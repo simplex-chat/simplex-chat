@@ -1,8 +1,22 @@
 # Terminal chat layout: UI
 
-Date: 2026-10-13. Revised: 2026-10-14.
+Date: 2026-10-13. Revised: 2026-10-14, 2026-10-19.
 
 Chats with the layout `terminal` are drawn in the Android, desktop and iOS apps as full-width rows without bubbles, in the colours of the colour mode, without wallpaper. Approved look: the mockup https://claude.ai/artifact/FWKgVq8mR9wqKVxpLq2WXz.
+
+Revision 2026-10-19:
+
+```
+Kotlin rows    rows of branch sh/desktop-flat-layout, names flat -> terminal
+               specification: apps/multiplatform/spec/client/chat-view.md, section 10
+               product: apps/multiplatform/product/views/chat.md, "Terminal Layout"
+excluded       desktop rail, compact chat list, developer flag of that branch
+activation     ChatInfo.activeChatLayout == Terminal, every ChatView of the chat
+colours        app, user and chat themes, as classic; to be confirmed by the user on desktop
+wallpaper      omitted: drawWallpaper = false in ChatLayout
+superseded     sections 2, 3 and 6 below, for Kotlin; open question 2
+pending        section 4 (iOS): rewrite for the carried-over rows, after the desktop review
+```
 
 References are to branch `ep/llm-ux`, commit `31a8c86fb`; files changed by the patch 01 rework are cited in `patches/ws/layout/work` ("rework").
 

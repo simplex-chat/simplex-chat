@@ -53,7 +53,7 @@ fun MarkdownBlocks(
   modifier: Modifier,
   cardColor: Color,
   blockText: @Composable (index: Int, range: SegmentRange, style: TextStyle, modifier: Modifier, softWrap: Boolean, last: Boolean) -> Unit,
-  metaLine: @Composable () -> Unit
+  metaLine: (@Composable () -> Unit)?
 ) {
   val roundness = remember { appPreferences.chatItemRoundness.state }.value.coerceIn(0f, 1f)
   val cardShape = RoundedCornerShape(12.dp * roundness)
@@ -124,7 +124,7 @@ fun MarkdownBlocks(
         is MarkdownBlock.Rule -> Box(Modifier.padding(vertical = 6.dp).fillMaxWidth().height(1.dp).background(lineColor))
       }
     }
-    if (!lastIsText) metaLine()
+    if (!lastIsText && metaLine != null) metaLine()
   }
 }
 

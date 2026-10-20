@@ -215,11 +215,13 @@ fun MarkdownText (
             selection = selection, textIndex = index, range = r.from until r.to, softWrap = blockSoftWrap, parentDirection = direction
           )
         },
-        metaLine = {
-          MarkdownText(
-            text, formattedText, markdownBlocks, meta = meta, chatTTL = chatTTL, toggleSecrets = toggleSecrets, style = style,
-            linkMode = linkMode, showViaProxy = showViaProxy, showTimestamp = showTimestamp, range = IntRange.EMPTY
-          )
+        metaLine = if (meta == null) null else {
+          {
+            MarkdownText(
+              text, formattedText, markdownBlocks, meta = meta, chatTTL = chatTTL, toggleSecrets = toggleSecrets, style = style,
+              linkMode = linkMode, showViaProxy = showViaProxy, showTimestamp = showTimestamp, range = IntRange.EMPTY
+            )
+          }
         }
       )
     }

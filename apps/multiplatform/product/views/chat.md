@@ -45,7 +45,7 @@ Rendered by `LazyColumnWithScrollBar` with pagination:
 | Merged items | Adjacent messages grouped with `ItemSeparation` (timestamp, large gap, date separators) |
 | Floating buttons | Scroll-to-bottom button with unread count |
 | Date separators | Date headers between messages from different days |
-| Wallpaper | Per-chat themed background via `perChatTheme` from contact/group `uiThemes` |
+| Wallpaper | Per-chat themed background via `perChatTheme` from contact/group `uiThemes`; classic layout only |
 | Content filter | Filter messages by type via `ContentFilter` (images, files, links, etc.) |
 
 ### Message Types
@@ -125,6 +125,33 @@ Shown when `selectedChatItems != null`:
 ### Timed/Disappearing Messages
 
 When `timedMessageAllowed` is true, compose bar includes a timer icon for setting message disappear time via `customDisappearingMessageTimePref`.
+
+### Terminal Layout
+
+Used for a direct or group chat whose layout is Terminal (chat layout set in Appearance settings, per user profile or on the chat theme screen), on Android and desktop: the main chat view, member support chats and reports. Note folders use the classic layout. App, user and chat theme colours apply; the wallpaper is omitted, and the chat is drawn on the theme background.
+
+| Element | Description |
+|---|---|
+| Message rows | Full-width rows, start-aligned for sent and received messages. Text, media and deleted messages are drawn on the chat background; group invitations and error items keep their rounded coloured card |
+| Sender header | Avatar, name, role label and time on the first message of a group. Role label: the member role above Member, or "channel" for channel posts (including an owner posting as the channel). A new header follows an event, a date change, a sender change (including an owner switching between posting as the channel and as themselves), or a gap of 60 seconds or more |
+| Continuation rows | Avatar and name omitted. Time in the start gutter: desktop, on hover; Android, on the newest row of each run of rows with the same time |
+| Avatar click | Received group message: member info; received direct or channel message, and a post shown as the channel: chat info. Other own messages: inactive |
+| Row background | Desktop: light tint on hover. Highlighted message (for example after jumping to a quoted message): primary tint. Both are rounded and slightly inset from the pane edges |
+| Avatars | Placeholder avatars have extra contrast against the background |
+| Hover action bar | Desktop, top end of the hovered row, items with message content only (events, calls, errors, group invitations and moderated items are excluded; marked-deleted messages show only More): 3 quick reactions, add reaction (remaining reactions), reply, forward, and More (the context menu). Each button follows the rules of the context menu. Hidden in selection mode and when the pointer leaves the row, unless the reaction picker is open |
+| Message time | Omitted from the message. Sent messages keep their delivery status; edited, timer and other icons stay. A received message with the time only shows no meta and reserves no space for it |
+| Replies | One compact line above the message in place of the quote block: reply icon, small avatar of the quoted sender, the sender name in semibold (long names truncated), and a one-line snippet. Media without text: its type; voice message: "Voice message" and its duration. Click: scroll to the quoted message; hover: darker text; long-press or right-click: message menu |
+| Code blocks, tables | Cards in one colour for sent and received messages |
+| Forwarded and report headers | Drawn on the chat background |
+| Deleted messages | Transparent, 14sp italic text, time omitted |
+| Reactions | Rounded pills with the count; own reactions tinted |
+| Date separators | Date in a pill on a full-width line |
+| Voice messages | Same arrangement for sent and received messages |
+| Search results | "Go to message" button at the end of each row |
+| Compose field | Rounded, lightly filled field with margins; divider above the compose area omitted |
+| Swipe to reply | Android: on the whole row |
+
+The context menu and multi-select work as in the classic layout. Item info, the Appearance preview and the chat theme preview keep the classic look.
 
 ## Source Files
 

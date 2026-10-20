@@ -1776,7 +1776,8 @@ fun ComposeView(
     }
 
     Surface(color = MaterialTheme.colors.background, contentColor = MaterialTheme.colors.onBackground) {
-      Divider()
+      val terminal = LocalTerminalLayout.current
+      if (!terminal) Divider()
       if (chat.chatInfo is ChatInfo.Group && chat.chatInfo.groupInfo.nextConnectPrepared) {
         if (chat.chatInfo.groupInfo.businessChat == null) {
           val isChannel = chat.chatInfo.groupInfo.useRelays
@@ -1796,7 +1797,7 @@ fun ComposeView(
         Column {
           ContextSendMessageToConnect(generalGetString(MR.strings.compose_send_direct_message_to_connect))
           Divider()
-          Row(Modifier.padding(end = 8.dp), verticalAlignment = Alignment.Bottom) {
+          Row((if (terminal) Modifier.terminalComposeField() else Modifier).padding(end = 8.dp), verticalAlignment = Alignment.Bottom) {
             ComposeActionButtons()
             SendMsgView_(
               disableSendButton = disableSendButton,
@@ -1851,7 +1852,7 @@ fun ComposeView(
           groupDirectInv = chat.chatInfo.contact.groupDirectInv
         )
       } else {
-        Row(Modifier.padding(end = 8.dp), verticalAlignment = Alignment.Bottom) {
+        Row((if (terminal) Modifier.terminalComposeField() else Modifier).padding(end = 8.dp), verticalAlignment = Alignment.Bottom) {
           ComposeActionButtons()
           val broadcastPlaceholder = (chat.chatInfo as? ChatInfo.Group)?.groupInfo?.let { gi ->
             if (gi.useRelays && gi.membership.memberRole >= GroupMemberRole.Owner && chat.chatInfo.groupChatScope() == null) generalGetString(MR.strings.compose_view_broadcast)
