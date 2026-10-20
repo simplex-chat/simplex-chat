@@ -2921,4 +2921,11 @@
     <string name="badges_how_it_works_p2">Per dimostrare a un contatto o a un server che hai un distintivo, l\'app genera una nuova prova che rivela solo il tipo di distintivo e la data di scadenza, arrotondata alla settimana.</string>
     <string name="badges_support_ended_on">Il tuo distintivo è scaduto il %1$s.</string>
     <string name="supporter_perks">Vantaggi dei sostenitori</string>
+    <string name="v7_0_crowdfunding" translatable="false"></string>
+    <string name="v7_0_invest_descr" translatable="false"></string>
+    <string name="v7_0_invest_learn_more" translatable="false"></string>
+    <string name="badges_redeem_code_placeholder" translatable="false"></string>
+    <string name="settings_section_title_interface" translatable="false"></string>
+    <string name="settings_section_title_language" translatable="false"></string>
+    <string name="v7_0_invest" translatable="false"></string>
 </resources>
