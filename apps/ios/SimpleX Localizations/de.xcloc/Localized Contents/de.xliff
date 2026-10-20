@@ -1573,9 +1573,9 @@ in Ihrem Netzwerk</target>
         <target state="translated">Für bessere Privatsphäre verpixeln.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Blur media" xml:space="preserve">
+      <trans-unit id="Blur media" xml:space="preserve" approved="no">
         <source>Blur media</source>
-        <target>Medien verpixeln</target>
+        <target state="translated">Medien verpixeln</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Bot" xml:space="preserve" approved="no">
