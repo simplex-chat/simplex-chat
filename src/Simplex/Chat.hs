@@ -82,8 +82,9 @@ defaultChatConfig =
       badgeCurrentTime = getCurrentTime,
       badgeRetryInterval = RetryInterval {initialInterval = 30_000000, increaseAfter = 0, maxInterval = 3600_000000},
       badgeConsecutiveRetries = 3,
-      -- TEST ONLY, DO NOT COMMIT: enables /_badge request against the dev badge service
+      -- TEST ONLY, DO NOT COMMIT: enables /_badge request, and asks the dev badge service every 2 minutes
       badgeDevRequests = True,
+      badgeDevRequestInterval = Just 120,
       confirmMigrations = MCConsole,
       -- this property should NOT use operator = Nothing
       -- non-operator servers can be passed via options

@@ -76,7 +76,9 @@ data StoreVerifier = StoreVerifier
     checkSubscription :: Maybe (SubscriptionRef -> Maybe Text -> IO (Either StoreRefusal SubscriptionCheck)),
     -- microseconds; a lane answers one request at a time, so a verifier that does not finish holds up the rest of its lane
     verifyTimeout :: Int,
-    storeChecks :: StoreChecks
+    storeChecks :: StoreChecks,
+    -- Local testing only: credits a purchase the store itself calls a test, which no real buyer pays for.
+    creditTestPurchases :: Bool
   }
 
 -- | When a subscription's store is asked about it. A real store's next charge has not started while coverage
@@ -117,7 +119,7 @@ data StoreCharge = StoreCharge
   deriving (Show)
 
 noStoreVerifier :: StoreVerifier
-noStoreVerifier = StoreVerifier {verifyApple = Nothing, verifyGoogle = Nothing, acknowledgeGoogle = Nothing, acknowledgeGoogleSubscription = Nothing, checkSubscription = Nothing, verifyTimeout = 10000000, storeChecks = ChecksAfterCoverage}
+noStoreVerifier = StoreVerifier {verifyApple = Nothing, verifyGoogle = Nothing, acknowledgeGoogle = Nothing, acknowledgeGoogleSubscription = Nothing, checkSubscription = Nothing, verifyTimeout = 10000000, storeChecks = ChecksAfterCoverage, creditTestPurchases = False}
 
 -- | Nothing for a payment no store made. Exceptions are not logged, since they can quote the receipt
 -- or, from Google, a URL holding the token.
@@ -165,12 +167,12 @@ toStoreReceipt StoreVerifier {verifyApple, verifyGoogle, acknowledgeGoogle, ackn
 -- | Both stores are asked online about a subscription, so a throw or an overrun is no verdict. A test
 -- purchase is refused here, for a first purchase and a renewal alike.
 checkStoreSubscription :: StoreVerifier -> SubscriptionRef -> Maybe Text -> IO (Either StoreRefusal SubscriptionCheck)
-checkStoreSubscription StoreVerifier {checkSubscription, verifyTimeout} ref product_ = case checkSubscription of
+checkStoreSubscription StoreVerifier {checkSubscription, verifyTimeout, creditTestPurchases} ref product_ = case checkSubscription of
   Nothing -> pure $ Left SRNotConfigured
   Just check -> (>>= notTest) <$> askStore verifyTimeout "subscription check" (check ref product_)
   where
     notTest = \case
-      SubscriptionCheck {testSubscription = True} -> Left SRTestPurchase
+      SubscriptionCheck {testSubscription = True} | not creditTestPurchases -> Left SRTestPurchase
       checked -> Right checked
 
 -- | Thrown by a verifier that cannot place what the store signed: its own failure, never the store's answer or silence.

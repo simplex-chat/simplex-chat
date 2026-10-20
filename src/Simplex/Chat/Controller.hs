@@ -158,6 +158,9 @@ data ChatConfig = ChatConfig
     badgeConsecutiveRetries :: Int,
     -- set only by builds for a dev badge service: allows /_badge request, sent off the shared schedule
     badgeDevRequests :: Bool,
+    -- Local testing only: the badge worker treats a request as due this often, instead of near the
+    -- credential's expiry, so a renewal can be watched without waiting weeks.
+    badgeDevRequestInterval :: Maybe NominalDiffTime,
     confirmMigrations :: MigrationConfirmation,
     presetServers :: PresetServers,
     shortLinkPresetServers :: NonEmpty SMPServer,

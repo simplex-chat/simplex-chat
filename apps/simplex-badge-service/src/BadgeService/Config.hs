@@ -147,8 +147,10 @@ data ServiceConfig = ServiceConfig
     group :: Maybe GroupConfig,
     -- Local testing only; anyone who can reach the service can mint badges with any well-formed receipt.
     devAcceptUnverifiedStoreReceipts :: Bool,
-    -- Local testing only, beside the mock; every issue request for a subscription asks it and banks the months it charges.
-    devCheckStoreDuringCoverage :: Bool
+    -- Local testing only; every issue request for a subscription asks its store and banks the months it charges.
+    devCheckStoreDuringCoverage :: Bool,
+    -- Local testing only; credits a purchase the store itself calls a test, which no real buyer pays for.
+    devCreditTestPurchases :: Bool
   }
   deriving (Eq, Show)
 
@@ -212,7 +214,7 @@ knownSettings =
     ("apple", ["bundle_id", "root_certificates", "api_key_id", "api_issuer_id", "api_private_key_file", "api_host"]),
     ("google", ["package_name", "service_account_file"]),
     ("group", ["display_name", "description"]),
-    ("dev", ["accept_unverified_store_receipts", "check_store_during_coverage"]),
+    ("dev", ["accept_unverified_store_receipts", "check_store_during_coverage", "credit_test_purchases"]),
     ("issuer", ["index", "private_key"])
   ]
 
@@ -250,8 +252,9 @@ parseConfig ini = do
   when (devUnverifiedReceipts && (isJust apple || isJust google)) $
     Left "[dev] accept_unverified_store_receipts must be off where [apple] or [google] verifies store receipts"
   devCheckStoreDuringCoverage <- bool "dev" "check_store_during_coverage" False
-  when (devCheckStoreDuringCoverage && not devUnverifiedReceipts) $
-    Left "[dev] check_store_during_coverage needs accept_unverified_store_receipts = on, as only the mock may be asked while coverage runs"
+  devCreditTestPurchases <- bool "dev" "credit_test_purchases" False
+  when (devCheckStoreDuringCoverage && not (devUnverifiedReceipts || devCreditTestPurchases)) $
+    Left "[dev] check_store_during_coverage needs accept_unverified_store_receipts or credit_test_purchases = on, as only a dev deployment may ask a store while coverage runs"
   pure
     ServiceConfig
       { listener = ListenerConfig {lHost, lPort, lStaticDir, lServeWebapp, lWebappExportDir, lTrustForwardedFor},
@@ -263,7 +266,8 @@ parseConfig ini = do
         issuer = iss,
         group = grp,
         devAcceptUnverifiedStoreReceipts = devUnverifiedReceipts,
-        devCheckStoreDuringCoverage
+        devCheckStoreDuringCoverage,
+        devCreditTestPurchases
       }
   where
     hasSection s = s `elem` sections ini
