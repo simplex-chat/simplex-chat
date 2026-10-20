@@ -152,7 +152,8 @@ configureStoreVerifier serviceCfg env@ServiceState {serviceCC, storeVerifier = v
     -- the badge clock is read at each check, as the controller that holds it starts after this
     mock <- newMockStoreVerifier $ atomically (readTMVar serviceCC) >>= badgeNow
     pure env {storeVerifier = mock {storeChecks = if devCheckStoreDuringCoverage then ChecksAtEveryRequest else ChecksAfterCoverage}}
-  Just ServiceConfig {appleStore, playStore} -> do
+  Just ServiceConfig {appleStore, playStore, devCheckStoreDuringCoverage, devCreditTestPurchases} -> do
+    when devCreditTestPurchases $ logWarn "[dev] credit_test_purchases is on: a purchase the store calls a test is credited as a real one"
     apple <- forM appleStore $ \AppleStoreConfig {aBundleId, aRootCertificates, aServerApi} -> do
       roots <- mapM (orExit . readAppleRoot) aRootCertificates
       appleSubscriptions <- forM aServerApi $ orExit . appleSubscriptionChecker roots aBundleId
@@ -173,7 +174,9 @@ configureStoreVerifier serviceCfg env@ServiceState {serviceCC, storeVerifier = v
                   (Nothing, Nothing) -> checkSubscription v
                   (checkApple_, checkGoogle_) -> Just $ \ref _ -> case ref of
                     SubscriptionApple originalId -> maybe notConfigured ($ originalId) checkApple_
-                    SubscriptionGoogle token -> maybe notConfigured ($ token) checkGoogle_
+                    SubscriptionGoogle token -> maybe notConfigured ($ token) checkGoogle_,
+                storeChecks = if devCheckStoreDuringCoverage then ChecksAtEveryRequest else ChecksAfterCoverage,
+                creditTestPurchases = devCreditTestPurchases
               }
         }
   Nothing -> pure env
@@ -512,7 +515,8 @@ purchaseWithReceipt key cc verifier checks purchaseKey masterKey StoreReceipt {t
               | transactionRef /= providerRef -> storeRefusalResponse $ SRVerifierFailed "verified a transaction other than the one claimed"
             Right VerifiedStoreTransaction {quantity}
               | quantity /= 1 -> storeRefusalResponse $ SRVerifierFailed $ "verified a quantity of " <> tshow quantity
-            Right VerifiedStoreTransaction {testPurchase = True} -> storeRefusalResponse SRTestPurchase
+            Right VerifiedStoreTransaction {testPurchase = True}
+              | not (creditTestPurchases verifier) -> storeRefusalResponse SRTestPurchase
             -- another key's credit is told only once the store vouched for the receipt, or it would reveal which transactions were credited
             Right tx -> case credit of
               Uncredited -> newPurchase tx
