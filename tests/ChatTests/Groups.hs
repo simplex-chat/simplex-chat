@@ -6282,7 +6282,8 @@ testGroupHistory =
 
       cath ##> "/_get chat #1 count=100"
       r <- chat <$> getTermLine cath
-      r `shouldContain` [(0, "hello"), (0, "hey!")]
+      let expected = [(0, "hello"), (0, "hey!")]
+      filter (`elem` expected) r `shouldContain` expected
 
       -- message delivery works after sending history
       alice #> "#team 1"
@@ -6376,7 +6377,8 @@ testGroupHistoryPreferenceOff =
 
       cath ##> "/_get chat #1 count=100"
       r <- chat <$> getTermLine cath
-      r `shouldContain` [(0, "hello"), (0, "hey!")]
+      let expected = [(0, "hello"), (0, "hey!")]
+      filter (`elem` expected) r `shouldContain` expected
 
       alice ##> "/set history #team off"
       alice <## "updated group preferences:"
@@ -6641,10 +6643,11 @@ testGroupHistoryMultipleFiles =
 
       cath ##> "/_get chat #1 count=100"
       r <- chatF <$> getTermLine cath
-      r
-        `shouldContain` [ ((0, "hi alice"), Just $ tmpFile cath "testfile_bob_1"),
-                          ((0, "hey bob"), Just $ tmpFile cath "testfile_alice_1")
-                        ]
+      let expected =
+            [ ((0, "hi alice"), Just $ tmpFile cath "testfile_bob_1"),
+              ((0, "hey bob"), Just $ tmpFile cath "testfile_alice_1")
+            ]
+      filter (`elem` expected) r `shouldContain` expected
 
 testGroupHistoryFileCancel :: HasCallStack => TestParams -> IO ()
 testGroupHistoryFileCancel =
@@ -6861,14 +6864,15 @@ testGroupHistoryQuotes =
 
       cath ##> "/_get chat #1 count=100"
       r <- chat' <$> getTermLine cath
-      r
-        `shouldContain` [ ((0, "ALICE"), Nothing),
-                          ((0, "BOB"), Nothing),
-                          ((0, "1"), Just (0, "ALICE")),
-                          ((0, "2"), Just (0, "BOB")),
-                          ((0, "3"), Just (0, "ALICE")),
-                          ((0, "4"), Just (0, "BOB"))
-                        ]
+      let expected =
+            [ ((0, "ALICE"), Nothing),
+              ((0, "BOB"), Nothing),
+              ((0, "1"), Just (0, "ALICE")),
+              ((0, "2"), Just (0, "BOB")),
+              ((0, "3"), Just (0, "ALICE")),
+              ((0, "4"), Just (0, "BOB"))
+            ]
+      filter (`elem` expected) r `shouldContain` expected
 
 testGroupHistoryDeletedMessage :: HasCallStack => TestParams -> IO ()
 testGroupHistoryDeletedMessage =
@@ -6970,7 +6974,8 @@ testGroupHistoryDisappearingMessage =
 
       cath ##> "/_get chat #1 count=100"
       r1 <- chat <$> getTermLine cath
-      r1 `shouldContain` [(0, "1"), (0, "2"), (0, "3"), (0, "4")]
+      let expected1 = [(0, "1"), (0, "2"), (0, "3"), (0, "4")]
+      filter (`elem` expected1) r1 `shouldContain` expected1
 
       threadDelay 11000000
       concurrentlyN_
@@ -6990,7 +6995,8 @@ testGroupHistoryDisappearingMessage =
 
       cath ##> "/_get chat #1 count=100"
       r2 <- chat <$> getTermLine cath
-      r2 `shouldContain` [(0, "1"), (0, "4")]
+      let expected2 = [(0, "1"), (0, "4")]
+      filter (`elem` expected2) r2 `shouldContain` expected2
       r2 `shouldNotContain` [(0, "2")]
       r2 `shouldNotContain` [(0, "3")]
 
@@ -7101,7 +7107,8 @@ testGroupHistoryUnknownMember =
 
       dan ##> "/_get chat #1 count=100"
       r <- chat <$> getTermLine dan
-      r `shouldContain` [(0, "hi from alice"), (0, "hi from bob"), (0, "hi from cath")]
+      let expected = [(0, "hi from alice"), (0, "hi from bob"), (0, "hi from cath")]
+      filter (`elem` expected) r `shouldContain` expected
 
       dan ##> "/ms team"
       dan

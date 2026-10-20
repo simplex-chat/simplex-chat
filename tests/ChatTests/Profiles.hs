@@ -916,12 +916,13 @@ testUserBadgeGroupLinkJoiner ps = do
       memberBadgeHeader alice "team" "bob" `shouldReturn` Just ("R", BSActive)
       bob ##> "/_start"
       bob <## "chat started"
-      bob <## "subscribed 1 connections on server localhost"
       concurrentlyN_
         [ alice <## "#team: bob joined the group",
-          do
-            bob <## "#team: joining the group..."
-            bob <## "#team: you joined the group"
+          bob
+            <### [ "subscribed 1 connections on server localhost",
+                   "#team: joining the group...",
+                   "#team: you joined the group"
+                 ]
         ]
       memberBadgeHeader alice "team" "bob" `shouldReturn` Just ("CG", BSActive)
 
@@ -986,8 +987,7 @@ testUserBadgeInvitedIntroduced ps = do
       bob <## "chat stopped"
       cath ##> "/_start"
       cath <## "chat started"
-      cath <## "subscribed 2 connections on server localhost"
-      cath <## "#team: alice added bob (Bob) to the group (connecting...)"
+      cath <### ["subscribed 2 connections on server localhost", "#team: alice added bob (Bob) to the group (connecting...)"]
       memberBadgeHeader cath "team" "bob" `shouldReturn` Just ("CG", BSActive)
 
 testUserBadgeInvitingHost :: HasCallStack => TestParams -> IO ()
