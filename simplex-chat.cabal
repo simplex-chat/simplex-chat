@@ -43,6 +43,7 @@ library
       Simplex.Chat.Badges.Code
       Simplex.Chat.Badges.Ledger
       Simplex.Chat.Badges.Service
+      Simplex.Chat.Badges.StorePlan
       Simplex.Chat.Badges.Types
       Simplex.Chat.Names
       Simplex.Chat.Call

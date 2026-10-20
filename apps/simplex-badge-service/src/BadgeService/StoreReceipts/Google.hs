@@ -7,7 +7,6 @@
 
 module BadgeService.StoreReceipts.Google (PlayVerifier (..), playStoreVerifier) where
 
-import BadgeService.Catalog (storePlan)
 import BadgeService.Config (PlayStoreConfig (..))
 import BadgeService.StoreReceipts (StoreCharge (..), StoreRefusal (..), SubscriptionCheck (..), VerifiedStoreTransaction (..), storeRequest)
 import Control.Concurrent.STM
@@ -38,6 +37,7 @@ import Network.HTTP.Client.TLS (newTlsManager)
 import Network.HTTP.Types (hAuthorization, hContentType, methodPost, renderSimpleQuery)
 import Simplex.Chat.Badges.Ledger (addMonths)
 import Simplex.Chat.Badges.Service (SubscriptionState (..))
+import Simplex.Chat.Badges.StorePlan (storePlan)
 import Simplex.Chat.PaymentService (googlePurchaseRef)
 import Simplex.Chat.PaymentService.Types (PaymentProvider (..))
 import Simplex.Messaging.Util (tshow)

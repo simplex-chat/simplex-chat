@@ -4,7 +4,7 @@
 
 module BadgeService.StoreReceipts.Mock (newMockStoreVerifier) where
 
-import BadgeService.Catalog (playMonthlyPlan, storePlan)
+import BadgeService.Catalog (playMonthlyPlan)
 import BadgeService.StoreReceipts
 import Control.Applicative ((<|>))
 import Control.Concurrent.STM (TVar, atomically, modifyTVar', newTVarIO, readTVarIO)
@@ -19,6 +19,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime, addUTCTime)
 import Simplex.Chat.Badges.Ledger (addMonths)
 import Simplex.Chat.Badges.Service (SubscriptionState (..))
+import Simplex.Chat.Badges.StorePlan (storePlan)
 import Simplex.Chat.PaymentService (appleTransactionRef, googlePurchaseRef)
 import Simplex.Chat.PaymentService.Types (PaymentProvider (..))
 import Simplex.Messaging.Util (eitherToMaybe, tshow)
