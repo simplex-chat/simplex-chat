@@ -5680,11 +5680,11 @@ updateUserBadge userId emitted now = do
         Just balance -> do
           -- No months come after a prepaid purchase's paidThrough, so it is retired before asking, as
           -- retirement needs no service and an unbounded retry would not return before it. A subscription's come
-          -- from the store, so it is asked about first, and retired once the service says it ended, or once the
-          -- window has passed since the first answer after which nothing was covered.
+          -- from the store, so it is asked about first, and retired once its store says it ended, by the service's answer
+          -- or the device's report, or once the window has passed since the first answer after which nothing was covered.
           retiredBefore <- case purchaseKind of
-            PKPrepaid -> retireExpiredBadge user p now balance
-            PKSubscription _ -> pure False
+            PKPrepaid | L.paidThrough balance <= now -> retireBadge user p
+            _ -> pure False
           latest <- withStore' (`getLatestIssuedCredential` badgePurchaseId)
           let due = not retiredBefore && badgeRequestDue now purchaseKind (shownBadgeCredential user p) latest balance
               -- a due month waits for the wake the last pass set, so a request that issued nothing is not repeated at every activation;
@@ -5704,11 +5704,14 @@ updateUserBadge userId emitted now = do
                     _ -> UnrenewedRun {unrenewedSince = now, lastUnrenewedAt = now}
                 | otherwise = unrenewedRun
               windowPassedSince t = subscriptionRecoveryWindow `addUTCTime` t <= now
+              ended = case purchaseKind of
+                PKSubscription BadgeSubscription {status} -> (subscription_ <|> status) == Just SSEnded
+                PKPrepaid -> False
           when (unrenewedRun' /= unrenewedRun) $ withStore' $ \db -> setBadgeUnrenewedRun db badgePurchaseId unrenewedRun'
           retired <-
-            -- after an answer only: a renewal since the run started is known only from an answer
-            if subscription_ == Just SSEnded || requestDue && maybe False (windowPassedSince . unrenewedSince) unrenewedRun'
-              then retireExpiredBadge user p now balance'
+            -- the window only after an answer: a renewal since the run started is known only from an answer
+            if ended || requestDue && maybe False (windowPassedSince . unrenewedSince) unrenewedRun'
+              then retireBadge user p
               else pure retiredBefore
           -- presenting broadcasts the record it is handed, and the request above can block for the
           -- whole service timeout, so this read belongs after it and not at the top of the pass
@@ -5970,11 +5973,13 @@ requestBadgeIssue userId UserBadgePurchase {badgePurchaseId, badgeType, purchase
         -- read again: now was taken before a lock wait and an untimed request, and the check reads
         -- it as the client's clock against the timestamps the service put on the rows
         storedAt <- badgeNow
+        let -- past the asserted coverage the state is the store's, except within an hour of an earlier check, when it can be
+            -- the last successful check's (a later fresh answer or device report corrects it); before then it can be a year old.
+            -- Ended is never stale: the service writes it only from a store check, after which it grants nothing
+            storedSubscription = boundedSubscriptionState <$> find (\s -> L.paidThrough lastEntry <= now || s == SSEnded) subscription
         (applied, balance_) <- withStore' $ \db -> do
           applied <- applyBadgeStatement db g badgePurchaseId badgeType statement verifiedCred_ storedAt
-          -- past the asserted coverage the state is the store's, except within an hour of an earlier check, when it can be
-          -- the last successful check's (a later fresh answer or device report corrects it); before then it can be a year old
-          when (L.paidThrough lastEntry <= now) $ forM_ subscription $ setBadgeSubscriptionStatus db badgePurchaseId . boundedSubscriptionState
+          forM_ storedSubscription $ setBadgeSubscriptionStatus db badgePurchaseId
           (applied,) <$> getBadgeLedgerLastEntry db badgePurchaseId
         -- the statement is applied either way, so a month can be spent with nothing to show for it
         case (sentCred_, verifiedCred_, applied) of
@@ -5984,7 +5989,7 @@ requestBadgeIssue userId UserBadgePurchase {badgePurchaseId, badgeType, purchase
           -- waits for its store to charge - which its statement then shows
           (Nothing, _, _) | maybe False ((> storedAt) . L.paidThrough) balance_ -> recordUnexpected "badge service issued no credential"
           _ -> pure ()
-        maybe (throwCmdError "badge ledger has no balance") (pure . Just . (,subscription)) balance_
+        maybe (throwCmdError "badge ledger has no balance") (pure . Just . (,storedSubscription)) balance_
       J.Success BSPError {code, retryAfter} -> do
         eToView $ ChatError $ CECommandError $ "badge service error: " <> T.unpack (badgeServiceErrorText code)
         -- retryAfter only marks the failure as one that can clear: the retry waits a stall like any request that
@@ -6030,11 +6035,11 @@ presentIssuedBadge user p@UserBadgePurchase {badgePurchaseId, shown} now
     -- request that produced it. Nothing shown at all is the state a lost profile write leaves.
     presentDue cred = Just cred /= shownCred && maybe True ((<= now) . credentialExpiry) shownCred
 
--- | The visible half of "the badge expired".
-retireExpiredBadge :: User -> UserBadgePurchase -> UTCTime -> StatementEntry -> CM Bool
-retireExpiredBadge user UserBadgePurchase {badgePurchaseId, shown} now balance
-  | not (shown && L.paidThrough balance <= now) = pure False
-  | otherwise = withUserProfileLock "retireExpiredBadge" $ do
+-- | The visible half of "the badge ended".
+retireBadge :: User -> UserBadgePurchase -> CM Bool
+retireBadge user UserBadgePurchase {badgePurchaseId, shown}
+  | not shown = pure False
+  | otherwise = withUserProfileLock "retireBadge" $ do
       user' <- withStore $ \db -> do
         liftIO $ clearShownBadge db user badgePurchaseId
         setUserBadge db user Nothing

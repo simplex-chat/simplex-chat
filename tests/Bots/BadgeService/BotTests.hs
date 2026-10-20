@@ -219,6 +219,8 @@ badgeServiceTests = do
     it "should ask about a subscription not opened for longer than the recovery window, and keep it when the store kept charging" testIdleSubscriptionKeptPastWindow
     it "should keep a subscription badge past the recovery window while the service does not answer" testSubscriptionNotRetiredWithoutAnswer
     it "should retire the badge and alert once the service says the subscription ended, and stop asking" testSubscriptionEnds
+    it "should retire a subscription badge the service answers ended while its ledger still covers, and credit a new subscription after it" testSubscriptionEndsWhileCovered
+    it "should retire a subscription badge the device reports ended without asking, and credit a one-time purchase after it" testDeviceEndedRetires
     it "should keep the state the service answered when it credited and when it renewed past paid coverage, and announce a change" testSubscriptionStateKept
     it "should keep the state from the credit through an issuance the service answers from its stored state" testAnnualStateNotFromStoredAnswer
     it "should keep the device store's view of a credited subscription, except renewing over billing retry, and nothing for any other transaction" testSubscriptionStateFromStore
@@ -2782,6 +2784,50 @@ testSubscriptionEnds ps =
       alice ##> ("/_badge subscription renewing " <> paymentArg subscriptionPlay)
       alice <## "ok"
       subscriptionStatuses (chatController alice) `shouldReturn` [Just "ended"]
+
+testSubscriptionEndsWhileCovered :: HasCallStack => TestParams -> IO ()
+testSubscriptionEndsWhileCovered ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsController = ChatController {chatStore}, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      firstStart <- addUTCTime (-3600) <$> serviceNow env
+      storeReports store $ subscriptionCheck SSRenewing $ Just $ storeCharge "subscr-badge-supporter-year-01" firstStart 12
+      alice ##> ("/_badge purchase 1 " <> paymentArg subscriptionPlay)
+      inAnyOrder alice [[openPurchase ""], ["1: supporter"]]
+      waitWakeArmed (chatController alice)
+      rows <- ledgerRows (chatController alice) "badge_ledger"
+      -- the state a store check leaves when the service's clock is past the coverage the client's still sees
+      withTransaction chatStore $ \db -> DB.execute_ db "UPDATE sx_badge_service_payments SET subscription_state = 'ended'"
+      checks <- subscriptionChecks store
+      setClockAt bsClock $ fst $ renewalMoments rows
+      alice `send` "/_app activate"
+      alice <### ["/_app activate", "ok", Predicate (\l -> "1: supporter, 10 months left" `isPrefixOf` l && ", subscription ended" `isInfixOf` l)]
+      waitShownBadge (chatController alice) Nothing
+      subscriptionStatuses (chatController alice) `shouldReturn` [Just "ended"]
+      subscriptionChecks store `shouldReturn` checks
+      now <- serviceNow env
+      let resubscribedToken = "fake-play-token-resubscribed.AO-J1Or2p4bgV3sPn6"
+      setSubscription store (SubscriptionGoogle resubscribedToken) $ subscriptionCheck SSRenewing $ Just (storeCharge "subscr-badge-supporter-month-02" (addUTCTime (-3600) now) 1) {chargeRef = "GPA.resubscribed"}
+      alice ##> ("/_badge purchase 1 " <> paymentArg (googlePayment "subscr_badge_supporter_01" resubscribedToken))
+      inAnyOrder alice [["1: supporter", openPurchase ""], ["2: supporter"]]
+      waitShownBadge (chatController alice) (Just 2)
+      alice ##> "/_badge state 1"
+      alice <##. "2: supporter"
+
+testDeviceEndedRetires :: HasCallStack => TestParams -> IO ()
+testDeviceEndedRetires ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClientCfg, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      _ <- clientSubscribedMonthly env alice
+      checks <- subscriptionChecks store
+      let ended = Predicate (\l -> "1: supporter, 0 months left" `isPrefixOf` l && ", subscription ended" `isInfixOf` l)
+      alice ##> ("/_badge subscription ended " <> paymentArg subscriptionPlay)
+      alice <### ["ok", ended, ended]
+      waitShownBadge (chatController alice) Nothing
+      subscriptionChecks store `shouldReturn` checks
+      invoiceId <- createInvoice alice 1
+      alice ##> purchaseWithInvoice 1 invoiceId supporterPlay
+      inAnyOrder alice [["1: supporter", invoicePurchase "" invoiceId], creditedLines "" invoiceId "2: supporter"]
+      waitShownBadge (chatController alice) (Just 2)
 
 subscriptionStatuses :: ChatController -> IO [Maybe Text]
 subscriptionStatuses ChatController {chatStore} =

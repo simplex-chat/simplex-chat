@@ -2220,7 +2220,7 @@ func apiPurchaseBadge(_ userId: Int64, _ echoedInvoiceId: String?, listed: Bool,
     }
 }
 
-// the device store's view of a subscription it charges, which changes only what is shown and alerted
+// the device store's view of a subscription it charges, which changes what is shown and alerted, and retires its badge once ended
 func apiSetBadgeSubscriptionStatus(_ status: BadgeSubscriptionState, _ payment: ServicePayment) async throws {
     let r: ChatResponse2 = try await chatSendCmd(.apiSetBadgeSubscriptionStatus(status: status, payment: payment), log: false)
     if case .cmdOk = r { return }
