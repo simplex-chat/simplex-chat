@@ -2891,4 +2891,12 @@
     <string name="supporter_perks">Támogatói előnyök</string>
     <string name="v7_1_supporter_badge_title">Támogatói kitűző ❤️</string>
     <string name="v7_1_supporter_badge_body">Segítsen fenntartani a hálózat működését és küldjön akár 2 GB méretű fájlokat.</string>
+    <string name="v7_0_crowdfunding" translatable="false"></string>
+    <string name="v7_0_invest_descr" translatable="false"></string>
+    <string name="v7_0_invest_learn_more" translatable="false"></string>
+    <string name="badges_redeem_code_placeholder" translatable="false"></string>
+    <string name="settings_section_title_interface" translatable="false"></string>
+    <string name="settings_section_title_language" translatable="false"></string>
+    <string name="app_name" translatable="false"></string>
+    <string name="v7_0_invest" translatable="false"></string>
 </resources>
