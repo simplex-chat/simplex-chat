@@ -2904,4 +2904,11 @@
     <string name="badges_your_badge">Seu selo</string>
     <string name="your_badge_expired">Seu selo expirou.</string>
     <string name="badges_support_ended_on">Seu selo expirou em %1$s.</string>
+    <string name="v7_0_crowdfunding" translatable="false"></string>
+    <string name="v7_0_invest_descr" translatable="false"></string>
+    <string name="v7_0_invest_learn_more" translatable="false"></string>
+    <string name="badges_redeem_code_placeholder" translatable="false"></string>
+    <string name="settings_section_title_interface" translatable="false"></string>
+    <string name="settings_section_title_language" translatable="false"></string>
+    <string name="v7_0_invest" translatable="false"></string>
 </resources>
