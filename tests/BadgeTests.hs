@@ -1166,12 +1166,18 @@ testBadgeSubscriptionJSON = do
         J.Object o -> KM.lookup "subscription" o
         _ -> Nothing
   subscriptionField (badgeState Nothing) `shouldBe` Nothing
-  subscriptionField (badgeState $ Just BadgeSubscription {planMonths = 12, status = Just SSCancelled})
+  subscriptionField (badgeState $ Just BadgeSubscription {planMonths = 12, status = Just SSCancelled, transactionRef = Nothing})
     `shouldBe` Just (J.object ["planMonths" J..= (12 :: Int), "status" J..= ("cancelled" :: T.Text)])
   -- not yet observed: the field is left out rather than sent as null
-  subscriptionField (badgeState $ Just BadgeSubscription {planMonths = 1, status = Nothing})
+  subscriptionField (badgeState $ Just BadgeSubscription {planMonths = 1, status = Nothing, transactionRef = Nothing})
     `shouldBe` Just (J.object ["planMonths" J..= (1 :: Int)])
-  let renewal status = badgeRenewal futureTime $ Just BadgeSubscription {planMonths = 1, status}
+  let withRef = BadgeSubscription {planMonths = 1, status = Just SSRenewing, transactionRef = Just "2000000812345680"}
+  subscriptionField (badgeState $ Just withRef)
+    `shouldBe` Just (J.object ["planMonths" J..= (1 :: Int), "status" J..= ("renewing" :: T.Text), "transactionRef" J..= ("2000000812345680" :: T.Text)])
+  J.fromJSON (J.toJSON withRef) `shouldBe` J.Success withRef
+  -- as an older core sends it
+  J.fromJSON (J.object ["planMonths" J..= (1 :: Int)]) `shouldBe` J.Success BadgeSubscription {planMonths = 1, status = Nothing, transactionRef = Nothing}
+  let renewal status = badgeRenewal futureTime $ Just BadgeSubscription {planMonths = 1, status, transactionRef = Nothing}
   renewal (Just SSRenewing) `shouldBe` (Just futureTime, True)
   mapM_ (\s -> renewal s `shouldBe` (Nothing, False)) [Nothing, Just SSCancelled, Just SSBillingRetry, Just SSEnded, Just (SSUnknown "renewing soon")]
   badgeRenewal futureTime Nothing `shouldBe` (Nothing, False)
@@ -1194,7 +1200,7 @@ testSubscriptionAlertDerivation = do
       early = addUTCTime (-10 * nominalDay) ends
       soon = addUTCTime (-nominalDay) ends
       past = addUTCTime nominalDay ends
-      subscription months st = SB.PKSubscription BadgeSubscription {planMonths = months, status = st}
+      subscription months st = SB.PKSubscription BadgeSubscription {planMonths = months, status = st, transactionRef = Nothing}
       alertOf t kind' isShown err =
         let p = SB.UserBadgePurchase {badgePurchaseId = 1, purchaseKey = k, purchasePrivKey = pk, masterKey = mk, badgeType = BTSupporter, shown = isShown, alertAcked = Nothing, alertSnoozeUntil = Nothing, issueError = err, nextWakeAt = Nothing, unrenewedRun = Nothing, purchaseKind = kind'}
          in (\BT.BadgeAlert {kind, date} -> (kind, date)) <$> derivedBadgeAlert t p Nothing balance

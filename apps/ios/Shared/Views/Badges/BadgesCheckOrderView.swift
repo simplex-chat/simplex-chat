@@ -14,6 +14,8 @@ struct BadgesCheckOrderView: View {
     @EnvironmentObject var theme: AppTheme
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject private var store = BadgeStore.shared
+    // store.forSale reads the active profile's badge
+    @ObservedObject private var badgeModel = BadgeModel.shared
     let level: BadgeLevel
     let period: BadgePeriod
     @State private var purchasing = false
@@ -54,8 +56,8 @@ struct BadgesCheckOrderView: View {
                         }
                     }
 
-                    if !store.forSale(period) && store.subscribedBefore == true {
-                        footnote("This Apple ID subscribed before. Subscribing again is not available in the app yet.")
+                    if !store.forSale(level, period) && store.subscribedBefore {
+                        footnote("This Apple ID subscribed before. In the app, it can subscribe again only to continue this profile's last purchase, when that was a subscription to this badge.")
                     }
 
                     Spacer(minLength: 20)
@@ -118,7 +120,7 @@ struct BadgesCheckOrderView: View {
 
     private func payButton() -> some View {
         let price = store.price(level, period, compact: false)
-        let disabled = !price.canPurchase || purchasing || !store.canBuy(chatModel.currentUser?.userId) || !store.forSale(period)
+        let disabled = !price.canPurchase || purchasing || !store.canBuy(chatModel.currentUser?.userId) || !store.forSale(level, period)
         return Button {
             purchase()
         } label: {

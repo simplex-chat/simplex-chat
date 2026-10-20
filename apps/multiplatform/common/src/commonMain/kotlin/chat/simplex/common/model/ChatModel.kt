@@ -2277,7 +2277,9 @@ data class BadgeState(
 data class BadgeSubscription(
   val planMonths: Int,
   // null until the service or the device's store has been asked
-  val status: BadgeSubscriptionState? = null
+  val status: BadgeSubscriptionState? = null,
+  // the store's reference: Apple's original transaction id, or a hash of Play's token
+  val transactionRef: String? = null
 )
 
 // the store's state as last observed; a newer core may know a state this version does not

@@ -508,14 +508,15 @@ getBadgePurchase db purchaseId =
                 WHERE l.badge_purchase_id = p.badge_purchase_id AND l.entry_type = 'credit' AND l.entry_credit_type = 'charge'
                 ORDER BY l.entry_id DESC
                 LIMIT 1),
-               p.subscription_status, p.unrenewed_since, p.last_unrenewed_at
+               p.subscription_status, p.unrenewed_since, p.last_unrenewed_at, r.transaction_ref
         FROM badge_purchases p
         JOIN users u ON u.user_id = p.user_id
+        LEFT JOIN badge_store_receipts r ON r.badge_store_receipt_id = p.badge_store_receipt_id
         WHERE p.badge_purchase_id = ? AND p.purchase_priv_key IS NOT NULL
       |]
       (Only purchaseId)
   where
-    toPurchase ((badgePurchaseId, purchaseKey, purchasePrivKey, Binary mk, badgeType, shown_, ackedKind_, ackedEpisode_, alertSnoozeUntil) :. (failedSince_, lastAttemptAt_, reason_, nextWakeAt, planMonths_, status, since_, lastAt_)) =
+    toPurchase ((badgePurchaseId, purchaseKey, purchasePrivKey, Binary mk, badgeType, shown_, ackedKind_, ackedEpisode_, alertSnoozeUntil) :. (failedSince_, lastAttemptAt_, reason_, nextWakeAt, planMonths_, status, since_, lastAt_, transactionRef)) =
       UserBadgePurchase
         { badgePurchaseId,
           purchaseKey,
@@ -528,7 +529,7 @@ getBadgePurchase db purchaseId =
           issueError = BadgeIssueError <$> failedSince_ <*> lastAttemptAt_ <*> reason_,
           nextWakeAt,
           unrenewedRun = UnrenewedRun <$> since_ <*> lastAt_,
-          purchaseKind = maybe PKPrepaid (\planMonths -> PKSubscription BadgeSubscription {planMonths, status}) planMonths_
+          purchaseKind = maybe PKPrepaid (\planMonths -> PKSubscription BadgeSubscription {planMonths, status, transactionRef}) planMonths_
         }
 
 setBadgeSubscriptionStatus :: DB.Connection -> Int64 -> SubscriptionState -> IO ()

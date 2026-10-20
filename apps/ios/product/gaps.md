@@ -66,9 +66,9 @@ The Haskell Store modules (`Store/Direct.hs`, `Store/Groups.hs`, `Store/Messages
 
 ### GAP: A badge subscription cannot be restored or bought again
 **Source:** [Shared/Views/Badges/BadgeStore.swift](../Shared/Views/Badges/BadgeStore.swift)
-Restoring a badge subscription on a new device or under another profile does not work, for two independent reasons. `restorePurchases()` reads `Transaction.unfinished`, so a purchase that was already finished is never found. And the service has credited the payment to the purchase key of the install that bought it, so a new key is answered `receipt_used`. Fixing only the client would turn "Nothing to restore" into a refusal, which is worse. On the same install a lapsed subscriber cannot subscribe again either: the app's gate refuses (`subscribedBefore`, scanning `Transaction.all`), and core would not credit the new charge anyway, since Apple keeps the original transaction id and core answers the hand-over from the old credited record.
+Restoring a badge subscription on a new device or under another profile does not work, for two independent reasons. `restorePurchases()` reads `Transaction.unfinished`, so a purchase that was already finished is never found. And the service has credited the payment to the purchase key of the install that bought it, so a new key is answered `receipt_used`. Fixing only the client would turn "Nothing to restore" into a refusal, which is worse. On the same install a lapsed subscriber can subscribe again only to the badge the active profile's newest purchase retired: core resumes that purchase on the new charge, as Apple keeps the original transaction id. The app's gate (`forSale`, comparing the original ids in `Transaction.all`, read once a run, with the purchase's `transactionRef`) shuts subscriptions for any other profile, device or badge, and for the rest of the run after a purchase that awaits approval, which StoreKit does not list.
 
-**REC:** A transfer design, in the service and the client, for new devices and profiles. For the same install, a resume path in core that credits a later charge of a retired subscription to its own purchase, then a gate narrowed to it.
+**REC:** A transfer design, in the service and the client, for new devices and profiles.
 
 ---
 

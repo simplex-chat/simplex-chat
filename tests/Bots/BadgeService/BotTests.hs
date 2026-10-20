@@ -62,8 +62,9 @@ import Simplex.Chat.Badges.Code (BadgeCode, badgeCodeHash, badgeCodeText, format
 import Simplex.Chat.Badges.Ledger (addMonths, creditTypeTag, debitTypeTag, emptyEntry, endOfMondayAfter)
 import Simplex.Chat.Badges.Service
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
+import qualified Simplex.Chat.Badges.Types as BT
 import Simplex.Chat.Bot.Store (withDB')
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatError (..), ChatErrorType (..), ChatResponse (CRCustomChatResponse))
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatError (..), ChatErrorType (..), ChatResponse (CRBadgeState, CRCustomChatResponse))
 import Simplex.Chat.Core (sendChatCmdStr)
 import Simplex.Chat.Library.Commands (resumeHoldLimit, subscriptionRecoveryWindow)
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
@@ -2891,6 +2892,13 @@ testFreshAnswerOverridesDeviceEnded ps =
       subscriptionStatuses (chatController alice) `shouldEventuallyReturn` [Just "renewing"]
       shownBadgeId (chatController alice) >>= (`shouldSatisfy` isJust)
 
+-- | Read from the API response, as the apps read it: the terminal view does not show it.
+badgeSubscriptionRef :: HasCallStack => ChatController -> IO (Maybe Text)
+badgeSubscriptionRef cc =
+  sendChatCmdStr cc "/_badge state 1" >>= \case
+    Right (CRBadgeState _ (Just BT.BadgeState {BT.subscription = Just BT.BadgeSubscription {BT.transactionRef = ref_}}) _) -> pure ref_
+    r -> error $ "expected a subscription's badge state, got " <> show (() <$ r)
+
 subscriptionStatuses :: ChatController -> IO [Maybe Text]
 subscriptionStatuses ChatController {chatStore} =
   withTransaction chatStore $ \db -> map fromOnly <$> DB.query_ db "SELECT subscription_status FROM badge_purchases"
@@ -2933,6 +2941,7 @@ testSubscriptionStateKept ps =
     withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
       (_, rows) <- clientSubscribedMonthly env alice
       subscriptionStatuses (chatController alice) `shouldReturn` [Just "renewing"]
+      badgeSubscriptionRef (chatController alice) `shouldReturn` Just (googlePurchaseRef googleSubscriptionToken)
       alice ##> "/_badge state 1"
       alice <### [Predicate (\l -> "1: supporter, 0 months left" `isPrefixOf` l && ", subscription renewing" `isInfixOf` l)]
       -- the request asserts coverage that has ended, so the service asks the store for its answer

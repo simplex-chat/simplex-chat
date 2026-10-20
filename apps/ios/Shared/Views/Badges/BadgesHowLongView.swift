@@ -71,13 +71,15 @@ enum BadgePeriod: String, CaseIterable, Identifiable {
 struct BadgesHowLongView: View {
     @EnvironmentObject var theme: AppTheme
     @ObservedObject private var store = BadgeStore.shared
+    // store.forSale reads the active profile's badge
+    @ObservedObject private var badgeModel = BadgeModel.shared
     let level: BadgeLevel
     @State private var chosenPeriod: BadgePeriod? = nil
     @State private var continueActive = false
 
     // monthly once subscriptions turn out to be for sale, unless a period was chosen before that
     private var selectedPeriod: BadgePeriod {
-        chosenPeriod ?? (store.forSale(.monthly) ? .monthly : .oneMonth)
+        chosenPeriod ?? (store.forSale(level, .monthly) ? .monthly : .oneMonth)
     }
 
     var body: some View {
@@ -109,8 +111,8 @@ struct BadgesHowLongView: View {
                     }
                     .fixedSize(horizontal: false, vertical: true)
 
-                    if store.subscribedBefore == true {
-                        Text("This Apple ID subscribed before. Subscribing again is not available in the app yet.")
+                    if !store.forSale(level, .monthly) && store.subscribedBefore {
+                        Text("This Apple ID subscribed before. In the app, it can subscribe again only to continue this profile's last purchase, when that was a subscription to this badge.")
                             .font(.footnote)
                             .foregroundColor(theme.colors.secondary)
                             .multilineTextAlignment(.center)
@@ -139,7 +141,7 @@ struct BadgesHowLongView: View {
 
     private func periodCard(_ period: BadgePeriod) -> some View {
         let isSelected = period == selectedPeriod
-        let forSale = store.forSale(period)
+        let forSale = store.forSale(level, period)
         return Button {
             chosenPeriod = period
         } label: {
