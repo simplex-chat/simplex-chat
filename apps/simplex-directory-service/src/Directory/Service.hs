@@ -387,7 +387,7 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
         Left e -> logError ("searchListedGroups error: " <> T.pack e) $> DRError "search failed"
         Right (gs, n) -> do
           now <- getCurrentTime
-          pure $ searchResultsPage rowCursor (n > length gs) [(row, searchEntry now g gLink_) | row@(g, _, gLink_) <- gs]
+          pure $ searchResultsPage rowCursor searchResults n [(row, searchEntry now g gLink_) | row@(g, _, gLink_) <- gs]
       where
         rowCursor (GroupInfo {groupId, groupSummary = GroupSummary {currentMembers}}, _, _) = SCMembers currentMembers groupId
     groupLinkText (CCLink cReq sLnk_) = maybe (strEncodeTxt $ simplexChatContact cReq) strEncodeTxt sLnk_

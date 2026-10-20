@@ -44,7 +44,9 @@ data DirectorySearchEntry = DirectorySearchEntry
 data DirectoryResponse
   = DRSearchResults
       { entries :: [DirectorySearchEntry],
-        searchCursor :: Maybe SearchCursor -- Nothing when there are no more results
+        searchCursor :: Maybe SearchCursor, -- Nothing when there are no more results
+        moreCount :: Int, -- matches after the cursor: they can include listings without a public link, which are not sent
+        pageSize :: Int
       }
   | DRError {errorMessage :: Text}
 
@@ -61,10 +63,11 @@ responseObject resp = case J.toJSON resp of
 
 -- Entries are dropped from the end until the response fits, so the cursor must point at the last row
 -- included, not the last one read. A single entry that still does not fit is skipped, or paging stalls on it.
-searchResultsPage :: (row -> SearchCursor) -> Bool -> [(row, Maybe DirectorySearchEntry)] -> DirectoryResponse
-searchResultsPage rowCursor storeHasMore rows = fit entryRows
+searchResultsPage :: (row -> SearchCursor) -> Int -> Int -> [(row, Maybe DirectorySearchEntry)] -> DirectoryResponse
+searchResultsPage rowCursor pageSize matched rows = fit entryRows
   where
-    entryRows = [(row, e) | (row, Just e) <- rows]
+    numbered = [((n, row), e) | (n, (row, e)) <- zip [1 ..] rows]
+    entryRows = [(row, e) | (row, Just e) <- numbered]
     fit sent = case page sent of
       Just resp -> resp
       Nothing -> case sent of
@@ -75,10 +78,18 @@ searchResultsPage rowCursor storeHasMore rows = fit entryRows
       | otherwise = Nothing
       where
         fittedAll = length sent == length entryRows
-        cursorRow = if fittedAll then fst <$> lastMaybe rows else fst <$> lastMaybe sent
-        more = not fittedAll || storeHasMore
-        resp = DRSearchResults {entries = map snd sent, searchCursor = if more then rowCursor <$> cursorRow else Nothing}
-    skipped row = DRSearchResults {entries = [], searchCursor = Just $ rowCursor row}
+        cursorRow = if fittedAll then fst <$> lastMaybe numbered else fst <$> lastMaybe sent
+        more = not fittedAll || matched > length rows
+        resp = results sent $ if more then cursorRow else Nothing
+    skipped row = results [] (Just row)
+    results sent cursorRow =
+      DRSearchResults
+        { entries = map snd sent,
+          searchCursor = rowCursor . snd <$> cursorRow,
+          -- the count query lacks the listing query's joins, so it can be below the rows read
+          moreCount = maybe 0 (\(consumed, _) -> max 0 (matched - consumed)) cursorRow,
+          pageSize
+        }
     fits = isRight . compressServiceBody . LB.toStrict . J.encode . responseObject
     dropImage :: DirectorySearchEntry -> DirectorySearchEntry
     dropImage e = e {image = Nothing}
