@@ -147,7 +147,7 @@ data ServiceConfig = ServiceConfig
     group :: Maybe GroupConfig,
     -- Local testing only; anyone who can reach the service can mint badges with any well-formed receipt.
     devAcceptUnverifiedStoreReceipts :: Bool,
-    -- Local testing only, beside the mock; every issue request for a subscription asks it and banks the month it charges.
+    -- Local testing only, beside the mock; every issue request for a subscription asks it and banks the months it charges.
     devCheckStoreDuringCoverage :: Bool
   }
   deriving (Eq, Show)

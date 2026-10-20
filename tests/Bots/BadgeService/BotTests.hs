@@ -192,6 +192,7 @@ badgeServiceTests = do
     describe "the store lane" $ do
       it "should answer other requests while a Play receipt is with the store, and credit it once Play answers" testPlayHoldsNoOtherRequest
       it "should route each request to its lane, judging a minute ahead" testStoreRouting
+      it "should check the store at every request only with both dev flags on" testStoreChecksConfigured
       it "should answer other requests while a renewal check is with the store, and the renewal once the store answers" testRenewalHoldsNoOtherRequest
       it "should answer a renewal check while a Play purchase is with the store" testPurchaseHoldsNoRenewal
       it "should answer other requests while an App Store subscription is with the store, and credit it once the store answers" testAppleSubscriptionHoldsNoOtherRequest
@@ -243,6 +244,7 @@ badgeServiceTests = do
     it "should credit a Play subscription Play reports, beside a one-time purchase, and answer provider_not_configured without [google]" testPlaySubscriptionThroughPlay
     it "should have the dev mock credit and renew the plan a subscription names, end one it does not know, and still vouch for a one-time purchase" testMockSubscriptions
     it "should bank a charge the dev mock reports during coverage, issue it once coverage reaches it, and answer ended after the mock restarts" testStoreChecksDuringCoverage
+    it "should not bank again during coverage a charge the ledger already granted" testStoreChecksDuringCoverageGrantedOnce
 
 badgeBotName :: Text
 badgeBotName = "SimpleX Badges"
@@ -3451,6 +3453,8 @@ testStoreChecksDuringCoverage ps =
     setClockAt bsClock $ addUTCTime nominalDay $ addMonths 1 now
     renewed <- request banked
     map entryTag (entries renewed) `shouldBe` ["charge", "badge"]
+    -- the month banked earlier and the one this check banks, less the one issued
+    (\(c, m, _) -> (c, m)) (entryOf $ last $ entries renewed) `shouldBe` (-1, 1)
     expiryOf renewed `shouldSatisfy` (> expiryOf purchased)
     -- a restarted mock has forgotten the plan, so the subscription has ended though coverage runs
     restarted <- checkingAtEveryRequest <$> newMockStoreVerifier (testClockTime bsClock)
@@ -3459,6 +3463,16 @@ testStoreChecksDuringCoverage ps =
     map entryTag (entries ended) `shouldBe` []
   where
     checkingAtEveryRequest v = v {storeChecks = ChecksAtEveryRequest}
+
+testStoreChecksDuringCoverageGrantedOnce :: HasCallStack => TestParams -> IO ()
+testStoreChecksDuringCoverageGrantedOnce ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsController = cc, bsStore = store} -> do
+    (purchaseKey, _, purchased) <- subscribedMonthly env
+    ledger <- ledgerRows cc "sx_badge_service_badge_ledger"
+    answered <- serviceCmd env {bsVerifier = (fakeVerifier store) {storeChecks = ChecksAtEveryRequest}} purchaseKey BSCIssueBadge {balance = BadgeBalance {lastEntry = last purchased}}
+    map entryTag (fst $ statementOf answered) `shouldBe` []
+    ledgerRows cc "sx_badge_service_badge_ledger" `shouldReturn` ledger
+    rowCount cc "sx_badge_service_subscription_charges" `shouldReturn` 1
 
 testPurchaseBadge :: HasCallStack => TestParams -> IO ()
 testPurchaseBadge ps =
@@ -3949,6 +3963,21 @@ testPlayHoldsNoOtherRequest ps = do
           putMVar release ()
           expectLinesWithin 60 alice ["1: supporter"] []
           rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 3
+
+testStoreChecksConfigured :: HasCallStack => TestParams -> IO ()
+testStoreChecksConfigured _ = do
+  createDirectoryIfMissing True "tests/tmp"
+  withTempDirectory "tests/tmp" "store-checks" $ \d -> do
+    writeFile (d </> "badge_service.ini") "[listener]\nstatic_dir = /srv/badges\n"
+    Right cfg <- readServiceConfig (d </> "badge_service.ini")
+    let checksFor c = (\ServiceState {storeVerifier} -> storeChecks storeVerifier) <$> (newServiceState >>= configureStoreVerifier c)
+        dev accept during = Just cfg {devAcceptUnverifiedStoreReceipts = accept, devCheckStoreDuringCoverage = during}
+    checksFor Nothing `shouldReturn` ChecksAfterCoverage
+    checksFor (dev False False) `shouldReturn` ChecksAfterCoverage
+    checksFor (dev True False) `shouldReturn` ChecksAfterCoverage
+    -- refused by the parser, and still not armed if set by hand
+    checksFor (dev False True) `shouldReturn` ChecksAfterCoverage
+    checksFor (dev True True) `shouldReturn` ChecksAtEveryRequest
 
 testStoreRouting :: HasCallStack => TestParams -> IO ()
 testStoreRouting ps =

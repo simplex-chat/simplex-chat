@@ -54,7 +54,7 @@ badgeConfigTests = describe "badge service config" $ do
   it "reads accept_unverified_store_receipts = on" testDevUnverifiedReceiptsOn
   it "reads accept_unverified_store_receipts = off" testDevUnverifiedReceiptsOff
   it "refuses an accept_unverified_store_receipts that is not on or off" testDevUnverifiedReceiptsNotBoolean
-  it "asks the store only once coverage ends unless check_store_during_coverage is on" testDevStoreChecksDefault
+  it "defaults check_store_during_coverage to off" testDevStoreChecksDefault
   it "reads check_store_during_coverage = on and off beside accept_unverified_store_receipts = on" testDevStoreChecksOnOff
   it "refuses check_store_during_coverage = on without accept_unverified_store_receipts = on" testDevStoreChecksWithoutMock
   it "configures no store verifier when [apple] and [google] are absent" testStoresAbsent
