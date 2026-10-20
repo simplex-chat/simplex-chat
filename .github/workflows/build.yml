@@ -603,6 +603,8 @@ jobs:
         timeout-minutes: 120
         shell: bash
         run: |
+          scripts/ci/test-watchdog.sh 45 &
+          watchdog=$!
           i=1
           attempts=1
           ${{ (github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) }} && attempts=3
@@ -615,6 +617,7 @@ jobs:
               sleep 1
             fi
           done
+          kill "$watchdog" || true
           if [ "$i" -gt "$attempts" ]; then
             echo "All "$attempts" attempts failed."
             exit 1
@@ -1124,6 +1127,8 @@ jobs:
         timeout-minutes: 120
         shell: bash
         run: |
+          scripts/ci/test-watchdog.sh 45 &
+          watchdog=$!
           i=1
           attempts=1
           ${{ (github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) }} && attempts=3
@@ -1136,6 +1141,7 @@ jobs:
               sleep 1
             fi
           done
+          kill "$watchdog" || true
           if [ "$i" -gt "$attempts" ]; then
             echo "All "$attempts" attempts failed."
             exit 1
