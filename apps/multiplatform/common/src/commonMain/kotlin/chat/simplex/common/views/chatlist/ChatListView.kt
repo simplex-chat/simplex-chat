@@ -70,6 +70,11 @@ private fun renewalPrice(): String? {
   return BadgeStore.subscriptionPrice(badgeState.badgeType, subscription.planMonths)
 }
 
+private fun renewalFailure(): String {
+  val issueError = BadgeModel.badgeState.value?.issueError ?: return generalGetString(MR.strings.badges_renewal_failed_unknown)
+  return issueError.reason.text
+}
+
 @Composable
 private fun BadgeAlertBanner(title: String, subtitle: String, warning: Boolean = false) {
   SupportSimpleXBanner(
@@ -1099,11 +1104,11 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
             is BadgeAlertKind.SupportEnded ->
               BadgeAlertBanner(stringResource(MR.strings.badges_support_ended), String.format(stringResource(MR.strings.badges_support_ended_on), alert.dateText))
             is BadgeAlertKind.IssueFailed ->
-              BadgeAlertBanner(stringResource(MR.strings.badges_renewal_failed), stringResource(MR.strings.badges_tap_for_details), warning = true)
+              BadgeAlertBanner(stringResource(MR.strings.badges_renewal_failed), renewalFailure(), warning = true)
             is BadgeAlertKind.SubscriptionEnded ->
               BadgeAlertBanner(stringResource(MR.strings.badges_subscription_ended_title), String.format(stringResource(MR.strings.badges_subscription_ended_on), alert.dateText))
             is BadgeAlertKind.PaymentIssue ->
-              BadgeAlertBanner(stringResource(MR.strings.badges_payment_problem_title), stringResource(MR.strings.badges_tap_for_details), warning = true)
+              BadgeAlertBanner(stringResource(MR.strings.badges_payment_problem_title), stringResource(MR.strings.badges_payment_problem_subtitle), warning = true)
             is BadgeAlertKind.SubscriptionCancelled ->
               BadgeAlertBanner(stringResource(MR.strings.badges_subscription_cancelled_title), String.format(stringResource(MR.strings.badges_stays_until), alert.dateText))
             is BadgeAlertKind.RenewalApproaching -> {

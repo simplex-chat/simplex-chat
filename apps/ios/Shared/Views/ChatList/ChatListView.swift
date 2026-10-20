@@ -399,6 +399,11 @@ struct ChatListView: View {
         return BadgeStore.shared.subscriptionPrice(badgeState.badgeType, planMonths: subscription.planMonths)
     }
 
+    private var renewalFailure: LocalizedStringKey {
+        guard let issueError = badgeModel.badgeState?.issueError else { return "Your badge could not be renewed." }
+        return "\(issueError.reason.text)"
+    }
+
     private func badgeAlertBanner(_ title: LocalizedStringKey, _ subtitle: LocalizedStringKey, warning: Bool = false, dismissTitle: String) -> some View {
         SupportSimpleXBanner(
             title: title,
@@ -504,11 +509,11 @@ struct ChatListView: View {
                             case .supportEnded:
                                 badgeAlertBanner("Your badge expired", "Your badge expired on \(alert.dateText).", dismissTitle: NSLocalizedString("Your badge expired", comment: "alert title"))
                             case .issueFailed:
-                                badgeAlertBanner("Badge renewal failed", "Tap for details", warning: true, dismissTitle: NSLocalizedString("Badge renewal failed", comment: "alert title"))
+                                badgeAlertBanner("Badge renewal failed", renewalFailure, warning: true, dismissTitle: NSLocalizedString("Badge renewal failed", comment: "alert title"))
                             case .subscriptionEnded:
                                 badgeAlertBanner("Your subscription ended", "Your badge subscription ended on \(alert.dateText).", dismissTitle: NSLocalizedString("Your subscription ended", comment: "alert title"))
                             case .paymentIssue:
-                                badgeAlertBanner("Badge payment problem", "Tap for details", warning: true, dismissTitle: NSLocalizedString("Badge payment problem", comment: "alert title"))
+                                badgeAlertBanner("Badge payment problem", "The store could not charge your payment method.", warning: true, dismissTitle: NSLocalizedString("Badge payment problem", comment: "alert title"))
                             case .subscriptionCancelled:
                                 badgeAlertBanner("Subscription cancelled", "Your badge stays until \(alert.dateText).", dismissTitle: NSLocalizedString("Subscription cancelled", comment: "alert title"))
                             case .renewalApproaching:
