@@ -52,7 +52,6 @@ class NetworkObserver {
         // the interface is compared too - a VPN that reconnected as another one can have the same
         // address, and an interface being configured has none yet
         let pathChanged = interface != prevInterface || lost(prevGateways, gateways) || lost(prevAddresses, addresses)
-        // the report that was not accepted is repeated when the next path update is received
         if prevInfo != info || (info.online && pathChanged) {
             prevInfo = setNetworkInfo(info) ? info : nil
         }
@@ -70,7 +69,8 @@ class NetworkObserver {
     }
 
     // NWPath has no addresses, and a changed address with the same interface and gateway
-    // (e.g. the lease was renewed after internet loss) also means the connections via it are dead
+    // (e.g. a new lease after internet loss) also means the connections via it are dead;
+    // link-local addresses are not used for the connections to the servers
     private func localAddresses(_ interface: String?) -> Set<String> {
         var ifap: UnsafeMutablePointer<ifaddrs>?
         guard let interface = interface, getifaddrs(&ifap) == 0, let first = ifap else { return [] }
@@ -81,7 +81,8 @@ class NetworkObserver {
                   String(cString: ifa.pointee.ifa_name) == interface else { return nil }
             var host = [CChar](repeating: 0, count: Int(NI_MAXHOST))
             guard getnameinfo(sa, socklen_t(sa.pointee.sa_len), &host, socklen_t(host.count), nil, 0, NI_NUMERICHOST) == 0 else { return nil }
-            return String(cString: host)
+            let address = String(cString: host)
+            return address.hasPrefix("fe80:") || address.hasPrefix("169.254.") ? nil : address
         })
     }
 
@@ -109,7 +110,6 @@ class NetworkObserver {
         return self.monitorLock.sync { () -> Bool in
             guard let ctrl = currentChatCtrl() else { return false }
             do {
-                // the controller is passed, so that resetting it while the report is sent is not a crash
                 try apiSetNetworkInfo(info, ctrl: ctrl)
                 return true
             } catch let err {

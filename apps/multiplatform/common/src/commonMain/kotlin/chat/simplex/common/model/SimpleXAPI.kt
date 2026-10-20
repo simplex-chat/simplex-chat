@@ -536,7 +536,7 @@ class AppPreferences {
 private const val MESSAGE_TIMEOUT: Int = 300_000_000
 
 object ChatController {
-  @Volatile private var chatCtrl: ChatCtrl? = -1
+  private var chatCtrl: ChatCtrl? = -1
   // Spec: spec/state.md#appPrefs
   val appPrefs: AppPreferences by lazy { AppPreferences() }
 
@@ -551,7 +551,6 @@ object ChatController {
 
   fun getChatCtrl(): ChatCtrl? = chatCtrl
 
-  // read once, so that the controller that is reset between the checks is not used
   fun currentCtrl(): ChatCtrl? = chatCtrl?.takeIf { it != -1L }
 
   fun setChatCtrl(ctrl: ChatCtrl?) {
@@ -1534,9 +1533,8 @@ object ChatController {
     return false
   }
 
-  // the network info is reported automatically, and again on the next event, so a failure is not alerted about
   suspend fun apiSetNetworkInfo(networkInfo: UserNetworkInfo, ctrl: ChatCtrl): Boolean =
-    sendCmd(null, CC.APISetNetworkInfo(networkInfo), ctrl).ok
+    sendCmd(null, CC.APISetNetworkInfo(networkInfo), ctrl).result is CR.CmdOk
 
   suspend fun apiSetMemberSettings(rh: Long?, groupId: Long, groupMemberId: Long, memberSettings: GroupMemberSettings): Boolean =
     sendCommandOkResp(rh, CC.ApiSetMemberSettings(groupId, groupMemberId, memberSettings))

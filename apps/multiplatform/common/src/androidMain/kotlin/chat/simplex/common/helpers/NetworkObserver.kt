@@ -16,18 +16,18 @@ import java.util.concurrent.atomic.AtomicBoolean
 class NetworkObserver {
   private var prevInfo: UserNetworkInfo? = null
   // The core reconnects to the servers on every online network event, so the event is also sent
-  // when the network type is the same, but it is a different network or the addresses changed
-  // (e.g., another Wi-Fi network or a new IP address) - connections via the previous network are dead.
+  // when the network type is the same, but it is a different network or an address was removed
+  // (e.g., another Wi-Fi network or a lost IP address) - connections via the previous network are dead.
   private var prevNetwork: Network? = null
   private var prevAddresses: Set<InetAddress>? = null
   // the last network info the core accepted and the network it was for (null - it was not accepted, or
   // nothing was sent to this chat controller and the core is online with the default network type)
   @Volatile private var sentInfo: UserNetworkInfo? = null
   @Volatile private var sentNetwork: Network? = null
-  // incremented when the chat controller is created anew - the reports for the previous one are dropped
+  // incremented when the chat controller is created anew - the reports for the previous one are not recorded
   @Volatile private var ctrlGeneration = 0
   private val sendMutex = Mutex()
-  // the numbers of removed addresses of the current network and of those reported to the core: while they
+  // the numbers of removed addresses and of those reported to the core: while they
   // differ the next online info must be sent even for the same network - the addresses cannot be compared
   // instead, as an address removed and assigned again also leaves the connections made via it dead
   @Volatile private var addressRemovals = 0
@@ -112,8 +112,8 @@ class NetworkObserver {
   }
 
   @Synchronized private fun networkLost(network: Network? = null) {
-    // the network that is replaced by another one is lost after it becomes the current network,
-    // and the connections are made via it, so its loss is not reported
+    // on some devices the network replaced by another one is reported lost after the other one becomes
+    // the current network, and the connections are made via that one, so this loss is not reported
     if (network != null && prevNetwork != null && network != prevNetwork) return
     Log.d(TAG, "Network changed: lost")
     val none = UserNetworkInfo(networkType = UserNetworkType.NONE, false)
@@ -134,7 +134,7 @@ class NetworkObserver {
         sendMutex.withLock {
           val removals = addressRemovals
           // the core has the same network info for the network its connections were made via, e.g. the network
-          // was reported offline less than 3 seconds ago and it was not sent - the connections are not affected
+          // was reported offline less than 3 seconds ago and it was not sent - the connections are assumed not affected
           if ((removals != sentAddressRemovals || sentInfo != info || network != sentNetwork) &&
             sendNetworkInfo(info, network, removals, ctrlGen)) sent.set(true)
         }
@@ -143,8 +143,7 @@ class NetworkObserver {
       withBGApi {
         delay(3000)
         // the report is not cancelled once it started, so that the core is not left with the info
-        // the app did not record - the online event that cancelled it while it was resuming is
-        // reported instead of it
+        // the app did not record - the online event that cancels it after this check is reported after it
         val cancelled = !isActive
         withContext(NonCancellable) {
           sendMutex.withLock {
@@ -153,18 +152,16 @@ class NetworkObserver {
         }
       }.also { noNetworkJob = it }
     }
-    // the job that is cancelled before it starts does not run its body; when the network info is reported
+    // the job that is cancelled before it starts does not run its body; when the online network info is reported
     // the wake lock is held until it times out, so that the device does not sleep while the core reconnects
     job.invokeOnCompletion { if (!sent.get()) releaseWakeLock() }
   }
 
   private suspend fun sendNetworkInfo(info: UserNetworkInfo, network: Network?, removals: Int, ctrlGen: Int): Boolean {
     if (ctrlGen != ctrlGeneration) return false
-    // the controller is passed, so that replacing it while the report is sent does not fail the command
     val ctrl = controller.currentCtrl() ?: return false.also { reportFailed(ctrlGen) }
-    // a failed command must not be recorded as sent, and it throws when the response cannot be parsed
+    // a failed command must not be recorded as sent, and it can throw when the response is not valid JSON
     val sent = try { controller.apiSetNetworkInfo(info, ctrl) } catch (e: Throwable) { Log.e(TAG, "Error reporting network info: ${e.stackTraceToString()}"); false }
-    // when it was not sent the network info is reported again when the next event is received
     if (sent) setSentInfo(info, network, removals, ctrlGen) else reportFailed(ctrlGen)
     return sent
   }
@@ -191,8 +188,10 @@ class NetworkObserver {
   private fun lost(prev: Set<InetAddress>?, addresses: Set<InetAddress>?): Boolean =
     prev != null && (addresses == null || !addresses.containsAll(prev) || (prev.isEmpty() && addresses.isNotEmpty()))
 
-  // LinkAddress equality includes address lifetimes that change with every router advertisement
-  private fun addresses(linkProperties: LinkProperties): Set<InetAddress> = linkProperties.linkAddresses.map { it.address }.toSet()
+  // LinkAddress equality includes address lifetimes that change with every router advertisement;
+  // link-local addresses are not used for the connections to the servers
+  private fun addresses(linkProperties: LinkProperties): Set<InetAddress> =
+    linkProperties.linkAddresses.map { it.address }.filterNot { it.isLinkLocalAddress }.toSet()
 
   private fun networkInfo(capabilities: NetworkCapabilities) = UserNetworkInfo(
     networkType = networkTypeFromCapabilities(capabilities),
