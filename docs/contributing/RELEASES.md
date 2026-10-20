@@ -148,7 +148,5 @@ Versions unpublished after a failure: published by the next push to the branch.
 
 ## Pull requests
 
-- `packages.yml`, for package changes:
-  - core unchanged: add-on built and packages tested on 5 platforms
-  - core changed: add-on built on 5 platforms when its sources changed
-- `build.yml`, for core changes: package tests on Linux x86_64 with the library built from the pull request
+- `build.yml`, for every pull request it runs for: add-on built and packages tested on 4 platforms (Linux aarch64 excluded); Linux x86_64 uses the library built from the pull request when the core changed, other platforms the pinned library
+- `packages.yml`, for package changes in a pull request without `build.yml` paths: add-on built and packages tested on 5 platforms
