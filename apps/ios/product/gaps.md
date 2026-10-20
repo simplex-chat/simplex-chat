@@ -62,3 +62,13 @@ The Haskell Store modules (`Store/Direct.hs`, `Store/Groups.hs`, `Store/Messages
 
 ---
 
+## Badges: Store Purchases
+
+### GAP: A badge subscription cannot be restored or bought again
+**Source:** [Shared/Views/Badges/BadgeStore.swift](../Shared/Views/Badges/BadgeStore.swift)
+Restoring a badge subscription on a new device or under another profile does not work, for two independent reasons. `restorePurchases()` reads `Transaction.unfinished`, so a purchase that was already finished is never found. And the service has credited the payment to the purchase key of the install that bought it, so a new key is answered `receipt_used`. Fixing only the client would turn "Nothing to restore" into a refusal, which is worse. On the same install a lapsed subscriber cannot subscribe again either: the app's gate refuses (`subscribedBefore`, scanning `Transaction.all`), and core would not credit the new charge anyway, since Apple keeps the original transaction id and core answers the hand-over from the old credited record.
+
+**REC:** A transfer design, in the service and the client, for new devices and profiles. For the same install, a resume path in core that credits a later charge of a retired subscription to its own purchase, then a gate narrowed to it.
+
+---
+

@@ -409,6 +409,8 @@ final class BadgeStore: ObservableObject {
 
     // Hands over as the device's own whatever the store lists, so a purchase no record here has is claimed by this profile.
     // Answers whether a badge is shown, or a purchase is being added or awaits approval, afterwards.
+    // Reading currentEntitlements would not restore a subscription on another install or profile: the service credited
+    // the payment to the purchase key of the install that bought it, and answers any other key receipt_used.
     func restorePurchases() async throws -> Bool {
         try await AppStore.sync()
         var handOverError: Error? = nil

@@ -15,6 +15,7 @@ This document catalogs known gaps in the multiplatform codebase (Android and Des
 7. [Desktop: Cryptor Not Implemented](#gap-07-desktop-cryptor-not-implemented)
 8. [Desktop: App Link Registration](#gap-08-desktop-app-link-registration)
 9. [Desktop: Emoji Picker Without Skin Tones and Localized Search](#gap-09-desktop-emoji-picker-without-skin-tones-and-localized-search)
+10. [Badges: Restoring a Subscription on a New Device or Profile](#gap-10-badges-restoring-a-subscription-on-a-new-device-or-profile)
 
 ---
 
@@ -349,3 +350,28 @@ Desktop users cannot pick a skin tone in the picker, and search in other languag
 
 1. Keep the skin tone variants in the generated data, grouped by base emoji, and add a skin tone choice to the picker.
 2. Add localized names (CLDR annotations) to the generated data for search.
+
+---
+
+## GAP-10: Badges: Restoring a Subscription on a New Device or Profile
+
+**Severity:** Medium
+**Category:** Feature / Payments
+**Platforms:** Android
+
+### Description
+
+Play gives a resubscription a new purchase token, so subscribing again on the same install is credited as a new purchase. On a new device or under another profile, Restore finds the subscription in Play's list and hands it over, but the service has credited the payment to the purchase key of the install that bought it and answers the new key `receipt_used`.
+
+### Affected Locations
+
+- `common/src/commonMain/kotlin/chat/simplex/common/views/badges/BadgeStore.kt` -- `restorePurchases()`
+- `../../apps/simplex-badge-service/src/BadgeService/Service.hs` -- a credited receipt answered to another key
+
+### Impact
+
+A subscriber who moves to a new device or profile keeps paying but cannot show the badge there, and Restore reports a refusal.
+
+### Recommendation
+
+1. A transfer design, in the service and the client and shared with iOS, that moves a credited subscription to a new purchase key.
