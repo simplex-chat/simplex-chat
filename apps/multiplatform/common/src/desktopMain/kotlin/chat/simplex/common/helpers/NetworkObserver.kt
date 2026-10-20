@@ -21,6 +21,7 @@ class NetworkObserver {
   @Volatile private var sentAddress6: InetAddress? = null
   @Volatile private var observer: Thread? = null
   private var address6Polls = 0
+  private var offlinePolls = 0
 
   @Synchronized fun restartNetworkObserver() {
     // the chat controller is created anew, and what was recorded, including a report the observer that is
@@ -73,21 +74,26 @@ class NetworkObserver {
 
   // the network prefix stays the same when an IPv6 temporary address is deleted, while the connections
   // made via it are dead; the address that is still used is not deleted, so it is not looked up, and the
-  // replaced one is looked up once a minute, as listing the interfaces can be slow (Windows)
+  // replaced one is looked up every 6th poll (once a minute while online), as listing the interfaces can be
+  // slow (Windows)
   private fun sentAddress6Removed(address6: InetAddress?): Boolean {
     val sent = sentAddress6 ?: return false
     if (sent == address6 || ++address6Polls % ADDRESS6_CHECK_POLLS != 0) return false
     return runCatching { NetworkInterface.getByInetAddress(sent) == null }.getOrDefault(false)
   }
 
+  // while the core has the network offline and it is polled more often, the interfaces are listed
+  // as often as while it is online
   private fun localAddresses(): Set<String> =
-    setOfNotNull(localAddress(PROBE_IPV4), localAddress(PROBE_IPV6)).ifEmpty { usableAddresses() }
+    setOfNotNull(localAddress(PROBE_IPV4), localAddress(PROBE_IPV6)).ifEmpty {
+      if (sentInfo?.online == false && ++offlinePolls % OFFLINE_LIST_POLLS != 0) emptySet() else usableAddresses()
+    }
 
   // without a route to the internet the network can still be used, e.g. via a proxy or a server in the
   // local network, so the addresses of the usable interfaces are compared instead of the chosen ones, with
   // a marker that is removed when the route returns - that is a change, while the addresses are not
   private fun usableAddresses(): Set<String> {
-    val addresses = NetworkInterface.getNetworkInterfaces()?.asSequence()?.filter { !it.isLoopback && it.isUp }
+    val addresses = NetworkInterface.getNetworkInterfaces()?.asSequence()?.filter { runCatching { !it.isLoopback && it.isUp }.getOrDefault(false) }
       ?.flatMap { i -> i.inetAddresses.asSequence().filter { !it.isLoopbackAddress && !it.isLinkLocalAddress } }
       ?.map(::addressKey)?.toSet() ?: emptySet()
     return if (addresses.isEmpty()) addresses else addresses + NO_ROUTE
@@ -142,6 +148,7 @@ class NetworkObserver {
     private const val POLL_INTERVAL_MS = 10_000L
     private const val OFFLINE_POLL_INTERVAL_MS = 2_000L
     private const val ADDRESS6_CHECK_POLLS = 6
+    private const val OFFLINE_LIST_POLLS = 5
     private const val CONFIRM_OFFLINE_MS = 1_000L
     private const val SUSPENDED_MS = 25_000L
     private const val NO_ROUTE = "no route"
