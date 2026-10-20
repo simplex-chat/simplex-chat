@@ -119,7 +119,7 @@ badgeTests = do
   describe "store purchases" $ do
     it "keys a purchase by the store's transaction id, not by the evidence signed over it" testStoreTransactionRef
     it "claims an Apple subscription by its original transaction id, and any other transaction by its own" testAppleTransactionRef
-    it "reads an Apple transaction's id, purchase date, revocation and type from its unverified payload" testAppleTransactionFacts
+    it "reads an Apple transaction's id, purchase and expiry dates, revocation and type from its unverified payload" testAppleTransactionFacts
     it "shows a service request in the terminal as its type alone" testShownServiceRequest
     it "refuses for good a Play product id that could name another purchase, before any verifier" testGoogleProductIdPath
     it "does not send a Play token that could name another purchase, and leaves it retryable" testGoogleTokenPath
@@ -1016,8 +1016,10 @@ testAppleTransactionFacts = do
   let jws fields = T.intercalate "." [part "{\"alg\":\"ES256\"}", part (safeDecodeUtf8 $ LB.toStrict $ J.encode $ J.object fields), "c2lnbmVk"]
       part = safeDecodeUtf8 . B64U.encodeUnpadded . encodeUtf8
       renewal = ["transactionId" J..= ("2000000900000002" :: T.Text), "type" J..= ("Auto-Renewable Subscription" :: T.Text)]
-      facts purchaseDate revoked autoRenewable = Just AppleTransactionFacts {transactionId = "2000000900000002", purchaseDate, revoked, autoRenewable}
+      facts purchaseDate revoked autoRenewable = Just AppleTransactionFacts {transactionId = "2000000900000002", purchaseDate, expiresDate = Nothing, revoked, autoRenewable}
   appleTransactionFacts (jws $ ("purchaseDate" J..= (1769904000000 :: Int)) : renewal) `shouldBe` facts (Just 1769904000000) False True
+  appleTransactionFacts (jws $ ("expiresDate" J..= (1772582400000 :: Int)) : renewal) `shouldBe` ((\f -> f {expiresDate = Just 1772582400000}) <$> facts Nothing False True)
+  appleTransactionFacts (jws $ ("expiresDate" J..= ("next month" :: T.Text)) : renewal) `shouldBe` facts Nothing False True
   -- the service reads a null revocationDate as not revoked, and so does the client
   appleTransactionFacts (jws $ ("revocationDate" J..= J.Null) : renewal) `shouldBe` facts Nothing False True
   appleTransactionFacts (jws $ ("revocationDate" J..= (1770000000000 :: Int)) : renewal) `shouldBe` facts Nothing True True

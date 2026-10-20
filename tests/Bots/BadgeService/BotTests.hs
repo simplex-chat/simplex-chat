@@ -54,6 +54,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Calendar (fromGregorian, toGregorian)
 import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, diffUTCTime, getCurrentTime, nominalDay)
+import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import Data.Word (Word32)
 import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey, BadgeType (..), generateMasterKey)
@@ -64,7 +65,7 @@ import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.Bot.Store (withDB')
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatError (..), ChatErrorType (..), ChatResponse (CRCustomChatResponse))
 import Simplex.Chat.Core (sendChatCmdStr)
-import Simplex.Chat.Library.Commands (subscriptionRecoveryWindow)
+import Simplex.Chat.Library.Commands (resumeHoldLimit, subscriptionRecoveryWindow)
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Options.DB
 import Simplex.Chat.PaymentService (ServicePayment (..), googlePurchaseRef)
@@ -232,6 +233,8 @@ badgeServiceTests = do
     it "should resolve an Apple renewal to the subscription's record, and credit a held record that adopted it once the subscription's hourly check allows" testAppleRenewalResolvesToPurchase
     it "should adopt into a held Apple record only another transaction bought later and not revoked" testAppleAdoptionRules
     it "should present an adopted Apple transaction at once though the attempt with the one before it failed, and credit it once the subscription's hourly check allows" testAdoptedReceiptNotOverwritten
+    it "should resume a retired Apple subscription on the same purchase when its store charges it again, retired past or within its coverage" testAppleResubscribeResumes
+    it "should answer an Apple resubscription from the record when it cannot resume, and refuse one the service does not grant once its hold ends" testAppleResubscribeBounded
     it "should ask the App Store about a subscription claim at most once an hour, whoever presents it and as any of its transactions" testApplePurchaseChecksBounded
     it "should ask Play about a subscription token at most once an hour, whoever presents it, credited to another key or not" testPlayPurchaseChecksBounded
     it "should keep at most the maximum of purchase checks, asking without recording once full, and drop expired ones" testPurchaseChecksBounded
@@ -3145,6 +3148,129 @@ testAppleRenewalResolvesToPurchase ps =
       storeReceiptRows (chatController alice) `shouldReturn` [(1, Nothing, True)]
       rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 1
       map (\(_, ch, m, _, _, t) -> (ch, m, t)) <$> ledgerRows (chatController alice) "badge_ledger" `shouldReturn` [(1, 1, Just "charge"), (-1, 0, Just "badge")]
+
+testAppleResubscribeResumes :: HasCallStack => TestParams -> IO ()
+testAppleResubscribeResumes ps = do
+  -- retired past its coverage on the service's answer that it ended, then charged again for the same tier
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      requestAt <- appleSubscriptionRetired env alice
+      -- past the hour in which the service answers from the check that found it ended
+      let resubscribedAt = addUTCTime 7200 requestAt
+      setClockAt bsClock resubscribedAt
+      appleStoreReports store $ subscriptionCheck SSRenewing $ Just (storeCharge "SUBSCR_BADGE_SUPPORTER_MONTH_01" resubscribedAt 1) {chargeRef = "apple.resubscribed"}
+      alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = appleResubscription "2000000812345690" resubscribedAt})
+      expectLinesWithin 30 alice ["1: supporter", openPurchase "", "1: supporter"] ["badge alert: subscription_ended ", "subscribed "]
+      waitShownBadge (chatController alice) (Just 1)
+      heldStoreReceipts (chatController alice) `shouldReturn` 0
+      storeReceiptCreditErrors (chatController alice) `shouldReturn` []
+      storeReceiptRows (chatController alice) `shouldReturn` [(1, Nothing, True)]
+      map (\(_, _, _, _, _, t) -> t) <$> ledgerRows (chatController alice) "badge_ledger" `shouldReturn` [Just "charge", Just "badge", Just "charge", Just "badge"]
+      [retiredExpiry, resumedExpiry] <- issuedExpiries (chatController alice)
+      resumedExpiry `shouldSatisfy` (> retiredExpiry)
+      subscriptionStatuses (chatController alice) `shouldReturn` [Just "renewing"]
+  -- retired within its coverage on an ended answer, as clocks that disagree give
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsController = ChatController {chatStore}, bsStore = store@FakeStore {appleSubscriptionJWS}} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      firstStart <- addUTCTime (-3600) <$> serviceNow env
+      appleStoreReports store $ subscriptionCheck SSRenewing $ Just $ storeCharge "SUBSCR_BADGE_SUPPORTER_YEAR_01" firstStart 12
+      alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = appleSubscriptionJWS})
+      inAnyOrder alice [[openPurchase ""], ["1: supporter"]]
+      waitWakeArmed (chatController alice)
+      rows <- ledgerRows (chatController alice) "badge_ledger"
+      withTransaction chatStore $ \db -> DB.execute_ db "UPDATE sx_badge_service_payments SET subscription_state = 'ended'"
+      setClockAt bsClock $ fst $ renewalMoments rows
+      alice `send` "/_app activate"
+      alice <### ["/_app activate", "ok", Predicate (\l -> "1: supporter" `isPrefixOf` l && ", subscription ended" `isInfixOf` l)]
+      waitShownBadge (chatController alice) Nothing
+      -- stands in for the service's check finding the new charge
+      withTransaction chatStore $ \db -> DB.execute_ db "UPDATE sx_badge_service_payments SET subscription_state = 'renewing'"
+      now <- serviceNow env
+      alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = appleResubscription "2000000812345691" now})
+      expectLinesWithin 30 alice ["1: supporter", openPurchase "", "1: supporter"] ["subscribed "]
+      waitShownBadge (chatController alice) (Just 1)
+      subscriptionStatuses (chatController alice) `shouldReturn` [Nothing]
+      alice ##> "/_app activate"
+      alice <## "ok"
+      threadDelay 2000000
+      shownBadgeId (chatController alice) `shouldReturn` Just 1
+
+testAppleResubscribeBounded :: HasCallStack => TestParams -> IO ()
+testAppleResubscribeBounded ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      requestAt <- appleSubscriptionRetired env alice
+      let handOver jws = alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws})
+          answeredFromRecord jws = do
+            handOver jws
+            alice <## "badge already redeemed"
+            heldStoreReceipts (chatController alice) `shouldReturn` 0
+      -- a charge whose paid period has ended
+      answeredFromRecord $ appleTransactionDated "2000000812345692" (addUTCTime (-40 * nominalDay) requestAt) (addUTCTime (-10 * nominalDay) requestAt)
+      -- a charge of another tier, which the service does not grant, dated a minute ahead of the client's clock
+      let resubscribedAt = addUTCTime 7200 requestAt
+          otherTier = appleResubscription "2000000812345693" (addUTCTime 60 resubscribedAt)
+      setClockAt bsClock resubscribedAt
+      appleStoreReports store $ subscriptionCheck SSRenewing $ Just (storeCharge "SUBSCR_BADGE_LEGEND_MONTH_01" resubscribedAt 1) {chargeRef = "apple.legend"}
+      handOver otherTier
+      expectLinesWithin 30 alice ["1: supporter", "badge alert: subscription_ended ", openPurchase ""] ["subscribed "]
+      heldStoreReceiptErrors (chatController alice) `shouldEventuallyReturn` ["service_error retry payment_pending"]
+      setClockAt bsClock $ addUTCTime (resumeHoldLimit + 120) resubscribedAt
+      alice ##> "/_app activate"
+      alice <## "ok"
+      heldStoreReceipts (chatController alice) `shouldEventuallyReturn` 0
+      storeReceiptCreditErrors (chatController alice) `shouldReturn` ["service_error final receipt_invalid"]
+      shownBadgeId (chatController alice) `shouldReturn` Nothing
+      answeredFromRecord otherTier
+      invoiceId <- createInvoice alice 1
+      -- while another receipt of the owner is held
+      setGoogleDown store True
+      alice ##> purchaseWithInvoice 1 invoiceId supporterPlay
+      expectLinesWithin 30 alice ["1: supporter", "badge alert: subscription_ended ", invoicePurchase "" invoiceId] ["subscribed "]
+      now <- serviceNow env
+      handOver $ appleResubscription "2000000812345694" now
+      alice <## "badge already redeemed"
+      heldStoreReceipts (chatController alice) `shouldReturn` 1
+
+-- | A monthly Apple subscription bought an hour into its first period and retired past its coverage, at its request
+-- moment, on the service's answer that it ended: that moment.
+appleSubscriptionRetired :: HasCallStack => BadgeServiceEnv -> TestCC -> IO UTCTime
+appleSubscriptionRetired env@BadgeServiceEnv {bsClock, bsStore = store@FakeStore {appleSubscriptionJWS}} alice = do
+  firstStart <- addUTCTime (-3600) <$> serviceNow env
+  appleStoreReports store $ subscriptionCheck SSRenewing $ Just $ storeCharge "SUBSCR_BADGE_SUPPORTER_MONTH_01" firstStart 1
+  alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = appleSubscriptionJWS})
+  inAnyOrder alice [[openPurchase ""], ["1: supporter"]]
+  waitWakeArmed (chatController alice)
+  (requestAt, _) <- renewalMoments <$> ledgerRows (chatController alice) "badge_ledger"
+  appleStoreReports store $ subscriptionCheck SSEnded Nothing
+  setClockAt bsClock requestAt
+  alice `send` "/_app activate"
+  alice
+    <### [ "/_app activate",
+           "ok",
+           StartsWith "badge alert: subscription_ended ",
+           StartsWith "1: supporter",
+           StartsWith "badge alert: subscription_ended "
+         ]
+  waitShownBadge (chatController alice) Nothing
+  pure requestAt
+
+appleStoreReports :: FakeStore -> SubscriptionCheck -> IO ()
+appleStoreReports store = setSubscription store (SubscriptionApple appleSubscriptionOriginalId)
+
+-- | Another transaction of appleSubscriptionOriginalId's subscription, bought at the time given for a month.
+appleResubscription :: Text -> UTCTime -> Text
+appleResubscription txId bought = appleTransactionDated txId bought (addMonths 1 bought)
+
+appleTransactionDated :: Text -> UTCTime -> UTCTime -> Text
+appleTransactionDated txId bought expires =
+  subscriptionJWS appleSubscriptionOriginalId txId ["purchaseDate" J..= epochMs bought, "expiresDate" J..= epochMs expires]
+  where
+    epochMs t = round (utcTimeToPOSIXSeconds t * 1000) :: Int64
+
+storeReceiptCreditErrors :: ChatController -> IO [Text]
+storeReceiptCreditErrors ChatController {chatStore} =
+  withTransaction chatStore $ \db -> map fromOnly <$> DB.query_ db "SELECT credit_error FROM badge_store_receipts WHERE credit_error IS NOT NULL"
 
 testApplePurchaseChecksBounded :: HasCallStack => TestParams -> IO ()
 testApplePurchaseChecksBounded ps =

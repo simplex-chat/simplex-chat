@@ -33,6 +33,9 @@ module Simplex.Chat.Store.Badges
     getNextHeldStoreReceipt,
     recordStoreReceiptFailure,
     refuseStoreReceipt,
+    settleStoreReceipt,
+    reholdStoreReceipt,
+    showResumedPurchase,
     deleteUnfundedStoreReceipts,
     deleteBadgeCodeRedemption,
     createStashBadgePurchase,
@@ -125,7 +128,7 @@ data BadgeReceiptRecord = BadgeReceiptRecord
 
 data BadgeReceiptStatus
   = RSHeld {stash :: BadgeStash, invoiceId :: Maybe Text, payment :: Text, nextAttemptAt :: UTCTime, retryDelay :: Maybe Int64}
-  | RSCredited {badgePurchaseId :: Int64}
+  | RSCredited {badgePurchaseId :: Int64, refusalRecorded :: Bool} -- a resume of it was refused
   | RSRefused {refusal :: Maybe BadgeIssueFailure}
 
 -- | Resolves a store transaction to the record that owns it, looking up by its reference again after each step
@@ -139,7 +142,8 @@ holdStoreReceipt :: DB.Connection -> TVar ChaChaDRG -> User -> StoreReceiptOrigi
 holdStoreReceipt db g User {userId} origin invoiceId_ txRef@StoreTransactionRef {provider, transactionRef} payment now =
   getReceiptRecord db txRef >>= \case
     Just r@BadgeReceiptRecord {receiptId, status} -> do
-      -- a resolved record stays resolved, so a hand-over landing just after its credit cannot hold it again
+      -- a resolved record stays resolved here, so a hand-over landing just after its credit cannot hold it again;
+      -- only a resume re-holds a credited one, which the hand-over decides
       case status of
         RSHeld {payment = held}
           | laterAppleTransaction payment held ->
@@ -212,7 +216,7 @@ getReceiptRecord db StoreTransactionRef {provider, transactionRef} =
       where
         status = case (payment_, nextAttemptAt_) of
           (Just payment, Just nextAttemptAt) -> RSHeld {stash = toBadgeStash BSRStoreReceipt (receiptId, purchaseKey, purchasePrivKey, mk), invoiceId, payment, nextAttemptAt, retryDelay}
-          _ -> maybe (RSRefused refusal) RSCredited purchaseId_
+          _ -> maybe (RSRefused refusal) (\badgePurchaseId -> RSCredited {badgePurchaseId, refusalRecorded = isJust refusal}) purchaseId_
 
 -- | The record made when Buy is tapped, before any receipt: the store echoes its invoice id.
 createBadgeStoreReceipt :: DB.Connection -> TVar ChaChaDRG -> User -> Text -> UTCTime -> IO ()
@@ -286,6 +290,39 @@ refuseStoreReceipt db receiptId refusal =
     "UPDATE badge_store_receipts SET payment = NULL, next_attempt_at = NULL, retry_delay = NULL, retry_count = 0, credit_error = ? WHERE badge_store_receipt_id = ?"
     (refusal, receiptId)
 
+-- | Every settle clears the failure, so one recorded on a credited record is a refused resume.
+settleStoreReceipt :: DB.Connection -> Int64 -> IO ()
+settleStoreReceipt db receiptId =
+  DB.execute
+    db
+    "UPDATE badge_store_receipts SET payment = NULL, next_attempt_at = NULL, retry_delay = NULL, retry_count = 0, credit_error = NULL WHERE badge_store_receipt_id = ?"
+    (Only receiptId)
+
+-- | Holds a credited record again for a later charge of its subscription while its purchase is its owner's newest,
+-- a subscription and not shown, and no other receipt of the owner is held: the receipt worker would credit that one
+-- first, and then skip this one while its badge is shown.
+reholdStoreReceipt :: DB.Connection -> User -> Int64 -> Int64 -> ServicePayment -> UTCTime -> IO Bool
+reholdStoreReceipt db owner receiptId badgePurchaseId payment now = do
+  newest_ <- getUserBadgePurchase db owner
+  pending <- getPendingStoreReceipts db owner
+  case newest_ of
+    Just UserBadgePurchase {badgePurchaseId = newestId, shown = False, purchaseKind = PKSubscription _}
+      | newestId == badgePurchaseId && null pending -> do
+          DB.execute
+            db
+            "UPDATE badge_store_receipts SET payment = ?, next_attempt_at = ?, retry_delay = NULL, retry_count = 0, credit_error = NULL WHERE badge_store_receipt_id = ? AND payment IS NULL"
+            (safeDecodeUtf8 . LB.toStrict $ J.encode payment, now, receiptId)
+          pure True
+    _ -> pure False
+
+-- | A resume's credit. The purchase keeps only the state the answer stored, so an ended state from before does not
+-- retire it again.
+showResumedPurchase :: DB.Connection -> User -> Int64 -> Int64 -> Maybe SubscriptionState -> IO ()
+showResumedPurchase db User {userId} receiptId badgePurchaseId state = do
+  settleStoreReceipt db receiptId
+  DB.execute db "UPDATE badge_purchases SET subscription_status = ? WHERE badge_purchase_id = ?" (state, badgePurchaseId)
+  DB.execute db "UPDATE users SET shown_badge_id = ? WHERE user_id = ?" (badgePurchaseId, userId)
+
 -- | A held record is paid for and a credited one is referenced by its purchase, so neither is deleted.
 deleteUnfundedStoreReceipts :: DB.Connection -> UTCTime -> IO ()
 deleteUnfundedStoreReceipts db createdBefore =
@@ -320,7 +357,7 @@ deleteBadgeCodeRedemption db User {userId} code =
 createStashBadgePurchase :: DB.Connection -> User -> BadgeStash -> BadgeCredential -> UTCTime -> IO (Int64, Bool)
 createStashBadgePurchase db User {userId} stash credential now = do
   -- the credit settles a held receipt in the transaction that stores its purchase, a replay included
-  forM_ storeReceiptId_ $ \storeReceiptId -> DB.execute db "UPDATE badge_store_receipts SET payment = NULL, next_attempt_at = NULL, retry_delay = NULL, retry_count = 0 WHERE badge_store_receipt_id = ?" (Only storeReceiptId)
+  forM_ storeReceiptId_ $ settleStoreReceipt db
   getStashBadgePurchase db stash >>= \case
     Just purchaseId -> pure (purchaseId, False)
     Nothing -> do
