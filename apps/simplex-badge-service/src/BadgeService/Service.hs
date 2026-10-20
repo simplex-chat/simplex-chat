@@ -381,6 +381,7 @@ handleServiceRequest key verifier checks cc trackerQ_ User {userId} reqId sigKey
   resp <-
     badgeServiceResponse key verifier checks cc trackerQ_ sigKey reqData `catchOwn'` \_ ->
       logError ("badge service request " <> reqIdT <> " failed") $> errorResponse BSEInternal
+  logInfo $ "badge answer: " <> responseName resp
   sendChatCmd cc (APISendServiceResponse userId reqId (responseObject resp)) >>= \case
     Right _ -> pure ()
     Left e -> logError $ "badge service response failed for " <> reqIdT <> ": " <> tshow e
@@ -408,7 +409,7 @@ badgeServiceResponse key verifier checks cc trackerQ_ sigKey reqData = case J.fr
   J.Success BadgeServiceRequest {version, purchaseKey, request}
     | not (version `isCompatible` supportedBadgeServiceVRange) -> pure $ errorResponse BSEUnsupportedVersion
     | purchaseKey /= sigKey -> pure $ errorResponse BSEBadRequest
-    | otherwise -> case request of
+    | otherwise -> logInfo ("badge request: " <> commandName request) >> case request of
         BSCRedeemBadgeCode {masterKey, code} -> case purchaseKey of
           Just k -> redeemCode key cc trackerQ_ k masterKey code
           Nothing -> pure $ errorResponse BSEBadRequest
@@ -658,6 +659,35 @@ firstChargeNotGranted provider = \case
 
 -- | A forged receipt and a refunded one are both receipt_invalid, so the client learns nothing a
 -- forger could iterate on. A test purchase is named, since the device that made it already knows.
+-- | What each request was answered, to pair with its command in a log. No payload: a credential,
+-- an invoice and a statement are the client's, and an error's message can quote what it refused.
+responseName :: BadgeServiceResponse -> Text
+responseName = \case
+  BSPBadgeCatalog {} -> "catalog"
+  BSPBadgeInvoice {} -> "invoice"
+  BSPBadgeCredential {credential = Just _, subscription} ->
+    "badge issued" <> maybe "" (\s -> ", subscription " <> tshow s) subscription
+  BSPBadgeCredential {credential = Nothing} -> "no month to issue"
+  BSPError {code} -> "error " <> tshow code
+
+-- | The command each request ran, so a log can be followed without the request ids. No payload:
+-- a payment holds a store receipt, and an upgrade a receipt code.
+commandName :: BadgeServiceCommand -> Text
+commandName = \case
+  BSCGetBadgeCatalog -> "getBadgeCatalog"
+  BSCGetBadgeInvoice {} -> "getBadgeInvoice"
+  BSCRedeemBadgeCode {} -> "redeemBadgeCode"
+  BSCPurchaseBadge {payment} -> "purchaseBadge " <> paymentName payment
+  BSCUpgradeBadgeSubscription {payment} -> "upgradeBadgeSubscription " <> paymentName payment
+  BSCIssueBadge {} -> "issueBadge"
+  BSCPauseBadge -> "pauseBadge"
+  where
+    paymentName = \case
+      SPApple {} -> "(App Store)"
+      SPGoogle {} -> "(Play)"
+      SPInvoice {} -> "(invoice)"
+      SPReceipt {} -> "(receipt)"
+
 storeRefusalResponse :: StoreRefusal -> IO BadgeServiceResponse
 storeRefusalResponse = \case
   SRInvalid reason -> logInfo ("store receipt refused: " <> reason) $> errorResponse BSEReceiptInvalid
