@@ -14,12 +14,13 @@ import kotlin.concurrent.thread
 class NetworkObserver {
   // the network info and the addresses the core was last told about, plus the addresses added since
   // (sentAddresses null - nothing was accepted since the observer was last restarted; sentInfo is also cleared
-  // after a suspend, so that the network is reported again), and the IPv6 address the connections are
+  // after a suspend, so that the network is reported again), and the IPv6 address the connections were
   // made from (recorded with the last accepted report, or when IPv6 was added after it)
   @Volatile private var sentAddresses: Set<String>? = null
   @Volatile private var sentInfo: UserNetworkInfo? = null
   @Volatile private var sentAddress6: InetAddress? = null
   @Volatile private var observer: Thread? = null
+  private var address6Polls = 0
 
   @Synchronized fun restartNetworkObserver() {
     // the chat controller is created anew, and what was recorded, including a report the observer that is
@@ -48,7 +49,7 @@ class NetworkObserver {
 
   // only the sleeps are measured - a poll waiting for the core to answer must not look like a suspend,
   // as the report it makes is what keeps the core busy; the connections made before the computer was
-  // suspended are dead, so the network is reported again even with the same addresses
+  // suspended may be dead, so the network is reported again even with the same addresses
   private fun sleepDetectingSuspend(ms: Long) {
     val sleptAt = System.currentTimeMillis()
     Thread.sleep(ms)
@@ -56,8 +57,11 @@ class NetworkObserver {
   }
 
   private fun pollNetwork() {
-    // the addresses can be briefly unavailable, e.g. when the computer wakes up
-    val addresses = localAddresses().ifEmpty { sleepDetectingSuspend(CONFIRM_OFFLINE_MS); localAddresses() }
+    // the addresses can be briefly unavailable, e.g. when the computer wakes up - it is not confirmed
+    // when the core already has the network offline
+    val addresses = localAddresses().ifEmpty {
+      if (sentInfo?.online == false) emptySet() else { sleepDetectingSuspend(CONFIRM_OFFLINE_MS); localAddresses() }
+    }
     val info = UserNetworkInfo(networkType = UserNetworkType.OTHER, online = addresses.isNotEmpty())
     if (!info.online && sentAddresses == null) return
     // the reported addresses are compared, so that the report that was not accepted is repeated,
@@ -68,10 +72,12 @@ class NetworkObserver {
   }
 
   // the network prefix stays the same when an IPv6 temporary address is deleted, while the connections
-  // made via it are dead; the address that is still used is not deleted, so it is not looked up
+  // made via it are dead; the address that is still used is not deleted, so it is not looked up, and the
+  // replaced one is looked up once a minute, as listing the interfaces can be slow (Windows)
   private fun sentAddress6Removed(address6: InetAddress?): Boolean {
     val sent = sentAddress6 ?: return false
-    return sent != address6 && runCatching { NetworkInterface.getByInetAddress(sent) == null }.getOrDefault(false)
+    if (sent == address6 || ++address6Polls % ADDRESS6_CHECK_POLLS != 0) return false
+    return runCatching { NetworkInterface.getByInetAddress(sent) == null }.getOrDefault(false)
   }
 
   private fun localAddresses(): Set<String> =
@@ -135,6 +141,7 @@ class NetworkObserver {
     val shared = NetworkObserver()
     private const val POLL_INTERVAL_MS = 10_000L
     private const val OFFLINE_POLL_INTERVAL_MS = 2_000L
+    private const val ADDRESS6_CHECK_POLLS = 6
     private const val CONFIRM_OFFLINE_MS = 1_000L
     private const val SUSPENDED_MS = 25_000L
     private const val NO_ROUTE = "no route"

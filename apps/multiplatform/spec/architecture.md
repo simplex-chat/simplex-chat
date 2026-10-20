@@ -222,7 +222,7 @@ Lifecycle callbacks in `SimplexApp` (implements `LifecycleEventObserver`):
 
 ### Desktop
 
-Entry: [`main()`](../desktop/src/jvmMain/kotlin/chat/simplex/desktop/Main.kt#L26)
+Entry: [`main()`](../desktop/src/jvmMain/kotlin/chat/simplex/desktop/Main.kt#L27)
 
 ```
 main(args)
