@@ -907,12 +907,6 @@ struct ChatLayoutPicker: View {
     private func setGlobalChatLayout(_ layout: ChatLayout) {
         globalLayout = layout
         chatLayoutGroupDefault.set(layout)
-        do {
-            try apiSetGlobalChatLayout(layout)
-            Task { await reloadChats() }
-        } catch {
-            logger.error("apiSetGlobalChatLayout error: \(responseError(error))")
-        }
     }
 
     private func setUserChatLayout(_ userId: Int64, _ layout: ChatLayout?) {
@@ -920,22 +914,9 @@ struct ChatLayoutPicker: View {
             do {
                 try await apiSetUserChatLayout(userId: userId, layout: layout)
                 await MainActor.run { m.updateCurrentUserChatLayout(layout) }
-                await reloadChats()
             } catch {
                 logger.error("apiSetUserChatLayout error: \(responseError(error))")
             }
-        }
-    }
-
-    private func reloadChats() async {
-        do {
-            let chats = try await apiGetChatsAsync()
-            await MainActor.run { m.updateChats(chats) }
-            if let id = m.chatId, let chat = m.getChat(id) {
-                await loadChat(chat: chat, im: ItemsModel.shared, clearItems: false)
-            }
-        } catch {
-            logger.error("apiGetChats error: \(responseError(error))")
         }
     }
 }

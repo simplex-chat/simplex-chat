@@ -1309,18 +1309,14 @@ fun ModalData.ChatWallpaperEditorModal(chat: Chat) {
 
 @Composable
 private fun ChatLayoutSection(rhId: Long?, chatInfo: ChatInfo) {
-  val layouts = when (chatInfo) {
-    is ChatInfo.Direct -> Triple(chatInfo.contact.chatLayout, chatInfo.contact.userChatLayout, chatInfo.contact.defaultChatLayout)
-    is ChatInfo.Group -> Triple(chatInfo.groupInfo.chatLayout, chatInfo.groupInfo.userChatLayout, chatInfo.groupInfo.defaultChatLayout)
-    else -> null
-  } ?: return
-  val (chatLayout, userChatLayout, defaultChatLayout) = layouts
+  val defaultChatLayout = chatInfo.defaultChatLayout(chatModel.currentUser.value, appPrefs.chatLayout.state.value)
   val otherLayout = otherChatLayout(defaultChatLayout)
-  val defaultSuffix = generalGetString(if (chatLayout == defaultChatLayout) MR.strings.chat_layout_chat_suffix else MR.strings.chat_layout_default_suffix)
+  val defaultSuffix = generalGetString(if (chatInfo.chatLayout == defaultChatLayout) MR.strings.chat_layout_chat_suffix else MR.strings.chat_layout_default_suffix)
   val values = listOf(
     null to "${chatLayoutName(defaultChatLayout)} $defaultSuffix",
     otherLayout to chatLayoutName(otherLayout)
   )
+  val userChatLayout = chatInfo.userChatLayout
   val selection = remember(userChatLayout, otherLayout) { mutableStateOf(if (userChatLayout == otherLayout) otherLayout else null) }
   SectionView {
     ExposedDropDownSettingRow(

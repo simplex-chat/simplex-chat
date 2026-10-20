@@ -1990,8 +1990,6 @@ Error:
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
 - chatLayout: [ChatLayout](#chatlayout)?
 - userChatLayout: [ChatLayout](#chatlayout)?
-- defaultChatLayout: [ChatLayout](#chatlayout)
-- activeChatLayout: [ChatLayout](#chatlayout)
 - chatDeleted: bool
 - customData: JSONObject?
 
@@ -2588,8 +2586,6 @@ MemberSupport:
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
 - chatLayout: [ChatLayout](#chatlayout)?
 - userChatLayout: [ChatLayout](#chatlayout)?
-- defaultChatLayout: [ChatLayout](#chatlayout)
-- activeChatLayout: [ChatLayout](#chatlayout)
 - customData: JSONObject?
 - groupSummary: [GroupSummary](#groupsummary)
 - rosterVersion: int64?

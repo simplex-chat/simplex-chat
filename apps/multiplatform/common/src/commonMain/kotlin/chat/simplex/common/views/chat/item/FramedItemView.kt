@@ -52,7 +52,7 @@ fun FramedItemView(
   val sent = ci.chatDir.sent
   val chatTTL = chatInfo.timedMessagesTTL
   val terminal = LocalTerminalLayout.current
-  val messageClip = Modifier.clipChatItem(ci, revealed = true)
+  val messageClip = if (terminal) Modifier.clipChatItem(ci, revealed = true) else Modifier
 
   fun membership(): GroupMember? {
     return if (chatInfo is ChatInfo.Group) chatInfo.groupInfo.membership else null
@@ -373,7 +373,7 @@ fun FramedItemView(
             when (val mc = ci.content.msgContent) {
               is MsgContent.MCImage -> {
                 val provider = imageProvider ?: return@PriorityLayout
-                Box(Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID).then(if (terminal) messageClip else Modifier)) {
+                Box(Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID).then(messageClip)) {
                   CIImageView(image = mc.image, file = ci.file, provider, showMenu, false, receiveFile)
                 }
                 if (mc.text == "" && !ci.meta.isLive) {
@@ -384,7 +384,7 @@ fun FramedItemView(
               }
               is MsgContent.MCVideo -> {
                 val provider = imageProvider ?: return@PriorityLayout
-                Box(Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID).then(if (terminal) messageClip else Modifier)) {
+                Box(Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID).then(messageClip)) {
                   CIVideoView(image = mc.image, mc.duration, file = ci.file, provider, showMenu, smallView = false, receiveFile = receiveFile)
                 }
                 if (mc.text == "" && !ci.meta.isLive) {

@@ -1869,11 +1869,23 @@ sealed class ChatInfo: SomeChat, NamedChat {
     else -> emptyList()
   }
 
-  val activeChatLayout: ChatLayout get() = when (this) {
-    is Direct -> contact.activeChatLayout
-    is Group -> groupInfo.activeChatLayout
-    else -> ChatLayout.Classic
+  val chatLayout: ChatLayout? get() = when (this) {
+    is Direct -> contact.chatLayout
+    is Group -> groupInfo.chatLayout
+    else -> null
   }
+
+  val userChatLayout: ChatLayout? get() = when (this) {
+    is Direct -> contact.userChatLayout
+    is Group -> groupInfo.userChatLayout
+    else -> null
+  }
+
+  fun defaultChatLayout(user: User?, appLayout: ChatLayout): ChatLayout =
+    chatLayout.known ?: user?.chatLayout.known ?: appLayout.known ?: ChatLayout.Classic
+
+  fun activeChatLayout(user: User?, appLayout: ChatLayout): ChatLayout =
+    userChatLayout.known ?: defaultChatLayout(user, appLayout)
 
   val contactCard: Boolean
     get() = when (this) {
@@ -1917,8 +1929,6 @@ data class Contact(
   val uiThemes: ThemeModeOverrides? = null,
   val chatLayout: ChatLayout? = null,
   val userChatLayout: ChatLayout? = null,
-  val defaultChatLayout: ChatLayout = ChatLayout.Classic,
-  val activeChatLayout: ChatLayout = ChatLayout.Classic,
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Direct
   override val id get() = "@$contactId"
@@ -2239,6 +2249,8 @@ object ChatLayoutSerializer : KSerializer<ChatLayout> {
   override fun deserialize(decoder: Decoder): ChatLayout = ChatLayout.fromText(decoder.decodeString())
   override fun serialize(encoder: Encoder, value: ChatLayout) = encoder.encodeString(value.text)
 }
+
+private val ChatLayout?.known: ChatLayout? get() = if (this is ChatLayout.Unknown) null else this
 
 fun peerTypeIcon(peerType: ChatPeerType?): ImageResource =
   when (peerType) {
@@ -2568,8 +2580,6 @@ data class GroupInfo (
   val uiThemes: ThemeModeOverrides? = null,
   val chatLayout: ChatLayout? = null,
   val userChatLayout: ChatLayout? = null,
-  val defaultChatLayout: ChatLayout = ChatLayout.Classic,
-  val activeChatLayout: ChatLayout = ChatLayout.Classic,
   val groupSummary: GroupSummary,
   val membersRequireAttention: Int,
   val chatTags: List<Long>,

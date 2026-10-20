@@ -105,6 +105,12 @@ class TerminalItemViewTest {
   }
 
   @Test
+  fun senderGroupsLocalNotes() {
+    assertTrue(terminalItemShowsSender(msg(1, CIDirection.LocalSnd(), 0), older = null))
+    assertFalse(terminalItemShowsSender(msg(2, CIDirection.LocalSnd(), 10), older = msg(1, CIDirection.LocalSnd(), 0)))
+  }
+
+  @Test
   fun noSenderForEventItem() {
     assertFalse(terminalItemShowsSender(featureEvent(2, 10), older = msg(1, CIDirection.DirectRcv(), 0)))
     assertFalse(terminalItemShowsSender(featureEvent(1, 0), older = null))

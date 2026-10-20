@@ -1550,8 +1550,6 @@ object ChatController {
     return false
   }
 
-  suspend fun apiSetGlobalChatLayout(layout: ChatLayout) = sendCommandOkResp(null, CC.ApiSetGlobalChatLayout(layout))
-
   suspend fun apiSetNetworkInfo(networkInfo: UserNetworkInfo): Boolean =
     sendCommandOkResp(null, CC.APISetNetworkInfo(networkInfo))
 
@@ -4099,7 +4097,6 @@ sealed class CC {
   class APISetChatSettings(val type: ChatType, val id: Long, val chatSettings: ChatSettings): CC()
   class ApiSetChatLayout(val type: ChatType, val id: Long, val layout: ChatLayout?): CC()
   class ApiSetUserChatLayout(val userId: Long, val layout: ChatLayout?): CC()
-  class ApiSetGlobalChatLayout(val layout: ChatLayout): CC()
   class ApiSetMemberSettings(val groupId: Long, val groupMemberId: Long, val memberSettings: GroupMemberSettings): CC()
   class ApiGetUpdatedGroupLinkData(val groupId: Long): CC()
   class APIContactInfo(val contactId: Long): CC()
@@ -4319,7 +4316,6 @@ sealed class CC {
     is APISetChatSettings -> "/_settings ${chatRef(type, id, scope = null)} ${json.encodeToString(chatSettings)}"
     is ApiSetChatLayout -> "/_layout ${chatRef(type, id, scope = null)} ${layout?.text ?: "default"}"
     is ApiSetUserChatLayout -> "/_layout user $userId ${layout?.text ?: "default"}"
-    is ApiSetGlobalChatLayout -> "/_layout global ${layout.text}"
     is ApiSetMemberSettings -> "/_member settings #$groupId $groupMemberId ${json.encodeToString(memberSettings)}"
     is ApiGetUpdatedGroupLinkData -> "/_get group link data #$groupId"
     is APIContactInfo -> "/_info @$contactId"
@@ -4519,7 +4515,6 @@ sealed class CC {
     is APISetChatSettings -> "apiSetChatSettings"
     is ApiSetChatLayout -> "apiSetChatLayout"
     is ApiSetUserChatLayout -> "apiSetUserChatLayout"
-    is ApiSetGlobalChatLayout -> "apiSetGlobalChatLayout"
     is ApiSetMemberSettings -> "apiSetMemberSettings"
     is ApiGetUpdatedGroupLinkData -> "apiGetUpdatedGroupLinkData"
     is APIContactInfo -> "apiContactInfo"

@@ -372,7 +372,8 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
 | `displayName` | `String` | Contact/group name |
 | `image` | `String?` | Profile image (base64) |
 | `chatSettings` | `ChatSettings?` | Notification/favorite settings |
-| `activeChatLayout` | `ChatLayout` | `activeChatLayout` of the contact or group, computed by the core: `userChatLayout`, else `defaultChatLayout` (the chat's `chatLayout`, else `User.chatLayout`, else the global value set with `apiSetGlobalChatLayout`, else `.classic`); `.classic` for other chats |
+| `chatLayout`, `userChatLayout` | `ChatLayout?` | The chat's layout (group profile or address) and the layout chosen by the user, of the contact or group; `nil` for other chats ([L2379](../SimpleXChat/ChatTypes.swift#L2379)) |
+| `defaultChatLayout(user, appLayout)` | `ChatLayout` | Computed in the app: `chatLayout`, else `User.chatLayout`, else `chatLayoutGroupDefault`, else `.classic`, skipping unknown values ([L2395](../SimpleXChat/ChatTypes.swift#L2395)) |
 | `chatTags` | `[Int64]?` | Assigned tag IDs |
 
 ### Relay-Related Data Model (Channels)

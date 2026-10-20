@@ -272,6 +272,13 @@ public enum ChatLayout: Hashable {
         case let .unknown(s): s
         }
     }
+
+    var known: ChatLayout? {
+        switch self {
+        case .unknown: nil
+        default: self
+        }
+    }
 }
 
 extension ChatLayout: RawRepresentable {
@@ -2369,12 +2376,24 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
 
-    public var activeChatLayout: ChatLayout {
+    public var chatLayout: ChatLayout? {
         switch self {
-        case let .direct(contact): contact.activeChatLayout
-        case let .group(groupInfo, _): groupInfo.activeChatLayout
-        default: .classic
+        case let .direct(contact): contact.chatLayout
+        case let .group(groupInfo, _): groupInfo.chatLayout
+        default: nil
         }
+    }
+
+    public var userChatLayout: ChatLayout? {
+        switch self {
+        case let .direct(contact): contact.userChatLayout
+        case let .group(groupInfo, _): groupInfo.userChatLayout
+        default: nil
+        }
+    }
+
+    public func defaultChatLayout(_ user: User?, _ appLayout: ChatLayout) -> ChatLayout {
+        chatLayout?.known ?? user?.chatLayout?.known ?? appLayout.known ?? .classic
     }
 
     public var chatTags: [Int64]? {
@@ -2545,8 +2564,6 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     public var uiThemes: ThemeModeOverrides?
     public var chatLayout: ChatLayout?
     public var userChatLayout: ChatLayout?
-    public var defaultChatLayout: ChatLayout = .classic
-    public var activeChatLayout: ChatLayout = .classic
     public var chatDeleted: Bool
 
     public var id: ChatId { get { "@\(contactId)" } }
@@ -2952,8 +2969,6 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var uiThemes: ThemeModeOverrides?
     public var chatLayout: ChatLayout?
     public var userChatLayout: ChatLayout?
-    public var defaultChatLayout: ChatLayout = .classic
-    public var activeChatLayout: ChatLayout = .classic
     public var groupSummary: GroupSummary
     public var membersRequireAttention: Int
 

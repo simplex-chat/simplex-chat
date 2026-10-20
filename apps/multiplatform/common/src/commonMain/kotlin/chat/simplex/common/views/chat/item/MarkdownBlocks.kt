@@ -131,10 +131,11 @@ fun MarkdownBlocks(
 @Composable
 fun Modifier.quoteBar(textColor: Color): Modifier {
   val color = textColor.copy(alpha = if (MaterialTheme.colors.isLight) 0.16f else 0.22f)
+  val barWidth = 4.dp
   return drawBehind {
-    val width = 4.dp.roundToPx().toFloat()
+    val width = barWidth.roundToPx().toFloat()
     drawRoundRect(color, Offset(if (layoutDirection == LayoutDirection.Ltr) 0f else size.width - width, 0f), Size(width, size.height), CornerRadius(2.dp.toPx()))
-  }.padding(start = 14.dp)
+  }.padding(start = barWidth).padding(start = 10.dp)
 }
 
 private val MarkdownBlock.start: Int get() = when (this) {

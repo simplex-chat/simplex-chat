@@ -1008,8 +1008,8 @@ fun setChatLayout(rhId: Long?, chatInfo: ChatInfo, layout: ChatLayout?, chatMode
   withBGApi {
     if (chatModel.controller.apiSetChatLayout(rhId, chatInfo.chatType, chatInfo.apiId, layout)) {
       val newChatInfo = when (val cInfo = chatModel.getChat(chatInfo.id)?.chatInfo) {
-        is ChatInfo.Direct -> ChatInfo.Direct(cInfo.contact.copy(userChatLayout = layout, activeChatLayout = layout ?: cInfo.contact.defaultChatLayout))
-        is ChatInfo.Group -> ChatInfo.Group(cInfo.groupInfo.copy(userChatLayout = layout, activeChatLayout = layout ?: cInfo.groupInfo.defaultChatLayout), groupChatScope = null)
+        is ChatInfo.Direct -> ChatInfo.Direct(cInfo.contact.copy(userChatLayout = layout))
+        is ChatInfo.Group -> ChatInfo.Group(cInfo.groupInfo.copy(userChatLayout = layout), groupChatScope = null)
         else -> null
       }
       if (newChatInfo != null) {

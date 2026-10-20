@@ -901,12 +901,7 @@ object AppearanceScope {
         generalGetString(MR.strings.chat_layout),
         listOf(ChatLayout.Classic, ChatLayout.Terminal).map { it to chatLayoutName(it) },
         globalLayout,
-        onSelected = { layout ->
-          appPrefs.chatLayout.set(layout)
-          withBGApi {
-            if (controller.apiSetGlobalChatLayout(layout)) reloadChats()
-          }
-        }
+        onSelected = { layout -> appPrefs.chatLayout.set(layout) }
       )
     } else {
       val userLayout = chatModel.currentUser.value?.chatLayout
@@ -925,22 +920,10 @@ object AppearanceScope {
             val rh = chatModel.remoteHostId()
             if (controller.apiSetUserChatLayout(rh, userId, layout)) {
               withContext(Dispatchers.Main) { chatModel.updateCurrentUserChatLayout(rh, layout) }
-              reloadChats()
             }
           }
         }
       )
-    }
-  }
-
-  private suspend fun reloadChats() {
-    try {
-      withContext(Dispatchers.Main) {
-        val chats = controller.apiGetChats(chatModel.remoteHostId())
-        chatModel.chatsContext.updateChats(chats)
-      }
-    } catch (e: Exception) {
-      Log.e(TAG, "apiGetChats error: ${e.message}")
     }
   }
 

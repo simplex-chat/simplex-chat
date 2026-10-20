@@ -150,7 +150,6 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
         Log.e(TAG, "Error while importing app settings: " + e.stackTraceToString())
       }
     }
-    controller.apiSetGlobalChatLayout(controller.appPrefs.chatLayout.get())
     if (user == null) {
       chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)
       chatModel.currentUser.value = null

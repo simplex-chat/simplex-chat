@@ -300,7 +300,7 @@ data class ChatStats(
 | `ChatInfo.ContactConnection` | `"contactConnection"` | `contactConnection: PendingContactConnection` |
 | `ChatInfo.InvalidJSON` | `"invalidJSON"` | `json: String` |
 
-[`ChatInfo.activeChatLayout`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L1872) is `activeChatLayout` of the contact or group, computed by the core: `userChatLayout`, else `defaultChatLayout` (the chat's `chatLayout`, else `User.chatLayout`, else the global value set with `apiSetGlobalChatLayout`, else `ChatLayout.Classic`); `ChatLayout.Classic` for other chats. `userChatLayout` is set by [`setChatLayout()`](../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListNavLinkView.kt#L1007).
+[`ChatInfo.activeChatLayout(user, appLayout)`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L1887) is computed in the app: the chat's `userChatLayout`, else [`defaultChatLayout(user, appLayout)`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L1884): the chat's `chatLayout` (group profile or address, set when the chat is created), else `User.chatLayout`, else `appPrefs.chatLayout`, else `ChatLayout.Classic`. `ChatLayout.Unknown` values are skipped. Note folders have no chat values, so the profile and app values apply. `ChatView` reads `chatModel.currentUser` and `appPrefs.chatLayout.state`, so a change of either recomposes the open chat; the chat list is not reloaded. `userChatLayout` is set by [`setChatLayout()`](../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListNavLinkView.kt#L1007), `User.chatLayout` by `apiSetUserChatLayout` and `ChatModel.updateCurrentUserChatLayout`.
 
 ### RelayStatus (Channels)
 

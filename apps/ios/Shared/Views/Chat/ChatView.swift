@@ -3270,11 +3270,9 @@ func setChatLayout(_ chat: Chat, layout: ChatLayout?) {
                 switch chat.chatInfo {
                 case var .direct(contact):
                     contact.userChatLayout = layout
-                    contact.activeChatLayout = layout ?? contact.defaultChatLayout
                     ChatModel.shared.updateContact(contact)
                 case var .group(groupInfo, _):
                     groupInfo.userChatLayout = layout
-                    groupInfo.activeChatLayout = layout ?? groupInfo.defaultChatLayout
                     ChatModel.shared.updateGroup(groupInfo)
                 default: ()
                 }

@@ -460,19 +460,13 @@ struct ChatLayoutSection: View {
     @ObservedObject var chat: Chat
 
     var body: some View {
-        switch chat.chatInfo {
-        case let .direct(contact): layoutPicker(contact.chatLayout, contact.userChatLayout, contact.defaultChatLayout)
-        case let .group(groupInfo, _): layoutPicker(groupInfo.chatLayout, groupInfo.userChatLayout, groupInfo.defaultChatLayout)
-        default: EmptyView()
-        }
-    }
-
-    private func layoutPicker(_ chatLayout: ChatLayout?, _ userChatLayout: ChatLayout?, _ defaultChatLayout: ChatLayout) -> some View {
+        let chatInfo = chat.chatInfo
+        let defaultChatLayout = chatInfo.defaultChatLayout(ChatModel.shared.currentUser, chatLayoutGroupDefault.get())
         let otherLayout = otherChatLayout(defaultChatLayout)
-        let suffix = chatLayout == defaultChatLayout ? NSLocalizedString("(chat)", comment: "chat layout") : NSLocalizedString("(default)", comment: "chat layout")
-        return Section {
+        let suffix = chatInfo.chatLayout == defaultChatLayout ? NSLocalizedString("(chat)", comment: "chat layout") : NSLocalizedString("(default)", comment: "chat layout")
+        Section {
             Picker("Chat layout", selection: Binding(
-                get: { userChatLayout == otherLayout ? otherLayout : nil },
+                get: { chatInfo.userChatLayout == otherLayout ? otherLayout : nil },
                 set: { setChatLayout(chat, layout: $0) }
             )) {
                 Text(defaultChatLayout.displayName + " " + suffix).tag(nil as ChatLayout?)

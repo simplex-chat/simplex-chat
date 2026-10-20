@@ -15,10 +15,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.changedToDownIgnoreConsumed
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.offset
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.chatModel
@@ -79,7 +81,7 @@ class TerminalRowInteractionSource : MutableInteractionSource {
 }
 
 @Composable
-fun Modifier.terminalRow(interactionSource: TerminalRowInteractionSource): Modifier =
+fun Modifier.terminalRowIndication(interactionSource: TerminalRowInteractionSource): Modifier =
   this
     .pointerInput(interactionSource) {
       awaitPointerEventScope {
@@ -90,6 +92,13 @@ fun Modifier.terminalRow(interactionSource: TerminalRowInteractionSource): Modif
     }
     .hoverable(interactionSource)
     .indication(interactionSource, LocalIndication.current)
+
+fun Modifier.terminalStartOffset(offset: () -> Dp): Modifier =
+  layout { measurable, constraints ->
+    val start = offset().roundToPx()
+    val placeable = measurable.measure(constraints.offset(horizontal = -start))
+    layout(placeable.width + start, placeable.height) { placeable.placeRelative(start, 0) }
+  }
 
 @Composable
 fun TerminalChatItemRow(
@@ -104,12 +113,12 @@ fun TerminalChatItemRow(
   modifier: Modifier = Modifier,
   content: @Composable () -> Unit
 ) {
+  val sender = if (showSender) terminalSender(chatInfo, cItem, range, reversedChatItems, showMemberInfo, showChatInfo) else null
   Column(
     modifier
-      .padding(top = if (showSender) 8.dp else topGap, start = 8.dp, end = 12.dp)
+      .padding(top = if (sender != null) 8.dp else topGap, start = 8.dp, end = 12.dp)
       .fillMaxWidth()
   ) {
-    val sender = if (showSender) terminalSender(chatInfo, cItem, range, reversedChatItems, showMemberInfo, showChatInfo) else null
     if (sender != null) {
       TerminalSenderNameAndRole(sender, topGap)
     }
@@ -119,7 +128,7 @@ fun TerminalChatItemRow(
           sender.image()
         }
       }
-      Box(Modifier.padding(top = if (showSender) 2.dp else 0.dp, start = 4.dp)) {
+      Box(Modifier.padding(top = if (sender != null) 2.dp else 0.dp, start = 4.dp)) {
         content()
       }
     }
