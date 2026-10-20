@@ -2908,4 +2908,12 @@
     <string name="badges_your_badge">你的徽章</string>
     <string name="badges_redeem_code_button">兑换徽章代码</string>
     <string name="badges_support_ended_on">你的徽章已于 %1$s 过期。</string>
+    <string name="v7_0_crowdfunding" translatable="false"></string>
+    <string name="v7_0_invest_descr" translatable="false"></string>
+    <string name="v7_0_invest_learn_more" translatable="false"></string>
+    <string name="badges_redeem_code_placeholder" translatable="false"></string>
+    <string name="settings_section_title_interface" translatable="false"></string>
+    <string name="relay_status_acknowledged_roster"></string>
+    <string name="settings_section_title_language" translatable="false"></string>
+    <string name="v7_0_invest" translatable="false"></string>
 </resources>
