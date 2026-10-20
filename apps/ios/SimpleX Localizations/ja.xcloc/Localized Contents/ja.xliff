@@ -70,9 +70,9 @@
         <target state="translated">%@ / %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ and %@" xml:space="preserve">
+      <trans-unit id="%@ and %@" xml:space="preserve" approved="no">
         <source>%@ and %@</source>
-        <target>%@ と %@</target>
+        <target state="translated">%@ と %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ and %@ connected" xml:space="preserve" approved="no">
