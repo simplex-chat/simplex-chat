@@ -10,7 +10,7 @@
 module BadgeTests (badgeTests) where
 
 import BadgeService.Service (badgeErrorRetryAfter, shownServiceRequest, survive)
-import BadgeService.StoreReceipts (StoreReceipt (..), StoreRefusal (..), StoreVerifier (..), VerifiedStoreTransaction (..), toStoreReceipt)
+import BadgeService.StoreReceipts (StoreChecks (..), StoreReceipt (..), StoreRefusal (..), StoreVerifier (..), VerifiedStoreTransaction (..), toStoreReceipt)
 import BadgeService.StoreReceipts.Mock (newMockStoreVerifier)
 import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
@@ -1057,7 +1057,7 @@ testGoogleTokenPath = do
   mapM_ (\t -> unsent t `shouldBe` True) ["a/b", "../x", "t?x", "t#x", "t x", ""]
 
 uncalledVerifier :: StoreVerifier
-uncalledVerifier = StoreVerifier {verifyApple = Nothing, verifyGoogle = Just $ \_ _ -> error "verifier called", acknowledgeGoogle = Nothing, acknowledgeGoogleSubscription = Nothing, checkSubscription = Nothing, verifyTimeout = 500000}
+uncalledVerifier = StoreVerifier {verifyApple = Nothing, verifyGoogle = Just $ \_ _ -> error "verifier called", acknowledgeGoogle = Nothing, acknowledgeGoogleSubscription = Nothing, checkSubscription = Nothing, verifyTimeout = 500000, storeChecks = ChecksAfterCoverage}
 
 validPlayToken :: T.Text
 validPlayToken = "fake-play-token.AO-J1Oz9x2kqE7wYt3"

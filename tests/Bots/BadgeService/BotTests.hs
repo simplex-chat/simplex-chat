@@ -24,7 +24,7 @@ import BadgeService.Options
 import BadgeService.Service
 import BadgeService.Store (IssuedCode (..), getBadgeCode)
 import BadgeService.Store.Invoices (markCodePaid, truncateToSecond)
-import BadgeService.StoreReceipts (StoreCharge (..), StoreRefusal (..), StoreVerifier (..), SubscriptionCheck (..), SubscriptionRef (..), checkStoreSubscription, noStoreVerifier)
+import BadgeService.StoreReceipts (StoreCharge (..), StoreChecks (..), StoreRefusal (..), StoreVerifier (..), SubscriptionCheck (..), SubscriptionRef (..), checkStoreSubscription, noStoreVerifier)
 import BadgeService.StoreReceipts.Mock (newMockStoreVerifier)
 import Simplex.Messaging.Agent.Store.DB (Binary (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -241,6 +241,7 @@ badgeServiceTests = do
     it "should acknowledge a Play subscription as a subscription before crediting it, and credit nothing when acknowledging fails" testPlaySubscriptionAcknowledgedBeforeCrediting
     it "should credit a Play subscription Play reports, beside a one-time purchase, and answer provider_not_configured without [google]" testPlaySubscriptionThroughPlay
     it "should have the dev mock credit and renew the plan a subscription names, end one it does not know, and still vouch for a one-time purchase" testMockSubscriptions
+    it "should bank a charge the dev mock reports during coverage, issue it once coverage reaches it, and answer ended after the mock restarts" testStoreChecksDuringCoverage
 
 badgeBotName :: Text
 badgeBotName = "SimpleX Badges"
@@ -3400,6 +3401,35 @@ testMockSubscriptions ps =
     (_, oneTime) <- purchase SPApple {jws = appleJWS ["transactionId" J..= ("2000000900000030" :: Text), "productId" J..= ("BADGE_SUPPORTER_01" :: Text)]}
     badgeTypeOf oneTime `shouldBe` Just BTSupporter
 
+testStoreChecksDuringCoverage :: HasCallStack => TestParams -> IO ()
+testStoreChecksDuringCoverage ps =
+  withBadgeServiceVerifierIO ps (\clock _ -> checkingAtEveryRequest <$> newMockStoreVerifier (testClockTime clock)) $ \env@BadgeServiceEnv {bsClock, bsController = cc} -> do
+    now <- serviceNow env
+    (purchaseKey, masterKey) <- newPurchaseKeys
+    purchased <- serviceCmd env purchaseKey $ purchaseCmd masterKey $ googlePayment "subscr_badge_supporter_01" googleSubscriptionToken
+    let entries = fst . statementOf
+        request r = assertBalance env purchaseKey (last $ entries r)
+    -- over a minute on, as the mock dates its charge a minute back and the client fails a row dated before the tip
+    setClockAt bsClock $ addUTCTime 120 now
+    banked <- request purchased
+    map entryTag (entries banked) `shouldBe` ["charge"]
+    -- a month granted on the running coverage: one left, paid through a month later
+    entryOf (last $ entries banked) `shouldBe` (1, 1, nextDue (entries purchased))
+    credentialOf banked `shouldBe` credentialOf purchased
+    subscriptionOf banked `shouldBe` Just SSRenewing
+    rowCount cc "sx_badge_service_subscription_charges" `shouldReturn` 2
+    setClockAt bsClock $ addUTCTime nominalDay $ addMonths 1 now
+    renewed <- request banked
+    map entryTag (entries renewed) `shouldBe` ["charge", "badge"]
+    expiryOf renewed `shouldSatisfy` (> expiryOf purchased)
+    -- a restarted mock has forgotten the plan, so the subscription has ended though coverage runs
+    restarted <- checkingAtEveryRequest <$> newMockStoreVerifier (testClockTime bsClock)
+    ended <- serviceCmd env {bsVerifier = restarted} purchaseKey BSCIssueBadge {balance = BadgeBalance {lastEntry = last $ entries renewed}}
+    subscriptionOf ended `shouldBe` Just SSEnded
+    map entryTag (entries ended) `shouldBe` []
+  where
+    checkingAtEveryRequest v = v {storeChecks = ChecksAtEveryRequest}
+
 testPurchaseBadge :: HasCallStack => TestParams -> IO ()
 testPurchaseBadge ps =
   withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg, bsController = cc} ->
@@ -3893,7 +3923,7 @@ testPlayHoldsNoOtherRequest ps = do
 testStoreRouting :: HasCallStack => TestParams -> IO ()
 testStoreRouting ps =
   withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsController = cc, bsStore = store@FakeStore {appleSubscriptionJWS, appleSupporterJWS}} -> do
-    let routedAs signer key cmd = requestLane cc (Just signer) (requestObject key cmd)
+    let routedAs signer key cmd = requestLane ChecksAfterCoverage cc (Just signer) (requestObject key cmd)
         routed key = routedAs key key
     (purchaseKey, masterKey) <- newPurchaseKeys
     let purchase payment = routed purchaseKey $ purchaseCmd masterKey payment

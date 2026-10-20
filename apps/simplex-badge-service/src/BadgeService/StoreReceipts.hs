@@ -9,6 +9,7 @@ module BadgeService.StoreReceipts
   ( VerifiedStoreTransaction (..),
     StoreRefusal (..),
     StoreVerifier (..),
+    StoreChecks (..),
     StoreReceipt (..),
     SubscriptionRef (..),
     SubscriptionCheck (..),
@@ -74,8 +75,14 @@ data StoreVerifier = StoreVerifier
     -- with the product the presented receipt names, absent on a renewal
     checkSubscription :: Maybe (SubscriptionRef -> Maybe Text -> IO (Either StoreRefusal SubscriptionCheck)),
     -- microseconds; a lane answers one request at a time, so a verifier that does not finish holds up the rest of its lane
-    verifyTimeout :: Int
+    verifyTimeout :: Int,
+    storeChecks :: StoreChecks
   }
+
+-- | When a subscription's store is asked about it. A real store's next charge has not started while coverage
+-- runs, and asking spends the quota every subscriber shares, so only the dev mock checks at every request.
+data StoreChecks = ChecksAfterCoverage | ChecksAtEveryRequest
+  deriving (Eq, Show)
 
 -- | A store payment, named by the store's own reference before anything is verified.
 data StoreReceipt = StoreReceipt
@@ -110,7 +117,7 @@ data StoreCharge = StoreCharge
   deriving (Show)
 
 noStoreVerifier :: StoreVerifier
-noStoreVerifier = StoreVerifier {verifyApple = Nothing, verifyGoogle = Nothing, acknowledgeGoogle = Nothing, acknowledgeGoogleSubscription = Nothing, checkSubscription = Nothing, verifyTimeout = 10000000}
+noStoreVerifier = StoreVerifier {verifyApple = Nothing, verifyGoogle = Nothing, acknowledgeGoogle = Nothing, acknowledgeGoogleSubscription = Nothing, checkSubscription = Nothing, verifyTimeout = 10000000, storeChecks = ChecksAfterCoverage}
 
 -- | Nothing for a payment no store made. Exceptions are not logged, since they can quote the receipt
 -- or, from Google, a URL holding the token.
