@@ -4156,9 +4156,9 @@ chat item action</note>
         <target state="translated">Fehler beim Scannen des Codes: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error sending email" xml:space="preserve">
+      <trans-unit id="Error sending email" xml:space="preserve" approved="no">
         <source>Error sending email</source>
-        <target>Fehler beim Senden der E-Mail</target>
+        <target state="translated">Fehler beim Senden der E-Mail</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error sending member contact invitation" xml:space="preserve" approved="no">
