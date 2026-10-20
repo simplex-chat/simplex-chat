@@ -355,9 +355,9 @@ channel relay bar</note>
         <target state="translated">%lld сообщений заблокировано</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld messages blocked by admin" xml:space="preserve">
+      <trans-unit id="%lld messages blocked by admin" xml:space="preserve" approved="no">
         <source>%lld messages blocked by admin</source>
-        <target>%lld сообщений заблокировано админом</target>
+        <target state="translated">%lld сообщений заблокировано админом</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld messages marked deleted" xml:space="preserve" approved="no">
@@ -1533,9 +1533,9 @@ in your network</source>
         <target state="translated">Заблокировать</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Block for all" xml:space="preserve">
+      <trans-unit id="Block for all" xml:space="preserve" approved="no">
         <source>Block for all</source>
-        <target>Заблокировать для всех</target>
+        <target state="translated">Заблокировать для всех</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Block group members" xml:space="preserve" approved="no">
@@ -1563,9 +1563,9 @@ in your network</source>
         <target state="translated">Заблокировать подписчика для всех?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Blocked by admin" xml:space="preserve">
+      <trans-unit id="Blocked by admin" xml:space="preserve" approved="no">
         <source>Blocked by admin</source>
-        <target>Заблокирован администратором</target>
+        <target state="translated">Заблокирован администратором</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Blur for better privacy." xml:space="preserve" approved="no">
@@ -9950,9 +9950,9 @@ You will be prompted to complete authentication before this feature is enabled.<
         <target state="translated">Разблокировать</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unblock for all" xml:space="preserve">
+      <trans-unit id="Unblock for all" xml:space="preserve" approved="no">
         <source>Unblock for all</source>
-        <target>Разблокировать для всех</target>
+        <target state="translated">Разблокировать для всех</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unblock member" xml:space="preserve" approved="no">
@@ -11390,14 +11390,14 @@ Relays can access channel messages.</source>
         <target state="translated">заблокировано</target>
         <note>marked deleted chat item preview text</note>
       </trans-unit>
-      <trans-unit id="blocked %@" xml:space="preserve">
+      <trans-unit id="blocked %@" xml:space="preserve" approved="no">
         <source>blocked %@</source>
-        <target>%@ заблокирован</target>
+        <target state="translated">%@ заблокирован</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="blocked by admin" xml:space="preserve">
+      <trans-unit id="blocked by admin" xml:space="preserve" approved="no">
         <source>blocked by admin</source>
-        <target>заблокировано администратором</target>
+        <target state="translated">заблокировано администратором</target>
         <note>blocked chat item
 marked deleted chat item preview text</note>
       </trans-unit>
@@ -12249,9 +12249,9 @@ last received msg: %2$@</source>
         <target state="translated">этот контакт</target>
         <note>notification title</note>
       </trans-unit>
-      <trans-unit id="unblocked %@" xml:space="preserve">
+      <trans-unit id="unblocked %@" xml:space="preserve" approved="no">
         <source>unblocked %@</source>
-        <target>%@ разблокирован</target>
+        <target state="translated">%@ разблокирован</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="unknown" xml:space="preserve" approved="no">
@@ -12384,9 +12384,9 @@ last received msg: %2$@</source>
         <target state="translated">Вы подписчик</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="you blocked %@" xml:space="preserve">
+      <trans-unit id="you blocked %@" xml:space="preserve" approved="no">
         <source>you blocked %@</source>
-        <target>Вы заблокировали %@</target>
+        <target state="translated">Вы заблокировали %@</target>
         <note>snd group event chat item</note>
       </trans-unit>
       <trans-unit id="you changed address" xml:space="preserve" approved="no">
@@ -12429,9 +12429,9 @@ last received msg: %2$@</source>
         <target state="translated">Вы создали ссылку инкогнито</target>
         <note>chat list item description</note>
       </trans-unit>
-      <trans-unit id="you unblocked %@" xml:space="preserve">
+      <trans-unit id="you unblocked %@" xml:space="preserve" approved="no">
         <source>you unblocked %@</source>
-        <target>Вы разблокировали %@</target>
+        <target state="translated">Вы разблокировали %@</target>
         <note>snd group event chat item</note>
       </trans-unit>
       <trans-unit id="you: " xml:space="preserve" approved="no">
