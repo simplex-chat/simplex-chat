@@ -1146,9 +1146,9 @@ swipe action</note>
         <target state="translated">Erlauben Sie Sprachnachrichten nur dann, wenn es Ihr Kontakt ebenfalls erlaubt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow voice messages?" xml:space="preserve">
+      <trans-unit id="Allow voice messages?" xml:space="preserve" approved="no">
         <source>Allow voice messages?</source>
-        <target>Sprachnachrichten erlauben?</target>
+        <target state="translated">Sprachnachrichten erlauben?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow your contacts adding message reactions." xml:space="preserve" approved="no">
@@ -9663,19 +9663,19 @@ in dem Sie Ihre Kontakte und Gruppen besitzen.</target>
         <target state="translated">Dieser SimpleX-Name wurde nicht registriert. Bitte überprüfen Sie den Namen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve">
+      <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve" approved="no">
         <source>This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain.</source>
-        <target>Dieser Vorgang kann nicht rückgängig gemacht werden - alle empfangenen und gesendeten Dateien sowie Medien werden gelöscht. Bilder mit niedriger Auflösung bleiben erhalten.</target>
+        <target state="translated">Dieser Vorgang kann nicht rückgängig gemacht werden - alle empfangenen und gesendeten Dateien sowie Medien werden gelöscht. Bilder mit niedriger Auflösung bleiben erhalten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes." xml:space="preserve">
+      <trans-unit id="This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes." xml:space="preserve" approved="no">
         <source>This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes.</source>
-        <target>Dieser Vorgang kann nicht rückgängig gemacht werden - die früher als ausgewählt gesendeten und empfangenen Nachrichten werden gelöscht. Dies kann ein paar Minuten dauern.</target>
+        <target state="translated">Dieser Vorgang kann nicht rückgängig gemacht werden - die früher als ausgewählt gesendeten und empfangenen Nachrichten werden gelöscht. Dies kann ein paar Minuten dauern.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted." xml:space="preserve">
+      <trans-unit id="This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted." xml:space="preserve" approved="no">
         <source>This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted.</source>
-        <target>Dieser Vorgang kann nicht rückgängig gemacht werden - die in diesem Chat früher als ausgewählt gesendeten und empfangenen Nachrichten werden gelöscht.</target>
+        <target state="translated">Dieser Vorgang kann nicht rückgängig gemacht werden - die in diesem Chat früher als ausgewählt gesendeten und empfangenen Nachrichten werden gelöscht.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." xml:space="preserve">
