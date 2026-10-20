@@ -2,26 +2,26 @@
 
 Two workflows build the apps from a branch's own code and test them, only when asked: `ios-sim` (the iOS app in a simulator on a macOS runner) and `desktop-linux` (the desktop app on a Linux runner). Each runs a scripted smoke test and, on request, a Claude session that follows a test plan, and a test backend (relay, directory, names server, peers). Details: [iOS](ios-sim/README.md), [desktop](desktop-linux/README.md).
 
-## Run tags
+## Starting a run
 
-Put a tag in the message of the commit you push to a branch named `f/…`. Tags combine: each workflow runs everything its tags ask for.
+Pushes start nothing: a run is started by hand, on any branch, with inputs that are off by default and combine.
 
-| Tag | iOS | Desktop |
+| Input | iOS | Desktop |
 |---|---|---|
-| `[app-ci]` | scripted test | scripted test |
-| `[app-ci:ios]` | scripted test | — |
-| `[app-ci:desktop]` | — | scripted test |
-| `[claude-test]` | scripted test, then Claude | scripted test, then Claude |
-| `[claude-test:ios]` | scripted test, then Claude | — |
-| `[claude-test:desktop]` | — | scripted test, then Claude |
-| `[ci-backend]`, with one of the above | also the test backend | also the test backend |
-| `[ci-release]`, with one of the above | — | also the latest release's onboarding, to tell a branch's failure from the runner's |
+| no input | scripted test | scripted test |
+| `claude` | scripted test, then Claude | scripted test, then Claude |
+| `backend` | also the test backend | also the test backend |
+| `release` | — | also the latest release's onboarding, to tell a branch's failure from the runner's |
 
-Only the pushed head commit counts, and a tag counts anywhere in its message, body included: never write one in a message unless that push should run it. A push that asks for nothing starts no job and doesn't cancel a running test; a newer requested run on the same branch cancels the older one. Tags start runs only on `f/…` branches, so pull requests from other branches don't list skipped runs; on any other branch, master and stable included, run a workflow by hand.
+In the Actions tab: `ios-sim` or `desktop-linux` → Run workflow, choose the branch and tick the inputs. With the GitHub CLI, each input is a field:
 
-## Running a workflow by hand
+```sh
+gh workflow run ios-sim.yml --ref <branch>
+gh workflow run ios-sim.yml --ref <branch> -f claude=true
+gh workflow run desktop-linux.yml --ref <branch> -f claude=true -f backend=true -f release=true
+```
 
-Actions → `ios-sim` or `desktop-linux` → Run workflow, on any branch, with checkboxes that are off by default: `claude` (the Claude session), `backend` (the test backend) and, on desktop, `release` (the latest release's onboarding).
+A newer run of a workflow on the same branch cancels the older one.
 
 ## How long a run takes
 
