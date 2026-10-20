@@ -386,7 +386,7 @@ public func getNetCfg() -> NetCfg {
         let keepIntvl = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_KEEP_INTVL)
         let keepCnt = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_KEEP_CNT)
         let unackedDataTimeout = groupDefaults.bool(forKey: GROUP_DEFAULT_NETWORK_TCP_UNACKED_DATA_TIMEOUT)
-        tcpKeepAlive = KeepAliveOpts(keepIdle: keepIdle, keepIntvl: keepIntvl, keepCnt: keepCnt, unackedDataTimeout: unackedDataTimeout)
+        tcpKeepAlive = KeepAliveOpts(keepIdle: keepIdle, keepIntvl: keepIntvl, keepCnt: keepCnt, unackedDataTimeout: unackedDataTimeout ? true : nil)
     } else {
         tcpKeepAlive = nil
     }

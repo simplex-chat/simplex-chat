@@ -80,7 +80,7 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (@Composable ModalData.() -
       val keepIdle = networkTCPKeepIdle.value
       val keepIntvl = networkTCPKeepIntvl.value
       val keepCnt = networkTCPKeepCnt.value
-      KeepAliveOpts(keepIdle = keepIdle, keepIntvl = keepIntvl, keepCnt = keepCnt, unackedDataTimeout = networkTCPUserTimeout.value)
+      KeepAliveOpts(keepIdle = keepIdle, keepIntvl = keepIntvl, keepCnt = keepCnt, unackedDataTimeout = if (networkTCPUserTimeout.value) true else null)
     } else {
       null
     }

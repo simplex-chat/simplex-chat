@@ -237,7 +237,7 @@ struct AdvancedNetworkSettings: View {
                         intSettingPicker("TCP_KEEPCNT", selection: $keepAliveOpts.keepCnt, values: [1, 2, 4, 6, 8], label: "")
                         Toggle("TCP_USER_TIMEOUT", isOn: Binding(
                             get: { keepAliveOpts.unackedDataTimeout == true },
-                            set: { keepAliveOpts.unackedDataTimeout = $0 }
+                            set: { keepAliveOpts.unackedDataTimeout = $0 ? true : nil }
                         ))
                     } else {
                         Group {
