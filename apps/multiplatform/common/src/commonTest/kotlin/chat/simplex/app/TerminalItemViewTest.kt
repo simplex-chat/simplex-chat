@@ -1,7 +1,7 @@
 package chat.simplex.app
 
 import chat.simplex.common.model.*
-import chat.simplex.common.views.chat.item.terminalItemHasHeader
+import chat.simplex.common.views.chat.item.terminalItemShowsSender
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
@@ -15,10 +15,13 @@ class TerminalItemViewTest {
   private val alice = GroupMember.sampleData.copy(groupMemberId = 1, memberId = "alice")
   private val bob = GroupMember.sampleData.copy(groupMemberId = 2, memberId = "bob")
 
-  private fun msg(id: Long, dir: CIDirection, secondsAfterNoon: Long) =
-    ChatItem.getSampleData(id, dir, Instant.fromEpochSeconds(noon.epochSeconds + secondsAfterNoon)).let {
+  private fun msgAt(id: Long, dir: CIDirection, ts: Instant) =
+    ChatItem.getSampleData(id, dir, ts).let {
       if (dir.sent) it else it.copy(content = CIContent.RcvMsgContent(MsgContent.MCText("hello")))
     }
+
+  private fun msg(id: Long, dir: CIDirection, secondsAfterNoon: Long) =
+    msgAt(id, dir, Instant.fromEpochSeconds(noon.epochSeconds + secondsAfterNoon))
 
   private fun integrityError(id: Long, secondsAfterNoon: Long) =
     msg(id, CIDirection.DirectRcv(), secondsAfterNoon).copy(content = CIContent.RcvIntegrityError(MsgErrorType.MsgSkipped(1, 2)))
@@ -32,76 +35,78 @@ class TerminalItemViewTest {
     )
 
   @Test
-  fun headerShownForOldestItem() {
-    assertTrue(terminalItemHasHeader(msg(1, CIDirection.DirectRcv(), 0), older = null))
+  fun senderShownForOldestItem() {
+    assertTrue(terminalItemShowsSender(msg(1, CIDirection.DirectRcv(), 0), older = null))
   }
 
   @Test
-  fun headerHiddenForSameSenderWithinMinute() {
-    assertFalse(terminalItemHasHeader(msg(2, CIDirection.DirectSnd(), 30), older = msg(1, CIDirection.DirectSnd(), 0)))
-    assertFalse(terminalItemHasHeader(msg(2, CIDirection.GroupRcv(alice), 59), older = msg(1, CIDirection.GroupRcv(alice), 0)))
+  fun senderHiddenForSameSenderWithinMinute() {
+    assertFalse(terminalItemShowsSender(msg(2, CIDirection.DirectSnd(), 30), older = msg(1, CIDirection.DirectSnd(), 0)))
+    assertFalse(terminalItemShowsSender(msg(2, CIDirection.GroupRcv(alice), 59), older = msg(1, CIDirection.GroupRcv(alice), 0)))
   }
 
   @Test
-  fun headerShownAfterMinuteGap() {
-    assertTrue(terminalItemHasHeader(msg(2, CIDirection.DirectRcv(), 60), older = msg(1, CIDirection.DirectRcv(), 0)))
+  fun senderShownAfterMinuteGap() {
+    assertTrue(terminalItemShowsSender(msg(2, CIDirection.DirectRcv(), 60), older = msg(1, CIDirection.DirectRcv(), 0)))
   }
 
   @Test
-  fun headerShownForDifferentGroupMember() {
-    assertTrue(terminalItemHasHeader(msg(2, CIDirection.GroupRcv(bob), 10), older = msg(1, CIDirection.GroupRcv(alice), 0)))
+  fun senderShownForDifferentGroupMember() {
+    assertTrue(terminalItemShowsSender(msg(2, CIDirection.GroupRcv(bob), 10), older = msg(1, CIDirection.GroupRcv(alice), 0)))
   }
 
   @Test
-  fun headerShownWhenDirectionChanges() {
-    assertTrue(terminalItemHasHeader(msg(2, CIDirection.DirectSnd(), 10), older = msg(1, CIDirection.DirectRcv(), 0)))
-    assertTrue(terminalItemHasHeader(msg(2, CIDirection.GroupSnd(), 10), older = msg(1, CIDirection.GroupRcv(alice), 0)))
+  fun senderShownWhenDirectionChanges() {
+    assertTrue(terminalItemShowsSender(msg(2, CIDirection.DirectSnd(), 10), older = msg(1, CIDirection.DirectRcv(), 0)))
+    assertTrue(terminalItemShowsSender(msg(2, CIDirection.GroupSnd(), 10), older = msg(1, CIDirection.GroupRcv(alice), 0)))
   }
 
   @Test
-  fun headerShownAfterEventItem() {
-    assertTrue(terminalItemHasHeader(msg(2, CIDirection.DirectRcv(), 10), older = featureEvent(1, 0)))
+  fun senderShownAfterEventItem() {
+    assertTrue(terminalItemShowsSender(msg(2, CIDirection.DirectRcv(), 10), older = featureEvent(1, 0)))
   }
 
   @Test
-  fun headerShownOnDateChangeWithinMinute() {
+  fun senderShownOnDateChangeWithinMinute() {
     val midnight = LocalDate(2026, 10, 13).atStartOfDayIn(TimeZone.currentSystemDefault())
-    val older = ChatItem.getSampleData(1, CIDirection.DirectRcv(), Instant.fromEpochSeconds(midnight.epochSeconds - 10))
-    val item = ChatItem.getSampleData(2, CIDirection.DirectRcv(), Instant.fromEpochSeconds(midnight.epochSeconds + 10))
-    assertTrue(terminalItemHasHeader(item, older))
+    val older = msgAt(1, CIDirection.DirectRcv(), Instant.fromEpochSeconds(midnight.epochSeconds - 10))
+    val item = msgAt(2, CIDirection.DirectRcv(), Instant.fromEpochSeconds(midnight.epochSeconds + 10))
+    assertTrue(terminalItemShowsSender(item, older))
   }
 
   @Test
-  fun headerShownWhenChannelPostFollowsMemberMessage() {
-    assertTrue(terminalItemHasHeader(msg(2, CIDirection.GroupRcv(alice), 10), older = msg(1, CIDirection.ChannelRcv(), 0)))
-    assertTrue(terminalItemHasHeader(msg(2, CIDirection.ChannelRcv(), 10), older = msg(1, CIDirection.GroupRcv(alice), 0)))
-    assertFalse(terminalItemHasHeader(msg(2, CIDirection.ChannelRcv(), 10), older = msg(1, CIDirection.ChannelRcv(), 0)))
+  fun senderShownWhenChannelPostFollowsMemberMessage() {
+    assertTrue(terminalItemShowsSender(msg(2, CIDirection.GroupRcv(alice), 10), older = msg(1, CIDirection.ChannelRcv(), 0)))
+    assertTrue(terminalItemShowsSender(msg(2, CIDirection.ChannelRcv(), 10), older = msg(1, CIDirection.GroupRcv(alice), 0)))
+    assertFalse(terminalItemShowsSender(msg(2, CIDirection.ChannelRcv(), 10), older = msg(1, CIDirection.ChannelRcv(), 0)))
   }
 
   @Test
-  fun headerShownWhenOwnerSwitchesBetweenChannelAndOwnName() {
+  fun senderShownWhenOwnerSwitchesBetweenChannelAndOwnName() {
     val asChannel = msg(1, CIDirection.GroupSnd(), 0).let { it.copy(meta = it.meta.copy(showGroupAsSender = true)) }
-    assertTrue(terminalItemHasHeader(msg(2, CIDirection.GroupSnd(), 10), older = asChannel))
+    assertTrue(terminalItemShowsSender(msg(2, CIDirection.GroupSnd(), 10), older = asChannel))
     val asChannelToo = msg(2, CIDirection.GroupSnd(), 10).let { it.copy(meta = it.meta.copy(showGroupAsSender = true)) }
-    assertFalse(terminalItemHasHeader(asChannelToo, older = asChannel))
-    assertFalse(terminalItemHasHeader(msg(2, CIDirection.ChannelRcv(), 10), older = asChannel))
+    assertFalse(terminalItemShowsSender(asChannelToo, older = asChannel))
+    assertFalse(terminalItemShowsSender(msg(2, CIDirection.ChannelRcv(), 10), older = asChannel))
   }
 
   @Test
-  fun noHeaderForIntegrityError() {
-    assertFalse(terminalItemHasHeader(integrityError(1, 0), older = null))
-    assertTrue(terminalItemHasHeader(msg(2, CIDirection.DirectRcv(), 10), older = integrityError(1, 0)))
+  fun integrityErrorGroupedWithSender() {
+    assertFalse(terminalItemShowsSender(integrityError(2, 10), older = msg(1, CIDirection.DirectRcv(), 0)))
+    assertFalse(terminalItemShowsSender(msg(3, CIDirection.DirectRcv(), 20), older = integrityError(2, 10)))
   }
 
   @Test
-  fun headerHiddenAfterDeletedMessageFromSameSender() {
-    val deleted = ChatItem.getSampleData(1, CIDirection.DirectRcv(), Instant.fromEpochSeconds(noon.epochSeconds), itemDeleted = CIDeleted.Deleted(null))
-    assertFalse(terminalItemHasHeader(msg(2, CIDirection.DirectRcv(), 10), older = deleted))
+  fun senderHiddenAfterDeletedMessageFromSameSender() {
+    val deleted = msg(1, CIDirection.DirectRcv(), 0).let { it.copy(meta = it.meta.copy(itemDeleted = CIDeleted.Deleted(null))) }
+    val legacyDeleted = msg(1, CIDirection.DirectRcv(), 0).copy(content = CIContent.RcvDeleted(CIDeleteMode.cidmBroadcast))
+    assertFalse(terminalItemShowsSender(msg(2, CIDirection.DirectRcv(), 10), older = deleted))
+    assertFalse(terminalItemShowsSender(msg(2, CIDirection.DirectRcv(), 10), older = legacyDeleted))
   }
 
   @Test
-  fun noHeaderForEventItem() {
-    assertFalse(terminalItemHasHeader(featureEvent(2, 10), older = msg(1, CIDirection.DirectRcv(), 0)))
-    assertFalse(terminalItemHasHeader(featureEvent(1, 0), older = null))
+  fun noSenderForEventItem() {
+    assertFalse(terminalItemShowsSender(featureEvent(2, 10), older = msg(1, CIDirection.DirectRcv(), 0)))
+    assertFalse(terminalItemShowsSender(featureEvent(1, 0), older = null))
   }
 }

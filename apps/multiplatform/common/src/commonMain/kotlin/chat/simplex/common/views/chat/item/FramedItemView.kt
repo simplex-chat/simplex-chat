@@ -52,6 +52,7 @@ fun FramedItemView(
   val sent = ci.chatDir.sent
   val chatTTL = chatInfo.timedMessagesTTL
   val terminal = LocalTerminalLayout.current
+  val messageClip = Modifier.clipChatItem(ci, revealed = true)
 
   fun membership(): GroupMember? {
     return if (chatInfo is ChatInfo.Group) chatInfo.groupInfo.membership else null
@@ -132,9 +133,7 @@ fun FramedItemView(
 
   @Composable
   fun cardModifier(): Modifier =
-    Modifier
-      .clipChatItem(ci, revealed = true)
-      .background(if (sent) MaterialTheme.appColors.sentQuote else MaterialTheme.appColors.receivedQuote)
+    messageClip.background(if (sent) MaterialTheme.appColors.sentQuote else MaterialTheme.appColors.receivedQuote)
 
   @Composable
   fun HeaderRow(modifier: Modifier, caption: String, italic: Boolean, icon: Painter?, iconColor: Color?) {
@@ -374,7 +373,7 @@ fun FramedItemView(
             when (val mc = ci.content.msgContent) {
               is MsgContent.MCImage -> {
                 val provider = imageProvider ?: return@PriorityLayout
-                Box(Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID).then(if (terminal) Modifier.clipChatItem(ci, revealed = true) else Modifier)) {
+                Box(Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID).then(if (terminal) messageClip else Modifier)) {
                   CIImageView(image = mc.image, file = ci.file, provider, showMenu, false, receiveFile)
                 }
                 if (mc.text == "" && !ci.meta.isLive) {
@@ -385,7 +384,7 @@ fun FramedItemView(
               }
               is MsgContent.MCVideo -> {
                 val provider = imageProvider ?: return@PriorityLayout
-                Box(Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID).then(if (terminal) Modifier.clipChatItem(ci, revealed = true) else Modifier)) {
+                Box(Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID).then(if (terminal) messageClip else Modifier)) {
                   CIVideoView(image = mc.image, mc.duration, file = ci.file, provider, showMenu, smallView = false, receiveFile = receiveFile)
                 }
                 if (mc.text == "" && !ci.meta.isLive) {

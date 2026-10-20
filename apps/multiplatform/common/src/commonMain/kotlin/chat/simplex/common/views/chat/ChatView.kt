@@ -5,6 +5,7 @@ import androidx.compose.animation.core.*
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -1925,7 +1926,6 @@ fun BoxScope.ChatItemsList(
     itemAtZeroIndexInWholeList: Boolean,
     range: State<IntRange?>,
     showAvatar: Boolean,
-    showTerminalHeader: Boolean,
     cItem: ChatItem,
     itemSeparation: ItemSeparation,
     previousItemSeparationLargeGap: Boolean,
@@ -1953,7 +1953,7 @@ fun BoxScope.ChatItemsList(
       }
 
       @Composable
-      fun ChatItemViewShortHand(cItem: ChatItem, itemSeparation: ItemSeparation, range: State<IntRange?>, fillMaxWidth: Boolean = true, swipeOffset: Float = 0f) {
+      fun ChatItemViewShortHand(cItem: ChatItem, itemSeparation: ItemSeparation, range: State<IntRange?>, fillMaxWidth: Boolean = true, swipeOffset: Float = 0f, interactionSource: MutableInteractionSource = remember { MutableInteractionSource() }) {
         tryOrShowError("${cItem.id}ChatItem", error = {
           CIBrokenComposableView(if (cItem.chatDir.sent && !LocalTerminalLayout.current) Alignment.CenterEnd else Alignment.CenterStart)
         }) {
@@ -1967,7 +1967,7 @@ fun BoxScope.ChatItemsList(
                 highlightedItems.value = setOf()
               }
           }
-          ChatItemView(chatsCtx, remoteHostId, chat, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, highlighted = highlighted, hoveredItemId = hoveredItemId, range = range, searchIsNotBlank = searchValueIsNotBlank, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems, reversedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, archiveReports = archiveReports, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, scrollToItemId = scrollToItemId, scrollToQuotedItemFromItem = scrollToQuotedItemFromItem, setReaction = setReaction, showItemDetails = showItemDetails, reveal = reveal, showMemberInfo = showMemberInfo, showChatInfo = showChatInfo, developerTools = developerTools, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp, swipeOffset = swipeOffset)
+          ChatItemView(chatsCtx, remoteHostId, chat, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, highlighted = highlighted, hoveredItemId = hoveredItemId, range = range, searchIsNotBlank = searchValueIsNotBlank, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems, reversedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, archiveReports = archiveReports, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, scrollToItemId = scrollToItemId, scrollToQuotedItemFromItem = scrollToQuotedItemFromItem, setReaction = setReaction, showItemDetails = showItemDetails, reveal = reveal, showMemberInfo = showMemberInfo, showChatInfo = showChatInfo, developerTools = developerTools, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp, swipeOffset = swipeOffset, bubbleInteractionSource = interactionSource)
         }
       }
 
@@ -1993,9 +1993,10 @@ fun BoxScope.ChatItemsList(
           swipeDistance = with(LocalDensity.current) { 30.dp.toPx() },
         )
         val sent = cItem.chatDir.sent
+        val itemTopGap = if (previousItemSeparationLargeGap) 4.dp else 1.dp
 
         @Composable
-        fun ChatItemBox(modifier: Modifier = Modifier, content: @Composable () -> Unit = { }) {
+        fun ChatItemBox(modifier: Modifier = Modifier, top: Dp = itemTopGap, content: @Composable () -> Unit = { }) {
           Box(
             modifier = modifier.padding(
               bottom = if (itemSeparation.largeGap) {
@@ -2004,7 +2005,7 @@ fun BoxScope.ChatItemsList(
                 } else {
                   4.dp
                 }
-              } else 1.dp, top = if (previousItemSeparationLargeGap) 4.dp else 1.dp
+              } else 1.dp, top = top
             ),
             contentAlignment = Alignment.CenterStart
           ) {
@@ -2028,23 +2029,24 @@ fun BoxScope.ChatItemsList(
           val selectionOffset by animateDpAsState(if (selectionVisible && (!sent || terminal)) 4.dp + 22.dp * fontSizeMultiplier else 0.dp)
           val swipeableOrSelectionModifier = (if (selectionVisible) Modifier else swipeableModifier).graphicsLayer { translationX = selectionOffset.toPx() }
           if (terminal) {
+            val rowInteractionSource = remember { TerminalRowInteractionSource() }
             val highlighted by remember { derivedStateOf { highlightedItems.value.contains(cItem.id) } }
-            val rowColor by animateColorAsState(
+            val rowColor = animateColorAsState(
               when {
                 selectedChatItems.value?.contains(cItem.id) == true -> MaterialTheme.colors.primary.copy(alpha = 0.1f)
                 highlighted -> MaterialTheme.colors.primary.copy(alpha = 0.14f)
                 else -> Color.Transparent
               }
             )
-            ChatItemBox(Modifier.background(rowColor).terminalRowIndication()) {
+            ChatItemBox(Modifier.drawBehind { drawRect(rowColor.value) }.terminalRow(rowInteractionSource), top = 0.dp) {
               AnimatedVisibility(selectionVisible, enter = fadeIn(), exit = fadeOut()) {
                 SelectedListItem(Modifier.padding(start = 8.dp), cItem.id, selectedChatItems)
               }
               TerminalChatItemRow(
-                chatInfo, cItem, showTerminalHeader, range.value, reversedChatItems.value, showMemberInfo, showChatInfo,
+                chatInfo, cItem, showAvatar, itemTopGap, range, reversedChatItems, showMemberInfo, showChatInfo,
                 Modifier.padding(start = selectionOffset).then(if (selectionVisible) Modifier else swipeableModifier)
               ) {
-                ChatItemViewShortHand(cItem, itemSeparation, range, swipeOffset = dismissState.offset.value)
+                ChatItemViewShortHand(cItem, itemSeparation, range, swipeOffset = dismissState.offset.value, interactionSource = rowInteractionSource)
               }
             }
           } else if (chatInfo is ChatInfo.Group) {
@@ -2448,8 +2450,8 @@ fun BoxScope.ChatItemsList(
         } else {
           null
         }
-        val showAvatar = shouldShowAvatar(item, merged.oldest().nextItem)
-        val showTerminalHeader = LocalTerminalLayout.current && terminalItemHasHeader(item, merged.oldest().nextItem)
+        val older = merged.oldest().nextItem
+        val showAvatar = if (LocalTerminalLayout.current) terminalItemShowsSender(item, older) else shouldShowAvatar(item, older)
         val isRevealed = remember { derivedStateOf { revealedItems.value.contains(item.id) } }
         val itemSeparation: ItemSeparation
         val prevItemSeparationLargeGap: Boolean
@@ -2463,7 +2465,7 @@ fun BoxScope.ChatItemsList(
           prevItemSeparationLargeGap = false
         }
         CompositionLocalProvider(LocalItemContext provides ItemContext(selectionIndex = index)) {
-          ChatViewListItem(index == 0, rememberUpdatedState(range), showAvatar, showTerminalHeader, item, itemSeparation, prevItemSeparationLargeGap, isRevealed) {
+          ChatViewListItem(index == 0, rememberUpdatedState(range), showAvatar, item, itemSeparation, prevItemSeparationLargeGap, isRevealed) {
             if (merged is MergedItem.Grouped) merged.reveal(it, revealedItems)
           }
         }
@@ -3787,7 +3789,7 @@ private fun getItemSeparation(chatItem: ChatItem, prevItem: ChatItem?): ItemSepa
   } else if (chatItem.chatDir is CIDirection.ChannelRcv && prevItem.chatDir is CIDirection.ChannelRcv) {
     true
   } else chatItem.chatDir.sent == prevItem.chatDir.sent
-  val largeGap = !sameMemberAndDirection || (abs(prevItem.meta.createdAt.epochSeconds - chatItem.meta.createdAt.epochSeconds) >= 60)
+  val largeGap = !sameMemberAndDirection || chatItem.minuteApart(prevItem)
 
   return ItemSeparation(
     timestamp = largeGap || prevItem.meta.timestampText != chatItem.meta.timestampText,
@@ -3806,8 +3808,11 @@ private fun getItemSeparationLargeGap(chatItem: ChatItem, nextItem: ChatItem?): 
   } else if (chatItem.chatDir is CIDirection.ChannelRcv && nextItem.chatDir is CIDirection.ChannelRcv) {
     true
   } else chatItem.chatDir.sent == nextItem.chatDir.sent
-  return !sameMemberAndDirection || (abs(nextItem.meta.createdAt.epochSeconds - chatItem.meta.createdAt.epochSeconds) >= 60)
+  return !sameMemberAndDirection || chatItem.minuteApart(nextItem)
 }
+
+fun ChatItem.minuteApart(other: ChatItem): Boolean =
+  abs(meta.createdAt.epochSeconds - other.meta.createdAt.epochSeconds) >= 60
 
 private fun shouldShowAvatar(current: ChatItem, older: ChatItem?): Boolean {
   val oldIsGroupRcv = older?.chatDir is CIDirection.GroupRcv || older?.chatDir is CIDirection.ChannelRcv

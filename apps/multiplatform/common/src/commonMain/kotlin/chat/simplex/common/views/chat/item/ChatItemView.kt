@@ -113,6 +113,7 @@ fun ChatItemView(
   itemSeparation: ItemSeparation,
   preview: Boolean = false,
   swipeOffset: Float = 0f,
+  bubbleInteractionSource: MutableInteractionSource = remember { MutableInteractionSource() },
 ) {
   val cInfo = chat.chatInfo
   val uriHandler = LocalUriHandler.current
@@ -308,7 +309,6 @@ fun ChatItemView(
           cInfo !is ChatInfo.Local && !cItem.isReport && !cItem.meta.isLive && cItem.meta.itemDeleted == null
       Box {
         Row(verticalAlignment = Alignment.CenterVertically) {
-          val bubbleInteractionSource = remember { MutableInteractionSource() }
         val bubbleHovered = bubbleInteractionSource.collectIsHoveredAsState()
         if (alignEnd) {
           GoToItemButton(true, bubbleHovered)
@@ -316,7 +316,7 @@ fun ChatItemView(
         Column(Modifier.weight(1f, fill = false)) {
           val enterInteraction = remember { HoverInteraction.Enter() }
           LaunchedEffect(highlighted.value, hoveredItemId.value) {
-            if (highlighted.value || hoveredItemId.value == cItem.id) {
+            if ((highlighted.value && !terminal) || hoveredItemId.value == cItem.id) {
               bubbleInteractionSource.emit(enterInteraction)
             } else {
               bubbleInteractionSource.emit(HoverInteraction.Exit(enterInteraction))

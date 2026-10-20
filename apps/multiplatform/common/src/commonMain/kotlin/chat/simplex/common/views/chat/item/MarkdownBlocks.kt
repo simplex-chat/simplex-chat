@@ -132,8 +132,8 @@ fun MarkdownBlocks(
 fun Modifier.quoteBar(textColor: Color): Modifier {
   val color = textColor.copy(alpha = if (MaterialTheme.colors.isLight) 0.16f else 0.22f)
   return drawBehind {
-    val width = 4.dp.toPx()
-    drawRoundRect(color, Offset(if (layoutDirection == LayoutDirection.Ltr) 0f else size.width - width, 0f), Size(width, size.height), CornerRadius(width / 2))
+    val width = 4.dp.roundToPx().toFloat()
+    drawRoundRect(color, Offset(if (layoutDirection == LayoutDirection.Ltr) 0f else size.width - width, 0f), Size(width, size.height), CornerRadius(2.dp.toPx()))
   }.padding(start = 14.dp)
 }
 

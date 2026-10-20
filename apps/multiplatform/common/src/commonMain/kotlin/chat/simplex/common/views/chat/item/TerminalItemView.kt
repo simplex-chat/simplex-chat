@@ -2,20 +2,22 @@ package chat.simplex.common.views.chat.item
 
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.indication
+import androidx.compose.foundation.interaction.Interaction
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.changedToDownIgnoreConsumed
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
@@ -25,19 +27,17 @@ import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.stringResource
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
-import kotlin.math.abs
+import kotlinx.coroutines.flow.Flow
 
 val LocalTerminalLayout = staticCompositionLocalOf { false }
 
-fun terminalItemHasHeader(item: ChatItem, older: ChatItem?): Boolean =
+fun terminalItemShowsSender(item: ChatItem, older: ChatItem?): Boolean =
   item.content.hasTerminalSender && (
     older == null
       || !older.content.hasTerminalSender
       || !sameTerminalSender(item, older)
-      || abs(item.meta.createdAt.epochSeconds - older.meta.createdAt.epochSeconds) >= 60
-      || localDate(item) != localDate(older)
+      || item.minuteApart(older)
+      || getTimestampDateText(item.meta.itemTs) != getTimestampDateText(older.meta.itemTs)
   )
 
 private fun sameTerminalSender(item: ChatItem, older: ChatItem): Boolean {
@@ -53,10 +53,7 @@ private fun sameTerminalSender(item: ChatItem, older: ChatItem): Boolean {
 private val ChatItem.channelIsSender: Boolean get() =
   chatDir is CIDirection.ChannelRcv || (chatDir is CIDirection.GroupSnd && meta.showGroupAsSender)
 
-private fun localDate(item: ChatItem) = item.meta.itemTs.toLocalDateTime(TimeZone.currentSystemDefault()).date
-
 private val CIContent.hasTerminalSender: Boolean get() = when (this) {
-  is CIContent.RcvIntegrityError -> false
   is CIContent.SndMsgContent,
   is CIContent.SndDeleted,
   is CIContent.SndCall,
@@ -65,28 +62,43 @@ private val CIContent.hasTerminalSender: Boolean get() = when (this) {
   else -> showMemberName
 }
 
+class TerminalRowInteractionSource : MutableInteractionSource {
+  private val source = MutableInteractionSource()
+  private var press: PressInteraction.Press? = null
+  var downPosition = Offset.Zero
+  override val interactions: Flow<Interaction> = source.interactions
+  override suspend fun emit(interaction: Interaction) = source.emit(rowInteraction(interaction))
+  override fun tryEmit(interaction: Interaction): Boolean = source.tryEmit(rowInteraction(interaction))
+
+  private fun rowInteraction(interaction: Interaction): Interaction = when (interaction) {
+    is PressInteraction.Press -> PressInteraction.Press(downPosition).also { press = it }
+    is PressInteraction.Release -> PressInteraction.Release(press ?: interaction.press)
+    is PressInteraction.Cancel -> PressInteraction.Cancel(press ?: interaction.press)
+    else -> interaction
+  }
+}
+
 @Composable
-fun Modifier.terminalRowIndication(): Modifier {
-  val interactionSource = remember { MutableInteractionSource() }
-  return this
-    .hoverable(interactionSource)
-    .indication(interactionSource, LocalIndication.current)
+fun Modifier.terminalRow(interactionSource: TerminalRowInteractionSource): Modifier =
+  this
     .pointerInput(interactionSource) {
-      awaitEachGesture {
-        val press = PressInteraction.Press(awaitFirstDown(requireUnconsumed = false).position)
-        interactionSource.tryEmit(press)
-        interactionSource.tryEmit(if (waitForUpOrCancellation() != null) PressInteraction.Release(press) else PressInteraction.Cancel(press))
+      awaitPointerEventScope {
+        while (true) {
+          awaitPointerEvent(PointerEventPass.Initial).changes.firstOrNull { it.changedToDownIgnoreConsumed() }?.let { interactionSource.downPosition = it.position }
+        }
       }
     }
-}
+    .hoverable(interactionSource)
+    .indication(interactionSource, LocalIndication.current)
 
 @Composable
 fun TerminalChatItemRow(
   chatInfo: ChatInfo,
   cItem: ChatItem,
-  showHeader: Boolean,
-  range: IntRange?,
-  reversedChatItems: List<ChatItem>,
+  showSender: Boolean,
+  topGap: Dp,
+  range: State<IntRange?>,
+  reversedChatItems: State<List<ChatItem>>,
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
   showChatInfo: () -> Unit,
   modifier: Modifier = Modifier,
@@ -94,12 +106,12 @@ fun TerminalChatItemRow(
 ) {
   Column(
     modifier
-      .padding(top = if (showHeader) 8.dp else 0.dp, start = 8.dp, end = 12.dp)
+      .padding(top = if (showSender) 8.dp else topGap, start = 8.dp, end = 12.dp)
       .fillMaxWidth()
   ) {
-    val sender = if (showHeader) terminalSender(chatInfo, cItem, range, reversedChatItems, showMemberInfo, showChatInfo) else null
+    val sender = if (showSender) terminalSender(chatInfo, cItem, range, reversedChatItems, showMemberInfo, showChatInfo) else null
     if (sender != null) {
-      TerminalSenderNameAndRole(sender)
+      TerminalSenderNameAndRole(sender, topGap)
     }
     Row {
       Box(Modifier.width(MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier)) {
@@ -107,7 +119,7 @@ fun TerminalChatItemRow(
           sender.image()
         }
       }
-      Box(Modifier.padding(top = if (showHeader) 2.dp else 0.dp, start = 4.dp)) {
+      Box(Modifier.padding(top = if (showSender) 2.dp else 0.dp, start = 4.dp)) {
         content()
       }
     }
@@ -120,8 +132,8 @@ private class TerminalSender(val name: String, val badge: LocalBadge?, val role:
 private fun terminalSender(
   chatInfo: ChatInfo,
   cItem: ChatItem,
-  range: IntRange?,
-  reversedChatItems: List<ChatItem>,
+  range: State<IntRange?>,
+  reversedChatItems: State<List<ChatItem>>,
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
   showChatInfo: () -> Unit
 ): TerminalSender {
@@ -139,7 +151,8 @@ private fun terminalSender(
       TerminalSender(chatInfo.displayName, chatInfo.nameBadge, null, chatImage)
     dir is CIDirection.GroupRcv && chatInfo is ChatInfo.Group -> {
       val member = dir.groupMember
-      val (prevMember, memCount) = if (range != null) chatModel.getPrevHiddenMember(member, range, reversedChatItems) else null to 1
+      val rangeValue = range.value
+      val (prevMember, memCount) = if (rangeValue != null) chatModel.getPrevHiddenMember(member, rangeValue, reversedChatItems.value) else null to 1
       TerminalSender(
         memberNames(member, prevMember, memCount),
         if (prevMember == null && memCount == 1) member.nameBadge else null,
@@ -173,8 +186,8 @@ private fun memberRole(member: GroupMember, isChannel: Boolean): String? =
   if (member.memberRole > GroupMemberRole.Member) member.memberRole.text(isChannel) else null
 
 @Composable
-private fun TerminalSenderNameAndRole(sender: TerminalSender) {
-  Row(Modifier.padding(start = MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier + DEFAULT_PADDING_HALF, bottom = 2.dp)) {
+private fun TerminalSenderNameAndRole(sender: TerminalSender, topGap: Dp) {
+  Row(Modifier.padding(start = MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier + DEFAULT_PADDING_HALF, bottom = 2.dp + topGap)) {
     NameWithBadge(
       sender.name,
       sender.badge,
