@@ -2609,7 +2609,7 @@ Dit is uw eigen eenmalige link!</target>
       </trans-unit>
       <trans-unit id="Core version: v%@" xml:space="preserve">
         <source>Core version: v%@</source>
-        <target>Core versie: v% @</target>
+        <target>Core versie: v%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Corner" xml:space="preserve">
@@ -11845,7 +11845,7 @@ pref value</note>
       </trans-unit>
       <trans-unit id="encryption agreed for %@" xml:space="preserve">
         <source>encryption agreed for %@</source>
-        <target>versleuteling overeengekomen voor % @</target>
+        <target>versleuteling overeengekomen voor %@</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="encryption ok" xml:space="preserve">
@@ -11855,7 +11855,7 @@ pref value</note>
       </trans-unit>
       <trans-unit id="encryption ok for %@" xml:space="preserve">
         <source>encryption ok for %@</source>
-        <target>versleuteling ok voor % @</target>
+        <target>versleuteling ok voor %@</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="encryption re-negotiation allowed" xml:space="preserve">
@@ -11865,7 +11865,7 @@ pref value</note>
       </trans-unit>
       <trans-unit id="encryption re-negotiation allowed for %@" xml:space="preserve">
         <source>encryption re-negotiation allowed for %@</source>
-        <target>versleuteling heronderhandeling toegestaan voor % @</target>
+        <target>versleuteling heronderhandeling toegestaan voor %@</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="encryption re-negotiation required" xml:space="preserve">
@@ -11875,7 +11875,7 @@ pref value</note>
       </trans-unit>
       <trans-unit id="encryption re-negotiation required for %@" xml:space="preserve">
         <source>encryption re-negotiation required for %@</source>
-        <target>heronderhandeling van versleuteling vereist voor % @</target>
+        <target>heronderhandeling van versleuteling vereist voor %@</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="ended" xml:space="preserve">

@@ -53,7 +53,7 @@
 "#secret#" = "#salaisuus#";
 
 /* No comment provided by engineer. */
-"%@" = "% @";
+"%@" = "%@";
 
 /* No comment provided by engineer. */
 "%@ (current)" = "%@ (nykyinen)";
@@ -62,10 +62,10 @@
 "%@ (current):" = "%@ (nykyinen):";
 
 /* No comment provided by engineer. */
-"%@ / %@" = "%@ / % @";
+"%@ / %@" = "%@ / %@";
 
 /* No comment provided by engineer. */
-"%@ %@" = "%@ % @";
+"%@ %@" = "%@ %@";
 
 /* No comment provided by engineer. */
 "%@ and %@ connected" = "%@ ja %@ yhdistetty";

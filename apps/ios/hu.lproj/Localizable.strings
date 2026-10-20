@@ -289,7 +289,7 @@ channel relay bar */
 "%lld messages marked deleted" = "%lld üzenet megjelölve törlésre";
 
 /* No comment provided by engineer. */
-"%lld messages moderated by %@" = "%@ %lld üzenetet moderált";
+"%lld messages moderated by %@" = "%2$@ %1$lld üzenetet moderált";
 
 /* No comment provided by engineer. */
 "%lld minutes" = "%lld perc";

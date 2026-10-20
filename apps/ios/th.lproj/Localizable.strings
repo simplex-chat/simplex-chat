@@ -1105,7 +1105,7 @@ alert button */
 "encryption agreed" = "ตกลง encryption";
 
 /* chat item text */
-"encryption agreed for %@" = "ตกลง encryption สําหรับ % @";
+"encryption agreed for %@" = "ตกลง encryption สําหรับ %@";
 
 /* chat item text */
 "encryption ok" = "encryptionใช้ได้";
@@ -1288,7 +1288,7 @@ alert button */
 conn error description
 file error text
 snd error text */
-"Error: %@" = "ข้อผิดพลาด: % @";
+"Error: %@" = "ข้อผิดพลาด: %@";
 
 /* No comment provided by engineer. */
 "Error: no database file" = "เกิดข้อผิดพลาด: ไม่มีแฟ้มฐานข้อมูล";
@@ -1333,7 +1333,7 @@ snd error text */
 "File will be received when your contact is online, please wait or check later!" = "จะได้รับไฟล์เมื่อผู้ติดต่อของคุณออนไลน์ โปรดรอหรือตรวจสอบในภายหลัง!";
 
 /* No comment provided by engineer. */
-"File: %@" = "ไฟล์: % @";
+"File: %@" = "ไฟล์: %@";
 
 /* No comment provided by engineer. */
 "Files & media" = "ไฟล์และสื่อ";

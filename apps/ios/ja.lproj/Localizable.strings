@@ -239,7 +239,7 @@ channel relay bar */
 "%lld messages marked deleted" = "%lld 件のメッセージが削除されました";
 
 /* No comment provided by engineer. */
-"%lld messages moderated by %@" = "%@ により%lld 件のメッセージが検閲されました";
+"%lld messages moderated by %@" = "%2$@ により%1$lld 件のメッセージが検閲されました";
 
 /* No comment provided by engineer. */
 "%lld minutes" = "%lld 分";

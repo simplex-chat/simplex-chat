@@ -12150,7 +12150,7 @@ marked deleted chat item preview text</note>
       </trans-unit>
       <trans-unit id="connection:%@" xml:space="preserve">
         <source>connection:%@</source>
-        <target>conexión: % @</target>
+        <target>conexión: %@</target>
         <note>connection information</note>
       </trans-unit>
       <trans-unit id="contact %@ changed to %@" xml:space="preserve">

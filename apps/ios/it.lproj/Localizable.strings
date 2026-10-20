@@ -1644,7 +1644,7 @@ server test step */
 "Connection with desktop stopped" = "Connessione con il desktop fermata";
 
 /* connection information */
-"connection:%@" = "connessione:% @";
+"connection:%@" = "connessione:%@";
 
 /* No comment provided by engineer. */
 "Connections" = "Connessioni";
