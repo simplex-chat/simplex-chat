@@ -5720,7 +5720,7 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
     resumeIssue ri delay user p@UserBadgePurchase {badgePurchaseId} purchasedAt now = do
       answer <- tryAllErrors $ requireBadgeService >>= \sendTarget -> sendBadgeIssue sendTarget userId p now
       answeredAt <- badgeNow
-      -- a charge the service does not grant, as one of another tier, stops holding the profile once its hold ends
+      -- a charge the service does not grant, as a revoked one, stops holding the profile once its hold ends
       let notCredited holding
             | resumeHoldEnded answeredAt purchasedAt = refuse receiptInvalid
             | otherwise = holding
@@ -6190,6 +6190,7 @@ applyBadgeStatement db g purchaseId badgeType BadgeStatement {entries} cred_ now
   -- and restate as one opening credit instead (badges-rpc.md), which is checked without a tip.
   tip <- getBadgeLedgerLastEntry db purchaseId
   storeBadgeStatement db purchaseId badgeType tip entries now
+  getBadgeLedgerLastEntry db purchaseId >>= mapM_ (\StatementEntry {balanceBadgeType} -> setBadgePurchaseType db purchaseId balanceBadgeType now)
   case (,) <$> cred_ <*> issuedEntryId of
     Nothing -> pure True
     Just (cred, entryUuid) ->

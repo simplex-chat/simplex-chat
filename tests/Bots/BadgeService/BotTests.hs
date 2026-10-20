@@ -59,7 +59,7 @@ import Data.Time.Format (defaultTimeLocale, formatTime)
 import Data.Word (Word32)
 import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey, BadgeType (..), generateMasterKey)
 import Simplex.Chat.Badges.Code (BadgeCode, badgeCodeHash, badgeCodeText, formatBadgeCode, parseBadgeCode, randomBadgeCode)
-import Simplex.Chat.Badges.Ledger (addMonths, creditTypeTag, debitTypeTag, emptyEntry, endOfMondayAfter)
+import Simplex.Chat.Badges.Ledger (addMonths, balanceChecked, creditTypeTag, debitTypeTag, emptyEntry, endOfMondayAfter)
 import Simplex.Chat.Badges.Service
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import qualified Simplex.Chat.Badges.Types as BT
@@ -203,7 +203,8 @@ badgeServiceTests = do
     it "should credit nothing for a subscription with no charge it can grant, retrying as the charge may still come" testSubscriptionPurchaseNotGrantable
     it "should grant each store charge once, and answer a repeat inside the issued month without asking the store" testSubscriptionChargeGrantedOnce
     it "should ask the store only once coverage has ended, and at most once an hour, failed checks included" testSubscriptionStoreChecksBounded
-    it "should record and not grant a revoked, other-tier, offer, unstarted or ended charge" testSubscriptionChargeNotGranted
+    it "should record and not grant a revoked, offer, unstarted or ended charge" testSubscriptionChargeNotGranted
+    it "should grant a store charge of another tier at renewal, on both sides, and back again" testSubscriptionTierChangeAtRenewal
     it "should not grant a Play charge whose month from its clipped period start has already run out" testClippedPlayPeriodNotGranted
     it "should answer an unreachable store with the check interval, writing no charge or ledger row" testSubscriptionStoreUnreachable
     it "should renew an App Store subscription by its original id, granting a charge first recorded before its period started" testAppleSubscriptionRenews
@@ -2232,7 +2233,6 @@ testSubscriptionChargeNotGranted ps =
         checkedAt i = addUTCTime (3 * nominalDay + fromIntegral (i :: Int) * 3700) (addMonths 1 firstStart)
         notGranted =
           [ (monthlyCharge monthly firstStart 1) {revoked = True},
-            monthlyCharge "subscr-badge-legend-month-01" firstStart 2,
             (monthlyCharge monthly firstStart 3) {offer = True},
             (monthlyCharge monthly firstStart 4) {periodStart = addUTCTime nominalDay (checkedAt 3), periodEnd = addMonths 1 (addUTCTime nominalDay (checkedAt 3))},
             (monthlyCharge monthly firstStart 5) {periodStart = firstStart, periodEnd = addMonths 1 firstStart},
@@ -2377,6 +2377,76 @@ testSubscriptionRenews ps =
       alice ##> "/_app activate"
       alice <## "ok"
       waitShownIssued (chatController alice)
+
+testSubscriptionTierChangeAtRenewal :: HasCallStack => TestParams -> IO ()
+testSubscriptionTierChangeAtRenewal ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc, bsStore = store@FakeStore {appleSubscriptionJWS}} -> do
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      firstStart <- addUTCTime (-3600) <$> serviceNow env
+      let monthly plan n = (storeCharge plan (addMonths n firstStart) 1) {chargeRef = "apple.renewal." <> tshow n}
+          tiersOf = map (\(_, ch, m, start, tier, t) -> (ch, m, start, tier, t))
+          renewAs plan n = do
+            rows <- ledgerRows (chatController alice) "badge_ledger"
+            let (requestAt, presentAt) = renewalMoments rows
+            appleStoreReports store $ subscriptionCheck SSRenewing $ Just $ monthly plan n
+            setClockAt bsClock requestAt
+            alice ##> "/_app activate"
+            alice <## "ok"
+            renewed <- waitLedgerRows (chatController alice) (length rows + 2)
+            pure (drop (length rows) renewed, presentAt)
+      appleStoreReports store $ subscriptionCheck SSRenewing $ Just $ storeCharge "SUBSCR_BADGE_SUPPORTER_MONTH_01" firstStart 1
+      alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = appleSubscriptionJWS})
+      inAnyOrder alice [[openPurchase ""], ["1: supporter"]]
+      waitWakeArmed (chatController alice)
+      -- the store charges Legend at the renewal: a new run from its period start, on both sides
+      (upgraded, presentAt) <- renewAs "SUBSCR_BADGE_LEGEND_MONTH_01" 1
+      alice <##. "1: legend"
+      let legendStart = addMonths 1 firstStart
+      tiersOf upgraded `shouldBe` [(1, 1, legendStart, "legend", Just "charge"), (-1, 0, addMonths 1 legendStart, "legend", Just "badge")]
+      balanceChecks (chatController alice) `shouldReturn` replicate 4 (Just True)
+      purchaseBadgeTypes (chatController alice) "badge_purchases" `shouldReturn` ["legend"]
+      purchaseBadgeTypes cc "sx_badge_service_badge_purchases" `shouldReturn` ["legend"]
+      issuedBadgeTypes (chatController alice) `shouldReturn` ["supporter", "legend"]
+      setClockAt bsClock presentAt
+      alice ##> "/_app activate"
+      alice <## "ok"
+      waitShownIssued (chatController alice)
+      -- and back to Supporter at the next renewal
+      (downgraded, _) <- renewAs "SUBSCR_BADGE_SUPPORTER_MONTH_01" 2
+      alice <##. "1: supporter"
+      tiersOf downgraded `shouldBe` [(1, 1, addMonths 2 firstStart, "supporter", Just "charge"), (-1, 0, addMonths 3 firstStart, "supporter", Just "badge")]
+      balanceChecks (chatController alice) `shouldReturn` replicate 6 (Just True)
+      purchaseBadgeTypes (chatController alice) "badge_purchases" `shouldReturn` ["supporter"]
+      purchaseBadgeTypes cc "sx_badge_service_badge_purchases" `shouldReturn` ["supporter"]
+    -- an annual Supporter upgraded to Legend in its third month, found only once its year ended, after a month
+    -- issued since the upgrade: the new run starts at that issue, and every row still follows the one before it
+    yearStart <- addUTCTime (-3600) <$> serviceNow env
+    storeReports store $ subscriptionCheck SSRenewing $ Just $ storeCharge "subscr-badge-supporter-year-01" yearStart 12
+    (purchaseKey, masterKey) <- newPurchaseKeys
+    purchased <- serviceCmd env purchaseKey $ purchaseCmd masterKey subscriptionPlay
+    setClockAt bsClock $ addUTCTime 600 (addMonths 11 yearStart)
+    lastMonth <- assertBalance env purchaseKey (last $ fst $ statementOf purchased)
+    let tip = last $ fst $ statementOf lastMonth
+        upgradedAt = addUTCTime (10 * nominalDay) (addMonths 2 yearStart)
+    storeReports store $ subscriptionCheck SSRenewing $ Just (storeCharge "subscr-badge-legend-year-01" upgradedAt 12) {chargeRef = "GPA.legend"}
+    setClockAt bsClock $ addUTCTime (3 * nominalDay) (addMonths 12 yearStart)
+    found <- assertBalance env purchaseKey tip
+    let rows = fst $ statementOf found
+    map entryTag rows `shouldBe` ["charge", "lapse", "badge"]
+    map createdAtOf (take 1 rows) `shouldBe` [createdAtOf tip]
+    map (\StatementEntry {balanceBadgeType} -> balanceBadgeType) rows `shouldBe` [BTLegend, BTLegend, BTLegend]
+    badgeTypeOf found `shouldBe` Just BTLegend
+    now <- serviceNow env
+    map snd (balanceChecked now BTSupporter (Just tip) rows) `shouldBe` [Just True, Just True, Just True]
+
+purchaseBadgeTypes :: ChatController -> String -> IO [Text]
+purchaseBadgeTypes ChatController {chatStore} table =
+  withTransaction chatStore $ \db ->
+    map fromOnly <$> DB.query_ db (fromString $ "SELECT current_badge_type FROM " <> table <> " ORDER BY badge_purchase_id")
+
+issuedBadgeTypes :: ChatController -> IO [Text]
+issuedBadgeTypes ChatController {chatStore} =
+  withTransaction chatStore $ \db -> map fromOnly <$> DB.query_ db "SELECT badge_type FROM badge_issuances ORDER BY period_end"
 
 testSubscriptionAwaitsCharge :: HasCallStack => TestParams -> IO ()
 testSubscriptionAwaitsCharge ps =
@@ -3221,14 +3291,14 @@ testAppleResubscribeBounded ps =
             heldStoreReceipts (chatController alice) `shouldReturn` 0
       -- a charge whose paid period has ended
       answeredFromRecord $ appleTransactionDated "2000000812345692" (addUTCTime (-40 * nominalDay) requestAt) (addUTCTime (-10 * nominalDay) requestAt)
-      -- the store charges another tier, which the service does not grant
+      -- the store reports a revoked charge, which the service does not grant
       let resubscribedAt = addUTCTime 7200 requestAt
           handOverHeld jws = do
             handOver jws
             expectLinesWithin 30 alice ["1: supporter", "badge alert: subscription_ended ", openPurchase ""] ["subscribed "]
             heldStoreReceiptErrors (chatController alice) `shouldEventuallyReturn` ["service_error retry payment_pending"]
       setClockAt bsClock resubscribedAt
-      appleStoreReports store $ subscriptionCheck SSRenewing $ Just (storeCharge "SUBSCR_BADGE_LEGEND_MONTH_01" resubscribedAt 1) {chargeRef = "apple.legend"}
+      appleStoreReports store $ subscriptionCheck SSRenewing $ Just (storeCharge "SUBSCR_BADGE_SUPPORTER_MONTH_01" resubscribedAt 1) {chargeRef = "apple.revoked", revoked = True}
       -- a charge whose paid period ends while it is held is refused before it is sent again
       handOverHeld $ appleTransactionDated "2000000812345695" resubscribedAt (addUTCTime 7200 resubscribedAt)
       checks <- subscriptionChecks store
@@ -3240,15 +3310,15 @@ testAppleResubscribeBounded ps =
       subscriptionChecks store `shouldReturn` checks
       shownBadgeId (chatController alice) `shouldReturn` Nothing
       -- a later charge is held again though a resume was refused, while its own hold, from its purchase date, runs
-      let otherTier = appleResubscription "2000000812345693" (addUTCTime 60 resubscribedAt)
-      handOverHeld otherTier
+      let laterCharge = appleResubscription "2000000812345693" (addUTCTime 60 resubscribedAt)
+      handOverHeld laterCharge
       setClockAt bsClock $ addUTCTime (resumeHoldLimit + 120) resubscribedAt
       alice ##> "/_app activate"
       alice <## "ok"
       heldStoreReceipts (chatController alice) `shouldEventuallyReturn` 0
       storeReceiptCreditErrors (chatController alice) `shouldReturn` ["service_error final receipt_invalid"]
       shownBadgeId (chatController alice) `shouldReturn` Nothing
-      answeredFromRecord otherTier
+      answeredFromRecord laterCharge
       invoiceId <- createInvoice alice 1
       -- while another receipt of the owner is held, a resubscription is answered held and left unfinished, not held here
       setGoogleDown store True

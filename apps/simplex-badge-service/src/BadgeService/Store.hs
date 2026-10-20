@@ -25,6 +25,7 @@ module BadgeService.Store
     getStorePaymentCredit,
     purchaseKeyExists,
     getPurchaseByKey,
+    setPurchaseBadgeType,
     getLedgerTip,
     getLedgerEntryId,
     getLedgerEntries,
@@ -253,6 +254,11 @@ getPurchaseByKey db key =
   where
     toPurchase (badgePurchaseId, Binary mk, badgeType) =
       ServicePurchase {badgePurchaseId, masterKey = BadgeMasterKey mk, badgeType}
+
+-- | In the transaction that writes the ledger rows of that tier.
+setPurchaseBadgeType :: DB.Connection -> Int64 -> BadgeType -> UTCTime -> IO ()
+setPurchaseBadgeType db purchaseId badgeType now =
+  DB.execute db "UPDATE sx_badge_service_badge_purchases SET current_badge_type = ?, updated_at = ? WHERE badge_purchase_id = ?" (badgeType, now, purchaseId)
 
 getLedgerTip :: DB.Connection -> Int64 -> IO (Maybe StatementEntry)
 getLedgerTip db purchaseId =

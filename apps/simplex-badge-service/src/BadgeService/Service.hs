@@ -573,7 +573,7 @@ purchaseWithReceipt key cc verifier checks purchaseKey masterKey StoreReceipt {t
       SubscriptionGoogle _ -> (googleChecks checks, Just $ playReads checks)
     newSubscription checked@SubscriptionCheck {subscriptionState} = do
       now <- badgeNow cc
-      case grantableCharge provider Nothing now checked >>= fundsMonthNow purchaseKey now Nothing of
+      case grantableCharge provider now checked >>= fundsMonthNow purchaseKey now Nothing of
         Left notGranted -> firstChargeNotGranted provider notGranted
         Right (charge@StoreCharge {periodStart, chargePaid = paid}, (badgeType, months)) ->
           acknowledged acknowledgeSubscription $ do
@@ -614,26 +614,24 @@ data NotGranted
   | NGRevoked
   | NGOffer
   | NGUnknownPlan
-  | NGOtherTier
   | NGNotStarted
   | NGPeriodOver
   deriving (Show)
 
 -- | The grant rule of a first purchase and a renewal alike, but for whether a ledger row already references
--- the charge, which is the caller's to check. tier is the ledger's; a first purchase may start on any plan.
-grantableCharge :: PaymentProvider -> Maybe BadgeType -> UTCTime -> SubscriptionCheck -> Either NotGranted (StoreCharge, (BadgeType, Int))
-grantableCharge provider tier now SubscriptionCheck {subscriptionState, latestCharge}
+-- the charge, which is the caller's to check. It grants the tier of the plan the store charged, which may not be the ledger's.
+grantableCharge :: PaymentProvider -> UTCTime -> SubscriptionCheck -> Either NotGranted (StoreCharge, (BadgeType, Int))
+grantableCharge provider now SubscriptionCheck {subscriptionState, latestCharge}
   | subscriptionState == SSEnded = Left NGEnded
   | otherwise = case latestCharge of
       Nothing -> Left NGNoCharge
       -- the plan first: Play derives a period from the plan's length, so a plan it does not know has none
       Just charge@StoreCharge {planId, periodStart, periodEnd, revoked, offer} -> case storePlan provider planId of
         Nothing -> Left NGUnknownPlan
-        Just plan@(badgeType, _)
+        Just plan
           | periodEnd <= periodStart -> Left NGMalformedPeriod
           | revoked -> Left NGRevoked
           | offer -> Left NGOffer
-          | maybe False (/= badgeType) tier -> Left NGOtherTier
           | now < periodStart -> Left NGNotStarted
           | now >= periodEnd -> Left NGPeriodOver
           | otherwise -> Right (charge, plan)
@@ -774,7 +772,7 @@ issueBadgeCmd key cc verifier purchaseKey BadgeBalance {lastEntry} = do
       pure $ fromRight (errorResponse BSEInternal) r
     -- Nothing but the store's answer is written until a charge is granted: a lapse at now would be dated
     -- after a grant a later check may make at an earlier period start, and the client would read it as a pass that issued.
-    renewSubscription ServicePurchase {badgePurchaseId, masterKey, badgeType} tip subscription@PurchaseSubscription {paymentId, provider, subscriptionRef, storedState} now
+    renewSubscription ServicePurchase {badgePurchaseId, masterKey} tip subscription@PurchaseSubscription {paymentId, provider, subscriptionRef, storedState} now
       | not (subscriptionCheckDue (storeChecks verifier) now tip subscription) = answered "answerStoredSubscription" $ \db -> issueResponse db badgePurchaseId now (Just storedState)
       | otherwise =
           withDB' "stampSubscriptionCheck" cc (\db -> stampSubscriptionCheck db paymentId now) >>= \case
@@ -782,12 +780,12 @@ issueBadgeCmd key cc verifier purchaseKey BadgeBalance {lastEntry} = do
             Right () ->
               checkStoreSubscription verifier subscriptionRef Nothing >>= \case
                 Left refusal -> atLeastCheckInterval <$> storeRefusalResponse refusal
-                Right checked@SubscriptionCheck {subscriptionState, latestCharge} -> case grantableCharge provider (Just badgeType) now checked >>= fundsMonthNow purchaseKey now (Just tip) of
+                Right checked@SubscriptionCheck {subscriptionState, latestCharge} -> case grantableCharge provider now checked >>= fundsMonthNow purchaseKey now (Just tip) of
                   Left NGMalformedPeriod -> storeRefusalResponse $ SRVerifierFailed "a charge whose period does not end after its start"
                   Left reason -> do
                     forM_ latestCharge $ \_ -> logInfo $ "store subscription charge not granted: " <> tshow reason
                     recordCheck latestCharge subscriptionState
-                  Right (charge@StoreCharge {chargeRef, periodStart}, (_, months)) ->
+                  Right (charge@StoreCharge {chargeRef, periodStart}, (badgeType, months)) ->
                     withDB' "getSubscriptionCharge" cc (\db -> getSubscriptionCharge db paymentId chargeRef) >>= \case
                       Left _ -> pure $ errorResponse BSEInternal
                       -- the store still reports the charge the ledger last granted
@@ -805,6 +803,7 @@ issueBadgeCmd key cc verifier purchaseKey BadgeBalance {lastEntry} = do
                                 else do
                                   insertSubscriptionCharge db paymentId chargeId charge now
                                   appendLedgerPlan db badgePurchaseId Nothing rows $ Just issuance
+                                  setPurchaseBadgeType db badgePurchaseId badgeType now
                                   setSubscriptionState db paymentId subscriptionState now
                                   Just <$> issueResponse db badgePurchaseId now (Just subscriptionState)
                             case r of
@@ -820,7 +819,7 @@ issueBadgeCmd key cc verifier purchaseKey BadgeBalance {lastEntry} = do
             setSubscriptionState db paymentId state now
             issueResponse db badgePurchaseId now (Just state)
     -- A charge the dev mock reports while coverage runs is banked with no issuance, and its month issued once coverage reaches it.
-    checkStoreDuringCoverage purchase@ServicePurchase {badgePurchaseId, badgeType} tip PurchaseSubscription {paymentId, provider, subscriptionRef} now =
+    checkStoreDuringCoverage purchase@ServicePurchase {badgePurchaseId} tip PurchaseSubscription {paymentId, provider, subscriptionRef} now =
       checkStoreSubscription verifier subscriptionRef Nothing >>= \case
         Left refusal -> atLeastCheckInterval <$> storeRefusalResponse refusal
         Right checked@SubscriptionCheck {subscriptionState, latestCharge} -> do
@@ -829,14 +828,15 @@ issueBadgeCmd key cc verifier purchaseKey BadgeBalance {lastEntry} = do
           r <- withDB' "checkStoreDuringCoverage" cc $ \db -> do
             tip' <- getLedgerTip db badgePurchaseId
             when (fmap entryId tip' == Just (entryId tip)) $ do
-              case grantableCharge provider (Just badgeType) now checked of
-                Right (charge@StoreCharge {chargeRef, periodStart}, (_, months)) ->
+              case grantableCharge provider now checked of
+                Right (charge@StoreCharge {chargeRef, periodStart}, (badgeType, months)) ->
                   getSubscriptionCharge db paymentId chargeRef >>= \case
                     Just (_, True) -> pure ()
                     recorded -> do
                       let chargeId = maybe newChargeId fst recorded
                       insertSubscriptionCharge db paymentId chargeId charge now
                       appendLedgerPlan db badgePurchaseId Nothing (chargeEntries periodStart now badgeType months purchaseKey chargeId entryIds tip) Nothing
+                      setPurchaseBadgeType db badgePurchaseId badgeType now
                 Left _ -> forM_ latestCharge $ \charge -> insertSubscriptionCharge db paymentId newChargeId charge now
               setSubscriptionState db paymentId subscriptionState now
             getLedgerTip db badgePurchaseId

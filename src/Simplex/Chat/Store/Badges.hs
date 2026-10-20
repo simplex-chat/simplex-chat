@@ -43,6 +43,7 @@ module Simplex.Chat.Store.Badges
     storeBadgeIssuance,
     getLatestIssuedCredential,
     storeBadgeStatement,
+    setBadgePurchaseType,
     getBadgeLedgerLastEntry,
     getBadgeLedger,
     getBadgeLedgerEntryId,
@@ -617,6 +618,10 @@ storeBadgeStatement db badgePurchaseId badgeType tip entries now =
           SECredit SCUnknown {} -> True
           SEDebit SDUnknown {} -> True
           _ -> False
+
+setBadgePurchaseType :: DB.Connection -> Int64 -> BadgeType -> UTCTime -> IO ()
+setBadgePurchaseType db badgePurchaseId badgeType now =
+  DB.execute db "UPDATE badge_purchases SET current_badge_type = ?, updated_at = ? WHERE badge_purchase_id = ?" (badgeType, now, badgePurchaseId)
 
 -- | The balance is the last row; nothing derives it by summing the history.
 getBadgeLedgerLastEntry :: DB.Connection -> Int64 -> IO (Maybe StatementEntry)
