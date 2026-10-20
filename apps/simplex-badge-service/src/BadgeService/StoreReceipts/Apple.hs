@@ -298,7 +298,7 @@ statusVerdict :: AppleApi -> Text -> LB.ByteString -> Either StoreRefusal Subscr
 statusVerdict AppleApi {roots, ourBundleId} originalId body = do
   StatusResponse items <- either (const $ failed "could not read Apple's subscription status") Right $ J.eitherDecode' body
   LastTransaction {status, signedTransactionInfo, signedRenewalInfo} <-
-    maybe (failed "Apple's answer names no such subscription") Right $ find (\LastTransaction {lastOriginalId} -> lastOriginalId == originalId) items
+    maybe (refused "Apple's answer names no such subscription") Right $ find (\LastTransaction {lastOriginalId} -> lastOriginalId == originalId) items
   SubscriptionTransaction {transactionId, txOriginalId, productId, bundleId, environment, purchaseDate, expiresDate, revoked, offer, familyShared, price, currency} <-
     verifiedItem signedTransactionInfo subscriptionTransactionP
   RenewalInfo {renewalOriginalId, autoRenewStatus} <- verifiedItem signedRenewalInfo renewalInfoP
