@@ -12221,9 +12221,9 @@ laatst ontvangen bericht: %2$@</target>
         <target state="translated">beginnen…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="strike" xml:space="preserve">
+      <trans-unit id="strike" xml:space="preserve" approved="no">
         <source>strike</source>
-        <target>staking</target>
+        <target state="translated">staking</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="subscriber" xml:space="preserve">
@@ -12426,9 +12426,9 @@ laatst ontvangen bericht: %2$@</target>
         <target state="translated">Jij: </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="~strike~" xml:space="preserve">
+      <trans-unit id="~strike~" xml:space="preserve" approved="no">
         <source>\~strike~</source>
-        <target>\~staking~</target>
+        <target state="translated">\~staking~</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="⚠️ Signature verification failed: %@." xml:space="preserve">
