@@ -3700,24 +3700,36 @@ testStoreChecksDuringCoverage ps =
     purchased <- serviceCmd env purchaseKey $ purchaseCmd masterKey $ googlePayment "subscr_badge_supporter_01" googleSubscriptionToken
     let entries = fst . statementOf
         request r = assertBalance env purchaseKey (last $ entries r)
+        stampedSince t previous = do
+          [Just checkedAt] <- subscriptionCheckedAt cc
+          checkedAt `shouldSatisfy` \c -> c >= t && c > previous
+          pure checkedAt
+        bankedAt = addUTCTime 120 now
+        renewedAt = addUTCTime nominalDay $ addMonths 1 now
+        endedAt = addUTCTime 60 renewedAt
+    [Just purchaseStamp] <- subscriptionCheckedAt cc
     -- over a minute on, as the mock dates its charge a minute back and the client fails a row dated before the tip
-    setClockAt bsClock $ addUTCTime 120 now
+    setClockAt bsClock bankedAt
     banked <- request purchased
+    bankedStamp <- stampedSince bankedAt purchaseStamp
     map entryTag (entries banked) `shouldBe` ["charge"]
     -- a month granted on the running coverage: one left, paid through a month later
     entryOf (last $ entries banked) `shouldBe` (1, 1, nextDue (entries purchased))
     credentialOf banked `shouldBe` credentialOf purchased
     subscriptionOf banked `shouldBe` Just SSRenewing
     rowCount cc "sx_badge_service_subscription_charges" `shouldReturn` 2
-    setClockAt bsClock $ addUTCTime nominalDay $ addMonths 1 now
+    setClockAt bsClock renewedAt
     renewed <- request banked
+    renewedStamp <- stampedSince renewedAt bankedStamp
     map entryTag (entries renewed) `shouldBe` ["charge", "badge"]
     -- the month banked earlier and the one this check banks, less the one issued
     (\(c, m, _) -> (c, m)) (entryOf $ last $ entries renewed) `shouldBe` (-1, 1)
     expiryOf renewed `shouldSatisfy` (> expiryOf purchased)
     -- a restarted mock has forgotten the plan, so the subscription has ended though coverage runs
     restarted <- checkingAtEveryRequest <$> newMockStoreVerifier (testClockTime bsClock)
+    setClockAt bsClock endedAt
     ended <- serviceCmd env {bsVerifier = restarted} purchaseKey BSCIssueBadge {balance = BadgeBalance {lastEntry = last $ entries renewed}}
+    void $ stampedSince endedAt renewedStamp
     subscriptionOf ended `shouldBe` Just SSEnded
     map entryTag (entries ended) `shouldBe` []
   where

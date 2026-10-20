@@ -823,35 +823,38 @@ issueBadgeCmd key cc verifier purchaseKey BadgeBalance {lastEntry} = do
             issueResponse db badgePurchaseId now (Just state)
     -- A charge a dev deployment's store reports while coverage runs is banked with no issuance, and its month issued once coverage reaches it.
     checkStoreDuringCoverage purchase@ServicePurchase {badgePurchaseId, badgeType} tip PurchaseSubscription {paymentId, provider, subscriptionRef} now =
-      checkStoreSubscription verifier subscriptionRef Nothing >>= \case
-        Left refusal -> atLeastCheckInterval <$> storeRefusalResponse refusal
-        Right checked@SubscriptionCheck {subscriptionState, latestCharge} -> do
-          newChargeId <- randomId cc
-          entryIds <- (,,) <$> randomId cc <*> randomId cc <*> randomId cc
-          r <- withDB' "checkStoreDuringCoverage" cc $ \db -> do
-            tip' <- getLedgerTip db badgePurchaseId
-            banked <-
-              if fmap entryId tip' == Just (entryId tip)
-                then do
-                  bankedMonths <- case grantableCharge provider (Just badgeType) now checked of
-                    Right (charge@StoreCharge {chargeRef, periodStart}, (_, months)) ->
-                      getSubscriptionCharge db paymentId chargeRef >>= \case
-                        Just (_, True) -> pure Nothing
-                        recorded -> do
-                          let chargeId = maybe newChargeId fst recorded
-                          insertSubscriptionCharge db paymentId chargeId charge now
-                          appendLedgerPlan db badgePurchaseId Nothing (chargeEntries periodStart now months chargeId entryIds tip) Nothing
-                          pure $ Just months
-                    Left _ -> Nothing <$ forM_ latestCharge (\charge -> insertSubscriptionCharge db paymentId newChargeId charge now)
-                  setSubscriptionState db paymentId subscriptionState now
-                  pure bankedMonths
-                else pure Nothing
-            (banked,) <$> getLedgerTip db badgePurchaseId
-          case r of
-            Left _ -> pure $ errorResponse BSEInternal
-            Right (banked, tip_) -> do
-              forM_ banked logBanked
-              issueDue purchase tip_ (Just subscriptionState) now
+      withDB' "stampSubscriptionCheck" cc (\db -> stampSubscriptionCheck db paymentId now) >>= \case
+        Left _ -> pure $ errorResponse BSEInternal
+        Right () ->
+          checkStoreSubscription verifier subscriptionRef Nothing >>= \case
+            Left refusal -> atLeastCheckInterval <$> storeRefusalResponse refusal
+            Right checked@SubscriptionCheck {subscriptionState, latestCharge} -> do
+              newChargeId <- randomId cc
+              entryIds <- (,,) <$> randomId cc <*> randomId cc <*> randomId cc
+              r <- withDB' "checkStoreDuringCoverage" cc $ \db -> do
+                tip' <- getLedgerTip db badgePurchaseId
+                banked <-
+                  if fmap entryId tip' == Just (entryId tip)
+                    then do
+                      bankedMonths <- case grantableCharge provider (Just badgeType) now checked of
+                        Right (charge@StoreCharge {chargeRef, periodStart}, (_, months)) ->
+                          getSubscriptionCharge db paymentId chargeRef >>= \case
+                            Just (_, True) -> pure Nothing
+                            recorded -> do
+                              let chargeId = maybe newChargeId fst recorded
+                              insertSubscriptionCharge db paymentId chargeId charge now
+                              appendLedgerPlan db badgePurchaseId Nothing (chargeEntries periodStart now months chargeId entryIds tip) Nothing
+                              pure $ Just months
+                        Left _ -> Nothing <$ forM_ latestCharge (\charge -> insertSubscriptionCharge db paymentId newChargeId charge now)
+                      setSubscriptionState db paymentId subscriptionState now
+                      pure bankedMonths
+                    else pure Nothing
+                (banked,) <$> getLedgerTip db badgePurchaseId
+              case r of
+                Left _ -> pure $ errorResponse BSEInternal
+                Right (banked, tip_) -> do
+                  forM_ banked logBanked
+                  issueDue purchase tip_ (Just subscriptionState) now
     answered what action = fromRight (errorResponse BSEInternal) <$> withDB' what cc action
     logBanked months = logInfo $ "store subscription charge banked: " <> tshow months <> " months for " <> purchaseKeyPart purchaseKey
     -- Only the asserted entry's identity is read, never the months it claims.
