@@ -450,9 +450,9 @@ channel relay bar</note>
         <target state="translated">**Додати контакт**: створити нове посилання-запрошення.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Create group**: to create a new group." xml:space="preserve">
+      <trans-unit id="**Create group**: to create a new group." xml:space="preserve" approved="no">
         <source>**Create group**: to create a new group.</source>
-        <target>**Створити групу**: створити нову групу.</target>
+        <target state="translated">**Створити групу**: створити нову групу.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**More private**: check new messages every 20 minutes. Only device token is shared with our push server. It doesn't see how many contacts you have, or any message metadata." xml:space="preserve" approved="no">
@@ -981,9 +981,9 @@ swipe action</note>
         <target state="translated">Всі повідомлення та файли надсилаються **наскрізним шифруванням**, з пост-квантовим захистом у прямих повідомленнях.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All messages will be deleted - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="All messages will be deleted - this cannot be undone!" xml:space="preserve" approved="no">
         <source>All messages will be deleted - this cannot be undone!</source>
-        <target>Усі повідомлення будуть видалені - цю дію не можна скасувати!</target>
+        <target state="translated">Усі повідомлення будуть видалені - цю дію не можна скасувати!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." xml:space="preserve" approved="no">
@@ -1532,9 +1532,9 @@ in your network</source>
         <target state="translated">Блокувати</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Block for all" xml:space="preserve">
+      <trans-unit id="Block for all" xml:space="preserve" approved="no">
         <source>Block for all</source>
-        <target>Заблокувати для всіх</target>
+        <target state="translated">Заблокувати для всіх</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Block group members" xml:space="preserve" approved="no">
@@ -1547,9 +1547,9 @@ in your network</source>
         <target state="translated">Заблокувати користувача</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Block member for all?" xml:space="preserve">
+      <trans-unit id="Block member for all?" xml:space="preserve" approved="no">
         <source>Block member for all?</source>
-        <target>Заблокувати учасника для всіх?</target>
+        <target state="translated">Заблокувати учасника для всіх?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Block member?" xml:space="preserve" approved="no">
@@ -1562,9 +1562,9 @@ in your network</source>
         <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Blocked by admin" xml:space="preserve">
+      <trans-unit id="Blocked by admin" xml:space="preserve" approved="no">
         <source>Blocked by admin</source>
-        <target>Заблокований адміністратором</target>
+        <target state="translated">Заблокований адміністратором</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Blur for better privacy." xml:space="preserve" approved="no">
@@ -1662,9 +1662,9 @@ in your network</source>
         <target state="translated">Дзвінки заборонені!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Camera not available" xml:space="preserve">
+      <trans-unit id="Camera not available" xml:space="preserve" approved="no">
         <source>Camera not available</source>
-        <target>Камера недоступна</target>
+        <target state="translated">Камера недоступна</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Can't call contact" xml:space="preserve" approved="no">
@@ -1951,9 +1951,9 @@ alert subtitle</note>
         <target state="translated">Чат зупинено</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat." xml:space="preserve">
+      <trans-unit id="Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat." xml:space="preserve" approved="no">
         <source>Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat.</source>
-        <target>Чат зупинено. Якщо ви вже використовували цю базу даних на іншому пристрої, перенесіть її назад перед запуском чату.</target>
+        <target state="translated">Чат зупинено. Якщо ви вже використовували цю базу даних на іншому пристрої, перенесіть її назад перед запуском чату.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat list" xml:space="preserve" approved="no">
