@@ -568,31 +568,31 @@ channel relay bar</note>
         <target state="translated">0sn</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="1 day" xml:space="preserve">
+      <trans-unit id="1 day" xml:space="preserve" approved="no">
         <source>1 day</source>
-        <target>1 gün</target>
+        <target state="translated">1 gün</target>
         <note>delete after time
 time interval</note>
       </trans-unit>
-      <trans-unit id="1 hour" xml:space="preserve">
+      <trans-unit id="1 hour" xml:space="preserve" approved="no">
         <source>1 hour</source>
-        <target>1 saat</target>
+        <target state="translated">1 saat</target>
         <note>time interval</note>
       </trans-unit>
-      <trans-unit id="1 minute" xml:space="preserve">
+      <trans-unit id="1 minute" xml:space="preserve" approved="no">
         <source>1 minute</source>
-        <target>1 dakika</target>
+        <target state="translated">1 dakika</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="1 month" xml:space="preserve">
+      <trans-unit id="1 month" xml:space="preserve" approved="no">
         <source>1 month</source>
-        <target>1 ay</target>
+        <target state="translated">1 ay</target>
         <note>delete after time
 time interval</note>
       </trans-unit>
-      <trans-unit id="1 week" xml:space="preserve">
+      <trans-unit id="1 week" xml:space="preserve" approved="no">
         <source>1 week</source>
-        <target>1 hafta</target>
+        <target state="translated">1 hafta</target>
         <note>delete after time
 time interval</note>
       </trans-unit>
@@ -611,25 +611,25 @@ time interval</note>
         <target state="translated">Tek kullanımlık bağlantı *sadece bir kişi ile* kullanılabilir - kişiyle veya uygulama içinden paylaş.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="5 minutes" xml:space="preserve">
+      <trans-unit id="5 minutes" xml:space="preserve" approved="no">
         <source>5 minutes</source>
-        <target>5 dakika</target>
+        <target state="translated">5 dakika</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="6" xml:space="preserve">
+      <trans-unit id="6" xml:space="preserve" approved="no">
         <source>6</source>
-        <target>6</target>
+        <target state="translated">6</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="30 seconds" xml:space="preserve">
+      <trans-unit id="30 seconds" xml:space="preserve" approved="no">
         <source>30 seconds</source>
-        <target>30 saniye</target>
+        <target state="translated">30 saniye</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="&lt;p&gt;Hi!&lt;/p&gt;&#10;&lt;p&gt;&lt;a href=&quot;%@&quot;&gt;Connect to me via SimpleX Chat&lt;/a&gt;&lt;/p&gt;" xml:space="preserve">
+      <trans-unit id="&lt;p&gt;Hi!&lt;/p&gt;&#10;&lt;p&gt;&lt;a href=&quot;%@&quot;&gt;Connect to me via SimpleX Chat&lt;/a&gt;&lt;/p&gt;" xml:space="preserve" approved="no">
         <source>&lt;p&gt;Hi!&lt;/p&gt;
 &lt;p&gt;&lt;a href="%@"&gt;Connect to me via SimpleX Chat&lt;/a&gt;&lt;/p&gt;</source>
-        <target>&lt;p&gt;Merhaba!&lt;/p&gt;
+        <target state="translated">&lt;p&gt;Merhaba!&lt;/p&gt;
 &lt;p&gt;&lt;a href="%@"&gt;SimpleX Chat ile bana bağlanın&lt;/a&gt;&lt;/p&gt;</target>
         <note>email text</note>
       </trans-unit>
@@ -643,9 +643,9 @@ time interval</note>
         <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="A new contact" xml:space="preserve">
+      <trans-unit id="A new contact" xml:space="preserve" approved="no">
         <source>A new contact</source>
-        <target>Yeni kişi</target>
+        <target state="translated">Yeni kişi</target>
         <note>notification title</note>
       </trans-unit>
       <trans-unit id="A new random profile will be shared." xml:space="preserve">
@@ -964,9 +964,9 @@ swipe action</note>
         <target state="translated">Tüm veriler cihazınıza özeldir.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All group members will remain connected." xml:space="preserve">
+      <trans-unit id="All group members will remain connected." xml:space="preserve" approved="no">
         <source>All group members will remain connected.</source>
-        <target>Tüm grup üyeleri bağlı kalacaktır.</target>
+        <target state="translated">Tüm grup üyeleri bağlı kalacaktır.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All messages" xml:space="preserve">
