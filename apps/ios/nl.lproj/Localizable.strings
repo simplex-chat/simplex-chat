@@ -2274,7 +2274,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Error saving user password" = "Fout bij opslaan gebruikers wachtwoord";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Error scanning code: %@" = "Fout bij het scannen van code: %@";
 
 /* No comment provided by engineer. */
@@ -2900,7 +2900,7 @@ servers warning */
 /* alert title */
 "Invalid name!" = "Ongeldige naam!";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Invalid QR code" = "Ongeldige QR-code";
 
 /* No comment provided by engineer. */
@@ -3029,7 +3029,7 @@ servers warning */
 /* No comment provided by engineer. */
 "KeyChain error" = "Keychain fout";
 
-/* No comment provided by engineer. */
+/* file alert title */
 "Large file!" = "Groot bestand!";
 
 /* badge alert button */
@@ -5942,9 +5942,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Your contact removed this link, or it was a one-time link that was already used.\nTo connect, ask your contact to create a new link." = "Tenzij uw contact de verbinding heeft verwijderd of deze link al is gebruikt, kan het een bug zijn. Meld het alstublieft.\nOm verbinding te maken, vraagt u uw contact om een andere verbinding link te maken en te controleren of u een stabiele netwerkverbinding heeft.";
-
-/* No comment provided by engineer. */
-"Your contact sent a file that is larger than currently supported maximum size (%@)." = "Uw contact heeft een bestand verzonden dat groter is dan de momenteel ondersteunde maximale grootte (%@).";
 
 /* No comment provided by engineer. */
 "Your contacts can allow full message deletion." = "Uw contacten kunnen volledige verwijdering van berichten toestaan.";

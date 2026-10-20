@@ -2715,7 +2715,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Error saving user password" = "保存用户密码时出错";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Error scanning code: %@" = "扫描代码时出错：%@";
 
 /* No comment provided by engineer. */
@@ -3405,7 +3405,7 @@ servers warning */
 /* alert title */
 "Invalid name!" = "无效名称！";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Invalid QR code" = "无效的二维码";
 
 /* alert title */
@@ -3558,7 +3558,7 @@ servers warning */
 /* No comment provided by engineer. */
 "KeyChain error" = "钥匙串错误";
 
-/* No comment provided by engineer. */
+/* file alert title */
 "Large file!" = "大文件！";
 
 /* badge alert button */
@@ -6985,9 +6985,6 @@ alert title */
 /* No comment provided by engineer. */
 "You can still view conversation with %@ in the list of chats." = "您仍然可以在聊天列表中查看与 %@的对话。";
 
-/* badge alert */
-"You can support SimpleX starting from v7 of the app." = "从 v7 版本起您可以支持 SimpleX。";
-
 /* No comment provided by engineer. */
 "You can turn on SimpleX Lock via Settings." = "您可以通过设置开启 SimpleX 锁定。";
 
@@ -7152,9 +7149,6 @@ alert title */
 
 /* No comment provided by engineer. */
 "Your contact removed this link, or it was a one-time link that was already used.\nTo connect, ask your contact to create a new link." = "除非您的联系人已删除此连接或此链接已被使用，否则它可能是一个错误——请报告。\n如果要连接，请让您的联系人创建另一个连接链接，并检查您的网络连接是否稳定。";
-
-/* No comment provided by engineer. */
-"Your contact sent a file that is larger than currently supported maximum size (%@)." = "您的联系人发送的文件大于当前支持的最大大小 (%@)。";
 
 /* No comment provided by engineer. */
 "Your contacts can allow full message deletion." = "您的联系人可以允许完全删除消息。";

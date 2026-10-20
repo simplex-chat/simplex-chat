@@ -11,6 +11,9 @@
 "- more stable message delivery.\n- a bit better groups.\n- and more!" = "- více stabilní doručování zpráv.\n- o trochu lepší skupiny.\n- a více!";
 
 /* No comment provided by engineer. */
+"- opt-in to send link previews.\n- prevent hyperlink phishing.\n- remove link tracking." = "- opt-in odesílání náhledu odkazů.\n- zabránění phishingu hyperlinků.\n- odstranění sledování odkazů.";
+
+/* No comment provided by engineer. */
 "- optionally notify deleted contacts.\n- profile names with spaces.\n- and more!" = "- volitelně informuje smazané kontakty.\n- profilová jména s mezerami.\n- a více!";
 
 /* No comment provided by engineer. */
@@ -18,6 +21,9 @@
 
 /* No comment provided by engineer. */
 "!1 colored!" = "!1 barevný!";
+
+/* chat link info line */
+"(from owner)" = "(od majitele)";
 
 /* No comment provided by engineer. */
 "(new)" = "(nový)";
@@ -45,6 +51,9 @@
 
 /* No comment provided by engineer. */
 "**Most private**: do not use SimpleX Chat push server. The app will check messages in background, when the system allows it, depending on how often you use the app." = "**Nejsoukromější**: nepoužívejte server oznámení SimpleX Chat, pravidelně kontrolujte zprávy na pozadí (závisí na tom, jak často aplikaci používáte).";
+
+/* No comment provided by engineer. */
+"**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection." = "**Čtěte prosím**: Jako ochrana zabezpečení, použití stejné databáze na dvou zařízeních rozbije dešifrování zpráv z vašich připojení.";
 
 /* No comment provided by engineer. */
 "**Please note**: you will NOT be able to recover or change passphrase if you lose it." = "**Upozornění**: Pokud heslo ztratíte, NEBUDETE jej moci obnovit ani změnit.";
@@ -106,6 +115,9 @@
 /* No comment provided by engineer. */
 "%@ downloaded" = "%@ staženo";
 
+/* badge alert */
+"%@ invested in SimpleX Chat crowdfunding." = "%@ investoval do SimpleX Chat crowdfunding.";
+
 /* notification title */
 "%@ is connected!" = "%@ je připojen!";
 
@@ -120,6 +132,9 @@
 
 /* No comment provided by engineer. */
 "%@ servers" = "%@ servery";
+
+/* badge alert */
+"%@ supports SimpleX Chat." = "%@ podporuje SimpleX Chat.";
 
 /* No comment provided by engineer. */
 "%@ uploaded" = "%@ nahrán";
@@ -138,6 +153,12 @@
 
 /* copied message info */
 "%@:" = "%@:";
+
+/* countdown */
+"%02d hrs %02d min %02d sec" = "%1$02d hod %2$02d min %3$02d sek";
+
+/* time interval */
+"%d day" = "%d den";
 
 /* time interval */
 "%d days" = "%d dní";
@@ -166,6 +187,27 @@
 /* time interval */
 "%d months" = "%d měsíce";
 
+/* channel owners count */
+"%d owner" = "%d majitel";
+
+/* channel owners count */
+"%d owners" = "%d majitelů";
+
+/* channel members count */
+"%d owners & contributors" = "%d majitelů a přispěvatelů";
+
+/* channel relay bar
+channel subscriber relay bar */
+"%d relays failed" = "%d relé selhalo";
+
+/* channel relay bar
+channel subscriber relay bar */
+"%d relays not active" = "%d relé není aktivní";
+
+/* channel relay bar
+channel subscriber relay bar */
+"%d relays removed" = "%d relé odstraněno";
+
 /* time interval */
 "%d sec" = "%d sek";
 
@@ -175,14 +217,42 @@
 /* integrity error chat item */
 "%d skipped message(s)" = "%d přeskočené zprávy";
 
+/* channel subscriber count */
+"%d subscribers" = "%d odběratelů";
+
 /* time interval */
 "%d weeks" = "%d týdnů";
+
+/* channel relay bar */
+"%d/%d relays active, %d errors" = "%1$d/%2$d relé aktivní, %3$d chyb";
+
+/* channel creation progress with errors
+channel relay bar */
+"%d/%d relays active, %d failed" = "%1$d/%2$d relé aktivní, %3$d selhalo";
+
+/* channel relay bar */
+"%d/%d relays active, %d removed" = "%1$d/%2$d relé aktivní, %3$d odstraněno";
+
+/* channel subscriber relay bar progress */
+"%d/%d relays connected" = "%1$d/%2$d relé připojeno";
+
+/* channel subscriber relay bar */
+"%d/%d relays connected, %d errors" = "%1$d/%2$d relé připojeno, %3$d chyb";
+
+/* channel subscriber relay bar */
+"%d/%d relays connected, %d failed" = "%1$d/%2$d relé připojeno, %3$d selhalo";
+
+/* channel subscriber relay bar */
+"%d/%d relays connected, %d removed" = "%1$d/%2$d relé připojeno, %3$d odstraněno";
 
 /* No comment provided by engineer. */
 "%lld" = "%lld";
 
 /* No comment provided by engineer. */
 "%lld %@" = "%lld %@";
+
+/* No comment provided by engineer. */
+"%lld channel events" = "%lld událostí kanálu";
 
 /* No comment provided by engineer. */
 "%lld contact(s) selected" = "%lld kontakt(y) vybrané";
@@ -281,6 +351,9 @@ time interval */
 "1 year" = "1 rok";
 
 /* No comment provided by engineer. */
+"1-time link" = "Jednorázový odkaz";
+
+/* No comment provided by engineer. */
 "1-time link can be used *with one contact only* - share in person or via any messenger." = "Jednorázový odkaz lze použít *pouze s jedním kontaktem* - sdílejte osobně nebo prostřednictvím libovolného komunikátoru.";
 
 /* No comment provided by engineer. */
@@ -294,6 +367,9 @@ time interval */
 
 /* No comment provided by engineer. */
 "A few more things" = "Ještě pár věcí";
+
+/* No comment provided by engineer. */
+"A link for one person to connect" = "Odkaz k připojení pro jednu osobu";
 
 /* notification title */
 "A new contact" = "Nový kontakt";
@@ -324,6 +400,9 @@ time interval */
 
 /* No comment provided by engineer. */
 "above, then choose:" = "výše, pak vyberte:";
+
+/* No comment provided by engineer. */
+"Accent" = "Zbarvení";
 
 /* accept contact request via notification
 accept incoming call via notification
@@ -362,11 +441,20 @@ swipe action */
 /* No comment provided by engineer. */
 "Accepted conditions" = "Přijaté podmínky";
 
+/* No comment provided by engineer. */
+"Acknowledged" = "Potvrzeno";
+
+/* No comment provided by engineer. */
+"Acknowledgement errors" = "Chyba potvrzení";
+
 /* token status text */
 "Active" = "Aktivní";
 
 /* No comment provided by engineer. */
 "Active connections" = "Aktivní spojení";
+
+/* No comment provided by engineer. */
+"Add" = "Přidat";
 
 /* No comment provided by engineer. */
 "Add friends" = "Přidat přátele";
@@ -2086,7 +2174,7 @@ server test error */
 /* No comment provided by engineer. */
 "KeyChain error" = "Chyba klíčenky";
 
-/* No comment provided by engineer. */
+/* file alert title */
 "Large file!" = "Velký soubor!";
 
 /* badge alert button */
@@ -3657,9 +3745,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Your contact removed this link, or it was a one-time link that was already used.\nTo connect, ask your contact to create a new link." = "Pokud váš kontakt neodstranil připojení nebo tento odkaz již nebyl použit, může se jednat o chybu – nahlaste ji.\nChcete-li se připojit, požádejte svůj kontakt o vytvoření dalšího odkazu na připojení a zkontrolujte, zda máte stabilní připojení k síti.";
-
-/* No comment provided by engineer. */
-"Your contact sent a file that is larger than currently supported maximum size (%@)." = "Kontakt odeslal soubor, který je větší než aktuálně podporovaná maximální velikost (%@).";
 
 /* No comment provided by engineer. */
 "Your contacts can allow full message deletion." = "Vaše kontakty mohou povolit úplné mazání zpráv.";

@@ -2098,7 +2098,7 @@ server test error */
 /* No comment provided by engineer. */
 "KeyChain error" = "キーチェーンのエラー";
 
-/* No comment provided by engineer. */
+/* file alert title */
 "Large file!" = "大きなファイル！";
 
 /* badge alert button */
@@ -3627,9 +3627,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Your contact removed this link, or it was a one-time link that was already used.\nTo connect, ask your contact to create a new link." = "連絡先が接続を削除したか、このリンクがすでに使用されている場合を除き、バグである可能性がありますので、報告してください。\n接続するには、連絡先に別の接続リンクを作成するよう依頼し、ネットワーク接続が安定していることを確認してください。";
-
-/* No comment provided by engineer. */
-"Your contact sent a file that is larger than currently supported maximum size (%@)." = "連絡先が現在サポートされている最大サイズ (%@) より大きいファイルを送信しました。";
 
 /* No comment provided by engineer. */
 "Your contacts can allow full message deletion." = "連絡先がメッセージの完全削除を許可できます。";

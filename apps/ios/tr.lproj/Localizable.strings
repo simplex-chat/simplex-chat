@@ -2393,7 +2393,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Error saving user password" = "Kullanıcı şifresi kaydedilirken hata oluştu";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Error scanning code: %@" = "Kod taranırken hata oluştu: %@";
 
 /* No comment provided by engineer. */
@@ -3031,7 +3031,7 @@ servers warning */
 /* alert title */
 "Invalid name!" = "Geçersiz isim!";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Invalid QR code" = "Geçersiz QR kodu";
 
 /* No comment provided by engineer. */
@@ -3163,7 +3163,7 @@ servers warning */
 /* No comment provided by engineer. */
 "KeyChain error" = "Anahtar Zinciri hatası";
 
-/* No comment provided by engineer. */
+/* file alert title */
 "Large file!" = "Büyük dosya!";
 
 /* badge alert button */
@@ -6254,9 +6254,6 @@ alert title */
 
 /* No comment provided by engineer. */
 "Your contact removed this link, or it was a one-time link that was already used.\nTo connect, ask your contact to create a new link." = "Kişiniz bağlantıyı silmediyse veya bu bağlantı kullanılmadıysa, bu bir hata olabilir - lütfen bildirin.\nBağlanmak için lütfen kişinizden başka bir bağlantı oluşturmasını isteyin ve sabit bir ağ bağlantınız olduğunu kontrol edin.";
-
-/* No comment provided by engineer. */
-"Your contact sent a file that is larger than currently supported maximum size (%@)." = "Kişiniz şu anda desteklenen maksimum boyuttan (%@) daha büyük bir dosya gönderdi.";
 
 /* No comment provided by engineer. */
 "Your contacts can allow full message deletion." = "Kişileriniz tam mesaj silme işlemine izin verebilir.";

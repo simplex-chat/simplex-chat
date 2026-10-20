@@ -1753,7 +1753,7 @@ server test error */
 /* No comment provided by engineer. */
 "KeyChain error" = "Avainnipun virhe";
 
-/* No comment provided by engineer. */
+/* file alert title */
 "Large file!" = "Suuri tiedosto!";
 
 /* badge alert button */
@@ -3290,9 +3290,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Your contact removed this link, or it was a one-time link that was already used.\nTo connect, ask your contact to create a new link." = "Ellei yhteyshenkilösi poistanut yhteyttä tai tämä linkki oli jo käytössä, se voi olla virhe - ilmoita siitä.\nJos haluat muodostaa yhteyden, pyydä kontaktiasi luomaan toinen yhteyslinkki ja tarkista, että verkkoyhteytesi on vakaa.";
-
-/* No comment provided by engineer. */
-"Your contact sent a file that is larger than currently supported maximum size (%@)." = "Yhteyshenkilösi lähetti tiedoston, joka on suurempi kuin tällä hetkellä tuettu enimmäiskoko (%@).";
 
 /* No comment provided by engineer. */
 "Your contacts can allow full message deletion." = "Kontaktisi voivat sallia viestien täydellisen poistamisen.";

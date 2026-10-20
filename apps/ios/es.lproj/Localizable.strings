@@ -160,6 +160,12 @@
 /* badge alert */
 "%1$@ supported SimpleX Chat. The badge expired on %2$@." = "%1$@ ha apoyado a SimpleX Chat. La insignia caducó el %2$@.";
 
+/* countdown */
+"%02d hrs %02d min %02d sec" = "%1$02d hrs %2$02d min %3$02d seg";
+
+/* time interval */
+"%d day" = "%d día";
+
 /* time interval */
 "%d days" = "%d día(s)";
 
@@ -794,7 +800,7 @@ swipe action */
 "App icon" = "Icono de la aplicación";
 
 /* No comment provided by engineer. */
-"App passcode" = "Código de acceso de la aplicación";
+"App passcode" = "Código de acceso";
 
 /* No comment provided by engineer. */
 "App passcode is replaced with self-destruct passcode." = "El código de acceso será reemplazado por código de autodestrucción.";
@@ -1815,6 +1821,9 @@ server test step */
 "creator" = "creador";
 
 /* No comment provided by engineer. */
+"Crowdfunding investors can reserve names before the sale starts: [simplex.domains](https://simplex.domains/)" = "Los inversores de crowdfunding pueden reservar nombres antes del comienzo de la venta: [simplex.domains](https://simplex.domains/)";
+
+/* No comment provided by engineer. */
 "Crowdfunding on Wefunder" = "Crowdfunding en Wefunder";
 
 /* No comment provided by engineer. */
@@ -2757,7 +2766,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Error saving user password" = "Error al guardar contraseña de usuario";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Error scanning code: %@" = "Error al escanear código: %@";
 
 /* No comment provided by engineer. */
@@ -3062,6 +3071,9 @@ servers warning */
 
 /* No comment provided by engineer. */
 "Forwarded" = "Reenviado";
+
+/* No comment provided by engineer. */
+"forwarded from" = "reenviado desde";
 
 /* No comment provided by engineer. */
 "Forwarded from" = "Reenviado por";
@@ -3465,7 +3477,7 @@ servers warning */
 /* alert title */
 "Invalid name!" = "¡Nombre no válido!";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Invalid QR code" = "Código QR no válido";
 
 /* alert title */
@@ -3618,7 +3630,7 @@ servers warning */
 /* No comment provided by engineer. */
 "KeyChain error" = "Error Keychain";
 
-/* No comment provided by engineer. */
+/* file alert title */
 "Large file!" = "¡Archivo grande!";
 
 /* badge alert button */
@@ -5896,6 +5908,9 @@ copied message info */
 /* alert title */
 "SimpleX name not verified" = "Nombre SimpleX no verificado";
 
+/* No comment provided by engineer. */
+"SimpleX name sale starts in" = "La venta de nombres SimpleX comienza en";
+
 /* simplex link type */
 "SimpleX one-time invitation" = "Invitación SimpleX de un uso";
 
@@ -6598,6 +6613,9 @@ alert subtitle */
 /* conn error description */
 "Unsupported connection link" = "Enlace de conexión no compatible";
 
+/* No comment provided by engineer. */
+"until you can register a SimpleX domain" = "hasta que puedas registrar un dominio SimpleX";
+
 /* badge alert title */
 "Unverified badge" = "Insignia sin verificar";
 
@@ -6618,6 +6636,9 @@ alert subtitle */
 
 /* No comment provided by engineer. */
 "Update settings?" = "¿Actualizar configuración?";
+
+/* No comment provided by engineer. */
+"Update the app to register a SimpleX domain" = "Actualiza la app para registrar un dominio SimpleX";
 
 /* rcv group event chat item */
 "updated channel profile" = "perfil del canal actualizado";
@@ -7142,9 +7163,6 @@ alert title */
 /* No comment provided by engineer. */
 "You can still view conversation with %@ in the list of chats." = "Aún puedes ver la conversación con %@ en la lista de chats.";
 
-/* badge alert */
-"You can support SimpleX starting from v7 of the app." = "Puedes apoyar SimpleX desde la versión 7.";
-
 /* No comment provided by engineer. */
 "You can turn on SimpleX Lock via Settings." = "Puedes activar el Bloqueo SimpleX a través de Configuración.";
 
@@ -7309,9 +7327,6 @@ alert title */
 
 /* No comment provided by engineer. */
 "Your contact removed this link, or it was a one-time link that was already used.\nTo connect, ask your contact to create a new link." = "A menos que tu contacto haya eliminado la conexión o el enlace se haya usado, podría ser un error. Por favor, notifícalo.\nPara conectarte pide a tu contacto que cree otro enlace y comprueba la conexión de red.";
-
-/* No comment provided by engineer. */
-"Your contact sent a file that is larger than currently supported maximum size (%@)." = "El contacto ha enviado un archivo mayor al máximo admitido (%@).";
 
 /* No comment provided by engineer. */
 "Your contacts can allow full message deletion." = "Tus contactos pueden permitir la eliminación completa de mensajes.";

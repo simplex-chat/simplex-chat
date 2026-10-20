@@ -2043,7 +2043,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Error saving user password" = "Грешка при запазване на потребителска парола";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Error scanning code: %@" = "Грешка при сканиране на кода: %@";
 
 /* No comment provided by engineer. */
@@ -2503,7 +2503,7 @@ server test error */
 /* alert title */
 "Invalid name!" = "Невалидно име!";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Invalid QR code" = "Невалиден QR код";
 
 /* No comment provided by engineer. */
@@ -2617,7 +2617,7 @@ server test error */
 /* No comment provided by engineer. */
 "KeyChain error" = "KeyChain грешка";
 
-/* No comment provided by engineer. */
+/* file alert title */
 "Large file!" = "Голям файл!";
 
 /* badge alert button */
@@ -4581,9 +4581,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Your contact removed this link, or it was a one-time link that was already used.\nTo connect, ask your contact to create a new link." = "Освен ако вашият контакт не е изтрил връзката или този линк вече е бил използван, това може да е грешка - моля, докладвайте.\nЗа да се свържете, моля, помолете вашия контакт да създаде друг линк за връзка и проверете дали имате стабилна мрежова връзка.";
-
-/* No comment provided by engineer. */
-"Your contact sent a file that is larger than currently supported maximum size (%@)." = "Вашият контакт изпрати файл, който е по-голям от поддържания в момента максимален размер (%@).";
 
 /* No comment provided by engineer. */
 "Your contacts can allow full message deletion." = "Вашите контакти могат да позволят пълното изтриване на съобщението.";
