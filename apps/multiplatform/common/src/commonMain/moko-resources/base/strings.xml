@@ -387,8 +387,6 @@
 
   <!-- Chat Actions - ChatItemView.kt (and general) -->
   <string name="reply_verb">Reply</string>
-  <string name="add_reaction">Add reaction</string>
-  <string name="more_actions">More</string>
   <string name="share_verb">Share</string>
   <string name="copy_verb">Copy</string>
   <string name="save_simplex_name_question">Save SimpleX name?</string>

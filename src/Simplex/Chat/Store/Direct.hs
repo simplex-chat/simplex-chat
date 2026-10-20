@@ -893,8 +893,8 @@ deleteContactRequest db User {userId} contactRequestId = do
     (userId, userId, contactRequestId, userId)
   DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND contact_request_id = ?" (userId, contactRequestId)
 
-createContactFromRequest :: DB.Connection -> StoreCxt -> User -> Maybe Int64 -> ConnId -> VersionChat -> VersionRangeChat -> ContactName -> ProfileId -> LocalProfile -> Maybe XContactId -> Maybe IncognitoProfile -> SubscriptionMode -> PQSupport -> Bool -> IO (Contact, Connection)
-createContactFromRequest db cxt user@User {userId, profile = LocalProfile {preferences}} uclId_ agentConnId connChatVersion cReqChatVRange localDisplayName profileId profile xContactId incognitoProfile subMode pqSup contactUsed = do
+createContactFromRequest :: DB.Connection -> User -> Maybe Int64 -> ConnId -> VersionChat -> VersionRangeChat -> ContactName -> ProfileId -> LocalProfile -> Maybe XContactId -> Maybe IncognitoProfile -> SubscriptionMode -> PQSupport -> Bool -> IO (Contact, Connection)
+createContactFromRequest db user@User {userId, profile = LocalProfile {preferences}} uclId_ agentConnId connChatVersion cReqChatVRange localDisplayName profileId profile xContactId incognitoProfile subMode pqSup contactUsed = do
   currentTs <- getCurrentTime
   let userPreferences = fromMaybe emptyChatPrefs $ incognitoProfile >> preferences
   DB.execute
@@ -905,7 +905,6 @@ createContactFromRequest db cxt user@User {userId, profile = LocalProfile {prefe
   DB.execute db "UPDATE contact_requests SET contact_id = ? WHERE user_id = ? AND local_display_name = ?" (contactId, userId, localDisplayName)
   conn <- createAcceptedContactConn db user uclId_ contactId agentConnId connChatVersion cReqChatVRange pqSup incognitoProfile subMode currentTs
   let mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito conn
-      (defaultChatLayout, activeChatLayout) = chatLayouts cxt user Nothing Nothing
       ct =
         Contact
           { contactId,
@@ -931,8 +930,6 @@ createContactFromRequest db cxt user@User {userId, profile = LocalProfile {prefe
             uiThemes = Nothing,
             chatLayout = Nothing,
             userChatLayout = Nothing,
-            defaultChatLayout,
-            activeChatLayout,
             chatDeleted = False,
             customData = Nothing
           }

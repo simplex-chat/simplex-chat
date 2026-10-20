@@ -211,7 +211,6 @@ newChatController
         chatActivated <- newTVarIO True
         showLiveItems <- newTVarIO False
         encryptLocalFiles <- newTVarIO False
-        globalChatLayout <- newTVarIO Nothing
         tempDirectory <- newTVarIO optTempDirectory
         assetsDirectory <- newTVarIO Nothing
         contactMergeEnabled <- newTVarIO True
@@ -261,7 +260,6 @@ newChatController
               chatActivated,
               showLiveItems,
               encryptLocalFiles,
-              globalChatLayout,
               tempDirectory,
               assetsDirectory,
               logFilePath = logFile,

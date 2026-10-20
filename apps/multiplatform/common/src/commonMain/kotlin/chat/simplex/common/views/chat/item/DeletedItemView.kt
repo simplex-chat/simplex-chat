@@ -2,7 +2,6 @@ package chat.simplex.common.views.chat.item
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.graphics.Color
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -19,23 +18,22 @@ import chat.simplex.common.ui.theme.*
 @Composable
 fun DeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, showViaProxy: Boolean, showTimestamp: Boolean) {
   val sent = ci.chatDir.sent
-  val terminal = LocalTerminalLayout.current
   val sentColor = MaterialTheme.appColors.sentMessage
   val receivedColor = MaterialTheme.appColors.receivedMessage
   Surface(
     shape = RoundedCornerShape(18.dp),
-    color = if (terminal) Color.Transparent else if (sent) sentColor else receivedColor,
+    color = if (sent) sentColor else receivedColor,
     contentColor = LocalContentColor.current
   ) {
     Row(
-      Modifier.padding(horizontal = 12.dp, vertical = if (terminal) TERMINAL_TEXT_VERTICAL_PADDING else 6.dp),
+      Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
       verticalAlignment = Alignment.Bottom
     ) {
       Text(
         buildAnnotatedString {
           withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = MaterialTheme.colors.secondary)) { append(ci.content.text) }
         },
-        style = MaterialTheme.typography.body1.copy(fontSize = if (terminal) TERMINAL_DELETED_FONT_SIZE else MaterialTheme.typography.body1.fontSize, lineHeight = 22.sp),
+        style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp),
         modifier = Modifier.padding(end = 8.dp)
       )
       CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp)

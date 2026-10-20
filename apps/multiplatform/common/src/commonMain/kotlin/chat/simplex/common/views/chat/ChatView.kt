@@ -5,6 +5,7 @@ import androidx.compose.animation.core.*
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -1953,9 +1954,9 @@ fun BoxScope.ChatItemsList(
       }
 
       @Composable
-      fun ChatItemViewShortHand(cItem: ChatItem, itemSeparation: ItemSeparation, range: State<IntRange?>, fillMaxWidth: Boolean = true, swipeOffset: Float = 0f, showMenu: MutableState<Boolean> = remember { mutableStateOf(false) }) {
+      fun ChatItemViewShortHand(cItem: ChatItem, itemSeparation: ItemSeparation, range: State<IntRange?>, fillMaxWidth: Boolean = true, swipeOffset: Float = 0f, interactionSource: MutableInteractionSource = remember { MutableInteractionSource() }) {
         tryOrShowError("${cItem.id}ChatItem", error = {
-          CIBrokenComposableView(if (cItem.chatDir.sent) Alignment.CenterEnd else Alignment.CenterStart)
+          CIBrokenComposableView(if (cItem.chatDir.sent && !LocalTerminalLayout.current) Alignment.CenterEnd else Alignment.CenterStart)
         }) {
           val highlighted = remember { derivedStateOf { highlightedItems.value.contains(cItem.id) } }
           LaunchedEffect(Unit) {
@@ -1967,7 +1968,7 @@ fun BoxScope.ChatItemsList(
                 highlightedItems.value = setOf()
               }
           }
-          ChatItemView(chatsCtx, remoteHostId, chat, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, highlighted = highlighted, hoveredItemId = hoveredItemId, range = range, searchIsNotBlank = searchValueIsNotBlank, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems, reversedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, archiveReports = archiveReports, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, scrollToItemId = scrollToItemId, scrollToQuotedItemFromItem = scrollToQuotedItemFromItem, setReaction = setReaction, showItemDetails = showItemDetails, reveal = reveal, showMemberInfo = showMemberInfo, showChatInfo = showChatInfo, developerTools = developerTools, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp && !LocalTerminalLayout.current, swipeOffset = swipeOffset, showMenu = showMenu)
+          ChatItemView(chatsCtx, remoteHostId, chat, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, highlighted = highlighted, hoveredItemId = hoveredItemId, range = range, searchIsNotBlank = searchValueIsNotBlank, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems, reversedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, archiveReports = archiveReports, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, scrollToItemId = scrollToItemId, scrollToQuotedItemFromItem = scrollToQuotedItemFromItem, setReaction = setReaction, showItemDetails = showItemDetails, reveal = reveal, showMemberInfo = showMemberInfo, showChatInfo = showChatInfo, developerTools = developerTools, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp, swipeOffset = swipeOffset, bubbleInteractionSource = interactionSource)
         }
       }
 
@@ -1977,8 +1978,10 @@ fun BoxScope.ChatItemsList(
           if (it == DismissValue.DismissedToStart) {
             itemScope.launch {
               if ((cItem.content is CIContent.SndMsgContent || cItem.content is CIContent.RcvMsgContent) && chatInfo !is ChatInfo.Local && !cItem.isReport) {
-                if (composeState.value.editing || cItem.id != ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
-                  replyToItem(composeState, cItem, useLinkPreviews)
+                if (composeState.value.editing) {
+                  composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem), useLinkPreviews = useLinkPreviews)
+                } else if (cItem.id != ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
+                  composeState.value = composeState.value.copy(contextItem = ComposeContextItem.QuotedItem(cItem))
                 }
               }
             }
@@ -1993,7 +1996,7 @@ fun BoxScope.ChatItemsList(
         val sent = cItem.chatDir.sent
 
         @Composable
-        fun ChatItemBox(modifier: Modifier = Modifier, content: @Composable BoxScope.() -> Unit = { }) {
+        fun ChatItemBox(modifier: Modifier = Modifier, content: @Composable () -> Unit = { }) {
           Box(
             modifier = modifier.padding(
               bottom = if (itemSeparation.largeGap) {
@@ -2026,23 +2029,23 @@ fun BoxScope.ChatItemsList(
           val selectionOffset by animateDpAsState(if (selectionVisible && (!sent || terminal)) 4.dp + 22.dp * fontSizeMultiplier else 0.dp)
           val swipeableOrSelectionModifier = (if (selectionVisible) Modifier else swipeableModifier).graphicsLayer { translationX = selectionOffset.toPx() }
           if (terminal) {
-            ChatItemBox {
-              AnimatedVisibility(selectionVisible, Modifier.align(Alignment.TopStart).padding(top = terminalSelectionTopPadding(terminalHeader)), enter = fadeIn(), exit = fadeOut()) {
+            val rowInteractionSource = remember { MutableInteractionSource() }
+            val rowColor by animateColorAsState(
+              when {
+                selectedChatItems.value?.contains(cItem.id) == true -> MaterialTheme.colors.primary.copy(alpha = 0.1f)
+                highlightedItems.value.contains(cItem.id) -> MaterialTheme.colors.primary.copy(alpha = 0.14f)
+                else -> Color.Transparent
+              }
+            )
+            ChatItemBox(Modifier.background(rowColor).hoverable(rowInteractionSource).indication(rowInteractionSource, LocalIndication.current)) {
+              AnimatedVisibility(selectionVisible, enter = fadeIn(), exit = fadeOut()) {
                 SelectedListItem(Modifier.padding(start = 8.dp), cItem.id, selectedChatItems)
               }
-              val highlighted = remember { derivedStateOf { highlightedItems.value.contains(cItem.id) } }
-              val showMenu = remember { mutableStateOf(false) }
               TerminalChatItemRow(
-                chatInfo, cItem,
-                showHeader = terminalHeader,
-                showTime = appPlatform.isAndroid && itemSeparation.timestamp,
-                highlighted.value, showMemberInfo, showChatInfo,
-                Modifier.terminalStartOffset { selectionOffset }.then(if (selectionVisible) Modifier else swipeableModifier),
-                hoverBar = { rowHovered ->
-                  TerminalHoverBarSlot(rowHovered, chatInfo, cItem, composeState, useLinkPreviews, selecting = selectedChatItems.value != null, setReaction, forwardItem, showMenu)
-                }
+                chatInfo, cItem, terminalHeader, range.value, reversedChatItems.value, showMemberInfo, showChatInfo,
+                Modifier.padding(start = selectionOffset).then(if (selectionVisible) Modifier else swipeableModifier)
               ) {
-                ChatItemViewShortHand(cItem, itemSeparation, range, swipeOffset = dismissState.offset.value, showMenu = showMenu)
+                ChatItemViewShortHand(cItem, itemSeparation, range, swipeOffset = dismissState.offset.value, interactionSource = rowInteractionSource)
               }
             }
           } else if (chatInfo is ChatInfo.Group) {
@@ -3082,10 +3085,6 @@ private fun ButtonRow(horizontalArrangement: Arrangement.Horizontal, content: @C
 
 @Composable
 private fun DateSeparator(date: Instant) {
-  if (LocalTerminalLayout.current) {
-    TerminalDateSeparator(getTimestampDateText(date))
-    return
-  }
   Text(
     text = getTimestampDateText(date),
     Modifier.padding(vertical = DEFAULT_PADDING_HALF + 4.dp, horizontal = DEFAULT_PADDING_HALF).fillMaxWidth(),
@@ -3528,7 +3527,7 @@ private fun markUnreadChatAsRead(chatId: String) {
 }
 
 @Composable
-private fun memberNames(member: GroupMember, prevMember: GroupMember?, memCount: Int): String {
+fun memberNames(member: GroupMember, prevMember: GroupMember?, memCount: Int): String {
   val name = member.displayName
   val prevName = prevMember?.displayName
   return if (prevName != null) {

@@ -507,8 +507,7 @@ toContact now cxt user chatTags ((Only contactId :. (profileId, localDisplayName
       preparedContact = toPreparedContact preparedContactRow
       contactRequest = UserContactRequestRef <$> contactRequestId <*> (unBI <$> rejectionSupported_)
       groupDirectInv = toGroupDirectInvitation groupDirectInvRow
-      (defaultChatLayout, activeChatLayout) = chatLayouts cxt user chatLayout userChatLayout
-   in Contact {contactId, localDisplayName, profile, activeConn, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, preparedContact, contactRequestId, contactRequest, contactGroupMemberId, contactGrpInvSent, groupDirectInv, chatTags, chatItemTTL, uiThemes, chatLayout, userChatLayout, defaultChatLayout, activeChatLayout, chatDeleted, customData}
+   in Contact {contactId, localDisplayName, profile, activeConn, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, preparedContact, contactRequestId, contactRequest, contactGroupMemberId, contactGrpInvSent, groupDirectInv, chatTags, chatItemTTL, uiThemes, chatLayout, userChatLayout, chatDeleted, customData}
 
 rowToContactDomain :: ContactDomainRow -> Maybe SimplexDomainClaim
 rowToContactDomain (domain_, domainProof_, _) = (`SimplexDomainClaim` domainProof_) . StrJSON <$> domain_
@@ -705,8 +704,8 @@ type GroupMemberRow = (GroupMemberId, GroupId, Int64, MemberId, VersionChat, Ver
 
 type ProfileRow = (ProfileId, ContactName, Text, Maybe Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, LocalAlias, Maybe Text, Maybe Text) :. BadgeRow :. ContactDomainRow
 
-toGroupInfo :: UTCTime -> StoreCxt -> User -> [ChatTagId] -> GroupInfoRow -> (GroupInfo, GroupKeysRow)
-toGroupInfo now cxt user@User {userContactId} chatTags ((groupId, localDisplayName, displayName, fullName, shortDescr, localAlias, description, image, groupType_, groupLink_, publicGroupId_) :. accessRow :. (enableNtfs_, sendRcpts, BI favorite, encodedPrefs, receivedPrefs, memberAdmission, profileChatLayout) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt) :. preparedGroupRow :. businessRow :. (BI useRelays, relayOwnStatus, uiThemes, currentMembers, publicMemberCount, rosterVersion, customData, chatItemTTL, membersRequireAttention, viaGroupLinkUri, groupDomainVerified) :. (chatLayout, userChatLayout) :. groupKeysRow :. userMemberRow) =
+toGroupInfo :: UTCTime -> StoreCxt -> Int64 -> [ChatTagId] -> GroupInfoRow -> (GroupInfo, GroupKeysRow)
+toGroupInfo now cxt userContactId chatTags ((groupId, localDisplayName, displayName, fullName, shortDescr, localAlias, description, image, groupType_, groupLink_, publicGroupId_) :. accessRow :. (enableNtfs_, sendRcpts, BI favorite, encodedPrefs, receivedPrefs, memberAdmission, profileChatLayout) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt) :. preparedGroupRow :. businessRow :. (BI useRelays, relayOwnStatus, uiThemes, currentMembers, publicMemberCount, rosterVersion, customData, chatItemTTL, membersRequireAttention, viaGroupLinkUri, groupDomainVerified) :. (chatLayout, userChatLayout) :. groupKeysRow :. userMemberRow) =
   let membership = (toGroupMember now userContactId userMemberRow) {memberChatVRange = vr cxt}
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts = unBI <$> sendRcpts, favorite}
       groupPreferences = groupPrefsFromRow encodedPrefs receivedPrefs
@@ -716,12 +715,11 @@ toGroupInfo now cxt user@User {userContactId} chatTags ((groupId, localDisplayNa
       businessChat = toBusinessChatInfo (toPublicGroupAccess accessRow >>= groupDomainClaim) businessRow
       preparedGroup = toPreparedGroup preparedGroupRow
       groupSummary = GroupSummary {currentMembers, publicMemberCount}
-      (defaultChatLayout, activeChatLayout) = chatLayouts cxt user chatLayout userChatLayout
-      gInfo = GroupInfo {groupId, useRelays = BoolDef useRelays, relayOwnStatus, localDisplayName, groupProfile, localAlias, businessChat, fullGroupPreferences, membership, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, preparedGroup, chatTags, chatItemTTL, uiThemes, chatLayout, userChatLayout, defaultChatLayout, activeChatLayout, groupSummary, rosterVersion, customData, membersRequireAttention, viaGroupLinkUri, groupDomainVerified = unBI <$> groupDomainVerified}
+      gInfo = GroupInfo {groupId, useRelays = BoolDef useRelays, relayOwnStatus, localDisplayName, groupProfile, localAlias, businessChat, fullGroupPreferences, membership, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, preparedGroup, chatTags, chatItemTTL, uiThemes, chatLayout, userChatLayout, groupSummary, rosterVersion, customData, membersRequireAttention, viaGroupLinkUri, groupDomainVerified = unBI <$> groupDomainVerified}
    in (gInfo, groupKeysRow)
 
-toGroupInfo_ :: UTCTime -> StoreCxt -> User -> [ChatTagId] -> GroupInfoRow -> GroupInfo
-toGroupInfo_ now cxt user chatTags row = fst $ toGroupInfo now cxt user chatTags row
+toGroupInfo_ :: UTCTime -> StoreCxt -> Int64 -> [ChatTagId] -> GroupInfoRow -> GroupInfo
+toGroupInfo_ now cxt userContactId chatTags row = fst $ toGroupInfo now cxt userContactId chatTags row
 
 toPreparedGroup :: PreparedGroupRow -> Maybe PreparedGroup
 toPreparedGroup = \case
@@ -951,10 +949,10 @@ getGroupInfo :: DB.Connection -> StoreCxt -> User -> Int64 -> ExceptT StoreError
 getGroupInfo db cxt user groupId = fst <$> getGroupInfoRow db cxt user groupId
 
 getGroupInfoRow :: DB.Connection -> StoreCxt -> User -> Int64 -> ExceptT StoreError IO (GroupInfo, GroupKeysRow)
-getGroupInfoRow db cxt user@User {userId, userContactId} groupId = ExceptT $ do
+getGroupInfoRow db cxt User {userId, userContactId} groupId = ExceptT $ do
   currentTs <- getCurrentTime
   chatTags <- getGroupChatTags db groupId
-  firstRow (toGroupInfo currentTs cxt user chatTags) (SEGroupNotFound groupId) $
+  firstRow (toGroupInfo currentTs cxt userContactId chatTags) (SEGroupNotFound groupId) $
     DB.query
       db
       -- mu.user_id steers the planner to idx_group_members_group_id; contact_id index is quadratic over all groups

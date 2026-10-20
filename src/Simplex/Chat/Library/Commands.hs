@@ -656,7 +656,6 @@ processChatCommand cxt nm = \case
         createDirectoryIfMissing True f
         chatWriteVar sel $ Just f
   APISetEncryptLocalFiles on -> chatWriteVar encryptLocalFiles on >> ok_
-  APISetGlobalChatLayout chatLayout -> chatWriteVar globalChatLayout chatLayout >> ok_
   SetContactMergeEnabled onOff -> chatWriteVar contactMergeEnabled onOff >> ok_
 #if !defined(dbPostgres)
   APIExportArchive cfg -> checkChatStopped $ CRArchiveExported <$> lift (exportArchive cfg)
@@ -3417,7 +3416,7 @@ processChatCommand cxt nm = \case
         -- TODO PQ should negotitate contact connection with PQSupportOn?
         (connId, CCLink cReq _) <- withAgent $ \a -> createConnection a nm (aUserId user) True False SCMInvitation Nothing Nothing IKPQOff True subMode
         -- [incognito] reuse membership incognito profile
-        ct <- withFastStore' $ \db -> createMemberContact db cxt user connId cReq g m mConn subMode
+        ct <- withFastStore' $ \db -> createMemberContact db user connId cReq g m mConn subMode
         void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing Nothing (Just epochStart)
         -- TODO not sure it is correct to set connections status here?
         pure $ CRNewMemberContact user ct g m
@@ -6433,7 +6432,6 @@ chatCommandP =
       "/_set theme user " *> (APISetUserUIThemes <$> A.decimal <*> optional (A.space *> jsonP)),
       "/_set theme " *> (APISetChatUIThemes <$> chatRefP <*> optional (A.space *> jsonP)),
       "/_layout user " *> (APISetUserChatLayout <$> A.decimal <* A.space <*> chatLayoutP_),
-      "/_layout global " *> (APISetGlobalChatLayout <$> chatLayoutP_),
       "/_layout " *> (APISetChatLayout <$> chatRefP <* A.space <*> chatLayoutP_),
       "/_set custom #" *> (APISetGroupCustomData <$> A.decimal <*> optional (A.space *> jsonP)),
       "/_set custom @" *> (APISetContactCustomData <$> A.decimal <*> optional (A.space *> jsonP)),

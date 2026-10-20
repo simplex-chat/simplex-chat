@@ -997,7 +997,7 @@ acceptContactRequest nm user@User {userId} UserContactRequest {agentInvitationId
       incognitoProfile <- if incognito then Just . NewIncognito <$> liftIO (generateIncognitoProfile user) else pure Nothing
       (connId, binding) <- withAgent $ \a -> prepareConnectionToAccept a (aUserId user) True invId pqSup'
       (ct, conn) <- withStore' $ \db ->
-        createContactFromRequest db cxt user userContactLinkId_ connId chatV cReqChatVRange cName profileId cp xContactId incognitoProfile subMode pqSup' False
+        createContactFromRequest db user userContactLinkId_ connId chatV cReqChatVRange cName profileId cp xContactId incognitoProfile subMode pqSup' False
       pure (ct, conn, incognitoProfile, pure $ Just $ directPresHeader binding)
     Just contactId -> do
       ct <- withFastStore $ \db -> getContact db cxt user contactId
@@ -3369,7 +3369,7 @@ createChatItems ::
 createChatItems user itemTs_ dirsCIContents = do
   createdAt <- liftIO getCurrentTime
   let itemTs = fromMaybe (roundDownToSecond createdAt) itemTs_
-  cxt <- chatStoreCxt'
+  cxt <- asks storeCxt
   void . withStoreBatch' $ \db -> map (updateChat db cxt createdAt) dirsCIContents
   withStoreBatch' $ \db -> concatMap (createACIs db itemTs createdAt) dirsCIContents
   where
@@ -3468,14 +3468,8 @@ waitChatStartedAndActivated = do
     unless (isJust started && activated) retry
 
 chatStoreCxt :: CM StoreCxt
-chatStoreCxt = lift chatStoreCxt'
+chatStoreCxt = asks storeCxt
 {-# INLINE chatStoreCxt #-}
-
-chatStoreCxt' :: CM' StoreCxt
-chatStoreCxt' = do
-  cc@ChatController {globalChatLayout} <- ask
-  globalLayout <- readTVarIO globalChatLayout
-  pure (storeCxt cc) {globalLayout}
 
 chatVersionRange :: CM VersionRangeChat
 chatVersionRange = lift chatVersionRange'

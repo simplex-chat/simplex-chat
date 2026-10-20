@@ -429,7 +429,6 @@ createNewGroup db cxt user@User {userId} groupProfile incognitoProfile memberId 
     let memberPubKey = Just $ C.publicKey $ memberPrivKey groupKeys
     membership <- createContactMemberInv_ db user groupId Nothing user (MemberIdRole memberId GROwner) GCUserMember GSMemCreator IBUser customUserProfileId memberPubKey currentTs (vr cxt)
     let chatSettings = ChatSettings {enableNtfs = MFAll, sendRcpts = Nothing, favorite = False}
-        (defaultChatLayout, activeChatLayout) = chatLayouts cxt user chatLayout Nothing
     pure
       GroupInfo
         { groupId,
@@ -452,8 +451,6 @@ createNewGroup db cxt user@User {userId} groupProfile incognitoProfile memberId 
           uiThemes = Nothing,
           chatLayout,
           userChatLayout = Nothing,
-          defaultChatLayout,
-          activeChatLayout,
           groupSummary = GroupSummary {currentMembers = 1, publicMemberCount = publicMemberCount_},
           rosterVersion = rosterVersion0,
           customData = Nothing,
@@ -531,7 +528,6 @@ createGroupInvitation db cxt user@User {userId} inviter peerChatVRange GroupInvi
               pure (groupMemberId, IBUnknown)
           membership <- createContactMemberInv_ db user groupId (Just groupMemberId) user invitedMember GCUserMember GSMemInvited invitedBy incognitoProfileId (Just $ fst memberKeys) currentTs (vr cxt)
           let chatSettings = ChatSettings {enableNtfs = MFAll, sendRcpts = Nothing, favorite = False}
-              (defaultChatLayout, activeChatLayout) = chatLayouts cxt user chatLayout Nothing
           pure
             ( GroupInfo
                 { groupId,
@@ -554,8 +550,6 @@ createGroupInvitation db cxt user@User {userId} inviter peerChatVRange GroupInvi
                   uiThemes = Nothing,
                   chatLayout,
                   userChatLayout = Nothing,
-                  defaultChatLayout,
-                  activeChatLayout,
                   groupSummary = GroupSummary {currentMembers = 2, publicMemberCount = Nothing},
                   rosterVersion = Nothing,
                   customData = Nothing,
@@ -1087,9 +1081,9 @@ getInProgressGroups db cxt user@User {userId} createdAtCutoff = do
   rights <$> mapM (runExceptT . getGroupInfo db cxt user) groupIds
 
 getBaseGroupDetails :: DB.Connection -> StoreCxt -> User -> Maybe ContactId -> Maybe Text -> IO [GroupInfo]
-getBaseGroupDetails db cxt user@User {userId, userContactId} _contactId_ search_ = do
+getBaseGroupDetails db cxt User {userId, userContactId} _contactId_ search_ = do
   currentTs <- getCurrentTime
-  map (toGroupInfo_ currentTs cxt user [])
+  map (toGroupInfo_ currentTs cxt userContactId [])
     <$> DB.query db (groupInfoQuery <> " " <> condition) (userId, userContactId, search, search, search, search)
   where
     condition =
@@ -2076,9 +2070,9 @@ isRelayGroupRejected db User {userId} groupLink =
   )
 
 getRelayServedGroups :: DB.Connection -> StoreCxt -> User -> ExceptT StoreError IO [GroupInfoKeys]
-getRelayServedGroups db cxt user@User {userId, userContactId} = do
+getRelayServedGroups db cxt User {userId, userContactId} = do
   currentTs <- liftIO getCurrentTime
-  rows <- liftIO $ map (toGroupInfo currentTs cxt user [])
+  rows <- liftIO $ map (toGroupInfo currentTs cxt userContactId [])
     <$> DB.query
       db
       ( groupInfoQuery
@@ -2120,10 +2114,10 @@ getGroupViaPublicGroupId db User {userId} publicGroupId =
       (userId, publicGroupId)
 
 getRelayInactiveGroups :: DB.Connection -> StoreCxt -> User -> NominalDiffTime -> IO [GroupInfo]
-getRelayInactiveGroups db cxt user@User {userId, userContactId} ttl = do
+getRelayInactiveGroups db cxt User {userId, userContactId} ttl = do
   currentTs <- getCurrentTime
   let cutoffTs = addUTCTime (- ttl) currentTs
-  map (toGroupInfo_ currentTs cxt user [])
+  map (toGroupInfo_ currentTs cxt userContactId [])
     <$> DB.query
       db
       ( groupInfoQuery
@@ -3254,10 +3248,9 @@ getHostConnId db user@User {userId} groupId = do
   ExceptT . firstRow fromOnly (SEConnectionNotFoundByMemberId hostMemberId) $
     DB.query db "SELECT connection_id FROM connections WHERE user_id = ? AND group_member_id = ?" (userId, hostMemberId)
 
-createMemberContact :: DB.Connection -> StoreCxt -> User -> ConnId -> ConnReqInvitation -> GroupInfo -> GroupMember -> Connection -> SubscriptionMode -> IO Contact
+createMemberContact :: DB.Connection -> User -> ConnId -> ConnReqInvitation -> GroupInfo -> GroupMember -> Connection -> SubscriptionMode -> IO Contact
 createMemberContact
   db
-  cxt
   user@User {userId, profile = LocalProfile {preferences}}
   acId
   cReq
@@ -3325,8 +3318,7 @@ createMemberContact
               quotaErrCounter = 0
             }
         mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito ctConn
-        (defaultChatLayout, activeChatLayout) = chatLayouts cxt user Nothing Nothing
-    pure Contact {contactId, localDisplayName, profile = memberProfile, activeConn = Just ctConn, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, preparedContact = Nothing, contactRequestId = Nothing, contactRequest = Nothing, contactGroupMemberId = Just groupMemberId, contactGrpInvSent = False, groupDirectInv = Nothing, chatTags = [], chatItemTTL = Nothing, uiThemes = Nothing, chatLayout = Nothing, userChatLayout = Nothing, defaultChatLayout, activeChatLayout, chatDeleted = False, customData = Nothing}
+    pure Contact {contactId, localDisplayName, profile = memberProfile, activeConn = Just ctConn, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, preparedContact = Nothing, contactRequestId = Nothing, contactRequest = Nothing, contactGroupMemberId = Just groupMemberId, contactGrpInvSent = False, groupDirectInv = Nothing, chatTags = [], chatItemTTL = Nothing, uiThemes = Nothing, chatLayout = Nothing, userChatLayout = Nothing, chatDeleted = False, customData = Nothing}
 
 getMemberContact :: DB.Connection -> StoreCxt -> User -> ContactId -> ExceptT StoreError IO (GroupInfo, GroupMember, Contact, ConnReqInvitation)
 getMemberContact db cxt user contactId = do

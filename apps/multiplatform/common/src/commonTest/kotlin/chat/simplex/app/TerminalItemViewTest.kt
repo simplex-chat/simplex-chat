@@ -1,10 +1,7 @@
 package chat.simplex.app
 
 import chat.simplex.common.model.*
-import chat.simplex.common.views.chat.item.terminalHoverBarVisible
 import chat.simplex.common.views.chat.item.terminalItemHasHeader
-import chat.simplex.common.views.chat.item.terminalMetaVisible
-import androidx.compose.ui.graphics.Color
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
@@ -88,60 +85,6 @@ class TerminalItemViewTest {
   fun headerHiddenAfterDeletedMessageFromSameSender() {
     val deleted = ChatItem.getSampleData(1, CIDirection.DirectRcv(), Instant.fromEpochSeconds(noon.epochSeconds), itemDeleted = CIDeleted.Deleted(null))
     assertFalse(terminalItemHasHeader(msg(2, CIDirection.DirectRcv(), 10), older = deleted))
-  }
-
-  @Test
-  fun hoverBarShownForHoveredMessage() {
-    assertTrue(terminalHoverBarVisible(msg(1, CIDirection.DirectRcv(), 0), rowHovered = true, reactionPickerOpen = false, canReact = true, selecting = false))
-  }
-
-  @Test
-  fun hoverBarHiddenWhenRowNotHovered() {
-    assertFalse(terminalHoverBarVisible(msg(1, CIDirection.DirectRcv(), 0), rowHovered = false, reactionPickerOpen = false, canReact = true, selecting = false))
-  }
-
-  @Test
-  fun hoverBarHiddenInSelectionMode() {
-    val message = msg(1, CIDirection.DirectRcv(), 0)
-    assertFalse(terminalHoverBarVisible(message, rowHovered = true, reactionPickerOpen = false, canReact = true, selecting = true))
-    assertFalse(terminalHoverBarVisible(message, rowHovered = false, reactionPickerOpen = true, canReact = true, selecting = true))
-  }
-
-  @Test
-  fun hoverBarHiddenForEventAndLiveDummyItems() {
-    assertFalse(terminalHoverBarVisible(featureEvent(2, 0), rowHovered = true, reactionPickerOpen = false, canReact = true, selecting = false))
-    assertFalse(terminalHoverBarVisible(msg(ChatItem.TEMP_LIVE_CHAT_ITEM_ID, CIDirection.DirectSnd(), 0), rowHovered = true, reactionPickerOpen = false, canReact = true, selecting = false))
-  }
-
-  @Test
-  fun hoverBarStaysOpenForReactionPickerUntilReactionsUnavailable() {
-    val message = msg(1, CIDirection.DirectRcv(), 0)
-    assertTrue(terminalHoverBarVisible(message, rowHovered = false, reactionPickerOpen = true, canReact = true, selecting = false))
-    assertFalse(terminalHoverBarVisible(message, rowHovered = false, reactionPickerOpen = true, canReact = false, selecting = false))
-  }
-
-  @Test
-  fun headerGroupsLocalNotes() {
-    assertTrue(terminalItemHasHeader(msg(1, CIDirection.LocalSnd(), 0), older = null))
-    assertFalse(terminalItemHasHeader(msg(2, CIDirection.LocalSnd(), 10), older = msg(1, CIDirection.LocalSnd(), 0)))
-  }
-
-  @Test
-  fun metaHiddenForPlainReceivedMessage() {
-    val received = ChatItem.getSampleData(1, CIDirection.DirectRcv(), noon, status = CIStatus.RcvRead())
-    assertFalse(terminalMetaVisible(received, chatTTL = null, showViaProxy = false, secondaryColor = Color.Gray))
-  }
-
-  @Test
-  fun metaShownForEditedReceivedMessage() {
-    val edited = ChatItem.getSampleData(1, CIDirection.DirectRcv(), noon, status = CIStatus.RcvRead(), itemEdited = true)
-    assertTrue(terminalMetaVisible(edited, chatTTL = null, showViaProxy = false, secondaryColor = Color.Gray))
-  }
-
-  @Test
-  fun metaShownForSentMessage() {
-    val sent = ChatItem.getSampleData(1, CIDirection.DirectSnd(), noon, status = CIStatus.SndSent(SndCIStatusProgress.Complete))
-    assertTrue(terminalMetaVisible(sent, chatTTL = null, showViaProxy = false, secondaryColor = Color.Gray))
   }
 
   @Test

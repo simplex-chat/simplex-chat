@@ -41,7 +41,6 @@ fun CIMetaView(
 ) {
   Row(Modifier.padding(start = 3.dp), verticalAlignment = Alignment.CenterVertically) {
     if (chatItem.isDeletedContent) {
-      if (!showTimestamp && LocalTerminalLayout.current) return@Row
       Text(
         chatItem.timestampText,
         color = metaColor,

@@ -442,12 +442,12 @@ toGroupInfoReg :: UTCTime -> StoreCxt -> User -> (GroupInfoRow :. GroupRegRow :.
 toGroupInfoReg currentTs cxt user row = let (g, gr, _) = toGroupInfoRegLink currentTs cxt user row in (g, gr)
 
 toGroupInfoRegLink :: UTCTime -> StoreCxt -> User -> (GroupInfoRow :. GroupRegRow :. GroupLinkRow) -> (GroupInfo, GroupReg, Maybe GroupLink)
-toGroupInfoRegLink currentTs cxt user (groupRow :. grRow :. linkRow) =
-  (toGroupInfo_ currentTs cxt user [] groupRow, rowToGroupReg grRow, toMaybeGroupLink linkRow)
+toGroupInfoRegLink currentTs cxt User {userContactId} (groupRow :. grRow :. linkRow) =
+  (toGroupInfo_ currentTs cxt userContactId [] groupRow, rowToGroupReg grRow, toMaybeGroupLink linkRow)
 
 toGroupInfoKeysRegLink :: UTCTime -> StoreCxt -> User -> (GroupInfoRow :. GroupRegRow :. GroupLinkRow) -> (GroupInfo, GroupKeysRow, GroupReg, Maybe GroupLink)
-toGroupInfoKeysRegLink currentTs cxt user (groupRow :. grRow :. linkRow) =
-  let (g, gksData) = toGroupInfo currentTs cxt user [] groupRow
+toGroupInfoKeysRegLink currentTs cxt User {userContactId} (groupRow :. grRow :. linkRow) =
+  let (g, gksData) = toGroupInfo currentTs cxt userContactId [] groupRow
    in (g, gksData, rowToGroupReg grRow, toMaybeGroupLink linkRow)
 
 type GroupRegRow = (GroupId, UserGroupRegId, ContactId, Maybe GroupMemberId, GroupRegStatus, BoolInt, UTCTime)

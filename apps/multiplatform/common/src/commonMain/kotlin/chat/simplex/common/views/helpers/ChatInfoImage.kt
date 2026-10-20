@@ -44,7 +44,7 @@ import kotlin.math.max
 import kotlin.math.roundToInt
 
 @Composable
-fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme.colors.secondaryVariant, shadow: Boolean = false) {
+fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme.colors.secondaryVariant, shadow: Boolean = false, backgroundColor: Color? = null) {
   val icon =
     when (chatInfo) {
       is ChatInfo.Group -> chatInfo.groupInfo.chatIconName
@@ -52,7 +52,7 @@ fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme
       is ChatInfo.Direct -> chatInfo.contact.chatIconName
       else -> MR.images.ic_account_circle_filled
     }
-  ProfileImage(size, chatInfo.image, icon, if (chatInfo is ChatInfo.Local) NoteFolderIconColor else iconColor)
+  ProfileImage(size, chatInfo.image, icon, if (chatInfo is ChatInfo.Local) NoteFolderIconColor else iconColor, backgroundColor)
 }
 
 @Composable

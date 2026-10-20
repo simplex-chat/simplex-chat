@@ -171,7 +171,7 @@ chatProfileTests = do
     it "group chat layout from group link without prepare" testGroupLinkChatLayout
     it "group chat layout kept after repeated invitation" testGroupInvitationChatLayout
     it "unknown chat layout stored and read" testUnknownChatLayout
-    it "chat layout precedence: chat, user profile, global" testChatLayoutPrecedence
+    it "user chat layout" testUserChatLayout
     it "contact chat layout from address" testAddressChatLayout
     it "business chat layout from business address" testBusinessAddressChatLayout
   describe "short links" $ do
@@ -3880,11 +3880,9 @@ testSetChatLayout =
     alice ##> "/i @bob"
     contactInfo alice
     alice <## "user chat layout: terminal"
-    alice <## "active chat layout: terminal"
     alice ##> "/i #team"
     groupInfo alice
     alice <## "user chat layout: terminal"
-    alice <## "active chat layout: terminal"
     alice #$> ("/_layout @2 classic", id, "ok")
     alice #$> ("/_layout #1 classic", id, "ok")
     contactChatLayout alice "bob" `shouldReturn` (Nothing, Just CLClassic)
@@ -3917,7 +3915,6 @@ testGroupChatLayout =
     groupInfo alice
     alice <## "chat layout: terminal"
     alice <## "user chat layout: classic"
-    alice <## "default chat layout: terminal"
     alice #$> ("/_layout #1 default", id, "ok")
     groupChatLayout alice "team" `shouldReturn` (Just CLTerminal, Nothing)
     addMember "team" alice cath GRAdmin
@@ -4013,41 +4010,21 @@ testUnknownChatLayout =
     groupInfo alice
     alice <## "chat layout: wide"
 
-testChatLayoutPrecedence :: HasCallStack => TestParams -> IO ()
-testChatLayoutPrecedence =
+testUserChatLayout :: HasCallStack => TestParams -> IO ()
+testUserChatLayout =
   testChat2 aliceProfile bobProfile $ \alice bob -> do
     connectUsers alice bob
-    alice #$> ("/_layout global terminal", id, "ok")
-    alice ##> "/i @bob"
-    contactInfo alice
-    alice <## "default chat layout: terminal"
-    alice <## "active chat layout: terminal"
-    alice #$> ("/_layout user 1 classic", id, "ok")
+    alice #$> ("/_layout user 1 terminal", id, "ok")
     alice ##> "/u"
     alice <## "user profile: alice (Alice)"
     alice <## "use /p <name> [<bio>] to change it"
-    alice <## "chat layout: classic"
+    alice <## "chat layout: terminal"
     alice ##> "/i @bob"
     contactInfo alice
     alice #$> ("/_layout user 1 default", id, "ok")
-    alice #$> ("/_layout @2 classic", id, "ok")
-    alice ##> "/i @bob"
-    contactInfo alice
-    alice <## "user chat layout: classic"
-    alice <## "default chat layout: terminal"
-    createGroupWithLayout alice "classic"
-    alice ##> "/i #team"
-    groupInfo alice
-    alice <## "chat layout: classic"
-    alice #$> ("/_layout global default", id, "ok")
-    alice #$> ("/_layout user 1 terminal", id, "ok")
-    alice ##> "/i #team"
-    groupInfo alice
-    alice <## "chat layout: classic"
-    alice ##> "/i @bob"
-    contactInfo alice
-    alice <## "user chat layout: classic"
-    alice <## "default chat layout: terminal"
+    alice ##> "/u"
+    alice <## "user profile: alice (Alice)"
+    alice <## "use /p <name> [<bio>] to change it"
     alice ##> "/_layout user 1 wide"
     alice <## "bad chat command: Failed reading: empty"
 

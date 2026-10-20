@@ -443,7 +443,6 @@ undocumentedCommands =
     "APISetConnectionIncognito",
     "APISetContactAlias",
     "APISetEncryptLocalFiles",
-    "APISetGlobalChatLayout",
     "APISetGroupAlias",
     "APISetMemberSettings",
     "APISetNetworkConfig",

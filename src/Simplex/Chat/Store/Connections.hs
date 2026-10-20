@@ -141,8 +141,7 @@ getConnectionEntityKeys db cxt user@User {userId, userContactId} agentConnId = d
           preparedContact = toPreparedContact preparedContactRow
           contactRequest = UserContactRequestRef <$> contactRequestId <*> (unBI <$> rejectionSupported_)
           groupDirectInv = toGroupDirectInvitation groupDirectInvRow
-          (defaultChatLayout, activeChatLayout) = chatLayouts cxt user chatLayout userChatLayout
-       in Contact {contactId, localDisplayName, profile, activeConn, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, preparedContact, contactRequestId, contactRequest, contactGroupMemberId, contactGrpInvSent, groupDirectInv, chatTags, chatItemTTL, uiThemes, chatLayout, userChatLayout, defaultChatLayout, activeChatLayout, chatDeleted, customData}
+       in Contact {contactId, localDisplayName, profile, activeConn, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, preparedContact, contactRequestId, contactRequest, contactGroupMemberId, contactGrpInvSent, groupDirectInv, chatTags, chatItemTTL, uiThemes, chatLayout, userChatLayout, chatDeleted, customData}
     getGroupAndMember_ :: Int64 -> Connection -> ExceptT StoreError IO ((GroupInfo, GroupKeysRow), GroupMember)
     getGroupAndMember_ groupMemberId c = do
       currentTs <- liftIO getCurrentTime
@@ -193,7 +192,7 @@ getConnectionEntityKeys db cxt user@User {userId, userContactId} agentConnId = d
       liftIO $ bitraverse (\(g, keysData) -> (,keysData) <$> addGroupChatTags db g) pure gm
     toGroupAndMember :: UTCTime -> Connection -> GroupInfoRow :. GroupMemberRow :. MaybeBadgeProofRow -> ((GroupInfo, GroupKeysRow), GroupMember)
     toGroupAndMember currentTs c (groupInfoRow :. memberRow :. proofRow) =
-      let groupInfo = toGroupInfo currentTs cxt user [] groupInfoRow
+      let groupInfo = toGroupInfo currentTs cxt userContactId [] groupInfoRow
           member = toGroupMember currentTs userContactId memberRow
        in (groupInfo, (member :: GroupMember) {activeConn = Just c, memberBadgeProof = NoJSON $ maybeRowToBadgeProof proofRow})
     getUserContact_ :: Int64 -> ExceptT StoreError IO UserContact
