@@ -24,6 +24,8 @@ module BadgeService.Service
     playReadWait,
     maxPlayPurchaseReads,
     badgeErrorRetryAfter,
+    grantableCharge,
+    NotGranted (..),
     shownServiceRequest,
     survive,
     IssueCodeOpts (..),

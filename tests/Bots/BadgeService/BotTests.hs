@@ -52,7 +52,7 @@ import Data.String (fromString)
 import System.Timeout (timeout)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time.Calendar (fromGregorian, toGregorian)
+import Data.Time.Calendar (addDays, fromGregorian, toGregorian)
 import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, diffUTCTime, getCurrentTime, nominalDay)
 import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import Data.Time.Format (defaultTimeLocale, formatTime)
@@ -214,6 +214,9 @@ badgeServiceTests = do
     it "should wait a day, not the hour the service answered, after a renewal whose store check failed" testStoreUnreachableWaitsStall
     it "should keep a request's wait past a snooze that ends sooner, and raise the alert again without a request" testSnoozeKeepsRequestWait
     it "should wait from a late request until the next daily moment of the shown credential's expiry, not a day after it" testStallRejoinsSharedMoment
+    it "should send no dev-interval request within the interval and one after it" testDevIntervalRequests
+    it "should send no request during coverage without a dev interval" testNoDevIntervalRequests
+    it "should retry a failed dev-interval request within the interval" testDevIntervalRetries
     it "should retire a subscription badge after asking, once the window has passed since the first answer that renewed nothing, whatever the service answers" testSubscriptionRetiredAfterRecoveryWindow
     it "should count the window from the first answer that renewed nothing, not from the coverage it held, and retire a store never reached" testUnrenewedRunStartsAtFirstAnswer
     it "should end the run of answers that renewed nothing at a renewal, and start a new one at the next" testRenewalEndsUnrenewedRun
@@ -2585,6 +2588,76 @@ testStallRejoinsSharedMoment ps =
       nextWakes (chatController alice) `shouldEventuallyReturn` [Just $ addUTCTime nominalDay presentAt]
       requestedAt $ addUTCTime nominalDay presentAt
       nextWakes (chatController alice) `shouldEventuallyReturn` [Just $ addUTCTime (2 * nominalDay) presentAt]
+
+-- | A service that asks its store at every issue request, so the store's check count counts the client's requests.
+withRequestCountingService :: HasCallStack => TestParams -> (BadgeServiceEnv -> IO ()) -> IO ()
+withRequestCountingService ps = withBadgeServiceVerifier ps $ \store -> (fakeVerifier store) {storeChecks = ChecksAtEveryRequest}
+
+-- | An hour past a midnight UTC three days before paidThrough: inside coverage, with the next daily moment of the
+-- shown expiry 23 hours on and every ledger moment days away, so only the dev interval can bring a request.
+devIntervalStart :: [ReplicatedRow] -> UTCTime
+devIntervalStart rows = UTCTime (addDays (-3) (utctDay (dueAtOf rows))) 3600
+
+activateAt :: HasCallStack => TestCC -> TestClock -> UTCTime -> IO ()
+activateAt cc clock t = do
+  setClockAt clock t
+  cc ##> "/_app activate"
+  cc <## "ok"
+
+testDevIntervalRequests :: HasCallStack => TestParams -> IO ()
+testDevIntervalRequests ps =
+  withRequestCountingService ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg {badgeDevRequestInterval = Just 600} "alice" aliceProfile $ \alice -> do
+      (_, rows) <- clientSubscribedMonthly env alice
+      let t1 = devIntervalStart rows
+      checks <- subscriptionChecks store
+      activateAt alice bsClock t1
+      subscriptionChecks store `shouldEventuallyReturn` (checks + 1)
+      waitWakeFrom (chatController alice) (addUTCTime 600 t1)
+      [Just wake] <- nextWakes (chatController alice)
+      wake `shouldSatisfy` (< addUTCTime 610 t1)
+      activateAt alice bsClock $ addUTCTime 300 t1
+      threadDelay 2000000
+      subscriptionChecks store `shouldReturn` checks + 1
+      nextWakes (chatController alice) `shouldReturn` [Just wake]
+      activateAt alice bsClock $ addUTCTime 620 t1
+      subscriptionChecks store `shouldEventuallyReturn` (checks + 2)
+
+testNoDevIntervalRequests :: HasCallStack => TestParams -> IO ()
+testNoDevIntervalRequests ps =
+  withRequestCountingService ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      (_, rows) <- clientSubscribedMonthly env alice
+      let t1 = devIntervalStart rows
+      checks <- subscriptionChecks store
+      wake <- nextWakes (chatController alice)
+      forM_ [0, 300, 620] $ \sinceStart -> do
+        activateAt alice bsClock $ addUTCTime sinceStart t1
+        threadDelay 2000000
+        subscriptionChecks store `shouldReturn` checks
+        nextWakes (chatController alice) `shouldReturn` wake
+
+testDevIntervalRetries :: HasCallStack => TestParams -> IO ()
+testDevIntervalRetries ps =
+  withRequestCountingService ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc} -> do
+    let hourly cfg = cfg {badgeDevRequestInterval = Just 3600}
+    rows <- withNewTestChatCfg ps (hourly bsClientCfg) "alice" aliceProfile $ \alice -> snd <$> clientSubscribedMonthly env alice
+    stopBadgeService cc
+    let t1 = devIntervalStart rows
+    -- the start's pass sends the request the interval made due, which times out and is retried
+    setClockAt bsClock t1
+    withTestChatCfg ps (hourly $ fastRetryCfg $ failingServiceCfg bsClientCfg) "alice" $ \alice ->
+      timeout 20000000 (issueErrorTimes (chatController alice) 2) >>= \case
+        Nothing -> expectationFailure "a failed dev-interval request was not retried within 20 seconds"
+        Just failedAt -> failedAt `shouldSatisfy` all (\t -> t >= t1 && t < addUTCTime 60 t1)
+
+issueErrorTimes :: ChatController -> Int -> IO [UTCTime]
+issueErrorTimes cc n = go []
+  where
+    go seen = do
+      errorAt <- issueErrorAt cc
+      let seen' = [t | Just t <- errorAt, t `notElem` seen] <> seen
+      if length seen' >= n then pure seen' else threadDelay 100000 >> go seen'
 
 testSubscriptionRetiredAfterRecoveryWindow :: HasCallStack => TestParams -> IO ()
 testSubscriptionRetiredAfterRecoveryWindow ps =
