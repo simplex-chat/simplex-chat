@@ -143,6 +143,7 @@ chatGroupTests = do
     it "admin that joined via link introduces member for moderator review" testGLinkReviewIntroduce
   describe "group link connection plan" $ do
     it "ok to connect; known group" testPlanGroupLinkKnown
+    it "short link without resolving: prepared and joined group known, /c join not found" testPlanGroupShortLinkNoResolve
     it "own group link" testPlanGroupLinkOwn
     it "group link without contact - connecting" testPlanGroupLinkConnecting
     it "re-join existing group after leaving" testPlanGroupLinkLeaveRejoin
@@ -4173,6 +4174,59 @@ testPlanGroupLinkKnown =
       bob ##> ("/c " <> gLink)
       bob <## "group link: known group #team"
       bob <## "use #team <message> to send messages"
+
+testPlanGroupShortLinkNoResolve :: HasCallStack => TestParams -> IO ()
+testPlanGroupShortLinkNoResolve =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      threadDelay 100000
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "to add members use /a team <name> or /create link #team"
+      alice ##> "/create link #team"
+      (shortLink, fullLink) <- getGroupLinks alice "team" GRMember True
+      let planNoResolve cc = cc ##> ("/_connect plan 1 " <> shortLink <> " resolve=never")
+
+      planNoResolve bob
+      bob <## "no matching chat found, name resolution is disabled"
+
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "group link: ok to connect directly"
+      groupSLinkData <- getTermLine bob
+      bob ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " " <> groupSLinkData)
+      bob <## "#team: group is prepared"
+      planNoResolve bob
+      bob <## "group link: known prepared group #team"
+
+      bob ##> "/_connect group #1"
+      bob <## "#team: connection started"
+      alice <## "bob (Bob): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: bob joined the group",
+          do
+            bob <## "#team: joining the group..."
+            bob <## "#team: you joined the group"
+        ]
+      planNoResolve bob
+      bob <## "group link: known group #team"
+      bob <## "use #team <message> to send messages"
+
+      cath ##> ("/c " <> shortLink)
+      cath <## "connection request sent!"
+      alice <## "cath (Catherine): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          do
+            cath <## "#team: joining the group..."
+            cath <## "#team: you joined the group"
+            cath <## "#team: member bob (Bob) is connected",
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+      -- known gap: a group joined with /c, without preparing it, is not found without resolving; a fix makes this fail
+      planNoResolve cath
+      cath <## "no matching chat found, name resolution is disabled"
 
 testPlanGroupLinkConnecting :: HasCallStack => TestParams -> IO ()
 testPlanGroupLinkConnecting ps = do
