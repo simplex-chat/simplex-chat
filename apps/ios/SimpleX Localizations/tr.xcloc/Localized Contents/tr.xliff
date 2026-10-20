@@ -1510,14 +1510,14 @@ in your network</source>
         <target state="translated">Daha iyi kullanıcı deneyimi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Bio" xml:space="preserve">
+      <trans-unit id="Bio" xml:space="preserve" approved="no">
         <source>Bio</source>
-        <target>Biy</target>
+        <target state="translated">Biy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Bio too large" xml:space="preserve">
+      <trans-unit id="Bio too large" xml:space="preserve" approved="no">
         <source>Bio too large</source>
-        <target>Biyografi çok uzun</target>
+        <target state="translated">Biyografi çok uzun</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Black" xml:space="preserve" approved="no">
@@ -1635,9 +1635,9 @@ in your network</source>
         <target state="translated">İş konuşmaları</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Business connection" xml:space="preserve">
+      <trans-unit id="Business connection" xml:space="preserve" approved="no">
         <source>Business connection</source>
-        <target>İş bağlantısı</target>
+        <target state="translated">İş bağlantısı</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Businesses" xml:space="preserve" approved="no">
@@ -3202,9 +3202,9 @@ alert button</note>
         <target state="translated">Açıklama</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Description too large" xml:space="preserve">
+      <trans-unit id="Description too large" xml:space="preserve" approved="no">
         <source>Description too large</source>
-        <target>Açıklama çok büyük</target>
+        <target state="translated">Açıklama çok büyük</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Desktop address" xml:space="preserve" approved="no">
@@ -8744,9 +8744,9 @@ chat item action</note>
         <target state="translated">Kısa SimpleX adresi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Short description" xml:space="preserve">
+      <trans-unit id="Short description" xml:space="preserve" approved="no">
         <source>Short description</source>
-        <target>Kısa açıklama</target>
+        <target state="translated">Kısa açıklama</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Short link" xml:space="preserve" approved="no">
@@ -9309,14 +9309,14 @@ Relay address was used to set up this relay for the channel.</source>
         <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap Connect to chat" xml:space="preserve">
+      <trans-unit id="Tap Connect to chat" xml:space="preserve" approved="no">
         <source>Tap Connect to chat</source>
-        <target>Sohbet etmek için Bağlan'a dokunun</target>
+        <target state="translated">Sohbet etmek için Bağlan'a dokunun</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap Connect to send request" xml:space="preserve">
+      <trans-unit id="Tap Connect to send request" xml:space="preserve" approved="no">
         <source>Tap Connect to send request</source>
-        <target>Bağlan'a dokunarak isteği gönderin</target>
+        <target state="translated">Bağlan'a dokunarak isteği gönderin</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap Connect to use bot" xml:space="preserve" approved="no">
@@ -9329,9 +9329,9 @@ Relay address was used to set up this relay for the channel.</source>
         <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap Join group" xml:space="preserve">
+      <trans-unit id="Tap Join group" xml:space="preserve" approved="no">
         <source>Tap Join group</source>
-        <target>Gruba katıl'a dokunun</target>
+        <target state="translated">Gruba katıl'a dokunun</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap button " xml:space="preserve" approved="no">
@@ -11068,9 +11068,9 @@ Bağlantı isteği tekrarlansın mı?</target>
         <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your business contact" xml:space="preserve">
+      <trans-unit id="Your business contact" xml:space="preserve" approved="no">
         <source>Your business contact</source>
-        <target>İş bağlantınız</target>
+        <target state="translated">İş bağlantınız</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your calls" xml:space="preserve" approved="no">
@@ -11108,9 +11108,9 @@ Bağlantı isteği tekrarlansın mı?</target>
         <target state="translated">Bağlantınız %@ adresine taşındı ancak sizi profile yönlendirirken beklenmedik bir hata oluştu.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your contact" xml:space="preserve">
+      <trans-unit id="Your contact" xml:space="preserve" approved="no">
         <source>Your contact</source>
-        <target>İrtibat kişiniz</target>
+        <target state="translated">İrtibat kişiniz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact removed this link, or it was a one-time link that was already used.&#10;To connect, ask your contact to create a new link." xml:space="preserve" approved="no">
@@ -11155,9 +11155,9 @@ Bağlanmak için lütfen kişinizden başka bir bağlantı oluşturmasını iste
         <target state="translated">Mevcut profiliniz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your group" xml:space="preserve">
+      <trans-unit id="Your group" xml:space="preserve" approved="no">
         <source>Your group</source>
-        <target>Grubunuz</target>
+        <target state="translated">Grubunuz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your network" xml:space="preserve">
