@@ -1199,30 +1199,49 @@ private func showPrepareGroupAlert(
         secondTitle: connectOtherButton,
         onCancel: { cleanup?() },
         onConfirm: {
-            Task {
-                do {
-                    let chat = try await apiPrepareGroup(connLink: connectionLink, directLink: groupShortLinkInfo?.direct ?? true, groupShortLinkData: groupShortLinkData, verifiedDomain: verifiedDomain)
-                    await MainActor.run {
-                        if let relays = groupShortLinkInfo?.groupRelays, !relays.isEmpty,
-                           case let .group(gInfo, _) = chat.chatInfo {
-                            ChatModel.shared.channelRelayHostnames[gInfo.groupId] = relays
-                        }
-                        ChatModel.shared.addChat(Chat(chat))
-                        openKnownChat(chat.id, dismiss: dismiss, cleanup: cleanup)
-                    }
-                } catch let error {
-                    logger.error("showPrepareGroupAlert apiPrepareGroup error: \(error.localizedDescription)")
-                    showAlert(NSLocalizedString(isChannel ? "Error opening channel" : "Error opening group", comment: "alert title"), message: responseError(error))
-                    await MainActor.run {
-                        cleanup?()
-                    }
-                }
-            }
+            prepareAndOpenGroup(
+                connectionLink: connectionLink,
+                groupShortLinkInfo: groupShortLinkInfo,
+                groupShortLinkData: groupShortLinkData,
+                verifiedDomain: verifiedDomain,
+                dismiss: dismiss,
+                cleanup: cleanup
+            )
         },
         onSecond: connectOtherLink.map { link in
             { planAndConnect(link, theme: theme, dismiss: dismiss, cleanup: cleanup) }
         }
     )
+}
+
+private func prepareAndOpenGroup(
+    connectionLink: CreatedConnLink,
+    groupShortLinkInfo: GroupShortLinkInfo?,
+    groupShortLinkData: GroupShortLinkData,
+    verifiedDomain: SimplexDomain?,
+    dismiss: Bool,
+    cleanup: (() -> Void)?
+) {
+    let isChannel = !(groupShortLinkInfo?.direct ?? true)
+    Task {
+        do {
+            let chat = try await apiPrepareGroup(connLink: connectionLink, directLink: groupShortLinkInfo?.direct ?? true, groupShortLinkData: groupShortLinkData, verifiedDomain: verifiedDomain)
+            await MainActor.run {
+                if let relays = groupShortLinkInfo?.groupRelays, !relays.isEmpty,
+                   case let .group(gInfo, _) = chat.chatInfo {
+                    ChatModel.shared.channelRelayHostnames[gInfo.groupId] = relays
+                }
+                ChatModel.shared.addChat(Chat(chat))
+                openKnownChat(chat.id, dismiss: dismiss, cleanup: cleanup)
+            }
+        } catch let error {
+            logger.error("prepareAndOpenGroup apiPrepareGroup error: \(error.localizedDescription)")
+            showAlert(NSLocalizedString(isChannel ? "Error opening channel" : "Error opening group", comment: "alert title"), message: responseError(error))
+            await MainActor.run {
+                cleanup?()
+            }
+        }
+    }
 }
 
 private func showOpenKnownContactAlert(
