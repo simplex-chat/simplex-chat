@@ -350,19 +350,19 @@ channel relay bar</note>
         <target state="translated">%lld členové</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld messages blocked" xml:space="preserve">
+      <trans-unit id="%lld messages blocked" xml:space="preserve" approved="no">
         <source>%lld messages blocked</source>
-        <target>%lld zprávy blokovaný</target>
+        <target state="translated">%lld zprávy blokovaný</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld messages blocked by admin" xml:space="preserve">
+      <trans-unit id="%lld messages blocked by admin" xml:space="preserve" approved="no">
         <source>%lld messages blocked by admin</source>
-        <target>%lld zprávy blokovaný adminem</target>
+        <target state="translated">%lld zprávy blokovaný adminem</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld messages marked deleted" xml:space="preserve">
+      <trans-unit id="%lld messages marked deleted" xml:space="preserve" approved="no">
         <source>%lld messages marked deleted</source>
-        <target>%lld zprávy označeno jako smazáno</target>
+        <target state="translated">%lld zprávy označeno jako smazáno</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld messages moderated by %@" xml:space="preserve" approved="no">
