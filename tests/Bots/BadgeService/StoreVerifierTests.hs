@@ -84,6 +84,7 @@ badgeStoreVerifierTests = describe "badge store verifiers" $ do
     it "reports a revoked charge and one in an offer, refuses a family-shared one, and names a Sandbox one a test purchase" testAppleSubscriptionCharges
     it "fails, rather than refuses, a status Apple did not sign or that was changed after signing" testAppleSubscriptionUnsigned
     it "fails on a verifier that cannot place what the store signed, and is unreachable on any other throw" testSubscriptionCheckThrows
+    it "refuses a check the store marks as a test, and passes it through only with credit_test_purchases on" testSubscriptionCheckCreditsTest
     it "fails on 401 and 403, is unreachable on 404, 429, 5xx and no answer, and refuses an answer naming no such subscription" testAppleSubscriptionHttp
     it "fails on a key Apple refuses, and at boot on a key file it cannot read" testAppleSubscriptionKey
     it "checks subscriptions only where [apple] sets the API key, and one-time purchases either way" testAppleConfiguredSubscriptions
@@ -576,6 +577,13 @@ testSubscriptionCheckThrows = do
   let throwing act = checkStoreSubscription noStoreVerifier {checkSubscription = Just (\_ _ -> act), verifyTimeout = 2000000} (SubscriptionApple subscriptionId) Nothing
   outcome <$> throwing (throwIO $ StoreVerifierFailure "apple verifier: a chain it cannot place") `shouldReturn` Failed
   outcome <$> throwing (ioError $ userError "connection reset") `shouldReturn` Unreachable
+
+testSubscriptionCheckCreditsTest :: IO ()
+testSubscriptionCheckCreditsTest = do
+  let testCheck = SubscriptionCheck {subscriptionState = SSRenewing, testSubscription = True, latestCharge = Nothing}
+      checkCrediting credit = checkStoreSubscription noStoreVerifier {checkSubscription = Just (\_ _ -> pure (Right testCheck)), creditTestPurchases = credit} (SubscriptionApple subscriptionId) Nothing
+  outcome <$> checkCrediting False `shouldReturn` TestPurchase
+  fmap (\SubscriptionCheck {subscriptionState, testSubscription} -> (subscriptionState, testSubscription)) <$> checkCrediting True `shouldReturn` Right (SSRenewing, True)
 
 testAppleSubscriptionHttp :: IO ()
 testAppleSubscriptionHttp = do

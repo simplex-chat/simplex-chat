@@ -146,6 +146,7 @@ badgeServiceTests = do
       it "should credit the months a store receipt paid for and issue the first" testStorePurchase
       it "should refuse a receipt another key was credited with" testStoreReceiptUsed
       it "should refuse a receipt the store does not vouch for, with no retry" testStoreReceiptInvalid
+      it "should credit a purchase the store calls a test only with credit_test_purchases on" testStoreTestPurchaseCredited
       it "should write nothing for a pending purchase, and credit it once when it settles" testStorePending
       it "should acknowledge a Play purchase before crediting it, and credit nothing when acknowledging fails" testStoreAcknowledgesBeforeCrediting
       it "should refuse a product that grants no badge" testStoreUnknownProduct
@@ -1834,6 +1835,28 @@ testStoreReceiptInvalid ps =
     -- named rather than lumped in with a forgery, since the device that bought it already knows
     refused SPApple {jws = appleSandboxJWS} `shouldReturn` (BSETestPurchase, Nothing)
     nothingPurchased cc
+
+testStoreTestPurchaseCredited :: HasCallStack => TestParams -> IO ()
+testStoreTestPurchaseCredited ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsController = cc, bsStore = store@FakeStore {appleSandboxJWS, appleSandboxSubscriptionJWS}} -> do
+    now <- serviceNow env
+    let crediting = env {bsVerifier = (fakeVerifier store) {creditTestPurchases = True}}
+        testToken = "fake-play-token-subscription-test.AO-J1Os2q5djX0pRm6"
+        testCheck planId = SubscriptionCheck {subscriptionState = SSRenewing, testSubscription = True, latestCharge = Just $ storeCharge planId (addUTCTime (-3600) now) 1}
+        receipts = [SPApple {jws = appleSandboxJWS}, googlePayment "subscr_badge_supporter_01" testToken, SPApple {jws = appleSandboxSubscriptionJWS}]
+        purchaseUnderNewKey verifierEnv payment = do
+          (purchaseKey, masterKey) <- newPurchaseKeys
+          serviceCmd verifierEnv purchaseKey $ purchaseCmd masterKey payment
+    setSubscription store (SubscriptionGoogle testToken) $ testCheck "subscr-badge-supporter-month-02"
+    setSubscription store (SubscriptionApple appleSubscriptionOriginalId) $ testCheck "SUBSCR_BADGE_SUPPORTER_MONTH_01"
+    credited <- mapM (purchaseUnderNewKey crediting) receipts
+    map (map entryTag . fst . statementOf) credited `shouldBe` [["payment", "badge"], ["charge", "badge"], ["charge", "badge"]]
+    map badgeTypeOf credited `shouldBe` [Just BTLegend, Just BTSupporter, Just BTSupporter]
+    -- past the hour the Play claim is held for since it was credited, so Play is asked again
+    setClockAt bsClock $ addUTCTime 3700 now
+    refused <- mapM (purchaseUnderNewKey env) receipts
+    map refusalOf refused `shouldBe` replicate 3 (BSETestPurchase, Nothing)
+    rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 3
 
 testStorePending :: HasCallStack => TestParams -> IO ()
 testStorePending ps =
