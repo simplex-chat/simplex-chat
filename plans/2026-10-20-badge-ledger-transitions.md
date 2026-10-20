@@ -28,7 +28,7 @@ Base: `f/badge-subscriptions` at 26f846e1a (line numbers at that commit). `SVC/`
 
 **Schema.**
 
-- Service: `badge_ledger.from_purchase_id`, `badge_ledger.to_purchase_id`; `payments.rebound_at` (when the payment was last moved to another key, for the monthly limit); charge index `UNIQUE(charge_id)` → `UNIQUE(badge_purchase_id, charge_id)`.
+- Service: `badge_ledger.from_purchase_id`, `badge_ledger.to_purchase_id`; `payments.rebound_at` (when the payment was last moved to another key, logged and answered in `transfer_limited`; the limit itself is checked against the previous key's latest credential expiry, which the service signed); charge index `UNIQUE(charge_id)` → `UNIQUE(badge_purchase_id, charge_id)`.
 - Client: `badge_store_receipts.hold_kind` (purchase, transfer, tier change).
 - Later, receipts: `badge_purchases.receipt_hash` (service), `badge_purchases.receipt` (client).
 
@@ -78,7 +78,7 @@ Base: `f/badge-subscriptions` at 26f846e1a (line numbers at that commit). `SVC/`
 
 A payment credited nowhere is treated as a first purchase. `purchaseBadge` from another key still gets `receipt_used`, so the automatic sweeps on two devices never move the badge back and forth; only the Restore button transfers. The request is routed to the purchase lane, since it calls the store.
 
-**Limit: once per payment per calendar month.** The previous key's credential stays valid until it expires. So the limit means each paid month is held by at most two keys, however many devices or people share the store account. It does not stop someone holding the account, or a receipt from it, from moving the badge to themselves monthly; the store account is the authority, as the stores themselves treat it.
+**Limit: a payment moves again only once the credential issued to the previous key has expired.** That credential stays valid until then, so each paid month is held by at most two keys, however many devices or people share the store account. The bound is the credential's own expiry rather than a calendar month, because a calendar month has an edge: a move on 31 January and another on 1 February are both allowed, and since a credential outlives a month, three keys would briefly hold valid ones. It does not stop someone holding the account, or a receipt from it, from moving the badge to themselves each time a credential lapses; the store account is the authority, as the stores themselves treat it.
 
 **Core (R2).** Restore hands receipts over with the new origin `restored`:
 
@@ -142,7 +142,7 @@ Final checks: `-m "badge"` here; the full suite (query plans) and the Postgres b
 
 ## Open questions (the slices assume the recommended answers)
 
-1. **The move limit.** Recommended: once per payment per calendar month. Once per billing period would mean once a year for annual plans.
+1. **The move limit.** Decided: a payment moves again only once the credential issued to the previous key has expired, which is what bounds how many keys hold a valid credential at once. Rejected: once per calendar month, whose month boundary lets two moves through in two days; once per billing period, which would mean once a year for annual plans.
 2. **Re-issue the current month on a store restore.** Recommended: yes. Otherwise a monthly subscriber, or an App Reviewer, sees nothing until the next renewal.
 3. **Require the latest Apple transaction for a restore.** Recommended: yes.
 4. **Keep a tier change on the same key**, where the model's §2.10 uses new keys. Recommended: the same key. The service sees changes made in the store's settings without the client, and only the client can make keys.
