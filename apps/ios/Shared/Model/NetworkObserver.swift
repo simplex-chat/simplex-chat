@@ -109,7 +109,6 @@ class NetworkObserver {
         return self.monitorLock.sync { () -> Bool in
             guard let ctrl = currentChatCtrl() else { return false }
             do {
-                // the controller is passed, so that resetting it while the report is sent is not a crash
                 try apiSetNetworkInfo(info, ctrl: ctrl)
                 return true
             } catch let err {
