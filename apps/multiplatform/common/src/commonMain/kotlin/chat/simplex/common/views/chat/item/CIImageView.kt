@@ -26,7 +26,7 @@ import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.DEFAULT_MAX_IMAGE_WIDTH
 import chat.simplex.common.views.chat.chatViewScrollState
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
 import kotlin.math.roundToInt
@@ -120,7 +120,7 @@ fun CIImageView(
   }
 
   @Composable
-  fun ImageView(painter: Painter, image: String, fileSource: CryptoFile?, onClick: () -> Unit) {
+  fun ImageView(painter: Painter, image: String, onClick: () -> Unit) {
     // On my Android device Compose fails to display 6000x6000 px WebP image with exception:
     // IllegalStateException: Recording currently in progress - missing #endRecording() call?
     // but can display 5000px image. Using even lower value here just to feel safer.
@@ -152,11 +152,7 @@ fun CIImageView(
         .privacyBlur(!smallView, previewBitmap, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
         contentAlignment = Alignment.Center
       ) {
-        imageView(previewBitmap, onClick = {
-          if (fileSource != null) {
-            openFile(fileSource)
-          }
-        })
+        imageView(previewBitmap, onClick = onClick)
         Icon(
           painterResource(MR.images.ic_open_in_new),
           contentDescription = stringResource(MR.strings.image_descr),
@@ -177,6 +173,15 @@ fun CIImageView(
     return null
   }
 
+  val view = LocalMultiplatformView()
+  if (file != null) {
+    OpenWhenReceivedEffect(file, smallView) {
+      hideKeyboard(view)
+      ModalManager.fullscreen.showCustomModal(animated = false) { close ->
+        ImageFullScreenView(imageProvider, close)
+      }
+    }
+  }
   Box(
     Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID)
       .then(
@@ -191,7 +196,7 @@ fun CIImageView(
           }
         } else Modifier
       )
-      .desktopModifyBlurredState(!smallView, blurred, showMenu),
+      .desktopModifyBlurredState(blurred, showMenu),
     contentAlignment = Alignment.TopEnd
   ) {
     val res: MutableState<Triple<ImageBitmap, ByteArray, String>?> = remember { mutableStateOf(null) }
@@ -217,7 +222,7 @@ fun CIImageView(
     val loaded = if (revealed) res.value else null
     if (loaded != null && file != null) {
       val (imageBitmap, data, _) = loaded
-      SimpleAndAnimatedImageView(data, imageBitmap, file, imageProvider, smallView, blurred, @Composable { painter, onClick -> ImageView(painter, image, file.fileSource, onClick) })
+      SimpleAndAnimatedImageView(data, imageBitmap, file, imageProvider, smallView, blurred, @Composable { painter, onClick -> ImageView(painter, image, onClick) })
     } else {
       imageView(previewBitmap, onClick = {
         if (file != null) {
@@ -226,6 +231,7 @@ fun CIImageView(
               if (file.fileProhibited != null) {
                 showProhibitedFileAlert(file, file.fileProhibited)
               } else {
+                chatModel.openWhenReceived(file, smallView)
                 receiveFile(file.fileId)
               }
             file.fileStatus is CIFileStatus.RcvAccepted ->

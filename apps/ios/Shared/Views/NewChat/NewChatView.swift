@@ -1169,11 +1169,9 @@ private func showPrepareContactAlert(
         profileImage:
             ProfileImage(
                 imageStr: contactShortLinkData.profile.image,
-                iconName: contactShortLinkData.business
-                            ? "briefcase.circle.fill"
-                            : contactShortLinkData.profile.peerType == .bot
-                            ? "cube.fill"
-                            : "person.crop.circle.fill",
+                icon: contactShortLinkData.business
+                            ? Image(systemName: "briefcase.circle.fill")
+                            : peerTypeIcon(contactShortLinkData.profile.peerType),
                 size: alertProfileImageSize
             ),
         profileBadge: contactShortLinkData.localBadge,
@@ -1226,9 +1224,9 @@ private func showPrepareGroupAlert(
         profileImage:
             ProfileImage(
                 imageStr: groupShortLinkData.groupProfile.image,
-                iconName: isChannel
+                icon: Image(systemName: isChannel
                             ? "antenna.radiowaves.left.and.right.circle.fill"
-                            : "person.2.circle.fill",
+                            : "person.2.circle.fill"),
                 size: alertProfileImageSize
             ),
         theme: theme,
@@ -1280,7 +1278,7 @@ private func showOpenKnownContactAlert(
         profileImage:
             ProfileImage(
                 imageStr: contact.profile.image,
-                iconName: contact.chatIconName,
+                icon: contact.chatIcon,
                 size: alertProfileImageSize
             ),
         profileBadge: contact.active ? contact.profile.localBadge : nil,
@@ -1328,7 +1326,7 @@ private func showOpenKnownGroupAlert(
         profileImage:
             ProfileImage(
                 imageStr: groupInfo.groupProfile.image,
-                iconName: groupInfo.chatIconName,
+                icon: Image(systemName: groupInfo.chatIconName),
                 size: alertProfileImageSize
             ),
         theme: theme,
@@ -1650,7 +1648,7 @@ func planAndConnect(
                                     profileImage:
                                         ProfileImage(
                                             imageStr: groupSLinkData.groupProfile.image,
-                                            iconName: "antenna.radiowaves.left.and.right.circle.fill",
+                                            icon: Image(systemName: "antenna.radiowaves.left.and.right.circle.fill"),
                                             size: alertProfileImageSize
                                         ),
                                     theme: theme,
@@ -1677,7 +1675,7 @@ func planAndConnect(
                                     profileImage:
                                         ProfileImage(
                                             imageStr: groupSLinkData.groupProfile.image,
-                                            iconName: "person.2.circle.fill",
+                                            icon: Image(systemName: "person.2.circle.fill"),
                                             size: alertProfileImageSize
                                         ),
                                     theme: theme,

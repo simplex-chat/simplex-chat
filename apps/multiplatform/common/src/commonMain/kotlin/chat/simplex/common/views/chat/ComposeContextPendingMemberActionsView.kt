@@ -18,7 +18,7 @@ import chat.simplex.common.views.chat.group.removeMember
 import chat.simplex.common.views.chat.group.removeMemberDialog
 import chat.simplex.common.views.chat.group.showMemberBanAlert
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

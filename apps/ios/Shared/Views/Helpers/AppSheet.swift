@@ -31,18 +31,21 @@ private struct PrivacySensitive: ViewModifier {
 
 // Presented from the top view controller instead of a .sheet on a parent view, so an alert button or
 // a view that is itself in a sheet can open it.
-func showAppSheet<Content: View>(detents: [UISheetPresentationController.Detent]? = nil, @ViewBuilder content: () -> Content) {
+@discardableResult
+func showAppSheet<Content: View>(detents: [UISheetPresentationController.Detent]? = nil, @ViewBuilder content: () -> Content) -> UIViewController? {
     if let topController = getTopViewController() {
         let v = content()
             .modifier(PrivacySensitive())
             .environmentObject(ChatModel.shared)
             .environmentObject(AppTheme.shared)
-        let controller = UIHostingController(rootView: v)
-        if let detents, let sheet = controller.sheetPresentationController {
-            sheet.detents = detents
+        let sheet = UIHostingController(rootView: v)
+        if let detents, let presentation = sheet.sheetPresentationController {
+            presentation.detents = detents
         }
-        topController.present(controller, animated: true)
+        topController.present(sheet, animated: true)
+        return sheet
     }
+    return nil
 }
 
 extension View {

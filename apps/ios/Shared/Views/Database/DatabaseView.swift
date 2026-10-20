@@ -453,6 +453,10 @@ struct DatabaseView: View {
                 ChatReceiver.shared.start()
                 chatLastStartGroupDefault.set(Date.now)
                 AppChatState.shared.set(.active)
+                if shouldDeleteDatabaseBackupsDefault.get() {
+                    deleteDatabaseBackups()
+                    shouldDeleteDatabaseBackupsDefault.set(false)
+                }
             } catch let error {
                 runChat.wrappedValue = false
                 showAlert(NSLocalizedString("Error starting chat", comment: ""), message: responseError(error))

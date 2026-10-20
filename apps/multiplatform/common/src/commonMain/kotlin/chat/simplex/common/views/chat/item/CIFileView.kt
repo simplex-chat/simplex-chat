@@ -25,7 +25,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import java.io.File
 import java.net.URI
 
@@ -80,6 +80,7 @@ fun CIFileView(
           if (prohibited != null) {
             showProhibitedFileAlert(file, prohibited)
           } else {
+            chatModel.openWhenReceived(file, smallView)
             receiveFile(file.fileId)
           }
         }
@@ -105,6 +106,8 @@ fun CIFileView(
           showFileErrorAlert(file.fileStatus.sndFileError)
         file.fileStatus is CIFileStatus.SndWarning ->
           showFileErrorAlert(file.fileStatus.sndFileError, temporary = true)
+        isMarkdownFile(file) && file.loaded ->
+          showMarkdownFile(file)
         file.forwardingAllowed() -> {
           withLongRunningApi(slow = 600_000) {
             var filePath = getLoadedFilePath(file)
@@ -183,21 +186,23 @@ fun CIFileView(
 
   val showOpenSaveMenu = rememberSaveable(file?.fileId) { mutableStateOf(false) }
   val ext = file?.fileSource?.filePath?.substringAfterLast(".")?.takeIf { it.isNotBlank() }
-  val loadedFilePath = if (appPlatform.isAndroid && file?.fileSource != null) getLoadedFilePath(file) else null
+  val loadedFilePath = if (appPlatform.isAndroid && file?.fileSource != null && !isMarkdownFile(file)) getLoadedFilePath(file) else null
   if (loadedFilePath != null && file?.fileSource != null) {
     val encrypted = file.fileSource.cryptoArgs != null
     SaveOrOpenFileMenu(showOpenSaveMenu, encrypted, ext, File(loadedFilePath).toURI(), file.fileSource, saveFile = { fileAction() })
   }
+  val onClick: () -> Unit = {
+    if (appPlatform.isAndroid && loadedFilePath != null) {
+      showOpenSaveMenu.value = true
+    } else {
+      fileAction()
+    }
+  }
+  if (file != null) OpenWhenReceivedEffect(file, smallView, onClick)
   Row(
     Modifier
       .combinedClickable(
-        onClick = {
-          if (appPlatform.isAndroid && loadedFilePath != null) {
-            showOpenSaveMenu.value = true
-          } else {
-            fileAction()
-          }
-        },
+        onClick = onClick,
         onLongClick = { showMenu.value = true }
       )
       .padding(if (smallView) PaddingValues() else PaddingValues(top = 4.sp.toDp(), bottom = 6.sp.toDp(), start = 6.sp.toDp(), end = 12.sp.toDp())),
@@ -238,6 +243,13 @@ fun CIFileView(
 
 // the core decides whether a received file is above the size the sender's badge allows
 fun fileSizeValid(file: CIFile): Boolean = file.fileProhibited == null
+
+@Composable
+fun OpenWhenReceivedEffect(file: CIFile, inChatList: Boolean, open: () -> Unit) {
+  KeyChangeEffect(file.loaded) {
+    if (chatModel.receivedFileToOpen(file, inChatList)) open()
+  }
+}
 
 fun showProhibitedFileAlert(file: CIFile, prohibited: FileProhibited) {
   val badgeIssue = when (prohibited.badgeStatus) {

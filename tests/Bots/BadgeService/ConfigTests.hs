@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -7,6 +8,7 @@ import BadgeService.Config
 import qualified Data.ByteString.Char8 as B
 import Data.Either (isLeft)
 import Data.Ini (readIniFile)
+import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Simplex.Messaging.Encoding.String (strDecode)
@@ -36,6 +38,7 @@ badgeConfigTests = describe "badge service config" $ do
   it "accepts a payment tolerance and refuses one that settles for a satoshi" testPaymentTolerance
   it "refuses a host that would send the api key in the clear" testHostMustBeHttps
   it "names a setting nothing reads, in every section it parses" testUnknownKeysAreNamed
+  it "ignores a section nothing reads rather than refusing the file" testUnknownSectionStillBoots
   it "refuses a file one malformed line would silently truncate" testMalformedLineRefused
   it "accepts a comment or blank line after the last setting" testTrailingCommentIsAccepted
   it "reports a missing file rather than throwing" testMissingFileIsReported
@@ -46,16 +49,25 @@ badgeConfigTests = describe "badge service config" $ do
   it "refuses an index that is not a positive whole number" testIssuerIndexInvalid
   it "refuses a private key that is not a valid issuer secret" testIssuerBadSecret
   it "names the old default and key_<n> settings, then refuses the boot" testIssuerOldFormat
-  it "leaves chat redemption off when the dev section is absent" testDevRedeemAbsent
-  it "reads chat_redeem = on" testDevRedeemOn
-  it "reads chat_redeem = off" testDevRedeemOff
-  it "refuses a chat_redeem that is not on or off" testDevRedeemNotBoolean
+  it "verifies store receipts when the dev section is absent" testDevUnverifiedReceiptsAbsent
+  it "reads accept_unverified_store_receipts = on" testDevUnverifiedReceiptsOn
+  it "reads accept_unverified_store_receipts = off" testDevUnverifiedReceiptsOff
+  it "refuses an accept_unverified_store_receipts that is not on or off" testDevUnverifiedReceiptsNotBoolean
+  it "configures no store verifier when [apple] and [google] are absent" testStoresAbsent
+  it "reads [apple] and [google], defaulting Google's endpoints" testStoresRead
+  it "refuses an incomplete [apple] or [google], naming the key" testStoresIncomplete
+  it "refuses accept_unverified_store_receipts beside a real store verifier" testDevUnverifiedBesideVerifier
+  groupConfigTests
 
 fullIni :: T.Text
 fullIni =
   T.unlines
     [ "[listener]",
       "static_dir = /srv/badges",
+      -- [group] stays before [btcpay], since tests append btcpay keys to this fixture.
+      "[group]",
+      "display_name = SimpleX Badges",
+      "description = badge ops desk",
       "[btcpay]",
       "host = https://btcpay.example.org",
       "api_key = token-value",
@@ -224,18 +236,24 @@ testExpiryMinutes = do
 
 testUnknownKeysAreNamed :: IO ()
 testUnknownKeysAreNamed =
-  withIni (fullIni <> "speed_polcy = LowSpeed\ntrust_forwaded_for = on\n[poll]\nwaiting_secnds = 5\n[dev]\nchat_redem = on\n") $ \p -> do
+  withIni (fullIni <> "speed_polcy = LowSpeed\ntrust_forwaded_for = on\n[poll]\nwaiting_secnds = 5\n[stripe]\nsecret_ky = rk_test_x\n") $ \p -> do
     Right ini <- readIniFile p
-    unknownKeys ini `shouldMatchList` ["btcpay.speed_polcy", "btcpay.trust_forwaded_for", "poll.waiting_secnds", "dev.chat_redem"]
+    unknownKeys ini `shouldMatchList` ["btcpay.speed_polcy", "btcpay.trust_forwaded_for", "poll.waiting_secnds", "stripe.secret_ky"]
     withIni (T.replace "[btcpay]" "[btcpai]" fullIni) $ \wrongSection -> do
       Right sectionIni <- readIniFile wrongSection
       unknownKeys sectionIni `shouldContain` ["[btcpai]"]
-    withIni ("chat_redeem = on\n" <> fullIni) $ \stray -> do
+    withIni ("static_dir = /srv/badges\n" <> fullIni) $ \stray -> do
       Right strayIni <- readIniFile stray
-      unknownKeys strayIni `shouldContain` ["chat_redeem, written above the first section header"]
+      unknownKeys strayIni `shouldContain` ["static_dir, written above the first section header"]
     withIni fullIni $ \clean -> do
       Right cleanIni <- readIniFile clean
       unknownKeys cleanIni `shouldBe` []
+
+testUnknownSectionStillBoots :: IO ()
+testUnknownSectionStillBoots =
+  parseIni (fullIni <> "[legacy]\nsetting = on\n") >>= \r -> case r of
+    Right cfg -> lStaticDir (listener cfg) `shouldBe` "/srv/badges"
+    Left e -> expectationFailure ("a section nothing reads must be ignored, not refused: " <> e)
 
 -- | The ini parser stops at the first line it cannot read and keeps what it has, so without this a
 -- missing `=` in [listener] would silently drop every section below it, and the provider with it.
@@ -252,7 +270,7 @@ testTrailingCommentIsAccepted :: IO ()
 testTrailingCommentIsAccepted = do
   accepts (fullIni <> "; rotated the api key on 2026-09-01\n")
   accepts (fullIni <> "\n\n")
-  accepts (fullIni <> "[dev]\n; chat_redeem = on\n")
+  accepts (fullIni <> "[poll]\n; idle_seconds = 5\n")
   accepts (fullIni <> "# a hash comment, with no newline after it")
   where
     accepts t =
@@ -345,25 +363,126 @@ testIssuerOldFormat = do
     unknownKeys ini `shouldMatchList` ["issuer.default", "issuer.key_1"]
   issuerRefusal old `shouldReturn` "issuer.index is required"
 
-testDevRedeemAbsent :: IO ()
-testDevRedeemAbsent = withIni fullIni $ \p -> do
+testDevUnverifiedReceiptsAbsent :: IO ()
+testDevUnverifiedReceiptsAbsent = withIni fullIni $ \p -> do
   Right cfg <- readServiceConfig p
-  devChatRedeem cfg `shouldBe` False
+  devAcceptUnverifiedStoreReceipts cfg `shouldBe` False
 
-testDevRedeemOn :: IO ()
-testDevRedeemOn = withDev "chat_redeem = on\n" $ \r -> case r of
-  Right cfg -> devChatRedeem cfg `shouldBe` True
-  Left e -> expectationFailure ("[dev] chat_redeem = on is legal: " <> e)
+testDevUnverifiedReceiptsOn :: IO ()
+testDevUnverifiedReceiptsOn = withDev "accept_unverified_store_receipts = on\n" $ \r -> case r of
+  Right cfg -> devAcceptUnverifiedStoreReceipts cfg `shouldBe` True
+  Left e -> expectationFailure ("[dev] accept_unverified_store_receipts = on is legal: " <> e)
 
-testDevRedeemOff :: IO ()
-testDevRedeemOff = withDev "chat_redeem = off\n" $ \r -> case r of
-  Right cfg -> devChatRedeem cfg `shouldBe` False
-  Left e -> expectationFailure ("[dev] chat_redeem = off is legal: " <> e)
+testDevUnverifiedReceiptsOff :: IO ()
+testDevUnverifiedReceiptsOff = withDev "accept_unverified_store_receipts = off\n" $ \r -> case r of
+  Right cfg -> devAcceptUnverifiedStoreReceipts cfg `shouldBe` False
+  Left e -> expectationFailure ("[dev] accept_unverified_store_receipts = off is legal: " <> e)
 
-testDevRedeemNotBoolean :: IO ()
-testDevRedeemNotBoolean = withDev "chat_redeem = true\n" $ \r -> case r of
-  Left e -> e `shouldContain` "chat_redeem"
-  Right _ -> expectationFailure "only on and off are accepted, so a typo cannot silently disarm the gate"
+testDevUnverifiedReceiptsNotBoolean :: IO ()
+testDevUnverifiedReceiptsNotBoolean = withDev "accept_unverified_store_receipts = yes\n" $ \r -> case r of
+  Left e -> e `shouldContain` "accept_unverified_store_receipts"
+  Right _ -> expectationFailure "only on and off are accepted, so a typo cannot silently arm the mock"
 
 withDev :: T.Text -> (Either String ServiceConfig -> IO a) -> IO a
 withDev keys act = withIni (fullIni <> "[dev]\n" <> keys) $ \p -> readServiceConfig p >>= act
+
+appleIni, googleIni :: T.Text
+appleIni = "[apple]\nbundle_id = chat.simplex.app\nroot_certificates = /etc/badges/AppleRootCA-G3.cer ,/etc/badges/AppleRootCA-G4.cer,\n"
+googleIni = "[google]\npackage_name = chat.simplex.app\nservice_account_file = /etc/badges/play.json\n"
+
+testStoresAbsent :: IO ()
+testStoresAbsent = withIni fullIni $ \p -> do
+  Right cfg <- readServiceConfig p
+  appleStore cfg `shouldBe` Nothing
+  playStore cfg `shouldBe` Nothing
+
+testStoresRead :: IO ()
+testStoresRead = withIni (fullIni <> appleIni <> googleIni) $ \p -> do
+  Right cfg <- readServiceConfig p
+  appleStore cfg `shouldBe` Just AppleStoreConfig {aBundleId = "chat.simplex.app", aRootCertificates = "/etc/badges/AppleRootCA-G3.cer" :| ["/etc/badges/AppleRootCA-G4.cer"]}
+  playStore cfg
+    `shouldBe` Just
+      PlayStoreConfig
+        { gPackageName = "chat.simplex.app",
+          gServiceAccountFile = "/etc/badges/play.json",
+          gApiHost = "https://androidpublisher.googleapis.com",
+          gTokenUrl = "https://oauth2.googleapis.com/token"
+        }
+
+testStoresIncomplete :: IO ()
+testStoresIncomplete = do
+  refused (T.replace "bundle_id = chat.simplex.app\n" "" appleIni) "apple.bundle_id"
+  refused (T.replace "root_certificates = /etc/badges/AppleRootCA-G3.cer ,/etc/badges/AppleRootCA-G4.cer,\n" "" appleIni) "apple.root_certificates"
+  refused (T.replace "package_name = chat.simplex.app\n" "" googleIni) "google.package_name"
+  refused (T.replace "service_account_file = /etc/badges/play.json\n" "" googleIni) "google.service_account_file"
+  where
+    refused section key =
+      withIni (fullIni <> section) readServiceConfig >>= \case
+        Left e -> e `shouldContain` key
+        Right _ -> expectationFailure ("an incomplete section must fail at boot, naming " <> key)
+
+testDevUnverifiedBesideVerifier :: IO ()
+testDevUnverifiedBesideVerifier =
+  mapM_
+    ( \stores ->
+        withIni (fullIni <> stores <> "[dev]\naccept_unverified_store_receipts = on\n") readServiceConfig >>= \case
+          Left e -> e `shouldContain` "accept_unverified_store_receipts"
+          Right _ -> expectationFailure "a service that verifies store receipts must not also accept unverified ones"
+    )
+    [appleIni, googleIni]
+
+parseIni :: T.Text -> IO (Either String ServiceConfig)
+parseIni t = withIni t readServiceConfig
+
+groupConfigTests :: Spec
+groupConfigTests = describe "group config" $ do
+  it "parses display_name and description" testGroupNameAndDescription
+  it "defaults description to Nothing" testGroupNoDescription
+  it "treats a blank description as absent" testGroupBlankDescription
+  it "refuses a display_name no group can be created under" testGroupInvalidName
+  it "suggests no name when no character of display_name is valid" testGroupNoValidName
+  it "requires display_name when the section is present" testGroupMissingName
+  it "leaves group Nothing when the section is absent" testGroupAbsent
+
+listenerIni :: T.Text
+listenerIni = "[listener]\nstatic_dir = /srv/web\n"
+
+groupIni :: T.Text -> IO (Either String ServiceConfig)
+groupIni body = parseIni (listenerIni <> "[group]\n" <> body)
+
+testGroupNameAndDescription :: IO ()
+testGroupNameAndDescription = do
+  r <- groupIni "display_name = SimpleX Badges\ndescription = Welcome\n"
+  fmap group r `shouldBe` Right (Just GroupConfig {gDisplayName = "SimpleX Badges", gDescription = Just "Welcome"})
+
+testGroupNoDescription :: IO ()
+testGroupNoDescription = do
+  r <- groupIni "display_name = X\n"
+  fmap group r `shouldBe` Right (Just GroupConfig {gDisplayName = "X", gDescription = Nothing})
+
+testGroupBlankDescription :: IO ()
+testGroupBlankDescription = do
+  r <- groupIni "display_name = X\ndescription =    \n"
+  fmap group r `shouldBe` Right (Just GroupConfig {gDisplayName = "X", gDescription = Nothing})
+
+testGroupInvalidName :: IO ()
+testGroupInvalidName = do
+  r <- groupIni "display_name = Значки (staging)\n"
+  case r of
+    Left e -> e `shouldBe` "group.display_name \"Значки (staging)\" is not a valid group name, the closest valid name is \"Значки staging\""
+    Right cfg -> expectationFailure ("a name the core refuses must not boot, and this one kept " <> show (group cfg))
+
+testGroupNoValidName :: IO ()
+testGroupNoValidName = do
+  r <- groupIni "display_name = !!!\n"
+  fmap group r `shouldBe` Left "group.display_name \"!!!\" is not a valid group name"
+
+testGroupMissingName :: IO ()
+testGroupMissingName = do
+  r <- groupIni "description = hi\n"
+  fmap group r `shouldBe` Left "group.display_name is required"
+
+testGroupAbsent :: IO ()
+testGroupAbsent = do
+  r <- parseIni listenerIni
+  fmap group r `shouldBe` Right Nothing

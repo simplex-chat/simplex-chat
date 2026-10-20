@@ -31,12 +31,16 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import com.mikepenz.markdown.compose.Markdown
+import com.mikepenz.markdown.compose.components.MarkdownComponents
 import com.mikepenz.markdown.compose.components.markdownComponents
 import com.mikepenz.markdown.compose.elements.MarkdownHeader
 import com.mikepenz.markdown.m2.markdownColor
 import com.mikepenz.markdown.m2.markdownTypography
+import com.mikepenz.markdown.model.MarkdownColors
+import com.mikepenz.markdown.model.MarkdownPadding
+import com.mikepenz.markdown.model.MarkdownTypography
 import com.mikepenz.markdown.model.markdownPadding
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -771,22 +775,36 @@ expect fun ConditionsBox(modifier: Modifier, scrollState: ScrollState, content: 
 
 @Composable
 private fun ConditionsMarkdown(text: String) {
+  val style = documentMarkdownStyle()
   Markdown(text,
-    markdownColor(linkText = MaterialTheme.colors.primary),
+    style.colors,
+    style.typography,
+    Modifier.padding(8.dp),
+    // using CommonMarkFlavourDescriptor instead of GFMFlavourDescriptor because it shows `https://simplex.chat/` (link inside backticks) incorrectly
+    flavour = CommonMarkFlavourDescriptor(),
+    components = style.components,
+    padding = style.padding
+  )
+}
+
+class DocumentMarkdownStyle(val colors: MarkdownColors, val typography: MarkdownTypography, val components: MarkdownComponents, val padding: MarkdownPadding)
+
+@Composable
+fun documentMarkdownStyle(h1: TextStyle = MaterialTheme.typography.body1): DocumentMarkdownStyle =
+  DocumentMarkdownStyle(
+    markdownColor(),
     markdownTypography(
-      h1 = MaterialTheme.typography.body1,
+      h1 = h1,
       h2 = MaterialTheme.typography.h3.copy(fontSize = 22.sp, fontWeight = FontWeight.Bold),
       h3 = MaterialTheme.typography.h4.copy(fontWeight = FontWeight.Bold),
       h4 = MaterialTheme.typography.h5.copy(fontSize = 16.sp, fontWeight = FontWeight.Bold),
       h5 = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold),
       link = MaterialTheme.typography.body1.copy(
+        color = MaterialTheme.colors.primary,
         textDecoration = TextDecoration.Underline
       )
     ),
-    Modifier.padding(8.dp),
-    // using CommonMarkFlavourDescriptor instead of GFMFlavourDescriptor because it shows `https://simplex.chat/` (link inside backticks) incorrectly
-    flavour = CommonMarkFlavourDescriptor(),
-    components = markdownComponents(
+    markdownComponents(
       heading2 = {
         Spacer(Modifier.height(10.dp))
         MarkdownHeader(it.content, it.node, it.typography.h2)
@@ -803,9 +821,8 @@ private fun ConditionsMarkdown(text: String) {
         Spacer(Modifier.height(4.dp))
       },
     ),
-    padding = markdownPadding(block = 4.dp)
+    markdownPadding(block = 4.dp)
   )
-}
 
 @Composable
 private fun ConditionsLinkView(conditionsLink: String) {

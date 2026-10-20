@@ -57,10 +57,8 @@ interface EventSubscriber<K extends CEvt.Tag> {
 }
 
 /**
- * Database configuration. The native library is built against exactly one
- * backend (see `simplex_backend` / `SIMPLEX_BACKEND` at install time); this
- * type makes the caller state which one they are targeting so field names
- * can't lie about their meaning.
+ * Database configuration. `type` selects the libsimplex backend loaded by
+ * `ChatApi.init`; one backend per process.
  */
 export type DbConfig =
   | {
@@ -79,6 +77,11 @@ export type DbConfig =
       /** PostgreSQL connection string (e.g. `postgres://user:pass@host/db`). */
       connectionString: string
     }
+
+function chatErrorEvent(err: unknown): ChatEvent {
+  if (err instanceof core.ChatAPIError && err.chatError) return {type: "chatError", chatError: err.chatError}
+  throw err
+}
 
 function dbConfigToMigrateArgs(db: DbConfig): [string, string] {
   switch (db.type) {
@@ -103,7 +106,7 @@ export class ChatApi {
   private constructor(protected ctrl_: bigint | undefined) {}
 
   /**
-   * Initializes the ChatApi.
+   * Initializes the ChatApi, loading libsimplex for `db.type` (downloaded on first use).
    * @param {DbConfig} db - Database configuration (sqlite or postgres).
    * @param {core.MigrationConfirmation} [confirm=core.MigrationConfirmation.YesUp] - Migration confirmation mode.
    * @param {number} [queueSize] - Size of internal queues, the core default is used when omitted.
@@ -114,6 +117,7 @@ export class ChatApi {
     queueSize?: number
   ): Promise<ChatApi> {
     const [path, key] = dbConfigToMigrateArgs(db)
+    await core.loadLibrary(db.type)
     const ctrl = await core.chatMigrateInit(path, key, confirm, queueSize)
     return new ChatApi(ctrl)
   }
@@ -171,7 +175,7 @@ export class ChatApi {
   private async runEventsLoop(): Promise<void> {
     while (this.receiveEvents) {
       try {
-        const event = await this.recvChatEvent()
+        const event = await this.recvChatEvent().catch(chatErrorEvent)
         if (!event) continue
         const subs = this.subscribers[event.type]
         if (subs) {
@@ -194,12 +198,7 @@ export class ChatApi {
           }
         }
       } catch(err) {
-        const e = err as core.ChatAPIError
-        if ("chatError" in e) {
-          console.log("Chat error", e.chatError)
-        } else {
-          console.log("Invalid event", e)
-        }
+        console.log("Invalid event", err)
       }
     }
   }
@@ -274,9 +273,11 @@ export class ChatApi {
     }
     return new Promise((resolve, reject) => {
       let done = false
+      let timer: NodeJS.Timeout | undefined = undefined
       const cleanup = () => {
         done = true
-        this.off(event, subscriber)    
+        clearTimeout(timer)
+        this.off(event, subscriber)
       }
       const subscriber: EventSubscriberFunc<K> = async (evt: ChatEvent & {type: K}) => {
         if (done) return
@@ -289,7 +290,7 @@ export class ChatApi {
       }
       this.on(event, subscriber)
       if (timeout > 0) {
-        setTimeout(() => { if (!done) { cleanup(); resolve(undefined) } }, timeout)        
+        timer = setTimeout(() => { if (!done) { cleanup(); resolve(undefined) } }, timeout)
       }
     })
   }
@@ -477,9 +478,10 @@ export class ChatApi {
 
   /**
    * Update message.
+   * A live message stays live with `liveMessage = true` and is finalized with `liveMessage = false`.
    * Network usage: background.
    */
-  async apiUpdateChatItem(chatType: T.ChatType, chatId: number, chatItemId: number, msgContent: T.MsgContent, liveMessage: false): Promise<T.ChatItem> {
+  async apiUpdateChatItem(chatType: T.ChatType, chatId: number, chatItemId: number, msgContent: T.MsgContent, liveMessage = false): Promise<T.ChatItem> {
     const r = await this.sendChatCmd(
       CC.APIUpdateChatItem.cmdString({
         chatRef: {chatType, chatId},
@@ -561,6 +563,16 @@ export class ChatApi {
   async apiAddMember(groupId: number, contactId: number, memberRole: T.GroupMemberRole): Promise<T.GroupMember> {
     const r = await this.sendChatCmd(CC.APIAddMember.cmdString({groupId, contactId, memberRole}))
     if (r.type === "sentGroupInvitation") return r.member
+    throw new ChatCommandError("error adding member", r)
+  }
+
+  /**
+   * Add member of another group to group. Requires bot to have Admin role in the group, and direct messages allowed for its role in another group.
+   * Network usage: interactive.
+   */
+  async apiAddMemberViaGroup(groupId: number, viaGroupId: number, groupMemberId: number, memberRole: T.GroupMemberRole): Promise<T.GroupMember> {
+    const r = await this.sendChatCmd(CC.APIAddMemberViaGroup.cmdString({groupId, viaGroupId, groupMemberId, memberRole}))
+    if (r.type === "sentGroupInvitationViaGroup") return r.member
     throw new ChatCommandError("error adding member", r)
   }
 
@@ -984,5 +996,90 @@ export class ChatApi {
     const r: any = await this.sendChatCmd(cmd)
     if (r.type === "newMemberContactSentInv") return r.contact
     throw new ChatCommandError("error sending member contact invitation", r)
+  }
+}
+
+/**
+ * Text shown as a live message while it is written, e.g. a streamed reply.
+ */
+export class LiveMessage {
+  private tasks: Promise<void> = Promise.resolve()
+  private text = ""
+  private writing = false
+  private timer: NodeJS.Timeout | undefined = undefined
+  private item: {itemId: number, text: string} | undefined = undefined
+
+  /**
+   * @param chat - Chat API, or an object with its methods to send, update and delete messages.
+   * @param {T.ChatType} chatType - Chat type.
+   * @param {number} chatId - Contact or group ID.
+   * @param {number} [interval=3000] - Minimum interval between updates of the live message, in milliseconds.
+   * @param onError - Error handler for sending, updating and deleting messages. Errors are logged when it is omitted.
+   */
+  constructor(
+    private readonly chat: Pick<ChatApi, "apiSendMessages" | "apiUpdateChatItem" | "apiDeleteChatItems">,
+    private readonly chatType: T.ChatType,
+    private readonly chatId: number,
+    private readonly interval = 3000,
+    private readonly onError: (error: unknown) => void = e => console.log("live message error", e)
+  ) {}
+
+  /**
+   * Set the text of the live message.
+   * The first text is sent at once; later texts update the message at most once per interval.
+   */
+  update(text: string): void {
+    this.text = text
+    if (!this.writing) {
+      this.writing = true
+      this.queueText(text, true)
+    } else if (this.timer === undefined) {
+      this.timer = setTimeout(() => {
+        this.timer = undefined
+        this.queueText(this.text, true)
+      }, this.interval)
+    }
+  }
+
+  /**
+   * Finalize the live message with the text, or with the last text when omitted.
+   * A message without text is deleted. The next update starts a new live message.
+   * The returned promise resolves after all queued commands complete.
+   */
+  end(text = this.text): Promise<void> {
+    clearTimeout(this.timer)
+    this.timer = undefined
+    this.text = ""
+    this.writing = false
+    this.queueText(text, false)
+    return this.tasks
+  }
+
+  private queueText(text: string, live: boolean): void {
+    this.tasks = this.tasks.then(() => this.showText(text, live)).catch(this.onError)
+  }
+
+  private async showText(text: string, live: boolean): Promise<void> {
+    try {
+      await this.showMessage(text, live)
+    } finally {
+      if (!live) this.item = undefined
+    }
+  }
+
+  private async showMessage(text: string, live: boolean): Promise<void> {
+    const item = this.item
+    if (item === undefined) {
+      if (live || text !== "") {
+        const [{chatItem}] = await this.chat.apiSendMessages([this.chatType, this.chatId], [{msgContent: {type: "text", text}, mentions: {}}], live)
+        this.item = live ? {itemId: chatItem.meta.itemId, text} : undefined
+      }
+    } else if (!live && text === "") {
+      await this.chat.apiDeleteChatItems(this.chatType, this.chatId, [item.itemId], T.CIDeleteMode.Broadcast)
+      this.item = undefined
+    } else if (!live || text !== item.text) {
+      await this.chat.apiUpdateChatItem(this.chatType, this.chatId, item.itemId, {type: "text", text}, live)
+      this.item = live ? {itemId: item.itemId, text} : undefined
+    }
   }
 }

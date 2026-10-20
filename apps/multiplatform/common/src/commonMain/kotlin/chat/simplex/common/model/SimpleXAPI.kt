@@ -27,11 +27,14 @@ import chat.simplex.common.model.SMPProxyMode.Always
 import dev.icerock.moko.resources.compose.painterResource
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.badges.BadgeStore
+import chat.simplex.common.views.badges.BadgeStoreError
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.chat.item.contentModerationPostLink
 import chat.simplex.common.views.chat.item.showContentBlockedAlert
 import chat.simplex.common.views.chat.item.showQuotedItemDoesNotExistAlert
 import chat.simplex.common.views.chatlist.openGroupChat
+import chat.simplex.common.views.database.deleteDatabaseBackups
 import chat.simplex.common.views.migration.MigrationFileLinkData
 import chat.simplex.common.views.newchat.LinkNoticeTarget
 import chat.simplex.common.views.newchat.showLinkNoticeAlert
@@ -41,7 +44,7 @@ import chat.simplex.common.views.usersettings.networkAndServers.defaultCondition
 import chat.simplex.common.views.usersettings.networkAndServers.serverHostname
 import com.charleskorn.kaml.Yaml
 import com.charleskorn.kaml.YamlConfiguration
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import com.russhwolf.settings.Settings
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
@@ -143,6 +146,7 @@ class AppPreferences {
   val appearanceBarsBlurRadius = mkIntPreference(SHARED_PREFS_APPEARANCE_BARS_BLUR_RADIUS, if (deviceSupportsBlur) 50 else 0)
   val experimentalCalls = mkBoolPreference(SHARED_PREFS_EXPERIMENTAL_CALLS, false)
   val showUnreadAndFavorites = mkBoolPreference(SHARED_PREFS_SHOW_UNREAD_AND_FAVORITES, false)
+  val markdownFileTextView = mkBoolPreference(SHARED_PREFS_MARKDOWN_FILE_TEXT_VIEW, false)
   val chatArchiveName = mkStrPreference(SHARED_PREFS_CHAT_ARCHIVE_NAME, null)
   val chatArchiveTime = mkDatePreference(SHARED_PREFS_CHAT_ARCHIVE_TIME, null)
   val chatLastStart = mkDatePreference(SHARED_PREFS_CHAT_LAST_START, null)
@@ -217,6 +221,7 @@ class AppPreferences {
   val encryptedSelfDestructPassphrase = mkStrPreference(SHARED_PREFS_ENCRYPTED_SELF_DESTRUCT_PASSPHRASE, null)
   val initializationVectorSelfDestructPassphrase = mkStrPreference(SHARED_PREFS_INITIALIZATION_VECTOR_SELF_DESTRUCT_PASSPHRASE, null)
   val encryptionStartedAt = mkDatePreference(SHARED_PREFS_ENCRYPTION_STARTED_AT, null)
+  val shouldDeleteDatabaseBackups = mkBoolPreference(SHARED_PREFS_SHOULD_DELETE_DATABASE_BACKUPS, false)
   val confirmDBUpgrades = mkBoolPreference(SHARED_PREFS_CONFIRM_DB_UPGRADES, false)
   val selfDestruct = mkBoolPreference(SHARED_PREFS_SELF_DESTRUCT, false)
   val selfDestructDisplayName = mkStrPreference(SHARED_PREFS_SELF_DESTRUCT_DISPLAY_NAME, null)
@@ -429,6 +434,7 @@ class AppPreferences {
     const val SHARED_PREFS_PRIVACY_FULL_BACKUP = "FullBackup"
     private const val SHARED_PREFS_EXPERIMENTAL_CALLS = "ExperimentalCalls"
     private const val SHARED_PREFS_SHOW_UNREAD_AND_FAVORITES = "ShowUnreadAndFavorites"
+    private const val SHARED_PREFS_MARKDOWN_FILE_TEXT_VIEW = "MarkdownFileTextView"
     private const val SHARED_PREFS_CHAT_ARCHIVE_NAME = "ChatArchiveName"
     private const val SHARED_PREFS_CHAT_ARCHIVE_TIME = "ChatArchiveTime"
     private const val SHARED_PREFS_APP_LANGUAGE = "AppLanguage"
@@ -489,6 +495,7 @@ class AppPreferences {
     private const val SHARED_PREFS_ENCRYPTED_SELF_DESTRUCT_PASSPHRASE = "EncryptedSelfDestructPassphrase"
     private const val SHARED_PREFS_INITIALIZATION_VECTOR_SELF_DESTRUCT_PASSPHRASE = "InitializationVectorSelfDestructPassphrase"
     private const val SHARED_PREFS_ENCRYPTION_STARTED_AT = "EncryptionStartedAt"
+    private const val SHARED_PREFS_SHOULD_DELETE_DATABASE_BACKUPS = "ShouldDeleteDatabaseBackups"
     private const val SHARED_PREFS_NEW_DATABASE_INITIALIZED = "NewDatabaseInitialized"
     private const val SHARED_PREFS_SHOULD_IMPORT_APP_SETTINGS = "ShouldImportAppSettings"
     private const val SHARED_PREFS_CONFIRM_DB_UPGRADES = "ConfirmDBUpgrades"
@@ -589,13 +596,38 @@ object ChatController {
     }
   }
 
+  // log = false because a store receipt is a bearer secret, like a badge code - it is in the command.
+  suspend fun apiPurchaseBadge(rh: Long?, userId: Long, echoedInvoiceId: String?, payment: ServicePayment): BadgePurchaseResult {
+    val r = sendCmd(rh, CC.ApiPurchaseBadge(userId, echoedInvoiceId, payment), log = false)
+    return when {
+      r is API.Result && r.res is CR.BadgeStateR -> BadgePurchaseResult.Held(r.res.user, r.res.badgeState, r.res.storePurchases)
+      r is API.Result && r.res is CR.BadgeRedeemed -> BadgePurchaseResult.Credited(r.res.user.updateRemoteHostId(rh), r.res.badgeState)
+      r is API.Error -> BadgePurchaseResult.Failed(r.err)
+      else -> {
+        // the response type alone - it names a case or a JSON key, never the service's message
+        Log.e(TAG, "apiPurchaseBadge: unexpected ${r.responseType}")
+        BadgePurchaseResult.Failed(null)
+      }
+    }
+  }
+
+  suspend fun apiCreateBadgeInvoice(rh: Long?, userId: Long): String {
+    val r = sendCmd(rh, CC.ApiCreateBadgeInvoice(userId))
+    if (r is API.Result && r.res is CR.BadgeInvoice) return r.res.invoiceId
+    if (r is API.Error) throw BadgeStoreError.ApiError(r.err)
+    throw Exception("apiCreateBadgeInvoice: unexpected ${r.responseType}")
+  }
+
   // localized where the user can act on it; otherwise the error itself, so a screenshot says what happened
-  fun redeemErrorText(err: ChatError?): String {
+  fun redeemErrorText(err: ChatError?, purchase: Boolean): String {
     if (err is ChatError.ChatErrorChat && err.errorType is ChatErrorType.CEBadgeRedeemError) {
       when (val e = err.errorType.badgeRedeemError) {
         is BadgeRedeemError.InvalidCode -> return generalGetString(MR.strings.badges_error_invalid_code)
-        is BadgeRedeemError.ServiceNotConfigured -> return generalGetString(MR.strings.badges_error_service_not_configured)
-        is BadgeRedeemError.BadgeActive -> return generalGetString(MR.strings.badges_error_already_active)
+        is BadgeRedeemError.InvalidReceipt -> {}
+        is BadgeRedeemError.ServiceNotConfigured ->
+          return generalGetString(if (purchase) MR.strings.badges_error_service_not_configured_purchase else MR.strings.badges_error_service_not_configured)
+        is BadgeRedeemError.BadgeActive ->
+          return generalGetString(if (purchase) MR.strings.badges_error_already_active_purchase else MR.strings.badges_error_already_active)
         is BadgeRedeemError.ServiceError -> badgeServiceErrorText(e.serviceError)?.let { return it }
         is BadgeRedeemError.InvalidResponse -> return String.format(generalGetString(MR.strings.badges_error_bad_service_response), e.message)
         is BadgeRedeemError.UnknownKeyIndex, is BadgeRedeemError.CredentialNotVerified -> return generalGetString(MR.strings.badges_error_credential_not_verified)
@@ -604,9 +636,9 @@ object ChatController {
     return "${generalGetString(MR.strings.error_prefix)}: ${err?.string ?: generalGetString(MR.strings.badges_error_unknown)}"
   }
 
-  suspend fun apiGetBadgeState(rh: Long?, userId: Long): BadgeState? {
+  suspend fun apiGetBadgeState(rh: Long?, userId: Long): Pair<BadgeState?, List<OpenStorePurchase>> {
     val r = sendCmd(rh, CC.ApiGetBadgeState(userId))
-    if (r is API.Result && r.res is CR.BadgeStateR) return r.res.badgeState
+    if (r is API.Result && r.res is CR.BadgeStateR) return r.res.badgeState to r.res.storePurchases
     throw Exception("apiGetBadgeState: unexpected ${r.responseType}")
   }
 
@@ -639,11 +671,14 @@ object ChatController {
 
   // Not thrown: a failed badge read must not stop the app starting, and the model is left alone
   // rather than set to nil, which would read as "no badge".
-  private suspend fun loadBadgeState(rhId: Long?) {
+  suspend fun loadBadgeState(rhId: Long?) {
     try {
       val userId = currentUserId("loadBadgeState")
-      val badgeState = apiGetBadgeState(rhId, userId)
-      withContext(Dispatchers.Main) { BadgeModel.set(rhId, userId, badgeState) }
+      val (badgeState, storePurchases) = apiGetBadgeState(rhId, userId)
+      withContext(Dispatchers.Main) {
+        BadgeModel.set(rhId, userId, badgeState)
+        BadgeStore.setStorePurchases(rhId, userId, storePurchases)
+      }
     } catch (e: Exception) {
       Log.e(TAG, "loadBadgeState: ${e.message}")
     }
@@ -688,6 +723,11 @@ object ChatController {
       }
       apiStartChat()
       appPrefs.chatStopped.set(false)
+      withLongRunningApi { BadgeStore.presentUnfinished() }
+      if (appPrefs.shouldDeleteDatabaseBackups.get()) {
+        deleteDatabaseBackups()
+        appPrefs.shouldDeleteDatabaseBackups.set(false)
+      }
     } catch (e: Throwable) {
       Log.e(TAG, "failed starting chat $e")
       throw e
@@ -753,6 +793,7 @@ object ChatController {
     chatModel.users.clear()
     chatModel.users.addAll(users)
     getUserChatData(rhId, keepingChatId = keepingChatId)
+    withLongRunningApi { BadgeStore.presentUnfinished() }
     val invitation = chatModel.callInvitations.values.firstOrNull { inv -> inv.user.userId == toUserId }
     if (invitation != null && currentUser != null) {
       chatModel.callManager.reportNewIncomingCall(invitation.copy(user = currentUser))
@@ -943,7 +984,7 @@ object ChatController {
       val r = json.decodeFromString<API>(rStr)
       if (log) {
         Log.d(TAG, "sendCmd response type ${r.responseType}")
-        if (r is API.Result && (r.res is CR.Response || r.res is CR.Invalid)) {
+        if (r is API.Result && ((r.res is CR.Response && !r.res.type.startsWith("call")) || r.res is CR.Invalid)) {
           Log.d(TAG, "sendCmd response json $rStr")
         }
         chatModel.addTerminalItem(TerminalItem.resp(rhId, r))
@@ -960,7 +1001,7 @@ object ChatController {
     } else {
       val r = json.decodeFromString<API>(rStr)
       Log.d(TAG, "chatRecvMsg: ${r.responseType}")
-      if (r is API.Result && (r.res is CR.Response || r.res is CR.Invalid)) Log.d(TAG, "chatRecvMsg json: $rStr")
+      if (r is API.Result && ((r.res is CR.Response && !r.res.type.startsWith("call")) || r.res is CR.Invalid)) Log.d(TAG, "chatRecvMsg json: $rStr")
       r
     }
   }
@@ -1928,8 +1969,10 @@ object ChatController {
     val r = sendCmd(rh, CC.ApiUpdateProfile(userId, profile))
     if (r is API.Result && r.res is CR.UserProfileNoChange) return profile to emptyList()
     if (r is API.Result && r.res is CR.UserProfileUpdated) return r.res.toProfile to r.res.updateSummary.changedContacts
-    if (r is API.Error && r.err is ChatError.ChatErrorStore && r.err.storeError is StoreError.DuplicateName) {
+    if (r is API.Error && (r.err is ChatError.ChatErrorStore && r.err.storeError is StoreError.DuplicateName || r.err is ChatError.ChatErrorChat && r.err.errorType is ChatErrorType.UserExists)) {
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.failed_to_create_user_duplicate_title), generalGetString(MR.strings.failed_to_create_user_duplicate_desc))
+    } else if (!(networkErrorAlert(r))) {
+      AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_saving_profile), "${r.responseType}: ${r.details}")
     }
     Log.e(TAG, "apiUpdateProfile bad response: ${r.responseType} ${r.details}")
     return null
@@ -1941,7 +1984,12 @@ object ChatController {
     return when {
       r is API.Result && r.res is CR.UserProfileNoChange -> null
       r is API.Result && r.res is CR.UserProfileUpdated -> r.res.user.updateRemoteHostId(rh)
-      else -> throw Exception("failed to set profile address: ${r.responseType} ${r.details}")
+      else -> {
+        if (!(networkErrorAlert(r))) {
+          apiErrorAlert("apiSetProfileAddress", generalGetString(MR.strings.error_saving_profile), r)
+        }
+        throw Exception("failed to set profile address: ${r.responseType} ${r.details}")
+      }
     }
   }
 
@@ -2145,8 +2193,8 @@ object ChatController {
     return r.result is CR.CmdOk
   }
 
-  suspend fun apiSendCallExtraInfo(rh: Long?, contact: Contact, rtcIceCandidates: String): Boolean {
-    val extraInfo = WebRTCExtraInfo(rtcIceCandidates)
+  suspend fun apiSendCallExtraInfo(rh: Long?, contact: Contact, rtcSession: String?, rtcIceCandidates: String): Boolean {
+    val extraInfo = WebRTCExtraInfo(rtcSession, rtcIceCandidates)
     val r = sendCmd(rh, CC.ApiSendCallExtraInfo(contact, extraInfo))
     return r.result is CR.CmdOk
   }
@@ -3122,6 +3170,13 @@ object ChatController {
           // TODO NtfManager.shared.notifyGroupInvitation
         }
       }
+      is CR.ReceivedGroupInvitationViaGroup -> {
+        if (active(r.user)) {
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.updateGroup(rhId, r.groupInfo)
+          }
+        }
+      }
       is CR.UserAcceptedGroupSent -> {
         if (!active(r.user)) return
 
@@ -3372,21 +3427,13 @@ object ChatController {
         chatModel.callManager.reportNewIncomingCall(r.callInvitation.copy(remoteHostId = rhId))
       }
       is CR.CallOffer -> {
-        // TODO askConfirmation?
-        // TODO check encryption is compatible
         withCall(r, r.contact) { call ->
-          chatModel.activeCall.value = call.copy(callState = CallState.OfferReceived, sharedKey = r.sharedKey)
-          val useRelay = appPrefs.webrtcPolicyRelay.get()
-          val iceServers = getIceServers()
-          Log.d(TAG, ".callOffer iceServers $iceServers")
-          chatModel.callCommand.add(WCallCommand.Offer(
-            offer = r.offer.rtcSession,
-            iceCandidates = r.offer.rtcIceCandidates,
-            media = r.callType.media,
-            aesKey = r.sharedKey,
-            iceServers = iceServers,
-            relay = useRelay
-          ))
+          chatModel.activeCall.value = call.copy(callState = CallState.OfferReceived, hasSharedKey = r.sharedKey != null)
+          if (r.askConfirmation) {
+            showUnencryptedCallAlert(call) { processCallOffer(r) }
+          } else {
+            processCallOffer(r)
+          }
         }
       }
       is CR.CallAnswer -> {
@@ -3397,7 +3444,7 @@ object ChatController {
       }
       is CR.CallExtraInfo -> {
         withCall(r, r.contact) { _ ->
-          chatModel.callCommand.add(WCallCommand.Ice(iceCandidates = r.extraInfo.rtcIceCandidates))
+          chatModel.callCommand.add(WCallCommand.Ice(iceCandidates = r.extraInfo.rtcIceCandidates, session = r.extraInfo.rtcSession))
         }
       }
       is CR.CallEnded -> {
@@ -3589,6 +3636,10 @@ object ChatController {
             BadgeModel.setAlert(rhId, r.user.userId, r.badgeAlert)
           }
         }
+      is CR.StorePurchaseCredited ->
+        withLongRunningApi { BadgeStore.storePurchaseCredited(rhId, r.user, r.invoiceId) }
+      is CR.StorePurchaseRefused ->
+        withLongRunningApi { BadgeStore.storePurchaseRefused(rhId, r.user, r.invoiceId, r.refusal) }
       else ->
         Log.d(TAG , "unsupported event: ${msg.responseType}")
     }
@@ -3630,7 +3681,7 @@ object ChatController {
     getUserChatData(null)
   }
 
-  private fun activeUser(rhId: Long?, user: UserLike): Boolean =
+  fun activeUser(rhId: Long?, user: UserLike): Boolean =
     rhId == chatModel.remoteHostId() && user.userId == chatModel.currentUser.value?.userId
 
   private fun withCall(r: CR, contact: Contact, perform: (Call) -> Unit) {
@@ -3640,6 +3691,39 @@ object ChatController {
     } else {
       Log.d(TAG, "processReceivedMsg: ignoring ${r.responseType}, not in call with the contact ${contact.id}")
     }
+  }
+
+  private fun processCallOffer(r: CR.CallOffer) {
+    val useRelay = appPrefs.webrtcPolicyRelay.get()
+    val iceServers = getIceServers()
+    chatModel.callCommand.add(WCallCommand.Offer(
+      offer = r.offer.rtcSession,
+      iceCandidates = r.offer.rtcIceCandidates,
+      media = r.callType.media,
+      aesKey = r.sharedKey,
+      iceServers = iceServers,
+      relay = useRelay
+    ))
+  }
+
+  private fun showUnencryptedCallAlert(call: Call, onContinue: () -> Unit) {
+    // the call may have ended, or a new one started with the same contact, while the alert was shown
+    fun offerPending(): Boolean {
+      val c = chatModel.activeCall.value
+      return c != null && c.remoteHostId == call.remoteHostId && c.contact.id == call.contact.id && c.callState == CallState.OfferReceived
+    }
+    val endCall = { if (offerPending()) withBGApi { chatModel.callManager.endCall(call) } }
+    AlertManager.shared.showAlertDialog(
+      title = generalGetString(MR.strings.call_not_encrypted_title),
+      text = generalGetString(MR.strings.call_not_encrypted_desc).format(call.contact.displayName),
+      confirmText = generalGetString(MR.strings.call_service_notification_end_call),
+      onConfirm = { endCall() },
+      dismissText = generalGetString(MR.strings.continue_to_next_step),
+      onDismiss = { if (offerPending()) onContinue() },
+      onDismissRequest = { endCall() },
+      destructive = true,
+      parseHtml = false
+    )
   }
 
   suspend fun leaveGroup(rh: Long?, groupId: Long) {
@@ -3892,6 +3976,17 @@ sealed class BadgeRedeemResult {
   class Failed(val err: ChatError?): BadgeRedeemResult()
 }
 
+@Serializable
+data class OpenStorePurchase(val invoiceId: String? = null, val transactionRef: String? = null, val creditError: BadgeIssueFailure? = null)
+
+// a refusal is Failed, with the code in BREServiceError
+sealed class BadgePurchaseResult {
+  class Held(val user: UserRef, val badgeState: BadgeState?, val storePurchases: List<OpenStorePurchase>): BadgePurchaseResult()
+  class Credited(val user: User, val badgeState: BadgeState?): BadgePurchaseResult()
+  // err is null for a response of an unexpected type, which is logged where it is received
+  class Failed(val err: ChatError?): BadgePurchaseResult()
+}
+
 // ChatCommand
 // Spec: spec/api.md#CC
 sealed class CC {
@@ -4072,6 +4167,8 @@ sealed class CC {
   class ApiStandaloneFileInfo(val url: String): CC()
   // badges
   class ApiRedeemBadgeCode(val userId: Long, val code: String): CC()
+  class ApiPurchaseBadge(val userId: Long, val echoedInvoiceId: String?, val payment: ServicePayment): CC()
+  class ApiCreateBadgeInvoice(val userId: Long): CC()
   class ApiGetBadgeState(val userId: Long): CC()
   class ApiGetBadgeLedger(val userId: Long, val badgePurchaseId: Long): CC()
   class ApiAckBadgeAlert(val userId: Long, val badgePurchaseId: Long, val alertKind: BadgeAlertKind, val snooze: Boolean, val episode: String): CC()
@@ -4297,6 +4394,8 @@ sealed class CC {
     is ApiDownloadStandaloneFile -> "/_download $userId $url ${file.filePath}"
     is ApiStandaloneFileInfo -> "/_download info $url"
     is ApiRedeemBadgeCode -> "/_redeem_badge_code $userId $code"
+    is ApiPurchaseBadge -> "/_badge purchase $userId${echoedInvoiceId?.let { " invoice=$it" } ?: ""} ${json.encodeToString(payment)}"
+    is ApiCreateBadgeInvoice -> "/_badge invoice $userId"
     is ApiGetBadgeState -> "/_badge state $userId"
     is ApiGetBadgeLedger -> "/_badge ledger $userId $badgePurchaseId"
     is ApiAckBadgeAlert -> "/_badge ack $userId $badgePurchaseId ${badgeAlertKindParam(alertKind)} ${onOff(snooze)} $episode"
@@ -4481,6 +4580,8 @@ sealed class CC {
     is ApiDownloadStandaloneFile -> "apiDownloadStandaloneFile"
     is ApiStandaloneFileInfo -> "apiStandaloneFileInfo"
     is ApiRedeemBadgeCode -> "apiRedeemBadgeCode"
+    is ApiPurchaseBadge -> "apiPurchaseBadge"
+    is ApiCreateBadgeInvoice -> "apiCreateBadgeInvoice"
     is ApiGetBadgeState -> "apiGetBadgeState"
     is ApiGetBadgeLedger -> "apiGetBadgeLedger"
     is ApiAckBadgeAlert -> "apiAckBadgeAlert"
@@ -4505,8 +4606,11 @@ sealed class CC {
       is ApiUnhideUser -> ApiUnhideUser(userId, obfuscate(viewPwd))
       is ApiDeleteUser -> ApiDeleteUser(userId, delSMPQueues, obfuscateOrNull(viewPwd))
       is TestStorageEncryption -> TestStorageEncryption(obfuscate(key))
-      // a code is a bearer secret until it is redeemed, and the terminal shows and copies cmdString
+      // a code or a store receipt is a bearer secret until it is redeemed, and the terminal shows and copies cmdString
       is ApiRedeemBadgeCode -> ApiRedeemBadgeCode(userId, obfuscate(code))
+      is ApiPurchaseBadge -> ApiPurchaseBadge(userId, echoedInvoiceId, when (payment) {
+        is ServicePayment.Google -> ServicePayment.Google(payment.productId, obfuscate(payment.token))
+      })
       else -> this
     }
 
@@ -4540,6 +4644,12 @@ sealed class CC {
       }
     }
   }
+}
+
+// the field must stay typed as the sealed base, or kotlinx omits the "type" tag core parses by
+@Serializable
+sealed class ServicePayment {
+  @Serializable @SerialName("google") class Google(val productId: String, val token: String): ServicePayment()
 }
 
 fun onOff(b: Boolean): String = if (b) "on" else "off"
@@ -4864,6 +4974,7 @@ sealed class UserServersError {
   @Serializable @SerialName("storageMissing") data class StorageMissing(val protocol: ServerProtocol, val user: UserRef?): UserServersError()
   @Serializable @SerialName("proxyMissing") data class ProxyMissing(val protocol: ServerProtocol, val user: UserRef?): UserServersError()
   @Serializable @SerialName("duplicateServer") data class DuplicateServer(val protocol: ServerProtocol, val duplicateServer: String, val duplicateHost: String): UserServersError()
+  @Serializable @SerialName("tooManyHosts") data class TooManyHosts(val protocol: ServerProtocol, val tooManyHostsServer: String): UserServersError()
   @Serializable @SerialName("duplicateChatRelayAddress") data class DuplicateChatRelayAddress(val duplicateChatRelay: String, val duplicateAddress: String): UserServersError()
 
   val globalError: String?
@@ -4879,6 +4990,7 @@ sealed class UserServersError {
       is StorageMissing -> this.protocol
       is ProxyMissing -> this.protocol
       is DuplicateServer -> this.protocol
+      is TooManyHosts -> this.protocol
       is DuplicateChatRelayAddress -> null
     }
 
@@ -4893,6 +5005,8 @@ sealed class UserServersError {
 
         is ProxyMissing -> this.user?.let { "${userStr(it)} ${generalGetString(MR.strings.no_message_servers_configured_for_private_routing)}" }
           ?: generalGetString(MR.strings.no_message_servers_configured_for_private_routing)
+
+        is TooManyHosts -> String.format(generalGetString(MR.strings.server_has_too_many_hosts), ServerAddress.parseServerAddress(this.tooManyHostsServer)?.hostnames?.firstOrNull() ?: this.tooManyHostsServer)
 
         else -> null
       }
@@ -6782,6 +6896,7 @@ sealed class CR {
   @Serializable @SerialName("leftMemberUser") class LeftMemberUser(val user: UserRef, val groupInfo: GroupInfo): CR()
   @Serializable @SerialName("groupMembers") class GroupMembers(val user: UserRef, val group: Group): CR()
   @Serializable @SerialName("receivedGroupInvitation") class ReceivedGroupInvitation(val user: UserRef, val groupInfo: GroupInfo, val contact: Contact, val memberRole: GroupMemberRole): CR()
+  @Serializable @SerialName("receivedGroupInvitationViaGroup") class ReceivedGroupInvitationViaGroup(val user: UserRef, val groupInfo: GroupInfo, val viaGroupInfo: GroupInfo, val viaMember: GroupMember, val memberRole: GroupMemberRole): CR()
   @Serializable @SerialName("groupDeletedUser") class GroupDeletedUser(val user: UserRef, val groupInfo: GroupInfo): CR()
   @Serializable @SerialName("joinedGroupMemberConnecting") class JoinedGroupMemberConnecting(val user: UserRef, val groupInfo: GroupInfo, val hostMember: GroupMember, val member: GroupMember): CR()
   @Serializable @SerialName("memberAccepted") class MemberAccepted(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember): CR()
@@ -6875,10 +6990,13 @@ sealed class CR {
   // badges
   // the full user, not UserRef: its profile carries the badge that setUserBadge just stored
   @Serializable @SerialName("badgeRedeemed") class BadgeRedeemed(val user: User, val redeemedBadge: LocalBadge, val newBadge: Boolean, val badgeState: BadgeState?): CR()
-  @Serializable @SerialName("badgeState") class BadgeStateR(val user: UserRef, val badgeState: BadgeState?): CR()
+  @Serializable @SerialName("badgeInvoice") class BadgeInvoice(val user: UserRef, val invoiceId: String): CR()
+  @Serializable @SerialName("badgeState") class BadgeStateR(val user: UserRef, val badgeState: BadgeState?, val storePurchases: List<OpenStorePurchase> = emptyList()): CR()
   @Serializable @SerialName("badgeLedger") class BadgeLedger(val user: UserRef, val badgeLedger: List<StatementEntry>): CR()
   @Serializable @SerialName("badgeChanged") class BadgeChanged(val user: User, val badgeState: BadgeState?): CR()
   @Serializable @SerialName("badgeAlert") class BadgeAlertR(val user: UserRef, val badgeAlert: BadgeAlert): CR()
+  @Serializable @SerialName("storePurchaseCredited") class StorePurchaseCredited(val user: UserRef, val invoiceId: String): CR()
+  @Serializable @SerialName("storePurchaseRefused") class StorePurchaseRefused(val user: UserRef, val invoiceId: String, val refusal: BadgeIssueFailure): CR()
   // general
   @Serializable class Response(val type: String, val json: String): CR()
   @Serializable class Invalid(val str: String): CR()
@@ -6982,6 +7100,7 @@ sealed class CR {
     is LeftMemberUser -> "leftMemberUser"
     is GroupMembers -> "groupMembers"
     is ReceivedGroupInvitation -> "receivedGroupInvitation"
+    is ReceivedGroupInvitationViaGroup -> "receivedGroupInvitationViaGroup"
     is GroupDeletedUser -> "groupDeletedUser"
     is JoinedGroupMemberConnecting -> "joinedGroupMemberConnecting"
     is MemberAccepted -> "memberAccepted"
@@ -7066,10 +7185,13 @@ sealed class CR {
     is ArchiveImported -> "archiveImported"
     is AppSettingsR -> "appSettings"
     is BadgeRedeemed -> "badgeRedeemed"
+    is BadgeInvoice -> "badgeInvoice"
     is BadgeStateR -> "badgeState"
     is BadgeLedger -> "badgeLedger"
     is BadgeChanged -> "badgeChanged"
     is BadgeAlertR -> "badgeAlert"
+    is StorePurchaseCredited -> "storePurchaseCredited"
+    is StorePurchaseRefused -> "storePurchaseRefused"
     is Response -> "* $type"
     is Invalid -> "* invalid json"
   }
@@ -7173,6 +7295,7 @@ sealed class CR {
     is LeftMemberUser -> withUser(user, json.encodeToString(groupInfo))
     is GroupMembers -> withUser(user, json.encodeToString(group))
     is ReceivedGroupInvitation -> withUser(user, "groupInfo: $groupInfo\ncontact: $contact\nmemberRole: $memberRole")
+    is ReceivedGroupInvitationViaGroup -> withUser(user, "groupInfo: $groupInfo\nviaGroupInfo: $viaGroupInfo\nviaMember: $viaMember\nmemberRole: $memberRole")
     is GroupDeletedUser -> withUser(user, json.encodeToString(groupInfo))
     is JoinedGroupMemberConnecting -> withUser(user, "groupInfo: $groupInfo\nhostMember: $hostMember\nmember: $member")
     is MemberAccepted -> withUser(user, "groupInfo: $groupInfo\nmember: $member")
@@ -7225,9 +7348,9 @@ sealed class CR {
     is SndStandaloneFileComplete -> withUser(user, rcvURIs.size.toString())
     is SndFileError -> withUser(user, "errorMessage: ${json.encodeToString(errorMessage)}\nchatItem: ${json.encodeToString(chatItem_)}")
     is SndFileWarning -> withUser(user, "errorMessage: ${json.encodeToString(errorMessage)}\nchatItem: ${json.encodeToString(chatItem_)}")
-    is CallInvitations -> "callInvitations: ${json.encodeToString(callInvitations)}"
-    is CallInvitation -> "contact: ${callInvitation.contact.id}\ncallType: $callInvitation.callType\nsharedKey: ${callInvitation.sharedKey ?: ""}"
-    is CallOffer -> withUser(user, "contact: ${contact.id}\ncallType: $callType\nsharedKey: ${sharedKey ?: ""}\naskConfirmation: $askConfirmation\noffer: ${json.encodeToString(offer)}")
+    is CallInvitations -> "callInvitations: ${json.encodeToString(callInvitations.map { it.copy(sharedKey = null) })}"
+    is CallInvitation -> "contact: ${callInvitation.contact.id}\ncallType: ${callInvitation.callType}"
+    is CallOffer -> withUser(user, "contact: ${contact.id}\ncallType: $callType\naskConfirmation: $askConfirmation\noffer: ${json.encodeToString(offer)}")
     is CallAnswer -> withUser(user, "contact: ${contact.id}\nanswer: ${json.encodeToString(answer)}")
     is CallExtraInfo -> withUser(user, "contact: ${contact.id}\nextraInfo: ${json.encodeToString(extraInfo)}")
     is CallEnded -> withUser(user, "contact: ${contact.id}")
@@ -7274,10 +7397,13 @@ sealed class CR {
     is ArchiveImported -> "${archiveErrors.map { it.string } }"
     is AppSettingsR -> json.encodeToString(appSettings)
     is BadgeRedeemed -> withUser(user, "redeemedBadge: ${json.encodeToString(redeemedBadge)}\nnewBadge: $newBadge\nbadgeState: ${json.encodeToString(badgeState)}")
-    is BadgeStateR -> withUser(user, json.encodeToString(badgeState))
+    is BadgeInvoice -> withUser(user, invoiceId)
+    is BadgeStateR -> withUser(user, "${json.encodeToString(badgeState)}\nstorePurchases: ${json.encodeToString(storePurchases)}")
     is BadgeLedger -> withUser(user, json.encodeToString(badgeLedger))
     is BadgeChanged -> withUser(user, json.encodeToString(badgeState))
     is BadgeAlertR -> withUser(user, json.encodeToString(badgeAlert))
+    is StorePurchaseCredited -> withUser(user, "invoiceId: $invoiceId")
+    is StorePurchaseRefused -> withUser(user, "invoiceId: $invoiceId\nrefusal: ${refusal.tag}")
     is Response -> json
     is Invalid -> str
   }
@@ -7336,6 +7462,7 @@ sealed class SimplexDomainError {
 sealed class BadgeRedeemError {
   val string: String get() = when (this) {
     is InvalidCode -> "invalidCode"
+    is InvalidReceipt -> "invalidReceipt"
     is ServiceNotConfigured -> "serviceNotConfigured"
     is BadgeActive -> "badgeActive"
     is ServiceError -> "serviceError ${serviceError.text}"
@@ -7344,6 +7471,7 @@ sealed class BadgeRedeemError {
     is CredentialNotVerified -> "credentialNotVerified"
   }
   @Serializable @SerialName("invalidCode") object InvalidCode : BadgeRedeemError()
+  @Serializable @SerialName("invalidReceipt") object InvalidReceipt : BadgeRedeemError()
   @Serializable @SerialName("serviceNotConfigured") object ServiceNotConfigured : BadgeRedeemError()
   @Serializable @SerialName("badgeActive") object BadgeActive : BadgeRedeemError()
   @Serializable @SerialName("serviceError") class ServiceError(val serviceError: BadgeServiceErrorCode) : BadgeRedeemError()
@@ -7365,12 +7493,14 @@ sealed class BadgeServiceErrorCode {
   object PaymentNotEntitled: BadgeServiceErrorCode()
   object PaymentPending: BadgeServiceErrorCode()
   object ProviderUnavailable: BadgeServiceErrorCode()
+  object ProviderNotConfigured: BadgeServiceErrorCode()
   object RateLimited: BadgeServiceErrorCode()
   object CodeInvalid: BadgeServiceErrorCode()
   object CodeUsed: BadgeServiceErrorCode()
   object CodeExpired: BadgeServiceErrorCode()
   object ReceiptInvalid: BadgeServiceErrorCode()
   object ReceiptUsed: BadgeServiceErrorCode()
+  object TestPurchase: BadgeServiceErrorCode()
   object Internal: BadgeServiceErrorCode()
   data class Unknown(val code: String): BadgeServiceErrorCode()
 
@@ -7386,12 +7516,14 @@ sealed class BadgeServiceErrorCode {
       is PaymentNotEntitled -> "payment_not_entitled"
       is PaymentPending -> "payment_pending"
       is ProviderUnavailable -> "provider_unavailable"
+      is ProviderNotConfigured -> "provider_not_configured"
       is RateLimited -> "rate_limited"
       is CodeInvalid -> "code_invalid"
       is CodeUsed -> "code_used"
       is CodeExpired -> "code_expired"
       is ReceiptInvalid -> "receipt_invalid"
       is ReceiptUsed -> "receipt_used"
+      is TestPurchase -> "test_purchase"
       is Internal -> "internal"
       is Unknown -> code
     }
@@ -7405,6 +7537,13 @@ fun badgeServiceErrorText(code: BadgeServiceErrorCode): String? = when (code) {
   is BadgeServiceErrorCode.UnsupportedVersion -> generalGetString(MR.strings.badges_error_unsupported_version)
   is BadgeServiceErrorCode.UnknownPurchaseKey -> generalGetString(MR.strings.badges_error_unknown_purchase)
   is BadgeServiceErrorCode.Internal -> generalGetString(MR.strings.badges_error_service_internal)
+  is BadgeServiceErrorCode.ReceiptInvalid -> generalGetString(MR.strings.badges_error_receipt_invalid)
+  is BadgeServiceErrorCode.TestPurchase -> generalGetString(MR.strings.badges_error_test_purchase)
+  is BadgeServiceErrorCode.ReceiptUsed -> generalGetString(MR.strings.badges_error_receipt_used)
+  is BadgeServiceErrorCode.PaymentPending -> generalGetString(MR.strings.badges_error_payment_pending)
+  is BadgeServiceErrorCode.ProviderUnavailable -> generalGetString(MR.strings.badges_error_provider_unavailable)
+  is BadgeServiceErrorCode.ProviderNotConfigured -> generalGetString(MR.strings.badges_error_provider_not_configured)
+  is BadgeServiceErrorCode.ProductUnavailable -> generalGetString(MR.strings.badges_error_product_unavailable)
   else -> null
 }
 
@@ -7422,12 +7561,14 @@ object BadgeServiceErrorCodeSerializer : KSerializer<BadgeServiceErrorCode> {
       "payment_not_entitled" -> BadgeServiceErrorCode.PaymentNotEntitled
       "payment_pending" -> BadgeServiceErrorCode.PaymentPending
       "provider_unavailable" -> BadgeServiceErrorCode.ProviderUnavailable
+      "provider_not_configured" -> BadgeServiceErrorCode.ProviderNotConfigured
       "rate_limited" -> BadgeServiceErrorCode.RateLimited
       "code_invalid" -> BadgeServiceErrorCode.CodeInvalid
       "code_used" -> BadgeServiceErrorCode.CodeUsed
       "code_expired" -> BadgeServiceErrorCode.CodeExpired
       "receipt_invalid" -> BadgeServiceErrorCode.ReceiptInvalid
       "receipt_used" -> BadgeServiceErrorCode.ReceiptUsed
+      "test_purchase" -> BadgeServiceErrorCode.TestPurchase
       "internal" -> BadgeServiceErrorCode.Internal
       else -> BadgeServiceErrorCode.Unknown(v)
     }
@@ -7552,7 +7693,8 @@ enum class RcvSwitchStatus {
   @SerialName("switch_started") SwitchStarted,
   @SerialName("sending_qadd") SendingQADD,
   @SerialName("sending_quse") SendingQUSE,
-  @SerialName("received_message") ReceivedMessage
+  @SerialName("received_message") ReceivedMessage,
+  @SerialName("received_qend") ReceivedQEND
 }
 
 @Serializable
@@ -8014,7 +8156,7 @@ sealed class StoreError {
       is UserChatRelayNotFound -> "userChatRelayNotFound $chatRelayId"
       is GroupRelayNotFound -> "groupRelayNotFound $groupRelayId"
       is GroupRelayNotFoundByMemberId -> "groupRelayNotFoundByMemberId $groupMemberId"
-      is DuplicateGroupMessage -> "duplicateGroupMessage $groupId $sharedMsgId $authorGroupMemberId $authorGroupMemberId"
+      is DuplicateGroupMessage -> "duplicateGroupMessage $groupId $sharedMsgId $authorGroupMemberId $forwardedByGroupMemberId"
       is RemoteHostNotFound -> "remoteHostNotFound $remoteHostId"
       is RemoteHostUnknown -> "remoteHostUnknown"
       is RemoteHostDuplicateCA -> "remoteHostDuplicateCA"

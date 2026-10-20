@@ -21,8 +21,10 @@ At this stage the service:
 
 - creates a double-ratchet contact address on first start (service RPC requires DR, see [`docs/protocol/badges-rpc.md`](../../docs/protocol/badges-rpc.md)),
 - listens for service requests (`CEvtServiceRequest`) on that address, rejects a request whose `purchaseKey` is not the key the agent verified the signature against, and answers `redeemBadgeCode`,
-- issues redemption codes, storing only their `SHA-256` and printing each code once,
-- does not accept contact requests unless `[dev] chat_redeem` is on: the address is for RPC only,
+- issues redemption codes, storing only their `SHA-256` in its code table,
+- does not accept contact requests: the address is for RPC only,
+- in service mode with `[group]` in the ini, manages one SimpleX group and serves `/issue`, `/bulk`
+  and `/revoke` in it (see [Issuing codes](#issuing-codes)),
 - in service mode with `--service-config`, also serves the built web app (`npm run build` in `web/`), `POST /api/invoice` and `GET /api/invoice/:id`, the BTCPay and Stripe webhook routes, and a payment poller, seeding its price/offer catalog on every start,
 - owns the `sx_badge_service_`-prefixed tables and its own migrations table (`sx_badge_service_migrations`).
 
@@ -47,8 +49,9 @@ simplex-badge-service --help
 - default (no `--run-cli`): background service mode, no interactive terminal.
 - `--run-cli`: interactive CLI that also processes service requests (mirrors
   `simplex-directory-service --run-cli`). This mode is the chat/RPC side and the `//` commands
-  below: it starts no web listener and no poller, and `[dev] chat_redeem` does not apply to it,
-  whatever `--service-config` says.
+  below: it starts no web listener and no poller, and serves no group commands, whatever
+  `--service-config` says. It still updates a code's group message when the code is redeemed or
+  revoked. `[apple]`, `[google]` and `[dev] accept_unverified_store_receipts` apply to it.
 - `--no-address`: skip address creation on start-up (for operators who provision the address themselves).
 The service cannot sign credentials without an issuer key and refuses to start without one:
 
@@ -81,7 +84,8 @@ Other options:
 - `--service-config INI_FILE`: path to `badge_service.ini`. Omit it to run the chat/RPC side
   only; the process never starts a web listener without it, and never starts one under
   `--run-cli`, which parses and validates the whole file (`[listener] static_dir` included) but
-  uses only its `[issuer]` section. An issuer key is still required either way.
+  uses only its `[issuer]`, `[apple]` and `[google]` sections and `[dev] accept_unverified_store_receipts`. An issuer key is
+  still required either way.
 - `--service-name NAME`: the bot's display name, without `*`s or spaces (default `SimpleX Badges`).
 - `--client-service`: use the client service certificate.
 - also accepts the standard SimpleX Chat core options — database path, SMP/XFTP servers,
@@ -92,7 +96,9 @@ Other options:
 
 `badge_service.ini` holds the listener bind address and `static_dir`, an optional
 `[btcpay]` section (omitting it disables Bitcoin and Monero), an optional `[stripe]`
-section (omitting it disables card payments) and the poll cadence.
+section (omitting it disables card payments), an optional `[group]` section (omitting it
+turns off the group's commands, though a group created earlier still has its code messages updated)
+and the poll cadence.
 `badge_service.ini.example` is the committed template; `badge_service.ini` itself is
 gitignored, since a real one holds API keys and webhook secrets.
 
@@ -203,27 +209,77 @@ the exception: each answers 200, 400 or 413 with an empty body, because its prov
 caller and nothing it could read would change what the route does. A wrong verb on any route, those
 two included, answers `method_not_allowed`.
 
-### Redeeming over chat, for local testing
+### Store purchases (App Store and Google Play)
+
+Each store is verified only when its section is present; without one, every receipt from that store
+is answered `provider_not_configured` and the app keeps the purchase to present again. A section
+missing a key, a root certificate that cannot be read or is not a root, an unreadable service
+account key, or either section beside
+`[dev] accept_unverified_store_receipts = on`, stops the service at startup.
+
+```ini
+[apple]
+bundle_id = chat.simplex.app
+root_certificates = /etc/simplex-badge-service/AppleRootCA-G3.cer
+
+[google]
+package_name = chat.simplex.app
+service_account_file = /etc/simplex-badge-service/play-service-account.json
+```
+
+- `[apple]` verifies the signed transaction offline, against the roots `root_certificates` lists,
+  comma-separated, each in DER. Today that is Apple Root CA - G3 as Apple publishes it at
+  <https://www.apple.com/certificateauthority/AppleRootCA-G3.cer>. Each must be self-signed.
+  Verification reads no validity period, so an expired root keeps verifying. A transaction for
+  another bundle id, or an intermediate no listed root signed, is answered `internal` and logged as
+  an error rather than refused, since `bundle_id` may be wrong or a root missing; check both when those errors appear, unless the purchase was made in Xcode's
+  StoreKit testing, which the App Store does not sign, so no root verifies it. When Apple signs
+  under a new root, list it beside the old one rather than in its place: a purchase signed under the
+  old root still verifies, and one answered `internal` meanwhile is credited when the app presents
+  it again.
+- `[google]` asks the Google Play Developer API about each purchase, and acknowledges it before
+  crediting it, as the service account whose JSON key `service_account_file` holds. The account
+  needs both Play Console permissions Google's
+  [getting started](https://developers.google.com/android-publisher/getting_started) lists for its
+  billing APIs: "View financial data, orders, and cancellation survey responses" to read a
+  purchase, and "Manage orders and subscriptions" to acknowledge it. Without the second, a Play
+  purchase the app has not already acknowledged itself is answered `internal` and logged as an
+  error naming the acknowledgement, and the app presents it again once the permission is granted,
+  which must be within three days, before Play refunds it. The key signs in
+  for an access token, so keep the file readable by this service alone.
+  Play purchases are verified on a lane of their own, so a slow or unreachable Play delays only
+  other Play purchases, not code redemptions, renewals or App Store purchases.
+
+Which answers are terminal for a purchase and which leave it to be presented again is listed per
+store in [`docs/protocol/badges-rpc.md`](../../docs/protocol/badges-rpc.md#commands).
+
+### Accepting store receipts unverified, for local testing
 
 ```ini
 [dev]
-chat_redeem = on
+accept_unverified_store_receipts = on
 ```
 
-With this on, the service accepts contact requests and answers `/redeem <code>` from a contact
-with the credential as one-line JSON, ready to paste into a client as `/badge add <json>`. Off by
-default, and only `on`/`off` parse, so a typo cannot silently arm it. It applies to the service
-mode only; `--run-cli` ignores it.
+Without a store verifier every store purchase is answered `provider_not_configured`. With this on,
+the service accepts any well-formed receipt without asking or verifying anything: an Apple JWS for
+the `transactionId` and `productId` its payload names, unsigned or not, and a Play product id and
+token as given. It applies to both run modes, since `--run-cli` answers service requests too, and
+the service logs a warning at every start while it is on. Off by default, and only `on`/`off`
+parse. The service refuses to start with it on beside an `[apple]` or `[google]` section.
 
-Keep it off anywhere real. The service RPC signs over a master key only the client holds; here
-there is no client key, so the service generates one and hands it over with the credential, which
-means it can link every badge it issues this way. `simplex-chat badge sign` has the same property
-and is the offline equivalent.
+With it on, anyone who can reach the service address can mint badges by sending a made-up receipt.
+That is harmless only while this deployment signs with an issuer key released apps do not carry, so
+they refuse what it signs — never turn it on where the key is one those apps trust.
 
 ## Issuing codes
 
-Issuing a code is an operator command sent to the running service in `--run-cli` mode, not a way
-to start it — so codes are issued without a second process touching the service's database:
+Operators issue codes two ways: from the service's own command line in `--run-cli` mode, and from the
+managed group in service mode. Both are commands to a running process, so no second process
+touches the service's database.
+
+### From the command line
+
+The command is sent to the running service in `--run-cli` mode, not a way to start it:
 
 ```
 //issue <badge_type> [months] [paid|unpaid|free]
@@ -245,8 +301,76 @@ A code that leaked, or that was refunded, is withdrawn the same way:
 ```
 
 A revoked code answers redemption with `code_invalid`, as if it had never existed, so its holder
-learns nothing from trying. Revoking is not repeatable: the second attempt says so. A code that
-was already redeemed cannot be revoked: its badge was issued, and the command answers with an error.
+learns nothing from trying. A client that redeemed it before the revoke still gets its own badge
+back when it asks again. Revoking it again answers "already revoked" and fixes its group
+message if the first revoke didn't. A code with no uses left can't be revoked, because its badges
+were already given out, and the command answers with an error. A multi-use code with uses left can
+be revoked, which stops the uses that remain.
 
 Core parses `//...` into `CustomChatCommand` and leaves it to the service's `preCmdHook`, which is
 why issuing codes lives in the service rather than in core.
+
+### From the group
+
+With `[group]` in `badge_service.ini`, the service manages one group and serves three commands in
+it: `/issue <type> [months <M>] [uses <N>]` and `/bulk <type> [months <M>] count <B>` for moderators
+and above, `/revoke <code>` for admins and owners. `months` is 1 to 255, `uses` 1 to 1000 and
+`count` 1 to 100; a value outside these gets the usage reply. A member's role is checked as the
+service last saw it, so a command sent by a moderator just demoted or removed can still run if it
+reaches the service first; revoke any code the service posts for them after the change. `uses`
+above 1 makes a multi-use code, tracked by a group message showing its remaining uses and the time
+of the last one; when every use is redeemed, the same message says so. Every reply carrying a code is read by every member,
+since the group has no private lane, so a code issued there is only as private as its least trusted
+member.
+Those replies are also kept as plain text in the service's chat database, so a copy of the database
+holds every code issued in the group. Keep the group's visible history off: with it on, each new
+member receives recent messages, and the codes in them, when they join. A multi-use code's message
+carries the code, and every redemption edits it or, after a day, posts it again; either way every
+current member receives it, so a member who joined after the code was issued gets the code while it
+still has uses left. A message replaced by a new post stays in the group with its old count. Keep
+disappearing messages off in the group and set no message TTL for the service's chats: a code's
+message that expires is treated as deleted and never posted again, so its counter stops.
+Every member can see when each use of a multi-use code was redeemed: the message shows the time of
+the last one, and its edit times show the rest.
+`/revoke <code>` names the code in an ordinary group message, so every member holds it before the
+service reads the command, and the code stays redeemable until the service acts on it — for the
+whole of any downtime. Revoke a code that is not already public in the group, a refunded one above
+all, with `//revoke` in `--run-cli` mode. A `/revoke <code>` with nothing after the code, from a
+member below admin, is answered that the code was not revoked and is now visible to the group. A
+group command the service received but had not run when it stopped, or received while it ran in
+`--run-cli` mode, is dropped with no reply, so resend it, or use `//revoke`.
+
+The first member to join through the link is promoted to owner, so the operator joins before sharing
+it. Keep the service an owner too: below owner it cannot update the group's command menu, and below
+author it cannot post codes or replies. A failed promotion is logged at once, and an owner who left
+is logged at the next start or join. Then make the member you choose owner with the `/mr` command
+that the log line names, in `--run-cli` mode; the service never promotes anyone once the first
+promotion was attempted.
+
+The join link logged when the group is created stays valid: anyone who has it can join later, as a
+member, and read every code posted or edited from then on. That includes a removed member, who can
+rejoin through it, so removing a member does not stop them seeing new codes. Keep the log that holds
+it private. The link is also stored in the `group_link` column of `sx_badge_service_group`, where it
+can be read again.
+
+If an owner deletes the group, or removes the service from it, the service logs an error on start
+and stops serving the group. To create a new group, stop the service, delete the row, and start it
+again: with SQLite, run `DELETE FROM sx_badge_service_group;` on the `<prefix>_chat.db` file
+(`~/.simplex/simplex_badge_service_chat.db` by default), opened with `sqlcipher` and the database key
+if one is set; with PostgreSQL, run
+`DELETE FROM <schema-prefix>_chat_schema.sx_badge_service_group;` (`simplex_v1_chat_schema` by default).
+Multi-use codes issued in the old group stay redeemable, but their messages there are no longer
+updated, so revoke with `//revoke` any that should not stay live.
+
+The group is identified by the single `sx_badge_service_group` row. Rolling back past the
+`20260918_badge_group_ops` migration drops that table, so a later re-upgrade creates a second group
+and orphans the first one with its members and roles; multi-use codes come back single-use with
+their claims re-derived, and outstanding trackers come back unanchored. Redeemed credentials are
+preserved and no code becomes redeemable again, though while the old version runs, only the holder
+whose credential ends last gets it back on a retry, and any other holder of a multi-use code gets
+`code_used`; every holder of a revoked code gets `code_invalid`. Rolling back means re-creating and
+re-sharing the group; delete the orphaned one with `/d #'<old local name>'` in `--run-cli` mode, as its
+join link still works and its messages hold every code posted there.
+
+The configured `display_name` and `description` apply only to the group the service creates. Editing
+them later is logged as not applied and changes nothing.

@@ -1,0 +1,461 @@
+name: android-emu
+
+on:
+  workflow_dispatch:
+    inputs:
+      claude:
+        description: Also run the Claude job, which spends the Claude subscription's usage limits
+        type: boolean
+        default: false
+      backend:
+        description: Also start the test backend
+        type: boolean
+        default: false
+      release:
+        description: Also test the latest released app, to tell a branch's failure from the runner's
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: android-emu-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GHC_VER: 9.6.3
+  CABAL_VER: 3.10.2.0
+  JAVA_VER: 17
+  CORE_PKG: android-core-arm64-v8a.tar.gz
+  BACKEND_PKG: desktop-linux-backend.tar.gz
+  APK: android-foss-arm64-v8a-debug.apk
+
+jobs:
+  plan:
+    name: choose jobs, find earlier builds
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      run-claude: ${{ steps.jobs.outputs.claude }}
+      run-backend: ${{ steps.jobs.outputs.backend }}
+      run-release: ${{ steps.jobs.outputs.release }}
+      claude-backend: ${{ steps.scope.outputs.backend }}
+      core: ${{ steps.names.outputs.core }}
+      core-run: ${{ steps.core.outputs.run-id }}
+      backend: ${{ steps.names.outputs.backend }}
+      backend-run: ${{ steps.backend.outputs.run-id }}
+    steps:
+      - name: Choose jobs
+        id: jobs
+        env:
+          CLAUDE: ${{ inputs.claude }}
+          BACKEND: ${{ inputs.backend }}
+          RELEASE: ${{ inputs.release }}
+        run: |
+          echo "claude=$CLAUDE" | tee -a "$GITHUB_OUTPUT"
+          echo "backend=$BACKEND" | tee -a "$GITHUB_OUTPUT"
+          echo "release=$RELEASE" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Claude scope
+        id: scope
+        if: steps.jobs.outputs.claude == 'true'
+        env:
+          BACKEND: ${{ steps.jobs.outputs.backend }}
+        run: |
+          backend=$(sed -n 's/^backend: *//p' scripts/ci/android/claude-scope)
+          case "$backend" in
+            yes | no) echo "backend=$backend" | tee -a "$GITHUB_OUTPUT" ;;
+            *)
+              echo "::error::claude-scope must say backend: yes or backend: no"
+              exit 1
+              ;;
+          esac
+          if [ "$backend" = yes ] && [ "$BACKEND" != true ]; then
+            echo "::error::claude-scope says the Claude session uses the test backend: ask for it too"
+            exit 1
+          fi
+
+      # artifacts are named after the sources they are built from, so a run uses one that an earlier run uploaded;
+      # the backend has desktop-linux's name and sources, so each workflow reuses the other's
+      - name: Artifact names
+        id: names
+        run: |
+          echo "core=android-core-${{ hashFiles('src/**', 'cabal.project', 'simplex-chat.cabal', 'PRIVACY.md', 'flake.nix', 'flake.lock', 'scripts/nix/**', 'scripts/ci/android/build-core.sh') }}" >> "$GITHUB_OUTPUT"
+          echo "backend=desktop-linux-backend-${{ hashFiles('src/**', 'apps/simplex-chat/**', 'apps/simplex-directory-service/Main.hs', 'apps/simplex-directory-service/src/**', 'cabal.project', 'simplex-chat.cabal', 'scripts/ci/desktop-linux/build-backend.sh') }}" >> "$GITHUB_OUTPUT"
+
+      - name: Find core library
+        id: core
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/ci/desktop-linux/earlier-run.sh "${{ steps.names.outputs.core }}"
+
+      - name: Find backend
+        id: backend
+        if: steps.jobs.outputs.backend == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/ci/desktop-linux/earlier-run.sh "${{ steps.names.outputs.backend }}"
+
+  backend:
+    name: test backend for the app
+    needs: plan
+    if: needs.plan.outputs.run-backend == 'true' && needs.plan.outputs.backend-run == ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Show runner
+        run: |
+          lsb_release -ds
+          nproc
+          free -h
+          df -h /
+
+      - name: Setup Haskell
+        uses: simplex-chat/setup-haskell-action@v2
+        with:
+          ghc-version: ${{ env.GHC_VER }}
+          cabal-version: ${{ env.CABAL_VER }}
+
+      - name: Install libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libffi-dev libgmp-dev libnuma-dev libssl-dev zlib1g-dev
+
+      - name: Build backend
+        run: scripts/ci/desktop-linux/build-backend.sh ~/backend/${{ env.BACKEND_PKG }}
+
+      - name: Upload backend
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ needs.plan.outputs.backend }}
+          path: ~/backend/${{ env.BACKEND_PKG }}
+          compression-level: 0
+          retention-days: 30
+          if-no-files-found: error
+
+  core:
+    name: core library for Android arm64
+    needs: plan
+    if: needs.plan.outputs.core-run == ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          filter: tree:0
+
+      - name: Show runner
+        run: |
+          lsb_release -ds
+          nproc
+          free -h
+          df -h /
+
+      - name: Build core library
+        run: scripts/ci/android/build-core.sh ~/core/${{ env.CORE_PKG }}
+
+      - name: Upload core library
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ needs.plan.outputs.core }}
+          path: ~/core/${{ env.CORE_PKG }}
+          compression-level: 0
+          retention-days: 30
+          if-no-files-found: error
+
+  app:
+    name: Android app in the emulator
+    needs: [plan, core, backend]
+    # core and backend are skipped when an earlier run built them, and backend also when the run doesn't start it
+    if: ${{ !cancelled() && !failure() && needs.plan.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Show runner
+        run: |
+          lsb_release -ds
+          nproc
+          free -h
+          df -h /
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          ls "$ANDROID_HOME/platforms" "$ANDROID_HOME/build-tools" "$ANDROID_HOME/ndk" || true
+
+      # the emulator's qemu needs libpulse0 and libegl1; the backend's avatars and checks need the rest
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpulse0 libegl1 imagemagick sqlite3 fonts-dejavu-core
+          dpkg-query -W libpulse0 libegl1 imagemagick sqlite3 fonts-dejavu-core
+
+      - name: Download core library
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.plan.outputs.core }}
+          path: ~/core
+          run-id: ${{ needs.plan.outputs.core-run || github.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Install core library
+        id: core
+        run: scripts/ci/android/install-core.sh ~/core/${{ env.CORE_PKG }}
+
+      - name: Download backend
+        if: needs.plan.outputs.run-backend == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.plan.outputs.backend }}
+          path: ~/backend
+          run-id: ${{ needs.plan.outputs.backend-run || github.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Start test backend
+        id: backend
+        if: needs.plan.outputs.run-backend == 'true'
+        timeout-minutes: 30
+        run: scripts/ci/desktop-linux/backend.sh start ~/backend/${{ env.BACKEND_PKG }} "$RUNNER_TEMP/backend"
+
+      # the app and its tests are still built when the backend fails
+      - name: Setup Java
+        if: ${{ !cancelled() && steps.core.outcome == 'success' }}
+        uses: actions/setup-java@v5
+        with:
+          distribution: corretto
+          java-version: ${{ env.JAVA_VER }}
+
+      # the injected ABI builds only arm64-v8a, whose core the job has, and puts the APK under build/intermediates
+      - name: Build app
+        id: build
+        if: ${{ !cancelled() && steps.core.outcome == 'success' }}
+        working-directory: apps/multiplatform
+        run: |
+          ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets -Pandroid.injected.build.abi=arm64-v8a :android:assembleFossDebug
+          mkdir -p "$RUNNER_TEMP/apk"
+          cp "android/build/intermediates/apk/foss/debug/$APK" "$RUNNER_TEMP/apk"
+          ls -la "$RUNNER_TEMP/apk"
+          unzip -l "$RUNNER_TEMP/apk/$APK" | grep -E ' lib/'
+
+      - name: Upload app
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && needs.plan.outputs.run-claude == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-app
+          path: ${{ runner.temp }}/apk/${{ env.APK }}
+          compression-level: 0
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Install emulator and system image
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: scripts/ci/android/install-sdk.sh "$RUNNER_TEMP/android-sdk"
+
+      - name: Boot emulator
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: scripts/ci/android/emulator.sh start "$RUNNER_TEMP/smoke-test"
+
+      # the test SMP server's addresses have the runner's 127.0.0.1, which adb reverse forwards from the emulator's
+      - name: Reach the test backend
+        id: reach
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.backend.outcome == 'success' }}
+        run: scripts/ci/android/emulator.sh reverse 5223
+
+      - name: Run smoke test
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.backend.outcome != 'failure' && steps.reach.outcome != 'failure' }}
+        env:
+          BACKEND: ${{ steps.reach.outcome }}
+        run: |
+          if [ "$BACKEND" = success ]; then
+            export NAMES_SERVER=$(cat "$RUNNER_TEMP/backend/names-server")
+            cases=backend
+          fi
+          scripts/ci/android/smoke-test.sh "$RUNNER_TEMP/apk/$APK" "$RUNNER_TEMP/smoke-test" ${cases:-}
+
+      - name: Stop test backend
+        if: ${{ !cancelled() && steps.backend.outcome != 'skipped' }}
+        run: scripts/ci/desktop-linux/backend.sh stop "$RUNNER_TEMP/backend"
+
+      - name: Upload smoke test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-smoke-test
+          path: ${{ runner.temp }}/smoke-test
+          retention-days: 3
+          if-no-files-found: warn
+
+      - name: Upload backend logs
+        if: ${{ !cancelled() && steps.backend.outcome != 'skipped' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-backend-logs
+          path: ${{ runner.temp }}/backend/*.log
+          retention-days: 3
+          if-no-files-found: warn
+
+  # Claude Code repeats the smoke test with the ui helper. Each run spends the Claude subscription's usage
+  # limits, so it runs only when asked for. The app-sim-claude environment's branch rule decides which branches
+  # may use the token.
+  claude:
+    name: Claude tests the Android app
+    needs: [plan, app]
+    if: ${{ !cancelled() && needs.plan.outputs.run-claude == 'true' && needs.app.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    environment:
+      name: app-sim-claude
+      deployment: false
+    concurrency:
+      group: android-emu-claude-${{ github.ref }}
+      cancel-in-progress: true
+    env:
+      # the same in all app workflows
+      CLAUDE_CODE_VERSION: 2.1.300
+      CLAUDE_MODEL: claude-haiku-5-5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpulse0 libegl1 imagemagick sqlite3 fonts-dejavu-core
+          dpkg-query -W libpulse0 libegl1 imagemagick sqlite3 fonts-dejavu-core
+
+      - name: Download app
+        uses: actions/download-artifact@v8
+        with:
+          name: android-app
+          path: ${{ runner.temp }}/apk
+
+      - name: Download backend
+        if: needs.plan.outputs.claude-backend == 'yes'
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.plan.outputs.backend }}
+          path: ~/backend
+          run-id: ${{ needs.plan.outputs.backend-run || github.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Start test backend
+        id: backend
+        if: needs.plan.outputs.claude-backend == 'yes'
+        timeout-minutes: 30
+        run: scripts/ci/desktop-linux/backend.sh start ~/backend/${{ env.BACKEND_PKG }} "$RUNNER_TEMP/backend"
+
+      - name: Install emulator and system image
+        run: scripts/ci/android/install-sdk.sh "$RUNNER_TEMP/android-sdk"
+
+      - name: Boot emulator
+        run: scripts/ci/android/emulator.sh start "$RUNNER_TEMP/claude-test/screens"
+
+      - name: Reach the test backend
+        if: steps.backend.outcome == 'success'
+        run: scripts/ci/android/emulator.sh reverse 5223
+
+      # ui goes on every shell's PATH, where Claude's Bash tool finds it whatever environment it builds
+      - name: Install Claude Code and the ui command
+        run: |
+          npm install --prefix "$RUNNER_TEMP/claude-code" "@anthropic-ai/claude-code@$CLAUDE_CODE_VERSION"
+          echo "$RUNNER_TEMP/claude-code/node_modules/.bin" >> "$GITHUB_PATH"
+          printf '#!/bin/sh\nexec %s/scripts/ci/android/ui "$@"\n' "$PWD" | sudo tee /usr/local/bin/ui
+          sudo chmod +x /usr/local/bin/ui
+
+      - name: Start the app
+        run: scripts/ci/android/smoke-test.sh "$RUNNER_TEMP/apk/$APK" "$RUNNER_TEMP/claude-test/screens" start
+
+      # Claude's Bash is limited to single ui commands by the guard hook in claude-test.sh. Claude Code's credential
+      # scrub stays off: on Linux it forces its whole Bash sandbox (bubblewrap, socat), which ui isn't set up for.
+      - name: Run Claude
+        id: claude
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: 1
+        run: scripts/ci/desktop-linux/claude-test.sh "$RUNNER_TEMP/claude-test" "$RUNNER_TEMP/claude-transcript.jsonl" scripts/ci/android/claude-test.md
+
+      - name: Report Claude usage
+        if: ${{ !cancelled() && steps.claude.outcome != 'skipped' }}
+        run: scripts/ci/desktop-linux/claude-usage.py "$RUNNER_TEMP/claude-transcript.jsonl" "$RUNNER_TEMP/claude-usage.json"
+
+      - name: Stop test backend
+        if: ${{ !cancelled() && steps.backend.outcome != 'skipped' }}
+        run: scripts/ci/desktop-linux/backend.sh stop "$RUNNER_TEMP/backend"
+
+      - name: Upload Claude test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-claude-test
+          path: |
+            ${{ runner.temp }}/claude-test
+            ${{ runner.temp }}/claude-transcript.jsonl
+            ${{ runner.temp }}/claude-transcript.jsonl.stderr
+            ${{ runner.temp }}/claude-transcript.jsonl.guard.log
+            ${{ runner.temp }}/claude-usage.json
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Upload backend logs
+        if: ${{ !cancelled() && steps.backend.outcome != 'skipped' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-claude-backend-logs
+          path: ${{ runner.temp }}/backend/*.log
+          retention-days: 3
+          if-no-files-found: warn
+
+  # the latest release's onboarding, to tell a branch's own failure from the runner's
+  release:
+    name: released app in the emulator
+    needs: plan
+    if: needs.plan.outputs.run-release == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          filter: tree:0
+
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpulse0 libegl1
+          dpkg-query -W libpulse0 libegl1
+
+      - name: Download released app
+        run: scripts/ci/android/release-apk.sh "$RUNNER_TEMP/release"
+
+      - name: Install emulator and system image
+        run: scripts/ci/android/install-sdk.sh "$RUNNER_TEMP/android-sdk"
+
+      - name: Boot emulator
+        run: scripts/ci/android/emulator.sh start "$RUNNER_TEMP/smoke-test"
+
+      - name: Run smoke test
+        run: scripts/ci/android/smoke-test.sh "$RUNNER_TEMP/release/simplex-aarch64.apk" "$RUNNER_TEMP/smoke-test" onboarding
+
+      - name: Upload smoke test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-release-smoke-test
+          path: ${{ runner.temp }}/smoke-test
+          retention-days: 3
+          if-no-files-found: warn

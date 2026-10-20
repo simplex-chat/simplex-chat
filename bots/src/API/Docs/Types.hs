@@ -224,6 +224,7 @@ chatTypesDocsData =
     (sti @BadgeServiceErrorCode, STEnum' (consSep "BSE" '_'), "", ["BSEUnknown"], "", ""),
     (sti @BlockingInfo, STRecord, "", [], "", ""),
     (sti @BlockingReason, STEnum, "BR", [], "", ""),
+    (sti @BlockToken, STUnion, "", [], "", ""),
     (sti @BrokerErrorType, STUnion, "", [], "", ""),
     (sti @BusinessChatInfo, STRecord, "", [], "", ""),
     (sti @BusinessChatType, STEnum, "BC", [], "", ""),
@@ -285,7 +286,7 @@ chatTypesDocsData =
     (sti @FileStatus, STEnum, "FS", [], "", ""),
     (sti @FileTransferMeta, STRecord, "", [], "", ""),
     (sti @FileType, STEnum' (consLower "FT"), "", [], "", ""),
-    (sti @Format, STUnion, "", ["Unknown"], "", ""),
+    (sti @Format, STUnion, "", ["Unknown"], "", "The format markup is a token of block Markdown syntax; its text is the syntax. The format escape is the backslash of a backslash escape. Bold singleStar: written with single stars."),
     (sti @FormattedText, STRecord, "", [], "", ""),
     (sti @FullGroupPreferences, STRecord, "", [], "", ""),
     (sti @FullPreferences, STRecord, "", [], "", ""),
@@ -298,7 +299,7 @@ chatTypesDocsData =
     (sti @GroupLink, STRecord, "", [], "", ""),
     (sti @GroupLinkOwner, STRecord, "", [], "", ""),
     (sti @GroupLinkPlan, STUnion, "GLP", [], "", ""),
-    (sti @GroupMember, STRecord, "", [], "", ""),
+    (removeField "memberBadgeProof" $ sti @GroupMember, STRecord, "", [], "", ""),
     (sti @GroupMemberAdmission, STRecord, "", [], "", ""),
     (sti @GroupMemberCategory, STEnum' (dropPfxSfx "GC" "Member"), "", [], "", ""),
     (sti @GroupMemberRef, STRecord, "", [], "", ""),
@@ -322,8 +323,10 @@ chatTypesDocsData =
     (sti @LinkNotice, STRecord, "", [], "", ""),
     (sti @LinkOwnerSig, STRecord, "", [], "", ""),
     (sti @LinkPreview, STRecord, "", [], "", ""),
+    (sti @ListEntry, STRecord, "", [], "", ""),
     (sti @BadgeInfo, STRecord, "", [], "", ""),
     (sti @LocalProfile, STRecord, "", [], "", ""),
+    (sti @MarkdownBlock, STUnion, "", ["UnknownBlock"], "", ""),
     (sti @MemberCriteria, STEnum1, "MC", [], "", ""),
     (sti @MsgChatLink, STUnion, "MCL", [], "", "Connection link sent in a message - only short links are allowed."),
     (sti @MsgContent, STUnion, "MC", [], "", ""),
@@ -372,6 +375,7 @@ chatTypesDocsData =
     (sti @ReportReason, STEnum' (dropPfxSfx "RR" ""), "", ["RRUnknown"], "", ""),
     (sti @RoleGroupPreference, STRecord, "", [], "", ""),
     (sti @SecurityCode, STRecord, "", [], "", ""),
+    (sti @SegmentRange, STRecord, "", [], "", ""),
     (sti @SimplePreference, STRecord, "", [], "", ""),
     (sti @SimplexDomain, STRecord, "", [], "", ""),
     (sti @SimplexDomainClaim, STRecord, "", [], "", ""),
@@ -392,6 +396,7 @@ chatTypesDocsData =
     (sti @SubscriptionStatus, STUnion, "SS", [], "", ""),
     (sti @SupportGroupPreference, STRecord, "", [], "", ""),
     (sti @SwitchPhase, STEnum, "SP", [], "", ""),
+    (sti @TableAlign, STEnum, "TA", [], "", ""),
     (sti @TimedMessagesGroupPreference, STRecord, "", [], "", ""),
     (sti @TimedMessagesPreference, STRecord, "", [], "", ""),
     (sti @TransportError, STUnion, "TE", [], "", ""),
@@ -458,6 +463,7 @@ deriving instance Generic BadgeRedeemError
 deriving instance Generic BadgeServiceErrorCode
 deriving instance Generic BlockingInfo
 deriving instance Generic BlockingReason
+deriving instance Generic BlockToken
 deriving instance Generic BrokerErrorType
 deriving instance Generic BusinessChatInfo
 deriving instance Generic BusinessChatType
@@ -563,8 +569,10 @@ deriving instance Generic LinkContent
 deriving instance Generic LinkNotice
 deriving instance Generic LinkOwnerSig
 deriving instance Generic LinkPreview
+deriving instance Generic ListEntry
 deriving instance Generic BadgeInfo
 deriving instance Generic LocalProfile
+deriving instance Generic MarkdownBlock
 deriving instance Generic MemberCriteria
 deriving instance Generic MsgChatLink
 deriving instance Generic MsgContent
@@ -612,6 +620,7 @@ deriving instance Generic RemoteCtrlSessionState
 deriving instance Generic RemoteCtrlStopReason
 deriving instance Generic ReportReason
 deriving instance Generic SecurityCode
+deriving instance Generic SegmentRange
 deriving instance Generic SimplexDomain
 deriving instance Generic SimplexDomainClaim
 deriving instance Generic SimplexDomainError
@@ -631,6 +640,7 @@ deriving instance Generic StoreError
 deriving instance Generic SubscriptionStatus
 deriving instance Generic SupportGroupPreference
 deriving instance Generic SwitchPhase
+deriving instance Generic TableAlign
 deriving instance Generic TimedMessagesGroupPreference
 deriving instance Generic TimedMessagesPreference
 deriving instance Generic TransportError

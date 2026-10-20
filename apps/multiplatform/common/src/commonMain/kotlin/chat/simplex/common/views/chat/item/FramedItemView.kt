@@ -25,7 +25,7 @@ import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.chatlist.openChat
 import chat.simplex.common.views.newchat.planAndConnect
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.math.ceil
@@ -61,6 +61,7 @@ fun FramedItemView(
     MarkdownText(
       qi.text,
       qi.formattedText,
+      qi.markdownBlocks,
       toggleSecrets = true,
       maxLines = lines,
       overflow = TextOverflow.Ellipsis,
@@ -153,6 +154,7 @@ fun FramedItemView(
 
   @Composable
   fun ciQuoteView(qi: CIQuote) {
+    val blurred = remember { mutableStateOf(appPreferences.privacyMediaBlurRadius.get() > 0) }
     val sentColor = MaterialTheme.appColors.sentQuote
     val receivedColor = MaterialTheme.appColors.receivedQuote
     Row(
@@ -170,7 +172,7 @@ fun FramedItemView(
             imageBitmap,
             contentDescription = stringResource(MR.strings.image_descr),
             contentScale = ContentScale.Crop,
-            modifier = Modifier.size(68.dp).clipToBounds()
+            modifier = Modifier.size(68.dp).clipToBounds().desktopModifyBlurredState(blurred, showMenu).privacyBlur(fullSize = false, imageBitmap, blurred, chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true })
           )
         }
         is MsgContent.MCVideo -> {
@@ -182,7 +184,7 @@ fun FramedItemView(
             imageBitmap,
             contentDescription = stringResource(MR.strings.video_descr),
             contentScale = ContentScale.Crop,
-            modifier = Modifier.size(68.dp).clipToBounds()
+            modifier = Modifier.size(68.dp).clipToBounds().desktopModifyBlurredState(blurred, showMenu).privacyBlur(fullSize = false, imageBitmap, blurred, chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true })
           )
         }
         is MsgContent.MCFile, is MsgContent.MCVoice -> {
@@ -456,11 +458,12 @@ fun CIMarkdownText(
 ) {
   val chatInfo = chat.chatInfo
   val text = if (ci.meta.isLive) ci.content.msgContent?.text ?: ci.text else ci.text
-  val selection = setupItemSelection(LocalSelectionManager.current, LocalItemContext.current.selectionIndex, ci.meta.isLive == true)
+  val bases = remember(ci, linkMode) { itemDisplay(ci, linkMode)?.bases ?: listOf(0) }
+  val selection = setupItemSelection(LocalSelectionManager.current, LocalItemContext.current.selectionIndex, ci.meta.isLive == true, bases)
 
-  Box(Modifier.padding(vertical = 7.dp, horizontal = 12.dp).then(selection.positionModifier)) {
+  Box(Modifier.padding(vertical = 7.dp, horizontal = 12.dp)) {
     MarkdownText(
-      text, if (text.isEmpty()) emptyList() else ci.formattedText, toggleSecrets = true,
+      text, if (text.isEmpty()) emptyList() else ci.formattedText, if (text.isEmpty()) null else ci.markdownBlocks, toggleSecrets = true,
       sendCommandMsg = if (chatInfo.useCommands && chat.chatInfo.sndReady) { { msg -> sendCommandMsg(chatsCtx, chat, msg) } } else null,
       meta = ci.meta, chatTTL = chatTTL, linkMode = linkMode,
       mentions = ci.mentions, userMemberId = when {
@@ -469,8 +472,9 @@ fun CIMarkdownText(
       },
       uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp, prefix = prefix,
       stripLink = stripLink,
-      selectionRange = selection.highlightRange,
-      onTextLayoutResult = selection.onTextLayoutResult
+      selection = selection,
+      blockLayout = true,
+      cardColor = if (ci.chatDir.sent) MaterialTheme.appColors.sentQuote else MaterialTheme.appColors.receivedQuote
     )
   }
 }
