@@ -12,10 +12,13 @@ import kotlin.concurrent.thread
 // connections are polled instead - unlike the addresses of all interfaces, they only change when the
 // network the connections are made via changes.
 class NetworkObserver {
-  // the addresses and the network info of the last report the core accepted
-  // (null - nothing was reported to the chat controller that is used now)
+  // the network info and the addresses the core was last told about, plus the addresses added since
+  // (sentAddresses null - the chat controller used now accepted nothing; sentInfo is also cleared
+  // after a suspend, so that the network is reported again), and the IPv6 address used for the
+  // connections when the core accepted the last report
   @Volatile private var sentAddresses: Set<String>? = null
   @Volatile private var sentInfo: UserNetworkInfo? = null
+  @Volatile private var sentAddress6: InetAddress? = null
   @Volatile private var observer: Thread? = null
 
   @Synchronized fun restartNetworkObserver() {
@@ -23,6 +26,7 @@ class NetworkObserver {
     // while it was being replaced is not recorded, so the network info is reported to it again
     sentAddresses = null
     sentInfo = null
+    sentAddress6 = null
     val newObserver = thread(start = false, isDaemon = true, name = "NetworkObserver") { observeNetwork() }
     // the observer that is stopping does not report, and it stops when it polls next
     observer = newObserver
@@ -51,15 +55,20 @@ class NetworkObserver {
   }
 
   private fun pollNetwork() {
-    // the addresses can be briefly unavailable, e.g. when the computer wakes up or the lease is renewed
+    // the addresses can be briefly unavailable, e.g. when the computer wakes up
     val addresses = localAddresses().ifEmpty { sleepDetectingSuspend(CONFIRM_OFFLINE_MS); localAddresses() }
     val info = UserNetworkInfo(networkType = UserNetworkType.OTHER, online = addresses.isNotEmpty())
     if (!info.online && sentAddresses == null) return
     // the reported addresses are compared, so that the report that was not accepted is repeated,
     // and an added address (e.g. IPv6 configured after IPv4) does not affect the connections, a removed does
-    val report = info != sentInfo || !addresses.containsAll(sentAddresses ?: emptySet())
-    if (report) sendNetworkInfo(info, addresses) else setSentInfo(info, addresses)
+    val report = info != sentInfo || !addresses.containsAll(sentAddresses ?: emptySet()) || sentAddress6Removed()
+    if (report) sendNetworkInfo(info, addresses, sourceAddress(PROBE_IPV6)) else setSentInfo(info, addresses)
   }
+
+  // the network prefix stays the same when an IPv6 temporary address is deleted, while the connections
+  // made via it are dead
+  private fun sentAddress6Removed(): Boolean =
+    sentAddress6?.let { a -> runCatching { NetworkInterface.getByInetAddress(a) == null }.getOrDefault(false) } ?: false
 
   private fun localAddresses(): Set<String> =
     setOfNotNull(localAddress(PROBE_IPV4), localAddress(PROBE_IPV6)).ifEmpty { usableAddresses() }
@@ -76,12 +85,14 @@ class NetworkObserver {
 
   // a socket is used once - a reused one keeps the address it was bound to on the platforms
   // that do not reset it when the socket is disconnected
-  private fun localAddress(remoteHost: String): String? =
+  private fun localAddress(remoteHost: String): String? = sourceAddress(remoteHost)?.let(::addressKey)
+
+  private fun sourceAddress(remoteHost: String): InetAddress? =
     try {
       DatagramSocket().use { socket ->
         // connecting a UDP socket sends nothing, it only binds it to the address chosen by the routing table
         socket.connect(InetSocketAddress(InetAddress.getByName(remoteHost), PROBE_PORT))
-        socket.localAddress?.takeIf { !it.isAnyLocalAddress && !it.isLinkLocalAddress }?.let(::addressKey)
+        socket.localAddress?.takeIf { !it.isAnyLocalAddress && !it.isLinkLocalAddress }
       }
     } catch (e: Exception) {
       // there is no route to this address family, or a socket cannot be created
@@ -89,19 +100,22 @@ class NetworkObserver {
     }
 
   // IPv6 temporary addresses are rotated within the same network, and the connections made via
-  // the previous address remain valid, so only the network prefix is compared.
+  // the previous address remain valid until it is deleted, so only the network prefix is compared.
   private fun addressKey(address: InetAddress): String =
     if (address is Inet6Address) address.address.copyOf(8).joinToString(":") { it.toUByte().toString(16) }
     else address.hostAddress ?: ""
 
   // taken under the same lock as the observer restart, so that a report of the observer that is stopping
   // is either delivered and recorded before the restart resets what was recorded, or not delivered
-  @Synchronized private fun sendNetworkInfo(info: UserNetworkInfo, addresses: Set<String>) {
+  @Synchronized private fun sendNetworkInfo(info: UserNetworkInfo, addresses: Set<String>, address6: InetAddress?) {
     if (observer !== Thread.currentThread()) return
     Log.d(TAG, "Network changed: $info")
     val ctrl = controller.currentCtrl()
     val sent = ctrl != null && runBlocking { controller.apiSetNetworkInfo(info, ctrl) }
-    if (sent) setSentInfo(info, addresses)
+    if (sent) {
+      setSentInfo(info, addresses)
+      sentAddress6 = address6
+    }
   }
 
   @Synchronized private fun setSentInfo(info: UserNetworkInfo, addresses: Set<String>) {
