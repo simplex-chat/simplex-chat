@@ -229,6 +229,7 @@ chatGroupTests = do
     it "multiple groups with same member, update is applied only once" testMembershipProfileUpdateSameMember
     it "member contact is active" testMembershipProfileUpdateContactActive
     it "member contact is deleted" testMembershipProfileUpdateContactDeleted
+    it "member contact is deleted, peer type is updated" testMembershipProfileUpdateContactDeletedPeerType
     it "member contact is deleted silently, then considered disabled" testMembershipProfileUpdateContactDisabled
     it "profile update without change is ignored" testMembershipProfileUpdateNoChangeIgnored
     it "change of profile contact link is ignored" testMembershipProfileUpdateContactLinkIgnored
@@ -7424,6 +7425,26 @@ testMembershipProfileUpdateContactDeleted =
       bob <## "connection not verified, use /code command to see security code"
       bob <## currentChatVRangeInfo
 
+testMembershipProfileUpdateContactDeletedPeerType :: HasCallStack => TestParams -> IO ()
+testMembershipProfileUpdateContactDeletedPeerType =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+
+      alice ##> "/d bob"
+      alice <## "bob: contact is deleted"
+      bob <## "alice (Alice) deleted contact with you"
+
+      alice ##> "/_profile 1 {\"displayName\": \"alisa\", \"fullName\": \"\", \"peerType\": \"bot\"}"
+      alice <## "user profile is changed to alisa (your 0 contacts are notified)"
+
+      alice #> "#team hello"
+      bob <## "contact alice changed to alisa"
+      bob <## "use @alisa <message> to send messages"
+      bob <# "#team alisa> hello"
+
+      memberAddressPeerType bob "alisa" `shouldReturn` [(Nothing, Just CPTBot)]
+
 testMembershipProfileUpdateContactDisabled :: HasCallStack => TestParams -> IO ()
 testMembershipProfileUpdateContactDisabled =
   testChat2 aliceProfile bobProfile $
@@ -12644,13 +12665,7 @@ testChannelMessageFile ps =
         withNewTestChat ps "dan" danProfile $ \dan ->
           withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer ps $ do
             createChannel1Relay "team" alice bob cath dan eve
-            -- the roster arrives as a file before this one; Postgres assigns it a new id and does not
-            -- reuse it on delete (SQLite does), so the received message file is id 2 here, 1 on SQLite.
-#if defined(dbPostgres)
             let rcvFileId = 2 :: Int
-#else
-            let rcvFileId = 1 :: Int
-#endif
             -- owner sends file as channel message
             alice #> "/f #team ./tests/fixtures/test.jpg"
             alice <## "use /fc 1 to cancel sending"
@@ -12696,11 +12711,7 @@ testChannelMessageFileCancel ps =
         withNewTestChat ps "dan" danProfile $ \dan ->
           withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer ps $ do
             createChannel1Relay "team" alice bob cath dan eve
-#if defined(dbPostgres)
             let rcvFileId = 2 :: Int
-#else
-            let rcvFileId = 1 :: Int
-#endif
             -- owner sends file as channel message
             alice #> "/f #team ./tests/fixtures/test.jpg"
             alice <## "use /fc 1 to cancel sending"
@@ -12876,11 +12887,7 @@ testChannelOwnerFileTransferAsMember ps =
         withNewTestChat ps "dan" danProfile $ \dan ->
           withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer ps $ do
             createChannel1Relay "team" alice bob cath dan eve
-#if defined(dbPostgres)
             let rcvFileId = 2 :: Int
-#else
-            let rcvFileId = 1 :: Int
-#endif
             -- owner sends file as member (not as channel)
             alice ##> "/_send #1(as_group=off) json [{\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"type\": \"file\", \"text\": \"\"}}]"
             alice <# "/f #team ./tests/fixtures/test.jpg"
@@ -13028,11 +13035,7 @@ testChannelFileBadgeProof ps = do
           withNewTestChatCfg ps cfg "eve" eveProfile $ \eve -> withXFTPServer ps $ do
             createChannel1Relay "team" alice bob cath dan eve
             addTestBadge alice =<< issueTestBadge sk futureDate
-#if defined(dbPostgres)
             let rcvFileId = 2 :: Int
-#else
-            let rcvFileId = 1 :: Int
-#endif
             alice ##> "/_send #1(as_group=off) json [{\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"type\": \"file\", \"text\": \"\"}}]"
             alice <# "/f #team ./tests/fixtures/test.jpg"
             alice <## "use /fc 1 to cancel sending"
@@ -13095,11 +13098,7 @@ testChannelOwnerFileCancelAsMember ps =
         withNewTestChat ps "dan" danProfile $ \dan ->
           withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer ps $ do
             createChannel1Relay "team" alice bob cath dan eve
-#if defined(dbPostgres)
             let rcvFileId = 2 :: Int
-#else
-            let rcvFileId = 1 :: Int
-#endif
             -- owner sends file as member (not as channel)
             alice ##> "/_send #1(as_group=off) json [{\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"type\": \"file\", \"text\": \"\"}}]"
             alice <# "/f #team ./tests/fixtures/test.jpg"
@@ -13475,17 +13474,9 @@ testChannelSignedFile ps =
             xftpCLI ["rand", testfile, "1mb"] `shouldReturn` ["File created: " <> testfile]
             createChannel1Relay "team" alice bob cath dan eve
             promoteChannelMember "team" alice bob cath [dan, eve]
-            -- roster serves arrive as files that Postgres deletes without reusing the id (SQLite reuses
-            -- it), so ids run higher here. cath's send and the subscribers' (dan, eve) receive both
-            -- follow only their join roster (id 2). The relay (bob) also received the roster re-served
-            -- on cath's promotion, so its file is id 3. The owner (alice) has no roster file, so id 1.
-#if defined(dbPostgres)
+            -- roster files are deleted after the transfer, so ids run higher: cath, dan and eve use id 2, the relay (bob) id 3, the owner (alice) id 1.
             let fileId = 2 :: Int
                 relayFileId = 3 :: Int
-#else
-            let fileId = 1 :: Int
-                relayFileId = 1 :: Int
-#endif
 
             -- cath's first (signed) message introduces her to dan/eve
             cath ##> "/_send #1 sign=on text hi"

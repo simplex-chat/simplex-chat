@@ -60,7 +60,7 @@ import Simplex.Messaging.Client (ProtocolClientConfig (..))
 import Simplex.Messaging.Client.Agent (defaultSMPClientAgentConfig)
 import Simplex.Messaging.Protocol (ProtoServerWithAuth (..), ProtocolServer (..), ProtocolType (..))
 import Simplex.Messaging.Server (runSMPServerBlocking)
-import Simplex.Messaging.Server.Env.STM (ServerConfig (..), ServerStoreCfg (..), StartOptions (..), StorePaths (..), defaultMessageExpiration, defaultIdleQueueInterval, defaultNtfExpiration, defaultInactiveClientExpiration)
+import Simplex.Messaging.Server.Env.STM (ServerConfig (..), ServerStoreCfg (..), StartOptions (..), StorePaths (..), defaultMaxClientCmdWait, defaultMessageExpiration, defaultNtfExpiration, defaultInactiveClientExpiration)
 import NameResolver (NameRegistry, resolverNamesConfig, withNameResolver)
 import Simplex.Messaging.Server.MsgStore.STM (STMMsgStore)
 import Simplex.Messaging.Transport
@@ -639,8 +639,6 @@ smpServerCfg p =
     { transports = [(smpTestPort p, transport @TLS, False)],
       tbqSize = 4,
       msgQueueQuota = 16,
-      maxJournalMsgCount = 24,
-      maxJournalStateLines = 4,
       queueIdBytes = 24,
       msgIdBytes = 24,
       serverStoreCfg = SSCMemory Nothing, -- $ Just StorePaths {storeLogFile = "tmp/smp-server-store.log", storeMsgsFile = Just "tmp/smp-server-messages.log"},
@@ -654,7 +652,6 @@ smpServerCfg p =
       messageExpiration = Just defaultMessageExpiration,
       expireMessagesOnStart = False,
       expireMessagesOnSend = False,
-      idleQueueInterval = defaultIdleQueueInterval,
       notificationExpiration = defaultNtfExpiration,
       inactiveClientExpiration = Just defaultInactiveClientExpiration,
       smpCredentials =
@@ -681,6 +678,7 @@ smpServerCfg p =
       allowSMPProxy = True,
       serverClientConcurrency = 16,
       serverResolverConcurrency = 1000,
+      maxClientCmdWait = defaultMaxClientCmdWait,
       namesConfig = Nothing,
       information = Nothing,
       startOptions = StartOptions {maintenance = False, compactLog = False, logLevel = LogError, skipWarnings = False, confirmMigrations = MCYesUp}

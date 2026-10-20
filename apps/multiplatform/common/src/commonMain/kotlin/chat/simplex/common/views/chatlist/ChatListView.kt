@@ -988,10 +988,10 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
             } else {
               val candidate = nameSearchCandidate(it.trim())
               connectNameCandidate.value = candidate
-              // clear the previous match immediately so the list falls back to text search during the debounce,
-              // instead of showing a stale filtered chat while the new search runs
-              searchChatFilteredBySimplexLink.value = emptySet()
               if (candidate != null) {
+                // clear the previous match immediately so the list falls back to text search during the debounce,
+                // instead of showing a stale filtered chat while the new search runs
+                searchChatFilteredBySimplexLink.value = emptySet()
                 // resolve the name locally on each keystroke, debounced; collectLatest cancels the in-flight
                 // search when the next keystroke arrives. A bare name can be a contact or a channel, so search
                 // both and filter every known chat found; drop the row only when both types are already known.

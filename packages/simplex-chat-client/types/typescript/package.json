@@ -1,7 +1,7 @@
 {
   "name": "@simplex-chat/types",
-  "version": "7.1.0-beta.6.1",
-  "simplexChatCore": "7.1.0.12",
+  "version": "7.1.0-beta.6.2",
+  "simplexChatCore": "7.1.0.14",
   "description": "TypeScript types for SimpleX Chat bot libraries",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -20,7 +20,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/simplex-chat/simplex-chat.git",
-    "directory": "/packages/simplex-chat-client/types/typescript"
+    "directory": "packages/simplex-chat-client/types/typescript"
   },
   "keywords": [
     "simplex",

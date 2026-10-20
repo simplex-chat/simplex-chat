@@ -180,7 +180,7 @@ The `ChatCommand` enum ([`AppAPITypes.swift` L15](../Shared/Model/AppAPITypes.sw
 | `apiRejectCall` | `contact` | Reject incoming call | [L169](../Shared/Model/AppAPITypes.swift#L169) |
 | `apiSendCallOffer` | `contact, callOffer: WebRTCCallOffer` | Send SDP offer | [L170](../Shared/Model/AppAPITypes.swift#L170) |
 | `apiSendCallAnswer` | `contact, answer: WebRTCSession` | Send SDP answer | [L171](../Shared/Model/AppAPITypes.swift#L171) |
-| `apiSendCallExtraInfo` | `contact, extraInfo: WebRTCExtraInfo` | Send ICE candidates | [L172](../Shared/Model/AppAPITypes.swift#L172) |
+| `apiSendCallExtraInfo` | `contact, extraInfo: WebRTCExtraInfo` | Send ICE candidates or ICE restart offer/answer | [L172](../Shared/Model/AppAPITypes.swift#L172) |
 | `apiEndCall` | `contact` | End active call | [L173](../Shared/Model/AppAPITypes.swift#L173) |
 | `apiGetCallInvitations` | -- | Get pending call invitations | [L174](../Shared/Model/AppAPITypes.swift#L174) |
 | `apiCallStatus` | `contact, callStatus` | Report call status change | [L175](../Shared/Model/AppAPITypes.swift#L175) |

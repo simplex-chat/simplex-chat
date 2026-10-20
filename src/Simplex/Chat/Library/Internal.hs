@@ -40,7 +40,7 @@ import Data.Foldable (foldr')
 import Data.Functor (($>))
 import Data.Functor.Identity
 import Data.Int (Int64)
-import Data.List (find, foldl', mapAccumL, partition)
+import Data.List (foldl', mapAccumL, partition)
 import Data.List.NonEmpty (NonEmpty (..), (<|))
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -3012,12 +3012,16 @@ saveSndChatItems user cd showGroupAsSender itemsData itemTimed live = do
     createItem :: DB.Connection -> UTCTime -> NewSndChatItemData c -> IO (Either ChatError (ChatItem c 'MDSnd))
     createItem db createdAt NewSndChatItemData {msg = msg@SndMessage {sharedMsgId, signedMsg_}, content, itemTexts = itemTexts@(_, ParsedMarkdown ft_ _), itemMentions, ciFile, quotedItem, itemForwarded} = do
       let hasLink_ = ciContentHasLink content ft_
-      ciId <- createNewSndChatItem db user cd showGroupAsSender msg content quotedItem itemForwarded itemTimed live hasLink_ createdAt
+          itemTs = roundDownToSecond createdAt
+      ciId <- createNewSndChatItem db user cd showGroupAsSender msg content quotedItem itemForwarded itemTimed live hasLink_ itemTs createdAt
       forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
-      let ci = mkChatItem_ cd showGroupAsSender ciId content itemTexts ciFile quotedItem (Just sharedMsgId) itemForwarded itemTimed live False hasLink_ createdAt Nothing (toMsgVerified (signMessagesRequired cd) (MSSVerified <$ signedMsg_)) createdAt
+      let ci = mkChatItem_ cd showGroupAsSender ciId content itemTexts ciFile quotedItem (Just sharedMsgId) itemForwarded itemTimed live False hasLink_ itemTs Nothing (toMsgVerified (signMessagesRequired cd) (MSSVerified <$ signedMsg_)) createdAt
       Right <$> case cd of
         CDGroupSnd g _scope | not (null itemMentions) -> createGroupCIMentions db g ci itemMentions
         _ -> pure ci
+
+roundDownToSecond :: UTCTime -> UTCTime
+roundDownToSecond t@UTCTime {utctDayTime} = t {utctDayTime = fromInteger (floor utctDayTime)}
 
 saveRcvChatItemNoParse :: (ChatTypeI c, ChatTypeQuotable c) => User -> ChatDirection c 'MDRcv -> RcvMessage -> UTCTime -> CIContent 'MDRcv -> CM (ChatItem c 'MDRcv, ChatInfo c)
 saveRcvChatItemNoParse user cd msg brokerTs = saveRcvChatItem user cd msg brokerTs . ciContentNoParse
@@ -3355,7 +3359,7 @@ createChatItems ::
   CM' [Either ChatError AChatItem]
 createChatItems user itemTs_ dirsCIContents = do
   createdAt <- liftIO getCurrentTime
-  let itemTs = fromMaybe createdAt itemTs_
+  let itemTs = fromMaybe (roundDownToSecond createdAt) itemTs_
   cxt <- asks storeCxt
   void . withStoreBatch' $ \db -> map (updateChat db cxt createdAt) dirsCIContents
   withStoreBatch' $ \db -> concatMap (createACIs db itemTs createdAt) dirsCIContents
@@ -3411,9 +3415,10 @@ createLocalChatItems user cd itemsData createdAt = do
     createItem :: DB.Connection -> (CIContent 'MDSnd, Maybe (CIFile 'MDSnd), Maybe CIForwardedFrom, (Text, ParsedMarkdown)) -> IO (ChatItem 'CTLocal 'MDSnd)
     createItem db (content, ciFile, itemForwarded, ts@(_, ParsedMarkdown ft_ _)) = do
       let hasLink_ = ciContentHasLink content ft_
-      ciId <- createNewChatItem_ db user cd False Nothing Nothing content (Nothing, Nothing, Nothing, Nothing, Nothing) itemForwarded Nothing False False hasLink_ createdAt Nothing Nothing Nothing Nothing createdAt
+          itemTs = roundDownToSecond createdAt
+      ciId <- createNewChatItem_ db user cd False Nothing Nothing content (Nothing, Nothing, Nothing, Nothing, Nothing) itemForwarded Nothing False False hasLink_ itemTs Nothing Nothing Nothing Nothing createdAt
       forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
-      pure $ mkChatItem_ cd False ciId content ts ciFile Nothing Nothing itemForwarded Nothing False False hasLink_ createdAt Nothing Nothing createdAt
+      pure $ mkChatItem_ cd False ciId content ts ciFile Nothing Nothing itemForwarded Nothing False False hasLink_ itemTs Nothing Nothing createdAt
 
 withUser' :: (User -> CM ChatResponse) -> CM ChatResponse
 withUser' action =
