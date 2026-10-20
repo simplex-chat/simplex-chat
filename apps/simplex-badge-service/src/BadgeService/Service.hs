@@ -661,7 +661,7 @@ firstChargeNotGranted provider = \case
 -- forger could iterate on. A test purchase is named, since the device that made it already knows.
 -- | What each request was answered, to pair with its command in a log. No payload: a credential,
 -- an invoice and a statement are the client's, and an error's message can quote what it refused.
-responseName :: BadgeServiceResponse -> Text
+responseName :: BadgeServiceResponse -> T.Text
 responseName = \case
   BSPBadgeCatalog {} -> "catalog"
   BSPBadgeInvoice {} -> "invoice"
@@ -672,7 +672,7 @@ responseName = \case
 
 -- | The command each request ran, so a log can be followed without the request ids. No payload:
 -- a payment holds a store receipt, and an upgrade a receipt code.
-commandName :: BadgeServiceCommand -> Text
+commandName :: BadgeServiceCommand -> T.Text
 commandName = \case
   BSCGetBadgeCatalog -> "getBadgeCatalog"
   BSCGetBadgeInvoice {} -> "getBadgeInvoice"
