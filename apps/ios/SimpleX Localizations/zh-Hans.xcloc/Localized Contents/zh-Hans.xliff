@@ -115,14 +115,14 @@
         <target state="translated">%@ 已认证</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ server" xml:space="preserve">
+      <trans-unit id="%@ server" xml:space="preserve" approved="no">
         <source>%@ server</source>
-        <target>服务器</target>
+        <target state="translated">服务器</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ servers" xml:space="preserve">
+      <trans-unit id="%@ servers" xml:space="preserve" approved="no">
         <source>%@ servers</source>
-        <target>服务器</target>
+        <target state="translated">服务器</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ supports SimpleX Chat." xml:space="preserve" approved="no">
