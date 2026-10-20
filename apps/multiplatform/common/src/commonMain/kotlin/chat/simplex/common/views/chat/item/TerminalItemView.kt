@@ -1,10 +1,19 @@
 package chat.simplex.common.views.chat.item
 
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.indication
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -32,54 +41,43 @@ fun terminalItemHasHeader(item: ChatItem, older: ChatItem?): Boolean =
   )
 
 private fun sameTerminalSender(item: ChatItem, older: ChatItem): Boolean {
+  val d = item.chatDir
   val o = older.chatDir
-  return when (val d = item.chatDir) {
-    is CIDirection.GroupRcv -> o is CIDirection.GroupRcv && o.groupMember.groupMemberId == d.groupMember.groupMemberId
-    is CIDirection.ChannelRcv -> o is CIDirection.ChannelRcv
-    is CIDirection.GroupSnd -> o is CIDirection.GroupSnd && older.meta.showGroupAsSender == item.meta.showGroupAsSender
-    is CIDirection.DirectSnd -> o is CIDirection.DirectSnd
-    is CIDirection.DirectRcv -> o is CIDirection.DirectRcv
-    is CIDirection.LocalSnd -> o is CIDirection.LocalSnd
-    is CIDirection.LocalRcv -> o is CIDirection.LocalRcv
+  return when {
+    item.channelIsSender || older.channelIsSender -> item.channelIsSender && older.channelIsSender
+    d is CIDirection.GroupRcv -> o is CIDirection.GroupRcv && o.groupMember.groupMemberId == d.groupMember.groupMemberId
+    else -> d::class == o::class
   }
 }
+
+private val ChatItem.channelIsSender: Boolean get() =
+  chatDir is CIDirection.ChannelRcv || (chatDir is CIDirection.GroupSnd && meta.showGroupAsSender)
 
 private fun localDate(item: ChatItem) = item.meta.itemTs.toLocalDateTime(TimeZone.currentSystemDefault()).date
 
 private val CIContent.hasTerminalSender: Boolean get() = when (this) {
+  is CIContent.RcvIntegrityError -> false
   is CIContent.SndMsgContent,
-  is CIContent.RcvMsgContent,
   is CIContent.SndDeleted,
-  is CIContent.RcvDeleted,
   is CIContent.SndCall,
-  is CIContent.RcvCall,
-  is CIContent.RcvIntegrityError,
-  is CIContent.RcvDecryptionError,
-  is CIContent.RcvMsgErrorContent,
-  is CIContent.RcvGroupInvitation,
   is CIContent.SndGroupInvitation,
-  is CIContent.SndModerated,
-  is CIContent.RcvModerated,
-  is CIContent.RcvBlocked,
-  is CIContent.InvalidJSON -> true
-  is CIContent.RcvDirectEventContent,
-  is CIContent.RcvGroupEventContent,
-  is CIContent.SndGroupEventContent,
-  is CIContent.RcvConnEventContent,
-  is CIContent.SndConnEventContent,
-  is CIContent.RcvChatFeature,
-  is CIContent.SndChatFeature,
-  is CIContent.RcvChatPreference,
-  is CIContent.SndChatPreference,
-  is CIContent.RcvGroupFeature,
-  is CIContent.SndGroupFeature,
-  is CIContent.RcvChatFeatureRejected,
-  is CIContent.RcvGroupFeatureRejected,
-  is CIContent.SndDirectE2EEInfo,
-  is CIContent.RcvDirectE2EEInfo,
-  is CIContent.SndGroupE2EEInfo,
-  is CIContent.RcvGroupE2EEInfo,
-  is CIContent.ChatBanner -> false
+  is CIContent.SndModerated -> true
+  else -> showMemberName
+}
+
+@Composable
+fun Modifier.terminalRowIndication(): Modifier {
+  val interactionSource = remember { MutableInteractionSource() }
+  return this
+    .hoverable(interactionSource)
+    .indication(interactionSource, LocalIndication.current)
+    .pointerInput(interactionSource) {
+      awaitEachGesture {
+        val press = PressInteraction.Press(awaitFirstDown(requireUnconsumed = false).position)
+        interactionSource.tryEmit(press)
+        interactionSource.tryEmit(if (waitForUpOrCancellation() != null) PressInteraction.Release(press) else PressInteraction.Cancel(press))
+      }
+    }
 }
 
 @Composable
@@ -135,7 +133,7 @@ private fun terminalSender(
   }
   val dir = cItem.chatDir
   return when {
-    dir is CIDirection.ChannelRcv || (dir is CIDirection.GroupSnd && cItem.meta.showGroupAsSender) ->
+    cItem.channelIsSender ->
       TerminalSender(chatInfo.chatViewName, null, stringResource(MR.strings.channel_role_label), chatImage)
     dir is CIDirection.DirectRcv ->
       TerminalSender(chatInfo.displayName, chatInfo.nameBadge, null, chatImage)

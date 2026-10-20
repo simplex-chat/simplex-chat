@@ -16,7 +16,12 @@ class TerminalItemViewTest {
   private val bob = GroupMember.sampleData.copy(groupMemberId = 2, memberId = "bob")
 
   private fun msg(id: Long, dir: CIDirection, secondsAfterNoon: Long) =
-    ChatItem.getSampleData(id, dir, Instant.fromEpochSeconds(noon.epochSeconds + secondsAfterNoon))
+    ChatItem.getSampleData(id, dir, Instant.fromEpochSeconds(noon.epochSeconds + secondsAfterNoon)).let {
+      if (dir.sent) it else it.copy(content = CIContent.RcvMsgContent(MsgContent.MCText("hello")))
+    }
+
+  private fun integrityError(id: Long, secondsAfterNoon: Long) =
+    msg(id, CIDirection.DirectRcv(), secondsAfterNoon).copy(content = CIContent.RcvIntegrityError(MsgErrorType.MsgSkipped(1, 2)))
 
   private fun featureEvent(id: Long, secondsAfterNoon: Long) =
     ChatItem(
@@ -79,6 +84,13 @@ class TerminalItemViewTest {
     assertTrue(terminalItemHasHeader(msg(2, CIDirection.GroupSnd(), 10), older = asChannel))
     val asChannelToo = msg(2, CIDirection.GroupSnd(), 10).let { it.copy(meta = it.meta.copy(showGroupAsSender = true)) }
     assertFalse(terminalItemHasHeader(asChannelToo, older = asChannel))
+    assertFalse(terminalItemHasHeader(msg(2, CIDirection.ChannelRcv(), 10), older = asChannel))
+  }
+
+  @Test
+  fun noHeaderForIntegrityError() {
+    assertFalse(terminalItemHasHeader(integrityError(1, 0), older = null))
+    assertTrue(terminalItemHasHeader(msg(2, CIDirection.DirectRcv(), 10), older = integrityError(1, 0)))
   }
 
   @Test
