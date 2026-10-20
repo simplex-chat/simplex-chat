@@ -70,9 +70,9 @@
         <target state="translated">%@ / %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ and %@" xml:space="preserve">
+      <trans-unit id="%@ and %@" xml:space="preserve" approved="no">
         <source>%@ and %@</source>
-        <target>%@ 和 %@</target>
+        <target state="translated">%@ 和 %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ and %@ connected" xml:space="preserve" approved="no">
@@ -85,9 +85,9 @@
         <target state="translated">%1$@ 于 %2$@：</target>
         <note>copied message info, &lt;sender&gt; at &lt;time&gt;</note>
       </trans-unit>
-      <trans-unit id="%@ connected" xml:space="preserve">
+      <trans-unit id="%@ connected" xml:space="preserve" approved="no">
         <source>%@ connected</source>
-        <target>%@ 已连接</target>
+        <target state="translated">%@ 已连接</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ downloaded" xml:space="preserve" approved="no">
@@ -145,9 +145,9 @@
         <target state="translated">%1$@, %2$@</target>
         <note>format for date separator in chat</note>
       </trans-unit>
-      <trans-unit id="%@, %@ and %lld members" xml:space="preserve">
+      <trans-unit id="%@, %@ and %lld members" xml:space="preserve" approved="no">
         <source>%@, %@ and %lld members</source>
-        <target>%@, %@ 和 %lld 成员</target>
+        <target state="translated">%@, %@ 和 %lld 成员</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@, %@ and %lld other members connected" xml:space="preserve">
@@ -340,9 +340,9 @@ channel relay bar</note>
         <target state="translated">%lld 总文件大小 %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld group events" xml:space="preserve">
+      <trans-unit id="%lld group events" xml:space="preserve" approved="no">
         <source>%lld group events</source>
-        <target>%lld 群组事件</target>
+        <target state="translated">%lld 群组事件</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld members" xml:space="preserve" approved="no">
@@ -350,9 +350,9 @@ channel relay bar</note>
         <target state="translated">%lld 成员</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld messages blocked" xml:space="preserve">
+      <trans-unit id="%lld messages blocked" xml:space="preserve" approved="no">
         <source>%lld messages blocked</source>
-        <target>%lld 条消息已屏蔽</target>
+        <target state="translated">%lld 条消息已屏蔽</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld messages blocked by admin" xml:space="preserve" approved="no">
