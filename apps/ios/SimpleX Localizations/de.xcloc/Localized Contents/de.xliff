@@ -5467,9 +5467,9 @@ Das ist Ihr Link für die Gruppe %@!</target>
         <target state="translated">KeyChain Fehler</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="LIVE" xml:space="preserve">
+      <trans-unit id="LIVE" xml:space="preserve" approved="no">
         <source>LIVE</source>
-        <target>LIVE</target>
+        <target state="translated">LIVE</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Large file!" xml:space="preserve" approved="no">
