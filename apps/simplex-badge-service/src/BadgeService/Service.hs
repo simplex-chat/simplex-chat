@@ -573,14 +573,14 @@ purchaseWithReceipt key cc verifier checks purchaseKey masterKey StoreReceipt {t
       SubscriptionGoogle _ -> (googleChecks checks, Just $ playReads checks)
     newSubscription checked@SubscriptionCheck {subscriptionState} = do
       now <- badgeNow cc
-      case grantableCharge provider Nothing now checked >>= fundsMonthNow now Nothing of
+      case grantableCharge provider Nothing now checked >>= fundsMonthNow purchaseKey now Nothing of
         Left notGranted -> firstChargeNotGranted provider notGranted
         Right (charge@StoreCharge {periodStart, chargePaid = paid}, (badgeType, months)) ->
           acknowledged acknowledgeSubscription $ do
             chargeId <- randomId cc
-            entryIds <- (,,) <$> randomId cc <*> randomId cc <*> randomId cc
+            entryIds <- (,,,) <$> randomId cc <*> randomId cc <*> randomId cc <*> randomId cc
             let seed = emptyEntry periodStart badgeType
-            signMonthAfter key cc masterKey now seed (chargeEntries periodStart now months chargeId entryIds seed) >>= \case
+            signMonthAfter key cc masterKey now seed (chargeEntries periodStart now badgeType months purchaseKey chargeId entryIds seed) >>= \case
               Left resp -> pure resp
               Right firstMonth ->
                 claimPurchase now (\paymentId -> NewStorePurchase {paymentId, provider, providerRef, paid, purchaseKey, masterKey, badgeType, subscriptionState = Just subscriptionState, providerToken}) $
@@ -640,9 +640,9 @@ grantableCharge provider tier now SubscriptionCheck {subscriptionState, latestCh
 
 -- | Play dates a period from its end less the plan's months, clipped at month ends, so the months the ledger grants
 -- from that start can end before Play's period does: a charge still in its period may then fund no month now.
-fundsMonthNow :: UTCTime -> Maybe StatementEntry -> (StoreCharge, (BadgeType, Int)) -> Either NotGranted (StoreCharge, (BadgeType, Int))
-fundsMonthNow now tip_ grant@(StoreCharge {periodStart}, (badgeType, months))
-  | isJust $ issueEntry now "" $ last $ tip : chargeEntries periodStart now months "" ("", "", "") tip = Right grant
+fundsMonthNow :: C.PublicKeyEd25519 -> UTCTime -> Maybe StatementEntry -> (StoreCharge, (BadgeType, Int)) -> Either NotGranted (StoreCharge, (BadgeType, Int))
+fundsMonthNow purchaseKey now tip_ grant@(StoreCharge {periodStart}, (badgeType, months))
+  | isJust $ issueEntry now "" $ last $ tip : chargeEntries periodStart now badgeType months purchaseKey "" ("", "", "", "") tip = Right grant
   | otherwise = Left NGPeriodOver
   where
     tip = fromMaybe (emptyEntry periodStart badgeType) tip_
@@ -719,7 +719,7 @@ signFirstMonth key cc masterKey badgeType months credit now = do
   -- TODO [badges] a top-up grants onto an existing ledger, and must lapse before it or the
   -- months it adds are counted from a start already in the past
   let seed = emptyEntry now badgeType
-  signMonthAfter key cc masterKey now seed [grantEntry now grantUuid months credit seed]
+  signMonthAfter key cc masterKey now seed [grantEntry now grantUuid badgeType months credit seed]
 
 -- | The rows that fund a month, after the entry they follow, with that month issued at now and signed.
 signMonthAfter :: BadgeIssuerKey -> ChatController -> BadgeMasterKey -> UTCTime -> StatementEntry -> [StatementEntry] -> IO (Either BadgeServiceResponse ([StatementEntry], (StatementEntry, StatementEntry, BadgeCredential)))
@@ -782,7 +782,7 @@ issueBadgeCmd key cc verifier purchaseKey BadgeBalance {lastEntry} = do
             Right () ->
               checkStoreSubscription verifier subscriptionRef Nothing >>= \case
                 Left refusal -> atLeastCheckInterval <$> storeRefusalResponse refusal
-                Right checked@SubscriptionCheck {subscriptionState, latestCharge} -> case grantableCharge provider (Just badgeType) now checked >>= fundsMonthNow now (Just tip) of
+                Right checked@SubscriptionCheck {subscriptionState, latestCharge} -> case grantableCharge provider (Just badgeType) now checked >>= fundsMonthNow purchaseKey now (Just tip) of
                   Left NGMalformedPeriod -> storeRefusalResponse $ SRVerifierFailed "a charge whose period does not end after its start"
                   Left reason -> do
                     forM_ latestCharge $ \_ -> logInfo $ "store subscription charge not granted: " <> tshow reason
@@ -794,8 +794,8 @@ issueBadgeCmd key cc verifier purchaseKey BadgeBalance {lastEntry} = do
                       Right (Just (_, True)) -> recordCheck (Just charge) subscriptionState
                       Right recorded -> do
                         chargeId <- maybe (randomId cc) (pure . fst) recorded
-                        entryIds <- (,,) <$> randomId cc <*> randomId cc <*> randomId cc
-                        signMonthAfter key cc masterKey now tip (chargeEntries periodStart now months chargeId entryIds tip) >>= \case
+                        entryIds <- (,,,) <$> randomId cc <*> randomId cc <*> randomId cc <*> randomId cc
+                        signMonthAfter key cc masterKey now tip (chargeEntries periodStart now badgeType months purchaseKey chargeId entryIds tip) >>= \case
                           Left resp -> pure resp
                           Right (rows, issuance) -> do
                             r <- withDB "renewSubscription" cc $ \db -> liftIO $ do
@@ -825,7 +825,7 @@ issueBadgeCmd key cc verifier purchaseKey BadgeBalance {lastEntry} = do
         Left refusal -> atLeastCheckInterval <$> storeRefusalResponse refusal
         Right checked@SubscriptionCheck {subscriptionState, latestCharge} -> do
           newChargeId <- randomId cc
-          entryIds <- (,,) <$> randomId cc <*> randomId cc <*> randomId cc
+          entryIds <- (,,,) <$> randomId cc <*> randomId cc <*> randomId cc <*> randomId cc
           r <- withDB' "checkStoreDuringCoverage" cc $ \db -> do
             tip' <- getLedgerTip db badgePurchaseId
             when (fmap entryId tip' == Just (entryId tip)) $ do
@@ -836,7 +836,7 @@ issueBadgeCmd key cc verifier purchaseKey BadgeBalance {lastEntry} = do
                     recorded -> do
                       let chargeId = maybe newChargeId fst recorded
                       insertSubscriptionCharge db paymentId chargeId charge now
-                      appendLedgerPlan db badgePurchaseId Nothing (chargeEntries periodStart now months chargeId entryIds tip) Nothing
+                      appendLedgerPlan db badgePurchaseId Nothing (chargeEntries periodStart now badgeType months purchaseKey chargeId entryIds tip) Nothing
                 Left _ -> forM_ latestCharge $ \charge -> insertSubscriptionCharge db paymentId newChargeId charge now
               setSubscriptionState db paymentId subscriptionState now
             getLedgerTip db badgePurchaseId

@@ -60,8 +60,8 @@ import Network.HTTP.Types (Header, HeaderName, hCacheControl, hContentType)
 import Network.HTTP.Types.Status (statusCode)
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey (..), BadgeType (..))
-import Simplex.Chat.Badges.Ledger (addMonths, emptyEntry, grantEntry)
-import Simplex.Chat.Badges.Service (BadgeOffer (..), BadgePrice (..), StatementCreditType (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..), SubscriptionState (..))
+import Simplex.Chat.Badges.Ledger (addMonths, debitEntry, emptyEntry, grantEntry)
+import Simplex.Chat.Badges.Service (BadgeOffer (..), BadgePrice (..), StatementCreditType (..), StatementDebitType (..), SubscriptionState (..))
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..), BadgeItemStatus (..), BadgeOfferId (..), BadgePriceId (..), OfferDiscount (..))
 import Simplex.Chat.PaymentService.Types (CryptoCurrency (..), CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), PaymentProvider (..), PaymentStatus (..), ServicePaymentDestination (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore (..), withConnection, withTransaction)
@@ -734,7 +734,7 @@ testChargeCreditRoundTrip = withServiceStore $ \st -> do
     createStorePurchase db NewStorePurchase {paymentId = "pay1", provider = PPApple, providerRef = "2000000812345671", paid = Nothing, purchaseKey, masterKey, badgeType = BTSupporter, subscriptionState = Just SSRenewing, providerToken = Nothing} now
   withTransaction st $ \db ->
     insertSubscriptionCharge db "pay1" "ch1" StoreCharge {chargeRef = "2000000812345672", planId = "SUBSCR_BADGE_SUPPORTER_MONTH_01", periodStart = now, periodEnd = addMonths 1 now, chargePaid = Nothing, revoked = False, offer = False} now
-  let charge = grantEntry now "e1" 1 (SCCharge "ch1") (emptyEntry now BTSupporter)
+  let charge = grantEntry now "e1" BTSupporter 1 (SCCharge "ch1") (emptyEntry now BTSupporter)
   withTransaction st $ \db -> appendLedgerPlan db purchaseId Nothing [charge] Nothing
   withTransaction st (\db -> getLedgerEntries db purchaseId 0) >>= (`shouldBe` Just [J.toJSON charge]) . fmap (map J.toJSON)
   withTransaction st (`getLedgerTip` purchaseId) >>= (`shouldBe` Just (J.toJSON charge)) . fmap J.toJSON
@@ -748,10 +748,9 @@ testTransferEntriesRoundTrip = withServiceStore $ \st -> do
     createStorePurchase db NewStorePurchase {paymentId = "pay1", provider = PPApple, providerRef = "2000000812345671", paid = Nothing, purchaseKey, masterKey, badgeType = BTSupporter, subscriptionState = Just SSRenewing, providerToken = Nothing} now
   Just _ <- withTransaction st $ \db ->
     createStorePurchase db NewStorePurchase {paymentId = "pay2", provider = PPApple, providerRef = "2000000812345673", paid = Nothing, purchaseKey = otherKey, masterKey = otherMasterKey, badgeType = BTSupporter, subscriptionState = Just SSRenewing, providerToken = Nothing} now
-  let debitAll uuid debit e = e {entryId = uuid, changeMonths = negate (balanceMonths e), balanceMonths = 0, entryType = SEDebit debit}
-      transferIn = grantEntry now "e1" 2 (SCTransferIn otherKey) (emptyEntry now BTSupporter)
-      upgrade = debitAll "e2" (SDUpgrade purchaseKey) transferIn
-      transferOut = debitAll "e3" (SDTransferOut otherKey) upgrade
+  let transferIn = grantEntry now "e1" BTSupporter 2 (SCTransferIn otherKey) (emptyEntry now BTSupporter)
+      upgrade = debitEntry now "e2" (SDUpgrade purchaseKey) transferIn
+      transferOut = debitEntry now "e3" (SDTransferOut otherKey) upgrade
       rows = [transferIn, upgrade, transferOut]
   withTransaction st $ \db -> appendLedgerPlan db purchaseId Nothing rows Nothing
   withTransaction st (\db -> getLedgerEntries db purchaseId 0) >>= (`shouldBe` Just (map J.toJSON rows)) . fmap (map J.toJSON)

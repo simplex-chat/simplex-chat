@@ -96,6 +96,8 @@ badgeTests = do
     it "leaves an entry type it cannot derive unchecked, its months still checked" testChecksUnknownType
     it "rejects an entry it cannot rebuild whose coverage or months contradict the ledger" testChecksUncheckedInvariants
     it "accepts every row a store charge adds, on each path a subscription renews by" testChargeRowsVerify
+    it "re-runs an upgrade or a transfer debit, and rejects one that leaves months" testDebitRowsVerify
+    it "accepts every row a change of tier adds, and rejects a new tier granted over months still held" testTierChangeRowsVerify
   describe "worker retry" $ do
     it "repeats a failure that can clear on its own, and no other" testRetryClassification
     it "backs off to the cap" testRetryBackoff
@@ -369,7 +371,7 @@ newBalance t = emptyEntry t BTSupporter
 
 -- these tests never write, so the id each operation stamps on its entry is never read
 grant :: UTCTime -> Int -> StatementEntry -> StatementEntry
-grant t n = grantEntry t "" n SCCode
+grant t n = grantEntry t "" BTSupporter n SCCode
 
 lapse :: UTCTime -> StatementEntry -> Maybe StatementEntry
 lapse t = lapseEntry t ""
@@ -696,10 +698,10 @@ testChecksUncheckedInvariants = do
   bMonths owing `shouldBe` bMonths issued - 3
 
 -- the service's step for a charge it grants: the planner's rows, then the issue at now
-charged :: UTCTime -> UTCTime -> Int -> StatementEntry -> [StatementEntry]
-charged periodStart now months tip = rows <> maybeToList (issue now $ finalBalance tip rows)
+charged :: C.PublicKeyEd25519 -> UTCTime -> UTCTime -> BadgeType -> Int -> StatementEntry -> [StatementEntry]
+charged ownKey periodStart now badgeType months tip = rows <> maybeToList (issue now $ finalBalance tip rows)
   where
-    rows = chargeEntries periodStart now months "ch1" ("", "", "") tip
+    rows = chargeEntries periodStart now badgeType months ownKey "ch1" ("", "", "", "") tip
 
 rowKind :: StatementEntry -> T.Text
 rowKind StatementEntry {entryType} = case entryType of
@@ -721,9 +723,10 @@ allVerify rows = verdicts (rowAt $ last rows) Nothing rows `shouldBe` map (const
 -- renews by must keep both the dates in order and the recompute exact.
 testChargeRowsVerify :: IO ()
 testChargeRowsVerify = do
+  ownKey <- newPurchaseKey
   let p0 = at 2026 3 10
       days n = addUTCTime (n * nominalDay)
-      firstCharge = charged p0 (addUTCTime 600 p0) 1 (newBalance p0)
+      firstCharge = charged ownKey p0 (addUTCTime 600 p0) BTSupporter 1 (newBalance p0)
       afterFirst = finalBalance (newBalance p0) firstCharge
   -- a first charge, granted onto the seed the service starts a purchase from
   map rowKind firstCharge `shouldBe` ["charge", "badge"]
@@ -731,20 +734,20 @@ testChargeRowsVerify = do
   -- monthly renewals, each charged at the store's period start and asked about some days after it
   let renew (tip, rows) (k, late) =
         let periodStart = addMonths k p0
-            new = charged periodStart (days late periodStart) 1 tip
+            new = charged ownKey periodStart (days late periodStart) BTSupporter 1 tip
          in (finalBalance tip new, rows <> new)
       (_, monthly) = foldl renew (afterFirst, firstCharge) [(1, 3), (2, 6), (3, 1)]
   map rowKind monthly `shouldBe` concat (replicate 4 ["charge", "badge"])
   allVerify monthly
   -- a period start equal to the balance start continues the run on its anchor
-  let sameStart = charged (bStart afterFirst) (days 4 $ bStart afterFirst) 1 afterFirst
+  let sameStart = charged ownKey (bStart afterFirst) (days 4 $ bStart afterFirst) BTSupporter 1 afterFirst
   map rowKind sameStart `shouldBe` ["charge", "badge"]
   map bAnchor (take 1 sameStart) `shouldBe` [p0]
   allVerify (firstCharge <> sameStart)
   -- and a store clock a minute either side of it still verifies, whichever branch the grant takes
   mapM_
     ( \offset -> do
-        let rows = charged (addUTCTime offset $ bStart afterFirst) (days 4 $ bStart afterFirst) 1 afterFirst
+        let rows = charged ownKey (addUTCTime offset $ bStart afterFirst) (days 4 $ bStart afterFirst) BTSupporter 1 afterFirst
         map rowKind rows `shouldBe` ["charge", "badge"]
         allVerify (firstCharge <> rows)
     )
@@ -752,36 +755,107 @@ testChargeRowsVerify = do
   -- a renewal after billing retry: the store's new period starts when the charge recovered, and the
   -- run restarts there, so coverage follows the store's new renewal date
   let recoveredAt = days 9 (addMonths 1 p0)
-      recovered = charged recoveredAt (days 1 recoveredAt) 1 afterFirst
+      recovered = charged ownKey recoveredAt (days 1 recoveredAt) BTSupporter 1 afterFirst
   map rowKind recovered `shouldBe` ["charge", "badge"]
   map bStart (take 1 recovered) `shouldBe` [recoveredAt]
   map paidThrough (take 1 recovered) `shouldBe` [addMonths 1 recoveredAt]
   allVerify (firstCharge <> recovered)
   -- annual: the first month issued at purchase, then one at each month's start
-  let annualFirst = charged p0 p0 12 (newBalance p0)
+  let annualFirst = charged ownKey p0 p0 BTSupporter 12 (newBalance p0)
       annualTip = finalBalance (newBalance p0) annualFirst
       yearEnd = addMonths 12 p0
       monthsIssued n = take n (issueAll annualTip)
       -- the device was offline for the year's last month, which is still unissued at the renewal
       tenMore = monthsIssued 10
       monthLeft = finalBalance annualTip tenMore
-      renewedAnnual = charged yearEnd (days 3 yearEnd) 12 monthLeft
+      renewedAnnual = charged ownKey yearEnd (days 3 yearEnd) BTSupporter 12 monthLeft
   bMonths monthLeft `shouldBe` 1
   map rowKind renewedAnnual `shouldBe` ["lapse", "charge", "badge"]
   allVerify (annualFirst <> tenMore <> renewedAnnual)
   -- the same, with the store's year starting an hour before the ledger's: that month has not run out
   -- at the period start, so it is carried and lapses after the grant
-  let earlyAnnual = charged (addUTCTime (-3600) yearEnd) (days 3 yearEnd) 12 monthLeft
+  let earlyAnnual = charged ownKey (addUTCTime (-3600) yearEnd) (days 3 yearEnd) BTSupporter 12 monthLeft
   map rowKind earlyAnnual `shouldBe` ["charge", "lapse", "badge"]
   allVerify (annualFirst <> tenMore <> earlyAnnual)
   -- away from month nine until 45 days past the year end, while the renewal failed and recovered
   -- inside the store's grace period, which keeps the original period start
   let eightMore = monthsIssued 8
       awayTip = finalBalance annualTip eightMore
-      graced = charged yearEnd (days 45 yearEnd) 12 awayTip
+      graced = charged ownKey yearEnd (days 45 yearEnd) BTSupporter 12 awayTip
   bMonths awayTip `shouldBe` 3
   map rowKind graced `shouldBe` ["lapse", "charge", "lapse", "badge"]
   allVerify (annualFirst <> eightMore <> graced)
+
+newPurchaseKey :: IO C.PublicKeyEd25519
+newPurchaseKey = fst <$> (C.newRandom >>= \g -> atomically (C.generateKeyPair g) :: IO (C.KeyPair 'C.Ed25519))
+
+bTier :: StatementEntry -> BadgeType
+bTier StatementEntry {balanceBadgeType} = balanceBadgeType
+
+-- An upgrade or a transfer takes every month left and keeps the run's coverage where it was, so
+-- re-running it verifies the row, and catches one that left months behind.
+testDebitRowsVerify :: IO ()
+testDebitRowsVerify = do
+  k <- newPurchaseKey
+  let start = at 2026 3 10
+      t = at 2026 3 20
+  Just issued <- pure $ issue start $ grant start 12 (newBalance start)
+  let upgraded = debitEntry t "" (SDUpgrade k) issued
+  (bMonths upgraded, bStart upgraded, bAnchor upgraded) `shouldBe` (0, bStart issued, bAnchor issued)
+  verdicts t (Just issued) [upgraded] `shouldBe` [Just True]
+  verdicts t (Just issued) [debitEntry t "" (SDTransferOut k) issued] `shouldBe` [Just True]
+  -- a transfer is written even when nothing is left, as the mark that the purchase moved
+  verdicts t (Just upgraded) [debitEntry t "" (SDTransferOut k) upgraded] `shouldBe` [Just True]
+  verdicts t (Just issued) [upgraded {changeMonths = -10, balanceMonths = 1}] `shouldBe` [Just False]
+
+-- A charge of another tier ends the old run with an upgrade debit of what it still held and starts
+-- a new one: every row it writes must re-run on the client, on each path a tier changes by.
+testTierChangeRowsVerify :: IO ()
+testTierChangeRowsVerify = do
+  k <- newPurchaseKey
+  let p0 = at 2026 3 10
+      days n = addUTCTime (n * nominalDay)
+      p1 = addMonths 1 p0
+  -- a monthly Legend subscription downgraded to Supporter, which the store charges at renewal
+  let legendTip = finalBalance (emptyEntry p0 BTLegend) $ charged k p0 (addUTCTime 600 p0) BTLegend 1 (emptyEntry p0 BTLegend)
+      downgraded = charged k p1 (days 2 p1) BTSupporter 1 legendTip
+  map rowKind downgraded `shouldBe` ["charge", "badge"]
+  map bTier downgraded `shouldBe` [BTSupporter, BTSupporter]
+  map bAnchor (take 1 downgraded) `shouldBe` [p1]
+  verdicts (days 2 p1) (Just legendTip) downgraded `shouldBe` [Just True, Just True]
+  -- an annual Supporter subscription upgraded to annual Legend in its third month, every month so
+  -- far issued: the nine left are debited, and the new year starts at the upgrade
+  let annual = charged k p0 (addUTCTime 600 p0) BTSupporter 12 (newBalance p0)
+      afterFirst = finalBalance (newBalance p0) annual
+      secondMonth = pass p1 afterFirst
+      thirdMonth = pass (addMonths 2 p0) (finalBalance afterFirst secondMonth)
+      afterThird = finalBalance afterFirst (secondMonth <> thirdMonth)
+      u = days 10 (addMonths 2 p0)
+      upgraded = charged k u (addUTCTime 60 u) BTLegend 12 afterThird
+  map rowKind upgraded `shouldBe` ["upgrade", "charge", "badge"]
+  map bMonths upgraded `shouldBe` [0, 12, 11]
+  map (\e -> (bStart e, bAnchor e, bTier e)) (take 1 $ drop 1 upgraded) `shouldBe` [(u, u, BTLegend)]
+  case upgraded of
+    StatementEntry {entryType = SEDebit SDUpgrade {toPurchaseKey}} : _ -> toPurchaseKey `shouldBe` k
+    _ -> expectationFailure "no upgrade debit"
+  allVerify (annual <> secondMonth <> thirdMonth <> upgraded)
+  -- the same upgrade after two months nobody asked for: they lapse before the rest is debited
+  let late = days 10 (addMonths 3 p0)
+      lapsedUpgrade = charged k late (addUTCTime 60 late) BTLegend 12 afterFirst
+  map rowKind lapsedUpgrade `shouldBe` ["lapse", "upgrade", "charge", "badge"]
+  map bMonths lapsedUpgrade `shouldBe` [9, 0, 12, 11]
+  allVerify (annual <> lapsedUpgrade)
+  -- a period the store starts before a month the service issued since is dated at that issue, so
+  -- the rows still follow it
+  let issuedAt = days 3 p1
+      issuedLate = pass issuedAt afterFirst
+      clamped = charged k (days 1 p1) (addUTCTime 3600 issuedAt) BTLegend 12 (finalBalance afterFirst issuedLate)
+  map rowKind clamped `shouldBe` ["upgrade", "charge", "badge"]
+  map rowAt (take 2 clamped) `shouldBe` [issuedAt, issuedAt]
+  allVerify (annual <> issuedLate <> clamped)
+  -- a grant of another tier straight over the months still held would discard them
+  let overwritten = grantEntry u "" BTLegend 12 (SCCharge "ch1") afterThird
+  verdicts u (Just afterThird) [overwritten] `shouldBe` [Just False]
 
 -- A failed renewal is otherwise left until the next chat start or activate, which on a desktop
 -- left running can be days - long enough for a funded badge to lapse.
