@@ -41,7 +41,8 @@ class NetworkObserver {
         // the observer thread is not restarted until the chat controller is created anew
         Log.e(TAG, "Error observing network: ${e.stackTraceToString()}")
       }
-      sleepDetectingSuspend(POLL_INTERVAL_MS)
+      // the core holds sending while it is offline, so the network is checked more often then
+      sleepDetectingSuspend(if (sentInfo?.online == false) OFFLINE_POLL_INTERVAL_MS else POLL_INTERVAL_MS)
     }
   }
 
@@ -133,6 +134,7 @@ class NetworkObserver {
   companion object {
     val shared = NetworkObserver()
     private const val POLL_INTERVAL_MS = 10_000L
+    private const val OFFLINE_POLL_INTERVAL_MS = 2_000L
     private const val CONFIRM_OFFLINE_MS = 1_000L
     private const val SUSPENDED_MS = 25_000L
     private const val NO_ROUTE = "no route"
