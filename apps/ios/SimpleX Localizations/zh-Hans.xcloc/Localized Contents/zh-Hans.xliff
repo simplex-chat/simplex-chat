@@ -385,14 +385,14 @@ channel relay bar</note>
         <target state="translated">%lld 秒</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lldd" xml:space="preserve">
+      <trans-unit id="%lldd" xml:space="preserve" approved="no">
         <source>%lldd</source>
-        <target>%lldd</target>
+        <target state="translated">%lldd</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lldh" xml:space="preserve">
+      <trans-unit id="%lldh" xml:space="preserve" approved="no">
         <source>%lldh</source>
-        <target>%lldh</target>
+        <target state="translated">%lldh</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lldk" xml:space="preserve" approved="no">
@@ -400,24 +400,24 @@ channel relay bar</note>
         <target state="translated">%lldk</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lldm" xml:space="preserve">
+      <trans-unit id="%lldm" xml:space="preserve" approved="no">
         <source>%lldm</source>
-        <target>%lldm</target>
+        <target state="translated">%lldm</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lldmth" xml:space="preserve">
+      <trans-unit id="%lldmth" xml:space="preserve" approved="no">
         <source>%lldmth</source>
-        <target>%lldmth</target>
+        <target state="translated">%lldmth</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%llds" xml:space="preserve">
+      <trans-unit id="%llds" xml:space="preserve" approved="no">
         <source>%llds</source>
-        <target>%llds</target>
+        <target state="translated">%llds</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lldw" xml:space="preserve">
+      <trans-unit id="%lldw" xml:space="preserve" approved="no">
         <source>%lldw</source>
-        <target>%lldw</target>
+        <target state="translated">%lldw</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%u messages failed to decrypt." xml:space="preserve" approved="no">
@@ -4825,9 +4825,9 @@ Error: %2$@</source>
         <target state="translated">群组偏好设置</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group profile" xml:space="preserve">
+      <trans-unit id="Group profile" xml:space="preserve" approved="no">
         <source>Group profile</source>
-        <target>集团简介</target>
+        <target state="translated">集团简介</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group profile is stored on members' devices, not on the servers." xml:space="preserve" approved="no">
@@ -5122,9 +5122,9 @@ More improvements are coming soon!</source>
         <target state="translated">匿名群组</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Incognito mode" xml:space="preserve">
+      <trans-unit id="Incognito mode" xml:space="preserve" approved="no">
         <source>Incognito mode</source>
-        <target>隐身模式</target>
+        <target state="translated">隐身模式</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Incognito mode protects your privacy by using a new random profile for each contact." xml:space="preserve" approved="no">
@@ -9308,9 +9308,9 @@ Relay address was used to set up this relay for the channel.</source>
         <target state="translated">尾部</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Take picture" xml:space="preserve">
+      <trans-unit id="Take picture" xml:space="preserve" approved="no">
         <source>Take picture</source>
-        <target>拍照</target>
+        <target state="translated">拍照</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Talk to someone" xml:space="preserve" approved="no">
@@ -9343,9 +9343,9 @@ Relay address was used to set up this relay for the channel.</source>
         <target state="translated">轻按加入群</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap button " xml:space="preserve">
+      <trans-unit id="Tap button " xml:space="preserve" approved="no">
         <source>Tap button </source>
-        <target>点击按钮 </target>
+        <target state="translated">点击按钮 </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap to Connect" xml:space="preserve" approved="no">
@@ -9573,9 +9573,9 @@ your contacts and groups.</source>
         <target state="translated">对于所有成员，这些消息将被标记为已审核。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The old database was not removed during the migration, it can be deleted." xml:space="preserve">
+      <trans-unit id="The old database was not removed during the migration, it can be deleted." xml:space="preserve" approved="no">
         <source>The old database was not removed during the migration, it can be deleted.</source>
-        <target>旧数据库在迁移过程中没有被移除，可以删除。</target>
+        <target state="translated">旧数据库在迁移过程中没有被移除，可以删除。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The oldest human freedom - to speak to another person without being watched - built on infrastructure that cannot betray it." xml:space="preserve" approved="no">
@@ -9799,9 +9799,9 @@ alert subtitle</note>
         <target state="translated">为了防止链接被替换，你可以比较联系人安全代码。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To protect timezone, image/voice files use UTC." xml:space="preserve">
+      <trans-unit id="To protect timezone, image/voice files use UTC." xml:space="preserve" approved="no">
         <source>To protect timezone, image/voice files use UTC.</source>
-        <target>为了保护时区，图像/语音文件使用 UTC。</target>
+        <target state="translated">为了保护时区，图像/语音文件使用 UTC。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To protect your IP address, private routing uses your SMP servers to deliver messages." xml:space="preserve" approved="no">
@@ -10950,9 +10950,9 @@ Repeat connection request?</source>
         <target state="translated">您已加入此群组</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You joined this group. Connecting to inviting group member." xml:space="preserve">
+      <trans-unit id="You joined this group. Connecting to inviting group member." xml:space="preserve" approved="no">
         <source>You joined this group. Connecting to inviting group member.</source>
-        <target>你加入了这个群组。连接到邀请组成员。</target>
+        <target state="translated">你加入了这个群组。连接到邀请组成员。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You may migrate the exported database." xml:space="preserve" approved="no">
@@ -11055,9 +11055,9 @@ Repeat connection request?</source>
         <target state="translated">如果您以后删除您的地址，您不会丢失您的联系人。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile" xml:space="preserve">
+      <trans-unit id="You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile" xml:space="preserve" approved="no">
         <source>You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile</source>
-        <target>您正在尝试邀请与您共享隐身个人资料的联系人加入您使用主要个人资料的群组</target>
+        <target state="translated">您正在尝试邀请与您共享隐身个人资料的联系人加入您使用主要个人资料的群组</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" xml:space="preserve" approved="no">
@@ -11132,9 +11132,9 @@ To connect, ask your contact to create a new link.</source>
 如果要连接，请让您的联系人创建另一个连接链接，并检查您的网络连接是否稳定。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your contact sent a file that is larger than currently supported maximum size (%@)." xml:space="preserve">
+      <trans-unit id="Your contact sent a file that is larger than currently supported maximum size (%@)." xml:space="preserve" approved="no">
         <source>Your contact sent a file that is larger than currently supported maximum size (%@).</source>
-        <target>您的联系人发送的文件大于当前支持的最大大小 (%@)。</target>
+        <target state="translated">您的联系人发送的文件大于当前支持的最大大小 (%@)。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contacts can allow full message deletion." xml:space="preserve" approved="no">
