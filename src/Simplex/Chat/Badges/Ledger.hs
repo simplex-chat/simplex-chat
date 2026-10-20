@@ -14,6 +14,8 @@ module Simplex.Chat.Badges.Ledger
     addMonths,
     endOfMondayAfter,
     entryTypeColumns,
+    EntryReferences (..),
+    noEntryReferences,
     entryTypeFromColumns,
     creditTypeTag,
     debitTypeTag,
@@ -28,6 +30,7 @@ import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime)
 import Simplex.Chat.Badges (BadgeType)
 import Simplex.Chat.Badges.Service (StatementCreditType (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..))
 import Simplex.Chat.PaymentService.Types (InvoiceId)
+import qualified Simplex.Messaging.Crypto as C
 
 -- The calendar difference overshoots by at most one month, so one comparison settles it.
 monthsBetween :: UTCTime -> UTCTime -> Integer
@@ -217,17 +220,30 @@ debitTypeTag = \case
   SDLapse -> "lapse"
   SDUnknown {tag} -> tag
 
--- | Rebuilds only what the columns determine: constructors with no fields, a payment credit and a charge credit.
--- payment_ is Nothing when the row references no payment, and Just Nothing when that payment had no
--- invoice, as a store purchase has none. The rest answer Nothing rather than invent a payload.
+-- | What a ledger row's reference columns name. refPayment is Nothing when the row references no payment,
+-- and Just Nothing when that payment had no invoice, as a store purchase has none.
+data EntryReferences = EntryReferences
+  { refPayment :: Maybe (Maybe InvoiceId),
+    refChargeId :: Maybe Text,
+    refFromPurchaseKey :: Maybe C.PublicKeyEd25519,
+    refToPurchaseKey :: Maybe C.PublicKeyEd25519
+  }
+
+noEntryReferences :: EntryReferences
+noEntryReferences = EntryReferences {refPayment = Nothing, refChargeId = Nothing, refFromPurchaseKey = Nothing, refToPurchaseKey = Nothing}
+
+-- | Rebuilds only what the columns determine: constructors with no fields, and the types that name a
+-- payment, a charge or a purchase, through the reference their row holds. The rest answer Nothing
+-- rather than invent a payload.
 -- The client stores each type's JSON and reads that first, so this is its fallback; the service has none.
--- TODO [badges] rebuild transferIn, upgrade and transferOut from their reference columns,
--- without which the service cannot re-emit a statement carrying one.
-entryTypeFromColumns :: Maybe (Maybe InvoiceId) -> Maybe Text -> Text -> Maybe Text -> Maybe Text -> Maybe StatementEntryType
-entryTypeFromColumns payment_ chargeId_ entryType credit_ debit_ = case (entryType, credit_, debit_) of
-  ("credit", Just "payment", _) -> SECredit . SCPayment <$> payment_
-  ("credit", Just "charge", _) -> SECredit . SCCharge <$> chargeId_
+entryTypeFromColumns :: EntryReferences -> Text -> Maybe Text -> Maybe Text -> Maybe StatementEntryType
+entryTypeFromColumns EntryReferences {refPayment, refChargeId, refFromPurchaseKey, refToPurchaseKey} entryType credit_ debit_ = case (entryType, credit_, debit_) of
+  ("credit", Just "payment", _) -> SECredit . SCPayment <$> refPayment
+  ("credit", Just "charge", _) -> SECredit . SCCharge <$> refChargeId
+  ("credit", Just "transferIn", _) -> SECredit . SCTransferIn <$> refFromPurchaseKey
   ("credit", Just t, _) -> SECredit <$> creditType t
+  ("debit", _, Just "upgrade") -> SEDebit . SDUpgrade <$> refToPurchaseKey
+  ("debit", _, Just "transferOut") -> SEDebit . SDTransferOut <$> refToPurchaseKey
   ("debit", _, Just t) -> SEDebit <$> debitType t
   _ -> Nothing
   where

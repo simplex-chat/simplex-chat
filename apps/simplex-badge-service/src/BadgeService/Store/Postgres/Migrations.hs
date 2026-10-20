@@ -215,6 +215,14 @@ ALTER TABLE @badge_ledger ADD COLUMN charge_id TEXT REFERENCES @subscription_cha
 
 CREATE UNIQUE INDEX @idx_badge_ledger_charge ON @badge_ledger(charge_id);
 
+ALTER TABLE @badge_ledger ADD COLUMN from_purchase_id BIGINT REFERENCES @badge_purchases;
+
+ALTER TABLE @badge_ledger ADD COLUMN to_purchase_id BIGINT REFERENCES @badge_purchases;
+
+CREATE INDEX @idx_badge_ledger_from_purchase ON @badge_ledger(from_purchase_id);
+
+CREATE INDEX @idx_badge_ledger_to_purchase ON @badge_ledger(to_purchase_id);
+
 ALTER TABLE @payments ADD COLUMN subscription_state TEXT;
 
 ALTER TABLE @payments ADD COLUMN subscription_checked_at TIMESTAMPTZ;
@@ -244,6 +252,14 @@ ALTER TABLE @payments DROP COLUMN provider_token;
 ALTER TABLE @payments DROP COLUMN subscription_checked_at;
 
 ALTER TABLE @payments DROP COLUMN subscription_state;
+
+DROP INDEX @idx_badge_ledger_to_purchase;
+
+DROP INDEX @idx_badge_ledger_from_purchase;
+
+ALTER TABLE @badge_ledger DROP COLUMN to_purchase_id;
+
+ALTER TABLE @badge_ledger DROP COLUMN from_purchase_id;
 
 DROP INDEX @idx_badge_ledger_charge;
 

@@ -916,19 +916,31 @@ testEntryTypeColumns = do
   mapM_ (\c -> wireTag (J.toJSON (SECredit c)) "credit" `shouldBe` Just (creditTypeTag c)) credits
   mapM_ (\d -> wireTag (J.toJSON (SEDebit d)) "debit" `shouldBe` Just (debitTypeTag d)) debits
   -- the types this version writes survive a round trip through the columns, a payment credit
-  -- through the payment its row references, and a charge credit through its charge
+  -- through the payment its row references, a charge credit through its charge, and a transfer
+  -- or an upgrade through the purchase it names
   mapM_
-    (\t -> uncurry3 (entryTypeFromColumns Nothing Nothing) (entryTypeColumns t) `shouldSatisfy` sameEntryType t)
+    (\t -> uncurry3 (entryTypeFromColumns noEntryReferences) (entryTypeColumns t) `shouldSatisfy` sameEntryType t)
     [SECredit SCCode, SEDebit SDBadge, SEDebit SDLapse]
   let storeCredit = SECredit (SCPayment Nothing)
       invoiceCredit = SECredit (SCPayment (Just (InvoiceId "inv1")))
       chargeCredit = SECredit (SCCharge "ch1")
-  uncurry3 (entryTypeFromColumns (Just Nothing) Nothing) (entryTypeColumns storeCredit) `shouldSatisfy` sameEntryType storeCredit
-  uncurry3 (entryTypeFromColumns (Just (Just (InvoiceId "inv1"))) Nothing) (entryTypeColumns invoiceCredit) `shouldSatisfy` sameEntryType invoiceCredit
-  uncurry3 (entryTypeFromColumns Nothing (Just "ch1")) (entryTypeColumns chargeCredit) `shouldSatisfy` sameEntryType chargeCredit
-  -- a type that needs a reference column is not silently read back as something else
-  uncurry3 (entryTypeFromColumns Nothing Nothing) (entryTypeColumns storeCredit) `shouldSatisfy` isNothing
-  uncurry3 (entryTypeFromColumns Nothing Nothing) (entryTypeColumns chargeCredit) `shouldSatisfy` isNothing
+      transferInCredit = SECredit (SCTransferIn k)
+      upgradeDebit = SEDebit (SDUpgrade k)
+      transferOutDebit = SEDebit (SDTransferOut k)
+      fromKey = noEntryReferences {refFromPurchaseKey = Just k}
+      toKey = noEntryReferences {refToPurchaseKey = Just k}
+  uncurry3 (entryTypeFromColumns noEntryReferences {refPayment = Just Nothing}) (entryTypeColumns storeCredit) `shouldSatisfy` sameEntryType storeCredit
+  uncurry3 (entryTypeFromColumns noEntryReferences {refPayment = Just (Just (InvoiceId "inv1"))}) (entryTypeColumns invoiceCredit) `shouldSatisfy` sameEntryType invoiceCredit
+  uncurry3 (entryTypeFromColumns noEntryReferences {refChargeId = Just "ch1"}) (entryTypeColumns chargeCredit) `shouldSatisfy` sameEntryType chargeCredit
+  uncurry3 (entryTypeFromColumns fromKey) (entryTypeColumns transferInCredit) `shouldSatisfy` sameEntryType transferInCredit
+  mapM_ (\t -> uncurry3 (entryTypeFromColumns toKey) (entryTypeColumns t) `shouldSatisfy` sameEntryType t) [upgradeDebit, transferOutDebit]
+  -- a type that needs a reference column is not silently read back as something else, nor from
+  -- the other purchase column
+  mapM_
+    (\t -> uncurry3 (entryTypeFromColumns noEntryReferences) (entryTypeColumns t) `shouldSatisfy` isNothing)
+    [storeCredit, chargeCredit, transferInCredit, upgradeDebit, transferOutDebit]
+  uncurry3 (entryTypeFromColumns toKey) (entryTypeColumns transferInCredit) `shouldSatisfy` isNothing
+  mapM_ (\t -> uncurry3 (entryTypeFromColumns fromKey) (entryTypeColumns t) `shouldSatisfy` isNothing) [upgradeDebit, transferOutDebit]
   -- which is why every type is stored as its own JSON as well, and read from that first: the
   -- columns alone would answer a row naming an invoice or a purchase as no row at all
   mapM_ roundTrips credits

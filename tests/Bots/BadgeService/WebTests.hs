@@ -61,7 +61,7 @@ import Network.HTTP.Types.Status (statusCode)
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey (..), BadgeType (..))
 import Simplex.Chat.Badges.Ledger (addMonths, emptyEntry, grantEntry)
-import Simplex.Chat.Badges.Service (BadgeOffer (..), BadgePrice (..), StatementCreditType (..), SubscriptionState (..))
+import Simplex.Chat.Badges.Service (BadgeOffer (..), BadgePrice (..), StatementCreditType (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..), SubscriptionState (..))
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..), BadgeItemStatus (..), BadgeOfferId (..), BadgePriceId (..), OfferDiscount (..))
 import Simplex.Chat.PaymentService.Types (CryptoCurrency (..), CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), PaymentProvider (..), PaymentStatus (..), ServicePaymentDestination (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore (..), withConnection, withTransaction)
@@ -159,6 +159,7 @@ badgeWebTests = do
     it "a multi-use code can be revoked while it has uses left, and not once they are gone" testRevokeMultiUseCode
     it "every timestamp round-trips to the second" testTimestampRoundTrip
     it "stores a charge credit with its charge, and reads it back at the tip and in the statement" testChargeCreditRoundTrip
+    it "stores transfers and an upgrade with the purchase each names, and reads them back at the tip and in the statement" testTransferEntriesRoundTrip
   describe "managed group" $ do
     it "round-trips and bootstraps once" testManagedGroupRoundTripsAndBootstrapsOnce
     it "refuses a second row and burns the flag per group" testManagedGroupIsSingleRow
@@ -328,7 +329,7 @@ assertSubscriptionColumns :: HasCallStack => DBStore -> IO ()
 assertSubscriptionColumns st = do
   columnsOf st "sx_badge_service_subscription_charges"
     >>= (`shouldSatisfy` \cs -> all (`elem` cs) ["charge_id", "payment_id", "provider_charge_ref", "plan_id", "period_start", "period_end", "amount", "currency", "created_at"])
-  columnsOf st "sx_badge_service_badge_ledger" >>= (`shouldSatisfy` elem "charge_id")
+  columnsOf st "sx_badge_service_badge_ledger" >>= (`shouldSatisfy` \cs -> all (`elem` cs) ["charge_id", "from_purchase_id", "to_purchase_id"])
   payments <- columnsOf st "sx_badge_service_payments"
   payments `shouldSatisfy` \cs -> all (`elem` cs) ["subscription_state", "subscription_checked_at", "provider_token"]
   payments `shouldSatisfy` \cs -> not (any (`elem` cs) ["subscription_renews_at", "grace_until", "cancelled"])
@@ -368,7 +369,7 @@ testSubscriptionsDownUp = withServiceStore $ \st -> do
   length subscriptions `shouldBe` 1
   runMigrations st $ MTRDown (mapMaybe toDownMigration subscriptions)
   columnsOf st "sx_badge_service_subscription_charges" `shouldReturn` []
-  columnsOf st "sx_badge_service_badge_ledger" >>= (`shouldNotSatisfy` elem "charge_id")
+  columnsOf st "sx_badge_service_badge_ledger" >>= (`shouldNotSatisfy` \cs -> any (`elem` cs) ["charge_id", "from_purchase_id", "to_purchase_id"])
   payments <- columnsOf st "sx_badge_service_payments"
   payments `shouldSatisfy` \cs -> all (`elem` cs) ["subscription_renews_at", "grace_until", "cancelled"]
   payments `shouldSatisfy` \cs -> not (any (`elem` cs) ["subscription_state", "subscription_checked_at", "provider_token"])
@@ -737,6 +738,24 @@ testChargeCreditRoundTrip = withServiceStore $ \st -> do
   withTransaction st $ \db -> appendLedgerPlan db purchaseId Nothing [charge] Nothing
   withTransaction st (\db -> getLedgerEntries db purchaseId 0) >>= (`shouldBe` Just [J.toJSON charge]) . fmap (map J.toJSON)
   withTransaction st (`getLedgerTip` purchaseId) >>= (`shouldBe` Just (J.toJSON charge)) . fmap J.toJSON
+
+testTransferEntriesRoundTrip :: IO ()
+testTransferEntriesRoundTrip = withServiceStore $ \st -> do
+  now <- truncateToSecond <$> getCurrentTime
+  (purchaseKey, masterKey) <- newPurchaseKeys
+  (otherKey, otherMasterKey) <- newPurchaseKeys
+  Just purchaseId <- withTransaction st $ \db ->
+    createStorePurchase db NewStorePurchase {paymentId = "pay1", provider = PPApple, providerRef = "2000000812345671", paid = Nothing, purchaseKey, masterKey, badgeType = BTSupporter, subscriptionState = Just SSRenewing, providerToken = Nothing} now
+  Just _ <- withTransaction st $ \db ->
+    createStorePurchase db NewStorePurchase {paymentId = "pay2", provider = PPApple, providerRef = "2000000812345673", paid = Nothing, purchaseKey = otherKey, masterKey = otherMasterKey, badgeType = BTSupporter, subscriptionState = Just SSRenewing, providerToken = Nothing} now
+  let debitAll uuid debit e = e {entryId = uuid, changeMonths = negate (balanceMonths e), balanceMonths = 0, entryType = SEDebit debit}
+      transferIn = grantEntry now "e1" 2 (SCTransferIn otherKey) (emptyEntry now BTSupporter)
+      upgrade = debitAll "e2" (SDUpgrade purchaseKey) transferIn
+      transferOut = debitAll "e3" (SDTransferOut otherKey) upgrade
+      rows = [transferIn, upgrade, transferOut]
+  withTransaction st $ \db -> appendLedgerPlan db purchaseId Nothing rows Nothing
+  withTransaction st (\db -> getLedgerEntries db purchaseId 0) >>= (`shouldBe` Just (map J.toJSON rows)) . fmap (map J.toJSON)
+  withTransaction st (`getLedgerTip` purchaseId) >>= (`shouldBe` Just (J.toJSON transferOut)) . fmap J.toJSON
 
 testManagedGroupRoundTripsAndBootstrapsOnce :: IO ()
 testManagedGroupRoundTripsAndBootstrapsOnce = withServiceStore $ \st -> do

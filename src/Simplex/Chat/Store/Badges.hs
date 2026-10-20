@@ -653,7 +653,7 @@ getBadgeLedger db User {userId} badgePurchaseId =
 toStatementEntry :: (Text, Int, Int, UTCTime, UTCTime, BadgeType) :. (Maybe UTCTime, UTCTime, Text, Maybe Text, Maybe Text, Maybe Text) -> Maybe StatementEntry
 toStatementEntry ((entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType) :. (wasPausedSince, createdAt, entryType_, credit_, debit_, value_)) =
   (\entryType -> StatementEntry {entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, wasPausedSince, createdAt, entryType})
-    <$> maybe (entryTypeFromColumns Nothing Nothing entryType_ credit_ debit_) (entryTypeFromValue entryType_) value_
+    <$> maybe (entryTypeFromColumns noEntryReferences entryType_ credit_ debit_) (entryTypeFromValue entryType_) value_
 
 -- | Decodes the stored JSON rather than rebuilding from the tag, so a version that has since
 -- learnt the type reads it with its fields, and one that has not still gets it back verbatim.
