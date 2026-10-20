@@ -676,7 +676,7 @@ data ChatCommand
   -- episode is last because it is free text: it is the value that makes one occurrence of an
   -- alert distinct from the next, and the app returns whatever it was given
   | APIAckBadgeAlert {userId :: UserId, badgePurchaseId :: Int64, alertKind :: BadgeAlertKind, snooze :: Bool, episode :: Text}
-  | APIRequestBadge {userId :: UserId} -- dev builds only: send a badge request now and run the badge pass on its answer
+  | APIRequestBadge {userId :: UserId}
   | ShowProfileImage
   | SetUserFeature AChatFeature FeatureAllowed -- UserId (not used in UI)
   | SetContactFeature AChatFeature ContactName (Maybe FeatureAllowed)

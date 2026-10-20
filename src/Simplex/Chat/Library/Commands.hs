@@ -3644,9 +3644,7 @@ processChatCommand cxt nm = \case
     -- after the write, so the pass it signals reads the ack rather than raising the alert again
     lift $ startBadgeWork user
     badgeStateResponse user
-  APIRequestBadge userId -> withUserId userId $ \user -> do
-    unlessM (asks $ badgeDevRequests . config) $ throwCmdError "/_badge request is only available in builds for a dev badge service"
-    requestBadgeNow user
+  APIRequestBadge userId -> withUserId userId requestBadgeNow
   SetBotCommands commands -> withUserProfileLock "updateProfile" $ withUser $ \user@User {profile} -> do
     let LocalProfile {preferences} = profile
         prefs = Just (fromMaybe emptyChatPrefs preferences :: Preferences) {commands = Just commands}
@@ -5501,9 +5499,10 @@ badgeNow = asks (badgeCurrentTime . config) >>= liftIO
 startBadgeWork :: User -> CM' ()
 startBadgeWork user = whenM (isJust <$> asks (badgeServiceAddress . config)) $ void $ getBadgeWorker user
 
--- | Off the shared expiry every client requests at, which is why only dev builds send it.
+-- | Sent off the shared request moment, so only a build for a dev badge service may send it.
 requestBadgeNow :: User -> CM ChatResponse
-requestBadgeNow user@User {userId} =
+requestBadgeNow user@User {userId} = do
+  unlessM (asks $ badgeDevRequests . config) $ throwCmdError "/_badge request is only available in builds for a dev badge service"
   withStore' (`getUserBadgePurchase` user) >>= \case
     Just p@UserBadgePurchase {shown = True} -> do
       void $ requestBadgeIssue userId p =<< badgeNow
