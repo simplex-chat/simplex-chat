@@ -298,6 +298,10 @@ length of its plan:
 It acknowledges nothing, so Play refunds a licence tester's subscription it credited once Play's
 acknowledgement window lapses.
 
+With it on, anyone who can reach the service address can mint badges by sending a made-up receipt.
+That is harmless only while this deployment signs with an issuer key released apps do not carry, so
+they refuse what it signs — never turn it on where the key is one those apps trust.
+
 ```ini
 [dev]
 accept_unverified_store_receipts = on
@@ -306,18 +310,15 @@ check_store_during_coverage = on
 
 With `check_store_during_coverage` on as well, the service asks the mock at every `issueBadge` for a
 subscription, while its paid coverage runs too, rather than once coverage has ended and at most once
-an hour. A charge it reports during coverage is banked: a charge row, one more month left and a
-later paid-through date, and the month is issued once coverage reaches it. So a renewal shows at
-once, though its credential waits for the paid month to end on the service's clock, and after a
-restart the mock answers the subscription ended at once. The mock charges anew at every check, so every such request banks another month; space
-requests over a minute apart, as the mock dates a charge a minute back and the app fails a ledger
-row dated before the one it follows. Off by default, and the service refuses to start with it on
-unless `accept_unverified_store_receipts` is on: a real store has not started its next charge while
+an hour. A charge it reports during coverage is banked: a charge row, the plan's months added to
+what is left and a later paid-through date, and those months are issued once coverage reaches them.
+So a renewal shows at once, though its credential waits for the paid month to end on the service's
+clock, and after a restart the mock answers the subscription ended at once. The mock charges anew
+at every check, so every such request banks the plan's months again; space requests over a minute
+apart, as the mock dates a charge a minute back and the app fails a ledger row dated before the one
+it follows. Off by default, and the service refuses to start with it on unless
+`accept_unverified_store_receipts` is on: a real store has not started its next charge while
 coverage runs, and asking it then would spend the quota every subscriber shares.
-
-With it on, anyone who can reach the service address can mint badges by sending a made-up receipt.
-That is harmless only while this deployment signs with an issuer key released apps do not carry, so
-they refuse what it signs — never turn it on where the key is one those apps trust.
 
 ## Issuing codes
 
