@@ -500,9 +500,9 @@ channel relay bar</note>
         <target>**Varování**: archiv bude odstraněn.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**e2e encrypted** audio call" xml:space="preserve">
+      <trans-unit id="**e2e encrypted** audio call" xml:space="preserve" approved="no">
         <source>**e2e encrypted** audio call</source>
-        <target>**e2e šifrovaný** audio hovor</target>
+        <target state="translated">**e2e šifrovaný** audio hovor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**e2e encrypted** video call" xml:space="preserve" approved="no">
@@ -3730,9 +3730,9 @@ chat item action</note>
         <target></target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Error accepting contact request" xml:space="preserve">
+      <trans-unit id="Error accepting contact request" xml:space="preserve" approved="no">
         <source>Error accepting contact request</source>
-        <target>Chyba při přijímání žádosti o kontakt</target>
+        <target state="translated">Chyba při přijímání žádosti o kontakt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error accepting member" xml:space="preserve">
@@ -4826,9 +4826,9 @@ Error: %2$@</source>
         <target></target>
         <note>alert button</note>
       </trans-unit>
-      <trans-unit id="How to" xml:space="preserve">
+      <trans-unit id="How to" xml:space="preserve" approved="no">
         <source>How to</source>
-        <target>Jak</target>
+        <target state="translated">Jak</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="How to register a test name" xml:space="preserve">
@@ -9492,9 +9492,9 @@ alert subtitle</note>
         <source>To make SimpleX Network last.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To make a new connection" xml:space="preserve">
+      <trans-unit id="To make a new connection" xml:space="preserve" approved="no">
         <source>To make a new connection</source>
-        <target>Vytvoření nového připojení</target>
+        <target state="translated">Vytvoření nového připojení</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To protect against your link being replaced, you can compare contact security codes." xml:space="preserve">
@@ -9636,9 +9636,9 @@ Před zapnutím této funkce budete vyzváni k dokončení ověření.</target>
         <target state="translated">Vypnout</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Turn on" xml:space="preserve">
+      <trans-unit id="Turn on" xml:space="preserve" approved="no">
         <source>Turn on</source>
-        <target>Zapnout</target>
+        <target state="translated">Zapnout</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unable to record voice message" xml:space="preserve" approved="no">
@@ -9749,9 +9749,9 @@ Před zapnutím této funkce budete vyzváni k dokončení ověření.</target>
         <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unlock" xml:space="preserve">
+      <trans-unit id="Unlock" xml:space="preserve" approved="no">
         <source>Unlock</source>
-        <target>Odemknout</target>
+        <target state="translated">Odemknout</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unlock app" xml:space="preserve" approved="no">
@@ -11870,9 +11870,9 @@ last received msg: %2$@</source>
         <target state="translated">začíná…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="strike" xml:space="preserve">
+      <trans-unit id="strike" xml:space="preserve" approved="no">
         <source>strike</source>
-        <target>stávka</target>
+        <target state="translated">stávka</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="subscriber" xml:space="preserve">
@@ -12050,9 +12050,9 @@ last received msg: %2$@</source>
         <target state="translated">Odebrali jste %@</target>
         <note>snd group event chat item</note>
       </trans-unit>
-      <trans-unit id="you shared one-time link" xml:space="preserve">
+      <trans-unit id="you shared one-time link" xml:space="preserve" approved="no">
         <source>you shared one-time link</source>
-        <target>sdíleli jste jednorázový odkaz</target>
+        <target state="translated">sdíleli jste jednorázový odkaz</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="you shared one-time link incognito" xml:space="preserve" approved="no">
