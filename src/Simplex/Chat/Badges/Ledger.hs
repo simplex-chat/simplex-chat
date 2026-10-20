@@ -121,22 +121,23 @@ issueEntry t entryId e@StatementEntry {balanceMonths, balanceStartTs}
             entryType = SEDebit SDBadge
           }
 
--- | Takes every remaining month, even none, and leaves coverage where it was.
+-- | Takes every remaining month, even none; the balance start and anchor stay, so coverage ends where the issued months end.
 debitEntry :: UTCTime -> Text -> StatementDebitType -> StatementEntry -> StatementEntry
 debitEntry t entryId debit e@StatementEntry {balanceMonths} =
   e {entryId, createdAt = t, changeMonths = negate balanceMonths, balanceMonths = 0, entryType = SEDebit debit}
 
--- | A store charge's rows, dated to its billing period start so coverage follows the store's periods:
--- a lapse to the period start, the grant, and a lapse to now; the caller issues at now. createdAt stays
--- non-decreasing as long as the period does not start before the tip was written.
+-- | A store charge's rows, dated to its billing period start so coverage follows the store's periods, or to
+-- the tip when the period started before it was written, so createdAt never decreases: a lapse to that date,
+-- the grant, and a lapse to now; the caller issues at now.
 -- A charge of another tier ends the run with an upgrade debit naming ownKey before its grant restarts it.
 chargeEntries :: UTCTime -> UTCTime -> BadgeType -> Int -> C.PublicKeyEd25519 -> Text -> (Text, Text, Text, Text) -> StatementEntry -> [StatementEntry]
 chargeEntries periodStart now badgeType months ownKey chargeId (lapseBeforeId, debitId, grantId, lapseSinceId) tip@StatementEntry {balanceBadgeType, createdAt} =
   maybeToList lapsedBefore <> maybeToList debited <> [granted] <> maybeToList lapsedSince
   where
     otherTier = badgeType /= balanceBadgeType
-    -- the run restarts, so it can be dated at the tip when the period started earlier, keeping createdAt in order
-    t = if otherTier then max periodStart createdAt else periodStart
+    -- while the run continues on its anchor, dating the grant at the tip moves only the row's date;
+    -- a run that has lapsed restarts at t
+    t = max periodStart createdAt
     lapsedBefore = lapseEntry t lapseBeforeId tip
     current = fromMaybe tip lapsedBefore
     debited
@@ -185,9 +186,8 @@ entryChecked now badgeType prev e
         -- including a negative count, which shortens what the user paid for.
         -- TODO [badges] a purchase made in the app knows the months it bought; check them here.
         | changeMonths e < 0 -> Just False
-        -- the recompute would agree, as a grant of another tier replaces the balance: so it must follow a
-        -- debit that emptied the old run, which the seed of a purchase with no ledger is not
-        | balanceBadgeType e /= balanceBadgeType prev && not (emptiedByDebit prev) -> Just False
+        -- the recompute would agree, as a grant of another tier replaces the balance
+        | tierSwitched -> Just False
         | otherwise -> matches $ grantEntry t "" (balanceBadgeType e) (changeMonths e) c prev
   where
     t = createdAt e
@@ -196,6 +196,8 @@ entryChecked now badgeType prev e
     -- Equal is not behind: a service pass writes its lapse and its issue with one clock reading
     backdated = t < createdAt prev
     matches = Just . sameBalance e
+    -- only a debit that emptied the old run may be followed by another tier, which the seed of a purchase with no ledger is not
+    tierSwitched = balanceBadgeType e /= balanceBadgeType prev && not (emptiedByDebit prev)
     emptiedByDebit StatementEntry {balanceMonths, entryType} = case entryType of
       SEDebit _ -> balanceMonths == 0
       SECredit _ -> False
@@ -204,6 +206,7 @@ entryChecked now badgeType prev e
       | balanceMonths e /= balanceMonths prev + changeMonths e = Just False
       | balanceMonths e < 0 = Just False
       | balanceStartTs e < balanceStartTs prev = Just False
+      | tierSwitched = Just False
       | otherwise = Nothing
 
 sameBalance :: StatementEntry -> StatementEntry -> Bool

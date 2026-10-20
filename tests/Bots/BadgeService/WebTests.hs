@@ -160,6 +160,7 @@ badgeWebTests = do
     it "every timestamp round-trips to the second" testTimestampRoundTrip
     it "stores a charge credit with its charge, and reads it back at the tip and in the statement" testChargeCreditRoundTrip
     it "stores transfers and an upgrade with the purchase each names, and reads them back at the tip and in the statement" testTransferEntriesRoundTrip
+    it "refuses a ledger row naming a purchase key with no purchase, writing nothing" testUnknownPurchaseKeyRefused
   describe "managed group" $ do
     it "round-trips and bootstraps once" testManagedGroupRoundTripsAndBootstrapsOnce
     it "refuses a second row and burns the flag per group" testManagedGroupIsSingleRow
@@ -755,6 +756,19 @@ testTransferEntriesRoundTrip = withServiceStore $ \st -> do
   withTransaction st $ \db -> appendLedgerPlan db purchaseId Nothing rows Nothing
   withTransaction st (\db -> getLedgerEntries db purchaseId 0) >>= (`shouldBe` Just (map J.toJSON rows)) . fmap (map J.toJSON)
   withTransaction st (`getLedgerTip` purchaseId) >>= (`shouldBe` Just (J.toJSON transferOut)) . fmap J.toJSON
+
+testUnknownPurchaseKeyRefused :: IO ()
+testUnknownPurchaseKeyRefused = withServiceStore $ \st -> do
+  now <- truncateToSecond <$> getCurrentTime
+  (purchaseKey, masterKey) <- newPurchaseKeys
+  (unknownKey, _) <- newPurchaseKeys
+  Just purchaseId <- withTransaction st $ \db ->
+    createStorePurchase db NewStorePurchase {paymentId = "pay1", provider = PPApple, providerRef = "2000000812345671", paid = Nothing, purchaseKey, masterKey, badgeType = BTSupporter, subscriptionState = Nothing, providerToken = Nothing} now
+  let granted = grantEntry now "e1" BTSupporter 2 SCCode (emptyEntry now BTSupporter)
+  withTransaction st $ \db -> appendLedgerPlan db purchaseId Nothing [granted] Nothing
+  refused <- E.try $ withTransaction st $ \db -> appendLedgerPlan db purchaseId Nothing [debitEntry now "e2" (SDTransferOut unknownKey) granted] Nothing
+  (refused :: Either E.SomeException ()) `shouldSatisfy` isLeft
+  withTransaction st (\db -> getLedgerEntries db purchaseId 0) >>= (`shouldBe` Just [J.toJSON granted]) . fmap (map J.toJSON)
 
 testManagedGroupRoundTripsAndBootstrapsOnce :: IO ()
 testManagedGroupRoundTripsAndBootstrapsOnce = withServiceStore $ \st -> do

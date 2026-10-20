@@ -676,6 +676,8 @@ testChecksUnknownType = do
   let unknown = issued {entryType = SEDebit SDUnknown {tag = "future", json = KM.empty}}
   verdicts start (Just granted) [unknown] `shouldBe` [Nothing]
   verdicts start (Just granted) [issued {entryType = SEDebit SDRefund}] `shouldBe` [Nothing]
+  -- nor may it switch tier over the months the balance holds
+  verdicts start (Just granted) [issued {entryType = SEDebit SDRefund, balanceBadgeType = BTLegend}] `shouldBe` [Just False]
   verdicts start (Just granted) [unknown {balanceMonths = 5}] `shouldBe` [Just False]
   verdicts start (Just granted) [stampedAt (at 2026 3 1) unknown] `shouldBe` [Just False]
   -- an unknown credit takes the same path: fall through to grantEntry and its negative count,
@@ -792,8 +794,8 @@ newPurchaseKey = fst <$> (C.newRandom >>= \g -> atomically (C.generateKeyPair g)
 bTier :: StatementEntry -> BadgeType
 bTier StatementEntry {balanceBadgeType} = balanceBadgeType
 
--- An upgrade or a transfer takes every month left and keeps the run's coverage where it was, so
--- re-running it verifies the row, and catches one that left months behind.
+-- An upgrade or a transfer takes every month left and keeps the balance start and anchor, so coverage
+-- ends where the issued months end; re-running it verifies the row, and catches one that left months behind.
 testDebitRowsVerify :: IO ()
 testDebitRowsVerify = do
   k <- newPurchaseKey
@@ -856,6 +858,16 @@ testTierChangeRowsVerify = do
   -- a grant of another tier straight over the months still held would discard them
   let overwritten = grantEntry u "" BTLegend 12 (SCCharge "ch1") afterThird
   verdicts u (Just afterThird) [overwritten] `shouldBe` [Just False]
+  -- an upgrade found only at the renewal check, after every month of the old year was issued: the new run
+  -- starts at the last issue, and the next charge of the new tier, from a period that started earlier, follows it
+  let yearIssued = issueAll afterFirst
+      found = charged k u (addMonths 12 p0) BTLegend 12 (finalBalance afterFirst yearIssued)
+      legendIssued = issueAll (finalBalance afterFirst (yearIssued <> found))
+      legendYearTip = finalBalance afterFirst (yearIssued <> found <> legendIssued)
+      renewed = charged k (addMonths 12 u) (days 3 $ paidThrough legendYearTip) BTLegend 12 legendYearTip
+  map rowKind found `shouldBe` ["charge", "lapse", "badge"]
+  map rowKind renewed `shouldBe` ["charge", "badge"]
+  allVerify (annual <> yearIssued <> found <> legendIssued <> renewed)
 
 -- A failed renewal is otherwise left until the next chat start or activate, which on a desktop
 -- left running can be days - long enough for a funded badge to lapse.
