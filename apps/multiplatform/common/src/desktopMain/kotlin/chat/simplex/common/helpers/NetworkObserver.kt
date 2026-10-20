@@ -54,6 +54,7 @@ class NetworkObserver {
     // the addresses can be briefly unavailable, e.g. when the computer wakes up or the lease is renewed
     val addresses = localAddresses().ifEmpty { sleepDetectingSuspend(CONFIRM_OFFLINE_MS); localAddresses() }
     val info = UserNetworkInfo(networkType = UserNetworkType.OTHER, online = addresses.isNotEmpty())
+    if (!info.online && sentAddresses == null) return
     // the reported addresses are compared, so that the report that was not accepted is repeated,
     // and an added address (e.g. IPv6 configured after IPv4) does not affect the connections, a removed does
     val report = info != sentInfo || !addresses.containsAll(sentAddresses ?: emptySet())
@@ -80,7 +81,7 @@ class NetworkObserver {
       DatagramSocket().use { socket ->
         // connecting a UDP socket sends nothing, it only binds it to the address chosen by the routing table
         socket.connect(InetSocketAddress(InetAddress.getByName(remoteHost), PROBE_PORT))
-        socket.localAddress?.takeIf { !it.isAnyLocalAddress }?.let(::addressKey)
+        socket.localAddress?.takeIf { !it.isAnyLocalAddress && !it.isLinkLocalAddress }?.let(::addressKey)
       }
     } catch (e: Exception) {
       // there is no route to this address family, or a socket cannot be created
@@ -98,7 +99,6 @@ class NetworkObserver {
   @Synchronized private fun sendNetworkInfo(info: UserNetworkInfo, addresses: Set<String>) {
     if (observer !== Thread.currentThread()) return
     Log.d(TAG, "Network changed: $info")
-    // the controller is passed, so that replacing it while the report is sent does not fail the command
     val ctrl = controller.currentCtrl()
     val sent = ctrl != null && runBlocking { controller.apiSetNetworkInfo(info, ctrl) }
     if (sent) setSentInfo(info, addresses)
