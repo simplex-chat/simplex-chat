@@ -687,9 +687,9 @@ time interval</note>
         <target state="translated">Про чат SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="About operators" xml:space="preserve">
+      <trans-unit id="About operators" xml:space="preserve" approved="no">
         <source>About operators</source>
-        <target>Про операторів</target>
+        <target state="translated">Про операторів</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Accent" xml:space="preserve" approved="no">
@@ -791,9 +791,9 @@ swipe action</note>
         <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add friends" xml:space="preserve">
+      <trans-unit id="Add friends" xml:space="preserve" approved="no">
         <source>Add friends</source>
-        <target>Додайте друзів</target>
+        <target state="translated">Додайте друзів</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add list" xml:space="preserve" approved="no">
@@ -836,9 +836,9 @@ swipe action</note>
         <target state="translated">Додайте сервери, відсканувавши QR-код.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add team members" xml:space="preserve">
+      <trans-unit id="Add team members" xml:space="preserve" approved="no">
         <source>Add team members</source>
-        <target>Додайте учасників команди</target>
+        <target state="translated">Додайте учасників команди</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add this code to your webpage. It will display the preview of your channel / group." xml:space="preserve" approved="no">
@@ -861,9 +861,9 @@ swipe action</note>
         <target state="translated">Додати вітальне повідомлення</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add your team members to the conversations." xml:space="preserve">
+      <trans-unit id="Add your team members to the conversations." xml:space="preserve" approved="no">
         <source>Add your team members to the conversations.</source>
-        <target>Додайте членів своєї команди до розмов.</target>
+        <target state="translated">Додайте членів своєї команди до розмов.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Added media &amp; file servers" xml:space="preserve" approved="no">
@@ -1627,14 +1627,14 @@ in your network</source>
         <target state="translated">Болгарською, фінською, тайською та українською мовами - завдяки користувачам та [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Business address" xml:space="preserve">
+      <trans-unit id="Business address" xml:space="preserve" approved="no">
         <source>Business address</source>
-        <target>Адреса підприємства</target>
+        <target state="translated">Адреса підприємства</target>
         <note>chat link info line</note>
       </trans-unit>
-      <trans-unit id="Business chats" xml:space="preserve">
+      <trans-unit id="Business chats" xml:space="preserve" approved="no">
         <source>Business chats</source>
-        <target>Ділові чати</target>
+        <target state="translated">Ділові чати</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Business connection" xml:space="preserve" approved="no">
@@ -1891,19 +1891,19 @@ alert subtitle</note>
         <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat" xml:space="preserve">
+      <trans-unit id="Chat" xml:space="preserve" approved="no">
         <source>Chat</source>
-        <target>Чат</target>
+        <target state="translated">Чат</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat already exists" xml:space="preserve">
+      <trans-unit id="Chat already exists" xml:space="preserve" approved="no">
         <source>Chat already exists</source>
-        <target>Чат вже існує</target>
+        <target state="translated">Чат вже існує</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat already exists!" xml:space="preserve">
+      <trans-unit id="Chat already exists!" xml:space="preserve" approved="no">
         <source>Chat already exists!</source>
-        <target>Чат вже існує!</target>
+        <target state="translated">Чат вже існує!</target>
         <note>new chat sheet title</note>
       </trans-unit>
       <trans-unit id="Chat colors" xml:space="preserve" approved="no">
@@ -2006,14 +2006,14 @@ alert subtitle</note>
         <target state="translated">Тема чату</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat will be deleted for all members - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="Chat will be deleted for all members - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Chat will be deleted for all members - this cannot be undone!</source>
-        <target>Чат буде видалено для всіх учасників - цю дію неможливо скасувати!</target>
+        <target state="translated">Чат буде видалено для всіх учасників - цю дію неможливо скасувати!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat will be deleted for you - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="Chat will be deleted for you - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Chat will be deleted for you - this cannot be undone!</source>
-        <target>Чат буде видалено для вас - цю дію неможливо скасувати!</target>
+        <target state="translated">Чат буде видалено для вас - цю дію неможливо скасувати!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat with admins" xml:space="preserve" approved="no">
@@ -2953,9 +2953,9 @@ swipe action</note>
         <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete chat" xml:space="preserve">
+      <trans-unit id="Delete chat" xml:space="preserve" approved="no">
         <source>Delete chat</source>
-        <target>Видалити чат</target>
+        <target state="translated">Видалити чат</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete chat messages from your device." xml:space="preserve" approved="no">
@@ -2978,9 +2978,9 @@ swipe action</note>
         <target state="translated">Видалити чат з учасником?</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Delete chat?" xml:space="preserve">
+      <trans-unit id="Delete chat?" xml:space="preserve" approved="no">
         <source>Delete chat?</source>
-        <target>Видалити чат?</target>
+        <target state="translated">Видалити чат?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete connection" xml:space="preserve" approved="no">
@@ -3284,9 +3284,9 @@ alert button</note>
         <target state="translated">Прямі повідомлення</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Direct messages between members are prohibited in this chat." xml:space="preserve">
+      <trans-unit id="Direct messages between members are prohibited in this chat." xml:space="preserve" approved="no">
         <source>Direct messages between members are prohibited in this chat.</source>
-        <target>У цьому чаті заборонені прямі повідомлення між учасниками.</target>
+        <target state="translated">У цьому чаті заборонені прямі повідомлення між учасниками.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Direct messages between members are prohibited." xml:space="preserve" approved="no">
@@ -5308,9 +5308,9 @@ More improvements are coming soon!</source>
         <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Invite to chat" xml:space="preserve">
+      <trans-unit id="Invite to chat" xml:space="preserve" approved="no">
         <source>Invite to chat</source>
-        <target>Запросити в чат</target>
+        <target state="translated">Запросити в чат</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invite to group" xml:space="preserve" approved="no">
@@ -5496,14 +5496,14 @@ This is your link for group %@!</source>
         <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Leave chat" xml:space="preserve">
+      <trans-unit id="Leave chat" xml:space="preserve" approved="no">
         <source>Leave chat</source>
-        <target>Вийти з чату</target>
+        <target state="translated">Вийти з чату</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Leave chat?" xml:space="preserve">
+      <trans-unit id="Leave chat?" xml:space="preserve" approved="no">
         <source>Leave chat?</source>
-        <target>Залишити чат?</target>
+        <target state="translated">Залишити чат?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Leave group" xml:space="preserve" approved="no">
@@ -5716,9 +5716,9 @@ This is your link for group %@!</source>
         <target state="translated">Повідомлення учасників</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Member will be removed from chat - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="Member will be removed from chat - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Member will be removed from chat - this cannot be undone!</source>
-        <target>Учасника буде видалено з чату – це неможливо скасувати!</target>
+        <target state="translated">Учасника буде видалено з чату – це неможливо скасувати!</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Member will be removed from group - this cannot be undone!" xml:space="preserve" approved="no">
@@ -6588,9 +6588,9 @@ Requires compatible VPN.</source>
         <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only chat owners can change preferences." xml:space="preserve">
+      <trans-unit id="Only chat owners can change preferences." xml:space="preserve" approved="no">
         <source>Only chat owners can change preferences.</source>
-        <target>Лише власники чату можуть змінювати налаштування.</target>
+        <target state="translated">Лише власники чату можуть змінювати налаштування.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only client devices store user profiles, contacts, groups, and messages." xml:space="preserve" approved="no">
@@ -6807,9 +6807,9 @@ alert button</note>
         <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Or import archive file" xml:space="preserve">
+      <trans-unit id="Or import archive file" xml:space="preserve" approved="no">
         <source>Or import archive file</source>
-        <target>Або імпортуйте архівний файл</target>
+        <target state="translated">Або імпортуйте архівний файл</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Or paste archive link" xml:space="preserve" approved="no">
@@ -7123,9 +7123,9 @@ Error: %@</source>
         <target state="translated">Раніше підключені сервери</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Privacy for your customers." xml:space="preserve">
+      <trans-unit id="Privacy for your customers." xml:space="preserve" approved="no">
         <source>Privacy for your customers.</source>
-        <target>Конфіденційність для ваших клієнтів.</target>
+        <target state="translated">Конфіденційність для ваших клієнтів.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Privacy policy and conditions of use." xml:space="preserve" approved="no">
@@ -8847,9 +8847,9 @@ copied message info</note>
         <target state="translated">Адреса SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app." xml:space="preserve">
+      <trans-unit id="SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app." xml:space="preserve" approved="no">
         <source>SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app.</source>
-        <target>SimpleX Chat і Flux уклали угоду про включення серверів, керованих Flux, у додаток.</target>
+        <target state="translated">SimpleX Chat і Flux уклали угоду про включення серверів, керованих Flux, у додаток.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX Chat security was audited by Trail of Bits." xml:space="preserve" approved="no">
@@ -10699,9 +10699,9 @@ alert title</note>
         <target state="translated">Ви вже підключені до %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You are already connected with %@." xml:space="preserve">
+      <trans-unit id="You are already connected with %@." xml:space="preserve" approved="no">
         <source>You are already connected with %@.</source>
-        <target>Ви вже підключені до %@.</target>
+        <target state="translated">Ви вже підключені до %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You are already connecting to %@." xml:space="preserve" approved="no">
@@ -11030,9 +11030,9 @@ Repeat connection request?</source>
         <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You will stop receiving messages from this chat. Chat history will be preserved." xml:space="preserve">
+      <trans-unit id="You will stop receiving messages from this chat. Chat history will be preserved." xml:space="preserve" approved="no">
         <source>You will stop receiving messages from this chat. Chat history will be preserved.</source>
-        <target>Ви більше не будете отримувати повідомлення з цього чату. Історія чату буде збережена.</target>
+        <target state="translated">Ви більше не будете отримувати повідомлення з цього чату. Історія чату буде збережена.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will stop receiving messages from this group. Chat history will be preserved." xml:space="preserve" approved="no">
@@ -11284,9 +11284,9 @@ Relays can access channel messages.</source>
         <target state="translated">прийнято виклик</target>
         <note>call status</note>
       </trans-unit>
-      <trans-unit id="accepted invitation" xml:space="preserve">
+      <trans-unit id="accepted invitation" xml:space="preserve" approved="no">
         <source>accepted invitation</source>
-        <target>прийняте запрошення</target>
+        <target state="translated">прийняте запрошення</target>
         <note>chat list item title</note>
       </trans-unit>
       <trans-unit id="accepted you" xml:space="preserve" approved="no">
@@ -12144,9 +12144,9 @@ time to disappear</note>
         <target></target>
         <note>rcv direct event chat item</note>
       </trans-unit>
-      <trans-unit id="requested to connect" xml:space="preserve">
+      <trans-unit id="requested to connect" xml:space="preserve" approved="no">
         <source>requested to connect</source>
-        <target>запит на підключення</target>
+        <target state="translated">запит на підключення</target>
         <note>chat list item title</note>
       </trans-unit>
       <trans-unit id="review" xml:space="preserve" approved="no">
