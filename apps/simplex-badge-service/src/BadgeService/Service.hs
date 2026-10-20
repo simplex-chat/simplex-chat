@@ -175,7 +175,7 @@ configureStoreVerifier serviceCfg env@ServiceState {serviceCC, storeVerifier = v
                   (checkApple_, checkGoogle_) -> Just $ \ref _ -> case ref of
                     SubscriptionApple originalId -> maybe notConfigured ($ originalId) checkApple_
                     SubscriptionGoogle token -> maybe notConfigured ($ token) checkGoogle_,
-                storeChecks = if devCheckStoreDuringCoverage then ChecksAtEveryRequest else ChecksAfterCoverage,
+                storeChecks = if devCheckStoreDuringCoverage && devCreditTestPurchases then ChecksAtEveryRequest else ChecksAfterCoverage,
                 creditTestPurchases = devCreditTestPurchases
               }
         }
@@ -819,7 +819,7 @@ issueBadgeCmd key cc verifier purchaseKey BadgeBalance {lastEntry} = do
             forM_ charge_ $ \charge -> insertSubscriptionCharge db paymentId chargeId charge now
             setSubscriptionState db paymentId state now
             issueResponse db badgePurchaseId now (Just state)
-    -- A charge the dev mock reports while coverage runs is banked with no issuance, and its month issued once coverage reaches it.
+    -- A charge a dev deployment's store reports while coverage runs is banked with no issuance, and its month issued once coverage reaches it.
     checkStoreDuringCoverage purchase@ServicePurchase {badgePurchaseId, badgeType} tip PurchaseSubscription {paymentId, provider, subscriptionRef} now =
       checkStoreSubscription verifier subscriptionRef Nothing >>= \case
         Left refusal -> atLeastCheckInterval <$> storeRefusalResponse refusal
