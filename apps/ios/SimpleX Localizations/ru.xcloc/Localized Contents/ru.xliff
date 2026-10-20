@@ -771,9 +771,9 @@ swipe action</note>
         <target state="translated">Активные соединения</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add" xml:space="preserve">
+      <trans-unit id="Add" xml:space="preserve" approved="no">
         <source>Add</source>
-        <target>Добавить</target>
+        <target state="translated">Добавить</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add address to your profile, so that your SimpleX contacts can share it with other people. Profile update will be sent to your SimpleX contacts." xml:space="preserve" approved="no">
@@ -2485,9 +2485,9 @@ This is your own one-time link!</source>
         <target state="translated">Соединения</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Contact" xml:space="preserve">
+      <trans-unit id="Contact" xml:space="preserve" approved="no">
         <source>Contact</source>
-        <target>Контакт</target>
+        <target state="translated">Контакт</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact address" xml:space="preserve" approved="no">
