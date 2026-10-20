@@ -409,7 +409,7 @@ badgeServiceResponse key verifier checks cc trackerQ_ sigKey reqData = case J.fr
   J.Success BadgeServiceRequest {version, purchaseKey, request}
     | not (version `isCompatible` supportedBadgeServiceVRange) -> pure $ errorResponse BSEUnsupportedVersion
     | purchaseKey /= sigKey -> pure $ errorResponse BSEBadRequest
-    | otherwise -> logInfo ("badge request: " <> commandName request <> maybe "" ((" from " <>) . purchaseKeyPrefix) purchaseKey) >> case request of
+    | otherwise -> logInfo ("badge request: " <> commandName request <> maybe "" ((" from " <>) . purchaseKeyPart) purchaseKey) >> case request of
         BSCRedeemBadgeCode {masterKey, code} -> case purchaseKey of
           Just k -> redeemCode key cc trackerQ_ k masterKey code
           Nothing -> pure $ errorResponse BSEBadRequest
@@ -658,9 +658,10 @@ firstChargeNotGranted provider = \case
   reason -> logInfo ("store subscription not credited yet: " <> tshow reason) $> BSPError {code = BSEPaymentPending, message = Nothing, retryAfter = Just 86400}
 
 -- | Enough of the purchase key to follow one purchase through a log. It is a public key the request
--- is signed by and the service stores, so a prefix of it tells an operator nothing new.
-purchaseKeyPrefix :: C.PublicKeyEd25519 -> T.Text
-purchaseKeyPrefix = T.take 8 . safeDecodeUtf8 . strEncode
+-- is signed by and the service stores, so a part of it tells an operator nothing new. Taken from the
+-- end, past the padding: every Ed25519 key shares the first 16 characters of this encoding.
+purchaseKeyPart :: C.PublicKeyEd25519 -> T.Text
+purchaseKeyPart = T.takeEnd 8 . T.dropWhileEnd (== '=') . safeDecodeUtf8 . strEncode
 
 -- | What each request was answered, to pair with its command in a log. No payload: a credential,
 -- an invoice and a statement are the client's, and an error's message can quote what it refused.
