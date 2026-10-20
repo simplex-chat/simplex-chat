@@ -1,25 +1,68 @@
+import {execFile, spawnSync} from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 import {core} from "../src/index";
+import * as libs from "../src/libs";
+import * as simplex from "../src/simplex";
 
 describe("Core tests", () => {
+  let libPath: string;
+  let addonPath: string;
+  // the first run downloads libsimplex
+  beforeAll(async () => {
+    const libsDir = await libs.resolveLibsDir("sqlite");
+    libPath = libs.libPath(libsDir);
+    addonPath = await libs.resolveAddonPath();
+    await core.loadLibrary("sqlite");
+  }, 300000);
   const tmpDir = "./tests/tmp";
   const dbPath = path.join(tmpDir, "simplex_v1");
+  const templateDir = "./tests/template";
+  const templateDbPath = path.join(templateDir, "simplex_v1");
 
-  beforeEach(() => fs.mkdirSync(tmpDir, {recursive: true}));
+  beforeAll(async () => {
+    fs.mkdirSync(templateDir, {recursive: true});
+    await stopAndClose(await core.chatMigrateInit(templateDbPath, "key", core.MigrationConfirmation.YesUp));
+  }, 30000);
+  afterAll(() => fs.rmSync(templateDir, {recursive: true, force: true}));
+  beforeEach(() => {
+    fs.mkdirSync(tmpDir, {recursive: true});
+    copyTemplateDb(dbPath);
+  });
   afterEach(() => fs.rmSync(tmpDir, {recursive: true, force: true}));
+
+  async function stopAndClose(ctrl: bigint): Promise<void> {
+    await expect(core.chatSendCmd(ctrl, "/_stop")).resolves.toMatchObject({type: "chatStopped"});
+    await core.chatCloseStore(ctrl);
+  }
+
+  function copyTemplateDb(dbFilePrefix: string): void {
+    for (const suffix of ["_chat.db", "_agent.db"]) fs.copyFileSync(templateDbPath + suffix, dbFilePrefix + suffix);
+  }
 
   it("should initialize chat controller", async () => {
     const ctrl = await core.chatMigrateInit(dbPath, "key", core.MigrationConfirmation.YesUp);
     expect(typeof ctrl).toBe("bigint");
-    await expect(core.chatCloseStore(ctrl)).resolves.toBe(undefined);
+    await expect(stopAndClose(ctrl)).resolves.toBe(undefined);
     
     await expect(core.chatMigrateInit(dbPath, "wrong_key", core.MigrationConfirmation.YesUp)).rejects.toMatchObject({
       message: "Database or migration error (see dbMigrationError property)",
       dbMigrationError: expect.objectContaining({type: "errorNotADatabase"})
     });
   });
-  
+
+  it("should initialize chat controller with queue size", async () => {
+    const ctrl = await core.chatMigrateInit(dbPath, "key", core.MigrationConfirmation.YesUp, 65536);
+    expect(typeof ctrl).toBe("bigint");
+    await expect(stopAndClose(ctrl)).resolves.toBe(undefined);
+
+    await expect(core.chatMigrateInit(dbPath, "key", core.MigrationConfirmation.YesUp, 0)).rejects.toMatchObject({
+      dbMigrationError: {type: "invalidQueueSize"}
+    });
+    await expect(core.chatMigrateInit(dbPath, "key", core.MigrationConfirmation.YesUp, 2 ** 31)).rejects.toThrow("Expected 32-bit integer queue size");
+    await expect(core.chatMigrateInit(dbPath, "key", core.MigrationConfirmation.YesUp, 1.5)).rejects.toThrow("Expected 32-bit integer queue size");
+  });
+
   it("should send command and receive event", async () => {
     const ctrl = await core.chatMigrateInit(dbPath, "key", core.MigrationConfirmation.YesUp);
 
@@ -41,7 +84,7 @@ describe("Core tests", () => {
       chatError: expect.objectContaining({type: "error"})
     });
 
-    await core.chatCloseStore(ctrl);
+    await stopAndClose(ctrl);
   });
 
   it("should write/read encrypted file from/to buffer", async () => {
@@ -59,7 +102,25 @@ describe("Core tests", () => {
     await expect(core.chatWriteFile(ctrl, path.join(tmpDir, "unknown", "unknown.txt"), buffer)).rejects.toThrow();
     await expect(core.chatReadFile(path.join(tmpDir, "unknown.txt"), cryptoArgs)).rejects.toThrow();
     
-    await core.chatCloseStore(ctrl);
+    await stopAndClose(ctrl);
+  });
+
+  it("should write the view of a Uint8Array and read an empty file", async () => {
+    const ctrl = await core.chatMigrateInit(dbPath, "key", core.MigrationConfirmation.YesUp);
+
+    const viewPath = path.join(tmpDir, "view.txt");
+    const viewArgs = await core.chatWriteFile(ctrl, viewPath, Buffer.from("xxabcxx").subarray(2, 5));
+    const view = await core.chatReadFile(viewPath, viewArgs);
+    expect(Buffer.isBuffer(view)).toBe(true);
+    expect(view.toString()).toBe("abc");
+
+    const emptyPath = path.join(tmpDir, "empty.txt");
+    const emptyArgs = await core.chatWriteFile(ctrl, emptyPath, new Uint8Array(0));
+    const empty = await core.chatReadFile(emptyPath, emptyArgs);
+    expect(Buffer.isBuffer(empty)).toBe(true);
+    expect(empty.length).toBe(0);
+
+    await stopAndClose(ctrl);
   });
 
   it("should encrypt/decrypt file", async () => {
@@ -80,6 +141,155 @@ describe("Core tests", () => {
     await expect(core.chatEncryptFile(ctrl, path.join(tmpDir, "unknown.txt"), encryptedPath)).rejects.toThrow();
     await expect(core.chatDecryptFile(path.join(tmpDir, "unknown.txt"), cryptoArgs, decryptedPath)).rejects.toThrow();
     
-    await core.chatCloseStore(ctrl);
+    await stopAndClose(ctrl);
   });
+
+  it("should not block the libuv pool while receiving", async () => {
+    const ctrl = await core.chatMigrateInit(dbPath, "key", core.MigrationConfirmation.YesUp);
+    const receives = [1, 2, 3, 4].map(() => core.chatRecvMsgWait(ctrl, 500_000));
+    const start = Date.now();
+    await fs.promises.stat(tmpDir);
+    expect(Date.now() - start).toBeLessThan(200);
+    // one receiver thread per controller runs the 4 receives in turn
+    await Promise.all(receives);
+    await stopAndClose(ctrl);
+  }, 30000);
+
+  const itOnLinux = process.platform === "linux" ? it : it.skip;
+
+  // Thread count is read from /proc/self/task, which only exists on Linux.
+  itOnLinux("should keep the thread count constant while receiving", async () => {
+    const ctrl = await core.chatMigrateInit(dbPath, "key", core.MigrationConfirmation.YesUp);
+    for (let i = 0; i < 10; i++) await core.chatRecvMsgWait(ctrl, 1);
+    const threadCount = () => fs.readdirSync("/proc/self/task").length;
+    const warmCount = threadCount();
+    const counts = new Set<number>();
+    for (let i = 0; i < 200; i++) {
+      await core.chatRecvMsgWait(ctrl, 1);
+      counts.add(threadCount());
+    }
+    expect({warmCount, counts: [...counts]}).toEqual({warmCount, counts: [warmCount]});
+    await stopAndClose(ctrl);
+  }, 30000);
+
+  it("should receive on two controllers concurrently", async () => {
+    const dbPathB = path.join(tmpDir, "simplex_b");
+    copyTemplateDb(dbPathB);
+    const ctrlA = await core.chatMigrateInit(dbPath, "key", core.MigrationConfirmation.YesUp);
+    const ctrlB = await core.chatMigrateInit(dbPathB, "key", core.MigrationConfirmation.YesUp);
+    const start = Date.now();
+    await expect(Promise.all([core.chatRecvMsgWait(ctrlA, 1_000_000), core.chatRecvMsgWait(ctrlB, 1_000_000)]))
+      .resolves.toEqual([undefined, undefined]);
+    const elapsed = Date.now() - start;
+    expect(elapsed).toBeGreaterThanOrEqual(900);
+    expect(elapsed).toBeLessThan(1800);
+    await stopAndClose(ctrlA);
+    await stopAndClose(ctrlB);
+  });
+
+  it("should receive events of one controller in order", async () => {
+    const ctrl = await core.chatMigrateInit(dbPath, "key", core.MigrationConfirmation.YesUp);
+    for (const action of ["first", "second"]) {
+      await expect(core.chatSendCmd(ctrl, `/debug event {"type": "timedAction", "action": "${action}", "durationMilliseconds": 1}`))
+        .resolves.toMatchObject({type: "cmdOk"});
+    }
+    const events = await Promise.all([core.chatRecvMsgWait(ctrl, 500_000), core.chatRecvMsgWait(ctrl, 500_000)]);
+    expect(events).toMatchObject([
+      {type: "timedAction", action: "first"},
+      {type: "timedAction", action: "second"}
+    ]);
+    await stopAndClose(ctrl);
+  });
+
+  it("should close the store while a receive is in flight", async () => {
+    const ctrl = await core.chatMigrateInit(dbPath, "key", core.MigrationConfirmation.YesUp);
+    // starts the receiver thread, so the next request only has to wake it
+    await core.chatRecvMsgWait(ctrl, 1);
+    const settle = (p: Promise<unknown>) => p.then((event) => ({event}), (e: Error) => ({error: e.message}));
+    const receives = Promise.all([settle(core.chatRecvMsgWait(ctrl, 3_000_000)), settle(core.chatRecvMsgWait(ctrl, 3_000_000))]);
+    // the thread enters the first receive within this margin even under load, so the second one is still queued at close
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    await expect(core.chatSendCmd(ctrl, "/_stop")).resolves.toMatchObject({type: "chatStopped"});
+    let closed = false;
+    const close = core.chatCloseStore(ctrl).then(() => { closed = true; });
+    const timerStart = Date.now();
+    const timerDelay = await new Promise<number>((resolve) => setTimeout(() => resolve(Date.now() - timerStart), 10));
+    expect({closed, timerDelayBelow100ms: timerDelay < 100}).toEqual({closed: false, timerDelayBelow100ms: true});
+    await close;
+    expect(await receives).toEqual([{event: undefined}, {error: "chat receiver stopped"}]);
+  });
+
+  it("should accept loading libsimplex again from the same path", () => {
+    expect(() => simplex.load(addonPath, libPath)).not.toThrow();
+  });
+
+  it("should refuse to load libsimplex from another path", () => {
+    expect(() => simplex.load(addonPath, path.resolve("other", "libsimplex.so"))).toThrow(`libsimplex already loaded from ${libPath}`);
+  });
+
+  it("should load libsimplex after a failed load and in several workers", () => {
+    const addon = path.resolve(__dirname, "..", "build", "Release", "simplex.node");
+    const childDbPath = path.resolve(tmpDir, "simplex_workers");
+    const script = `
+      const {Worker} = require("worker_threads");
+      const simplex = require(${JSON.stringify(addon)});
+      try { simplex.load(${JSON.stringify(addon)}) } catch (e) { console.log(JSON.stringify(e.message.endsWith("does not export hs_init_with_rtsopts"))) }
+      const load = ${JSON.stringify(`require(${JSON.stringify(addon)}).load(${JSON.stringify(libPath)})`)};
+      const workers = Array.from({length: 4}, () => new Worker(load, {eval: true}));
+      Promise.all(workers.map((w) => new Promise((resolve, reject) => w.on("exit", resolve).on("error", reject))))
+        .then(async (codes) => {
+          simplex.load(${JSON.stringify(libPath)});
+          const [ctrl] = await simplex.chat_migrate_init(${JSON.stringify(childDbPath)}, "key", "yesUp");
+          await simplex.chat_send_cmd(ctrl, "/_stop");
+          console.log(JSON.stringify({codes, closed: await simplex.chat_close_store(ctrl) === ""}));
+        });
+    `;
+    const child = spawnSync(process.execPath, ["-e", script], {timeout: 30000, encoding: "utf8"});
+    if (child.status !== 0 || child.signal !== null) console.log("child stderr:", child.stderr);
+    expect({status: child.status, signal: child.signal, stdout: child.stdout.trim()})
+      .toEqual({status: 0, signal: null, stdout: 'true\n{"codes":[0,0,0,0],"closed":true}'});
+  }, 35000);
+
+  it("should let the process exit while a receiver is idle", () => {
+    const childDbPath = path.resolve(dbPath);
+    const script = `
+      const simplex = require("./build/Release/simplex.node");
+      simplex.load(${JSON.stringify(libPath)});
+      simplex.chat_migrate_init(${JSON.stringify(childDbPath)}, "key", "yesUp")
+        .then(([ctrl]) => simplex.chat_recv_msg_wait(ctrl, 1))
+        .then((res) => console.log("received " + JSON.stringify(res)));
+    `;
+    const child = spawnSync(process.execPath, ["-e", script], {cwd: path.join(__dirname, ".."), timeout: 25000, encoding: "utf8"});
+    if (child.status !== 0 || child.signal !== null) console.log("child stderr:", child.stderr);
+    expect({status: child.status, signal: child.signal, stdout: child.stdout.trim()})
+      .toEqual({status: 0, signal: null, stdout: 'received ""'});
+  });
+
+  it("should not crash when closing stopped controllers repeatedly", async () => {
+    const script = `
+      const fs = require("fs"), path = require("path");
+      const simplex = require("./build/Release/simplex.node");
+      simplex.load(${JSON.stringify(libPath)});
+      (async () => {
+        // a new database runs every migration, each committed with a disk flush that takes up to 30 ms on CI runners
+        const dir = fs.mkdtempSync(path.join(${JSON.stringify(path.resolve(tmpDir))}, "close-"));
+        for (let i = 0; i < 40; i++) {
+          const [ctrl] = await simplex.chat_migrate_init(path.join(dir, "simplex"), "key", "yesUp");
+          await simplex.chat_send_cmd(ctrl, "/v");
+          await simplex.chat_send_cmd(ctrl, "/_stop");
+          const res = await simplex.chat_close_store(ctrl);
+          if (res !== "") throw new Error("close failed: " + res);
+        }
+        fs.rmSync(dir, {recursive: true, force: true});
+      })();
+    `;
+    const runChild = () => new Promise<{code: number | null, signal: NodeJS.Signals | null, stderr: string}>((resolve) => {
+      const child = execFile(process.execPath, ["-e", script], {cwd: path.join(__dirname, ".."), timeout: 150000}, (_error, _stdout, stderr) =>
+        resolve({code: child.exitCode, signal: child.signalCode, stderr}));
+    });
+    const childCount = 3;
+    const results = await Promise.all(Array.from({length: childCount}, runChild));
+    for (const r of results) if (r.code !== 0 || r.signal !== null) console.log("child stderr:", r.stderr);
+    expect(results.map(({code, signal}) => ({code, signal}))).toEqual(Array(childCount).fill({code: 0, signal: null}));
+  }, 180000);
 });

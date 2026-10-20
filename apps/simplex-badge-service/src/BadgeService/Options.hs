@@ -5,19 +5,18 @@
 
 module BadgeService.Options
   ( BadgeServiceOpts (..),
-    BadgeIssuerKey (..),
     getBadgeServiceOpts,
     badgeServiceOpts,
     mkChatOpts,
   )
 where
 
+import BadgeService.Config (BadgeIssuerKey (..))
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
 import Options.Applicative
 import Simplex.Chat.Controller (updateStr, versionNumber, versionString)
 import Simplex.Chat.Options (ChatCmdLog (..), ChatOpts (..), CoreChatOpts, CreateBotOpts (..), coreChatOptsP)
-import Simplex.Messaging.Crypto.BBS (BBSSecretKey)
 import Simplex.Messaging.Encoding.String (strDecode)
 
 data BadgeServiceOpts = BadgeServiceOpts
@@ -26,20 +25,10 @@ data BadgeServiceOpts = BadgeServiceOpts
     clientService :: Bool,
     noAddress :: Bool,
     runCLI :: Bool,
-    -- the service refuses to start without this: it cannot sign a credential
-    issuerKey :: Maybe BadgeIssuerKey,
+    serviceConfigFile :: Maybe FilePath,
+    issuerKey :: Either String (Maybe BadgeIssuerKey),
     testing :: Bool
   }
-
--- | The issuer secret that signs credentials, and the index the apps find its public half under.
-data BadgeIssuerKey = BadgeIssuerKey
-  { keyIdx :: Int,
-    secretKey :: BBSSecretKey
-  }
-
--- BBSSecretKey derives Show, so this is written out to keep the secret out of logs and errors
-instance Show BadgeIssuerKey where
-  show BadgeIssuerKey {keyIdx} = "issuer key " <> show keyIdx
 
 badgeServiceOpts :: FilePath -> FilePath -> Parser BadgeServiceOpts
 badgeServiceOpts appDir defaultDbName = do
@@ -66,6 +55,14 @@ badgeServiceOpts appDir defaultDbName = do
       ( long "run-cli"
           <> help "Run badge service as CLI"
       )
+  serviceConfigFile <-
+    optional
+      ( strOption
+          ( long "service-config"
+              <> metavar "INI_FILE"
+              <> help "Path to badge_service.ini: parsed in full in every mode, but --run-cli starts no web listener"
+          )
+      )
   issuerKeyIdx <-
     optional $
       option
@@ -89,7 +86,11 @@ badgeServiceOpts appDir defaultDbName = do
         clientService,
         noAddress,
         runCLI,
-        issuerKey = BadgeIssuerKey <$> issuerKeyIdx <*> issuerSecret,
+        serviceConfigFile,
+        issuerKey = case (issuerKeyIdx, issuerSecret) of
+          (Just idx, Just secret) -> Right (Just (BadgeIssuerKey idx secret))
+          (Nothing, Nothing) -> Right Nothing
+          _ -> Left "--issuer-key-idx and --issuer-secret are given together or not at all",
         testing = False
       }
 

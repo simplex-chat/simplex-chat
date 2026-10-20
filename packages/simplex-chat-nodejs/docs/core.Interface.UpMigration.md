@@ -6,7 +6,7 @@
 
 # Interface: UpMigration
 
-Defined in: [src/core.ts:185](../src/core.ts#L185)
+Defined in: [src/core.ts:215](../core.ts#L215)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [src/core.ts:185](../src/core.ts#L185)
 
 > **upName**: `string`
 
-Defined in: [src/core.ts:186](../src/core.ts#L186)
+Defined in: [src/core.ts:216](../core.ts#L216)
 
 ***
 
@@ -22,4 +22,4 @@ Defined in: [src/core.ts:186](../src/core.ts#L186)
 
 > **withDown**: `boolean`
 
-Defined in: [src/core.ts:187](../src/core.ts#L187)
+Defined in: [src/core.ts:217](../core.ts#L217)

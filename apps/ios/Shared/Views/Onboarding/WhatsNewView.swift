@@ -845,7 +845,7 @@ fileprivate struct InvestInSimpleXChat: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .sheet(isPresented: $showGetStakeSheet) {
-            GetStakeView(fromSettings: false)
+            GetStakeView(fromSettings: false, showFirstImage: false)
         }
     }
 }
@@ -885,16 +885,17 @@ struct GetStakeView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var chatModel: ChatModel
     var fromSettings: Bool
+    var showFirstImage: Bool
 
     var body: some View {
         ZoomablePageView {
             VStack(alignment: .leading, spacing: 18) {
-                Text(verbatim: "Get a stake in\nSimpleX Chat")
+                Text(verbatim: "Invest in\nSimpleX Chat")
                     .font(.largeTitle)
                     .bold()
                     .fixedSize(horizontal: false, vertical: true)
                     .if(!fromSettings) { $0.padding(.top) }
-                if fromSettings {
+                if showFirstImage {
                     slideImage(getStakeSlides[0])
                 }
                 (Text(verbatim: getStakeSlides[0].text) + Text(verbatim: " Learn more and invest on Wefunder.").bold().foregroundColor(.accentColor))

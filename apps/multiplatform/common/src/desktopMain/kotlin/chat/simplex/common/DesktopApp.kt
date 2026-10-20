@@ -19,7 +19,7 @@ import chat.simplex.common.ui.theme.DEFAULT_START_MODAL_WIDTH
 import chat.simplex.common.ui.theme.SimpleXTheme
 import chat.simplex.common.views.TerminalView
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
@@ -182,9 +182,10 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
         }
       }
       var windowFocused by remember { simplexWindowState.windowFocused }
-      LaunchedEffect(windowFocused) {
+      val showCallView = ChatModel.showCallView.value
+      LaunchedEffect(windowFocused, showCallView) {
         val delay = ChatController.appPrefs.laLockDelay.get()
-        if (!windowFocused && ChatModel.showAuthScreen.value && delay > 0) {
+        if (!windowFocused && !showCallView && ChatModel.showAuthScreen.value && delay > 0) {
           delay(delay * 1000L)
           // Trigger auth state check when delay ends (and if it ends)
           AppLock.recheckAuthState()
@@ -258,11 +259,16 @@ private fun ApplicationScope.handleCloseRequest(closedByError: MutableState<Bool
 fun showWindow() {
   simplexWindowState.windowVisible.value = true
   simplexWindowState.window?.apply {
+    // During a crash restart this is the disposed window, and showing it would bring it back.
+    if (!isDisplayable) return
     // Clear ICONIFIED so a minimized window un-minimizes; preserves MAXIMIZED_BOTH
     // when set. toFront() alone does not un-minimize on any AWT platform.
     extendedState = extendedState and Frame.ICONIFIED.inv()
+    // The window is made visible before the activation below; the next recomposition would be too late.
+    isVisible = true
     toFront()
     requestFocus()
+    if (desktopPlatform.isLinux()) requestX11Activation(this)
   }
 }
 

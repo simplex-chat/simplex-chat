@@ -1,0 +1,219 @@
+{
+  "updated": "2026-10-08",
+  "groups": [
+    {
+      "title": "Network and users",
+      "facts": [
+        {
+          "fact": "User identifiers on the network",
+          "value": "None – no phone numbers, usernames, account IDs or random user IDs",
+          "asOf": "2026",
+          "sources": [{ "title": "How SimpleX works", "url": "https://simplex.chat/docs/simplex.md" }]
+        },
+        {
+          "fact": "Monthly active users",
+          "value": "600,000+",
+          "asOf": "October 2026",
+          "sources": [{ "title": "Wefunder memo", "url": "https://simplex.chat/wefunder.md" }]
+        },
+        {
+          "fact": "User growth",
+          "value": "about 70% in the last six months",
+          "asOf": "October 2026",
+          "sources": [{ "title": "Wefunder memo", "url": "https://simplex.chat/wefunder.md" }]
+        },
+        {
+          "fact": "App downloads",
+          "value": "3 million+",
+          "asOf": "October 2026",
+          "sources": [{ "title": "Wefunder memo", "url": "https://simplex.chat/wefunder.md" }]
+        },
+        {
+          "fact": "Messages per day via preset servers",
+          "value": "20 million+",
+          "asOf": "October 2026",
+          "sources": [{ "title": "Wefunder memo", "url": "https://simplex.chat/wefunder.md" }]
+        },
+        {
+          "fact": "Paid marketing",
+          "value": "none before the equity crowdfunding campaign",
+          "asOf": "until August 2026",
+          "sources": [{ "title": "Wefunder memo", "url": "https://simplex.chat/wefunder.md" }]
+        },
+        {
+          "fact": "Independent publications about SimpleX",
+          "value": "200+ reviews, posts and videos in 20+ languages",
+          "asOf": "October 2026",
+          "sources": [{ "title": "Links", "url": "https://simplex.chat/links.md" }]
+        }
+      ]
+    },
+    {
+      "title": "Network participants",
+      "facts": [
+        {
+          "fact": "Servers run by volunteers",
+          "value": "about 1,000",
+          "asOf": "October 2026",
+          "sources": [{ "title": "Wefunder memo", "url": "https://simplex.chat/wefunder.md" }]
+        },
+        {
+          "fact": "Preset server operators",
+          "value": "SimpleX Chat and Flux",
+          "asOf": "since December 2024",
+          "sources": [{ "title": "Blog", "url": "https://simplex.chat/blog/20241210-simplex-network-v6-2-servers-by-flux-business-chats.md" }]
+        },
+        {
+          "fact": "Public channels created",
+          "value": "12,500+ in the five months since scalable channels shipped",
+          "asOf": "October 2026",
+          "sources": [{ "title": "Wefunder memo", "url": "https://simplex.chat/wefunder.md" }]
+        },
+        {
+          "fact": "Curated directory",
+          "value": "500+ public groups and channels, 30% active daily",
+          "asOf": "October 2026",
+          "sources": [
+            { "title": "Wefunder memo", "url": "https://simplex.chat/wefunder.md" },
+            { "title": "Directory", "url": "https://simplex.chat/directory.md" }
+          ]
+        },
+        {
+          "fact": "Businesses supporting customers over SimpleX",
+          "value": "50+",
+          "asOf": "October 2026",
+          "sources": [{ "title": "Wefunder memo", "url": "https://simplex.chat/wefunder.md" }]
+        },
+        {
+          "fact": "GitHub",
+          "value": "19,000+ stars, 1,400+ forks",
+          "asOf": "October 2026",
+          "sources": [
+            { "title": "Wefunder memo", "url": "https://simplex.chat/wefunder.md" },
+            { "title": "GitHub", "url": "https://github.com/simplex-chat/simplex-chat" }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Security",
+      "facts": [
+        {
+          "fact": "End-to-end encryption",
+          "value": "double ratchet with post-quantum key exchange (sntrup761) on every ratchet step, on by default in direct conversations",
+          "asOf": "since v5.7, April 2024",
+          "sources": [{ "title": "Blog", "url": "https://simplex.chat/blog/20240426-simplex-legally-binding-transparency-v5-7-better-user-experience.md" }]
+        },
+        {
+          "fact": "IP address protection",
+          "value": "private message routing: 2-hop routing where the sender chooses the forwarding relay and the recipient chooses the destination relay, so neither side observes the other's IP address",
+          "asOf": "since v5.8, June 2024",
+          "sources": [{ "title": "Blog", "url": "https://simplex.chat/blog/20240604-simplex-chat-v5.8-private-message-routing-chat-themes.md" }]
+        },
+        {
+          "fact": "Implementation security assessment",
+          "value": "Trail of Bits",
+          "asOf": "October 2022",
+          "sources": [
+            { "title": "Blog", "url": "https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.md" },
+            { "title": "Report", "url": "https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SimpleX_Chat_Final_Report_11_03_2022.pdf" }
+          ]
+        },
+        {
+          "fact": "Cryptographic design review",
+          "value": "Trail of Bits",
+          "asOf": "July 2024",
+          "sources": [
+            { "title": "Blog", "url": "https://simplex.chat/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.md" },
+            { "title": "Report", "url": "https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SimpleX_Design_Review_2024_Summary_Report_12_08_2024.pdf" }
+          ]
+        },
+        {
+          "fact": "Third Trail of Bits audit",
+          "value": "completed, to be published",
+          "asOf": "2026",
+          "sources": [{ "title": "Wefunder memo", "url": "https://simplex.chat/wefunder.md" }]
+        },
+        {
+          "fact": "Licence",
+          "value": "AGPL-3.0",
+          "asOf": "2026",
+          "sources": [{ "title": "LICENSE", "url": "https://github.com/simplex-chat/simplex-chat/blob/stable/LICENSE" }]
+        }
+      ]
+    },
+    {
+      "title": "Company and funding",
+      "facts": [
+        {
+          "fact": "Founder",
+          "value": "Evgeny Poberezkin, creator of the Ajv JSON Schema validator",
+          "asOf": "2026",
+          "sources": [{ "title": "Ajv", "url": "https://github.com/ajv-validator/ajv" }]
+        },
+        {
+          "fact": "Total investment to date",
+          "value": "$1.7M",
+          "asOf": "October 2026",
+          "sources": [{ "title": "Wefunder memo", "url": "https://simplex.chat/wefunder.md" }]
+        },
+        {
+          "fact": "User donations",
+          "value": "$650,000+, including from Vitalik Buterin",
+          "asOf": "October 2026",
+          "sources": [{ "title": "Wefunder memo", "url": "https://simplex.chat/wefunder.md" }]
+        },
+        {
+          "fact": "Prior investors",
+          "value": "Village Global and angel investors (pre-seed, closed in July 2022); Jack Dorsey and Asymmetric Capital Partners (closed in July 2023)",
+          "asOf": "announced April 2023 and August 2024",
+          "sources": [{ "title": "Blog", "url": "https://simplex.chat/blog/20240814-simplex-chat-vision-funding-v6-private-routing-new-user-experience.md" }]
+        },
+        {
+          "fact": "Equity crowdfunding",
+          "value": "on Wefunder, launched 20 August 2026",
+          "asOf": "October 2026",
+          "sources": [
+            { "title": "Blog", "url": "https://simplex.chat/blog/20260819-simplex-chat-crowdfunding.md" },
+            { "title": "Crowdfunding", "url": "https://simplex.chat/crowdfunding.md" }
+          ]
+        },
+        {
+          "fact": "Governance",
+          "value": "SimpleX Network Consortium: an agreement between the non-profit SimpleX Network Foundation and SimpleX Chat",
+          "asOf": "2026",
+          "sources": [{ "title": "Blog", "url": "https://simplex.chat/blog/20260430-simplex-channels-v6-5-consortium-crowdfunding-freedom-of-speech.md" }]
+        },
+        {
+          "fact": "Business model",
+          "value": "free private messaging; channels and businesses pay for public names, business messaging and servers for big channels",
+          "asOf": "October 2026",
+          "sources": [{ "title": "Wefunder memo", "url": "https://simplex.chat/wefunder.md" }]
+        }
+      ]
+    },
+    {
+      "title": "Public names",
+      "facts": [
+        {
+          "fact": "Test names (.testing)",
+          "value": "available since v7-beta",
+          "asOf": "July 2026",
+          "sources": [{ "title": "Blog", "url": "https://simplex.chat/blog/20260722-simplex-public-names.md" }]
+        },
+        {
+          "fact": ".simplex names sale",
+          "value": "starts 12 December 2026, 18:00 UTC",
+          "asOf": "October 2026",
+          "sources": [{ "title": "simplex.domains", "url": "https://simplex.domains/" }]
+        },
+        {
+          "fact": "Registry",
+          "value": "SimpleX Name Service, a fork of ENS on Ethereum, without off-chain indexer or metadata services",
+          "asOf": "July 2026",
+          "sources": [{ "title": "Whitepaper", "url": "https://simplex.chat/docs/protocol/names-overview.md" }]
+        }
+      ]
+    }
+  ]
+}

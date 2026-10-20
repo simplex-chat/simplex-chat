@@ -247,6 +247,88 @@ export interface BadgeProof {
   badgeInfo: BadgeInfo
 }
 
+export type BadgeRedeemError = 
+  | BadgeRedeemError.InvalidCode
+  | BadgeRedeemError.InvalidReceipt
+  | BadgeRedeemError.ServiceNotConfigured
+  | BadgeRedeemError.BadgeActive
+  | BadgeRedeemError.ServiceError
+  | BadgeRedeemError.InvalidResponse
+  | BadgeRedeemError.UnknownKeyIndex
+  | BadgeRedeemError.CredentialNotVerified
+
+export namespace BadgeRedeemError {
+  export type Tag = 
+    | "invalidCode"
+    | "invalidReceipt"
+    | "serviceNotConfigured"
+    | "badgeActive"
+    | "serviceError"
+    | "invalidResponse"
+    | "unknownKeyIndex"
+    | "credentialNotVerified"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface InvalidCode extends Interface {
+    type: "invalidCode"
+  }
+
+  export interface InvalidReceipt extends Interface {
+    type: "invalidReceipt"
+  }
+
+  export interface ServiceNotConfigured extends Interface {
+    type: "serviceNotConfigured"
+  }
+
+  export interface BadgeActive extends Interface {
+    type: "badgeActive"
+  }
+
+  export interface ServiceError extends Interface {
+    type: "serviceError"
+    serviceError: BadgeServiceErrorCode
+  }
+
+  export interface InvalidResponse extends Interface {
+    type: "invalidResponse"
+    message: string
+  }
+
+  export interface UnknownKeyIndex extends Interface {
+    type: "unknownKeyIndex"
+  }
+
+  export interface CredentialNotVerified extends Interface {
+    type: "credentialNotVerified"
+  }
+}
+
+export enum BadgeServiceErrorCode {
+  Bad_request = "bad_request",
+  Unsupported_version = "unsupported_version",
+  Unknown_purchase_key = "unknown_purchase_key",
+  Unknown_offer_id = "unknown_offer_id",
+  Offer_disabled = "offer_disabled",
+  Offer_mismatch = "offer_mismatch",
+  Product_unavailable = "product_unavailable",
+  Payment_not_entitled = "payment_not_entitled",
+  Payment_pending = "payment_pending",
+  Provider_unavailable = "provider_unavailable",
+  Provider_not_configured = "provider_not_configured",
+  Rate_limited = "rate_limited",
+  Code_invalid = "code_invalid",
+  Code_used = "code_used",
+  Code_expired = "code_expired",
+  Receipt_invalid = "receipt_invalid",
+  Receipt_used = "receipt_used",
+  Test_purchase = "test_purchase",
+  Internal = "internal",
+}
+
 export enum BadgeStatus {
   Active = "active",
   Expired = "expired",
@@ -259,6 +341,112 @@ export enum BadgeType {
   Supporter = "supporter",
   Legend = "legend",
   Investor = "investor",
+}
+
+export type BlockToken = 
+  | BlockToken.LineBreak
+  | BlockToken.SoftBreak
+  | BlockToken.HardBreak
+  | BlockToken.ParagraphBreak
+  | BlockToken.Indent
+  | BlockToken.HeadingMark
+  | BlockToken.HeadingClose
+  | BlockToken.HeadingUnderline
+  | BlockToken.ListMark
+  | BlockToken.QuoteMark
+  | BlockToken.FenceMark
+  | BlockToken.RowMark
+  | BlockToken.CellMark
+  | BlockToken.DelimiterRow
+  | BlockToken.RuleMark
+
+export namespace BlockToken {
+  export type Tag = 
+    | "lineBreak"
+    | "softBreak"
+    | "hardBreak"
+    | "paragraphBreak"
+    | "indent"
+    | "headingMark"
+    | "headingClose"
+    | "headingUnderline"
+    | "listMark"
+    | "quoteMark"
+    | "fenceMark"
+    | "rowMark"
+    | "cellMark"
+    | "delimiterRow"
+    | "ruleMark"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface LineBreak extends Interface {
+    type: "lineBreak"
+  }
+
+  export interface SoftBreak extends Interface {
+    type: "softBreak"
+  }
+
+  export interface HardBreak extends Interface {
+    type: "hardBreak"
+  }
+
+  export interface ParagraphBreak extends Interface {
+    type: "paragraphBreak"
+    lineBreaks: number // int
+  }
+
+  export interface Indent extends Interface {
+    type: "indent"
+  }
+
+  export interface HeadingMark extends Interface {
+    type: "headingMark"
+    level: number // int
+  }
+
+  export interface HeadingClose extends Interface {
+    type: "headingClose"
+  }
+
+  export interface HeadingUnderline extends Interface {
+    type: "headingUnderline"
+    level: number // int
+  }
+
+  export interface ListMark extends Interface {
+    type: "listMark"
+    number?: string
+  }
+
+  export interface QuoteMark extends Interface {
+    type: "quoteMark"
+  }
+
+  export interface FenceMark extends Interface {
+    type: "fenceMark"
+    language?: string
+  }
+
+  export interface RowMark extends Interface {
+    type: "rowMark"
+  }
+
+  export interface CellMark extends Interface {
+    type: "cellMark"
+  }
+
+  export interface DelimiterRow extends Interface {
+    type: "delimiterRow"
+    columns: TableAlign[]
+  }
+
+  export interface RuleMark extends Interface {
+    type: "ruleMark"
+  }
 }
 
 export interface BlockingInfo {
@@ -916,6 +1104,7 @@ export interface CIQuote {
   sentAt: string // ISO-8601 timestamp
   content: MsgContent
   formattedText?: FormattedText[]
+  markdownBlocks?: MarkdownBlock[]
 }
 
 export interface CIReaction {
@@ -1153,6 +1342,7 @@ export type ChatErrorType =
   | ChatErrorType.AgentVersion
   | ChatErrorType.AgentNoSubResult
   | ChatErrorType.CommandError
+  | ChatErrorType.BadgeRedeemError
   | ChatErrorType.AgentCommandError
   | ChatErrorType.InvalidFileDescription
   | ChatErrorType.ConnectionIncognitoChangeProhibited
@@ -1232,6 +1422,7 @@ export namespace ChatErrorType {
     | "agentVersion"
     | "agentNoSubResult"
     | "commandError"
+    | "badgeRedeemError"
     | "agentCommandError"
     | "invalidFileDescription"
     | "connectionIncognitoChangeProhibited"
@@ -1576,6 +1767,11 @@ export namespace ChatErrorType {
     message: string
   }
 
+  export interface BadgeRedeemError extends Interface {
+    type: "badgeRedeemError"
+    badgeRedeemError: BadgeRedeemError
+  }
+
   export interface AgentCommandError extends Interface {
     type: "agentCommandError"
     message: string
@@ -1671,6 +1867,7 @@ export interface ChatItem {
   content: CIContent
   mentions: {[key: string]: CIMention}
   formattedText?: FormattedText[]
+  markdownBlocks?: MarkdownBlock[]
   quotedItem?: CIQuote
   reactions: CIReactionCount[]
   file?: CIFile
@@ -1707,6 +1904,7 @@ export enum ChatPeerType {
   Human = "human",
   Bot = "bot",
   Business = "business",
+  Agent = "agent",
 }
 // Used in API commands. Chat scope can only be passed with groups.
 
@@ -2479,6 +2677,7 @@ export enum FileType {
   Normal = "normal",
   Roster = "roster",
 }
+// The format markup is a token of block Markdown syntax; its text is the syntax. The format escape is the backslash of a backslash escape. Bold singleStar: written with single stars.
 
 export type Format = 
   | Format.Bold
@@ -2496,6 +2695,8 @@ export type Format =
   | Format.Mention
   | Format.Email
   | Format.Phone
+  | Format.Escape
+  | Format.Markup
 
 export namespace Format {
   export type Tag = 
@@ -2514,6 +2715,8 @@ export namespace Format {
     | "mention"
     | "email"
     | "phone"
+    | "escape"
+    | "markup"
 
   interface Interface {
     type: Tag
@@ -2521,6 +2724,7 @@ export namespace Format {
 
   export interface Bold extends Interface {
     type: "bold"
+    singleStar: boolean
   }
 
   export interface Italic extends Interface {
@@ -2587,6 +2791,15 @@ export namespace Format {
 
   export interface Phone extends Interface {
     type: "phone"
+  }
+
+  export interface Escape extends Interface {
+    type: "escape"
+  }
+
+  export interface Markup extends Interface {
+    type: "markup"
+    token: BlockToken
   }
 }
 
@@ -2715,13 +2928,7 @@ export interface GroupInfo {
   rosterVersion?: number // int64
   membersRequireAttention: number // int
   viaGroupLinkUri?: string
-  groupKeys?: GroupKeys
   groupDomainVerified?: boolean
-}
-
-export interface GroupKeys {
-  publicGroupKeys?: PublicGroupKeys
-  memberPrivKey: string
 }
 
 export interface GroupLink {
@@ -2917,26 +3124,6 @@ export interface GroupRelay {
   relayCap: RelayCapabilities
 }
 
-export type GroupRootKey = GroupRootKey.Private | GroupRootKey.Public
-
-export namespace GroupRootKey {
-  export type Tag = "private" | "public"
-
-  interface Interface {
-    type: Tag
-  }
-
-  export interface Private extends Interface {
-    type: "private"
-    rootPrivKey: string
-  }
-
-  export interface Public extends Interface {
-    type: "public"
-    rootPubKey: string
-  }
-}
-
 export interface GroupShortLinkData {
   groupProfile: GroupProfile
   publicGroupData?: PublicGroupData
@@ -3078,6 +3265,12 @@ export interface LinkPreview {
   content?: LinkContent
 }
 
+export interface ListEntry {
+  number?: string
+  content: SegmentRange
+  items: ListEntry[]
+}
+
 export interface LocalBadge {
   badge: BadgeInfo
   status: BadgeStatus
@@ -3097,6 +3290,62 @@ export interface LocalProfile {
   localAlias: string
   contactDomain?: SimplexDomainClaim
   contactDomainVerified?: boolean
+}
+
+export type MarkdownBlock = 
+  | MarkdownBlock.Paragraph
+  | MarkdownBlock.Heading
+  | MarkdownBlock.CodeBlock
+  | MarkdownBlock.Quote
+  | MarkdownBlock.List
+  | MarkdownBlock.Table
+  | MarkdownBlock.Rule
+
+export namespace MarkdownBlock {
+  export type Tag = "paragraph" | "heading" | "codeBlock" | "quote" | "list" | "table" | "rule"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Paragraph extends Interface {
+    type: "paragraph"
+    content: SegmentRange
+  }
+
+  export interface Heading extends Interface {
+    type: "heading"
+    level: number // int
+    content: SegmentRange
+  }
+
+  export interface CodeBlock extends Interface {
+    type: "codeBlock"
+    language?: string
+    content: SegmentRange
+  }
+
+  export interface Quote extends Interface {
+    type: "quote"
+    content: SegmentRange
+  }
+
+  export interface List extends Interface {
+    type: "list"
+    items: ListEntry[] // non-empty
+  }
+
+  export interface Table extends Interface {
+    type: "table"
+    columns: TableAlign[] // non-empty
+    header: SegmentRange[]
+    rows: SegmentRange[][]
+  }
+
+  export interface Rule extends Interface {
+    type: "rule"
+    mark: SegmentRange
+  }
 }
 
 export enum MemberCriteria {
@@ -3565,11 +3814,6 @@ export interface PublicGroupAccess {
 
 export interface PublicGroupData {
   publicMemberCount: number // int64
-}
-
-export interface PublicGroupKeys {
-  publicGroupId: string
-  groupRootKey: GroupRootKey
 }
 
 export interface PublicGroupProfile {
@@ -4155,6 +4399,11 @@ export namespace SMPAgentError {
 export interface SecurityCode {
   securityCode: string
   verifiedAt: string // ISO-8601 timestamp
+}
+
+export interface SegmentRange {
+  from: number // int
+  to: number // int
 }
 
 export interface SimplePreference {
@@ -5070,6 +5319,13 @@ export enum SwitchPhase {
   Confirmed = "confirmed",
   Secured = "secured",
   Completed = "completed",
+}
+
+export enum TableAlign {
+  None = "none",
+  Left = "left",
+  Center = "center",
+  Right = "right",
 }
 
 export interface TimedMessagesGroupPreference {

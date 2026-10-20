@@ -66,6 +66,21 @@ export namespace APISetProfileAddress {
   }
 }
 
+// Set or remove SimpleX name of bot address. The name must be registered with the address short link.
+// Network usage: interactive.
+export interface APISetUserDomain {
+  userId: number // int64
+  simplexDomain?: string
+}
+
+export namespace APISetUserDomain {
+  export type Response = CR.UserProfileUpdated | CR.UserProfileNoChange | CR.ChatCmdError
+
+  export function cmdString(self: APISetUserDomain): string {
+    return '/_set domain ' + self.userId + (self.simplexDomain ? ' ' + self.simplexDomain : '')
+  }
+}
+
 // Set bot address settings.
 // Network usage: interactive.
 export interface APISetAddressSettings {
@@ -248,6 +263,23 @@ export namespace APIAddMember {
 
   export function cmdString(self: APIAddMember): string {
     return '/_add #' + self.groupId + ' ' + self.contactId + ' ' + self.memberRole
+  }
+}
+
+// Add member of another group to group. Requires bot to have Admin role in the group, and direct messages allowed for its role in another group.
+// Network usage: interactive.
+export interface APIAddMemberViaGroup {
+  groupId: number // int64
+  viaGroupId: number // int64
+  groupMemberId: number // int64
+  memberRole: T.GroupMemberRole
+}
+
+export namespace APIAddMemberViaGroup {
+  export type Response = CR.SentGroupInvitationViaGroup | CR.ChatCmdError
+
+  export function cmdString(self: APIAddMemberViaGroup): string {
+    return '/_add #' + self.groupId + ' #' + self.viaGroupId + ' ' + self.groupMemberId + ' ' + self.memberRole
   }
 }
 
@@ -570,7 +602,7 @@ export namespace APIConnect {
   export type Response = CR.SentConfirmation | CR.ContactAlreadyExists | CR.SentInvitation | CR.ChatCmdError
 
   export function cmdString(self: APIConnect): string {
-    return '/_connect ' + self.userId + (self.preparedLink_ ? ' ' + T.CreatedConnLink.cmdString(self.preparedLink_) : '')
+    return '/_connect ' + self.userId + (self.incognito ? ' incognito=on' : '') + (self.preparedLink_ ? ' ' + T.CreatedConnLink.cmdString(self.preparedLink_) : '')
   }
 }
 

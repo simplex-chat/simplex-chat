@@ -8,7 +8,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.helpers.DatabaseUtils.ksDatabasePassword
 import chat.simplex.common.views.helpers.DatabaseUtils.randomDatabasePassword
 import chat.simplex.common.views.onboarding.OnboardingStage
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.coroutines.*
 import java.io.File
 import java.nio.ByteBuffer
@@ -39,6 +39,13 @@ external fun chatWriteFile(ctrl: ChatCtrl, path: String, buffer: ByteBuffer): St
 external fun chatReadFile(path: String, key: String, nonce: String): Array<Any>
 external fun chatEncryptFile(ctrl: ChatCtrl, fromPath: String, toPath: String): String
 external fun chatDecryptFile(fromPath: String, key: String, nonce: String, toPath: String): String
+
+// the code in core's canonical form (prefix and 20 characters, no separators), or null when core rejects it.
+// The check character is verified by core via FFI, not re-implemented here, so the two cannot disagree.
+fun parseBadgeCode(s: String): String? {
+  val canonical = chatParseBadgeCode(s)
+  return if (canonical.isEmpty()) null else canonical
+}
 
 val chatModel: ChatModel
   get() = chatController.chatModel

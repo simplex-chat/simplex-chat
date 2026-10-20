@@ -124,8 +124,8 @@ func chatSendCmd<R: ChatAPIResult>(_ cmd: ChatCommand, bgTask: Bool = true, bgDe
 }
 
 // Spec: spec/api.md#chatApiSendCmdWithRetry
-func chatApiSendCmdWithRetry<R: ChatAPIResult>(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil, inProgress: BoxedValue<Bool>? = nil, retryNum: Int32 = 0) async -> APIResult<R>? {
-    let r: APIResult<R> = await chatApiSendCmd(cmd, bgTask: bgTask, bgDelay: bgDelay, retryNum: retryNum)
+func chatApiSendCmdWithRetry<R: ChatAPIResult>(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil, inProgress: BoxedValue<Bool>? = nil, retryNum: Int32 = 0, log: Bool = true) async -> APIResult<R>? {
+    let r: APIResult<R> = await chatApiSendCmd(cmd, bgTask: bgTask, bgDelay: bgDelay, retryNum: retryNum, log: log)
     if inProgress == nil || inProgress?.boxedValue == true,
        case let .error(e) = r, let alert = retryableNetworkErrorAlert(e) {
         return await withCheckedContinuation { cont in
@@ -135,7 +135,7 @@ func chatApiSendCmdWithRetry<R: ChatAPIResult>(_ cmd: ChatCommand, bgTask: Bool 
                     cont.resume(returning: nil)
                 },
                 onRetry: {
-                    let r1: APIResult<R>? = await chatApiSendCmdWithRetry(cmd, bgTask: bgTask, bgDelay: bgDelay, inProgress: inProgress, retryNum: retryNum + 1)
+                    let r1: APIResult<R>? = await chatApiSendCmdWithRetry(cmd, bgTask: bgTask, bgDelay: bgDelay, inProgress: inProgress, retryNum: retryNum + 1, log: log)
                     cont.resume(returning: r1)
                 }
             )
@@ -199,6 +199,10 @@ func retryableNetworkErrorAlert(_ e: ChatError) -> (title: String, message: Stri
     case let .errorAgent(.PROXY(proxyServer, destServer, .protocolError(.PROXY(.NO_SESSION)))): (
         title: NSLocalizedString("No private routing session", comment: "alert title"),
         message: proxyDestinationErrorAlertMessage(proxyServer: proxyServer, destServer: destServer)
+    )
+    case .errorAgent(.AGENT(.A_SERVICE(.timeout))): (
+        title: NSLocalizedString("Connection timeout", comment: "alert title"),
+        message: NSLocalizedString("The service did not respond. Please try again.", comment: "alert message")
     )
     default: nil
     }
@@ -1355,8 +1359,12 @@ func apiUpdateProfile(profile: Profile) async throws -> (Profile, [Contact])? {
     switch r {
     case .result(.userProfileNoChange): return (profile, [])
     case let .result(.userProfileUpdated(_, _, toProfile, updateSummary)): return (toProfile, updateSummary.changedContacts)
-    case .error(.errorStore(.duplicateName)): return nil;
-    default: throw r.unexpected
+    case .error(.errorStore(.duplicateName)), .error(.error(.userExists)): return nil;
+    default:
+        await MainActor.run {
+            showErrorAlert(r.unexpected, NSLocalizedString("Error saving profile", comment: "alert title"))
+        }
+        throw r.unexpected
     }
 }
 
@@ -1842,8 +1850,8 @@ func apiSendCallAnswer(_ contact: Contact, _ rtcSession: String, _ rtcIceCandida
     try await sendCommandOkResp(.apiSendCallAnswer(contact: contact, answer: answer))
 }
 
-func apiSendCallExtraInfo(_ contact: Contact, _ rtcIceCandidates: String) async throws {
-    let extraInfo = WebRTCExtraInfo(rtcIceCandidates: rtcIceCandidates)
+func apiSendCallExtraInfo(_ contact: Contact, _ rtcSession: String?, _ rtcIceCandidates: String) async throws {
+    let extraInfo = WebRTCExtraInfo(rtcSession: rtcSession, rtcIceCandidates: rtcIceCandidates)
     try await sendCommandOkResp(.apiSendCallExtraInfo(contact: contact, extraInfo: extraInfo))
 }
 
@@ -2182,103 +2190,82 @@ func resetAgentServersStats() async throws {
     try await sendCommandOkResp(.resetAgentServersStats)
 }
 
-// The failures redeemBadgeCode raises, as core flattens them to command error text.
-// tests/Bots/BadgeServiceTests.hs asserts that text, so a change in core breaks a test there.
-enum BadgeRedeemError: Error {
-    case invalidCode
-    case serviceNotConfigured
-    case alreadyActive
-    case codeInvalid
-    case codeUsed
-    case codeExpired
-    case rateLimited
-    case serviceFailed
-    case badServiceResponse
-    case credentialNotVerified
-    case unsupportedVersion
-    case networkError
-    case badgeEnded
-    case unknown
-}
-
-private enum BadgeErrorText {
-    static let invalidCode = "invalid badge code"
-    static let serviceNotConfigured = "badge service not configured"
-    static let alreadyActive = "badge already active"
-    static let unknownKeyIndex = "unknown badge key index"
-    static let credentialNotVerified = "badge credential does not verify against configured key"
-    static let invalidResponse = "invalid badge service response, "
-    static let unexpectedResponse = "unexpected badge service response: "
-    static let serviceError = "badge service error: "
-    // raised by sendServiceRequestTo, not by redeemBadgeCode itself, when the reply is not JSON
-    static let undecodableResponse = "invalid service response"
-}
-
-func badgeRedeemError(_ error: ChatError) -> BadgeRedeemError {
-    // the app's own classifier decides what counts as a network failure; only the classification is
-    // used here, not its retry policy - a client that retries makes code guessing cheaper
-    if retryableNetworkErrorAlert(error) != nil { return .networkError }
-    guard case let .error(.commandError(message)) = error else { return .unknown }
-    switch message {
-    case BadgeErrorText.invalidCode: return .invalidCode
-    case BadgeErrorText.serviceNotConfigured: return .serviceNotConfigured
-    case BadgeErrorText.alreadyActive: return .alreadyActive
-    case BadgeErrorText.unknownKeyIndex, BadgeErrorText.credentialNotVerified: return .credentialNotVerified
-    case BadgeErrorText.undecodableResponse: return .badServiceResponse
-    default: break
-    }
-    if message.hasPrefix(BadgeErrorText.invalidResponse) || message.hasPrefix(BadgeErrorText.unexpectedResponse) {
-        return .badServiceResponse
-    }
-    if message.hasPrefix(BadgeErrorText.serviceError) {
-        return badgeServiceError(String(message.dropFirst(BadgeErrorText.serviceError.count)))
-    }
-    return .unknown
-}
-
-// the service's own tag, which core bounds to [a-z0-9_] and 32 characters and which is never shown
-private func badgeServiceError(_ tag: String) -> BadgeRedeemError {
-    switch tag {
-    case "code_invalid": return .codeInvalid
-    case "code_used": return .codeUsed
-    case "code_expired": return .codeExpired
-    case "rate_limited": return .rateLimited
-    // retrying never succeeds: the client is too old for the service
-    case "unsupported_version": return .unsupportedVersion
-    default: return .serviceFailed
-    }
-}
-
-// log: false because the code is a bearer secret until it is redeemed - it is in the command, and a
-// service response echoed into an error message would carry it into the terminal with the response.
-func apiRedeemBadgeCode(_ userId: Int64, _ code: String) async throws -> (user: User, newBadge: Bool) {
-    let r: APIResult<ChatResponse2> = await chatApiSendCmd(.apiRedeemBadgeCode(userId: userId, code: code), log: false)
-    switch r {
-    // redeemedBadge is dropped: it is the credential, and the user's profile carries what is shown
-    case let .result(.badgeRedeemed(user, _, newBadge)): return (user, newBadge)
-    case let .error(e): throw badgeRedeemError(e)
-    default:
-        // the response type alone - it names a case or a JSON key, never the service's message
-        logger.error("apiRedeemBadgeCode: unexpected \(r.responseType)")
-        throw BadgeRedeemError.unknown
-    }
-}
-
-func apiGetBadgeState(_ userId: Int64) async throws -> BadgeState? {
-    let r: ChatResponse2 = try await chatSendCmd(.apiGetBadgeState(userId: userId))
-    if case let .badgeState(_, badgeState) = r { return badgeState }
+// log: false because the code is a bearer secret until it is redeemed - it is in the command.
+// nil when the user cancels the retry alert.
+func apiRedeemBadgeCode(_ userId: Int64, _ code: String) async throws -> (user: User, newBadge: Bool, badgeState: BadgeState?)? {
+    let r: APIResult<ChatResponse2>? = await chatApiSendCmdWithRetry(.apiRedeemBadgeCode(userId: userId, code: code), log: false)
+    guard let r else { return nil }
+    // redeemedBadge is dropped: the user's profile carries what is shown
+    if case let .result(.badgeRedeemed(user, _, newBadge, badgeState)) = r { return (user, newBadge, badgeState) }
     throw r.unexpected
 }
 
-func apiGetBadgeStateSync(_ userId: Int64) throws -> BadgeState? {
+// a refusal is thrown, as BREServiceError with the code
+enum BadgePurchaseResult {
+    case held(user: UserRef, badgeState: BadgeState?, storePurchases: [OpenStorePurchase])
+    case credited(user: User, badgeState: BadgeState?)
+}
+
+// log: false because a store receipt is a bearer secret, like a badge code - it is in the command.
+func apiPurchaseBadge(_ userId: Int64, _ echoedInvoiceId: String?, _ payment: ServicePayment) async throws -> BadgePurchaseResult {
+    let r: ChatResponse2 = try await chatSendCmd(.apiPurchaseBadge(userId: userId, echoedInvoiceId: echoedInvoiceId, payment: payment), log: false)
+    switch r {
+    case let .badgeState(user, badgeState, storePurchases): return .held(user: user, badgeState: badgeState, storePurchases: storePurchases ?? [])
+    case let .badgeRedeemed(user, _, _, badgeState): return .credited(user: user, badgeState: badgeState)
+    default: throw r.unexpected
+    }
+}
+
+func apiCreateBadgeInvoice(_ userId: Int64) async throws -> String {
+    let r: ChatResponse2 = try await chatSendCmd(.apiCreateBadgeInvoice(userId: userId))
+    if case let .badgeInvoice(_, invoiceId) = r { return invoiceId }
+    throw r.unexpected
+}
+
+// localized where the user can act on it; otherwise the error itself, so a screenshot says what happened
+func redeemErrorText(_ error: Error, purchase: Bool) -> String {
+    if case let .error(.badgeRedeemError(e)) = error as? ChatError {
+        switch e {
+        case .invalidCode: return NSLocalizedString("This code is not valid.", comment: "alert message")
+        case .invalidReceipt: break
+        case .serviceNotConfigured:
+            return purchase
+                ? NSLocalizedString("This app version cannot buy badges.", comment: "alert message")
+                : NSLocalizedString("This app version cannot redeem badge codes.", comment: "alert message")
+        case .badgeActive:
+            return purchase
+                ? NSLocalizedString("This profile already has a badge.", comment: "alert message")
+                : NSLocalizedString("This profile already has a badge. Redeem the code on another profile, or once this badge ends.", comment: "alert message")
+        case let .serviceError(code): if let text = badgeServiceErrorText(code) { return text }
+        case let .invalidResponse(message):
+            return String.localizedStringWithFormat(NSLocalizedString("The badge service sent an unexpected response: %@", comment: "alert message"), message)
+        case .unknownKeyIndex, .credentialNotVerified: return NSLocalizedString("This app version cannot verify this badge. Please update the app.", comment: "alert message")
+        }
+    }
+    return String.localizedStringWithFormat(NSLocalizedString("Error: %@", comment: "alert message"), responseError(error))
+}
+
+func apiGetBadgeState(_ userId: Int64) async throws -> (badgeState: BadgeState?, storePurchases: [OpenStorePurchase]) {
+    let r: ChatResponse2 = try await chatSendCmd(.apiGetBadgeState(userId: userId))
+    if case let .badgeState(_, badgeState, storePurchases) = r { return (badgeState, storePurchases ?? []) }
+    throw r.unexpected
+}
+
+func apiGetBadgeStateSync(_ userId: Int64) throws -> (badgeState: BadgeState?, storePurchases: [OpenStorePurchase]) {
     let r: ChatResponse2 = try chatSendCmdSync(.apiGetBadgeState(userId: userId))
-    if case let .badgeState(_, badgeState) = r { return badgeState }
+    if case let .badgeState(_, badgeState, storePurchases) = r { return (badgeState, storePurchases ?? []) }
+    throw r.unexpected
+}
+
+func apiGetBadgeLedger(_ userId: Int64, _ badgePurchaseId: Int64) async throws -> [StatementEntry] {
+    let r: ChatResponse2 = try await chatSendCmd(.apiGetBadgeLedger(userId: userId, badgePurchaseId: badgePurchaseId))
+    if case let .badgeLedger(_, badgeLedger) = r { return badgeLedger }
     throw r.unexpected
 }
 
 func apiAckBadgeAlert(_ userId: Int64, _ badgePurchaseId: Int64, _ alertKind: BadgeAlertKind, snooze: Bool, episode: String) async throws -> BadgeState? {
     let r: ChatResponse2 = try await chatSendCmd(.apiAckBadgeAlert(userId: userId, badgePurchaseId: badgePurchaseId, alertKind: alertKind, snooze: snooze, episode: episode))
-    if case let .badgeState(_, badgeState) = r { return badgeState }
+    if case let .badgeState(_, badgeState, _) = r { return badgeState }
     throw r.unexpected
 }
 
@@ -2407,6 +2394,11 @@ func startChat(refreshInvitations: Bool = true, onboarding: Bool = false) throws
     ChatReceiver.shared.start()
     m.chatRunning = true
     chatLastStartGroupDefault.set(Date.now)
+    Task { await BadgeStore.shared.presentUnfinished() }
+    if shouldDeleteDatabaseBackupsDefault.get() {
+        deleteDatabaseBackups()
+        shouldDeleteDatabaseBackupsDefault.set(false)
+    }
 }
 
 func startChatWithTemporaryDatabase(ctrl: chat_ctrl) throws -> User? {
@@ -2431,6 +2423,7 @@ private func changeActiveUser_(_ userId: Int64, viewPwd: String?) throws {
     m.currentUser = try apiSetActiveUser(userId, viewPwd: viewPwd)
     m.users = try listUsers()
     try getUserChatData()
+    Task { await BadgeStore.shared.presentUnfinished() }
 }
 
 func changeActiveUserAsync_(_ userId: Int64?, viewPwd: String?, keepingChatId: String? = nil) async throws {
@@ -2446,6 +2439,7 @@ func changeActiveUserAsync_(_ userId: Int64?, viewPwd: String?, keepingChatId: S
         m.users = users
     }
     try await getUserChatDataAsync(keepingChatId: keepingChatId)
+    Task { await BadgeStore.shared.presentUnfinished() }
     await MainActor.run {
         if let currentUser = currentUser, var (_, invitation) = ChatModel.shared.callInvitations.first(where: { _, inv in inv.user.userId == userId }) {
             invitation.user = currentUser
@@ -2473,19 +2467,29 @@ func getUserChatData() throws {
 private func loadBadgeState() {
     do {
         let userId = try currentUserId("loadBadgeState")
-        let badgeState = try apiGetBadgeStateSync(userId)
+        let (badgeState, storePurchases) = try apiGetBadgeStateSync(userId)
         BadgeModel.shared.set(userId: userId, badgeState: badgeState)
+        BadgeStore.shared.setStorePurchases(userId, storePurchases)
     } catch let error {
         logger.error("loadBadgeState: \(responseError(error))")
     }
 }
 
-private func loadBadgeStateAsync(_ userId: Int64) async {
+func loadBadgeStateAsync(_ userId: Int64) async {
     do {
-        let badgeState = try await apiGetBadgeState(userId)
-        await MainActor.run { BadgeModel.shared.set(userId: userId, badgeState: badgeState) }
+        let (badgeState, storePurchases) = try await apiGetBadgeState(userId)
+        await MainActor.run {
+            BadgeModel.shared.set(userId: userId, badgeState: badgeState)
+            BadgeStore.shared.setStorePurchases(userId, storePurchases)
+        }
     } catch let error {
         logger.error("loadBadgeState: \(responseError(error))")
+    }
+}
+
+func loadCurrentBadgeState() async {
+    if let userId = await MainActor.run(body: { ChatModel.shared.currentUser?.userId }) {
+        await loadBadgeStateAsync(userId)
     }
 }
 
@@ -2743,7 +2747,8 @@ func processReceivedMsg(_ res: ChatEvent) async {
         }
     case let .groupChatItemsDeleted(user, groupInfo, chatItemIDs, _, member_):
         await groupChatItemsDeleted(user, groupInfo, chatItemIDs, member_)
-    case let .receivedGroupInvitation(user, groupInfo, _, _):
+    case let .receivedGroupInvitation(user, groupInfo, _, _),
+         let .receivedGroupInvitationViaGroup(user, groupInfo, _, _, _):
         if active(user) {
             await MainActor.run {
                 m.updateGroup(groupInfo) // update so that repeat group invitations are not duplicated
@@ -2910,6 +2915,9 @@ func processReceivedMsg(_ res: ChatEvent) async {
         await chatItemSimpleUpdate(user, aChatItem)
     case let .rcvFileComplete(user, aChatItem):
         await chatItemSimpleUpdate(user, aChatItem)
+        if active(user), let file = aChatItem.chatItem.file, m.receivedFileToOpen(file) {
+            await MainActor.run { m.openReceivedFile(file) }
+        }
     case let .rcvFileSndCancelled(user, aChatItem, _):
         await chatItemSimpleUpdate(user, aChatItem)
         Task { cleanupFile(aChatItem) }
@@ -2956,23 +2964,19 @@ func processReceivedMsg(_ res: ChatEvent) async {
             m.callInvitations[invitation.contact.id] = invitation
         }
         activateCall(invitation)
-    case let .callOffer(_, contact, callType, offer, sharedKey, _):
+    case let .callOffer(_, contact, callType, offer, sharedKey, askConfirmation):
         await withCall(contact) { call in
             await MainActor.run {
                 call.callState = .offerReceived
                 call.sharedKey = sharedKey
             }
-            let useRelay = UserDefaults.standard.bool(forKey: DEFAULT_WEBRTC_POLICY_RELAY)
-            let iceServers = getIceServers()
-            logger.debug(".callOffer useRelay \(useRelay)")
-            logger.debug(".callOffer iceServers \(String(describing: iceServers))")
-            await m.callCommand.processCommand(.offer(
-                offer: offer.rtcSession,
-                iceCandidates: offer.rtcIceCandidates,
-                media: callType.media, aesKey: sharedKey,
-                iceServers: iceServers,
-                relay: useRelay
-            ))
+            if askConfirmation {
+                showUnencryptedCallAlert(call) {
+                    Task { await processCallOffer(callType, offer, sharedKey) }
+                }
+            } else {
+                await processCallOffer(callType, offer, sharedKey)
+            }
         }
     case let .callAnswer(_, contact, answer):
         await withCall(contact) { call in
@@ -2983,7 +2987,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
         }
     case let .callExtraInfo(_, contact, extraInfo):
         await withCall(contact) { _ in
-            await m.callCommand.processCommand(.ice(iceCandidates: extraInfo.rtcIceCandidates))
+            await m.callCommand.processCommand(.ice(iceCandidates: extraInfo.rtcIceCandidates, session: extraInfo.rtcSession))
         }
     case let .callEnded(_, contact):
         if let invitation = await MainActor.run(body: { m.callInvitations.removeValue(forKey: contact.id) }) {
@@ -3085,10 +3089,10 @@ func processReceivedMsg(_ res: ChatEvent) async {
             }
         }
     case let .badgeChanged(user, badgeState):
-        if active(user) {
-            await MainActor.run {
-                // read by core after retiring or presenting, so it carries the profile badge as changed
-                m.updateUser(user)
+        await MainActor.run {
+            // read by core after retiring or presenting, so it carries the profile badge as changed
+            m.updateUser(user)
+            if active(user) {
                 BadgeModel.shared.set(userId: user.userId, badgeState: badgeState)
             }
         }
@@ -3098,6 +3102,10 @@ func processReceivedMsg(_ res: ChatEvent) async {
                 BadgeModel.shared.setAlert(userId: user.userId, alert: badgeAlert)
             }
         }
+    case let .storePurchaseCredited(user, invoiceId):
+        Task { await BadgeStore.shared.storePurchaseCredited(user, invoiceId) }
+    case let .storePurchaseRefused(user, invoiceId, refusal):
+        Task { await BadgeStore.shared.storePurchaseRefused(user, invoiceId, refusal) }
     default:
         logger.debug("unsupported event: \(res.responseType)")
     }
@@ -3107,6 +3115,43 @@ func processReceivedMsg(_ res: ChatEvent) async {
             await perform(call)
         } else {
             logger.debug("processReceivedMsg: ignoring \(res.responseType), not in call with the contact \(contact.id)")
+        }
+    }
+
+    func processCallOffer(_ callType: CallType, _ offer: WebRTCSession, _ sharedKey: String?) async {
+        let useRelay = UserDefaults.standard.bool(forKey: DEFAULT_WEBRTC_POLICY_RELAY)
+        let iceServers = getIceServers()
+        logger.debug(".callOffer useRelay \(useRelay)")
+        logger.debug(".callOffer iceServers \(String(describing: iceServers))")
+        await m.callCommand.processCommand(.offer(
+            offer: offer.rtcSession,
+            iceCandidates: offer.rtcIceCandidates,
+            media: callType.media, aesKey: sharedKey,
+            iceServers: iceServers,
+            relay: useRelay
+        ))
+    }
+
+    func showUnencryptedCallAlert(_ call: Call, onContinue: @escaping () -> Void) {
+        DispatchQueue.main.async {
+            showAlert(
+                NSLocalizedString("Call is not encrypted", comment: "alert title"),
+                message: String.localizedStringWithFormat(NSLocalizedString("%@ accepted the call without end-to-end encryption.", comment: "alert message"), call.contact.displayName),
+                actions: {[
+                    UIAlertAction(title: NSLocalizedString("End call", comment: "alert action"), style: .destructive) { _ in
+                        // the call may have ended, or a new one started with the same contact, while the alert was shown
+                        guard m.activeCall === call else { return }
+                        if let uuid = call.callUUID {
+                            CallController.shared.endCall(callUUID: uuid)
+                        } else {
+                            CallController.shared.endCall(call: call) {}
+                        }
+                    },
+                    UIAlertAction(title: NSLocalizedString("Continue", comment: "alert action"), style: .default) { _ in
+                        if m.activeCall === call { onContinue() }
+                    }
+                ]}
+            )
         }
     }
 }

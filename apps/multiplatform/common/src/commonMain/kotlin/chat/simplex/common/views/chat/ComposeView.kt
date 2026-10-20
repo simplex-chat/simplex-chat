@@ -33,14 +33,16 @@ import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.filesToDelete
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.badges.openBadgesView
 import chat.simplex.common.views.chat.group.hostFromRelayLink
 import chat.simplex.common.views.chat.group.relayConnStatus
 import chat.simplex.common.views.chat.item.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.RelayProgressIndicator
 import chat.simplex.common.views.newchat.RelayStatusIndicator
+import chat.simplex.common.views.newchat.noShownBadge
 import chat.simplex.common.views.newchat.relayDisplayName
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.ImageResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -320,6 +322,24 @@ private fun isVideoUri(uri: URI): Boolean {
 
 private fun isWebmUri(uri: URI): Boolean = getFileName(uri)?.lowercase()?.endsWith(".webm") == true
 
+// A badge only helps below the largest badge's limit, and not in incognito chats, so outside that
+// the alert is informational as before.
+fun showLargeFileAlert(fileSize: Long, incognito: Boolean, senderProfile: LocalProfile?) {
+  val title = generalGetString(MR.strings.large_file)
+  val text = largeFileMessage(fileSize, incognito, expiredBadgeReason(fileSize, senderProfile))
+  if (!incognito && fileSize <= MAX_FILE_SIZE_XFTP_LEGEND && noShownBadge()) {
+    AlertManager.shared.showAlertDialog(
+      title = title,
+      text = text,
+      confirmText = generalGetString(MR.strings.ok),
+      dismissText = generalGetString(MR.strings.badges_support_simplex_title),
+      onDismiss = ::openBadgesView
+    )
+  } else {
+    AlertManager.shared.showAlertMsg(title, text)
+  }
+}
+
 fun MutableState<ComposeState>.processPickedFile(uri: URI?, text: String?) {
   if (uri != null) {
     val maxFileSize = value.maxFileSize
@@ -330,10 +350,7 @@ fun MutableState<ComposeState>.processPickedFile(uri: URI?, text: String?) {
         value = value.copy(message = if (text != null) ComposeMessage(text) else value.message, preview = ComposePreview.FilePreview(fileName, uri))
       }
     } else if (fileSize != null) {
-      AlertManager.shared.showAlertMsg(
-        generalGetString(MR.strings.large_file),
-        largeFileMessage(fileSize, value.sendIncognito, expiredBadgeReason(fileSize, chatModel.currentUser.value?.profile))
-      )
+      showLargeFileAlert(fileSize, value.sendIncognito, chatModel.currentUser.value?.profile)
     } else {
       showWrongUriAlert()
     }
@@ -359,10 +376,7 @@ suspend fun MutableState<ComposeState>.processPickedMedia(uris: List<URI>, text:
             UploadContent.AnimatedImage(uri)
           } else {
             bitmap = null
-            AlertManager.shared.showAlertMsg(
-              generalGetString(MR.strings.large_file),
-              largeFileMessage(fileSize ?: 0, value.sendIncognito, expiredBadgeReason(fileSize ?: 0, chatModel.currentUser.value?.profile))
-            )
+            showLargeFileAlert(fileSize ?: 0, value.sendIncognito, chatModel.currentUser.value?.profile)
             null
           }
         } else if (bitmap != null) {
@@ -440,6 +454,7 @@ fun ComposeView(
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
   val textStyle = remember(MaterialTheme.colors.isLight) { mutableStateOf(smallFont) }
   val recState: MutableState<RecordingState> = remember { mutableStateOf(RecordingState.NotStarted) }
+  val emojiPickerShown = rememberSaveable { mutableStateOf(false) }
   AttachmentSelection(composeState, attachmentOption, composeState::processPickedFile) { uris, text -> CoroutineScope(Dispatchers.IO).launch { composeState.processPickedMedia(uris, text) } }
 
   suspend fun fetchAndUpdateLinkPreview(url: String) {
@@ -1264,6 +1279,17 @@ fun ComposeView(
   val userCantSendReason = rememberUpdatedState(chat.chatInfo.userCantSendReason((ownerRelayState?.noActiveRelays ?: subscriberRelayState?.noActiveRelays) == true))
   val sendMsgEnabled = rememberUpdatedState(userCantSendReason.value == null)
   val nextSendGrpInv = rememberUpdatedState(chat.nextSendGrpInv)
+  val emojiEnabled = sendMsgEnabled.value && composeState.value.preview !is ComposePreview.VoicePreview
+  LaunchedEffect(emojiEnabled) {
+    if (!emojiEnabled) emojiPickerShown.value = false
+  }
+  KeyChangeEffect(emojiPickerShown.value) {
+    if (!emojiPickerShown.value && emojiEnabled) focusRequester?.requestFocus()
+  }
+
+  fun onEmoji(emoji: String) {
+    if (!composeState.value.inProgress) onMessageChange(composeState.value.message.insertingEmoji(emoji))
+  }
 
   @Composable
   fun CommandsButton() {
@@ -1318,7 +1344,7 @@ fun ComposeView(
   }
 
   @Composable
-  fun AttachmentAndCommandsButtons() {
+  fun ComposeActionButtons() {
     val cInfo = chat.chatInfo
     Row(
       Modifier.padding(start = 3.dp, end = 1.dp, bottom = if (appPlatform.isAndroid) 2.sp.toDp() else 5.sp.toDp() * fontSizeSqrtMultiplier),
@@ -1332,6 +1358,7 @@ fun ComposeView(
       if (showAttachment) {
         AttachmentButton()
       }
+      ComposeEmojiButton(emojiPickerShown, emojiEnabled, ::onEmoji)
     }
   }
 
@@ -1770,7 +1797,7 @@ fun ComposeView(
           ContextSendMessageToConnect(generalGetString(MR.strings.compose_send_direct_message_to_connect))
           Divider()
           Row(Modifier.padding(end = 8.dp), verticalAlignment = Alignment.Bottom) {
-            AttachmentAndCommandsButtons()
+            ComposeActionButtons()
             SendMsgView_(
               disableSendButton = disableSendButton,
               sendToConnect = { withApi { sendMemberContactInvitation() } }
@@ -1825,7 +1852,7 @@ fun ComposeView(
         )
       } else {
         Row(Modifier.padding(end = 8.dp), verticalAlignment = Alignment.Bottom) {
-          AttachmentAndCommandsButtons()
+          ComposeActionButtons()
           val broadcastPlaceholder = (chat.chatInfo as? ChatInfo.Group)?.groupInfo?.let { gi ->
             if (gi.useRelays && gi.membership.memberRole >= GroupMemberRole.Owner && chat.chatInfo.groupChatScope() == null) generalGetString(MR.strings.compose_view_broadcast)
             else null
@@ -2139,7 +2166,8 @@ private fun ownerRelayState(chat: Chat, chatModel: ChatModel): OwnerRelayState? 
   if (!gInfo.useRelays || gInfo.membership.memberRole != GroupMemberRole.Owner ||
     gInfo.membership.memberStatus in listOf(GroupMemberStatus.MemLeft, GroupMemberStatus.MemRemoved, GroupMemberStatus.MemGroupDeleted)
   ) return null
-  val relays = if (ChannelRelaysModel.groupId.value == gInfo.groupId) ChannelRelaysModel.groupRelays.toList() else emptyList()
+  if (ChannelRelaysModel.groupId.value != gInfo.groupId) return null
+  val relays = ChannelRelaysModel.groupRelays.toList()
   if (relays.isEmpty()) return OwnerRelayState(emptyList(), 0, 0, 0, true)
   val relayMembers = relays.map { relay ->
     relay to chatModel.groupMembers.value.firstOrNull { it.groupMemberId == relay.groupMemberId }
@@ -2172,6 +2200,7 @@ private fun subscriberRelayState(chat: Chat, chatModel: ChatModel): SubscriberRe
   val connectedCount = relayMembers.count { !relayMemberRemoved(it.memberStatus) && it.activeConn?.connStatus == ConnStatus.Ready && it.activeConn?.connFailedErr == null }
   val failedCount = relayMembers.count { !relayMemberRemoved(it.memberStatus) && it.activeConn?.connFailedErr != null }
   val total = if (relayMembers.isNotEmpty()) relayMembers.size else hostnames.size
+  if (total == 0 && !chatModel.membersLoaded.value) return null
   val noActiveRelays = connectedCount == 0 && (removedCount + failedCount) == total
   return SubscriberRelayState(hostnames, relayMembers, connectedCount, removedCount, failedCount, total, noActiveRelays)
 }

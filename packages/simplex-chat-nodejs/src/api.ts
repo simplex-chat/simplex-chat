@@ -47,7 +47,7 @@ export const defaultBotAddressSettings: BotAddressSettings = {
   businessAddress: false
 }
 
-export type EventSubscriberFunc<K extends CEvt.Tag> = (event: ChatEvent & {type: K}) => void | Promise<void>
+export type EventSubscriberFunc<K extends CEvt.Tag> = (event: ChatEvent & {type: K}, chat: ChatApi) => void | Promise<void>
 
 export type EventSubscribers = {[K in CEvt.Tag]?: EventSubscriberFunc<K>}
 
@@ -57,10 +57,8 @@ interface EventSubscriber<K extends CEvt.Tag> {
 }
 
 /**
- * Database configuration. The native library is built against exactly one
- * backend (see `simplex_backend` / `SIMPLEX_BACKEND` at install time); this
- * type makes the caller state which one they are targeting so field names
- * can't lie about their meaning.
+ * Database configuration. `type` selects the libsimplex backend loaded by
+ * `ChatApi.init`; one backend per process.
  */
 export type DbConfig =
   | {
@@ -79,6 +77,11 @@ export type DbConfig =
       /** PostgreSQL connection string (e.g. `postgres://user:pass@host/db`). */
       connectionString: string
     }
+
+function chatErrorEvent(err: unknown): ChatEvent {
+  if (err instanceof core.ChatAPIError && err.chatError) return {type: "chatError", chatError: err.chatError}
+  throw err
+}
 
 function dbConfigToMigrateArgs(db: DbConfig): [string, string] {
   switch (db.type) {
@@ -103,16 +106,19 @@ export class ChatApi {
   private constructor(protected ctrl_: bigint | undefined) {}
 
   /**
-   * Initializes the ChatApi.
+   * Initializes the ChatApi, loading libsimplex for `db.type` (downloaded on first use).
    * @param {DbConfig} db - Database configuration (sqlite or postgres).
    * @param {core.MigrationConfirmation} [confirm=core.MigrationConfirmation.YesUp] - Migration confirmation mode.
+   * @param {number} [queueSize] - Size of internal queues, the core default is used when omitted.
    */
   static async init(
     db: DbConfig,
-    confirm = core.MigrationConfirmation.YesUp
+    confirm = core.MigrationConfirmation.YesUp,
+    queueSize?: number
   ): Promise<ChatApi> {
     const [path, key] = dbConfigToMigrateArgs(db)
-    const ctrl = await core.chatMigrateInit(path, key, confirm)
+    await core.loadLibrary(db.type)
+    const ctrl = await core.chatMigrateInit(path, key, confirm, queueSize)
     return new ChatApi(ctrl)
   }
 
@@ -120,49 +126,62 @@ export class ChatApi {
    * Start chat controller. Must be called with the existing user profile.
    */
   async startChat(): Promise<void> {
+    if (this.eventsLoop) throw new Error("chat already started")
+    const ctrl = this.ctrl
     this.receiveEvents = true
     this.eventsLoop = this.runEventsLoop()
-    const r = await this.sendChatCmd(CC.StartChat.cmdString({mainApp: true, enableSndFiles: true}))
+    let r: ChatResponse
+    try {
+      r = await core.chatSendCmd(ctrl, CC.StartChat.cmdString({mainApp: true, enableSndFiles: true, serviceRequests: false}))
+    } catch (e) {
+      await this.stopEventsLoop()
+      throw e
+    }
     if (r.type !== "chatStarted" && r.type !== "chatRunning") {
+      await this.stopEventsLoop()
       throw new ChatCommandError("error starting chat", r)
     }
   }
-  
+
   /**
    * Stop chat controller.
-   * Must be called before closing the database.
+   * `close` calls it before closing the database.
    * Usually doesn't need to be called in chat bots.
    */
   async stopChat(): Promise<void> {
     const r = await this.sendChatCmd("/_stop")
-    if (r.type !== "chatStopped") throw new ChatCommandError("error starting chat", r)
-    this.receiveEvents = false
-    if (this.eventsLoop) await this.eventsLoop
-    this.eventsLoop = undefined    
+    if (r.type !== "chatStopped") throw new ChatCommandError("error stopping chat", r)
+    await this.stopEventsLoop()
   }
 
   /**
-   * Close chat database.
+   * Stop chat controller and close chat database.
+   * The database is not closed if stopping fails.
    * Usually doesn't need to be called in chat bots.
    */
   async close(): Promise<void> {
-    this.receiveEvents = false
-    if (this.eventsLoop) await this.eventsLoop
-    this.eventsLoop = undefined    
+    // a running controller keeps using the database connections that closing frees
+    await this.stopChat()
     await core.chatCloseStore(this.ctrl)
     this.ctrl_ = undefined
   }
-  
+
+  private async stopEventsLoop(): Promise<void> {
+    this.receiveEvents = false
+    if (this.eventsLoop) await this.eventsLoop
+    this.eventsLoop = undefined
+  }
+
   private async runEventsLoop(): Promise<void> {
     while (this.receiveEvents) {
       try {
-        const event = await this.recvChatEvent()
+        const event = await this.recvChatEvent().catch(chatErrorEvent)
         if (!event) continue
         const subs = this.subscribers[event.type]
         if (subs) {
           for (const {subscriber, once} of [...subs]) {
             try {
-              const p = (subscriber as EventSubscriberFunc<typeof event.type>)(event)
+              const p = (subscriber as EventSubscriberFunc<typeof event.type>)(event, this)
               if (p instanceof Promise) await p
             } catch(e) {
               console.log(`${event.type} event processing error`, e)
@@ -172,19 +191,14 @@ export class ChatApi {
         }
         for (const r of [...this.receivers]) {          
           try {
-            const p = r(event)
+            const p = r(event, this)
             if (p instanceof Promise) await p
           } catch(e) {
             console.log(`${event.type} event processing error`, e)
           }
         }
       } catch(err) {
-        const e = err as core.ChatAPIError
-        if ("chatError" in e) {
-          console.log("Chat error", e.chatError)
-        } else {
-          console.log("Invalid event", e)
-        }
+        console.log("Invalid event", err)
       }
     }
   }
@@ -259,9 +273,11 @@ export class ChatApi {
     }
     return new Promise((resolve, reject) => {
       let done = false
+      let timer: NodeJS.Timeout | undefined = undefined
       const cleanup = () => {
         done = true
-        this.off(event, subscriber)    
+        clearTimeout(timer)
+        this.off(event, subscriber)
       }
       const subscriber: EventSubscriberFunc<K> = async (evt: ChatEvent & {type: K}) => {
         if (done) return
@@ -274,7 +290,7 @@ export class ChatApi {
       }
       this.on(event, subscriber)
       if (timeout > 0) {
-        setTimeout(() => { if (!done) { cleanup(); resolve(undefined) } }, timeout)        
+        timer = setTimeout(() => { if (!done) { cleanup(); resolve(undefined) } }, timeout)
       }
     })
   }
@@ -335,7 +351,7 @@ export class ChatApi {
     return await core.chatSendCmd(this.ctrl, cmd)
   }
   
-  async recvChatEvent(wait: number = 5_000_000): Promise<ChatEvent | undefined> {
+  async recvChatEvent(wait: number = 500_000): Promise<ChatEvent | undefined> {
     return await core.chatRecvMsgWait(this.ctrl, wait)
   }
   
@@ -386,8 +402,10 @@ export class ChatApi {
     switch (r.type) {
       case "userProfileUpdated":
         return r.updateSummary
+      case "userProfileNoChange":
+        return {updateSuccesses: 0, updateFailures: 0, changedContacts: []}
       default:
-        throw new ChatCommandError("error loading user address", r)
+        throw new ChatCommandError("error setting profile address", r)
     }
   }
 
@@ -405,7 +423,18 @@ export class ChatApi {
     const r = await this.sendChatCmd(CC.APISetAddressSettings.cmdString({userId, settings}))
     if (r.type !== "userContactLinkUpdated") {
       throw new ChatCommandError("error changing user contact address settings", r)
-    }  
+    }
+  }
+
+  async apiSetUserDomain(userId: number, simplexDomain?: string): Promise<T.User> {
+    const r = await this.sendChatCmd(CC.APISetUserDomain.cmdString({userId, simplexDomain}))
+    switch (r.type) {
+      case "userProfileUpdated":
+      case "userProfileNoChange":
+        return r.user
+      default:
+        throw new ChatCommandError("error setting SimpleX name", r)
+    }
   }
 
   /**
@@ -449,9 +478,10 @@ export class ChatApi {
 
   /**
    * Update message.
+   * A live message stays live with `liveMessage = true` and is finalized with `liveMessage = false`.
    * Network usage: background.
    */
-  async apiUpdateChatItem(chatType: T.ChatType, chatId: number, chatItemId: number, msgContent: T.MsgContent, liveMessage: false): Promise<T.ChatItem> {
+  async apiUpdateChatItem(chatType: T.ChatType, chatId: number, chatItemId: number, msgContent: T.MsgContent, liveMessage = false): Promise<T.ChatItem> {
     const r = await this.sendChatCmd(
       CC.APIUpdateChatItem.cmdString({
         chatRef: {chatType, chatId},
@@ -460,7 +490,7 @@ export class ChatApi {
         updatedMessage: {msgContent, mentions: {}},
       })
     )
-    if (r.type === "chatItemUpdated") return r.chatItem.chatItem
+    if (r.type === "chatItemUpdated" || r.type === "chatItemNotChanged") return r.chatItem.chatItem
     throw new ChatCommandError("error updating chat item", r)
   }
 
@@ -499,10 +529,10 @@ export class ChatApi {
     chatItemId: number,
     add: boolean,
     reaction: T.MsgReaction
-  ) {
+  ): Promise<T.ACIReaction> {
     const r = await this.sendChatCmd(CC.APIChatItemReaction.cmdString({chatRef: {chatType, chatId}, chatItemId, add, reaction}))
-    if (r.type === "chatItemsDeleted") return r.chatItemDeletions
-    throw new ChatCommandError("error setting item reaction", r)  
+    if (r.type === "chatItemReaction") return r.reaction
+    throw new ChatCommandError("error setting item reaction", r)
   }
 
   /**
@@ -512,6 +542,7 @@ export class ChatApi {
   async apiReceiveFile(fileId: number): Promise<T.AChatItem> {
     const r = await this.sendChatCmd(CC.ReceiveFile.cmdString({fileId, userApprovedRelays: true}))
     if (r.type === "rcvFileAccepted") return r.chatItem
+    if (r.type === "rcvFileAcceptedSndCancelled") throw new ChatCommandError("file cancelled by sender", r)
     throw new ChatCommandError("error receiving file", r)
   }
 
@@ -532,6 +563,16 @@ export class ChatApi {
   async apiAddMember(groupId: number, contactId: number, memberRole: T.GroupMemberRole): Promise<T.GroupMember> {
     const r = await this.sendChatCmd(CC.APIAddMember.cmdString({groupId, contactId, memberRole}))
     if (r.type === "sentGroupInvitation") return r.member
+    throw new ChatCommandError("error adding member", r)
+  }
+
+  /**
+   * Add member of another group to group. Requires bot to have Admin role in the group, and direct messages allowed for its role in another group.
+   * Network usage: interactive.
+   */
+  async apiAddMemberViaGroup(groupId: number, viaGroupId: number, groupMemberId: number, memberRole: T.GroupMemberRole): Promise<T.GroupMember> {
+    const r = await this.sendChatCmd(CC.APIAddMemberViaGroup.cmdString({groupId, viaGroupId, groupMemberId, memberRole}))
+    if (r.type === "sentGroupInvitationViaGroup") return r.member
     throw new ChatCommandError("error adding member", r)
   }
 
@@ -698,7 +739,7 @@ export class ChatApi {
    * Connect via prepared SimpleX link. The link can be 1-time invitation link, contact address or group link
    * Network usage: interactive.
    */
-  async apiConnect(userId: number, incognito: boolean, preparedLink?: T.CreatedConnLink): Promise<ConnReqType> {
+  async apiConnect(userId: number, incognito: boolean, preparedLink: T.CreatedConnLink): Promise<ConnReqType> {
     const r = await this.sendChatCmd(CC.APIConnect.cmdString({userId, incognito, preparedLink_: preparedLink}))
     return this.handleConnectResult(r)
   }
@@ -740,7 +781,7 @@ export class ChatApi {
    * Network usage: no.
    */
   async apiRejectContactRequest(contactReqId: number): Promise<void> {
-    const r = await this.sendChatCmd(CC.APIRejectContact.cmdString({contactReqId}))
+    const r = await this.sendChatCmd(CC.APIRejectContact.cmdString({contactReqId, notify: false}))
     if (r.type === "contactRequestRejected") return
     throw new ChatCommandError("error rejecting contact request", r)
   }
@@ -955,5 +996,90 @@ export class ChatApi {
     const r: any = await this.sendChatCmd(cmd)
     if (r.type === "newMemberContactSentInv") return r.contact
     throw new ChatCommandError("error sending member contact invitation", r)
+  }
+}
+
+/**
+ * Text shown as a live message while it is written, e.g. a streamed reply.
+ */
+export class LiveMessage {
+  private tasks: Promise<void> = Promise.resolve()
+  private text = ""
+  private writing = false
+  private timer: NodeJS.Timeout | undefined = undefined
+  private item: {itemId: number, text: string} | undefined = undefined
+
+  /**
+   * @param chat - Chat API, or an object with its methods to send, update and delete messages.
+   * @param {T.ChatType} chatType - Chat type.
+   * @param {number} chatId - Contact or group ID.
+   * @param {number} [interval=3000] - Minimum interval between updates of the live message, in milliseconds.
+   * @param onError - Error handler for sending, updating and deleting messages. Errors are logged when it is omitted.
+   */
+  constructor(
+    private readonly chat: Pick<ChatApi, "apiSendMessages" | "apiUpdateChatItem" | "apiDeleteChatItems">,
+    private readonly chatType: T.ChatType,
+    private readonly chatId: number,
+    private readonly interval = 3000,
+    private readonly onError: (error: unknown) => void = e => console.log("live message error", e)
+  ) {}
+
+  /**
+   * Set the text of the live message.
+   * The first text is sent at once; later texts update the message at most once per interval.
+   */
+  update(text: string): void {
+    this.text = text
+    if (!this.writing) {
+      this.writing = true
+      this.queueText(text, true)
+    } else if (this.timer === undefined) {
+      this.timer = setTimeout(() => {
+        this.timer = undefined
+        this.queueText(this.text, true)
+      }, this.interval)
+    }
+  }
+
+  /**
+   * Finalize the live message with the text, or with the last text when omitted.
+   * A message without text is deleted. The next update starts a new live message.
+   * The returned promise resolves after all queued commands complete.
+   */
+  end(text = this.text): Promise<void> {
+    clearTimeout(this.timer)
+    this.timer = undefined
+    this.text = ""
+    this.writing = false
+    this.queueText(text, false)
+    return this.tasks
+  }
+
+  private queueText(text: string, live: boolean): void {
+    this.tasks = this.tasks.then(() => this.showText(text, live)).catch(this.onError)
+  }
+
+  private async showText(text: string, live: boolean): Promise<void> {
+    try {
+      await this.showMessage(text, live)
+    } finally {
+      if (!live) this.item = undefined
+    }
+  }
+
+  private async showMessage(text: string, live: boolean): Promise<void> {
+    const item = this.item
+    if (item === undefined) {
+      if (live || text !== "") {
+        const [{chatItem}] = await this.chat.apiSendMessages([this.chatType, this.chatId], [{msgContent: {type: "text", text}, mentions: {}}], live)
+        this.item = live ? {itemId: chatItem.meta.itemId, text} : undefined
+      }
+    } else if (!live && text === "") {
+      await this.chat.apiDeleteChatItems(this.chatType, this.chatId, [item.itemId], T.CIDeleteMode.Broadcast)
+      this.item = undefined
+    } else if (!live || text !== item.text) {
+      await this.chat.apiUpdateChatItem(this.chatType, this.chatId, item.itemId, {type: "text", text}, live)
+      this.item = live ? {itemId: item.itemId, text} : undefined
+    }
   }
 }

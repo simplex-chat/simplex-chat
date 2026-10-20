@@ -7,6 +7,7 @@ This file is generated automatically.
 - [APIDeleteMyAddress](#apideletemyaddress)
 - [APIShowMyAddress](#apishowmyaddress)
 - [APISetProfileAddress](#apisetprofileaddress)
+- [APISetUserDomain](#apisetuserdomain)
 - [APISetAddressSettings](#apisetaddresssettings)
 
 [Message commands](#message-commands)
@@ -24,6 +25,7 @@ This file is generated automatically.
 
 [Group commands](#group-commands)
 - [APIAddMember](#apiaddmember)
+- [APIAddMemberViaGroup](#apiaddmemberviagroup)
 - [APIJoinGroup](#apijoingroup)
 - [APIAcceptMember](#apiacceptmember)
 - [APIMembersRole](#apimembersrole)
@@ -242,6 +244,53 @@ UserProfileNoChange: User profile was not changed.
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APISetUserDomain
+
+Set or remove SimpleX name of bot address. The name must be registered with the address short link.
+
+*Network usage*: interactive.
+
+**Parameters**:
+- userId: int64
+- simplexDomain: string?
+
+**Syntax**:
+
+```
+/_set domain <userId>[ <simplexDomain>]
+```
+
+```javascript
+'/_set domain ' + userId + (simplexDomain ? ' ' + simplexDomain : '') // JavaScript
+```
+
+```python
+'/_set domain ' + str(userId) + ((' ' + simplexDomain) if simplexDomain is not None else '') # Python
+```
+
+**Responses**:
+
+UserProfileUpdated: User profile updated.
+- type: "userProfileUpdated"
+- user: [User](./TYPES.md#user)
+- fromProfile: [Profile](./TYPES.md#profile)
+- toProfile: [Profile](./TYPES.md#profile)
+- updateSummary: [UserProfileUpdateSummary](./TYPES.md#userprofileupdatesummary)
+
+UserProfileNoChange: User profile was not changed.
+- type: "userProfileNoChange"
+- user: [User](./TYPES.md#user)
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+**Errors**:
+- SimplexDomainNotReady: The name does not resolve to the address short link.
 
 ---
 
@@ -709,6 +758,52 @@ SentGroupInvitation: Group invitation sent.
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APIAddMemberViaGroup
+
+Add member of another group to group. Requires bot to have Admin role in the group, and direct messages allowed for its role in another group.
+
+*Network usage*: interactive.
+
+**Parameters**:
+- groupId: int64
+- viaGroupId: int64
+- groupMemberId: int64
+- memberRole: [GroupMemberRole](./TYPES.md#groupmemberrole)
+
+**Syntax**:
+
+```
+/_add #<groupId> #<viaGroupId> <groupMemberId> relay|observer|author|member|moderator|admin|owner
+```
+
+```javascript
+'/_add #' + groupId + ' #' + viaGroupId + ' ' + groupMemberId + ' ' + memberRole // JavaScript
+```
+
+```python
+'/_add #' + str(groupId) + ' #' + str(viaGroupId) + ' ' + str(groupMemberId) + ' ' + str(memberRole) # Python
+```
+
+**Responses**:
+
+SentGroupInvitationViaGroup: Group invitation sent to member of another group.
+- type: "sentGroupInvitationViaGroup"
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- member: [GroupMember](./TYPES.md#groupmember)
+- viaGroupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- viaMember: [GroupMember](./TYPES.md#groupmember)
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+**Errors**:
+- PeerChatVRangeIncompatible: Member's client version is older than required.
 
 ---
 
@@ -1537,15 +1632,15 @@ Connect via prepared SimpleX link. The link can be 1-time invitation link, conta
 **Syntax**:
 
 ```
-/_connect <userId>[ <str(preparedLink_)>]
+/_connect <userId>[ incognito=on][ <str(preparedLink_)>]
 ```
 
 ```javascript
-'/_connect ' + userId + (preparedLink_ ? ' ' + CreatedConnLink.cmdString(preparedLink_) : '') // JavaScript
+'/_connect ' + userId + (incognito ? ' incognito=on' : '') + (preparedLink_ ? ' ' + CreatedConnLink.cmdString(preparedLink_) : '') // JavaScript
 ```
 
 ```python
-'/_connect ' + str(userId) + ((' ' + CreatedConnLink_cmd_string(preparedLink_)) if preparedLink_ is not None else '') # Python
+'/_connect ' + str(userId) + (' incognito=on' if incognito else '') + ((' ' + CreatedConnLink_cmd_string(preparedLink_)) if preparedLink_ is not None else '') # Python
 ```
 
 **Responses**:

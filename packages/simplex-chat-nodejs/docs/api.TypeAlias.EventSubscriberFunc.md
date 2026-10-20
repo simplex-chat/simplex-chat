@@ -6,9 +6,9 @@
 
 # Type Alias: EventSubscriberFunc\<K\>
 
-> **EventSubscriberFunc**\<`K`\> = (`event`) => `void` \| `Promise`\<`void`\>
+> **EventSubscriberFunc**\<`K`\> = (`event`, `chat`) => `void` \| `Promise`\<`void`\>
 
-Defined in: [src/api.ts:50](../src/api.ts#L50)
+Defined in: [src/api.ts:50](../api.ts#L50)
 
 ## Type Parameters
 
@@ -21,6 +21,10 @@ Defined in: [src/api.ts:50](../src/api.ts#L50)
 ### event
 
 `ChatEvent` & `object`
+
+### chat
+
+[`ChatApi`](api.Class.ChatApi.md)
 
 ## Returns
 
