@@ -134,7 +134,7 @@ class NetworkObserver {
         sendMutex.withLock {
           val removals = addressRemovals
           // the core has the same network info for the network its connections were made via, e.g. the network
-          // was reported offline less than 3 seconds ago and it was not sent - the connections are not affected
+          // was reported offline less than 3 seconds ago and it was not sent - the connections are assumed not affected
           if ((removals != sentAddressRemovals || sentInfo != info || network != sentNetwork) &&
             sendNetworkInfo(info, network, removals, ctrlGen)) sent.set(true)
         }
@@ -188,8 +188,10 @@ class NetworkObserver {
   private fun lost(prev: Set<InetAddress>?, addresses: Set<InetAddress>?): Boolean =
     prev != null && (addresses == null || !addresses.containsAll(prev) || (prev.isEmpty() && addresses.isNotEmpty()))
 
-  // LinkAddress equality includes address lifetimes that change with every router advertisement
-  private fun addresses(linkProperties: LinkProperties): Set<InetAddress> = linkProperties.linkAddresses.map { it.address }.toSet()
+  // LinkAddress equality includes address lifetimes that change with every router advertisement;
+  // link-local addresses are not used for the connections to the servers
+  private fun addresses(linkProperties: LinkProperties): Set<InetAddress> =
+    linkProperties.linkAddresses.map { it.address }.filterNot { it.isLinkLocalAddress }.toSet()
 
   private fun networkInfo(capabilities: NetworkCapabilities) = UserNetworkInfo(
     networkType = networkTypeFromCapabilities(capabilities),
