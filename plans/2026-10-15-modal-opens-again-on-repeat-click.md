@@ -4,7 +4,7 @@ Fixes #6270.
 
 ## Problem
 
-Issue #6270 reports one case: on desktop, clicking "Learn more" in a pending connection several times opens one copy of the page per click, and each copy needs its own Back. The same bug has two causes, and both occur across the app:
+Issue #6270 reports one case: on desktop (Linux), clicking "Learn more" repeatedly in a pending connection opens the page again on every click. Each copy then needs its own Back. The same bug has two causes, and both occur across the app:
 
 1. **The button stays clickable in another pane.** On desktop the window has a left pane (chat list, `ModalManager.start`), a center pane (chat or `ModalManager.center`) and a right pane (`ModalManager.end`). Each pane draws only the top modal of its own stack. When a button in one pane opens a page in another, the button stays visible and clickable, and every click pushes another copy.
 2. **A fast double click during the slide-in.** A modal slides in over 250 ms. Until it covers the button that opened it, the button still takes clicks, so a double click opens two copies. Pages slide in on Android and in the desktop left pane; in the desktop center and right panes the first page never slides, the third and later do, and the second does only after an earlier page there has slid out.
@@ -15,14 +15,14 @@ Reproduced on the master prebuild (a932c82), R8 on the stable prebuild (master h
 |---|---|---|---|
 | R1 | Pending connection: "Learn more" or "Incognito" | 3 | 3 |
 | R2 | Your chat profiles: "+ Add profile" (form opens in the center) | 3 | 3 |
-| R3 | "Chat with admins" or reports open on the right; in the group chat, message menu → "Info" | 3 | 3 |
+| R3 | "Chat with admins" open on the right (a reports chat opens the same way; not tried); in the group chat, message menu → "Info" | 3 | 3 |
 | R4 | Direct chat banner: profile bio "Read more" | 3 | 3 |
 | R5 | Attach a file over 1 GB; "Large file" alert → "Support SimpleX" | 3 | 3 |
 | R6 | `.md` file clicked in a support chat on the right (viewer opens in the center) | 3 | 3 |
 | R7 | What's New opened in the center after an update → "Create your address" → "Address settings" | 3 | 3 |
 | R8 | No profile and no linked mobile: picker → "Create chat profile" | 3 | 3 |
 | D1 | Settings: double-click "Appearance" (80 ms, 150 ms) | 2 | 2 |
-| D2 | Settings: double-click "Network & servers" (80, 150, 250 ms) | 2 | 2 |
+| D2 | Settings: double-click "Network & servers" (80 ms) | 2 | 2 |
 | D3 | User menu: double-click "Your chat profiles" (80 ms) | 2 | 2 |
 
 Controls that don't stack on master: message "Info" with nothing open on the right, a double click on "Group preferences" when group info is the only page on the right, a double click on the new-chat pencil.
@@ -60,8 +60,8 @@ The "on top" checks use a new `isTopModalOpen`, which looks at the visible top m
 
 ### Not fixed
 
-- **R7, What's New "Create your address".** The address page opened from What's New in the center pushes its own pages (Address settings, SimpleX name, 1-time link, Learn more) to the left pane, beside it. Opening it in the left pane instead, where they would cover it, makes it disposed while covered: on Back it is composed again, its `autoCreateAddress` effect runs again (re-creating an address the user just deleted) and its "share with contacts" state resets. The Settings → What's New path and Android already have that flaw. Fixing it needs `UserAddressView` to keep that state across disposal; left as an open question.
-- Async openers that load data before showing a page, e.g. the reports and support bars, the add-members, channel-members and relays rows in group info, and on Android a `.md` file tapped twice while it loads. Two clicks within the load time can still push two pages. This is a different mechanism from the slide-in, and it was not reproduced.
+- **R7, What's New "Create your address".** The address page opened from What's New in the center pushes its own pages (Address settings, SimpleX name, 1-time link, Learn more) to the left pane, beside it. Opening it in the left pane instead, where they would cover it, makes it disposed while covered: on Back it is composed again, its `autoCreateAddress` effect runs again (re-creating an address the user just deleted) and its "share with contacts" state resets. The Settings → What's New path and Android already have that flaw. Fixing it needs `UserAddressView` to keep that state across disposal, which a follow-up PR (#7756) does.
+- Async openers that load data before showing a page, e.g. the reports and support bars, the add-members, channel-members and relays rows in group info, and on Android a `.md` file tapped twice while it loads. Two clicks within the load time can still push two pages. This is a different mechanism from the slide-in. It reproduces on master (reports bar, "Invite", "Invite members", "Member reports", "Chats with members" rows) and is fixed in a follow-up PR (#7757).
 - On desktop, two different `.md` files clicked before either has loaded: the one that finishes loading last is shown, as on master; Back now returns to the chat instead of the other file.
 - `OpenWhenReceivedEffect`: a file opened when its download finishes is not a repeated click. An image opens a second fullscreen viewer over an open one, as before. On desktop a `.md` file opened this way now replaces an open `.md` viewer, so Back returns to the chat instead of the other file.
 - Keyboard and accessibility activation are not pointer input and are not blocked during a slide.
@@ -73,7 +73,7 @@ The "on top" checks use a new `isTopModalOpen`, which looks at the visible top m
 - Desktop: each fixed button opens its page once. A repeated click keeps the open page or replaces it with what was clicked. The on-top check doesn't depend on which button opened the page, so a bio, `.md` viewer or Info opened from one place is also replaced by one opened from another (for example a member's bio by a business chat banner's "Read more"), and Back then returns to the page under it. Message Info that replaces Info with nothing else on the right also starts fresh now: master kept the previous page's selected tab and, when both messages had the same title, its app bar showed none.
 - Both platforms: while a modal slides open, the page it covers in its pane, or the view under a pane's first modal, takes no new pointer input (clicks, drags, wheel scroll, hover) for 250 ms. On desktop the first page of the center and right panes appears without a slide, so it has no such window.
 - Both platforms: a keyed page (bio, `.md` viewer, Info, #6270's pages) opened again while the previous one is still sliding out after Back now starts fresh; master reused the closing page's remembered state (for example Info's selected tab), and its app bar showed no title when the title was unchanged.
-- Android: the slide window also covers modals the app opens itself (What's New at start), and a double-tapped toggle (chat info, the reports and support-chats bars, the profile picker's incognito info) now stays open. Apart from these and the fresh state above, the per-site checks act only on desktop, where the button stays visible.
+- Android: the slide window also covers modals the app opens itself (What's New at start), and a double-tapped toggle (chat info, the profile picker's incognito info, and the reports and support-chats bars when the second tap comes after their page is pushed) now stays open; a second tap during the reports or support-chat load still opens a second page (see Not fixed). Apart from these and the fresh state above, the per-site checks act only on desktop, where the button stays visible.
 
 ## Verification
 
