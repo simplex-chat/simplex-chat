@@ -34,7 +34,7 @@ import ChatTests.Utils
 import Control.Concurrent (newEmptyMVar, putMVar, takeMVar, threadDelay)
 import Control.Concurrent.Async (async, cancel)
 import Control.Concurrent.STM (TQueue, atomically, readTMVar, readTQueue, readTVarIO)
-import Control.Monad (forM_, void, when)
+import Control.Monad (forM_, replicateM, void, when)
 import Control.Exception (finally)
 import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
@@ -2646,18 +2646,13 @@ testDevIntervalRetries ps =
     let t1 = devIntervalStart rows
     -- the start's pass sends the request the interval made due, which times out and is retried
     setClockAt bsClock t1
-    withTestChatCfg ps (hourly $ fastRetryCfg $ failingServiceCfg bsClientCfg) "alice" $ \alice ->
-      timeout 20000000 (issueErrorTimes (chatController alice) 2) >>= \case
-        Nothing -> expectationFailure "a failed dev-interval request was not retried within 20 seconds"
-        Just failedAt -> failedAt `shouldSatisfy` all (\t -> t >= t1 && t < addUTCTime 60 t1)
-
-issueErrorTimes :: ChatController -> Int -> IO [UTCTime]
-issueErrorTimes cc n = go []
-  where
-    go seen = do
-      errorAt <- issueErrorAt cc
-      let seen' = [t | Just t <- errorAt, t `notElem` seen] <> seen
-      if length seen' >= n then pure seen' else threadDelay 100000 >> go seen'
+    withTestChatCfg ps (hourly $ fastRetryCfg $ failingServiceCfg bsClientCfg) "alice" $ \alice -> do
+      failedAt <- replicateM 2 $ alice <##. "1: supporter" >> issueErrorAt (chatController alice)
+      case failedAt of
+        [[Just first], [Just second]] -> do
+          second `shouldSatisfy` (> first)
+          [first, second] `shouldSatisfy` all (\t -> t >= t1 && t < addUTCTime 60 t1)
+        _ -> expectationFailure $ "expected two failed attempts, got " <> show failedAt
 
 testSubscriptionRetiredAfterRecoveryWindow :: HasCallStack => TestParams -> IO ()
 testSubscriptionRetiredAfterRecoveryWindow ps =
