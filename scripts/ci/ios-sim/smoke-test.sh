@@ -2,11 +2,14 @@
 
 # Installs the app in a new iPhone simulator and runs the scripted UI cases with the ui helper: onboarding to the
 # chat list with the one-hand UI (the default), then the chat list again with the top bar. It leaves the app in the one-hand UI.
-# With BACKEND_DIR, the work dir of the running test backend, it then searches the test directory, whose results
-# must show their avatars and have the Directory header above them in both layouts; then, with a joined channel,
-# the chat list's cards must show while typing and hide under the results; a page whose only result is that channel
-# must say so; the channel found by its description must be its chat row, opening it, on the chat list in both layouts
-# and in New chat; and "Show more" must be disabled while its page loads (a screenshot shows its colour).
+# With BACKEND_DIR, the work dir of the running test backend, it then searches the test directory: the first search
+# asks to enable Directory search (Cancel sends nothing, Enable searches), and no later search, the Search key's included,
+# asks again; the results show Open and their avatars, with no header, in both layouts; Open prepares a channel and
+# opens it without an alert, with its subscriber count; once joined, the channel is its chat row among the results, on
+# the chat list in both layouts and in New chat; the chat list's cards show while typing and hide under the results;
+# a page whose only result is that channel says so; the load row says how many results are left, is disabled while
+# its page loads (a screenshot shows its colour) and offers a retry when that fails; and a long press on a result
+# shows a menu with Open (not fatal: the gesture is new to this harness; a screenshot shows it).
 # Usage: scripts/ci/ios-sim/smoke-test.sh <path to SimpleX.app> <output dir>
 # Each step saves a screenshot and an accessibility tree to the output dir and prints the tree to the log.
 # Later steps of the job get SIM_UDID and UI_OUT, with the simulator still running.
@@ -91,23 +94,53 @@ expect_chat_list() {
   echo "in the $1 layout the chat list shows the onboarding pages and the toolbar"
 }
 
-# the y of the first element with exactly this label
-element_y() {
+# the first element whose label contains the text
+labelled_containing() {
   local tree
   tree=$("$ui" tree)
-  grep -F "\"$1\" value=" <<< "$tree" | head -n 1 | sed -E 's/.* at [0-9-]+,([0-9-]+) .*/\1/'
+  grep -F -- "$1" <<< "$tree" | head -n 1 || true
 }
 
-expect_header_above_results() {
-  local header group channel
-  header=$(element_y Directory)
-  group=$(element_y "#ci_group")
-  channel=$(element_y "#ci_channel")
-  if [ -z "$header" ] || [ -z "$group" ] || [ -z "$channel" ] || [ "$header" -ge "$group" ] || [ "$header" -ge "$channel" ]; then
-    echo "error: in the $1 layout the Directory header (y=$header) is not above its results (#ci_group y=$group, #ci_channel y=$channel)"
+# The "Open" on the row of the result labelled exactly $1, or nothing: the row's texts are stacked beside its avatar
+# and Open is centred on the row, so Open's top is within a row's height of the name's top.
+open_in_row() {
+  local tree name top line y
+  tree=$("$ui" tree)
+  name=$(grep -F "\"$1\" value=" <<< "$tree" | head -n 1 || true)
+  if [ -z "$name" ]; then
+    return 0
+  fi
+  top=$(sed -E 's/.* at [0-9-]+,([0-9-]+) .*/\1/' <<< "$name")
+  while IFS= read -r line; do
+    y=$(sed -E 's/.* at [0-9-]+,([0-9-]+) .*/\1/' <<< "$line")
+    if [ "$y" -ge $((top - 10)) ] && [ "$y" -le $((top + 60)) ]; then
+      echo "$line"
+      return 0
+    fi
+  done < <(grep -F '"Open" value=' <<< "$tree" || true)
+}
+
+# #ci_group and #ci_channel each with Open on its row and its avatar; no header, and no "Search in Directory" while results show
+expect_seed_results() {
+  local tree name
+  for name in "#ci_group" "#ci_channel"; do
+    if [ -z "$(open_in_row "$name")" ]; then
+      echo "error: in the $1 layout $name is not a result with Open on its row"
+      exit 1
+    fi
+  done
+  tree=$("$ui" tree)
+  # matched exactly: "Search in Directory" also contains the word
+  if grep -qF '"Directory" value=' <<< "$tree"; then
+    echo "error: in the $1 layout the results have a Directory header"
     exit 1
   fi
-  echo "in the $1 layout the Directory header (y=$header) is above its results (#ci_group y=$group, #ci_channel y=$channel)"
+  if grep -qF '"Search in Directory"' <<< "$tree"; then
+    echo "error: in the $1 layout \"Search in Directory\" is shown while the results are"
+    exit 1
+  fi
+  expect_avatars "$1"
+  echo "in the $1 layout #ci_group and #ci_channel are results with Open, with no header and no \"Search in Directory\""
 }
 
 # a result without an avatar shows a placeholder icon labelled with its symbol name; an avatar image has no label
@@ -127,12 +160,24 @@ type_search() {
   sleep 2
 }
 
-# the alert asks before every search, as the first search chose "Search", not "Search and don't show again"
-search_directory() {
-  "$ui" tap "Search in Directory"
-  if "$ui" wait "Search in Directory?" 10; then
-    "$ui" tap "Search"
+# the first search turned Directory search on, so no later one may ask to enable it
+expect_no_consent() {
+  local tree
+  tree=$("$ui" tree)
+  if grep -qF "Enable Directory search?" <<< "$tree"; then
+    "$ui" shot consent-asked-again
+    echo "error: $1 asked to enable Directory search again"
+    exit 1
   fi
+}
+
+tap_search_in_directory() {
+  "$ui" tap "Search in Directory"
+  expect_no_consent "\"Search in Directory\""
+}
+
+search_directory() {
+  tap_search_in_directory
   "$ui" wait "$1" 60
 }
 
@@ -183,8 +228,7 @@ expect_cards_hidden_by_results() {
     echo "error: in the $1 layout the directory results are shown with cards: $(paste -sd ',' - <<< "$results")"
     exit 1
   fi
-  expect_header_above_results "$1 (chat list)"
-  expect_avatars "$1 (chat list)"
+  expect_seed_results "$1 (chat list)"
   clear_search
   sleep 2
   "$ui" shot "cards-cleared-$1"
@@ -196,12 +240,12 @@ expect_cards_hidden_by_results() {
   echo "in the $1 layout the cards ($(paste -sd ',' - <<< "$typing")) show while typing, are hidden under the results and come back when the search is cleared"
 }
 
-# the joined channel must not be offered to join again
+# ci_cards is the only result for "ci cards": once joined, it must be its chat row, not a result to open
 expect_no_join_row() {
   local tree
   tree=$("$ui" tree)
-  if grep -qF '"#ci_cards"' <<< "$tree" || grep -qF 'Join channel' <<< "$tree"; then
-    echo "error: in $1 the joined ci_cards is a Directory row (#ci_cards, Join channel), not its chat"
+  if grep -qF '"#ci_cards"' <<< "$tree" || grep -qF '"Open" value=' <<< "$tree"; then
+    echo "error: in $1 the joined ci_cards is a result row (#ci_cards, Open), not its chat"
     exit 1
   fi
 }
@@ -242,6 +286,7 @@ topmost() {
   sed -E 's/.* at [0-9-]+,([0-9-]+) .*/\1 &/' <<< "$1" | sort -n | head -n 1 | cut -d ' ' -f 2-
 }
 
+# taps the centre of the element on this tree line, or long-presses it with long-press
 tap_element() {
   local x y w h
   read -r x y w h <<< "$(sed -nE 's/.* at ([0-9]+),([0-9]+) size ([0-9]+)x([0-9]+).*/\1 \2 \3 \4/p' <<< "$1")"
@@ -249,24 +294,32 @@ tap_element() {
     echo "error: no on-screen element to tap in: $1"
     exit 1
   fi
-  "$ui" tap-xy $((x + w / 2)) $((y + h / 2))
+  "$ui" "${2:-tap-xy}" $((x + w / 2)) $((y + h / 2))
 }
 
-# New chat lists only contacts, so there the joined channel is a contact-style chat row. The chat list behind the sheet
-# may be in the tree too, with its own search field (at the bottom with the one-hand UI) and ci_cards row, so the sheet's
-# field is the topmost one and its row is the ci_cards element the search adds.
-open_known_chat_from_new_chat() {
+# New chat lists only contacts, so there the seeded results are rows with Open and the joined channel is a contact-style
+# chat row. The chat list behind the sheet may be in the tree too, with its own search field (at the bottom with the
+# one-hand UI) and ci_cards row, so the sheet's field is the topmost one and its row is the ci_cards element the search adds.
+search_in_new_chat() {
   local before row deadline
   before=$(labelled ci_cards)
   "$ui" tap Compose
   "$ui" wait "Create 1-time link" 10
   tap_element "$(topmost "$("$ui" tree | grep -F 'TextField null value="Search or paste SimpleX link"')")"
+  "$ui" type "$search_text"
+  sleep 2
+  search_directory '"#ci_group"'
+  "$ui" shot new-chat-results
+  if [ -z "$(open_in_row "#ci_group")" ]; then
+    echo "error: in New chat #ci_group is not a result with Open on its row"
+    exit 1
+  fi
+  tap_element "$(topmost "$("$ui" tree | grep -F 'TextField null value=')")"
+  "$ui" tap Cancel
+  tap_element "$(topmost "$("$ui" tree | grep -F 'TextField null value="Search or paste SimpleX link"')")"
   "$ui" type "ci cards"
   sleep 2
-  "$ui" tap "Search in Directory"
-  if "$ui" wait "Search in Directory?" 10; then
-    "$ui" tap "Search"
-  fi
+  tap_search_in_directory
   deadline=$((SECONDS + 60))
   until row=$(added_labelled ci_cards "$before") && [ -n "$row" ]; do
     if [ "$SECONDS" -ge "$deadline" ]; then
@@ -282,7 +335,7 @@ open_known_chat_from_new_chat() {
   "$ui" wait "you are subscriber" 30
   "$ui" shot known-chat-opened-new-chat
   "$ui" tap Back
-  echo "in New chat the directory result for the joined ci_cards is its chat row ($row), which closes the sheet and opens the channel"
+  echo "in New chat #ci_group is a result with Open, and the directory result for the joined ci_cards is its chat row ($row), which closes the sheet and opens the channel"
 }
 
 xcrun simctl install "$SIM_UDID" "$app"
@@ -335,56 +388,104 @@ sleep 2
 expect_in_tree -iF "\"$search_text\""
 expect_in_tree -F '"Search in Directory"'
 
-# the directory finds the seeded group and channel, after the first-search consent
+# Directory search is off until enabled: the first search asks, and Cancel sends nothing
 "$ui" tap "Search in Directory"
-"$ui" wait "Search in Directory?" 10
+"$ui" wait "Enable Directory search?" 10
 "$ui" shot search-consent
-"$ui" tap "Search"
-if ! "$ui" wait "Join channel" 60; then
+"$ui" tap Cancel
+sleep 2
+"$ui" shot search-cancelled
+tree=$("$ui" tree)
+if grep -qF '"Open" value=' <<< "$tree" || ! grep -qF '"Search in Directory"' <<< "$tree"; then
+  echo "error: Cancel in \"Enable Directory search?\" searched, or \"Search in Directory\" is gone"
+  exit 1
+fi
+echo "Cancel in \"Enable Directory search?\" searched nothing, and \"Search in Directory\" is still shown"
+
+# Enable turns Directory search on and searches: the directory finds the seeded group and channel
+"$ui" tap "Search in Directory"
+"$ui" wait "Enable Directory search?" 10
+"$ui" tap Enable
+if ! "$ui" wait '"Open"' 60; then
   "$ui" shot search-failed
-  "$ui" tap "Search failed, tap to retry"
-  "$ui" wait "Join channel" 60
+  tap_element "$(labelled_containing "Search failed, tap to retry")"
+  "$ui" wait '"Open"' 60
 fi
 "$ui" shot directory-results
-# the header alone is matched exactly: "Search in Directory" stays shown above the field
-expect_in_tree -F '"Directory"'
-expect_in_tree -F '#ci_group'
-expect_in_tree -F 'Join group'
-expect_in_tree -F '#ci_channel'
-expect_in_tree -F 'Join channel'
-expect_header_above_results reachable
-expect_avatars reachable
+expect_seed_results reachable
+
+# the Search key searches the directory too, and never resolves names: "Connect to …" stays for the name typed
+clear_search
+type_search cinews
+"$ui" key return
+expect_no_consent "The Search key"
+"$ui" wait '"#cinews"' 60
+"$ui" shot search-key-results
+# the keyboard capitalizes the first letter
+expect_in_tree -iF '"Connect to cinews.testing"'
+tree=$("$ui" tree)
+if grep -qF '"Names"' <<< "$tree"; then
+  echo "error: the Search key shows a Names part"
+  exit 1
+fi
+echo "the Search key shows the directory's results for cinews, with \"Connect to cinews.testing\" and no Names part"
+clear_search
 
 "$ui" layout top
 type_search "$search_text"
-search_directory "Join channel"
+search_directory '"Open"'
 "$ui" shot directory-results-top
-expect_header_above_results top
-expect_avatars top
+expect_seed_results top
 "$ui" layout reachable
 
-# with a conversation the chat list replaces the onboarding pages, and has cards around the chats
-type_search "ci_cards"
-search_directory "#ci_cards"
-"$ui" tap "#ci_cards"
-"$ui" tap "Open channel" 30
-"$ui" wait "Tap Join channel" 30
+# Open prepares the channel and opens it without asking, so no tree read until it opens may show the "Open channel" alert;
+# with a conversation the chat list then replaces the onboarding pages, and has cards around the chats
+type_search "ci cards"
+search_directory '"#ci_cards"'
+"$ui" shot ci-cards-result
+open=$(open_in_row "#ci_cards")
+if [ -z "$open" ]; then
+  echo "error: #ci_cards is not a result with Open on its row"
+  exit 1
+fi
+tap_element "$open"
+deadline=$((SECONDS + 60))
+until tree=$("$ui" tree) && grep -qF "Tap Join channel" <<< "$tree"; do
+  if grep -qF 'Button "Open channel"' <<< "$tree"; then
+    "$ui" shot open-channel-alert
+    echo "error: Open on #ci_cards showed the \"Open channel\" alert"
+    exit 1
+  fi
+  if [ "$SECONDS" -ge "$deadline" ]; then
+    "$ui" shot prepared-channel-missing
+    echo "error: Open on #ci_cards did not open the channel with \"Tap Join channel\" after 60 s"
+    exit 1
+  fi
+  sleep 1
+done
+"$ui" shot prepared-channel
+# the toolbar and the banner
+subscribers=$(grep -cE '[0-9]+ subscribers?' <<< "$tree" || true)
+if [ "$subscribers" -lt 2 ]; then
+  echo "error: the prepared channel shows its subscriber count $subscribers times, not in both the toolbar and the banner"
+  exit 1
+fi
+echo "Open on #ci_cards opened the prepared channel without an alert, with its subscriber count in the toolbar and the banner"
 "$ui" tap "Join channel"
 "$ui" wait "you are subscriber" 60
 "$ui" shot joined-channel
 "$ui" tap Back
-# the search text matches the joined channel, so the list shows it as a chat, and its Directory row must be gone
+# "ci cards" doesn't match the chat's name, so the list doesn't show it: the results show it as its chat row
 "$ui" shot joined-channel-search
 expect_in_tree -F 'StaticText "ci_cards"'
-tree=$("$ui" tree)
-if grep -qF '"#ci_cards"' <<< "$tree"; then
-  echo "error: the Directory row #ci_cards is still shown next to the chat opened from it"
-  exit 1
-fi
-echo "after joining from its Directory row, ci_cards is a chat in the search results and its Directory row is gone"
-# the page's only result is that channel, which the list shows, so the Directory part says the page added none
-expect_in_tree -F '"All results on this page are already in your chats"'
-echo "the Directory part says all results on the page are already in your chats"
+expect_no_join_row "the chat list after joining"
+echo "after joining through Open, ci_cards is its chat row among the results and no longer a result to open"
+clear_search
+# the page's only result is that channel, which the list shows, so the results say the page added none
+type_search "ci_cards"
+search_directory '"All results on this page are already in your chats"'
+"$ui" shot page-in-chats
+echo "the results say all results on the page are already in your chats"
 clear_search
 expect_cards_hidden_by_results reachable
 open_known_chat_from_results reachable
@@ -393,15 +494,51 @@ dismiss_lock_notice
 expect_cards_hidden_by_results top
 open_known_chat_from_results top
 "$ui" layout reachable
-open_known_chat_from_new_chat
+search_in_new_chat
 
-# with the directory stopped, the next page waits 10 s before it fails: long enough to see "Show more" while it loads
+# with the directory stopped, the next page waits 10 s before it fails: long enough to see the load row while it loads
 type_search "ci avatar"
-search_directory "Show more"
+search_directory "Load more"
+"$ui" shot load-more
+expect_in_tree -E 'Load more · [0-9]+ left'
+loaded=$("$ui" tree | grep -cF '"#ci_avatar_' || true)
 "$ui" directory stop
-"$ui" tap "Show more"
-"$ui" shot show-more-loading
-expect_in_tree -E '^Button "Show more" .* disabled$'
+tap_element "$(labelled_containing "Load more")"
+# read before the screenshot, which takes long enough for the 10 s request to fail
+expect_in_tree -E '^Button ".*Load more.*" .* disabled$'
+"$ui" shot load-more-loading
+"$ui" wait "Search failed, tap to retry" 30
+"$ui" shot load-more-failed
 "$ui" directory start
+# the directory takes a while to accept requests again, so the retry is repeated until the next page comes
+deadline=$((SECONDS + 120))
+until [ "$("$ui" tree | grep -cF '"#ci_avatar_' || true)" -gt "$loaded" ]; do
+  if [ "$SECONDS" -ge "$deadline" ]; then
+    "$ui" shot load-more-retry-failed
+    echo "error: retrying the failed page did not load more results after 120 s"
+    exit 1
+  fi
+  retry=$(labelled_containing "Search failed, tap to retry")
+  if [ -n "$retry" ]; then
+    tap_element "$retry"
+  fi
+  sleep 5
+done
+"$ui" shot load-more-retried
+echo "the load row says how many results are left, is disabled while its page loads, offers a retry when it fails, and the retry loads the page"
 clear_search
-echo "smoke test passed: onboarding reaches the chat list in both layouts; the directory search for \"$search_text\" shows #ci_group (Join group) and #ci_channel (Join channel) with their avatars and the Directory header above them; with a chat, the list's cards show while typing and hide under the results; a page of chats already listed says so; the joined channel found by its description is its chat row on the chat list in both layouts and in New chat, and opens it; \"Show more\" is disabled while its page loads"
+
+# not fatal: the long press is new to this harness, and the screenshot shows the menu's preview over the flipped list
+type_search "$search_text"
+search_directory '"#ci_group"'
+opens=$(labelled Open)
+tap_element "$(labelled_containing '"#ci_group" value=')" long-press
+"$ui" shot long-press-menu
+if [ -n "$(added_labelled Open "$opens")" ]; then
+  echo "a long press on #ci_group shows a menu with Open"
+  "$ui" tap-xy 200 100
+else
+  echo "WARN: a long press on #ci_group shows no menu with Open; see the long-press-menu screenshot"
+fi
+clear_search || true
+echo "smoke test passed: onboarding reaches the chat list in both layouts; the first directory search asks to enable Directory search, Cancel sends nothing and Enable searches, and no later search asks; the search for \"$search_text\" shows #ci_group and #ci_channel with Open and their avatars, with no header; the Search key searches the directory and keeps \"Connect to …\"; Open opens a prepared channel without an alert, with its subscriber count; with a chat, the list's cards show while typing and hide under the results; a page of chats already listed says so; the joined channel found by its description is its chat row on the chat list in both layouts and in New chat, and opens it; the load row says how many results are left, is disabled while its page loads and retries a failed page"

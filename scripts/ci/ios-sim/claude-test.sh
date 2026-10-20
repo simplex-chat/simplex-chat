@@ -77,7 +77,7 @@ write_prompt() {
     echo "- No test backend runs in this session."
   fi
   if [ -z "$previous" ] && [ -n "$BACKEND_DIR" ]; then
-    echo "- At the start: the smoke test onboarded a profile (typed as \"citester\"; the keyboard may have autocorrected the name), searched the directory in both layouts, choosing \"Search\" in the alert each time, and joined the channel ci_cards; it is the profile's only conversation."
+    echo "- At the start: the smoke test onboarded a profile (typed as \"citester\"; the keyboard may have autocorrected the name), enabled Directory search in the first search's alert, searched the directory in both layouts, and opened and joined the channel ci_cards; it is the profile's only conversation."
   elif [ -z "$previous" ]; then
     echo "- At the start: the smoke test onboarded a profile (typed as \"citester\"; the keyboard may have autocorrected the name) and checked the chat list in both layouts; the profile has no conversations."
   else

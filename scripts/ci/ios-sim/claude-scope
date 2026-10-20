@@ -5,9 +5,9 @@
 backend: yes
 model: claude-haiku-5-5
 layouts: reachable top
-cases-reachable: U1, U2, U4 and W12
-cases-top: U2 and U4 (the list's structure differs in this layout)
-entries-reachable: the smoke test joined the channel ci_cards; U1 and U4 search `ci_cards`, U2 and W12 search `ci cards` (the space keeps the local list from matching it); join nothing else
-entries-top: the same entries: U4 searches `ci_cards`, U2 searches `ci cards`; nothing else is joined
+cases-reachable: U1, U2, U4, D15 and W12
+cases-top: U2, U4 and D15 (the list's order and the row's flip differ in this layout)
+entries-reachable: the smoke test joined the channel ci_cards; U1 and U4 search `ci_cards`, U2 and W12 search `ci cards` (the space keeps the local list from matching it); D15 searches `ci seed` and long-presses #ci_group, closing the menu without choosing Open; open and join nothing else
+entries-top: the same entries: U4 searches `ci_cards`, U2 searches `ci cards`, D15 long-presses #ci_group from `ci seed`; nothing else is opened or joined
 max-turns: 300
 max-budget-usd: 3

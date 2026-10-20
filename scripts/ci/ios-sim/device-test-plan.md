@@ -1,11 +1,11 @@
 # Device test plan: iOS online search (f/directory-search)
 
-Run these on an iOS simulator or device on the Mac. Each case says what to do and what you should see. The case IDs map to the run's acceptance criteria (AC1–AC8) and review fixes (R1-x).
+Run these on an iOS simulator or device on the Mac. Each case says what to do and what you should see. The case IDs map to the run's acceptance criteria (AC3–AC9).
 
 ## Setup
 
-1. **Build** `f/directory-search` (HEAD `e7678b634` or later) in Xcode on a simulator. Use a small one (iPhone SE) and a large one, or switch Dynamic Type to a large size for the layout cases.
-2. **A directory the app can reach with service requests.** The app sends every search to `DIRECTORY_SERVICE_LINK` (`apps/ios/Shared/Model/DirectorySearch.swift:14`), which is the live SimpleX Directory. Searches against the live directory fail with `ASENotDRAddress` until it runs `/_rotate_address_keys <bot user id>`. Pick one:
+1. **Build** `f/directory-search` in Xcode on a simulator. Use a small one (iPhone SE) and a large one, or switch Dynamic Type to a large size for the layout cases. The long-press menu (D15, W8) needs iOS 16 or later; on iOS 15 there is no menu.
+2. **A directory the app can reach with service requests.** The app sends every search to `DIRECTORY_SERVICE_LINK` (`apps/ios/Shared/Model/DirectorySearch.swift`), which is the live SimpleX Directory. Searches against the live directory fail with `ASENotDRAddress` until it runs `/_rotate_address_keys <bot user id>`. Pick one:
    - **Live directory:** rotate its address keys first. The published link does not change.
    - **Test directory:** run `simplex-directory-service` against your own servers (it turns service requests on by itself). Create its address with `/ad pq_ratchet=on`, take the short link, and point `DIRECTORY_SERVICE_LINK` at it in your local build only. Do not commit that change.
 3. **Directory content** (most useful with a test directory):
@@ -14,8 +14,8 @@ Run these on an iOS simulator or device on the Mac. Each case says what to do an
    - one entry with a long name and a two-line description;
    - one entry whose name contains markdown, e.g. `*bold* [x](https://example.com)`;
    - one channel the test profile has already joined.
-4. **SimpleX names** (for the Names cases): the test profile needs a server that resolves names. You also need a channel with a verified `#name` and a contact address with an `@name`, each at least 5 characters long (a bare word is completed with `.testing`). Without these, only cases N4 and N7 can run.
-5. **Consent alert:** Settings → "Reset all hints" brings it back between runs.
+4. **SimpleX names** (for "Connect to …", C3, C11 and G5): the test profile needs a server that resolves names, and a channel with a verified `#name` and a contact address with an `@name`, each at least 5 characters long (a bare word is completed with `.testing`). The search itself never resolves names.
+5. **Directory search switch:** Settings → Privacy → "Directory search" (in the Chats section), off by default. While it is off, every search asks first; turn it off again to repeat the consent cases.
 6. Run every chat-list case in **both toolbar modes** (one-hand UI on and off).
 
 ## Chat list: search rows and consent
@@ -25,74 +25,61 @@ Run these on an iOS simulator or device on the Mac. Each case says what to do an
 | C1 | Empty search field | Tags in the slot above the field (one-hand) or above as usual (top bar); no "Search in Directory" row |
 | C2 | Type `ne` | One-hand: "Search in Directory" replaces the tags above the field. Top bar: tags stay, "Search in Directory" appears below the field |
 | C3 | Type a 5+ letter word, e.g. `alice` | "Connect to alice.testing" and "Search in Directory" (same slots as C2) |
-| C4 (AC4) | Paste a SimpleX link | One-hand: the **tags stay** in the slot (before this change the slot was empty). Neither mode offers "Search in Directory"; the link connects as before |
-| C5 (AC8) | After resetting hints, tap "Search in Directory" | Alert "Search in Directory?": the text goes to SimpleX Directory, and if it is a SimpleX name, also to your server that resolves names. Actions: Cancel / Search / Search and don't show again |
-| C6 | In C5, choose Cancel | Nothing is sent: no spinner, no results |
-| C7 | Choose "Search and don't show again", then search again | No alert the second time; "Reset all hints" brings it back |
-| C8 | Type text, press the keyboard **Search** key | The key is labelled Search; it runs the same directory search (alert first time) |
+| C4 | Paste a SimpleX link | One-hand: the tags stay in the slot. Neither mode offers "Search in Directory"; the link connects as before |
+| C5 (AC4) | With "Directory search" off, tap "Search in Directory" | Alert "Enable Directory search?", message "Search text is sent to SimpleX Directory, each search separately and without your profile, so it can't build your search history.", actions Cancel and Enable |
+| C6 (AC4) | In C5, choose Cancel | Nothing is sent: no spinner, no results, the request count does not change; "Search in Directory" is still shown |
+| C7 (AC4) | Choose Enable | The search runs; Settings → Privacy → "Directory search" is now on; later searches, by the row or the key, do not ask; turning the switch off brings the alert back |
+| C8 (AC3) | Type text, press the keyboard **Search** key | The key is labelled Search; it runs the same directory search as the row (the alert first while the switch is off) |
 | C9 | Whitespace only, then press Search or tap the row | Nothing happens |
+| C10 (AC3) | Search, then look at the rows by the field while the results load and show; then change the text | "Search in Directory" is hidden while the results for the current text load or show; it comes back when the text changes |
+| C11 (AC3) | Type a 5+ letter name of a listed channel, e.g. `cinews`, press **Search** | Directory results only: no "Names" part, no name resolution. "Connect to cinews.testing" stays shown next to the results (one-hand: above the field; top bar: below it) |
 
-## Chat list: directory results (AC1–AC3)
-
-| ID | Do | Expect |
-|----|----|--------|
-| D1 | Search for a term that matches listed groups | Spinner in the search field after about 1 s. While loading: **no "Directory" header**, no "No chats found" overlay |
-| D2 | Results arrive | A "Directory" header row, then rows: avatar, `#` name, the directory's SimpleX name (if any), description up to 2 lines, member or subscriber count, and **"Join channel"** for channels or **"Join group"** for groups at the trailing edge. "Join …" rows are for entries you don't have; an entry you already have is a chat row (U2) |
-| D3 (R1-4) | Long-named entry, small phone, large text | The verb stays on one line; the name and description truncate instead |
-| D4 | Scroll the list, especially in one-hand mode | The "Directory" header scrolls with the rows and is not pinned to the screen edge |
-| D5 | Entry with markdown in its name or description | Shown literally: no bold, no tappable link |
-| D6 | Tap a directory row | The usual join flow (channel or group alert); the keyboard hides |
-| D7 | More entries than one page | A "Show more" row; tapping it appends the next page, is disabled while loading, and disappears at the end. No entry appears twice |
-| D8 | Turn networking off, search | After about 10 s: "Search failed, tap to retry" under the "Directory" header. Turn networking on, tap it: the page loads |
-| D9 | Fail a "Show more" (network off), then retry | The retry continues from the next page; it does not start over |
-| D10 (AC3) | Search for nonsense, e.g. `zqxvjk`, with no local chat matching | No Directory part, no "No results" row; the centred "No chats found" appears once the search finishes |
-| D11 | Search for nonsense that matches a local chat name | Only the local chats; no Directory part, no overlay |
-| D12 | Start a search, change the text before it returns | Results and spinner clear at once; the old reply never appears |
-| D13 | Start a search, clear the field | The spinner stops; nothing appears later |
-| D14 | With results shown, switch profile | Results disappear |
-| D15 | Profile with no conversations (onboarding pages shown) | The search bar is shown with the onboarding pages (below them with the one-hand UI, above them with the top bar). A search replaces them with the results while it runs or shows rows; a search that finds nothing shows a "No chats found" row; clearing the text brings the onboarding pages back |
-
-## Chat list: no duplicates (AC6)
+## Chat list: results (AC5–AC8)
 
 | ID | Do | Expect |
 |----|----|--------|
-| U1 | Search for the name of a channel you joined (it is also listed) | It appears once, as your local chat; no Directory row for it |
-| U2 | Search for a word only in that channel's description, so the local list does not show it | It appears in the Directory part as your chat's row (as in the chat list: name without `#`, last message, time), with no "Join channel"; tapping it opens the channel, with no alert |
-| U3 | A listed regular group you joined through a different link (or by invitation) | It shows twice, local and Directory. This is the documented limit, not a regression |
-| U4 | Search for the name of a joined channel that is the page's only result, so the list shows it as your chat | Under the "Directory" header: "All results on this page are already in your chats" (grey), and "Show more" when there are more pages (with the one-hand UI it sits right under the header, as in D7); nothing loads more pages by itself |
+| D1 | Search for a term that matches listed groups | Spinner in the search field after about 1 s. While loading: no header, no "No chats found" overlay |
+| D2 (AC5) | Results arrive | One list without headers (no "Directory", no "Names"): your chats first, then the results. A result row: avatar the size of a chat row's, `#` name, the directory's SimpleX name (if any), description up to 2 lines, member or subscriber count, and **"Open"** at the trailing edge. No "Join channel" or "Join group" |
+| D3 | Long-named entry, small phone, large text | "Open" stays on one line; the name and description truncate instead |
+| D4 | Entry with markdown in its name or description | Shown literally: no bold, no tappable link |
+| D5 (AC6) | Tap a channel's result (or its "Open") | The keyboard hides, the spinner shows in the field ("Loading profile…"), then the channel opens, not yet joined, with "Tap Join channel" and the "Join channel" bar, and with **no "Open channel?" alert**. Its subscriber count shows in the toolbar and in the banner under the name. A group's result opens the same way, with "Tap Join group" |
+| D6 (AC7) | More entries than one page | The last row of the results is "Load more · N left" (N from the directory) or "Load more" (when the directory sends no count), with a plus-magnifier icon; one-hand: it is the top row of the results, farthest from the field. Tapping it appends the next page; while it loads the row is grey and disabled; it disappears at the end. No entry appears twice |
+| D7 (AC7) | Stop the directory, search | After about 10 s: "Search failed, tap to retry" with a circular arrow, where the results go. Start the directory, tap it: the page loads |
+| D8 (AC7) | Fail a "Load more" (directory stopped), then retry | The row turns into "Search failed, tap to retry"; the retry continues from the next page; it does not start over |
+| D9 | Search for nonsense, e.g. `zqxvjk`, with no local chat matching | No result rows; the centred "No chats found" appears once the search finishes |
+| D10 | Search for nonsense that matches a local chat name | Only the local chats; no overlay |
+| D11 | Start a search, change the text before it returns | Results and spinner clear at once; the old reply never appears |
+| D12 | Start a search, clear the field | The spinner stops; nothing appears later |
+| D13 | With results shown, switch profile | Results disappear |
+| D14 | Profile with no conversations (onboarding pages shown) | The search bar is shown with the onboarding pages (below them with the one-hand UI, above them with the top bar). A search replaces them with the results while it runs or shows rows; a search that finds nothing shows a "No chats found" row; clearing the text brings the onboarding pages back |
+| D15 (AC8) | Long press a result | A menu with one item, "Open", over a lifted preview of the row (the row without its "Open"), drawn upright in both layouts. Choosing Open does what a tap does; dismissing the menu opens nothing |
+| D16 (AC5) | Manual only: a full-link entry you are already joining (joined, not yet connected) | Its caption says "Already joining" in place of the count, with nothing at the trailing edge; tapping it shows the usual "already joining" sheet or alert |
 
-## Chat list: names (AC5)
+## Chat list: your chats (AC5)
 
 | ID | Do | Expect |
 |----|----|--------|
-| N1 | Type a bare name registered only as a channel (e.g. `news1`), press **Search** | Directory results as above, plus a "Names" header above the Directory part with one row: avatar, profile name in bold, `(#news1…)` in grey, description. The "Connect to …" row disappears |
-| N2 | Type `@alice.testing` (registered contact address), press Search | One Names row for the contact |
-| N3 | Bare name registered as both a contact and a channel | Up to two Names rows |
-| N4 (R1-6 note) | Name that is not registered, press Search | **No alert**, no Names row; "Connect to …" stays; directory results still come |
-| N5 | Name of a contact you already have, shown in the local list | No Names row for it |
-| N6 | A channel found both by name and in the directory | Shown once, as the Names row. If it also shows in Directory, note it (link encoding differs; nothing should ever be hidden wrongly) |
-| N7 | Profile without a name-resolving server, press Search on a name | No "None of your servers…" alert; just no Names row |
-| N8 | After names arrive, tap "Search in Directory", "Show more" or retry | The Names rows stay |
-| N9 | Tap "Search in Directory" (not the key) with a name candidate | Directory only; no Names part |
-| N10 | Tap a Names row | The usual connect flow (contact or channel alert). If the directory page is still loading, it stops, and the Names rows stay (also on the onboarding screen) |
-| N11 | Start a connect (tap a result, "Loading profile…"), and while it runs press Search | The spinner stays the connection's; when both finish, no spinner is left behind |
+| U1 | Search for the name of a channel you joined (it is also listed) | It appears once, as your local chat; no result row for it |
+| U2 | Search for a word only in that channel's description, so the local list does not show it | It appears as your chat's row (as in the chat list: name without `#`, last message, time), before the result rows, with no "Open"; tapping it opens the channel, with no alert |
+| U3 | A listed regular group you joined with `/c` or through another link, or by invitation | It shows as a result with "Open" beside its own chat row. This is the documented limit, not a regression |
+| U4 | Search for the name of a joined channel that is the page's only result, so the list shows it as your chat | "All results on this page are already in your chats" (grey), and the load row when there are more pages; nothing loads more pages by itself |
 
-## New chat (AC7)
+## New chat (AC9)
 
 | ID | Do | Expect |
 |----|----|--------|
 | W1 | Open New chat (pencil), type text | "Search in Directory" below the field; the action rows (1-time link, scan, create group/channel) hide as before |
 | W2 | Type a 5+ letter word | "Connect to … " and "Search in Directory" below the field |
 | W3 | Paste a link | No "Search in Directory"; the link connects as before |
-| W4 | Press the keyboard **Search** key | "Names" and "Directory" sections after "Your Contacts" (which shows only while a contact matches), with uppercase grey headers like it; first time, the same consent alert |
-| W5 | Search with no contact matching | "No filtered contacts" is hidden while searching and when there are results; shown when nothing is found anywhere |
-| W6 | Tap a Directory or Names result | The sheet closes and the join or connect flow runs |
-| W7 | Name of a contact listed in "Your Contacts" | No Names row for it |
-| W8 | Name of a known contact whose display name does not contain the typed text | It shows as a Names row (documented gap); tapping opens the existing chat |
+| W4 | Press the keyboard **Search** key | The directory results, after the alert while the switch is off; "Connect to …" stays; "Search in Directory" hides while the results show |
+| W5 | Results arrive | One card without a header after "Your Contacts" (which shows only while a contact matches): your chats, then the results with 30-pt avatars and "Open", the load row last |
+| W6 | Search with no contact matching | "No filtered contacts" is hidden while searching and when there are results; shown when nothing is found anywhere |
+| W7 | Tap a result or its "Open" | The sheet closes and the chat opens prepared, with no alert |
+| W8 | Long press a result | A menu with "Open", as in D15 |
 | W9 | Close the sheet while a search runs | The spinner stops; the chat list is unaffected |
-| W10 (R1-1) | Sheet open with results, tap a notification from another profile | The results disappear |
+| W10 | Sheet open with results, tap a notification from another profile | The results disappear |
 | W11 | New chat → Archived contacts, type and press return | The key is "return", not Search; no online rows; empty states as before |
-| W12 | In New chat, search the directory for a word in the description of a channel or group you joined | In the Directory section it is a chat row like a contact's (avatar, name without `#`, a star if favourite, a mask if incognito), with no "Join …"; tapping it closes the sheet and opens the chat |
+| W12 | In New chat, search the directory for a word in the description of a channel or group you joined | In the results card it is a chat row like a contact's (avatar, name without `#`, a star if favourite, a mask if incognito), with no "Open"; tapping it closes the sheet and opens the chat |
 
 ## Regression checks
 
@@ -102,3 +89,4 @@ Run these on an iOS simulator or device on the Mac. Each case says what to do an
 | G2 | Tag filters, unread filter, clearing the search | Unchanged |
 | G3 | Tap the pencil while a chat-list search runs | The chat-list search is cancelled (spinner stops) |
 | G4 | Pull to refresh (reconnect servers) | Unchanged |
+| G5 | Tap "Connect to …" for a registered name | The name resolves and the usual contact or channel alert shows, as before |

@@ -458,7 +458,7 @@ write_seed() {
     echo "| \`$avatar_search_text\` | ci_avatar_g1…3 (groups), ci_avatar_c1…3 (channels), each with an avatar the size the app makes | avatars and the response size limit: about one entry per page |"
     echo "| \`ci long\` | $long_name (group): a long name and a two-line description | D3 |"
     echo "| \`ci markdown\` | ci_markdown (group): markdown in the description | D5 |"
-    echo "| \`cinews\` | cinews (channel, with the name cinews.testing), cinews_digest and cinews_weekly (groups) | a search that shows local chats, Names and Directory |"
+    echo "| \`cinews\` | cinews (channel, with the name cinews.testing), cinews_digest and cinews_weekly (groups) | the Search key with a name typed: directory results, with Connect to cinews.testing still shown |"
     echo
     sqlite3 -markdown "$work/directory_chat.db" "$listings_query"
     echo
