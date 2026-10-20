@@ -78,7 +78,6 @@ class NetworkObserver {
     noNetworkJob.cancel()
     if (info.online) {
       withBGApi {
-        // the controller is read once and passed, so that replacing it between the two does not fail the command
         val ctrl = controller.currentCtrl()
         if (ctrl != null && controller.apiSetNetworkInfo(info, ctrl)) {
           chatModel.networkInfo.value = info
@@ -87,7 +86,6 @@ class NetworkObserver {
     } else {
       noNetworkJob = withBGApi {
         delay(3000)
-        // the controller is read once and passed, so that replacing it between the two does not fail the command
         val ctrl = controller.currentCtrl()
         if (ctrl != null && controller.apiSetNetworkInfo(info, ctrl)) {
           chatModel.networkInfo.value = info
