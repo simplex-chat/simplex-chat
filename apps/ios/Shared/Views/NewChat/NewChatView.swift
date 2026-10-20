@@ -1334,6 +1334,10 @@ private func showOpenKnownGroupAlert(
     )
 }
 
+enum PrepareGroupMode {
+    case confirm, open
+}
+
 // Spec: spec/client/navigation.md#planAndConnect
 func planAndConnect(
     _ shortOrFullLink: String,
@@ -1342,7 +1346,8 @@ func planAndConnect(
     dismiss: Bool,
     cleanup: (() -> Void)? = nil,
     filterKnownContact: ((Contact) -> Void)? = nil,
-    filterKnownGroup: ((GroupInfo) -> Void)? = nil
+    filterKnownGroup: ((GroupInfo) -> Void)? = nil,
+    prepareGroup: PrepareGroupMode = .confirm
 ) {
     switch strConnectTarget(shortOrFullLink) {
     case let .link(_, linkType, _):
@@ -1543,18 +1548,30 @@ func planAndConnect(
                         if let groupSLinkData = groupSLinkData_ {
                             logger.debug("planAndConnect, .groupLink, .ok, short link data present")
                             await MainActor.run {
-                                showPrepareGroupAlert(
-                                    connectionLink: connectionLink,
-                                    groupShortLinkInfo: groupShortLinkInfo_,
-                                    groupShortLinkData: groupSLinkData,
-                                    ownerVerification: ownerVerification,
-                                    verifiedDomain: planSimplexName?.nameDomain,
-                                    connectOtherButton: connectOtherButton,
-                                    connectOtherLink: connectOtherLink,
-                                    theme: theme,
-                                    dismiss: dismiss,
-                                    cleanup: cleanup
-                                )
+                                switch prepareGroup {
+                                case .confirm:
+                                    showPrepareGroupAlert(
+                                        connectionLink: connectionLink,
+                                        groupShortLinkInfo: groupShortLinkInfo_,
+                                        groupShortLinkData: groupSLinkData,
+                                        ownerVerification: ownerVerification,
+                                        verifiedDomain: planSimplexName?.nameDomain,
+                                        connectOtherButton: connectOtherButton,
+                                        connectOtherLink: connectOtherLink,
+                                        theme: theme,
+                                        dismiss: dismiss,
+                                        cleanup: cleanup
+                                    )
+                                case .open:
+                                    prepareAndOpenGroup(
+                                        connectionLink: connectionLink,
+                                        groupShortLinkInfo: groupShortLinkInfo_,
+                                        groupShortLinkData: groupSLinkData,
+                                        verifiedDomain: planSimplexName?.nameDomain,
+                                        dismiss: dismiss,
+                                        cleanup: cleanup
+                                    )
+                                }
                             }
                         } else {
                             logger.debug("planAndConnect, .groupLink, .ok, no short link data")

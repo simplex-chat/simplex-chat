@@ -73,12 +73,14 @@ private struct DirectorySearchResponse: Decodable {
     var type: String
     var entries: [JSONValue]?
     var searchCursor: JSONValue?
+    var moreCount: JSONValue?
 }
 
 struct DirectorySearchResults {
     var entries: [DirectorySearchEntry]
     // opaque: stored and echoed back on the next request, never inspected
     var cursor: JSONValue?
+    var moreCount: Int?
 }
 
 func directorySearchRequestJSON(_ text: String, _ cursor: JSONValue?) -> String {
@@ -96,7 +98,9 @@ func parseDirectorySearchResponse(_ resp: JSONValue) -> DirectorySearchResults? 
     let entries = (r.entries ?? []).compactMap { (e: JSONValue) -> DirectorySearchEntry? in
         decodeJSONValue(e)
     }
-    return DirectorySearchResults(entries: entries, cursor: r.searchCursor)
+    // only shown as text, so a count out of range is dropped rather than failing the response
+    let moreCount: Int? = if case let .number(n)? = r.moreCount, n >= 0, n <= Double(Int32.max), n == n.rounded() { Int(n) } else { nil }
+    return DirectorySearchResults(entries: entries, cursor: r.searchCursor, moreCount: moreCount)
 }
 
 func planLocalChatId(_ plan: ConnectionPlan) -> ChatId? {
@@ -122,66 +126,33 @@ func planLocalChatId(_ plan: ConnectionPlan) -> ChatId? {
     }
 }
 
-struct NameSearchResult: Identifiable {
-    let target: String
-    let simplexName: String
-    let profileName: String?
-    let descr: String?
-    let image: String?
-    let iconName: String
-    var localChatId: ChatId?
-    // the link the core resolved the name to, never a profile field the name's owner wrote
-    let resolvedLink: String?
+enum DirectoryResultState {
+    case yourChat(ChatId)
+    case joining
+    case open
+}
 
-    var id: String { target }
-
-    init?(target: String, result: ConnectionPlanResult) {
-        let profile: (any NamedChat)?
-        switch result.connectionPlan {
-        case let .contactAddress(contactAddressPlan):
-            switch contactAddressPlan {
-            case let .ok(contactSLinkData_, _): profile = contactSLinkData_?.profile
-            case let .contactViaAddress(contact), let .connectingProhibit(contact), let .known(contact): profile = contact.profile
-            case .connectingConfirmReconnect: profile = nil
-            case .ownLink: return nil
-            }
-            iconName = "person.crop.circle.fill"
-            resolvedLink = nil
-        case let .groupLink(groupLinkPlan):
-            let groupProfile: GroupProfile?
-            switch groupLinkPlan {
-            case let .ok(_, groupSLinkData_, _), let .noRelays(groupSLinkData_), let .updateRequired(groupSLinkData_): groupProfile = groupSLinkData_?.groupProfile
-            case let .known(groupInfo), let .ownLink(groupInfo): groupProfile = groupInfo.groupProfile
-            case let .connectingProhibit(groupInfo_): groupProfile = groupInfo_?.groupProfile
-            case .connectingConfirmReconnect: groupProfile = nil
-            }
-            profile = groupProfile
-            iconName = groupProfile?.isChannel == true ? "antenna.radiowaves.left.and.right.circle.fill" : "person.2.circle.fill"
-            resolvedLink = result.connLink.connShortLink
-        case .invitationLink, .error:
-            return nil
-        }
-        self.target = target
-        simplexName = result.planSimplexName?.shortStr ?? target
-        profileName = profile?.displayName
-        descr = profile?.shortDescr
-        image = profile?.image
-        localChatId = planLocalChatId(result.connectionPlan)
+// no plan means the store doesn't know the link, or the plan failed and Open's online plan will show why
+func directoryResultState(_ plan: ConnectionPlan?) -> DirectoryResultState {
+    if let chatId = plan.flatMap(planLocalChatId) { return .yourChat(chatId) }
+    switch plan {
+    case .groupLink(.connectingConfirmReconnect)?, .groupLink(.connectingProhibit(nil))?: return .joining
+    default: return .open
     }
 }
 
 struct DirectoryResult: Identifiable {
     let entry: DirectorySearchEntry
-    var localChatId: ChatId?
+    var state: DirectoryResultState
 
     var id: String { entry.id }
 }
 
 struct OnlineSearchRows {
-    var names: [NameSearchResult]
-    var directory: [DirectoryResult]
+    var yourChats: [ChatId]
+    var results: [DirectoryResult]
     var pageInChats: Bool
     var footer: DirectoryFooter?
 
-    var isEmpty: Bool { names.isEmpty && directory.isEmpty && !pageInChats && footer == nil }
+    var isEmpty: Bool { yourChats.isEmpty && results.isEmpty && !pageInChats && footer == nil }
 }

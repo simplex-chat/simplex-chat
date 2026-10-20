@@ -17,6 +17,7 @@ struct PrivacySettings: View {
     @AppStorage(GROUP_DEFAULT_PRIVACY_SANITIZE_LINKS, store: groupDefaults) private var privacySanitizeLinks = false
     @AppStorage(DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS) private var showChatPreviews = true
     @AppStorage(DEFAULT_PRIVACY_VERIFY_SIMPLEX_NAMES) private var verifySimplexNames = false
+    @AppStorage(DEFAULT_PRIVACY_DIRECTORY_SEARCH) private var directorySearch = false
     @AppStorage(DEFAULT_PRIVACY_SAVE_LAST_DRAFT) private var saveLastDraft = true
     @AppStorage(DEFAULT_PRIVACY_SHOW_SIGNATURE) private var showSignature = true
     @AppStorage(DEFAULT_PRIVACY_SHOW_FILE_ENCRYPTION) private var showFileEncryption = true
@@ -82,6 +83,9 @@ struct PrivacySettings: View {
                                 UserDefaults.standard.set(linkPreviews, forKey: DEFAULT_PRIVACY_LINK_PREVIEWS)
                                 privacyLinkPreviewsShowAlertGroupDefault.set(false)
                             }
+                    }
+                    settingsRow("magnifyingglass", color: theme.colors.secondary) {
+                        Toggle("Directory search", isOn: $directorySearch)
                     }
                     settingsRow("link", color: theme.colors.secondary) {
                         Toggle("Remove link tracking", isOn: $privacySanitizeLinks)

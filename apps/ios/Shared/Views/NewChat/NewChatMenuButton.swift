@@ -93,10 +93,10 @@ struct NewChatSheet: View {
                     searchShowingSimplexLink: $searchShowingSimplexLink,
                     searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink,
                     connectNameCandidate: $connectNameCandidate,
-                    onSearch: runOnlineSearch
+                    onSearch: runDirectorySearch
                 )
                 .frame(maxWidth: .infinity)
-                if let candidate = connectNameCandidate, onlineSearch.names.isEmpty {
+                if let candidate = connectNameCandidate {
                     ConnectByNameRow(
                         name: candidate,
                         searchText: $searchText,
@@ -105,7 +105,7 @@ struct NewChatSheet: View {
                         dismiss: true
                     )
                 }
-                if !searchTrimmed.isEmpty, !searchShowingSimplexLink {
+                if !searchTrimmed.isEmpty, !searchShowingSimplexLink, !onlineSearch.showResults {
                     SearchInDirectoryRow(searchFocussed: $searchFocussed, onSearch: runDirectorySearch)
                 }
             }
@@ -182,7 +182,7 @@ struct NewChatSheet: View {
                 showDeletedChatIcon: true,
                 showsEmptyState: !onlineSearch.searching && rows.isEmpty
             )
-            onlineSearchSections(rows)
+            onlineSearchSection(rows)
         }
         .onChange(of: searchText) { _ in
             onlineSearch.reset()
@@ -192,49 +192,30 @@ struct NewChatSheet: View {
         }
     }
 
-    @ViewBuilder private func onlineSearchSections(_ rows: OnlineSearchRows) -> some View {
-        if !rows.names.isEmpty {
+    @ViewBuilder private func onlineSearchSection(_ rows: OnlineSearchRows) -> some View {
+        if !rows.isEmpty {
             Section {
-                ForEach(rows.names) { result in
-                    NameSearchRow(result: result)
-                        .onTapGesture {
-                            searchFocussed = false
-                            planAndConnect(result.target, theme: theme, dismiss: true, cleanup: nil)
-                        }
+                ForEach(rows.yourChats.compactMap { chatModel.getChat($0) }, id: \.viewId) { chat in
+                    ContactListNavLink(chat: chat, showDeletedChatIcon: true)
                 }
-            } header: {
-                onlineSearchHeader("Names")
-            }
-        }
-        if !rows.directory.isEmpty || rows.pageInChats || rows.footer != nil {
-            Section {
-                ForEach(rows.directory) { result in
-                    if let chat = result.localChatId.flatMap({ chatModel.getChat($0) }) {
-                        ContactListNavLink(chat: chat, showDeletedChatIcon: true)
-                    } else {
-                        DirectorySearchRow(entry: result.entry)
-                            .onTapGesture {
-                                searchFocussed = false
-                                planAndConnect(result.entry.link, theme: theme, dismiss: true, cleanup: nil)
-                            }
-                    }
+                ForEach(rows.results) { result in
+                    DirectorySearchRow(entry: result.entry, imageSize: 30, state: result.state)
+                        .modifier(DirectoryResultMenu(result: result, imageSize: 30, onOpen: { openResult(result) }))
+                        .onTapGesture { openResult(result) }
                 }
                 if rows.pageInChats { DirectoryPageInChatsRow() }
                 switch rows.footer {
                 case .retry: DirectoryRetryRow(onlineSearch: onlineSearch)
-                case .showMore: DirectoryShowMoreRow(onlineSearch: onlineSearch)
+                case .loadMore: DirectoryLoadMoreRow(onlineSearch: onlineSearch)
                 case nil: EmptyView()
                 }
-            } header: {
-                onlineSearchHeader("Directory")
             }
         }
     }
 
-    private func onlineSearchHeader(_ title: LocalizedStringKey) -> some View {
-        Text(title)
-            .textCase(.uppercase)
-            .foregroundColor(theme.colors.secondary)
+    private func openResult(_ result: DirectoryResult) {
+        searchFocussed = false
+        openDirectoryResult(result, theme: theme, dismiss: true, cleanup: nil)
     }
 
     private var searchTrimmed: String {
@@ -245,13 +226,6 @@ struct NewChatSheet: View {
         let text = searchTrimmed
         guard !text.isEmpty, !searchShowingSimplexLink else { return }
         confirmDirectorySearch { Task { await onlineSearch.searchDirectory(text) } }
-    }
-
-    private func runOnlineSearch() {
-        let text = searchTrimmed
-        guard !text.isEmpty, !searchShowingSimplexLink else { return }
-        let name = connectNameCandidate
-        confirmDirectorySearch { Task { await onlineSearch.search(text, name: name) } }
     }
 
     private func contactListChatPredicate(_ chat: Chat, _ withSearch: Bool) -> Bool {
