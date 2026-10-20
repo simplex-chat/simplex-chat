@@ -3465,14 +3465,14 @@ alert button</note>
         <note>alert button
 chat item action</note>
       </trans-unit>
-      <trans-unit id="Download errors" xml:space="preserve">
+      <trans-unit id="Download errors" xml:space="preserve" approved="no">
         <source>Download errors</source>
-        <target>ダウンロードエラー</target>
+        <target state="translated">ダウンロードエラー</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Download failed" xml:space="preserve">
+      <trans-unit id="Download failed" xml:space="preserve" approved="no">
         <source>Download failed</source>
-        <target>ダウンロード失敗</target>
+        <target state="translated">ダウンロード失敗</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Download file" xml:space="preserve" approved="no">
@@ -3485,19 +3485,19 @@ chat item action</note>
         <target></target>
         <note>alert action</note>
       </trans-unit>
-      <trans-unit id="Downloaded" xml:space="preserve">
+      <trans-unit id="Downloaded" xml:space="preserve" approved="no">
         <source>Downloaded</source>
-        <target>ダウンロード済</target>
+        <target state="translated">ダウンロード済</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Downloaded files" xml:space="preserve">
+      <trans-unit id="Downloaded files" xml:space="preserve" approved="no">
         <source>Downloaded files</source>
-        <target>ダウンロード済ファイル</target>
+        <target state="translated">ダウンロード済ファイル</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Downloading archive" xml:space="preserve">
+      <trans-unit id="Downloading archive" xml:space="preserve" approved="no">
         <source>Downloading archive</source>
-        <target>アーカイブをダウンロード中</target>
+        <target state="translated">アーカイブをダウンロード中</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Downloading link details" xml:space="preserve">
@@ -3550,9 +3550,9 @@ chat item action</note>
         <target state="translated">グループのプロフィールを編集</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Empty message!" xml:space="preserve">
+      <trans-unit id="Empty message!" xml:space="preserve" approved="no">
         <source>Empty message!</source>
-        <target>メッセージが空です!</target>
+        <target state="translated">メッセージが空です!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable" xml:space="preserve" approved="no">
@@ -11633,9 +11633,9 @@ pref value</note>
         <target state="translated">重複メッセージ</target>
         <note>integrity error chat item</note>
       </trans-unit>
-      <trans-unit id="duplicates" xml:space="preserve">
+      <trans-unit id="duplicates" xml:space="preserve" approved="no">
         <source>duplicates</source>
-        <target>重複</target>
+        <target state="translated">重複</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="e2e encrypted" xml:space="preserve" approved="no">
