@@ -42,7 +42,6 @@
       </trans-unit>
       <trans-unit id="%02d hrs %02d min %02d sec" xml:space="preserve">
         <source>%1$02d hrs %2$02d min %3$02d sec</source>
-        <target></target>
         <note>countdown</note>
       </trans-unit>
       <trans-unit id="%@" xml:space="preserve" approved="no">
@@ -162,7 +161,6 @@
       </trans-unit>
       <trans-unit id="%d day" xml:space="preserve">
         <source>%d day</source>
-        <target></target>
         <note>time interval</note>
       </trans-unit>
       <trans-unit id="%d days" xml:space="preserve" approved="no">
@@ -2727,17 +2725,14 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Crowdfunding investors can reserve names before the sale starts: [simplex.domains](https://simplex.domains/)" xml:space="preserve">
         <source>Crowdfunding investors can reserve names before the sale starts: [simplex.domains](https://simplex.domains/)</source>
-        <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Crowdfunding on Wefunder" xml:space="preserve">
         <source>Crowdfunding on Wefunder</source>
-        <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Crowdfunding on Wefunder." xml:space="preserve">
         <source>Crowdfunding on Wefunder.</source>
-        <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Current Passcode" xml:space="preserve" approved="no">
@@ -4797,7 +4792,6 @@ Error: %2$@</source>
       </trans-unit>
       <trans-unit id="Group invitations" xml:space="preserve">
         <source>Group invitations</source>
-        <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group link" xml:space="preserve" approved="no">
@@ -8954,7 +8948,6 @@ copied message info</note>
       </trans-unit>
       <trans-unit id="SimpleX name sale starts in" xml:space="preserve">
         <source>SimpleX name sale starts in</source>
-        <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX one-time invitation" xml:space="preserve" approved="no">
@@ -10112,7 +10105,6 @@ You will be prompted to complete authentication before this feature is enabled.<
       </trans-unit>
       <trans-unit id="Update the app to register a SimpleX domain" xml:space="preserve">
         <source>Update the app to register a SimpleX domain</source>
-        <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Updated conditions" xml:space="preserve" approved="no">
@@ -10830,12 +10822,10 @@ Repeat join request?</source>
       </trans-unit>
       <trans-unit id="You can now invest in SimpleX Chat" xml:space="preserve">
         <source>You can now invest in SimpleX Chat</source>
-        <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can now invest in SimpleX Chat! 🚀" xml:space="preserve">
         <source>You can now invest in SimpleX Chat! 🚀</source>
-        <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can send messages to %@ from Archived contacts." xml:space="preserve" approved="no">
@@ -11764,7 +11754,6 @@ pref value</note>
       </trans-unit>
       <trans-unit id="forwarded from" xml:space="preserve">
         <source>forwarded from</source>
-        <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="group" xml:space="preserve" approved="no">
@@ -12276,7 +12265,6 @@ last received msg: %2$@</source>
       </trans-unit>
       <trans-unit id="until you can register a SimpleX domain" xml:space="preserve">
         <source>until you can register a SimpleX domain</source>
-        <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="updated channel profile" xml:space="preserve" approved="no">
@@ -12495,12 +12483,10 @@ last received msg: %2$@</source>
     <body>
       <trans-unit id="CFBundleName" translate="no" xml:space="preserve">
         <source>SimpleXChat</source>
-        <target></target>
         <note>Bundle name</note>
       </trans-unit>
       <trans-unit id="NSHumanReadableCopyright" translate="no" xml:space="preserve">
         <source>Copyright © 2022 SimpleX Chat. All rights reserved.</source>
-        <target></target>
         <note>Copyright (human-readable)</note>
       </trans-unit>
     </body>
