@@ -2993,11 +2993,4 @@
     <string name="badges_your_badge">Ihr Badge</string>
     <string name="badges_how_it_works_p2">Um einem Kontakt oder einem Server nachzuweisen, dass Sie einen Badge besitzen, erzeugt die App einen neuen Nachweis, der nur den Badge-Typ und das auf eine Woche gerundete Ablaufdatum offenlegt.</string>
     <string name="badges_support_ended_on">Ihr Badge ist am %1$s abgelaufen.</string>
-    <string name="v7_0_crowdfunding" translatable="false"></string>
-    <string name="v7_0_invest_descr" translatable="false"></string>
-    <string name="v7_0_invest_learn_more" translatable="false"></string>
-    <string name="badges_redeem_code_placeholder" translatable="false"></string>
-    <string name="settings_section_title_interface" translatable="false"></string>
-    <string name="settings_section_title_language" translatable="false"></string>
-    <string name="v7_0_invest" translatable="false"></string>
 </resources>
