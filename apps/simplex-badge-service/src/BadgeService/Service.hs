@@ -409,7 +409,7 @@ badgeServiceResponse key verifier checks cc trackerQ_ sigKey reqData = case J.fr
   J.Success BadgeServiceRequest {version, purchaseKey, request}
     | not (version `isCompatible` supportedBadgeServiceVRange) -> pure $ errorResponse BSEUnsupportedVersion
     | purchaseKey /= sigKey -> pure $ errorResponse BSEBadRequest
-    | otherwise -> logInfo ("badge request: " <> commandName request) >> case request of
+    | otherwise -> logInfo ("badge request: " <> commandName request <> maybe "" ((" from " <>) . purchaseKeyPrefix) purchaseKey) >> case request of
         BSCRedeemBadgeCode {masterKey, code} -> case purchaseKey of
           Just k -> redeemCode key cc trackerQ_ k masterKey code
           Nothing -> pure $ errorResponse BSEBadRequest
@@ -657,8 +657,11 @@ firstChargeNotGranted provider = \case
   -- a later charge, or an Apple resubscription under the same original id, may yet be credited from this receipt
   reason -> logInfo ("store subscription not credited yet: " <> tshow reason) $> BSPError {code = BSEPaymentPending, message = Nothing, retryAfter = Just 86400}
 
--- | A forged receipt and a refunded one are both receipt_invalid, so the client learns nothing a
--- forger could iterate on. A test purchase is named, since the device that made it already knows.
+-- | Enough of the purchase key to follow one purchase through a log. It is a public key the request
+-- is signed by and the service stores, so a prefix of it tells an operator nothing new.
+purchaseKeyPrefix :: C.PublicKeyEd25519 -> T.Text
+purchaseKeyPrefix = T.take 8 . safeDecodeUtf8 . strEncode
+
 -- | What each request was answered, to pair with its command in a log. No payload: a credential,
 -- an invoice and a statement are the client's, and an error's message can quote what it refused.
 responseName :: BadgeServiceResponse -> T.Text
@@ -688,6 +691,8 @@ commandName = \case
       SPInvoice {} -> "(invoice)"
       SPReceipt {} -> "(receipt)"
 
+-- | A forged receipt and a refunded one are both receipt_invalid, so the client learns nothing a
+-- forger could iterate on. A test purchase is named, since the device that made it already knows.
 storeRefusalResponse :: StoreRefusal -> IO BadgeServiceResponse
 storeRefusalResponse = \case
   SRInvalid reason -> logInfo ("store receipt refused: " <> reason) $> errorResponse BSEReceiptInvalid
