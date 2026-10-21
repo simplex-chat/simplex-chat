@@ -37,7 +37,7 @@
     "simplex-private-9-title": "Yksisuuntaisia<br>viestijonoja",
     "simplex-private-10-title": "Väliaikaiset nimettömät parittaiset tunnisteet",
     "simplex-private-card-3-point-1": "Vain TLS 1.2/1.3 vahvoilla algoritmeilla käytetään asiakas-palvelin-yhteyksiin.",
-    "simplex-private-card-4-point-2": "Käyttääksesi SimpleX:ää Torin kautta, asenna <a href=\"https://guardianproject.info/apps/org.torproject.android/\" target=\"_blank\" rel=\"noopener\">Orbot-sovellus</a> ja ota käyttöön SOCKS5-välityspalvelin (tai VPN <a href=\"https://apps.apple.com/us/app/orbot/id1609461599?platform=iphone\" target=\"_blank\" rel=\"noopener\">iOS:lla</a>).",
+    "simplex-private-card-4-point-2": "Käyttääksesi SimpleX:ää Torin kautta, asenna <a href=\"https://guardianproject.info/apps/org.torproject.android/\" target=\"_blank\">Orbot-sovellus</a> ja ota käyttöön SOCKS5-välityspalvelin (tai VPN <a href=\"https://apps.apple.com/us/app/orbot/id1609461599?platform=iphone\" target=\"_blank\">iOS:lla</a>).",
     "simplex-private-card-7-point-1": "Viestien eheyden varmistamiseksi ne numeroituvat peräkkäin ja sisältävät edellisen viestin tiivisteen.",
     "simplex-private-card-7-point-2": "Jos viestiä lisätään, poistetaan tai muutetaan, vastaanottaja saa ilmoituksen.",
     "simplex-private-card-8-point-1": "SimpleX-palvelimet toimivat matalan viiveen sekoitussolmuina &mdash; saapuvilla ja lähtevillä viesteillä on erilainen järjestys.",
