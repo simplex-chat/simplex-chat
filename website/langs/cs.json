@@ -1,7 +1,7 @@
 {
     "simplex-private-card-10-point-2": "Umožňuje doručovat zprávy bez identifikátoru uživatelských profilů, což poskytuje lepší soukromí metadat než alternativy.",
     "simplex-unique-4-overlay-1-title": "Plně decentralizované &mdash; uživatelé vlastní síť SimpleX",
-    "hero-overlay-card-1-p-6": "Více v <a href=\"https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md\" target=\"_blank\" rel=\"noopener\">SimpleX whitepaper</a>.",
+    "hero-overlay-card-1-p-6": "Více v <a href=\"https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md\" target=\"_blank\">SimpleX whitepaper</a>.",
     "hero-overlay-card-1-p-2": "K doručování zpráv používá SimpleX namísto ID uživatelů používaných všemi ostatními sítěmi, dočasné anonymní párové identifikátory front zpráv, oddělené pro každé z vašich připojení &mdash; neexistují žádné dlouhodobé identifikátory.",
     "hero-overlay-card-1-p-3": "Definujete, které servery se mají používat k přijímání zpráv, vašich kontaktů &mdash; servery, které používáte k odesílání zpráv. Každá konverzace bude pravděpodobně používat dva různé servery.",
     "hero-overlay-card-2-p-3": "I v těch nejsoukromějších aplikacích, které používají služby Tor v3, pokud mluvíte se dvěma různými kontakty prostřednictvím stejného profilu, může být prokázáno, že jsou spojeni se stejnou osobou.",
@@ -188,7 +188,7 @@
     "contact-hero-p-1": "Veřejné klíče a adresa fronty zpráv v tomto odkazu NEJSOU při zobrazení této stránky odesílány přes síť &mdash; jsou obsaženy ve fragmentu kontrolního součtu adresy URL odkazu.",
     "simplex-unique-overlay-card-3-p-4": "Mezi odeslaným a přijatým provozem serveru nejsou žádné společné identifikátory ani šifrovaný text &mdash; pokud to někdo pozoruje, nemůže snadno určit, kdo s kým komunikuje, i když je TLS kompromitován.",
     "simplex-unique-card-2-p-1": "Protože na SimpleX síti nemáte žádný identifikátor nebo pevnou adresu, nikdo vás nemůže kontaktovat pokud nenasdílíte jednorázovou nebo dočasnou uživatelskou adresu, jako QR kód nebo odkaz.",
-    "simplex-unique-overlay-card-4-p-2": "SimpleX síť používá <a href=\"https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md\" target=\"_blank\" rel=\"noopener\">otevřený protokol</a> a poskytuje <a href=\"https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-client/typescript\" target=\"_blank\" rel=\"noopener\">SDK k vytváření chat botů</a>, což umožní implementaci služeb, díky nimž boudou moci uživatelé komunikovat prostřednictvím aplikací SimpleX Chat &mdash; Opravdu se těšíme, jaké služby SimpleX vytvoříte.",
+    "simplex-unique-overlay-card-4-p-2": "SimpleX síť používá <a href=\"https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md\" target=\"_blank\">otevřený protokol</a> a poskytuje <a href=\"https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-client/typescript\" target=\"_blank\">SDK k vytváření chat botů</a>, což umožní implementaci služeb, díky nimž boudou moci uživatelé komunikovat prostřednictvím aplikací SimpleX Chat &mdash; Opravdu se těšíme, jaké služby SimpleX vytvoříte.",
     "simplex-network": "SimpleX síť",
     "simplex-explained-tab-2-p-1": "Pro každé připojení používáte dvě samostatné fronty zasílání zpráv k odesílání a přijímání zpráv prostřednictvím různých serverů.",
     "simplex-explained-tab-1-p-1": "Můžete vytvářet kontakty a skupiny a vést obousměrné konverzace, stejně jako v jakémkoli jiném messengeru.",
