@@ -353,7 +353,8 @@ no_consent_alert() {
   ! "$ui" find "Enable Directory search" > /dev/null 2>&1
 }
 
-# A right click on a result opens its menu, which offers Open; Escape closes it.
+# A right click on a result opens its menu, which offers Open; a click elsewhere closes it (Escape doesn't close the
+# chat list's menus on desktop).
 result_menu() {
   local layout=$1 pos opens
   pos=$(left_pane_position "#ci_group") || { check "$layout: #ci_group shown for its menu" false; return; }
@@ -361,9 +362,9 @@ result_menu() {
   "$ui" right-click "${pos% *}" "${pos#* }"
   check "$layout: a right click on #ci_group opens a menu with \"Open\"" [ "$(count_phrases all Open)" -gt "$opens" ]
   "$ui" shot "$layout-result-menu"
-  "$ui" key Escape
+  "$ui" click 900 450
   sleep 1
-  check "$layout: Escape closes the result's menu" [ "$(count_phrases all Open)" -eq "$opens" ]
+  check "$layout: a click elsewhere closes the result's menu" [ "$(count_phrases all Open)" -eq "$opens" ]
 }
 
 # Searches the directory for the text in the search field with the "Search in Directory" row; the first search
@@ -513,7 +514,12 @@ wait_prepared_channel() {
       alert_shown=true
     fi
     if grep -qiF "tap join channel" <<< "$screen"; then
-      prepared_subscribers=$(count_phrases right "1 subscriber")
+      local line
+      while IFS= read -r line; do
+        if [ "${line%%,*}" -ge 390 ] && grep -qiE '[0-9]+ subscribers?' <<< "$line"; then
+          prepared_subscribers=$((prepared_subscribers + 1))
+        fi
+      done <<< "$screen"
       return 0
     fi
     [ "$SECONDS" -lt "$deadline" ] || return 1
