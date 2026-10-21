@@ -259,9 +259,9 @@ channel subscriber relay bar</note>
         <note>channel relay bar
 channel subscriber relay bar</note>
       </trans-unit>
-      <trans-unit id="%d sec" xml:space="preserve">
+      <trans-unit id="%d sec" xml:space="preserve" approved="no">
         <source>%d sec</source>
-        <target>%d s</target>
+        <target state="translated">%d s</target>
         <note>time interval</note>
       </trans-unit>
       <trans-unit id="%d seconds(s)" xml:space="preserve" approved="no">
@@ -4324,9 +4324,9 @@ chat item action</note>
         <target state="translated">Errore di scansione del codice: %@</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Error sending email" xml:space="preserve">
+      <trans-unit id="Error sending email" xml:space="preserve" approved="no">
         <source>Error sending email</source>
-        <target>Errore nell'invio dell'e-mail</target>
+        <target state="translated">Errore nell'invio dell'e-mail</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error sending member contact invitation" xml:space="preserve" approved="no">
@@ -6855,9 +6855,9 @@ La crittografia più sicura.</target>
         <target state="translated">OK</target>
         <note>alert button</note>
       </trans-unit>
-      <trans-unit id="Off" xml:space="preserve">
+      <trans-unit id="Off" xml:space="preserve" approved="no">
         <source>Off</source>
-        <target>Disattivato</target>
+        <target state="translated">Disattivato</target>
         <note>blur media</note>
       </trans-unit>
       <trans-unit id="Ok" xml:space="preserve" approved="no">
@@ -6867,9 +6867,9 @@ La crittografia più sicura.</target>
 alert button
 new chat action</note>
       </trans-unit>
-      <trans-unit id="Old database" xml:space="preserve">
+      <trans-unit id="Old database" xml:space="preserve" approved="no">
         <source>Old database</source>
-        <target>Base di dati vecchia</target>
+        <target state="translated">Base di dati vecchia</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="On your phone, not on servers." xml:space="preserve" approved="no">
@@ -10146,9 +10146,9 @@ i tuoi contatti e i tuoi gruppi.</target>
         <target state="translated">Temi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Then we moved online, and every platform asked for a piece of you - your name, your number, your friends. We accepted that the price of talking to others is letting someone know who we talk to. Every generation, people and tech, had it this way - telephone, email, messengers, social media. It seemed the only way possible." xml:space="preserve">
+      <trans-unit id="Then we moved online, and every platform asked for a piece of you - your name, your number, your friends. We accepted that the price of talking to others is letting someone know who we talk to. Every generation, people and tech, had it this way - telephone, email, messengers, social media. It seemed the only way possible." xml:space="preserve" approved="no">
         <source>Then we moved online, and every platform asked for a piece of you - your name, your number, your friends. We accepted that the price of talking to others is letting someone know who we talk to. Every generation, people and tech, had it this way - telephone, email, messengers, social media. It seemed the only way possible.</source>
-        <target>Poi ci siamo trasferiti online e ogni piattaforma ha chiesto un pezzo di noi: il nome, il numero, gli amici. Abbiamo accettato che il prezzo da pagare per comunicare con gli altri fosse quello di far sapere a qualcuno con chi parliamo. Ogni generazione, sia di persone che di tecnologia, ha funzionato così: telefono, e-mail, messenger, social media. Sembrava l'unico modo possibile.</target>
+        <target state="translated">Poi ci siamo trasferiti online e ogni piattaforma ha chiesto un pezzo di noi: il nome, il numero, gli amici. Abbiamo accettato che il prezzo da pagare per comunicare con gli altri fosse quello di far sapere a qualcuno con chi parliamo. Ogni generazione, sia di persone che di tecnologia, ha funzionato così: telefono, e-mail, messenger, social media. Sembrava l'unico modo possibile.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="There is another way. A network with no phone numbers. No usernames. No accounts. No user identities of any kind. A network that connects people and carries encrypted messages without knowing who is connected." xml:space="preserve" approved="no">
@@ -10892,9 +10892,9 @@ alert title</note>
         <target state="translated">Usa l'app con una mano sola.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use this address in your social media profile, website, or email signature." xml:space="preserve">
+      <trans-unit id="Use this address in your social media profile, website, or email signature." xml:space="preserve" approved="no">
         <source>Use this address in your social media profile, website, or email signature.</source>
-        <target>Usa questo indirizzo nel tuo profilo di social media, sito web o firma e-mail.</target>
+        <target state="translated">Usa questo indirizzo nel tuo profilo di social media, sito web o firma e-mail.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use web port" xml:space="preserve" approved="no">
@@ -11872,9 +11872,9 @@ I relay hanno accesso ai messaggi del canale.</target>
         <target state="translated">Le tue impostazioni</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="[Send us email](mailto:chat@simplex.chat)" xml:space="preserve">
+      <trans-unit id="[Send us email](mailto:chat@simplex.chat)" xml:space="preserve" approved="no">
         <source>[Send us email](mailto:chat@simplex.chat)</source>
-        <target>[Inviaci un'e-mail](mailto:chat@simplex.chat)</target>
+        <target state="translated">[Inviaci un'e-mail](mailto:chat@simplex.chat)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="_italic_" xml:space="preserve" approved="no">
@@ -12622,9 +12622,9 @@ pref value</note>
         <target state="translated">osservatore</target>
         <note>member role</note>
       </trans-unit>
-      <trans-unit id="off" xml:space="preserve">
+      <trans-unit id="off" xml:space="preserve" approved="no">
         <source>off</source>
-        <target>disattivato</target>
+        <target state="translated">disattivato</target>
         <note>enabled status
 group pref value
 member criteria value
@@ -12640,9 +12640,9 @@ time to disappear</note>
         <target state="translated">offerto %1$@: %2$@</target>
         <note>feature offered item</note>
       </trans-unit>
-      <trans-unit id="on" xml:space="preserve">
+      <trans-unit id="on" xml:space="preserve" approved="no">
         <source>on</source>
-        <target>attivato</target>
+        <target state="translated">attivato</target>
         <note>group pref value</note>
       </trans-unit>
       <trans-unit id="other" xml:space="preserve" approved="no">
