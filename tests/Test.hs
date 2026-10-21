@@ -86,6 +86,7 @@ main = do
         badgeBTCPayTests
         badgeStripeTests
         badgeNameRegistrationTests
+      namesConfigTests
       describe "SimpleX chat markdown" markdownTests
       describe "JSON Tests" jsonTests
       describe "Member relations" memberRelationsTests

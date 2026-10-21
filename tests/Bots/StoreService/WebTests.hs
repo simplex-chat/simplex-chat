@@ -974,12 +974,13 @@ prepareStaticDir root = do
 testServiceConfig :: FilePath -> Bool -> ServiceConfig
 testServiceConfig staticDir trustForwarded =
   ServiceConfig
-    { listener = ListenerConfig {lHost = "127.0.0.1", lPort = 0, lStaticDir = staticDir, lServeWebapp = True, lWebappExportDir = Nothing, lTrustForwardedFor = trustForwarded},
+    { listener = ListenerConfig {lHost = "127.0.0.1", lPort = 0, lStaticDir = staticDir, lServeWebapp = True, lWebappExportDir = Nothing, lTrustForwardedFor = trustForwarded, lNamesStaticDir = Nothing, lNamesExportDir = Nothing, lNamesHosts = []},
       btcpay = Nothing,
       stripe = Nothing,
       poll = PollConfig {pWaitingSeconds = 3, pIdleSeconds = 60},
       issuer = Nothing,
-      group = Nothing
+      group = Nothing,
+      names = Nothing
     }
 
 testServeWebappOff :: IO ()
@@ -1003,7 +1004,7 @@ testExportWebapp = do
   withTempDirectory "tests/tmp" "badge-export" $ \root -> do
     staticDir <- prepareStaticDir root
     let outDir = root </> "out"
-        lc = ListenerConfig {lHost = "127.0.0.1", lPort = 0, lStaticDir = staticDir, lServeWebapp = False, lWebappExportDir = Just outDir, lTrustForwardedFor = False}
+        lc = ListenerConfig {lHost = "127.0.0.1", lPort = 0, lStaticDir = staticDir, lServeWebapp = False, lWebappExportDir = Just outDir, lTrustForwardedFor = False, lNamesStaticDir = Nothing, lNamesExportDir = Nothing, lNamesHosts = []}
         stripeCfg = Just StripeConfig {sSecretKey = "rk_test_x", sPublishableKey = "pk_test_injected", sWebhookSecret = "whsec_x", sSessionMinutes = 60, sHost = "https://api.stripe.com"}
     exportWebapp lc stripeCfg
     idx <- LB.readFile (outDir </> "index.html")
