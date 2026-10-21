@@ -356,7 +356,13 @@ requestLane checks cc sigKey reqData = case J.fromJSON (J.Object reqData) of
           -- a read that failed may hide a due check, and the main lane is what must not wait on a store
           Left _ -> RenewalLane
   J.Success BadgeServiceRequest {purchaseKey = Just k, request = BSCUpgradeBadgeSubscription {}}
-    | sigKey == Just k -> pure RenewalLane
+    | sigKey == Just k -> do
+        now <- badgeNow cc
+        withDB' "requestLane" cc (\db -> getIssuePurchase db k) <&> \case
+          Right (Just (_, Just _, Just subscription@PurchaseSubscription {subscriptionRef = SubscriptionApple _}))
+            | isNothing $ checkWait (addUTCTime routeLookahead now) subscription -> RenewalLane
+          Right _ -> MainLane
+          Left _ -> RenewalLane
   _ -> pure MainLane
 
 -- | The router judges a minute ahead, so a handler reading the clock moments later finds due only what the router routed off the main lane.
@@ -695,7 +701,6 @@ data NotGranted
   | NGRevoked
   | NGOffer
   | NGUnknownPlan
-  | NGNotUpgradeTier
   | NGNotStarted
   | NGPeriodOver
   deriving (Show)
@@ -877,11 +882,11 @@ issueBadgeCmd key cc verifier purchaseKey upgrade_ BadgeBalance {lastEntry} = do
         issueResponse db purchaseId t state_
       pure $ fromRight (errorResponse BSEInternal) r
     -- Answered pending until the tier the device saw is granted, so the old tier's credential is never taken for the new one.
-    upgradeSubscription SubscriptionUpgrade {upgradeRef, upgradeTier} purchase@ServicePurchase {badgePurchaseId} tip@StatementEntry {balanceBadgeType} subscription@PurchaseSubscription {subscriptionRef, storedState, checkedAt} now
+    upgradeSubscription SubscriptionUpgrade {upgradeRef, upgradeTier} purchase@ServicePurchase {badgePurchaseId} tip@StatementEntry {balanceBadgeType} subscription@PurchaseSubscription {subscriptionRef, storedState} now
       | not ownSubscription = pure $ errorResponse BSEBadRequest
       | balanceBadgeType == upgradeTier = answered "answerUpgraded" $ \db -> issueResponse db badgePurchaseId now (Just storedState)
-      | Just t <- checkedAt, diffUTCTime now t < subscriptionCheckInterval =
-          pure BSPError {code = BSEPaymentPending, message = Nothing, retryAfter = Just $ ceiling $ subscriptionCheckInterval - diffUTCTime now t}
+      | Just wait <- checkWait now subscription =
+          pure BSPError {code = BSEPaymentPending, message = Nothing, retryAfter = Just $ ceiling wait}
       | otherwise = renewSubscription (Just upgradeTier) purchase tip subscription now
       where
         ownSubscription = case subscriptionRef of
@@ -889,7 +894,7 @@ issueBadgeCmd key cc verifier purchaseKey upgrade_ BadgeBalance {lastEntry} = do
           SubscriptionGoogle _ -> False
     -- Nothing but the store's answer is written until a charge is granted: a lapse at now would be dated
     -- after a grant a later check may make at an earlier period start, and the client would read it as a pass that issued.
-    renewSubscription upgradeTier_ ServicePurchase {badgePurchaseId, masterKey} tip subscription@PurchaseSubscription {paymentId, provider, subscriptionRef, storedState} now
+    renewSubscription upgradeTier_ ServicePurchase {badgePurchaseId, masterKey} tip@StatementEntry {balanceBadgeType} subscription@PurchaseSubscription {paymentId, provider, subscriptionRef, storedState} now
       | isNothing upgradeTier_ && not (subscriptionCheckDue (storeChecks verifier) now tip subscription) = answered "answerStoredSubscription" $ \db -> issueResponse db badgePurchaseId now (Just storedState)
       | otherwise =
           withDB' "stampSubscriptionCheck" cc (\db -> stampSubscriptionCheck db paymentId now) >>= \case
@@ -897,7 +902,7 @@ issueBadgeCmd key cc verifier purchaseKey upgrade_ BadgeBalance {lastEntry} = do
             Right () ->
               checkStoreSubscription verifier subscriptionRef Nothing >>= \case
                 Left refusal -> atLeastCheckInterval <$> storeRefusalResponse refusal
-                Right checked@SubscriptionCheck {subscriptionState, latestCharge} -> case grantableCharge provider now checked >>= ofUpgradeTier >>= fundsMonthNow purchaseKey now (Just tip) of
+                Right checked@SubscriptionCheck {subscriptionState, latestCharge} -> case grantableCharge provider now checked >>= fundsMonthNow purchaseKey now (Just tip) of
                   Left NGMalformedPeriod -> storeRefusalResponse $ SRVerifierFailed "a charge whose period does not end after its start"
                   Left reason -> do
                     forM_ latestCharge $ \_ -> logInfo $ "store subscription charge not granted: " <> tshow reason
@@ -922,24 +927,22 @@ issueBadgeCmd key cc verifier purchaseKey upgrade_ BadgeBalance {lastEntry} = do
                                   appendLedgerPlan db badgePurchaseId Nothing rows $ Just issuance
                                   setPurchaseBadgeType db badgePurchaseId badgeType now
                                   setSubscriptionState db paymentId subscriptionState now
-                                  Just <$> issueResponse db badgePurchaseId now (Just subscriptionState)
+                                  Just <$> checkedResponse db badgeType subscriptionState
                             case r of
                               Right (Just resp) -> logBanked months $> resp
                               Right Nothing -> logError "badge service: a subscription's ledger moved while its renewal was signed" $> errorResponse BSEInternal
                               Left _ -> pure $ errorResponse BSEInternal
       where
-        ofUpgradeTier grant@(_, (badgeType, _)) = case upgradeTier_ of
-          Just tier | tier /= badgeType -> Left NGNotUpgradeTier
-          _ -> Right grant
         -- the store's answer is kept, and a charge it reports is recorded once, granted or not
         recordCheck charge_ state = do
           chargeId <- randomId cc
           answered "recordSubscriptionCheck" $ \db -> do
             forM_ charge_ $ \charge -> insertSubscriptionCharge db paymentId chargeId charge now
             setSubscriptionState db paymentId state now
-            case upgradeTier_ of
-              Nothing -> issueResponse db badgePurchaseId now (Just state)
-              Just _ -> pure $ atLeastCheckInterval $ errorResponse BSEPaymentPending
+            checkedResponse db balanceBadgeType state
+        checkedResponse db ledgerTier state = case upgradeTier_ of
+          Just tier | tier /= ledgerTier -> pure $ atLeastCheckInterval $ errorResponse BSEPaymentPending
+          _ -> issueResponse db badgePurchaseId now (Just state)
     -- A charge a dev deployment's store reports while coverage runs is banked with no issuance, and its month issued once coverage reaches it.
     checkStoreDuringCoverage purchase@ServicePurchase {badgePurchaseId} tip PurchaseSubscription {paymentId, provider, subscriptionRef} now =
       withDB' "stampSubscriptionCheck" cc (\db -> stampSubscriptionCheck db paymentId now) >>= \case
@@ -997,8 +1000,13 @@ getIssuePurchase db purchaseKey = do
 
 subscriptionCheckDue :: StoreChecks -> UTCTime -> StatementEntry -> PurchaseSubscription -> Bool
 subscriptionCheckDue ChecksAtEveryRequest _ _ _ = True
-subscriptionCheckDue ChecksAfterCoverage now tip PurchaseSubscription {checkedAt} =
-  paidThrough tip <= now && maybe True (\t -> diffUTCTime now t >= subscriptionCheckInterval) checkedAt
+subscriptionCheckDue ChecksAfterCoverage now tip subscription =
+  paidThrough tip <= now && isNothing (checkWait now subscription)
+
+-- | What remains of the interval since the subscription last asked its store, if anything.
+checkWait :: UTCTime -> PurchaseSubscription -> Maybe NominalDiffTime
+checkWait now PurchaseSubscription {checkedAt} =
+  mfilter (> 0) $ (\t -> subscriptionCheckInterval - diffUTCTime now t) <$> checkedAt
 
 -- | Each subscription asks its store at most this often, failed attempts included, so a client
 -- repeating its requests cannot spend the store quota every subscriber shares.

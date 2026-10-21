@@ -206,7 +206,7 @@ getCodePurchaseForKey db badgeCodeId key =
         FROM sx_badge_service_badge_purchases p
         LEFT JOIN sx_badge_service_badge_issuances i ON i.badge_purchase_id = p.badge_purchase_id
         WHERE p.badge_code_id = ? AND p.purchase_key = ?
-        ORDER BY i.period_end DESC
+        ORDER BY i.entry_id DESC
         LIMIT 1
       |]
       (badgeCodeId, key)
@@ -226,7 +226,7 @@ getStorePaymentCredit db provider providerRef =
         JOIN sx_badge_service_badge_purchases p ON p.payment_id = pay.payment_id
         LEFT JOIN sx_badge_service_badge_issuances i ON i.badge_purchase_id = p.badge_purchase_id
         WHERE pay.provider = ? AND pay.provider_ref = ?
-        ORDER BY i.period_end DESC
+        ORDER BY i.entry_id DESC
         LIMIT 1
       |]
       (textEncode provider, providerRef)
@@ -322,20 +322,21 @@ toEntry ((entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs,
           refToPurchaseKey = toKey_
         }
 
+-- | The newest issuance, and only while it runs: after a tier change the superseded tier's month can end later.
 getCurrentIssuance :: DB.Connection -> Int64 -> UTCTime -> IO (Maybe BadgeCredential)
 getCurrentIssuance db purchaseId now = do
   rs <-
     DB.query
       db
       [sql|
-        SELECT credential FROM sx_badge_service_badge_issuances
-        WHERE badge_purchase_id = ? AND period_end > ?
-        ORDER BY period_end DESC
+        SELECT credential, period_end FROM sx_badge_service_badge_issuances
+        WHERE badge_purchase_id = ?
+        ORDER BY entry_id DESC
         LIMIT 1
       |]
-      (purchaseId, now)
+      (Only purchaseId)
   pure $ case rs of
-    [Only (Binary bs)] -> J.decodeStrict' bs
+    [(Binary bs, periodEnd)] | periodEnd > now -> J.decodeStrict' bs
     _ -> Nothing
 
 -- | creditPaymentId_ names the payment behind a payment credit among the rows.

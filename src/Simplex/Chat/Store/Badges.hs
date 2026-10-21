@@ -499,7 +499,7 @@ getLatestIssuedCredential db badgePurchaseId = do
       [sql|
         SELECT credential FROM badge_issuances
         WHERE badge_purchase_id = ?
-        ORDER BY period_end DESC
+        ORDER BY entry_id DESC
         LIMIT 1
       |]
       (Only badgePurchaseId)

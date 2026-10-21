@@ -3830,12 +3830,11 @@ SEARCH cp USING INTEGER PRIMARY KEY (rowid=?)
 Query: 
         SELECT credential FROM badge_issuances
         WHERE badge_purchase_id = ?
-        ORDER BY period_end DESC
+        ORDER BY entry_id DESC
         LIMIT 1
-      
+
 Plan:
 SEARCH badge_issuances USING INDEX idx_badge_issuances_purchase_entry (badge_purchase_id=?)
-USE TEMP B-TREE FOR ORDER BY
 
 Query: 
         SELECT ct.contact_id
