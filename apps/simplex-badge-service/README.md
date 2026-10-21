@@ -308,17 +308,50 @@ accept_unverified_store_receipts = on
 check_store_during_coverage = on
 ```
 
-With `check_store_during_coverage` on as well, the service asks the mock at every `issueBadge` for a
-subscription, while its paid coverage runs too, rather than once coverage has ended and at most once
-an hour. A charge it reports during coverage is banked: a charge row, the plan's months added to
-what is left and a later paid-through date, and those months are issued once coverage reaches them.
-So a renewal shows at once, though its credential waits for the paid month to end on the service's
-clock, and after a restart the mock answers the subscription ended at once. The mock charges anew
-at every check, so every such request banks the plan's months again; space requests over a minute
-apart, as the mock dates a charge a minute back and the app fails a ledger row dated before the one
-it follows. Off by default, and the service refuses to start with it on unless
-`accept_unverified_store_receipts` is on: a real store has not started its next charge while
-coverage runs, and asking it then would spend the quota every subscriber shares.
+With `check_store_during_coverage` on as well, the service asks its store, the mock or a real one
+with `credit_test_purchases` on (below), at every `issueBadge` for a subscription, while its paid
+coverage runs too, rather than once coverage has ended and at most once an hour. A charge it
+reports during coverage is banked: a charge row, the plan's months added to what is left and a
+later paid-through date, and those months are issued once coverage reaches them. So a renewal
+shows at once, though its credential waits for the paid month to end on the service's clock, and
+after a restart the mock answers the subscription ended at once. The mock charges anew at every
+check, so every such request banks the plan's months again; space requests over a minute apart, as
+the mock dates a charge a minute back and the app fails a ledger row dated before the one it
+follows. The service logs each banked charge as
+`store subscription charge banked: <n> months for <purchase key part>`, which tells a banked month
+from a repeated `badge issued`. Off by default, and the service refuses to start with it on unless
+`accept_unverified_store_receipts` or `credit_test_purchases` is on: a real store has not started
+its next charge while coverage runs, and asking it then would spend the quota every subscriber
+shares.
+
+### Crediting test purchases, for testing against a real store
+
+```ini
+[dev]
+credit_test_purchases = on
+```
+
+A purchase the store itself calls a test, an App Store Sandbox purchase (which TestFlight builds
+buy in) or a Play licence tester's, is refused `test_purchase` by default, which is terminal, so it
+can never be credited. With this on, the service credits it as a real one, one-time purchases and
+subscriptions alike. It applies beside a real `[apple]` or `[google]` section, which still verifies
+every receipt, and changes nothing beside `accept_unverified_store_receipts`, whose mock reports
+no test purchase. The service logs a warning at every start while it is on. Off by default, and only
+`on`/`off` parse. A Sandbox subscription is read only through the sandbox host, so `[apple]` also
+sets `api_host = https://api.storekit-sandbox.itunes.apple.com`.
+
+```ini
+[dev]
+credit_test_purchases = on
+check_store_during_coverage = on
+```
+
+With both on, the real store is asked at every `issueBadge` for a subscription, as above, to watch
+its renewals by hand: a Sandbox subscription renews every few minutes.
+
+No setting marks a production deployment, so the service cannot refuse this flag there: never turn
+it on where released apps trust the issuer key, or anyone with a TestFlight build or a licence
+tester's account gets a badge without paying.
 
 ## Issuing codes
 

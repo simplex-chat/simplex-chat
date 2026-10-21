@@ -24,6 +24,8 @@ module BadgeService.Service
     playReadWait,
     maxPlayPurchaseReads,
     badgeErrorRetryAfter,
+    grantableCharge,
+    NotGranted (..),
     shownServiceRequest,
     survive,
     IssueCodeOpts (..),
@@ -144,7 +146,9 @@ readConfigOrExit path =
     Left e -> putStrLn (path <> ": " <> e) >> exitFailure
     Right sc -> pure sc
 
--- | The config refuses the dev flag beside a real verifier, so only one of them applies.
+-- | Only one of the mock and the real verifiers applies: the config refuses
+-- accept_unverified_store_receipts beside [apple] or [google]. The other two dev settings,
+-- credit_test_purchases and check_store_during_coverage, are meant to sit beside a real verifier.
 configureStoreVerifier :: Maybe ServiceConfig -> ServiceState -> IO ServiceState
 configureStoreVerifier serviceCfg env@ServiceState {serviceCC, storeVerifier = v} = case serviceCfg of
   Just ServiceConfig {devAcceptUnverifiedStoreReceipts = True, devCheckStoreDuringCoverage} -> do
@@ -175,7 +179,7 @@ configureStoreVerifier serviceCfg env@ServiceState {serviceCC, storeVerifier = v
                   (checkApple_, checkGoogle_) -> Just $ \ref _ -> case ref of
                     SubscriptionApple originalId -> maybe notConfigured ($ originalId) checkApple_
                     SubscriptionGoogle token -> maybe notConfigured ($ token) checkGoogle_,
-                storeChecks = if devCheckStoreDuringCoverage then ChecksAtEveryRequest else ChecksAfterCoverage,
+                storeChecks = if devCheckStoreDuringCoverage && devCreditTestPurchases then ChecksAtEveryRequest else ChecksAfterCoverage,
                 creditTestPurchases = devCreditTestPurchases
               }
         }
@@ -696,7 +700,9 @@ commandName = \case
 -- forger could iterate on. A test purchase is named, since the device that made it already knows.
 storeRefusalResponse :: StoreRefusal -> IO BadgeServiceResponse
 storeRefusalResponse = \case
-  SRInvalid reason -> logInfo ("store receipt refused: " <> reason) $> errorResponse BSEReceiptInvalid
+  -- warn, not info: every one of these ends a purchase for good, and one of them (a store that no longer
+  -- knows a subscription it once sold) can do that to a purchase the user really paid for
+  SRInvalid reason -> logWarn ("store receipt refused for good: " <> reason) $> errorResponse BSEReceiptInvalid
   SRTestPurchase -> logInfo "store receipt refused: test purchase" $> errorResponse BSETestPurchase
   SRPending -> pure $ errorResponse BSEPaymentPending
   SRUnreachable reason -> logWarn ("store unreachable: " <> reason) $> errorResponse BSEProviderUnavailable
@@ -808,7 +814,7 @@ issueBadgeCmd key cc verifier purchaseKey BadgeBalance {lastEntry} = do
                                   setSubscriptionState db paymentId subscriptionState now
                                   Just <$> issueResponse db badgePurchaseId now (Just subscriptionState)
                             case r of
-                              Right (Just resp) -> pure resp
+                              Right (Just resp) -> logBanked months $> resp
                               Right Nothing -> logError "badge service: a subscription's ledger moved while its renewal was signed" $> errorResponse BSEInternal
                               Left _ -> pure $ errorResponse BSEInternal
       where
@@ -819,29 +825,42 @@ issueBadgeCmd key cc verifier purchaseKey BadgeBalance {lastEntry} = do
             forM_ charge_ $ \charge -> insertSubscriptionCharge db paymentId chargeId charge now
             setSubscriptionState db paymentId state now
             issueResponse db badgePurchaseId now (Just state)
-    -- A charge the dev mock reports while coverage runs is banked with no issuance, and its month issued once coverage reaches it.
+    -- A charge a dev deployment's store reports while coverage runs is banked with no issuance, and its month issued once coverage reaches it.
     checkStoreDuringCoverage purchase@ServicePurchase {badgePurchaseId, badgeType} tip PurchaseSubscription {paymentId, provider, subscriptionRef} now =
-      checkStoreSubscription verifier subscriptionRef Nothing >>= \case
-        Left refusal -> atLeastCheckInterval <$> storeRefusalResponse refusal
-        Right checked@SubscriptionCheck {subscriptionState, latestCharge} -> do
-          newChargeId <- randomId cc
-          entryIds <- (,,) <$> randomId cc <*> randomId cc <*> randomId cc
-          r <- withDB' "checkStoreDuringCoverage" cc $ \db -> do
-            tip' <- getLedgerTip db badgePurchaseId
-            when (fmap entryId tip' == Just (entryId tip)) $ do
-              case grantableCharge provider (Just badgeType) now checked of
-                Right (charge@StoreCharge {chargeRef, periodStart}, (_, months)) ->
-                  getSubscriptionCharge db paymentId chargeRef >>= \case
-                    Just (_, True) -> pure ()
-                    recorded -> do
-                      let chargeId = maybe newChargeId fst recorded
-                      insertSubscriptionCharge db paymentId chargeId charge now
-                      appendLedgerPlan db badgePurchaseId Nothing (chargeEntries periodStart now months chargeId entryIds tip) Nothing
-                Left _ -> forM_ latestCharge $ \charge -> insertSubscriptionCharge db paymentId newChargeId charge now
-              setSubscriptionState db paymentId subscriptionState now
-            getLedgerTip db badgePurchaseId
-          either (const $ pure $ errorResponse BSEInternal) (\tip_ -> issueDue purchase tip_ (Just subscriptionState) now) r
+      withDB' "stampSubscriptionCheck" cc (\db -> stampSubscriptionCheck db paymentId now) >>= \case
+        Left _ -> pure $ errorResponse BSEInternal
+        Right () ->
+          checkStoreSubscription verifier subscriptionRef Nothing >>= \case
+            Left refusal -> atLeastCheckInterval <$> storeRefusalResponse refusal
+            Right checked@SubscriptionCheck {subscriptionState, latestCharge} -> do
+              newChargeId <- randomId cc
+              entryIds <- (,,) <$> randomId cc <*> randomId cc <*> randomId cc
+              r <- withDB' "checkStoreDuringCoverage" cc $ \db -> do
+                tip' <- getLedgerTip db badgePurchaseId
+                banked <-
+                  if fmap entryId tip' == Just (entryId tip)
+                    then do
+                      bankedMonths <- case grantableCharge provider (Just badgeType) now checked of
+                        Right (charge@StoreCharge {chargeRef, periodStart}, (_, months)) ->
+                          getSubscriptionCharge db paymentId chargeRef >>= \case
+                            Just (_, True) -> pure Nothing
+                            recorded -> do
+                              let chargeId = maybe newChargeId fst recorded
+                              insertSubscriptionCharge db paymentId chargeId charge now
+                              appendLedgerPlan db badgePurchaseId Nothing (chargeEntries periodStart now months chargeId entryIds tip) Nothing
+                              pure $ Just months
+                        Left _ -> Nothing <$ forM_ latestCharge (\charge -> insertSubscriptionCharge db paymentId newChargeId charge now)
+                      setSubscriptionState db paymentId subscriptionState now
+                      pure bankedMonths
+                    else pure Nothing
+                (banked,) <$> getLedgerTip db badgePurchaseId
+              case r of
+                Left _ -> pure $ errorResponse BSEInternal
+                Right (banked, tip_) -> do
+                  forM_ banked logBanked
+                  issueDue purchase tip_ (Just subscriptionState) now
     answered what action = fromRight (errorResponse BSEInternal) <$> withDB' what cc action
+    logBanked months = logInfo $ "store subscription charge banked: " <> tshow months <> " months for " <> purchaseKeyPart purchaseKey
     -- Only the asserted entry's identity is read, never the months it claims.
     issueResponse db purchaseId t subscription = do
       let StatementEntry {entryId = assertedUuid} = lastEntry

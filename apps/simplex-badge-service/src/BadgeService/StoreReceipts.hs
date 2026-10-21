@@ -94,7 +94,7 @@ data StoreVerifier = StoreVerifier
   }
 
 -- | When a subscription's store is asked about it. A real store's next charge has not started while coverage
--- runs, and asking spends the quota every subscriber shares, so only the dev mock checks at every request.
+-- runs, and asking spends the quota every subscriber shares, so only a dev deployment checks at every request.
 data StoreChecks = ChecksAfterCoverage | ChecksAtEveryRequest
   deriving (Eq, Show)
 

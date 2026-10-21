@@ -9,8 +9,8 @@
 
 module BadgeTests (badgeTests) where
 
-import BadgeService.Service (badgeErrorRetryAfter, shownServiceRequest, survive)
-import BadgeService.StoreReceipts (StoreChecks (..), StoreReceipt (..), StoreRefusal (..), StoreVerifier (..), VerifiedStoreTransaction (..), toStoreReceipt)
+import BadgeService.Service (NotGranted (..), badgeErrorRetryAfter, grantableCharge, shownServiceRequest, survive)
+import BadgeService.StoreReceipts (StoreCharge (..), StoreChecks (..), StoreReceipt (..), StoreRefusal (..), StoreVerifier (..), SubscriptionCheck (..), VerifiedStoreTransaction (..), toStoreReceipt)
 import BadgeService.StoreReceipts.Mock (newMockStoreVerifier)
 import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
@@ -121,6 +121,7 @@ badgeTests = do
     it "claims an Apple subscription by its original transaction id, and any other transaction by its own" testAppleTransactionRef
     it "reads an Apple transaction's id, purchase and expiry dates, revocation and type from its unverified payload" testAppleTransactionFacts
     it "resumes a retired subscription only with an Apple charge whose paid period runs, dated less than a day ahead" testResumableCharge
+    it "refuses a store charge once its period has ended, as a sandbox's five-minute one does" testChargePeriodOver
     it "shows a service request in the terminal as its type alone" testShownServiceRequest
     it "refuses for good a Play product id that could name another purchase, before any verifier" testGoogleProductIdPath
     it "does not send a Play token that could name another purchase, and leaves it retryable" testGoogleTokenPath
@@ -1059,6 +1060,19 @@ testResumableCharge = do
   resumableCharge now SPGoogle {productId = "subscr_badge_supporter_01", token = "fake-play-token"} `shouldBe` Nothing
   resumeHoldEnded (secondsAhead oneDay) now `shouldBe` True
   resumeHoldEnded (secondsAhead (oneDay - 1)) now `shouldBe` False
+
+testChargePeriodOver :: IO ()
+testChargePeriodOver = do
+  let startsAt = UTCTime (fromGregorian 2026 10 20) 43200
+      endsAt = addUTCTime 300 startsAt
+      charge = StoreCharge {chargeRef = "2000000900000002", planId = "SUBSCR_BADGE_SUPPORTER_MONTH_01", periodStart = startsAt, periodEnd = endsAt, chargePaid = Nothing, revoked = False, offer = False}
+      grantAt t = grantableCharge PPApple Nothing t SubscriptionCheck {subscriptionState = SSRenewing, testSubscription = False, latestCharge = Just charge}
+      periodOver = \case
+        Left NGPeriodOver -> True
+        _ -> False
+  either (const Nothing) (Just . snd) (grantAt $ addUTCTime 240 startsAt) `shouldBe` Just (BTSupporter, 1)
+  grantAt endsAt `shouldSatisfy` periodOver
+  grantAt (addUTCTime 60 endsAt) `shouldSatisfy` periodOver
 
 testShownServiceRequest :: IO ()
 testShownServiceRequest = do

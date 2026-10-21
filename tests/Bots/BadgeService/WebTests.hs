@@ -1025,7 +1025,8 @@ testServiceConfig staticDir trustForwarded =
       issuer = Nothing,
       group = Nothing,
       devAcceptUnverifiedStoreReceipts = False,
-      devCheckStoreDuringCoverage = False
+      devCheckStoreDuringCoverage = False,
+      devCreditTestPurchases = False
     }
 
 testServeWebappOff :: IO ()

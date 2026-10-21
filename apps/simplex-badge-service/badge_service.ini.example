@@ -105,4 +105,6 @@ check_store_during_coverage = off
 ; local testing only, beside a real [apple] or [google]: credits a purchase the store itself calls a
 ; test - an App Store sandbox purchase, or a Play licence tester's - which no real buyer pays for.
 ; Without it such a purchase is refused as test_purchase, which is terminal, so it can never be credited.
+; The service refuses to start with this on while apple.api_host is the production App Store, since a
+; sandbox receipt verifies like any other and would then be credited as a real purchase.
 credit_test_purchases = off

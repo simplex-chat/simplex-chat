@@ -56,13 +56,18 @@ badgeConfigTests = describe "badge service config" $ do
   it "refuses an accept_unverified_store_receipts that is not on or off" testDevUnverifiedReceiptsNotBoolean
   it "defaults check_store_during_coverage to off" testDevStoreChecksDefault
   it "reads check_store_during_coverage = on and off beside accept_unverified_store_receipts = on" testDevStoreChecksOnOff
-  it "refuses check_store_during_coverage = on without accept_unverified_store_receipts = on" testDevStoreChecksWithoutMock
+  it "refuses check_store_during_coverage = on without accept_unverified_store_receipts or credit_test_purchases on" testDevStoreChecksWithoutMock
+  it "defaults credit_test_purchases to off" testDevCreditTestPurchasesDefault
+  it "reads credit_test_purchases = on and off" testDevCreditTestPurchasesOnOff
+  it "refuses a credit_test_purchases that is not on or off" testDevCreditTestPurchasesNotBoolean
+  it "reads credit_test_purchases = on beside [apple] and [google]" testDevCreditTestPurchasesBesideStores
+  it "reads check_store_during_coverage = on beside credit_test_purchases = on, with no store and beside [apple] or [google]" testDevStoreChecksWithCredit
   it "configures no store verifier when [apple] and [google] are absent" testStoresAbsent
   it "reads [apple] and [google], defaulting Google's endpoints" testStoresRead
   it "refuses an incomplete [apple] or [google], naming the key" testStoresIncomplete
   it "reads the App Store Server API key, defaulting to the production host" testAppleServerApi
   it "refuses an App Store Server API key missing a setting, or an http host" testAppleServerApiIncomplete
-  it "refuses accept_unverified_store_receipts beside a real store verifier" testDevUnverifiedBesideVerifier
+  it "refuses accept_unverified_store_receipts beside a real store verifier, also with credit_test_purchases = on" testDevUnverifiedBesideVerifier
   groupConfigTests
 
 fullIni :: T.Text
@@ -404,13 +409,46 @@ testDevStoreChecksOnOff =
 
 testDevStoreChecksWithoutMock :: IO ()
 testDevStoreChecksWithoutMock =
-  forM_ ["", "accept_unverified_store_receipts = off\n"] $ \mock ->
-    withDev (mock <> "check_store_during_coverage = on\n") $ \case
-      Left e -> e `shouldContain` "check_store_during_coverage"
-      Right _ -> expectationFailure "only the mock may be asked while coverage runs"
+  forM_ ["", "accept_unverified_store_receipts = off\n", "accept_unverified_store_receipts = off\ncredit_test_purchases = off\n"] $ \devFlags ->
+    withDev (devFlags <> "check_store_during_coverage = on\n") $ \case
+      Left e -> e `shouldBe` "[dev] check_store_during_coverage needs accept_unverified_store_receipts or credit_test_purchases = on, as only a dev deployment may ask a store while coverage runs"
+      Right _ -> expectationFailure "only a dev deployment may ask a store while coverage runs"
+
+testDevCreditTestPurchasesDefault :: IO ()
+testDevCreditTestPurchasesDefault = do
+  withIni fullIni $ \p -> do
+    Right cfg <- readServiceConfig p
+    devCreditTestPurchases cfg `shouldBe` False
+  withDev "accept_unverified_store_receipts = on\n" $ \r -> devCreditTestPurchases <$> r `shouldBe` Right False
+
+testDevCreditTestPurchasesOnOff :: IO ()
+testDevCreditTestPurchasesOnOff =
+  forM_ [("on", True), ("off", False)] $ \(v, expected) ->
+    withDev ("credit_test_purchases = " <> v <> "\n") $ \r ->
+      devCreditTestPurchases <$> r `shouldBe` Right expected
+
+testDevCreditTestPurchasesNotBoolean :: IO ()
+testDevCreditTestPurchasesNotBoolean = withDev "credit_test_purchases = yes\n" $ \case
+  Left e -> e `shouldContain` "credit_test_purchases"
+  Right _ -> expectationFailure "only on and off are accepted, so a typo cannot silently credit test purchases"
+
+testDevCreditTestPurchasesBesideStores :: IO ()
+testDevCreditTestPurchasesBesideStores =
+  forM_ [appleIni, googleIni] $ \stores ->
+    withDevBeside stores "credit_test_purchases = on\n" $ \r ->
+      devCreditTestPurchases <$> r `shouldBe` Right True
+
+testDevStoreChecksWithCredit :: IO ()
+testDevStoreChecksWithCredit =
+  forM_ ["", appleIni, googleIni] $ \stores ->
+    withDevBeside stores "credit_test_purchases = on\ncheck_store_during_coverage = on\n" $ \r ->
+      (\cfg -> (devCheckStoreDuringCoverage cfg, devCreditTestPurchases cfg)) <$> r `shouldBe` Right (True, True)
 
 withDev :: T.Text -> (Either String ServiceConfig -> IO a) -> IO a
-withDev keys act = withIni (fullIni <> "[dev]\n" <> keys) $ \p -> readServiceConfig p >>= act
+withDev = withDevBeside ""
+
+withDevBeside :: T.Text -> T.Text -> (Either String ServiceConfig -> IO a) -> IO a
+withDevBeside stores keys act = withIni (fullIni <> stores <> "[dev]\n" <> keys) $ \p -> readServiceConfig p >>= act
 
 appleIni, googleIni :: T.Text
 appleIni = "[apple]\nbundle_id = chat.simplex.app\nroot_certificates = /etc/badges/AppleRootCA-G3.cer ,/etc/badges/AppleRootCA-G4.cer,\n"
@@ -480,13 +518,11 @@ testAppleServerApiIncomplete = do
 
 testDevUnverifiedBesideVerifier :: IO ()
 testDevUnverifiedBesideVerifier =
-  mapM_
-    ( \stores ->
-        withIni (fullIni <> stores <> "[dev]\naccept_unverified_store_receipts = on\n") readServiceConfig >>= \case
-          Left e -> e `shouldContain` "accept_unverified_store_receipts"
-          Right _ -> expectationFailure "a service that verifies store receipts must not also accept unverified ones"
-    )
-    [appleIni, googleIni]
+  forM_ [appleIni, googleIni] $ \stores ->
+    forM_ ["", "credit_test_purchases = on\n"] $ \credit ->
+      withDevBeside stores ("accept_unverified_store_receipts = on\n" <> credit) $ \case
+        Left e -> e `shouldContain` "accept_unverified_store_receipts"
+        Right _ -> expectationFailure "a service that verifies store receipts must not also accept unverified ones"
 
 parseIni :: T.Text -> IO (Either String ServiceConfig)
 parseIni t = withIni t readServiceConfig

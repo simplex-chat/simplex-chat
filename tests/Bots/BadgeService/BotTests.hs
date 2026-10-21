@@ -34,7 +34,7 @@ import ChatTests.Utils
 import Control.Concurrent (newEmptyMVar, putMVar, takeMVar, threadDelay)
 import Control.Concurrent.Async (async, cancel)
 import Control.Concurrent.STM (TQueue, atomically, readTMVar, readTQueue, readTVarIO)
-import Control.Monad (forM_, void, when)
+import Control.Monad (forM_, replicateM, void, when)
 import Control.Exception (finally)
 import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
@@ -52,7 +52,7 @@ import Data.String (fromString)
 import System.Timeout (timeout)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time.Calendar (fromGregorian, toGregorian)
+import Data.Time.Calendar (addDays, fromGregorian, toGregorian)
 import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, diffUTCTime, getCurrentTime, nominalDay)
 import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import Data.Time.Format (defaultTimeLocale, formatTime)
@@ -146,6 +146,7 @@ badgeServiceTests = do
       it "should credit the months a store receipt paid for and issue the first" testStorePurchase
       it "should refuse a receipt another key was credited with" testStoreReceiptUsed
       it "should refuse a receipt the store does not vouch for, with no retry" testStoreReceiptInvalid
+      it "should credit a purchase the store calls a test only with credit_test_purchases on" testStoreTestPurchaseCredited
       it "should write nothing for a pending purchase, and credit it once when it settles" testStorePending
       it "should acknowledge a Play purchase before crediting it, and credit nothing when acknowledging fails" testStoreAcknowledgesBeforeCrediting
       it "should refuse a product that grants no badge" testStoreUnknownProduct
@@ -194,7 +195,7 @@ badgeServiceTests = do
     describe "the store lane" $ do
       it "should answer other requests while a Play receipt is with the store, and credit it once Play answers" testPlayHoldsNoOtherRequest
       it "should route each request to its lane, judging a minute ahead" testStoreRouting
-      it "should check the store at every request only with both dev flags on" testStoreChecksConfigured
+      it "should check the store at every request only with check_store_during_coverage beside the mock or credit_test_purchases, and credit test purchases only from a real store" testStoreChecksConfigured
       it "should answer other requests while a renewal check is with the store, and the renewal once the store answers" testRenewalHoldsNoOtherRequest
       it "should answer a renewal check while a Play purchase is with the store" testPurchaseHoldsNoRenewal
       it "should answer other requests while an App Store subscription is with the store, and credit it once the store answers" testAppleSubscriptionHoldsNoOtherRequest
@@ -213,6 +214,9 @@ badgeServiceTests = do
     it "should wait a day, not the hour the service answered, after a renewal whose store check failed" testStoreUnreachableWaitsStall
     it "should keep a request's wait past a snooze that ends sooner, and raise the alert again without a request" testSnoozeKeepsRequestWait
     it "should wait from a late request until the next daily moment of the shown credential's expiry, not a day after it" testStallRejoinsSharedMoment
+    it "should send no dev-interval request within the interval and one after it" testDevIntervalRequests
+    it "should send no request during coverage without a dev interval" testNoDevIntervalRequests
+    it "should retry a failed dev-interval request within the interval" testDevIntervalRetries
     it "should retire a subscription badge after asking, once the window has passed since the first answer that renewed nothing, whatever the service answers" testSubscriptionRetiredAfterRecoveryWindow
     it "should count the window from the first answer that renewed nothing, not from the coverage it held, and retire a store never reached" testUnrenewedRunStartsAtFirstAnswer
     it "should end the run of answers that renewed nothing at a renewal, and start a new one at the next" testRenewalEndsUnrenewedRun
@@ -1835,6 +1839,28 @@ testStoreReceiptInvalid ps =
     refused SPApple {jws = appleSandboxJWS} `shouldReturn` (BSETestPurchase, Nothing)
     nothingPurchased cc
 
+testStoreTestPurchaseCredited :: HasCallStack => TestParams -> IO ()
+testStoreTestPurchaseCredited ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsController = cc, bsStore = store@FakeStore {appleSandboxJWS, appleSandboxSubscriptionJWS}} -> do
+    now <- serviceNow env
+    let crediting = env {bsVerifier = (fakeVerifier store) {creditTestPurchases = True}}
+        testToken = "fake-play-token-subscription-test.AO-J1Os2q5djX0pRm6"
+        testCheck planId = SubscriptionCheck {subscriptionState = SSRenewing, testSubscription = True, latestCharge = Just $ storeCharge planId (addUTCTime (-3600) now) 1}
+        receipts = [SPApple {jws = appleSandboxJWS}, googlePayment "subscr_badge_supporter_01" testToken, SPApple {jws = appleSandboxSubscriptionJWS}]
+        purchaseUnderNewKey verifierEnv payment = do
+          (purchaseKey, masterKey) <- newPurchaseKeys
+          serviceCmd verifierEnv purchaseKey $ purchaseCmd masterKey payment
+    setSubscription store (SubscriptionGoogle testToken) $ testCheck "subscr-badge-supporter-month-02"
+    setSubscription store (SubscriptionApple appleSubscriptionOriginalId) $ testCheck "SUBSCR_BADGE_SUPPORTER_MONTH_01"
+    credited <- mapM (purchaseUnderNewKey crediting) receipts
+    map (map entryTag . fst . statementOf) credited `shouldBe` [["payment", "badge"], ["charge", "badge"], ["charge", "badge"]]
+    map badgeTypeOf credited `shouldBe` [Just BTLegend, Just BTSupporter, Just BTSupporter]
+    -- past the hour the Play claim is held for since it was credited, so Play is asked again
+    setClockAt bsClock $ addUTCTime 3700 now
+    refused <- mapM (purchaseUnderNewKey env) receipts
+    map refusalOf refused `shouldBe` replicate 3 (BSETestPurchase, Nothing)
+    rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 3
+
 testStorePending :: HasCallStack => TestParams -> IO ()
 testStorePending ps =
   withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsController = cc, bsStore = store} -> do
@@ -2562,6 +2588,71 @@ testStallRejoinsSharedMoment ps =
       nextWakes (chatController alice) `shouldEventuallyReturn` [Just $ addUTCTime nominalDay presentAt]
       requestedAt $ addUTCTime nominalDay presentAt
       nextWakes (chatController alice) `shouldEventuallyReturn` [Just $ addUTCTime (2 * nominalDay) presentAt]
+
+-- | A service that asks its store at every issue request, so the store's check count counts the client's requests.
+withRequestCountingService :: HasCallStack => TestParams -> (BadgeServiceEnv -> IO ()) -> IO ()
+withRequestCountingService ps = withBadgeServiceVerifier ps $ \store -> (fakeVerifier store) {storeChecks = ChecksAtEveryRequest}
+
+-- | An hour past a midnight UTC three days before paidThrough: inside coverage, with the next daily moment of the
+-- shown expiry 23 hours on and every ledger moment days away, so only the dev interval can bring a request.
+devIntervalStart :: [ReplicatedRow] -> UTCTime
+devIntervalStart rows = UTCTime (addDays (-3) (utctDay (dueAtOf rows))) 3600
+
+activateAt :: HasCallStack => TestCC -> TestClock -> UTCTime -> IO ()
+activateAt cc clock t = do
+  setClockAt clock t
+  cc ##> "/_app activate"
+  cc <## "ok"
+
+testDevIntervalRequests :: HasCallStack => TestParams -> IO ()
+testDevIntervalRequests ps =
+  withRequestCountingService ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg {badgeDevRequestInterval = Just 600} "alice" aliceProfile $ \alice -> do
+      (_, rows) <- clientSubscribedMonthly env alice
+      let t1 = devIntervalStart rows
+      checks <- subscriptionChecks store
+      activateAt alice bsClock t1
+      subscriptionChecks store `shouldEventuallyReturn` (checks + 1)
+      waitWakeFrom (chatController alice) (addUTCTime 600 t1)
+      [Just wake] <- nextWakes (chatController alice)
+      wake `shouldSatisfy` (< addUTCTime 610 t1)
+      activateAt alice bsClock $ addUTCTime 300 t1
+      threadDelay 2000000
+      subscriptionChecks store `shouldReturn` checks + 1
+      nextWakes (chatController alice) `shouldReturn` [Just wake]
+      activateAt alice bsClock $ addUTCTime 620 t1
+      subscriptionChecks store `shouldEventuallyReturn` (checks + 2)
+
+testNoDevIntervalRequests :: HasCallStack => TestParams -> IO ()
+testNoDevIntervalRequests ps =
+  withRequestCountingService ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      (_, rows) <- clientSubscribedMonthly env alice
+      let t1 = devIntervalStart rows
+      checks <- subscriptionChecks store
+      wake <- nextWakes (chatController alice)
+      forM_ [0, 300, 620] $ \sinceStart -> do
+        activateAt alice bsClock $ addUTCTime sinceStart t1
+        threadDelay 2000000
+        subscriptionChecks store `shouldReturn` checks
+        nextWakes (chatController alice) `shouldReturn` wake
+
+testDevIntervalRetries :: HasCallStack => TestParams -> IO ()
+testDevIntervalRetries ps =
+  withRequestCountingService ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc} -> do
+    let hourly cfg = cfg {badgeDevRequestInterval = Just 3600}
+    rows <- withNewTestChatCfg ps (hourly bsClientCfg) "alice" aliceProfile $ \alice -> snd <$> clientSubscribedMonthly env alice
+    stopBadgeService cc
+    let t1 = devIntervalStart rows
+    -- the start's pass sends the request the interval made due, which times out and is retried
+    setClockAt bsClock t1
+    withTestChatCfg ps (hourly $ fastRetryCfg $ failingServiceCfg bsClientCfg) "alice" $ \alice -> do
+      failedAt <- replicateM 2 $ alice <##. "1: supporter" >> issueErrorAt (chatController alice)
+      case failedAt of
+        [[Just first], [Just second]] -> do
+          second `shouldSatisfy` (> first)
+          [first, second] `shouldSatisfy` all (\t -> t >= t1 && t < addUTCTime 60 t1)
+        _ -> expectationFailure $ "expected two failed attempts, got " <> show failedAt
 
 testSubscriptionRetiredAfterRecoveryWindow :: HasCallStack => TestParams -> IO ()
 testSubscriptionRetiredAfterRecoveryWindow ps =
@@ -3604,24 +3695,36 @@ testStoreChecksDuringCoverage ps =
     purchased <- serviceCmd env purchaseKey $ purchaseCmd masterKey $ googlePayment "subscr_badge_supporter_01" googleSubscriptionToken
     let entries = fst . statementOf
         request r = assertBalance env purchaseKey (last $ entries r)
+        stampedSince t previous = do
+          [Just checkedAt] <- subscriptionCheckedAt cc
+          checkedAt `shouldSatisfy` \c -> c >= t && c > previous
+          pure checkedAt
+        bankedAt = addUTCTime 120 now
+        renewedAt = addUTCTime nominalDay $ addMonths 1 now
+        endedAt = addUTCTime 60 renewedAt
+    [Just purchaseStamp] <- subscriptionCheckedAt cc
     -- over a minute on, as the mock dates its charge a minute back and the client fails a row dated before the tip
-    setClockAt bsClock $ addUTCTime 120 now
+    setClockAt bsClock bankedAt
     banked <- request purchased
+    bankedStamp <- stampedSince bankedAt purchaseStamp
     map entryTag (entries banked) `shouldBe` ["charge"]
     -- a month granted on the running coverage: one left, paid through a month later
     entryOf (last $ entries banked) `shouldBe` (1, 1, nextDue (entries purchased))
     credentialOf banked `shouldBe` credentialOf purchased
     subscriptionOf banked `shouldBe` Just SSRenewing
     rowCount cc "sx_badge_service_subscription_charges" `shouldReturn` 2
-    setClockAt bsClock $ addUTCTime nominalDay $ addMonths 1 now
+    setClockAt bsClock renewedAt
     renewed <- request banked
+    renewedStamp <- stampedSince renewedAt bankedStamp
     map entryTag (entries renewed) `shouldBe` ["charge", "badge"]
     -- the month banked earlier and the one this check banks, less the one issued
     (\(c, m, _) -> (c, m)) (entryOf $ last $ entries renewed) `shouldBe` (-1, 1)
     expiryOf renewed `shouldSatisfy` (> expiryOf purchased)
     -- a restarted mock has forgotten the plan, so the subscription has ended though coverage runs
     restarted <- checkingAtEveryRequest <$> newMockStoreVerifier (testClockTime bsClock)
+    setClockAt bsClock endedAt
     ended <- serviceCmd env {bsVerifier = restarted} purchaseKey BSCIssueBadge {balance = BadgeBalance {lastEntry = last $ entries renewed}}
+    void $ stampedSince endedAt renewedStamp
     subscriptionOf ended `shouldBe` Just SSEnded
     map entryTag (entries ended) `shouldBe` []
   where
@@ -4134,13 +4237,21 @@ testStoreChecksConfigured _ = do
     writeFile (d </> "badge_service.ini") "[listener]\nstatic_dir = /srv/badges\n"
     Right cfg <- readServiceConfig (d </> "badge_service.ini")
     let checksFor c = (\ServiceState {storeVerifier} -> storeChecks storeVerifier) <$> (newServiceState >>= configureStoreVerifier c)
-        dev accept during = Just cfg {devAcceptUnverifiedStoreReceipts = accept, devCheckStoreDuringCoverage = during}
+        creditsFor c = (\ServiceState {storeVerifier} -> creditTestPurchases storeVerifier) <$> (newServiceState >>= configureStoreVerifier c)
+        dev accept during credit = Just cfg {devAcceptUnverifiedStoreReceipts = accept, devCheckStoreDuringCoverage = during, devCreditTestPurchases = credit}
     checksFor Nothing `shouldReturn` ChecksAfterCoverage
-    checksFor (dev False False) `shouldReturn` ChecksAfterCoverage
-    checksFor (dev True False) `shouldReturn` ChecksAfterCoverage
+    checksFor (dev False False False) `shouldReturn` ChecksAfterCoverage
+    checksFor (dev True False False) `shouldReturn` ChecksAfterCoverage
     -- refused by the parser, and still not armed if set by hand
-    checksFor (dev False True) `shouldReturn` ChecksAfterCoverage
-    checksFor (dev True True) `shouldReturn` ChecksAtEveryRequest
+    checksFor (dev False True False) `shouldReturn` ChecksAfterCoverage
+    checksFor (dev True True False) `shouldReturn` ChecksAtEveryRequest
+    checksFor (dev False False True) `shouldReturn` ChecksAfterCoverage
+    checksFor (dev False True True) `shouldReturn` ChecksAtEveryRequest
+    creditsFor Nothing `shouldReturn` False
+    creditsFor (dev False False False) `shouldReturn` False
+    creditsFor (dev False False True) `shouldReturn` True
+    -- the mock never reports a test purchase
+    creditsFor (dev True False True) `shouldReturn` False
 
 testStoreRouting :: HasCallStack => TestParams -> IO ()
 testStoreRouting ps =
