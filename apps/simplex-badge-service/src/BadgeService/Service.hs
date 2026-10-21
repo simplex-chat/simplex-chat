@@ -344,7 +344,8 @@ requestLane checks cc sigKey reqData = case J.fromJSON (J.Object reqData) of
   J.Success BadgeServiceRequest {request = BSCPurchaseBadge {payment = SPGoogle {}, upgrade = Nothing}} -> pure PurchaseLane
   J.Success BadgeServiceRequest {request = BSCPurchaseBadge {payment = SPApple {jws}, upgrade = Nothing}}
     | maybe False autoRenewable (appleTransactionFacts jws) -> pure PurchaseLane
-  J.Success BadgeServiceRequest {request = BSCTransferBadge {payment = SPApple {}}} -> pure PurchaseLane
+  J.Success BadgeServiceRequest {request = BSCTransferBadge {payment = SPApple {jws}}}
+    | maybe False autoRenewable (appleTransactionFacts jws) -> pure PurchaseLane
   J.Success BadgeServiceRequest {request = BSCTransferBadge {payment = SPGoogle {}}} -> pure PurchaseLane
   J.Success BadgeServiceRequest {purchaseKey = Just k, request = BSCIssueBadge {}}
     | sigKey == Just k -> do

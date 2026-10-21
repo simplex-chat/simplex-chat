@@ -214,6 +214,10 @@ badgeServiceTests = do
       it "should turn a held or receipt_used hand-over into a transfer on Restore" testRestoreAfterUnfinishedPass
       it "should leave a resume held for one profile unchanged when a Restore on another profile finds it" testRestoreLeavesResumeHold
       it "should move a subscription back to the device it left once the first key's credential expired" testRestoreMovesBack
+      it "should refuse Restore while a badge is shown, recording nothing, and answer a limited move's next Restore with the limit, holding it again" testRestoreLimitedOnNewDevice
+      it "should leave a tier change held for one profile unchanged when a Restore on another profile finds it" testRestoreLeavesTierChangeHold
+      it "should hold a tier change at once after a move of its subscription was refused transfer_limited" testRefusedMoveKeepsTierChange
+      it "should give a move held for a deleted profile back to the profile whose purchase it funds" testRestoreHeldProfileDeleted
   describe "subscriptions" $ do
     it "should credit a subscription's charge from the store's period start, and answer replays from the record" testSubscriptionPurchase
     it "should credit nothing for a subscription with no charge it can grant, retrying as the charge may still come" testSubscriptionPurchaseNotGrantable
@@ -2571,6 +2575,9 @@ testSubscriptionUpgradeLateInMonth ps =
     badgeTypeOf upgraded `shouldBe` Just BTLegend
     replayed <- upgrade
     credentialOf replayed `shouldBe` credentialOf upgraded
+    -- the purchase replayed is answered with the newest issuance, though the Supporter month ends later
+    repurchased <- serviceCmd env purchaseKey $ purchaseCmd masterKey SPApple {jws = appleSubscriptionJWS}
+    badgeTypeOf repurchased `shouldBe` Just BTLegend
     let legendTip = last $ fst $ statementOf upgraded
     setClockAt bsClock $ addUTCTime (-3600) legendEnd
     beforeEnd <- assertBalance env purchaseKey legendTip
@@ -2903,7 +2910,7 @@ testRestoreOnOtherProfile ps =
       shownBadges a `shouldEventuallyReturn` [(1, Just 1), (2, Just 2)]
       purchaseReceiptLinks a `shouldReturn` [(1, False), (2, True)]
       storeReceiptRows a `shouldReturn` [(2, Nothing, True)]
-      -- settled as a purchase, so a later charge of it is resumed rather than moved again
+      -- the move settles the record, so it is not sent as a transfer again
       storeReceiptHolds a `shouldReturn` [(2, "purchase")]
       setClockAt bsClock $ fst $ renewalMoments aliceRows
       alice `send` "/_app activate"
@@ -2920,8 +2927,14 @@ testRestoreOnOtherProfile ps =
       threadDelay 1000000
       heldStoreReceipts a `shouldReturn` 0
       rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` purchases
-      -- a later Restore says why, and holds the record for this profile again
-      either show (const "answered without a refusal") <$> sendChatCmdStr a (restoredCmd 3 subscriptionPlay) >>= (`shouldSatisfy` ("TransferLimited" `isInfixOf`))
+      -- a later Restore says why, and holds the record for this profile again; the worker's attempt is refused again
+      let restoreLimited = either show (const "answered without a refusal") <$> sendChatCmdStr a (restoredCmd 3 subscriptionPlay) >>= (`shouldSatisfy` ("TransferLimited" `isInfixOf`))
+      restoreLimited
+      storeReceiptHolds a `shouldEventuallyReturn` [(2, "purchase")]
+      -- within the hour of that attempt's store check the next one waits, so the record stays this profile's move
+      restoreLimited
+      storeReceiptHolds a `shouldEventuallyReturn` [(3, "transfer")]
+      heldStoreReceiptErrors a `shouldEventuallyReturn` ["service_error retry payment_pending"]
       shownBadges a `shouldReturn` [(1, Nothing), (2, Just 2), (3, Nothing)]
       dropOutput alice
 
@@ -2951,6 +2964,100 @@ testRestoreMovesBack ps =
         bob `send` "/_app activate"
         waitShownBadge (chatController bob) Nothing
         mapM_ dropOutput [alice, bob]
+
+testRestoreLimitedOnNewDevice :: HasCallStack => TestParams -> IO ()
+testRestoreLimitedOnNewDevice ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClientCfg, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice ->
+      withNewTestChatCfg ps bsClientCfg "bob" bobProfile $ \bob ->
+        withNewTestChatCfg ps bsClientCfg "cath" cathProfile $ \cath -> do
+          let refusedWith err cc cmd = either show (const "answered without a refusal") <$> sendChatCmdStr cc cmd >>= (`shouldSatisfy` (err `isInfixOf`))
+          firstStart <- addUTCTime (-3600) <$> serviceNow env
+          storeReports store $ subscriptionCheck SSRenewing $ Just $ storeCharge "subscr-badge-supporter-month-02" firstStart 1
+          alice `send` ("/_badge purchase 1 " <> paymentArg subscriptionPlay)
+          waitShownBadge (chatController alice) (Just 1)
+          nextClaimCheck env
+          bob `send` restoredCmd 1 subscriptionPlay
+          waitShownBadge (chatController bob) (Just 1)
+          -- a Restore on a profile showing a badge is refused, recording nothing
+          refusedWith "BadgeActive" (chatController bob) $ restoredCmd 1 $ googlePayment "subscr_badge_supporter_01" $ restoreToken "3"
+          storeReceiptRows (chatController bob) `shouldReturn` [(1, Nothing, True)]
+          -- before the first key's credential expires a third device's move is refused, and its next Restore says why and holds it again
+          nextClaimCheck env
+          cath `send` restoredCmd 1 subscriptionPlay
+          storeReceiptCreditErrors (chatController cath) `shouldEventuallyReturn` ["service_error final transfer_limited"]
+          heldStoreReceipts (chatController cath) `shouldReturn` 0
+          refusedWith "TransferLimited" (chatController cath) $ restoredCmd 1 subscriptionPlay
+          heldStoreReceiptErrors (chatController cath) `shouldEventuallyReturn` ["service_error retry payment_pending"]
+          storeReceiptHolds (chatController cath) `shouldReturn` [(1, "transfer")]
+          mapM_ dropOutput [alice, bob, cath]
+
+testRestoreLeavesTierChangeHold :: HasCallStack => TestParams -> IO ()
+testRestoreLeavesTierChangeHold ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClientCfg, bsStore = FakeStore {appleLegendSubscriptionJWS}} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      let a = chatController alice
+          legend = SPApple {jws = appleLegendSubscriptionJWS}
+      appleSupporterBeforeLegend env alice
+      -- the store still reports Supporter, so the tier change stays held
+      alice `send` ("/_badge purchase 1 " <> paymentArg legend)
+      heldStoreReceiptErrors a `shouldEventuallyReturn` ["service_error retry payment_pending"]
+      alice `send` "/create user alisa"
+      shownBadges a `shouldEventuallyReturn` [(1, Just 1), (2, Nothing)]
+      isRight <$> sendChatCmdStr a (restoredCmd 2 legend) `shouldReturn` True
+      storeReceiptHolds a `shouldReturn` [(1, "tier_change")]
+      heldStoreReceipts a `shouldReturn` 1
+      dropOutput alice
+
+testRefusedMoveKeepsTierChange :: HasCallStack => TestParams -> IO ()
+testRefusedMoveKeepsTierChange ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsStore = store@FakeStore {appleSubscriptionJWS, appleLegendSubscriptionJWS}, bsClientCfg} ->
+    withNewTestChatCfg ps bsClientCfg "bob" bobProfile $ \bob ->
+      withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+        let a = chatController alice
+            supporter = SPApple {jws = appleSubscriptionJWS}
+        appleSupporterBeforeLegend env bob
+        -- the status names the transaction presented as the latest, so it moves
+        appleStoreReports store $ subscriptionCheck SSRenewing $ Just (storeCharge "SUBSCR_BADGE_SUPPORTER_MONTH_01" (addUTCTime (-5 * nominalDay) legendBoughtAt) 1) {chargeRef = "2000000812345681"}
+        alice `send` restoredCmd 1 supporter
+        waitShownBadge a (Just 1)
+        alice `send` "/create user alisa"
+        shownBadges a `shouldEventuallyReturn` [(1, Just 1), (2, Nothing)]
+        nextClaimCheck env
+        alice `send` restoredCmd 2 supporter
+        storeReceiptCreditErrors a `shouldEventuallyReturn` ["service_error final transfer_limited"]
+        storeReceiptHolds a `shouldReturn` [(1, "purchase")]
+        -- the refused move is not the purchase's own refused change, so a tier change of it is held at once
+        isRight <$> sendChatCmdStr a "/user alice" `shouldReturn` True
+        either show (const "answered") <$> sendChatCmdStr a ("/_badge purchase 1 " <> paymentArg SPApple {jws = appleLegendSubscriptionJWS}) `shouldReturn` "answered"
+        storeReceiptHolds a `shouldReturn` [(1, "tier_change")]
+        heldStoreReceipts a `shouldReturn` 1
+        mapM_ dropOutput [alice, bob]
+
+testRestoreHeldProfileDeleted :: HasCallStack => TestParams -> IO ()
+testRestoreHeldProfileDeleted ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClientCfg, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      let a = chatController alice
+      firstStart <- addUTCTime (-3600) <$> serviceNow env
+      storeReports store $ subscriptionCheck SSRenewing $ Just $ storeCharge "subscr-badge-supporter-month-02" firstStart 1
+      alice `send` ("/_badge purchase 1 " <> paymentArg subscriptionPlay)
+      waitShownBadge a (Just 1)
+      alice `send` "/create user alisa"
+      shownBadges a `shouldEventuallyReturn` [(1, Just 1), (2, Nothing)]
+      -- within the hour of the purchase's store check the move waits, held for the second profile
+      alice `send` restoredCmd 2 subscriptionPlay
+      heldStoreReceiptErrors a `shouldEventuallyReturn` ["service_error retry payment_pending"]
+      storeReceiptHolds a `shouldReturn` [(2, "transfer")]
+      isRight <$> sendChatCmdStr a "/user alice" `shouldReturn` True
+      isRight <$> sendChatCmdStr a "/_delete user 2 del_smp=off" `shouldReturn` True
+      storeReceiptHolds a `shouldReturn` [(1, "purchase")]
+      heldStoreReceipts a `shouldReturn` 0
+      purchaseReceiptLinks a `shouldReturn` [(1, True)]
+      -- handed over again, it is answered from the record
+      isRight <$> sendChatCmdStr a ("/_badge purchase 1 " <> paymentArg subscriptionPlay) `shouldReturn` True
+      heldStoreReceipts a `shouldReturn` 0
+      dropOutput alice
 
 testRestoreLeavesResumeHold :: HasCallStack => TestParams -> IO ()
 testRestoreLeavesResumeHold ps =
@@ -4955,6 +5062,7 @@ testStoreRouting ps =
     purchase SPApple {jws = appleSupporterJWS} `shouldReturn` MainLane
     routed purchaseKey (transferCmd masterKey subscriptionPlay) `shouldReturn` PurchaseLane
     routed purchaseKey (transferCmd masterKey SPApple {jws = appleSubscriptionJWS}) `shouldReturn` PurchaseLane
+    routed purchaseKey (transferCmd masterKey SPApple {jws = appleSupporterJWS}) `shouldReturn` MainLane
     g <- C.newRandom
     (fromPurchaseKey, fromPriv) <- atomically $ C.generateKeyPair g :: IO (C.KeyPair 'C.Ed25519)
     now <- getCurrentTime

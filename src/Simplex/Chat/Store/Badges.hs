@@ -216,13 +216,18 @@ holdStoreReceipt db g User {userId} origin invoiceId_ txRef@StoreTransactionRef 
         ((userId, invoiceId', provider, transactionRef, paymentJSON, now) :. (purchaseKey, purchasePrivKey, Binary mk, holdKind, now))
 
 -- | Restore's hand-over of a transaction already recorded: a record that funds no purchase of this profile, or only one
--- its payment moved away from, is held as a move of its payment to this profile. True when its last refusal was transfer_limited, which the hand-over answers.
+-- its payment moved away from, is taken by this profile and held as a move of its payment to it. True when its last refusal was transfer_limited, which the hand-over answers.
 holdStoreTransfer :: DB.Connection -> TVar ChaChaDRG -> User -> StoreTransactionRef -> ServicePayment -> UTCTime -> IO Bool
 holdStoreTransfer db g User {userId} txRef payment now =
   getReceiptRecord db txRef >>= \case
     Just BadgeReceiptRecord {receiptId, status = RSHeld {stash, holdKind = SHKPurchase}} ->
       getStashBadgePurchase db stash >>= \case
-        Nothing -> False <$ DB.execute db "UPDATE badge_store_receipts SET hold_kind = ?, next_attempt_at = ? WHERE badge_store_receipt_id = ?" (SHKTransfer, now, receiptId)
+        Nothing ->
+          False
+            <$ DB.execute
+              db
+              "UPDATE badge_store_receipts SET user_id = ?, hold_kind = ?, next_attempt_at = ? WHERE badge_store_receipt_id = ? AND payment IS NOT NULL AND hold_kind = ?"
+              (userId, SHKTransfer, now, receiptId, SHKPurchase)
         Just _ -> pure False
     Just BadgeReceiptRecord {receiptId, status = RSRefused {refusal = Just BIFServiceError {code}}}
       | code == BSEReceiptUsed || code == BSETransferLimited -> (code == BSETransferLimited) <$ holdTransfer receiptId
@@ -233,8 +238,8 @@ holdStoreTransfer db g User {userId} txRef payment now =
           lastRefusal <- maybeFirstRow fromOnly $ DB.query db "SELECT credit_error FROM badge_store_receipts WHERE badge_store_receipt_id = ?" (Only receiptId)
           (purchaseKey, purchasePrivKey) <- atomically (C.generateKeyPair g) :: IO C.KeyPairEd25519
           BadgeMasterKey mk <- generateMasterKey g
+          DB.execute db "UPDATE badge_store_receipts SET purchase_key = ?, purchase_priv_key = ?, master_key = ? WHERE badge_store_receipt_id = ? AND payment IS NULL" (purchaseKey, purchasePrivKey, Binary mk, receiptId)
           holdTransfer receiptId
-          DB.execute db "UPDATE badge_store_receipts SET purchase_key = ?, purchase_priv_key = ?, master_key = ? WHERE badge_store_receipt_id = ?" (purchaseKey, purchasePrivKey, Binary mk, receiptId)
           pure $ case join lastRefusal of
             Just BIFServiceError {code = BSETransferLimited} -> True
             _ -> False
@@ -250,7 +255,7 @@ holdStoreTransfer db g User {userId} txRef payment now =
     holdTransfer receiptId =
       DB.execute
         db
-        "UPDATE badge_store_receipts SET user_id = ?, payment = ?, next_attempt_at = ?, retry_delay = NULL, retry_count = 0, credit_error = NULL, hold_kind = ? WHERE badge_store_receipt_id = ?"
+        "UPDATE badge_store_receipts SET user_id = ?, payment = ?, next_attempt_at = ?, retry_delay = NULL, retry_count = 0, credit_error = NULL, hold_kind = ? WHERE badge_store_receipt_id = ? AND payment IS NULL"
         (userId, safeDecodeUtf8 . LB.toStrict $ J.encode payment, now, SHKTransfer, receiptId)
 
 -- | Whether a held Apple record presents this payment next: another transaction of its subscription, bought
@@ -284,7 +289,11 @@ getReceiptRecord db StoreTransactionRef {provider, transactionRef} =
       where
         status = case (payment_, nextAttemptAt_) of
           (Just payment, Just nextAttemptAt) -> RSHeld {stash = toBadgeStash BSRStoreReceipt (receiptId, purchaseKey, purchasePrivKey, mk), invoiceId, payment, nextAttemptAt, retryDelay, holdKind}
-          _ -> maybe (RSRefused refusal) (\badgePurchaseId -> RSCredited {badgePurchaseId, refusalRecorded = isJust refusal}) purchaseId_
+          _ -> maybe (RSRefused refusal) (\badgePurchaseId -> RSCredited {badgePurchaseId, refusalRecorded = maybe False ownRefusal refusal}) purchaseId_
+        -- only a move is refused transfer_limited, and a refused move must not hold off the purchase's own resume or tier change
+        ownRefusal = \case
+          BIFServiceError {code = BSETransferLimited} -> False
+          _ -> True
 
 -- | The record made when Buy is tapped, before any receipt: the store echoes its invoice id.
 createBadgeStoreReceipt :: DB.Connection -> TVar ChaChaDRG -> User -> Text -> UTCTime -> IO ()
