@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
@@ -24,14 +25,15 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeUtf8)
+import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Data.Time.Clock (diffUTCTime, getCurrentTime)
 import Data.Word (Word32, Word64)
 import Simplex.Chat.Controller (ChatErrorType (..), ChatError (..), ConnectionPlan (..), ContactAddressPlan (..), GroupLinkPlan (..))
 import Simplex.Chat.Protocol (ContactShortLinkData (..), GroupShortLinkData (..), PublicGroupData (..))
 import Simplex.Chat.Types (ChatPeerType (..), GroupProfile (..), ImageData (..), Profile (..))
-import Simplex.Messaging.Agent.Protocol (ConnShortLink, ConnectionMode (..))
+import Simplex.Messaging.Agent.Protocol (ConnShortLink (..), ConnectionMode (..), simplexShortLink)
 import Simplex.Messaging.Encoding.String (strDecode, strEncode)
+import Simplex.Messaging.Protocol (SMPServer)
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import StoreService.Names.Profiles
 import Test.Hspec hiding (it)
@@ -51,6 +53,7 @@ namesProfilesTests = describe "StoreService names: profiles" $ do
     H.it "encodes a contact entity as the contract's example" testEntityContactJSON
     H.it "encodes a channel entity with subscribers and a simplex:/ deep link" testEntityChannelJSON
     H.it "encodes previews without a profile as empty, kind from the link" testPreviewEmptyJSON
+    H.it "gives a deep link that parses back in the core with the link's server" testDeepLinkParses
   describe "bounds and cache" $ do
     H.it "answers a link again from the cache, and fetches it again once the cache expires" testCacheExpiry
     H.it "does not cache a failed fetch" testFailureNotCached
@@ -167,7 +170,7 @@ testEntityContactJSON = do
   e
     `shouldEncodeAs` "{\"type\": \"address\", \"kind\": \"contact\", \"displayName\": \"Alice's Bakery\", \"fullName\": \"Sourdough and pastries, Lisbon\",\
                      \ \"image\": \"data:image/jpeg;base64,/9j/4AAQSkZJRg==\", \"subscribers\": null, \"profile\": \"ok\",\
-                     \ \"link\": \"https://smp8.simplex.im/a#Y8m3qT0vLw2Ab7cD9eF1gH3jK5mN7pQ9rSAAAAAAAAA\", \"deepLink\": \"simplex:/a#Y8m3qT0vLw2Ab7cD9eF1gH3jK5mN7pQ9rSAAAAAAAAA\"}"
+                     \ \"link\": \"https://smp8.simplex.im/a#Y8m3qT0vLw2Ab7cD9eF1gH3jK5mN7pQ9rSAAAAAAAAA\", \"deepLink\": \"simplex:/a#Y8m3qT0vLw2Ab7cD9eF1gH3jK5mN7pQ9rSAAAAAAAAA?h=smp8.simplex.im\"}"
   where
     bakery = LinkProfile {kind = CKContact, displayName = "Alice's Bakery", fullName = "Sourdough and pastries, Lisbon", image = Just jpeg, subscribers = Nothing}
 
@@ -178,12 +181,32 @@ testEntityChannelJSON = do
   e
     `shouldEncodeAs` "{\"type\": \"channel\", \"kind\": \"channel\", \"displayName\": \"Bakery news\", \"fullName\": \"Daily bakes and opening hours\",\
                      \ \"image\": null, \"subscribers\": 1204, \"profile\": \"ok\",\
-                     \ \"link\": \"https://smp9.simplex.im/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4LmAAAAAAAAA\", \"deepLink\": \"simplex:/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4LmAAAAAAAAA\"}"
+                     \ \"link\": \"https://smp9.simplex.im/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4LmAAAAAAAAA\", \"deepLink\": \"simplex:/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4LmAAAAAAAAA?h=smp9.simplex.im\"}"
   let simplexLink = "simplex:/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4LmAAAAAAAAA?h=smp9.simplex.im"
   Entity {link, deepLink} <- linkEntity ps ETChannel [publicHost] simplexLink
   (link, deepLink) `shouldBe` (simplexLink, simplexLink)
   where
     news = LinkProfile {kind = CKChannel, displayName = "Bakery news", fullName = "Daily bakes and opening hours", image = Nothing, subscribers = Just 1204}
+
+testDeepLinkParses :: IO ()
+testDeepLinkParses = do
+  ps <- quietProfiles answerAll publicResolver
+  mapM_ (deepLinkKeepsServer ps) [bakeryLink, keyedLink, twoHostLink]
+  Entity {deepLink} <- linkEntity ps ETAddress [] "https://smp8.simplex.im/a#x"
+  deepLink `shouldBe` "https://smp8.simplex.im/a#x"
+  where
+    keyedLink = "https://smp.example.com/a#Y8m3qT0vLw2Ab7cD9eF1gH3jK5mN7pQ9rSAAAAAAAAA?p=5224&c=LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI"
+    twoHostLink = "simplex:/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4LmAAAAAAAAA?h=a.example.com%2Cb.example.com"
+    deepLinkKeepsServer ps l = do
+      Entity {deepLink} <- linkEntity ps ETAddress [publicHost] l
+      let original = parseLink l
+          reparsed = parseLink deepLink
+      ("simplex:/" `T.isPrefixOf` deepLink, serverOf <$> reparsed) `shouldBe` (True, serverOf <$> original)
+      reparsed `shouldBe` (simplexShortLink <$> original)
+    parseLink :: Text -> Either String (ConnShortLink 'CMContact)
+    parseLink = strDecode . encodeUtf8
+    serverOf :: ConnShortLink 'CMContact -> SMPServer
+    serverOf (CSLContact _ _ srv _) = srv
 
 testPreviewEmptyJSON :: IO ()
 testPreviewEmptyJSON = do

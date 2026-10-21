@@ -51,10 +51,10 @@ import Simplex.Chat.Controller (ChatResponse (..), ChatCommand (APIConnectPlan),
 import Simplex.Chat.Core (sendChatCmd)
 import Simplex.Chat.Protocol (ContactShortLinkData (..), GroupShortLinkData (..), PublicGroupData (..))
 import Simplex.Chat.Types (AConnectTarget (..), ChatPeerType (..), Contact (..), ContactNameOrLink (..), ConnectTarget (..), GroupInfo (..), GroupProfile (..), GroupSummary (..), ImageData (..), Profile (..), User (..), fromLocalProfile)
-import Simplex.Messaging.Agent.Protocol (ConnShortLink, ConnectionMode (..), SConnectionMode (..), UserId)
-import Simplex.Messaging.Encoding.String (strDecode)
+import Simplex.Messaging.Agent.Protocol (ConnShortLink, ConnectionMode (..), SConnectionMode (..), UserId, simplexShortLink)
+import Simplex.Messaging.Encoding.String (strDecode, strEncode)
 import Simplex.Messaging.Transport.Client (TransportHost (..))
-import Simplex.Messaging.Util (anyM)
+import Simplex.Messaging.Util (anyM, safeDecodeUtf8)
 import System.Timeout (timeout)
 
 data ProfileLimits = ProfileLimits
@@ -166,26 +166,29 @@ chatKindText = \case
   CKChannel -> "channel"
 
 -- | A search answer's entity, within the search bound. The hosts are the link's servers, every one of which must pass the host rule.
+-- The deep link is the core's @simplex:/@ form, which carries the server; a link the core cannot parse keeps its own text.
 linkEntity :: Profiles -> EntityType -> [TransportHost] -> Text -> IO Entity
 linkEntity ps@Profiles {searchSlots} t hosts link = do
-  r <- boundedProfile ps searchSlots hosts link
-  pure Entity {entityPreview = Preview t r, link, deepLink = deepLinkOf link}
+  r <- boundedProfile ps searchSlots hosts link sl_
+  pure Entity {entityPreview = Preview t r, link, deepLink = maybe link (safeDecodeUtf8 . strEncode . simplexShortLink) sl_}
+  where
+    sl_ = parseShortLink link
 
 -- | A link preview, within the preview bound.
 linkPreview :: Profiles -> EntityType -> [TransportHost] -> Text -> IO Preview
-linkPreview ps@Profiles {previewSlots} t hosts link = Preview t <$> boundedProfile ps previewSlots hosts link
+linkPreview ps@Profiles {previewSlots} t hosts link = Preview t <$> boundedProfile ps previewSlots hosts link (parseShortLink link)
 
-deepLinkOf :: Text -> Text
-deepLinkOf link = maybe link (("simplex:/" <>) . T.drop 1 . T.dropWhile (/= '/')) (T.stripPrefix "https://" link)
+parseShortLink :: Text -> Maybe (ConnShortLink 'CMContact)
+parseShortLink = either (const Nothing) Just . strDecode . encodeUtf8
 
 -- | A link the chat core cannot parse names no server it could fetch from, so it is not fetched.
-boundedProfile :: Profiles -> TVar Int -> [TransportHost] -> Text -> IO ProfileRead
-boundedProfile Profiles {limits = ProfileLimits {fetchTimeout, cacheSeconds, maxCachedProfiles}, clock, fetchLink, resolveHost, cache} slots hosts link =
+boundedProfile :: Profiles -> TVar Int -> [TransportHost] -> Text -> Maybe (ConnShortLink 'CMContact) -> IO ProfileRead
+boundedProfile Profiles {limits = ProfileLimits {fetchTimeout, cacheSeconds, maxCachedProfiles}, clock, fetchLink, resolveHost, cache} slots hosts link sl_ =
   cached >>= \case
     Just p -> pure $ ProfileOk p
-    Nothing -> case strDecode (encodeUtf8 link) of
-      Left _ -> pure ProfileUnavailable
-      Right sl -> fromMaybe ProfileUnread <$> timeout fetchTimeout (checkAndFetch sl)
+    Nothing -> case sl_ of
+      Nothing -> pure ProfileUnavailable
+      Just sl -> fromMaybe ProfileUnread <$> timeout fetchTimeout (checkAndFetch sl)
   where
     cached = do
       now <- clock
