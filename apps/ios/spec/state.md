@@ -1,6 +1,6 @@
 # SimpleX Chat iOS -- State Management
 
-**Source:** [`ChatModel.swift`](../Shared/Model/ChatModel.swift#L1-L1521) | [`ChatTypes.swift`](../SimpleXChat/ChatTypes.swift#L1-L5377)
+**Source:** [`ChatModel.swift`](../Shared/Model/ChatModel.swift#L1-L1538) | [`ChatTypes.swift`](../SimpleXChat/ChatTypes.swift#L1-L6520)
 
 > Technical specification for the app's state architecture: ChatModel, ItemsModel, Chat, ChatInfo, and preference storage.
 >
@@ -107,7 +107,7 @@ ChatTagsModel (singleton -- filter state)
 | `groupMembers` | `[GMember]` | Members of active group | [L442](../Shared/Model/ChatModel.swift#L442) |
 | `groupMembersIndexes` | `[Int64: Int]` | Member ID to index mapping | [L443](../Shared/Model/ChatModel.swift#L443) |
 | `membersLoaded` | `Bool` | Whether members have been loaded | [L444](../Shared/Model/ChatModel.swift#L444) |
-| `secondaryIM` | `ItemsModel?` | Secondary items model (e.g. support chat scope) | [L504](../Shared/Model/ChatModel.swift#L504) |
+| `secondaryIM` | `ItemsModel?` | Secondary items model (e.g. support chat scope) | [L521](../Shared/Model/ChatModel.swift#L521) |
 
 #### Authentication
 | Property | Type | Description | Line |
@@ -164,22 +164,22 @@ ChatTagsModel (singleton -- filter state)
 | `messageDelivery` | `[Int64: () -> Void]` | Pending delivery confirmation callbacks | [L487](../Shared/Model/ChatModel.swift#L487) |
 | `filesToDelete` | `Set<URL>` | Files queued for deletion | [L489](../Shared/Model/ChatModel.swift#L489) |
 | `chatListBanner` | `ChatListBanner?` | The banner kind the chat list showed this app session; `bannerSlotFree(for:)` tells whether a kind may take the slot (see [chat-list.md](client/chat-list.md)) | [L493](../Shared/Model/ChatModel.swift#L493) |
-| `im` | `ItemsModel` | Reference to `ItemsModel.shared` | [L501](../Shared/Model/ChatModel.swift#L501) |
+| `im` | `ItemsModel` | Reference to `ItemsModel.shared` | [L518](../Shared/Model/ChatModel.swift#L518) |
 
 ### Key Methods
 
 | Method | Description | Line |
 |--------|-------------|------|
-| `getUser(_ userId:)` | Find user by ID | [L524](../Shared/Model/ChatModel.swift#L524) |
-| `updateUser(_ user:)` | Update user in list and current | [L535](../Shared/Model/ChatModel.swift#L535) |
-| `removeUser(_ user:)` | Remove user from list | [L545](../Shared/Model/ChatModel.swift#L545) |
-| `getChat(_ id:)` | Find chat by ID | [L556](../Shared/Model/ChatModel.swift#L556) |
-| `addChat(_ chat:)` | Add chat to list | [L611](../Shared/Model/ChatModel.swift#L611) |
-| `updateChatInfo(_ cInfo:)` | Update chat metadata | [L625](../Shared/Model/ChatModel.swift#L625) |
-| `replaceChat(_ id:, _ chat:)` | Replace chat in list | [L677](../Shared/Model/ChatModel.swift#L677) |
-| `removeChat(_ id:)` | Remove chat from list | [L1328](../Shared/Model/ChatModel.swift#L1328) |
-| `popChat(_ id:)` | Move chat to top of list | [L1295](../Shared/Model/ChatModel.swift#L1295) |
-| `totalUnreadCountForAllUsers()` | Sum unread across all users | [L1195](../Shared/Model/ChatModel.swift#L1195) |
+| `getUser(_ userId:)` | Find user by ID | [L541](../Shared/Model/ChatModel.swift#L541) |
+| `updateUser(_ user:)` | Update user in list and current | [L552](../Shared/Model/ChatModel.swift#L552) |
+| `removeUser(_ user:)` | Remove user from list | [L562](../Shared/Model/ChatModel.swift#L562) |
+| `getChat(_ id:)` | Find chat by ID | [L573](../Shared/Model/ChatModel.swift#L573) |
+| `addChat(_ chat:)` | Add chat to list | [L628](../Shared/Model/ChatModel.swift#L628) |
+| `updateChatInfo(_ cInfo:)` | Update chat metadata | [L642](../Shared/Model/ChatModel.swift#L642) |
+| `replaceChat(_ id:, _ chat:)` | Replace chat in list | [L694](../Shared/Model/ChatModel.swift#L694) |
+| `removeChat(_ id:)` | Remove chat from list | [L1345](../Shared/Model/ChatModel.swift#L1345) |
+| `popChat(_ id:)` | Move chat to top of list | [L1312](../Shared/Model/ChatModel.swift#L1312) |
+| `totalUnreadCountForAllUsers()` | Sum unread across all users | [L1212](../Shared/Model/ChatModel.swift#L1212) |
 
 ---
 
@@ -298,7 +298,7 @@ Holds runtime relay state for the currently viewed channel. Used by `ChannelRela
 ## 6. [Chat](../Shared/Model/ChatModel.swift#L1418-L1470)
 
 **Class**: `final class Chat: ObservableObject, Identifiable, ChatLike`
-**Source**: [`Shared/Model/ChatModel.swift`](../Shared/Model/ChatModel.swift#L1418)
+**Source**: [`Shared/Model/ChatModel.swift`](../Shared/Model/ChatModel.swift#L1435)
 
 Represents a single conversation in the chat list. Each `Chat` is an independent observable object.
 
@@ -306,12 +306,12 @@ Represents a single conversation in the chat list. Each `Chat` is an independent
 
 | Property | Type | Description | Line |
 |----------|------|-------------|------|
-| `chatInfo` | `ChatInfo` | Conversation type and metadata | [L1419](../Shared/Model/ChatModel.swift#L1419) |
-| `chatItems` | `[ChatItem]` | Preview items (typically last message) | [L1420](../Shared/Model/ChatModel.swift#L1420) |
-| `chatStats` | `ChatStats` | Unread counts and min unread item ID | [L1421](../Shared/Model/ChatModel.swift#L1421) |
-| `created` | `Date` | Creation timestamp | [L1422](../Shared/Model/ChatModel.swift#L1422) |
+| `chatInfo` | `ChatInfo` | Conversation type and metadata | [L1436](../Shared/Model/ChatModel.swift#L1436) |
+| `chatItems` | `[ChatItem]` | Preview items (typically last message) | [L1437](../Shared/Model/ChatModel.swift#L1437) |
+| `chatStats` | `ChatStats` | Unread counts and min unread item ID | [L1438](../Shared/Model/ChatModel.swift#L1438) |
+| `created` | `Date` | Creation timestamp | [L1439](../Shared/Model/ChatModel.swift#L1439) |
 
-### [ChatStats](../SimpleXChat/ChatTypes.swift#L1881-L1903)
+### [ChatStats](../SimpleXChat/ChatTypes.swift#L2411-L2433)
 
 ```swift
 struct ChatStats: Decodable, Hashable {
@@ -327,17 +327,17 @@ struct ChatStats: Decodable, Hashable {
 
 | Property | Description | Line |
 |----------|-------------|------|
-| `id` | Chat ID from `chatInfo.id` | [L1453](../Shared/Model/ChatModel.swift#L1453) |
-| `viewId` | Unique view identity including creation time | [L1455](../Shared/Model/ChatModel.swift#L1455) |
-| `unreadTag` | Whether chat counts as "unread" based on notification settings | [L1445](../Shared/Model/ChatModel.swift#L1445) |
-| `supportUnreadCount` | Unread count for group support scope | [L1457](../Shared/Model/ChatModel.swift#L1457) |
+| `id` | Chat ID from `chatInfo.id` | [L1470](../Shared/Model/ChatModel.swift#L1470) |
+| `viewId` | Unique view identity including creation time | [L1472](../Shared/Model/ChatModel.swift#L1472) |
+| `unreadTag` | Whether chat counts as "unread" based on notification settings | [L1462](../Shared/Model/ChatModel.swift#L1462) |
+| `supportUnreadCount` | Unread count for group support scope | [L1474](../Shared/Model/ChatModel.swift#L1474) |
 
 ---
 
-## 7. [ChatInfo](../SimpleXChat/ChatTypes.swift#L1374-L1856)
+## 7. [ChatInfo](../SimpleXChat/ChatTypes.swift#L1867-L2386)
 
 **Enum**: `public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable`
-**Source**: [`SimpleXChat/ChatTypes.swift`](../SimpleXChat/ChatTypes.swift#L1374)
+**Source**: [`SimpleXChat/ChatTypes.swift`](../SimpleXChat/ChatTypes.swift#L1867)
 
 Represents the type and metadata of a conversation:
 
@@ -382,26 +382,26 @@ A **channel** is a group with `groupInfo.useRelays == true`. These types support
 
 | Type | Field | Type | Description | Line |
 |------|-------|------|-------------|------|
-| `User` | `userChatRelay` | `Bool` | Whether user acts as a chat relay | [L46](../SimpleXChat/ChatTypes.swift#L46) |
-| `GroupInfo` | `useRelays` | `Bool` | Whether group uses relay infrastructure (channel mode) | [L2343](../SimpleXChat/ChatTypes.swift#L2343) |
-| `GroupInfo` | `relayOwnStatus` | `RelayStatus?` | Current user's relay status in this group | [L2344](../SimpleXChat/ChatTypes.swift#L2344) |
-| `GroupProfile` | `publicGroup` | `PublicGroupProfile?` | Channel-specific profile data (type, link, ID) | [L2472](../SimpleXChat/ChatTypes.swift#L2472) |
+| `User` | `userChatRelay` | `Bool` | Whether user acts as a chat relay | [L48](../SimpleXChat/ChatTypes.swift#L48) |
+| `GroupInfo` | `useRelays` | `Bool` | Whether group uses relay infrastructure (channel mode) | [L2890](../SimpleXChat/ChatTypes.swift#L2890) |
+| `GroupInfo` | `relayOwnStatus` | `RelayStatus?` | Current user's relay status in this group | [L2891](../SimpleXChat/ChatTypes.swift#L2891) |
+| `GroupProfile` | `publicGroup` | `PublicGroupProfile?` | Channel-specific profile data (type, link, ID) | [L3069](../SimpleXChat/ChatTypes.swift#L3069) |
 
 #### New Types
 
 | Type | Kind | Description | Line |
 |------|------|-------------|------|
-| `RelayStatus` | `enum` | Relay lifecycle: `.rsNew`, `.rsInvited`, `.rsAccepted`, `.rsActive`, `.rsInactive`, `.rsRejected` | [L2506](../SimpleXChat/ChatTypes.swift#L2506) |
-| `RelayStatus.text` | `extension` | Localized display text: New/Invited/Accepted/Active/Inactive/Rejected | [L2565](../SimpleXChat/ChatTypes.swift#L2565) |
-| `GroupRelay` | `struct` | Relay instance for a group (ID, member ID, relay status). Fetched at runtime via `apiGetGroupRelays` (owner only) | [L2555](../SimpleXChat/ChatTypes.swift#L2555) |
-| `UserChatRelay` | `struct` | User's chat relay configuration (ID, SMP address, name, domains, preset/tested/enabled/deleted flags) | [L2513](../SimpleXChat/ChatTypes.swift#L2513) |
+| `RelayStatus` | `enum` | Relay lifecycle: `.rsNew`, `.rsInvited`, `.rsAccepted`, `.rsActive`, `.rsInactive`, `.rsRejected` | [L3167](../SimpleXChat/ChatTypes.swift#L3167) |
+| `RelayStatus.text` | `extension` | Localized display text: New/Invited/Accepted/Active/Inactive/Rejected | [L3241](../SimpleXChat/ChatTypes.swift#L3241) |
+| `GroupRelay` | `struct` | Relay instance for a group (ID, member ID, relay status). Fetched at runtime via `apiGetGroupRelays` (owner only) | [L3231](../SimpleXChat/ChatTypes.swift#L3231) |
+| `UserChatRelay` | `struct` | User's chat relay configuration (ID, SMP address, name, domains, preset/tested/enabled/deleted flags) | [L3184](../SimpleXChat/ChatTypes.swift#L3184) |
 
 #### New Enum Cases
 
 | Enum | Case | Description | Line |
 |------|------|-------------|------|
-| `GroupMemberRole` | `.relay` | Role for relay members (below `.observer`) | [L2807](../SimpleXChat/ChatTypes.swift#L2807) |
-| `CIDirection` | `.channelRcv` | Message direction for channel-received messages (via relay) | [L3529](../SimpleXChat/ChatTypes.swift#L3529) |
+| `GroupMemberRole` | `.relay` | Role for relay members (below `.observer`) | [L3502](../SimpleXChat/ChatTypes.swift#L3502) |
+| `CIDirection` | `.channelRcv` | Message direction for channel-received messages (via relay) | [L4237](../SimpleXChat/ChatTypes.swift#L4237) |
 
 ---
 

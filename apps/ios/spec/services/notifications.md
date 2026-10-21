@@ -82,11 +82,11 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
 |--------|---------|------|
 | [`registerCategories()`](../../Shared/Model/NtfManager.swift#L156) | Registers notification action categories with iOS | [156](../../Shared/Model/NtfManager.swift#L156) |
 | [`requestAuthorization()`](../../Shared/Model/NtfManager.swift#L215) | Requests notification permission from user | [215](../../Shared/Model/NtfManager.swift#L215) |
-| [`setNtfBadgeCount(_:)`](../../Shared/Model/NtfManager.swift#L264) | Updates app icon badge | [264](../../Shared/Model/NtfManager.swift#L264) |
+| [`setNtfBadgeCount(_:)`](../../Shared/Model/NtfManager.swift#L267) | Updates app icon badge | [267](../../Shared/Model/NtfManager.swift#L267) |
 | [`processNotificationResponse(_:)`](../../Shared/Model/NtfManager.swift#L54) | Handles user interaction with notification | [54](../../Shared/Model/NtfManager.swift#L54) |
-| [`notifyContactRequest(_:)`](../../Shared/Model/NtfManager.swift#L239) | Shows contact request notification | [239](../../Shared/Model/NtfManager.swift#L239) |
-| [`notifyCallInvitation(_:)`](../../Shared/Model/NtfManager.swift#L258) | Shows incoming call notification | [258](../../Shared/Model/NtfManager.swift#L258) |
-| [`notifyMessageReceived(_:)`](../../Shared/Model/NtfManager.swift#L250) | Shows message received notification | [250](../../Shared/Model/NtfManager.swift#L250) |
+| [`notifyContactRequest(_:)`](../../Shared/Model/NtfManager.swift#L242) | Shows contact request notification | [242](../../Shared/Model/NtfManager.swift#L242) |
+| [`notifyCallInvitation(_:)`](../../Shared/Model/NtfManager.swift#L261) | Shows incoming call notification | [261](../../Shared/Model/NtfManager.swift#L261) |
+| [`notifyMessageReceived(_:)`](../../Shared/Model/NtfManager.swift#L253) | Shows message received notification | [253](../../Shared/Model/NtfManager.swift#L253) |
 
 ### [Notification Response Processing](../../Shared/Model/NtfManager.swift#L40)
 
@@ -120,7 +120,7 @@ The NSE is a separate process that iOS launches when a push notification arrives
 - ~30 second execution window per notification
 - No access to main app's in-memory state
 
-### [Processing Flow](../../SimpleX NSE/NotificationService.swift#L300)
+### [Processing Flow](../../SimpleX NSE/NotificationService.swift#L310)
 
 ```
 1. didReceive(request:, withContentHandler:)                          L300
@@ -143,8 +143,8 @@ The NSE uses a subset of the chat API:
 
 | Command | Purpose | Line |
 |---------|---------|------|
-| [`apiGetNtfConns(nonce:, encNtfInfo:)`](../../SimpleX NSE/NotificationService.swift#L1123) | Decrypt notification connection info | [1123](../../SimpleX NSE/NotificationService.swift#L1123) |
-| [`apiGetConnNtfMessages(connMsgReqs:)`](../../SimpleX NSE/NotificationService.swift#L1140) | Fetch messages for notification connections | [1140](../../SimpleX NSE/NotificationService.swift#L1140) |
+| [`apiGetNtfConns(nonce:, encNtfInfo:)`](../../SimpleX NSE/NotificationService.swift#L1135) | Decrypt notification connection info | [1135](../../SimpleX NSE/NotificationService.swift#L1135) |
+| [`apiGetConnNtfMessages(connMsgReqs:)`](../../SimpleX NSE/NotificationService.swift#L1152) | Fetch messages for notification connections | [1152](../../SimpleX NSE/NotificationService.swift#L1152) |
 
 ### Database Coordination
 
@@ -167,24 +167,24 @@ The NSE uses a subset of the chat API:
 | Type | Purpose | Line |
 |------|---------|------|
 | [`NSENotificationData`](../../SimpleX NSE/NotificationService.swift#L27) | Enum of possible notification payloads | [27](../../SimpleX NSE/NotificationService.swift#L27) |
-| [`NSEThreads`](../../SimpleX NSE/NotificationService.swift#L82) | Concurrency coordinator for multiple NSE instances | [82](../../SimpleX NSE/NotificationService.swift#L82) |
-| [`NotificationEntity`](../../SimpleX NSE/NotificationService.swift#L245) | Per-connection processing state | [245](../../SimpleX NSE/NotificationService.swift#L245) |
-| [`NotificationService`](../../SimpleX NSE/NotificationService.swift#L287) | Main NSE class (`UNNotificationServiceExtension`) | [287](../../SimpleX NSE/NotificationService.swift#L287) |
-| [`NSEChatState`](../../SimpleX NSE/NotificationService.swift#L781) | Singleton managing NSE lifecycle state | [781](../../SimpleX NSE/NotificationService.swift#L781) |
+| [`NSEThreads`](../../SimpleX NSE/NotificationService.swift#L92) | Concurrency coordinator for multiple NSE instances | [92](../../SimpleX NSE/NotificationService.swift#L92) |
+| [`NotificationEntity`](../../SimpleX NSE/NotificationService.swift#L255) | Per-connection processing state | [255](../../SimpleX NSE/NotificationService.swift#L255) |
+| [`NotificationService`](../../SimpleX NSE/NotificationService.swift#L297) | Main NSE class (`UNNotificationServiceExtension`) | [297](../../SimpleX NSE/NotificationService.swift#L297) |
+| [`NSEChatState`](../../SimpleX NSE/NotificationService.swift#L791) | Singleton managing NSE lifecycle state | [791](../../SimpleX NSE/NotificationService.swift#L791) |
 
 ### Key Internal Functions
 
 | Function | Purpose | Line |
 |----------|---------|------|
-| [`startChat()`](../../SimpleX NSE/NotificationService.swift#L836) | Initializes Haskell core for NSE | [836](../../SimpleX NSE/NotificationService.swift#L836) |
-| [`doStartChat()`](../../SimpleX NSE/NotificationService.swift#L861) | Performs actual chat initialization (migration, config) | [861](../../SimpleX NSE/NotificationService.swift#L861) |
-| [`activateChat()`](../../SimpleX NSE/NotificationService.swift#L907) | Reactivates suspended chat controller | [907](../../SimpleX NSE/NotificationService.swift#L907) |
-| [`suspendChat(_:)`](../../SimpleX NSE/NotificationService.swift#L921) | Suspends chat controller with timeout | [921](../../SimpleX NSE/NotificationService.swift#L921) |
-| [`receiveMessages()`](../../SimpleX NSE/NotificationService.swift#L954) | Main message-receive loop | [954](../../SimpleX NSE/NotificationService.swift#L954) |
-| [`receivedMsgNtf(_:)`](../../SimpleX NSE/NotificationService.swift#L1003) | Maps chat events to notification data | [1003](../../SimpleX NSE/NotificationService.swift#L1003) |
-| [`receiveNtfMessages(_:)`](../../SimpleX NSE/NotificationService.swift#L403) | Orchestrates notification message fetch and delivery | [403](../../SimpleX NSE/NotificationService.swift#L403) |
-| [`deliverBestAttemptNtf()`](../../SimpleX NSE/NotificationService.swift#L604) | Delivers the best available notification content | [604](../../SimpleX NSE/NotificationService.swift#L604) |
-| [`didReceive(_:withContentHandler:)`](../../SimpleX%20NSE/NotificationService.swift#L300) | Main NSE entry point -- processes incoming notification | [300](../../SimpleX%20NSE/NotificationService.swift#L300) |
+| [`startChat()`](../../SimpleX NSE/NotificationService.swift#L846) | Initializes Haskell core for NSE | [846](../../SimpleX NSE/NotificationService.swift#L846) |
+| [`doStartChat()`](../../SimpleX NSE/NotificationService.swift#L871) | Performs actual chat initialization (migration, config) | [871](../../SimpleX NSE/NotificationService.swift#L871) |
+| [`activateChat()`](../../SimpleX NSE/NotificationService.swift#L917) | Reactivates suspended chat controller | [917](../../SimpleX NSE/NotificationService.swift#L917) |
+| [`suspendChat(_:)`](../../SimpleX NSE/NotificationService.swift#L931) | Suspends chat controller with timeout | [931](../../SimpleX NSE/NotificationService.swift#L931) |
+| [`receiveMessages()`](../../SimpleX NSE/NotificationService.swift#L964) | Main message-receive loop | [964](../../SimpleX NSE/NotificationService.swift#L964) |
+| [`receivedMsgNtf(_:)`](../../SimpleX NSE/NotificationService.swift#L1013) | Maps chat events to notification data | [1013](../../SimpleX NSE/NotificationService.swift#L1013) |
+| [`receiveNtfMessages(_:)`](../../SimpleX NSE/NotificationService.swift#L413) | Orchestrates notification message fetch and delivery | [413](../../SimpleX NSE/NotificationService.swift#L413) |
+| [`deliverBestAttemptNtf()`](../../SimpleX NSE/NotificationService.swift#L614) | Delivers the best available notification content | [614](../../SimpleX NSE/NotificationService.swift#L614) |
+| [`didReceive(_:withContentHandler:)`](../../SimpleX%20NSE/NotificationService.swift#L310) | Main NSE entry point -- processes incoming notification | [310](../../SimpleX%20NSE/NotificationService.swift#L310) |
 
 ---
 
@@ -301,9 +301,9 @@ NtfManager.shared.setNtfBadgeCount(chatModel.totalUnreadCountForAllUsers())
 
 | Method | Purpose | Line |
 |--------|---------|------|
-| [`setBadgeCount()`](../../SimpleX NSE/NotificationService.swift#L592) | Increments badge via `ntfBadgeCountGroupDefault` | [592](../../SimpleX NSE/NotificationService.swift#L592) |
-| [`setNtfBadgeCount(_:)`](../../Shared/Model/NtfManager.swift#L264) | Sets badge on `UIApplication` | [264](../../Shared/Model/NtfManager.swift#L264) |
-| [`changeNtfBadgeCount(by:)`](../../Shared/Model/NtfManager.swift#L270) | Adjusts badge by delta | [270](../../Shared/Model/NtfManager.swift#L270) |
+| [`setBadgeCount()`](../../SimpleX NSE/NotificationService.swift#L602) | Increments badge via `ntfBadgeCountGroupDefault` | [602](../../SimpleX NSE/NotificationService.swift#L602) |
+| [`setNtfBadgeCount(_:)`](../../Shared/Model/NtfManager.swift#L267) | Sets badge on `UIApplication` | [267](../../Shared/Model/NtfManager.swift#L267) |
+| [`changeNtfBadgeCount(by:)`](../../Shared/Model/NtfManager.swift#L273) | Adjusts badge by delta | [273](../../Shared/Model/NtfManager.swift#L273) |
 
 ---
 

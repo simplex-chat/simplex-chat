@@ -289,7 +289,7 @@ enum OnboardingStage: String, Identifiable {
 }
 ```
 
-Each stage is a dedicated view presented in place of `ChatListView` within [`ContentView`](../../Shared/ContentView.swift#L174).
+Each stage is a dedicated view presented in place of `ChatListView` within [`ContentView`](../../Shared/ContentView.swift#L24).
 
 Migration state (`ChatModel.migrationState != nil`) takes precedence over onboarding.
 

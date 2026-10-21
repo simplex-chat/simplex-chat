@@ -84,33 +84,33 @@ The main conversation view. Key responsibilities:
 
 | Function | Line | Description |
 |----------|------|-------------|
-| [`body`](../../Shared/Views/Chat/ChatView.swift#L75) | L75 | Main view body |
-| [`initChatView()`](../../Shared/Views/Chat/ChatView.swift#L660) | L660 | Initializes chat view state on appear |
-| [`chatItemsList()`](../../Shared/Views/Chat/ChatView.swift#L817) | L817 | Builds the scrollable message list |
-| [`scrollToItem(_:)`](../../Shared/Views/Chat/ChatView.swift#L731) | L731 | Scrolls to a specific message by ID |
-| [`searchToolbar()`](../../Shared/Views/Chat/ChatView.swift#L765) | L765 | In-chat search toolbar UI |
-| [`searchTextChanged(_:)`](../../Shared/Views/Chat/ChatView.swift#L1095) | L1095 | Handles search query changes |
-| [`loadChatItems(_:_:)`](../../Shared/Views/Chat/ChatView.swift#L1531) | L1531 | Loads chat items with pagination |
-| [`filtered(_:)`](../../Shared/Views/Chat/ChatView.swift#L803) | L803 | Filters items by content type |
-| [`callButton(_:_:imageName:)`](../../Shared/Views/Chat/ChatView.swift#L1273) | L1273 | Audio/video call toolbar button |
-| [`searchButton()`](../../Shared/Views/Chat/ChatView.swift#L1293) | L1293 | Search toggle toolbar button |
-| [`addMembersButton()`](../../Shared/Views/Chat/ChatView.swift#L1361) | L1361 | Group add-members toolbar button |
-| [`forwardSelectedMessages()`](../../Shared/Views/Chat/ChatView.swift#L1420) | L1420 | Forwards batch-selected messages |
-| [`deletedSelectedMessages()`](../../Shared/Views/Chat/ChatView.swift#L1411) | L1411 | Deletes batch-selected messages |
-| [`onChatItemsUpdated()`](../../Shared/Views/Chat/ChatView.swift#L1572) | L1572 | Reacts to chat items model changes |
-| [`contentFilterMenu(withLabel:)`](../../Shared/Views/Chat/ChatView.swift#L1301) | L1301 | Content filter dropdown menu |
+| [`body`](../../Shared/Views/Chat/ChatView.swift#L98) | L75 | Main view body |
+| [`initChatView()`](../../Shared/Views/Chat/ChatView.swift#L733) | L660 | Initializes chat view state on appear |
+| [`chatItemsList()`](../../Shared/Views/Chat/ChatView.swift#L898) | L817 | Builds the scrollable message list |
+| [`scrollToItem(_:)`](../../Shared/Views/Chat/ChatView.swift#L812) | L731 | Scrolls to a specific message by ID |
+| [`searchToolbar()`](../../Shared/Views/Chat/ChatView.swift#L846) | L765 | In-chat search toolbar UI |
+| [`searchTextChanged(_:)`](../../Shared/Views/Chat/ChatView.swift#L1194) | L1095 | Handles search query changes |
+| [`loadChatItems(_:_:)`](../../Shared/Views/Chat/ChatView.swift#L1634) | L1531 | Loads chat items with pagination |
+| [`filtered(_:)`](../../Shared/Views/Chat/ChatView.swift#L884) | L803 | Filters items by content type |
+| [`callButton(_:_:imageName:)`](../../Shared/Views/Chat/ChatView.swift#L1372) | L1273 | Audio/video call toolbar button |
+| [`searchButton()`](../../Shared/Views/Chat/ChatView.swift#L1392) | L1293 | Search toggle toolbar button |
+| [`addMembersButton()`](../../Shared/Views/Chat/ChatView.swift#L1460) | L1361 | Group add-members toolbar button |
+| [`forwardSelectedMessages()`](../../Shared/Views/Chat/ChatView.swift#L1523) | L1420 | Forwards batch-selected messages |
+| [`deletedSelectedMessages()`](../../Shared/Views/Chat/ChatView.swift#L1514) | L1411 | Deletes batch-selected messages |
+| [`onChatItemsUpdated()`](../../Shared/Views/Chat/ChatView.swift#L1675) | L1572 | Reacts to chat items model changes |
+| [`contentFilterMenu(withLabel:)`](../../Shared/Views/Chat/ChatView.swift#L1400) | L1301 | Content filter dropdown menu |
 
 ### Supporting Types
 
 | Type | Line | Description |
 |------|------|-------------|
-| [`ChatItemWithMenu`](../../Shared/Views/Chat/ChatView.swift#L1600) | L1600 | Wraps each chat item with context menu |
-| [`FloatingButtonModel`](../../Shared/Views/Chat/ChatView.swift#L2787) | L2787 | Manages scroll-to-bottom button state |
-| [`ReactionContextMenu`](../../Shared/Views/Chat/ChatView.swift#L2974) | L2974 | Reaction picker context menu |
-| [`ToggleNtfsButton`](../../Shared/Views/Chat/ChatView.swift#L3072) | L3072 | Mute/unmute notifications button |
-| [`ContentFilter`](../../Shared/Views/Chat/ChatView.swift#L3124) | L3124 | Enum for message content filter types |
-| [`deleteMessages()`](../../Shared/Views/Chat/ChatView.swift#L2870) | L2870 | Deletes messages with confirmation |
-| [`archiveReports()`](../../Shared/Views/Chat/ChatView.swift#L2917) | L2917 | Archives report messages |
+| [`ChatItemWithMenu`](../../Shared/Views/Chat/ChatView.swift#L1703) | L1600 | Wraps each chat item with context menu |
+| [`FloatingButtonModel`](../../Shared/Views/Chat/ChatView.swift#L2926) | L2787 | Manages scroll-to-bottom button state |
+| [`ReactionContextMenu`](../../Shared/Views/Chat/ChatView.swift#L3124) | L2974 | Reaction picker context menu |
+| [`ToggleNtfsButton`](../../Shared/Views/Chat/ChatView.swift#L3222) | L3072 | Mute/unmute notifications button |
+| [`ContentFilter`](../../Shared/Views/Chat/ChatView.swift#L3274) | L3124 | Enum for message content filter types |
+| [`deleteMessages()`](../../Shared/Views/Chat/ChatView.swift#L3017) | L2870 | Deletes messages with confirmation |
+| [`archiveReports()`](../../Shared/Views/Chat/ChatView.swift#L3067) | L2917 | Archives report messages |
 
 ---
 
@@ -142,7 +142,7 @@ Routes each `ChatItem` to the appropriate renderer based on its `CIContent` type
 - Events/system messages: centered, no bubble
 
 ### Appearance Dependencies
-Each [`ChatItemWithMenu`](../../Shared/Views/Chat/ChatView.swift#L1600) may depend on the previous and next items for visual decisions:
+Each [`ChatItemWithMenu`](../../Shared/Views/Chat/ChatView.swift#L1703) may depend on the previous and next items for visual decisions:
 - Whether to show the sender name (group messages, different sender than previous)
 - Whether to show the tail on the bubble (last consecutive message from same sender)
 - Date separator between messages on different days
@@ -151,16 +151,16 @@ Each [`ChatItemWithMenu`](../../Shared/Views/Chat/ChatView.swift#L1600) may depe
 
 ### Channel Message Rendering (`.channelRcv`)
 
-Channel messages (`CIDirection.channelRcv`) are rendered with the group avatar and group name as sender, with "channel" as the role label. This mirrors the `.groupRcv` path's `showGroupAsSender` visual but uses a dedicated code branch in [`chatItemListView()`](../../Shared/Views/Chat/ChatView.swift#L1846).
+Channel messages (`CIDirection.channelRcv`) are rendered with the group avatar and group name as sender, with "channel" as the role label. This mirrors the `.groupRcv` path's `showGroupAsSender` visual but uses a dedicated code branch in [`chatItemListView()`](../../Shared/Views/Chat/ChatView.swift#L1930).
 
 Key differences from `.groupRcv`:
 - No `prevMember`/`memCount` logic — channels have no per-member identity
 - Always shows group avatar (via `ProfileImage` with `groupInfo.image` / `groupInfo.chatIconName`)
 - Tapping avatar opens `showChatInfoSheet` (not member info)
-- [`shouldShowAvatar()`](../../Shared/Views/Chat/ChatView.swift#L1670) treats consecutive `.channelRcv` items as same sender
-- [`getItemSeparation()`](../../Shared/Views/Chat/ChatView.swift#L1649) treats consecutive `.channelRcv` items as `sameMemberAndDirection`
-- [`showMemberImage()`](../../Shared/Views/Chat/ChatView.swift#L2116) returns `true` when previous item is `.channelRcv` (different sender type)
-- [`memberToModerate()`](../../SimpleXChat/ChatTypes.swift#L3297) returns `nil` for `.channelRcv` (no per-member moderation)
+- [`shouldShowAvatar()`](../../Shared/Views/Chat/ChatView.swift#L17) treats consecutive `.channelRcv` items as same sender
+- [`getItemSeparation()`](../../Shared/Views/Chat/ChatView.swift#L1756) treats consecutive `.channelRcv` items as `sameMemberAndDirection`
+- [`showMemberImage()`](../../Shared/Views/Chat/ChatView.swift#L2251) returns `true` when previous item is `.channelRcv` (different sender type)
+- [`memberToModerate()`](../../SimpleXChat/ChatTypes.swift#L4002) returns `nil` for `.channelRcv` (no per-member moderation)
 
 ---
 
@@ -340,7 +340,7 @@ When `groupInfo.useRelays == true`, [`GroupChatInfoView`](../../Shared/Views/Cha
 
 All "group" labels are replaced with "channel" equivalents via `groupInfo.useRelays ? "Channel..." :` ternary prepended before existing `businessChat` ternary. Affected: delete/leave buttons, delete/leave alerts, remove member alert, edit profile button, group link nav title. Channel link button uses a separate `channelLinkButton()` with hardcoded "Channel link" label.
 
-### [`channelMembersButton()`](../../Shared/Views/Chat/Group/GroupChatInfoView.swift#L627) → [`ChannelMembersView`](../../Shared/Views/Chat/Group/ChannelMembersView.swift)
+### [`channelMembersButton()`](../../Shared/Views/Chat/Group/GroupChatInfoView.swift#L736) → [`ChannelMembersView`](../../Shared/Views/Chat/Group/ChannelMembersView.swift)
 
 Navigates to a dedicated members view with two sections:
 - **Owners**: current user (if owner) + members with `memberRole >= .owner`
@@ -350,11 +350,11 @@ Member rows show profile image, display name (with verified shield), connection 
 
 ### Channel Link
 
-Owner sees [`channelLinkButton()`](../../Shared/Views/Chat/Group/GroupChatInfoView.swift#L605) (navigates to `GroupLinkView` for full link management), guarded by `groupInfo.isOwner && groupLink != nil` — channel links can only be created during channel creation, not from the info view. A TODO marks the need for protocol changes to allow other owners to manage the same channel link. Non-owner sees read-only QR code displaying `groupProfile.publicGroup?.groupLink` via `SimpleXLinkQRCode`. `apiGetGroupLink` is skipped in `onAppear` for non-owner channels.
+Owner sees [`channelLinkButton()`](../../Shared/Views/Chat/Group/GroupChatInfoView.swift#L669) (navigates to `GroupLinkView` for full link management), guarded by `groupInfo.isOwner && groupLink != nil` — channel links can only be created during channel creation, not from the info view. A TODO marks the need for protocol changes to allow other owners to manage the same channel link. Non-owner sees read-only QR code displaying `groupProfile.publicGroup?.groupLink` via `SimpleXLinkQRCode`. `apiGetGroupLink` is skipped in `onAppear` for non-owner channels.
 
-Groups use separate [`groupLinkButton()`](../../Shared/Views/Chat/Group/GroupChatInfoView.swift#L593) which supports both "Create group link" and "Group link" labels.
+Groups use separate [`groupLinkButton()`](../../Shared/Views/Chat/Group/GroupChatInfoView.swift#L657) which supports both "Create group link" and "Group link" labels.
 
-### [`channelRelaysButton()`](../../Shared/Views/Chat/Group/GroupChatInfoView.swift#L639) → [`ChannelRelaysView`](../../Shared/Views/Chat/Group/ChannelRelaysView.swift)
+### [`channelRelaysButton()`](../../Shared/Views/Chat/Group/GroupChatInfoView.swift#L748) → [`ChannelRelaysView`](../../Shared/Views/Chat/Group/ChannelRelaysView.swift)
 
 Navigates to relay list view with role-based branches:
 - **Owner**: loads `[GroupRelay]` via [`apiGetGroupRelays`](../../Shared/Model/SimpleXAPI.swift#L1999) (owner-only API, guarded by `assertUserGroupRole GROwner` on backend). Joins with `chatModel.groupMembers` by `groupMemberId` for display names. Shows status indicators (colored circle + `RelayStatus.text`). When `relayStatus == .rsRejected` the indicator dot is red and the text reads "rejected", matching the `connFailed`/`removed` rendering.
@@ -375,7 +375,7 @@ Sole channel owner cannot leave (only delete). Guard: `members.filter({ $0.wrapp
 
 | File | Path | Line |
 |------|------|------|
-| Chat view | [`Shared/Views/Chat/ChatView.swift`](../../Shared/Views/Chat/ChatView.swift) | [L18](../../Shared/Views/Chat/ChatView.swift#L18) |
+| Chat view | [`Shared/Views/Chat/ChatView.swift`](../../Shared/Views/Chat/ChatView.swift) | [L41](../../Shared/Views/Chat/ChatView.swift#L41) |
 | Item router | [`Shared/Views/Chat/ChatItemView.swift`](../../Shared/Views/Chat/ChatItemView.swift) | [L42](../../Shared/Views/Chat/ChatItemView.swift#L42) |
 | Framed bubble | [`Shared/Views/Chat/ChatItem/FramedItemView.swift`](../../Shared/Views/Chat/ChatItem/FramedItemView.swift) | [L14](../../Shared/Views/Chat/ChatItem/FramedItemView.swift#L14) |
 | Emoji message | [`Shared/Views/Chat/ChatItem/EmojiItemView.swift`](../../Shared/Views/Chat/ChatItem/EmojiItemView.swift) | [L14](../../Shared/Views/Chat/ChatItem/EmojiItemView.swift#L14) |
