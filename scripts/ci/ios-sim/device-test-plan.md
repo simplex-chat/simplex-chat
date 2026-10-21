@@ -62,7 +62,7 @@ Run these on an iOS simulator or device on the Mac. Each case says what to do an
 | U1 | Search for the name of a channel you joined (it is also listed) | It appears once, as your local chat; no result row for it |
 | U2 | Search for a word only in that channel's description, so the local list does not show it | It appears as your chat's row (as in the chat list: name without `#`, last message, time), before the result rows, with no "Open"; tapping it opens the channel, with no alert |
 | U3 | A listed regular group you joined with `/c` and its listed link; one you were invited to or joined through another link | The `/c`-joined group shows as your chat, with no "Open". The invited or other-link group shows as a result with "Open" beside its own chat row: the documented limit, not a regression |
-| U4 | Search for the name of a joined channel that is the page's only result, so the list shows it as your chat | "All results on this page are already in your chats" (grey), and the load row when there are more pages; nothing loads more pages by itself |
+| U4 | Search for the name of a joined channel that is the page's only result, so the list shows it as your chat | Only the chat's own row, no note about the page, and the load row when there are more pages; nothing loads more pages by itself |
 
 ## New chat (AC9)
 
@@ -72,7 +72,7 @@ Run these on an iOS simulator or device on the Mac. Each case says what to do an
 | W2 | Type a 5+ letter word | "Connect to … " and "Search in Directory" below the field |
 | W3 | Paste a link | No "Search in Directory"; the link connects as before |
 | W4 | Press the keyboard **Search** key | The directory results, after the alert while the switch is off; "Connect to …" stays; "Search in Directory" hides while the results show |
-| W5 | Results arrive | One card without a header after "Your Contacts" (which shows only while a contact matches): your chats, then the results with 30-pt avatars and "Open", the load row last |
+| W5 | Results arrive | One card without a header: the contacts that match, your chats, then the results with 30-pt avatars and "Open", the load row last; no "Your Contacts" header while results show |
 | W6 | Search with no contact matching | "No filtered contacts" is hidden while searching and when there are results; shown when nothing is found anywhere |
 | W7 | Tap a result or its "Open" | The sheet closes and the chat opens prepared, with no alert |
 | W8 | Long press a result | A menu with "Open", as in D15 |

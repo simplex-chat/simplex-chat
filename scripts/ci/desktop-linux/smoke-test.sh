@@ -11,7 +11,7 @@
 # which searches the directory too and leaves "Connect to …" for the typed name; with the toolbar at the bottom, also
 # with Enter in the New chat sheet, and a right click on a result opens its menu with Open. Then it joins ci_channel
 # through its result's Open, which opens the prepared channel without an alert, and checks, in both layouts, that a page
-# of chats already listed says so and that ci_channel, when the list doesn't show it, is its chat's row among the
+# of chats already listed adds nothing and that ci_channel, when the list doesn't show it, is its chat's row among the
 # results, opening it without an alert; and, with the toolbar at the bottom, that it is a chat row in New chat too.
 # These three need NAMES_SERVER, the test SMP server's address.
 # Each step saves a numbered screenshot and the text read from it to the output dir, prints the text to the log,
@@ -419,7 +419,7 @@ full_search() {
   clear_search_and_check_cards "$layout full search"
 }
 
-# The same Search key from the New chat sheet: one results card after the contacts, with Open on the results.
+# The same Search key from the New chat sheet: one group of results, the contacts that match first, with Open on the results.
 new_chat_sheet_search() {
   # the pencil at the right of the bottom toolbar opens New chat; the chat list behind it has the same search field
   "$ui" click 363 730
@@ -561,7 +561,7 @@ show_known_results() {
 }
 
 # A directory result that is a chat the user has. Typed `ci_channel`, it is listed as the chat open in the right pane,
-# so the page added no row and the results say so. With "seeded notes" open and `ci seed` typed, the list doesn't
+# so the page adds no row and no note. With "seeded notes" open and `ci seed` typed, the list doesn't
 # show it, so it is its chat row among the results, and clicking it opens it.
 known_channel_searches() {
   local layout=$1
@@ -569,10 +569,15 @@ known_channel_searches() {
   "$ui" type ci_channel
   "$ui" wait "Search in Directory" 15
   "$ui" click-text "Search in Directory"
-  # the note is a long line, which OCR can split after its first words
-  wait_in_list "All results on this page" || true
+  # nothing marks the end of a search that adds no row: wait out the request, which times out after 10 s
+  sleep 12
+  if on_screen "Search failed, tap to retry"; then
+    "$ui" click-text "Search failed, tap to retry"
+    sleep 12
+  fi
   "$ui" shot "$layout-known-listed"
-  check "$layout: a page of chats already listed says so" on_screen "All results on this page"
+  check "$layout: the search for the listed chat didn't fail" not_on_screen "Search failed, tap to retry"
+  check "$layout: a page of chats already listed adds no note" not_on_screen "All results on this page"
   check "$layout: no #ci_channel result next to the listed chat" no_ci_channel_directory_row
   check "$layout: no \"Open\" next to the listed chat" not_on_screen_exact "Open"
   clear_search_field "$layout"
@@ -893,7 +898,7 @@ if grep -q '^FAIL' "$checks"; then
   fail "the smoke test failed checks: $(grep -c '^FAIL' "$checks") of $(grep -cE '^(PASS|FAIL)' "$checks")"
 fi
 if [ "$cases" = search ]; then
-  echo "smoke test passed: onboarding reached the chat list with the toolbar at the bottom and at the top, the first search enabled Directory search, the searches showed one list of results with Open and the load row, Open opened the prepared ci_channel without an alert, and the joined ci_channel is a chat row among the results (chat list in both layouts, New chat), with the note for a page of chats already listed"
+  echo "smoke test passed: onboarding reached the chat list with the toolbar at the bottom and at the top, the first search enabled Directory search, the searches showed one list of results with Open and the load row, Open opened the prepared ci_channel without an alert, and the joined ci_channel is a chat row among the results (chat list in both layouts, New chat), and a page of chats already listed adds nothing"
   exit 0
 fi
 echo "smoke test passed: onboarding reached the chat list, which shows \"$local_chat\" with the toolbar at the bottom and at the top"

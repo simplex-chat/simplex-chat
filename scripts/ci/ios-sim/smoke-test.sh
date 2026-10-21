@@ -7,7 +7,7 @@
 # asks again; the results show Open and their avatars, with no header, in both layouts; Open prepares a channel and
 # opens it without an alert, with its subscriber count; once joined, the channel is its chat row among the results, on
 # the chat list in both layouts and in New chat; the chat list's cards show while typing and hide under the results;
-# a page whose only result is that channel says so; the load row says how many results are left, is disabled while
+# a page whose only result is that channel adds nothing; the load row says how many results are left, is disabled while
 # its page loads (a screenshot shows its colour) and offers a retry when that fails; and a long press on a result
 # shows a menu with Open (not fatal: the gesture is new to this harness; a screenshot shows it).
 # Usage: scripts/ci/ios-sim/smoke-test.sh <path to SimpleX.app> <output dir>
@@ -481,11 +481,24 @@ expect_in_tree -F 'StaticText "ci_cards"'
 expect_no_join_row "the chat list after joining"
 echo "after joining through Open, ci_cards is its chat row among the results and no longer a result to open"
 clear_search
-# the page's only result is that channel, which the list shows, so the results say the page added none
+# the page's only result is that channel, which the list shows, so the search adds no row and no note; nothing marks
+# its end, so the step waits out the request, which times out after 10 s
 type_search "ci_cards"
-search_directory '"All results on this page are already in your chats"'
+tap_search_in_directory
+sleep 12
+retry=$(labelled_containing "Search failed, tap to retry")
+if [ -n "$retry" ]; then
+  tap_element "$retry"
+  sleep 12
+fi
 "$ui" shot page-in-chats
-echo "the results say all results on the page are already in your chats"
+expect_in_tree -F 'StaticText "ci_cards"'
+expect_no_join_row "the chat list listing ci_cards"
+if "$ui" tree | grep -qF -e "All results on this page" -e "Search failed, tap to retry"; then
+  echo "error: the search whose only result is the listed ci_cards shows a note or failed"
+  exit 1
+fi
+echo "the search whose only result is the listed ci_cards adds no row and no note"
 clear_search
 expect_cards_hidden_by_results reachable
 open_known_chat_from_results reachable
@@ -541,4 +554,4 @@ else
   echo "WARN: a long press on #ci_group shows no menu with Open; see the long-press-menu screenshot"
 fi
 clear_search || true
-echo "smoke test passed: onboarding reaches the chat list in both layouts; the first directory search asks to enable Directory search, Cancel sends nothing and Enable searches, and no later search asks; the search for \"$search_text\" shows #ci_group and #ci_channel with Open and their avatars, with no header; the Search key searches the directory and keeps \"Connect to …\"; Open opens a prepared channel without an alert, with its subscriber count; with a chat, the list's cards show while typing and hide under the results; a page of chats already listed says so; the joined channel found by its description is its chat row on the chat list in both layouts and in New chat, and opens it; the load row says how many results are left, is disabled while its page loads and retries a failed page"
+echo "smoke test passed: onboarding reaches the chat list in both layouts; the first directory search asks to enable Directory search, Cancel sends nothing and Enable searches, and no later search asks; the search for \"$search_text\" shows #ci_group and #ci_channel with Open and their avatars, with no header; the Search key searches the directory and keeps \"Connect to …\"; Open opens a prepared channel without an alert, with its subscriber count; with a chat, the list's cards show while typing and hide under the results; a page of chats already listed adds nothing; the joined channel found by its description is its chat row on the chat list in both layouts and in New chat, and opens it; the load row says how many results are left, is disabled while its page loads and retries a failed page"
