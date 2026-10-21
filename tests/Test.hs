@@ -11,6 +11,7 @@ import Bots.StoreService.GroupIntegrationTests
 import Bots.StoreService.GroupTests
 import Bots.StoreService.NameRegistrationTests
 import Bots.StoreService.NamesLabelTests
+import Bots.StoreService.NamesProfilesTests
 import Bots.StoreService.NamesSignatureTests
 import Bots.StoreService.NamesWiringTests
 import Bots.StoreService.StripeTests
@@ -91,6 +92,7 @@ main = do
         badgeNameRegistrationTests
       namesConfigTests
       namesLabelTests
+      namesProfilesTests
       namesSignatureTests
       namesWiringTests
       describe "SimpleX chat markdown" markdownTests
@@ -124,6 +126,7 @@ main = do
             storeServiceTests
             describe "managed group" badgeGroupIntegrationTests
           describe "StoreService names: boot" namesBootTests
+          namesProfilesChatTests
           describe "Remote session" remoteTests
 #if !defined(dbPostgres)
           sequential $ xdescribe'' "Save query plans" saveQueryPlans
