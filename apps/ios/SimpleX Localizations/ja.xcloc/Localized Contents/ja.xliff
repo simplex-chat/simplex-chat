@@ -1150,9 +1150,9 @@ swipe action</note>
         <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow to irreversibly delete sent messages. (24 hours)" xml:space="preserve">
+      <trans-unit id="Allow to irreversibly delete sent messages. (24 hours)" xml:space="preserve" approved="no">
         <source>Allow to irreversibly delete sent messages. (24 hours)</source>
-        <target>送信済みメッセージの永久削除を許可する。(24時間)</target>
+        <target state="translated">送信済みメッセージの永久削除を許可する。(24時間)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow to report messsages to moderators." xml:space="preserve">
@@ -1195,9 +1195,9 @@ swipe action</note>
         <target state="translated">連絡先からの通話を許可する。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow your contacts to irreversibly delete sent messages. (24 hours)" xml:space="preserve">
+      <trans-unit id="Allow your contacts to irreversibly delete sent messages. (24 hours)" xml:space="preserve" approved="no">
         <source>Allow your contacts to irreversibly delete sent messages. (24 hours)</source>
-        <target>送信相手が永久メッセージ削除するのを許可する。(24時間)</target>
+        <target state="translated">送信相手が永久メッセージ削除するのを許可する。(24時間)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow your contacts to send disappearing messages." xml:space="preserve" approved="no">
@@ -1657,9 +1657,9 @@ in your network</source>
         <target state="translated">自分も相手もメッセージへのリアクションを追加できます。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Both you and your contact can irreversibly delete sent messages. (24 hours)" xml:space="preserve">
+      <trans-unit id="Both you and your contact can irreversibly delete sent messages. (24 hours)" xml:space="preserve" approved="no">
         <source>Both you and your contact can irreversibly delete sent messages. (24 hours)</source>
-        <target>あなたと連絡相手が送信済みメッセージを永久削除できます。(24時間)</target>
+        <target state="translated">あなたと連絡相手が送信済みメッセージを永久削除できます。(24時間)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can make calls." xml:space="preserve" approved="no">
@@ -6942,9 +6942,9 @@ VPN を有効にする必要があります。</target>
         <target state="translated">メッセージへのリアクションを追加できるのは、あなただけです。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only you can irreversibly delete messages (your contact can mark them for deletion). (24 hours)" xml:space="preserve">
+      <trans-unit id="Only you can irreversibly delete messages (your contact can mark them for deletion). (24 hours)" xml:space="preserve" approved="no">
         <source>Only you can irreversibly delete messages (your contact can mark them for deletion). (24 hours)</source>
-        <target>メッセージの完全削除はあなたにしかできません (あなたの連絡先は削除対象とすることができます)。(24時間)</target>
+        <target state="translated">メッセージの完全削除はあなたにしかできません (あなたの連絡先は削除対象とすることができます)。(24時間)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only you can make calls." xml:space="preserve" approved="no">
@@ -6972,9 +6972,9 @@ VPN を有効にする必要があります。</target>
         <target state="translated">メッセージへのリアクションを追加できるのは連絡先だけです。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only your contact can irreversibly delete messages (you can mark them for deletion). (24 hours)" xml:space="preserve">
+      <trans-unit id="Only your contact can irreversibly delete messages (you can mark them for deletion). (24 hours)" xml:space="preserve" approved="no">
         <source>Only your contact can irreversibly delete messages (you can mark them for deletion). (24 hours)</source>
-        <target>メッセージを完全削除できるのはあなたの連絡相手だけです (あなたは削除対象とすることができます)。(24時間)</target>
+        <target state="translated">メッセージを完全削除できるのはあなたの連絡相手だけです (あなたは削除対象とすることができます)。(24時間)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only your contact can make calls." xml:space="preserve" approved="no">
@@ -13061,14 +13061,14 @@ last received msg: %2$@</source>
         <target state="translated">SimpleX</target>
         <note>Bundle name</note>
       </trans-unit>
-      <trans-unit id="NSCameraUsageDescription" xml:space="preserve">
+      <trans-unit id="NSCameraUsageDescription" xml:space="preserve" approved="no">
         <source>SimpleX needs camera access to scan QR codes to connect to other users and for video calls.</source>
-        <target>SimpleXは他のユーザーに接続したりビデオ通話する際にQRコード読み取りのためにカメラにアクセスする必要があります。</target>
+        <target state="translated">SimpleXは他のユーザーに接続したりビデオ通話する際にQRコード読み取りのためにカメラにアクセスする必要があります。</target>
         <note>Privacy - Camera Usage Description</note>
       </trans-unit>
-      <trans-unit id="NSFaceIDUsageDescription" xml:space="preserve">
+      <trans-unit id="NSFaceIDUsageDescription" xml:space="preserve" approved="no">
         <source>SimpleX uses Face ID for local authentication</source>
-        <target>SimpleXはローカル認証にFace IDを使用します</target>
+        <target state="translated">SimpleXはローカル認証にFace IDを使用します</target>
         <note>Privacy - Face ID Usage Description</note>
       </trans-unit>
       <trans-unit id="NSLocalNetworkUsageDescription" xml:space="preserve">
@@ -13076,14 +13076,14 @@ last received msg: %2$@</source>
         <target></target>
         <note>Privacy - Local Network Usage Description</note>
       </trans-unit>
-      <trans-unit id="NSMicrophoneUsageDescription" xml:space="preserve">
+      <trans-unit id="NSMicrophoneUsageDescription" xml:space="preserve" approved="no">
         <source>SimpleX needs microphone access for audio and video calls, and to record voice messages.</source>
-        <target>SimpleXは音声通話やビデオ通話および音声メッセージの録音のためにマイクにアクセスする必要があります。</target>
+        <target state="translated">SimpleXは音声通話やビデオ通話および音声メッセージの録音のためにマイクにアクセスする必要があります。</target>
         <note>Privacy - Microphone Usage Description</note>
       </trans-unit>
-      <trans-unit id="NSPhotoLibraryAddUsageDescription" xml:space="preserve">
+      <trans-unit id="NSPhotoLibraryAddUsageDescription" xml:space="preserve" approved="no">
         <source>SimpleX needs access to Photo Library for saving captured and received media</source>
-        <target>SimpleXはキャプチャおよび受信したメディアを保存するためにフォトライブラリにアクセスする必要があります</target>
+        <target state="translated">SimpleXはキャプチャおよび受信したメディアを保存するためにフォトライブラリにアクセスする必要があります</target>
         <note>Privacy - Photo Library Additions Usage Description</note>
       </trans-unit>
     </body>
