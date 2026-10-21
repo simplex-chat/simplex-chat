@@ -766,7 +766,8 @@ testUnknownPurchaseKeyRefused = withServiceStore $ \st -> do
     createStorePurchase db NewStorePurchase {paymentId = "pay1", provider = PPApple, providerRef = "2000000812345671", paid = Nothing, purchaseKey, masterKey, badgeType = BTSupporter, subscriptionState = Nothing, providerToken = Nothing} now
   let granted = grantEntry now "e1" BTSupporter 2 SCCode (emptyEntry now BTSupporter)
   withTransaction st $ \db -> appendLedgerPlan db purchaseId Nothing [granted] Nothing
-  refused <- E.try $ withTransaction st $ \db -> appendLedgerPlan db purchaseId Nothing [debitEntry now "e2" (SDTransferOut unknownKey) granted] Nothing
+  let upgraded = debitEntry now "e2" (SDUpgrade purchaseKey) granted
+  refused <- E.try $ withTransaction st $ \db -> appendLedgerPlan db purchaseId Nothing [upgraded, debitEntry now "e3" (SDTransferOut unknownKey) upgraded] Nothing
   (refused :: Either E.SomeException ()) `shouldSatisfy` isLeft
   withTransaction st (\db -> getLedgerEntries db purchaseId 0) >>= (`shouldBe` Just [J.toJSON granted]) . fmap (map J.toJSON)
 
