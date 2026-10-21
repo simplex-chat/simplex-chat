@@ -88,6 +88,10 @@ expect_chat_list() {
 }
 
 xcrun simctl install "$SIM_UDID" "$app"
+# private routing to unknown servers only: the preset servers that would proxy name lookups can't reach the test SMP
+# server on localhost
+prefs=$(xcrun simctl get_app_container "$SIM_UDID" "$bundle_id" group.chat.simplex.app)/Library/Preferences/group.chat.simplex.app
+xcrun simctl spawn "$SIM_UDID" defaults write "$prefs" networkSMPProxyMode -string unknown
 xcrun simctl launch "$SIM_UDID" "$bundle_id"
 
 # onboarding to the chat list
