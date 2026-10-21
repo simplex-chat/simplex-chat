@@ -10,9 +10,9 @@
         <target state="translated"> (można skopiować)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="!1 colored!" xml:space="preserve">
+      <trans-unit id="!1 colored!" xml:space="preserve" approved="no">
         <source>!1 colored!</source>
-        <target>!1 pokolorowany!</target>
+        <target state="translated">!1 pokolorowany!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="# %@" xml:space="preserve" approved="no">
@@ -485,14 +485,14 @@ channel relay bar</note>
         <target state="translated">**Najbardziej prywatny**: nie korzystaj z serwera powiadomień SimpleX Chat, wiadomości sprawdzane są co jakiś czas w tle (zależne od tego jak często korzystasz z aplikacji).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection." xml:space="preserve">
+      <trans-unit id="**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection." xml:space="preserve" approved="no">
         <source>**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection.</source>
-        <target>*Uwaga*: w celach bezpieczeństwa użycie tej samej bazy danych na dwóch różnych urządzeniach spowoduje brak możliwości odszyfrowywania wiadomości z Twoich połączeń.</target>
+        <target state="translated">*Uwaga*: w celach bezpieczeństwa użycie tej samej bazy danych na dwóch różnych urządzeniach spowoduje brak możliwości odszyfrowywania wiadomości z Twoich połączeń.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Please note**: you will NOT be able to recover or change passphrase if you lose it." xml:space="preserve">
+      <trans-unit id="**Please note**: you will NOT be able to recover or change passphrase if you lose it." xml:space="preserve" approved="no">
         <source>**Please note**: you will NOT be able to recover or change passphrase if you lose it.</source>
-        <target>**Uwaga**: NIE będziesz w stanie odzyskać lub zmienić kodu dostępu, jeśli go stracisz.</target>
+        <target state="translated">**Uwaga**: NIE będziesz w stanie odzyskać lub zmienić kodu dostępu, jeśli go stracisz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Recommended**: device token and end-to-end encrypted notifications are sent to SimpleX Chat push server, but it does not see the message content, size or who it is from." xml:space="preserve" approved="no">
@@ -510,9 +510,9 @@ channel relay bar</note>
         <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Warning**: Instant push notifications require passphrase saved in Keychain." xml:space="preserve">
+      <trans-unit id="**Warning**: Instant push notifications require passphrase saved in Keychain." xml:space="preserve" approved="no">
         <source>**Warning**: Instant push notifications require passphrase saved in Keychain.</source>
-        <target>**Uwaga**: Natychmiastowe powiadomienia push wymagają zapisania kodu dostępu w Keychain.</target>
+        <target state="translated">**Uwaga**: Natychmiastowe powiadomienia push wymagają zapisania kodu dostępu w Keychain.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Warning**: the archive will be removed." xml:space="preserve" approved="no">
@@ -7365,14 +7365,14 @@ Błąd: %@</target>
         <target state="translated">Skontaktuj się z administratorem grupy.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please enter correct current passphrase." xml:space="preserve">
+      <trans-unit id="Please enter correct current passphrase." xml:space="preserve" approved="no">
         <source>Please enter correct current passphrase.</source>
-        <target>Wprowadź poprawny obecny kod dostępu.</target>
+        <target state="translated">Wprowadź poprawny obecny kod dostępu.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please enter the previous password after restoring database backup. This action can not be undone." xml:space="preserve">
+      <trans-unit id="Please enter the previous password after restoring database backup. This action can not be undone." xml:space="preserve" approved="no">
         <source>Please enter the previous password after restoring database backup. This action can not be undone.</source>
-        <target>Proszę podać poprzedni kod dostępu po przywróceniu kopii zapasowej bazy danych. Tej czynności nie można cofnąć.</target>
+        <target state="translated">Proszę podać poprzedni kod dostępu po przywróceniu kopii zapasowej bazy danych. Tej czynności nie można cofnąć.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please remember or store it securely - there is no way to recover a lost passcode!" xml:space="preserve" approved="no">
@@ -7390,14 +7390,14 @@ Błąd: %@</target>
         <target state="translated">Uruchom ponownie aplikację i przeprowadź migrację bazy danych, aby włączyć powiadomienia push.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please store passphrase securely, you will NOT be able to access chat if you lose it." xml:space="preserve">
+      <trans-unit id="Please store passphrase securely, you will NOT be able to access chat if you lose it." xml:space="preserve" approved="no">
         <source>Please store passphrase securely, you will NOT be able to access chat if you lose it.</source>
-        <target>Przechowuj kod dostępu w bezpieczny sposób, w przypadku jego utraty NIE będzie można uzyskać dostępu do czatu.</target>
+        <target state="translated">Przechowuj kod dostępu w bezpieczny sposób, w przypadku jego utraty NIE będzie można uzyskać dostępu do czatu.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please store passphrase securely, you will NOT be able to change it if you lose it." xml:space="preserve">
+      <trans-unit id="Please store passphrase securely, you will NOT be able to change it if you lose it." xml:space="preserve" approved="no">
         <source>Please store passphrase securely, you will NOT be able to change it if you lose it.</source>
-        <target>Przechowuj kod dostępu w bezpieczny sposób, w przypadku jego utraty NIE będzie można go zmienić.</target>
+        <target state="translated">Przechowuj kod dostępu w bezpieczny sposób, w przypadku jego utraty NIE będzie można go zmienić.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please try to disable and re-enable notfications." xml:space="preserve" approved="no">
