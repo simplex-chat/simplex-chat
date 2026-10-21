@@ -118,7 +118,7 @@
     "simplex-private-card-3-point-1": "Використовується лише TLS 1.2/1.3 із сильними алгоритмами для з'єднань клієнт-сервер.",
     "simplex-private-card-3-point-2": "Відбиток сервера та зв'язування каналу запобігають MITM та атакам повтору.",
     "simplex-private-card-4-point-1": "Для захисту вашої IP-адреси ви можете отримати доступ до серверів через Tor чи іншу транспортну оверлейну мережу.",
-    "simplex-private-card-4-point-2": "Для використання SimpleX через Tor, будь ласка, встановіть <a href=\"https://guardianproject.info/apps/org.torproject.android/\" target=\"_blank\" rel=\"noopener\">додаток Orbot</a> та активуйте SOCKS5-проксі (або VPN <a href=\"https://apps.apple.com/us/app/orbot/id1609461599?platform=iphone\" target=\"_blank\" rel=\"noopener\">на iOS</a>).",
+    "simplex-private-card-4-point-2": "Для використання SimpleX через Tor, будь ласка, встановіть <a href=\"https://guardianproject.info/apps/org.torproject.android/\" target=\"_blank\">додаток Orbot</a> та активуйте SOCKS5-проксі (або VPN <a href=\"https://apps.apple.com/us/app/orbot/id1609461599?platform=iphone\" target=\"_blank\">на iOS</a>).",
     "simplex-private-card-5-point-1": "SimpleX використовує наповнення вмісту для кожного шару шифрування для ускладнення атак за розміром повідомлень.",
     "simplex-private-card-5-point-2": "Це забезпечує, що повідомлення різних розмірів виглядають однаково для серверів та спостерігачів мережі.",
     "simplex-private-card-6-point-1": "Багато комунікаційних мереж вразливі до MITM-атак серверів чи постачальників мережі.",
