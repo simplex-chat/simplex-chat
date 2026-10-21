@@ -776,24 +776,7 @@ fun showPrepareGroupAlert(
     confirmText = generalGetString(if (isChannel) MR.strings.connect_plan_open_channel else MR.strings.connect_plan_open_group),
     onConfirm = {
       AlertManager.privacySensitive.hideAlert()
-      withBGApi {
-        val directLink = groupShortLinkInfo?.direct ?: true
-        val chat = chatModel.controller.apiPrepareGroup(rhId, connectionLink, directLink = directLink, groupShortLinkData, planSimplexName?.nameDomain)
-        if (chat != null) {
-          withContext(Dispatchers.Main) {
-            val relays = groupShortLinkInfo?.groupRelays
-            if (!relays.isNullOrEmpty()) {
-              val chatInfo = chat.chatInfo
-              if (chatInfo is ChatInfo.Group) {
-                chatModel.channelRelayHostnames[chatInfo.groupInfo.groupId] = relays
-              }
-            }
-            ChatController.chatModel.chatsContext.addChat(chat)
-            openChat_(chatModel, rhId, close, chat)
-          }
-        }
-        cleanup?.invoke()
-      }
+      prepareAndOpenGroup(rhId, connectionLink, groupShortLinkInfo, groupShortLinkData, planSimplexName?.nameDomain, close, cleanup)
     },
     connectOtherButton = connectOtherButton,
     onConnectOther = connectOtherLink?.let { link -> { withBGApi { planAndConnect(rhId, link, close = close, cleanup = cleanup) } } },
@@ -801,6 +784,35 @@ fun showPrepareGroupAlert(
       cleanup?.invoke()
     }
   )
+}
+
+private fun prepareAndOpenGroup(
+  rhId: Long?,
+  connectionLink: CreatedConnLink,
+  groupShortLinkInfo: GroupShortLinkInfo?,
+  groupShortLinkData: GroupShortLinkData,
+  verifiedDomain: SimplexDomain?,
+  close: (() -> Unit)?,
+  cleanup: (() -> Unit)?
+) {
+  withBGApi {
+    val directLink = groupShortLinkInfo?.direct ?: true
+    val chat = chatModel.controller.apiPrepareGroup(rhId, connectionLink, directLink = directLink, groupShortLinkData, verifiedDomain)
+    if (chat != null) {
+      withContext(Dispatchers.Main) {
+        val relays = groupShortLinkInfo?.groupRelays
+        if (!relays.isNullOrEmpty()) {
+          val chatInfo = chat.chatInfo
+          if (chatInfo is ChatInfo.Group) {
+            chatModel.channelRelayHostnames[chatInfo.groupInfo.groupId] = relays
+          }
+        }
+        ChatController.chatModel.chatsContext.addChat(chat)
+        openChat_(chatModel, rhId, close, chat)
+      }
+    }
+    cleanup?.invoke()
+  }
 }
 
 fun ownerVerificationMessage(ov: OwnerVerification?): String? = when (ov) {
