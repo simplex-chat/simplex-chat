@@ -323,6 +323,15 @@
             "balance": {"ref": "balance"}
           }
         },
+        "transferBadge": {
+          "properties": {
+            "masterKey": {"ref": "base64url"},
+            "payment": {
+              "ref": "payment",
+              "metadata": {"comment": "a store subscription's receipt, credited to another key"}
+            }
+          }
+        },
         "issueBadge": {
           "properties": {
             "balance": {"ref": "balance"}

@@ -249,6 +249,7 @@ data BadgeServiceErrorCode
   | BSECodeExpired
   | BSEReceiptInvalid
   | BSEReceiptUsed
+  | BSETransferLimited -- the subscription moved from another key whose credential has not expired yet
   | BSETestPurchase -- the store vouched for a purchase that cost nothing: Apple's sandbox, a Play license tester
   | BSEInternal
   | BSEUnknown Text -- forwards-compatible: service is deployed ahead of clients
@@ -376,6 +377,7 @@ instance TextEncoding BadgeServiceErrorCode where
     BSECodeExpired -> "code_expired"
     BSEReceiptInvalid -> "receipt_invalid"
     BSEReceiptUsed -> "receipt_used"
+    BSETransferLimited -> "transfer_limited"
     BSETestPurchase -> "test_purchase"
     BSEInternal -> "internal"
     BSEUnknown t -> t
@@ -397,6 +399,7 @@ instance TextEncoding BadgeServiceErrorCode where
     "code_expired" -> BSECodeExpired
     "receipt_invalid" -> BSEReceiptInvalid
     "receipt_used" -> BSEReceiptUsed
+    "transfer_limited" -> BSETransferLimited
     "test_purchase" -> BSETestPurchase
     "internal" -> BSEInternal
     t -> BSEUnknown t
