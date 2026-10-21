@@ -2528,9 +2528,9 @@ To jest twój jednorazowy link!</target>
         <target state="translated">Błąd połączenia</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Connection failed" xml:space="preserve">
+      <trans-unit id="Connection failed" xml:space="preserve" approved="no">
         <source>Connection failed</source>
-        <target>Połączenie nie powiodło się</target>
+        <target state="translated">Połączenie nie powiodło się</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection is blocked by server operator:&#10;%@" xml:space="preserve" approved="no">
@@ -5237,9 +5237,9 @@ Błąd: %2$@</target>
         <target state="translated">Jeśli wpiszesz swój pin samodestrukcji podczas otwierania aplikacji:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="If you joined or created channels, they will stop working permanently." xml:space="preserve">
+      <trans-unit id="If you joined or created channels, they will stop working permanently." xml:space="preserve" approved="no">
         <source>If you joined or created channels, they will stop working permanently.</source>
-        <target>Jeśli dołączyłeś do kanałów lub je utworzyłeś, przestaną one działać na stałe.</target>
+        <target state="translated">Jeśli dołączyłeś do kanałów lub je utworzyłeś, przestaną one działać na stałe.</target>
         <note>down migration warning</note>
       </trans-unit>
       <trans-unit id="If you need to use the chat now tap **Do it later** below (you will be offered to migrate the database when you restart the app)." xml:space="preserve" approved="no">
@@ -10701,9 +10701,9 @@ Przed włączeniem tej funkcji zostanie wyświetlony monit uwierzytelniania.</ta
         <target state="translated">Aktualizacja ustawień spowoduje ponowne połączenie klienta ze wszystkimi serwerami.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Upgrade" xml:space="preserve">
+      <trans-unit id="Upgrade" xml:space="preserve" approved="no">
         <source>Upgrade</source>
-        <target>Zaktualizuj</target>
+        <target state="translated">Zaktualizuj</target>
         <note>alert button</note>
       </trans-unit>
       <trans-unit id="Upgrade address" xml:space="preserve" approved="no">
@@ -12350,9 +12350,9 @@ pref value</note>
         <target state="translated">wygasły</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="failed" xml:space="preserve">
+      <trans-unit id="failed" xml:space="preserve" approved="no">
         <source>failed</source>
-        <target>nieudane</target>
+        <target state="translated">nieudane</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="forwarded" xml:space="preserve" approved="no">
