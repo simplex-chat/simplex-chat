@@ -166,6 +166,7 @@
       </trans-unit>
       <trans-unit id="%llds" xml:space="preserve">
         <source>%llds</source>
+        <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lldw" xml:space="preserve">
@@ -232,6 +233,7 @@
       </trans-unit>
       <trans-unit id="*bold*" xml:space="preserve">
         <source>\*bold*</source>
+        <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id=", " xml:space="preserve" approved="no">
