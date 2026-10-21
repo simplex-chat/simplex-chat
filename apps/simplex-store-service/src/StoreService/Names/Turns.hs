@@ -1,5 +1,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 
+-- | A thread that takes a turn it already holds waits forever. Label turns are taken before a code turn.
 module StoreService.Names.Turns (Turns, newTurns, withLabelTurn, withLabelTurns, withCodeTurn) where
 
 import Control.Concurrent.STM
