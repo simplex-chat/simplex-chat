@@ -73,7 +73,7 @@
     "simplex-private-5-title": "שכבות מרובות של<br>ריפוד תוכן",
     "simplex-private-card-3-point-3": "חידוש החיבור מושבת כדי למנוע התקפות הפעלה.",
     "simplex-private-card-4-point-1": "כדי להגן על כתובת ה-IP שלכם, אתם יכולים לגשת לשרתים דרך Tor או רשת שכבת-על אחרת של תעבורה.",
-    "simplex-private-card-4-point-2": "כדי להשתמש ב-SimpleX דרך Tor, התקן את <a href=\"https://guardianproject.info/apps/org.torproject.android/\" target=\"_blank\" rel=\"noopener\">אפליקציית Orbot</a> והפעל את SOCKS5 proxy (או VPN <a href=\"https://apps.apple.com/us/app/orbot/id1609461599?platform=iphone\" target=\"_blank\" rel=\"noopener\">ב-iOS</a>).",
+    "simplex-private-card-4-point-2": "כדי להשתמש ב-SimpleX דרך Tor, התקן את <a href=\"https://guardianproject.info/apps/org.torproject.android/\" target=\"_blank\">אפליקציית Orbot</a> והפעל את SOCKS5 proxy (או VPN <a href=\"https://apps.apple.com/us/app/orbot/id1609461599?platform=iphone\" target=\"_blank\">ב-iOS</a>).",
     "simplex-private-card-7-point-2": "אם הודעה כלשהי תתווסף, תוסר או תשתנה, הנמען יקבל התראה.",
     "simplex-private-card-9-point-1": "כל תור הודעות מעביר הודעות בכיוון אחד, עם כתובות השליחה והקבלה השונות.",
     "privacy-matters-1-overlay-1-title": "פרטיות חוסכת לכם כסף",
