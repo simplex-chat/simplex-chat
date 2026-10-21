@@ -6,6 +6,7 @@ module Bots.StoreService.NamesChainTests (namesChainTests) where
 
 import Bots.StoreService.FakeEthNode
 import Control.Concurrent.STM (TVar)
+import Control.Exception (toException, try)
 import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson as J
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
@@ -14,6 +15,7 @@ import qualified Data.ByteString as B
 import qualified Data.Text as T
 import Data.Time.Clock (diffUTCTime, getCurrentTime)
 import Data.Word (Word64)
+import qualified Network.HTTP.Client as HTTP
 import qualified Simplex.Messaging.Crypto as C
 import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Abi (selector, uint256)
@@ -40,6 +42,7 @@ namesChainTests = describe "StoreService names: chain" $ do
     it "reads a 2xx answer that is not JSON as unavailable, without quoting it" $ testNotJson g
     it "cuts a node's long error message" $ testLongNodeMessage g
     it "refuses a quantity over 256 bits, and a long one within the call's timeout" $ testLongQuantity g
+    it "keeps an HTTP failure's detail for the log, with the URL's host, path and query redacted" testFailureDetail
   describe "reads" $ do
     it "answers eth_call from the node by contract and calldata" $ testEthCall g
     it "reads the latest block's number, time and base fee" $ testLatestBlock g
@@ -186,6 +189,23 @@ testLongQuantity g = withChain g $ \node c -> do
   fee (T.replicate 1000000 "f") `shouldReturn` notQuantity
   elapsed <- (`diffUTCTime` start) <$> getCurrentTime
   elapsed `shouldSatisfy` (< 1)
+
+testFailureDetail :: IO ()
+testFailureDetail = do
+  let url = "https://provider.example/v2/provider-api-key?key=abc"
+  req <- HTTP.parseRequest url
+  let detail = httpFailureDetail url . HTTP.HttpExceptionRequest req
+      redacted t = (t, filter (`T.isInfixOf` t) ["provider.example", "provider-api-key", "key=abc"]) `shouldBe` (t, [])
+  redacted $ detail $ HTTP.InvalidDestinationHost "provider.example"
+  redacted $ detail $ HTTP.ConnectionFailure $ toException $ userError $ "connect to " <> url
+  redacted $ httpFailureDetail url $ HTTP.InvalidUrlException url "Invalid URL"
+  manager <- HTTP.newManager HTTP.defaultManagerSettings
+  -- port 1 is privileged and nothing listens on it in the test container
+  let refusedUrl = "http://127.0.0.1:1" <> secretPath
+  refused <- try $ HTTP.parseRequest refusedUrl >>= (`HTTP.httpLbs` manager)
+  case refused of
+    Left e -> httpFailureDetail refusedUrl e `shouldSatisfy` ("ConnectionFailure" `T.isPrefixOf`)
+    Right _ -> expectationFailure "connected to port 1"
 
 testEthCall :: TVar ChaChaDRG -> IO ()
 testEthCall g = withChain g $ \node c -> do

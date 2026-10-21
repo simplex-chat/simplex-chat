@@ -24,6 +24,7 @@ module StoreService.Names.Chain
     maxPriorityFee,
     signTransaction,
     sendRawTransaction,
+    httpFailureDetail,
   )
 where
 
@@ -37,9 +38,10 @@ import qualified Data.Aeson.Types as JT
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy as LB
+import Data.List (foldl')
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (encodeUtf8)
+import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Word (Word64)
 import Network.HTTP.Client (Manager)
 import qualified Network.HTTP.Client as HTTP
@@ -51,6 +53,7 @@ import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey)
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..), signEip1559Tx)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..))
+import StoreService.Log (logWarn)
 import StoreService.Names.Abi (hex)
 import StoreService.Names.Revert (RevertName, decodeRevert)
 import System.Timeout (timeout)
@@ -190,7 +193,9 @@ rpc :: ChainClient -> Text -> [J.Value] -> (J.Value -> JT.Parser a) -> IO (Eithe
 rpc ChainClient {ccManager, ccConfig = ChainConfig {cRpcUrl}, ccTimeout} method params parseResult =
   timeout ccTimeout (try $ post >>= evaluate . answer) >>= \case
     Nothing -> pure $ Left $ unavailable "timed out"
-    Just (Left (e :: HTTP.HttpException)) -> pure $ Left $ unavailable $ httpFailure e
+    Just (Left (e :: HTTP.HttpException)) -> do
+      logWarn $ "chain RPC " <> method <> " failed: " <> httpFailureDetail cRpcUrl e
+      pure $ Left $ unavailable $ httpFailure e
     Just (Right r) -> pure r
   where
     answer (status, body)
@@ -226,7 +231,7 @@ rpc ChainClient {ccManager, ccConfig = ChainConfig {cRpcUrl}, ccTimeout} method 
           else unavailable $ "error " <> tshow code <> ": " <> T.take maxNodeMessageLength message
     unavailable reason = ChainUnavailable $ method <> ": " <> reason
 
--- | Only the kind of failure: an exception's text can hold the URL or its host.
+-- | Only the kind of failure, for callers: an exception's text can hold the URL or its host.
 httpFailure :: HTTP.HttpException -> Text
 httpFailure = \case
   HTTP.InvalidUrlException {} -> "invalid RPC URL"
@@ -235,6 +240,16 @@ httpFailure = \case
     HTTP.ConnectionTimeout -> "connection timed out"
     HTTP.ConnectionFailure _ -> "connection failed"
     _ -> "request failed"
+
+-- | The failure's detail for the service log, with the RPC URL and its host, path and query replaced, since they can carry a provider's key.
+httpFailureDetail :: String -> HTTP.HttpException -> Text
+httpFailureDetail rpcUrl e = foldl' (\t secret -> T.replace secret "<redacted>" t) detail secrets
+  where
+    detail = case e of
+      HTTP.InvalidUrlException _ reason -> "invalid URL: " <> T.pack reason
+      HTTP.HttpExceptionRequest _ content -> tshow content
+    secrets = filter ((> 1) . T.length) $ T.pack rpcUrl : maybe [] urlParts (HTTP.parseRequest rpcUrl)
+    urlParts req = map decodeLatin1 [HTTP.host req, HTTP.path req, HTTP.queryString req]
 
 nullable :: (J.Value -> JT.Parser a) -> J.Value -> JT.Parser (Maybe a)
 nullable p = \case
