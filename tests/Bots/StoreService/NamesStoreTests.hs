@@ -57,6 +57,10 @@ namesStoreTests = describe "StoreService names: store" $ do
     it "bumps the version on every write and changes nothing for a stale one" testVersionBumps
     it "writes and reads back every changeable field, and clears the reveal" testRoundTrip
     it "keeps live in step with the phase" testLiveFollowsPhase
+    it "is live while an order can still progress to a registration for its name" testOrderLive
+    it "lets a wallet order a name again once its registration is done" testReorderAfterRegistered
+    it "refuses to queue a closed order, also when a newer live order holds its name" testLatePayment
+    it "refuses a write that would meet another live order, writing nothing" testWriteMeetsLiveOrder
     it "retargets to the new fields, clearing the reveal, transactions, reveal times and refusal" testRetarget
     it "finds an owner's orders newest first, at most 50" testFind
     it "tells a label being registered here" testLabelRegistering
@@ -398,27 +402,85 @@ testRoundTrip = withServiceStore $ \st -> do
             nrMoves = 2
           }
   write st changed `shouldReturn` Written 2
-  reg st "r1" `shouldReturn` changed {nrVersion = 2, nrUpdatedAt = at 1}
+  reg st "r1" `shouldReturn` changed {nrVersion = 2, nrLive = False, nrUpdatedAt = at 1}
   write st changed {nrVersion = 2, nrReveal = Nothing} `shouldReturn` Written 3
   nrReveal <$> reg st "r1" `shouldReturn` Nothing
 
 testLiveFollowsPhase :: IO ()
 testLiveFollowsPhase = withServiceStore $ \st -> do
   placePaid st "r1" ownerA (order "alicebakery" 1) (at 60) `shouldReturn` Right ()
-  let step phase expected = do
-        r <- reg st "r1"
-        void $ write st r {nrPhase = phase}
-        (nrPhase &&& nrLive) <$> reg st "r1" `shouldReturn` (phase, expected)
-  step PQueued True
-  step PTaken False
-  step PFailed True
-  step PCodeIssued False
+  code <- issue st 1 usable
+  placeCode st "r2" ownerB (order "bobsbakery" 2) code `shouldReturn` Right ()
+  let step rid phase expected = do
+        r <- reg st rid
+        write st r {nrPhase = phase} `shouldReturn` Written (nrVersion r + 1)
+        (nrPhase &&& nrLive) <$> reg st rid `shouldReturn` (phase, expected)
+  step "r1" PQueued True
+  step "r1" PTaken True
+  step "r1" PFailed True
+  step "r1" PTaken True
+  step "r1" PCodeIssued False
+  step "r2" PRegistering True
+  step "r2" PTaken False
+  placePaid st "r3" ownerA (order "carolsbakery" 3) (at 60) `shouldReturn` Right ()
+  r3 <- reg st "r3"
+  write st r3 {nrLive = False} `shouldReturn` Written 2
+  nrLive <$> reg st "r3" `shouldReturn` False
+
+testOrderLive :: IO ()
+testOrderLive = withServiceStore $ \st -> do
+  placePaid st "r1" ownerA (order "alicebakery" 1) (at 60) `shouldReturn` Right ()
+  paid <- reg st "r1"
+  let code = paid {nrPayment = RPCode 1}
+      liveIn r phase = (phase, orderLive r {nrPhase = phase})
+  map (liveIn paid) [minBound .. maxBound]
+    `shouldBe` [(PUnpaid, True), (PQueued, True), (PCommitting, True), (PCommitted, True), (PRegistering, True), (PRegistered, False), (PTaken, True), (PFailed, True), (PCodeIssued, False)]
+  map (liveIn code) [PTaken, PFailed, PRegistered] `shouldBe` [(PTaken, False), (PFailed, True), (PRegistered, False)]
+  orderLive paid {nrLive = False} `shouldBe` False
+  orderLive paid {nrLive = False, nrPhase = PQueued} `shouldBe` True
+
+testReorderAfterRegistered :: IO ()
+testReorderAfterRegistered = withServiceStore $ \st -> do
+  let o = order "alicebakery" 1
+  code <- issue st 1 usable
+  placeCode st "r1" ownerA o code `shouldReturn` Right ()
+  placePaid st "r2" ownerA o {ofCommitment = digestFixture 2} (at 60) `shouldReturn` Left RRLiveOrder
   r <- reg st "r1"
-  void $ write st r {nrPhase = PUnpaid, nrLive = True}
-  nrLive <$> reg st "r1" `shouldReturn` True
-  r' <- reg st "r1"
-  void $ write st r' {nrLive = False}
+  write st r {nrPhase = PRegistered, nrRegisteredAt = Just (at 1)} `shouldReturn` Written 2
   nrLive <$> reg st "r1" `shouldReturn` False
+  placePaid st "r3" ownerA o {ofCommitment = digestFixture 2} (at 60) `shouldReturn` Right ()
+
+testLatePayment :: IO ()
+testLatePayment = withServiceStore $ \st -> do
+  let o = order "alicebakery" 1
+      o' = o {ofCommitment = digestFixture 2, ofSealed = "new"}
+  placePaid st "r1" ownerA o (at 60) `shouldReturn` Right ()
+  closed <- reg st "r1"
+  withTransaction st (\db -> closeOverdue db closed (at 61)) `shouldReturn` Written 2
+  r1 <- reg st "r1"
+  write st r1 {nrPhase = PQueued} `shouldReturn` NotLive
+  reg st "r1" `shouldReturn` r1
+  placePaid st "r2" ownerA o' (at 120) `shouldReturn` Right ()
+  write st r1 {nrPhase = PQueued} `shouldReturn` NotLive
+  reg st "r1" `shouldReturn` r1
+  (nrPhase &&& nrLive) <$> reg st "r2" `shouldReturn` (PUnpaid, True)
+  write st r1 {nrVersion = 1, nrPhase = PQueued} `shouldReturn` VersionChanged
+
+testWriteMeetsLiveOrder :: IO ()
+testWriteMeetsLiveOrder = withServiceStore $ \st -> do
+  let held = order "bobsbakery" 2
+  placePaid st "r1" ownerA (order "alicebakery" 1) (at 60) `shouldReturn` Right ()
+  placePaid st "r2" ownerA held (at 60) `shouldReturn` Right ()
+  placePaid st "r3" ownerB (order "carolsbakery" 3) (at 60) `shouldReturn` Right ()
+  r1 <- reg st "r1"
+  write st r1 {nrPhase = PTaken} `shouldReturn` Written 2
+  taken <- reg st "r1"
+  let retarget o = withTransaction st $ \db -> retargetRegistration db taken o 10000 (at 6)
+  retarget held {ofCommitment = digestFixture 4} `shouldReturn` LiveOrderExists
+  r3 <- reg st "r3"
+  retarget (order "carolsbakery" 5) {ofCommitment = nrCommitment r3} `shouldReturn` LiveOrderExists
+  reg st "r1" `shouldReturn` taken
+  retarget (order "davesbakery" 6) `shouldReturn` Written 3
 
 testRetarget :: IO ()
 testRetarget = withServiceStore $ \st -> do

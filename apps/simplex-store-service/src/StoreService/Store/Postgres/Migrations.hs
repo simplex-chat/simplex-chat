@@ -153,7 +153,7 @@ ALTER TABLE @badge_codes DROP COLUMN redeem_limit;
 DROP TABLE @group;
 |]
 
--- A registration is live while its invoice is open, or past unpaid and not taken or code_issued.
+-- A registration is live as Names.Store's orderLive decides.
 -- reserved_by is added after the registrations table, which references the codes table.
 m20261010_names :: Text
 m20261010_names =

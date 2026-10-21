@@ -29,6 +29,7 @@ module StoreService.Names.Store
     NewRecordEdit (..),
     findLimit,
     orderHash,
+    orderLive,
     newRegistrationId,
     methodText,
     createPaidRegistration,
@@ -202,7 +203,8 @@ data PaidOrder = PaidOrder
 data RegistrationRefused = RRLiveOrder | RRCodeNotReservable
   deriving (Eq, Show)
 
-data VersionWrite = Written Int64 | VersionChanged
+-- | NotLive: the write would make a closed order live. LiveOrderExists: another live order holds its commitment, or its owner and label hash.
+data VersionWrite = Written Int64 | VersionChanged | NotLive | LiveOrderExists
   deriving (Eq, Show)
 
 -- | A live order an order request meets; overdue when its open invoice is past its expiry time.
@@ -494,7 +496,7 @@ getLiveOrders db commitment owner (LabelHash lh) now =
 closeOverdue :: DB.Connection -> NameRegistration -> UTCTime -> IO VersionWrite
 closeOverdue db r@NameRegistration {nrId = RegistrationId rid} now = do
   written <- updateRegistration db r {nrLive = False} now
-  when (written /= VersionChanged) $
+  when (isWritten written) $
     DB.execute
       db
       [sql|
@@ -504,8 +506,30 @@ closeOverdue db r@NameRegistration {nrId = RegistrationId rid} now = do
       (invoiceStatusText ISExpired, truncateToSecond now, invoiceStatusText ISOpen, rid)
   pure written
 
--- | Writes every changeable field of a registration read at its nrVersion, unless it changed since.
--- An unpaid registration keeps the given nrLive, which only its invoice decides.
+isWritten :: VersionWrite -> Bool
+isWritten = \case
+  Written _ -> True
+  _ -> False
+
+-- | Whether an order can still progress to a registration for its name. The unique live indexes allow one such order per commitment,
+-- and one per owner and label hash, so a wallet can order a name again once its registration is done.
+-- An unpaid order is live while its invoice is open, which nrLive carries; a paid order that lost its name can move to another one.
+orderLive :: NameRegistration -> Bool
+orderLive NameRegistration {nrPhase, nrPayment, nrLive} = case nrPhase of
+  PUnpaid -> nrLive
+  PQueued -> True
+  PCommitting -> True
+  PCommitted -> True
+  PRegistering -> True
+  PFailed -> True
+  PTaken -> case nrPayment of
+    RPInvoice {} -> True
+    RPCode _ -> False
+  PRegistered -> False
+  PCodeIssued -> False
+
+-- | Writes every changeable field of a registration read at its nrVersion, unless it changed since, with live as orderLive decides.
+-- A closed order is never made live again, and a write that would make the order meet another live one changes nothing.
 updateRegistration :: DB.Connection -> NameRegistration -> UTCTime -> IO VersionWrite
 updateRegistration db r now = do
   changed <-
@@ -518,23 +542,27 @@ updateRegistration db r now = do
           commit_tx = ?, commit_block = ?, register_tx = ?, register_block = ?, reveal_after = ?, reveal_before = ?, expires_at = ?,
           issued_code_id = ?, registered_at = ?, failed_at = ?, error = ?, live = ?, moves = ?, links_refused_at = ?, updated_at = ?
         WHERE registration_id = ? AND version = ?
+          AND (? = 0 OR (live = 1 AND NOT EXISTS (
+            SELECT 1 FROM sx_badge_service_name_registrations o
+            WHERE o.live = 1 AND o.registration_id <> ? AND (o.commitment = ? OR (o.owner = ? AND o.label_hash = ?))
+          )))
       |]
       ( (Binary lh, nrLength, int64 nrDuration, Binary nrCommitment, nrSealed, nrPhase, nrPrice)
           :. (rvLabel <$> nrReveal, Binary . rvSecret <$> nrReveal, rvContactLink =<< nrReveal, rvChannelLink =<< nrReveal, int64 . rvNonce <$> nrReveal, int64 . rvDeadline <$> nrReveal, Binary . serializeSignature . rvSignature <$> nrReveal)
           :. (Binary <$> nrCommitTx, int64 <$> nrCommitBlock, Binary <$> nrRegisterTx, int64 <$> nrRegisterBlock, int64 <$> nrRevealAfter, int64 <$> nrRevealBefore, int64 <$> nrExpiresAt)
           :. (nrIssuedCodeId, truncateToSecond <$> nrRegisteredAt, truncateToSecond <$> nrFailedAt, nrError, BI live, nrMoves, truncateToSecond <$> nrLinksRefusedAt, truncateToSecond now)
-          :. (rid, nrVersion)
+          :. (rid, nrVersion, BI live, rid, Binary nrCommitment, Binary $ unAddress nrOwner, Binary lh)
       )
-  pure $ if changed > 0 then Written (nrVersion + 1) else VersionChanged
+  if changed > 0 then pure $ Written (nrVersion + 1) else refusal
   where
-    NameRegistration {nrId = RegistrationId rid, nrVersion, nrLabelHash = LabelHash lh, nrLength, nrDuration, nrCommitment, nrSealed, nrPhase, nrPrice, nrReveal} = r
+    NameRegistration {nrId = RegistrationId rid, nrVersion, nrLabelHash = LabelHash lh, nrLength, nrDuration, nrOwner, nrCommitment, nrSealed, nrPhase, nrPrice, nrReveal} = r
     NameRegistration {nrCommitTx, nrCommitBlock, nrRegisterTx, nrRegisterBlock, nrRevealAfter, nrRevealBefore, nrExpiresAt} = r
-    NameRegistration {nrIssuedCodeId, nrRegisteredAt, nrFailedAt, nrError, nrLive, nrMoves, nrLinksRefusedAt} = r
-    live = case nrPhase of
-      PUnpaid -> nrLive
-      PTaken -> False
-      PCodeIssued -> False
-      _ -> True
+    NameRegistration {nrIssuedCodeId, nrRegisteredAt, nrFailedAt, nrError, nrMoves, nrLinksRefusedAt} = r
+    live = orderLive r
+    refusal =
+      DB.query db "SELECT version, live FROM sx_badge_service_name_registrations WHERE registration_id = ?" (Only rid) >>= \case
+        [(version, BI storedLive)] | version == nrVersion -> pure $ if storedLive then LiveOrderExists else NotLive
+        _ -> pure VersionChanged
 
 -- | Another name, or other links: queued again with the reveal, transactions, reveal times and link refusal cleared.
 -- The order hash stays the original order's, so a resend of that order still finds it.
