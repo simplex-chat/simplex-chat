@@ -25,7 +25,9 @@ module Simplex.Chat.Store.Badges
     createBadgeCodeRedemption,
     BadgeReceiptRecord (..),
     BadgeReceiptStatus (..),
+    StoreHoldKind (..),
     holdStoreReceipt,
+    holdStoreTransfer,
     getReceiptRecord,
     createBadgeStoreReceipt,
     getOpenStorePurchases,
@@ -43,6 +45,7 @@ module Simplex.Chat.Store.Badges
     storeBadgeIssuance,
     getLatestIssuedCredential,
     storeBadgeStatement,
+    setBadgePurchaseType,
     getBadgeLedgerLastEntry,
     getBadgeLedger,
     getBadgeLedgerEntryId,
@@ -62,24 +65,28 @@ import Data.Time.Clock (UTCTime)
 import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Ledger
 import Simplex.Chat.Badges.Service (StatementCreditType (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..))
-import Simplex.Chat.Badges.Types (BadgeAlertKind, BadgeIssueError (..), BadgeIssueFailure, BadgePurchaseStatus (..), BadgeSubscription (..), OpenStorePurchase (..), StoreReceiptOrigin (..), SubscriptionState)
+import Simplex.Chat.Badges.Types (BadgeAlertKind, BadgeIssueError (..), BadgeIssueFailure (..), BadgePurchaseStatus (..), BadgeServiceErrorCode (..), BadgeSubscription (..), OpenStorePurchase (..), StoreReceiptOrigin (..), SubscriptionState)
 import Simplex.Chat.PaymentService (AppleTransactionFacts (..), ServicePayment (..), appleTransactionFacts)
 import Simplex.Chat.PaymentService.Types (StoreTransactionRef (..))
 import Simplex.Chat.Store.Shared (StoreError, insertedRowId)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (UserId)
-import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
+import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..), fromTextField_)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Encoding.String (strEncode)
+import Simplex.Messaging.Encoding.String (TextEncoding (..), strEncode)
 import Simplex.Messaging.Util (decodeJSON, maybeFirstRow, maybeFirstRow', safeDecodeUtf8)
 
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..), (:.) (..))
+import Database.PostgreSQL.Simple.FromField (FromField (..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)
+import Database.PostgreSQL.Simple.ToField (ToField (..))
 #else
 import Database.SQLite.Simple (Only (..), (:.) (..))
+import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.QQ (sql)
+import Database.SQLite.Simple.ToField (ToField (..))
 #endif
 
 -- | The keys one attempt to fund a badge is signed with, stashed before the request is sent so that
@@ -127,9 +134,29 @@ data BadgeReceiptRecord = BadgeReceiptRecord
   }
 
 data BadgeReceiptStatus
-  = RSHeld {stash :: BadgeStash, invoiceId :: Maybe Text, payment :: Text, nextAttemptAt :: UTCTime, retryDelay :: Maybe Int64}
-  | RSCredited {badgePurchaseId :: Int64, refusalRecorded :: Bool} -- a resume of it was refused
+  = RSHeld {stash :: BadgeStash, invoiceId :: Maybe Text, payment :: Text, nextAttemptAt :: UTCTime, retryDelay :: Maybe Int64, holdKind :: StoreHoldKind}
+  | RSCredited {badgePurchaseId :: Int64, refusalRecorded :: Bool} -- a resume or a tier change of it was refused
   | RSRefused {refusal :: Maybe BadgeIssueFailure}
+
+-- | What a held record waits for: its own purchase, or the resume of one, a move of its payment to new keys,
+-- or a change of the tier of the purchase it funds.
+data StoreHoldKind = SHKPurchase | SHKTransfer | SHKTierChange
+  deriving (Eq, Show)
+
+instance TextEncoding StoreHoldKind where
+  textEncode = \case
+    SHKPurchase -> "purchase"
+    SHKTransfer -> "transfer"
+    SHKTierChange -> "tier_change"
+  textDecode = \case
+    "purchase" -> Just SHKPurchase
+    "transfer" -> Just SHKTransfer
+    "tier_change" -> Just SHKTierChange
+    _ -> Nothing
+
+instance FromField StoreHoldKind where fromField = fromTextField_ textDecode
+
+instance ToField StoreHoldKind where toField = toField . textEncode
 
 -- | Resolves a store transaction to the record that owns it, looking up by its reference again after each step
 -- rather than trusting the write: finding none still leaves the echoed invoice's record to attach it to, and a
@@ -163,12 +190,15 @@ holdStoreReceipt db g User {userId} origin invoiceId_ txRef@StoreTransactionRef 
         Just r -> pure $ Just r
         Nothing -> case origin of
           SROPurchased -> do
-            insertReceipt
+            insertReceipt SHKPurchase
+            getReceiptRecord db txRef
+          SRORestored -> do
+            insertReceipt SHKTransfer
             getReceiptRecord db txRef
           SROListed -> pure Nothing
   where
     paymentJSON = safeDecodeUtf8 . LB.toStrict $ J.encode payment
-    insertReceipt = do
+    insertReceipt holdKind = do
       (purchaseKey, purchasePrivKey) <- atomically (C.generateKeyPair g) :: IO C.KeyPairEd25519
       BadgeMasterKey mk <- generateMasterKey g
       -- an invoice id another record holds is not repeated: this record is then keyed by its transaction alone
@@ -179,11 +209,54 @@ holdStoreReceipt db g User {userId} origin invoiceId_ txRef@StoreTransactionRef 
         db
         [sql|
           INSERT INTO badge_store_receipts
-            (user_id, invoice_id, provider, transaction_ref, payment, next_attempt_at, purchase_key, purchase_priv_key, master_key, created_at)
-          VALUES (?,?,?,?,?,?,?,?,?,?)
+            (user_id, invoice_id, provider, transaction_ref, payment, next_attempt_at, purchase_key, purchase_priv_key, master_key, hold_kind, created_at)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?)
           ON CONFLICT DO NOTHING
         |]
-        ((userId, invoiceId', provider, transactionRef, paymentJSON, now) :. (purchaseKey, purchasePrivKey, Binary mk, now))
+        ((userId, invoiceId', provider, transactionRef, paymentJSON, now) :. (purchaseKey, purchasePrivKey, Binary mk, holdKind, now))
+
+-- | Restore's hand-over of a transaction already recorded: a record that funds no purchase of this profile, or only one
+-- its payment moved away from, is taken by this profile and held as a move of its payment to it. True when its last refusal was transfer_limited, which the hand-over answers.
+holdStoreTransfer :: DB.Connection -> TVar ChaChaDRG -> User -> StoreTransactionRef -> ServicePayment -> UTCTime -> IO Bool
+holdStoreTransfer db g User {userId} txRef payment now =
+  getReceiptRecord db txRef >>= \case
+    Just BadgeReceiptRecord {receiptId, status = RSHeld {stash, holdKind = SHKPurchase}} ->
+      getStashBadgePurchase db stash >>= \case
+        Nothing ->
+          False
+            <$ DB.execute
+              db
+              "UPDATE badge_store_receipts SET user_id = ?, hold_kind = ?, next_attempt_at = ? WHERE badge_store_receipt_id = ? AND payment IS NOT NULL AND hold_kind = ?"
+              (userId, SHKTransfer, now, receiptId, SHKPurchase)
+        Just _ -> pure False
+    Just BadgeReceiptRecord {receiptId, status = RSRefused {refusal = Just BIFServiceError {code}}}
+      | code == BSEReceiptUsed || code == BSETransferLimited -> (code == BSETransferLimited) <$ holdTransfer receiptId
+    Just BadgeReceiptRecord {receiptId, ownerId, status = RSCredited {badgePurchaseId}} ->
+      movesHere ownerId badgePurchaseId >>= \case
+        False -> pure False
+        True -> do
+          lastRefusal <- maybeFirstRow fromOnly $ DB.query db "SELECT credit_error FROM badge_store_receipts WHERE badge_store_receipt_id = ?" (Only receiptId)
+          (purchaseKey, purchasePrivKey) <- atomically (C.generateKeyPair g) :: IO C.KeyPairEd25519
+          BadgeMasterKey mk <- generateMasterKey g
+          DB.execute db "UPDATE badge_store_receipts SET purchase_key = ?, purchase_priv_key = ?, master_key = ? WHERE badge_store_receipt_id = ? AND payment IS NULL" (purchaseKey, purchasePrivKey, Binary mk, receiptId)
+          holdTransfer receiptId
+          pure $ case join lastRefusal of
+            Just BIFServiceError {code = BSETransferLimited} -> True
+            _ -> False
+    _ -> pure False
+  where
+    -- the service answers a purchase whose payment moved away ended, so a resume of it never succeeds
+    movesHere ownerId badgePurchaseId
+      | ownerId /= userId = pure True
+      | otherwise = maybe False movedOut <$> getBadgeLedgerLastEntry db badgePurchaseId
+    movedOut StatementEntry {entryType} = case entryType of
+      SEDebit SDTransferOut {} -> True
+      _ -> False
+    holdTransfer receiptId =
+      DB.execute
+        db
+        "UPDATE badge_store_receipts SET user_id = ?, payment = ?, next_attempt_at = ?, retry_delay = NULL, retry_count = 0, credit_error = NULL, hold_kind = ? WHERE badge_store_receipt_id = ? AND payment IS NULL"
+        (userId, safeDecodeUtf8 . LB.toStrict $ J.encode payment, now, SHKTransfer, receiptId)
 
 -- | Whether a held Apple record presents this payment next: another transaction of its subscription, bought
 -- later and not revoked. The core decides which is newest, since the app's store listener races its sweep, and a
@@ -204,19 +277,23 @@ getReceiptRecord db StoreTransactionRef {provider, transactionRef} =
       db
       [sql|
         SELECT r.badge_store_receipt_id, r.user_id, r.purchase_key, r.purchase_priv_key, r.master_key,
-          r.invoice_id, r.payment, r.next_attempt_at, r.retry_delay, p.badge_purchase_id, r.credit_error
+          r.invoice_id, r.payment, r.next_attempt_at, r.retry_delay, p.badge_purchase_id, r.credit_error, r.hold_kind
         FROM badge_store_receipts r
         LEFT JOIN badge_purchases p ON p.badge_store_receipt_id = r.badge_store_receipt_id
         WHERE r.provider = ? AND r.transaction_ref = ?
       |]
       (provider, transactionRef)
   where
-    toReceiptRecord ((receiptId, ownerId, purchaseKey, purchasePrivKey, mk) :. (invoiceId, payment_, nextAttemptAt_, retryDelay, purchaseId_, refusal)) =
+    toReceiptRecord ((receiptId, ownerId, purchaseKey, purchasePrivKey, mk) :. (invoiceId, payment_, nextAttemptAt_, retryDelay, purchaseId_, refusal, holdKind)) =
       BadgeReceiptRecord {receiptId, ownerId, status}
       where
         status = case (payment_, nextAttemptAt_) of
-          (Just payment, Just nextAttemptAt) -> RSHeld {stash = toBadgeStash BSRStoreReceipt (receiptId, purchaseKey, purchasePrivKey, mk), invoiceId, payment, nextAttemptAt, retryDelay}
-          _ -> maybe (RSRefused refusal) (\badgePurchaseId -> RSCredited {badgePurchaseId, refusalRecorded = isJust refusal}) purchaseId_
+          (Just payment, Just nextAttemptAt) -> RSHeld {stash = toBadgeStash BSRStoreReceipt (receiptId, purchaseKey, purchasePrivKey, mk), invoiceId, payment, nextAttemptAt, retryDelay, holdKind}
+          _ -> maybe (RSRefused refusal) (\badgePurchaseId -> RSCredited {badgePurchaseId, refusalRecorded = maybe False ownRefusal refusal}) purchaseId_
+        -- only a move is refused transfer_limited, and a refused move must not hold off the purchase's own resume or tier change
+        ownRefusal = \case
+          BIFServiceError {code = BSETransferLimited} -> False
+          _ -> True
 
 -- | The record made when Buy is tapped, before any receipt: the store echoes its invoice id.
 createBadgeStoreReceipt :: DB.Connection -> TVar ChaChaDRG -> User -> Text -> UTCTime -> IO ()
@@ -252,23 +329,26 @@ getPendingStoreReceipts :: DB.Connection -> User -> IO [(Text, Maybe BadgeIssueF
 getPendingStoreReceipts db User {userId} =
   DB.query db "SELECT payment, credit_error FROM badge_store_receipts WHERE user_id = ? AND payment IS NOT NULL" (Only userId)
 
+-- | A profile showing a badge waits with its held records, but for a change of the tier of the badge it shows.
 getNextHeldStoreReceipt :: DB.Connection -> UserId -> IO (Either StoreError (Maybe BadgeReceiptRecord))
 getNextHeldStoreReceipt db userId =
   fmap Right . maybeFirstRow toHeld $
     DB.query
       db
       [sql|
-        SELECT r.badge_store_receipt_id, r.purchase_key, r.purchase_priv_key, r.master_key, r.invoice_id, r.payment, r.next_attempt_at, r.retry_delay
+        SELECT r.badge_store_receipt_id, r.purchase_key, r.purchase_priv_key, r.master_key, r.invoice_id, r.payment, r.next_attempt_at, r.retry_delay, r.hold_kind
         FROM badge_store_receipts r
         JOIN users u ON u.user_id = r.user_id
-        WHERE r.user_id = ? AND r.payment IS NOT NULL AND u.shown_badge_id IS NULL
+        LEFT JOIN badge_purchases p ON p.badge_store_receipt_id = r.badge_store_receipt_id
+        WHERE r.user_id = ? AND r.payment IS NOT NULL
+          AND (u.shown_badge_id IS NULL OR (r.hold_kind = ? AND u.shown_badge_id = p.badge_purchase_id))
         ORDER BY r.next_attempt_at, r.retry_count, r.badge_store_receipt_id
         LIMIT 1
       |]
-      (Only userId)
+      (userId, SHKTierChange)
   where
-    toHeld (stashRow@(receiptId, _, _, _) :. (invoiceId, payment, nextAttemptAt, retryDelay)) =
-      BadgeReceiptRecord {receiptId, ownerId = userId, status = RSHeld {stash = toBadgeStash BSRStoreReceipt stashRow, invoiceId, payment, nextAttemptAt, retryDelay}}
+    toHeld (stashRow@(receiptId, _, _, _) :. (invoiceId, payment, nextAttemptAt, retryDelay, holdKind)) =
+      BadgeReceiptRecord {receiptId, ownerId = userId, status = RSHeld {stash = toBadgeStash BSRStoreReceipt stashRow, invoiceId, payment, nextAttemptAt, retryDelay, holdKind}}
 
 -- | Only while the record still holds the payment that failed: one adopted meanwhile is due at once.
 recordStoreReceiptFailure :: DB.Connection -> Int64 -> Text -> Int64 -> UTCTime -> BadgeIssueFailure -> IO ()
@@ -283,37 +363,43 @@ recordStoreReceiptFailure db receiptId payment retryDelay nextAttemptAt failure 
     (retryDelay, nextAttemptAt, failure, receiptId, payment)
 
 -- | Kept rather than deleted, so that a later hand-over of the same transaction is answered from the record.
+-- A refused move returns the record to the profile whose purchase it still funds.
 refuseStoreReceipt :: DB.Connection -> Int64 -> BadgeIssueFailure -> IO ()
 refuseStoreReceipt db receiptId refusal =
   DB.execute
     db
-    "UPDATE badge_store_receipts SET payment = NULL, next_attempt_at = NULL, retry_delay = NULL, retry_count = 0, credit_error = ? WHERE badge_store_receipt_id = ?"
-    (refusal, receiptId)
+    [sql|
+      UPDATE badge_store_receipts
+      SET payment = NULL, next_attempt_at = NULL, retry_delay = NULL, retry_count = 0, credit_error = ?, hold_kind = ?,
+        user_id = COALESCE((SELECT p.user_id FROM badge_purchases p WHERE p.badge_store_receipt_id = ?), user_id)
+      WHERE badge_store_receipt_id = ?
+    |]
+    (refusal, SHKPurchase, receiptId, receiptId)
 
--- | Every settle clears the failure, so one recorded on a credited record is a refused resume.
+-- | Every settle clears the failure, so one recorded on a credited record is a refused resume or tier change.
 settleStoreReceipt :: DB.Connection -> Int64 -> IO ()
 settleStoreReceipt db receiptId =
   DB.execute
     db
-    "UPDATE badge_store_receipts SET payment = NULL, next_attempt_at = NULL, retry_delay = NULL, retry_count = 0, credit_error = NULL WHERE badge_store_receipt_id = ?"
-    (Only receiptId)
+    "UPDATE badge_store_receipts SET payment = NULL, next_attempt_at = NULL, retry_delay = NULL, retry_count = 0, credit_error = NULL, hold_kind = ? WHERE badge_store_receipt_id = ?"
+    (SHKPurchase, receiptId)
 
 -- | Whether a later charge of a credited record's subscription is answered as held: its purchase must be its owner's
--- newest, a subscription and not shown. The record is held again only while no other receipt of the owner is held,
--- which the receipt worker would credit first and then skip this one while its badge is shown; until then the app
--- keeps the charge unfinished and hands it over again.
-reholdStoreReceipt :: DB.Connection -> User -> Int64 -> Int64 -> ServicePayment -> UTCTime -> IO Bool
-reholdStoreReceipt db owner receiptId badgePurchaseId payment now = do
+-- newest and a subscription, not shown for a resume and shown for a tier change. The record is held again only while no
+-- other receipt of the owner is held, which the receipt worker would credit first and then skip this one while its badge
+-- is shown; until then the app keeps the charge unfinished and hands it over again.
+reholdStoreReceipt :: DB.Connection -> User -> Int64 -> Int64 -> StoreHoldKind -> ServicePayment -> UTCTime -> IO Bool
+reholdStoreReceipt db owner receiptId badgePurchaseId holdKind payment now = do
   newest_ <- getUserBadgePurchase db owner
   pending <- getPendingStoreReceipts db owner
   case newest_ of
-    Just UserBadgePurchase {badgePurchaseId = newestId, shown = False, purchaseKind = PKSubscription _}
-      | newestId == badgePurchaseId -> do
+    Just UserBadgePurchase {badgePurchaseId = newestId, shown, purchaseKind = PKSubscription _}
+      | newestId == badgePurchaseId && shown == (holdKind == SHKTierChange) -> do
           when (null pending) $
             DB.execute
               db
-              "UPDATE badge_store_receipts SET payment = ?, next_attempt_at = ?, retry_delay = NULL, retry_count = 0, credit_error = NULL WHERE badge_store_receipt_id = ? AND payment IS NULL"
-              (safeDecodeUtf8 . LB.toStrict $ J.encode payment, now, receiptId)
+              "UPDATE badge_store_receipts SET payment = ?, next_attempt_at = ?, retry_delay = NULL, retry_count = 0, credit_error = NULL, hold_kind = ? WHERE badge_store_receipt_id = ? AND payment IS NULL"
+              (safeDecodeUtf8 . LB.toStrict $ J.encode payment, now, holdKind, receiptId)
           pure True
     _ -> pure False
 
@@ -358,6 +444,12 @@ deleteBadgeCodeRedemption db User {userId} code =
 -- issued, and that must add no purchase and leave the shown badge alone.
 createStashBadgePurchase :: DB.Connection -> User -> BadgeStash -> BadgeCredential -> UTCTime -> IO (Int64, Bool)
 createStashBadgePurchase db User {userId} stash credential now = do
+  -- a moved payment's record still links the purchase it moved from, which would be taken for a replay
+  forM_ storeReceiptId_ $ \receiptId ->
+    DB.execute
+      db
+      "UPDATE badge_purchases SET badge_store_receipt_id = NULL WHERE badge_store_receipt_id = ? AND EXISTS (SELECT 1 FROM badge_store_receipts WHERE badge_store_receipt_id = ? AND hold_kind = ?)"
+      (receiptId, receiptId, SHKTransfer)
   -- the credit settles a held receipt in the transaction that stores its purchase, a replay included
   forM_ storeReceiptId_ $ settleStoreReceipt db
   getStashBadgePurchase db stash >>= \case
@@ -416,7 +508,7 @@ getLatestIssuedCredential db badgePurchaseId = do
       [sql|
         SELECT credential FROM badge_issuances
         WHERE badge_purchase_id = ?
-        ORDER BY period_end DESC
+        ORDER BY entry_id DESC
         LIMIT 1
       |]
       (Only badgePurchaseId)
@@ -618,6 +710,10 @@ storeBadgeStatement db badgePurchaseId badgeType tip entries now =
           SEDebit SDUnknown {} -> True
           _ -> False
 
+setBadgePurchaseType :: DB.Connection -> Int64 -> BadgeType -> UTCTime -> IO ()
+setBadgePurchaseType db badgePurchaseId badgeType now =
+  DB.execute db "UPDATE badge_purchases SET current_badge_type = ?, updated_at = ? WHERE badge_purchase_id = ?" (badgeType, now, badgePurchaseId)
+
 -- | The balance is the last row; nothing derives it by summing the history.
 getBadgeLedgerLastEntry :: DB.Connection -> Int64 -> IO (Maybe StatementEntry)
 getBadgeLedgerLastEntry db badgePurchaseId =
@@ -653,7 +749,7 @@ getBadgeLedger db User {userId} badgePurchaseId =
 toStatementEntry :: (Text, Int, Int, UTCTime, UTCTime, BadgeType) :. (Maybe UTCTime, UTCTime, Text, Maybe Text, Maybe Text, Maybe Text) -> Maybe StatementEntry
 toStatementEntry ((entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType) :. (wasPausedSince, createdAt, entryType_, credit_, debit_, value_)) =
   (\entryType -> StatementEntry {entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, wasPausedSince, createdAt, entryType})
-    <$> maybe (entryTypeFromColumns Nothing Nothing entryType_ credit_ debit_) (entryTypeFromValue entryType_) value_
+    <$> maybe (entryTypeFromColumns noEntryReferences entryType_ credit_ debit_) (entryTypeFromValue entryType_) value_
 
 -- | Decodes the stored JSON rather than rebuilding from the tag, so a version that has since
 -- learnt the type reads it with its fields, and one that has not still gets it back verbatim.

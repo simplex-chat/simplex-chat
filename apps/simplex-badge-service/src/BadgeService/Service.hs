@@ -33,7 +33,7 @@ module BadgeService.Service
   )
 where
 
-import BadgeService.Catalog (StoreProduct (..), defaultCatalog, storePlan, storeProduct)
+import BadgeService.Catalog (StoreProduct (..), defaultCatalog, storeProduct)
 import BadgeService.Codes (issueFailedText, issueOneCode, singleUse)
 import BadgeService.Config (AppleStoreConfig (..), BadgeIssuerKey (..), PlayStoreConfig (..), ServiceConfig (..), readServiceConfig)
 import BadgeService.Group (GroupEvent, ensureManagedGroup, groupEvent, hasTracker, refreshTracker, revokeWithTracker, runGroupLane)
@@ -64,7 +64,7 @@ import Data.Either (fromRight)
 import Data.Functor (($>), (<&>))
 import Data.Int (Int64)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe, isJust, maybeToList)
+import Data.Maybe (fromMaybe, isJust, isNothing, maybeToList)
 import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
 import Data.Word (Word32)
@@ -72,6 +72,7 @@ import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Code
 import Simplex.Chat.Badges.Ledger
 import Simplex.Chat.Badges.Service
+import Simplex.Chat.Badges.StorePlan (storePlan)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.Bot (initializeBotAddress')
 import Simplex.Chat.Bot.Store (withDB, withDB')
@@ -343,6 +344,9 @@ requestLane checks cc sigKey reqData = case J.fromJSON (J.Object reqData) of
   J.Success BadgeServiceRequest {request = BSCPurchaseBadge {payment = SPGoogle {}, upgrade = Nothing}} -> pure PurchaseLane
   J.Success BadgeServiceRequest {request = BSCPurchaseBadge {payment = SPApple {jws}, upgrade = Nothing}}
     | maybe False autoRenewable (appleTransactionFacts jws) -> pure PurchaseLane
+  J.Success BadgeServiceRequest {request = BSCTransferBadge {payment = SPApple {jws}}}
+    | maybe False autoRenewable (appleTransactionFacts jws) -> pure PurchaseLane
+  J.Success BadgeServiceRequest {request = BSCTransferBadge {payment = SPGoogle {}}} -> pure PurchaseLane
   J.Success BadgeServiceRequest {purchaseKey = Just k, request = BSCIssueBadge {}}
     | sigKey == Just k -> do
         now <- badgeNow cc
@@ -351,6 +355,14 @@ requestLane checks cc sigKey reqData = case J.fromJSON (J.Object reqData) of
             | subscriptionCheckDue checks (addUTCTime routeLookahead now) tip subscription -> RenewalLane
           Right _ -> MainLane
           -- a read that failed may hide a due check, and the main lane is what must not wait on a store
+          Left _ -> RenewalLane
+  J.Success BadgeServiceRequest {purchaseKey = Just k, request = BSCUpgradeBadgeSubscription {}}
+    | sigKey == Just k -> do
+        now <- badgeNow cc
+        withDB' "requestLane" cc (\db -> getIssuePurchase db k) <&> \case
+          Right (Just (_, Just _, Just subscription@PurchaseSubscription {subscriptionRef = SubscriptionApple _}))
+            | isNothing $ checkWait (addUTCTime routeLookahead now) subscription -> RenewalLane
+          Right _ -> MainLane
           Left _ -> RenewalLane
   _ -> pure MainLane
 
@@ -419,13 +431,24 @@ badgeServiceResponse key verifier checks cc trackerQ_ sigKey reqData = case J.fr
           Nothing -> pure $ errorResponse BSEBadRequest
         BSCPurchaseBadge {masterKey, payment, upgrade}
           | Just receipt_ <- toStoreReceipt verifier payment -> case (purchaseKey, upgrade) of
-              (Just k, Nothing) -> either storeRefusalResponse (purchaseWithReceipt key cc verifier checks k masterKey) receipt_
+              (Just k, Nothing) -> either storeRefusalResponse (purchaseWithReceipt key cc verifier checks RUPurchase k masterKey) receipt_
               -- store upgrades are not built, and ignoring one would credit its months at the discounted price
               (Just _, Just _) -> pure $ errorResponse BSEBadRequest
               (Nothing, _) -> pure $ errorResponse BSEBadRequest
         BSCIssueBadge {balance} -> case purchaseKey of
-          Just k -> issueBadgeCmd key cc verifier k balance
+          Just k -> issueBadgeCmd key cc verifier k Nothing balance
           Nothing -> pure $ errorResponse BSEBadRequest
+        -- only an App Store subscription changes tier on the same transaction; Play gives a change a new token
+        BSCUpgradeBadgeSubscription {payment = payment@SPApple {}, balance}
+          | Just k <- purchaseKey,
+            Just receipt_ <- toStoreReceipt verifier payment ->
+              either storeRefusalResponse (upgradeSubscriptionCmd key cc verifier k balance) receipt_
+        BSCUpgradeBadgeSubscription {} -> pure $ errorResponse BSEBadRequest
+        BSCTransferBadge {masterKey, payment}
+          | Just k <- purchaseKey,
+            Just receipt_ <- toStoreReceipt verifier payment ->
+              either storeRefusalResponse (purchaseWithReceipt key cc verifier checks (RUTransfer $ presentedTransaction payment) k masterKey) receipt_
+        BSCTransferBadge {} -> pure $ errorResponse BSEBadRequest
         -- Every command but redeemBadgeCode and purchaseBadge from a store needs a key the service already knows; those two create the purchase, so their key is unknown on a first purchase.
         _ -> case purchaseKey of
           Nothing -> pure $ errorResponse BSEUnsupportedVersion
@@ -501,15 +524,26 @@ redeemCode key cc trackerQ_ purchaseKey masterKey codeText = case parseBadgeCode
               | maybe False (now >=) expiresAt -> pure $ Left $ errorResponse BSECodeExpired
               | otherwise -> pure $ Right c
 
+-- | What a store receipt is presented for. A transfer carries the Apple transaction the device presented,
+-- as only the subscription's latest one moves it.
+data ReceiptUse = RUPurchase | RUTransfer (Maybe T.Text)
+
+presentedTransaction :: ServicePayment -> Maybe T.Text
+presentedTransaction = \case
+  SPApple {jws} -> (\AppleTransactionFacts {transactionId} -> transactionId) <$> appleTransactionFacts jws
+  _ -> Nothing
+
 -- | Every refusal is answered before anything is written, so it leaves the receipt unclaimed; and
 -- nothing is written until the credential is signed.
-purchaseWithReceipt :: BadgeIssuerKey -> ChatController -> StoreVerifier -> PurchaseChecks -> C.PublicKeyEd25519 -> BadgeMasterKey -> StoreReceipt -> IO BadgeServiceResponse
-purchaseWithReceipt key cc verifier checks purchaseKey masterKey StoreReceipt {txRef = StoreTransactionRef {provider, transactionRef = providerRef}, receiptProductId, subscriptionRef, verifyReceipt, acknowledgeReceipt, acknowledgeSubscription} =
-  withDB' "getStorePayment" cc (\db -> getStorePaymentCredit db provider providerRef) >>= \case
+purchaseWithReceipt :: BadgeIssuerKey -> ChatController -> StoreVerifier -> PurchaseChecks -> ReceiptUse -> C.PublicKeyEd25519 -> BadgeMasterKey -> StoreReceipt -> IO BadgeServiceResponse
+purchaseWithReceipt key cc verifier checks use purchaseKey masterKey StoreReceipt {txRef = StoreTransactionRef {provider, transactionRef = providerRef}, receiptProductId, subscriptionRef, verifyReceipt, acknowledgeReceipt, acknowledgeSubscription} =
+  withDB' "getStorePayment" cc (\db -> (,) <$> getStorePaymentCredit db provider providerRef <*> keyHoldsPurchase db) >>= \case
     Left _ -> pure $ errorResponse BSEInternal
-    Right credit
+    Right (credit, keyHeld)
       -- only the key it credited can ask, and it is told only what it was given, so the store is not asked
       | creditedBy credit -> answerCredit credit
+      -- a payment moves only to a key with no purchase, so one transferOut alone names the purchase holding it
+      | keyHeld -> pure $ errorResponse BSEBadRequest
       -- a Play subscription is verified by asking about the subscription itself
       | Just StoreSubscription <- storeProduct provider =<< receiptProductId -> purchaseSubscription receiptProductId credit
       | otherwise ->
@@ -523,10 +557,17 @@ purchaseWithReceipt key cc verifier checks purchaseKey masterKey StoreReceipt {t
             Right VerifiedStoreTransaction {testPurchase = True}
               | not (creditTestPurchases verifier) -> storeRefusalResponse SRTestPurchase
             -- another key's credit is told only once the store vouched for the receipt, or it would reveal which transactions were credited
-            Right tx -> case credit of
+            Right tx@VerifiedStoreTransaction {productId} -> case credit of
               Uncredited -> newPurchase tx
+              _
+                | RUTransfer _ <- use,
+                  Just StoreSubscription <- storeProduct provider productId ->
+                    purchaseSubscription (Just productId) credit
               _ -> answerCredit credit
   where
+    keyHoldsPurchase db = case use of
+      RUPurchase -> pure False
+      RUTransfer _ -> purchaseKeyExists db purchaseKey
     creditedBy = \case
       Credited CreditedPurchase {purchaseKey = k} -> k == purchaseKey
       _ -> False
@@ -561,8 +602,9 @@ purchaseWithReceipt key cc verifier checks purchaseKey masterKey StoreReceipt {t
             -- no store was asked, so the claim is not held off
             Left SRNotConfigured -> atomically (modifyTVar' claimChecks $ M.delete providerRef) >> storeRefusalResponse SRNotConfigured
             Left refusal -> atLeastCheckInterval <$> storeRefusalResponse refusal
-            Right checked -> atLeastCheckInterval <$> case credit of
-              Uncredited -> newSubscription checked
+            Right checked -> atLeastCheckInterval <$> case (credit, use) of
+              (Uncredited, _) -> newSubscription checked
+              (Credited from, RUTransfer presented) -> moveSubscription presented from checked
               _ -> answerCredit credit
     subscriptionAsk now =
       purchaseCheckWait claimChecks now providerRef >>= \case
@@ -577,20 +619,62 @@ purchaseWithReceipt key cc verifier checks purchaseKey masterKey StoreReceipt {t
       SubscriptionGoogle _ -> (googleChecks checks, Just $ playReads checks)
     newSubscription checked@SubscriptionCheck {subscriptionState} = do
       now <- badgeNow cc
-      case grantableCharge provider Nothing now checked >>= fundsMonthNow now Nothing of
+      case grantableCharge provider now checked >>= fundsMonthNow purchaseKey now Nothing of
         Left notGranted -> firstChargeNotGranted provider notGranted
         Right (charge@StoreCharge {periodStart, chargePaid = paid}, (badgeType, months)) ->
           acknowledged acknowledgeSubscription $ do
             chargeId <- randomId cc
-            entryIds <- (,,) <$> randomId cc <*> randomId cc <*> randomId cc
+            entryIds <- (,,,) <$> randomId cc <*> randomId cc <*> randomId cc <*> randomId cc
             let seed = emptyEntry periodStart badgeType
-            signMonthAfter key cc masterKey now seed (chargeEntries periodStart now months chargeId entryIds seed) >>= \case
+            signMonthAfter key cc masterKey now seed (chargeEntries periodStart now badgeType months purchaseKey chargeId entryIds seed) >>= \case
               Left resp -> pure resp
               Right firstMonth ->
                 claimPurchase now (\paymentId -> NewStorePurchase {paymentId, provider, providerRef, paid, purchaseKey, masterKey, badgeType, subscriptionState = Just subscriptionState, providerToken}) $
                   \db purchaseId paymentId -> do
                     insertSubscriptionCharge db paymentId chargeId charge now
                     firstMonthResponse db purchaseId Nothing (Just subscriptionState) firstMonth
+    moveSubscription presented CreditedPurchase {badgePurchaseId = fromPurchaseId, purchaseKey = fromKey} checked@SubscriptionCheck {subscriptionState, latestCharge}
+      -- an older transaction stops moving the subscription once the store charges again, so a leaked receipt lapses
+      | SubscriptionApple _ <- subscriptionRef,
+        presented /= ((\StoreCharge {chargeRef} -> chargeRef) <$> latestCharge) =
+          pure $ errorResponse BSEPaymentPending
+      | otherwise = do
+          now <- badgeNow cc
+          withDB' "getMovedPayment" cc (\db -> getPurchaseSubscription db fromPurchaseId >>= mapM (movedPayment db)) >>= \case
+            Right (Just (paymentId, movedFromExpiry_, Just fromTip))
+              -- A store receipt proves control of the store account but is no one-time secret, so this is the only bound on moves:
+              -- waiting out the credential of the key the payment last moved from keeps each paid month with at most two keys.
+              | maybe False (now <) movedFromExpiry_ -> pure $ errorResponse BSETransferLimited
+              | otherwise -> case grantableCharge provider now checked >>= fundsMonthNow purchaseKey now Nothing of
+                  Left notGranted -> firstChargeNotGranted provider notGranted
+                  Right grant -> movePayment now paymentId fromTip grant
+            _ -> pure $ errorResponse BSEInternal
+      where
+        movedPayment db PurchaseSubscription {paymentId} = (paymentId,,) <$> getMovedFromExpiry db paymentId <*> getLedgerTip db fromPurchaseId
+        movePayment now paymentId fromTip (charge@StoreCharge {chargeRef, periodStart}, (badgeType, months)) =
+          withDB' "getSubscriptionCharge" cc (\db -> getSubscriptionCharge db paymentId chargeRef) >>= \case
+            Left _ -> pure $ errorResponse BSEInternal
+            Right recorded -> do
+              chargeId <- maybe (randomId cc) (pure . fst) recorded
+              entryIds <- (,,,) <$> randomId cc <*> randomId cc <*> randomId cc <*> randomId cc
+              (lapseId, transferId) <- (,) <$> randomId cc <*> randomId cc
+              let seed = emptyEntry periodStart badgeType
+                  lapsed = lapseEntry now lapseId fromTip
+                  fromRows = maybeToList lapsed <> [debitEntry now transferId (SDTransferOut purchaseKey) (fromMaybe fromTip lapsed)]
+              signMonthAfter key cc masterKey now seed (chargeEntries periodStart now badgeType months purchaseKey chargeId entryIds seed) >>= \case
+                Left resp -> pure resp
+                Right firstMonth -> do
+                  r <- withDB "transferStorePurchase" cc $ \db -> liftIO $
+                    rebindStorePayment db PaymentRebind {paymentId, fromPurchaseId, fromTipId = entryId fromTip, fromRows, purchaseKey, masterKey, badgeType} now >>= \case
+                      Nothing -> pure Nothing
+                      Just purchaseId -> do
+                        insertSubscriptionCharge db paymentId chargeId charge now
+                        setSubscriptionState db paymentId subscriptionState now
+                        Just <$> firstMonthResponse db purchaseId Nothing (Just subscriptionState) firstMonth
+                  case r of
+                    Right (Just resp) -> logInfo ("store subscription moved from " <> purchaseKeyPart fromKey <> " to " <> purchaseKeyPart purchaseKey) $> resp
+                    Right Nothing -> logError "badge service: a subscription moved, or its ledger changed, while its transfer was signed" $> errorResponse BSEInternal
+                    Left _ -> pure $ errorResponse BSEInternal
     providerToken = case subscriptionRef of
       SubscriptionGoogle token -> Just token
       SubscriptionApple _ -> Nothing
@@ -618,35 +702,33 @@ data NotGranted
   | NGRevoked
   | NGOffer
   | NGUnknownPlan
-  | NGOtherTier
   | NGNotStarted
   | NGPeriodOver
   deriving (Show)
 
 -- | The grant rule of a first purchase and a renewal alike, but for whether a ledger row already references
--- the charge, which is the caller's to check. tier is the ledger's; a first purchase may start on any plan.
-grantableCharge :: PaymentProvider -> Maybe BadgeType -> UTCTime -> SubscriptionCheck -> Either NotGranted (StoreCharge, (BadgeType, Int))
-grantableCharge provider tier now SubscriptionCheck {subscriptionState, latestCharge}
+-- the charge, which is the caller's to check. It grants the tier of the plan the store charged, which may not be the ledger's.
+grantableCharge :: PaymentProvider -> UTCTime -> SubscriptionCheck -> Either NotGranted (StoreCharge, (BadgeType, Int))
+grantableCharge provider now SubscriptionCheck {subscriptionState, latestCharge}
   | subscriptionState == SSEnded = Left NGEnded
   | otherwise = case latestCharge of
       Nothing -> Left NGNoCharge
       -- the plan first: Play derives a period from the plan's length, so a plan it does not know has none
       Just charge@StoreCharge {planId, periodStart, periodEnd, revoked, offer} -> case storePlan provider planId of
         Nothing -> Left NGUnknownPlan
-        Just plan@(badgeType, _)
+        Just plan
           | periodEnd <= periodStart -> Left NGMalformedPeriod
           | revoked -> Left NGRevoked
           | offer -> Left NGOffer
-          | maybe False (/= badgeType) tier -> Left NGOtherTier
           | now < periodStart -> Left NGNotStarted
           | now >= periodEnd -> Left NGPeriodOver
           | otherwise -> Right (charge, plan)
 
 -- | Play dates a period from its end less the plan's months, clipped at month ends, so the months the ledger grants
 -- from that start can end before Play's period does: a charge still in its period may then fund no month now.
-fundsMonthNow :: UTCTime -> Maybe StatementEntry -> (StoreCharge, (BadgeType, Int)) -> Either NotGranted (StoreCharge, (BadgeType, Int))
-fundsMonthNow now tip_ grant@(StoreCharge {periodStart}, (badgeType, months))
-  | isJust $ issueEntry now "" $ last $ tip : chargeEntries periodStart now months "" ("", "", "") tip = Right grant
+fundsMonthNow :: C.PublicKeyEd25519 -> UTCTime -> Maybe StatementEntry -> (StoreCharge, (BadgeType, Int)) -> Either NotGranted (StoreCharge, (BadgeType, Int))
+fundsMonthNow purchaseKey now tip_ grant@(StoreCharge {periodStart}, (badgeType, months))
+  | isJust $ issueEntry now "" $ last $ tip : chargeEntries periodStart now badgeType months purchaseKey "" ("", "", "", "") tip = Right grant
   | otherwise = Left NGPeriodOver
   where
     tip = fromMaybe (emptyEntry periodStart badgeType) tip_
@@ -687,6 +769,7 @@ commandName = \case
   BSCRedeemBadgeCode {} -> "redeemBadgeCode"
   BSCPurchaseBadge {payment} -> "purchaseBadge " <> paymentName payment
   BSCUpgradeBadgeSubscription {payment} -> "upgradeBadgeSubscription " <> paymentName payment
+  BSCTransferBadge {payment} -> "transferBadge " <> paymentName payment
   BSCIssueBadge {} -> "issueBadge"
   BSCPauseBadge -> "pauseBadge"
   where
@@ -725,7 +808,7 @@ signFirstMonth key cc masterKey badgeType months credit now = do
   -- TODO [badges] a top-up grants onto an existing ledger, and must lapse before it or the
   -- months it adds are counted from a start already in the past
   let seed = emptyEntry now badgeType
-  signMonthAfter key cc masterKey now seed [grantEntry now grantUuid months credit seed]
+  signMonthAfter key cc masterKey now seed [grantEntry now grantUuid badgeType months credit seed]
 
 -- | The rows that fund a month, after the entry they follow, with that month issued at now and signed.
 signMonthAfter :: BadgeIssuerKey -> ChatController -> BadgeMasterKey -> UTCTime -> StatementEntry -> [StatementEntry] -> IO (Either BadgeServiceResponse ([StatementEntry], (StatementEntry, StatementEntry, BadgeCredential)))
@@ -745,18 +828,39 @@ firstMonthResponse db purchaseId creditPaymentId_ subscription (rows, issuance@(
   entries_ <- getLedgerEntries db purchaseId 0
   pure $ maybe (errorResponse BSEInternal) (credentialResponse (Just credential) Nothing subscription) entries_
 
+-- | The subscription a device's transaction names, and the tier of its product: what an upgrade waits for, never what it grants.
+data SubscriptionUpgrade = SubscriptionUpgrade
+  { upgradeRef :: T.Text,
+    upgradeTier :: BadgeType
+  }
+
+-- | Refused before the store is asked: a transaction that does not verify, or that is of no subscription product.
+upgradeSubscriptionCmd :: BadgeIssuerKey -> ChatController -> StoreVerifier -> C.PublicKeyEd25519 -> BadgeBalance -> StoreReceipt -> IO BadgeServiceResponse
+upgradeSubscriptionCmd key cc verifier purchaseKey balance StoreReceipt {txRef = StoreTransactionRef {provider, transactionRef = claimedRef}, verifyReceipt} =
+  verifyReceipt >>= \case
+    Left refusal -> storeRefusalResponse refusal
+    Right VerifiedStoreTransaction {transactionRef}
+      | transactionRef /= claimedRef -> storeRefusalResponse $ SRVerifierFailed "verified a transaction other than the one claimed"
+    Right VerifiedStoreTransaction {productId} -> case storePlan provider productId of
+      Nothing -> pure $ errorResponse BSEBadRequest
+      Just (tier, _) -> issueBadgeCmd key cc verifier purchaseKey (Just SubscriptionUpgrade {upgradeRef = claimedRef, upgradeTier = tier}) balance
+
 -- | The purchase is reached through the verified signer key and no other way.
-issueBadgeCmd :: BadgeIssuerKey -> ChatController -> StoreVerifier -> C.PublicKeyEd25519 -> BadgeBalance -> IO BadgeServiceResponse
-issueBadgeCmd key cc verifier purchaseKey BadgeBalance {lastEntry} = do
+issueBadgeCmd :: BadgeIssuerKey -> ChatController -> StoreVerifier -> C.PublicKeyEd25519 -> Maybe SubscriptionUpgrade -> BadgeBalance -> IO BadgeServiceResponse
+issueBadgeCmd key cc verifier purchaseKey upgrade_ BadgeBalance {lastEntry} = do
   now <- badgeNow cc
   purchase_ <- withDB' "getBadgePurchase" cc (\db -> getIssuePurchase db purchaseKey)
   case purchase_ of
     Left _ -> pure $ errorResponse BSEInternal
     Right Nothing -> pure $ errorResponse BSEUnknownPurchaseKey
-    -- once a subscription's paid coverage has ended, only a new store charge funds another month
     Right (Just (purchase, Just tip, Just subscription))
-      | paidThrough tip <= now -> renewSubscription purchase tip subscription now
+      | Just upgrade <- upgrade_ -> upgradeSubscription upgrade purchase tip subscription now
+      -- once a subscription's paid coverage has ended, only a new store charge funds another month
+      | paidThrough tip <= now -> renewSubscription Nothing purchase tip subscription now
       | ChecksAtEveryRequest <- storeChecks verifier -> checkStoreDuringCoverage purchase tip subscription now
+    Right (Just _) | isJust upgrade_ -> pure $ errorResponse BSEBadRequest
+    Right (Just (ServicePurchase {badgePurchaseId}, Just StatementEntry {entryType = SEDebit SDTransferOut {}}, Nothing)) ->
+      answered "answerMovedOut" $ \db -> withoutCredential <$> issueResponse db badgePurchaseId now (Just SSEnded)
     Right (Just (purchase, tip, subscription_)) -> issueDue purchase tip ((\PurchaseSubscription {storedState} -> storedState) <$> subscription_) now
   where
     issueDue ServicePurchase {badgePurchaseId, masterKey, badgeType} tip state_ now = do
@@ -778,30 +882,41 @@ issueBadgeCmd key cc verifier purchaseKey BadgeBalance {lastEntry} = do
         when (fmap entryId tip' == fmap entryId tip) $ appendLedgerPlan db purchaseId Nothing rows issuance_
         issueResponse db purchaseId t state_
       pure $ fromRight (errorResponse BSEInternal) r
+    -- Answered pending until the tier the device saw is granted, so the old tier's credential is never taken for the new one.
+    upgradeSubscription SubscriptionUpgrade {upgradeRef, upgradeTier} purchase@ServicePurchase {badgePurchaseId} tip@StatementEntry {balanceBadgeType} subscription@PurchaseSubscription {subscriptionRef, storedState} now
+      | not ownSubscription = pure $ errorResponse BSEBadRequest
+      | balanceBadgeType == upgradeTier = answered "answerUpgraded" $ \db -> issueResponse db badgePurchaseId now (Just storedState)
+      | Just wait <- checkWait now subscription =
+          pure BSPError {code = BSEPaymentPending, message = Nothing, retryAfter = Just $ ceiling wait}
+      | otherwise = renewSubscription (Just upgradeTier) purchase tip subscription now
+      where
+        ownSubscription = case subscriptionRef of
+          SubscriptionApple ref -> ref == upgradeRef
+          SubscriptionGoogle _ -> False
     -- Nothing but the store's answer is written until a charge is granted: a lapse at now would be dated
     -- after a grant a later check may make at an earlier period start, and the client would read it as a pass that issued.
-    renewSubscription ServicePurchase {badgePurchaseId, masterKey, badgeType} tip subscription@PurchaseSubscription {paymentId, provider, subscriptionRef, storedState} now
-      | not (subscriptionCheckDue (storeChecks verifier) now tip subscription) = answered "answerStoredSubscription" $ \db -> issueResponse db badgePurchaseId now (Just storedState)
+    renewSubscription upgradeTier_ ServicePurchase {badgePurchaseId, masterKey} tip@StatementEntry {balanceBadgeType} subscription@PurchaseSubscription {paymentId, provider, subscriptionRef, storedState} now
+      | isNothing upgradeTier_ && not (subscriptionCheckDue (storeChecks verifier) now tip subscription) = answered "answerStoredSubscription" $ \db -> issueResponse db badgePurchaseId now (Just storedState)
       | otherwise =
           withDB' "stampSubscriptionCheck" cc (\db -> stampSubscriptionCheck db paymentId now) >>= \case
             Left _ -> pure $ errorResponse BSEInternal
             Right () ->
               checkStoreSubscription verifier subscriptionRef Nothing >>= \case
                 Left refusal -> atLeastCheckInterval <$> storeRefusalResponse refusal
-                Right checked@SubscriptionCheck {subscriptionState, latestCharge} -> case grantableCharge provider (Just badgeType) now checked >>= fundsMonthNow now (Just tip) of
+                Right checked@SubscriptionCheck {subscriptionState, latestCharge} -> case grantableCharge provider now checked >>= fundsMonthNow purchaseKey now (Just tip) of
                   Left NGMalformedPeriod -> storeRefusalResponse $ SRVerifierFailed "a charge whose period does not end after its start"
                   Left reason -> do
                     forM_ latestCharge $ \_ -> logInfo $ "store subscription charge not granted: " <> tshow reason
                     recordCheck latestCharge subscriptionState
-                  Right (charge@StoreCharge {chargeRef, periodStart}, (_, months)) ->
+                  Right (charge@StoreCharge {chargeRef, periodStart}, (badgeType, months)) ->
                     withDB' "getSubscriptionCharge" cc (\db -> getSubscriptionCharge db paymentId chargeRef) >>= \case
                       Left _ -> pure $ errorResponse BSEInternal
                       -- the store still reports the charge the ledger last granted
                       Right (Just (_, True)) -> recordCheck (Just charge) subscriptionState
                       Right recorded -> do
                         chargeId <- maybe (randomId cc) (pure . fst) recorded
-                        entryIds <- (,,) <$> randomId cc <*> randomId cc <*> randomId cc
-                        signMonthAfter key cc masterKey now tip (chargeEntries periodStart now months chargeId entryIds tip) >>= \case
+                        entryIds <- (,,,) <$> randomId cc <*> randomId cc <*> randomId cc <*> randomId cc
+                        signMonthAfter key cc masterKey now tip (chargeEntries periodStart now badgeType months purchaseKey chargeId entryIds tip) >>= \case
                           Left resp -> pure resp
                           Right (rows, issuance) -> do
                             r <- withDB "renewSubscription" cc $ \db -> liftIO $ do
@@ -811,8 +926,9 @@ issueBadgeCmd key cc verifier purchaseKey BadgeBalance {lastEntry} = do
                                 else do
                                   insertSubscriptionCharge db paymentId chargeId charge now
                                   appendLedgerPlan db badgePurchaseId Nothing rows $ Just issuance
+                                  setPurchaseBadgeType db badgePurchaseId badgeType now
                                   setSubscriptionState db paymentId subscriptionState now
-                                  Just <$> issueResponse db badgePurchaseId now (Just subscriptionState)
+                                  Just <$> checkedResponse db badgeType subscriptionState
                             case r of
                               Right (Just resp) -> logBanked months $> resp
                               Right Nothing -> logError "badge service: a subscription's ledger moved while its renewal was signed" $> errorResponse BSEInternal
@@ -824,9 +940,12 @@ issueBadgeCmd key cc verifier purchaseKey BadgeBalance {lastEntry} = do
           answered "recordSubscriptionCheck" $ \db -> do
             forM_ charge_ $ \charge -> insertSubscriptionCharge db paymentId chargeId charge now
             setSubscriptionState db paymentId state now
-            issueResponse db badgePurchaseId now (Just state)
+            checkedResponse db balanceBadgeType state
+        checkedResponse db ledgerTier state = case upgradeTier_ of
+          Just tier | tier /= ledgerTier -> pure $ atLeastCheckInterval $ errorResponse BSEPaymentPending
+          _ -> issueResponse db badgePurchaseId now (Just state)
     -- A charge a dev deployment's store reports while coverage runs is banked with no issuance, and its month issued once coverage reaches it.
-    checkStoreDuringCoverage purchase@ServicePurchase {badgePurchaseId, badgeType} tip PurchaseSubscription {paymentId, provider, subscriptionRef} now =
+    checkStoreDuringCoverage purchase@ServicePurchase {badgePurchaseId} tip PurchaseSubscription {paymentId, provider, subscriptionRef} now =
       withDB' "stampSubscriptionCheck" cc (\db -> stampSubscriptionCheck db paymentId now) >>= \case
         Left _ -> pure $ errorResponse BSEInternal
         Right () ->
@@ -834,20 +953,21 @@ issueBadgeCmd key cc verifier purchaseKey BadgeBalance {lastEntry} = do
             Left refusal -> atLeastCheckInterval <$> storeRefusalResponse refusal
             Right checked@SubscriptionCheck {subscriptionState, latestCharge} -> do
               newChargeId <- randomId cc
-              entryIds <- (,,) <$> randomId cc <*> randomId cc <*> randomId cc
+              entryIds <- (,,,) <$> randomId cc <*> randomId cc <*> randomId cc <*> randomId cc
               r <- withDB' "checkStoreDuringCoverage" cc $ \db -> do
                 tip' <- getLedgerTip db badgePurchaseId
                 banked <-
                   if fmap entryId tip' == Just (entryId tip)
                     then do
-                      bankedMonths <- case grantableCharge provider (Just badgeType) now checked of
-                        Right (charge@StoreCharge {chargeRef, periodStart}, (_, months)) ->
+                      bankedMonths <- case grantableCharge provider now checked of
+                        Right (charge@StoreCharge {chargeRef, periodStart}, (badgeType, months)) ->
                           getSubscriptionCharge db paymentId chargeRef >>= \case
                             Just (_, True) -> pure Nothing
                             recorded -> do
                               let chargeId = maybe newChargeId fst recorded
                               insertSubscriptionCharge db paymentId chargeId charge now
-                              appendLedgerPlan db badgePurchaseId Nothing (chargeEntries periodStart now months chargeId entryIds tip) Nothing
+                              appendLedgerPlan db badgePurchaseId Nothing (chargeEntries periodStart now badgeType months purchaseKey chargeId entryIds tip) Nothing
+                              setPurchaseBadgeType db badgePurchaseId badgeType now
                               pure $ Just months
                         Left _ -> Nothing <$ forM_ latestCharge (\charge -> insertSubscriptionCharge db paymentId newChargeId charge now)
                       setSubscriptionState db paymentId subscriptionState now
@@ -860,6 +980,9 @@ issueBadgeCmd key cc verifier purchaseKey BadgeBalance {lastEntry} = do
                   forM_ banked logBanked
                   issueDue purchase tip_ (Just subscriptionState) now
     answered what action = fromRight (errorResponse BSEInternal) <$> withDB' what cc action
+    withoutCredential = \case
+      BSPBadgeCredential {receipt, statement, subscription} -> BSPBadgeCredential {credential = Nothing, receipt, statement, subscription}
+      resp -> resp
     logBanked months = logInfo $ "store subscription charge banked: " <> tshow months <> " months for " <> purchaseKeyPart purchaseKey
     -- Only the asserted entry's identity is read, never the months it claims.
     issueResponse db purchaseId t subscription = do
@@ -878,8 +1001,13 @@ getIssuePurchase db purchaseKey = do
 
 subscriptionCheckDue :: StoreChecks -> UTCTime -> StatementEntry -> PurchaseSubscription -> Bool
 subscriptionCheckDue ChecksAtEveryRequest _ _ _ = True
-subscriptionCheckDue ChecksAfterCoverage now tip PurchaseSubscription {checkedAt} =
-  paidThrough tip <= now && maybe True (\t -> diffUTCTime now t >= subscriptionCheckInterval) checkedAt
+subscriptionCheckDue ChecksAfterCoverage now tip subscription =
+  paidThrough tip <= now && isNothing (checkWait now subscription)
+
+-- | What remains of the interval since the subscription last asked its store, if anything.
+checkWait :: UTCTime -> PurchaseSubscription -> Maybe NominalDiffTime
+checkWait now PurchaseSubscription {checkedAt} =
+  mfilter (> 0) $ (\t -> subscriptionCheckInterval - diffUTCTime now t) <$> checkedAt
 
 -- | Each subscription asks its store at most this often, failed attempts included, so a client
 -- repeating its requests cannot spend the store quota every subscriber shares.
