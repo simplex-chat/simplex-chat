@@ -20,9 +20,10 @@ where
 
 import StoreService.Catalog (defaultCatalog)
 import StoreService.Codes (issueFailedText, issueOneCode, singleUse)
-import StoreService.Config (BadgeIssuerKey (..), ServiceConfig (..), readServiceConfig)
+import StoreService.Config (BadgeIssuerKey (..), ChainConfig (..), NamesConfig (..), ServiceConfig (..), readServiceConfig)
 import StoreService.Group (GroupEvent, ensureManagedGroup, groupEvent, hasTracker, refreshTracker, revokeWithTracker, runGroupLane)
 import StoreService.Group.Command (badgeTypeP, codeP, maxMonths, textTokenP)
+import StoreService.Names.Env (NamesEnv, newNamesEnv)
 import StoreService.Options
 import StoreService.Poller (newPollerEnv, newReadHints, runPoller)
 import StoreService.Providers.BTCPay (btcpayProvider)
@@ -150,17 +151,26 @@ storeService opts@StoreServiceOpts {serviceConfigFile} cfg env = do
   simplexChatCore cfg {chatHooks} (mkChatOpts opts) $ \_ cc -> raceAny_ [readEvents cc, startLanes cc]
   where
     serviceLanes :: Waiters -> ChatController -> ServiceConfig -> IO [IO ()]
-    serviceLanes ws ChatController {chatStore} sc = do
+    serviceLanes ws cc@ChatController {chatStore} sc = do
       -- Seed before the listener accepts anything, since every checkout is priced from these.
       seedServiceCatalog chatStore
       btc <- maybe (pure []) (fmap (: []) . btcpayProvider) (btcpay sc)
       str <- maybe (pure []) (fmap (: []) . stripeProvider) (stripe sc)
       let providers = btc <> str
       hints <- newReadHints
-      webEnv <- newWebEnv chatStore sc ws hints providers
+      namesEnv <- forM (names sc) (startNames cc)
+      webEnv <- newWebEnv chatStore sc ws hints providers namesEnv
       exportWebapp (listener sc) (stripe sc)
       pollerEnv <- newPollerEnv chatStore ws hints providers (poll sc)
       pure [runWebListener webEnv, runPoller pollerEnv]
+
+startNames :: ChatController -> NamesConfig -> IO NamesEnv
+startNames cc@ChatController {chatStore} nc@NamesConfig {nTLD, nChain = ChainConfig {cChainId}} =
+  readTVarIO (currentUser cc) >>= \case
+    Nothing -> putStrLn "No current user" >> exitFailure
+    Just User {userId} -> do
+      logInfo $ "names: on, TLD " <> safeDecodeUtf8 (strEncode nTLD) <> ", chain " <> tshow cChainId
+      newNamesEnv cc userId nc chatStore
 
 seedServiceCatalog :: DBStore -> IO ()
 seedServiceCatalog st = do

@@ -12,6 +12,8 @@ module StoreService.Config
     PollConfig (..),
     BadgeIssuerKey (..),
     GroupConfig (..),
+    NamesConfig (..),
+    ChainConfig (..),
     ServiceConfig (..),
     defaultExpiryMinutes,
     defaultSessionMinutes,
@@ -22,17 +24,26 @@ where
 
 import qualified Control.Exception as E
 import StoreService.Log (logWarn)
-import Control.Monad (mfilter)
+import Control.Monad (mfilter, unless, when)
 import Data.Attoparsec.Text (Parser, endOfInput, isEndOfLine, parseOnly, satisfy, skipMany, skipSpace, skipWhile)
+import qualified Data.ByteArray as BA
+import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import qualified Data.ByteString.Char8 as B
 import Data.Ini (Ini, iniGlobals, iniParser, keys, lookupValue, sections)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
 import qualified Data.Text.IO as TIO
+import Data.Time.Clock (UTCTime)
+import Data.Time.Format.ISO8601 (iso8601ParseM)
+import Data.Word (Word64)
 import Simplex.Chat.Library.Commands (mkValidName)
 import Simplex.Messaging.Crypto.BBS (BBSSecretKey)
+import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey, mkPrivateKey)
 import Simplex.Messaging.Encoding.String (strDecode)
+import Simplex.Messaging.Eth.Address (Address)
+import Simplex.Messaging.SimplexName (SimplexTLD (..))
 import System.IO.Error (ioeGetErrorString)
 import Text.Read (readMaybe)
 
@@ -42,7 +53,10 @@ data ListenerConfig = ListenerConfig
     lStaticDir :: FilePath,
     lServeWebapp :: Bool,
     lWebappExportDir :: Maybe FilePath,
-    lTrustForwardedFor :: Bool
+    lTrustForwardedFor :: Bool,
+    lNamesStaticDir :: Maybe FilePath,
+    lNamesExportDir :: Maybe FilePath,
+    lNamesHosts :: [Text]
   }
   deriving (Eq, Show)
 
@@ -107,13 +121,42 @@ data GroupConfig = GroupConfig
   }
   deriving (Eq, Show)
 
+data NamesConfig = NamesConfig
+  { nTLD :: SimplexTLD,
+    nYears :: Int,
+    nTermStart :: UTCTime,
+    nTermSlackSeconds :: Int,
+    nRevealMarginSeconds :: Int,
+    nMaxOrderMoves :: Int,
+    nChain :: ChainConfig
+  }
+  deriving (Eq, Show)
+
+data ChainConfig = ChainConfig
+  { cRpcUrl :: String,
+    cChainId :: Word64,
+    cController :: Address,
+    cSponsor :: Address,
+    cBaseRegistrar :: Address,
+    cResolver :: Address,
+    cServiceKey :: Secp256k1PrivateKey,
+    cConfirmations :: Int,
+    cGasLimitCap :: Word64
+  }
+  deriving (Eq)
+
+-- The RPC URL can carry a provider's API key, so neither it nor the service key is shown.
+instance Show ChainConfig where
+  show ChainConfig {cChainId} = "chain " <> show cChainId
+
 data ServiceConfig = ServiceConfig
   { listener :: ListenerConfig,
     btcpay :: Maybe BTCPayConfig,
     stripe :: Maybe StripeConfig,
     poll :: PollConfig,
     issuer :: Maybe BadgeIssuerKey,
-    group :: Maybe GroupConfig
+    group :: Maybe GroupConfig,
+    names :: Maybe NamesConfig
   }
   deriving (Eq, Show)
 
@@ -136,6 +179,16 @@ requireHttps :: Text -> Either String Text
 requireHttps u
   | "https://" `T.isPrefixOf` u = Right u
   | otherwise = Left "btcpay.host must be an absolute https URL"
+
+-- | The controller refuses a registration under 730 days.
+minNameYears :: Int
+minNameYears = 2
+
+defaultTermStart :: String
+defaultTermStart = "2027-01-01T00:00:00Z"
+
+serviceKeyBytes :: Int
+serviceKeyBytes = 32
 
 -- | Well below 100, where BTCPay settles an invoice for one satoshi.
 maxTolerance :: Double
@@ -160,12 +213,14 @@ trailingNoise = skipSpace *> skipMany (comment *> skipSpace)
 
 knownSettings :: [(Text, [Text])]
 knownSettings =
-  [ ("listener", ["host", "port", "static_dir", "serve_webapp", "webapp_export_dir", "trust_forwarded_for"]),
+  [ ("listener", ["host", "port", "static_dir", "serve_webapp", "webapp_export_dir", "trust_forwarded_for", "names_static_dir", "names_export_dir", "names_hosts"]),
     ("btcpay", ["host", "api_key", "store_id", "webhook_secret", "expiry_minutes", "speed_policy", "payment_tolerance"]),
     ("stripe", ["secret_key", "publishable_key", "webhook_secret", "session_minutes"]),
     ("poll", ["waiting_seconds", "idle_seconds"]),
     ("group", ["display_name", "description"]),
-    ("issuer", ["index", "private_key"])
+    ("issuer", ["index", "private_key"]),
+    ("names", ["tld", "years", "term_start", "term_slack_seconds", "reveal_margin_seconds", "max_order_moves"]),
+    ("chain", ["rpc_url", "chain_id", "controller", "sponsor", "base_registrar", "resolver", "service_key", "confirmations", "gas_limit_cap"])
   ]
 
 unknownKeys :: Ini -> [Text]
@@ -190,20 +245,25 @@ parseConfig ini = do
   lServeWebapp <- bool "listener" "serve_webapp" True
   let lWebappExportDir = T.unpack <$> present "listener" "webapp_export_dir"
   lTrustForwardedFor <- bool "listener" "trust_forwarded_for" False
+  let lNamesStaticDir = T.unpack <$> present "listener" "names_static_dir"
+      lNamesExportDir = T.unpack <$> present "listener" "names_export_dir"
+      lNamesHosts = maybe [] (filter (not . T.null) . map (T.toLower . T.strip) . T.splitOn ",") (present "listener" "names_hosts")
   btc <- btcpaySection
   str <- stripeSection
   iss <- issuerSection
   grp <- groupSection
+  nms <- namesSection
   pWaitingSeconds <- cadence "waiting_seconds" 3
   pIdleSeconds <- cadence "idle_seconds" 60
   pure
     ServiceConfig
-      { listener = ListenerConfig {lHost, lPort, lStaticDir, lServeWebapp, lWebappExportDir, lTrustForwardedFor},
+      { listener = ListenerConfig {lHost, lPort, lStaticDir, lServeWebapp, lWebappExportDir, lTrustForwardedFor, lNamesStaticDir, lNamesExportDir, lNamesHosts},
         btcpay = btc,
         stripe = str,
         poll = PollConfig {pWaitingSeconds, pIdleSeconds},
         issuer = iss,
-        group = grp
+        group = grp,
+        names = nms
       }
   where
     hasSection s = s `elem` sections ini
@@ -295,6 +355,61 @@ parseConfig ini = do
           sSessionMinutes <- sessionMinutes
           let sHost = defaultStripeHost
           pure (Just StripeConfig {sSecretKey, sPublishableKey, sWebhookSecret, sSessionMinutes, sHost})
+    namesSection
+      | not (hasSection "names") = if hasSection "chain" then Left "[chain] is set but [names] is absent, so nothing would use it" else Right Nothing
+      | not (hasSection "chain") = Left "[names] needs a [chain] section"
+      | otherwise = do
+          nTLD <- tldSetting
+          nYears <- num "names" "years" minNameYears
+          when (nYears < minNameYears) $ Left ("names.years must be at least " <> show minNameYears)
+          nTermStart <- termStart
+          nTermSlackSeconds <- atLeast 0 "names" "term_slack_seconds" 3600
+          nRevealMarginSeconds <- atLeast 0 "names" "reveal_margin_seconds" 900
+          nMaxOrderMoves <- atLeast 0 "names" "max_order_moves" 3
+          nChain <- chainSection
+          pure (Just NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves, nChain})
+    tldSetting =
+      required "names" "tld" >>= \case
+        "simplex" -> Right TLDSimplex
+        "testing" -> Right TLDTesting
+        other -> Left ("names.tld must be simplex or testing, not " <> T.unpack other)
+    termStart =
+      maybe (Left ("names.term_start must be an ISO 8601 UTC time such as " <> defaultTermStart)) Right $
+        iso8601ParseM (maybe defaultTermStart T.unpack (present "names" "term_start"))
+    atLeast lowest s k d = do
+      v <- num s k d
+      if v >= lowest then Right v else Left (T.unpack s <> "." <> T.unpack k <> " must be at least " <> show lowest)
+    -- No error below quotes a value, since the URL and the key are secrets.
+    chainSection = do
+      cRpcUrl <- rpcUrl
+      cChainId <- positiveWord "chain_id" Nothing
+      cController <- address "controller"
+      cSponsor <- address "sponsor"
+      cBaseRegistrar <- address "base_registrar"
+      cResolver <- address "resolver"
+      cServiceKey <- serviceKey
+      cConfirmations <- atLeast 0 "chain" "confirmations" 3
+      cGasLimitCap <- positiveWord "gas_limit_cap" (Just 8000000)
+      pure ChainConfig {cRpcUrl, cChainId, cController, cSponsor, cBaseRegistrar, cResolver, cServiceKey, cConfirmations, cGasLimitCap}
+    rpcUrl = do
+      v <- required "chain" "rpc_url"
+      unless (any (`T.isPrefixOf` v) ["http://", "https://"]) $ Left "chain.rpc_url must be an http or https URL"
+      Right (T.unpack v)
+    positiveWord k d = case (present "chain" k, d) of
+      (Nothing, Just v) -> Right v
+      (Nothing, Nothing) -> Left ("chain." <> T.unpack k <> " is required")
+      (Just v, _) -> case readMaybe (T.unpack v) :: Maybe Integer of
+        Just n | n >= 1, n <= toInteger (maxBound :: Word64) -> Right (fromInteger n)
+        _ -> Left ("chain." <> T.unpack k <> " must be a positive whole number")
+    address k = do
+      v <- required "chain" k
+      either (const (Left ("chain." <> T.unpack k <> " is not an Ethereum address"))) Right (strDecode (encodeUtf8 v) :: Either String Address)
+    serviceKey = do
+      v <- required "chain" "service_key"
+      let bad = Left "chain.service_key must be 0x and 64 hex digits of a valid secp256k1 key"
+      case T.stripPrefix "0x" v of
+        Just h | T.length h == 2 * serviceKeyBytes, Right bytes <- convertFromBase Base16 (encodeUtf8 h) -> either (const bad) Right (mkPrivateKey (BA.convert (bytes :: B.ByteString)))
+        _ -> bad
     sessionMinutes = do
       v <- num "stripe" "session_minutes" defaultSessionMinutes
       if v >= minSessionMinutes && v <= maxSessionMinutes

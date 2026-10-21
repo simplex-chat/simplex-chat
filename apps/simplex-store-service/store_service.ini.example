@@ -15,6 +15,11 @@ serve_webapp = on
 ; proxy's own address, so one bucket is shared by everyone. Set it off only where this
 ; listener is reached directly, since a client can write the header itself.
 trust_forwarded_for = on
+; the names site (simplex.domains): its build directory, the directory it is exported to for a
+; reverse proxy, and the comma-separated hosts it is served on in the all-in-one deployment
+; names_static_dir = /srv/names
+; names_export_dir = /srv/names-export
+; names_hosts = simplex.domains
 
 ; omit this whole section to disable Bitcoin and Monero (the browser shows the provider-unavailable screen)
 [btcpay]
@@ -60,3 +65,34 @@ idle_seconds = 60
 ;[group]
 ;display_name = SimpleX Badges
 ;description = Welcome to the badges group
+;
+; the names store: omit [names] and [chain] together to turn it off.
+;[names]
+; testing until the .simplex TLD is deployed
+;tld = testing
+; the paid years of a name; at least 2, the controller's minimum
+;years = 2
+; a name's term starts here; the days until then are free
+;term_start = 2027-01-01T00:00:00Z
+; how far an order's duration may be from the one the service computes
+;term_slack_seconds = 3600
+; a commitment with less than this left before its reveal deadline is not reused
+;reveal_margin_seconds = 900
+; how many times one order may move to another name
+;max_order_moves = 3
+;
+; the chain the names are registered on. rpc_url can carry a provider's API key and service_key
+; pays for every commit and register: keep both secret. Neither is ever logged.
+;[chain]
+;rpc_url = http://127.0.0.1:8545
+;chain_id = 31337
+;controller = 0x...
+;sponsor = 0x...
+;base_registrar = 0x...
+;resolver = 0x...
+; 0x and 64 hex digits: the registrar key the service sends transactions with
+;service_key = 0x...
+; blocks after a register's receipt before a name counts as registered
+;confirmations = 3
+; the most gas any one transaction may use
+;gas_limit_cap = 8000000
