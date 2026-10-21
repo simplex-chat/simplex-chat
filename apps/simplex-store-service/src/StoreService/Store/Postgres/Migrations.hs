@@ -18,7 +18,8 @@ storeServiceSchemaMigrations = sortOn name $ map migration schemaMigrations
 schemaMigrations :: [(String, Text, Maybe Text)]
 schemaMigrations =
   [ ("20260915_badge_service_schema", m20260915_badge_service_schema, Just down_m20260915_badge_service_schema),
-    ("20260918_badge_group_ops", m20260918_badge_group_ops, Just down_m20260918_badge_group_ops)
+    ("20260918_badge_group_ops", m20260918_badge_group_ops, Just down_m20260918_badge_group_ops),
+    ("20261010_names", m20261010_names, Just down_m20261010_names)
   ]
 
 -- | The client tables share this database, so the service tables are the same names behind a prefix.
@@ -150,6 +151,178 @@ ALTER TABLE @badge_codes DROP COLUMN group_item_id;
 ALTER TABLE @badge_codes DROP COLUMN redeem_count;
 ALTER TABLE @badge_codes DROP COLUMN redeem_limit;
 DROP TABLE @group;
+|]
+
+-- A registration is live while its invoice is open, or past unpaid and not taken or code_issued.
+-- reserved_by is added after the registrations table, which references the codes table.
+m20261010_names :: Text
+m20261010_names =
+  withPrefix
+    servicePrefix
+    [r|
+CREATE TABLE @name_prepaid_codes(
+  name_prepaid_code_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  code_hash BYTEA NOT NULL,
+  min_length INTEGER NOT NULL,
+  years INTEGER NOT NULL,
+  code_payment_status TEXT NOT NULL,
+  reserved_at TIMESTAMPTZ,
+  spent_at TIMESTAMPTZ,
+  revoked_at TIMESTAMPTZ,
+  expires_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL,
+  UNIQUE(code_hash)
+);
+
+CREATE TABLE @name_registrations(
+  registration_id TEXT NOT NULL PRIMARY KEY,
+  version BIGINT NOT NULL,
+  label_hash BYTEA NOT NULL,
+  length INTEGER NOT NULL,
+  duration BIGINT NOT NULL,
+  owner BYTEA NOT NULL,
+  commitment BYTEA NOT NULL,
+  sealed TEXT NOT NULL,
+  phase TEXT NOT NULL,
+  years INTEGER NOT NULL,
+  price INTEGER NOT NULL,
+  method TEXT,
+  name_prepaid_code_id BIGINT REFERENCES @name_prepaid_codes,
+  label TEXT,
+  secret BYTEA,
+  contact_link TEXT,
+  channel_link TEXT,
+  intent_nonce BIGINT,
+  intent_deadline BIGINT,
+  intent_signature BYTEA,
+  commit_tx BYTEA,
+  commit_block BIGINT,
+  register_tx BYTEA,
+  register_block BIGINT,
+  reveal_after BIGINT,
+  reveal_before BIGINT,
+  expires_at BIGINT,
+  issued_code_id BIGINT REFERENCES @name_prepaid_codes,
+  registered_at TIMESTAMPTZ,
+  failed_at TIMESTAMPTZ,
+  error TEXT,
+  live SMALLINT NOT NULL,
+  order_hash BYTEA NOT NULL,
+  moves INTEGER NOT NULL DEFAULT 0,
+  links_refused_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL
+);
+
+ALTER TABLE @name_prepaid_codes ADD COLUMN reserved_by TEXT REFERENCES @name_registrations;
+
+CREATE UNIQUE INDEX @idx_name_prepaid_codes_reserved_by ON @name_prepaid_codes(reserved_by);
+
+CREATE UNIQUE INDEX @idx_name_registrations_live_commitment ON @name_registrations(commitment) WHERE live = 1;
+
+CREATE UNIQUE INDEX @idx_name_registrations_live_owner_label ON @name_registrations(owner, label_hash) WHERE live = 1;
+
+CREATE INDEX @idx_name_registrations_label_phase ON @name_registrations(label_hash, phase);
+
+CREATE INDEX @idx_name_registrations_owner ON @name_registrations(owner, created_at);
+
+CREATE INDEX @idx_name_registrations_phase ON @name_registrations(phase, created_at);
+
+CREATE INDEX @idx_name_registrations_order_hash ON @name_registrations(order_hash);
+
+CREATE INDEX @idx_name_registrations_prepaid_code ON @name_registrations(name_prepaid_code_id);
+
+CREATE INDEX @idx_name_registrations_issued_code ON @name_registrations(issued_code_id);
+
+CREATE TABLE @name_invoices(
+  invoice_id TEXT NOT NULL PRIMARY KEY REFERENCES @invoices ON DELETE CASCADE,
+  registration_id TEXT NOT NULL REFERENCES @name_registrations ON DELETE CASCADE,
+  provider_ref TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE UNIQUE INDEX @idx_name_invoices_registration ON @name_invoices(registration_id);
+
+CREATE UNIQUE INDEX @idx_name_invoices_provider_ref ON @name_invoices(provider_ref);
+
+CREATE TABLE @name_record_edits(
+  name_record_edit_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  label_hash BYTEA NOT NULL,
+  owner BYTEA NOT NULL,
+  nonce BIGINT NOT NULL,
+  record_key TEXT,
+  record_value TEXT,
+  deadline BIGINT NOT NULL,
+  signature BYTEA NOT NULL,
+  body_hash BYTEA NOT NULL,
+  state TEXT NOT NULL,
+  revert TEXT,
+  mined_tx BYTEA,
+  created_at TIMESTAMPTZ NOT NULL
+);
+
+-- A reverted edit keeps its row for its repeats while a new body reuses the nonce.
+CREATE UNIQUE INDEX @idx_name_record_edits_owner_nonce ON @name_record_edits(owner, nonce) WHERE state IN ('pending', 'mined');
+
+CREATE INDEX @idx_name_record_edits_body_hash ON @name_record_edits(body_hash);
+
+CREATE INDEX @idx_name_record_edits_label_created ON @name_record_edits(label_hash, created_at);
+
+CREATE TABLE @name_transactions(
+  name_transaction_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  registration_id TEXT REFERENCES @name_registrations,
+  name_record_edit_id BIGINT REFERENCES @name_record_edits,
+  kind TEXT NOT NULL,
+  raw BYTEA NOT NULL,
+  tx_hash BYTEA NOT NULL,
+  registrar_nonce BIGINT NOT NULL,
+  sent_at TIMESTAMPTZ NOT NULL,
+  mined_block BIGINT,
+  status TEXT NOT NULL,
+  CHECK ((registration_id IS NULL) <> (name_record_edit_id IS NULL)),
+  UNIQUE(tx_hash)
+);
+
+CREATE INDEX @idx_name_transactions_registration ON @name_transactions(registration_id);
+
+CREATE INDEX @idx_name_transactions_edit ON @name_transactions(name_record_edit_id);
+
+CREATE INDEX @idx_name_transactions_status ON @name_transactions(status, registrar_nonce);
+|]
+
+-- A table another table's foreign key references cannot be dropped, so reserved_by goes first.
+down_m20261010_names :: Text
+down_m20261010_names =
+  withPrefix
+    servicePrefix
+    [r|
+DROP INDEX @idx_name_transactions_status;
+DROP INDEX @idx_name_transactions_edit;
+DROP INDEX @idx_name_transactions_registration;
+DROP TABLE @name_transactions;
+
+DROP INDEX @idx_name_record_edits_label_created;
+DROP INDEX @idx_name_record_edits_body_hash;
+DROP INDEX @idx_name_record_edits_owner_nonce;
+DROP TABLE @name_record_edits;
+
+DROP INDEX @idx_name_invoices_provider_ref;
+DROP INDEX @idx_name_invoices_registration;
+DROP TABLE @name_invoices;
+
+DROP INDEX @idx_name_registrations_issued_code;
+DROP INDEX @idx_name_registrations_prepaid_code;
+DROP INDEX @idx_name_registrations_order_hash;
+DROP INDEX @idx_name_registrations_phase;
+DROP INDEX @idx_name_registrations_owner;
+DROP INDEX @idx_name_registrations_label_phase;
+DROP INDEX @idx_name_registrations_live_owner_label;
+DROP INDEX @idx_name_registrations_live_commitment;
+DROP INDEX @idx_name_prepaid_codes_reserved_by;
+ALTER TABLE @name_prepaid_codes DROP COLUMN reserved_by;
+DROP TABLE @name_registrations;
+
+DROP TABLE @name_prepaid_codes;
 |]
 
 {- TODO [badges] deferred with the draft in M20260915_user_badges, service only.

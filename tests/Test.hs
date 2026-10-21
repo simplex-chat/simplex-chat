@@ -12,6 +12,7 @@ import Bots.StoreService.GroupTests
 import Bots.StoreService.NameRegistrationTests
 import Bots.StoreService.NamesLabelTests
 import Bots.StoreService.NamesSignatureTests
+import Bots.StoreService.NamesStoreTests
 import Bots.StoreService.NamesWiringTests
 import Bots.StoreService.StripeTests
 import Bots.StoreService.WaitersTests
@@ -92,6 +93,7 @@ main = do
       namesConfigTests
       namesLabelTests
       namesSignatureTests
+      namesStoreTests
       namesWiringTests
       describe "SimpleX chat markdown" markdownTests
       describe "JSON Tests" jsonTests
