@@ -23,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.input.TextFieldValue
@@ -298,32 +299,53 @@ object AppearanceScope {
     ) {
       if (withMessages) {
         val chatItemTail = remember { appPreferences.chatItemTail.state }
+        val alice = remember { ChatItem.getSampleData(1, CIDirection.DirectRcv(), Clock.System.now(), generalGetString(MR.strings.wallpaper_preview_hello_bob)) }
+        val reply = ChatItem.getSampleData(2, CIDirection.DirectSnd(), Clock.System.now(), stringResource(MR.strings.wallpaper_preview_hello_alice),
+          quotedItem = CIQuote(alice.chatDir, alice.id, sentAt = alice.meta.itemTs, formattedText = alice.formattedText, content = MsgContent.MCText(alice.content.text))
+        )
 
         @Composable
-        fun PreviewItem(item: ChatItem) {
-          if (terminal) {
-            TerminalChatItemRow(
-              Chat.sampleData.chatInfo, item, showSender = true, topGap = 0.dp, range = remember { mutableStateOf<IntRange?>(null) }, reversedChatItems = remember { mutableStateOf(emptyList<ChatItem>()) },
-              showMemberInfo = { _, _ -> }, showChatInfo = {}
-            ) {
-              PreviewChatItemView(item)
-            }
-          } else {
+        fun TerminalPreviewRow(item: ChatItem) {
+          TerminalChatItemRow(
+            Chat.sampleData.chatInfo, item, showSender = true, topGap = 0.dp, range = remember { mutableStateOf<IntRange?>(null) }, reversedChatItems = remember { mutableStateOf(emptyList<ChatItem>()) },
+            showMemberInfo = { _, _ -> }, showChatInfo = {}
+          ) {
             PreviewChatItemView(item)
           }
         }
 
-        Column(verticalArrangement = Arrangement.spacedBy(if (terminal) 0.dp else 4.dp), modifier = if (chatItemTail.value || terminal) Modifier else Modifier.padding(horizontal = msgTailWidthDp)) {
-          val alice = remember { ChatItem.getSampleData(1, CIDirection.DirectRcv(), Clock.System.now(), generalGetString(MR.strings.wallpaper_preview_hello_bob)) }
-          PreviewItem(alice)
-          PreviewItem(
-            ChatItem.getSampleData(2, CIDirection.DirectSnd(), Clock.System.now(), stringResource(MR.strings.wallpaper_preview_hello_alice),
-              quotedItem = CIQuote(alice.chatDir, alice.id, sentAt = alice.meta.itemTs, formattedText = alice.formattedText, content = MsgContent.MCText(alice.content.text))
-            )
-          )
-        }
+        PreviewInEitherLayout(
+          terminal,
+          classic = {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = if (chatItemTail.value) Modifier else Modifier.padding(horizontal = msgTailWidthDp)) {
+              PreviewChatItemView(alice)
+              PreviewChatItemView(reply)
+            }
+          },
+          terminalRows = {
+            Column {
+              TerminalPreviewRow(alice)
+              TerminalPreviewRow(reply)
+            }
+          }
+        )
       } else {
         Box(Modifier.fillMaxSize())
+      }
+    }
+  }
+
+  @Composable
+  private fun PreviewInEitherLayout(terminal: Boolean, classic: @Composable () -> Unit, terminalRows: @Composable () -> Unit) {
+    Layout({
+      CompositionLocalProvider(LocalTerminalLayout provides false, content = classic)
+      CompositionLocalProvider(LocalTerminalLayout provides true, content = terminalRows)
+    }) { measurables, constraints ->
+      val placeables = measurables.map { it.measure(constraints) }
+      val shown = placeables[if (terminal) 1 else 0]
+      val height = placeables.maxOf { it.height }
+      layout(placeables.maxOf { it.width }, height) {
+        shown.placeRelative(0, (height - shown.height) / 2)
       }
     }
   }

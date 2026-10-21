@@ -1312,6 +1312,8 @@ fun shapeStyleWithTail(chatItem: ChatItem? = null, tailEnabled: Boolean, tailVis
   }
 }
 
+val GO_TO_ITEM_BUTTON_SIZE = 22.dp
+
 // improvement could be to track "forwarded from" scope and open it
 @Composable
 fun GoToItemButton(
@@ -1382,7 +1384,7 @@ private fun GoToItemInnerButton(
     onClick,
     modifier
       .then(if (fullyVisible) Modifier.background(mixedBackgroundColor, CircleShape) else Modifier)
-      .size(22.dp),
+      .size(GO_TO_ITEM_BUTTON_SIZE),
     interactionSource = buttonInteractionSource
   ) {
     Icon(painterResource(icon), null, Modifier.size(iconSize), tint = iconTint)

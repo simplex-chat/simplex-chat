@@ -158,13 +158,11 @@ fun TerminalChatItemRow(
   content: @Composable () -> Unit
 ) {
   val sender = if (showSender) terminalSender(chatInfo, cItem, range, reversedChatItems, showMemberInfo, showChatInfo) else null
-  val avatarSize = MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier
+  val gutter = if (chatInfo is ChatInfo.Group) MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier else GO_TO_ITEM_BUTTON_SIZE
   Layout(
     content = {
       Box {
-        if (sender != null) {
-          sender.image()
-        }
+        sender?.image?.invoke()
       }
       Box {
         goToButton()
@@ -182,8 +180,8 @@ fun TerminalChatItemRow(
       .padding(top = if (sender != null) 8.dp else topGap, start = 8.dp, end = 12.dp)
       .fillMaxWidth()
   ) { measurables, constraints ->
-    val avatarWidth = avatarSize.roundToPx()
-    val messageStart = avatarWidth + 4.dp.roundToPx()
+    val gutterWidth = gutter.roundToPx()
+    val messageStart = gutterWidth + 4.dp.roundToPx()
     val looseConstraints = constraints.copy(minWidth = 0, minHeight = 0)
     val messageConstraints = looseConstraints.copy(maxWidth = (constraints.maxWidth - messageStart).coerceAtLeast(0))
     val avatar = measurables[0].measure(looseConstraints)
@@ -195,14 +193,14 @@ fun TerminalChatItemRow(
     val height = maxOf(messageTop + message.height, avatar.height, buttonTop + button.height)
     layout(constraints.maxWidth, height) {
       avatar.placeRelative(0, 0)
-      button.placeRelative((avatarWidth - button.width) / 2, buttonTop)
+      button.placeRelative((gutterWidth - button.width) / 2, buttonTop)
       name.placeRelative(messageStart, 0)
       message.placeRelative(messageStart, messageTop)
     }
   }
 }
 
-private class TerminalSender(val name: String, val badge: LocalBadge?, val role: String?, val own: Boolean, val image: @Composable () -> Unit)
+private class TerminalSender(val name: String, val badge: LocalBadge?, val role: String?, val own: Boolean, val image: (@Composable () -> Unit)?)
 
 @Composable
 private fun terminalSender(
@@ -213,18 +211,16 @@ private fun terminalSender(
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
   showChatInfo: () -> Unit
 ): TerminalSender {
-  val size = MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier
-  val chatImage: @Composable () -> Unit = {
-    Box(Modifier.clickable { showChatInfo() }) {
-      ChatInfoImage(chatInfo, size, backgroundColor = MaterialTheme.colors.background)
-    }
-  }
   val dir = cItem.chatDir
   return when {
     cItem.channelIsSender ->
-      TerminalSender(chatInfo.chatViewName, null, stringResource(MR.strings.channel_role_label), dir.sent, chatImage)
+      TerminalSender(chatInfo.chatViewName, null, stringResource(MR.strings.channel_role_label), dir.sent) {
+        Box(Modifier.clickable { showChatInfo() }) {
+          ChatInfoImage(chatInfo, MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier, backgroundColor = MaterialTheme.colors.background)
+        }
+      }
     dir is CIDirection.DirectRcv ->
-      TerminalSender(chatInfo.displayName, chatInfo.nameBadge, null, false, chatImage)
+      TerminalSender(chatInfo.displayName, chatInfo.nameBadge, null, false, null)
     dir is CIDirection.GroupRcv && chatInfo is ChatInfo.Group -> {
       val member = dir.groupMember
       val rangeValue = range.value
@@ -247,14 +243,10 @@ private fun terminalSender(
       }
     }
     chatInfo.incognito ->
-      TerminalSender(stringResource(MR.strings.incognito), null, null, true) {
-        IncognitoImage(size)
-      }
+      TerminalSender(stringResource(MR.strings.incognito), null, null, true, null)
     else -> {
       val user = chatModel.currentUser.value
-      TerminalSender(user?.displayName ?: "", user?.profile?.localBadge, null, true) {
-        ProfileImage(size, user?.image, backgroundColor = MaterialTheme.colors.background)
-      }
+      TerminalSender(user?.displayName ?: "", user?.profile?.localBadge, null, true, null)
     }
   }
 }
