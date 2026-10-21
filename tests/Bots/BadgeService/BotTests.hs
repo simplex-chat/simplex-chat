@@ -208,6 +208,7 @@ badgeServiceTests = do
     it "should grant a store charge of another tier at renewal, on both sides, and back again" testSubscriptionTierChangeAtRenewal
     it "should grant an App Store upgrade during coverage once the store charges it, answering pending until then and asking at most hourly" testSubscriptionUpgradeNow
     it "should answer the upgraded tier's month after an upgrade late in the month, and nothing once it ends, though the old tier's month ends later" testSubscriptionUpgradeLateInMonth
+    it "should grant the old tier's renewal from an upgrade's store check, answering the upgrade pending until its own tier is charged" testUpgradeCheckGrantsRenewal
     it "should refuse an upgrade from another key, of another subscription, of a prepaid purchase or from Play, without asking the store" testUpgradeRequestRefused
     it "should not grant a Play charge whose month from its clipped period start has already run out" testClippedPlayPeriodNotGranted
     it "should answer an unreachable store with the check interval, writing no charge or ledger row" testSubscriptionStoreUnreachable
@@ -2563,6 +2564,36 @@ testSubscriptionUpgradeLateInMonth ps =
     setClockAt bsClock $ addUTCTime 3600 legendEnd
     afterEnd <- assertBalance env purchaseKey legendTip
     credentialOf afterEnd `shouldBe` Nothing
+
+testUpgradeCheckGrantsRenewal :: HasCallStack => TestParams -> IO ()
+testUpgradeCheckGrantsRenewal ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsController = cc, bsStore = store@FakeStore {appleSubscriptionJWS, appleLegendSubscriptionJWS}} -> do
+    firstStart <- addUTCTime (-3600) <$> serviceNow env
+    appleStoreReports store $ subscriptionCheck SSRenewing $ Just $ storeCharge "SUBSCR_BADGE_SUPPORTER_MONTH_01" firstStart 1
+    (purchaseKey, masterKey) <- newPurchaseKeys
+    purchased <- serviceCmd env purchaseKey $ purchaseCmd masterKey SPApple {jws = appleSubscriptionJWS}
+    let tip = last $ fst $ statementOf purchased
+        renewalStart = addMonths 1 firstStart
+        upgradedAt = addUTCTime 600 renewalStart
+    -- coverage has ended and Apple charged the Supporter renewal, while its status still shows Supporter
+    appleStoreReports store $ subscriptionCheck SSRenewing $ Just (storeCharge "SUBSCR_BADGE_SUPPORTER_MONTH_01" renewalStart 1) {chargeRef = "apple.renewal"}
+    setClockAt bsClock upgradedAt
+    checks <- subscriptionChecks store
+    refusalOf <$> serviceCmd env purchaseKey (upgradeCmdWith appleLegendSubscriptionJWS tip) `shouldReturn` (BSEPaymentPending, Just 3600)
+    subscriptionChecks store `shouldReturn` checks + 1
+    -- the check granted the renewal, so the hour's requests get its month without asking the store
+    renewed <- assertBalance env purchaseKey tip
+    map entryTag (fst $ statementOf renewed) `shouldBe` ["charge", "badge"]
+    badgeTypeOf renewed `shouldBe` Just BTSupporter
+    subscriptionChecks store `shouldReturn` checks + 1
+    purchaseBadgeTypes cc "sx_badge_service_badge_purchases" `shouldReturn` ["supporter"]
+    -- Apple reports Legend, and past the hour the upgrade grants it
+    appleStoreReports store $ subscriptionCheck SSRenewing $ Just (storeCharge "SUBSCR_BADGE_LEGEND_MONTH_01" (addUTCTime 1800 upgradedAt) 1) {chargeRef = "apple.legend"}
+    setClockAt bsClock $ addUTCTime 3700 upgradedAt
+    upgraded <- serviceCmd env purchaseKey $ upgradeCmdWith appleLegendSubscriptionJWS $ last $ fst $ statementOf renewed
+    badgeTypeOf upgraded `shouldBe` Just BTLegend
+    subscriptionChecks store `shouldReturn` checks + 2
+    purchaseBadgeTypes cc "sx_badge_service_badge_purchases" `shouldReturn` ["legend"]
 
 testUpgradeRequestRefused :: HasCallStack => TestParams -> IO ()
 testUpgradeRequestRefused ps =
