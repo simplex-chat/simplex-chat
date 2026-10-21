@@ -277,7 +277,7 @@ publicAddress = \case
   THIPv6 a -> publicIPv6 a
   _ -> False
 
--- | Unspecified ("this network"), private, CGNAT, loopback, link-local and multicast.
+-- | Unspecified ("this network"), private, CGNAT, loopback, link-local, benchmarking, multicast and reserved with broadcast.
 refusedIPv4 :: [(Word32, Int)]
 refusedIPv4 =
   [ (ipv4Word (0, 0, 0, 0), 8),
@@ -287,24 +287,31 @@ refusedIPv4 =
     (ipv4Word (169, 254, 0, 0), 16),
     (ipv4Word (172, 16, 0, 0), 12),
     (ipv4Word (192, 168, 0, 0), 16),
-    (ipv4Word (224, 0, 0, 0), 4)
+    (ipv4Word (198, 18, 0, 0), 15),
+    (ipv4Word (224, 0, 0, 0), 4),
+    (ipv4Word (240, 0, 0, 0), 4)
   ]
 
--- | Unique-local, link-local and multicast, as prefixes of the address's first 32 bits.
+-- | Unique-local, link-local, site-local and multicast, as prefixes of the address's first 32 bits.
 refusedIPv6 :: [(Word32, Int)]
-refusedIPv6 = [(0xfc000000, 7), (0xfe800000, 10), (0xff000000, 8)]
+refusedIPv6 = [(0xfc000000, 7), (0xfe800000, 10), (0xfec00000, 10), (0xff000000, 8)]
 
 -- | The third 32-bit word of an IPv4-mapped IPv6 address, @::ffff:a.b.c.d@.
 ipv4MappedWord :: Word32
 ipv4MappedWord = 0xffff
 
+-- | The first 32-bit word of the NAT64 prefix @64:ff9b::/96@.
+nat64Word :: Word32
+nat64Word = 0x0064ff9b
+
 publicIPv4 :: Word32 -> Bool
 publicIPv4 a = not $ any (inPrefix a) refusedIPv4
 
+-- | An address that carries an IPv4 address in its last 32 bits is judged by it: IPv4-mapped, IPv4-compatible (with @::@ and @::1@) and NAT64.
 publicIPv6 :: (Word32, Word32, Word32, Word32) -> Bool
 publicIPv6 (w0, w1, w2, w3)
-  | w0 == 0 && w1 == 0 && w2 == ipv4MappedWord = publicIPv4 w3
-  | w0 == 0 && w1 == 0 && w2 == 0 && w3 <= 1 = False
+  | w0 == 0 && w1 == 0 && (w2 == ipv4MappedWord || w2 == 0) = publicIPv4 w3
+  | w0 == nat64Word && w1 == 0 && w2 == 0 = publicIPv4 w3
   | otherwise = not $ any (inPrefix w0) refusedIPv6
 
 inPrefix :: Word32 -> (Word32, Int) -> Bool

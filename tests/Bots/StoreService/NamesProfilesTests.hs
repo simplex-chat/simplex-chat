@@ -70,6 +70,7 @@ namesProfilesTests = describe "StoreService names: profiles" $ do
     H.it "refuses private, loopback, CGNAT, link-local and unique-local literals" testPrivateLiterals
     H.it "refuses names resolving to those addresses" testPrivateNames
     H.it "refuses unspecified, multicast and IPv4-mapped private addresses" testOtherRefused
+    H.it "refuses reserved, broadcast, benchmarking and site-local addresses, and private IPv4 in IPv4-compatible and NAT64 addresses" testEmbeddedAndReserved
     H.it "refuses .onion hosts without resolving them, and unresolvable names" testOnionUnresolvable
     H.it "refuses a link with one public and one private host, and a name with one private address" testMixedHosts
     H.it "answers a refused link unavailable without fetching it" testRefusedNotFetched
@@ -418,6 +419,17 @@ testOtherRefused = do
   mapM_ (\h -> (h,) <$> fetchable [h] `shouldReturn` (h, False)) ["0.0.0.0", "::", "224.0.0.1", "ff02::1", mapped (127, 0, 0, 1), mapped (10, 0, 0, 1)]
   fetchable [mapped (1, 1, 1, 1)] `shouldReturn` True
 
+testEmbeddedAndReserved :: IO ()
+testEmbeddedAndReserved = do
+  mapM_ (\h -> (h,) <$> fetchable [h] `shouldReturn` (h, False)) $
+    ["240.0.0.1", "255.255.255.255", "198.18.0.1", "198.19.255.254", "fec0::1"]
+      <> map compatible [(127, 0, 0, 1), (10, 0, 0, 1)]
+      <> map nat64 [(127, 0, 0, 1), (192, 168, 1, 1), (100, 64, 0, 1)]
+  mapM_ (\h -> (h,) <$> fetchable [h] `shouldReturn` (h, True)) ["198.20.0.1", "198.17.255.255", compatible (1, 1, 1, 1), nat64 (1, 1, 1, 1)]
+  where
+    compatible = THIPv6 . (0, 0, 0,) . ipv4
+    nat64 = THIPv6 . (0x0064ff9b, 0, 0,) . ipv4
+
 testOnionUnresolvable :: IO ()
 testOnionUnresolvable = do
   asked <- newTVarIO []
@@ -429,7 +441,10 @@ testOnionUnresolvable = do
 
 -- | An IPv4-mapped IPv6 address, @::ffff:a.b.c.d@.
 mapped :: (Word32, Word32, Word32, Word32) -> TransportHost
-mapped (a, b, c, d) = THIPv6 (0, 0, 0xffff, a * 0x1000000 + b * 0x10000 + c * 0x100 + d)
+mapped = THIPv6 . (0, 0, 0xffff,) . ipv4
+
+ipv4 :: (Word32, Word32, Word32, Word32) -> Word32
+ipv4 (a, b, c, d) = a * 0x1000000 + b * 0x10000 + c * 0x100 + d
 
 testMixedHosts :: IO ()
 testMixedHosts = do
