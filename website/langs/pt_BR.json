@@ -46,7 +46,7 @@
     "simplex-private-3-title": "Transporte TLS<br>seguro e autenticado",
     "simplex-private-card-2-point-1": "Camada adicional de criptografia de servidor para entrega ao destinatário, para evitar a correlação entre o tráfego de servidor recebido e enviado se o TLS for comprometido.",
     "simplex-private-card-4-point-1": "Para proteger seu endereço IP, você pode acessar os servidores por meio do Tor ou de alguma outra rede de sobreposição de transporte.",
-    "simplex-private-card-4-point-2": "Para usar o SimpleX via Tor, instale o aplicativo <a href=\"https://guardianproject.info/apps/org.torproject.android/\" target=\"_blank\" rel=\"noopener\">Orbot</a> e ative o proxy SOCKS5 (ou VPN <a href=\"https://apps.apple.com/us/app/orbot/id1609461599?platform=iphone\" target=\"_blank\" rel=\"noopener\">no iOS</a>).",
+    "simplex-private-card-4-point-2": "Para usar o SimpleX via Tor, instale o aplicativo <a href=\"https://guardianproject.info/apps/org.torproject.android/\" target=\"_blank\">Orbot</a> e ative o proxy SOCKS5 (ou VPN <a href=\"https://apps.apple.com/us/app/orbot/id1609461599?platform=iphone\" target=\"_blank\">no iOS</a>).",
     "simplex-private-card-7-point-2": "Se alguma mensagem for adicionada, removida ou alterada, o destinatário será alertado.",
     "simplex-private-card-10-point-1": "O SimpleX usa endereços anônimos temporários em pares e credenciais para cada contato de usuário ou membro de grupo.",
     "privacy-matters-1-overlay-1-title": "A privacidade economiza seu dinheiro",
