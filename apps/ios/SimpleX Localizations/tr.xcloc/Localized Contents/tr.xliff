@@ -20,9 +20,9 @@
         <target state="translated"># %@</target>
         <note>copied message info title, # &lt;title&gt;</note>
       </trans-unit>
-      <trans-unit id="## History" xml:space="preserve">
+      <trans-unit id="## History" xml:space="preserve" approved="no">
         <source>## History</source>
-        <target>## Geçmiş</target>
+        <target state="translated">## Geçmiş</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="## In reply to" xml:space="preserve" approved="no">
@@ -661,9 +661,9 @@ time interval</note>
         <source>A badge is an anonymous credential stored in your profile on your device. This credential is never sent to anyone.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="A few more things" xml:space="preserve">
+      <trans-unit id="A few more things" xml:space="preserve" approved="no">
         <source>A few more things</source>
-        <target>Birkaç şey daha</target>
+        <target state="translated">Birkaç şey daha</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="A link for one person to connect" xml:space="preserve">
@@ -676,9 +676,9 @@ time interval</note>
         <target state="translated">Yeni kişi</target>
         <note>notification title</note>
       </trans-unit>
-      <trans-unit id="A new random profile will be shared." xml:space="preserve">
+      <trans-unit id="A new random profile will be shared." xml:space="preserve" approved="no">
         <source>A new random profile will be shared.</source>
-        <target>Yeni bir rastgele profil paylaşılacak.</target>
+        <target state="translated">Yeni bir rastgele profil paylaşılacak.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="A separate TCP connection will be used **for each chat profile you have in the app**." xml:space="preserve" approved="no">
@@ -723,9 +723,9 @@ time interval</note>
         <target state="translated">Ana renk</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Accept" xml:space="preserve">
+      <trans-unit id="Accept" xml:space="preserve" approved="no">
         <source>Accept</source>
-        <target>Kabul et</target>
+        <target state="translated">Kabul et</target>
         <note>accept contact request via notification
 accept incoming call via notification
 alert action
@@ -865,9 +865,9 @@ swipe action</note>
         <target state="translated">Sunucu ekle</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add servers by scanning QR codes." xml:space="preserve">
+      <trans-unit id="Add servers by scanning QR codes." xml:space="preserve" approved="no">
         <source>Add servers by scanning QR codes.</source>
-        <target>Karekod taratarak sunucuları ekleyin.</target>
+        <target state="translated">Karekod taratarak sunucuları ekleyin.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add team members" xml:space="preserve" approved="no">
@@ -890,9 +890,9 @@ swipe action</note>
         <target state="translated">Listeye ekle</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add welcome message" xml:space="preserve">
+      <trans-unit id="Add welcome message" xml:space="preserve" approved="no">
         <source>Add welcome message</source>
-        <target>Karşılama mesajı ekleyin</target>
+        <target state="translated">Karşılama mesajı ekleyin</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add your team members to the conversations." xml:space="preserve" approved="no">
@@ -925,14 +925,14 @@ swipe action</note>
         <target state="translated">Ek ikincil renk</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Address" xml:space="preserve">
+      <trans-unit id="Address" xml:space="preserve" approved="no">
         <source>Address</source>
-        <target>Adres</target>
+        <target state="translated">Adres</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Address change will be aborted. Old receiving address will be used." xml:space="preserve">
+      <trans-unit id="Address change will be aborted. Old receiving address will be used." xml:space="preserve" approved="no">
         <source>Address change will be aborted. Old receiving address will be used.</source>
-        <target>Adres değişikliği iptal edilecek. Eski alıcı adresi kullanılacaktır.</target>
+        <target state="translated">Adres değişikliği iptal edilecek. Eski alıcı adresi kullanılacaktır.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Address or 1-time link?" xml:space="preserve" approved="no">
@@ -975,14 +975,14 @@ swipe action</note>
         <target state="translated">Hepsi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All app data is deleted." xml:space="preserve">
+      <trans-unit id="All app data is deleted." xml:space="preserve" approved="no">
         <source>All app data is deleted.</source>
-        <target>Tüm uygulama verileri silinir.</target>
+        <target state="translated">Tüm uygulama verileri silinir.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All chats and messages will be deleted - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="All chats and messages will be deleted - this cannot be undone!" xml:space="preserve" approved="no">
         <source>All chats and messages will be deleted - this cannot be undone!</source>
-        <target>Tüm konuşmalar ve mesajlar silinecektir. Bu, geri alınamaz!</target>
+        <target state="translated">Tüm konuşmalar ve mesajlar silinecektir. Bu, geri alınamaz!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All chats will be removed from the list %@, and the list deleted." xml:space="preserve" approved="no">
@@ -990,9 +990,9 @@ swipe action</note>
         <target state="translated">Tüm sohbetler %@ listesinden kaldırılacak ve liste silinecek.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="All data is erased when it is entered." xml:space="preserve">
+      <trans-unit id="All data is erased when it is entered." xml:space="preserve" approved="no">
         <source>All data is erased when it is entered.</source>
-        <target>Kullanıldığında bütün veriler silinir.</target>
+        <target state="translated">Kullanıldığında bütün veriler silinir.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All data is kept private on your device." xml:space="preserve" approved="no">
@@ -1020,9 +1020,9 @@ swipe action</note>
         <target state="translated">Tüm mesajlar silinecektir - bu geri alınamaz!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." xml:space="preserve">
+      <trans-unit id="All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." xml:space="preserve" approved="no">
         <source>All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you.</source>
-        <target>Tüm mesajlar silinecektir. Bu, geri alınamaz! Mesajlar, YALNIZCA senin için silinecektir.</target>
+        <target state="translated">Tüm mesajlar silinecektir. Bu, geri alınamaz! Mesajlar, YALNIZCA senin için silinecektir.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All new messages from %@ will be hidden!" xml:space="preserve" approved="no">
@@ -1055,14 +1055,14 @@ swipe action</note>
         <target state="translated">Tüm sunucular</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All your contacts will remain connected." xml:space="preserve">
+      <trans-unit id="All your contacts will remain connected." xml:space="preserve" approved="no">
         <source>All your contacts will remain connected.</source>
-        <target>Konuştuğun kişilerin tümü bağlı kalacaktır.</target>
+        <target state="translated">Konuştuğun kişilerin tümü bağlı kalacaktır.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All your contacts will remain connected. Profile update will be sent to your contacts." xml:space="preserve">
+      <trans-unit id="All your contacts will remain connected. Profile update will be sent to your contacts." xml:space="preserve" approved="no">
         <source>All your contacts will remain connected. Profile update will be sent to your contacts.</source>
-        <target>Tüm kişileriniz bağlı kalacaktır. Profil güncellemesi kişilerinize gönderilecektir.</target>
+        <target state="translated">Tüm kişileriniz bağlı kalacaktır. Profil güncellemesi kişilerinize gönderilecektir.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." xml:space="preserve" approved="no">
@@ -1070,9 +1070,9 @@ swipe action</note>
         <target state="translated">Tüm kişileriniz, konuşmalarınız ve dosyalarınız güvenli bir şekilde şifrelenir ve yapılandırılmış XFTP yönlendiricilerine parçalar halinde yüklenir.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow" xml:space="preserve">
+      <trans-unit id="Allow" xml:space="preserve" approved="no">
         <source>Allow</source>
-        <target>İzin ver</target>
+        <target state="translated">İzin ver</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow anyone to embed" xml:space="preserve">
@@ -1080,9 +1080,9 @@ swipe action</note>
         <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow calls only if your contact allows them." xml:space="preserve">
+      <trans-unit id="Allow calls only if your contact allows them." xml:space="preserve" approved="no">
         <source>Allow calls only if your contact allows them.</source>
-        <target>Yalnızca irtibat kişiniz izin veriyorsa aramalara izin verin.</target>
+        <target state="translated">Yalnızca irtibat kişiniz izin veriyorsa aramalara izin verin.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow calls?" xml:space="preserve" approved="no">
@@ -1115,9 +1115,9 @@ swipe action</note>
         <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow message reactions only if your contact allows them." xml:space="preserve">
+      <trans-unit id="Allow message reactions only if your contact allows them." xml:space="preserve" approved="no">
         <source>Allow message reactions only if your contact allows them.</source>
-        <target>Yalnızca kişin mesaj tepkilerine izin veriyorsa sen de ver.</target>
+        <target state="translated">Yalnızca kişin mesaj tepkilerine izin veriyorsa sen de ver.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow message reactions." xml:space="preserve" approved="no">
@@ -1135,9 +1135,9 @@ swipe action</note>
         <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow sending disappearing messages." xml:space="preserve">
+      <trans-unit id="Allow sending disappearing messages." xml:space="preserve" approved="no">
         <source>Allow sending disappearing messages.</source>
-        <target>Kendiliğinden yok olan mesajlar göndermeye izin ver.</target>
+        <target state="translated">Kendiliğinden yok olan mesajlar göndermeye izin ver.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow sharing" xml:space="preserve" approved="no">
@@ -1165,29 +1165,29 @@ swipe action</note>
         <target state="translated">SimpleX bağlantıları göndilmesine izin ver.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow to send files and media." xml:space="preserve">
+      <trans-unit id="Allow to send files and media." xml:space="preserve" approved="no">
         <source>Allow to send files and media.</source>
-        <target>Dosya ve medya göndermeye izin ver.</target>
+        <target state="translated">Dosya ve medya göndermeye izin ver.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow to send voice messages." xml:space="preserve">
+      <trans-unit id="Allow to send voice messages." xml:space="preserve" approved="no">
         <source>Allow to send voice messages.</source>
-        <target>Sesli mesaj göndermeye izin ver.</target>
+        <target state="translated">Sesli mesaj göndermeye izin ver.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow voice messages only if your contact allows them." xml:space="preserve">
+      <trans-unit id="Allow voice messages only if your contact allows them." xml:space="preserve" approved="no">
         <source>Allow voice messages only if your contact allows them.</source>
-        <target>Yalnızca kişiniz sesli mesaj göndermeye izin veriyorsa sen de ver.</target>
+        <target state="translated">Yalnızca kişiniz sesli mesaj göndermeye izin veriyorsa sen de ver.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow voice messages?" xml:space="preserve">
+      <trans-unit id="Allow voice messages?" xml:space="preserve" approved="no">
         <source>Allow voice messages?</source>
-        <target>Sesli mesajlara izin ver?</target>
+        <target state="translated">Sesli mesajlara izin ver?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow your contacts adding message reactions." xml:space="preserve">
+      <trans-unit id="Allow your contacts adding message reactions." xml:space="preserve" approved="no">
         <source>Allow your contacts adding message reactions.</source>
-        <target>Konuştuğun kişilerin mesajlarına tepki eklemesine izin ver.</target>
+        <target state="translated">Konuştuğun kişilerin mesajlarına tepki eklemesine izin ver.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow your contacts to call you." xml:space="preserve" approved="no">
@@ -1220,14 +1220,14 @@ swipe action</note>
         <target state="translated">Zaten bağlandı?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Already connecting!" xml:space="preserve">
+      <trans-unit id="Already connecting!" xml:space="preserve" approved="no">
         <source>Already connecting!</source>
-        <target>Zaten bağlanılıyor!</target>
+        <target state="translated">Zaten bağlanılıyor!</target>
         <note>new chat sheet title</note>
       </trans-unit>
-      <trans-unit id="Already joining the group!" xml:space="preserve">
+      <trans-unit id="Already joining the group!" xml:space="preserve" approved="no">
         <source>Already joining the group!</source>
-        <target>Zaten gruba bağlanılıyor!</target>
+        <target state="translated">Zaten gruba bağlanılıyor!</target>
         <note>new chat sheet title</note>
       </trans-unit>
       <trans-unit id="Always use private routing." xml:space="preserve" approved="no">
@@ -1240,9 +1240,9 @@ swipe action</note>
         <target state="translated">Her zaman yönlendirici kullan</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="An empty chat profile with the provided name is created, and the app opens as usual." xml:space="preserve">
+      <trans-unit id="An empty chat profile with the provided name is created, and the app opens as usual." xml:space="preserve" approved="no">
         <source>An empty chat profile with the provided name is created, and the app opens as usual.</source>
-        <target>Verilen adla boş bir sohbet profili oluşturulur ve uygulama her zamanki gibi açılır.</target>
+        <target state="translated">Verilen adla boş bir sohbet profili oluşturulur ve uygulama her zamanki gibi açılır.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Anchor" xml:space="preserve">
@@ -1258,9 +1258,9 @@ swipe action</note>
         <target state="translated">Başka bir sebep</target>
         <note>report reason</note>
       </trans-unit>
-      <trans-unit id="Answer call" xml:space="preserve">
+      <trans-unit id="Answer call" xml:space="preserve" approved="no">
         <source>Answer call</source>
-        <target>Aramayı cevapla</target>
+        <target state="translated">Aramayı cevapla</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Any webpage can show the preview." xml:space="preserve">
@@ -1288,14 +1288,14 @@ swipe action</note>
         <target state="translated">Uygulama grubu:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App icon" xml:space="preserve">
+      <trans-unit id="App icon" xml:space="preserve" approved="no">
         <source>App icon</source>
-        <target>Uygulama simgesi</target>
+        <target state="translated">Uygulama simgesi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App passcode" xml:space="preserve">
+      <trans-unit id="App passcode" xml:space="preserve" approved="no">
         <source>App passcode</source>
-        <target>Uygulama erişim kodu</target>
+        <target state="translated">Uygulama erişim kodu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App passcode is replaced with self-destruct passcode." xml:space="preserve" approved="no">
@@ -5747,9 +5747,9 @@ Bu senin grup için bağlantın %@!</target>
         <target state="translated">Daha fazlası</target>
         <note>badge alert button</note>
       </trans-unit>
-      <trans-unit id="Leave" xml:space="preserve">
+      <trans-unit id="Leave" xml:space="preserve" approved="no">
         <source>Leave</source>
-        <target>Ayrıl</target>
+        <target state="translated">Ayrıl</target>
         <note>swipe action</note>
       </trans-unit>
       <trans-unit id="Leave channel" xml:space="preserve">
@@ -5772,9 +5772,9 @@ Bu senin grup için bağlantın %@!</target>
         <target state="translated">Sohbetten ayrılsın mı?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Leave group" xml:space="preserve">
+      <trans-unit id="Leave group" xml:space="preserve" approved="no">
         <source>Leave group</source>
-        <target>Gruptan ayrıl</target>
+        <target state="translated">Gruptan ayrıl</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Leave group?" xml:space="preserve" approved="no">
