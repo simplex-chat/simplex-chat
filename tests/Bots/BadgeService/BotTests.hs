@@ -35,6 +35,7 @@ import Control.Concurrent (newEmptyMVar, putMVar, takeMVar, threadDelay)
 import Control.Concurrent.Async (async, cancel)
 import Control.Concurrent.STM (TQueue, atomically, readTMVar, readTQueue, readTVarIO)
 import Control.Monad (forM_, replicateM, void, when)
+import Control.Monad.Except (runExceptT)
 import Control.Exception (finally)
 import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
@@ -72,7 +73,8 @@ import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Options.DB
 import Simplex.Chat.PaymentService (ServicePayment (..), googlePurchaseRef)
 import Simplex.Chat.PaymentService.Types (InvoiceId (..))
-import Simplex.Chat.Store.Badges (getLatestIssuedCredential, getNextHeldStoreReceipt)
+import Simplex.Chat.Store.Badges (clearShownBadge, getLatestIssuedCredential, getNextHeldStoreReceipt)
+import Simplex.Chat.Store.Profiles (getUser, setUserBadge)
 import Simplex.Messaging.Agent (disposeAgentClient)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..))
 import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..))
@@ -272,6 +274,9 @@ badgeServiceTests = do
     it "should hold an Apple charge of another tier while its badge is shown, grant it through the worker and show it at once, and send nothing for one of the same tier" testAppleTierChangeHandOver
     it "should keep an Apple tier change held while the store reports the old tier, without failing the renewal, and grant it once the store reports the new one" testAppleTierChangeStoreLags
     it "should settle an Apple tier change with no change and no request once its window has passed" testAppleTierChangeWindowEnds
+    it "should show the purchase a tier change credits, though a retire cleared it while the change was with the service" testAppleTierChangeKeepsPurchaseShown
+    it "should refuse in silence an Apple tier change the store does not vouch for, keeping the badge shown, and answer it again from the record" testAppleTierChangeRefused
+    it "should hold and credit an Apple tier change while another receipt of the owner is held" testAppleTierChangeBesideHeldReceipt
     it "should answer an Apple resubscription from the record when it cannot resume, refuse a held one that stops being resumable or that the service does not grant within its hold, and keep one behind another held receipt unfinished" testAppleResubscribeBounded
     it "should ask the App Store about a subscription claim at most once an hour, whoever presents it and as any of its transactions" testApplePurchaseChecksBounded
     it "should ask Play about a subscription token at most once an hour, whoever presents it, credited to another key or not" testPlayPurchaseChecksBounded
@@ -4257,6 +4262,59 @@ testAppleTierChangeWindowEnds ps =
       handOver
       alice <## "badge already redeemed"
       heldStoreReceipts (chatController alice) `shouldReturn` 0
+
+testAppleTierChangeKeepsPurchaseShown :: HasCallStack => TestParams -> IO ()
+testAppleTierChangeKeepsPurchaseShown ps = do
+  hook <- newIORef (pure ())
+  withBadgeServiceVerifier ps (subscriptionCheckWithHook hook) $ \env@BadgeServiceEnv {bsClientCfg, bsStore = store@FakeStore {appleLegendSubscriptionJWS}} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      appleSupporterBeforeLegend env alice
+      appleReportsLegend store
+      -- a retire, as retireBadge writes it, while the change is with the service
+      writeIORef hook $ withTransaction (chatStore $ chatController alice) $ \db -> do
+        Right user <- runExceptT $ getUser db 1
+        clearShownBadge db user 1
+        void $ runExceptT $ setUserBadge db user Nothing
+      alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = appleLegendSubscriptionJWS})
+      expectLinesWithin 30 alice ["1: legend"] ["1: supporter", "store purchase open", "subscribed "]
+      heldStoreReceipts (chatController alice) `shouldEventuallyReturn` 0
+      shownBadgeId (chatController alice) `shouldReturn` Just 1
+      waitShownIssued (chatController alice)
+
+testAppleTierChangeRefused :: HasCallStack => TestParams -> IO ()
+testAppleTierChangeRefused ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClientCfg, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      appleSupporterBeforeLegend env alice
+      let unvouched = subscriptionJWS appleSubscriptionOriginalId "2000000812345696" ["purchaseDate" J..= (1769904000000 :: Int64), "productId" J..= ("SUBSCR_BADGE_LEGEND_YEAR_01" :: Text)]
+          handOver = alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = unvouched})
+      checks <- subscriptionChecks store
+      handOver
+      expectLinesWithin 30 alice ["1: supporter", "bad chat command: badge service error: receipt_invalid"] ["store purchase open", "subscribed "]
+      heldStoreReceipts (chatController alice) `shouldEventuallyReturn` 0
+      storeReceiptCreditErrors (chatController alice) `shouldReturn` ["service_error final receipt_invalid"]
+      (alice </)
+      issueErrorRow (chatController alice) `shouldReturn` (Nothing, Nothing)
+      shownBadgeId (chatController alice) `shouldReturn` Just 1
+      purchaseBadgeTypes (chatController alice) "badge_purchases" `shouldReturn` ["supporter"]
+      handOver
+      alice <## "badge already redeemed"
+      heldStoreReceipts (chatController alice) `shouldReturn` 0
+      subscriptionChecks store `shouldReturn` checks
+
+testAppleTierChangeBesideHeldReceipt :: HasCallStack => TestParams -> IO ()
+testAppleTierChangeBesideHeldReceipt ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClientCfg, bsStore = store@FakeStore {appleLegendSubscriptionJWS}} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      appleSupporterBeforeLegend env alice
+      alice ##> ("/_badge purchase 1 " <> paymentArg supporterPlay)
+      expectLinesWithin 30 alice ["1: supporter", openPurchase ""] ["subscribed "]
+      heldStoreReceipts (chatController alice) `shouldReturn` 1
+      appleReportsLegend store
+      alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = appleLegendSubscriptionJWS})
+      expectLinesWithin 30 alice ["1: legend"] ["1: supporter", "store purchase open", "subscribed "]
+      waitShownIssued (chatController alice)
+      heldStoreReceipts (chatController alice) `shouldReturn` 1
 
 -- | A monthly Apple subscription bought an hour into its first period and retired past its coverage, at its request
 -- moment, on the service's answer that it ended: that moment.

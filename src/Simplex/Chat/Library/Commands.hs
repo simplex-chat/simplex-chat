@@ -5781,8 +5781,8 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
                   pure $ SROCredited (Just user')
             -- the service's own check interval
             _ -> notCredited $ failed ri delay BIFServiceError {code = BSEPaymentPending, retryable = True} (Just 3600)
-    -- Past the window, or once the tier shown is the one charged, the record settles with nothing to announce:
-    -- the service grants the change at its next renewal check.
+    -- Past the window, once the purchase's ledger holds the tier charged, or once its badge is no longer shown, the record
+    -- settles with nothing to announce: the service grants the change at its next renewal check.
     changeTier ri delay purchaseId = do
       user <- withStore $ \db -> getUser db userId
       p_ <- withStore' (`getBadgePurchase` purchaseId)
@@ -5809,7 +5809,7 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
             Just cred@(BadgeCredential _ _ _ info@BadgeInfo {badgeType = issuedType})
               | issuedType == tier && credentialExpiry cred > answeredAt -> do
                   user' <- withStore $ \db -> do
-                    liftIO $ settleStoreReceipt db receiptId
+                    liftIO $ showTierChangedPurchase db user receiptId badgePurchaseId
                     setUserBadge db user (Just $ OwnBadge cred (mkBadgeStatus answeredAt (Just True) info))
                   lift $ startBadgeWork user'
                   pure $ SROCredited (Just user')

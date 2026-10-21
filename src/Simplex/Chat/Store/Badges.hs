@@ -38,6 +38,7 @@ module Simplex.Chat.Store.Badges
     settleStoreReceipt,
     reholdStoreReceipt,
     showResumedPurchase,
+    showTierChangedPurchase,
     deleteUnfundedStoreReceipts,
     deleteBadgeCodeRedemption,
     createStashBadgePurchase,
@@ -384,24 +385,28 @@ settleStoreReceipt db receiptId =
     "UPDATE badge_store_receipts SET payment = NULL, next_attempt_at = NULL, retry_delay = NULL, retry_count = 0, credit_error = NULL, hold_kind = ? WHERE badge_store_receipt_id = ?"
     (SHKPurchase, receiptId)
 
--- | Whether a later charge of a credited record's subscription is answered as held: its purchase must be its owner's
--- newest and a subscription, not shown for a resume and shown for a tier change. The record is held again only while no
--- other receipt of the owner is held, which the receipt worker would credit first and then skip this one while its badge
--- is shown; until then the app keeps the charge unfinished and hands it over again.
+-- | Whether a later charge of a credited record's subscription is answered as held: its purchase must be its owner's newest
+-- and a subscription. A tier change, of a shown purchase, is held whatever else is held, as the worker serves it while the
+-- badge is shown. A resume, of a purchase not shown, is held only while no other receipt of the owner is held, which the
+-- worker would credit first; until then the app keeps the charge unfinished and hands it over again. No other kind is held.
 reholdStoreReceipt :: DB.Connection -> User -> Int64 -> Int64 -> StoreHoldKind -> ServicePayment -> UTCTime -> IO Bool
 reholdStoreReceipt db owner receiptId badgePurchaseId holdKind payment now = do
   newest_ <- getUserBadgePurchase db owner
-  pending <- getPendingStoreReceipts db owner
   case newest_ of
     Just UserBadgePurchase {badgePurchaseId = newestId, shown, purchaseKind = PKSubscription _}
-      | newestId == badgePurchaseId && shown == (holdKind == SHKTierChange) -> do
-          when (null pending) $
-            DB.execute
-              db
-              "UPDATE badge_store_receipts SET payment = ?, next_attempt_at = ?, retry_delay = NULL, retry_count = 0, credit_error = NULL, hold_kind = ? WHERE badge_store_receipt_id = ? AND payment IS NULL"
-              (safeDecodeUtf8 . LB.toStrict $ J.encode payment, now, holdKind, receiptId)
-          pure True
+      | newestId == badgePurchaseId -> case holdKind of
+          SHKTierChange | shown -> True <$ hold
+          SHKPurchase | not shown -> do
+            pending <- getPendingStoreReceipts db owner
+            True <$ when (null pending) hold
+          _ -> pure False
     _ -> pure False
+  where
+    hold =
+      DB.execute
+        db
+        "UPDATE badge_store_receipts SET payment = ?, next_attempt_at = ?, retry_delay = NULL, retry_count = 0, credit_error = NULL, hold_kind = ? WHERE badge_store_receipt_id = ? AND payment IS NULL"
+        (safeDecodeUtf8 . LB.toStrict $ J.encode payment, now, holdKind, receiptId)
 
 -- | A resume's credit. The purchase keeps only the state the answer stored, so an ended state from before does not
 -- retire it again.
@@ -409,6 +414,12 @@ showResumedPurchase :: DB.Connection -> User -> Int64 -> Int64 -> Maybe Subscrip
 showResumedPurchase db User {userId} receiptId badgePurchaseId state = do
   settleStoreReceipt db receiptId
   DB.execute db "UPDATE badge_purchases SET subscription_status = ? WHERE badge_purchase_id = ?" (state, badgePurchaseId)
+  DB.execute db "UPDATE users SET shown_badge_id = ? WHERE user_id = ?" (badgePurchaseId, userId)
+
+-- | A tier change's credit, which shows the purchase again if a retire cleared it while the change was with the service.
+showTierChangedPurchase :: DB.Connection -> User -> Int64 -> Int64 -> IO ()
+showTierChangedPurchase db User {userId} receiptId badgePurchaseId = do
+  settleStoreReceipt db receiptId
   DB.execute db "UPDATE users SET shown_badge_id = ? WHERE user_id = ?" (badgePurchaseId, userId)
 
 -- | A held record is paid for and a credited one is referenced by its purchase, so neither is deleted.
