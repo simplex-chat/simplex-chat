@@ -61,7 +61,7 @@
     "simplex-private-card-3-point-2": "L'empreinte du serveur et la fixation des canaux empêchent les attaques MITM et les attaques par rejeu.",
     "simplex-private-card-3-point-3": "La reprise de connexion est désactivée pour empêcher les attaques de session.",
     "simplex-private-card-4-point-1": "Pour protéger votre adresse IP, vous pouvez accéder aux serveurs via Tor ou un autre réseau de transport superposé.",
-    "simplex-private-card-4-point-2": "Pour utiliser SimpleX via Tor, veuillez installer <a href=\"https://guardianproject.info/apps/org.torproject.android/\" target=\"_blank\" rel=\"noopener\">l'application Orbot</a> et activez le proxy SOCKS5 (ou le mode VPN <a href=\"https://apps.apple.com/us/app/orbot/id1609461599?platform=iphone\" target=\"_blank\" rel=\"noopener\"> sur iOS</a>).",
+    "simplex-private-card-4-point-2": "Pour utiliser SimpleX via Tor, veuillez installer <a href=\"https://guardianproject.info/apps/org.torproject.android/\" target=\"_blank\">l'application Orbot</a> et activez le proxy SOCKS5 (ou le mode VPN <a href=\"https://apps.apple.com/us/app/orbot/id1609461599?platform=iphone\" target=\"_blank\"> sur iOS</a>).",
     "simplex-private-card-5-point-1": "SimpleX utilise une couverture de contenu pour chaque couche de chiffrement afin de résister aux attaques ciblant la taille des messages.",
     "simplex-private-card-5-point-2": "Cela rend les messages de différentes tailles identiques pour les serveurs et les observateurs du réseau.",
     "simplex-private-card-6-point-1": "De nombreux réseaux de communication sont vulnérables aux attaques MITM par des serveurs ou des fournisseurs de réseau.",
