@@ -4620,8 +4620,8 @@ processChatCommand cxt nm = \case
               Just (_, CPGroupLink (GLPKnown g _ _ _))
                 | resolveMode == PRMAllGroups -> resolveKnownGroup g
               Just r -> pure r
+              Nothing | resolveMode == PRMNever -> storedLinkPlan
               Nothing -> do
-                when (resolveMode == PRMNever) $ throwChatError CENotResolvedLocally
                 l' <- resolveSLink
                 (fd, cData@(ContactLinkData _ UserContactData {direct, owners, relays}), cReq) <- getShortLinkConnReq' nm user l'
                 groupSLinkData_ <- liftIO $ decodeLinkUserData cData
@@ -4666,6 +4666,18 @@ processChatCommand cxt nm = \case
                 liftIO (getGroupInfoViaUserTarget db cxt user nl') >>= \case
                   Just (ccl, g) -> pure $ Just (ACCL SCMContact ccl, CPGroupLink (GLPOwnLink g))
                   Nothing -> (gPlan =<<) <$> getGroupToConnect db cxt user nl'
+              storedLinkPlan :: CM (ACreatedConnLink, ConnectionPlan)
+              storedLinkPlan = case nl' of
+                CTLink l' ->
+                  withFastStore' (\db -> getConnReqContactViaShortLink db user l') >>= \case
+                    Just cReq ->
+                      groupJoinRequestPlan user cReq Nothing Nothing Nothing [] >>= \case
+                        CPGroupLink GLPOk {} -> notResolved
+                        plan -> pure (con l' cReq, plan)
+                    Nothing -> notResolved
+                CTName _ -> notResolved
+                where
+                  notResolved = throwChatError CENotResolvedLocally
               resolveKnownGroup g = do
                 l' <- resolveSLink
                 (FixedLinkData {rootKey = rk}, cData@(ContactLinkData _ UserContactData {owners}), cReq) <- getShortLinkConnReq' nm user l'

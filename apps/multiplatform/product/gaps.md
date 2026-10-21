@@ -15,7 +15,7 @@ This document catalogs known gaps in the multiplatform codebase (Android and Des
 7. [Desktop: Cryptor Not Implemented](#gap-07-desktop-cryptor-not-implemented)
 8. [Desktop: App Link Registration](#gap-08-desktop-app-link-registration)
 9. [Desktop: Emoji Picker Without Skin Tones and Localized Search](#gap-09-desktop-emoji-picker-without-skin-tones-and-localized-search)
-10. [Online Search: Groups Joined Without a Prepared Group Still Appear as Results With Open](#gap-10-online-search-groups-joined-without-a-prepared-group-still-appear-as-results-with-open)
+10. [Online Search: Groups Joined Without the Listed Short Link Still Appear as Results With Open](#gap-10-online-search-groups-joined-without-the-listed-short-link-still-appear-as-results-with-open)
 11. [Online Search: The Count of Results Left Can Include Listings the Directory Never Sends](#gap-11-online-search-the-count-of-results-left-can-include-listings-the-directory-never-sends)
 
 ---
@@ -354,7 +354,7 @@ Desktop users cannot pick a skin tone in the picker, and search in other languag
 
 ---
 
-## GAP-10: Online Search: Groups Joined Without a Prepared Group Still Appear as Results With Open
+## GAP-10: Online Search: Groups Joined Without the Listed Short Link Still Appear as Results With Open
 
 **Severity:** Low
 **Category:** UI / UX
@@ -362,12 +362,12 @@ Desktop users cannot pick a skin tone in the picker, and search in other languag
 
 ### Description
 
-A directory entry is matched to a local chat by a store-only plan of its link (`apiConnectPlan` with `PlanResolveMode.PRMNever`, then `directoryResultState`), which finds a group only when it was prepared from that short link (every short-link join in current apps, Open included) or joined with the full link the directory sends. A group joined without a prepared group shows as a result with Open beside its own chat row:
+A directory entry is matched to a local chat by a store-only plan of its link (`apiConnectPlan` with `PlanResolveMode.PRMNever`, then `directoryResultState`), which finds a group only when it was prepared from that short link (every short-link join in current apps, Open included), joined with `/c` and that short link (the join connection stores the full link under it), or joined with the full link the directory sends. A group joined otherwise shows as a result with Open beside its own chat row:
 
-- a group (not a channel: `/c` with a channel link prepares it) joined with `/c`, an older app, or a full link when the directory sends the short link: Open's online plan finds it known and shows the "Open group" alert;
+- a group joined with a full link (an older app) when the directory sends the short link: Open's online plan finds it known and shows the "Open group" alert;
 - a member added by invitation, or one who joined through a link the owner has since replaced: the online plan is `Ok`, so Open prepares and opens a second copy of the group without asking (before, the "Open group?" confirm led to the same copy).
 
-Accepted for now: channels, the directory's main content, are always joined through a prepared group. "Already joining" is reachable only for entries the directory sends with a full link, since a short link's connecting plan needs a network fetch. The core test "short link without resolving: prepared and joined group known, /c join not found" (tests/ChatTests/Groups.hs) pins the store-only contract, including the `/c` case.
+Accepted for now: channels, the directory's main content, are always joined through a prepared group. "Already joining" is reachable for a short-link entry with a pending `/c` join and for entries the directory sends with a full link. The core tests "short link without resolving: prepared and /c-joined groups known, invited member not found" and "short link without resolving: pending /c join is connecting" (tests/ChatTests/Groups.hs) pin the store-only contract, including the `/c` and invited-member cases.
 
 ### Affected Locations
 
@@ -377,11 +377,11 @@ Accepted for now: channels, the directory's main content, are always joined thro
 
 ### Impact
 
-A group the user is already in can appear as a result with Open. For a group joined with `/c`, Open shows the known group's alert and joining is not repeated; for an invited member, Open adds a second, prepared copy of the group to the chat list.
+A group the user is already in can appear as a result with Open. For a group joined with a full link, Open shows the known group's alert and joining is not repeated; for an invited member, Open adds a second, prepared copy of the group to the chat list.
 
 ### Recommendation
 
-Let the store-only plan recognise joins made without a prepared group (a lookup by the connection's `via_short_link_contact`, mapped as the online plan maps a join request); it would cover `/c` joins, not invited members.
+Recognising invited members needs a link in the group record that matches the listed one, which they don't have today: the owner would have to share the group's current link, a protocol change.
 
 ---
 

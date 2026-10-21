@@ -64,16 +64,16 @@ The Haskell Store modules (`Store/Direct.hs`, `Store/Groups.hs`, `Store/Messages
 
 ## Online Search
 
-### GAP: Groups joined without a prepared group still appear as results with Open
+### GAP: Groups joined without the listed short link still appear as results with Open
 **Source:** [spec/client/chat-list.md](../spec/client/chat-list.md#11-online-search)
-A directory entry is matched to a local chat by a store-only plan of its link (`resolve=never`), which finds a group only when it was prepared from that short link (every short-link join in current apps, Open included) or joined with the full link the directory sends. A group joined without a prepared group shows as a result with Open beside its own chat row:
+A directory entry is matched to a local chat by a store-only plan of its link (`resolve=never`), which finds a group only when it was prepared from that short link (every short-link join in current apps, Open included), joined with `/c` and that short link (the join connection stores the full link under it), or joined with the full link the directory sends. A group joined otherwise shows as a result with Open beside its own chat row:
 
-- a group (not a channel: `/c` with a channel link prepares it) joined with `/c`, an older app, or a full link when the directory sends the short link: Open's online plan finds it known and shows the "Open group" alert;
+- a group joined with a full link (an older app) when the directory sends the short link: Open's online plan finds it known and shows the "Open group" alert;
 - a member added by invitation, or one who joined through a link the owner has since replaced: the online plan is "ok", so Open prepares and opens a second copy of the group without asking (before, the "Open group?" confirm led to the same copy).
 
-Accepted for now: channels, the directory's main content, are always joined through a prepared group. "Already joining" is reachable only for entries the directory sends with a full link, since a short link's connecting plan needs a network fetch. A core test pins the store-only contract, including the `/c` case.
+Accepted for now: channels, the directory's main content, are always joined through a prepared group. "Already joining" is reachable for a short-link entry with a pending `/c` join and for entries the directory sends with a full link. Core tests pin the store-only contract, including the `/c` and invited-member cases.
 
-**REC:** Let the store-only plan recognise joins made without a prepared group (a lookup by the connection's `via_short_link_contact`, mapped as the online plan maps a join request); it would cover `/c` joins, not invited members.
+**REC:** Recognising invited members needs a link in the group record that matches the listed one, which they don't have today: the owner would have to share the group's current link, a protocol change.
 
 ### GAP: The count of results left can include listings the directory never sends
 **Source:** [spec/client/chat-list.md](../spec/client/chat-list.md#11-online-search)

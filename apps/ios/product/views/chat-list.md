@@ -53,7 +53,7 @@ Searching beyond the user's own chats happens only when the user asks, and the r
 | Load row | The last row of the results: "Load more · N left" when the directory says how many matches are left, "Load more" otherwise; greyed while a page loads. A failed request turns it into "Search failed, tap to retry". Nothing loads more pages automatically |
 | Page note | When every result of the last page loaded is a chat already in the list, "All results on this page are already in your chats" (secondary colour), followed by the load row when there are more pages |
 
-A result is not shown twice: an entry for a chat already shown in the list is hidden, and one the list doesn't show is drawn once, as the chat. A group joined without preparing it first (with an older app, by `/c`, or added by invitation) is not recognised: it appears as a result with "Open" beside its own chat. Directory entries that are not group or channel links are ignored.
+A result is not shown twice: an entry for a chat already shown in the list is hidden, and one the list doesn't show is drawn once, as the chat. A group joined without the listed short link (with a full link from an older app, or added by invitation) is not recognised: it appears as a result with "Open" beside its own chat. Directory entries that are not group or channel links are ignored.
 
 With the one-hand UI the whole list is mirrored: going up from the search field at the bottom come the local chats, then your chats from the results, then the other results, with the load row at the top, farthest from the field. This order is intended, so the user's own chats stay nearest the field.
 
