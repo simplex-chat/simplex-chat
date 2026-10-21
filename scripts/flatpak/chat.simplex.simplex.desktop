@@ -5,6 +5,6 @@ Name=SimpleX Chat
 Comment=A private & encrypted open-source messenger without any user IDs (not even random ones)!
 Keywords=chat;message;private;secure;simplex;
 Categories=Utility;Chat;InstantMessaging;
-Exec=simplex %U
+Exec=env _JAVA_AWT_WM_NONREPARENTING=1 simplex %U
 Icon=chat.simplex.simplex
 StartupWMClass=simplex-chat
