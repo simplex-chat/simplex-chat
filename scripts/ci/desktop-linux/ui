@@ -14,6 +14,7 @@
 #   ui ink <text>                 print the height in pixels of the text's ink, to compare text sizes
 #   ui wait <text> [secs]         wait up to secs (30) until the text is on screen
 #   ui click <x> <y>              click at x,y
+#   ui right-click <x> <y>        right-click at x,y, e.g. to open a list row's menu
 #   ui click-text <text> [secs]   wait up to secs (20) for the text and click its centre
 #   ui scroll <x> <y> <up|down> [clicks]
 #                                 turn the mouse wheel over x,y, 3 clicks unless given
@@ -156,7 +157,7 @@ shot() {
 }
 
 click() {
-  xdotool mousemove --sync "$1" "$2" click 1
+  xdotool mousemove --sync "$1" "$2" click "${3:-1}"
   sleep 1
 }
 
@@ -233,6 +234,10 @@ case "${1:-}" in
   click)
     click "$2" "$3"
     log "click $2,$3"
+    ;;
+  right-click)
+    click "$2" "$3" 3
+    log "right-click $2,$3"
     ;;
   click-text)
     secs=${3:-20}
