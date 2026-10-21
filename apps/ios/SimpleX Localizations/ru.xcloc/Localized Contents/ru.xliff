@@ -264,9 +264,9 @@ channel subscriber relay bar</note>
         <target state="translated">%d сек</target>
         <note>time interval</note>
       </trans-unit>
-      <trans-unit id="%d seconds(s)" xml:space="preserve">
+      <trans-unit id="%d seconds(s)" xml:space="preserve" approved="no">
         <source>%d seconds(s)</source>
-        <target>%d секунд</target>
+        <target state="translated">%d секунд</target>
         <note>delete after time</note>
       </trans-unit>
       <trans-unit id="%d skipped message(s)" xml:space="preserve" approved="no">
@@ -618,9 +618,9 @@ time interval</note>
         <note>delete after time
 time interval</note>
       </trans-unit>
-      <trans-unit id="1 year" xml:space="preserve">
+      <trans-unit id="1 year" xml:space="preserve" approved="no">
         <source>1 year</source>
-        <target>1 год</target>
+        <target state="translated">1 год</target>
         <note>delete after time</note>
       </trans-unit>
       <trans-unit id="1-time link" xml:space="preserve" approved="no">
@@ -832,9 +832,9 @@ swipe action</note>
         <target state="translated">Добавить друзей</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add list" xml:space="preserve">
+      <trans-unit id="Add list" xml:space="preserve" approved="no">
         <source>Add list</source>
-        <target>Добавить список</target>
+        <target state="translated">Добавить список</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add message" xml:space="preserve" approved="no">
@@ -887,9 +887,9 @@ swipe action</note>
         <target state="translated">Добавить на другое устройство</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add to list" xml:space="preserve">
+      <trans-unit id="Add to list" xml:space="preserve" approved="no">
         <source>Add to list</source>
-        <target>Добавить в список</target>
+        <target state="translated">Добавить в список</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add welcome message" xml:space="preserve" approved="no">
@@ -972,9 +972,9 @@ swipe action</note>
         <target state="translated">Дополнительные настройки</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All" xml:space="preserve">
+      <trans-unit id="All" xml:space="preserve" approved="no">
         <source>All</source>
-        <target>Все</target>
+        <target state="translated">Все</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All app data is deleted." xml:space="preserve" approved="no">
@@ -1255,9 +1255,9 @@ swipe action</note>
         <source>Annual</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Another reason" xml:space="preserve">
+      <trans-unit id="Another reason" xml:space="preserve" approved="no">
         <source>Another reason</source>
-        <target>Другая причина</target>
+        <target state="translated">Другая причина</target>
         <note>report reason</note>
       </trans-unit>
       <trans-unit id="Answer call" xml:space="preserve" approved="no">
@@ -1340,9 +1340,9 @@ swipe action</note>
         <target state="translated">Применить к</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Archive" xml:space="preserve">
+      <trans-unit id="Archive" xml:space="preserve" approved="no">
         <source>Archive</source>
-        <target>Архивировать</target>
+        <target state="translated">Архивировать</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Archive %lld reports?" xml:space="preserve" approved="no">
@@ -1365,14 +1365,14 @@ swipe action</note>
         <target state="translated">Архивируйте контакты чтобы продолжить переписку.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Archive report" xml:space="preserve">
+      <trans-unit id="Archive report" xml:space="preserve" approved="no">
         <source>Archive report</source>
-        <target>Архивировать сообщение о нарушении</target>
+        <target state="translated">Архивировать сообщение о нарушении</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Archive report?" xml:space="preserve">
+      <trans-unit id="Archive report?" xml:space="preserve" approved="no">
         <source>Archive report?</source>
-        <target>Архивировать сообщение о нарушении?</target>
+        <target state="translated">Архивировать сообщение о нарушении?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Archive reports" xml:space="preserve" approved="no">
