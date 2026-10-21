@@ -126,6 +126,31 @@ Shown when `selectedChatItems != null`:
 
 When `timedMessageAllowed` is true, compose bar includes a timer icon for setting message disappear time via `customDisappearingMessageTimePref`.
 
+### Desktop Flat Layout (experimental)
+
+Desktop only, enabled by "Flat layout (experimental)" in Developer options while developer tools are on. Applies to all chats, including reports and member support chats in the end panel. The aim is a lean, Discord-like look that keeps SimpleX features. The chat pane keeps the theme background and wallpaper; the rail and chat list are shaded (see [chat-list.md](chat-list.md)).
+
+| Element | Description |
+|---|---|
+| Message rows | Full-width rows; sent and received messages are both aligned left. Text, media and deleted messages have no bubble, tail or background; group invitations and error items keep their rounded coloured card |
+| Sender header | Avatar, name, role label and time on the first message of a group. The role label is the member role when above Member, or "channel" for channel posts (including an owner posting as the channel). Shown again after an event, a date change, a sender change (including an owner switching between posting as the channel and as themselves), or a gap of 60 seconds or more |
+| Continuation rows | No avatar or name; the time appears small and right-aligned in the left gutter on hover |
+| Avatar click | Received group message: member info; received direct or channel message: chat info. Own messages: none, except a post shown as the channel, which opens chat info |
+| Row background | Light tint over the hovered row; a stronger primary tint on a highlighted message (for example after jumping to a quoted message). Both are drawn as a rounded shape slightly inset from the pane edges |
+| Avatars | Placeholder avatars get extra contrast against shaded and light backgrounds |
+| Hover action bar | Inside the top-right of the hovered row, for items with message content only (events, calls, errors, group invitations and moderated items have no bar; marked-deleted messages show only More): 3 quick reactions, add reaction (remaining reactions), reply, forward, and More (opens the regular context menu). Each button follows the same rules as the context menu. Hidden in selection mode and when the pointer leaves the row, unless the reaction picker is open |
+| Message time | Not shown inside the message. Sent messages keep their delivery status; edited, timer and other icons stay. A received message with nothing but the time shows no meta and reserves no space for it |
+| Replies | One compact line above the message instead of the quote block: reply icon, small avatar of the quoted sender, the sender name in semibold (long names truncated), and a one-line snippet. Media without text shows its type; a voice message shows "Voice message" and its duration. Clicking the line scrolls to the quoted message; hovering darkens its text; long-press or right-click opens the message menu |
+| Forwarded and report headers | No background |
+| Deleted messages | Transparent, 14sp italic text, no time |
+| Reactions | Rounded pills with the count always shown; your own reactions are tinted |
+| Date separators | Date in a pill on a full-width line |
+| Voice messages | Not mirrored for sent messages |
+| Search results | The "go to message" button is always on the right |
+| Compose field | A rounded, lightly filled field with margins; no divider above the compose area |
+
+The context menu and multi-select work as in the bubble layout. The Appearance bubble preview keeps the bubble look.
+
 ## Source Files
 
 | File | Path |

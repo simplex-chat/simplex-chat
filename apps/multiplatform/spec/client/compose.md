@@ -62,7 +62,7 @@ ComposeView
 
 ## 2. ComposeState Data Class
 
-**Location:** [`ComposeView.kt#L98`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt#L98)
+**Location:** [`ComposeView.kt#L110`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt#L110)
 
 ```kotlin
 @Serializable
@@ -144,7 +144,7 @@ Tracks a live (streaming) message: the associated `ChatItem`, the currently type
 
 ## 3. ComposePreview Sealed Class
 
-**Location:** [`ComposeView.kt#L52`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt#L52)
+**Location:** [`ComposeView.kt#L63`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt#L63)
 
 ```kotlin
 sealed class ComposePreview {
@@ -176,7 +176,7 @@ Used within `MediaPreview` to track the source type:
 
 ## 4. ComposeContextItem Sealed Class
 
-**Location:** [`ComposeView.kt#L61`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt#L61)
+**Location:** [`ComposeView.kt#L73`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt#L73)
 
 ```kotlin
 sealed class ComposeContextItem {
@@ -210,7 +210,7 @@ sealed class ComposeContextItem {
 
 ## 5. SendMsgView
 
-**Location:** [`SendMsgView.kt#L36`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/SendMsgView.kt#L36)
+**Location:** [`SendMsgView.kt#L35`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/SendMsgView.kt#L35)
 
 ```kotlin
 fun SendMsgView(
@@ -261,6 +261,8 @@ The view is a `Box` containing:
    - **Send button:** Arrow icon (new message) or checkmark (editing/live). Long-press opens dropdown:
      - "Send live message" option
      - Timed message options (1min, 5min, 1hr, 8hr, 1day, 1week, 1month, custom)
+
+In the desktop flat layout, `ComposeView` hides its top `Divider` and wraps the main input row and the "send message to connect" row (attachment buttons plus `SendMsgView`) in `Modifier.flatComposeField()`: a rounded field (8dp corner, `onBackground` at 6%) with 12dp horizontal and 8dp vertical margins. See [chat-view.md](chat-view.md#FlatLayout).
 
 ### RecordingState
 
@@ -350,7 +352,7 @@ When `privacyLinkPreviews` is enabled and the message contains a URL:
 
 ## 7. Draft Persistence
 
-**Location:** [`ComposeView.kt#L1394`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt#L1394) (`KeyChangeEffect(chatModel.chatId.value)`)
+**Location:** [`ComposeView.kt#L1395`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt#L1395) (`KeyChangeEffect(chatModel.chatId.value)`)
 
 Controlled by the `privacySaveLastDraft` preference.
 

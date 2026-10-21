@@ -1,6 +1,6 @@
 # Navigation Specification
 
-Source: `common/src/commonMain/kotlin/chat/simplex/common/App.kt` (470 lines)
+Source: `common/src/commonMain/kotlin/chat/simplex/common/App.kt` (513 lines)
 
 ---
 
@@ -27,10 +27,10 @@ SimpleX Chat navigation is a platform-adaptive system implemented in `App.kt`. T
 ## 1. Overview
 
 ```
-AppScreen (line 46)
+AppScreen (line 48)
 +-- SimpleXTheme
     +-- Surface
-        +-- MainScreen (line 82)
+        +-- MainScreen (line 85)
             |-- [Migration in progress]     -> DefaultProgressView
             |-- [Database opening]          -> DefaultProgressView
             |-- [Database error]            -> DatabaseErrorView
@@ -39,11 +39,12 @@ AppScreen (line 46)
             |-- [Onboarding complete]
             |   |-- [Android]
             |   |   +-- AndroidWrapInCallLayout
-            |   |       +-- AndroidScreen (line 293)
+            |   |       +-- AndroidScreen (line 313)
             |   |           |-- StartPartOfScreen (ChatListView)
             |   |           +-- ChatView (slide-in panel)
             |   +-- [Desktop]
-            |       +-- DesktopScreen (line 406)
+            |       +-- DesktopScreen (line 434)
+            |           |-- DesktopRail (far left, flat layout only)
             |           |-- StartPartOfScreen + UserPicker (left column)
             |           |-- ModalManager.start (overlay on left)
             |           |-- CenterPartOfScreen / ChatView (center column)
@@ -59,7 +60,7 @@ AppScreen (line 46)
 
 ## 2. AppScreen Composable
 
-**Location:** [`App.kt#L47`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L47)
+**Location:** [`App.kt#L48`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L48)
 
 ```kotlin
 @Composable
@@ -79,7 +80,7 @@ fun AppScreen()
 
 ## 3. MainScreen
 
-**Location:** [`App.kt#L84`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L84)
+**Location:** [`App.kt#L85`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L85)
 
 ```kotlin
 @Composable
@@ -134,7 +135,7 @@ App links use the app's own scheme, `simplexchat:`, for everything that is not a
 
 ## 4. Android Layout
 
-**Location:** [`App.kt#L296`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L296)
+**Location:** [`App.kt#L313`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L313)
 
 ```kotlin
 @Composable
@@ -165,7 +166,7 @@ If the device has a display cutout on horizontal sides (detected via `WindowInse
 
 ### Call Layout Wrapper
 
-`AndroidWrapInCallLayout` (line ~279) adds a 40dp top padding when an active call is in progress (not in `WaitCapabilities` or `InvitationAccepted` state), with an `ActiveCallInteractiveArea` banner above.
+`AndroidWrapInCallLayout` (line ~298) adds a 40dp top padding when an active call is in progress (not in `WaitCapabilities` or `InvitationAccepted` state), with an `ActiveCallInteractiveArea` banner above.
 
 ---
 
@@ -173,34 +174,55 @@ If the device has a display cutout on horizontal sides (detected via `WindowInse
 
 ## 5. Desktop Layout
 
-**Location:** [`App.kt#L410`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L410)
+**Location:** [`App.kt#L434`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L434)
 
 ```kotlin
 @Composable
 fun DesktopScreen(userPickerState: MutableStateFlow<AnimatedViewState>)
 ```
 
+`DesktopScreen` provides `LocalFlatLayout` and delegates to the private `DesktopScreenLayout`, which draws the columns below.
+
+### Flat Layout Flag
+
+| Symbol | Location | Description |
+|---|---|---|
+| `LocalFlatLayout` | [`App.kt#L427`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L427) | `staticCompositionLocalOf { false }`; read by chat item, chat list and preview views to switch to the flat layout |
+| `desktopFlatLayoutEnabled` | [`App.kt#L429-L430`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L429-L430) | `appPlatform.isDesktop && developerTools && desktopFlatLayout`; also read outside composition by `ModalManager` |
+
+`DesktopScreen` provides `LocalFlatLayout = desktopFlatLayoutEnabled`, so the flag covers every column and `ModalManager.fullscreen`. Turning developer tools off disables the layout without changing the `desktopFlatLayout` preference. See [chat-view.md](chat-view.md#FlatLayout) and [chat-list.md](chat-list.md#DesktopRail).
+
 ### 3-Column Layout
 
 | Column | Width | Content |
 |---|---|---|
+| **Rail** (flat layout only) | `DESKTOP_RAIL_WIDTH * fontSizeSqrtMultiplier` (64dp, fixed) | `DesktopRail`: users, tag filters, settings |
 | **Left** | `DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier` (fixed) | `StartPartOfScreen` (ChatListView) + `UserPicker` overlay |
 | **Left overlay** | Same as left column | `ModalManager.start` modals + `SwitchingUsersView` |
 | **Center** | `min = DEFAULT_MIN_CENTER_MODAL_WIDTH`, `weight = 1f` (flexible) | `CenterPartOfScreen` (ChatView with `ModalManager.center` over it; without a chat: `ModalManager.center` or "no selected chat" placeholder) |
 | **Right** | `max = DEFAULT_END_MODAL_WIDTH * fontSizeSqrtMultiplier` (flexible, 0 when empty) | `ModalManager.end` (ChatInfoView, GroupChatInfoView, ChatItemInfoView, etc.) |
 
+In the flat layout the rail is added before the left column and every start offset (left column, left overlay, center/right row, dismiss overlay) is shifted by the rail width; the left column keeps its width because the desktop `UserPicker` layout assumes it. When an end modal opens, `ModalManager` expands the window by the rail width as well.
+
+The left column content (`StartPartOfScreen` and `UserPicker`) is a remembered `movableContentOf`, so toggling the flat layout keeps its state. In the flat layout it is wrapped in `FlatListSurface`, which paints the list shade and overrides the theme background for that pane only (see [chat-list.md](chat-list.md#DesktopRail)); the rail is painted with `flatRailColor()`, and the chat pane keeps the theme background and wallpaper.
+
+Known limitations of the flat surfaces:
+- start-pane modals (`ModalManager.start`), `ShareListView` and `SetDeliveryReceiptsView` use the plain theme background over the shaded list;
+- the app-bar blur underlay uses the plain theme background;
+- in dark themes the list is lighter than the chat, which keeps wallpapers untouched.
+
 ### Column Separators
 
-- `VerticalDivider` between left and center columns (always visible).
+- `VerticalDivider` between left and center columns (always visible in the regular layout; not drawn in the flat layout, where the rail, list and chat are separated by their shades).
 - `VerticalDivider` between center and right columns (visible when `ModalManager.end.hasModalsOpen()`).
 
 ### Click-to-Dismiss Overlay
 
-When the UserPicker is visible or a start modal is open (but no center modal), a full-size clickable overlay covers the center+right area (line ~428). Clicking it closes start modals and hides the UserPicker.
+When the UserPicker is visible or a start modal is open (but no center modal), a full-size clickable overlay covers the center+right area (line ~473). Clicking it closes start modals and hides the UserPicker.
 
 ### CenterPartOfScreen
 
-**Location:** [`App.kt#L373`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L373)
+**Location:** [`App.kt#L390`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L390)
 
 - When `chatId` is null and no center modals: shows "No selected chat" placeholder.
 - When `chatId` is null and center modals open: shows `ModalManager.center`.
@@ -209,7 +231,7 @@ When the UserPicker is visible or a start modal is open (but no center modal), a
 
 ### StartPartOfScreen
 
-**Location:** [`App.kt#L352`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L352)
+**Location:** [`App.kt#L369`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L369)
 
 Routes between:
 - `SetDeliveryReceiptsView` (if `chatModel.setDeliveryReceipts` is true)
@@ -220,7 +242,7 @@ Routes between:
 
 ## 6. ModalManager
 
-**Location:** `common/src/commonMain/kotlin/chat/simplex/common/views/helpers/ModalView.kt` (line 92)
+**Location:** `common/src/commonMain/kotlin/chat/simplex/common/views/helpers/ModalView.kt` (line 100)
 
 ```kotlin
 class ModalManager(private val placement: ModalPlacement?)
@@ -368,7 +390,7 @@ The stage value is stored in `appPrefs.onboardingStage` and persisted across app
 
 | File | Description |
 |---|---|
-| `App.kt` | AppScreen, MainScreen, AndroidScreen, DesktopScreen, StartPartOfScreen, CenterPartOfScreen, EndPartOfScreen |
+| `App.kt` | AppScreen, MainScreen, AndroidScreen, DesktopScreen, StartPartOfScreen, CenterPartOfScreen, EndPartOfScreen, LocalFlatLayout |
 | `AppLock.kt` | AppLock object, authentication state, lock notice, LA mode selection |
 | `views/helpers/ModalView.kt` | ModalManager class, ModalPlacement enum, modal stack management |
 | `views/onboarding/OnboardingView.kt` | OnboardingStage enum |
@@ -380,6 +402,7 @@ The stage value is stored in `appPrefs.onboardingStage` and persisted across app
 | `views/onboarding/SetNotificationsMode.kt` | Step 4: Notification setup |
 | `views/chatlist/ChatListView.kt` | Chat list (StartPartOfScreen content) |
 | `views/chatlist/UserPicker.kt` | User switching panel |
+| `views/chatlist/DesktopRail.kt` | Desktop flat layout rail (users, tag filters, settings) |
 | `views/chat/ChatView.kt` | Chat view (CenterPartOfScreen content) |
 | `views/database/DatabaseErrorView.kt` | Database error recovery |
 | `views/SplashView.kt` | Splash / loading screen |

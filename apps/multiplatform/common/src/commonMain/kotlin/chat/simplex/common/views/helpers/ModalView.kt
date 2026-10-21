@@ -9,10 +9,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import chat.simplex.common.desktopFlatLayoutEnabled
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import LocalCardScreen
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.chatlist.DESKTOP_RAIL_WIDTH
 import chat.simplex.common.views.chatlist.StatusBarBackground
 import chat.simplex.common.views.onboarding.OnboardingStage
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -147,7 +150,8 @@ class ModalManager(private val placement: ModalPlacement? = null) {
     _modalCount.value = modalViews.size - toRemove.size
 
     if (placement == ModalPlacement.END) {
-      desktopExpandWindowToWidth(DEFAULT_START_MODAL_WIDTH * sqrt(appPrefs.fontScale.get()) + DEFAULT_MIN_CENTER_MODAL_WIDTH + DEFAULT_END_MODAL_WIDTH * sqrt(appPrefs.fontScale.get()))
+      val railWidth = if (desktopFlatLayoutEnabled) DESKTOP_RAIL_WIDTH else 0.dp
+      desktopExpandWindowToWidth((railWidth + DEFAULT_START_MODAL_WIDTH) * sqrt(appPrefs.fontScale.get()) + DEFAULT_MIN_CENTER_MODAL_WIDTH + DEFAULT_END_MODAL_WIDTH * sqrt(appPrefs.fontScale.get()))
     }
   }
 

@@ -16,12 +16,13 @@ Source: `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatLis
 8. [UserPicker](#8-userpicker)
 9. [Source Files](#9-source-files)
 10. [Crowdfunding Banner](#10-crowdfunding-banner)
+11. [Desktop Rail](#11-desktop-rail)
 
 ---
 
 ## Executive Summary
 
-The Chat List is the landing screen of SimpleX Chat, rendering all conversations for the active user. Built around `ChatListView` (line 179 in `ChatListView.kt`), it provides a searchable, filterable `LazyColumn` of chat previews with a toolbar, tag-based filtering, and a user-switching side panel. The view adapts between one-hand UI mode (toolbar at bottom, reversed list) and standard mode (toolbar at top). Search also accepts SimpleX links for direct connection.
+The Chat List is the landing screen of SimpleX Chat, rendering all conversations for the active user. Built around `ChatListView` (line 217 in `ChatListView.kt`), it provides a searchable, filterable `LazyColumn` of chat previews with a toolbar, tag-based filtering, and a user-switching side panel. The view adapts between one-hand UI mode (toolbar at bottom, reversed list) and standard mode (toolbar at top). Search also accepts SimpleX links for direct connection.
 
 ---
 
@@ -30,7 +31,7 @@ The Chat List is the landing screen of SimpleX Chat, rendering all conversations
 ```
 ChatListView
 |-- ChatListToolbar               (top or bottom app bar)
-|   |-- UserProfileButton         (opens UserPicker)
+|   |-- UserProfileButton         (opens UserPicker; in desktop flat layout only when desktopNoUserNoRemote)
 |   |-- Title ("Your chats")
 |   |-- SubscriptionStatusIndicator
 |   +-- NewChatButton / StoppedIndicator
@@ -39,7 +40,7 @@ ChatListView
 |   |   |-- Spacer (top/bottom padding)
 |   |   |-- stickyHeader
 |   |   |   |-- ChatListSearchBar (search input + filter toggle)
-|   |   |   +-- TagsView          (preset + custom tag chips)
+|   |   |   +-- TagsView          (preset + custom tag chips; hidden in desktop flat layout)
 |   |   |-- ChatListNavLinkView[] (per-chat row items)
 |   |   +-- ChatListFeatureCards  (one-hand UI card, address card)
 |   +-- EmptyState text
@@ -54,7 +55,7 @@ ChatListView
 
 ## 2. ChatListView Composable
 
-**Location:** [`ChatListView.kt#L179`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L179)
+**Location:** [`ChatListView.kt#L217`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L217)
 
 ```kotlin
 fun ChatListView(
@@ -67,8 +68,8 @@ fun ChatListView(
 
 ### Initialization
 
-- Shows "What's New" modal on first launch after update (line ~185), with a 1-second delay.
-- On desktop, closing a chat resets audio/video players (line ~193).
+- Shows "What's New" modal on first launch after update (line ~221), with a 1-second delay.
+- On desktop, closing a chat resets audio/video players (line ~236).
 
 ### Layout Modes
 
@@ -89,8 +90,8 @@ The `oneHandUI` preference (`appPrefs.oneHandUI.state`) controls the layout:
 
 ### Android-specific
 
-- `SetNotificationsModeAdditions`: Notification permission setup (line ~243).
-- `UserPicker`: Overlay side panel for user switching (line ~247).
+- `SetNotificationsModeAdditions`: Notification permission setup (line ~281).
+- `UserPicker`: Overlay side panel for user switching (line ~285).
 
 ---
 
@@ -114,7 +115,7 @@ The `oneHandUI` preference (`appPrefs.oneHandUI.state`) controls the layout:
 
 ### Active Filter Types
 
-Defined as sealed class `ActiveFilter` (line ~59):
+Defined as sealed class `ActiveFilter` (line ~62):
 
 ```kotlin
 sealed class ActiveFilter {
@@ -132,12 +133,13 @@ sealed class ActiveFilter {
 | `FAVORITES` | Chats marked as favorite |
 | `CONTACTS` | Direct (1:1) chats |
 | `GROUPS` | Group chats |
+| `CHANNELS` | Channels |
 | `BUSINESS` | Business-type chats |
 | `NOTES` | Local note folders |
 
 ### Search Filtering
 
-The `filteredChats` function (line ~1474) applies filters in this order:
+The `filteredChats` function (line ~1543) applies filters in this order:
 
 1. **SimpleX link match:** If a pasted link resolved to a known contact/group, show only that chat.
 2. **Text search:** Case-insensitive match against `chat.chatInfo.chatViewName`, `chat.chatInfo.fullName`, and `chat.chatInfo.localAlias`.
@@ -148,7 +150,7 @@ The `filteredChats` function (line ~1474) applies filters in this order:
 
 ### Search Bar
 
-`ChatListSearchBar` (line ~765) provides:
+`ChatListSearchBar` (line ~789) provides:
 - Text input with search icon.
 - SimpleX link detection: When a pasted string contains a single SimpleX link, it triggers `planAndConnect` for connection, suppressing normal search.
 - Unread filter toggle button (right side, when search is empty).
@@ -159,7 +161,7 @@ The `filteredChats` function (line ~1474) applies filters in this order:
 
 ## 5. Chat Preview
 
-**Location:** [`ChatPreviewView.kt#L41`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatPreviewView.kt#L41)
+**Location:** [`ChatPreviewView.kt#L42`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatPreviewView.kt#L42)
 
 ```kotlin
 fun ChatPreviewView(
@@ -196,6 +198,14 @@ When `chatModelDraftChatId` matches the chat ID, the preview shows a draft indic
 - Inactive contacts: cancel icon overlay on profile image.
 - Left/removed/deleted groups: cancel icon overlay.
 
+### Compact Row (Desktop Flat Layout)
+
+When `LocalFlatLayout.current` is true, `ChatPreviewView` renders a single line and returns early: `ChatInfoImage` at `COMPACT_CHAT_IMAGE_SIZE` (28dp, scaled by `fontSizeSqrtMultiplier`) with `chatPreviewImageOverlayIcon()` (the inactive icon at 12sp), `chatPreviewTitle()`, `chatPreviewUnreadIndicator()`, a 4sp spacer and `chatStatusImage()`. There is no last message, draft or timestamp. `chatPreviewUnreadIndicator()` is a local composable (unread count or mention badge, muted icon, or favorite star) shared with the regular layout; in the flat layout its `UnreadBadge` has no vertical offset.
+
+Titles of direct and group chats use `titleStyle` and `titleWeight`: `body1`, SemiBold when the chat has unread messages and Normal otherwise (the regular layout keeps `h3` Bold). A title without its own color is drawn in `secondary` when notifications are off and there are no unread mentions. A `LaunchedEffect` on `chatModel.deletedChats` stops a playing voice message of the chat's last item when the chat is deleted, as the voice preview does in the regular row.
+
+`ContactRequestView` and `ContactConnectionView` use `COMPACT_CHAT_IMAGE_SIZE` for their image in the flat layout.
+
 ---
 
 <a id="ChatListNavLinkView"></a>
@@ -219,13 +229,15 @@ Routes each chat to the appropriate click action and context menu based on `chat
 
 On desktop, the currently selected chat (`chatModel.chatId.value == chat.id`) receives a highlight background. `nextChatSelected` state is used to suppress the bottom divider when the next chat in the list is selected.
 
+In the desktop flat layout, [`ChatListNavLinkLayout`](../../common/src/desktopMain/kotlin/chat/simplex/common/views/chatlist/ChatListNavLinkView.desktop.kt#L37-L77) insets each row by 6dp horizontally and 1dp vertically and clips it to 6dp rounded corners, uses 4dp vertical padding instead of 8dp, draws the selected row at `onBackground` 10% (5% in the regular layout), and draws no dividers.
+
 ---
 
 ## 7. Tag System
 
 ### TagsView
 
-**Location:** [`ChatListView.kt#L1214`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L1214)
+**Location:** [`ChatListView.kt#L1282`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L1282)
 
 Renders a horizontally scrollable row of tag chips (via `TagsRow`, which is a platform-specific `expect` composable).
 
@@ -240,6 +252,8 @@ Layout logic:
 - **Single tap:** Toggles the tag filter on `chatModel.activeChatTagFilter`.
 - **Long press / right-click (user tags):** Opens dropdown menu with edit/delete/reorder options.
 - **Unread dot:** Shown on tags that have chats with unread messages.
+
+In the desktop flat layout, `TagsView` renders nothing and the tags move to the rail (section 11); `ChatList` also omits the divider between `TagsView` and the connect-by-name row, so no double divider appears. [`presetTagLabel()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L1610) is `internal` so the rail uses the same icons and labels.
 
 <a id="TagListView"></a>
 
@@ -282,6 +296,11 @@ fun UserPicker(
 - On Desktop, when there is no active user and no mobile is in use (`desktopNoUserNoRemote`), the SimpleX address and Chat preferences rows and the divider below them are hidden.
 - The SimpleX address row opens `UserAddressView` in `ModalManager.start`. With no active user (`currentUser == null`) the modal draws nothing and closes itself when it is the top modal (`ModalManager.start.isLastModal`); if another screen covers it, it closes when the user goes back to it.
 - The Chat preferences row closes its modal the same way when there is no active user.
+- **Desktop flat layout:** The toolbar shows the profile button only when `chatModel.desktopNoUserNoRemote`, and hides the Settings menu button shown when there are no users (the rail has Settings). Clicking the active user's avatar in the rail opens the picker.
+
+Selecting another user calls [`switchToUser(user)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/UserPicker.kt#L670-L677), which closes all modals and calls `changeActiveUser` with progress. The rail uses the same function.
+
+[`profileSwitchAllowed(sharedContent)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ShareListView.kt#L225-L226) is false while sharing a forward, a chat link or the user address; `ShareListView` and the rail use it to block profile switching.
 
 ### Content
 
@@ -316,6 +335,7 @@ Uses `AnimatedViewState` (`GONE`, `VISIBLE`, `HIDING`) with a `MutableStateFlow`
 | `ShareListView.kt` | Share target list (forwarding flow) |
 | `TagListView.kt` | Tag management and assignment view |
 | `UserPicker.kt` | User switching side panel |
+| `DesktopRail.kt` | Desktop flat layout rail: users, tag filters, settings |
 | `GetStakeBanner.kt` | Crowdfunding banner and the shared banner card chrome |
 
 ---
@@ -324,7 +344,7 @@ Uses `AnimatedViewState` (`GONE`, `VISIBLE`, `HIDING`) with a `MutableStateFlow`
 
 ## 10. Crowdfunding Banner
 
-**Location:** [`GetStakeBanner.kt#L31`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/GetStakeBanner.kt#L31)
+**Location:** [`GetStakeBanner.kt#L35`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/GetStakeBanner.kt#L35)
 
 ```kotlin
 fun GetStakeBanner(showDismiss: Boolean, onTap: () -> Unit, onDismiss: () -> Unit)
@@ -361,3 +381,37 @@ Tapping the card runs `openGetStake()`, which opens `GetStakeView(showFirstImage
 ### Shared card chrome
 
 `Modifier.bannerCard(onTap)` (size state, gradient brush, `heightIn`, `clip`, `background`, `clickable`) and `BannerDismissButton` are declared separately from `GetStakeBanner` so other banners can adopt the same chrome; the paddings stay with the caller. The gradient reuses `gradientPoints`, `lightStops` and `darkStops` from `views/newchat/OnboardingCards.kt`.
+
+---
+
+<a id="DesktopRail"></a>
+
+## 11. Desktop Rail
+
+**Location:** [`DesktopRail.kt#L89`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DesktopRail.kt#L89)
+
+```kotlin
+fun DesktopRail(userPickerState: MutableStateFlow<AnimatedViewState>, setPerformLA: (Boolean) -> Unit)
+```
+
+Vertical column at the far left of `DesktopScreen` in the desktop flat layout (see [navigation.md](navigation.md#DesktopScreen)). Width [`DESKTOP_RAIL_WIDTH`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DesktopRail.kt#L40) (64dp) scaled by `fontSizeSqrtMultiplier`, painted with `flatRailColor()`, with no divider on its right. The scrollable users and tags area ends in a 12dp fade to the rail color; Settings sits below a divider at the bottom.
+
+### Surfaces
+
+| Function | Behavior |
+|---|---|
+| [`flatRailColor()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DesktopRail.kt#L65-L66) | Theme background darkened toward black: 7% in light themes, 50% in dark themes |
+| [`flatListColor()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DesktopRail.kt#L69-L71) | Light themes: background darkened 3.5%. Dark themes: background lifted 4.5% toward white, because darkening a near-black background is invisible |
+| [`FlatListSurface { }`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DesktopRail.kt#L74-L85) | Paints the chat-list pane with `flatListColor()` and overrides `MaterialTheme.colors.background` (to the list color) and `secondaryVariant` (to `flatContrastSecondaryVariant`, for placeholder avatar contrast) for its content only |
+
+The chat pane keeps the theme background and wallpaper. In dark themes the list is therefore lighter than the chat.
+
+### Content
+
+| Part | Function | Behavior |
+|---|---|---|
+| Users | [`RailUsers`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DesktopRail.kt#L130-L186) | Profile tiles of the active and non-hidden users, sorted by `activeOrder` descending and keyed by user id. Each tile ([`RailProfileTile`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DesktopRail.kt#L189-L199)) shows the profile image, or the [`firstGrapheme`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DesktopRail.kt#L203-L214) of the display name, uppercased, on a `primary` 15% tint. Tile corners follow the user's `profileImageCornerRadius` preference (capped at a circle) and animate to 60% of it on hover or when active. A `primary` marker on the left edge animates to 0, 40% of the tile height on hover, or 80% when active. Inactive users show `userUnreadBadge`, drawn outside the tile clip. Clicking an inactive user hides `UserPicker` if visible and calls `switchToUser`; clicking the active user closes start modals and sets `userPickerState` to `VISIBLE`. All tiles are disabled while `profileSwitchAllowed(chatModel.sharedContent)` is false or users are being switched; inactive tiles are also disabled while chat is not running and not connected to a remote host |
+| Tags | [`RailTags`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DesktopRail.kt#L217-L258) | "All" (clears `activeChatTagFilter`), preset tags with a non-zero count in `PresetTagKind` order, user tags (emoji or label icon, unread dot, long-press or right-click opens `TagsDropdownMenu`), and "Add list" opening `TagListEditor` in `ModalManager.start` |
+| Settings | [`DesktopRail`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DesktopRail.kt#L89-L127) | Bottom item below a divider, opening `SettingsView` in `ModalManager.start` as a card screen |
+
+Users and tags are shown only when `chatModel.users` is not empty. Each item is a [`RailItem`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DesktopRail.kt#L266-L313): icon (scaled by `fontSizeSqrtMultiplier`) or emoji above a one-line label, in a click area inset 6dp with 8dp rounded corners. The active item is neutral: `onBackground` icon and label on a 40x32dp (scaled) `onBackground` 10% background; inactive items use `secondary`. Clicking a preset or user tag toggles it through the private [`toggleFilter`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DesktopRail.kt#L260-L263), which sets `chatModel.activeChatTagFilter` to the tag or back to `null`, as `TagsView` does. "All", tags, "Add list", Settings and the active user tile call `ModalManager.start.closeModals()` first, because the rail stays clickable while a start-pane modal is open.

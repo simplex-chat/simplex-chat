@@ -102,7 +102,7 @@ private fun ShareListToolbar(chatModel: ChatModel, stopped: Boolean, onSearchVal
     val sharedContent = remember { chatModel.sharedContent }.value
     when {
       showSearch -> NavigationButtonBack(hideSearchOnBack)
-      (users.size > 1 || chatModel.remoteHosts.isNotEmpty()) && sharedContent !is SharedContent.Forward && sharedContent !is SharedContent.ChatLink && sharedContent !is SharedContent.MyAddress -> {
+      (users.size > 1 || chatModel.remoteHosts.isNotEmpty()) && profileSwitchAllowed(sharedContent) -> {
         val allRead = users
           .filter { u -> !u.user.activeUser && !u.user.hidden }
           .all { u -> u.unreadCount == 0 }
@@ -221,3 +221,6 @@ private fun ShareList(
     }
   }
 }
+
+internal fun profileSwitchAllowed(sharedContent: SharedContent?): Boolean =
+  sharedContent !is SharedContent.Forward && sharedContent !is SharedContent.ChatLink && sharedContent !is SharedContent.MyAddress

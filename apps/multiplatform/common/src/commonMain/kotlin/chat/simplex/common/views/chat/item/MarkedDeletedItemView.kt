@@ -1,6 +1,7 @@
 package chat.simplex.common.views.chat.item
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -11,6 +12,7 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.runtime.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import chat.simplex.common.LocalFlatLayout
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.getChatItemIndexOrNull
 import chat.simplex.common.ui.theme.*
@@ -21,15 +23,16 @@ import kotlinx.datetime.Clock
 
 @Composable
 fun MarkedDeletedItemView(chatsCtx: ChatModel.ChatsContext, ci: ChatItem, chatInfo: ChatInfo, timedMessagesTTL: Int?, revealed: State<Boolean>, showViaProxy: Boolean, showTimestamp: Boolean) {
+  val flat = LocalFlatLayout.current
   val sentColor = MaterialTheme.appColors.sentMessage
   val receivedColor = MaterialTheme.appColors.receivedMessage
   Surface(
     shape = RoundedCornerShape(18.dp),
-    color = if (ci.chatDir.sent) sentColor else receivedColor,
+    color = if (flat) Color.Transparent else if (ci.chatDir.sent) sentColor else receivedColor,
     contentColor = LocalContentColor.current
   ) {
     Row(
-      Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+      Modifier.padding(horizontal = 12.dp, vertical = if (flat) FLAT_TEXT_VERTICAL_PADDING else 6.dp),
       verticalAlignment = Alignment.CenterVertically
     ) {
       Box(Modifier.weight(1f, false)) {
@@ -82,7 +85,7 @@ private fun MergedMarkedDeletedText(chatsCtx: ChatModel.ChatsContext, chatItem: 
 
   Text(
     buildAnnotatedString {
-      withStyle(SpanStyle(fontSize = 12.sp, fontStyle = FontStyle.Italic, color = MaterialTheme.colors.secondary)) { append(text) }
+      withStyle(SpanStyle(fontSize = if (LocalFlatLayout.current) FLAT_DELETED_FONT_SIZE else 12.sp, fontStyle = FontStyle.Italic, color = MaterialTheme.colors.secondary)) { append(text) }
     },
     style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp),
     modifier = Modifier.padding(end = 8.dp),

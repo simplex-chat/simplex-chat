@@ -161,12 +161,7 @@ fun UserPicker(
     val onUserClicked: (user: User) -> Unit = { user ->
       if (!user.activeUser) {
         userPickerState.value = AnimatedViewState.HIDING
-        withBGApi {
-          controller.showProgressIfNeeded {
-            ModalManager.closeAllModalsEverywhere()
-            chatModel.controller.changeActiveUser(user.remoteHostId, user.userId, null)
-          }
-        }
+        switchToUser(user)
       } else {
         showCustomModal { chatModel, close -> UserProfileView(chatModel, close) }()
         withBGApi {
@@ -670,6 +665,15 @@ fun BoxScope.userUnreadBadge(unreadCount: Int, userMuted: Boolean, hasPadding: B
       .padding(vertical = 2.sp.toDp())
       .align(Alignment.TopEnd)
   )
+}
+
+fun switchToUser(user: User) {
+  withBGApi {
+    controller.showProgressIfNeeded {
+      ModalManager.closeAllModalsEverywhere()
+      chatModel.controller.changeActiveUser(user.remoteHostId, user.userId, null)
+    }
+  }
 }
 
 private suspend fun closePicker(userPickerState: MutableStateFlow<AnimatedViewState>) {

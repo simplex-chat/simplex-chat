@@ -387,6 +387,8 @@
 
   <!-- Chat Actions - ChatItemView.kt (and general) -->
   <string name="reply_verb">Reply</string>
+  <string name="add_reaction">Add reaction</string>
+  <string name="more_actions">More</string>
   <string name="share_verb">Share</string>
   <string name="copy_verb">Copy</string>
   <string name="save_simplex_name_question">Save SimpleX name?</string>
@@ -1175,6 +1177,7 @@
   <string name="deprecated_options_section">Deprecated options</string>
   <string name="show_internal_errors">Show internal errors</string>
   <string name="show_slow_api_calls">Show slow API calls</string>
+  <string name="desktop_flat_layout">Flat layout (experimental)</string>
   <string name="storage">Storage</string>
   <string name="storage_total">Total</string>
   <string name="shutdown_alert_question">Shutdown?</string>
