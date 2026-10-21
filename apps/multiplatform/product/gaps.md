@@ -361,17 +361,18 @@ Desktop users cannot pick a skin tone in the picker, and search in other languag
 
 ### Description
 
-Play gives a resubscription a new purchase token, so subscribing again on the same install is credited as a new purchase. On a new device or under another profile, Restore finds the subscription in Play's list and hands it over, but the service has credited the payment to the purchase key of the install that bought it and answers the new key `receipt_used`.
+Play gives a resubscription a new purchase token, so subscribing again on the same install is credited as a new purchase. On a new device or under another profile, Restore hands over the subscriptions in Play's list as restored, and the service moves the subscription to the restoring profile's purchase key. A payment moves again only once the credential issued to the key it last moved from has expired; until then Restore is answered `transfer_limited`, and the first Restore of a limited payment adds nothing and shows nothing, so only the next Restore says why. A badge bought with Stripe or crypto cannot be moved at all.
 
 ### Affected Locations
 
 - `common/src/commonMain/kotlin/chat/simplex/common/views/badges/BadgeStore.kt` -- `restorePurchases()`
-- `../../apps/simplex-badge-service/src/BadgeService/Service.hs` -- a credited receipt answered to another key
+- `../../apps/simplex-badge-service/src/BadgeService/Service.hs` -- the move limit
 
 ### Impact
 
-A subscriber who moves to a new device or profile keeps paying but cannot show the badge there, and Restore reports a refusal.
+A subscriber who moves the badge again before the previous key's credential expires waits until it does, and the first such Restore gives no reason. A badge bought with Stripe or crypto stays with the profile it was credited to.
 
 ### Recommendation
 
-1. A transfer design, in the service and the client and shared with iOS, that moves a credited subscription to a new purchase key.
+1. Restore by a receipt code for Stripe and crypto purchases, shared with iOS.
+2. Announce a limited move on the first Restore.

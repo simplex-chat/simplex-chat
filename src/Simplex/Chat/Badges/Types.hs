@@ -249,6 +249,7 @@ data BadgeServiceErrorCode
   | BSECodeExpired
   | BSEReceiptInvalid
   | BSEReceiptUsed
+  | BSETransferLimited -- the subscription moved from another key whose credential has not expired yet
   | BSETestPurchase -- the store vouched for a purchase that cost nothing: Apple's sandbox, a Play license tester
   | BSEInternal
   | BSEUnknown Text -- forwards-compatible: service is deployed ahead of clients
@@ -321,8 +322,9 @@ data OpenStorePurchase = OpenStorePurchase
 -- | Where the app found a store transaction it hands over. The store lists an account's purchases on every
 -- device signed into it, so a listed one is claimed only by a core that already has a record for it.
 data StoreReceiptOrigin
-  = SROPurchased -- the app's own purchase call, or Restore
+  = SROPurchased -- the app's own purchase call
   | SROListed -- the store's list of unfinished transactions, or its updates
+  | SRORestored -- Restore's hand-over of what the store lists as this account's, moved to this profile
   deriving (Eq, Show)
 
 instance TextEncoding BadgePurchaseStatus where
@@ -376,6 +378,7 @@ instance TextEncoding BadgeServiceErrorCode where
     BSECodeExpired -> "code_expired"
     BSEReceiptInvalid -> "receipt_invalid"
     BSEReceiptUsed -> "receipt_used"
+    BSETransferLimited -> "transfer_limited"
     BSETestPurchase -> "test_purchase"
     BSEInternal -> "internal"
     BSEUnknown t -> t
@@ -397,6 +400,7 @@ instance TextEncoding BadgeServiceErrorCode where
     "code_expired" -> BSECodeExpired
     "receipt_invalid" -> BSEReceiptInvalid
     "receipt_used" -> BSEReceiptUsed
+    "transfer_limited" -> BSETransferLimited
     "test_purchase" -> BSETestPurchase
     "internal" -> BSEInternal
     t -> BSEUnknown t

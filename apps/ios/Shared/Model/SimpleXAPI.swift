@@ -2209,9 +2209,8 @@ enum BadgePurchaseResult {
 }
 
 // log: false because a store receipt is a bearer secret, like a badge code - it is in the command.
-// listed: found in the store's list rather than bought or restored here, so core records it only into a record it has.
-func apiPurchaseBadge(_ userId: Int64, _ echoedInvoiceId: String?, listed: Bool, _ payment: ServicePayment) async throws -> BadgePurchaseResult {
-    let r: ChatResponse2 = try await chatSendCmd(.apiPurchaseBadge(userId: userId, echoedInvoiceId: echoedInvoiceId, listed: listed, payment: payment), log: false)
+func apiPurchaseBadge(_ userId: Int64, _ echoedInvoiceId: String?, origin: StoreReceiptOrigin, _ payment: ServicePayment) async throws -> BadgePurchaseResult {
+    let r: ChatResponse2 = try await chatSendCmd(.apiPurchaseBadge(userId: userId, echoedInvoiceId: echoedInvoiceId, origin: origin, payment: payment), log: false)
     switch r {
     case let .badgeState(user, badgeState, storePurchases): return .held(user: user, badgeState: badgeState, storePurchases: storePurchases ?? [])
     case let .badgeRedeemed(user, _, _, badgeState): return .credited(user: user, badgeState: badgeState)

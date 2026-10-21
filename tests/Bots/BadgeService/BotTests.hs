@@ -199,6 +199,26 @@ badgeServiceTests = do
       it "should answer other requests while a renewal check is with the store, and the renewal once the store answers" testRenewalHoldsNoOtherRequest
       it "should answer a renewal check while a Play purchase is with the store" testPurchaseHoldsNoRenewal
       it "should answer other requests while an App Store subscription is with the store, and credit it once the store answers" testAppleSubscriptionHoldsNoOtherRequest
+    describe "transfers" $ do
+      it "should move a store subscription to a new key, ending the old key's share, and renew it for the new key" testStoreRebind
+      it "should move a payment again only once the credential of the key it last moved from has expired" testStoreRebindCapped
+      it "should fund the new key from a charge the service never recorded, ending the idle old key at zero months" testStoreRebindNewCharge
+      it "should answer the old key ended with no credential, without asking the store, and its purchase receipt_used" testStoreRebindOldKeyEnded
+      it "should move an App Store subscription only with its latest transaction, writing nothing for an older one" testStoreRebindStaleAppleTransaction
+      it "should credit a transfer of a payment credited nowhere as a first purchase" testTransferUncredited
+      it "should answer a repeated transfer from the record, without asking the store or limiting it" testTransferReplayAnswered
+      it "should refuse a transfer to a key that holds a purchase, without asking the store" testTransferKnownKeyRefused
+    describe "restore" $ do
+      it "should move a subscription to another device on Restore, retire it on the old one, and credit one credited nowhere" testRestoreOnNewDevice
+      it "should move a subscription to another profile on Restore, and refuse a move on before the first key's credential expires, once" testRestoreOnOtherProfile
+      it "should turn a held or receipt_used hand-over into a transfer on Restore" testRestoreAfterUnfinishedPass
+      it "should leave a resume held for one profile unchanged when a Restore on another profile finds it" testRestoreLeavesResumeHold
+      it "should move a subscription back to the device it left once the first key's credential expired" testRestoreMovesBack
+      it "should refuse Restore while a badge is shown, recording nothing, and answer a limited move's next Restore with the limit, holding it again" testRestoreLimitedOnNewDevice
+      it "should leave a tier change held for one profile unchanged when a Restore on another profile finds it" testRestoreLeavesTierChangeHold
+      it "should hold a tier change at once after a move of its subscription was refused transfer_limited" testRefusedMoveKeepsTierChange
+      it "should give a move held for a deleted profile back to the profile whose purchase it funds" testRestoreHeldProfileDeleted
+      it "should take a purchase hand-over held for one profile to the profile that restores it, and credit it there" testRestoreTakesHeldPurchase
   describe "subscriptions" $ do
     it "should credit a subscription's charge from the store's period start, and answer replays from the record" testSubscriptionPurchase
     it "should credit nothing for a subscription with no charge it can grant, retrying as the charge may still come" testSubscriptionPurchaseNotGrantable
@@ -2556,6 +2576,9 @@ testSubscriptionUpgradeLateInMonth ps =
     badgeTypeOf upgraded `shouldBe` Just BTLegend
     replayed <- upgrade
     credentialOf replayed `shouldBe` credentialOf upgraded
+    -- the purchase replayed is answered with the newest issuance, though the Supporter month ends later
+    repurchased <- serviceCmd env purchaseKey $ purchaseCmd masterKey SPApple {jws = appleSubscriptionJWS}
+    badgeTypeOf repurchased `shouldBe` Just BTLegend
     let legendTip = last $ fst $ statementOf upgraded
     setClockAt bsClock $ addUTCTime (-3600) legendEnd
     beforeEnd <- assertBalance env purchaseKey legendTip
@@ -2624,6 +2647,495 @@ testUpgradeRequestRefused ps =
     refused playKey BSCUpgradeBadgeSubscription {payment = subscriptionPlay, balance = BadgeBalance {lastEntry = last played}} `shouldReturn` (BSEBadRequest, Nothing)
     subscriptionChecks store `shouldReturn` checks
     ledgerRows cc "sx_badge_service_badge_ledger" `shouldReturn` ledger
+
+transferCmd :: BadgeMasterKey -> ServicePayment -> BadgeServiceCommand
+transferCmd masterKey payment = BSCTransferBadge {masterKey, payment}
+
+transferWithNewKey :: HasCallStack => BadgeServiceEnv -> ServicePayment -> IO (C.PublicKeyEd25519, BadgeServiceResponse)
+transferWithNewKey env payment = do
+  (purchaseKey, masterKey) <- newPurchaseKeys
+  (purchaseKey,) <$> serviceCmd env purchaseKey (transferCmd masterKey payment)
+
+-- | Past the hour a claim's store check holds the next one off.
+nextClaimCheck :: BadgeServiceEnv -> IO ()
+nextClaimCheck BadgeServiceEnv {bsClock} = testClockTime bsClock >>= setClockAt bsClock . addUTCTime 3700
+
+movedOutTo :: StatementEntry -> Maybe C.PublicKeyEd25519
+movedOutTo StatementEntry {entryType = SEDebit (SDTransferOut k)} = Just k
+movedOutTo _ = Nothing
+
+reboundPayments :: ChatController -> IO Int
+reboundPayments cc = rowCount cc "sx_badge_service_payments WHERE rebound_at IS NOT NULL"
+
+testStoreRebind :: HasCallStack => TestParams -> IO ()
+testStoreRebind ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsController = cc, bsStore = store@FakeStore {appleSubscriptionJWS}} -> do
+    let changes = map (\e -> let (c, m, _) = entryOf e in (c, m))
+        verified badgeType rows = verifiedAfter badgeType Nothing rows
+        verifiedAfter badgeType tip_ rows = do
+          now <- serviceNow env
+          map snd (balanceChecked now badgeType tip_ rows) `shouldBe` map (const $ Just True) rows
+    (playKey, firstStart, purchased) <- subscribedMonthly env
+    setClockAt bsClock $ addUTCTime (10 * nominalDay) firstStart
+    (movedKey, moved) <- transferWithNewKey env subscriptionPlay
+    let movedRows = fst $ statementOf moved
+    map entryTag movedRows `shouldBe` ["charge", "badge"]
+    map createdAtOf (take 1 movedRows) `shouldBe` [firstStart]
+    subscriptionOf moved `shouldBe` Just SSRenewing
+    credentialOf moved `shouldSatisfy` isJust
+    verified BTSupporter movedRows
+    reboundPayments cc `shouldReturn` 1
+    ended <- assertBalance env playKey (last purchased)
+    map entryTag (fst $ statementOf ended) `shouldBe` ["transferOut"]
+    map movedOutTo (fst $ statementOf ended) `shouldBe` [Just movedKey]
+    verifiedAfter BTSupporter (Just $ last purchased) (fst $ statementOf ended)
+    -- the next charge renews the new key's purchase
+    storeReports store $ subscriptionCheck SSRenewing $ Just $ monthlyCharge "subscr-badge-supporter-month-02" firstStart 1
+    setClockAt bsClock $ addUTCTime (3 * nominalDay) (addMonths 1 firstStart)
+    renewed <- assertBalance env movedKey (last movedRows)
+    map entryTag (fst $ statementOf renewed) `shouldBe` ["charge", "badge"]
+    credentialOf renewed `shouldSatisfy` isJust
+    -- an annual App Store subscription two months in: the old key's passed month lapses before the rest moves
+    appleStart <- addUTCTime (-3600) <$> serviceNow env
+    appleStoreReports store $ subscriptionCheck SSRenewing $ Just (storeCharge "SUBSCR_BADGE_SUPPORTER_YEAR_01" appleStart 12) {chargeRef = "2000000812345681"}
+    (appleKey, appleMasterKey) <- newPurchaseKeys
+    applePurchased <- serviceCmd env appleKey $ purchaseCmd appleMasterKey SPApple {jws = appleSubscriptionJWS}
+    setClockAt bsClock $ addUTCTime (10 * nominalDay) (addMonths 2 appleStart)
+    (appleMovedKey, appleMoved) <- transferWithNewKey env SPApple {jws = appleSubscriptionJWS}
+    let appleMovedRows = fst $ statementOf appleMoved
+    map entryTag appleMovedRows `shouldBe` ["charge", "lapse", "badge"]
+    changes appleMovedRows `shouldBe` [(12, 12), (-2, 10), (-1, 9)]
+    verified BTSupporter appleMovedRows
+    appleEnded <- fst . statementOf <$> assertBalance env appleKey (last $ fst $ statementOf applePurchased)
+    map entryTag appleEnded `shouldBe` ["lapse", "transferOut"]
+    changes appleEnded `shouldBe` [(-1, 10), (-10, 0)]
+    map movedOutTo appleEnded `shouldBe` [Nothing, Just appleMovedKey]
+    verifiedAfter BTSupporter (Just $ last $ fst $ statementOf applePurchased) appleEnded
+    reboundPayments cc `shouldReturn` 2
+
+testStoreRebindNewCharge :: HasCallStack => TestParams -> IO ()
+testStoreRebindNewCharge ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsController = cc, bsStore = store} -> do
+    (oldKey, firstStart, purchased) <- subscribedMonthly env
+    let chargeStart = addMonths 2 firstStart
+        changes = map (\e -> let (c, m, _) = entryOf e in (c, m))
+        verifiedAfter tip_ rows = do
+          now <- serviceNow env
+          map snd (balanceChecked now BTSupporter tip_ rows) `shouldBe` map (const $ Just True) rows
+    -- the old key went idle after its first month, and the store has since charged a month the service never recorded
+    storeReports store $ subscriptionCheck SSRenewing $ Just $ monthlyCharge "subscr-badge-supporter-month-02" firstStart 2
+    setClockAt bsClock $ addUTCTime (3 * nominalDay) chargeStart
+    (newKey, moved) <- transferWithNewKey env subscriptionPlay
+    let movedRows = fst $ statementOf moved
+    map entryTag movedRows `shouldBe` ["charge", "badge"]
+    map createdAtOf (take 1 movedRows) `shouldBe` [chargeStart]
+    verifiedAfter Nothing movedRows
+    ended <- fst . statementOf <$> assertBalance env oldKey (last purchased)
+    map entryTag ended `shouldBe` ["transferOut"]
+    changes ended `shouldBe` [(0, 0)]
+    verifiedAfter (Just $ last purchased) ended
+    -- asked again in the same period, the new key is granted nothing more
+    ledger <- ledgerRows cc "sx_badge_service_badge_ledger"
+    again <- assertBalance env newKey (last movedRows)
+    map entryTag (fst $ statementOf again) `shouldBe` []
+    credentialOf again `shouldBe` credentialOf moved
+    ledgerRows cc "sx_badge_service_badge_ledger" `shouldReturn` ledger
+
+testStoreRebindCapped :: HasCallStack => TestParams -> IO ()
+testStoreRebindCapped ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsStore = store} -> do
+    (_, firstStart, _) <- subscribedMonthly env
+    let firstExpiry = endOfMondayAfter (addMonths 1 firstStart)
+    nextClaimCheck env
+    (firstMoveKey, firstMove) <- transferWithNewKey env subscriptionPlay
+    credentialOf firstMove `shouldSatisfy` isJust
+    expiryOf firstMove `shouldBe` Just firstExpiry
+    nextClaimCheck env
+    checks <- subscriptionChecks store
+    refusalOf . snd <$> transferWithNewKey env subscriptionPlay `shouldReturn` (BSETransferLimited, Nothing)
+    subscriptionChecks store `shouldReturn` checks + 1
+    -- past the first key's credential the first move's key renews, into a credential that outlives the first
+    storeReports store $ subscriptionCheck SSRenewing $ Just $ monthlyCharge "subscr-badge-supporter-month-02" firstStart 1
+    setClockAt bsClock $ addUTCTime 3600 firstExpiry
+    renewed <- assertBalance env firstMoveKey (last $ fst $ statementOf firstMove)
+    expiryOf renewed `shouldBe` Just (endOfMondayAfter $ addMonths 2 firstStart)
+    (_, secondMove) <- transferWithNewKey env subscriptionPlay
+    credentialOf secondMove `shouldSatisfy` isJust
+    nextClaimCheck env
+    refusalOf . snd <$> transferWithNewKey env subscriptionPlay `shouldReturn` (BSETransferLimited, Nothing)
+
+testStoreRebindOldKeyEnded :: HasCallStack => TestParams -> IO ()
+testStoreRebindOldKeyEnded ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsStore = store} -> do
+    (purchaseKey, _, purchased) <- subscribedMonthly env
+    nextClaimCheck env
+    (_, moved) <- transferWithNewKey env subscriptionPlay
+    credentialOf moved `shouldSatisfy` isJust
+    checks <- subscriptionChecks store
+    ended <- assertBalance env purchaseKey (last purchased)
+    subscriptionOf ended `shouldBe` Just SSEnded
+    credentialOf ended `shouldBe` Nothing
+    subscriptionChecks store `shouldReturn` checks
+    nextClaimCheck env
+    (_, masterKey) <- newPurchaseKeys
+    refusalOf <$> serviceCmd env purchaseKey (purchaseCmd masterKey subscriptionPlay) `shouldReturn` (BSEReceiptUsed, Nothing)
+
+testStoreRebindStaleAppleTransaction :: HasCallStack => TestParams -> IO ()
+testStoreRebindStaleAppleTransaction ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsController = cc, bsStore = store@FakeStore {appleSubscriptionJWS, appleRenewalSubscriptionJWS}} -> do
+    now <- serviceNow env
+    appleStoreReports store $ subscriptionCheck SSRenewing $ Just (storeCharge "SUBSCR_BADGE_SUPPORTER_MONTH_01" (addUTCTime (-3600) now) 1) {chargeRef = "2000000812345683"}
+    (purchaseKey, masterKey) <- newPurchaseKeys
+    _ <- serviceCmd env purchaseKey $ purchaseCmd masterKey SPApple {jws = appleSubscriptionJWS}
+    nextClaimCheck env
+    ledger <- ledgerRows cc "sx_badge_service_badge_ledger"
+    checks <- subscriptionChecks store
+    refusalOf . snd <$> transferWithNewKey env SPApple {jws = appleSubscriptionJWS} `shouldReturn` (BSEPaymentPending, Just 3600)
+    subscriptionChecks store `shouldReturn` checks + 1
+    ledgerRows cc "sx_badge_service_badge_ledger" `shouldReturn` ledger
+    rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 1
+    reboundPayments cc `shouldReturn` 0
+    nextClaimCheck env
+    credentialOf . snd <$> transferWithNewKey env SPApple {jws = appleRenewalSubscriptionJWS} >>= (`shouldSatisfy` isJust)
+    reboundPayments cc `shouldReturn` 1
+
+testTransferUncredited :: HasCallStack => TestParams -> IO ()
+testTransferUncredited ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsController = cc, bsStore = store} -> do
+    periodStart <- addUTCTime (-3600) <$> serviceNow env
+    storeReports store $ subscriptionCheck SSRenewing $ Just $ storeCharge "subscr-badge-supporter-month-02" periodStart 1
+    (_, transferred) <- transferWithNewKey env subscriptionPlay
+    map entryTag (fst $ statementOf transferred) `shouldBe` ["charge", "badge"]
+    map createdAtOf (take 1 $ fst $ statementOf transferred) `shouldBe` [periodStart]
+    subscriptionOf transferred `shouldBe` Just SSRenewing
+    credentialOf transferred `shouldSatisfy` isJust
+    rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 1
+    reboundPayments cc `shouldReturn` 0
+
+testTransferReplayAnswered :: HasCallStack => TestParams -> IO ()
+testTransferReplayAnswered ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsStore = store} -> do
+    _ <- subscribedMonthly env
+    nextClaimCheck env
+    (movedKey, movedMasterKey) <- newPurchaseKeys
+    moved <- serviceCmd env movedKey $ transferCmd movedMasterKey subscriptionPlay
+    checks <- subscriptionChecks store
+    replayed <- serviceCmd env movedKey $ transferCmd movedMasterKey subscriptionPlay
+    credentialOf replayed `shouldBe` credentialOf moved
+    credentialOf replayed `shouldSatisfy` isJust
+    subscriptionChecks store `shouldReturn` checks
+
+testTransferKnownKeyRefused :: HasCallStack => TestParams -> IO ()
+testTransferKnownKeyRefused ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsController = cc, bsStore = store} -> do
+    _ <- subscribedMonthly env
+    (heldKey, heldMasterKey) <- newPurchaseKeys
+    _ <- serviceCmd env heldKey $ purchaseCmd heldMasterKey supporterPlay
+    nextClaimCheck env
+    checks <- subscriptionChecks store
+    ledger <- ledgerRows cc "sx_badge_service_badge_ledger"
+    refusalOf <$> serviceCmd env heldKey (transferCmd heldMasterKey subscriptionPlay) `shouldReturn` (BSEBadRequest, Nothing)
+    subscriptionChecks store `shouldReturn` checks
+    ledgerRows cc "sx_badge_service_badge_ledger" `shouldReturn` ledger
+    rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 2
+    reboundPayments cc `shouldReturn` 0
+
+restoredCmd :: Int64 -> ServicePayment -> String
+restoredCmd userId payment = "/_badge purchase " <> show userId <> " restored " <> paymentArg payment
+
+shownBadges :: ChatController -> IO [(Int64, Maybe Int64)]
+shownBadges ChatController {chatStore} =
+  withTransaction chatStore $ \db -> DB.query_ db "SELECT user_id, shown_badge_id FROM users ORDER BY user_id"
+
+-- | Each purchase's owner, and whether it still links the store record, through which its subscription's transaction is read.
+purchaseReceiptLinks :: ChatController -> IO [(Int64, Bool)]
+purchaseReceiptLinks ChatController {chatStore} =
+  withTransaction chatStore $ \db -> DB.query_ db "SELECT user_id, badge_store_receipt_id IS NOT NULL FROM badge_purchases ORDER BY badge_purchase_id"
+
+ledgerTags :: ChatController -> IO [Maybe Text]
+ledgerTags cc = map (\(_, _, _, _, _, t) -> t) <$> ledgerRows cc "badge_ledger"
+
+restoreToken :: Text -> Text
+restoreToken n = "fake-play-token-restore-" <> n <> ".AO-J1Om8l3biV8pPk4"
+
+storeReceiptHolds :: ChatController -> IO [(Int64, Text)]
+storeReceiptHolds ChatController {chatStore} =
+  withTransaction chatStore $ \db -> DB.query_ db "SELECT user_id, hold_kind FROM badge_store_receipts ORDER BY badge_store_receipt_id"
+
+-- | For clients checked through their databases: what they printed is read and dropped, until a second passes with nothing.
+dropOutput :: TestCC -> IO ()
+dropOutput cc = timeout 1000000 (atomically $ readTQueue $ termQ cc) >>= mapM_ (\_ -> dropOutput cc)
+
+testRestoreOnNewDevice :: HasCallStack => TestParams -> IO ()
+testRestoreOnNewDevice ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice ->
+      withNewTestChatCfg ps bsClientCfg "bob" bobProfile $ \bob -> do
+        firstStart <- addUTCTime (-3600) <$> serviceNow env
+        storeReports store $ subscriptionCheck SSRenewing $ Just $ storeCharge "subscr-badge-supporter-month-02" firstStart 1
+        alice `send` ("/_badge purchase 1 " <> paymentArg subscriptionPlay)
+        waitShownBadge (chatController alice) (Just 1)
+        aliceRows <- ledgerRows (chatController alice) "badge_ledger"
+        nextClaimCheck env
+        bob `send` restoredCmd 1 subscriptionPlay
+        waitShownBadge (chatController bob) (Just 1)
+        ledgerTags (chatController bob) `shouldReturn` [Just "charge", Just "badge"]
+        reboundPayments cc `shouldReturn` 1
+        -- the old device's badge retires at its next request, which the service answers ended
+        setClockAt bsClock $ fst $ renewalMoments aliceRows
+        alice `send` "/_app activate"
+        waitShownBadge (chatController alice) Nothing
+        withNewTestChatCfg ps bsClientCfg "cath" cathProfile $ \cath -> do
+          creditedNowhere <- addUTCTime (-3600) <$> serviceNow env
+          setSubscription store (SubscriptionGoogle $ restoreToken "1") $ subscriptionCheck SSRenewing $ Just $ storeCharge "subscr-badge-supporter-month-02" creditedNowhere 1
+          cath `send` restoredCmd 1 (googlePayment "subscr_badge_supporter_01" $ restoreToken "1")
+          waitShownBadge (chatController cath) (Just 1)
+          ledgerTags (chatController cath) `shouldReturn` [Just "charge", Just "badge"]
+          reboundPayments cc `shouldReturn` 1
+          mapM_ dropOutput [alice, bob, cath]
+
+testRestoreOnOtherProfile :: HasCallStack => TestParams -> IO ()
+testRestoreOnOtherProfile ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      let a = chatController alice
+      firstStart <- addUTCTime (-3600) <$> serviceNow env
+      storeReports store $ subscriptionCheck SSRenewing $ Just $ storeCharge "subscr-badge-supporter-month-02" firstStart 1
+      alice `send` ("/_badge purchase 1 " <> paymentArg subscriptionPlay)
+      waitShownBadge a (Just 1)
+      aliceRows <- ledgerRows a "badge_ledger"
+      alice `send` "/create user alisa"
+      shownBadges a `shouldEventuallyReturn` [(1, Just 1), (2, Nothing)]
+      nextClaimCheck env
+      alice `send` restoredCmd 2 subscriptionPlay
+      shownBadges a `shouldEventuallyReturn` [(1, Just 1), (2, Just 2)]
+      purchaseReceiptLinks a `shouldReturn` [(1, False), (2, True)]
+      storeReceiptRows a `shouldReturn` [(2, Nothing, True)]
+      -- the move settles the record, so it is not sent as a transfer again
+      storeReceiptHolds a `shouldReturn` [(2, "purchase")]
+      setClockAt bsClock $ fst $ renewalMoments aliceRows
+      alice `send` "/_app activate"
+      shownBadges a `shouldEventuallyReturn` [(1, Nothing), (2, Just 2)]
+      -- before the first key's credential expires, a move on is refused once and not retried, and the record returns to its owner
+      alice `send` "/create user alisa2"
+      shownBadges a `shouldEventuallyReturn` [(1, Nothing), (2, Just 2), (3, Nothing)]
+      purchases <- rowCount cc "sx_badge_service_badge_purchases"
+      alice `send` restoredCmd 3 subscriptionPlay
+      storeReceiptCreditErrors a `shouldEventuallyReturn` ["service_error final transfer_limited"]
+      storeReceiptRows a `shouldReturn` [(2, Nothing, True)]
+      heldStoreReceipts a `shouldReturn` 0
+      setClockAt bsClock $ addUTCTime 7200 (fst $ renewalMoments aliceRows)
+      threadDelay 1000000
+      heldStoreReceipts a `shouldReturn` 0
+      rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` purchases
+      -- a later Restore says why, and holds the record for this profile again; the worker's attempt is refused again
+      let restoreLimited = either show (const "answered without a refusal") <$> sendChatCmdStr a (restoredCmd 3 subscriptionPlay) >>= (`shouldSatisfy` ("TransferLimited" `isInfixOf`))
+      restoreLimited
+      storeReceiptHolds a `shouldEventuallyReturn` [(2, "purchase")]
+      -- within the hour of that attempt's store check the next one waits, so the record stays this profile's move
+      restoreLimited
+      storeReceiptHolds a `shouldEventuallyReturn` [(3, "transfer")]
+      heldStoreReceiptErrors a `shouldEventuallyReturn` ["service_error retry payment_pending"]
+      shownBadges a `shouldReturn` [(1, Nothing), (2, Just 2), (3, Nothing)]
+      dropOutput alice
+
+testRestoreMovesBack :: HasCallStack => TestParams -> IO ()
+testRestoreMovesBack ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice ->
+      withNewTestChatCfg ps bsClientCfg "bob" bobProfile $ \bob -> do
+        firstStart <- addUTCTime (-3600) <$> serviceNow env
+        storeReports store $ subscriptionCheck SSRenewing $ Just $ storeCharge "subscr-badge-supporter-month-02" firstStart 1
+        alice `send` ("/_badge purchase 1 " <> paymentArg subscriptionPlay)
+        waitShownBadge (chatController alice) (Just 1)
+        (renewalAt, firstExpiry) <- renewalMoments <$> ledgerRows (chatController alice) "badge_ledger"
+        nextClaimCheck env
+        bob `send` restoredCmd 1 subscriptionPlay
+        waitShownBadge (chatController bob) (Just 1)
+        setClockAt bsClock renewalAt
+        alice `send` "/_app activate"
+        waitShownBadge (chatController alice) Nothing
+        -- past the first key's credential, the subscription moves back to the purchase it left, as a new purchase
+        storeReports store $ subscriptionCheck SSRenewing $ Just $ monthlyCharge "subscr-badge-supporter-month-02" firstStart 1
+        setClockAt bsClock $ addUTCTime 3600 firstExpiry
+        alice `send` restoredCmd 1 subscriptionPlay
+        waitShownBadge (chatController alice) (Just 2)
+        purchaseReceiptLinks (chatController alice) `shouldReturn` [(1, False), (1, True)]
+        storeReceiptHolds (chatController alice) `shouldReturn` [(1, "purchase")]
+        bob `send` "/_app activate"
+        waitShownBadge (chatController bob) Nothing
+        mapM_ dropOutput [alice, bob]
+
+testRestoreLimitedOnNewDevice :: HasCallStack => TestParams -> IO ()
+testRestoreLimitedOnNewDevice ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClientCfg, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice ->
+      withNewTestChatCfg ps bsClientCfg "bob" bobProfile $ \bob ->
+        withNewTestChatCfg ps bsClientCfg "cath" cathProfile $ \cath -> do
+          let refusedWith err cc cmd = either show (const "answered without a refusal") <$> sendChatCmdStr cc cmd >>= (`shouldSatisfy` (err `isInfixOf`))
+          firstStart <- addUTCTime (-3600) <$> serviceNow env
+          storeReports store $ subscriptionCheck SSRenewing $ Just $ storeCharge "subscr-badge-supporter-month-02" firstStart 1
+          alice `send` ("/_badge purchase 1 " <> paymentArg subscriptionPlay)
+          waitShownBadge (chatController alice) (Just 1)
+          nextClaimCheck env
+          bob `send` restoredCmd 1 subscriptionPlay
+          waitShownBadge (chatController bob) (Just 1)
+          -- a Restore on a profile showing a badge is refused, recording nothing
+          refusedWith "BadgeActive" (chatController bob) $ restoredCmd 1 $ googlePayment "subscr_badge_supporter_01" $ restoreToken "3"
+          storeReceiptRows (chatController bob) `shouldReturn` [(1, Nothing, True)]
+          -- before the first key's credential expires a third device's move is refused, and its next Restore says why and holds it again
+          nextClaimCheck env
+          cath `send` restoredCmd 1 subscriptionPlay
+          storeReceiptCreditErrors (chatController cath) `shouldEventuallyReturn` ["service_error final transfer_limited"]
+          heldStoreReceipts (chatController cath) `shouldReturn` 0
+          refusedWith "TransferLimited" (chatController cath) $ restoredCmd 1 subscriptionPlay
+          heldStoreReceiptErrors (chatController cath) `shouldEventuallyReturn` ["service_error retry payment_pending"]
+          storeReceiptHolds (chatController cath) `shouldReturn` [(1, "transfer")]
+          mapM_ dropOutput [alice, bob, cath]
+
+testRestoreLeavesTierChangeHold :: HasCallStack => TestParams -> IO ()
+testRestoreLeavesTierChangeHold ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClientCfg, bsStore = FakeStore {appleLegendSubscriptionJWS}} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      let a = chatController alice
+          legend = SPApple {jws = appleLegendSubscriptionJWS}
+      appleSupporterBeforeLegend env alice
+      -- the store still reports Supporter, so the tier change stays held
+      alice `send` ("/_badge purchase 1 " <> paymentArg legend)
+      heldStoreReceiptErrors a `shouldEventuallyReturn` ["service_error retry payment_pending"]
+      alice `send` "/create user alisa"
+      shownBadges a `shouldEventuallyReturn` [(1, Just 1), (2, Nothing)]
+      isRight <$> sendChatCmdStr a (restoredCmd 2 legend) `shouldReturn` True
+      storeReceiptHolds a `shouldReturn` [(1, "tier_change")]
+      heldStoreReceipts a `shouldReturn` 1
+      dropOutput alice
+
+testRefusedMoveKeepsTierChange :: HasCallStack => TestParams -> IO ()
+testRefusedMoveKeepsTierChange ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsStore = store@FakeStore {appleSubscriptionJWS, appleLegendSubscriptionJWS}, bsClientCfg} ->
+    withNewTestChatCfg ps bsClientCfg "bob" bobProfile $ \bob ->
+      withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+        let a = chatController alice
+            supporter = SPApple {jws = appleSubscriptionJWS}
+        appleSupporterBeforeLegend env bob
+        -- the status names the transaction presented as the latest, so it moves
+        appleStoreReports store $ subscriptionCheck SSRenewing $ Just (storeCharge "SUBSCR_BADGE_SUPPORTER_MONTH_01" (addUTCTime (-5 * nominalDay) legendBoughtAt) 1) {chargeRef = "2000000812345681"}
+        alice `send` restoredCmd 1 supporter
+        waitShownBadge a (Just 1)
+        alice `send` "/create user alisa"
+        shownBadges a `shouldEventuallyReturn` [(1, Just 1), (2, Nothing)]
+        nextClaimCheck env
+        alice `send` restoredCmd 2 supporter
+        storeReceiptCreditErrors a `shouldEventuallyReturn` ["service_error final transfer_limited"]
+        storeReceiptHolds a `shouldReturn` [(1, "purchase")]
+        -- the refused move is not the purchase's own refused change, so a tier change of it is held at once
+        isRight <$> sendChatCmdStr a "/user alice" `shouldReturn` True
+        either show (const "answered") <$> sendChatCmdStr a ("/_badge purchase 1 " <> paymentArg SPApple {jws = appleLegendSubscriptionJWS}) `shouldReturn` "answered"
+        storeReceiptHolds a `shouldReturn` [(1, "tier_change")]
+        heldStoreReceipts a `shouldReturn` 1
+        mapM_ dropOutput [alice, bob]
+
+testRestoreHeldProfileDeleted :: HasCallStack => TestParams -> IO ()
+testRestoreHeldProfileDeleted ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClientCfg, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      let a = chatController alice
+      firstStart <- addUTCTime (-3600) <$> serviceNow env
+      storeReports store $ subscriptionCheck SSRenewing $ Just $ storeCharge "subscr-badge-supporter-month-02" firstStart 1
+      alice `send` ("/_badge purchase 1 " <> paymentArg subscriptionPlay)
+      waitShownBadge a (Just 1)
+      alice `send` "/create user alisa"
+      shownBadges a `shouldEventuallyReturn` [(1, Just 1), (2, Nothing)]
+      -- within the hour of the purchase's store check the move waits, held for the second profile
+      alice `send` restoredCmd 2 subscriptionPlay
+      heldStoreReceiptErrors a `shouldEventuallyReturn` ["service_error retry payment_pending"]
+      storeReceiptHolds a `shouldReturn` [(2, "transfer")]
+      isRight <$> sendChatCmdStr a "/user alice" `shouldReturn` True
+      isRight <$> sendChatCmdStr a "/_delete user 2 del_smp=off" `shouldReturn` True
+      storeReceiptHolds a `shouldReturn` [(1, "purchase")]
+      -- the move's failures are not the owner's refused resume or tier change
+      storeReceiptCreditErrors a `shouldReturn` []
+      heldStoreReceipts a `shouldReturn` 0
+      purchaseReceiptLinks a `shouldReturn` [(1, True)]
+      -- handed over again, it is answered from the record
+      isRight <$> sendChatCmdStr a ("/_badge purchase 1 " <> paymentArg subscriptionPlay) `shouldReturn` True
+      heldStoreReceipts a `shouldReturn` 0
+      dropOutput alice
+
+testRestoreTakesHeldPurchase :: HasCallStack => TestParams -> IO ()
+testRestoreTakesHeldPurchase ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClientCfg, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg "bob" bobProfile $ \bob ->
+      withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+        let a = chatController alice
+        firstStart <- addUTCTime (-3600) <$> serviceNow env
+        storeReports store $ subscriptionCheck SSRenewing $ Just $ storeCharge "subscr-badge-supporter-month-02" firstStart 1
+        bob `send` ("/_badge purchase 1 " <> paymentArg subscriptionPlay)
+        waitShownBadge (chatController bob) (Just 1)
+        -- a hand-over on profile 1 within the hour of the purchase's store check is held
+        alice `send` ("/_badge purchase 1 " <> paymentArg subscriptionPlay)
+        heldStoreReceiptErrors a `shouldEventuallyReturn` ["service_error retry payment_pending"]
+        storeReceiptHolds a `shouldReturn` [(1, "purchase")]
+        alice `send` "/create user alisa"
+        shownBadges a `shouldEventuallyReturn` [(1, Nothing), (2, Nothing)]
+        isRight <$> sendChatCmdStr a (restoredCmd 2 subscriptionPlay) `shouldReturn` True
+        storeReceiptHolds a `shouldReturn` [(2, "transfer")]
+        nextClaimCheck env
+        isRight <$> sendChatCmdStr a (restoredCmd 2 subscriptionPlay) `shouldReturn` True
+        shownBadges a `shouldEventuallyReturn` [(1, Nothing), (2, Just 1)]
+        purchaseReceiptLinks a `shouldReturn` [(2, True)]
+        mapM_ dropOutput [alice, bob]
+
+testRestoreLeavesResumeHold :: HasCallStack => TestParams -> IO ()
+testRestoreLeavesResumeHold ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg "dan" danProfile $ \dan -> do
+      requestAt <- appleSubscriptionRetired env dan
+      let resubscribedAt = addUTCTime 7200 requestAt
+          resubscription = SPApple {jws = appleTransactionDated "2000000812345695" resubscribedAt (addMonths 1 resubscribedAt)}
+      setClockAt bsClock resubscribedAt
+      appleStoreReports store $ subscriptionCheck SSRenewing $ Just (storeCharge "SUBSCR_BADGE_SUPPORTER_MONTH_01" resubscribedAt 1) {chargeRef = "apple.revoked", revoked = True}
+      dan `send` ("/_badge purchase 1 " <> paymentArg resubscription)
+      heldStoreReceiptErrors (chatController dan) `shouldEventuallyReturn` ["service_error retry payment_pending"]
+      dan `send` "/create user daniel"
+      shownBadges (chatController dan) `shouldEventuallyReturn` [(1, Nothing), (2, Nothing)]
+      isRight <$> sendChatCmdStr (chatController dan) (restoredCmd 2 resubscription) `shouldReturn` True
+      storeReceiptHolds (chatController dan) `shouldReturn` [(1, "purchase")]
+      heldStoreReceipts (chatController dan) `shouldReturn` 1
+      dropOutput dan
+
+testRestoreAfterUnfinishedPass :: HasCallStack => TestParams -> IO ()
+testRestoreAfterUnfinishedPass ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClientCfg, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice ->
+      withNewTestChatCfg ps bsClientCfg "bob" bobProfile $ \bob ->
+        withNewTestChatCfg ps bsClientCfg "cath" cathProfile $ \cath -> do
+          firstStart <- addUTCTime (-3600) <$> serviceNow env
+          let other = googlePayment "subscr_badge_supporter_01" $ restoreToken "2"
+          storeReports store $ subscriptionCheck SSRenewing $ Just $ storeCharge "subscr-badge-supporter-month-02" firstStart 1
+          setSubscription store (SubscriptionGoogle $ restoreToken "2") $ subscriptionCheck SSRenewing $ Just $ storeCharge "subscr-badge-supporter-month-02" firstStart 1
+          alice `send` ("/_badge purchase 1 " <> paymentArg subscriptionPlay)
+          waitShownBadge (chatController alice) (Just 1)
+          -- a sweep's hand-over, held while the claim's hour holds the store check off, becomes a transfer on Restore
+          bob `send` ("/_badge purchase 1 " <> paymentArg subscriptionPlay)
+          heldStoreReceiptErrors (chatController bob) `shouldEventuallyReturn` ["service_error retry payment_pending"]
+          nextClaimCheck env
+          bob `send` restoredCmd 1 subscriptionPlay
+          waitShownBadge (chatController bob) (Just 1)
+          heldStoreReceipts (chatController bob) `shouldReturn` 0
+          -- a hand-over refused receipt_used is held again as a transfer
+          alice `send` "/create user alisa"
+          shownBadges (chatController alice) `shouldEventuallyReturn` [(1, Just 1), (2, Nothing)]
+          alice `send` ("/_badge purchase 2 " <> paymentArg other)
+          shownBadges (chatController alice) `shouldEventuallyReturn` [(1, Just 1), (2, Just 2)]
+          nextClaimCheck env
+          cath `send` ("/_badge purchase 1 " <> paymentArg other)
+          storeReceiptCreditErrors (chatController cath) `shouldEventuallyReturn` ["service_error final receipt_used"]
+          nextClaimCheck env
+          cath `send` restoredCmd 1 other
+          waitShownBadge (chatController cath) (Just 1)
+          storeReceiptCreditErrors (chatController cath) `shouldReturn` []
+          mapM_ dropOutput [alice, bob, cath]
 
 testSubscriptionAwaitsCharge :: HasCallStack => TestParams -> IO ()
 testSubscriptionAwaitsCharge ps =
@@ -4575,6 +5087,9 @@ testStoreRouting ps =
     purchase subscriptionPlay `shouldReturn` PurchaseLane
     purchase SPApple {jws = appleSubscriptionJWS} `shouldReturn` PurchaseLane
     purchase SPApple {jws = appleSupporterJWS} `shouldReturn` MainLane
+    routed purchaseKey (transferCmd masterKey subscriptionPlay) `shouldReturn` PurchaseLane
+    routed purchaseKey (transferCmd masterKey SPApple {jws = appleSubscriptionJWS}) `shouldReturn` PurchaseLane
+    routed purchaseKey (transferCmd masterKey SPApple {jws = appleSupporterJWS}) `shouldReturn` MainLane
     g <- C.newRandom
     (fromPurchaseKey, fromPriv) <- atomically $ C.generateKeyPair g :: IO (C.KeyPair 'C.Ed25519)
     now <- getCurrentTime

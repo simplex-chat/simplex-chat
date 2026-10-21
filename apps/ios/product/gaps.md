@@ -64,11 +64,11 @@ The Haskell Store modules (`Store/Direct.hs`, `Store/Groups.hs`, `Store/Messages
 
 ## Badges: Store Purchases
 
-### GAP: A badge subscription cannot be restored or bought again
+### GAP: A badge moves to another device or profile only once in a while, and is bought again only to continue the last purchase
 **Source:** [Shared/Views/Badges/BadgeStore.swift](../Shared/Views/Badges/BadgeStore.swift)
-Restoring a badge subscription on a new device or under another profile does not work, for two independent reasons. `restorePurchases()` reads `Transaction.unfinished`, so a purchase that was already finished is never found. And the service has credited the payment to the purchase key of the install that bought it, so a new key is answered `receipt_used`. Fixing only the client would turn "Nothing to restore" into a refusal, which is worse. On the same install a lapsed subscriber can subscribe again only to the badge the active profile's newest purchase retired: core resumes that purchase on the new charge, as Apple keeps the original transaction id. The app's gate (`forSale`, comparing the original ids in `Transaction.all`, read once a run, with the purchase's `transactionRef`) shuts subscriptions for any other profile, device or badge, and for the rest of the run after a purchase that awaits approval, which StoreKit does not list.
+`restorePurchases()` hands over `Transaction.currentEntitlements` and `Transaction.unfinished` as restored, and the service moves the subscription to the restoring profile's purchase key. A payment moves again only once the credential issued to the key it last moved from has expired; until then Restore is answered `transfer_limited`, and the first Restore of a limited payment adds nothing and shows nothing, so only the next Restore says why. A badge bought with Stripe or crypto cannot be moved at all. On the same install a lapsed subscriber can subscribe again only to the badge the active profile's newest purchase retired: core resumes that purchase on the new charge, as Apple keeps the original transaction id. The app's gate (`forSale`, comparing the original ids in `Transaction.all`, read once a run, with the purchase's `transactionRef`) shuts subscriptions for any other profile, device or badge, and for the rest of the run after a purchase that awaits approval, which StoreKit does not list.
 
-**REC:** A transfer design, in the service and the client, for new devices and profiles.
+**REC:** Restore by a receipt code for Stripe and crypto purchases, and announce a limited move on the first Restore.
 
 ---
 
