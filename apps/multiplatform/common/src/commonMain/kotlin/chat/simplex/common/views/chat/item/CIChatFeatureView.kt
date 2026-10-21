@@ -8,6 +8,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
@@ -106,7 +107,7 @@ private fun FeatureIconView(f: FeatureInfo) {
   if (f.param != null) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
       icon()
-      Text(chatEventText(f.param, ""), maxLines = 1)
+      Text(chatEventText(f.param, AnnotatedString("")), maxLines = 1)
     }
   } else {
     icon()
@@ -120,7 +121,7 @@ private fun FullFeatureView(
   iconColor: Color,
   icon: Painter? = null
 ) {
-  ItemWithMeta(meta = { ChatEventMeta(chatItem) }) { inlineMeta ->
+  ChatEventWithMeta(chatItem) { ts ->
     Row(
       Modifier.padding(horizontal = chatEventHorizontalPadding(), vertical = 6.dp),
       verticalAlignment = Alignment.CenterVertically,
@@ -128,7 +129,7 @@ private fun FullFeatureView(
     ) {
       Icon(icon ?: feature.iconFilled(), feature.text, Modifier.size(20.dp), tint = iconColor)
       Text(
-        chatEventText(chatItem, ts = if (inlineMeta != null) chatItem.timestampText else ""),
+        chatEventText(chatItem, ts = ts),
         Modifier,
         // this is important. Otherwise, aligning will be bad because annotated string has a Span with size 12.sp
         fontSize = 12.sp

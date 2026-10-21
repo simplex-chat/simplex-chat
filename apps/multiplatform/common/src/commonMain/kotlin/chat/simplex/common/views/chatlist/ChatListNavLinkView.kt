@@ -1004,23 +1004,6 @@ fun updateChatSettings(remoteHostId: Long?, chatInfo: ChatInfo, chatSettings: Ch
   }
 }
 
-fun setChatLayout(rhId: Long?, chatInfo: ChatInfo, layout: ChatLayout?, chatModel: ChatModel) {
-  withBGApi {
-    if (chatModel.controller.apiSetChatLayout(rhId, chatInfo.chatType, chatInfo.apiId, layout)) {
-      val newChatInfo = when (val cInfo = chatModel.getChat(chatInfo.id)?.chatInfo) {
-        is ChatInfo.Direct -> ChatInfo.Direct(cInfo.contact.copy(userChatLayout = layout))
-        is ChatInfo.Group -> ChatInfo.Group(cInfo.groupInfo.copy(userChatLayout = layout), groupChatScope = null)
-        else -> null
-      }
-      if (newChatInfo != null) {
-        withContext(Dispatchers.Main) {
-          chatModel.chatsContext.updateChatInfo(rhId, newChatInfo)
-        }
-      }
-    }
-  }
-}
-
 private fun showArchiveAllReportsForMeAlert(archiveReports: () -> Unit) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.report_archive_alert_title_all),

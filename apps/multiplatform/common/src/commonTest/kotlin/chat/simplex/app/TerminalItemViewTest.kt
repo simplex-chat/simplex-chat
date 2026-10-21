@@ -40,14 +40,10 @@ class TerminalItemViewTest {
   }
 
   @Test
-  fun senderHiddenForSameSenderWithinMinute() {
+  fun senderHiddenForSameSender() {
     assertFalse(terminalItemShowsSender(msg(2, CIDirection.DirectSnd(), 30), older = msg(1, CIDirection.DirectSnd(), 0)))
     assertFalse(terminalItemShowsSender(msg(2, CIDirection.GroupRcv(alice), 59), older = msg(1, CIDirection.GroupRcv(alice), 0)))
-  }
-
-  @Test
-  fun senderShownAfterMinuteGap() {
-    assertTrue(terminalItemShowsSender(msg(2, CIDirection.DirectRcv(), 60), older = msg(1, CIDirection.DirectRcv(), 0)))
+    assertFalse(terminalItemShowsSender(msg(2, CIDirection.DirectRcv(), 3600), older = msg(1, CIDirection.DirectRcv(), 0)))
   }
 
   @Test
@@ -67,11 +63,11 @@ class TerminalItemViewTest {
   }
 
   @Test
-  fun senderShownOnDateChangeWithinMinute() {
+  fun senderHiddenOnDateChange() {
     val midnight = LocalDate(2026, 10, 13).atStartOfDayIn(TimeZone.currentSystemDefault())
     val older = msgAt(1, CIDirection.DirectRcv(), Instant.fromEpochSeconds(midnight.epochSeconds - 10))
     val item = msgAt(2, CIDirection.DirectRcv(), Instant.fromEpochSeconds(midnight.epochSeconds + 10))
-    assertTrue(terminalItemShowsSender(item, older))
+    assertFalse(terminalItemShowsSender(item, older))
   }
 
   @Test

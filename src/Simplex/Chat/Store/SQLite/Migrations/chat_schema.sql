@@ -56,8 +56,7 @@ CREATE TABLE users(
   is_user_chat_relay INTEGER NOT NULL DEFAULT 0,
   client_service INTEGER NOT NULL DEFAULT 0,
   auto_accept_group_invitations INTEGER NOT NULL DEFAULT 0,
-  shown_badge_id INTEGER REFERENCES badge_purchases ON DELETE SET NULL,
-  chat_layout TEXT, -- 1 for active user
+  shown_badge_id INTEGER REFERENCES badge_purchases ON DELETE SET NULL, -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE RESTRICT
@@ -111,7 +110,6 @@ CREATE TABLE contacts(
   grp_direct_inv_from_member_conn_id INTEGER REFERENCES connections(connection_id) ON DELETE SET NULL,
   grp_direct_inv_started_connection INTEGER NOT NULL DEFAULT 0,
   chat_layout TEXT,
-  user_chat_layout TEXT,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -217,9 +215,7 @@ CREATE TABLE groups(
   group_domain_verified INTEGER,
   stored_roster_version INTEGER,
   applied_complete_roster_version INTEGER,
-  relay_request_public_group_id BLOB,
-  chat_layout TEXT,
-  user_chat_layout TEXT, -- received
+  relay_request_public_group_id BLOB, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE

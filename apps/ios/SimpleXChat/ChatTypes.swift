@@ -45,7 +45,6 @@ public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
     public var autoAcceptGroupInvitations: Bool
     public var viewPwdHash: UserPwdHash?
     public var uiThemes: ThemeModeOverrides?
-    public var chatLayout: ChatLayout?
     public var userChatRelay: Bool
 
     public var id: Int64 { userId }
@@ -264,21 +263,6 @@ public enum ChatLayout: Hashable {
     case classic
     case terminal
     case unknown(String)
-
-    public var text: String {
-        switch self {
-        case .classic: "classic"
-        case .terminal: "terminal"
-        case let .unknown(s): s
-        }
-    }
-
-    var known: ChatLayout? {
-        switch self {
-        case .unknown: nil
-        default: self
-        }
-    }
 }
 
 extension ChatLayout: RawRepresentable {
@@ -290,7 +274,13 @@ extension ChatLayout: RawRepresentable {
         }
     }
 
-    public var rawValue: String { text }
+    public var rawValue: String {
+        switch self {
+        case .classic: "classic"
+        case .terminal: "terminal"
+        case let .unknown(s): s
+        }
+    }
 }
 
 extension ChatLayout: Codable {
@@ -300,7 +290,7 @@ extension ChatLayout: Codable {
 
     public func encode(to encoder: Encoder) throws {
         var c = encoder.singleValueContainer()
-        try c.encode(text)
+        try c.encode(rawValue)
     }
 }
 
@@ -2376,26 +2366,6 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
 
-    public var chatLayout: ChatLayout? {
-        switch self {
-        case let .direct(contact): contact.chatLayout
-        case let .group(groupInfo, _): groupInfo.chatLayout
-        default: nil
-        }
-    }
-
-    public var userChatLayout: ChatLayout? {
-        switch self {
-        case let .direct(contact): contact.userChatLayout
-        case let .group(groupInfo, _): groupInfo.userChatLayout
-        default: nil
-        }
-    }
-
-    public func defaultChatLayout(_ user: User?, _ appLayout: ChatLayout) -> ChatLayout {
-        chatLayout?.known ?? user?.chatLayout?.known ?? appLayout.known ?? .classic
-    }
-
     public var chatTags: [Int64]? {
         switch self {
         case let .direct(contact): return contact.chatTags
@@ -2562,8 +2532,6 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     public var chatTags: [Int64]
     public var chatItemTTL: Int64?
     public var uiThemes: ThemeModeOverrides?
-    public var chatLayout: ChatLayout?
-    public var userChatLayout: ChatLayout?
     public var chatDeleted: Bool
 
     public var id: ChatId { get { "@\(contactId)" } }
@@ -2967,8 +2935,6 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     var chatTs: Date?
     public var preparedGroup: PreparedGroup?
     public var uiThemes: ThemeModeOverrides?
-    public var chatLayout: ChatLayout?
-    public var userChatLayout: ChatLayout?
     public var groupSummary: GroupSummary
     public var membersRequireAttention: Int
 

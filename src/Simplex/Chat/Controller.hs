@@ -459,8 +459,6 @@ data ChatCommand
   | APISetConnectionAlias {connectionId :: Int64, localAlias :: LocalAlias}
   | APISetUserUIThemes UserId (Maybe UIThemeEntityOverrides)
   | APISetChatUIThemes ChatRef (Maybe UIThemeEntityOverrides)
-  | APISetUserChatLayout UserId (Maybe ChatLayout)
-  | APISetChatLayout ChatRef (Maybe ChatLayout)
   | APISetGroupCustomData {groupId :: GroupId, customData :: Maybe CustomData}
   | APISetContactCustomData {contactId :: ContactId, customData :: Maybe CustomData}
   | APIGetNtfToken

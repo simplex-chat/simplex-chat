@@ -103,13 +103,11 @@ export class ChatClient {
     throw new ChatCommandError("unexpected response", r)
   }
 
-  /** @deprecated use apiGetAddressSettings and apiSetAddressSettings */
   async enableAddressAutoAccept(userId: number, autoReply?: T.MsgContent, businessAddress = false): Promise<void> {
     const settings = await this.apiGetAddressSettings(userId)
     await this.apiSetAddressSettings(userId, {...settings, businessAddress, autoAccept: {acceptIncognito: false}, autoReply})
   }
 
-  /** @deprecated use apiGetAddressSettings and apiSetAddressSettings */
   async disableAddressAutoAccept(userId: number, businessAddress = false): Promise<void> {
     const settings = await this.apiGetAddressSettings(userId)
     await this.apiSetAddressSettings(userId, {...settings, businessAddress, autoAccept: undefined, autoReply: undefined})

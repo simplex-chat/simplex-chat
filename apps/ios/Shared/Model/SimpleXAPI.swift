@@ -915,14 +915,6 @@ func apiSetChatSettings(type: ChatType, id: Int64, chatSettings: ChatSettings) a
     try await sendCommandOkResp(.apiSetChatSettings(type: type, id: id, chatSettings: chatSettings))
 }
 
-func apiSetChatLayout(type: ChatType, id: Int64, layout: ChatLayout?) async throws {
-    try await sendCommandOkResp(.apiSetChatLayout(type: type, id: id, layout: layout))
-}
-
-func apiSetUserChatLayout(userId: Int64, layout: ChatLayout?) async throws {
-    try await sendCommandOkResp(.apiSetUserChatLayout(userId: userId, layout: layout))
-}
-
 func apiSetMemberSettings(_ groupId: Int64, _ groupMemberId: Int64, _ memberSettings: GroupMemberSettings) async throws {
     try await sendCommandOkResp(.apiSetMemberSettings(groupId: groupId, groupMemberId: groupMemberId, memberSettings: memberSettings))
 }

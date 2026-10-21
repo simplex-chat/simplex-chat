@@ -969,7 +969,7 @@ def test_bot_address_settings_include_the_chat_layout(monkeypatch):
     ]
 
 
-def test_bot_address_settings_keep_the_stored_chat_layout(monkeypatch):
+def test_bot_address_settings_remove_the_chat_layout_not_in_bot_settings(monkeypatch):
     import simplex_chat.client as client_mod
 
     api = _StubApi()
@@ -989,9 +989,7 @@ def test_bot_address_settings_keep_the_stored_chat_layout(monkeypatch):
             pass
 
     asyncio.run(go())
-    assert api.address_settings == [
-        {"businessAddress": False, "autoAccept": {"acceptIncognito": False}, "chatLayout": "terminal"}
-    ]
+    assert api.address_settings == [{"businessAddress": False, "autoAccept": {"acceptIncognito": False}}]
 
 
 def test_profile_can_be_replaced(monkeypatch):

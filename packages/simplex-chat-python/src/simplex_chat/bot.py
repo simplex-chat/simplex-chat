@@ -155,9 +155,8 @@ class Bot(Client):
             desired: T.AddressSettings = {"businessAddress": self._business_address}
             if self._auto_accept:
                 desired["autoAccept"] = {"acceptIncognito": False}
-            chat_layout = address["addressSettings"].get("chatLayout") if self._chat_layout is None else self._chat_layout
-            if chat_layout is not None:
-                desired["chatLayout"] = chat_layout
+            if self._chat_layout is not None:
+                desired["chatLayout"] = self._chat_layout
             if self._welcome is not None:
                 desired["autoReply"] = (
                     {"type": "text", "text": self._welcome}

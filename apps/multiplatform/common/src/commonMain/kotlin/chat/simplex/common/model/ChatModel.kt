@@ -1152,16 +1152,6 @@ object ChatModel {
     currentUser.value = updated
   }
 
-  fun updateCurrentUserChatLayout(rhId: Long?, chatLayout: ChatLayout?) {
-    val current = currentUser.value ?: return
-    val updated = current.copy(chatLayout = chatLayout)
-    val i = users.indexOfFirst { it.user.userId == current.userId && it.user.remoteHostId == rhId }
-    if (i != -1) {
-      users[i] = users[i].copy(user = updated)
-    }
-    currentUser.value = updated
-  }
-
   suspend fun addLiveDummy(chatInfo: ChatInfo): ChatItem {
     val cItem = ChatItem.liveDummy(chatInfo is ChatInfo.Direct)
     withContext(Dispatchers.Main) {
@@ -1357,7 +1347,6 @@ data class User(
   val autoAcceptGroupInvitations: Boolean,
   val viewPwdHash: UserPwdHash?,
   val uiThemes: ThemeModeOverrides? = null,
-  val chatLayout: ChatLayout? = null,
   val userChatRelay: Boolean,
 ): NamedChat, UserLike {
   override val displayName: String get() = profile.displayName
@@ -1869,23 +1858,23 @@ sealed class ChatInfo: SomeChat, NamedChat {
     else -> emptyList()
   }
 
-  val chatLayout: ChatLayout? get() = when (this) {
+  val chatLayout: ChatLayoutMode? get() = when (this) {
     is Direct -> contact.chatLayout
-    is Group -> groupInfo.chatLayout
+    is Group -> groupInfo.groupProfile.chatLayout
     else -> null
   }
 
-  val userChatLayout: ChatLayout? get() = when (this) {
-    is Direct -> contact.userChatLayout
-    is Group -> groupInfo.userChatLayout
+  val uiThemes: ThemeModeOverrides? get() = when (this) {
+    is Direct -> contact.uiThemes
+    is Group -> groupInfo.uiThemes
     else -> null
   }
 
-  fun defaultChatLayout(user: User?, appLayout: ChatLayout): ChatLayout =
-    chatLayout.known ?: profileChatLayout(user, appLayout)
+  fun defaultChatLayout(user: User?): ChatLayoutMode =
+    chatLayout.known ?: profileChatLayout(user)
 
-  fun activeChatLayout(user: User?, appLayout: ChatLayout): ChatLayout =
-    userChatLayout.known ?: defaultChatLayout(user, appLayout)
+  fun activeChatLayout(user: User?): ChatLayoutMode =
+    uiThemes?.chatLayout.known ?: defaultChatLayout(user)
 
   val contactCard: Boolean
     get() = when (this) {
@@ -1927,8 +1916,7 @@ data class Contact(
   val chatItemTTL: Long?,
   override val chatDeleted: Boolean,
   val uiThemes: ThemeModeOverrides? = null,
-  val chatLayout: ChatLayout? = null,
-  val userChatLayout: ChatLayout? = null,
+  val chatLayout: ChatLayoutMode? = null,
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Direct
   override val id get() = "@$contactId"
@@ -2222,11 +2210,11 @@ object ChatPeerTypeSerializer : KSerializer<ChatPeerType> {
   override fun serialize(encoder: Encoder, value: ChatPeerType) = encoder.encodeString(value.text)
 }
 
-@Serializable(with = ChatLayoutSerializer::class)
-sealed class ChatLayout {
-  @Serializable @SerialName("classic") object Classic: ChatLayout()
-  @Serializable @SerialName("terminal") object Terminal: ChatLayout()
-  @Serializable @SerialName("unknown") data class Unknown(val type: String): ChatLayout()
+@Serializable(with = ChatLayoutModeSerializer::class)
+sealed class ChatLayoutMode {
+  @Serializable @SerialName("classic") object Classic: ChatLayoutMode()
+  @Serializable @SerialName("terminal") object Terminal: ChatLayoutMode()
+  @Serializable @SerialName("unknown") data class Unknown(val type: String): ChatLayoutMode()
 
   val text: String
     get() = when (this) {
@@ -2236,7 +2224,7 @@ sealed class ChatLayout {
     }
 
   companion object {
-    fun fromText(text: String): ChatLayout = when (text) {
+    fun fromText(text: String): ChatLayoutMode = when (text) {
       "classic" -> Classic
       "terminal" -> Terminal
       else -> Unknown(text)
@@ -2244,16 +2232,16 @@ sealed class ChatLayout {
   }
 }
 
-object ChatLayoutSerializer : KSerializer<ChatLayout> {
-  override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("ChatLayout", PrimitiveKind.STRING)
-  override fun deserialize(decoder: Decoder): ChatLayout = ChatLayout.fromText(decoder.decodeString())
-  override fun serialize(encoder: Encoder, value: ChatLayout) = encoder.encodeString(value.text)
+object ChatLayoutModeSerializer : KSerializer<ChatLayoutMode> {
+  override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("ChatLayoutMode", PrimitiveKind.STRING)
+  override fun deserialize(decoder: Decoder): ChatLayoutMode = ChatLayoutMode.fromText(decoder.decodeString())
+  override fun serialize(encoder: Encoder, value: ChatLayoutMode) = encoder.encodeString(value.text)
 }
 
-private val ChatLayout?.known: ChatLayout? get() = if (this is ChatLayout.Unknown) null else this
+private val ChatLayoutMode?.known: ChatLayoutMode? get() = if (this is ChatLayoutMode.Unknown) null else this
 
-fun profileChatLayout(user: User?, appLayout: ChatLayout): ChatLayout =
-  user?.chatLayout.known ?: appLayout.known ?: ChatLayout.Classic
+fun profileChatLayout(user: User?): ChatLayoutMode =
+  user?.uiThemes?.chatLayout.known ?: ChatController.appPrefs.chatLayout.state.value.known ?: ChatLayoutMode.Classic
 
 fun peerTypeIcon(peerType: ChatPeerType?): ImageResource =
   when (peerType) {
@@ -2581,8 +2569,6 @@ data class GroupInfo (
   val chatTs: Instant?,
   val preparedGroup: PreparedGroup?,
   val uiThemes: ThemeModeOverrides? = null,
-  val chatLayout: ChatLayout? = null,
-  val userChatLayout: ChatLayout? = null,
   val groupSummary: GroupSummary,
   val membersRequireAttention: Int,
   val chatTags: List<Long>,
@@ -2752,7 +2738,7 @@ data class GroupProfile (
   override val localAlias: String = "",
   val groupPreferences: GroupPreferences? = null,
   val memberAdmission: GroupMemberAdmission? = null,
-  val chatLayout: ChatLayout? = null
+  val chatLayout: ChatLayoutMode? = null
 ): NamedChat {
   val isChannel: Boolean get() = publicGroup?.groupType == GroupType.Channel
 
@@ -2791,7 +2777,7 @@ data class ContactShortLinkData (
   val profile: Profile,
   val message: MsgContent?,
   val business: Boolean,
-  val chatLayout: ChatLayout? = null,
+  val chatLayout: ChatLayoutMode? = null,
   // set by the core when building the connection plan: the link profile's badge, verified and crypto-free
   val localBadge: LocalBadge? = null
 )

@@ -114,8 +114,6 @@ enum ChatCommand: ChatCmdProtocol {
     case reconnectAllServers
     case reconnectServer(userId: Int64, smpServer: String)
     case apiSetChatSettings(type: ChatType, id: Int64, chatSettings: ChatSettings)
-    case apiSetChatLayout(type: ChatType, id: Int64, layout: ChatLayout?)
-    case apiSetUserChatLayout(userId: Int64, layout: ChatLayout?)
     case apiSetMemberSettings(groupId: Int64, groupMemberId: Int64, memberSettings: GroupMemberSettings)
     case apiGetUpdatedGroupLinkData(groupId: Int64)
     case apiContactInfo(contactId: Int64)
@@ -334,8 +332,6 @@ enum ChatCommand: ChatCmdProtocol {
             case .reconnectAllServers: return "/reconnect"
             case let .reconnectServer(userId, smpServer): return "/reconnect \(userId) \(smpServer)"
             case let .apiSetChatSettings(type, id, chatSettings): return "/_settings \(ref(type, id, scope: nil)) \(encodeJSON(chatSettings))"
-            case let .apiSetChatLayout(type, id, layout): return "/_layout \(ref(type, id, scope: nil)) \(layout?.text ?? "default")"
-            case let .apiSetUserChatLayout(userId, layout): return "/_layout user \(userId) \(layout?.text ?? "default")"
             case let .apiSetMemberSettings(groupId, groupMemberId, memberSettings): return "/_member settings #\(groupId) \(groupMemberId) \(encodeJSON(memberSettings))"
             case let .apiGetUpdatedGroupLinkData(groupId): return "/_get group link data #\(groupId)"
             case let .apiContactInfo(contactId): return "/_info @\(contactId)"
@@ -546,8 +542,6 @@ enum ChatCommand: ChatCmdProtocol {
             case .reconnectAllServers: return "reconnectAllServers"
             case .reconnectServer: return "reconnectServer"
             case .apiSetChatSettings: return "apiSetChatSettings"
-            case .apiSetChatLayout: return "apiSetChatLayout"
-            case .apiSetUserChatLayout: return "apiSetUserChatLayout"
             case .apiSetMemberSettings: return "apiSetMemberSettings"
             case .apiGetUpdatedGroupLinkData: return "apiGetUpdatedGroupLinkData"
             case .apiContactInfo: return "apiContactInfo"

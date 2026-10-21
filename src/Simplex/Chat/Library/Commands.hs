@@ -100,6 +100,7 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
+import Simplex.Chat.Types.UITheme (ChatLayout (..))
 import Simplex.Chat.Util (liftIOEither, zipWith3')
 import qualified Simplex.Chat.Util as U
 import Simplex.Chat.Web (webPreviewWorker)
@@ -1663,25 +1664,6 @@ processChatCommand cxt nm = \case
       withFastStore $ \db -> do
         g <- getGroupInfo db cxt user chatId
         liftIO $ setGroupUIThemes db user g uiThemes
-      ok user
-    _ -> throwCmdError "not supported"
-  APISetUserChatLayout uId chatLayout -> withUser $ \user@User {userId} -> do
-    user'@User {userId = uId'} <- withFastStore $ \db -> do
-      user' <- getUser db uId
-      liftIO $ setUserChatLayout db user' chatLayout
-      pure user'
-    when (userId == uId') $ chatWriteVar currentUser $ Just (user :: User) {chatLayout}
-    ok user'
-  APISetChatLayout (ChatRef cType chatId scope) userChatLayout -> withUser $ \user -> case cType of
-    CTDirect -> do
-      withFastStore $ \db -> do
-        ct <- getContact db cxt user chatId
-        liftIO $ setContactUserChatLayout db user ct userChatLayout
-      ok user
-    CTGroup | isNothing scope -> do
-      withFastStore $ \db -> do
-        g <- getGroupInfo db cxt user chatId
-        liftIO $ setGroupUserChatLayout db user g userChatLayout
       ok user
     _ -> throwCmdError "not supported"
   APISetGroupCustomData groupId customData_ -> withUser $ \user -> do
@@ -6431,8 +6413,6 @@ chatCommandP =
       "/_set prefs @" *> (APISetContactPrefs <$> A.decimal <* A.space <*> jsonP),
       "/_set theme user " *> (APISetUserUIThemes <$> A.decimal <*> optional (A.space *> jsonP)),
       "/_set theme " *> (APISetChatUIThemes <$> chatRefP <*> optional (A.space *> jsonP)),
-      "/_layout user " *> (APISetUserChatLayout <$> A.decimal <* A.space <*> chatLayoutP_),
-      "/_layout " *> (APISetChatLayout <$> chatRefP <* A.space <*> chatLayoutP_),
       "/_set custom #" *> (APISetGroupCustomData <$> A.decimal <*> optional (A.space *> jsonP)),
       "/_set custom @" *> (APISetContactCustomData <$> A.decimal <*> optional (A.space *> jsonP)),
       "/_ntf get" $> APIGetNtfToken,

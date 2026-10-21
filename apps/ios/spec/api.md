@@ -203,8 +203,6 @@ The `ChatCommand` enum ([`AppAPITypes.swift` L15](../Shared/Model/AppAPITypes.sw
 | `apiSaveSettings` | `settings: AppSettings` | Save app settings to core | [L41](../Shared/Model/AppAPITypes.swift#L41) |
 | `apiGetSettings` | `settings: AppSettings` | Get settings from core | [L42](../Shared/Model/AppAPITypes.swift#L42) |
 | `apiSetChatSettings` | `type, id, chatSettings` | Per-chat notification settings | [L110](../Shared/Model/AppAPITypes.swift#L110) |
-| `apiSetChatLayout` | `type, id, layout: ChatLayout?` | Layout chosen by the user for a direct or group chat; `nil` clears it | [L117](../Shared/Model/AppAPITypes.swift#L117) |
-| `apiSetUserChatLayout` | `userId, layout: ChatLayout?` | Layout chosen for a user profile; `nil` clears it | [L118](../Shared/Model/AppAPITypes.swift#L118) |
 | `apiSetChatItemTTL` | `userId, seconds` | Set global message TTL | [L102](../Shared/Model/AppAPITypes.swift#L102) |
 | `apiGetChatItemTTL` | `userId` | Get global message TTL | [L103](../Shared/Model/AppAPITypes.swift#L103) |
 | `apiSetChatTTL` | `userId, type, id, seconds` | Per-chat message TTL | [L104](../Shared/Model/AppAPITypes.swift#L104) |

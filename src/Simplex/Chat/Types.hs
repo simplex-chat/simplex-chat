@@ -149,8 +149,7 @@ data User = User
     userMemberProfileUpdatedAt :: Maybe UTCTime,
     userChatRelay :: BoolDef,
     clientService :: BoolDef,
-    uiThemes :: Maybe UIThemeEntityOverrides,
-    chatLayout :: Maybe ChatLayout
+    uiThemes :: Maybe UIThemeEntityOverrides
   }
   deriving (Show)
 
@@ -222,7 +221,6 @@ data Contact = Contact
     chatItemTTL :: Maybe Int64,
     uiThemes :: Maybe UIThemeEntityOverrides,
     chatLayout :: Maybe ChatLayout,
-    userChatLayout :: Maybe ChatLayout,
     chatDeleted :: Bool,
     customData :: Maybe CustomData
   }
@@ -535,8 +533,6 @@ data GroupInfo = GroupInfo
     chatTags :: [ChatTagId],
     chatItemTTL :: Maybe Int64,
     uiThemes :: Maybe UIThemeEntityOverrides,
-    chatLayout :: Maybe ChatLayout,
-    userChatLayout :: Maybe ChatLayout,
     customData :: Maybe CustomData,
     groupSummary :: GroupSummary,
     rosterVersion :: Maybe VersionRoster,
@@ -781,30 +777,6 @@ instance TextEncoding ChatPeerType where
     CPTBusiness -> "business"
     CPTAgent -> "agent"
     CPTUnknown tag -> tag
-
-data ChatLayout = CLClassic | CLTerminal | CLUnknown Text
-  deriving (Eq, Show)
-
-instance FromJSON ChatLayout where
-  parseJSON = textParseJSON "ChatLayout"
-
-instance ToJSON ChatLayout where
-  toJSON = J.String . textEncode
-  toEncoding = JE.text . textEncode
-
-instance FromField ChatLayout where fromField = fromTextField_ textDecode
-
-instance ToField ChatLayout where toField = toField . textEncode
-
-instance TextEncoding ChatLayout where
-  textDecode s = Just $ case s of
-    "classic" -> CLClassic
-    "terminal" -> CLTerminal
-    tag -> CLUnknown tag
-  textEncode = \case
-    CLClassic -> "classic"
-    CLTerminal -> "terminal"
-    CLUnknown tag -> tag
 
 profileFromName :: ContactName -> Profile
 profileFromName displayName =

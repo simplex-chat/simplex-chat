@@ -1602,7 +1602,6 @@ class Contact(TypedDict):
     chatItemTTL: NotRequired[int]  # int64
     uiThemes: NotRequired["UIThemeEntityOverrides"]
     chatLayout: NotRequired["ChatLayout"]
-    userChatLayout: NotRequired["ChatLayout"]
     chatDeleted: bool
     customData: NotRequired[dict[str, object]]
 
@@ -2045,8 +2044,6 @@ class GroupInfo(TypedDict):
     chatTags: list[int]  # int64
     chatItemTTL: NotRequired[int]  # int64
     uiThemes: NotRequired["UIThemeEntityOverrides"]
-    chatLayout: NotRequired["ChatLayout"]
-    userChatLayout: NotRequired["ChatLayout"]
     customData: NotRequired[dict[str, object]]
     groupSummary: "GroupSummary"
     rosterVersion: NotRequired[int]  # int64
@@ -3785,6 +3782,7 @@ class UIThemeEntityOverride(TypedDict):
 class UIThemeEntityOverrides(TypedDict):
     light: NotRequired["UIThemeEntityOverride"]
     dark: NotRequired["UIThemeEntityOverride"]
+    chatLayout: NotRequired["ChatLayout"]
 
 class UpdatedMessage(TypedDict):
     msgContent: "MsgContent"
@@ -3809,7 +3807,6 @@ class User(TypedDict):
     userChatRelay: bool
     clientService: bool
     uiThemes: NotRequired["UIThemeEntityOverrides"]
-    chatLayout: NotRequired["ChatLayout"]
 
 class UserChatRelay(TypedDict):
     chatRelayId: int  # int64

@@ -696,10 +696,10 @@ private class AddressSettingsState {
     private set
   var autoReply: String = ""
     private set
-  var chatLayout: ChatLayout? = null
+  var chatLayout: ChatLayoutMode? = null
     private set
 
-  constructor(businessAddress: Boolean = false, autoAccept: Boolean = false, autoAcceptIncognito: Boolean = false, autoReply: String = "", chatLayout: ChatLayout? = null) {
+  constructor(businessAddress: Boolean = false, autoAccept: Boolean = false, autoAcceptIncognito: Boolean = false, autoReply: String = "", chatLayout: ChatLayoutMode? = null) {
     this.businessAddress = businessAddress
     this.autoAccept = autoAccept
     this.autoAcceptIncognito = autoAcceptIncognito

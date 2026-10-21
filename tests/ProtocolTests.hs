@@ -21,6 +21,7 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
+import Simplex.Chat.Types.UITheme (ChatLayout (..))
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Compression (compress1)
 import qualified Simplex.Messaging.Crypto as C

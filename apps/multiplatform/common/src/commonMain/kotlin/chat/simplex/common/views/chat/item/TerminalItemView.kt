@@ -1,14 +1,12 @@
 package chat.simplex.common.views.chat.item
 
 import androidx.compose.foundation.LocalIndication
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.Interaction
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -19,19 +17,12 @@ import androidx.compose.ui.layout.AlignmentLine
 import androidx.compose.ui.layout.HorizontalAlignmentLine
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layout
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.offset
-import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
-import chat.simplex.common.platform.chatModel
-import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.*
-import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.flow.Flow
 import kotlin.math.max
 
@@ -40,26 +31,7 @@ val LocalTerminalLayout = staticCompositionLocalOf { false }
 val TERMINAL_TEXT_BOTTOM_PADDING = 1.dp
 
 fun terminalItemShowsSender(item: ChatItem, older: ChatItem?): Boolean =
-  item.content.hasTerminalSender && (
-    older == null
-      || !older.content.hasTerminalSender
-      || !sameTerminalSender(item, older)
-      || item.minuteApart(older)
-      || getTimestampDateText(item.meta.itemTs) != getTimestampDateText(older.meta.itemTs)
-  )
-
-private fun sameTerminalSender(item: ChatItem, older: ChatItem): Boolean {
-  val d = item.chatDir
-  val o = older.chatDir
-  return when {
-    item.channelIsSender || older.channelIsSender -> item.channelIsSender && older.channelIsSender
-    d is CIDirection.GroupRcv -> o is CIDirection.GroupRcv && o.groupMember.groupMemberId == d.groupMember.groupMemberId
-    else -> d::class == o::class
-  }
-}
-
-private val ChatItem.channelIsSender: Boolean get() =
-  chatDir is CIDirection.ChannelRcv || (chatDir is CIDirection.GroupSnd && meta.showGroupAsSender)
+  showsSender(item, older) { it.content.hasTerminalSender }
 
 private val CIContent.hasTerminalSender: Boolean get() = when (this) {
   is CIContent.SndMsgContent,
@@ -115,12 +87,14 @@ fun Modifier.messageTextBottom(): Modifier =
   }
 
 @Composable
-fun ItemWithMeta(meta: @Composable () -> Unit, content: @Composable (inlineMeta: (@Composable () -> Unit)?) -> Unit) {
+fun ItemWithMeta(meta: @Composable () -> Unit, overlayMeta: (@Composable () -> Unit)? = null, content: @Composable (inlineMeta: (@Composable () -> Unit)?) -> Unit) {
   if (LocalTerminalLayout.current) {
     TerminalMetaLayout {
       content(null)
-      Box(Modifier.padding(bottom = 6.dp, end = 12.dp)) {
-        meta()
+      listOfNotNull(meta, overlayMeta).forEach { m ->
+        Box(Modifier.padding(bottom = 6.dp, end = 12.dp)) {
+          m()
+        }
       }
     }
   } else {
@@ -132,13 +106,19 @@ fun ItemWithMeta(meta: @Composable () -> Unit, content: @Composable (inlineMeta:
 private fun TerminalMetaLayout(contentWithMeta: @Composable () -> Unit) {
   Layout(contentWithMeta) { measurables, constraints ->
     val content = measurables[0].measure(constraints.copy(minWidth = 0))
-    val meta = measurables[1].measure(constraints.copy(minWidth = 0, minHeight = 0))
+    val metaConstraints = constraints.copy(minWidth = 0, minHeight = 0)
+    val meta = measurables[1].measure(metaConstraints)
+    val overlay = measurables.getOrNull(2)?.measure(metaConstraints)
     val width = if (constraints.hasBoundedWidth) constraints.maxWidth else max(content.width, meta.width)
     val textBottom = content[MessageTextBottom]
     val metaBottom = if (textBottom == AlignmentLine.Unspecified) content.height else textBottom + CHAT_ITEM_TEXT_VERTICAL_PADDING.roundToPx()
     layout(width, content.height) {
       content.placeRelative(0, 0)
-      meta.placeRelative(width - meta.width, metaBottom - meta.height)
+      if (overlay != null && content.width + meta.width > width) {
+        overlay.placeRelative(content.width - overlay.width, content.height - overlay.height)
+      } else {
+        meta.placeRelative(width - meta.width, metaBottom - meta.height)
+      }
     }
   }
 }
@@ -149,7 +129,7 @@ fun terminalGutter(chatInfo: ChatInfo): Dp =
 
 @Composable
 fun TerminalChatItemRow(
-  sender: TerminalSender?,
+  sender: ChatItemSender?,
   gutter: Dp,
   topGap: Dp,
   modifier: Modifier = Modifier,
@@ -167,7 +147,7 @@ fun TerminalChatItemRow(
       }
       Box {
         if (sender != null) {
-          TerminalSenderNameAndRole(sender, topGap)
+          SenderNameAndRole(sender, Modifier.padding(start = CHAT_ITEM_TEXT_PADDING, bottom = 2.dp + topGap))
         }
       }
       Box(Modifier.padding(top = if (sender != null) 2.dp else 0.dp)) {
@@ -194,85 +174,6 @@ fun TerminalChatItemRow(
       button.placeRelative((gutterWidth - button.width) / 2, buttonTop)
       name.placeRelative(messageStart, 0)
       message.placeRelative(messageStart, messageTop)
-    }
-  }
-}
-
-class TerminalSender(val name: String, val badge: LocalBadge?, val role: String?, val own: Boolean, val image: (@Composable () -> Unit)?)
-
-@Composable
-fun terminalSender(
-  chatInfo: ChatInfo,
-  cItem: ChatItem,
-  range: State<IntRange?>,
-  reversedChatItems: State<List<ChatItem>>,
-  showMemberInfo: (GroupInfo, GroupMember) -> Unit,
-  showChatInfo: () -> Unit
-): TerminalSender {
-  val dir = cItem.chatDir
-  return when {
-    cItem.channelIsSender ->
-      TerminalSender(chatInfo.chatViewName, null, stringResource(MR.strings.channel_role_label), dir.sent) {
-        Box(Modifier.clickable { showChatInfo() }) {
-          ChatInfoImage(chatInfo, MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier, backgroundColor = MaterialTheme.colors.background)
-        }
-      }
-    dir is CIDirection.DirectRcv ->
-      TerminalSender(chatInfo.displayName, chatInfo.nameBadge, null, false, null)
-    dir is CIDirection.GroupRcv && chatInfo is ChatInfo.Group -> {
-      val member = dir.groupMember
-      val rangeValue = range.value
-      val (prevMember, memCount) = if (rangeValue != null) chatModel.getPrevHiddenMember(member, rangeValue, reversedChatItems.value) else null to 1
-      TerminalSender(
-        memberNames(member, prevMember, memCount),
-        if (prevMember == null && memCount == 1) member.nameBadge else null,
-        if (memCount == 1) memberRole(member, chatInfo.isChannel) else null,
-        false
-      ) {
-        Box(Modifier.clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
-          MemberImage(member)
-        }
-      }
-    }
-    dir is CIDirection.GroupSnd && chatInfo is ChatInfo.Group -> {
-      val membership = chatInfo.groupInfo.membership
-      TerminalSender(membership.displayName, membership.nameBadge, memberRole(membership, chatInfo.isChannel), true) {
-        MemberImage(membership)
-      }
-    }
-    chatInfo.incognito ->
-      TerminalSender(stringResource(MR.strings.incognito), null, null, true, null)
-    else -> {
-      val user = chatModel.currentUser.value
-      TerminalSender(user?.displayName ?: "", user?.profile?.localBadge, null, true, null)
-    }
-  }
-}
-
-private fun memberRole(member: GroupMember, isChannel: Boolean): String? =
-  if (member.memberRole > GroupMemberRole.Member) member.memberRole.text(isChannel) else null
-
-@Composable
-private fun TerminalSenderNameAndRole(sender: TerminalSender, topGap: Dp) {
-  Row(Modifier.padding(start = CHAT_ITEM_TEXT_PADDING, bottom = 2.dp + topGap)) {
-    NameWithBadge(
-      sender.name,
-      sender.badge,
-      Modifier.weight(1f, false),
-      fontSize = 13.5.sp,
-      color = if (sender.own) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
-      overflow = TextOverflow.Ellipsis,
-      maxLines = 1
-    )
-    if (sender.role != null) {
-      Text(
-        sender.role,
-        Modifier.padding(start = DEFAULT_PADDING_HALF * 1.5f),
-        fontSize = 13.5.sp,
-        fontWeight = FontWeight.Medium,
-        color = MaterialTheme.colors.secondary,
-        maxLines = 1
-      )
     }
   }
 }

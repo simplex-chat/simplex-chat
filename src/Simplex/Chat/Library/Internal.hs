@@ -78,6 +78,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
+import Simplex.Chat.Types.UITheme (ChatLayout)
 import Simplex.Chat.Util (encryptFile, shuffle)
 import Simplex.FileTransfer.Description (FileDescriptionURI (..), ValidFileDescription)
 import qualified Simplex.FileTransfer.Description as FD

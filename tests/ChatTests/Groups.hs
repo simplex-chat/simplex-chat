@@ -43,6 +43,7 @@ import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (XGrpMemNe
 import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations (MemberRelation (..), getRelation, setRelation)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
+import Simplex.Chat.Types.UITheme (ChatLayout (..))
 import Simplex.Messaging.Agent (joinConnection, prepareConnectionToJoin, sendMessages, vrValue)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
@@ -10573,9 +10574,9 @@ testChannelChatLayout ps =
               bob <## "#team: cath joined the group",
             alice <### [EndsWith "introduced cath (Catherine) in the channel"]
           ]
-        groupChatLayout alice "team" `shouldReturn` (Nothing, Nothing)
-        groupChatLayout bob "team" `shouldReturn` (Nothing, Nothing)
-        groupChatLayout cath "team" `shouldReturn` (Just CLTerminal, Nothing)
+        groupChatLayout alice "team" `shouldReturn` Just CLTerminal
+        groupChatLayout bob "team" `shouldReturn` Just CLTerminal
+        groupChatLayout cath "team" `shouldReturn` Just CLTerminal
 
 testChannelOwnerKeyAfterLinkUpdate :: HasCallStack => TestParams -> IO ()
 testChannelOwnerKeyAfterLinkUpdate ps =

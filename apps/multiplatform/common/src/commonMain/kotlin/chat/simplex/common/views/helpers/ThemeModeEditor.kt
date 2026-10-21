@@ -13,7 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import chat.simplex.common.model.ChatController.appPrefs
-import chat.simplex.common.model.ChatLayout
+import chat.simplex.common.model.ChatLayoutMode
 import chat.simplex.common.model.yaml
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
@@ -536,13 +536,13 @@ private fun SetDefaultThemeButton(onClick: () -> Unit) {
   }
 }
 
-fun chatLayoutName(layout: ChatLayout): String = when (layout) {
-  is ChatLayout.Classic -> generalGetString(MR.strings.chat_layout_classic)
-  is ChatLayout.Terminal -> generalGetString(MR.strings.chat_layout_terminal)
-  is ChatLayout.Unknown -> layout.type
+fun chatLayoutName(layout: ChatLayoutMode): String = when (layout) {
+  is ChatLayoutMode.Classic -> generalGetString(MR.strings.chat_layout_classic)
+  is ChatLayoutMode.Terminal -> generalGetString(MR.strings.chat_layout_terminal)
+  is ChatLayoutMode.Unknown -> layout.type
 }
 
-fun otherChatLayout(layout: ChatLayout): ChatLayout = if (layout == ChatLayout.Terminal) ChatLayout.Classic else ChatLayout.Terminal
+fun otherChatLayout(layout: ChatLayoutMode): ChatLayoutMode = if (layout == ChatLayoutMode.Terminal) ChatLayoutMode.Classic else ChatLayoutMode.Terminal
 
 @Composable
 private fun AdvancedSettingsButton(onClick: () -> Unit) {

@@ -21,8 +21,7 @@ fun CIFeaturePreferenceView(
   allowed: FeatureAllowed,
   acceptFeature: (Contact, ChatFeature, Int?) -> Unit
 ) {
-  ItemWithMeta(meta = { ChatEventMeta(chatItem) }) { inlineMeta ->
-    val ts = if (inlineMeta != null) chatItem.timestampText else ""
+  ChatEventWithMeta(chatItem) { ts ->
     Row(
       Modifier.padding(horizontal = chatEventHorizontalPadding(), vertical = 6.dp),
       verticalAlignment = Alignment.CenterVertically,
@@ -39,7 +38,7 @@ fun CIFeaturePreferenceView(
           withAnnotation(tag = "Accept", annotation = "Accept") {
             withStyle(acceptStyle) { append(generalGetString(acceptTextId) + "  ") }
           }
-          withStyle(chatEventStyle) { append(ts) }
+          append(ts)
         }
         fun accept(offset: Int): Boolean = annotatedText.getStringAnnotations(tag = "Accept", start = offset, end = offset).isNotEmpty()
         ClickableText(
@@ -48,7 +47,7 @@ fun CIFeaturePreferenceView(
           shouldConsumeEvent = ::accept
         )
       } else {
-        Text(chatItem.content.text + "  " + ts,
+        Text(AnnotatedString(chatItem.content.text + "  ") + ts,
           fontSize = 12.sp, fontWeight = FontWeight.Light, color = MaterialTheme.colors.secondary)
       }
     }

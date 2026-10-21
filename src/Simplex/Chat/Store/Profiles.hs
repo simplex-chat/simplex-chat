@@ -85,7 +85,6 @@ module Simplex.Chat.Store.Profiles
     updateCommandStatus,
     getCommandDataByCorrId,
     setUserUIThemes,
-    setUserChatLayout,
     profileContactLink,
   )
 where
@@ -171,7 +170,7 @@ createUserRecordAt db (AgentUserId auId) userChatRelay clientService Profile {di
       (profileId, displayName, userId, BI True, currentTs, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
-    pure $ toUser currentTs $ (userId, auId, contactId, profileId, BI activeUser, order, displayName) :. (displayName, fullName, shortDescr, description, image, Nothing, peerType, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, BI autoAcceptGroupInvitations, Nothing, Nothing, Nothing, BI userChatRelay, BI clientService, Nothing, Nothing) :. localBadgeToRow Nothing :. (Nothing, Nothing, Nothing)
+    pure $ toUser currentTs $ (userId, auId, contactId, profileId, BI activeUser, order, displayName) :. (displayName, fullName, shortDescr, description, image, Nothing, peerType, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, BI autoAcceptGroupInvitations, Nothing, Nothing, Nothing, BI userChatRelay, BI clientService, Nothing) :. localBadgeToRow Nothing :. (Nothing, Nothing, Nothing)
 
 -- TODO [mentions]
 getUsersInfo :: DB.Connection -> IO [UserInfo]
@@ -1155,8 +1154,3 @@ setUserUIThemes :: DB.Connection -> User -> Maybe UIThemeEntityOverrides -> IO (
 setUserUIThemes db User {userId} uiThemes = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE users SET ui_themes = ?, updated_at = ? WHERE user_id = ?" (uiThemes, updatedAt, userId)
-
-setUserChatLayout :: DB.Connection -> User -> Maybe ChatLayout -> IO ()
-setUserChatLayout db User {userId} chatLayout = do
-  updatedAt <- getCurrentTime
-  DB.execute db "UPDATE users SET chat_layout = ?, updated_at = ? WHERE user_id = ?" (chatLayout, updatedAt, userId)

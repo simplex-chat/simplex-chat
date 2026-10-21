@@ -1989,7 +1989,6 @@ Error:
 - chatItemTTL: int64?
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
 - chatLayout: [ChatLayout](#chatlayout)?
-- userChatLayout: [ChatLayout](#chatlayout)?
 - chatDeleted: bool
 - customData: JSONObject?
 
@@ -2584,8 +2583,6 @@ MemberSupport:
 - chatTags: [int64]
 - chatItemTTL: int64?
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
-- chatLayout: [ChatLayout](#chatlayout)?
-- userChatLayout: [ChatLayout](#chatlayout)?
 - customData: JSONObject?
 - groupSummary: [GroupSummary](#groupsummary)
 - rosterVersion: int64?
@@ -4658,6 +4655,7 @@ Handshake:
 **Record type**:
 - light: [UIThemeEntityOverride](#uithemeentityoverride)?
 - dark: [UIThemeEntityOverride](#uithemeentityoverride)?
+- chatLayout: [ChatLayout](#chatlayout)?
 
 
 ---
@@ -4692,7 +4690,6 @@ Handshake:
 - userChatRelay: bool
 - clientService: bool
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
-- chatLayout: [ChatLayout](#chatlayout)?
 
 
 ---

@@ -2296,7 +2296,6 @@ export interface Contact {
   chatItemTTL?: number // int64
   uiThemes?: UIThemeEntityOverrides
   chatLayout?: ChatLayout
-  userChatLayout?: ChatLayout
   chatDeleted: boolean
   customData?: object
 }
@@ -2932,8 +2931,6 @@ export interface GroupInfo {
   chatTags: number[] // int64
   chatItemTTL?: number // int64
   uiThemes?: UIThemeEntityOverrides
-  chatLayout?: ChatLayout
-  userChatLayout?: ChatLayout
   customData?: object
   groupSummary: GroupSummary
   rosterVersion?: number // int64
@@ -5420,6 +5417,7 @@ export interface UIThemeEntityOverride {
 export interface UIThemeEntityOverrides {
   light?: UIThemeEntityOverride
   dark?: UIThemeEntityOverride
+  chatLayout?: ChatLayout
 }
 
 export interface UpdatedMessage {
@@ -5446,7 +5444,6 @@ export interface User {
   userChatRelay: boolean
   clientService: boolean
   uiThemes?: UIThemeEntityOverrides
-  chatLayout?: ChatLayout
 }
 
 export interface UserChatRelay {

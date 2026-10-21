@@ -490,14 +490,14 @@ type PreparedContactRow = (Maybe AConnectionRequestUri, Maybe AConnShortLink, Ma
 
 type GroupDirectInvitationRow = (Maybe ConnReqInvitation, Maybe GroupId, Maybe GroupMemberId, Maybe Int64, BoolInt)
 
-type ContactRow' = (ProfileId, ContactName, ContactName, Text, Maybe Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, LocalAlias, BoolInt, ContactStatus) :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe Text, Maybe Text, Preferences, UTCTime, UTCTime, Maybe UTCTime) :. PreparedContactRow :. (Maybe Int64, Maybe BoolInt, Maybe GroupMemberId, BoolInt) :. GroupDirectInvitationRow :. (Maybe UIThemeEntityOverrides, BoolInt, Maybe CustomData, Maybe Int64, Maybe ChatLayout, Maybe ChatLayout) :. BadgeRow :. ContactDomainRow
+type ContactRow' = (ProfileId, ContactName, ContactName, Text, Maybe Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, LocalAlias, BoolInt, ContactStatus) :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe Text, Maybe Text, Preferences, UTCTime, UTCTime, Maybe UTCTime) :. PreparedContactRow :. (Maybe Int64, Maybe BoolInt, Maybe GroupMemberId, BoolInt) :. GroupDirectInvitationRow :. (Maybe UIThemeEntityOverrides, BoolInt, Maybe CustomData, Maybe Int64, Maybe ChatLayout) :. BadgeRow :. ContactDomainRow
 
 type ContactRow = Only ContactId :. ContactRow'
 
 type ContactDomainRow = (Maybe SimplexDomain, Maybe SimplexDomainProof, Maybe BoolInt)
 
 toContact :: UTCTime -> StoreCxt -> User -> [ChatTagId] -> ContactRow :. MaybeConnectionRow -> Contact
-toContact now cxt user chatTags ((Only contactId :. (profileId, localDisplayName, displayName, fullName, shortDescr, description, image, contactLink, peerType, localAlias, BI contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, BI favorite, encodedPrefs, receivedPrefs, userPreferences, createdAt, updatedAt, chatTs) :. preparedContactRow :. (contactRequestId, rejectionSupported_, contactGroupMemberId, BI contactGrpInvSent) :. groupDirectInvRow :. (uiThemes, BI chatDeleted, customData, chatItemTTL, chatLayout, userChatLayout) :. badgeRow :. domainRow) :. connRow) =
+toContact now cxt user chatTags ((Only contactId :. (profileId, localDisplayName, displayName, fullName, shortDescr, description, image, contactLink, peerType, localAlias, BI contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, BI favorite, encodedPrefs, receivedPrefs, userPreferences, createdAt, updatedAt, chatTs) :. preparedContactRow :. (contactRequestId, rejectionSupported_, contactGroupMemberId, BI contactGrpInvSent) :. groupDirectInvRow :. (uiThemes, BI chatDeleted, customData, chatItemTTL, chatLayout) :. badgeRow :. domainRow) :. connRow) =
   let preferences = chatPrefsFromRow encodedPrefs receivedPrefs
       profile = LocalProfile {profileId, displayName, fullName, shortDescr, description, image, contactLink, contactDomain = rowToContactDomain domainRow, contactDomainVerified = rowToDomainVerified domainRow, peerType, localBadge = rowToBadge now badgeRow, preferences, localAlias}
       activeConn = toMaybeConnection cxt connRow
@@ -507,7 +507,7 @@ toContact now cxt user chatTags ((Only contactId :. (profileId, localDisplayName
       preparedContact = toPreparedContact preparedContactRow
       contactRequest = UserContactRequestRef <$> contactRequestId <*> (unBI <$> rejectionSupported_)
       groupDirectInv = toGroupDirectInvitation groupDirectInvRow
-   in Contact {contactId, localDisplayName, profile, activeConn, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, preparedContact, contactRequestId, contactRequest, contactGroupMemberId, contactGrpInvSent, groupDirectInv, chatTags, chatItemTTL, uiThemes, chatLayout, userChatLayout, chatDeleted, customData}
+   in Contact {contactId, localDisplayName, profile, activeConn, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, preparedContact, contactRequestId, contactRequest, contactGroupMemberId, contactGrpInvSent, groupDirectInv, chatTags, chatItemTTL, uiThemes, chatLayout, chatDeleted, customData}
 
 rowToContactDomain :: ContactDomainRow -> Maybe SimplexDomainClaim
 rowToContactDomain (domain_, domainProof_, _) = (`SimplexDomainClaim` domainProof_) . StrJSON <$> domain_
@@ -560,16 +560,16 @@ userQuery :: Query
 userQuery =
   [sql|
     SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.display_name, ucp.full_name, ucp.short_descr, ucp.description, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
-      u.show_ntfs, u.send_rcpts_contacts, u.send_rcpts_small_groups, u.auto_accept_member_contacts, u.auto_accept_group_invitations, u.view_pwd_hash, u.view_pwd_salt, u.user_member_profile_updated_at, u.is_user_chat_relay, u.client_service, u.ui_themes, u.chat_layout,
+      u.show_ntfs, u.send_rcpts_contacts, u.send_rcpts_small_groups, u.auto_accept_member_contacts, u.auto_accept_group_invitations, u.view_pwd_hash, u.view_pwd_salt, u.user_member_profile_updated_at, u.is_user_chat_relay, u.client_service, u.ui_themes,
       ucp.badge_proof, ucp.badge_pres_header, ucp.badge_expiry, ucp.badge_type, ucp.badge_verified, ucp.badge_extra, ucp.badge_master_key, ucp.badge_signature, ucp.badge_key_idx, ucp.contact_domain, ucp.contact_domain_proof, ucp.contact_domain_verified
     FROM users u
     JOIN contacts uct ON uct.contact_id = u.contact_id
     JOIN contact_profiles ucp ON ucp.contact_profile_id = uct.contact_profile_id
   |]
 
-toUser :: UTCTime -> (UserId, UserId, ContactId, ProfileId, BoolInt, Int64, ContactName) :. (ContactName, Text, Maybe Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, Maybe Preferences) :. (BoolInt, BoolInt, BoolInt, BoolInt, BoolInt, Maybe B64UrlByteString, Maybe B64UrlByteString, Maybe UTCTime, BoolInt, BoolInt, Maybe UIThemeEntityOverrides, Maybe ChatLayout) :. BadgeRow :. ContactDomainRow -> User
-toUser now ((userId, auId, userContactId, profileId, BI activeUser, activeOrder, localDisplayName) :. (displayName, fullName, shortDescr, description, image, contactLink, peerType, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, BI autoAcceptGroupInv, viewPwdHash_, viewPwdSalt_, userMemberProfileUpdatedAt, BI userChatRelay, BI clientService, uiThemes, chatLayout) :. badgeRow :. domainRow) =
-  User {userId, agentUserId = AgentUserId auId, userContactId, localDisplayName, profile, activeUser, activeOrder, fullPreferences, showNtfs, sendRcptsContacts, sendRcptsSmallGroups, autoAcceptMemberContacts, autoAcceptGroupInvitations, viewPwdHash, userMemberProfileUpdatedAt, userChatRelay = BoolDef userChatRelay, clientService = BoolDef clientService, uiThemes, chatLayout}
+toUser :: UTCTime -> (UserId, UserId, ContactId, ProfileId, BoolInt, Int64, ContactName) :. (ContactName, Text, Maybe Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, Maybe Preferences) :. (BoolInt, BoolInt, BoolInt, BoolInt, BoolInt, Maybe B64UrlByteString, Maybe B64UrlByteString, Maybe UTCTime, BoolInt, BoolInt, Maybe UIThemeEntityOverrides) :. BadgeRow :. ContactDomainRow -> User
+toUser now ((userId, auId, userContactId, profileId, BI activeUser, activeOrder, localDisplayName) :. (displayName, fullName, shortDescr, description, image, contactLink, peerType, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, BI autoAcceptGroupInv, viewPwdHash_, viewPwdSalt_, userMemberProfileUpdatedAt, BI userChatRelay, BI clientService, uiThemes) :. badgeRow :. domainRow) =
+  User {userId, agentUserId = AgentUserId auId, userContactId, localDisplayName, profile, activeUser, activeOrder, fullPreferences, showNtfs, sendRcptsContacts, sendRcptsSmallGroups, autoAcceptMemberContacts, autoAcceptGroupInvitations, viewPwdHash, userMemberProfileUpdatedAt, userChatRelay = BoolDef userChatRelay, clientService = BoolDef clientService, uiThemes}
   where
     profile = LocalProfile {profileId, displayName, fullName, shortDescr, description, image, contactLink, contactDomain = rowToContactDomain domainRow, contactDomainVerified = rowToDomainVerified domainRow, peerType, localBadge = rowToBadge now badgeRow, preferences = userPreferences, localAlias = ""}
     fullPreferences = fullPreferences' userPreferences
@@ -696,7 +696,7 @@ type BusinessChatInfoRow = (Maybe BusinessChatType, Maybe MemberId, Maybe Member
 
 type GroupKeysRow = (Maybe C.PrivateKeyEd25519, Maybe C.PublicKeyEd25519, Maybe C.PrivateKeyEd25519)
 
-type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, Text, Maybe Text, Maybe ImageData, Maybe GroupType, Maybe ShortLinkContact, Maybe B64UrlByteString) :. PublicGroupAccessRow :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe Text, Maybe Text, Maybe GroupMemberAdmission, Maybe ChatLayout) :. (UTCTime, UTCTime, Maybe UTCTime, Maybe UTCTime) :. PreparedGroupRow :. BusinessChatInfoRow :. (BoolInt, Maybe RelayStatus, Maybe UIThemeEntityOverrides, Int64, Maybe Int64, Maybe VersionRoster, Maybe CustomData, Maybe Int64, Int, Maybe ConnReqContact, Maybe BoolInt) :. (Maybe ChatLayout, Maybe ChatLayout) :. GroupKeysRow :. GroupMemberRow
+type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, Text, Maybe Text, Maybe ImageData, Maybe GroupType, Maybe ShortLinkContact, Maybe B64UrlByteString) :. PublicGroupAccessRow :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe Text, Maybe Text, Maybe GroupMemberAdmission, Maybe ChatLayout) :. (UTCTime, UTCTime, Maybe UTCTime, Maybe UTCTime) :. PreparedGroupRow :. BusinessChatInfoRow :. (BoolInt, Maybe RelayStatus, Maybe UIThemeEntityOverrides, Int64, Maybe Int64, Maybe VersionRoster, Maybe CustomData, Maybe Int64, Int, Maybe ConnReqContact, Maybe BoolInt) :. GroupKeysRow :. GroupMemberRow
 
 type PublicGroupAccessRow = (Maybe Text, Maybe SimplexDomain, Maybe BoolInt, Maybe BoolInt, Maybe SimplexDomainProof)
 
@@ -705,17 +705,17 @@ type GroupMemberRow = (GroupMemberId, GroupId, Int64, MemberId, VersionChat, Ver
 type ProfileRow = (ProfileId, ContactName, Text, Maybe Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, LocalAlias, Maybe Text, Maybe Text) :. BadgeRow :. ContactDomainRow
 
 toGroupInfo :: UTCTime -> StoreCxt -> Int64 -> [ChatTagId] -> GroupInfoRow -> (GroupInfo, GroupKeysRow)
-toGroupInfo now cxt userContactId chatTags ((groupId, localDisplayName, displayName, fullName, shortDescr, localAlias, description, image, groupType_, groupLink_, publicGroupId_) :. accessRow :. (enableNtfs_, sendRcpts, BI favorite, encodedPrefs, receivedPrefs, memberAdmission, profileChatLayout) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt) :. preparedGroupRow :. businessRow :. (BI useRelays, relayOwnStatus, uiThemes, currentMembers, publicMemberCount, rosterVersion, customData, chatItemTTL, membersRequireAttention, viaGroupLinkUri, groupDomainVerified) :. (chatLayout, userChatLayout) :. groupKeysRow :. userMemberRow) =
+toGroupInfo now cxt userContactId chatTags ((groupId, localDisplayName, displayName, fullName, shortDescr, localAlias, description, image, groupType_, groupLink_, publicGroupId_) :. accessRow :. (enableNtfs_, sendRcpts, BI favorite, encodedPrefs, receivedPrefs, memberAdmission, chatLayout) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt) :. preparedGroupRow :. businessRow :. (BI useRelays, relayOwnStatus, uiThemes, currentMembers, publicMemberCount, rosterVersion, customData, chatItemTTL, membersRequireAttention, viaGroupLinkUri, groupDomainVerified) :. groupKeysRow :. userMemberRow) =
   let membership = (toGroupMember now userContactId userMemberRow) {memberChatVRange = vr cxt}
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts = unBI <$> sendRcpts, favorite}
       groupPreferences = groupPrefsFromRow encodedPrefs receivedPrefs
       fullGroupPreferences = mergeGroupPreferences groupPreferences
       publicGroup = toPublicGroupProfile groupType_ groupLink_ publicGroupId_ (toPublicGroupAccess accessRow)
-      groupProfile = GroupProfile {displayName, fullName, shortDescr, description, image, publicGroup, groupPreferences, memberAdmission, chatLayout = profileChatLayout}
+      groupProfile = GroupProfile {displayName, fullName, shortDescr, description, image, publicGroup, groupPreferences, memberAdmission, chatLayout}
       businessChat = toBusinessChatInfo (toPublicGroupAccess accessRow >>= groupDomainClaim) businessRow
       preparedGroup = toPreparedGroup preparedGroupRow
       groupSummary = GroupSummary {currentMembers, publicMemberCount}
-      gInfo = GroupInfo {groupId, useRelays = BoolDef useRelays, relayOwnStatus, localDisplayName, groupProfile, localAlias, businessChat, fullGroupPreferences, membership, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, preparedGroup, chatTags, chatItemTTL, uiThemes, chatLayout, userChatLayout, groupSummary, rosterVersion, customData, membersRequireAttention, viaGroupLinkUri, groupDomainVerified = unBI <$> groupDomainVerified}
+      gInfo = GroupInfo {groupId, useRelays = BoolDef useRelays, relayOwnStatus, localDisplayName, groupProfile, localAlias, businessChat, fullGroupPreferences, membership, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, preparedGroup, chatTags, chatItemTTL, uiThemes, groupSummary, rosterVersion, customData, membersRequireAttention, viaGroupLinkUri, groupDomainVerified = unBI <$> groupDomainVerified}
    in (gInfo, groupKeysRow)
 
 toGroupInfo_ :: UTCTime -> StoreCxt -> Int64 -> [ChatTagId] -> GroupInfoRow -> GroupInfo
@@ -849,7 +849,6 @@ groupInfoQueryFields =
       g.business_chat, g.business_member_id, g.customer_member_id,
       g.use_relays, g.relay_own_status,
       g.ui_themes, g.summary_current_members_count, g.public_member_count, g.roster_version, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri, g.group_domain_verified,
-      g.chat_layout, g.user_chat_layout,
       g.root_priv_key, g.root_pub_key, g.member_priv_key,
       -- GroupMember - membership
       mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,

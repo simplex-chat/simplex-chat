@@ -81,8 +81,6 @@ struct AppearanceSettings: View {
                 Section {
                     ThemeDestinationPicker(themeUserDestination: $themeUserDestination, themeUserDest: themeUserDestination?.0, customizeThemeIsOpen: $customizeThemeIsOpen)
 
-                    ChatLayoutPicker(userId: themeUserDestination?.0)
-
                     WallpaperPresetSelector(
                         selectedWallpaper: theme.wallpaper.type,
                         currentColors: currentColors,
@@ -777,14 +775,14 @@ struct UserWallpaperEditorSheet: View {
                 let filePath = saveWallpaperFile(url: getWallpaperFilePath(imageFile))
                 if currentMode == DefaultThemeMode.light {
                     dark.wallpaper?.imageFile = filePath
-                    changedThemes = ThemeModeOverrides(light: changedThemes?.light, dark: dark)
+                    changedThemes?.dark = dark
                 } else {
                     light.wallpaper?.imageFile = filePath
-                    changedThemes = ThemeModeOverrides(light: light, dark: changedThemes?.dark)
+                    changedThemes?.light = light
                 }
             }
         } else {
-            changedThemes = nil
+            changedThemes = changedThemes?.layoutOnly()
         }
         wallpaperFiles.remove(changedThemes?.light?.wallpaper?.imageFile)
         wallpaperFiles.remove(changedThemes?.dark?.wallpaper?.imageFile)
@@ -871,52 +869,6 @@ struct ThemeDestinationPicker: View {
                     themeUserDestination = nil
                     themeUserDest = nil
                 }
-        }
-    }
-}
-
-struct ChatLayoutPicker: View {
-    @EnvironmentObject var m: ChatModel
-    var userId: Int64?
-    @State private var globalLayout: ChatLayout = chatLayoutGroupDefault.get()
-
-    var body: some View {
-        if let userId {
-            let otherLayout = otherChatLayout(globalLayout)
-            Picker("Chat layout", selection: Binding(
-                get: { m.currentUser?.chatLayout == otherLayout ? otherLayout : nil },
-                set: { setUserChatLayout(userId, $0) }
-            )) {
-                Text(globalLayout.displayName + " " + NSLocalizedString("(default)", comment: "chat layout")).tag(nil as ChatLayout?)
-                Text(otherLayout.displayName).tag(otherLayout as ChatLayout?)
-            }
-            .frame(height: 36)
-        } else {
-            Picker("Chat layout", selection: Binding(
-                get: { globalLayout },
-                set: { setGlobalChatLayout($0) }
-            )) {
-                ForEach([ChatLayout.classic, ChatLayout.terminal], id: \.self) { layout in
-                    Text(layout.displayName).tag(layout)
-                }
-            }
-            .frame(height: 36)
-        }
-    }
-
-    private func setGlobalChatLayout(_ layout: ChatLayout) {
-        globalLayout = layout
-        chatLayoutGroupDefault.set(layout)
-    }
-
-    private func setUserChatLayout(_ userId: Int64, _ layout: ChatLayout?) {
-        Task {
-            do {
-                try await apiSetUserChatLayout(userId: userId, layout: layout)
-                await MainActor.run { m.updateCurrentUserChatLayout(layout) }
-            } catch {
-                logger.error("apiSetUserChatLayout error: \(responseError(error))")
-            }
         }
     }
 }
@@ -1183,7 +1135,7 @@ private func saveThemeToDatabase(_ themeUserDestination: (Int64, ThemeModeOverri
 private func removeUserThemeModeOverrides(_ themeUserDestination: Binding<(Int64, ThemeModeOverrides?)?>, _ perUserTheme: Binding<ThemeModeOverride>) {
     guard let dest = themeUserDestination.wrappedValue else { return }
     perUserTheme.wrappedValue = ThemeModeOverride(mode: CurrentColors.base.mode)
-    themeUserDestination.wrappedValue = (dest.0, nil)
+    themeUserDestination.wrappedValue = (dest.0, dest.1?.layoutOnly())
     var wallpaperFilesToDelete: [String] = []
     if let type = ChatModel.shared.currentUser?.uiThemes?.light?.type, case let WallpaperType.image(filename, _, _) = type {
         wallpaperFilesToDelete.append(filename)

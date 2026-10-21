@@ -32,7 +32,7 @@ import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Protocol (ChatBinding (..), ChatMsgEvent (XInfo), ContactShortLinkData (ContactShortLinkData), LinkOwnerSig, MsgChatLink (..), MsgContent (..), encodeChatBinding)
 import Simplex.Chat.Store.Groups (getGroupMembers)
 import Simplex.Chat.Store.Shared (createContact, getGroupInfoKeys)
-import Simplex.Chat.Types (AgentConnId (..), ChatLayout (..), ChatPeerType (..), ConnStatus (..), GroupId, GroupInfo (..), GroupInfoKeys (..), GroupMember (..), Profile (..), GroupRejectionReason (..), fromLocalProfile, profileFromName, userProfileDirect, pattern VersionChat)
+import Simplex.Chat.Types (AgentConnId (..), ChatPeerType (..), ConnStatus (..), GroupId, GroupInfo (..), GroupInfoKeys (..), GroupMember (..), Profile (..), GroupRejectionReason (..), fromLocalProfile, profileFromName, userProfileDirect, pattern VersionChat)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey, BBSSecretKey, bbsKeyGen)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
@@ -166,12 +166,9 @@ chatProfileTests = do
       it "SimpleX links" testGroupPrefsSimplexLinksForRole
     it "set user, contact and group UI theme" testSetUITheme
   describe "chat layout" $ do
-    it "set contact and group chat layout" testSetChatLayout
     it "group chat layout from group profile" testGroupChatLayout
     it "group chat layout from group link without prepare" testGroupLinkChatLayout
-    it "group chat layout kept after repeated invitation" testGroupInvitationChatLayout
     it "unknown chat layout stored and read" testUnknownChatLayout
-    it "user chat layout" testUserChatLayout
     it "contact chat layout from address" testAddressChatLayout
     it "business chat layout from business address" testBusinessAddressChatLayout
   describe "short links" $ do
@@ -3844,93 +3841,42 @@ testSetUITheme =
     alice ##> "/i #team"
     groupInfo alice
   where
-    theme cm = T.unpack $ encodeJSON UIThemeEntityOverrides {light = Nothing, dark = Just $ UIThemeEntityOverride cm Nothing defaultUIColors}
+    theme cm = T.unpack $ encodeJSON UIThemeEntityOverrides {light = Nothing, dark = Just $ UIThemeEntityOverride cm Nothing defaultUIColors, chatLayout = Just CLTerminal}
     userInfo a name = do
       a <## ("user profile: " <> name)
       a <## "use /p <name> [<bio>] to change it"
-
-contactInfo :: HasCallStack => TestCC -> IO ()
-contactInfo a = do
-  a <## "contact ID: 2"
-  a <## "receiving messages via: localhost"
-  a <## "sending messages via: localhost"
-  a <## "you've shared main profile with this contact"
-  a <## "connection not verified, use /code command to see security code"
-  a <## "quantum resistant end-to-end encryption"
-  a <## currentChatVRangeInfo
-
-groupInfo :: HasCallStack => TestCC -> IO ()
-groupInfo a = do
-  a <## "group ID: 1"
-  a <## "current members: 1"
-
-testSetChatLayout :: HasCallStack => TestParams -> IO ()
-testSetChatLayout =
-  testChat2 aliceProfile bobProfile $ \alice bob -> do
-    connectUsers alice bob
-    alice ##> "/g team"
-    alice <## "group #team is created"
-    alice <## "to add members use /a team <name> or /create link #team"
-    contactChatLayout alice "bob" `shouldReturn` (Nothing, Nothing)
-    groupChatLayout alice "team" `shouldReturn` (Nothing, Nothing)
-    alice #$> ("/_layout @2 terminal", id, "ok")
-    alice #$> ("/_layout #1 terminal", id, "ok")
-    contactChatLayout alice "bob" `shouldReturn` (Nothing, Just CLTerminal)
-    groupChatLayout alice "team" `shouldReturn` (Nothing, Just CLTerminal)
-    alice ##> "/i @bob"
-    contactInfo alice
-    alice <## "user chat layout: terminal"
-    alice ##> "/i #team"
-    groupInfo alice
-    alice <## "user chat layout: terminal"
-    alice #$> ("/_layout @2 classic", id, "ok")
-    alice #$> ("/_layout #1 classic", id, "ok")
-    contactChatLayout alice "bob" `shouldReturn` (Nothing, Just CLClassic)
-    groupChatLayout alice "team" `shouldReturn` (Nothing, Just CLClassic)
-    alice #$> ("/_layout @2 default", id, "ok")
-    alice #$> ("/_layout #1 default", id, "ok")
-    contactChatLayout alice "bob" `shouldReturn` (Nothing, Nothing)
-    groupChatLayout alice "team" `shouldReturn` (Nothing, Nothing)
-    alice ##> "/i @bob"
-    contactInfo alice
-    alice ##> "/i #team"
-    groupInfo alice
-    alice ##> "/_layout *1 terminal"
-    alice <## "bad chat command: not supported"
-    alice ##> "/_layout #1(_support) terminal"
-    alice <## "bad chat command: not supported"
-    alice ##> "/_layout @2 wide"
-    alice <## "bad chat command: Failed reading: empty"
-    contactChatLayout bob "alice" `shouldReturn` (Nothing, Nothing)
+    contactInfo a = do
+      a <## "contact ID: 2"
+      a <## "receiving messages via: localhost"
+      a <## "sending messages via: localhost"
+      a <## "you've shared main profile with this contact"
+      a <## "connection not verified, use /code command to see security code"
+      a <## "quantum resistant end-to-end encryption"
+      a <## currentChatVRangeInfo
+    groupInfo a = do
+      a <## "group ID: 1"
+      a <## "current members: 1"
 
 testGroupChatLayout :: HasCallStack => TestParams -> IO ()
 testGroupChatLayout =
   testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
     connectUsers alice cath
     createGroupWithLayout alice "terminal"
-    groupChatLayout alice "team" `shouldReturn` (Just CLTerminal, Nothing)
-    alice #$> ("/_layout #1 classic", id, "ok")
-    groupChatLayout alice "team" `shouldReturn` (Just CLTerminal, Just CLClassic)
-    alice ##> "/i #team"
-    groupInfo alice
-    alice <## "chat layout: terminal"
-    alice <## "user chat layout: classic"
-    alice #$> ("/_layout #1 default", id, "ok")
-    groupChatLayout alice "team" `shouldReturn` (Just CLTerminal, Nothing)
+    groupChatLayout alice "team" `shouldReturn` Just CLTerminal
     addMember "team" alice cath GRAdmin
     cath ##> "/j team"
     concurrently_
       (alice <## "#team: cath joined the group")
       (cath <## "#team: you joined the group")
-    groupChatLayout cath "team" `shouldReturn` (Just CLTerminal, Nothing)
+    groupChatLayout cath "team" `shouldReturn` Just CLTerminal
     alice ##> "/create link #team"
     (shortLink, fullLink) <- getGroupLinks alice "team" GRMember True
     alice ##> "/set layout #team classic"
     alice <## "chat layout changed to: classic"
     cath <## "alice updated group #team: (signed)"
     cath <## "chat layout changed to: classic"
-    groupChatLayout alice "team" `shouldReturn` (Just CLTerminal, Nothing)
-    groupChatLayout cath "team" `shouldReturn` (Just CLTerminal, Nothing)
+    groupChatLayout alice "team" `shouldReturn` Just CLClassic
+    groupChatLayout cath "team" `shouldReturn` Just CLClassic
     alice ##> "/group_profile team"
     alice <## "#team"
     alice <## "chat layout: classic"
@@ -3941,13 +3887,13 @@ testGroupChatLayout =
     groupSLinkData <- getTermLine bob
     bob ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " " <> groupSLinkData)
     bob <## "#team: group is prepared"
-    groupChatLayout bob "team" `shouldReturn` (Just CLClassic, Nothing)
+    groupChatLayout bob "team" `shouldReturn` Just CLClassic
     alice ##> "/set layout #team default"
     alice <## "chat layout removed"
     cath <## "alice updated group #team: (signed)"
     cath <## "chat layout removed"
-    groupChatLayout alice "team" `shouldReturn` (Just CLTerminal, Nothing)
-    groupChatLayout cath "team" `shouldReturn` (Just CLTerminal, Nothing)
+    groupChatLayout alice "team" `shouldReturn` Nothing
+    groupChatLayout cath "team" `shouldReturn` Nothing
     bob ##> "/_connect group #1"
     bob <## "#team: connection started"
     alice <## "bob (Bob): accepting request to join group #team..."
@@ -3961,7 +3907,7 @@ testGroupChatLayout =
           cath <## "#team: alice added bob (Bob) to the group (connecting...)"
           cath <## "#team: new member bob is connected"
       ]
-    groupChatLayout bob "team" `shouldReturn` (Just CLClassic, Nothing)
+    groupChatLayout bob "team" `shouldReturn` Nothing
 
 createGroupWithLayout :: HasCallStack => TestCC -> String -> IO ()
 createGroupWithLayout cc layout = do
@@ -3984,49 +3930,13 @@ testGroupLinkChatLayout =
           bob <## "#team: joining the group..."
           bob <## "#team: you joined the group"
       ]
-    groupChatLayout bob "team" `shouldReturn` (Just CLTerminal, Nothing)
-
-testGroupInvitationChatLayout :: HasCallStack => TestParams -> IO ()
-testGroupInvitationChatLayout =
-  testChat2 aliceProfile bobProfile $ \alice bob -> do
-    connectUsers alice bob
-    createGroupWithLayout alice "terminal"
-    addMember "team" alice bob GRAdmin
-    groupChatLayout bob "team" `shouldReturn` (Just CLTerminal, Nothing)
-    groupProfileChatLayout bob "team" `shouldReturn` Just CLTerminal
-    alice ##> "/set layout #team classic"
-    alice <## "chat layout changed to: classic"
-    addMember "team" alice bob GRAdmin
-    groupChatLayout bob "team" `shouldReturn` (Just CLTerminal, Nothing)
-    groupProfileChatLayout bob "team" `shouldReturn` Just CLClassic
+    groupChatLayout bob "team" `shouldReturn` Just CLTerminal
 
 testUnknownChatLayout :: HasCallStack => TestParams -> IO ()
 testUnknownChatLayout =
   testChat aliceProfile $ \alice -> do
     createGroupWithLayout alice "wide"
-    groupChatLayout alice "team" `shouldReturn` (Just (CLUnknown "wide"), Nothing)
-    groupProfileChatLayout alice "team" `shouldReturn` Just (CLUnknown "wide")
-    alice ##> "/i #team"
-    groupInfo alice
-    alice <## "chat layout: wide"
-
-testUserChatLayout :: HasCallStack => TestParams -> IO ()
-testUserChatLayout =
-  testChat2 aliceProfile bobProfile $ \alice bob -> do
-    connectUsers alice bob
-    alice #$> ("/_layout user 1 terminal", id, "ok")
-    alice ##> "/u"
-    alice <## "user profile: alice (Alice)"
-    alice <## "use /p <name> [<bio>] to change it"
-    alice <## "chat layout: terminal"
-    alice ##> "/i @bob"
-    contactInfo alice
-    alice #$> ("/_layout user 1 default", id, "ok")
-    alice ##> "/u"
-    alice <## "user profile: alice (Alice)"
-    alice <## "use /p <name> [<bio>] to change it"
-    alice ##> "/_layout user 1 wide"
-    alice <## "bad chat command: Failed reading: empty"
+    groupChatLayout alice "team" `shouldReturn` Just (CLUnknown "wide")
 
 testAddressChatLayout :: HasCallStack => TestParams -> IO ()
 testAddressChatLayout =
@@ -4041,9 +3951,7 @@ testAddressChatLayout =
     contactSLinkData <- getTermLine bob
     bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
     bob <## "alice: contact is prepared"
-    contactChatLayout bob "alice" `shouldReturn` (Just CLTerminal, Nothing)
-    bob #$> ("/_layout @2 classic", id, "ok")
-    contactChatLayout bob "alice" `shouldReturn` (Just CLTerminal, Just CLClassic)
+    contactChatLayout bob "alice" `shouldReturn` Just CLTerminal
     bob ##> "/_connect contact @2 text hello"
     bob
       <### [ "alice: connection started",
@@ -4055,10 +3963,8 @@ testAddressChatLayout =
     concurrently_
       (bob <## "alice (Alice): contact is connected")
       (alice <## "bob (Bob): contact is connected")
-    contactChatLayout bob "alice" `shouldReturn` (Just CLTerminal, Just CLClassic)
-    bob #$> ("/_layout @2 default", id, "ok")
-    contactChatLayout bob "alice" `shouldReturn` (Just CLTerminal, Nothing)
-    contactChatLayout alice "bob" `shouldReturn` (Nothing, Nothing)
+    contactChatLayout bob "alice" `shouldReturn` Just CLTerminal
+    contactChatLayout alice "bob" `shouldReturn` Nothing
     alice ##> "/auto_accept on layout=classic"
     alice <## "auto_accept on"
     alice <## "chat layout: classic"
@@ -4089,7 +3995,7 @@ testBusinessAddressChatLayout =
     contactSLinkData <- getTermLine bob
     bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
     bob <## "#biz: group is prepared"
-    groupChatLayout bob "biz" `shouldReturn` (Just CLTerminal, Nothing)
+    groupChatLayout bob "biz" `shouldReturn` Just CLTerminal
     bob ##> "/_connect group #1"
     bob <## "#biz: connection started"
     biz <## "#bob (Bob): accepting business address request..."
@@ -4097,8 +4003,8 @@ testBusinessAddressChatLayout =
     concurrently_
       (biz <## "#bob: bob_1 joined the group")
       (bob <## "#biz: you joined the group")
-    groupChatLayout bob "biz" `shouldReturn` (Just CLTerminal, Nothing)
-    groupChatLayout biz "bob" `shouldReturn` (Nothing, Nothing)
+    groupChatLayout bob "biz" `shouldReturn` Just CLTerminal
+    groupChatLayout biz "bob" `shouldReturn` Nothing
     alice ##> ("/c " <> fullLink)
     alice <## "connection request sent!"
     biz <## "#alice (Alice): accepting business address request..."
@@ -4106,7 +4012,7 @@ testBusinessAddressChatLayout =
     concurrently_
       (biz <## "#alice: alice_1 joined the group")
       (alice <## "#biz: you joined the group")
-    groupChatLayout alice "biz" `shouldReturn` (Just CLTerminal, Nothing)
+    groupChatLayout alice "biz" `shouldReturn` Just CLTerminal
 
 testShortLinkInvitation :: HasCallStack => TestParams -> IO ()
 testShortLinkInvitation =

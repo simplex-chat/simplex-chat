@@ -116,7 +116,7 @@ chatErrorToView isCmd ChatConfig {logLevel, testView} = viewChatError isCmd logL
 
 chatResponseToView :: (Maybe RemoteHostId, Maybe User) -> ChatConfig -> Bool -> CurrentTime -> TimeZone -> Maybe RemoteHostId -> ChatResponse -> [StyledString]
 chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, testView} liveItems ts tz outputRH = \case
-  CRActiveUser User {profile = p@LocalProfile {localBadge}, uiThemes, chatLayout} -> viewUserProfile localBadge (fromLocalProfile p) <> viewUITheme uiThemes <> viewChatLayout "chat layout" chatLayout
+  CRActiveUser User {profile = p@LocalProfile {localBadge}, uiThemes} -> viewUserProfile localBadge (fromLocalProfile p) <> viewUITheme uiThemes
   CRUsersList users -> viewUsersList users
   CRChatStarted -> ["chat started"]
   CRChatRunning -> ["chat is running"]
@@ -1193,14 +1193,14 @@ viewAddressSettings :: AddressSettings -> [StyledString]
 viewAddressSettings AddressSettings {businessAddress, autoAccept, chatLayout, autoReply} = case autoAccept of
   Just AutoAccept {acceptIncognito} ->
     ("auto_accept on" <> aaInfo)
-      : viewChatLayout "chat layout" chatLayout
+      : viewChatLayout chatLayout
       <> maybe [] ((["auto reply:"] <>) . ttyMsgContent) autoReply
     where
       aaInfo
         | businessAddress = ", business"
         | acceptIncognito = ", incognito"
         | otherwise = ""
-  _ -> "auto_accept off" : viewChatLayout "chat layout" chatLayout
+  _ -> "auto_accept off" : viewChatLayout chatLayout
 
 groupLink_ :: Bool -> StyledString -> GroupInfo -> GroupLink -> [StyledString]
 groupLink_ showFullLinks intro g GroupLink {connLinkContact = CCLink cReq shortLink, acceptMemberRole} =
@@ -1894,7 +1894,7 @@ dayTime :: UTCTime -> Text
 dayTime = T.pack . formatTime defaultTimeLocale "%Y-%m-%d %H:%M"
 
 viewContactInfo :: Contact -> Maybe ConnectionStats -> Maybe Profile -> [StyledString]
-viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink, localBadge, contactDomain, contactDomainVerified, description}, activeConn, uiThemes, chatLayout, userChatLayout, customData} stats incognitoProfile =
+viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink, localBadge, contactDomain, contactDomainVerified, description}, activeConn, uiThemes, chatLayout, customData} stats incognitoProfile =
   ["contact ID: " <> sShow contactId]
     <> viewContactBadge localBadge
     <> maybe [] ((bold' "description:" :) . map plain . T.lines) description
@@ -1910,17 +1910,16 @@ viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, conta
     <> ["quantum resistant end-to-end encryption" | contactPQEnabled ct == CR.PQEncOn]
     <> maybe [] (\ac -> [viewPeerChatVRange (peerChatVRange ac)]) activeConn
     <> viewUITheme uiThemes
-    <> viewChatLayouts chatLayout userChatLayout
+    <> viewChatLayout chatLayout
     <> viewCustomData customData
 
 viewGroupInfo :: GroupInfo -> [StyledString]
-viewGroupInfo gInfo@GroupInfo {groupId, businessChat, groupDomainVerified, groupProfile = GroupProfile {publicGroup}, uiThemes, chatLayout, userChatLayout, customData, groupSummary = GroupSummary {currentMembers, publicMemberCount}} =
+viewGroupInfo gInfo@GroupInfo {groupId, businessChat, groupDomainVerified, groupProfile = GroupProfile {publicGroup}, uiThemes, customData, groupSummary = GroupSummary {currentMembers, publicMemberCount}} =
   [ "group ID: " <> sShow groupId,
     memberCountLine
   ]
     <> domainLine
     <> viewUITheme uiThemes
-    <> viewChatLayouts chatLayout userChatLayout
     <> viewCustomData customData
   where
     -- a business presents as a contact (@-name); a public group/channel shows its #-name
@@ -1934,11 +1933,8 @@ viewGroupInfo gInfo@GroupInfo {groupId, businessChat, groupDomainVerified, group
 viewUITheme :: Maybe UIThemeEntityOverrides -> [StyledString]
 viewUITheme = maybe [] (\uiThemes -> ["UI themes: " <> viewJSON uiThemes])
 
-viewChatLayout :: StyledString -> Maybe ChatLayout -> [StyledString]
-viewChatLayout name = maybe [] (\chatLayout -> [name <> ": " <> plain (textEncode chatLayout)])
-
-viewChatLayouts :: Maybe ChatLayout -> Maybe ChatLayout -> [StyledString]
-viewChatLayouts chatLayout userChatLayout = viewChatLayout "chat layout" chatLayout <> viewChatLayout "user chat layout" userChatLayout
+viewChatLayout :: Maybe ChatLayout -> [StyledString]
+viewChatLayout = maybe [] (\chatLayout -> ["chat layout: " <> plain (textEncode chatLayout)])
 
 viewCustomData :: Maybe CustomData -> [StyledString]
 viewCustomData = maybe [] (\(CustomData v) -> ["custom data: " <> viewJSON (J.Object v)])
@@ -2170,7 +2166,7 @@ viewGroupProfile g@GroupInfo {groupProfile = GroupProfile {shortDescr, descripti
     <> maybe [] (\sd -> ["description: " <> plain sd]) shortDescr
     <> maybe [] (const ["has profile image"]) image
     <> maybe [] ((bold' "welcome message:" :) . map plain . T.lines) description
-    <> viewChatLayout "chat layout" chatLayout
+    <> viewChatLayout chatLayout
     <> (bold' "group preferences:" : map viewPref (if useRelays' g then channelGroupFeatures else regularGroupFeatures))
   where
     viewPref (AGF f) = plain $ groupPreferenceText (pref gps)

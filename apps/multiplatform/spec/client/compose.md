@@ -262,8 +262,6 @@ The view is a `Box` containing:
      - "Send live message" option
      - Timed message options (1min, 5min, 1hr, 8hr, 1day, 1week, 1month, custom)
 
-In the terminal layout, `ComposeView` omits its top `Divider`, and the main input row and the "send message to connect" row (attachment buttons plus `SendMsgView`) are wrapped in `Modifier.terminalComposeField()`: a rounded field (8dp corner, `onBackground` at 6%) with 12dp horizontal and 8dp vertical margins. See [chat-view.md](chat-view.md#TerminalLayout).
-
 ### RecordingState
 
 ```kotlin

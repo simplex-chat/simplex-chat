@@ -39,7 +39,7 @@ ChatView
 |   |   |   |-- MemberImage        (group received messages)
 |   |   |   |-- ChatItemView       (message type routing)
 |   |   |   +-- TerminalChatItemRow (terminal layout, replaces the three lines above)
-|   |   |       |-- sender header, hover bar
+|   |   |       |-- sender row, avatar in groups, GoToItemButton
 |   |   |       +-- ChatItemView
 |   |   |-- ChatBannerView         (first item: chat profile banner)
 |   |   +-- FloatingButtons        (scroll-to-bottom, unread counter)
@@ -60,7 +60,7 @@ ChatView
 
 ## 2. ChatView Composable
 
-**Location:** [`ChatView.kt#L97`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L97)
+**Location:** [`ChatView.kt#L99`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L99)
 
 ```kotlin
 fun ChatView(
@@ -122,7 +122,7 @@ The message list is a `LazyColumnWithScrollBar` with `reverseLayout = true`, mea
 - **Scroll To Item:** `scrollToItem` lambda supports animated scrolling to a specific item ID, used by search result taps and quoted message navigation.
 - **Unread Marking:** `MarkItemsReadAfterDelay` composable marks newly visible received items as read after a brief delay.
 - **Date Separators:** `DateSeparator` composable renders between messages when the date changes (via `ItemSeparation.date`).
-- **Swipe to Reply:** `SwipeToDismiss` modifier on each item (EndToStart direction, 30dp threshold) sets `ComposeContextItem.QuotedItem` via `replyToItem()`.
+- **Swipe to Reply:** `SwipeToDismiss` modifier on each item (EndToStart direction, 30dp threshold) sets `ComposeContextItem.QuotedItem`.
 - **Selection Mode:** When `selectedChatItems` is non-null, a checkbox overlay appears on each item; a full-width clickable overlay toggles selection.
 
 ### Item Layout (ChatViewListItem)
@@ -139,7 +139,7 @@ The message list is a `LazyColumnWithScrollBar` with `reverseLayout = true`, mea
 
 ## 4. ChatItemView
 
-**Location:** [`item/ChatItemView.kt#L66`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemView.kt#L66)
+**Location:** [`item/ChatItemView.kt#L71`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemView.kt#L71)
 
 ```kotlin
 fun ChatItemView(
@@ -174,28 +174,22 @@ The composable routes based on `cItem.content` and `cItem.meta.itemDeleted`:
 
 ### Context Menu
 
-Long-press or right-click opens a dropdown menu with context-sensitive actions (see section 6). In the terminal layout, the More button of the hover bar opens the same menu.
+Long-press or right-click opens a dropdown menu with context-sensitive actions (see section 6).
 
 ### Terminal Layout Adjustments
 
-`ChatItemView` has the parameter `showMenu: MutableState<Boolean>`, shared with the hover bar of the terminal row.
+When `LocalTerminalLayout.current` is true, `ChatItemView` and the item views it calls keep their content and start at one text edge, `CHAT_ITEM_TEXT_PADDING` (12dp) inside the item; messages are drawn without the bubble fill and tail:
 
-When `LocalTerminalLayout.current` is true, `ChatItemView` and the item views it calls keep their content and are drawn without the bubble look for text, media and deleted items:
+- Items are start-aligned for both directions ([`alignEnd`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemView.kt#L126)). The item click has no indication; the row draws it (section 10). `GoToItemButton` is placed by the row (section 10), not by `ChatItemView` ([L255](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemView.kt#L255), [L752](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemView.kt#L752)). Voice items use the arrangement of received items for both directions.
+- [`chatItemTailEnabled()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemView.kt#L1152) returns false, so `shapeStyle` draws no tail.
+- `FramedItemView` has a transparent background. Forwarded and report headers and the quote have no background and start at the text edge. The quote has the bar of Markdown quotes ([`Modifier.quoteBar`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/MarkdownBlocks.kt#L132)) and its text in `onSurface` at 70%.
+- Images, videos, link previews and chat link cards start at the text edge and keep the message corner clip ([`mediaModifier`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FramedItemView.kt#L55)). Link previews and chat links are cards in the quote colour ([`cardModifier`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FramedItemView.kt#L57)).
+- [`CIMarkdownText`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FramedItemView.kt#L462): top padding 0 when the text is the first part of the item (`first`), bottom padding `TERMINAL_TEXT_BOTTOM_PADDING` (1dp); `Modifier.messageTextBottom()` marks the bottom of the text for the meta.
+- Event, feature and member-created items use [`chatEventHorizontalPadding()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/CIEventView.kt#L21); voice and call items and reactions start at the text edge.
+- Time and status: placed at the end of the row by [`ItemWithMeta`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TerminalItemView.kt#L111-L125), level with the last text line (section 10); message and file text keep the space reserved for them at the end of the last line, so the last line ends before the time. Images and videos without a caption (`captionlessMedia`) keep the meta in `secondary` beside the media when it fits in the row, otherwise the meta is drawn over the bottom end of the media in white, as in the classic layout (`overlayMeta`). Event items are wrapped in [`ChatEventWithMeta`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/CIEventView.kt#L23-L34), which passes the end of the event text as `ts`: in the classic layout the time in the event style, in the terminal layout a transparent no-break space and `reserveSpaceForMeta` of the meta, so the last line of the event text ends before the time at the row end.
+- Group invitations, deleted items and error items (`IntegrityErrorItemView`, `CIRcvDecryptionError`) keep their rounded coloured card.
 
-- Items are start-aligned for both directions; `GoToItemButton` is placed at the end; the item click has no indication (the row draws the hover background).
-- Voice items, with or without a caption, have the arrangement of received items.
-- [`chatItemTailEnabled()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemView.kt#L1224) returns false, so `shapeStyle` draws no tail.
-- `FramedItemView` has a transparent background and 2dp vertical text padding (`TERMINAL_TEXT_VERTICAL_PADDING`). The forwarded and report header rows are transparent with 2dp vertical padding; the report header has bottom padding too. The outer container is a `Column`: the reply line is placed above the body, and the meta follows the body only.
-- Replies: the quote block is replaced by [`ciReplyLine`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FramedItemView.kt#L255-L293), one line above the body: reply icon, [`ciReplyAvatar`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FramedItemView.kt#L240-L253) (16dp scaled; member, contact, channel or own avatar, `TerminalUserImage` for incognito), the quoted sender in SemiBold capped at 160dp (scaled) with an ellipsis, and a one-line 13sp snippet in `secondary`. Media without text: a label (image, video, file); voice: "Voice message" with the duration; chat links: the link name as prefix, link stripped. A click calls [`openQuotedItem`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FramedItemView.kt#L227-L238), shared with the bubble quote block; hover tints the text `onBackground`; long-press or right-click opens the item menu.
-- `ChatItemsList` passes `showTimestamp = false`. When `terminalMetaVisible()` is false (a received item whose meta would show only the time), `FramedItemView` and `CIMarkdownText` omit the meta and its reserved space; otherwise the meta shows its icons, and the delivery status for sent items only.
-- `CIMarkdownText` passes `receivedQuote` as `cardColor` for both directions: code blocks and table headers of sent and received items share one colour on the chat background. With the meta omitted, `MarkdownText` passes `metaLine = null` to `MarkdownBlocks`, so a text ending in a code block, table or rule has no empty meta line.
-- `DeletedItemView` and `MarkedDeletedItemView` are transparent, with 2dp vertical padding and 14sp text (`TERMINAL_DELETED_FONT_SIZE`). `CIMetaView` returns early for deleted content when the timestamp is hidden.
-- `CIEventView` uses the terminal text padding (12dp start, 2dp vertical).
-- `ChatItemReactions` renders pills (`terminalReactionPill`, tinted and bordered in primary when the user reacted), always shows the count, uses 14sp emoji, and aligns with the message text.
-- `DateSeparator` renders `TerminalDateSeparator`: the date in a pill on a full-width divider.
-- `ComposeView` omits its top `Divider`; the main input row and the "send message to connect" row use `Modifier.terminalComposeField()`: a rounded field (8dp corner, `onBackground` at 6%) with 12dp horizontal and 8dp vertical margins.
-
-Group invitations (`CIGroupInvitationView`) and error items (`IntegrityErrorItemView`, `CIRcvDecryptionError`) keep their rounded coloured card.
+Both layouts: `MarkdownText` draws message text in [`messageTextColor()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TextItemView.kt#L54), `onSurface` at 87% in dark themes.
 
 ---
 
@@ -262,22 +256,6 @@ Context menu actions are built dynamically in `ChatItemView` based on message ty
 | **Save** | Image/video/file with completed download | Saves media to device |
 | **Open** | File with completed download | Opens file with system handler |
 | **Reveal / Hide** | Part of a merged group; expanded or collapsed | Toggles `revealedItems` state |
-
-The React, Reply and Forward conditions are computed by [`itemQuickActions()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemView.kt#L801-L810), which returns [`ItemQuickActions`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemView.kt#L799). The menu evaluates it inside its `DefaultDropdownMenu` content, so only while the menu is open. All three are false for items without message content, temporary items (`id < 0`) and reports. Otherwise:
-
-| Field | Condition |
-|---|---|
-| `react` | Reactions feature enabled in the chat and `cItem.allowAddReaction` |
-| `reply` | Not deleted, not live, not a local note, `cInfo.sendMsgEnabled` |
-| `forward` | Not deleted, file (if any) allows forwarding, not the live dummy item, not live |
-
-Helpers shared by the menu and the hover bar of the terminal layout:
-
-| Function | Purpose |
-|---|---|
-| [`availableReactions(cItem)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemView.kt#L812-L813) | `MsgReaction.supported` minus the reactions set by the user |
-| [`replyToItem(composeState, cItem, useLinkPreviews)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemView.kt#L815-L821) | Sets `ComposeContextItem.QuotedItem`; replaces the compose state when editing. Also used by swipe to reply |
-| [`MsgReactionsMenu(cInfo, cItem, setReaction, showMenu)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemView.kt#L824-L841) | Scrollable row of available reactions; a tap sets the reaction and closes `showMenu` |
 
 ---
 
@@ -358,7 +336,7 @@ Key sections: group profile, group link, member list with roles, group preferenc
 | `MarkdownFileView.kt` | Markdown file viewer, formatted or as text |
 | `IntegrityErrorItemView.kt` | Message integrity error |
 | `MarkedDeletedItemView.kt` | Marked-as-deleted / moderated message |
-| `TerminalItemView.kt` | Terminal layout: `LocalTerminalLayout`, sender header rule, `TerminalChatItemRow`, hover bar, terminal styling helpers |
+| `TerminalItemView.kt` | Terminal layout: `LocalTerminalLayout`, sender row rule, `TerminalChatItemRow`, `ItemWithMeta` |
 | `TextItemView.kt` | Plain text message with markdown; blocks of `markdownBlocks` drawn as a column of views by `MarkdownBlocks` (`MarkdownBlocks.kt`) |
 
 ### `views/chat/group/`
@@ -395,96 +373,114 @@ The `RelayStatusIndicator` composable in `AddChannelView.kt` renders `RsRejected
 
 **Location:** [`item/TerminalItemView.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TerminalItemView.kt)
 
-Rendering of a chat whose [`ChatInfo.activeChatLayout`](../state.md) is `ChatLayout.Terminal`: full-width rows, avatar and sender name once per group of messages, text, media and deleted items without bubbles (item-level changes: section 4). Android and desktop; iOS draws the classic layout.
+Rendering of a chat whose [`ChatInfo.activeChatLayout`](../state.md) is `ChatLayoutMode.Terminal`: full-width start-aligned rows, the sender name once per group of messages, avatars in groups only, messages without bubbles (item-level changes: section 4). Android and desktop; iOS draws the classic layout.
 
 ### Activation
 
 | Step | Location |
 |---|---|
-| `terminal = chatInfo.activeChatLayout == ChatLayout.Terminal` | [`ChatView`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L267) |
-| `LocalTerminalLayout provides terminal`, next to `LocalAppBarHandler` and `LocalSelectionManager` | [`ChatView`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L268-L272) |
-| `drawWallpaper = false` of `chatViewBackgroundModifier` | [`ChatLayout`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L1005) |
+| `terminal = chatInfo.activeChatLayout(user) == ChatLayoutMode.Terminal` | [`ChatView`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L269) |
+| `LocalTerminalLayout provides terminal`, next to `LocalAppBarHandler` and `LocalSelectionManager` | [`ChatView`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L270-L274) |
+| `drawWallpaperImage = false` of `chatViewBackgroundModifier` | [`ChatLayout` composable](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L1007) |
 
-[`LocalTerminalLayout`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TerminalItemView.kt#L35) is `false` outside `ChatView`: chat item info, the Appearance preview and the chat theme preview keep the bubble look. `activeChatLayout` is `Classic` for note folders. The value applies to every `ChatView` of the chat: main view, member support chats and reports.
+[`LocalTerminalLayout`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TerminalItemView.kt#L38) is `false` outside `ChatView` and the theme screens (below); chat item info keeps the bubble look. The value applies to every `ChatView` of the chat: main view, member support chats and reports.
 
-Colours: the app, user and chat themes apply as in the classic layout. Wallpaper: omitted; with `drawWallpaper = false`, `chatViewBackgroundModifier` fills the chat with `colors.background` of the theme, as for member support chats and reports in the classic layout.
+Colours: the app, user and chat themes apply as in the classic layout. Wallpaper: `chatViewBackgroundModifier` fills the chat with the background colour of the wallpaper (preset or custom) and omits the image.
 
 ### Functions
 
 | Function | Purpose |
 |---|---|
-| [`terminalItemHasHeader(item, older)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TerminalItemView.kt#L65-L72) | Whether a row shows the sender header. `older`: the next older item in the list |
-| [`sameTerminalSender(item, older)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TerminalItemView.kt#L74-L85) | Private; same sender for header grouping |
-| [`terminalHoverBarVisible(...)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TerminalItemView.kt#L89-L90) | Internal; hover bar visibility rule |
-| [`CIContent.hasTerminalSender`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TerminalItemView.kt#L92-L126) | Private. True for content with a sender (messages, deleted/moderated/blocked, calls, errors, group invitations, invalid JSON); false for events, feature and preference changes, E2EE info and the chat banner |
-| [`TerminalChatItemRow(...)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TerminalItemView.kt#L128-L181) | Full-width hoverable row, inset 4dp with 6dp rounded corners: a 56dp gutter (scaled by `fontSizeSqrtMultiplier`) with the avatar (inside `TerminalAvatarContrast`) on header rows, otherwise the time (10sp, end-aligned) when hovered or when `showTime`; then a column with the header and the item content; then the `hoverBar` slot |
-| [`TerminalHoverBarSlot(...)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TerminalItemView.kt#L183-L216) | Hover bar slot content: reaction picker state, `itemQuickActions` and `terminalHoverBarVisible`, the private `TerminalHoverBar` |
-| [`TerminalAvatarContrast { }`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TerminalItemView.kt#L218-L227) | `secondaryVariant` mixed 15% toward `onBackground` for its content (gutter and reply avatars), so placeholder avatars keep contrast on the background |
-| [`TerminalUserImage(chatInfo, size)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TerminalItemView.kt#L306-L313) | Own avatar, or `IncognitoImage` in an incognito chat |
-| [`TerminalHoverBar(...)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TerminalItemView.kt#L315-L359) | Private; bordered action bar |
-| [`terminalMetaVisible(...)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TerminalItemView.kt#L368-L372) | False when the meta would show only the time (status counted for sent items only) |
-| [`Modifier.terminalStartOffset(offset)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TerminalItemView.kt#L374-L378) | Shifts the row by the selection offset and narrows it by the same amount |
-| [`Modifier.terminalReactionPill(userReacted)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TerminalItemView.kt#L380-L385) | Reaction pill background and border |
-| [`TerminalDateSeparator(text)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TerminalItemView.kt#L387-L403) | Date pill on a divider |
-| [`terminalSelectionTopPadding(showHeader)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TerminalItemView.kt#L407-L410) | Top padding of the selection checkbox: aligned with the avatar on header rows, with the first text line otherwise |
-| [`Modifier.terminalComposeField()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TerminalItemView.kt#L415-L419) | Rounded compose field |
+| [`terminalItemShowsSender(item, older)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TerminalItemView.kt#L42-L43) | Whether a row shows the sender row. `older`: the next older item in the list |
+| [`sameTerminalSender(item, older)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TerminalItemView.kt#L45-L53) | Private; same sender for grouping |
+| [`CIContent.hasTerminalSender`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TerminalItemView.kt#L58-L65) | Private. True for sent messages, sent deleted and moderated items, sent calls and group invitations, and received content with `showMemberName` (messages, deleted, moderated and blocked items, calls, errors, group invitations, invalid JSON); false for events, feature and preference changes, E2EE info and the chat banner |
+| [`TerminalRowInteractionSource`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TerminalItemView.kt#L67-L81) | Interaction source of the row and its item: press interactions are emitted at the position where the pointer went down in the row, so the ripple starts there |
+| [`Modifier.terminalRowIndication(source)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TerminalItemView.kt#L83-L94) | Records the pointer-down position; hover and press indication of the whole row |
+| [`Modifier.terminalStartOffset(offset)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TerminalItemView.kt#L96-L101) | Shifts the row by the selection offset and narrows it by the same amount |
+| [`Modifier.messageTextBottom()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TerminalItemView.kt#L105-L109) | Sets the private alignment line `MessageTextBottom` to the bottom of the message text |
+| [`ItemWithMeta(meta, overlayMeta, content)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TerminalItemView.kt#L111-L125) | Classic: `content` with the meta passed as `inlineMeta`. Terminal: `content` without meta, and the meta in a box with 6dp bottom and 12dp end padding at the end of the available width, the message column of the row (private [`TerminalMetaLayout`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TerminalItemView.kt#L127-L146)); the box ends `CHAT_ITEM_TEXT_VERTICAL_PADDING` below `MessageTextBottom` when the content has a message text, otherwise at the content bottom. When `overlayMeta` is given and the content and the meta together are wider than the row, the `overlayMeta` box is placed at the bottom end of the content instead |
+| [`terminalGutter(chatInfo)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TerminalItemView.kt#L148-L150) | Gutter width: the member image size (scaled by `fontSizeSqrtMultiplier`) in groups, `GO_TO_ITEM_BUTTON_SIZE` (22dp) in other chats |
+| [`TerminalChatItemRow(sender, gutter, topGap, modifier, senderTopGap, goToButton, content)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TerminalItemView.kt#L152-L201) | Row layout below |
+| [`TerminalSender`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TerminalItemView.kt#L203) | Name, badge, role label, `own`, avatar |
+| [`terminalSender(chatInfo, cItem, range, reversedChatItems, showMemberInfo, showChatInfo)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TerminalItemView.kt#L205-L252) | Sender of a row (table below) |
 
-### Header Rule
+### Row Layout
 
-`ChatItemsList` computes `terminalHeader = LocalTerminalLayout.current && terminalItemHasHeader(item, merged.oldest().nextItem)` and passes it through `ChatViewListItem`. A row has a header when its content has a sender and one of these holds:
+```
+row padding        top: senderTopGap (8dp) with a sender row, otherwise the item gap (1dp, 4dp after a large gap); start 8dp; end 12dp
+gutter             terminalGutter(chatInfo)
+  avatar           top of the gutter, sender rows of groups only
+  go-to button     centred in the gutter and on the message; below the avatar when the message is shorter
+message column     starts at gutter + 4dp
+  sender row       name and badge (13.5sp; primary for own messages, secondary otherwise), role label; start padding CHAT_ITEM_TEXT_PADDING
+  item             ChatItemView; 4dp + topGap below the sender row
+```
+
+`ChatItemsList` passes [`showAvatar`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L2458) = `terminalItemShowsSender(item, merged.oldest().nextItem)`, and the row gets `terminalSender(...)` when it is true, `null` otherwise.
+
+### Sender Rule
+
+A row shows the sender row when its content has a sender and one of these holds:
 
 - it is the oldest loaded item;
 - the older item has no sender (an event);
-- `sameTerminalSender` is false;
-- the items' `createdAt` are 60 seconds or more apart;
-- the items' `itemTs` are on different local dates.
+- `sameTerminalSender` is false.
 
-`sameTerminalSender` is true when both items have the same direction and, for `GroupRcv`, the same `groupMemberId`; for `GroupSnd`, the same `meta.showGroupAsSender` (an owner posting as the channel and as themselves are different senders). Any two `ChannelRcv` items match.
+As in the classic layout, the time between the items and a date change do not repeat the sender row.
+
+`sameTerminalSender`: when either item is posted as the channel (`ChannelRcv`, or `GroupSnd` with `meta.showGroupAsSender`), both must be; two `GroupRcv` items need the same `groupMemberId`; other items need the same direction class.
 
 ### Sender Resolution
 
-| Direction | Name and badge | Role label | Avatar | Avatar click |
-|---|---|---|---|---|
-| `GroupRcv` | Member display name | Member role when above `Member` | `MemberImage` | `showMemberInfo` |
-| `ChannelRcv` | Channel name | "channel" (`channel_role_label`) | `ChatInfoImage` | `showChatInfo` |
-| `GroupSnd` with `showGroupAsSender` | Channel name | "channel" | `ChatInfoImage` | `showChatInfo` |
-| `GroupSnd` | `groupInfo.membership` (incognito profile when incognito) | Membership role when above `Member` | `MemberImage(membership)` | None |
-| `DirectRcv` | Contact display name | None | `ChatInfoImage` | `showChatInfo` |
-| `DirectSnd`, `LocalSnd`, `LocalRcv` | Current user, or "Incognito" in an incognito chat | None | User profile image or `IncognitoImage` | None |
+| Direction | Name and badge | Role label | Avatar | Avatar click | Own colour |
+|---|---|---|---|---|---|
+| `ChannelRcv`, `GroupSnd` with `showGroupAsSender` | Channel name | "channel" (`channel_role_label`) | `ProfileImage` of the group, as in the classic layout | `showChatInfo` | For `GroupSnd` |
+| `DirectRcv` | Contact display name and badge | None | None | None | No |
+| `GroupRcv` | `memberNames` of the merged members; badge for one member | Member role when above `Member`, for one member | `MemberImage` | `showMemberInfo` | No |
+| `GroupSnd` | `groupInfo.membership` display name and badge | Membership role when above `Member` | `MemberImage(membership)` | None | Yes |
+| Other, incognito chat | "Incognito" | None | None | None | Yes |
+| Other (`DirectSnd`, `LocalSnd`, `LocalRcv`) | Current user display name and badge | None | None | None | Yes |
 
-The header shows the name in SemiBold, the role, and `cItem.timestampText`.
-
-### Time of Continuation Rows
-
-| Platform | Gutter time |
-|---|---|
-| Desktop | On hover |
-| Android | `showTime = itemSeparation.timestamp`: the newest row of each run of rows with the same time text |
+The sender row has no time; the time of every item is placed by `ItemWithMeta`.
 
 ### Row Background
 
-Drawn inside a 4dp horizontal inset with 6dp rounded corners.
-
 | State | Background |
 |---|---|
-| Highlighted (`highlightedItems` contains the item, e.g. after jumping to a quoted message) | `primary` at 12% |
-| Hovered | `onBackground` at 4% (`TERMINAL_SUBTLE_FILL_ALPHA`) |
+| Selected (selection mode) | `primary` at 10% |
+| Highlighted (`highlightedItems` contains the item, e.g. after jumping to a quoted message) | `primary` at 14% |
 | Otherwise | Transparent |
 
-### Hover Bar
+Hover and press are drawn by `terminalRowIndication` over the whole row.
 
-`ChatItemsList` creates one `showMenu` state per item and passes it to `TerminalHoverBarSlot` (through the `hoverBar` slot of `TerminalChatItemRow`) and to `ChatItemViewShortHand`/`ChatItemView`, so the More button of the bar opens the context menu of the item. Terminal rows leave `hoveredItemId` unchanged.
+### Go-to Button
 
-The bar is drawn inside the row at its top end; rows with message content have a minimum height (`TERMINAL_ROW_MIN_HEIGHT`) that fits it, as the bar is hidden once the pointer leaves the row. `terminalHoverBarVisible` shows it when selection mode is off, the item has message content and is not the live dummy item, and the row is hovered or the reaction picker is open while reactions are available. A `LaunchedEffect` closes the picker when the bar is hidden or reactions become unavailable.
-
-| Button | Shown when | Action |
-|---|---|---|
-| 3 quick reactions | `itemQuickActions().react` | First 3 of `availableReactions(cItem)`; sets the reaction |
-| Add reaction | `itemQuickActions().react` | Opens `MsgReactionsMenu` in a `DefaultDropdownMenu` |
-| Reply | `itemQuickActions().reply` | `replyToItem()` |
-| Forward | `itemQuickActions().forward` | `forwardItem()` |
-| More | Always | Opens the context menu of the item (`showMenu`) |
+[`GoToItemButton`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemView.kt#L1322) (`GO_TO_ITEM_BUTTON_SIZE`, 22dp) is passed to the `goToButton` slot of the row, with the row hover as `parentActivated`: the search icon in search results, the arrow for forwarded items.
 
 ### Selection and Swipe
 
-The selection checkbox and the full-row selection click overlay are shared with the bubble layout. The row is moved by `Modifier.terminalStartOffset` for sent and received items alike, and the checkbox is top-aligned by `terminalSelectionTopPadding`. Swipe to reply uses the `swipeableModifier` of the bubble layout on the whole row (Android; off in selection mode).
+The selection checkbox (8dp start padding) and the full-row selection click overlay are shared with the bubble layout. The row is moved by `Modifier.terminalStartOffset` for sent and received items alike. Swipe to reply uses the `swipeableModifier` of the bubble layout on the whole row (Android; off in selection mode).
+
+### Theme Screens
+
+`LocalTerminalLayout` is provided to the theme screens of a terminal chat or profile:
+
+| Screen | Value |
+|---|---|
+| Chat theme ([`ChatWallpaperEditorModal`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatInfoView.kt#L1300)) | `activeChatLayout` of the chat |
+| Appearance › Themes, preset selector ([`ThemesSection`](../../common/src/commonMain/kotlin/chat/simplex/common/views/usersettings/Appearance.kt#L579)) | `profileChatLayout` of the current user, or of none for the app theme destination |
+| Customize theme, profile theme, colour editors | the same, through `profileLayoutIsTerminal` and the `terminal` parameter of `editColor` |
+
+With the value true:
+
+- the preview draws two terminal rows ("alice", then "bob" in the own colour) without gutter; [`PreviewInEitherLayout`](../../common/src/commonMain/kotlin/chat/simplex/common/views/usersettings/Appearance.kt#L335) measures both layouts and shows the active one centred in the larger height, so a layout switch keeps the preview height;
+- the preview and the preset tiles show the wallpaper colour without the image;
+- the custom image tile, the image scale, the scale slider and the wallpaper accent row are hidden.
+
+Layout controls:
+
+| Control | Values | Stored in |
+|---|---|---|
+| Chat theme screen, first section ([`ChatLayoutSection`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatInfoView.kt#L1313)) | the chat default, "(chat)" when the chat layout is the default, otherwise "(default)"; the other layout | chat theme record, by [`setChatLayout`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatInfoView.kt#L1382) and `apiSetChatUIThemes` |
+| Appearance › Themes, app theme destination ([`ChatLayoutRow`](../../common/src/commonMain/kotlin/chat/simplex/common/views/usersettings/Appearance.kt#L948)) | Classic, Terminal; the selection is `profileChatLayout(null)` | `appPrefs.chatLayout` |
+| Appearance › Themes, profile destination | `profileChatLayout(null)` "(default)"; the other layout | profile theme record, by `saveThemeToDatabase` and `apiSetUserUIThemes` |

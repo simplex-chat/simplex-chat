@@ -206,7 +206,6 @@ module Simplex.Chat.Store.Groups
     updateUserMemberProfileSentAt,
     setGroupCustomData,
     setGroupUIThemes,
-    setGroupUserChatLayout,
     updateGroupChatTags,
     getGroupChatTags,
     setGroupChatTTL,
@@ -419,11 +418,11 @@ createNewGroup db cxt user@User {userId} groupProfile incognitoProfile memberId 
           INSERT INTO groups
             (use_relays, creating_in_progress, local_display_name, user_id, group_profile_id, enable_ntfs,
              created_at, updated_at, chat_ts, user_member_profile_sent_at,
-             root_priv_key, root_pub_key, member_priv_key, public_member_count, roster_version, chat_layout)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+             root_priv_key, root_pub_key, member_priv_key, public_member_count, roster_version)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         |]
         ( (BI useRelays, BI useRelays, ldn, userId, profileId, BI True, currentTs, currentTs, currentTs, currentTs)
-            :. (rootPrivKey_, rootPubKey_, memberPrivKey_, publicMemberCount_, rosterVersion0, chatLayout)
+            :. (rootPrivKey_, rootPubKey_, memberPrivKey_, publicMemberCount_, rosterVersion0)
         )
       insertedRowId db
     let memberPubKey = Just $ C.publicKey $ memberPrivKey groupKeys
@@ -449,8 +448,6 @@ createNewGroup db cxt user@User {userId} groupProfile incognitoProfile memberId 
           chatTags = [],
           chatItemTTL = Nothing,
           uiThemes = Nothing,
-          chatLayout,
-          userChatLayout = Nothing,
           groupSummary = GroupSummary {currentMembers = 1, publicMemberCount = publicMemberCount_},
           rosterVersion = rosterVersion0,
           customData = Nothing,
@@ -499,10 +496,10 @@ createGroupInvitation db cxt user@User {userId} inviter peerChatVRange GroupInvi
               [sql|
                 INSERT INTO groups
                   (group_profile_id, local_display_name, inv_queue_info, user_id, enable_ntfs,
-                   created_at, updated_at, chat_ts, user_member_profile_sent_at, member_priv_key, business_chat, business_member_id, customer_member_id, chat_layout)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                   created_at, updated_at, chat_ts, user_member_profile_sent_at, member_priv_key, business_chat, business_member_id, customer_member_id)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
               |]
-              ((profileId, localDisplayName, connRequest, userId, BI True, currentTs, currentTs, currentTs, currentTs, snd memberKeys) :. businessChatInfoRow business :. Only chatLayout)
+              ((profileId, localDisplayName, connRequest, userId, BI True, currentTs, currentTs, currentTs, currentTs, snd memberKeys) :. businessChatInfoRow business)
             insertedRowId db
           let hostVRange = adjustedMemberVRange (vr cxt) peerChatVRange
           (groupMemberId, invitedBy) <- case inviter of
@@ -548,8 +545,6 @@ createGroupInvitation db cxt user@User {userId} inviter peerChatVRange GroupInvi
                   chatTags = [],
                   chatItemTTL = Nothing,
                   uiThemes = Nothing,
-                  chatLayout,
-                  userChatLayout = Nothing,
                   groupSummary = GroupSummary {currentMembers = 2, publicMemberCount = Nothing},
                   rosterVersion = Nothing,
                   customData = Nothing,
@@ -957,10 +952,10 @@ createGroup_ db userId groupProfile prepared business useRelays relayOwnStatus p
           INSERT INTO groups
             (group_profile_id, local_display_name, user_id, enable_ntfs,
               created_at, updated_at, chat_ts, user_member_profile_sent_at, conn_full_link_to_connect, conn_short_link_to_connect, welcome_shared_msg_id,
-              business_chat, business_member_id, customer_member_id, use_relays, relay_own_status, public_member_count, member_priv_key, chat_layout)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+              business_chat, business_member_id, customer_member_id, use_relays, relay_own_status, public_member_count, member_priv_key)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         |]
-        ((profileId, localDisplayName, userId, BI True, currentTs, currentTs, currentTs, currentTs) :. toPreparedGroupRow prepared :. businessChatInfoRow business :. (BI useRelays, relayOwnStatus, publicMemberCount_, memberPrivKey_, chatLayout))
+        ((profileId, localDisplayName, userId, BI True, currentTs, currentTs, currentTs, currentTs) :. toPreparedGroupRow prepared :. businessChatInfoRow business :. (BI useRelays, relayOwnStatus, publicMemberCount_, memberPrivKey_))
       groupId <- insertedRowId db
       pure (groupId, localDisplayName)
 
@@ -3318,7 +3313,7 @@ createMemberContact
               quotaErrCounter = 0
             }
         mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito ctConn
-    pure Contact {contactId, localDisplayName, profile = memberProfile, activeConn = Just ctConn, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, preparedContact = Nothing, contactRequestId = Nothing, contactRequest = Nothing, contactGroupMemberId = Just groupMemberId, contactGrpInvSent = False, groupDirectInv = Nothing, chatTags = [], chatItemTTL = Nothing, uiThemes = Nothing, chatLayout = Nothing, userChatLayout = Nothing, chatDeleted = False, customData = Nothing}
+    pure Contact {contactId, localDisplayName, profile = memberProfile, activeConn = Just ctConn, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, preparedContact = Nothing, contactRequestId = Nothing, contactRequest = Nothing, contactGroupMemberId = Just groupMemberId, contactGrpInvSent = False, groupDirectInv = Nothing, chatTags = [], chatItemTTL = Nothing, uiThemes = Nothing, chatLayout = Nothing, chatDeleted = False, customData = Nothing}
 
 getMemberContact :: DB.Connection -> StoreCxt -> User -> ContactId -> ExceptT StoreError IO (GroupInfo, GroupMember, Contact, ConnReqInvitation)
 getMemberContact db cxt user contactId = do
@@ -3698,11 +3693,6 @@ setGroupUIThemes :: DB.Connection -> User -> GroupInfo -> Maybe UIThemeEntityOve
 setGroupUIThemes db User {userId} GroupInfo {groupId} uiThemes = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE groups SET ui_themes = ?, updated_at = ? WHERE user_id = ? AND group_id = ?" (uiThemes, updatedAt, userId, groupId)
-
-setGroupUserChatLayout :: DB.Connection -> User -> GroupInfo -> Maybe ChatLayout -> IO ()
-setGroupUserChatLayout db User {userId} GroupInfo {groupId} userChatLayout = do
-  updatedAt <- getCurrentTime
-  DB.execute db "UPDATE groups SET user_chat_layout = ?, updated_at = ? WHERE user_id = ? AND group_id = ?" (userChatLayout, updatedAt, userId, groupId)
 
 updateGroupChatTags :: DB.Connection -> GroupId -> [ChatTagId] -> IO ()
 updateGroupChatTags db gId tIds = do

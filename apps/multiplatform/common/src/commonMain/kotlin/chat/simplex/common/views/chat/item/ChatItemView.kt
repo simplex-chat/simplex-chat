@@ -50,12 +50,13 @@ private val msgTailMaxHeightDp = msgTailWidthDp * 1.732f // 60deg
 
 val chatEventStyle = SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.Light, color = CurrentColors.value.colors.secondary)
 
-fun chatEventText(ci: ChatItem, isChannel: Boolean = false, ts: String = ci.timestampText): AnnotatedString =
+fun chatEventText(ci: ChatItem, isChannel: Boolean = false, ts: AnnotatedString): AnnotatedString =
   chatEventText(ci.content.text(isChannel), ts)
 
-fun chatEventText(eventText: String, ts: String): AnnotatedString =
+fun chatEventText(eventText: String, ts: AnnotatedString): AnnotatedString =
   buildAnnotatedString {
-    withStyle(chatEventStyle) { append("$eventText  $ts") }
+    withStyle(chatEventStyle) { append("$eventText  ") }
+    append(ts)
   }
 
 data class ChatItemReactionMenuItem (
@@ -63,6 +64,9 @@ data class ChatItemReactionMenuItem (
   val image: String?,
   val onClick: (() -> Unit)?
 )
+
+private val REACTION_SPACING = 5.dp
+private val REACTION_PADDING = 2.dp
 
 // Spec: spec/client/chat-view.md#ChatItemView
 @Composable
@@ -142,7 +146,7 @@ fun ChatItemView(
 
     @Composable
     fun ChatItemReactions() {
-      Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.chatItemOffset(cItem, itemSeparation.largeGap, inverted = true, revealed = true).padding(start = if (terminal) CHAT_ITEM_TEXT_PADDING - 5.dp - 2.dp else 0.dp)) {
+      Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.chatItemOffset(cItem, itemSeparation.largeGap, inverted = true, revealed = true).padding(start = if (terminal) CHAT_ITEM_TEXT_PADDING - REACTION_SPACING - REACTION_PADDING else 0.dp)) {
         cItem.reactions.forEach { r ->
           val showReactionMenu = remember { mutableStateOf(false) }
           val reactionMenuItems = remember { mutableStateOf(emptyList<ChatItemReactionMenuItem>()) }
@@ -156,7 +160,7 @@ fun ChatItemView(
             }
           }
 
-          var modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp).clip(RoundedCornerShape(8.dp))
+          var modifier = Modifier.padding(horizontal = REACTION_SPACING, vertical = 2.dp).clip(RoundedCornerShape(8.dp))
           if (cInfo.featureEnabled(ChatFeature.Reactions)) {
             fun showReactionsMenu() {
               when (cInfo) {
@@ -209,7 +213,7 @@ fun ChatItemView(
               )
               .onRightClick { showReactionsMenu() }
           }
-          Row(modifier.padding(2.dp), verticalAlignment = Alignment.CenterVertically) {
+          Row(modifier.padding(REACTION_PADDING), verticalAlignment = Alignment.CenterVertically) {
             ReactionIcon(r.reaction.text, fontSize = 12.sp)
             DefaultDropdownMenu(showMenu = showReactionMenu) {
               reactionMenuItems.value.forEach { m ->
@@ -248,7 +252,7 @@ fun ChatItemView(
       Box {
         Row(verticalAlignment = Alignment.CenterVertically) {
         val bubbleHovered = bubbleInteractionSource.collectIsHoveredAsState()
-        if (alignEnd) {
+        if (cItem.chatDir.sent && !terminal) {
           GoToItemButton(rhId, cInfo, cItem, searchIsNotBlank, hoveredItemId, bubbleHovered, Modifier.padding(end = DEFAULT_PADDING_HALF + 3.dp))
         }
         Column(Modifier.weight(1f, fill = false)) {
@@ -562,7 +566,7 @@ fun ChatItemView(
               }
             }
 
-            fun eventItemViewText(reversedChatItems: List<ChatItem>, ts: String): AnnotatedString {
+            fun eventItemViewText(reversedChatItems: List<ChatItem>, ts: AnnotatedString): AnnotatedString {
               val memberDisplayName = cItem.memberDisplayName
               val t = mergedGroupEventText(cItem, reversedChatItems)
               return if (!revealed.value && t != null) {
@@ -579,8 +583,8 @@ fun ChatItemView(
 
             @Composable fun EventItemView() {
               val reversedChatItems = chatsCtx.chatItems.value.asReversed()
-              ItemWithMeta(meta = { ChatEventMeta(cItem) }) { inlineMeta ->
-                CIEventView(eventItemViewText(reversedChatItems, if (inlineMeta != null) cItem.timestampText else ""))
+              ChatEventWithMeta(cItem) { ts ->
+                CIEventView(eventItemViewText(reversedChatItems, ts))
               }
             }
 
@@ -745,7 +749,7 @@ fun ChatItemView(
             }
           }
         }
-        if (!alignEnd && !terminal) {
+        if (!cItem.chatDir.sent && !terminal) {
           GoToItemButton(rhId, cInfo, cItem, searchIsNotBlank, hoveredItemId, bubbleHovered, Modifier.padding(start = DEFAULT_PADDING_HALF + 3.dp))
         }
         }

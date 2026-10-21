@@ -12,7 +12,6 @@ import qualified Data.Aeson.TH as JQ
 import Data.Map.Strict (Map)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
-import Simplex.Chat.Types (ChatLayout (..))
 import Simplex.Chat.Types.UITheme
 import Simplex.Messaging.Client (NetworkConfig, defaultNetworkConfig)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON)

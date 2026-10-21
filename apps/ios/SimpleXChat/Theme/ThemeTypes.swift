@@ -570,14 +570,20 @@ extension [ThemeOverrides] {
 public struct ThemeModeOverrides: Codable, Hashable {
     public var light: ThemeModeOverride? = nil
     public var dark: ThemeModeOverride? = nil
+    public var chatLayout: ChatLayout? = nil
 
-    public init(light: ThemeModeOverride? = nil, dark: ThemeModeOverride? = nil) {
+    public init(light: ThemeModeOverride? = nil, dark: ThemeModeOverride? = nil, chatLayout: ChatLayout? = nil) {
         self.light = light
         self.dark = dark
+        self.chatLayout = chatLayout
     }
 
     public func preferredMode(_ darkTheme: Bool) -> ThemeModeOverride? {
         darkTheme ? dark : light
+    }
+
+    public func layoutOnly() -> ThemeModeOverrides? {
+        chatLayout.map { ThemeModeOverrides(chatLayout: $0) }
     }
 }
 

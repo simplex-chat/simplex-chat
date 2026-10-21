@@ -278,8 +278,8 @@ class AppPreferences {
   val oneHandUI = mkBoolPreference(SHARED_PREFS_ONE_HAND_UI, true)
   val chatBottomBar = mkBoolPreference(SHARED_PREFS_CHAT_BOTTOM_BAR, true)
   val chatLayout = SharedPreference(
-    get = fun() = ChatLayout.fromText(settings.getString(SHARED_PREFS_CHAT_LAYOUT, ChatLayout.Classic.text)),
-    set = fun(value: ChatLayout) = settings.putString(SHARED_PREFS_CHAT_LAYOUT, value.text)
+    get = fun() = ChatLayoutMode.fromText(settings.getString(SHARED_PREFS_CHAT_LAYOUT, ChatLayoutMode.Classic.text)),
+    set = fun(value: ChatLayoutMode) = settings.putString(SHARED_PREFS_CHAT_LAYOUT, value.text)
   )
 
   val hintPreferences: List<HintPref> = listOf(
@@ -1533,20 +1533,6 @@ object ChatController {
     val r = sendCmd(rh, CC.APISetChatSettings(type, id, settings))
     if (r.result is CR.CmdOk) return true
     Log.e(TAG, "apiSetSettings bad response: ${r.responseType} ${r.details}")
-    return false
-  }
-
-  suspend fun apiSetChatLayout(rh: Long?, type: ChatType, id: Long, layout: ChatLayout?): Boolean {
-    val r = sendCmd(rh, CC.ApiSetChatLayout(type, id, layout))
-    if (r.result is CR.CmdOk) return true
-    Log.e(TAG, "apiSetChatLayout bad response: ${r.responseType} ${r.details}")
-    return false
-  }
-
-  suspend fun apiSetUserChatLayout(rh: Long?, userId: Long, layout: ChatLayout?): Boolean {
-    val r = sendCmd(rh, CC.ApiSetUserChatLayout(userId, layout))
-    if (r.result is CR.CmdOk) return true
-    Log.e(TAG, "apiSetUserChatLayout bad response: ${r.responseType} ${r.details}")
     return false
   }
 
@@ -4095,8 +4081,6 @@ sealed class CC {
   class ReconnectServer(val userId: Long, val server: String): CC()
   class ReconnectAllServers: CC()
   class APISetChatSettings(val type: ChatType, val id: Long, val chatSettings: ChatSettings): CC()
-  class ApiSetChatLayout(val type: ChatType, val id: Long, val layout: ChatLayout?): CC()
-  class ApiSetUserChatLayout(val userId: Long, val layout: ChatLayout?): CC()
   class ApiSetMemberSettings(val groupId: Long, val groupMemberId: Long, val memberSettings: GroupMemberSettings): CC()
   class ApiGetUpdatedGroupLinkData(val groupId: Long): CC()
   class APIContactInfo(val contactId: Long): CC()
@@ -4314,8 +4298,6 @@ sealed class CC {
     is ReconnectServer -> "/reconnect $userId $server"
     is ReconnectAllServers -> "/reconnect"
     is APISetChatSettings -> "/_settings ${chatRef(type, id, scope = null)} ${json.encodeToString(chatSettings)}"
-    is ApiSetChatLayout -> "/_layout ${chatRef(type, id, scope = null)} ${layout?.text ?: "default"}"
-    is ApiSetUserChatLayout -> "/_layout user $userId ${layout?.text ?: "default"}"
     is ApiSetMemberSettings -> "/_member settings #$groupId $groupMemberId ${json.encodeToString(memberSettings)}"
     is ApiGetUpdatedGroupLinkData -> "/_get group link data #$groupId"
     is APIContactInfo -> "/_info @$contactId"
@@ -4513,8 +4495,6 @@ sealed class CC {
     is ReconnectServer -> "reconnectServer"
     is ReconnectAllServers -> "reconnectAllServers"
     is APISetChatSettings -> "apiSetChatSettings"
-    is ApiSetChatLayout -> "apiSetChatLayout"
-    is ApiSetUserChatLayout -> "apiSetUserChatLayout"
     is ApiSetMemberSettings -> "apiSetMemberSettings"
     is ApiGetUpdatedGroupLinkData -> "apiGetUpdatedGroupLinkData"
     is APIContactInfo -> "apiContactInfo"
@@ -7802,7 +7782,7 @@ data class AddressSettings(
   val businessAddress: Boolean,
   val autoAccept: AutoAccept?,
   val autoReply: MsgContent?,
-  val chatLayout: ChatLayout? = null
+  val chatLayout: ChatLayoutMode? = null
 )
 
 @Serializable
@@ -8759,7 +8739,7 @@ data class AppSettings(
   var uiThemes: List<ThemeOverrides>? = null,
   var oneHandUI: Boolean? = null,
   var chatBottomBar: Boolean? = null,
-  var uiChatLayout: ChatLayout? = null
+  var uiChatLayout: ChatLayoutMode? = null
 ) {
   fun prepareForExport(): AppSettings {
     val empty = AppSettings()
@@ -8885,7 +8865,7 @@ data class AppSettings(
         uiThemes = null,
         oneHandUI = true,
         chatBottomBar = true,
-        uiChatLayout = ChatLayout.Classic,
+        uiChatLayout = ChatLayoutMode.Classic,
       )
 
     val current: AppSettings

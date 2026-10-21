@@ -973,15 +973,6 @@ final class ChatModel: ObservableObject {
         currentUser = current
     }
 
-    func updateCurrentUserChatLayout(_ chatLayout: ChatLayout?) {
-        guard var current = currentUser else { return }
-        current.chatLayout = chatLayout
-        if let i = users.firstIndex(where: { $0.user.userId == current.userId }) {
-            users[i].user = current
-        }
-        currentUser = current
-    }
-
     func addLiveDummy(_ chatInfo: ChatInfo) -> ChatItem {
         let cItem = ChatItem.liveDummy(chatInfo.chatType)
         withAnimation {

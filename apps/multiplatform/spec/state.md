@@ -300,7 +300,17 @@ data class ChatStats(
 | `ChatInfo.ContactConnection` | `"contactConnection"` | `contactConnection: PendingContactConnection` |
 | `ChatInfo.InvalidJSON` | `"invalidJSON"` | `json: String` |
 
-[`ChatInfo.activeChatLayout(user, appLayout)`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L1887) is computed in the app: the chat's `userChatLayout`, else [`defaultChatLayout(user, appLayout)`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L1884): the chat's `chatLayout` (group profile or address, set when the chat is created), else `User.chatLayout`, else `appPrefs.chatLayout`, else `ChatLayout.Classic`. `ChatLayout.Unknown` values are skipped. Note folders have no chat values, so the profile and app values apply. `ChatView` reads `chatModel.currentUser` and `appPrefs.chatLayout.state`, so a change of either recomposes the open chat; the chat list is not reloaded. `userChatLayout` is set by [`setChatLayout()`](../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListNavLinkView.kt#L1007), `User.chatLayout` by `apiSetUserChatLayout` and `ChatModel.updateCurrentUserChatLayout`.
+[`ChatInfo.activeChatLayout(user)`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L1876) is computed in the app, skipping `ChatLayoutMode.Unknown` values:
+
+```
+chat choice        ChatInfo.uiThemes.chatLayout (contact or group theme record)
+chat layout        ChatInfo.chatLayout: groupProfile.chatLayout of a group; Contact.chatLayout (address link data, stored when the contact is prepared)
+profile choice     User.uiThemes.chatLayout (profileChatLayout)
+app choice         appPrefs.chatLayout
+otherwise          ChatLayoutMode.Classic
+```
+
+[`defaultChatLayout(user)`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L1873) is the same without the chat choice. Note folders have no chat values, so the profile and app choices apply. `ChatView` reads `chatModel.currentUser`, and `profileChatLayout` reads `appPrefs.chatLayout.state`, so a change of either recomposes the open chat; the chat list is not reloaded. The chat choice is written with `apiSetChatUIThemes` (`setChatLayout`, `ChatInfoView.kt`), the profile choice with `apiSetUserUIThemes` (`ChatLayoutRow`, `Appearance.kt`), together with the colours of the same record.
 
 ### RelayStatus (Channels)
 
@@ -452,6 +462,7 @@ val appPrefs: AppPreferences by lazy { AppPreferences() }
 |---|---|---|---|
 | `oneHandUI` | `Boolean` | `true` | One-hand mode |
 | `chatBottomBar` | `Boolean` | `true` | Bottom bar in chat |
+| `chatLayout` | `ChatLayoutMode` | `Classic` | App chat layout (`activeChatLayout`) |
 
 #### Remote Access (lines 238-243)
 

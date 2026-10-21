@@ -87,7 +87,6 @@ module Simplex.Chat.Store.Direct
     resetContactConnInitiated,
     setContactCustomData,
     setContactUIThemes,
-    setContactUserChatLayout,
     setContactChatDeleted,
     getDirectChatTags,
     addDirectChatTags,
@@ -325,7 +324,7 @@ getContactByConnReqHash db cxt user@User {userId} cReqHash1 cReqHash2 = do
             ct.contact_id, ct.contact_profile_id, ct.local_display_name, cp.display_name, cp.full_name, cp.short_descr, cp.description, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
             cp.preferences, cp.preferences_json, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id, cr2.rejection_supported,
             ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
-            ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl, ct.chat_layout, ct.user_chat_layout,
+            ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl, ct.chat_layout,
             cp.badge_proof, cp.badge_pres_header, cp.badge_expiry, cp.badge_type, cp.badge_verified, cp.badge_extra, cp.badge_master_key, cp.badge_signature, cp.badge_key_idx,
             cp.contact_domain, cp.contact_domain_proof, cp.contact_domain_verified,
             -- Connection
@@ -929,7 +928,6 @@ createContactFromRequest db user@User {userId, profile = LocalProfile {preferenc
             chatItemTTL = Nothing,
             uiThemes = Nothing,
             chatLayout = Nothing,
-            userChatLayout = Nothing,
             chatDeleted = False,
             customData = Nothing
           }
@@ -979,7 +977,7 @@ getContact_ db cxt user@User {userId} contactId deleted = do
           ct.contact_id, ct.contact_profile_id, ct.local_display_name, cp.display_name, cp.full_name, cp.short_descr, cp.description, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
           cp.preferences, cp.preferences_json, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id, cr2.rejection_supported,
           ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
-          ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl, ct.chat_layout, ct.user_chat_layout,
+          ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl, ct.chat_layout,
           cp.badge_proof, cp.badge_pres_header, cp.badge_expiry, cp.badge_type, cp.badge_verified, cp.badge_extra, cp.badge_master_key, cp.badge_signature, cp.badge_key_idx,
           cp.contact_domain, cp.contact_domain_proof, cp.contact_domain_verified,
           -- Connection
@@ -1118,11 +1116,6 @@ setContactUIThemes :: DB.Connection -> User -> Contact -> Maybe UIThemeEntityOve
 setContactUIThemes db User {userId} Contact {contactId} uiThemes = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE contacts SET ui_themes = ?, updated_at = ? WHERE user_id = ? AND contact_id = ?" (uiThemes, updatedAt, userId, contactId)
-
-setContactUserChatLayout :: DB.Connection -> User -> Contact -> Maybe ChatLayout -> IO ()
-setContactUserChatLayout db User {userId} Contact {contactId} userChatLayout = do
-  updatedAt <- getCurrentTime
-  DB.execute db "UPDATE contacts SET user_chat_layout = ?, updated_at = ? WHERE user_id = ? AND contact_id = ?" (userChatLayout, updatedAt, userId, contactId)
 
 setContactChatDeleted :: DB.Connection -> User -> Contact -> Bool -> IO ()
 setContactChatDeleted db User {userId} Contact {contactId} chatDeleted = do

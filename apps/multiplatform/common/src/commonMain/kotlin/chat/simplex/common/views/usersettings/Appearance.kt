@@ -39,19 +39,17 @@ import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.ThemeManager.colorFromReadableHex
 import chat.simplex.common.ui.theme.ThemeManager.toReadableHex
+import chat.simplex.common.views.chat.ChatItemSender
 import chat.simplex.common.views.chat.item.LocalTerminalLayout
 import chat.simplex.common.views.chat.item.PreviewChatItemView
 import chat.simplex.common.views.chat.item.TerminalChatItemRow
-import chat.simplex.common.views.chat.item.TerminalSender
 import chat.simplex.common.views.chat.item.msgTailWidthDp
 import chat.simplex.res.*
 import com.godaddy.android.colorpicker.ClassicColorPicker
 import com.godaddy.android.colorpicker.HsvColor
 import dev.icerock.moko.resources.StringResource
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlinx.serialization.encodeToString
 import java.io.File
@@ -306,7 +304,7 @@ object AppearanceScope {
         )
 
         @Composable
-        fun TerminalPreviewRow(item: ChatItem, sender: TerminalSender, senderTopGap: Dp) {
+        fun TerminalPreviewRow(item: ChatItem, sender: ChatItemSender, senderTopGap: Dp) {
           TerminalChatItemRow(sender, gutter = 0.dp, topGap = 0.dp, senderTopGap = senderTopGap) {
             PreviewChatItemView(item)
           }
@@ -322,8 +320,8 @@ object AppearanceScope {
           },
           terminalRows = {
             Column {
-              TerminalPreviewRow(alice, TerminalSender("alice", null, null, own = false, image = null), senderTopGap = 0.dp)
-              TerminalPreviewRow(reply, TerminalSender("bob", null, null, own = true, image = null), senderTopGap = 8.dp)
+              TerminalPreviewRow(alice, ChatItemSender("alice", null, null, own = false, image = null), senderTopGap = 0.dp)
+              TerminalPreviewRow(reply, ChatItemSender("bob", null, null, own = true, image = null), senderTopGap = 8.dp)
             }
           }
         )
@@ -572,7 +570,7 @@ object AppearanceScope {
 
     SectionView(stringResource(MR.strings.settings_section_title_themes)) {
       ThemeDestinationPicker(themeUserDestination)
-      ChatLayoutRow(themeUserDestination.value?.first)
+      ChatLayoutRow(themeUserDestination)
 
       val importWallpaperLauncher = rememberFileChooserLauncher(true) { to: URI? ->
         if (to != null) onImport(to)
@@ -924,7 +922,7 @@ object AppearanceScope {
       }
       changedThemes
     } else {
-      null
+      changedThemes?.layoutOnly()
     }
 
     val wallpaperFilesToDelete = wallpaperFiles - changedThemes?.light?.wallpaper?.imageFile - changedThemes?.dark?.wallpaper?.imageFile
@@ -943,22 +941,23 @@ object AppearanceScope {
     }
   }
 
-  @Composable
   private fun profileLayoutIsTerminal(user: User?): Boolean =
-    profileChatLayout(user, appPrefs.chatLayout.state.value) == ChatLayout.Terminal
+    profileChatLayout(user) == ChatLayoutMode.Terminal
 
   @Composable
-  private fun ChatLayoutRow(userId: Long?) {
-    val globalLayout = remember { appPrefs.chatLayout.state }
-    if (userId == null) {
+  private fun ChatLayoutRow(themeUserDestination: MutableState<Pair<Long, ThemeModeOverrides?>?>) {
+    val globalLayout = remember { derivedStateOf { profileChatLayout(null) } }
+    val dest = themeUserDestination.value
+    if (dest == null) {
       ExposedDropDownSettingRow(
         generalGetString(MR.strings.chat_layout),
-        listOf(ChatLayout.Classic, ChatLayout.Terminal).map { it to chatLayoutName(it) },
+        listOf(ChatLayoutMode.Classic, ChatLayoutMode.Terminal).map { it to chatLayoutName(it) },
         globalLayout,
         onSelected = { layout -> appPrefs.chatLayout.set(layout) }
       )
     } else {
-      val userLayout = chatModel.currentUser.value?.chatLayout
+      val (userId, themes) = dest
+      val userLayout = themes?.chatLayout
       val otherLayout = otherChatLayout(globalLayout.value)
       val selection = remember(userLayout, otherLayout) { mutableStateOf(if (userLayout == otherLayout) otherLayout else null) }
       ExposedDropDownSettingRow(
@@ -969,13 +968,8 @@ object AppearanceScope {
         ),
         selection,
         onSelected = { layout ->
-          selection.value = layout
-          withBGApi {
-            val rh = chatModel.remoteHostId()
-            if (controller.apiSetUserChatLayout(rh, userId, layout)) {
-              withContext(Dispatchers.Main) { chatModel.updateCurrentUserChatLayout(rh, layout) }
-            }
-          }
+          themeUserDestination.value = userId to themes.withChatLayout(layout)
+          saveThemeToDatabase(themeUserDestination.value)
         }
       )
     }
@@ -988,7 +982,7 @@ object AppearanceScope {
       if (themeUserDestination.value == null) {
         // Easiest way to hide per-user customization.
         // Otherwise, it would be needed to make global variable and to use it everywhere for making a decision to include these overrides into active theme constructing or not
-        chatModel.currentUser.value = chatModel.currentUser.value?.copy(uiThemes = null)
+        chatModel.currentUser.value = chatModel.currentUser.value?.let { it.copy(uiThemes = it.uiThemes?.layoutOnly()) }
       } else {
         chatModel.updateCurrentUserUiThemes(chatModel.remoteHostId(), chatModel.users.firstOrNull { it.user.userId == chatModel.currentUser.value?.userId }?.user?.uiThemes)
       }
@@ -1384,7 +1378,7 @@ private fun ColorPicker(initialColor: Color, showAlphaBar: Boolean, onColorChang
 private fun removeUserThemeModeOverrides(themeUserDestination: MutableState<Pair<Long, ThemeModeOverrides?>?>, perUserTheme: MutableState<ThemeModeOverride>) {
   val dest = themeUserDestination.value ?: return
   perUserTheme.value = ThemeModeOverride()
-  themeUserDestination.value = dest.first to null
+  themeUserDestination.value = dest.first to dest.second?.layoutOnly()
   val wallpaperFilesToDelete = listOf(
     (chatModel.currentUser.value?.uiThemes?.light?.type as? WallpaperType.Image)?.filename,
     (chatModel.currentUser.value?.uiThemes?.dark?.type as? WallpaperType.Image)?.filename

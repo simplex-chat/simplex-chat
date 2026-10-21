@@ -334,7 +334,7 @@ struct ChatInfoView: View {
             case .syncConnectionForceAlert:
                 return syncConnectionForceAlert({
                     Task {
-                        if let stats = await syncContactConnection(chat.chatInfo.contact ?? contact, force: true) {
+                        if let stats = await syncContactConnection(contact, force: true) {
                             connectionStats = stats
                             dismiss()
                         }
@@ -516,7 +516,7 @@ struct ChatInfoView: View {
     private func synchronizeConnectionButton() -> some View {
         Button {
             Task {
-                if let stats = await syncContactConnection(chat.chatInfo.contact ?? contact, force: false) {
+                if let stats = await syncContactConnection(contact, force: false) {
                     connectionStats = stats
                     dismiss()
                 }
@@ -588,7 +588,7 @@ struct ChatInfoView: View {
                 let stats = try apiSwitchContact(contactId: contact.apiId)
                 connectionStats = stats
                 await MainActor.run {
-                    chatModel.updateContactConnectionStats(chat.chatInfo.contact ?? contact, stats)
+                    chatModel.updateContactConnectionStats(contact, stats)
                     dismiss()
                 }
             } catch let error {
@@ -606,7 +606,7 @@ struct ChatInfoView: View {
                 let stats = try apiAbortSwitchContact(contact.apiId)
                 connectionStats = stats
                 await MainActor.run {
-                    chatModel.updateContactConnectionStats(chat.chatInfo.contact ?? contact, stats)
+                    chatModel.updateContactConnectionStats(contact, stats)
                 }
             } catch let error {
                 logger.error("abortSwitchContactAddress apiAbortSwitchContact error: \(responseError(error))")
@@ -811,7 +811,7 @@ private struct CallButton: View {
                                 message: Text("Connection requires encryption renegotiation."),
                                 primaryButton: .default(Text("Fix")) {
                                     Task {
-                                        if let stats = await syncContactConnection(chat.chatInfo.contact ?? contact, force: false) {
+                                        if let stats = await syncContactConnection(contact, force: false) {
                                             connectionStats = stats
                                         }
                                     }
@@ -946,7 +946,6 @@ struct ChatWallpaperEditorSheet: View {
         let preferred = themes.preferredMode(!theme.colors.isLight)
         let initialTheme = preferred ?? ThemeManager.defaultActiveTheme(ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
         ChatWallpaperEditor(
-            chat: ChatModel.shared.getChat(chat.id) ?? chat,
             initialTheme: initialTheme,
             themeModeOverride: initialTheme,
             applyToMode: themes.light == themes.dark ? nil : initialTheme.mode,
@@ -1024,14 +1023,14 @@ struct ChatWallpaperEditorSheet: View {
                 let filePath = saveWallpaperFile(url: getWallpaperFilePath(imageFile))
                 if currentMode == DefaultThemeMode.light {
                     dark.wallpaper?.imageFile = filePath
-                    changedThemes = ThemeModeOverrides(light: changedThemes?.light, dark: dark)
+                    changedThemes?.dark = dark
                 } else {
                     light.wallpaper?.imageFile = filePath
-                    changedThemes = ThemeModeOverrides(light: light, dark: changedThemes?.dark)
+                    changedThemes?.light = light
                 }
             }
         } else {
-            changedThemes = nil
+            changedThemes = changedThemes?.layoutOnly()
         }
         wallpaperFiles.remove(changedThemes?.light?.wallpaper?.imageFile)
         wallpaperFiles.remove(changedThemes?.dark?.wallpaper?.imageFile)
@@ -1043,15 +1042,14 @@ struct ChatWallpaperEditorSheet: View {
             do {
                 try await Task.sleep(nanoseconds: 300_000000)
                 if await apiSetChatUIThemes(chatId: chat.id, themes: changedThemesConstant) {
-                    let chatInfo = (ChatModel.shared.getChat(chat.wrappedValue.id) ?? chat.wrappedValue).chatInfo
-                    if case var ChatInfo.direct(contact) = chatInfo {
+                    if case var ChatInfo.direct(contact) = chat.wrappedValue.chatInfo {
                         contact.uiThemes = changedThemesConstant
                         await MainActor.run {
                             ChatModel.shared.updateChatInfo(ChatInfo.direct(contact: contact))
                             chat.wrappedValue = Chat.init(chatInfo: ChatInfo.direct(contact: contact))
                             themes = themesFromChat(chat.wrappedValue)
                         }
-                    } else if case var ChatInfo.group(groupInfo, _) = chatInfo {
+                    } else if case var ChatInfo.group(groupInfo, _) = chat.wrappedValue.chatInfo {
                         groupInfo.uiThemes = changedThemesConstant
 
                         await MainActor.run {
