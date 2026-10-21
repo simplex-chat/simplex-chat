@@ -253,6 +253,11 @@ parseConfig ini = do
     Left "[dev] accept_unverified_store_receipts must be off where [apple] or [google] verifies store receipts"
   devCheckStoreDuringCoverage <- bool "dev" "check_store_during_coverage" False
   devCreditTestPurchases <- bool "dev" "credit_test_purchases" False
+  -- A sandbox receipt verifies like any other and says so only in a field, so crediting test purchases
+  -- against production Apple would mint badges for anyone holding a sandbox account. A deployment that
+  -- means it points api_host at the sandbox; nothing else here distinguishes production.
+  when (devCreditTestPurchases && maybe False ((== defaultAppleApiHost) . aApiHost) (apple >>= aServerApi)) $
+    Left "[dev] credit_test_purchases must be off where apple.api_host is the production App Store, as a sandbox receipt would be credited as a real purchase"
   when (devCheckStoreDuringCoverage && not (devUnverifiedReceipts || devCreditTestPurchases)) $
     Left "[dev] check_store_during_coverage needs accept_unverified_store_receipts or credit_test_purchases = on, as only a dev deployment may ask a store while coverage runs"
   pure
