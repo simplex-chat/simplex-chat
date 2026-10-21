@@ -230,7 +230,7 @@ This stage adds the service's names endpoints: search, link previews, code check
 
 The contract [`2026-10-21-store-api.md`](2026-10-21-store-api.md) defines every endpoint below to the field; this section says how the service builds them.
 
-- **`[names]` in the ini:** `tld` (`testing` until `.simplex` is deployed), `years` (2), `term_start` (`2027-01-01T00:00:00Z`), `term_slack_seconds` (3600), `reveal_margin_seconds` (900), `max_order_moves` (3).
+- **`[names]` in the ini** (`store_service.ini`, at `/etc/simplex-store-service/` in production): `tld` (`testing` until `.simplex` is deployed), `years` (2), `term_start` (`2027-01-01T00:00:00Z`), `term_slack_seconds` (3600), `reveal_margin_seconds` (900), `max_order_moves` (3).
   - `knownSettings` in `Config.hs` gains `[names]`, `[chain]` and the `[listener]` keys `names_static_dir`, `names_export_dir` and `names_hosts`.
   - The parser warns about and ignores any key not listed.
 
@@ -710,7 +710,7 @@ It uses the branch's chain client (`BadgeService/Names/Chain.hs`, `sendCommit`, 
 ### 5. Webapps: a shared library, the badges webapp, the names webapp
 
 This stage builds two webapps that share logic, not screens.
-- The badges webapp stays in `apps/simplex-badge-service/web/` (`apps/simplex-store-service/web/` after stage 1).
+- The badges webapp stays in `apps/simplex-store-service/web/`.
 - The names webapp lives in the simplex.domains repo, in that site's look, and is a submodule of simplex-chat.
 - The shared logic is a library in `packages/`, published to npm.
 
@@ -812,13 +812,13 @@ This stage builds two webapps that share logic, not screens.
 - **Docker:** `Dockerfile.dockerignore` gains `!apps/simplex-domains`, and the Dockerfile's web stage builds it next to the badges webapp, so one image carries both sites.
 - **Releases:** a names release reaches production by bumping the submodule pointer. Builds check it out (`git submodule update --init`).
 
-### 6. Deployment (`scripts/badge-service/`, renamed in stage 1)
+### 6. Deployment (`scripts/store-service/`)
 
 This stage serves both sites from the existing production deployment.
 
-Production is the split deployment in `scripts/badge-service/`. Today:
+Production is the split deployment in `scripts/store-service/`. Today:
 - Caddy serves the one folder the service exports at boot (`compose.yml` mounts `./web` as `/srv/webapp`, the ini's `webapp_export_dir`), and proxies `/api` and `/webhooks` on badges.simplex.chat.
-- The service runs with `+client_postgres` and host networking, with its ini mounted read-only.
+- The service runs with `+client_postgres` and host networking, with `store_service.ini` mounted read-only at `/etc/simplex-store-service/`.
 
 Changes:
 - **Two exported sites:**
@@ -829,7 +829,7 @@ Changes:
   - `badges.simplex.chat` serves the badges folder; `simplex.domains` serves the names folder.
   - Both proxy `/api/*` to the service, so the names site calls the API on its own origin, with no CORS.
   - `/webhooks/*` (`/webhooks/btcpay`, `/webhooks/stripe`) stays on badges.simplex.chat only, as today. BTCPay and Stripe send every event there, names payments included.
-  - `apps/simplex-badge-service/README.md` (renamed in stage 1) gains the host blocks, since the Caddyfile is not in this repository.
+  - `apps/simplex-store-service/README.md` gains the host blocks, since the Caddyfile is not in this repository.
   - The names site's CSP follows the badges one in `web/README.md`, with `data:` added to its `img-src` (`'self' data: https://*.stripe.com`) for the link profiles' pictures.
   - Stripe.js runs on simplex.domains itself, in the document that holds the owner codes and prepaid codes in `localStorage` (owner, 2026-10-20: accepted). The README's hosting section says so, with the CSP's `script-src` and `frame-src` limited to `https://js.stripe.com` and `https://*.js.stripe.com`.
   - The CSP allows no inline styles. So the views port the mockups' `style` attributes to classes, or set them through `node.style` (the avatar hue).

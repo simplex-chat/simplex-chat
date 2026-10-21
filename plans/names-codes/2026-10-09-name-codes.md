@@ -533,7 +533,7 @@ Migration `20261010_names` runs in SQLite and Postgres. The badge tables (`sx_ba
 
 ## 10. Configuration
 
-The service reads these new settings from its ini file. The comments say what each one is for.
+The service reads these new settings from its ini file, `store_service.ini` (mounted at `/etc/simplex-store-service/store_service.ini`; the example is `apps/simplex-store-service/store_service.ini.example`). The comments say what each one is for.
 
 ```ini
 [listener]
@@ -623,9 +623,9 @@ The board's frames below predate the mockup: the checkout's "I have a code" (N3,
 
 This section says how production changes so that one service serves both sites.
 
-Production is the split deployment in `scripts/badge-service/` (`scripts/store-service/` after the rename). Today:
+Production is the split deployment in `scripts/store-service/`. Today:
 - Caddy serves the one folder the service exports at boot (`compose.yml` mounts `./web` as `/srv/webapp`, the ini's `webapp_export_dir`). It proxies `/api` and `/webhooks` on badges.simplex.chat.
-- The service runs with `+client_postgres` and host networking, with its ini mounted read-only.
+- The service runs with `+client_postgres` and host networking, with `store_service.ini` mounted read-only at `/etc/simplex-store-service/`.
 
 What changes:
 - **Build:** `Dockerfile.dockerignore` lets `packages/simplex-chat-store` and `apps/simplex-domains` into the build context. The web stage copies them in the repo's layout, builds the badges webapp on the library, and builds the names submodule.
@@ -634,7 +634,7 @@ What changes:
   - `badges.simplex.chat` serves the badges folder, and `simplex.domains` the names folder.
   - Both proxy `/api/*`, so each site calls the API on its own origin.
   - `/webhooks/*` (`/webhooks/btcpay`, `/webhooks/stripe`) stays on badges.simplex.chat only, as today. BTCPay and Stripe send every event there, names payments included.
-  - `apps/simplex-badge-service/README.md` (`apps/simplex-store-service/` after the rename) gains the host blocks.
+  - `apps/simplex-store-service/README.md` gains the host blocks.
   - The names site gets a CSP like the badges one, with `data:` added to its `img-src` (`'self' data: https://*.stripe.com`) for the link profiles' pictures.
   - Stripe.js runs on simplex.domains itself, in the document that holds the codes in `localStorage`. Accepted by the owner (2026-10-20): no Checkout redirect and no separate card origin.
   - No inline styles are allowed. So the views move the mockups' `style` attributes into classes or set them through `node.style`.
@@ -650,12 +650,12 @@ The board is generated from the mockups. This section says which files draw it a
 - `mockups/screens.js` on `mockups/mockups.css` draws the other frames: the badges landing on the compiled badges webapp, and the app and operator frames.
 - `mockups/fixtures.js` holds the data both use.
 - `mockups/layout.mjs` holds the captions, positions and arrows.
-- `mockups/board.mjs` reads the badges build from `apps/simplex-badge-service/web/dist/assets` (a path that follows the stage 1 rename). It reads simplex.domains from a checkout beside this repo or from `$SIMPLEX_DOMAINS`. It renders each frame with Playwright into `screens/<tag>.jpg` (JPEG at quality 85) and writes `names-flow.svg`.
+- `mockups/board.mjs` reads the badges build from `apps/simplex-store-service/web/dist/assets`. It reads simplex.domains from a checkout beside this repo or from `$SIMPLEX_DOMAINS`. It renders each frame with Playwright into `screens/<tag>.jpg` (JPEG at quality 85) and writes `names-flow.svg`.
 
 To rebuild, run from the repo root:
 
 ```
-cd apps/simplex-badge-service/web && npm install && npm run build && cd ../../..
+cd apps/simplex-store-service/web && npm install && npm run build && cd ../../..
 npm install --prefix /tmp/pw playwright && npx --prefix /tmp/pw playwright install chromium
 PLAYWRIGHT=/tmp/pw/node_modules/playwright/index.mjs node plans/names-codes/mockups/board.mjs
 ```

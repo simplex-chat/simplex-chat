@@ -10,7 +10,7 @@ import { CORNER, FRAMES, NOTES, SECTIONS, SUBTITLE, TITLE } from "./layout.mjs";
 const HERE = fileURLToPath(new URL(".", import.meta.url));
 const OUT = join(HERE, "..");
 const SCREENS_DIR = join(OUT, "screens");
-const DIST = join(HERE, "../../../apps/simplex-badge-service/web/dist/assets");
+const DIST = join(HERE, "../../../apps/simplex-store-service/web/dist/assets");
 const DOMAINS = process.env.SIMPLEX_DOMAINS ?? join(HERE, "../../../../simplex.domains");
 // frames drawn by screens.js: the badges landing, the app and the operator; every other frame is from domains.js.
 // Listed here because screens.js imports the badges build, which loads only in the page.
@@ -63,7 +63,7 @@ catch (e) { document.body.dataset.error = String(e && e.stack || e); }
 </script></body></html>`;
 
 function buildHash() {
-  if (!existsSync(DIST)) throw new Error(`board: ${DIST} is missing - run npm run build in apps/simplex-badge-service/web`);
+  if (!existsSync(DIST)) throw new Error(`board: ${DIST} is missing - run npm run build in apps/simplex-store-service/web`);
   const builds = readdirSync(DIST);
   if (builds.length !== 1) throw new Error(`board: expected one build in ${DIST}, found ${builds.length}`);
   return join(DIST, builds[0]);
