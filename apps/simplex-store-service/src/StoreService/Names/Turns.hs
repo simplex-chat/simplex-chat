@@ -1,7 +1,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 
 -- | A thread that takes a turn it already holds waits forever. Label turns are taken before a code turn.
-module StoreService.Names.Turns (Turns, newTurns, withLabelTurn, withLabelTurns, withCodeTurn) where
+module StoreService.Names.Turns (Turns, newTurns, withLabelTurn, withLabelTurns, withCodeTurn, turnsCount) where
 
 import Control.Concurrent.STM
 import Control.Exception (bracket, bracket_)
@@ -27,6 +27,10 @@ withLabelTurns turns a@(LabelHash ha) b@(LabelHash hb) action
   | ha == hb = withLabelTurn turns a action
   | ha < hb = withLabelTurn turns a $ withLabelTurn turns b action
   | otherwise = withLabelTurn turns b $ withLabelTurn turns a action
+
+-- | The label and code hashes with a holder or a waiter.
+turnsCount :: Turns -> IO Int
+turnsCount Turns {labelTurns, codeTurns} = atomically $ (+) <$> (Map.size <$> readTVar labelTurns) <*> (Map.size <$> readTVar codeTurns)
 
 -- | Keyed by the code's SHA-256 hash.
 withCodeTurn :: Turns -> ByteString -> IO a -> IO a

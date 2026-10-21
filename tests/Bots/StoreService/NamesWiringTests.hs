@@ -37,6 +37,7 @@ namesWiringTests = describe "StoreService names: wiring" $ do
     it "catches a publish that lands between subscribing and reading" testPublishBeforeRead
     it "gives up after the hold when nothing is published" testHoldTimesOut
     it "is not woken by another registration's publish" testOtherRegistration
+    it "drops a registration's watch once no waiter is left" testPhasesDropIdleWatches
   describe "router" $ do
     it "answers a known path with another method 405 with Allow, spending no token" testWrongMethod
     it "leaves an unknown path to the caller" testUnknownPath
@@ -47,6 +48,7 @@ namesWiringTests = describe "StoreService names: wiring" $ do
     it "holds both label hashes in withLabelTurns, and one when they are equal" testLabelTurnsHoldBoth
     it "never deadlocks withLabelTurns A->B against B->A" testLabelTurnsNoDeadlock
     it "releases a turn whose holder throws" testTurnReleasedOnThrow
+    it "drops a lock once nobody holds or waits for it" testTurnsDropIdleLocks
 
 -- | Long enough that only a missed wake-up could make a test wait it out.
 longHold :: Int
@@ -101,6 +103,20 @@ testOtherRegistration = do
   takeMVar parked
   atomically $ publish phases rid2 7
   timeout prompt (wait waiter) `shouldReturn` Just False
+
+testPhasesDropIdleWatches :: IO ()
+testPhasesDropIdleWatches = do
+  phases <- newPhases
+  parked <- newEmptyMVar
+  woken <- async $ awaitChange phases rid1 (putMVar parked () >> pure 1) 1 longHold
+  cancelled <- async $ awaitChange phases rid2 (putMVar parked () >> pure 1) 1 longHold
+  replicateM_ 2 $ takeMVar parked
+  phasesCount phases `shouldReturn` 2
+  atomically $ publish phases rid1 2
+  timeout prompt (wait woken) `shouldReturn` Just True
+  Async.cancel cancelled
+  awaitChange phases rid1 (pure 2) 2 parkDelay `shouldReturn` False
+  phasesCount phases `shouldReturn` 0
 
 type Client = (Manager, String)
 
@@ -223,3 +239,13 @@ testTurnReleasedOnThrow = do
     Left Boom -> pure ()
     Right () -> expectationFailure "the holder's exception must reach the caller"
   timeout prompt (withLabelTurn turns a (pure ())) `shouldReturn` Just ()
+
+testTurnsDropIdleLocks :: IO ()
+testTurnsDropIdleLocks = do
+  turns <- newTurns
+  let a = labelHash "alice1"
+  withLabelTurns turns a (labelHash "bobby2") $ withCodeTurn turns (BC.replicate 32 'c') $ turnsCount turns `shouldReturn` 3
+  E.handle (\Boom -> pure ()) $ withLabelTurn turns a (E.throwIO Boom)
+  -- the waiter is cancelled by the timeout while the holder keeps the turn
+  withLabelTurn turns a $ timeout parkDelay (withLabelTurn turns a (pure ())) `shouldReturn` Nothing
+  turnsCount turns `shouldReturn` 0
