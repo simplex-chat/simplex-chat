@@ -214,7 +214,7 @@
     "simplex-private-card-3-point-2": "اثر انگشت سرور و اتصال کانال از حملات MITM و حملات replay جلوگیری می‌کنند.",
     "simplex-private-card-3-point-3": "برای جلوگیری از حملات نشست، از سرگیری اتصال غیرفعال شده است.",
     "simplex-private-card-4-point-1": "برای محافظت از آدرس IP خود، می‌توانید از طریق Tor یا برخی دیگر از شبکه‌های حمل و نقل پوششی به سرورها دسترسی پیدا کنید.",
-    "simplex-private-card-4-point-2": "برای استفاده از SimpleX از طریق Tor، لطفاً <a href=\"https://guardianproject.info/apps/org.torproject.android/\" target=\"_blank\" rel=\"noopener\">برنامه Orbot</a> را نصب کرده و پروکسی SOCKS5 (یا VPN <a href=\"https://apps.apple.com/us/app/orbot/id1609461599?platform=iphone\" target=\"_blank\" rel=\"noopener\">در iOS</a>) را فعال کنید.",
+    "simplex-private-card-4-point-2": "برای استفاده از SimpleX از طریق Tor، لطفاً <a href=\"https://guardianproject.info/apps/org.torproject.android/\" target=\"_blank\">برنامه Orbot</a> را نصب کرده و پروکسی SOCKS5 (یا VPN <a href=\"https://apps.apple.com/us/app/orbot/id1609461599?platform=iphone\" target=\"_blank\">در iOS</a>) را فعال کنید.",
     "simplex-private-card-5-point-1": "SimpleX از padding محتوا برای هر لایه رمزنگاری استفاده می‌کند تا از حملات اندازه پیام جلوگیری کند.",
     "simplex-private-card-5-point-2": "این کار باعث می‌شود که پیام‌های با اندازه‌های مختلف برای سرورها و ناظران شبکه یکسان به نظر برسند.",
     "simplex-private-card-6-point-1": "بسیاری از شبکه‌های ارتباطی در برابر حملات MITM توسط سرورها یا ارائه‌دهندگان شبکه آسیب‌پذیر هستند.",
