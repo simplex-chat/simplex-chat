@@ -224,7 +224,7 @@
     <string name="v4_5_reduced_battery_usage_descr">更多改進即將推出！</string>
     <string name="v4_5_italian_interface">意大利語言界面</string>
     <string name="v4_5_italian_interface_descr">感謝用戶 - 使用 Weblate 的翻譯貢獻！</string>
-    <string name="app_name">SimpleX</string>
+    <string name="app_name" translatable="false">SimpleX</string>
     <string name="thousand_abbreviation">k</string>
     <string name="connect_via_contact_link">透過聯絡人地址連接？</string>
     <string name="connect_via_invitation_link">透過一次性連結連接？</string>
@@ -325,8 +325,7 @@
     <string name="notification_preview_new_message">新訊息</string>
     <string name="notification_contact_connected">已連接</string>
     <string name="la_notice_title_simplex_lock">SimpleX 鎖定</string>
-    <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">為了保護你的個人訊息，開啟 SimpleX 鎖定。
-\n在啟用此功能之前，系統將提示你完成螢幕鎖定的功能。</string>
+    <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">為了保護你的個人訊息，開啟 SimpleX 鎖定。 \n在啟用此功能之前，系統將提示你完成螢幕鎖定的功能。</string>
     <string name="la_notice_turn_on">開啟</string>
     <string name="auth_simplex_lock_turned_on">已開啟SimpleX 鎖定</string>
     <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">你的裝置沒有啟用螢幕鎖定。你可以通過設定內啟用螢幕鎖定，當你啟用後就可以使用 SimpleX 鎖定。</string>
@@ -429,8 +428,7 @@
     <string name="delete_group_menu_action">刪除</string>
     <string name="mark_read">標記為已讀</string>
     <string name="mark_unread">標記為未讀</string>
-    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">你的聯絡人需要上線才能連接成功。
-\n你可以取消此連接和刪除此聯絡人（或者你可以稍後使用新的連結再試一次）。</string>
+    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">你的聯絡人需要上線才能連接成功。 \n你可以取消此連接和刪除此聯絡人（或者你可以稍後使用新的連結再試一次）。</string>
     <string name="image_descr_qr_code">QR 圖碼</string>
     <string name="image_descr_profile_image">個人檔案頭像</string>
     <string name="image_descr_link_preview">預覧連結圖片</string>
@@ -527,7 +525,7 @@
     <string name="no_call_on_lock_screen">停用</string>
     <string name="icon_descr_call_missed">已錯過通話</string>
     <string name="open_verb">開啟</string>
-    <string name="open_simplex_chat_to_accept_call">開啟  SimpleX Chat 以接受通話</string>
+    <string name="open_simplex_chat_to_accept_call">開啟 SimpleX Chat 以接受通話</string>
     <string name="icon_descr_call_rejected">已拒絕通話</string>
     <string name="show_call_on_lock_screen">顯示</string>
     <string name="icon_descr_call_connecting">連接通話中</string>
@@ -566,8 +564,8 @@
     <string name="button_create_group_link">建立連結</string>
     <string name="delete_link_question">刪除連結？</string>
     <string name="button_remove_member">移除成員</string>
-    <string name="member_role_will_be_changed_with_notification">成員的身份會修改為 "%s"。所有在群組內的成員都接收到通知。</string>
-    <string name="member_role_will_be_changed_with_invitation">成員的身份會修改為 "%s"。該成員將接收到新的邀請。</string>
+    <string name="member_role_will_be_changed_with_notification">成員的身份會修改為 %s。所有在群組內的成員都接收到通知。</string>
+    <string name="member_role_will_be_changed_with_invitation">成員的身份會修改為 %s。該成員將接收到新的邀請。</string>
     <string name="network_status">網路狀態</string>
     <string name="network_options_reset_to_defaults">重設為預設值</string>
     <string name="incognito_info_share">當你與某人分享已啟用匿名聊天模式的個人檔案時，此個人檔案將用於他們邀請你參加的群組。</string>
@@ -914,9 +912,7 @@
     <string name="v4_6_reduced_battery_usage">進一步減少電池使用</string>
     <string name="v4_6_group_moderation">群組審核</string>
     <string name="v4_6_reduced_battery_usage_descr">更多改進即將推出！</string>
-    <string name="v4_6_group_moderation_descr">現在管理員可以：
-\n- 刪除成員的訊息。
-\n- 禁用成員（“觀察員”角色）</string>
+    <string name="v4_6_group_moderation_descr">現在管理員可以： \n- 刪除成員的訊息。 \n- 禁用成員（“觀察員”角色）</string>
     <string name="v4_6_hidden_chat_profiles_descr">使用密碼保護你的聊天資料！</string>
     <string name="relay_server_protects_ip">中繼伺服器保護你的 IP 地址，但它可以觀察通話的持續時間。</string>
     <string name="button_add_welcome_message">新增歡迎訊息</string>
@@ -1039,8 +1035,7 @@
     <string name="la_could_not_be_verified">你未能通過認證；請再試一次。</string>
     <string name="you_can_turn_on_lock">你可以透過設定啟用 SimpleX 鎖定。</string>
     <string name="la_mode_system">系統</string>
-    <string name="alert_text_msg_bad_id">此ID的下一則訊息是錯誤（小於或等於上一則的）。
-\n當一些錯誤出現或你的連結被破壞時會發生。</string>
+    <string name="alert_text_msg_bad_id">此ID的下一則訊息是錯誤（小於或等於上一則的）。 \n當一些錯誤出現或你的連結被破壞時會發生。</string>
     <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d 條訊息解密失敗。</string>
     <string name="network_socks_toggle_use_socks_proxy">使用SOCKS 代理伺服器</string>
     <string name="alert_text_decryption_error_too_many_skipped">%1$d 條訊息已跳過。</string>
@@ -1061,8 +1056,7 @@
     <string name="auto_accept_contact">自動接受</string>
     <string name="continue_to_next_step">繼續</string>
     <string name="enter_welcome_message_optional">輸入歡迎訊息… （可選擇的）</string>
-    <string name="email_invite_body">你好！ 
-\n透過 SimpleX Chat 來和我連接吧：%s</string>
+    <string name="email_invite_body">你好！ \n透過 SimpleX Chat 來和我連接吧：%s</string>
     <string name="save_auto_accept_settings">儲存自動接受的設定</string>
     <string name="save_settings_question">儲存設定？</string>
     <string name="invite_friends">邀請朋友</string>
@@ -1171,9 +1165,7 @@
     <string name="both_you_and_your_contact_can_add_message_reactions">你和你的聯絡人可以新增訊息互動。</string>
     <string name="non_fatal_errors_occured_during_import">匯入過程中出現了一些非致命錯誤：</string>
     <string name="allow_message_reactions_only_if">只有你的聯絡人允許的情況下，才允許訊息互動。</string>
-    <string name="v5_1_better_messages_descr">- 長達5分鐘的語音訊息。
-\n- 自定義銷毀時間。
-\n- 編輯紀錄。</string>
+    <string name="v5_1_better_messages_descr">- 長達5分鐘的語音訊息。 \n- 自定義銷毀時間。 \n- 編輯紀錄。</string>
     <string name="search_verb">搜尋</string>
     <string name="la_mode_off">關閉</string>
     <string name="v5_8_safe_files_descr">確認來自未知伺服器的檔案。</string>
@@ -1283,8 +1275,7 @@
     <string name="privacy_media_blur_radius">模糊媒體</string>
     <string name="allow_calls_question">允許通話？</string>
     <string name="share_text_created_at">建立於：%s</string>
-    <string name="error_initializing_web_view">Webview 初始化失敗。更新你的系統到新版本。請聯繫開發者。
-\n錯誤：%s</string>
+    <string name="error_initializing_web_view">Webview 初始化失敗。更新你的系統到新版本。請聯繫開發者。 \n錯誤：%s</string>
     <string name="rcv_direct_event_contact_deleted">已刪除聯絡人</string>
     <string name="rcv_group_events_count">%d 個群組事件</string>
     <string name="message_too_large">訊息太大</string>
@@ -1329,8 +1320,7 @@
     <string name="proxy_destination_error_broker_version">%1$s 的目地伺服器版本不相容於轉送伺服器 %2$s.</string>
     <string name="disable_notifications_button">關閉通知</string>
     <string name="snd_error_expired">網路問題 - 多次嘗試傳送訊息後，訊息已過期。</string>
-    <string name="snd_error_proxy_relay">轉發伺服器：%1$s
-\n目標伺服器錯誤：%2$s</string>
+    <string name="snd_error_proxy_relay">轉發伺服器：%1$s \n目標伺服器錯誤：%2$s</string>
     <string name="member_inactive_desc">如果成員變得活躍，可能會在之後傳送訊息。</string>
     <string name="contact_deleted">刪除了聯絡人！</string>
     <string name="delete_contact_cannot_undo_warning">聯絡人將被刪除 - 無法復原此操作</string>
@@ -1387,9 +1377,7 @@
     <string name="conn_event_ratchet_sync_agreed">同意加密</string>
     <string name="info_row_message_status">訊息狀態</string>
     <string name="connect_via_member_address_alert_desc">連接請求將傳送給該組成員。</string>
-    <string name="v5_2_more_things_descr">- 更穩定的消息傳送。
-\n- 更好的群組。
-\n- 還有更多！</string>
+    <string name="v5_2_more_things_descr">- 更穩定的消息傳送。 \n- 更好的群組。 \n- 還有更多！</string>
     <string name="v5_5_new_interface_languages">匈牙利語和土耳其語用戶界面</string>
     <string name="migrate_from_device_migration_complete">轉移完成</string>
     <string name="migrate_from_device_delete_database_from_device">從此裝置刪除資料庫</string>
@@ -1425,8 +1413,7 @@
     <string name="blocked_by_admin_items_description">管理員封鎖了 %d 條訊息</string>
     <string name="smp_proxy_error_connecting">連結轉發伺服器 %1$s 出錯。請稍候嘗試。</string>
     <string name="migrate_from_device_error_deleting_database">刪除資料庫出錯</string>
-    <string name="snd_error_proxy">轉發伺服器：%1$s
-\n錯誤：%2$s</string>
+    <string name="snd_error_proxy">轉發伺服器：%1$s \n錯誤：%2$s</string>
     <string name="proxy_destination_error_failed_to_connect">轉發伺服器 %1$s 連結目標伺服器 %2$s 失敗。請稍後嘗試。</string>
     <string name="migrate_to_device_importing_archive">正在匯入封存</string>
     <string name="v5_8_message_delivery">改進訊息傳送</string>
@@ -1482,9 +1469,7 @@
     <string name="error_creating_member_contact">建立聯絡人時出錯</string>
     <string name="v5_2_disappear_one_message">移除一條訊息</string>
     <string name="v5_2_fix_encryption">保持連接</string>
-    <string name="v5_3_discover_join_groups_descr">- 連接到目錄服務（BETA）！
-\n- 發送回執（最多20名成員）。
-\n- 更快，更穩定。</string>
+    <string name="v5_3_discover_join_groups_descr">- 連接到目錄服務（BETA）！ \n- 發送回執（最多20名成員）。 \n- 更快，更穩定。</string>
     <string name="v5_4_link_mobile_desktop">連接行動端和桌面端應用程式！ 🔗</string>
     <string name="v5_5_message_delivery">改進訊息傳送</string>
     <string name="delivery_receipts_are_disabled">已關閉送達回執！</string>
@@ -1500,8 +1485,7 @@
     <string name="fix_connection_not_supported_by_contact">修復聯絡人不支援的問題</string>
     <string name="fix_connection_confirm">修復</string>
     <string name="fix_connection_question">修復連結？</string>
-    <string name="database_migration_in_progress">正在進行資料庫轉移。
-\n可能需要幾分鐘時間。</string>
+    <string name="database_migration_in_progress">正在進行資料庫轉移。 \n可能需要幾分鐘時間。</string>
     <string name="error_creating_message">建立訊息出錯</string>
     <string name="error_deleting_note_folder">刪除私密筆記錯誤</string>
     <string name="enable_camera_access">啟用相機訪問</string>
@@ -1640,10 +1624,7 @@
     <string name="migrate_from_device_database_init">正在準備上載</string>
     <string name="feature_roles_owners">擁有者</string>
     <string name="not_compatible">不相容！</string>
-    <string name="agent_critical_error_desc">請將它報告給開發者：
-\n%s
-\n
-\n建議重啟應用。</string>
+    <string name="agent_critical_error_desc">請將它報告給開發者： \n%s \n \n建議重啟應用。</string>
     <string name="loading_remote_file_desc">從已連接行動裝置加載檔案時請稍候片刻</string>
     <string name="or_scan_qr_code">或者掃描QR code</string>
     <string name="prohibit_sending_simplex_links">禁止傳送 SimpleX 連結</string>
@@ -1657,8 +1638,7 @@
     <string name="network_type_no_network_connection">沒有網路連接</string>
     <string name="no_history">無歷史記錄</string>
     <string name="no_filtered_chats">無過濾聊天</string>
-    <string name="agent_internal_error_desc">請將它報告給開發者：
-\n%s</string>
+    <string name="agent_internal_error_desc">請將它報告給開發者： \n%s</string>
     <string name="turn_off_system_restriction_button">打開應用程式設定</string>
     <string name="auth_open_migration_to_another_device">開啟轉移畫面</string>
     <string name="shutdown_alert_desc">通知將停止，直到你重啟應用程式</string>
@@ -1668,15 +1648,12 @@
     <string name="servers_info_previously_connected_servers_section_header">先前連接的伺服器</string>
     <string name="other_label">其他</string>
     <string name="message_queue_info_none">無</string>
-    <string name="v5_4_more_things_descr">- 可選擇通知已刪除的聯絡人。
-\n- 帶空格的個人資料名稱。
-\n- 以及更多！</string>
+    <string name="v5_4_more_things_descr">- 可選擇通知已刪除的聯絡人。 \n- 帶空格的個人資料名稱。 \n- 以及更多！</string>
     <string name="v5_5_simpler_connect_ui">貼上連結以連接！</string>
     <string name="paste_desktop_address">貼上桌面地址</string>
     <string name="migrate_to_device_confirm_network_settings_footer">請確認此裝置的網路設定是否正確。</string>
     <string name="other_errors">其他錯誤</string>
-    <string name="remote_ctrl_connection_stopped_desc">請檢查行動裝置和桌面設備連接到的是同一個本地網絡，且桌面防火牆允許連接。
-\n請和開發者分享任何其他問題。</string>
+    <string name="remote_ctrl_connection_stopped_desc">請檢查行動裝置和桌面設備連接到的是同一個本地網絡，且桌面防火牆允許連接。 \n請和開發者分享任何其他問題。</string>
     <string name="open_port_in_firewall_title">在防火牆中打開端口</string>
     <string name="or_paste_archive_link">或貼上封存連結</string>
     <string name="migrate_to_device_database_init">正在準備下載</string>
@@ -2463,8 +2440,8 @@
     <string name="unblock_for_all">為所有人解除封鎖</string>
     <string name="unblock_members_desc">這些成員的訊息將會顯示！</string>
     <string name="member_info_member_failed">失敗</string>
-    <string name="member_role_will_be_changed_with_notification_chat">角色將變更為 "%s"。聊天中的所有人都會收到通知。</string>
-    <string name="member_role_will_be_changed_with_notification_channel">角色將變更為 "%s"。頻道中的所有人都會收到通知。</string>
+    <string name="member_role_will_be_changed_with_notification_chat">角色將變更為 %s。聊天中的所有人都會收到通知。</string>
+    <string name="member_role_will_be_changed_with_notification_channel">角色將變更為 %s。頻道中的所有人都會收到通知。</string>
     <string name="info_row_connection_failed">連線失敗</string>
     <string name="message_queue_info_server_info">伺服器佇列資訊：%1$s\n\n最後收到的訊息：%2$s</string>
     <string name="you_need_to_allow_calls">你需要允許你的聯絡人通話，才能致電給對方。</string>
@@ -2777,4 +2754,251 @@
     <string name="badge_unverified_desc">無法驗證此徽章，可能並非真實。</string>
     <string name="badge_unknown_key_title">無法驗證徽章</string>
     <string name="badge_unknown_key_desc">此徽章使用此版本應用程式無法識別的金鑰簽署。請更新應用程式以驗證此徽章。</string>
+    <string name="save_simplex_name_question"></string>
+    <string name="simplex_name_resolver_error_desc"></string>
+    <string name="badges_error_already_active_purchase"></string>
+    <string name="keystore_key_storage_tee"></string>
+    <string name="storage"></string>
+    <string name="emoji_category_smileys"></string>
+    <string name="badges_link_added_profile"></string>
+    <string name="badges_copy_purchase_key"></string>
+    <string name="supporter_badge"></string>
+    <string name="badges_level_supporter_summary"></string>
+    <string name="v7_0_channels"></string>
+    <string name="badges_your_badge"></string>
+    <string name="channel_simplex_name"></string>
+    <string name="v7_0_crowdfunding" translatable="false"></string>
+    <string name="emoji_category_objects"></string>
+    <string name="keystore_key_storage_software"></string>
+    <string name="badges_error_service_not_configured"></string>
+    <string name="error_saving_simplex_name"></string>
+    <string name="error_sharing_address"></string>
+    <string name="badges_price_loading"></string>
+    <string name="markdown_text_view"></string>
+    <string name="message_signatures_are_not_required"></string>
+    <string name="badges_error_last_attempt"></string>
+    <string name="badge_verification_failed"></string>
+    <string name="simplex_name_unconfirmed_desc"></string>
+    <string name="icon_descr_emoji"></string>
+    <string name="badges_level_supporter_file_storage"></string>
+    <string name="markdown_formatted_view"></string>
+    <string name="rcv_group_event_msg_bad_signature"></string>
+    <string name="badges_preview_my_nickname"></string>
+    <string name="badges_ledger_anchor"></string>
+    <string name="badges_level_supporter"></string>
+    <string name="badges_how_it_works_p2"></string>
+    <string name="invest_banner_subtitle" translatable="false"></string>
+    <string name="group_invitations"></string>
+    <string name="emoji_category_flags"></string>
+    <string name="badges_period_monthly"></string>
+    <string name="file_expired"></string>
+    <string name="badges_pay_annual"></string>
+    <string name="badges_ledger_entry_id"></string>
+    <string name="large_file_incognito"></string>
+    <string name="badges_error_receipt_invalid"></string>
+    <string name="to_verify_channel_member_key"></string>
+    <string name="v7_1_supporter_badge_body"></string>
+    <string name="badges_price_unavailable"></string>
+    <string name="badges_link_view_badge"></string>
+    <string name="large_file_requires_badge"></string>
+    <string name="badges_level_legend_summary"></string>
+    <string name="badges_period_one_month"></string>
+    <string name="badges_ledger_invoice_id"></string>
+    <string name="badges_error_credential_invalid"></string>
+    <string name="v7_0_invest_descr" translatable="false"></string>
+    <string name="badges_support_simplex_body"></string>
+    <string name="badges_credential"></string>
+    <string name="badges_remind_me_later"></string>
+    <string name="call_not_encrypted_title"></string>
+    <string name="badges_dismiss"></string>
+    <string name="emoji_category_people"></string>
+    <string name="badges_tap_for_details"></string>
+    <string name="badges_error_provider_unavailable"></string>
+    <string name="badges_error_since"></string>
+    <string name="message_signatures_are_required"></string>
+    <string name="set_user_simplex_name_footer"></string>
+    <string name="badges_continue"></string>
+    <string name="badges_banner_subtitle"></string>
+    <string name="badges_savings"></string>
+    <string name="v7_0_invest_learn_more" translatable="false"></string>
+    <string name="badges_support_ended"></string>
+    <string name="badges_redeem_code_body"></string>
+    <string name="badges_error_already_active"></string>
+    <string name="call_not_encrypted_desc"></string>
+    <string name="simplex_name_no_servers_desc"></string>
+    <string name="get_simplex_name_beta"></string>
+    <string name="badges_ends"></string>
+    <string name="supporter_perks"></string>
+    <string name="connect_plan_join_name"></string>
+    <string name="badges_error_unknown_purchase"></string>
+    <string name="badges_larger_files_longer"></string>
+    <string name="badges_ledger_paused_since"></string>
+    <string name="badges_error_title"></string>
+    <string name="badges_error_service_internal"></string>
+    <string name="badges_ledger_from_purchase_key"></string>
+    <string name="badges_purchase_error"></string>
+    <string name="badges_error_receipt_used"></string>
+    <string name="sign_message_desc"></string>
+    <string name="simplex_name_sales_footer"></string>
+    <string name="info_row_file_servers"></string>
+    <string name="badges_how_it_works_title"></string>
+    <string name="badges_check_your_order_title"></string>
+    <string name="badges_redeem"></string>
+    <string name="badge_expired"></string>
+    <string name="badges_code_you_scanned_is_not_badge_code"></string>
+    <string name="badges_redeem_code_placeholder" translatable="false"></string>
+    <string name="v7_0_simplex_names"></string>
+    <string name="info_row_signed_verified"></string>
+    <string name="badges_pay_monthly"></string>
+    <string name="badges_error_code_invalid"></string>
+    <string name="badges_credential_status"></string>
+    <string name="follow_simplex_network_news"></string>
+    <string name="badges_banner_title"></string>
+    <string name="badges_buy_in_browser"></string>
+    <string name="badges_renewal_failed"></string>
+    <string name="badges_link_held_title"></string>
+    <string name="badges_error_code_expired"></string>
+    <string name="group_invitation_for_member_only"></string>
+    <string name="service_request_timeout_desc"></string>
+    <string name="badges_period_annual"></string>
+    <string name="badges_issuing_body"></string>
+    <string name="badges_credential_months_left"></string>
+    <string name="add_description"></string>
+    <string name="badges_link_held_other_profile"></string>
+    <string name="simplex_name_owner_no_channel_link"></string>
+    <string name="badges_error_test_purchase"></string>
+    <string name="badges_credential_expires"></string>
+    <string name="simplex_name_server_no_resolver_desc"></string>
+    <string name="simplex_name_unconfirmed"></string>
+    <string name="badges_error_product_unavailable"></string>
+    <string name="sign_message"></string>
+    <string name="badges_ledger_balance_start"></string>
+    <string name="badges_error_payment_pending"></string>
+    <string name="settings_section_title_interface" translatable="false"></string>
+    <string name="badges_how_it_works_p3"></string>
+    <string name="emoji_category_travel"></string>
+    <string name="enter_description_optional"></string>
+    <string name="show_encryption"></string>
+    <string name="simplex_name_no_valid_link"></string>
+    <string name="badges_pay_once"></string>
+    <string name="remove_name"></string>
+    <string name="operator_use_for_names"></string>
+    <string name="badges_credential_purchase_id"></string>
+    <string name="simplex_name_sales"></string>
+    <string name="badges_link_added_title"></string>
+    <string name="badges_error_rate_limited"></string>
+    <string name="v7_0_simplex_names_descr"></string>
+    <string name="update_app_register_simplex_domain"></string>
+    <string name="badges_error_unsupported_version"></string>
+    <string name="simplex_name_error"></string>
+    <string name="badges_link_confirm_title"></string>
+    <string name="badges_support_ended_on"></string>
+    <string name="badges_level_legend_file_storage"></string>
+    <string name="do_not_require_message_signatures"></string>
+    <string name="badges_ledger_charge_id"></string>
+    <string name="badges_billing_footer_subscribe"></string>
+    <string name="simplex_name_no_valid_link_desc"></string>
+    <string name="badges_link_issuing_profile"></string>
+    <string name="verify_simplex_name_action"></string>
+    <string name="badges_error_credential_not_verified"></string>
+    <string name="badges_redeem_code_title"></string>
+    <string name="badges_how_it_works_read_more_with_link"><![CDATA[]]></string>
+    <string name="badges_error_code_used"></string>
+    <string name="badges_support_simplex_title"></string>
+    <string name="badges_price_monthly"></string>
+    <string name="sign_messages"></string>
+    <string name="badges_ledger_date"></string>
+    <string name="badges_ledger_no_entries"></string>
+    <string name="badges_ledger_to_purchase_key"></string>
+    <string name="error_saving_profile"></string>
+    <string name="invest_banner_title" translatable="false"></string>
+    <string name="storage_total"></string>
+    <string name="badges_why_simplex_is_built"></string>
+    <string name="badges_error_badge_ended"></string>
+    <string name="max_file_size_with_badge"></string>
+    <string name="badges_order_total"></string>
+    <string name="badges_prepaid_footer"></string>
+    <string name="server_has_too_many_hosts"></string>
+    <string name="simplex_name_owner_no_address"></string>
+    <string name="emoji_category_food"></string>
+    <string name="v7_0_channels_relays"></string>
+    <string name="badges_shown_on_your_profile"></string>
+    <string name="badges_redeem_code_button"></string>
+    <string name="badges_price_annual"></string>
+    <string name="badges_link_held_page"></string>
+    <string name="badges_how_long_title"></string>
+    <string name="badges_error_no_response"></string>
+    <string name="badges_level_legend"></string>
+    <string name="verify_simplex_names"></string>
+    <string name="badges_link_add_badge"></string>
+    <string name="group_invitation_for_you_only"></string>
+    <string name="your_simplex_name"></string>
+    <string name="badges_contact_team"></string>
+    <string name="badge_no_key"></string>
+    <string name="signature_missing_alert_desc"></string>
+    <string name="register_test_name"></string>
+    <string name="badges_error_unknown"></string>
+    <string name="info_row_file_expired"></string>
+    <string name="v7_0_channels_previews"></string>
+    <string name="badges_ledger_badge_type"></string>
+    <string name="badges_checking_purchases_title"></string>
+    <string name="badges_order_duration"></string>
+    <string name="file_error_expired"></string>
+    <string name="no_emoji_found"></string>
+    <string name="badges_ledger_balance"></string>
+    <string name="badges_level_legend_file_size"></string>
+    <string name="badges_link_confirm_profile"></string>
+    <string name="badges_choose_your_badge_lede"></string>
+    <string name="legend_badge"></string>
+    <string name="badges_error_bad_service_response"></string>
+    <string name="emoji_category_symbols"></string>
+    <string name="info_row_signed"></string>
+    <string name="v7_1_supporter_badge_title"></string>
+    <string name="badges_how_it_works_button"></string>
+    <string name="forwarded_from"></string>
+    <string name="badges_error_provider_not_configured"></string>
+    <string name="keystore_key_storage_strongbox"></string>
+    <string name="badges_waiting_for_approval_body"></string>
+    <string name="profile_description__field"></string>
+    <string name="your_badge_expired"></string>
+    <string name="simplex_name_not_verified"></string>
+    <string name="badges_how_it_works_p1"></string>
+    <string name="app_link_not_supported"></string>
+    <string name="badges_ledger"></string>
+    <string name="badges_error_invalid_code"></string>
+    <string name="badges_choose_your_badge_title"></string>
+    <string name="require_message_signatures"></string>
+    <string name="badges_banner_dismiss_message"></string>
+    <string name="set_simplex_name"></string>
+    <string name="signature_missing_alert_title"></string>
+    <string name="badges_issuing_title"></string>
+    <string name="no_names_servers_enabled"></string>
+    <string name="badges_waiting_for_approval_title"></string>
+    <string name="badges_error_service_not_configured_purchase"></string>
+    <string name="badges_error_unexpected"></string>
+    <string name="emoji_category_activities"></string>
+    <string name="simplex_name_not_found_desc"></string>
+    <string name="settings_section_title_language" translatable="false"></string>
+    <string name="info_row_file_expires"></string>
+    <string name="until_register_simplex_domain"></string>
+    <string name="emoji_category_animals"></string>
+    <string name="callstate_reconnecting"></string>
+    <string name="simplex_name_not_found"></string>
+    <string name="badges_type_investor"></string>
+    <string name="v7_0_invest" translatable="false"></string>
+    <string name="badges_billing_footer_one_month"></string>
+    <string name="countdown_hrs_min_sec"></string>
+    <string name="badges_credential_next_check"></string>
+    <string name="edit_description"></string>
+    <string name="share_text_file_servers"></string>
+    <string name="v7_0_channels_wider_messages"></string>
+    <string name="connect_plan_connect_to_name"></string>
+    <string name="set_channel_simplex_name_footer"></string>
+    <string name="badges_error_unreachable"></string>
+    <string name="badges_error_purchase_refused"></string>
+    <string name="show_signature"></string>
+    <string name="markdown_file_bidi_warning"></string>
+    <string name="badges_level_supporter_file_size"></string>
+    <string name="v7_0_channels_contributors"></string>
+    <string name="badges_error_service_refused"></string>
 </resources>
