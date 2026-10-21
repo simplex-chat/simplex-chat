@@ -215,8 +215,8 @@ holdStoreReceipt db g User {userId} origin invoiceId_ txRef@StoreTransactionRef 
         |]
         ((userId, invoiceId', provider, transactionRef, paymentJSON, now) :. (purchaseKey, purchasePrivKey, Binary mk, holdKind, now))
 
--- | Restore's hand-over of a transaction already recorded: a record that funds no purchase of this profile is held
--- as a move of its payment to this profile. True when its last refusal was transfer_limited, which the hand-over answers.
+-- | Restore's hand-over of a transaction already recorded: a record that funds no purchase of this profile, or only one
+-- its payment moved away from, is held as a move of its payment to this profile. True when its last refusal was transfer_limited, which the hand-over answers.
 holdStoreTransfer :: DB.Connection -> TVar ChaChaDRG -> User -> StoreTransactionRef -> ServicePayment -> UTCTime -> IO Bool
 holdStoreTransfer db g User {userId} txRef payment now =
   getReceiptRecord db txRef >>= \case
@@ -226,8 +226,10 @@ holdStoreTransfer db g User {userId} txRef payment now =
         Just _ -> pure False
     Just BadgeReceiptRecord {receiptId, status = RSRefused {refusal = Just BIFServiceError {code}}}
       | code == BSEReceiptUsed || code == BSETransferLimited -> (code == BSETransferLimited) <$ holdTransfer receiptId
-    Just BadgeReceiptRecord {receiptId, ownerId, status = RSCredited {}}
-      | ownerId /= userId -> do
+    Just BadgeReceiptRecord {receiptId, ownerId, status = RSCredited {badgePurchaseId}} ->
+      movesHere ownerId badgePurchaseId >>= \case
+        False -> pure False
+        True -> do
           lastRefusal <- maybeFirstRow fromOnly $ DB.query db "SELECT credit_error FROM badge_store_receipts WHERE badge_store_receipt_id = ?" (Only receiptId)
           (purchaseKey, purchasePrivKey) <- atomically (C.generateKeyPair g) :: IO C.KeyPairEd25519
           BadgeMasterKey mk <- generateMasterKey g
@@ -238,6 +240,13 @@ holdStoreTransfer db g User {userId} txRef payment now =
             _ -> False
     _ -> pure False
   where
+    -- the service answers a purchase whose payment moved away ended, so a resume of it never succeeds
+    movesHere ownerId badgePurchaseId
+      | ownerId /= userId = pure True
+      | otherwise = maybe False movedOut <$> getBadgeLedgerLastEntry db badgePurchaseId
+    movedOut StatementEntry {entryType} = case entryType of
+      SEDebit SDTransferOut {} -> True
+      _ -> False
     holdTransfer receiptId =
       DB.execute
         db
