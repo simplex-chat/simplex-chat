@@ -2963,4 +2963,8 @@
     <string name="badges_error_test_purchase">Gli acquisti di prova non sono accreditati. I distintivi possono essere comprati solo con un acquisto reale.</string>
     <string name="badges_error_credential_invalid">Il distintivo emesso dal servizio non può essere verificato.</string>
     <string name="badges_error_unreachable">Impossibile raggiungere il servizio dei distintivi.</string>
+    <string name="badges_error_no_response">Il servizio dei distintivi non ha risposto.</string>
+    <string name="badges_error_unknown_purchase">Il servizio dei distintivi non riconosce questo distintivo.</string>
+    <string name="badges_error_purchase_refused">Il servizio dei distintivi ha rifiutato l\'acquisto: %1$s</string>
+    <string name="badges_error_service_refused">Il servizio dei distintivi ha rifiutato il rinnovo: %1$s</string>
 </resources>
