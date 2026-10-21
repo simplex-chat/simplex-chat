@@ -291,6 +291,7 @@ CREATE INDEX @idx_name_transactions_status ON @name_transactions(status, registr
 |]
 
 -- A table another table's foreign key references cannot be dropped, so reserved_by goes first.
+-- The name orders' invoices go with them, except those with a payment, which stay for the accounts.
 down_m20261010_names :: Text
 down_m20261010_names =
   withPrefix
@@ -306,6 +307,10 @@ DROP INDEX @idx_name_record_edits_body_hash;
 DROP INDEX @idx_name_record_edits_owner_nonce;
 DROP TABLE @name_record_edits;
 
+DELETE FROM @invoices WHERE invoice_id IN (
+  SELECT ni.invoice_id FROM @name_invoices ni
+  WHERE NOT EXISTS (SELECT 1 FROM @payments p WHERE p.invoice_id = ni.invoice_id)
+);
 DROP INDEX @idx_name_invoices_provider_ref;
 DROP INDEX @idx_name_invoices_registration;
 DROP TABLE @name_invoices;

@@ -41,7 +41,7 @@ namesStoreTests :: Spec
 namesStoreTests = describe "StoreService names: store" $ do
   describe "migration" $ do
     it "creates the names tables with the planned columns" testNamesColumns
-    it "rolls back and re-applies only the names migration, with rows in it, leaving the badge tables as they were" testNamesDownUp
+    it "rolls back and re-applies only the names migration, with rows in it, leaving the badge tables and paid invoices as they were" testNamesDownUp
   describe "order hash" $ do
     it "is equal for the same order fields, and differs when any one field differs" testOrderHashFields
     it "keeps field boundaries, so moving a byte between two fields changes it" testOrderHashBoundaries
@@ -188,8 +188,11 @@ testNamesDownUp = withServiceStore $ \st -> do
   code <- issue st 1 usable
   placeCode st "r1" ownerA (order "alicebakery" 1) code `shouldReturn` Right ()
   placePaid st "r2" ownerB (order "bobsbakery" 2) (at 60) `shouldReturn` Right ()
+  placePaid st "r3" ownerB (order "carolsbakery" 3) (at 60) `shouldReturn` Right ()
+  withTransaction st $ \db -> insertPayment db "inv-r3"
   runMigrations st $ MTRDown (mapMaybe toDownMigration names)
   mapM (columnsOf st) namesTables `shouldReturn` map (const []) namesTables
+  mapM (invoiceCount st) ["inv-r2", "inv-r3"] `shouldReturn` [0, 1]
   badgeColumns `shouldReturn` badgeBefore
   runMigrations st $ MTRUp names
   mapM (fmap null . columnsOf st) namesTables `shouldReturn` map (const False) namesTables
@@ -580,11 +583,7 @@ testUnpaidCleanup = withServiceStore $ \st -> do
   placePaid st "funded" ownerA (order "bobsbakery" 2) (at 60) `shouldReturn` Right ()
   placePaid st "queued" ownerA (order "carolsbakery" 3) (at 60) `shouldReturn` Right ()
   placePaid st "open" ownerA (order "davesbakery" 4) (at 120) `shouldReturn` Right ()
-  withTransaction st $ \db ->
-    DB.execute
-      db
-      "INSERT INTO sx_badge_service_payments (payment_id, invoice_id, provider, status, created_at, updated_at) VALUES (?,?,?,?,?,?)"
-      ("inv-funded" :: Text, "inv-funded" :: Text, "crypto" :: Text, "pending" :: Text, t0, t0)
+  withTransaction st $ \db -> insertPayment db "inv-funded"
   r <- reg st "queued"
   void $ write st r {nrPhase = PQueued}
   candidates <- withTransaction st $ \db -> unpaidCleanupCandidates db (at 61)
@@ -594,6 +593,13 @@ testUnpaidCleanup = withServiceStore $ \st -> do
   invoiceCount st "inv-old" `shouldReturn` 0
   invoiceCount st "inv-funded" `shouldReturn` 1
   nrPhase <$> reg st "funded" `shouldReturn` PUnpaid
+
+insertPayment :: DB.Connection -> Text -> IO ()
+insertPayment db invId =
+  DB.execute
+    db
+    "INSERT INTO sx_badge_service_payments (payment_id, invoice_id, provider, status, created_at, updated_at) VALUES (?,?,?,?,?,?)"
+    (invId, invId, "crypto" :: Text, "pending" :: Text, t0, t0)
 
 invoiceCount :: DBStore -> Text -> IO Int
 invoiceCount st invId = withTransaction st $ \db ->
