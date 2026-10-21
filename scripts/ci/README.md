@@ -36,3 +36,11 @@ A newer run of a workflow on the same branch cancels the older one.
 ## The Claude job
 
 It needs the GitHub environment `app-sim-claude` with the secret `CLAUDE_CODE_OAUTH_TOKEN`, a Claude subscription token. The environment's branch rule alone decides which branches may use it: on a branch it doesn't allow, a run that asks for Claude fails at the Claude job's environment check, and the scripted test runs as usual. Each run spends the subscription's usage limits; the job summary gives its tokens and cost estimated at API prices.
+
+A Claude job that starts the app job's test backend again (iOS and desktop, when `claude-scope` says `backend: yes`) also needs the environment's secret `BACKEND_STATE_KEY`, the private key of `backend-state.crt`, to decrypt that backend's keys and databases (`backend-state.sh`). A new pair replaces both:
+
+```sh
+openssl req -x509 -newkey rsa:4096 -nodes -days 3650 -subj /CN=simplex-chat-ci-backend-state -keyout key.pem -out scripts/ci/backend-state.crt
+gh secret set BACKEND_STATE_KEY --env app-sim-claude --repo simplex-chat/simplex-chat < key.pem
+rm key.pem
+```
