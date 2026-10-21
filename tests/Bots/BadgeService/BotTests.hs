@@ -277,6 +277,8 @@ badgeServiceTests = do
     it "should show the purchase a tier change credits, though a retire cleared it while the change was with the service" testAppleTierChangeKeepsPurchaseShown
     it "should refuse in silence an Apple tier change the store does not vouch for, keeping the badge shown, and answer it again from the record" testAppleTierChangeRefused
     it "should hold and credit an Apple tier change while another receipt of the owner is held" testAppleTierChangeBesideHeldReceipt
+    it "should keep renewing a tier change's purchase that the device reported ended before the change" testAppleTierChangeClearsEnded
+    it "should record on the receipt, not the purchase, a tier change whose credential does not verify" testAppleTierChangeCredentialUnverified
     it "should answer an Apple resubscription from the record when it cannot resume, refuse a held one that stops being resumable or that the service does not grant within its hold, and keep one behind another held receipt unfinished" testAppleResubscribeBounded
     it "should ask the App Store about a subscription claim at most once an hour, whoever presents it and as any of its transactions" testApplePurchaseChecksBounded
     it "should ask Play about a subscription token at most once an hour, whoever presents it, credited to another key or not" testPlayPurchaseChecksBounded
@@ -4179,12 +4181,22 @@ legendBoughtAt = posixSecondsToUTCTime 1769904000
 
 -- | A monthly Apple Supporter subscription bought five days before the Legend transaction, shown; the clock an hour into that transaction.
 appleSupporterBeforeLegend :: HasCallStack => BadgeServiceEnv -> TestCC -> IO ()
-appleSupporterBeforeLegend BadgeServiceEnv {bsClock, bsStore = store@FakeStore {appleSubscriptionJWS}} alice = do
+appleSupporterBeforeLegend env alice = appleSupporterBeforeLegendWith env alice Nothing
+
+-- | The same, handed over with the invoice given, if any.
+appleSupporterBeforeLegendWith :: HasCallStack => BadgeServiceEnv -> TestCC -> Maybe String -> IO ()
+appleSupporterBeforeLegendWith BadgeServiceEnv {bsClock, bsStore = store@FakeStore {appleSubscriptionJWS}} alice invoiceId_ = do
   let firstStart = addUTCTime (-5 * nominalDay) legendBoughtAt
+      supporter = SPApple {jws = appleSubscriptionJWS}
   setClockAt bsClock $ addUTCTime 3600 firstStart
   appleStoreReports store $ subscriptionCheck SSRenewing $ Just $ storeCharge "SUBSCR_BADGE_SUPPORTER_MONTH_01" firstStart 1
-  alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = appleSubscriptionJWS})
-  inAnyOrder alice [[openPurchase ""], ["1: supporter"]]
+  case invoiceId_ of
+    Nothing -> do
+      alice ##> ("/_badge purchase 1 " <> paymentArg supporter)
+      inAnyOrder alice [[openPurchase ""], ["1: supporter"]]
+    Just invoiceId -> do
+      alice ##> purchaseWithInvoice 1 invoiceId supporter
+      inAnyOrder alice [[invoicePurchase "" invoiceId], creditedLines "" invoiceId "1: supporter"]
   waitWakeArmed (chatController alice)
   setClockAt bsClock $ addUTCTime 3600 legendBoughtAt
 
@@ -4285,7 +4297,8 @@ testAppleTierChangeRefused :: HasCallStack => TestParams -> IO ()
 testAppleTierChangeRefused ps =
   withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClientCfg, bsStore = store} ->
     withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
-      appleSupporterBeforeLegend env alice
+      invoiceId <- createInvoice alice 1
+      appleSupporterBeforeLegendWith env alice (Just invoiceId)
       let unvouched = subscriptionJWS appleSubscriptionOriginalId "2000000812345696" ["purchaseDate" J..= (1769904000000 :: Int64), "productId" J..= ("SUBSCR_BADGE_LEGEND_YEAR_01" :: Text)]
           handOver = alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = unvouched})
       checks <- subscriptionChecks store
@@ -4315,6 +4328,43 @@ testAppleTierChangeBesideHeldReceipt ps =
       expectLinesWithin 30 alice ["1: legend"] ["1: supporter", "store purchase open", "subscribed "]
       waitShownIssued (chatController alice)
       heldStoreReceipts (chatController alice) `shouldReturn` 1
+
+testAppleTierChangeClearsEnded :: HasCallStack => TestParams -> IO ()
+testAppleTierChangeClearsEnded ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsStore = store@FakeStore {appleSubscriptionJWS, appleLegendSubscriptionJWS}} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      appleSupporterBeforeLegend env alice
+      alice ##> ("/_badge subscription ended " <> paymentArg SPApple {jws = appleSubscriptionJWS})
+      alice <### ["ok", Predicate (\l -> "1: supporter" `isPrefixOf` l && ", subscription ended" `isInfixOf` l)]
+      -- a monthly Legend charge, so the month it funds ends within the test
+      appleStoreReports store $ subscriptionCheck SSRenewing $ Just (storeCharge "SUBSCR_BADGE_LEGEND_MONTH_01" legendBoughtAt 1) {chargeRef = "apple.legend"}
+      alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = appleLegendSubscriptionJWS})
+      expectLinesWithin 30 alice ["1: legend"] ["1: supporter", "store purchase open", "subscribed "]
+      waitShownIssued (chatController alice)
+      paidThrough <- dueAtOf <$> ledgerRows (chatController alice) "badge_ledger"
+      (Just expiry, _) <- shownAndIssuedExpiry (chatController alice)
+      let pastPaidThrough = addUTCTime 3600 paidThrough
+          requestAt = addUTCTime (-nominalDay) expiry
+      pastPaidThrough `shouldSatisfy` (< requestAt)
+      setClockAt bsClock pastPaidThrough
+      alice ##> "/_app activate"
+      alice <## "ok"
+      waitWakeFrom (chatController alice) requestAt
+      shownBadgeId (chatController alice) `shouldReturn` Just 1
+      subscriptionStatuses (chatController alice) `shouldReturn` [Nothing]
+
+testAppleTierChangeCredentialUnverified :: HasCallStack => TestParams -> IO ()
+testAppleTierChangeCredentialUnverified ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClientCfg, bsStore = store@FakeStore {appleLegendSubscriptionJWS}} -> do
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> appleSupporterBeforeLegend env alice
+    appleReportsLegend store
+    -- trusting no issuer key, so the Legend credential the service issues does not verify
+    withTestChatCfg ps bsClientCfg {badgePublicKeys = M.empty} "alice" $ \alice -> do
+      alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = appleLegendSubscriptionJWS})
+      expectLinesWithin 30 alice ["1: supporter", "internal chat error: issued badge credential does not verify"] ["store purchase open", "subscribed "]
+      heldStoreReceiptErrors (chatController alice) `shouldEventuallyReturn` ["invalid_credential"]
+      issueErrorRow (chatController alice) `shouldReturn` (Nothing, Nothing)
+      shownBadgeId (chatController alice) `shouldReturn` Just 1
 
 -- | A monthly Apple subscription bought an hour into its first period and retired past its coverage, at its request
 -- moment, on the service's answer that it ended: that moment.

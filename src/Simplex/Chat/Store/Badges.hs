@@ -66,7 +66,7 @@ import Data.Time.Clock (UTCTime)
 import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Ledger
 import Simplex.Chat.Badges.Service (StatementCreditType (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..))
-import Simplex.Chat.Badges.Types (BadgeAlertKind, BadgeIssueError (..), BadgeIssueFailure (..), BadgePurchaseStatus (..), BadgeServiceErrorCode (..), BadgeSubscription (..), OpenStorePurchase (..), StoreReceiptOrigin (..), SubscriptionState)
+import Simplex.Chat.Badges.Types (BadgeAlertKind, BadgeIssueError (..), BadgeIssueFailure (..), BadgePurchaseStatus (..), BadgeServiceErrorCode (..), BadgeSubscription (..), OpenStorePurchase (..), StoreReceiptOrigin (..), SubscriptionState (..))
 import Simplex.Chat.PaymentService (AppleTransactionFacts (..), ServicePayment (..), appleTransactionFacts)
 import Simplex.Chat.PaymentService.Types (StoreTransactionRef (..))
 import Simplex.Chat.Store.Shared (StoreError, insertedRowId)
@@ -416,10 +416,11 @@ showResumedPurchase db User {userId} receiptId badgePurchaseId state = do
   DB.execute db "UPDATE badge_purchases SET subscription_status = ? WHERE badge_purchase_id = ?" (state, badgePurchaseId)
   DB.execute db "UPDATE users SET shown_badge_id = ? WHERE user_id = ?" (badgePurchaseId, userId)
 
--- | A tier change's credit, which shows the purchase again if a retire cleared it while the change was with the service.
+-- | A tier change's credit: shows the purchase again if a retire cleared it meanwhile, and drops an ended its grant disproves.
 showTierChangedPurchase :: DB.Connection -> User -> Int64 -> Int64 -> IO ()
 showTierChangedPurchase db User {userId} receiptId badgePurchaseId = do
   settleStoreReceipt db receiptId
+  DB.execute db "UPDATE badge_purchases SET subscription_status = NULL WHERE badge_purchase_id = ? AND subscription_status = ?" (badgePurchaseId, SSEnded)
   DB.execute db "UPDATE users SET shown_badge_id = ? WHERE user_id = ?" (badgePurchaseId, userId)
 
 -- | A held record is paid for and a credited one is referenced by its purchase, so neither is deleted.
