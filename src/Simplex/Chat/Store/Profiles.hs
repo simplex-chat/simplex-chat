@@ -288,13 +288,13 @@ getUserFileInfo db User {userId} =
 
 deleteUserRecord :: DB.Connection -> User -> IO ()
 deleteUserRecord db User {userId} = do
-  -- a move held for this profile returns the record to the profile whose purchase still links it, as a refused move does
+  -- a move held for this profile returns the record to the profile whose purchase still links it, without the move's failures
   DB.execute
     db
     [sql|
       UPDATE badge_store_receipts
       SET user_id = (SELECT p.user_id FROM badge_purchases p WHERE p.badge_store_receipt_id = badge_store_receipts.badge_store_receipt_id),
-        payment = NULL, next_attempt_at = NULL, retry_delay = NULL, retry_count = 0, hold_kind = 'purchase'
+        payment = NULL, next_attempt_at = NULL, retry_delay = NULL, retry_count = 0, credit_error = NULL, hold_kind = 'purchase'
       WHERE user_id = ?
         AND EXISTS (SELECT 1 FROM badge_purchases p WHERE p.badge_store_receipt_id = badge_store_receipts.badge_store_receipt_id AND p.user_id != ?)
     |]

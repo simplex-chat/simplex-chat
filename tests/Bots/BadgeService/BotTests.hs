@@ -218,6 +218,7 @@ badgeServiceTests = do
       it "should leave a tier change held for one profile unchanged when a Restore on another profile finds it" testRestoreLeavesTierChangeHold
       it "should hold a tier change at once after a move of its subscription was refused transfer_limited" testRefusedMoveKeepsTierChange
       it "should give a move held for a deleted profile back to the profile whose purchase it funds" testRestoreHeldProfileDeleted
+      it "should take a purchase hand-over held for one profile to the profile that restores it, and credit it there" testRestoreTakesHeldPurchase
   describe "subscriptions" $ do
     it "should credit a subscription's charge from the store's period start, and answer replays from the record" testSubscriptionPurchase
     it "should credit nothing for a subscription with no charge it can grant, retrying as the charge may still come" testSubscriptionPurchaseNotGrantable
@@ -3052,12 +3053,38 @@ testRestoreHeldProfileDeleted ps =
       isRight <$> sendChatCmdStr a "/user alice" `shouldReturn` True
       isRight <$> sendChatCmdStr a "/_delete user 2 del_smp=off" `shouldReturn` True
       storeReceiptHolds a `shouldReturn` [(1, "purchase")]
+      -- the move's failures are not the owner's refused resume or tier change
+      storeReceiptCreditErrors a `shouldReturn` []
       heldStoreReceipts a `shouldReturn` 0
       purchaseReceiptLinks a `shouldReturn` [(1, True)]
       -- handed over again, it is answered from the record
       isRight <$> sendChatCmdStr a ("/_badge purchase 1 " <> paymentArg subscriptionPlay) `shouldReturn` True
       heldStoreReceipts a `shouldReturn` 0
       dropOutput alice
+
+testRestoreTakesHeldPurchase :: HasCallStack => TestParams -> IO ()
+testRestoreTakesHeldPurchase ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClientCfg, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg "bob" bobProfile $ \bob ->
+      withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+        let a = chatController alice
+        firstStart <- addUTCTime (-3600) <$> serviceNow env
+        storeReports store $ subscriptionCheck SSRenewing $ Just $ storeCharge "subscr-badge-supporter-month-02" firstStart 1
+        bob `send` ("/_badge purchase 1 " <> paymentArg subscriptionPlay)
+        waitShownBadge (chatController bob) (Just 1)
+        -- a hand-over on profile 1 within the hour of the purchase's store check is held
+        alice `send` ("/_badge purchase 1 " <> paymentArg subscriptionPlay)
+        heldStoreReceiptErrors a `shouldEventuallyReturn` ["service_error retry payment_pending"]
+        storeReceiptHolds a `shouldReturn` [(1, "purchase")]
+        alice `send` "/create user alisa"
+        shownBadges a `shouldEventuallyReturn` [(1, Nothing), (2, Nothing)]
+        isRight <$> sendChatCmdStr a (restoredCmd 2 subscriptionPlay) `shouldReturn` True
+        storeReceiptHolds a `shouldReturn` [(2, "transfer")]
+        nextClaimCheck env
+        isRight <$> sendChatCmdStr a (restoredCmd 2 subscriptionPlay) `shouldReturn` True
+        shownBadges a `shouldEventuallyReturn` [(1, Nothing), (2, Just 1)]
+        purchaseReceiptLinks a `shouldReturn` [(2, True)]
+        mapM_ dropOutput [alice, bob]
 
 testRestoreLeavesResumeHold :: HasCallStack => TestParams -> IO ()
 testRestoreLeavesResumeHold ps =
