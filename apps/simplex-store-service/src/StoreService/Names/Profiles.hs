@@ -10,7 +10,6 @@ module StoreService.Names.Profiles
     ProfileLimits (..),
     ProfileFetcher,
     HostResolver,
-    EntityType (..),
     ChatKind (..),
     LinkProfile (..),
     ProfileRead (..),
@@ -38,12 +37,13 @@ import Data.Bits (shiftL, shiftR, (.|.))
 import Data.Char (toLower)
 import Data.Int (Int64)
 import Data.List (dropWhileEnd, isSuffixOf)
+import Data.List.NonEmpty (NonEmpty)
+import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word32, Word64, Word8)
 import GHC.Clock (getMonotonicTimeNSec)
 import Network.Socket (AddrInfo (..), HostName, SockAddr (..), SocketType (..), defaultHints, getAddrInfo, hostAddressToTuple)
@@ -52,9 +52,10 @@ import Simplex.Chat.Core (sendChatCmd)
 import Simplex.Chat.Protocol (ContactShortLinkData (..), GroupShortLinkData (..), PublicGroupData (..))
 import Simplex.Chat.Types (AConnectTarget (..), ChatPeerType (..), Contact (..), ContactNameOrLink (..), ConnectTarget (..), GroupInfo (..), GroupProfile (..), GroupSummary (..), ImageData (..), Profile (..), User (..), fromLocalProfile)
 import Simplex.Messaging.Agent.Protocol (ConnShortLink, ConnectionMode (..), SConnectionMode (..), UserId, simplexShortLink)
-import Simplex.Messaging.Encoding.String (strDecode, strEncode)
+import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (anyM, safeDecodeUtf8)
+import StoreService.Names.Links (LinkKind (..), parseShortLink, shortLinkHosts)
 import System.Timeout (timeout)
 
 data ProfileLimits = ProfileLimits
@@ -102,10 +103,6 @@ newProfiles limits@ProfileLimits {searchFetchSlots, previewFetchSlots} clock fet
 monotonicSeconds :: IO Word64
 monotonicSeconds = (`div` 1000000000) <$> getMonotonicTimeNSec
 
--- | The record a link came from: @simplex.contact@ or @simplex.channel@.
-data EntityType = ETAddress | ETChannel
-  deriving (Eq, Show)
-
 data ChatKind = CKContact | CKBusiness | CKBot | CKChannel
   deriving (Eq, Show)
 
@@ -121,7 +118,7 @@ data LinkProfile = LinkProfile
 data ProfileRead = ProfileOk LinkProfile | ProfileUnread | ProfileUnavailable
   deriving (Eq, Show)
 
-data Preview = Preview {previewType :: EntityType, previewProfile :: ProfileRead}
+data Preview = Preview {previewType :: LinkKind, previewProfile :: ProfileRead}
   deriving (Eq, Show)
 
 data Entity = Entity {entityPreview :: Preview, link :: Text, deepLink :: Text}
@@ -135,7 +132,7 @@ instance J.ToJSON Entity where
 
 previewPairs :: Preview -> [JT.Pair]
 previewPairs (Preview t r) =
-  [ "type" .= entityTypeText t,
+  [ "type" .= linkKindText t,
     "kind" .= chatKindText kind,
     "displayName" .= displayName,
     "fullName" .= fullName,
@@ -148,15 +145,16 @@ previewPairs (Preview t r) =
       ProfileOk p -> (p, "ok" :: Text)
       ProfileUnread -> (emptyProfile, "unread")
       ProfileUnavailable -> (emptyProfile, "unavailable")
-    emptyProfile = LinkProfile {kind = linkKind t, displayName = "", fullName = "", image = Nothing, subscribers = Nothing}
-    linkKind = \case
-      ETAddress -> CKContact
-      ETChannel -> CKChannel
+    emptyProfile = LinkProfile {kind = chatKind t, displayName = "", fullName = "", image = Nothing, subscribers = Nothing}
+    chatKind = \case
+      LKContact -> CKContact
+      LKChannel -> CKChannel
 
-entityTypeText :: EntityType -> Text
-entityTypeText = \case
-  ETAddress -> "address"
-  ETChannel -> "channel"
+-- | The record the link came from, as the contract names it: @simplex.contact@ holds an address.
+linkKindText :: LinkKind -> Text
+linkKindText = \case
+  LKContact -> "address"
+  LKChannel -> "channel"
 
 chatKindText :: ChatKind -> Text
 chatKindText = \case
@@ -165,25 +163,22 @@ chatKindText = \case
   CKBot -> "bot"
   CKChannel -> "channel"
 
--- | A search answer's entity, within the search bound. The hosts are the link's servers, every one of which must pass the host rule.
+-- | A search answer's entity, within the search bound. Every server host of the link must pass the host rule.
 -- The deep link is the core's @simplex:/@ form, which carries the server; a link the core cannot parse keeps its own text.
-linkEntity :: Profiles -> EntityType -> [TransportHost] -> Text -> IO Entity
-linkEntity ps@Profiles {searchSlots} t hosts link = do
-  r <- boundedProfile ps searchSlots hosts link sl_
+linkEntity :: Profiles -> LinkKind -> Text -> IO Entity
+linkEntity ps@Profiles {searchSlots} t link = do
+  r <- boundedProfile ps searchSlots link sl_
   pure Entity {entityPreview = Preview t r, link, deepLink = maybe link (safeDecodeUtf8 . strEncode . simplexShortLink) sl_}
   where
     sl_ = parseShortLink link
 
 -- | A link preview, within the preview bound.
-linkPreview :: Profiles -> EntityType -> [TransportHost] -> Text -> IO Preview
-linkPreview ps@Profiles {previewSlots} t hosts link = Preview t <$> boundedProfile ps previewSlots hosts link (parseShortLink link)
-
-parseShortLink :: Text -> Maybe (ConnShortLink 'CMContact)
-parseShortLink = either (const Nothing) Just . strDecode . encodeUtf8
+linkPreview :: Profiles -> LinkKind -> Text -> IO Preview
+linkPreview ps@Profiles {previewSlots} t link = Preview t <$> boundedProfile ps previewSlots link (parseShortLink link)
 
 -- | A link the chat core cannot parse names no server it could fetch from, so it is not fetched.
-boundedProfile :: Profiles -> TVar Int -> [TransportHost] -> Text -> Maybe (ConnShortLink 'CMContact) -> IO ProfileRead
-boundedProfile Profiles {limits = ProfileLimits {fetchTimeout, cacheSeconds, maxCachedProfiles}, clock, fetchLink, resolveHost, cache} slots hosts link sl_ =
+boundedProfile :: Profiles -> TVar Int -> Text -> Maybe (ConnShortLink 'CMContact) -> IO ProfileRead
+boundedProfile Profiles {limits = ProfileLimits {fetchTimeout, cacheSeconds, maxCachedProfiles}, clock, fetchLink, resolveHost, cache} slots link sl_ =
   cached >>= \case
     Just p -> pure $ ProfileOk p
     Nothing -> case sl_ of
@@ -194,7 +189,7 @@ boundedProfile Profiles {limits = ProfileLimits {fetchTimeout, cacheSeconds, max
       now <- clock
       (\m -> case Map.lookup link m of Just (expiry, p) | expiry > now -> Just p; _ -> Nothing) <$> readTVarIO cache
     checkAndFetch sl =
-      hostsFetchable resolveHost hosts >>= \case
+      hostsFetchable resolveHost (shortLinkHosts sl) >>= \case
         False -> pure ProfileUnavailable
         True -> withSlot (fetchLink sl) >>= maybe (pure ProfileUnread) (\p -> ProfileOk p <$ remember p)
     withSlot =
@@ -266,10 +261,8 @@ imageURI (ImageData uri)
   | otherwise = Nothing
 
 -- | False when any host is an onion address, does not resolve, or is or resolves to an address outside the public internet.
-hostsFetchable :: HostResolver -> [TransportHost] -> IO Bool
-hostsFetchable resolve hosts
-  | null hosts = pure False
-  | otherwise = not <$> anyM (map refused hosts)
+hostsFetchable :: HostResolver -> NonEmpty TransportHost -> IO Bool
+hostsFetchable resolve hosts = not <$> anyM (map refused $ L.toList hosts)
   where
     refused = \case
       THDomainName name

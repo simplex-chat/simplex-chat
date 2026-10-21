@@ -7,6 +7,8 @@ module StoreService.Names.Links
   ( LinkKind (..),
     linkMaxBytes,
     linkKindOf,
+    parseShortLink,
+    shortLinkHosts,
     linkHosts,
   )
 where
@@ -16,6 +18,7 @@ import Data.Attoparsec.Text (Parser)
 import qualified Data.Attoparsec.Text as A
 import qualified Data.ByteString as B
 import Data.Char (isAsciiLower, isAsciiUpper, isDigit)
+import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
@@ -50,9 +53,13 @@ shortLinkP = do
     -- simplexmq escapes the comma between a link's hosts, and no other character of its query
     hostSeparator = "%2C"
 
+-- the link as the chat core reads it
+parseShortLink :: Text -> Maybe (ConnShortLink 'CMContact)
+parseShortLink = either (const Nothing) Just . strDecode . encodeUtf8
+
+shortLinkHosts :: ConnShortLink 'CMContact -> NonEmpty TransportHost
+shortLinkHosts (CSLContact _ _ ProtocolServer {host} _) = host
+
 -- the hosts as the chat core reads them, empty for a link it cannot read
 linkHosts :: Text -> [TransportHost]
-linkHosts = either (const []) hosts . strDecode . encodeUtf8
-  where
-    hosts :: ConnShortLink 'CMContact -> [TransportHost]
-    hosts (CSLContact _ _ ProtocolServer {host} _) = L.toList host
+linkHosts = maybe [] (L.toList . shortLinkHosts) . parseShortLink
