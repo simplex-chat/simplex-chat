@@ -767,13 +767,14 @@ insertTransaction db for NewTransaction {ntxRaw, ntxHash, ntxNonce} now = do
     (rid, editId, kind, Binary ntxRaw, Binary ntxHash, int64 ntxNonce, truncateToSecond now, TSPending)
   insertedRowId db
 
-recordTransactionOutcome :: DB.Connection -> ByteString -> TxStatus -> Maybe Word64 -> IO Bool
-recordTransactionOutcome db hash status block =
+-- | Moves a transaction on from the status the caller read, so an outcome is never overwritten unseen; False when it is not in that status.
+recordTransactionOutcome :: DB.Connection -> ByteString -> TxStatus -> TxStatus -> Maybe Word64 -> IO Bool
+recordTransactionOutcome db hash from status block =
   (> 0)
     <$> executeChanging
       db
-      "UPDATE sx_badge_service_name_transactions SET status = ?, mined_block = ? WHERE tx_hash = ?"
-      (status, int64 <$> block, Binary hash)
+      "UPDATE sx_badge_service_name_transactions SET status = ?, mined_block = ? WHERE tx_hash = ? AND status = ?"
+      (status, int64 <$> block, Binary hash, from)
 
 transactionColumns :: Query
 transactionColumns =
