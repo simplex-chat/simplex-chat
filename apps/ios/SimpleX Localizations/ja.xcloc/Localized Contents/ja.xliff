@@ -870,9 +870,9 @@ swipe action</note>
         <target state="translated">QRコードでサーバを追加する。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add team members" xml:space="preserve">
+      <trans-unit id="Add team members" xml:space="preserve" approved="no">
         <source>Add team members</source>
-        <target>チームメンバーを追加</target>
+        <target state="translated">チームメンバーを追加</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add this code to your webpage. It will display the preview of your channel / group." xml:space="preserve">
@@ -1085,9 +1085,9 @@ swipe action</note>
         <target state="translated">連絡先が通話を許可している場合のみ通話を許可する。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow calls?" xml:space="preserve">
+      <trans-unit id="Allow calls?" xml:space="preserve" approved="no">
         <source>Allow calls?</source>
-        <target>通話を許可しますか？</target>
+        <target state="translated">通話を許可しますか？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow disappearing messages only if your contact allows it to you." xml:space="preserve" approved="no">
@@ -1095,9 +1095,9 @@ swipe action</note>
         <target state="translated">連絡先が許可している場合のみ消えるメッセージを許可する。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow downgrade" xml:space="preserve">
+      <trans-unit id="Allow downgrade" xml:space="preserve" approved="no">
         <source>Allow downgrade</source>
-        <target>ダウングレードを許可する</target>
+        <target state="translated">ダウングレードを許可する</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow files and media only if your contact allows them." xml:space="preserve">
@@ -1253,9 +1253,9 @@ swipe action</note>
         <source>Annual</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Another reason" xml:space="preserve">
+      <trans-unit id="Another reason" xml:space="preserve" approved="no">
         <source>Another reason</source>
-        <target>他の理由</target>
+        <target state="translated">他の理由</target>
         <note>report reason</note>
       </trans-unit>
       <trans-unit id="Answer call" xml:space="preserve" approved="no">
@@ -1338,9 +1338,9 @@ swipe action</note>
         <target state="translated">に適用する</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Archive" xml:space="preserve">
+      <trans-unit id="Archive" xml:space="preserve" approved="no">
         <source>Archive</source>
-        <target>アーカイブ</target>
+        <target state="translated">アーカイブ</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Archive %lld reports?" xml:space="preserve">
@@ -1378,9 +1378,9 @@ swipe action</note>
         <target></target>
         <note>swipe action</note>
       </trans-unit>
-      <trans-unit id="Archived contacts" xml:space="preserve">
+      <trans-unit id="Archived contacts" xml:space="preserve" approved="no">
         <source>Archived contacts</source>
-        <target>アーカイブされた連絡先</target>
+        <target state="translated">アーカイブされた連絡先</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Archiving database" xml:space="preserve">
@@ -1755,9 +1755,9 @@ in your network</source>
         <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Can't change profile" xml:space="preserve">
+      <trans-unit id="Can't change profile" xml:space="preserve" approved="no">
         <source>Can't change profile</source>
-        <target>プロフィールを変更できません</target>
+        <target state="translated">プロフィールを変更できません</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Can't invite contact!" xml:space="preserve" approved="no">
@@ -1792,9 +1792,9 @@ new chat action</note>
         <target></target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Cancel migration" xml:space="preserve">
+      <trans-unit id="Cancel migration" xml:space="preserve" approved="no">
         <source>Cancel migration</source>
-        <target>移行を中止する</target>
+        <target state="translated">移行を中止する</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Cannot access keychain to save database password" xml:space="preserve" approved="no">
@@ -1802,9 +1802,9 @@ new chat action</note>
         <target state="translated">データベースのパスワードを保存するためのキーチェーンにアクセスできません</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Cannot forward message" xml:space="preserve">
+      <trans-unit id="Cannot forward message" xml:space="preserve" approved="no">
         <source>Cannot forward message</source>
-        <target>メッセージを転送できません</target>
+        <target state="translated">メッセージを転送できません</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Cannot generate random database passphrase" xml:space="preserve">
@@ -1985,9 +1985,9 @@ alert subtitle</note>
         <source>Charge ID</source>
         <note>ledger entry field</note>
       </trans-unit>
-      <trans-unit id="Chat" xml:space="preserve">
+      <trans-unit id="Chat" xml:space="preserve" approved="no">
         <source>Chat</source>
-        <target>チャット</target>
+        <target state="translated">チャット</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat already exists" xml:space="preserve">
@@ -2050,9 +2050,9 @@ alert subtitle</note>
         <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat list" xml:space="preserve">
+      <trans-unit id="Chat list" xml:space="preserve" approved="no">
         <source>Chat list</source>
-        <target>チャット一覧</target>
+        <target state="translated">チャット一覧</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat migrated!" xml:space="preserve">
@@ -2151,9 +2151,9 @@ chat toolbar</note>
         <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Check messages every 20 min." xml:space="preserve">
+      <trans-unit id="Check messages every 20 min." xml:space="preserve" approved="no">
         <source>Check messages every 20 min.</source>
-        <target>20分おきにメッセージを確認する。</target>
+        <target state="translated">20分おきにメッセージを確認する。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Check messages when allowed." xml:space="preserve">
