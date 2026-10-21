@@ -4727,9 +4727,9 @@ server test error</note>
         <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Fingerprint in server address does not match certificate." xml:space="preserve">
+      <trans-unit id="Fingerprint in server address does not match certificate." xml:space="preserve" approved="no">
         <source>Fingerprint in server address does not match certificate.</source>
-        <target>Відбиток в адресі сервера не співпадає з сертифікатом.</target>
+        <target state="translated">Відбиток в адресі сервера не співпадає з сертифікатом.</target>
         <note>relay test error
 server test error</note>
       </trans-unit>
@@ -8896,14 +8896,14 @@ chat item action</note>
         <target></target>
         <note>relay test error</note>
       </trans-unit>
-      <trans-unit id="Server requires authorization to create queues, check password." xml:space="preserve">
+      <trans-unit id="Server requires authorization to create queues, check password." xml:space="preserve" approved="no">
         <source>Server requires authorization to create queues, check password.</source>
-        <target>Сервер вимагає авторизації для створення черг, перевірте пароль.</target>
+        <target state="translated">Сервер вимагає авторизації для створення черг, перевірте пароль.</target>
         <note>server test error</note>
       </trans-unit>
-      <trans-unit id="Server requires authorization to upload, check password." xml:space="preserve">
+      <trans-unit id="Server requires authorization to upload, check password." xml:space="preserve" approved="no">
         <source>Server requires authorization to upload, check password.</source>
-        <target>Сервер вимагає авторизації для завантаження, перевірте пароль.</target>
+        <target state="translated">Сервер вимагає авторизації для завантаження, перевірте пароль.</target>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Server test failed!" xml:space="preserve" approved="no">
