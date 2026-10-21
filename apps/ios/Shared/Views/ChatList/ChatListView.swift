@@ -872,6 +872,8 @@ struct ChatListSearchBar: View {
                         .disabled(searchShowingSimplexLink)
                         .focused($searchFocussed)
                         .frame(maxWidth: .infinity)
+                        .autocorrectionDisabled(true)
+                        .textInputAutocapitalization(.never)
                         .submitLabel(.search)
                         .onSubmit(runDirectorySearch)
                     if connectProgressManager.showConnectProgress != nil {
