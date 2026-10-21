@@ -609,7 +609,7 @@ jobs:
           attempts=1
           ${{ (github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) }} && attempts=3
           while [ "$i" -le "$attempts" ]; do
-            if ./simplex-chat-test; then
+            if ./simplex-chat-test +RTS -s -RTS; then
               break
             else
               echo "Attempt $i failed, retrying..."
@@ -1133,7 +1133,7 @@ jobs:
           attempts=1
           ${{ (github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) }} && attempts=3
           while [ "$i" -le "$attempts" ]; do
-            if cabal test --test-show-details=direct ${{ env.ghc_options }}; then
+            if cabal test --test-show-details=direct --test-options="+RTS -s -RTS" ${{ env.ghc_options }}; then
               break
             else
               echo "Attempt $i failed, retrying..."
