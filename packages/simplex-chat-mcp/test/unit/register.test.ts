@@ -1,9 +1,10 @@
+import * as childProcess from "child_process"
 import {mkdirSync, mkdtempSync, rmSync, writeFileSync} from "fs"
 import {tmpdir} from "os"
 import {join} from "path"
 import {createDataFolder, serverToken, writeServerFile} from "../../src/files"
 import {ExitError} from "../../src/log"
-import {RunResult, projectRoot, register, registryEntry} from "../../src/register"
+import {RunResult, cmdArgument, projectRoot, register, registryEntry} from "../../src/register"
 
 let dir: string
 
@@ -12,7 +13,10 @@ beforeEach(() => {
   createDataFolder(dir)
 })
 
-afterEach(() => rmSync(join(dir, ".."), {recursive: true, force: true}))
+afterEach(() => {
+  jest.restoreAllMocks()
+  rmSync(join(dir, ".."), {recursive: true, force: true})
+})
 
 const ok: RunResult = {missing: false, status: 0, stderr: ""}
 
@@ -80,6 +84,50 @@ describe("register", () => {
     expect(() => register({name: "agent", data: dir, scope: "user"}, recorder([ok, {missing: false, status: 1, stderr: "bad scope\n"}]).run)).toThrow(
       new ExitError("claude mcp add-json failed: bad scope", 1),
     )
+  })
+
+  describe("when claude can't be spawned", () => {
+    const spawnClaude = (shellStatus: number): jest.SpyInstance =>
+      jest.spyOn(childProcess, "spawnSync").mockImplementation(((_command: string, args: unknown) =>
+        Array.isArray(args) ? {error: Object.assign(new Error("spawnSync claude ENOENT"), {code: "ENOENT"}), status: null, stderr: ""} : {status: shellStatus, stderr: ""}) as never)
+    const manualEntry = (): ExitError => new ExitError(`Add this entry under "mcpServers" in ~/.claude.json: {"simplex-agent": ${JSON.stringify(registryEntry(5226, dir, 23))}}`, 1)
+
+    beforeEach(() => writeServerFile(dir, {name: "agent", port: 5226, expireHours: 23}))
+
+    it("runs it through cmd.exe on Windows, with the arguments quoted for cmd.exe", () => {
+      onPlatform("win32")
+      const spawn = spawnClaude(0)
+      expect(register({name: "agent", data: dir, scope: "user"})).toBe("Added to Claude Code: scope user, server simplex-agent.")
+      const words = (args: string[]): string => ["claude", ...args.map(cmdArgument)].join(" ")
+      expect(spawn.mock.calls).toEqual([
+        ["claude", ["mcp", "remove", "--scope", "user", "simplex-agent"], {encoding: "utf8"}],
+        [words(["mcp", "remove", "--scope", "user", "simplex-agent"]), {encoding: "utf8", shell: true}],
+        ["claude", ["mcp", "add-json", "--scope", "user", "simplex-agent", JSON.stringify(registryEntry(5226, dir, 23))], {encoding: "utf8"}],
+        [words(["mcp", "add-json", "--scope", "user", "simplex-agent", JSON.stringify(registryEntry(5226, dir, 23))]), {encoding: "utf8", shell: true}],
+      ])
+    })
+
+    it("prints the entry on Windows when cmd.exe does not find it either", () => {
+      onPlatform("win32")
+      const spawn = spawnClaude(9009)
+      expect(() => register({name: "agent", data: dir, scope: "user"})).toThrow(manualEntry())
+      expect(spawn).toHaveBeenCalledTimes(2)
+    })
+
+    it("prints the entry on other platforms without a shell", () => {
+      onPlatform("linux")
+      const spawn = spawnClaude(0)
+      expect(() => register({name: "agent", data: dir, scope: "user"})).toThrow(manualEntry())
+      expect(spawn).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  it("quotes an argument for cmd.exe and for the npm command shim it runs", () => {
+    expect(cmdArgument("mcp")).toBe('^^^"mcp^^^"')
+    expect(cmdArgument('{"a":"b c"}')).toBe('^^^"{\\^^^"a\\^^^":\\^^^"b^^^ c\\^^^"}^^^"')
+    expect(cmdArgument('a\\"b')).toBe('^^^"a\\\\\\^^^"b^^^"')
+    expect(cmdArgument("C:\\dir\\")).toBe('^^^"C:\\dir\\\\^^^"')
+    expect(cmdArgument("100% & more")).toBe('^^^"100^^^%^^^ ^^^&^^^ more^^^"')
   })
 })
 
