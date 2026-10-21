@@ -2933,7 +2933,7 @@
     <string name="badges_link_held_page">Il suo codice è nella pagina in cui l\'hai acquistato, sotto \"Mostra codice\".</string>
     <string name="badges_choose_your_badge_lede">File più grandi che restano disponibili più a lungo.</string>
     <string name="badges_error_last_attempt">Ultimo tentativo</string>
-    <string name="badges_level_legend_summary">Legenda: file di 5 GB disponibili per 21 giorni.</string>
+    <string name="badges_level_legend_summary">Leggenda: file fino a 5 GB disponibili per 21 giorni.</string>
     <string name="rcv_group_event_msg_bad_signature">messaggio rifiutato: firma non valida</string>
     <string name="badges_credential_months_left">Mesi rimasti</string>
     <string name="badges_credential_next_check">Prossimo controllo</string>
@@ -2956,7 +2956,7 @@
     <string name="storage">Archiviazione</string>
     <string name="badges_level_legend_file_storage">Conservato per 21 giorni</string>
     <string name="badges_level_supporter_file_storage">Conservato per 7 giorni</string>
-    <string name="badges_level_supporter_summary">Sostenitore: file di 2 GB disponibili per 7 giorni.</string>
+    <string name="badges_level_supporter_summary">Sostenitore: file fino a 2 GB disponibili per 7 giorni.</string>
     <string name="badges_larger_files_longer">Supporta SimpleX per inviare file più grandi che restano disponibili più a lungo</string>
     <string name="emoji_category_symbols">Simboli</string>
     <string name="badges_tap_for_details">Tocca per i dettagli</string>
@@ -2967,4 +2967,25 @@
     <string name="badges_error_unknown_purchase">Il servizio dei distintivi non riconosce questo distintivo.</string>
     <string name="badges_error_purchase_refused">Il servizio dei distintivi ha rifiutato l\'acquisto: %1$s</string>
     <string name="badges_error_service_refused">Il servizio dei distintivi ha rifiutato il rinnovo: %1$s</string>
+    <string name="badges_error_service_internal">Il servizio dei distintivi ha segnalato un errore interno.</string>
+    <string name="badges_link_added_profile">Il distintivo è stato aggiunto al profilo %1$s.</string>
+    <string name="badges_link_confirm_profile">Il distintivo verrà aggiunto al profilo %1$s.</string>
+    <string name="badges_link_issuing_profile">Il distintivo verrà aggiunto a questo profilo.</string>
+    <string name="badges_error_payment_pending">Il pagamento non è ancora stato confermato.</string>
+    <string name="service_request_timeout_desc">Il servizio non ha risposto. Riprova.</string>
+    <string name="badges_error_provider_unavailable">Impossibile raggiungere il negozio.</string>
+    <string name="badges_error_receipt_invalid">Il negozio non ha confermato questo acquisto.</string>
+    <string name="badges_error_service_not_configured_purchase">Questa versione dell\'app non può acquistare distintivi.</string>
+    <string name="badges_error_product_unavailable">Questo distintivo non è in vendita.</string>
+    <string name="markdown_file_bidi_warning">Questo file ha caratteri di direzione del testo. Il testo può essere mostrato in un ordine diverso da quello scritto.</string>
+    <string name="app_link_not_supported">Questo link non è supportato da questa versione dell\'app. Controlla gli aggiornamenti dell\'app.</string>
+    <string name="badges_error_already_active_purchase">Questo profilo ha già un distintivo.</string>
+    <string name="badges_error_receipt_used">Questo acquisto era già accreditato a un distintivo su un altro dispositivo o profilo.</string>
+    <string name="storage_total">Totale</string>
+    <string name="badges_order_total">Totale</string>
+    <string name="emoji_category_travel">Viaggi e luoghi</string>
+    <string name="badges_error_unexpected">Errore imprevisto: %1$s</string>
+    <string name="badges_link_view_badge">Vedi il tuo distintivo</string>
+    <string name="badges_waiting_for_approval_title">In attesa di approvazione</string>
+    <string name="badges_issuing_body">Il pagamento è completo. Il distintivo verrà aggiunto a questo profilo.</string>
 </resources>
