@@ -89,7 +89,7 @@ Common Module (commonMain)
 | Database | [spec/database.md](database.md) | SQLite database files, migrations, encryption, backup/restore |
 | Impact | [spec/impact.md](impact.md) | Source file → product concept mapping for change impact analysis |
 | Chat View | [spec/client/chat-view.md](client/chat-view.md) | ChatView, ChatItemView, message rendering, item interactions |
-| Chat List | [spec/client/chat-list.md](client/chat-list.md) | ChatListView, ChatPreviewView, filtering, search, tags, online search (SimpleX Directory and names) |
+| Chat List | [spec/client/chat-list.md](client/chat-list.md) | ChatListView, ChatPreviewView, filtering, search, tags, online search (SimpleX Directory) |
 | Compose | [spec/client/compose.md](client/compose.md) | ComposeView, SendMsgView, ComposeState, attachments, mentions |
 | Navigation | [spec/client/navigation.md](client/navigation.md) | App screen routing, onboarding, settings, new chat flows, New chat online search |
 | Calls | [spec/services/calls.md](services/calls.md) | WebRTC call lifecycle, signaling, platform-specific call views |

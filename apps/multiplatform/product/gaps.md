@@ -15,9 +15,8 @@ This document catalogs known gaps in the multiplatform codebase (Android and Des
 7. [Desktop: Cryptor Not Implemented](#gap-07-desktop-cryptor-not-implemented)
 8. [Desktop: App Link Registration](#gap-08-desktop-app-link-registration)
 9. [Desktop: Emoji Picker Without Skin Tones and Localized Search](#gap-09-desktop-emoji-picker-without-skin-tones-and-localized-search)
-10. [Online Search: Groups Joined Through Another Link Are Not Recognised](#gap-10-online-search-groups-joined-through-another-link-are-not-recognised)
-11. [Online Search: First-Search Alert Does Not Mention the Server Hosting a Resolved Address](#gap-11-online-search-first-search-alert-does-not-mention-the-server-hosting-a-resolved-address)
-12. [Online Search: New Chat Does Not Narrow Contacts by Name While Typing](#gap-12-online-search-new-chat-does-not-narrow-contacts-by-name-while-typing)
+10. [Online Search: Groups Joined Without a Prepared Group Still Appear as Results With Open](#gap-10-online-search-groups-joined-without-a-prepared-group-still-appear-as-results-with-open)
+11. [Online Search: The Count of Results Left Can Include Listings the Directory Never Sends](#gap-11-online-search-the-count-of-results-left-can-include-listings-the-directory-never-sends)
 
 ---
 
@@ -355,7 +354,7 @@ Desktop users cannot pick a skin tone in the picker, and search in other languag
 
 ---
 
-## GAP-10: Online Search: Groups Joined Through Another Link Are Not Recognised
+## GAP-10: Online Search: Groups Joined Without a Prepared Group Still Appear as Results With Open
 
 **Severity:** Low
 **Category:** UI / UX
@@ -363,53 +362,30 @@ Desktop users cannot pick a skin tone in the picker, and search in other languag
 
 ### Description
 
-A directory entry is matched to a local chat by a store-only lookup of its link (`apiConnectPlan` with `PlanResolveMode.PRMNever`, then `planLocalChatId`). An entry the app finds this way opens as a chat: the screen's chat row is drawn in place of the entry. A regular group's entry carries the directory's own group link (short link only), so a group the user joined through a different link, through the directory's full link, or by invitation is not found and still shows as a directory entry with "Join group". Tapping it goes through `planAndConnect`, which handles the known group. Accepted.
+A directory entry is matched to a local chat by a store-only plan of its link (`apiConnectPlan` with `PlanResolveMode.PRMNever`, then `directoryResultState`), which finds a group only when it was prepared from that short link (every short-link join in current apps, Open included) or joined with the full link the directory sends. A group joined without a prepared group shows as a result with Open beside its own chat row:
 
-Related: the note "All results on this page are already in your chats" is not shown when a page's only results are hidden because a name search resolved to the same link (that row is on screen, but not one of the user's chats); the Directory part then shows only "Show more" when there are more pages, and is not shown otherwise.
+- a group (not a channel: `/c` with a channel link prepares it) joined with `/c`, an older app, or a full link when the directory sends the short link: Open's online plan finds it known and shows the "Open group" alert;
+- a member added by invitation, or one who joined through a link the owner has since replaced: the online plan is `Ok`, so Open prepares and opens a second copy of the group without asking (before, the "Open group?" confirm led to the same copy).
+
+Accepted for now: channels, the directory's main content, are always joined through a prepared group. "Already joining" is reachable only for entries the directory sends with a full link, since a short link's connecting plan needs a network fetch. The core test "short link without resolving: prepared and joined group known, /c join not found" (tests/ChatTests/Groups.hs) pins the store-only contract, including the `/c` case.
 
 ### Affected Locations
 
-- `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt` -- `OnlineSearchModel.request`, `OnlineSearchModel.rows`
-- `common/src/commonMain/kotlin/chat/simplex/common/model/DirectorySearch.kt` -- `planLocalChatId`
+- `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt` -- `OnlineSearchModel.resultState`, `OnlineSearchModel.rows`, `openDirectoryResult`
+- `common/src/commonMain/kotlin/chat/simplex/common/model/DirectorySearch.kt` -- `planLocalChatId`, `directoryResultState`
 - See [spec/client/chat-list.md](../spec/client/chat-list.md#11-online-search)
 
 ### Impact
 
-A group the user is already in can appear as a directory result with "Join group". Joining is not repeated: the connection plan opens the known group.
+A group the user is already in can appear as a result with Open. For a group joined with `/c`, Open shows the known group's alert and joining is not repeated; for an invited member, Open adds a second, prepared copy of the group to the chat list.
 
 ### Recommendation
 
-Have the directory send a stable group identifier the core can match locally, or let the core match a directory short link against groups joined through the corresponding full link.
+Let the store-only plan recognise joins made without a prepared group (a lookup by the connection's `via_short_link_contact`, mapped as the online plan maps a join request); it would cover `/c` joins, not invited members.
 
 ---
 
-## GAP-11: Online Search: First-Search Alert Does Not Mention the Server Hosting a Resolved Address
-
-**Severity:** Low
-**Category:** Privacy / UX
-**Platforms:** Android, Desktop
-
-### Description
-
-Resolving a SimpleX name with `PlanResolveMode.PRMUnknown` also loads the resolved address's link data from the SMP server that hosts it. The search text itself is not sent there, and the first-search alert ("Search in Directory?") names only SimpleX Directory and the name-resolving server.
-
-### Affected Locations
-
-- `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt` -- `showDirectorySearchAlert`, `OnlineSearchModel.resolveNames`
-- `common/src/commonMain/moko-resources/base/strings.xml` -- `search_in_directory_alert_desc`
-- See [spec/client/chat-list.md](../spec/client/chat-list.md#11-online-search)
-
-### Impact
-
-The alert under-describes which servers learn of a name search: the server hosting the resolved address sees a link data request.
-
-### Recommendation
-
-Decide whether the alert copy should also say that the address a name points to is loaded.
-
----
-
-## GAP-12: Online Search: New Chat Does Not Narrow Contacts by Name While Typing
+## GAP-11: Online Search: The Count of Results Left Can Include Listings the Directory Never Sends
 
 **Severity:** Low
 **Category:** UI / UX
@@ -417,17 +393,18 @@ Decide whether the alert copy should also say that the address a name points to 
 
 ### Description
 
-The chat list resolves a typed SimpleX name locally on each keystroke (debounced, `PlanResolveMode.PRMNever`) to narrow the list to the matching chat; the New chat sheet does not (its `ContactsSearchBar` resolves a name only when the "Connect to …" row is tapped). A known contact whose display name does not contain the typed name is therefore not in "Your contacts" and appears as a Names result instead; tapping it opens the existing chat.
+The directory's `moreCount` counts the matching listings after the page, including listings without a public link, which it never sends. "Load more · N left" can therefore promise more results than loading brings, and a last page can come back empty.
 
 ### Affected Locations
 
-- `common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt` -- `ContactsSearchBar` typing collector, `NewChatSheetLayout` online search
-- See [spec/client/navigation.md](../spec/client/navigation.md#10-new-chat-online-search)
+- `apps/simplex-directory-service/src/Directory/Rpc.hs` -- `searchResultsPage` (`moreCount`)
+- `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt` -- `DirectoryLoadMoreRow`
+- See [spec/client/chat-list.md](../spec/client/chat-list.md#11-online-search)
 
 ### Impact
 
-A contact the user already has can show up as an online Names result rather than in the contacts list.
+The load row's count can be higher than the number of results still to come.
 
 ### Recommendation
 
-Reuse the chat list's local name resolution in `ContactsSearchBar` if this proves confusing.
+Count only listings with a public link in the directory's count query.

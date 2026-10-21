@@ -71,17 +71,17 @@ Accessed via `NewChatMenuButton` dropdown:
 
 ### Search (New Chat Sheet)
 
-The search field at the top of the New chat sheet filters "Your Contacts" and offers the same online search as the chat list (see [Chat List, Online Search](chat-list.md#online-search-names-and-directory)):
+The search field at the top of the New chat sheet filters "Your Contacts" and offers the same online search as the chat list (see [Chat List, Online Search](chat-list.md#online-search-simplex-directory)):
 
 | Element | Behavior |
 |---|---|
-| "Connect to …" row | Below the field for a SimpleX name; hidden once the online search found anything for that name |
-| "Search in Directory" row | Below the field for non-empty text that is not a SimpleX link; searches SimpleX Directory |
-| Keyboard Search key | Searches the directory and, for a SimpleX name, resolves the name online |
-| Names and Directory sections | After "Your Contacts", with headers in the same style. Tapping a result connects and closes the sheet, as other New chat actions do. A result for a contact already listed in "Your Contacts" is not repeated. A directory entry for a group or channel the user already has is shown as a contact-style chat row (avatar, name, favourite star, incognito mask) that opens the chat and closes the sheet, never "Join …". When every result of the last page loaded is a chat the user has, the Directory section shows "All results on this page are already in your chats", followed by "Show more" when there are more pages |
+| "Connect to …" row | Below the field for a SimpleX name; stays next to the results |
+| "Search in Directory" row | Below the field for non-empty text that is not a SimpleX link, until results for that text show or load; searches SimpleX Directory |
+| Keyboard Search key | The same directory search; it never looks up names |
+| Results card | One card without a header after "Your Contacts". First your chats among the results that "Your Contacts" doesn't list, as contact-style chat rows (avatar, name, favourite star, incognito mask) that open the chat and close the sheet; then the other results with New chat's small icons, each with "Open" (or "Already joining"), and the same long-press menu as on the chat list. Open opens the prepared chat and closes the sheet, as other New chat actions do. When every result of the last page loaded is a chat the user has, the card shows "All results on this page are already in your chats". The card ends with the load row ("Load more · N left" or "Load more") or the retry row |
 | Contacts empty state | "No filtered contacts" / "No contacts" are not shown while the online search runs or shows results |
 
-The first online search asks for consent with the same alert as on the chat list. Results disappear when the text changes or the user switches profile. Archived contacts keep their own search field without the Search key or online results.
+While the "Directory search" switch is off, every online search asks with the same "Enable Directory search?" alert as on the chat list. Results disappear when the text changes or the user switches profile. Archived contacts keep their own search field without the Search key or online results.
 
 ## Loading / Error States
 
@@ -93,7 +93,7 @@ The first online search asks for consent with the same alert as on the chat list
 | Connection in progress | Chat list shows pending connection entry |
 | Unused invitation on dismiss | Alert: "Keep unused invitation?" with Keep/Delete options |
 | Online search running | Progress indicator in the search field; closing the sheet cancels the search |
-| Directory search failed | "Search failed, tap to retry" row at the end of the Directory section |
+| Directory search failed | "Search failed, tap to retry" row at the end of the results card |
 
 ## Create Channel (`AddChannelView`)
 
@@ -162,7 +162,7 @@ When preparing a channel link, `groupShortLinkInfo.groupRelays` (hostnames) are 
 ## Source Files
 
 - `Shared/Views/NewChat/NewChatView.swift` -- Main view with invite/connect tabs, link generation
-- `Shared/Views/NewChat/NewChatMenuButton.swift` -- Dropdown menu (new chat, create group, create channel); New chat sheet search, contacts list and online search sections
+- `Shared/Views/NewChat/NewChatMenuButton.swift` -- Dropdown menu (new chat, create group, create channel); New chat sheet search, contacts list and online search results card
 - `Shared/Views/NewChat/QRCode.swift` -- QR code generation and display
 - `Shared/Views/NewChat/AddGroupView.swift` -- Group creation form
 - `Shared/Views/NewChat/AddChannelView.swift` -- Channel creation wizard (3 steps)

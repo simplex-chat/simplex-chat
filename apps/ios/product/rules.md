@@ -152,7 +152,7 @@
 ## Online Search
 
 ### RULE-24: Online results are never saved
-**Rule:** Name and directory results MUST NOT be stored, and MUST live only as long as the search text and the active profile: any text change or profile switch clears them, and a reply that arrives after that (or after the search was cancelled) MUST NOT be shown.
+**Rule:** Directory results MUST NOT be stored, and MUST live only as long as the search text and the active profile: any text change or profile switch clears them, and a reply that arrives after that (or after the search was cancelled) MUST NOT be shown.
 **Enforced by:** `DirectorySearchView.swift` (`OnlineSearchModel.reset()` bumps `generation`; every publish checks it); `ChatListView.swift` (`ChatListSearchBar` resets on `searchText` and `currentUser?.userId` changes); `NewChatMenuButton.swift` (`NewChatSheet` resets on the same changes).
 **Spec:** [spec/client/chat-list.md](../spec/client/chat-list.md#11-online-search)
 
@@ -162,16 +162,16 @@
 **Spec:** [spec/client/chat-list.md](../spec/client/chat-list.md#11-online-search)
 
 ### RULE-26: Online lookups never show alerts
-**Rule:** Resolving a SimpleX name online and looking up directory entries locally MUST NOT show any alert, including the network retry alert; a failure gives no row.
-**Enforced by:** `SimpleXAPI.swift` (`apiConnectPlan(onFailure: .log)`); `DirectorySearchView.swift` (`inProgress: BoxedValue(false)` for every lookup).
+**Rule:** Looking up directory entries locally MUST NOT show any alert, including the network retry alert; a failed lookup shows the entry with Open, whose online plan shows the real error.
+**Enforced by:** `SimpleXAPI.swift` (`apiConnectPlan(onFailure: .log)`); `DirectorySearchView.swift` (`inProgress: BoxedValue(false)` for every lookup); `DirectorySearch.swift` (`directoryResultState` maps no plan to `.open`).
 **Spec:** [spec/api.md](../spec/api.md#8-directory-search-and-connection-plans)
 
 ### RULE-27: Nothing is shown twice
-**Rule:** A name result whose chat is shown in the local list MUST be hidden. A directory result MUST be hidden when its link refers, in the local store, to a chat shown in the local list or found by name, or when its link is the link a name was resolved through. Only store-derived chat ids and links resolved by the core may hide a row. A directory result whose link refers to a chat the screen doesn't list MUST be drawn as that screen's chat row, which opens the chat, never as "Join …". When every result of the last page loaded is hidden as a chat the user has, the Directory part MUST say so ("All results on this page are already in your chats"); a result hidden only because a name was resolved through its link does not count. Limit: a regular group joined through another link, the directory's full link or by invitation is not found by the lookup and still appears as a directory result with "Join group".
-**Enforced by:** `DirectorySearchView.swift` (`OnlineSearchModel.rows(shownChatIds:)`, `pageInChats`); `DirectorySearch.swift` (`planLocalChatId`, `NameSearchResult.resolvedLink`); `ChatListView.swift` (`directoryRows`, `chatListNavLink`); `NewChatMenuButton.swift` (`onlineSearchSections`); `ContactListNavLink.swift` (`groupNavLink`).
+**Rule:** A directory result MUST be hidden when its link refers, in the local store, to a chat shown in the local list. A result whose link refers to a chat the screen doesn't list MUST be drawn once, as that screen's chat row, which opens the chat, never with Open; two entries that refer to one chat MUST give one row, and an entry repeated across pages MUST be shown once. Only store-derived chat ids may decide this, never a field the directory wrote. When every result of the last page loaded is a chat the local list shows, the results MUST say so ("All results on this page are already in your chats"). Limits: the store-only lookup finds a group only when it was prepared from that short link or joined with the full link the directory sends. A group joined without a prepared group (`/c`, an older app, a full link when the directory sends the short link, an invitation, a link the owner has since replaced) appears as a result with Open beside its own chat row; for an invited member, or one who joined through a replaced link, Open prepares and opens a second copy of the group without asking.
+**Enforced by:** `DirectorySearchView.swift` (`OnlineSearchModel.rows(shownChatIds:)`, `pageInChats`; `request` drops entries already shown); `DirectorySearch.swift` (`planLocalChatId`, `directoryResultState`); `ChatListView.swift` (`directoryRows`, `chatListNavLink`); `NewChatMenuButton.swift` (`onlineSearchSection`); `ContactListNavLink.swift` (`groupNavLink`).
 **Spec:** [spec/client/chat-list.md](../spec/client/chat-list.md#11-online-search)
 
 ### RULE-28: Consent before the first online search
-**Rule:** The search text MUST NOT be sent online until the user has confirmed the first-search alert, which names both recipients (SimpleX Directory and, for a SimpleX name, the server that resolves names), unless the user chose not to be asked again.
-**Enforced by:** `DirectorySearchView.swift` (`confirmDirectorySearch`, `DEFAULT_DIRECTORY_SEARCH_ALERT_SHOWN`); both triggers in `ChatListView.swift` and `NewChatMenuButton.swift` go through it.
+**Rule:** The search text MUST NOT be sent online while the "Directory search" switch in Privacy settings is off, unless the user confirms the "Enable Directory search?" alert, which says the text goes to SimpleX Directory and turns the switch on. Cancel MUST send nothing. The search never resolves SimpleX names, so the directory is its only recipient.
+**Enforced by:** `DirectorySearchView.swift` (`confirmDirectorySearch`, `DEFAULT_PRIVACY_DIRECTORY_SEARCH`); `PrivacySettings.swift` (the switch); both triggers in `ChatListView.swift` and `NewChatMenuButton.swift` go through it.
 **Spec:** [spec/client/chat-list.md](../spec/client/chat-list.md#11-online-search)

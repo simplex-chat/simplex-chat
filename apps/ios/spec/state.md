@@ -468,7 +468,7 @@ App-level UI settings stored in `UserDefaults.standard`:
 | `DEFAULT_SHOW_LA_NOTICE` | `Bool` | Show LA setup notice |
 | `DEFAULT_NOTIFICATION_ALERT_SHOWN` | `Bool` | Notification permission alert shown |
 | `DEFAULT_CALL_KIT_CALLS_IN_RECENTS` | `Bool` | Show CallKit calls in recents |
-| `DEFAULT_DIRECTORY_SEARCH_ALERT_SHOWN` | `Bool` | The user chose "Search and don't show again" in the online search alert; in `hintDefaults` (see [Chat List, Online Search](client/chat-list.md#11-online-search)) |
+| `DEFAULT_PRIVACY_DIRECTORY_SEARCH` | `Bool` | "Directory search" in Privacy settings, default false; while it is off, every online search asks "Enable Directory search?", and Enable turns it on; not in `hintDefaults` (see [Chat List, Online Search](client/chat-list.md#11-online-search)) |
 
 ### GroupDefaults
 

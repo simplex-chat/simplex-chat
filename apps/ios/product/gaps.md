@@ -64,25 +64,22 @@ The Haskell Store modules (`Store/Direct.hs`, `Store/Groups.hs`, `Store/Messages
 
 ## Online Search
 
-### GAP: Groups joined through another link still appear as directory results
+### GAP: Groups joined without a prepared group still appear as results with Open
 **Source:** [spec/client/chat-list.md](../spec/client/chat-list.md#11-online-search)
-A directory entry is matched to a local chat by a store-only lookup of its link. An entry the app finds this way opens as a chat: the screen's chat row is drawn in place of the entry. A regular group's entry carries the directory's own group link (short link only), so a group the user joined through a different link, through the directory's full link, or by invitation is not found and still shows as a directory entry with "Join group". Tapping it goes through `planAndConnect`, which handles the known group. Accepted.
+A directory entry is matched to a local chat by a store-only plan of its link (`resolve=never`), which finds a group only when it was prepared from that short link (every short-link join in current apps, Open included) or joined with the full link the directory sends. A group joined without a prepared group shows as a result with Open beside its own chat row:
 
-Related: the note "All results on this page are already in your chats" is not shown when a page's only results are hidden because a name search resolved to the same link (that row is on screen, but not one of the user's chats); the Directory part then shows only "Show more" when there are more pages, and is not shown otherwise.
+- a group (not a channel: `/c` with a channel link prepares it) joined with `/c`, an older app, or a full link when the directory sends the short link: Open's online plan finds it known and shows the "Open group" alert;
+- a member added by invitation, or one who joined through a link the owner has since replaced: the online plan is "ok", so Open prepares and opens a second copy of the group without asking (before, the "Open group?" confirm led to the same copy).
 
-**REC:** Have the directory send a stable group identifier the core can match locally, or let the core match a directory short link against groups joined through the corresponding full link.
+Accepted for now: channels, the directory's main content, are always joined through a prepared group. "Already joining" is reachable only for entries the directory sends with a full link, since a short link's connecting plan needs a network fetch. A core test pins the store-only contract, including the `/c` case.
 
-### GAP: First-search alert does not mention the server hosting a resolved address
+**REC:** Let the store-only plan recognise joins made without a prepared group (a lookup by the connection's `via_short_link_contact`, mapped as the online plan maps a join request); it would cover `/c` joins, not invited members.
+
+### GAP: The count of results left can include listings the directory never sends
 **Source:** [spec/client/chat-list.md](../spec/client/chat-list.md#11-online-search)
-Resolving a SimpleX name with `PlanResolveMode.unknown` also loads the resolved address's link data from the SMP server that hosts it. The search text itself is not sent there, and the alert names only SimpleX Directory and the name-resolving server.
+The directory's `moreCount` counts the matching listings after the page, including listings without a public link, which it never sends. "Load more · N left" can therefore promise more results than loading brings, and a last page can come back empty.
 
-**REC:** Decide whether the alert copy should also say that the address a name points to is loaded.
-
-### GAP: New chat does not narrow contacts by name while typing
-**Source:** [spec/client/navigation.md](../spec/client/navigation.md#12-new-chat-online-search)
-The chat list resolves a typed SimpleX name locally on each keystroke to narrow the list to the matching chat; New chat does not. A known contact whose display name does not contain the typed name is therefore not in "Your Contacts" and appears as a Names result instead (tapping it opens the existing chat).
-
-**REC:** Reuse the chat list's local name resolution in `ContactsListSearchBar` if this proves confusing.
+**REC:** Count only listings with a public link in the directory's count query.
 
 ---
 

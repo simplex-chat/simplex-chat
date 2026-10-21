@@ -610,9 +610,9 @@ Wrappers in [`Shared/Model/SimpleXAPI.swift`](../Shared/Model/SimpleXAPI.swift) 
 
 | Function | Description | Source |
 |----------|-------------|--------|
-| `apiSearchDirectory(_ text:, cursor:)` | Sends `apiSendServiceRequest` to `DIRECTORY_SERVICE_LINK` with `DIRECTORY_SEARCH_TIMEOUT_SEC` and the search request; returns `parseDirectorySearchResponse(responseData)`, or nil on any error (logged). Blocks for up to the timeout | [L1044](../Shared/Model/SimpleXAPI.swift#L1044) |
-| `apiConnectPlan(connLink:, resolveMode:, linkOwnerSig:, inProgress:, onFailure:)` | Plans a connection; returns `ConnectionPlanResult?`. `notResolvedLocally` (a `.never` lookup that matched nothing) returns nil silently; any other failure is handled by `onFailure` | [L1064](../Shared/Model/SimpleXAPI.swift#L1064) |
-| `ConnectPlanFailure` | `.alert` (default, every existing caller): `apiConnectResponseAlert`; `.log`: debug log only, used by the online search so name resolution and per-entry lookups never raise alerts | [L1060](../Shared/Model/SimpleXAPI.swift#L1060) |
+| `apiSearchDirectory(_ text:, cursor:)` | Sends `apiSendServiceRequest` to `DIRECTORY_SERVICE_LINK` with `DIRECTORY_SEARCH_TIMEOUT_SEC` and the search request; returns `parseDirectorySearchResponse(responseData)` (the entries, the cursor and `moreCount`), or nil on any error (logged). Blocks for up to the timeout | [L1044](../Shared/Model/SimpleXAPI.swift#L1044) |
+| `apiConnectPlan(connLink:, resolveMode:, linkOwnerSig:, inProgress:, onFailure:)` | Plans a connection; returns `ConnectionPlanResult?`. `notResolvedLocally` (a `.never` lookup that matched nothing) returns nil silently; any other failure is handled by `onFailure`. The online search reads nil from a `.never` plan of a directory result as "not one of your chats" | [L1064](../Shared/Model/SimpleXAPI.swift#L1064) |
+| `ConnectPlanFailure` | `.alert` (default, every existing caller): `apiConnectResponseAlert`; `.log`: debug log only, used by the online search so per-entry lookups never raise alerts | [L1060](../Shared/Model/SimpleXAPI.swift#L1060) |
 
 A service response is carried as [`JSONValue`](../SimpleXChat/APITypes.swift#L722) (any JSON), so the framework does not depend on a service's own types; callers decode it with [`decodeJSONValue`](../SimpleXChat/APITypes.swift#L760).
 

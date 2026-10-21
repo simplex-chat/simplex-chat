@@ -85,19 +85,19 @@ Group creation flow:
 
 ### Search (New Chat Sheet)
 
-The search field of the New chat sheet filters "Your contacts" and offers the same online search as the chat list (see [Chat List, Online Search](chat-list.md#online-search-names-and-directory)):
+The search field of the New chat sheet filters "Your contacts" and offers the same online search as the chat list (see [Chat List, Online Search](chat-list.md#online-search-simplex-directory)):
 
 | Element | Behavior |
 |---|---|
-| "Connect to …" row | Below the field for a SimpleX name; hidden once the online search found anything for that name |
-| "Search in Directory" row | Below the field (after "Connect to …") for non-empty text that is not a SimpleX link; searches SimpleX Directory |
-| Keyboard Search key | On Android the keyboard's Search action, on desktop Enter. Searches the directory and, for a SimpleX name, resolves the name online |
-| Names and Directory sections | After the contacts, each with a section header in the style of "Your contacts". Tapping a result connects and closes the sheet, as other New chat actions do. A result for a contact already listed is not repeated. A directory entry for a group or channel the user already has is shown as a contact-style chat row (avatar, name, favourite star, incognito mask) that opens the chat and closes the sheet, never "Join …". When every result of the last page loaded is a chat the user has, the Directory section shows "All results on this page are already in your chats", followed by "Show more" when there are more pages. With the one-hand UI the list is reversed, and each header is still shown above its rows |
+| "Connect to …" row | Below the field for a SimpleX name; stays next to the results |
+| "Search in Directory" row | Below the field (after "Connect to …") for non-empty text that is not a SimpleX link, until results for that text show or load; searches SimpleX Directory |
+| Keyboard Search key | On Android the keyboard's Search action, on desktop Enter. The same directory search; it never looks up names |
+| Results card | One group of rows without a header after the contacts. First your chats among the results that the contacts list doesn't show, as contact-style chat rows (avatar, name, favourite star, incognito mask) that open the chat and close the sheet; then the other results with the contact rows' avatar size, each with "Open" (or "Already joining") and the same long-press / right-click menu as on the chat list. Open opens the prepared chat and closes the sheet, as other New chat actions do. When every result of the last page loaded is a chat the user has, the card shows "All results on this page are already in your chats". The card ends with the load row ("Load more · N left" or "Load more") or the retry row, which is the row farthest from the field in both layouts: at the bottom with the top bar, at the top of the reversed list with the one-hand UI |
 | Contacts empty state | "No filtered contacts" is not shown while the online search runs or shows results |
 | Online search running | Progress indicator in the search bar; closing the sheet cancels the search |
-| Directory search failed | "Search failed, tap to retry" row at the end of the Directory section |
+| Directory search failed | "Search failed, tap to retry" row at the end of the results card |
 
-The first online search asks for consent with the same alert as on the chat list. Results disappear when the text changes or the user switches profile (which also closes the sheet), and when a sheet opened from New chat covers it. Archived contacts keep their own search field without online results; their Search key does nothing.
+While the "Directory search" switch is off, every online search asks with the same "Enable Directory search?" alert as on the chat list. Results disappear when the text changes or the user switches profile (which also closes the sheet), and when a sheet opened from New chat covers it. Archived contacts keep their own search field without online results; their Search key does nothing.
 
 ## Source Files
 

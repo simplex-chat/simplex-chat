@@ -369,6 +369,7 @@ val appPrefs: AppPreferences by lazy { AppPreferences() }
 | `privacyProtectScreen` | `Boolean` | `true` | FLAG_SECURE on Android |
 | `privacyAcceptImages` | `Boolean` | `true` | Auto-accept images |
 | `privacyLinkPreviews` | `Boolean` | `true` | Generate link previews |
+| [`privacyDirectorySearch`](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L128) (`"PrivacyDirectorySearch"`) | `Boolean` | `false` | "Directory search" in Privacy settings; while it is off, every online search asks "Enable Directory search?", and Enable turns it on (see [Chat List, Online Search](client/chat-list.md#11-online-search)) |
 | `privacySanitizeLinks` | `Boolean` | `false` | Remove tracking params from links |
 | `simplexLinkMode` | `SimplexLinkMode` | `DESCRIPTION` | DESCRIPTION / FULL / BROWSER |
 | `privacyShowChatPreviews` | `Boolean` | `true` | Show chat previews in list |
@@ -453,11 +454,7 @@ val appPrefs: AppPreferences by lazy { AppPreferences() }
 
 #### Hints
 
-Preferences listed in [`hintPreferences`](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L279-L297) are restored to their defaults by "Reset all hints" (`resetHintPreferences()` in `views/usersettings/SettingsView.kt`).
-
-| Key | Type | Default | Purpose |
-|---|---|---|---|
-| [`directorySearchAlertShown`](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L196) (`"DirectorySearchAlertShown"`) | `Boolean` | `false` | The user chose "Search and don't show again" in the online search alert; in `hintPreferences` (see [Chat List, Online Search](client/chat-list.md#11-online-search)) |
+Preferences listed in [`hintPreferences`](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L282-L299) are restored to their defaults by "Reset all hints" (`resetHintPreferences()` in `views/usersettings/SettingsView.kt`). The online search's consent is not among them: `privacyDirectorySearch` (Privacy, above) is a setting, so "Reset all hints" leaves it as it is.
 
 #### Remote Access (lines 258-263)
 

@@ -41,7 +41,7 @@
 | PC29 | User Address |
 | PC30 | Member Support Chat |
 | PC31 | Channels (Relays) |
-| PC32 | Online Search (Directory and Names) |
+| PC32 | Online Search (SimpleX Directory) |
 
 ---
 
@@ -57,7 +57,7 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 | `AppLock.kt` | PC22 | Medium | App lock state and authorization lifecycle |
 | `model/ChatModel.kt` | PC1 through PC32 | High | Central state object — every feature reads or writes here |
 | `model/SimpleXAPI.kt` | PC1 through PC32 | High | FFI bridge to Haskell core — all commands and responses |
-| `model/DirectorySearch.kt` | PC32 | High | Directory response parsing and link-type validation of untrusted entries; online result types |
+| `model/DirectorySearch.kt` | PC32 | High | Directory response parsing (entries, lenient `moreCount`) and link-type validation of untrusted entries; result states and rows |
 | `model/CryptoFile.kt` | PC10, PC23 | Medium | Encrypted file read/write helpers |
 | `platform/Core.kt` | PC1 through PC32 | High | Native FFI declarations (`chatMigrateInit`, `chatSendCmd`, etc.) — all API traffic |
 | `platform/AppCommon.kt` | PC1 through PC32 | Medium | Shared app initialization logic |
@@ -93,9 +93,9 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 
 | Source File | Product Concepts Affected | Risk Level | Notes |
 |-------------|--------------------------|------------|-------|
-| `views/chatlist/ChatListView.kt` | PC1, PC28, PC32 | High | Main screen — chat list rendering and search; online search triggers, result parts and the onboarding search |
+| `views/chatlist/ChatListView.kt` | PC1, PC28, PC32 | High | Main screen — chat list rendering and search; online search triggers, result rows and the onboarding search |
 | `views/chatlist/GetStakeBanner.kt` | PC1 | Low | Crowdfunding banner and shared banner card chrome |
-| `views/chatlist/DirectorySearchView.kt` | PC1, PC32 | Medium | Online search model (generation, spinner, de-duplication), result rows, consent alert |
+| `views/chatlist/DirectorySearchView.kt` | PC1, PC32 | Medium | Online search model (generation, spinner, result states, de-duplication), result rows, load row, result menu, Open, consent alert |
 | `views/chatlist/ChatListNavLinkView.kt` | PC1, PC2, PC3 | Medium | Navigation from chat list item to chat |
 | `views/chatlist/ChatPreviewView.kt` | PC1, PC2, PC3, PC11 | Medium | Chat row preview rendering |
 | `views/chatlist/TagListView.kt` | PC28 | Medium | Chat tag filter UI |
@@ -111,7 +111,7 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 
 | Source File | Product Concepts Affected | Risk Level | Notes |
 |-------------|--------------------------|------------|-------|
-| `views/chat/ChatView.kt` | PC2, PC3, PC4, PC5, PC6, PC7, PC8, PC9, PC11 | High | Core conversation UI — most messaging features |
+| `views/chat/ChatView.kt` | PC2, PC3, PC4, PC5, PC6, PC7, PC8, PC9, PC11, PC32 | High | Core conversation UI — most messaging features; the prepared channel's banner count that Open leads to |
 | `views/chat/ComposeView.kt` | PC4, PC6, PC9, PC10, PC11 | High | Message composition — send path for all messages |
 | `views/chat/SendMsgView.kt` | PC4, PC9 | Medium | Send button and voice record toggle |
 | `views/chat/ComposeEmojiPicker.kt` | PC4 | Low | Emoji button expect declaration, emoji insertion |
@@ -194,8 +194,8 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 | Source File | Product Concepts Affected | Risk Level | Notes |
 |-------------|--------------------------|------------|-------|
 | `views/newchat/NewChatView.kt` | PC12, PC29 | High | New connection creation — onramp for all contacts |
-| `views/newchat/NewChatSheet.kt` | PC12, PC32 | Medium | Bottom sheet with connection options, contacts list and online search sections; search bar shared with archived contacts |
-| `views/newchat/ConnectPlan.kt` | PC12, PC15 | Medium | Link parsing and connection plan resolution |
+| `views/newchat/NewChatSheet.kt` | PC12, PC32 | Medium | Bottom sheet with connection options, contacts list and online search results card; search bar shared with archived contacts |
+| `views/newchat/ConnectPlan.kt` | PC12, PC15, PC32 | Medium | Link parsing and connection plan resolution; `planAndConnect`'s `prepareGroup` mode, which the online search's Open uses |
 | `views/newchat/AddGroupView.kt` | PC3, PC14 | Medium | New group creation flow |
 | `views/newchat/AddChannelView.kt` | PC31 | Medium | Public channel creation, channel link card, `RelayStatusIndicator` |
 | `views/newchat/ContactConnectionInfoView.kt` | PC12 | Low | Pending connection details |
@@ -211,7 +211,7 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 |-------------|--------------------------|------------|-------|
 | `views/usersettings/SettingsView.kt` | PC18, PC22, PC23, PC24, PC25, PC29 | Medium | Settings navigation hub |
 | `views/usersettings/Appearance.kt` | PC24 | Low | Theme and appearance customization |
-| `views/usersettings/PrivacySettings.kt` | PC20, PC22 | Medium | Privacy and lock settings |
+| `views/usersettings/PrivacySettings.kt` | PC20, PC22, PC32 | Medium | Privacy and lock settings; the "Directory search" switch |
 | `views/usersettings/UserProfileView.kt` | PC19 | Medium | Profile display name and image editing |
 | `views/usersettings/UserProfilesView.kt` | PC19, PC21 | Medium | Multi-profile management |
 | `views/usersettings/HiddenProfileView.kt` | PC21 | Medium | Hidden profile access |
@@ -286,7 +286,7 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 | `views/helpers/ChooseAttachmentView.kt` | PC10 | Low | Attachment picker |
 | `views/helpers/GetImageView.kt` | PC10, PC19 | Low | Image capture and crop |
 | `views/helpers/TextEditor.kt` | PC4 | Low | Rich text editor helpers |
-| `views/helpers/SearchTextField.kt` | PC1, PC32 | Low | Search bar composable; optional Search key handler (`onSearch`: Android IME action, desktop Enter) |
+| `views/helpers/SearchTextField.kt` | PC1, PC32 | Low | Search bar composable; optional Search key handler (`onSearch`: Android IME action, desktop Enter); no autocorrect or capitalization |
 | `views/helpers/CustomTimePicker.kt` | PC8 | Low | Time picker for timed messages |
 | `views/helpers/DragAndDrop.kt` | PC10 | Low | Drag-and-drop file handling |
 | `views/helpers/ProcessedErrors.kt` | — | Low | Error aggregation |

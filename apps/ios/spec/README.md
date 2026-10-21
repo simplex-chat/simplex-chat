@@ -40,7 +40,7 @@ SimpleXApp (root entry point)
 | [State Management](state.md) | ChatModel, ItemsModel, Chat, ChatInfo, preference storage |
 | [Database & Storage](database.md) | SQLite databases, encryption, file storage, export/import |
 | [Chat View](client/chat-view.md) | Message rendering, chat item types, context menu actions |
-| [Chat List](client/chat-list.md) | Conversation list, filtering, search, swipe actions, online search (SimpleX Directory and names) |
+| [Chat List](client/chat-list.md) | Conversation list, filtering, search, swipe actions, online search (SimpleX Directory) |
 | [Message Composition](client/compose.md) | Compose bar, attachments, reply/edit/forward modes, voice recording |
 | [Navigation](client/navigation.md) | Navigation stack, deep linking, sheet presentation, call overlay, New chat online search |
 | [Push Notifications](services/notifications.md) | NtfManager, NSE, notification modes, token lifecycle |
