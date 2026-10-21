@@ -4,6 +4,8 @@
 module StoreService.Names.Registration
   ( Registration (..),
     RegisterIntent (..),
+    Node,
+    namehash,
     sponsorDomain,
     resolverDomain,
     makeCommitment,
@@ -43,6 +45,9 @@ data Registration = Registration
     rContactLink :: Maybe Text,
     rChannelLink :: Maybe Text
   }
+
+-- | Only built by 'namehash', so it always holds 32 bytes.
+newtype Node = Node ByteString
 
 data RegisterIntent = RegisterIntent
   { riRegistration :: Registration,
@@ -94,22 +99,22 @@ verifyRegisterIntent domain now RegisterIntent {riRegistration = r@Registration 
   signer <- ExceptT $ recoverAddress riSignature $ registerIntentDigest domain r riNonce riDeadline
   unless (signer == rOwner) $ throwError "intent is not signed by the owner"
 
-setTextDigest :: Eip712Domain -> ByteString -> Text -> Text -> Word64 -> Word64 -> ByteString
+setTextDigest :: Eip712Domain -> Node -> Text -> Text -> Word64 -> Word64 -> ByteString
 setTextDigest domain node key value nonce deadline =
   hashTypedData
     domain
     "SetText(bytes32 node,string key,string value,uint256 nonce,uint256 deadline)"
     [bytes32 node, VBytes $ encodeUtf8 key, VBytes $ encodeUtf8 value, VUint $ fromIntegral nonce, VUint $ fromIntegral deadline]
 
-clearRecordsDigest :: Eip712Domain -> ByteString -> Word64 -> Word64 -> ByteString
+clearRecordsDigest :: Eip712Domain -> Node -> Word64 -> Word64 -> ByteString
 clearRecordsDigest domain node nonce deadline =
   hashTypedData
     domain
     "ClearRecords(bytes32 node,uint256 nonce,uint256 deadline)"
     [bytes32 node, VUint $ fromIntegral nonce, VUint $ fromIntegral deadline]
 
-bytes32 :: ByteString -> Eip712Value
-bytes32 = VUint . fromInteger . os2ip
+bytes32 :: Node -> Eip712Value
+bytes32 (Node node) = VUint $ fromInteger $ os2ip node
 
 registrationTuple :: Registration -> ByteString
 registrationTuple r@Registration {rLabel, rOwner, rDuration, rSecret, rResolver} =
@@ -134,9 +139,9 @@ recordCalls Registration {rLabel, rTLD, rContactLink, rChannelLink} =
     setText key link =
       selector "setText(bytes32,string,string)"
         <> abiTuple [Static node, Dynamic $ abiBytes key, Dynamic $ abiBytes $ encodeUtf8 link]
-    node = namehash rTLD rLabel
+    Node node = namehash rTLD rLabel
 
-namehash :: SimplexTLD -> Text -> ByteString
-namehash tld label = keccak256 $ tldNode <> keccak256 (encodeUtf8 label)
+namehash :: SimplexTLD -> Text -> Node
+namehash tld label = Node $ keccak256 $ tldNode <> keccak256 (encodeUtf8 label)
   where
     tldNode = keccak256 $ B.replicate 32 0 <> keccak256 (B.drop 1 $ strEncode tld)
