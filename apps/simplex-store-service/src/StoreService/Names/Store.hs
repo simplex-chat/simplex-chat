@@ -610,8 +610,9 @@ activeRegistrations db =
   DB.query db (selectRegistrations <> " WHERE r.phase IN (?,?,?,?) ORDER BY r.created_at, r.registration_id") (PQueued, PCommitting, PCommitted, PRegistering)
     >>= decodeAll toRegistration
 
+-- | Unpaid orders whose invoice expired before the cutoff, without a recorded payment.
 unpaidCleanupCandidates :: DB.Connection -> UTCTime -> IO [(RegistrationId, InvoiceId)]
-unpaidCleanupCandidates db createdBefore =
+unpaidCleanupCandidates db expiredBefore =
   map (\(rid, invId) -> (RegistrationId rid, InvoiceId invId))
     <$> DB.query
       db
@@ -619,10 +620,12 @@ unpaidCleanupCandidates db createdBefore =
         SELECT r.registration_id, ni.invoice_id
         FROM sx_badge_service_name_registrations r
         JOIN sx_badge_service_name_invoices ni ON ni.registration_id = r.registration_id
-        WHERE r.phase = ? AND r.created_at < ?
-        ORDER BY r.created_at, r.registration_id
+        JOIN sx_badge_service_invoices i ON i.invoice_id = ni.invoice_id
+        WHERE r.phase = ? AND i.expires_at < ?
+          AND NOT EXISTS (SELECT 1 FROM sx_badge_service_payments p WHERE p.invoice_id = ni.invoice_id)
+        ORDER BY i.expires_at, r.registration_id
       |]
-      (PUnpaid, truncateToSecond createdBefore)
+      (PUnpaid, truncateToSecond expiredBefore)
 
 -- | Deletes an unpaid registration and its invoice, unless a payment was recorded for it.
 deleteUnpaidRegistration :: DB.Connection -> RegistrationId -> IO Bool

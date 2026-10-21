@@ -66,7 +66,7 @@ namesStoreTests = describe "StoreService names: store" $ do
     it "orders registrations made in the same second by their id" testSameSecondOrder
     it "tells a label being registered here" testLabelRegistering
     it "lists the registrations a worker moves on" testActive
-    it "deletes an unpaid order past the cutoff with its invoice, sparing one with a payment" testUnpaidCleanup
+    it "lists unpaid orders whose invoice expired before the cutoff without a payment, and deletes one with its invoice" testUnpaidCleanup
     it "lists code orders failed before the cutoff that still hold their code" testFailedCodeOrders
   describe "prepaid codes" $ do
     it "issues one code per hash" testIssueCode
@@ -578,17 +578,16 @@ testUnpaidCleanup = withServiceStore $ \st -> do
   placePaid st "old" ownerA (order "alicebakery" 1) (at 60) `shouldReturn` Right ()
   placePaid st "funded" ownerA (order "bobsbakery" 2) (at 60) `shouldReturn` Right ()
   placePaid st "queued" ownerA (order "carolsbakery" 3) (at 60) `shouldReturn` Right ()
-  withTransaction st $ \db -> do
-    insertInvoiceRow db "inv-new" (at 60) "open"
-    createPaidRegistration db (newReg "new" ownerA (order "davesbakery" 4)) (paidOrder "inv-new") (at 10) `shouldReturn` Right ()
+  placePaid st "open" ownerA (order "davesbakery" 4) (at 120) `shouldReturn` Right ()
+  withTransaction st $ \db ->
     DB.execute
       db
       "INSERT INTO sx_badge_service_payments (payment_id, invoice_id, provider, status, created_at, updated_at) VALUES (?,?,?,?,?,?)"
       ("inv-funded" :: Text, "inv-funded" :: Text, "crypto" :: Text, "pending" :: Text, t0, t0)
   r <- reg st "queued"
   void $ write st r {nrPhase = PQueued}
-  candidates <- withTransaction st $ \db -> unpaidCleanupCandidates db (at 5)
-  sort (map (\(RegistrationId rid, InvoiceId invId) -> (rid, invId)) candidates) `shouldBe` [("funded", "inv-funded"), ("old", "inv-old")]
+  candidates <- withTransaction st $ \db -> unpaidCleanupCandidates db (at 61)
+  map (\(RegistrationId rid, InvoiceId invId) -> (rid, invId)) candidates `shouldBe` [("old", "inv-old")]
   withTransaction st (\db -> mapM (deleteUnpaidRegistration db . RegistrationId) ["old", "funded", "queued"]) `shouldReturn` [True, False, False]
   withTransaction st (\db -> getRegistration db (RegistrationId "old")) `shouldReturn` Nothing
   invoiceCount st "inv-old" `shouldReturn` 0
