@@ -15,19 +15,19 @@
         <target state="translated">!1 种彩色!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="# %@" xml:space="preserve">
+      <trans-unit id="# %@" xml:space="preserve" approved="no">
         <source># %@</source>
-        <target># %@</target>
+        <target state="translated"># %@</target>
         <note>copied message info title, # &lt;title&gt;</note>
       </trans-unit>
-      <trans-unit id="## History" xml:space="preserve">
+      <trans-unit id="## History" xml:space="preserve" approved="no">
         <source>## History</source>
-        <target>## 历史</target>
+        <target state="translated">## 历史</target>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="## In reply to" xml:space="preserve">
+      <trans-unit id="## In reply to" xml:space="preserve" approved="no">
         <source>## In reply to</source>
-        <target>## 回复</target>
+        <target state="translated">## 回复</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="#secret#" xml:space="preserve" approved="no">
@@ -154,9 +154,9 @@
         <target state="translated">%@, %@ 和 %lld 成员</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@, %@ and %lld other members connected" xml:space="preserve">
+      <trans-unit id="%@, %@ and %lld other members connected" xml:space="preserve" approved="no">
         <source>%@, %@ and %lld other members connected</source>
-        <target>%@, %@ 和 %lld 个成员</target>
+        <target state="translated">%@, %@ 和 %lld 个成员</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@/month" xml:space="preserve">
@@ -544,11 +544,11 @@ channel relay bar</note>
 - 更快并且更稳固。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="- more stable message delivery.&#10;- a bit better groups.&#10;- and more!" xml:space="preserve">
+      <trans-unit id="- more stable message delivery.&#10;- a bit better groups.&#10;- and more!" xml:space="preserve" approved="no">
         <source>- more stable message delivery.
 - a bit better groups.
 - and more!</source>
-        <target>- 更稳定的传输！
+        <target state="translated">- 更稳定的传输！
 - 更好的社群！
 - 以及更多！</target>
         <note>No comment provided by engineer.</note>
