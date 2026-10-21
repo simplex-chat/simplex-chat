@@ -19,8 +19,10 @@ import StoreService.Config (BTCPayConfig (..), ListenerConfig (..), ServiceConfi
 import StoreService.Poller (ReadHints, queueReadHint)
 import StoreService.Providers (OrderDraft (..), Provider (..), ProviderError (..), ProviderInvoice (..), WebhookError (..))
 import StoreService.Store.Invoices (CreateError (..), InvoicePayment (..), InvoiceRow (..), NewInvoice (..), cancelOpenInvoice, codeHashExists, createInvoiceRows, cryptoCurrencyText, getInvoice, getInvoiceByProviderRef, invoiceStatusText, newInvoiceId, paymentHolds, readCatalogRows, textToInvoiceStatus, truncateToSecond)
+import StoreService.Names.Env (NamesEnv)
 import StoreService.Waiters (Seen, Waiters, awaitStatus, publish)
 import StoreService.Web.Http
+import StoreService.Web.Names (namesApp, namesRoutes)
 import Control.Concurrent.STM
 import qualified Control.Exception as E
 import StoreService.Log (logError, logInfo, logWarn)
@@ -60,14 +62,16 @@ data WebEnv = WebEnv
     weHints :: ReadHints,
     weHttp :: HttpEnv,
     -- | @Nothing@ when no Stripe key is configured, and the pristine @static_dir@ shell is served instead.
-    weShell :: Maybe LB.ByteString
+    weShell :: Maybe LB.ByteString,
+    -- | @Nothing@ when the ini has no @[names]@ section.
+    weNames :: Maybe NamesEnv
   }
 
-newWebEnv :: DBStore -> ServiceConfig -> Waiters -> ReadHints -> [Provider] -> IO WebEnv
-newWebEnv weStore weConfig weWaiters weHints weProviders = do
+newWebEnv :: DBStore -> ServiceConfig -> Waiters -> ReadHints -> [Provider] -> Maybe NamesEnv -> IO WebEnv
+newWebEnv weStore weConfig weWaiters weHints weProviders weNames = do
   weHttp <- newHttpEnv (listener weConfig)
   weShell <- prepareShell (listener weConfig) (stripe weConfig)
-  pure WebEnv {weStore, weConfig, weWaiters, weProviders, weHoldMicros = holdMicros, weHints, weHttp, weShell}
+  pure WebEnv {weStore, weConfig, weWaiters, weProviders, weHoldMicros = holdMicros, weHints, weHttp, weShell, weNames}
 
 listenerConfig :: WebEnv -> ListenerConfig
 listenerConfig WebEnv {weConfig} = listener weConfig
@@ -98,9 +102,10 @@ webApp env@WebEnv {weHttp} req respond = case pathInfo req of
   ["api", "invoice", iid, "cancel"] -> only "POST" req respond $ limited weHttp createLimit req respond $ cancelInvoiceHandler env (InvoiceId iid) respond
   ["webhooks", "btcpay"] -> only "POST" req respond $ webhookHandler env PPCrypto "POST /webhooks/btcpay" req respond
   ["webhooks", "stripe"] -> only "POST" req respond $ webhookHandler env PPStripe "POST /webhooks/stripe" req respond
-  _ -> respond notFound
+  _ -> fromMaybe (respond notFound) names
   where
     serving = lServeWebapp (listenerConfig env)
+    names = weNames env >>= \n -> namesApp weHttp (namesRoutes n) req respond
 
 -- | A @".."@ check would miss separators WAI has already decoded, an absolute path, and a symlink out of the tree.
 serveStatic :: WebEnv -> [Text] -> Respond -> IO ResponseReceived

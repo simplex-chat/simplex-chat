@@ -1040,7 +1040,7 @@ withListener providers rethrow hold st cfg action = do
   let runner = if rethrow then Warp.testWithApplicationSettings else Warp.withApplicationSettings
   waiters <- newWaiters
   hints <- newReadHints
-  built <- newWebEnv st cfg waiters hints providers
+  built <- newWebEnv st cfg waiters hints providers Nothing
   let env = built {weHoldMicros = hold}
   mgr <- newManager defaultManagerSettings
   runner (webSettings (listener cfg)) (pure (webApp env)) $ \prt ->

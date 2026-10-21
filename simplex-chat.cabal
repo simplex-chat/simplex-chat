@@ -442,6 +442,11 @@ executable simplex-store-service
       StoreService.Group
       StoreService.Group.Command
       StoreService.Log
+      StoreService.Names.Chain
+      StoreService.Names.Env
+      StoreService.Names.Phases
+      StoreService.Names.Registration
+      StoreService.Names.Turns
       StoreService.Options
       StoreService.Orders
       StoreService.Poller
@@ -454,6 +459,7 @@ executable simplex-store-service
       StoreService.Store.Migrate
       StoreService.Waiters
       StoreService.Web.Http
+      StoreService.Web.Names
       StoreService.Web.Server
       Paths_simplex_chat
   ghc-options: -O2 -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-missing-kind-signatures -Wno-missing-deriving-strategies -Wno-monomorphism-restriction -Wno-prepositive-qualified-module -Wno-unused-packages -Wno-implicit-prelude -Wno-missing-safe-haskell-mode -Wno-missing-export-lists -Wno-partial-fields -Wcompat -Werror=incomplete-record-updates -Werror=incomplete-patterns -Werror=missing-methods -Werror=incomplete-uni-patterns -Werror=tabs -Wredundant-constraints -Wincomplete-record-updates -Wunused-type-patterns -Werror=name-shadowing -threaded -rtsopts
@@ -739,6 +745,7 @@ test-suite simplex-chat-test
       Bots.StoreService.GroupIntegrationTests
       Bots.StoreService.GroupTests
       Bots.StoreService.NameRegistrationTests
+      Bots.StoreService.NamesWiringTests
       Bots.StoreService.StripeTests
       Bots.StoreService.WaitersTests
       Bots.StoreService.WebTests
@@ -761,7 +768,10 @@ test-suite simplex-chat-test
       StoreService.Group.Command
       StoreService.Log
       StoreService.Names.Chain
+      StoreService.Names.Env
+      StoreService.Names.Phases
       StoreService.Names.Registration
+      StoreService.Names.Turns
       StoreService.Options
       StoreService.Orders
       StoreService.Poller
@@ -774,6 +784,7 @@ test-suite simplex-chat-test
       StoreService.Store.Migrate
       StoreService.Waiters
       StoreService.Web.Http
+      StoreService.Web.Names
       StoreService.Web.Server
       Paths_simplex_chat
   if flag(client_postgres)
