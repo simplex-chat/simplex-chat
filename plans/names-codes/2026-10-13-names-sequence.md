@@ -3,14 +3,15 @@
 This document shows every flow of the names store as a sequence of calls. Its purpose is to check each step and find what is missing.
 
 - The spec is [`2026-10-09-name-codes.md`](2026-10-09-name-codes.md), and the plan is [`2026-10-09-names-web-store-plan.md`](2026-10-09-names-web-store-plan.md).
-- The words used here (owner code, commitment, intent, sponsor, the lag and others) are defined in the spec, under [Words used here](2026-10-09-name-codes.md#words-used-here).
+- The words used here (owner code, commitment, intent, sponsor, RPC node, resolver contract and others) are defined in the spec, under [Words used here](2026-10-09-name-codes.md#words-used-here).
+- The API contract [`2026-10-21-store-api.md`](2026-10-21-store-api.md) is authoritative for every request and answer shown here.
 
 ## The whole flow at a glance
 
 Three parts talk to each other:
 - the **webapp** in the browser;
 - the **service** (StoreService);
-- the **chain host**, where the resolver reads names from the Ethereum node (reth, with nimbus as its consensus client).
+- the **RPC node**: the Ethereum JSON-RPC endpoint, a reth node (with nimbus as its consensus client) or a hosted provider such as Alchemy. The service reads names and sends transactions through it directly.
 
 The payment provider only takes the money. Sections 1–13 below show every step in detail. This diagram is the happy path for one paid name.
 
@@ -20,21 +21,17 @@ sequenceDiagram
   participant W as Webapp
   participant S as Service
   participant P as BTCPay or Stripe
-  box Chain host
-    participant R as Resolver
-    participant E as Ethereum node<br/>reth + nimbus
-  end
+  participant E as RPC node<br/>reth or Alchemy
 
   Note over W,E: Search
   W->>S: GET /api/name/:hash
-  S->>R: GET /v2/resolve/[hash].simplex
-  R->>E: eth_call (registry, resolver)
-  R-->>S: available
-  S-->>W: available, price
+  S->>E: eth_call: nameExpires(labelHash), reservedNames(labelHash), rentPriceUSD
+  E-->>S: available, price
+  S-->>W: available, price, termStart
 
   Note over W,E: Order
-  W->>W: owner code → wallet, makeCommitment
-  W->>S: POST /api/invoice (hash, owner, commitment)
+  W->>W: links, owner code → wallet, duration, makeCommitment
+  W->>S: POST /api/invoice (hash, duration, owner, commitment)
   S->>P: create invoice
   S-->>W: invoice to pay
 
@@ -78,9 +75,8 @@ Participants, the same in every diagram:
 - **Webapp**: the names webapp in the browser (`wallet.ts`, `names.ts`, the library's `api.ts` and `store.ts`).
 - **Service**: StoreService. This is its web API, its registration worker with the one transaction sender, and its database.
 - **BTCPay or Stripe**: the payment provider.
-- **Resolver**: `snrc-resolve.py` on the chain host. It reads names by hash from the Ethereum node.
-- **Ethereum node**: reth (with nimbus) and the PR #35 contracts (`SimplexController`, `SimplexSponsor`, `SimplexResolver`, the base registrar).
-- **SimpleX app**: the app. It redeems names, and it opens orders for its own wallet.
+- **RPC node**: reth (with nimbus) or a hosted provider such as Alchemy, and the PR #35 contracts behind it (`SimplexController`, `SimplexSponsor`, `SimplexResolver`, the base registrar, the registry). The service reads every name and sends every transaction through it. The SMP relays and the app read the chain from their own nodes too; there is no resolver service (owner, 2026-10-21).
+- **SimpleX app**: the app. It redeems names. The web flow opened from the app is dropped (owner, 2026-10-21): the app will buy names itself (#7530 §13.6).
 
 Each section shows the calls first. The bullets under it hold the exact rules.
 
@@ -96,11 +92,10 @@ Each section shows the calls first. The bullets under it hold the exact rules.
 7. A prepaid code
 8. Taken: another name, or a prepaid code
 9. Failed, retried, lapsed
-10. Restore with the owner code
-11. Links: preview at checkout, edit later
+10. A name code on Check your code
+11. Links: preview before the order, edit later
 12. Redeem in the app
-13. Opened from the app
-14. Gaps found
+13. Gaps found
 
 ## 1. Search
 
@@ -111,67 +106,64 @@ sequenceDiagram
   autonumber
   participant W as Webapp
   participant S as Service
-  participant R as Resolver
-  participant E as Ethereum node
-  W->>W: lower-case, validLabel, keccak256 → labelHash
+  participant E as RPC node
+  W->>W: lower-case, validateLabel, keccak256 → labelHash
   W->>S: GET /api/name/:labelHash?length=n
-  S->>R: GET /v2/resolve/[labelHash].simplex
-  R->>E: eth_call: registry, registrar, controller
-  R-->>S: available, registered or reserved
+  S->>E: eth_call: registrar nameExpires(labelHash), GRACE_PERIOD, controller reservedNames(labelHash)
+  E-->>S: available, registered or reserved
   alt available
-    S->>S: namePrice(labelHash, n)
-    S-->>W: available (price, sponsor, chainId)
+    S->>E: eth_call: controller rentPriceUSD("a" × n, years × 365 days)
+    S-->>W: available (price, years, termStart, resolver, sponsor, chainId)
   else registered
-    S->>S: linkProfile(link) for each link
+    S->>E: registry owner(node), resolver(node)
     S->>E: nonces(owner), text(node, contact), text(node, channel)
-    S-->>W: registered (cards, owner, records)
+    S->>S: chatProfile(link) for each link
+    S-->>W: registered (chats, owner, records)
   else reserved
     S-->>W: reserved
   end
 ```
 
-- **The page's check:** the page folds the name to lower case first. Then `validateLabel` in `names.ts` checks it, mirroring `validLabel`.
+- **The page's check:** the page folds the name to lower case first. Then `validateLabel` in `names.ts` checks it, mirroring simplexmq's `nameLabelP`, which the service reaches by parsing the label as `SimplexDomain`.
 - **Checks first:** the service checks the search rate limit, then the length. The length must be 6–63, else the answer is `invalid_name`.
-- **The price:** `namePrice` is `Catalog.namePrice`.
-- **Hash formats:**
-  - `:labelHash` is `0x` + 64 lowercase hex.
-  - The resolver path takes 64 lowercase hex without `0x`.
-- **The lag:** the resolver may say available while our own registration (`registrationByHash(labelHash)`) is `registering`, or `registered` within the last hour.
+- **The price:** the chain's, `rentPriceUSD(…).base / 10^16` in cents for the paid `years`. The placeholder label of the same length works because the oracle prices by length only, and keeps the label from the RPC node. Launch list: $100 for 8+ letters, $200 for 7, $400 for 6, for 2 years.
+- **Hash formats:** `:labelHash` is `0x` + 64 lowercase hex.
+- **The status:** `registered` while `nameExpires + GRACE_PERIOD` is not past the latest block; else `reserved` when `reservedNames(labelHash)` is set; else `available`.
+- **Being registered here:** the chain still says available while our own registration (`registrationByHash(labelHash)`) is `registering`, its register sent but not mined.
   - Then the answer is `registered{entities: [], tld}`, with no owner.
-  - The page then takes the nonce, chain id and resolver from the registration view.
+  - The worker sets `registered` only `confirmations` blocks after the receipt, so from then on the chain reads show the name.
 - **The answers:**
-  - `available{price, currency, years, resolver, sponsor, chainId, tld}`;
-  - `registered{entities, records, owner, resolver, recordsNonce, chainId, tld}`.
+  - `available{price, currency, years, termStart, resolver, sponsor, chainId, tld}`;
+  - `registered{entities, records, owner, resolver, recordsNonce, expiresAt, chainId, tld}`.
 - **Owner and records:**
-  - `owner` and `resolver` come from the resolver's answer.
-  - `records` and `recordsNonce` are read from the chain, on the default resolver, with `node = keccak256(namehash(tld) ‖ labelHash)`.
-  - They are read only when the answer names the default resolver. Otherwise they are null.
-- **Link cards:** for each `simplexContact` and `simplexChannel` link, `linkProfile` uses `APIConnectPlan` ‡. It has its own rate limit, a cache and a 3 s timeout.
-- **Failures:** any resolver error answers `provider_unavailable`. A failed chain read answers the same. The resolver errors are:
-  - `upstreamError`, `tldNotConfigured`, `noPriceOracle`, `unknown`;
-  - no answer;
-  - `labelNotRecorded`, which cannot happen on PR #35.
+  - `node = keccak256(namehash(tld) ‖ labelHash)`, and the registry is `baseRegistrar.ens()`.
+  - `owner` and `resolver` are the registry's `owner(node)` and `resolver(node)`.
+  - `records` and `recordsNonce` are read on the default resolver contract.
+  - They are read only when `resolver(node)` is the default resolver contract. Otherwise they are null.
+- **The chats:** for each short link of its key's kind in the `simplex.contact` and `simplex.channel` records, split on ";", `chatProfile` uses `APIConnectPlan` ‡. Each chat has its `kind` (contact, business, bot or channel), display name, full name, picture if any, a channel's subscriber count, the link and its deep link. A fetch has a 3 s timeout, at most 4 run at once, and a 10-minute cache; a failed one gives the chat with no profile.
+- **Failures:** a failed chain read answers `provider_unavailable`: the RPC node does not answer, or answers an error.
 
 ## 2. Checkout, owner code and order
 
-The page makes the owner code, the owner wallet and the commitment in the browser, then places the order. The order carries the name's hash, the commitment and the sealed copy, not the name itself.
+The buyer chooses the links, saves the name code, then checks the order and pays. The page makes the owner code, the owner wallet and the commitment in the browser. The order carries the name's hash, the duration, the commitment and the sealed copy, not the name itself.
 
 ```mermaid
 sequenceDiagram
   autonumber
   participant W as Webapp
   participant S as Service
+  opt Links step
+    W->>S: POST /api/link/preview (section 11)
+    S-->>W: the link's chat
+  end
   W->>W: newOwnerCode() → owner code
+  W->>W: show the owner code, wait for "I have saved my name code"
   W->>W: walletFromCode(code) → key, owner address
   W->>W: secret = HMAC(seed, name)
-  opt links chosen
-    W->>S: POST /api/link/preview (section 11)
-    S-->>W: link card
-  end
+  W->>W: duration = years × 365 days + max(0, termStart − now)
   W->>W: commitment = makeCommitment(registration)
   W->>W: sealed = encrypt(name, links) with the seed
   W->>W: saveOrder(code, name, links)
-  W->>W: show the owner code, wait for "I have saved my code"
 ```
 
 Then the order itself:
@@ -181,13 +173,14 @@ sequenceDiagram
   autonumber
   participant W as Webapp
   participant S as Service
-  participant R as Resolver
+  participant E as RPC node
   participant P as BTCPay or Stripe
-  W->>S: POST /api/invoice (labelHash, length, price, method, owner, commitment, sealed)
-  S->>S: validate, check this commitment's other orders
-  S->>R: is the name still free?
-  R-->>S: available
-  S->>S: namePrice = price?
+  W->>W: sign "simplex.domains order …" with the owner key
+  W->>S: POST /api/invoice (labelHash, length, duration, price, method, owner, commitment, sealed, timestamp, signature)
+  S->>S: validate, check the signature, existing orders for the name, the duration (one at a time per label hash)
+  S->>E: is the name still free? nameExpires, reservedNames; rentPriceUSD
+  E-->>S: available, price
+  S->>S: chain price = price?
   S->>P: create invoice
   P-->>S: invoice
   S->>S: save registration (unpaid) and invoice
@@ -195,29 +188,30 @@ sequenceDiagram
   W->>W: saveOrder(orderId = invoiceId, registrationId)
 ```
 
-- **Before checkout:** if this browser has an open order whose card payment awaits confirmation, Continue is off (N3e).
+- **Before paying:** if this browser has an open order whose card payment awaits confirmation, Pay is off (N3e). Check your order, the page before payment, shows the links read-only, the term, "Free until 1 January 2027" and the end date (`max(termStart, now) + years × 365 days`: 31 December 2028 for 2 years ordered before 2027), and the dApp line for Ethereum buyers (ep, 2026-10-21 08:43, recorded in the owner decisions).
 - **Page-side functions:**
   - `newOwnerCode` works as `randomNameCode` †. It takes 128 bits of entropy. The code is `SN-` + the entropy + 22 bits of SHA-256.
-  - `walletFromCode` works as the test mock †. It makes a BIP-39 seed, the key at `m/44'/60'/0'/0/0`, and its address.
+  - `walletFromCode` works as the test mock †. It makes a BIP-39 seed from the entropy, the key at `m/44'/60'/0'/0/0`, and its address, as the app derives them. The BIP-39 phrase is an internal step and is never shown.
 - **Registration fields:**
   - `secret = HMAC-SHA256(seed, "simplex.domains commitment " + label)`.
-  - The links of one key are joined with ";". Each value is within 4096 bytes.
-  - `registration = {label, owner, duration (2 years × 365 days), secret, resolver, data = recordCalls(registration) †}`.
+  - One short link per key, within 4096 bytes.
+  - `registration = {label, owner, duration (years × 365 days + max(0, termStart − now)), secret, resolver, data = recordCalls(registration) †}`.
   - `makeCommitment` is †.
 - **Sealing:** `sealed = AES-256-GCM(HMAC-SHA256(seed, "simplex.domains sealed"), {label, contact, channel})`.
 - **The service's checks, in order:**
   1. the create rate limit;
-  2. the owner address;
-  3. the length (`invalid_name`);
-  4. `sealed` within its bound (`bad_request`);
-  5. this commitment's other orders (below);
-  6. the resolver: registered or reserved is `name_taken`. A resolver failure is `name_check_unavailable`, and nothing is created;
-  7. the lag: our own registration `registering`, or `registered` within an hour, is `name_taken`;
-  8. `namePrice` must equal the price, else `catalog_changed{price}`.
-- **This commitment's other orders:**
-  - An open invoice for the same order is answered with that invoice.
-  - A different order gets `400 {"error": "bad_request", "invoiceId"}`, and the page opens that order.
-  - A registration past `unpaid` is answered with its order. For a code registration, `invoiceId` is null, and the page opens `?registration=<id>`.
+  2. the owner address, the length (`invalid_name`), `sealed` present and within its bound (`bad_request`);
+  3. the order signature, EIP-191 over `simplex.domains order <labelHash> <length> <duration> <commitment> <sha256(sealed)> <timestamp>`, recovering the owner (`bad_request`);
+  4. existing orders for the name (below);
+  5. the timestamp within 600 s, and the duration within an hour of `years × 365 days + max(0, termStart − now)`, else `bad_request`;
+  6. the chain: registered or reserved is `name_taken`. A failed chain read is `name_check_unavailable`, and nothing is created;
+  7. being registered here: our own registration `registering` is `name_taken`;
+  8. the chain's price must equal the price, else `catalog_changed{price}`.
+- **Existing orders for the name** (a live order of the same commitment, or of the same owner and label hash; manager's ruling, 2026-10-21):
+  - An exact resend, every field equal to the stored order including `sealed`, the method and the price, is answered with that order, in any phase and however late.
+  - A live order of the same wallet and name whose invoice has passed its expiry time is closed inside the new order's transaction (invoice `expired`, `live` cleared, the provider's cancel after, best effort); the new order then goes on.
+  - Anything else gets `409 order_exists`, which names nothing. The page then runs the signed `find` (section 10) and opens its order. A commitment is public on chain once committed, so it alone proves nothing.
+  - Orders, `/name`, `/code` and `/retry` run one at a time per label hash; unique constraints back it.
 - **Storage:** the service inserts `name_registrations` (phase `unpaid`), `name_invoices` and `invoices` ‡.
 
 ## 3. Payment and settlement
@@ -245,10 +239,10 @@ sequenceDiagram
 - **Name invoices in today's code:** `getInvoiceByProviderRef` ‡, the poller's scans, its expiry update and `GET /api/invoice/:id` all gain a name side.
 - **Settlement** is one database transaction:
   - the invoice becomes paid;
-  - the registration goes `unpaid` → `queued`.
+  - the registration goes `unpaid` → `queued`, only while it is still live. A payment for an order that was closed (cancelled, expired, or closed by a newer order of the same wallet and name) is a late payment.
   - Both changes are published to the long poll after the commit.
 - **Late payment:** an invoice paid after it expired or was canceled leaves the registration `unpaid`. The operator is alerted to refund it (gap 26).
-- **The long poll** carries `wait` and `seenPhase`, so it also wakes on phase changes.
+- **The long poll** carries `wait` and `seenVersion`, so it also wakes on every change of the registration (its `version`).
 
 **Get a new invoice.** The old invoice may still be open when the card form does not load, or the payment details are unavailable. The page then cancels it before ordering again:
 
@@ -259,7 +253,7 @@ sequenceDiagram
   participant S as Service
   W->>S: POST /api/invoice/:id/cancel
   alt cancelled, nothing received
-    W->>S: POST /api/invoice, same commitment (section 2)
+    W->>S: POST /api/invoice, a new commitment with the current duration (section 2)
   else 409 funded, 503, or still open
     W->>W: keep the old order
   else 409 not_open, paid, or holding a payment
@@ -276,6 +270,7 @@ sequenceDiagram
   - paid, with the registration still `unpaid` (paid after it closed): order again;
   - otherwise holding a payment: keep the order;
   - expired with nothing received: order again.
+- **The new order** keeps the wallet and the links, and builds a new commitment, since the free days until 1 January 2027 shrink each day. The service finds the old order by owner and label hash.
 
 ## 4. Commit
 
@@ -286,7 +281,7 @@ sequenceDiagram
   autonumber
   participant W as Webapp
   participant S as Service
-  participant E as Ethereum node
+  participant E as RPC node
   S->>S: next queued registration
   S->>E: eth_estimateGas: SimplexController.commit(commitment)
   S->>S: sign, save the tx hash and raw tx
@@ -322,7 +317,7 @@ sequenceDiagram
   autonumber
   participant W as Webapp
   participant S as Service
-  participant E as Ethereum node
+  participant E as RPC node
   W->>W: wait until revealAfter
   W->>W: sign RegisterName(label, owner, duration, resolver, data, nonce, deadline)
   W->>S: POST /api/registration/:id/reveal (label, secret, records, nonce, deadline, signature)
@@ -341,24 +336,24 @@ sequenceDiagram
   - `deadline` is `revealBefore`.
   - The digest uses `sponsorDomain(chainId, sponsor)` †. The page signs it with `@noble/secp256k1`.
 - **The service's checks:**
-  - **Rate limit:** the read limit. Each `bad_request` counts against it.
+  - **Rate limit:** the read limit. Every request counts, whatever its outcome.
   - **Phase:** the registration must be `committed`, with `label` null.
     - Once `label` is set, an identical repeat answers 200 in any phase.
     - A different body is `bad_request`.
   - **The name:**
-    - `validLabel` (#7390, ported and tightened to simplexmq's hyphen rule);
+    - `validLabel` (simplexmq's `SimplexDomain` parser, lower case, 6–63);
     - `keccak256(label)` = `labelHash`, and the length matches;
-    - the price is the registration's `price_id` row, or the prepaid code covers the length.
-  - **Links and resolver:**
-    - each link is a SimpleX link of its kind;
-    - each record is within 4096 bytes;
-    - the resolver is the default one.
-  - **The commitment:** `data = recordCalls(registration)` †, and `makeCommitment(registration)` † must equal the stored commitment.
+    - the price is the registration's `price`, fixed at the order, or the prepaid code covers the length.
+  - **Links and resolver contract:** at most one link per key; the resolver contract is the default one. The links' kind and bound are checked last (below).
+  - **The commitment:** `data = recordCalls(registration)` †, the registration's stored `duration`, and `makeCommitment(registration)` † must equal the stored commitment. The intent signs that duration (PR #36).
   - **The intent:**
     - `verifyRegisterIntent` † checks the 32-byte secret, the deadline, and that the signer is the owner;
     - the service then checks for low s itself, because the sponsor's `SignatureChecker` rejects high s;
     - the nonce must equal `SimplexSponsor.nonces(owner)`.
-  - **A failed chain read** answers `provider_unavailable`. It does not count as a `bad_request`.
+  - **The links, last:** each is a SimpleX short link of its kind within 4096 bytes, else `invalid_link`.
+  - **A failed chain read** answers `provider_unavailable`.
+  - **Links refused** (`invalid_link`) cannot be revealed again, since they are in the commitment. The service records the refusal, the one write a failed reveal makes, and only after the commitment and intent checks passed, so the refused links are the committed ones and the owner signed them. Recording it bumps `version` and wakes the polls. The page offers `/name` with the same name and corrected links (section 8), allowed only after such a refusal.
+  - **Serialization:** the reveal runs one at a time per label hash with orders, `/name` and `/retry`, and writes by compare-and-set on the `version` it read. A write that loses the race, here or on any endpoint, changes nothing and answers `409 registration_changed` with the current view.
 
 ## 6. Register and confirm
 
@@ -369,7 +364,7 @@ sequenceDiagram
   autonumber
   participant W as Webapp
   participant S as Service
-  participant E as Ethereum node
+  participant E as RPC node
   S->>S: revealed and now ≥ revealAfter, verifyRegisterIntent again
   S->>E: dry run: SimplexSponsor.registerWithCredit(registration, nonce, deadline, signature)
   E-->>S: ok
@@ -390,7 +385,7 @@ When the dry run or the mined transaction reverts:
 sequenceDiagram
   autonumber
   participant S as Service
-  participant E as Ethereum node
+  participant E as RPC node
   S->>E: ownerOf(labelHash)
   alt the owner already holds it
     S->>S: phase registered (a resumed or duplicate send)
@@ -421,55 +416,55 @@ sequenceDiagram
 
 ## 7. A prepaid code
 
-The buyer pays with a prepaid code instead of money. The page checks the code first, then registers without an invoice.
+The buyer pays with a prepaid code instead of money. Codes are entered only on Check your code, in the top bar (owner, 2026-10-21). The page checks the code there, keeps it, and registers without an invoice from Check your order.
 
 ```mermaid
 sequenceDiagram
   autonumber
   participant W as Webapp
   participant S as Service
-  W->>W: parseNameCode(text) → prepaid code
+  W->>W: Check your code: parseNameCode(text) → prepaid code
   W->>S: POST /api/code/check (code)
   S-->>W: minLength, years, state
-  W->>W: covered names show $0 and the code's years
-  W->>W: checkout as section 2, duration = years × 365 days
+  W->>W: keep the code in Your names; covered names show $0 and the code's years
+  W->>W: Links, name code and commitment as section 2, duration = code years × 365 days + max(0, termStart − now)
 ```
 
-Then the registration:
+Then the registration, from Check your order's "Register with your code":
 
 ```mermaid
 sequenceDiagram
   autonumber
   participant W as Webapp
   participant S as Service
-  participant R as Resolver
-  W->>S: POST /api/name/register (labelHash, length, owner, commitment, sealed, code)
-  S->>S: a repeat of this code's registration? answer it
-  S->>S: validate, check this commitment's other orders
-  S->>R: is the name still free?
-  R-->>S: available
-  S->>S: code usable and covers the length? reserve it
+  participant E as RPC node
+  W->>S: POST /api/name/register (labelHash, length, duration, owner, commitment, sealed, code, timestamp, signature)
+  S->>S: validate, check the signature; an exact resend? answer it
+  S->>S: other live orders for the name? order_exists; check the duration
+  S->>E: is the name still free? nameExpires, reservedNames
+  E-->>S: available
+  S->>S: code usable and covers the length? reserve it (one at a time per code)
   S->>S: registration queued
   S-->>W: registrationId
   Note over W,S: then sections 4 to 6, on ?registration=id
 ```
 
-- **Parsing:** `parseNameCode` returns `NCPrepaid` or `NCOwner`. The sum type is proposed. The page catches a typo in the check character (K6).
-- **An owner code entered here** sends nothing. The page tells the buyer it is a name code, to restore under Your names.
+- **Parsing:** `parseNameCode` returns `NCPrepaid` or `NCOwner`. The sum type is proposed. The page catches a typo in the check character before any request.
+- **A name code entered on Check your code** is not sent to the code check: section 10.
 - **The code check:**
   - `POST /api/code/check` looks the code up in `name_prepaid_codes` by `namePrepaidCodeHash`.
+  - It answers `minLength`, `years` and `state`: `unused`, `reserved`, `used`, `revoked`, `expired` or `unpaid`.
   - The code covers a name when its length ≥ `min_length`.
   - An unknown code answers `400 code_invalid`.
 - **Rate limits:** `/api/name/register` uses the code-check rate limit.
 - **The service's checks, in order:**
-  1. **The repeat check:** a registration paying with this code, with the same owner and commitment, answers its `registrationId`. This keeps a lost response safe.
-  2. **Validation:** the owner, `sealed` within its bound (`bad_request`), and the length (`invalid_name`).
-  3. **This commitment's other orders:**
-     - an open invoice answers `bad_request` with its `invoiceId`. The page cancels that invoice first.
-     - a registration past `unpaid` answers its `registrationId`, plus its `invoiceId` when it was paid. The page opens `?order=`.
-  4. **The resolver:** registered or reserved is `name_taken`. A failure is `name_check_unavailable`.
-  5. **The lag:** our own registration `registering`, or `registered` within the hour, is `name_taken`.
-- **Code errors:** `code_invalid`, `code_used`, `code_reserved`, `code_expired`, `payment_pending` or `code_not_covering`. They are shown at checkout (K7), or in the popup (K5).
+  1. **Validation:** the owner, `sealed` within its bound (`bad_request`), and the length (`invalid_name`); the code parses and is known (`code_invalid`); the order signature recovers the owner (`bad_request`).
+  2. **Existing orders:** an exact resend (every field, the code included) answers its `registrationId`, in any phase, so a lost response is safe. Anything else meeting a live order for the name is `order_exists`.
+  3. **The timestamp and the duration**, for the code's years, within their windows (`bad_request`).
+  5. **The chain:** registered or reserved is `name_taken`. A failed chain read is `name_check_unavailable`.
+  6. **Being registered here:** our own registration `registering` is `name_taken`.
+  7. **The code:** its state, then its cover. Reserving is one conditional update in the transaction that creates the registration, one at a time per code.
+- **Code errors:** `code_invalid`, `code_used`, `code_reserved`, `code_expired`, `payment_pending` or `code_not_covering`. They show on the page that sent the order, and the name shows its price again.
 
 ## 8. Taken: another name, or a prepaid code
 
@@ -482,16 +477,16 @@ sequenceDiagram
   participant S as Service
   S-->>W: phase taken (long poll)
   alt another name (N8a)
-    W->>S: GET /api/name/:hash (section 1), price ≤ paid
-    W->>W: new commitment and sealed for the same wallet
+    W->>S: GET /api/name/:hash (section 1), chain price ≤ the order's price
+    W->>W: new duration, commitment and sealed for the same wallet
     W->>W: sign "simplex.domains name …" with the owner key
-    W->>S: POST /api/registration/:id/name (labelHash, length, commitment, sealed, timestamp, signature)
+    W->>S: POST /api/registration/:id/name (labelHash, length, duration, commitment, sealed, timestamp, signature)
     S->>S: checks, then queued with the new name
     Note over W,S: then sections 4 to 6 again
   else a prepaid code (N8b)
-    W->>W: derive the code from the seed and registrationId
+    W->>W: derive the code (SN + codeLength) from the seed and registrationId
     W->>W: sign "simplex.domains code …" with the owner key
-    W->>S: POST /api/registration/:id/code (codeHash, timestamp, signature)
+    W->>S: POST /api/registration/:id/code (codeHash, codeLength, timestamp, signature)
     S->>S: save the code, phase code_issued
     S-->>W: 200
   end
@@ -500,18 +495,21 @@ sequenceDiagram
 - **Another name (`/name`):** it uses the create rate limit.
   - **Checks, in order:**
     1. the owner's signature and timestamp;
-    2. a paid registration in `taken`;
-    3. the order's checks: `sealed` within its bound, `invalid_name`, and `name_taken`. A resolver failure is `name_check_unavailable`, and nothing changes;
-    4. `namePrice` must be ≤ the amount paid, else `bad_request`.
+    2. a paid registration in `taken`, or any registration in `failed`, or one in `committed` whose reveal was refused for its links (to correct them; the same name is allowed); never a healthy `committed`. At most 3 successful moves per order; after the last, `409 move_limit` answers the order's state, shown with a support line and the reference; a body equal to the current fields answers the view unchanged. Both label hashes' turns are taken in hash order;
+    3. the order's checks: `sealed` within its bound, `invalid_name`, other live orders for the new commitment or this owner and the new hash (`order_exists`), the duration, and `name_taken`. A failed chain read is `name_check_unavailable`, and nothing changes;
+    4. a paid order: the new name's chain price must be ≤ the order's `price`, else `409 price_too_high` with that price. A cheaper name refunds nothing, which the page says first. A code order: the code is checked and reserved again under its per-code turn (`code_used` when spent elsewhere after the sweep released it, `code_reserved`, `code_invalid`, `code_expired`) and must cover the new name (`code_not_covering`).
+  - **The signed message** includes the duration: `simplex.domains name <registrationId> <labelHash> <length> <duration> <commitment> <sha256(sealed)> <timestamp>`.
   - **On success:**
-    - `price_id` becomes the new price row.
-    - The registration goes to `queued` with the new hash, length, commitment and `sealed`.
+    - `price` becomes the new name's price, which caps a further move.
+    - The registration goes to `queued` with the new hash, length, duration, commitment and `sealed`.
     - `label`, `secret`, `records`, `intent_*`, the tx hashes and blocks, `reveal_after`, `reveal_before` and `error` are cleared.
 - **A prepaid code instead (`/code`):** it uses the create rate limit, then checks the owner's signature and timestamp.
-  - **The code:** `SN<length tier>` + a payload from `HMAC-SHA256(seed, "simplex.domains taken code " + registrationId)`. The page keeps it under Your names.
-  - **A repeat:** if `issued_code_id` already has this hash, the answer is 200 again.
+  - **The code:** `SN<codeLength>` + a payload from `HMAC-SHA256(seed, "simplex.domains taken code " + registrationId)`. `codeLength` is the shortest length `L` from 6 such that every length from `L` to 63 costs at most the order's price, from the oracle's whole list: the code pays for any name no dearer than the order. The view carries it in `taken` and still in `code_issued`, so the name code recovers the code on any browser. The page keeps it under Your names.
+  - **The length moved** since the view was read (a price change): `409 code_length_changed` with the current value, and nothing is issued; the page derives the code again. So the issued row's length always equals the code's text.
+  - **No length qualifies** (the prices rose above the order's): `409 code_unavailable`; the view's `codeLength` is null, and the page offers only another name. A failed read is `503 provider_unavailable`.
+  - **A repeat:** if `issued_code_id` already has this hash, the answer is 200 again, whatever `codeLength` it carries; this is checked before the length.
   - **Otherwise:** only a paid registration in `taken` qualifies. The service then:
-    - inserts the code (current length tier, 2 years, paid, no expiry);
+    - inserts the code (`codeLength`, the order's years, paid, no expiry);
     - sets `issued_code_id`;
     - moves the phase to `code_issued`.
   - **Collisions:** a hash that another code already has is `code_conflict`. For a derived code this is unreachable in practice.
@@ -526,7 +524,7 @@ sequenceDiagram
   autonumber
   participant W as Webapp
   participant S as Service
-  participant E as Ethereum node
+  participant E as RPC node
   S->>S: phase failed (retries exhausted, or not revealed in time)
   W->>S: POST /api/registration/:id/retry
   S->>E: did it register after all? receipts, ownerOf(labelHash)
@@ -547,7 +545,7 @@ From `queued`, the worker reads the commitment to decide whether to commit again
 sequenceDiagram
   autonumber
   participant S as Service
-  participant E as Ethereum node
+  participant E as RPC node
   S->>E: commitments(commitment)
   alt 0, a commit of ours pending
     S->>S: wait for it
@@ -586,9 +584,9 @@ sequenceDiagram
   - **After `revealBefore`:** the worker first clears `label`, `secret`, `records`, `intent_*`, `error`, the tx hashes and blocks, `reveal_after` and `reveal_before`. Then it commits again.
 - **Failure causes:** `InsufficientAllowance` also alerts the operator.
 
-## 10. Restore with the owner code
+## 10. A name code on Check your code
 
-In another browser, or after losing the order link, the owner code alone finds and reopens the order.
+In another browser, or after losing the order link, the owner code alone finds and reopens the order. Check your code takes it (owner, 2026-10-21); there is no separate Restore screen.
 
 ```mermaid
 sequenceDiagram
@@ -597,11 +595,12 @@ sequenceDiagram
   participant S as Service
   alt the order link is known (N7b)
     W->>S: GET /api/invoice/:id or /api/registration/:id
-  else only the code (Your names)
-    W->>W: walletFromCode(code)
+  else only the code (Check your code)
+    W->>W: parseNameCode → NCOwner, walletFromCode(code)
     W->>W: sign "simplex.domains find owner timestamp"
     W->>S: POST /api/registration/find (owner, timestamp, signature)
-    S-->>W: registrations, newest first
+    S-->>W: registrations with labelHash and sealed, newest first
+    W->>W: open each sealed → "Name code of alicebakery.simplex", Add to Your names
     W->>S: GET the newest that is not unpaid
   end
   S-->>W: the registration
@@ -620,18 +619,19 @@ sequenceDiagram
   - `timestamp` is in Unix seconds.
 - **`find` checks:** its own rate limit. The signer must be `owner`, and the timestamp must be within 10 minutes.
 - **`find` answers:**
-  - `{registrations: [{registrationId, invoiceId or null, phase, createdAt}]}`, including retargeted ones;
-  - `404 not_found` when there are none.
+  - `{registrations: [{registrationId, invoiceId or null, phase, createdAt, labelHash, sealed}]}`, including retargeted ones, the 50 newest. `labelHash` and `sealed` let the page name every order in one request. Orders are signed by their owner, so only the code's own orders are listed;
+  - `404 not_found` when there are none: "No order was found for this code".
+- **After `409 order_exists`** the page runs `find` the same way to open the order it already has.
 - **Opening a registration:** with the read limit, the page opens:
   - `GET /api/invoice/:invoiceId` when it is set (the order page, with what was paid);
   - else `GET /api/registration/:id`.
-- **Checking the code:** the page rebuilds the commitment from `sealed` and the seed. It must equal the registration's commitment.
+- **Checking the code:** the page rebuilds the commitment from `sealed`, the seed and the view's `duration`. It must equal the registration's commitment, else "This code does not open the order".
 
-## 11. Links: preview at checkout, edit later
+## 11. Links: preview before the order, edit later
 
 After registration, the owner changes links by signing each edit, and the service relays it and pays the gas.
 
-At checkout, a link is previewed before it goes into the registration:
+On the Links step, before the name code, a link is previewed before it goes into the registration. One field takes a contact address or a channel link; its kind is detected, and a second field takes the other kind:
 
 ```mermaid
 sequenceDiagram
@@ -640,8 +640,8 @@ sequenceDiagram
   participant S as Service
   W->>S: POST /api/link/preview (link)
   S->>S: SimpleX contact or channel link? APIConnectPlan
-  S-->>W: type, displayName, image (or invalid_link)
-  Note over W: the links go into the registration's data (section 2)
+  S-->>W: type, kind, displayName, fullName, image, subscribers, profile (or invalid_link)
+  Note over W: the links go into the registration's data (section 2), read-only inside the order
 ```
 
 Later, editing a registered name's links:
@@ -651,7 +651,7 @@ sequenceDiagram
   autonumber
   participant W as Webapp
   participant S as Service
-  participant E as Ethereum node
+  participant E as RPC node
   W->>W: sign SetText(node, key, value, nonce, deadline) with the owner key
   W->>S: POST /api/name/records (labelHash, key, value, nonce, deadline, signature)
   S->>S: recover the signer, check the link and a repeat
@@ -659,7 +659,7 @@ sequenceDiagram
   S->>S: save the pending edit
   S->>E: SimplexResolver.setTextWithSig(…), the service pays gas
   E-->>S: receipt
-  S-->>W: tx, or record_reverted
+  S-->>W: tx, record_reverted, or edit_pending after 90 s
 ```
 
 When an edit reverts, or a restart finds it unresolved:
@@ -668,7 +668,7 @@ When an edit reverts, or a restart finds it unresolved:
 sequenceDiagram
   autonumber
   participant S as Service
-  participant E as Ethereum node
+  participant E as RPC node
   S->>E: nonces(signer), text(node, key)
   alt nonce passed and the record holds the value
     S->>S: mined (applied by another transaction): answer tx null
@@ -679,38 +679,38 @@ sequenceDiagram
   end
 ```
 
-- **Preview:** its own rate limit. The link must be within 4096 bytes.
+- **Preview:** its own rate limit. The link must be one SimpleX short link of a contact address (`/a#`) or a channel (`/c#`), within 4096 bytes. The hosts are the link's servers (the authority of an `https://` link, or the server hosts inside a `simplex:/` link). A public IP literal passes, since SimpleX servers may be addressed by IP. Every host of the link is checked before the chat core fetches: an IP literal as it is, a name by resolving it; a private, loopback, link-local, unique-local, CGNAT, unspecified or multicast address, a `.onion` host or an unresolvable name means no fetch. A link with several hosts is fetched only if all pass. A link not fetched stays valid: its profile is `unavailable`. The check is best effort, since the chat core resolves again when it connects (DNS rebinding remains possible); an egress rule in the deployment denies the service's traffic to private ranges.
 - **How records are stored:**
-  - A key holds its links joined with ";".
-  - Removing one of several links rewrites the whole value.
-  - Clearing a key sets it to "".
+  - A key holds one short link (gap 35).
+  - A record set elsewhere may hold several joined with ";"; readers split on it, and an edit replaces the whole value.
+  - Removing a key's link sets it to "".
 - **Clearing all records:** the page signs `ClearRecords` instead, and the service relays `clearRecordsWithSig`.
 - **When the page offers Edit links:**
   - **Hidden** when the search answer has an owner other than the code's address (the name was redeemed).
-  - **Hidden** when the answer has an owner with null records (another resolver, or none).
+  - **Hidden** when the answer has an owner with null records (another resolver contract, or none).
   - **The current values** come from the answer's records.
-  - **During the lag**, the values come from the order's links in `sealed`, or from this browser's last mined edit of that key. A mined clear sets both keys to "". The chain id and resolver come from the view. Edit links is offered only once the phase is `registered`.
 - **The page's nonce:**
-  - **Start:** `recordsNonce` from the search answer or the view.
+  - **Start:** `recordsNonce` from the search answer.
   - **Next nonce:** +1 after each `{tx}`. The same after `record_reverted`.
   - **Recovery:** re-read it after any `bad_request`.
   - **Deadline:** now + 1 hour.
 - **The service's checks, in order:**
   1. **Rate limit:** its own, for every request.
-  2. **The record:** the key is `simplex.contact` or `simplex.channel`. Its links are of that kind and within 4096 bytes, else `invalid_link`.
-  3. **The signature:** recover the signer (`recoverAddress` †) and require low s. Otherwise `bad_request`, not counted toward the cap.
-  4. **A repeat:** found by signer and nonce, and matched by `body_hash`. This runs before any deadline check.
-     - An identical repeat waits for the same tx. It answers the tx once mined (tx null when another transaction applied it), or answers `record_reverted` again.
+  2. **The record:** the key is `simplex.contact` or `simplex.channel`. The value is one short link of that kind within 4096 bytes, or "", else `invalid_link`.
+  3. **The signature:** recover the signer (`recoverAddress` †) and require low s. Otherwise `bad_request`.
+  4. **A repeat of a sent edit:** found by signer and nonce, and matched by `body_hash`. This runs before any deadline check. Only sent edits are stored; a refused request leaves nothing, so its repeat is checked anew.
+     - An identical repeat waits for the same tx. It answers the tx once mined (tx null when found applied), or answers `record_reverted` again.
      - A different body with a nonce whose edit is pending or mined is `bad_request`.
      - After `record_reverted`, the nonce is free again for a new body.
-  5. **For a new edit only:** the deadline must be ahead of the latest block, else `bad_request`. Then the per-name cap applies (`rate_limited`).
-  6. **On chain:** the signer must be `ENSRegistry.owner(node)`, and the nonce must equal `SimplexResolver.nonces(signer)`, else `bad_request`. A failed read is `provider_unavailable`.
+  5. **For a new edit only:** the deadline must be ahead of the latest block; the signer must be `ENSRegistry.owner(node)`; the nonce must equal `SimplexResolver.nonces(signer)`. Else `bad_request`. A failed read is `provider_unavailable`, and nothing is stored.
+  6. **The per-name cap**, after those checks: 10 relayed edits an hour, else `rate_limited`. Only sent edits count, so a non-owner cannot use up a name's cap.
   7. **Concurrency:** the pending row (signer, nonce, body hash) is inserted before signing. Of two concurrent identical requests, one loses the unique insert.
   8. **Sending:** through the registrar's one sender. The hash and raw tx are saved before sending.
 - **The revert re-read:** the service re-reads the nonce and the record in these cases:
   - after a revert: an applied edit reverts `InvalidNonce`, or `SignatureExpired` once past its deadline;
   - after a restart's expiry.
   - **The revert's name:** a mined revert's receipt has no data. It is named `SignatureExpired` when past the deadline, else null.
+  - **Applied** is decided from the edit's own sent hashes first: a status-1 receipt answers that hash. Only without a known receipt: the owner's nonce passed the edit's and the record holds its value means applied (`{tx: null}`); a passed nonce with another value means `record_reverted` with `InvalidNonce`.
 
 ## 12. Redeem in the app
 
@@ -721,7 +721,7 @@ sequenceDiagram
   autonumber
   participant A as SimpleX app
   participant S as Service
-  participant E as Ethereum node
+  participant E as RPC node
   A->>A: parseNameCode → NCOwner, walletFromCode → key, address
   A->>E: balanceOf, tokenOfOwnerByIndex, labelOf, nameExpires
   A->>A: sign ApproveName with the code key
@@ -739,32 +739,14 @@ sequenceDiagram
 - **The relay endpoints** are not specified yet (gap 9).
 - **Afterwards** the owner code no longer controls the name.
 
-## 13. Opened from the app
-
-The app opens the store for a name that its own wallet will own, so there is no owner code. The link is `simplex.domains/#/?name=<label>&owner=<appAddress>`.
-
-```mermaid
-sequenceDiagram
-  autonumber
-  participant A as SimpleX app
-  participant W as Webapp
-  participant S as Service
-  A->>W: open simplex.domains with name and owner = appAddress
-  W->>W: owner = appAddress, shown before paying
-  W->>W: random secret, kept in this page
-  W->>S: order as section 2, without sealed
-  Note over W,S: sections 3 and 4 as usual
-  W->>A: the RegisterName intent must be signed by appAddress (gap 10)
-```
-
-## 14. Gaps found
+## 13. Gaps found
 
 Each gap says what the problem is, why it matters, and what is decided, or that it is still open. Gaps marked "Resolved" are settled and kept for the record.
 
 1. **The page cannot build the sponsor's EIP-712 domain.**
    - Problem: `sponsorDomain(chainId, sponsor)` † needs the chain id and the `SimplexSponsor` address. The search answer carries only `resolver`.
    - Why it matters: the intent's digest uses that domain (section 5), so the page cannot sign.
-   - Decided: the answer is `available{…, resolver, sponsor, chainId, tld}`. The TLD (`[names] tld`) builds the records' node.
+   - Decided: the answer is `available{…, years, termStart, resolver, sponsor, chainId, tld}`. The TLD (`[names] tld`) builds the records' node; `termStart` builds the duration.
 2. **The intent can expire before it is sent.**
    - Problem: the page signs with a deadline. The register may be sent after it, because of a gas spike, retries or a queue.
    - Why it matters: then `verifyRegisterIntent` fails and the sponsor reverts.
@@ -790,17 +772,15 @@ Each gap says what the problem is, why it matters, and what is decided, or that 
      1. Read `ownerOf(labelHash)` first. The owner holding it means this registration went through.
      2. Otherwise, a decoded `NameNotAvailable` or `NameReserved` means taken or reserved. So does any other revert while `available(label)` is false.
      - The sponsor checks the intent's signature, nonce and deadline, and spends the allowance, before the controller checks availability. So a taken name can first revert `SignatureExpired`, `InvalidNonce`, `InvalidSignature` or `InsufficientAllowance`.
-   - Open: whether reth's `error.data` carries the revert data is unchecked.
-6. **The commitment fixes the links and the duration at checkout.**
+   - Open: whether reth's or a hosted provider's `error.data` carries the revert data is unchecked.
+6. **The commitment fixes the links and the duration at the order.**
    - Problem: links changed after the order need a new commitment before the commit, or an edit after registration.
    - Why it matters: a change after the order no longer matches the commitment the service holds.
-   - Decided: allow editing links only until the order is created.
+   - Decided: links are set on the Links step before paying and are read-only inside an order (owner, 2026-10-20). The duration is fixed in the commitment too, so a new order of the same wallet builds a new commitment with the current free days.
 7. **Resolved: the price may change between order and reveal.**
-   - Problem: the catalog price may change after the order.
-   - Why it matters: the reveal checks the price (section 5).
-   - Decided: the registration's `price_id` fixes the price at order time, or at retarget after its check against what was paid.
-     - `name_prices` is insert-only, so that row stays.
-     - The reveal compares no price: the label's hash and length make that row its price.
+   - Problem: the chain's price (`rentPriceUSD`, owner 2026-10-20) may change after the order, with `setPrices`.
+   - Why it matters: the buyer paid the price shown at the order.
+   - Decided: the registration's `price` (cents) fixes the price at order time, or at retarget after its check against what was paid. The reveal and the register compare no price. The sponsor spends the chain's price at registration from the allowance, so a rise between order and register is the service's cost.
 8. **Resolved: a lapsed commitment can be committed again.**
    - Problem: a retry after a lapse must know when the same commitment can go on chain again.
    - The contract's rules:
@@ -816,14 +796,11 @@ Each gap says what the problem is, why it matters, and what is decided, or that 
      - The app reads the code's names on chain. The registrar is ERC-721 enumerable, with `labelOf` and `nameExpires`.
      - Add relay endpoints for `approveWithSig`, and then `claimWithSig`.
      - The claim signs `offer = offers(tokenId)`, read after the approval.
-10. **Opened from the app: the intent's signer is the app.**
-    - Problem: the page cannot sign for `appAddress`. The page's random secret is lost if the page closes. A taken order cannot sign `/name` or `/code` without the app.
-    - Why it matters: the flow in section 13 cannot finish from the page alone.
-    - Open, two options:
-      - the app builds and keeps the registration and signs the intent, and the page only takes the payment;
-      - or defer the flow.
+10. **Resolved: opened from the app.**
+    - Problem: an order opened from the app would need the app's wallet to sign the intent, `/name` and `/code`.
+    - Decided: the web flow opened from the app is dropped (owner, 2026-10-21). The app will buy names itself (#7530 §13.6). Every web order has an owner code and `sealed`.
 11. **Resolved: editing links later.**
-    - Problem: the commitment fixes the links at checkout (gap 6), so later changes need a signed edit on chain.
+    - Problem: the commitment fixes the links at the order (gap 6), so later changes need a signed edit on chain.
     - The contract: PR #35's `SimplexResolver` has:
       - `setTextWithSig` (EIP-712 `SetText`, domain `SimplexResolver`) and `clearRecordsWithSig` (`ClearRecords`);
       - one nonce counter per owner, shared by both;
@@ -831,18 +808,18 @@ Each gap says what the problem is, why it matters, and what is decided, or that 
       - a `SetText` intent covers one record, and a `ClearRecords` intent all of the name's records;
       - `Multicallable`, which would let the relayer send several signed edits in one transaction.
     - Decided:
-      - The page needs that nonce and the chain id. So the registered search answer carries them with the resolver. The registration view carries the nonce while search lags.
+      - The page needs that nonce and the chain id. So the registered search answer carries them with the resolver.
       - Several edits go one at a time. The service accepts an edit only when its nonce equals `nonces(owner)` on chain, and answers once it is mined. The page signs the next edit after that answer.
       - A higher nonce sent early would revert `InvalidNonce`, because the contract does not queue intents.
       - The service relays one transaction per edit, by its own choice, and bounds the cost itself.
     - Tested: two consecutive edits, relayed in order, are in `e2e/StoreE2E.test.ts`.
 12. **Resolved: search during our own registration.**
-    - Problem: during the lag, the resolver may still say available for a name we are registering.
+    - Problem: while our register is sent but not mined, the chain still says available for a name we are registering.
     - Why it matters: search would offer a name that is already ours.
-    - Decided: search uses the index on `name_registrations.label_hash` with `phase`, now in both schemas, and `registered_at` for the resolver's hour of lag.
+    - Decided: search uses the index on `name_registrations.label_hash` with `phase`, now in both schemas, and answers `registered` for a hash in `registering`. The service reads the chain itself, so it needs no margin after `registered`.
 13. **Resolved: the reveal's rate limit.**
     - Problem: the reveal needed a rate limit.
-    - Decided: it takes the read limit, and each `bad_request` from it counts against that limit.
+    - Decided: it takes the read limit, and every request counts against it, whatever its outcome.
 14. **Resolved: Alain's encoder carries the intent nonce.**
     - Problem: the encoder must match PR #35's register call and intent.
     - Decided: since `965046fe1` ("adapt contract updates"), `Registration.hs` has:
@@ -891,7 +868,7 @@ Each gap says what the problem is, why it matters, and what is decided, or that 
     - Decided: the view carries:
       - `intentNonce` (`SimplexSponsor.nonces(owner)`);
       - `revealBefore` (commit block time + `maxCommitmentAge`, 24 h in PR #35's deploy);
-      - for a browser with only the owner code: `sealed` (the label and links), `commitment`, `years` (the duration), `resolver`, `sponsor`, `chainId` and `tld`.
+      - for a browser with only the owner code: `sealed` (the label and links), `commitment`, `years` and `duration`, `resolver`, `sponsor`, `chainId` and `tld`.
       - That is enough to rebuild the commitment and the intent.
     - Tested: `e2e/StoreE2E.test.ts` registers from only the code and those fields.
 22. **Resolved: a consumed commitment also reads 0.**
@@ -923,25 +900,25 @@ Each gap says what the problem is, why it matters, and what is decided, or that 
       - So an identical repeat is answered after a restart with its `{tx}`, or `record_reverted` again.
       - The per-name cap is counted from it.
       - The relay sends through the worker's one sender.
-25. **The resolver host's reth runs `--minimal`** (simplexmq `scripts/resolver/docker-compose.yml`).
+25. **A reth node run `--minimal`**, as simplexmq's `scripts/resolver/docker-compose.yml` ran it for the resolver service, which is no longer used.
     - Problem: as far as known, and not yet checked against reth's source, that mode prunes the hash-to-transaction index fully. It keeps receipts only for about the last 10,000 blocks.
     - Why it matters:
       - `eth_getTransactionReceipt` could fail even for a recent transaction.
       - `/retry`'s step 1 could not read a receipt older than about 10,000 blocks, some 33 hours.
       - It falls back on `ownerOf` when the node answers a pruned receipt with null. An RPC error there is a failed read, so `/retry` answers `provider_unavailable`.
       - On such a node a mined transaction also looks unknown. This is why the rebroadcast rule (gap 23) reads the effect on chain rather than re-signing blindly.
-    - Open: check reth's minimal pruning before relying on that node, or point the worker at a node that keeps the index and receipts.
+    - Open: check reth's minimal pruning before relying on such a node, or run the service's reth (with nimbus) without `--minimal`, or use a provider that keeps the index and receipts.
 26. **A closed name invoice paid late.**
-    - Problem: today's settlement marks even an expired invoice paid on a settled signal, with no alert (`Orders.hs`, `Poller.hs`). Get a new invoice reuses the commitment.
-    - Why it matters: a late payment of the closed invoice could queue a second paid registration for the same commitment.
+    - Problem: today's settlement marks even an expired invoice paid on a settled signal, with no alert (`Orders.hs`, `Poller.hs`). Get a new invoice orders the same name for the same wallet.
+    - Why it matters: a late payment of the closed invoice could queue a second paid registration of one wallet for one name.
     - Decided:
       - The name side checks the invoice's prior state.
       - A late payment of a closed invoice does not queue its registration. That registration stays `unpaid`.
       - The 30-day cleanup never deletes it, because the cleanup spares any invoice that received a payment.
       - The late payment is kept for support to refund.
-      - So one commitment never has two paid registrations. The other guards for this:
-        - a different order for a commitment with an open invoice is refused, and a matching resend gets that invoice;
-        - an order or a code register for a commitment with a registration past unpaid gets that registration;
+      - So one wallet never has two paid registrations for one name. The other guards for this, by commitment or by owner and label hash:
+        - an exact resend gets its own order; any other order while a live order holds the name is refused with `order_exists`, which names nothing;
+        - orders run one at a time per label hash, and unique constraints allow one live registration per owner and label hash;
         - Get a new invoice cancels an open invoice first, and orders again only after the cancel succeeds.
       - The page shows "Paid after the invoice closed; support refunds it" with the reference, in the order and in history.
       - The poller and the provider list pass read an invoice only within about 72 hours of its creation (`settleWindow` ‡). After that, only a webhook brings a payment.
@@ -951,8 +928,8 @@ Each gap says what the problem is, why it matters, and what is decided, or that 
     - Problem: the answer is lost, but the code may already be reserved for a `queued` registration.
     - Why it matters: the buyer does not have the `registrationId` of a registration that holds the code.
     - Decided:
-      - Try again resends the same body. The repeat check, run right after the rate limit, answers that `registrationId`.
-      - A buyer who leaves finds it through Restore with a name code.
+      - Try again resends the same body. The exact-resend check (every field equal, the signature recovering the owner, the timestamp's age not checked) answers that `registrationId`.
+      - A buyer who leaves finds it through Check your code with the name code.
 28. **Resolved: concurrent edits with one nonce.**
     - Problem: two requests can arrive at once for the same nonce.
     - Why it matters: both could be signed and sent.
@@ -980,25 +957,21 @@ Each gap says what the problem is, why it matters, and what is decided, or that 
       - The cap needs a count and a window over a name's `name_record_edits` rows.
       - All limits share one bucket map capped at `maxBuckets = 8192`, with one bucket per limit and client (`Web/Server.hs`). When full, it first drops buckets older than the window. Then, if more than half are still live, it drops the lowest-count half. So about six new limits may need the cap raised.
       - The client clamps `Retry-After` at 300 s (`RETRY_AFTER_MAX_SECONDS` in `api.ts`). So a per-name cap window over 5 minutes needs the page to show when edits reopen rather than retry, or a larger clamp for it.
-    - Open: decide them before the service is built.
+    - Decided (2026-10-21, `2026-10-21-store-api.md` section 1): per client per minute, search 30, preview 20, code check 10, find 5, records 10, with the existing read 60 and create 5; one 60-second window for all, so `Limit` needs no change; `maxBuckets` 32768; profile fetches with separate bounds for search (4) and previews (2), a 3 s timeout that also bounds the wait for a slot, and a 10-minute cache; an edit cap of 10 an hour per name, whose real wait the page clamps to 300 s and asks again; `revealMargin` 900 s.
 30. **An edit judged applied by its nonce and record can be misjudged.**
     - Problem: the re-read after a revert, an expiry or a lost receipt treats an edit as applied when the signer's nonce has passed it and the record holds its value.
       - A later edit that overwrote the key makes an applied edit answer `record_reverted`.
       - A record that already held the value, while another edit took the nonce, makes an unapplied edit answer `{tx: null}`.
     - Why it matters: the page recovers through its next `bad_request` and nonce re-read, but the outcome it shows is wrong.
-    - Open: matching the resolver's `TextChanged`/`VersionChanged` logs for the node to a transaction carrying this edit's signature would decide it exactly.
+    - Decided (2026-10-21): keep the nonce-and-record judgment; the page's next nonce re-read corrects a misjudged outcome. Matching the resolver contract's `TextChanged`/`VersionChanged` logs to a transaction carrying this edit's signature would decide it exactly, and can come later.
       - PR #35's `SimplexResolver` emits `TextChanged` from `setTextWithSig` and `VersionChanged` from `clearRecordsWithSig`.
       - Whether a pruned node keeps those logs is not checked.
-31. **Which resolver serves the fresh deployment.**
-    - Problem: the resolver knows two TLDs, with one deployment each. Its `testing` defaults to the live mainnet `.testing` contracts (simplexmq `scripts/resolver/service/snrc-resolve.py`, `REGISTRIES`, `REGISTRARS`, `CONTROLLERS`). The SMP relays resolve through it.
-    - Why it matters: pointing the shared resolver at the fresh deployment would take the live names from the relays.
-    - Options:
-      - a fresh PR #35 deployment under `tld = testing` gets its own resolver instance, with `SNRC_REGISTRY_TESTING`, `SNRC_REGISTRAR_TESTING` and `SNRC_CONTROLLER_TESTING` set to it and `resolver_url` pointing there;
-      - or `.testing` itself is redeployed.
-    - Open: an owner decision, with Alain.
+31. **Resolved: which resolver serves the fresh deployment to the relays.**
+    - Problem: the SMP relays resolved names through simplexmq's resolver service, whose `testing` pointed at the live `.testing` contracts, not the fresh deployment.
+    - Decided: there is no resolver service (owner, 2026-10-21). The relays and the app connect to their own node (reth with nimbus) and read the deployment's contracts directly, as the service does.
 32. **Alain's prototype makes the commitment secret random.**
     - Problem: simplexmq PR #1942's `names-web` draws a random 32-byte secret. This design derives it: `HMAC-SHA256(seed, "simplex.domains commitment " + label)` (section 2).
-    - Why it matters: with a derived secret, the same code and name always give the same commitment, which Get a new invoice and retry reuse, and the owner code alone rebuilds it on another browser. A random secret would have to be stored too, for example inside `sealed`.
+    - Why it matters: with a derived secret, the same code, name, links and duration always give the same commitment, which retry reuses, and the owner code alone rebuilds it on another browser with the view's `duration`. A random secret would have to be stored too, for example inside `sealed`.
     - Recommended: keep the derived secret. A random one gains nothing here; the prototype has no restore flow.
     - Open: agree with Alain.
 33. **Alain's prototype sets the intent's deadline to now + 1 hour.**
@@ -1011,10 +984,8 @@ Each gap says what the problem is, why it matters, and what is decided, or that 
     - Why it matters:
       - Signing at checkout lets the buyer pay and close the tab; the service then registers alone, which suits slow Bitcoin payments. But the intent carries the name, so the service learns it at checkout.
       - Signing at the reveal keeps the service to the name's hash until after the commit, as decided on 2026-10-12, and as Alain's checklist asks for payment metadata and logs. But the page must be open, or reopened within 24 hours, after the 60-second wait.
-    - Options: keep signing at the reveal; or sign at checkout with the deadline at the invoice's expiry + `maxCommitmentAge`, not now + 1 hour, so a slow payment does not expire it.
-    - Open: an owner decision.
+    - Decided (2026-10-21): keep signing at the reveal. The mockup's copy ("keep this page open, or reopen its link within 24 hours") and the mock assume it, and the service learns no name before the commit.
 35. **One link per key, short links only.**
-    - Problem: this design lets a key hold several links joined with `;` (sections 2 and 11). `names-web` takes one link per key. The app reads a name with `firstNameLink` (`src/Simplex/Chat/Library/Commands.hs`), which takes the first link that parses as a short link of the right type and ignores the rest. Alain's checklist accepts only a contact short link in `simplex.contact` and a channel short link in `simplex.channel`.
-    - Why it matters: extra links do nothing in the app, and a full link never works through a name, while several links per key cost the design editing one link of several, the `;` joining, and the lag rules that keep removed links from coming back (section 11).
-    - Recommended: one short link per key, refusing full links with `invalid_link`.
-    - Open: confirm, then simplify sections 2 and 11, the spec and the plan.
+    - Problem: the earlier design let a key hold several links joined with `;`. `names-web` takes one link per key. The app reads a name with `firstNameLink` (`src/Simplex/Chat/Library/Commands.hs`), which takes the first link that parses as a short link of the right type and ignores the rest. Alain's checklist accepts only a contact short link in `simplex.contact` and a channel short link in `simplex.channel`.
+    - Why it matters: extra links do nothing in the app, and a full link never works through a name, while several links per key cost the design editing one link of several and the `;` joining (section 11).
+    - Decided: one short link per key, refusing full links with `invalid_link`, as the mock, the redesign (one link field, a second for the other kind) and the app already do. Sections 2 and 11, the spec and the plan follow.
