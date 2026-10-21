@@ -36,7 +36,7 @@ fun CIChatFeatureView(
   ) {
     if (!revealed.value && merged != null) {
       Row(
-        Modifier.padding(horizontal = 6.dp, vertical = 8.dp),
+        Modifier.padding(horizontal = chatEventHorizontalPadding(), vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp)
       ) {
         merged.forEach {
@@ -121,7 +121,7 @@ private fun FullFeatureView(
   icon: Painter? = null
 ) {
   Row(
-    Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
+    Modifier.padding(horizontal = chatEventHorizontalPadding(), vertical = 6.dp),
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(4.dp)
   ) {

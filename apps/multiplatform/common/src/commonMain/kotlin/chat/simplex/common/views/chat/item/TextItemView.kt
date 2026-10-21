@@ -50,6 +50,9 @@ import kotlinx.coroutines.*
 val reserveTimestampStyle = SpanStyle(color = Color.Transparent)
 val boldFont = SpanStyle(fontWeight = FontWeight.Medium)
 
+@Composable
+fun messageTextColor(): Color = MaterialTheme.colors.onSurface.copy(alpha = if (MaterialTheme.colors.isLight) 1f else 0.87f)
+
 fun appendSender(b: AnnotatedString.Builder, sender: String?, senderBold: Boolean) {
   if (sender != null) {
     if (senderBold) b.withStyle(boldFont) { append(sender) }
@@ -175,7 +178,7 @@ fun MarkdownText (
   userMemberId: String? = null,
   toggleSecrets: Boolean,
   sendCommandMsg: ((String) -> Unit)? = null,
-  style: TextStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onSurface, lineHeight = 22.sp),
+  style: TextStyle = MaterialTheme.typography.body1.copy(color = messageTextColor(), lineHeight = 22.sp),
   maxLines: Int = Int.MAX_VALUE,
   overflow: TextOverflow = TextOverflow.Clip,
   uriHandler: UriHandler? = null,

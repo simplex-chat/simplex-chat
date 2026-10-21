@@ -40,6 +40,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.group.ChatTTLOption
+import chat.simplex.common.views.chat.item.LocalTerminalLayout
 import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.chatlist.updateChatSettings
 import chat.simplex.common.views.newchat.*
@@ -1297,14 +1298,17 @@ fun ModalData.ChatWallpaperEditorModal(chat: Chat) {
     globalThemeUsed.value = preferred == null
     preferred ?: ThemeManager.defaultActiveTheme(chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
   }
-  ChatWallpaperEditor(
-    initialTheme,
-    applyToMode = if (themes.light == themes.dark) null else initialTheme.mode,
-    globalThemeUsed = globalThemeUsed,
-    layoutSection = { ChatLayoutSection(chat.remoteHostId, chatModel.getChat(chat.id)?.chatInfo ?: chat.chatInfo) },
-    save = { applyToMode, newTheme ->
-      save(applyToMode, newTheme, chatModel.getChat(chat.id) ?: chat)
-    })
+  val chatInfo = chatModel.getChat(chat.id)?.chatInfo ?: chat.chatInfo
+  CompositionLocalProvider(LocalTerminalLayout provides (chatInfo.activeChatLayout(chatModel.currentUser.value, appPrefs.chatLayout.state.value) == ChatLayout.Terminal)) {
+    ChatWallpaperEditor(
+      initialTheme,
+      applyToMode = if (themes.light == themes.dark) null else initialTheme.mode,
+      globalThemeUsed = globalThemeUsed,
+      layoutSection = { ChatLayoutSection(chat.remoteHostId, chatInfo) },
+      save = { applyToMode, newTheme ->
+        save(applyToMode, newTheme, chatModel.getChat(chat.id) ?: chat)
+      })
+  }
 }
 
 @Composable

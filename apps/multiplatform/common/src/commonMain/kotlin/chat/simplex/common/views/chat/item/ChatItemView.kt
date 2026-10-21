@@ -142,7 +142,7 @@ fun ChatItemView(
 
     @Composable
     fun ChatItemReactions() {
-      Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.chatItemOffset(cItem, itemSeparation.largeGap, inverted = true, revealed = true)) {
+      Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.chatItemOffset(cItem, itemSeparation.largeGap, inverted = true, revealed = true).padding(start = if (terminal) CHAT_ITEM_TEXT_PADDING - 5.dp - 2.dp else 0.dp)) {
         cItem.reactions.forEach { r ->
           val showReactionMenu = remember { mutableStateOf(false) }
           val reactionMenuItems = remember { mutableStateOf(emptyList<ChatItemReactionMenuItem>()) }
@@ -242,68 +242,6 @@ fun ChatItemView(
       }
     }
 
-    @Composable
-    fun GoToItemInnerButton(alignStart: Boolean, icon: ImageResource, iconSize: Dp = 22.dp, parentActivated: State<Boolean>, onClick: () -> Unit) {
-      val buttonInteractionSource = remember { MutableInteractionSource() }
-      val buttonHovered = buttonInteractionSource.collectIsHoveredAsState()
-      val buttonPressed = buttonInteractionSource.collectIsPressedAsState()
-      val buttonActivated = remember { derivedStateOf { buttonHovered.value || buttonPressed.value } }
-
-      val fullyVisible = parentActivated.value || buttonActivated.value || hoveredItemId.value == cItem.id
-      val mixAlpha = 0.6f
-      val mixedBackgroundColor = if (fullyVisible) {
-        if (MaterialTheme.colors.isLight) {
-          MaterialTheme.colors.secondary.mixWith(Color.White, mixAlpha)
-        } else {
-          MaterialTheme.colors.secondary.mixWith(Color.Black, mixAlpha)
-        }
-      } else {
-        Color.Unspecified
-      }
-      val iconTint = if (fullyVisible) {
-        Color.White
-      } else {
-        if (MaterialTheme.colors.isLight) {
-          MaterialTheme.colors.secondary.mixWith(Color.White, mixAlpha)
-        } else {
-          MaterialTheme.colors.secondary.mixWith(Color.Black, mixAlpha)
-        }
-      }
-
-      IconButton(
-        onClick,
-        Modifier
-          .padding(start = if (alignStart) 0.dp else DEFAULT_PADDING_HALF + 3.dp, end = if (alignStart) DEFAULT_PADDING_HALF + 3.dp else 0.dp)
-          .then(if (fullyVisible) Modifier.background(mixedBackgroundColor, CircleShape) else Modifier)
-          .size(22.dp),
-        interactionSource = buttonInteractionSource
-      ) {
-        Icon(painterResource(icon), null, Modifier.size(iconSize), tint = iconTint)
-      }
-    }
-
-    // improvement could be to track "forwarded from" scope and open it
-    @Composable
-    fun GoToItemButton(alignStart: Boolean, parentActivated: State<Boolean>) {
-      val chatTypeApiIdMsgId = cItem.meta.itemForwarded?.chatTypeApiIdMsgId
-      if (searchIsNotBlank.value) {
-        GoToItemInnerButton(alignStart, MR.images.ic_search, 17.dp, parentActivated) {
-          withBGApi {
-            openChat(secondaryChatsCtx = null, rhId, cInfo.chatType, cInfo.apiId, cItem.id)
-            closeReportsIfNeeded()
-          }
-        }
-      } else if (chatTypeApiIdMsgId != null) {
-        GoToItemInnerButton(alignStart, MR.images.ic_arrow_forward, 22.dp, parentActivated) {
-          val (chatType, apiId, msgId) = chatTypeApiIdMsgId
-          withBGApi {
-            openChat(secondaryChatsCtx = null, rhId, chatType, apiId, msgId)
-            closeReportsIfNeeded()
-          }
-        }
-      }
-    }
-
     Column(horizontalAlignment = if (alignEnd) Alignment.End else Alignment.Start) {
       val canReply = (cItem.content is CIContent.SndMsgContent || cItem.content is CIContent.RcvMsgContent) &&
           cInfo !is ChatInfo.Local && !cItem.isReport && !cItem.meta.isLive && cItem.meta.itemDeleted == null
@@ -311,7 +249,7 @@ fun ChatItemView(
         Row(verticalAlignment = Alignment.CenterVertically) {
         val bubbleHovered = bubbleInteractionSource.collectIsHoveredAsState()
         if (alignEnd) {
-          GoToItemButton(true, bubbleHovered)
+          GoToItemButton(rhId, cInfo, cItem, searchIsNotBlank, hoveredItemId, bubbleHovered, Modifier.padding(end = DEFAULT_PADDING_HALF + 3.dp))
         }
         Column(Modifier.weight(1f, fill = false)) {
           val enterInteraction = remember { HoverInteraction.Enter() }
@@ -649,7 +587,7 @@ fun ChatItemView(
                 buildAnnotatedString {
                   withStyle(chatEventStyle.copy(fontWeight = FontWeight.Bold)) { append(cItem.content.text(cInfo.isChannel)) }
                 },
-                Modifier.padding(horizontal = 6.dp, vertical = 6.dp)
+                Modifier.padding(horizontal = chatEventHorizontalPadding(), vertical = 6.dp)
               )
             }
 
@@ -679,7 +617,7 @@ fun ChatItemView(
                 buildAnnotatedString {
                   withStyle(chatEventStyle) { append(annotatedStringResource(sId)) }
                 },
-                Modifier.padding(horizontal = 6.dp, vertical = 6.dp)
+                Modifier.padding(horizontal = chatEventHorizontalPadding(), vertical = 6.dp)
               )
             }
 
@@ -805,8 +743,8 @@ fun ChatItemView(
             }
           }
         }
-        if (!alignEnd) {
-          GoToItemButton(false, bubbleHovered)
+        if (!alignEnd && !terminal) {
+          GoToItemButton(rhId, cInfo, cItem, searchIsNotBlank, hoveredItemId, bubbleHovered, Modifier.padding(start = DEFAULT_PADDING_HALF + 3.dp))
         }
         }
         if (canReply && swipeOffset < 0) {
@@ -1369,6 +1307,83 @@ fun shapeStyleWithTail(chatItem: ChatItem? = null, tailEnabled: Boolean, tailVis
     is CIContent.RcvGroupInvitation,
     is CIContent.SndGroupInvitation -> return ShapeStyle.RoundRect(msgRectMaxRadius)
     else -> return ShapeStyle.RoundRect(8.dp)
+  }
+}
+
+// improvement could be to track "forwarded from" scope and open it
+@Composable
+fun GoToItemButton(
+  rhId: Long?,
+  cInfo: ChatInfo,
+  cItem: ChatItem,
+  searchIsNotBlank: State<Boolean>,
+  hoveredItemId: State<Long?>,
+  parentActivated: State<Boolean>,
+  modifier: Modifier
+) {
+  val chatTypeApiIdMsgId = cItem.meta.itemForwarded?.chatTypeApiIdMsgId
+  if (searchIsNotBlank.value) {
+    GoToItemInnerButton(cItem, hoveredItemId, parentActivated, modifier, MR.images.ic_search, 17.dp) {
+      withBGApi {
+        openChat(secondaryChatsCtx = null, rhId, cInfo.chatType, cInfo.apiId, cItem.id)
+        closeReportsIfNeeded()
+      }
+    }
+  } else if (chatTypeApiIdMsgId != null) {
+    GoToItemInnerButton(cItem, hoveredItemId, parentActivated, modifier, MR.images.ic_arrow_forward, 22.dp) {
+      val (chatType, apiId, msgId) = chatTypeApiIdMsgId
+      withBGApi {
+        openChat(secondaryChatsCtx = null, rhId, chatType, apiId, msgId)
+        closeReportsIfNeeded()
+      }
+    }
+  }
+}
+
+@Composable
+private fun GoToItemInnerButton(
+  cItem: ChatItem,
+  hoveredItemId: State<Long?>,
+  parentActivated: State<Boolean>,
+  modifier: Modifier,
+  icon: ImageResource,
+  iconSize: Dp,
+  onClick: () -> Unit
+) {
+  val buttonInteractionSource = remember { MutableInteractionSource() }
+  val buttonHovered = buttonInteractionSource.collectIsHoveredAsState()
+  val buttonPressed = buttonInteractionSource.collectIsPressedAsState()
+  val buttonActivated = remember { derivedStateOf { buttonHovered.value || buttonPressed.value } }
+
+  val fullyVisible = parentActivated.value || buttonActivated.value || hoveredItemId.value == cItem.id
+  val mixAlpha = 0.6f
+  val mixedBackgroundColor = if (fullyVisible) {
+    if (MaterialTheme.colors.isLight) {
+      MaterialTheme.colors.secondary.mixWith(Color.White, mixAlpha)
+    } else {
+      MaterialTheme.colors.secondary.mixWith(Color.Black, mixAlpha)
+    }
+  } else {
+    Color.Unspecified
+  }
+  val iconTint = if (fullyVisible) {
+    Color.White
+  } else {
+    if (MaterialTheme.colors.isLight) {
+      MaterialTheme.colors.secondary.mixWith(Color.White, mixAlpha)
+    } else {
+      MaterialTheme.colors.secondary.mixWith(Color.Black, mixAlpha)
+    }
+  }
+
+  IconButton(
+    onClick,
+    modifier
+      .then(if (fullyVisible) Modifier.background(mixedBackgroundColor, CircleShape) else Modifier)
+      .size(22.dp),
+    interactionSource = buttonInteractionSource
+  ) {
+    Icon(painterResource(icon), null, Modifier.size(iconSize), tint = iconTint)
   }
 }
 

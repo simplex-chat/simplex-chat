@@ -10,11 +10,15 @@ import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.changedToDownIgnoreConsumed
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.AlignmentLine
+import androidx.compose.ui.layout.HorizontalAlignmentLine
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -30,8 +34,11 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.flow.Flow
+import kotlin.math.max
 
 val LocalTerminalLayout = staticCompositionLocalOf { false }
+
+val TERMINAL_TEXT_BOTTOM_PADDING = 1.dp
 
 fun terminalItemShowsSender(item: ChatItem, older: ChatItem?): Boolean =
   item.content.hasTerminalSender && (
@@ -100,6 +107,29 @@ fun Modifier.terminalStartOffset(offset: () -> Dp): Modifier =
     layout(placeable.width + start, placeable.height) { placeable.placeRelative(start, 0) }
   }
 
+private val MessageTextBottom = HorizontalAlignmentLine(::max)
+
+fun Modifier.messageTextBottom(): Modifier =
+  layout { measurable, constraints ->
+    val placeable = measurable.measure(constraints)
+    layout(placeable.width, placeable.height, mapOf(MessageTextBottom to placeable.height)) { placeable.placeRelative(0, 0) }
+  }
+
+@Composable
+fun TerminalMetaLayout(contentWithMeta: @Composable () -> Unit) {
+  Layout(contentWithMeta) { measurables, constraints ->
+    val content = measurables[0].measure(constraints.copy(minWidth = 0))
+    val meta = measurables[1].measure(constraints.copy(minWidth = 0, minHeight = 0))
+    val width = if (constraints.hasBoundedWidth) constraints.maxWidth else max(content.width, meta.width)
+    val textBottom = content[MessageTextBottom]
+    val metaBottom = if (textBottom == AlignmentLine.Unspecified) content.height else textBottom + CHAT_ITEM_TEXT_VERTICAL_PADDING.roundToPx()
+    layout(width, content.height) {
+      content.placeRelative(0, 0)
+      meta.placeRelative(width - meta.width, metaBottom - meta.height)
+    }
+  }
+}
+
 @Composable
 fun TerminalChatItemRow(
   chatInfo: ChatInfo,
@@ -111,24 +141,29 @@ fun TerminalChatItemRow(
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
   showChatInfo: () -> Unit,
   modifier: Modifier = Modifier,
+  goToButton: @Composable () -> Unit = {},
   content: @Composable () -> Unit
 ) {
   val sender = if (showSender) terminalSender(chatInfo, cItem, range, reversedChatItems, showMemberInfo, showChatInfo) else null
-  Column(
+  val avatarSize = MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier
+  Row(
     modifier
       .padding(top = if (sender != null) 8.dp else topGap, start = 8.dp, end = 12.dp)
       .fillMaxWidth()
   ) {
-    if (sender != null) {
-      TerminalSenderNameAndRole(sender, topGap)
-    }
-    Row {
-      Box(Modifier.width(MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier)) {
-        if (sender != null) {
-          sender.image()
-        }
+    Column(Modifier.width(avatarSize + 4.dp)) {
+      if (sender != null) {
+        sender.image()
       }
-      Box(Modifier.padding(top = if (sender != null) 2.dp else 0.dp, start = 4.dp)) {
+      Box(Modifier.width(avatarSize), contentAlignment = Alignment.Center) {
+        goToButton()
+      }
+    }
+    Column {
+      if (sender != null) {
+        TerminalSenderNameAndRole(sender, topGap)
+      }
+      Box(Modifier.padding(top = if (sender != null) 2.dp else 0.dp)) {
         content()
       }
     }
@@ -196,7 +231,7 @@ private fun memberRole(member: GroupMember, isChannel: Boolean): String? =
 
 @Composable
 private fun TerminalSenderNameAndRole(sender: TerminalSender, topGap: Dp) {
-  Row(Modifier.padding(start = MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier + DEFAULT_PADDING_HALF, bottom = 2.dp + topGap)) {
+  Row(Modifier.padding(start = CHAT_ITEM_TEXT_PADDING, bottom = 2.dp + topGap)) {
     NameWithBadge(
       sender.name,
       sender.badge,

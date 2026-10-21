@@ -25,10 +25,11 @@ fun CICallItemView(
   timedMessagesTTL: Int?
 ) {
   val sent = cItem.chatDir.sent
+  val terminal = LocalTerminalLayout.current
   Column(
     Modifier
-      .padding(horizontal = 4.dp)
-      .padding(bottom = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+      .padding(horizontal = if (terminal) CHAT_ITEM_TEXT_PADDING else 4.dp)
+      .padding(bottom = 8.dp), horizontalAlignment = if (terminal) Alignment.Start else Alignment.CenterHorizontally) {
     @Composable fun ConnectingCallIcon() = Icon(painterResource(MR.images.ic_settings_phone), stringResource(MR.strings.icon_descr_call_connecting), tint = SimplexGreen)
     when (status) {
       CICallStatus.Pending -> if (sent) {

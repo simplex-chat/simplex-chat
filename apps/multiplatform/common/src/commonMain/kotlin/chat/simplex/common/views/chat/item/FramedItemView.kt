@@ -52,7 +52,7 @@ fun FramedItemView(
   val sent = ci.chatDir.sent
   val chatTTL = chatInfo.timedMessagesTTL
   val terminal = LocalTerminalLayout.current
-  val messageClip = if (terminal) Modifier.clipChatItem(ci, revealed = true) else Modifier
+  val mediaModifier = if (terminal) Modifier.padding(start = CHAT_ITEM_TEXT_PADDING).clipChatItem(ci, revealed = true) else Modifier
 
   fun membership(): GroupMember? {
     return if (chatInfo is ChatInfo.Group) chatInfo.groupInfo.membership else null
@@ -67,7 +67,7 @@ fun FramedItemView(
       toggleSecrets = true,
       maxLines = lines,
       overflow = TextOverflow.Ellipsis,
-      style = TextStyle(fontSize = 15.sp, color = MaterialTheme.colors.onSurface.copy(alpha = if (terminal) 0.7f else 1f)),
+      style = TextStyle(fontSize = 15.sp, color = if (terminal) MaterialTheme.colors.onSurface.copy(alpha = 0.7f) else messageTextColor()),
       linkMode = linkMode,
       uriHandler = if (appPlatform.isDesktop) uriHandler else null,
       showTimestamp = showTimestamp,
@@ -128,12 +128,12 @@ fun FramedItemView(
       .then(if (terminal) Modifier else Modifier.background(if (sent) sentColor else receivedColor))
       .fillMaxWidth()
       .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-      .padding(start = 8.dp, top = 6.dp, end = 12.dp, bottom = if (pad || (ci.quotedItem == null && ci.meta.itemForwarded == null)) 6.dp else 0.dp)
+      .padding(start = if (terminal) CHAT_ITEM_TEXT_PADDING else 8.dp, top = 6.dp, end = 12.dp, bottom = if (pad || (ci.quotedItem == null && ci.meta.itemForwarded == null)) 6.dp else 0.dp)
   }
 
   @Composable
   fun cardModifier(): Modifier =
-    messageClip.background(if (sent) MaterialTheme.appColors.sentQuote else MaterialTheme.appColors.receivedQuote)
+    mediaModifier.background(if (sent) MaterialTheme.appColors.sentQuote else MaterialTheme.appColors.receivedQuote)
 
   @Composable
   fun HeaderRow(modifier: Modifier, caption: String, italic: Boolean, icon: Painter?, iconColor: Color?) {
@@ -236,6 +236,7 @@ fun FramedItemView(
 
   val transparentBackground = (ci.content.msgContent is MsgContent.MCImage || ci.content.msgContent is MsgContent.MCVideo) &&
       !ci.meta.isLive && ci.content.text.isEmpty() && ci.quotedItem == null && ci.meta.itemForwarded == null
+  val textFirst = ci.quotedItem == null && ci.meta.itemForwarded == null && !ci.isReport && ci.meta.itemDeleted == null && !ci.meta.isLive
 
   val sentColor = MaterialTheme.appColors.sentMessage
   val receivedColor = MaterialTheme.appColors.receivedMessage
@@ -249,7 +250,7 @@ fun FramedItemView(
       }
     )) {
     var metaColor = MaterialTheme.colors.secondary
-    Box(contentAlignment = Alignment.BottomEnd) {
+    val contentWithMeta: @Composable () -> Unit = {
       val style = shapeStyle(ci, chatItemTailEnabled(), tailVisible, true)
       val tailRendered = style is ShapeStyle.Bubble && style.tailVisible
       Column(
@@ -373,7 +374,7 @@ fun FramedItemView(
             when (val mc = ci.content.msgContent) {
               is MsgContent.MCImage -> {
                 val provider = imageProvider ?: return@PriorityLayout
-                Box(Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID).then(messageClip)) {
+                Box(Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID).then(mediaModifier)) {
                   CIImageView(image = mc.image, file = ci.file, provider, showMenu, false, receiveFile)
                 }
                 if (mc.text == "" && !ci.meta.isLive) {
@@ -384,7 +385,7 @@ fun FramedItemView(
               }
               is MsgContent.MCVideo -> {
                 val provider = imageProvider ?: return@PriorityLayout
-                Box(Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID).then(messageClip)) {
+                Box(Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID).then(mediaModifier)) {
                   CIVideoView(image = mc.image, mc.duration, file = ci.file, provider, showMenu, smallView = false, receiveFile = receiveFile)
                 }
                 if (mc.text == "" && !ci.meta.isLive) {
@@ -402,7 +403,7 @@ fun FramedItemView(
               is MsgContent.MCFile -> ciFileView(ci, mc.text)
               is MsgContent.MCUnknown ->
                 if (ci.file == null) {
-                  CIMarkdownText(chatsCtx, ci, chat, chatTTL, linkMode, uriHandler, onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
+                  CIMarkdownText(chatsCtx, ci, chat, chatTTL, linkMode, uriHandler, onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp, first = textFirst)
                 } else {
                   ciFileView(ci, mc.text)
                 }
@@ -438,7 +439,7 @@ fun FramedItemView(
                 }
                 CIMarkdownText(chatsCtx, ci, chat, chatTTL, linkMode, uriHandler, onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp, prefix = prefix)
               }
-              else -> CIMarkdownText(chatsCtx, ci, chat, chatTTL, linkMode, uriHandler, onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
+              else -> CIMarkdownText(chatsCtx, ci, chat, chatTTL, linkMode, uriHandler, onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp, first = textFirst)
             }
           }
         }
@@ -452,6 +453,11 @@ fun FramedItemView(
       ) {
         CIMetaView(ci, chatTTL, metaColor, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
       }
+    }
+    if (terminal && !transparentBackground) {
+      TerminalMetaLayout(contentWithMeta)
+    } else {
+      Box(contentAlignment = Alignment.BottomEnd) { contentWithMeta() }
     }
   }
 }
@@ -468,14 +474,25 @@ fun CIMarkdownText(
   showViaProxy: Boolean,
   showTimestamp: Boolean,
   prefix: AnnotatedString? = null,
-  stripLink: String? = null
+  stripLink: String? = null,
+  first: Boolean = false
 ) {
   val chatInfo = chat.chatInfo
   val text = if (ci.meta.isLive) ci.content.msgContent?.text ?: ci.text else ci.text
   val bases = remember(ci, linkMode) { itemDisplay(ci, linkMode)?.bases ?: listOf(0) }
   val selection = setupItemSelection(LocalSelectionManager.current, LocalItemContext.current.selectionIndex, ci.meta.isLive == true, bases)
+  val terminal = LocalTerminalLayout.current
 
-  Box(Modifier.padding(vertical = 7.dp, horizontal = 12.dp)) {
+  Box(
+    Modifier
+      .padding(
+        start = CHAT_ITEM_TEXT_PADDING,
+        top = if (terminal && first) 0.dp else CHAT_ITEM_TEXT_VERTICAL_PADDING,
+        end = CHAT_ITEM_TEXT_PADDING,
+        bottom = if (terminal) TERMINAL_TEXT_BOTTOM_PADDING else CHAT_ITEM_TEXT_VERTICAL_PADDING
+      )
+      .then(if (terminal) Modifier.messageTextBottom() else Modifier)
+  ) {
     MarkdownText(
       text, if (text.isEmpty()) emptyList() else ci.formattedText, if (text.isEmpty()) null else ci.markdownBlocks, toggleSecrets = true,
       sendCommandMsg = if (chatInfo.useCommands && chat.chatInfo.sndReady) { { msg -> sendCommandMsg(chatsCtx, chat, msg) } } else null,
@@ -523,6 +540,8 @@ const val CHAT_IMAGE_LAYOUT_ID = "chatImage"
 const val CHAT_BUBBLE_LAYOUT_ID = "chatBubble"
 const val CHAT_COMPOSE_LAYOUT_ID = "chatCompose"
 const val CONSOLE_COMPOSE_LAYOUT_ID = "consoleCompose"
+val CHAT_ITEM_TEXT_PADDING = 12.dp
+val CHAT_ITEM_TEXT_VERTICAL_PADDING = 7.dp
 
 /**
  * Compose shows "Can't represent a width of ... and height ... in Constraints" even when using built-in method for measuring max

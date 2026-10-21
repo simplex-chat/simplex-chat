@@ -6,14 +6,18 @@ import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.*
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.ui.theme.*
 
 @Composable
 fun CIEventView(text: AnnotatedString) {
-  Text(text, Modifier.padding(horizontal = 6.dp, vertical = 6.dp), style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp), maxLines = 4)
+  Text(text, Modifier.padding(horizontal = chatEventHorizontalPadding(), vertical = 6.dp), style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp), maxLines = 4)
 }
+
+@Composable
+fun chatEventHorizontalPadding(): Dp = if (LocalTerminalLayout.current) CHAT_ITEM_TEXT_PADDING else 6.dp
 @Preview/*(
   uiMode = Configuration.UI_MODE_NIGHT_YES,
   name = "Dark Mode"

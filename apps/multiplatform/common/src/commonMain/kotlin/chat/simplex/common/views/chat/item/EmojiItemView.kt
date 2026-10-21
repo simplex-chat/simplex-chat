@@ -27,7 +27,7 @@ fun EmojiItemView(chatItem: ChatItem, timedMessagesTTL: Int?, showViaProxy: Bool
 
   Column(
     Modifier.padding(vertical = 8.dp, horizontal = 12.dp),
-    horizontalAlignment = Alignment.CenterHorizontally
+    horizontalAlignment = if (LocalTerminalLayout.current) Alignment.Start else Alignment.CenterHorizontally
   ) {
     if (isSelected) {
       Box(Modifier.background(SelectionHighlightColor)) {

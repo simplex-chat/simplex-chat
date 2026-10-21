@@ -1882,7 +1882,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
   }
 
   fun defaultChatLayout(user: User?, appLayout: ChatLayout): ChatLayout =
-    chatLayout.known ?: user?.chatLayout.known ?: appLayout.known ?: ChatLayout.Classic
+    chatLayout.known ?: profileChatLayout(user, appLayout)
 
   fun activeChatLayout(user: User?, appLayout: ChatLayout): ChatLayout =
     userChatLayout.known ?: defaultChatLayout(user, appLayout)
@@ -2251,6 +2251,9 @@ object ChatLayoutSerializer : KSerializer<ChatLayout> {
 }
 
 private val ChatLayout?.known: ChatLayout? get() = if (this is ChatLayout.Unknown) null else this
+
+fun profileChatLayout(user: User?, appLayout: ChatLayout): ChatLayout =
+  user?.chatLayout.known ?: appLayout.known ?: ChatLayout.Classic
 
 fun peerTypeIcon(peerType: ChatPeerType?): ImageResource =
   when (peerType) {

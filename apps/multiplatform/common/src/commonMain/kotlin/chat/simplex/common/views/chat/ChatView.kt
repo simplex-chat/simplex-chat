@@ -6,6 +6,7 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -1003,7 +1004,7 @@ fun ChatLayout(
       sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
     ) {
       val composeViewHeight = remember { mutableStateOf(0.dp) }
-      Box(Modifier.fillMaxSize().chatViewBackgroundModifier(MaterialTheme.colors, MaterialTheme.wallpaper, LocalAppBarHandler.current?.backgroundGraphicsLayerSize, LocalAppBarHandler.current?.backgroundGraphicsLayer, drawWallpaper = chatsCtx.secondaryContextFilter == null && !LocalTerminalLayout.current)) {
+      Box(Modifier.fillMaxSize().chatViewBackgroundModifier(MaterialTheme.colors, MaterialTheme.wallpaper, LocalAppBarHandler.current?.backgroundGraphicsLayerSize, LocalAppBarHandler.current?.backgroundGraphicsLayer, drawWallpaper = chatsCtx.secondaryContextFilter == null, drawWallpaperImage = !LocalTerminalLayout.current)) {
         val remoteHostId = remember { remoteHostId }.value
         val chat = remember { chat }.value
         val chatInfo = chat?.chatInfo
@@ -2037,6 +2038,7 @@ fun BoxScope.ChatItemsList(
           val swipeableOrSelectionModifier = (if (selectionVisible) Modifier else swipeableModifier).graphicsLayer { translationX = selectionOffset.toPx() }
           if (terminal) {
             val rowInteractionSource = remember { TerminalRowInteractionSource() }
+            val rowHovered = rowInteractionSource.collectIsHoveredAsState()
             val highlighted = remember { derivedStateOf { highlightedItems.value.contains(cItem.id) } }
             val rowColor = animateColorAsState(
               when {
@@ -2051,7 +2053,8 @@ fun BoxScope.ChatItemsList(
               }
               TerminalChatItemRow(
                 chatInfo, cItem, showAvatar, itemTopGap, range, reversedChatItems, showMemberInfo, showChatInfo,
-                Modifier.terminalStartOffset { selectionOffset }.then(if (selectionVisible) Modifier else swipeableModifier)
+                Modifier.terminalStartOffset { selectionOffset }.then(if (selectionVisible) Modifier else swipeableModifier),
+                goToButton = { GoToItemButton(remoteHostId, chatInfo, cItem, searchValueIsNotBlank, hoveredItemId, rowHovered, Modifier) }
               ) {
                 ChatItemViewShortHand(cItem, itemSeparation, range, swipeOffset = dismissState.offset.value, highlighted = highlighted, bubbleInteractionSource = rowInteractionSource)
               }
@@ -3554,9 +3557,10 @@ fun Modifier.chatViewBackgroundModifier(
   wallpaper: AppWallpaper,
   backgroundGraphicsLayerSize: MutableState<IntSize>?,
   backgroundGraphicsLayer: GraphicsLayer?,
-  drawWallpaper: Boolean
+  drawWallpaper: Boolean,
+  drawWallpaperImage: Boolean
 ): Modifier {
-  val wallpaperImage = wallpaper.type.image
+  val wallpaperImage = if (drawWallpaperImage) wallpaper.type.image else null
   val wallpaperType = wallpaper.type
   val backgroundColor = if (drawWallpaper) wallpaper.background ?: wallpaperType.defaultBackgroundColor(CurrentColors.value.base, colors.background) else colors.background
   val tintColor = wallpaper.tint ?: wallpaperType.defaultTintColor(CurrentColors.value.base)
