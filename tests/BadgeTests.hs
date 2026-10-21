@@ -29,10 +29,11 @@ import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Code
 import Simplex.Chat.Badges.Ledger
 import Simplex.Chat.Badges.Service
-import Simplex.Chat.Badges.Types (BadgeIssueFailure (..))
+import Simplex.Chat.Badges.Types (BadgeIssueFailure (..), BadgeOfferId (..), BadgePriceId (..))
 import Simplex.Chat (defaultChatConfig)
 import Simplex.Chat.Controller (ChatError (..), ChatErrorType (..), badgeRetryInterval, chatErrorAgent)
 import Simplex.Chat.Library.Commands (badgeErrorRetry, badgeFailureTransient, badgeIssueFailure, badgeRetryAfter, badgeServiceErrorText, badgeStalledInterval)
+import Simplex.Chat.PaymentService
 import Simplex.Messaging.Agent.Protocol (AgentErrorType (..), AgentServiceError (..), SMPAgentError (..))
 import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..), nextRetryDelay)
 import Simplex.Messaging.Crypto.BBS
@@ -103,6 +104,7 @@ badgeTests = do
     it "badgeCredential response matches the schema" testCredentialResponseJSON
     it "error response matches the schema" testErrorResponseJSON
     it "statement entries round-trip, unknown entry types verbatim" testStatementJSON
+    it "pins the wire tag of every command, response and error code" testServiceWireTags
 
 proofOf :: BadgeProof -> BBSProof
 proofOf (BadgeProof _ _ p _) = p
@@ -880,20 +882,23 @@ testErrorResponseJSON = do
   J.toJSON BSPError {code = BSERateLimited, message = Just "slow down", retryAfter = Just 30}
     `shouldBe` J.object ["type" J..= ("error" :: T.Text), "code" J..= ("rate_limited" :: T.Text), "message" J..= ("slow down" :: T.Text), "retryAfter" J..= (30 :: Int)]
 
+testEntry :: StatementEntry
+testEntry =
+  StatementEntry
+    { entryId = "e1",
+      changeMonths = 3,
+      balanceMonths = 3,
+      balanceStartTs = futureTime,
+      balanceAnchorTs = futureTime,
+      balanceBadgeType = BTSupporter,
+      wasPausedSince = Nothing,
+      createdAt = futureTime,
+      entryType = SECredit {credit = SCPayment {invoiceId = Nothing}}
+    }
+
 testStatementJSON :: IO ()
 testStatementJSON = do
-  let entry =
-        StatementEntry
-          { entryId = "e1",
-            changeMonths = 3,
-            balanceMonths = 3,
-            balanceStartTs = futureTime,
-            balanceAnchorTs = futureTime,
-            balanceBadgeType = BTSupporter,
-            wasPausedSince = Nothing,
-            createdAt = futureTime,
-            entryType = SECredit {credit = SCPayment {invoiceId = Nothing}}
-          }
+  let entry = testEntry
   -- the whole entry: the required fields, and wasPausedSince omitted rather than sent as null
   J.toJSON entry
     `shouldBe` J.object
@@ -920,6 +925,112 @@ testStatementJSON = do
       tag `shouldBe` "grant"
       J.toJSON c `shouldBe` futureCredit
     r -> expectationFailure $ "expected SCUnknown, got " <> show (fmap (const ()) r)
+
+testServiceWireTags :: IO ()
+testServiceWireTags = do
+  drg <- C.newRandom
+  masterKey <- generateMasterKey drg
+  let badgeInfo = BadgeInfo {badgeType = BTSupporter, badgeExpiry = futureTime, badgeExtra = ""}
+      badgeRequest = BadgeRequest {masterKey, badgeInfo}
+      payment = SPInvoice {invoiceId = InvoiceId "inv-1"}
+      balance = BadgeBalance {lastEntry = testEntry}
+      statement = BadgeStatement {entries = [testEntry], previousEntryId = Nothing}
+      invoice =
+        ServiceInvoice
+          { invoiceId = InvoiceId "inv-1",
+            price = CurrencyAmount 500,
+            discount = Nothing,
+            credit = Nothing,
+            amount = CurrencyAmount 500,
+            currency = "USD",
+            expiresAt = futureTime,
+            paymentTo = SPDCard {provider = CPStripe, url = "https://checkout.example/inv-1"}
+          }
+      commands =
+        [ BSCGetBadgeCatalog,
+          BSCGetBadgeInvoice {priceId = BadgePriceId "price-1", offerId = Just (BadgeOfferId "offer-1"), badgeInfo, paymentVia = SPMCard {provider = CPStripe}, upgrade = Nothing},
+          BSCRedeemBadgeCode {masterKey, code = "SB-4K2P7-TQ9M1-ZX3RB-8HJ5W"},
+          BSCPurchaseBadge {badgeRequest, payment, upgrade = Nothing},
+          BSCUpgradeBadgeSubscription {badgeRequest, payment, balance},
+          BSCIssueBadge {balance},
+          BSCPauseBadge
+        ]
+      responses =
+        [ BSPBadgeCatalog {catalog = BadgeCatalog {prices = [], offers = []}, badgeStatement = Just statement},
+          BSPBadgeInvoice {invoice, badgeType = BTSupporter, months = 3},
+          BSPBadgeCredential {credential = Nothing, receipt = Just "receipt", statement},
+          BSPError {code = BSEInternal, message = Nothing, retryAfter = Nothing}
+        ]
+      errors =
+        [ BSEBadRequest,
+          BSEUnsupportedVersion,
+          BSEUnknownPurchaseKey,
+          BSEUnknownOfferId,
+          BSEOfferDisabled,
+          BSEOfferMismatch,
+          BSEProductUnavailable,
+          BSEPaymentNotEntitled,
+          BSEPaymentPending,
+          BSEProviderUnavailable,
+          BSERateLimited,
+          BSECodeInvalid,
+          BSECodeUsed,
+          BSECodeExpired,
+          BSEReceiptInvalid,
+          BSEReceiptUsed,
+          BSEInternal,
+          BSEUnknown "future_code"
+        ]
+  forM_ commands $ pinsTypeTag commandTag
+  forM_ responses $ pinsTypeTag responseTag
+  forM_ errors $ \e -> do
+    J.toJSON e `shouldBe` J.String (errorTag e)
+    J.fromJSON (J.String $ errorTag e) `shouldBe` J.Success e
+  where
+    commandTag = \case
+      BSCGetBadgeCatalog -> "getBadgeCatalog"
+      BSCGetBadgeInvoice {} -> "getBadgeInvoice"
+      BSCRedeemBadgeCode {} -> "redeemBadgeCode"
+      BSCPurchaseBadge {} -> "purchaseBadge"
+      BSCUpgradeBadgeSubscription {} -> "upgradeBadgeSubscription"
+      BSCIssueBadge {} -> "issueBadge"
+      BSCPauseBadge -> "pauseBadge"
+    responseTag = \case
+      BSPBadgeCatalog {} -> "badgeCatalog"
+      BSPBadgeInvoice {} -> "badgeInvoice"
+      BSPBadgeCredential {} -> "badgeCredential"
+      BSPError {} -> "error"
+    errorTag = \case
+      BSEBadRequest -> "bad_request"
+      BSEUnsupportedVersion -> "unsupported_version"
+      BSEUnknownPurchaseKey -> "unknown_purchase_key"
+      BSEUnknownOfferId -> "unknown_offer_id"
+      BSEOfferDisabled -> "offer_disabled"
+      BSEOfferMismatch -> "offer_mismatch"
+      BSEProductUnavailable -> "product_unavailable"
+      BSEPaymentNotEntitled -> "payment_not_entitled"
+      BSEPaymentPending -> "payment_pending"
+      BSEProviderUnavailable -> "provider_unavailable"
+      BSERateLimited -> "rate_limited"
+      BSECodeInvalid -> "code_invalid"
+      BSECodeUsed -> "code_used"
+      BSECodeExpired -> "code_expired"
+      BSEReceiptInvalid -> "receipt_invalid"
+      BSEReceiptUsed -> "receipt_used"
+      BSEInternal -> "internal"
+      BSEUnknown t -> t
+
+-- the tag is checked in both encodings, and decoding must land on the constructor the tag names
+pinsTypeTag :: (HasCallStack, J.ToJSON a, J.FromJSON a) => (a -> T.Text) -> a -> IO ()
+pinsTypeTag tagOf x = do
+  let tag = J.String $ tagOf x
+  typeTag (J.toJSON x) `shouldBe` Just tag
+  (typeTag <$> J.eitherDecode (J.encode x)) `shouldBe` Right (Just tag)
+  (tagOf <$> J.eitherDecode (J.encode x)) `shouldBe` Right (tagOf x)
+  where
+    typeTag = \case
+      J.Object o -> KM.lookup "type" o
+      _ -> Nothing
 
 -- decoding and re-encoding reproduces the encoding, without Eq on the protocol types
 roundTrips :: (HasCallStack, J.ToJSON a, J.FromJSON a) => a -> IO ()
