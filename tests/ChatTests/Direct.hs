@@ -647,13 +647,13 @@ testArchiveContact =
 
       alice ##> "/c"
       _ <- getInvitation alice
-      connId <- withCCTransaction alice $ \db -> (\[Only i] -> i :: Int) <$> DB.query_ db "SELECT max(connection_id) FROM connections"
+      [Only connId] <- withCCTransaction alice $ \db -> DB.query_ db "SELECT max(connection_id) FROM connections" :: IO [Only Int]
       alice ##> ("/_delete :" <> show connId <> " archive")
       alice <## "bad chat command: archive is not supported for pending connections"
   where
-    chatDeleted cc =
-      withCCTransaction cc $ \db ->
-        (\[Only (DB.BI d)] -> d) <$> DB.query_ db "SELECT chat_deleted FROM contacts WHERE contact_id = 2"
+    chatDeleted cc = do
+      [Only (DB.BI d)] <- withCCTransaction cc $ \db -> DB.query_ db "SELECT chat_deleted FROM contacts WHERE contact_id = 2"
+      pure d
 
 testDeleteConversationKeepContact :: HasCallStack => TestParams -> IO ()
 testDeleteConversationKeepContact =

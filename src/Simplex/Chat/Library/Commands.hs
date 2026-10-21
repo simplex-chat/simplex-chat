@@ -4777,7 +4777,9 @@ processChatCommand cxt nm = \case
             Nothing ->
               withFastStore' (\db -> getContactWithoutConnViaAddress db cxt user cReqSchemas) >>= \case
                 Just ct | not (contactDeleted ct) -> plan $ CAPContactViaAddress ct
-                _ -> okPlan
+                _ ->
+                  withFastStore' (\db -> getGroupInfoByGroupLinkHash db cxt user cReqHashes)
+                    >>= maybe okPlan (\gInfo -> groupPlan gInfo notice_ Nothing Nothing Nothing [])
             Just (RcvDirectMsgConnection Connection {connStatus} Nothing)
               | connStatus == ConnPrepared -> okPlan
               | otherwise -> plan CAPConnectingConfirmReconnect

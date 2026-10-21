@@ -2177,6 +2177,9 @@ testBusinessAddressNotice = testChat3 businessProfile bobProfile cathProfile $
     biz <## "#cath: you deleted the group (signed)"
     waitLinkNoticesCount cath 1
     cath <// 50000
+    cath ##> ("/_connect plan 1 " <> cLink)
+    cath <## "business address: known business #biz"
+    cath <## "use #biz <message> to send messages"
     leaveDeleteBiz cath
     cath ##> ("/_connect plan 1 " <> cLink)
     cath <## "contact address: banned permanently"
