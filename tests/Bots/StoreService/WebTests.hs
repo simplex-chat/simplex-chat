@@ -17,6 +17,7 @@ import StoreService.Providers.Stripe (stripeProvider)
 import StoreService.Store (KeyPurchase (..), KeyRedemption (..), ManagedGroup (..), NewCodePurchase (..), RevokeResult (..), createCodePurchase, getCodePurchaseForKey, getManagedGroup, insertBadgeCode, insertManagedGroup, markOwnerBootstrapped, revokeCode)
 import StoreService.Store.Invoices
 import StoreService.Waiters (awaitStatus, newWaiters, publish, waitingCount)
+import StoreService.Web.Http
 import StoreService.Web.Server
 import Bots.StoreService.BotTests (codeCounts, newPurchaseKeys)
 import Bots.StoreService.CatalogTests (WebOffer (..), WebPrice (..), parseCatalogSource)
@@ -1434,23 +1435,23 @@ testForwardedForMustBeAnAddress = bounded "forwarded-for is an address" $ withWe
 testBucketsStayBounded :: IO ()
 testBucketsStayBounded = bounded "bucket cap" $ withWebApp $ \env _ -> do
   let clients = map (\i -> T.pack ("198.51." <> show (i `div` 256) <> "." <> show (i `mod` 256))) [1 .. maxBuckets * 2 + 100]
-  mapM_ (takeToken env readLimit) clients
-  held <- Map.size <$> readTVarIO (weBuckets env)
+  mapM_ (takeToken (weHttp env) readLimit) clients
+  held <- Map.size <$> readTVarIO (heBuckets (weHttp env))
   held `shouldSatisfy` \n -> n > 0 && n <= maxBuckets
-  answers <- mapM (\_ -> takeToken env readLimit "203.0.113.9") [1 .. readsPerMinute + 1]
+  answers <- mapM (\_ -> takeToken (weHttp env) readLimit "203.0.113.9") [1 .. readsPerMinute + 1]
   length (filter isJust answers) `shouldBe` 1
 
   let fill i = do
-        n <- Map.size <$> readTVarIO (weBuckets env)
+        n <- Map.size <$> readTVarIO (heBuckets (weHttp env))
         when (n < maxBuckets) $ do
-          _ <- takeToken env readLimit (T.pack ("192.0." <> show (i `div` 256) <> "." <> show (i `mod` 256)))
+          _ <- takeToken (weHttp env) readLimit (T.pack ("192.0." <> show (i `div` 256) <> "." <> show (i `mod` 256)))
           fill (i + 1)
   fill (1 :: Int)
-  atTheCap <- Map.size <$> readTVarIO (weBuckets env)
+  atTheCap <- Map.size <$> readTVarIO (heBuckets (weHttp env))
   atTheCap `shouldBe` maxBuckets
-  refusedAgain <- takeToken env readLimit "203.0.113.9"
+  refusedAgain <- takeToken (weHttp env) readLimit "203.0.113.9"
   refusedAgain `shouldSatisfy` isJust
-  afterARefusal <- Map.size <$> readTVarIO (weBuckets env)
+  afterARefusal <- Map.size <$> readTVarIO (heBuckets (weHttp env))
   afterARefusal `shouldSatisfy` (<= atTheCap `div` 2 + 1)
 
 testHoldReportsTheRowNotTheWake :: IO ()
