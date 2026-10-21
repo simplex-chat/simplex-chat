@@ -205,6 +205,8 @@ badgeServiceTests = do
     it "should ask the store only once coverage has ended, and at most once an hour, failed checks included" testSubscriptionStoreChecksBounded
     it "should record and not grant a revoked, offer, unstarted or ended charge" testSubscriptionChargeNotGranted
     it "should grant a store charge of another tier at renewal, on both sides, and back again" testSubscriptionTierChangeAtRenewal
+    it "should grant an App Store upgrade during coverage once the store charges it, answering pending until then and asking at most hourly" testSubscriptionUpgradeNow
+    it "should refuse an upgrade from another key, of another subscription, of a prepaid purchase or from Play, without asking the store" testUpgradeRequestRefused
     it "should not grant a Play charge whose month from its clipped period start has already run out" testClippedPlayPeriodNotGranted
     it "should answer an unreachable store with the check interval, writing no charge or ledger row" testSubscriptionStoreUnreachable
     it "should renew an App Store subscription by its original id, granting a charge first recorded before its period started" testAppleSubscriptionRenews
@@ -2448,6 +2450,87 @@ issuedBadgeTypes :: ChatController -> IO [Text]
 issuedBadgeTypes ChatController {chatStore} =
   withTransaction chatStore $ \db -> map fromOnly <$> DB.query_ db "SELECT badge_type FROM badge_issuances ORDER BY period_end"
 
+upgradeCmdWith :: Text -> StatementEntry -> BadgeServiceCommand
+upgradeCmdWith jws lastEntry = BSCUpgradeBadgeSubscription {payment = SPApple {jws}, balance = BadgeBalance {lastEntry}}
+
+testSubscriptionUpgradeNow :: HasCallStack => TestParams -> IO ()
+testSubscriptionUpgradeNow ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsController = cc, bsStore = store@FakeStore {appleSubscriptionJWS, appleLegendSubscriptionJWS}} -> do
+    firstStart <- addUTCTime (-3600) <$> serviceNow env
+    appleStoreReports store $ subscriptionCheck SSRenewing $ Just $ storeCharge "SUBSCR_BADGE_SUPPORTER_YEAR_01" firstStart 12
+    (purchaseKey, masterKey) <- newPurchaseKeys
+    purchased <- serviceCmd env purchaseKey $ purchaseCmd masterKey SPApple {jws = appleSubscriptionJWS}
+    setClockAt bsClock $ addUTCTime 600 (addMonths 1 firstStart)
+    second <- assertBalance env purchaseKey (last $ fst $ statementOf purchased)
+    setClockAt bsClock $ addUTCTime 600 (addMonths 2 firstStart)
+    third <- assertBalance env purchaseKey (last $ fst $ statementOf second)
+    let tip = last $ fst $ statementOf third
+        upgradedAt = addUTCTime (10 * nominalDay) (addMonths 2 firstStart)
+        upgrade jws = serviceCmd env purchaseKey $ upgradeCmdWith jws tip
+    setClockAt bsClock upgradedAt
+    checks <- subscriptionChecks store
+    ledger <- ledgerRows cc "sx_badge_service_badge_ledger"
+    -- a transaction of the tier the ledger holds is answered from the record
+    sameTier <- upgrade appleSubscriptionJWS
+    badgeTypeOf sameTier `shouldBe` Just BTSupporter
+    subscriptionChecks store `shouldReturn` checks
+    ledgerRows cc "sx_badge_service_badge_ledger" `shouldReturn` ledger
+    -- while the store still reports the Supporter plan, nothing is granted and the Supporter credential is not given
+    refusalOf <$> upgrade appleLegendSubscriptionJWS `shouldReturn` (BSEPaymentPending, Just 3600)
+    subscriptionChecks store `shouldReturn` checks + 1
+    subscriptionCheckedAt cc >>= (`shouldSatisfy` \case [Just t] -> abs (diffUTCTime t upgradedAt) < 60; _ -> False)
+    ledgerRows cc "sx_badge_service_badge_ledger" `shouldReturn` ledger
+    -- the store now reports Legend, but the hour since it was asked holds
+    appleStoreReports store $ subscriptionCheck SSRenewing $ Just (storeCharge "SUBSCR_BADGE_LEGEND_YEAR_01" upgradedAt 12) {chargeRef = "apple.legend"}
+    setClockAt bsClock $ addUTCTime 1800 upgradedAt
+    refusalOf <$> upgrade appleLegendSubscriptionJWS >>= (`shouldSatisfy` \case (BSEPaymentPending, Just s) -> s > 1740 && s <= 1801; _ -> False)
+    subscriptionChecks store `shouldReturn` checks + 1
+    -- past it, the unissued Supporter months are debited and the Legend year starts at the store's period
+    setClockAt bsClock $ addUTCTime 3700 upgradedAt
+    upgraded <- upgrade appleLegendSubscriptionJWS
+    subscriptionChecks store `shouldReturn` checks + 2
+    let rows = fst $ statementOf upgraded
+    map entryTag rows `shouldBe` ["upgrade", "charge", "badge"]
+    map createdAtOf (take 2 rows) `shouldBe` [upgradedAt, upgradedAt]
+    badgeTypeOf upgraded `shouldBe` Just BTLegend
+    now <- serviceNow env
+    map snd (balanceChecked now BTSupporter (Just tip) rows) `shouldBe` [Just True, Just True, Just True]
+    purchaseBadgeTypes cc "sx_badge_service_badge_purchases" `shouldReturn` ["legend"]
+    -- asked again, it is answered from the record with the Legend credential
+    again <- upgrade appleLegendSubscriptionJWS
+    credentialOf again `shouldBe` credentialOf upgraded
+    subscriptionChecks store `shouldReturn` checks + 2
+
+testUpgradeRequestRefused :: HasCallStack => TestParams -> IO ()
+testUpgradeRequestRefused ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsIssuerKey, bsVerifier, bsPurchaseChecks, bsController = cc, bsStore = store@FakeStore {appleSubscriptionJWS, appleLegendSubscriptionJWS, appleSecondSubscriptionJWS, appleSupporterJWS}} -> do
+    now <- serviceNow env
+    appleStoreReports store $ subscriptionCheck SSRenewing $ Just $ storeCharge "SUBSCR_BADGE_SUPPORTER_MONTH_01" (addUTCTime (-3600) now) 1
+    (appleKey, appleMasterKey) <- newPurchaseKeys
+    apple <- serviceCmd env appleKey $ purchaseCmd appleMasterKey SPApple {jws = appleSubscriptionJWS}
+    (playKey, _, played) <- subscribedMonthly env
+    (prepaidKey, prepaidMasterKey) <- newPurchaseKeys
+    prepaid <- serviceCmd env prepaidKey $ purchaseCmd prepaidMasterKey SPApple {jws = appleSupporterJWS}
+    (unknownKey, _) <- newPurchaseKeys
+    checks <- subscriptionChecks store
+    ledger <- ledgerRows cc "sx_badge_service_badge_ledger"
+    let appleTip = last $ fst $ statementOf apple
+        refused key cmd = refusalOf <$> serviceCmd env key cmd
+    -- signed by another key than the purchase it names
+    refusalOf <$> badgeServiceResponse bsIssuerKey bsVerifier bsPurchaseChecks cc Nothing (Just playKey) (requestObject appleKey $ upgradeCmdWith appleLegendSubscriptionJWS appleTip)
+      `shouldReturn` (BSEBadRequest, Nothing)
+    refused unknownKey (upgradeCmdWith appleLegendSubscriptionJWS appleTip) `shouldReturn` (BSEUnknownPurchaseKey, Nothing)
+    -- another purchase's subscription, and another subscription for this purchase
+    refused playKey (upgradeCmdWith appleLegendSubscriptionJWS $ last played) `shouldReturn` (BSEBadRequest, Nothing)
+    refused appleKey (upgradeCmdWith appleSecondSubscriptionJWS appleTip) `shouldReturn` (BSEBadRequest, Nothing)
+    refused prepaidKey (upgradeCmdWith appleLegendSubscriptionJWS $ last $ fst $ statementOf prepaid) `shouldReturn` (BSEBadRequest, Nothing)
+    -- a transaction the verifier does not vouch for, one of no subscription product, and Play
+    refused appleKey (upgradeCmdWith (subscriptionJWS appleSubscriptionOriginalId "2000000812345689" []) appleTip) `shouldReturn` (BSEReceiptInvalid, Nothing)
+    refused appleKey (upgradeCmdWith appleSupporterJWS appleTip) `shouldReturn` (BSEBadRequest, Nothing)
+    refused playKey BSCUpgradeBadgeSubscription {payment = subscriptionPlay, balance = BadgeBalance {lastEntry = last played}} `shouldReturn` (BSEBadRequest, Nothing)
+    subscriptionChecks store `shouldReturn` checks
+    ledgerRows cc "sx_badge_service_badge_ledger" `shouldReturn` ledger
+
 testSubscriptionAwaitsCharge :: HasCallStack => TestParams -> IO ()
 testSubscriptionAwaitsCharge ps =
   withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc, bsStore = store} ->
@@ -4255,6 +4338,9 @@ testStoreRouting ps =
     answeredWithoutStore
     routedAt (addUTCTime 3700 lastCheck) `shouldReturn` RenewalLane
     routedAs purchaseKey subscriberKey issue `shouldReturn` MainLane
+    let upgradeCmd = BSCUpgradeBadgeSubscription {payment = SPApple {jws = appleSubscriptionJWS}, balance = BadgeBalance {lastEntry = last purchased}}
+    routed subscriberKey upgradeCmd `shouldReturn` RenewalLane
+    routedAs purchaseKey subscriberKey upgradeCmd `shouldReturn` MainLane
     (unknownKey, _) <- newPurchaseKeys
     routed unknownKey issue `shouldReturn` MainLane
 

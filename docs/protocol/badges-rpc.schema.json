@@ -22,12 +22,6 @@
         "badgeExpiry": {"type": "timestamp"}
       }
     },
-    "badgeRequest": {
-      "properties": {
-        "masterKey": {"ref": "base64url"},
-        "badgeInfo": {"ref": "badgeInfo"}
-      }
-    },
     "credential": {
       "properties": {
         "badgeKeyIdx": {"type": "uint16"},
@@ -322,13 +316,9 @@
         },
         "upgradeBadgeSubscription": {
           "properties": {
-            "badgeRequest": {
-              "ref": "badgeRequest",
-              "metadata": {"comment": "known wrong: to be dropped when implemented, see badges-rpc.md"}
-            },
             "payment": {
               "ref": "payment",
-              "metadata": {"comment": "store payments only"}
+              "metadata": {"comment": "apple only: a transaction of the purchase's own subscription"}
             },
             "balance": {"ref": "balance"}
           }
