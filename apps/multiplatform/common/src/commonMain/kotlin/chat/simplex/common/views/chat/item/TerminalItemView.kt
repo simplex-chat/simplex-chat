@@ -10,7 +10,6 @@ import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.PointerEventPass
@@ -116,7 +115,21 @@ fun Modifier.messageTextBottom(): Modifier =
   }
 
 @Composable
-fun TerminalMetaLayout(contentWithMeta: @Composable () -> Unit) {
+fun ItemWithMeta(meta: @Composable () -> Unit, content: @Composable (inlineMeta: (@Composable () -> Unit)?) -> Unit) {
+  if (LocalTerminalLayout.current) {
+    TerminalMetaLayout {
+      content(null)
+      Box(Modifier.padding(bottom = 6.dp, end = 12.dp)) {
+        meta()
+      }
+    }
+  } else {
+    content(meta)
+  }
+}
+
+@Composable
+private fun TerminalMetaLayout(contentWithMeta: @Composable () -> Unit) {
   Layout(contentWithMeta) { measurables, constraints ->
     val content = measurables[0].measure(constraints.copy(minWidth = 0))
     val meta = measurables[1].measure(constraints.copy(minWidth = 0, minHeight = 0))
@@ -146,31 +159,50 @@ fun TerminalChatItemRow(
 ) {
   val sender = if (showSender) terminalSender(chatInfo, cItem, range, reversedChatItems, showMemberInfo, showChatInfo) else null
   val avatarSize = MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier
-  Row(
-    modifier
-      .padding(top = if (sender != null) 8.dp else topGap, start = 8.dp, end = 12.dp)
-      .fillMaxWidth()
-  ) {
-    Column(Modifier.width(avatarSize + 4.dp)) {
-      if (sender != null) {
-        sender.image()
+  Layout(
+    content = {
+      Box {
+        if (sender != null) {
+          sender.image()
+        }
       }
-      Box(Modifier.width(avatarSize), contentAlignment = Alignment.Center) {
+      Box {
         goToButton()
       }
-    }
-    Column {
-      if (sender != null) {
-        TerminalSenderNameAndRole(sender, topGap)
+      Box {
+        if (sender != null) {
+          TerminalSenderNameAndRole(sender, topGap)
+        }
       }
       Box(Modifier.padding(top = if (sender != null) 2.dp else 0.dp)) {
         content()
       }
+    },
+    modifier
+      .padding(top = if (sender != null) 8.dp else topGap, start = 8.dp, end = 12.dp)
+      .fillMaxWidth()
+  ) { measurables, constraints ->
+    val avatarWidth = avatarSize.roundToPx()
+    val messageStart = avatarWidth + 4.dp.roundToPx()
+    val looseConstraints = constraints.copy(minWidth = 0, minHeight = 0)
+    val messageConstraints = looseConstraints.copy(maxWidth = (constraints.maxWidth - messageStart).coerceAtLeast(0))
+    val avatar = measurables[0].measure(looseConstraints)
+    val button = measurables[1].measure(looseConstraints)
+    val name = measurables[2].measure(messageConstraints)
+    val message = measurables[3].measure(messageConstraints)
+    val messageTop = name.height
+    val buttonTop = max(avatar.height, messageTop + (message.height - button.height) / 2)
+    val height = maxOf(messageTop + message.height, avatar.height, buttonTop + button.height)
+    layout(constraints.maxWidth, height) {
+      avatar.placeRelative(0, 0)
+      button.placeRelative((avatarWidth - button.width) / 2, buttonTop)
+      name.placeRelative(messageStart, 0)
+      message.placeRelative(messageStart, messageTop)
     }
   }
 }
 
-private class TerminalSender(val name: String, val badge: LocalBadge?, val role: String?, val image: @Composable () -> Unit)
+private class TerminalSender(val name: String, val badge: LocalBadge?, val role: String?, val own: Boolean, val image: @Composable () -> Unit)
 
 @Composable
 private fun terminalSender(
@@ -190,9 +222,9 @@ private fun terminalSender(
   val dir = cItem.chatDir
   return when {
     cItem.channelIsSender ->
-      TerminalSender(chatInfo.chatViewName, null, stringResource(MR.strings.channel_role_label), chatImage)
+      TerminalSender(chatInfo.chatViewName, null, stringResource(MR.strings.channel_role_label), dir.sent, chatImage)
     dir is CIDirection.DirectRcv ->
-      TerminalSender(chatInfo.displayName, chatInfo.nameBadge, null, chatImage)
+      TerminalSender(chatInfo.displayName, chatInfo.nameBadge, null, false, chatImage)
     dir is CIDirection.GroupRcv && chatInfo is ChatInfo.Group -> {
       val member = dir.groupMember
       val rangeValue = range.value
@@ -200,7 +232,8 @@ private fun terminalSender(
       TerminalSender(
         memberNames(member, prevMember, memCount),
         if (prevMember == null && memCount == 1) member.nameBadge else null,
-        if (memCount == 1) memberRole(member, chatInfo.isChannel) else null
+        if (memCount == 1) memberRole(member, chatInfo.isChannel) else null,
+        false
       ) {
         Box(Modifier.clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
           MemberImage(member)
@@ -209,17 +242,17 @@ private fun terminalSender(
     }
     dir is CIDirection.GroupSnd && chatInfo is ChatInfo.Group -> {
       val membership = chatInfo.groupInfo.membership
-      TerminalSender(membership.displayName, membership.nameBadge, memberRole(membership, chatInfo.isChannel)) {
+      TerminalSender(membership.displayName, membership.nameBadge, memberRole(membership, chatInfo.isChannel), true) {
         MemberImage(membership)
       }
     }
     chatInfo.incognito ->
-      TerminalSender(stringResource(MR.strings.incognito), null, null) {
+      TerminalSender(stringResource(MR.strings.incognito), null, null, true) {
         IncognitoImage(size)
       }
     else -> {
       val user = chatModel.currentUser.value
-      TerminalSender(user?.displayName ?: "", user?.profile?.localBadge, null) {
+      TerminalSender(user?.displayName ?: "", user?.profile?.localBadge, null, true) {
         ProfileImage(size, user?.image, backgroundColor = MaterialTheme.colors.background)
       }
     }
@@ -237,7 +270,7 @@ private fun TerminalSenderNameAndRole(sender: TerminalSender, topGap: Dp) {
       sender.badge,
       Modifier.weight(1f, false),
       fontSize = 13.5.sp,
-      color = MaterialTheme.colors.secondary,
+      color = if (sender.own) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
       overflow = TextOverflow.Ellipsis,
       maxLines = 1
     )

@@ -250,7 +250,7 @@ fun FramedItemView(
       }
     )) {
     var metaColor = MaterialTheme.colors.secondary
-    val contentWithMeta: @Composable () -> Unit = {
+    val framedContent: @Composable (inlineMeta: (@Composable () -> Unit)?) -> Unit = { inlineMeta ->
       val style = shapeStyle(ci, chatItemTailEnabled(), tailVisible, true)
       val tailRendered = style is ShapeStyle.Bubble && style.tailVisible
       Column(
@@ -378,7 +378,7 @@ fun FramedItemView(
                   CIImageView(image = mc.image, file = ci.file, provider, showMenu, false, receiveFile)
                 }
                 if (mc.text == "" && !ci.meta.isLive) {
-                  metaColor = Color.White
+                  if (!terminal) metaColor = Color.White
                 } else {
                   CIMarkdownText(chatsCtx, ci, chat, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
                 }
@@ -389,7 +389,7 @@ fun FramedItemView(
                   CIVideoView(image = mc.image, mc.duration, file = ci.file, provider, showMenu, smallView = false, receiveFile = receiveFile)
                 }
                 if (mc.text == "" && !ci.meta.isLive) {
-                  metaColor = Color.White
+                  if (!terminal) metaColor = Color.White
                 } else {
                   CIMarkdownText(chatsCtx, ci, chat, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
                 }
@@ -444,20 +444,20 @@ fun FramedItemView(
           }
         }
       }
-      Box(
-        Modifier
-          .padding(
-            bottom = 6.dp,
-            end = 12.dp + if (tailRendered && sent) msgTailWidthDp else 0.dp,
-          )
-      ) {
-        CIMetaView(ci, chatTTL, metaColor, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
+      if (inlineMeta != null) {
+        Box(
+          Modifier
+            .padding(
+              bottom = 6.dp,
+              end = 12.dp + if (tailRendered && sent) msgTailWidthDp else 0.dp,
+            )
+        ) {
+          inlineMeta()
+        }
       }
     }
-    if (terminal && !transparentBackground) {
-      TerminalMetaLayout(contentWithMeta)
-    } else {
-      Box(contentAlignment = Alignment.BottomEnd) { contentWithMeta() }
+    ItemWithMeta(meta = { CIMetaView(ci, chatTTL, metaColor, showViaProxy = showViaProxy, showTimestamp = showTimestamp) }) { inlineMeta ->
+      Box(contentAlignment = Alignment.BottomEnd) { framedContent(inlineMeta) }
     }
   }
 }

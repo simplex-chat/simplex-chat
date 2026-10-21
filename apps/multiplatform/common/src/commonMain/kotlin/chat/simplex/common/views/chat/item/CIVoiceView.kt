@@ -173,6 +173,7 @@ private fun VoiceLayout(
       }
     }
   }
+  val meta: @Composable () -> Unit = { CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp) }
   when {
     sizeMultiplier != 1f -> {
       Row(verticalAlignment = Alignment.CenterVertically) {
@@ -193,7 +194,7 @@ private fun VoiceLayout(
         Slider(if (ci.chatDir.sent) sentColor else receivedColor)
       }
     }
-    sent -> {
+    sent -> ItemWithMeta(meta) { inlineMeta ->
       Column(horizontalAlignment = Alignment.End) {
         Row {
           Row(Modifier.weight(1f, false), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.End) {
@@ -203,12 +204,14 @@ private fun VoiceLayout(
           }
           VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, 1f, play, pause, longClick, receiveFile)
         }
-        Box(Modifier.padding(top = 6.sp.toDp() * sizeMultiplier, end = 6.sp.toDp() * sizeMultiplier)) {
-          CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
+        if (inlineMeta != null) {
+          Box(Modifier.padding(top = 6.sp.toDp() * sizeMultiplier, end = 6.sp.toDp() * sizeMultiplier)) {
+            inlineMeta()
+          }
         }
       }
     }
-    else -> {
+    else -> ItemWithMeta(meta) { inlineMeta ->
       Column(horizontalAlignment = Alignment.Start) {
         Row {
           VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, 1f, play, pause, longClick, receiveFile)
@@ -218,8 +221,10 @@ private fun VoiceLayout(
             Spacer(Modifier.height(56.sp.toDp() * sizeMultiplier))
           }
         }
-        Box(Modifier.padding(top = 6.sp.toDp() * sizeMultiplier)) {
-          CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
+        if (inlineMeta != null) {
+          Box(Modifier.padding(top = 6.sp.toDp() * sizeMultiplier)) {
+            inlineMeta()
+          }
         }
       }
     }

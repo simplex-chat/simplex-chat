@@ -120,17 +120,19 @@ private fun FullFeatureView(
   iconColor: Color,
   icon: Painter? = null
 ) {
-  Row(
-    Modifier.padding(horizontal = chatEventHorizontalPadding(), vertical = 6.dp),
-    verticalAlignment = Alignment.CenterVertically,
-    horizontalArrangement = Arrangement.spacedBy(4.dp)
-  ) {
-    Icon(icon ?: feature.iconFilled(), feature.text, Modifier.size(20.dp), tint = iconColor)
-    Text(
-      chatEventText(chatItem),
-      Modifier,
-      // this is important. Otherwise, aligning will be bad because annotated string has a Span with size 12.sp
-      fontSize = 12.sp
-    )
+  ItemWithMeta(meta = { ChatEventMeta(chatItem) }) { inlineMeta ->
+    Row(
+      Modifier.padding(horizontal = chatEventHorizontalPadding(), vertical = 6.dp),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+      Icon(icon ?: feature.iconFilled(), feature.text, Modifier.size(20.dp), tint = iconColor)
+      Text(
+        chatEventText(chatItem, ts = if (inlineMeta != null) chatItem.timestampText else ""),
+        Modifier,
+        // this is important. Otherwise, aligning will be bad because annotated string has a Span with size 12.sp
+        fontSize = 12.sp
+      )
+    }
   }
 }

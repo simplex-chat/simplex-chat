@@ -9,6 +9,7 @@ import androidx.compose.ui.text.*
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import chat.simplex.common.model.ChatItem
 import chat.simplex.common.ui.theme.*
 
 @Composable
@@ -18,6 +19,11 @@ fun CIEventView(text: AnnotatedString) {
 
 @Composable
 fun chatEventHorizontalPadding(): Dp = if (LocalTerminalLayout.current) CHAT_ITEM_TEXT_PADDING else 6.dp
+
+@Composable
+fun ChatEventMeta(ci: ChatItem) {
+  CIMetaView(ci, timedMessagesTTL = null, showStatus = false, showEdited = false, showViaProxy = false, showTimestamp = true)
+}
 @Preview/*(
   uiMode = Configuration.UI_MODE_NIGHT_YES,
   name = "Dark Mode"

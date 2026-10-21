@@ -50,8 +50,8 @@ private val msgTailMaxHeightDp = msgTailWidthDp * 1.732f // 60deg
 
 val chatEventStyle = SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.Light, color = CurrentColors.value.colors.secondary)
 
-fun chatEventText(ci: ChatItem, isChannel: Boolean = false): AnnotatedString =
-  chatEventText(ci.content.text(isChannel), ci.timestampText)
+fun chatEventText(ci: ChatItem, isChannel: Boolean = false, ts: String = ci.timestampText): AnnotatedString =
+  chatEventText(ci.content.text(isChannel), ts)
 
 fun chatEventText(eventText: String, ts: String): AnnotatedString =
   buildAnnotatedString {
@@ -562,24 +562,26 @@ fun ChatItemView(
               }
             }
 
-            fun eventItemViewText(reversedChatItems: List<ChatItem>): AnnotatedString {
+            fun eventItemViewText(reversedChatItems: List<ChatItem>, ts: String): AnnotatedString {
               val memberDisplayName = cItem.memberDisplayName
               val t = mergedGroupEventText(cItem, reversedChatItems)
               return if (!revealed.value && t != null) {
-                chatEventText(t, cItem.timestampText)
+                chatEventText(t, ts)
               } else if (memberDisplayName != null) {
                 buildAnnotatedString {
                   withStyle(chatEventStyle) { append(memberDisplayName) }
                   append(" ")
-                }.plus(chatEventText(cItem, cInfo.isChannel))
+                }.plus(chatEventText(cItem, cInfo.isChannel, ts))
               } else {
-                chatEventText(cItem, cInfo.isChannel)
+                chatEventText(cItem, cInfo.isChannel, ts)
               }
             }
 
             @Composable fun EventItemView() {
               val reversedChatItems = chatsCtx.chatItems.value.asReversed()
-              CIEventView(eventItemViewText(reversedChatItems))
+              ItemWithMeta(meta = { ChatEventMeta(cItem) }) { inlineMeta ->
+                CIEventView(eventItemViewText(reversedChatItems, if (inlineMeta != null) cItem.timestampText else ""))
+              }
             }
 
             @Composable fun PendingReviewEventItemView() {
