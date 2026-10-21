@@ -184,7 +184,7 @@
     "simplex-unique-overlay-card-3-p-2": "Сквозные зашифрованные сообщения временно хранятся на серверах SimpleX до получения, после чего они удаляются безвозвратно.",
     "blog": "Блог",
     "simplex-private-card-7-point-1": "Для обеспечения неизменности, сообщения нумеруются по порядку и содержат хеш предыдущего сообщения.",
-    "simplex-unique-overlay-card-4-p-2": "Сеть SimpleX использует <a href=\"https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md\" target=\"_blank\" rel=\"noopener\">открытый протокол</a> и предоставляет <a href=\"https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-client/typescript\" target=\"_blank\" rel=\"noopener\">SDK для создания чат-ботов</a>, позволяя внедрять сервисы, с которыми пользователи могут взаимодействовать через приложение SimpleX Chat &mdash; мы с нетерпением ждем сервисы SimpleX, которые Вы создадите.",
+    "simplex-unique-overlay-card-4-p-2": "Сеть SimpleX использует <a href=\"https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md\" target=\"_blank\">открытый протокол</a> и предоставляет <a href=\"https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-client/typescript\" target=\"_blank\">SDK для создания чат-ботов</a>, позволяя внедрять сервисы, с которыми пользователи могут взаимодействовать через приложение SimpleX Chat &mdash; мы с нетерпением ждем сервисы SimpleX, которые Вы создадите.",
     "simplex-explained-tab-1-p-1": "Вы можете создавать контакты и группы, а также вести двусторонние беседы, как и в любом другом мессенджере.",
     "contact-hero-p-2": "Еще не скачали SimpleX Chat?",
     "why-simplex-is-unique": "Почему SimpleX <span class='gradient-text'>уникален</span>",
