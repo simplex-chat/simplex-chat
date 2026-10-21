@@ -4535,7 +4535,7 @@ testStoreChecksConfigured _ = do
 
 testStoreRouting :: HasCallStack => TestParams -> IO ()
 testStoreRouting ps =
-  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsController = cc, bsStore = store@FakeStore {appleSubscriptionJWS, appleSupporterJWS}} -> do
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsController = cc, bsStore = store@FakeStore {appleSubscriptionJWS, appleLegendSubscriptionJWS, appleSupporterJWS}} -> do
     let routedAs signer key cmd = requestLane ChecksAfterCoverage cc (Just signer) (requestObject key cmd)
         routed key = routedAs key key
     (purchaseKey, masterKey) <- newPurchaseKeys
@@ -4577,10 +4577,24 @@ testStoreRouting ps =
     routedAt (addUTCTime 3700 lastCheck) `shouldReturn` RenewalLane
     routedAs purchaseKey subscriberKey issue `shouldReturn` MainLane
     let upgradeCmd = BSCUpgradeBadgeSubscription {payment = SPApple {jws = appleSubscriptionJWS}, balance = BadgeBalance {lastEntry = last purchased}}
-    routed subscriberKey upgradeCmd `shouldReturn` RenewalLane
+    routed subscriberKey upgradeCmd `shouldReturn` MainLane
     routedAs purchaseKey subscriberKey upgradeCmd `shouldReturn` MainLane
+    routed codeKey upgradeCmd `shouldReturn` MainLane
     (unknownKey, _) <- newPurchaseKeys
     routed unknownKey issue `shouldReturn` MainLane
+    routed unknownKey upgradeCmd `shouldReturn` MainLane
+    -- an App Store subscription's upgrade may ask the store once the hour since its last check has passed
+    let boughtAt = addUTCTime 7200 lastCheck
+    setClockAt bsClock boughtAt
+    appleStoreReports store $ subscriptionCheck SSRenewing $ Just $ storeCharge "SUBSCR_BADGE_SUPPORTER_MONTH_01" (addUTCTime (-3600) boughtAt) 1
+    (appleKey, appleMasterKey) <- newPurchaseKeys
+    bought <- serviceCmd env appleKey $ purchaseCmd appleMasterKey SPApple {jws = appleSubscriptionJWS}
+    let appleUpgrade = upgradeCmdWith appleLegendSubscriptionJWS $ last $ fst $ statementOf bought
+        upgradeRoutedAt t = setClockAt bsClock t >> routed appleKey appleUpgrade
+    upgradeRoutedAt (addUTCTime 3530 boughtAt) `shouldReturn` MainLane
+    upgradeRoutedAt (addUTCTime 3550 boughtAt) `shouldReturn` RenewalLane
+    upgradeRoutedAt (addUTCTime 3700 boughtAt) `shouldReturn` RenewalLane
+    routedAs purchaseKey appleKey appleUpgrade `shouldReturn` MainLane
 
 testRenewalHoldsNoOtherRequest :: HasCallStack => TestParams -> IO ()
 testRenewalHoldsNoOtherRequest ps = do
