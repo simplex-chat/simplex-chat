@@ -30,9 +30,9 @@
         <target state="translated">## En respuesta a</target>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="#secret#" xml:space="preserve">
+      <trans-unit id="#secret#" xml:space="preserve" approved="no">
         <source>#secret#</source>
-        <target>#secreto#</target>
+        <target state="translated">#secreto#</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%1$@ supported SimpleX Chat. The badge expired on %2$@." xml:space="preserve" approved="no">
@@ -45,9 +45,9 @@
         <target state="translated">%1$02d hrs %2$02d min %3$02d seg</target>
         <note>countdown</note>
       </trans-unit>
-      <trans-unit id="%@" xml:space="preserve">
+      <trans-unit id="%@" xml:space="preserve" approved="no">
         <source>%@</source>
-        <target>%@</target>
+        <target state="translated">%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ %@" xml:space="preserve" approved="no">
@@ -104,19 +104,19 @@
         <target state="translated">%@ ha participado en la financiación colectiva de SimpleX Chat.</target>
         <note>badge alert</note>
       </trans-unit>
-      <trans-unit id="%@ is connected!" xml:space="preserve">
+      <trans-unit id="%@ is connected!" xml:space="preserve" approved="no">
         <source>%@ is connected!</source>
-        <target>%@ ¡está conectado!</target>
+        <target state="translated">%@ ¡está conectado!</target>
         <note>notification title</note>
       </trans-unit>
-      <trans-unit id="%@ is not verified" xml:space="preserve">
+      <trans-unit id="%@ is not verified" xml:space="preserve" approved="no">
         <source>%@ is not verified</source>
-        <target>%@ no está verificado</target>
+        <target state="translated">%@ no está verificado</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ is verified" xml:space="preserve">
+      <trans-unit id="%@ is verified" xml:space="preserve" approved="no">
         <source>%@ is verified</source>
-        <target>%@ está verificado</target>
+        <target state="translated">%@ está verificado</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ server" xml:space="preserve" approved="no">
@@ -331,14 +331,14 @@ channel relay bar</note>
         <target state="translated">%1$d/%2$d servidores conectados, %3$d eliminados</target>
         <note>channel subscriber relay bar</note>
       </trans-unit>
-      <trans-unit id="%lld" xml:space="preserve">
+      <trans-unit id="%lld" xml:space="preserve" approved="no">
         <source>%lld</source>
-        <target>%lld</target>
+        <target state="translated">%lld</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld %@" xml:space="preserve">
+      <trans-unit id="%lld %@" xml:space="preserve" approved="no">
         <source>%lld %@</source>
-        <target>%lld %@</target>
+        <target state="translated">%lld %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld channel events" xml:space="preserve" approved="no">
