@@ -44,6 +44,8 @@ module Simplex.Chat.Badges.Code
     namePrepaidCodeText,
     namePrepaidCodeHash,
     namePrepaidCodeLength,
+    minNameLength,
+    maxNameLength,
   )
 where
 
@@ -153,6 +155,12 @@ data NameCode = NCOwner NameOwnerCode | NCPrepaid NamePrepaidCode
 nameCodePrefix :: Text
 nameCodePrefix = "SN"
 
+minNameLength :: Int
+minNameLength = 6
+
+maxNameLength :: Int
+maxNameLength = 63
+
 -- | Read either kind of name code as typed, as 'parseBadgeCode' reads a badge code.
 parseNameCode :: Text -> Maybe NameCode
 parseNameCode t = do
@@ -160,7 +168,7 @@ parseNameCode t = do
   case T.length body of
     n
       | n == nameOwnerCodeLength -> NCOwner <$> parseOwnerBody body
-      | n - codeLength `elem` [1 .. length (show maxPrepaidNameLength)] -> NCPrepaid <$> parsePrepaidBody body
+      | n - codeLength `elem` [1 .. length (show maxNameLength)] -> NCPrepaid <$> parsePrepaidBody body
       | otherwise -> Nothing
 
 -- | The code as it is shown and printed.
@@ -212,12 +220,6 @@ nameOwnerCodeChecksum = (`shiftR` (256 - nameOwnerCodeChecksumBits)) . os2ip . C
 data NamePrepaidCode = NamePrepaidCode Int Text
   deriving (Eq, Show)
 
-minPrepaidNameLength :: Int
-minPrepaidNameLength = 6
-
-maxPrepaidNameLength :: Int
-maxPrepaidNameLength = 63
-
 -- | The length must be 6 to 63, or the code will not parse.
 randomNamePrepaidCode :: TVar ChaChaDRG -> Int -> IO NamePrepaidCode
 randomNamePrepaidCode drg len = do
@@ -230,7 +232,7 @@ parsePrepaidBody body = do
   let (lenText, codeText) = T.splitAt (T.length body - codeLength) body
   len <- readMaybe $ T.unpack lenText
   -- a leading zero adds nothing to the check, so it would give the same code a second text and hash
-  guard $ tshow len == lenText && len >= minPrepaidNameLength && len <= maxPrepaidNameLength
+  guard $ tshow len == lenText && len >= minNameLength && len <= maxNameLength
   vs <- mapM charValue $ T.unpack codeText
   let (payload, checkChar) = splitAt (codeLength - 1) vs
   guard $ checkChar == [checkValue $ lengthValues len <> payload]
