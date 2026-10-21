@@ -748,9 +748,9 @@ swipe action</note>
         <target state="translated">Aceptar condiciones</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Accept connection request?" xml:space="preserve">
+      <trans-unit id="Accept connection request?" xml:space="preserve" approved="no">
         <source>Accept connection request?</source>
-        <target>¿Aceptar solicitud de conexión?</target>
+        <target state="translated">¿Aceptar solicitud de conexión?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Accept contact request" xml:space="preserve" approved="no">
@@ -2451,9 +2451,9 @@ This is your own one-time link!</source>
         <target state="translated">Conecta vía enlace o QR</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect via one-time link" xml:space="preserve">
+      <trans-unit id="Connect via one-time link" xml:space="preserve" approved="no">
         <source>Connect via one-time link</source>
-        <target>Conectar mediante enlace de un sólo uso</target>
+        <target state="translated">Conectar mediante enlace de un sólo uso</target>
         <note>new chat sheet title</note>
       </trans-unit>
       <trans-unit id="Connect with %@" xml:space="preserve" approved="no">
@@ -10261,9 +10261,9 @@ y los contactos son tuyos.</target>
         <source>This file has text direction characters. The text can be shown in a different order than it is written.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This group has over %lld members, delivery receipts are not sent." xml:space="preserve">
+      <trans-unit id="This group has over %lld members, delivery receipts are not sent." xml:space="preserve" approved="no">
         <source>This group has over %lld members, delivery receipts are not sent.</source>
-        <target>Este grupo tiene más de %lld miembros, no se enviarán confirmaciones de entrega.</target>
+        <target state="translated">Este grupo tiene más de %lld miembros, no se enviarán confirmaciones de entrega.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This group no longer exists." xml:space="preserve" approved="no">
@@ -10807,9 +10807,9 @@ alert title</note>
         <target state="translated">Usar puerto TCP 443 solo en servidores predefinidos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use current profile" xml:space="preserve">
+      <trans-unit id="Use current profile" xml:space="preserve" approved="no">
         <source>Use current profile</source>
-        <target>Usar perfil actual</target>
+        <target state="translated">Usar perfil actual</target>
         <note>new chat action</note>
       </trans-unit>
       <trans-unit id="Use for files" xml:space="preserve" approved="no">
@@ -10847,9 +10847,9 @@ alert title</note>
         <target state="translated">Usar perfil incógnito</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use new incognito profile" xml:space="preserve">
+      <trans-unit id="Use new incognito profile" xml:space="preserve" approved="no">
         <source>Use new incognito profile</source>
-        <target>Usar nuevo perfil incógnito</target>
+        <target state="translated">Usar nuevo perfil incógnito</target>
         <note>new chat action</note>
       </trans-unit>
       <trans-unit id="Use only local notifications?" xml:space="preserve" approved="no">
@@ -12264,9 +12264,9 @@ pref value</note>
         <target state="translated">directa</target>
         <note>connection level description</note>
       </trans-unit>
-      <trans-unit id="disabled" xml:space="preserve">
+      <trans-unit id="disabled" xml:space="preserve" approved="no">
         <source>disabled</source>
-        <target>desactivado</target>
+        <target state="translated">desactivado</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="duplicate message" xml:space="preserve" approved="no">
