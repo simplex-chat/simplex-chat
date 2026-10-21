@@ -24,7 +24,8 @@ import Test.Hspec
 
 namesSignatureTests :: Spec
 namesSignatureTests = describe "StoreService names: signatures" $ do
-  -- expected values are viem's, for the webapp's fixture wallet and the SimplexController, SimplexResolver and SimplexPriceOracle ABIs
+  -- expected values are viem 2.57.5's for the fixtures below, the webapp's wallet (BIP-39 entropy 6f2d1c9a4b7e3f80d15a2c6e9b04f7a3, account 0)
+  -- and the SimplexSponsor, SimplexController, SimplexResolver and SimplexPriceOracle ABIs of ens-contracts PR #36 at 23892cc
   describe "EIP-712" $ do
     it "commits to a registration with one contact link" $
       makeCommitment dynamis `shouldBe` commitment
