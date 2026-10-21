@@ -15,7 +15,7 @@ import Control.Concurrent.STM (TVar)
 import Crypto.Random (ChaChaDRG)
 import Data.Text (Text)
 import Data.Word (Word64)
-import Simplex.Chat.Badges.Code (NameCode, formatNameCode, nameCodeEntropy, parseNameCode, randomNameCode)
+import Simplex.Chat.Badges.Code (NameOwnerCode, formatNameOwnerCode, nameOwnerCodeEntropy, parseNameOwnerCode, randomNameOwnerCode)
 import Simplex.Messaging.Crypto.BIP32 (masterKey, xkKey)
 import Simplex.Messaging.Crypto.BIP39 (entropySeed)
 import Simplex.Messaging.Crypto.BIP44 (CoinType (..), bip44Path, mkAccountIndex)
@@ -24,19 +24,19 @@ import Simplex.Messaging.Eth.Address (Address, deriveAddress)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain)
 
 data EphemeralWallet = EphemeralWallet
-  { ewCode :: NameCode,
+  { ewCode :: NameOwnerCode,
     ewKey :: Secp256k1PrivateKey,
     ewAddress :: Address
   }
 
 newEphemeralWallet :: TVar ChaChaDRG -> IO EphemeralWallet
-newEphemeralWallet g = randomNameCode g >>= walletFromNameCode g
+newEphemeralWallet g = randomNameOwnerCode g >>= walletFromNameOwnerCode g
 
 redemptionCode :: EphemeralWallet -> Text
-redemptionCode = formatNameCode . ewCode
+redemptionCode = formatNameOwnerCode . ewCode
 
 walletFromCode :: TVar ChaChaDRG -> Text -> IO EphemeralWallet
-walletFromCode g = maybe (fail "invalid name code") (walletFromNameCode g) . parseNameCode
+walletFromCode g = maybe (fail "invalid name code") (walletFromNameOwnerCode g) . parseNameOwnerCode
 
 signRegisterIntent :: TVar ChaChaDRG -> Eip712Domain -> EphemeralWallet -> Registration -> Word64 -> IO RegisterIntent
 signRegisterIntent g domain EphemeralWallet {ewKey} r deadline =
@@ -44,9 +44,9 @@ signRegisterIntent g domain EphemeralWallet {ewKey} r deadline =
   where
     nonce = 0
 
-walletFromNameCode :: TVar ChaChaDRG -> NameCode -> IO EphemeralWallet
-walletFromNameCode g ewCode = do
-  master <- either fail pure $ masterKey $ entropySeed (nameCodeEntropy ewCode) ""
+walletFromNameOwnerCode :: TVar ChaChaDRG -> NameOwnerCode -> IO EphemeralWallet
+walletFromNameOwnerCode g ewCode = do
+  master <- either fail pure $ masterKey $ entropySeed (nameOwnerCodeEntropy ewCode) ""
   account <- either fail pure $ mkAccountIndex 0
   (xk, ewAddress) <- deriveAddress g master (bip44Path Ethereum account) >>= either fail pure
   pure EphemeralWallet {ewCode, ewKey = xkKey xk, ewAddress}
