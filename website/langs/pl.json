@@ -68,7 +68,7 @@
     "simplex-private-card-6-point-2": "Aby temu zapobiec aplikacje SimpleX przekazują klucze jednorazowe out-of-band, gdy udostępniasz adres jako link lub kod QR.",
     "simplex-private-card-7-point-1": "Aby zagwarantować integralność, wiadomości są kolejno numerowane i zawierają hash poprzedniej wiadomości.",
     "simplex-private-card-7-point-2": "Jeśli jakaś wiadomość zostanie dodana, usunięta lub zmieniona, odbiorca zostanie o tym powiadomiony.",
-    "simplex-private-card-4-point-2": "Aby użyć SimpleX przez Tor zainstaluj <a href=\"https://guardianproject.info/apps/org.torproject.android/\" target=\"_blank\" rel=\"noopener\">aplikację Orbot na android</a> i włącz proxy SOCKS5 (lub VPN <a href=\"https://apps.apple.com/us/app/orbot/id1609461599?platform=iphone\" target=\"_blank\" rel=\"noopener\">na iOS</a>).",
+    "simplex-private-card-4-point-2": "Aby użyć SimpleX przez Tor zainstaluj <a href=\"https://guardianproject.info/apps/org.torproject.android/\" target=\"_blank\">aplikację Orbot na android</a> i włącz proxy SOCKS5 (lub VPN <a href=\"https://apps.apple.com/us/app/orbot/id1609461599?platform=iphone\" target=\"_blank\">na iOS</a>).",
     "simplex-private-card-5-point-1": "SimpleX używa paddingu treści dla każdej warstwy szyfrowania, aby udaremnić ataki na rozmiar wiadomości.",
     "simplex-private-card-5-point-2": "Dzięki temu wiadomości o różnych rozmiarach wyglądają tak samo dla serwerów i obserwatorów sieci.",
     "simplex-private-card-8-point-1": "Serwery SimpleX działają jak węzły mieszania o niskim opóźnieniu &mdash; wiadomości przychodzące i wychodzące mają inną kolejność.",
