@@ -138,8 +138,7 @@ data class DirectoryResult(
 data class OnlineSearchRows(
   val yourChats: List<ChatId>,
   val results: List<DirectoryResult>,
-  val pageInChats: Boolean,
   val footer: DirectoryFooter?,
 ) {
-  val isEmpty: Boolean get() = yourChats.isEmpty() && results.isEmpty() && !pageInChats && footer == null
+  val isEmpty: Boolean get() = yourChats.isEmpty() && results.isEmpty() && footer == null
 }

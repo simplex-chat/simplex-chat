@@ -189,15 +189,11 @@ private fun ModalData.NewChatSheetLayout(
   // emitted in this order, the load row is the row farthest from the field in both layouts
   fun LazyListScope.onlineSearchSection(rows: OnlineSearchRows) {
     if (!rows.isEmpty) {
-      item { SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false) }
       items(rows.yourChats.mapNotNull { chatModel.getChat(it) }, key = { it.remoteHostId to it.id }) { chat ->
         ContactListNavLinkView(chat, remember { mutableStateOf(false) }, showDeletedChatIcon = true)
       }
       items(rows.results, key = { it.id }) { result ->
         DirectoryResultNavLink(result, imageSize = 42.dp, previewModifier = Modifier.padding(horizontal = DEFAULT_PADDING_HALF), close = close, cleanup = null)
-      }
-      if (rows.pageInChats) {
-        item { DirectoryPageInChatsRow() }
       }
       when (rows.footer) {
         DirectoryFooter.Retry -> item { DirectoryRetryRow(onlineSearch) }

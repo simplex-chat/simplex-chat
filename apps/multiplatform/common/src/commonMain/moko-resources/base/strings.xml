@@ -523,7 +523,6 @@
   <string name="directory_search_load_more">Load more</string>
   <string name="directory_search_load_more_n_left">Load more · %1$d left</string>
   <string name="directory_search_failed_retry">Search failed, tap to retry</string>
-  <string name="directory_search_page_in_chats">All results on this page are already in your chats</string>
   <string name="searching_directory">Searching directory…</string>
 
   <!-- ChatView.kt -->

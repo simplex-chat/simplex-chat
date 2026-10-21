@@ -151,8 +151,7 @@ struct DirectoryResult: Identifiable {
 struct OnlineSearchRows {
     var yourChats: [ChatId]
     var results: [DirectoryResult]
-    var pageInChats: Bool
     var footer: DirectoryFooter?
 
-    var isEmpty: Bool { yourChats.isEmpty && results.isEmpty && !pageInChats && footer == nil }
+    var isEmpty: Bool { yourChats.isEmpty && results.isEmpty && footer == nil }
 }

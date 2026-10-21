@@ -24,7 +24,6 @@ class OnlineSearchModel: ObservableObject {
     @Published private(set) var searched = false
 
     private var cursor: JSONValue? = nil
-    private var lastPageIds: Set<String> = []
     private var searchedText = ""
     // bumped on every reset, so a reply that arrives too late cannot refill a list already cleared
     private var generation = 0
@@ -39,7 +38,6 @@ class OnlineSearchModel: ObservableObject {
         directory = []
         moreCount = nil
         cursor = nil
-        lastPageIds = []
         loading = false
         failed = false
         searched = false
@@ -59,7 +57,6 @@ class OnlineSearchModel: ObservableObject {
             directory = []
             moreCount = nil
             cursor = nil
-            lastPageIds = []
             failed = false
             searched = false
         } else {
@@ -98,15 +95,7 @@ class OnlineSearchModel: ObservableObject {
                 results.append(result)
             }
         }
-        let lastPage = directory.filter { lastPageIds.contains($0.id) }
-        return OnlineSearchRows(
-            yourChats: yourChats,
-            results: results,
-            pageInChats: !lastPage.isEmpty && lastPage.allSatisfy { result in
-                if case let .yourChat(chatId) = result.state { shownChatIds.contains(chatId) } else { false }
-            },
-            footer: footer
-        )
+        return OnlineSearchRows(yourChats: yourChats, results: results, footer: footer)
     }
 
     // a chat opened from a result exists only once its connection flow ends, so results look again then
@@ -153,7 +142,6 @@ class OnlineSearchModel: ObservableObject {
         cursor = r.cursor
         moreCount = r.moreCount
         directory = append ? directory + page : page
-        lastPageIds = Set(page.map { $0.id })
     }
 
     private func updateSpinner() {
@@ -253,15 +241,6 @@ struct DirectorySearchRow: View {
         return isChannel
             ? subscriberCountStr(count)
             : String.localizedStringWithFormat(NSLocalizedString("%d members", comment: "directory search result"), Int(count))
-    }
-}
-
-struct DirectoryPageInChatsRow: View {
-    @EnvironmentObject var theme: AppTheme
-
-    var body: some View {
-        Text("All results on this page are already in your chats")
-            .foregroundColor(theme.colors.secondary)
     }
 }
 

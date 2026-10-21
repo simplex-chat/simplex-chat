@@ -493,7 +493,6 @@ struct ChatListView: View {
                 .listRowBackground(Color.clear)
                 .onTapGesture { openResult(result) }
         }
-        if rows.pageInChats { directoryPageInChatsRow() }
         switch rows.footer {
         case .retry: directoryRetryRow()
         case .loadMore: directoryLoadMoreRow()
@@ -651,12 +650,6 @@ struct ChatListView: View {
             .background { theme.colors.background } // Hides default list selection colour
             .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
         }
-    }
-
-    @ViewBuilder private func directoryPageInChatsRow() -> some View {
-        DirectoryPageInChatsRow()
-            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
-            .listRowBackground(Color.clear)
     }
 
     @ViewBuilder private func directoryLoadMoreRow() -> some View {

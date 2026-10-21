@@ -47,7 +47,6 @@ class OnlineSearchModel {
     private set
 
   private var cursor by mutableStateOf<JsonObject?>(null)
-  private var lastPageIds by mutableStateOf<Set<String>>(emptySet())
   private var searchedText = ""
   // bumped on every reset, so a reply that arrives too late cannot refill a list already cleared
   private var generation = 0
@@ -62,7 +61,6 @@ class OnlineSearchModel {
     directory = emptyList()
     moreCount = null
     cursor = null
-    lastPageIds = emptySet()
     loading = false
     failed = false
     searched = false
@@ -82,7 +80,6 @@ class OnlineSearchModel {
       directory = emptyList()
       moreCount = null
       cursor = null
-      lastPageIds = emptySet()
       failed = false
       searched = false
     } else {
@@ -122,16 +119,7 @@ class OnlineSearchModel {
           results.add(result)
       }
     }
-    val lastPage = directory.filter { lastPageIds.contains(it.id) }
-    return OnlineSearchRows(
-      yourChats = yourChats,
-      results = results,
-      pageInChats = lastPage.isNotEmpty() && lastPage.all {
-        val state = it.state
-        state is DirectoryResultState.YourChat && shownChatIds.contains(state.chatId)
-      },
-      footer = footer
-    )
+    return OnlineSearchRows(yourChats = yourChats, results = results, footer = footer)
   }
 
   // a chat opened from a result exists only once its connection flow ends, so results look again then
@@ -176,7 +164,6 @@ class OnlineSearchModel {
     cursor = r.cursor
     moreCount = r.moreCount
     directory = if (append) directory + page else page
-    lastPageIds = page.map { it.id }.toSet()
   }
 
   private fun updateSpinner() {
@@ -268,17 +255,6 @@ fun DirectorySearchRow(entry: DirectorySearchEntry, imageSize: Dp, state: Direct
 }
 
 @Composable
-fun DirectoryPageInChatsRow() {
-  Row(
-    Modifier
-      .fillMaxWidth()
-      .padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF)
-  ) {
-    Text(stringResource(MR.strings.directory_search_page_in_chats), color = MaterialTheme.colors.secondary)
-  }
-}
-
-@Composable
 fun DirectoryLoadMoreRow(onlineSearch: OnlineSearchModel) {
   val moreCount = onlineSearch.moreCount
   val color = if (onlineSearch.loading) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
@@ -291,7 +267,7 @@ fun DirectoryLoadMoreRow(onlineSearch: OnlineSearchModel) {
       .padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF),
     verticalAlignment = Alignment.CenterVertically
   ) {
-    Icon(painterResource(MR.images.ic_search), null, Modifier.padding(end = DEFAULT_PADDING_HALF).size(22.dp * fontSizeSqrtMultiplier), tint = color)
+    Icon(painterResource(MR.images.ic_zoom_in), null, Modifier.padding(end = DEFAULT_PADDING_HALF).size(22.dp * fontSizeSqrtMultiplier), tint = color)
     Text(
       if (moreCount != null && moreCount > 0) String.format(generalGetString(MR.strings.directory_search_load_more_n_left), moreCount)
       else stringResource(MR.strings.directory_search_load_more),

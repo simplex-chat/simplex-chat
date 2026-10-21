@@ -171,18 +171,21 @@ struct NewChatSheet: View {
                 showUnreadAndFavorites: showUnreadAndFavorites
             ).shown
             let rows = onlineSearch.rows(shownChatIds: Set(shownContacts.map { $0.id }))
-            ContactsList(
-                chatPredicate: contactListChatPredicate,
-                searchMode: $searchMode,
-                searchText: $searchText,
-                header: "Your Contacts",
-                searchFocussed: $searchFocussed,
-                searchShowingSimplexLink: $searchShowingSimplexLink,
-                searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink,
-                showDeletedChatIcon: true,
-                showsEmptyState: !onlineSearch.searching && rows.isEmpty
-            )
-            onlineSearchSection(rows)
+            if onlineSearch.showResults && (!shownContacts.isEmpty || !rows.isEmpty) {
+                onlineSearchSection(rows, contacts: shownContacts)
+            } else {
+                ContactsList(
+                    chatPredicate: contactListChatPredicate,
+                    searchMode: $searchMode,
+                    searchText: $searchText,
+                    header: "Your Contacts",
+                    searchFocussed: $searchFocussed,
+                    searchShowingSimplexLink: $searchShowingSimplexLink,
+                    searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink,
+                    showDeletedChatIcon: true,
+                    showsEmptyState: !onlineSearch.searching
+                )
+            }
         }
         .onChange(of: searchText) { _ in
             onlineSearch.reset()
@@ -192,23 +195,24 @@ struct NewChatSheet: View {
         }
     }
 
-    @ViewBuilder private func onlineSearchSection(_ rows: OnlineSearchRows) -> some View {
-        if !rows.isEmpty {
-            Section {
-                ForEach(rows.yourChats.compactMap { chatModel.getChat($0) }, id: \.viewId) { chat in
-                    ContactListNavLink(chat: chat, showDeletedChatIcon: true)
-                }
-                ForEach(rows.results) { result in
-                    DirectorySearchRow(entry: result.entry, imageSize: 30, state: result.state)
-                        .modifier(DirectoryResultMenu(result: result, imageSize: 30, onOpen: { openResult(result) }))
-                        .onTapGesture { openResult(result) }
-                }
-                if rows.pageInChats { DirectoryPageInChatsRow() }
-                switch rows.footer {
-                case .retry: DirectoryRetryRow(onlineSearch: onlineSearch)
-                case .loadMore: DirectoryLoadMoreRow(onlineSearch: onlineSearch)
-                case nil: EmptyView()
-                }
+    private func onlineSearchSection(_ rows: OnlineSearchRows, contacts: [Chat]) -> some View {
+        Section {
+            ForEach(contacts, id: \.viewId) { chat in
+                ContactListNavLink(chat: chat, showDeletedChatIcon: true)
+                    .disabled(chatModel.chatRunning != true)
+            }
+            ForEach(rows.yourChats.compactMap { chatModel.getChat($0) }, id: \.viewId) { chat in
+                ContactListNavLink(chat: chat, showDeletedChatIcon: true)
+            }
+            ForEach(rows.results) { result in
+                DirectorySearchRow(entry: result.entry, imageSize: 30, state: result.state)
+                    .modifier(DirectoryResultMenu(result: result, imageSize: 30, onOpen: { openResult(result) }))
+                    .onTapGesture { openResult(result) }
+            }
+            switch rows.footer {
+            case .retry: DirectoryRetryRow(onlineSearch: onlineSearch)
+            case .loadMore: DirectoryLoadMoreRow(onlineSearch: onlineSearch)
+            case nil: EmptyView()
             }
         }
     }
