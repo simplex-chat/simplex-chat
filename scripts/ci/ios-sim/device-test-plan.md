@@ -61,7 +61,7 @@ Run these on an iOS simulator or device on the Mac. Each case says what to do an
 |----|----|--------|
 | U1 | Search for the name of a channel you joined (it is also listed) | It appears once, as your local chat; no result row for it |
 | U2 | Search for a word only in that channel's description, so the local list does not show it | It appears as your chat's row (as in the chat list: name without `#`, last message, time), before the result rows, with no "Open"; tapping it opens the channel, with no alert |
-| U3 | A listed regular group you joined with `/c` or through another link, or by invitation | It shows as a result with "Open" beside its own chat row. This is the documented limit, not a regression |
+| U3 | A listed regular group you joined with `/c` and its listed link; one you were invited to or joined through another link | The `/c`-joined group shows as your chat, with no "Open". The invited or other-link group shows as a result with "Open" beside its own chat row: the documented limit, not a regression |
 | U4 | Search for the name of a joined channel that is the page's only result, so the list shows it as your chat | "All results on this page are already in your chats" (grey), and the load row when there are more pages; nothing loads more pages by itself |
 
 ## New chat (AC9)
