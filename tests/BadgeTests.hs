@@ -1115,8 +1115,10 @@ testAppleTransactionFacts = do
   let jws fields = T.intercalate "." [part "{\"alg\":\"ES256\"}", part (safeDecodeUtf8 $ LB.toStrict $ J.encode $ J.object fields), "c2lnbmVk"]
       part = safeDecodeUtf8 . B64U.encodeUnpadded . encodeUtf8
       renewal = ["transactionId" J..= ("2000000900000002" :: T.Text), "type" J..= ("Auto-Renewable Subscription" :: T.Text)]
-      facts purchaseDate revoked autoRenewable = Just AppleTransactionFacts {transactionId = "2000000900000002", purchaseDate, expiresDate = Nothing, revoked, autoRenewable}
+      facts purchaseDate revoked autoRenewable = Just AppleTransactionFacts {transactionId = "2000000900000002", productId = Nothing, purchaseDate, expiresDate = Nothing, revoked, autoRenewable}
   appleTransactionFacts (jws $ ("purchaseDate" J..= (1769904000000 :: Int)) : renewal) `shouldBe` facts (Just 1769904000000) False True
+  appleTransactionFacts (jws $ ("productId" J..= ("SUBSCR_BADGE_LEGEND_YEAR_01" :: T.Text)) : renewal)
+    `shouldBe` Just AppleTransactionFacts {transactionId = "2000000900000002", productId = Just "SUBSCR_BADGE_LEGEND_YEAR_01", purchaseDate = Nothing, expiresDate = Nothing, revoked = False, autoRenewable = True}
   appleTransactionFacts (jws $ ("expiresDate" J..= (1772582400000 :: Int)) : renewal) `shouldBe` ((\f -> f {expiresDate = Just 1772582400000}) <$> facts Nothing False True)
   appleTransactionFacts (jws $ ("expiresDate" J..= ("next month" :: T.Text)) : renewal) `shouldBe` facts Nothing False True
   -- the service reads a null revocationDate as not revoked, and so does the client
