@@ -5781,9 +5781,8 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
                   pure $ SROCredited (Just user')
             -- the service's own check interval
             _ -> notCredited $ failed ri delay BIFServiceError {code = BSEPaymentPending, retryable = True} (Just 3600)
-    -- The record settles with nothing to announce past the window, when the service grants the change at its next renewal
-    -- check; once the purchase's ledger holds the tier charged, when there is nothing to change; or once its badge is no
-    -- longer shown, when the charge's next hand-over resumes the purchase.
+    -- Settles with nothing to announce: past the window the renewal check grants the change, at the tier charged there is
+    -- nothing to change, and a badge no longer shown is resumed by the charge's next hand-over.
     changeTier ri delay purchaseId = do
       user <- withStore $ \db -> getUser db userId
       p_ <- withStore' (`getBadgePurchase` purchaseId)
@@ -5805,10 +5804,10 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
           | storeReceiptRefused code -> SRODeferred <$ withStore' (\db -> refuseStoreReceipt db receiptId $ serviceFailure code retryAfter)
           | otherwise -> failed ri delay (serviceFailure code retryAfter) retryAfter
         Right (Right _) | Just failure <- recorded_ -> failed ri delay failure Nothing
-        Right (Right _) ->
+        Right (Right (_, stored)) ->
           withStore' (`getLatestIssuedCredential` badgePurchaseId) >>= \case
             Just cred@(BadgeCredential _ _ _ info@BadgeInfo {badgeType = issuedType})
-              | issuedType == tier && credentialExpiry cred > answeredAt -> do
+              | issuedType == tier && credentialExpiry cred > answeredAt && stored /= Just SSEnded -> do
                   user' <- withStore $ \db -> do
                     liftIO $ showTierChangedPurchase db user receiptId badgePurchaseId
                     setUserBadge db user (Just $ OwnBadge cred (mkBadgeStatus answeredAt (Just True) info))
