@@ -157,9 +157,11 @@ nameCodePrefix = "SN"
 parseNameCode :: Text -> Maybe NameCode
 parseNameCode t = do
   body <- T.stripPrefix nameCodePrefix $ T.toUpper $ T.filter isAlphaNum t
-  if T.length body == nameOwnerCodeLength
-    then NCOwner <$> parseOwnerBody body
-    else NCPrepaid <$> parsePrepaidBody body
+  case T.length body of
+    n
+      | n == nameOwnerCodeLength -> NCOwner <$> parseOwnerBody body
+      | n - codeLength `elem` [1 .. length (show maxPrepaidNameLength)] -> NCPrepaid <$> parsePrepaidBody body
+      | otherwise -> Nothing
 
 -- | The code as it is shown and printed.
 formatNameCode :: NameCode -> Text
