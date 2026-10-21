@@ -11,6 +11,7 @@ module StoreService.Names.Chain
   )
 where
 
+import StoreService.Names.Abi (hex)
 import StoreService.Names.Registration (RegisterIntent, commitCalldata, registerWithCreditCalldata)
 import Control.Concurrent.STM (TVar)
 import Control.Exception (try)
@@ -20,11 +21,11 @@ import Crypto.Random (ChaChaDRG)
 import Data.Aeson ((.:), (.:?), (.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Types as JT
-import Data.ByteArray.Encoding (Base (Base16), convertFromBase, convertToBase)
+import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import Data.ByteString (ByteString)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeLatin1, encodeUtf8)
+import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word64)
 import Network.HTTP.Client (Manager)
 import qualified Network.HTTP.Client as HTTP
@@ -104,6 +105,3 @@ bytes :: J.Value -> JT.Parser ByteString
 bytes = J.withText "data" $ \t -> case T.stripPrefix "0x" t of
   Just h | Right bs <- convertFromBase Base16 (encodeUtf8 h) -> pure bs
   _ -> fail "not hex data"
-
-hex :: ByteString -> Text
-hex bs = "0x" <> decodeLatin1 (convertToBase Base16 bs)
