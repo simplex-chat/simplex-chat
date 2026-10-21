@@ -28,7 +28,7 @@ Base: `f/badge-subscriptions` at 26f846e1a (line numbers at that commit). `SVC/`
 
 **Schema.**
 
-- Service: `badge_ledger.from_purchase_id`, `badge_ledger.to_purchase_id`; `payments.rebound_at` (when the payment was last moved to another key, logged and answered in `transfer_limited`; the limit itself is checked against the previous key's latest credential expiry, which the service signed); charge index `UNIQUE(charge_id)` → `UNIQUE(badge_purchase_id, charge_id)`.
+- Service: `badge_ledger.from_purchase_id`, `badge_ledger.to_purchase_id`; `payments.rebound_at` (when the payment was last moved to another key, logged; the limit itself is checked against the previous key's latest credential expiry, which the service signed, and `transfer_limited` carries no date); charge index `UNIQUE(charge_id)` → `UNIQUE(badge_purchase_id, charge_id)`.
 - Client: `badge_store_receipts.hold_kind` (purchase, transfer, tier change).
 - Later, receipts: `badge_purchases.receipt_hash` (service), `badge_purchases.receipt` (client).
 
@@ -90,7 +90,7 @@ A payment credited nowhere is treated as a first purchase. `purchaseBadge` from 
 
 The worker sends `transferBadge` for transfer records. On success the record links to the new purchase; on a refusal it goes back to the old one.
 
-**Apps (R3).** Restore hands over `Transaction.currentEntitlements` and `Transaction.unfinished` on iOS, and Play's subscriptions on Android, with the `restored` origin. The result shows through the existing "being added" state and alerts. One new text, for `transfer_limited`: "This purchase was moved to another device or profile recently. It can be moved again on {date}."
+**Apps (R3).** Restore hands over `Transaction.currentEntitlements` and `Transaction.unfinished` on iOS, and Play's subscriptions on Android, with the `restored` origin. The result shows through the existing "being added" state and alerts. One new text, for `transfer_limited`: "This purchase was moved to another device or profile recently."
 
 ### Restore by receipt for Stripe and crypto (later, R4-R6)
 
