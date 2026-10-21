@@ -47,7 +47,7 @@ Both the contact branch and the group branch get this change. The group branch a
 
 Until the reload returns, the pane shows none of the previous chat's loaded info:
 - The contact info, security code and group link start empty when `preloadedChatId` is not the shown chat (`remember(chatInfo.id)`, so a switch inside the same branch also starts over). With no code, the "Verify security code" row is hidden, as it already was when the code was not loaded.
-- The "Create group link" / "Group link" row is hidden and the channel "Link" button is disabled until the link is loaded (`linkLoaded`, passed to `GroupChatInfoView` as `groupLinkLoaded`). With no link yet, both would open the link page, which creates a link when it gets none; for a group that already has one, the core creates a server queue before failing with a duplicate link error.
+- Until the link is loaded (`linkLoaded`, passed to `GroupChatInfoView` as `groupLinkLoaded`), the "Create group link" / "Group link" row is hidden, the channel "Link" button is disabled, and a channel owner sees no channel link rows. With no link yet, the row and the button would open the link page, which creates a link when it gets none; for a group that already has one, the core creates a server queue before failing with a duplicate link error. The owner's "Channel link" and "SimpleX name" rows need the loaded link; the channel's QR code and "Share via chat", which an owner sees only when no link is loaded for the channel, would otherwise show until the "Channel link" row replaces them.
 
 A link created, changed or deleted on the "Group link" page finishes in the background. It is stored only while the stored values belong to the group it came from, so after a switch it can't replace the next group's link.
 
