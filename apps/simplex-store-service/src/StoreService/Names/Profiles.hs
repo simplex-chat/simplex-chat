@@ -3,6 +3,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 -- | The host rule is best effort: the chat core resolves a host again when it connects, so the deployment's egress rule is the real guard.
 module StoreService.Names.Profiles
@@ -15,25 +16,30 @@ module StoreService.Names.Profiles
     ProfileRead (..),
     Preview (..),
     Entity (..),
+    HostCheck (..),
+    Deadline,
     defaultProfileLimits,
     newProfiles,
     monotonicSeconds,
+    deadlineIn,
     chatProfile,
     systemResolver,
     planProfile,
-    hostsFetchable,
+    checkHosts,
     linkEntity,
     linkPreview,
   )
 where
 
-import Control.Concurrent (forkFinally)
+import Control.Concurrent (forkIOWithUnmask)
 import Control.Concurrent.STM
-import Control.Exception (bracket_)
+import Control.Exception (SomeException, bracket, mask_, try)
+import Control.Monad (join, unless)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Types as JT
 import Data.Bits (shiftL, shiftR, (.|.))
+import Data.Bool (bool)
 import Data.Char (toLower)
 import Data.Int (Int64)
 import Data.List (dropWhileEnd, isSuffixOf)
@@ -41,7 +47,7 @@ import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
-import Data.Maybe (fromMaybe, mapMaybe)
+import Data.Maybe (isJust, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Word (Word32, Word64, Word8)
@@ -54,17 +60,21 @@ import Simplex.Chat.Types (AConnectTarget (..), ChatPeerType (..), Contact (..),
 import Simplex.Messaging.Agent.Protocol (ConnShortLink, ConnectionMode (..), SConnectionMode (..), UserId, simplexShortLink)
 import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Transport.Client (TransportHost (..))
-import Simplex.Messaging.Util (anyM, safeDecodeUtf8)
+import Simplex.Messaging.Util (safeDecodeUtf8)
 import StoreService.Names.Links (LinkKind (..), parseShortLink, shortLinkHosts)
 import System.Timeout (timeout)
 
 data ProfileLimits = ProfileLimits
   { searchFetchSlots :: Int,
     previewFetchSlots :: Int,
+    -- | Host name lookups in flight across the service, each holding a thread until the resolver answers.
+    hostLookupSlots :: Int,
     -- | Microseconds for one fetch, the wait for its slot and its host check included.
     fetchTimeout :: Int,
     cacheSeconds :: Word64,
-    maxCachedProfiles :: Int
+    maxCachedProfiles :: Int,
+    refusedHostSeconds :: Word64,
+    maxRefusedHosts :: Int
   }
 
 defaultProfileLimits :: ProfileLimits
@@ -72,15 +82,18 @@ defaultProfileLimits =
   ProfileLimits
     { searchFetchSlots = 4,
       previewFetchSlots = 2,
+      hostLookupSlots = 8,
       fetchTimeout = 3000000,
       cacheSeconds = 600,
-      maxCachedProfiles = 2048
+      maxCachedProfiles = 2048,
+      refusedHostSeconds = 60,
+      maxRefusedHosts = 2048
     }
 
 -- | Nothing when the link data could not be read.
 type ProfileFetcher = ConnShortLink 'CMContact -> IO (Maybe LinkProfile)
 
--- | The addresses a name resolves to, none when it does not resolve.
+-- | The addresses a name resolves to; none or an exception when it does not resolve.
 type HostResolver = HostName -> IO [TransportHost]
 
 data Profiles = Profiles
@@ -90,18 +103,69 @@ data Profiles = Profiles
     resolveHost :: HostResolver,
     searchSlots :: TVar Int,
     previewSlots :: TVar Int,
-    cache :: TVar (Map Text (Word64, LinkProfile))
+    lookupSlots :: TVar Int,
+    cache :: TVar (Map Text (Word64, LinkProfile)),
+    refusedHosts :: TVar (Map HostName (Word64, ()))
   }
 
 newProfiles :: ProfileLimits -> IO Word64 -> ProfileFetcher -> HostResolver -> IO Profiles
-newProfiles limits@ProfileLimits {searchFetchSlots, previewFetchSlots} clock fetchLink resolveHost = do
+newProfiles limits@ProfileLimits {searchFetchSlots, previewFetchSlots, hostLookupSlots} clock fetchLink resolveHost = do
   searchSlots <- newTVarIO searchFetchSlots
   previewSlots <- newTVarIO previewFetchSlots
+  lookupSlots <- newTVarIO hostLookupSlots
   cache <- newTVarIO Map.empty
-  pure Profiles {limits, clock, fetchLink, resolveHost, searchSlots, previewSlots, cache}
+  refusedHosts <- newTVarIO Map.empty
+  pure Profiles {limits, clock, fetchLink, resolveHost, searchSlots, previewSlots, lookupSlots, cache, refusedHosts}
 
 monotonicSeconds :: IO Word64
 monotonicSeconds = (`div` 1000000000) <$> getMonotonicTimeNSec
+
+-- | A time on the monotonic clock, in nanoseconds.
+newtype Deadline = Deadline Word64
+
+nanosPerMicro :: Word64
+nanosPerMicro = 1000
+
+deadlineIn :: Int -> IO Deadline
+deadlineIn micros = Deadline . (+ fromIntegral micros * nanosPerMicro) <$> getMonotonicTimeNSec
+
+remainingMicros :: Deadline -> IO Int
+remainingMicros (Deadline d) = (\now -> if now >= d then 0 else fromIntegral $ (d - now) `div` nanosPerMicro) <$> getMonotonicTimeNSec
+
+-- | Nothing once the deadline passes without the transaction completing.
+waitUntil :: Deadline -> STM a -> IO (Maybe a)
+waitUntil deadline act = do
+  expired <- registerDelay =<< remainingMicros deadline
+  atomically $ (Just <$> act) `orElse` (Nothing <$ (readTVar expired >>= check))
+
+takeSlot :: TVar Int -> STM ()
+takeSlot slots = readTVar slots >>= \n -> check (n > 0) >> writeTVar slots (n - 1)
+
+releaseSlot :: TVar Int -> STM ()
+releaseSlot slots = modifyTVar' slots (+ 1)
+
+-- | Nothing when no slot frees before the deadline, or the action does not end by it.
+withSlot :: Deadline -> TVar Int -> IO a -> IO (Maybe a)
+withSlot deadline slots act =
+  bracket (waitUntil deadline $ takeSlot slots) (mapM_ $ \() -> atomically $ releaseSlot slots) $ \case
+    Nothing -> pure Nothing
+    Just () -> remainingMicros deadline >>= (`timeout` act)
+
+freshEntry :: Ord k => Word64 -> k -> Map k (Word64, v) -> Maybe v
+freshEntry now k m = case Map.lookup k m of
+  Just (expiry, v) | expiry > now -> Just v
+  _ -> Nothing
+
+-- | A full map first drops its expired entries, then the entry that expires soonest.
+insertBounded :: Ord k => Int -> Word64 -> k -> (Word64, v) -> Map k (Word64, v) -> Map k (Word64, v)
+insertBounded maxSize now k entry m = Map.insert k entry room
+  where
+    room
+      | Map.size m < maxSize || Map.member k m = m
+      | otherwise =
+          let live = Map.filter ((> now) . fst) m
+           in if Map.size live < maxSize then live else maybe live (`Map.delete` live) (soonestExpiry live)
+    soonestExpiry = fmap fst . Map.foldrWithKey (\k' (e, _) acc -> if maybe True ((e <) . snd) acc then Just (k', e) else acc) Nothing
 
 data ChatKind = CKContact | CKBusiness | CKBot | CKChannel
   deriving (Eq, Show)
@@ -178,33 +242,22 @@ linkPreview ps@Profiles {previewSlots} t link = Preview t <$> boundedProfile ps 
 
 -- | A link the chat core cannot parse names no server it could fetch from, so it is not fetched.
 boundedProfile :: Profiles -> TVar Int -> Text -> Maybe (ConnShortLink 'CMContact) -> IO ProfileRead
-boundedProfile Profiles {limits = ProfileLimits {fetchTimeout, cacheSeconds, maxCachedProfiles}, clock, fetchLink, resolveHost, cache} slots link sl_ =
+boundedProfile ps@Profiles {limits = ProfileLimits {fetchTimeout, cacheSeconds, maxCachedProfiles}, clock, fetchLink, cache} slots link sl_ =
   cached >>= \case
     Just p -> pure $ ProfileOk p
     Nothing -> case sl_ of
       Nothing -> pure ProfileUnavailable
-      Just sl -> fromMaybe ProfileUnread <$> timeout fetchTimeout (checkAndFetch sl)
+      Just sl -> do
+        deadline <- deadlineIn fetchTimeout
+        checkHosts ps deadline (shortLinkHosts sl) >>= \case
+          HostRefused -> pure ProfileUnavailable
+          HostUnanswered -> pure ProfileUnread
+          HostPublic -> maybe ProfileUnread ProfileOk . join <$> withSlot deadline slots (fetchLink sl >>= mapM remember)
   where
-    cached = do
-      now <- clock
-      (\m -> case Map.lookup link m of Just (expiry, p) | expiry > now -> Just p; _ -> Nothing) <$> readTVarIO cache
-    checkAndFetch sl =
-      hostsFetchable resolveHost (shortLinkHosts sl) >>= \case
-        False -> pure ProfileUnavailable
-        True -> withSlot (fetchLink sl) >>= maybe (pure ProfileUnread) (\p -> ProfileOk p <$ remember p)
-    withSlot =
-      bracket_
-        (atomically $ readTVar slots >>= \n -> check (n > 0) >> writeTVar slots (n - 1))
-        (atomically $ modifyTVar' slots (+ 1))
+    cached = clock >>= \now -> freshEntry now link <$> readTVarIO cache
     remember p = do
       now <- clock
-      atomically $ modifyTVar' cache $ Map.insert link (now + cacheSeconds, p) . makeRoom now
-    makeRoom now m
-      | Map.size m < maxCachedProfiles || Map.member link m = m
-      | otherwise =
-          let live = Map.filter ((> now) . fst) m
-           in if Map.size live < maxCachedProfiles then live else maybe live (`Map.delete` live) (soonestExpiry live)
-    soonestExpiry = fmap fst . Map.foldrWithKey (\k (e, _) acc -> if maybe True ((e <) . snd) acc then Just (k, e) else acc) Nothing
+      p <$ atomically (modifyTVar' cache $ insertBounded maxCachedProfiles now link (now + cacheSeconds, p))
 
 -- | Runs the connect plan, which reads the link data without connecting. A known chat answers with its stored profile.
 chatProfile :: ChatController -> UserId -> ProfileFetcher
@@ -260,16 +313,50 @@ imageURI (ImageData uri)
   | "data:image/" `T.isPrefixOf` uri = Just uri
   | otherwise = Nothing
 
--- | False when any host is an onion address, does not resolve, or is or resolves to an address outside the public internet.
-hostsFetchable :: HostResolver -> NonEmpty TransportHost -> IO Bool
-hostsFetchable resolve hosts = not <$> anyM (map refused $ L.toList hosts)
+data HostCheck = HostPublic | HostRefused | HostUnanswered
+  deriving (Eq, Show)
+
+-- | Refused when any host is an onion address, does not resolve, is or resolves to an address outside the public internet,
+-- or finds no lookup slot before the deadline; unanswered when a lookup does not answer by the deadline.
+checkHosts :: Profiles -> Deadline -> NonEmpty TransportHost -> IO HostCheck
+checkHosts ps deadline = checkAll . L.toList
   where
-    refused = \case
+    checkAll = \case
+      [] -> pure HostPublic
+      host : hosts ->
+        checkHost host >>= \case
+          HostPublic -> checkAll hosts
+          result -> pure result
+    checkHost = \case
       THDomainName name
-        | onionName name -> pure True
-        | otherwise -> (\addresses -> null addresses || not (all publicAddress addresses)) <$> resolve name
-      host -> pure $ not $ publicAddress host
+        | onionName name -> pure HostRefused
+        | otherwise -> lookupHost ps deadline name
+      host -> pure $ if publicAddress host then HostPublic else HostRefused
     onionName name = ".onion" `isSuffixOf` dropWhileEnd (== '.') (map toLower name)
+
+-- | getAddrInfo is a foreign call that a timeout cannot interrupt, so each lookup runs in its own thread,
+-- which holds its lookup slot until the resolver answers, also after the caller has given up.
+lookupHost :: Profiles -> Deadline -> HostName -> IO HostCheck
+lookupHost Profiles {limits = ProfileLimits {refusedHostSeconds, maxRefusedHosts}, clock, resolveHost, lookupSlots, refusedHosts} deadline name = do
+  now <- clock
+  cachedRefusal <- isJust . freshEntry now name <$> readTVarIO refusedHosts
+  if cachedRefusal
+    then pure HostRefused
+    else do
+      answer <- newEmptyTMVarIO
+      started <- mask_ $ waitUntil deadline (takeSlot lookupSlots) >>= mapM (\() -> forkIOWithUnmask $ \unmask -> try (unmask $ resolveHost name) >>= finish answer)
+      case started of
+        Nothing -> pure HostRefused
+        Just _ -> maybe HostUnanswered (bool HostRefused HostPublic) <$> waitUntil deadline (readTMVar answer)
+  where
+    finish answer resolved = do
+      let public = either (\(_ :: SomeException) -> False) allPublic resolved
+      now <- clock
+      atomically $ do
+        unless public $ modifyTVar' refusedHosts $ insertBounded maxRefusedHosts now name (now + refusedHostSeconds, ())
+        putTMVar answer public
+        releaseSlot lookupSlots
+    allPublic addresses = not (null addresses) && all publicAddress addresses
 
 publicAddress :: TransportHost -> Bool
 publicAddress = \case
@@ -320,13 +407,8 @@ inPrefix a (net, len) = a `shiftR` (32 - len) == net `shiftR` (32 - len)
 ipv4Word :: (Word8, Word8, Word8, Word8) -> Word32
 ipv4Word (a, b, c, d) = fromIntegral a `shiftL` 24 .|. fromIntegral b `shiftL` 16 .|. fromIntegral c `shiftL` 8 .|. fromIntegral d
 
--- | getAddrInfo is a foreign call that a timeout cannot interrupt, so it runs in its own thread, which a timed-out caller leaves to finish.
 systemResolver :: HostResolver
-systemResolver name = do
-  result <- newEmptyTMVarIO
-  _ <- forkFinally (getAddrInfo (Just defaultHints {addrSocketType = Stream}) (Just name) Nothing) $
-    atomically . putTMVar result . either (const []) (mapMaybe (sockHost . addrAddress))
-  atomically $ readTMVar result
+systemResolver name = mapMaybe (sockHost . addrAddress) <$> getAddrInfo (Just defaultHints {addrSocketType = Stream}) (Just name) Nothing
   where
     sockHost = \case
       SockAddrInet _ a -> Just $ THIPv4 $ hostAddressToTuple a

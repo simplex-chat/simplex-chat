@@ -22,6 +22,7 @@ import Data.Int (Int64)
 import qualified Data.ByteString.Base64.URL as B64URL
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.List (isPrefixOf)
 import qualified Data.List.NonEmpty as L
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
@@ -74,6 +75,9 @@ namesProfilesTests = describe "StoreService names: profiles" $ do
     H.it "refuses .onion hosts without resolving them, and unresolvable names" testOnionUnresolvable
     H.it "refuses a link with one public and one private host, and a name with one private address" testMixedHosts
     H.it "answers a refused link unavailable without fetching it" testRefusedNotFetched
+  describe "host lookups" $ do
+    H.it "bounds the lookups in flight across searches and previews, and a lookup with no slot in time is unavailable" testLookupBound
+    H.it "remembers a refused host until its time passes, also when its lookup answers after the caller gave up" testRefusedHostCache
 
 namesProfilesChatTests :: SpecWith TestParams
 namesProfilesChatTests =
@@ -396,8 +400,14 @@ stubResolver asked name = do
 publicResolver :: HostResolver
 publicResolver _ = pure ["1.1.1.1"]
 
+hostCheck :: HostResolver -> L.NonEmpty TransportHost -> IO HostCheck
+hostCheck resolver hosts = do
+  ps <- quietProfiles answerAll resolver
+  deadline <- deadlineIn testTimeout
+  checkHosts ps deadline hosts
+
 fetchable :: [TransportHost] -> IO Bool
-fetchable hosts = newTVarIO [] >>= \asked -> hostsFetchable (stubResolver asked) (L.fromList hosts)
+fetchable hosts = newTVarIO [] >>= \asked -> (== HostPublic) <$> hostCheck (stubResolver asked) (L.fromList hosts)
 
 testPublicHosts :: IO ()
 testPublicHosts = do
@@ -433,10 +443,10 @@ testEmbeddedAndReserved = do
 testOnionUnresolvable :: IO ()
 testOnionUnresolvable = do
   asked <- newTVarIO []
-  hostsFetchable (stubResolver asked) (L.singleton "abcdefghij234567.onion") `shouldReturn` False
-  hostsFetchable (stubResolver asked) (L.singleton $ THDomainName "abcdefghij234567.ONION.") `shouldReturn` False
+  hostCheck (stubResolver asked) (L.singleton "abcdefghij234567.onion") `shouldReturn` HostRefused
+  hostCheck (stubResolver asked) (L.singleton $ THDomainName "abcdefghij234567.ONION.") `shouldReturn` HostRefused
   readTVarIO asked `shouldReturn` []
-  hostsFetchable (stubResolver asked) (L.singleton "unknown.test") `shouldReturn` False
+  hostCheck (stubResolver asked) (L.singleton "unknown.test") `shouldReturn` HostRefused
   readTVarIO asked `shouldReturn` ["unknown.test"]
 
 -- | An IPv4-mapped IPv6 address, @::ffff:a.b.c.d@.
@@ -461,6 +471,57 @@ testRefusedNotFetched = do
   (\Entity {entityPreview = Preview _ r} -> r) <$> linkEntity profiles LKContact (addressLinkAt "127.0.0.1" 1) `shouldReturn` ProfileUnavailable
   fetchCount fake `shouldReturn` 0
   (\(Preview _ r) -> r) <$> linkPreview profiles LKContact l `shouldReturn` ProfileOk (profileFor l)
+  fetchCount fake `shouldReturn` 1
+
+-- Host lookups
+
+-- | A resolver for which names starting with "held" report that their lookup started, then block past any timeout until the gate opens,
+-- as getAddrInfo does; held names then do not resolve, and every other name resolves to a public address.
+heldResolver :: TVar [String] -> TQueue () -> TMVar () -> HostResolver
+heldResolver asked started gate name = do
+  atomically $ modifyTVar' asked (name :)
+  if "held" `isPrefixOf` name
+    then [] <$ (atomically (writeTQueue started ()) >> uninterruptibleMask_ (atomically $ readTMVar gate))
+    else pure ["1.1.1.1"]
+
+testLookupBound :: IO ()
+testLookupBound = do
+  asked <- newTVarIO []
+  started <- newTQueueIO
+  gate <- newEmptyTMVarIO
+  fake <- newFake testLimits {hostLookupSlots = 2} answerAll (heldResolver asked started gate)
+  let at host = addressLinkAt host 1
+  held <- mapM async [preview fake (at "held-1.test"), search fake (at "held-2.test")]
+  replicateM_ 2 (atomically $ readTQueue started)
+  mapM wait held `shouldReturn` [ProfileUnread, ProfileUnread]
+  preview fake (at "free.test") `shouldReturn` ProfileUnavailable
+  readTVarIO asked >>= (`shouldNotContain` ["free.test"])
+  atomically $ putTMVar gate ()
+  preview fake (at "free.test") `shouldReturn` ProfileOk (profileFor (at "free.test"))
+  fetchCount fake `shouldReturn` 1
+
+testRefusedHostCache :: IO ()
+testRefusedHostCache = do
+  asked <- newTVarIO []
+  started <- newTQueueIO
+  gate <- newEmptyTMVarIO
+  let resolver name = if "held" `isPrefixOf` name then heldResolver asked started gate name else stubResolver asked name
+  fake@Fake {clockAt} <- newFake testLimits {hostLookupSlots = 1} answerAll resolver
+  let lookups host = length . filter (== host) <$> readTVarIO asked
+  mapM_ (\n -> preview fake (addressLinkAt "private.test" n) `shouldReturn` ProfileUnavailable) [1, 2]
+  lookups "private.test" `shouldReturn` 1
+  atomically $ writeTVar clockAt 59
+  preview fake (addressLinkAt "private.test" 3) `shouldReturn` ProfileUnavailable
+  lookups "private.test" `shouldReturn` 1
+  atomically $ writeTVar clockAt 60
+  preview fake (addressLinkAt "private.test" 4) `shouldReturn` ProfileUnavailable
+  lookups "private.test" `shouldReturn` 2
+  preview fake (addressLinkAt "held.test" 1) `shouldReturn` ProfileUnread
+  atomically $ putTMVar gate ()
+  -- The one lookup slot frees in the same transaction that remembers the late refusal.
+  preview fake (addressLink 1) `shouldReturn` ProfileOk (profileFor (addressLink 1))
+  preview fake (addressLinkAt "held.test" 2) `shouldReturn` ProfileUnavailable
+  lookups "held.test" `shouldReturn` 1
   fetchCount fake `shouldReturn` 1
 
 -- Through the chat core
