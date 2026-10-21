@@ -45,16 +45,11 @@ struct ContextPendingMemberActionsView: View {
 }
 
 func showRejectMemberAlert(_ groupInfo: GroupInfo, _ member: GroupMember, dismiss: DismissAction? = nil) {
-    showMemberBanAlert(
-        groupInfo,
-        member,
-        NSLocalizedString("Reject member?", comment: "alert title"),
-        message: nil,
-        actions: [
-            LinkBanAction(title: NSLocalizedString("Reject", comment: "alert action")) { notice in
-                removeMember(groupInfo, member, withMessages: false, notice: notice, dismiss: dismiss)
-            }
-        ]
+    showAlert(
+        title: NSLocalizedString("Reject member?", comment: "alert title"),
+        buttonTitle: "Reject",
+        buttonAction: { removeMember(groupInfo, member, withMessages: false,  dismiss: dismiss) },
+        cancelButton: true
     )
 }
 

@@ -176,8 +176,8 @@ export class ChatClient {
     }
   }
 
-  async apiDeleteChat(chatType: T.ChatType, chatId: number, deleteMode: T.ChatDeleteMode = {type: "full", notify: true}, notice?: T.LinkNotice): Promise<void> {
-    const r = await this.sendChatCmd(CC.APIDeleteChat.cmdString({chatRef: {chatType, chatId}, chatDeleteMode: deleteMode, notice}))
+  async apiDeleteChat(chatType: T.ChatType, chatId: number, deleteMode: T.ChatDeleteMode = {type: "full", notify: true}): Promise<void> {
+    const r = await this.sendChatCmd(CC.APIDeleteChat.cmdString({chatRef: {chatType, chatId}, chatDeleteMode: deleteMode}))
     switch (chatType) {
       case T.ChatType.Direct:
         if (r.type === "contactDeleted") return
@@ -273,8 +273,8 @@ export class ChatClient {
     throw new ChatCommandError("error joining group", r)
   }
 
-  async apiRemoveMembers(groupId: number, memberIds: number[], withMessages = false, notice?: T.LinkNotice): Promise<T.GroupMember[]> {
-    const r = await this.sendChatCmd(CC.APIRemoveMembers.cmdString({groupId, groupMemberIds: memberIds, withMessages, notice}))
+  async apiRemoveMembers(groupId: number, memberIds: number[], withMessages = false): Promise<T.GroupMember[]> {
+    const r = await this.sendChatCmd(CC.APIRemoveMembers.cmdString({groupId, groupMemberIds: memberIds, withMessages}))
     if (r.type === "userDeletedMembers") return r.members
     throw new ChatCommandError("error removing member", r)
   }
