@@ -86,7 +86,7 @@
     "simplex-private-card-3-point-1": "客户端与服务器之间的连接只使用强加密的 TLS 1.2/1.3。",
     "privacy-matters-3-overlay-1-title": "隐私保您自由",
     "privacy-matters-3-overlay-1-linkText": "隐私保您自由",
-    "simplex-private-card-4-point-2": "要通过 Tor 使用 SimpleX，请安装 <a href=\"https://guardianproject.info/apps/org.torproject.android/\" target=\"_blank\" rel=\"noopener\">Orbot</a> 应用并启用 SOCKS5 代理（在 <a href=\"https://apps.apple.com/us/app/orbot/id1609461599?platform=iphone\" target=\"_blank\" rel=\"noopener\">iOS</a>上需要使用 VPN 模式）。",
+    "simplex-private-card-4-point-2": "要通过 Tor 使用 SimpleX，请安装 <a href=\"https://guardianproject.info/apps/org.torproject.android/\" target=\"_blank\">Orbot</a> 应用并启用 SOCKS5 代理（在 <a href=\"https://apps.apple.com/us/app/orbot/id1609461599?platform=iphone\" target=\"_blank\">iOS</a>上需要使用 VPN 模式）。",
     "simplex-unique-1-overlay-1-title": "您的身份、个人资料、联系人和元数据的完整隐私",
     "simplex-unique-2-title": "您可以免受垃圾消息和平台滥用的侵害",
     "simplex-unique-1-title": "您有完整的隐私",
