@@ -92,6 +92,7 @@ import Simplex.Messaging.Eth.EIP712 (serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (maybeFirstRow, tshow)
 import StoreService.Names.Abi (hex)
+import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Signatures (OrderFields (..), parseSignature)
 import StoreService.Store (RevokeResult (..))
@@ -165,9 +166,9 @@ data NameRegistration = NameRegistration
     nrPrice :: Int,
     nrPayment :: RegistrationPayment,
     nrReveal :: Maybe NameReveal,
-    nrCommitTx :: Maybe ByteString,
+    nrCommitTx :: Maybe TxHash,
     nrCommitBlock :: Maybe Word64,
-    nrRegisterTx :: Maybe ByteString,
+    nrRegisterTx :: Maybe TxHash,
     nrRegisterBlock :: Maybe Word64,
     nrRevealAfter :: Maybe Word64,
     nrRevealBefore :: Maybe Word64,
@@ -266,7 +267,7 @@ data NameTransaction = NameTransaction
   { ntId :: Int64,
     ntFor :: TxFor,
     ntRaw :: ByteString,
-    ntHash :: ByteString,
+    ntHash :: TxHash,
     ntNonce :: Word64,
     ntSentAt :: UTCTime,
     ntMinedBlock :: Maybe Word64,
@@ -276,7 +277,7 @@ data NameTransaction = NameTransaction
 
 data NewTransaction = NewTransaction
   { ntxRaw :: ByteString,
-    ntxHash :: ByteString,
+    ntxHash :: TxHash,
     ntxNonce :: Word64
   }
 
@@ -284,7 +285,7 @@ data NewTransaction = NewTransaction
 data RecordChange = RCSetText Text Text | RCClear
   deriving (Eq, Show)
 
-data EditState = ESPending | ESMined (Maybe ByteString) | ESReverted (Maybe Text)
+data EditState = ESPending | ESMined (Maybe TxHash) | ESReverted (Maybe Text)
   deriving (Eq, Show)
 
 data RecordEdit = RecordEdit
@@ -447,9 +448,9 @@ toRegistration
           nrPrice,
           nrPayment,
           nrReveal,
-          nrCommitTx = fromBinary <$> commitTx,
+          nrCommitTx = txHash <$> commitTx,
           nrCommitBlock = word64 <$> commitBlock,
-          nrRegisterTx = fromBinary <$> registerTx,
+          nrRegisterTx = txHash <$> registerTx,
           nrRegisterBlock = word64 <$> registerBlock,
           nrRevealAfter = word64 <$> revealAfter,
           nrRevealBefore = word64 <$> revealBefore,
@@ -549,7 +550,7 @@ updateRegistration db r now = do
       |]
       ( (Binary lh, nrLength, int64 nrDuration, Binary nrCommitment, nrSealed, nrPhase, nrPrice)
           :. (rvLabel <$> nrReveal, Binary . rvSecret <$> nrReveal, rvContactLink =<< nrReveal, rvChannelLink =<< nrReveal, int64 . rvNonce <$> nrReveal, int64 . rvDeadline <$> nrReveal, Binary . serializeSignature . rvSignature <$> nrReveal)
-          :. (Binary <$> nrCommitTx, int64 <$> nrCommitBlock, Binary <$> nrRegisterTx, int64 <$> nrRegisterBlock, int64 <$> nrRevealAfter, int64 <$> nrRevealBefore, int64 <$> nrExpiresAt)
+          :. (txHashField <$> nrCommitTx, int64 <$> nrCommitBlock, txHashField <$> nrRegisterTx, int64 <$> nrRegisterBlock, int64 <$> nrRevealAfter, int64 <$> nrRevealBefore, int64 <$> nrExpiresAt)
           :. (nrIssuedCodeId, truncateToSecond <$> nrRegisteredAt, truncateToSecond <$> nrFailedAt, nrError, BI live, nrMoves, truncateToSecond <$> nrLinksRefusedAt, truncateToSecond now)
           :. (rid, nrVersion, BI live, rid, Binary nrCommitment, Binary $ unAddress nrOwner, Binary lh)
       )
@@ -764,17 +765,17 @@ insertTransaction db for NewTransaction {ntxRaw, ntxHash, ntxNonce} now = do
         (registration_id, name_record_edit_id, kind, raw, tx_hash, registrar_nonce, sent_at, status)
       VALUES (?,?,?,?,?,?,?,?)
     |]
-    (rid, editId, kind, Binary ntxRaw, Binary ntxHash, int64 ntxNonce, truncateToSecond now, TSPending)
+    (rid, editId, kind, Binary ntxRaw, txHashField ntxHash, int64 ntxNonce, truncateToSecond now, TSPending)
   insertedRowId db
 
 -- | Moves a transaction on from the status the caller read, so an outcome is never overwritten unseen; False when it is not in that status.
-recordTransactionOutcome :: DB.Connection -> ByteString -> TxStatus -> TxStatus -> Maybe Word64 -> IO Bool
+recordTransactionOutcome :: DB.Connection -> TxHash -> TxStatus -> TxStatus -> Maybe Word64 -> IO Bool
 recordTransactionOutcome db hash from status block =
   (> 0)
     <$> executeChanging
       db
       "UPDATE sx_badge_service_name_transactions SET status = ?, mined_block = ? WHERE tx_hash = ? AND status = ?"
-      (status, int64 <$> block, Binary hash, from)
+      (status, int64 <$> block, txHashField hash, from)
 
 transactionColumns :: Query
 transactionColumns =
@@ -786,13 +787,13 @@ transactionColumns =
 type TransactionRow = (Int64, Text, Maybe Text, Maybe Int64, Binary ByteString, Binary ByteString, Int64, UTCTime, Maybe Int64, TxStatus)
 
 toTransaction :: TransactionRow -> Either Text NameTransaction
-toTransaction (ntId, kind, rid_, editId_, Binary ntRaw, Binary ntHash, nonce, ntSentAt, block, ntStatus) = do
+toTransaction (ntId, kind, rid_, editId_, Binary ntRaw, hash, nonce, ntSentAt, block, ntStatus) = do
   ntFor <- case (kind, rid_, editId_) of
     ("commit", Just rid, Nothing) -> Right $ TxCommit $ RegistrationId rid
     ("register", Just rid, Nothing) -> Right $ TxRegister $ RegistrationId rid
     ("edit", Nothing, Just editId) -> Right $ TxEdit editId
     _ -> Left $ "name_transactions.kind: " <> kind
-  pure NameTransaction {ntId, ntFor, ntRaw, ntHash, ntNonce = word64 nonce, ntSentAt, ntMinedBlock = word64 <$> block, ntStatus}
+  pure NameTransaction {ntId, ntFor, ntRaw, ntHash = txHash hash, ntNonce = word64 nonce, ntSentAt, ntMinedBlock = word64 <$> block, ntStatus}
 
 -- | Those without a receipt, in nonce order, for the sender to resume.
 pendingTransactions :: DB.Connection -> IO [NameTransaction]
@@ -863,7 +864,7 @@ toRecordEdit ((reId, Binary lh, Binary owner, nonce, key_, value_, deadline, Bin
   where
     decodeState
       | state == pendingEdit = Right ESPending
-      | state == minedEdit = Right $ ESMined $ fromBinary <$> minedTx
+      | state == minedEdit = Right $ ESMined $ txHash <$> minedTx
       | state == revertedEdit = Right $ ESReverted revert
       | otherwise = Left $ "name_record_edits.state: " <> state
 
@@ -890,7 +891,7 @@ settleRecordEdit db editId state =
     <$> executeChanging
       db
       "UPDATE sx_badge_service_name_record_edits SET state = ?, revert = ?, mined_tx = ? WHERE name_record_edit_id = ? AND state = ?"
-      (stateText, revert, Binary <$> minedTx, editId, pendingEdit)
+      (stateText, revert, txHashField <$> minedTx, editId, pendingEdit)
   where
     (stateText, revert, minedTx) = case state of
       ESPending -> (pendingEdit, Nothing, Nothing)
@@ -908,6 +909,12 @@ relayedEditTimes db (LabelHash lh) since =
 
 int64 :: Word64 -> Int64
 int64 = fromIntegral
+
+txHash :: Binary ByteString -> TxHash
+txHash (Binary h) = TxHash h
+
+txHashField :: TxHash -> Binary ByteString
+txHashField (TxHash h) = Binary h
 
 word64 :: Int64 -> Word64
 word64 = fromIntegral

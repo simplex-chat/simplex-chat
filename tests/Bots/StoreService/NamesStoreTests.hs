@@ -23,6 +23,7 @@ import Simplex.Messaging.Agent.Store.Shared (Migration (..), MigrationsToRun (..
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.SimplexName (labelHash)
+import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Signatures (OrderFields (..), parseAnyCaseAddress, parseSignature)
 import StoreService.Names.Store
@@ -372,7 +373,7 @@ testVersionBumps = withServiceStore $ \st -> do
   code <- issue st 1 usable
   placeCode st "r1" ownerA (order "alicebakery" 1) code `shouldReturn` Right ()
   r1 <- reg st "r1"
-  write st r1 {nrPhase = PCommitting, nrCommitTx = Just (digestFixture 8)} `shouldReturn` Written 2
+  write st r1 {nrPhase = PCommitting, nrCommitTx = Just (TxHash $ digestFixture 8)} `shouldReturn` Written 2
   r2 <- reg st "r1"
   write st r2 {nrPhase = PCommitted, nrRevealAfter = Just 1792828800, nrRevealBefore = Just 1792915140} `shouldReturn` Written 3
   r3 <- reg st "r1"
@@ -392,9 +393,9 @@ testRoundTrip = withServiceStore $ \st -> do
         r
           { nrPhase = PRegistered,
             nrReveal = Just reveal {rvChannelLink = Just "simplex:/c#xyz"},
-            nrCommitTx = Just (digestFixture 8),
+            nrCommitTx = Just (TxHash $ digestFixture 8),
             nrCommitBlock = Just 100,
-            nrRegisterTx = Just (digestFixture 9),
+            nrRegisterTx = Just (TxHash $ digestFixture 9),
             nrRegisterBlock = Just 120,
             nrRevealAfter = Just 1792828800,
             nrRevealBefore = Just 1792915140,
@@ -497,9 +498,9 @@ testRetarget = withServiceStore $ \st -> do
         r
           { nrPhase = PTaken,
             nrReveal = Just reveal,
-            nrCommitTx = Just (digestFixture 8),
+            nrCommitTx = Just (TxHash $ digestFixture 8),
             nrCommitBlock = Just 100,
-            nrRegisterTx = Just (digestFixture 9),
+            nrRegisterTx = Just (TxHash $ digestFixture 9),
             nrRegisterBlock = Just 120,
             nrRevealAfter = Just 1,
             nrRevealBefore = Just 2,
@@ -710,14 +711,14 @@ testTransactions = withServiceStore $ \st -> do
   Just editId <- withTransaction st $ \db -> insertRecordEdit db (newEdit ownerA 20 setChannel) t0
   let r1 = RegistrationId "r1"
       tx :: Word8 -> NewTransaction
-      tx n = NewTransaction {ntxRaw = digestFixture (n + 100), ntxHash = digestFixture n, ntxNonce = fromIntegral n}
+      tx n = NewTransaction {ntxRaw = digestFixture (n + 100), ntxHash = TxHash $ digestFixture n, ntxNonce = fromIntegral n}
   [commitId, _, registerId] <- withTransaction st $ \db ->
     sequence [insertTransaction db (TxCommit r1) (tx 2) (at 1), insertTransaction db (TxEdit editId) (tx 1) (at 2), insertTransaction db (TxRegister r1) (tx 3) (at 3)]
   unsettled <- withTransaction st pendingTransactions
   map (\NameTransaction {ntFor, ntNonce, ntStatus} -> (ntFor, ntNonce, ntStatus)) unsettled
     `shouldBe` [(TxEdit editId, 1, TSPending), (TxCommit r1, 2, TSPending), (TxRegister r1, 3, TSPending)]
   map ntRaw unsettled `shouldBe` map (\n -> digestFixture (n + 100)) [1, 2, 3]
-  let outcome n from status block = withTransaction st $ \db -> recordTransactionOutcome db (digestFixture n) from status block
+  let outcome n from status block = withTransaction st $ \db -> recordTransactionOutcome db (TxHash $ digestFixture n) from status block
   outcome 2 TSPending TSMined (Just 77) `shouldReturn` True
   outcome 1 TSPending TSReverted (Just 78) `shouldReturn` True
   outcome 50 TSPending TSMined (Just 79) `shouldReturn` False
@@ -732,9 +733,9 @@ testTransactionFromStatus :: IO ()
 testTransactionFromStatus = withServiceStore $ \st -> do
   code <- issue st 1 usable
   placeCode st "r1" ownerA (order "alicebakery" 1) code `shouldReturn` Right ()
-  let outcome from status block = withTransaction st $ \db -> recordTransactionOutcome db (digestFixture 2) from status block
+  let outcome from status block = withTransaction st $ \db -> recordTransactionOutcome db (TxHash $ digestFixture 2) from status block
       current = withTransaction st $ \db -> map (\NameTransaction {ntStatus, ntMinedBlock} -> (ntStatus, ntMinedBlock)) <$> registrationTransactions db (RegistrationId "r1")
-  void $ withTransaction st $ \db -> insertTransaction db (TxCommit $ RegistrationId "r1") NewTransaction {ntxRaw = "raw", ntxHash = digestFixture 2, ntxNonce = 0} t0
+  void $ withTransaction st $ \db -> insertTransaction db (TxCommit $ RegistrationId "r1") NewTransaction {ntxRaw = "raw", ntxHash = TxHash $ digestFixture 2, ntxNonce = 0} t0
   outcome TSPending TSMined (Just 77) `shouldReturn` True
   outcome TSPending TSDropped Nothing `shouldReturn` False
   current `shouldReturn` [(TSMined, Just 77)]
@@ -758,7 +759,7 @@ testEditNonceUnique = withServiceStore $ \st -> do
 testSettleEdit :: IO ()
 testSettleEdit = withServiceStore $ \st -> do
   Just editId <- withTransaction st $ \db -> insertRecordEdit db (newEdit ownerA 1 setChannel) t0
-  withTransaction st (\db -> settleRecordEdit db editId (ESMined (Just $ digestFixture 9))) `shouldReturn` True
+  withTransaction st (\db -> settleRecordEdit db editId (ESMined (Just $ TxHash $ digestFixture 9))) `shouldReturn` True
   withTransaction st (\db -> settleRecordEdit db editId (ESReverted Nothing)) `shouldReturn` False
   edit <- withTransaction st $ \db -> getRecordEdit db editId
   edit
@@ -772,7 +773,7 @@ testSettleEdit = withServiceStore $ \st -> do
           reDeadline = 1792832400,
           reSignature = signature,
           reBodyHash = digestFixture 1,
-          reState = ESMined (Just $ digestFixture 9),
+          reState = ESMined (Just $ TxHash $ digestFixture 9),
           reCreatedAt = t0
         }
 
