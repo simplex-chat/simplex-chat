@@ -27,6 +27,7 @@ module Simplex.Chat.Store.Badges
     BadgeReceiptStatus (..),
     StoreHoldKind (..),
     holdStoreReceipt,
+    holdStoreTransfer,
     getReceiptRecord,
     createBadgeStoreReceipt,
     getOpenStorePurchases,
@@ -64,7 +65,7 @@ import Data.Time.Clock (UTCTime)
 import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Ledger
 import Simplex.Chat.Badges.Service (StatementCreditType (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..))
-import Simplex.Chat.Badges.Types (BadgeAlertKind, BadgeIssueError (..), BadgeIssueFailure, BadgePurchaseStatus (..), BadgeSubscription (..), OpenStorePurchase (..), StoreReceiptOrigin (..), SubscriptionState)
+import Simplex.Chat.Badges.Types (BadgeAlertKind, BadgeIssueError (..), BadgeIssueFailure (..), BadgePurchaseStatus (..), BadgeServiceErrorCode (..), BadgeSubscription (..), OpenStorePurchase (..), StoreReceiptOrigin (..), SubscriptionState)
 import Simplex.Chat.PaymentService (AppleTransactionFacts (..), ServicePayment (..), appleTransactionFacts)
 import Simplex.Chat.PaymentService.Types (StoreTransactionRef (..))
 import Simplex.Chat.Store.Shared (StoreError, insertedRowId)
@@ -189,12 +190,15 @@ holdStoreReceipt db g User {userId} origin invoiceId_ txRef@StoreTransactionRef 
         Just r -> pure $ Just r
         Nothing -> case origin of
           SROPurchased -> do
-            insertReceipt
+            insertReceipt SHKPurchase
+            getReceiptRecord db txRef
+          SRORestored -> do
+            insertReceipt SHKTransfer
             getReceiptRecord db txRef
           SROListed -> pure Nothing
   where
     paymentJSON = safeDecodeUtf8 . LB.toStrict $ J.encode payment
-    insertReceipt = do
+    insertReceipt holdKind = do
       (purchaseKey, purchasePrivKey) <- atomically (C.generateKeyPair g) :: IO C.KeyPairEd25519
       BadgeMasterKey mk <- generateMasterKey g
       -- an invoice id another record holds is not repeated: this record is then keyed by its transaction alone
@@ -205,11 +209,40 @@ holdStoreReceipt db g User {userId} origin invoiceId_ txRef@StoreTransactionRef 
         db
         [sql|
           INSERT INTO badge_store_receipts
-            (user_id, invoice_id, provider, transaction_ref, payment, next_attempt_at, purchase_key, purchase_priv_key, master_key, created_at)
-          VALUES (?,?,?,?,?,?,?,?,?,?)
+            (user_id, invoice_id, provider, transaction_ref, payment, next_attempt_at, purchase_key, purchase_priv_key, master_key, hold_kind, created_at)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?)
           ON CONFLICT DO NOTHING
         |]
-        ((userId, invoiceId', provider, transactionRef, paymentJSON, now) :. (purchaseKey, purchasePrivKey, Binary mk, now))
+        ((userId, invoiceId', provider, transactionRef, paymentJSON, now) :. (purchaseKey, purchasePrivKey, Binary mk, holdKind, now))
+
+-- | Restore's hand-over of a transaction already recorded: a record that funds no purchase of this profile is held
+-- as a move of its payment to this profile. True when its last refusal was transfer_limited, which the hand-over answers.
+holdStoreTransfer :: DB.Connection -> TVar ChaChaDRG -> User -> StoreTransactionRef -> ServicePayment -> UTCTime -> IO Bool
+holdStoreTransfer db g User {userId} txRef payment now =
+  getReceiptRecord db txRef >>= \case
+    Just BadgeReceiptRecord {receiptId, status = RSHeld {stash, holdKind = SHKPurchase}} ->
+      getStashBadgePurchase db stash >>= \case
+        Nothing -> False <$ DB.execute db "UPDATE badge_store_receipts SET hold_kind = ?, next_attempt_at = ? WHERE badge_store_receipt_id = ?" (SHKTransfer, now, receiptId)
+        Just _ -> pure False
+    Just BadgeReceiptRecord {receiptId, status = RSRefused {refusal = Just BIFServiceError {code}}}
+      | code == BSEReceiptUsed || code == BSETransferLimited -> (code == BSETransferLimited) <$ holdTransfer receiptId
+    Just BadgeReceiptRecord {receiptId, ownerId, status = RSCredited {}}
+      | ownerId /= userId -> do
+          lastRefusal <- maybeFirstRow fromOnly $ DB.query db "SELECT credit_error FROM badge_store_receipts WHERE badge_store_receipt_id = ?" (Only receiptId)
+          (purchaseKey, purchasePrivKey) <- atomically (C.generateKeyPair g) :: IO C.KeyPairEd25519
+          BadgeMasterKey mk <- generateMasterKey g
+          holdTransfer receiptId
+          DB.execute db "UPDATE badge_store_receipts SET purchase_key = ?, purchase_priv_key = ?, master_key = ? WHERE badge_store_receipt_id = ?" (purchaseKey, purchasePrivKey, Binary mk, receiptId)
+          pure $ case join lastRefusal of
+            Just BIFServiceError {code = BSETransferLimited} -> True
+            _ -> False
+    _ -> pure False
+  where
+    holdTransfer receiptId =
+      DB.execute
+        db
+        "UPDATE badge_store_receipts SET user_id = ?, payment = ?, next_attempt_at = ?, retry_delay = NULL, retry_count = 0, credit_error = NULL, hold_kind = ? WHERE badge_store_receipt_id = ?"
+        (userId, safeDecodeUtf8 . LB.toStrict $ J.encode payment, now, SHKTransfer, receiptId)
 
 -- | Whether a held Apple record presents this payment next: another transaction of its subscription, bought
 -- later and not revoked. The core decides which is newest, since the app's store listener races its sweep, and a
@@ -312,12 +345,18 @@ recordStoreReceiptFailure db receiptId payment retryDelay nextAttemptAt failure 
     (retryDelay, nextAttemptAt, failure, receiptId, payment)
 
 -- | Kept rather than deleted, so that a later hand-over of the same transaction is answered from the record.
+-- A refused move returns the record to the profile whose purchase it still funds.
 refuseStoreReceipt :: DB.Connection -> Int64 -> BadgeIssueFailure -> IO ()
 refuseStoreReceipt db receiptId refusal =
   DB.execute
     db
-    "UPDATE badge_store_receipts SET payment = NULL, next_attempt_at = NULL, retry_delay = NULL, retry_count = 0, credit_error = ?, hold_kind = ? WHERE badge_store_receipt_id = ?"
-    (refusal, SHKPurchase, receiptId)
+    [sql|
+      UPDATE badge_store_receipts
+      SET payment = NULL, next_attempt_at = NULL, retry_delay = NULL, retry_count = 0, credit_error = ?, hold_kind = ?,
+        user_id = COALESCE((SELECT p.user_id FROM badge_purchases p WHERE p.badge_store_receipt_id = ?), user_id)
+      WHERE badge_store_receipt_id = ?
+    |]
+    (refusal, SHKPurchase, receiptId, receiptId)
 
 -- | Every settle clears the failure, so one recorded on a credited record is a refused resume or tier change.
 settleStoreReceipt :: DB.Connection -> Int64 -> IO ()
@@ -387,6 +426,12 @@ deleteBadgeCodeRedemption db User {userId} code =
 -- issued, and that must add no purchase and leave the shown badge alone.
 createStashBadgePurchase :: DB.Connection -> User -> BadgeStash -> BadgeCredential -> UTCTime -> IO (Int64, Bool)
 createStashBadgePurchase db User {userId} stash credential now = do
+  -- a moved payment's record still links the purchase it moved from, which would be taken for a replay
+  forM_ storeReceiptId_ $ \receiptId ->
+    DB.execute
+      db
+      "UPDATE badge_purchases SET badge_store_receipt_id = NULL WHERE badge_store_receipt_id = ? AND EXISTS (SELECT 1 FROM badge_store_receipts WHERE badge_store_receipt_id = ? AND hold_kind = ?)"
+      (receiptId, receiptId, SHKTransfer)
   -- the credit settles a held receipt in the transaction that stores its purchase, a replay included
   forM_ storeReceiptId_ $ settleStoreReceipt db
   getStashBadgePurchase db stash >>= \case

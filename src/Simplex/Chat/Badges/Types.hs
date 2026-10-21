@@ -322,8 +322,9 @@ data OpenStorePurchase = OpenStorePurchase
 -- | Where the app found a store transaction it hands over. The store lists an account's purchases on every
 -- device signed into it, so a listed one is claimed only by a core that already has a record for it.
 data StoreReceiptOrigin
-  = SROPurchased -- the app's own purchase call, or Restore
+  = SROPurchased -- the app's own purchase call
   | SROListed -- the store's list of unfinished transactions, or its updates
+  | SRORestored -- Restore's hand-over of what the store lists as this account's, moved to this profile
   deriving (Eq, Show)
 
 instance TextEncoding BadgePurchaseStatus where
