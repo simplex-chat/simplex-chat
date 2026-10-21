@@ -1,104 +1,236 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 
 module StoreService.Names.Chain
   ( ChainClient (..),
     ChainError (..),
     TxHash (..),
-    sendCommit,
-    sendRegister,
+    SignedTx (..),
+    TxRequest (..),
+    Block (..),
+    Receipt (..),
+    TxState (..),
+    BlockTag (..),
+    newChainClient,
+    ethCall,
+    latestBlock,
+    transactionReceipt,
+    transactionByHash,
+    transactionCount,
+    estimateGas,
+    maxPriorityFee,
+    signTransaction,
+    sendRawTransaction,
   )
 where
 
-import StoreService.Names.Abi (hex)
-import StoreService.Names.Registration (RegisterIntent, commitCalldata, registerWithCreditCalldata)
 import Control.Concurrent.STM (TVar)
 import Control.Exception (try)
-import Control.Monad.Except (ExceptT, liftEither, runExceptT, throwError)
-import Control.Monad.IO.Class (liftIO)
+import Control.Monad ((>=>))
 import Crypto.Random (ChaChaDRG)
 import Data.Aeson ((.:), (.:?), (.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Types as JT
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import Data.ByteString (ByteString)
+import qualified Data.ByteString.Lazy as LB
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word64)
 import Network.HTTP.Client (Manager)
 import qualified Network.HTTP.Client as HTTP
-import Network.HTTP.Types (hContentType, methodPost)
+import Network.HTTP.Client.TLS (newTlsManager)
+import Network.HTTP.Types (hContentType, methodPost, statusCode, statusIsSuccessful)
 import Numeric (readHex)
-import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey)
+import Simplex.Messaging.Crypto (keccak256)
 import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey)
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..), signEip1559Tx)
-import Simplex.Messaging.Util (liftError', tshow)
+import Simplex.Messaging.Util (tshow)
+import StoreService.Config (ChainConfig (..))
+import StoreService.Names.Abi (hex)
+import StoreService.Names.Revert (RevertName, decodeRevert)
+import System.Timeout (timeout)
 
 data ChainClient = ChainClient
   { ccManager :: Manager,
-    ccRpcUrl :: String,
-    ccChainId :: Word64,
-    ccController :: Address,
-    ccSponsor :: Address,
-    ccRegistrarKey :: Secp256k1PrivateKey
+    ccConfig :: ChainConfig,
+    ccRegistrar :: Address,
+    -- | microseconds for a whole call, from the request to the end of its body
+    ccTimeout :: Int
   }
 
-newtype ChainError = ChainError Text
+-- | 'ChainUnavailable' never holds the RPC URL, which can carry a provider's key.
+data ChainError
+  = ChainReverted (Maybe RevertName)
+  | ChainUnavailable Text
+  | ChainGasAboveCap Word64
   deriving (Eq, Show)
 
 newtype TxHash = TxHash ByteString
   deriving (Eq, Show)
 
-sendCommit :: TVar ChaChaDRG -> ChainClient -> ByteString -> IO (Either ChainError TxHash)
-sendCommit g c@ChainClient {ccController} = sendTransaction g c ccController . commitCalldata
+data SignedTx = SignedTx {stRaw :: ByteString, stHash :: TxHash}
+  deriving (Eq, Show)
 
-sendRegister :: TVar ChaChaDRG -> ChainClient -> RegisterIntent -> IO (Either ChainError TxHash)
-sendRegister g c@ChainClient {ccSponsor} = sendTransaction g c ccSponsor . registerWithCreditCalldata
+data TxRequest = TxRequest
+  { trTo :: Address,
+    trData :: ByteString,
+    trNonce :: Word64,
+    trGasLimit :: Word64,
+    trMaxFeePerGas :: Word64,
+    trMaxPriorityFeePerGas :: Word64
+  }
 
-sendTransaction :: TVar ChaChaDRG -> ChainClient -> Address -> ByteString -> IO (Either ChainError TxHash)
-sendTransaction g c@ChainClient {ccChainId, ccRegistrarKey} to calldata = runExceptT $ do
-  from <- liftIO $ addressFromPrivateKey g ccRegistrarKey
-  gas <- rpc c "eth_estimateGas" [J.object ["from" .= from, "to" .= to, "data" .= hex calldata], "pending"] quantity
-  nonce <- rpc c "eth_getTransactionCount" [J.toJSON from, "pending"] quantity
-  tip <- rpc c "eth_maxPriorityFeePerGas" [] quantity
-  baseFee <- rpc c "eth_getBlockByNumber" ["latest", J.Bool False] $ J.withObject "block" $ \b -> quantity =<< b .: "baseFeePerGas"
-  let tx =
-        Eip1559Tx
-          { txChainId = ccChainId,
-            txNonce = nonce,
-            txMaxPriorityFeePerGas = tip,
-            txMaxFeePerGas = 2 * baseFee + tip,
-            txGasLimit = gas,
-            txTo = to,
-            txValue = 0,
-            txData = calldata
-          }
-  raw <- liftError' (ChainError . T.pack) $ signEip1559Tx g ccRegistrarKey tx
-  TxHash <$> rpc c "eth_sendRawTransaction" [J.String $ hex raw] bytes
+data Block = Block {blockNumber :: Word64, blockTimestamp :: Word64, blockBaseFee :: Word64}
+  deriving (Eq, Show)
 
-rpc :: ChainClient -> Text -> [J.Value] -> (J.Value -> JT.Parser a) -> ExceptT ChainError IO a
-rpc ChainClient {ccManager, ccRpcUrl} method params parseResult = do
-  resp <- liftError' (\(e :: HTTP.HttpException) -> ChainError $ tshow e) $ try $ do
-    req <- HTTP.parseRequest ccRpcUrl
-    HTTP.httpLbs
-      req
-        { HTTP.method = methodPost,
-          HTTP.redirectCount = 0,
-          HTTP.requestHeaders = (hContentType, "application/json") : HTTP.requestHeaders req,
-          HTTP.requestBody = HTTP.RequestBodyLBS body
-        }
-      ccManager
-  either (throwError . ChainError . T.pack) liftEither $ JT.parseEither response =<< J.eitherDecode (HTTP.responseBody resp)
+data Receipt = Receipt {receiptSuccess :: Bool, receiptBlock :: Word64}
+  deriving (Eq, Show)
+
+data TxState = TxPending | TxMined Word64
+  deriving (Eq, Show)
+
+data BlockTag = Latest | Pending
+
+rpcTimeout :: Int
+rpcTimeout = 10000000
+
+-- | Far above the largest answer the service reads: a block with its transaction hashes, or two records at the link bound.
+maxRpcResponseBytes :: Int
+maxRpcResponseBytes = 1024 * 1024
+
+revertCode :: Int
+revertCode = 3
+
+newChainClient :: TVar ChaChaDRG -> ChainConfig -> IO ChainClient
+newChainClient g ccConfig@ChainConfig {cServiceKey} = do
+  ccManager <- newTlsManager
+  ccRegistrar <- addressFromPrivateKey g cServiceKey
+  pure ChainClient {ccManager, ccConfig, ccRegistrar, ccTimeout = rpcTimeout}
+
+ethCall :: ChainClient -> Address -> ByteString -> IO (Either ChainError ByteString)
+ethCall c to calldata = rpc c "eth_call" [J.object ["to" .= to, "data" .= hex calldata], "latest"] bytes
+
+latestBlock :: ChainClient -> IO (Either ChainError Block)
+latestBlock c =
+  rpc c "eth_getBlockByNumber" ["latest", J.Bool False] $ J.withObject "block" $ \b ->
+    Block <$> (quantity =<< b .: "number") <*> (quantity =<< b .: "timestamp") <*> (quantity =<< b .: "baseFeePerGas")
+
+-- | Nothing while the transaction is not mined, or after the node pruned its receipt.
+transactionReceipt :: ChainClient -> TxHash -> IO (Either ChainError (Maybe Receipt))
+transactionReceipt c (TxHash h) =
+  rpc c "eth_getTransactionReceipt" [J.String $ hex h] $ nullable $ J.withObject "receipt" $ \r ->
+    Receipt <$> (status =<< r .: "status") <*> (quantity =<< r .: "blockNumber")
   where
-    body = J.encode $ J.object ["jsonrpc" .= ("2.0" :: Text), "id" .= (1 :: Int), "method" .= method, "params" .= params]
-    response = J.withObject "JSON-RPC response" $ \o -> o .:? "error" >>= maybe (Right <$> (parseResult =<< o .: "result")) rpcError
-    rpcError = J.withObject "JSON-RPC error" $ \e -> Left . ChainError <$> e .: "message"
+    status =
+      quantity >=> \case
+        (1 :: Word64) -> pure True
+        0 -> pure False
+        _ -> fail "not a receipt status"
 
-quantity :: (Eq a, Num a) => J.Value -> JT.Parser a
+-- | Nothing when the node does not know the transaction.
+transactionByHash :: ChainClient -> TxHash -> IO (Either ChainError (Maybe TxState))
+transactionByHash c (TxHash h) =
+  rpc c "eth_getTransactionByHash" [J.String $ hex h] $ nullable $ J.withObject "transaction" $ \t ->
+    maybe TxPending TxMined <$> (traverse quantity =<< t .:? "blockNumber")
+
+transactionCount :: ChainClient -> Address -> BlockTag -> IO (Either ChainError Word64)
+transactionCount c a tag = rpc c "eth_getTransactionCount" [J.toJSON a, blockTag] quantity
+  where
+    blockTag = case tag of
+      Latest -> "latest"
+      Pending -> "pending"
+
+-- | The dry run of a registrar transaction; an estimate above the configured cap is refused.
+estimateGas :: ChainClient -> Address -> ByteString -> IO (Either ChainError Word64)
+estimateGas c@ChainClient {ccRegistrar, ccConfig = ChainConfig {cGasLimitCap}} to calldata =
+  (>>= capped) <$> rpc c "eth_estimateGas" [J.object ["from" .= ccRegistrar, "to" .= to, "data" .= hex calldata], "pending"] quantity
+  where
+    capped gas
+      | gas > cGasLimitCap = Left $ ChainGasAboveCap gas
+      | otherwise = Right gas
+
+maxPriorityFee :: ChainClient -> IO (Either ChainError Word64)
+maxPriorityFee c = rpc c "eth_maxPriorityFeePerGas" [] quantity
+
+signTransaction :: TVar ChaChaDRG -> ChainClient -> TxRequest -> IO (Either String SignedTx)
+signTransaction g ChainClient {ccConfig = ChainConfig {cChainId, cServiceKey}} TxRequest {trTo, trData, trNonce, trGasLimit, trMaxFeePerGas, trMaxPriorityFeePerGas} =
+  fmap signed <$> signEip1559Tx g cServiceKey tx
+  where
+    tx =
+      Eip1559Tx
+        { txChainId = cChainId,
+          txNonce = trNonce,
+          txMaxPriorityFeePerGas = fromIntegral trMaxPriorityFeePerGas,
+          txMaxFeePerGas = fromIntegral trMaxFeePerGas,
+          txGasLimit = trGasLimit,
+          txTo = trTo,
+          txValue = 0,
+          txData = trData
+        }
+    signed raw = SignedTx {stRaw = raw, stHash = TxHash $ keccak256 raw}
+
+sendRawTransaction :: ChainClient -> ByteString -> IO (Either ChainError TxHash)
+sendRawTransaction c raw = rpc c "eth_sendRawTransaction" [J.String $ hex raw] (fmap TxHash . bytes)
+
+rpc :: ChainClient -> Text -> [J.Value] -> (J.Value -> JT.Parser a) -> IO (Either ChainError a)
+rpc ChainClient {ccManager, ccConfig = ChainConfig {cRpcUrl}, ccTimeout} method params parseResult =
+  timeout ccTimeout (try post) >>= \case
+    Nothing -> pure $ Left $ unavailable "timed out"
+    Just (Left (e :: HTTP.HttpException)) -> pure $ Left $ unavailable $ httpFailure e
+    Just (Right (status, body))
+      | LB.length body > fromIntegral maxRpcResponseBytes -> pure $ Left $ unavailable $ "response over " <> tshow maxRpcResponseBytes <> " bytes"
+      | otherwise -> pure $ case JT.parseEither response =<< J.eitherDecode body of
+          Right r -> r
+          Left e
+            | statusIsSuccessful status -> Left $ unavailable $ "not a JSON-RPC response: " <> T.pack e
+            | otherwise -> Left $ unavailable $ "HTTP " <> tshow (statusCode status)
+  where
+    post = do
+      req <- HTTP.parseRequest cRpcUrl
+      HTTP.withResponse
+        req
+          { HTTP.method = methodPost,
+            HTTP.redirectCount = 0,
+            HTTP.requestHeaders = (hContentType, "application/json") : HTTP.requestHeaders req,
+            HTTP.requestBody = HTTP.RequestBodyLBS requestBody
+          }
+        ccManager
+        $ \resp -> (HTTP.responseStatus resp,) <$> HTTP.brReadSome (HTTP.responseBody resp) (maxRpcResponseBytes + 1)
+    requestBody = J.encode $ J.object ["jsonrpc" .= ("2.0" :: Text), "id" .= (1 :: Int), "method" .= method, "params" .= params]
+    response = J.withObject "JSON-RPC response" $ \o -> o .:? "error" >>= maybe (Right <$> (parseResult =<< o .: "result")) (fmap Left . rpcError)
+    rpcError = J.withObject "JSON-RPC error" $ \e -> do
+      code <- e .: "code"
+      message <- e .: "message"
+      revertData <- e .:? "data"
+      pure $
+        if code == revertCode || "execution reverted" `T.isPrefixOf` message
+          then ChainReverted $ decodeRevert =<< (JT.parseMaybe bytes =<< revertData)
+          else unavailable $ "error " <> tshow code <> ": " <> message
+    unavailable reason = ChainUnavailable $ method <> ": " <> reason
+
+-- | Only the kind of failure: an exception's text can hold the URL or its host.
+httpFailure :: HTTP.HttpException -> Text
+httpFailure = \case
+  HTTP.InvalidUrlException {} -> "invalid RPC URL"
+  HTTP.HttpExceptionRequest _ content -> case content of
+    HTTP.ResponseTimeout -> "timed out"
+    HTTP.ConnectionTimeout -> "connection timed out"
+    HTTP.ConnectionFailure _ -> "connection failed"
+    _ -> "request failed"
+
+nullable :: (J.Value -> JT.Parser a) -> J.Value -> JT.Parser (Maybe a)
+nullable p = \case
+  J.Null -> pure Nothing
+  v -> Just <$> p v
+
+quantity :: forall a. (Integral a, Bounded a) => J.Value -> JT.Parser a
 quantity = J.withText "quantity" $ \t -> case T.stripPrefix "0x" t of
-  Just h | [(n, "")] <- readHex (T.unpack h) -> pure n
+  Just h | [(n, "")] <- readHex (T.unpack h), n <= toInteger (maxBound :: a) -> pure $ fromInteger n
   _ -> fail "not a quantity"
 
 bytes :: J.Value -> JT.Parser ByteString

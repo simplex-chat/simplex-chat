@@ -5,18 +5,17 @@ module Bots.StoreService.NameRegistrationTests (badgeNameRegistrationTests) wher
 
 import StoreService.Names.Chain
 import StoreService.Names.Registration
+import StoreService.Names.Revert (RevertName (..))
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.WebUIMock
 import Control.Concurrent.STM (TVar)
 import Crypto.Random (ChaChaDRG)
-import qualified Data.ByteArray as BA
-import Data.ByteArray.Encoding (Base (Base16), convertToBase)
+import Data.ByteArray.Encoding (Base (Base16), convertFromBase, convertToBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import Data.Text (Text)
 import Data.Word (Word64)
 import qualified Simplex.Messaging.Crypto as C
-import qualified Simplex.Messaging.Crypto.Secp256k1 as S
 import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain)
@@ -25,7 +24,7 @@ import Simplex.Messaging.SimplexName (SimplexTLD (..))
 import Test.Hspec
 
 badgeNameRegistrationTests :: Spec
-badgeNameRegistrationTests = describe "store service name registration" $ do
+badgeNameRegistrationTests = describe "StoreService names: registration" $ do
   g <- runIO C.newRandom
   -- expected encodings and signatures are viem's, against the SimplexController, SimplexSponsor and SimplexResolver ABIs
   describe "encoding" $ do
@@ -36,7 +35,7 @@ badgeNameRegistrationTests = describe "store service name registration" $ do
     it "rejects an intent signed by another wallet" $ testVerifyOtherSigner g
     it "rejects an intent past its deadline" $ testVerifyExpired g
     it "rejects a secret that is not 32 bytes" $ testVerifyShortSecret g
-  it "sends nothing when the dry run reverts" $ testRevertedDryRun g
+  it "reads the register's dry run reverting as the sponsor's error" $ testRevertedDryRun g
   it "registers a name the client committed to without revealing it" $ testCommitThenRegister g
 
 testRegisterCalldataWithRecords :: TVar ChaChaDRG -> IO ()
@@ -73,23 +72,41 @@ testVerifyShortSecret g = do
 
 testRevertedDryRun :: TVar ChaChaDRG -> IO ()
 testRevertedDryRun g = withFakeEthNode $ \node -> do
-  revertCalls node
+  -- viem's encodeErrorResult of InsufficientAllowance(10000, 2500)
+  setFault node "eth_estimateGas" $ revertFault $ fromHex "2a1b2dd8000000000000000000000000000000000000000000000000000000000000271000000000000000000000000000000000000000000000000000000000000009c4"
   intent <- knownIntent g knownRegistration
-  sendRegister g (chainClient node) intent `shouldReturn` Left (ChainError "execution reverted")
-  sentTransactions node `shouldReturn` []
+  c <- newChainClient g $ fakeChainConfig node
+  estimateGas c fakeSponsor (registerWithCreditCalldata intent) `shouldReturn` Left (ChainReverted $ Just RNInsufficientAllowance)
 
 testCommitThenRegister :: TVar ChaChaDRG -> IO ()
 testCommitThenRegister g = withFakeEthNode $ \node -> do
+  c <- newChainClient g $ fakeChainConfig node
   w <- newEphemeralWallet g
   ewAddress <$> walletFromCode g (redemptionCode w) `shouldReturn` ewAddress w
   let registration = knownRegistration {rOwner = ewAddress w}
-      commitment = makeCommitment registration
-  commitTx <- expectedTransaction g 0 controller $ commitCalldata commitment
-  sendCommit g (chainClient node) commitment `shouldReturn` Right (TxHash $ C.keccak256 commitTx)
+      commitCall = commitCalldata $ makeCommitment registration
+  commitTx <- expectedTransaction g 0 fakeController commitCall
+  send g c fakeController commitCall `shouldReturn` SignedTx commitTx (TxHash $ C.keccak256 commitTx)
   intent <- signRegisterIntent g domain w registration deadline
   verifyRegisterIntent domain deadline intent `shouldReturn` Right ()
-  registerTx <- expectedTransaction g 1 sponsor $ registerWithCreditCalldata intent
-  sendRegister g (chainClient node) intent `shouldReturn` Right (TxHash $ C.keccak256 registerTx)
+  let registerCall = registerWithCreditCalldata intent
+  registerTx <- expectedTransaction g 1 fakeSponsor registerCall
+  send g c fakeSponsor registerCall `shouldReturn` SignedTx registerTx (TxHash $ C.keccak256 registerTx)
+  sentTransactions node `shouldReturn` [commitTx, registerTx]
+
+-- | The dry run, the registrar's next nonce and the fees, then the signed transaction sent and its hash checked.
+send :: TVar ChaChaDRG -> ChainClient -> Address -> ByteString -> IO SignedTx
+send g c@ChainClient {ccRegistrar} to calldata = do
+  gas <- right' =<< estimateGas c to calldata
+  nonce <- right' =<< transactionCount c ccRegistrar Pending
+  tip <- right' =<< maxPriorityFee c
+  Block {blockBaseFee} <- right' =<< latestBlock c
+  tx@SignedTx {stRaw, stHash} <-
+    right <$> signTransaction g c TxRequest {trTo = to, trData = calldata, trNonce = nonce, trGasLimit = gas, trMaxFeePerGas = 2 * blockBaseFee + tip, trMaxPriorityFeePerGas = tip}
+  sendRawTransaction c stRaw `shouldReturn` Right stHash
+  pure tx
+  where
+    right' = either (fail . show) pure
 
 -- fixtures
 
@@ -114,34 +131,20 @@ knownIntent g r = do
 knownCode :: Text
 knownCode = "SN-00000-00000-00000-00000-00000-0VME2"
 
-controller, sponsor :: Address
-controller = address "0x0165878a594ca255338adfa4d48449f69242eb8f"
-sponsor = address "0x9a676e781a523b5d0c0e43731313a708cb607508"
-
 domain :: Eip712Domain
-domain = sponsorDomain chainId sponsor
-
-chainId :: Word64
-chainId = 31337
+domain = sponsorDomain fakeChainId fakeSponsor
 
 deadline :: Word64
 deadline = 4102444800
-
-registrarKey :: S.Secp256k1PrivateKey
-registrarKey = right $ S.mkPrivateKey $ BA.replicate 32 0x46
-
-chainClient :: FakeEthNode -> ChainClient
-chainClient FakeEthNode {fnUrl, fnManager} =
-  ChainClient {ccManager = fnManager, ccRpcUrl = fnUrl, ccChainId = chainId, ccController = controller, ccSponsor = sponsor, ccRegistrarKey = registrarKey}
 
 expectedTransaction :: TVar ChaChaDRG -> Word64 -> Address -> ByteString -> IO ByteString
 expectedTransaction g nonce to calldata =
   right
     <$> signEip1559Tx
       g
-      registrarKey
+      fakeRegistrarKey
       Eip1559Tx
-        { txChainId = chainId,
+        { txChainId = fakeChainId,
           txNonce = nonce,
           txMaxPriorityFeePerGas = fakeTip,
           txMaxFeePerGas = 2 * fakeBaseFee + fakeTip,
@@ -156,6 +159,9 @@ address = right . strDecode
 
 toHex :: ByteString -> ByteString
 toHex = convertToBase Base16
+
+fromHex :: ByteString -> ByteString
+fromHex = right . convertFromBase Base16
 
 right :: Either String a -> a
 right = either (error . ("unexpected Left: " <>)) id
