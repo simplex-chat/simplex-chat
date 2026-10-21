@@ -95,7 +95,7 @@ export const FRAMES = {
   N3: {
     url: `${HOST}/#/checkout`, from: "N2", label: `Register ${NAME}.simplex`, color: "blue",
     title: "Check your order, and pay",
-    text: "Step 2 of 5. The browser makes the name's wallet: 128-bit entropy, shown as a name code (SN- and 30 characters: the entropy and 22 bits of its SHA-256), the key at m/44'/60'/0'/0/0 of the BIP-39 phrase with that entropy. The order carries the address, the name's hash and length, the commitment, and the name and links sealed under a key from the code; never the plain name. Optional links, the payment method, and the order card with Continue, I have a code and the investor line.",
+    text: "Step 2 of 5. The browser makes the name's wallet: 128-bit entropy, shown as a name code (SN- and 30 characters: the entropy and 22 bits of its SHA-256), the key at m/44'/60'/0'/0/0 of the BIP-39 seed from that entropy (the phrase is never shown). The order carries the address, the name's hash and length, the commitment, and the name and links sealed under a key from the code; never the plain name. Optional links, the payment method, and the order card with Continue, I have a code and the investor line.",
   },
   N4: {
     url: ORDER, from: "N3h", label: "code saved: Bitcoin", color: "blue",
@@ -104,7 +104,7 @@ export const FRAMES = {
   },
   N5: {
     url: ORDER, from: "N4", label: "the full amount arrives", color: "blue",
-    title: "Payment received",
+    title: "Confirming your payment",
     text: "Settlement hands the order to the registration worker; the page moves on by itself.",
   },
   N6: {
@@ -145,7 +145,7 @@ export const FRAMES = {
   N2b: {
     url: HOST, from: "N1a", label: "taken, linked to nothing", color: "orange",
     title: "Taken, pointing nowhere",
-    text: "Registered without links: a name, bought here or elsewhere, whose owner has not set records yet, or one this service is registering or registered within the last hour, before the resolver has it. Nothing is held before that.",
+    text: "Registered without links: a name, bought here or elsewhere, whose owner has not set records yet, or one this service is registering, while its transaction is being mined. Nothing is held before that.",
   },
   N2c: {
     url: HOST, from: "N1a", label: "reserved", color: "orange",
@@ -153,7 +153,7 @@ export const FRAMES = {
     text: "With a way to reach the SimpleX team, as the app does.",
   },
   N2d: {
-    url: HOST, from: "N1a", label: "503: the resolver is down", color: "orange",
+    url: HOST, from: "N1a", label: "503: the chain cannot be read", color: "orange",
     title: "Not checked",
     text: "Nothing goes forward on a guess.",
   },
@@ -273,7 +273,7 @@ export const FRAMES = {
     text: "A second order would be a second charge, so Continue is off while a submitted card payment awaits confirmation, until it settles or expires.",
   },
   N4a: { url: ORDER, from: "N4", label: "less than the amount", color: "orange", title: "Part of the amount", text: "The rest to send, with the rate's remaining time." },
-  N4b: { url: ORDER, from: "N4", label: "Cancel this invoice", color: "orange", title: "Cancelled", text: "Get a new invoice makes a new order for the same name and wallet." },
+  N4b: { url: ORDER, from: "N4", label: "Cancel this invoice", color: "orange", title: "Cancelled", text: "Order the name again leads back to the name's search result, to order it anew and choose how to pay; nothing is ordered until then." },
   N4c: { url: ORDER, from: "N4", label: "the window closes, nothing sent", color: "orange", title: "Expired, nothing received", text: "Nothing was received." },
   N4d: { url: ORDER, from: "N4a", label: "the window closes", color: "orange", title: "Expired, part paid", text: "The buyer quotes the reference." },
   N10: {
@@ -358,7 +358,7 @@ export const FRAMES = {
 export const NOTES = [
   "Design document, not screenshots of a build: the names screens are rendered from mockups/domains.js on simplex.domains' fonts, logos and brand blue, with a palette of its own, prototypes for the names app in that repo; the badges landing is the real badges webapp.",
   "Two stores, two webapps: names at simplex.domains, from its own repo (a submodule of simplex-chat); badges at badges.simplex.chat. One service (StoreService) exports both; one library (@simplex-chat/store) holds the logic they share.",
-  "Non-custodial: the browser makes each name's wallet (128-bit entropy, shown as an SN- name code; the key at m/44'/60'/0'/0/0 of its BIP-39 phrase) with vendored @noble/secp256k1 and @noble/hashes, and sends the address and a commitment, revealing the name only after the commit; the service pays for and sends commit and register with that owner and never owns the name.",
+  "Non-custodial: the browser makes each name's wallet (128-bit entropy, shown as an SN- name code; the key at m/44'/60'/0'/0/0 of its BIP-39 seed; no phrase is shown) with vendored @noble/secp256k1 and @noble/hashes, and sends the address and a commitment, revealing the name only after the commit; the service pays for and sends commit and register with that owner and never owns the name.",
   "A paid name registers for 2 years, a code for its own term; the price is the service's answer for the searched name. Codes (SN6-, SN7-, SN20-, ...) come from the operator, the app (not yet in #7530) or, for a taken order, the page, derived from the name code; never sold here; the service's table is their truth.",
   "Regenerate after npm run build in apps/simplex-badge-service/web (apps/simplex-store-service/web after the rename), with a simplex.domains checkout beside this repo: PLAYWRIGHT=<playwright index.mjs> node plans/names-codes/mockups/board.mjs",
 ];

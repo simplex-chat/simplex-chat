@@ -57,6 +57,8 @@ const paidTotal = () => el("div", { class: "total" }, el("span", { class: "label
 const btn = (text, cls = "", ...extra) => el("button", { class: `btn ${cls}`.trim(), type: "button" }, text, ...extra);
 const disabled = (node) => { node.setAttribute("disabled", ""); return node; };
 const link = (text) => el("a", { href: "#" }, text);
+// the term as the page words it: a code's or a search's years, and the 30 days every registration adds
+const termText = (years) => `${years} years + 30 days`;
 const chip = (text, cls = "", dot = false) => el("span", { class: `chip ${cls}`.trim() }, dot ? el("span", { class: "dot" }) : null, text);
 const alertBox = (tone, ic, title, text) => el("div", { class: `alert ${tone}` }, icon(ic), el("div", {}, title ? el("b", {}, title) : null, text));
 const nameTitle = (label, cls = "name") => el("div", { class: cls }, label, el("span", {}, ".simplex"));
@@ -111,7 +113,7 @@ function bento() {
     el("div", { class: "section-head" }, el("h2", { class: "display" }, "How it works")),
     el("div", { class: "bento" },
       step("1", "Search", "Any name of 6 letters or more: a–z, 0–9 and single hyphens between them. The search sends only its hash and length."),
-      step("2", "Pay", "One price for 2 years, shown with the name.",
+      step("2", "Pay", "One price for 2 years, shown with the name, and 30 more days free.",
         el("div", { class: "pays" }, ...["card", "btc", "xmr"].map((m) => el("span", {}, methodMark(m), METHODS[m][0])))),
       step("3", "It's yours", "Registered to a wallet made in your browser. Its name code is the only key, and moves the name to your app."),
       el("article", { class: "tile wide" },
@@ -140,7 +142,7 @@ function availableResult(label, { coded = false, credit = false } = {}) {
   const what = el("div", { class: "what" },
     nameTitle(label),
     el("div", { class: "meta" }, chip("Available", "ok", true), chip(`${label.length} letters`),
-      chip(coded ? `${APPLIED_YEARS} years` : "2 years"), coded ? chip("Code applied", "brand") : null, credit ? chip("Covered by your payment", "brand") : null),
+      chip(coded ? termText(APPLIED_YEARS) : termText(2)), coded ? chip("Code applied", "brand") : null, credit ? chip("Covered by your payment", "brand") : null),
     coded ? el("div", { class: "covered" }, "Covered by your code", el("span", { class: "mono nowrap" }, APPLIED_SHORT), "·", link("Remove")) : null);
   const priceBox = coded
     ? el("div", { class: "price" }, el("b", {}, el("s", {}, dollars(price)), "$0"), el("span", {}, `for ${APPLIED_YEARS} years`))
@@ -172,10 +174,10 @@ function searchScreen(state) {
     case "reserved": return [hero("support", { after: [takenResult("support", chip("Reserved", "warn", true),
       [el("p", { class: "note" }, "Reserved names are not sold here. If it is yours to use, contact the SimpleX team."),
         el("div", { style: "margin-top: 12px" }, btn("Contact the SimpleX team", "quiet"))])] }), bento()];
-    case "unchecked": return [hero(NAME, { after: [under(alertBox("warn", "alert", "This name could not be checked", "The name service did not answer. Try again in a moment."))] }), bento()];
+    case "unchecked": return [hero(NAME, { after: [under(el("div", {}, alertBox("warn", "alert", "This name could not be checked", "The name service did not answer."), el("div", { style: "margin-top: 14px" }, btn("Try again", "quiet", icon("refresh")))))] }), bento()];
     case "limited": return [hero(NAME, { box: { off: true }, after: [under(alertBox("warn", "clock", "Try again in 42 seconds", "Too many names were searched from here. Searching is paused until then."))] }), bento()];
     case "credit": return [hero("dynamos", {
-      banner: el("div", { class: "banner" }, icon("wallet"), el("span", {}, el("b", {}, `Your payment is kept: ${PAID}. `), `Choose another name of up to ${PAID}; it is registered with what you paid.`)),
+      banner: el("div", { class: "banner" }, icon("wallet"), el("span", {}, el("b", {}, `Your payment is kept: ${PAID}. `), `Choose another name of up to ${PAID}; nothing more is charged.`)),
       after: [availableResult("dynamos", { credit: true })] })];
     case "fromApp": return [hero(NAME, {
       banner: el("div", { class: "banner" }, icon("phone"), el("span", {}, el("b", {}, "Opened from SimpleX. "), `The name is registered to your app's wallet, ${APP_OWNER_SHORT}.`)),
@@ -255,7 +257,7 @@ function checkoutScreen(opts = {}) {
   let paySec;
   if (covered) {
     paySec = el("div", { class: "panel-sec" }, el("div", { class: "sec-title" }, el("h3", {}, "Payment")),
-      el("div", { class: "covered-box" }, icon("check"), el("div", {}, "Paid with your code", el("p", {}, `Registered for ${APPLIED_YEARS} years, with nothing to pay.`))));
+      el("div", { class: "covered-box" }, icon("check"), el("div", {}, "Paid with your code", el("p", {}, `Registered for ${termText(APPLIED_YEARS)}, with nothing to pay.`))));
   } else if (opts.openOrder) {
     paySec = el("div", { class: "panel-sec" }, el("div", { class: "sec-title" }, el("h3", {}, "Payment method")),
       alertBox("info", "info", "You have an order waiting to be confirmed", "A second order would be a second charge, so this one cannot start yet. When that payment is confirmed or expires, you can start a new one here."),
@@ -269,7 +271,7 @@ function checkoutScreen(opts = {}) {
   const storage = opts.noStorage ? el("div", { class: "panel-sec" }, alertBox("warn", "alert", "This browser will not keep your name code", "The next step shows it: your saved copy will be the only one.")) : null;
   const main = el("div", { class: "panel" }, storage, linksSec, paySec);
 
-  const term = covered ? `${APPLIED_YEARS} years` : "2 years";
+  const term = covered ? termText(APPLIED_YEARS) : termText(2);
   const until = covered ? CODE_UNTIL_SHORT : UNTIL_SHORT;
   const rows = [["Term", term], ["Registered until", `about ${until}`]];
   if (opts.code !== "entry" && !opts.openOrder) rows.push(covered ? ["Code", APPLIED_SHORT] : ["Paying with", METHODS[selected][0]]);
@@ -308,7 +310,7 @@ function codeScreen() {
         el("p", { class: "sec-note" }, "Copy it somewhere safe or write it down. You redeem it in the app later."),
         ...codeBlock(),
         el("label", { class: "check" }, el("span", { class: "box" }), "I have saved my code"))),
-      orderCard(NAME, [["Term", "2 years"], ["Registered until", `about ${UNTIL_SHORT}`], ["Paying with", "Bitcoin"]],
+      orderCard(NAME, [["Term", termText(2)], ["Registered until", `about ${UNTIL_SHORT}`], ["Paying with", "Bitcoin"]],
         paidTotal(),
         disabled(btn("Continue to payment", "lg block", icon("arrow"))),
         el("div", { class: "why" },
@@ -322,7 +324,7 @@ function priceChanged() {
 }
 
 function rateLimited() {
-  return status("warn", "clock", "Too many attempts", "Try again in 41 seconds. Nothing was charged.", [disabled(btn("Try again in 41 s")), btn("Back", "quiet")]);
+  return status("warn", "clock", "Too many attempts", "Too many orders were tried from here, so ordering is paused. Nothing was charged.", [disabled(btn("Try again in 41 seconds")), btn("Back", "quiet")]);
 }
 
 function invoiceFailure() {
@@ -337,16 +339,16 @@ function copyField(label, value, copy = true) {
 function cryptoScreen({ partial = false } = {}) {
   const due = partial ? CRYPTO_REMAINING : CRYPTO.amount;
   const main = el("div", { class: "panel" }, el("div", { class: "panel-sec" },
-    partial ? el("div", { style: "margin-bottom: 18px" }, alertBox("warn", "alert", "Part of the amount has arrived", `${CRYPTO.partial} of ${CRYPTO.amount} BTC is seen. Send the remaining ${CRYPTO_REMAINING} BTC to the same address.`)) : null,
+    partial ? el("div", { style: "margin-bottom: 18px" }, alertBox("warn", "alert", "Part of the payment arrived", `${CRYPTO.partial} of ${CRYPTO.amount} BTC is seen. Send the remaining ${CRYPTO_REMAINING} BTC to the same address.`)) : null,
     el("div", { class: "pay-head" },
       el("div", {}, el("span", { class: "label" }, partial ? "Send the rest" : "Send"), el("div", { class: "amount" }, `${due} BTC`), el("div", { class: "usd" }, `${PAID} in total`)),
       chip(partial ? "Rate held 45:59" : "Rate held 59:59", "brand")),
     el("div", { class: "pay-body" },
       el("div", { class: "qr" }, qrSvg(`bitcoin:${CRYPTO.address}?amount=${due}`, "Bitcoin payment")),
       el("div", {}, copyField("Amount", `${due} BTC`), copyField("Bitcoin address", CRYPTO.address), copyField("Reference", ORDER_ID, false))),
-    el("div", { class: "waiting" }, el("span", { class: "live" }, partial ? "Waiting for the rest of the payment" : "Waiting for the payment"), link("Cancel this invoice"))));
+    el("div", { class: "waiting" }, el("span", { class: "live" }, partial ? "Waiting for the rest of the payment" : "Waiting for payment"), partial ? null : link("Cancel this invoice"))));
   return [pageHead(3, "Pay with Bitcoin", "Bookmark this page: the address and the countdown live on its link."),
-    twoCols(main, orderCard(NAME, [["Term", "2 years"], ["Paying with", "Bitcoin"]], paidTotal()))];
+    twoCols(main, orderCard(NAME, [["Term", termText(2)], ["Paying with", "Bitcoin"]], paidTotal()))];
 }
 
 function confirmingScreen(card) {
@@ -358,8 +360,8 @@ function confirmingScreen(card) {
       ? "Stripe usually confirms within a minute. Registration starts by itself; this page moves on."
       : `${CRYPTO.amount} BTC arrived. Registration starts once it confirms; this page moves on by itself.`),
     el("div", { class: "meter" }, el("i")),
-    el("div", { class: "waiting" }, el("span", { class: "live" }, "Confirming"), el("span", { class: "mono", style: "font-size: 13px; color: var(--ink-3)" }, ORDER_ID))));
-  return [pageHead(3, card ? "Paying by card" : "Payment received"), twoCols(main, orderCard(NAME, [["Term", "2 years"], ["Paying with", card ? "Card" : "Bitcoin"]], paidTotal()))];
+    el("div", { class: "waiting" }, el("span", { class: "live" }, "Confirming payment"), el("span", { class: "mono", style: "font-size: 13px; color: var(--ink-3)" }, ORDER_ID))));
+  return [pageHead(3, card ? "Paying by card" : "Confirming your payment"), twoCols(main, orderCard(NAME, [["Term", termText(2)], ["Paying with", card ? "Card" : "Bitcoin"]], paidTotal()))];
 }
 
 function cardScreen() {
@@ -372,7 +374,7 @@ function cardScreen() {
       el("div", { class: "two" }, f("Expiry", "MM / YY"), f("CVC", "CVC")),
       f("Country", "Portugal")),
     el("div", { style: "margin-top: 18px" }, btn(`Pay ${PAID}`, "lg block"))));
-  return [pageHead(3, "Pay by card"), twoCols(main, orderCard(NAME, [["Term", "2 years"], ["Paying with", "Card"]], paidTotal()))];
+  return [pageHead(3, "Pay by card"), twoCols(main, orderCard(NAME, [["Term", termText(2)], ["Paying with", "Card"]], paidTotal()))];
 }
 
 // a single outcome, centred, as the badge store's endings are
@@ -390,7 +392,7 @@ function track(states) {
   const stage = (st, n, title, text) => el("div", { class: `stage ${st}` }, el("span", { class: "node" }, st === "done" ? "✓" : st === "failed" ? "✕" : n), el("b", {}, title), el("span", {}, text));
   return el("div", { class: "track" },
     stage(states[0], "1", states[0] === "done" ? "Committed" : "Committing", "The name, hidden, goes on chain"),
-    stage(states[1], "2", "Waiting", "Every registration waits a minute"),
+    stage(states[1], "2", "Waiting", "Every registration waits after its commit"),
     stage(states[2], "3", states[2] === "done" ? "Registered" : "Registering", "Then it is yours"));
 }
 
@@ -407,12 +409,12 @@ function registeringScreen(states) {
   const active = states.indexOf("active");
   const box = [
     el("div", { class: "countdown" }, el("b", {}, icon("clock")), el("p", {}, "Waiting for the commit to be mined. The wait starts once it is.")),
-    el("div", { class: "countdown" }, el("b", {}, "0:42"), el("p", {}, "The contract makes every registration wait a minute after its commit, so nobody can take a name they saw being registered.")),
+    el("div", { class: "countdown" }, el("b", {}, "0:42"), el("p", {}, "The contract makes every registration wait after its commit, so nobody can take a name they saw being registered.")),
     el("div", { class: "countdown" }, el("b", {}, icon("clock")), el("p", {}, "The register transaction is being mined; the name is yours once it is, and final 3 blocks later.")),
   ][active];
-  return [pageHead(4, ["Registering ", el("span", { class: "grad" }, `${NAME}.simplex`)], "About two minutes. Keep this page open: after the wait it sends the name to finish."),
+  return [pageHead(4, ["Registering ", el("span", { class: "grad" }, `${NAME}.simplex`)], "About two minutes. Keep this page open: after the wait it signs the name to finish it."),
     twoCols(el("div", { class: "panel" }, el("div", { class: "panel-sec" }, track(states), box), txRows(states)),
-      orderCard(NAME, [["Paid", `${PAID} · Bitcoin`], ["Term", "2 years"], ["Reference", SHORT_REF]]))];
+      orderCard(NAME, [["Paid", `${PAID} · Bitcoin`], ["Term", termText(2)], ["Reference", SHORT_REF]]))];
 }
 
 function celebrate(label, lead) {
@@ -424,13 +426,12 @@ function celebrate(label, lead) {
 
 function registeredScreen({ saved = true, years = 2, until = UNTIL } = {}) {
   const next = (ic, title, text, action) => el("div", { class: "item" }, el("span", { class: "ic" }, icon(ic)), el("div", {}, el("b", {}, title), el("p", {}, text), action));
-  return [celebrate(NAME, `Registered for ${years} years, until ${until}, to ${OWNER_SHORT}, a wallet made in this browser.`),
+  return [celebrate(NAME, `Registered for ${termText(years)}, until ${until}, to ${OWNER_SHORT}, a wallet made in this browser.`),
     twoCols(
       el("div", { class: "panel" }, el("div", { class: "panel-sec" },
         el("div", { class: "sec-title" }, el("h3", {}, "Your name code")),
-        el("p", { class: "sec-note" }, "The same code you saved at checkout. It owns the name."),
+        el("p", { class: "sec-note" }, "The name code it was ordered with. It owns the name."),
         ...codeBlock(),
-        el("p", { class: "sec-note", style: "margin: 12px 0 0" }, link("Show it as 12 words, for another wallet")),
         saved
           ? alertBox("warn", "shield", null, "Whoever has this code controls the name. Nobody else has a copy, not even us.")
           : alertBox("bad", "alert", "This code could not be saved in this browser", "The copy you saved before paying is the only one."))),
@@ -567,9 +568,9 @@ const SCREENS = {
   N3h: () => codeScreen(),
   N4: () => cryptoScreen(),
   N4a: () => cryptoScreen({ partial: true }),
-  N4b: () => status("info", "x", "Invoice cancelled", "This invoice was cancelled and nothing was received.", [btn("Get a new invoice")], { reference: true }),
-  N4c: () => status("info", "clock", "This invoice expired", "Nothing was received before its rate window closed.", [btn("Get a new invoice")], { reference: true }),
-  N4d: () => status("warn", "alert", "This invoice expired", `${CRYPTO.partial} BTC arrived, which is not the full amount. The rate window has closed; quote the reference below and we will sort it out.`, [btn("Get a new invoice", "quiet")], { reference: true }),
+  N4b: () => status("info", "x", "Invoice cancelled", "This invoice was cancelled and nothing was received.", [btn("Order the name again")], { reference: true }),
+  N4c: () => status("info", "clock", "Invoice expired", "Nothing was received before its rate window closed.", [btn("Get a new invoice")], { reference: true }),
+  N4d: () => status("warn", "alert", "Invoice expired", `${CRYPTO.partial} BTC arrived, which is not the full amount. Write to chat@simplex.chat with the reference below and we will sort it out.`, [btn("Get a new invoice", "quiet")], { reference: true }),
   N5: () => confirmingScreen(false),
   N6: () => registeringScreen(["active", "", ""]),
   N6a: () => registeringScreen(["done", "active", ""]),
@@ -583,7 +584,7 @@ const SCREENS = {
   N8b: () => takenCode(),
   N9: () => failedAfterPaying(),
   N10: () => cardScreen(),
-  N10a: () => status("warn", "alert", "The card form did not load", "Stripe's form was blocked or failed to load. Nothing was charged.", [btn("Try again"), btn("Get a new invoice", "quiet")], { reference: true }),
+  N10a: () => status("warn", "alert", "The card form did not load", "Stripe's form was blocked or failed to load. Nothing was charged.", [btn("Load the card form again"), btn("Get a new invoice", "quiet")], { reference: true }),
   N10b: () => confirmingScreen(true),
   N10c: () => status("warn", "clock", "This is taking longer than expected", "The payment has not been confirmed. This page keeps working: come back to it later, or quote the reference below.", [btn("Check again")], { reference: true }),
   N11: () => status("info", "link", "This link does not work", "It names no order this service knows. Check the link, or start again.", [btn("Search a name")]),
