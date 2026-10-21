@@ -72,7 +72,7 @@ import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Options.DB
 import Simplex.Chat.PaymentService (ServicePayment (..), googlePurchaseRef)
 import Simplex.Chat.PaymentService.Types (InvoiceId (..))
-import Simplex.Chat.Store.Badges (getNextHeldStoreReceipt)
+import Simplex.Chat.Store.Badges (getLatestIssuedCredential, getNextHeldStoreReceipt)
 import Simplex.Messaging.Agent (disposeAgentClient)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..))
 import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..))
@@ -124,6 +124,7 @@ badgeServiceTests = do
   it "should sign a renewal with the master key stored on the purchase" testRenewalSignsWithStoredMasterKey
   it "should leave the client holding the same ledger rows as the service" testClientReplicatesLedger
   it "should renew a badge whose credential is lapsing, with no command" testWorkerRenews
+  it "should take the newest issued credential by its ledger row, not by the period it ends" testLatestIssuedByRow
   it "should keep answering and renewing a holder after its partly used multi-use code is revoked" testRevokedMultiUseHolderRenews
   it "should return a multi-use holder's renewed credential on a repeat, apart from a later holder" testMultiUseHoldersRenewApart
   it "should request from the wake it set a day before the credential lapses" testRequestWakeFires
@@ -1031,6 +1032,27 @@ testWorkerRenews ps =
       alice ##> "/_app activate"
       alice <## "ok"
       waitShownIssued (chatController alice)
+
+testLatestIssuedByRow :: HasCallStack => TestParams -> IO ()
+testLatestIssuedByRow ps =
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      code <- issueCode cc BTSupporter 3
+      redeemFirstBadge alice code
+      redeemed <- ledgerRows (chatController alice) "badge_ledger"
+      setClockAt bsClock $ fst $ renewalMoments redeemed
+      alice ##> "/_app activate"
+      alice <## "ok"
+      _ <- waitLedgerRows (chatController alice) 3
+      alice <##. "1: supporter"
+      withTransaction (chatStore $ chatController alice) $ \db -> do
+        -- as a tier change leaves them: the newer issuance ends before the older one
+        [(purchaseId, olderId, olderEnd), (_, newerId, newerEnd)] :: [(Int64, Int64, UTCTime)] <-
+          DB.query_ db "SELECT badge_purchase_id, entry_id, period_end FROM badge_issuances ORDER BY entry_id"
+        DB.execute db "UPDATE badge_issuances SET period_end = ? WHERE entry_id = ?" (newerEnd, olderId)
+        DB.execute db "UPDATE badge_issuances SET period_end = ? WHERE entry_id = ?" (olderEnd, newerId)
+        [Only (Binary newest)] <- DB.query db "SELECT credential FROM badge_issuances WHERE entry_id = ?" (Only newerId)
+        getLatestIssuedCredential db purchaseId `shouldReturn` J.decodeStrict' newest
 
 testRevokedMultiUseHolderRenews :: HasCallStack => TestParams -> IO ()
 testRevokedMultiUseHolderRenews ps =
