@@ -207,9 +207,9 @@
         <target state="translated">%d hodin</target>
         <note>time interval</note>
       </trans-unit>
-      <trans-unit id="%d messages not forwarded" xml:space="preserve">
+      <trans-unit id="%d messages not forwarded" xml:space="preserve" approved="no">
         <source>%d messages not forwarded</source>
-        <target>%d zprávy nebyly přeposlány</target>
+        <target state="translated">%d zprávy nebyly přeposlány</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="%d min" xml:space="preserve" approved="no">
@@ -381,9 +381,9 @@ channel relay bar</note>
         <target>%lld zprávy označeno jako smazáno</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld messages moderated by %@" xml:space="preserve">
+      <trans-unit id="%lld messages moderated by %@" xml:space="preserve" approved="no">
         <source>%lld messages moderated by %@</source>
-        <target>%lld zprávy moderované %@</target>
+        <target state="translated">%lld zprávy moderované %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld minutes" xml:space="preserve" approved="no">
@@ -455,9 +455,9 @@ channel relay bar</note>
         <target state="translated">(od majitele)</target>
         <note>chat link info line</note>
       </trans-unit>
-      <trans-unit id="(new)" xml:space="preserve">
+      <trans-unit id="(new)" xml:space="preserve" approved="no">
         <source>(new)</source>
-        <target>(nový)</target>
+        <target state="translated">(nový)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="(this device v%@)" xml:space="preserve" approved="no">
@@ -515,9 +515,9 @@ channel relay bar</note>
         <target state="translated">**Upozornění**: Okamžitě doručovaná oznámení vyžadují přístupové heslo uložené v Klíčence.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Warning**: the archive will be removed." xml:space="preserve">
+      <trans-unit id="**Warning**: the archive will be removed." xml:space="preserve" approved="no">
         <source>**Warning**: the archive will be removed.</source>
-        <target>**Varování**: archiv bude odstraněn.</target>
+        <target state="translated">**Varování**: archiv bude odstraněn.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**e2e encrypted** audio call" xml:space="preserve" approved="no">
