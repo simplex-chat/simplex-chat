@@ -1548,7 +1548,8 @@ func planAndConnect(
                         if let groupSLinkData = groupSLinkData_ {
                             logger.debug("planAndConnect, .groupLink, .ok, short link data present")
                             await MainActor.run {
-                                switch prepareGroup {
+                                let mode: PrepareGroupMode = ownerVerification == nil && connectOtherLink == nil ? prepareGroup : .confirm
+                                switch mode {
                                 case .confirm:
                                     showPrepareGroupAlert(
                                         connectionLink: connectionLink,

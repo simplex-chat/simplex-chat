@@ -255,7 +255,8 @@ private suspend fun planAndConnectTask(
         is GroupLinkPlan.Ok ->
           if (connectionPlan.groupLinkPlan.groupSLinkData_ != null) {
             Log.d(TAG, "planAndConnect, .GroupLink, .Ok, short link data present")
-            when (prepareGroup) {
+            val mode = if (connectionPlan.groupLinkPlan.ownerVerification == null && connectOtherLink == null) prepareGroup else PrepareGroupMode.Confirm
+            when (mode) {
               PrepareGroupMode.Confirm ->
                 showPrepareGroupAlert(
                   rhId,

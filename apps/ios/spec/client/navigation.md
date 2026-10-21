@@ -351,7 +351,7 @@ When `groupShortLinkInfo?.direct == false` (channel relay link), the prepare ale
 - `apiPrepareGroup` call passes `directLink: false`
 - Stores `groupShortLinkInfo.groupRelays` in `ChatModel.shared.channelRelayHostnames`
 
-The alert's confirm calls `prepareAndOpenGroup`, which prepares the group, stores the relays, adds the chat and opens it. `planAndConnect(…, prepareGroup: .open)`, which the online search's Open uses, calls `prepareAndOpenGroup` without the alert (see [Chat List, Opening a result](chat-list.md#opening-a-result)); the default `.confirm` keeps the alert.
+The alert's confirm calls `prepareAndOpenGroup`, which prepares the group, stores the relays, adds the chat and opens it. `planAndConnect(…, prepareGroup: .open)`, which the online search's Open uses, calls `prepareAndOpenGroup` without the alert when the plan has no owner verification and no other name (see [Chat List, Opening a result](chat-list.md#opening-a-result)); with either, and with the default `.confirm`, the alert shows.
 
 ### Own Link Confirmation (`showOwnGroupLinkConfirmConnectSheet`)
 
