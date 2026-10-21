@@ -146,7 +146,9 @@ readConfigOrExit path =
     Left e -> putStrLn (path <> ": " <> e) >> exitFailure
     Right sc -> pure sc
 
--- | The config refuses the dev flag beside a real verifier, so only one of them applies.
+-- | Only one of the mock and the real verifiers applies: the config refuses
+-- accept_unverified_store_receipts beside [apple] or [google]. The other two dev settings,
+-- credit_test_purchases and check_store_during_coverage, are meant to sit beside a real verifier.
 configureStoreVerifier :: Maybe ServiceConfig -> ServiceState -> IO ServiceState
 configureStoreVerifier serviceCfg env@ServiceState {serviceCC, storeVerifier = v} = case serviceCfg of
   Just ServiceConfig {devAcceptUnverifiedStoreReceipts = True, devCheckStoreDuringCoverage} -> do
@@ -698,7 +700,9 @@ commandName = \case
 -- forger could iterate on. A test purchase is named, since the device that made it already knows.
 storeRefusalResponse :: StoreRefusal -> IO BadgeServiceResponse
 storeRefusalResponse = \case
-  SRInvalid reason -> logInfo ("store receipt refused: " <> reason) $> errorResponse BSEReceiptInvalid
+  -- warn, not info: every one of these ends a purchase for good, and one of them (a store that no longer
+  -- knows a subscription it once sold) can do that to a purchase the user really paid for
+  SRInvalid reason -> logWarn ("store receipt refused for good: " <> reason) $> errorResponse BSEReceiptInvalid
   SRTestPurchase -> logInfo "store receipt refused: test purchase" $> errorResponse BSETestPurchase
   SRPending -> pure $ errorResponse BSEPaymentPending
   SRUnreachable reason -> logWarn ("store unreachable: " <> reason) $> errorResponse BSEProviderUnavailable
