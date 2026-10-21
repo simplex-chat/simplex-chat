@@ -1130,7 +1130,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               XInfoProbeOk probe -> Nothing <$ xInfoProbeOk (COMGroupMember m'') probe
               BFileChunk sharedMsgId chunk -> Nothing <$ bFileChunkGroup (GIK gInfo' gks) m'' sharedMsgId chunk msgMeta
               _ -> Nothing <$ messageError ("unsupported message: " <> tshow event)
-            forM deliveryTaskContext_ $ \taskContext -> do
+            forM (if memberStatus m'' == GSMemPendingApproval then Nothing else deliveryTaskContext_) $ \taskContext -> do
               let contentChanged :: CM ()
                   contentChanged = atomically $ channelContentChanged cc groupId
               case event of
