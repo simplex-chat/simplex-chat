@@ -423,6 +423,7 @@ Path prefix: `common/src/desktopMain/kotlin/chat/simplex/common/`
 | `WindowActivation.kt` | — | Low | `_NET_ACTIVE_WINDOW` request that raises the window on X11 and XWayland |
 | `platform/AppLinkScheme.desktop.kt` | — | Medium | Runtime `simplexchat:` and `simplex:` scheme registration (Windows HKCU, AppImage desktop entry) |
 | `model/NtfManager.desktop.kt` | PC18 | Medium | Desktop system tray notification display |
+| `helpers/NetworkObserver.kt` | PC25 | Medium | Desktop network observer — polls the routing table's source addresses |
 | `platform/AppCommon.desktop.kt` | PC1 through PC31 | Medium | Desktop app initialization actual declarations |
 | `platform/SimplexService.desktop.kt` | PC18 | Low | Desktop background receiver (no foreground service) |
 | `platform/Files.desktop.kt` | PC10, PC23, PC26 | Medium | Desktop file path resolution |

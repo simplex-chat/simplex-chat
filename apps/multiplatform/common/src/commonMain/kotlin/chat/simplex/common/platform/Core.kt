@@ -127,7 +127,7 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
     }
     appPrefs.newDatabaseInitialized.set(true)
     chatModel.incompleteInitializedDbRemoved.value = false
-    platform.androidRestartNetworkObserver()
+    platform.restartNetworkObserver()
     controller.apiSetAppFilePaths(
       appFilesDir.absolutePath,
       coreTmpDir.absolutePath,

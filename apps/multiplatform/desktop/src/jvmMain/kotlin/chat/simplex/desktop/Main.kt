@@ -9,6 +9,7 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.*
 import chat.simplex.common.acquireSingleInstance
+import chat.simplex.common.helpers.NetworkObserver
 import chat.simplex.common.installOpenUriHandler
 import chat.simplex.common.linkFromArgs
 import chat.simplex.common.model.ChatController.appPrefs
@@ -72,6 +73,10 @@ private fun initHaskell() {
   initHS()
 
   platform = object: PlatformInterface {
+    override fun restartNetworkObserver() {
+      NetworkObserver.shared.restartNetworkObserver()
+    }
+
     @Composable
     override fun desktopShowAppUpdateNotice() {
       fun showNoticeIfNeeded() {

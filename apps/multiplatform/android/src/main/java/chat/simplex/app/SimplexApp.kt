@@ -341,7 +341,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
         activeCallDestroyWebView()
       }
 
-      override fun androidRestartNetworkObserver() {
+      override fun restartNetworkObserver() {
         NetworkObserver.shared.restartNetworkObserver()
       }
 
