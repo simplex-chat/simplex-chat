@@ -70,7 +70,7 @@
     "simplex-private-6-title": "Out-of-band<br>sleuteluitwisseling",
     "simplex-private-7-title": "Bericht integriteit<br>verificatie",
     "simplex-private-card-4-point-1": "Om uw IP-adres te beschermen kunt u via Tor of een ander transport overlay netwerk toegang krijgen tot de servers.",
-    "simplex-private-card-4-point-2": "Installeer de <a href=\"https://guardianproject.info/apps/org.torproject.android/\" target=\"_blank\" rel=\"noopener\">Orbot-app </a> en schakel de SOCKS5-proxy in (of VPN <a href=\"https://apps.apple.com/us/app/orbot/id1609461599?platform=iphone\" target=\"_blank\" rel=\"noopener\"> op iOS </a>) om SimpleX via Tor te gebruiken.",
+    "simplex-private-card-4-point-2": "Installeer de <a href=\"https://guardianproject.info/apps/org.torproject.android/\" target=\"_blank\">Orbot-app </a> en schakel de SOCKS5-proxy in (of VPN <a href=\"https://apps.apple.com/us/app/orbot/id1609461599?platform=iphone\" target=\"_blank\"> op iOS </a>) om SimpleX via Tor te gebruiken.",
     "simplex-private-card-6-point-2": "Om te voorkomen dat SimpleX apps eenmalige sleutels out-of-band doorgeven, wanneer u een adres deelt als een link of een QR-code.",
     "simplex-private-card-7-point-1": "Om de integriteit te garanderen, zijn de berichten opeenvolgend genummerd en bevatten ze de hash van het vorige bericht.",
     "simplex-private-card-9-point-1": "Elke berichten wachtrij geeft berichten in één richting door, met verschillende verzend en ontvangst adressen.",
