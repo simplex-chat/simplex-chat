@@ -863,11 +863,10 @@ private fun openAppLink(rhId: Long?, uri: String) {
 }
 
 @Composable
-private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState<TextFieldValue>, searchShowingSimplexLink: MutableState<Boolean>, searchChatFilteredBySimplexLink: MutableState<Set<String>>, connectNameCandidate: MutableState<String?>, onlineSearch: OnlineSearchModel) {
+private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState<TextFieldValue>, searchShowingSimplexLink: MutableState<Boolean>, searchChatFilteredBySimplexLink: MutableState<Set<String>>, connectNameCandidate: MutableState<String?>, onlineSearch: OnlineSearchModel, focused: MutableState<Boolean>) {
   Box {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
       val focusRequester = remember { FocusRequester() }
-      var focused by remember { mutableStateOf(false) }
       Icon(
         painterResource(MR.images.ic_search),
         contentDescription = null,
@@ -875,7 +874,7 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
         tint = MaterialTheme.colors.secondary
       )
       SearchTextField(
-        Modifier.weight(1f).onFocusChanged { focused = it.hasFocus }.focusRequester(focusRequester),
+        Modifier.weight(1f).onFocusChanged { focused.value = it.hasFocus }.focusRequester(focusRequester),
         placeholder = stringResource(MR.strings.search_or_paste_simplex_link),
         alwaysVisible = true,
         searchText = searchText,
@@ -904,7 +903,7 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
       val focusManager = LocalFocusManager.current
       val keyboardState = getKeyboardState()
       LaunchedEffect(keyboardState.value) {
-        if (keyboardState.value == KeyboardState.Closed && focused) {
+        if (keyboardState.value == KeyboardState.Closed && focused.value) {
           focusManager.clearFocus()
         }
       }
@@ -1212,6 +1211,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
 @Composable
 private fun ChatListSearchBarWithTags(listState: LazyListState, searchText: MutableState<TextFieldValue>, searchShowingSimplexLink: MutableState<Boolean>, searchChatFilteredBySimplexLink: MutableState<Set<String>>, connectNameCandidate: MutableState<String?>, onlineSearch: OnlineSearchModel) {
   val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val searchFocused = remember { mutableStateOf(false) }
   if (oneHandUI.value) {
     Column(Modifier.consumeWindowInsets(WindowInsets.navigationBars).consumeWindowInsets(PaddingValues(bottom = AppBarHeight))) {
       Divider()
@@ -1221,11 +1221,14 @@ private fun ChatListSearchBarWithTags(listState: LazyListState, searchText: Muta
         Divider()
         rows()
       }
-      ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink, connectNameCandidate, onlineSearch)
-      Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
+      ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink, connectNameCandidate, onlineSearch, searchFocused)
+      // only the field's own keyboard: one opened by a view over the list must not resize the onboarding cards above
+      if (searchFocused.value) {
+        Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
+      }
     }
   } else {
-    ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink, connectNameCandidate, onlineSearch)
+    ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink, connectNameCandidate, onlineSearch, searchFocused)
     // top toolbar: search bar above, so on desktop the search rows go above the tags
     TagsOrConnectByName(searchText, searchShowingSimplexLink, connectNameCandidate, onlineSearch) { rows ->
       rows()
