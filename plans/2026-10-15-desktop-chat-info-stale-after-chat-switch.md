@@ -47,7 +47,7 @@ Both the contact branch and the group branch get this change. The group branch a
 
 Until the reload returns, the pane shows none of the previous chat's loaded info:
 - The contact info, security code and group link start empty when `preloadedChatId` is not the shown chat (`remember(chatInfo.id)`, so a switch inside the same branch also starts over). With no code, the "Verify security code" row is hidden, as it already was when the code was not loaded.
-- The "Create group link" / "Group link" row is hidden and the channel "Link" button is disabled until the link is loaded (`linkLoaded`, passed to `GroupChatInfoView` as `groupLinkLoaded`). With no link yet, both would open the link page, which creates a link when it gets none; for a group that already has one, the core creates a server queue before failing with a duplicate link error.
+- Until the link is loaded (`linkLoaded`, passed to `GroupChatInfoView` as `groupLinkLoaded`), the "Create group link" / "Group link" row is hidden, the channel "Link" button is disabled, and a channel owner sees no channel link rows. With no link yet, the row and the button would open the link page, which creates a link when it gets none; for a group that already has one, the core creates a server queue before failing with a duplicate link error. The owner's "Channel link" and "SimpleX name" rows need the loaded link; the channel's QR code, "Share link" and "Share via chat", which an owner sees only when no link is loaded for the channel, would otherwise show until the "Channel link" row replaces them.
 
 A link created, changed or deleted on the "Group link" page finishes in the background. It is stored only while the stored values belong to the group it came from, so after a switch it can't replace the next group's link.
 
@@ -66,7 +66,7 @@ Alternatives considered:
 
 ## Verification
 
-Desktop, master prebuild (0002582) vs this branch, the same scripts on fresh profiles: two contacts, two groups owned by them; then the user is made admin of both groups, and a third group where the user is a member is added. Security codes were compared with each peer's own `/code` output.
+Desktop, master prebuild (0002582) vs this branch before its last commit (93881883c, the channel owner's link rows), the same scripts on fresh profiles: two contacts, two groups owned by them; then the user is made admin of both groups, and a third group where the user is a member is added. Security codes were compared with each peer's own `/code` output.
 
 Changed:
 
@@ -89,7 +89,6 @@ Unchanged:
 | T4 | Group A info → switch to group B | "2 members" | same |
 | T5 | Verify → Back → Verify (same contact) | A's code | same |
 | T8 | A info → Verify → B → A → Verify | A's code | same |
-| T10 | Group A info → "Chat with admins" → contact B → A → Back | "2 members" | same |
 | R1 | First open of contact info | Verify row, the contact's code | same |
 | R2 | Info of a group where the user is a member | no link row, members listed | same |
 | R3 | First open of a group the user admins, no link | "Create group link" | same |
@@ -100,7 +99,7 @@ Unchanged:
 
 Both: no crashes; no `E:` log lines other than `apiGetGroupLink … groupLinkNotFound` for groups without a link.
 
-While the info loads (desktop; test-only builds of the branch with only the `preloadedChatId` fix (before) and with the whole branch (after), both with `delay(3000)` added before the pane's reload and after the preload's `setGroupMembers`, to make the moment observable; locally it lasts milliseconds):
+While the info loads (desktop; test-only builds of the branch with only the `preloadedChatId` fix (before) and with the branch before its last commit (after), both with `delay(3000)` added before the pane's reload and after the preload's `setGroupMembers`, to make the moment observable; locally it lasts milliseconds):
 
 | # | Check | before | after |
 |---|---|---|---|
@@ -109,4 +108,6 @@ While the info loads (desktop; test-only builds of the branch with only the `pre
 | W3 | Group B info → click group A (has a link) | "Create group link" shown; tapping it fails with "Error creating group link" (duplicateGroupLink) | no link row until loaded, then "Group link" |
 | M1 | Click info on group A → click B → click A while it loads | "1 members" | "2 members" |
 
-Android (Waydroid debug APK), the branch with only the `preloadedChatId` fix vs the whole branch, identical: contact info → Verify → Back → Verify shows the peer's code both times; group info lists both members, also after Group preferences → Back; in a group the user admins, "Create group link" → Back → "Group link" → the link, members intact.
+Android (Waydroid debug APK), the branch with only the `preloadedChatId` fix vs the branch before its last commit, identical: contact info → Verify → Back → Verify shows the peer's code both times; group info lists both members, also after Group preferences → Back; in a group the user admins, "Create group link" → Back → "Group link" → the link, members intact.
+
+The last commit, desktop: test-only builds of the branch before and after it, both with `delay(3000)` before the pane's link load. An owner with channel X's info open clicks their channel Y, which has a link: before it, Y's QR code, "Share link" and "Share via chat" show during the load; after it, no link rows until the "Channel link" row appears. A subscriber sees the channel's QR code at once (tested after it; the condition is unchanged for non-owners). The final code against a later master prebuild (built 2026-10-17): the security code after a contact switch, "Mark verified", the members after Group preferences → another group, the group link rows (as in the first table), messages each way in a direct chat and a group; no errors in the logs other than `groupLinkNotFound`.
