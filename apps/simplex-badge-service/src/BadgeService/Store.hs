@@ -33,6 +33,9 @@ module BadgeService.Store
     appendLedgerPlan,
     createCodePurchase,
     createStorePurchase,
+    PaymentRebind (..),
+    rebindStorePayment,
+    getMovedFromExpiry,
     PurchaseSubscription (..),
     getPurchaseSubscription,
     stampSubscriptionCheck,
@@ -432,6 +435,65 @@ createStorePurchase db NewStorePurchase {paymentId, provider, providerRef, paid,
         |]
         (purchaseKey, Binary mk, badgeType, badgeType, PSIssued, paymentId, now, now)
       Just <$> insertedRowId db
+
+-- | A payment's move from the purchase holding it to a new purchase under another key. fromRows are the old
+-- purchase's rows that end its share, written after the new purchase exists, as they name its key.
+data PaymentRebind = PaymentRebind
+  { paymentId :: Text,
+    fromPurchaseId :: Int64,
+    fromTipId :: Text,
+    fromRows :: [StatementEntry],
+    purchaseKey :: C.PublicKeyEd25519,
+    masterKey :: BadgeMasterKey,
+    badgeType :: BadgeType
+  }
+
+-- | In the transaction of the new purchase's own rows. Writes nothing and returns Nothing when another request
+-- moved the payment or the old purchase's ledger since fromTipId was read.
+rebindStorePayment :: DB.Connection -> PaymentRebind -> UTCTime -> IO (Maybe Int64)
+rebindStorePayment db PaymentRebind {paymentId, fromPurchaseId, fromTipId, fromRows, purchaseKey, masterKey = BadgeMasterKey mk, badgeType} now = do
+  tip <- getLedgerTip db fromPurchaseId
+  if fmap entryId tip /= Just fromTipId
+    then pure Nothing
+    else do
+      released <-
+        executeChanging
+          db
+          "UPDATE sx_badge_service_badge_purchases SET payment_id = NULL, updated_at = ? WHERE badge_purchase_id = ? AND payment_id = ?"
+          (now, fromPurchaseId, paymentId)
+      if released == 0
+        then pure Nothing
+        else do
+          DB.execute
+            db
+            [sql|
+              INSERT INTO sx_badge_service_badge_purchases
+                (purchase_key, master_key, initial_badge_type, current_badge_type, status, payment_id, created_at, updated_at)
+              VALUES (?,?,?,?,?,?,?,?)
+            |]
+            (purchaseKey, Binary mk, badgeType, badgeType, PSIssued, paymentId, now, now)
+          purchaseId <- insertedRowId db
+          appendLedgerPlan db fromPurchaseId Nothing fromRows Nothing
+          DB.execute db "UPDATE sx_badge_service_payments SET rebound_at = ?, updated_at = ? WHERE payment_id = ?" (now, now, paymentId)
+          pure $ Just purchaseId
+
+-- | The latest credential expiry of the purchase the payment last moved from; Nothing if it never moved.
+-- Only that purchase's transferOut names the holder, as a payment moves only to a key that held no purchase.
+getMovedFromExpiry :: DB.Connection -> Text -> IO (Maybe UTCTime)
+getMovedFromExpiry db paymentId =
+  maybeFirstRow fromOnly $
+    DB.query
+      db
+      [sql|
+        SELECT i.expiry
+        FROM sx_badge_service_badge_purchases p
+        JOIN sx_badge_service_badge_ledger l ON l.to_purchase_id = p.badge_purchase_id
+        JOIN sx_badge_service_badge_issuances i ON i.badge_purchase_id = l.badge_purchase_id
+        WHERE p.payment_id = ? AND l.entry_type = 'debit' AND l.entry_debit_type = 'transferOut'
+        ORDER BY i.expiry DESC
+        LIMIT 1
+      |]
+      (Only paymentId)
 
 -- | What a renewal asks the store about, for a purchase a subscription funds.
 data PurchaseSubscription = PurchaseSubscription

@@ -214,7 +214,7 @@ CREATE TABLE @subscription_charges(
 
 ALTER TABLE @badge_ledger ADD COLUMN charge_id TEXT REFERENCES @subscription_charges;
 
-CREATE UNIQUE INDEX @idx_badge_ledger_charge ON @badge_ledger(charge_id);
+CREATE UNIQUE INDEX @idx_badge_ledger_charge ON @badge_ledger(charge_id, badge_purchase_id);
 
 ALTER TABLE @badge_ledger ADD COLUMN from_purchase_id INTEGER REFERENCES @badge_purchases;
 
@@ -229,6 +229,8 @@ ALTER TABLE @payments ADD COLUMN subscription_state TEXT;
 ALTER TABLE @payments ADD COLUMN subscription_checked_at TEXT;
 
 ALTER TABLE @payments ADD COLUMN provider_token TEXT;
+
+ALTER TABLE @payments ADD COLUMN rebound_at TEXT;
 
 ALTER TABLE @payments DROP COLUMN subscription_renews_at;
 
@@ -247,6 +249,8 @@ ALTER TABLE @payments ADD COLUMN subscription_renews_at TEXT;
 ALTER TABLE @payments ADD COLUMN grace_until TEXT;
 
 ALTER TABLE @payments ADD COLUMN cancelled INTEGER NOT NULL DEFAULT 0;
+
+ALTER TABLE @payments DROP COLUMN rebound_at;
 
 ALTER TABLE @payments DROP COLUMN provider_token;
 
