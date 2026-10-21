@@ -19,7 +19,7 @@ import Bots.BadgeService.ConfigTests (withIssuer)
 import Bots.BadgeService.FakeAppStore (FakeAppStore (..), withFakeAppStore)
 import Bots.BadgeService.FakePlay (FakePlay (..), PlayAnswer (..), answerPurchase, withFakePlay)
 import Bots.BadgeService.FakeStore
-import Bots.BadgeService.StoreVerifierTests (TestChain (..), lineItem, ourBundleId, purchaseRecord, signedBy, subscriptionPayload, subscriptionRecord, transactionPayload, trustedChain)
+import Bots.BadgeService.StoreVerifierTests (TestChain (..), basePlan, lineItem, ourBundleId, purchaseRecord, signedBy, subscriptionPayload, subscriptionRecord, transactionPayload, trustedChain)
 import BadgeService.Options
 import BadgeService.Service
 import BadgeService.Store (IssuedCode (..), getBadgeCode)
@@ -57,9 +57,10 @@ import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, diffUTCTime, 
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import Data.Word (Word32)
-import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey, BadgeType (..), generateMasterKey)
+import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey, BadgeType (..), badgeGraceInterval, generateMasterKey)
 import Simplex.Chat.Badges.Code (BadgeCode, badgeCodeHash, badgeCodeText, formatBadgeCode, parseBadgeCode, randomBadgeCode)
 import Simplex.Chat.Badges.Ledger (addMonths, balanceChecked, creditTypeTag, debitTypeTag, emptyEntry, endOfMondayAfter)
+import qualified Simplex.Chat.Badges.Ledger as L
 import Simplex.Chat.Badges.Service
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import qualified Simplex.Chat.Badges.Types as BT
@@ -231,6 +232,8 @@ badgeServiceTests = do
     it "should grant the old tier's renewal from an upgrade's store check, answering the upgrade pending until its own tier is charged" testUpgradeCheckGrantsRenewal
     it "should refuse an upgrade from another key, of another subscription, of a prepaid purchase or from Play, without asking the store" testUpgradeRequestRefused
     it "should not grant a Play charge whose month from its clipped period start has already run out" testClippedPlayPeriodNotGranted
+    it "should fund exactly one month from each Play charge of a monthly plan anchored on the 31st, at most the grace behind Play's period end" testPlayMonthEndWalk
+    it "should fund each month of an annual Play plan anchored on the 31st and twelve from its renewal, at most the grace behind Play's period end" testPlayAnnualMonthEndWalk
     it "should answer an unreachable store with the check interval, writing no charge or ledger row" testSubscriptionStoreUnreachable
     it "should renew an App Store subscription by its original id, granting a charge first recorded before its period started" testAppleSubscriptionRenews
     it "should keep asking at zero months, and present the renewed credential when the old one expires" testSubscriptionRenews
@@ -2325,6 +2328,62 @@ testClippedPlayPeriodNotGranted ps =
     let otherToken = "fake-play-token-clipped.AO-J1Op9n4cjW9qQl5"
     setSubscription store (SubscriptionGoogle otherToken) $ subscriptionCheck SSRenewing $ Just clipped
     refusalOf <$> serviceCmd env otherKey (purchaseCmd otherMasterKey $ googlePayment "subscr_badge_supporter_01" otherToken) `shouldReturn` (BSEPaymentPending, Just 86400)
+
+testPlayMonthEndWalk :: HasCallStack => TestParams -> IO ()
+testPlayMonthEndWalk ps = walkPlayMonthEnd ps "subscr-badge-supporter-month-02" 1 5
+
+testPlayAnnualMonthEndWalk :: HasCallStack => TestParams -> IO ()
+testPlayAnnualMonthEndWalk ps = walkPlayMonthEnd ps "subscr-badge-supporter-year-01" 12 12
+
+-- | A Play subscription bought an hour into a period starting on 31 January, through the service as deployed, and then
+-- as many more months asked for at the device's moments. Play's periods end on the 31st clipped at month ends, and it
+-- reports at each moment the period that moment is in.
+walkPlayMonthEnd :: HasCallStack => TestParams -> Text -> Integer -> Int -> IO ()
+walkPlayMonthEnd ps planId planMonths months =
+  withFakePlay $ \fake@FakePlay {fpConfig} -> do
+    let ini = takeDirectory (gServiceAccountFile fpConfig) </> "badge_service.ini"
+    writeFile ini "[listener]\nstatic_dir = /srv/badges\n"
+    Right cfg <- readServiceConfig ini
+    ServiceState {storeVerifier} <- newServiceState >>= configureStoreVerifier (Just cfg {playStore = Just fpConfig})
+    withBadgeServiceVerifier ps (const storeVerifier) $ \env@BadgeServiceEnv {bsClock, bsController = cc} -> do
+      (purchaseKey, masterKey) <- newPurchaseKeys
+      let anchor = UTCTime (fromGregorian 2027 1 31) 39600
+          periodEnd k = addMonths ((k + 1) * planMonths) anchor
+          periodAt t = toInteger $ length $ takeWhile (<= t) $ map periodEnd [0 ..]
+          askAt t = do
+            let k = periodAt t
+                item = lineItem [("expiryTime", J.toJSON $ periodEnd k), ("latestSuccessfulOrderId", J.String $ "GPA.1234-5678-9012-34567.." <> tshow k), basePlan planId] []
+            answerPurchase fake googleSubscriptionToken $ PlayRecord $ subscriptionRecord "SUBSCRIPTION_STATE_ACTIVE" [] [item]
+            setClockAt bsClock t
+          monthIssued :: UTCTime -> Int -> BadgeServiceResponse -> IO (StatementEntry, UTCTime, UTCTime)
+          monthIssued t monthsHeld answer = do
+            let rows = fst $ statementOf answer
+                expected
+                  | monthsHeld == 0 = [("charge", fromInteger planMonths), ("badge", -1)]
+                  | otherwise = [("badge", -1)]
+                lag = diffUTCTime (periodEnd $ periodAt t) (L.paidThrough $ last rows)
+            map (\e -> let (change, _, _) = entryOf e in (entryTag e, change)) rows `shouldBe` expected
+            lag `shouldSatisfy` \l -> l >= 0 && l <= badgeGraceInterval
+            Just expiry <- pure $ expiryOf answer
+            pure (last rows, expiry, t)
+          renew (tip, expiry, _) = askFrom [addUTCTime (fromInteger d * nominalDay) expiry | d <- [-1 .. 8]]
+            where
+              (_, held, _) = entryOf tip
+              askFrom = \case
+                [] -> error $ "no month issued after the credential expiring " <> show expiry
+                t : ts -> do
+                  askAt t
+                  answer <- assertBalance env purchaseKey tip
+                  if null (fst $ statementOf answer) then askFrom ts else monthIssued t held answer
+          walk :: Int -> (StatementEntry, UTCTime, UTCTime) -> IO UTCTime
+          walk 0 (_, _, t) = pure t
+          walk n issued = renew issued >>= walk (n - 1)
+          purchasedAt = addUTCTime 3600 anchor
+      askAt purchasedAt
+      purchased <- serviceCmd env purchaseKey $ purchaseCmd masterKey subscriptionPlay
+      lastAskedAt <- monthIssued purchasedAt 0 purchased >>= walk months
+      rowCount cc "sx_badge_service_subscription_charges" `shouldReturn` fromInteger (periodAt lastAskedAt + 1)
+      rowCount cc "sx_badge_service_subscription_charges c WHERE NOT EXISTS (SELECT 1 FROM sx_badge_service_badge_ledger l WHERE l.charge_id = c.charge_id)" `shouldReturn` 0
 
 testSubscriptionStoreUnreachable :: HasCallStack => TestParams -> IO ()
 testSubscriptionStoreUnreachable ps =

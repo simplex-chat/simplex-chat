@@ -14,6 +14,7 @@ module Bots.BadgeService.StoreVerifierTests
     purchaseRecord,
     subscriptionRecord,
     lineItem,
+    basePlan,
   )
 where
 
