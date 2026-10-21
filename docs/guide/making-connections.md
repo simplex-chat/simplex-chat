@@ -13,6 +13,12 @@ Private Connection — connect using an invitation link or QR code via video or 
 
 Group Chat — Users have the option to create a secret group, share their contact link [which can be deleted later on], or generate a one-time invitation link.
 
+## Connect by scanning a QR code
+
+<a href="https://youtu.be/gHCpFG8UsmM"><img src="./images/Connection_QR_video.jpg" alt="Video: how to connect by scanning a QR code" width="330"></a>
+
+Prefer to watch rather than read? This video shows how to connect by sharing a 1-time invitation link as a QR code.
+
 ## Your SimpleX contact address
 
 You can [create an optional long term address](./app-settings.md#your-simplex-contact-address) for other people to connect with you. Unlike 1-time invitation links, these addresses can be used many times, that makes them good to share online, e.g. on social media platforms, or in email signatures. That helps more people discover SimpleX Chat, so please do it!
