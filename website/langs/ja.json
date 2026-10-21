@@ -109,7 +109,7 @@
     "no": "いいえ",
     "contact-hero-header": "SimpleX Chatで接続するためのアドレスを受信しました",
     "feature-8-title": "シークレット モード &mdash; <br>SimpleX Chat に固有の",
-    "simplex-private-card-4-point-2": "Tor経由でSimpleXを使用するには、<a href=\"https://guardianproject.info/apps/org.torproject.android/\" target=\"_blank\" rel=\"noopener\">Orbotアプリ</a>をインストールし、SOCKS5プロキシを有効にしてください（iOSの場合は<a href=\"https://apps.apple.com/us/app/orbot/id1609461599?platform=iphone\" target=\"_blank\" rel=\"noopener\">VPN</a>）。",
+    "simplex-private-card-4-point-2": "Tor経由でSimpleXを使用するには、<a href=\"https://guardianproject.info/apps/org.torproject.android/\" target=\"_blank\">Orbotアプリ</a>をインストールし、SOCKS5プロキシを有効にしてください（iOSの場合は<a href=\"https://apps.apple.com/us/app/orbot/id1609461599?platform=iphone\" target=\"_blank\">VPN</a>）。",
     "contact-hero-subheader": "スマホ・タブレットのSimpleX ChatアプリでQRコードを読み取ってください。",
     "simplex-unique-2-overlay-1-title": "スパムと悪用からの最高の保護",
     "simplex-private-6-title": "帯域外の<br>鍵交換",
