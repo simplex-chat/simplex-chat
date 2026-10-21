@@ -445,6 +445,7 @@ executable simplex-store-service
       StoreService.Names.Abi
       StoreService.Names.Chain
       StoreService.Names.Env
+      StoreService.Names.Label
       StoreService.Names.Phases
       StoreService.Names.Registration
       StoreService.Names.Signatures
@@ -747,6 +748,7 @@ test-suite simplex-chat-test
       Bots.StoreService.GroupIntegrationTests
       Bots.StoreService.GroupTests
       Bots.StoreService.NameRegistrationTests
+      Bots.StoreService.NamesLabelTests
       Bots.StoreService.NamesSignatureTests
       Bots.StoreService.NamesWiringTests
       Bots.StoreService.StripeTests
@@ -773,6 +775,7 @@ test-suite simplex-chat-test
       StoreService.Names.Abi
       StoreService.Names.Chain
       StoreService.Names.Env
+      StoreService.Names.Label
       StoreService.Names.Phases
       StoreService.Names.Registration
       StoreService.Names.Signatures
