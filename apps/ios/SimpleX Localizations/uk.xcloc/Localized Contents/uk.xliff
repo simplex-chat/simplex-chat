@@ -1285,9 +1285,9 @@ swipe action</note>
         <target state="translated">Додаток шифрує нові локальні файли (крім відео).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App group:" xml:space="preserve">
+      <trans-unit id="App group:" xml:space="preserve" approved="no">
         <source>App group:</source>
-        <target>Група застосунків:</target>
+        <target state="translated">Група застосунків:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App icon" xml:space="preserve" approved="no">
@@ -4055,9 +4055,9 @@ chat item action</note>
         <target state="translated">Помилка переходу на інкогніто!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error checking token status" xml:space="preserve">
+      <trans-unit id="Error checking token status" xml:space="preserve" approved="no">
         <source>Error checking token status</source>
-        <target>Помилка перевірки статусу токена</target>
+        <target state="translated">Помилка перевірки статусу токена</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error connecting to forwarding server %@. Please try later." xml:space="preserve" approved="no">
@@ -4239,9 +4239,9 @@ chat item action</note>
         <target state="translated">Помилка перепідключення серверів</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error registering for notifications" xml:space="preserve">
+      <trans-unit id="Error registering for notifications" xml:space="preserve" approved="no">
         <source>Error registering for notifications</source>
-        <target>Помилка під час реєстрації для отримання сповіщень</target>
+        <target state="translated">Помилка під час реєстрації для отримання сповіщень</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error rejecting contact request" xml:space="preserve" approved="no">
@@ -4254,9 +4254,9 @@ chat item action</note>
         <target state="translated">Помилка видалення учасника</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Error reordering lists" xml:space="preserve">
+      <trans-unit id="Error reordering lists" xml:space="preserve" approved="no">
         <source>Error reordering lists</source>
-        <target>Помилка при переупорядкуванні списків</target>
+        <target state="translated">Помилка при переупорядкуванні списків</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error resetting statistics" xml:space="preserve" approved="no">
@@ -4274,9 +4274,9 @@ chat item action</note>
         <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error saving chat list" xml:space="preserve">
+      <trans-unit id="Error saving chat list" xml:space="preserve" approved="no">
         <source>Error saving chat list</source>
-        <target>Помилка під час збереження списку чатів</target>
+        <target state="translated">Помилка під час збереження списку чатів</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error saving group profile" xml:space="preserve" approved="no">
@@ -4383,9 +4383,9 @@ chat item action</note>
         <target state="translated">Помилка синхронізації з'єднання</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error testing server connection" xml:space="preserve">
+      <trans-unit id="Error testing server connection" xml:space="preserve" approved="no">
         <source>Error testing server connection</source>
-        <target>Помилка під час перевірки з'єднання з сервером</target>
+        <target state="translated">Помилка під час перевірки з'єднання з сервером</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error updating group link" xml:space="preserve" approved="no">
@@ -4477,9 +4477,9 @@ server test error</note>
         <target state="translated">Розгорнути</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Expired" xml:space="preserve">
+      <trans-unit id="Expired" xml:space="preserve" approved="no">
         <source>Expired</source>
-        <target>Термін дії закінчився</target>
+        <target state="translated">Термін дії закінчився</target>
         <note>token status text</note>
       </trans-unit>
       <trans-unit id="Expires" xml:space="preserve">
@@ -4526,9 +4526,9 @@ server test error</note>
         <target state="translated">Швидко і без очікування, поки відправник буде онлайн!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Faster deletion of groups." xml:space="preserve">
+      <trans-unit id="Faster deletion of groups." xml:space="preserve" approved="no">
         <source>Faster deletion of groups.</source>
-        <target>Швидше видалення груп.</target>
+        <target state="translated">Швидше видалення груп.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Faster joining and more reliable messages." xml:space="preserve" approved="no">
@@ -4536,9 +4536,9 @@ server test error</note>
         <target state="translated">Швидше приєднання та надійніші повідомлення.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Faster sending messages." xml:space="preserve">
+      <trans-unit id="Faster sending messages." xml:space="preserve" approved="no">
         <source>Faster sending messages.</source>
-        <target>Швидше надсилання повідомлень.</target>
+        <target state="translated">Швидше надсилання повідомлень.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Favorite" xml:space="preserve" approved="no">
@@ -4546,9 +4546,9 @@ server test error</note>
         <target state="translated">Улюблений</target>
         <note>swipe action</note>
       </trans-unit>
-      <trans-unit id="Favorites" xml:space="preserve">
+      <trans-unit id="Favorites" xml:space="preserve" approved="no">
         <source>Favorites</source>
-        <target>Вибране</target>
+        <target state="translated">Вибране</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="File available until" xml:space="preserve">
@@ -4776,9 +4776,9 @@ server test error</note>
         <source>For %@ only</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="For all moderators" xml:space="preserve">
+      <trans-unit id="For all moderators" xml:space="preserve" approved="no">
         <source>For all moderators</source>
-        <target>Для всіх модераторів</target>
+        <target state="translated">Для всіх модераторів</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="For anyone to reach you" xml:space="preserve">
@@ -4802,9 +4802,9 @@ servers warning</note>
         <target state="translated">Наприклад, якщо ваш контакт отримує повідомлення через сервер SimpleX Chat, ваш додаток доставлятиме їх через сервер Flux.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="For me" xml:space="preserve">
+      <trans-unit id="For me" xml:space="preserve" approved="no">
         <source>For me</source>
-        <target>Для мене</target>
+        <target state="translated">Для мене</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="For private routing" xml:space="preserve" approved="no">
@@ -4957,9 +4957,9 @@ Error: %2$@</source>
         <target></target>
         <note>relay test step</note>
       </trans-unit>
-      <trans-unit id="Get notified when mentioned." xml:space="preserve">
+      <trans-unit id="Get notified when mentioned." xml:space="preserve" approved="no">
         <source>Get notified when mentioned.</source>
-        <target>Отримуйте сповіщення, коли вас згадують.</target>
+        <target state="translated">Отримуйте сповіщення, коли вас згадують.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Get started" xml:space="preserve">
@@ -5087,9 +5087,9 @@ Error: %2$@</source>
         <target state="translated">Група буде видалена для вас - це не може бути скасовано!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Groups" xml:space="preserve">
+      <trans-unit id="Groups" xml:space="preserve" approved="no">
         <source>Groups</source>
-        <target>Групи</target>
+        <target state="translated">Групи</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Help" xml:space="preserve" approved="no">
@@ -5102,9 +5102,9 @@ Error: %2$@</source>
         <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Help admins moderating their groups." xml:space="preserve">
+      <trans-unit id="Help admins moderating their groups." xml:space="preserve" approved="no">
         <source>Help admins moderating their groups.</source>
-        <target>Допоможіть адміністраторам модерувати їхні групи.</target>
+        <target state="translated">Допоможіть адміністраторам модерувати їхні групи.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Help keep the network running — send files up to 2 GB." xml:space="preserve">
@@ -5180,9 +5180,9 @@ Error: %2$@</source>
         <target state="translated">Як це захищає приватність</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="How it works" xml:space="preserve">
+      <trans-unit id="How it works" xml:space="preserve" approved="no">
         <source>How it works</source>
-        <target>Як це працює</target>
+        <target state="translated">Як це працює</target>
         <note>alert button</note>
       </trans-unit>
       <trans-unit id="How long?" xml:space="preserve">
@@ -5341,14 +5341,14 @@ More improvements are coming soon!</source>
         <target state="translated">Звуки вхідного дзвінка</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Inappropriate content" xml:space="preserve">
+      <trans-unit id="Inappropriate content" xml:space="preserve" approved="no">
         <source>Inappropriate content</source>
-        <target>Невідповідний вміст</target>
+        <target state="translated">Невідповідний вміст</target>
         <note>report reason</note>
       </trans-unit>
-      <trans-unit id="Inappropriate profile" xml:space="preserve">
+      <trans-unit id="Inappropriate profile" xml:space="preserve" approved="no">
         <source>Inappropriate profile</source>
-        <target>Невідповідний профіль</target>
+        <target state="translated">Невідповідний профіль</target>
         <note>report reason</note>
       </trans-unit>
       <trans-unit id="Incognito" xml:space="preserve" approved="no">
@@ -5443,29 +5443,29 @@ More improvements are coming soon!</source>
         <target state="translated">Кольори інтерфейсу</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Invalid" xml:space="preserve">
+      <trans-unit id="Invalid" xml:space="preserve" approved="no">
         <source>Invalid</source>
-        <target>Недійсний</target>
+        <target state="translated">Недійсний</target>
         <note>token status text</note>
       </trans-unit>
-      <trans-unit id="Invalid (bad token)" xml:space="preserve">
+      <trans-unit id="Invalid (bad token)" xml:space="preserve" approved="no">
         <source>Invalid (bad token)</source>
-        <target>Недійсний (неправильний токен)</target>
+        <target state="translated">Недійсний (неправильний токен)</target>
         <note>token status text</note>
       </trans-unit>
-      <trans-unit id="Invalid (expired)" xml:space="preserve">
+      <trans-unit id="Invalid (expired)" xml:space="preserve" approved="no">
         <source>Invalid (expired)</source>
-        <target>Недійсний (термін дії закінчився)</target>
+        <target state="translated">Недійсний (термін дії закінчився)</target>
         <note>token status text</note>
       </trans-unit>
-      <trans-unit id="Invalid (unregistered)" xml:space="preserve">
+      <trans-unit id="Invalid (unregistered)" xml:space="preserve" approved="no">
         <source>Invalid (unregistered)</source>
-        <target>Недійсний (незареєстрований)</target>
+        <target state="translated">Недійсний (незареєстрований)</target>
         <note>token status text</note>
       </trans-unit>
-      <trans-unit id="Invalid (wrong topic)" xml:space="preserve">
+      <trans-unit id="Invalid (wrong topic)" xml:space="preserve" approved="no">
         <source>Invalid (wrong topic)</source>
-        <target>Недійсний (неправильна тема)</target>
+        <target state="translated">Недійсний (неправильна тема)</target>
         <note>token status text</note>
       </trans-unit>
       <trans-unit id="Invalid QR code" xml:space="preserve" approved="no">
@@ -5852,14 +5852,14 @@ This is your link for group %@!</source>
         <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="List" xml:space="preserve">
+      <trans-unit id="List" xml:space="preserve" approved="no">
         <source>List</source>
-        <target>Список</target>
+        <target state="translated">Список</target>
         <note>swipe action</note>
       </trans-unit>
-      <trans-unit id="List name and emoji should be different for all lists." xml:space="preserve">
+      <trans-unit id="List name and emoji should be different for all lists." xml:space="preserve" approved="no">
         <source>List name and emoji should be different for all lists.</source>
-        <target>Назва списку та емодзі повинні бути різними для всіх списків.</target>
+        <target state="translated">Назва списку та емодзі повинні бути різними для всіх списків.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="List name..." xml:space="preserve" approved="no">
