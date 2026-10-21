@@ -648,7 +648,7 @@ fun ModalData.GroupChatInfoLayout(
           if (groupInfo.isOwner && groupLink != null) {
             anyTopSectionRowShow = true
             ChannelLinkButton(manageGroupLink)
-          } else if (channelLink != null) {
+          } else if (channelLink != null && (groupLinkLoaded || !groupInfo.isOwner)) {
             anyTopSectionRowShow = true
             ChannelLinkQRCodeSection(channelLink)
             ShareViaChatButton {
