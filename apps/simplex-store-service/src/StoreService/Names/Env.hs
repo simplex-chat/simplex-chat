@@ -2,10 +2,11 @@
 
 module StoreService.Names.Env (NamesEnv (..), newNamesEnv) where
 
-import Simplex.Chat.Controller (ChatController)
+import Simplex.Chat.Controller (ChatController (..))
 import Simplex.Messaging.Agent.Protocol (UserId)
 import Simplex.Messaging.Agent.Store.Common (DBStore)
-import StoreService.Config (NamesConfig)
+import StoreService.Config (NamesConfig (..))
+import StoreService.Names.Chain (ChainClient, newChainClient)
 import StoreService.Names.Phases (Phases, newPhases)
 import StoreService.Names.Turns (Turns, newTurns)
 
@@ -15,11 +16,13 @@ data NamesEnv = NamesEnv
     neConfig :: NamesConfig,
     neStore :: DBStore,
     nePhases :: Phases,
-    neTurns :: Turns
+    neTurns :: Turns,
+    neChain :: ChainClient
   }
 
 newNamesEnv :: ChatController -> UserId -> NamesConfig -> DBStore -> IO NamesEnv
-newNamesEnv neChat neUserId neConfig neStore = do
+newNamesEnv neChat@ChatController {random} neUserId neConfig@NamesConfig {nChain} neStore = do
   nePhases <- newPhases
   neTurns <- newTurns
-  pure NamesEnv {neChat, neUserId, neConfig, neStore, nePhases, neTurns}
+  neChain <- newChainClient random nChain
+  pure NamesEnv {neChat, neUserId, neConfig, neStore, nePhases, neTurns, neChain}
