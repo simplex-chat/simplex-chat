@@ -112,7 +112,7 @@ fun SearchTextField(
     enabled = rememberUpdatedState(enabled).value,
     cursorBrush = SolidColor(colors.cursorColor(false).value),
     visualTransformation = VisualTransformation.None,
-    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None, autoCorrect = false, imeAction = ImeAction.Search),
     keyboardActions = KeyboardActions(onSearch = if (onSearch != null && appPlatform.isAndroid) {
       {
         keyboard?.hide()

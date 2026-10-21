@@ -21,6 +21,10 @@ enum class ConnectionLinkType {
   INVITATION, CONTACT, GROUP
 }
 
+enum class PrepareGroupMode {
+  Confirm, Open
+}
+
 suspend fun planAndConnect(
   rhId: Long?,
   shortOrFullLink: String,
@@ -29,6 +33,7 @@ suspend fun planAndConnect(
   cleanup: (() -> Unit)? = null,
   filterKnownContact: ((Contact) -> Unit)? = null,
   filterKnownGroup: ((GroupInfo) -> Unit)? = null,
+  prepareGroup: PrepareGroupMode = PrepareGroupMode.Confirm,
 ): CompletableDeferred<Boolean> {
   when (val target = strConnectTarget(shortOrFullLink.trim())) {
     is ConnectTarget.Link -> {
@@ -51,7 +56,7 @@ suspend fun planAndConnect(
     inProgress.value = false
     cleanup?.invoke()
   }
-  return planAndConnectTask(rhId, shortOrFullLink, linkOwnerSig, close, cleanup, filterKnownContact, filterKnownGroup, inProgress)
+  return planAndConnectTask(rhId, shortOrFullLink, linkOwnerSig, close, cleanup, filterKnownContact, filterKnownGroup, prepareGroup, inProgress)
 }
 
 private suspend fun planAndConnectTask(
@@ -62,6 +67,7 @@ private suspend fun planAndConnectTask(
   cleanup: (() -> Unit)? = null,
   filterKnownContact: ((Contact) -> Unit)? = null,
   filterKnownGroup: ((GroupInfo) -> Unit)? = null,
+  prepareGroup: PrepareGroupMode,
   inProgress: MutableState<Boolean>
 ): CompletableDeferred<Boolean> {
   val completable = CompletableDeferred<Boolean>()
@@ -249,18 +255,31 @@ private suspend fun planAndConnectTask(
         is GroupLinkPlan.Ok ->
           if (connectionPlan.groupLinkPlan.groupSLinkData_ != null) {
             Log.d(TAG, "planAndConnect, .GroupLink, .Ok, short link data present")
-            showPrepareGroupAlert(
-              rhId,
-              connectionLink,
-              connectionPlan.groupLinkPlan.groupSLinkInfo_,
-              connectionPlan.groupLinkPlan.groupSLinkData_,
-              ownerVerification = connectionPlan.groupLinkPlan.ownerVerification,
-              planSimplexName = planSimplexName,
-              connectOtherButton = connectOtherButton,
-              connectOtherLink = connectOtherLink,
-              close,
-              cleanup
-            )
+            when (prepareGroup) {
+              PrepareGroupMode.Confirm ->
+                showPrepareGroupAlert(
+                  rhId,
+                  connectionLink,
+                  connectionPlan.groupLinkPlan.groupSLinkInfo_,
+                  connectionPlan.groupLinkPlan.groupSLinkData_,
+                  ownerVerification = connectionPlan.groupLinkPlan.ownerVerification,
+                  planSimplexName = planSimplexName,
+                  connectOtherButton = connectOtherButton,
+                  connectOtherLink = connectOtherLink,
+                  close,
+                  cleanup
+                )
+              PrepareGroupMode.Open ->
+                prepareAndOpenGroup(
+                  rhId,
+                  connectionLink,
+                  connectionPlan.groupLinkPlan.groupSLinkInfo_,
+                  connectionPlan.groupLinkPlan.groupSLinkData_,
+                  planSimplexName?.nameDomain,
+                  close,
+                  cleanup
+                )
+            }
           } else {
             Log.d(TAG, "planAndConnect, .GroupLink, .Ok, no short link data")
             askCurrentOrIncognitoProfileAlert(

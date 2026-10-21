@@ -472,19 +472,12 @@ private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFiel
         if (onlineSearch.showResults) {
           val rows = onlineSearch.rows(shownChatIds = emptySet())
           val resultsState = rememberLazyListState()
-          val hasNames = rows.names.isNotEmpty()
-          // the list keeps its first visible row in place by key, so in one-hand UI names arriving after
-          // the directory page would be inserted below that row, out of view
-          LaunchedEffect(hasNames) {
-            if (hasNames && oneHandUI.value) resultsState.scrollToItem(0)
-          }
           LazyColumnWithScrollBarNoAppBar(
             if (!oneHandUI.value) Modifier.fillMaxSize().imePadding() else Modifier.fillMaxSize(),
             state = resultsState,
             reverseLayout = oneHandUI.value
           ) {
-            nameRows(rows.names, onlineSearch, oneHandUI.value)
-            directoryRows(rows, onlineSearch, oneHandUI.value)
+            directoryRows(rows, onlineSearch)
             if (!onlineSearch.searching && rows.isEmpty) {
               item {
                 Text(
@@ -514,72 +507,21 @@ private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFiel
   }
 }
 
-private fun LazyListScope.nameRows(names: List<NameSearchResult>, onlineSearch: OnlineSearchModel, oneHandUI: Boolean) {
-  if (names.isNotEmpty()) {
-    searchPart(MR.strings.online_search_names, oneHandUI) {
-      items(names, key = { it.id }) { result ->
-        val view = LocalMultiplatformView()
-        NameSearchRow(
-          result,
-          Modifier.clickable {
-            hideKeyboard(view)
-            withBGApi { planAndConnect(chatModel.remoteHostId(), result.target, close = null, cleanup = { withApi { onlineSearch.refreshLocalChatIds() } }) }
-          }
-        )
-      }
-    }
+private fun LazyListScope.directoryRows(rows: OnlineSearchRows, onlineSearch: OnlineSearchModel) {
+  items(rows.yourChats.mapNotNull { chatModel.getChat(it) }, key = { it.remoteHostId to it.id }) { chat ->
+    ChatListNavLinkView(chat, remember { mutableStateOf(false) })
   }
-}
-
-private fun LazyListScope.directoryRows(rows: OnlineSearchRows, onlineSearch: OnlineSearchModel, oneHandUI: Boolean) {
-  if (rows.directory.isNotEmpty() || rows.pageInChats || rows.footer != null) {
-    searchPart(MR.strings.online_search_directory, oneHandUI) {
-      items(rows.directory, key = { it.id }) { result ->
-        val chat = result.localChatId?.let { chatModel.getChat(it) }
-        if (chat != null) {
-          ChatListNavLinkView(chat, remember { mutableStateOf(false) })
-        } else {
-          val view = LocalMultiplatformView()
-          DirectorySearchRow(
-            result.entry,
-            Modifier.clickable {
-              hideKeyboard(view)
-              withBGApi { planAndConnect(chatModel.remoteHostId(), result.entry.link, close = null, cleanup = { withApi { onlineSearch.refreshLocalChatIds() } }) }
-            }
-          )
-        }
-      }
-      if (rows.pageInChats) {
-        item { DirectoryPageInChatsRow() }
-      }
-      when (rows.footer) {
-        DirectoryFooter.Retry -> item { DirectoryRetryRow(onlineSearch) }
-        DirectoryFooter.ShowMore -> item { DirectoryShowMoreRow(onlineSearch) }
-        null -> {}
-      }
-    }
+  items(rows.results, key = { it.id }) { result ->
+    DirectoryResultNavLink(result, imageSize = 72.dp * fontSizeSqrtMultiplier, close = null, cleanup = { withApi { onlineSearch.refreshStates() } })
   }
-}
-
-// the list is reversed in one-hand UI, so there the header follows its rows to be drawn above them
-internal fun LazyListScope.searchPart(title: StringResource, oneHandUI: Boolean, header: @Composable (String) -> Unit = { SearchPartHeader(it) }, content: LazyListScope.() -> Unit) {
-  if (oneHandUI) {
-    content()
-    item { header(stringResource(title)) }
-  } else {
-    item { header(stringResource(title)) }
-    content()
+  if (rows.pageInChats) {
+    item { DirectoryPageInChatsRow() }
   }
-}
-
-@Composable
-private fun SearchPartHeader(title: String) {
-  Text(
-    title,
-    Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).semantics { heading() },
-    color = MaterialTheme.colors.secondary,
-    style = MaterialTheme.typography.body2
-  )
+  when (rows.footer) {
+    DirectoryFooter.Retry -> item { DirectoryRetryRow(onlineSearch) }
+    DirectoryFooter.LoadMore -> item { DirectoryLoadMoreRow(onlineSearch) }
+    null -> {}
+  }
 }
 
 @Composable
@@ -941,7 +883,7 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
         trailingContent = null,
         // the clear button must line up with the filter icon it replaces, so no reduction here
         reducedCloseButtonPadding = 0.dp,
-        onSearch = { runOnlineSearch(searchText, searchShowingSimplexLink, connectNameCandidate, onlineSearch) },
+        onSearch = { runDirectorySearch(searchText, searchShowingSimplexLink, onlineSearch) },
       ) {
         searchText.value = searchText.value.copy(it)
       }
@@ -1043,18 +985,11 @@ private fun connect(link: String, searchChatFilteredBySimplexLink: MutableState<
 private fun searchTrimmed(searchText: State<TextFieldValue>): String =
   searchText.value.text.trim()
 
-// whatever is typed here gets sent to the directory, so ask before the first time
+// whatever is typed here gets sent to the directory, so ask until Directory search is enabled
 private fun runDirectorySearch(searchText: State<TextFieldValue>, searchShowingSimplexLink: State<Boolean>, onlineSearch: OnlineSearchModel) {
   val text = searchTrimmed(searchText)
   if (text.isEmpty() || searchShowingSimplexLink.value) return
   confirmDirectorySearch { withApi { onlineSearch.searchDirectory(text) } }
-}
-
-private fun runOnlineSearch(searchText: State<TextFieldValue>, searchShowingSimplexLink: State<Boolean>, connectNameCandidate: State<String?>, onlineSearch: OnlineSearchModel) {
-  val text = searchTrimmed(searchText)
-  if (text.isEmpty() || searchShowingSimplexLink.value) return
-  val name = connectNameCandidate.value
-  confirmDirectorySearch { withApi { onlineSearch.search(text, name) } }
 }
 
 @Composable
@@ -1240,8 +1175,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
       } }
       ChatListNavLinkView(chat, nextChatSelected)
     }
-    nameRows(rows.names, onlineSearch, oneHandUI.value)
-    directoryRows(rows, onlineSearch, oneHandUI.value)
+    directoryRows(rows, onlineSearch)
     if (showsCards && !addressCreationCardShown.value) {
       item {
         ChatListFeatureCards()
@@ -1372,14 +1306,17 @@ private fun TagsOrConnectByName(
   val searchInDirectoryRow: @Composable () -> Unit = {
     SearchInDirectoryRow(onSearch = { runDirectorySearch(searchText, searchShowingSimplexLink, onlineSearch) })
   }
+  // a SimpleX link connects on its own, so the directory is not offered for one
+  val searchesText = searchTrimmed(searchText).isNotEmpty() && !searchShowingSimplexLink.value
+  val showsSearchInDirectory = searchesText && !onlineSearch.showResults
   when {
     appPlatform.isDesktop ->
-      if ((candidate != null && onlineSearch.names.isEmpty()) || (searchTrimmed(searchText).isNotEmpty() && !searchShowingSimplexLink.value)) {
+      if (candidate != null || showsSearchInDirectory) {
         desktopView {
-          if (candidate != null && onlineSearch.names.isEmpty()) {
+          if (candidate != null) {
             ConnectByNameRow(candidate, searchText, connectNameCandidate, close = null)
           }
-          if (searchTrimmed(searchText).isNotEmpty() && !searchShowingSimplexLink.value) {
+          if (showsSearchInDirectory) {
             searchInDirectoryRow()
           }
         }
@@ -1387,22 +1324,21 @@ private fun TagsOrConnectByName(
         TagsView(searchText)
       }
     oneHandUI.value ->
-      if (candidate != null && onlineSearch.names.isEmpty()) {
+      if (candidate != null) {
         ConnectByNameRow(candidate, searchText, connectNameCandidate, close = null)
-        searchInDirectoryRow()
-      // a SimpleX link connects on its own, so the directory is not offered for one
-      } else if (searchTrimmed(searchText).isNotEmpty() && !searchShowingSimplexLink.value) {
-        searchInDirectoryRow()
+        if (showsSearchInDirectory) searchInDirectoryRow()
+      } else if (searchesText) {
+        if (showsSearchInDirectory) searchInDirectoryRow()
       } else {
         TagsView(searchText)
       }
     else -> {
-      if (candidate != null && onlineSearch.names.isEmpty()) {
+      if (candidate != null) {
         ConnectByNameRow(candidate, searchText, connectNameCandidate, close = null)
       } else {
         TagsView(searchText)
       }
-      if (searchTrimmed(searchText).isNotEmpty() && !searchShowingSimplexLink.value) {
+      if (showsSearchInDirectory) {
         Divider()
         searchInDirectoryRow()
       }

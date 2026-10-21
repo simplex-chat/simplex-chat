@@ -186,55 +186,23 @@ private fun ModalData.NewChatSheetLayout(
     onlineSearch.reset()
   }
 
-  @Composable
-  fun OnlineSearchHeader(title: String) {
-    SectionView(title, headerBottomPadding = DEFAULT_PADDING_HALF) {}
-  }
-
-  // the divider is an item of its own: the reversed one-hand column also reverses the nodes inside an item,
-  // which would put it between the header and its rows
-  fun LazyListScope.onlineSearchSections(rows: OnlineSearchRows) {
-    if (rows.names.isNotEmpty()) {
+  // emitted in this order, the load row is the row farthest from the field in both layouts
+  fun LazyListScope.onlineSearchSection(rows: OnlineSearchRows) {
+    if (!rows.isEmpty) {
       item { SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false) }
-      searchPart(MR.strings.online_search_names, oneHandUI.value, header = { OnlineSearchHeader(it) }) {
-        items(rows.names, key = { it.id }) { result ->
-          val view = LocalMultiplatformView()
-          NameSearchRow(
-            result,
-            Modifier.clickable {
-              hideKeyboard(view)
-              withBGApi { planAndConnect(chatModel.remoteHostId(), result.target, close = close, cleanup = null) }
-            }
-          )
-        }
+      items(rows.yourChats.mapNotNull { chatModel.getChat(it) }, key = { it.remoteHostId to it.id }) { chat ->
+        ContactListNavLinkView(chat, remember { mutableStateOf(false) }, showDeletedChatIcon = true)
       }
-    }
-    if (rows.directory.isNotEmpty() || rows.pageInChats || rows.footer != null) {
-      item { SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false) }
-      searchPart(MR.strings.online_search_directory, oneHandUI.value, header = { OnlineSearchHeader(it) }) {
-        items(rows.directory, key = { it.id }) { result ->
-          val chat = result.localChatId?.let { chatModel.getChat(it) }
-          if (chat != null) {
-            ContactListNavLinkView(chat, remember { mutableStateOf(false) }, showDeletedChatIcon = true)
-          } else {
-            val view = LocalMultiplatformView()
-            DirectorySearchRow(
-              result.entry,
-              Modifier.clickable {
-                hideKeyboard(view)
-                withBGApi { planAndConnect(chatModel.remoteHostId(), result.entry.link, close = close, cleanup = null) }
-              }
-            )
-          }
-        }
-        if (rows.pageInChats) {
-          item { DirectoryPageInChatsRow() }
-        }
-        when (rows.footer) {
-          DirectoryFooter.Retry -> item { DirectoryRetryRow(onlineSearch) }
-          DirectoryFooter.ShowMore -> item { DirectoryShowMoreRow(onlineSearch) }
-          null -> {}
-        }
+      items(rows.results, key = { it.id }) { result ->
+        DirectoryResultNavLink(result, imageSize = 42.dp, previewModifier = Modifier.padding(horizontal = DEFAULT_PADDING_HALF), close = close, cleanup = null)
+      }
+      if (rows.pageInChats) {
+        item { DirectoryPageInChatsRow() }
+      }
+      when (rows.footer) {
+        DirectoryFooter.Retry -> item { DirectoryRetryRow(onlineSearch) }
+        DirectoryFooter.LoadMore -> item { DirectoryLoadMoreRow(onlineSearch) }
+        null -> {}
       }
     }
   }
@@ -245,13 +213,6 @@ private fun ModalData.NewChatSheetLayout(
     val text = searchTrimmed()
     if (text.isEmpty() || searchShowingSimplexLink.value) return
     confirmDirectorySearch { withApi { onlineSearch.searchDirectory(text) } }
-  }
-
-  fun runOnlineSearch() {
-    val text = searchTrimmed()
-    if (text.isEmpty() || searchShowingSimplexLink.value) return
-    val name = connectNameCandidate.value
-    confirmDirectorySearch { withApi { onlineSearch.search(text, name) } }
   }
 
   val sectionModifier = Modifier.fillMaxWidth()
@@ -395,14 +356,14 @@ private fun ModalData.NewChatSheetLayout(
               searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
               connectNameCandidate = connectNameCandidate,
               close = close,
-              onSearch = ::runOnlineSearch,
+              onSearch = ::runDirectorySearch,
             )
             val candidate = connectNameCandidate.value
-            if (candidate != null && onlineSearch.names.isEmpty()) {
+            if (candidate != null) {
               Divider()
               ConnectByNameRow(candidate, searchText, connectNameCandidate, close = close)
             }
-            if (searchTrimmed().isNotEmpty() && !searchShowingSimplexLink.value) {
+            if (searchTrimmed().isNotEmpty() && !searchShowingSimplexLink.value && !onlineSearch.showResults) {
               Divider()
               SearchInDirectoryRow(onSearch = ::runDirectorySearch)
             }
@@ -431,7 +392,7 @@ private fun ModalData.NewChatSheetLayout(
         }
         ContactListNavLinkView(chat, nextChatSelected, showDeletedChatIcon = true)
       }
-      onlineSearchSections(rows)
+      onlineSearchSection(rows)
       if (appPlatform.isAndroid) {
         item {
           Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
@@ -493,14 +454,14 @@ private fun ModalData.NewChatSheetLayout(
             searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
             connectNameCandidate = connectNameCandidate,
             close = close,
-            onSearch = ::runOnlineSearch,
+            onSearch = ::runDirectorySearch,
           )
           val candidate = connectNameCandidate.value
-          if (candidate != null && onlineSearch.names.isEmpty()) {
+          if (candidate != null) {
             Divider()
             ConnectByNameRow(candidate, searchText, connectNameCandidate, close = close)
           }
-          if (searchTrimmed().isNotEmpty() && !searchShowingSimplexLink.value) {
+          if (searchTrimmed().isNotEmpty() && !searchShowingSimplexLink.value && !onlineSearch.showResults) {
             Divider()
             SearchInDirectoryRow(onSearch = ::runDirectorySearch)
           }
@@ -527,7 +488,7 @@ private fun ModalData.NewChatSheetLayout(
         }
         ContactListNavLinkView(chat, nextChatSelected, showDeletedChatIcon = true)
       }
-      onlineSearchSections(rows)
+      onlineSearchSection(rows)
       if (appPlatform.isAndroid) {
         item {
           Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))

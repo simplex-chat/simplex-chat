@@ -3,8 +3,6 @@ package chat.simplex.common.model
 import chat.simplex.common.views.chatlist.DirectoryFooter
 import chat.simplex.common.views.newchat.ConnectTarget
 import chat.simplex.common.views.newchat.strConnectTarget
-import chat.simplex.res.*
-import dev.icerock.moko.resources.ImageResource
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Serializable
@@ -66,6 +64,7 @@ data class DirectorySearchResults(
   val entries: List<DirectorySearchEntry>,
   // opaque: stored and echoed back on the next request, never inspected
   val cursor: JsonObject?,
+  val moreCount: Int?,
 )
 
 fun directorySearchRequest(text: String, cursor: JsonObject?): JsonObject = buildJsonObject {
@@ -82,7 +81,9 @@ fun parseDirectorySearchResponse(resp: JsonObject): DirectorySearchResults? =
       val entries = (resp["entries"] as? JsonArray)?.mapNotNull {
         runCatching { json.decodeFromJsonElement<DirectorySearchEntry>(it) }.getOrNull()
       } ?: emptyList()
-      DirectorySearchResults(entries, resp["searchCursor"] as? JsonObject)
+      // only shown as text, so a count out of range is dropped rather than failing the response
+      val moreCount = (resp["moreCount"] as? JsonPrimitive)?.takeIf { !it.isString }?.intOrNull?.takeIf { it >= 0 }
+      DirectorySearchResults(entries, resp["searchCursor"] as? JsonObject, moreCount)
     }
     else -> null
   }
@@ -109,82 +110,36 @@ fun planLocalChatId(plan: ConnectionPlan): ChatId? =
     is ConnectionPlan.Error -> null
   }
 
-class NameSearchResult private constructor(
-  val target: String,
-  val simplexName: String,
-  val profileName: String?,
-  val descr: String?,
-  val image: String?,
-  val iconName: ImageResource,
-  val localChatId: ChatId?,
-  // the link the core resolved the name to, never a profile field the name's owner wrote
-  val resolvedLink: String?,
-) {
-  val id: String get() = target
+sealed class DirectoryResultState {
+  data class YourChat(val chatId: ChatId): DirectoryResultState()
+  object Joining: DirectoryResultState()
+  object Open: DirectoryResultState()
+}
 
-  fun withLocalChatId(localChatId: ChatId?): NameSearchResult =
-    NameSearchResult(target, simplexName, profileName, descr, image, iconName, localChatId, resolvedLink)
-
-  companion object {
-    operator fun invoke(target: String, result: ConnectionPlanResult): NameSearchResult? {
-      val profile: NamedChat?
-      val iconName: ImageResource
-      val resolvedLink: String?
-      when (val connectionPlan = result.connectionPlan) {
-        is ConnectionPlan.ContactAddress -> {
-          profile = when (val contactAddressPlan = connectionPlan.contactAddressPlan) {
-            is ContactAddressPlan.Ok -> contactAddressPlan.contactSLinkData_?.profile
-            is ContactAddressPlan.ContactViaAddress -> contactAddressPlan.contact.profile
-            is ContactAddressPlan.ConnectingProhibit -> contactAddressPlan.contact.profile
-            is ContactAddressPlan.Known -> contactAddressPlan.contact.profile
-            ContactAddressPlan.ConnectingConfirmReconnect -> null
-            ContactAddressPlan.OwnLink -> return null
-          }
-          iconName = MR.images.ic_account_circle_filled
-          resolvedLink = null
-        }
-        is ConnectionPlan.GroupLink -> {
-          val groupProfile: GroupProfile? = when (val groupLinkPlan = connectionPlan.groupLinkPlan) {
-            is GroupLinkPlan.Ok -> groupLinkPlan.groupSLinkData_?.groupProfile
-            is GroupLinkPlan.NoRelays -> groupLinkPlan.groupSLinkData_?.groupProfile
-            is GroupLinkPlan.UpdateRequired -> groupLinkPlan.groupSLinkData_?.groupProfile
-            is GroupLinkPlan.Known -> groupLinkPlan.groupInfo.groupProfile
-            is GroupLinkPlan.OwnLink -> groupLinkPlan.groupInfo.groupProfile
-            is GroupLinkPlan.ConnectingProhibit -> groupLinkPlan.groupInfo_?.groupProfile
-            GroupLinkPlan.ConnectingConfirmReconnect -> null
-          }
-          profile = groupProfile
-          iconName = if (groupProfile?.isChannel == true) MR.images.ic_bigtop_updates_circle_filled else MR.images.ic_supervised_user_circle_filled
-          resolvedLink = result.connLink.connShortLink
-        }
-        is ConnectionPlan.InvitationLink, is ConnectionPlan.Error -> return null
-      }
-      return NameSearchResult(
-        target = target,
-        simplexName = result.planSimplexName?.shortStr ?: target,
-        profileName = profile?.displayName,
-        descr = profile?.shortDescr,
-        image = profile?.image,
-        iconName = iconName,
-        localChatId = planLocalChatId(result.connectionPlan),
-        resolvedLink = resolvedLink,
-      )
-    }
+// no plan means the store doesn't know the link, or the plan failed and Open's online plan will show why
+fun directoryResultState(plan: ConnectionPlan?): DirectoryResultState {
+  val chatId = plan?.let { planLocalChatId(it) }
+  if (chatId != null) return DirectoryResultState.YourChat(chatId)
+  val groupLinkPlan = (plan as? ConnectionPlan.GroupLink)?.groupLinkPlan
+  return if (groupLinkPlan == GroupLinkPlan.ConnectingConfirmReconnect || (groupLinkPlan is GroupLinkPlan.ConnectingProhibit && groupLinkPlan.groupInfo_ == null)) {
+    DirectoryResultState.Joining
+  } else {
+    DirectoryResultState.Open
   }
 }
 
 data class DirectoryResult(
   val entry: DirectorySearchEntry,
-  val localChatId: ChatId?,
+  val state: DirectoryResultState,
 ) {
   val id: String get() = entry.id
 }
 
 data class OnlineSearchRows(
-  val names: List<NameSearchResult>,
-  val directory: List<DirectoryResult>,
+  val yourChats: List<ChatId>,
+  val results: List<DirectoryResult>,
   val pageInChats: Boolean,
   val footer: DirectoryFooter?,
 ) {
-  val isEmpty: Boolean get() = names.isEmpty() && directory.isEmpty() && !pageInChats && footer == null
+  val isEmpty: Boolean get() = yourChats.isEmpty() && results.isEmpty() && !pageInChats && footer == null
 }

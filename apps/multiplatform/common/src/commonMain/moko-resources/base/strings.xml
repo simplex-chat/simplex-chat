@@ -515,16 +515,16 @@
   <string name="connect_with_contact_name_question">Connect with %1$s?</string>
   <string name="search_or_paste_simplex_link">Search or paste SimpleX link</string>
   <string name="search_in_directory">Search in Directory</string>
-  <string name="search_in_directory_question">Search in Directory?</string>
-  <string name="search_in_directory_alert_desc">The text in the search field will be sent to SimpleX Directory to find public groups and channels. If it is a SimpleX name, it will also be sent to your server that resolves names.\n\nNo contact is created and your profile is not sent.</string>
-  <string name="search_and_dont_show_again">Search and don\'t show again</string>
+  <string name="enable_directory_search_question">Enable Directory search?</string>
+  <string name="enable_directory_search_alert_desc">Search text is sent to SimpleX Directory, each search separately and without your profile, so it can\'t build your search history.</string>
+  <string name="enable_verb">Enable</string>
   <string name="directory_search_n_members">%1$d members</string>
-  <string name="directory_search_show_more">Show more</string>
+  <string name="directory_search_already_joining">Already joining</string>
+  <string name="directory_search_load_more">Load more</string>
+  <string name="directory_search_load_more_n_left">Load more · %1$d left</string>
   <string name="directory_search_failed_retry">Search failed, tap to retry</string>
   <string name="directory_search_page_in_chats">All results on this page are already in your chats</string>
   <string name="searching_directory">Searching directory…</string>
-  <string name="online_search_names">Names</string>
-  <string name="online_search_directory">Directory</string>
 
   <!-- ChatView.kt -->
   <string name="no_selected_chat">No selected chat</string>
@@ -1500,6 +1500,7 @@
   <string name="app_will_ask_to_confirm_unknown_file_servers">The app will ask to confirm downloads from unknown file servers (except .onion or when SOCKS proxy is enabled).</string>
   <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Without Tor or VPN, your IP address will be visible to file servers.</string>
   <string name="send_link_previews">Send link previews</string>
+  <string name="directory_search">Directory search</string>
   <string name="sanitize_links_toggle">Remove link tracking</string>
   <string name="privacy_show_last_messages">Show last messages</string>
   <string name="privacy_message_draft">Message draft</string>

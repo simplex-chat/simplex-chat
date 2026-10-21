@@ -125,6 +125,7 @@ class AppPreferences {
   val privacyProtectScreen = mkBoolPreference(SHARED_PREFS_PRIVACY_PROTECT_SCREEN, true)
   val privacyAcceptImages = mkBoolPreference(SHARED_PREFS_PRIVACY_ACCEPT_IMAGES, true)
   val privacyLinkPreviews = mkBoolPreference(SHARED_PREFS_PRIVACY_LINK_PREVIEWS, true)
+  val privacyDirectorySearch = mkBoolPreference(SHARED_PREFS_PRIVACY_DIRECTORY_SEARCH, false)
   val privacyVerifySimplexNames = mkBoolPreference(SHARED_PREFS_PRIVACY_VERIFY_SIMPLEX_NAMES, false)
   val privacyLinkPreviewsShowAlert = mkBoolPreference(SHARED_PREFS_PRIVACY_LINK_PREVIEWS_SHOW_ALERT, true)
   val privacySanitizeLinks = mkBoolPreference(SHARED_PREFS_PRIVACY_SANITIZE_LINKS, false)
@@ -196,7 +197,6 @@ class AppPreferences {
   val showHiddenProfilesNotice = mkBoolPreference(SHARED_PREFS_SHOW_HIDDEN_PROFILES_NOTICE, true)
   val oneHandUICardShown = mkBoolPreference(SHARED_PREFS_ONE_HAND_UI_CARD_SHOWN, false)
   val addressCreationCardShown = mkBoolPreference(SHARED_PREFS_ADDRESS_CREATION_CARD_SHOWN, false)
-  val directorySearchAlertShown = mkBoolPreference(SHARED_PREFS_DIRECTORY_SEARCH_ALERT_SHOWN, false)
   val supporterBannerShown = mkBoolPreference(SHARED_PREFS_SUPPORTER_BANNER_SHOWN, false)
   val supporterBannerTapped = mkBoolPreference(SHARED_PREFS_SUPPORTER_BANNER_TAPPED, false)
   val getStakeBannerTapped = mkBoolPreference(SHARED_PREFS_GET_STAKE_BANNER_TAPPED, false)
@@ -283,7 +283,6 @@ class AppPreferences {
     hintPref(laNoticeShown, false),
     hintPref(oneHandUICardShown, false),
     hintPref(addressCreationCardShown, false),
-    hintPref(directorySearchAlertShown, false),
     hintPref(supporterBannerShown, false),
     hintPref(supporterBannerTapped, false),
     hintPref(getStakeBannerTapped, false),
@@ -417,6 +416,7 @@ class AppPreferences {
     private const val SHARED_PREFS_PRIVACY_ACCEPT_IMAGES = "PrivacyAcceptImages"
     private const val SHARED_PREFS_PRIVACY_TRANSFER_IMAGES_INLINE = "PrivacyTransferImagesInline"
     private const val SHARED_PREFS_PRIVACY_LINK_PREVIEWS = "PrivacyLinkPreviews"
+    private const val SHARED_PREFS_PRIVACY_DIRECTORY_SEARCH = "PrivacyDirectorySearch"
     private const val SHARED_PREFS_PRIVACY_VERIFY_SIMPLEX_NAMES = "PrivacyVerifySimplexNames"
     private const val SHARED_PREFS_PRIVACY_LINK_PREVIEWS_SHOW_ALERT = "PrivacyLinkPreviewsShowAlert"
     private const val SHARED_PREFS_PRIVACY_SANITIZE_LINKS = "PrivacySanitizeLinks"
@@ -480,7 +480,6 @@ class AppPreferences {
     private const val SHARED_PREFS_SHOW_HIDDEN_PROFILES_NOTICE = "ShowHiddenProfilesNotice"
     private const val SHARED_PREFS_ONE_HAND_UI_CARD_SHOWN = "OneHandUICardShown"
     private const val SHARED_PREFS_ADDRESS_CREATION_CARD_SHOWN = "AddressCreationCardShown"
-    private const val SHARED_PREFS_DIRECTORY_SEARCH_ALERT_SHOWN = "DirectorySearchAlertShown"
     private const val SHARED_PREFS_SUPPORTER_BANNER_SHOWN = "SupporterBannerShown"
     private const val SHARED_PREFS_SUPPORTER_BANNER_TAPPED = "SupporterBannerTapped"
     private const val SHARED_PREFS_GET_STAKE_BANNER_TAPPED = "GetStakeBannerTapped"
