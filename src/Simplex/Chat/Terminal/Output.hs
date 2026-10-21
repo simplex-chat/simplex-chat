@@ -99,7 +99,7 @@ withChatTerm ChatTerminal {termDevice = TerminalDevice t} action = withTerm t $ 
 
 newChatTerminal :: WithTerminal t => t -> ChatOpts -> IO ChatTerminal
 newChatTerminal t opts = do
-  termSize <- withTerm t . runTerminalT $ getWindowSize
+  termSize <- safeSize <$> (withTerm t . runTerminalT $ getWindowSize)
   let lastRow = height termSize - 1
   termState <- newTVarIO mkTermState
   liveMessageState <- newTVarIO Nothing
@@ -121,6 +121,9 @@ newChatTerminal t opts = do
         activeTo,
         currentRemoteUsers
       }
+
+safeSize :: Size -> Size
+safeSize Size {height = h, width = w} = Size {height = max 1 h, width = max 1 w}
 
 mkTermState :: TerminalState
 mkTermState =
