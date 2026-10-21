@@ -28,7 +28,7 @@ module StoreService.Names.Chain
 where
 
 import Control.Concurrent.STM (TVar)
-import Control.Exception (try)
+import Control.Exception (evaluate, try)
 import Control.Monad ((>=>))
 import Crypto.Random (ChaChaDRG)
 import Data.Aeson ((.:), (.:?), (.=))
@@ -106,6 +106,14 @@ maxRpcResponseBytes = 1024 * 1024
 revertCode :: Int
 revertCode = 3
 
+-- | A node's error message is cut to this many characters.
+maxNodeMessageLength :: Int
+maxNodeMessageLength = 200
+
+-- | The hex digits of a 256-bit quantity.
+maxQuantityDigits :: Int
+maxQuantityDigits = 64
+
 newChainClient :: TVar ChaChaDRG -> ChainConfig -> IO ChainClient
 newChainClient g ccConfig@ChainConfig {cServiceKey} = do
   ccManager <- newTlsManager
@@ -177,19 +185,24 @@ signTransaction g ChainClient {ccConfig = ChainConfig {cChainId, cServiceKey}} T
 sendRawTransaction :: ChainClient -> ByteString -> IO (Either ChainError TxHash)
 sendRawTransaction c raw = rpc c "eth_sendRawTransaction" [J.String $ hex raw] (fmap TxHash . bytes)
 
+-- | The answer is parsed within the timeout, so a slow parse is bounded too.
 rpc :: ChainClient -> Text -> [J.Value] -> (J.Value -> JT.Parser a) -> IO (Either ChainError a)
 rpc ChainClient {ccManager, ccConfig = ChainConfig {cRpcUrl}, ccTimeout} method params parseResult =
-  timeout ccTimeout (try post) >>= \case
+  timeout ccTimeout (try $ post >>= evaluate . answer) >>= \case
     Nothing -> pure $ Left $ unavailable "timed out"
     Just (Left (e :: HTTP.HttpException)) -> pure $ Left $ unavailable $ httpFailure e
-    Just (Right (status, body))
-      | LB.length body > fromIntegral maxRpcResponseBytes -> pure $ Left $ unavailable $ "response over " <> tshow maxRpcResponseBytes <> " bytes"
-      | otherwise -> pure $ case JT.parseEither response =<< J.eitherDecode body of
-          Right r -> r
-          Left e
-            | statusIsSuccessful status -> Left $ unavailable $ "not a JSON-RPC response: " <> T.pack e
-            | otherwise -> Left $ unavailable $ "HTTP " <> tshow (statusCode status)
+    Just (Right r) -> pure r
   where
+    answer (status, body)
+      | LB.length body > fromIntegral maxRpcResponseBytes = Left $ unavailable $ "response over " <> tshow maxRpcResponseBytes <> " bytes"
+      | otherwise = case J.eitherDecode body of
+          Left _ -> refused Nothing
+          Right v -> either (refused . Just) id $ JT.parseEither response v
+      where
+        refused parseError
+          | not (statusIsSuccessful status) = Left $ unavailable $ "HTTP " <> tshow (statusCode status)
+          -- aeson's decode error quotes the body, which can be any page a proxy answers with
+          | otherwise = Left $ unavailable $ "not a JSON-RPC response" <> maybe "" ((": " <>) . T.pack) parseError
     post = do
       req <- HTTP.parseRequest cRpcUrl
       HTTP.withResponse
@@ -210,7 +223,7 @@ rpc ChainClient {ccManager, ccConfig = ChainConfig {cRpcUrl}, ccTimeout} method 
       pure $
         if code == revertCode || "execution reverted" `T.isPrefixOf` message
           then ChainReverted $ decodeRevert =<< (JT.parseMaybe bytes =<< revertData)
-          else unavailable $ "error " <> tshow code <> ": " <> message
+          else unavailable $ "error " <> tshow code <> ": " <> T.take maxNodeMessageLength message
     unavailable reason = ChainUnavailable $ method <> ": " <> reason
 
 -- | Only the kind of failure: an exception's text can hold the URL or its host.
@@ -230,7 +243,7 @@ nullable p = \case
 
 quantity :: forall a. (Integral a, Bounded a) => J.Value -> JT.Parser a
 quantity = J.withText "quantity" $ \t -> case T.stripPrefix "0x" t of
-  Just h | [(n, "")] <- readHex (T.unpack h), n <= toInteger (maxBound :: a) -> pure $ fromInteger n
+  Just h | T.length h <= maxQuantityDigits, [(n, "")] <- readHex (T.unpack h), n <= toInteger (maxBound :: a) -> pure $ fromInteger n
   _ -> fail "not a quantity"
 
 bytes :: J.Value -> JT.Parser ByteString

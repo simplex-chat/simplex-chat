@@ -7,6 +7,7 @@ module Bots.StoreService.NamesChainTests (namesChainTests) where
 import Bots.StoreService.FakeEthNode
 import Control.Concurrent.STM (TVar)
 import Crypto.Random (ChaChaDRG)
+import qualified Data.Aeson as J
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
@@ -36,6 +37,9 @@ namesChainTests = describe "StoreService names: chain" $ do
     it "reads an HTTP failure as unavailable" $ testHttpFailure g
     it "reads a refused connection as unavailable, without the URL" $ testRefused g
     it "refuses an answer over the size bound" $ testOversized g
+    it "reads a 2xx answer that is not JSON as unavailable, without quoting it" $ testNotJson g
+    it "cuts a node's long error message" $ testLongNodeMessage g
+    it "refuses a quantity over 256 bits, and a long one within the call's timeout" $ testLongQuantity g
   describe "reads" $ do
     it "answers eth_call from the node by contract and calldata" $ testEthCall g
     it "reads the latest block's number, time and base fee" $ testLatestBlock g
@@ -161,6 +165,27 @@ testOversized :: TVar ChaChaDRG -> IO ()
 testOversized g = withChain g $ \node c -> do
   answerCall node fakeController availableCall $ Returns $ B.replicate (512 * 1024) 0
   ethCall c fakeController availableCall `shouldReturn` Left (ChainUnavailable "eth_call: response over 1048576 bytes")
+
+testNotJson :: TVar ChaChaDRG -> IO ()
+testNotJson g = withChain g $ \node c -> do
+  setFault node "eth_call" NotJson
+  ethCall c fakeController availableCall `shouldReturn` Left (ChainUnavailable "eth_call: not a JSON-RPC response")
+
+testLongNodeMessage :: TVar ChaChaDRG -> IO ()
+testLongNodeMessage g = withChain g $ \node c -> do
+  setFault node "eth_call" $ RpcError (-32000) (T.replicate 1000 "x") Nothing
+  ethCall c fakeController availableCall `shouldReturn` Left (ChainUnavailable $ "eth_call: error -32000: " <> T.replicate 200 "x")
+
+testLongQuantity :: TVar ChaChaDRG -> IO ()
+testLongQuantity g = withChain g $ \node c -> do
+  let fee digits = setFault node "eth_maxPriorityFeePerGas" (Answers $ J.String $ "0x" <> digits) >> maxPriorityFee c {ccTimeout = 300000}
+      notQuantity = Left (ChainUnavailable "eth_maxPriorityFeePerGas: not a JSON-RPC response: Error in $: not a quantity")
+  fee (T.replicate 63 "0" <> "7") `shouldReturn` Right 7
+  fee (T.replicate 64 "0" <> "7") `shouldReturn` notQuantity
+  start <- getCurrentTime
+  fee (T.replicate 1000000 "f") `shouldReturn` notQuantity
+  elapsed <- (`diffUTCTime` start) <$> getCurrentTime
+  elapsed `shouldSatisfy` (< 1)
 
 testEthCall :: TVar ChaChaDRG -> IO ()
 testEthCall g = withChain g $ \node c -> do

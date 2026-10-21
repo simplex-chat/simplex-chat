@@ -63,6 +63,9 @@ data Fault
   | -- | answers only once the node is closed
     Hang
   | HttpFailure
+  | -- | a 200 page that is not JSON, as a proxy may answer
+    NotJson
+  | Answers J.Value
 
 data FakeState = FakeState
   { fsCalls :: Map (ByteString, ByteString) CallAnswer,
@@ -157,6 +160,8 @@ fakeApp st req respond = do
           atomically $ readTVar st >>= check . fsClosed
           reply $ rpcError (-32000) "node closed" Nothing
         Just (RpcError code message revertData) -> reply $ rpcError code message revertData
+        Just NotJson -> respond $ responseLBS ok200 [] "<html>Sign in to provider-api-key</html>"
+        Just (Answers v) -> reply ["result" .= v]
         Nothing -> reply =<< atomically (answer st method params)
     Nothing -> respond $ responseLBS badRequest400 [] "not a JSON-RPC request"
   where
