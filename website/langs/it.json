@@ -155,7 +155,7 @@
     "developers": "Sviluppatori",
     "simplex-explained-tab-1-p-1": "Puoi creare contatti e gruppi, ed avere conversazioni bidirezionali, come in qualsiasi altro messenger.",
     "feature-2-title": "Immagini, video e file<br>crittografati E2E",
-    "simplex-private-card-4-point-2": "Per usare SimpleX tramite Tor, installa <a href=\"https://guardianproject.info/apps/org.torproject.android/\" target=\"_blank\" rel=\"noopener\">l'app Orbot</a> e attiva il proxy SOCKS5 (o VPN <a href=\"https://apps.apple.com/us/app/orbot/id1609461599?platform=iphone\" target=\"_blank\" rel=\"noopener\">su iOS</a>).",
+    "simplex-private-card-4-point-2": "Per usare SimpleX tramite Tor, installa <a href=\"https://guardianproject.info/apps/org.torproject.android/\" target=\"_blank\">l'app Orbot</a> e attiva il proxy SOCKS5 (o VPN <a href=\"https://apps.apple.com/us/app/orbot/id1609461599?platform=iphone\" target=\"_blank\">su iOS</a>).",
     "reference": "Riferimenti",
     "simplex-explained-tab-3-text": "3. Cosa vedono i server",
     "chat-bot-example": "Esempio di chat bot",
