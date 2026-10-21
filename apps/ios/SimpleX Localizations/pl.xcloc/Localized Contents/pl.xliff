@@ -731,14 +731,14 @@ accept incoming call via notification
 alert action
 swipe action</note>
       </trans-unit>
-      <trans-unit id="Accept as member" xml:space="preserve">
+      <trans-unit id="Accept as member" xml:space="preserve" approved="no">
         <source>Accept as member</source>
-        <target>Zaakceptuj jako członka</target>
+        <target state="translated">Zaakceptuj jako członka</target>
         <note>alert action</note>
       </trans-unit>
-      <trans-unit id="Accept as observer" xml:space="preserve">
+      <trans-unit id="Accept as observer" xml:space="preserve" approved="no">
         <source>Accept as observer</source>
-        <target>Zaakceptuj jako obserwatora</target>
+        <target state="translated">Zaakceptuj jako obserwatora</target>
         <note>alert action</note>
       </trans-unit>
       <trans-unit id="Accept conditions" xml:space="preserve" approved="no">
@@ -751,9 +751,9 @@ swipe action</note>
         <target state="translated">Zaakceptować prośbę o połączenie?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Accept contact request" xml:space="preserve">
+      <trans-unit id="Accept contact request" xml:space="preserve" approved="no">
         <source>Accept contact request</source>
-        <target>Zaakceptuj prośby o kontakt</target>
+        <target state="translated">Zaakceptuj prośby o kontakt</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Accept contact request from %@?" xml:space="preserve" approved="no">
@@ -767,9 +767,9 @@ swipe action</note>
         <note>alert action
 swipe action</note>
       </trans-unit>
-      <trans-unit id="Accept member" xml:space="preserve">
+      <trans-unit id="Accept member" xml:space="preserve" approved="no">
         <source>Accept member</source>
-        <target>Zaakceptuj członka</target>
+        <target state="translated">Zaakceptuj członka</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Accepted conditions" xml:space="preserve" approved="no">
@@ -835,9 +835,9 @@ swipe action</note>
         <target state="translated">Dodaj listę</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add message" xml:space="preserve">
+      <trans-unit id="Add message" xml:space="preserve" approved="no">
         <source>Add message</source>
-        <target>Dodaj wiadomość</target>
+        <target state="translated">Dodaj wiadomość</target>
         <note>placeholder for sending contact request</note>
       </trans-unit>
       <trans-unit id="Add profile" xml:space="preserve" approved="no">
@@ -1050,9 +1050,9 @@ swipe action</note>
         <target state="translated">Wszystkie raporty zostaną dla Ciebie zarchiwizowane.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All servers" xml:space="preserve">
+      <trans-unit id="All servers" xml:space="preserve" approved="no">
         <source>All servers</source>
-        <target>Wszystkie serwery</target>
+        <target state="translated">Wszystkie serwery</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All your contacts will remain connected." xml:space="preserve" approved="no">
@@ -1100,9 +1100,9 @@ swipe action</note>
         <target state="translated">Zezwól na obniżenie wersji</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow files and media only if your contact allows them." xml:space="preserve">
+      <trans-unit id="Allow files and media only if your contact allows them." xml:space="preserve" approved="no">
         <source>Allow files and media only if your contact allows them.</source>
-        <target>Zezwalaj na pliki i media tylko wtedy, gdy Twój kontakt na to pozwala.</target>
+        <target state="translated">Zezwalaj na pliki i media tylko wtedy, gdy Twój kontakt na to pozwala.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow irreversible message deletion only if your contact allows it to you. (24 hours)" xml:space="preserve" approved="no">
@@ -1205,9 +1205,9 @@ swipe action</note>
         <target state="translated">Zezwól swoim kontaktom na wysyłanie znikających wiadomości.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow your contacts to send files and media." xml:space="preserve">
+      <trans-unit id="Allow your contacts to send files and media." xml:space="preserve" approved="no">
         <source>Allow your contacts to send files and media.</source>
-        <target>Pozwól kontaktom wysyłać pliki i media.</target>
+        <target state="translated">Pozwól kontaktom wysyłać pliki i media.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow your contacts to send voice messages." xml:space="preserve" approved="no">
@@ -1542,9 +1542,9 @@ in your network</source>
         <target state="translated">Lepsze grupy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Better groups performance" xml:space="preserve">
+      <trans-unit id="Better groups performance" xml:space="preserve" approved="no">
         <source>Better groups performance</source>
-        <target>Lepsze działanie grup</target>
+        <target state="translated">Lepsze działanie grup</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Better message dates." xml:space="preserve" approved="no">
@@ -1567,9 +1567,9 @@ in your network</source>
         <target state="translated">Lepsze powiadomienia</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Better privacy and security" xml:space="preserve">
+      <trans-unit id="Better privacy and security" xml:space="preserve" approved="no">
         <source>Better privacy and security</source>
-        <target>Lepsza prywatność i bezpieczeństwo</target>
+        <target state="translated">Lepsza prywatność i bezpieczeństwo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Better security ✅" xml:space="preserve" approved="no">
@@ -1647,9 +1647,9 @@ in your network</source>
         <target state="translated">Rozmycie mediów</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Bot" xml:space="preserve">
+      <trans-unit id="Bot" xml:space="preserve" approved="no">
         <source>Bot</source>
-        <target>Bot</target>
+        <target state="translated">Bot</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can add message reactions." xml:space="preserve" approved="no">
@@ -1672,9 +1672,9 @@ in your network</source>
         <target state="translated">Zarówno Ty, jak i Twój kontakt możecie wysyłać znikające wiadomości.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Both you and your contact can send files and media." xml:space="preserve">
+      <trans-unit id="Both you and your contact can send files and media." xml:space="preserve" approved="no">
         <source>Both you and your contact can send files and media.</source>
-        <target>Zarówno Ty, jak i Twój kontakt możecie wysyłać pliki i media.</target>
+        <target state="translated">Zarówno Ty, jak i Twój kontakt możecie wysyłać pliki i media.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can send voice messages." xml:space="preserve" approved="no">
