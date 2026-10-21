@@ -2052,7 +2052,9 @@ fun BoxScope.ChatItemsList(
                 SelectedListItem(Modifier.padding(start = 8.dp), cItem.id, selectedChatItems)
               }
               TerminalChatItemRow(
-                chatInfo, cItem, showAvatar, itemTopGap, range, reversedChatItems, showMemberInfo, showChatInfo,
+                if (showAvatar) terminalSender(chatInfo, cItem, range, reversedChatItems, showMemberInfo, showChatInfo) else null,
+                terminalGutter(chatInfo),
+                itemTopGap,
                 Modifier.terminalStartOffset { selectionOffset }.then(if (selectionVisible) Modifier else swipeableModifier),
                 goToButton = { GoToItemButton(remoteHostId, chatInfo, cItem, searchValueIsNotBlank, hoveredItemId, rowHovered, Modifier) }
               ) {

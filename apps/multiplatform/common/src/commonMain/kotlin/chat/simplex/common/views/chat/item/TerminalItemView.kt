@@ -144,21 +144,19 @@ private fun TerminalMetaLayout(contentWithMeta: @Composable () -> Unit) {
 }
 
 @Composable
+fun terminalGutter(chatInfo: ChatInfo): Dp =
+  if (chatInfo is ChatInfo.Group) MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier else GO_TO_ITEM_BUTTON_SIZE
+
+@Composable
 fun TerminalChatItemRow(
-  chatInfo: ChatInfo,
-  cItem: ChatItem,
-  showSender: Boolean,
+  sender: TerminalSender?,
+  gutter: Dp,
   topGap: Dp,
-  range: State<IntRange?>,
-  reversedChatItems: State<List<ChatItem>>,
-  showMemberInfo: (GroupInfo, GroupMember) -> Unit,
-  showChatInfo: () -> Unit,
   modifier: Modifier = Modifier,
+  senderTopGap: Dp = 8.dp,
   goToButton: @Composable () -> Unit = {},
   content: @Composable () -> Unit
 ) {
-  val sender = if (showSender) terminalSender(chatInfo, cItem, range, reversedChatItems, showMemberInfo, showChatInfo) else null
-  val gutter = if (chatInfo is ChatInfo.Group) MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier else GO_TO_ITEM_BUTTON_SIZE
   Layout(
     content = {
       Box {
@@ -177,7 +175,7 @@ fun TerminalChatItemRow(
       }
     },
     modifier
-      .padding(top = if (sender != null) 8.dp else topGap, start = 8.dp, end = 12.dp)
+      .padding(top = if (sender != null) senderTopGap else topGap, start = 8.dp, end = 12.dp)
       .fillMaxWidth()
   ) { measurables, constraints ->
     val gutterWidth = gutter.roundToPx()
@@ -200,10 +198,10 @@ fun TerminalChatItemRow(
   }
 }
 
-private class TerminalSender(val name: String, val badge: LocalBadge?, val role: String?, val own: Boolean, val image: (@Composable () -> Unit)?)
+class TerminalSender(val name: String, val badge: LocalBadge?, val role: String?, val own: Boolean, val image: (@Composable () -> Unit)?)
 
 @Composable
-private fun terminalSender(
+fun terminalSender(
   chatInfo: ChatInfo,
   cItem: ChatItem,
   range: State<IntRange?>,

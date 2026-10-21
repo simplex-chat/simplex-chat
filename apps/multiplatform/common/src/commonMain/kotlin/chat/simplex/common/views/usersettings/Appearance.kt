@@ -42,6 +42,7 @@ import chat.simplex.common.ui.theme.ThemeManager.toReadableHex
 import chat.simplex.common.views.chat.item.LocalTerminalLayout
 import chat.simplex.common.views.chat.item.PreviewChatItemView
 import chat.simplex.common.views.chat.item.TerminalChatItemRow
+import chat.simplex.common.views.chat.item.TerminalSender
 import chat.simplex.common.views.chat.item.msgTailWidthDp
 import chat.simplex.res.*
 import com.godaddy.android.colorpicker.ClassicColorPicker
@@ -305,11 +306,8 @@ object AppearanceScope {
         )
 
         @Composable
-        fun TerminalPreviewRow(item: ChatItem) {
-          TerminalChatItemRow(
-            Chat.sampleData.chatInfo, item, showSender = true, topGap = 0.dp, range = remember { mutableStateOf<IntRange?>(null) }, reversedChatItems = remember { mutableStateOf(emptyList<ChatItem>()) },
-            showMemberInfo = { _, _ -> }, showChatInfo = {}
-          ) {
+        fun TerminalPreviewRow(item: ChatItem, sender: TerminalSender, senderTopGap: Dp) {
+          TerminalChatItemRow(sender, gutter = 0.dp, topGap = 0.dp, senderTopGap = senderTopGap) {
             PreviewChatItemView(item)
           }
         }
@@ -324,8 +322,8 @@ object AppearanceScope {
           },
           terminalRows = {
             Column {
-              TerminalPreviewRow(alice)
-              TerminalPreviewRow(reply)
+              TerminalPreviewRow(alice, TerminalSender("alice", null, null, own = false, image = null), senderTopGap = 0.dp)
+              TerminalPreviewRow(reply, TerminalSender("bob", null, null, own = true, image = null), senderTopGap = 8.dp)
             }
           }
         )
