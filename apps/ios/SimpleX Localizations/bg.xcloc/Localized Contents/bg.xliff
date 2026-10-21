@@ -2726,19 +2726,19 @@ This is your own one-time link!</source>
         <target state="translated">Поправи име на %@?</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Create 1-time link" xml:space="preserve">
+      <trans-unit id="Create 1-time link" xml:space="preserve" approved="no">
         <source>Create 1-time link</source>
-        <target>Създаване на еднократна препратка</target>
+        <target state="translated">Създаване на еднократна препратка</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create SimpleX address" xml:space="preserve">
+      <trans-unit id="Create SimpleX address" xml:space="preserve" approved="no">
         <source>Create SimpleX address</source>
-        <target>Създаване на адрес в SimpleX</target>
+        <target state="translated">Създаване на адрес в SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create a group using a random profile." xml:space="preserve">
+      <trans-unit id="Create a group using a random profile." xml:space="preserve" approved="no">
         <source>Create a group using a random profile.</source>
-        <target>Създаване група с автоматично създаден профил.</target>
+        <target state="translated">Създаване група с автоматично създаден профил.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create a webpage to show your channel preview to visitors before they subscribe. Host it yourself or use any static hosting." xml:space="preserve">
@@ -2746,14 +2746,14 @@ This is your own one-time link!</source>
         <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create file" xml:space="preserve">
+      <trans-unit id="Create file" xml:space="preserve" approved="no">
         <source>Create file</source>
-        <target>Създаване на файл</target>
+        <target state="translated">Създаване на файл</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Create group" xml:space="preserve">
+      <trans-unit id="Create group" xml:space="preserve" approved="no">
         <source>Create group</source>
-        <target>Създаване на група</target>
+        <target state="translated">Създаване на група</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create group link" xml:space="preserve" approved="no">
@@ -11645,9 +11645,9 @@ Repeat connection request?</source>
         <target state="translated">Вашите ICE сървъри</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your SimpleX address" xml:space="preserve">
+      <trans-unit id="Your SimpleX address" xml:space="preserve" approved="no">
         <source>Your SimpleX address</source>
-        <target>Вашият адрес в SimpleX</target>
+        <target state="translated">Вашият адрес в SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your SimpleX name" xml:space="preserve">
