@@ -1422,7 +1422,7 @@ struct ComposeView: View {
         case .spam: NSLocalizedString("Report spam: only group moderators will see it.", comment: "report reason")
         case .profile: NSLocalizedString("Report member profile: only group moderators will see it.", comment: "report reason")
         case .community: NSLocalizedString("Report violation: only group moderators will see it.", comment: "report reason")
-        case .illegal: NSLocalizedString("Report content: only group moderators will see it.", comment: "report reason")
+        case .content: NSLocalizedString("Report content: only group moderators will see it.", comment: "report reason")
         case .other: NSLocalizedString("Report other: only group moderators will see it.", comment: "report reason")
         case .unknown: "" // Should never happen
         }

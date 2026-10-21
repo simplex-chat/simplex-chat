@@ -5927,18 +5927,29 @@ public enum FormatColor: String, Decodable, Hashable {
 
 public enum ReportReason: Hashable {
     case spam
-    case illegal
+    case content
     case community
     case profile
     case other
     case unknown(type: String)
 
-    public static var supportedReasons: [ReportReason] = [.spam, .illegal, .community, .profile, .other]
+    public static var supportedReasons: [ReportReason] = [.spam, .content, .community, .profile, .other]
+
+    public var rawValue: String {
+        switch self {
+        case .spam: "spam"
+        case .content: "content"
+        case .community: "community"
+        case .profile: "profile"
+        case .other: "other"
+        case let .unknown(type): type
+        }
+    }
 
     public var text: String {
         switch self {
         case .spam: return NSLocalizedString("Spam", comment: "report reason")
-        case .illegal: return NSLocalizedString("Inappropriate content", comment: "report reason")
+        case .content: return NSLocalizedString("Inappropriate content", comment: "report reason")
         case .community: return NSLocalizedString("Community guidelines violation", comment: "report reason")
         case .profile: return NSLocalizedString("Inappropriate profile", comment: "report reason")
         case .other: return NSLocalizedString("Another reason", comment: "report reason")
@@ -5958,14 +5969,7 @@ public enum ReportReason: Hashable {
 extension ReportReason: Encodable {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
-        switch self {
-        case .spam: try container.encode("spam")
-        case .illegal: try container.encode("illegal")
-        case .community: try container.encode("community")
-        case .profile: try container.encode("profile")
-        case .other: try container.encode("other")
-        case let .unknown(type): try container.encode(type)
-        }
+        try container.encode(rawValue)
     }
 }
 
@@ -5975,7 +5979,7 @@ extension ReportReason: Decodable {
         let type = try container.decode(String.self)
         switch type {
         case "spam": self = .spam
-        case "illegal": self = .illegal
+        case "content", "illegal": self = .content
         case "community": self = .community
         case "profile": self = .profile
         case "other": self = .other
