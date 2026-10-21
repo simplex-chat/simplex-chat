@@ -1803,6 +1803,7 @@ metaBrokerTs MsgMeta {broker = (_, brokerTs)} = brokerTs
 
 createContactPQSndItem :: User -> Contact -> Connection -> PQEncryption -> CM (Contact, Connection)
 createContactPQSndItem user ct conn@Connection {pqSndEnabled} pqSndEnabled' =
+  (liftIO (putStrLn $ "PQ-DEBUG snd " <> show (localDisplayName' ct) <> " " <> show pqSndEnabled <> " -> " <> show pqSndEnabled') >>) $
   flip catchAllErrors (const $ pure (ct, conn)) $ case (pqSndEnabled, pqSndEnabled') of
     (Just b, b') | b' /= b -> createPQItem $ CISndConnEvent (SCEPqEnabled pqSndEnabled')
     (Nothing, PQEncOn) -> createPQItem $ CISndDirectE2EEInfo (e2eInfoEncrypted $ Just pqSndEnabled')
@@ -1818,6 +1819,7 @@ createContactPQSndItem user ct conn@Connection {pqSndEnabled} pqSndEnabled' =
 
 updateContactPQRcv :: User -> Contact -> Connection -> PQEncryption -> CM (Contact, Connection)
 updateContactPQRcv user ct conn@Connection {connId, pqRcvEnabled} pqRcvEnabled' =
+  (liftIO (putStrLn $ "PQ-DEBUG rcv " <> show (localDisplayName' ct) <> " " <> show pqRcvEnabled <> " -> " <> show pqRcvEnabled') >>) $
   flip catchAllErrors (const $ pure (ct, conn)) $ case (pqRcvEnabled, pqRcvEnabled') of
     (Just b, b') | b' /= b -> updatePQ $ CIRcvConnEvent (RCEPqEnabled pqRcvEnabled')
     (Nothing, PQEncOn) -> updatePQ $ CIRcvDirectE2EEInfo (e2eInfoEncrypted $ Just pqRcvEnabled')
