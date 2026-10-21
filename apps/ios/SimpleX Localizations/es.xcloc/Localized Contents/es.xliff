@@ -167,9 +167,9 @@
         <source>%@/year</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@:" xml:space="preserve">
+      <trans-unit id="%@:" xml:space="preserve" approved="no">
         <source>%@:</source>
-        <target>%@:</target>
+        <target state="translated">%@:</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="%d day" xml:space="preserve" approved="no">
@@ -585,9 +585,9 @@ channel relay bar</note>
         <target state="translated">0 seg</target>
         <note>time to disappear</note>
       </trans-unit>
-      <trans-unit id="0s" xml:space="preserve">
+      <trans-unit id="0s" xml:space="preserve" approved="no">
         <source>0s</source>
-        <target>0s</target>
+        <target state="translated">0s</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="1 day" xml:space="preserve" approved="no">
@@ -1470,14 +1470,14 @@ swipe action</note>
         <target state="translated">Dirección ordenador incorrecta</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Bad message ID" xml:space="preserve">
+      <trans-unit id="Bad message ID" xml:space="preserve" approved="no">
         <source>Bad message ID</source>
-        <target>ID de mensaje incorrecto</target>
+        <target state="translated">ID de mensaje incorrecto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Bad message hash" xml:space="preserve">
+      <trans-unit id="Bad message hash" xml:space="preserve" approved="no">
         <source>Bad message hash</source>
-        <target>Hash de mensaje incorrecto</target>
+        <target state="translated">Hash de mensaje incorrecto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Badge added" xml:space="preserve">
@@ -1887,9 +1887,9 @@ new chat action</note>
         <target state="translated">¿Cambiar el rol?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Change self-destruct mode" xml:space="preserve">
+      <trans-unit id="Change self-destruct mode" xml:space="preserve" approved="no">
         <source>Change self-destruct mode</source>
-        <target>Cambiar el modo de autodestrucción</target>
+        <target state="translated">Cambiar el modo de autodestrucción</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Change self-destruct passcode" xml:space="preserve" approved="no">
@@ -2351,9 +2351,9 @@ chat toolbar</note>
         <target state="translated">¿Confirmas la eliminación del contacto?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirm database upgrades" xml:space="preserve">
+      <trans-unit id="Confirm database upgrades" xml:space="preserve" approved="no">
         <source>Confirm database upgrades</source>
-        <target>Confirmar actualizaciones de la bases de datos</target>
+        <target state="translated">Confirmar actualizaciones de la bases de datos</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm files from unknown servers." xml:space="preserve" approved="no">
@@ -2933,9 +2933,9 @@ This is your own one-time link!</source>
         <target state="translated">IDs de la base de datos y opciónes de aislamiento de transporte.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database downgrade" xml:space="preserve">
+      <trans-unit id="Database downgrade" xml:space="preserve" approved="no">
         <source>Database downgrade</source>
-        <target>Degradación de la base de datos</target>
+        <target state="translated">Degradación de la base de datos</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database encrypted!" xml:space="preserve" approved="no">
@@ -2992,9 +2992,9 @@ This is your own one-time link!</source>
         <target state="translated">Para abrir la aplicación se requiere la contraseña de la base de datos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database upgrade" xml:space="preserve">
+      <trans-unit id="Database upgrade" xml:space="preserve" approved="no">
         <source>Database upgrade</source>
-        <target>Actualización de la base de datos</target>
+        <target state="translated">Actualización de la base de datos</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database will be encrypted and the passphrase stored in the keychain.&#10;" xml:space="preserve" approved="no">
@@ -3252,9 +3252,9 @@ alert button</note>
         <target state="translated">¿Eliminar conexión pendiente?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete profile" xml:space="preserve">
+      <trans-unit id="Delete profile" xml:space="preserve" approved="no">
         <source>Delete profile</source>
-        <target>Eliminar perfil</target>
+        <target state="translated">Eliminar perfil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete queue" xml:space="preserve" approved="no">
@@ -3604,9 +3604,9 @@ alert button</note>
         <target state="translated">Hecho</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Downgrade and open chat" xml:space="preserve">
+      <trans-unit id="Downgrade and open chat" xml:space="preserve" approved="no">
         <source>Downgrade and open chat</source>
-        <target>Degradar y abrir Chat</target>
+        <target state="translated">Degradar y abrir Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Download" xml:space="preserve" approved="no">
@@ -3785,14 +3785,14 @@ chat item action</note>
         <target state="translated">¿Activar notificaciones periódicas?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable self-destruct" xml:space="preserve">
+      <trans-unit id="Enable self-destruct" xml:space="preserve" approved="no">
         <source>Enable self-destruct</source>
-        <target>Activar autodestrucción</target>
+        <target state="translated">Activar autodestrucción</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable self-destruct passcode" xml:space="preserve">
+      <trans-unit id="Enable self-destruct passcode" xml:space="preserve" approved="no">
         <source>Enable self-destruct passcode</source>
-        <target>Activar código de autodestrucción</target>
+        <target state="translated">Activar código de autodestrucción</target>
         <note>set passcode view</note>
       </trans-unit>
       <trans-unit id="Enabled" xml:space="preserve" approved="no">
@@ -4424,9 +4424,9 @@ chat item action</note>
         <target state="translated">Error al verificar la frase de contraseña:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error: " xml:space="preserve">
+      <trans-unit id="Error: " xml:space="preserve" approved="no">
         <source>Error: </source>
-        <target>Error: </target>
+        <target state="translated">Error: </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error: %@" xml:space="preserve" approved="no">
@@ -5230,9 +5230,9 @@ Error: %2$@</target>
         <target state="translated">Si no puedes reunirte en persona, muestra el código QR por videollamada o comparte el enlace.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="If you enter this passcode when opening the app, all app data will be irreversibly removed!" xml:space="preserve">
+      <trans-unit id="If you enter this passcode when opening the app, all app data will be irreversibly removed!" xml:space="preserve" approved="no">
         <source>If you enter this passcode when opening the app, all app data will be irreversibly removed!</source>
-        <target>¡Si introduces este código al abrir la aplicación, todos los datos de la misma se eliminarán de forma irreversible!</target>
+        <target state="translated">¡Si introduces este código al abrir la aplicación, todos los datos de la misma se eliminarán de forma irreversible!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="If you enter your self-destruct passcode while opening the app:" xml:space="preserve" approved="no">
@@ -5387,9 +5387,9 @@ More improvements are coming soon!</source>
         <target state="translated">Videollamada entrante</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Incompatible database version" xml:space="preserve">
+      <trans-unit id="Incompatible database version" xml:space="preserve" approved="no">
         <source>Incompatible database version</source>
-        <target>Versión de base de datos incompatible</target>
+        <target state="translated">Versión de base de datos incompatible</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Incompatible version" xml:space="preserve" approved="no">
@@ -5595,9 +5595,9 @@ More improvements are coming soon!</source>
         <target state="translated">Permite tener varias conexiones anónimas sin datos compartidos entre estas dentro del mismo perfil.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="It can happen when you or your connection used the old database backup." xml:space="preserve">
+      <trans-unit id="It can happen when you or your connection used the old database backup." xml:space="preserve" approved="no">
         <source>It can happen when you or your connection used the old database backup.</source>
-        <target>Puede ocurrir cuando tu o tu contacto estáis usando una copia de seguridad antigua de la base de datos.</target>
+        <target state="translated">Puede ocurrir cuando tu o tu contacto estáis usando una copia de seguridad antigua de la base de datos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 30 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve" approved="no">
@@ -7388,9 +7388,9 @@ Error: %@</target>
         <target state="translated">Por favor, recuerda y guarda el código de acceso en un lugar seguro. ¡No hay manera de recuperar un código perdido!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please report it to the developers." xml:space="preserve">
+      <trans-unit id="Please report it to the developers." xml:space="preserve" approved="no">
         <source>Please report it to the developers.</source>
-        <target>Por favor, informa a los desarrolladores.</target>
+        <target state="translated">Por favor, informa a los desarrolladores.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please restart the app and migrate the database to enable push notifications." xml:space="preserve" approved="no">
@@ -7556,9 +7556,9 @@ Error: %@</target>
         <target state="translated">Forma de los perfiles</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Profile password" xml:space="preserve">
+      <trans-unit id="Profile password" xml:space="preserve" approved="no">
         <source>Profile password</source>
-        <target>Contraseña del perfil</target>
+        <target state="translated">Contraseña del perfil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Profile theme" xml:space="preserve" approved="no">
@@ -8618,24 +8618,24 @@ chat item action</note>
         <target state="translated">Las preferencias seleccionadas no permiten este mensaje.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Self-destruct" xml:space="preserve">
+      <trans-unit id="Self-destruct" xml:space="preserve" approved="no">
         <source>Self-destruct</source>
-        <target>Autodestrucción</target>
+        <target state="translated">Autodestrucción</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Self-destruct passcode" xml:space="preserve">
+      <trans-unit id="Self-destruct passcode" xml:space="preserve" approved="no">
         <source>Self-destruct passcode</source>
-        <target>Código de autodestrucción</target>
+        <target state="translated">Código de autodestrucción</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Self-destruct passcode changed!" xml:space="preserve">
+      <trans-unit id="Self-destruct passcode changed!" xml:space="preserve" approved="no">
         <source>Self-destruct passcode changed!</source>
-        <target>¡Código de autodestrucción cambiado!</target>
+        <target state="translated">¡Código de autodestrucción cambiado!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Self-destruct passcode enabled!" xml:space="preserve">
+      <trans-unit id="Self-destruct passcode enabled!" xml:space="preserve" approved="no">
         <source>Self-destruct passcode enabled!</source>
-        <target>¡Código de autodestrucción activado!</target>
+        <target state="translated">¡Código de autodestrucción activado!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send" xml:space="preserve" approved="no">
@@ -9168,9 +9168,9 @@ chat item action</note>
         <target state="translated">Mostrar llamadas en el historial del teléfono</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Show developer options" xml:space="preserve">
+      <trans-unit id="Show developer options" xml:space="preserve" approved="no">
         <source>Show developer options</source>
-        <target>Mostrar opciones de desarrollador</target>
+        <target state="translated">Mostrar opciones de desarrollador</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show encryption" xml:space="preserve" approved="no">
@@ -9875,10 +9875,10 @@ server test failure</note>
         <target state="translated">¡Agradecimiento a los colaboradores! Puedes contribuir a través de Weblate</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The ID of the next message is incorrect (less or equal to the previous).&#10;It can happen because of some bug or when the connection is compromised." xml:space="preserve">
+      <trans-unit id="The ID of the next message is incorrect (less or equal to the previous).&#10;It can happen because of some bug or when the connection is compromised." xml:space="preserve" approved="no">
         <source>The ID of the next message is incorrect (less or equal to the previous).
 It can happen because of some bug or when the connection is compromised.</source>
-        <target>El ID del siguiente mensaje es incorrecto (menor o igual que el anterior).
+        <target state="translated">El ID del siguiente mensaje es incorrecto (menor o igual que el anterior).
 Puede ocurrir por algún bug o cuando la conexión está comprometida.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -10036,9 +10036,9 @@ your contacts and groups.</source>
 y los contactos son tuyos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The hash of the previous message is different." xml:space="preserve">
+      <trans-unit id="The hash of the previous message is different." xml:space="preserve" approved="no">
         <source>The hash of the previous message is different.</source>
-        <target>El hash del mensaje anterior es diferente.</target>
+        <target state="translated">El hash del mensaje anterior es diferente.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The link will be short, and group profile will be shared via the link." xml:space="preserve" approved="no">
@@ -10591,9 +10591,9 @@ Se te pedirá que completes la autenticación antes de activar esta función.</t
         <target state="translated">Mostrar perfil oculto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unhide profile" xml:space="preserve">
+      <trans-unit id="Unhide profile" xml:space="preserve" approved="no">
         <source>Unhide profile</source>
-        <target>Mostrar perfil</target>
+        <target state="translated">Mostrar perfil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unit" xml:space="preserve" approved="no">
@@ -10727,9 +10727,9 @@ Se te pedirá que completes la autenticación antes de activar esta función.</t
         <note>alert message
 alert title</note>
       </trans-unit>
-      <trans-unit id="Upgrade and open chat" xml:space="preserve">
+      <trans-unit id="Upgrade and open chat" xml:space="preserve" approved="no">
         <source>Upgrade and open chat</source>
-        <target>Actualizar y abrir Chat</target>
+        <target state="translated">Actualizar y abrir Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Upgrade group link?" xml:space="preserve" approved="no">
@@ -11115,9 +11115,9 @@ alert title</note>
         <target state="translated">Atención: el inicio del chat en varios dispositivos es incompatible y provocará fallos en la entrega de mensajes</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Warning: you may lose some data!" xml:space="preserve">
+      <trans-unit id="Warning: you may lose some data!" xml:space="preserve" approved="no">
         <source>Warning: you may lose some data!</source>
-        <target>Atención: ¡puedes perder algunos datos!</target>
+        <target state="translated">Atención: ¡puedes perder algunos datos!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="We made connecting simpler for new users." xml:space="preserve" approved="no">
