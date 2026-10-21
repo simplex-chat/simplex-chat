@@ -151,7 +151,7 @@
     "donate-here-to-help-us": "Przekaż darowiznę tutaj, aby nam pomóc",
     "simplex-unique-overlay-card-4-p-3": "Jeśli rozważasz rozwój dla sieci SimpleX, na przykład czatbotu dla użytkowników aplikacji SimpleX lub integrację biblioteki SimpleX Chat w swoich aplikacjach mobilnych, prosimy o <a href=\"https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D\" target=\"_blank\">kontakt</a> dla wszelkich porad i wsparcia.",
     "simplex-unique-card-1-p-1": "SimpleX chroni prywatność Twojego profilu, kontaktów i metadanych, ukrywając je przed serwerami sieci SimpleX i wszelkimi obserwatorami.",
-    "simplex-unique-overlay-card-4-p-2": "Sieć SimpleX wykorzystuje <a href=\"https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md\" target=\"_blank\" rel=\"noopener\">otwarty protokół</a> i udostępnia <a href=\"https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-client/typescript\" target=\"_blank\" rel=\"noopener\">SDK do tworzenia chatbotów</a>, umożliwiając implementację usług, z którymi użytkownicy mogą wchodzić w interakcje za pośrednictwem aplikacji SimpleX Chat &mdash; naprawdę nie możemy się doczekać, aby zobaczyć, jakie usługi SimpleX zbudujesz.",
+    "simplex-unique-overlay-card-4-p-2": "Sieć SimpleX wykorzystuje <a href=\"https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md\" target=\"_blank\">otwarty protokół</a> i udostępnia <a href=\"https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-client/typescript\" target=\"_blank\">SDK do tworzenia chatbotów</a>, umożliwiając implementację usług, z którymi użytkownicy mogą wchodzić w interakcje za pośrednictwem aplikacji SimpleX Chat &mdash; naprawdę nie możemy się doczekać, aby zobaczyć, jakie usługi SimpleX zbudujesz.",
     "simplex-unique-card-1-p-2": "W przeciwieństwie do każdej innej istniejącej sieci komunikacyjnej, SimpleX nie ma żadnych identyfikatorów przypisanych do użytkowników &mdash; <strong>nawet losowych liczb</strong>.",
     "tap-the-connect-button-in-the-app": "Stuknij przycisk <span class=\"text-active-blue\">\"połącz się\"</span> w aplikacji",
     "join-the-REDDIT-community": "Dołącz do społeczności REDDIT",
@@ -264,7 +264,7 @@
     "index-hero-h2": "W Swojej Sieci",
     "index-hero-p1": "Pierwsza sieć bez identyfikatorów użytkowników.<br>Twoje kontakty, grupy i kanały należą do Ciebie.",
     "index-hero-own-part": "Miej w niej udział.",
-    "index-hero-invest": "Zainwestuj w SimpleX Chat.",
+    "index-hero-invest": "",
     "index-hero-downloads": "Pobrań",
     "index-hero-monthly-users": "Użytkowników miesięcznie",
     "index-hero-countdown-lead": "Start domen SimpleX",
@@ -379,5 +379,10 @@
     "file-proto-p-4": "Gdy plik jest dzielony na fragmenty, jest on wysyłany przez routery sieciowe obsługiwane przez niezależne podmioty. Żaden operator nie może zobaczyć rzeczywistego rozmiaru ani nazwy pliku. Nawet jeśli router zostanie naruszony, może on zobaczyć tylko zaszyfrowane fragmenty o stałym rozmiarze. Fragmenty plików są przechowywane w pamięci podręcznej routerów sieciowych przez około 48 godzin.",
     "file-proto-spec": "Zapoznaj się ze specyfikacją protokołu XFTP →",
     "send-file": "Wyślij plik",
-    "why-film": "Obejrzyj 2-minutowy film na YouTube"
+    "why-film": "Obejrzyj 2-minutowy film na YouTube",
+    "docs-dropdown-16": "",
+    "links-all-languages": "",
+    "index-hero-invest-cta": "",
+    "links-title": "",
+    "links": ""
 }
