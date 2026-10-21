@@ -5903,9 +5903,10 @@ updateUserBadge userId emitted now = do
               wakeAt = earliestTime [devWakeAt, snoozeAt, stalledAt, heldUntil, reminderAt, badgeBoundary now (shownBadgeCredential user'' p') balance']
               failed = failureAfter /= failureBefore
               subscriptionChanged = kindAfter /= purchaseKind
+              balanceMoved = entryId balance' /= entryId balance
           -- written before the event, so the state it reports carries the attempt it leads to
           withStore' $ \db -> setBadgeNextWake db badgePurchaseId wakeAt
-          when (retired || issued || failed || subscriptionChanged) $ toView . CEvtBadgeChanged user'' =<< getUserBadgeState user''
+          when (retired || balanceMoved || failed || subscriptionChanged) $ toView . CEvtBadgeChanged user'' =<< getUserBadgeState user''
           pure wakeAt
 
 -- | Warning before a prepaid badge ends is not actionable while topping up cannot credit months without issuing.

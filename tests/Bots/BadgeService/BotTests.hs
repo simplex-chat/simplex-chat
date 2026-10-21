@@ -282,6 +282,7 @@ badgeServiceTests = do
     it "should have the dev mock credit and renew the plan a subscription names, end one it does not know, and still vouch for a one-time purchase" testMockSubscriptions
     it "should bank a charge the dev mock reports during coverage, issue it once coverage reaches it, and answer ended after the mock restarts" testStoreChecksDuringCoverage
     it "should not bank again during coverage a charge the ledger already granted" testStoreChecksDuringCoverageGrantedOnce
+    it "should announce a month a request banks during coverage, though it issues nothing" testBankedMonthAnnounced
 
 badgeBotName :: Text
 badgeBotName = "SimpleX Badges"
@@ -1405,6 +1406,8 @@ testNoCredentialMonthsRanOut ps =
       setClockAt bsClock $ snd $ renewalMoments rows
       alice ##> "/_app activate"
       alice <## "ok"
+      alice <##. "badge alert: support_ended "
+      alice <##. "1: supporter, 0 months left"
       alice <##. "badge alert: support_ended "
       issueErrorRow (chatController alice) `shouldReturn` (Nothing, Nothing)
       -- the debit is the client's now, and the next pass retires the badge on it
@@ -4562,6 +4565,21 @@ testStoreChecksDuringCoverageGrantedOnce ps =
     map entryTag (fst $ statementOf answered) `shouldBe` []
     ledgerRows cc "sx_badge_service_badge_ledger" `shouldReturn` ledger
     rowCount cc "sx_badge_service_subscription_charges" `shouldReturn` 1
+
+testBankedMonthAnnounced :: HasCallStack => TestParams -> IO ()
+testBankedMonthAnnounced ps =
+  withRequestCountingService ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg {badgeDevRequestInterval = Just 600} "alice" aliceProfile $ \alice -> do
+      (firstStart, rows) <- clientSubscribedMonthly env alice
+      let t1 = devIntervalStart rows
+          paidThrough = addMonths 2 firstStart
+      storeReports store $ subscriptionCheck SSRenewing $ Just (storeCharge "subscr-badge-supporter-month-02" (addUTCTime (-60) t1) 1) {chargeRef = "GPA.banked"}
+      setClockAt bsClock t1
+      alice `send` "/_app activate"
+      expectLinesWithin 30 alice ["/_app activate", "ok", "1: supporter, 1 months left, paid through " <> day paidThrough] ["subscribed "]
+      drop 2 . rowChanges <$> ledgerRows (chatController alice) "badge_ledger" `shouldReturn` [(1, 1, dueAtOf rows, Just "charge")]
+  where
+    day = formatTime defaultTimeLocale "%Y-%m-%d"
 
 testPurchaseBadge :: HasCallStack => TestParams -> IO ()
 testPurchaseBadge ps =
