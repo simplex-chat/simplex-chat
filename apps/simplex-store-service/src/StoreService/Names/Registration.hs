@@ -1,4 +1,3 @@
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -16,10 +15,8 @@ where
 
 import Control.Monad (unless, when)
 import Control.Monad.Except (ExceptT (..), runExceptT, throwError)
-import Crypto.Number.Serialize (i2ospOf_)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
-import Data.List (mapAccumL)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -27,9 +24,10 @@ import Data.Word (Word64)
 import Simplex.Messaging.Crypto (keccak256)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.Encoding.String (strEncode)
-import Simplex.Messaging.Eth.Address (Address, recoverAddress, unAddress)
+import Simplex.Messaging.Eth.Address (Address, recoverAddress)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain (..), Eip712Value (..), hashTypedData, serializeSignature)
 import Simplex.Messaging.SimplexName (SimplexTLD)
+import StoreService.Names.Abi (AbiValue (..), abiArray, abiBytes, abiTuple, addressWord, selector, uint256)
 
 data Registration = Registration
   { rLabel :: Text,
@@ -118,28 +116,3 @@ namehash :: SimplexTLD -> Text -> ByteString
 namehash tld label = keccak256 $ tldNode <> keccak256 (encodeUtf8 label)
   where
     tldNode = keccak256 $ B.replicate 32 0 <> keccak256 (B.drop 1 $ strEncode tld)
-
-data AbiValue = Static ByteString | Dynamic ByteString
-
-abiTuple :: [AbiValue] -> ByteString
-abiTuple values = B.concat heads <> B.concat [tl | Dynamic tl <- values]
-  where
-    heads = snd $ mapAccumL encodeHead (32 * length values) values
-    encodeHead offset = \case
-      Static w -> (offset, w)
-      Dynamic tl -> (offset + B.length tl, uint256 offset)
-
-abiBytes :: ByteString -> ByteString
-abiBytes bs = uint256 (B.length bs) <> bs <> B.replicate (negate (B.length bs) `mod` 32) 0
-
-abiArray :: [ByteString] -> ByteString
-abiArray items = uint256 (length items) <> abiTuple (map Dynamic items)
-
-uint256 :: Integral a => a -> ByteString
-uint256 = i2ospOf_ 32 . toInteger
-
-addressWord :: Address -> ByteString
-addressWord a = B.replicate 12 0 <> unAddress a
-
-selector :: ByteString -> ByteString
-selector = B.take 4 . keccak256
