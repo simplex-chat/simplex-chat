@@ -6,11 +6,13 @@
 # With "start" it stops at the first screen, for an agent to go on from; with "onboarding", at the chat list.
 # "setup" creates the group, makes the test SMP server (backend.sh) the one that resolves SimpleX names, and stops;
 # "backend" does the same, connects to the name that backend.sh registered, and goes on to both layouts.
-# "search" also searches in both layouts: the test directory with "Search in Directory", and the full search with
-# Enter, which also resolves a SimpleX name; with the toolbar at the bottom, also the full search in the New chat sheet.
-# Then it joins ci_channel from its Directory row and checks, in both layouts, that a page of chats already listed
-# says so and that ci_channel, when the list doesn't show it, is its chat's row in the Directory part, opening it
-# without an alert; and, with the toolbar at the bottom, that it is a chat row in the New chat sheet too.
+# "search" also searches in both layouts: the test directory with "Search in Directory", after the alert that enables
+# Directory search (Cancel searches nothing, Enable searches; no later search asks), and with Enter, the Search key,
+# which searches the directory too and leaves "Connect to …" for the typed name; with the toolbar at the bottom, also
+# with Enter in the New chat sheet, and a right click on a result opens its menu with Open. Then it joins ci_channel
+# through its result's Open, which opens the prepared channel without an alert, and checks, in both layouts, that a page
+# of chats already listed says so and that ci_channel, when the list doesn't show it, is its chat's row among the
+# results, opening it without an alert; and, with the toolbar at the bottom, that it is a chat row in New chat too.
 # These three need NAMES_SERVER, the test SMP server's address.
 # Each step saves a numbered screenshot and the text read from it to the output dir, prints the text to the log,
 # and adds a line to steps.log there. What the screens show is checked without stopping: every check is listed in
@@ -158,6 +160,42 @@ in_row_of() {
   [ "$label" -ge "$name" ] && [ $((label - name)) -lt 45 ]
 }
 
+not_on_screen_exact() {
+  ! left_pane_position "$1" exact > /dev/null
+}
+
+# Prints "x y" of the "Open" in the result row headed by the name, as in_row_of places a label: each result has one,
+# so the first "Open" on screen can be another row's.
+open_in_row_of() {
+  local name line x y
+  name=$(y_of "$1") || return 1
+  while IFS= read -r line; do
+    x=${line%%,*}
+    y=${line#*,}
+    y=${y%% *}
+    if [ "$x" -lt 390 ] && [ "$(normalise "${line#* }")" = open ] && [ "$y" -ge "$name" ] && [ $((y - name)) -lt 45 ]; then
+      echo "$x $y"
+      return 0
+    fi
+  done < <("$ui" text)
+  return 1
+}
+
+# how many phrases are the text in the chat list pane (left), the open chat's pane (right) or anywhere (all)
+count_phrases() {
+  local pane=$1 target line x n=0
+  target=$(normalise "$2")
+  while IFS= read -r line; do
+    x=${line%%,*}
+    if [ "$pane" = all ] || { [ "$pane" = left ] && [ "$x" -lt 390 ]; } || { [ "$pane" = right ] && [ "$x" -ge 390 ]; }; then
+      if [ "$(normalise "${line#* }")" = "$target" ]; then
+        n=$((n + 1))
+      fi
+    fi
+  done < <("$ui" text)
+  echo "$n"
+}
+
 # the value is on the same line as its setting's title
 in_line_with() {
   local value title
@@ -240,17 +278,28 @@ clear_search_and_check_cards() {
   done
 }
 
-# Shows more results until both seeded entries are listed: their avatars make each response hold one of them.
-# Sets pages and retries.
+# Loads more results until both seeded entries are listed: their avatars make each response hold one of them.
+# The load row's text after the first page is recorded before its shot, in load_more_shown and one_left_shown:
+# OCR may misread its middle dot, so "Load more" and "1 left" are read separately. Sets pages and retries.
 show_all_results() {
   local layout=$1 missing
   pages=1
   retries=0
+  load_more_shown=false
+  one_left_shown=false
   while :; do
-    "$ui" wait "Join" 60 || true
+    "$ui" wait "Open" 60 || true
     missing=""
     on_screen "#ci_channel" || missing="#ci_channel"
     on_screen "#ci_group" || missing="#ci_group"
+    if [ "$pages" -eq 1 ] && [ -n "$missing" ]; then
+      if on_screen "Load more"; then
+        load_more_shown=true
+      fi
+      if on_screen "1 left"; then
+        one_left_shown=true
+      fi
+    fi
     "$ui" shot "$layout-page-$pages"
     [ -n "$missing" ] || break
     if on_screen "Search failed, tap to retry"; then
@@ -259,7 +308,7 @@ show_all_results() {
       "$ui" click-text "Search failed, tap to retry"
     else
       [ "$pages" -lt 5 ] || fail "$layout: $missing is not in $pages pages of results"
-      "$ui" click-text "Show more" 10 || fail "$layout: $missing is not in the results, and there is no Show more"
+      "$ui" click-text "Load more" 10 || fail "$layout: $missing is not in the results, and there is no Load more"
       pages=$((pages + 1))
       "$ui" wait "$missing" 60 || true
     fi
@@ -269,71 +318,108 @@ show_all_results() {
 
 check_directory_rows() {
   local layout=$1
-  check "$layout: the first page held one result, \"Show more\" loaded the other" [ "$pages" -eq 2 ]
-  check "$layout: no more results offered" not_on_screen "Show more"
-  check "$layout: \"Directory\" header above #ci_group" above "Directory" "#ci_group"
-  check "$layout: \"Directory\" header above #ci_channel" above "Directory" "#ci_channel"
+  check "$layout: the first page held one result, \"Load more\" loaded the other" [ "$pages" -eq 2 ]
+  check "$layout: after the first page the load row said \"Load more\"" [ "$load_more_shown" = true ]
+  check "$layout: after the first page the load row said \"1 left\"" [ "$one_left_shown" = true ]
+  check "$layout: no more results offered" not_on_screen "Load more"
+  check "$layout: no \"Directory\" header" not_on_screen_exact "Directory"
   check "$layout: #ci_group shows its red avatar" "$ui" avatar "#ci_group" red
   check "$layout: #ci_channel shows its green avatar" "$ui" avatar "#ci_channel" green
   check "$layout: #ci_group row has \"CI seeded group\"" in_row_of "CI seeded group" "#ci_group"
   check "$layout: #ci_channel row has \"CI seeded channel\"" in_row_of "CI seeded channel" "#ci_channel"
-  check "$layout: #ci_group row has \"Join group\"" in_row_of "Join group" "#ci_group"
-  check "$layout: #ci_channel row has \"Join channel\"" in_row_of "Join channel" "#ci_channel"
+  check "$layout: #ci_group row has \"Open\"" open_in_row_of "#ci_group"
+  check "$layout: #ci_channel row has \"Open\"" open_in_row_of "#ci_channel"
   check "$layout: member count shown" on_screen "2 members"
   check "$layout: subscriber count shown" on_screen "1 subscriber"
 }
 
-# Searches the directory for the text in the search field with the "Search in Directory" row.
-search_directory() {
-  local layout=$1 consent=$2
+# The first search asks to enable Directory search: Cancel searches nothing, Enable turns it on and searches.
+enable_directory_search() {
   "$ui" click-text "Search in Directory"
-  "$ui" wait "Search and don't show again" 10
-  "$ui" shot "$layout-search-consent"
-  "$ui" click-text "$consent"
+  "$ui" wait "Enable Directory search" 10
+  "$ui" shot search-consent
+  "$ui" click-text "Cancel"
+  sleep 2
+  check "Cancel in the alert searches nothing" not_on_screen_exact "Open"
+  check "\"Search in Directory\" still shown after Cancel" on_screen "Search in Directory"
+  "$ui" shot search-cancelled
+  "$ui" click-text "Search in Directory"
+  "$ui" wait "Enable Directory search" 10
+  "$ui" click-text "Enable"
+}
+
+# Directory search was enabled at the first search, so no later one may ask
+no_consent_alert() {
+  ! "$ui" find "Enable Directory search" > /dev/null 2>&1
+}
+
+# A right click on a result opens its menu, which offers Open; Escape closes it.
+result_menu() {
+  local layout=$1 pos opens
+  pos=$(left_pane_position "#ci_group") || { check "$layout: #ci_group shown for its menu" false; return; }
+  opens=$(count_phrases all Open)
+  "$ui" right-click "${pos% *}" "${pos#* }"
+  check "$layout: a right click on #ci_group opens a menu with \"Open\"" [ "$(count_phrases all Open)" -gt "$opens" ]
+  "$ui" shot "$layout-result-menu"
+  "$ui" key Escape
+  sleep 1
+  check "$layout: Escape closes the result's menu" [ "$(count_phrases all Open)" -eq "$opens" ]
+}
+
+# Searches the directory for the text in the search field with the "Search in Directory" row; the first search
+# enables Directory search.
+search_directory() {
+  local layout=$1
+  if [ "$layout" = bottom ]; then
+    enable_directory_search
+  else
+    "$ui" click-text "Search in Directory"
+    sleep 2
+    check "$layout: no alert before the search" no_consent_alert
+  fi
   show_all_results "$layout-directory"
   check_directory_rows "$layout"
+  check "$layout: no \"Search in Directory\" while the results show" not_on_screen "Search in Directory"
   check "$layout: the count's text is smaller than the description's" count_text_smaller
   cards_hidden "$layout, directory results"
+  if [ "$layout" = bottom ]; then
+    result_menu "$layout"
+  fi
   clear_search_and_check_cards "$layout directory search"
 }
 
-# Types a SimpleX name and presses Enter, the desktop's Search key: the local chat that matches, then the Names part
-# with the name's contact, then the Directory part, in the list's order outward from the search field.
+# Types a SimpleX name and presses Enter, the desktop's Search key: it searches the directory only, so the local chat
+# that matches is nearest the search field, then the directory's results; "Connect to …" stays and nothing is resolved.
 full_search() {
-  local layout=$1 consent=$2
+  local layout=$1
   "$ui" click-text "Search or paste SimpleX link"
   "$ui" type "$name_label"
   "$ui" wait "Connect to $name_label.testing" 15
   "$ui" shot "$layout-name-typed"
   "$ui" key Return
-  if [ -n "$consent" ]; then
-    "$ui" wait "Search and don't show again" 10
-    "$ui" click-text "$consent"
-  fi
-  "$ui" wait "ci_contact" 60 || true
+  sleep 2
+  check "$layout full search: no alert before the search" no_consent_alert
   show_all_results "$layout-full"
   check_directory_rows "$layout full search"
   check "$layout full search: \"$local_chat\" listed" on_screen "$local_chat"
-  check "$layout full search: \"Names\" header shown" on_screen "Names"
-  check "$layout full search: ci_contact found by its name" in_row_of "@$name_label.testing" "ci_contact"
-  check "$layout full search: ci_contact row has \"CI seeded contact\"" in_row_of "CI seeded contact" "ci_contact"
-  check "$layout full search: ci_contact shows its blue avatar" "$ui" avatar "ci_contact" blue
-  check "$layout full search: \"Connect to $name_label.testing\" gone once the name is found" not_on_screen "Connect to $name_label.testing"
-  check "$layout full search: \"Names\" header above ci_contact" above "Names" "ci_contact"
+  check "$layout full search: no \"Names\" header" not_on_screen_exact "Names"
+  check "$layout full search: no ci_contact row, as the name is not resolved" not_on_screen "ci_contact"
+  check "$layout full search: \"Connect to $name_label.testing\" stays" on_screen "Connect to $name_label.testing"
   if [ "$layout" = top ]; then
-    check "$layout full search: local chat, Names, Directory, from the search field down" \
-      in_order "Search in Directory" "$local_chat" "Names" "ci_contact" "Directory" "#ci_channel"
+    check "$layout full search: \"Connect to …\", the local chat, then the results, from the search field down" \
+      in_order "Connect to $name_label.testing" "$local_chat" "#ci_group"
+    check "$layout full search: #ci_channel below the local chat" above "$local_chat" "#ci_channel"
   else
-    check "$layout full search: local chat, Names, Directory, from the search field up" \
-      in_order "Directory" "#ci_channel" "Names" "ci_contact" "$local_chat" "Search in Directory"
+    check "$layout full search: the results, the local chat, then \"Connect to …\", from the search field up" \
+      in_order "#ci_group" "$local_chat" "Connect to $name_label.testing"
+    check "$layout full search: #ci_channel above the local chat" above "#ci_channel" "$local_chat"
   fi
   cards_hidden "$layout, full search results"
   clear_search_and_check_cards "$layout full search"
 }
 
-# The same full search from the New chat sheet, whose list is reversed too with the toolbar at the bottom.
+# The same Search key from the New chat sheet: one results card after the contacts, with Open on the results.
 new_chat_sheet_search() {
-  local consent=$1
   # the pencil at the right of the bottom toolbar opens New chat; the chat list behind it has the same search field
   "$ui" click 363 730
   "$ui" wait "Create group" 10
@@ -341,17 +427,16 @@ new_chat_sheet_search() {
   "$ui" type "$name_label"
   "$ui" wait "Connect to $name_label.testing" 15
   "$ui" key Return
-  "$ui" wait "Search and don't show again" 10
-  "$ui" click-text "$consent"
-  "$ui" wait "ci_contact" 60 || true
+  sleep 2
+  check "New chat: no alert before the search" no_consent_alert
   show_all_results new-chat
-  check "New chat: the first page held one result, \"Show more\" loaded the other" [ "$pages" -eq 2 ]
-  check "New chat: no more results offered" not_on_screen "Show more"
-  check "New chat: \"Names\" header above ci_contact" above "Names" "ci_contact"
-  check "New chat: \"Directory\" header above #ci_group" above "Directory" "#ci_group"
-  check "New chat: \"Directory\" header above #ci_channel" above "Directory" "#ci_channel"
-  check "New chat: Names, then Directory, from the search field up" \
-    in_order "Directory" "#ci_channel" "Names" "ci_contact" "Search in Directory"
+  check "New chat: the first page held one result, \"Load more\" loaded the other" [ "$pages" -eq 2 ]
+  check "New chat: no more results offered" not_on_screen "Load more"
+  check "New chat: no \"Names\" header" not_on_screen_exact "Names"
+  check "New chat: no \"Directory\" header" not_on_screen_exact "Directory"
+  check "New chat: #ci_group row has \"Open\"" open_in_row_of "#ci_group"
+  check "New chat: #ci_channel row has \"Open\"" open_in_row_of "#ci_channel"
+  check "New chat: \"Connect to $name_label.testing\" stays" on_screen "Connect to $name_label.testing"
   # with the toolbar at the bottom Escape only clears the sheet's search; its back arrow closes it
   "$ui" key Escape
   "$ui" wait "Create group" 10
@@ -416,18 +501,42 @@ clear_search_field() {
   "$ui" wait "Search or paste SimpleX link" 10 || fail "$1: the search field is not empty"
 }
 
-# Joins ci_channel from its Directory row, with the toolbar at the top, so that it is a chat the later searches find.
+# Opens the prepared channel, read before its shot: it has "Tap Join channel" and its subscriber count in the toolbar and
+# the banner. Sets alert_shown when a read on the way found the "Open channel" alert, which Open must not show.
+wait_prepared_channel() {
+  local deadline=$((SECONDS + 30)) screen
+  alert_shown=false
+  prepared_subscribers=0
+  while :; do
+    screen=$("$ui" text)
+    if grep -qiF "open channel" <<< "$screen"; then
+      alert_shown=true
+    fi
+    if grep -qiF "tap join channel" <<< "$screen"; then
+      prepared_subscribers=$(count_phrases right "1 subscriber")
+      return 0
+    fi
+    [ "$SECONDS" -lt "$deadline" ] || return 1
+    sleep 1
+  done
+}
+
+# Joins ci_channel through its result's Open, with the toolbar at the top, so that it is a chat the later searches find.
 join_directory_channel() {
+  local pos
   "$ui" click-text "Search or paste SimpleX link"
   "$ui" type "$search_text"
   "$ui" wait "Search in Directory" 15
   "$ui" click-text "Search in Directory"
   show_all_results top-join
-  "$ui" click-text "#ci_channel"
-  "$ui" click-text "Open channel" 30
-  "$ui" wait "Tap Join channel" 30
+  pos=$(open_in_row_of "#ci_channel") || fail "no \"Open\" in #ci_channel's row"
+  "$ui" click "${pos% *}" "${pos#* }"
+  check "top: Open on #ci_channel opens the prepared channel" wait_prepared_channel
+  check "top: Open on #ci_channel shows no \"Open channel\" alert" [ "$alert_shown" = false ]
+  check "top: the prepared channel shows its subscriber count in the toolbar and the banner" [ "$prepared_subscribers" -ge 2 ]
+  "$ui" shot top-prepared-channel
   click_in_chat "Join channel" || fail "no \"Join channel\" in the opened channel"
-  check "top: ci_channel joined from its Directory row" "$ui" wait "you are subscriber" 60
+  check "top: ci_channel joined through Open" "$ui" wait "you are subscriber" 60
   "$ui" shot top-joined-channel
   clear_search_field top
 }
@@ -435,19 +544,19 @@ join_directory_channel() {
 # With ci_channel joined, "ci seed" finds it on the first page, as its chat row, and #ci_group on the second.
 show_known_results() {
   local what=$1
-  if ! wait_in_list "Show more" && on_screen "Search failed, tap to retry"; then
+  if ! wait_in_list "Load more" && on_screen "Search failed, tap to retry"; then
     "$ui" click-text "Search failed, tap to retry"
-    wait_in_list "Show more" || true
+    wait_in_list "Load more" || true
   fi
   "$ui" shot "$what-page-1"
-  "$ui" click-text "Show more" 10 || fail "$what: no \"Show more\" after the first page"
+  "$ui" click-text "Load more" 10 || fail "$what: no \"Load more\" after the first page"
   "$ui" wait "#ci_group" 60 || true
   "$ui" shot "$what-page-2"
 }
 
 # A directory result that is a chat the user has. Typed `ci_channel`, it is listed as the chat open in the right pane,
-# so the page added no row and the Directory part says so. With "seeded notes" open and `ci seed` typed, the list
-# doesn't show it, so it is its chat row in the Directory part, and clicking it opens it.
+# so the page added no row and the results say so. With "seeded notes" open and `ci seed` typed, the list doesn't
+# show it, so it is its chat row among the results, and clicking it opens it.
 known_channel_searches() {
   local layout=$1
   "$ui" click-text "Search or paste SimpleX link"
@@ -458,8 +567,8 @@ known_channel_searches() {
   wait_in_list "All results on this page" || true
   "$ui" shot "$layout-known-listed"
   check "$layout: a page of chats already listed says so" on_screen "All results on this page"
-  check "$layout: no #ci_channel Directory row next to the listed chat" no_ci_channel_directory_row
-  check "$layout: no \"Join channel\" next to the listed chat" not_on_screen "Join channel"
+  check "$layout: no #ci_channel result next to the listed chat" no_ci_channel_directory_row
+  check "$layout: no \"Open\" next to the listed chat" not_on_screen_exact "Open"
   clear_search_field "$layout"
   click_in_list "$local_chat"
   "$ui" click-text "Search or paste SimpleX link"
@@ -467,10 +576,10 @@ known_channel_searches() {
   "$ui" wait "Search in Directory" 15
   "$ui" click-text "Search in Directory"
   show_known_results "$layout-known"
-  check "$layout: ci_channel is a row of the Directory part" above "Directory" "ci_channel"
+  check "$layout: ci_channel is listed among the results" on_screen "ci_channel"
   check "$layout: ci_channel is its chat's row, not #ci_channel" no_ci_channel_directory_row
-  check "$layout: ci_channel has no \"Join channel\"" not_on_screen "Join channel"
-  check "$layout: #ci_group row keeps \"Join group\"" in_row_of "Join group" "#ci_group"
+  check "$layout: only #ci_group has \"Open\", not ci_channel" [ "$(count_phrases left Open)" -eq 1 ]
+  check "$layout: #ci_group row has \"Open\"" open_in_row_of "#ci_group"
   click_in_list ci_channel
   sleep 2
   "$ui" shot "$layout-known-opened"
@@ -479,7 +588,7 @@ known_channel_searches() {
   clear_search_field "$layout"
 }
 
-# New chat lists only contacts, so there too the joined channel is a chat row in the Directory part.
+# New chat lists only contacts, so there too the joined channel is a chat row among the results.
 new_chat_known_channel() {
   "$ui" click 363 730
   "$ui" wait "Create group" 10
@@ -488,10 +597,10 @@ new_chat_known_channel() {
   "$ui" wait "Search in Directory" 15
   "$ui" click-text "Search in Directory"
   show_known_results new-chat-known
-  check "New chat: ci_channel is a row of the Directory part" above "Directory" "ci_channel"
+  check "New chat: ci_channel is listed among the results" on_screen "ci_channel"
   check "New chat: ci_channel is its chat's row, not #ci_channel" no_ci_channel_directory_row
-  check "New chat: ci_channel has no \"Join channel\"" not_on_screen "Join channel"
-  check "New chat: #ci_group row keeps \"Join group\"" in_row_of "Join group" "#ci_group"
+  check "New chat: only #ci_group has \"Open\", not ci_channel" [ "$(count_phrases left Open)" -eq 1 ]
+  check "New chat: #ci_group row has \"Open\"" open_in_row_of "#ci_group"
   # with the toolbar at the bottom Escape only clears the sheet's search; its back arrow closes it
   "$ui" key Escape
   "$ui" wait "Create group" 10
@@ -752,13 +861,12 @@ if [ "$cases" = search ]; then
   "$ui" wait "Search in Directory" 15
   "$ui" shot bottom-search-typed
   cards_while_typing bottom
-  search_directory bottom "Search"
-  full_search bottom "Search"
-  new_chat_sheet_search "Search"
+  search_directory bottom
+  full_search bottom
+  new_chat_sheet_search
 fi
 switch_toolbar top
 check_layout top
-# the alert was answered with "Search" both times, so it asks again
 if [ "$cases" = search ]; then
   "$ui" click-text "Search or paste SimpleX link"
   "$ui" type "$search_text"
@@ -766,8 +874,8 @@ if [ "$cases" = search ]; then
   "$ui" wait "Search in Directory" 15
   "$ui" shot top-search-typed
   cards_while_typing top
-  search_directory top "Search and don't show again"
-  full_search top ""
+  search_directory top
+  full_search top
   join_directory_channel
   known_channel_searches top
   switch_toolbar bottom
@@ -779,7 +887,7 @@ if grep -q '^FAIL' "$checks"; then
   fail "the smoke test failed checks: $(grep -c '^FAIL' "$checks") of $(grep -cE '^(PASS|FAIL)' "$checks")"
 fi
 if [ "$cases" = search ]; then
-  echo "smoke test passed: onboarding reached the chat list with the toolbar at the bottom and at the top, the directory and name searches showed their parts, and the joined ci_channel is a chat row in the Directory part (chat list in both layouts, New chat), with the note for a page of chats already listed"
+  echo "smoke test passed: onboarding reached the chat list with the toolbar at the bottom and at the top, the first search enabled Directory search, the searches showed one list of results with Open and the load row, Open opened the prepared ci_channel without an alert, and the joined ci_channel is a chat row among the results (chat list in both layouts, New chat), with the note for a page of chats already listed"
   exit 0
 fi
 echo "smoke test passed: onboarding reached the chat list, which shows \"$local_chat\" with the toolbar at the bottom and at the top"
