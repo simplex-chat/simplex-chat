@@ -296,10 +296,11 @@ class APIBlockMembersForAll(TypedDict):
     groupId: int  # int64
     groupMemberIds: list[int]  # int64, non-empty
     blocked: bool
+    ttl: NotRequired[int]  # int
 
 
 def APIBlockMembersForAll_cmd_string(self: APIBlockMembersForAll) -> str:
-    return '/_block #' + str(self['groupId']) + ' ' + ','.join(map(str, self['groupMemberIds'])) + ' blocked=' + ('on' if self['blocked'] else 'off')
+    return '/_block #' + str(self['groupId']) + ' ' + ','.join(map(str, self['groupMemberIds'])) + ' blocked=' + ('on' if self['blocked'] else 'off') + ((' ttl=' + str(self.get('ttl'))) if self.get('ttl') is not None else '')
 
 APIBlockMembersForAll_Response = CR.MembersBlockedForAllUser | CR.ChatCmdError
 

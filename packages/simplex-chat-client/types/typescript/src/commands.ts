@@ -335,13 +335,14 @@ export interface APIBlockMembersForAll {
   groupId: number // int64
   groupMemberIds: number[] // int64, non-empty
   blocked: boolean
+  ttl?: number // int
 }
 
 export namespace APIBlockMembersForAll {
   export type Response = CR.MembersBlockedForAllUser | CR.ChatCmdError
 
   export function cmdString(self: APIBlockMembersForAll): string {
-    return '/_block #' + self.groupId + ' ' + self.groupMemberIds.join(',') + ' blocked=' + (self.blocked ? 'on' : 'off')
+    return '/_block #' + self.groupId + ' ' + self.groupMemberIds.join(',') + ' blocked=' + (self.blocked ? 'on' : 'off') + (self.ttl ? ' ttl=' + self.ttl : '')
   }
 }
 

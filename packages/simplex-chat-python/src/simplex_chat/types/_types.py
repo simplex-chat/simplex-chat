@@ -853,13 +853,21 @@ class ChatDeleteMode_entity(TypedDict):
 class ChatDeleteMode_messages(TypedDict):
     type: Literal["messages"]
 
-ChatDeleteMode = ChatDeleteMode_full | ChatDeleteMode_entity | ChatDeleteMode_messages
+class ChatDeleteMode_archive(TypedDict):
+    type: Literal["archive"]
 
-ChatDeleteMode_Tag = Literal["full", "entity", "messages"]
+ChatDeleteMode = (
+    ChatDeleteMode_full
+    | ChatDeleteMode_entity
+    | ChatDeleteMode_messages
+    | ChatDeleteMode_archive
+)
+
+ChatDeleteMode_Tag = Literal["full", "entity", "messages", "archive"]
 
 
 def ChatDeleteMode_cmd_string(self: ChatDeleteMode) -> str:
-    return str(self['type']) + ('' if str(self['type']) == 'messages' else (' notify=off' if not self['notify'] else ''))  # type: ignore[typeddict-item]
+    return str(self['type']) + ('' if str(self['type']) == 'messages' else '' if str(self['type']) == 'archive' else (' notify=off' if not self['notify'] else ''))  # type: ignore[typeddict-item]
 
 class ChatError_error(TypedDict):
     type: Literal["error"]
@@ -971,7 +979,6 @@ class ChatErrorType_connReqMessageProhibited(TypedDict):
 class ChatErrorType_linkNotice(TypedDict):
     type: Literal["linkNotice"]
     expiresAt: NotRequired[str]  # ISO-8601 timestamp
-    reason: NotRequired["ReportReason"]
 
 class ChatErrorType_contactNotReady(TypedDict):
     type: Literal["contactNotReady"]
@@ -1633,7 +1640,7 @@ class ContactAddressPlan_contactViaAddress(TypedDict):
 class ContactAddressPlan_linkNotice(TypedDict):
     type: Literal["linkNotice"]
     expiresAt: NotRequired[str]  # ISO-8601 timestamp
-    reason: NotRequired["ReportReason"]
+    contactSLinkData_: NotRequired["ContactShortLinkData"]
 
 ContactAddressPlan = (
     ContactAddressPlan_ok
@@ -2105,7 +2112,6 @@ class GroupLinkPlan_updateRequired(TypedDict):
 class GroupLinkPlan_linkNotice(TypedDict):
     type: Literal["linkNotice"]
     expiresAt: NotRequired[str]  # ISO-8601 timestamp
-    reason: NotRequired["ReportReason"]
 
 GroupLinkPlan = (
     GroupLinkPlan_ok
@@ -2130,6 +2136,7 @@ class GroupMember(TypedDict):
     memberStatus: "GroupMemberStatus"
     memberSettings: "GroupMemberSettings"
     blockedByAdmin: bool
+    blockedUntil: NotRequired[str]  # ISO-8601 timestamp
     invitedBy: "InvitedBy"
     invitedByGroupMemberId: NotRequired[int]  # int64
     localDisplayName: str
@@ -2284,7 +2291,6 @@ LinkContent_Tag = Literal["page", "image", "video", "unknown"]
 
 class LinkNotice(TypedDict):
     ttl: NotRequired[int]  # int64
-    reason: NotRequired["ReportReason"]
 
 class LinkOwnerSig(TypedDict):
     ownerId: NotRequired[str]

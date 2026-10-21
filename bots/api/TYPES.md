@@ -1179,18 +1179,21 @@ Entity:
 Messages:
 - type: "messages"
 
+Archive:
+- type: "archive"
+
 **Syntax**:
 
 ```
-full|entity|messages[ notify=off]
+full|entity|messages|archive[ notify=off]
 ```
 
 ```javascript
-type + (type == 'messages' ? '' : (!notify ? ' notify=off' : '')) // JavaScript
+type + (type == 'messages' ? '' : type == 'archive' ? '' : (!notify ? ' notify=off' : '')) // JavaScript
 ```
 
 ```python
-str(type) + ('' if str(type) == 'messages' else (' notify=off' if not notify else '')) # Python
+str(type) + ('' if str(type) == 'messages' else '' if str(type) == 'archive' else (' notify=off' if not notify else '')) # Python
 ```
 
 
@@ -1313,7 +1316,6 @@ ConnReqMessageProhibited:
 LinkNotice:
 - type: "linkNotice"
 - expiresAt: UTCTime?
-- reason: [ReportReason](#reportreason)?
 
 ContactNotReady:
 - type: "contactNotReady"
@@ -2019,7 +2021,7 @@ ContactViaAddress:
 LinkNotice:
 - type: "linkNotice"
 - expiresAt: UTCTime?
-- reason: [ReportReason](#reportreason)?
+- contactSLinkData_: [ContactShortLinkData](#contactshortlinkdata)?
 
 
 ---
@@ -2652,7 +2654,6 @@ UpdateRequired:
 LinkNotice:
 - type: "linkNotice"
 - expiresAt: UTCTime?
-- reason: [ReportReason](#reportreason)?
 
 
 ---
@@ -2669,6 +2670,7 @@ LinkNotice:
 - memberStatus: [GroupMemberStatus](#groupmemberstatus)
 - memberSettings: [GroupMemberSettings](#groupmembersettings)
 - blockedByAdmin: bool
+- blockedUntil: UTCTime?
 - invitedBy: [InvitedBy](#invitedby)
 - invitedByGroupMemberId: int64?
 - localDisplayName: string
@@ -2952,7 +2954,6 @@ Unknown:
 
 **Record type**:
 - ttl: int64?
-- reason: [ReportReason](#reportreason)?
 
 
 ---

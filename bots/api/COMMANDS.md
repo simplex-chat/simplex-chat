@@ -941,19 +941,20 @@ Block members. Requires Moderator role.
 - groupId: int64
 - groupMemberIds: [int64]
 - blocked: bool
+- ttl: int?
 
 **Syntax**:
 
 ```
-/_block #<groupId> <groupMemberIds[0]>[,<groupMemberIds[1]>...] blocked=on|off
+/_block #<groupId> <groupMemberIds[0]>[,<groupMemberIds[1]>...] blocked=on|off[ ttl=<ttl>]
 ```
 
 ```javascript
-'/_block #' + groupId + ' ' + groupMemberIds.join(',') + ' blocked=' + (blocked ? 'on' : 'off') // JavaScript
+'/_block #' + groupId + ' ' + groupMemberIds.join(',') + ' blocked=' + (blocked ? 'on' : 'off') + (ttl ? ' ttl=' + ttl : '') // JavaScript
 ```
 
 ```python
-'/_block #' + str(groupId) + ' ' + ','.join(map(str, groupMemberIds)) + ' blocked=' + ('on' if blocked else 'off') # Python
+'/_block #' + str(groupId) + ' ' + ','.join(map(str, groupMemberIds)) + ' blocked=' + ('on' if blocked else 'off') + ((' ttl=' + str(ttl)) if ttl is not None else '') # Python
 ```
 
 **Responses**:

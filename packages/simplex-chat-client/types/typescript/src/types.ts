@@ -1218,10 +1218,14 @@ export namespace ChatBotCommand {
   }
 }
 
-export type ChatDeleteMode = ChatDeleteMode.Full | ChatDeleteMode.Entity | ChatDeleteMode.Messages
+export type ChatDeleteMode = 
+  | ChatDeleteMode.Full
+  | ChatDeleteMode.Entity
+  | ChatDeleteMode.Messages
+  | ChatDeleteMode.Archive
 
 export namespace ChatDeleteMode {
-  export type Tag = "full" | "entity" | "messages"
+  export type Tag = "full" | "entity" | "messages" | "archive"
 
   interface Interface {
     type: Tag
@@ -1241,8 +1245,12 @@ export namespace ChatDeleteMode {
     type: "messages"
   }
 
+  export interface Archive extends Interface {
+    type: "archive"
+  }
+
   export function cmdString(self: ChatDeleteMode): string {
-    return self.type + (self.type == 'messages' ? '' : (!self.notify ? ' notify=off' : ''))
+    return self.type + (self.type == 'messages' ? '' : self.type == 'archive' ? '' : (!self.notify ? ' notify=off' : ''))
   }
 }
 
@@ -1554,7 +1562,6 @@ export namespace ChatErrorType {
   export interface LinkNotice extends Interface {
     type: "linkNotice"
     expiresAt?: string // ISO-8601 timestamp
-    reason?: ReportReason
   }
 
   export interface ContactNotReady extends Interface {
@@ -2356,7 +2363,7 @@ export namespace ContactAddressPlan {
   export interface LinkNotice extends Interface {
     type: "linkNotice"
     expiresAt?: string // ISO-8601 timestamp
-    reason?: ReportReason
+    contactSLinkData_?: ContactShortLinkData
   }
 }
 
@@ -3028,7 +3035,6 @@ export namespace GroupLinkPlan {
   export interface LinkNotice extends Interface {
     type: "linkNotice"
     expiresAt?: string // ISO-8601 timestamp
-    reason?: ReportReason
   }
 }
 
@@ -3042,6 +3048,7 @@ export interface GroupMember {
   memberStatus: GroupMemberStatus
   memberSettings: GroupMemberSettings
   blockedByAdmin: boolean
+  blockedUntil?: string // ISO-8601 timestamp
   invitedBy: InvitedBy
   invitedByGroupMemberId?: number // int64
   localDisplayName: string
@@ -3277,7 +3284,6 @@ export namespace LinkContent {
 
 export interface LinkNotice {
   ttl?: number // int64
-  reason?: ReportReason
 }
 
 export interface LinkOwnerSig {

@@ -162,14 +162,14 @@ Query:
                   g.root_priv_key, g.root_pub_key, g.member_priv_key,
                   -- GroupInfo {membership}
                   mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
-                  mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
+                  mu.member_status, mu.show_messages, mu.member_restriction, mu.member_restriction_expires_at, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
                   -- GroupInfo {membership = GroupMember {memberProfile}}
                   pu.display_name, pu.full_name, pu.short_descr, pu.description, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences, pu.preferences_json,
                   pu.badge_proof, pu.badge_pres_header, pu.badge_expiry, pu.badge_type, pu.badge_verified, pu.badge_extra, pu.badge_master_key, pu.badge_signature, pu.badge_key_idx, pu.contact_domain, pu.contact_domain_proof, pu.contact_domain_verified,
                   mu.created_at, mu.updated_at,
                   mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts, mu.member_pub_key, mu.relay_link, mu.member_security_code, mu.member_security_code_verified_at,
                   -- from GroupMember
-                  m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
+                  m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction, m.member_restriction_expires_at,
                   m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
                   p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
                   m.created_at, m.updated_at,
@@ -1075,7 +1075,7 @@ Query:
             SELECT i.chat_item_id,
               -- GroupMember
               m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category,
-              m.member_status, m.show_messages, m.member_restriction, m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id,
+              m.member_status, m.show_messages, m.member_restriction, m.member_restriction_expires_at, m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id,
               p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
               p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
               m.created_at, m.updated_at,
@@ -1331,10 +1331,10 @@ SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (conta
 Query: 
           INSERT INTO group_members
             (group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector,
-            member_restriction, invited_by, invited_by_group_member_id,
+            member_restriction, member_restriction_expires_at, invited_by, invited_by_group_member_id,
             user_id, local_display_name, contact_id, contact_profile_id, member_pub_key, created_at, updated_at,
             peer_chat_min_version, peer_chat_max_version)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         
 Plan:
 SEARCH group_member_badge_proofs USING INTEGER PRIMARY KEY (rowid=?)
@@ -1449,7 +1449,7 @@ Query:
             i.forwarded_by_group_member_id, i.show_group_as_sender,
             -- GroupMember
             m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category,
-            m.member_status, m.show_messages, m.member_restriction, m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id,
+            m.member_status, m.show_messages, m.member_restriction, m.member_restriction_expires_at, m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id,
             p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
             p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
             m.created_at, m.updated_at,
@@ -1458,14 +1458,14 @@ Query:
             ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent,
             -- quoted GroupMember
             rm.group_member_id, rm.group_id, rm.index_in_group, rm.member_id, rm.peer_chat_min_version, rm.peer_chat_max_version, rm.member_role, rm.member_category,
-            rm.member_status, rm.show_messages, rm.member_restriction, rm.invited_by, rm.invited_by_group_member_id, rm.local_display_name, rm.contact_id, rm.contact_profile_id, rp.contact_profile_id,
+            rm.member_status, rm.show_messages, rm.member_restriction, rm.member_restriction_expires_at, rm.invited_by, rm.invited_by_group_member_id, rm.local_display_name, rm.contact_id, rm.contact_profile_id, rp.contact_profile_id,
             rp.display_name, rp.full_name, rp.short_descr, rp.description, rp.image, rp.contact_link, rp.chat_peer_type, rp.local_alias, rp.preferences, rp.preferences_json,
             rp.badge_proof, rp.badge_pres_header, rp.badge_expiry, rp.badge_type, rp.badge_verified, rp.badge_extra, rp.badge_master_key, rp.badge_signature, rp.badge_key_idx, rp.contact_domain, rp.contact_domain_proof, rp.contact_domain_verified,
             rm.created_at, rm.updated_at,
             rm.support_chat_ts, rm.support_chat_items_unread, rm.support_chat_items_member_attention, rm.support_chat_items_mentions, rm.support_chat_last_msg_from_member_ts, rm.member_pub_key, rm.relay_link, rm.member_security_code, rm.member_security_code_verified_at,
             -- deleted by GroupMember
             dbm.group_member_id, dbm.group_id, dbm.index_in_group, dbm.member_id, dbm.peer_chat_min_version, dbm.peer_chat_max_version, dbm.member_role, dbm.member_category,
-            dbm.member_status, dbm.show_messages, dbm.member_restriction, dbm.invited_by, dbm.invited_by_group_member_id, dbm.local_display_name, dbm.contact_id, dbm.contact_profile_id, dbp.contact_profile_id,
+            dbm.member_status, dbm.show_messages, dbm.member_restriction, dbm.member_restriction_expires_at, dbm.invited_by, dbm.invited_by_group_member_id, dbm.local_display_name, dbm.contact_id, dbm.contact_profile_id, dbp.contact_profile_id,
             dbp.display_name, dbp.full_name, dbp.short_descr, dbp.description, dbp.image, dbp.contact_link, dbp.chat_peer_type, dbp.local_alias, dbp.preferences, dbp.preferences_json,
             dbp.badge_proof, dbp.badge_pres_header, dbp.badge_expiry, dbp.badge_type, dbp.badge_verified, dbp.badge_extra, dbp.badge_master_key, dbp.badge_signature, dbp.badge_key_idx, dbp.contact_domain, dbp.contact_domain_proof, dbp.contact_domain_verified,
             dbm.created_at, dbm.updated_at,
@@ -3901,7 +3901,7 @@ Plan:
 SEARCH badge_ledger USING INDEX idx_badge_ledger_purchase (badge_purchase_id=?)
 
 Query: 
-        SELECT expires_at, reason
+        SELECT expires_at
         FROM link_notices
         WHERE link_hash IN (?,?) AND (expires_at IS NULL OR expires_at > ?)
         ORDER BY expires_at IS NULL DESC, expires_at DESC
@@ -4022,6 +4022,15 @@ Query:
 Plan:
 SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+        SELECT group_id, group_member_id, member_restriction_by_user
+        FROM group_members
+        WHERE user_id = ? AND member_restriction = ? AND member_restriction_expires_at <= ?
+          AND member_status NOT IN (?,?,?,?)
+      
+Plan:
+SEARCH group_members USING INDEX idx_group_members_user_id (user_id=?)
 
 Query: 
         SELECT group_member_id
@@ -5184,11 +5193,10 @@ Query:
 Plan:
 
 Query: 
-      INSERT INTO link_notices (link_hash, expires_at, reason, created_at, updated_at)
-      VALUES (?,?,?,?,?)
+      INSERT INTO link_notices (link_hash, expires_at, created_at, updated_at)
+      VALUES (?,?,?,?)
       ON CONFLICT (link_hash) DO UPDATE SET
         expires_at = EXCLUDED.expires_at,
-        reason = EXCLUDED.reason,
         updated_at = EXCLUDED.updated_at
     
 Plan:
@@ -5489,11 +5497,11 @@ Query:
           badge_proof = ?, badge_pres_header = ?, badge_expiry = ?, badge_type = ?, badge_verified = ?, badge_extra = ?, badge_master_key = ?, badge_signature = ?, badge_key_idx = ?,
           contact_domain = ?, contact_domain_proof = ?
       WHERE user_id = ? AND contact_profile_id = ?
-
+    
 Plan:
 SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
 
-Query:
+Query: 
       UPDATE contact_profiles
       SET display_name = ?, full_name = ?, short_descr = ?, description = ?, image = ?, contact_link = ?, chat_peer_type = ?, preferences = NULL, preferences_json = NULL, updated_at = ?,
           badge_proof = ?, badge_pres_header = ?, badge_expiry = ?, badge_type = ?, badge_verified = ?, badge_extra = ?, badge_master_key = ?, badge_signature = ?, badge_key_idx = ?,
@@ -5574,7 +5582,7 @@ SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE group_members
-      SET member_restriction = ?, updated_at = ?
+      SET member_restriction = ?, member_restriction_expires_at = ?, member_restriction_by_user = ?, updated_at = ?
       WHERE user_id = ? AND group_id = ? AND group_member_id = ?
     
 Plan:
@@ -5886,7 +5894,7 @@ Query:
       g.root_priv_key, g.root_pub_key, g.member_priv_key,
       -- GroupMember - membership
       mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
-      mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
+      mu.member_status, mu.show_messages, mu.member_restriction, mu.member_restriction_expires_at, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
       pu.display_name, pu.full_name, pu.short_descr, pu.description, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences, pu.preferences_json,
       pu.badge_proof, pu.badge_pres_header, pu.badge_expiry, pu.badge_type, pu.badge_verified, pu.badge_extra, pu.badge_master_key, pu.badge_signature, pu.badge_key_idx, pu.contact_domain, pu.contact_domain_proof, pu.contact_domain_verified,
       mu.created_at, mu.updated_at,
@@ -5924,7 +5932,7 @@ Query:
       g.root_priv_key, g.root_pub_key, g.member_priv_key,
       -- GroupMember - membership
       mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
-      mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
+      mu.member_status, mu.show_messages, mu.member_restriction, mu.member_restriction_expires_at, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
       pu.display_name, pu.full_name, pu.short_descr, pu.description, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences, pu.preferences_json,
       pu.badge_proof, pu.badge_pres_header, pu.badge_expiry, pu.badge_type, pu.badge_verified, pu.badge_extra, pu.badge_master_key, pu.badge_signature, pu.badge_key_idx, pu.contact_domain, pu.contact_domain_proof, pu.contact_domain_verified,
       mu.created_at, mu.updated_at,
@@ -5955,7 +5963,7 @@ Query:
       g.root_priv_key, g.root_pub_key, g.member_priv_key,
       -- GroupMember - membership
       mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
-      mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
+      mu.member_status, mu.show_messages, mu.member_restriction, mu.member_restriction_expires_at, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
       pu.display_name, pu.full_name, pu.short_descr, pu.description, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences, pu.preferences_json,
       pu.badge_proof, pu.badge_pres_header, pu.badge_expiry, pu.badge_type, pu.badge_verified, pu.badge_extra, pu.badge_master_key, pu.badge_signature, pu.badge_key_idx, pu.contact_domain, pu.contact_domain_proof, pu.contact_domain_verified,
       mu.created_at, mu.updated_at,
@@ -6008,7 +6016,7 @@ SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
     SELECT
-      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
+      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction, m.member_restriction_expires_at,
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
@@ -6039,7 +6047,7 @@ SEARCH bp USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 
 Query: 
     SELECT
-      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
+      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction, m.member_restriction_expires_at,
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
@@ -6063,7 +6071,7 @@ SEARCH bp USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 
 Query: 
     SELECT
-      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
+      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction, m.member_restriction_expires_at,
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
@@ -6086,7 +6094,7 @@ SEARCH bp USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 
 Query: 
     SELECT
-      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
+      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction, m.member_restriction_expires_at,
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
@@ -6109,7 +6117,7 @@ SEARCH bp USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 
 Query: 
     SELECT
-      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
+      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction, m.member_restriction_expires_at,
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
@@ -6132,7 +6140,7 @@ SEARCH bp USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 
 Query: 
     SELECT
-      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
+      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction, m.member_restriction_expires_at,
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
@@ -6155,7 +6163,7 @@ SEARCH bp USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 
 Query: 
     SELECT
-      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
+      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction, m.member_restriction_expires_at,
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
@@ -6178,7 +6186,7 @@ SEARCH bp USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 
 Query: 
     SELECT
-      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
+      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction, m.member_restriction_expires_at,
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
@@ -6201,7 +6209,7 @@ SEARCH bp USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 
 Query: 
     SELECT
-      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
+      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction, m.member_restriction_expires_at,
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
@@ -6224,7 +6232,7 @@ SEARCH bp USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 
 Query: 
     SELECT
-      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
+      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction, m.member_restriction_expires_at,
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
@@ -6247,7 +6255,7 @@ SEARCH bp USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 
 Query: 
     SELECT
-      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
+      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction, m.member_restriction_expires_at,
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
@@ -6270,7 +6278,7 @@ SEARCH bp USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 
 Query: 
     SELECT
-      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
+      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction, m.member_restriction_expires_at,
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
@@ -6293,7 +6301,7 @@ SEARCH bp USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 
 Query: 
     SELECT
-      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
+      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction, m.member_restriction_expires_at,
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
@@ -6316,7 +6324,7 @@ SEARCH bp USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 
 Query: 
     SELECT
-      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
+      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction, m.member_restriction_expires_at,
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
@@ -6339,7 +6347,7 @@ SEARCH bp USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 
 Query: 
     SELECT
-      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
+      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction, m.member_restriction_expires_at,
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
@@ -6362,7 +6370,7 @@ SEARCH bp USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 
 Query: 
     SELECT
-      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
+      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction, m.member_restriction_expires_at,
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
@@ -7222,6 +7230,10 @@ SEARCH files USING COVERING INDEX idx_files_group_id (group_id=?)
 SEARCH group_members USING COVERING INDEX idx_group_members_group_id_index_in_group (group_id=?)
 SEARCH contacts USING COVERING INDEX idx_contacts_grp_direct_inv_from_group_id (grp_direct_inv_from_group_id=?)
 
+Query: DELETE FROM link_notices WHERE expires_at <= ?
+Plan:
+SCAN link_notices
+
 Query: DELETE FROM messages WHERE connection_id = ?
 Plan:
 SEARCH messages USING COVERING INDEX idx_messages_connection_id (connection_id=?)
@@ -7258,6 +7270,17 @@ SEARCH pending_group_messages USING COVERING INDEX idx_pending_group_messages_me
 Query: DELETE FROM messages WHERE group_id = ?
 Plan:
 SEARCH messages USING COVERING INDEX idx_messages_group_id (group_id=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_message_id (message_id=?)
+SEARCH msg_deliveries USING COVERING INDEX idx_msg_deliveries_message_id (message_id=?)
+SEARCH chat_item_moderations USING COVERING INDEX idx_chat_item_moderations_created_by_msg_id (created_by_msg_id=?)
+SEARCH chat_item_reactions USING COVERING INDEX idx_chat_item_reactions_created_by_msg_id (created_by_msg_id=?)
+SEARCH chat_item_messages USING COVERING INDEX sqlite_autoindex_chat_item_messages_1 (message_id=?)
+SEARCH chat_items USING COVERING INDEX sqlite_autoindex_chat_items_1 (created_by_msg_id=?)
+SEARCH pending_group_messages USING COVERING INDEX idx_pending_group_messages_message_id (message_id=?)
+
+Query: DELETE FROM messages WHERE message_id = ?
+Plan:
+SEARCH messages USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_message_id (message_id=?)
 SEARCH msg_deliveries USING COVERING INDEX idx_msg_deliveries_message_id (message_id=?)
 SEARCH chat_item_moderations USING COVERING INDEX idx_chat_item_moderations_created_by_msg_id (created_by_msg_id=?)
@@ -7618,6 +7641,10 @@ Plan:
 SCAN m USING COVERING INDEX idx_group_members_user_id_local_display_name
 SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?)
 
+Query: SELECT chat_deleted FROM contacts WHERE contact_id = 2
+Plan:
+SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: SELECT chat_item_id FROM chat_items WHERE group_scope_tag = 'member_support' ORDER BY chat_item_id DESC LIMIT 1
 Plan:
 SCAN chat_items
@@ -7754,6 +7781,14 @@ Query: SELECT count(1) FROM link_notices
 Plan:
 SCAN link_notices USING COVERING INDEX idx_link_notices_link_hash
 
+Query: SELECT count(1) FROM link_notices WHERE expires_at IS NULL
+Plan:
+SCAN link_notices
+
+Query: SELECT count(1) FROM messages WHERE msg_sent = 0 AND chat_msg_event = 'x.grp.mem.restrict'
+Plan:
+SCAN messages
+
 Query: SELECT count(1) FROM pending_group_messages
 Plan:
 SCAN pending_group_messages USING COVERING INDEX idx_pending_group_messages_group_member_id
@@ -7871,6 +7906,10 @@ SCAN group_members USING COVERING INDEX idx_group_members_user_id_local_display_
 Query: SELECT max(active_order) FROM users
 Plan:
 SEARCH users
+
+Query: SELECT max(connection_id) FROM connections
+Plan:
+SEARCH connections
 
 Query: SELECT member_id FROM group_members WHERE local_display_name = ?
 Plan:
