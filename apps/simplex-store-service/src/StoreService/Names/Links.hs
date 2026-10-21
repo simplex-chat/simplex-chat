@@ -41,12 +41,14 @@ shortLinkP = do
   _ <- ("https://" *> A.takeWhile1 hostChar *> "/") <|> "simplex:/"
   kind <- (LKContact <$ A.char 'a') <|> (LKChannel <$ A.char 'c')
   _ <- A.char '#' *> A.takeWhile1 keyChar
-  _ <- optional $ A.char '?' *> A.takeWhile queryChar
+  _ <- optional $ A.char '?' *> A.skipMany (A.takeWhile1 queryChar <|> hostSeparator)
   pure kind
   where
     hostChar c = isAsciiLower c || isDigit c || c == '.' || c == '-'
     keyChar c = isAsciiLower c || isAsciiUpper c || isDigit c || c == '_' || c == '-'
     queryChar c = keyChar c || c == '=' || c == '&' || c == '.'
+    -- simplexmq escapes the comma between a link's hosts, and no other character of its query
+    hostSeparator = "%2C"
 
 -- the hosts as the chat core reads them, empty for a link it cannot read
 linkHosts :: Text -> [TransportHost]

@@ -41,8 +41,16 @@ namesLinksTests = describe "StoreService names: links" $ do
           pageContact <> " ",
           pageContact <> "?x=é"
         ]
-    it "refuses a link with several hosts, as the page does" $
-      linkKindOf multiHostContact `shouldBe` Nothing
+    it "accepts a link with several hosts, as simplexmq writes it" $ do
+      linkKindOf multiHostContact `shouldBe` Just LKContact
+      linkKindOf multiHostChannel `shouldBe` Just LKChannel
+    it "refuses any other escape in the query" $
+      mapM_
+        refused
+        [ "simplex:/a#MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY?h=smp.simplex.im%2Fx",
+          "simplex:/a#MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY?h=smp.simplex.im%2cx.onion",
+          "simplex:/a#MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY?h=smp.simplex.im%"
+        ]
     it "accepts a link of exactly the bound and refuses one byte over it" $ do
       let atBound = padded linkMaxBytes
       T.length atBound `shouldBe` linkMaxBytes
@@ -58,8 +66,9 @@ namesLinksTests = describe "StoreService names: links" $ do
         `shouldBe` [THDomainName "smp.simplex.im", THOnionHost onionHost]
     it "reads the one server host of a simplex link" $
       linkHosts "simplex:/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw?h=smp6.simplex.im" `shouldBe` [THDomainName "smp6.simplex.im"]
-    it "reads every server host of a simplex link" $
+    it "reads every server host of a simplex link" $ do
       linkHosts multiHostContact `shouldBe` [THDomainName "smp.simplex.im", THOnionHost onionHost]
+      linkHosts multiHostChannel `shouldBe` [THDomainName "smp.simplex.im", THOnionHost onionHost]
     it "reads the hosts of a channel link" $
       linkHosts "simplex:/c#AQIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg?h=smp.simplex.im&p=5223&c=1234-w" `shouldBe` [THDomainName "smp.simplex.im"]
     it "has no hosts for a link the chat core cannot read" $ do
@@ -81,6 +90,9 @@ presetContact = "https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM
 
 multiHostContact :: Text
 multiHostContact = "simplex:/a#MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY?h=smp.simplex.im%2Cjjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&p=5223&c=1234-w"
+
+multiHostChannel :: Text
+multiHostChannel = "simplex:/c#MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY?h=smp.simplex.im%2Cjjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&p=5223&c=1234-w"
 
 onionHost :: ByteString
 onionHost = "jjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion"
