@@ -15,13 +15,19 @@ import boofcv.struct.image.GrayU8
 import chat.simplex.common.R
 import chat.simplex.common.views.helpers.errorBitmap
 import chat.simplex.common.views.helpers.getFileName
+import java.io.BufferedInputStream
 import java.io.ByteArrayOutputStream
+import java.io.IOException
 import java.io.InputStream
 import java.net.URI
 import kotlin.math.min
 import kotlin.math.sqrt
 
-private const val MAX_IMAGE_DIMENSION = 4320
+internal const val MAX_IMAGE_DIMENSION = 4320
+internal const val MAX_THUMBNAIL_DIMENSION = 1000
+private const val MAX_SOURCE_IMAGE_DIMENSION = 16384
+private const val MAX_DECODED_PIXELS = 18_662_400L
+internal const val MAX_IMAGE_HEADER_BYTES = 1024 * 1024
 
 actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
   val imageString = base64ImageString
@@ -131,5 +137,62 @@ actual fun isAnimImage(uri: URI, drawable: Any?): Boolean {
   return isAnimNewApi || isAnimOldApi
 }
 
+internal fun boundedImageSampleSize(width: Int, height: Int, target: Int): Int? {
+  if (width !in 1..MAX_SOURCE_IMAGE_DIMENSION || height !in 1..MAX_SOURCE_IMAGE_DIMENSION) return null
+  var sampleSize = 1
+  val halfHeight = height / 2
+  val halfWidth = width / 2
+  while (halfHeight / sampleSize >= target && halfWidth / sampleSize >= target) sampleSize *= 2
+  while (ceilDiv(width, sampleSize) * ceilDiv(height, sampleSize) > MAX_DECODED_PIXELS) sampleSize *= 2
+  return sampleSize
+}
+
+private fun ceilDiv(value: Int, divisor: Int): Long =
+  (value.toLong() + divisor - 1L) / divisor
+
+internal class LimitedInputStream(
+  private val source: InputStream,
+  limit: Int,
+) : InputStream() {
+  private var remaining = limit
+
+  override fun read(): Int {
+    if (remaining == 0) return -1
+    val value = source.read()
+    if (value >= 0) remaining--
+    return value
+  }
+
+  override fun read(buffer: ByteArray, offset: Int, length: Int): Int {
+    if (length == 0) return 0
+    if (remaining == 0) return -1
+    val count = source.read(buffer, offset, minOf(length, remaining))
+    if (count > 0) remaining -= count
+    return count
+  }
+
+  override fun skip(count: Long): Long {
+    val allowed = minOf(count.coerceAtLeast(0), remaining.toLong())
+    val skipped = source.skip(allowed).coerceIn(0, allowed)
+    remaining -= skipped.toInt()
+    return skipped
+  }
+
+  override fun available(): Int = source.available().coerceIn(0, remaining)
+}
+
+internal fun decodeImageBitmap(inputStream: InputStream, target: Int): ImageBitmap {
+  val source = BufferedInputStream(inputStream)
+  source.mark(MAX_IMAGE_HEADER_BYTES)
+  val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+  BitmapFactory.decodeStream(LimitedInputStream(source, MAX_IMAGE_HEADER_BYTES), null, options)
+  val sampleSize = boundedImageSampleSize(options.outWidth, options.outHeight, target)
+    ?: throw IOException("Image dimensions exceed limit")
+  source.reset()
+  options.inJustDecodeBounds = false
+  options.inSampleSize = sampleSize
+  return (BitmapFactory.decodeStream(source, null, options) ?: throw IOException("Unable to decode image")).asImageBitmap()
+}
+
 actual fun loadImageBitmap(inputStream: InputStream): ImageBitmap =
-  BitmapFactory.decodeStream(inputStream).asImageBitmap()
+  decodeImageBitmap(inputStream, MAX_IMAGE_DIMENSION)
