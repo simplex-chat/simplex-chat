@@ -63,6 +63,7 @@ namesStoreTests = describe "StoreService names: store" $ do
     it "refuses a write that would meet another live order, writing nothing" testWriteMeetsLiveOrder
     it "retargets to the new fields, clearing the reveal, transactions, reveal times and refusal" testRetarget
     it "finds an owner's orders newest first, at most 50" testFind
+    it "orders registrations made in the same second by their id" testSameSecondOrder
     it "tells a label being registered here" testLabelRegistering
     it "lists the registrations a worker moves on" testActive
     it "deletes an unpaid order past the cutoff with its invoice, sparing one with a payment" testUnpaidCleanup
@@ -529,6 +530,23 @@ testFind = withServiceStore $ \st -> do
   found <- withTransaction st $ \db -> findRegistrations db ownerA
   map nrId found `shouldBe` [RegistrationId $ "r" <> T.pack (show i) | i <- [52, 51 .. 3 :: Int]]
   withTransaction st (\db -> findRegistrations db (address "0x0000000000000000000000000000000000000001")) `shouldReturn` []
+
+testSameSecondOrder :: IO ()
+testSameSecondOrder = withServiceStore $ \st -> do
+  let o = order "alicebakery" 1
+      ids = ["r2", "r3", "r1"]
+  forM_ (zip ids [10 ..]) $ \(rid, n) -> do
+    placePaid st rid ownerA (order ("alicebakery" <> rid) n) (at 60) `shouldReturn` Right ()
+    r <- reg st rid
+    write st r {nrPhase = PQueued} `shouldReturn` Written 2
+  map nrId <$> withTransaction st (`findRegistrations` ownerA) `shouldReturn` map RegistrationId ["r3", "r2", "r1"]
+  map nrId <$> withTransaction st activeRegistrations `shouldReturn` map RegistrationId ["r1", "r2", "r3"]
+  forM_ ["r5", "r4"] $ \rid -> do
+    placePaid st rid ownerB o (at 60) `shouldReturn` Right ()
+    r <- reg st rid
+    withTransaction st (\db -> closeOverdue db r (at 61)) `shouldReturn` Written 2
+  found <- withTransaction st $ \db -> getRegistrationByOrderHash db (orderHash ownerB o (OTInvoice btc price))
+  nrId <$> found `shouldBe` Just (RegistrationId "r5")
 
 testLabelRegistering :: IO ()
 testLabelRegistering = withServiceStore $ \st -> do

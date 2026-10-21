@@ -474,7 +474,7 @@ getRegistration db (RegistrationId rid) =
 getRegistrationByOrderHash :: DB.Connection -> ByteString -> IO (Maybe NameRegistration)
 getRegistrationByOrderHash db hash =
   firstDecoded toRegistration $
-    DB.query db (selectRegistrations <> " WHERE r.order_hash = ? ORDER BY r.created_at DESC LIMIT 1") (Only $ Binary hash)
+    DB.query db (selectRegistrations <> " WHERE r.order_hash = ? ORDER BY r.created_at DESC, r.registration_id DESC LIMIT 1") (Only $ Binary hash)
 
 -- | Overdue whatever status the poller has marked, as long as the invoice is not paid.
 getLiveOrders :: DB.Connection -> ByteString -> Address -> LabelHash -> UTCTime -> IO [LiveOrder]
@@ -594,7 +594,7 @@ retargetRegistration db r OrderFields {ofLabelHash, ofLength, ofDuration, ofComm
 -- | Newest first, at most findLimit.
 findRegistrations :: DB.Connection -> Address -> IO [NameRegistration]
 findRegistrations db owner =
-  DB.query db (selectRegistrations <> " WHERE r.owner = ? ORDER BY r.created_at DESC LIMIT ?") (Binary $ unAddress owner, findLimit)
+  DB.query db (selectRegistrations <> " WHERE r.owner = ? ORDER BY r.created_at DESC, r.registration_id DESC LIMIT ?") (Binary $ unAddress owner, findLimit)
     >>= decodeAll toRegistration
 
 isLabelRegistering :: DB.Connection -> LabelHash -> IO Bool
@@ -607,7 +607,7 @@ isLabelRegistering db (LabelHash lh) =
 -- | The registrations a worker moves on, oldest first.
 activeRegistrations :: DB.Connection -> IO [NameRegistration]
 activeRegistrations db =
-  DB.query db (selectRegistrations <> " WHERE r.phase IN (?,?,?,?) ORDER BY r.created_at") (PQueued, PCommitting, PCommitted, PRegistering)
+  DB.query db (selectRegistrations <> " WHERE r.phase IN (?,?,?,?) ORDER BY r.created_at, r.registration_id") (PQueued, PCommitting, PCommitted, PRegistering)
     >>= decodeAll toRegistration
 
 unpaidCleanupCandidates :: DB.Connection -> UTCTime -> IO [(RegistrationId, InvoiceId)]
@@ -620,7 +620,7 @@ unpaidCleanupCandidates db createdBefore =
         FROM sx_badge_service_name_registrations r
         JOIN sx_badge_service_name_invoices ni ON ni.registration_id = r.registration_id
         WHERE r.phase = ? AND r.created_at < ?
-        ORDER BY r.created_at
+        ORDER BY r.created_at, r.registration_id
       |]
       (PUnpaid, truncateToSecond createdBefore)
 
@@ -656,7 +656,7 @@ failedCodeOrdersBefore db cutoff =
         FROM sx_badge_service_name_registrations r
         JOIN sx_badge_service_name_prepaid_codes c ON c.reserved_by = r.registration_id
         WHERE r.phase = ? AND r.failed_at < ? AND c.spent_at IS NULL
-        ORDER BY r.failed_at
+        ORDER BY r.failed_at, r.registration_id
       |]
       (PFailed, truncateToSecond cutoff)
 
