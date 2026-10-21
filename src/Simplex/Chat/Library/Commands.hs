@@ -63,7 +63,7 @@ import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey
 import qualified Simplex.Chat.Badges.Ledger as L
 import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind (..), BadgeIssueError (..), BadgeIssueFailure (..), BadgeState (..))
 import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
-import Simplex.Chat.Badges.Service (BadgeBalance (..), BadgeServiceCommand (..), BadgeServiceErrorCode (..), BadgeServiceRequest (..), BadgeServiceResponse (..), BadgeStatement (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..), currentBadgeServiceVersion)
+import Simplex.Chat.StoreService (BadgeBalance (..), BadgeStatement (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..), StoreServiceCommand (..), StoreServiceErrorCode (..), StoreServiceRequest (..), StoreServiceResponse (..), currentStoreServiceVersion)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
 import Simplex.Chat.Wallet (deriveAccount, masterMnemonic, newEntropy)
 import Simplex.Chat.Call
@@ -5432,7 +5432,7 @@ presentUserBadgeToContacts user'@User {userId, profile = LocalProfile {localBadg
 redeemBadgeCode :: NetworkRequestMode -> User -> Text -> CM ChatResponse
 redeemBadgeCode nm user@User {userId} codeText = do
   code <- maybe (throwRedeemError BREInvalidCode) pure $ parseBadgeCode codeText
-  sendTarget <- asks (badgeServiceAddress . config) >>= maybe (throwRedeemError BREServiceNotConfigured) pure
+  sendTarget <- asks (storeServiceAddress . config) >>= maybe (throwRedeemError BREServiceNotConfigured) pure
   g <- asks random
   now <- liftIO getCurrentTime
   let codeSent = badgeCodeText code
@@ -5446,15 +5446,15 @@ redeemBadgeCode nm user@User {userId} codeText = do
     unless replaying $ whenM (withStore' (`userHasBadge` user)) $ throwRedeemError BREBadgeActive
     redemption@BadgeCodeRedemption {purchaseKey, purchasePrivKey, masterKey} <-
       maybe (withStore' $ \db -> createBadgeCodeRedemption db g user codeSent now) pure redemption_
-    let req = BadgeServiceRequest {version = currentBadgeServiceVersion, purchaseKey = Just purchaseKey, request = BSCRedeemBadgeCode {masterKey, code = codeSent}}
+    let req = StoreServiceRequest {version = currentStoreServiceVersion, purchaseKey = Just purchaseKey, request = STCRedeemBadgeCode {masterKey, code = codeSent}}
     respBytes <- sendServiceRequestBytes nm user sendTarget Nothing (Just purchasePrivKey) req
     respData <- either (const $ throwRedeemError $ BREInvalidResponse "not JSON") pure $ J.eitherDecodeStrict' respBytes
     case J.fromJSON (J.Object respData) of
-      J.Error _ -> throwRedeemError $ BREInvalidResponse "not a badge service response"
-      J.Success BSPError {code = errCode} -> do
+      J.Error _ -> throwRedeemError $ BREInvalidResponse "not a store service response"
+      J.Success STPError {code = errCode} -> do
         when (terminalCodeError errCode) $ withStore' $ \db -> deleteBadgeCodeRedemption db (redemptionId redemption)
         throwRedeemError $ BREServiceError errCode
-      J.Success BSPBadgeCredential {credential = Just cred, statement} -> storeRedeemedBadge user redemption cred statement
+      J.Success STPBadgeCredential {credential = Just cred, statement} -> storeRedeemedBadge user redemption cred statement
       J.Success _ -> throwRedeemError $ BREInvalidResponse "unexpected response type"
   -- outside the badge lock: the chat lock must not be taken under it
   mapM_ presentUserBadgeToContacts present_
@@ -5462,23 +5462,23 @@ redeemBadgeCode nm user@User {userId} codeText = do
   where
     -- the code will never work, so the keys stashed for it are dead; a timeout keeps them
     terminalCodeError = \case
-      BSECodeInvalid -> True
-      BSECodeUsed -> True
-      BSECodeExpired -> True
+      STECodeInvalid -> True
+      STECodeUsed -> True
+      STECodeExpired -> True
       _ -> False
 
 throwRedeemError :: BadgeRedeemError -> CM a
 throwRedeemError = throwChatError . CEBadgeRedeemError
 
-badgeServiceErrorText :: BadgeServiceErrorCode -> Text
-badgeServiceErrorText = textEncode . boundedServiceErrorCode
+storeServiceErrorText :: StoreServiceErrorCode -> Text
+storeServiceErrorText = textEncode . boundedServiceErrorCode
 
 -- | An unknown code is reported and recorded, since the service is deployed ahead of clients, but
 -- its text is the service's - so it is bounded and stripped before it reaches a terminal that acts
 -- on controls, or a sentence the app shows the user as its own.
-boundedServiceErrorCode :: BadgeServiceErrorCode -> BadgeServiceErrorCode
+boundedServiceErrorCode :: StoreServiceErrorCode -> StoreServiceErrorCode
 boundedServiceErrorCode = \case
-  BSEUnknown t -> BSEUnknown $ case T.filter errorCodeChar (T.take 32 t) of
+  STEUnknown t -> STEUnknown $ case T.filter errorCodeChar (T.take 32 t) of
     "" -> "unknown"
     t' -> t'
   code -> code
@@ -5492,7 +5492,7 @@ badgeNow = asks (badgeCurrentTime . config) >>= liftIO
 -- | A signal carries nothing: each pass derives its work from stored state, so a signal lost or
 -- duplicated changes no outcome.
 startBadgeWork :: User -> CM' ()
-startBadgeWork user = whenM (isJust <$> asks (badgeServiceAddress . config)) $ void $ getBadgeWorker user
+startBadgeWork user = whenM (isJust <$> asks (storeServiceAddress . config)) $ void $ getBadgeWorker user
 
 -- | Exactly one caller starts the thread and the rest wait for it: the lookup and the create cannot
 -- be one transaction, because starting a thread is not STM.
@@ -5751,7 +5751,7 @@ badgeIssueFailure e = case e of
 badgeFailureTransient :: BadgeIssueFailure -> Bool
 badgeFailureTransient = \case
   -- the service withholds retryAfter from internal to avoid being pressed while failing, not because it is final
-  BIFServiceError {code = BSEInternal} -> True
+  BIFServiceError {code = STEInternal} -> True
   BIFServiceError {retryable} -> retryable
   BIFServiceTimeout -> True
   BIFNetwork {} -> True
@@ -5770,21 +5770,21 @@ badgeErrorRetry = badgeFailureTransient . badgeIssueFailure
 -- nothing else records one.
 requestBadgeIssue :: UserId -> UserBadgePurchase -> UTCTime -> CM (Either UTCTime StatementEntry)
 requestBadgeIssue userId UserBadgePurchase {badgePurchaseId, badgeType, purchaseKey, purchasePrivKey, masterKey} now = do
-  sendTarget <- asks (badgeServiceAddress . config) >>= maybe (throwCmdError "badge service not configured") pure
+  sendTarget <- asks (storeServiceAddress . config) >>= maybe (throwCmdError "store service not configured") pure
   withEntityLock "badgeIssue" (CLBadgeUser userId) $ do
     user <- withStore $ \db -> getUser db userId
     lastEntry <- withStore' (`getBadgeLedgerLastEntry` badgePurchaseId) >>= maybe (throwCmdError "badge ledger has no entry to assert") pure
     let req =
-          BadgeServiceRequest
-            { version = currentBadgeServiceVersion,
+          StoreServiceRequest
+            { version = currentStoreServiceVersion,
               purchaseKey = Just purchaseKey,
-              request = BSCIssueBadge {balance = BadgeBalance {lastEntry}}
+              request = STCIssueBadge {balance = BadgeBalance {lastEntry}}
             }
     respData <-
       sendServiceRequestTo NRMBackground user sendTarget Nothing (Just purchasePrivKey) req
         `catchAllErrors` \e -> recordFailure (badgeIssueFailure e) >> throwError e
     case J.fromJSON (J.Object respData) of
-      J.Success BSPBadgeCredential {credential = sentCred_, statement} -> do
+      J.Success STPBadgeCredential {credential = sentCred_, statement} -> do
         verifiedCred_ <- verifyIssuedCredential masterKey sentCred_
         g <- asks random
         -- read again: now was taken before a lock wait and an untimed request, and the check reads
@@ -5798,11 +5798,11 @@ requestBadgeIssue userId UserBadgePurchase {badgePurchaseId, badgeType, purchase
           (Just _, Nothing, _) -> recordFailure BIFInvalidCredential
           (_, _, False) -> recordUnexpected "issued badge credential has no ledger row to store it against"
           -- no credential is the service saying the months ran out, which its statement then shows
-          (Nothing, _, _) | maybe False ((> 0) . balanceMonths) balance_ -> recordUnexpected "badge service issued no credential"
+          (Nothing, _, _) | maybe False ((> 0) . balanceMonths) balance_ -> recordUnexpected "store service issued no credential"
           _ -> pure ()
         maybe (throwCmdError "badge ledger has no balance") (pure . Right) balance_
-      J.Success BSPError {code, retryAfter} -> do
-        eToView $ ChatError $ CECommandError $ "badge service error: " <> T.unpack (badgeServiceErrorText code)
+      J.Success STPError {code, retryAfter} -> do
+        eToView $ ChatError $ CECommandError $ "store service error: " <> T.unpack (storeServiceErrorText code)
         recordFailure BIFServiceError {code = boundedServiceErrorCode code, retryable = isJust retryAfter}
         ri <- asks $ badgeRetryInterval . config
         pure $ Left $ badgeRetryAfter ri retryAfter `addUTCTime` now
@@ -5810,7 +5810,7 @@ requestBadgeIssue userId UserBadgePurchase {badgePurchaseId, badgeType, purchase
         recordFailure BIFUnexpected {message = unexpectedResponse}
         throwCmdError $ T.unpack unexpectedResponse
   where
-    unexpectedResponse = "unexpected badge service response"
+    unexpectedResponse = "unexpected store service response"
     recordUnexpected message = do
       eToView $ ChatError $ CEInternalError $ T.unpack message
       recordFailure BIFUnexpected {message}

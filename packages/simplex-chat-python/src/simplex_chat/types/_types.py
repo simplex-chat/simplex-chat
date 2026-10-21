@@ -196,7 +196,7 @@ class BadgeRedeemError_badgeActive(TypedDict):
 
 class BadgeRedeemError_serviceError(TypedDict):
     type: Literal["serviceError"]
-    serviceError: "BadgeServiceErrorCode"
+    serviceError: "StoreServiceErrorCode"
 
 class BadgeRedeemError_invalidResponse(TypedDict):
     type: Literal["invalidResponse"]
@@ -219,8 +219,6 @@ BadgeRedeemError = (
 )
 
 BadgeRedeemError_Tag = Literal["invalidCode", "serviceNotConfigured", "badgeActive", "serviceError", "invalidResponse", "unknownKeyIndex", "credentialNotVerified"]
-
-BadgeServiceErrorCode = Literal["bad_request", "unsupported_version", "unknown_purchase_key", "unknown_offer_id", "offer_disabled", "offer_mismatch", "product_unavailable", "payment_not_entitled", "payment_pending", "provider_unavailable", "rate_limited", "code_invalid", "code_used", "code_expired", "receipt_invalid", "receipt_used", "internal"]
 
 BadgeStatus = Literal["active", "expired", "expiredOld", "failed", "unknownKey"]
 
@@ -3601,6 +3599,8 @@ StoreError = (
 )
 
 StoreError_Tag = Literal["duplicateName", "userNotFound", "relayUserNotFound", "userNotFoundByName", "userNotFoundByContactId", "userNotFoundByGroupId", "userNotFoundByFileId", "userNotFoundByContactRequestId", "contactNotFound", "contactNotFoundByName", "contactNotFoundByMemberId", "contactNotReady", "duplicateContactLink", "userContactLinkNotFound", "contactRequestNotFound", "contactRequestNotFoundByName", "invalidContactRequestEntity", "invalidBusinessChatContactRequest", "groupNotFound", "groupNotFoundByName", "groupMemberNameNotFound", "groupMemberNotFound", "groupMemberNotFoundByIndex", "memberRelationsVectorNotFound", "groupHostMemberNotFound", "groupMemberNotFoundByMemberId", "memberContactGroupMemberNotFound", "invalidMemberRelationUpdate", "groupWithoutUser", "duplicateGroupMember", "duplicateMemberId", "groupAlreadyJoined", "groupInvitationNotFound", "noteFolderAlreadyExists", "noteFolderNotFound", "userNoteFolderNotFound", "sndFileNotFound", "sndFileInvalid", "rcvFileNotFound", "rcvFileDescrNotFound", "fileNotFound", "rcvFileInvalid", "rcvFileInvalidDescrPart", "localFileNoTransfer", "sharedMsgIdNotFoundByFileId", "fileIdNotFoundBySharedMsgId", "sndFileNotFoundXFTP", "rcvFileNotFoundXFTP", "connectionNotFound", "connectionNotFoundById", "connectionNotFoundByMemberId", "pendingConnectionNotFound", "uniqueID", "largeMsg", "internalError", "dBException", "dBBusyError", "badChatItem", "chatItemNotFound", "chatItemNotFoundByText", "chatItemSharedMsgIdNotFound", "chatItemNotFoundByFileId", "chatItemNotFoundByContactId", "chatItemNotFoundByGroupId", "profileNotFound", "duplicateGroupLink", "groupLinkNotFound", "hostMemberIdNotFound", "contactNotFoundByFileId", "noGroupSndStatus", "duplicateGroupMessage", "remoteHostNotFound", "remoteHostUnknown", "remoteHostDuplicateCA", "remoteCtrlNotFound", "remoteCtrlDuplicateCA", "prohibitedDeleteUser", "operatorNotFound", "usageConditionsNotFound", "userChatRelayNotFound", "groupRelayNotFound", "groupRelayNotFoundByMemberId", "invalidQuote", "invalidMention", "invalidDeliveryTask", "deliveryTaskNotFound", "invalidDeliveryJob", "deliveryJobNotFound", "walletNotFound", "duplicateWallet", "workItemError"]
+
+StoreServiceErrorCode = Literal["bad_request", "unsupported_version", "unknown_purchase_key", "unknown_offer_id", "offer_disabled", "offer_mismatch", "product_unavailable", "payment_not_entitled", "payment_pending", "provider_unavailable", "rate_limited", "code_invalid", "code_used", "code_expired", "receipt_invalid", "receipt_used", "internal"]
 
 class SubscriptionStatus_active(TypedDict):
     type: Literal["active"]

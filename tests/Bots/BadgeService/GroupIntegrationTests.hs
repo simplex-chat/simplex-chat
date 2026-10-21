@@ -40,7 +40,7 @@ import Network.Socket (Family (..), SockAddr (..), SocketType (..), close, conne
 import Network.Wai.Handler.Warp (openFreePort)
 import Simplex.Chat.Badges (BadgeType (..))
 import Simplex.Chat.Badges.Code (formatBadgeCode, parseBadgeCode, randomBadgeCode)
-import Simplex.Chat.Badges.Service
+import Simplex.Chat.StoreService
 import Simplex.Chat.Controller (ChatCommand (APIDeleteChatItem), ChatConfig (..), ChatController (..), ChatResponse (CRChatItemsDeleted))
 import Simplex.Chat.Core (sendChatCmd, sendChatCmdStr)
 import Simplex.Chat.Messages (ChatRef (ChatRef), ChatType (CTGroup))
@@ -564,7 +564,7 @@ testBulkIssue ps =
       r <- redeemViaService gsKey cc env code
       badgeTypeOf r `shouldBe` Just BTLegend
       map (\e -> let (c, m, _) = entryOf e in (c, m)) (fst $ statementOf r) `shouldBe` [(2, 2), (-1, 1)]
-    forM_ codes $ \code -> redeemViaService gsKey cc env code >>= (`shouldAnswerError` BSECodeUsed)
+    forM_ codes $ \code -> redeemViaService gsKey cc env code >>= (`shouldAnswerError` STECodeUsed)
     countRows cc "sx_badge_service_badge_codes WHERE group_item_id IS NOT NULL" `shouldReturn` 0
 
 testIssueMonths :: HasCallStack => TestParams -> IO ()
@@ -640,7 +640,7 @@ testMultiUseTracker ps =
     redeemOk gsKey cc env code
     usedUp <- waitItemText cc trackerItemId "All 2 uses redeemed"
     sentItemsWithCode cc code `shouldReturn` [usedUp]
-    redeemViaService gsKey cc env code >>= (`shouldAnswerError` BSECodeUsed)
+    redeemViaService gsKey cc env code >>= (`shouldAnswerError` STECodeUsed)
 
 testStaleRefreshIgnored :: HasCallStack => TestParams -> IO ()
 testStaleRefreshIgnored ps =
@@ -811,7 +811,7 @@ testGroupRevoke ps =
     code <- extractCode <$> replyTo cc alice "/issue supporter"
     other <- extractCode <$> replyTo cc alice "/issue legend"
     revokeInGroup cc alice code "Revoked."
-    redeemViaService gsKey cc env code >>= (`shouldAnswerError` BSECodeInvalid)
+    redeemViaService gsKey cc env code >>= (`shouldAnswerError` STECodeInvalid)
     redeemOk gsKey cc env other
     revokeInGroup cc alice code "Already revoked."
     -- The reply follows the tracker step, so the revoke has already passed it here.
@@ -959,7 +959,7 @@ testRevokeRetiresTracker ps =
     awaitLane cc env
     readItemText cc trackerItemId `shouldReturn` retired
     revokedTrackerCount cc `shouldReturn` 1
-    redeemViaService gsKey cc env code >>= (`shouldAnswerError` BSECodeInvalid)
+    redeemViaService gsKey cc env code >>= (`shouldAnswerError` STECodeInvalid)
 
 testServiceRevokeRetiresTracker :: HasCallStack => TestParams -> IO ()
 testServiceRevokeRetiresTracker ps =
@@ -1000,7 +1000,7 @@ redeemOkWith key cc trackerQ_ code = do
   r <- redeemWithQueue key cc trackerQ_ code
   credentialOf r `shouldSatisfy` isJust
 
-redeemViaService :: HasCallStack => BadgeIssuerKey -> ChatController -> ServiceState -> Text -> IO BadgeServiceResponse
+redeemViaService :: HasCallStack => BadgeIssuerKey -> ChatController -> ServiceState -> Text -> IO StoreServiceResponse
 redeemViaService key cc env = redeemWithQueue key cc (Just (groupEventQ env))
 
 -- The reply to the made-up request id fails after the redemption, and the service only logs it.
@@ -1008,7 +1008,7 @@ queueRedemption :: HasCallStack => ChatController -> ServiceState -> Text -> IO 
 queueRedemption cc env codeText = do
   user <- readTVarIO (currentUser cc) >>= maybe (error "no current user") pure
   (purchaseKey, masterKey) <- newPurchaseKeys
-  let request = requestObject purchaseKey BSCRedeemBadgeCode {masterKey, code = codeText}
+  let request = requestObject purchaseKey STCRedeemBadgeCode {masterKey, code = codeText}
   atomically $ writeTQueue (serviceRequestQ env) (user, AgentInvId "test-request", Just purchaseKey, request)
 
 redeemLosingRefresh :: HasCallStack => BadgeIssuerKey -> ChatController -> Text -> IO ()

@@ -284,7 +284,7 @@ export namespace BadgeRedeemError {
 
   export interface ServiceError extends Interface {
     type: "serviceError"
-    serviceError: BadgeServiceErrorCode
+    serviceError: StoreServiceErrorCode
   }
 
   export interface InvalidResponse extends Interface {
@@ -299,26 +299,6 @@ export namespace BadgeRedeemError {
   export interface CredentialNotVerified extends Interface {
     type: "credentialNotVerified"
   }
-}
-
-export enum BadgeServiceErrorCode {
-  Bad_request = "bad_request",
-  Unsupported_version = "unsupported_version",
-  Unknown_purchase_key = "unknown_purchase_key",
-  Unknown_offer_id = "unknown_offer_id",
-  Offer_disabled = "offer_disabled",
-  Offer_mismatch = "offer_mismatch",
-  Product_unavailable = "product_unavailable",
-  Payment_not_entitled = "payment_not_entitled",
-  Payment_pending = "payment_pending",
-  Provider_unavailable = "provider_unavailable",
-  Rate_limited = "rate_limited",
-  Code_invalid = "code_invalid",
-  Code_used = "code_used",
-  Code_expired = "code_expired",
-  Receipt_invalid = "receipt_invalid",
-  Receipt_used = "receipt_used",
-  Internal = "internal",
 }
 
 export enum BadgeStatus {
@@ -5164,6 +5144,26 @@ export namespace StoreError {
     type: "workItemError"
     errContext: string
   }
+}
+
+export enum StoreServiceErrorCode {
+  Bad_request = "bad_request",
+  Unsupported_version = "unsupported_version",
+  Unknown_purchase_key = "unknown_purchase_key",
+  Unknown_offer_id = "unknown_offer_id",
+  Offer_disabled = "offer_disabled",
+  Offer_mismatch = "offer_mismatch",
+  Product_unavailable = "product_unavailable",
+  Payment_not_entitled = "payment_not_entitled",
+  Payment_pending = "payment_pending",
+  Provider_unavailable = "provider_unavailable",
+  Rate_limited = "rate_limited",
+  Code_invalid = "code_invalid",
+  Code_used = "code_used",
+  Code_expired = "code_expired",
+  Receipt_invalid = "receipt_invalid",
+  Receipt_used = "receipt_used",
+  Internal = "internal",
 }
 
 export type SubscriptionStatus = 

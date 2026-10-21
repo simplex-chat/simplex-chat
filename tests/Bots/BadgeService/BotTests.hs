@@ -46,7 +46,7 @@ import Data.Time.Format (defaultTimeLocale, formatTime)
 import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey, BadgeType (..), generateMasterKey)
 import Simplex.Chat.Badges.Code (BadgeCode, badgeCodeHash, badgeCodeText, formatBadgeCode, parseBadgeCode, randomBadgeCode)
 import Simplex.Chat.Badges.Ledger (addMonths, creditTypeTag, debitTypeTag, endOfMondayAfter)
-import Simplex.Chat.Badges.Service
+import Simplex.Chat.StoreService
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.Bot.Store (withDB')
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatError (..), ChatErrorType (..), ChatResponse (CRCustomChatResponse))
@@ -206,7 +206,7 @@ withBadgeServiceEnv ps test = do
     bs <## "auto_accept off"
     pure sLink
   let clientCfg =
-        svcCfg {badgeServiceAddress = Just $ either (error . ("bad badge service address: " <>)) id $ strDecode (B.pack bsLink)}
+        svcCfg {storeServiceAddress = Just $ either (error . ("bad badge service address: " <>)) id $ strDecode (B.pack bsLink)}
   -- Second start: badge service takes the ShowMyAddress branch, then serves the test body.
   runBadgeService ps svcCfg opts $ \env -> do
     cc <- atomically $ readTMVar $ serviceCC env
@@ -305,7 +305,7 @@ testRedeemUnknownCode ps =
       g <- C.newRandom
       unknown <- randomBadgeCode g
       alice ##> ("/_redeem_badge_code 1 " <> codeArg unknown)
-      alice <## "cannot redeem badge code: badge service error: code_invalid"
+      alice <## "cannot redeem badge code: store service error: code_invalid"
       -- a failed check character is refused before anything leaves the device
       alice ##> "/_redeem_badge_code 1 SB-00000-00000-00000-00001"
       alice <## "cannot redeem badge code: invalid code"
@@ -383,21 +383,21 @@ testRedeemSameCodeOtherProfile ps =
       alice ##> "/create user alisa"
       showActiveUser alice "alisa"
       alice ##> ("/_redeem_badge_code 2 " <> codeArg code)
-      alice <## "cannot redeem badge code: badge service error: code_used"
+      alice <## "cannot redeem badge code: store service error: code_used"
       alice ##> "/p"
       showActiveUser alice "alisa"
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice, * supporter)"
 
-serviceCmd :: HasCallStack => BadgeServiceEnv -> C.PublicKeyEd25519 -> BadgeServiceCommand -> IO BadgeServiceResponse
+serviceCmd :: HasCallStack => BadgeServiceEnv -> C.PublicKeyEd25519 -> StoreServiceCommand -> IO StoreServiceResponse
 serviceCmd BadgeServiceEnv {bsIssuerKey, bsController} = serviceCmdWith bsIssuerKey bsController Nothing
 
-serviceCmdWith :: HasCallStack => BadgeIssuerKey -> ChatController -> Maybe (TQueue GroupEvent) -> C.PublicKeyEd25519 -> BadgeServiceCommand -> IO BadgeServiceResponse
+serviceCmdWith :: HasCallStack => BadgeIssuerKey -> ChatController -> Maybe (TQueue GroupEvent) -> C.PublicKeyEd25519 -> StoreServiceCommand -> IO StoreServiceResponse
 serviceCmdWith key cc trackerQ_ purchaseKey request =
   badgeServiceResponse key cc trackerQ_ (Just purchaseKey) (requestObject purchaseKey request)
 
-requestObject :: HasCallStack => C.PublicKeyEd25519 -> BadgeServiceCommand -> J.Object
-requestObject purchaseKey request = case J.toJSON BadgeServiceRequest {version = currentBadgeServiceVersion, purchaseKey = Just purchaseKey, request} of
+requestObject :: HasCallStack => C.PublicKeyEd25519 -> StoreServiceCommand -> J.Object
+requestObject purchaseKey request = case J.toJSON StoreServiceRequest {version = currentStoreServiceVersion, purchaseKey = Just purchaseKey, request} of
   J.Object o -> o
   _ -> error "badge service request must encode as an object"
 
@@ -412,19 +412,19 @@ entryTag StatementEntry {entryType} = case entryType of
   SECredit c -> creditTypeTag c
   SEDebit d -> debitTypeTag d
 
-statementOf :: HasCallStack => BadgeServiceResponse -> ([StatementEntry], Maybe Text)
+statementOf :: HasCallStack => StoreServiceResponse -> ([StatementEntry], Maybe Text)
 statementOf = \case
-  BSPBadgeCredential {statement = BadgeStatement {entries, previousEntryId}} -> (entries, previousEntryId)
+  STPBadgeCredential {statement = BadgeStatement {entries, previousEntryId}} -> (entries, previousEntryId)
   r -> error $ "expected badgeCredential, got " <> show (J.toJSON r)
 
-credentialOf :: HasCallStack => BadgeServiceResponse -> Maybe BadgeCredential
+credentialOf :: HasCallStack => StoreServiceResponse -> Maybe BadgeCredential
 credentialOf = \case
-  BSPBadgeCredential {credential} -> credential
+  STPBadgeCredential {credential} -> credential
   r -> error $ "expected badgeCredential, got " <> show (J.toJSON r)
 
-shouldAnswerError :: HasCallStack => BadgeServiceResponse -> BadgeServiceErrorCode -> IO ()
+shouldAnswerError :: HasCallStack => StoreServiceResponse -> StoreServiceErrorCode -> IO ()
 shouldAnswerError r expected = case r of
-  BSPError {code = ec} -> ec `shouldBe` expected
+  STPError {code = ec} -> ec `shouldBe` expected
   _ -> expectationFailure $ "expected " <> show expected <> ", got: " <> show (J.toJSON r)
 
 codeCounts :: DBStore -> ByteString -> IO (Maybe (Int, Int))
@@ -442,28 +442,28 @@ newPurchaseKeys = do
   (purchaseKey, _) <- atomically $ C.generateKeyPair g :: IO (C.KeyPair 'C.Ed25519)
   (purchaseKey,) <$> generateMasterKey g
 
-redeemAsNewPurchase :: HasCallStack => BadgeServiceEnv -> BadgeCode -> IO BadgeServiceResponse
+redeemAsNewPurchase :: HasCallStack => BadgeServiceEnv -> BadgeCode -> IO StoreServiceResponse
 redeemAsNewPurchase BadgeServiceEnv {bsIssuerKey, bsController} = redeemWithQueue bsIssuerKey bsController Nothing . badgeCodeText
 
-redeemWithKeys :: HasCallStack => BadgeServiceEnv -> (C.PublicKeyEd25519, BadgeMasterKey) -> BadgeCode -> IO BadgeServiceResponse
-redeemWithKeys env (purchaseKey, masterKey) code = serviceCmd env purchaseKey BSCRedeemBadgeCode {masterKey, code = badgeCodeText code}
+redeemWithKeys :: HasCallStack => BadgeServiceEnv -> (C.PublicKeyEd25519, BadgeMasterKey) -> BadgeCode -> IO StoreServiceResponse
+redeemWithKeys env (purchaseKey, masterKey) code = serviceCmd env purchaseKey STCRedeemBadgeCode {masterKey, code = badgeCodeText code}
 
-redeemWithQueue :: HasCallStack => BadgeIssuerKey -> ChatController -> Maybe (TQueue GroupEvent) -> Text -> IO BadgeServiceResponse
+redeemWithQueue :: HasCallStack => BadgeIssuerKey -> ChatController -> Maybe (TQueue GroupEvent) -> Text -> IO StoreServiceResponse
 redeemWithQueue key cc trackerQ_ codeText = do
   (purchaseKey, masterKey) <- newPurchaseKeys
-  serviceCmdWith key cc trackerQ_ purchaseKey BSCRedeemBadgeCode {masterKey, code = codeText}
+  serviceCmdWith key cc trackerQ_ purchaseKey STCRedeemBadgeCode {masterKey, code = codeText}
 
-assertBalance :: HasCallStack => BadgeServiceEnv -> C.PublicKeyEd25519 -> StatementEntry -> IO BadgeServiceResponse
+assertBalance :: HasCallStack => BadgeServiceEnv -> C.PublicKeyEd25519 -> StatementEntry -> IO StoreServiceResponse
 assertBalance env purchaseKey lastEntry =
-  serviceCmd env purchaseKey BSCIssueBadge {balance = BadgeBalance {lastEntry}}
+  serviceCmd env purchaseKey STCIssueBadge {balance = BadgeBalance {lastEntry}}
 
-expiryOf :: HasCallStack => BadgeServiceResponse -> Maybe UTCTime
+expiryOf :: HasCallStack => StoreServiceResponse -> Maybe UTCTime
 expiryOf r = (\(BadgeCredential _ _ _ BadgeInfo {badgeExpiry}) -> badgeExpiry) <$> credentialOf r
 
-badgeTypeOf :: HasCallStack => BadgeServiceResponse -> Maybe BadgeType
+badgeTypeOf :: HasCallStack => StoreServiceResponse -> Maybe BadgeType
 badgeTypeOf r = (\(BadgeCredential _ _ _ BadgeInfo {badgeType}) -> badgeType) <$> credentialOf r
 
-masterKeyOf :: HasCallStack => BadgeServiceResponse -> Maybe BadgeMasterKey
+masterKeyOf :: HasCallStack => StoreServiceResponse -> Maybe BadgeMasterKey
 masterKeyOf r = (\(BadgeCredential _ mk _ _) -> mk) <$> credentialOf r
 
 testCodeMonthsRenew :: HasCallStack => TestParams -> IO ()
@@ -525,7 +525,7 @@ testMultiUseRepeatAfterExpiry ps =
       waitShownBadge (chatController alice) Nothing
       codeUses cc code `shouldReturn` Just (2, 1)
       withNewTestChatCfg ps bsClientCfg "bob" bobProfile $ \bob -> redeemFirstBadge bob code
-      redeemAsNewPurchase env code >>= (`shouldAnswerError` BSECodeUsed)
+      redeemAsNewPurchase env code >>= (`shouldAnswerError` STECodeUsed)
 
 testMultiUseWithoutGroup :: HasCallStack => TestParams -> IO ()
 testMultiUseWithoutGroup ps =
@@ -540,7 +540,7 @@ testMultiUseWithoutGroup ps =
       expiryOf redeemed `shouldBe` Just (endOfMondayAfter (nextDue entries))
       masterKeyOf redeemed `shouldBe` Just masterKey
       codeUses cc code `shouldReturn` Just (2, claimed)
-    redeemAsNewPurchase env code >>= (`shouldAnswerError` BSECodeUsed)
+    redeemAsNewPurchase env code >>= (`shouldAnswerError` STECodeUsed)
 
 testUnreadableCredentialIsInternal :: HasCallStack => TestParams -> IO ()
 testUnreadableCredentialIsInternal ps =
@@ -551,11 +551,11 @@ testUnreadableCredentialIsInternal ps =
     redeem holder >>= (`shouldSatisfy` isJust) . credentialOf
     withTransaction (chatStore cc) $ \db ->
       DB.execute db "UPDATE sx_badge_service_badge_issuances SET credential = ?" (Only (Binary ("not a credential" :: ByteString)))
-    redeem holder >>= (`shouldAnswerError` BSEInternal)
+    redeem holder >>= (`shouldAnswerError` STEInternal)
     codeUses cc code `shouldReturn` Just (2, 1)
     newPurchaseKeys >>= redeem >>= (`shouldSatisfy` isJust) . credentialOf
     codeUses cc code `shouldReturn` Just (2, 2)
-    redeem holder >>= (`shouldAnswerError` BSEInternal)
+    redeem holder >>= (`shouldAnswerError` STEInternal)
     codeUses cc code `shouldReturn` Just (2, 2)
 
 -- Multi-use codes come from the group command, and this service has no group.
@@ -858,7 +858,7 @@ testRevokedMultiUseHolderRenews ps =
       redeemFirstBadge alice code
       redeemed <- ledgerRows (chatController alice) "badge_ledger"
       revokeCodeAs cc code `shouldReturn` Right "Revoked."
-      redeemAsNewPurchase env code >>= (`shouldAnswerError` BSECodeInvalid)
+      redeemAsNewPurchase env code >>= (`shouldAnswerError` STECodeInvalid)
       codeUses cc code `shouldReturn` Just (2, 1)
       -- A holder whose reply was lost retries with the same key and still gets its badge.
       alice ##> ("/_redeem_badge_code 1 " <> codeArg code)
@@ -1234,13 +1234,13 @@ testNoCredentialMonthsLeft ps =
       setClockAt bsClock $ snd $ renewalMoments rows
       alice ##> "/_app activate"
       alice <## "ok"
-      alice <## "internal chat error: badge service issued no credential"
+      alice <## "internal chat error: store service issued no credential"
       alice <##. "badge alert: issue_failed "
       alice <##. "1: supporter"
       alice <##. "renewal failing since "
       alice <##. "badge alert: issue_failed "
       (_, reason) <- issueErrorRow (chatController alice)
-      reason `shouldBe` Just "unexpected badge service issued no credential"
+      reason `shouldBe` Just "unexpected store service issued no credential"
 
 -- | A debit the service wrote on its own, taking back the months the purchase had: copied from
 -- the tip so that it follows it in every column the client checks.
@@ -1262,7 +1262,7 @@ zeroServiceLedgerTip ChatController {chatStore} =
     DB.execute_ db "UPDATE sx_badge_service_badge_ledger SET balance_months = 0 WHERE entry_id = (SELECT MAX(entry_id) FROM sx_badge_service_badge_ledger)"
 
 badgeServiceRefused :: String
-badgeServiceRefused = "bad chat command: badge service error: unknown_purchase_key"
+badgeServiceRefused = "bad chat command: store service error: unknown_purchase_key"
 
 -- | The alert's episode is the start of the run of failures, as the ack command spells it.
 episodeOf :: HasCallStack => Maybe UTCTime -> Text
@@ -1498,7 +1498,7 @@ testRedeemUnpaidCode ps =
     withNewTestChatCfg ps clientCfg "alice" aliceProfile $ \alice -> do
       unpaid <- issueCodeAs cc BTSupporter 1 "unpaid"
       alice ##> ("/_redeem_badge_code 1 " <> codeArg unpaid)
-      alice <## "cannot redeem badge code: badge service error: payment_pending"
+      alice <## "cannot redeem badge code: store service error: payment_pending"
       paid <- issueCodeAs cc BTSupporter 1 "paid"
       alice ##> ("/_redeem_badge_code 1 " <> codeArg paid)
       alice <## "badge redeemed"
@@ -1515,7 +1515,7 @@ testExpiredCode ps =
       withDB' "markCodePaid" cc (\db -> markCodePaid db (badgeCodeHash code) (addUTCTime (-60) now))
         `shouldReturn` Right ()
       alice ##> ("/_redeem_badge_code 1 " <> codeArg code)
-      alice <## "cannot redeem badge code: badge service error: code_expired"
+      alice <## "cannot redeem badge code: store service error: code_expired"
 
 testRedeemedBeforeTheDeadline :: HasCallStack => TestParams -> IO ()
 testRedeemedBeforeTheDeadline ps =
@@ -1569,7 +1569,7 @@ testRevokedCode ps =
       paid <- issueCodeAs cc BTSupporter 1 "paid"
       revokeCodeAs cc paid `shouldReturn` Right "Revoked."
       alice ##> ("/_redeem_badge_code 1 " <> codeArg paid)
-      alice <## "cannot redeem badge code: badge service error: code_invalid"
+      alice <## "cannot redeem badge code: store service error: code_invalid"
       revokeCodeAs cc paid `shouldReturn` Right "Already revoked."
 
 testRevokedUnpaidCode :: HasCallStack => TestParams -> IO ()
@@ -1577,7 +1577,7 @@ testRevokedUnpaidCode ps =
   withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsController = cc} -> do
     code <- issueCodeAs cc BTSupporter 1 "unpaid"
     revokeCodeAs cc code `shouldReturn` Right "Revoked."
-    redeemAsNewPurchase env code >>= (`shouldAnswerError` BSECodeInvalid)
+    redeemAsNewPurchase env code >>= (`shouldAnswerError` STECodeInvalid)
 
 testRevokeRejectsTrailingInput :: HasCallStack => TestParams -> IO ()
 testRevokeRejectsTrailingInput ps =

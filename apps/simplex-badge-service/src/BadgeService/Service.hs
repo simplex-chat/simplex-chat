@@ -51,7 +51,7 @@ import Data.Word (Word32)
 import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Code
 import Simplex.Chat.Badges.Ledger
-import Simplex.Chat.Badges.Service
+import Simplex.Chat.StoreService
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.Bot (initializeBotAddress')
 import Simplex.Chat.Bot.Store (withDB, withDB')
@@ -272,44 +272,44 @@ handleServiceRequest key cc trackerQ_ User {userId} reqId sigKey reqData = do
     Right _ -> pure ()
     Left e -> logError $ "badge service response failed for " <> reqIdT <> ": " <> tshow e
 
-responseObject :: BadgeServiceResponse -> J.Object
+responseObject :: StoreServiceResponse -> J.Object
 responseObject r = case J.toJSON r of
   J.Object o -> o
-  _ -> KM.fromList [("type", J.String "error"), ("code", J.toJSON BSEInternal)]
+  _ -> KM.fromList [("type", J.String "error"), ("code", J.toJSON STEInternal)]
 
-errorResponse :: BadgeServiceErrorCode -> BadgeServiceResponse
-errorResponse code = BSPError {code, message = Nothing, retryAfter = badgeErrorRetryAfter code}
+errorResponse :: StoreServiceErrorCode -> StoreServiceResponse
+errorResponse code = STPError {code, message = Nothing, retryAfter = badgeErrorRetryAfter code}
 
-badgeErrorRetryAfter :: BadgeServiceErrorCode -> Maybe Word32
+badgeErrorRetryAfter :: StoreServiceErrorCode -> Maybe Word32
 badgeErrorRetryAfter = \case
-  BSEPaymentPending -> Just 300
-  BSEProviderUnavailable -> Just 300
-  BSERateLimited -> Just 60
+  STEPaymentPending -> Just 300
+  STEProviderUnavailable -> Just 300
+  STERateLimited -> Just 60
   _ -> Nothing
 
 
 -- | The agent verified the signature, so sigKey is a key the sender holds; a differing purchaseKey would let a client claim a purchase it cannot sign for.
-badgeServiceResponse :: BadgeIssuerKey -> ChatController -> Maybe (TQueue GroupEvent) -> Maybe C.PublicKeyEd25519 -> J.Object -> IO BadgeServiceResponse
+badgeServiceResponse :: BadgeIssuerKey -> ChatController -> Maybe (TQueue GroupEvent) -> Maybe C.PublicKeyEd25519 -> J.Object -> IO StoreServiceResponse
 badgeServiceResponse key cc trackerQ_ sigKey reqData = case J.fromJSON (J.Object reqData) of
-  J.Error _ -> pure $ errorResponse BSEBadRequest
-  J.Success BadgeServiceRequest {version, purchaseKey, request}
-    | not (version `isCompatible` supportedBadgeServiceVRange) -> pure $ errorResponse BSEUnsupportedVersion
-    | purchaseKey /= sigKey -> pure $ errorResponse BSEBadRequest
+  J.Error _ -> pure $ errorResponse STEBadRequest
+  J.Success StoreServiceRequest {version, purchaseKey, request}
+    | not (version `isCompatible` supportedStoreServiceVRange) -> pure $ errorResponse STEUnsupportedVersion
+    | purchaseKey /= sigKey -> pure $ errorResponse STEBadRequest
     | otherwise -> case request of
-        BSCRedeemBadgeCode {masterKey, code} -> case purchaseKey of
+        STCRedeemBadgeCode {masterKey, code} -> case purchaseKey of
           Just k -> redeemCode key cc trackerQ_ k masterKey code
-          Nothing -> pure $ errorResponse BSEBadRequest
-        BSCIssueBadge {balance} -> case purchaseKey of
+          Nothing -> pure $ errorResponse STEBadRequest
+        STCIssueBadge {balance} -> case purchaseKey of
           Just k -> issueBadgeCmd key cc k balance
-          Nothing -> pure $ errorResponse BSEBadRequest
+          Nothing -> pure $ errorResponse STEBadRequest
         -- Every command but redeemBadgeCode needs a key the service already knows; that one creates the purchase, so its key is unknown on a first redemption.
         _ -> case purchaseKey of
-          Nothing -> pure $ errorResponse BSEUnsupportedVersion
+          Nothing -> pure $ errorResponse STEUnsupportedVersion
           Just k ->
             withDB' "purchaseKeyExists" cc (`purchaseKeyExists` k) >>= \case
-              Right True -> pure $ errorResponse BSEUnsupportedVersion
-              Right False -> pure $ errorResponse BSEUnknownPurchaseKey
-              Left _ -> pure $ errorResponse BSEInternal
+              Right True -> pure $ errorResponse STEUnsupportedVersion
+              Right False -> pure $ errorResponse STEUnknownPurchaseKey
+              Left _ -> pure $ errorResponse STEInternal
 
 badgeNow :: ChatController -> IO UTCTime
 badgeNow ChatController {config = ChatConfig {badgeCurrentTime}} = badgeCurrentTime
@@ -326,18 +326,18 @@ credentialForEntry BadgeIssuerKey {keyIdx, secretKey} masterKey e@StatementEntry
 issuanceAfter :: StatementEntry -> (StatementEntry, BadgeCredential) -> (StatementEntry, StatementEntry, BadgeCredential)
 issuanceAfter previous (issued, credential) = (previous, issued, credential)
 
-credentialResponse :: Maybe BadgeCredential -> Maybe T.Text -> [StatementEntry] -> BadgeServiceResponse
+credentialResponse :: Maybe BadgeCredential -> Maybe T.Text -> [StatementEntry] -> StoreServiceResponse
 credentialResponse credential previousEntryId entries =
-  BSPBadgeCredential {credential, receipt = Nothing, statement = BadgeStatement {entries, previousEntryId}}
+  STPBadgeCredential {credential, receipt = Nothing, statement = BadgeStatement {entries, previousEntryId}}
 
 -- | Nothing is written until the credential is signed, so a signing failure leaves the code unspent.
-redeemCode :: BadgeIssuerKey -> ChatController -> Maybe (TQueue GroupEvent) -> C.PublicKeyEd25519 -> BadgeMasterKey -> T.Text -> IO BadgeServiceResponse
+redeemCode :: BadgeIssuerKey -> ChatController -> Maybe (TQueue GroupEvent) -> C.PublicKeyEd25519 -> BadgeMasterKey -> T.Text -> IO StoreServiceResponse
 redeemCode key cc trackerQ_ purchaseKey masterKey codeText = case parseBadgeCode codeText of
-  Nothing -> pure $ errorResponse BSECodeInvalid
+  Nothing -> pure $ errorResponse STECodeInvalid
   Just code -> do
     now <- badgeNow cc
     withDB "getBadgeCode" cc (readCode now code) >>= \case
-      Left _ -> pure $ errorResponse BSEInternal
+      Left _ -> pure $ errorResponse STEInternal
       Right (Left resp) -> pure resp
       Right (Right IssuedCode {badgeCodeId, badgeType, months, redeemLimit}) -> do
         (grantUuid, issueUuid) <- (,) <$> randomId cc <*> randomId cc
@@ -346,9 +346,9 @@ redeemCode key cc trackerQ_ purchaseKey masterKey codeText = case parseBadgeCode
         let granted = grantEntry now grantUuid months SCCode $ emptyEntry now badgeType
         -- A grant of at least one month starting now always has a month to issue.
         case issueEntry now issueUuid granted of
-          Nothing -> pure $ errorResponse BSEInternal
+          Nothing -> pure $ errorResponse STEInternal
           Just issued -> credentialForEntry key masterKey issued >>= \case
-            Left e -> logError ("badge service signing failed: " <> T.pack e) $> errorResponse BSEInternal
+            Left e -> logError ("badge service signing failed: " <> T.pack e) $> errorResponse STEInternal
             Right signed -> do
               -- If the code was revoked or used up while signing, the claim fails. Read the code again to tell the client why.
               r <- withDB "writeCodeRedemption" cc $ \db ->
@@ -356,47 +356,47 @@ redeemCode key cc trackerQ_ purchaseKey masterKey codeText = case parseBadgeCode
                   Nothing ->
                     readCode now code db >>= \case
                       Left resp -> pure (resp, False)
-                      Right _ -> logError "badge service: redeeming a code failed, but the code has uses left and is not revoked" $> (errorResponse BSEInternal, False)
+                      Right _ -> logError "badge service: redeeming a code failed, but the code has uses left and is not revoked" $> (errorResponse STEInternal, False)
                   Just purchaseId -> liftIO $ do
                     appendLedgerPlan db purchaseId [granted] $ Just $ issuanceAfter granted signed
                     entries_ <- getLedgerEntries db purchaseId 0
-                    pure (maybe (errorResponse BSEInternal) (credentialResponse (Just $ snd signed) Nothing) entries_, True)
-              let (resp, claimed) = fromRight (errorResponse BSEInternal, False) r
+                    pure (maybe (errorResponse STEInternal) (credentialResponse (Just $ snd signed) Nothing) entries_, True)
+              let (resp, claimed) = fromRight (errorResponse STEInternal, False) r
               when (claimed && hasTracker redeemLimit) $ refreshTracker cc trackerQ_ badgeCodeId code
               pure resp
   where
     readCode now code db = liftIO $
       getBadgeCode db (badgeCodeHash code) >>= \case
-        Nothing -> pure $ Left $ errorResponse BSECodeInvalid
+        Nothing -> pure $ Left $ errorResponse STECodeInvalid
         Just c@IssuedCode {badgeCodeId, revokedAt, paymentStatus, expiresAt, redeemLimit, redeemCount} ->
           getCodePurchaseForKey db badgeCodeId purchaseKey >>= \case
             -- A key that already redeemed gets its credential back without a use, even if the code has since
             -- expired or been revoked: a client whose reply was lost retries, and would otherwise lose the badge.
             KeyRedeemed KeyPurchase {badgePurchaseId, credential} ->
-              maybe (Left $ errorResponse BSEInternal) (Left . credentialResponse (Just credential) Nothing)
+              maybe (Left $ errorResponse STEInternal) (Left . credentialResponse (Just credential) Nothing)
                 <$> getLedgerEntries db badgePurchaseId 0
             -- code_used would make the client drop its keys, so the holder could never get the badge back.
             KeyRedeemedUnreadable ->
-              logError "badge service: a redeemed code's credential is missing or unreadable" $> Left (errorResponse BSEInternal)
+              logError "badge service: a redeemed code's credential is missing or unreadable" $> Left (errorResponse STEInternal)
             KeyUnredeemed
               -- Revoked is checked first, so it answers as if the code never existed.
-              | Just _ <- revokedAt -> pure $ Left $ errorResponse BSECodeInvalid
+              | Just _ <- revokedAt -> pure $ Left $ errorResponse STECodeInvalid
               -- Redeeming an unpaid code would issue a free badge, so unpaid is refused.
-              | CPSUnpaid <- paymentStatus -> pure $ Left $ errorResponse BSEPaymentPending
-              | redeemCount >= redeemLimit -> pure $ Left $ errorResponse BSECodeUsed
-              | maybe False (now >=) expiresAt -> pure $ Left $ errorResponse BSECodeExpired
+              | CPSUnpaid <- paymentStatus -> pure $ Left $ errorResponse STEPaymentPending
+              | redeemCount >= redeemLimit -> pure $ Left $ errorResponse STECodeUsed
+              | maybe False (now >=) expiresAt -> pure $ Left $ errorResponse STECodeExpired
               | otherwise -> pure $ Right c
 
 -- | The purchase is reached through the verified signer key and no other way.
-issueBadgeCmd :: BadgeIssuerKey -> ChatController -> C.PublicKeyEd25519 -> BadgeBalance -> IO BadgeServiceResponse
+issueBadgeCmd :: BadgeIssuerKey -> ChatController -> C.PublicKeyEd25519 -> BadgeBalance -> IO StoreServiceResponse
 issueBadgeCmd key cc purchaseKey BadgeBalance {lastEntry} = do
   now <- badgeNow cc
   purchase_ <- withDB' "getBadgePurchase" cc $ \db -> do
     p_ <- getPurchaseByKey db purchaseKey
     forM p_ $ \p@ServicePurchase {badgePurchaseId} -> (p,) <$> getLedgerTip db badgePurchaseId
   case purchase_ of
-    Left _ -> pure $ errorResponse BSEInternal
-    Right Nothing -> pure $ errorResponse BSEUnknownPurchaseKey
+    Left _ -> pure $ errorResponse STEInternal
+    Right Nothing -> pure $ errorResponse STEUnknownPurchaseKey
     Right (Just (ServicePurchase {badgePurchaseId, masterKey, badgeType}, tip)) -> do
       (lapseUuid, issueUuid) <- (,) <$> randomId cc <*> randomId cc
       let tipEntry = fromMaybe (emptyEntry now badgeType) tip
@@ -406,7 +406,7 @@ issueBadgeCmd key cc purchaseKey BadgeBalance {lastEntry} = do
         Nothing -> writeIssued badgePurchaseId tip (maybeToList lapsed) now Nothing
         Just e ->
           credentialForEntry key masterKey e >>= \case
-            Left err -> logError ("badge service signing failed: " <> T.pack err) $> errorResponse BSEInternal
+            Left err -> logError ("badge service signing failed: " <> T.pack err) $> errorResponse STEInternal
             Right signed ->
               writeIssued badgePurchaseId tip (maybeToList lapsed) now $ Just $ issuanceAfter current signed
   where
@@ -416,7 +416,7 @@ issueBadgeCmd key cc purchaseKey BadgeBalance {lastEntry} = do
         tip' <- getLedgerTip db purchaseId
         when (fmap entryId tip' == fmap entryId tip) $ appendLedgerPlan db purchaseId rows issuance_
         issueResponse db purchaseId t
-      pure $ fromRight (errorResponse BSEInternal) r
+      pure $ fromRight (errorResponse STEInternal) r
     -- Only the asserted entry's identity is read, never the months it claims.
     issueResponse db purchaseId t = do
       let StatementEntry {entryId = assertedUuid} = lastEntry
@@ -425,4 +425,4 @@ issueBadgeCmd key cc purchaseKey BadgeBalance {lastEntry} = do
       -- single opening credit, rather than resending the whole history
       entries_ <- getLedgerEntries db purchaseId (fromMaybe 0 assertedId)
       credential_ <- getCurrentIssuance db purchaseId t
-      pure $ maybe (errorResponse BSEInternal) (credentialResponse credential_ (assertedUuid <$ assertedId)) entries_
+      pure $ maybe (errorResponse STEInternal) (credentialResponse credential_ (assertedUuid <$ assertedId)) entries_

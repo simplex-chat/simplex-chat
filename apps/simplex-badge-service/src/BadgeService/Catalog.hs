@@ -19,7 +19,7 @@ import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import Data.Word (Word32, Word64, Word8)
 import Simplex.Chat.Badges (BadgeType (..))
-import Simplex.Chat.Badges.Service (BadgeOffer (..), BadgePrice (..))
+import Simplex.Chat.StoreService (BadgeOffer (..), BadgePrice (..))
 import Simplex.Chat.Badges.Types (BadgeItemStatus (..), BadgeOfferId (..), BadgePriceId (..), OfferDiscount (..))
 import Simplex.Chat.PaymentService.Types (CurrencyAmount (..))
 

@@ -15,7 +15,7 @@ import Data.Time.Clock (UTCTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Data.Word (Word32, Word8)
 import Simplex.Chat.Badges (BadgeType (..))
-import Simplex.Chat.Badges.Service (BadgeOffer (..), BadgePrice (..))
+import Simplex.Chat.StoreService (BadgeOffer (..), BadgePrice (..))
 import Simplex.Chat.Badges.Types (BadgeItemStatus (..), BadgeOfferId (..), BadgePriceId (..), OfferDiscount (..))
 import Simplex.Chat.PaymentService.Types (CurrencyAmount (..))
 import Test.Hspec

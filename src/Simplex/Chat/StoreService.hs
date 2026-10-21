@@ -5,19 +5,19 @@
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Simplex.Chat.Badges.Service
-  ( BadgeServiceRequest (..),
-    BadgeServiceCommand (..),
-    BadgeServiceVersion,
-    VersionBadgeService,
-    VersionRangeBadgeService,
-    pattern VersionBadgeService,
-    initialBadgeServiceVersion,
-    currentBadgeServiceVersion,
-    supportedBadgeServiceVRange,
+module Simplex.Chat.StoreService
+  ( StoreServiceRequest (..),
+    StoreServiceCommand (..),
+    StoreServiceVersion,
+    VersionStoreService,
+    VersionRangeStoreService,
+    pattern VersionStoreService,
+    initialStoreServiceVersion,
+    currentStoreServiceVersion,
+    supportedStoreServiceVRange,
     BadgeUpgrade (..),
-    BadgeServiceResponse (..),
-    BadgeServiceErrorCode (..),
+    StoreServiceResponse (..),
+    StoreServiceErrorCode (..),
     BadgeCatalog (..),
     BadgePrice (..),
     BadgeOffer (..),
@@ -46,60 +46,60 @@ import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, taggedObjectJSON)
 import Simplex.Messaging.Version (VersionRange, VersionScope, mkVersionRange)
 import Simplex.Messaging.Version.Internal (Version (..))
 
-data BadgeServiceVersion
+data StoreServiceVersion
 
-instance VersionScope BadgeServiceVersion
+instance VersionScope StoreServiceVersion
 
-type VersionBadgeService = Version BadgeServiceVersion
+type VersionStoreService = Version StoreServiceVersion
 
-pattern VersionBadgeService :: Word16 -> VersionBadgeService
-pattern VersionBadgeService v = Version v
+pattern VersionStoreService :: Word16 -> VersionStoreService
+pattern VersionStoreService v = Version v
 
-type VersionRangeBadgeService = VersionRange BadgeServiceVersion
+type VersionRangeStoreService = VersionRange StoreServiceVersion
 
-initialBadgeServiceVersion :: VersionBadgeService
-initialBadgeServiceVersion = VersionBadgeService 1
+initialStoreServiceVersion :: VersionStoreService
+initialStoreServiceVersion = VersionStoreService 1
 
-currentBadgeServiceVersion :: VersionBadgeService
-currentBadgeServiceVersion = VersionBadgeService 1
+currentStoreServiceVersion :: VersionStoreService
+currentStoreServiceVersion = VersionStoreService 1
 
 -- the service is deployed ahead of app releases, so it answers within the client's version
-supportedBadgeServiceVRange :: VersionRangeBadgeService
-supportedBadgeServiceVRange = mkVersionRange initialBadgeServiceVersion currentBadgeServiceVersion
+supportedStoreServiceVRange :: VersionRangeStoreService
+supportedStoreServiceVRange = mkVersionRange initialStoreServiceVersion currentStoreServiceVersion
 
-data BadgeServiceRequest = BadgeServiceRequest
-  { version :: VersionBadgeService,
-    purchaseKey :: Maybe C.PublicKeyEd25519, -- optional for BSCGetBadgeCatalog, required for other commands
-    request :: BadgeServiceCommand
+data StoreServiceRequest = StoreServiceRequest
+  { version :: VersionStoreService,
+    purchaseKey :: Maybe C.PublicKeyEd25519, -- optional for STCGetBadgeCatalog, required for other commands
+    request :: StoreServiceCommand
   }
 
-data BadgeServiceCommand
-  = BSCGetBadgeCatalog
-  | BSCGetBadgeInvoice
+data StoreServiceCommand
+  = STCGetBadgeCatalog
+  | STCGetBadgeInvoice
       { priceId :: BadgePriceId,
         offerId :: Maybe BadgeOfferId, -- absent for 1 month at the badge price
         badgeInfo :: BadgeInfo,
         paymentVia :: ServicePaymentMethod,
         upgrade :: Maybe BadgeUpgrade -- upgrade non-store badge
       }
-  | BSCRedeemBadgeCode
+  | STCRedeemBadgeCode
       { masterKey :: BadgeMasterKey,
         code :: Text -- no badgeRequest: a code carries no tier for the client to state
       }
-  | BSCPurchaseBadge
+  | STCPurchaseBadge
       { badgeRequest :: BadgeRequest,
         payment :: ServicePayment,
         upgrade :: Maybe BadgeUpgrade -- upgrade store 1-time badge
       }
-  | BSCUpgradeBadgeSubscription
+  | STCUpgradeBadgeSubscription
       { badgeRequest :: BadgeRequest,
         payment :: ServicePayment, -- store payments only
         balance :: BadgeBalance
       }
-  | BSCIssueBadge
+  | STCIssueBadge
       { balance :: BadgeBalance -- no badgeRequest: the service holds the key, the tier and the expiry
       }
-  | BSCPauseBadge
+  | STCPauseBadge
 
 data BadgeUpgrade = BadgeUpgrade
   { fromPurchaseKey :: C.PublicKeyEd25519,
@@ -108,23 +108,23 @@ data BadgeUpgrade = BadgeUpgrade
     balance :: BadgeBalance
   }
 
-data BadgeServiceResponse
-  = BSPBadgeCatalog
+data StoreServiceResponse
+  = STPBadgeCatalog
       { catalog :: BadgeCatalog,
         badgeStatement :: Maybe BadgeStatement -- for signed getBadgeCatalog
       }
-  | BSPBadgeInvoice
+  | STPBadgeInvoice
       { invoice :: ServiceInvoice,
         badgeType :: BadgeType,
         months :: Word8
       }
-  | BSPBadgeCredential
+  | STPBadgeCredential
       { credential :: Maybe BadgeCredential, -- Nothing when no balance to issueBadge or no current credential for pause
         receipt :: Maybe Text, -- not provided for lifetime badges
         statement :: BadgeStatement
       }
-  | BSPError
-      { code :: BadgeServiceErrorCode,
+  | STPError
+      { code :: StoreServiceErrorCode,
         message :: Maybe Text,
         retryAfter :: Maybe Word32
       }
@@ -246,9 +246,9 @@ $(JQ.deriveJSON defaultJSON ''BadgeBalance)
 
 $(JQ.deriveJSON defaultJSON ''BadgeUpgrade)
 
-$(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "BSC") ''BadgeServiceCommand)
+$(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "STC") ''StoreServiceCommand)
 
-$(JQ.deriveJSON defaultJSON ''BadgeServiceRequest)
+$(JQ.deriveJSON defaultJSON ''StoreServiceRequest)
 
 $(JQ.deriveJSON defaultJSON ''BadgePrice)
 
@@ -256,4 +256,4 @@ $(JQ.deriveJSON defaultJSON ''BadgeOffer)
 
 $(JQ.deriveJSON defaultJSON ''BadgeCatalog)
 
-$(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "BSP") ''BadgeServiceResponse)
+$(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "STP") ''StoreServiceResponse)

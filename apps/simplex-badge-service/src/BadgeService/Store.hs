@@ -46,7 +46,7 @@ import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import Simplex.Chat.Badges (BadgeCredential, BadgeMasterKey (..), BadgeType)
 import Simplex.Chat.Badges.Ledger
-import Simplex.Chat.Badges.Service (StatementEntry (..))
+import Simplex.Chat.StoreService (StatementEntry (..))
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus, BadgePurchaseStatus (..))
 import Simplex.Chat.Store.Shared (insertedRowId)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))

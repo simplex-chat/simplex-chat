@@ -59,7 +59,7 @@ import Network.HTTP.Types (Header, HeaderName, hCacheControl, hContentType)
 import Network.HTTP.Types.Status (statusCode)
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey (..), BadgeType (..))
-import Simplex.Chat.Badges.Service (BadgeOffer (..), BadgePrice (..))
+import Simplex.Chat.StoreService (BadgeOffer (..), BadgePrice (..))
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..), BadgeItemStatus (..), BadgeOfferId (..), BadgePriceId (..), OfferDiscount (..))
 import Simplex.Chat.PaymentService.Types (CryptoCurrency (..), CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), PaymentProvider (..), PaymentStatus (..), ServicePaymentDestination (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore (..), withConnection, withTransaction)

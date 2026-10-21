@@ -42,7 +42,6 @@ library
       Simplex.Chat.Badges.CLI
       Simplex.Chat.Badges.Code
       Simplex.Chat.Badges.Ledger
-      Simplex.Chat.Badges.Service
       Simplex.Chat.Badges.Types
       Simplex.Chat.Names
       Simplex.Chat.Call
@@ -95,6 +94,7 @@ library
       Simplex.Chat.Store.Remote
       Simplex.Chat.Store.Shared
       Simplex.Chat.Store.Wallets
+      Simplex.Chat.StoreService
       Simplex.Chat.Styled
       Simplex.Chat.Types
       Simplex.Chat.Types.MemberRelations

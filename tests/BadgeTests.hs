@@ -28,11 +28,11 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Code
 import Simplex.Chat.Badges.Ledger
-import Simplex.Chat.Badges.Service
+import Simplex.Chat.StoreService
 import Simplex.Chat.Badges.Types (BadgeIssueFailure (..), BadgeOfferId (..), BadgePriceId (..))
 import Simplex.Chat (defaultChatConfig)
 import Simplex.Chat.Controller (ChatError (..), ChatErrorType (..), badgeRetryInterval, chatErrorAgent)
-import Simplex.Chat.Library.Commands (badgeErrorRetry, badgeFailureTransient, badgeIssueFailure, badgeRetryAfter, badgeServiceErrorText, badgeStalledInterval)
+import Simplex.Chat.Library.Commands (badgeErrorRetry, badgeFailureTransient, badgeIssueFailure, badgeRetryAfter, badgeStalledInterval, storeServiceErrorText)
 import Simplex.Chat.PaymentService
 import Simplex.Messaging.Agent.Protocol (AgentErrorType (..), AgentServiceError (..), SMPAgentError (..))
 import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..), nextRetryDelay)
@@ -704,7 +704,7 @@ testRetryClassification = do
   -- terminal: the same request would fail the same way, and repeating it would spin
   retryFor (AGENT (A_SERVICE ASEBadSignature)) `shouldBe` False
   retryFor (AGENT (A_SERVICE (ASERejected "no"))) `shouldBe` False
-  badgeErrorRetry (ChatError (CECommandError "unexpected badge service response")) `shouldBe` False
+  badgeErrorRetry (ChatError (CECommandError "unexpected store service response")) `shouldBe` False
 
 -- A failure that never clears is repeated for as long as the balance funds a month, so the wait
 -- has to grow: at a fixed interval an annual code would ask hundreds of times a day, all year.
@@ -743,15 +743,15 @@ testServiceRetryFloor = do
 -- schedule, so the set is the protocol's and not a judgement to make per call site.
 testServiceRetryAfter :: IO ()
 testServiceRetryAfter = do
-  badgeErrorRetryAfter BSEPaymentPending `shouldBe` Just 300
-  badgeErrorRetryAfter BSEProviderUnavailable `shouldBe` Just 300
-  badgeErrorRetryAfter BSERateLimited `shouldBe` Just 60
+  badgeErrorRetryAfter STEPaymentPending `shouldBe` Just 300
+  badgeErrorRetryAfter STEProviderUnavailable `shouldBe` Just 300
+  badgeErrorRetryAfter STERateLimited `shouldBe` Just 60
   -- internal is the one most likely to clear on its own, and is still terminal: repeating it on
   -- the service's cadence presses a service already failing, and the client has its own floor
-  badgeErrorRetryAfter BSEInternal `shouldBe` Nothing
+  badgeErrorRetryAfter STEInternal `shouldBe` Nothing
   mapM_
     (\code -> badgeErrorRetryAfter code `shouldBe` Nothing)
-    [BSEBadRequest, BSEUnsupportedVersion, BSEUnknownPurchaseKey, BSECodeInvalid, BSECodeUsed, BSECodeExpired, BSEUnknown "future_code"]
+    [STEBadRequest, STEUnsupportedVersion, STEUnknownPurchaseKey, STECodeInvalid, STECodeUsed, STECodeExpired, STEUnknown "future_code"]
 
 -- The app shows the recorded failure in a sentence, so an agent error is stored as the agent
 -- error and not as the chat error wrapping it, whether or not it can clear on its own.
@@ -763,18 +763,18 @@ testIssueFailureClassification = do
   failureFor (AGENT (A_SERVICE ASETimeout)) `shouldBe` BIFServiceTimeout
   failureFor timeout `shouldBe` BIFNetwork {agentError = tshow timeout}
   failureFor auth `shouldBe` BIFUnexpected {message = tshow auth}
-  badgeIssueFailure (ChatError (CECommandError "unexpected badge service response")) `shouldBe` BIFUnexpected {message = "unexpected badge service response"}
+  badgeIssueFailure (ChatError (CECommandError "unexpected store service response")) `shouldBe` BIFUnexpected {message = "unexpected store service response"}
 
 -- A refusal the service marks transient is not worth a word before the credential lapses. Internal
 -- comes without retryAfter so that a failing service is not pressed, not because the fault is
 -- final, so it waits the same way; any other refusal is told at once.
 testServiceErrorTransience :: IO ()
 testServiceErrorTransience = do
-  badgeFailureTransient BIFServiceError {code = BSERateLimited, retryable = True} `shouldBe` True
-  badgeFailureTransient BIFServiceError {code = BSEInternal, retryable = False} `shouldBe` True
-  badgeFailureTransient BIFServiceError {code = BSEUnknownPurchaseKey, retryable = False} `shouldBe` False
-  badgeFailureTransient BIFServiceError {code = BSEUnknown "future_code", retryable = False} `shouldBe` False
-  badgeFailureTransient BIFServiceError {code = BSEUnknown "future_code", retryable = True} `shouldBe` True
+  badgeFailureTransient BIFServiceError {code = STERateLimited, retryable = True} `shouldBe` True
+  badgeFailureTransient BIFServiceError {code = STEInternal, retryable = False} `shouldBe` True
+  badgeFailureTransient BIFServiceError {code = STEUnknownPurchaseKey, retryable = False} `shouldBe` False
+  badgeFailureTransient BIFServiceError {code = STEUnknown "future_code", retryable = False} `shouldBe` False
+  badgeFailureTransient BIFServiceError {code = STEUnknown "future_code", retryable = True} `shouldBe` True
 
 -- The failure is stored as text and read back by getBadgePurchase, so every value this version
 -- writes must read back as itself, and any other value must still read: a row it cannot parse
@@ -783,20 +783,20 @@ testIssueFailureEncoding :: IO ()
 testIssueFailureEncoding = do
   mapM_
     (\f -> strDecode (strEncode f) `shouldBe` Right f)
-    [ BIFServiceError {code = BSEUnknownPurchaseKey, retryable = False},
-      BIFServiceError {code = BSERateLimited, retryable = True},
-      BIFServiceError {code = BSEUnknown "future_code", retryable = True},
-      BIFServiceError {code = BSEUnknown "code with spaces", retryable = False},
-      BIFServiceError {code = BSEUnknown "", retryable = False},
+    [ BIFServiceError {code = STEUnknownPurchaseKey, retryable = False},
+      BIFServiceError {code = STERateLimited, retryable = True},
+      BIFServiceError {code = STEUnknown "future_code", retryable = True},
+      BIFServiceError {code = STEUnknown "code with spaces", retryable = False},
+      BIFServiceError {code = STEUnknown "", retryable = False},
       BIFServiceTimeout,
       BIFNetwork {agentError = "BROKER \"smp://x\" NETWORK"},
       BIFInvalidCredential,
-      BIFUnexpected {message = "unexpected badge service response"},
+      BIFUnexpected {message = "unexpected store service response"},
       BIFUnexpected {message = "several words and : punctuation"}
     ]
   -- the row the CLI prints, and what a reader of the database sees
-  strEncode BIFServiceError {code = BSECodeUsed, retryable = False} `shouldBe` "service_error final code_used"
-  strEncode BIFServiceError {code = BSERateLimited, retryable = True} `shouldBe` "service_error retry rate_limited"
+  strEncode BIFServiceError {code = STECodeUsed, retryable = False} `shouldBe` "service_error final code_used"
+  strEncode BIFServiceError {code = STERateLimited, retryable = True} `shouldBe` "service_error retry rate_limited"
   strEncode BIFServiceTimeout `shouldBe` "service_timeout"
   -- a row a later version wrote, or one edited by hand, still reads - as the text it holds
   strDecode "future_failure with text" `shouldBe` Right BIFUnexpected {message = "future_failure with text"}
@@ -807,11 +807,11 @@ testIssueFailureEncoding = do
 -- a sentence of its own - so it is bounded and stripped of anything but a code before it is stored.
 testServiceErrorCodeBounded :: IO ()
 testServiceErrorCodeBounded = do
-  badgeServiceErrorText BSECodeUsed `shouldBe` "code_used"
-  badgeServiceErrorText (BSEUnknown "future_code") `shouldBe` "future_code"
-  badgeServiceErrorText (BSEUnknown "two words") `shouldBe` "twowords"
-  badgeServiceErrorText (BSEUnknown (T.replicate 100 "a")) `shouldBe` T.replicate 32 "a"
-  badgeServiceErrorText (BSEUnknown "Visit evil.example.com!") `shouldBe` "isitevilexamplecom"
+  storeServiceErrorText STECodeUsed `shouldBe` "code_used"
+  storeServiceErrorText (STEUnknown "future_code") `shouldBe` "future_code"
+  storeServiceErrorText (STEUnknown "two words") `shouldBe` "twowords"
+  storeServiceErrorText (STEUnknown (T.replicate 100 "a")) `shouldBe` T.replicate 32 "a"
+  storeServiceErrorText (STEUnknown "Visit evil.example.com!") `shouldBe` "isitevilexamplecom"
 
 -- The client replicates entry_credit_type / entry_debit_type verbatim, so a stored tag that
 -- disagreed with the wire tag would put a different row on each side.
@@ -847,7 +847,7 @@ testRedeemRequestJSON = do
   mk <- generateMasterKey drg
   (k, _) <- atomically $ C.generateKeyPair drg :: IO (C.KeyPair 'C.Ed25519)
   code <- randomBadgeCode drg
-  let req = BadgeServiceRequest {version = Version 1, purchaseKey = Just k, request = BSCRedeemBadgeCode {masterKey = mk, code = badgeCodeText code}}
+  let req = StoreServiceRequest {version = Version 1, purchaseKey = Just k, request = STCRedeemBadgeCode {masterKey = mk, code = badgeCodeText code}}
   J.toJSON req
     `shouldBe` J.object
       [ "version" J..= (1 :: Int),
@@ -855,7 +855,7 @@ testRedeemRequestJSON = do
         "request" J..= J.object ["type" J..= ("redeemBadgeCode" :: T.Text), "masterKey" J..= mk, "code" J..= badgeCodeText code]
       ]
   -- purchaseKey is optional in the schema, and a nullary command is a bare tagged object
-  J.toJSON BadgeServiceRequest {version = Version 1, purchaseKey = Nothing, request = BSCGetBadgeCatalog}
+  J.toJSON StoreServiceRequest {version = Version 1, purchaseKey = Nothing, request = STCGetBadgeCatalog}
     `shouldBe` J.object ["version" J..= (1 :: Int), "request" J..= J.object ["type" J..= ("getBadgeCatalog" :: T.Text)]]
   roundTrips req
 
@@ -866,7 +866,7 @@ testCredentialResponseJSON = do
   mk <- generateMasterKey drg
   let info = BadgeInfo {badgeType = BTSupporter, badgeExpiry = futureTime, badgeExtra = ""}
   Right cred <- issueBadge testKeyIdx sk (VerifiedBadgeRequest BadgeRequest {masterKey = mk, badgeInfo = info})
-  let resp = BSPBadgeCredential {credential = Just cred, receipt = Nothing, statement = BadgeStatement {entries = [], previousEntryId = Nothing}}
+  let resp = STPBadgeCredential {credential = Just cred, receipt = Nothing, statement = BadgeStatement {entries = [], previousEntryId = Nothing}}
   J.toJSON resp
     `shouldBe` J.object
       [ "type" J..= ("badgeCredential" :: T.Text),
@@ -877,9 +877,9 @@ testCredentialResponseJSON = do
 
 testErrorResponseJSON :: IO ()
 testErrorResponseJSON = do
-  let resp = BSPError {code = BSECodeInvalid, message = Nothing, retryAfter = Nothing}
+  let resp = STPError {code = STECodeInvalid, message = Nothing, retryAfter = Nothing}
   J.toJSON resp `shouldBe` J.object ["type" J..= ("error" :: T.Text), "code" J..= ("code_invalid" :: T.Text)]
-  J.toJSON BSPError {code = BSERateLimited, message = Just "slow down", retryAfter = Just 30}
+  J.toJSON STPError {code = STERateLimited, message = Just "slow down", retryAfter = Just 30}
     `shouldBe` J.object ["type" J..= ("error" :: T.Text), "code" J..= ("rate_limited" :: T.Text), "message" J..= ("slow down" :: T.Text), "retryAfter" J..= (30 :: Int)]
 
 testEntry :: StatementEntry
@@ -947,39 +947,39 @@ testServiceWireTags = do
             paymentTo = SPDCard {provider = CPStripe, url = "https://checkout.example/inv-1"}
           }
       commands =
-        [ BSCGetBadgeCatalog,
-          BSCGetBadgeInvoice {priceId = BadgePriceId "price-1", offerId = Just (BadgeOfferId "offer-1"), badgeInfo, paymentVia = SPMCard {provider = CPStripe}, upgrade = Nothing},
-          BSCRedeemBadgeCode {masterKey, code = "SB-4K2P7-TQ9M1-ZX3RB-8HJ5W"},
-          BSCPurchaseBadge {badgeRequest, payment, upgrade = Nothing},
-          BSCUpgradeBadgeSubscription {badgeRequest, payment, balance},
-          BSCIssueBadge {balance},
-          BSCPauseBadge
+        [ STCGetBadgeCatalog,
+          STCGetBadgeInvoice {priceId = BadgePriceId "price-1", offerId = Just (BadgeOfferId "offer-1"), badgeInfo, paymentVia = SPMCard {provider = CPStripe}, upgrade = Nothing},
+          STCRedeemBadgeCode {masterKey, code = "SB-4K2P7-TQ9M1-ZX3RB-8HJ5W"},
+          STCPurchaseBadge {badgeRequest, payment, upgrade = Nothing},
+          STCUpgradeBadgeSubscription {badgeRequest, payment, balance},
+          STCIssueBadge {balance},
+          STCPauseBadge
         ]
       responses =
-        [ BSPBadgeCatalog {catalog = BadgeCatalog {prices = [], offers = []}, badgeStatement = Just statement},
-          BSPBadgeInvoice {invoice, badgeType = BTSupporter, months = 3},
-          BSPBadgeCredential {credential = Nothing, receipt = Just "receipt", statement},
-          BSPError {code = BSEInternal, message = Nothing, retryAfter = Nothing}
+        [ STPBadgeCatalog {catalog = BadgeCatalog {prices = [], offers = []}, badgeStatement = Just statement},
+          STPBadgeInvoice {invoice, badgeType = BTSupporter, months = 3},
+          STPBadgeCredential {credential = Nothing, receipt = Just "receipt", statement},
+          STPError {code = STEInternal, message = Nothing, retryAfter = Nothing}
         ]
       errors =
-        [ BSEBadRequest,
-          BSEUnsupportedVersion,
-          BSEUnknownPurchaseKey,
-          BSEUnknownOfferId,
-          BSEOfferDisabled,
-          BSEOfferMismatch,
-          BSEProductUnavailable,
-          BSEPaymentNotEntitled,
-          BSEPaymentPending,
-          BSEProviderUnavailable,
-          BSERateLimited,
-          BSECodeInvalid,
-          BSECodeUsed,
-          BSECodeExpired,
-          BSEReceiptInvalid,
-          BSEReceiptUsed,
-          BSEInternal,
-          BSEUnknown "future_code"
+        [ STEBadRequest,
+          STEUnsupportedVersion,
+          STEUnknownPurchaseKey,
+          STEUnknownOfferId,
+          STEOfferDisabled,
+          STEOfferMismatch,
+          STEProductUnavailable,
+          STEPaymentNotEntitled,
+          STEPaymentPending,
+          STEProviderUnavailable,
+          STERateLimited,
+          STECodeInvalid,
+          STECodeUsed,
+          STECodeExpired,
+          STEReceiptInvalid,
+          STEReceiptUsed,
+          STEInternal,
+          STEUnknown "future_code"
         ]
   forM_ commands $ pinsTypeTag commandTag
   forM_ responses $ pinsTypeTag responseTag
@@ -988,37 +988,37 @@ testServiceWireTags = do
     J.fromJSON (J.String $ errorTag e) `shouldBe` J.Success e
   where
     commandTag = \case
-      BSCGetBadgeCatalog -> "getBadgeCatalog"
-      BSCGetBadgeInvoice {} -> "getBadgeInvoice"
-      BSCRedeemBadgeCode {} -> "redeemBadgeCode"
-      BSCPurchaseBadge {} -> "purchaseBadge"
-      BSCUpgradeBadgeSubscription {} -> "upgradeBadgeSubscription"
-      BSCIssueBadge {} -> "issueBadge"
-      BSCPauseBadge -> "pauseBadge"
+      STCGetBadgeCatalog -> "getBadgeCatalog"
+      STCGetBadgeInvoice {} -> "getBadgeInvoice"
+      STCRedeemBadgeCode {} -> "redeemBadgeCode"
+      STCPurchaseBadge {} -> "purchaseBadge"
+      STCUpgradeBadgeSubscription {} -> "upgradeBadgeSubscription"
+      STCIssueBadge {} -> "issueBadge"
+      STCPauseBadge -> "pauseBadge"
     responseTag = \case
-      BSPBadgeCatalog {} -> "badgeCatalog"
-      BSPBadgeInvoice {} -> "badgeInvoice"
-      BSPBadgeCredential {} -> "badgeCredential"
-      BSPError {} -> "error"
+      STPBadgeCatalog {} -> "badgeCatalog"
+      STPBadgeInvoice {} -> "badgeInvoice"
+      STPBadgeCredential {} -> "badgeCredential"
+      STPError {} -> "error"
     errorTag = \case
-      BSEBadRequest -> "bad_request"
-      BSEUnsupportedVersion -> "unsupported_version"
-      BSEUnknownPurchaseKey -> "unknown_purchase_key"
-      BSEUnknownOfferId -> "unknown_offer_id"
-      BSEOfferDisabled -> "offer_disabled"
-      BSEOfferMismatch -> "offer_mismatch"
-      BSEProductUnavailable -> "product_unavailable"
-      BSEPaymentNotEntitled -> "payment_not_entitled"
-      BSEPaymentPending -> "payment_pending"
-      BSEProviderUnavailable -> "provider_unavailable"
-      BSERateLimited -> "rate_limited"
-      BSECodeInvalid -> "code_invalid"
-      BSECodeUsed -> "code_used"
-      BSECodeExpired -> "code_expired"
-      BSEReceiptInvalid -> "receipt_invalid"
-      BSEReceiptUsed -> "receipt_used"
-      BSEInternal -> "internal"
-      BSEUnknown t -> t
+      STEBadRequest -> "bad_request"
+      STEUnsupportedVersion -> "unsupported_version"
+      STEUnknownPurchaseKey -> "unknown_purchase_key"
+      STEUnknownOfferId -> "unknown_offer_id"
+      STEOfferDisabled -> "offer_disabled"
+      STEOfferMismatch -> "offer_mismatch"
+      STEProductUnavailable -> "product_unavailable"
+      STEPaymentNotEntitled -> "payment_not_entitled"
+      STEPaymentPending -> "payment_pending"
+      STEProviderUnavailable -> "provider_unavailable"
+      STERateLimited -> "rate_limited"
+      STECodeInvalid -> "code_invalid"
+      STECodeUsed -> "code_used"
+      STECodeExpired -> "code_expired"
+      STEReceiptInvalid -> "receipt_invalid"
+      STEReceiptUsed -> "receipt_used"
+      STEInternal -> "internal"
+      STEUnknown t -> t
 
 -- the tag is checked in both encodings, and decoding must land on the constructor the tag names
 pinsTypeTag :: (HasCallStack, J.ToJSON a, J.FromJSON a) => (a -> T.Text) -> a -> IO ()
