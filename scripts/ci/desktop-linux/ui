@@ -156,7 +156,16 @@ shot() {
   log "shot $(basename "$f").png"
 }
 
+number() {
+  if ! [[ "$1" =~ ^[0-9]+$ ]]; then
+    echo "error: \"$1\" is not a number"
+    exit 1
+  fi
+}
+
 click() {
+  number "$1"
+  number "$2"
   xdotool mousemove --sync "$1" "$2" click "${3:-1}"
   sleep 1
 }
@@ -172,6 +181,9 @@ scroll() {
       return 1
       ;;
   esac
+  number "$1"
+  number "$2"
+  number "$4"
   xdotool mousemove --sync "$1" "$2" click --repeat "$4" --delay 100 "$button"
   sleep 1
 }
@@ -260,7 +272,16 @@ case "${1:-}" in
     ;;
   key)
     shift
-    xdotool key --delay 100 -- "$@"
+    for k in "$@"; do
+      if ! [[ "$k" =~ ^[A-Za-z0-9_]+(\+[A-Za-z0-9_]+)*$ ]]; then
+        echo "error: \"$k\" is not a key name"
+        exit 1
+      fi
+    done
+    # one key per call: xdotool key runs any later argument that names one of its commands, such as exec
+    for k in "$@"; do
+      xdotool key --delay 100 -- "$k"
+    done
     log "key $*"
     ;;
   do)
