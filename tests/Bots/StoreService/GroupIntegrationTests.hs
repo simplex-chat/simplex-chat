@@ -7,7 +7,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 -- Members' messages reach a console over separate connections in no fixed order, so gating is asserted from the bot's store.
-module Bots.StoreService.GroupIntegrationTests (badgeGroupIntegrationTests) where
+module Bots.StoreService.GroupIntegrationTests (badgeGroupIntegrationTests, namesBootTests) where
 
 import StoreService.Config (BadgeIssuerKey (..), GroupConfig (..))
 import StoreService.Group (GroupAction (..), GroupEvent (..), codeInTracker, ensureManagedGroup)
@@ -16,6 +16,7 @@ import StoreService.Options (StoreServiceOpts (..))
 import StoreService.Service (ServiceState (..), storeService, newServiceState)
 import StoreService.Store (ManagedGroup (..), getManagedGroup)
 import Bots.StoreService.BotTests (badgeBotName, badgeProfile, badgeTypeOf, credentialOf, entryOf, issueCode, issueRaw, mkStoreServiceOpts, newPurchaseKeys, redeemWithQueue, requestObject, revokeRaw, serviceDbPrefix, shouldAnswerError, statementOf, stopStoreService, testIssuerKeyIdx)
+import Bots.StoreService.ConfigTests (chainSection, namesSection)
 import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
@@ -29,13 +30,15 @@ import Data.Int (Int64)
 import Data.List (isInfixOf)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe, isJust, listToMaybe)
+import Data.Maybe (fromMaybe, isJust, isNothing, listToMaybe)
 import Data.String (fromString)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, getCurrentTime)
+import Network.HTTP.Client (defaultManagerSettings, httpLbs, newManager, parseRequest, responseStatus)
+import Network.HTTP.Types.Status (statusCode)
 import Network.Socket (Family (..), SockAddr (..), SocketType (..), close, connect, defaultProtocol, socket, tupleToHostAddress)
 import Network.Wai.Handler.Warp (openFreePort)
 import Simplex.Chat.Badges (BadgeType (..))
@@ -119,6 +122,20 @@ badgeGroupIntegrationTests = do
   it "reconciles every stalled tracker on restart, not only the first" testEveryStalledTrackerReconciled
   it "leaves a tracker it cannot edit alone rather than publishing the code again" testUneditableTrackerLeftAlone
 
+namesBootTests :: SpecWith TestParams
+namesBootTests = it "boots with [names] and [chain], leaving a path no route knows to 404" testNamesBoot
+
+testNamesBoot :: HasCallStack => TestParams -> IO ()
+testNamesBoot ps = do
+  svc <- prepareGroupService ps
+  (t, cc, _, port) <- startGroupService svc {gsIniSections = "" : namesSection <> chainSection} Nothing
+  flip finally (stopGroupService t cc) $ do
+    pollUntilTrue (listening port)
+    mgr <- newManager defaultManagerSettings
+    req <- parseRequest $ "http://127.0.0.1:" <> show port <> "/api/names/unknown"
+    statusCode . responseStatus <$> httpLbs req mgr `shouldReturn` 404
+    poll t >>= (`shouldSatisfy` isNothing)
+
 groupName :: String
 groupName = "testbadges"
 
@@ -147,6 +164,7 @@ data GroupSvc = GroupSvc
   { gsCfg :: ChatConfig,
     gsKey :: BadgeIssuerKey,
     gsStaticDir :: FilePath,
+    gsIniSections :: [Text],
     gsPs :: TestParams
   }
 
@@ -160,7 +178,7 @@ prepareGroupService ps@TestParams {tmpPath} =
           gsStaticDir = tmpPath </> "badge_group_static"
       createDirectoryIfMissing True gsStaticDir
       withNewTestChatCfg ps gsCfg serviceDbPrefix badgeProfile $ \_ -> pure ()
-      pure GroupSvc {gsCfg, gsKey, gsStaticDir, gsPs = ps}
+      pure GroupSvc {gsCfg, gsKey, gsStaticDir, gsIniSections = [], gsPs = ps}
 
 runGroupService :: HasCallStack => GroupSvc -> (ChatController -> ServiceState -> Int64 -> IO a) -> IO a
 runGroupService svc = runGroupServiceAs svc (Just testGroupConfig)
@@ -204,7 +222,7 @@ stopChat cc = stopStoreService cc >> disposeAgentClient (smpAgent cc)
 
 -- It writes the service's ini on a free port; Nothing omits the [group] section.
 groupServiceOpts :: GroupSvc -> Maybe GroupConfig -> IO (StoreServiceOpts, Int)
-groupServiceOpts GroupSvc {gsKey = BadgeIssuerKey {secretKey}, gsStaticDir, gsPs = ps@TestParams {tmpPath}} groupCfg = do
+groupServiceOpts GroupSvc {gsKey = BadgeIssuerKey {secretKey}, gsStaticDir, gsIniSections, gsPs = ps@TestParams {tmpPath}} groupCfg = do
   (port, sock) <- openFreePort
   close sock
   let iniPath = tmpPath </> "badge_group.ini"
@@ -216,6 +234,7 @@ groupServiceOpts GroupSvc {gsKey = BadgeIssuerKey {secretKey}, gsStaticDir, gsPs
         "static_dir = " <> gsStaticDir
       ]
         <> maybe [] groupSection groupCfg
+        <> map T.unpack gsIniSections
   pure ((mkStoreServiceOpts ps secretKey) {serviceConfigFile = Just iniPath, noAddress = True}, port)
   where
     groupSection GroupConfig {gDisplayName, gDescription} =

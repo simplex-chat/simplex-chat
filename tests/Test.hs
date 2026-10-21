@@ -123,6 +123,7 @@ main = do
           describe "SimpleX store service e2e" $ do
             storeServiceTests
             describe "managed group" badgeGroupIntegrationTests
+          describe "StoreService names: boot" namesBootTests
           describe "Remote session" remoteTests
 #if !defined(dbPostgres)
           sequential $ xdescribe'' "Save query plans" saveQueryPlans
