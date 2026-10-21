@@ -482,20 +482,22 @@ expect_no_join_row "the chat list after joining"
 echo "after joining through Open, ci_cards is its chat row among the results and no longer a result to open"
 clear_search
 # the page's only result is that channel, which the list shows, so the search adds no row and no note; nothing marks
-# its end, so the step waits out the request, which times out after 10 s
+# its end, so the step waits it out: once the directory's link is fetched, the request fails after 10 s
 type_search "ci_cards"
 tap_search_in_directory
-sleep 12
+sleep 20
 retry=$(labelled_containing "Search failed, tap to retry")
 if [ -n "$retry" ]; then
   tap_element "$retry"
-  sleep 12
+  sleep 20
 fi
 "$ui" shot page-in-chats
 expect_in_tree -F 'StaticText "ci_cards"'
 expect_no_join_row "the chat list listing ci_cards"
-if "$ui" tree | grep -qF -e "All results on this page" -e "Search failed, tap to retry"; then
-  echo "error: the search whose only result is the listed ci_cards shows a note or failed"
+tree=$("$ui" tree)
+# "Search in Directory" hides once a search for the text runs
+if grep -qF -e '"Search in Directory"' -e "All results on this page" -e "Search failed, tap to retry" <<< "$tree"; then
+  echo "error: the search whose only result is the listed ci_cards didn't run, failed or shows a note"
   exit 1
 fi
 echo "the search whose only result is the listed ci_cards adds no row and no note"

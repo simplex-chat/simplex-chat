@@ -569,13 +569,15 @@ known_channel_searches() {
   "$ui" type ci_channel
   "$ui" wait "Search in Directory" 15
   "$ui" click-text "Search in Directory"
-  # nothing marks the end of a search that adds no row: wait out the request, which times out after 10 s
-  sleep 12
+  # nothing marks the end of a search that adds no row: wait it out (once the directory's link is fetched, the request
+  # fails after 10 s); "Search in Directory" hides once a search for the text runs
+  sleep 20
   if on_screen "Search failed, tap to retry"; then
     "$ui" click-text "Search failed, tap to retry"
-    sleep 12
+    sleep 20
   fi
   "$ui" shot "$layout-known-listed"
+  check "$layout: the search for the listed chat ran" not_on_screen "Search in Directory"
   check "$layout: the search for the listed chat didn't fail" not_on_screen "Search failed, tap to retry"
   check "$layout: a page of chats already listed adds no note" not_on_screen "All results on this page"
   check "$layout: no #ci_channel result next to the listed chat" no_ci_channel_directory_row
