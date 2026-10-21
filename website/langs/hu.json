@@ -224,7 +224,7 @@
     "contact-hero-header": "Ez egy meghívó a SimpleX Chaten való beszélgetéshez",
     "invitation-hero-header": "Kapott egy egyszer használható meghívót a SimpleX Chaten való beszélgetéshez",
     "simplex-network-overlay-card-1-li-4": "A P2P-megvalósításokat egyes internetszolgáltatók blokkolhatják (mint például a <a href=\"https://en.wikipedia.org/wiki/BitTorrent\">BitTorrent</a>). A SimpleX átvitel-független &mdash; a szabványos webes protokollokon, például WebSocketsen keresztül is működik.",
-    "simplex-private-card-4-point-2": "A SimpleX, Tor hálózaton keresztüli használatához telepítse az <a href=\"https://guardianproject.info/apps/org.torproject.android/\" target=\"_blank\" rel=\"noopener\">Orbot alkalmazást</a> és engedélyezze a SOCKS5 proxyt (vagy a VPN-t <a href=\"https://apps.apple.com/us/app/orbot/id1609461599?platform=iphone\" target=\"_blank\" rel=\"noopener\">az iOS-ban</a>).",
+    "simplex-private-card-4-point-2": "A SimpleX, Tor hálózaton keresztüli használatához telepítse az <a href=\"https://guardianproject.info/apps/org.torproject.android/\" target=\"_blank\">Orbot alkalmazást</a> és engedélyezze a SOCKS5 proxyt (vagy a VPN-t <a href=\"https://apps.apple.com/us/app/orbot/id1609461599?platform=iphone\" target=\"_blank\">az iOS-ban</a>).",
     "simplex-private-card-5-point-1": "A SimpleX minden titkosítási réteghez tartalomkitöltést használ az üzenetméretre irányuló támadások meghiúsítása érdekében.",
     "simplex-private-card-5-point-2": "A kiszolgálók és a hálózatot megfigyelők számára a különböző méretű üzenetek egyformának tűnnek.",
     "privacy-matters-1-title": "Hirdetés és árdiszkrimináció",
