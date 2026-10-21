@@ -76,6 +76,7 @@ directoryServiceTests = do
   it "should page search over service RPC by the echoed cursor" testDirectorySearchRpcPaging
   it "should match LIKE wildcards in search text literally" testDirectorySearchRpcLiteral
   it "should reject service requests over the cap" testDirectorySearchRpcBusy
+  it "should take a new service request once the previous one is answered" testDirectorySearchRpcSlotReleased
   it "should send every entry field the apps render" testDirectorySearchEntryFields
   it "should send a channel entry with its published link" testDirectorySearchChannelEntry
   it "should drop an oversize image and keep the entry" testSearchEntryImageBound
@@ -767,6 +768,17 @@ testDirectorySearchRpcBusy ps =
     withNewTestChat ps "cath" cathProfile $ \cath -> do
       cath ##> ("/_service_request 1 " <> dsShortLink <> " {\"type\":\"search\",\"searchText\":\"privacy\"}")
       cath <## "smp agent error: AGENT {agentErr = A_SERVICE {serviceError = ASERejected {rejectReason = \"service is busy\"}}}"
+
+testDirectorySearchRpcSlotReleased :: HasCallStack => TestParams -> IO ()
+testDirectorySearchRpcSlotReleased ps =
+  withDirectoryServiceOptsLinks ps (\o -> o {maxServiceRequestsInFlight = 1}) $ \_superUser (dsShortLink, _) ->
+    withNewTestChat ps "cath" cathProfile $ \cath -> do
+      let search = cath ##> ("/_service_request 1 " <> dsShortLink <> " {\"type\":\"search\",\"searchText\":\"nothing matches this\"}")
+          noResults = "service response: {\"entries\":[],\"moreCount\":0,\"pageSize\":3,\"type\":\"searchResults\"}"
+      search
+      cath <## noResults
+      search
+      cath <## noResults
 
 -- Read from the controller, not the terminal: an entry with an image is longer than a terminal
 -- row, and the test terminal only queues the last row of a line that wrapped.
