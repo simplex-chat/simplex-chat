@@ -52,7 +52,7 @@ You can connect to the team via the app using "chat with the developers button" 
 - to suggest any improvements
 - to share anything relevant
 
-We are replying the questions manually, so it is not instant – it can take up to 24 hours.
+We are replying to the questions manually, so it is not instant – it can take up to 24 hours.
 
 If you are interested in helping us to integrate open-source language models, and in [joining our team](./docs/JOIN_TEAM.md), please get in touch.
 
