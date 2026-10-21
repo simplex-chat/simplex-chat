@@ -151,6 +151,10 @@ chatGroupTests = do
     it "removal notice applies only to the link used to join" testPlanGroupLinkRemovedNoticeOtherLinks
     it "group deletion without notice leaves notices unchanged" testPlanGroupLinkDeletedWithoutNotice
     it "rejected pending member with notice can't re-join" testPlanGroupLinkRejectedNotice
+    it "removed admin with notice sees removal and can't re-join" testPlanGroupLinkRemovedAdminNotice
+    it "removal with notice of a member on previous version is prohibited" $
+      runTestCfg2 testCfg testCfgVPrev testRemoveMemberNoticePrevVersion
+    it "group deleted with kept conversation" testGroupDeleteKeepConversation
 #if !defined(dbPostgres)
   -- TODO [postgres] restore from outdated db backup (same as in agent)
   describe "group message errors" $ do
@@ -248,6 +252,10 @@ chatGroupTests = do
     it "block left/removed members" testBlockForAllLeftRemoved
     it "mentions of blocked member are ignored" testBlockForAllMentionsIgnored
     it "replies of blocked member are not mentions" testBlockedMemberReplyNotMention
+    it "timed block ends at the end time" testBlockForAllTimed
+    it "member who set the block sends unblock after the end time" $
+      runTestCfg3 blockCleanupCfg testCfg testCfgVPrev testBlockForAllExpiryCleanup
+    it "blocked pending member can't be accepted" testBlockPendingMember
   describe "group member inactivity" $ do
     it "mark member inactive on reaching quota" testGroupMemberInactive
   describe "group member reports" $ do
@@ -3108,27 +3116,32 @@ testPlanGroupLinkRemovedNotice =
       gLink <- createTeamLink alice
       joinTeamViaLink alice bob gLink "bob"
 
-      alice ##> "/rm team bob notice={\"ttl\":86400,\"reason\":\"spam\"}"
-      removedFromTeam alice bob "bob"
+      alice ##> "/rm team bob notice={\"ttl\":86400}"
+      silentlyRemovedFromTeam alice bob "bob" 1
 
       bob ##> ("/_connect plan 1 " <> gLink)
-      bannedLine bob "group link: " ", reason: spam"
-      bob ##> ("/_connect plan 1 " <> linkAnotherSchema gLink)
-      bannedLine bob "group link: " ", reason: spam"
+      bob <## "group link: known group #team"
+      bob <## "use #team <message> to send messages"
       bob ##> ("/c " <> gLink)
-      bannedLine bob "group link: " ", reason: spam"
-      bob ##> ("/_connect 1 " <> gLink)
-      bannedLine bob "connection link: " ", reason: spam"
+      bob <## "group link: known group #team"
+      bob <## "use #team <message> to send messages"
+      bob #> "#team hello"
+      alice <// 50000
 
-      bob ##> "/d #team"
-      bob <## "#team: you deleted your local copy of the group"
+      leaveDeleteTeam bob
       bob ##> ("/_connect plan 1 " <> gLink)
-      bannedLine bob "group link: " ", reason: spam"
+      bannedLine bob "group link: "
+      bob ##> ("/_connect plan 1 " <> linkAnotherSchema gLink)
+      bannedLine bob "group link: "
+      bob ##> ("/c " <> gLink)
+      bannedLine bob "group link: "
+      bob ##> ("/_connect 1 " <> gLink)
+      bannedLine bob "connection link: "
 
       bob ##> "/create user robert"
       showActiveUser bob "robert"
       bob ##> ("/_connect plan 2 " <> gLink)
-      bannedLine bob "group link: " ", reason: spam"
+      bannedLine bob "group link: "
 
 testPlanGroupLinkRemovedNoticeReplaced :: HasCallStack => TestParams -> IO ()
 testPlanGroupLinkRemovedNoticeReplaced =
@@ -3149,20 +3162,22 @@ testPlanGroupLinkRemovedNoticeReplaced =
       joinTeamViaLink alice bob gLink "bob_1"
 
       alice ##> "/rm team bob_1 notice={\"ttl\":0}"
-      removedFromTeam alice bob "bob_1"
+      silentlyRemovedFromTeam alice bob "bob_1" 1
+      leaveDeleteTeam bob
       bob ##> ("/_connect plan 1 " <> gLink)
       bob <## "group link: ok to connect directly"
       _sLinkData <- getTermLine bob
       linkNoticesCount bob `shouldReturn` 1
 
-      bob ##> "/d #team"
-      bob <## "#team: you deleted your local copy of the group"
       joinTeamViaLink alice bob gLink "bob_2"
 
-      alice ##> "/rm team bob_2 notice={\"reason\":\"profile\"}"
-      removedFromTeam alice bob "bob_2"
+      alice ##> "/rm team bob_2 notice={}"
+      alice <## "#team: you removed bob_2 from the group (signed)"
+      permanentLinkNoticesCount bob `shouldEventuallyReturn` 1
+      bob <// 50000
+      leaveDeleteTeam bob
       bob ##> ("/_connect plan 1 " <> gLink)
-      bob <## "group link: banned permanently, reason: profile"
+      bob <## "group link: banned permanently"
       linkNoticesCount bob `shouldReturn` 1
 
 testPlanGroupLinkRemovedNoticeOtherLinks :: HasCallStack => TestParams -> IO ()
@@ -3178,9 +3193,10 @@ testPlanGroupLinkRemovedNoticeOtherLinks =
       clubLink <- getGroupLink alice "club" GRMember True
 
       alice ##> "/rm team bob notice={\"ttl\":86400}"
-      removedFromTeam alice bob "bob"
+      silentlyRemovedFromTeam alice bob "bob" 1
+      leaveDeleteTeam bob
       bob ##> ("/_connect plan 1 " <> gLink)
-      bannedLine bob "group link: " ""
+      bannedLine bob "group link: "
       bob ##> ("/_connect plan 1 " <> clubLink)
       bob <## "group link: ok to connect directly"
       _sLinkData <- getTermLine bob
@@ -3225,15 +3241,72 @@ testPlanGroupLinkRejectedNotice =
             bob <## "#team: you joined the group, pending approval"
         ]
 
-      alice ##> "/rm team bob notice={\"ttl\":3600,\"reason\":\"community\"}"
-      alice <## "#team: you removed bob from the group (signed)"
-      bob <## "#team: alice removed you from the group (signed)"
-      bob <## "use /d #team to delete the group"
+      alice ##> "/rm team bob notice={\"ttl\":3600}"
+      silentlyRemovedFromTeam alice bob "bob" 1
+      leaveDeleteTeam bob
 
       bob ##> ("/_connect plan 1 " <> gLink)
-      bannedLine bob "group link: " ", reason: community"
+      bannedLine bob "group link: "
   where
     cfg = testCfg {chatHooks = defaultChatHooks {acceptMember = Just (\_ _ _ -> pure $ Right (GAPendingApproval, GRObserver))}}
+
+testPlanGroupLinkRemovedAdminNotice :: HasCallStack => TestParams -> IO ()
+testPlanGroupLinkRemovedAdminNotice =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      gLink <- createTeamLink alice
+      joinTeamViaLink alice bob gLink "bob"
+      alice ##> "/mr team bob admin"
+      alice <## "#team: you changed the role of bob to admin (signed)"
+      bob <## "#team: alice changed your role from member to admin (signed)"
+
+      alice ##> "/rm team bob notice={\"ttl\":86400}"
+      removedFromTeam alice bob "bob"
+      linkNoticesCount bob `shouldReturn` 1
+      bob ##> "/d #team"
+      bob <## "#team: you deleted your local copy of the group"
+      bob ##> ("/_connect plan 1 " <> gLink)
+      bannedLine bob "group link: "
+
+testRemoveMemberNoticePrevVersion :: HasCallStack => TestCC -> TestCC -> IO ()
+testRemoveMemberNoticePrevVersion alice bob = do
+  createGroup2' "team" alice (bob, GRMember) True
+  alice ##> "/rm team bob notice={}"
+  alice <## "bad chat command: notice is not supported for relays, members on old versions and members not in the group"
+  alice ##> "/rm team bob"
+  concurrentlyN_
+    [ alice <## "#team: you removed bob from the group (signed)",
+      do
+        bob <## "#team: alice removed you from the group (signed)"
+        bob <## "use /d #team to delete the group"
+    ]
+
+testGroupDeleteKeepConversation :: HasCallStack => TestParams -> IO ()
+testGroupDeleteKeepConversation =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2' "team" alice (bob, GRMember) True
+      alice #> "#team hi"
+      bob <# "#team alice> hi"
+
+      bob ##> "/_delete #1 entity"
+      bob <## "#team: you have insufficient permissions for this action, the required role is owner"
+      alice ##> "/_delete #1 archive"
+      alice <## "bad chat command: only full deletion or keeping the conversation is supported for groups"
+      alice ##> "/_delete #1 messages"
+      alice <## "bad chat command: only full deletion or keeping the conversation is supported for groups"
+
+      alice ##> "/_delete #1 entity"
+      alice <## "#team: you deleted the group (signed)"
+      bob <## "#team: alice deleted the group (signed)"
+      bob <## "use /d #team to delete the local copy of the group"
+      alice #$> ("/_get chat #1 count=1", chat, [(1, "hi")])
+      alice ##> "#team hello"
+      alice <## "bad chat command: not current member"
+      alice ##> "/_delete #1 entity"
+      alice <## "bad chat command: keeping the conversation requires an active owner"
+      alice ##> "/d #team"
+      alice <## "#team: you deleted your local copy of the group"
 
 createTeamLink :: HasCallStack => TestCC -> IO String
 createTeamLink alice = do
@@ -3266,6 +3339,20 @@ removedFromTeam alice bob bobName =
         bob <## "#team: alice removed you from the group (signed)"
         bob <## "use /d #team to delete the group"
     ]
+
+silentlyRemovedFromTeam :: HasCallStack => TestCC -> TestCC -> String -> Int -> IO ()
+silentlyRemovedFromTeam alice bob bobName noticesCount = do
+  alice <## ("#team: you removed " <> bobName <> " from the group (signed)")
+  waitLinkNoticesCount bob noticesCount
+  bob <// 50000
+
+leaveDeleteTeam :: HasCallStack => TestCC -> IO ()
+leaveDeleteTeam bob = do
+  bob ##> "/l team"
+  bob <## "#team: you left the group"
+  bob <## "use /d #team to delete the group"
+  bob ##> "/d #team"
+  bob <## "#team: you deleted your local copy of the group"
 
 testGroupLinkLargeGroupProfile :: HasCallStack => TestParams -> IO ()
 testGroupLinkLargeGroupProfile =
@@ -8184,12 +8271,14 @@ testBlockForAllMultipleMembers =
 
       -- bob and cath don't know they are blocked and receive each other's messages
       bob #> "#team 3"
-      [alice, dan] *<# "#team bob> 3 [blocked by admin] <muted>"
+      alice <# "#team bob> 3 [blocked by admin] <muted>"
       cath <# "#team bob> 3"
+      dan <// 50000
 
       cath #> "#team 4"
-      [alice, dan] *<# "#team cath> 4 [blocked by admin] <muted>"
+      alice <# "#team cath> 4 [blocked by admin] <muted>"
       bob <# "#team cath> 4"
+      dan <// 50000
 
       alice ##> "/_block #1 2,3 blocked=off"
       alice <## "#team: you unblocked 2 members (signed)"
@@ -8203,6 +8292,112 @@ testBlockForAllMultipleMembers =
 
       cath #> "#team 6"
       [alice, bob, dan] *<# "#team cath> 6"
+
+testBlockForAllTimed :: HasCallStack => TestParams -> IO ()
+testBlockForAllTimed =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
+      threadDelay 1000000
+      alice #> "#team hi"
+      [bob, cath] *<# "#team alice> hi"
+
+      alice ##> "/block for all #team bob ttl=4"
+      alice <## "#team: you blocked bob (signed)"
+      cath <## "#team: alice blocked bob (signed)"
+      bob <// 50000
+
+      alice ##> "/ms team"
+      alice
+        <### [ "alice (Alice): owner, you, created group",
+               "bob (Bob): member, invited, connected, blocked by admin",
+               "cath (Catherine): member, invited, connected"
+             ]
+      cath ##> "/ms team"
+      cath
+        <### [ "cath (Catherine): member, you, connected",
+               "alice (Alice): owner, host, connected",
+               "bob (Bob): member, connected"
+             ]
+
+      bob #> "#team 1"
+      alice <# "#team bob> 1 [blocked by admin] <muted>"
+      cath <// 50000
+      alice #$> ("/_get chat #1 count=2", chat, [(1, "blocked bob (signed)"), (0, "1 [blocked by admin]")])
+      cath #$> ("/_get chat #1 count=1", chat, [(0, "hi")])
+
+      threadDelay 4000000
+      bob #> "#team 2"
+      [alice, cath] *<# "#team bob> 2"
+      alice ##> "/ms team"
+      alice
+        <### [ "alice (Alice): owner, you, created group",
+               "bob (Bob): member, invited, connected",
+               "cath (Catherine): member, invited, connected"
+             ]
+
+testBlockForAllExpiryCleanup :: HasCallStack => TestCC -> TestCC -> TestCC -> IO ()
+testBlockForAllExpiryCleanup alice bob cath = do
+  createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
+  threadDelay 1000000
+
+  alice ##> "/block for all #team cath"
+  alice <## "#team: you blocked cath (signed)"
+  bob <## "#team: alice blocked cath (signed)"
+  cath <// 50000
+
+  alice ##> "/block for all #team bob ttl=2"
+  alice <## "#team: you blocked bob (signed)"
+  cath <## "#team: alice blocked bob (signed)"
+  bob <// 50000
+
+  cath <## "#team: alice unblocked bob (signed)"
+  alice #$> ("/_get chat #1 count=3", chat, [(1, "blocked cath (signed)"), (1, "blocked bob (signed)"), (1, "unblocked bob (signed)")])
+  threadDelay 2000000
+  alice #$> ("/_get chat #1 count=1", chat, [(1, "unblocked bob (signed)")])
+  alice ##> "/ms team"
+  alice
+    <### [ "alice (Alice): owner, you, created group",
+           "bob (Bob): member, invited, connected",
+           "cath (Catherine): member, invited, connected, blocked by admin"
+         ]
+
+  bob #> "#team hi"
+  [alice, cath] *<# "#team bob> hi"
+
+blockCleanupCfg :: ChatConfig
+blockCleanupCfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerInterval = 1, cleanupManagerStepDelay = 0}
+
+testBlockPendingMember :: HasCallStack => TestParams -> IO ()
+testBlockPendingMember =
+  testChatCfg2 cfg aliceProfile bobProfile $
+    \alice bob -> do
+      gLink <- createTeamLink alice
+      bob ##> ("/c " <> gLink)
+      bob <## "connection request sent!"
+      alice <## "bob (Bob): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: bob connected and pending approval, use /_accept member #1 2 <role> to accept member",
+          do
+            bob <## "#team: joining the group..."
+            bob <## "#team: you joined the group, pending approval"
+        ]
+
+      alice ##> "/block for all #team bob"
+      alice <##. "#team: you blocked bob"
+      bob <// 50000
+      alice ##> "/_accept member #1 2 member"
+      alice <## "bad chat command: can't accept blocked member, unblock first"
+
+      alice ##> "/unblock for all #team bob"
+      alice <##. "#team: you unblocked bob"
+      alice ##> "/_accept member #1 2 member"
+      concurrentlyN_
+        [ alice <## "#team: bob accepted",
+          bob <## "#team: you joined the group"
+        ]
+  where
+    cfg = testCfg {chatHooks = defaultChatHooks {acceptMember = Just (\_ _ _ -> pure $ Right (GAPendingApproval, GRObserver))}}
 
 testBlockForAllLeftRemoved :: HasCallStack => TestParams -> IO ()
 testBlockForAllLeftRemoved =
@@ -10905,10 +11100,10 @@ testChannelBlockMemberSigned ps =
                 eve <## "#team: alice blocked cath (signed)"
               ]
             alice #$> ("/_get chat #1 count=1", chat, [(1, "blocked cath (signed)")])
-            bob #$> ("/_get chat #1 count=1", chat, [(0, "blocked cath (signed)")])
+            bob #$> ("/_get chat #1 count=1", chat, [(0, "hello from cath")])
             cath #$> ("/_get chat #1 count=1", chat, [(1, "hello from cath")]) -- was blocked - no "blocked" chat item
-            dan #$> ("/_get chat #1 count=1", chat, [(0, "blocked cath (signed)")])
-            eve #$> ("/_get chat #1 count=1", chat, [(0, "blocked cath (signed)")])
+            dan #$> ("/_get chat #1 count=1", chat, [(0, "hello from cath")])
+            eve #$> ("/_get chat #1 count=1", chat, [(0, "hello from cath")])
 
             -- TODO [relays] member: in channels - don't create unknown member record and chat item? (just ignore)
             -- block silent member (other members create unknown member record and can verify)
@@ -10925,16 +11120,10 @@ testChannelBlockMemberSigned ps =
                   eve .<##. ("#team: alice blocked", "(signed)")
               ]
             alice #$> ("/_get chat #1 count=1", chat, [(1, "blocked dan (signed)")])
-            bob #$> ("/_get chat #1 count=1", chat, [(0, "blocked dan (signed)")])
-            cath ##> "/_get chat #1 count=1"
-            [(0, r1)] <- chat <$> getTermLine cath
-            r1 `shouldStartWith` "blocked"
-            r1 `shouldEndWith` "(signed)"
-            dan #$> ("/_get chat #1 count=1", chat, [(0, "blocked cath (signed)")]) -- was blocked - no new chat item
-            eve ##> "/_get chat #1 count=1"
-            [(0, r2)] <- chat <$> getTermLine eve
-            r2 `shouldStartWith` "blocked"
-            r2 `shouldEndWith` "(signed)"
+            bob #$> ("/_get chat #1 count=1", chat, [(0, "hello from cath")])
+            cath #$> ("/_get chat #1 count=1", chat, [(1, "hello from cath")])
+            dan #$> ("/_get chat #1 count=1", chat, [(0, "hello from cath")])
+            eve #$> ("/_get chat #1 count=1", chat, [(0, "hello from cath")])
 
 checkMemberRow :: HasCallStack => TestCC -> T.Text -> Maybe T.Text -> IO ()
 checkMemberRow cc name expectedRole = memberRoles cc name `shouldReturn` maybeToList expectedRole
@@ -11443,16 +11632,25 @@ testChannelRemoveMemberNotice ps =
         memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
 
         threadDelay 1000000
-        alice ##> "/rm #team cath notice={\"ttl\":86400,\"reason\":\"content\"}"
+        alice ##> "/rm #team cath notice={\"ttl\":86400}"
         alice <## "#team: you removed cath from the group (signed)"
         bob <## "#team: alice removed cath from the group (signed)"
-        cath <## "#team: alice removed you from the group (signed)"
-        cath <## "use /d #team to delete the group"
+        waitLinkNoticesCount cath 1
+        cath <// 50000
 
         cath ##> ("/_connect plan 1 " <> shortLink)
-        bannedLine cath "group link: " ", reason: content"
+        cath <## "group link: known group #team"
+        cath <## "use #team <message> to send messages"
         cath ##> "/_connect group #1"
-        bannedLine cath "connection link: " ", reason: content"
+        bannedLine cath "connection link: "
+
+        cath ##> "/l #team"
+        cath <## "#team: you left the group"
+        cath <## "use /d #team to delete the group"
+        cath ##> "/d #team"
+        cath <## "#team: you deleted your local copy of the group"
+        cath ##> ("/_connect plan 1 " <> shortLink)
+        bannedLine cath "group link: "
 
 -- asserts the member row is GSMemRemoved, with removed_at set (TTL tombstone) or NULL (permanent)
 checkRemovedMember :: HasCallStack => TestCC -> String -> Bool -> Expectation

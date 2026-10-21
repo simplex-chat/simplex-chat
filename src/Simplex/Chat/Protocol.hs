@@ -300,7 +300,6 @@ instance StrEncoding ReportReason where
     A.takeTill (== ' ') >>= \case
       "spam" -> pure RRSpam
       "content" -> pure RRContent
-      "illegal" -> pure RRContent
       "community" -> pure RRCommunity
       "profile" -> pure RRProfile
       "other" -> pure RROther
@@ -313,13 +312,8 @@ instance ToJSON ReportReason where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-instance ToField ReportReason where toField = toField . safeDecodeUtf8 . strEncode
-
-instance FromField ReportReason where fromField = fromTextField_ $ eitherToMaybe . strDecode . encodeUtf8
-
 data LinkNotice = LinkNotice
-  { ttl :: Maybe Int64,
-    reason :: Maybe ReportReason
+  { ttl :: Maybe Int64
   }
   deriving (Eq, Show)
 
@@ -510,9 +504,9 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpMemRestrict :: MemberId -> MemberRestrictions -> ChatMsgEvent 'Json
   XGrpMemCon :: MemberId -> ChatMsgEvent 'Json
   XGrpMemConAll :: MemberId -> ChatMsgEvent 'Json -- TODO not implemented
-  XGrpMemDel :: MemberId -> Bool -> Maybe VersionRoster -> Maybe LinkNotice -> ChatMsgEvent 'Json
+  XGrpMemDel :: MemberId -> Bool -> Maybe VersionRoster -> Bool -> Maybe LinkNotice -> ChatMsgEvent 'Json
   XGrpLeave :: ChatMsgEvent 'Json
-  XGrpDel :: Maybe LinkNotice -> ChatMsgEvent 'Json
+  XGrpDel :: ChatMsgEvent 'Json
   XGrpInfo :: GroupProfile -> ChatMsgEvent 'Json
   XGrpPrefs :: GroupPreferences -> ChatMsgEvent 'Json
   XGrpDirectInv :: ConnReqInvitation -> Maybe MsgContent -> Maybe MsgScope -> ChatMsgEvent 'Json
@@ -559,7 +553,7 @@ isForwardedGroupMsg ev = case ev of
   XGrpMemRestrict {} -> True
   XGrpMemDel {} -> True
   XGrpLeave -> True
-  XGrpDel _ -> True
+  XGrpDel -> True
   XGrpInfo _ -> True
   XGrpPrefs _ -> True
   XGrpRoster _ -> True
@@ -1316,7 +1310,7 @@ toCMEventTag msg = case msg of
   XGrpMemConAll _ -> XGrpMemConAll_
   XGrpMemDel {} -> XGrpMemDel_
   XGrpLeave -> XGrpLeave_
-  XGrpDel _ -> XGrpDel_
+  XGrpDel -> XGrpDel_
   XGrpInfo _ -> XGrpInfo_
   XGrpPrefs _ -> XGrpPrefs_
   XGrpDirectInv {} -> XGrpDirectInv_
@@ -1492,9 +1486,9 @@ appJsonToCM fwdDepth AppMessageJson {v, msgId, event, params} = do
       XGrpMemRestrict_ -> XGrpMemRestrict <$> p "memberId" <*> p "memberRestrictions"
       XGrpMemCon_ -> XGrpMemCon <$> p "memberId"
       XGrpMemConAll_ -> XGrpMemConAll <$> p "memberId"
-      XGrpMemDel_ -> XGrpMemDel <$> p "memberId" <*> Right (fromRight False $ p "messages") <*> opt "rosterVersion" <*> Right (fromRight Nothing $ opt "notice")
+      XGrpMemDel_ -> XGrpMemDel <$> p "memberId" <*> Right (fromRight False $ p "messages") <*> opt "rosterVersion" <*> Right (fromRight False $ p "silent") <*> Right (fromRight Nothing $ opt "notice")
       XGrpLeave_ -> pure XGrpLeave
-      XGrpDel_ -> XGrpDel <$> Right (fromRight Nothing $ opt "notice")
+      XGrpDel_ -> pure XGrpDel
       XGrpInfo_ -> XGrpInfo <$> p "groupProfile"
       XGrpPrefs_ -> XGrpPrefs <$> p "groupPreferences"
       XGrpDirectInv_ -> XGrpDirectInv <$> p "connReq" <*> opt "content" <*> opt "scope"
@@ -1568,9 +1562,9 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XGrpMemRestrict memId memRestrictions -> o ["memberId" .= memId, "memberRestrictions" .= memRestrictions]
       XGrpMemCon memId -> o ["memberId" .= memId]
       XGrpMemConAll memId -> o ["memberId" .= memId]
-      XGrpMemDel memId messages rosterVersion notice -> o $ ("notice" .=? notice) $ ("rosterVersion" .=? rosterVersion) $ ("messages" .=? if messages then Just True else Nothing) ["memberId" .= memId]
+      XGrpMemDel memId messages rosterVersion silent notice -> o $ ("notice" .=? notice) $ ("silent" .=? justTrue silent) $ ("rosterVersion" .=? rosterVersion) $ ("messages" .=? if messages then Just True else Nothing) ["memberId" .= memId]
       XGrpLeave -> JM.empty
-      XGrpDel notice -> o $ ("notice" .=? notice) []
+      XGrpDel -> JM.empty
       XGrpInfo p -> o ["groupProfile" .= p]
       XGrpPrefs p -> o ["groupPreferences" .= p]
       XGrpDirectInv connReq content scope -> o $ ("content" .=? content) $ ("scope" .=? scope) ["connReq" .= connReq]

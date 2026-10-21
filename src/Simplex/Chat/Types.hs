@@ -1162,14 +1162,18 @@ mrsBlocked = \case
   MRSBlocked -> True
   _ -> False
 
+blockedAt :: UTCTime -> Maybe MemberRestrictionStatus -> Maybe UTCTime -> Bool
+blockedAt now restriction_ blockedUntil = maybe False mrsBlocked restriction_ && maybe True (now <) blockedUntil
+
 data MemberRestrictions = MemberRestrictions
-  { restriction :: MemberRestrictionStatus
+  { restriction :: MemberRestrictionStatus,
+    expiresAt :: Maybe UTCTime
   }
   deriving (Eq, Show)
 
 memberRestrictions :: GroupMember -> Maybe MemberRestrictions
 memberRestrictions m
-  | blockedByAdmin m = Just MemberRestrictions {restriction = MRSBlocked}
+  | blockedByAdmin m = Just MemberRestrictions {restriction = MRSBlocked, expiresAt = blockedUntil m}
   | otherwise = Nothing
 
 data ReceivedGroupInvitation = ReceivedGroupInvitation
@@ -1194,6 +1198,7 @@ data GroupMember = GroupMember
     memberStatus :: GroupMemberStatus,
     memberSettings :: GroupMemberSettings,
     blockedByAdmin :: Bool,
+    blockedUntil :: Maybe UTCTime,
     invitedBy :: InvitedBy,
     invitedByGroupMemberId :: Maybe GroupMemberId,
     localDisplayName :: ContactName,
@@ -1308,7 +1313,7 @@ data NewGroupMember = NewGroupMember
   { memInfo :: MemberInfo,
     memCategory :: GroupMemberCategory,
     memStatus :: GroupMemberStatus,
-    memRestriction :: Maybe MemberRestrictionStatus,
+    memRestriction :: Maybe MemberRestrictions,
     memInvitedBy :: InvitedBy,
     memInvitedByGroupMemberId :: Maybe GroupMemberId,
     localDisplayName :: ContactName,

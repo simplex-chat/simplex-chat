@@ -126,7 +126,6 @@ chatProfileTests = do
     it "contact via address" testPlanAddressContactViaAddress
     it "contact via short address" testPlanAddressContactViaShortAddress
     it "contact deleted silently with notice can't re-connect" testPlanAddressContactDeletedNoticeSilent
-    it "contact deleted with notification and notice can't re-connect" testPlanAddressContactDeletedNoticeNotify
     it "silent notice is not sent to previous version" $
       runTestCfg2 testCfg testCfgVPrev testPlanAddressContactDeletedNoticePrevVersion
   describe "incognito" $ do
@@ -2160,26 +2159,38 @@ testBusinessAddressNotice = testChat3 businessProfile bobProfile cathProfile $
     biz <## "auto_accept on, business"
 
     connectBusinessCustomer biz bob cLink "bob" "Bob"
-    biz ##> "/rm #bob bob_1 notice={\"ttl\":86400,\"reason\":\"spam\"}"
+    biz ##> "/rm #bob bob_1 notice={\"ttl\":86400}"
     biz <## "#bob: you removed bob_1 from the group (signed)"
-    bob <## "#biz: biz_1 removed you from the group (signed)"
-    bob <## "use /d #biz to delete the group"
+    waitLinkNoticesCount bob 1
+    bob <// 50000
     bob ##> ("/_connect plan 1 " <> cLink)
-    bannedLine bob "contact address: " ", reason: spam"
+    bob <## "business address: known business #biz"
+    bob <## "use #biz <message> to send messages"
+    leaveDeleteBiz bob
+    bob ##> ("/_connect plan 1 " <> cLink)
+    bannedLine bob "contact address: "
     bob ##> ("/_connect 1 " <> cLink)
-    bannedLine bob "connection link: " ", reason: spam"
+    bannedLine bob "connection link: "
 
     connectBusinessCustomer biz cath cLink "cath" "Catherine"
-    biz ##> "/_delete #2 full notice={\"reason\":\"other\"}"
+    biz ##> "/_delete #2 full notice={}"
     biz <## "#cath: you deleted the group (signed)"
-    cath <## "#biz: biz_1 deleted the group (signed)"
-    cath <## "use /d #biz to delete the local copy of the group"
+    waitLinkNoticesCount cath 1
+    cath <// 50000
+    leaveDeleteBiz cath
     cath ##> ("/_connect plan 1 " <> cLink)
-    cath <## "contact address: banned permanently, reason: other"
+    cath <## "contact address: banned permanently"
     cath ##> ("/c " <> cLink)
-    cath <## "contact address: banned permanently, reason: other"
+    cath <## "contact address: banned permanently"
     cath ##> ("/_connect 1 " <> cLink)
-    cath <## "connection link: banned permanently, reason: other"
+    cath <## "connection link: banned permanently"
+  where
+    leaveDeleteBiz cc = do
+      cc ##> "/l #biz"
+      cc <## "#biz: you left the group"
+      cc <## "use /d #biz to delete the group"
+      cc ##> "/d #biz"
+      cc <## "#biz: you deleted your local copy of the group"
 
 connectBusinessCustomer :: HasCallStack => TestCC -> TestCC -> String -> String -> String -> IO ()
 connectBusinessCustomer biz customer cLink name fullName = do
@@ -2394,41 +2405,33 @@ testPlanAddressContactDeletedNoticeSilent =
     \alice bob -> do
       cLink <- connectViaAddress alice bob
 
-      alice ##> "/_delete @2 full notify=off notice={\"ttl\":86400,\"reason\":\"spam\"}"
-      alice <## "bob: contact is deleted"
-      waitLinkNoticesCount bob 1
-
-      bob ##> ("/_connect plan 1 " <> cLink)
-      bannedLine bob "contact address: " ", reason: spam"
-      bob ##> ("/_connect plan 1 " <> linkAnotherSchema cLink)
-      bannedLine bob "contact address: " ", reason: spam"
-      bob ##> ("/c " <> cLink)
-      bannedLine bob "contact address: " ", reason: spam"
-      bob ##> ("/_connect 1 " <> cLink)
-      bannedLine bob "connection link: " ", reason: spam"
-      bob @@@ [("@alice", "hey")]
-
-testPlanAddressContactDeletedNoticeNotify :: HasCallStack => TestParams -> IO ()
-testPlanAddressContactDeletedNoticeNotify =
-  testChat2 aliceProfile bobProfile $
-    \alice bob -> do
-      cLink <- connectViaAddress alice bob
-
       alice ##> "/_delete @2 full notice={\"ttl\":86400}"
       alice <## "bob: contact is deleted"
-      bob <## "alice (Alice) deleted contact with you"
+      waitLinkNoticesCount bob 1
+      bob <// 50000
 
       bob ##> ("/_connect plan 1 " <> cLink)
-      bannedLine bob "contact address: " ""
-      linkNoticesCount bob `shouldReturn` 1
+      bob <## "contact address: known contact alice"
+      bob <## "use @alice <message> to send messages"
+      bob @@@ [("@alice", "hey")]
+
+      bob ##> "/d alice"
+      bob <## "alice: contact is deleted"
+      bob ##> ("/_connect plan 1 " <> cLink)
+      bannedLine bob "contact address: "
+      bob ##> ("/_connect plan 1 " <> linkAnotherSchema cLink)
+      bannedLine bob "contact address: "
+      bob ##> ("/c " <> cLink)
+      bannedLine bob "contact address: "
+      bob ##> ("/_connect 1 " <> cLink)
+      bannedLine bob "connection link: "
 
 testPlanAddressContactDeletedNoticePrevVersion :: HasCallStack => TestCC -> TestCC -> IO ()
 testPlanAddressContactDeletedNoticePrevVersion alice bob = do
   cLink <- connectViaAddress alice bob
 
   alice ##> "/_delete @2 full notify=off notice={\"ttl\":86400}"
-  alice <## "bob: contact is deleted"
-  threadDelay 500000
+  alice <## "bad chat command: contact does not support notice"
 
   bob ##> ("/_connect plan 1 " <> cLink)
   bob <## "contact address: known contact alice"

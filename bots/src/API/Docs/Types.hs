@@ -229,7 +229,7 @@ chatTypesDocsData =
     (sti @BusinessChatInfo, STRecord, "", [], "", ""),
     (sti @BusinessChatType, STEnum, "BC", [], "", ""),
     (sti @ChatBotCommand, STUnion, "CBC", [], "", ""),
-    (sti @ChatDeleteMode, STUnion, "CDM", [], Param "type" <> Choice "self" [("messages", "")] (OnOffParam "notify" "notify" (Just True)), ""),
+    (sti @ChatDeleteMode, STUnion, "CDM", [], Param "type" <> Choice "self" [("messages", ""), ("archive", "")] (OnOffParam "notify" "notify" (Just True)), ""),
     (sti @ChatError, STUnion, "Chat", ["ChatErrorDatabase", "ChatErrorRemoteHost", "ChatErrorRemoteCtrl"], "", ""),
     (sti @ChatErrorType, STUnion, "CE", ["CEContactNotFound", "CEServerProtocol", "CECallState", "CEInvalidChatMessage"], "", ""),
     (sti @BadgeStatus, STEnum, "BS", [], "", ""),

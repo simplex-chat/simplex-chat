@@ -36,7 +36,7 @@ import Data.Type.Equality
 import Simplex.Chat.Badges (BadgeRow, MaybeBadgeProofRow, ProofPresHeader, badgeToRow, maybeRowToBadgeProof, rowToBadge)
 import Simplex.Chat.Names (SimplexDomainProof, SimplexDomainClaim (..), claimDomain)
 import Simplex.Chat.Messages
-import Simplex.Chat.Protocol (LinkNotice (..), ReportReason)
+import Simplex.Chat.Protocol (LinkNotice (..))
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
@@ -702,7 +702,7 @@ type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, Text, Maybe 
 
 type PublicGroupAccessRow = (Maybe Text, Maybe SimplexDomain, Maybe BoolInt, Maybe BoolInt, Maybe SimplexDomainProof)
 
-type GroupMemberRow = (GroupMemberId, GroupId, Int64, MemberId, VersionChat, VersionChat, GroupMemberRole, GroupMemberCategory, GroupMemberStatus, BoolInt, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, ContactName, Maybe ContactId, ProfileId) :. ProfileRow :. (UTCTime, UTCTime) :. (Maybe UTCTime, Int64, Int64, Int64, Maybe UTCTime, Maybe C.PublicKeyEd25519, Maybe ShortLinkContact, Maybe Text, Maybe UTCTime)
+type GroupMemberRow = (GroupMemberId, GroupId, Int64, MemberId, VersionChat, VersionChat, GroupMemberRole, GroupMemberCategory, GroupMemberStatus, BoolInt, Maybe MemberRestrictionStatus, Maybe UTCTime) :.(Maybe Int64, Maybe GroupMemberId, ContactName, Maybe ContactId, ProfileId) :. ProfileRow :. (UTCTime, UTCTime) :. (Maybe UTCTime, Int64, Int64, Int64, Maybe UTCTime, Maybe C.PublicKeyEd25519, Maybe ShortLinkContact, Maybe Text, Maybe UTCTime)
 
 type ProfileRow = (ProfileId, ContactName, Text, Maybe Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, LocalAlias, Maybe Text, Maybe Text) :. BadgeRow :. ContactDomainRow
 
@@ -781,10 +781,10 @@ setUserMemberKey db groupId membershipId newKey = do
   pure memberPrivKey
 
 toGroupMember :: UTCTime -> Int64 -> GroupMemberRow -> GroupMember
-toGroupMember now userContactId ((groupMemberId, groupId, indexInGroup, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, BI showMessages, memberRestriction_) :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId) :. profileRow :. (createdAt, updatedAt) :. (supportChatTs_, supportChatUnread, supportChatMemberAttention, supportChatMentions, supportChatLastMsgFromMemberTs, memberPubKey, relayLink, memberCode_, memberCodeVerifiedAt_)) =
+toGroupMember now userContactId ((groupMemberId, groupId, indexInGroup, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, BI showMessages, memberRestriction_, blockedUntil) :.(invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId) :. profileRow :. (createdAt, updatedAt) :. (supportChatTs_, supportChatUnread, supportChatMemberAttention, supportChatMentions, supportChatLastMsgFromMemberTs, memberPubKey, relayLink, memberCode_, memberCodeVerifiedAt_)) =
   let memberProfile = rowToLocalProfile now profileRow
       memberSettings = GroupMemberSettings {showMessages}
-      blockedByAdmin = maybe False mrsBlocked memberRestriction_
+      blockedByAdmin = blockedAt now memberRestriction_ blockedUntil
       invitedBy = toInvitedBy userContactId invitedById
       activeConn = Nothing
       memberVerifiedCode = SecurityCode <$> memberCode_ <*> memberCodeVerifiedAt_
@@ -807,7 +807,7 @@ groupMemberQuery :: Query
 groupMemberQuery =
   [sql|
     SELECT
-      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
+      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction, m.member_restriction_expires_at,
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
@@ -854,7 +854,7 @@ groupInfoQueryFields =
       g.root_priv_key, g.root_pub_key, g.member_priv_key,
       -- GroupMember - membership
       mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
-      mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
+      mu.member_status, mu.show_messages, mu.member_restriction, mu.member_restriction_expires_at, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
       pu.display_name, pu.full_name, pu.short_descr, pu.description, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences, pu.preferences_json,
       pu.badge_proof, pu.badge_pres_header, pu.badge_expiry, pu.badge_type, pu.badge_verified, pu.badge_extra, pu.badge_master_key, pu.badge_signature, pu.badge_key_idx, pu.contact_domain, pu.contact_domain_proof, pu.contact_domain_verified,
       mu.created_at, mu.updated_at,
@@ -1002,30 +1002,38 @@ setContactLinkNotice db ct brokerTs notice =
       >>= mapM_ (\linkHash -> upsertLinkNotice db linkHash brokerTs notice)
 
 upsertLinkNotice :: DB.Connection -> ConnReqUriHash -> UTCTime -> LinkNotice -> IO ()
-upsertLinkNotice db linkHash brokerTs LinkNotice {ttl, reason} = do
+upsertLinkNotice db linkHash brokerTs LinkNotice {ttl} = do
   currentTs <- getCurrentTime
+  let expiresAt = capExpiry $ (\t -> addUTCTime (fromIntegral t) (min brokerTs currentTs)) <$> ttl
   DB.execute
     db
     [sql|
-      INSERT INTO link_notices (link_hash, expires_at, reason, created_at, updated_at)
-      VALUES (?,?,?,?,?)
+      INSERT INTO link_notices (link_hash, expires_at, created_at, updated_at)
+      VALUES (?,?,?,?)
       ON CONFLICT (link_hash) DO UPDATE SET
         expires_at = EXCLUDED.expires_at,
-        reason = EXCLUDED.reason,
         updated_at = EXCLUDED.updated_at
     |]
-    (linkHash, expiresAt, reason, currentTs, currentTs)
-  where
-    expiresAt = mfilter (< maxLinkNoticeExpiry) $ (\t -> addUTCTime (fromIntegral t) brokerTs) <$> ttl
-    maxLinkNoticeExpiry = UTCTime (fromGregorian 10000 1 1) 0
+    (linkHash, expiresAt, currentTs, currentTs)
 
-getLinkNotice :: DB.Connection -> UTCTime -> (ConnReqUriHash, ConnReqUriHash) -> IO (Maybe (Maybe UTCTime, Maybe ReportReason))
+capExpiry :: Maybe UTCTime -> Maybe UTCTime
+capExpiry = fmap (max minExpiry) . mfilter (< maxExpiry)
+  where
+    minExpiry = UTCTime (fromGregorian 1970 1 1) 0
+    maxExpiry = UTCTime (fromGregorian 10000 1 1) 0
+
+blockExpiry :: MemberRestrictions -> Maybe UTCTime
+blockExpiry MemberRestrictions {restriction, expiresAt}
+  | mrsBlocked restriction = capExpiry expiresAt
+  | otherwise = Nothing
+
+getLinkNotice :: DB.Connection -> UTCTime -> (ConnReqUriHash, ConnReqUriHash) -> IO (Maybe (Maybe UTCTime))
 getLinkNotice db currentTs (linkHash1, linkHash2) =
-  maybeFirstRow id $
+  maybeFirstRow fromOnly $
     DB.query
       db
       [sql|
-        SELECT expires_at, reason
+        SELECT expires_at
         FROM link_notices
         WHERE link_hash IN (?,?) AND (expires_at IS NULL OR expires_at > ?)
         ORDER BY expires_at IS NULL DESC, expires_at DESC

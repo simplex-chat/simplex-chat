@@ -296,9 +296,6 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
         chatInitialVRange
         (Just $ SharedMsgId "\1\2\3\4")
         (XMsgNew (mcQuote quotedMsg (MCReport "" RRSpam)))
-  it "x.msg.new report with illegal reason" $
-    "{\"v\":\"9\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"\",\"reason\":\"illegal\",\"type\":\"report\"}}}"
-      ==# XMsgNew (mcSimple (MCReport "" RRContent))
   it "x.msg.new forward with file" $
     "{\"v\":\"9\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"file\":{\"fileSize\":12345,\"fileName\":\"photo.jpg\"},\"forward\":true}}"
       ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ (mcForward Nothing (MCText "hello")) {file = Just FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing, fileBadge = Nothing}})
@@ -376,7 +373,10 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
       #==# XGrpMemIntro MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRAdmin, v = Just $ ChatVersionRange supportedChatVRange, profile = testProfile, memberKey = Nothing} Nothing
   it "x.grp.mem.intro with member restrictions" $
     "{\"v\":\"9\",\"event\":\"x.grp.mem.intro\",\"params\":{\"memberRestrictions\":{\"restriction\":\"blocked\"},\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
-      #==# XGrpMemIntro MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRAdmin, v = Nothing, profile = testProfile, memberKey = Nothing} (Just MemberRestrictions {restriction = MRSBlocked})
+      #==# XGrpMemIntro MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRAdmin, v = Nothing, profile = testProfile, memberKey = Nothing} (Just MemberRestrictions {restriction = MRSBlocked, expiresAt = Nothing})
+  it "x.grp.mem.intro with timed member restrictions" $
+    "{\"v\":\"9\",\"event\":\"x.grp.mem.intro\",\"params\":{\"memberRestrictions\":{\"restriction\":\"blocked\",\"expiresAt\":\"1970-01-01T00:00:01.000000001Z\"},\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
+      #==# XGrpMemIntro MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRAdmin, v = Nothing, profile = testProfile, memberKey = Nothing} (Just MemberRestrictions {restriction = MRSBlocked, expiresAt = Just $ systemToUTCTime $ MkSystemTime 1 1})
   it "x.grp.mem.inv" $
     "{\"v\":\"9\",\"event\":\"x.grp.mem.inv\",\"params\":{\"memberId\":\"AQIDBA==\",\"memberIntro\":{\"groupConnReq\":\"simplex:/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-4%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D3%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\"}}}"
       #==# XGrpMemInv (MemberId "\1\2\3\4") IntroInvitation {groupConnReq = testConnReq}
@@ -394,31 +394,40 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
       #==# XGrpMemConAll (MemberId "\1\2\3\4")
   it "x.grp.mem.del" $
     "{\"v\":\"9\",\"event\":\"x.grp.mem.del\",\"params\":{\"memberId\":\"AQIDBA==\"}}"
-      #==# XGrpMemDel (MemberId "\1\2\3\4") False Nothing Nothing
-  it "x.grp.mem.del with notice" $
-    "{\"v\":\"9\",\"event\":\"x.grp.mem.del\",\"params\":{\"memberId\":\"AQIDBA==\",\"notice\":{\"ttl\":86400,\"reason\":\"spam\"}}}"
-      #==# XGrpMemDel (MemberId "\1\2\3\4") False Nothing (Just LinkNotice {ttl = Just 86400, reason = Just RRSpam})
+      #==# XGrpMemDel (MemberId "\1\2\3\4") False Nothing False Nothing
+  it "x.grp.mem.del silent" $
+    "{\"v\":\"9\",\"event\":\"x.grp.mem.del\",\"params\":{\"memberId\":\"AQIDBA==\",\"silent\":true}}"
+      #==# XGrpMemDel (MemberId "\1\2\3\4") False Nothing True Nothing
+  it "x.grp.mem.del silent with notice" $
+    "{\"v\":\"9\",\"event\":\"x.grp.mem.del\",\"params\":{\"memberId\":\"AQIDBA==\",\"silent\":true,\"notice\":{\"ttl\":86400}}}"
+      #==# XGrpMemDel (MemberId "\1\2\3\4") False Nothing True (Just LinkNotice {ttl = Just 86400})
+  it "x.grp.mem.del with permanent notice" $
+    "{\"v\":\"9\",\"event\":\"x.grp.mem.del\",\"params\":{\"memberId\":\"AQIDBA==\",\"messages\":true,\"silent\":true,\"notice\":{}}}"
+      #==# XGrpMemDel (MemberId "\1\2\3\4") True Nothing True (Just LinkNotice {ttl = Nothing})
   it "x.grp.mem.del with malformed notice" $
     "{\"v\":\"9\",\"event\":\"x.grp.mem.del\",\"params\":{\"memberId\":\"AQIDBA==\",\"notice\":{\"ttl\":\"day\"}}}"
-      ==# XGrpMemDel (MemberId "\1\2\3\4") False Nothing Nothing
+      ==# XGrpMemDel (MemberId "\1\2\3\4") False Nothing False Nothing
+  it "x.grp.mem.restrict" $
+    "{\"v\":\"9\",\"event\":\"x.grp.mem.restrict\",\"params\":{\"memberId\":\"AQIDBA==\",\"memberRestrictions\":{\"restriction\":\"blocked\"}}}"
+      #==# XGrpMemRestrict (MemberId "\1\2\3\4") MemberRestrictions {restriction = MRSBlocked, expiresAt = Nothing}
+  it "x.grp.mem.restrict with end time" $
+    "{\"v\":\"9\",\"event\":\"x.grp.mem.restrict\",\"params\":{\"memberId\":\"AQIDBA==\",\"memberRestrictions\":{\"restriction\":\"blocked\",\"expiresAt\":\"1970-01-01T00:00:01.000000001Z\"}}}"
+      #==# XGrpMemRestrict (MemberId "\1\2\3\4") MemberRestrictions {restriction = MRSBlocked, expiresAt = Just $ systemToUTCTime $ MkSystemTime 1 1}
+  it "x.grp.mem.restrict automatic unblock" $
+    "{\"v\":\"9\",\"event\":\"x.grp.mem.restrict\",\"params\":{\"memberId\":\"AQIDBA==\",\"memberRestrictions\":{\"restriction\":\"unrestricted\",\"expiresAt\":\"1970-01-01T00:00:01.000000001Z\"}}}"
+      #==# XGrpMemRestrict (MemberId "\1\2\3\4") MemberRestrictions {restriction = MRSUnrestricted, expiresAt = Just $ systemToUTCTime $ MkSystemTime 1 1}
   it "x.grp.leave" $
     "{\"v\":\"9\",\"event\":\"x.grp.leave\",\"params\":{}}"
       ==# XGrpLeave
   it "x.grp.del" $
     "{\"v\":\"9\",\"event\":\"x.grp.del\",\"params\":{}}"
-      ==# XGrpDel Nothing
-  it "x.grp.del with notice" $
-    "{\"v\":\"9\",\"event\":\"x.grp.del\",\"params\":{\"notice\":{\"reason\":\"content\"}}}"
-      #==# XGrpDel (Just LinkNotice {ttl = Nothing, reason = Just RRContent})
-  it "x.grp.del with malformed notice" $
-    "{\"v\":\"9\",\"event\":\"x.grp.del\",\"params\":{\"notice\":1}}"
-      ==# XGrpDel Nothing
+      ==# XGrpDel
   it "x.direct.del" $
     "{\"v\":\"9\",\"event\":\"x.direct.del\",\"params\":{}}"
       #==# XDirectDel False Nothing
   it "x.direct.del silent with notice" $
     "{\"v\":\"9\",\"event\":\"x.direct.del\",\"params\":{\"silent\":true,\"notice\":{\"ttl\":3600}}}"
-      #==# XDirectDel True (Just LinkNotice {ttl = Just 3600, reason = Nothing})
+      #==# XDirectDel True (Just LinkNotice {ttl = Just 3600})
   it "x.direct.del with malformed notice" $
     "{\"v\":\"9\",\"event\":\"x.direct.del\",\"params\":{\"notice\":\"spam\"}}"
       ==# XDirectDel False Nothing

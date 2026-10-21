@@ -696,11 +696,16 @@ waitLinkNoticesCount cc n = go (50 :: Int)
         then count `shouldBe` n
         else threadDelay 100000 >> go (attempts - 1)
 
-bannedLine :: HasCallStack => TestCC -> String -> String -> Expectation
-bannedLine cc prefix suffix = do
+permanentLinkNoticesCount :: TestCC -> IO Int
+permanentLinkNoticesCount cc =
+  withCCTransaction cc $ \db ->
+    fromMaybe 0 <$> maybeFirstRow fromOnly (DB.query_ db "SELECT count(1) FROM link_notices WHERE expires_at IS NULL")
+
+bannedLine :: HasCallStack => TestCC -> String -> Expectation
+bannedLine cc prefix = do
   l <- getTermLine' (Just $ "banned: " <> prefix) cc
-  let banned = (prefix <> "banned until ") `isPrefixOf` l && suffix `isSuffixOf` l
-  unless banned $ print ("expected banned line: " <> prefix <> "... " <> suffix, ", got: " <> l)
+  let banned = (prefix <> "banned until ") `isPrefixOf` l
+  unless banned $ print ("expected banned line: " <> prefix <> "..., got: " <> l)
   banned `shouldBe` True
 
 shouldEventuallyReturn :: (HasCallStack, Eq a, Show a) => IO a -> a -> Expectation
