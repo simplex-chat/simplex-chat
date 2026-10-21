@@ -738,6 +738,7 @@ test-suite simplex-chat-test
       Bots.StoreService.GroupIntegrationTests
       Bots.StoreService.GroupTests
       Bots.StoreService.NameRegistrationTests
+      Bots.StoreService.NamesLabelTests
       Bots.StoreService.StripeTests
       Bots.StoreService.WaitersTests
       Bots.StoreService.WebTests
@@ -760,6 +761,7 @@ test-suite simplex-chat-test
       StoreService.Group.Command
       StoreService.Log
       StoreService.Names.Chain
+      StoreService.Names.Label
       StoreService.Names.Registration
       StoreService.Options
       StoreService.Orders
