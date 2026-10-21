@@ -9,7 +9,7 @@
     <string name="images_limit_desc">Possono essere inviate solo 10 immagini alla volta</string>
     <string name="image_will_be_received_when_contact_is_online">L\'immagine verrà ricevuta quando il tuo contatto sarà in linea, aspetta o controlla più tardi!</string>
     <string name="waiting_for_image">In attesa dell\'immagine</string>
-    <string name="app_name">SimpleX</string>
+    <string name="app_name" translatable="false">SimpleX</string>
     <string name="thousand_abbreviation">k</string>
     <string name="connect_via_invitation_link">Connettere via link una tantum?</string>
     <string name="connect_via_group_link">Entrare nel gruppo?</string>
@@ -130,7 +130,7 @@
     <string name="reveal_verb">Rivela</string>
     <string name="hide_verb">Nascondi</string>
     <string name="allow_verb">Consenti</string>
-    <string name="delete_message__question">Eliminare il messaggio\?</string>
+    <string name="delete_message__question">Eliminare il messaggio?</string>
     <string name="delete_message_cannot_be_undone_warning">Il messaggio verrà eliminato, non è reversibile!</string>
     <string name="for_me_only">Elimina per me</string>
     <string name="for_everybody">Per tutti</string>
@@ -170,18 +170,18 @@
     <string name="voice_message_with_duration">Messaggio vocale (%1$s)</string>
     <string name="voice_message_send_text">Messaggio vocale…</string>
     <string name="notifications">Notifiche</string>
-    <string name="delete_contact_question">Eliminare il contatto\?</string>
+    <string name="delete_contact_question">Eliminare il contatto?</string>
     <string name="button_delete_contact">Elimina contatto</string>
     <string name="text_field_set_contact_placeholder">Imposta nome del contatto…</string>
     <string name="icon_descr_server_status_connected">Connesso</string>
     <string name="icon_descr_server_status_disconnected">Disconnesso</string>
     <string name="icon_descr_server_status_error">Errore</string>
-    <string name="switch_receiving_address_question">Cambiare l\'indirizzo di ricezione\?</string>
+    <string name="switch_receiving_address_question">Cambiare l\'indirizzo di ricezione?</string>
     <string name="view_security_code">Vedi codice di sicurezza</string>
     <string name="verify_security_code">Verifica codice di sicurezza</string>
     <string name="icon_descr_send_message">Invia messaggio</string>
     <string name="icon_descr_record_voice_message">Registra messaggio vocale</string>
-    <string name="allow_voice_messages_question">Permettere i messaggi vocali\?</string>
+    <string name="allow_voice_messages_question">Permettere i messaggi vocali?</string>
     <string name="you_need_to_allow_to_send_voice">Devi consentire al tuo contatto di inviare messaggi vocali per poterli inviare anche tu.</string>
     <string name="voice_messages_prohibited">Messaggi vocali vietati!</string>
     <string name="ask_your_contact_to_enable_voice">Chiedi al tuo contatto di attivare l\'invio dei messaggi vocali.</string>
@@ -208,8 +208,7 @@
     <string name="simplex_service_notification_title">Servizio SimpleX Chat</string>
     <string name="notifications_mode_service_desc">Servizio in secondo piano sempre attivo. Le notifiche verranno mostrate appena i messaggi saranno disponibili.</string>
     <string name="la_notice_title_simplex_lock">SimpleX Lock</string>
-    <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Per proteggere le tue informazioni, attiva SimpleX Lock.
-\nTi verrà chiesto di completare l\'autenticazione prima di attivare questa funzionalità.</string>
+    <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Per proteggere le tue informazioni, attiva SimpleX Lock. \nTi verrà chiesto di completare l\'autenticazione prima di attivare questa funzionalità.</string>
     <string name="auth_simplex_lock_turned_on">SimpleX Lock attivo</string>
     <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">Dovrai autenticarti quando avvii o riapri l\'app dopo 30 secondi in secondo piano.</string>
     <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">L\'autenticazione del dispositivo non è attiva. Potrai attivare SimpleX Lock nelle impostazioni, quando avrai attivato l\'autenticazione del dispositivo.</string>
@@ -231,13 +230,13 @@
     <string name="allow_disappearing_messages_only_if">Consenti i messaggi a tempo solo se il tuo contatto li consente.</string>
     <string name="allow_to_delete_messages">Permetti di eliminare irreversibilmente i messaggi inviati. (24 ore)</string>
     <string name="allow_your_contacts_to_send_disappearing_messages">Permetti ai tuoi contatti di inviare messaggi a tempo.</string>
-    <string name="network_enable_socks_info">Accedere ai server via proxy SOCKS sulla porta %d\? Il proxy deve essere avviato prima di attivare questa opzione.</string>
+    <string name="network_enable_socks_info">Accedere ai server via proxy SOCKS sulla porta %d? Il proxy deve essere avviato prima di attivare questa opzione.</string>
     <string name="v4_3_improved_server_configuration_desc">Aggiungi server scansionando codici QR.</string>
     <string name="all_group_members_will_remain_connected">Tutti i membri del gruppo resteranno connessi.</string>
     <string name="allow_irreversible_message_deletion_only_if">Consenti l\'eliminazione irreversibile dei messaggi solo se il contatto la consente a te. (24 ore)</string>
     <string name="above_then_preposition_continuation">sopra, quindi:</string>
     <string name="accept_contact_button">Accetta</string>
-    <string name="accept_connection_request__question">Accettare la richiesta di connessione\?</string>
+    <string name="accept_connection_request__question">Accettare la richiesta di connessione?</string>
     <string name="accept_contact_incognito_button">Accetta in incognito</string>
     <string name="clear_chat_warning">Tutti i messaggi verranno eliminati, non è reversibile! I messaggi verranno eliminati SOLO per te.</string>
     <string name="smp_servers_add">Aggiungi server</string>
@@ -271,7 +270,7 @@
     <string name="chat_is_stopped">Chat fermata</string>
     <string name="group_member_status_introduced">in connessione (presentato)</string>
     <string name="connection_request_sent">Richiesta di connessione inviata!</string>
-    <string name="delete_link_question">Eliminare il link\?</string>
+    <string name="delete_link_question">Eliminare il link?</string>
     <string name="delete_link">Elimina link</string>
     <string name="create_address">Crea indirizzo</string>
     <string name="button_create_group_link">Crea link</string>
@@ -283,7 +282,7 @@
     <string name="display_name">Inserisci il tuo nome:</string>
     <string name="choose_file">File</string>
     <string name="clear_chat_button">Svuota chat</string>
-    <string name="clear_chat_question">Svuotare la chat\?</string>
+    <string name="clear_chat_question">Svuotare la chat?</string>
     <string name="clear_verb">Svuota</string>
     <string name="copied">Copiato negli appunti</string>
     <string name="create_group">Crea gruppo segreto</string>
@@ -296,7 +295,7 @@
     <string name="icon_descr_close_button">Pulsante di chiusura</string>
     <string name="alert_title_contact_connection_pending">Il contatto non è ancora connesso!</string>
     <string name="delete_contact_menu_action">Elimina</string>
-    <string name="delete_pending_connection__question">Eliminare la connessione in attesa\?</string>
+    <string name="delete_pending_connection__question">Eliminare la connessione in attesa?</string>
     <string name="icon_descr_email">Email</string>
     <string name="icon_descr_help">aiuto</string>
     <string name="chat_console">Console della chat</string>
@@ -312,7 +311,7 @@
     <string name="configure_ICE_servers">Configura server ICE</string>
     <string name="contribute">Contribuisci</string>
     <string name="delete_address">Elimina indirizzo</string>
-    <string name="delete_address__question">Eliminare l\'indirizzo\?</string>
+    <string name="delete_address__question">Eliminare l\'indirizzo?</string>
     <string name="smp_servers_delete_server">Elimina server</string>
     <string name="error_saving_ICE_servers">Errore nel salvataggio dei server ICE</string>
     <string name="how_to">Come si fa</string>
@@ -370,7 +369,7 @@
     <string name="settings_section_title_chats">Chat</string>
     <string name="set_password_to_export_desc">Il database è crittografato con una password casuale. Cambiala prima di esportare.</string>
     <string name="database_passphrase">Password del database</string>
-    <string name="delete_chat_profile_question">Eliminare il profilo di chat\?</string>
+    <string name="delete_chat_profile_question">Eliminare il profilo di chat?</string>
     <string name="delete_database">Elimina database</string>
     <string name="settings_developer_tools">Strumenti di sviluppo</string>
     <string name="settings_section_title_device">Dispositivo</string>
@@ -417,7 +416,7 @@
     <string name="group_member_status_creator">creatore</string>
     <string name="info_row_database_id">ID database</string>
     <string name="button_delete_group">Elimina gruppo</string>
-    <string name="delete_group_question">Eliminare il gruppo\?</string>
+    <string name="delete_group_question">Eliminare il gruppo?</string>
     <string name="button_edit_group_profile">Modifica il profilo del gruppo</string>
     <string name="error_creating_link_for_group">Errore nella creazione del link del gruppo</string>
     <string name="error_deleting_link_for_group">Errore nell\'eliminazione del link del gruppo</string>
@@ -483,19 +482,19 @@
     <string name="v4_3_improved_privacy_and_security_desc">Nascondi la schermata dell\'app nelle app recenti.</string>
     <string name="keychain_allows_to_receive_ntfs">L\'archivio chiavi di Android verrà usato per memorizzare in modo sicuro la password dopo il riavvio dell\'app o la modifica della password; consentirà di ricevere le notifiche.</string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>Nota bene</b>: NON potrai recuperare o cambiare la password se la perdi.]]></string>
-    <string name="change_database_passphrase_question">Cambiare password del database\?</string>
+    <string name="change_database_passphrase_question">Cambiare password del database?</string>
     <string name="confirm_new_passphrase">Conferma nuova password…</string>
     <string name="current_passphrase">Password attuale…</string>
     <string name="database_encrypted">Database crittografato!</string>
     <string name="database_passphrase_will_be_updated">La password di crittografia del database verrà aggiornata.</string>
     <string name="database_will_be_encrypted">Il database verrà crittografato.</string>
     <string name="database_will_be_encrypted_and_passphrase_stored">Il database verrà crittografato e la password conservata nell\'archivio chiavi.</string>
-    <string name="delete_files_and_media_question">Eliminare i file e i multimediali\?</string>
+    <string name="delete_files_and_media_question">Eliminare i file e i multimediali?</string>
     <string name="delete_messages">Elimina messaggi</string>
     <string name="delete_messages_after">Elimina messaggi dopo</string>
     <string name="total_files_count_and_size">%d file con dimensione totale di %s</string>
-    <string name="enable_automatic_deletion_question">Attivare l\'eliminazione automatica dei messaggi\?</string>
-    <string name="encrypt_database_question">Crittografare il database\?</string>
+    <string name="enable_automatic_deletion_question">Attivare l\'eliminazione automatica dei messaggi?</string>
+    <string name="encrypt_database_question">Crittografare il database?</string>
     <string name="encrypt_database">Crittografare</string>
     <string name="error_changing_message_deletion">Errore cambiando l\'impostazione</string>
     <string name="error_encrypting_database">Errore nella crittografia del database</string>
@@ -537,8 +536,7 @@
     <string name="icon_descr_simplex_team">Squadra di SimpleX</string>
     <string name="you_accepted_connection">Hai accettato la connessione</string>
     <string name="you_invited_a_contact">Hai invitato il contatto</string>
-    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Il tuo contatto deve essere in linea per completare la connessione.
-\nPuoi annullare questa connessione e rimuovere il contatto (e riprovare più tardi con un link nuovo).</string>
+    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Il tuo contatto deve essere in linea per completare la connessione. \nPuoi annullare questa connessione e rimuovere il contatto (e riprovare più tardi con un link nuovo).</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Verrai connesso/a quando la tua richiesta di connessione verrà accettata, attendi o controlla più tardi!</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Verrai connesso/a quando il dispositivo del tuo contatto sarà in linea, attendi o controlla più tardi!</string>
     <string name="incorrect_code">Codice di sicurezza sbagliato!</string>
@@ -576,8 +574,7 @@
     <string name="network_and_servers">Rete e server</string>
     <string name="network_settings_title">Impostazioni avanzate</string>
     <string name="network_use_onion_hosts_no">No</string>
-    <string name="network_use_onion_hosts_required_desc">Gli host Onion saranno necessari per la connessione.
-\nNota bene: non potrai connetterti ai server senza indirizzo .onion .</string>
+    <string name="network_use_onion_hosts_required_desc">Gli host Onion saranno necessari per la connessione. \nNota bene: non potrai connetterti ai server senza indirizzo .onion .</string>
     <string name="network_use_onion_hosts_prefer_desc">Gli host Onion verranno usati quando disponibili.</string>
     <string name="network_use_onion_hosts_no_desc">Gli host Onion non verranno usati.</string>
     <string name="rate_the_app">Valuta l\'app</string>
@@ -586,10 +583,10 @@
     <string name="saved_ICE_servers_will_be_removed">I server WebRTC ICE salvati verranno rimossi.</string>
     <string name="share_link">Condividi link</string>
     <string name="star_on_github">Dai una stella su GitHub</string>
-    <string name="network_disable_socks">Usare una connessione internet diretta\?</string>
+    <string name="network_disable_socks">Usare una connessione internet diretta?</string>
     <string name="network_use_onion_hosts">Usa gli host .onion</string>
-    <string name="network_enable_socks">Usare il proxy SOCKS\?</string>
-    <string name="use_simplex_chat_servers__question">Usare i server di SimpleX Chat\?</string>
+    <string name="network_enable_socks">Usare il proxy SOCKS?</string>
+    <string name="use_simplex_chat_servers__question">Usare i server di SimpleX Chat?</string>
     <string name="using_simplex_chat_servers">Stai usando i server di SimpleX Chat.</string>
     <string name="network_use_onion_hosts_prefer">Quando disponibili</string>
     <string name="your_ICE_servers">I tuoi server ICE</string>
@@ -601,7 +598,7 @@
     <string name="save_and_notify_contact">Salva e avvisa il contatto</string>
     <string name="save_and_notify_contacts">Salva e avvisa i contatti</string>
     <string name="save_and_notify_group_members">Salva e avvisa i membri del gruppo</string>
-    <string name="save_preferences_question">Salvare le preferenze\?</string>
+    <string name="save_preferences_question">Salvare le preferenze?</string>
     <string name="secret_text">segreto</string>
     <string name="callstate_starting">avvio…</string>
     <string name="strikethrough_text">barrato</string>
@@ -650,7 +647,7 @@
     <string name="your_calls">Le tue chiamate</string>
     <string name="your_privacy">La tua privacy</string>
     <string name="import_database_confirmation">Importa</string>
-    <string name="import_database_question">Importare il database della chat\?</string>
+    <string name="import_database_question">Importare il database della chat?</string>
     <string name="import_database">Importa database</string>
     <string name="settings_section_title_incognito">Modalità incognito</string>
     <string name="settings_section_title_messages">Messaggi e file</string>
@@ -663,32 +660,31 @@
     <string name="set_password_to_export">Imposta la password per esportare</string>
     <string name="settings_section_title_settings">Impostazioni</string>
     <string name="stop_chat_confirmation">Ferma</string>
-    <string name="stop_chat_question">Fermare la chat\?</string>
+    <string name="stop_chat_question">Fermare la chat?</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">Ferma la chat per esportare, importare o eliminare il database della chat. Non potrai ricevere e inviare messaggi mentre la chat è ferma.</string>
     <string name="settings_section_title_support">Supporta SimpleX Chat</string>
     <string name="settings_section_title_themes">Temi</string>
     <string name="delete_chat_profile_action_cannot_be_undone_warning">Questa azione non può essere annullata: il tuo profilo, i contatti, i messaggi e i file andranno persi in modo irreversibile.</string>
     <string name="settings_section_title_you">Tu</string>
     <string name="your_chat_database">Il tuo database della chat</string>
-    <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">Il tuo attuale database di chat verrà ELIMINATO e SOSTITUITO con quello importato.
-\nQuesta azione non può essere annullata: il tuo profilo, i contatti, i messaggi e i file andranno persi in modo irreversibile.</string>
+    <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">Il tuo attuale database di chat verrà ELIMINATO e SOSTITUITO con quello importato. \nQuesta azione non può essere annullata: il tuo profilo, i contatti, i messaggi e i file andranno persi in modo irreversibile.</string>
     <string name="alert_title_group_invitation_expired">Invito scaduto!</string>
     <string name="group_invitation_item_description">invito al gruppo %1$s</string>
     <string name="icon_descr_add_members">Invita membri</string>
     <string name="join_group_button">Entra</string>
-    <string name="join_group_question">Entrare nel gruppo\?</string>
+    <string name="join_group_question">Entrare nel gruppo?</string>
     <string name="join_group_incognito_button">Entra in incognito</string>
     <string name="joining_group">Ingresso nel gruppo</string>
     <string name="keychain_error">Errore del portachiavi</string>
     <string name="leave_group_button">Esci</string>
-    <string name="leave_group_question">Uscire dal gruppo\?</string>
+    <string name="leave_group_question">Uscire dal gruppo?</string>
     <string name="open_chat">Apri chat</string>
     <string name="restore_passphrase_not_found_desc">Password non trovata nell\'archivio chiavi, inseriscila a mano. Potrebbe essere successo se hai ripristinato i dati dell\'app usando uno strumento di backup. In caso contrario, contatta gli sviluppatori.</string>
     <string name="restore_database_alert_desc">Inserisci la password precedente dopo aver ripristinato il backup del database. Questa azione non può essere annullata.</string>
     <string name="store_passphrase_securely_without_recover">Conserva la password in modo sicuro, NON potrai accedere alla chat se la perdi.</string>
     <string name="restore_database_alert_confirm">Ripristina</string>
     <string name="restore_database">Ripristina backup del database</string>
-    <string name="restore_database_alert_title">Ripristinare il backup del database\?</string>
+    <string name="restore_database_alert_title">Ripristinare il backup del database?</string>
     <string name="database_restore_error">Errore di ripristino del database</string>
     <string name="save_passphrase_and_open_chat">Salva la password e apri la chat</string>
     <string name="database_backup_can_be_restored">Il tentativo di cambiare la password del database non è stato completato.</string>
@@ -767,9 +763,9 @@
     <string name="network_option_tcp_connection_timeout">Scadenza connessione TCP</string>
     <string name="group_is_decentralized">Completamente decentralizzato: visibile solo ai membri.</string>
     <string name="member_role_will_be_changed_with_notification">Il ruolo verrà cambiato in %s. Verrà avvisato chiunque nel gruppo.</string>
-    <string name="member_role_will_be_changed_with_invitation">Il ruolo verrà cambiato in "%s". Il membro riceverà un nuovo invito.</string>
+    <string name="member_role_will_be_changed_with_invitation">Il ruolo verrà cambiato in %s. Il membro riceverà un nuovo invito.</string>
     <string name="update_network_settings_confirmation">Aggiorna</string>
-    <string name="update_network_settings_question">Aggiornare le impostazioni di rete\?</string>
+    <string name="update_network_settings_question">Aggiornare le impostazioni di rete?</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">L\'aggiornamento delle impostazioni riconnetterà il client a tutti i server.</string>
     <string name="incognito_info_share">Quando condividi un profilo in incognito con qualcuno, questo profilo verrà utilizzato per i gruppi a cui ti invitano.</string>
     <string name="group_main_profile_sent">Il tuo profilo di chat verrà inviato ai membri del gruppo</string>
@@ -847,7 +843,7 @@
     <string name="app_version_name">Versione app: v%s</string>
     <string name="smp_servers_per_user">I server per le nuove connessioni del profilo di chat attuale</string>
     <string name="users_add">Aggiungi profilo</string>
-    <string name="users_delete_question">Eliminare il profilo di chat\?</string>
+    <string name="users_delete_question">Eliminare il profilo di chat?</string>
     <string name="network_session_mode_user_description"><![CDATA[Verrà usata una connessione TCP separata (e le credenziali SOCKS) <b> per ogni profilo di chat presente nell\'app</b>.]]></string>
     <string name="delete_files_and_media_all">Elimina tutti i file</string>
     <string name="users_delete_data_only">Solo dati del profilo locale</string>
@@ -884,7 +880,7 @@
     <string name="v4_5_multiple_chat_profiles_descr">Nomi e avatar diversi, isolamento del trasporto.</string>
     <string name="moderated_description">moderato</string>
     <string name="moderated_item_description">moderato da %s</string>
-    <string name="delete_member_message__question">Eliminare il messaggio del membro\?</string>
+    <string name="delete_member_message__question">Eliminare il messaggio del membro?</string>
     <string name="moderate_verb">Modera</string>
     <string name="moderate_message_will_be_deleted_warning">Il messaggio verrà eliminato per tutti i membri.</string>
     <string name="moderate_message_will_be_marked_warning">Il messaggio sarà segnato come moderato per tutti i membri.</string>
@@ -904,7 +900,7 @@
     <string name="language_system">Sistema</string>
     <string name="button_add_welcome_message">Aggiungi messaggio di benvenuto</string>
     <string name="button_welcome_message">Messaggio di benvenuto</string>
-    <string name="save_welcome_message_question">Salvare il messaggio di benvenuto\?</string>
+    <string name="save_welcome_message_question">Salvare il messaggio di benvenuto?</string>
     <string name="group_welcome_title">Messaggio di benvenuto</string>
     <string name="save_and_update_group_profile">Salva e aggiorna il profilo del gruppo</string>
     <string name="enter_password_to_show">Inserisci password nella ricerca</string>
@@ -926,15 +922,13 @@
     <string name="v4_6_chinese_spanish_interface_descr">Grazie agli utenti – contribuite via Weblate!</string>
     <string name="hidden_profile_password">Password del profilo nascosta</string>
     <string name="save_profile_password">Salva la password del profilo</string>
-    <string name="to_reveal_profile_enter_password">Per rivelare il tuo profilo nascosto, inserisci una password completa in un campo di ricerca nella pagina "I tuoi profili di chat".</string>
+    <string name="to_reveal_profile_enter_password">Per rivelare il tuo profilo nascosto, inserisci una password completa in un campo di ricerca nella pagina I tuoi profili di chat.</string>
     <string name="password_to_show">Password per mostrare</string>
-    <string name="v4_6_group_moderation_descr">Ora gli amministratori possono:
-\n- eliminare i messaggi dei membri.
-\n- disattivare i membri (ruolo "osservatore")</string>
+    <string name="v4_6_group_moderation_descr">Ora gli amministratori possono: \n- eliminare i messaggi dei membri. \n- disattivare i membri (ruolo osservatore)</string>
     <string name="hide_profile">Nascondi il profilo</string>
     <string name="confirm_password">Conferma password</string>
     <string name="error_updating_user_privacy">Errore nell\'aggiornamento della privacy dell\'utente</string>
-    <string name="smp_save_servers_question">Salvare i server\?</string>
+    <string name="smp_save_servers_question">Salvare i server?</string>
     <string name="error_saving_user_password">Errore nel salvataggio della password utente</string>
     <string name="v4_6_reduced_battery_usage">Ulteriore riduzione del consumo della batteria</string>
     <string name="v4_6_hidden_chat_profiles">Profili di chat nascosti</string>
@@ -1019,22 +1013,21 @@
     <string name="alert_text_decryption_error_too_many_skipped">%1$d messaggi saltati.</string>
     <string name="alert_title_msg_bad_id">ID del messaggio errato</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Può accadere quando tu o il tuo contatto avete usato il backup del vecchio database.</string>
-    <string name="alert_text_msg_bad_id">L\'ID del messaggio successivo non è corretto (inferiore o uguale al precedente).
-\nPuò accadere a causa di qualche bug o quando la connessione è compromessa.</string>
+    <string name="alert_text_msg_bad_id">L\'ID del messaggio successivo non è corretto (inferiore o uguale al precedente). \nPuò accadere a causa di qualche bug o quando la connessione è compromessa.</string>
     <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d messaggi non decifrati.</string>
     <string name="alert_title_msg_bad_hash">Hash del messaggio errato</string>
     <string name="alert_text_msg_bad_hash">L\'hash del messaggio precedente è diverso.</string>
     <string name="alert_text_fragment_please_report_to_developers">Si prega di segnalarlo agli sviluppatori.</string>
     <string name="stop_snd_file__message">L\'invio del file verrà interrotto.</string>
     <string name="stop_file__action">Ferma file</string>
-    <string name="stop_snd_file__title">Fermare l\'invio del file\?</string>
+    <string name="stop_snd_file__title">Fermare l\'invio del file?</string>
     <string name="revoke_file__message">Il file verrà eliminato dai server.</string>
     <string name="stop_rcv_file__message">La ricezione del file verrà interrotta.</string>
     <string name="revoke_file__confirm">Revoca</string>
     <string name="revoke_file__action">Revoca file</string>
-    <string name="revoke_file__title">Revocare il file\?</string>
+    <string name="revoke_file__title">Revocare il file?</string>
     <string name="stop_file__confirm">Ferma</string>
-    <string name="stop_rcv_file__title">Fermare la ricezione del file\?</string>
+    <string name="stop_rcv_file__title">Fermare la ricezione del file?</string>
     <string name="allow_calls_only_if">Consenti le chiamate solo se il tuo contatto le consente.</string>
     <string name="calls_prohibited_with_this_contact">Le chiamate audio/video sono vietate.</string>
     <string name="both_you_and_your_contact_can_make_calls">Sia tu che il tuo contatto potete effettuare chiamate.</string>
@@ -1062,8 +1055,7 @@
     <string name="share_address_with_contacts_question">Condividere l\'indirizzo con i contatti di SimpleX?</string>
     <string name="stop_sharing">Smetti di condividere</string>
     <string name="enter_welcome_message_optional">Inserisci il messaggio di benvenuto… (facoltativo)</string>
-    <string name="email_invite_body">Ciao!
-\nConnettiti a me tramite SimpleX Chat: %s</string>
+    <string name="email_invite_body">Ciao! \nConnettiti a me tramite SimpleX Chat: %s</string>
     <string name="invite_friends">Invita amici</string>
     <string name="save_auto_accept_settings">Salva le impostazioni dell\'indirizzo SimpleX</string>
     <string name="share_address">Condividi indirizzo…</string>
@@ -1095,8 +1087,8 @@
     <string name="profile_update_will_be_sent_to_contacts">L\'aggiornamento del profilo verrà inviato ai tuoi contatti di SimpleX.</string>
     <string name="read_more_in_user_guide_with_link"><![CDATA[Maggiori informazioni nella <font color="#0088ff">Guida per l\'utente</font>.]]></string>
     <string name="color_surface">Menu e avvisi</string>
-    <string name="stop_sharing_address">Smettere di condividere l\'indirizzo\?</string>
-    <string name="save_settings_question">Salvare le impostazioni\?</string>
+    <string name="stop_sharing_address">Smettere di condividere l\'indirizzo?</string>
+    <string name="save_settings_question">Salvare le impostazioni?</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">Non perderai i contatti se in seguito elimini il tuo indirizzo.</string>
     <string name="opening_database">Apertura del database…</string>
     <string name="change_self_destruct_mode">Cambia modalità di autodistruzione</string>
@@ -1165,9 +1157,7 @@
     <string name="v5_1_message_reactions">Reazioni ai messaggi</string>
     <string name="v5_1_self_destruct_passcode">Codice di autodistruzione</string>
     <string name="whats_new_thanks_to_users_contribute_weblate">Grazie agli utenti – contribuite via Weblate!</string>
-    <string name="v5_1_better_messages_descr">- messaggi vocali fino a 5 minuti.
-\n- tempo di scomparsa personalizzato.
-\n- cronologia delle modifiche.</string>
+    <string name="v5_1_better_messages_descr">- messaggi vocali fino a 5 minuti. \n- tempo di scomparsa personalizzato. \n- cronologia delle modifiche.</string>
     <string name="v5_1_better_messages">Messaggi migliorati</string>
     <string name="v5_1_japanese_portuguese_interface">Interfaccia giapponese e portoghese</string>
     <string name="item_info_current">(attuale)</string>
@@ -1181,11 +1171,11 @@
     <string name="settings_section_title_app">App</string>
     <string name="shutdown_alert_desc">Le notifiche smetteranno di funzionare fino a quando non riavvierai l\'app</string>
     <string name="settings_shutdown">Spegni</string>
-    <string name="shutdown_alert_question">Spegnere\?</string>
+    <string name="shutdown_alert_question">Spegnere?</string>
     <string name="abort_switch_receiving_address_confirm">Interrompi</string>
     <string name="allow_to_send_files">Consenti l\'invio di file e contenuti multimediali.</string>
     <string name="abort_switch_receiving_address">Interrompi il cambio di indirizzo</string>
-    <string name="abort_switch_receiving_address_question">Interrompere il cambio di indirizzo\?</string>
+    <string name="abort_switch_receiving_address_question">Interrompere il cambio di indirizzo?</string>
     <string name="error_aborting_address_change">Errore nell\'interruzione del cambio di indirizzo</string>
     <string name="only_owners_can_enable_files_and_media">Solo i proprietari del gruppo possono attivare file e contenuti multimediali.</string>
     <string name="files_and_media">File e multimediali</string>
@@ -1199,8 +1189,8 @@
     <string name="favorite_chat">Preferita</string>
     <string name="unfavorite_chat">Non preferita</string>
     <string name="network_option_protocol_timeout_per_kb">Scadenza del protocollo per KB</string>
-    <string name="receipts_contacts_title_disable">Disattivare le ricevute\?</string>
-    <string name="receipts_contacts_title_enable">Attivare le ricevute\?</string>
+    <string name="receipts_contacts_title_disable">Disattivare le ricevute?</string>
+    <string name="receipts_contacts_title_enable">Attivare le ricevute?</string>
     <string name="fix_connection_not_supported_by_group_member">Correzione non supportata dal membro del gruppo</string>
     <string name="v5_2_more_things">Qualche altra cosa</string>
     <string name="v5_2_disappear_one_message_descr">Anche quando disattivato nella conversazione.</string>
@@ -1219,9 +1209,7 @@
     <string name="snd_conn_event_ratchet_sync_allowed">rinegoziazione della crittografia consentita per %s</string>
     <string name="renegotiate_encryption">Rinegoziare crittografia</string>
     <string name="snd_conn_event_ratchet_sync_required">richiesta rinegoziazione della crittografia per %s</string>
-    <string name="v5_2_more_things_descr">- recapito dei messaggi più stabile.
-\n- gruppi un po\' migliorati.
-\n- e altro ancora!</string>
+    <string name="v5_2_more_things_descr">- recapito dei messaggi più stabile. \n- gruppi un po\' migliorati. \n- e altro ancora!</string>
     <string name="v5_2_disappear_one_message">Fai sparire un messaggio</string>
     <string name="v5_2_fix_encryption">Mantieni le tue connessioni</string>
     <string name="you_can_enable_delivery_receipts_later_alert">Puoi attivarle più tardi nelle impostazioni dell\'app \"La tua privacy\".</string>
@@ -1232,7 +1220,7 @@
     <string name="conn_event_ratchet_sync_allowed">rinegoziazione della crittografia consentita</string>
     <string name="v5_2_favourites_filter">Trova le chat più velocemente</string>
     <string name="v5_2_favourites_filter_descr">Filtra le chat non lette e preferite.</string>
-    <string name="fix_connection_question">Correggere la connessione\?</string>
+    <string name="fix_connection_question">Correggere la connessione?</string>
     <string name="sync_connection_force_confirm">Rinegoziare</string>
     <string name="sender_at_ts">%s alle %s</string>
     <string name="rcv_conn_event_verification_code_reset">codice di sicurezza modificato</string>
@@ -1256,13 +1244,13 @@
     <string name="error_synchronizing_connection">Errore nella sincronizzazione della connessione</string>
     <string name="in_reply_to">In risposta a</string>
     <string name="no_history">Nessuna cronologia</string>
-    <string name="sync_connection_force_question">Rinegoziare la crittografia\?</string>
+    <string name="sync_connection_force_question">Rinegoziare la crittografia?</string>
     <string name="choose_file_title">Scegli un file</string>
     <string name="no_selected_chat">Nessuna chat selezionata</string>
     <string name="in_developing_title">Prossimamente!</string>
     <string name="in_developing_desc">Questa funzione non è ancora supportata. Prova la prossima versione.</string>
     <string name="no_info_on_delivery">Nessuna informazione sulla consegna</string>
-    <string name="receipts_groups_title_enable">Attivare le ricevute per i gruppi\?</string>
+    <string name="receipts_groups_title_enable">Attivare le ricevute per i gruppi?</string>
     <string name="receipts_section_groups">Piccoli gruppi (max 20)</string>
     <string name="receipts_groups_enable_for_all">Attiva per tutti i gruppi</string>
     <string name="receipts_groups_override_disabled">L\'invio di ricevute è disattivato per %d gruppi</string>
@@ -1272,11 +1260,11 @@
     <string name="receipts_groups_enable_keep_overrides">Attiva (mantieni sostituzioni dei gruppi)</string>
     <string name="send_receipts_disabled">disattivato</string>
     <string name="receipts_groups_disable_keep_overrides">Disattiva (mantieni sostituzioni dei gruppi)</string>
-    <string name="receipts_groups_title_disable">Disattivare le ricevute per i gruppi\?</string>
+    <string name="receipts_groups_title_disable">Disattivare le ricevute per i gruppi?</string>
     <string name="receipts_groups_disable_for_all">Disattiva per tutti i gruppi</string>
     <string name="recipient_colon_delivery_status">%s: %s</string>
     <string name="send_receipts_disabled_alert_msg">Questo gruppo ha più di %1$d membri, le ricevute di consegna non vengono inviate.</string>
-    <string name="connect_via_member_address_alert_title">Connettersi direttamente\?</string>
+    <string name="connect_via_member_address_alert_title">Connettersi direttamente?</string>
     <string name="connect_via_member_address_alert_desc">La richiesta di connessione verrà inviata a questo membro del gruppo.</string>
     <string name="connect_use_current_profile">Usa il profilo attuale</string>
     <string name="connect_use_new_incognito_profile">Usa nuovo profilo in incognito</string>
@@ -1296,10 +1284,9 @@
     <string name="privacy_message_draft">Bozza del messaggio</string>
     <string name="privacy_show_last_messages">Mostra gli ultimi messaggi</string>
     <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">Il database verrà crittografato e la password conservata nelle impostazioni.</string>
-    <string name="you_can_change_it_later">La password casuale viene conservata nelle impostazioni come testo normale.
-\nPuoi cambiarla dopo.</string>
+    <string name="you_can_change_it_later">La password casuale viene conservata nelle impostazioni come testo normale. \nPuoi cambiarla dopo.</string>
     <string name="database_encryption_will_be_updated_in_settings">La password di crittografia del database verrà aggiornata e conservata nelle impostazioni.</string>
-    <string name="remove_passphrase_from_settings">Rimuovere la password dalle impostazioni\?</string>
+    <string name="remove_passphrase_from_settings">Rimuovere la password dalle impostazioni?</string>
     <string name="use_random_passphrase">Usa password casuale</string>
     <string name="save_passphrase_in_settings">Salva password nelle impostazioni</string>
     <string name="setup_database_passphrase">Configura la password del database</string>
@@ -1318,9 +1305,7 @@
     <string name="v5_3_new_interface_languages_descr">Arabo, bulgaro, finlandese, ebraico, tailandese e ucraino - grazie agli utenti e a Weblate.</string>
     <string name="v5_3_new_desktop_app_descr">Crea un nuovo profilo nell\'app desktop. 💻</string>
     <string name="v5_3_simpler_incognito_mode_descr">Attiva/disattiva l\'incognito quando ti colleghi.</string>
-    <string name="v5_3_discover_join_groups_descr">- connessione al servizio directory (BETA)!
-\n- ricevute di consegna (fino a 20 membri).
-\n- più veloce e più stabile.</string>
+    <string name="v5_3_discover_join_groups_descr">- connessione al servizio directory (BETA)! \n- ricevute di consegna (fino a 20 membri). \n- più veloce e più stabile.</string>
     <string name="rcv_group_event_open_chat">Apri</string>
     <string name="error_creating_member_contact">Errore di creazione del contatto</string>
     <string name="compose_send_direct_message_to_connect">Invia messaggio diretto per connetterti</string>
@@ -1434,9 +1419,7 @@
     <string name="v5_4_incognito_groups">Gruppi in incognito</string>
     <string name="remote_host_was_disconnected_toast"><![CDATA[Il cellulare <b>%s</b> è stato disconnesso]]></string>
     <string name="v5_4_better_groups_descr">Ingresso più veloce e messaggi più affidabili.</string>
-    <string name="v5_4_more_things_descr">- avvisa facoltativamente i contatti eliminati.
-\n- nomi del profilo con spazi.
-\n- e molto altro!</string>
+    <string name="v5_4_more_things_descr">- avvisa facoltativamente i contatti eliminati. \n- nomi del profilo con spazi. \n- e molto altro!</string>
     <string name="waiting_for_mobile_to_connect">In attesa che il cellulare si connette:</string>
     <string name="group_member_role_author">autore</string>
     <string name="multicast_connect_automatically">Connetti automaticamente</string>
@@ -1485,12 +1468,8 @@
     <string name="start_chat_question">Avviare la chat?</string>
     <string name="agent_critical_error_title">Errore critico</string>
     <string name="agent_internal_error_title">Errore interno</string>
-    <string name="agent_critical_error_desc">Si prega di segnalarlo agli sviluppatori:
-\n%s
-\n
-\nSi consiglia di riavviare l\'app.</string>
-    <string name="agent_internal_error_desc">Si prega di segnalarlo agli sviluppatori:
-\n%s</string>
+    <string name="agent_critical_error_desc">Si prega di segnalarlo agli sviluppatori: \n%s \n \nSi consiglia di riavviare l\'app.</string>
+    <string name="agent_internal_error_desc">Si prega di segnalarlo agli sviluppatori: \n%s</string>
     <string name="restart_chat_button">Riavvia la chat</string>
     <string name="show_internal_errors">Mostra errori interni</string>
     <string name="remote_host_disconnected_from"><![CDATA[Disconnesso dal telefono <b>%s</b> per il motivo: %s]]></string>
@@ -1695,10 +1674,8 @@
     <string name="v5_7_forward_descr">La fonte del messaggio resta privata.</string>
     <string name="v5_7_shape_profile_images">Forma delle immagini del profilo</string>
     <string name="v5_7_shape_profile_images_descr">Quadrata, circolare o qualsiasi forma tra le due</string>
-    <string name="snd_error_proxy_relay">Server di inoltro: %1$s
-\nErrore del server di destinazione: %2$s</string>
-    <string name="snd_error_proxy">Server di inoltro: %1$s
-\nErrore: %2$s</string>
+    <string name="snd_error_proxy_relay">Server di inoltro: %1$s \nErrore del server di destinazione: %2$s</string>
+    <string name="snd_error_proxy">Server di inoltro: %1$s \nErrore: %2$s</string>
     <string name="snd_error_expired">Problemi di rete - messaggio scaduto dopo molti tentativi di inviarlo.</string>
     <string name="srv_error_host">L\'indirizzo del server non è compatibile con le impostazioni di rete.</string>
     <string name="srv_error_version">La versione del server non è compatibile con le impostazioni di rete.</string>
@@ -1731,8 +1708,7 @@
     <string name="app_will_ask_to_confirm_unknown_file_servers">L\'app chiederà di confermare i download da server di file sconosciuti (eccetto .onion o quando il proxy SOCKS è attivo).</string>
     <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Senza Tor o VPN, il tuo indirizzo IP sarà visibile ai server di file.</string>
     <string name="settings_section_title_files">File</string>
-    <string name="file_not_approved_descr">Senza Tor o VPN, il tuo indirizzo IP sarà visibile a questi relay XFTP:
-\n%1$s.</string>
+    <string name="file_not_approved_descr">Senza Tor o VPN, il tuo indirizzo IP sarà visibile a questi relay XFTP: \n%1$s.</string>
     <string name="settings_section_title_chat_theme">Tema della chat</string>
     <string name="theme_black">Nero</string>
     <string name="color_mode">Modalità di colore</string>
@@ -1762,10 +1738,8 @@
     <string name="wallpaper_preview_hello_bob">Buongiorno!</string>
     <string name="color_wallpaper_background">Retro dello sfondo</string>
     <string name="v5_8_private_routing">Instradamento privato dei messaggi 🚀</string>
-    <string name="v5_8_private_routing_descr">Proteggi il tuo indirizzo IP dai relay di messaggistica scelti dai tuoi contatti.
-\nAttivalo nelle impostazioni *Rete e server*.</string>
-    <string name="error_initializing_web_view">Errore di inizializzazione di WebView. Aggiorna il sistema ad una nuova versione. Contatta gli sviluppatori.
-\nErrore: %s</string>
+    <string name="v5_8_private_routing_descr">Proteggi il tuo indirizzo IP dai relay di messaggistica scelti dai tuoi contatti. \nAttivalo nelle impostazioni *Rete e server*.</string>
+    <string name="error_initializing_web_view">Errore di inizializzazione di WebView. Aggiorna il sistema ad una nuova versione. Contatta gli sviluppatori. \nErrore: %s</string>
     <string name="theme_destination_app_theme">Tema dell\'app</string>
     <string name="chat_theme_reset_to_app_theme">Ripristina al tema dell\'app</string>
     <string name="chat_theme_reset_to_user_theme">Ripristina al tema dell\'utente</string>
@@ -1778,9 +1752,7 @@
     <string name="v5_8_message_delivery_descr">Con consumo di batteria ridotto.</string>
     <string name="message_queue_info">Info coda messaggi</string>
     <string name="message_queue_info_none">nessuna</string>
-    <string name="message_queue_info_server_info">info coda server: %1$s
-\n
-\nultimo msg ricevuto: %2$s</string>
+    <string name="message_queue_info_server_info">info coda server: %1$s \n \nultimo msg ricevuto: %2$s</string>
     <string name="info_row_debug_delivery">Debug della consegna</string>
     <string name="share_text_message_status">Stato del messaggio: %s</string>
     <string name="share_text_file_status">Stato del file: %s</string>
@@ -1791,8 +1763,7 @@
     <string name="file_error_relay">Errore del server del file: %1$s</string>
     <string name="file_error">Errore del file</string>
     <string name="temporary_file_error">Errore del file temporaneo</string>
-    <string name="remote_ctrl_connection_stopped_desc">Controlla che mobile e desktop siano collegati alla stessa rete locale e che il firewall del desktop consenta la connessione.
-\nSi prega di condividere qualsiasi altro problema con gli sviluppatori.</string>
+    <string name="remote_ctrl_connection_stopped_desc">Controlla che mobile e desktop siano collegati alla stessa rete locale e che il firewall del desktop consenta la connessione. \nSi prega di condividere qualsiasi altro problema con gli sviluppatori.</string>
     <string name="remote_ctrl_connection_stopped_identity_desc">Questo link è stato usato con un altro dispositivo mobile, creane uno nuovo sul desktop.</string>
     <string name="copy_error">Copia errore</string>
     <string name="cannot_share_message_alert_title">Impossibile inviare il messaggio</string>
@@ -2011,8 +1982,7 @@
     <string name="forward_files_messages_deleted_after_selection_title">%1$s messaggi non inoltrati</string>
     <string name="n_other_file_errors">%1$d altro/i errore/i di file.</string>
     <string name="error_forwarding_messages">Errore nell\'inoltro dei messaggi</string>
-    <string name="n_file_errors">%1$d errore/i di file:
-\n%2$s</string>
+    <string name="n_file_errors">%1$d errore/i di file: \n%2$s</string>
     <string name="forward_alert_title_messages_to_forward">Inoltrare %1$s messaggio/i?</string>
     <string name="forward_alert_forward_messages_without_files">Inoltrare i messaggi senza file?</string>
     <string name="forward_files_messages_deleted_after_selection_desc">I messaggi sono stati eliminati dopo che li hai selezionati.</string>
@@ -2025,8 +1995,7 @@
     <string name="forward_multiple">Inoltra messaggi…</string>
     <string name="compose_save_messages_n">Salvataggio di %1$s messaggi</string>
     <string name="icon_descr_sound_muted">Audio silenziato</string>
-    <string name="error_initializing_web_view_wrong_arch">Errore di inizializzazione di WebView. Assicurati di avere WebView installato e che la sua architettura supportata sia arm64.
-\nErrore: %s</string>
+    <string name="error_initializing_web_view_wrong_arch">Errore di inizializzazione di WebView. Assicurati di avere WebView installato e che la sua architettura supportata sia arm64. \nErrore: %s</string>
     <string name="settings_message_shape_corner">Angolo</string>
     <string name="settings_section_title_message_shape">Forma del messaggio</string>
     <string name="settings_message_shape_tail">Coda</string>
@@ -2780,7 +2749,7 @@
     <string name="group_member_role_observer_channel">iscritto</string>
     <string name="settings_section_title_support_project">Sostieni il progetto</string>
     <string name="badge_unknown_key_desc">Il distintivo è firmato con una chiave che questa versione dell\'app non riconosce. Aggiorna l\'app per verificare questo distintivo.</string>
-    <string name="member_role_will_be_changed_with_notification_channel">Il ruolo verrà cambiato in "%s". Verrà avvisato chiunque nel canale.</string>
+    <string name="member_role_will_be_changed_with_notification_channel">Il ruolo verrà cambiato in %s. Verrà avvisato chiunque nel canale.</string>
     <string name="badge_unverified_desc">Non è stato possibile verificare questo distintivo e potrebbe non essere autentico.</string>
     <string name="group_link_requires_newer_version">Questo gruppo richiede una versione dell\'app più recente. Aggiorna l\'app per entrare.</string>
     <string name="badge_unverified_title">Distintivo non verificato</string>
@@ -2921,4 +2890,116 @@
     <string name="badges_how_it_works_p2">Per dimostrare a un contatto o a un server che hai un distintivo, l\'app genera una nuova prova che rivela solo il tipo di distintivo e la data di scadenza, arrotondata alla settimana.</string>
     <string name="badges_support_ended_on">Il tuo distintivo è scaduto il %1$s.</string>
     <string name="supporter_perks">Vantaggi dei sostenitori</string>
+    <string name="badges_error_already_active_purchase"></string>
+    <string name="keystore_key_storage_tee"></string>
+    <string name="storage"></string>
+    <string name="emoji_category_smileys"></string>
+    <string name="badges_link_added_profile"></string>
+    <string name="badges_copy_purchase_key"></string>
+    <string name="badges_level_supporter_summary"></string>
+    <string name="v7_0_crowdfunding" translatable="false"></string>
+    <string name="emoji_category_objects"></string>
+    <string name="keystore_key_storage_software"></string>
+    <string name="markdown_text_view"></string>
+    <string name="badges_error_last_attempt"></string>
+    <string name="icon_descr_emoji"></string>
+    <string name="badges_level_supporter_file_storage"></string>
+    <string name="markdown_formatted_view"></string>
+    <string name="rcv_group_event_msg_bad_signature"></string>
+    <string name="badges_ledger_anchor"></string>
+    <string name="invest_banner_subtitle" translatable="false"></string>
+    <string name="emoji_category_flags"></string>
+    <string name="badges_ledger_entry_id"></string>
+    <string name="badges_error_receipt_invalid"></string>
+    <string name="badges_link_view_badge"></string>
+    <string name="badges_level_legend_summary"></string>
+    <string name="badges_ledger_invoice_id"></string>
+    <string name="badges_error_credential_invalid"></string>
+    <string name="v7_0_invest_descr" translatable="false"></string>
+    <string name="badges_credential"></string>
+    <string name="call_not_encrypted_title"></string>
+    <string name="badges_dismiss"></string>
+    <string name="emoji_category_people"></string>
+    <string name="badges_tap_for_details"></string>
+    <string name="badges_error_provider_unavailable"></string>
+    <string name="badges_error_since"></string>
+    <string name="v7_0_invest_learn_more" translatable="false"></string>
+    <string name="call_not_encrypted_desc"></string>
+    <string name="badges_error_unknown_purchase"></string>
+    <string name="badges_larger_files_longer"></string>
+    <string name="badges_ledger_paused_since"></string>
+    <string name="badges_error_service_internal"></string>
+    <string name="badges_ledger_from_purchase_key"></string>
+    <string name="badges_error_receipt_used"></string>
+    <string name="badges_check_your_order_title"></string>
+    <string name="badges_redeem_code_placeholder" translatable="false"></string>
+    <string name="badges_credential_status"></string>
+    <string name="follow_simplex_network_news"></string>
+    <string name="badges_buy_in_browser"></string>
+    <string name="badges_renewal_failed"></string>
+    <string name="badges_link_held_title"></string>
+    <string name="group_invitation_for_member_only"></string>
+    <string name="service_request_timeout_desc"></string>
+    <string name="badges_issuing_body"></string>
+    <string name="badges_credential_months_left"></string>
+    <string name="badges_link_held_other_profile"></string>
+    <string name="badges_error_test_purchase"></string>
+    <string name="badges_credential_expires"></string>
+    <string name="badges_error_product_unavailable"></string>
+    <string name="badges_ledger_balance_start"></string>
+    <string name="badges_error_payment_pending"></string>
+    <string name="settings_section_title_interface" translatable="false"></string>
+    <string name="emoji_category_travel"></string>
+    <string name="badges_credential_purchase_id"></string>
+    <string name="badges_link_added_title"></string>
+    <string name="badges_link_confirm_title"></string>
+    <string name="badges_level_legend_file_storage"></string>
+    <string name="badges_ledger_charge_id"></string>
+    <string name="badges_link_issuing_profile"></string>
+    <string name="badges_how_it_works_read_more_with_link"><![CDATA[]]></string>
+    <string name="badges_ledger_date"></string>
+    <string name="badges_ledger_no_entries"></string>
+    <string name="badges_ledger_to_purchase_key"></string>
+    <string name="error_saving_profile"></string>
+    <string name="invest_banner_title" translatable="false"></string>
+    <string name="storage_total"></string>
+    <string name="badges_order_total"></string>
+    <string name="server_has_too_many_hosts"></string>
+    <string name="emoji_category_food"></string>
+    <string name="badges_link_held_page"></string>
+    <string name="badges_how_long_title"></string>
+    <string name="badges_error_no_response"></string>
+    <string name="badges_link_add_badge"></string>
+    <string name="group_invitation_for_you_only"></string>
+    <string name="badges_contact_team"></string>
+    <string name="badges_ledger_badge_type"></string>
+    <string name="badges_checking_purchases_title"></string>
+    <string name="badges_order_duration"></string>
+    <string name="no_emoji_found"></string>
+    <string name="badges_ledger_balance"></string>
+    <string name="badges_level_legend_file_size"></string>
+    <string name="badges_link_confirm_profile"></string>
+    <string name="badges_choose_your_badge_lede"></string>
+    <string name="emoji_category_symbols"></string>
+    <string name="badges_error_provider_not_configured"></string>
+    <string name="keystore_key_storage_strongbox"></string>
+    <string name="badges_waiting_for_approval_body"></string>
+    <string name="app_link_not_supported"></string>
+    <string name="badges_ledger"></string>
+    <string name="badges_choose_your_badge_title"></string>
+    <string name="badges_issuing_title"></string>
+    <string name="badges_waiting_for_approval_title"></string>
+    <string name="badges_error_service_not_configured_purchase"></string>
+    <string name="badges_error_unexpected"></string>
+    <string name="emoji_category_activities"></string>
+    <string name="settings_section_title_language" translatable="false"></string>
+    <string name="emoji_category_animals"></string>
+    <string name="callstate_reconnecting"></string>
+    <string name="v7_0_invest" translatable="false"></string>
+    <string name="badges_credential_next_check"></string>
+    <string name="badges_error_unreachable"></string>
+    <string name="badges_error_purchase_refused"></string>
+    <string name="markdown_file_bidi_warning"></string>
+    <string name="badges_level_supporter_file_size"></string>
+    <string name="badges_error_service_refused"></string>
 </resources>
