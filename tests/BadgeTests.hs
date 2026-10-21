@@ -9,7 +9,7 @@
 
 module BadgeTests (badgeTests) where
 
-import BadgeService.Service (badgeErrorRetryAfter)
+import StoreService.Service (badgeErrorRetryAfter)
 import Control.Concurrent.STM (atomically)
 import Control.Monad (forM_)
 import Data.ByteArray.Encoding (Base (Base16), convertToBase)

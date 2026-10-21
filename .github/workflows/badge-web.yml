@@ -6,11 +6,11 @@ on:
       - master
       - stable
     paths:
-      - "apps/simplex-badge-service/web/**"
+      - "apps/simplex-store-service/web/**"
       - ".github/workflows/badge-web.yml"
   pull_request:
     paths:
-      - "apps/simplex-badge-service/web/**"
+      - "apps/simplex-store-service/web/**"
       - ".github/workflows/badge-web.yml"
 
 jobs:
@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: apps/simplex-badge-service/web
+        working-directory: apps/simplex-store-service/web
     steps:
       - uses: actions/checkout@v4
 
@@ -26,7 +26,7 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: apps/simplex-badge-service/web/package-lock.json
+          cache-dependency-path: apps/simplex-store-service/web/package-lock.json
 
       - run: npm ci
 
