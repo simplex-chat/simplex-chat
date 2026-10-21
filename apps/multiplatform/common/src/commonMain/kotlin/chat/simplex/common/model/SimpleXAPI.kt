@@ -2196,8 +2196,8 @@ object ChatController {
     return r.result is CR.CmdOk
   }
 
-  suspend fun apiSendCallExtraInfo(rh: Long?, contact: Contact, rtcIceCandidates: String): Boolean {
-    val extraInfo = WebRTCExtraInfo(rtcIceCandidates)
+  suspend fun apiSendCallExtraInfo(rh: Long?, contact: Contact, rtcSession: String?, rtcIceCandidates: String): Boolean {
+    val extraInfo = WebRTCExtraInfo(rtcSession, rtcIceCandidates)
     val r = sendCmd(rh, CC.ApiSendCallExtraInfo(contact, extraInfo))
     return r.result is CR.CmdOk
   }
@@ -3447,7 +3447,7 @@ object ChatController {
       }
       is CR.CallExtraInfo -> {
         withCall(r, r.contact) { _ ->
-          chatModel.callCommand.add(WCallCommand.Ice(iceCandidates = r.extraInfo.rtcIceCandidates))
+          chatModel.callCommand.add(WCallCommand.Ice(iceCandidates = r.extraInfo.rtcIceCandidates, session = r.extraInfo.rtcSession))
         }
       }
       is CR.CallEnded -> {
