@@ -787,7 +787,6 @@ searchDirectory u dsLink text cursor_ = (\(es, c, _, _) -> (es, c)) <$> searchDi
 searchNames :: HasCallStack => TestCC -> String -> String -> Maybe J.Value -> IO ([Text], Maybe J.Value)
 searchNames u dsLink text cursor_ = first (map entryName) <$> searchDirectory u dsLink text cursor_
 
--- the page's names and cursor, then its moreCount and pageSize
 searchNamesCounts :: TestCC -> String -> String -> Maybe J.Value -> IO ([Text], Maybe J.Value, Int, Int)
 searchNamesCounts u dsLink text cursor_ = (\(es, c, m, s) -> (map entryName es, c, m, s)) <$> searchDirectoryCounts u dsLink text cursor_
 
