@@ -33,8 +33,10 @@ import Simplex.Messaging.Crypto (keccak256, sha256Hash)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..))
 import Simplex.Messaging.Encoding.String (strDecode, strEncode)
 import Simplex.Messaging.Eth.Address (Address, unAddress)
+import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (tshow)
 import StoreService.Names.Abi (hex)
+import StoreService.Names.Phases (RegistrationId (..))
 
 data SignatureError
   = SEFormat
@@ -49,7 +51,7 @@ data AddressError
 
 -- | The fields an owner signs in an order and in another name for it.
 data OrderFields = OrderFields
-  { ofLabelHash :: ByteString,
+  { ofLabelHash :: LabelHash,
     ofLength :: Int,
     ofDuration :: Word64,
     ofCommitment :: ByteString,
@@ -94,18 +96,18 @@ orderMessage order timestamp = message $ ["order"] <> orderWords order <> [tshow
 findMessage :: Address -> Word64 -> ByteString
 findMessage owner timestamp = message ["find", hex $ unAddress owner, tshow timestamp]
 
-retargetMessage :: Text -> OrderFields -> Word64 -> ByteString
-retargetMessage registrationId order timestamp = message $ ["name", registrationId] <> orderWords order <> [tshow timestamp]
+retargetMessage :: RegistrationId -> OrderFields -> Word64 -> ByteString
+retargetMessage (RegistrationId rid) order timestamp = message $ ["name", rid] <> orderWords order <> [tshow timestamp]
 
-takenCodeMessage :: Text -> Text -> Int -> Word64 -> ByteString
-takenCodeMessage registrationId codeHash codeLength timestamp = message ["code", registrationId, codeHash, tshow codeLength, tshow timestamp]
+takenCodeMessage :: RegistrationId -> Text -> Int -> Word64 -> ByteString
+takenCodeMessage (RegistrationId rid) codeHash codeLength timestamp = message ["code", rid, codeHash, tshow codeLength, tshow timestamp]
 
 message :: [Text] -> ByteString
 message = encodeUtf8 . T.unwords . ("simplex.domains" :)
 
 orderWords :: OrderFields -> [Text]
-orderWords OrderFields {ofLabelHash, ofLength, ofDuration, ofCommitment, ofSealed} =
-  [hex ofLabelHash, tshow ofLength, tshow ofDuration, hex ofCommitment, hex $ sha256Hash $ encodeUtf8 ofSealed]
+orderWords OrderFields {ofLabelHash = LabelHash labelHash, ofLength, ofDuration, ofCommitment, ofSealed} =
+  [hex labelHash, tshow ofLength, tshow ofDuration, hex ofCommitment, hex $ sha256Hash $ encodeUtf8 ofSealed]
 
 -- the address parser checks EIP-55 only on mixed-case hex, so one-case text is refused here by comparing the encoding
 parseChecksumAddress :: Text -> Either AddressError Address

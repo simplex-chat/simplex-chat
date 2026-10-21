@@ -15,8 +15,9 @@ import Data.Word (Word64)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..))
 import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Eth.Address (Address, recoverAddress)
-import Simplex.Messaging.SimplexName (SimplexTLD (..))
+import Simplex.Messaging.SimplexName (SimplexTLD (..), labelHash)
 import StoreService.Names.Abi
+import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Registration
 import StoreService.Names.Signatures
 import Test.Hspec
@@ -48,7 +49,7 @@ namesSignatureTests = describe "StoreService names: signatures" $ do
         "0xfa0908260c3f21c8e47bd37e2c3cf3bd6bc62966591ab1a2c4e31695646548f47d2e79b34413be27b4b07330682de642f48a8f5e641449d7d79728eeb4ab14da1c"
     it "signs another name for an order, with its duration" $
       testMessage
-        (retargetMessage registrationId dynamisOrder {ofLabelHash = hx "0x5bfbbf75311ec002834031d73fa30bfe8bdf675f4a3df72443841490c4b49d02"} timestamp)
+        (retargetMessage registrationId dynamisOrder {ofLabelHash = labelHash "another"} timestamp)
         "simplex.domains name t2Jk8RmQ4vXw9NcP3yLb6g 0x5bfbbf75311ec002834031d73fa30bfe8bdf675f4a3df72443841490c4b49d02 7 69259500 0x9cf04ddef2eedfb02e6e7ba58f879c0636c584b6acc67ffe9f97a06bfb016ac1 0xb1971beb567c8dc1b2f01f0d823754c6168d8d6830db2221702a7678e1804674 1792574100"
         "0x8bc79aa98fbd53013e8961db27554ecd17139e14ec168b86afbaf2fc910bfc52"
         "0xe3d680bcc62255179d5260beeb920319c86bd919f6b01927bee01509cf6c1fe3121151947fb9e3a310e6652c0c9a9bf7ceb48e8d903774a38a3162d916e8b4591b"
@@ -137,7 +138,7 @@ dynamis =
 dynamisOrder :: OrderFields
 dynamisOrder =
   OrderFields
-    { ofLabelHash = hx "0x78b602f03f164366531da963764c1f2fdfd588d0487daf2aa261ca799e5ffe33",
+    { ofLabelHash = labelHash "dynamis",
       ofLength = 7,
       ofDuration = duration,
       ofCommitment = commitment,
@@ -158,8 +159,8 @@ timestamp = 1792574100
 duration :: Word64
 duration = 69259500
 
-registrationId :: Text
-registrationId = "t2Jk8RmQ4vXw9NcP3yLb6g"
+registrationId :: RegistrationId
+registrationId = RegistrationId "t2Jk8RmQ4vXw9NcP3yLb6g"
 
 orderSignature :: Text
 orderSignature = "0x73e32be461e99e64b093a4ad09b04b4d810e5623a1b0e9c9fdb4701ec2a6a2a84df9ffdccc39c5cb827cde4d846c7662f591665f1b868ab1c15778646d3f414e1b"
