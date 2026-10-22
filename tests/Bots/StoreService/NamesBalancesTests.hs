@@ -58,6 +58,7 @@ namesBalancesTests = describe "StoreService names: balances" $ do
     it "lets one of two difference orders hold a balance, the losing order not written" testTwoHolds
     it "spends a hold only for its holder and while the amount covers it, clearing the hold" testSpendHeld
     it "releases a hold only for its holder" testRelease
+    it "refuses spends, holds and held spends of 0 or fewer cents, and negative credits, refunds and late credits" testNoNegativeCents
     it "refunds a balance only at its amount, above 0 and not held, refused while held and accepted once released" testRefund
     it "keeps amount = credited - spent - refunded over spends at once, a held spend, a released hold and a refund, spent counting orders past unpaid" testInvariant
     it "keeps the invariant over credit, refund, credit, refund, refunded the sum" testCreditRefundTwice
@@ -304,6 +305,26 @@ testRelease = withServiceStore $ \st -> do
   release st "h" `shouldReturn` True
   figures st "s" t0 `shouldReturn` Just (10000, 10000, 0, Nothing)
   release st "h" `shouldReturn` False
+
+testNoNegativeCents :: IO ()
+testNoNegativeCents = withServiceStore $ \st -> do
+  source st "s" 10000
+  mapM (\(r, cents) -> coveredSpend st r "s" cents 10000) [("c0", 0), ("c1", -1)] `shouldReturn` replicate 2 (Left RRBalanceChanged)
+  mapM_ (absent st) ["c0", "c1"]
+  figures st "s" t0 `shouldReturn` Just (10000, 10000, 0, Nothing)
+  holder st "h" "s" 10000 (at 60) `shouldReturn` Right ()
+  mapM (\used -> withTransaction st $ \db -> spendHeldBalance db (RegistrationId "h") used t0) [0, -1] `shouldReturn` [False, False]
+  figures st "s" t0 `shouldReturn` Just (10000, 10000, 0, Just $ hold "h" (at 60) False)
+  source st "z" 0
+  holder st "hz" "z" 0 (at 60) `shouldReturn` Left RRBalanceChanged
+  figures st "z" t0 `shouldReturn` Just (0, 0, 0, Nothing)
+  placeOrderRow st "x" False 20000 (at 60)
+  credit st "x" 5000
+  creditLate st (lateCredit "x" 1 Nothing (-1)) `shouldThrow` anyException
+  figures st "x" t0 `shouldReturn` Just (5000, 5000, 0, Nothing)
+  forM_ ["credited", "refunded"] $ \column ->
+    withTransaction st (\db -> DB.execute_ db $ "UPDATE sx_badge_service_name_balances SET " <> column <> " = -1 WHERE registration_id = 's'") `shouldThrow` anyException
+  figures st "s" t0 `shouldReturn` Just (10000, 10000, 0, Just $ hold "h" (at 60) False)
 
 testRefund :: IO ()
 testRefund = withServiceStore $ \st -> do

@@ -934,32 +934,32 @@ creditBalance db (RegistrationId rid) cents now' =
   where
     now = truncateToSecond now'
 
--- | The price spent at once, where the amount is the one seen and nothing holds it.
+-- | The price, above 0, spent at once, where the amount is the one seen and nothing holds it.
 spendBalance :: DB.Connection -> RegistrationId -> Int -> Int -> UTCTime -> IO Bool
 spendBalance db (RegistrationId rid) price seen now =
   (> 0)
     <$> executeChanging
       db
-      "UPDATE sx_badge_service_name_balances SET amount = amount - ?, updated_at = ? WHERE registration_id = ? AND amount = ? AND amount >= ? AND reserved_by IS NULL"
-      (price, now, rid, seen, price)
+      "UPDATE sx_badge_service_name_balances SET amount = amount - ?, updated_at = ? WHERE registration_id = ? AND amount = ? AND amount >= ? AND ? > 0 AND reserved_by IS NULL"
+      (price, now, rid, seen, price, price)
 
--- | Held by a difference order, where the amount is the one seen and nothing holds it.
+-- | Held by a difference order, where the amount is the one seen, above 0, and nothing holds it.
 holdBalance :: DB.Connection -> RegistrationId -> Int -> RegistrationId -> UTCTime -> IO Bool
 holdBalance db (RegistrationId rid) seen (RegistrationId holder) now =
   (> 0)
     <$> executeChanging
       db
-      "UPDATE sx_badge_service_name_balances SET reserved_by = ?, updated_at = ? WHERE registration_id = ? AND amount = ? AND reserved_by IS NULL"
-      (holder, now, rid, seen)
+      "UPDATE sx_badge_service_name_balances SET reserved_by = ?, updated_at = ? WHERE registration_id = ? AND amount = ? AND ? > 0 AND reserved_by IS NULL"
+      (holder, now, rid, seen, seen)
 
--- | The holder's hold spent and cleared, where this holder holds the balance and it still has the cents.
+-- | The holder's hold spent and cleared, where this holder holds the balance and it still has the cents, above 0.
 spendHeldBalance :: DB.Connection -> RegistrationId -> Int -> UTCTime -> IO Bool
 spendHeldBalance db (RegistrationId holder) used now =
   (> 0)
     <$> executeChanging
       db
-      "UPDATE sx_badge_service_name_balances SET amount = amount - ?, reserved_by = NULL, updated_at = ? WHERE reserved_by = ? AND amount >= ?"
-      (used, truncateToSecond now, holder, used)
+      "UPDATE sx_badge_service_name_balances SET amount = amount - ?, reserved_by = NULL, updated_at = ? WHERE reserved_by = ? AND amount >= ? AND ? > 0"
+      (used, truncateToSecond now, holder, used, used)
 
 releaseHeldBalance :: DB.Connection -> RegistrationId -> UTCTime -> IO Bool
 releaseHeldBalance db (RegistrationId holder) now =

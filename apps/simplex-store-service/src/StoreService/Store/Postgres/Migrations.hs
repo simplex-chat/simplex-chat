@@ -365,8 +365,8 @@ m20261022_name_balances =
 CREATE TABLE @name_balances(
   registration_id TEXT NOT NULL PRIMARY KEY REFERENCES @name_registrations,
   amount INTEGER NOT NULL CHECK (amount >= 0),
-  credited INTEGER NOT NULL DEFAULT 0,
-  refunded INTEGER NOT NULL DEFAULT 0,
+  credited INTEGER NOT NULL DEFAULT 0 CHECK (credited >= 0),
+  refunded INTEGER NOT NULL DEFAULT 0 CHECK (refunded >= 0),
   reserved_by TEXT REFERENCES @name_registrations,
   refunded_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL,
@@ -402,7 +402,7 @@ CREATE TABLE @name_late_credits(
   invoice_rate TEXT,
   current_rate TEXT,
   rate_used TEXT,
-  cents INTEGER NOT NULL,
+  cents INTEGER NOT NULL CHECK (cents >= 0),
   created_at TIMESTAMPTZ NOT NULL,
   UNIQUE(invoice_id, credit_no)
 );
