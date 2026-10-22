@@ -68,12 +68,12 @@ import Simplex.Messaging.Eth.Address (Address, recoverAddress)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig (..))
-import StoreService.Log (logWarn)
-import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, reserveCode, reserveRefusal, spendCode)
+import StoreService.Log (logError, logWarn)
+import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, reserveCode, reserveRefusal, spendLandedCode)
 import StoreService.Names.Contracts (Contracts, NameStatus (..), chainPriceCents, codeLengthFor, nameExpires, nameStatus, ownerOfToken, secondsPerYear)
 import StoreService.Names.Env (NamesEnv (..))
-import StoreService.Names.Phases (Phases, RegistrationId)
-import StoreService.Names.Abi (bytes32FromHex)
+import StoreService.Names.Phases (Phases, RegistrationId (..))
+import StoreService.Names.Abi (bytes32FromHex, hex)
 import StoreService.Names.Signatures (OrderFields (..), orderMessage, parseChecksumAddress, parseSignature, personalDigest)
 import StoreService.Names.Store (CodeHashTaken, LiveOrder (..), NamePhase (..), NameRegistration (..), NewPrepaidCode (..), NewRegistration (..), PrepaidCode (..), RegistrationPayment (..), RegistrationRefused (..), NameTransaction (..), TxFor (..), TxStatus (..), VersionWrite (..), closeOverdue, createCodeRegistration, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistrationByOrderHash, insertPrepaidCode, isLabelRegistering, registrationTransactions, retargetRegistration, setIssuedCode, updateRegistration)
 import StoreService.Names.Turns (Turns, withCodeTurn)
@@ -360,7 +360,15 @@ confirmLanded OrdersEnv {oeStore, oeContracts, oeTurns, oeNow} r@NameRegistratio
           write db = versionWritten <$> updateRegistration db registered now
       case nrPayment of
         RPInvoice {} -> withTransaction oeStore write
-        RPCode codeId -> fmap fst <$> spendCode oeTurns oeStore now codeId nrId write
+        RPCode codeId -> spendLandedCode oeTurns oeStore now codeId nrId write >>= traverse (paidWith codeId)
+    paidWith codeId (v, spent) = do
+      unless spent $ do
+        code <- withTransaction oeStore (`getPrepaidCodeById` codeId)
+        logError $
+          "names: registration " <> ridText nrId <> " turned out registered with prepaid code " <> maybe (tshow codeId) (hex . pcCodeHash) code
+            <> ", which was released and then spent, revoked or expired: the name was paid with it"
+      pure v
+    ridText (RegistrationId t) = t
 
 -- | The hash of the code a taken order was turned into.
 issuedCodeHash :: DBStore -> NameRegistration -> IO (Maybe ByteString)

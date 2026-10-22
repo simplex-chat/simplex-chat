@@ -9,7 +9,7 @@ import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (launchPricesAnswer, oracle, pricesAnswer, pricesCall, registrarOf, rentPriceAnswer, rentPriceCall, unhex)
 import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesStoreTests (order, ownerA, t0)
-import Bots.StoreService.WebTests (digestFixture, jsonObject, statusOf, webGet)
+import Bots.StoreService.WebTests (capturingStderr, digestFixture, jsonObject, statusOf, webGet)
 import Control.Applicative ((<|>))
 import Control.Arrow ((&&&))
 import Control.Concurrent (threadDelay)
@@ -74,6 +74,7 @@ namesOwnerTests = describe "StoreService names: owner" $ do
     it "runs the order checks on the new fields: invalid_name, the duration, name_taken, name_check_unavailable" testMoveOrderChecks
     it "registers a failed order whose register went through, by its mined register or by ownerOf, answering registration_changed and spending a code" testMoveLanded
     it "answers name_check_unavailable when the register check cannot read the chain, changing nothing" testMoveLandedUnread
+    it "spends a released code still unused when its failed order turns out registered, and alerts once when it was spent elsewhere meanwhile" testMoveLandedReleasedCode
     it "answers a dearer name price_too_high with its price, and moves to a cheaper one at its price" testMovePrice
     it "checks a code order's code again: code_not_covering for a shorter name, a held code kept though revoked and expired since" testMoveCodeOrder
     it "reserves a released code again while unused, else answers code_used, code_reserved, code_invalid or code_expired" testMoveReleasedCode
@@ -535,6 +536,36 @@ testMoveLanded = withOwner $ \ctx -> do
   to <- moveTo ctx "alicebakers" 11
   v <- moved ctx keyB notLanded to
   fieldsIn v [("phase", "queued"), ("moves", J.Number 1)]
+
+testMoveLandedReleasedCode :: IO ()
+testMoveLandedReleasedCode = withOwner $ \ctx@Ctx {cStore} -> do
+  answerFree ctx "alicebakers"
+  spender <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 20} id
+  (unused, unusedCode) <- codeIn ctx 7 dynamisOrder failedPhase
+  (spentElsewhere, spentCode) <- codeIn ctx 8 aliceOrder failedPhase
+  let expiry = seconds orderTime + 2 * 31536000
+  forM_ [("dynamis", unused), ("alicebakery", spentElsewhere)] $ \(label, r) -> do
+    answerExpiry ctx label expiry
+    answerOwner ctx label (nrOwner r)
+  forM_ [(unused, unusedCode), (spentElsewhere, spentCode)] $ \(r, code) ->
+    withTransaction cStore (\db -> releasePrepaidCode db (pcId code) (nrId r)) `shouldReturn` True
+  withTransaction cStore $ \db -> do
+    reservePrepaidCode db (pcId spentCode) (nrId spender) orderTime `shouldReturn` True
+    spendPrepaidCode db (pcId spentCode) (nrId spender) orderTime `shouldReturn` True
+  spenderBefore <- stored ctx spender
+  spentBefore <- codeRow ctx spentCode
+  to <- moveTo ctx "alicebakers" 10
+  fst <$> move ctx keyA unused to `shouldReturn` 409
+  nrPhase <$> stored ctx unused `shouldReturn` PRegistered
+  (pcReservedBy &&& pcSpentAt) <$> codeRow ctx unusedCode `shouldReturn` (Just (nrId unused), Just orderTime)
+  to' <- moveTo ctx "alicebakers" 11
+  logs <- capturingStderr $ fst <$> move ctx keyA spentElsewhere to' `shouldReturn` 409
+  nrPhase <$> stored ctx spentElsewhere `shouldReturn` PRegistered
+  length (filter (\l -> "[ERROR " `T.isInfixOf` l && hex (pcCodeHash spentCode) `T.isInfixOf` l && idText (nrId spentElsewhere) `T.isInfixOf` l) $ T.lines logs) `shouldBe` 1
+  codeRow ctx spentCode `shouldReturn` spentBefore
+  stored ctx spender `shouldReturn` spenderBefore
+  where
+    idText (RegistrationId t) = t
 
 testMoveLandedUnread :: IO ()
 testMoveLandedUnread = withOwner $ \ctx@Ctx {cNode} -> do
