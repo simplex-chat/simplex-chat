@@ -33,7 +33,8 @@ Without `tests`, each platform's tests run in four jobs at once; with `tests`, i
 | `android-core` | android-emu's `build-core.sh`, when the Android tests run | skipped when reused, about 27 min not |
 | `bin` | `build-bin.sh`: `exe:simplex-chat` and `exe:uitest-servers` with `-O0 -f uitest`, as `uitest.sh` builds them locally | skipped when reused; to be measured |
 | `desktop` | one job per shard: `uitest.sh` with the prebuilt CLI and servers (`UITEST_CLI`, `UITEST_SERVERS`) | to be measured |
-| `android` | one job per shard: the debug APK and the test APK, the emulator, `uitest-android.sh` | to be measured |
+| `android-apk` | the debug APK and the test APK, once per run | to be measured |
+| `android` | one job per shard: the host-side bridge, the emulator, `uitest-android.sh` | to be measured |
 
 ### Desktop shards
 
@@ -41,11 +42,13 @@ Without `tests`, the desktop tests run in four jobs, one per test package: `chat
 
 `uitest.sh` runs the tests in their own user, PID and network namespaces (`unshare -rn --pid`), which Ubuntu 24.04 restricts: the job turns `kernel.apparmor_restrict_unprivileged_userns` off first, as android-emu's core build does for Nix, and checks that `unshare` works.
 
+The desktop app's system theme detector runs `gsettings monitor`, which exits at once without a session bus and then crashes its thread (plan §15.5 item 24), which the harness reports as an app crash. The desktop jobs start a session bus on a filesystem socket (`unix:dir=`), which the tests' network namespace can reach, unlike an abstract socket, and install the GNOME schemas.
+
 ### Android
 
-An emulator runs one test at a time, and the Android tests (about 450) run under ARM translation, likely too long for one job's 6 hours: without `tests` they are split by AndroidJUnitRunner's own sharding (`-e numShards 4 -e shardIndex <i>`), which assigns each test method to a shard by a hash of its name, the same in every pass of `uitest-android.sh`. Each shard job builds the APKs itself, since it compiles the host-side bridge anyway, whose classpath names files in the job's Gradle cache.
+An emulator runs one test at a time, and the Android tests (about 450) run under ARM translation, likely too long for one job's 6 hours: without `tests` they are split by AndroidJUnitRunner's own sharding (`-e numShards 4 -e shardIndex <i>`), which assigns each test method to a shard by a hash of its name, the same in every pass of `uitest-android.sh`. The APKs are built once, in `android-apk`; each shard job builds only the host-side bridge, whose classpath names files in the job's Gradle cache, with the Kotlin compiler in-process (building the app and the bridge in one Gradle run ran out of memory).
 
-The emulator is android-emu's (`install-sdk.sh`, `emulator.sh`): Google APIs x86_64, API 34, with KVM, running the app's arm64-v8a code under ARM translation. The APKs are built as android-emu builds its APK (`-Pandroid.injected.build.abi=arm64-v8a`, `:android:assembleFossDebug`), with `:android:assembleFossDebugAndroidTest` and `:common:uitestBridgeClasspath` in the same Gradle run, before `install-sdk.sh` points `ANDROID_HOME` at an SDK that has only the emulator. Without `local.properties` the debug app's id is `chat.simplex.app` (`UITEST_APP_ID`). `uitest.sh --prepare-only` writes the peer template and `build/uitest/env.properties` that the host-side bridge reads, without the desktop build; `uitest-android.sh` then runs with `UITEST_SERIAL` set to the emulator and `ADB` to the SDK's adb, and forwards the bridge's and the servers' ports with `adb reverse`.
+The emulator is android-emu's (`install-sdk.sh`, `emulator.sh`): Google APIs x86_64, API 34, with KVM, running the app's arm64-v8a code under ARM translation. The APKs are built as android-emu builds its APK (`-Pandroid.injected.build.abi=arm64-v8a`, `:android:assembleFossDebug`), with `:android:assembleFossDebugAndroidTest`; each shard builds `:common:uitestBridgeClasspath` before `install-sdk.sh` points `ANDROID_HOME` at an SDK that has only the emulator. Without `local.properties` the debug app's id is `chat.simplex.app` (`UITEST_APP_ID`). `uitest.sh --prepare-only` writes the peer template and `build/uitest/env.properties` that the host-side bridge reads, without the desktop build; `uitest-android.sh` then runs with `UITEST_SERIAL` set to the emulator and `ADB` to the SDK's adb, and forwards the bridge's and the servers' ports with `adb reverse`.
 
 ## Results
 

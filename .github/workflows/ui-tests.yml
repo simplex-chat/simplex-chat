@@ -232,8 +232,17 @@ jobs:
       - name: Install libraries
         run: |
           sudo apt-get update
-          sudo apt-get install -y libffi-dev libgmp-dev libnuma-dev libssl-dev zlib1g-dev fonts-dejavu-core
+          sudo apt-get install -y libffi-dev libgmp-dev libnuma-dev libssl-dev zlib1g-dev fonts-dejavu-core dbus libglib2.0-bin gsettings-desktop-schemas
           dpkg-query -W libffi-dev libgmp-dev libnuma-dev libssl-dev zlib1g-dev fonts-dejavu-core
+
+      # the desktop app's theme detector runs `gsettings monitor`, which needs a session bus (plan §15.5 item 24); a
+      # filesystem socket reaches it from the tests' network namespace, where an abstract socket would not
+      - name: Start a session bus
+        run: |
+          mkdir -p "$RUNNER_TEMP/dbus"
+          addr=$(dbus-daemon --session --address="unix:dir=$RUNNER_TEMP/dbus" --fork --print-address=1 | head -n 1)
+          echo "DBUS_SESSION_BUS_ADDRESS=$addr" >> "$GITHUB_ENV"
+          DBUS_SESSION_BUS_ADDRESS="$addr" gsettings get org.gnome.desktop.interface gtk-theme
 
       # uitest.sh runs the tests in their own user, PID and network namespaces, which Ubuntu 24.04 restricts
       - name: Allow user namespaces
@@ -308,9 +317,62 @@ jobs:
 
   # an emulator runs one test at a time, so the tests are split over several. Each shard builds the APKs itself: it
   # compiles the host-side bridge anyway, whose classpath names files in the job's own Gradle cache
+  android-apk:
+    name: Android app and test APKs
+    needs: [plan, android-core]
+    # the core is skipped when an earlier run built it
+    if: ${{ !cancelled() && !failure() && needs.plan.result == 'success' && needs.plan.outputs.run-android == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Download core library
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.plan.outputs.android-core }}
+          path: ~/core
+          run-id: ${{ needs.plan.outputs.android-core-run || github.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Install core library
+        run: scripts/ci/android/install-core.sh ~/core/${{ env.ANDROID_CORE_PKG }}
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: corretto
+          java-version: ${{ env.JAVA_VER }}
+
+      # as android-emu builds its APK, plus the test APK
+      - name: Build app and tests
+        working-directory: apps/multiplatform
+        run: |
+          ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets -Pandroid.injected.build.abi=arm64-v8a \
+            :android:assembleFossDebug :android:assembleFossDebugAndroidTest
+          mkdir -p "$RUNNER_TEMP/apk"
+          cp "android/build/intermediates/apk/foss/debug/$APK" "$RUNNER_TEMP/apk"
+          test_apk=$(find android/build -name '*androidTest*.apk' | head -n 1)
+          [ -n "$test_apk" ] || { echo "error: no androidTest APK"; find android/build -name '*.apk'; exit 1; }
+          cp "$test_apk" "$RUNNER_TEMP/apk/androidTest.apk"
+          ls -la "$RUNNER_TEMP/apk"
+          unzip -l "$RUNNER_TEMP/apk/$APK" | grep -E ' lib/'
+
+      - name: Upload APKs
+        uses: actions/upload-artifact@v7
+        with:
+          name: ui-tests-apk
+          path: ${{ runner.temp }}/apk
+          compression-level: 0
+          retention-days: 3
+          if-no-files-found: error
+
   android:
     name: Android UI tests (${{ matrix.shard }})
-    needs: [plan, android-core, bin]
+    needs: [plan, android-apk, bin]
     # the builds are skipped when an earlier run built them
     if: ${{ !cancelled() && !failure() && needs.plan.result == 'success' && needs.plan.outputs.run-android == 'true' }}
     runs-on: ubuntu-24.04
@@ -341,17 +403,6 @@ jobs:
           sudo apt-get install -y libpulse0 libegl1 libffi-dev libgmp-dev libnuma-dev libssl-dev zlib1g-dev
           dpkg-query -W libpulse0 libegl1 libffi-dev libgmp-dev libnuma-dev libssl-dev zlib1g-dev
 
-      - name: Download core library
-        uses: actions/download-artifact@v8
-        with:
-          name: ${{ needs.plan.outputs.android-core }}
-          path: ~/core
-          run-id: ${{ needs.plan.outputs.android-core-run || github.run_id }}
-          github-token: ${{ github.token }}
-
-      - name: Install core library
-        run: scripts/ci/android/install-core.sh ~/core/${{ env.ANDROID_CORE_PKG }}
-
       - name: Download CLI and test servers
         uses: actions/download-artifact@v8
         with:
@@ -369,21 +420,20 @@ jobs:
           distribution: corretto
           java-version: ${{ env.JAVA_VER }}
 
-      # as android-emu builds its APK, plus the test APK and the host-side bridge's classpath, which uitest-android.sh
-      # then finds up to date; all before install-sdk.sh points ANDROID_HOME at an SDK with only the emulator
-      - name: Build app, tests and bridge
+      - name: Download APKs
+        uses: actions/download-artifact@v8
+        with:
+          name: ui-tests-apk
+          path: ${{ runner.temp }}/apk
+
+      # the host-side bridge's classpath, which uitest-android.sh then finds up to date; before install-sdk.sh points
+      # ANDROID_HOME at an SDK with only the emulator
+      - name: Build bridge
         working-directory: apps/multiplatform
         run: |
-          ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets -Pandroid.injected.build.abi=arm64-v8a \
-            :android:assembleFossDebug :android:assembleFossDebugAndroidTest :common:uitestBridgeClasspath
-          pkill -f KotlinCompileDaemon || true
-          mkdir -p "$RUNNER_TEMP/apk"
-          cp "android/build/intermediates/apk/foss/debug/$APK" "$RUNNER_TEMP/apk"
-          test_apk=$(find android/build -name 'android-foss-debug-androidTest.apk' | head -n 1)
-          [ -n "$test_apk" ] || { echo "error: no androidTest APK"; find android/build -name '*.apk'; exit 1; }
-          cp "$test_apk" "$RUNNER_TEMP/apk/androidTest.apk"
+          ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets -Pkotlin.compiler.execution.strategy=in-process \
+            :common:uitestBridgeClasspath
           ls -la "$RUNNER_TEMP/apk"
-          unzip -l "$RUNNER_TEMP/apk/$APK" | grep -E ' lib/'
 
       - name: Prepare test peers and servers
         working-directory: apps/multiplatform

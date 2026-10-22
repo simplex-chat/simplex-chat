@@ -82,6 +82,7 @@ class ChatListScreen(private val s: UiScope) {
 
   fun open(name: String): ChatScreen {
     val id = chatId(name)
+    s.quiesce()
     s.click(Ui.ChatList.Row(id))
     s.poll(what = "chat `$name` to open, or an alert instead") {
       chatModel.chatId.value == id || AlertManager.shared.hasAlertsShown() || AlertManager.privacySensitive.hasAlertsShown()
