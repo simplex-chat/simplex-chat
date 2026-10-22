@@ -167,6 +167,8 @@ object ChatModel {
   // rhId, chatId
   val deletedChats = mutableStateOf<List<Pair<Long?, String>>>(emptyList())
   val creatingChannelId = mutableStateOf<String?>(null)
+  val creatingChannelMembers = mutableStateOf<List<GroupMember>>(emptyList())
+  val creatingChannelRelays = mutableStateOf<List<GroupRelay>>(emptyList())
   val groupMembers = mutableStateOf<List<GroupMember>>(emptyList())
   val groupMembersIndexes = mutableStateOf<Map<Long, Int>>(emptyMap())
   val membersLoaded = mutableStateOf(false)
@@ -988,8 +990,10 @@ object ChatModel {
         updateGroup(rhId, groupInfo)
         return false
       }
-      // update current chat or channel being created
-      return if (chatId.value == groupInfo.id || creatingChannelId.value == groupInfo.id) {
+      if (creatingChannelId.value == groupInfo.id) {
+        creatingChannelMembers.value = creatingChannelMembers.value.filter { it.groupMemberId != member.groupMemberId } + member
+      }
+      return if (chatId.value == groupInfo.id) {
         if (groupMembers.value.isNotEmpty() && groupMembers.value.firstOrNull()?.groupId != groupInfo.groupId) {
           // stale data, should be cleared at that point, otherwise, duplicated items will be here which will produce crashes in LazyColumn
           groupMembers.value = emptyList()
