@@ -222,7 +222,7 @@ badgeServiceTests = do
       it "should refuse Restore while a badge is shown, recording nothing, and answer a limited move's next Restore with the limit, holding it again" testRestoreLimitedOnNewDevice
       it "should leave a tier change held for one profile unchanged when a Restore on another profile finds it" testRestoreLeavesTierChangeHold
       it "should hold a tier change at once after a move of its subscription was refused transfer_limited" testRefusedMoveKeepsTierChange
-      fit "should give a move held for a deleted profile back to the profile whose purchase it funds" testRestoreHeldProfileDeleted
+      it "should give a move held for a deleted profile back to the profile whose purchase it funds" testRestoreHeldProfileDeleted
       it "should take a purchase hand-over held for one profile to the profile that restores it, and credit it there" testRestoreTakesHeldPurchase
   describe "subscriptions" $ do
     it "should credit a subscription's charge from the store's period start, and answer replays from the record" testSubscriptionPurchase
