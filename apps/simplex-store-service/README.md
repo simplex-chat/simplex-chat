@@ -462,56 +462,66 @@ edits (`setTextWithSig`, `clearRecordsWithSig`) to the resolver. It pays only th
 names' rent is spent from its allowance on the sponsor, in USD, which the guardian sets. It holds no
 names.
 
-The commands use Foundry's `cast` ([getfoundry.sh](https://getfoundry.sh), checked with 1.5.1) from
-`scripts/store-service/` on the service host, against the node at `[chain] rpc_url`, with the
-addresses from `[chain]`:
+The commands run from `scripts/store-service/` on the service host, with Foundry's `cast`
+([getfoundry.sh](https://getfoundry.sh), checked with 1.5.1) and `jq`. They read the ini through this
+shell function, which takes a key's value without surrounding spaces, tabs or a CR:
 
 ```
-RPC=<rpc_url>
-CONTROLLER=<controller>
-SPONSOR=<sponsor>
+ini() { sudo sed -n "s/^$1[[:space:]]*=[[:space:]]*\([^[:space:]]*\).*/\1/p" "${2:-store_service.ini}"; }
 ```
+
+Keys and the RPC URL are read through `ini`, so they stay out of the shell history. A key is in
+cast's arguments, and the RPC URL in curl's, visible to `ps` while it runs.
+
+The ini is never edited in place. `sudoedit` refuses a file in a directory the invoking user can
+write (sudo(8), sudoers(5) `sudoedit_checkdir`), as `scripts/store-service/` of the checkout is.
+`sudo <editor>` would leave swap or backup files holding the key beside it, which git does not
+ignore. So each change is made in a copy in a root-only directory and copied over the ini, which
+keeps its owner, mode and inode, so compose's read-only mount sees it. `next/store_service.ini` and
+the other copies below are ignored by git, as every `store_service.ini` is, and are outside the
+image.
 
 #### Create the key
 
-```
-cast wallet new
-```
+Fill `[names]` and `[chain]` in a copy, with a `service_key = 0x...` line under `[chain]`. Then
+generate the key into that line, so it is never printed, and put the copy in place:
 
 ```
-Successfully created new keypair.
-Address:     0x955C54a660fA233247D47b3f90C5713bA7ADD98B
-Private key: 0x3f77…ba3e
+sudo install -d -m 700 next && sudo cp -p store_service.ini next/store_service.ini
+sudoedit next/store_service.ini
+cast wallet new --json | jq -r '"s/^service_key[[:space:]]*=.*/service_key = " + .[0].private_key + "/"' | sudo sed -i -f - next/store_service.ini
+cast wallet address "$(ini service_key next/store_service.ini)"
+sudo cp next/store_service.ini store_service.ini && sudo rm -r next
 ```
 
-Copy the private key into `[chain]` as `service_key = 0x…` (`0x` and 64 hex digits) with
-`sudoedit store_service.ini`, then clear the screen. The ini holds the only copy. It is gitignored,
-every `*.ini` is kept out of the image, and compose mounts it read-only. Keep it owned by the
-service user with mode 600 (see [Egress rule](#egress-rule)). The service never logs the key; keep
-it out of shell history, logs and tickets too.
+The address check prints the key's address, as in `0xB2590B3a4fa5bEdda803F5f1F605803438C3F71E`, and
+fails when the line was not replaced. The key is `0x` and 64 hex digits.
 
-#### Find its address
+The ini holds the only copy of the key. It is gitignored, every `*.ini` is kept out of the image,
+and compose mounts it read-only. Keep it owned by the service user with mode 600 (see
+[Egress rule](#egress-rule)). The service never logs the key; keep it out of logs and tickets too.
+If a key was ever shown on a terminal, clear the screen and its scrollback (`clear && printf
+'\e[3J'`, and `tmux clear-history` in tmux), and never show one in a recorded session.
 
-`cast wallet new` printed it. Check that the ini holds the same key:
-
-```
-cast wallet address "$(sudo sed -n 's/^service_key *= *//p' store_service.ini)"
-```
-
-It prints the address (`0x` and 40 hex digits). The commands below that need a key read it from the
-ini the same way, so it stays out of the shell history, but it is in cast's arguments, visible to
-`ps`, while cast runs.
+#### Set up the shell
 
 ```
-REGISTRAR=<the address>
+export ETH_RPC_URL="$(ini rpc_url)"
+CONTROLLER=$(ini controller)
+SPONSOR=$(ini sponsor)
+REGISTRAR=$(cast wallet address "$(ini service_key)")
 ```
+
+cast reads the node from `ETH_RPC_URL`, so no command below names it. The address check reads the
+ini on disk, not the running service, which logs no address. To confirm the service runs with the
+key, check that `cast nonce $REGISTRAR --block pending` rises after its next transaction.
 
 #### Grant the allowance
 
 Only the guardian, the controller's beneficiary, can set the allowance:
 
 ```
-cast call $CONTROLLER 'beneficiary()(address)' --rpc-url $RPC
+cast call $CONTROLLER 'beneficiary()(address)'
 ```
 
 The guardian sends this call to `$SPONSOR`, with no value, from whatever wallet holds its key. Its
@@ -528,7 +538,7 @@ cast calldata 'setRegistrarAllowance(address,uint256)' $REGISTRAR $(cast parse-u
 - From a key, with cast (`--interactive` prompts for the key; `--ledger` signs on a Ledger instead):
 
   ```
-  cast send $SPONSOR 'setRegistrarAllowance(address,uint256)' $REGISTRAR $(cast parse-units 1000) --rpc-url $RPC --interactive
+  cast send $SPONSOR 'setRegistrarAllowance(address,uint256)' $REGISTRAR $(cast parse-units 1000) --interactive
   ```
 
 - From a multisig such as Safe: submit that calldata to the sponsor address as a transaction with
@@ -537,7 +547,7 @@ cast calldata 'setRegistrarAllowance(address,uint256)' $REGISTRAR $(cast parse-u
 Then anyone can check the result:
 
 ```
-cast call $SPONSOR 'registrarAllowance(address)(uint256)' $REGISTRAR --rpc-url $RPC
+cast call $SPONSOR 'registrarAllowance(address)(uint256)' $REGISTRAR
 ```
 
 ```
@@ -554,7 +564,7 @@ cast call $SPONSOR 'registrarAllowance(address)(uint256)' $REGISTRAR --rpc-url $
   letters or more:
 
   ```
-  cast call $CONTROLLER 'rentPriceUSD(string,uint256)((uint256,uint256))' examplename 63072000 --rpc-url $RPC
+  cast call $CONTROLLER 'rentPriceUSD(string,uint256)((uint256,uint256))' examplename 63072000
   ```
 
   ```
@@ -566,7 +576,7 @@ cast call $SPONSOR 'registrarAllowance(address)(uint256)' $REGISTRAR --rpc-url $
 Send ETH on the chain of `[chain] chain_id` from any wallet, and top it up the same way. With cast:
 
 ```
-cast send $REGISTRAR --value 1ether --rpc-url $RPC --interactive
+cast send $REGISTRAR --value 1ether --interactive
 ```
 
 The gas below was measured on a local anvil deployment of the contracts (the names webapp's
@@ -596,9 +606,9 @@ The gas below was measured on a local anvil deployment of the contracts (the nam
 #### Check the balance and transactions in flight
 
 ```
-cast balance $REGISTRAR --ether --rpc-url $RPC
-cast nonce $REGISTRAR --block latest --rpc-url $RPC
-cast nonce $REGISTRAR --block pending --rpc-url $RPC
+cast balance $REGISTRAR --ether
+cast nonce $REGISTRAR --block latest
+cast nonce $REGISTRAR --block pending
 ```
 
 The balance prints as `1.000000000000000000`. The `latest` nonce counts the key's mined
@@ -608,9 +618,9 @@ in flight. The same reads through JSON-RPC answer in hex wei and hex counts
 prints as `1`):
 
 ```
-curl -s -X POST -H 'content-type: application/json' --data '{"jsonrpc":"2.0","id":1,"method":"eth_getBalance","params":["<address>","latest"]}' $RPC
-curl -s -X POST -H 'content-type: application/json' --data '{"jsonrpc":"2.0","id":1,"method":"eth_getTransactionCount","params":["<address>","latest"]}' $RPC
-curl -s -X POST -H 'content-type: application/json' --data '{"jsonrpc":"2.0","id":1,"method":"eth_getTransactionCount","params":["<address>","pending"]}' $RPC
+curl -s -X POST -H 'content-type: application/json' --data '{"jsonrpc":"2.0","id":1,"method":"eth_getBalance","params":["'"$REGISTRAR"'","latest"]}' "$ETH_RPC_URL"
+curl -s -X POST -H 'content-type: application/json' --data '{"jsonrpc":"2.0","id":1,"method":"eth_getTransactionCount","params":["'"$REGISTRAR"'","latest"]}' "$ETH_RPC_URL"
+curl -s -X POST -H 'content-type: application/json' --data '{"jsonrpc":"2.0","id":1,"method":"eth_getTransactionCount","params":["'"$REGISTRAR"'","pending"]}' "$ETH_RPC_URL"
 ```
 
 A transaction the node refused is in neither count. The service's own list is the `pending` rows of
@@ -640,16 +650,18 @@ psql "postgresql://simplex@127.0.0.1:5432/badge_service" -c "SELECT registrar_no
 The service resumes its saved transactions at start and gives new ones nonces after theirs. Those
 are signed by the key that sent them, so started on another key it would give that key's
 transactions nonces it has not reached, and they would never be mined. Rotate only with no `pending`
-row:
+row, at a quiet time: every stop takes the store offline, and each order sends its register about a
+minute after its commit.
 
-1. Create the new key in a copy of the ini, which git ignores as it does every `store_service.ini`,
-   check its address, fund it, and have the guardian grant it an allowance, as above:
+1. Keep a copy of the old ini, create the new key in another, fund it, and have the guardian grant
+   it an allowance, as above for `$NEW`:
 
    ```
-   sudo install -d -m 700 next && sudo cp -p store_service.ini next/store_service.ini
-   cast wallet new
-   sudoedit next/store_service.ini
-   cast wallet address "$(sudo sed -n 's/^service_key *= *//p' next/store_service.ini)"
+   sudo install -d -m 700 prev next
+   sudo cp -p store_service.ini prev/store_service.ini && sudo cp -p store_service.ini next/store_service.ini
+   cast wallet new --json | jq -r '"s/^service_key[[:space:]]*=.*/service_key = " + .[0].private_key + "/"' | sudo sed -i -f - next/store_service.ini
+   OLD=$(cast wallet address "$(ini service_key prev/store_service.ini)")
+   NEW=$(cast wallet address "$(ini service_key next/store_service.ini)")
    ```
 
 2. Stop the service and count the `pending` rows:
@@ -659,33 +671,57 @@ row:
    psql "postgresql://simplex@127.0.0.1:5432/badge_service" -tAc "SELECT count(*) FROM simplex_v1_chat_schema.sx_badge_service_name_transactions WHERE status = 'pending'"
    ```
 
-   On anything but `0`, `docker compose start store-service` on the old key, let them settle
-   (`confirmations` blocks after they are mined), and repeat this step.
-3. Keep the old ini for step 5, put the new one in place, start, and check the address it runs with:
+   On `0`, go to step 3. Otherwise `docker compose start store-service` on the old key, let them
+   settle (`confirmations` blocks after they are mined), wait for a pause in the orders, and repeat
+   this step. For a drain that new orders cannot hold up, start the old key with
+   `max_fee_per_gas = 1` under `[chain]` instead:
 
    ```
-   sudo install -d -m 700 prev && sudo cp -p store_service.ini prev/store_service.ini
+   sudo install -d -m 700 drain && sudo cp -p store_service.ini drain/store_service.ini
+   sudoedit drain/store_service.ini
+   sudo cp drain/store_service.ini store_service.ini
+   docker compose start store-service
+   ```
+
+   With a cap of 1 wei the service signs no new transaction. Each new one waits and logs the fee
+   warning, and an owner's link edit is answered as unavailable. The saved transactions are still
+   followed and settle. They are not bumped above the cap, so one that stays pending for long needs
+   the old ini back (`sudo cp prev/store_service.ini store_service.ini` and a restart) to be
+   replaced. Step 3 puts the full cap back, since `next/` was copied before.
+3. Put the new ini in place, start, and check that the ini on disk now holds the new key:
+
+   ```
    sudo cp next/store_service.ini store_service.ini
    docker compose start store-service
-   cast wallet address "$(sudo sed -n 's/^service_key *= *//p' store_service.ini)"
+   cast wallet address "$(ini service_key)"
    ```
 
-4. The guardian zeroes the old key's allowance (`OLD` is its address), sending this calldata as in
+   It prints `$NEW`. After the next order's commit, `cast nonce $NEW --block pending` is above 0,
+   and `cast nonce $OLD --block pending` stays where it was.
+4. The guardian zeroes the old key's allowance, sending this calldata as in
    [Grant the allowance](#grant-the-allowance), then anyone checks it reads 0:
 
    ```
    cast calldata 'setRegistrarAllowance(address,uint256)' $OLD 0
-   cast call $SPONSOR 'registrarAllowance(address)(uint256)' $OLD --rpc-url $RPC
+   cast call $SPONSOR 'registrarAllowance(address)(uint256)' $OLD
    ```
 
-5. Send the old key's ETH back, keeping 0.003 ETH for the fee (21,000 gas at 100 gwei is
-   0.0021 ETH), then delete both copies:
+5. Send the old key's ETH back to a plain account (a transfer to a contract such as a Safe needs
+   more than the 21,000 gas used here), then delete the copies. The first send leaves 0.01 ETH for
+   the fees. The second sweeps the rest, as a legacy transaction that pays exactly its gas price,
+   twice the node's current one, so the balance ends at 0:
 
    ```
-   cast balance $OLD --ether --rpc-url $RPC
-   cast send <your wallet> --value <balance - 0.003>ether --rpc-url $RPC --private-key "$(sudo sed -n 's/^service_key *= *//p' prev/store_service.ini)"
-   sudo rm -r prev next
+   cast balance $OLD --ether
+   cast send <account> --value <balance - 0.01>ether --private-key "$(ini service_key prev/store_service.ini)"
+   P=$(( 2 * $(cast gas-price) ))
+   cast send <account> --legacy --gas-limit 21000 --gas-price $P --value $(( $(cast balance $OLD) - 21000 * P )) --private-key "$(ini service_key prev/store_service.ini)"
+   cast balance $OLD
+   sudo rm -rf prev next drain
    ```
+
+   The last balance prints `0`. A negative value, from fees above about 150 gwei, makes cast refuse
+   the sweep; run it again when they fall.
 
 ## Issuing codes
 
