@@ -6,7 +6,8 @@ module Bots.StoreService.StripeTests (badgeStripeTests) where
 
 import StoreService.Config (StripeConfig (..))
 import StoreService.Providers
-  ( ListPass (..),
+  ( Confirmed (..),
+    ListPass (..),
     OrderDraft (..),
     PaymentSignal (..),
     Provider (..),
@@ -23,6 +24,8 @@ import Data.Aeson ((.=))
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as LB
 import Data.Either (isLeft)
+import Data.Maybe (isNothing)
+import Data.Word (Word32)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, getCurrentTime)
@@ -55,6 +58,7 @@ badgeStripeTests = describe "badge stripe adapter" $ do
     it "refuses a crypto method, since Stripe offers none" testRefusesCrypto
     it "makes an unknown intent status a ProviderError, not a silent no-signal" testFakeReadUnknownStatus
     it "settles a succeeded intent with no charge at read time" testSettledNoChargeReadTime
+    it "confirms only a succeeded intent's amount, and reads no rate" testConfirmedOnlySucceeded
   describe "listing intents to settle" $ do
     it "lists by a created window, never status=open" testFakeListWindow
     it "moves the settled and canceled intents, at read time, leaving the open one" testFakeListsOpen
@@ -73,10 +77,23 @@ fiftyFourDollars :: OrderDraft
 fiftyFourDollars = OrderDraft {odAmount = CurrencyAmount 5400, odCurrency = "usd"}
 
 fiftyFourDollarsReceived :: Received
-fiftyFourDollarsReceived = Received {rcvAmount = CurrencyAmount 5400, rcvCrypto = Nothing, rcvDue = Nothing}
+fiftyFourDollarsReceived = cardReceived 5400 5400
 
 nothingReceived :: Received
-nothingReceived = Received {rcvAmount = CurrencyAmount 0, rcvCrypto = Nothing, rcvDue = Nothing}
+nothingReceived = cardReceived 0 0
+
+-- | Cents received and confirmed, with no units or rate.
+cardReceived :: Word32 -> Word32 -> Received
+cardReceived cents confirmed =
+  Received
+    { rcvAmount = CurrencyAmount cents,
+      rcvCrypto = Nothing,
+      rcvDue = Nothing,
+      rcvUnits = Nothing,
+      rcvRate = Nothing,
+      rcvConfirmed = Confirmed {cfCents = CurrencyAmount confirmed, cfUnits = Nothing},
+      rcvUncreditable = Nothing
+    }
 
 fixtureChargeAt :: UTCTime
 fixtureChargeAt = posixSecondsToUTCTime 1700000000
@@ -213,6 +230,14 @@ testSettledNoChargeReadTime = do
   now <- getCurrentTime
   let ir = IntentRead {irId = "pi_test_x", irStatus = "succeeded", irAmountReceived = 5400, irChargeCreated = Nothing}
   signalOf now ir `shouldBe` Right (Just (SigSettled fiftyFourDollarsReceived now))
+
+testConfirmedOnlySucceeded :: IO ()
+testConfirmedOnlySucceeded = do
+  now <- getCurrentTime
+  let read' status = signalOf now IntentRead {irId = "pi_test_x", irStatus = status, irAmountReceived = 5400, irChargeCreated = Nothing}
+  read' "succeeded" `shouldBe` Right (Just (SigSettled (cardReceived 5400 5400) now))
+  read' "canceled" `shouldBe` Right (Just (SigClosed (cardReceived 0 0)))
+  withProvider $ \_ p -> isNothing (pCurrentRate p) `shouldBe` True
 
 -- | A status=open query returns only open intents, which carry no signal, so the poll lists by
 -- creation time instead to catch a settlement the webhook missed. The window reaches back the
