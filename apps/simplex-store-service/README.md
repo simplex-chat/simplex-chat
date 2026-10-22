@@ -124,7 +124,8 @@ proxy appends.
 
 The BTCPay API key needs four permissions, each scoped to the one store:
 `cancreateinvoice` and `canviewinvoices` for checkout and the poller,
-`canviewstoresettings` to log the store's live payment methods at startup, and
+`canviewstoresettings` to log the store's live payment methods at startup and to read the store's
+rates for late crypto credits, and
 `canmodifyinvoices` so `POST /api/invoice/:id/cancel` can invalidate an invoice at BTCPay
 rather than only in this store.
 
