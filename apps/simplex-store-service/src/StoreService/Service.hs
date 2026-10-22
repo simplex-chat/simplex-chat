@@ -30,6 +30,7 @@ import StoreService.Names.Sender (runSender)
 import StoreService.Names.Turns (Turns, newTurns)
 import StoreService.Options
 import StoreService.Poller (newPollerEnv, newReadHints, runPoller)
+import StoreService.Providers (Provider)
 import StoreService.Providers.BTCPay (btcpayProvider)
 import StoreService.Providers.Stripe (stripeProvider)
 import StoreService.Store
@@ -165,19 +166,19 @@ storeService opts@StoreServiceOpts {serviceConfigFile} cfg env = do
       str <- maybe (pure []) (fmap (: []) . stripeProvider) (stripe sc)
       let providers = btc <> str
       hints <- newReadHints
-      namesEnv <- forM (names sc) (startNames cc turns)
+      namesEnv <- forM (names sc) (startNames cc turns ws providers)
       webEnv <- newWebEnv chatStore sc ws hints providers namesEnv
       exportWebapp (listener sc) (stripe sc)
       pollerEnv <- newPollerEnv chatStore ws (nePhases <$> namesEnv) hints providers (poll sc)
       pure $ [runWebListener webEnv, runPoller pollerEnv] <> maybe [] (\ne -> [runSender (neSender ne), runRecordEdits (neRecords ne)]) namesEnv
 
-startNames :: ChatController -> Turns -> NamesConfig -> IO NamesEnv
-startNames cc@ChatController {chatStore} turns nc@NamesConfig {nTLD, nChain = ChainConfig {cChainId}} =
+startNames :: ChatController -> Turns -> Waiters -> [Provider] -> NamesConfig -> IO NamesEnv
+startNames cc@ChatController {chatStore} turns waiters providers nc@NamesConfig {nTLD, nChain = ChainConfig {cChainId}} =
   readTVarIO (currentUser cc) >>= \case
     Nothing -> putStrLn "No current user" >> exitFailure
     Just User {userId} -> do
       logInfo $ "names: on, TLD " <> safeDecodeUtf8 (strEncode nTLD) <> ", chain " <> tshow cChainId
-      newNamesEnv cc userId nc chatStore turns
+      newNamesEnv cc userId nc chatStore turns waiters providers
 
 seedServiceCatalog :: DBStore -> IO ()
 seedServiceCatalog st = do

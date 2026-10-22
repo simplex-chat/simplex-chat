@@ -18,6 +18,8 @@ module StoreService.Names.Orders
     checkOrderSigner,
     existingOrder,
     placeOrder,
+    placeCodeOrder,
+    codeOrderInsert,
     checkTimestamp,
     checkDuration,
     checkNameFree,
@@ -46,13 +48,14 @@ import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig (..))
 import StoreService.Log (logWarn)
+import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, reserveRefusal)
 import StoreService.Names.Contracts (Contracts, NameStatus (..), chainPriceCents, nameStatus, secondsPerYear)
 import StoreService.Names.Env (NamesEnv (..))
-import StoreService.Names.Phases (Phases)
+import StoreService.Names.Phases (Phases, RegistrationId)
 import StoreService.Names.Abi (bytes32FromHex)
 import StoreService.Names.Signatures (OrderFields (..), orderMessage, parseChecksumAddress, parseSignature, personalDigest)
-import StoreService.Names.Store (LiveOrder (..), NameRegistration (..), RegistrationRefused (..), closeOverdue, getLiveOrders, getRegistrationByOrderHash, isLabelRegistering)
-import StoreService.Names.Turns (Turns)
+import StoreService.Names.Store (LiveOrder (..), NameRegistration (..), NewRegistration (..), PrepaidCode (..), RegistrationRefused (..), closeOverdue, createCodeRegistration, getLiveOrders, getPrepaidCode, getRegistrationByOrderHash, isLabelRegistering)
+import StoreService.Names.Turns (Turns, withCodeTurn)
 
 data OrdersEnv = OrdersEnv
   { oeStore :: DBStore,
@@ -82,6 +85,7 @@ data OrderRefusal
   | ORNameTaken
   | ORNameCheckUnavailable
   | ORCatalogChanged Int
+  | ORCode CodeRefusal
   deriving (Eq, Show)
 
 newtype OrderRefused = OrderRefused OrderRefusal
@@ -153,8 +157,8 @@ overdueOrdersMet db OrderRequest {orOwner, orFields = OrderFields {ofLabelHash, 
       loOverdue && nrOwner == orOwner && nrLabelHash == ofLabelHash
 
 -- | In one transaction, the overdue orders the request meets are closed, then the order is inserted.
--- Refused, changing nothing, when it meets an order it cannot close, or the insert meets one.
-placeOrder :: OrdersEnv -> OrderRequest -> (DB.Connection -> UTCTime -> IO (Either RegistrationRefused ())) -> IO (Either OrderRefusal [ClosedOrder])
+-- Refused, changing nothing, when it meets an order it cannot close, or the insert refuses.
+placeOrder :: OrdersEnv -> OrderRequest -> (DB.Connection -> UTCTime -> IO (Either OrderRefusal ())) -> IO (Either OrderRefusal [ClosedOrder])
 placeOrder OrdersEnv {oeStore, oeNow} req insert = do
   now <- oeNow
   first (\(OrderRefused refusal) -> refusal) <$> E.try (withTransaction oeStore $ \db -> transaction db now)
@@ -163,12 +167,31 @@ placeOrder OrdersEnv {oeStore, oeNow} req insert = do
       overdueOrdersMet db req now >>= \case
         Just overdue -> do
           closed <- mapM (close db now) overdue
-          insert db now >>= either (const $ E.throwIO $ OrderRefused OROrderExists) (const $ pure closed)
+          insert db now >>= either (E.throwIO . OrderRefused) (const $ pure closed)
         Nothing -> E.throwIO $ OrderRefused OROrderExists
     close db now r =
       closeOverdue db r now >>= \case
         Just v -> pure ClosedOrder {coRegistration = r, coVersion = v}
         Nothing -> E.throwIO $ OrderRefused OROrderExists
+
+-- | In the code's turn, the code as it reads there must pay for the name; the order's insert then reserves it.
+placeCodeOrder :: OrdersEnv -> OrderRequest -> RegistrationId -> PrepaidCode -> IO (Either OrderRefusal [ClosedOrder])
+placeCodeOrder env@OrdersEnv {oeStore, oeTurns, oeNow} req@OrderRequest {orOwner, orFields = fields@OrderFields {ofLength}} rid PrepaidCode {pcCodeHash, pcYears} =
+  withCodeTurn oeTurns pcCodeHash $ do
+    now <- oeNow
+    withTransaction oeStore (`getPrepaidCode` pcCodeHash) >>= \case
+      Nothing -> pure $ Left $ ORCode CRInvalid
+      Just code
+        | Just refusal <- codeRefusal now rid ofLength code -> pure $ Left $ ORCode refusal
+        | otherwise -> placeOrder env req $ codeOrderInsert NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = fields, nrgYears = pcYears} code
+
+-- | The code was checked in its turn, so only a writer outside this process can make its reservation fail.
+codeOrderInsert :: NewRegistration -> PrepaidCode -> DB.Connection -> UTCTime -> IO (Either OrderRefusal ())
+codeOrderInsert new@NewRegistration {nrgId, nrgOrder = OrderFields {ofLength}} code@PrepaidCode {pcCodeHash} db now =
+  createCodeRegistration db new code now >>= \case
+    Right () -> pure $ Right ()
+    Left RRLiveOrder -> pure $ Left OROrderExists
+    Left RRCodeNotReservable -> Left . ORCode <$> reserveRefusal db now pcCodeHash nrgId ofLength
 
 checkTimestamp :: UTCTime -> Word64 -> Either OrderRefusal ()
 checkTimestamp now timestamp =

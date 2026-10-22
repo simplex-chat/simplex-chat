@@ -2,7 +2,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module StoreService.Names.View (ViewReads (..), registrationView, readViewChain, viewJSON, tldText) where
+module StoreService.Names.View (ViewReads (..), registrationView, readViewChain, viewJSON, addressText, tldText) where
 
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
