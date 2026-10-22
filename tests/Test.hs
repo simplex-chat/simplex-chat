@@ -31,7 +31,6 @@ import Bots.DirectoryTests
 import ChatClient
 import ChatTests
 import ChatTests.DBUtils
-import ChatTests.Names (chatNamesTests)
 import ChatTests.Utils (xdescribe'')
 import Control.Logger.Simple
 import Data.Time.Clock.System
@@ -59,6 +58,7 @@ import Simplex.Chat.Store.Postgres.Migrations (migrations)
 import Simplex.Messaging.Agent.Store.Postgres.Util (createDBAndUserIfNotExists, dropDatabaseAndUser)
 #else
 import APIDocs
+import ChatTests.Names (chatNamesTests)
 import qualified Simplex.Messaging.TMap as TM
 import MobileTests
 import SchemaDump

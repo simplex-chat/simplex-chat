@@ -63,11 +63,11 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (BBSSecretKey, bbsKeyGen)
 import Simplex.Messaging.Encoding.String (strDecode, strEncode, textEncode)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
-import System.FilePath ((</>))
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..))
 #else
 import Database.SQLite.Simple (Only (..))
+import System.FilePath ((</>))
 #endif
 import Test.Hspec hiding (it)
 
