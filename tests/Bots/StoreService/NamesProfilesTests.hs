@@ -5,7 +5,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 
-module Bots.StoreService.NamesProfilesTests (namesProfilesTests, namesProfilesChatTests) where
+module Bots.StoreService.NamesProfilesTests (namesProfilesTests, namesProfilesChatTests, bakeryLink, newsLink, jpeg) where
 
 import ChatClient (TestCC (..), testChat2)
 import ChatTests.DBUtils (TestParams)
