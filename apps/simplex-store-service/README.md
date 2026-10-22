@@ -135,8 +135,15 @@ reaches a name invoice after the invoice closed: the money stays pending, the po
 once it is older than its read window (about 72 hours), and support settles it by hand. The service
 judges each invoice by the policy it was created with, so changing the setting later credits nothing
 that arrived under `HighSpeed`. With `MediumSpeed` (the template's value) or a slower policy, late
-money is credited to the order's balance once confirmed, at the lower of the invoice's rate and the
+bitcoin is credited to the order's balance once confirmed, at the lower of the invoice's rate and the
 rate when it is credited.
+
+**Set the Monero plugin's settled-confirmation threshold (`InvoiceSettledConfirmationThreshold`) to
+at least 1.** BTCPay's API does not show how many confirmations a Monero payment has, only that
+threshold, so late Monero is credited only on an invoice made while it was 1 or more; it is then
+credited as late bitcoin is. Left unset (the plugin's default) or at 0,
+every late Monero payment stays pending and goes to support, as under `HighSpeed`. Each invoice
+keeps the threshold it was made with, so raising it later credits nothing already paid.
 
 Give the service a BTCPay store of its own, and a Stripe account of its own if card payments are
 on. The poller lists every invoice and payment intent of the last three days or so, and one it did
