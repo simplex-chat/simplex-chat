@@ -102,15 +102,19 @@ searchAnswer NamesConfig {nTLD, nYears, nTermStart, nChain = ChainConfig {cChain
     recordsJSON NameRecords {rdContact, rdChannel} = J.object ["contact" .= rdContact, "channel" .= rdChannel]
 
 -- | Contact entities first. A record may hold several links joined as the app joins them; a value that is not
--- a short link of its record's kind makes no entity.
+-- a short link of its record's kind makes no entity, and neither does a link past the first few of its kind.
 recordEntities :: Profiles -> NameRecords -> IO [Entity]
 recordEntities ps NameRecords {rdContact, rdChannel} =
   mapConcurrently (uncurry $ linkEntity ps) $ recordLinks LKContact rdContact <> recordLinks LKChannel rdChannel
   where
-    recordLinks kind = map (kind,) . filter ((Just kind ==) . linkKindOf) . map T.strip . T.splitOn linkSeparator
+    recordLinks kind = map (kind,) . take maxEntitiesPerKey . filter ((Just kind ==) . linkKindOf) . map T.strip . T.splitOn linkSeparator
 
 linkSeparator :: Text
 linkSeparator = ";"
+
+-- | The links of a record beyond these are not fetched, so a record cannot grow a search's fetches and answer.
+maxEntitiesPerKey :: Int
+maxEntitiesPerKey = 5
 
 -- | A link whose profile cannot be read is still a valid link: only its kind decides.
 previewHandler :: Profiles -> Request -> Respond -> IO ResponseReceived

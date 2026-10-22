@@ -71,6 +71,7 @@ namesSearchTests = describe "StoreService names: search" $ do
     it "answers a name the chain has available as registered while its register here is sent, without a price" $ testRegistering g
     it "answers a registered name with its entities, raw records, owner, resolver, nonce, expiry and grace period" $ testRegistered g
     it "makes one entity per short link of its record's kind, splitting on ';', and none from other values" $ testRecordLinks g
+    it "makes entities of the first 5 short links of a record only, fetching no other" $ testRecordLinksCap g
     it "reads no records from another resolver" $ testOtherResolver g
     it "answers a link whose profile was not read unread, and a private host's unavailable without fetching it" $ testEntityProfiles g
     it "answers provider_unavailable to any failed chain read, records and price included" $ testFailedReads g
@@ -346,6 +347,16 @@ testRecordLinks g = withSearch g id $ \s@Search {node} -> do
   (snd answer >>= JT.parseMaybe (J.withObject "answer" (J..: "records"))) `shouldBe` Just (recordsOf contact channel)
   registeredWith node fullLink ""
   searchAlice s 12 `shouldReturn` registeredAnswer [] (recordsOf fullLink "") resolverText (J.toJSON (0 :: Int))
+
+testRecordLinksCap :: TVar ChaChaDRG -> IO ()
+testRecordLinksCap g = withSearch g id $ \s@Search {node} -> do
+  let contacts = map (\n -> taggedLink "smp8.simplex.im" 'a' ("Bot" <> T.pack (show n))) [1 .. 7 :: Int]
+  -- a value of another kind first, so the cap counts only the record's own links
+  registeredWith node (T.intercalate ";" $ newsLink : contacts) newsLink
+  answer <- searchAlice s 12
+  entitySummaries answer
+    `shouldBe` map ("address", "bot", "ok",) (take 5 contacts) <> [("channel", "channel", "ok", newsLink)]
+  length . filter (T.isInfixOf "#Bot") <$> fetchedLinks s `shouldReturn` 5
 
 testOtherResolver :: TVar ChaChaDRG -> IO ()
 testOtherResolver g = withSearch g id $ \s@Search {node} -> do
