@@ -9,6 +9,7 @@ module StoreService.Service
     newServiceState,
     welcomeGetOpts,
     trustDevKeys,
+    checkDevChain,
     checkIssuerKey,
     storeService,
     storeServiceCLI,
@@ -21,10 +22,11 @@ where
 
 import StoreService.Catalog (defaultCatalog)
 import StoreService.Codes (issueFailedText, issueOneCode, singleUse)
-import StoreService.Config (BadgeIssuerKey (..), ChainConfig (..), NamesConfig (..), ServiceConfig (..), minNameYears, readServiceConfig)
+import StoreService.Config (BadgeIssuerKey (..), ChainConfig (..), NamesConfig (..), ServiceConfig (..), localChainId, minNameYears, readServiceConfig)
 import StoreService.Group (GroupEvent, ensureManagedGroup, fmtTime, groupEvent, hasTracker, refreshTracker, revokeWithTracker, runGroupLane)
 import StoreService.Group.Command (badgeTypeP, codeP, maxMonths, maxNameYears, nameCodeP, textTokenP)
 import StoreService.Names.Balances (RefundRecord (..), RefundRefusal (..), recordRefund)
+import StoreService.Names.Chain (newChainClient, nodeChainId)
 import StoreService.Names.Codes (issueNameCode, revokeNameCode)
 import StoreService.Names.Env (NamesEnv (..), newNamesEnv)
 import StoreService.Names.Orders (ordersEnv)
@@ -122,6 +124,20 @@ trustDevKeys serviceCfg cfg@ChatConfig {badgePublicKeys} = do
       | M.member keyIdx badgePublicKeys = pure $ Left $ "issuer.dev_keys index " <> show keyIdx <> " is the index of a key clients trust"
       | otherwise = fmap (keyIdx,) . first (("issuer.dev_keys secret at index " <> show keyIdx <> " is not a valid key: ") <>) <$> bbsPublicKey secretKey
 
+-- | With dev keys, the node itself must be the local chain, not only the ini's chain_id.
+checkDevChain :: Maybe ServiceConfig -> IO (Either String ())
+checkDevChain = \case
+  Just ServiceConfig {devIssuerKeys = _ : _, names = Just NamesConfig {nChain}} -> do
+    chain <- C.newRandom >>= (`newChainClient` nChain)
+    nodeChainId chain <&> \case
+      Right chainId
+        | chainId == localChainId -> Right ()
+        | otherwise -> Left $ refused <> "is " <> show chainId <> ", not " <> show localChainId
+      Left _ -> Left $ refused <> "could not be read"
+  _ -> pure $ Right ()
+  where
+    refused = "issuer.dev_keys is refused: the node's chain id "
+
 checkIssuerKey :: StoreServiceOpts -> Maybe ServiceConfig -> ChatConfig -> IO (Either String BadgeIssuerKey)
 checkIssuerKey StoreServiceOpts {issuerKey} serviceCfg cfg = case issuerKey of
   Left e -> pure (Left e)
@@ -144,7 +160,9 @@ requireIssuerKey opts serviceCfg cfg =
   checkIssuerKey opts serviceCfg cfg >>= orExit
 
 requireDevKeys :: Maybe ServiceConfig -> ChatConfig -> IO ChatConfig
-requireDevKeys serviceCfg cfg = trustDevKeys serviceCfg cfg >>= orExit
+requireDevKeys serviceCfg cfg = do
+  checkDevChain serviceCfg >>= orExit
+  trustDevKeys serviceCfg cfg >>= orExit
 
 orExit :: Either String a -> IO a
 orExit = either (\e -> putStrLn ("Error: " <> e) >> exitFailure) pure

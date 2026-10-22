@@ -20,12 +20,12 @@ import StoreService.Names.Store (NamePhase (..), NameRegistration (..), PrepaidC
 import StoreService.Names.Turns (newTurns, withCodeTurn)
 import StoreService.Options (StoreServiceOpts (..))
 import StoreService.Orders (cancelOpenInvoice, expireOverdue)
-import StoreService.Service (ServiceState (..), newServiceState, storeService, trustDevKeys)
+import StoreService.Service (ServiceState (..), checkDevChain, newServiceState, storeService, trustDevKeys)
 import StoreService.Store (ManagedGroup (..), getManagedGroup)
 import StoreService.Waiters (newWaiters)
 import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, badgeTypeOf, credentialOf, devKeysIni, entryOf, issueCode, issueRaw, mkStoreServiceOpts, newPurchaseKeys, operatorCmd, redeemWithQueue, requestObject, revokeRaw, serviceDbPrefix, shouldAnswerError, statementOf, stopStoreService, testIssuerKeyIdx, withStoreService)
 import Bots.StoreService.ConfigTests (chainSection, controllerAddr, namesSection)
-import Bots.StoreService.FakeEthNode (CallAnswer (..), FakeEthNode (..), answerCall, awaitSent, withFakeEthNode)
+import Bots.StoreService.FakeEthNode (CallAnswer (..), FakeEthNode (..), Fault (..), answerCall, awaitSent, setFault, withFakeEthNode)
 import Bots.StoreService.WebTests (capturingStderr, digestFixture)
 import Bots.StoreService.NamesSearchTests (aliceHex)
 import qualified Bots.StoreService.NamesBalancesTests as Balances
@@ -144,6 +144,7 @@ badgeGroupIntegrationTests = do
 namesBootTests :: SpecWith TestParams
 namesBootTests = do
   it "warns naming the indexes of trusted dev_keys, and says nothing without them" testDevKeysWarned
+  it "refuses dev_keys unless the node's own chain id is 31337" testDevKeysNodeChain
   it "boots with [names] and [chain], routing fixed /api/name paths ahead of a search, find ahead of registrations, registrations to GET, another name, a reveal, a spend and a retry to POST, a path no route knows and a taken order's code to 404, code checks and orders under one limit, and another name and retries under another" testNamesBoot
 
 testDevKeysWarned :: HasCallStack => TestParams -> IO ()
@@ -157,6 +158,20 @@ testDevKeysWarned _ = do
   Right withoutDev <- devKeysIni chainSection testIssuerKeyIdx sk []
   quiet <- capturingStderr $ trustDevKeys (Just withoutDev) cfg >>= (`shouldSatisfy` isRight) . fmap badgePublicKeys
   filter ("dev_keys" `T.isInfixOf`) (T.lines quiet) `shouldBe` []
+
+testDevKeysNodeChain :: HasCallStack => TestParams -> IO ()
+testDevKeysNodeChain _ = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
+  Right (_, devSk) <- bbsKeyGen
+  let onNode = map (\l -> if "rpc_url =" `T.isPrefixOf` l then "rpc_url = " <> T.pack fnUrl else l) chainSection
+  Right withDev <- devKeysIni onNode 9 devSk [(9, devSk)]
+  Right noDev <- devKeysIni onNode testIssuerKeyIdx devSk []
+  checkDevChain (Just withDev) `shouldReturn` Right ()
+  setFault node "eth_chainId" (Answers (J.String "0x1"))
+  checkDevChain (Just withDev) `shouldReturn` Left "issuer.dev_keys is refused: the node's chain id is 1, not 31337"
+  setFault node "eth_chainId" HttpFailure
+  checkDevChain (Just withDev) `shouldReturn` Left "issuer.dev_keys is refused: the node's chain id could not be read"
+  checkDevChain (Just noDev) `shouldReturn` Right ()
+  checkDevChain Nothing `shouldReturn` Right ()
 
 testNamesBoot :: HasCallStack => TestParams -> IO ()
 testNamesBoot ps = do
