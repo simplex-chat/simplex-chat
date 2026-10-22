@@ -18,7 +18,7 @@ import StoreService.Names.Phases (Phases, RegistrationId (..))
 import qualified StoreService.Names.Phases as Phases
 import StoreService.Names.Store (NamePhase (..), NameRegistration (..), VersionWrite (..), getRegistration, updateRegistration)
 import StoreService.Providers (Funded (..), PaymentSignal (..), Received (..))
-import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), expireOverdueInvoice, markCodePaid, paymentHolds, paymentStatusText, settlementCodeHash, settlementInvoice, truncateToSecond, updateInvoiceStatus, upsertPayment)
+import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), expireOverdueInvoice, lockInvoice, markCodePaid, paymentHolds, paymentStatusText, settlementCodeHash, settlementInvoice, truncateToSecond, updateInvoiceStatus, upsertPayment)
 import StoreService.Waiters (Waiters, publish, publishPayment)
 import Control.Concurrent.STM (STM, atomically)
 import Control.Exception (Exception)
@@ -91,11 +91,13 @@ settleOrder :: DBStore -> Waiters -> Maybe Phases -> InvoiceId -> PaymentSignal 
 settleOrder st waiters phases invId@(InvoiceId invText) signal now' = do
   outcome <- withTransaction st $ \db ->
     settlementInvoice db invId >>= \case
-      Nothing -> pure (Left "no such invoice")
-      Just row@InvoiceRow {irStatus} -> case decide irStatus signal of
-        Nothing -> pure (Right (irStatus, PubNothing, []))
-        -- read the product first, so an invoice without one leaves the transaction empty, not paid with nothing to show for it
-        Just w -> productOf db row w >>= either (pure . Left) (settle db row w)
+      Just InvoiceRow {irStatus}
+        | isJust (decide irStatus signal) -> do
+            -- On Postgres, a concurrent overdue close holding the row is waited for, and the read below sees its writes;
+            -- a close that comes later waits for this payment and then sees it.
+            lockInvoice db invId now
+            settlementInvoice db invId >>= settleRow db
+      row_ -> settleRow db row_
   case outcome of
     Left e -> pure (Left e)
     Right (status, toPublish, name) -> do
@@ -115,6 +117,12 @@ settleOrder st waiters phases invId@(InvoiceId invText) signal now' = do
   where
     now = truncateToSecond now'
     at = truncateToSecond (settledInstant signal now)
+    settleRow db = \case
+      Nothing -> pure (Left "no such invoice")
+      Just row@InvoiceRow {irStatus} -> case decide irStatus signal of
+        Nothing -> pure (Right (irStatus, PubNothing, []))
+        -- read the product first, so an invoice without one is not marked paid with nothing to show for it
+        Just w -> productOf db row w >>= either (pure . Left) (settle db row w)
     productOf :: DB.Connection -> InvoiceRow -> Write -> IO (Either Text Product)
     productOf db InvoiceRow {irProduct} Write {wCode} = case irProduct of
       IPBadge {}

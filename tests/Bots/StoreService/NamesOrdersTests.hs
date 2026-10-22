@@ -100,6 +100,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "answers cancel with funded, not_open, paid when settlement won, and expired with the payment read meanwhile" testCancelAnswers
     it "leaves a late payment of a cancelled invoice unpaid and alerts" testLatePayment
     it "queues an order settled while open and publishes its version" testSettlementQueues
+    it "takes the invoice's row before recording a payment that moves no status" testSettlementLocksInvoice
     it "closes the order of an invoice the provider closed or the sweep expired" testExpiryCloses
     it "sweeps each invoice on its own, skipping one whose order cannot be read" testSweepSkipsBadRow
     it "cleans up unpaid orders after 30 days, reading the provider first" testCleanup
@@ -779,6 +780,16 @@ testSettlementQueues = withOrders $ \ctx -> do
   timeout 2000000 (wait waiter) `shouldReturn` Just True
   r <- invoiceRegistration ctx invId
   (nrPhase r, nrLive r, nrVersion r) `shouldBe` (PQueued, True, 2)
+
+-- | Postgres serializes the payment with a concurrent overdue close only on this row; SQLite shows that it is written.
+testSettlementLocksInvoice :: IO ()
+testSettlementLocksInvoice = withOrders $ \ctx -> do
+  (inv@(InvoiceId t), _) <- placed ctx aliceOrder
+  advance ctx 60
+  settleNow ctx inv (SigFunded (rcv 10000 (Just "0.00156")) PaidInFull) `shouldReturn` Right ISOpen
+  now <- readIORef (cClock ctx)
+  withConnection (cStore ctx) (\db -> DB.query db "SELECT updated_at, status FROM sx_badge_service_invoices WHERE invoice_id = ?" [t])
+    `shouldReturn` [(now, "open" :: Text)]
 
 testExpiryCloses :: IO ()
 testExpiryCloses = withOrders $ \ctx -> do

@@ -97,7 +97,7 @@ import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Signatures (OrderFields (..), parseSignature)
 import StoreService.Store (RevokeResult (..))
-import StoreService.Store.Invoices (StoreDecodeError (..), executeChanging, invoiceStatusText, newInvoiceId, truncateToSecond)
+import StoreService.Store.Invoices (StoreDecodeError (..), executeChanging, invoiceStatusText, lockInvoice, newInvoiceId, truncateToSecond)
 
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..), Query, (:.) (..))
@@ -513,7 +513,11 @@ unfunded =
 -- the registration, as settlement, cancel and the sweep write them; a registration write that loses after it leaves the
 -- caller to roll back.
 closeOverdue :: DB.Connection -> NameRegistration -> UTCTime -> IO VersionWrite
-closeOverdue db r@NameRegistration {nrId = RegistrationId rid, nrVersion} now = do
+closeOverdue db r@NameRegistration {nrId = RegistrationId rid, nrVersion, nrPayment} now = do
+  -- locked first, so the funding check below, a later statement, sees a payment a concurrent settlement committed
+  mapM_ (\invId -> lockInvoice db invId now) $ case nrPayment of
+    RPInvoice _ invId -> Just invId
+    RPCode _ -> Nothing
   expired <-
     executeChanging
       db

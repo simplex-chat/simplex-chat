@@ -26,6 +26,7 @@ module StoreService.Store.Invoices
     OverdueInvoice (..),
     overdueInvoices,
     expireOverdueInvoice,
+    lockInvoice,
     newInvoiceId,
     readCatalogRows,
     seedCatalog,
@@ -295,6 +296,9 @@ qUpsertPayment =
       <> " THEN @payments.updated_at ELSE excluded.updated_at END"
   where
     alreadySettled = "@payments.status = '" <> paymentStatusText PSSettled <> "'"
+
+qLockInvoice :: Query
+qLockInvoice = mkQuery "UPDATE @invoices SET updated_at = ? WHERE invoice_id = ?"
 
 qUpdateInvoiceStatus :: Query
 qUpdateInvoiceStatus =
@@ -656,6 +660,10 @@ upsertPayment db InvoiceRow {irInvoiceId, irProvider, irProviderRef, irCurrency}
   where
     InvoiceId invId = irInvoiceId
     at = truncateToSecond at'
+
+-- | Takes the invoice row's lock for the rest of the transaction; SQLite's transactions hold the whole database already.
+lockInvoice :: DB.Connection -> InvoiceId -> UTCTime -> IO ()
+lockInvoice db (InvoiceId invId) at = DB.execute db qLockInvoice (truncateToSecond at, invId)
 
 updateInvoiceStatus :: DB.Connection -> InvoiceId -> InvoiceStatus -> InvoiceStatus -> UTCTime -> IO Bool
 updateInvoiceStatus db (InvoiceId invId) observed new at =
