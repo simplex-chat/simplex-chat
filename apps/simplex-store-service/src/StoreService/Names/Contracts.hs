@@ -14,7 +14,6 @@ module StoreService.Names.Contracts
     nameRecords,
     textRecord,
     chainPriceCents,
-    codeLengthFor,
     sponsorNonce,
     resolverNonce,
     confirmedTag,
@@ -33,12 +32,10 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Functor.Compose (Compose (..))
 import Data.IORef (IORef, atomicWriteIORef, newIORef, readIORef)
-import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Word (Word64)
-import Simplex.Chat.Badges.Code (maxNameLength, minNameLength)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD)
 import Simplex.Messaging.Util (tshow)
@@ -134,19 +131,6 @@ chainPriceCents ct len years = call ct (controller ct) ("rentPriceUSD(string,uin
   if cents <= toInteger (maxBound :: Int) then Right (fromInteger cents) else Left AERange
   where
     args = abiTuple [Dynamic $ abiBytes $ B.replicate len 'a', Static $ uint256 $ toInteger years * secondsPerYear]
-
--- | The shortest length from the shortest label such that every length up to the longest costs at most these cents
--- for these years, from one read of the oracle's whole price list, which need not fall with the length.
-codeLengthFor :: Contracts -> Int -> Int -> IO (Either ChainError (Maybe Int))
-codeLengthFor ct cents years = runExceptT $ do
-  oracle <- ExceptT $ call ct (controller ct) ("prices()", "") decodeAddress
-  (basePerYear, exceptions) <- ExceptT $ call ct oracle ("prices()", "") decodePrices
-  let exceptionPrices = M.fromList exceptions
-      perYear len = M.findWithDefault basePerYear (toInteger len) exceptionPrices
-      covered len = perYear len * toInteger years <= toInteger cents
-  pure $ case takeWhile covered [maxNameLength, maxNameLength - 1 .. minNameLength] of
-    [] -> Nothing
-    lens -> Just $ last lens
 
 sponsorNonce :: Contracts -> Address -> IO (Either ChainError Word64)
 sponsorNonce ct owner = call ct (cSponsor $ chainConfig ct) ("nonces(address)", addressWord owner) decodeWord64

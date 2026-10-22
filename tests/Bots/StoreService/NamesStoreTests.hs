@@ -42,7 +42,8 @@ namesStoreTests :: Spec
 namesStoreTests = describe "StoreService names: store" $ do
   describe "migration" $ do
     it "creates the names tables with the planned columns" testNamesColumns
-    it "rolls back and re-applies only the names migration, with rows in it, leaving the badge tables and paid invoices as they were" testNamesDownUp
+    it "rolls back and re-applies only the names migrations, with rows in them, leaving the badge tables and paid invoices as they were" testNamesDownUp
+    it "turns a code_issued order taken at price 0 and not live, dropping issued_code_id and its index, which the down migration restores" testDropTakenCodes
   describe "order hash" $ do
     it "is equal for the same order fields, and differs when any one field differs" testOrderHashFields
     it "keeps field boundaries, so moving a byte between two fields changes it" testOrderHashBoundaries
@@ -172,7 +173,7 @@ testNamesColumns = withServiceStore $ \st -> do
     "sx_badge_service_name_registrations"
     [ "registration_id", "label_hash", "length", "label", "secret", "contact_link", "channel_link", "intent_nonce", "intent_deadline", "intent_signature",
       "sealed", "owner", "commitment", "phase", "commit_tx", "commit_block", "register_tx", "register_block", "reveal_after", "reveal_before",
-      "years", "duration", "expires_at", "price", "name_prepaid_code_id", "issued_code_id", "registered_at", "failed_at", "error", "created_at",
+      "years", "duration", "expires_at", "price", "name_prepaid_code_id", "registered_at", "failed_at", "error", "created_at",
       "updated_at", "version", "live", "order_hash", "method", "moves", "links_refused_at"
     ]
   has "sx_badge_service_name_invoices" ["invoice_id", "registration_id", "provider_ref"]
@@ -181,10 +182,9 @@ testNamesColumns = withServiceStore $ \st -> do
 
 testNamesDownUp :: IO ()
 testNamesDownUp = withServiceStore $ \st -> do
-  let names = [m | m@Migration {name = "20261010_names"} <- storeServiceSchemaMigrations]
+  let names = dropWhile ((/= "20261010_names") . name) storeServiceSchemaMigrations
       badgeColumns = mapM (fmap sort . columnsOf st) badgeTables
-  length names `shouldBe` 1
-  map name storeServiceSchemaMigrations `shouldSatisfy` ((== "20261010_names") . last)
+  map name names `shouldBe` ["20261010_names", "20261022_drop_taken_codes"]
   badgeBefore <- badgeColumns
   code <- issue st 1 usable
   placeCode st "r1" ownerA (order "alicebakery" 1) code `shouldReturn` Right ()
@@ -198,6 +198,30 @@ testNamesDownUp = withServiceStore $ \st -> do
   runMigrations st $ MTRUp names
   mapM (fmap null . columnsOf st) namesTables `shouldReturn` map (const False) namesTables
   badgeColumns `shouldReturn` badgeBefore
+
+testDropTakenCodes :: IO ()
+testDropTakenCodes = withServiceStore $ \st -> do
+  let dropCodes = [m | m@Migration {name = "20261022_drop_taken_codes"} <- storeServiceSchemaMigrations]
+      issuedCode = (,) <$> (elem "issued_code_id" <$> columnsOf st "sx_badge_service_name_registrations") <*> indexExists st "sx_badge_service_idx_name_registrations_issued_code"
+      worth r = (nrPhase r, nrPrice r, nrLive r)
+  length dropCodes `shouldBe` 1
+  runMigrations st $ MTRDown (mapMaybe toDownMigration dropCodes)
+  issuedCode `shouldReturn` (True, True)
+  code <- issue st 1 usable
+  placePaid st "r1" ownerA (order "alicebakery" 1) (at 60) `shouldReturn` Right ()
+  placePaid st "r2" ownerB (order "bobsbakery" 2) (at 60) `shouldReturn` Right ()
+  withTransaction st $ \db -> DB.execute db "UPDATE sx_badge_service_name_registrations SET phase = 'code_issued', issued_code_id = ? WHERE registration_id = 'r1'" (Only $ pcId code)
+  r2 <- reg st "r2"
+  write st r2 {nrPhase = PTaken} `shouldReturn` Written 2
+  taken <- reg st "r2"
+  runMigrations st $ MTRUp dropCodes
+  issuedCode `shouldReturn` (False, False)
+  worth <$> reg st "r1" `shouldReturn` (PTaken, 0, False)
+  reg st "r2" `shouldReturn` taken
+  withTransaction st (\db -> getPrepaidCodeById db (pcId code)) `shouldReturn` Just code
+  runMigrations st $ MTRDown (mapMaybe toDownMigration dropCodes)
+  issuedCode `shouldReturn` (True, True)
+  worth <$> reg st "r1" `shouldReturn` (PTaken, 0, False)
 
 testOrderHashFields :: IO ()
 testOrderHashFields = do
@@ -252,7 +276,6 @@ testCreatePaid = withServiceStore $ \st -> do
         nrRevealAfter = Nothing,
         nrRevealBefore = Nothing,
         nrExpiresAt = Nothing,
-        nrIssuedCodeId = Nothing,
         nrRegisteredAt = Nothing,
         nrFailedAt = Nothing,
         nrError = Nothing,
@@ -386,7 +409,6 @@ testVersionBumps = withServiceStore $ \st -> do
 testRoundTrip :: IO ()
 testRoundTrip = withServiceStore $ \st -> do
   code <- issue st 1 usable
-  issued <- issue st 2 usable
   placeCode st "r1" ownerA (order "alicebakery" 1) code `shouldReturn` Right ()
   r <- reg st "r1"
   let changed =
@@ -400,7 +422,6 @@ testRoundTrip = withServiceStore $ \st -> do
             nrRevealAfter = Just 1792828800,
             nrRevealBefore = Just 1792915140,
             nrExpiresAt = Just 1861833600,
-            nrIssuedCodeId = Just (pcId issued),
             nrRegisteredAt = Just (at 3),
             nrFailedAt = Just (at 2),
             nrError = Just "The name was not signed in time",
@@ -425,7 +446,6 @@ testLiveFollowsPhase = withServiceStore $ \st -> do
   step "r1" PTaken True
   step "r1" PFailed True
   step "r1" PTaken True
-  step "r1" PCodeIssued False
   step "r2" PRegistering True
   step "r2" PTaken False
   placePaid st "r3" ownerA (order "carolsbakery" 3) (at 60) `shouldReturn` Right ()
@@ -440,7 +460,7 @@ testOrderLive = withServiceStore $ \st -> do
   let code = paid {nrPayment = RPCode 1}
       liveIn r phase = (phase, orderLive r {nrPhase = phase})
   map (liveIn paid) [minBound .. maxBound]
-    `shouldBe` [(PUnpaid, True), (PQueued, True), (PCommitting, True), (PCommitted, True), (PRegistering, True), (PRegistered, False), (PTaken, True), (PFailed, True), (PCodeIssued, False)]
+    `shouldBe` [(PUnpaid, True), (PQueued, True), (PCommitting, True), (PCommitted, True), (PRegistering, True), (PRegistered, False), (PTaken, True), (PFailed, True)]
   map (liveIn code) [PTaken, PFailed, PRegistered] `shouldBe` [(PTaken, False), (PFailed, True), (PRegistered, False)]
   orderLive paid {nrLive = False} `shouldBe` False
   orderLive paid {nrLive = False, nrPhase = PQueued} `shouldBe` True
@@ -601,6 +621,17 @@ insertPayment db invId =
     db
     "INSERT INTO sx_badge_service_payments (payment_id, invoice_id, provider, status, created_at, updated_at) VALUES (?,?,?,?,?,?)"
     (invId, invId, "crypto" :: Text, "pending" :: Text, t0, t0)
+
+indexExists :: DBStore -> Text -> IO Bool
+indexExists st index = withTransaction st $ \db -> do
+  rows <- DB.query db indexQuery (Only index)
+  pure $ not $ null (rows :: [Only Text])
+  where
+#if defined(dbPostgres)
+    indexQuery = "SELECT indexname FROM pg_indexes WHERE schemaname = current_schema() AND indexname = ?"
+#else
+    indexQuery = "SELECT name FROM sqlite_master WHERE type = 'index' AND name = ?"
+#endif
 
 invoiceCount :: DBStore -> Text -> IO Int
 invoiceCount st invId = withTransaction st $ \db ->

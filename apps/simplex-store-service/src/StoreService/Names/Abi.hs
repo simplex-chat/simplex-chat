@@ -1,6 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TupleSections #-}
 
 module StoreService.Names.Abi
   ( AbiValue (..),
@@ -21,7 +20,6 @@ module StoreService.Names.Abi
     decodeBytes32,
     decodeBytes,
     decodeString,
-    decodePrices,
   )
 where
 
@@ -125,15 +123,6 @@ decodeBytes ret = offsetAt 0 ret >>= bytesAt ret
 
 decodeString :: ByteString -> Either AbiError Text
 decodeString ret = decodeBytes ret >>= first (const AENotUtf8) . decodeUtf8'
-
--- | Decodes @(uint256, (uint256, uint256)[])@, the oracle's base price and its prices by label length.
-decodePrices :: ByteString -> Either AbiError (Integer, [(Integer, Integer)])
-decodePrices ret = do
-  base <- uintAt 0 ret
-  items <- offsetAt abiWordSize ret
-  n <- offsetAt items ret
-  let pairAt i = let o = items + abiWordSize * (1 + 2 * i) in (,) <$> uintAt o ret <*> uintAt (o + abiWordSize) ret
-  (base,) <$> mapM pairAt [0 .. n - 1]
 
 wordAt :: Int -> ByteString -> Either AbiError ByteString
 wordAt o ret

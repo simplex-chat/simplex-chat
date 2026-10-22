@@ -2,14 +2,13 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
--- | The requests only the owner code can sign: find, another name, and a code for a taken order.
-module StoreService.Web.Names.Owner (findHandler, retargetHandler, takenCodeHandler) where
+-- | The requests only the owner code can sign: find and another name.
+module StoreService.Web.Names.Owner (findHandler, retargetHandler) where
 
 import Control.Concurrent.STM (atomically)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
-import Data.ByteString (ByteString)
 import Data.Int (Int64)
 import Data.Text (Text)
 import Data.Word (Word64)
@@ -27,11 +26,11 @@ import StoreService.Log (logError, logInfo)
 import StoreService.Names.Abi (hex)
 import StoreService.Names.Orders
 import StoreService.Names.Phases (RegistrationId (..), publish)
-import StoreService.Names.Signatures (OrderFields (..), findMessage, parseAnyCaseAddress, parseSignature, retargetMessage, takenCodeMessage)
+import StoreService.Names.Signatures (OrderFields (..), findMessage, parseAnyCaseAddress, parseSignature, retargetMessage)
 import StoreService.Names.Store (NamePhase (..), NameRegistration (..), RegistrationPayment (..), findRegistrations, getRegistration)
-import StoreService.Names.Turns (withLabelTurn, withLabelTurns)
+import StoreService.Names.Turns (withLabelTurns)
 import StoreService.Names.View (registrationAt, registrationView)
-import StoreService.Web.Http (Respond, internalError, jsonResponse, maxBodyBytes, nameBodyBytes, notFound, parseCodeHash, readBoundedBody)
+import StoreService.Web.Http (Respond, internalError, jsonResponse, maxBodyBytes, nameBodyBytes, notFound, readBoundedBody)
 import StoreService.Web.Names.Orders (Answer (..), answerNow, firstRefusal, orderRefusalResponse, sendAnswer)
 import StoreService.Web.Names.Registration (registrationChangedResponse, registrationRefusalResponse)
 
@@ -39,14 +38,6 @@ data FindRequest = FindRequest
   { frOwner :: Address,
     frTimestamp :: Word64,
     frSignature :: RecoverableSignature
-  }
-
-data TakenCodeRequest = TakenCodeRequest
-  { tcHashText :: Text,
-    tcHash :: ByteString,
-    tcLength :: Int,
-    tcTimestamp :: Word64,
-    tcSignature :: RecoverableSignature
   }
 
 -- | POST /api/registration/find, the owner's orders newest first.
@@ -143,56 +134,6 @@ retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} r
         Nothing -> answerNow internalError <$ logError ("POST /api/registration/:id/name: order " <> ridText <> " is not readable after its move")
     changed = answerNow <$> registrationChangedResponse env rid
     refuse = refused "POST /api/registration/:id/name"
-
--- | POST /api/registration/:id/code, a paid taken order turned into a prepaid code, under its name's turn.
-takenCodeHandler :: OrdersEnv -> Text -> Request -> Respond -> IO ResponseReceived
-takenCodeHandler env@OrdersEnv {oeStore, oeContracts, oeTurns, oeNow} ridText req respond =
-  readBoundedBody maxBodyBytes req >>= requested >>= sendAnswer respond
-  where
-    rid = RegistrationId ridText
-    requested = \case
-      Just body | Just (J.Object o) <- J.decode body, Just request <- parseTakenCode o -> signed request
-      _ -> refuse ORBadRequest
-    signed request@TakenCodeRequest {tcHashText, tcLength, tcTimestamp, tcSignature} =
-      withTransaction oeStore (`getRegistration` rid) >>= \case
-        Nothing -> pure $ answerNow notFound
-        Just NameRegistration {nrOwner, nrLabelHash} ->
-          checkSigner nrOwner (takenCodeMessage rid tcHashText tcLength tcTimestamp) tcSignature >>= \case
-            Left refusal -> refuse refusal
-            Right () -> withLabelTurn oeTurns nrLabelHash $ inTurn nrLabelHash request
-    inTurn held request@TakenCodeRequest {tcHash} = do
-      now <- oeNow
-      withTransaction oeStore (`getRegistration` rid) >>= \case
-        Nothing -> pure $ answerNow notFound
-        Just r
-          | nrLabelHash r /= held -> changed
-          | otherwise ->
-              issuedCodeHash oeStore r >>= \case
-                Just issued | issued == tcHash -> pure $ answerNow codeIssued
-                _ -> issue now r request
-    issue now r TakenCodeRequest {tcHash, tcLength, tcTimestamp}
-      | Left refusal <- checkTimestamp now tcTimestamp = refuse refusal
-      | not (issuable r) = refuse ORBadRequest
-      | otherwise =
-          checkTakenCodeLength oeContracts r tcLength >>= \case
-            Left refusal -> refuse refusal
-            Right () ->
-              issueTakenCode env r tcHash tcLength >>= \case
-                Right v -> pure $ written env rid v codeIssued
-                Left WRChanged -> changed
-                Left (WRRefused refusal) -> refuse refusal
-    codeIssued = jsonResponse status200 $ J.object []
-    changed = answerNow <$> registrationChangedResponse env rid
-    refuse = refused "POST /api/registration/:id/code"
-
-parseTakenCode :: J.Object -> Maybe TakenCodeRequest
-parseTakenCode o = do
-  tcHashText <- textField o "codeHash"
-  tcHash <- parseCodeHash tcHashText
-  tcLength <- integerField =<< KM.lookup "codeLength" o
-  tcTimestamp <- integerField =<< KM.lookup "timestamp" o
-  tcSignature <- eitherToMaybe . parseSignature =<< textField o "signature"
-  pure TakenCodeRequest {tcHashText, tcHash, tcLength, tcTimestamp, tcSignature}
 
 -- | Published after the turn, as the answer is sent.
 written :: OrdersEnv -> RegistrationId -> Int64 -> Response -> Answer

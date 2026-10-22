@@ -41,7 +41,6 @@ module StoreService.Names.Store
     closeOverdue,
     updateRegistration,
     retargetRegistration,
-    setIssuedCode,
     findRegistrations,
     isLabelRegistering,
     activeRegistrations,
@@ -121,7 +120,6 @@ data NamePhase
   | PRegistered
   | PTaken
   | PFailed
-  | PCodeIssued
   deriving (Eq, Show, Enum, Bounded)
 
 instance TextEncoding NamePhase where
@@ -134,7 +132,6 @@ instance TextEncoding NamePhase where
     PRegistered -> "registered"
     PTaken -> "taken"
     PFailed -> "failed"
-    PCodeIssued -> "code_issued"
   textDecode t = lookup t [(textEncode p, p) | p <- [minBound .. maxBound]]
 
 instance FromField NamePhase where fromField = fromTextField_ textDecode
@@ -179,7 +176,6 @@ data NameRegistration = NameRegistration
     nrRevealAfter :: Maybe Word64,
     nrRevealBefore :: Maybe Word64,
     nrExpiresAt :: Maybe Word64,
-    nrIssuedCodeId :: Maybe Int64,
     nrRegisteredAt :: Maybe UTCTime,
     nrFailedAt :: Maybe UTCTime,
     nrError :: Maybe Text,
@@ -401,7 +397,7 @@ registrationColumns =
   [sql|
     SELECT r.registration_id, r.version, r.label_hash, r.length, r.duration, r.owner, r.commitment, r.sealed, r.phase, r.years,
       r.price, r.method, ni.invoice_id, r.name_prepaid_code_id, r.label, r.secret, r.contact_link, r.channel_link, r.intent_nonce, r.intent_deadline,
-      r.intent_signature, r.commit_tx, r.commit_block, r.register_tx, r.register_block, r.reveal_after, r.reveal_before, r.expires_at, r.issued_code_id, r.registered_at,
+      r.intent_signature, r.commit_tx, r.commit_block, r.register_tx, r.register_block, r.reveal_after, r.reveal_before, r.expires_at, r.registered_at,
       r.failed_at, r.error, r.live, r.order_hash, r.moves, r.links_refused_at, r.created_at, r.updated_at
   |]
 
@@ -419,14 +415,14 @@ selectRegistrations = registrationColumns <> registrationFrom
 type RegistrationRow =
   (Text, Int64, Binary ByteString, Int, Int64, Binary ByteString, Binary ByteString, Text, NamePhase, Int)
     :. (Int, Maybe Text, Maybe Text, Maybe Int64, Maybe Text, Maybe (Binary ByteString), Maybe Text, Maybe Text, Maybe Int64, Maybe Int64)
-    :. (Maybe (Binary ByteString), Maybe (Binary ByteString), Maybe Int64, Maybe (Binary ByteString), Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime)
+    :. (Maybe (Binary ByteString), Maybe (Binary ByteString), Maybe Int64, Maybe (Binary ByteString), Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime)
     :. (Maybe UTCTime, Maybe Text, BoolInt, Binary ByteString, Int, Maybe UTCTime, UTCTime, UTCTime)
 
 toRegistration :: RegistrationRow -> Either Text NameRegistration
 toRegistration
   ( (rid, nrVersion, Binary lh, nrLength, duration, Binary owner, Binary nrCommitment, nrSealed, nrPhase, nrYears)
       :. (nrPrice, method_, invoiceId_, codeId_, label_, secret_, nrContactLink, nrChannelLink, nonce_, deadline_)
-      :. (signature_, commitTx, commitBlock, registerTx, registerBlock, revealAfter, revealBefore, expiresAt, nrIssuedCodeId, nrRegisteredAt)
+      :. (signature_, commitTx, commitBlock, registerTx, registerBlock, revealAfter, revealBefore, expiresAt, nrRegisteredAt)
       :. (nrFailedAt, nrError, BI nrLive, Binary nrOrderHash, nrMoves, nrLinksRefusedAt, nrCreatedAt, nrUpdatedAt)
     ) = do
     nrOwner <- decodeAddress owner
@@ -462,7 +458,6 @@ toRegistration
           nrRevealAfter = word64 <$> revealAfter,
           nrRevealBefore = word64 <$> revealBefore,
           nrExpiresAt = word64 <$> expiresAt,
-          nrIssuedCodeId,
           nrRegisteredAt,
           nrFailedAt,
           nrError,
@@ -552,7 +547,6 @@ orderLive NameRegistration {nrPhase, nrPayment, nrLive} = case nrPhase of
     RPInvoice {} -> True
     RPCode _ -> False
   PRegistered -> False
-  PCodeIssued -> False
 
 -- | Writes every changeable field of a registration read at its nrVersion, unless it changed since, with live as orderLive decides.
 -- A closed order is never made live again, and a write that would make the order meet another live one changes nothing.
@@ -566,7 +560,7 @@ updateRegistration db r now = do
         SET version = version + 1, label_hash = ?, length = ?, duration = ?, commitment = ?, sealed = ?, phase = ?, price = ?,
           label = ?, secret = ?, contact_link = ?, channel_link = ?, intent_nonce = ?, intent_deadline = ?, intent_signature = ?,
           commit_tx = ?, commit_block = ?, register_tx = ?, register_block = ?, reveal_after = ?, reveal_before = ?, expires_at = ?,
-          issued_code_id = ?, registered_at = ?, failed_at = ?, error = ?, live = ?, moves = ?, links_refused_at = ?, updated_at = ?
+          registered_at = ?, failed_at = ?, error = ?, live = ?, moves = ?, links_refused_at = ?, updated_at = ?
         WHERE registration_id = ? AND version = ?
           AND (? = 0 OR (live = 1 AND NOT EXISTS (
             SELECT 1 FROM sx_badge_service_name_registrations o
@@ -576,14 +570,14 @@ updateRegistration db r now = do
       ( (Binary lh, nrLength, int64 nrDuration, Binary nrCommitment, nrSealed, nrPhase, nrPrice)
           :. (rvLabel <$> nrReveal, Binary . rvSecret <$> nrReveal, rvContactLink =<< nrReveal, rvChannelLink =<< nrReveal, int64 . rvNonce <$> nrReveal, int64 . rvDeadline <$> nrReveal, Binary . serializeSignature . rvSignature <$> nrReveal)
           :. (txHashField <$> nrCommitTx, int64 <$> nrCommitBlock, txHashField <$> nrRegisterTx, int64 <$> nrRegisterBlock, int64 <$> nrRevealAfter, int64 <$> nrRevealBefore, int64 <$> nrExpiresAt)
-          :. (nrIssuedCodeId, truncateToSecond <$> nrRegisteredAt, truncateToSecond <$> nrFailedAt, nrError, BI live, nrMoves, truncateToSecond <$> nrLinksRefusedAt, truncateToSecond now)
+          :. (truncateToSecond <$> nrRegisteredAt, truncateToSecond <$> nrFailedAt, nrError, BI live, nrMoves, truncateToSecond <$> nrLinksRefusedAt, truncateToSecond now)
           :. (rid, nrVersion, BI live, rid, Binary nrCommitment, Binary $ unAddress nrOwner, Binary lh)
       )
   if changed > 0 then pure $ Written (nrVersion + 1) else refusal
   where
     NameRegistration {nrId = RegistrationId rid, nrVersion, nrLabelHash = LabelHash lh, nrLength, nrDuration, nrOwner, nrCommitment, nrSealed, nrPhase, nrPrice, nrReveal} = r
     NameRegistration {nrCommitTx, nrCommitBlock, nrRegisterTx, nrRegisterBlock, nrRevealAfter, nrRevealBefore, nrExpiresAt} = r
-    NameRegistration {nrIssuedCodeId, nrRegisteredAt, nrFailedAt, nrError, nrMoves, nrLinksRefusedAt} = r
+    NameRegistration {nrRegisteredAt, nrFailedAt, nrError, nrMoves, nrLinksRefusedAt} = r
     live = orderLive r
     refusal =
       DB.query db "SELECT version, live FROM sx_badge_service_name_registrations WHERE registration_id = ?" (Only rid) >>= \case
@@ -616,10 +610,6 @@ retargetRegistration db r OrderFields {ofLabelHash, ofLength, ofDuration, ofComm
         nrFailedAt = Nothing,
         nrError = Nothing
       }
-
--- | Links the code a taken order was turned into, in the transaction that wrote its code_issued phase and version.
-setIssuedCode :: DB.Connection -> RegistrationId -> Int64 -> IO ()
-setIssuedCode db (RegistrationId rid) codeId = DB.execute db "UPDATE sx_badge_service_name_registrations SET issued_code_id = ? WHERE registration_id = ?" (codeId, rid)
 
 -- | Newest first, at most findLimit.
 findRegistrations :: DB.Connection -> Address -> IO [NameRegistration]

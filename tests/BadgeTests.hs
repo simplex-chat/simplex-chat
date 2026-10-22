@@ -66,8 +66,7 @@ badgeTests = do
   describe "StoreService names: codes" $ do
     it "encodes an owner code's entropy and its checksum" testNameOwnerCodeVectors
     it "rejects an owner code with a wrong character" testNameOwnerCodeChecksum
-    it "reads the webapp's prepaid codes: length, canonical form, display and hash" testNamePrepaidCodeVectors
-    it "reads a taken order's code derived by the webapp, and refuses its lengths outside 6 to 63" testTakenOrderCodeVectors
+    it "reads the webapp's prepaid codes: length, canonical form, display and hash, and refuses lengths outside 6 to 63" testNamePrepaidCodeVectors
     it "never reads an owner code as prepaid, nor the reverse" testNameCodeKinds
     it "reads random codes of both kinds back, as typed" testNameCodeRoundTrip
     it "refuses a prepaid code with one character changed or two adjacent swapped, except 0 and Z" testNamePrepaidCodeCheck
@@ -374,6 +373,9 @@ testNamePrepaidCodeVectors = do
     convertToBase Base64URLUnpadded (namePrepaidCodeHash code) `shouldBe` (hash :: ByteString)
   -- the webapp's typo vector
   parseNameCode "SN7-4K2P7-TQ9M1-ZX3RB-8HJ5X" `shouldBe` Nothing
+  -- their check characters are valid, but no name length is outside 6 to 63
+  parseNameCode "SN5-N0N9J-5D292-HPSYA-R911Q" `shouldBe` Nothing
+  parseNameCode "SN64-N0N9J-5D292-HPSYA-R911C" `shouldBe` Nothing
 
 -- typed code, length, canonical form, display and the webapp's codeHash
 namePrepaidCodeVectors :: [(T.Text, Int, T.Text, T.Text, ByteString)]
@@ -381,25 +383,6 @@ namePrepaidCodeVectors =
   [ ("SN7-BJTBP-29596-R3HJ8-25YM7", 7, "SN7BJTBP29596R3HJ825YM7", "SN7-BJTBP-29596-R3HJ8-25YM7", "7hg6ED6EotRVm21uS1KOZ-CKEzkJK5hvG4W5atfcn_Q"),
     ("sn7 bjtbp 29596 r3hj8 25ym7", 7, "SN7BJTBP29596R3HJ825YM7", "SN7-BJTBP-29596-R3HJ8-25YM7", "7hg6ED6EotRVm21uS1KOZ-CKEzkJK5hvG4W5atfcn_Q"),
     ("SN8-25X6F-6JDNM-8C59E-HDHJD", 8, "SN825X6F6JDNM8C59EHDHJD", "SN8-25X6F-6JDNM-8C59E-HDHJD", "cOnJDSzWBEZiY2z1I-HMGW2gylyx_13V8sOpMDeJOvU")
-  ]
-
--- takenOrderCode(seed of the webapp's fixture entropy, "t2Jk8RmQ4vXw9NcP3yLb6g", length), computed by the webapp's code.ts
-testTakenOrderCodeVectors :: IO ()
-testTakenOrderCodeVectors = do
-  forM_ takenOrderCodeVectors $ \(display, len, hash) -> do
-    Just (NCPrepaid code) <- pure $ parseNameCode display
-    (namePrepaidCodeLength code, formatNameCode (NCPrepaid code)) `shouldBe` (len, display)
-    convertToBase Base64URLUnpadded (namePrepaidCodeHash code) `shouldBe` (hash :: ByteString)
-  -- the webapp reads these, but no name length is outside 6 to 63
-  parseNameCode "SN5-N0N9J-5D292-HPSYA-R911Q" `shouldBe` Nothing
-  parseNameCode "SN64-N0N9J-5D292-HPSYA-R911C" `shouldBe` Nothing
-
-takenOrderCodeVectors :: [(T.Text, Int, ByteString)]
-takenOrderCodeVectors =
-  [ ("SN6-N0N9J-5D292-HPSYA-R911P", 6, "SKKFjAl5K21B6HRIgQcYQ3AaZ67nVxl2xszsSkZ97cA"),
-    ("SN7-N0N9J-5D292-HPSYA-R911N", 7, "pXhWV9oSfjH0oaQ78HPSGKTg1lScZhNGi-YZnqt-GyQ"),
-    ("SN12-N0N9J-5D292-HPSYA-R911R", 12, "FozeCQ3A_sUsZF9_OwQDp42kdHRMsoJazuGvOkTS-FQ"),
-    ("SN63-N0N9J-5D292-HPSYA-R911D", 63, "U-Nh_Kw3-xDlQuFJffkuCAyolK5m9EfN3QuYiJ28A0A")
   ]
 
 testNameCodeKinds :: IO ()

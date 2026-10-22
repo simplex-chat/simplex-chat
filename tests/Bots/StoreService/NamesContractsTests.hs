@@ -20,10 +20,6 @@ module Bots.StoreService.NamesContractsTests
     contactTextCall,
     channelTextCall,
     noncesCall,
-    pricesCall,
-    launchPricesAnswer,
-    pricesAnswer,
-    oracle,
     alice,
     availableCall,
     minCommitmentAgeCall,
@@ -70,9 +66,6 @@ namesContractsTests = describe "StoreService names: contracts" $ do
     it "reads no records from another resolver" $ testOtherResolver g
   describe "prices" $ do
     it "quotes 6, 7 and 12 letters at the launch list for 2 years" $ testLaunchPrices g
-    it "finds the code length for each launch price" $ testLaunchCodeLengths g
-    it "requires every longer length to be covered when the list is not monotone" $ testNonMonotone g
-    it "reads the oracle from the controller on each call" $ testOracleReplaced g
   describe "other reads" $ do
     it "reads the sponsor's and the resolver's nonces from their own contracts" $ testNonces g
     it "reads ownerOf's revert without data as nobody" $ testOwnerOfNobody g
@@ -164,32 +157,6 @@ testLaunchPrices g = withContracts g $ \node ct -> do
   answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000
   mapM (\len -> chainPriceCents ct len 2) [6, 7, 12] `shouldReturn` [Right 40000, Right 20000, Right 10000]
 
-testLaunchCodeLengths :: TVar ChaChaDRG -> IO ()
-testLaunchCodeLengths g = withContracts g $ \node ct -> do
-  answerCall node fakeController pricesCall $ Returns $ addressWord oracle
-  answerCall node oracle pricesCall $ Returns launchPricesAnswer
-  mapM (\cents -> codeLengthFor ct cents 2) [40000, 20000, 10000, 9999]
-    `shouldReturn` [Right (Just 6), Right (Just 7), Right (Just 8), Right Nothing]
-  codeLengthFor ct 20000 4 `shouldReturn` Right (Just 8)
-
-testNonMonotone :: TVar ChaChaDRG -> IO ()
-testNonMonotone g = withContracts g $ \node ct -> do
-  answerCall node fakeController pricesCall $ Returns $ addressWord oracle
-  answerCall node oracle pricesCall $ Returns $ pricesAnswer 5000 [(6, 15000), (7, 20000)]
-  mapM (\cents -> codeLengthFor ct cents 2) [30000, 40000] `shouldReturn` [Right (Just 8), Right (Just 6)]
-  answerCall node oracle pricesCall $ Returns $ pricesAnswer 5000 [(63, 30000)]
-  mapM (\cents -> codeLengthFor ct cents 2) [59999, 60000] `shouldReturn` [Right Nothing, Right (Just 6)]
-
-testOracleReplaced :: TVar ChaChaDRG -> IO ()
-testOracleReplaced g = withContracts g $ \node ct -> do
-  let newOracle = address "0x8a791620dd6260079bf849dc5567adc3f2fdc318"
-  answerCall node fakeController pricesCall $ Returns $ addressWord oracle
-  answerCall node oracle pricesCall $ Returns launchPricesAnswer
-  answerCall node newOracle pricesCall $ Returns $ pricesAnswer 10000 []
-  codeLengthFor ct 20000 2 `shouldReturn` Right (Just 7)
-  answerCall node fakeController pricesCall $ Returns $ addressWord newOracle
-  codeLengthFor ct 20000 2 `shouldReturn` Right (Just 6)
-
 testNonces :: TVar ChaChaDRG -> IO ()
 testNonces g = withContracts g $ \node ct -> do
   answerCall node fakeSponsor noncesCall $ Returns $ uint256 (5 :: Int)
@@ -265,9 +232,6 @@ testMalformed g = withContracts g $ \node ct -> do
   nameExpires ct Latest alice `shouldReturn` Left (ChainUnavailable "eth_call: nameExpires(uint256) answered AEShort")
   answerCall node fakeSponsor noncesCall $ Returns $ uint256 (toInteger (maxBound :: Word64) + 1)
   sponsorNonce ct owner `shouldReturn` Left (ChainUnavailable "eth_call: nonces(address) answered AERange")
-  answerCall node fakeController pricesCall $ Returns $ addressWord oracle
-  answerCall node oracle pricesCall $ Returns $ B.dropEnd 32 launchPricesAnswer
-  codeLengthFor ct 40000 2 `shouldReturn` Left (ChainUnavailable "eth_call: prices() answered AEShort")
 
 testStatusDeadline :: TVar ChaChaDRG -> IO ()
 testStatusDeadline g = withContracts g $ \node ct -> do
@@ -347,13 +311,6 @@ resolverOf = cResolver . fakeChainConfig
 rentPriceAnswer :: Integer -> ByteString
 rentPriceAnswer cents = uint256 (cents * 10 ^ (16 :: Int)) <> uint256 (0 :: Int)
 
-pricesAnswer :: Integer -> [(Integer, Integer)] -> ByteString
-pricesAnswer base exceptions = abiTuple [Static $ uint256 base, Dynamic $ uint256 (length exceptions) <> B.concat [uint256 len <> uint256 cents | (len, cents) <- exceptions]]
-
--- viem: prices() answering the launch list, base 5000 and [{7, 10000}, {6, 20000}]
-launchPricesAnswer :: ByteString
-launchPricesAnswer = unhex "0000000000000000000000000000000000000000000000000000000000001388000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000007000000000000000000000000000000000000000000000000000000000000271000000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000004e20"
-
 -- viem: text answering "https://smp8.simplex.im/a#Y8m3"
 contactTextAnswer :: ByteString
 contactTextAnswer = unhex "0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001e68747470733a2f2f736d70382e73696d706c65782e696d2f612359386d330000"
@@ -376,10 +333,9 @@ aliceNode = unhex "0f4104919a21c22f566d9c7947c7c7d8addbf546c973851a7e449276ea54e
 commitment :: ByteString
 commitment = unhex "f8096c3f3cfbadc9f3a108d2c586ccc816c0510711c8d6228aa4fa507324d30c"
 
-owner, registry, oracle, otherResolver :: Address
+owner, registry, otherResolver :: Address
 owner = address "0x014f9c09cceedef1b713110d04d3a07d5b5d9b73"
 registry = address "0x5fbdb2315678afecb367f032d93f642f64180aa3"
-oracle = address "0xa513e6e4b8f2a923d98304ec87f64353c4d5c853"
 otherResolver = address "0x4826533b4897376654bb4d4ad88b7fafd0c98528"
 
 -- viem's calldata for the reads
@@ -407,8 +363,7 @@ rentPriceCall = \case
   12 -> unhex "9ff7ec0900000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000003c26700000000000000000000000000000000000000000000000000000000000000000c6161616161616161616161610000000000000000000000000000000000000000"
   len -> error $ "no viem vector for length " <> show len
 
-pricesCall, commitmentsCall, availableCall, minCommitmentAgeCall, maxCommitmentAgeCall :: ByteString
-pricesCall = unhex "d3419bf3"
+commitmentsCall, availableCall, minCommitmentAgeCall, maxCommitmentAgeCall :: ByteString
 commitmentsCall = unhex "839df945f8096c3f3cfbadc9f3a108d2c586ccc816c0510711c8d6228aa4fa507324d30c"
 availableCall = unhex "aeb8ce9b0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000b616c69636562616b657279000000000000000000000000000000000000000000"
 minCommitmentAgeCall = unhex "8d839ffe"

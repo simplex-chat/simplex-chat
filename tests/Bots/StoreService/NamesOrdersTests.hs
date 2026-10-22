@@ -34,8 +34,8 @@ where
 
 import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), setInvoiceState, withFakeBTCPay)
 import Bots.StoreService.FakeEthNode
-import Bots.StoreService.NamesContractsTests (alice, answerRegistered, answerRegistrar, launchPricesAnswer, nameExpiresCall, noncesCall, oracle, pricesCall, registrarOf, rentPriceAnswer, rentPriceCall, reservedNamesCall, unhex)
-import Bots.StoreService.NamesStoreTests (issue, order, ownerA, ownerB, placeCode, placePaid, t0, usable)
+import Bots.StoreService.NamesContractsTests (alice, answerRegistered, answerRegistrar, nameExpiresCall, noncesCall, registrarOf, rentPriceAnswer, rentPriceCall, reservedNamesCall, unhex)
+import Bots.StoreService.NamesStoreTests (order, ownerA, ownerB, placeCode, placePaid, t0)
 import Bots.StoreService.WebTests
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (async, concurrently, wait)
@@ -78,7 +78,7 @@ import Simplex.Messaging.Eth.EIP712 (serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..), ServiceConfig (..))
-import StoreService.Names.Abi (addressWord, hex, uint256)
+import StoreService.Names.Abi (hex, uint256)
 import StoreService.Names.Chain (newChainClient)
 import StoreService.Names.Contracts (newContracts)
 import StoreService.Names.Codes (CodeRefusal (..))
@@ -168,8 +168,8 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "agrees between the sweep and the overdue close on which invoices hold money" testFundedAgreement
   describe "registration view" $ do
     it "has the contract's fields" testViewFields
-    it "reads the intent nonce in committed and the code length in taken and code_issued" testViewReads
-    it "leaves a failed intentNonce or codeLength read null and named in unread" testViewUnread
+    it "reads the intent nonce in committed and nothing in taken" testViewReads
+    it "leaves a failed intentNonce read null and named in unread, reading nothing in taken" testViewUnread
 
 -- fixtures
 
@@ -1344,11 +1344,11 @@ testViewFields :: IO ()
 testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   Right () <- placePaid st "r1" ownerA (order "alicebakery" 1) (addUTCTime 3600 t0)
   r <- withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "r1")
-  let v = objectOf $ viewJSON (testNamesConfig node) r ViewReads {vrIntentNonce = Nothing, vrCodeLength = Nothing, vrUnread = []}
+  let v = objectOf $ viewJSON (testNamesConfig node) r ViewReads {vrIntentNonce = Nothing, vrUnread = []}
   sort (KM.keys v)
     `shouldBe` sort
       [ "id", "version", "moves", "linksRefused", "phase", "labelHash", "label", "owner", "commitment", "sealed", "resolver", "sponsor", "chainId", "tld",
-        "years", "duration", "price", "codeLength", "commitTx", "registerTx", "revealAfter", "revealBefore", "intentNonce", "unread", "expiresAt", "error"
+        "years", "duration", "price", "commitTx", "registerTx", "revealAfter", "revealBefore", "intentNonce", "unread", "expiresAt", "error"
       ]
   map (`field` v) ["id", "phase", "owner", "tld", "chainId", "linksRefused", "label", "unread", "sponsor"]
     `shouldBe` map
@@ -1369,26 +1369,16 @@ testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   g <- C.newRandom
   ct <- newContracts TLDSimplex =<< newChainClient g (fakeChainConfig node)
   answerCall node fakeSponsor noncesCall $ Returns $ uint256 (4 :: Int)
-  answerCall node fakeController pricesCall $ Returns $ addressWord oracle
-  answerCall node oracle pricesCall $ Returns launchPricesAnswer
   Right () <- placePaid st "paid" ownerA (order "alicebakery" 1) (addUTCTime 3600 t0)
-  code <- issue st 7 usable
-  Right () <- placeCode st "code" ownerB (order "alicebakery" 2) code
-  let inPhase rid phase = do
-        r <- withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId rid)
+  let inPhase phase = do
+        r <- withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "paid")
         Written _ <- withTransaction st $ \db -> updateRegistration db r {nrPhase = phase} t0
-        withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId rid)
-  committed <- inPhase "paid" PCommitted
-  readViewChain st ct committed `shouldReturn` ViewReads (Just 4) Nothing []
-  taken <- inPhase "paid" PTaken
-  -- worth 20000 cents for 2 years at the launch list: 7 letters and longer
-  readViewChain st ct taken `shouldReturn` ViewReads Nothing (Just 7) []
-  takenCode <- inPhase "code" PTaken
-  readViewChain st ct takenCode `shouldReturn` ViewReads Nothing Nothing []
-  issued <- issue st 8 usable {npcMinLength = 9}
-  Written _ <- withTransaction st $ \db -> updateRegistration db taken {nrPhase = PCodeIssued, nrIssuedCodeId = Just (pcId issued)} t0
-  codeIssued <- withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "paid")
-  readViewChain st ct codeIssued `shouldReturn` ViewReads Nothing (Just 9) []
+        withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "paid")
+  committed <- inPhase PCommitted
+  readViewChain ct committed `shouldReturn` ViewReads (Just 4) []
+  -- the oracle's prices are not answered, so any read in taken would be named in unread
+  taken <- inPhase PTaken
+  readViewChain ct taken `shouldReturn` ViewReads Nothing []
 
 testViewUnread :: IO ()
 testViewUnread = withServiceStore $ \st -> withFakeEthNode $ \node -> do
@@ -1397,7 +1387,7 @@ testViewUnread = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   setFault node "eth_call" HttpFailure
   Right () <- placePaid st "paid" ownerA (order "alicebakery" 1) (addUTCTime 3600 t0)
   r <- withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "paid")
-  readViewChain st ct r {nrPhase = PCommitted} `shouldReturn` ViewReads Nothing Nothing ["intentNonce"]
-  readViewChain st ct r {nrPhase = PTaken} `shouldReturn` ViewReads Nothing Nothing ["codeLength"]
-  let v = objectOf $ viewJSON (testNamesConfig node) r {nrPhase = PTaken} (ViewReads Nothing Nothing ["codeLength"])
-  (field "codeLength" v, field "unread" v) `shouldBe` (Just J.Null, Just (J.toJSON ["codeLength" :: Text]))
+  readViewChain ct r {nrPhase = PCommitted} `shouldReturn` ViewReads Nothing ["intentNonce"]
+  readViewChain ct r {nrPhase = PTaken} `shouldReturn` ViewReads Nothing []
+  let v = objectOf $ viewJSON (testNamesConfig node) r {nrPhase = PCommitted} (ViewReads Nothing ["intentNonce"])
+  (field "intentNonce" v, field "unread" v) `shouldBe` (Just J.Null, Just (J.toJSON ["intentNonce" :: Text]))
