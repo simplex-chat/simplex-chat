@@ -333,10 +333,11 @@ check_family() {
       failed=1
     fi
   done < <(rules_for "$family")
-  jumps=$(jumps_for "$tool")
+  # check runs under ||, where errexit is off, so a failed lookup has to end the check itself
+  jumps=$(jumps_for "$tool") || return 1
   while read -r parent line; do
     jump="-A $parent $line -j $CHAIN"
-    rules=$(chain_rules "$tool" "$parent")
+    rules=$(chain_rules "$tool" "$parent") || return 1
     if [[ ${rules%%$'\n'*} != "$jump" ]]; then
       echo "$tool: the first rule of $parent is not $jump" >&2
       failed=1
