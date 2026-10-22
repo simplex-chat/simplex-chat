@@ -64,8 +64,10 @@ fun AddGroupView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit, c
               GroupLinkView(chatModel, rhId, groupInfo, groupLink = null, onGroupLinkUpdated = null, creatingGroup = true, close = close)
             }
           }
+        } else {
+          inProgress.value = false
         }
-      }.invokeOnCompletion { inProgress.value = false }
+      }
     },
     incognitoPref = chatModel.controller.appPrefs.incognito,
     rhId,

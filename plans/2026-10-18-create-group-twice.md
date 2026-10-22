@@ -1,6 +1,6 @@
 # A double click on "Create group" creates two groups
 
-Follow-up to #7725, stacked on its branch.
+Follow-up to #7725.
 
 ## Problem
 
@@ -8,12 +8,12 @@ Follow-up to #7725, stacked on its branch.
 
 ## Fix
 
-The page remembers whether its create is in progress, as `CIGroupInvitationView` does for joining: the create handler checks and sets it at the start and clears it when its job ends, so a second click on that page while it is set is ignored.
+The page remembers whether its create is in progress, as `CIGroupInvitationView` does for joining: the create handler checks and sets it at the start, so a second click on that page while it is set is ignored. It is cleared only when the create fails. A successful create closes the page, but the page leaves the screen only after its job has ended (in testing the job ended about 0.7 s after the click and the page was gone 0.8 to 1.1 s after it), so clearing it at the end of the job let a second click in that gap create a second group.
 
 ## Not fixed
 
 - The channel's "Continue" (desktop `onLinkReady`) was checked and not affected: a double click opened one link page in testing.
-- A create that never returns keeps that page's "Create group" inert until it does; a page opened again meanwhile creates as on master.
+- A create that never returns, or that throws instead of returning an error, keeps that page's "Create group" inert; a page opened again creates as on master.
 
 ## Effect
 
