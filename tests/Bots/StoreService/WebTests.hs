@@ -1068,6 +1068,9 @@ namesManifest = "{\"name\":\"SimpleX names\"}"
 namesHost :: ByteString
 namesHost = "simplex.domains"
 
+namesIPv6Host :: Text
+namesIPv6Host = "[2001:db8::1]"
+
 prepareNamesDir :: FilePath -> IO FilePath
 prepareNamesDir root = do
   let namesDir = root </> "names"
@@ -1104,7 +1107,7 @@ withBothSites action =
       staticDir <- prepareStaticDir root
       namesDir <- prepareNamesDir root
       let base = testServiceConfig staticDir True
-          cfg = base {listener = (listener base) {lNamesStaticDir = Just namesDir, lNamesHosts = [safeDecodeUtf8 namesHost]}, stripe = Just publishTestStripe}
+          cfg = base {listener = (listener base) {lNamesStaticDir = Just namesDir, lNamesHosts = [safeDecodeUtf8 namesHost, namesIPv6Host]}, stripe = Just publishTestStripe}
       withListener [] True holdMicros st cfg (const action)
 
 webGetAt :: WebClient -> ByteString -> String -> IO (Response LB.ByteString)
@@ -1112,13 +1115,13 @@ webGetAt client host target = webRequest client "GET" target [("Host", host)]
 
 testHostPicksTheSite :: IO ()
 testHostPicksTheSite = bounded "host picks the site" $ withBothSites $ \client -> do
-  forM_ [namesHost, "SIMPLEX.Domains:8443", "simplex.domains:80", "simplex.domains.", "simplex.domains.:443"] $ \host -> do
+  forM_ [namesHost, "SIMPLEX.Domains:8443", "simplex.domains:80", "simplex.domains.", "simplex.domains.:443", "[2001:DB8::1]:8080", "[2001:db8::1]"] $ \host -> do
     shell <- webGetAt client host "/"
     (statusOf shell, responseBody shell) `shouldBe` (200, namesShellWithKey)
     headerOf shell hContentType `shouldBe` Just "text/html; charset=utf-8"
   namesIndex <- webGetAt client namesHost "/index.html"
   (statusOf namesIndex, responseBody namesIndex) `shouldBe` (200, namesShellWithKey)
-  forM_ ["badges.simplex.chat", "www.simplex.domains", "simplex.domains.example.org"] $ \host -> do
+  forM_ ["badges.simplex.chat", "www.simplex.domains", "simplex.domains.example.org", "[::1]:8080", "[2001:db8::2]", "[2001:db8::10]:8080"] $ \host -> do
     shell <- webGetAt client host "/"
     statusOf shell `shouldBe` 200
     LB.toStrict (responseBody shell) `shouldSatisfy` BC.isInfixOf "SimpleX badges"

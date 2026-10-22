@@ -422,7 +422,7 @@ namesConfigTests = describe "StoreService names: config" $ do
   it "reads every [names] and [chain] setting written out" testNamesWrittenOut
   it "reads the names keys of [listener]" testNamesListenerKeys
   it "refuses names_hosts or names_export_dir without names_static_dir" testNamesSiteNeedsItsBuild
-  it "reads names_hosts entries without a port or the root's trailing dot" testNamesHostsNormalised
+  it "reads names_hosts entries without a port or the root's trailing dot, and IPv6 literals whole" testNamesHostsNormalised
   it "leaves the names side off when [names] is absent" testNamesAbsent
   it "refuses [names] without [chain], and [chain] without [names]" testNamesNeedsChain
   it "refuses years below 2" testNamesYearsBelowTwo
@@ -539,6 +539,9 @@ testNamesHostsNormalised = do
   let withHosts = T.replace "static_dir = /srv/badges\n" "static_dir = /srv/badges\nnames_static_dir = /srv/names\nnames_hosts = simplex.domains:8443, Names.Example., www.simplex.domains.:443\n" fullIni
   Right cfg <- parseIni withHosts
   lNamesHosts (listener cfg) `shouldBe` ["simplex.domains", "names.example", "www.simplex.domains"]
+  let withLiterals = T.replace "static_dir = /srv/badges\n" "static_dir = /srv/badges\nnames_static_dir = /srv/names\nnames_hosts = [2001:DB8::1], 2001:db8::2, [::1]:8443\n" fullIni
+  Right literals <- parseIni withLiterals
+  lNamesHosts (listener literals) `shouldBe` ["[2001:db8::1]", "[2001:db8::2]", "[::1]"]
 
 testNamesAbsent :: IO ()
 testNamesAbsent = do

@@ -219,11 +219,16 @@ trailingNoise = skipSpace *> skipMany (comment *> skipSpace)
   where
     comment = satisfy (\c -> c == ';' || c == '#') *> skipWhile (not . isEndOfLine)
 
--- | A host as names_hosts compares it: in lower case, without a port or the root's trailing dot.
+-- | A host as names_hosts compares it: in lower case, without a port or the root's trailing dot,
+-- and an IPv6 literal whole in brackets, as a Host header carries it.
 hostName :: Text -> Text
-hostName h = fromMaybe name (T.stripSuffix "." name)
+hostName h
+  | "[" `T.isPrefixOf` host = T.takeWhile (/= ']') host <> "]"
+  | T.count ":" host > 1 = "[" <> host <> "]"
+  | otherwise = fromMaybe name (T.stripSuffix "." name)
   where
-    name = T.takeWhile (/= ':') (T.toLower (T.strip h))
+    host = T.toLower (T.strip h)
+    name = T.takeWhile (/= ':') host
 
 knownSettings :: [(Text, [Text])]
 knownSettings =
