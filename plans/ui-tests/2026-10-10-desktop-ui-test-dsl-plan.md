@@ -1579,6 +1579,8 @@ Each entry gives the symptom, the cause (how it was confirmed), and the fix or m
 - `ChatListRowsTest.previewGroupSenderPrefix` (full Android run, 2026-10-14 21:07): after alice leaves the group chat, bob sends "#team hello all"; for 10 s the `team` row showed the unread badge "1" but kept the preview "mine" (failure screenshot). Passed in the rerun of the class.
 - The badge proves the row recomposed with new chat stats; the preview text comes from `chat.chatItems.lastOrNull()` (`ChatPreviewView.kt:228`). Either the new item did not reach the chat's preview list while its stats did (app-side model update), or an earlier group event incremented the counter and the message was still in transit. Not resolved; next step is to capture `chatModel.chats` for the row on failure.
 
+- 2026-10-22: seen on desktop too, in `ChatListRowsTest.previewGroupSenderPrefix` (1 of 2 runs, after the master merge with #7072): bob's group message arrived while alice had the group open, and the row kept showing alice's earlier "mine" instead of "bob: hello all". The test passed when rerun alone.
+
 ### 15.4.1b Open flake: received message missing from a chat opened at the same moment (desktop, 1 of 4 runs)
 
 - `ForwardTest.forward_toNotes_showsSavedFrom` (rebased run b23, 2026-10-15): bob sends "hey", alice opens bob's chat right away; the chat list row shows "hey" with unread 1, but the open chat shows no items (only the "1" unread-below counter) for 10 s. Three reruns of the class passed.

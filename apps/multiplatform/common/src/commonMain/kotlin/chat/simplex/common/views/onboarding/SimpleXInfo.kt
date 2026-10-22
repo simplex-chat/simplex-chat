@@ -251,8 +251,8 @@ fun TextButtonBelowOnboardingButton(text: String, onClick: (() -> Unit)?, icon: 
 @Composable
 fun OnboardingInformationButton(
   text: String,
-  onClick: () -> Unit,
   uiKey: UiKey? = null,
+  onClick: () -> Unit,
 ) {
   Box(
     modifier = Modifier
