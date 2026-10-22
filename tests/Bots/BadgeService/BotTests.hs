@@ -206,7 +206,7 @@ badgeServiceTests = do
     describe "transfers" $ do
       it "should move a store subscription to a new key, ending the old key's share, and renew it for the new key" testStoreRebind
       it "should move a payment again only once the credential of the key it last moved from has expired" testStoreRebindCapped
-      it "should fund the new key from a charge the service never recorded, ending the idle old key at zero months" testStoreRebindNewCharge
+      it "should fund the new key from a charge the service never recorded, ending the idle old key at zero months, and grant that charge once" testStoreRebindNewCharge
       it "should answer the old key ended with no credential, without asking the store, and its purchase receipt_used" testStoreRebindOldKeyEnded
       it "should move an App Store subscription only with its latest transaction, writing nothing for an older one" testStoreRebindStaleAppleTransaction
       it "should credit a transfer of a payment credited nowhere as a first purchase" testTransferUncredited
@@ -2815,8 +2815,9 @@ testStoreRebindNewCharge ps =
         verifiedAfter tip_ rows = do
           now <- serviceNow env
           map snd (balanceChecked now BTSupporter tip_ rows) `shouldBe` map (const $ Just True) rows
-    -- the old key went idle after its first month, and the store has since charged a month the service never recorded
-    storeReports store $ subscriptionCheck SSRenewing $ Just $ monthlyCharge "subscr-badge-supporter-month-02" firstStart 2
+    -- the old key went idle after its first month, and the store has since charged a month the service never recorded;
+    -- its period runs past the month the move funds, so the charge is still current once that month is spent
+    storeReports store $ subscriptionCheck SSRenewing $ Just (monthlyCharge "subscr-badge-supporter-month-02" firstStart 2) {periodEnd = addUTCTime (10 * nominalDay) (addMonths 1 chargeStart)}
     setClockAt bsClock $ addUTCTime (3 * nominalDay) chargeStart
     (newKey, moved) <- transferWithNewKey env subscriptionPlay
     let movedRows = fst $ statementOf moved
@@ -2832,6 +2833,14 @@ testStoreRebindNewCharge ps =
     again <- assertBalance env newKey (last movedRows)
     map entryTag (fst $ statementOf again) `shouldBe` []
     credentialOf again `shouldBe` credentialOf moved
+    ledgerRows cc "sx_badge_service_badge_ledger" `shouldReturn` ledger
+    -- the store still reports that charge once the month it funded has run out, and it is not granted again
+    checks <- subscriptionChecks store
+    setClockAt bsClock $ addUTCTime (3 * nominalDay) (addMonths 1 chargeStart)
+    reported <- assertBalance env newKey (last movedRows)
+    subscriptionChecks store `shouldReturn` checks + 1
+    map entryTag (fst $ statementOf reported) `shouldBe` []
+    credentialOf reported `shouldBe` Nothing
     ledgerRows cc "sx_badge_service_badge_ledger" `shouldReturn` ledger
 
 testStoreRebindCapped :: HasCallStack => TestParams -> IO ()
