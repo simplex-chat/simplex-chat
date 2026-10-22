@@ -355,13 +355,13 @@ Desktop users cannot pick a skin tone in the picker, and search in other languag
 
 ## GAP-10: Badges: Limits on Moving a Badge to a New Device or Profile
 
-**Severity:** Low
+**Severity:** Medium
 **Category:** Feature / Payments
 **Platforms:** Android
 
 ### Description
 
-Play gives a resubscription a new purchase token, so subscribing again on the same install is credited as a new purchase. On a new device or under another profile, Restore hands over the subscriptions in Play's list as restored, and the service moves the subscription to the restoring profile's purchase key. A payment moves again only once the credential issued to the key it last moved from has expired; until then Restore is answered `transfer_limited`, and the first Restore of a limited payment adds nothing and shows nothing, so only the next Restore says why. A badge bought with Stripe or crypto cannot be moved at all.
+Play gives a resubscription a new purchase token, so subscribing again on the same install is credited as a new purchase. On a new device or under another profile, Restore hands over the subscriptions in Play's list as restored, and the service moves the subscription to the restoring profile's purchase key. Restore is refused while the restoring profile shows a badge. A payment moves again only once the credential issued to the key it last moved from has expired; until then the move is refused `transfer_limited`. The first Restore's own answer doesn't say so: the app hears of the refusal only from core's purchase-refused event, which core sends only for a record holding an invoice id, and the next Restore is answered `transfer_limited` itself. A badge bought with Stripe or crypto cannot be moved at all. A plan change made in Play's own pages gets a new token, which the app's sweep finds but core does not record, so only Restore claims it, after the old badge has ended; until then it stays unacknowledged, which Play refunds after three days.
 
 ### Affected Locations
 
@@ -370,9 +370,10 @@ Play gives a resubscription a new purchase token, so subscribing again on the sa
 
 ### Impact
 
-A subscriber who moves the badge again before the previous key's credential expires waits until it does, and the first such Restore gives no reason. A badge bought with Stripe or crypto stays with the profile it was credited to.
+A subscriber who moves the badge again before the previous key's credential expires waits until it does, and the first such Restore may give no reason. A badge bought with Stripe or crypto stays with the profile it was credited to. A subscriber who changes plan in Play keeps the old badge until its paid months end, and can lose the new plan to Play's refund before it is credited.
 
 ### Recommendation
 
 1. Restore by a receipt code for Stripe and crypto purchases, shared with iOS.
 2. Announce a limited move on the first Restore.
+3. Credit a Play plan change's new token without waiting for Restore.
