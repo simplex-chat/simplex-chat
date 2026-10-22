@@ -69,6 +69,7 @@ namesSpendTests = describe "StoreService names: spend" $ do
     it "refuses another signer and a stale timestamp, and answers an unknown order 404" testSignerAndId
     it "answers name_taken, catalog_changed, name_check_unavailable, provider_unavailable and order_exists, spending nothing" testOrderChecks
     it "runs its checks in the contract's order" testCheckOrder
+    it "refuses a card difference below the card minimum after the price check, accepting it by crypto and at the minimum" testCardMinimum
     it "refuses sealed missing or over 11095 characters and a body over 16384 bytes, accepting the longest" testSpendSizes
     it "counts spends against the create limit" testSpendLimit
   describe "holders" $ do
@@ -387,6 +388,19 @@ testCheckOrder = withSpend $ \ctx@Ctx {cNode = node, cStub} -> do
   spend ctx src (covered 30000) {sbOrder = aliceOrder {oKey = keyB}} `shouldReturn` refusedWith 400 "bad_request"
   spend ctx src (covered 31000) {sbOrder = aliceOrder {oCommitment = commitmentOf 3}} `shouldReturn` refusedWith 409 "order_exists"
   amountOf ctx src `shouldReturn` Just 20000
+
+testCardMinimum :: IO ()
+testCardMinimum = withSpend $ \ctx -> do
+  small <- sourceOf ctx "small" 9951
+  spend ctx small (difference 9951) {sbOrder = aliceOrder {oPrice = 9990}, sbMethod = Just "card"} `shouldReturn` (409, Just $ KM.fromList [("error", "catalog_changed"), ("price", J.Number 10000)])
+  spend ctx small (difference 9951) {sbMethod = Just "card"} `shouldReturn` refusedWith 400 "bad_request"
+  stubCalls (cStub ctx) `shouldReturn` []
+  amountOf ctx small `shouldReturn` Just 9951
+  fst <$> spend ctx small (difference 9951) `shouldReturn` 200
+  least <- sourceOf ctx "least" 19950
+  fst <$> spend ctx least (dynamis 19950 (Just "card")) `shouldReturn` 200
+  calls <- stubCalls (cStub ctx)
+  [odAmount d | StubCreate _ d <- calls] `shouldBe` [CurrencyAmount 49, CurrencyAmount 50]
 
 testSpendSizes :: IO ()
 testSpendSizes = withSpend $ \ctx -> do

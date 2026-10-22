@@ -30,7 +30,7 @@ import Data.Word (Word32, Word64)
 import Network.HTTP.Types (status200, status409, status503)
 import Network.Wai (Request, Response, ResponseReceived)
 import Simplex.Chat.Badges.Code (NameCode (..), parseNameCode)
-import Simplex.Chat.PaymentService.Types (CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), ServicePaymentMethod)
+import Simplex.Chat.PaymentService.Types (CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
@@ -268,9 +268,15 @@ spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} cfg 
         placeOrder env order (maybeToList holder) (coveredOrderInsert spend new) >>= \case
           Left refusal -> refuse refusal
           Right closed -> pure Answer {aResponse = registrationAnswer rid, aAfter = announceClosed env providers waiters closed}
+      Just (SPMCard _)
+        | spPrice - spBalance < minCardChargeCents -> refuse ORBadRequest
       Just method ->
         createAtProvider env cfg providers waiters what $
           InvoicedOrder {ivRequest = order, ivHolders = maybeToList holder, ivMethod = method, ivPrice = spPrice, ivAmount = fromIntegral (spPrice - spBalance), ivInsert = differenceOrderInsert spend}
+
+-- | Stripe refuses a USD charge under 50 cents, so the page offers only crypto for a smaller difference.
+minCardChargeCents :: Int
+minCardChargeCents = 50
 
 -- | Every format check, the method present exactly for a difference, then the length's range.
 parseSpend :: RegistrationId -> J.Object -> Either OrderRefusal ((OrderFields, Word64, RecoverableSignature), Spend)
