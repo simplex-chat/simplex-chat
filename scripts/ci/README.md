@@ -2,6 +2,15 @@
 
 Three workflows build the apps from a branch's own code and test them, only when asked: `ios-sim` (the iOS app in a simulator on a macOS runner), `desktop-linux` (the desktop app on a Linux runner) and `android-emu` (the Android app in an emulator on a Linux runner). Each runs a scripted smoke test and, on request, a Claude session that follows a test plan, and a test backend (relay, directory, names server, peers). Details: [iOS](ios-sim/README.md), [desktop](desktop-linux/README.md), [Android](android/README.md).
 
+## UI tests
+
+`ui-tests` runs the Compose UI tests (`apps/multiplatform/common/src/uiTestShared`, desktop and Android) with `apps/multiplatform/scripts/uitest.sh` and `uitest-android.sh`: the desktop tests on the runner, the Android tests in android-emu's emulator, each platform in four parallel jobs. It is started by hand like the others, and reuses the core libraries that `desktop-linux` and `android-emu` built on the branch, and they its own. Details: [UI tests](ui-tests/README.md).
+
+```sh
+gh workflow run ui-tests.yml --ref <branch> -f platform=both
+gh workflow run ui-tests.yml --ref <branch> -f platform=android -f tests=chat.simplex.app.ui.main.ChatListRowsTest
+```
+
 ## Starting a run
 
 Pushes start nothing: a run is started by hand, on any branch, with inputs that are off by default and combine.
