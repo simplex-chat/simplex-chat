@@ -740,6 +740,13 @@ fundsMonthNow purchaseKey now tip_ grant@(StoreCharge {periodStart}, (badgeType,
   where
     tip = fromMaybe (emptyEntry periodStart badgeType) tip_
 
+-- | The store ended the subscription, or revoked the latest charge it reports, one this payment was granted: a refund or a reversal.
+coverageEnded :: DB.Connection -> T.Text -> SubscriptionCheck -> IO Bool
+coverageEnded db paymentId SubscriptionCheck {subscriptionState, latestCharge}
+  | subscriptionState == SSEnded = pure True
+  | Just StoreCharge {chargeRef, revoked = True} <- latestCharge = maybe False snd <$> getSubscriptionCharge db paymentId chargeRef
+  | otherwise = pure False
+
 -- | No payment row exists yet to stamp, so a first purchase's checks are bounded by the purchase checks.
 firstChargeNotGranted :: PaymentProvider -> NotGranted -> IO BadgeServiceResponse
 firstChargeNotGranted provider = \case
@@ -859,6 +866,7 @@ issueBadgeCmd key cc verifier purchaseKey upgrade_ BadgeBalance {lastEntry} = do
       -- once a subscription's paid coverage has ended, only a new store charge funds another month
       | paidThrough tip <= now -> renewSubscription Nothing purchase tip subscription now
       | ChecksAtEveryRequest <- storeChecks verifier -> checkStoreDuringCoverage purchase tip subscription now
+      | balanceStartTs tip <= now -> checkStoreBeforeMonth purchase tip subscription now
     Right (Just _) | isJust upgrade_ -> pure $ errorResponse BSEBadRequest
     Right (Just (ServicePurchase {badgePurchaseId}, Just StatementEntry {entryType = SEDebit SDTransferOut {}}, Nothing)) ->
       answered "answerMovedOut" $ \db -> withoutCredential <$> issueResponse db badgePurchaseId now (Just SSEnded)
@@ -959,9 +967,10 @@ issueBadgeCmd key cc verifier purchaseKey upgrade_ BadgeBalance {lastEntry} = do
               entryIds <- (,,,) <$> randomId cc <*> randomId cc <*> randomId cc <*> randomId cc
               r <- withDB' "checkStoreDuringCoverage" cc $ \db -> do
                 lockPurchaseLedger db badgePurchaseId now
+                ended <- coverageEnded db paymentId checked
                 tip' <- getLedgerTip db badgePurchaseId
                 banked <-
-                  if fmap entryId tip' == Just (entryId tip)
+                  if not ended && fmap entryId tip' == Just (entryId tip)
                     then do
                       bankedMonths <- case grantableCharge provider now checked of
                         Right (charge@StoreCharge {chargeRef, periodStart}, (badgeType, months)) ->
@@ -977,12 +986,55 @@ issueBadgeCmd key cc verifier purchaseKey upgrade_ BadgeBalance {lastEntry} = do
                       setSubscriptionState db paymentId subscriptionState now
                       pure bankedMonths
                     else pure Nothing
-                (banked,) <$> getLedgerTip db badgePurchaseId
+                (ended, banked,) <$> getLedgerTip db badgePurchaseId
               case r of
                 Left _ -> pure $ errorResponse BSEInternal
-                Right (banked, tip_) -> do
+                Right (True, _, _) -> refundRemaining purchase tip paymentId now
+                Right (False, banked, tip_) -> do
                   forM_ banked logBanked
                   issueDue purchase tip_ (Just subscriptionState) now
+    -- While coverage runs the store is asked before each new month, so a refund ends the months not yet issued; a store
+    -- that fails or does not answer ends nothing, and the month is issued as before.
+    checkStoreBeforeMonth purchase tip subscription@PurchaseSubscription {paymentId, subscriptionRef, storedState} now
+      | held, storedState == SSEnded = refundRemaining purchase tip paymentId now
+      | held = issueDue purchase (Just tip) (Just storedState) now
+      | otherwise =
+          withDB' "stampSubscriptionCheck" cc (\db -> stampSubscriptionCheck db paymentId now) >>= \case
+            Left _ -> pure $ errorResponse BSEInternal
+            Right () ->
+              checkStoreSubscription verifier subscriptionRef Nothing >>= \case
+                Left _ -> issueDue purchase (Just tip) (Just storedState) now
+                Right checked@SubscriptionCheck {subscriptionState, latestCharge} -> do
+                  chargeId <- randomId cc
+                  r <- withDB' "recordSubscriptionCheck" cc $ \db -> do
+                    ended <- coverageEnded db paymentId checked
+                    -- a new charge is only recorded: it is granted once coverage ends, as a renewal
+                    unless ended $ forM_ latestCharge $ \charge -> insertSubscriptionCharge db paymentId chargeId charge now
+                    setSubscriptionState db paymentId (if ended then SSEnded else subscriptionState) now
+                    pure ended
+                  case r of
+                    Left _ -> pure $ errorResponse BSEInternal
+                    Right True -> refundRemaining purchase tip paymentId now
+                    Right False -> issueDue purchase (Just tip) (Just subscriptionState) now
+      where
+        held = isJust $ checkWait now subscription
+    refundRemaining ServicePurchase {badgePurchaseId} tip paymentId now = do
+      (lapseId, refundId) <- (,) <$> randomId cc <*> randomId cc
+      let lapsed = lapseEntry now lapseId tip
+          refund@StatementEntry {changeMonths = refunded} = debitEntry now refundId SDRefund (fromMaybe tip lapsed)
+      r <- withDB' "refundSubscription" cc $ \db -> do
+        lockPurchaseLedger db badgePurchaseId now
+        tip' <- getLedgerTip db badgePurchaseId
+        if fmap entryId tip' /= Just (entryId tip)
+          then pure Nothing
+          else do
+            appendLedgerPlan db badgePurchaseId Nothing (maybeToList lapsed <> [refund]) Nothing
+            setSubscriptionState db paymentId SSEnded now
+            Just . withoutCredential <$> issueResponse db badgePurchaseId now (Just SSEnded)
+      case r of
+        Right (Just resp) -> logInfo ("store subscription ended during coverage: " <> tshow (negate refunded) <> " months refunded") $> resp
+        Right Nothing -> logError "badge service: a subscription's ledger moved while its refund was written" $> errorResponse BSEInternal
+        Left _ -> pure $ errorResponse BSEInternal
     answered what action = fromRight (errorResponse BSEInternal) <$> withDB' what cc action
     withoutCredential = \case
       BSPBadgeCredential {receipt, statement, subscription} -> BSPBadgeCredential {credential = Nothing, receipt, statement, subscription}
@@ -1003,10 +1055,11 @@ getIssuePurchase db purchaseKey = do
   p_ <- getPurchaseByKey db purchaseKey
   forM p_ $ \p@ServicePurchase {badgePurchaseId} -> (p,,) <$> getLedgerTip db badgePurchaseId <*> getPurchaseSubscription db badgePurchaseId
 
+-- | Due with each month, within coverage too, so a refund ends the months not yet issued; at most once an interval.
 subscriptionCheckDue :: StoreChecks -> UTCTime -> StatementEntry -> PurchaseSubscription -> Bool
 subscriptionCheckDue ChecksAtEveryRequest _ _ _ = True
 subscriptionCheckDue ChecksAfterCoverage now tip subscription =
-  paidThrough tip <= now && isNothing (checkWait now subscription)
+  balanceStartTs tip <= now && isNothing (checkWait now subscription)
 
 -- | What remains of the interval since the subscription last asked its store, if anything.
 checkWait :: UTCTime -> PurchaseSubscription -> Maybe NominalDiffTime
