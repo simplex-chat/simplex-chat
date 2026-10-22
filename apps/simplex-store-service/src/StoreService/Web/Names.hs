@@ -1,12 +1,15 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module StoreService.Web.Names (Route (..), namesRoutes, namesApp) where
 
 import Data.Text (Text)
 import Network.HTTP.Types (Method)
 import Network.Wai (Request, ResponseReceived, pathInfo)
-import StoreService.Names.Env (NamesEnv)
-import StoreService.Web.Http (HttpEnv, Limit, Respond, limited, only)
+import StoreService.Names.Env (NamesEnv (..))
+import StoreService.Web.Http (HttpEnv, Limit, Respond, codeLimit, limited, only)
+import StoreService.Web.Names.Codes (codeCheckHandler)
 
 data Route = Route
   { rMethod :: Method,
@@ -15,7 +18,9 @@ data Route = Route
   }
 
 namesRoutes :: NamesEnv -> [Text] -> Maybe Route
-namesRoutes _ _ = Nothing
+namesRoutes NamesEnv {neStore} = \case
+  ["api", "code", "check"] -> Just Route {rMethod = "POST", rLimit = codeLimit, rHandler = codeCheckHandler neStore}
+  _ -> Nothing
 
 -- | Nothing for a path no route knows. The limit is taken only once the route and the method match.
 namesApp :: HttpEnv -> ([Text] -> Maybe Route) -> Request -> Respond -> Maybe (IO ResponseReceived)

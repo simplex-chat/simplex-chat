@@ -3,7 +3,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Bots.StoreService.NamesStoreTests (namesStoreTests) where
+module Bots.StoreService.NamesStoreTests (namesStoreTests, ownerA, ownerB, order, placePaid, placeCode, usable) where
 
 import Bots.StoreService.WebTests (columnsOf, digestFixture, runMigrations, withServiceStore)
 import Control.Arrow ((&&&))
