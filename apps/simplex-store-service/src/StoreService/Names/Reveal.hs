@@ -108,15 +108,18 @@ committedRegistration NamesConfig {nTLD, nChain = ChainConfig {cResolver}} NameR
       [link] -> Right $ Just link
       _ -> Left RVInvalidLink
 
--- | The deadline not past and the owner's signature first, so a request nobody signed reads nothing from the chain.
-checkIntent :: NamesConfig -> Contracts -> UTCTime -> RegisterIntent -> IO (Either RevealRefusal ())
-checkIntent NamesConfig {nChain = ChainConfig {cChainId, cSponsor}} ct now intent@RegisterIntent {riRegistration = Registration {rOwner}, riNonce} =
-  verifyRegisterIntent (sponsorDomain cChainId cSponsor) (floor $ utcTimeToPOSIXSeconds now) intent >>= \case
-    Left _ -> pure $ Left RVBadRequest
-    Right () ->
-      sponsorNonce ct rOwner >>= \case
-        Left e -> Left RVChainUnavailable <$ logWarn ("names: a reveal's nonce read failed: " <> tshow e)
-        Right nonce -> pure $ if nonce == riNonce then Right () else Left RVBadRequest
+-- | The deadline and the owner's signature first, so a request nobody signed reads nothing from the chain.
+-- A deadline before revealBefore would expire while the commitment can still register.
+checkIntent :: NamesConfig -> Contracts -> UTCTime -> Maybe Word64 -> RegisterIntent -> IO (Either RevealRefusal ())
+checkIntent NamesConfig {nChain = ChainConfig {cChainId, cSponsor}} ct now revealBefore intent@RegisterIntent {riRegistration = Registration {rOwner}, riNonce, riDeadline}
+  | not (any (riDeadline >=) revealBefore) = pure $ Left RVBadRequest
+  | otherwise =
+      verifyRegisterIntent (sponsorDomain cChainId cSponsor) (floor $ utcTimeToPOSIXSeconds now) intent >>= \case
+        Left _ -> pure $ Left RVBadRequest
+        Right () ->
+          sponsorNonce ct rOwner >>= \case
+            Left e -> Left RVChainUnavailable <$ logWarn ("names: a reveal's nonce read failed: " <> tshow e)
+            Right nonce -> pure $ if nonce == riNonce then Right () else Left RVBadRequest
 
 linksValid :: Registration -> Bool
 linksValid Registration {rContactLink, rChannelLink} = all (ofKind LKContact) rContactLink && all (ofKind LKChannel) rChannelLink

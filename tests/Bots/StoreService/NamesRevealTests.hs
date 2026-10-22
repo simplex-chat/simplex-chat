@@ -69,7 +69,7 @@ namesRevealTests = describe "StoreService names: reveal" $ do
     it "answers an identical repeat in a later phase, and refuses a different one" testRepeats
     it "answers after the name's turn, so a slow reader of one answer holds no other reveal" testAnswersAfterTurn
   describe "refused" $ do
-    it "refuses a high-s intent, a wrong signer, a stale nonce and a past deadline, writing nothing" testIntentRefusals
+    it "refuses a high-s intent, a wrong signer, a stale nonce, and a deadline past or before revealBefore, writing nothing" testIntentRefusals
     it "refuses a label not of the order, another secret or other links, writing nothing" testCommitmentRefusals
     it "refuses a commitment of another duration than the order's" testWrongDuration
     it "refuses a second link for one key with invalid_link, recording nothing" testSecondLink
@@ -342,10 +342,12 @@ testIntentRefusals = withReveals $ \Fx {fCtx = ctx@Ctx {cNode}} -> do
   unchanged <- unwritten <$> stored ctx rid
   sig <- signIntent ctx keyA alice 0 revealBefore
   other <- signIntent ctx fakeRegistrarKey alice 0 revealBefore
+  early <- signIntent ctx keyA alice 0 (revealBefore - 1)
   past <- signIntent ctx keyA alice 0 (orderSeconds - 1)
   forM_
     [ ("high s", bodyOf (highS sig) alice 0 revealBefore),
       ("another signer", bodyOf other alice 0 revealBefore),
+      ("a deadline a second before revealBefore", bodyOf early alice 0 (revealBefore - 1)),
       ("a past deadline", bodyOf past alice 0 (orderSeconds - 1))
     ]
     $ \(what, body) -> (what,) <$> reveal ctx rid body `shouldReturn` (what :: String, badRequest)
