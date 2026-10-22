@@ -246,13 +246,13 @@ testFundedThenSettledLate = withLate $ \l@Late {lStore = st} -> do
 
 testHoldNotSpent :: IO ()
 testHoldNotSpent = withLate $ \l@Late {lStore = st} -> do
-  source st "s" 10000
-  holder st "h" "s" 10000 (at 60) `shouldReturn` Right ()
-  withTransaction st $ \db -> DB.execute db "UPDATE sx_badge_service_name_balances SET reserved_by = NULL WHERE registration_id = ?" (Only ("s" :: Text))
-  logs <- capturingStderr $ settleAt l "h" (SigSettled (btcPaid 480000 480000) (at 10)) (at 10) `shouldReturn` Right ISPaid
-  logs `shouldSatisfy` logged "ERROR" "queued registration h as paid, but the balance of registration s it held could not be spent"
-  nrPhase <$> reg st "h" `shouldReturn` PQueued
-  balanceOf st "s" `shouldReturn` Just (10000, 10000, 0)
+  source st "unspentsrc" 10000
+  holder st "unspent" "unspentsrc" 10000 (at 60) `shouldReturn` Right ()
+  withTransaction st $ \db -> DB.execute db "UPDATE sx_badge_service_name_balances SET reserved_by = NULL WHERE registration_id = ?" (Only ("unspentsrc" :: Text))
+  logs <- capturingStderr $ settleAt l "unspent" (SigSettled (btcPaid 480000 480000) (at 10)) (at 10) `shouldReturn` Right ISPaid
+  logs `shouldSatisfy` logged "ERROR" "queued registration unspent as paid, but the balance of registration unspentsrc it held could not be spent"
+  nrPhase <$> reg st "unspent" `shouldReturn` PQueued
+  balanceOf st "unspentsrc" `shouldReturn` Just (10000, 10000, 0)
 
 -- | The unique index keeping one live order per commitment is dropped, so a second live order can meet the first at settlement.
 meetsLiveOrder :: DBStore -> Text -> IO ()
@@ -300,16 +300,16 @@ testSettlementBeforeRefund = withLate $ \l@Late {lStore = st} -> do
 
 testLateCredited :: IO ()
 testLateCredited = withLate $ \l@Late {lStore = st} -> do
-  source st "s" 10000
-  holder st "h" "s" 10000 (at 60) `shouldReturn` Right ()
-  settleAt l "h" (SigClosed nothingPaid) (at 61) `shouldReturn` Right ISExpired
-  figures st "s" t0 `shouldReturn` Just (10000, 10000, 0, Nothing)
-  logs <- readSignal l "h" (SigClosed (btcPaid lateUnits lateUnits))
-  logs `shouldSatisfy` logged "INFO" "invoice inv-h credited 19200 cents to the balance of registration h for 320000 units at 60000.5 (invoice 62500, current 60000.5)"
-  logs `shouldNotSatisfy` T.isInfixOf "[ERROR"
-  balanceOf st "h" `shouldReturn` Just (19200, 19200, 0)
-  creditsOf st "h" `shouldReturn` [(Just lateUnits, Just "62500", Just "60000.5", Just "60000.5", 19200)]
-  figures st "s" t0 `shouldReturn` Just (10000, 10000, 0, Nothing)
+  source st "paid" 10000
+  holder st "credited" "paid" 10000 (at 60) `shouldReturn` Right ()
+  settleAt l "credited" (SigClosed nothingPaid) (at 61) `shouldReturn` Right ISExpired
+  figures st "paid" t0 `shouldReturn` Just (10000, 10000, 0, Nothing)
+  logs <- readSignal l "credited" (SigClosed (btcPaid lateUnits lateUnits))
+  logs `shouldSatisfy` logged "INFO" "invoice inv-credited credited 19200 cents to the balance of registration credited for 320000 units at 60000.5 (invoice 62500, current 60000.5)"
+  logs `shouldNotSatisfy` logged "ERROR" "inv-credited"
+  balanceOf st "credited" `shouldReturn` Just (19200, 19200, 0)
+  creditsOf st "credited" `shouldReturn` [(Just lateUnits, Just "62500", Just "60000.5", Just "60000.5", 19200)]
+  figures st "paid" t0 `shouldReturn` Just (10000, 10000, 0, Nothing)
 
 testRisingPrice :: IO ()
 testRisingPrice = withLate $ \l@Late {lStore = st} -> do
@@ -360,70 +360,70 @@ testUnconfirmedThenSettled = withLate $ \l@Late {lStore = st} -> do
 -- | The order was placed long before the payment, whose own row the window counts from.
 testNeverConfirmed :: IO ()
 testNeverConfirmed = withLate $ \l@Late {lStore = st} -> do
-  closedOrder l "x" False
+  closedOrder l "never" False
   let seenAt = at (60 * 24 * 5)
-      alert = "invoice inv-x of order x: 320000 satoshi received, 0 satoshi confirmed, 0 satoshi credited; refund by hand only a transaction confirmed on chain that BTCPay no longer monitors; one still Processing there waits"
-  settleAt l "x" (SigClosed (btcPaid lateUnits 0)) seenAt `shouldReturn` Right ISExpired
-  alertsAt l (Right stubRate) (pastWindow seenAt (-60)) >>= (`shouldNotSatisfy` T.isInfixOf "invoice inv-x of order x")
-  lateWaitOf st "x" `shouldReturn` Just LWConfirming
+      alert = "invoice inv-never of order never: 320000 satoshi received, 0 satoshi confirmed, 0 satoshi credited; refund by hand only a transaction confirmed on chain that BTCPay no longer monitors; one still Processing there waits"
+  settleAt l "never" (SigClosed (btcPaid lateUnits 0)) seenAt `shouldReturn` Right ISExpired
+  alertsAt l (Right stubRate) (pastWindow seenAt (-60)) >>= (`shouldNotSatisfy` T.isInfixOf "invoice inv-never of order never")
+  lateWaitOf st "never" `shouldReturn` Just LWConfirming
   logs <- alertsAt l (Right stubRate) (pastWindow seenAt 60)
   (count alert logs, logged "ERROR" alert logs) `shouldBe` (1, True)
-  lateWaitOf st "x" `shouldReturn` Just LWSupport
-  alertsAt l (Right stubRate) (pastWindow seenAt (24 * 3600 + 60)) >>= (`shouldNotSatisfy` T.isInfixOf "invoice inv-x of order x")
-  balanceOf st "x" `shouldReturn` Nothing
+  lateWaitOf st "never" `shouldReturn` Just LWSupport
+  alertsAt l (Right stubRate) (pastWindow seenAt (24 * 3600 + 60)) >>= (`shouldNotSatisfy` T.isInfixOf "invoice inv-never of order never")
+  balanceOf st "never" `shouldReturn` Nothing
 
 testPartCreditAlerted :: IO ()
 testPartCreditAlerted = withLate $ \l@Late {lStore = st} -> do
-  closedOrder l "x" False
-  settleAt l "x" (SigClosed (btcPaid lateUnits 160000)) (at 100) `shouldReturn` Right ISExpired
+  closedOrder l "part" False
+  settleAt l "part" (SigClosed (btcPaid lateUnits 160000)) (at 100) `shouldReturn` Right ISExpired
   void $ passAt l (at 101)
-  balanceOf st "x" `shouldReturn` Just (9600, 9600, 0)
+  balanceOf st "part" `shouldReturn` Just (9600, 9600, 0)
   logs <- alertsAt l (Right stubRate) (pastWindow (at 100) 60)
-  count "invoice inv-x of order x: 320000 satoshi received, 160000 satoshi confirmed, 160000 satoshi credited; refund by hand only" logs `shouldBe` 1
-  alertsAt l (Right stubRate) (pastWindow (at 100) (24 * 3600 + 60)) >>= (`shouldNotSatisfy` T.isInfixOf "invoice inv-x")
+  count "invoice inv-part of order part: 320000 satoshi received, 160000 satoshi confirmed, 160000 satoshi credited; refund by hand only" logs `shouldBe` 1
+  alertsAt l (Right stubRate) (pastWindow (at 100) (24 * 3600 + 60)) >>= (`shouldNotSatisfy` T.isInfixOf "invoice inv-part of order part")
 
 testMoneroZero :: IO ()
 testMoneroZero = withLate $ \l@Late {lStore = st} -> do
-  closedOrder l "x" False
-  logs <- readSignal l "x" (SigFunded (btcPaid 0 0) {rcvCrypto = Nothing} PaidInFull)
-  logs `shouldSatisfy` logged "INFO" "invoice inv-x holds money of its closed order not yet confirmed"
-  withTransaction st (\db -> latePending db (invOf "x")) `shouldReturn` Just LPConfirming
+  closedOrder l "monero" False
+  logs <- readSignal l "monero" (SigFunded (btcPaid 0 0) {rcvCrypto = Nothing} PaidInFull)
+  logs `shouldSatisfy` logged "INFO" "invoice inv-monero holds money of its closed order not yet confirmed"
+  withTransaction st (\db -> latePending db (invOf "monero")) `shouldReturn` Just LPConfirming
   now <- getCurrentTime
-  alertsAt l (Right stubRate) (addUTCTime 3600 now) >>= (`shouldNotSatisfy` T.isInfixOf "invoice inv-x")
-  balanceOf st "x" `shouldReturn` Nothing
+  alertsAt l (Right stubRate) (addUTCTime 3600 now) >>= (`shouldNotSatisfy` T.isInfixOf "invoice inv-monero of order monero")
+  balanceOf st "monero" `shouldReturn` Nothing
 
 testRateFails :: IO ()
 testRateFails = withLate $ \l@Late {lStore = st} -> do
-  closedOrder l "x" False
-  closedOrder l "y" False
-  setRate l (Left $ ProviderError "rates down")
-  logs <- readSignal l "x" (SigClosed (btcPaid lateUnits lateUnits))
-  settleAt l "y" (SigClosed (btcPaid lateUnits lateUnits)) (at 70) `shouldReturn` Right ISExpired
+  closedOrder l "fail1" False
+  closedOrder l "fail2" False
+  setRate l (Left $ ProviderError "rates down for fail1")
+  logs <- readSignal l "fail1" (SigClosed (btcPaid lateUnits lateUnits))
+  settleAt l "fail2" (SigClosed (btcPaid lateUnits lateUnits)) (at 70) `shouldReturn` Right ISExpired
   more <- passAt l (at 71)
-  count "late credits wait, as the current rate cannot be read" (logs <> more) `shouldBe` 1
-  lateWaitOf st "x" `shouldReturn` Just LWCrediting
-  mapM (balanceOf st) ["x", "y"] `shouldReturn` [Nothing, Nothing]
+  count "late credits wait, as the current rate cannot be read; each pass tries again: rates down for fail1" (logs <> more) `shouldBe` 1
+  lateWaitOf st "fail1" `shouldReturn` Just LWCrediting
+  mapM (balanceOf st) ["fail1", "fail2"] `shouldReturn` [Nothing, Nothing]
   setRate l (Right stubRate)
   void $ passAt l (at 72)
-  mapM (balanceOf st) ["x", "y"] `shouldReturn` replicate 2 (Just (19200, 19200, 0))
-  lateWaitOf st "x" `shouldReturn` Nothing
+  mapM (balanceOf st) ["fail1", "fail2"] `shouldReturn` replicate 2 (Just (19200, 19200, 0))
+  lateWaitOf st "fail1" `shouldReturn` Nothing
 
 testRateFloor :: IO ()
 testRateFloor = withLate $ \l@Late {lStore = st} -> do
-  closedOrder l "x" False
+  closedOrder l "floored" False
   let floored = rateOf "31000" 31000
   setRate l (Right floored)
-  settleAt l "x" (SigClosed (btcPaid lateUnits lateUnits)) (at 70) `shouldReturn` Right ISExpired
+  settleAt l "floored" (SigClosed (btcPaid lateUnits lateUnits)) (at 70) `shouldReturn` Right ISExpired
   logs <- passAt l (at 71)
-  logs `shouldSatisfy` logged "ERROR" "invoice inv-x is not credited: the current rate 31000 is below half its rate 62500"
-  balanceOf st "x" `shouldReturn` Nothing
-  lateWaitOf st "x" `shouldReturn` Just LWSupport
+  logs `shouldSatisfy` logged "ERROR" "invoice inv-floored is not credited: the current rate 31000 is below half its rate 62500"
+  balanceOf st "floored" `shouldReturn` Nothing
+  lateWaitOf st "floored" `shouldReturn` Just LWSupport
   alertsAt l (Right floored) (pastWindow (at 70) 60)
-    >>= (`shouldSatisfy` logged "ERROR" "invoice inv-x of order x: 320000 satoshi received, 320000 satoshi confirmed, 0 satoshi credited; confirmed; the coin's price fell by more than half since the invoice (62500, 31000); the owner decides: credit at the current rate, or refund by hand")
+    >>= (`shouldSatisfy` logged "ERROR" "invoice inv-floored of order floored: 320000 satoshi received, 320000 satoshi confirmed, 0 satoshi credited; confirmed; the coin's price fell by more than half since the invoice (62500, 31000); the owner decides: credit at the current rate, or refund by hand")
   setRate l (Right $ rateOf "31250" 31250)
   void $ passAt l (at 72)
-  creditsOf st "x" `shouldReturn` [(Just lateUnits, Just "62500", Just "31250", Just "31250", 10000)]
-  lateWaitOf st "x" `shouldReturn` Nothing
+  creditsOf st "floored" `shouldReturn` [(Just lateUnits, Just "62500", Just "31250", Just "31250", 10000)]
+  lateWaitOf st "floored" `shouldReturn` Nothing
 
 testOneRateReadPerPass :: IO ()
 testOneRateReadPerPass = withLate $ \l@Late {lStore = st} -> do
@@ -438,14 +438,14 @@ testOneRateReadPerPass = withLate $ \l@Late {lStore = st} -> do
 
 testHighSpeed :: IO ()
 testHighSpeed = withLate $ \l@Late {lStore = st} -> do
-  closedOrder l "x" False
+  closedOrder l "hs" False
   let highSpeed = (btcPaid lateUnits 0) {rcvUncreditable = Just UCHighSpeed}
-  settleAt l "x" (SigSettled highSpeed (at 70)) (at 70) `shouldReturn` Right ISPaid
+  settleAt l "hs" (SigSettled highSpeed (at 70)) (at 70) `shouldReturn` Right ISPaid
   void $ passAt l (at 71)
-  balanceOf st "x" `shouldReturn` Nothing
-  lateWaitOf st "x" `shouldReturn` Just LWSupport
+  balanceOf st "hs" `shouldReturn` Nothing
+  lateWaitOf st "hs" `shouldReturn` Just LWSupport
   alertsAt l (Right stubRate) (pastWindow (at 70) 60)
-    >>= (`shouldSatisfy` logged "ERROR" "invoice inv-x of order x: 320000 satoshi received, 0 satoshi confirmed, 0 satoshi credited; the invoice was made under HighSpeed")
+    >>= (`shouldSatisfy` logged "ERROR" "invoice inv-hs of order hs: 320000 satoshi received, 0 satoshi confirmed, 0 satoshi credited; the invoice was made under HighSpeed")
 
 testCreditedByPass :: IO ()
 testCreditedByPass = withLate $ \l@Late {lStore = st} -> do
@@ -470,13 +470,13 @@ testLiveAgain = withLate $ \l@Late {lStore = st} -> do
 
 testTwoInstancesAlert :: IO ()
 testTwoInstancesAlert = withLate $ \l -> do
-  closedOrder l "x" False
-  settleAt l "x" (SigClosed (btcPaid lateUnits 0)) (at 70) `shouldReturn` Right ISExpired
-  let first = "invoice inv-x of order x: 320000 satoshi received"
+  closedOrder l "twice" False
+  settleAt l "twice" (SigClosed (btcPaid lateUnits 0)) (at 70) `shouldReturn` Right ISExpired
+  let first = "invoice inv-twice of order twice: 320000 satoshi received"
   logs <- (<>) <$> alertsAt l (Right stubRate) (pastWindow (at 70) 60) <*> alertsAt l (Right stubRate) (pastWindow (at 70) 60)
   count first logs `shouldBe` 1
-  settleAt l "x" (SigClosed (btcPaid 400000 0)) (at 80) `shouldReturn` Right ISExpired
-  alertsAt l (Right stubRate) (pastWindow (at 70) 120) >>= (`shouldSatisfy` logged "ERROR" "invoice inv-x of order x: 400000 satoshi received, 0 satoshi confirmed")
+  settleAt l "twice" (SigClosed (btcPaid 400000 0)) (at 80) `shouldReturn` Right ISExpired
+  alertsAt l (Right stubRate) (pastWindow (at 70) 120) >>= (`shouldSatisfy` logged "ERROR" "invoice inv-twice of order twice: 400000 satoshi received, 0 satoshi confirmed")
 
 testFallingSum :: IO ()
 testFallingSum = withLate $ \l@Late {lStore = st} -> do
