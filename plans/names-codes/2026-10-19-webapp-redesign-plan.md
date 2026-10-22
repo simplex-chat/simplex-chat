@@ -1066,7 +1066,7 @@ function cardUnconfirmedScreen(s: OrderState): HTMLElement {
       : "The payment has not been confirmed. This page keeps checking: come back to it later, or quote the reference below." })
 }
 ```
-`buildUnreadable`, `buildUnknownLink`, `buildPaidByInvoice`, `buildNotOnDevice`, `buildPriceChanged`, `buildCodeIssued`, `buildTakenWithCode` become `outcome()` calls with their existing words. `buildTaken` keeps both options ("Choose another name" to `/#/?retarget=<id>`, "Take a code") as a `screen()` with the failed stages, one sentence and the two buttons stacked. `buildFailed` keeps Try again or, once the code is refused, "Search a name". `reorderAfterCancel` is deleted with the card-failed page's "Get a new invoice".
+`buildUnreadable`, `buildUnknownLink`, `buildPaidByInvoice`, `buildNotOnDevice`, `buildPriceChanged`, `buildCodeIssued`, `buildTakenWithCode` become `outcome()` calls with their existing words. `buildTaken` keeps both options ("Choose another name" to `/#/?retarget=<id>`, "Take a code") as a `screen()` with the failed stages, one sentence and the two buttons stacked. (Superseded 2026-10-22: there is no code for a taken order, and the taken page offers the order's balance with Use and Refund; `buildCodeIssued` goes. See the contract's Appendix A, items 36–38, and tasks W1f-1 and W1f-3.) `buildFailed` keeps Try again or, once the code is refused, "Search a name". `reorderAfterCancel` is deleted with the card-failed page's "Get a new invoice".
 
 - [ ] **Step 4: One rate-limit screen** in `src/views/shell.ts`, used by the checkout's `status:too-many`:
 
