@@ -154,7 +154,7 @@ The order, `/api/name/register` and the `/name` retarget answer a failed chain r
 
 Search fetches and link-preview fetches have separate service-wide bounds (4 and 2 at a time), a 3 s timeout each that also bounds the wait for a slot, and a 10-minute cache. The hosts are the link's servers (the authority of an `https://` link, or the server hosts inside a `simplex:/` link). A public IP literal passes, since SimpleX servers may be addressed by IP. Every host of the link is checked before the chat core fetches: an IP literal as it is, a name by resolving it; a private, loopback, link-local, unique-local, CGNAT, unspecified or multicast address, a `.onion` host or an unresolvable name means no fetch. A link with several hosts is fetched only if all pass. A link not fetched stays valid: its profile is `unavailable`. The check is best effort, since the chat core resolves again when it connects (DNS rebinding remains possible); an egress rule in the deployment denies the service's traffic to private ranges. A fetch that fails or gets no slot in time gives `profile: unread`. Without a profile the chat shows with the link's kind and the default icon. The answer also carries `gracePeriod` (the registrar's 90 days), so the page says when an expired name can be registered again.
 
-**The page around the search** is the simplex.domains landing: the headline "Your SimpleX domain" and its subtitle. Every page closes with "Invest in SimpleX Chat to get a name for 5 years." and a link to Wefunder.
+**The page around the search** is the simplex.domains landing: the headline "Your SimpleX domain" and its subtitle. Every page closes with "Invest in SimpleX Chat and get a free name." and a link to Wefunder.
 
 ## 4. Price and term
 
