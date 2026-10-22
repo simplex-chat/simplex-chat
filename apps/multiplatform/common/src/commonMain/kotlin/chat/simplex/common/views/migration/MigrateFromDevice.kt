@@ -479,12 +479,34 @@ private suspend fun MutableState<MigrationFromState>.verifyDatabasePassphrase(db
   }
 }
 
+private fun showDatabaseTooLargeAlert(bytes: Long) {
+  AlertManager.shared.showAlertMsg(
+    generalGetString(MR.strings.migrate_from_device_database_too_large_title),
+    String.format(generalGetString(MR.strings.migrate_from_device_database_too_large_desc), formatBytes(bytes), formatBytes(MAX_FILE_SIZE_XFTP_HARD))
+  )
+}
+
 private fun MutableState<MigrationFromState>.exportArchive() {
   withLongRunningApi {
+    val dataBytes = exportDataBytes()
+    if (dataBytes > MAX_FILE_SIZE_XFTP_HARD) {
+      showDatabaseTooLargeAlert(dataBytes)
+      state = MigrationFromState.UploadConfirmation
+      return@withLongRunningApi
+    }
+    if (!confirmExportStorage(getMigrationTempFilesDirectory(), dataBytes)) {
+      state = MigrationFromState.UploadConfirmation
+      return@withLongRunningApi
+    }
     try {
       getMigrationTempFilesDirectory().mkdir()
       val (archivePath, archiveErrors) = exportChatArchive(chatModel, getMigrationTempFilesDirectory(), mutableStateOf(""))
-      if (archiveErrors.isEmpty()) {
+      val archiveBytes = File(archivePath).length()
+      if (archiveBytes > MAX_FILE_SIZE_XFTP_HARD) {
+        File(archivePath).delete()
+        showDatabaseTooLargeAlert(archiveBytes)
+        state = MigrationFromState.UploadConfirmation
+      } else if (archiveErrors.isEmpty()) {
         uploadArchive(archivePath)
       } else {
         showArchiveExportedWithErrorsAlert(generalGetString(MR.strings.chat_database_exported_migrate), archiveErrors) {

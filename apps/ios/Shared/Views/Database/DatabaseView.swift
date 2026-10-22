@@ -17,6 +17,7 @@ enum DatabaseAlert: Identifiable {
     case archiveImported
     case archiveImportedWithErrors(archiveErrors: [ArchiveError])
     case archiveExportedWithErrors(archivePath: URL, archiveErrors: [ArchiveError])
+    case lowStorage(required: Int64, available: Int64)
     case deleteChat
     case chatDeleted
     case deleteLegacyDatabase
@@ -32,6 +33,7 @@ enum DatabaseAlert: Identifiable {
         case .archiveImported: return "archiveImported"
         case .archiveImportedWithErrors: return "archiveImportedWithErrors"
         case .archiveExportedWithErrors: return "archiveExportedWithErrors"
+        case .lowStorage: return "lowStorage"
         case .deleteChat: return "deleteChat"
         case .chatDeleted: return "chatDeleted"
         case .deleteLegacyDatabase: return "deleteLegacyDatabase"
@@ -306,6 +308,10 @@ struct DatabaseView: View {
                     showShareSheet(items: [archivePath])
                 }
             )
+        case let .lowStorage(required, available):
+            return lowStorageAlert(required, available, onContinue: {
+                Task { await exportArchiveNow() }
+            }, onCancel: {})
         case .deleteChat:
             return Alert(
                 title: Text("Delete chat profile?"),
@@ -469,6 +475,21 @@ struct DatabaseView: View {
         await MainActor.run {
             progressIndicator = true
         }
+        if let s = await exportStorageShortfall(await exportDataBytes()) {
+            await MainActor.run {
+                alert = .lowStorage(required: s.required, available: s.available)
+                progressIndicator = false
+            }
+        } else {
+            await exportArchiveNow()
+        }
+        return false
+    }
+
+    private func exportArchiveNow() async {
+        await MainActor.run {
+            progressIndicator = true
+        }
         do {
             let (archivePath, archiveErrors) = try await exportChatArchive()
             if archiveErrors.isEmpty {
@@ -486,7 +507,6 @@ struct DatabaseView: View {
                 progressIndicator = false
             }
         }
-        return false
     }
 
     static func importArchive(

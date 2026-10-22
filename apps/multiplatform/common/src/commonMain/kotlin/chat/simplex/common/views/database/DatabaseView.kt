@@ -603,6 +603,32 @@ fun deleteDatabaseBackups() {
   File(dataDir, "$agentDatabaseFileName.bak").delete()
 }
 
+// export holds a copy of the data in databaseExportDir while it writes the archive to archiveDir,
+// where a migration upload then also writes an encrypted copy of the archive
+suspend fun confirmExportStorage(archiveDir: File = databaseExportDir, dataBytes: Long = exportDataBytes()): Boolean {
+  databaseExportDir.mkdirs()
+  archiveDir.mkdirs()
+  val (shortDir, requiredBytes) = listOf(archiveDir to 2L * dataBytes, databaseExportDir to dataBytes)
+    .firstOrNull { (dir, needed) -> dir.usableSpace < needed } ?: return true
+  val availableBytes = shortDir.usableSpace
+  val proceed = CompletableDeferred<Boolean>()
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.not_enough_storage_title),
+    text = String.format(generalGetString(MR.strings.not_enough_storage_desc), formatBytes(requiredBytes), formatBytes(availableBytes)),
+    confirmText = generalGetString(MR.strings.continue_to_next_step),
+    onConfirm = { proceed.complete(true) },
+    onDismiss = { proceed.complete(false) },
+    onDismissRequest = { proceed.complete(false) },
+  )
+  return proceed.await()
+}
+
+fun exportDataBytes(): Long =
+  directoryFileCountAndSize(appFilesDir.absolutePath).second +
+    directoryFileCountAndSize(wallpapersDir.absolutePath).second +
+    File(dataDir, chatDatabaseFileName).length() +
+    File(dataDir, agentDatabaseFileName).length()
+
 private suspend fun exportArchive(
   m: ChatModel,
   progressIndicator: MutableState<Boolean>,
@@ -610,6 +636,10 @@ private suspend fun exportArchive(
   saveArchiveLauncher: FileChooserLauncher
 ): Boolean {
   progressIndicator.value = true
+  if (!confirmExportStorage()) {
+    progressIndicator.value = false
+    return false
+  }
   try {
     val (archiveFile, archiveErrors) = exportChatArchive(m, null, chatArchiveFile)
     chatArchiveFile.value = archiveFile

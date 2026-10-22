@@ -35,6 +35,7 @@ private enum MigrateFromDeviceViewAlert: Identifiable {
     case databaseError(_ title: LocalizedStringKey = "Database error", message: String)
     case unknownError(_ title: LocalizedStringKey = "Unknown error", message: String)
     case archiveExportedWithErrors(archivePath: URL, archiveErrors: [ArchiveError])
+    case lowStorage(required: Int64, available: Int64)
 
     case error(title: LocalizedStringKey, error: String = "")
 
@@ -50,6 +51,7 @@ private enum MigrateFromDeviceViewAlert: Identifiable {
         case let .databaseError(title, message): return "\(title) \(message)"
         case let .unknownError(title, message): return "\(title) \(message)"
         case let .archiveExportedWithErrors(path, _): return "archiveExportedWithErrors \(path)"
+        case .lowStorage: return "lowStorage"
 
         case let .error(title, _): return "error \(title)"
         }
@@ -183,6 +185,12 @@ struct MigrateFromDevice: View {
                         Task { await uploadArchive(path: archivePath) }
                     }
                 )
+            case let .lowStorage(required, available):
+                return lowStorageAlert(required, available, onContinue: {
+                    Task { await archiveAndUpload() }
+                }, onCancel: {
+                    migrationState = .uploadConfirmation
+                })
             case let .error(title, error):
                 return Alert(title: Text(title), message: Text(error))
             }
@@ -465,22 +473,43 @@ struct MigrateFromDevice: View {
 
     private func exportArchive() {
         Task {
-            do {
-                try? FileManager.default.createDirectory(at: getMigrationTempFilesDirectory(), withIntermediateDirectories: true)
-                let (archivePath, errs) = try await exportChatArchive(getMigrationTempFilesDirectory())
-                if errs.isEmpty {
-                    await uploadArchive(path: archivePath)
-                } else {
-                    await MainActor.run {
-                        alert = .archiveExportedWithErrors(archivePath: archivePath, archiveErrors: errs)
-                        migrationState = .uploadConfirmation
-                    }
-                }
-            } catch let error {
+            let dataBytes = await exportDataBytes()
+            if dataBytes > MAX_FILE_SIZE_XFTP_HARD {
                 await MainActor.run {
-                    alert = .error(title: "Error exporting chat database", error: responseError(error))
+                    alert = databaseTooLargeAlert(dataBytes)
                     migrationState = .uploadConfirmation
                 }
+            } else if let s = await exportStorageShortfall(dataBytes) {
+                await MainActor.run { alert = .lowStorage(required: s.required, available: s.available) }
+            } else {
+                await archiveAndUpload()
+            }
+        }
+    }
+
+    private func archiveAndUpload() async {
+        do {
+            try? FileManager.default.createDirectory(at: getMigrationTempFilesDirectory(), withIntermediateDirectories: true)
+            let (archivePath, errs) = try await exportChatArchive(getMigrationTempFilesDirectory())
+            let archiveBytes = (try? FileManager.default.attributesOfItem(atPath: archivePath.path)[.size] as? Int64) ?? 0
+            if archiveBytes > MAX_FILE_SIZE_XFTP_HARD {
+                try? FileManager.default.removeItem(at: archivePath)
+                await MainActor.run {
+                    alert = databaseTooLargeAlert(archiveBytes)
+                    migrationState = .uploadConfirmation
+                }
+            } else if errs.isEmpty {
+                await uploadArchive(path: archivePath)
+            } else {
+                await MainActor.run {
+                    alert = .archiveExportedWithErrors(archivePath: archivePath, archiveErrors: errs)
+                    migrationState = .uploadConfirmation
+                }
+            }
+        } catch let error {
+            await MainActor.run {
+                alert = .error(title: "Error exporting chat database", error: responseError(error))
+                migrationState = .uploadConfirmation
             }
         }
     }
@@ -783,4 +812,61 @@ struct MigrateFromDevice_Previews: PreviewProvider {
     static var previews: some View {
         MigrateFromDevice(showProgressOnSettings: Binding.constant(false))
     }
+}
+
+private func databaseTooLargeAlert(_ bytes: Int64) -> MigrateFromDeviceViewAlert {
+    .error(
+        title: "Database is too large",
+        error: String.localizedStringWithFormat(
+            NSLocalizedString("The database (%@) is larger than the maximum size supported for migration (%@).", comment: "migration alert"),
+            ByteCountFormatter.string(fromByteCount: bytes, countStyle: .binary),
+            ByteCountFormatter.string(fromByteCount: MAX_FILE_SIZE_XFTP_HARD, countStyle: .binary)
+        )
+    )
+}
+
+func exportDataBytes() async -> Int64 {
+    await Task.detached { estimatedExportBytes() }.value
+}
+
+// export transiently holds a copy of the data and the archive of it
+func exportStorageShortfall(_ dataBytes: Int64) async -> (required: Int64, available: Int64)? {
+    let required = dataBytes * 2
+    guard let available = availableImportantBytes(at: getDocumentsDirectory()), available < required else { return nil }
+    return (required, available)
+}
+
+func lowStorageAlert(_ required: Int64, _ available: Int64, onContinue: @escaping () -> Void, onCancel: @escaping () -> Void) -> Alert {
+    Alert(
+        title: Text("You may not have enough storage"),
+        message: Text(String.localizedStringWithFormat(
+            NSLocalizedString("Exporting the database may need about %@ of free space, but only %@ is available. Continue anyway?", comment: "alert message"),
+            ByteCountFormatter.string(fromByteCount: required, countStyle: .binary),
+            ByteCountFormatter.string(fromByteCount: available, countStyle: .binary)
+        )),
+        primaryButton: .default(Text("Continue"), action: onContinue),
+        secondaryButton: .cancel(onCancel)
+    )
+}
+
+private func estimatedExportBytes() -> Int64 {
+    let dbPrefix = getAppDatabasePath().path
+    return filesSize(getAppFilesDirectory()) + filesSize(getWallpaperDirectory()) + fileContentSize(dbPrefix + "_chat.db") + fileContentSize(dbPrefix + "_agent.db")
+}
+
+private func filesSize(_ dir: URL) -> Int64 {
+    let urls = (try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: [.fileSizeKey, .isRegularFileKey])) ?? []
+    return urls.reduce(0) { sum, url in
+        let v = try? url.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey])
+        return sum + (v?.isRegularFile == true ? Int64(v?.fileSize ?? 0) : 0)
+    }
+}
+
+private func fileContentSize(_ path: String) -> Int64 {
+    (try? FileManager.default.attributesOfItem(atPath: path)[.size] as? Int64) ?? 0
+}
+
+private func availableImportantBytes(at url: URL) -> Int64? {
+    (try? url.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey]))?
+        .volumeAvailableCapacityForImportantUsage
 }
