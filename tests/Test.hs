@@ -134,6 +134,7 @@ main = do
             storeServiceTests
             describe "managed group" badgeGroupIntegrationTests
           describe "StoreService names: boot" namesBootTests
+          namesCodesChatTests
           namesProfilesChatTests
           describe "Remote session" remoteTests
 #if !defined(dbPostgres)

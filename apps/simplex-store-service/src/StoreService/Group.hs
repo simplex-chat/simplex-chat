@@ -28,6 +28,7 @@ import StoreService.Codes (issueFailedText, issueOneCode, revokeBadgeCode, singl
 import StoreService.Config (GroupConfig (..))
 import StoreService.Group.Command (CmdAction (..), GroupCmd (..), groupCmdAction, groupCommands)
 import StoreService.Log (logError, logInfo, logWarn)
+import StoreService.Names.Codes (issueNameCode)
 import StoreService.Store (CodeTracker (..), ManagedGroup (..), RevokeResult (..), clearCodeGroupItems, getCodeTracker, getEditableTrackers, getManagedGroup, insertManagedGroup, markOwnerBootstrapped, setCodeGroupItem)
 import StoreService.Store.Invoices (truncateToSecond)
 import Control.Concurrent.STM (TQueue, atomically, flushTQueue, readTQueue, readTVarIO, writeTQueue)
@@ -46,7 +47,7 @@ import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime, nominalDay)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import GHC.Stack (HasCallStack, withFrozenCallStack)
-import Simplex.Chat.Badges.Code (BadgeCode, formatBadgeCode, parseBadgeCode)
+import Simplex.Chat.Badges.Code (BadgeCode, NameCode (..), formatBadgeCode, formatNameCode, parseBadgeCode)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.Bot.Store (withDB')
 import Simplex.Chat.Controller
@@ -266,19 +267,21 @@ runGroupCmd cc groupId = \case
             now <- truncateToSecond <$> getCurrentTime
             sendGroupText cc groupId ("tracker, code " <> tshow badgeCodeId <> " is lost") (initialTrackerBody code uses)
               >>= mapM_ (\iid -> withDB' "setCodeGroupItem" cc $ \db -> setCodeGroupItem db badgeCodeId iid now)
-  GCBulk bt months count -> do
-    codes <- replicateM count (issueOneCode cc bt months CPSFree singleUse)
-    let (errs, ok) = partitionEithers codes
-        issued = map (formatBadgeCode . fst) ok
-    reply . T.intercalate "\n" $ case errs of
-      [] -> issued
-      _ : _ -> issued <> ["Issued " <> tshow (length issued) <> " of " <> tshow count <> " codes. The remaining codes could not be issued."]
+  GCBulk bt months count -> issueMany count (fmap (formatBadgeCode . fst) <$> issueOneCode cc bt months CPSFree singleUse)
+  GCIssueName len years ->
+    issueNameCode cc len years CPSFree >>= reply . either (const issueFailedText) (("Code: " <>) . formatNameCode . NCPrepaid)
+  GCBulkName len years count -> issueMany count (fmap (formatNameCode . NCPrepaid) <$> issueNameCode cc len years CPSFree)
   -- Naming the code tells concurrent revokes apart; the command already made it public.
   GCRevoke code -> do
     outcome <- either id id <$> revokeWithTracker cc code
     reply (formatBadgeCode code <> ": " <> outcome)
   where
     reply = void . sendGroupText cc groupId "reply, any codes in it are lost"
+    issueMany count issueOne = do
+      (errs, issued) <- partitionEithers <$> replicateM count issueOne
+      reply . T.intercalate "\n" $ case errs of
+        [] -> issued
+        _ : _ -> issued <> ["Issued " <> tshow (length issued) <> " of " <> tshow count <> " codes. The remaining codes could not be issued."]
 
 -- The label says what is lost when the send fails, since the log line is its only trace.
 sendGroupText :: HasCallStack => ChatController -> GroupId -> Text -> Text -> IO (Maybe ChatItemId)

@@ -22,8 +22,8 @@ import Test.Hspec
 badgeGroupTests :: Spec
 badgeGroupTests = describe "badge group" $ do
   let p = groupCmdAction GROwner
-      issueUsage = ReplyText "Usage: /issue <type> [months <M>] [uses <N>]"
-      bulkUsage = ReplyText "Usage: /bulk <type> [months <M>] count <B>"
+      issueUsage = ReplyText "Usage: /issue <type> [months <M>] [uses <N>], or name <length> [years <Y>]"
+      bulkUsage = ReplyText "Usage: /bulk <type> [months <M>] count <B>, or name <length> [years <Y>] count <B>"
       revokeUsage = ReplyText "Usage: /revoke <code>"
   it "issue defaults" $ p "/issue supporter" `shouldBe` RunCmd (GCIssue BTSupporter 1 1)
   it "issue with months and uses" $ p "/issue legend months 6 uses 50" `shouldBe` RunCmd (GCIssue BTLegend 6 50)

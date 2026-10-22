@@ -26,10 +26,12 @@ import Network.HTTP.Types.Status (statusCode)
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Chat.Badges.Code (NameCode (..), NamePrepaidCode, formatNameCode, namePrepaidCodeHash, parseNameCode, randomNamePrepaidCode)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
+import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import StoreService.Config (ListenerConfig (..))
+import StoreService.Group.Command (CmdAction (..), GroupCmd (..), groupCmdAction)
 import StoreService.Names.Codes
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Store (NewPrepaidCode (..), PrepaidCode (..), getPrepaidCode, insertPrepaidCode, revokePrepaidCode, spendPrepaidCode)
@@ -57,6 +59,9 @@ namesCodesTests = describe "StoreService names: prepaid codes" $ do
     it "gives the code back when the write refuses" testReserveWriteRefused
     it "lets one of two concurrent reservations of a code win, the other answered code_reserved" testConcurrentReserve
     it "releases and spends a code only after the write, and only for its holder" testReleaseSpend
+  describe "group commands" $ do
+    it "parses /issue name and /bulk name with the length, years and count" testGroupNameCommands
+    it "answers the usage to a length outside 6-63 or with a leading zero, and to years outside 2-10" testGroupNameCommandsRefused
 
 r1, r2 :: RegistrationId
 r1 = RegistrationId "r1"
@@ -320,3 +325,23 @@ testReleaseSpend = withOrders $ \turns st -> do
   releaseCode turns st (pcId releasedRow) r1 writeOk `shouldReturn` Right ((), False)
   releaseCode turns st (pcId releasedRow) r4 (holderInWrite releasedRow) `shouldReturn` Right (Just r4, True)
   (pcReservedBy =<<) <$> readCode st releasedRow `shouldReturn` Nothing
+
+testGroupNameCommands :: IO ()
+testGroupNameCommands = do
+  let p = groupCmdAction GRModerator
+  p "/issue name 8" `shouldBe` RunCmd (GCIssueName 8 2)
+  p "/issue name 6 years 5" `shouldBe` RunCmd (GCIssueName 6 5)
+  p "/issue name 63 years 10" `shouldBe` RunCmd (GCIssueName 63 10)
+  p "/bulk name 7 count 3" `shouldBe` RunCmd (GCBulkName 7 2 3)
+  p "/bulk name 12 years 3 count 100" `shouldBe` RunCmd (GCBulkName 12 3 100)
+  groupCmdAction GRMember "/issue name 8" `shouldBe` IgnoreMsg
+
+testGroupNameCommandsRefused :: IO ()
+testGroupNameCommandsRefused = do
+  let p = groupCmdAction GRModerator
+      issueUsage = ReplyText "Usage: /issue <type> [months <M>] [uses <N>], or name <length> [years <Y>]"
+      bulkUsage = ReplyText "Usage: /bulk <type> [months <M>] count <B>, or name <length> [years <Y>] count <B>"
+  forM_ ["name", "name 5", "name 64", "name 06", "name 8 years 1", "name 8 years 0", "name 8 years 11", "name 8 uses 2", "name 8 months 2", "name 8 paid", "name 8 years 18446744073709551618"] $ \args ->
+    (args, p ("/issue " <> args)) `shouldBe` (args, issueUsage)
+  forM_ ["name 8", "name 8 count 0", "name 8 count 101", "name 8 years 1 count 2", "name 5 count 2", "name 08 count 2"] $ \args ->
+    (args, p ("/bulk " <> args)) `shouldBe` (args, bulkUsage)

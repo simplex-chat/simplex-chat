@@ -20,9 +20,10 @@ where
 
 import StoreService.Catalog (defaultCatalog)
 import StoreService.Codes (issueFailedText, issueOneCode, singleUse)
-import StoreService.Config (BadgeIssuerKey (..), ChainConfig (..), NamesConfig (..), ServiceConfig (..), readServiceConfig)
+import StoreService.Config (BadgeIssuerKey (..), ChainConfig (..), NamesConfig (..), ServiceConfig (..), minNameYears, readServiceConfig)
 import StoreService.Group (GroupEvent, ensureManagedGroup, groupEvent, hasTracker, refreshTracker, revokeWithTracker, runGroupLane)
-import StoreService.Group.Command (badgeTypeP, codeP, maxMonths, textTokenP)
+import StoreService.Group.Command (badgeTypeP, codeP, maxMonths, maxNameYears, nameCodeP, textTokenP)
+import StoreService.Names.Codes (issueNameCode, revokeNameCode)
 import StoreService.Names.Env (NamesEnv, newNamesEnv)
 import StoreService.Options
 import StoreService.Poller (newPollerEnv, newReadHints, runPoller)
@@ -42,8 +43,9 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
+import Data.Char (isSpace)
 import Data.Either (fromRight)
-import Data.Functor (($>), (<&>))
+import Data.Functor (($>))
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust, maybeToList)
 import qualified Data.Text as T
@@ -212,17 +214,43 @@ badgeCmdHook cc = \case
 runBadgeCmd :: ChatController -> ByteString -> IO (Either ChatError ChatResponse)
 runBadgeCmd cc cmd
   | Right issueOpts <- A.parseOnly issueCmdP cmd =
-      issueBadgeCode cc issueOpts >>= \case
-        Right code -> pure $ Right CRCustomChatResponse {user_ = Nothing, response = "Code: " <> formatBadgeCode code}
-        Left _ -> pure $ chatCmdError (T.unpack issueFailedText)
-  | Right code <- A.parseOnly revokeCmdP cmd =
-      revokeWithTracker cc code <&> \case
-        Right response -> Right CRCustomChatResponse {user_ = Nothing, response}
-        Left e -> chatCmdError (T.unpack e)
-  | otherwise = pure $ chatCmdError $ "Usage: //issue supporter|legend|investor [months 1-" <> show maxMonths <> "] [paid|unpaid|free], or //revoke <code>"
+      issuedReply formatBadgeCode <$> issueBadgeCode cc issueOpts
+  | Right (len, years, paymentStatus) <- A.parseOnly issueNameCmdP cmd =
+      issuedReply (formatNameCode . NCPrepaid) <$> issueNameCode cc len years paymentStatus
+  | Right code <- A.parseOnly revokeCmdP cmd = revokedReply <$> revokeWithTracker cc code
+  | Right code <- A.parseOnly revokeNameCmdP cmd = revokedReply <$> revokeNameCode cc code
+  | otherwise =
+      pure $ chatCmdError $
+        "Usage: //issue supporter|legend|investor [months 1-" <> show maxMonths <> "] [paid|unpaid|free], //issue name <length "
+          <> show minNameLength <> "-" <> show maxNameLength <> "> [years " <> show minNameYears <> "-" <> show maxNameYears
+          <> "] [paid|unpaid|free], or //revoke <code>"
+  where
+    issuedReply :: (c -> T.Text) -> Either String c -> Either ChatError ChatResponse
+    issuedReply format = \case
+      Right code -> Right CRCustomChatResponse {user_ = Nothing, response = "Code: " <> format code}
+      Left _ -> chatCmdError (T.unpack issueFailedText)
+    revokedReply = \case
+      Right response -> Right CRCustomChatResponse {user_ = Nothing, response}
+      Left e -> chatCmdError (T.unpack e)
 
 revokeCmdP :: A.Parser BadgeCode
 revokeCmdP = "revoke " *> codeP <* (A.skipSpace *> A.endOfInput)
+
+revokeNameCmdP :: A.Parser NamePrepaidCode
+revokeNameCmdP = "revoke " *> prepaidCodeP <* (A.skipSpace *> A.endOfInput)
+  where
+    prepaidCodeP =
+      parseNameCode . safeDecodeUtf8 <$> A.takeWhile1 (not . isSpace) >>= \case
+        Just (NCPrepaid code) -> pure code
+        _ -> fail "not a prepaid name code"
+
+issueNameCmdP :: A.Parser (Int, Int, BadgeCodePaymentStatus)
+issueNameCmdP = do
+  (len, years) <- "issue " *> nameCodeP
+  paymentStatus <- fromMaybe CPSFree <$> optional (A.space *> textTokenP)
+  A.skipSpace
+  A.endOfInput
+  pure (len, years, paymentStatus)
 
 issueCmdP :: A.Parser IssueCodeOpts
 issueCmdP =
