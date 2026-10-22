@@ -1034,7 +1034,7 @@ pendingCase =
   " CASE WHEN" <> uncreditedMoney <> " THEN " <> literal LPUncredited
     <> " WHEN COALESCE(p.amount, 0) = 0 AND (p.crypto_paid IS NOT NULL OR p.paid_in_full = 1) THEN " <> literal LPConfirming
     <> " WHEN" <> cardInvoice <> " AND COALESCE(p.amount, 0) > p.confirmed_amount THEN " <> literal LPUnconfirmed
-    <> " WHEN p.received_units > p.confirmed_units THEN " <> literal LPUnconfirmed
+    <> " WHEN p.received_units > COALESCE(p.confirmed_units, 0) THEN " <> literal LPUnconfirmed
     <> " WHEN" <> cryptoInvoice <> " AND p.received_units IS NULL AND COALESCE(p.amount, 0) > 0 THEN " <> literal LPUncounted
     <> " END"
   where

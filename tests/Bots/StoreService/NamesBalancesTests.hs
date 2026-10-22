@@ -81,6 +81,7 @@ namesBalancesTests = describe "StoreService names: balances" $ do
     it "tells each case of pending money and selects confirmed money not all credited, by the order whatever the invoice's status" testLateScans
     it "leaves 0.1 and 0.2 BTC credited against 0.3 confirmed neither pending nor selected" testExactUnits
     it "tells confirmed money not credited as such while its cents still read 0, as Monero's can" testConfirmedBeforeCents
+    it "reads crypto received with no confirmed figure as unconfirmed" testNoConfirmedFigure
     it "alerts on pending money past the cutoff once, again only when more arrives, claimed by one of two instances" testLateAlerts
     it "alerts again on money that could not be counted in units when more of it arrives" testUncountedAlertRepeats
   describe "turns" $ do
@@ -646,6 +647,11 @@ testConfirmedBeforeCents = withServiceStore $ \st -> do
   closedWith st "x" False Paid {pCents = 0, pConfirmedCents = 0, pCrypto = Just "0", pUnits = Just 1000000000000, pConfirmedUnits = Just 1000000000000, pInFull = True} t0
   withTransaction st (\db -> latePending db (InvoiceId "inv-x")) `shouldReturn` Just LPUncredited
   withTransaction st uncreditedLateInvoices `shouldReturn` [InvoiceId "inv-x"]
+
+testNoConfirmedFigure :: IO ()
+testNoConfirmedFigure = withServiceStore $ \st -> do
+  closedWith st "x" False (cryptoPaid 300000 0) {pConfirmedUnits = Nothing} t0
+  withTransaction st (\db -> latePending db (InvoiceId "inv-x")) `shouldReturn` Just LPUnconfirmed
 
 testLateAlerts :: IO ()
 testLateAlerts = withServiceStore $ \st -> do
