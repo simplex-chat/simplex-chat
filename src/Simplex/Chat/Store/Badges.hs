@@ -416,11 +416,12 @@ showResumedPurchase db User {userId} receiptId badgePurchaseId state = do
   DB.execute db "UPDATE badge_purchases SET subscription_status = ? WHERE badge_purchase_id = ?" (state, badgePurchaseId)
   DB.execute db "UPDATE users SET shown_badge_id = ? WHERE user_id = ?" (badgePurchaseId, userId)
 
--- | A tier change's credit: shows the purchase again if a retire cleared it meanwhile, and drops an ended its grant disproves.
-showTierChangedPurchase :: DB.Connection -> User -> Int64 -> Int64 -> IO ()
-showTierChangedPurchase db User {userId} receiptId badgePurchaseId = do
+-- | A tier change's credit: shows the purchase again if a retire cleared it meanwhile, and keeps only the state the
+-- answer stored, as a resume does, since its charge disproves an ended or a billing retry stored before.
+showTierChangedPurchase :: DB.Connection -> User -> Int64 -> Int64 -> Maybe SubscriptionState -> IO ()
+showTierChangedPurchase db User {userId} receiptId badgePurchaseId state = do
   settleStoreReceipt db receiptId
-  DB.execute db "UPDATE badge_purchases SET subscription_status = NULL WHERE badge_purchase_id = ? AND subscription_status = ?" (badgePurchaseId, SSEnded)
+  DB.execute db "UPDATE badge_purchases SET subscription_status = ? WHERE badge_purchase_id = ?" (state, badgePurchaseId)
   DB.execute db "UPDATE users SET shown_badge_id = ? WHERE user_id = ?" (badgePurchaseId, userId)
 
 -- | A held record is paid for and a credited one is referenced by its purchase, so neither is deleted.

@@ -286,6 +286,7 @@ badgeServiceTests = do
     it "should refuse in silence an Apple tier change the store does not vouch for, keeping the badge shown, and answer it again from the record" testAppleTierChangeRefused
     it "should hold and credit an Apple tier change while another receipt of the owner is held" testAppleTierChangeBesideHeldReceipt
     it "should keep renewing a tier change's purchase that the device reported ended before the change" testAppleTierChangeClearsEnded
+    it "should clear the payment problem a device reported once a tier change is charged" testAppleTierChangeClearsBillingRetry
     it "should record on the receipt, not the purchase, a tier change whose credential does not verify" testAppleTierChangeCredentialUnverified
     it "should send nothing for an Apple charge of a lower tier while its badge is shown, and grant it at renewal, shown when the old credential expires" testAppleTierChangeLowerWaitsForRenewal
     it "should settle with no request a tier change held for a lower tier, as a build that held every change held it" testAppleTierChangeHeldLowerSettles
@@ -4578,6 +4579,23 @@ testAppleTierChangeClearsEnded ps =
       waitWakeFrom (chatController alice) requestAt
       shownBadgeId (chatController alice) `shouldReturn` Just 1
       subscriptionStatuses (chatController alice) `shouldReturn` [Nothing]
+
+testAppleTierChangeClearsBillingRetry :: HasCallStack => TestParams -> IO ()
+testAppleTierChangeClearsBillingRetry ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClientCfg, bsStore = store@FakeStore {appleSubscriptionJWS, appleLegendSubscriptionJWS}} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      appleSupporterBeforeLegend env alice
+      alice ##> ("/_badge subscription billingRetry " <> paymentArg SPApple {jws = appleSubscriptionJWS})
+      expectLinesWithin 30 alice ["ok", "1: supporter", "badge alert: payment_issue "] ["badge alert: payment_issue "]
+      subscriptionStatuses (chatController alice) `shouldReturn` [Just "billingRetry"]
+      appleReportsLegend store
+      alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = appleLegendSubscriptionJWS})
+      expectLinesWithin 30 alice ["1: legend"] ["1: supporter", "store purchase open", "subscribed ", "badge alert: payment_issue "]
+      heldStoreReceipts (chatController alice) `shouldEventuallyReturn` 0
+      subscriptionStatuses (chatController alice) `shouldReturn` [Nothing]
+      alice ##> "/_badge state 1"
+      alice <##. "1: legend"
+      (alice </)
 
 testAppleTierChangeCredentialUnverified :: HasCallStack => TestParams -> IO ()
 testAppleTierChangeCredentialUnverified ps =

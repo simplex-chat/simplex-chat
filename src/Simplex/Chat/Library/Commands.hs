@@ -5814,7 +5814,7 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
             Just cred@(BadgeCredential _ _ _ info@BadgeInfo {badgeType = issuedType})
               | issuedType == tier && credentialExpiry cred > answeredAt && stored /= Just SSEnded -> do
                   user' <- withStore $ \db -> do
-                    liftIO $ showTierChangedPurchase db user receiptId badgePurchaseId
+                    liftIO $ showTierChangedPurchase db user receiptId badgePurchaseId stored
                     setUserBadge db user (Just $ OwnBadge cred (mkBadgeStatus answeredAt (Just True) info))
                   lift $ startBadgeWork user'
                   pure $ SROCredited (Just user')
