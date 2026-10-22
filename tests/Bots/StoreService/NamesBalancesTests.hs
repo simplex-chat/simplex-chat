@@ -5,7 +5,7 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Bots.StoreService.NamesBalancesTests (namesBalancesTests) where
+module Bots.StoreService.NamesBalancesTests (namesBalancesTests, cardPaid, coveredSpend, credit, creditLate, figures, holder, lateCredit, payment, placeOrderRow, settleHolder, source) where
 
 import Bots.StoreService.NamesOrdersTests (Ctx (..), withOrders)
 import Bots.StoreService.NamesStoreTests (at, btc, invoiceStatus, newReg, ownerA, ownerB, paidOrder, reg, signature, t0, write)

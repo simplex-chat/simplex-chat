@@ -8,25 +8,28 @@
 {-# LANGUAGE TupleSections #-}
 
 -- Members' messages reach a console over separate connections in no fixed order, so gating is asserted from the bot's store.
-module Bots.StoreService.GroupIntegrationTests (badgeGroupIntegrationTests, namesBootTests, namesCodesChatTests, namesWorkerBootTests) where
+module Bots.StoreService.GroupIntegrationTests (badgeGroupIntegrationTests, namesBootTests, namesCodesChatTests, namesRefundChatTests, namesWorkerBootTests) where
 
 import StoreService.Config (BadgeIssuerKey (..), GroupConfig (..))
 import StoreService.Group (GroupAction (..), GroupEvent (..), codeInTracker, ensureManagedGroup)
-import StoreService.Group.Command (maxUses)
+import StoreService.Group.Command (CmdAction (..), groupCmdAction, maxUses)
 import StoreService.Names.Abi (selector, uint256)
 import StoreService.Names.Codes (issueNameCode, reserveCode, revokeNameCode)
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Store (PrepaidCode (..), getPrepaidCode, spendPrepaidCode)
+import StoreService.Names.Store (NamePhase (..), NameRegistration (..), PrepaidCode (..), VersionWrite (..), getPrepaidCode, spendPrepaidCode)
 import StoreService.Names.Turns (newTurns, withCodeTurn)
 import StoreService.Options (StoreServiceOpts (..))
+import StoreService.Orders (cancelOpenInvoice, expireOverdue)
 import StoreService.Service (ServiceState (..), storeService, newServiceState)
 import StoreService.Store (ManagedGroup (..), getManagedGroup)
-import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, badgeTypeOf, credentialOf, entryOf, issueCode, issueRaw, mkStoreServiceOpts, newPurchaseKeys, redeemWithQueue, requestObject, revokeRaw, serviceDbPrefix, shouldAnswerError, statementOf, stopStoreService, testIssuerKeyIdx)
+import StoreService.Waiters (newWaiters)
+import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, badgeTypeOf, credentialOf, entryOf, issueCode, issueRaw, mkStoreServiceOpts, newPurchaseKeys, operatorCmd, redeemWithQueue, requestObject, revokeRaw, serviceDbPrefix, shouldAnswerError, statementOf, stopStoreService, testIssuerKeyIdx, withStoreService)
 import Bots.StoreService.ConfigTests (chainSection, controllerAddr, namesSection)
 import Bots.StoreService.FakeEthNode (CallAnswer (..), FakeEthNode (..), answerCall, awaitSent, withFakeEthNode)
-import Bots.StoreService.WebTests (digestFixture)
+import Bots.StoreService.WebTests (capturingStderr, digestFixture)
 import Bots.StoreService.NamesSearchTests (aliceHex)
-import Bots.StoreService.NamesStoreTests (order, ownerA, placeCode, placePaid)
+import qualified Bots.StoreService.NamesBalancesTests as Balances
+import Bots.StoreService.NamesStoreTests (order, ownerA, placeCode, placePaid, reg, t0, write)
 import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
@@ -49,6 +52,7 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, getCurrentTime)
+import Data.Time.Format (defaultTimeLocale, formatTime)
 import Network.HTTP.Client (RequestBody (..), defaultManagerSettings, httpLbs, method, newManager, parseRequest, requestBody, responseBody, responseHeaders, responseStatus)
 import Network.HTTP.Types.Status (statusCode)
 import Network.Socket (Family (..), SockAddr (..), SocketType (..), close, connect, defaultProtocol, socket, tupleToHostAddress)
@@ -61,12 +65,13 @@ import Simplex.Chat.Controller (ChatCommand (APIDeleteChatItem), ChatConfig (..)
 import Simplex.Chat.Core (sendChatCmd, sendChatCmdStr)
 import Simplex.Chat.Messages (ChatRef (ChatRef), ChatType (CTGroup))
 import Simplex.Chat.Messages.CIContent (CIDeleteMode (CIDMInternal))
+import Simplex.Chat.PaymentService.Types (InvoiceId (..))
 import Simplex.Chat.Types (AgentInvId (..))
 import Simplex.Chat.Types.Preferences (ChatBotCommand (..), FullDeleteGroupPreference (..), GroupFeatureEnabled (..), GroupFeatureI (..), GroupPreferences (..), HistoryGroupPreference (..), SGroupFeature (..), commands_, emptyGroupPrefs, getGroupPreference)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Messaging.Agent (disposeAgentClient)
 import Simplex.Messaging.Agent.Protocol (AConnShortLink (..), ConnShortLink (..), ContactConnType (..))
-import Simplex.Messaging.Agent.Store.Common (withTransaction)
+import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (bbsKeyGen)
@@ -289,6 +294,132 @@ testRevokeTakesCodeTurn ps = do
     reserving <- holdTurn $ \body -> reserveCode turns st now (namePrepaidCodeHash reserved) (RegistrationId "r1") 8 (\_ -> Right <$> body :: IO (Either Text ()))
     revokeAfter reserved (releaseTurn reserving) `shouldReturn` Right "Revoked. The order holding it keeps it."
     finished (thAction reserving) `shouldReturn` Right (Right ())
+
+namesRefundChatTests :: SpecWith TestParams
+namesRefundChatTests = describe "StoreService names: operator refund" $ do
+  it "shows a balance with what paid for it, and records refunds by registration or invoice id, adding them up" testRefundRecorded
+  it "refuses an unknown reference, an order without a balance and another amount, and answers the usage to a malformed command" testRefundRefusals
+  it "refuses a balance held by an open order, naming it and its expiry, and records it once that order's invoice is cancelled" testRefundOpenHolder
+  it "refuses a balance held by an overdue order, naming its expiry, and records it once the sweep closed that order" testRefundOverdueHolder
+  it "refuses a balance held by an order whose invoice holds money past its expiry" testRefundFundedHolder
+  it "lists every order of a chain of three that the balance came through" testRefundChain
+  it "stops the chain of a late-paid difference order at itself, its cents marked late" testRefundLateChain
+  it "is not a group command" $ \_ -> groupCmdAction GROwner "/refund s 10000" `shouldBe` IgnoreMsg
+
+refundRaw :: HasCallStack => ChatController -> Text -> IO (Either Text Text)
+refundRaw cc args = operatorCmd cc ("//refund " <> args)
+
+minuteText :: UTCTime -> Text
+minuteText = T.pack . formatTime defaultTimeLocale "%Y-%m-%d %H:%M UTC"
+
+testRefundRecorded :: HasCallStack => TestParams -> IO ()
+testRefundRecorded ps = withStoreService ps $ \_ _ cc -> do
+  let st = chatStore cc
+      paidBy = "order s: $100.00 by btc on invoice inv-s"
+  Balances.source st "s" 10000
+  refundRaw cc "s" `shouldReturn` Right ("Order s: balance $100.00 (credited $100.00, refunded $0.00). Paid by: " <> paidBy <> ". To record its refund: //refund s 10000")
+  logs <- capturingStderr $ refundRaw cc "inv-s 10000" `shouldReturn` Right ("Recorded a refund of $100.00 for order s. Refund it now, by: " <> paidBy <> ".")
+  logs `shouldSatisfy` T.isInfixOf "names: recorded a refund of 10000 cents for order s"
+  Balances.figures st "s" t0 `shouldReturn` Just (0, 10000, 10000, Nothing)
+  refundRaw cc "inv-s" `shouldReturn` Right ("Order s: balance $0.00 (credited $100.00, refunded $100.00). Paid by: " <> paidBy <> ". Nothing to refund.")
+  Balances.credit st "s" 2505
+  refundRaw cc "s 2505" `shouldReturn` Right ("Recorded a refund of $25.05 for order s. Refund it now, by: " <> paidBy <> ".")
+  Balances.figures st "s" t0 `shouldReturn` Just (0, 12505, 12505, Nothing)
+
+testRefundRefusals :: HasCallStack => TestParams -> IO ()
+testRefundRefusals ps = withStoreService ps $ \_ _ cc -> do
+  let st = chatStore cc
+  Balances.placeOrderRow st "plain" False 20000 t0
+  Balances.source st "s" 10000
+  refundRaw cc "nothing" `shouldReturn` Left "No order has the reference nothing."
+  refundRaw cc "nothing 10000" `shouldReturn` Left "Nothing recorded: no order has the reference nothing."
+  refundRaw cc "inv-plain" `shouldReturn` Left "Order plain has no balance."
+  refundRaw cc "inv-plain 20000" `shouldReturn` Left "Nothing recorded: the order of inv-plain has no balance."
+  refundRaw cc "s 9000" `shouldReturn` Left "Nothing recorded: the balance is $100.00 now, not $90.00."
+  refundRaw cc "s 10001" `shouldReturn` Left "Nothing recorded: the balance is $100.00 now, not $100.01."
+  forM_ ["", "s 0", "s -5", "s 100.00", "s 10000 junk", "s 99999999999999999999"] $ \args ->
+    (args,) <$> refundRaw cc args `shouldReturn` (args, Left badgeCmdUsage)
+  Balances.figures st "s" t0 `shouldReturn` Just (10000, 10000, 0, Nothing)
+
+-- | The source s with a balance of $100.00 and the order h holding it, whose invoice expires at the given time.
+heldSource :: ChatController -> UTCTime -> IO ()
+heldSource cc expiry = do
+  Balances.source (chatStore cc) "s" 10000
+  Balances.holder (chatStore cc) "h" "s" 10000 expiry `shouldReturn` Right ()
+
+heldRefusals :: HasCallStack => ChatController -> Text -> IO ()
+heldRefusals cc held = do
+  refundRaw cc "s" `shouldReturn` Right ("Order s: balance $100.00 (credited $100.00, refunded $0.00). Paid by: order s: $100.00 by btc on invoice inv-s. It cannot be refunded now: " <> held <> ".")
+  refundRaw cc "inv-s 10000" `shouldReturn` Left ("Nothing recorded: " <> held <> ".")
+  Balances.figures (chatStore cc) "s" t0 >>= (`shouldSatisfy` \case Just (10000, 10000, 0, Just _) -> True; _ -> False)
+
+recordedS :: Either Text Text
+recordedS = Right "Recorded a refund of $100.00 for order s. Refund it now, by: order s: $100.00 by btc on invoice inv-s."
+
+testRefundOpenHolder :: HasCallStack => TestParams -> IO ()
+testRefundOpenHolder ps = withStoreService ps $ \_ _ cc -> do
+  now <- getCurrentTime
+  let expiry = addUTCTime 3600 now
+  heldSource cc expiry
+  heldRefusals cc $ "held by order h, its invoice open until " <> minuteText expiry <> "; run the command again then"
+  waiters <- newWaiters
+  cancelOpenInvoice (chatStore cc) waiters Nothing (InvoiceId "inv-h") now `shouldReturn` True
+  refundRaw cc "s 10000" `shouldReturn` recordedS
+
+testRefundOverdueHolder :: HasCallStack => TestParams -> IO ()
+testRefundOverdueHolder ps = withStoreService ps $ \_ _ cc -> do
+  now <- getCurrentTime
+  let expiry = addUTCTime (-120) now
+  heldSource cc expiry
+  heldRefusals cc $ "held by order h, its invoice expired at " <> minuteText expiry <> "; the poller closes it within 10 minutes; run the command again then"
+  waiters <- newWaiters
+  expireOverdue (chatStore cc) waiters Nothing now now [InvoiceId "inv-h"] `shouldReturn` [InvoiceId "inv-h"]
+  refundRaw cc "s 10000" `shouldReturn` recordedS
+
+testRefundFundedHolder :: HasCallStack => TestParams -> IO ()
+testRefundFundedHolder ps = withStoreService ps $ \_ _ cc -> do
+  now <- getCurrentTime
+  let expiry = addUTCTime (-120) now
+  heldSource cc expiry
+  Balances.payment (chatStore cc) "inv-h" (Balances.cardPaid 100 0) now
+  heldRefusals cc $ "held by order h, whose invoice expired at " <> minuteText expiry <> " holding money; it holds until that payment settles or the invoice closes; run the command again then"
+
+testRefundChain :: HasCallStack => TestParams -> IO ()
+testRefundChain ps = withStoreService ps $ \_ _ cc -> do
+  let st = chatStore cc
+  Balances.source st "a" 20000
+  Balances.holder st "b" "a" 20000 t0 `shouldReturn` Right ()
+  b <- reg st "b"
+  withTransaction st (`Balances.settleHolder` b) `shouldReturn` True
+  taken st "b"
+  Balances.credit st "b" 40000
+  Balances.coveredSpend st "c" "b" 10000 40000 `shouldReturn` Right ()
+  taken st "c"
+  Balances.credit st "c" 10000
+  refundRaw cc "c"
+    `shouldReturn` Right
+      ( "Order c: balance $100.00 (credited $100.00, refunded $0.00). Paid by: order c: $100.00 from the balance of order b; "
+          <> "order b: $200.00 by btc on invoice inv-b, $200.00 from the balance of order a; order a: $200.00 by btc on invoice inv-a. "
+          <> "To record its refund: //refund c 10000"
+      )
+  where
+    taken :: DBStore -> Text -> IO ()
+    taken st r = do
+      queued <- reg st r
+      write st queued {nrPhase = PTaken} `shouldReturn` Written (nrVersion queued + 1)
+
+testRefundLateChain :: HasCallStack => TestParams -> IO ()
+testRefundLateChain ps = withStoreService ps $ \_ _ cc -> do
+  let st = chatStore cc
+      paidBy = "order d: $24.00 late by btc on invoice inv-d"
+  Balances.source st "s" 15000
+  Balances.holder st "d" "s" 15000 t0 `shouldReturn` Right ()
+  waiters <- newWaiters
+  cancelOpenInvoice st waiters Nothing (InvoiceId "inv-d") t0 `shouldReturn` True
+  Balances.creditLate st (Balances.lateCredit "d" 1 (Just 40000) 2400) `shouldReturn` True
+  refundRaw cc "inv-d" `shouldReturn` Right ("Order d: balance $24.00 (credited $24.00, refunded $0.00). Paid by: " <> paidBy <> ". To record its refund: //refund inv-d 2400")
+  refundRaw cc "inv-d 2400" `shouldReturn` Right ("Recorded a refund of $24.00 for order d. Refund it now, by: " <> paidBy <> ".")
+  Balances.figures st "s" t0 `shouldReturn` Just (15000, 15000, 0, Nothing)
 
 data TurnHolder a = TurnHolder {thAction :: Async a, thRelease :: MVar ()}
 
