@@ -323,7 +323,18 @@ within what action = timeout 10000000 action >>= maybe (error $ what <> " did no
 awaitTurns :: Ctx -> Int -> IO ()
 awaitTurns Ctx {cOrders} n = within "turns" loop
   where
-    loop = turnsCount (oeTurns cOrders) >>= \held -> unless (held >= n) (threadDelay 1000 >> loop)
+    loop = turnsCount (oeTurns cOrders) >>= \count -> unless (count >= n) (threadDelay 1000 >> loop)
+
+-- | A registration poll at the order's version, once the server holds it.
+held :: Ctx -> NameRegistration -> IO (Async (Int, J.Object))
+held ctx@Ctx {cOrders} NameRegistration {nrId, nrVersion} = do
+  waiting <- atomically $ phasesWaiting (oePhases cOrders)
+  poll <- async $ webGet (cClient ctx) (registrationPath nrId <> "?seenVersion=" <> show nrVersion) >>= \resp -> (statusOf resp,) <$> jsonObject resp
+  within "the hold" $ atomically $ phasesWaiting (oePhases cOrders) >>= check . (> waiting)
+  pure poll
+
+woken :: Async (Int, J.Object) -> IO (Int, J.Object)
+woken poll = timeout 5000000 (wait poll) >>= maybe (cancel poll >> error "the poll was not woken") pure
 
 -- | Long enough for a request just sent to reach its turns.
 parkDelay :: Int
@@ -525,10 +536,12 @@ testMoveLanded = withOwner $ \ctx -> do
   void $ sentRegister ctx notLanded 2 TSReverted
   answerOwner ctx "alicebakery" (nrOwner minedOrder)
   forM_ [(minedOrder, Just minedHash), (ownedOrder, Nothing)] $ \(r, hash) -> do
+    poll <- held ctx r
     to <- moveTo ctx "alicebakers" 10
     answer <- move ctx keyA r to
     view <- getView ctx r
     answer `shouldBe` refusedWithView "registration_changed" view
+    woken poll `shouldReturn` (200, view)
     fieldsIn view [("phase", "registered"), ("expiresAt", J.toJSON expiry), ("moves", J.Number 0), ("error", J.Null), ("registerTx", maybe J.Null (J.String . hex) hash)]
     written <- stored ctx r
     (nrPhase written, nrLive written, nrVersion written, nrLabelHash written) `shouldBe` (PRegistered, False, nrVersion r + 1, nrLabelHash r)
@@ -834,11 +847,3 @@ testPollsWoken = withOwner $ \ctx -> do
   takeCode ctx keyA t (fst $ takenCodeHash 1) 8 `shouldReturn` (200, answered)
   (status', v') <- woken poll'
   (status', field "version" v', field "phase" v') `shouldBe` (200, Just (J.toJSON $ nrVersion t + 1), Just "code_issued")
-  where
-    held ctx'@Ctx {cOrders} NameRegistration {nrId, nrVersion} = do
-      waiting <- atomically $ phasesWaiting (oePhases cOrders)
-      poll <- async $ webGet (cClient ctx') (registrationPath nrId <> "?seenVersion=" <> show nrVersion) >>= \resp -> (statusOf resp,) <$> jsonObject resp
-      within "the hold" $ atomically $ phasesWaiting (oePhases cOrders) >>= check . (> waiting)
-      pure poll
-    woken :: Async (Int, J.Object) -> IO (Int, J.Object)
-    woken poll = timeout 5000000 (wait poll) >>= maybe (cancel poll >> error "the poll was not woken") pure
