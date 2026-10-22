@@ -257,8 +257,9 @@ names build into the container for `names_static_dir` until it does.
 
 The service refuses to start with `names_hosts` or `names_export_dir` but no `names_static_dir`.
 
-With `serve_webapp = on` (all in one), the listener picks the site by the request's `Host`, without
-its port: a host in `names_hosts` gets the names site, any other host the badges site. Every path
+With `serve_webapp = on` (all in one), the listener picks the site by the request's `Host`, in
+lower case and without its port or a trailing dot, as `names_hosts` entries are read: a host in
+`names_hosts` gets the names site, any other host or none the badges site. Every path
 outside `/api/` and `/webhooks/` is a file of the chosen site, `/` and `/index.html` its shell. The
 API answers on every host.
 
