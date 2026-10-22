@@ -457,6 +457,7 @@ executable simplex-store-service
       StoreService.Names.Signatures
       StoreService.Names.Store
       StoreService.Names.Turns
+      StoreService.Names.View
       StoreService.Options
       StoreService.Orders
       StoreService.Poller
@@ -803,6 +804,7 @@ test-suite simplex-chat-test
       StoreService.Names.Signatures
       StoreService.Names.Store
       StoreService.Names.Turns
+      StoreService.Names.View
       StoreService.Options
       StoreService.Orders
       StoreService.Poller
