@@ -87,7 +87,7 @@ namesLateCreditTests = describe "StoreService names: balance life" $ do
   describe "the view" $ do
     it "shows a funded holder past its expiry held with no end time, and an unfunded one before it with its expiry" testHeldUntil
     it "shows a balance spent to 0 and a refunded one as objects with amount 0" testZeroBalances
-    it "waits confirming, crediting, or support for each reason, and on nothing once all is credited" testLateWaits
+    it "waits confirming, crediting, or support for each reason, on nothing once all is credited, and on support for good below the rate floor" testLateWaits
     it "finds the order a balance paid and the order holding a balance, none for an overdue unfunded holder" testFindLinks
 #if defined(dbPostgres)
   describe "two connections" $ do
@@ -677,7 +677,7 @@ testLateWaits = withLate $ \l@Late {lStore = st} -> do
   setRate l (Right stubRate)
   void $ readSignal l "alerted" (SigClosed (btcPaid lateUnits lateUnits))
   void $ passAt l (at 71)
-  waits ["crediting", "floor", "alerted"] `shouldReturn` [("crediting", Nothing), ("floor", Nothing), ("alerted", Nothing)]
+  waits ["crediting", "floor", "alerted"] `shouldReturn` [("crediting", Nothing), ("floor", Just LWSupport), ("alerted", Nothing)]
 
 testFindLinks :: IO ()
 testFindLinks = withLate $ \Late {lStore = st} -> do
