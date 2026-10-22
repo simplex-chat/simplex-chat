@@ -241,7 +241,7 @@ sequenceDiagram
   - the invoice becomes paid;
   - the registration goes `unpaid` → `queued`, only while it is still live. A payment for an order that was closed (cancelled, expired, or closed by a newer order of the same wallet and name) is a late payment.
   - Both changes are published to the long poll after the commit.
-- **Late payment:** an invoice paid after it expired or was canceled leaves the registration `unpaid`. What arrived is credited to that order's balance (owner, 2026-10-22), which Your names shows and which buys a name or is refunded by support on request; each reported figure credits only its increase, and the service logs it (gap 26).
+- **Late payment:** an invoice paid after it expired or was canceled leaves the registration `unpaid`. Its confirmed money is credited to that order's balance (owner, 2026-10-22), which Your names shows and which buys a name or is refunded by support on request; each confirmed rise credits only its increase, and the service logs it (gap 26).
 - **The long poll** carries `wait` and `seenVersion`, so it also wakes on every change of the registration (its `version`).
 
 **Get a new invoice.** The old invoice may still be open when the card form does not load, or the payment details are unavailable. The page then cancels it before ordering again:
@@ -921,7 +921,7 @@ Each gap says what the problem is, why it matters, and what is decided, or that 
       - The name side checks the invoice's prior state.
       - A late payment of a closed invoice does not queue its registration. That registration stays `unpaid`.
       - The 30-day cleanup never deletes it, because the cleanup spares any invoice that received a payment.
-      - The late payment is credited to that order's balance (owner, 2026-10-22), which Your names shows and which buys a name or is refunded by support on request (it was kept for support to refund until then).
+      - The late payment's confirmed money is credited to that order's balance (owner, 2026-10-22), which Your names shows and which buys a name or is refunded by support on request (it was kept for support to refund until then).
       - So one wallet never has two paid registrations for one name. The other guards for this, by commitment or by owner and label hash:
         - an exact resend gets its own order; any other order while a live order holds the name is refused with `order_exists`, which names nothing;
         - orders run one at a time per label hash, and unique constraints allow one live registration per owner and label hash;

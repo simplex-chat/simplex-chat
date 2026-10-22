@@ -263,7 +263,7 @@ This section follows a name from the order to the chain. The service commits, wa
    - with `bad_request`, a duration outside the hour's slack.
 
    **Closed invoices.** An invoice that expires or is canceled leaves its registration `unpaid`.
-   - A late payment of that invoice does not queue the registration. What arrived is credited to that order's balance (owner, 2026-10-22), which Your names shows and which buys a name or is refunded by support on request. This is because a new order of the same wallet for the name may have been paid meanwhile.
+   - A late payment of that invoice does not queue the registration. Its confirmed money is credited to that order's balance (owner, 2026-10-22), which Your names shows and which buys a name or is refunded by support on request. This is because a new order of the same wallet for the name may have been paid meanwhile.
    - Get a new invoice, on an expired invoice, makes a new order for the same name and wallet.
    - A canceled invoice offers Order the name again instead. It leads to the name's search result, where the buyer orders anew and chooses how to pay. Nothing is ordered until then.
 
@@ -271,7 +271,7 @@ This section follows a name from the order to the chain. The service commits, wa
    - A registration whose invoice received any payment, partial or late, is not deleted. It stays for support.
    - The cleanup first reads the invoice from the provider itself (`pReadInvoice`, then settlement as for any read). The poller and the provider list pass read an invoice only within about 72 hours of its creation (`settleWindow`). After that, only a webhook brings a payment.
    - Today's BTCPay handler acts only on `InvoiceProcessing`, `InvoiceSettled`, `InvoiceExpired` and `InvoiceInvalid`. It gains `InvoiceReceivedPayment` and `InvoicePaymentSettled` as read hints for a payment into a closed invoice.
-   - The cleanup's read is the backstop. A payment whose webhook was lost is still recorded and alerted. If the provider does not answer, the registration is kept until the next daily run.
+   - The cleanup's read is the backstop. A payment whose webhook was lost is still recorded, and its confirmed money credited to the order's balance and logged. If the provider does not answer, the registration is kept until the next daily run.
 2. **No hold.** The service cannot hold a name it has not seen, so it holds none. Two orders may name the same hash. Whichever registers first wins. The other ends `taken`, with its payment kept as a balance.
 3. **The worker.** There is one worker per registration, resumed after a restart. It uses the branch's chain client (`sendCommit`, `sendRegister`):
    - JSON-RPC to the RPC node, `[chain] rpc_url`: a reth node, or a hosted provider such as Alchemy. The same node serves the service's chain reads (#7530's decision D5 named the reth node on the resolver host);
@@ -525,10 +525,10 @@ Migration `20261010_names` runs in SQLite and Postgres. The badge tables (`sx_ba
   - A row found applied on chain with no receipt for any of its hashes is `mined`, with no hash known to have mined.
   - The service answers identical repeats from the table after a restart. The per-name cap counts its rows of the last hour.
 - **`sx_badge_service_name_transactions`:** the registration or edit, `kind` (commit, register, edit), `raw`, `tx_hash`, `registrar_nonce`, `sent_at`, `mined_block`, `status`. The sender resumes from the rows with no receipt.
-- **`sx_badge_service_name_invoices`:** `invoice_id`, `registration_id`, `provider_ref`.
+- **`sx_badge_service_name_invoices`:** `invoice_id`, `registration_id`, `provider_ref`, `late_credited` (the cents of a late payment already credited to the order's balance). Payments gain `confirmed_amount` (confirmed money only, only rising), which the late credit reads.
   - Today's invoice queries are badge-only. So each of these gains this table: `GET /api/invoice/:id`, cancel, settlement, the poller's unpaid and overdue scans and its expiry update, and the lookups by `provider_ref`.
   - Settling a name invoice queues its registration, instead of requiring a code hash. This happens in the transaction that marks the invoice paid; the invoice's and the registration's changes are published to the long poll only after that commit. It applies only to an invoice still open.
-  - An invoice settled after it expired or was canceled leaves its registration `unpaid` and credits what arrived to that order's balance. Its order page and history row say "Paid after the invoice closed; kept as your balance", with Use and Refund.
+  - An invoice settled after it expired or was canceled leaves its registration `unpaid` and credits its confirmed money to that order's balance. Its order page and history row say "Paid after the invoice closed; kept as your balance", with Use and Refund.
   - The lookups by `provider_ref` cover both this table and `sx_badge_service_badge_code_invoices`.
   - As in `Web/Server.hs` today, a row whose provider differs from the webhook's is ignored. This guards against a collision between providers.
   - A ref must also be unique across the two tables. The lookup checks both and refuses a ref found in both.
