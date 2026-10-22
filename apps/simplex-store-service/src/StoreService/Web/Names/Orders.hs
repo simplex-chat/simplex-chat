@@ -2,7 +2,19 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module StoreService.Web.Names.Orders (nameInvoiceHandler, codeOrderHandler, nameInvoiceView, orderRefusalResponse, registrationChangedResponse) where
+module StoreService.Web.Names.Orders
+  ( Answer (..),
+    answerNow,
+    sendAnswer,
+    firstRefusal,
+    nameInvoiceHandler,
+    codeOrderHandler,
+    nameInvoiceView,
+    orderRefusalResponse,
+    registrationChangedResponse,
+    registrationRefusalResponse,
+  )
+where
 
 import Control.Concurrent.STM (atomically)
 import qualified Control.Exception as E
@@ -35,7 +47,7 @@ import StoreService.Orders (publishRegistration)
 import StoreService.Providers (OrderDraft (..), Provider (..), ProviderError (..), ProviderInvoice (..), expiresItself)
 import StoreService.Store.Invoices (InvoiceRow (..), NewNameInvoice (..), getInvoice, insertNameInvoice, newInvoiceId, truncateToSecond)
 import StoreService.Waiters (Waiters, publish)
-import StoreService.Web.Http (Respond, badRequest, confirmationsFor, internalError, invalidName, invoiceAt, invoicePairs, invoiceWindow, jsonError, jsonResponse, nameBodyBytes, notFound, providerFor, providerNamed, providerUnavailable, readBoundedBody)
+import StoreService.Web.Http (Respond, badRequest, codeConflict, confirmationsFor, internalError, invalidName, invoiceAt, invoicePairs, invoiceWindow, jsonError, jsonResponse, nameBodyBytes, notFound, providerFor, providerNamed, providerUnavailable, readBoundedBody)
 import StoreService.Web.Names.Codes (codeRefusalResponse)
 import StoreService.Web.Names.Registration (registrationAt)
 
@@ -54,7 +66,7 @@ parseInvoiceOrder o = do
       _ -> Nothing
     ioPrice <- integerField =<< KM.lookup "price" o
     pure InvoiceOrder {ioRequest, ioMethod, ioPrice}
-  order <$ checkLength ioRequest
+  order <$ checkLength (orFields ioRequest)
 
 -- | An order's answer and the work its commit leaves, both done after the name's turn, so a slow client holds no turn.
 data Answer = Answer {aResponse :: Response, aAfter :: IO ()}
@@ -180,12 +192,8 @@ codeOrderHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} 
 
 parseCodeOrder :: J.Object -> Either OrderRefusal (OrderRequest, Text)
 parseCodeOrder o = do
-  order@(req, _) <- maybe (Left ORBadRequest) Right $ (,) <$> parseOrderRequest o <*> codeText
-  order <$ checkLength req
-  where
-    codeText = case KM.lookup "code" o of
-      Just (J.String t) -> Just t
-      _ -> Nothing
+  order@(req, _) <- maybe (Left ORBadRequest) Right $ (,) <$> parseOrderRequest o <*> textField o "code"
+  order <$ checkLength (orFields req)
 
 -- | After the commit, the closed orders' invoices and versions are published, and their invoices cancelled at the provider,
 -- best effort, as the poller's sweep would cancel them.
@@ -223,13 +231,17 @@ nameInvoiceView OrdersEnv {oeStore, oeConfig, oeContracts} confirmations row@Inv
 
 -- | The registration's current view, for a request that lost the race to change it.
 registrationChangedResponse :: OrdersEnv -> RegistrationId -> IO Response
-registrationChangedResponse OrdersEnv {oeStore, oeConfig, oeContracts, oeNow} rid =
+registrationChangedResponse env = registrationRefusalResponse env "registration_changed"
+
+-- | A refusal with the registration's current view, so the page follows its state.
+registrationRefusalResponse :: OrdersEnv -> Text -> RegistrationId -> IO Response
+registrationRefusalResponse OrdersEnv {oeStore, oeConfig, oeContracts, oeNow} tag rid =
   withTransaction oeStore (`getRegistration` rid) >>= \case
     Nothing -> pure notFound
     Just r -> do
       now <- oeNow
       view <- registrationView oeStore oeConfig oeContracts (registrationAt now r)
-      pure $ jsonResponse status409 $ J.object ["error" .= ("registration_changed" :: Text), "registration" .= view]
+      pure $ jsonResponse status409 $ J.object ["error" .= tag, "registration" .= view]
 
 orderRefusalResponse :: OrderRefusal -> Response
 orderRefusalResponse = \case
@@ -240,3 +252,8 @@ orderRefusalResponse = \case
   ORNameCheckUnavailable -> jsonError status503 "name_check_unavailable"
   ORCatalogChanged price -> jsonResponse status409 $ J.object ["error" .= ("catalog_changed" :: Text), "price" .= price]
   ORCode refusal -> codeRefusalResponse refusal
+  ORPriceTooHigh price -> jsonResponse status409 $ J.object ["error" .= ("price_too_high" :: Text), "price" .= price]
+  ORCodeLengthChanged len -> jsonResponse status409 $ J.object ["error" .= ("code_length_changed" :: Text), "codeLength" .= len]
+  ORCodeUnavailable -> jsonError status409 "code_unavailable"
+  ORCodeConflict -> codeConflict
+  ORProviderUnavailable -> providerUnavailable

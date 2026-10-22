@@ -57,6 +57,7 @@ data OrderFields = OrderFields
     ofCommitment :: ByteString,
     ofSealed :: Text
   }
+  deriving (Eq)
 
 signatureHexLength :: Int
 signatureHexLength = 130

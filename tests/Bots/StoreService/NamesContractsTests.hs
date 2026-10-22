@@ -22,6 +22,7 @@ module Bots.StoreService.NamesContractsTests
     noncesCall,
     pricesCall,
     launchPricesAnswer,
+    pricesAnswer,
     oracle,
     alice,
     unhex,

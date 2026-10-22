@@ -41,6 +41,7 @@ module StoreService.Names.Store
     closeOverdue,
     updateRegistration,
     retargetRegistration,
+    setIssuedCode,
     findRegistrations,
     isLabelRegistering,
     activeRegistrations,
@@ -53,6 +54,7 @@ module StoreService.Names.Store
     reservePrepaidCode,
     releasePrepaidCode,
     spendPrepaidCode,
+    spendLandedPrepaidCode,
     revokePrepaidCode,
     insertTransaction,
     recordTransactionOutcome,
@@ -615,6 +617,10 @@ retargetRegistration db r OrderFields {ofLabelHash, ofLength, ofDuration, ofComm
         nrError = Nothing
       }
 
+-- | Links the code a taken order was turned into, in the transaction that wrote its code_issued phase and version.
+setIssuedCode :: DB.Connection -> RegistrationId -> Int64 -> IO ()
+setIssuedCode db (RegistrationId rid) codeId = DB.execute db "UPDATE sx_badge_service_name_registrations SET issued_code_id = ? WHERE registration_id = ?" (codeId, rid)
+
 -- | Newest first, at most findLimit.
 findRegistrations :: DB.Connection -> Address -> IO [NameRegistration]
 findRegistrations db owner =
@@ -755,6 +761,21 @@ spendPrepaidCode db codeId (RegistrationId rid) now =
       db
       "UPDATE sx_badge_service_name_prepaid_codes SET spent_at = ? WHERE name_prepaid_code_id = ? AND reserved_by = ? AND spent_at IS NULL"
       (truncateToSecond now, codeId, rid)
+
+-- | For a registration whose register went through: spends the code it holds, or one released and still usable; False otherwise.
+spendLandedPrepaidCode :: DB.Connection -> Int64 -> RegistrationId -> UTCTime -> IO Bool
+spendLandedPrepaidCode db codeId (RegistrationId rid) now' =
+  (> 0)
+    <$> executeChanging
+      db
+      [sql|
+        UPDATE sx_badge_service_name_prepaid_codes SET reserved_by = ?, reserved_at = COALESCE(reserved_at, ?), spent_at = ?
+        WHERE name_prepaid_code_id = ? AND spent_at IS NULL
+          AND (reserved_by = ? OR (reserved_by IS NULL AND revoked_at IS NULL AND code_payment_status <> ? AND (expires_at IS NULL OR expires_at > ?)))
+      |]
+      (rid, now, now, codeId, rid, CPSUnpaid, now)
+  where
+    now = truncateToSecond now'
 
 -- | A reserved code can be revoked, and its order keeps it; a spent one cannot.
 revokePrepaidCode :: DB.Connection -> ByteString -> UTCTime -> IO RevokeResult

@@ -15,12 +15,14 @@ module StoreService.Names.Codes
     reserveCode,
     releaseCode,
     spendCode,
+    spendLandedCode,
     issueNameCode,
     revokeNameCode,
   )
 where
 
 import Control.Applicative ((<|>))
+import qualified Control.Exception as E
 import Data.ByteString (ByteString)
 import Data.Functor ((<&>))
 import Data.Int (Int64)
@@ -36,7 +38,7 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import StoreService.Config (minNameYears)
 import StoreService.Group.Command (maxNameYears)
 import StoreService.Names.Phases (RegistrationId)
-import StoreService.Names.Store (CodeHashTaken (..), NewPrepaidCode (..), PrepaidCode (..), getPrepaidCode, getPrepaidCodeById, insertPrepaidCode, releasePrepaidCode, reservePrepaidCode, revokePrepaidCode, spendPrepaidCode)
+import StoreService.Names.Store (CodeHashTaken (..), NewPrepaidCode (..), PrepaidCode (..), getPrepaidCode, getPrepaidCodeById, insertPrepaidCode, releasePrepaidCode, reservePrepaidCode, revokePrepaidCode, spendLandedPrepaidCode, spendPrepaidCode)
 import StoreService.Names.Turns (Turns, withCodeTurn)
 import StoreService.Store (RevokeResult (..))
 
@@ -102,24 +104,31 @@ reserveRefusal db now codeHash rid len = maybe CRInvalid (fromMaybe CRReserved .
 readPrepaidCode :: DBStore -> NamePrepaidCode -> IO (Maybe PrepaidCode)
 readPrepaidCode st code = withTransaction st (`getPrepaidCode` namePrepaidCodeHash code)
 
--- | In the code's turn and one transaction, the code is checked and reserved for the registration, then
--- the write runs. A write that refuses gives the code back.
+newtype ReservationRefused = ReservationRefused CodeRefusal
+  deriving (Show)
+
+instance E.Exception ReservationRefused
+
+-- | In the code's turn and one transaction, the code is checked, the write runs, then the code is reserved for the
+-- registration, so the registration's row is locked before the code's. A refused reservation rolls the write back.
 reserveCode :: Turns -> DBStore -> UTCTime -> ByteString -> RegistrationId -> Int -> (DB.Connection -> IO (Either e a)) -> IO (Either CodeRefusal (Either e a))
 reserveCode turns st now codeHash rid len write =
-  withCodeTurn turns codeHash $ withTransaction st $ \db ->
-    getPrepaidCode db codeHash >>= \case
-      Nothing -> pure $ Left CRInvalid
-      Just code@PrepaidCode {pcId, pcReservedBy}
-        | Just refusal <- codeRefusal now rid len code -> pure $ Left refusal
-        | pcReservedBy == Just rid -> Right <$> write db
-        | otherwise ->
-            reservePrepaidCode db pcId rid now >>= \case
-              -- Only a writer outside this process, which takes no turn here, can refuse it.
-              False -> Left <$> reserveRefusal db now codeHash rid len
-              True ->
-                write db >>= \case
-                  refused@(Left _) -> Right refused <$ releasePrepaidCode db pcId rid
-                  written -> pure $ Right written
+  withCodeTurn turns codeHash $ either (\(ReservationRefused refusal) -> Left refusal) id <$> E.try (withTransaction st reserve)
+  where
+    reserve db =
+      getPrepaidCode db codeHash >>= \case
+        Nothing -> pure $ Left CRInvalid
+        Just code@PrepaidCode {pcId, pcReservedBy}
+          | Just refusal <- codeRefusal now rid len code -> pure $ Left refusal
+          | otherwise ->
+              write db >>= \case
+                written@(Right _)
+                  | pcReservedBy /= Just rid ->
+                      reservePrepaidCode db pcId rid now >>= \case
+                        True -> pure $ Right written
+                        -- Only a writer outside this process, which takes no turn here, can refuse it.
+                        False -> E.throwIO . ReservationRefused =<< reserveRefusal db now codeHash rid len
+                written -> pure $ Right written
 
 -- | The write runs first, and the code is released only if it succeeds. False when the registration did not hold the code.
 releaseCode :: Turns -> DBStore -> Int64 -> RegistrationId -> (DB.Connection -> IO (Either e a)) -> IO (Either e (a, Bool))
@@ -128,6 +137,11 @@ releaseCode turns st codeId rid = afterWrite turns st codeId (\db -> releasePrep
 -- | The write runs first, and the code is spent only if it succeeds. False when the registration did not hold the code.
 spendCode :: Turns -> DBStore -> UTCTime -> Int64 -> RegistrationId -> (DB.Connection -> IO (Either e a)) -> IO (Either e (a, Bool))
 spendCode turns st now codeId rid = afterWrite turns st codeId (\db -> spendPrepaidCode db codeId rid now)
+
+-- | As spendCode, for a registration whose register went through: a code it no longer holds is spent too while still usable.
+-- False when the code was released and then spent, revoked or expired meanwhile.
+spendLandedCode :: Turns -> DBStore -> UTCTime -> Int64 -> RegistrationId -> (DB.Connection -> IO (Either e a)) -> IO (Either e (a, Bool))
+spendLandedCode turns st now codeId rid = afterWrite turns st codeId (\db -> spendLandedPrepaidCode db codeId rid now)
 
 afterWrite :: Turns -> DBStore -> Int64 -> (DB.Connection -> IO Bool) -> (DB.Connection -> IO (Either e a)) -> IO (Either e (a, Bool))
 afterWrite turns st codeId change write = do

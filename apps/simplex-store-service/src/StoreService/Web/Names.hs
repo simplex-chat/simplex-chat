@@ -9,9 +9,10 @@ import Network.HTTP.Types (Method)
 import Network.Wai (Request, ResponseReceived, pathInfo)
 import StoreService.Names.Env (NamesEnv (..))
 import StoreService.Names.Orders (ordersEnv)
-import StoreService.Web.Http (HttpEnv, Limit, Respond, codeLimit, holdMicros, limited, only, previewLimit, readLimit, recordsLimit, searchLimit)
+import StoreService.Web.Http (HttpEnv, Limit, Respond, codeLimit, createLimit, findLimit, holdMicros, limited, only, previewLimit, readLimit, recordsLimit, searchLimit)
 import StoreService.Web.Names.Codes (codeCheckHandler)
 import StoreService.Web.Names.Orders (codeOrderHandler)
+import StoreService.Web.Names.Owner (findHandler, retargetHandler, takenCodeHandler)
 import StoreService.Web.Names.Records (recordsHandler)
 import StoreService.Web.Names.Registration (registrationHandler)
 import StoreService.Web.Names.Search (previewHandler, searchHandler)
@@ -30,7 +31,11 @@ namesRoutes env@NamesEnv {neConfig, neStore, neContracts, neProfiles, neRecords,
   ["api", "link", "preview"] -> Just Route {rMethod = "POST", rLimit = previewLimit, rHandler = previewHandler neProfiles}
   -- below every fixed /api/name/<word> route, which it would otherwise match
   ["api", "name", hash] -> Just Route {rMethod = "GET", rLimit = searchLimit, rHandler = searchHandler neConfig neStore neContracts neProfiles hash}
+  -- above /api/registration/:id, which it would otherwise match
+  ["api", "registration", "find"] -> Just Route {rMethod = "POST", rLimit = findLimit, rHandler = findHandler (ordersEnv env)}
   ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler (ordersEnv env) holdMicros rid}
+  ["api", "registration", rid, "name"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = retargetHandler (ordersEnv env) rid}
+  ["api", "registration", rid, "code"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = takenCodeHandler (ordersEnv env) rid}
   _ -> Nothing
 
 -- | Nothing for a path no route knows. The limit is taken only once the route and the method match.
