@@ -5384,9 +5384,13 @@ handOverStoreReceipt presentingUser echoedInvoiceId origin payment = do
         RSHeld {} -> lift (resumeStoreReceiptWork ownerId) >> badgeStateResponse owner
         RSCredited {badgePurchaseId, refusalRecorded} -> do
           let rehold kind = withStore' $ \db -> reholdStoreReceipt db owner receiptId badgePurchaseId kind payment now
-          answeredHeld <- case resumableCharge now payment of
+          answeredHeld <- case resumeHold now payment of
             -- a charge refused after its hold is answered from the record, or the app's sweep would hold it again at every launch
-            Just purchasedAt | not (refusalRecorded && resumeHoldEnded now purchasedAt) -> rehold SHKPurchase
+            Just (RHPurchasedAt purchasedAt) | not (refusalRecorded && resumeHoldEnded now purchasedAt) -> rehold SHKPurchase
+            -- a refused Play resume is held again: the service's hourly check bounds what the sweep can ask of Play
+            Just RHAttempts -> do
+              movedOut <- withStore' (`purchaseMovedOut` badgePurchaseId)
+              if movedOut then pure False else rehold SHKPurchase
             _ -> pure False
           -- a refused tier change is answered from the record, or every sweep would hold it and send it again
           tierChangeHeld <- case tierChangeCharge now payment of
@@ -5463,6 +5467,21 @@ resumableCharge now = \case
 
 resumeHoldEnded :: UTCTime -> UTCTime -> Bool
 resumeHoldEnded now purchasedAt = resumeHoldLimit `addUTCTime` purchasedAt <= now
+
+-- | How long a resume the service answers without crediting keeps holding the profile: an Apple charge until
+-- resumeHoldLimit after its purchase date, a Play token, which carries no date, for playResumeAttempts attempts.
+data ResumeHold = RHPurchasedAt UTCTime | RHAttempts
+
+-- | Play lists a subscription only while it is in a paid period, so its token may always resume it; a one-time
+-- product's token funds no subscription purchase, which only reholdStoreReceipt holds.
+resumeHold :: UTCTime -> ServicePayment -> Maybe ResumeHold
+resumeHold now = \case
+  SPGoogle {} -> Just RHAttempts
+  payment -> RHPurchasedAt <$> resumableCharge now payment
+
+-- | Failed attempts included; whatever the device sends, the service asks Play about a subscription at most once an hour.
+playResumeAttempts :: Int64
+playResumeAttempts = 24
 
 -- | How far a tier change's purchase date may be from this device's clock, either way, for it to be asked of the service
 -- at once; past it, the service grants the change at its next renewal check.
@@ -5761,15 +5780,17 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
       case p_ of
         Just UserBadgePurchase {shown = True} -> SROCredited Nothing <$ withStore' (`settleStoreReceipt` receiptId)
         Just p@UserBadgePurchase {purchaseKind = PKSubscription _}
-          | isNewest, Just purchasedAt <- resumableCharge now =<< decodeJSON payment -> resumeIssue ri delay user p purchasedAt now
+          | isNewest, Just hold <- resumeHold now =<< decodeJSON payment -> resumeIssue ri delay user p hold now
         _ -> refuse receiptInvalid
-    resumeIssue ri delay user p@UserBadgePurchase {badgePurchaseId} purchasedAt now = do
+    resumeIssue ri delay user p@UserBadgePurchase {badgePurchaseId} hold now = do
       answer <- tryAllErrors $ requireBadgeService >>= \sendTarget -> sendBadgeIssue sendTarget userId p BSCIssueBadge (recordBadgeIssueFailure p) now
       answeredAt <- badgeNow
-      -- a charge the service does not grant, as a revoked one, stops holding the profile once its hold ends
-      let notCredited holding
-            | resumeHoldEnded answeredAt purchasedAt = refuse receiptInvalid
-            | otherwise = holding
+      -- a charge the service does not grant, as a revoked one, stops holding the profile once its hold ends;
+      -- this attempt's failure is not recorded yet, so it is counted here
+      let holdEnded = case hold of
+            RHPurchasedAt purchasedAt -> pure $ resumeHoldEnded answeredAt purchasedAt
+            RHAttempts -> (>= playResumeAttempts) . (+ 1) <$> withStore' (`getStoreReceiptFailures` receiptId)
+          notCredited holding = holdEnded >>= \ended -> if ended then refuse receiptInvalid else holding
       case answer of
         Left e -> failed ri delay (badgeIssueFailure e) Nothing
         Right (Left (code, retryAfter))

@@ -278,6 +278,8 @@ badgeServiceTests = do
     it "should present an adopted Apple transaction at once though the attempt with the one before it failed, and credit it once the subscription's hourly check allows" testAdoptedReceiptNotOverwritten
     it "should resume a retired Apple subscription on the same purchase when its store charges it again" testAppleResubscribeResumes
     it "should resume an Apple subscription retired within its coverage by a refund, once its store charges it again" testAppleResubscribeResumesWithinCoverage
+    it "should resume a Play subscription retired past the recovery window when its token is handed over while Play charges it" testPlaySubscriptionResumes
+    it "should not hold a Play subscription moved to another device as a resume of the purchase it left" testMovedOutPlayNotResumed
     it "should hold an Apple charge of another tier while its badge is shown, grant it through the worker and show it at once, and send nothing for one of the same tier" testAppleTierChangeHandOver
     it "should tell the apps a granted Apple tier change and show it to a contact at once" testTierChangeReachesContacts
     it "should keep an Apple tier change held while the store reports the old tier, without failing the renewal, and grant it once the store reports the new one" testAppleTierChangeStoreLags
@@ -4309,6 +4311,50 @@ testAppleResubscribeResumesWithinCoverage ps =
       alice <## "ok"
       threadDelay 2000000
       shownBadgeId (chatController alice) `shouldReturn` Just 1
+
+testPlaySubscriptionResumes :: HasCallStack => TestParams -> IO ()
+testPlaySubscriptionResumes ps =
+  -- retired once the recovery window passed while Play retried the payment, then charged again on the same token
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      (_, rows) <- clientSubscribedMonthly env alice
+      storeReports store $ subscriptionCheck SSBillingRetry Nothing
+      t0 <- firstUnrenewedAnswer alice bsClock rows []
+      [Just wake] <- nextWakes (chatController alice)
+      setClockAt bsClock $ max wake $ addUTCTime (subscriptionRecoveryWindow + 3600) t0
+      activateAnswered alice ["badge alert: subscription_ended "]
+      waitShownBadge (chatController alice) Nothing
+      -- past the hour in which the service answers from the check that retired it
+      resumedAt <- addUTCTime 7200 <$> serviceNow env
+      setClockAt bsClock resumedAt
+      storeReports store $ subscriptionCheck SSRenewing $ Just (storeCharge "subscr-badge-supporter-month-02" (addUTCTime (-3600) resumedAt) 1) {chargeRef = "GPA.resumed"}
+      alice ##> ("/_badge purchase 1 " <> paymentArg subscriptionPlay)
+      expectLinesWithin 30 alice ["1: supporter", openPurchase "", "1: supporter"] ["badge alert: ", "renewal failing since ", "subscribed "]
+      waitShownBadge (chatController alice) (Just 1)
+      heldStoreReceipts (chatController alice) `shouldReturn` 0
+      storeReceiptCreditErrors (chatController alice) `shouldReturn` []
+      ledgerTags (chatController alice) `shouldReturn` [Just "charge", Just "badge", Just "charge", Just "badge"]
+
+testMovedOutPlayNotResumed :: HasCallStack => TestParams -> IO ()
+testMovedOutPlayNotResumed ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice ->
+      withNewTestChatCfg ps bsClientCfg "bob" bobProfile $ \bob -> do
+        (_, rows) <- clientSubscribedMonthly env alice
+        bob `send` restoredCmd 1 subscriptionPlay
+        waitShownBadge (chatController bob) (Just 1)
+        -- the old device's badge retires at its next request, which the service answers ended
+        setClockAt bsClock $ fst $ renewalMoments rows
+        alice `send` "/_app activate"
+        waitShownBadge (chatController alice) Nothing
+        last <$> ledgerTags (chatController alice) `shouldReturn` Just "transferOut"
+        dropOutput alice
+        checks <- subscriptionChecks store
+        alice ##> ("/_badge purchase 1 " <> paymentArg subscriptionPlay)
+        alice <## "badge already redeemed"
+        heldStoreReceipts (chatController alice) `shouldReturn` 0
+        subscriptionChecks store `shouldReturn` checks
+        mapM_ dropOutput [alice, bob]
 
 testAppleResubscribeBounded :: HasCallStack => TestParams -> IO ()
 testAppleResubscribeBounded ps =

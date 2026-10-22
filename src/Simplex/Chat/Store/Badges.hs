@@ -28,11 +28,13 @@ module Simplex.Chat.Store.Badges
     StoreHoldKind (..),
     holdStoreReceipt,
     holdStoreTransfer,
+    purchaseMovedOut,
     getReceiptRecord,
     createBadgeStoreReceipt,
     getOpenStorePurchases,
     getPendingStoreReceipts,
     getNextHeldStoreReceipt,
+    getStoreReceiptFailures,
     recordStoreReceiptFailure,
     refuseStoreReceipt,
     settleStoreReceipt,
@@ -246,18 +248,22 @@ holdStoreTransfer db g User {userId} txRef payment now =
             _ -> False
     _ -> pure False
   where
-    -- the service answers a purchase whose payment moved away ended, so a resume of it never succeeds
     movesHere ownerId badgePurchaseId
       | ownerId /= userId = pure True
-      | otherwise = maybe False movedOut <$> getBadgeLedgerLastEntry db badgePurchaseId
-    movedOut StatementEntry {entryType} = case entryType of
-      SEDebit SDTransferOut {} -> True
-      _ -> False
+      | otherwise = purchaseMovedOut db badgePurchaseId
     holdTransfer receiptId =
       DB.execute
         db
         "UPDATE badge_store_receipts SET user_id = ?, payment = ?, next_attempt_at = ?, retry_delay = NULL, retry_count = 0, credit_error = NULL, hold_kind = ? WHERE badge_store_receipt_id = ? AND payment IS NULL"
         (userId, safeDecodeUtf8 . LB.toStrict $ J.encode payment, now, SHKTransfer, receiptId)
+
+-- | The service answers a purchase whose payment moved away ended, so a resume of it never succeeds.
+purchaseMovedOut :: DB.Connection -> Int64 -> IO Bool
+purchaseMovedOut db badgePurchaseId = maybe False movedOut <$> getBadgeLedgerLastEntry db badgePurchaseId
+  where
+    movedOut StatementEntry {entryType} = case entryType of
+      SEDebit SDTransferOut {} -> True
+      _ -> False
 
 -- | Whether a held Apple record presents this payment next: another transaction of its subscription, bought
 -- later and not revoked. The core decides which is newest, since the app's store listener races its sweep, and a
@@ -350,6 +356,11 @@ getNextHeldStoreReceipt db userId =
   where
     toHeld (stashRow@(receiptId, _, _, _) :. (invoiceId, payment, nextAttemptAt, retryDelay, holdKind)) =
       BadgeReceiptRecord {receiptId, ownerId = userId, status = RSHeld {stash = toBadgeStash BSRStoreReceipt stashRow, invoiceId, payment, nextAttemptAt, retryDelay, holdKind}}
+
+-- | The attempts that failed since the record was last held: each hold resets the count.
+getStoreReceiptFailures :: DB.Connection -> Int64 -> IO Int64
+getStoreReceiptFailures db receiptId =
+  maybeFirstRow' 0 fromOnly $ DB.query db "SELECT retry_count FROM badge_store_receipts WHERE badge_store_receipt_id = ?" (Only receiptId)
 
 -- | Only while the record still holds the payment that failed: one adopted meanwhile is due at once.
 recordStoreReceiptFailure :: DB.Connection -> Int64 -> Text -> Int64 -> UTCTime -> BadgeIssueFailure -> IO ()
