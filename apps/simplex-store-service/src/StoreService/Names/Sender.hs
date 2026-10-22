@@ -316,10 +316,10 @@ warnNonce Sender {snInFlight} nonce warning = do
         | ifLastWarning == Just warning -> pure False
         | otherwise -> True <$ writeTVar snInFlight (M.insert nonce tx {ifLastWarning = Just warning} inFlight)
       Nothing -> pure True
-  when changed $ (if underfundedMessage `T.isInfixOf` warning then logError else logWarn) message
+  when changed $ (if underfundedMessage `T.isInfixOf` T.toLower warning then logError else logWarn) message
   where
     message = "names sender: nonce " <> tshow nonce <> ": " <> warning
 
--- | How geth, reth and erigon refuse a transaction whose key cannot pay gas × fee + value.
+-- | How geth, reth and erigon refuse a transaction whose key cannot pay gas × fee + value, in lower case; anvil capitalizes it.
 underfundedMessage :: Text
 underfundedMessage = "insufficient funds"
