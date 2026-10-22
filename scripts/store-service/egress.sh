@@ -28,7 +28,8 @@ Usage: $0 [--dry-run | --check | --remove] (--uid UID | --bridge IFACE) [--ini F
 
 Installs the egress rule as the iptables and ip6tables chain $CHAIN, rebuilt on every run.
 
-  --dry-run          print the commands an install would run, and change nothing
+  --dry-run          print the iptables-restore input an install would commit, read against the
+                     current rules (so as root), and change nothing
   --check            exit 1 unless every rule and jump an install writes is in place and the chain
                      holds no other rule
   --remove           delete the jumps an install adds for this --uid or --bridge, then the chain
@@ -82,7 +83,8 @@ if [[ $bridge ]]; then
   fi
 else
   [[ $uid ]] || die "--uid is required with host networking: the uid the service runs as (USER_UID in compose)"
-  [[ $uid =~ ^[0-9]+$ ]] || die "--uid must be a numeric user id"
+  # iptables prints the uid without leading zeros, and the jump is found by that text.
+  [[ $uid =~ ^(0|[1-9][0-9]*)$ ]] || die "--uid must be a numeric user id without leading zeros"
 fi
 
 ini_value() {
