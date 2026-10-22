@@ -79,6 +79,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "refuses a bad signature, or another signer's" testBadSignature
     it "refuses a stale timestamp on a new order" testStaleTimestamp
     it "lets one of two concurrent orders for one owner and name win" testConcurrentOrders
+    it "cancels the provider invoice and logs it when the order's insert fails" testInsertFailureCancels
     it "checks the duration within the slack, before and after the term start" testDurationSlack
     it "answers catalog_changed with the chain price" testCatalogChanged
     it "answers name_taken for a registered, reserved or being registered name" testNameTaken
@@ -457,6 +458,19 @@ testConcurrentOrders = withOrders $ \ctx -> do
   sort [fst a, fst b] `shouldBe` [200, 409]
   filter ((== 409) . fst) [a, b] `shouldBe` [refusedWith 409 "order_exists"]
   length <$> registrationsOf ctx ownerA `shouldReturn` 1
+
+-- | The stub gives every invoice one ref, so the second order's insert breaks the unique ref.
+testInsertFailureCancels :: IO ()
+testInsertFailureCancels = withOrdersVia (\p -> p {pCreateInvoice = \m d -> fmap (\i -> i {piProviderRef = "pref-same"}) <$> pCreateInvoice p m d}) $ \ctx -> do
+  void $ placed ctx aliceOrder
+  -- a listener that answers the handler's exception instead of rethrowing it into the test
+  mgr <- newManager defaultManagerSettings
+  logs <- Warp.withApplication (pure $ webApp $ cWeb ctx) $ \port -> do
+    let answering = ctx {cClient = (mgr, "http://127.0.0.1:" <> show port)}
+    capturingStderr $ fst <$> placeOrder answering aliceOrder {oLabel = "dynamis", oPrice = 20000, oCommitment = commitmentOf 2} `shouldReturn` 500
+  logs `shouldSatisfy` T.isInfixOf "invoice pref-same is cancelled at the provider"
+  calls <- stubCalls (cStub ctx)
+  [r | StubCancel r <- calls] `shouldBe` ["pref-same"]
 
 testDurationSlack :: IO ()
 testDurationSlack = withOrders $ \ctx -> do

@@ -5,8 +5,10 @@
 module StoreService.Web.Names.Orders (nameInvoiceHandler, nameInvoiceView, orderRefusalResponse, registrationChangedResponse) where
 
 import Control.Concurrent.STM (atomically)
+import qualified Control.Exception as E
 import Control.Monad (forM_, unless)
 import Data.Aeson ((.=))
+import Data.Maybe (isJust)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import Data.Text (Text)
@@ -101,7 +103,9 @@ nameInvoiceHandler env@OrdersEnv {oeStore, oeTurns, oeNow} cfg providers waiters
           let invoice = NewNameInvoice {nniInvoiceId = invId, nniProvider = pProvider provider, nniAmount = amount, nniCurrency = catalogCurrency, nniDestination = piDestination, nniExpiresAt = addUTCTime (invoiceWindow cfg ioMethod) now, nniCreatedAt = now}
               registration = NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = orFields, nrgYears = nYears $ oeConfig env}
               paid = PaidOrder {poMethod = ioMethod, poPrice = fromIntegral ioPrice, poInvoiceId = invId, poProviderRef = piProviderRef}
-          placeOrder env req (\db at -> insertNameInvoice db invoice >> createPaidRegistration db registration paid at) >>= \case
+          placeOrder env req (\db at -> insertNameInvoice db invoice >> createPaidRegistration db registration paid at)
+            `E.catch` strandedBy provider piProviderRef
+            >>= \case
             Left refusal -> do
               logWarn ("POST /api/invoice (name): the order lost to another, so invoice " <> piProviderRef <> " is cancelled at the provider")
               cancelAtProvider provider piProviderRef
@@ -113,6 +117,14 @@ nameInvoiceHandler env@OrdersEnv {oeStore, oeTurns, oeNow} cfg providers waiters
               case (row_, registration_) of
                 (Just row, Just r) -> respondView row r
                 _ -> logError ("POST /api/invoice (name): order " <> invText invId <> " is not readable after its commit") >> respond internalError
+    -- An invoice created at the provider for an order that was not written would stay payable with nothing watching it.
+    strandedBy :: Provider -> Text -> E.SomeException -> IO a
+    strandedBy provider ref e = do
+      unless (isAsync e) $ do
+        logError ("POST /api/invoice (name): the order was not written, so invoice " <> ref <> " is cancelled at the provider: " <> tshow e)
+        cancelAtProvider provider ref
+      E.throwIO e
+    isAsync e = isJust (E.fromException e :: Maybe E.SomeAsyncException)
     cancelAtProvider Provider {pCancelInvoice} ref =
       pCancelInvoice ref >>= \case
         Left (ProviderError e) -> logWarn ("names: cancelling invoice " <> ref <> " at the provider failed: " <> e)
