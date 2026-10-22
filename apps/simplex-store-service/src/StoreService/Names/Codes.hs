@@ -10,6 +10,7 @@ module StoreService.Names.Codes
     CodeRefusal (..),
     codeRefusal,
     codeRefusalTag,
+    reserveRefusal,
     readPrepaidCode,
     reserveCode,
     releaseCode,
@@ -94,6 +95,10 @@ stateRefusal = \case
   CSExpired -> Just CRExpired
   CSUnpaid -> Just CRPaymentPending
 
+-- | Why a conditional reservation of the code refused it, as the code reads now.
+reserveRefusal :: DB.Connection -> UTCTime -> ByteString -> RegistrationId -> Int -> IO CodeRefusal
+reserveRefusal db now codeHash rid len = maybe CRInvalid (fromMaybe CRReserved . codeRefusal now rid len) <$> getPrepaidCode db codeHash
+
 readPrepaidCode :: DBStore -> NamePrepaidCode -> IO (Maybe PrepaidCode)
 readPrepaidCode st code = withTransaction st (`getPrepaidCode` namePrepaidCodeHash code)
 
@@ -110,7 +115,7 @@ reserveCode turns st now codeHash rid len write =
         | otherwise ->
             reservePrepaidCode db pcId rid now >>= \case
               -- Only a writer outside this process, which takes no turn here, can refuse it.
-              False -> Left . maybe CRInvalid (fromMaybe CRReserved . codeRefusal now rid len) <$> getPrepaidCode db codeHash
+              False -> Left <$> reserveRefusal db now codeHash rid len
               True ->
                 write db >>= \case
                   refused@(Left _) -> Right refused <$ releasePrepaidCode db pcId rid
