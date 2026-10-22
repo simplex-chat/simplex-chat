@@ -26,7 +26,7 @@ Run these on an iOS simulator or device on the Mac. Each case says what to do an
 | C2 | Type `ne` | One-hand: "Search in Directory" replaces the tags above the field. Top bar: tags stay, "Search in Directory" appears below the field |
 | C3 | Type a 5+ letter word, e.g. `alice` | "Connect to alice.testing" and "Search in Directory" (same slots as C2) |
 | C4 | Paste a SimpleX link | One-hand: the tags stay in the slot. Neither mode offers "Search in Directory"; the link connects as before |
-| C5 (AC4) | With "Directory search" off, tap "Search in Directory" | Alert "Enable Directory search?", message "Search text is sent to SimpleX Directory, each search separately and without your profile, so it can't build your search history.", actions Cancel and Enable |
+| C5 (AC4) | With "Directory search" off, tap "Search in Directory" | Alert "Enable Directory search?", message "Search text is sent to SimpleX Directory, each search separately and without your profile.", actions Cancel and Enable |
 | C6 (AC4) | In C5, choose Cancel | Nothing is sent: no spinner, no results, the request count does not change; "Search in Directory" is still shown |
 | C7 (AC4) | Choose Enable | The search runs; Settings → Privacy → "Directory search" is now on; later searches, by the row or the key, do not ask; turning the switch off brings the alert back |
 | C8 (AC3) | Type text, press the keyboard **Search** key | The key is labelled Search; it runs the same directory search as the row (the alert first while the switch is off) |
