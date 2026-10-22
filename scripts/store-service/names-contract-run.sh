@@ -26,8 +26,8 @@ SERVICE_URL="http://127.0.0.1:$SERVICE_PORT"
 CODES_URL="http://127.0.0.1:$CODES_PORT"
 STARTUP_SECONDS=120
 CLI_TIMEOUT_SECONDS=120
-# A test issuer key, trusted through [issuer] dev_keys, which the service accepts only on chain 31337.
-# The service refuses it if a client key ever takes its index.
+# The test suite's public issuer secret (issuerSecret in tests/Bots/StoreService/ConfigTests.hs), trusted
+# through [issuer] dev_keys, which the service accepts only on chain 31337. Never use it elsewhere.
 DEV_ISSUER_INDEX=999
 DEV_ISSUER_SECRET=Ea5wG-J2mQjPBu9YfSJRKPnGnzoIdEE-8VaMh_wY2Bg=
 

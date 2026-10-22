@@ -90,9 +90,16 @@ private_key = <secret>
 dev_keys = 999:<secret>
 ```
 
-The service refuses to start with `dev_keys` unless `[names]` is on and `[chain] chain_id` is 31337,
-anvil's local chain, and refuses a dev key at the index of a key clients trust. Clients never trust a
-dev key, so nothing it signs verifies outside that run. Leave it out everywhere else.
+With `dev_keys`, the service refuses to start:
+
+- unless `[names]` is on and `[chain] chain_id` is 31337, anvil's local chain;
+- unless the node at `rpc_url` answers `eth_chainId` with 31337 as the service starts;
+- when `[btcpay]` or `[stripe]` is configured, since a run with dev keys takes no payments;
+- when a dev key has the index of a key clients trust.
+
+It logs a warning naming the dev keys' indexes at every start. Clients never trust a dev key, but the
+service's own chat core does, for the badges it receives, so a contact's badge signed by a dev key is
+accepted in that run. Leave `dev_keys` out everywhere else.
 
 Other options:
 
@@ -933,8 +940,9 @@ payment against this service in Chromium, as they run against the webapp's mock.
    age of 5 seconds;
 2. builds the names site (`vite build`) into the run's folder;
 3. writes an ini for that deployment with `[names]` and `[chain]` and no `[btcpay]` or `[stripe]`,
-   serving the names site all in one on the host `127.0.0.1`, and signing with a fixed test key
-   trusted through `[issuer] dev_keys`;
+   serving the names site all in one on the host `127.0.0.1`, and signing with the test suite's
+   public issuer secret (`issuerSecret` in `tests/Bots/StoreService/ConfigTests.hs`), trusted through
+   `[issuer] dev_keys`. That secret is public: never use it outside this script;
 4. starts the service once to make its database, stops it, and issues the prepaid codes the cases
    need with `//issue name` in `--run-cli`;
 5. starts the service on 8180 and a code server on 8199, and runs the cases with `BASE_URL` at the
@@ -944,11 +952,15 @@ The code server answers the cases' `POST /control/code` with the issued codes, t
 `/control/search` that `search.spec.ts` sends after each case as done, and any other `/control/` with
 `501`, which fails the case that sends it. It passes `/api/` to the service.
 
-It needs Foundry's anvil, Node.js, `jq`, `curl` and `python3`; the webapp with its packages and
+It needs bash 5.1 or later (for `wait -n -p`), `cabal` (for the default `STORE_SERVICE_BIN`),
+Foundry's anvil, Node.js 22.18 or later (which runs the webapp's `dev/deploy.ts` as TypeScript, as its
+`dev/start.sh` does), `jq`, `curl` and `python3`; the webapp with its packages and
 Playwright's Chromium (`npm install`, `npx playwright install chromium`); and an `ens-contracts` checkout
 compiled as the webapp's `dev/start.sh` needs. The cases read the chain's addresses from the webapp's
 `dev/local-chain-0.json`, so the script stops when its deployment differs from it; run the webapp's
-`SLOTS=1 MIN_COMMITMENT_AGE=5 dev/start.sh` once to write it. Ports 8545, 8180 and 8199 must be free.
+`SLOTS=1 MIN_COMMITMENT_AGE=5 dev/start.sh` once to write it. Ports 8545, 8180 and 8199 must be free:
+the script stops before starting anything when one of them answers, and stops at once when anvil,
+the service or the code server exits before it answers.
 
 ```
 cabal build exe:simplex-store-service
