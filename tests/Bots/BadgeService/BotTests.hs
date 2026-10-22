@@ -280,6 +280,7 @@ badgeServiceTests = do
     it "should resume an Apple subscription retired within its coverage by a refund, once its store charges it again" testAppleResubscribeResumesWithinCoverage
     it "should resume a Play subscription retired past the recovery window when its token is handed over while Play charges it" testPlaySubscriptionResumes
     it "should not hold a Play subscription moved to another device as a resume of the purchase it left" testMovedOutPlayNotResumed
+    it "should derive no alert for an Apple purchase Restore moved to another device, and not hold a later charge as a resume of it" testMovedOutAppleNoAlertNoResume
     it "should hold an Apple charge of another tier while its badge is shown, grant it through the worker and show it at once, and send nothing for one of the same tier" testAppleTierChangeHandOver
     it "should tell the apps a granted Apple tier change and show it to a contact at once" testTierChangeReachesContacts
     it "should keep an Apple tier change held while the store reports the old tier, without failing the renewal, and grant it once the store reports the new one" testAppleTierChangeStoreLags
@@ -4355,6 +4356,38 @@ testMovedOutPlayNotResumed ps =
         heldStoreReceipts (chatController alice) `shouldReturn` 0
         subscriptionChecks store `shouldReturn` checks
         mapM_ dropOutput [alice, bob]
+
+testMovedOutAppleNoAlertNoResume :: HasCallStack => TestParams -> IO ()
+testMovedOutAppleNoAlertNoResume ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsStore = store@FakeStore {appleSubscriptionJWS}} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice ->
+      withNewTestChatCfg ps bsClientCfg "bob" bobProfile $ \bob -> do
+        firstStart <- addUTCTime (-3600) <$> serviceNow env
+        -- the status names the transaction presented as the latest, so Restore moves it
+        appleStoreReports store $ subscriptionCheck SSRenewing $ Just (storeCharge "SUBSCR_BADGE_SUPPORTER_MONTH_01" firstStart 1) {chargeRef = "2000000812345681"}
+        alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = appleSubscriptionJWS})
+        inAnyOrder alice [[openPurchase ""], ["1: supporter"]]
+        waitWakeArmed (chatController alice)
+        aliceRows <- ledgerRows (chatController alice) "badge_ledger"
+        bob `send` restoredCmd 1 SPApple {jws = appleSubscriptionJWS}
+        waitShownBadge (chatController bob) (Just 1)
+        -- the source profile's badge retires at its next request, answered ended, and no alert says it ended there
+        let requestAt = fst $ renewalMoments aliceRows
+        setClockAt bsClock requestAt
+        alice `send` "/_app activate"
+        expectLinesWithin 30 alice ["/_app activate", "ok", "1: supporter"] ["1: supporter", "subscribed "]
+        waitShownBadge (chatController alice) Nothing
+        last <$> ledgerTags (chatController alice) `shouldReturn` Just "transferOut"
+        alice ##> "/_badge state 1"
+        alice <##. "1: supporter"
+        (alice </)
+        -- a later charge of the subscription is answered from the record, not held as a resume of the purchase it left
+        checks <- subscriptionChecks store
+        alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = appleResubscription "2000000812345692" requestAt})
+        alice <## "badge already redeemed"
+        heldStoreReceipts (chatController alice) `shouldReturn` 0
+        subscriptionChecks store `shouldReturn` checks
+        dropOutput bob
 
 testAppleResubscribeBounded :: HasCallStack => TestParams -> IO ()
 testAppleResubscribeBounded ps =

@@ -29,6 +29,7 @@ module Simplex.Chat.Store.Badges
     holdStoreReceipt,
     holdStoreTransfer,
     purchaseMovedOut,
+    paymentMovedOut,
     getReceiptRecord,
     createBadgeStoreReceipt,
     getOpenStorePurchases,
@@ -259,11 +260,13 @@ holdStoreTransfer db g User {userId} txRef payment now =
 
 -- | The service answers a purchase whose payment moved away ended, so a resume of it never succeeds.
 purchaseMovedOut :: DB.Connection -> Int64 -> IO Bool
-purchaseMovedOut db badgePurchaseId = maybe False movedOut <$> getBadgeLedgerLastEntry db badgePurchaseId
-  where
-    movedOut StatementEntry {entryType} = case entryType of
-      SEDebit SDTransferOut {} -> True
-      _ -> False
+purchaseMovedOut db badgePurchaseId = maybe False paymentMovedOut <$> getBadgeLedgerLastEntry db badgePurchaseId
+
+-- | A ledger tip that moved the purchase's payment to another key.
+paymentMovedOut :: StatementEntry -> Bool
+paymentMovedOut StatementEntry {entryType} = case entryType of
+  SEDebit SDTransferOut {} -> True
+  _ -> False
 
 -- | Whether a held Apple record presents this payment next: another transaction of its subscription, bought
 -- later and not revoked. The core decides which is newest, since the app's store listener races its sweep, and a

@@ -5384,13 +5384,13 @@ handOverStoreReceipt presentingUser echoedInvoiceId origin payment = do
         RSHeld {} -> lift (resumeStoreReceiptWork ownerId) >> badgeStateResponse owner
         RSCredited {badgePurchaseId, refusalRecorded} -> do
           let rehold kind = withStore' $ \db -> reholdStoreReceipt db owner receiptId badgePurchaseId kind payment now
+          movedOut <- withStore' (`purchaseMovedOut` badgePurchaseId)
           answeredHeld <- case resumeHold now payment of
+            _ | movedOut -> pure False
             -- a charge refused after its hold is answered from the record, or the app's sweep would hold it again at every launch
             Just (RHPurchasedAt purchasedAt) | not (refusalRecorded && resumeHoldEnded now purchasedAt) -> rehold SHKPurchase
             -- a refused Play resume is held again: the service's hourly check bounds what the sweep can ask of Play
-            Just RHAttempts -> do
-              movedOut <- withStore' (`purchaseMovedOut` badgePurchaseId)
-              if movedOut then pure False else rehold SHKPurchase
+            Just RHAttempts -> rehold SHKPurchase
             _ -> pure False
           -- a refused tier change is answered from the record, or every sweep would hold it and send it again
           tierChangeHeld <- case tierChangeCharge now payment of
@@ -5938,6 +5938,8 @@ updateUserBadge userId emitted now = do
 -- | Warning before a prepaid badge ends is not actionable while topping up cannot credit months without issuing.
 -- TODO [badges] BAPrepaidEnding belongs here, three days before paidThrough, once that exists.
 derivedBadgeAlert :: UTCTime -> UserBadgePurchase -> Maybe BadgeCredential -> StatementEntry -> Maybe BadgeAlert
+-- Restore moved its payment to another key, so nothing of this purchase ended, lapsed or failed
+derivedBadgeAlert _ _ _ b | paymentMovedOut b = Nothing
 derivedBadgeAlert now p@UserBadgePurchase {purchaseKind, shown} shownCred b = case purchaseKind of
   PKPrepaid
     | endsAt <= now -> Just $ alertOf BASupportEnded endsAt
