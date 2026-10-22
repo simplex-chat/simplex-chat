@@ -214,7 +214,8 @@ badgeServiceTests = do
       it "should refuse a transfer to a key that holds a purchase, without asking the store" testTransferKnownKeyRefused
       it "should answer a transfer of a one-time purchase credited to another key receipt_used, moving nothing" testTransferOneTimeRefused
     describe "restore" $ do
-      it "should move a subscription to another device on Restore, retire it on the old one, and credit one credited nowhere" testRestoreOnNewDevice
+      it "should move a subscription to another device on Restore right after its purchase, retire it on the old one, and credit one credited nowhere" testRestoreOnNewDevice
+      it "should hold a second Restore within the hour of the first without asking the store, and still ask once for a purchase presented in it" testRestoreHeldPerPurpose
       it "should move a subscription to another profile on Restore, and refuse a move on before the first key's credential expires, once" testRestoreOnOtherProfile
       it "should turn a held or receipt_used hand-over into a transfer on Restore" testRestoreAfterUnfinishedPass
       it "should leave a resume held for one profile unchanged when a Restore on another profile finds it" testRestoreLeavesResumeHold
@@ -2997,11 +2998,13 @@ testRestoreOnNewDevice ps =
         alice `send` ("/_badge purchase 1 " <> paymentArg subscriptionPlay)
         waitShownBadge (chatController alice) (Just 1)
         aliceRows <- ledgerRows (chatController alice) "badge_ledger"
-        nextClaimCheck env
+        -- within the hour of the purchase's store check, the Restore asks the store itself
+        checks <- subscriptionChecks store
         bob `send` restoredCmd 1 subscriptionPlay
         waitShownBadge (chatController bob) (Just 1)
         ledgerTags (chatController bob) `shouldReturn` [Just "charge", Just "badge"]
         reboundPayments cc `shouldReturn` 1
+        subscriptionChecks store `shouldReturn` checks + 1
         -- the old device's badge retires at its next request, which the service answers ended
         setClockAt bsClock $ fst $ renewalMoments aliceRows
         alice `send` "/_app activate"
@@ -3014,6 +3017,28 @@ testRestoreOnNewDevice ps =
           ledgerTags (chatController cath) `shouldReturn` [Just "charge", Just "badge"]
           reboundPayments cc `shouldReturn` 1
           mapM_ dropOutput [alice, bob, cath]
+
+testRestoreHeldPerPurpose :: HasCallStack => TestParams -> IO ()
+testRestoreHeldPerPurpose ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsStore = store} -> do
+    let heldFor s (code, retryAfter) = code == BSEPaymentPending && maybe False (\t -> t > s - 60 && t <= s + 60) retryAfter
+    _ <- subscribedMonthly env
+    purchasedAt <- testClockTime bsClock
+    setClockAt bsClock $ addUTCTime 1800 purchasedAt
+    checks <- subscriptionChecks store
+    (_, moved) <- transferWithNewKey env subscriptionPlay
+    credentialOf moved `shouldSatisfy` isJust
+    subscriptionChecks store `shouldReturn` checks + 1
+    -- past the purchase's hour and inside the Restore's
+    setClockAt bsClock $ addUTCTime 3700 purchasedAt
+    refusalOf . snd <$> transferWithNewKey env subscriptionPlay >>= (`shouldSatisfy` heldFor 1700)
+    subscriptionChecks store `shouldReturn` checks + 1
+    (otherKey, otherMasterKey) <- newPurchaseKeys
+    let presented = refusalOf <$> serviceCmd env otherKey (purchaseCmd otherMasterKey subscriptionPlay)
+    presented `shouldReturn` (BSEReceiptUsed, Nothing)
+    subscriptionChecks store `shouldReturn` checks + 2
+    presented >>= (`shouldSatisfy` heldFor 3600)
+    subscriptionChecks store `shouldReturn` checks + 2
 
 testRestoreOnOtherProfile :: HasCallStack => TestParams -> IO ()
 testRestoreOnOtherProfile ps =
