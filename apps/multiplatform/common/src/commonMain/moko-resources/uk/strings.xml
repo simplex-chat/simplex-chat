@@ -2030,7 +2030,6 @@
     <string name="network_session_mode_session_description">Нові облікові дані SOCKS будуть використовуватись щоразу, коли ви запускаєте додаток.</string>
     <string name="network_session_mode_server_description">Нові облікові дані SOCKS будуть використовуватись для кожного сервера.</string>
     <string name="network_session_mode_server">Сервер</string>
-    <string name="call_desktop_permission_denied_title">Щоб здійснювати дзвінки, дозволіть використовувати ваш мікрофон. Завершіть дзвінок і спробуйте зателефонувати знову.</string>
     <string name="v6_1_better_calls">Кращі дзвінки</string>
     <string name="v6_1_better_security">Краща безпека ✅</string>
     <string name="v6_1_customizable_message_descr">Налаштовувана форма повідомлень.</string>

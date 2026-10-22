@@ -971,7 +971,6 @@
     <string name="app_will_ask_to_confirm_unknown_file_servers">Aplikasi akan meminta untuk mengonfirmasi unduhan dari server berkas yang tidak dikenal (kecuali .onion atau saat proxy SOCKS diaktifkan).</string>
     <string name="message_reactions_prohibited_in_this_chat">Reaksi pesan dilarang dalam obrolan ini.</string>
     <string name="migrate_from_device_to_another_device">Pindah ke perangkat lain</string>
-    <string name="call_desktop_permission_denied_title">Untuk melakukan panggilan, izinkan penggunaan mikrofon. Akhiri panggilan dan coba panggil lagi.</string>
     <string name="relay_server_protects_ip">Server relai melindungi alamat IP Anda, tetapi dapat mengamati durasi panggilan.</string>
     <string name="open_simplex_chat_to_accept_call">Buka SimpleX Chat untuk terima panggilan</string>
     <string name="open_verb">Buka</string>

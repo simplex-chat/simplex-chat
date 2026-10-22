@@ -1930,7 +1930,6 @@
     <string name="remote_ctrl_connection_stopped_identity_desc">Đường dẫn này đã được sử dụng với một thiết bị di động khác, xin vui lòng tạo một đường dẫn mới trên máy tính.</string>
     <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Để bảo vệ thông tin của bạn, bật Khóa SimpleX.\nBạn sẽ được nhắc để hoàn thành xác thực trước khi tính năng này được bật.</string>
     <string name="this_string_is_not_a_connection_link">Chuỗi ký tự này không phải là một đường dẫn kết nối!</string>
-    <string name="call_desktop_permission_denied_title">Để thực hiện các cuộc gọi, cho phép sử dụng mic của bạn. Kết thúc cuộc gọi và thử gọi lại.</string>
     <string name="operator_use_for_messages_receiving">Để nhận</string>
     <string name="scan_qr_to_connect_to_contact">Để kết nối, liên hệ của bạn có thể quét mã QR hoặc dùng đường dẫn trong ứng dụng.</string>
     <string name="color_title">Tiêu đề</string>

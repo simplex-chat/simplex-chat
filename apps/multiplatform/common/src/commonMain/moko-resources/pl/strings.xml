@@ -2029,7 +2029,6 @@
     <string name="migrate_from_device_uploaded_archive_will_be_removed">Przesłane archiwum bazy danych zostanie trwale usunięte z serwerów.</string>
     <string name="network_session_mode_server">Serwer</string>
     <string name="settings_message_shape_tail">Ogon</string>
-    <string name="call_desktop_permission_denied_title">Aby wykonywać połączenia, zezwól na korzystanie z mikrofonu. Zakończ połączenie i spróbuj zadzwonić ponownie.</string>
     <string name="v6_1_better_security">Lepsze bezpieczeństwo ✅</string>
     <string name="v6_1_message_dates_descr">Lepsze daty wiadomości.</string>
     <string name="v6_1_customizable_message_descr">Możliwość dostosowania kształtu wiadomości.</string>

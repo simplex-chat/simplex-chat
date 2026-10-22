@@ -2228,7 +2228,6 @@
     <string name="operator_use_for_sending">Pro odeslílání</string>
     <string name="operator_use_for_files">Použit pro soubory</string>
     <string name="v6_2_network_decentralization_descr">Druhý přednastavený operátor v aplikaci!</string>
-    <string name="call_desktop_permission_denied_title">Chcete-li volat, povolte použití mikrofonu. Ukončete hovor a zkuste to znovu.</string>
     <string name="servers_info_statistics_section_header">Statistiky</string>
     <string name="subscription_errors">Chyby odběru</string>
     <string name="onboarding_network_about_operators">O operátorech</string>

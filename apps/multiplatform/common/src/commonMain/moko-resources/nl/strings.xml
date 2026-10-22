@@ -2031,7 +2031,6 @@
     <string name="network_session_mode_server_description">Voor elke server worden nieuwe SOCKS-inloggegevens gebruikt.</string>
     <string name="network_session_mode_server">Server</string>
     <string name="settings_message_shape_tail">Staart</string>
-    <string name="call_desktop_permission_denied_title">Als u wilt bellen, geeft u toestemming om uw microfoon te gebruiken. Beëindig het gesprek en probeer opnieuw te bellen.</string>
     <string name="v6_1_better_security">Betere beveiliging ✅</string>
     <string name="v6_1_better_security_descr">SimpleX-protocollen beoordeeld door Trail of Bits.</string>
     <string name="v6_1_message_dates_descr">Betere datums voor berichten.</string>

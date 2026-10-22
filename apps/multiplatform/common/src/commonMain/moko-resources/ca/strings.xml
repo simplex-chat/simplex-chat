@@ -1186,7 +1186,6 @@
     <string name="video_call_no_encryption">videotrucada (sense xifrar)</string>
     <string name="ignore">Ignorar</string>
     <string name="reject">Rebutjar</string>
-    <string name="call_desktop_permission_denied_title">Per fer trucades, permet utilitzar el micròfon. Finalitza la trucada i prova de tornar a trucar.</string>
     <string name="icon_descr_video_call">Videotrucada</string>
     <string name="relay_server_if_necessary">El servidor de retransmissió només s\'utilitza si cal. Un tercer pot observar la vostra adreça IP.</string>
     <string name="show_call_on_lock_screen">Mostrar</string>

@@ -2028,7 +2028,6 @@
     <string name="settings_message_shape_corner">Coin</string>
     <string name="settings_section_title_message_shape">Forme du message</string>
     <string name="settings_message_shape_tail">Queue</string>
-    <string name="call_desktop_permission_denied_title">Pour passer des appels, autorisez l\'utilisation de votre microphone. Mettez fin à l\'appel et essayez d\'appeler à nouveau.</string>
     <string name="migrate_from_device_remove_archive_question">Supprimer l\'archive ?</string>
     <string name="v6_1_better_calls">Appels améliorés</string>
     <string name="v6_1_customizable_message_descr">Forme des messages personnalisable.</string>

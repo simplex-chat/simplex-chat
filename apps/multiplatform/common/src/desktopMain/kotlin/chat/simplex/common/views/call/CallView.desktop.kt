@@ -143,7 +143,7 @@ actual fun ActiveCallView() {
         }
         is WCallResponse.Error -> {
           if (apiMsg.command is WCallCommand.Capabilities) {
-            AlertManager.shared.showAlertMsg(generalGetString(MR.strings.call_desktop_permission_denied_title))
+            AlertManager.shared.showAlertMsg(generalGetString(MR.strings.call_desktop_engine_error), r.message)
             withBGApi { chatModel.callManager.endCall(call) }
           }
           Log.e(TAG, "ActiveCallView: command error ${r.message}")

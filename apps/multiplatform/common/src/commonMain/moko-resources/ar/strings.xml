@@ -2008,7 +2008,6 @@
     <string name="network_session_mode_server">الخادم</string>
     <string name="network_session_mode_session_description">سيتم استخدام بيانات اعتماد SOCKS الجديدة في كل مرة تبدأ فيها تشغيل التطبيق.</string>
     <string name="network_session_mode_server_description">سيتم استخدام بيانات اعتماد SOCKS الجديدة لكل خادم.</string>
-    <string name="call_desktop_permission_denied_title">لإجراء مكالمات، اسمح باستخدام الميكروفون. أنهِ المكالمة وحاول الاتصال مرة أخرى.</string>
     <string name="v6_1_better_user_experience">تجربة مستخدم أفضل</string>
     <string name="v6_1_customizable_message_descr">شكل الرسالة قابل للتخصيص.</string>
     <string name="v6_1_better_calls_descr">تبديل الصوت والفيديو أثناء المكالمة.</string>

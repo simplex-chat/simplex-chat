@@ -2314,7 +2314,6 @@
     <string name="onboarding_configure_routers">ルーターを設定</string>
     <string name="onboarding_configure_notifications">通知を設定</string>
     <string name="onboarding_network_commitments">ネットワークの取り組み</string>
-    <string name="call_desktop_permission_denied_title">通話するにはマイクの使用を許可してください。通話を終了して、もう一度かけ直してください。</string>
     <string name="open_external_link_title">外部リンクを開きますか？</string>
     <string name="icon_descr_sound_muted">サウンドをミュート中</string>
     <string name="rcv_msg_error_dropped">破棄されました（%1$d回試行）</string>
