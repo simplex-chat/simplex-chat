@@ -298,7 +298,7 @@ struct GroupMemberInfoView: View {
                 do {
                     let (_, stats) = try await apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
                     let getCode = (member.memberActive || (groupInfo.useRelays && member.memberCurrent)) && member.memberRole != .relay
-                    let (mem, code) = getCode ? try await apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId) : (member, nil)
+                    let (mem, code) = getCode ? try await apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId) : (chatModel.withLoadedSupportChat(member), nil)
                     await MainActor.run {
                         _ = chatModel.upsertGroupMember(groupInfo, mem)
                         connectionStats = stats
@@ -578,7 +578,7 @@ struct GroupMemberInfoView: View {
                 connectionCode: code,
                 connectionVerified: member.verified,
                 verify: { code in
-                    var member = groupMember.wrapped
+                    var member = chatModel.withLoadedSupportChat(groupMember.wrapped)
                     if let r = apiVerifyGroupMember(member.groupId, member.groupMemberId, connectionCode: code) {
                         let (verified, existingCode) = r
                         let connCode = verified ? SecurityCode(securityCode: existingCode, verifiedAt: .now) : nil
@@ -773,7 +773,7 @@ struct GroupMemberInfoView: View {
                 let stats = try apiSwitchGroupMember(groupInfo.apiId, groupMember.groupMemberId)
                 connectionStats = stats
                 await MainActor.run {
-                    chatModel.updateGroupMemberConnectionStats(groupInfo, groupMember.wrapped, stats)
+                    chatModel.updateGroupMemberConnectionStats(groupInfo, chatModel.withLoadedSupportChat(groupMember.wrapped), stats)
                     dismiss()
                 }
             } catch let error {
@@ -791,7 +791,7 @@ struct GroupMemberInfoView: View {
                 let stats = try apiAbortSwitchGroupMember(groupInfo.apiId, groupMember.groupMemberId)
                 connectionStats = stats
                 await MainActor.run {
-                    chatModel.updateGroupMemberConnectionStats(groupInfo, groupMember.wrapped, stats)
+                    chatModel.updateGroupMemberConnectionStats(groupInfo, chatModel.withLoadedSupportChat(groupMember.wrapped), stats)
                 }
             } catch let error {
                 logger.error("abortSwitchMemberAddress apiAbortSwitchGroupMember error: \(responseError(error))")
@@ -869,7 +869,7 @@ func updateMemberSettings(_ gInfo: GroupInfo, _ member: GroupMember, _ memberSet
         do {
             try await apiSetMemberSettings(gInfo.groupId, member.groupMemberId, memberSettings)
             await MainActor.run {
-                var mem = member
+                var mem = ChatModel.shared.withLoadedSupportChat(member)
                 mem.memberSettings = memberSettings
                 _ = ChatModel.shared.upsertGroupMember(gInfo, mem)
             }

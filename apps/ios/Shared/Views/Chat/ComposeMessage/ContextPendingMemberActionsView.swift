@@ -82,7 +82,7 @@ func acceptMember(_ groupInfo: GroupInfo, _ member: GroupMember, _ role: GroupMe
         do {
             let (gInfo, acceptedMember) = try await apiAcceptMember(groupInfo.groupId, member.groupMemberId, role)
             await MainActor.run {
-                _ = ChatModel.shared.upsertGroupMember(gInfo, acceptedMember)
+                _ = ChatModel.shared.upsertGroupMember(gInfo, ChatModel.shared.withLoadedSupportChat(acceptedMember))
                 ChatModel.shared.updateGroup(gInfo)
                 dismiss?()
             }

@@ -79,6 +79,7 @@ suspend fun processLoadedChat(
       withContext(Dispatchers.Main) {
         chatsCtx.chatItems.replaceAll(chat.chatItems)
         chatModel.chatId.value = chat.id
+        chatModel.upsertSupportChatMember(chat.remoteHostId, chat.chatInfo)
         splits.value = newSplits
         if (chat.chatItems.isNotEmpty()) {
           unreadAfterItemId.value = chat.chatItems.last().id
