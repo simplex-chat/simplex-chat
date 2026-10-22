@@ -1,0 +1,30 @@
+[
+ {
+  "input": "",
+  "compressed": "Q==="
+ },
+ {
+  "input": "a",
+  "compressed": "IZA="
+ },
+ {
+  "input": "aaaaaaaaaaaaaaaaaaaa",
+  "compressed": "IY1/kA=="
+ },
+ {
+  "input": "hello world",
+  "compressed": "BYUwNmD2AEDukCcwBMg="
+ },
+ {
+  "input": "привет 🎉 مرحبا",
+  "compressed": "vwggEQQcIITCCKwghCIABIHg3CR+3QomCEYwQtGCAowQ5GBA"
+ },
+ {
+  "input": "{\"type\":\"offer\",\"sdp\":\"v=0\\r\\no=- 4611731400430051336 2 IN IP4 127.0.0.1\\r\\ns=-\\r\\nt=0 0\\r\\na=group:BUNDLE 0 1 2 3\\r\\na=msid-semantic: WMS micCamera\\r\\nm=audio 9 UDP/TLS/RTP/SAVPF 111 63 9 0 8 13 110 126\\r\\nc=IN IP4 0.0.0.0\\r\\na=rtcp:9 IN IP4 0.0.0.0\\r\\na=ice-ufrag:abcd\\r\\na=ice-pwd:0123456789abcdefghijkl\\r\\na=fingerprint:sha-256 AB:CD:EF\\r\\na=setup:actpass\\r\\na=mid:0\\r\\na=sendrecv\\r\\na=rtpmap:111 opus/48000/2\\r\\n\"}",
+  "compressed": "N4IgLgngDgpiBcID2AzFMBOIA0IDOAJlAiAG4C8ADADobUB2S5AtAAQAsAbAIzcDsAZm7tKldgNEBWbgIGdWAJlYBJAHIqACu1bcFfAHSVD+7rQZ4WZ+mCqsadegENyAcwxIArlHgAhAKqqACIAMgCidjqKrAJWzgC2eACWBMx4MHGO1okAxvCsAOoAsgDKrHE5AMKOcZiOVnHkjh4EiUisAJysfoEaAPQAKsHFvQBK/X3FAIIAahoAYjq8rJwCHREAHDqrvJQ6CpxW2eRqmtpG54ax5Bhg2d6dJ8padsbnVzkwzB4oGI4u8I4AEbZAjvbKfKAAdwI8EougE7EknD463aQJBMBQLgAFokAFYAawANlcUIl6C5MFAMOSwPA8NjHMwFEjWJMfPAKoF4KE5lc0mAvADsmAoI48HgruUYfYGM40vQCBgYNlSFcblAMt5eNxWEgoB48L12OtRJRegorCAAL5AA==="
+ },
+ {
+  "input": "[{\"candidate\":\"candidate:1 1 udp 2122260223 192.168.1.2 51000 typ host generation 0\",\"sdpMid\":\"0\",\"sdpMLineIndex\":0,\"usernameFragment\":\"abcd\"}]",
+  "compressed": "NobwRAxghgdgJgSzlALgUzALkrRz2YCMABCQK5wAOxATITQwGwAMDAzKQJw0B0hjADj48axAKyFmU4igCe1ABYB7AM4piAczQw0AJ1QIlMYszAAaMCqoBZJFjCmLVytYAyCHQEl4aAB5ZmCzIVPRgoAFs0ADF9DUiYFHsoACMIODAAXwBdIA"
+ }
+]
