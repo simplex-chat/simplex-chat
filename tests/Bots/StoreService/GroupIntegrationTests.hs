@@ -134,7 +134,7 @@ badgeGroupIntegrationTests = do
   it "leaves a tracker it cannot edit alone rather than publishing the code again" testUneditableTrackerLeftAlone
 
 namesBootTests :: SpecWith TestParams
-namesBootTests = it "boots with [names] and [chain], routing fixed /api/name paths ahead of a search, find ahead of registrations, registrations to GET, another name and a code to POST, a path no route knows to 404, and code checks and orders under one limit" testNamesBoot
+namesBootTests = it "boots with [names] and [chain], routing fixed /api/name paths ahead of a search, find ahead of registrations, registrations to GET, another name, a code and a reveal to POST, a path no route knows to 404, and code checks and orders under one limit" testNamesBoot
 
 testNamesBoot :: HasCallStack => TestParams -> IO ()
 testNamesBoot ps = do
@@ -165,6 +165,10 @@ testNamesBoot ps = do
     forM_ ["name", "code"] $ \action -> do
       owned <- request $ "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g/" <> action
       (action,) <$> answer owned {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` (action, refused "bad_request")
+    revealed <- request "/api/registration/t2Jk8RmQ4vXw9NcP3yLb6g/reveal"
+    answer revealed {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` (404, Just $ J.object ["error" J..= ("not_found" :: Text)])
+    revealedByGet <- httpLbs revealed mgr
+    (statusCode $ responseStatus revealedByGet, lookup "Allow" $ responseHeaders revealedByGet) `shouldBe` (405, Just "POST")
     -- the register above took the first of this client's 10 code requests a minute, which the code check shares
     let codeRequest path = request path >>= \r -> statusCode . responseStatus <$> httpLbs r {method = "POST", requestBody = RequestBodyLBS "{}"} mgr
     forM_ (take 9 $ cycle ["/api/code/check", "/api/name/register"]) $ \path -> (path,) <$> codeRequest path `shouldReturn` (path, 400)
