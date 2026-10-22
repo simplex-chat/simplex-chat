@@ -11,6 +11,7 @@ import Bots.StoreService.GroupIntegrationTests
 import Bots.StoreService.GroupTests
 import Bots.StoreService.NameRegistrationTests
 import Bots.StoreService.NamesChainTests
+import Bots.StoreService.NamesContractsTests
 import Bots.StoreService.NamesLabelTests
 import Bots.StoreService.NamesLinksTests
 import Bots.StoreService.NamesProfilesTests
@@ -95,6 +96,7 @@ main = do
         badgeNameRegistrationTests
       namesConfigTests
       namesChainTests
+      namesContractsTests
       namesLabelTests
       namesLinksTests
       namesProfilesTests
