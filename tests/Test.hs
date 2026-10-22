@@ -161,6 +161,7 @@ main = do
           describe "StoreService names: worker" namesWorkerBootTests
           namesCodesChatTests
           namesRefundChatTests
+          namesSpendChatTests
           namesProfilesChatTests
           describe "Remote session" remoteTests
 #if !defined(dbPostgres)

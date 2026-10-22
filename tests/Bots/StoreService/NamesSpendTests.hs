@@ -3,19 +3,24 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 
-module Bots.StoreService.NamesSpendTests (namesSpendTests) where
+module Bots.StoreService.NamesSpendTests (namesSpendChatTests, namesSpendTests) where
 
+import Bots.StoreService.BotTests (operatorCmd, withStoreService)
+import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), setInvoiceState, setRates, webhookEvent, webhookSigHeader, withFakeBTCPay)
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (reservedNamesCall)
-import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), advance, aliceOrder, commitmentOf, field, fieldsOf, invoiceRegistration, keyB, orderTime, placeOrder, post, refusedWith, registrationById, registrationOf, registrationsOf, settleNow, withOrdersVia, yearsDuration)
+import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), advance, aliceOrder, commitmentOf, field, fieldsOf, invoiceRegistration, keyA, keyB, orderTime, ownerAText, placeOrder, placed, post, refusedWith, registrationById, registrationOf, registrationsOf, settleNow, withOrdersOn, yearsDuration)
+import Bots.StoreService.NamesOwnerTests (findBody, postFind)
 import Bots.StoreService.NamesStoreTests (at, order, ownerA, placePaid, reg, t0, write)
-import Bots.StoreService.WebTests (StubCall (..), capturingStderr, StubState (..), jsonObject, rcv, sampleProviderInvoice, statusOf, stubCalls, webGet, webRequestBody)
+import Bots.StoreService.WebTests (StubCall (..), capturingStderr, StubState (..), jsonObject, rcv, sampleProviderInvoice, statusOf, stubCalls, webGet, webRequestBody, withServiceStores)
+import ChatTests.DBUtils (TestParams)
 import Control.Concurrent.Async (Async, async, cancel, concurrently, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (atomically, check)
-import Control.Monad (join, replicateM_)
+import Control.Monad (join, replicateM_, void)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
+import qualified Data.Aeson.Types as JT
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Int (Int64)
 import Data.IORef (IORef, modifyIORef', newIORef, readIORef, writeIORef)
@@ -24,19 +29,21 @@ import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
-import Data.Time.Clock (UTCTime, addUTCTime)
+import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import Data.Word (Word64)
 import Network.HTTP.Client (defaultManagerSettings, newManager)
 import Network.HTTP.Types (hContentType)
 import Network.Wai (Application)
 import qualified Network.Wai.Handler.Warp as Warp
-import Simplex.Chat.PaymentService.Types (CryptoCurrency (..), CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), ServicePaymentMethod (..))
+import Simplex.Chat.Controller (ChatController (..))
+import Simplex.Chat.PaymentService.Types (CryptoCurrency (..), CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), PaymentProvider (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (signRecoverable)
 import Simplex.Messaging.Eth.EIP712 (serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..), labelHash)
+import StoreService.Config (BTCPayConfig (..), ServiceConfig (..))
 import StoreService.Names.Abi (hex, uint256)
 import StoreService.Names.Balances (RefundRefusal (..), recordRefund)
 import StoreService.Names.Orders (OrdersEnv (..))
@@ -45,12 +52,16 @@ import StoreService.Names.Signatures (OrderFields (..), personalDigest, spendMes
 import StoreService.Names.Store
 import StoreService.Names.View (balanceJSON)
 import StoreService.Orders (cancelOpenInvoice)
+import StoreService.Poller (PollerEnv, creditPass, drainHints, forgetRates, newPollerEnv)
 import StoreService.Providers (Funded (..), OrderDraft (..), PaymentSignal (..), Provider (..), ProviderError (..))
+import StoreService.Providers.BTCPay (btcpayProvider)
 import StoreService.Names.Turns (balanceTurnCount, labelTurnCount, withBalanceTurn)
 import StoreService.Store.Invoices (InvoiceRow (..), getInvoice)
+import qualified StoreService.Web.Http as Http (findLimit)
 import StoreService.Web.Http (createLimit, holdMicros, readLimit)
 import StoreService.Web.Names (Route (..), namesApp)
 import StoreService.Web.Names.Orders (spendHandler)
+import StoreService.Web.Names.Owner (findHandler)
 import StoreService.Web.Names.Registration (registrationHandler)
 import StoreService.Web.Server (WebEnv (..), webApp)
 import System.Timeout (timeout)
@@ -84,22 +95,33 @@ namesSpendTests = describe "StoreService names: spend" $ do
     it "lets one of a spend and a refund of the balance win" testSpendRacesRefund
     it "takes the new name's turn and then the balance's" testSpendTurns
 
+namesSpendChatTests :: SpecWith TestParams
+namesSpendChatTests =
+  describe "StoreService names: spend end to end" $
+    it "spends a taken order's balance on a dearer name through BTCPay and the poller, credits a late payment, and refunds the rest" testSpendEndToEnd
+
 -- fixtures
 
--- | The spend route beside the registration poll and the service's routes; the hook runs as each provider invoice is created.
+-- | Over a new database; the hook runs as each provider invoice is created.
 withSpendHook :: (IORef (IO ()) -> Ctx -> IO a) -> IO a
 withSpendHook action = do
   hook <- newIORef (pure ())
-  withOrdersVia (\p -> p {pCreateInvoice = \m d -> join (readIORef hook) >> pCreateInvoice p m d}) $ \ctx@Ctx {cOrders, cWeb} -> do
+  withServiceStores $ \open -> withSpendOn open (\p -> p {pCreateInvoice = \m d -> join (readIORef hook) >> pCreateInvoice p m d}) (action hook)
+
+-- | The spend route beside find, the registration poll and the service's routes.
+withSpendOn :: IO DBStore -> (Provider -> Provider) -> (Ctx -> IO a) -> IO a
+withSpendOn open via action =
+  withOrdersOn open via $ \ctx@Ctx {cOrders, cWeb} -> do
     let routes :: [Text] -> Maybe Route
         routes = \case
+          ["api", "registration", "find"] -> Just Route {rMethod = "POST", rLimit = Http.findLimit, rHandler = findHandler cOrders}
           ["api", "registration", rid, "spend"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = spendHandler cOrders (weConfig cWeb) (weProviders cWeb) (weWaiters cWeb) rid}
           ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler cOrders holdMicros rid}
           _ -> Nothing
         app :: Application
         app req respond = fromMaybe (webApp cWeb req respond) (namesApp (weHttp cWeb) routes req respond)
     mgr <- newManager defaultManagerSettings
-    Warp.testWithApplication (pure app) $ \port -> action hook ctx {cClient = (mgr, "http://127.0.0.1:" <> show port)}
+    Warp.testWithApplication (pure app) $ \port -> action ctx {cClient = (mgr, "http://127.0.0.1:" <> show port)}
 
 withSpend :: (Ctx -> IO a) -> IO a
 withSpend action = withSpendHook (const action)
@@ -143,7 +165,10 @@ dynamis = SpendBody dynamisOrder
 
 -- | Signed and timed at the clock's time, as a page acting later sends it.
 timedAt :: UTCTime -> SpendBody -> SpendBody
-timedAt now b@SpendBody {sbOrder} = b {sbOrder = sbOrder {oTimestamp = seconds now, oDuration = yearsDuration 2 now}}
+timedAt now b@SpendBody {sbOrder} = b {sbOrder = orderAt now sbOrder}
+
+orderAt :: UTCTime -> Order -> Order
+orderAt now o = o {oTimestamp = seconds now, oDuration = yearsDuration 2 now}
 
 spendBody :: Ctx -> RegistrationId -> SpendBody -> IO J.Object
 spendBody Ctx {cRandom} source SpendBody {sbOrder = o@Order {oKey, oPrice, oTimestamp}, sbBalance, sbMethod} = do
@@ -584,3 +609,129 @@ testSpendTurns = withSpend $ \ctx@Ctx {cOrders} -> do
   putMVar proceed ()
   wait holding
   fst <$> wait spent `shouldReturn` 200
+
+-- end to end
+
+-- | The real BTCPay adapter against the fake, read by the poller when BTCPay's webhook asks, over the running service's store, so
+-- //refund reads what the routes wrote; the clock is the wall clock, which the poller and //refund read.
+withBTCPaySpend :: TestParams -> (ChatController -> FakeBTCPay -> PollerEnv -> Ctx -> IO ()) -> IO ()
+withBTCPaySpend ps action = withStoreService ps $ \_ _ cc -> withFakeBTCPay $ \fake -> do
+  btcpay <- btcpayProvider (fbConfig fake)
+  let viaFake :: Provider -> Provider
+      viaFake p = case pProvider p of
+        PPCrypto -> btcpay
+        _ -> p
+  withSpendOn (pure $ chatStore cc) viaFake $ \ctx@Ctx {cStore, cOrders, cWeb, cClock} -> do
+    getCurrentTime >>= writeIORef cClock
+    poller <- newPollerEnv cStore (weWaiters cWeb) (Just $ oePhases cOrders) (weHints cWeb) (weProviders cWeb) (poll $ weConfig cWeb)
+    action cc fake poller ctx
+
+-- | BTCPay shows the invoice in the state and sends the event, and the poller reads the invoice the event names.
+reported :: FakeBTCPay -> PollerEnv -> Ctx -> Text -> Text -> [JT.Pair] -> IO ()
+reported fake poller Ctx {cClient} event ref state = do
+  setInvoiceState fake ref state
+  let body = webhookEvent event ref
+  statusOf <$> webRequestBody cClient "POST" "/webhooks/btcpay" (webhookSigHeader (bWebhookSecret $ fbConfig fake) body) body `shouldReturn` 200
+  drainHints poller
+
+-- | Paid in full and settled: $100.00 at the fixtures' rate of 108000.12 dollars a bitcoin.
+settledState :: [JT.Pair]
+settledState = ["status" J..= ("Settled" :: Text), "paymentMethodPaid" J..= ("0.00092593" :: Text)]
+
+-- | $54.00 confirmed after the invoice expired, credited as 5400 cents at that rate.
+latePaid :: [JT.Pair]
+latePaid =
+  [ "additionalStatus" J..= ("PaidLate" :: Text),
+    "paymentMethodPaid" J..= lateBtc,
+    "payments" J..= [J.object ["id" J..= ("late-tx" :: Text), "receivedDate" J..= (1700003600 :: Int), "value" J..= lateBtc, "fee" J..= ("0.00000000" :: Text), "status" J..= ("Settled" :: Text)]]
+  ]
+  where
+    lateBtc = "0.00050000" :: Text
+
+ratesDown, ratesUp :: J.Value
+ratesDown = J.toJSON [J.object ["currencyPair" J..= ("BTC_USD" :: Text), "errors" J..= ["no rate source answered" :: Text], "rate" J..= J.Null]]
+ratesUp = J.toJSON [J.object ["currencyPair" J..= ("BTC_USD" :: Text), "errors" J..= ([] :: [Text]), "rate" J..= ("108000.12" :: Text)]]
+
+-- | The worker's write when another wallet holds the name: taken, with the order's whole price credited in the same transaction.
+takenNow :: Ctx -> RegistrationId -> IO ()
+takenNow ctx@Ctx {cStore, cClock} rid = do
+  r <- registrationById ctx rid
+  now <- readIORef cClock
+  withTransaction cStore (\db -> updateRegistration db r {nrPhase = PTaken} now >>= \w -> w <$ creditBalance db rid (nrPrice r) now)
+    `shouldReturn` Written (nrVersion r + 1)
+
+-- | Owner A's orders as find lists them: each one's id, the order whose balance paid it, and the order holding its balance.
+links :: Ctx -> IO [(Text, Maybe Text, Maybe Text)]
+links ctx@Ctx {cClock} = do
+  now <- readIORef cClock
+  findBody ctx keyA ownerAText (seconds now) >>= postFind ctx >>= \case
+    (200, Just v) | Just found <- JT.parseMaybe (\o -> o J..: "registrations" >>= mapM entry) v -> pure (sort found)
+    other -> error $ "find refused: " <> show other
+  where
+    entry :: J.Value -> JT.Parser (Text, Maybe Text, Maybe Text)
+    entry = J.withObject "registration" $ \r -> (,,) <$> r J..: "registrationId" <*> r J..: "balanceSource" <*> r J..: "heldBy"
+
+balanceView :: Ctx -> RegistrationId -> IO (Maybe J.Value)
+balanceView ctx rid = field "balance" <$> viewOf ctx rid
+
+-- | A balance nothing holds.
+balanceObject :: Int -> Int -> Maybe J.Value
+balanceObject amount refunded = Just $ J.object ["amount" J..= amount, "held" J..= False, "heldUntil" J..= J.Null, "refunded" J..= refunded]
+
+ridText :: RegistrationId -> Text
+ridText (RegistrationId t) = t
+
+testSpendEndToEnd :: TestParams -> IO ()
+testSpendEndToEnd ps = withBTCPaySpend ps $ \cc fake poller ctx@Ctx {cClock} -> do
+  now <- readIORef cClock
+  let report :: Text -> InvoiceId -> [JT.Pair] -> IO ()
+      report event inv state = providerRef ctx inv >>= \ref -> reported fake poller ctx event ref state
+      orderOf :: InvoiceId -> IO RegistrationId
+      orderOf inv = nrId <$> invoiceRegistration ctx inv
+      dynamisAgain :: Int -> SpendBody
+      dynamisAgain n = timedAt now $ (dynamis 10000 (Just "btc")) {sbOrder = dynamisOrder {oCommitment = commitmentOf n}}
+  -- alicebakery paid at BTCPay and queued by the poller, then taken by another wallet, its price kept as its balance
+  (srcInv@(InvoiceId srcInvText), _) <- placed ctx (orderAt now aliceOrder)
+  report "InvoiceSettled" srcInv settledState
+  src <- orderOf srcInv
+  nrPhase <$> registrationById ctx src `shouldReturn` PQueued
+  takenNow ctx src
+  balanceView ctx src `shouldReturn` balanceObject 10000 0
+  let s = ridText src
+  -- the balance on dynamis, with an invoice for the difference that holds all of it until BTCPay expires it
+  (200, held) <- spend ctx src (dynamisAgain 2)
+  let firstInv = invoiceIdOf held
+  first <- orderOf firstInv
+  let f = ridText first
+  links ctx `shouldReturn` sort [(s, Nothing, Just f), (f, Just s, Nothing)]
+  report "InvoiceExpired" firstInv ["status" J..= ("Expired" :: Text)]
+  (\r -> (nrPhase r, nrLive r)) <$> registrationById ctx first `shouldReturn` (PUnpaid, False)
+  balanceView ctx src `shouldReturn` balanceObject 10000 0
+  links ctx `shouldReturn` sort [(s, Nothing, Nothing), (f, Just s, Nothing)]
+  -- money paid into the expired invoice: the poller's read cannot credit it while the rate read fails, and its next credit pass does
+  setRates fake ratesDown
+  report "InvoicePaymentSettled" firstInv latePaid
+  (\v -> (field "latePayment" v, field "balance" v)) <$> viewOf ctx first `shouldReturn` (Just $ J.object ["waiting" J..= ("crediting" :: Text)], Just J.Null)
+  setRates fake ratesUp
+  void $ capturingStderr $ forgetRates poller >> getCurrentTime >>= creditPass poller
+  (\v -> (field "latePayment" v, field "balance" v)) <$> viewOf ctx first `shouldReturn` (Just J.Null, balanceObject 5400 0)
+  balanceView ctx src `shouldReturn` balanceObject 10000 0
+  -- dynamis again with a new commitment: BTCPay settles the difference, and the poller queues the order and spends the hold
+  (200, again) <- spend ctx src (dynamisAgain 3)
+  let dearerInv@(InvoiceId dearerInvText) = invoiceIdOf again
+  dearer <- orderOf dearerInv
+  let d = ridText dearer
+  links ctx `shouldReturn` sort [(s, Nothing, Just d), (f, Just s, Nothing), (d, Just s, Nothing)]
+  report "InvoiceSettled" dearerInv settledState
+  (\r -> (nrPhase r, nrPrice r, nrBalanceSource r, nrBalanceUsed r)) <$> registrationById ctx dearer `shouldReturn` (PQueued, 20000, Just src, 10000)
+  balanceView ctx src `shouldReturn` balanceObject 0 0
+  links ctx `shouldReturn` sort [(s, Nothing, Nothing), (f, Just s, Nothing), (d, Just s, Nothing)]
+  -- that order taken in turn keeps its whole price; a covered spend of alicebakery takes half, and support refunds the rest
+  takenNow ctx dearer
+  covering <- registrationAnswer . snd <$> spend ctx dearer (timedAt now $ (covered 20000) {sbOrder = aliceOrder {oCommitment = commitmentOf 4}})
+  (\r -> (nrPhase r, nrBalanceSource r, nrBalanceUsed r)) <$> registrationById ctx covering `shouldReturn` (PQueued, Just dearer, 10000)
+  let paidBy = "order " <> d <> ": $100.00 by btc on invoice " <> dearerInvText <> ", $100.00 from the balance of order " <> s <> "; order " <> s <> ": $100.00 by btc on invoice " <> srcInvText
+  operatorCmd cc ("//refund " <> d)
+    `shouldReturn` Right ("Order " <> d <> ": balance $100.00 (credited $200.00, refunded $0.00). Paid by: " <> paidBy <> ". To record its refund: //refund " <> d <> " 10000")
+  operatorCmd cc ("//refund " <> dearerInvText <> " 10000") `shouldReturn` Right ("Recorded a refund of $100.00 for order " <> d <> ". Refund it now, by: " <> paidBy <> ".")
+  balanceView ctx dearer `shouldReturn` balanceObject 0 10000

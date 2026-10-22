@@ -8,6 +8,7 @@ module Bots.StoreService.NamesOrdersTests
     Order (..),
     withOrders,
     withOrdersVia,
+    withOrdersOn,
     withOrdersCancelling,
     aliceOrder,
     commitmentOf,
@@ -309,7 +310,11 @@ withOrders = withOrdersVia id
 
 -- | With the providers changed as a test needs them.
 withOrdersVia :: (Provider -> Provider) -> (Ctx -> IO a) -> IO a
-withOrdersVia via action = withServiceStores $ \cOpenStore -> cOpenStore >>= \cStore -> withFakeEthNode $ \cNode -> do
+withOrdersVia via action = withServiceStores $ \open -> withOrdersOn open via action
+
+-- | Over the stores the action opens.
+withOrdersOn :: IO DBStore -> (Provider -> Provider) -> (Ctx -> IO a) -> IO a
+withOrdersOn cOpenStore via action = cOpenStore >>= \cStore -> withFakeEthNode $ \cNode -> do
   cRandom <- C.newRandom
   ct <- newContracts TLDSimplex =<< newChainClient cRandom (fakeChainConfig cNode)
   turns <- newTurns
