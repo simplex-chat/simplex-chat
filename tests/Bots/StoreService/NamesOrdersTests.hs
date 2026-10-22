@@ -27,7 +27,7 @@ import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.IORef (IORef, atomicModifyIORef', modifyIORef', newIORef, readIORef, writeIORef)
 import Data.List (sort)
-import Data.Maybe (fromJust, isJust, isNothing)
+import Data.Maybe (fromJust, fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, getCurrentTime)
@@ -36,6 +36,8 @@ import Data.Word (Word64)
 import Network.HTTP.Client (defaultManagerSettings, newManager, responseBody)
 import Network.HTTP.Types (hContentType)
 import qualified Network.Wai.Handler.Warp as Warp
+import Simplex.Chat.Badges.Code (NameCode (..), formatNameCode, namePrepaidCodeHash, randomNamePrepaidCode)
+import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.PaymentService.Types (CardProvider (..), CryptoCurrency (..), CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), PaymentProvider (..), ServicePaymentDestination (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withConnection, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -50,7 +52,9 @@ import StoreService.Config (ChainConfig (..), NamesConfig (..), ServiceConfig (.
 import StoreService.Names.Abi (addressWord, hex, uint256)
 import StoreService.Names.Chain (newChainClient)
 import StoreService.Names.Contracts (newContracts)
+import StoreService.Names.Codes (CodeRefusal (..))
 import StoreService.Names.Orders (OrdersEnv (..))
+import qualified StoreService.Names.Orders as Orders
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, newPhases)
 import StoreService.Names.Signatures (OrderFields (..), orderMessage, personalDigest)
 import StoreService.Names.Store
@@ -61,7 +65,11 @@ import StoreService.Poller (cleanupInterval, cleanupReadsPerPass, cleanupUnpaid,
 import StoreService.Providers.BTCPay (btcpayProvider)
 import StoreService.Providers (Funded (..), OrderDraft (..), PaymentSignal (..), Provider (..), ProviderError (..), ProviderInvoice (..))
 import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), ProviderRefConflict (..), getInvoice, getInvoiceByProviderRef, overdueInvoices, unpaidRefs)
-import StoreService.Waiters (newWaiters)
+import StoreService.Waiters (Waiters, newWaiters)
+import StoreService.Web.Http (codeLimit)
+import StoreService.Web.Names (Route (..), namesApp)
+import StoreService.Web.Names.Codes (codeCheckHandler)
+import StoreService.Web.Names.Orders (codeOrderHandler)
 import StoreService.Web.Server (WebEnv (..), newWebEnv, webApp, webSettings)
 import System.Directory (createDirectoryIfMissing)
 import System.Timeout (timeout)
@@ -90,6 +98,20 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "refuses sealed missing or over 11095 characters and a body over 16384 bytes, accepting the longest order" testSizes
     it "refuses malformed fields, an unknown kind, and an order outside 6-63 letters" testFormats
     it "accepts orders for one name from two wallets" testTwoWallets
+  describe "code orders" $ do
+    it "places a code order as a queued live registration holding its code, answering only its id" testCodeOrder
+    it "answers an exact resend with its id in any phase, the code spent or not, before any chain read" testCodeResend
+    it "refuses a resend differing in any one field, the code included, with a bare order_exists" testCodeOneFieldDiffers
+    it "refuses a bad signature, or another signer's, after the code check" testCodeBadSignature
+    it "refuses a stale timestamp on a new code order" testCodeStaleTimestamp
+    it "refuses a code order meeting an open invoice for the name with order_exists" testCodeMeetsInvoice
+    it "closes an overdue paid order of the same wallet and name, cancelling its invoice after" testCodeClosesOverdue
+    it "refuses each code that cannot pay with its tag, the state before the cover" testCodeRefusals
+    it "checks the duration for the code's years" testCodeYears
+    it "refuses sealed over 11095 characters, a body over 16384 bytes and malformed fields, accepting the longest order" testCodeSizes
+    it "lets one of two concurrent orders spending one code for two names win, the other answered code_reserved" testConcurrentCodeOrders
+    it "answers the code's refusal when its reservation fails in the insert, writing nothing" testCodeNotReservable
+    it "counts code orders and code checks against one code limit" testCodeLimitShared
   describe "closed orders" $ do
     it "accepts a new order of the same wallet and name after a cancel" testOrderAfterCancel
     it "closes an overdue order of the same wallet and name before the poller marks it, cancelling its invoice after" testOverdueClosed
@@ -136,7 +158,10 @@ seconds = floor . utcTimeToPOSIXSeconds
 
 -- | What the page sends: 2 paid years and the free days until the term starts.
 durationAt :: UTCTime -> Word64
-durationAt now = 2 * yearSeconds + fromIntegral (max 0 (toInteger (seconds termStart) - toInteger (seconds now)))
+durationAt = yearsDuration 2
+
+yearsDuration :: Word64 -> UTCTime -> Word64
+yearsDuration years now = years * yearSeconds + fromIntegral (max 0 (toInteger (seconds termStart) - toInteger (seconds now)))
 
 -- the webapp's wallet, BIP-39 entropy 6f2d1c9a4b7e3f80d15a2c6e9b04f7a3, accounts 0 and 1 as viem derives them
 keyA, keyB :: Secp256k1PrivateKey
@@ -265,9 +290,17 @@ withOrdersVia via action = withServiceStore $ \cStore -> withFakeEthNode $ \cNod
     hints <- newReadHints
     built <- newWebEnv cStore cfg waiters hints [crypto, card] Nothing
     let cWeb = built {weOrders = Just cOrders}
+        app req respond = fromMaybe (webApp cWeb req respond) (namesApp (weHttp cWeb) (codeRoutes cOrders [crypto, card] waiters) req respond)
     mgr <- newManager defaultManagerSettings
-    Warp.testWithApplicationSettings (webSettings (listener cfg)) (pure (webApp cWeb)) $ \port ->
+    Warp.testWithApplicationSettings (webSettings (listener cfg)) (pure app) $ \port ->
       action Ctx {cStore, cNode, cOrders, cWeb, cClient = (mgr, "http://127.0.0.1:" <> show port), cStub, cClock, cRandom, cIps}
+
+-- | The routes as namesRoutes registers them, since a NamesEnv needs a running chat controller.
+codeRoutes :: OrdersEnv -> [Provider] -> Waiters -> [Text] -> Maybe Route
+codeRoutes orders providers waiters = \case
+  ["api", "name", "register"] -> Just Route {rMethod = "POST", rLimit = codeLimit, rHandler = codeOrderHandler orders providers waiters}
+  ["api", "code", "check"] -> Just Route {rMethod = "POST", rLimit = codeLimit, rHandler = codeCheckHandler (oeStore orders)}
+  _ -> Nothing
 
 -- | alicebakery and dynamis available, at the launch prices for 2 years.
 answerAvailable :: FakeEthNode -> IO ()
@@ -593,6 +626,243 @@ testTwoWallets = withOrders $ \ctx -> do
   (b, _) <- placed ctx aliceOrder {oOwner = ownerBText, oKey = keyB, oCommitment = commitmentOf 2}
   a `shouldNotBe` b
   mapM (fmap nrLive . invoiceRegistration ctx) [a, b] `shouldReturn` [True, True]
+
+-- code orders
+
+-- | A prepaid code as the operator issues it, with its text as the page sends it.
+issueCode :: Ctx -> Int -> Int -> (NewPrepaidCode -> NewPrepaidCode) -> IO (Text, PrepaidCode)
+issueCode Ctx {cStore, cRandom} len years change = do
+  code <- randomNamePrepaidCode cRandom len
+  let new = change NewPrepaidCode {npcCodeHash = namePrepaidCodeHash code, npcMinLength = len, npcYears = years, npcPaymentStatus = CPSPaid, npcExpiresAt = Nothing}
+  stored <- withTransaction cStore $ \db ->
+    insertPrepaidCode db new orderTime >>= \case
+      Right codeId -> fromJust <$> getPrepaidCodeById db codeId
+      Left e -> error $ "code not issued: " <> show e
+  pure (formatNameCode $ NCPrepaid code, stored)
+
+unissuedCode :: Ctx -> Int -> IO Text
+unissuedCode Ctx {cRandom} len = formatNameCode . NCPrepaid <$> randomNamePrepaidCode cRandom len
+
+readCode :: Ctx -> PrepaidCode -> IO PrepaidCode
+readCode Ctx {cStore} PrepaidCode {pcId} = withTransaction cStore $ \db -> fromJust <$> getPrepaidCodeById db pcId
+
+-- | The body of /api/name/register: the order's fields and the code, without a kind, method or price.
+signedCodeBody :: Ctx -> Text -> Order -> IO J.Object
+signedCodeBody ctx code o = KM.insert "code" (J.String code) . KM.delete "kind" . KM.delete "method" . KM.delete "price" <$> signedBody (cRandom ctx) o
+
+postRegister :: Ctx -> J.Object -> IO (Int, Maybe J.Object)
+postRegister ctx = post ctx "/api/name/register" . J.encode
+
+register :: Ctx -> Text -> Order -> IO (Int, Maybe J.Object)
+register ctx code o = signedCodeBody ctx code o >>= postRegister ctx
+
+-- | A code order's registration id, failing the test unless the order was accepted with that alone.
+registered :: Ctx -> Text -> Order -> IO RegistrationId
+registered ctx code o =
+  register ctx code o >>= \case
+    (200, Just v) | [("registrationId", J.String rid)] <- KM.toList v -> pure $ RegistrationId rid
+    other -> error $ "code order refused: " <> show other
+
+registrationAnswer :: RegistrationId -> (Int, Maybe J.Object)
+registrationAnswer (RegistrationId rid) = (200, Just $ KM.fromList [("registrationId", J.String rid)])
+
+registrationById :: Ctx -> RegistrationId -> IO NameRegistration
+registrationById Ctx {cStore} rid = withTransaction cStore $ \db -> fromJust <$> getRegistration db rid
+
+testCodeOrder :: IO ()
+testCodeOrder = withOrders $ \ctx -> do
+  (code, issued@PrepaidCode {pcId, pcCodeHash}) <- issueCode ctx 8 2 id
+  rid <- registered ctx code aliceOrder
+  r <- registrationById ctx rid
+  (nrPhase r, nrLive r, nrVersion r, nrYears r, nrPrice r, nrPayment r) `shouldBe` (PQueued, True, 1, 2, 0, RPCode pcId)
+  (nrOwner r, nrDuration r, nrCommitment r, nrSealed r) `shouldBe` (ownerA, durationAt orderTime, oCommitment aliceOrder, oSealed aliceOrder)
+  nrOrderHash r `shouldBe` orderHash ownerA (fieldsOf aliceOrder) (OTCode pcCodeHash)
+  held <- readCode ctx issued
+  (pcReservedBy held, pcReservedAt held, pcSpentAt held) `shouldBe` (Just rid, Just orderTime, Nothing)
+  stubCalls (cStub ctx) `shouldReturn` []
+
+testCodeResend :: IO ()
+testCodeResend = withOrders $ \ctx -> do
+  (code, PrepaidCode {pcId}) <- issueCode ctx 8 2 id
+  body <- signedCodeBody ctx code aliceOrder
+  rid <- registered ctx code aliceOrder
+  advance ctx 60
+  register ctx code aliceOrder {oTimestamp = seconds orderTime + 60} `shouldReturn` registrationAnswer rid
+  r <- registrationById ctx rid
+  now <- readIORef (cClock ctx)
+  withTransaction (cStore ctx) $ \db -> do
+    updateRegistration db r {nrPhase = PRegistered} now `shouldReturn` Written 2
+    spendPrepaidCode db pcId rid now `shouldReturn` True
+  advance ctx 3600
+  setFault (cNode ctx) "eth_call" HttpFailure
+  postRegister ctx body `shouldReturn` registrationAnswer rid
+  register ctx code aliceOrder {oTimestamp = seconds orderTime + 3660} `shouldReturn` registrationAnswer rid
+  length <$> registrationsOf ctx ownerA `shouldReturn` 1
+
+testCodeOneFieldDiffers :: IO ()
+testCodeOneFieldDiffers = withOrders $ \ctx -> do
+  (code, _) <- issueCode ctx 7 2 id
+  (other, otherCode) <- issueCode ctx 8 2 id
+  void $ registered ctx code aliceOrder
+  let variants =
+        [ (code, aliceOrder {oLabel = "dynamis"}),
+          (code, aliceOrder {oCommitment = commitmentOf 2}),
+          (code, aliceOrder {oSealed = "sealed-alicebakery-2"}),
+          (code, aliceOrder {oDuration = oDuration aliceOrder + 1}),
+          (other, aliceOrder)
+        ]
+  forM_ variants $ \(c, o) -> register ctx c o `shouldReturn` refusedWith 409 "order_exists"
+  -- the same fields as a paid order are another order
+  placeOrder ctx aliceOrder `shouldReturn` refusedWith 409 "order_exists"
+  pcReservedBy <$> readCode ctx otherCode `shouldReturn` Nothing
+  length <$> registrationsOf ctx ownerA `shouldReturn` 1
+
+testCodeBadSignature :: IO ()
+testCodeBadSignature = withOrders $ \ctx -> do
+  (code, issued) <- issueCode ctx 8 2 id
+  register ctx code aliceOrder {oKey = keyB} `shouldReturn` refusedWith 400 "bad_request"
+  good <- signedCodeBody ctx code aliceOrder
+  let highS = "0x" <> T.replicate 32 "11" <> "ff" <> T.replicate 31 "11" <> "1b"
+  forM_ [highS, ""] $ \bad -> postRegister ctx (withSignature bad good) `shouldReturn` refusedWith 400 "bad_request"
+  postRegister ctx (KM.delete "signature" good) `shouldReturn` refusedWith 400 "bad_request"
+  unknown <- unissuedCode ctx 8
+  register ctx unknown aliceOrder {oKey = keyB} `shouldReturn` refusedWith 400 "code_invalid"
+  pcReservedBy <$> readCode ctx issued `shouldReturn` Nothing
+  length <$> registrationsOf ctx ownerA `shouldReturn` 0
+
+testCodeStaleTimestamp :: IO ()
+testCodeStaleTimestamp = withOrders $ \ctx -> do
+  (code, _) <- issueCode ctx 8 2 id
+  let at offset = aliceOrder {oTimestamp = fromIntegral (toInteger (seconds orderTime) + offset)}
+  forM_ [-601, 601] $ \offset -> register ctx code (at offset) `shouldReturn` refusedWith 400 "bad_request"
+  register ctx code aliceOrder {oTimestamp = maxBound} `shouldReturn` refusedWith 400 "bad_request"
+  void $ registered ctx code (at (-600))
+
+testCodeMeetsInvoice :: IO ()
+testCodeMeetsInvoice = withOrders $ \ctx -> do
+  (code, issued) <- issueCode ctx 8 2 id
+  void $ placed ctx aliceOrder
+  register ctx code aliceOrder `shouldReturn` refusedWith 409 "order_exists"
+  register ctx code aliceOrder {oCommitment = commitmentOf 2} `shouldReturn` refusedWith 409 "order_exists"
+  -- another wallet sending the open order's commitment
+  register ctx code aliceOrder {oOwner = ownerBText, oKey = keyB} `shouldReturn` refusedWith 409 "order_exists"
+  pcReservedBy <$> readCode ctx issued `shouldReturn` Nothing
+  length <$> registrationsOf ctx ownerA `shouldReturn` 1
+  length <$> registrationsOf ctx ownerB `shouldReturn` 0
+
+testCodeClosesOverdue :: IO ()
+testCodeClosesOverdue = withOrders $ \ctx -> do
+  (code, _) <- issueCode ctx 8 2 id
+  (short, _) <- issueCode ctx 12 2 id
+  (oldInv, _) <- placed ctx aliceOrder {oMethod = "card"}
+  -- past the card invoice's 60 minutes, before any sweep
+  advance ctx (61 * 60)
+  now <- readIORef (cClock ctx)
+  let next = aliceOrder {oCommitment = commitmentOf 2, oTimestamp = seconds now, oDuration = durationAt now}
+  register ctx short next `shouldReturn` refusedWith 409 "code_not_covering"
+  nrLive <$> invoiceRegistration ctx oldInv `shouldReturn` True
+  rid <- registered ctx code next
+  Just oldRow <- getInvoice (cStore ctx) oldInv
+  irStatus oldRow `shouldBe` ISExpired
+  old <- invoiceRegistration ctx oldInv
+  (nrPhase old, nrLive old, nrVersion old) `shouldBe` (PUnpaid, False, 2)
+  (nrPhase &&& nrLive) <$> registrationById ctx rid `shouldReturn` (PQueued, True)
+  calls <- stubCalls (cStub ctx)
+  [c | c@StubCancel {} <- calls] `shouldBe` [StubCancel (irProviderRef oldRow)]
+
+testCodeRefusals :: IO ()
+testCodeRefusals = withOrders $ \ctx@Ctx {cStore} -> do
+  unknown <- unissuedCode ctx 8
+  let typo = T.init unknown <> (if T.last unknown == '0' then "1" else "0")
+      ownerCode = "SN-DWPHS-6JBFR-ZR1MA-T5HQ9-P17QM-F5GM5"
+  forM_ [unknown, typo, ownerCode, "not a code"] $ \c -> register ctx c aliceOrder `shouldReturn` refusedWith 400 "code_invalid"
+  (revoked, revokedCode) <- issueCode ctx 8 2 id
+  withTransaction cStore $ \db -> void $ revokePrepaidCode db (pcCodeHash revokedCode) orderTime
+  register ctx revoked aliceOrder `shouldReturn` refusedWith 400 "code_invalid"
+  (reserved, reservedCode) <- issueCode ctx 8 2 id
+  placeCode cStore "holder" ownerB (order "holderone" 1) reservedCode `shouldReturn` Right ()
+  register ctx reserved aliceOrder `shouldReturn` refusedWith 409 "code_reserved"
+  (used, usedCode) <- issueCode ctx 8 2 id
+  placeCode cStore "spender" ownerB (order "spendertwo" 2) usedCode `shouldReturn` Right ()
+  withTransaction cStore (\db -> spendPrepaidCode db (pcId usedCode) (RegistrationId "spender") t0) `shouldReturn` True
+  register ctx used aliceOrder `shouldReturn` refusedWith 409 "code_used"
+  (expired, _) <- issueCode ctx 8 2 $ \c -> c {npcExpiresAt = Just orderTime}
+  register ctx expired aliceOrder `shouldReturn` refusedWith 409 "code_expired"
+  (unpaid, _) <- issueCode ctx 8 2 $ \c -> c {npcPaymentStatus = CPSUnpaid}
+  register ctx unpaid aliceOrder `shouldReturn` refusedWith 409 "payment_pending"
+  (long, _) <- issueCode ctx 12 2 id
+  register ctx long aliceOrder `shouldReturn` refusedWith 409 "code_not_covering"
+  (longUnpaid, _) <- issueCode ctx 12 2 $ \c -> c {npcPaymentStatus = CPSUnpaid}
+  register ctx longUnpaid aliceOrder `shouldReturn` refusedWith 409 "payment_pending"
+  length <$> registrationsOf ctx ownerA `shouldReturn` 0
+
+testCodeYears :: IO ()
+testCodeYears = withOrders $ \ctx -> do
+  (code, _) <- issueCode ctx 8 5 id
+  register ctx code aliceOrder `shouldReturn` refusedWith 400 "bad_request"
+  rid <- registered ctx code aliceOrder {oDuration = yearsDuration 5 orderTime}
+  (nrYears &&& nrDuration) <$> registrationById ctx rid `shouldReturn` (5, yearsDuration 5 orderTime)
+
+testCodeSizes :: IO ()
+testCodeSizes = withOrders $ \ctx -> do
+  (code, _) <- issueCode ctx 8 2 id
+  register ctx code aliceOrder {oSealed = T.replicate 11096 "a"} `shouldReturn` refusedWith 400 "bad_request"
+  padded <- KM.insert "padding" (J.String $ T.replicate 16384 "a") <$> signedCodeBody ctx code aliceOrder
+  postRegister ctx padded `shouldReturn` refusedWith 400 "bad_request"
+  good <- signedCodeBody ctx code aliceOrder
+  let with k v = KM.insert k v good
+  forM_
+    [ KM.delete "sealed" good,
+      KM.delete "code" good,
+      with "code" (J.Number 8),
+      with "labelHash" (J.String $ T.toUpper $ hex $ (\(LabelHash h) -> h) alice),
+      with "owner" (J.String $ T.toLower ownerAText),
+      with "timestamp" "1792574100"
+    ]
+    $ \body -> postRegister ctx body `shouldReturn` refusedWith 400 "bad_request"
+  forM_ ["[]", "{"] $ \body -> post ctx "/api/name/register" body `shouldReturn` (400, errorOnly "bad_request")
+  -- the formats and the length come before the code
+  forM_ [5, 64] $ \len -> postRegister ctx (KM.insert "code" "not a code" $ with "length" (J.Number len)) `shouldReturn` refusedWith 400 "invalid_name"
+  longest <- signedCodeBody ctx code aliceOrder {oSealed = T.replicate 11095 "a"}
+  LB.length (J.encode longest) `shouldSatisfy` (< 16384)
+  fst <$> postRegister ctx longest `shouldReturn` 200
+
+testConcurrentCodeOrders :: IO ()
+testConcurrentCodeOrders = withOrders $ \ctx -> do
+  (code, issued) <- issueCode ctx 7 2 id
+  (a, b) <- concurrently (register ctx code aliceOrder) (register ctx code aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 2})
+  sort [fst a, fst b] `shouldBe` [200, 409]
+  filter ((== 409) . fst) [a, b] `shouldBe` [refusedWith 409 "code_reserved"]
+  [(_, winner)] <- pure $ filter ((== 200) . fst) [a, b]
+  pcReservedBy <$> readCode ctx issued `shouldReturn` Just (RegistrationId $ textOf "registrationId" winner)
+  length <$> registrationsOf ctx ownerA `shouldReturn` 1
+
+-- | A writer outside this process, which takes no turn here, reserves or revokes the code between the check and the insert.
+testCodeNotReservable :: IO ()
+testCodeNotReservable = withOrders $ \ctx@Ctx {cStore} -> do
+  (_, reservedLate) <- issueCode ctx 8 2 id
+  placeCode cStore "outsider" ownerB (order "holderone" 1) reservedLate `shouldReturn` Right ()
+  (_, revokedLate) <- issueCode ctx 8 2 id
+  withTransaction cStore $ \db -> void $ revokePrepaidCode db (pcCodeHash revokedLate) orderTime
+  req <- fromJust . Orders.parseOrderRequest <$> signedBody (cRandom ctx) aliceOrder
+  let new = NewRegistration {nrgId = RegistrationId "late", nrgOwner = ownerA, nrgOrder = fieldsOf aliceOrder, nrgYears = 2}
+  forM_ [(reservedLate, CRReserved), (revokedLate, CRInvalid)] $ \(stale, refusal) -> do
+    placedOrder <- Orders.placeOrder (cOrders ctx) req (Orders.codeOrderInsert new stale)
+    either Just (const Nothing) placedOrder `shouldBe` Just (Orders.ORCode refusal)
+  length <$> registrationsOf ctx ownerA `shouldReturn` 0
+
+-- | One client's code checks and code orders share its 10 a minute; another client is not limited by them.
+testCodeLimitShared :: IO ()
+testCodeLimitShared = withOrders $ \ctx@Ctx {cClient} -> do
+  (code, _) <- issueCode ctx 8 2 id
+  body <- J.encode <$> signedCodeBody ctx code aliceOrder
+  let from path b = statusOf <$> webRequestBody cClient "POST" path [(hContentType, "application/json"), ("X-Forwarded-For", "203.0.113.7")] b
+      codeCheck = from "/api/code/check" (J.encode $ J.object ["code" .= code])
+      codeOrder = from "/api/name/register" body
+  sequence (concat $ replicate 5 [codeCheck, codeOrder]) `shouldReturn` replicate 10 200
+  codeCheck `shouldReturn` 429
+  codeOrder `shouldReturn` 429
+  fst <$> register ctx code aliceOrder `shouldReturn` 200
 
 testOrderAfterCancel :: IO ()
 testOrderAfterCancel = withOrders $ \ctx -> do

@@ -150,6 +150,8 @@ testNamesBoot ps = do
     statusCode . responseStatus <$> httpLbs unknown mgr `shouldReturn` 404
     records <- request "/api/name/records"
     answer records {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` refused "bad_request"
+    register <- request "/api/name/register"
+    answer register {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` refused "bad_request"
     search <- request $ "/api/name/" <> T.unpack aliceHex <> "?length=5"
     answer search `shouldReturn` refused "invalid_name"
     poll t >>= (`shouldSatisfy` isNothing)
