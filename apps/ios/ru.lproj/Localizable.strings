@@ -2751,7 +2751,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Error saving user password" = "Ошибка при сохранении пароля пользователя";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Error scanning code: %@" = "Ошибка сканирования кода: %@";
 
 /* No comment provided by engineer. */
@@ -3456,7 +3456,7 @@ servers warning */
 /* alert title */
 "Invalid name!" = "Неверное имя!";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Invalid QR code" = "Ошибка QR-кода";
 
 /* alert title */
@@ -3609,7 +3609,7 @@ servers warning */
 /* No comment provided by engineer. */
 "KeyChain error" = "Ошибка KeyChain";
 
-/* No comment provided by engineer. */
+/* file alert title */
 "Large file!" = "Большой файл!";
 
 /* badge alert button */
@@ -7127,9 +7127,6 @@ alert title */
 /* No comment provided by engineer. */
 "You can still view conversation with %@ in the list of chats." = "Вы по-прежнему можете просмотреть разговор с %@ в списке чатов.";
 
-/* badge alert */
-"You can support SimpleX starting from v7 of the app." = "Вы можете поддержать SimpleX начиная с версии приложения v7.";
-
 /* No comment provided by engineer. */
 "You can turn on SimpleX Lock via Settings." = "Вы можете включить Блокировку SimpleX через Настройки.";
 
@@ -7294,9 +7291,6 @@ alert title */
 
 /* No comment provided by engineer. */
 "Your contact removed this link, or it was a one-time link that was already used.\nTo connect, ask your contact to create a new link." = "Возможно, Ваш контакт удалил ссылку, или она уже была использована. Если это не так, то это может быть ошибкой - пожалуйста, сообщите нам об этом.\nЧтобы установить соединение, попросите Ваш контакт создать ещё одну ссылку и проверьте Ваше соединение с сетью.";
-
-/* No comment provided by engineer. */
-"Your contact sent a file that is larger than currently supported maximum size (%@)." = "Ваш контакт отправил файл, размер которого превышает максимальный размер (%@).";
 
 /* No comment provided by engineer. */
 "Your contacts can allow full message deletion." = "Ваши контакты могут разрешить окончательное удаление сообщений.";
