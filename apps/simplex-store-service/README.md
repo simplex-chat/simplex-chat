@@ -908,3 +908,50 @@ expiry unless money reached the invoice:
 The command also answers when the reference matches no order, when the order has no balance, and
 when the cents are not the balance. A refunded balance shows `amount` 0 and its `refunded` total in
 Your names; a later late payment credits it again, and a second refund adds to `refunded`.
+
+## Running the webapp's cases against the service
+
+`scripts/store-service/names-contract-run.sh` runs the names webapp's end-to-end cases that need no
+payment against this service in Chromium, as they run against the webapp's mock. It:
+
+1. starts anvil on 8545 and deploys the contracts with the webapp's `dev/deploy.ts`, with a commitment
+   age of 5 seconds;
+2. builds the names site (`vite build`) into the run's folder;
+3. writes an ini for that deployment with `[names]` and `[chain]` and no `[btcpay]` or `[stripe]`,
+   serving the names site all in one on the host `127.0.0.1`;
+4. starts the service once to make its database, stops it, and issues the prepaid codes the cases
+   need with `//issue name` in `--run-cli`;
+5. starts the service on 8180 and a code server on 8199, and runs the cases with `BASE_URL` at the
+   service and `MOCK_URL` at the code server.
+
+The code server answers the cases' `POST /control/code` with the issued codes, the reset of
+`/control/search` that `search.spec.ts` sends after each case as done, and any other `/control/` with
+`501`, which fails the case that sends it. It passes `/api/` to the service.
+
+It needs Foundry's anvil, Node.js, `jq`, `curl` and `python3`; the webapp with its packages and
+Playwright's Chromium (`npm install`, `npx playwright install chromium`); and an `ens-contracts` checkout
+compiled as the webapp's `dev/start.sh` needs. The cases read the chain's addresses from the webapp's
+`dev/local-chain-0.json`, so the script stops when its deployment differs from it; run the webapp's
+`SLOTS=1 MIN_COMMITMENT_AGE=5 dev/start.sh` once to write it. Ports 8545, 8180 and 8199 must be free.
+
+```
+cabal build exe:simplex-store-service
+WEBAPP_DIR=../simplex.domains/webapp ENS_CONTRACTS_DIR=<ens-contracts> ANVIL=<anvil> \
+  ISSUER_INDEX=<index> ISSUER_SECRET=<secret> scripts/store-service/names-contract-run.sh
+```
+
+- `ISSUER_INDEX` and `ISSUER_SECRET`: an issuer key the binary trusts, as for any start of the service
+  (see [Run](#run)).
+- `STORE_SERVICE_BIN`: the service binary (default: `cabal list-bin exe:simplex-store-service`).
+- `SERVICE_PORT`, `CODES_PORT`: the service's and the code server's ports (8180 and 8199).
+- Arguments, if given, are passed to `playwright test` in place of the default cases' title filter.
+
+The default cases cover search answers for an available name, Check your code, code orders to
+`registered`, and Edit links, whose case answers its own name and record requests in the page.
+"search answers every kind of name" is not among them: it expects the profiles the mock makes up for
+the deployment's links, which name no real chat, and it takes the chain down with `/control/search`.
+
+The cases all run from one client, so a longer list meets the service's per-client limits, which the
+mock does not enforce; the 10 code checks a minute (`codeLimit` in `StoreService/Web/Http.hs`) come
+first. The script stops everything it started, deletes its folder when the cases pass, and keeps it
+with the logs, the ini and Playwright's results when they fail.
