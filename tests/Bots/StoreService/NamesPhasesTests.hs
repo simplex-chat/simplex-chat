@@ -255,7 +255,7 @@ testLapseReadsFailed = bounded "lapse" $ withPolls holdMicros $ \Polls {pCtx = c
   (_, o) <- get ctx (invoicePath inv)
   (key "phase" (registrationOf o), key "error" (registrationOf o)) `shouldBe` (Just "failed", Just "The name was not signed in time")
   (nrPhase <$> invoiceRegistration ctx inv) `shouldReturn` PCommitted
-  -- one whose reveal was accepted is registering, not lapsed
+  -- one with a reveal set stays committed past revealBefore
   revealed <- change ctx nrId $ \r' -> r' {nrReveal = Just reveal}
   pSetNow $ addUTCTime 3600 lapsedAt
   (_, r') <- get ctx (registrationPath nrId)
