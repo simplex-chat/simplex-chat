@@ -38,7 +38,7 @@ suspend fun apiLoadMessages(
   if (chatWasSwitched(chat, pagination, openAroundItemId)
     || (!allowEmptyItems && chat.chatItems.isEmpty())
     || !isActive) return@coroutineScope
-  processLoadedChat(chatsCtx, chat, navInfo, pagination, openAroundItemId, visibleItemIndexesNonReversed)
+  processLoadedChat(chatsCtx, chat, navInfo, pagination, openAroundItemId, visibleItemIndexesNonReversed, statsFiltered = contentTag != null)
 }
 
 /** .initial pagination and opening around item set [ChatModel.chatId] themselves after the items are loaded.
@@ -54,7 +54,8 @@ suspend fun processLoadedChat(
   navInfo: NavigationInfo,
   pagination: ChatPagination,
   openAroundItemId: Long?,
-  visibleItemIndexesNonReversed: () -> IntRange = { 0 .. 0 }
+  visibleItemIndexesNonReversed: () -> IntRange = { 0 .. 0 },
+  statsFiltered: Boolean = false
 ) {
   val chatState = chatsCtx.chatState
   val (splits, unreadAfterItemId, totalAfter, unreadTotal, unreadAfter, unreadAfterNewestLoaded) = chatState
@@ -73,6 +74,9 @@ suspend fun processLoadedChat(
             chatModel.chatsContext.updateChatInfo(chat.remoteHostId, chat.chatInfo)
             // unreadChat is currently not actual in getChat query (always false)
             chatModel.chatsContext.updateChatStats(chat.remoteHostId, chat.id, chat.chatStats.copy(unreadChat = oldChat.chatStats.unreadChat))
+            if (!statsFiltered) {
+              chatModel.chatsContext.changeUserUnreadCounter(chat.remoteHostId, oldChat.userUnreadCount, minOf(chat.userUnreadCount, oldChat.userUnreadCount))
+            }
           }
         }
       }
