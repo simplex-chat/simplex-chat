@@ -8,7 +8,6 @@ module StoreService.Names.Balances
   )
 where
 
-import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
@@ -34,9 +33,9 @@ recordRefund :: Turns -> DBStore -> Text -> Int -> UTCTime -> IO (Either RefundR
 recordRefund turns st ref cents now =
   withTransaction st (\db -> balanceByReference db ref now) >>= \case
     Nothing -> pure $ Left RefundNoOrder
-    Just (rid, _) -> withBalanceTurn turns rid $ withTransaction st refund
+    Just (rid, _) -> withBalanceTurn turns rid $ withTransaction st (refund True)
   where
-    refund db =
+    refund retry db =
       balanceByReference db ref now >>= \case
         Nothing -> pure $ Left RefundNoOrder
         Just (rid, balance) -> case refusal balance of
@@ -44,8 +43,10 @@ recordRefund turns st ref cents now =
           Nothing ->
             refundBalance db rid cents now >>= \case
               True -> Right . RefundRecord rid cents <$> balanceChain db rid
-              -- only a writer outside the turn, as a late credit, can change the balance between the read and the write
-              False -> Left . fromMaybe (RefundAmount cents) . refusal . (snd =<<) <$> balanceByReference db ref now
+              -- only a writer outside the turn, as a late credit, changes the balance between the read and the write, so it is read again once
+              False
+                | retry -> refund False db
+                | otherwise -> pure $ Left $ RefundAmount $ maybe 0 blAmount balance
     refusal :: Maybe Balance -> Maybe RefundRefusal
     refusal = \case
       Nothing -> Just RefundNoBalance
