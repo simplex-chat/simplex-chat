@@ -2,8 +2,9 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
--- | Each registration from queued to registered, taken or failed: its commit, the wait for the page's reveal, and its register.
--- A step starts from the stored registration, the sender's transactions in flight and the chain, so a restart resumes any phase.
+-- | Each registration from queued to registered, taken or failed: its commit, the wait for the page's reveal, and its register;
+-- and Try again, which queues a failed one again. A step starts from the stored registration, the sender's transactions in flight
+-- and the chain, so a restart resumes any phase.
 module StoreService.Names.Worker
   ( Worker,
     Next (..),
@@ -13,6 +14,9 @@ module StoreService.Names.Worker
     sweepFailedCodes,
     runCodeSweep,
     maxUnexpiredWaits,
+    Retried (..),
+    RetryRefusal (..),
+    retryRegistration,
   )
 where
 
@@ -36,8 +40,8 @@ import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Log (logError, logInfo, logWarn, safely, safelyWith)
 import StoreService.Names.Chain (Block (..), ChainClient, ChainError (..), TxHash, blockAt)
-import StoreService.Names.Codes (releaseCode)
-import StoreService.Names.Contracts (CommitmentAges (..), commitmentAges, commitmentTime, controllerAvailable)
+import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, releaseCode, reserveCode)
+import StoreService.Names.Contracts (CommitmentAges (..), commitmentAges, commitmentTime, controllerAvailable, sponsorNonce)
 import StoreService.Names.Orders (Landing (..), OrdersEnv (..), WriteRefusal (..), confirmLanded, versionWritten)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, publish)
 import StoreService.Names.Registration (commitCalldata, registerWithCreditCalldata, sponsorDomain, verifyRegisterIntent)
@@ -46,7 +50,7 @@ import StoreService.Names.Revert (RevertName (..))
 import StoreService.Names.Sender (PendingTx, SendError (..), Sender, awaitOutcome, inFlightTransaction, ptHash, submitTransaction)
 import StoreService.Names.Store
 import StoreService.Names.Turns (withLabelTurn)
-import StoreService.Names.View (lapseMoment, notSignedInTime, registrationVersion)
+import StoreService.Names.View (lapseMoment, notSignedInTime, registrationAt, registrationVersion)
 
 data Worker = Worker
   { wkOrders :: OrdersEnv,
@@ -167,17 +171,24 @@ commit w@Worker {wkOrders = OrdersEnv {oeContracts}, wkSender} now r@NameRegistr
         Right (_, Nothing) -> sendCommit w now r
         Right (ages, Just t) -> fromCommitment w now r ages t
 
--- | A live commitment is reused while revealMargin is left before its lapse. At the lapse second it can neither register
--- nor be committed again, so the worker waits a second past it, then commits again with the stale fields cleared.
+-- | At the lapse second a commitment can neither register nor be committed again, so the worker waits a second past it,
+-- then commits again with the stale fields cleared.
 fromCommitment :: Worker -> UTCTime -> NameRegistration -> CommitmentAges -> Word64 -> IO Next
-fromCommitment w@Worker {wkOrders = OrdersEnv {oeConfig = NamesConfig {nRevealMarginSeconds}}} now r ages@CommitmentAges {caMax} t
-  | left >= toInteger nRevealMarginSeconds = toCommitted w now r ages t
-  | left >= 0 = pure $ waitUntil r $ addUTCTime chainSecond $ secondsTime lapse
+fromCommitment w@Worker {wkOrders = OrdersEnv {oeConfig}} now r ages t
+  | reusable oeConfig now lapse = toCommitted w now r ages t
+  | lapse >= unixSeconds now = pure $ waitUntil r $ addUTCTime chainSecond $ secondsTime lapse
   | lapsedFields r /= r = save w now $ lapsedFields r
   | otherwise = sendCommit w now r
   where
-    lapse = toInteger t + caMax
-    left = lapse - unixSeconds now
+    lapse = commitmentLapse ages t
+
+-- | The revealBefore of a commitment committed at this time.
+commitmentLapse :: CommitmentAges -> Word64 -> Integer
+commitmentLapse CommitmentAges {caMax} t = toInteger t + caMax
+
+-- | A live commitment is reused while revealMargin is left before its lapse, time for the page's reveal and the register to mine.
+reusable :: NamesConfig -> UTCTime -> Integer -> Bool
+reusable NamesConfig {nRevealMarginSeconds} now lapse = lapse - unixSeconds now >= toInteger nRevealMarginSeconds
 
 -- | The intent's deadline is the lapsed revealBefore, so it goes with the old transactions and reveal times; the page signs again.
 lapsedFields :: NameRegistration -> NameRegistration
@@ -358,6 +369,68 @@ unixSeconds = floor . utcTimeToPOSIXSeconds
 
 secondsTime :: Integer -> UTCTime
 secondsTime = posixSecondsToUTCTime . fromInteger
+
+-- | What Try again did: the version it wrote, the order changed since it was read, or a refusal.
+data Retried = RTWritten Int64 | RTChanged | RTRefused RetryRefusal
+
+data RetryRefusal = RFNotFailed | RFCode CodeRefusal | RFUnread
+  deriving (Eq, Show)
+
+-- | Try again, in the caller's turn of the order's name: registered when its register went through; else a code order's code
+-- must still pay for it; else queued again at no charge, a released code reserved again in the code's turn.
+retryRegistration :: OrdersEnv -> NameRegistration -> IO Retried
+retryRegistration oe@OrdersEnv {oeNow} current = do
+  now <- oeNow
+  case registrationAt now current of
+    r@NameRegistration {nrPhase = PFailed} ->
+      confirmLanded oe r >>= \case
+        LRegistered v -> pure $ RTWritten v
+        LChanged -> pure RTChanged
+        LUnread -> pure $ RTRefused RFUnread
+        LNotLanded -> retryCode oe now r >>= either (pure . RTRefused . RFCode) (requeue oe now r)
+    _ -> pure $ RTRefused RFNotFailed
+
+-- | The code a code order still holds, though revoked or expired since, or a released one it can reserve again.
+retryCode :: OrdersEnv -> UTCTime -> NameRegistration -> IO (Either CodeRefusal (Maybe PrepaidCode))
+retryCode OrdersEnv {oeStore} now NameRegistration {nrId, nrLength, nrPayment} = case nrPayment of
+  RPInvoice {} -> pure $ Right Nothing
+  RPCode codeId ->
+    withTransaction oeStore (`getPrepaidCodeById` codeId) <&> \case
+      Just code -> maybe (Right $ Just code) Left $ codeRefusal now nrId nrLength code
+      Nothing -> Left CRInvalid
+
+-- | The register's transactions, which confirmLanded has read, are cleared with the failure; the reveal unless its intent still serves.
+requeue :: OrdersEnv -> UTCTime -> NameRegistration -> Maybe PrepaidCode -> IO Retried
+requeue oe@OrdersEnv {oeStore, oeTurns} now r@NameRegistration {nrId, nrLength} code =
+  servingReveal oe now r >>= \case
+    Left e -> RTRefused RFUnread <$ logWarn ("names: a retry's chain read failed: " <> tshow e)
+    Right reveal -> do
+      let requeued = r {nrPhase = PQueued, nrReveal = reveal, nrFailedAt = Nothing, nrError = Nothing, nrRegisterTx = Nothing, nrRegisterBlock = Nothing}
+          write db = versionWritten <$> updateRegistration db requeued now
+      outcome <- case code of
+        Nothing -> Right <$> withTransaction oeStore write
+        Just PrepaidCode {pcCodeHash} -> reserveCode oeTurns oeStore now pcCodeHash nrId nrLength write
+      pure $ case outcome of
+        Left refusal -> RTRefused $ RFCode refusal
+        Right (Right v) -> RTWritten v
+        -- a failed order is already live, so only a changed version refuses the write
+        Right (Left _) -> RTChanged
+
+-- | The stored reveal while its intent can still register: the sponsor nonce unmoved, and the commitment live with revealMargin
+-- left in a window the intent's deadline covers. A new commit or another's re-commit opens a window the old deadline cannot serve.
+servingReveal :: OrdersEnv -> UTCTime -> NameRegistration -> IO (Either ChainError (Maybe NameReveal))
+servingReveal OrdersEnv {oeConfig, oeContracts} now NameRegistration {nrOwner, nrCommitment, nrReveal} = case nrReveal of
+  Nothing -> pure $ Right Nothing
+  Just rv@NameReveal {rvNonce, rvDeadline} -> runExceptT $ do
+    nonce <- ExceptT $ sponsorNonce oeContracts nrOwner
+    if nonce /= rvNonce
+      then pure Nothing
+      else do
+        ages <- ExceptT $ commitmentAges oeContracts
+        committedAt <- ExceptT $ commitmentTime oeContracts nrCommitment
+        pure $ case commitmentLapse ages <$> committedAt of
+          Just lapse | reusable oeConfig now lapse && lapse <= toInteger rvDeadline -> Just rv
+          _ -> Nothing
 
 -- | Each code order failed for failedCodeHold gives its code back, in its name's and its code's turns, unless it was requeued meanwhile.
 sweepFailedCodes :: Worker -> IO ()

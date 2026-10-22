@@ -6,6 +6,7 @@
 module StoreService.Web.Names.Registration
   ( registrationHandler,
     revealHandler,
+    retryHandler,
     registrationChangedResponse,
     registrationRefusalResponse,
     heldFor,
@@ -35,7 +36,9 @@ import StoreService.Names.Reveal (RevealFields (..), RevealRefusal (..), SignedL
 import StoreService.Names.Store (NamePhase (..), NameRegistration (..), VersionWrite (..), getRegistration, updateRegistration)
 import StoreService.Names.Turns (withLabelTurn)
 import StoreService.Names.View (lapseMoment, registrationAt, registrationVersion, registrationView)
+import StoreService.Names.Worker (Retried (..), RetryRefusal (..), retryRegistration)
 import StoreService.Web.Http (Respond, badRequest, invalidLink, jsonResponse, nameBodyBytes, notFound, providerUnavailable, readBoundedBody)
+import StoreService.Web.Names.Codes (codeRefusalResponse)
 import Text.Read (readMaybe)
 
 -- | GET /api/registration/:id, held while its version is seenVersion.
@@ -108,19 +111,45 @@ revealHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oePhases, 
       RDGone -> respond notFound
     published = mapM_ (atomically . publish oePhases rid)
 
+-- | POST /api/registration/:id/retry, Try again in the name's turn; the publish and the answer come after the turn.
+retryHandler :: OrdersEnv -> Text -> Request -> Respond -> IO ResponseReceived
+retryHandler env@OrdersEnv {oeStore, oeTurns, oePhases} ridText _ respond =
+  withTransaction oeStore (`getRegistration` rid) >>= \case
+    Nothing -> respond notFound
+    Just NameRegistration {nrLabelHash} -> withLabelTurn oeTurns nrLabelHash (decide nrLabelHash) >>= maybe (respond notFound) answer
+  where
+    rid = RegistrationId ridText
+    decide turnHash = withTransaction oeStore (`getRegistration` rid) >>= traverse (inTurn turnHash)
+    inTurn turnHash r
+      -- moved to another name while this request waited for the turn
+      | nrLabelHash r /= turnHash = pure RTChanged
+      | otherwise = retryRegistration env r
+    answer = \case
+      RTWritten v -> do
+        atomically $ publish oePhases rid v
+        respond . maybe notFound (jsonResponse status200) =<< currentView env rid
+      RTChanged -> respond =<< registrationChangedResponse env rid
+      RTRefused refusal -> do
+        logInfo ("POST /api/registration/:id/retry refused: " <> tshow refusal)
+        respond $ case refusal of
+          RFNotFailed -> badRequest
+          RFCode code -> codeRefusalResponse code
+          RFUnread -> providerUnavailable
+
 -- | The registration's current view, for a request that lost the race to change it.
 registrationChangedResponse :: OrdersEnv -> RegistrationId -> IO Response
 registrationChangedResponse env = registrationRefusalResponse env "registration_changed"
 
 -- | A refusal with the registration's current view, so the page follows its state.
 registrationRefusalResponse :: OrdersEnv -> Text -> RegistrationId -> IO Response
-registrationRefusalResponse OrdersEnv {oeStore, oeConfig, oeContracts, oeNow} tag rid =
-  withTransaction oeStore (`getRegistration` rid) >>= \case
-    Nothing -> pure notFound
-    Just r -> do
-      now <- oeNow
-      view <- registrationView oeStore oeConfig oeContracts (registrationAt now r)
-      pure $ jsonResponse status409 $ J.object ["error" .= tag, "registration" .= view]
+registrationRefusalResponse env tag rid = maybe notFound refusal <$> currentView env rid
+  where
+    refusal view = jsonResponse status409 $ J.object ["error" .= tag, "registration" .= view]
+
+-- | The registration's view as it reads now.
+currentView :: OrdersEnv -> RegistrationId -> IO (Maybe J.Value)
+currentView OrdersEnv {oeStore, oeConfig, oeContracts, oeNow} rid =
+  withTransaction oeStore (`getRegistration` rid) >>= traverse (\r -> oeNow >>= \now -> registrationView oeStore oeConfig oeContracts (registrationAt now r))
 
 -- | The hold, cut to end just past the next moment at which the answer changes with time alone.
 heldFor :: Int -> UTCTime -> [UTCTime] -> Int

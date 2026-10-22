@@ -21,6 +21,7 @@ module Bots.StoreService.NamesOwnerTests
     paidIn,
     postMove,
     rewrite,
+    sentRegister,
     stored,
   )
 where
