@@ -81,8 +81,10 @@ namesLateCreditTests = describe "StoreService names: balance life" $ do
     it "sums the refunds over credit, refund, late credit, refund" testCreditRefundTwice
     it "spends a late credit with a covered spend and refunds the rest" testSpendAndRefundLate
   describe "the view" $ do
+    it "shows a funded holder past its expiry held with no end time, and an unfunded one before it with its expiry" testHeldUntil
     it "shows a balance spent to 0 and a refunded one as objects with amount 0" testZeroBalances
     it "waits confirming, crediting, or support for each reason, and on nothing once all is credited" testLateWaits
+    it "finds the order a balance paid and the order holding a balance, none for an overdue unfunded holder" testFindLinks
 #if defined(dbPostgres)
   describe "two connections" $ do
     it "credits once of two credit steps on one invoice, cleanly, where a step reading before the lock is refused" testConcurrentCredits
@@ -513,7 +515,7 @@ testCreditWhileHeld = withLate $ \l@Late {lStore = st} -> do
   void $ readSignal l "x" (SigClosed (btcPaid lateUnits lateUnits))
   holder st "h" "x" 19200 (at 60) `shouldReturn` Right ()
   void $ readSignal l "x" (SigClosed (btcPaid 400000 400000))
-  figures st "x" (at 10) `shouldReturn` Just (24000, 24000, 0, Just BalanceHold {bhHolder = RegistrationId "h", bhUntil = at 60, bhOverdue = False})
+  figures st "x" (at 10) `shouldReturn` Just (24000, 24000, 0, Just BalanceHold {bhHolder = RegistrationId "h", bhUntil = at 60, bhOverdue = False, bhFunded = False})
   settleAt l "h" (SigSettled (btcPaid 330000 330000) (at 10)) (at 10) `shouldReturn` Right ISPaid
   figures st "x" (at 10) `shouldReturn` Just (4800, 24000, 0, Nothing)
   invariantHolds st "x"
@@ -560,6 +562,19 @@ balanceAt st r now = fmap balanceJSON <$> withTransaction st (\db -> getBalance 
 balanceObject :: Int -> Bool -> Maybe UTCTime -> Int -> J.Value
 balanceObject amount held heldUntil refunded = J.object ["amount" J..= amount, "held" J..= held, "heldUntil" J..= heldUntil, "refunded" J..= refunded]
 
+testHeldUntil :: IO ()
+testHeldUntil = withLate $ \l@Late {lStore = st} -> do
+  source st "funded" 10000
+  holder st "fh" "funded" 10000 (at 60) `shouldReturn` Right ()
+  source st "unfunded" 10000
+  holder st "uh" "unfunded" 10000 (at 60) `shouldReturn` Right ()
+  balanceAt st "funded" (at 30) `shouldReturn` Just (balanceObject 10000 True (Just $ at 60) 0)
+  settleAt l "fh" (SigFunded (btcPaid 100 0) PaidInPart) (at 30) `shouldReturn` Right ISOpen
+  balanceAt st "funded" (at 30) `shouldReturn` Just (balanceObject 10000 True Nothing 0)
+  balanceAt st "funded" (at 120) `shouldReturn` Just (balanceObject 10000 True Nothing 0)
+  balanceAt st "unfunded" (at 30) `shouldReturn` Just (balanceObject 10000 True (Just $ at 60) 0)
+  balanceAt st "unfunded" (at 120) `shouldReturn` Just (balanceObject 10000 False Nothing 0)
+
 testZeroBalances :: IO ()
 testZeroBalances = withLate $ \Late {lStore = st} -> do
   turns <- newTurns
@@ -599,6 +614,17 @@ testLateWaits = withLate $ \l@Late {lStore = st} -> do
   void $ readSignal l "alerted" (SigClosed (btcPaid lateUnits lateUnits))
   void $ passAt l (at 71)
   waits ["crediting", "floor", "alerted"] `shouldReturn` [("crediting", Nothing), ("floor", Nothing), ("alerted", Nothing)]
+
+testFindLinks :: IO ()
+testFindLinks = withLate $ \Late {lStore = st} -> do
+  source st "paying" 10000
+  coveredSpend st "spend" "paying" 10000 10000 `shouldReturn` Right ()
+  source st "held" 10000
+  holder st "holder" "held" 10000 (at 60) `shouldReturn` Right ()
+  let links now = map (\(NameRegistration {nrId = RegistrationId r, nrBalanceSource}, heldBy') -> (r, nrBalanceSource, heldBy')) <$> withTransaction st (\db -> findRegistrations db ownerA now)
+      linked rows = filter (\(_, src, h) -> src /= Nothing || h /= Nothing) rows
+  linked <$> links (at 30) `shouldReturn` [("spend", Just (RegistrationId "paying"), Nothing), ("holder", Just (RegistrationId "held"), Nothing), ("held", Nothing, Just (RegistrationId "holder"))]
+  linked <$> links (at 120) `shouldReturn` [("spend", Just (RegistrationId "paying"), Nothing), ("holder", Just (RegistrationId "held"), Nothing)]
 
 #if defined(dbPostgres)
 -- | Each thread waits here until both arrive, after its unlocked read and before its locked transaction.

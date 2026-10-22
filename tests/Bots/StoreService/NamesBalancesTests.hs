@@ -150,7 +150,7 @@ holder st r src seen expiresAt = withTransaction st $ \db -> do
   createPaidRegistration db (newReg r ownerA (fieldsN r)) (holdTerms src seen) (paidOrder ("inv-" <> r)) {poPrice = holdPrice} t0
 
 hold :: Text -> UTCTime -> Bool -> BalanceHold
-hold h bhUntil bhOverdue = BalanceHold {bhHolder = RegistrationId h, bhUntil, bhOverdue}
+hold h bhUntil bhOverdue = BalanceHold {bhHolder = RegistrationId h, bhUntil, bhOverdue, bhFunded = False}
 
 coveredSpend :: DBStore -> Text -> Text -> Int -> Int -> IO (Either RegistrationRefused ())
 coveredSpend st r src price seen = withTransaction st $ \db -> createBalanceRegistration db (newReg r ownerA (fieldsN r)) (RegistrationId src) price seen t0
@@ -462,7 +462,7 @@ testFindBalances = withServiceStore $ \st -> do
   credit st "r1" 5000
   credit st "r2" 3000
   refund st "r2" 3000 `shouldReturn` True
-  map nrId <$> withTransaction st (`findRegistrations` ownerA) `shouldReturn` map (RegistrationId . rid) ([52, 51 .. 3] <> [1])
+  map (nrId . fst) <$> withTransaction st (\db -> findRegistrations db ownerA t0) `shouldReturn` map (RegistrationId . rid) ([52, 51 .. 3] <> [1])
 
 -- closes
 
@@ -517,7 +517,7 @@ testNamedHolders = withOrders $ \Ctx {cStore = st, cOrders, cWeb} -> do
   h2 <- reg st "h2"
   payment st "inv-h2" (cardPaid 100 0) (at 61)
   Just funded <- withTransaction st $ \db -> getBalance db (RegistrationId "s2") now
-  blHold funded `shouldBe` Just (hold "h2" (at 60) False)
+  blHold funded `shouldBe` Just (hold "h2" (at 60) False) {bhFunded = True}
   closedIds <$> Orders.placeOrder cOrders (orderRequest "c2") [h2] (spendInsert "c2" "s2" 6000 10000) `shouldReturn` Left (ORBalanceChanged $ Just funded)
   absent st "c2"
   nrLive <$> reg st "h2" `shouldReturn` True

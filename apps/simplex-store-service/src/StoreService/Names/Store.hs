@@ -266,10 +266,12 @@ data Balance = Balance
   deriving (Eq, Show)
 
 -- | The order whose open invoice holds a balance, until that invoice expires; overdue past it with no money received.
+-- Funded once money reached it: it then holds until its payment settles or the provider closes it, whatever the time.
 data BalanceHold = BalanceHold
   { bhHolder :: RegistrationId,
     bhUntil :: UTCTime,
-    bhOverdue :: Bool
+    bhOverdue :: Bool,
+    bhFunded :: Bool
   }
   deriving (Eq, Show)
 
@@ -786,12 +788,26 @@ retargetRegistration db r OrderFields {ofLabelHash, ofLength, ofDuration, ofComm
       }
 
 -- | Newest first: findLimit of them, then every older one holding a balance above 0, since a balance never expires.
-findRegistrations :: DB.Connection -> Address -> IO [NameRegistration]
-findRegistrations db owner = do
-  newest <- DB.query db (selectRegistrations <> " WHERE r.owner = ?" <> newestFirst <> " LIMIT ?") (Binary $ unAddress owner, findLimit) >>= decodeAll toRegistration
-  holding <- DB.query db (selectRegistrations <> " WHERE r.owner = ?" <> withBalance <> newestFirst) (Only $ Binary $ unAddress owner) >>= decodeAll toRegistration
-  pure $ newest <> filter ((`notElem` map nrId newest) . nrId) holding
+-- Each with the order holding its balance, as getBalance reads the hold at the given time.
+findRegistrations :: DB.Connection -> Address -> UTCTime -> IO [(NameRegistration, Maybe RegistrationId)]
+findRegistrations db owner now = do
+  newest <- DB.query db (selectHeld <> " WHERE r.owner = ?" <> newestFirst <> " LIMIT ?") (holdParams :. (Binary $ unAddress owner, findLimit)) >>= decodeAll found
+  holding <- DB.query db (selectHeld <> " WHERE r.owner = ?" <> withBalance <> newestFirst) (holdParams :. Only (Binary $ unAddress owner)) >>= decodeAll found
+  pure $ newest <> filter ((`notElem` map (nrId . fst) newest) . nrId . fst) holding
   where
+    selectHeld =
+      registrationColumns
+        <> ", (SELECT b.reserved_by FROM sx_badge_service_name_balances b"
+        <> " JOIN sx_badge_service_name_registrations h ON h.registration_id = b.reserved_by"
+        <> " JOIN sx_badge_service_name_invoices hni ON hni.registration_id = b.reserved_by"
+        <> " JOIN sx_badge_service_invoices i ON i.invoice_id = hni.invoice_id"
+        <> " WHERE b.registration_id = r.registration_id AND NOT ("
+        <> holdOverdue
+        <> "))"
+        <> registrationFrom
+    holdParams = (PUnpaid, invoiceStatusText ISPaid, truncateToSecond now)
+    found :: RegistrationRow :. Only (Maybe Text) -> Either Text (NameRegistration, Maybe RegistrationId)
+    found (row :. Only holder) = (\r -> (r, RegistrationId <$> holder)) <$> toRegistration row
     newestFirst = " ORDER BY r.created_at DESC, r.registration_id DESC"
     withBalance = " AND EXISTS (SELECT 1 FROM sx_badge_service_name_balances b WHERE b.registration_id = r.registration_id AND b.amount > 0)"
 
@@ -870,16 +886,22 @@ heldBy Balance {blHold} = case blHold of
   Just BalanceHold {bhOverdue = False} -> blHold
   _ -> Nothing
 
--- | A holder is overdue as getLiveOrders reads an order overdue: its invoice past its expiry, not paid, and holding no money.
+-- | A holder h with invoice i is overdue as getLiveOrders reads an order overdue: its invoice past its expiry, not paid, and holding no money.
+-- Takes the unpaid phase, the paid status and the time.
+holdOverdue :: Query
+holdOverdue = " h.phase = ? AND i.status <> ? AND i.expires_at < ?" <> unfunded
+
 getBalance :: DB.Connection -> RegistrationId -> UTCTime -> IO (Maybe Balance)
 getBalance db (RegistrationId rid) now =
   firstDecoded toBalance $
     DB.query
       db
       ( "SELECT b.registration_id, b.amount, b.credited, b.refunded, b.reserved_by, i.expires_at,"
-          <> " CASE WHEN h.phase = ? AND i.status <> ? AND i.expires_at < ?"
+          <> " CASE WHEN"
+          <> holdOverdue
+          <> " THEN 1 ELSE 0 END, CASE WHEN i.invoice_id IS NOT NULL"
           <> unfunded
-          <> " THEN 1 ELSE 0 END, b.refunded_at"
+          <> " THEN 0 ELSE 1 END, b.refunded_at"
           <> " FROM sx_badge_service_name_balances b"
           <> " LEFT JOIN sx_badge_service_name_registrations h ON h.registration_id = b.reserved_by"
           <> " LEFT JOIN sx_badge_service_name_invoices ni ON ni.registration_id = b.reserved_by"
@@ -888,11 +910,11 @@ getBalance db (RegistrationId rid) now =
       )
       (PUnpaid, invoiceStatusText ISPaid, truncateToSecond now, rid)
 
-toBalance :: (Text, Int, Int, Int, Maybe Text, Maybe UTCTime, BoolInt, Maybe UTCTime) -> Either Text Balance
-toBalance (rid, blAmount, blCredited, blRefunded, holder_, until_, BI overdue, blRefundedAt) = do
+toBalance :: (Text, Int, Int, Int, Maybe Text, Maybe UTCTime, BoolInt, BoolInt, Maybe UTCTime) -> Either Text Balance
+toBalance (rid, blAmount, blCredited, blRefunded, holder_, until_, BI bhOverdue, BI bhFunded, blRefundedAt) = do
   blHold <- case (holder_, until_) of
     (Nothing, _) -> Right Nothing
-    (Just holder, Just bhUntil) -> Right $ Just BalanceHold {bhHolder = RegistrationId holder, bhUntil, bhOverdue = overdue}
+    (Just holder, Just bhUntil) -> Right $ Just BalanceHold {bhHolder = RegistrationId holder, bhUntil, bhOverdue, bhFunded}
     (Just _, Nothing) -> Left $ "name_balances holder without an invoice: " <> rid
   pure Balance {blRegistration = RegistrationId rid, blAmount, blCredited, blRefunded, blHold, blRefundedAt}
 

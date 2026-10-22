@@ -343,7 +343,7 @@ testFind = withOwner $ \ctx@Ctx {cStore} -> do
       case entries of
         lapsedEntry : unpaidEntry : moveEntry : _ -> do
           (field "phase" lapsedEntry, nrPhase lapsed) `shouldBe` (Just "failed", PCommitted)
-          sort (KM.keys unpaidEntry) `shouldBe` sort ["registrationId", "invoiceId", "phase", "createdAt", "labelHash", "sealed"]
+          sort (KM.keys unpaidEntry) `shouldBe` sort ["registrationId", "invoiceId", "phase", "createdAt", "labelHash", "sealed", "balanceSource", "heldBy"]
           unpaidEntry
             `shouldBe` KM.fromList
               [ ("registrationId", idText $ nrId paid),
@@ -351,7 +351,9 @@ testFind = withOwner $ \ctx@Ctx {cStore} -> do
                 ("phase", "unpaid"),
                 ("createdAt", J.toJSON orderTime),
                 ("labelHash", labelHashText "alicebakery"),
-                ("sealed", "sealed-alicebakery-1")
+                ("sealed", "sealed-alicebakery-1"),
+                ("balanceSource", J.Null),
+                ("heldBy", J.Null)
               ]
           moveEntry
             `shouldBe` KM.fromList
@@ -360,7 +362,9 @@ testFind = withOwner $ \ctx@Ctx {cStore} -> do
                 ("phase", "queued"),
                 ("createdAt", J.toJSON $ addUTCTime 50 t0),
                 ("labelHash", labelHashText "alicebakers"),
-                ("sealed", "sealed-alicebakers-10")
+                ("sealed", "sealed-alicebakers-10"),
+                ("balanceSource", J.Null),
+                ("heldBy", J.Null)
               ]
         _ -> expectationFailure "fewer than three entries"
     other -> expectationFailure $ "find refused: " <> show other

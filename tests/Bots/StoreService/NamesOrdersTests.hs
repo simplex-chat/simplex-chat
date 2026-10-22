@@ -392,7 +392,7 @@ advance :: Ctx -> NominalDiffTime -> IO ()
 advance Ctx {cClock} by = modifyIORef' cClock (addUTCTime by)
 
 registrationsOf :: Ctx -> Address -> IO [NameRegistration]
-registrationsOf Ctx {cStore} owner = withTransaction cStore (`findRegistrations` owner)
+registrationsOf Ctx {cStore, cClock} owner = readIORef cClock >>= \now -> map fst <$> withTransaction cStore (\db -> findRegistrations db owner now)
 
 invoiceRegistration :: Ctx -> InvoiceId -> IO NameRegistration
 invoiceRegistration Ctx {cStore} invId =

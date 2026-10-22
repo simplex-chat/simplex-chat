@@ -613,9 +613,9 @@ testFind = withServiceStore $ \st -> do
     insertInvoiceRow db ("inv-" <> rid) (at 60) "open"
     createPaidRegistration db (newReg rid ownerA o) (OTInvoice btc price) (paidOrder $ "inv-" <> rid) (at i) `shouldReturn` Right ()
   placePaid st "other" ownerB (order "bobsbakery" 99) (at 60) `shouldReturn` Right ()
-  found <- withTransaction st $ \db -> findRegistrations db ownerA
-  map nrId found `shouldBe` [RegistrationId $ "r" <> T.pack (show i) | i <- [52, 51 .. 3 :: Int]]
-  withTransaction st (\db -> findRegistrations db (address "0x0000000000000000000000000000000000000001")) `shouldReturn` []
+  found <- withTransaction st $ \db -> findRegistrations db ownerA t0
+  map (nrId . fst) found `shouldBe` [RegistrationId $ "r" <> T.pack (show i) | i <- [52, 51 .. 3 :: Int]]
+  withTransaction st (\db -> findRegistrations db (address "0x0000000000000000000000000000000000000001") t0) `shouldReturn` []
 
 testSameSecondOrder :: IO ()
 testSameSecondOrder = withServiceStore $ \st -> do
@@ -625,7 +625,7 @@ testSameSecondOrder = withServiceStore $ \st -> do
     placePaid st rid ownerA (order ("alicebakery" <> rid) n) (at 60) `shouldReturn` Right ()
     r <- reg st rid
     write st r {nrPhase = PQueued} `shouldReturn` Written 2
-  map nrId <$> withTransaction st (`findRegistrations` ownerA) `shouldReturn` map RegistrationId ["r3", "r2", "r1"]
+  map (nrId . fst) <$> withTransaction st (\db -> findRegistrations db ownerA t0) `shouldReturn` map RegistrationId ["r3", "r2", "r1"]
   map nrId <$> withTransaction st activeRegistrations `shouldReturn` map RegistrationId ["r1", "r2", "r3"]
   forM_ ["r5", "r4"] $ \rid -> do
     placePaid st rid ownerB o (at 60) `shouldReturn` Right ()

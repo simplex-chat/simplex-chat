@@ -53,9 +53,9 @@ findHandler OrdersEnv {oeStore, oeNow} req respond =
       firstRefusal [checkSigner frOwner (findMessage frOwner frTimestamp) frSignature, pure $ checkTimestamp now frTimestamp] >>= \case
         Just refusal -> refuse refusal
         Nothing ->
-          withTransaction oeStore (`findRegistrations` frOwner) >>= \case
+          withTransaction oeStore (\db -> findRegistrations db frOwner now) >>= \case
             [] -> pure $ answerNow notFound
-            rs -> pure $ answerNow $ jsonResponse status200 $ J.object ["registrations" .= map (foundJSON . registrationAt now) rs]
+            rs -> pure $ answerNow $ jsonResponse status200 $ J.object ["registrations" .= map (\(r, holder) -> foundJSON (registrationAt now r) holder) rs]
     refuse = refused "POST /api/registration/find"
 
 parseFind :: J.Object -> Maybe FindRequest
@@ -65,17 +65,21 @@ parseFind o = do
   frSignature <- eitherToMaybe . parseSignature =<< textField o "signature"
   pure FindRequest {frOwner, frTimestamp, frSignature}
 
-foundJSON :: NameRegistration -> J.Value
-foundJSON NameRegistration {nrId = RegistrationId rid, nrPayment, nrPhase, nrCreatedAt, nrLabelHash = LabelHash lh, nrSealed} =
+-- | balanceSource: the order whose balance paid this one; heldBy: the order whose invoice holds this one's balance.
+foundJSON :: NameRegistration -> Maybe RegistrationId -> J.Value
+foundJSON NameRegistration {nrId = RegistrationId rid, nrPayment, nrPhase, nrCreatedAt, nrLabelHash = LabelHash lh, nrSealed, nrBalanceSource} holder =
   J.object
     [ "registrationId" .= rid,
       "invoiceId" .= invoiceId,
       "phase" .= (textEncode nrPhase :: Text),
       "createdAt" .= nrCreatedAt,
       "labelHash" .= hex lh,
-      "sealed" .= nrSealed
+      "sealed" .= nrSealed,
+      "balanceSource" .= (idText <$> nrBalanceSource),
+      "heldBy" .= (idText <$> holder)
     ]
   where
+    idText (RegistrationId t) = t
     invoiceId = case nrPayment of
       RPInvoice _ (InvoiceId t) -> Just t
       RPCode _ -> Nothing
