@@ -122,7 +122,7 @@ invoiceRow db invId card cents expiresAt =
 placeOrderRow :: DBStore -> Text -> Bool -> Int -> UTCTime -> IO ()
 placeOrderRow st r card cents expiresAt = withTransaction st $ \db -> do
   invoiceRow db ("inv-" <> r) card cents expiresAt
-  createPaidRegistration db (newReg r ownerA (fieldsN r)) (OTInvoice method cents) (paidOrder ("inv-" <> r)) {poMethod = method, poPrice = cents} Nothing t0 `shouldReturn` Right ()
+  createPaidRegistration db (newReg r ownerA (fieldsN r)) (OTInvoice method cents) (paidOrder ("inv-" <> r)) {poMethod = method, poPrice = cents} t0 `shouldReturn` Right ()
   where
     method = if card then SPMCard CPStripe else btc
 
@@ -147,7 +147,7 @@ holdTerms src seen = OTBalance (RegistrationId src) holdPrice seen (Just btc)
 holder :: DBStore -> Text -> Text -> Int -> UTCTime -> IO (Either RegistrationRefused ())
 holder st r src seen expiresAt = withTransaction st $ \db -> do
   invoiceRow db ("inv-" <> r) False (holdPrice - seen) expiresAt
-  createPaidRegistration db (newReg r ownerA (fieldsN r)) (holdTerms src seen) (paidOrder ("inv-" <> r)) {poPrice = holdPrice} (Just $ HeldBalance (RegistrationId src) seen) t0
+  createPaidRegistration db (newReg r ownerA (fieldsN r)) (holdTerms src seen) (paidOrder ("inv-" <> r)) {poPrice = holdPrice} t0
 
 hold :: Text -> UTCTime -> Bool -> BalanceHold
 hold h bhUntil bhOverdue = BalanceHold {bhHolder = RegistrationId h, bhUntil, bhOverdue}
@@ -458,7 +458,7 @@ testFindBalances = withServiceStore $ \st -> do
       rid i = "r" <> T.pack (show i)
   forM_ [1 .. 52 :: Int] $ \i -> withTransaction st $ \db -> do
     invoiceRow db ("inv-" <> rid i) False 20000 (at 60)
-    createPaidRegistration db (newReg (rid i) ownerA (fieldsN $ rid i)) (OTInvoice btc 20000) (paidOrder ("inv-" <> rid i)) Nothing (at i) `shouldReturn` Right ()
+    createPaidRegistration db (newReg (rid i) ownerA (fieldsN $ rid i)) (OTInvoice btc 20000) (paidOrder ("inv-" <> rid i)) (at i) `shouldReturn` Right ()
   credit st "r1" 5000
   credit st "r2" 3000
   refund st "r2" 3000 `shouldReturn` True

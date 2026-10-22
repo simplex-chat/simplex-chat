@@ -1413,7 +1413,7 @@ testViewBalance = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   Right () <- withTransaction st $ \db -> do
     insertInvoiceRow db "inv-holder" holderExpiry "open"
     let terms = OTBalance (RegistrationId "source") 20000 15000 (Just btc)
-    createPaidRegistration db (newReg "holder" ownerA (order "bobsbakery" 2)) terms (paidOrder "inv-holder") (Just $ HeldBalance (RegistrationId "source") 15000) t0
+    createPaidRegistration db (newReg "holder" ownerA (order "bobsbakery" 2)) terms (paidOrder "inv-holder") t0
   balanceOf <$> viewOf "source" t0 `shouldReturn` (Just $ balance 15000 True (Just holderExpiry) 0, Just $ J.Number 0)
   balanceOf <$> viewOf "source" (addUTCTime 1 holderExpiry) `shouldReturn` (Just $ balance 15000 False Nothing 0, Just $ J.Number 0)
   balanceOf <$> viewOf "holder" t0 `shouldReturn` (Just J.Null, Just $ J.Number 15000)

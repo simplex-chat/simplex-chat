@@ -128,7 +128,7 @@ nameInvoiceHandler env@OrdersEnv {oeStore, oeTurns, oeNow} cfg providers waiters
           let invoice = NewNameInvoice {nniInvoiceId = invId, nniProvider = pProvider provider, nniAmount = amount, nniCurrency = catalogCurrency, nniDestination = piDestination, nniExpiresAt = addUTCTime (invoiceWindow cfg ioMethod) now, nniCreatedAt = now}
               registration = NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = orFields, nrgYears = nYears $ oeConfig env}
               paid = PaidOrder {poMethod = ioMethod, poPrice = price, poInvoiceId = invId, poProviderRef = piProviderRef}
-          placeOrder env req [] (\db at -> insertNameInvoice db invoice >> first (const OROrderExists) <$> createPaidRegistration db registration (OTInvoice ioMethod price) paid Nothing at)
+          placeOrder env req [] (\db at -> insertNameInvoice db invoice >> first (const OROrderExists) <$> createPaidRegistration db registration (OTInvoice ioMethod price) paid at)
             `E.catch` strandedBy provider piProviderRef
             >>= \case
             Left refusal -> do

@@ -143,7 +143,7 @@ insertInvoiceRow db invId expiresAt status =
 placePaid :: DBStore -> Text -> Address -> OrderFields -> UTCTime -> IO (Either RegistrationRefused ())
 placePaid st rid owner o expiresAt = withTransaction st $ \db -> do
   insertInvoiceRow db ("inv-" <> rid) expiresAt "open"
-  createPaidRegistration db (newReg rid owner o) (OTInvoice btc price) (paidOrder $ "inv-" <> rid) Nothing t0
+  createPaidRegistration db (newReg rid owner o) (OTInvoice btc price) (paidOrder $ "inv-" <> rid) t0
 
 issue :: DBStore -> Word8 -> NewPrepaidCode -> IO PrepaidCode
 issue st n c = withTransaction st $ \db -> do
@@ -417,7 +417,7 @@ testCloseOverdue = withServiceStore $ \st -> do
     [LiveOrder {loRegistration, loOverdue = True}] <- getLiveOrders db (ofCommitment o') ownerA (ofLabelHash o') (at 61)
     void $ closeOverdue db loRegistration (at 61)
     insertInvoiceRow db "inv-r2" (at 120) "open"
-    createPaidRegistration db (newReg "r2" ownerA o') (OTInvoice btc price) (paidOrder "inv-r2") Nothing (at 61)
+    createPaidRegistration db (newReg "r2" ownerA o') (OTInvoice btc price) (paidOrder "inv-r2") (at 61)
   placed `shouldBe` Right ()
   old <- reg st "r1"
   (nrLive old, nrPhase old, nrVersion old) `shouldBe` (False, PUnpaid, 2)
@@ -610,7 +610,7 @@ testFind = withServiceStore $ \st -> do
     let rid = "r" <> T.pack (show i)
         o = order ("alicebakery" <> T.pack (show i)) (fromIntegral i)
     insertInvoiceRow db ("inv-" <> rid) (at 60) "open"
-    createPaidRegistration db (newReg rid ownerA o) (OTInvoice btc price) (paidOrder $ "inv-" <> rid) Nothing (at i) `shouldReturn` Right ()
+    createPaidRegistration db (newReg rid ownerA o) (OTInvoice btc price) (paidOrder $ "inv-" <> rid) (at i) `shouldReturn` Right ()
   placePaid st "other" ownerB (order "bobsbakery" 99) (at 60) `shouldReturn` Right ()
   found <- withTransaction st $ \db -> findRegistrations db ownerA
   map nrId found `shouldBe` [RegistrationId $ "r" <> T.pack (show i) | i <- [52, 51 .. 3 :: Int]]

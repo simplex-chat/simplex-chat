@@ -16,7 +16,6 @@ module StoreService.Names.Store
     VersionWrite (..),
     LiveOrder (..),
     OrderTerms (..),
-    HeldBalance (..),
     Balance (..),
     BalanceHold (..),
     BalanceLink (..),
@@ -251,9 +250,6 @@ data LiveOrder = LiveOrder
 -- | What an order pays with, as its hash covers it. OTBalance: the paying order, the price, the balance seen, and the method of a difference.
 data OrderTerms = OTInvoice ServicePaymentMethod Int | OTCode ByteString | OTBalance RegistrationId Int Int (Maybe ServicePaymentMethod)
 
--- | The balance a difference order holds while its invoice is open: the paying order, and all of its amount.
-data HeldBalance = HeldBalance {hbSource :: RegistrationId, hbAmount :: Int}
-
 -- | Cents left to spend, and over the balance's life the cents credited and refunded.
 data Balance = Balance
   { blRegistration :: RegistrationId,
@@ -473,12 +469,16 @@ methodText = \case
 textMethod :: Text -> Maybe ServicePaymentMethod
 textMethod t = lookup t [(methodText m, m) | m <- [SPMCard CPStripe, SPMCrypto CCBtc, SPMCrypto CCXmr]]
 
--- | A difference order's hold is written after the registration, so the registration's row is locked before the balance's.
-createPaidRegistration :: DB.Connection -> NewRegistration -> OrderTerms -> PaidOrder -> Maybe HeldBalance -> UTCTime -> IO (Either RegistrationRefused ())
-createPaidRegistration db new@NewRegistration {nrgId = regId@(RegistrationId rid), nrgOwner, nrgOrder} terms PaidOrder {poMethod, poPrice, poInvoiceId = InvoiceId invId, poProviderRef} held now' = do
+-- | A difference order (OTBalance) holds all of the balance seen while its invoice is open. The hold is written after the registration,
+-- so the registration's row is locked before the balance's.
+createPaidRegistration :: DB.Connection -> NewRegistration -> OrderTerms -> PaidOrder -> UTCTime -> IO (Either RegistrationRefused ())
+createPaidRegistration db new@NewRegistration {nrgId = regId@(RegistrationId rid), nrgOwner, nrgOrder} terms PaidOrder {poMethod, poPrice, poInvoiceId = InvoiceId invId, poProviderRef} now' = do
   let now = truncateToSecond now'
-      fromBalance = (\HeldBalance {hbSource, hbAmount} -> (hbSource, hbAmount)) <$> held
-  inserted <- insertRegistration db new PUnpaid poPrice (Just poMethod) Nothing fromBalance (orderHash nrgOwner nrgOrder terms) now
+      held = case terms of
+        OTBalance source _ seen _ -> Just (source, seen)
+        OTInvoice {} -> Nothing
+        OTCode _ -> Nothing
+  inserted <- insertRegistration db new PUnpaid poPrice (Just poMethod) Nothing held (orderHash nrgOwner nrgOrder terms) now
   if not inserted
     then pure $ Left RRLiveOrder
     else do
@@ -486,7 +486,7 @@ createPaidRegistration db new@NewRegistration {nrgId = regId@(RegistrationId rid
         db
         "INSERT INTO sx_badge_service_name_invoices (invoice_id, registration_id, provider_ref, created_at) VALUES (?,?,?,?)"
         (invId, rid, poProviderRef, now)
-      held' <- maybe (pure True) (\HeldBalance {hbSource, hbAmount} -> holdBalance db hbSource hbAmount regId now) held
+      held' <- maybe (pure True) (\(source, seen) -> holdBalance db source seen regId now) held
       if held' then pure $ Right () else Left RRBalanceChanged <$ deleteRegistration db regId
 
 -- | Reserving the code is the conditional update of the transaction that creates the registration.
