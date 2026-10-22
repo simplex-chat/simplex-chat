@@ -26,6 +26,7 @@ on:
       - "cabal.project"
       - "Dockerfile*"
       - "scripts/ci/**"
+      - "scripts/ci/ios-stub-libs.sh"
       - "scripts/desktop/**"
       - ".github/**"
 
@@ -92,7 +93,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       libs_tag: ${{ steps.libs.outputs.tag }}
-      core_changed: ${{ steps.core.outputs.core }}
+      core_changed: ${{ steps.changes.outputs.core }}
       haskell: ${{ steps.changes.outputs.haskell }}
       kotlin: ${{ steps.changes.outputs.kotlin }}
       ios: ${{ steps.changes.outputs.ios }}
@@ -110,28 +111,16 @@ jobs:
         with:
           fetch-depth: 2
 
-      - name: Check chat core change
-        id: core
-        if: github.event_name == 'pull_request'
-        env:
-          BASE: ${{ github.event.pull_request.base.sha }}
-        run: |
-          git fetch -q --depth=1 origin "$BASE"
-          python3 scripts/ci/packages_release.py changes "$BASE" | grep '^core=' >> "$GITHUB_OUTPUT"
-
-      - name: Check app changes
+      - name: Check changes
         id: changes
         if: github.event_name == 'push' || github.event_name == 'pull_request'
         shell: bash
         env:
           BASE: ${{ github.event.pull_request.base.sha }}
         run: |
-          changed() { ! git diff --quiet "$BASE" HEAD -- "$@"; }
           if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
             git fetch -q --depth=1 origin "$BASE"
-            if changed . ':(exclude)apps/multiplatform' ':(exclude)apps/ios'; then echo "haskell=true"; fi
-            if changed apps/multiplatform .github/workflows/build.yml; then echo "kotlin=true"; fi
-            if changed apps/ios scripts/ci/ios-stub-libs.sh .github/workflows/build.yml; then echo "ios=true"; fi
+            python3 scripts/ci/packages_release.py changes "$BASE"
           else
             echo "haskell=true"
             if [ "$GITHUB_REF_TYPE" = branch ]; then
