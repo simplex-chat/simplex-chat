@@ -27,8 +27,8 @@ import StoreService.Store.Invoices (CreateError (..), InvoicePayment (..), Invoi
 import StoreService.Waiters (Seen, Waiters, awaitStatus)
 import StoreService.Web.Http
 import StoreService.Web.Names (namesApp, namesRoutes)
-import StoreService.Web.Names.Orders (nameInvoiceHandler, nameInvoiceView, registrationChangedResponse)
-import StoreService.Web.Names.Registration (heldFor, lapseMoment, registrationAt, registrationVersion, versionParam)
+import StoreService.Web.Names.Orders (nameInvoiceHandler, nameInvoiceView)
+import StoreService.Web.Names.Registration (heldFor, lapseMoment, registrationAt, registrationChangedResponse, registrationVersion, versionParam)
 import Control.Concurrent.Async (race)
 import qualified Control.Exception as E
 import StoreService.Log (logError, logInfo, logWarn)

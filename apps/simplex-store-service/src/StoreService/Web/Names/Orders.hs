@@ -11,8 +11,6 @@ module StoreService.Web.Names.Orders
     codeOrderHandler,
     nameInvoiceView,
     orderRefusalResponse,
-    registrationChangedResponse,
-    registrationRefusalResponse,
   )
 where
 
@@ -47,7 +45,7 @@ import StoreService.Orders (publishRegistration)
 import StoreService.Providers (OrderDraft (..), Provider (..), ProviderError (..), ProviderInvoice (..), expiresItself)
 import StoreService.Store.Invoices (InvoiceRow (..), NewNameInvoice (..), getInvoice, insertNameInvoice, newInvoiceId, truncateToSecond)
 import StoreService.Waiters (Waiters, publish)
-import StoreService.Web.Http (Respond, badRequest, codeConflict, confirmationsFor, internalError, invalidName, invoiceAt, invoicePairs, invoiceWindow, jsonError, jsonResponse, nameBodyBytes, notFound, providerFor, providerNamed, providerUnavailable, readBoundedBody)
+import StoreService.Web.Http (Respond, badRequest, codeConflict, confirmationsFor, internalError, invalidName, invoiceAt, invoicePairs, invoiceWindow, jsonError, jsonResponse, nameBodyBytes, providerFor, providerNamed, providerUnavailable, readBoundedBody)
 import StoreService.Web.Names.Codes (codeRefusalResponse)
 import StoreService.Web.Names.Registration (registrationAt)
 
@@ -228,20 +226,6 @@ nameInvoiceView :: OrdersEnv -> Maybe Int -> InvoiceRow -> NameRegistration -> I
 nameInvoiceView OrdersEnv {oeStore, oeConfig, oeContracts} confirmations row@InvoiceRow {irInvoiceId = InvoiceId invId} r = do
   view <- registrationView oeStore oeConfig oeContracts r
   pure $ J.object $ ["invoiceId" .= invId, "kind" .= ("name" :: Text), "registration" .= view] <> invoicePairs confirmations row
-
--- | The registration's current view, for a request that lost the race to change it.
-registrationChangedResponse :: OrdersEnv -> RegistrationId -> IO Response
-registrationChangedResponse env = registrationRefusalResponse env "registration_changed"
-
--- | A refusal with the registration's current view, so the page follows its state.
-registrationRefusalResponse :: OrdersEnv -> Text -> RegistrationId -> IO Response
-registrationRefusalResponse OrdersEnv {oeStore, oeConfig, oeContracts, oeNow} tag rid =
-  withTransaction oeStore (`getRegistration` rid) >>= \case
-    Nothing -> pure notFound
-    Just r -> do
-      now <- oeNow
-      view <- registrationView oeStore oeConfig oeContracts (registrationAt now r)
-      pure $ jsonResponse status409 $ J.object ["error" .= tag, "registration" .= view]
 
 orderRefusalResponse :: OrderRefusal -> Response
 orderRefusalResponse = \case

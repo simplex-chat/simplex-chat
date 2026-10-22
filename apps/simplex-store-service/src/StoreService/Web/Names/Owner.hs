@@ -32,8 +32,8 @@ import StoreService.Names.Store (NamePhase (..), NameRegistration (..), Registra
 import StoreService.Names.Turns (withLabelTurn, withLabelTurns)
 import StoreService.Names.View (registrationView)
 import StoreService.Web.Http (Respond, internalError, jsonResponse, maxBodyBytes, nameBodyBytes, notFound, parseCodeHash, readBoundedBody)
-import StoreService.Web.Names.Orders (Answer (..), answerNow, firstRefusal, orderRefusalResponse, registrationChangedResponse, registrationRefusalResponse, sendAnswer)
-import StoreService.Web.Names.Registration (registrationAt)
+import StoreService.Web.Names.Orders (Answer (..), answerNow, firstRefusal, orderRefusalResponse, sendAnswer)
+import StoreService.Web.Names.Registration (registrationAt, registrationChangedResponse, registrationRefusalResponse)
 
 data FindRequest = FindRequest
   { frOwner :: Address,
