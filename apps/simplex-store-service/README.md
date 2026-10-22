@@ -96,8 +96,9 @@ Other options:
 `store_service.ini` holds the listener bind address and `static_dir`, an optional
 `[btcpay]` section (omitting it disables Bitcoin and Monero), an optional `[stripe]`
 section (omitting it disables card payments), an optional `[group]` section (omitting it
-turns off the group's commands, though a group created earlier still has its code messages updated)
-and the poll cadence.
+turns off the group's commands, though a group created earlier still has its code messages updated),
+the poll cadence, and optional `[names]` and `[chain]` sections for the names store (omitting both
+turns it off), whose `[chain] service_key` is [the gas key](#the-gas-key).
 `store_service.ini.example` is the committed template; `store_service.ini` itself is
 gitignored, since a real one holds API keys and webhook secrets.
 
@@ -452,6 +453,220 @@ docker compose exec store-service bash -c ': </dev/tcp/<gateway>/443'
 `sudo ./egress.sh --remove --uid 998` (or `--bridge <interface>`) deletes the jumps an install
 adds for that user or network, then the chain, in `iptables` and `ip6tables`. Running it again
 changes nothing, and `--check` then reports the chain absent.
+
+### The gas key
+
+`[chain] service_key` is the registrar key: an Ethereum account (EOA) that sends every names
+transaction, `commit` to the controller, `registerWithCredit` to the sponsor, and the owners' record
+edits (`setTextWithSig`, `clearRecordsWithSig`) to the resolver. It pays only their gas, in ETH. The
+names' rent is spent from its allowance on the sponsor, in USD, which the guardian sets. It holds no
+names.
+
+The commands use Foundry's `cast` ([getfoundry.sh](https://getfoundry.sh), checked with 1.5.1) from
+`scripts/store-service/` on the service host, against the node at `[chain] rpc_url`, with the
+addresses from `[chain]`:
+
+```
+RPC=<rpc_url>
+CONTROLLER=<controller>
+SPONSOR=<sponsor>
+```
+
+#### Create the key
+
+```
+cast wallet new
+```
+
+```
+Successfully created new keypair.
+Address:     0x955C54a660fA233247D47b3f90C5713bA7ADD98B
+Private key: 0x3f77…ba3e
+```
+
+Copy the private key into `[chain]` as `service_key = 0x…` (`0x` and 64 hex digits) with
+`sudoedit store_service.ini`, then clear the screen. The ini holds the only copy. It is gitignored,
+every `*.ini` is kept out of the image, and compose mounts it read-only. Keep it owned by the
+service user with mode 600 (see [Egress rule](#egress-rule)). The service never logs the key; keep
+it out of shell history, logs and tickets too.
+
+#### Find its address
+
+`cast wallet new` printed it. Check that the ini holds the same key:
+
+```
+cast wallet address "$(sudo sed -n 's/^service_key *= *//p' store_service.ini)"
+```
+
+It prints the address (`0x` and 40 hex digits). The commands below that need a key read it from the
+ini the same way, so it stays out of the shell history, but it is in cast's arguments, visible to
+`ps`, while cast runs.
+
+```
+REGISTRAR=<the address>
+```
+
+#### Grant the allowance
+
+Only the guardian, the controller's beneficiary, can set the allowance:
+
+```
+cast call $CONTROLLER 'beneficiary()(address)' --rpc-url $RPC
+```
+
+The guardian sends from its own wallet (here a Ledger; `--interactive` prompts for a raw key), then
+anyone can check the result:
+
+```
+cast send $SPONSOR 'setRegistrarAllowance(address,uint256)' $REGISTRAR $(cast parse-units 1000) --rpc-url $RPC --ledger
+cast call $SPONSOR 'registrarAllowance(address)(uint256)' $REGISTRAR --rpc-url $RPC
+```
+
+```
+1000000000000000000000 [1e21]
+```
+
+- The amount is in attoUSD: dollars × 10^18, or cents × 10^16. `cast parse-units 1000` gives $1,000.
+- It replaces the allowance and does not add to it. To top it up, read what is left and send the
+  new total.
+- Zero is the kill switch: `setRegistrarAllowance($REGISTRAR, 0)` stops every register from that
+  key in one transaction. A sender that is not the guardian is refused with `NotBeneficiary`.
+- Each register spends the name's list price (`rentPriceUSD`, base plus premium) for its whole
+  duration, the free days before `[names] term_start` included. For example, 2 years of a name of 8
+  letters or more:
+
+  ```
+  cast call $CONTROLLER 'rentPriceUSD(string,uint256)((uint256,uint256))' examplename 63072000 --rpc-url $RPC
+  ```
+
+  ```
+  (100000000000000000000 [1e20], 0)
+  ```
+
+#### Fund the key
+
+Send ETH on the chain of `[chain] chain_id` from any wallet, and top it up the same way:
+
+```
+cast send $REGISTRAR --value 1ether --rpc-url $RPC --ledger
+```
+
+The gas below was measured on a local anvil deployment of the contracts (the names webapp's
+`dev/deploy.ts`), with a 63-letter label and links of 4096 bytes, the most the service accepts:
+
+| Transaction | Gas limit | Gas used | Limit × 100 gwei |
+|---|---|---|---|
+| `commit` | 58,983 | 53,521 | 0.0059 ETH |
+| `registerWithCredit`, no links | 568,116 | 504,408 | 0.0568 ETH |
+| `registerWithCredit`, one link | 3,673,412 | 3,489,551 | 0.3673 ETH |
+| `registerWithCredit`, two links | 6,791,417 | 6,467,815 | 0.6791 ETH |
+| `setTextWithSig`, a new link | 3,026,449 | 3,026,449 | 0.3026 ETH |
+| `setTextWithSig`, a link replacing one | 462,289 | 462,289 | 0.0462 ETH |
+| `setTextWithSig`, a link removed | 698,644 | 558,916 | 0.0699 ETH |
+| `clearRecordsWithSig` | 80,312 | 80,312 | 0.0080 ETH |
+
+- The service sets each transaction's gas limit to its estimate and its max fee to at most
+  `max_fee_per_gas` (default 100 gwei). The node accepts a transaction only while the balance covers
+  its limit × max fee, so the last column is what each one needs held. What it is charged is gas
+  used × the block's base fee plus tip, usually far less.
+- An order is one commit and one register: 0.6850 ETH at the cap with two links, 0.0627 ETH with
+  none. The expected orders × 0.6850 ETH, plus 0.3026 ETH per expected link edit, pays for all of
+  them even at the cap. The figures scale with `max_fee_per_gas`.
+- `gas_limit_cap` (default 8,000,000) must stay above 6,791,417: a transaction whose estimate is
+  above it is not sent.
+
+#### Check the balance and transactions in flight
+
+```
+cast balance $REGISTRAR --ether --rpc-url $RPC
+cast nonce $REGISTRAR --block latest --rpc-url $RPC
+cast nonce $REGISTRAR --block pending --rpc-url $RPC
+```
+
+The balance prints as `1.000000000000000000`. The `latest` nonce counts the key's mined
+transactions, and the `pending` one adds those waiting in the node's pool; the difference is what is
+in flight. The same reads through JSON-RPC answer in hex wei and hex counts
+(`{"jsonrpc":"2.0","id":1,"result":"0xde0b6b3a7640000"}`, which `cast to-unit 0xde0b6b3a7640000 ether`
+prints as `1`):
+
+```
+curl -s -X POST -H 'content-type: application/json' --data '{"jsonrpc":"2.0","id":1,"method":"eth_getBalance","params":["<address>","latest"]}' $RPC
+curl -s -X POST -H 'content-type: application/json' --data '{"jsonrpc":"2.0","id":1,"method":"eth_getTransactionCount","params":["<address>","latest"]}' $RPC
+curl -s -X POST -H 'content-type: application/json' --data '{"jsonrpc":"2.0","id":1,"method":"eth_getTransactionCount","params":["<address>","pending"]}' $RPC
+```
+
+A transaction the node refused is in neither count. The service's own list is the `pending` rows of
+its transactions table, here with compose's default database and schema:
+
+```
+psql "postgresql://simplex@127.0.0.1:5432/badge_service" -c "SELECT registrar_nonce, kind, sent_at FROM simplex_v1_chat_schema.sx_badge_service_name_transactions WHERE status = 'pending' ORDER BY registrar_nonce"
+```
+
+#### When funds or the allowance run out
+
+`docker compose logs store-service` shows:
+
+- `[ERROR …] names sender: nonce <n>: not sent: …`, with the node's `insufficient funds` message,
+  when the key cannot pay. The transaction is saved and sent again every few seconds, so funding the
+  key is enough and needs no restart. The line is logged again only when the node's message changes.
+- `[ERROR …] names worker: registration <id> failed: the registrar's allowance on the sponsor is
+  used up; the guardian raises it with setRegistrarAllowance` when the sponsor refuses a register
+  with `InsufficientAllowance`. The order is failed; a code order keeps its code for Try again.
+- `[WARN …] names sender: the latest block needs <wei> wei per gas, above max_fee_per_gas <cap>;
+  the transaction waits` when fees are above the cap. Nothing is signed until they fall.
+- `[WARN …] names sender: nonce <n>: not replaced: a replacement would pay over max_fee_per_gas
+  <cap>` when a transaction stuck in the pool cannot be bumped within the cap.
+
+#### Rotate the key
+
+The service resumes its saved transactions at start and gives new ones nonces after theirs. Those
+are signed by the key that sent them, so started on another key it would give that key's
+transactions nonces it has not reached, and they would never be mined. Rotate only with no `pending`
+row:
+
+1. Create the new key in a copy of the ini, which git ignores as it does every `store_service.ini`,
+   check its address, fund it, and have the guardian grant it an allowance, as above:
+
+   ```
+   sudo install -d -m 700 next && sudo cp -p store_service.ini next/store_service.ini
+   cast wallet new
+   sudoedit next/store_service.ini
+   cast wallet address "$(sudo sed -n 's/^service_key *= *//p' next/store_service.ini)"
+   ```
+
+2. Stop the service and count the `pending` rows:
+
+   ```
+   docker compose stop store-service
+   psql "postgresql://simplex@127.0.0.1:5432/badge_service" -tAc "SELECT count(*) FROM simplex_v1_chat_schema.sx_badge_service_name_transactions WHERE status = 'pending'"
+   ```
+
+   On anything but `0`, `docker compose start store-service` on the old key, let them settle
+   (`confirmations` blocks after they are mined), and repeat this step.
+3. Keep the old ini for step 5, put the new one in place, start, and check the address it runs with:
+
+   ```
+   sudo install -d -m 700 prev && sudo cp -p store_service.ini prev/store_service.ini
+   sudo cp next/store_service.ini store_service.ini
+   docker compose start store-service
+   cast wallet address "$(sudo sed -n 's/^service_key *= *//p' store_service.ini)"
+   ```
+
+4. The guardian zeroes the old key's allowance (`OLD` is its address):
+
+   ```
+   cast send $SPONSOR 'setRegistrarAllowance(address,uint256)' $OLD 0 --rpc-url $RPC --ledger
+   cast call $SPONSOR 'registrarAllowance(address)(uint256)' $OLD --rpc-url $RPC
+   ```
+
+5. Send the old key's ETH back, keeping 0.003 ETH for the fee (21,000 gas at 100 gwei is
+   0.0021 ETH), then delete both copies:
+
+   ```
+   cast balance $OLD --ether --rpc-url $RPC
+   cast send <your wallet> --value <balance - 0.003>ether --rpc-url $RPC --private-key "$(sudo sed -n 's/^service_key *= *//p' prev/store_service.ini)"
+   sudo rm -r prev next
+   ```
 
 ## Issuing codes
 
