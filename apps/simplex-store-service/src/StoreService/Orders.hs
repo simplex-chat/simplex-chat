@@ -17,7 +17,7 @@ where
 import StoreService.Log (logError, safelyWith)
 import StoreService.Names.Phases (Phases, RegistrationId (..))
 import qualified StoreService.Names.Phases as Phases
-import StoreService.Names.Store (NamePhase (..), NameRegistration (..), VersionWrite (..), getRegistration, updateRegistration)
+import StoreService.Names.Store (NamePhase (..), NameRegistration (..), VersionWrite (..), getRegistration, releaseHeldBalance, updateRegistration)
 import StoreService.Providers (Funded (..), PaymentSignal (..), Received (..))
 import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), expireOverdueInvoice, lockInvoice, markCodePaid, paymentHolds, paymentStatusText, settlementCodeHash, settlementInvoice, truncateToSecond, updateInvoiceStatus, upsertPayment)
 import StoreService.Waiters (Waiters, publish, publishPayment)
@@ -184,13 +184,13 @@ nameSettled db before after wrotePayment holdsMoney r@NameRegistration {nrId, nr
       Just ISExpired -> (<> [NOLate nrId | holdsMoney]) . maybe [] (\(rid, v) -> [NOWritten rid v]) <$> closeOrder db r now
       _ -> pure [NOLate nrId | before /= ISOpen, wrotePayment]
 
--- | Clears a live unpaid order's live flag, as its invoice closes in the same transaction.
+-- | Clears a live unpaid order's live flag, as its invoice closes in the same transaction, and releases a balance it held.
 closeOrder :: DB.Connection -> NameRegistration -> UTCTime -> IO (Maybe (RegistrationId, Int64))
 closeOrder db r@NameRegistration {nrId, nrPhase, nrLive} now
   | nrPhase /= PUnpaid || not nrLive = pure Nothing
   | otherwise =
       updateRegistration db r {nrLive = False} now >>= \case
-        Written v -> pure (Just (nrId, v))
+        Written v -> Just (nrId, v) <$ releaseHeldBalance db nrId now
         _ -> E.throwIO (RegistrationChanged nrId)
 
 -- | The order of a name invoice whose status this transaction moved to expired.

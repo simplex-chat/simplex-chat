@@ -327,6 +327,7 @@ judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {n
 taken :: Worker -> UTCTime -> NameRegistration -> IO (Maybe Int64, Next)
 taken Worker {wkOrders = OrdersEnv {oeStore, oeTurns}} now r@NameRegistration {nrId, nrPayment} = case nrPayment of
   RPInvoice {} -> written r <$> withTransaction oeStore write
+  RPBalance -> written r <$> withTransaction oeStore write
   RPCode codeId -> written r . fmap fst <$> releaseCode oeTurns oeStore codeId nrId write
   where
     write db = versionWritten <$> updateRegistration db r {nrPhase = PTaken, nrError = Nothing} now
@@ -396,6 +397,7 @@ retryRegistration oe@OrdersEnv {oeNow} current = do
 retryCode :: OrdersEnv -> UTCTime -> NameRegistration -> IO (Either CodeRefusal (Maybe PrepaidCode))
 retryCode OrdersEnv {oeStore} now NameRegistration {nrId, nrLength, nrPayment} = case nrPayment of
   RPInvoice {} -> pure $ Right Nothing
+  RPBalance -> pure $ Right Nothing
   RPCode codeId ->
     withTransaction oeStore (`getPrepaidCodeById` codeId) <&> \case
       Just code -> maybe (Right $ Just code) Left $ codeRefusal now nrId nrLength code

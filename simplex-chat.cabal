@@ -443,6 +443,7 @@ executable simplex-store-service
       StoreService.Group.Command
       StoreService.Log
       StoreService.Names.Abi
+      StoreService.Names.Balances
       StoreService.Names.Chain
       StoreService.Names.Codes
       StoreService.Names.Contracts
@@ -767,6 +768,7 @@ test-suite simplex-chat-test
       Bots.StoreService.GroupIntegrationTests
       Bots.StoreService.GroupTests
       Bots.StoreService.NameRegistrationTests
+      Bots.StoreService.NamesBalancesTests
       Bots.StoreService.NamesChainTests
       Bots.StoreService.NamesCodesTests
       Bots.StoreService.NamesContractsTests
@@ -806,6 +808,7 @@ test-suite simplex-chat-test
       StoreService.Group.Command
       StoreService.Log
       StoreService.Names.Abi
+      StoreService.Names.Balances
       StoreService.Names.Chain
       StoreService.Names.Codes
       StoreService.Names.Contracts

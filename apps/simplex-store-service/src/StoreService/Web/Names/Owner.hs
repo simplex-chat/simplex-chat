@@ -79,6 +79,7 @@ foundJSON NameRegistration {nrId = RegistrationId rid, nrPayment, nrPhase, nrCre
     invoiceId = case nrPayment of
       RPInvoice _ (InvoiceId t) -> Just t
       RPCode _ -> Nothing
+      RPBalance -> Nothing
 
 -- | POST /api/registration/:id/name, another name or other links, under the turns of both names.
 retargetHandler :: OrdersEnv -> Text -> Request -> Respond -> IO ResponseReceived
@@ -105,7 +106,7 @@ retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} r
           | nrLabelHash stored `notElem` held -> changed
           | otherwise -> moveTo now (registrationAt now stored) fields timestamp
     moveTo now r@NameRegistration {nrPhase} fields timestamp
-      | orderFieldsOf r == fields = answerNow . jsonResponse status200 <$> registrationView oeStore oeConfig oeContracts r
+      | orderFieldsOf r == fields = answerNow . jsonResponse status200 <$> registrationView oeStore oeConfig oeContracts now r
       | Left refusal <- checkTimestamp now timestamp = refuse refusal
       | not (movable r) = refuse ORBadRequest
       | nrPhase == PFailed =
@@ -122,6 +123,7 @@ retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} r
             Just refusal -> refuse refusal
             Nothing -> case nrPayment of
               RPInvoice {} -> checkMovePrice oeContracts r ofLength >>= either refuse (write now r fields)
+              RPBalance -> checkMovePrice oeContracts r ofLength >>= either refuse (write now r fields)
               RPCode _ -> write now r fields nrPrice
     write now r fields price =
       retargetOrder env r fields price >>= \case
@@ -130,7 +132,7 @@ retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} r
         Left (WRRefused refusal) -> refuse refusal
     movedAnswer now v =
       withTransaction oeStore (`getRegistration` rid) >>= \case
-        Just r -> written env rid v . jsonResponse status200 <$> registrationView oeStore oeConfig oeContracts (registrationAt now r)
+        Just r -> written env rid v . jsonResponse status200 <$> registrationView oeStore oeConfig oeContracts now (registrationAt now r)
         Nothing -> answerNow internalError <$ logError ("POST /api/registration/:id/name: order " <> ridText <> " is not readable after its move")
     changed = answerNow <$> registrationChangedResponse env rid
     refuse = refused "POST /api/registration/:id/name"
