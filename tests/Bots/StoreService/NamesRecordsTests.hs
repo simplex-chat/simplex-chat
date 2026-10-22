@@ -72,17 +72,22 @@ namesRecordsTests = describe "StoreService names: records" $ do
     it "checks a refused edit's repeat anew" $ testRefusedRepeat g
     it "refuses the eleventh relayed edit of a name within an hour, with the real wait" $ testCap g
     it "answers provider_unavailable and stores nothing when the chain fails before the send" $ testUnavailableBeforeSend g
+    it "stores no edit whose dry run reverted, so eleven of them leave the cap to sent edits" $ testDryRunNotCounted g
+    it "checks a dry-run-reverted edit's repeat anew" $ testDryRunRepeat g
+    it "answers provider_unavailable and stores nothing when the re-read after a dry run's revert fails" $ testDryRunReReadFails g
     it "lets a concurrent twin lose the unique insert before any signing, and answers both" $ testConcurrentTwin g
     it "answers edit_pending after the wait, and its repeat with the hash once mined" $ testPendingThenMined g
     it "answers edit_pending at once when the chain stops answering after the send" $ testChainStopsAfterSend g
   describe "outcomes" $ do
     it "answers an InvalidNonce revert of an edit another relayer applied as mined with no hash, and its repeat too" $ testAppliedByAnother g
+    it "answers a dry run's InvalidNonce revert of an edit another relayer applied as applied with no hash, storing nothing" $ testDryRunAppliedByAnother g
     it "answers a SignatureExpired revert of an edit another relayer applied as mined with no hash" $ testExpiredAppliedByAnother g
     it "answers record_reverted InvalidNonce when another body used the nonce with another value" $ testNonceTakenByAnother g
     it "frees a reverted edit's nonce for a new body, and answers the reverted edit's repeat while the new one is pending" $ testRevertFreesNonce g
-    it "keeps an edit pending when the re-read after a dry run's revert fails, and settles it in a later round" $ testFailedReRead g
+    it "keeps an edit pending when the re-read after a mined revert fails, and settles it in a later round" $ testFailedReRead g
   describe "restarts" $ do
     it "sends a saved edit that was never sent, and follows a sent one to its receipt" $ testResume g
+    it "forgets a saved edit that was never sent once its dry run reverts or its deadline passes" $ testUnsentForgotten g
     it "answers an identical repeat after a restart from the stored edit, with no chain read" $ testRepeatAfterRestart g
     it "finds an edit that expired across a restart applied, and makes it mined" $ testRestartExpiredApplied g
     it "frees an edit past its deadline while its transaction is still rebroadcast" $ testExpiryFreesNonce g
@@ -137,8 +142,10 @@ answerName s@Setup {node, owner = EphemeralWallet {ewAddress}} = do
   setRecord s channelKey ""
 
 setNonce :: Setup -> Word64 -> IO ()
-setNonce Setup {node, owner = EphemeralWallet {ewAddress}} n =
-  answerCall node fakeResolver (selector "nonces(address)" <> addressWord ewAddress) $ Returns $ uint256 n
+setNonce s@Setup {node} n = answerCall node fakeResolver (noncesCall s) $ Returns $ uint256 n
+
+noncesCall :: Setup -> ByteString
+noncesCall Setup {owner = EphemeralWallet {ewAddress}} = selector "nonces(address)" <> addressWord ewAddress
 
 setRecord :: Setup -> Text -> Text -> IO ()
 setRecord Setup {node} key value =
@@ -323,6 +330,40 @@ testUnavailableBeforeSend g = withSetup g $ \s@Setup {node, records} -> do
   h <- mineSent s 1 True
   answerOf r `shouldReturn` EAApplied (Just h)
 
+testDryRunNotCounted :: TVar ChaChaDRG -> IO ()
+testDryRunNotCounted g = withSetup g $ \s@Setup {node, records, owner} -> do
+  setFault node "eth_estimateGas" $ revertFault $ selector "InvalidSignature()"
+  forM_ [1 .. 11 :: Int] $ \n ->
+    (relayEdit records =<< signEdit s owner (channel $ "https://smp8.simplex.im/c#n" <> T.pack (show n)) 0 deadline)
+      `shouldReturn` EAReverted (Just "InvalidSignature")
+  editRows s `shouldReturn` 0
+  clearFault node "eth_estimateGas"
+  r <- relay s =<< ownerEdit s viemChannelLink
+  h <- mineSent s 1 True
+  answerOf r `shouldReturn` EAApplied (Just h)
+
+testDryRunRepeat :: TVar ChaChaDRG -> IO ()
+testDryRunRepeat g = withSetup g $ \s@Setup {node, records} -> do
+  req <- ownerEdit s viemChannelLink
+  revertDryRun node viemSetCall $ Just $ selector "InvalidSignature()"
+  relayEdit records req `shouldReturn` EAReverted (Just "InvalidSignature")
+  stateOf s req `shouldReturn` Nothing
+  revertDryRun node viemSetCall Nothing
+  r <- relay s req
+  h <- mineSent s 1 True
+  answerOf r `shouldReturn` EAApplied (Just h)
+
+testDryRunReReadFails :: TVar ChaChaDRG -> IO ()
+testDryRunReReadFails g = withSetup g $ \s@Setup {node, records} -> do
+  req <- ownerEdit s viemChannelLink
+  -- the nonce check reads it, the re-read after the revert finds no answer
+  answerCallOnce node fakeResolver (noncesCall s) $ Returns $ uint256 (0 :: Int)
+  forgetCall node fakeResolver (noncesCall s)
+  revertDryRun node viemSetCall $ Just $ selector "InvalidSignature()"
+  relayEdit records req `shouldReturn` EAUnavailable
+  editRows s `shouldReturn` 0
+  sentTransactions node `shouldReturn` []
+
 testConcurrentTwin :: TVar ChaChaDRG -> IO ()
 testConcurrentTwin g = withSetup g $ \s@Setup {node, records} -> do
   req <- ownerEdit s viemChannelLink
@@ -359,18 +400,29 @@ testChainStopsAfterSend g = withSetup g $ \s@Setup {node, records} -> do
 -- outcomes
 
 testAppliedByAnother :: TVar ChaChaDRG -> IO ()
-testAppliedByAnother g = withSetup g $ \s@Setup {node} -> do
+testAppliedByAnother g = withSetup g $ \s@Setup {node, records} -> do
   req <- ownerEdit s viemChannelLink
-  saveUnsent s req
-  -- another relayer applied it while the service was down
+  r <- relay s req
+  _ <- within $ awaitSent node 1
+  -- another relayer's transaction with the same signed edit mined first
+  setNonce s 1
+  setRecord s channelKey viemChannelLink
+  _ <- mineSent s 1 False
+  answerOf r `shouldReturn` EAApplied Nothing
+  stateOf s req `shouldReturn` Just (ESMined Nothing)
+  relayEdit records req `shouldReturn` EAApplied Nothing
+
+testDryRunAppliedByAnother :: TVar ChaChaDRG -> IO ()
+testDryRunAppliedByAnother g = withSetup g $ \s@Setup {node, records} -> do
+  req <- ownerEdit s viemChannelLink
+  -- the nonce check reads 0; another relayer applies the edit before the dry run
+  answerCallOnce node fakeResolver (noncesCall s) $ Returns $ uint256 (0 :: Int)
   setNonce s 1
   setRecord s channelKey viemChannelLink
   revertDryRun node viemSetCall $ Just $ selector "InvalidNonce()"
-  s' <- restart s
-  recordsRound (records s')
-  stateOf s req `shouldReturn` Just (ESMined Nothing)
+  relayEdit records req `shouldReturn` EAApplied Nothing
+  editRows s `shouldReturn` 0
   sentTransactions node `shouldReturn` []
-  relayEdit (records s') req `shouldReturn` EAApplied Nothing
 
 testExpiredAppliedByAnother :: TVar ChaChaDRG -> IO ()
 testExpiredAppliedByAnother g = withSetup g $ \s@Setup {node} -> do
@@ -412,22 +464,19 @@ testRevertFreesNonce g = withSetup g $ \s@Setup {node, records} -> do
   answerOf r' `shouldReturn` EAApplied (Just h)
 
 testFailedReRead :: TVar ChaChaDRG -> IO ()
-testFailedReRead g = withSetup g $ \s@Setup {node} -> do
+testFailedReRead g = withSetup g $ \s@Setup {node, records} -> do
   req <- ownerEdit s viemChannelLink
-  saveUnsent s req
-  revertDryRun node viemSetCall $ Just $ selector "InvalidSignature()"
-  s' <- restart s
+  r <- relay s req
+  _ <- within $ awaitSent node 1
   setFault node "eth_call" HttpFailure
-  recordsRound (records s')
+  _ <- mineSent s 1 False
+  answerOf r `shouldReturn` EAPending
   stateOf s req `shouldReturn` Just ESPending
-  relayEdit (records s') req `shouldReturn` EAPending
+  relayEdit records req `shouldReturn` EAPending
   clearFault node "eth_call"
-  recordsRound (records s')
-  stateOf s req `shouldReturn` Just (ESReverted $ Just "InvalidSignature")
-  relayEdit (records s') req `shouldReturn` EAReverted (Just "InvalidSignature")
-  sentTransactions node `shouldReturn` []
-
--- restarts
+  recordsRound records
+  stateOf s req `shouldReturn` Just (ESReverted Nothing)
+  relayEdit records req `shouldReturn` EAReverted Nothing
 
 testResume :: TVar ChaChaDRG -> IO ()
 testResume g = withSetup g $ \s@Setup {node, owner} -> do
@@ -450,6 +499,22 @@ testResume g = withSetup g $ \s@Setup {node, owner} -> do
   stateOf s sent `shouldReturn` Just (ESMined $ Just h')
   TxHash (C.keccak256 raw) `shouldBe` h'
 
+testUnsentForgotten :: TVar ChaChaDRG -> IO ()
+testUnsentForgotten g = withSetup g $ \s@Setup {node, owner} -> do
+  reverting <- ownerEdit s viemChannelLink
+  saveUnsent s reverting
+  revertDryRun node viemSetCall $ Just $ selector "InvalidSignature()"
+  s' <- restart s
+  recordsRound (records s')
+  stateOf s reverting `shouldReturn` Nothing
+  late <- signEdit s owner (channel viemChannelLink) 0 (deadline + 1)
+  saveUnsent s late
+  setBlock node 2 $ deadline + 1
+  recordsRound (records s')
+  stateOf s late `shouldReturn` Nothing
+  editRows s `shouldReturn` 0
+  sentTransactions node `shouldReturn` []
+
 testRepeatAfterRestart :: TVar ChaChaDRG -> IO ()
 testRepeatAfterRestart g = withSetup g $ \s@Setup {node} -> do
   req <- ownerEdit s viemChannelLink
@@ -465,14 +530,17 @@ testRepeatAfterRestart g = withSetup g $ \s@Setup {node} -> do
 testRestartExpiredApplied :: TVar ChaChaDRG -> IO ()
 testRestartExpiredApplied g = withSetup g $ \s@Setup {node} -> do
   req <- ownerEdit s viemChannelLink
-  saveUnsent s req
+  relayEdit (records s) {rsPendingAfter = shortWait} req `shouldReturn` EAPending
+  _ <- within $ awaitSent node 1
+  -- while the service is down the deadline passes, and another relayer applies the edit
   setBlock node 300 $ deadline + 1
+  setBlock node 301 $ deadline + 2
   setNonce s 1
   setRecord s channelKey viemChannelLink
   s' <- restart s
   recordsRound (records s')
   stateOf s req `shouldReturn` Just (ESMined Nothing)
-  sentTransactions node `shouldReturn` []
+  relayEdit (records s') req `shouldReturn` EAApplied Nothing
 
 testExpiryFreesNonce :: TVar ChaChaDRG -> IO ()
 testExpiryFreesNonce g = withSetup g $ \s@Setup {node, records, sender} -> do

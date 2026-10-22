@@ -176,27 +176,36 @@ insertEdit Records {rsStore, rsTurns, rsNow} EditRequest {erLabelHash, erChange,
   where
     edit = NewRecordEdit {nreLabelHash = erLabelHash, nreOwner = signer, nreNonce = erNonce, nreChange = erChange, nreDeadline = erDeadline, nreSignature = erSignature, nreBodyHash = bodyHash}
 
--- | An edit the chain failed to take is deleted while still claimed, so the lane cannot send it after.
+-- | An edit that was not sent is answered and deleted while still claimed, so the lane cannot send it after.
 sendNew :: Records -> Int64 -> IO EditAnswer
-sendNew rs editId = do
-  sent <- withClaim rs editId True $ withStore rs (`getRecordEdit` editId) >>= maybe (pure True) send
-  if sent then awaitEdit rs editId else EAUnavailable <$ settled rs editId
+sendNew rs editId =
+  withClaim rs editId Nothing (withStore rs (`getRecordEdit` editId) >>= maybe (pure Nothing) send) >>= maybe (awaitEdit rs editId) pure
   where
     send edit =
       sendEdit rs edit >>= \case
-        Right () -> pure True
+        Right () -> pure Nothing
         Left e -> do
-          logWarn $ "names records: edit " <> tshow editId <> " not sent: " <> tshow e
-          False <$ withStore rs (`deleteUnsentEdit` editId)
+          answer <- case e of
+            SEChain (ChainReverted name) -> either (const EAUnavailable) (dryRunAnswer name) <$> judge rs edit
+            _ -> EAUnavailable <$ logWarn ("names records: edit " <> tshow editId <> " not sent: " <> tshow e)
+          Just answer <$ forget rs editId
+    -- anyone can relay a signed edit, so a revert may mean another relayer applied it
+    dryRunAnswer name = \case
+      Applied tx -> EAApplied tx
+      NonceTaken -> EAReverted $ revertText RNInvalidNonce
+      NonceFree -> EAReverted $ revertText =<< name
 
--- | A dry run's revert is judged at once; Left when nothing was sent and the chain did not refuse the edit.
+-- | Left when nothing was sent: the dry run reverted or the chain failed.
 sendEdit :: Records -> RecordEdit -> IO (Either SendError ())
 sendEdit rs@Records {rsSender} edit@RecordEdit {reId} =
   submitTransaction rsSender (TxEdit reId) (resolver rs) (editCalldata rs edit) >>= \case
     Right _ -> Right () <$ unstall rs reId
     Left SEInFlight -> pure $ Right ()
-    Left (SEChain (ChainReverted name)) -> Right () <$ judged rs edit (settle rs reId $ ESReverted $ revertText =<< name)
     Left e -> pure $ Left e
+
+-- | Only sent edits are stored, so one never sent leaves no row and its repeat is checked anew.
+forget :: Records -> Int64 -> IO ()
+forget rs editId = withStore rs (`deleteUnsentEdit` editId) >> settled rs editId
 
 -- | Waits until the edit settles, the chain stops answering for it, or 'rsPendingAfter' passes.
 awaitEdit :: Records -> Int64 -> IO EditAnswer
@@ -242,7 +251,7 @@ follow :: Records -> Block -> Block -> RecordEdit -> IO ()
 follow rs@Records {rsChain} Block {blockTimestamp} Block {blockTimestamp = deepTime} edit@RecordEdit {reId, reDeadline} = do
   txs <- withStore rs (`editTransactions` reId)
   case txs of
-    [] -> if ahead then resend else expire
+    [] -> if ahead then sendUnsent else forget rs reId
     _
       | mined : _ <- [ntHash | NameTransaction {ntHash, ntStatus = TSMined} <- txs] -> settle rs reId $ ESMined $ Just mined
       | any ((== TSPending) . ntStatus) txs -> if deepTime > reDeadline then expire else unstall rs reId
@@ -256,7 +265,15 @@ follow rs@Records {rsChain} Block {blockTimestamp} Block {blockTimestamp = deepT
   where
     ahead = reDeadline > blockTimestamp
     expire = judged rs edit $ settle rs reId $ ESReverted signatureExpired
-    resend = sendEdit rs edit >>= either (stall rs reId) pure
+    sendUnsent =
+      sendEdit rs edit >>= \case
+        Left (SEChain (ChainReverted _)) -> forget rs reId
+        r -> either (stall rs reId) pure r
+    -- the edit was sent before, so its dry run's revert is its outcome
+    resend =
+      sendEdit rs edit >>= \case
+        Left (SEChain (ChainReverted name)) -> settle rs reId $ ESReverted $ revertText =<< name
+        r -> either (stall rs reId) pure r
 
 -- | Settles the edit as the chain shows it, or runs the action when its nonce is still free.
 judged :: Records -> RecordEdit -> IO () -> IO ()
