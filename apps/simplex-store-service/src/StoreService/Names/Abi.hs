@@ -13,6 +13,7 @@ module StoreService.Names.Abi
     selector,
     hex,
     decodeUint256,
+    decodeWord64,
     decodeAddress,
     decodeBool,
     decodeBytes32,
@@ -31,6 +32,7 @@ import qualified Data.ByteString as B
 import Data.List (mapAccumL)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1, decodeUtf8')
+import Data.Word (Word64)
 import Simplex.Messaging.Crypto (keccak256)
 import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Eth.Address (Address, unAddress)
@@ -43,6 +45,7 @@ data AbiError
   | AENotAddress
   | AENotBool
   | AENotUtf8
+  | AERange
   deriving (Eq, Show)
 
 abiWordSize :: Int
@@ -79,6 +82,11 @@ hex bs = "0x" <> decodeLatin1 (convertToBase Base16 bs)
 
 decodeUint256 :: ByteString -> Either AbiError Integer
 decodeUint256 = uintAt 0
+
+decodeWord64 :: ByteString -> Either AbiError Word64
+decodeWord64 ret = do
+  n <- decodeUint256 ret
+  if n <= toInteger (maxBound :: Word64) then Right (fromInteger n) else Left AERange
 
 decodeAddress :: ByteString -> Either AbiError Address
 decodeAddress ret = do

@@ -12,6 +12,7 @@ import Bots.StoreService.GroupTests
 import Bots.StoreService.NameRegistrationTests
 import Bots.StoreService.NamesChainTests
 import Bots.StoreService.NamesCodesTests
+import Bots.StoreService.NamesContractsTests
 import Bots.StoreService.NamesLabelTests
 import Bots.StoreService.NamesLinksTests
 import Bots.StoreService.NamesProfilesTests
@@ -97,6 +98,7 @@ main = do
       namesConfigTests
       namesChainTests
       namesCodesTests
+      namesContractsTests
       namesLabelTests
       namesLinksTests
       namesProfilesTests

@@ -5,7 +5,11 @@ module StoreService.Names.Registration
   ( Registration (..),
     RegisterIntent (..),
     Node,
+    nodeBytes,
     namehash,
+    labelNode,
+    contactRecordKey,
+    channelRecordKey,
     sponsorDomain,
     resolverDomain,
     makeCommitment,
@@ -32,7 +36,7 @@ import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Eth.Address (Address, recoverAddress)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain (..), Eip712Value (..), hashTypedData, serializeSignature)
-import Simplex.Messaging.SimplexName (SimplexTLD)
+import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD)
 import StoreService.Names.Abi (AbiValue (..), abiArray, abiBytes, abiTuple, addressWord, selector, uint256)
 
 data Registration = Registration
@@ -46,8 +50,15 @@ data Registration = Registration
     rChannelLink :: Maybe Text
   }
 
--- | Only built by 'namehash', so it always holds 32 bytes.
+-- | Only built by 'labelNode', so it always holds 32 bytes.
 newtype Node = Node ByteString
+
+nodeBytes :: Node -> ByteString
+nodeBytes (Node node) = node
+
+contactRecordKey, channelRecordKey :: ByteString
+contactRecordKey = "simplex.contact"
+channelRecordKey = "simplex.channel"
 
 data RegisterIntent = RegisterIntent
   { riRegistration :: Registration,
@@ -134,7 +145,7 @@ registrationTuple r@Registration {rLabel, rOwner, rDuration, rSecret, rResolver}
 
 recordCalls :: Registration -> [ByteString]
 recordCalls Registration {rLabel, rTLD, rContactLink, rChannelLink} =
-  catMaybes [setText "simplex.contact" <$> rContactLink, setText "simplex.channel" <$> rChannelLink]
+  catMaybes [setText contactRecordKey <$> rContactLink, setText channelRecordKey <$> rChannelLink]
   where
     setText key link =
       selector "setText(bytes32,string,string)"
@@ -142,6 +153,9 @@ recordCalls Registration {rLabel, rTLD, rContactLink, rChannelLink} =
     Node node = namehash rTLD rLabel
 
 namehash :: SimplexTLD -> Text -> Node
-namehash tld label = Node $ keccak256 $ tldNode <> keccak256 (encodeUtf8 label)
+namehash tld = labelNode tld . LabelHash . keccak256 . encodeUtf8
+
+labelNode :: SimplexTLD -> LabelHash -> Node
+labelNode tld (LabelHash h) = Node $ keccak256 $ tldNode <> h
   where
     tldNode = keccak256 $ B.replicate 32 0 <> keccak256 (B.drop 1 $ strEncode tld)

@@ -31,7 +31,7 @@ namesChainTests = describe "StoreService names: chain" $ do
     it "reads a dry run's revert with data by its name" $ testDryRunRevertNamed g
     it "reads an eth_call revert with data by its name" $ testCallRevertNamed g
     it "reads ownerOf of a name nobody holds as a revert" $ testOwnerOfRevert g
-    it "reads a revert without code 3 or data as a revert" $ testRevertWithoutData g
+    it "reads a revert without code 3 or data as a revert without data" $ testRevertWithoutData g
     it "reads a revert of an unknown error as an unnamed revert" $ testUnknownRevert g
   describe "failures" $ do
     it "reads an RPC error as unavailable, without the URL" $ testRpcError g
@@ -101,9 +101,10 @@ viemSelectors =
 
 testRevertSelectors :: IO ()
 testRevertSelectors = do
-  map snd viemSelectors `shouldBe` [minBound .. maxBound]
+  map snd viemSelectors `shouldBe` filter (/= RNWithoutData) [minBound .. maxBound]
   [(n, decodeRevert $ unhex sel <> uint256 (0 :: Int)) | (sel, n) <- viemSelectors] `shouldBe` [(n, Just n) | (_, n) <- viemSelectors]
   decodeRevert (B.take 3 $ unhex "74480cc9") `shouldBe` Nothing
+  decodeRevert "" `shouldBe` Just RNWithoutData
 
 testDryRunRevertNamed :: TVar ChaChaDRG -> IO ()
 testDryRunRevertNamed g = withChain g $ \node c -> do
@@ -120,12 +121,12 @@ testOwnerOfRevert :: TVar ChaChaDRG -> IO ()
 testOwnerOfRevert g = withChain g $ \node c@ChainClient {ccConfig = ChainConfig {cBaseRegistrar}} -> do
   let ownerOf = selector "ownerOf(uint256)" <> C.keccak256 "bakery1"
   answerCall node cBaseRegistrar ownerOf $ Reverts ""
-  ethCall c cBaseRegistrar ownerOf `shouldReturn` Left (ChainReverted Nothing)
+  ethCall c cBaseRegistrar ownerOf `shouldReturn` Left (ChainReverted $ Just RNWithoutData)
 
 testRevertWithoutData :: TVar ChaChaDRG -> IO ()
 testRevertWithoutData g = withChain g $ \node c -> do
   setFault node "eth_call" $ RpcError (-32000) "execution reverted" Nothing
-  ethCall c fakeController availableCall `shouldReturn` Left (ChainReverted Nothing)
+  ethCall c fakeController availableCall `shouldReturn` Left (ChainReverted $ Just RNWithoutData)
 
 testUnknownRevert :: TVar ChaChaDRG -> IO ()
 testUnknownRevert g = withChain g $ \node c -> do
