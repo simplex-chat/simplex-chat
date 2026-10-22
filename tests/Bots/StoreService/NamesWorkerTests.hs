@@ -851,6 +851,7 @@ testRetryReleasedCode = withWorker $ \W {wCtx = ctx@Ctx {cStore}} -> do
           ("revoked", \PrepaidCode {pcCodeHash} db -> void $ revokePrepaidCode db pcCodeHash orderTime, refusedWith 400 "code_invalid"),
           ("expired", \PrepaidCode {pcCodeHash} db -> expire db pcCodeHash, refusedWith 409 "code_expired")
         ]
+      expire :: DB.Connection -> ByteString -> IO ()
       expire db codeHash = DB.execute db "UPDATE sx_badge_service_name_prepaid_codes SET expires_at = ? WHERE code_hash = ?" (orderTime, DB.Binary codeHash)
   forM_ (zip [1 :: Int ..] refusals) $ \(n, (what, change, refusal)) -> do
     (r, code) <- codeOrder n failedPhase >>= released
