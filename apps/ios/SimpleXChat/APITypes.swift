@@ -438,6 +438,7 @@ public struct KeepAliveOpts: Codable, Equatable {
     public var keepIdle: Int // seconds
     public var keepIntvl: Int // seconds
     public var keepCnt: Int // times
+    public var unackedDataTimeout: Bool? = nil
 
     public static let defaults: KeepAliveOpts = KeepAliveOpts(keepIdle: 30, keepIntvl: 15, keepCnt: 4)
 }

@@ -401,6 +401,7 @@ val appPrefs: AppPreferences by lazy { AppPreferences() }
 | `networkTCPKeepIdle` | `Int` | default | Keep-alive idle time |
 | `networkTCPKeepIntvl` | `Int` | default | Keep-alive interval |
 | `networkTCPKeepCnt` | `Int` | default | Keep-alive count |
+| `networkTCPUnackedDataTimeout` | `Boolean` | default | Fail connections with unacknowledged data after the keep-alive time |
 
 #### Appearance (lines 213-233)
 
