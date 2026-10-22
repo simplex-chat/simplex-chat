@@ -883,8 +883,8 @@ automatically, and the service never learns where to send money. Support records
    cents.
 
 A balance that an open order holds is never refunded: that order is buying another name with it and
-its invoice is waiting for the difference. The command names the order and its invoice's expiry
-instead:
+its invoice is waiting for the difference. The command names the order instead, with its invoice's
+expiry unless money reached the invoice:
 
 - `its invoice open until <time>`: if the buyer pays it, the balance is spent; if not, it is released
   once the invoice expires and the poller, in service mode, closes the order. Run the command again
@@ -893,9 +893,9 @@ instead:
   after the expiry at the earliest, then stop it and run //refund again`: the poller runs only in
   service mode. Its first pass from 10 minutes after the expiry closes the order and releases the
   hold; a card order closes only once Stripe accepts the cancel.
-- `whose invoice expired at <time> holding money`: a payment reached the invoice; the hold stays
-  until that payment settles, which spends the balance, or the provider closes the invoice, which
-  releases it.
+- `whose invoice holds money`: a payment reached the invoice, before or after its expiry; the hold
+  stays until that payment settles, which spends the balance, or the provider closes the invoice,
+  which releases it.
 
 The command also answers when the reference matches no order, when the order has no balance, and
 when the cents are not the balance. A refunded balance shows `amount` 0 and its `refunded` total in

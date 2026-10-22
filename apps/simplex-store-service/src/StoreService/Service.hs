@@ -290,12 +290,12 @@ showRefund cc ref = do
     Right (Just (RegistrationId rid, Just (balance@Balance {blAmount, blCredited, blRefunded}, chain))) ->
       Right $
         "Order " <> rid <> ": balance " <> dollars blAmount <> " (credited " <> dollars blCredited <> ", refunded " <> dollars blRefunded
-          <> "). Paid by: " <> chainText chain <> ". " <> nextStep now balance
+          <> "). Paid by: " <> chainText chain <> ". " <> nextStep balance
     Left _ -> Left "The balance could not be read."
   where
     withChain db (rid, balance_) = (rid,) <$> mapM (\balance -> (balance,) <$> balanceChain db rid) balance_
-    nextStep now Balance {blAmount, blHold} = case blHold of
-      Just hold -> "It cannot be refunded now: " <> heldText now hold <> "."
+    nextStep Balance {blAmount, blHold} = case blHold of
+      Just hold -> "It cannot be refunded now: " <> heldText hold <> "."
       Nothing
         | blAmount > 0 -> "To record its refund: //refund " <> ref <> " " <> tshow blAmount
         | otherwise -> "Nothing to refund."
@@ -309,19 +309,19 @@ refundBalanceCmd turns ChatController {chatStore} ref cents = do
       -- The registration id, not the reference, since an invoice id is kept out of the logs.
       logInfo $ "names: recorded a refund of " <> tshow rdCents <> " cents for order " <> rid
       pure $ Right $ "Recorded a refund of " <> dollars rdCents <> " for order " <> rid <> ". Refund it now, by: " <> chainText rdChain <> "."
-    Right (Left refusal) -> pure $ Left $ "Nothing recorded: " <> refusalText now refusal <> "."
+    Right (Left refusal) -> pure $ Left $ "Nothing recorded: " <> refusalText refusal <> "."
     Left e -> Left "The refund could not be recorded." <$ logError ("names: recording a refund failed: " <> tshow e)
   where
-    refusalText now = \case
+    refusalText = \case
       RefundNoOrder -> "no order has the reference " <> ref
       RefundNoBalance -> "the order of " <> ref <> " has no balance"
       RefundAmount amount -> "the balance is " <> dollars amount <> " now, not " <> dollars cents
-      RefundHeld hold -> heldText now hold
+      RefundHeld hold -> heldText hold
 
-heldText :: UTCTime -> BalanceHold -> T.Text
-heldText now BalanceHold {bhHolder = RegistrationId holder, bhUntil, bhOverdue}
+heldText :: BalanceHold -> T.Text
+heldText BalanceHold {bhHolder = RegistrationId holder, bhUntil, bhOverdue, bhFunded}
   | bhOverdue = heldBy <> "its invoice expired at " <> fmtTime bhUntil <> "; start the service so the poller closes that order, " <> tshow graceMinutes <> " minutes after the expiry at the earliest, then stop it and run //refund again"
-  | bhUntil < now = heldBy <> "whose invoice expired at " <> fmtTime bhUntil <> " holding money; it holds until that payment settles or the invoice closes; run the command again then"
+  | bhFunded = heldBy <> "whose invoice holds money; it holds until that payment settles or the invoice closes; run the command again then"
   | otherwise = heldBy <> "its invoice open until " <> fmtTime bhUntil <> "; run the command again then"
   where
     heldBy = "held by order " <> holder <> ", "

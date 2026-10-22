@@ -318,7 +318,7 @@ namesRefundChatTests = describe "StoreService names: operator refund" $ do
   it "refuses an unknown reference, an order without a balance and another amount, and answers the usage to a malformed command" testRefundRefusals
   it "refuses a balance held by an open order, naming it and its expiry, and records it once that order's invoice is cancelled" testRefundOpenHolder
   it "refuses a balance held by an overdue order, naming its expiry, and records it once the sweep closed that order" testRefundOverdueHolder
-  it "refuses a balance held by an order whose invoice holds money past its expiry" testRefundFundedHolder
+  it "refuses a balance held by an order whose invoice holds money, before its expiry and past it" testRefundFundedHolder
   it "lists every order of a chain of three that the balance came through" testRefundChain
   it "stops the chain of a late-paid difference order at itself, its cents marked late" testRefundLateChain
   it "is not a group command" $ \_ -> groupCmdAction GROwner "/refund s 10000" `shouldBe` IgnoreMsg
@@ -358,17 +358,17 @@ testRefundRefusals ps = withStoreService ps $ \_ _ cc -> do
     (args,) <$> refundRaw cc args `shouldReturn` (args, Left badgeCmdUsage)
   Balances.figures st "s" t0 `shouldReturn` Just (10000, 10000, 0, Nothing)
 
--- | The source s with a balance of $100.00 and the order h holding it, whose invoice expires at the given time.
-heldSource :: ChatController -> UTCTime -> IO ()
-heldSource cc expiry = do
-  Balances.source (chatStore cc) "s" 10000
-  Balances.holder (chatStore cc) "h" "s" 10000 expiry `shouldReturn` Right ()
+-- | The source with a balance of $100.00 and the holder holding it, whose invoice expires at the given time.
+heldSource :: ChatController -> Text -> Text -> UTCTime -> IO ()
+heldSource cc src holder expiry = do
+  Balances.source (chatStore cc) src 10000
+  Balances.holder (chatStore cc) holder src 10000 expiry `shouldReturn` Right ()
 
-heldRefusals :: HasCallStack => ChatController -> Text -> IO ()
-heldRefusals cc held = do
-  refundRaw cc "s" `shouldReturn` Right ("Order s: balance $100.00 (credited $100.00, refunded $0.00). Paid by: order s: $100.00 by btc on invoice inv-s. It cannot be refunded now: " <> held <> ".")
-  refundRaw cc "inv-s 10000" `shouldReturn` Left ("Nothing recorded: " <> held <> ".")
-  Balances.figures (chatStore cc) "s" t0 >>= (`shouldSatisfy` \case Just (10000, 10000, 0, Just _) -> True; _ -> False)
+heldRefusals :: HasCallStack => ChatController -> Text -> Text -> IO ()
+heldRefusals cc src held = do
+  refundRaw cc src `shouldReturn` Right ("Order " <> src <> ": balance $100.00 (credited $100.00, refunded $0.00). Paid by: order " <> src <> ": $100.00 by btc on invoice inv-" <> src <> ". It cannot be refunded now: " <> held <> ".")
+  refundRaw cc ("inv-" <> src <> " 10000") `shouldReturn` Left ("Nothing recorded: " <> held <> ".")
+  Balances.figures (chatStore cc) src t0 >>= (`shouldSatisfy` \case Just (10000, 10000, 0, Just _) -> True; _ -> False)
 
 recordedS :: Either Text Text
 recordedS = Right "Recorded a refund of $100.00 for order s. Refund it now, by: order s: $100.00 by btc on invoice inv-s."
@@ -377,8 +377,8 @@ testRefundOpenHolder :: HasCallStack => TestParams -> IO ()
 testRefundOpenHolder ps = withStoreService ps $ \_ _ cc -> do
   now <- getCurrentTime
   let expiry = addUTCTime 3600 now
-  heldSource cc expiry
-  heldRefusals cc $ "held by order h, its invoice open until " <> minuteText expiry <> "; run the command again then"
+  heldSource cc "s" "h" expiry
+  heldRefusals cc "s" $ "held by order h, its invoice open until " <> minuteText expiry <> "; run the command again then"
   waiters <- newWaiters
   cancelOpenInvoice (chatStore cc) waiters Nothing (InvoiceId "inv-h") now `shouldReturn` True
   refundRaw cc "s 10000" `shouldReturn` recordedS
@@ -387,8 +387,8 @@ testRefundOverdueHolder :: HasCallStack => TestParams -> IO ()
 testRefundOverdueHolder ps = withStoreService ps $ \_ _ cc -> do
   now <- getCurrentTime
   let expiry = addUTCTime (-120) now
-  heldSource cc expiry
-  heldRefusals cc $ "held by order h, its invoice expired at " <> minuteText expiry <> "; start the service so the poller closes that order, 10 minutes after the expiry at the earliest, then stop it and run //refund again"
+  heldSource cc "s" "h" expiry
+  heldRefusals cc "s" $ "held by order h, its invoice expired at " <> minuteText expiry <> "; start the service so the poller closes that order, 10 minutes after the expiry at the earliest, then stop it and run //refund again"
   waiters <- newWaiters
   expireOverdue (chatStore cc) waiters Nothing now now [InvoiceId "inv-h"] `shouldReturn` [InvoiceId "inv-h"]
   refundRaw cc "s 10000" `shouldReturn` recordedS
@@ -396,10 +396,10 @@ testRefundOverdueHolder ps = withStoreService ps $ \_ _ cc -> do
 testRefundFundedHolder :: HasCallStack => TestParams -> IO ()
 testRefundFundedHolder ps = withStoreService ps $ \_ _ cc -> do
   now <- getCurrentTime
-  let expiry = addUTCTime (-120) now
-  heldSource cc expiry
-  Balances.payment (chatStore cc) "inv-h" (Balances.cardPaid 100 0) now
-  heldRefusals cc $ "held by order h, whose invoice expired at " <> minuteText expiry <> " holding money; it holds until that payment settles or the invoice closes; run the command again then"
+  forM_ [("s", "h", addUTCTime (-120) now), ("t", "g", addUTCTime 3600 now)] $ \(src, holder, expiry) -> do
+    heldSource cc src holder expiry
+    Balances.payment (chatStore cc) ("inv-" <> holder) (Balances.cardPaid 100 0) now
+    heldRefusals cc src $ "held by order " <> holder <> ", whose invoice holds money; it holds until that payment settles or the invoice closes; run the command again then"
 
 testRefundChain :: HasCallStack => TestParams -> IO ()
 testRefundChain ps = withStoreService ps $ \_ _ cc -> do
