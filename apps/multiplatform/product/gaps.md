@@ -15,7 +15,7 @@ This document catalogs known gaps in the multiplatform codebase (Android and Des
 7. [Desktop: Cryptor Not Implemented](#gap-07-desktop-cryptor-not-implemented)
 8. [Desktop: App Link Registration](#gap-08-desktop-app-link-registration)
 9. [Desktop: Emoji Picker Without Skin Tones and Localized Search](#gap-09-desktop-emoji-picker-without-skin-tones-and-localized-search)
-10. [Badges: Restoring a Subscription on a New Device or Profile](#gap-10-badges-restoring-a-subscription-on-a-new-device-or-profile)
+10. [Badges: Limits on Moving a Badge to a New Device or Profile](#gap-10-badges-limits-on-moving-a-badge-to-a-new-device-or-profile)
 
 ---
 
@@ -353,9 +353,9 @@ Desktop users cannot pick a skin tone in the picker, and search in other languag
 
 ---
 
-## GAP-10: Badges: Restoring a Subscription on a New Device or Profile
+## GAP-10: Badges: Limits on Moving a Badge to a New Device or Profile
 
-**Severity:** Medium
+**Severity:** Low
 **Category:** Feature / Payments
 **Platforms:** Android
 
