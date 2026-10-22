@@ -330,7 +330,11 @@ parkDelay = 200000
 
 -- | Each eth_call's delay in the lost-race tests, far longer than a request takes to read its registration.
 slowRead :: Int
-slowRead = 1000000
+slowRead = 3000000
+
+-- | How long after the turns are held the lost-race tests change the order: past the request's read, before its write.
+raceDelay :: Int
+raceDelay = 1000000
 
 -- tests
 
@@ -634,7 +638,7 @@ testMoveLostRace = withOwner $ \ctx@Ctx {cNode} -> do
   setFault cNode "eth_call" (Slow slowRead)
   moving <- async $ move ctx keyA r to
   awaitTurns ctx 2
-  threadDelay (slowRead `div` 5)
+  threadDelay raceDelay
   changed <- rewrite ctx r id
   clearFault cNode "eth_call"
   answer <- within "the move" $ wait moving
@@ -776,7 +780,7 @@ testCodeLostRace = withOwner $ \ctx@Ctx {cNode, cStore} -> do
   setFault cNode "eth_call" (Slow slowRead)
   issuing <- async $ takeCode ctx keyA r hashText 8
   awaitTurns ctx 1
-  threadDelay (slowRead `div` 5)
+  threadDelay raceDelay
   changed <- rewrite ctx r id
   clearFault cNode "eth_call"
   answer <- within "the code" $ wait issuing
