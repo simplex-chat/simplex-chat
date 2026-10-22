@@ -16,7 +16,7 @@ import Control.Applicative ((<|>))
 import Control.Concurrent.Async (wait, withAsync)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (atomically, check)
-import Control.Monad (replicateM_, void)
+import Control.Monad (forM_, replicateM_, void)
 import Data.ByteString (ByteString)
 import qualified Data.Aeson as J
 import Data.IORef (readIORef)
@@ -56,6 +56,7 @@ namesWorkerTests = describe "StoreService names: worker" $ do
     it "goes to committed when the commit reverts UnexpiredCommitmentExists, in its dry run or mined, with the commitment's times" testUnexpiredCommitment
     it "sends a commit mined out of gas again" testCommitOutOfGas
     it "waits a second at the lapse second, and again when the dry run still reverts, then commits" testLapseSecond
+    it "waits a second at most a few times in a row for UnexpiredCommitmentExists, logging each, then keeps the phase" testUnexpiredBounded
     it "clears a requeued order's stale intent before committing again after a lapse, and a third party's commitment's" testStaleIntent
     it "keeps the phase while the latest block needs more than the fee cap, then commits" testFeeAboveCap
   describe "writes" $ do
@@ -362,6 +363,23 @@ testLapseSecond = withWorker $ \w@W {wCtx = ctx} -> do
   void $ steps w r >>= awaiting
   nrPhase <$> stored ctx r `shouldReturn` PCommitting
   length <$> sent w `shouldReturn` 1
+
+testUnexpiredBounded :: IO ()
+testUnexpiredBounded = withWorker $ \w@W {wCtx = ctx} -> do
+  r <- paidIn ctx aliceOrder id
+  -- lapsed by the service's clock, while the node's pending block keeps refusing a new commit
+  answerCommitment w r (orderSeconds - maxAge - 1)
+  dryRunsRevert w "UnexpiredCommitmentExists(bytes32)" (nrCommitment r)
+  logs <- capturingStderr $ forM_ [1 .. maxUnexpiredWaits] $ \n -> do
+    steps w r >>= waitingUntil >>= (`shouldBe` addUTCTime (fromIntegral n) orderTime)
+    advance ctx 1
+  length (T.breakOnAll "UnexpiredCommitmentExists" logs) `shouldBe` maxUnexpiredWaits
+  steps w r >>= retrying
+  stored ctx r `shouldReturn` r
+  sent w `shouldReturn` []
+  dryRunsPass w
+  void $ steps w r >>= awaiting
+  nrPhase <$> stored ctx r `shouldReturn` PCommitting
 
 testStaleIntent :: IO ()
 testStaleIntent = withWorker $ \w@W {wCtx = ctx} -> do

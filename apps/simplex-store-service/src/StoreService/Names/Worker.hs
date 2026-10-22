@@ -12,6 +12,7 @@ module StoreService.Names.Worker
     runWorkers,
     sweepFailedCodes,
     runCodeSweep,
+    maxUnexpiredWaits,
   )
 where
 
@@ -52,7 +53,9 @@ data Worker = Worker
     wkChain :: ChainClient,
     wkSender :: Sender,
     -- | the thread following each registration, kept by the scan
-    wkThreads :: TVar (Map RegistrationId (Async ()))
+    wkThreads :: TVar (Map RegistrationId (Async ())),
+    -- | the one-second waits in a row after a commit's dry run reverted UnexpiredCommitmentExists
+    wkUnexpiredWaits :: TVar (Map RegistrationId Int)
   }
 
 -- | What a step leaves to the next one.
@@ -83,6 +86,11 @@ outcomeWait = 60000000
 maxWait :: NominalDiffTime
 maxWait = 60
 
+-- | One-second waits in a row after a commit's dry run reverts UnexpiredCommitmentExists, before the usual retry interval:
+-- enough for the node's block to pass the lapse second, not to spin on a node that keeps disagreeing with its own read.
+maxUnexpiredWaits :: Int
+maxUnexpiredWaits = 3
+
 -- | Block times are whole seconds.
 chainSecond :: NominalDiffTime
 chainSecond = 1
@@ -98,7 +106,7 @@ notRegistered :: Text
 notRegistered = "The name could not be registered"
 
 newWorker :: OrdersEnv -> ChainClient -> Sender -> IO Worker
-newWorker wkOrders wkChain wkSender = Worker wkOrders wkChain wkSender <$> newTVarIO M.empty
+newWorker wkOrders wkChain wkSender = Worker wkOrders wkChain wkSender <$> newTVarIO M.empty <*> newTVarIO M.empty
 
 -- | A thread for each registration in the worker's phases, started by a scan every scanInterval; they stop with it.
 runWorkers :: Worker -> IO ()
@@ -188,8 +196,8 @@ lapsedFields r =
 -- | The reveal times come from the commitment's time. When that is not the block of our commit mined with status 1,
 -- someone committed it again after a lapse, so our commit and the reveal signed for its window are cleared.
 toCommitted :: Worker -> UTCTime -> NameRegistration -> CommitmentAges -> Word64 -> IO Next
-toCommitted w now r CommitmentAges {caMin, caMax} t =
-  ourCommit w r t >>= \case
+toCommitted w now r@NameRegistration {nrId} CommitmentAges {caMin, caMax} t =
+  unexpiredDone w nrId >> ourCommit w r t >>= \case
     Left e -> pure $ failure r e
     Right ours -> save w now (minedBy ours) {nrPhase = PCommitted, nrRevealAfter = Just $ after caMin, nrRevealBefore = Just $ after caMax}
   where
@@ -211,11 +219,26 @@ ourCommit Worker {wkOrders = OrdersEnv {oeStore}, wkChain} NameRegistration {nrI
 sendCommit :: Worker -> UTCTime -> NameRegistration -> IO Next
 sendCommit w@Worker {wkOrders = OrdersEnv {oeConfig}, wkSender} now r@NameRegistration {nrId, nrCommitment} =
   submitTransaction wkSender (TxCommit nrId) (cController $ nChain oeConfig) (commitCalldata nrCommitment) >>= \case
-    Right p -> commitSent w now r p
-    Left SEInFlight -> pure Again
     -- a commit mined since the read, or a latest block still at the lapse second
-    Left (SEChain (ChainReverted (Just RNUnexpiredCommitmentExists))) -> pure $ waitUntil r $ addUTCTime chainSecond now
-    Left e -> pure $ failure r e
+    Left (SEChain (ChainReverted (Just RNUnexpiredCommitmentExists))) -> unexpired w now r
+    sendResult -> do
+      unexpiredDone w nrId
+      case sendResult of
+        Right p -> commitSent w now r p
+        Left SEInFlight -> pure Again
+        Left e -> pure $ failure r e
+
+unexpired :: Worker -> UTCTime -> NameRegistration -> IO Next
+unexpired Worker {wkUnexpiredWaits} now r@NameRegistration {nrId = rid@(RegistrationId ridText)} = do
+  waits <- atomically $ stateTVar wkUnexpiredWaits $ \m -> let n = M.findWithDefault 0 rid m + 1 in (n, M.insert rid n m)
+  if waits <= maxUnexpiredWaits
+    then do
+      logWarn $ "names worker: registration " <> ridText <> ": the commit's dry run reverted UnexpiredCommitmentExists, wait " <> tshow waits <> " of a second"
+      pure $ waitUntil r $ addUTCTime chainSecond now
+    else pure $ Retry (nrVersion r) "the commit's dry run keeps reverting UnexpiredCommitmentExists"
+
+unexpiredDone :: Worker -> RegistrationId -> IO ()
+unexpiredDone Worker {wkUnexpiredWaits} = atomically . modifyTVar' wkUnexpiredWaits . M.delete
 
 -- | Recorded with the newest signature's hash, so a fee-bumped replacement is the one the view shows.
 commitSent :: Worker -> UTCTime -> NameRegistration -> PendingTx -> IO Next
