@@ -9,10 +9,10 @@ import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesStoreTests (reveal)
 import Bots.StoreService.WebTests (bounded, jsonObject, rcv, statusOf, webGet)
 import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async (Async, async, cancel, wait)
+import Control.Concurrent.Async (Async, async, cancel, wait, waitCatchSTM)
 import qualified Control.Concurrent.Async as Async
-import Control.Concurrent.STM (atomically)
-import Control.Monad (forM_, unless)
+import Control.Concurrent.STM (STM, atomically, check, orElse)
+import Control.Monad (forM_)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Key as K
 import qualified Data.Aeson.KeyMap as KM
@@ -28,11 +28,11 @@ import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), InvoiceStatus (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import StoreService.Names.Orders (OrdersEnv (..))
-import StoreService.Names.Phases (RegistrationId (..), phasesCount, publish)
+import StoreService.Names.Phases (RegistrationId (..), phasesWaiting, publish)
 import StoreService.Names.Store (NamePhase (..), NameRegistration (..), VersionWrite (..), getRegistration, updateRegistration)
 import StoreService.Providers (Funded (..), PaymentSignal (..))
 import StoreService.Store.Invoices (InvoiceRow (..), getInvoice)
-import StoreService.Waiters (publishPayment, waitingCount)
+import StoreService.Waiters (publishPayment, waitingCountSTM)
 import StoreService.Web.Http (holdMicros, readLimit)
 import StoreService.Web.Names (Route (..), namesApp)
 import StoreService.Web.Names.Registration (registrationHandler)
@@ -80,13 +80,17 @@ withPolls hold action = withOrders $ \ctx@Ctx {cClock, cOrders, cWeb} -> do
   Warp.testWithApplication (pure app) $ \port ->
     action Polls {pCtx = ctx {cOrders = orders, cWeb = web, cClient = (mgr, "http://127.0.0.1:" <> show port)}, pSetNow}
 
--- | A poll still running after this was held, not answered.
+-- | How long a held poll is watched for a wake that must not come.
 parkDelay :: Int
 parkDelay = 200000
 
--- | How long a woken poll may take to answer; far below the hold.
+-- | How long a poll may take to be held or to answer once woken; far below the hold.
 prompt :: Int
-prompt = 3000000
+prompt = 6000000
+
+-- | How far ahead of a moment the clock is set, so a poll is held well before the moment wakes it.
+shortOfMoment :: NominalDiffTime
+shortOfMoment = 3
 
 shortHold :: Int
 shortHold = 500000
@@ -94,13 +98,20 @@ shortHold = 500000
 get :: Ctx -> String -> IO (Int, J.Object)
 get Ctx {cClient} path = webGet cClient path >>= \r -> (statusOf r,) <$> jsonObject r
 
--- | A poll that is still held after parkDelay.
-held :: Ctx -> String -> IO (Async (Int, J.Object))
-held ctx path = do
+-- | The holds the server has taken: invoices held on a payment, and waiters on a registration's version.
+subscriptions :: Ctx -> STM (Int, Int)
+subscriptions Ctx {cWeb, cOrders} = (,) <$> waitingCountSTM (weWaiters cWeb) <*> phasesWaiting (oePhases cOrders)
+
+-- | A poll once the server holds it, having taken these many more holds of each kind.
+held :: Ctx -> (Int, Int) -> String -> IO (Async (Int, J.Object))
+held ctx (payments, versions) path = do
+  (payments0, versions0) <- atomically $ subscriptions ctx
   poll <- async $ get ctx path
-  threadDelay parkDelay
-  Async.poll poll >>= \answered -> unless (isNothing answered) $ expectationFailure (path <> " was answered at once: " <> show answered)
-  pure poll
+  let holding = subscriptions ctx >>= check . (== (payments0 + payments, versions0 + versions))
+  timeout prompt (atomically $ (Left <$> waitCatchSTM poll) `orElse` (Right <$> holding)) >>= \case
+    Just (Right ()) -> pure poll
+    Just (Left answered) -> fail $ path <> " was answered at once: " <> show answered
+    Nothing -> cancel poll >> fail (path <> " was not held with " <> show (payments, versions) <> " more holds")
 
 woken :: String -> Async (Int, J.Object) -> IO (Int, J.Object)
 woken what poll = timeout prompt (wait poll) >>= maybe (cancel poll >> fail (what <> " was not woken")) pure
@@ -166,8 +177,8 @@ testEachChangeWakes = bounded "each change wakes" $ withPolls holdMicros $ \Poll
         ]
   forM_ changes $ \(what, f, k, expected) -> do
     v <- nrVersion <$> invoiceRegistration ctx inv
-    invoicePoll <- held ctx $ invoicePath inv <> following ISPaid v settledPaid True
-    registrationPoll <- held ctx $ registrationPath nrId <> seenVersion v
+    invoicePoll <- held ctx (0, 1) $ invoicePath inv <> following ISPaid v settledPaid True
+    registrationPoll <- held ctx (0, 1) $ registrationPath nrId <> seenVersion v
     v' <- change ctx nrId f
     (status, o) <- woken (what <> ": invoice poll") invoicePoll
     (status, key "status" o, key "version" (registrationOf o), key k (registrationOf o)) `shouldBe` (200, Just "paid", Just (J.toJSON v'), Just expected)
@@ -181,7 +192,7 @@ testPaidHoldsOnVersion = bounded "paid holds on version" $ withPolls holdMicros 
   NameRegistration {nrId, nrVersion} <- invoiceRegistration ctx inv
   -- without a version there is nothing a paid invoice could wait for
   (fst <$> answeredAtOnce ctx (invoicePath inv <> "?wait=paid&seenPaid=" <> T.unpack settledPaid <> "&seenFull=1")) `shouldReturn` 200
-  poll <- held ctx $ invoicePath inv <> following ISPaid nrVersion settledPaid True
+  poll <- held ctx (0, 1) $ invoicePath inv <> following ISPaid nrVersion settledPaid True
   atomically $ publishPayment (weWaiters cWeb) inv
   threadDelay parkDelay
   Async.poll poll >>= (`shouldSatisfy` isNothing)
@@ -206,7 +217,7 @@ testOpenWakesOnVersion = bounded "open wakes on version" $ withPolls holdMicros 
   NameRegistration {nrId, nrVersion} <- invoiceRegistration ctx inv
   -- a version the page has not seen answers at once
   (fst <$> answeredAtOnce ctx (invoicePath inv <> following ISOpen (nrVersion - 1) "" False)) `shouldReturn` 200
-  poll <- held ctx $ invoicePath inv <> following ISOpen nrVersion "" False
+  poll <- held ctx (1, 1) $ invoicePath inv <> following ISOpen nrVersion "" False
   v' <- change ctx nrId $ \r -> r {nrError = Just "Checking the payment"}
   (_, o) <- woken "open invoice poll" poll
   (key "status" o, key "version" (registrationOf o)) `shouldBe` (Just "open", Just (J.toJSON v'))
@@ -217,8 +228,8 @@ testExpiryWakes = bounded "expiry wakes" $ withPolls holdMicros $ \Polls {pCtx =
   (inv, _) <- placed ctx aliceOrder
   Just InvoiceRow {irExpiresAt} <- getInvoice (cStore ctx) inv
   NameRegistration {nrVersion} <- invoiceRegistration ctx inv
-  pSetNow $ addUTCTime (-1) irExpiresAt
-  poll <- held ctx $ invoicePath inv <> following ISOpen nrVersion "" False
+  pSetNow $ addUTCTime (negate shortOfMoment) irExpiresAt
+  poll <- held ctx (1, 1) $ invoicePath inv <> following ISOpen nrVersion "" False
   (status, o) <- woken "unpaid invoice poll" poll
   (status, key "status" o, key "version" (registrationOf o)) `shouldBe` (200, Just "expired", Just (J.toJSON nrVersion))
   -- read so, not written: the sweep or the next order closes it
@@ -234,7 +245,7 @@ testFundedStaysOpen = bounded "funded stays open" $ withPolls holdMicros $ \Poll
   pSetNow $ addUTCTime 60 irExpiresAt
   (status, o) <- get ctx (invoicePath inv)
   (status, key "status" o) `shouldBe` (200, Just "open")
-  poll <- held ctx $ invoicePath inv <> following ISOpen nrVersion "0.00078" False
+  poll <- held ctx (1, 1) $ invoicePath inv <> following ISOpen nrVersion "0.00078" False
   cancel poll
 
 testLapseReadsFailed :: IO ()
@@ -245,11 +256,11 @@ testLapseReadsFailed = bounded "lapse" $ withPolls holdMicros $ \Polls {pCtx = c
   now <- oeNow cOrders
   let revealBefore = seconds now + 600
       lapsedAt = posixSecondsToUTCTime (fromInteger revealBefore)
-  pSetNow $ addUTCTime (-1) lapsedAt
+  pSetNow $ addUTCTime (negate shortOfMoment) lapsedAt
   v <- change ctx nrId $ \r -> r {nrPhase = PCommitted, nrRevealAfter = Just (fromInteger $ revealBefore - 3600), nrRevealBefore = Just (fromInteger revealBefore)}
   (_, r) <- get ctx (registrationPath nrId)
   key "phase" r `shouldBe` Just "committed"
-  poll <- held ctx $ registrationPath nrId <> seenVersion v
+  poll <- held ctx (0, 1) $ registrationPath nrId <> seenVersion v
   (status, lapsed) <- woken "registration poll at the lapse" poll
   (status, key "phase" lapsed, key "error" lapsed, key "version" lapsed) `shouldBe` (200, Just "failed", Just "The name was not signed in time", Just (J.toJSON v))
   (_, o) <- get ctx (invoicePath inv)
@@ -286,16 +297,14 @@ testUnknownRegistration = bounded "unknown" $ withPolls holdMicros $ \Polls {pCt
 
 -- | The poller reads providers sooner while a page waits on a payment; a hold on a version waits on none.
 testWaitingCount :: IO ()
-testWaitingCount = bounded "waiting count" $ withPolls holdMicros $ \Polls {pCtx = ctx@Ctx {cWeb, cOrders}} -> do
+testWaitingCount = bounded "waiting count" $ withPolls holdMicros $ \Polls {pCtx = ctx} -> do
   (paid, _) <- placed ctx aliceOrder
   settleNow ctx paid settled `shouldReturn` Right ISPaid
   NameRegistration {nrId, nrVersion} <- invoiceRegistration ctx paid
-  polls <- mapM (held ctx) [registrationPath nrId <> seenVersion nrVersion, invoicePath paid <> following ISPaid nrVersion settledPaid True]
-  (waitingCount (weWaiters cWeb), phasesCount (oePhases cOrders)) `shouldReturnPair` (0, 1)
+  polls <- mapM (held ctx (0, 1)) [registrationPath nrId <> seenVersion nrVersion, invoicePath paid <> following ISPaid nrVersion settledPaid True]
+  atomically (subscriptions ctx) `shouldReturn` (0, 2)
   (open, _) <- placed ctx aliceOrder {oLabel = "dynamis", oPrice = 20000, oCommitment = commitmentOf 2}
   NameRegistration {nrVersion = openVersion} <- invoiceRegistration ctx open
-  openPoll <- held ctx $ invoicePath open <> following ISOpen openVersion "" False
-  (waitingCount (weWaiters cWeb), phasesCount (oePhases cOrders)) `shouldReturnPair` (1, 2)
+  openPoll <- held ctx (1, 1) $ invoicePath open <> following ISOpen openVersion "" False
+  atomically (subscriptions ctx) `shouldReturn` (1, 3)
   mapM_ cancel (openPoll : polls)
-  where
-    shouldReturnPair (a, b) expected = ((,) <$> a <*> b) `shouldReturn` expected
