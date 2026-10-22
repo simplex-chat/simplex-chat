@@ -693,6 +693,9 @@ final class ChatModel: ObservableObject {
         }
         NtfManager.shared.setNtfBadgeCount(totalUnreadCountForAllUsers())
         popChatCollector.clear()
+        if let chatId, getChat(chatId) == nil {
+            self.chatId = nil
+        }
     }
 
 //    func addGroup(_ group: SimpleXChat.Group) {
