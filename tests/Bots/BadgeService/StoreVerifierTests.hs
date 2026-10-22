@@ -82,6 +82,7 @@ badgeStoreVerifierTests = describe "badge store verifiers" $ do
     it "has nothing to acknowledge" testAppleNoAcknowledgement
   describe "App Store subscriptions" $ do
     it "maps each status, renewing or cancelled by autoRenewStatus, and the charge to the latest transaction, with one token reused" testAppleSubscriptionStatuses
+    it "reads the subscription asked about from an answer that lists another one first" testAppleSubscriptionAmongOthers
     it "reports a revoked charge and one in an offer, refuses a family-shared one, and names a Sandbox one a test purchase" testAppleSubscriptionCharges
     it "fails, rather than refuses, a status Apple did not sign or that was changed after signing" testAppleSubscriptionUnsigned
     it "fails on a verifier that cannot place what the store signed, and is unreachable on any other throw" testSubscriptionCheckThrows
@@ -466,18 +467,25 @@ renewalPayload overrides =
 
 -- | Get All Subscription Statuses as Apple answers it, with the subscription's latest transaction.
 statusBody :: Int -> Text -> Text -> J.Value
-statusBody status signedTx signedRenewal =
+statusBody status signedTx signedRenewal = statusListing [lastTransaction subscriptionId status signedTx signedRenewal]
+
+-- | Get All Subscription Statuses listing these subscriptions, all in one subscription group.
+statusListing :: [J.Value] -> J.Value
+statusListing lastTransactions =
   J.object
     [ "environment" J..= ("Production" :: Text),
       "bundleId" J..= ourBundleId,
       "data"
         J..= [ J.object
                  [ "subscriptionGroupIdentifier" J..= ("21000000" :: Text),
-                   "lastTransactions"
-                     J..= [J.object ["originalTransactionId" J..= subscriptionId, "status" J..= status, "signedTransactionInfo" J..= signedTx, "signedRenewalInfo" J..= signedRenewal]]
+                   "lastTransactions" J..= lastTransactions
                  ]
              ]
     ]
+
+lastTransaction :: Text -> Int -> Text -> Text -> J.Value
+lastTransaction originalId status signedTx signedRenewal =
+  J.object ["originalTransactionId" J..= originalId, "status" J..= status, "signedTransactionInfo" J..= signedTx, "signedRenewalInfo" J..= signedRenewal]
 
 -- | The check the service runs, through the same runner as a purchase and a renewal.
 withAppleChecker :: TestChain -> (FakeAppStore -> (Text -> IO (Either StoreRefusal SubscriptionCheck)) -> IO a) -> IO a
@@ -531,6 +539,19 @@ testAppleSubscriptionStatuses = do
     length (nub tokens) `shouldBe` 1
   where
     millis ms = posixSecondsToUTCTime $ fromIntegral ms / 1000
+
+-- | Apple lists every subscription the customer holds in the app, a family member's shared one included.
+testAppleSubscriptionAmongOthers :: IO ()
+testAppleSubscriptionAmongOthers = do
+  chain <- trustedChain
+  withAppleChecker chain $ \fake check -> do
+    let sharedId = "2000000900000011"
+    sharedTx <- signedBy chain $ subscriptionPayload [("originalTransactionId", J.String sharedId), ("transactionId", "2000000900000012"), ("inAppOwnershipType", "FAMILY_SHARED")] []
+    sharedRenewal <- signedBy chain $ renewalPayload [("originalTransactionId", J.String sharedId)]
+    ownTx <- signedBy chain $ subscriptionPayload [] []
+    ownRenewal <- signedBy chain $ renewalPayload []
+    answerStatus fake subscriptionId $ AppStoreBody $ statusListing [lastTransaction sharedId 1 sharedTx sharedRenewal, lastTransaction subscriptionId 1 ownTx ownRenewal]
+    stateOf <$> check subscriptionId `shouldReturn` Right SSRenewing
 
 testAppleSubscriptionCharges :: IO ()
 testAppleSubscriptionCharges = do
