@@ -90,6 +90,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "accepts a new order of the same wallet and name after a cancel" testOrderAfterCancel
     it "closes an overdue order of the same wallet and name before the poller marks it, cancelling its invoice after" testOverdueClosed
     it "records a payment of the closed order as a late payment, leaving the newer order alone" testLatePaymentAfterNewOrder
+    it "keeps an overdue order whose invoice holds money, refusing the next order, and settles it" testFundedOverdueKept
     it "alerts on a late payment as BTCPay reports it for an expired, cancelled or swept invoice, once" testLateBTCPayPayments
     it "answers cancel with funded, not_open, paid when settlement won, and expired with the payment read meanwhile" testCancelAnswers
     it "leaves a late payment of a cancelled invoice unpaid and alerts" testLatePayment
@@ -590,6 +591,22 @@ testLatePaymentAfterNewOrder = withOrders $ \ctx -> do
   (nrPhase new, nrLive new, nrVersion new) `shouldBe` (PUnpaid, True, 1)
   settleNow ctx newInv settled `shouldReturn` Right ISPaid
   (nrPhase <$> invoiceRegistration ctx newInv) `shouldReturn` PQueued
+
+-- | Paid in full at minute 44 of 45 and confirming after; a second tab's order at minute 46 must not refund it.
+testFundedOverdueKept :: IO ()
+testFundedOverdueKept = withOrders $ \ctx -> do
+  (inv, _) <- placed ctx aliceOrder
+  advance ctx (44 * 60)
+  settleNow ctx inv (SigFunded (rcv 10000 (Just "0.00156")) PaidInFull) `shouldReturn` Right ISOpen
+  advance ctx (2 * 60)
+  now <- readIORef (cClock ctx)
+  placeOrder ctx aliceOrder {oCommitment = commitmentOf 2, oTimestamp = seconds now, oDuration = durationAt now} `shouldReturn` refusedWith 409 "order_exists"
+  r <- invoiceRegistration ctx inv
+  (nrLive r, nrPhase r) `shouldBe` (True, PUnpaid)
+  withTransaction (cStore ctx) (\db -> closeOverdue db r now) >>= (`shouldNotBe` Written (nrVersion r + 1))
+  (irStatus <$>) <$> getInvoice (cStore ctx) inv `shouldReturn` Just ISOpen
+  settleNow ctx inv settled `shouldReturn` Right ISPaid
+  nrPhase <$> invoiceRegistration ctx inv `shouldReturn` PQueued
 
 -- | The real BTCPay adapter against the fake: a payment into an expired invoice reads Expired with PaidLate,
 -- into a cancelled one Invalid, and into one only we closed New and paid in part.
