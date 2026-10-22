@@ -68,6 +68,7 @@ namesLateCreditTests = describe "StoreService names: balance life" $ do
     it "credits nothing while the rate read fails, warning once, then credits at the next pass" testRateFails
     it "credits nothing below the rate floor and never after, logging an error, and alerts support naming both rates" testRateFloor
     it "logs the rate floor of an invoice once while the price moves below it" testFloorLoggedOnce
+    it "alerts confirmed money waiting on the rate read as such, whatever reason was stored before" testWaitingOutranksStoredReason
     it "reads one rate per coin per pass for several invoices, and none when nothing is due" testOneRateReadPerPass
     it "never credits a late Settled payment on an invoice made under HighSpeed, alerting it past the window" testHighSpeed
     it "credits at the next pass a late Settled invoice and a settlement whose credit step did not run" testCreditedByPass
@@ -437,6 +438,15 @@ testFloorLoggedOnce = withLate $ \l -> do
   setRate l (Right $ rateOf "30000" 30000)
   second <- passAt l (at 72)
   count "invoice inv-floorlog is not credited" (first <> second) `shouldBe` 1
+
+-- | A reason stored by an earlier read, as one without the invoice's policy would store HighSpeed.
+testWaitingOutranksStoredReason :: IO ()
+testWaitingOutranksStoredReason = withLate $ \l@Late {lStore = st} -> do
+  closedOrder l "outranked" False
+  withTransaction st $ \db -> setLateSupport db (invOf "outranked") LSHighSpeed
+  settleAt l "outranked" (SigClosed (btcPaid lateUnits lateUnits)) (at 70) `shouldReturn` Right ISExpired
+  alertsAt l (Left $ ProviderError "rates down for outranked") (pastWindow (at 70) 60)
+    >>= (`shouldSatisfy` logged "ERROR" "invoice inv-outranked of order outranked: 320000 satoshi received, 320000 satoshi confirmed, 0 satoshi credited; confirmed, the credit waits on the rate read; do not refund; fix the rate read")
 
 testOneRateReadPerPass :: IO ()
 testOneRateReadPerPass = withLate $ \l@Late {lStore = st} -> do

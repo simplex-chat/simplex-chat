@@ -394,11 +394,10 @@ alertLatePayments env@PollerEnv {peStore} now = do
       claimed <- withTransaction peStore $ \db -> claimLateAlert db alert support now
       when claimed $ logError (lateAlertText alert reason)
 
+-- | Confirmed money waiting comes before a stored reason, as in pendingCase, so its alert never asks for a refund by hand.
 lateReason :: PollerEnv -> LateAlert -> IO (Text, Maybe LateSupport)
 lateReason env@PollerEnv {peStore, peProviders} LateAlert {laPending, laState = LateCreditState {lsInvoice, lsCoin, lsSupport, lsInvoiceRate}} = case laPending of
   LPUncounted -> pure (uncounted, Nothing)
-  _ | lsSupport == Just LSHighSpeed -> pure (highSpeed, Nothing)
-  _ | lsSupport == Just LSNoConfirmation -> pure (noConfirmation, Nothing)
   LPUncredited -> case lsCoin of
     Nothing -> pure (cardWaits, Nothing)
     Just coin
@@ -407,6 +406,8 @@ lateReason env@PollerEnv {peStore, peProviders} LateAlert {laPending, laState = 
             Just InvoiceRow {irProvider} | Just p <- find ((== irProvider) . pProvider) peProviders -> (\r -> (rateFloor (either (const "unread") rateText r), Nothing)) <$> cachedRate env p coin
             _ -> pure (rateFloor "unread", Nothing)
       | otherwise -> pure (rateRead, Nothing)
+  _ | lsSupport == Just LSHighSpeed -> pure (highSpeed, Nothing)
+  _ | lsSupport == Just LSNoConfirmation -> pure (noConfirmation, Nothing)
   _ -> pure (unconfirmed, Just LSUnconfirmed)
   where
     unconfirmed = "refund by hand only a transaction confirmed on chain that BTCPay no longer monitors; one still Processing there waits"
