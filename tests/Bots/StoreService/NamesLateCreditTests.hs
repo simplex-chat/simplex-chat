@@ -67,6 +67,7 @@ namesLateCreditTests = describe "StoreService names: balance life" $ do
     it "logs Monero's zero figure as pending and does not alert it within the window" testMoneroZero
     it "credits nothing while the rate read fails, warning once, then credits at the next pass" testRateFails
     it "credits nothing below the rate floor, logging an error, and alerts naming both rates and the owner's decision" testRateFloor
+    it "logs the rate floor of an invoice once while the price moves below it" testFloorLoggedOnce
     it "reads one rate per coin per pass for several invoices, and none when nothing is due" testOneRateReadPerPass
     it "never credits a late Settled payment on an invoice made under HighSpeed, alerting it past the window" testHighSpeed
     it "credits at the next pass a late Settled invoice and a settlement whose credit step did not run" testCreditedByPass
@@ -425,6 +426,16 @@ testRateFloor = withLate $ \l@Late {lStore = st} -> do
   void $ passAt l (at 72)
   creditsOf st "floored" `shouldReturn` [(Just lateUnits, Just "62500", Just "31250", Just "31250", 10000)]
   lateWaitOf st "floored" `shouldReturn` Nothing
+
+testFloorLoggedOnce :: IO ()
+testFloorLoggedOnce = withLate $ \l -> do
+  closedOrder l "floorlog" False
+  settleAt l "floorlog" (SigClosed (btcPaid lateUnits lateUnits)) (at 70) `shouldReturn` Right ISExpired
+  setRate l (Right $ rateOf "31000" 31000)
+  first <- passAt l (at 71)
+  setRate l (Right $ rateOf "30000" 30000)
+  second <- passAt l (at 72)
+  count "invoice inv-floorlog is not credited" (first <> second) `shouldBe` 1
 
 testOneRateReadPerPass :: IO ()
 testOneRateReadPerPass = withLate $ \l@Late {lStore = st} -> do

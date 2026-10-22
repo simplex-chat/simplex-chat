@@ -371,9 +371,8 @@ creditLate env@PollerEnv {peStore} p now invId@(InvoiceId invText) = do
       due <- dueToWarn env now ("rate read failed: " <> tshow (pProvider p))
       when due $ logWarn ("names: late credits wait, as the current rate cannot be read; each pass tries again: " <> e)
     CORateFloor invoiceRate Rate {rateText} -> do
-      let alert = "names: invoice " <> invText <> " is not credited: the current rate " <> rateText <> " is below half its rate " <> invoiceRate <> "; a glitch, or a real fall the owner decides on"
-      due <- dueToWarn env now alert
-      when due $ logError alert
+      due <- dueToWarn env now ("rate floor: " <> invText)
+      when due $ logError ("names: invoice " <> invText <> " is not credited: the current rate " <> rateText <> " is below half its rate " <> invoiceRate <> "; a glitch, or a real fall the owner decides on")
     CORefused -> logError ("names: the credit of invoice " <> invText <> " was refused, its credit number taken meanwhile; the next pass tries again")
   pure outcome
 
