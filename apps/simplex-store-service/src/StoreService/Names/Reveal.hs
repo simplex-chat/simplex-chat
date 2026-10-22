@@ -112,7 +112,7 @@ committedRegistration NamesConfig {nTLD, nChain = ChainConfig {cResolver}} NameR
 -- A deadline before revealBefore would expire while the commitment can still register.
 checkIntent :: NamesConfig -> Contracts -> UTCTime -> Maybe Word64 -> RegisterIntent -> IO (Either RevealRefusal ())
 checkIntent NamesConfig {nChain = ChainConfig {cChainId, cSponsor}} ct now revealBefore intent@RegisterIntent {riRegistration = Registration {rOwner}, riNonce, riDeadline}
-  | not (any (riDeadline >=) revealBefore) = pure $ Left RVBadRequest
+  | maybe True (riDeadline <) revealBefore = pure $ Left RVBadRequest
   | otherwise =
       verifyRegisterIntent (sponsorDomain cChainId cSponsor) (floor $ utcTimeToPOSIXSeconds now) intent >>= \case
         Left _ -> pure $ Left RVBadRequest
