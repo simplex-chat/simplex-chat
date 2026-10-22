@@ -248,7 +248,7 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
   KeyChangeEffect(searchText.value.text) {
     onlineSearch.reset()
   }
-  KeyChangeEffect(chatModel.currentUser.value?.userId) {
+  KeyChangeEffect(chatModel.remoteHostId(), chatModel.currentUser.value?.userId) {
     onlineSearch.reset()
   }
   Box(Modifier.fillMaxSize()) {

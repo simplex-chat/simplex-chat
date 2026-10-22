@@ -75,7 +75,7 @@ class OnlineSearchModel: ObservableObject {
     func retry() async {
         if cursor != nil {
             await loadMore()
-        } else if !loading {
+        } else if !loading && !searchedText.isEmpty {
             await request(append: false)
         }
     }

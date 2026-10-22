@@ -261,7 +261,7 @@ This document specifies invariants enforced by the Android and Desktop (Kotlin/C
 
 **Invariant:** Directory results MUST NOT be stored, and MUST live only as long as the search text and the active profile: any text change or profile switch clears them, and a reply that arrives after that (or after the search was cancelled) MUST NOT be shown.
 
-**Enforcement:** `OnlineSearchModel.reset()` bumps `generation`, and every publish in `request` and `refreshStates` checks it; `cancelRequest()` bumps it too. `ChatListView` (which owns the search text and the model, not the search bar) and `NewChatSheetLayout` call `reset()` from `KeyChangeEffect`s on the search text and on `chatModel.currentUser.value?.userId`. The model is kept in Compose `remember` only, so it is also dropped when its screen leaves composition (e.g. an Android rotation).
+**Enforcement:** `OnlineSearchModel.reset()` bumps `generation`, and every publish in `request` and `refreshStates` checks it; `cancelRequest()` bumps it too. `ChatListView` (which owns the search text and the model, not the search bar) and `NewChatSheetLayout` call `reset()` from `KeyChangeEffect`s on the search text and on `chatModel.currentUser.value?.userId` (`ChatListView` together with `chatModel.remoteHostId()`: on desktop the user on another remote host can have the same id). The model is kept in Compose `remember` only, so it is also dropped when its screen leaves composition (e.g. an Android rotation).
 
 **Location:**
 - `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt` -- `OnlineSearchModel`

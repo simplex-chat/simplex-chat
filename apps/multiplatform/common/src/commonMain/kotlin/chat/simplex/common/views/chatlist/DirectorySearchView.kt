@@ -98,7 +98,7 @@ class OnlineSearchModel {
   suspend fun retry() {
     if (cursor != null) {
       loadMore()
-    } else if (!loading) {
+    } else if (!loading && searchedText.isNotEmpty()) {
       request(append = false)
     }
   }

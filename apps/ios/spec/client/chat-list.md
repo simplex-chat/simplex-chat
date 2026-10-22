@@ -370,7 +370,7 @@ The rows above or below the search field follow the toolbar mode. "Search in Dir
 | [`cancelRequest()`](../../Shared/Views/ChatList/DirectorySearchView.swift#L48) | The spinner's `onCancel`: bumps `generation` and clears `loading`; results already shown stay |
 | [`searchDirectory(_:)`](../../Shared/Views/ChatList/DirectorySearchView.swift#L53) | Both triggers: ignored for empty text or while `loading` for the same text; for the same text it clears the results, `moreCount`, cursor and flags, for new text it resets; then the first page |
 | [`loadMore()`](../../Shared/Views/ChatList/DirectorySearchView.swift#L69) | The load row: the next page, appended |
-| [`retry()`](../../Shared/Views/ChatList/DirectorySearchView.swift#L75) | The retry row: resumes the page when a cursor exists, else repeats the first page; no reset |
+| [`retry()`](../../Shared/Views/ChatList/DirectorySearchView.swift#L75) | The retry row: resumes the page when a cursor exists, else repeats the first page of the text searched, and does nothing after a reset (its consent alert can outlast one); no reset |
 | [`rows(shownChatIds:)`](../../Shared/Views/ChatList/DirectorySearchView.swift#L83) | The rows to render, given the ids of the local chats shown (see De-duplication) |
 | [`refreshStates()`](../../Shared/Views/ChatList/DirectorySearchView.swift#L102) | The `cleanup` of a connection started from a result row, run when its flow ends: plans every result that is not `.yourChat` again, store-only, unless the generation changed. A chat opened from a result is created during that flow, so its result then becomes `.yourChat`: hidden like any shown chat, or drawn as its chat row when the list doesn't show it |
 
