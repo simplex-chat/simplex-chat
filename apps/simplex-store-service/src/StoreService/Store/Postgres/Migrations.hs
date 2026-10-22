@@ -20,7 +20,8 @@ schemaMigrations =
   [ ("20260915_badge_service_schema", m20260915_badge_service_schema, Just down_m20260915_badge_service_schema),
     ("20260918_badge_group_ops", m20260918_badge_group_ops, Just down_m20260918_badge_group_ops),
     ("20261010_names", m20261010_names, Just down_m20261010_names),
-    ("20261022_drop_taken_codes", m20261022_drop_taken_codes, Just down_m20261022_drop_taken_codes)
+    ("20261022_drop_taken_codes", m20261022_drop_taken_codes, Just down_m20261022_drop_taken_codes),
+    ("20261022_name_balances", m20261022_name_balances, Just down_m20261022_name_balances)
   ]
 
 -- | The client tables share this database, so the service tables are the same names behind a prefix.
@@ -352,6 +353,92 @@ down_m20261022_drop_taken_codes =
 ALTER TABLE @name_registrations ADD COLUMN issued_code_id BIGINT REFERENCES @name_prepaid_codes;
 
 CREATE INDEX @idx_name_registrations_issued_code ON @name_registrations(issued_code_id);
+|]
+
+-- amount = credited - spent - refunded, spent being the balance_used of the orders it paid for that went past unpaid.
+-- Crypto is counted in integer units (satoshi, piconero), so every sum is exact; rates are decimal text, never summed.
+m20261022_name_balances :: Text
+m20261022_name_balances =
+  withPrefix
+    servicePrefix
+    [r|
+CREATE TABLE @name_balances(
+  registration_id TEXT NOT NULL PRIMARY KEY REFERENCES @name_registrations,
+  amount INTEGER NOT NULL CHECK (amount >= 0),
+  credited INTEGER NOT NULL DEFAULT 0,
+  refunded INTEGER NOT NULL DEFAULT 0,
+  reserved_by TEXT REFERENCES @name_registrations,
+  refunded_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE UNIQUE INDEX @idx_name_balances_reserved_by ON @name_balances(reserved_by);
+
+ALTER TABLE @name_registrations ADD COLUMN balance_source TEXT REFERENCES @name_registrations;
+
+ALTER TABLE @name_registrations ADD COLUMN balance_used INTEGER NOT NULL DEFAULT 0;
+
+CREATE INDEX @idx_name_registrations_balance_source ON @name_registrations(balance_source);
+
+ALTER TABLE @payments ADD COLUMN confirmed_amount INTEGER NOT NULL DEFAULT 0;
+
+ALTER TABLE @payments ADD COLUMN received_units BIGINT;
+
+ALTER TABLE @payments ADD COLUMN confirmed_units BIGINT;
+
+ALTER TABLE @payments ADD COLUMN invoice_rate TEXT;
+
+ALTER TABLE @name_invoices ADD COLUMN late_alerted_at TIMESTAMPTZ;
+
+ALTER TABLE @name_invoices ADD COLUMN late_alerted_units BIGINT;
+
+CREATE TABLE @name_late_credits(
+  name_late_credit_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  invoice_id TEXT NOT NULL REFERENCES @invoices,
+  credit_no INTEGER NOT NULL,
+  registration_id TEXT NOT NULL REFERENCES @name_registrations,
+  units BIGINT,
+  invoice_rate TEXT,
+  current_rate TEXT,
+  rate_used TEXT,
+  cents INTEGER NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL,
+  UNIQUE(invoice_id, credit_no)
+);
+
+CREATE INDEX @idx_name_late_credits_registration ON @name_late_credits(registration_id);
+
+UPDATE @name_registrations SET live = 0 WHERE phase = 'taken';
+
+INSERT INTO @name_balances (registration_id, amount, credited, refunded, created_at, updated_at)
+SELECT registration_id, price, price, 0, updated_at, updated_at FROM @name_registrations
+WHERE phase = 'taken' AND name_prepaid_code_id IS NULL AND price > 0;
+|]
+
+-- Taken orders stay not live.
+down_m20261022_name_balances :: Text
+down_m20261022_name_balances =
+  withPrefix
+    servicePrefix
+    [r|
+DROP INDEX @idx_name_late_credits_registration;
+DROP TABLE @name_late_credits;
+
+ALTER TABLE @name_invoices DROP COLUMN late_alerted_units;
+ALTER TABLE @name_invoices DROP COLUMN late_alerted_at;
+
+ALTER TABLE @payments DROP COLUMN invoice_rate;
+ALTER TABLE @payments DROP COLUMN confirmed_units;
+ALTER TABLE @payments DROP COLUMN received_units;
+ALTER TABLE @payments DROP COLUMN confirmed_amount;
+
+DROP INDEX @idx_name_registrations_balance_source;
+ALTER TABLE @name_registrations DROP COLUMN balance_used;
+ALTER TABLE @name_registrations DROP COLUMN balance_source;
+
+DROP INDEX @idx_name_balances_reserved_by;
+DROP TABLE @name_balances;
 |]
 
 {- TODO [badges] deferred with the draft in M20260915_user_badges, service only.
