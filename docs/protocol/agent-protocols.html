@@ -890,7 +890,7 @@ window.addEventListener('click',(e)=>{
                             </div>
                         </div>
                     </div> -->
-                    <div><p>Revision 1, 2026-10-19, draft for comments</p>
+                    <div><p>Revision 2, 2026-10-21, draft for comments</p>
 <p>Evgeny Poberezkin</p>
 <h1 id="agent-protocols-over-simplex" tabindex="-1">Agent protocols over SimpleX</h1>
 <h2 id="table-of-contents" tabindex="-1">Table of contents</h2>
@@ -929,6 +929,19 @@ window.addEventListener('click',(e)=>{
 <li><a href="#examples">Examples</a></li>
 </ul>
 </li>
+<li><a href="#a2a-binding">A2A binding</a>
+<ul>
+<li><a href="#identification">Identification</a></li>
+<li><a href="#a2a-messages">A2A messages</a></li>
+<li><a href="#service-parameters">Service parameters</a></li>
+<li><a href="#streaming">Streaming</a></li>
+<li><a href="#push-notifications">Push notifications</a></li>
+<li><a href="#callers-and-authorization">Callers and authorization</a></li>
+<li><a href="#service-rpc">Service RPC</a></li>
+<li><a href="#agent-card">Agent Card</a></li>
+<li><a href="#a2a-examples">A2A examples</a></li>
+</ul>
+</li>
 <li><a href="#security-considerations">Security considerations</a></li>
 <li><a href="#privacy-considerations">Privacy considerations</a></li>
 <li><a href="#implementations">Implementations</a></li>
@@ -941,7 +954,7 @@ window.addEventListener('click',(e)=>{
 <li>declarations: the protocols a profile serves and their transports, the peer types a channel or a contact address is made for, and the update frequency of a channel;</li>
 <li>the chat transport: the command <code>/_call</code> in a conversation;</li>
 <li>the Service RPC transport: one request and one response, without a conversation, in a generic envelope;</li>
-<li>the binding of the Model Context Protocol (MCP) [MCP] to both transports.</li>
+<li>the bindings of the Model Context Protocol (MCP) [MCP] and of the Agent2Agent protocol (A2A) [A2A] to both transports.</li>
 </ul>
 <h2 id="conventions" tabindex="-1">Conventions</h2>
 <p>The key words &quot;MUST&quot;, &quot;MUST NOT&quot;, &quot;SHOULD&quot;, &quot;SHOULD NOT&quot; and &quot;MAY&quot; in this document are to be interpreted as described in BCP 14 [RFC2119] [RFC8174] when, and only when, they appear in all capitals.</p>
@@ -999,7 +1012,7 @@ window.addEventListener('click',(e)=>{
 
 - [Acme news](https://smp12.simplex.im/c#…): SimpleX updates for people and agents, weekly. Product news and offers.
 - [Acme customers](https://smp12.simplex.im/g#…): SimpleX group for people. Questions and tips from customers.
-- [Ask Acme](https://smp12.simplex.im/a#…): SimpleX business contact for agents, MCP. Orders and availability.
+- [Ask Acme](https://smp12.simplex.im/a#…): SimpleX business contact for agents, MCP, A2A. Orders and availability.
 - [Acme support](mailto:support@acme.example): Email contact for people.
 </code></pre>
 <h2 id="profile-declarations" tabindex="-1">Profile declarations</h2>
@@ -1039,6 +1052,10 @@ window.addEventListener('click',(e)=>{
   &quot;protocols&quot;: {
     &quot;mcp&quot;: {
       &quot;versions&quot;: [&quot;2026-07-28&quot;],
+      &quot;transports&quot;: {&quot;chat&quot;: true, &quot;rpc&quot;: true}
+    },
+    &quot;a2a&quot;: {
+      &quot;versions&quot;: [&quot;1.0&quot;],
       &quot;transports&quot;: {&quot;chat&quot;: true, &quot;rpc&quot;: true}
     }
   }
@@ -1084,6 +1101,10 @@ window.addEventListener('click',(e)=>{
 <td><code>mcp</code></td>
 <td><a href="#mcp-binding">MCP binding</a></td>
 </tr>
+<tr>
+<td><code>a2a</code></td>
+<td><a href="#a2a-binding">A2A binding</a></td>
+</tr>
 </tbody>
 </table>
 <h2 id="chat-transport" tabindex="-1">Chat transport</h2>
@@ -1101,10 +1122,12 @@ window.addEventListener('click',(e)=>{
 </ul>
 <h3 id="replies" tabindex="-1">Replies</h3>
 <ul>
-<li>A bot sends one reply to each command it answers. The reply quotes the command, with a truncated quote. Its text is the protocol's response message, a JSON object.</li>
+<li>A bot answers a command with one or more replies. Each reply quotes the command, with a truncated quote. Its text is a message of the protocol, a JSON object.</li>
+<li>The binding defines the messages a bot sends before its last reply, and the message that ends its answer.</li>
 <li>A caller matches each reply to its command by the quoted message. Replies can arrive in any order.</li>
-<li>In a group, a broadcast can receive several replies, one from each member that serves the protocol. A caller collects them all, each with its sender.</li>
-<li>In a direct chat, a caller accepts replies only from the recipient. In a group, a caller of a command with a mention accepts only the mentioned member's reply.</li>
+<li>A caller collects every reply until its wait ends, each with its sender, in arrival order. In a group, a broadcast receives the answers of every member that serves the protocol.</li>
+<li>A reply whose text is not a message of the protocol is collected as text, with its sender.</li>
+<li>In a direct chat, a caller accepts replies only from the recipient. In a group, a caller of a command with a mention accepts only the mentioned member's replies.</li>
 <li>Commands and replies are ordinary messages: people see them in the conversation.</li>
 </ul>
 <h3 id="message-size" tabindex="-1">Message size</h3>
@@ -1172,7 +1195,7 @@ window.addEventListener('click',(e)=>{
 </code></pre>
 <ul>
 <li>A response has exactly one of <code>response</code> and <code>error</code>.</li>
-<li><code>response</code>: the protocol's response message, the same as the reply in a conversation.</li>
+<li><code>response</code>: the protocol's response message, the same as the last reply of the answer in a conversation.</li>
 <li><code>error</code>: the request was not passed to the protocol.</li>
 <li><code>message</code>: a description for the requester's logs.</li>
 <li><code>retryAfter</code>: the number of seconds after which a repeated request can succeed.</li>
@@ -1200,9 +1223,10 @@ window.addEventListener('click',(e)=>{
 <h3 id="messages" tabindex="-1">Messages</h3>
 <ul>
 <li>The request is one JSON-RPC request of MCP revision 2026-07-28 or later, with its <code>_meta</code> envelope [MCP]. In a conversation, it follows <code>/_call mcp</code>. Over Service RPC, it is the envelope's <code>request</code>.</li>
-<li>The response is the JSON-RPC response to the request: a result or a JSON-RPC error. In a conversation, it is the text of the reply. Over Service RPC, it is the envelope's <code>response</code>.</li>
+<li>The bot's answer ends with the JSON-RPC response to the request: a result or a JSON-RPC error. In a conversation, it is the text of the last reply. Over Service RPC, it is the envelope's <code>response</code>.</li>
+<li>In a conversation, the bot MAY send notifications for the request before the response, each as a reply: for example <code>notifications/progress</code> when the request has a progress token [MCP].</li>
 <li>In a conversation, a caller matches a reply to its request by the quoted message. The response has the request's <code>id</code>, as JSON-RPC requires.</li>
-<li>A bot serves the methods answered with one response, for example <code>server/discover</code>, <code>tools/list</code> and <code>tools/call</code>.</li>
+<li>A bot serves the request-response methods, for example <code>server/discover</code>, <code>tools/list</code> and <code>tools/call</code>.</li>
 <li>A multi-round-trip result (<code>resultType: &quot;input_required&quot;</code>) is answered with a new request, as MCP defines.</li>
 <li>A response above the size limit is replaced with a JSON-RPC error with code -32603 in a conversation, and with the envelope error <code>too_large</code> over Service RPC.</li>
 <li>Over Service RPC, a call of a tool that needs a conversation is answered with the envelope error <code>conversation_required</code>.</li>
@@ -1271,19 +1295,120 @@ window.addEventListener('click',(e)=>{
   }
 }
 </code></pre>
+<h2 id="a2a-binding" tabindex="-1">A2A binding</h2>
+<p>Protocol name: <code>a2a</code>. This binding is a custom protocol binding of A2A 1.0 [A2A, sections 5.8 and 12]: it carries the messages of the A2A JSON-RPC binding [A2A, section 9] over both SimpleX transports.</p>
+<h3 id="identification" tabindex="-1">Identification</h3>
+<ul>
+<li>Binding URI: <code>https://simplex.chat/protocol/a2a/v1</code>. A revision of this binding that breaks compatibility uses a new URI.</li>
+<li>An A2A Agent Card lists a SimpleX interface in <code>supportedInterfaces</code>, with <code>url</code> the bot's contact address link, <code>protocolBinding</code> the binding URI, and <code>protocolVersion</code> the A2A version.</li>
+<li><code>versions</code> in the <code>protocols</code> declaration: A2A versions in the <code>Major.Minor</code> form, for example <code>1.0</code>.</li>
+</ul>
+<h3 id="a2a-messages" tabindex="-1">A2A messages</h3>
+<ul>
+<li>The request is one JSON-RPC request of the A2A JSON-RPC binding, with its method name and parameters unchanged: <code>SendMessage</code>, <code>SendStreamingMessage</code>, <code>GetTask</code>, <code>ListTasks</code>, <code>CancelTask</code>, <code>SubscribeToTask</code>, the push notification methods and <code>GetExtendedAgentCard</code> [A2A, section 9.4]. In a conversation, it follows <code>/_call a2a</code>. Over Service RPC, it is the envelope's <code>request</code>.</li>
+<li>Responses and errors are those of the A2A JSON-RPC binding, with the JSON forms of its data types: timestamps, bytes in base64 and enumerations [A2A, section 12.2].</li>
+<li>For every method other than the two streaming methods, the bot's answer is one JSON-RPC response. In a conversation, it is one reply. Over Service RPC, it is the envelope's <code>response</code>.</li>
+<li>A response above the size limit is replaced with a JSON-RPC error with code -32603 in a conversation, and with the envelope error <code>too_large</code> over Service RPC. The bytes of <code>raw</code> parts count towards the limit.</li>
+</ul>
+<h3 id="service-parameters" tabindex="-1">Service parameters</h3>
+<p>A2A sends service parameters, such as <code>A2A-Version</code> and <code>A2A-Extensions</code>, as HTTP headers [A2A, section 9.2]. SimpleX messages have no headers, so this binding uses the field that A2A names for protocols without headers [A2A, section 12.3]:</p>
+<ul>
+<li><code>a2a-service-parameters</code>: a member of the JSON-RPC request object, beside <code>jsonrpc</code>, <code>method</code>, <code>params</code> and <code>id</code>. Its value is an object of service parameter names and string values.</li>
+<li>Names are case-insensitive. Several values of one parameter are joined by commas in one string, as in an HTTP header.</li>
+<li>Every request MUST carry <code>A2A-Version</code>. A bot answers a request of a version it does not serve with A2A's <code>VersionNotSupportedError</code>.</li>
+<li>A proxy to an HTTP interface sends each service parameter as an HTTP header and removes the member from the request.</li>
+<li>The envelope's <code>version</code> is omitted.</li>
+</ul>
+<h3 id="streaming" tabindex="-1">Streaming</h3>
+<p><code>SendStreamingMessage</code> and <code>SubscribeToTask</code> are served in a conversation [A2A, section 12.5]:</p>
+<ul>
+<li>Each <code>StreamResponse</code> is one reply that quotes the command. Its text is a JSON-RPC response with the request's <code>id</code>, whose <code>result</code> is the <code>StreamResponse</code>, as in the events of the A2A JSON-RPC binding.</li>
+<li>Replies are sent in the order of the stream.</li>
+<li>The stream ends with the reply whose task or status update is in a terminal state (completed, failed, canceled, rejected) or an interrupted state (input required, auth required).</li>
+<li>A caller that missed replies resumes the stream with <code>SubscribeToTask</code>.</li>
+<li>Over Service RPC, both methods are answered with the envelope error <code>conversation_required</code>.</li>
+</ul>
+<h3 id="push-notifications" tabindex="-1">Push notifications</h3>
+<p>A conversation delivers every update of a task to the caller, so push notification configurations are not used. A bot answers the push notification methods with A2A's <code>PushNotificationNotSupportedError</code>.</p>
+<h3 id="callers-and-authorization" tabindex="-1">Callers and authorization</h3>
+<ul>
+<li>In a conversation, the caller is the contact or the group member that sent the command [A2A, section 12.6].</li>
+<li>A context and its tasks are available only to their caller: in the conversation where they were created, and in a group to the member who created them. A request that names the context or the task of another caller is answered as a request for an unknown task.</li>
+<li>An agent whose Agent Card declares security schemes receives the credential as the service parameter of the scheme, for example <code>Authorization</code> for an HTTP scheme. A challenge is answered with the task state <code>auth required</code>.</li>
+<li>A request with a credential MUST NOT be sent in a group.</li>
+</ul>
+<h3 id="service-rpc" tabindex="-1">Service RPC</h3>
+<p>Service RPC serves one-shot tasks: a request and its answer, without a conversation.</p>
+<ul>
+<li>A bot answers <code>SendMessage</code> whose message has neither <code>contextId</code> nor <code>taskId</code>, and whose <code>configuration.returnImmediately</code> is absent or false.</li>
+<li>The response is the task in its state at the end of the work, or a message.</li>
+<li>A bot that cannot finish the task within 180 seconds answers with the envelope error <code>conversation_required</code>.</li>
+<li>Every other request is answered with the envelope error <code>conversation_required</code>.</li>
+</ul>
+<h3 id="agent-card" tabindex="-1">Agent Card</h3>
+<ul>
+<li>The Agent Card of an agent with a website is published at the well-known URI of A2A [A2A, section 8.2], with the SimpleX interface among its interfaces.</li>
+<li>A bot answers <code>GetExtendedAgentCard</code> with its Agent Card. For a caller without credentials, it is the public card.</li>
+</ul>
+<h3 id="a2a-examples" tabindex="-1">A2A examples</h3>
+<p>A one-shot task over Service RPC, the request:</p>
+<pre><code class="language-json">{
+  &quot;protocol&quot;: &quot;a2a&quot;,
+  &quot;request&quot;: {
+    &quot;jsonrpc&quot;: &quot;2.0&quot;,
+    &quot;id&quot;: 1,
+    &quot;method&quot;: &quot;SendMessage&quot;,
+    &quot;a2a-service-parameters&quot;: {&quot;A2A-Version&quot;: &quot;1.0&quot;},
+    &quot;params&quot;: {
+      &quot;message&quot;: {
+        &quot;messageId&quot;: &quot;m-1&quot;,
+        &quot;role&quot;: &quot;ROLE_USER&quot;,
+        &quot;parts&quot;: [{&quot;text&quot;: &quot;Price of two anvils delivered to Lisbon&quot;}]
+      }
+    }
+  }
+}
+</code></pre>
+<p>The response:</p>
+<pre><code class="language-json">{
+  &quot;response&quot;: {
+    &quot;jsonrpc&quot;: &quot;2.0&quot;,
+    &quot;id&quot;: 1,
+    &quot;result&quot;: {
+      &quot;task&quot;: {
+        &quot;id&quot;: &quot;t-1&quot;,
+        &quot;contextId&quot;: &quot;c-1&quot;,
+        &quot;status&quot;: {&quot;state&quot;: &quot;TASK_STATE_COMPLETED&quot;},
+        &quot;artifacts&quot;: [
+          {&quot;artifactId&quot;: &quot;a-1&quot;, &quot;parts&quot;: [{&quot;text&quot;: &quot;EUR 480, delivered within 5 days.&quot;}]}
+        ]
+      }
+    }
+  }
+}
+</code></pre>
+<p>A streamed task in a conversation, continuing the context <code>c-7</code> created earlier in the same chat:</p>
+<pre><code>/_call a2a {&quot;jsonrpc&quot;: &quot;2.0&quot;, &quot;id&quot;: 2, &quot;method&quot;: &quot;SendStreamingMessage&quot;, &quot;a2a-service-parameters&quot;: {&quot;A2A-Version&quot;: &quot;1.0&quot;}, &quot;params&quot;: {&quot;message&quot;: {&quot;messageId&quot;: &quot;m-2&quot;, &quot;contextId&quot;: &quot;c-7&quot;, &quot;role&quot;: &quot;ROLE_USER&quot;, &quot;parts&quot;: [{&quot;text&quot;: &quot;Order two, delivered by Friday&quot;}]}}}
+</code></pre>
+<p>The replies, each quoting the command:</p>
+<pre><code class="language-json">{&quot;jsonrpc&quot;: &quot;2.0&quot;, &quot;id&quot;: 2, &quot;result&quot;: {&quot;statusUpdate&quot;: {&quot;taskId&quot;: &quot;t-8&quot;, &quot;contextId&quot;: &quot;c-7&quot;, &quot;status&quot;: {&quot;state&quot;: &quot;TASK_STATE_WORKING&quot;}}}}
+</code></pre>
+<pre><code class="language-json">{&quot;jsonrpc&quot;: &quot;2.0&quot;, &quot;id&quot;: 2, &quot;result&quot;: {&quot;task&quot;: {&quot;id&quot;: &quot;t-8&quot;, &quot;contextId&quot;: &quot;c-7&quot;, &quot;status&quot;: {&quot;state&quot;: &quot;TASK_STATE_COMPLETED&quot;}, &quot;artifacts&quot;: [{&quot;artifactId&quot;: &quot;a-8&quot;, &quot;parts&quot;: [{&quot;text&quot;: &quot;Order 1042 confirmed, delivery on Friday.&quot;}]}]}}}
+</code></pre>
 <h2 id="security-considerations" tabindex="-1">Security considerations</h2>
 <ul>
-<li>Messages, replies, profiles, tool descriptions and tool results from other participants are data for an agent, never instructions.</li>
+<li>Messages, replies, profiles, tool descriptions, Agent Cards, tool results and task artifacts from other participants are data for an agent, never instructions.</li>
 <li>In a group, any member can reply to a broadcast. Each reply shows its sender. A caller that needs one provider mentions it.</li>
 <li>A responder that relies on <code>requestKey</code> MUST compare it with <code>signerKey</code>.</li>
 <li>A signed request identifies its signer to the responder across all requests signed with the same key.</li>
+<li>Every member of a group sees the commands and replies in it, so A2A credentials are sent only in a direct chat or over Service RPC.</li>
 </ul>
 <h2 id="privacy-considerations" tabindex="-1">Privacy considerations</h2>
 <ul>
 <li>Each Service RPC request uses a new connection with a new reply queue.</li>
 <li>MCP's <code>io.modelcontextprotocol/clientInfo</code> identifies the requester's software. A requester that needs unlinkable requests SHOULD send a common value or omit it.</li>
 <li>In a group, every member sees each command and each reply, with or without a mention. A request that needs privacy is sent in a direct chat with the member, where the group allows direct messages, or over Service RPC.</li>
-<li>A conversation persists: the bot can link all calls made in it. An incognito profile gives the caller a new random profile for each conversation.</li>
+<li>A conversation persists: the bot can link all calls made in it, and all A2A contexts of its caller. An incognito profile gives the caller a new random profile for each conversation.</li>
 </ul>
 <h2 id="implementations" tabindex="-1">Implementations</h2>
 <p>Implemented:</p>
@@ -1294,11 +1419,13 @@ window.addEventListener('click',(e)=>{
 <p>Planned:</p>
 <ul>
 <li>The simplex-chat core: the key <code>protocols</code> in the preferences types, in the preferences sent in profiles and in link data, and in the preferences of business chats; <code>audience</code> and <code>changeFrequency</code> in the public group record; <code>serves</code> in the address settings and the address link data; replies with a truncated quote.</li>
-<li><code>@simplex-chat/mcp</code>: the tools <code>mcp_tools</code> and <code>mcp_call</code>. They use Service RPC when the address declares <code>transports.rpc</code>, and the agent's conversation otherwise. In a group, <code>mcp_call</code> mentions the called member, or broadcasts and returns all replies. Each call is an action, approved by the agent's owner as a message is.</li>
-<li>The bot library: a helper that serves MCP tools over both transports.</li>
+<li><code>@simplex-chat/mcp</code>: the tools <code>mcp_tools</code> and <code>mcp_call</code>, and A2A calls. They use Service RPC when the address declares <code>transports.rpc</code> and the request suits it, and the agent's conversation otherwise. In a group, a call mentions the called member, or broadcasts and returns all replies with their senders. Each call is an action, approved by the agent's owner as a message is.</li>
+<li>The bot library: helpers that serve MCP tools and A2A over both transports.</li>
+<li>An A2A proxy bot: it serves <code>a2a</code> over both transports and forwards each request to the HTTP JSON-RPC interface of an A2A agent, with the service parameters as HTTP headers.</li>
 </ul>
 <h2 id="references" tabindex="-1">References</h2>
 <ul>
+<li>[A2A] Agent2Agent (A2A) protocol specification, version 1.0: <a href="https://a2a-protocol.org/latest/specification/">https://a2a-protocol.org/latest/specification/</a></li>
 <li>[BUSINESS] Using SimpleX Chat in business: <a href="/docs/business.html">BUSINESS.md</a></li>
 <li>[CHAT] SimpleX Chat protocol: <a href="/docs/protocol/simplex-chat.html">simplex-chat.md</a></li>
 <li>[LLMSTXT] The /llms.txt file: <a href="https://llmstxt.org">https://llmstxt.org</a></li>
