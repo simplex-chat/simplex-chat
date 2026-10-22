@@ -262,18 +262,26 @@ run() {
   fi
 }
 
+# With --noflush the chain line empties an existing chain, and the restore commits all or nothing,
+# so the chain is never open or half filled.
+chain_restore() {
+  local family=$1 line
+  echo "*filter"
+  echo ":$CHAIN - [0:0]"
+  while read -r line; do echo "-A $CHAIN $line"; done < <(rules_for "$family")
+  echo "COMMIT"
+}
+
 install_family() {
   local tool=$1 family=$2 line parent
   local -a args
-  if [[ $mode != dry-run ]] && "$tool" -w -S "$CHAIN" >/dev/null 2>&1; then
-    run "$tool" -w -F "$CHAIN"
+  if [[ $mode == dry-run ]]; then
+    echo "$tool-restore -w --noflush <<EOF"
+    chain_restore "$family"
+    echo "EOF"
   else
-    run "$tool" -w -N "$CHAIN"
+    chain_restore "$family" | "$tool-restore" -w --noflush
   fi
-  while read -r line; do
-    read -ra args <<<"$line"
-    run "$tool" -w -A "$CHAIN" "${args[@]}"
-  done < <(rules_for "$family")
   while read -r parent line; do
     read -ra args <<<"$line"
     if [[ $mode == dry-run ]] || ! "$tool" -w -C "$parent" "${args[@]}" -j "$CHAIN" 2>/dev/null; then
