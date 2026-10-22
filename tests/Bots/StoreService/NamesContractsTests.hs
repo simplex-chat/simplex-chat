@@ -6,6 +6,7 @@ module Bots.StoreService.NamesContractsTests (namesContractsTests) where
 
 import Bots.StoreService.FakeEthNode
 import Control.Concurrent.STM (TVar)
+import Control.Monad (forM_)
 import Crypto.Random (ChaChaDRG)
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import Data.ByteString (ByteString)
@@ -56,6 +57,7 @@ namesContractsTests = describe "StoreService names: contracts" $ do
     it "fails a read whose answer does not decode or does not fit" $ testMalformed g
     it "fails a status within its deadline when one method hangs" $ testStatusDeadline g
     it "fails records within their deadline when the calls hang" $ testRecordsDeadline g
+    it "reads a status and records within a deadline only concurrent reads meet" $ testConcurrentReads g
 
 testNode :: IO ()
 testNode = do
@@ -255,7 +257,31 @@ testRecordsDeadline g = withContracts g $ \node ct -> do
   elapsed <- timed $ nameRecords ct {ctDeadline = testDeadline} alice (registeredAlice (resolverOf node) $ now + year) `shouldReturn` Left (ChainUnavailable "name records: timed out")
   elapsed `shouldSatisfy` (< 2)
 
+-- | Each slow read takes a third of the deadline or more, so the status's reads in sequence (four) or the records' (three)
+-- pass it, while their concurrent rounds (two and one) meet it.
+testConcurrentReads :: TVar ChaChaDRG -> IO ()
+testConcurrentReads g = withContracts g $ \node ct -> do
+  let resolver = resolverOf node
+      ct' = ct {ctDeadline = concurrentDeadline}
+      registered = registeredAlice resolver (now + year)
+  answerRegistrar node
+  answerRegistered node resolver
+  setBlock node 100 now
+  answerCall node (registrarOf node) nameExpiresCall $ Returns $ uint256 (now + year)
+  answerCall node resolver contactTextCall $ Returns contactTextAnswer
+  answerCall node resolver channelTextCall $ Returns $ abiTuple [Dynamic $ abiBytes ""]
+  answerCall node resolver noncesCall $ Returns $ uint256 (3 :: Int)
+  -- the registrar's constants are read once, so this read takes them out of the timed ones
+  nameStatus ct alice `shouldReturn` Right (NSRegistered registered)
+  forM_ ["eth_call", "eth_getBlockByNumber"] $ \m -> setFault node m $ Slow $ concurrentDeadline * 2 `div` 5
+  nameStatus ct' alice `shouldReturn` Right (NSRegistered registered)
+  forM_ ["eth_call", "eth_getBlockByNumber"] $ \m -> setFault node m $ Slow $ concurrentDeadline * 3 `div` 5
+  nameRecords ct' alice registered `shouldReturn` Right (Just NameRecords {rdContact = "https://smp8.simplex.im/a#Y8m3", rdChannel = "", rdNonce = 3})
+
 -- fixtures
+
+concurrentDeadline :: Int
+concurrentDeadline = 1500000
 
 -- | Far below a call's 10-second timeout, so only the deadline can end a hung read in time.
 testDeadline :: Int
