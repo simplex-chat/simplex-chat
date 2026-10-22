@@ -2,7 +2,26 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Bots.StoreService.NamesContractsTests (namesContractsTests) where
+module Bots.StoreService.NamesContractsTests
+  ( namesContractsTests,
+    withContracts,
+    answerRegistrar,
+    answerRegistered,
+    registrarOf,
+    resolverOf,
+    rentPriceCall,
+    rentPriceAnswer,
+    now,
+    year,
+    gracePeriod,
+    otherResolver,
+    nameExpiresCall,
+    reservedNamesCall,
+    contactTextCall,
+    channelTextCall,
+    noncesCall,
+  )
+where
 
 import Bots.StoreService.FakeEthNode
 import Control.Concurrent.STM (TVar)
