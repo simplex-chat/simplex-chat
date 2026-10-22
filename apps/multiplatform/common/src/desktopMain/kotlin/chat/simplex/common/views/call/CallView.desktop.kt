@@ -283,9 +283,7 @@ private fun CallControls(engine: NativeCallEngine, call: Call, modifier: Modifie
       if (cameraOn) MR.strings.icon_descr_video_off else MR.strings.icon_descr_video_on
     ) { chatModel.callCommand.add(WCallCommand.Media(CallMediaSource.Camera, enable = !cameraOn)) }
     ScreenShareButton(engine, sources.screenVideo)
-    CameraPickerButton(engine)
-    AudioDevicePickerButton(engine, AudioDeviceKind.Mic, appPrefs.desktopCallMic, painterResource(MR.images.ic_keyboard_voice), MR.strings.permissions_record_audio)
-    AudioDevicePickerButton(engine, AudioDeviceKind.Speaker, appPrefs.desktopCallSpeaker, painterResource(MR.images.ic_headphones), MR.strings.audio_device_speaker)
+    DevicesButton(engine)
     ControlButton(painterResource(MR.images.ic_call_end_filled), MR.strings.icon_descr_hang_up, background = Color.Red) {
       withBGApi { chatModel.callManager.endCall(call) }
     }
@@ -328,15 +326,22 @@ private fun ScreenShareButton(engine: NativeCallEngine, sharing: Boolean) {
 }
 
 @Composable
-private fun CameraPickerButton(engine: NativeCallEngine) {
+private fun DevicesButton(engine: NativeCallEngine) {
   val showMenu = remember { mutableStateOf(false) }
+  val mics = remember { mutableStateOf(emptyList<AudioDevice>()) }
+  val speakers = remember { mutableStateOf(emptyList<AudioDevice>()) }
   val cameras = remember { mutableStateOf(emptyList<VideoDevice>()) }
   Box {
-    ControlButton(painterResource(MR.images.ic_settings), MR.strings.permissions_camera) {
+    ControlButton(painterResource(MR.images.ic_settings), MR.strings.call_devices) {
+      mics.value = engine.audioDevices(AudioDeviceKind.Mic)
+      speakers.value = engine.audioDevices(AudioDeviceKind.Speaker)
       cameras.value = NativeCallEngine.videoCaptureDevices()
       showMenu.value = true
     }
     DefaultDropdownMenu(showMenu) {
+      AudioDeviceItems(engine, AudioDeviceKind.Mic, appPrefs.desktopCallMic, mics.value, MR.strings.permissions_record_audio, showMenu)
+      AudioDeviceItems(engine, AudioDeviceKind.Speaker, appPrefs.desktopCallSpeaker, speakers.value, MR.strings.audio_device_speaker, showMenu)
+      DevicesSectionTitle(MR.strings.permissions_camera)
       if (cameras.value.isEmpty()) {
         Text(stringResource(MR.strings.camera_not_available), Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF), color = MaterialTheme.colors.secondary)
       }
@@ -351,29 +356,25 @@ private fun CameraPickerButton(engine: NativeCallEngine) {
 }
 
 @Composable
-private fun AudioDevicePickerButton(engine: NativeCallEngine, kind: AudioDeviceKind, pref: SharedPreference<String?>, icon: Painter, description: StringResource) {
-  val showMenu = remember { mutableStateOf(false) }
-  val devices = remember { mutableStateOf(emptyList<AudioDevice>()) }
-  Box {
-    ControlButton(icon, description) {
-      devices.value = engine.audioDevices(kind)
-      showMenu.value = true
-    }
-    DefaultDropdownMenu(showMenu) {
-      val chosenId = storedAudioDevice(pref.state.value)?.id
-      (listOf(null) + devices.value).forEach { device ->
-        ItemAction(
-          device?.name ?: stringResource(MR.strings.call_audio_device_system_default),
-          { if (device?.descriptor == chosenId) Icon(painterResource(MR.images.ic_check), null, tint = MenuTextColor) },
-          onClick = {
-            showMenu.value = false
-            pref.set(device?.let { json.encodeToString(SavedAudioDevice.serializer(), savedAudioDevice(it)) })
-            engine.selectAudioDevice(kind, device)
-          }
-        )
+private fun AudioDeviceItems(engine: NativeCallEngine, kind: AudioDeviceKind, pref: SharedPreference<String?>, devices: List<AudioDevice>, title: StringResource, showMenu: MutableState<Boolean>) {
+  DevicesSectionTitle(title)
+  val chosenId = storedAudioDevice(pref.state.value)?.id
+  (listOf(null) + devices).forEach { device ->
+    ItemAction(
+      device?.name ?: stringResource(MR.strings.call_audio_device_system_default),
+      { if (device?.descriptor == chosenId) Icon(painterResource(MR.images.ic_check), null, tint = MenuTextColor) },
+      onClick = {
+        showMenu.value = false
+        pref.set(device?.let { json.encodeToString(SavedAudioDevice.serializer(), savedAudioDevice(it)) })
+        engine.selectAudioDevice(kind, device)
       }
-    }
+    )
   }
+}
+
+@Composable
+private fun DevicesSectionTitle(title: StringResource) {
+  Text(stringResource(title), Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF), color = MaterialTheme.colors.secondary)
 }
 
 private fun callAudioSettings() = CallAudioSettings(
