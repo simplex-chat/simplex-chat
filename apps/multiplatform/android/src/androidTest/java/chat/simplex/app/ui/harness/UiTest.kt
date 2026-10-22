@@ -23,6 +23,9 @@ import android.app.Instrumentation
 import android.content.Intent
 import androidx.test.espresso.intent.Intents
 import androidx.test.espresso.intent.matcher.IntentMatchers
+import androidx.core.content.FileProvider
+import chat.simplex.common.helpers.APPLICATION_ID
+import java.io.File
 
 abstract class UiTest {
   @get:Rule val rule: ComposeTestRule = createEmptyComposeRule()
@@ -83,16 +86,34 @@ class UiScope(val rule: ComposeTestRule) {
     return App(this)
   }
 
-  fun restart(): App {
-    UiTestApp.restartCore()
-    UiTestApp.onMain { CommonPrefs.reload() }
-    poll(timeoutMs = 60_000, what = "the core to start again with chat running") {
+  fun restart(
+    ready: () -> Boolean = {
       val m = chat.simplex.common.platform.chatModel
       m.chatDbStatus.value != null && !m.ctrlInitInProgress.value && m.chatRunning.value == true && m.currentUser.value != null && m.users.isNotEmpty()
-    }
+    },
+    what: String = "the core to start again with chat running"
+  ): App {
+    UiTestApp.restartCore()
+    UiTestApp.onMain { CommonPrefs.reload() }
+    poll(timeoutMs = 60_000, what = what) { ready() }
     Timing.phase("close") { close() }
     Timing.phase("launch") { launch() }
     return App(this)
+  }
+
+  fun exchangeDir(): File = File(androidAppContext.filesDir, "uitest-exchange").apply { mkdirs() }
+
+  fun saveFileAs(file: File, action: () -> Unit) = answerIntent(listOf(Intent.ACTION_CREATE_DOCUMENT), file, action)
+
+  fun openFile(file: File, action: () -> Unit) = answerIntent(listOf(Intent.ACTION_GET_CONTENT, Intent.ACTION_PICK), file, action)
+
+  private fun answerIntent(intentActions: List<String>, file: File, action: () -> Unit) {
+    val uri = FileProvider.getUriForFile(androidAppContext, "$APPLICATION_ID.provider", file)
+    val result = Instrumentation.ActivityResult(Activity.RESULT_OK, Intent().setData(uri))
+    intentActions.forEach { Intents.intending(IntentMatchers.hasAction(it)).respondWith(result) }
+    val before = Intents.getIntents().count { it.action in intentActions }
+    action()
+    poll(what = "the app to ask for a file with ${intentActions.joinToString(" or ")}") { Intents.getIntents().count { it.action in intentActions } > before }
   }
 
   fun keyboardShown(): Boolean {
@@ -128,6 +149,7 @@ class UiScope(val rule: ComposeTestRule) {
 
   fun finish() {
     peers.forEach { it.dispose() }
+    runCatching { SocksProxy.stop() }
     Timing.phase("close") { close() }
     Timing.phase("drain") { UiTestApp.drain() }
   }
@@ -155,6 +177,7 @@ class UiScope(val rule: ComposeTestRule) {
     val deadline = start + timeoutMs
     var busyAtDeadline: Set<Long>? = null
     var lastError: Throwable? = null
+    var workEnded = false
     while (true) {
       rule.mainClock.advanceTimeBy(48, ignoreFrameDuration = true)
       rule.waitForIdle()
@@ -165,10 +188,12 @@ class UiScope(val rule: ComposeTestRule) {
       }
       val now = System.currentTimeMillis()
       val busy = if (now > deadline) busyAtDeadline ?: UiIdle.inFlight().map { it.id }.toSet().also { busyAtDeadline = it } else emptySet()
-      if (now > deadline && (UiIdle.inFlight().none { it.id in busy } || now > deadline + EXTENSION_MS)) {
+      val idle = now > deadline && UiIdle.inFlight().none { it.id in busy }
+      if (now > deadline && ((idle && workEnded) || now > deadline + EXTENSION_MS)) {
         val shot = if (screenshot) FailureShots.take(what) else null
         throw AssertionError("timed out after $timeoutMs ms waiting for $what; ${lastError?.let { "last condition error: $it; " } ?: ""}in flight: ${UiIdle.inFlight().joinToString { it.what }}; screenshot: $shot; visible texts: ${texts().take(60)}")
       }
+      workEnded = idle
       Thread.sleep(50)
     }
   }
@@ -195,6 +220,31 @@ class UiScope(val rule: ComposeTestRule) {
         lists.fetchSemanticsNodes().indices.any { i -> runCatching { lists[i].performScrollToNode(matcher(key)) }.isSuccess && exists(key) }
       }
     }
+  }
+
+  fun scrollChatTowardOlder(pages: Int = 1): Boolean = scrollChat(pages, towardOlder = true)
+
+  fun scrollChatTowardNewer(pages: Int = 1): Boolean = scrollChat(pages, towardOlder = false)
+
+  private fun scrollChat(pages: Int, towardOlder: Boolean): Boolean {
+    val list = rule.onNode(SemanticsMatcher.keyIsDefined(SemanticsActions.ScrollToIndex) and SemanticsMatcher.keyIsDefined(SemanticsActions.ScrollBy) and hasAnyDescendant(chatItemNode))
+    repeat(pages) {
+      val items = rule.onAllNodes(chatItemNode).fetchSemanticsNodes()
+      val tracked = (if (towardOlder) items.minByOrNull { it.boundsInRoot.top } else items.maxByOrNull { it.boundsInRoot.bottom })
+        ?: throw AssertionError("no chat items in view to scroll the chat")
+      val tag = tracked.config[SemanticsProperties.TestTag]
+      val before = tracked.boundsInRoot
+      val node = list.fetchSemanticsNode()
+      val dy = node.boundsInRoot.height * CHAT_SCROLL_PAGE
+      rule.runOnUiThread { node.config[SemanticsActions.ScrollBy].action?.invoke(0f, if (towardOlder) dy else -dy) }
+      settle()
+      val after = rule.onAllNodes(hasTestTag(tag)).fetchSemanticsNodes().firstOrNull()?.boundsInRoot
+      if (after == before) return false
+      if (after == null || (if (towardOlder) after.top <= before.top else after.bottom >= before.bottom)) {
+        throw AssertionError("scrolling the chat toward ${if (towardOlder) "older" else "newer"} messages moved $tag the other way: $before -> $after")
+      }
+    }
+    return true
   }
 
   fun waitStable(key: UiKey) {
@@ -246,13 +296,16 @@ class UiScope(val rule: ComposeTestRule) {
     rule.waitForIdle()
   }
 
-  private fun isMessageField(key: UiKey) = key.tag == Ui.Chat.Message.tag
+  private fun isMessageField(key: UiKey) = key.id == Ui.Chat.Message.id
+
+  private fun messageEditText(key: UiKey) =
+    Espresso.onView(org.hamcrest.CoreMatchers.allOf(ViewMatchers.isAssignableFrom(EditText::class.java), ViewMatchers.withTagValue(org.hamcrest.CoreMatchers.equalTo<Any>(key.tag))))
 
   private fun setMessageField(key: UiKey, value: String) {
     waitFor(key)
     waitStable(key)
     settle()
-    Espresso.onView(ViewMatchers.isAssignableFrom(EditText::class.java)).perform(CommitText(value))
+    messageEditText(key).perform(CommitText(value))
     poll(what = "the message field to hold `$value`") { editableText(key) == value }
   }
 
@@ -285,7 +338,7 @@ class UiScope(val rule: ComposeTestRule) {
   }
 
   fun pressEnter(key: UiKey) {
-    if (isMessageField(key)) click(Ui.Chat.Send) else rule.onNode(matcher(key)).performImeAction()
+    if (isMessageField(key)) click(key.part("send")) else rule.onNode(matcher(key)).performImeAction()
     rule.waitForIdle()
   }
 
@@ -295,11 +348,19 @@ class UiScope(val rule: ComposeTestRule) {
   fun editableText(key: UiKey): String? {
     if (isMessageField(key)) {
       var t: String? = null
-      Espresso.onView(ViewMatchers.isAssignableFrom(EditText::class.java)).check { v, _ -> t = (v as? EditText)?.text?.toString() }
+      messageEditText(key).check { v, _ -> t = (v as? EditText)?.text?.toString() }
       return t
     }
     return rule.onAllNodes((matcher(key) or hasAnyAncestor(matcher(key))) and SemanticsMatcher.keyIsDefined(SemanticsProperties.EditableText), useUnmergedTree = true)
       .fetchSemanticsNodes().firstOrNull()?.config?.get(SemanticsProperties.EditableText)?.text
+  }
+
+  fun hintOf(key: UiKey): String? {
+    if (!isMessageField(key)) return if (editableText(key).isNullOrEmpty()) textsOf(key).firstOrNull() else null
+    waitFor(key)
+    var hint: String? = null
+    messageEditText(key).check { v, _ -> hint = (v as? EditText)?.takeIf { it.text.isNullOrEmpty() }?.hint?.toString() }
+    return hint
   }
 
   fun textsOf(key: UiKey): List<String> {
@@ -350,6 +411,13 @@ class UiScope(val rule: ComposeTestRule) {
       val inner = if (i.action == Intent.ACTION_CHOOSER) i.getParcelableExtra(Intent.EXTRA_INTENT) as? Intent else i
       inner?.getStringExtra(Intent.EXTRA_TEXT)
     } ?: (androidAppContext.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager).primaryClip?.getItemAt(0)?.text?.toString()
+
+  fun setClipboardText(text: String?) = UiTestApp.onMain {
+    val cm = androidAppContext.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+    if (text != null) cm.setPrimaryClip(android.content.ClipData.newPlainText("uitest", text))
+    else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) cm.clearPrimaryClip()
+    else error("clearing the clipboard needs Android 9")
+  }
 }
 
 object FailureShots {
@@ -379,6 +447,9 @@ object Timing {
 }
 
 private const val SETTLE_MS = 500L
+private const val CHAT_SCROLL_PAGE = 0.8f
+private val CHAT_ITEM_TAG = "${Ui.Chat.Item(0).id}["
+private val chatItemNode = SemanticsMatcher("a chat item") { it.config.getOrElseNullable(SemanticsProperties.TestTag) { null }?.startsWith(CHAT_ITEM_TAG) == true }
 private const val KEYBOARD_SHOW_MS = 1_500L
 private const val END_WORK_MS = 30_000L
 private const val EXTENSION_MS = 60_000L

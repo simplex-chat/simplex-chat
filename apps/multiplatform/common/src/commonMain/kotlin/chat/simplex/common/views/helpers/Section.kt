@@ -158,12 +158,13 @@ fun <T> SectionViewSelectable(
   title: String?,
   currentValue: State<T>,
   values: List<ValueTitleDesc<T>>,
+  uiKey: UiKey? = null,
   onSelected: (T) -> Unit,
 ) {
   SectionView(title) {
     Column {
       values.forEach { item ->
-        SectionItemViewSpaceBetween({ onSelected(item.value) }) {
+        SectionItemViewSpaceBetween({ onSelected(item.value) }, uiKey = uiKey?.let { k -> item.value?.let { k.option(it) } }) {
           Text(item.title)
           if (currentValue.value == item.value) {
             Icon(painterResource(MR.images.ic_check), item.title, tint = MaterialTheme.colors.primary)
@@ -181,6 +182,7 @@ fun <T> SectionViewSelectableCards(
   title: String?,
   currentValue: State<T>,
   values: List<ValueTitleDesc<T>>,
+  uiKey: UiKey? = null,
   onSelected: (T) -> Unit,
 ) {
   SectionView(title) {
@@ -190,7 +192,7 @@ fun <T> SectionViewSelectableCards(
         Spacer(Modifier.height(DEFAULT_PADDING * 2f))
       }
       values.forEach { item ->
-        SelectableCard(currentValue, item.value, item.title, item.description, onSelected)
+        SelectableCard(currentValue, item.value, item.title, item.description, icon = null, uiKey = uiKey?.option(item.value ?: "null"), onSelected = onSelected)
       }
     }
   }
@@ -301,9 +303,10 @@ fun <T> SectionItemWithValue(
   icon: Painter? = null,
   iconTint: Color = MaterialTheme.colors.secondary,
   enabled: State<Boolean> = mutableStateOf(true),
+  uiKey: UiKey? = null,
   onSelected: () -> Unit
 ) {
-  SettingsActionItemWithContent(icon = icon, text = title, iconColor = iconTint, click = if (enabled.value) onSelected else null, disabled = !enabled.value) {
+  SettingsActionItemWithContent(icon = icon, text = title, iconColor = iconTint, click = if (enabled.value) onSelected else null, disabled = !enabled.value, uiKey = uiKey) {
     Row(
       Modifier.padding(start = 10.dp),
       verticalAlignment = Alignment.CenterVertically,
@@ -443,8 +446,8 @@ fun InfoRowTwoValues(
 
 
 @Composable
-fun InfoRowEllipsis(title: String, value: String, onClick: () -> Unit) {
-  SectionItemViewSpaceBetween(onClick) {
+fun InfoRowEllipsis(title: String, value: String, uiKey: UiKey? = null, onClick: () -> Unit) {
+  SectionItemViewSpaceBetween(onClick, uiKey = uiKey) {
     val screenWidthDp = windowWidth()
     Text(title)
     Text(

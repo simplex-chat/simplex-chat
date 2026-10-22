@@ -123,80 +123,80 @@ Each sub-area (a `###` section) is one test class, or several consecutive classe
 | 01 | 3 | Chat list | `chatListScrollToTopOnTitleClick` | `ChatListToolbarSearchTest` | 16 | 0 |
 | 01 | 3 | Chat list | `unreadFilterToggle` | `ChatListFiltersListsTest` | 24 | 0 |
 | 01 | 3 | Chat list | `previewShowsLastTextMessage` | `ChatListRowsTest` | 17 | 0 |
-| 01 | 3 | Chat list | `contactMenuMarkRead` | `ChatListMenusPendingTest` | 12 | 0 |
+| 01 | 3 | Chat list | `contactMenuMarkRead` | `ChatListMenusPendingTest` | 11 | 0 |
 | 01 | 3 | Chat list | `contactRequestMenuAccept` | `ChatListRequestsCardsTest`, `ChatListRequestsCardsCompatTest`, `ChatListRequestsCardsCompatStableTest` | 24 | 0 |
-| 01 | 4 | Servers summary | `serversSummaryOpensFromIndicator` | `ServersSummaryTest` | 10 | 0 |
-| 01 | 5 | User picker and profiles | `userPickerOpensAndShowsCurrentUser` | `UserPickerTest` | 11 | 0 |
-| 01 | 5 | User picker and profiles | `profilesListShowsAllVisible` | `ChatProfilesTest` | 21 | 0 |
-| 01 | 5 | User picker and profiles | `editProfileDisplayName` | `ProfileEditTest` | 12 | 0 |
-| 01 | 6 | New chat sheet and contacts | `newChatSheetShowsActions` | `NewChatSheetTest` | 17 | 0 |
-| 01 | 7 | 1-time link (create / share / QR / incognito / profile) | `createOneTimeLinkShowsLinkAndQr` | `OneTimeLinkTest`, `OneTimeLinkCompatTest`, `OneTimeLinkCompatStableTest` | 17 | 0 |
-| 01 | 8 | Paste link and connection plans (contact, invitation, address, bot, name, signature, URI and link-card links) | `pasteLinkInvalidTextAlert` | `ConnectPlanTest`, `ConnectPlanCompatTest`, `ConnectPlanCompatStableTest` | 29 | 0 |
-| 01 | 9 | Connecting a prepared chat (compose area) | `preparedContactInvitationConnectButton` | `PreparedChatTest` | 11 | 0 |
-| 01 | 10 | Pending connection info screen | `pendingInfoInvitedShowsLinkQrShare` | `PendingConnectionTest` | 7 | 0 |
-| 01 | 11 | Address screens | `addressScreenNoAddressShowsCreate` | `AddressTest` | 22 | 0 |
+| 01 | 4 | Servers summary | `serversSummaryShowsLocalSmpConnected` | `ServersSummaryTest` | 7 | 0 |
+| 01 | 5 | User picker and profiles | `userPickerOpensAndShowsCurrentUser` | `UserPickerTest` | 5 | 0 |
+| 01 | 5 | User picker and profiles | `profilesListShowsAllVisible` | `ChatProfilesTest` | 14 | 0 |
+| 01 | 5 | User picker and profiles | `editProfileDisplayName` | `ProfileEditTest` | 7 | 0 |
+| 01 | 6 | New chat sheet and contacts | `newChatSheetShowsActions` | `NewChatSheetTest` | 10 | 0 |
+| 01 | 7 | 1-time link (create / share / QR / incognito / profile) | `createOneTimeLinkShowsLinkAndQr` | `OneTimeLinkTest`, `OneTimeLinkCompatTest`, `OneTimeLinkCompatStableTest` | 14 | 0 |
+| 01 | 8 | Paste link and connection plans (contact, invitation, address, bot, name, signature, URI and link-card links) | `pasteLinkInvalidTextAlert` | `ConnectPlanTest` | 15 | 0 |
+| 01 | 9 | Connecting a prepared chat (compose area) | `preparedContactInvitationConnectButton` | `PreparedChatTest` | 6 | 0 |
+| 01 | 10 | Pending connection info screen | `pendingInfoInvitedSharesWorkingLink` | `PendingConnectionTest` | 5 | 0 |
+| 01 | 11 | Address screens | `addressScreenNoAddressShowsCreate` | `AddressTest` | 12 | 0 |
 | 01 | 12 | SimpleX name | `simplexNameEntryShownWithAddress` | `SimplexNameTest` | 8 | 0 |
-| 01 | 13 | Contact info screen | `contactInfoOpensFromChatHeader` | `ContactInfoTest` | 28 | 0 |
-| 01 | 14 | Preferences | `contactPrefsDisappearingMessagesAllow` | `ContactPreferencesTest` | 12 | 0 |
-| 01 | 15 | Delete contact variants | `deleteContactOnlyConversation` | `DeleteContactTest` | 10 | 0 |
-| 02 | A | Chat view shell, toolbar, banner | `directChat_opens_showsToolbarAndBanner` | `ChatShellTest` | 11 | 0 |
-| 02 | B | Composing and sending text, links, mentions, commands | `sendText_sendButton_peerReceives` | `ComposeTest` | 28 | 0 |
-| 02 | C | Live messages | `liveMessage_menuStart_alertConfirm_peerSeesStarted` | `LiveMessageTest` | 10 | 0 |
-| 02 | D | Timed / disappearing messages | `timed_send30s_bothSidesDelete` | `TimedMessageTest` | 6 | 0 |
+| 01 | 13 | Contact info screen | `contactInfoSetLocalAlias` | `ContactInfoTest` | 24 | 0 |
+| 01 | 14 | Preferences | `contactPrefsSaveNotifiesContactAndEnforces` | `ContactPreferencesTest` | 4 | 0 |
+| 01 | 15 | Delete contact variants | `deleteContactOnlyConversation` | `DeleteContactTest` | 7 | 0 |
+| 02 | A | Chat view shell, toolbar, banner | `directChat_opens_showsToolbarAndBanner` | `ChatShellTest` | 8 | 0 |
+| 02 | B | Composing and sending text, links, mentions, commands | `sendText_sendButton_peerReceives` | `ComposeTest` | 21 | 0 |
+| 02 | C | Live messages | `liveMessage_menuStart_alertConfirm_peerSeesStarted` | `LiveMessageTest` | 5 | 0 |
+| 02 | D | Timed / disappearing messages | `timed_send30s_bothSidesDelete` | `TimedMessageTest` | 5 | 0 |
 | 02 | E | Voice messages | `voice_record_send_peerReceivesVoice` | `VoiceMessageTest` | 11 | 0 |
-| 02 | F | Attachments – sending | `attach_sheet_showsImageVideoFile` | `SendAttachmentTest`, `SendAttachmentCompatTest`, `SendAttachmentCompatStableTest` | 21 | 1 |
-| 02 | G | Receiving files: download, cancel, errors, save, viewers | `rcvImage_autoReceived_renders` | `ReceiveFileTest` | 20 | 0 |
-| 02 | H | Replies / quotes | `reply_menu_sendQuoted_peerSeesQuote` | `ReplyTest`, `ReplyCompatTest`, `ReplyCompatStableTest` | 7 | 0 |
-| 02 | I | Edit and history | `edit_menu_updatesPeer` | `EditMessageTest`, `EditMessageCompatTest`, `EditMessageCompatStableTest` | 12 | 0 |
-| 02 | J | Delete / reveal / blocked | `delete_ownForMe_localOnly` | `DeleteMessageTest`, `DeleteMessageCompatTest`, `DeleteMessageCompatStableTest` | 8 | 0 |
-| 02 | K | Multi-select and selection toolbar | `select_enterMode_showsCounterToolbar` | `MultiSelectTest` | 9 | 0 |
-| 02 | L | Forwarding | `forward_contactToContact_peerSeesForwarded` | `ForwardTest` | 17 | 0 |
-| 02 | M | Reactions | `reaction_add_peerSeesAdded` | `ReactionTest`, `ReactionCompatTest`, `ReactionCompatStableTest` | 8 | 0 |
-| 02 | N | Copy / Share / Save / text selection | `copy_text_toClipboardAndToast` | `CopyShareTest` | 9 | 0 |
-| 02 | O | Reports, member side | `report_member_spam_moderatorsReceive` | `MemberReportTest` | 7 | 0 |
-| 02 | P | Chat item info | `info_sent_showsSentAt` | `ItemInfoTest` | 15 | 0 |
-| 02 | Q | Unread handling, scrolling, pagination | `unread_openChat_scrollsToFirstUnread` | `UnreadScrollTest` | 18 | 0 |
-| 02 | R | Search and content filters | `search_direct_filtersResults` | `ChatSearchTest` | 11 | 0 |
-| 02 | S | Draft persistence | `draft_text_restoredAfterChatSwitch` | `DraftTest` | 8 | 0 |
+| 02 | F | Attachments – sending | `attachFile_withText_peerReceivesTextAndFile` | `SendAttachmentTest`, `SendAttachmentCompatTest`, `SendAttachmentCompatStableTest` | 14 | 1 |
+| 02 | G | Receiving files: download, cancel, errors, save, viewers | `rcvImage_autoReceived_renders` | `ReceiveFileTest` | 19 | 0 |
+| 02 | H | Replies / quotes | `reply_menu_sendQuoted_peerSeesQuote` | `ReplyTest`, `ReplyCompatTest`, `ReplyCompatStableTest` | 6 | 0 |
+| 02 | I | Edit and history | `edit_menu_updatesPeer` | `EditMessageTest`, `EditMessageCompatTest`, `EditMessageCompatStableTest` | 5 | 0 |
+| 02 | J | Delete / reveal / blocked | `delete_ownForEveryone_peerSeesMarkedDeleted` | `DeleteMessageTest`, `DeleteMessageCompatTest`, `DeleteMessageCompatStableTest` | 4 | 0 |
+| 02 | K | Multi-select and selection toolbar | `select_toggle_updatesCounter` | `MultiSelectTest` | 3 | 0 |
+| 02 | L | Forwarding | `forward_contactToContact_peerSeesForwarded` | `ForwardTest` | 9 | 0 |
+| 02 | M | Reactions | `reaction_add_peerSeesAdded` | `ReactionTest`, `ReactionCompatTest`, `ReactionCompatStableTest` | 5 | 0 |
+| 02 | N | Copy / Share / Save / text selection | `copy_text_toClipboardAndToast` | `CopyShareTest` | 5 | 0 |
+| 02 | O | Reports, member side | `report_member_spam_moderatorsReceive` | `MemberReportTest` | 2 | 0 |
+| 02 | P | Chat item info | `info_sent_showsSentAt` | `ItemInfoTest` | 10 | 0 |
+| 02 | Q | Unread handling, scrolling, pagination | `unread_openChat_scrollsToFirstUnread` | `UnreadScrollTest` | 12 | 0 |
+| 02 | R | Search and content filters | `search_direct_filtersResults` | `ChatSearchTest` | 6 | 0 |
+| 02 | S | Draft persistence | `draft_onlyLastChatKept` | `DraftTest` | 5 | 0 |
 | 02 | T | Status icons and delivery | `status_direct_sentThenDelivered` | `ItemStatusTest`, `ItemStatusCompatTest`, `ItemStatusCompatStableTest` | 9 | 0 |
-| 02 | U | Special items | `e2eeInfo_direct_pq` | `SpecialItemTest`, `SpecialItemCompatTest`, `SpecialItemCompatStableTest` | 19 | 1 |
-| 02 | V | Private notes | `notes_sendText_saved` | `NotesTest` | 7 | 0 |
-| 02 | W | Context menus and keyboard | `contextMenu_rightClick_opens` | `ContextMenuTest` | 5 | 0 |
+| 02 | U | Special items | `featureOffer_accept_updatesPrefs` | `SpecialItemTest`, `SpecialItemCompatTest`, `SpecialItemCompatStableTest` | 16 | 1 |
+| 02 | V | Private notes | `notes_sendText_saved` | `NotesTest` | 5 | 0 |
+| 02 | W | Context menus and keyboard | `contextMenu_itemsMatrix_byItemType` | `ContextMenuTest` | 1 | 0 |
 | 02 | X | Rare states and out-of-reach rows | `call_webrtcSession_connects` | `ChatEdgeCasesTest` | 4 | 2 |
-| 03 | 1 | Create group | `createGroup_buttonDisabledForEmptyOrInvalidName` | `CreateGroupTest` | 12 | 0 |
-| 03 | 2 | Invite members | `inviteMembers_listsOnlyEligibleContacts` | `InviteMembersTest`, `InviteMembersCompatTest`, `InviteMembersCompatStableTest` | 11 | 0 |
-| 03 | 3 | Group info screen rows | `groupInfo_headerShowsProfileAndCopiesName` | `GroupInfoTest` | 13 | 0 |
-| 03 | 4 | Group profile and welcome message | `editGroupProfile_renameNotifiesMembers` | `GroupProfileTest` | 14 | 0 |
-| 03 | 5 | Group preferences | `groupPrefs_disappearingOnWithTtl` | `GroupPreferencesTest` | 19 | 1 |
-| 03 | 6 | Member admission and review | `memberAdmission_enableReviewAll` | `MemberAdmissionTest` | 16 | 2 |
-| 03 | 7 | Group link | `groupLink_createdAutomatically` | `GroupLinkTest` | 14 | 0 |
-| 03 | 8 | Joining (alice as joiner), connect-plan states, invitations | `joinGroup_pasteShortLinkPrepareAndJoin` | `JoiningTest`, `JoiningCompatTest`, `JoiningCompatStableTest` | 24 | 0 |
-| 03 | 9 | Member list and multi-select | `memberList_rolesAndStatuses` | `MemberListTest` | 10 | 0 |
-| 03 | 10 | Member info | `memberInfo_openShowsSections` | `MemberInfoTest` | 28 | 0 |
-| 03 | 11 | Member contacts | `memberContact_createAndSendInvitation` | `MemberContactTest` | 5 | 0 |
-| 03 | 12 | Support chats, «Chats with members» / «Chat with admins» | `supportChat_memberSendsToAdmins` | `SupportChatTest` | 13 | 0 |
-| 03 | 13 | Reports, moderator side | `reports_moderatorBannerAndCounts` | `ModeratorReportTest` | 9 | 0 |
-| 03 | 14 | Moderation | `moderate_markDeletedForAll` | `ModerationTest` | 6 | 0 |
-| 03 | 15 | Mentions, notification side | `mentions_mentionsOnlyMuteStillNotifies` | `MentionNotificationTest` | 2 | 0 |
-| 03 | 16 | Group events and history | `groupEvents_memberConnectedMerged` | `GroupEventsTest` | 8 | 0 |
-| 03 | 17 | Leave, delete, clear | `leaveGroup_notifiesMembers` | `LeaveDeleteClearTest` | 8 | 0 |
+| 03 | 1 | Create group | `createGroup_buttonDisabledForEmptyOrInvalidName` | `CreateGroupTest` | 9 | 0 |
+| 03 | 2 | Invite members | `inviteMembers_listsOnlyEligibleContacts` | `InviteMembersTest`, `InviteMembersCompatTest`, `InviteMembersCompatStableTest` | 8 | 0 |
+| 03 | 3 | Group info screen rows | `groupInfo_headerShowsProfileAndCopiesName` | `GroupInfoTest` | 11 | 0 |
+| 03 | 4 | Group profile and welcome message | `editGroupProfile_renameNotifiesMembers` | `GroupProfileTest` | 10 | 0 |
+| 03 | 5 | Group preferences | `groupPrefs_ownerChangesNotifyAndRestrictMembers` | `GroupPreferencesTest` | 6 | 1 |
+| 03 | 6 | Member admission and review | `memberAdmission_unsavedChangesAlert` | `MemberAdmissionTest` | 7 | 2 |
+| 03 | 7 | Group link | `groupLink_cliJoinsViaShortLink` | `GroupLinkTest` | 9 | 0 |
+| 03 | 8 | Joining (alice as joiner), connect-plan states, invitations | `joinGroup_pasteShortLinkPrepareAndJoin` | `JoiningTest`, `JoiningCompatTest`, `JoiningCompatStableTest` | 17 | 0 |
+| 03 | 9 | Member list and multi-select | `memberList_rolesAndStatuses` | `MemberListTest` | 5 | 0 |
+| 03 | 10 | Member info | `memberInfo_openShowsSections` | `MemberInfoTest` | 22 | 0 |
+| 03 | 11 | Member contacts | `memberContact_createAndSendInvitation` | `MemberContactTest` | 4 | 0 |
+| 03 | 12 | Support chats, «Chats with members» / «Chat with admins» | `supportChat_memberSendsToAdmins` | `SupportChatTest` | 6 | 0 |
+| 03 | 13 | Reports, moderator side | `reports_moderatorBannerAndCounts` | `ModeratorReportTest` | 5 | 0 |
+| 03 | 14 | Moderation | `moderate_markDeletedForAll` | `ModerationTest` | 4 | 0 |
+| 03 | 15 | Mentions, notification side | `mentions_mentionsOnlyMuteCountsOnlyMentionsForOtherProfile` | `MentionNotificationTest` | 2 | 0 |
+| 03 | 16 | Group events and history | `groupEvents_memberConnectedMerged` | `GroupEventsTest` | 6 | 0 |
+| 03 | 17 | Leave, delete, clear | `leaveGroup_thenDeleteLocalCopy` | `LeaveDeleteClearTest` | 7 | 0 |
 | 03 | 18 | Channels: alice as owner, with relays and CLI subscribers | `createChannel_noRelaysBlocksCreation` | `ChannelOwnerCreateTest` | 16 | 0 |
 | 03 | 18 | Channels: alice as owner, with relays and CLI subscribers | `channel_broadcastPlaceholderAndDelivery` | `ChannelOwnerBroadcastTest` | 15 | 0 |
 | 03 | 18 | Channels: alice as owner, with relays and CLI subscribers | `channelSubscribers_listAndCount` | `ChannelOwnerManageTest` | 27 | 1 |
 | 03 | 19 | Channels: alice as subscriber, with a CLI owner and relays | `joinChannel_pasteLinkOpenChannel` | `ChannelSubscriberTest` | 26 | 0 |
-| 03 | 20 | Business chats | `business_customerConnectsCreatesBusinessChat` | `BusinessChatTest` | 16 | 0 |
-| 04 | A | Settings root and global keys | `settingsRoot_listsDesktopItems` | `SettingsRootTest` | 7 | 0 |
-| 04 | B | Privacy (Your privacy, More privacy, receipts) | `privacy_sectionsAndFooter` | `PrivacyTest` | 24 | 0 |
-| 04 | C | SimpleX Lock (desktop passcode) and self-destruct | `lock_enable_setsPasscode` | `LockTest` | 22 | 0 |
-| 04 | D | Appearance | `appearance_language_switch` | `AppearanceTest` | 24 | 0 |
-| 04 | E | Network & servers | `network_rootLayout` | `NetworkServersTest` | 22 | 0 |
-| 04 | E | Network & servers | `socks_enable_confirm` | `NetworkProxyTest` | 21 | 0 |
+| 03 | 20 | Business chats | `business_autoReplyWelcome` | `BusinessChatTest` | 9 | 0 |
+| 04 | A | Settings root and global keys | `settingsRoot_rowsOpenTheirScreens` | `SettingsRootTest` | 5 | 0 |
+| 04 | B | Privacy (Your privacy, More privacy, receipts) | `privacy_sectionsAndFooter` | `PrivacyTest` | 22 | 0 |
+| 04 | C | SimpleX Lock (desktop passcode) and self-destruct | `lock_enable_setsPasscode` | `LockTest` | 12 | 0 |
+| 04 | D | Appearance | `appearance_language_switch` | `AppearanceTest` | 18 | 0 |
+| 04 | E | Network & servers | `operators_enableDisableOperator` | `NetworkServersTest` | 18 | 0 |
+| 04 | E | Network & servers | `socks_enable_confirm` | `NetworkProxyTest` | 15 | 0 |
 | 04 | F | Audio & video calls | `calls_screenLayout_noLockScreenOption` | `CallSettingsTest` | 6 | 0 |
-| 04 | G | Chat data, database, encryption, startup DB errors | `chatData_layout` | `ChatDataTest` | 21 | 2 |
-| 04 | G | Chat data, database, encryption, startup DB errors | `dbEncrypt_setFirstPassphrase` | `DatabaseEncryptionTest` | 14 | 1 |
+| 04 | G | Chat data, database, encryption, startup DB errors | `chatData_ttlDecrease_alertConfirm` | `ChatDataTest` | 12 | 1 |
+| 04 | G | Chat data, database, encryption, startup DB errors | `dbEncrypt_changePassphrase` | `DatabaseEncryptionTest` | 7 | 1 |
 | 04 | H | Migrate to/from device | `migrateFrom_stopsChatAndAuth` | `MigrationTest` | 15 | 6 |
-| 04 | I | App version, update checker, developer tools | `version_screenShowsVersions` | `VersionDevToolsTest` | 15 | 0 |
-| 04 | J | Help & support | `help_layout` | `HelpTest` | 8 | 2 |
+| 04 | I | App version, update checker, developer tools | `version_screenShowsVersions` | `VersionDevToolsTest` | 13 | 0 |
+| 04 | J | Help & support | `help_layoutHowToUseAndAbout` | `HelpTest` | 4 | 2 |
 | 04 | K | Remote desktop: "Link a mobile" (the desktop GUI is the controller, the CLI is the mobile host) | `linkMobile_layout` | `RemoteDesktopTest` | 17 | 0 |
 | 04 | L | Supporter perks (badge-display screens excluded) | `badges_supportScreenLayout` | `SupporterPerksTest` | 8 | 1 |
 | 04 | M | Out of reach in-process | `tray_closeToTrayBehaviour` | `SettingsOutOfReachTest` | 8 | 8 |

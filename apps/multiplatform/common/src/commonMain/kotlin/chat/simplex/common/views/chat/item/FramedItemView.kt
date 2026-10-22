@@ -369,7 +369,7 @@ fun FramedItemView(
           } else {
             when (val mc = ci.content.msgContent) {
               is MsgContent.MCImage -> {
-                CIImageView(image = mc.image, file = ci.file, imageProvider ?: return@PriorityLayout, showMenu, false, receiveFile)
+                CIImageView(image = mc.image, file = ci.file, imageProvider ?: return@PriorityLayout, showMenu, false, Ui.Chat.ItemFile(ci.id), receiveFile)
                 if (mc.text == "" && !ci.meta.isLive) {
                   metaColor = Color.White
                 } else {
@@ -406,7 +406,7 @@ fun FramedItemView(
               is MsgContent.MCChat -> {
                 val hasText = mc.text != mc.chatLink.connLinkStr
                 Box(
-                  Modifier.combinedClickable(
+                  Modifier.ui(Ui.Chat.Item(ci.id).part("chatLink")).combinedClickable(
                     onClick = {
                       withBGApi { planAndConnect(chat.remoteHostId, mc.chatLink.connLinkStr, linkOwnerSig = mc.ownerSig, close = null) }
                     },

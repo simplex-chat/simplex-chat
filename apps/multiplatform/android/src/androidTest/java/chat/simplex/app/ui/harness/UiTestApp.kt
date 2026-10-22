@@ -75,6 +75,7 @@ object UiTestApp {
     Timing.phase("reset.stop running=${chatModel.chatRunning.value}") { stopCore() }
     Timing.phase("reset.delete") { deleteChatDatabaseFilesAndState() }
     Timing.phase("reset.prefs") { PrefStores.restore() }
+    Timing.phase("reset.serversBaseline") { TestServers.restoreBaseline() }
     androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand("cmd statusbar collapse").close()
     if (chat.simplex.app.SimplexService.isServiceStarted) Timing.phase("reset.ntfs") {
       onMain { chat.simplex.common.views.usersettings.changeNotificationsMode(chat.simplex.common.model.NotificationsMode.OFF, chatModel) }
@@ -111,7 +112,12 @@ object UiTestApp {
   }
 
   private fun stopCore() {
-    waitUntil(10_000, "ctrlInitInProgress to clear") { !chatModel.ctrlInitInProgress.value }
+    val deadline = System.currentTimeMillis() + 10_000
+    while (chatModel.ctrlInitInProgress.value && System.currentTimeMillis() < deadline) Thread.sleep(50)
+    if (chatModel.ctrlInitInProgress.value) {
+      android.util.Log.w("UITEST", "ctrlInitInProgress still set after 10 s (left by a failed test); clearing it to reset")
+      chatModel.ctrlInitInProgress.value = false
+    }
     runBlocking {
       val ctrl = chatController.getChatCtrl()
       if (ctrl != null && ctrl != -1L && chatModel.chatRunning.value == true) chatController.apiStopChat()

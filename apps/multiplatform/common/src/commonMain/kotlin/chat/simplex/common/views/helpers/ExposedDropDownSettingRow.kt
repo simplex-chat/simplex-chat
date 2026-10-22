@@ -34,6 +34,7 @@ fun <T> ExposedDropDownSetting(
   minWidth: Dp = 200.dp,
   maxWidth: Dp = with(LocalDensity.current) { 180.sp.toDp() },
   uiKey: UiKey? = null,
+  optionKey: (T) -> Any? = { it },
   onSelected: (T) -> Unit
 ) {
   val expanded = remember { mutableStateOf(false) }
@@ -74,7 +75,7 @@ fun <T> ExposedDropDownSetting(
             onSelected(selectionOption.first)
             expanded.value = false
           },
-          modifier = Modifier.ui(uiKey?.option(selectionOption.first ?: "null")),
+          modifier = Modifier.ui(uiKey?.option(optionKey(selectionOption.first) ?: "null")),
           contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)
         ) {
           Text(
@@ -170,9 +171,10 @@ fun <T> ExposedDropDownSettingRow(
   minWidth: Dp = 200.dp,
   maxWidth: Dp = with(LocalDensity.current) { 180.sp.toDp() },
   uiKey: UiKey? = null,
+  optionKey: (T) -> Any? = { it },
   onSelected: (T) -> Unit
 ) {
   SettingsActionItemWithContent(icon, title, iconColor = iconTint, disabled = !enabled.value) {
-    ExposedDropDownSetting(values, selection ,textColor, label = label, enabled = enabled, minWidth = minWidth, maxWidth = maxWidth, uiKey = uiKey, onSelected = onSelected)
+    ExposedDropDownSetting(values, selection ,textColor, label = label, enabled = enabled, minWidth = minWidth, maxWidth = maxWidth, uiKey = uiKey, optionKey = optionKey, onSelected = onSelected)
   }
 }

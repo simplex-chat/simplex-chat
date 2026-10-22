@@ -4,7 +4,14 @@ fun interface Waiter {
   fun waitUntil(timeoutMs: Long, what: String, cond: () -> Boolean)
 }
 
-data class PeerFlags(val reactions: Boolean = false, val markRead: Boolean = false, val fullLinks: Boolean = false)
+data class PeerFlags(
+  val reactions: Boolean = false,
+  val markRead: Boolean = false,
+  val fullLinks: Boolean = false,
+  val relay: Boolean = false,
+  val smpServer: String = "smp1",
+  val xftpServer: String = "xftp1"
+)
 
 abstract class PeerLines(val name: String, protected val waiter: Waiter) {
   protected val lines = ArrayList<String>()
@@ -51,6 +58,12 @@ abstract class PeerLines(val name: String, protected val waiter: Waiter) {
     }
   }
 
+  fun eventuallyAll(lines: List<String>, messages: List<String> = emptyList(), timeoutMs: Long = LINE_TIMEOUT_MS) {
+    val wanted = lines.map { l -> { s: String -> s == l } } + messages.map { m -> { s: String -> stripTime(s) == m } }
+    await(timeoutMs, "$name: all of ${lines + messages}") { lastIndexOfAll(wanted) != null }
+    synchronized(this.lines) { lastIndexOfAll(wanted)?.takeIf { it >= 0 }?.let { dropThrough(it) } }
+  }
+
   fun nextLine(timeoutMs: Long = LINE_TIMEOUT_MS): String {
     await(timeoutMs, "$name: next output line") { synchronized(lines) { lines.isNotEmpty() } }
     return synchronized(lines) { lines.removeAt(0) }
@@ -93,6 +106,11 @@ abstract class PeerLines(val name: String, protected val waiter: Waiter) {
     }
 
   protected fun stripTime(line: String): String = TIME_PREFIX.replaceFirst(line, "")
+
+  private fun lastIndexOfAll(wanted: List<(String) -> Boolean>): Int? = synchronized(lines) {
+    val used = HashSet<Int>()
+    wanted.maxOfOrNull { p -> lines.indices.firstOrNull { it !in used && p(lines[it]) }?.also { used += it } ?: return null } ?: -1
+  }
 
   private fun takeFirst(pred: (String) -> Boolean): String? = synchronized(lines) {
     val i = lines.indexOfFirst(pred)

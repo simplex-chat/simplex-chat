@@ -13,6 +13,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
 import chat.simplex.common.ui.theme.EmojiFont
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
@@ -32,7 +33,7 @@ actual fun ReactionIcon(text: String, fontSize: TextUnit) {
 
 @Composable
 actual fun SaveContentItemAction(cItem: ChatItem, saveFileLauncher: FileChooserLauncher, showMenu: MutableState<Boolean>) {
-  ItemAction(stringResource(MR.strings.save_verb), painterResource(MR.images.ic_download), onClick = {
+  ItemAction(stringResource(MR.strings.save_verb), painterResource(MR.images.ic_download), uiKey = Ui.Chat.ItemMenu(cItem.id, "save"), onClick = {
     val saveIfExists = {
       when (cItem.content.msgContent) {
         is MsgContent.MCImage, is MsgContent.MCFile, is MsgContent.MCVoice, is MsgContent.MCVideo -> withLongRunningApi { saveFileLauncher.launch(cItem.file?.fileName ?: "") }

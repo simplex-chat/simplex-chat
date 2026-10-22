@@ -372,7 +372,8 @@ fun ActiveProfilePicker(
         }
       },
         image = { ProfileImage(size = 42.dp, image = user.image) },
-        badge = user.profile.localBadge
+        badge = user.profile.localBadge,
+        uiKey = Ui.Link.Profile(user.userId)
     )
   }
 
@@ -544,6 +545,7 @@ private fun InviteView(rhId: Long?, connLinkInvitation: CreatedConnLink, contact
               showSearch = true,
               searchAlwaysVisible = true,
               onSearchValueChanged = { search.value = it },
+              uiKey = Ui.Link.ProfileBar,
               content = {
                 ActiveProfilePicker(
                   search = search,
@@ -593,7 +595,7 @@ fun ToggleShortLinkButton(short: MutableState<Boolean>) {
   if (appPrefs.developerTools.state.value) {
     Text(
       stringResource(if (short.value) MR.strings.full_link_button_text else MR.strings.short_link_button_text),
-      modifier = Modifier.clickable(
+      modifier = Modifier.ui(Ui.Link.ShortLinkToggle).clickable(
         interactionSource = remember { MutableInteractionSource() },
         indication = null
       ) { short.value = !short.value },
@@ -696,7 +698,7 @@ private fun PasteLinkView(rhId: Long?, pastedLink: MutableState<String>, showQRC
           text = generalGetString(MR.strings.the_text_you_pasted_is_not_a_link)
         )
       }
-    }) {
+    }, uiKey = Ui.Link.Paste) {
       Box(Modifier.weight(1f)) {
         Text(stringResource(MR.strings.tap_to_paste_link), color = MaterialTheme.colors.primary)
       }
@@ -858,6 +860,7 @@ fun strConnectTarget(str: String): ConnectTarget? {
 fun IncognitoToggle(
   incognitoPref: SharedPreference<Boolean>,
   incognito: MutableState<Boolean>,
+  uiKey: UiKey? = null,
   onClickInfo: () -> Unit
 ) {
   SettingsActionItemWithContent(
@@ -871,6 +874,7 @@ fun IncognitoToggle(
       stringResource(MR.strings.incognito),
       painterResource(MR.images.ic_info),
       stopped = false,
+      uiKey = uiKey,
       onClickInfo = onClickInfo,
       preference = incognitoPref,
       preferenceState = incognito

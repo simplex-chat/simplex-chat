@@ -253,7 +253,8 @@ fun UserPicker(
               }
             }()
           }),
-          disabled = stopped
+          disabled = stopped,
+          uiKey = Ui.UserPicker.ChatPreferences
         )
       }
       if (appPlatform.isDesktop) {
@@ -388,7 +389,8 @@ private fun GlobalSettingsSection(
           ConnectDesktopView(close)
         }
       },
-      disabled = stopped
+      disabled = stopped,
+      uiKey = Ui.UserPicker.UseFromDesktop
     )
   } else {
     UserPickerOptionRow(
@@ -400,7 +402,8 @@ private fun GlobalSettingsSection(
           ConnectMobileView()
         }
       },
-      disabled = stopped
+      disabled = stopped,
+      uiKey = Ui.UserPicker.LinkMobile
     )
   }
 
@@ -544,7 +547,8 @@ private fun DevicePickerRow(
         icon = painterResource(MR.images.ic_smartphone_300),
         text = activeHost.hostDeviceName,
         actionButtonVisible = activeHost.sessionState is RemoteHostSessionState.Connected,
-        onActionButtonClick = { onRemoteHostActionButtonClick(activeHost) }
+        onActionButtonClick = { onRemoteHostActionButtonClick(activeHost) },
+        uiKey = Ui.UserPicker.Device(activeHost.remoteHostId)
       ) {
         onRemoteHostClick(activeHost, connecting)
       }
@@ -554,7 +558,8 @@ private fun DevicePickerRow(
       active = localDeviceActive,
       icon = painterResource(MR.images.ic_desktop),
       text = stringResource(MR.strings.this_device),
-      actionButtonVisible = false
+      actionButtonVisible = false,
+      uiKey = Ui.UserPicker.Device(null)
     ) {
       onLocalDeviceClick()
     }
@@ -567,7 +572,8 @@ private fun DevicePickerRow(
         icon = painterResource(MR.images.ic_smartphone_300),
         text = h.hostDeviceName,
         actionButtonVisible = h.sessionState is RemoteHostSessionState.Connected,
-        onActionButtonClick = { onRemoteHostActionButtonClick(h) }
+        onActionButtonClick = { onRemoteHostActionButtonClick(h) },
+        uiKey = Ui.UserPicker.Device(h.remoteHostId)
       ) {
         onRemoteHostClick(h, connecting)
       }
@@ -597,9 +603,11 @@ fun DevicePill(
   text: String,
   actionButtonVisible: Boolean,
   onActionButtonClick: (() -> Unit)? = null,
+  uiKey: UiKey? = null,
   onClick: () -> Unit) {
   Row(
     Modifier
+      .ui(uiKey)
       .clip(RoundedCornerShape(8.dp))
       .border(
         BorderStroke(1.dp, MaterialTheme.colors.secondaryVariant),
@@ -637,7 +645,7 @@ fun DevicePill(
         val interactionSource = remember { MutableInteractionSource() }
         val hovered = interactionSource.collectIsHoveredAsState().value
         Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON * fontSizeSqrtMultiplier))
-        IconButton(onActionButtonClick, Modifier.requiredSize(16.dp * fontSizeSqrtMultiplier)) {
+        IconButton(onActionButtonClick, Modifier.ui(uiKey?.part("disconnect")).requiredSize(16.dp * fontSizeSqrtMultiplier)) {
           Icon(
             painterResource(if (hovered) MR.images.ic_wifi_off else MR.images.ic_wifi),
             null,

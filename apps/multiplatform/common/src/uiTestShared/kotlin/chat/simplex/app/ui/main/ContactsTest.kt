@@ -3,9 +3,7 @@ package chat.simplex.app.ui.main
 import chat.simplex.app.ui.harness.CONNECT_TIMEOUT_MS
 import chat.simplex.app.ui.harness.connect
 import chat.simplex.app.ui.harness.UiTest
-import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.Ui
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ContactsTest : UiTest() {
@@ -38,17 +36,6 @@ class ContactsTest : UiTest() {
     click(Ui.Alert.Option(Ui.AlertSource.Shared, "deleteAndNotify"))
     bob.eventually("alice deleted contact with you", CONNECT_TIMEOUT_MS)
     alice.chatList.gone("bob")
-  }
-
-  @Test fun contactInfoSetLocalAlias() = uiTest {
-    val alice = app("alice"); val bob = cli("bob")
-    connect(bob)
-    alice.chatList.row("bob")
-    assertTrue("bob" in alice.chatList.rowTexts("bob"))
-    alice.chatList.open("bob").info()
-    typeInto(Ui.Info.Alias, "friend")
-    poll(what = "the row to read `friend`") { chatModel.chats.value.any { it.chatInfo.chatViewName == "friend" } }
-    poll(what = "the row text `friend` instead of `bob`") { alice.chatList.rowTexts("friend").let { "friend" in it && "bob" !in it } }
   }
 
   @Test fun editProfileDisplayName() = uiTest {

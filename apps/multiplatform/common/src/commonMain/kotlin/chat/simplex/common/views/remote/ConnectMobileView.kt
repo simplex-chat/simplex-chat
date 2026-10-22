@@ -140,7 +140,7 @@ fun ConnectMobileLayout(
           }
         }
       }
-      SectionItemView(addMobileDevice) {
+      SectionItemView(addMobileDevice, uiKey = Ui.Remote.AddMobile) {
         Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.link_a_mobile), tint = MaterialTheme.colors.primary)
         Spacer(Modifier.padding(horizontal = 10.dp))
         Text(stringResource(MR.strings.link_a_mobile), color = MaterialTheme.colors.primary)

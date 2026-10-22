@@ -58,9 +58,10 @@ fun SimpleButton(
   text: String, icon: Painter,
   color: Color = MaterialTheme.colors.primary,
   disabled: Boolean,
+  uiKey: UiKey? = null,
   click: () -> Unit
 ) {
-  SimpleButtonFrame(click, disabled = disabled) {
+  SimpleButtonFrame(click, Modifier.ui(uiKey), disabled = disabled) {
     Icon(
       icon, text, tint = if (disabled) MaterialTheme.colors.secondary else color,
       modifier = Modifier.padding(end = 8.dp)

@@ -18,7 +18,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.ui.ui
 import chat.simplex.common.views.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.ReadableText
@@ -139,7 +141,7 @@ fun GroupProfileLayout(
                 }
               }
             }
-            ProfileNameField(displayName, "", { isValidNewProfileName(it, groupProfile) }, focusRequester)
+            ProfileNameField(displayName, "", { isValidNewProfileName(it, groupProfile) }, focusRequester, uiKey = Ui.GroupProfile.Name)
             if (groupProfile.fullName.trim().isNotEmpty() && groupProfile.fullName.trim() != groupProfile.displayName.trim()) {
               Spacer(Modifier.height(DEFAULT_PADDING))
               Text(
@@ -167,7 +169,7 @@ fun GroupProfileLayout(
                 }
               }
             }
-            ProfileNameField(shortDescr, "", isValid = { bioFitsLimit(it) })
+            ProfileNameField(shortDescr, "", isValid = { bioFitsLimit(it) }, uiKey = Ui.GroupProfile.ShortDescr)
 
             Spacer(Modifier.height(DEFAULT_PADDING))
             val enabled = !dataUnchanged && canUpdateProfile(displayName.value, shortDescr.value, groupProfile)
@@ -175,7 +177,7 @@ fun GroupProfileLayout(
             if (enabled) {
               Text(
                 stringResource(saveProfileLabel),
-                modifier = Modifier.clickable {
+                modifier = Modifier.ui(Ui.GroupProfile.Save).clickable {
                   saveProfile(
                     groupProfile.copy(
                       displayName = displayName.value.trim(),
@@ -190,6 +192,7 @@ fun GroupProfileLayout(
             } else {
               Text(
                 stringResource(saveProfileLabel),
+                Modifier.ui(Ui.GroupProfile.Save),
                 color = MaterialTheme.colors.secondary
               )
             }

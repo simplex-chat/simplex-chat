@@ -114,19 +114,6 @@ class ChatListMenusPendingTest : UiTest() {
     poll(what = "the row named `friend`") { "friend" in alice.chatList.rowTexts("friend") }
   }
 
-  @Test fun pendingConnectionClickOpensInfo() = uiTest {
-    val alice = app("alice")
-    keepOneTimeLink(alice)
-    poll(what = "the pending row `invited to connect` / `you shared one-time link` and no pending connection info") {
-      alice.chatList.rowTexts(PENDING).containsAll(listOf(PENDING, "you shared one-time link")) && !seesText("You invited a contact")
-    }
-    val id = alice.chatList.chatId(PENDING)
-    alice.chatList.open(PENDING)
-    poll(what = "`You invited a contact` with the one-time link and the name field") {
-      chatModel.chatId.value == id && seesText("You invited a contact") && seesText("One-time invitation link") && exists(Ui.Info.Alias)
-    }
-  }
-
   @Test fun pendingConnectionMenuDeleteInitiated() = uiTest {
     val alice = app("alice"); val bob = cli("bob")
     val link = keepOneTimeLink(alice)

@@ -64,7 +64,7 @@ object UiTestApp {
     coreStarted = true
     PrefStores.restore()
     UiState.clearUiState()
-    TestServers.start()
+    TestServers.restoreBaseline()
     DbTemplate.installIfPresent()
     if (user != null) TestPrefs.preset()
     initCore()

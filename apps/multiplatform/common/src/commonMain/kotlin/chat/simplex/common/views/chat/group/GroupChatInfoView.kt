@@ -40,6 +40,8 @@ import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.ui
+import chat.simplex.common.ui.UiKey
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
@@ -373,7 +375,7 @@ private fun removeMembersAlert(rhId: Long?, groupInfo: GroupInfo, memberIds: Lis
         SectionItemView({
           AlertManager.shared.hideAlert()
           removeMembers(rhId, groupInfo, memberIds, withMessages = false, onSuccess = onSuccess)
-        }) {
+        }, uiKey = Ui.Alert.Option(Ui.AlertSource.Shared, "remove")) {
           Text(generalGetString(MR.strings.remove_member_confirmation), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
         }
         SectionItemView({
@@ -431,6 +433,7 @@ fun MuteButton(
     title = generalGetString(nextNotificationMode.text(true)),
     disabled = !groupInfo.ready,
     disabledLook = !groupInfo.ready,
+    uiKey = Ui.GroupInfo.Mute,
     onClick = {
       toggleNotifications(chat.remoteHostId, chat.chatInfo, nextNotificationMode, chatModel, notificationMode)
     }
@@ -499,6 +502,7 @@ fun UserSupportChatButton(
       }
     },
     iconColor = (if (chat.supportUnreadCount > 0) MaterialTheme.colors.primary else MaterialTheme.colors.secondary),
+    uiKey = Ui.GroupInfo.UserSupport,
   ) {
     if (chat.supportUnreadCount > 0) {
       UnreadBadge(
@@ -559,6 +563,7 @@ fun ModalData.GroupChatInfoLayout(
     val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val imePadding = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
   LazyColumnWithScrollBar(
+    Modifier.ui(Ui.GroupInfo.Content),
     state = listState,
     contentPadding = if (oneHandUI.value) {
       PaddingValues(
@@ -945,11 +950,12 @@ private fun SelectedItemsCounterToolbarSetter(
 }
 
 @Composable
-fun ChatTTLOption(chatItemTTL: State<ChatItemTTL?>, setChatItemTTL: (ChatItemTTL?) -> Unit, deletingItems: State<Boolean>) {
+fun ChatTTLOption(chatItemTTL: State<ChatItemTTL?>, setChatItemTTL: (ChatItemTTL?) -> Unit, deletingItems: State<Boolean>, uiKey: UiKey? = null) {
   Box {
     TtlOptions(
       chatItemTTL,
       enabled = remember { derivedStateOf { !deletingItems.value } },
+      uiKey = uiKey,
       onSelected = setChatItemTTL,
       default = chatModel.chatItemTTL
     )
@@ -1018,7 +1024,8 @@ private fun MemberSupportButton(chat: Chat, onClick: () -> Unit) {
     painterResource(if (chat.supportUnreadCount > 0) MR.images.ic_flag_filled else MR.images.ic_flag),
     stringResource(MR.strings.member_support),
     click = onClick,
-    iconColor = (if (chat.supportUnreadCount > 0) MaterialTheme.colors.primary else MaterialTheme.colors.secondary)
+    iconColor = (if (chat.supportUnreadCount > 0) MaterialTheme.colors.primary else MaterialTheme.colors.secondary),
+    uiKey = Ui.GroupInfo.MemberSupport
   ) {
     if (chat.supportUnreadCount > 0) {
       UnreadBadge(
@@ -1034,7 +1041,8 @@ private fun GroupPreferencesButton(titleId: StringResource, onClick: () -> Unit)
   SettingsActionItem(
     painterResource(MR.images.ic_toggle_on),
     stringResource(titleId),
-    click = onClick
+    click = onClick,
+    uiKey = Ui.GroupInfo.Preferences
   )
 }
 
@@ -1044,7 +1052,8 @@ private fun GroupReportsButton(chat: Chat, onClick: () -> Unit) {
     painterResource(if (chat.chatStats.reportsCount > 0) MR.images.ic_flag_filled else MR.images.ic_flag),
     stringResource(MR.strings.group_reports_member_reports),
     click = onClick,
-    iconColor = (if (chat.chatStats.reportsCount > 0) Color.Red else MaterialTheme.colors.secondary)
+    iconColor = (if (chat.chatStats.reportsCount > 0) Color.Red else MaterialTheme.colors.secondary),
+    uiKey = Ui.GroupInfo.Reports
   ) {
     if (chat.chatStats.reportsCount > 0) {
       UnreadBadge(
@@ -1066,6 +1075,8 @@ private fun SendReceiptsOption(currentUser: User, state: State<SendReceipts>, on
     state,
     icon = painterResource(MR.images.ic_double_check),
     enabled = remember { mutableStateOf(true) },
+    uiKey = Ui.GroupInfo.SendReceipts,
+    optionKey = { it.bool },
     onSelected = onSelected
   )
 }
@@ -1093,7 +1104,8 @@ private fun AddMembersButton(titleId: StringResource, tint: Color = MaterialThem
     stringResource(titleId),
     onClick,
     iconColor = tint,
-    textColor = tint
+    textColor = tint,
+    uiKey = Ui.GroupInfo.AddMembers
   )
 }
 
@@ -1191,38 +1203,38 @@ private fun DropDownMenuForMember(rhId: Long?, member: GroupMember, groupInfo: G
       DefaultDropdownMenu(showMenu) {
         if (canBlockForAll) {
           if (member.blockedByAdmin) {
-            ItemAction(stringResource(MR.strings.unblock_for_all), painterResource(MR.images.ic_do_not_touch), onClick = {
+            ItemAction(stringResource(MR.strings.unblock_for_all), painterResource(MR.images.ic_do_not_touch), uiKey = Ui.GroupInfo.MemberMenu(member.groupMemberId, "unblockForAll"), onClick = {
               unblockForAllAlert(rhId, groupInfo, member)
               showMenu.value = false
             })
           } else {
-            ItemAction(stringResource(MR.strings.block_for_all), painterResource(MR.images.ic_back_hand), color = MaterialTheme.colors.error, onClick = {
+            ItemAction(stringResource(MR.strings.block_for_all), painterResource(MR.images.ic_back_hand), color = MaterialTheme.colors.error, uiKey = Ui.GroupInfo.MemberMenu(member.groupMemberId, "blockForAll"), onClick = {
               blockForAllAlert(rhId, groupInfo, member)
               showMenu.value = false
             })
           }
         }
         if (canRemove) {
-          ItemAction(stringResource(MR.strings.remove_member_button), painterResource(MR.images.ic_delete), color = MaterialTheme.colors.error, onClick = {
+          ItemAction(stringResource(MR.strings.remove_member_button), painterResource(MR.images.ic_delete), color = MaterialTheme.colors.error, uiKey = Ui.GroupInfo.MemberMenu(member.groupMemberId, "remove"), onClick = {
             removeMemberAlert(rhId, groupInfo, member)
             showMenu.value = false
           })
         }
         if (selectedItems.value == null && member.memberRole < GroupMemberRole.Moderator) {
           Divider()
-          SelectItemAction(showMenu) { toggleItemSelection(member.groupMemberId, selectedItems) }
+          SelectItemAction(showMenu, Ui.GroupInfo.MemberMenu(member.groupMemberId, "select")) { toggleItemSelection(member.groupMemberId, selectedItems) }
         }
       }
     }
   } else if (!member.blockedByAdmin) {
     DefaultDropdownMenu(showMenu) {
       if (member.memberSettings.showMessages) {
-        ItemAction(stringResource(MR.strings.block_member_button), painterResource(MR.images.ic_back_hand), color = MaterialTheme.colors.error, onClick = {
+        ItemAction(stringResource(MR.strings.block_member_button), painterResource(MR.images.ic_back_hand), color = MaterialTheme.colors.error, uiKey = Ui.GroupInfo.MemberMenu(member.groupMemberId, "block"), onClick = {
           blockMemberAlert(rhId, groupInfo, member)
           showMenu.value = false
         })
       } else {
-        ItemAction(stringResource(MR.strings.unblock_member_button), painterResource(MR.images.ic_do_not_touch), onClick = {
+        ItemAction(stringResource(MR.strings.unblock_member_button), painterResource(MR.images.ic_do_not_touch), uiKey = Ui.GroupInfo.MemberMenu(member.groupMemberId, "unblock"), onClick = {
           unblockMemberAlert(rhId, groupInfo, member)
           showMenu.value = false
         })
@@ -1237,7 +1249,8 @@ private fun GroupLinkButton(onClick: () -> Unit) {
     painterResource(MR.images.ic_link),
     stringResource(MR.strings.group_link),
     onClick,
-    iconColor = MaterialTheme.colors.secondary
+    iconColor = MaterialTheme.colors.secondary,
+    uiKey = Ui.GroupInfo.GroupLink
   )
 }
 
@@ -1341,7 +1354,8 @@ fun EditGroupProfileButton(titleId: StringResource = MR.strings.button_edit_grou
     painterResource(MR.images.ic_edit),
     stringResource(titleId),
     onClick,
-    iconColor = MaterialTheme.colors.secondary
+    iconColor = MaterialTheme.colors.secondary,
+    uiKey = Ui.GroupInfo.EditProfile
   )
 }
 
@@ -1356,7 +1370,8 @@ private fun AddOrEditWelcomeMessage(welcomeMessage: String?, onClick: () -> Unit
     painterResource(MR.images.ic_maps_ugc),
     text,
     onClick,
-    iconColor = MaterialTheme.colors.secondary
+    iconColor = MaterialTheme.colors.secondary,
+    uiKey = Ui.GroupInfo.WelcomeMessage
   )
 }
 
@@ -1367,7 +1382,8 @@ private fun LeaveGroupButton(titleId: StringResource, onClick: () -> Unit) {
     stringResource(titleId),
     onClick,
     iconColor = Color.Red,
-    textColor = Color.Red
+    textColor = Color.Red,
+    uiKey = Ui.GroupInfo.Leave
   )
 }
 
@@ -1378,19 +1394,21 @@ private fun DeleteGroupButton(titleId: StringResource, onClick: () -> Unit) {
     stringResource(titleId),
     onClick,
     iconColor = Color.Red,
-    textColor = Color.Red
+    textColor = Color.Red,
+    uiKey = Ui.GroupInfo.Delete
   )
 }
 
 @Composable
 fun MemberListSearchRowView(
-  searchText: MutableState<TextFieldValue> = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue()) }
+  searchText: MutableState<TextFieldValue> = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue()) },
+  uiKey: UiKey? = null
 ) {
   Box(Modifier.width(36.dp), contentAlignment = Alignment.Center) {
     Icon(painterResource(MR.images.ic_search), stringResource(MR.strings.search_verb), tint = MaterialTheme.colors.secondary)
   }
   Spacer(Modifier.width(14.dp))
-  SearchTextField(Modifier.fillMaxWidth(), searchText = searchText, alwaysVisible = true) {
+  SearchTextField(Modifier.fillMaxWidth().ui(uiKey), searchText = searchText, alwaysVisible = true) {
     searchText.value = searchText.value.copy(it)
   }
 }

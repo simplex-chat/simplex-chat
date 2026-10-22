@@ -146,8 +146,8 @@ fun NavigationButtonClose(onButtonClicked: (() -> Unit)?, tintColor: Color = if 
 }
 
 @Composable
-fun ShareButton(onButtonClicked: () -> Unit) {
-  IconButton(onButtonClicked) {
+fun ShareButton(uiKey: UiKey? = null, onButtonClicked: () -> Unit) {
+  IconButton(onButtonClicked, Modifier.ui(uiKey)) {
     Icon(
       painterResource(MR.images.ic_share), stringResource(MR.strings.share_verb), tint = MaterialTheme.colors.primary
     )

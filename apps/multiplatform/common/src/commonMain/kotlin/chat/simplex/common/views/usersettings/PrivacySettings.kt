@@ -1,6 +1,7 @@
 package chat.simplex.common.views.usersettings
 
 import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.ui
 import SectionBottomSpacer
 import SectionItemView
 import SectionDividerSpaced
@@ -68,18 +69,20 @@ fun PrivacySettingsView(
         painterResource(MR.images.ic_travel_explore),
         stringResource(MR.strings.send_link_previews),
         chatModel.controller.appPrefs.privacyLinkPreviews,
+        uiKey = Ui.Privacy.LinkPreviews,
         onChange = { _ -> chatModel.controller.appPrefs.privacyLinkPreviewsShowAlert.set(false) } // to avoid showing alert to current users, show alert in v6.5
       )
       SettingsPreferenceItem(
         painterResource(MR.images.ic_link),
         stringResource(MR.strings.sanitize_links_toggle),
-        chatModel.controller.appPrefs.privacySanitizeLinks
+        chatModel.controller.appPrefs.privacySanitizeLinks,
+        uiKey = Ui.Privacy.SanitizeLinks
       )
     }
     SectionDividerSpaced()
 
     SectionView(stringResource(MR.strings.settings_section_title_files)) {
-      SettingsPreferenceItem(painterResource(MR.images.ic_image), stringResource(MR.strings.auto_accept_images), chatModel.controller.appPrefs.privacyAcceptImages)
+      SettingsPreferenceItem(painterResource(MR.images.ic_image), stringResource(MR.strings.auto_accept_images), chatModel.controller.appPrefs.privacyAcceptImages, uiKey = Ui.Privacy.AcceptImages)
       BlurRadiusOptions(remember { appPrefs.privacyMediaBlurRadius.state }) {
         appPrefs.privacyMediaBlurRadius.set(it)
       }
@@ -137,6 +140,7 @@ fun MorePrivacyView(chatModel: ChatModel) {
         painterResource(MR.images.ic_edit_note),
         stringResource(MR.strings.privacy_message_draft),
         chatModel.controller.appPrefs.privacySaveLastDraft,
+        uiKey = Ui.Privacy.SaveDraft,
         onChange = { saveDraft ->
           if (!saveDraft) {
             chatModel.draft.value = null
@@ -158,7 +162,7 @@ fun MorePrivacyView(chatModel: ChatModel) {
     SectionDividerSpaced()
 
     SectionView(stringResource(MR.strings.settings_section_title_files)) {
-      SettingsPreferenceItem(painterResource(MR.images.ic_lock), stringResource(MR.strings.encrypt_local_files), chatModel.controller.appPrefs.privacyEncryptLocalFiles, onChange = { enable ->
+      SettingsPreferenceItem(painterResource(MR.images.ic_lock), stringResource(MR.strings.encrypt_local_files), chatModel.controller.appPrefs.privacyEncryptLocalFiles, uiKey = Ui.Privacy.EncryptLocalFiles, onChange = { enable ->
         withBGApi { chatModel.controller.apiSetEncryptLocalFiles(enable) }
       })
       SettingsPreferenceItem(painterResource(MR.images.ic_security), stringResource(MR.strings.protect_ip_address), chatModel.controller.appPrefs.privacyAskToApproveRelays)
@@ -331,6 +335,7 @@ private fun BlurRadiusOptions(state: State<Int>, onSelected: (Int) -> Unit) {
     values,
     state,
     icon = painterResource(MR.images.ic_blur_on),
+    uiKey = Ui.Privacy.BlurMedia,
     onSelected = onSelected
   )
 }
@@ -354,7 +359,8 @@ private fun AutoAcceptSection(
         checked = currentUser.autoAcceptMemberContacts,
         onCheckedChange = { enable ->
           setAutoAcceptMemberContacts(enable)
-        }
+        },
+        modifier = Modifier.ui(Ui.Privacy.AutoAcceptMemberContacts)
       )
     }
     SettingsActionItemWithContent(painterResource(MR.images.ic_group), stringResource(MR.strings.group_invitations)) {
@@ -362,7 +368,8 @@ private fun AutoAcceptSection(
         checked = currentUser.autoAcceptGroupInvitations,
         onCheckedChange = { enable ->
           setAutoAcceptGroupInvitations(enable)
-        }
+        },
+        modifier = Modifier.ui(Ui.Privacy.AutoAcceptGroupInvitations)
       )
     }
   }
@@ -391,7 +398,8 @@ private fun DeliveryReceiptsSection(
         checked = currentUser.sendRcptsContacts,
         onCheckedChange = { enable ->
           setOrAskSendReceiptsContacts(enable)
-        }
+        },
+        modifier = Modifier.ui(Ui.Privacy.ReceiptsContacts)
       )
     }
     SettingsActionItemWithContent(painterResource(MR.images.ic_group), stringResource(MR.strings.receipts_section_groups)) {
@@ -399,7 +407,8 @@ private fun DeliveryReceiptsSection(
         checked = currentUser.sendRcptsSmallGroups,
         onCheckedChange = { enable ->
           setOrAskSendReceiptsGroups(enable)
-        }
+        },
+        modifier = Modifier.ui(Ui.Privacy.ReceiptsGroups)
       )
     }
   }
@@ -688,7 +697,7 @@ fun SimplexLockView(
       if (performLA.value) {
         LockDelaySelector(remember { laLockDelay.state }) { laLockDelay.set(it) }
         if (showChangePasscode.value && laMode.value == LAMode.PASSCODE) {
-          SectionItemView({ changeLAPassword() }) {
+          SectionItemView({ changeLAPassword() }, uiKey = Ui.Lock.ChangePasscode) {
             Text(
               generalGetString(MR.strings.la_change_app_passcode),
               color = MaterialTheme.colors.primary
@@ -705,12 +714,13 @@ fun SimplexLockView(
             SelfDestructInfoView()
           }
         }
-        SettingsActionItemWithContent(null, null, click = openInfo) {
+        SettingsActionItemWithContent(null, null, click = openInfo, uiKey = Ui.Lock.SelfDestructInfo) {
           SharedPreferenceToggleWithIcon(
             stringResource(MR.strings.enable_self_destruct),
             painterResource(MR.images.ic_info),
             openInfo,
-            remember { selfDestructPref.state }.value
+            remember { selfDestructPref.state }.value,
+            uiKey = Ui.Lock.SelfDestruct
           ) {
             toggleSelfDestruct(selfDestructPref)
           }
@@ -723,7 +733,7 @@ fun SimplexLockView(
               fontSize = 16.sp,
               modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
             )
-            ProfileNameField(selfDestructDisplayName, "", { isValidDisplayName(it.trim()) })
+            ProfileNameField(selfDestructDisplayName, "", { isValidDisplayName(it.trim()) }, uiKey = Ui.Lock.SelfDestructName)
             LaunchedEffect(selfDestructDisplayName.value) {
               val new = selfDestructDisplayName.value
               if (isValidDisplayName(new) && selfDestructDisplayNamePref.get() != new) {
@@ -731,7 +741,7 @@ fun SimplexLockView(
               }
             }
           }
-          SectionItemView({ changeSelfDestructPassword() }) {
+          SectionItemView({ changeSelfDestructPassword() }, uiKey = Ui.Lock.ChangeSelfDestruct) {
             Text(
               stringResource(MR.strings.change_self_destruct_passcode),
               color = MaterialTheme.colors.primary
@@ -791,6 +801,7 @@ private fun EnableLock(performLA: State<Boolean>, onCheckedChange: (Boolean) -> 
       DefaultSwitch(
         checked = performLA.value,
         onCheckedChange = onCheckedChange,
+        modifier = Modifier.ui(Ui.Lock.Enable),
       )
     }
   }
@@ -819,6 +830,7 @@ private fun LockDelaySelector(state: State<Int>, onSelected: (Int) -> Unit) {
     state,
     icon = null,
     enabled = remember { mutableStateOf(true) },
+    uiKey = Ui.Lock.Delay,
     onSelected = onSelected
   )
 }

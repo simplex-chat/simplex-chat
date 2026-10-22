@@ -14,6 +14,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.ui
 import chat.simplex.res.*
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.views.helpers.*
@@ -97,14 +99,14 @@ private fun SetDeliveryReceiptsLayout(
 
 @Composable
 private fun EnableReceiptsButton(onClick: () -> Unit) {
-  TextButton(onClick) {
+  TextButton(onClick, Modifier.ui(Ui.DeliveryReceipts.Enable)) {
     Text(stringResource(MR.strings.enable_receipts_all), style = MaterialTheme.typography.h2, color = MaterialTheme.colors.primary)
   }
 }
 
 @Composable
 private fun SkipButton(onClick: () -> Unit) {
-  SimpleButtonIconEnded(stringResource(MR.strings.dont_enable_receipts), painterResource(MR.images.ic_chevron_right), click = onClick)
+  SimpleButtonIconEnded(stringResource(MR.strings.dont_enable_receipts), painterResource(MR.images.ic_chevron_right), uiKey = Ui.DeliveryReceipts.Skip, click = onClick)
   TextBelowButton(stringResource(MR.strings.you_can_enable_delivery_receipts_later))
 }
 

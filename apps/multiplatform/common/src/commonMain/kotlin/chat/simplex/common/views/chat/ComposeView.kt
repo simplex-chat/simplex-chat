@@ -33,6 +33,7 @@ import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.filesToDelete
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.badges.openBadgesView
 import chat.simplex.common.views.chat.group.hostFromRelayLink
@@ -1297,6 +1298,7 @@ fun ComposeView(
     val commandsEnabled = chat.chatInfo.sendMsgEnabled && chat.chatInfo.menuCommands.isNotEmpty()
     IconButton(
       onClick = { showCommandsMenu.value = !showCommandsMenu.value },
+      modifier = Modifier.ui(Ui.Chat.CommandsButton),
       enabled = commandsEnabled
     ) {
       Box(
@@ -1528,6 +1530,7 @@ fun ComposeView(
       },
       editPrevMessage = ::editPrevMessage,
       onFilesPasted = { composeState.onFilesAttached(it) },
+      uiKey = if (chatsCtx.secondaryContextFilter == null) Ui.Chat.Message else Ui.Chat.ScopeMessage,
       onMessageChange = ::onMessageChange,
       textStyle = textStyle,
       focusRequester = focusRequester,
@@ -1573,7 +1576,7 @@ fun ComposeView(
     icon: ImageResource,
     connect: () -> Unit
   ) {
-    var modifier = Modifier.height(57.dp).fillMaxWidth()
+    var modifier = Modifier.height(57.dp).fillMaxWidth().ui(Ui.Chat.Connect)
     modifier = if (composeState.value.inProgress) modifier else modifier.clickable(onClick = { connect() })
     Box(
       modifier,
@@ -1881,13 +1884,13 @@ private fun showLinkPreviewsConfirmAlert(socksEnabled: Boolean, onChoice: (Boole
         SectionItemView({
           AlertManager.shared.hideAlert()
           onChoice(false)
-        }) {
+        }, uiKey = Ui.Alert.Option(Ui.AlertSource.Shared, "disable")) {
           Text(stringResource(MR.strings.link_previews_alert_disable), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
         SectionItemView({
           AlertManager.shared.hideAlert()
           onChoice(true)
-        }) {
+        }, uiKey = Ui.Alert.Option(Ui.AlertSource.Shared, "enable")) {
           Text(stringResource(MR.strings.link_previews_alert_enable), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = if (socksEnabled) MaterialTheme.colors.primary else Color.Red)
         }
 //        SectionItemView({

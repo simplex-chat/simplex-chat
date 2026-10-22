@@ -194,6 +194,19 @@ class ChatListToolbarSearchTest : UiTest() {
     }
     click(Ui.Alert.Dismiss(Ui.AlertSource.PrivacySensitive))
     poll(what = "the search field cleared and editable") { editableText(Ui.ChatList.Search).isNullOrEmpty() && isEnabled(Ui.ChatList.Search) }
+    bob sends "/da"
+    bob expects "Your chat address is deleted - accepted contacts will remain connected."
+    bob expects "To create a new chat address use /ad"
+    enterLinkInSearch(address)
+    poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "the `Connection link removed` alert for the deleted address") {
+      seesText("Connection link removed") && seesText("Your contact removed this link", substring = true)
+    }
+    check(!exists(planConfirm)) { "the plan alert opened for a deleted address" }
+    click(Ui.Alert.Confirm(Ui.AlertSource.Shared))
+    poll(what = "the alert to close, the search cleared and editable, and no chat with bob") {
+      !seesText("Connection link removed") && editableText(Ui.ChatList.Search).isNullOrEmpty() && isEnabled(Ui.ChatList.Search) &&
+        chatModel.chats.value.none { it.chatInfo.chatViewName == "bob" }
+    }
   }
 
   @Test fun searchPasteKnownContactLinkFiltersToContact() = uiTest {

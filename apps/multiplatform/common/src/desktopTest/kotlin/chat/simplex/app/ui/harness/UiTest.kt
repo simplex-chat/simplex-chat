@@ -63,6 +63,7 @@ abstract class UiTest {
       }
       watchdog.cancel()
       Peers.stopAll()
+      SocksProxy.stop()
       if (passed) dir.deleteRecursively()
     }
   }
@@ -78,6 +79,13 @@ private const val LIST_PAGES = 20
 private const val REPLACE_CHECK_MS = 2_000L
 private const val SCROLL_PAGE = 0.6f
 private const val SCROLL_MARGIN_DP = 48f
+private const val CHAT_SCROLL_PAGE = 0.8f
+private const val DRAG_STEPS = 10
+private const val DRAG_INSET_PX = 4f
+private val CHAT_ITEM_TAG = "${chat.simplex.common.ui.Ui.Chat.Item(0).id}["
+private val chatItemNode = SemanticsMatcher("a chat item") {
+  it.config.getOrElseNullable(androidx.compose.ui.semantics.SemanticsProperties.TestTag) { null }?.startsWith(CHAT_ITEM_TAG) == true
+}
 
 class UiScope(val ui: SkikoComposeUiTest, private val dir: File) {
   val clipboard = TestClipboard()
@@ -90,15 +98,36 @@ class UiScope(val ui: SkikoComposeUiTest, private val dir: File) {
     return App(this)
   }
 
-  fun restart(): App {
+  fun restart(
+    ready: () -> Boolean = { chat.simplex.common.platform.chatModel.chatDbStatus.value != null && !chat.simplex.common.platform.chatModel.ctrlInitInProgress.value },
+    what: String = "the app to start again"
+  ): App {
     ui.setContent { }
     ui.waitForIdle()
     UiTestApp.restartCore(beforeInit = PrefStores::reloadFromDisk)
     ui.setContent { TestRoot(clipboard, uriHandler) { AppScreen() } }
-    poll(timeoutMs = 30_000, what = "the app to start again") {
-      chat.simplex.common.platform.chatModel.chatDbStatus.value != null && !chat.simplex.common.platform.chatModel.ctrlInitInProgress.value
-    }
+    poll(timeoutMs = 30_000, what = what) { ready() }
     return App(this)
+  }
+
+  fun exchangeDir(): File = File(dir, "exchange").apply { mkdirs() }
+
+  fun saveFileAs(file: File, action: () -> Unit) = answerDialog(chat.simplex.common.simplexWindowState.saveDialog, "the save file dialog", file, action)
+
+  fun openFile(file: File, action: () -> Unit) {
+    val single = chat.simplex.common.simplexWindowState.openDialog
+    val multiple = chat.simplex.common.simplexWindowState.openMultipleDialog
+    action()
+    poll(what = "the open file dialog") { single.isAwaiting || multiple.isAwaiting }
+    onEdt { if (single.isAwaiting) single.onResult(file) else multiple.onResult(listOf(file)) }
+    poll(what = "the open file dialog to close") { !single.isAwaiting && !multiple.isAwaiting }
+  }
+
+  private fun answerDialog(dialog: chat.simplex.common.DialogState<File?>, what: String, file: File, action: () -> Unit) {
+    action()
+    poll(what = what) { dialog.isAwaiting }
+    onEdt { dialog.onResult(file) }
+    poll(what = "$what to close") { !dialog.isAwaiting }
   }
 
   fun textOf(key: UiKey): String? {
@@ -127,6 +156,8 @@ class UiScope(val ui: SkikoComposeUiTest, private val dir: File) {
   }
 
   fun clipboardText(): String? = clipboard.content?.text
+
+  fun setClipboardText(text: String?) { clipboard.content = text?.let { androidx.compose.ui.text.AnnotatedString(it) } }
 
   fun matcher(key: UiKey): SemanticsMatcher =
     if (key.id == DESCRIBED) hasContentDescription(key.arg as String) and hasClickAction() else hasTestTag(key.tag)
@@ -162,6 +193,31 @@ class UiScope(val ui: SkikoComposeUiTest, private val dir: File) {
 
 
 
+  fun scrollChatTowardOlder(pages: Int = 1): Boolean = scrollChat(pages, towardOlder = true)
+
+  fun scrollChatTowardNewer(pages: Int = 1): Boolean = scrollChat(pages, towardOlder = false)
+
+  private fun scrollChat(pages: Int, towardOlder: Boolean): Boolean {
+    val list = ui.onNode(SemanticsMatcher.keyIsDefined(SemanticsActions.ScrollToIndex) and SemanticsMatcher.keyIsDefined(SemanticsActions.ScrollBy) and hasAnyDescendant(chatItemNode))
+    repeat(pages) {
+      val items = ui.onAllNodes(chatItemNode).fetchSemanticsNodes()
+      val tracked = (if (towardOlder) items.minByOrNull { it.boundsInRoot.top } else items.maxByOrNull { it.boundsInRoot.bottom })
+        ?: throw AssertionError("no chat items in view to scroll the chat")
+      val tag = tracked.config[androidx.compose.ui.semantics.SemanticsProperties.TestTag]
+      val before = tracked.boundsInRoot
+      val node = list.fetchSemanticsNode()
+      val dy = node.boundsInRoot.height * CHAT_SCROLL_PAGE
+      ui.runOnUiThread { node.config[SemanticsActions.ScrollBy].action?.invoke(0f, if (towardOlder) dy else -dy) }
+      repeat(SCROLL_ANIMATION_FRAMES) { ui.mainClock.advanceTimeBy(16, ignoreFrameDuration = true); ui.waitForIdle() }
+      val after = ui.onAllNodes(hasTestTag(tag)).fetchSemanticsNodes().firstOrNull()?.boundsInRoot
+      if (after == before) return false
+      if (after == null || (if (towardOlder) after.top <= before.top else after.bottom >= before.bottom)) {
+        throw AssertionError("scrolling the chat toward ${if (towardOlder) "older" else "newer"} messages moved $tag the other way: $before -> $after")
+      }
+    }
+    return true
+  }
+
   fun waitStable(key: UiKey) {
     var last: androidx.compose.ui.geometry.Rect? = null
     var count = 0
@@ -183,17 +239,19 @@ class UiScope(val ui: SkikoComposeUiTest, private val dir: File) {
       val rootBottom = generateSequence(node) { it.parent }.last().boundsInRoot.bottom
       val b = node.boundsInRoot
       val placed = b.width > 0f && b.height > 0f
-      if (placed && b.top >= 0f && b.bottom <= rootBottom) return
+      val margin = node.layoutInfo.density.density * SCROLL_MARGIN_DP
+      if (placed && b.top >= 0f && b.bottom <= rootBottom - margin) return
       val scroller = generateSequence(node.parent) { it.parent }
         .firstOrNull { it.config.contains(androidx.compose.ui.semantics.SemanticsActions.ScrollBy) } ?: return
-      val margin = node.layoutInfo.density.density * SCROLL_MARGIN_DP
       val dy = when {
+        !placed && node.positionInRoot.y < 0f -> node.positionInRoot.y - margin
         !placed -> rootBottom * SCROLL_PAGE
-        b.bottom > rootBottom -> b.bottom - rootBottom + margin
+        b.bottom > rootBottom - margin -> b.bottom - rootBottom + margin
         else -> b.top - margin
       }
       ui.runOnUiThread { scroller.config[androidx.compose.ui.semantics.SemanticsActions.ScrollBy].action?.invoke(0f, dy) }
       repeat(SCROLL_ANIMATION_FRAMES) { ui.mainClock.advanceTimeBy(16, ignoreFrameDuration = true); ui.waitForIdle() }
+      if (placed && ui.onAllNodes(matcher(key)).fetchSemanticsNodes().firstOrNull()?.boundsInRoot == b) return
     }
   }
 
@@ -270,6 +328,26 @@ class UiScope(val ui: SkikoComposeUiTest, private val dir: File) {
     ui.waitForIdle()
   }
 
+  fun drag(from: UiKey, to: UiKey) {
+    waitFor(from)
+    waitFor(to)
+    waitStable(from)
+    waitStable(to)
+    waitPopupsClosedUnlessInside(from)
+    val start = ui.onNode(matcher(from)).fetchSemanticsNode().boundsInRoot.let { androidx.compose.ui.geometry.Offset(it.left + DRAG_INSET_PX, it.top + DRAG_INSET_PX) }
+    val end = ui.onNode(matcher(to)).fetchSemanticsNode().boundsInRoot.let { androidx.compose.ui.geometry.Offset(it.right - DRAG_INSET_PX, it.bottom - DRAG_INSET_PX) }
+    val root = ui.onRoot()
+    ui.runOnUiThread { root.performMouseInput { moveTo(start); press() } }
+    repeat(FOCUS_SETTLE_FRAMES) { ui.mainClock.advanceTimeBy(16, ignoreFrameDuration = true); ui.waitForIdle() }
+    for (step in 1..DRAG_STEPS) {
+      val point = start + (end - start) * (step.toFloat() / DRAG_STEPS)
+      ui.runOnUiThread { root.performMouseInput { moveTo(point) } }
+      repeat(FOCUS_SETTLE_FRAMES) { ui.mainClock.advanceTimeBy(16, ignoreFrameDuration = true); ui.waitForIdle() }
+    }
+    ui.runOnUiThread { root.performMouseInput { release() } }
+    repeat(FOCUS_SETTLE_FRAMES) { ui.mainClock.advanceTimeBy(16, ignoreFrameDuration = true); ui.waitForIdle() }
+  }
+
   fun textsOf(key: UiKey): List<String> {
     waitFor(key)
     val textKey = androidx.compose.ui.semantics.SemanticsProperties.Text
@@ -301,14 +379,17 @@ class UiScope(val ui: SkikoComposeUiTest, private val dir: File) {
     ui.onAllNodes((matcher(key) or hasAnyAncestor(matcher(key))) and SemanticsMatcher.keyIsDefined(androidx.compose.ui.semantics.SemanticsProperties.EditableText), useUnmergedTree = true)
       .fetchSemanticsNodes().firstOrNull()?.config?.get(androidx.compose.ui.semantics.SemanticsProperties.EditableText)?.text
 
+  fun hintOf(key: UiKey): String? = if (editableText(key).isNullOrEmpty()) textsOf(key).firstOrNull() else null
+
   fun cli(name: String, flags: PeerFlags = PeerFlags()): CliPeer =
-    CliPeer(name, File(dir, "peers/$name"), TestServers.smp1, flags) { t, what, cond -> poll(t, what, cond = cond) }
+    CliPeer(name, File(dir, "peers/$name"), flags) { t, what, cond -> poll(t, what, cond = cond) }
       .also { Peers.add(it); it.start() }
 
   fun poll(timeoutMs: Long = 10_000, what: String, screenshot: Boolean = true, cond: () -> Boolean) {
     val deadline = System.currentTimeMillis() + timeoutMs
     var busyAtDeadline: Set<Long>? = null
     var lastError: Throwable? = null
+    var workEnded = false
     while (true) {
       ui.mainClock.advanceTimeBy(16, ignoreFrameDuration = true)
       ui.waitForIdle()
@@ -318,10 +399,11 @@ class UiScope(val ui: SkikoComposeUiTest, private val dir: File) {
       if (now > deadline) {
         val busy = busyAtDeadline ?: UiIdle.inFlight().map { it.id }.toSet().also { busyAtDeadline = it }
         val stillBusy = UiIdle.inFlight().any { it.id in busy }
-        if (!stillBusy || now > deadline + EXTENSION_MS) {
+        if ((!stillBusy && workEnded) || now > deadline + EXTENSION_MS) {
           val shot = if (screenshot) failureShot(what) else null
           throw AssertionError("timed out after $timeoutMs ms waiting for $what; ${lastError?.let { "last condition error: $it; " } ?: ""}in flight: ${UiIdle.inFlight().joinToString { it.what }}; screenshot: $shot; visible texts: ${texts().take(60)}")
         }
+        workEnded = !stillBusy
       }
       Thread.sleep(16)
     }

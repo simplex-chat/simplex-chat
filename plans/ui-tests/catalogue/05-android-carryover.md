@@ -204,7 +204,7 @@ Rules used by many rows; the tables name every row they apply to, as `R<n>` plus
 | 02:138 | `edit_metaShowsEditedIcon` | ADAPT | R2: as above | `A/platform/PlatformTextField.android.kt:60-63` |
 | 02:139 | `edit_upArrow_editsLastMessage` | DESKTOP-ONLY | R2: no Up-arrow handling | `D/platform/PlatformTextField.desktop.kt:138-140` |
 | 02:142 | `edit_ownImage_previewWithoutCancel` | ADAPT | R3: the image comes from the gallery stub; R2: the edit is sent with the send button | `A/views/chat/ComposeView.android.kt:40,58-65` |
-| 02:142 | `edit_ownFile_previewWithoutCancel` | ADAPT | R3: the file comes from the "File" stub; R2: as above | `A/views/chat/ComposeView.android.kt:44,74-77` |
+| 02:142 | `edit_ownFile_keepsFileWithoutPreview` | ADAPT | R3: the file comes from the "File" stub; R2: as above | `A/views/chat/ComposeView.android.kt:44,74-77` |
 | 02:143 | `edit_notOffered_forReceivedVoiceForwarded` | ADAPT | R10 (`REC`) for alice's recorded voice message | `A/platform/RecAndPlay.android.kt:17-98` |
 | 02:167 | `forwarded_goToSource_opensOriginalChat` | ADAPT | No hover: the arrow button is always composed (faded until activated) and is tapped directly; tapping the forwarded bubble toggles it to full visibility | `C/views/chat/item/ChatItemView.kt:243-302,330-332` |
 | 02:178 | `reaction_chipMenu_direct_showsNames` | ADAPT | R1 (long-press the chip) | `C/views/chat/item/ChatItemView.kt:200-207` |

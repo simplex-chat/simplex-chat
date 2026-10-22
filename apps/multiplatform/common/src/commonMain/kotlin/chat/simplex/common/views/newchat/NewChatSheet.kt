@@ -30,6 +30,7 @@ import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.Ui
 import chat.simplex.common.ui.UiKey
+import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.CIFileViewScope
 import chat.simplex.common.views.chat.topPaddingToContent
@@ -190,11 +191,11 @@ private fun ModalData.NewChatSheetLayout(
     NewChatAction(
       painterResource(MR.images.ic_qr_code),
       if (appPlatform.isAndroid) stringResource(MR.strings.scan_paste_link) else stringResource(MR.strings.paste_link),
-      null,
+      Ui.NewChat.PasteLink,
       scanPaste,
     ),
     NewChatAction(painterResource(MR.images.ic_group), stringResource(MR.strings.create_group_button), Ui.NewChat.CreateGroup, createGroup),
-    NewChatAction(painterResource(MR.images.ic_bigtop_updates), stringResource(MR.strings.create_channel_button), null, createChannel),
+    NewChatAction(painterResource(MR.images.ic_bigtop_updates), stringResource(MR.strings.create_channel_button), Ui.NewChat.CreateChannel, createChannel),
   )
 
   @Composable
@@ -234,7 +235,8 @@ private fun ModalData.NewChatSheetLayout(
                   })
                 }
               }
-            }
+            },
+            uiKey = Ui.NewChat.Archived
           ) {
             Icon(
               painterResource(MR.images.ic_inventory_2),
@@ -487,7 +489,7 @@ private fun ContactsSearchBar(
       tint = MaterialTheme.colors.secondary
     )
     SearchTextField(
-      Modifier.weight(1f).onFocusChanged { focused = it.hasFocus }.focusRequester(focusRequester),
+      Modifier.ui(Ui.NewChat.Search).weight(1f).onFocusChanged { focused = it.hasFocus }.focusRequester(focusRequester),
       placeholder = stringResource(MR.strings.search_or_paste_simplex_link),
       alwaysVisible = true,
       searchText = searchText,
@@ -572,7 +574,7 @@ private fun ContactsSearchBar(
 @Composable
 private fun ToggleFilterButton() {
   val pref = remember { appPrefs.showUnreadAndFavorites }
-  IconButton(onClick = { pref.set(!pref.get()) }) {
+  IconButton(onClick = { pref.set(!pref.get()) }, modifier = Modifier.ui(Ui.NewChat.Favorites)) {
     val sp16 = with(LocalDensity.current) { 16.sp.toDp() }
     Icon(
       painterResource(MR.images.ic_filter_list),
