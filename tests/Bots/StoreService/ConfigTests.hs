@@ -434,6 +434,7 @@ namesConfigTests = describe "StoreService names: config" $ do
   it "names a [names] or [chain] setting nothing reads, and still boots" testNamesUnknownKeys
   it "accepts [issuer] dev_keys on chain 31337 only, with [names] on" testDevKeysLocalChain
   it "refuses a malformed dev_keys entry or an index named twice, quoting no secret" testDevKeysMalformed
+  it "refuses [issuer] dev_keys beside [btcpay] or [stripe]" testDevKeysNoPayments
 
 rpcUrl :: T.Text
 rpcUrl = "https://eth.example.org/v2/rpc-token-value"
@@ -621,6 +622,10 @@ testNamesUnknownKeys = do
   NamesConfig {nYears} <- parsedNames (namesSection <> ["yeers = 3"]) (chainSection <> ["rpc = x"])
   nYears `shouldBe` 2
 
+-- | Names on the local chain with no payment provider, as a run with dev keys has.
+localNamesIni :: [T.Text] -> T.Text
+localNamesIni cs = T.unlines (["[listener]", "static_dir = /srv/badges"] <> namesSection <> cs)
+
 devKeysIssuer :: T.Text -> [T.Text]
 devKeysIssuer keys = ["[issuer]", "index = 1", "private_key = " <> issuerSecret, "dev_keys = " <> keys]
 
@@ -630,14 +635,14 @@ withChainId v = map (\l -> if "chain_id =" `T.isPrefixOf` l then "chain_id = " <
 testDevKeysLocalChain :: IO ()
 testDevKeysLocalChain = do
   Right sk <- pure (strDecode (B.pack (T.unpack issuerSecret)))
-  Right local <- parseIni (namesIni namesSection chainSection <> T.unlines (devKeysIssuer ("9:" <> issuerSecret <> ", 12:" <> issuerSecret)))
+  Right local <- parseIni (localNamesIni chainSection <> T.unlines (devKeysIssuer ("9:" <> issuerSecret <> ", 12:" <> issuerSecret)))
   devIssuerKeys local `shouldBe` [BadgeIssuerKey {keyIdx = 9, secretKey = sk}, BadgeIssuerKey {keyIdx = 12, secretKey = sk}]
   Right without <- parseIni (namesIni namesSection chainSection)
   devIssuerKeys without `shouldBe` []
   let refused = "issuer.dev_keys is accepted only with [names] on the local chain, [chain] chain_id = 31337" :: String
   forM_ ["1", "11155111", "31338"] $ \chainId ->
-    parseIni (namesIni namesSection (withChainId chainId) <> T.unlines (devKeysIssuer ("9:" <> issuerSecret))) `shouldReturn` Left refused
-  parseIni (fullIni <> T.unlines (devKeysIssuer ("9:" <> issuerSecret))) `shouldReturn` Left refused
+    parseIni (localNamesIni (withChainId chainId) <> T.unlines (devKeysIssuer ("9:" <> issuerSecret))) `shouldReturn` Left refused
+  parseIni (T.unlines ["[listener]", "static_dir = /srv/badges"] <> T.unlines (devKeysIssuer ("9:" <> issuerSecret))) `shouldReturn` Left refused
 
 testDevKeysMalformed :: IO ()
 testDevKeysMalformed = do
@@ -651,5 +656,15 @@ testDevKeysMalformed = do
   where
     refusal :: T.Text -> IO String
     refusal keys =
-      parseIni (namesIni namesSection chainSection <> T.unlines (devKeysIssuer keys))
+      parseIni (localNamesIni chainSection <> T.unlines (devKeysIssuer keys))
         >>= either pure (\_ -> "" <$ expectationFailure (T.unpack keys <> " must not boot"))
+
+testDevKeysNoPayments :: IO ()
+testDevKeysNoPayments = do
+  let devKeys = T.unlines (devKeysIssuer ("9:" <> issuerSecret))
+      btcpay = ["[btcpay]", "host = https://btcpay.example.org", "api_key = token-value", "store_id = store-value", "webhook_secret = secret-value"]
+      stripe = ["[stripe]", "secret_key = rk_test_x", "publishable_key = pk_test_x", "webhook_secret = whsec_x"]
+      refused = "issuer.dev_keys is refused with [btcpay] or [stripe], since a run with dev keys takes no payments" :: String
+  forM_ [btcpay, stripe, btcpay <> stripe] $ \provider ->
+    parseIni (localNamesIni (chainSection <> provider) <> devKeys) `shouldReturn` Left refused
+  parseIni (localNamesIni (chainSection <> btcpay)) >>= (`shouldSatisfy` either (const False) (const True))

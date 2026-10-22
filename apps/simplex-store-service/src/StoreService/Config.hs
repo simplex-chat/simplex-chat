@@ -285,6 +285,8 @@ parseConfig ini = do
   devKeys <- devKeysSetting
   unless (null devKeys || maybe False onLocalChain nms) $
     Left ("issuer.dev_keys is accepted only with [names] on the local chain, [chain] chain_id = " <> show localChainId)
+  unless (null devKeys || (isNothing btc && isNothing str)) $
+    Left "issuer.dev_keys is refused with [btcpay] or [stripe], since a run with dev keys takes no payments"
   pWaitingSeconds <- cadence "waiting_seconds" 3
   pIdleSeconds <- cadence "idle_seconds" 60
   pure

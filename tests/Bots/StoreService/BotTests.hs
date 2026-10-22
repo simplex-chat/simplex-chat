@@ -13,7 +13,7 @@ module Bots.StoreService.BotTests where
 import StoreService.Codes (issueOneCode)
 import StoreService.Config (BadgeIssuerKey (..), ServiceConfig, readServiceConfig)
 import StoreService.Group (GroupEvent)
-import Bots.StoreService.ConfigTests (chainSection, namesIni, namesSection, withIni, withIssuer)
+import Bots.StoreService.ConfigTests (chainSection, localNamesIni, withIni, withIssuer)
 import StoreService.Options
 import StoreService.Service
 import StoreService.Store (IssuedCode (..), getBadgeCode)
@@ -1503,20 +1503,24 @@ testDevKeysTrusted ps = do
   let cfg = testCfg {badgePublicKeys = M.singleton testIssuerKeyIdx pk}
       devIdx = testIssuerKeyIdx + 8
       fromIni = (mkStoreServiceOpts ps sk) {issuerKey = Right Nothing}
-  Right withDev <- devIni devIdx devSk devIdx devSk
+  Right withDev <- devKeysIni chainSection devIdx devSk [(devIdx, devSk)]
   checkIssuerKey fromIni (Just withDev) cfg >>= (`shouldSatisfy` isLeft)
   Right trusted <- trustDevKeys (Just withDev) cfg
   checkIssuerKey fromIni (Just withDev) trusted `shouldReturn` Right (BadgeIssuerKey devIdx devSk)
   M.keys (badgePublicKeys trusted) `shouldBe` [testIssuerKeyIdx, devIdx]
   trustedIndexes cfg Nothing `shouldReturn` Right [testIssuerKeyIdx]
-  Right atClientIndex <- devIni testIssuerKeyIdx sk testIssuerKeyIdx devSk
+  Right atClientIndex <- devKeysIni chainSection testIssuerKeyIdx sk [(testIssuerKeyIdx, devSk)]
   trustedIndexes cfg (Just atClientIndex) `shouldReturn` Left ("issuer.dev_keys index " <> show testIssuerKeyIdx <> " is the index of a key clients trust")
   where
     trustedIndexes :: ChatConfig -> Maybe ServiceConfig -> IO (Either String [Int])
     trustedIndexes cfg sc = fmap (M.keys . badgePublicKeys) <$> trustDevKeys sc cfg
-    devIni :: Int -> BBSSecretKey -> Int -> BBSSecretKey -> IO (Either String ServiceConfig)
-    devIni idx k devIdx devK =
-      withIni (namesIni namesSection chainSection <> T.unlines ["[issuer]", "index = " <> tshow idx, "private_key = " <> keyText k, "dev_keys = " <> tshow devIdx <> ":" <> keyText devK]) readServiceConfig
+
+devKeysIni :: [T.Text] -> Int -> BBSSecretKey -> [(Int, BBSSecretKey)] -> IO (Either String ServiceConfig)
+devKeysIni chain idx k devKeys =
+  withIni (localNamesIni chain <> T.unlines ["[issuer]", "index = " <> tshow idx, "private_key = " <> keyText k, "dev_keys = " <> T.intercalate ", " (map devKey devKeys)]) readServiceConfig
+  where
+    devKey :: (Int, BBSSecretKey) -> T.Text
+    devKey (i, dk) = tshow i <> ":" <> keyText dk
     keyText :: BBSSecretKey -> T.Text
     keyText = safeDecodeUtf8 . strEncode
 
