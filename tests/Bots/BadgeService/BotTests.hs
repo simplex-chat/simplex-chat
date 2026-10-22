@@ -289,8 +289,7 @@ badgeServiceTests = do
     it "should allow the purchase path at most the maximum of Play reads in a minute, counted from its first read" testPlayReadsBounded
     it "should answer a Play subscription rate_limited without asking Play once the minute's reads are used, and not hold it off" testPlayPurchaseReadsLimited
     it "should refuse an App Store Sandbox subscription as a test purchase without asking Apple" testAppleSandboxSubscriptionNotAsked
-    it "should answer an App Store subscription provider_not_configured without an API key, and credit a one-time purchase" testAppleSubscriptionWithoutApiKey
-    it "should answer an App Store subscription provider_not_configured every time when only Play's subscriptions are checked" testAppleSubscriptionWithPlayChecker
+    it "should answer an App Store subscription provider_not_configured every time without an API key, and credit a one-time purchase" testAppleSubscriptionWithoutApiKey
     it "should acknowledge a Play subscription as a subscription before crediting it, and credit nothing when acknowledging fails" testPlaySubscriptionAcknowledgedBeforeCrediting
     it "should credit a Play subscription Play reports, beside a one-time purchase, and answer provider_not_configured without [google]" testPlaySubscriptionThroughPlay
     it "should have the dev mock credit and renew the plan a subscription names, end one it does not know, and still vouch for a one-time purchase" testMockSubscriptions
@@ -4661,18 +4660,7 @@ testAppleSandboxSubscriptionNotAsked ps = do
       nothingPurchased cc
 
 testAppleSubscriptionWithoutApiKey :: HasCallStack => TestParams -> IO ()
-testAppleSubscriptionWithoutApiKey = appleSubscriptionNotConfigured id
-
--- | [google] beside an [apple] with no API key: configureStoreVerifier builds a checker that answers App Store refs not configured.
-testAppleSubscriptionWithPlayChecker :: HasCallStack => TestParams -> IO ()
-testAppleSubscriptionWithPlayChecker = appleSubscriptionNotConfigured $ \v -> v {checkSubscription = Just playOnly}
-  where
-    playOnly ref _ = case ref of
-      SubscriptionApple _ -> pure $ Left SRNotConfigured
-      SubscriptionGoogle _ -> pure $ Left $ SRUnreachable "no Play in this test"
-
-appleSubscriptionNotConfigured :: HasCallStack => (StoreVerifier -> StoreVerifier) -> TestParams -> IO ()
-appleSubscriptionNotConfigured withChecker ps = do
+testAppleSubscriptionWithoutApiKey ps = do
   chain <- trustedChain
   createDirectoryIfMissing True "tests/tmp"
   withTempDirectory "tests/tmp" "apple-no-api-key" $ \d -> do
@@ -4681,7 +4669,7 @@ appleSubscriptionNotConfigured withChecker ps = do
     Right cfg <- readServiceConfig (d </> "badge_service.ini")
     let apple = AppleStoreConfig {aBundleId = ourBundleId, aRootCertificates = (d </> "root.cer") :| [], aServerApi = Nothing}
     ServiceState {storeVerifier} <- newServiceState >>= configureStoreVerifier (Just cfg {appleStore = Just apple})
-    withBadgeServiceVerifier ps (const $ withChecker storeVerifier) $ \env@BadgeServiceEnv {bsController = cc} -> do
+    withBadgeServiceVerifier ps (const storeVerifier) $ \env@BadgeServiceEnv {bsController = cc} -> do
       (purchaseKey, masterKey) <- newPurchaseKeys
       subscription <- signedBy chain $ subscriptionPayload [] []
       let presentSubscription = refusalOf <$> serviceCmd env purchaseKey (purchaseCmd masterKey SPApple {jws = subscription})
