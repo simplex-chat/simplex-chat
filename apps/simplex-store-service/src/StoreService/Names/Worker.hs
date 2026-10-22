@@ -418,21 +418,25 @@ requeue oe@OrdersEnv {oeStore, oeTurns} now r@NameRegistration {nrId, nrLength} 
         -- a failed order is already live, so only a changed version refuses the write
         Right (Left _) -> RTChanged
 
--- | The stored reveal while its intent can still register: the sponsor nonce unmoved, and the commitment live with revealMargin
--- left in a window the intent's deadline covers. A new commit or another's re-commit opens a window the old deadline cannot serve.
+-- | The stored reveal while its intent can still register: accepted by the worker's check before sending, the sponsor nonce unmoved,
+-- and the commitment live with revealMargin left in a window the intent's deadline covers. A new commit or another's re-commit
+-- opens a window the old deadline cannot serve.
 servingReveal :: OrdersEnv -> UTCTime -> NameRegistration -> IO (Either ChainError (Maybe NameReveal))
-servingReveal OrdersEnv {oeConfig, oeContracts} now NameRegistration {nrOwner, nrCommitment, nrReveal} = case nrReveal of
+servingReveal OrdersEnv {oeConfig = cfg@NamesConfig {nChain = ChainConfig {cChainId, cSponsor}}, oeContracts} now r@NameRegistration {nrOwner, nrCommitment, nrReveal} = case nrReveal of
   Nothing -> pure $ Right Nothing
-  Just rv@NameReveal {rvNonce, rvDeadline} -> runExceptT $ do
-    nonce <- ExceptT $ sponsorNonce oeContracts nrOwner
-    if nonce /= rvNonce
-      then pure Nothing
-      else do
-        ages <- ExceptT $ commitmentAges oeContracts
-        committedAt <- ExceptT $ commitmentTime oeContracts nrCommitment
-        pure $ case commitmentLapse ages <$> committedAt of
-          Just lapse | reusable oeConfig now lapse && lapse <= toInteger rvDeadline -> Just rv
-          _ -> Nothing
+  Just rv@NameReveal {rvNonce, rvDeadline} ->
+    verifyRegisterIntent (sponsorDomain cChainId cSponsor) (fromInteger $ unixSeconds now) (intentOf cfg r rv) >>= \case
+      Left _ -> pure $ Right Nothing
+      Right () -> runExceptT $ do
+        nonce <- ExceptT $ sponsorNonce oeContracts nrOwner
+        if nonce /= rvNonce
+          then pure Nothing
+          else do
+            ages <- ExceptT $ commitmentAges oeContracts
+            committedAt <- ExceptT $ commitmentTime oeContracts nrCommitment
+            pure $ case commitmentLapse ages <$> committedAt of
+              Just lapse | reusable cfg now lapse && lapse <= toInteger rvDeadline -> Just rv
+              _ -> Nothing
 
 -- | Each code order failed for failedCodeHold gives its code back, in its name's and its code's turns, unless it was requeued meanwhile.
 sweepFailedCodes :: Worker -> IO ()

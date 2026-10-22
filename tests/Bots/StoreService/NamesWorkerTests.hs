@@ -100,6 +100,7 @@ namesWorkerTests = describe "StoreService names: worker" $ do
     it "requeues clearing failed_at, error and the register's hashes, waking a held poll" testRetryRequeue
     it "keeps the intent while our commitment is live with revealMargin left, going straight to committed" testRetryLiveCommitment
     it "clears the label and intent when the sponsor nonce moved, our live commit keeping its hashes" testRetryNonceMoved
+    it "clears the label and an intent the worker would refuse, while our commitment is live with revealMargin left" testRetryRefusedIntent
     it "clears the intent of a third party's live re-commit, and the worker the commit's hashes" testRetryThirdParty
     it "clears the intent with less than revealMargin left, committing again a second after revealBefore" testRetryMargin
     it "requeues a lapsed committed order, which reads failed, answering an old version at once after it" testRetryLapsed
@@ -908,6 +909,18 @@ testRetryNonceMoved = withWorker $ \w@W {wCtx = ctx} -> do
   x <- stored ctx f
   (nrPhase x, nrReveal x, nrCommitTx x, nrCommitBlock x, nrRevealBefore x) `shouldBe` (PCommitted, Nothing, nrCommitTx f, nrCommitBlock f, Just (t + maxAge))
   field "commitTx" <$> viewOf ctx f `shouldReturn` txJSON (nrCommitTx f)
+
+testRetryRefusedIntent :: IO ()
+testRetryRefusedIntent = withWorker $ \w@W {wCtx = ctx} -> do
+  (r, _) <- paidIn ctx aliceOrder id >>= committedByUs w
+  f <- failedAfterRegister w r
+  -- not signed by the owner, as the worker's check reads an intent after a change of the [chain] settings
+  rv <- signedReveal ctx keyB reveal {rvDeadline = fromJust $ nrRevealBefore r} r
+  f' <- rewrite ctx f $ \o -> o {nrReveal = Just rv}
+  answerNonce w $ rvNonce reveal
+  v <- retried ctx f'
+  (field "phase" v, field "label" v) `shouldBe` (Just "queued", Just J.Null)
+  nrReveal <$> stored ctx f' `shouldReturn` Nothing
 
 testRetryThirdParty :: IO ()
 testRetryThirdParty = withWorker $ \w@W {wCtx = ctx} -> do
