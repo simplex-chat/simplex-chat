@@ -275,6 +275,16 @@ service_account_file = /etc/simplex-badge-service/play-service-account.json
 Which answers are terminal for a purchase and which leave it to be presented again is listed per
 store in [`docs/protocol/badges-rpc.md`](../../docs/protocol/badges-rpc.md#commands).
 
+The root certificates, the App Store Server API key and the Play service account key are read only
+at startup, so rotating any of them takes a restart. Until then the old key keeps being used, and
+each request the store refuses it for is answered `internal` and logged as an error.
+
+Do not roll back the `20261012_badge_subscriptions` migration on a database that holds store
+subscriptions. Its down migration drops their columns without refusing: every subscription becomes
+a prepaid purchase that is never renewed, every Play purchase token is lost, and every ledger with a
+charge, transfer or tier-change row can no longer be read, so its purchase answers `internal`.
+Upgrading again restores none of it. Take a backup first if a rollback is unavoidable.
+
 ### Accepting store receipts unverified, for local testing
 
 ```ini
