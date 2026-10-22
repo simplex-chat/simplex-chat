@@ -29,6 +29,7 @@ import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import Data.Word (Word64)
 import Network.HTTP.Client (defaultManagerSettings, newManager)
 import Network.HTTP.Types (hContentType)
+import Network.Wai (Application)
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Chat.PaymentService.Types (CryptoCurrency (..), CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
@@ -94,6 +95,7 @@ withSpendHook action = do
           ["api", "registration", rid, "spend"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = spendHandler cOrders (weConfig cWeb) (weProviders cWeb) (weWaiters cWeb) rid}
           ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler cOrders holdMicros rid}
           _ -> Nothing
+        app :: Application
         app req respond = fromMaybe (webApp cWeb req respond) (namesApp (weHttp cWeb) routes req respond)
     mgr <- newManager defaultManagerSettings
     Warp.testWithApplication (pure app) $ \port -> action hook ctx {cClient = (mgr, "http://127.0.0.1:" <> show port)}
