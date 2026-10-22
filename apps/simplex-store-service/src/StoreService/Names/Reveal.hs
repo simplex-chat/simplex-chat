@@ -38,7 +38,7 @@ import StoreService.Names.Abi (bytes32FromHex)
 import StoreService.Names.Contracts (Contracts, sponsorNonce)
 import StoreService.Names.Label (validLabel)
 import StoreService.Names.Links (LinkKind (..), linkKindOf)
-import StoreService.Names.Orders (integerField)
+import StoreService.Names.Orders (integerField, textField)
 import StoreService.Names.Registration (RegisterIntent (..), Registration (..), makeCommitment, sponsorDomain, verifyRegisterIntent)
 import StoreService.Names.Signatures (parseSignature)
 import StoreService.Names.Store (NameRegistration (..), NameReveal (..))
@@ -60,14 +60,14 @@ data RevealFields = RevealFields
 -- | The signature's format and low s, and the label as text.
 parseSignedLabel :: J.Object -> Maybe SignedLabel
 parseSignedLabel o = do
-  slSignature <- either (const Nothing) Just . parseSignature =<< textField "signature" o
-  slLabel <- textField "label" o
+  slSignature <- either (const Nothing) Just . parseSignature =<< textField o "signature"
+  slLabel <- textField o "label"
   pure SignedLabel {slLabel, slSignature}
 
 -- | The links of each key as sent, however many; at most one per key is a check of its own.
 parseRevealFields :: J.Object -> Maybe RevealFields
 parseRevealFields o = do
-  rfSecret <- bytes32FromHex =<< textField "secret" o
+  rfSecret <- bytes32FromHex =<< textField o "secret"
   rfNonce <- integerField =<< KM.lookup "nonce" o
   rfDeadline <- integerField =<< KM.lookup "deadline" o
   records <- case KM.lookup "records" o of
@@ -83,11 +83,6 @@ parseRevealFields o = do
     text = \case
       J.String t -> Just t
       _ -> Nothing
-
-textField :: J.Key -> J.Object -> Maybe Text
-textField k o = case KM.lookup k o of
-  Just (J.String t) -> Just t
-  _ -> Nothing
 
 isRepeat :: SignedLabel -> NameReveal -> Bool
 isRepeat SignedLabel {slLabel, slSignature} NameReveal {rvLabel, rvSignature} = slLabel == rvLabel && slSignature == rvSignature
