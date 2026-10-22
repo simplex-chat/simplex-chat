@@ -25,6 +25,7 @@ module StoreService.Web.Http
     notFound,
     badRequest,
     invalidName,
+    invalidLink,
     codeConflict,
     providerUnavailable,
     rateLimited,
@@ -253,6 +254,9 @@ badRequest = jsonError status400 "bad_request"
 
 invalidName :: Response
 invalidName = jsonError status400 "invalid_name"
+
+invalidLink :: Response
+invalidLink = jsonError status400 "invalid_link"
 
 codeConflict :: Response
 codeConflict = jsonError status409 "code_conflict"

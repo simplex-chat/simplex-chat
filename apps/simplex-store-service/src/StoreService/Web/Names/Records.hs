@@ -10,7 +10,7 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.Types as JT
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1)
-import Network.HTTP.Types (status200, status400, status409, status504)
+import Network.HTTP.Types (status200, status409, status504)
 import Network.Wai (Request, Response, ResponseReceived)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import StoreService.Names.Abi (bytes32FromHex, hex)
@@ -20,7 +20,7 @@ import StoreService.Names.Records (EditAnswer (..), EditRequest (..), Records, r
 import StoreService.Names.Registration (channelRecordKey, contactRecordKey)
 import StoreService.Names.Signatures (parseSignature)
 import StoreService.Names.Store (RecordChange (..))
-import StoreService.Web.Http (Respond, badRequest, jsonError, jsonResponse, maxBodyBytes, providerUnavailable, rateLimited, readBoundedBody)
+import StoreService.Web.Http (Respond, badRequest, invalidLink, jsonError, jsonResponse, maxBodyBytes, providerUnavailable, rateLimited, readBoundedBody)
 
 data EditInvalid = EIBadRequest | EIInvalidLink
   deriving (Eq, Show)
@@ -64,6 +64,3 @@ editResponse = \case
   EARefused -> badRequest
   EAUnavailable -> providerUnavailable
   EACapped seconds -> rateLimited seconds
-
-invalidLink :: Response
-invalidLink = jsonError status400 "invalid_link"

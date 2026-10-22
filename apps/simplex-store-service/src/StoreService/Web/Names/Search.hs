@@ -18,7 +18,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1)
 import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
-import Network.HTTP.Types (status200, status400)
+import Network.HTTP.Types (status200)
 import Network.Wai (Request, Response, ResponseReceived, queryString)
 import Simplex.Chat.Badges.Code (maxNameLength, minNameLength)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
@@ -33,7 +33,7 @@ import StoreService.Names.Contracts
 import StoreService.Names.Links (LinkKind (..), linkKindOf)
 import StoreService.Names.Profiles (Entity, Profiles, linkEntity, linkPreview)
 import StoreService.Names.Store (isLabelRegistering)
-import StoreService.Web.Http (Respond, badRequest, jsonError, jsonResponse, maxBodyBytes, providerUnavailable, readBoundedBody)
+import StoreService.Web.Http (Respond, badRequest, invalidLink, invalidName, jsonResponse, maxBodyBytes, providerUnavailable, readBoundedBody)
 import System.Timeout (timeout)
 import Text.Read (readMaybe)
 
@@ -127,7 +127,3 @@ previewHandler ps req respond =
 
 addressText :: Address -> Text
 addressText = decodeLatin1 . strEncode
-
-invalidName, invalidLink :: Response
-invalidName = jsonError status400 "invalid_name"
-invalidLink = jsonError status400 "invalid_link"
