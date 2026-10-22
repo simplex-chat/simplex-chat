@@ -569,7 +569,7 @@ testXmrLate = withLate $ \l@Late {lStore = st} -> do
   lateWaitOf st "xmrnone" `shouldReturn` Just LWSupport
   now <- getCurrentTime
   alertsAt l (Right stubRate) (pastWindow now 60)
-    >>= (`shouldSatisfy` logged "ERROR" "invoice inv-xmrnone of order xmrnone: 320950000000 piconero received, 0 piconero confirmed, 0 piconero credited; the Monero plugin shows no confirmation")
+    >>= (`shouldSatisfy` logged "ERROR" "invoice inv-xmrnone of order xmrnone: 320950000000 piconero received, 0 piconero confirmed, 0 piconero credited; the Monero plugin shows no confirmation of this money, so it is never credited by itself; refund by hand only a transaction confirmed on chain")
 
 -- balances with late credits
 

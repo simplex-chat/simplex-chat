@@ -417,7 +417,7 @@ lateReason env@PollerEnv {peStore, peProviders} LateAlert {laPending, laState = 
   where
     unconfirmed = "refund by hand only a transaction confirmed on chain that BTCPay no longer monitors; one still Processing there waits"
     highSpeed = "the invoice was made under HighSpeed, so its money is never credited by itself; refund by hand only a transaction confirmed on chain"
-    noConfirmation = "the Monero plugin shows no confirmation of this money (the invoice's settled-confirmation threshold is 0 or not given), so it is never credited by itself; refund by hand only a transaction confirmed on chain"
+    noConfirmation = "the Monero plugin shows no confirmation of this money, so it is never credited by itself; refund by hand only a transaction confirmed on chain"
     rateRead = "confirmed, the credit waits on the rate read; do not refund; fix the rate read"
     cardWaits = "confirmed, the credit waits on the poller's credit pass; do not refund; check the service log"
     rateFloor current = "confirmed; the coin's price fell by more than half since the invoice (" <> fromMaybe "?" lsInvoiceRate <> ", " <> current <> "); it is never credited by itself; refund by hand only a transaction confirmed on chain"

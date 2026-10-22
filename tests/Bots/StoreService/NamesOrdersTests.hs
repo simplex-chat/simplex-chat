@@ -1092,7 +1092,7 @@ testOneLateAlert = withOrders $ \ctx@Ctx {cStore = st, cWeb} -> do
   setSignals (cStub ctx) [(ref, SigClosed paid)]
   logs <- readWith poller
   refunds logs `shouldBe` 1
-  logs `shouldSatisfy` T.isInfixOf "it stays unpaid, and its confirmed money is credited to its balance"
+  logs `shouldSatisfy` T.isInfixOf "it stays unpaid, and its money is credited to its balance once confirmed, else alerted"
   restarted <- newPoller
   refunds <$> readWith restarted `shouldReturn` 0
   (nrPhase &&& nrLive) <$> invoiceRegistration ctx inv `shouldReturn` (PUnpaid, False)

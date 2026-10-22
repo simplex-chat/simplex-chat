@@ -225,7 +225,7 @@ lateSupportOf = \case
 
 latePayment :: InvoiceId -> RegistrationId -> IO ()
 latePayment (InvoiceId invText) (RegistrationId rid) =
-  logInfo ("names: invoice " <> invText <> " received money after registration " <> rid <> " closed; it stays unpaid, and its confirmed money is credited to its balance")
+  logInfo ("names: invoice " <> invText <> " received money after registration " <> rid <> " closed; it stays unpaid, and its money is credited to its balance once confirmed, else alerted")
 
 holdNotSpent :: InvoiceId -> RegistrationId -> RegistrationId -> IO ()
 holdNotSpent (InvoiceId invText) (RegistrationId holder) (RegistrationId source) =
