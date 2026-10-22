@@ -58,7 +58,7 @@ import qualified StoreService.Names.Orders as Orders
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, newPhases)
 import StoreService.Names.Signatures (OrderFields (..), orderMessage, personalDigest)
 import StoreService.Names.Store
-import StoreService.Names.Turns (newTurns)
+import StoreService.Names.Turns (newTurns, withCodeTurn)
 import StoreService.Names.View (ViewReads (..), readViewChain, viewJSON)
 import StoreService.Orders (cancelOpenInvoice, expireOverdue, settleOrder)
 import StoreService.Poller (cleanupInterval, cleanupReadsPerPass, cleanupUnpaid, drainHints, newPollerEnv, newReadHints, queueReadHint, runOnePass, unpaidRetention)
@@ -110,7 +110,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "checks the duration for the code's years" testCodeYears
     it "answers name_taken and name_check_unavailable before the code's state and cover, leaving the code unreserved" testCodeNameChecks
     it "refuses sealed over 11095 characters, a body over 16384 bytes and malformed fields, accepting the longest order" testCodeSizes
-    it "lets one of two concurrent orders spending one code for two names win, the other answered code_reserved" testConcurrentCodeOrders
+    it "runs code orders in the code's turn, one of two spending one code for two names winning, the other answered code_reserved" testConcurrentCodeOrders
     it "answers the code's refusal when its reservation fails in the insert, writing nothing" testCodeNotReservable
     it "counts code orders and code checks against one code limit" testCodeLimitShared
   describe "closed orders" $ do
@@ -851,10 +851,20 @@ testCodeSizes = withOrders $ \ctx -> do
   LB.length (J.encode longest) `shouldSatisfy` (< 16384)
   fst <$> postRegister ctx longest `shouldReturn` 200
 
+-- | Both orders wait while the test holds the code's turn, so neither checks or reserves the code outside it.
 testConcurrentCodeOrders :: IO ()
 testConcurrentCodeOrders = withOrders $ \ctx -> do
-  (code, issued) <- issueCode ctx 7 2 id
-  (a, b) <- concurrently (register ctx code aliceOrder) (register ctx code aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 2})
+  (code, issued@PrepaidCode {pcCodeHash}) <- issueCode ctx 7 2 id
+  entered <- newEmptyMVar
+  release <- newEmptyMVar
+  holder <- async $ withCodeTurn (oeTurns $ cOrders ctx) pcCodeHash $ putMVar entered () >> takeMVar release
+  takeMVar entered
+  orders <- async $ concurrently (register ctx code aliceOrder) (register ctx code aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 2})
+  timeout 300000 (wait orders) >>= (`shouldSatisfy` isNothing)
+  pcReservedBy <$> readCode ctx issued `shouldReturn` Nothing
+  putMVar release ()
+  wait holder
+  (a, b) <- wait orders
   sort [fst a, fst b] `shouldBe` [200, 409]
   filter ((== 409) . fst) [a, b] `shouldBe` [refusedWith 409 "code_reserved"]
   [(_, winner)] <- pure $ filter ((== 200) . fst) [a, b]
