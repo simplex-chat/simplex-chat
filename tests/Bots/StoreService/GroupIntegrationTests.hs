@@ -134,7 +134,7 @@ badgeGroupIntegrationTests = do
   it "leaves a tracker it cannot edit alone rather than publishing the code again" testUneditableTrackerLeftAlone
 
 namesBootTests :: SpecWith TestParams
-namesBootTests = it "boots with [names] and [chain], routing fixed /api/name paths ahead of a search and a path no route knows to 404" testNamesBoot
+namesBootTests = it "boots with [names] and [chain], routing fixed /api/name paths ahead of a search, a path no route knows to 404, and code checks and orders under one limit" testNamesBoot
 
 testNamesBoot :: HasCallStack => TestParams -> IO ()
 testNamesBoot ps = do
@@ -154,6 +154,10 @@ testNamesBoot ps = do
     answer register {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` refused "bad_request"
     search <- request $ "/api/name/" <> T.unpack aliceHex <> "?length=5"
     answer search `shouldReturn` refused "invalid_name"
+    -- the register above took the first of this client's 10 code requests a minute, which the code check shares
+    let codeRequest path = request path >>= \r -> statusCode . responseStatus <$> httpLbs r {method = "POST", requestBody = RequestBodyLBS "{}"} mgr
+    forM_ (take 9 $ cycle ["/api/code/check", "/api/name/register"]) $ \path -> (path,) <$> codeRequest path `shouldReturn` (path, 400)
+    forM_ ["/api/code/check", "/api/name/register"] $ \path -> (path,) <$> codeRequest path `shouldReturn` (path, 429)
     poll t >>= (`shouldSatisfy` isNothing)
 
 namesCodesChatTests :: SpecWith TestParams
