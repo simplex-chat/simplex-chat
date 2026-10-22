@@ -80,6 +80,7 @@ namesBalancesTests = describe "StoreService names: balances" $ do
     it "credits a late payment once per credit number, a taken number changing neither the rows nor the balance" testCreditLatePayment
     it "tells each case of pending money and selects confirmed money not all credited, by the order whatever the invoice's status" testLateScans
     it "leaves 0.1 and 0.2 BTC credited against 0.3 confirmed neither pending nor selected" testExactUnits
+    it "tells confirmed money not credited as such while its cents still read 0, as Monero's can" testConfirmedBeforeCents
     it "alerts on pending money past the cutoff once, again only when more arrives, claimed by one of two instances" testLateAlerts
     it "alerts again on money that could not be counted in units when more of it arrives" testUncountedAlertRepeats
   describe "turns" $ do
@@ -639,6 +640,12 @@ testExactUnits = withServiceStore $ \st -> do
   withTransaction st (\db -> latePending db (InvoiceId "inv-x")) `shouldReturn` Nothing
   withTransaction st uncreditedLateInvoices `shouldReturn` []
   fmap lsCreditedUnits <$> withTransaction st (\db -> lateCreditState db (InvoiceId "inv-x")) `shouldReturn` Just 30000000
+
+testConfirmedBeforeCents :: IO ()
+testConfirmedBeforeCents = withServiceStore $ \st -> do
+  closedWith st "x" False Paid {pCents = 0, pConfirmedCents = 0, pCrypto = Just "0", pUnits = Just 1000000000000, pConfirmedUnits = Just 1000000000000, pInFull = True} t0
+  withTransaction st (\db -> latePending db (InvoiceId "inv-x")) `shouldReturn` Just LPUncredited
+  withTransaction st uncreditedLateInvoices `shouldReturn` [InvoiceId "inv-x"]
 
 testLateAlerts :: IO ()
 testLateAlerts = withServiceStore $ \st -> do

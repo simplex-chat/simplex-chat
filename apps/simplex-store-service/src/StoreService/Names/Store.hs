@@ -1028,10 +1028,11 @@ uncreditedMoney =
     <> " OR (" <> cryptoInvoice <> " AND p.confirmed_units >" <> creditedTotal "units" <> "))"
 
 -- | Why a closed order's money is not all credited, by the first case that holds, else NULL.
+-- Confirmed money waiting comes first, so its alert never asks for a refund by hand.
 pendingCase :: Query
 pendingCase =
-  " CASE WHEN COALESCE(p.amount, 0) = 0 AND (p.crypto_paid IS NOT NULL OR p.paid_in_full = 1) THEN " <> literal LPConfirming
-    <> " WHEN" <> uncreditedMoney <> " THEN " <> literal LPUncredited
+  " CASE WHEN" <> uncreditedMoney <> " THEN " <> literal LPUncredited
+    <> " WHEN COALESCE(p.amount, 0) = 0 AND (p.crypto_paid IS NOT NULL OR p.paid_in_full = 1) THEN " <> literal LPConfirming
     <> " WHEN" <> cardInvoice <> " AND COALESCE(p.amount, 0) > p.confirmed_amount THEN " <> literal LPUnconfirmed
     <> " WHEN p.received_units > p.confirmed_units THEN " <> literal LPUnconfirmed
     <> " WHEN" <> cryptoInvoice <> " AND p.received_units IS NULL AND COALESCE(p.amount, 0) > 0 THEN " <> literal LPUncounted
