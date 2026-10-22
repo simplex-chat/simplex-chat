@@ -85,6 +85,15 @@ if [[ $bridge ]]; then
   if [[ $mode != remove && ! -d /sys/class/net/$bridge/bridge ]]; then
     die "$bridge is not a bridge interface; a Docker network's is br- and the first 12 characters of its id, or docker0"
   fi
+  # A bridge carrying the host's uplink (br0, vmbr0) holds its default route.
+  if [[ $mode != remove ]]; then
+    command -v ip >/dev/null || die "ip (iproute2) is needed to check the routes of $bridge"
+    routes=$(ip -4 route show default dev "$bridge")$(ip -6 route show default dev "$bridge")
+    if [[ $routes ]]; then
+      die "$bridge holds a default route, so it carries the host's own traffic and the rule would" \
+        "refuse new connections to the host through it, SSH included; pass the Docker network's bridge"
+    fi
+  fi
 else
   [[ $uid ]] || die "--uid is required with host networking: the uid the service runs as (USER_UID in compose)"
   # iptables prints the uid without leading zeros, and the jump is found by that text.

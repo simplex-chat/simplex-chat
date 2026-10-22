@@ -372,7 +372,9 @@ docker compose up -d --build --remove-orphans
 
 On a Docker bridge network instead, `--bridge <interface>` matches traffic from that network's
 bridge interface in `DOCKER-USER` (traffic forwarded to other hosts) and `INPUT` (the host's own
-addresses), and needs no `--uid`. The script refuses an interface that is not a bridge, and stops
+addresses), and needs no `--uid`. The script refuses an interface that is not a bridge or that holds a default route (a bridge
+carrying the host's uplink, such as `br0` or `vmbr0`, whose inbound connections it would refuse),
+and stops
 when `DOCKER-USER` is missing (Docker's nftables backend, `"iptables": false` or `"ip6tables":
 false` in its daemon config, or Docker not started yet): the forwarded traffic would then pass
 unfiltered. The interface is `docker0` for the default network; for another, it is the network's
