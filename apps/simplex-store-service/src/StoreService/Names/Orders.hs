@@ -331,6 +331,7 @@ versionWritten = \case
 
 -- | /retry's first check, on the order's current name: a register mined with status 1, or the owner holding the name, went through
 -- with only its confirmation lost. The order then becomes registered by a compare-and-set on the version read, a code order spending its code.
+-- The caller holds the turn of the order's label hash and passes the order as registrationAt reads it.
 confirmLanded :: OrdersEnv -> NameRegistration -> IO Landing
 confirmLanded OrdersEnv {oeStore, oeContracts, oeTurns, oeNow} r@NameRegistration {nrId, nrOwner, nrLabelHash, nrPayment, nrRegisterTx, nrRegisterBlock} = do
   txs <- withTransaction oeStore (`registrationTransactions` nrId)
