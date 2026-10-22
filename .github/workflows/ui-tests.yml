@@ -432,8 +432,13 @@ jobs:
       - name: Build bridge
         working-directory: apps/multiplatform
         run: |
-          ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets -Pkotlin.compiler.execution.strategy=in-process \
-            :common:uitestBridgeClasspath
+          for attempt in 1 2 3; do
+            ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets -Pkotlin.compiler.execution.strategy=in-process \
+              :common:uitestBridgeClasspath && break
+            [ "$attempt" = 3 ] && exit 1
+            echo "Gradle failed (attempt $attempt), retrying in 60 s: Maven Central rate-limits parallel jobs"
+            sleep 60
+          done
           ls -la "$RUNNER_TEMP/apk"
 
       - name: Prepare test peers and servers
