@@ -43,7 +43,7 @@ data CreditOutcome
 creditLateInvoice :: DBStore -> (CryptoCurrency -> IO (Either ProviderError Rate)) -> InvoiceId -> UTCTime -> IO CreditOutcome
 creditLateInvoice st readRate invId now =
   withTransaction st (`lateCreditState` invId) >>= \case
-    Just s | closedUnpaid s && moneyDue s -> case lsCoin s of
+    Just s | creditable s && moneyDue s -> case lsCoin s of
       Nothing -> credit Nothing
       Just coin ->
         readRate coin >>= \case
@@ -59,13 +59,14 @@ creditLateInvoice st readRate invId now =
     credit rate = withTransaction st $ \db -> do
       lockInvoice db invId now
       lateCreditState db invId >>= \case
-        Just s | closedUnpaid s, Just c <- lateCreditOf s rate -> do
+        Just s | creditable s, Just c <- lateCreditOf s rate -> do
           applied <- creditLatePayment db c now
           pure $ if applied then COCredited c else CORefused
         _ -> pure CONothingDue
 
-closedUnpaid :: LateCreditState -> Bool
-closedUnpaid LateCreditState {lsPhase, lsLive} = lsPhase == PUnpaid && not lsLive
+-- | A closed order's money, unless a rate below the floor sent it to support for good, so a later recovery cannot credit money refunded by hand.
+creditable :: LateCreditState -> Bool
+creditable LateCreditState {lsPhase, lsLive, lsSupport} = lsPhase == PUnpaid && not lsLive && lsSupport /= Just LSRateFloor
 
 moneyDue :: LateCreditState -> Bool
 moneyDue s@LateCreditState {lsConfirmedCents, lsCreditedCents} = case lsCoin s of

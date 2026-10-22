@@ -372,7 +372,7 @@ creditLate env@PollerEnv {peStore} p now invId@(InvoiceId invText) = do
       when due $ logWarn ("names: late credits wait, as the current rate cannot be read; each pass tries again: " <> e)
     CORateFloor invoiceRate Rate {rateText} -> do
       due <- dueToWarn env now ("rate floor: " <> invText)
-      when due $ logError ("names: invoice " <> invText <> " is not credited: the current rate " <> rateText <> " is below half its rate " <> invoiceRate <> "; a glitch, or a real fall the owner decides on")
+      when due $ logError ("names: invoice " <> invText <> " is not credited: the current rate " <> rateText <> " is below half its rate " <> invoiceRate <> "; it is never credited by itself, and support refunds it by hand")
     CORefused -> logError ("names: the credit of invoice " <> invText <> " was refused, its credit number taken meanwhile; the next pass tries again")
   pure outcome
 
@@ -404,8 +404,8 @@ lateReason env@PollerEnv {peStore, peProviders} LateAlert {laPending, laState = 
     Just coin
       | lsSupport == Just LSRateFloor ->
           getInvoice peStore lsInvoice >>= \case
-            Just InvoiceRow {irProvider} | Just p <- find ((== irProvider) . pProvider) peProviders -> either (const (rateRead, Nothing)) (\Rate {rateText} -> (rateFloor rateText, Nothing)) <$> cachedRate env p coin
-            _ -> pure (rateRead, Nothing)
+            Just InvoiceRow {irProvider} | Just p <- find ((== irProvider) . pProvider) peProviders -> (\r -> (rateFloor (either (const "unread") rateText r), Nothing)) <$> cachedRate env p coin
+            _ -> pure (rateFloor "unread", Nothing)
       | otherwise -> pure (rateRead, Nothing)
   _ -> pure (unconfirmed, Just LSUnconfirmed)
   where
@@ -414,7 +414,7 @@ lateReason env@PollerEnv {peStore, peProviders} LateAlert {laPending, laState = 
     noConfirmation = "the Monero plugin shows no confirmation of this money (the invoice's settled-confirmation threshold is 0 or not given), so it is never credited by itself; refund by hand only a transaction confirmed on chain"
     rateRead = "confirmed, the credit waits on the rate read; do not refund; fix the rate read"
     cardWaits = "confirmed, the credit waits on the poller's credit pass; do not refund; check the service log"
-    rateFloor current = "confirmed; the coin's price fell by more than half since the invoice (" <> fromMaybe "?" lsInvoiceRate <> ", " <> current <> "); the owner decides: credit at the current rate, or refund by hand"
+    rateFloor current = "confirmed; the coin's price fell by more than half since the invoice (" <> fromMaybe "?" lsInvoiceRate <> ", " <> current <> "); it is never credited by itself; refund by hand only a transaction confirmed on chain"
     uncounted = "an amount BTCPay reported with more decimals than its unit; check it at the provider"
 
 lateAlertText :: LateAlert -> Text -> Text

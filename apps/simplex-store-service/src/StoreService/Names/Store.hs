@@ -1152,11 +1152,14 @@ lateWait db (InvoiceId invId) =
       (Just LPConfirming, Nothing) -> Just LWConfirming
       (Just LPUnconfirmed, Nothing) -> Just LWConfirming
 
--- | Closed orders' invoices with confirmed money not all credited, for the poller's credit pass.
+-- | Closed orders' invoices with confirmed money not all credited, for the poller's credit pass; none a rate below the floor sent to support.
 uncreditedLateInvoices :: DB.Connection -> IO [InvoiceId]
 uncreditedLateInvoices db =
   map (InvoiceId . fromOnly)
-    <$> DB.query db ("SELECT ni.invoice_id" <> lateFrom <> " WHERE" <> closedUnpaid <> " AND" <> uncreditedMoney <> " ORDER BY p.created_at, ni.invoice_id") (Only PUnpaid)
+    <$> DB.query
+      db
+      ("SELECT ni.invoice_id" <> lateFrom <> " WHERE" <> closedUnpaid <> " AND" <> uncreditedMoney <> " AND (ni.late_support IS NULL OR ni.late_support <> ?) ORDER BY p.created_at, ni.invoice_id")
+      (PUnpaid, LSRateFloor)
 
 -- | Pending money whose payment row was created before the cutoff, never alerted, or alerted for less money than now received.
 lateAlertDue :: DB.Connection -> UTCTime -> IO [LateAlert]

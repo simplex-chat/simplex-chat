@@ -66,7 +66,7 @@ namesLateCreditTests = describe "StoreService names: balance life" $ do
     it "alerts a part credit with an unconfirmed rest once, naming its units" testPartCreditAlerted
     it "logs Monero's zero figure as pending and does not alert it within the window" testMoneroZero
     it "credits nothing while the rate read fails, warning once, then credits at the next pass" testRateFails
-    it "credits nothing below the rate floor, logging an error, and alerts naming both rates and the owner's decision" testRateFloor
+    it "credits nothing below the rate floor and never after, logging an error, and alerts support naming both rates" testRateFloor
     it "logs the rate floor of an invoice once while the price moves below it" testFloorLoggedOnce
     it "reads one rate per coin per pass for several invoices, and none when nothing is due" testOneRateReadPerPass
     it "never credits a late Settled payment on an invoice made under HighSpeed, alerting it past the window" testHighSpeed
@@ -421,11 +421,12 @@ testRateFloor = withLate $ \l@Late {lStore = st} -> do
   balanceOf st "floored" `shouldReturn` Nothing
   lateWaitOf st "floored" `shouldReturn` Just LWSupport
   alertsAt l (Right floored) (pastWindow (at 70) 60)
-    >>= (`shouldSatisfy` logged "ERROR" "invoice inv-floored of order floored: 320000 satoshi received, 320000 satoshi confirmed, 0 satoshi credited; confirmed; the coin's price fell by more than half since the invoice (62500, 31000); the owner decides: credit at the current rate, or refund by hand")
-  setRate l (Right $ rateOf "31250" 31250)
+    >>= (`shouldSatisfy` logged "ERROR" "invoice inv-floored of order floored: 320000 satoshi received, 320000 satoshi confirmed, 0 satoshi credited; confirmed; the coin's price fell by more than half since the invoice (62500, 31000); it is never credited by itself; refund by hand only a transaction confirmed on chain")
+  setRate l (Right stubRate)
   void $ passAt l (at 72)
-  creditsOf st "floored" `shouldReturn` [(Just lateUnits, Just "62500", Just "31250", Just "31250", 10000)]
-  lateWaitOf st "floored" `shouldReturn` Nothing
+  creditsOf st "floored" `shouldReturn` []
+  withTransaction st uncreditedLateInvoices >>= (`shouldNotSatisfy` elem (invOf "floored"))
+  lateWaitOf st "floored" `shouldReturn` Just LWSupport
 
 testFloorLoggedOnce :: IO ()
 testFloorLoggedOnce = withLate $ \l -> do
