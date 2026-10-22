@@ -183,7 +183,7 @@ testNamesColumns = withServiceStore $ \st -> do
       "years", "duration", "expires_at", "price", "name_prepaid_code_id", "registered_at", "failed_at", "error", "created_at",
       "updated_at", "version", "live", "order_hash", "method", "moves", "links_refused_at", "balance_source", "balance_used"
     ]
-  has "sx_badge_service_name_invoices" ["invoice_id", "registration_id", "provider_ref", "late_alerted_at", "late_alerted_units"]
+  has "sx_badge_service_name_invoices" ["invoice_id", "registration_id", "provider_ref", "late_alerted_at", "late_alerted_units", "late_support"]
   has "sx_badge_service_name_balances" ["registration_id", "amount", "credited", "refunded", "reserved_by", "refunded_at", "created_at", "updated_at"]
   has "sx_badge_service_name_late_credits" ["invoice_id", "credit_no", "registration_id", "units", "invoice_rate", "current_rate", "rate_used", "cents", "created_at"]
   has "sx_badge_service_payments" balancePaymentColumns
@@ -194,7 +194,7 @@ testNamesDownUp :: IO ()
 testNamesDownUp = withServiceStore $ \st -> do
   let names = dropWhile ((/= "20261010_names") . name) storeServiceSchemaMigrations
       badgeColumns = mapM (fmap sort . columnsOf st) badgeTables
-  map name names `shouldBe` ["20261010_names", "20261022_drop_taken_codes", "20261022_name_balances"]
+  map name names `shouldBe` ["20261010_names", "20261022_drop_taken_codes", "20261022_name_balances", "20261022_name_late_wait"]
   badgeBefore <- badgeColumns
   code <- issue st 1 usable
   placeCode st "r1" ownerA (order "alicebakery" 1) code `shouldReturn` Right ()
@@ -503,9 +503,10 @@ testLiveFollowsPhase = withServiceStore $ \st -> do
         write st r {nrPhase = phase} `shouldReturn` Written (nrVersion r + 1)
         (nrPhase &&& nrLive) <$> reg st rid `shouldReturn` (phase, expected)
   step "r1" PQueued True
-  step "r1" PTaken True
   step "r1" PFailed True
-  step "r1" PTaken True
+  step "r1" PTaken False
+  r1 <- reg st "r1"
+  write st r1 {nrPhase = PFailed} `shouldReturn` NotLive
   step "r2" PRegistering True
   step "r2" PTaken False
   placePaid st "r3" ownerA (order "carolsbakery" 3) (at 60) `shouldReturn` Right ()
@@ -520,7 +521,7 @@ testOrderLive = withServiceStore $ \st -> do
   let code = paid {nrPayment = RPCode 1}
       liveIn r phase = (phase, orderLive r {nrPhase = phase})
   map (liveIn paid) [minBound .. maxBound]
-    `shouldBe` [(PUnpaid, True), (PQueued, True), (PCommitting, True), (PCommitted, True), (PRegistering, True), (PRegistered, False), (PTaken, True), (PFailed, True)]
+    `shouldBe` [(PUnpaid, True), (PQueued, True), (PCommitting, True), (PCommitted, True), (PRegistering, True), (PRegistered, False), (PTaken, False), (PFailed, True)]
   map (liveIn code) [PTaken, PFailed, PRegistered] `shouldBe` [(PTaken, False), (PFailed, True), (PRegistered, False)]
   orderLive paid {nrLive = False} `shouldBe` False
   orderLive paid {nrLive = False, nrPhase = PQueued} `shouldBe` True
@@ -559,13 +560,13 @@ testWriteMeetsLiveOrder = withServiceStore $ \st -> do
   placePaid st "r2" ownerA held (at 60) `shouldReturn` Right ()
   placePaid st "r3" ownerB (order "carolsbakery" 3) (at 60) `shouldReturn` Right ()
   r1 <- reg st "r1"
-  write st r1 {nrPhase = PTaken} `shouldReturn` Written 2
-  taken <- reg st "r1"
-  let retarget o = withTransaction st $ \db -> retargetRegistration db taken o 10000 (at 6)
+  write st r1 {nrPhase = PFailed} `shouldReturn` Written 2
+  failed <- reg st "r1"
+  let retarget o = withTransaction st $ \db -> retargetRegistration db failed o 10000 (at 6)
   retarget held {ofCommitment = digestFixture 4} `shouldReturn` LiveOrderExists
   r3 <- reg st "r3"
   retarget (order "carolsbakery" 5) {ofCommitment = nrCommitment r3} `shouldReturn` LiveOrderExists
-  reg st "r1" `shouldReturn` taken
+  reg st "r1" `shouldReturn` failed
   retarget (order "davesbakery" 6) `shouldReturn` Written 3
 
 testRetarget :: IO ()
@@ -574,9 +575,9 @@ testRetarget = withServiceStore $ \st -> do
       o' = order "alicebakers" 2
   placePaid st "r1" ownerA o (at 60) `shouldReturn` Right ()
   r <- reg st "r1"
-  let taken =
+  let failed =
         r
-          { nrPhase = PTaken,
+          { nrPhase = PFailed,
             nrReveal = Just reveal,
             nrCommitTx = Just (TxHash $ digestFixture 8),
             nrCommitBlock = Just 100,
@@ -588,8 +589,8 @@ testRetarget = withServiceStore $ \st -> do
             nrFailedAt = Just (at 5),
             nrError = Just "failed"
           }
-  write st taken `shouldReturn` Written 2
-  withTransaction st (\db -> retargetRegistration db taken {nrVersion = 2} o' 10000 (at 6)) `shouldReturn` Written 3
+  write st failed `shouldReturn` Written 2
+  withTransaction st (\db -> retargetRegistration db failed {nrVersion = 2} o' 10000 (at 6)) `shouldReturn` Written 3
   r' <- reg st "r1"
   r'
     `shouldBe` r
@@ -602,7 +603,7 @@ testRetarget = withServiceStore $ \st -> do
         nrMoves = 1,
         nrUpdatedAt = at 6
       }
-  withTransaction st (\db -> retargetRegistration db taken {nrVersion = 2} o 10000 (at 7)) `shouldReturn` VersionChanged
+  withTransaction st (\db -> retargetRegistration db failed {nrVersion = 2} o 10000 (at 7)) `shouldReturn` VersionChanged
 
 testFind :: IO ()
 testFind = withServiceStore $ \st -> do
@@ -612,9 +613,9 @@ testFind = withServiceStore $ \st -> do
     insertInvoiceRow db ("inv-" <> rid) (at 60) "open"
     createPaidRegistration db (newReg rid ownerA o) (OTInvoice btc price) (paidOrder $ "inv-" <> rid) (at i) `shouldReturn` Right ()
   placePaid st "other" ownerB (order "bobsbakery" 99) (at 60) `shouldReturn` Right ()
-  found <- withTransaction st $ \db -> findRegistrations db ownerA
-  map nrId found `shouldBe` [RegistrationId $ "r" <> T.pack (show i) | i <- [52, 51 .. 3 :: Int]]
-  withTransaction st (\db -> findRegistrations db (address "0x0000000000000000000000000000000000000001")) `shouldReturn` []
+  found <- withTransaction st $ \db -> findRegistrations db ownerA t0
+  map (nrId . fst) found `shouldBe` [RegistrationId $ "r" <> T.pack (show i) | i <- [52, 51 .. 3 :: Int]]
+  withTransaction st (\db -> findRegistrations db (address "0x0000000000000000000000000000000000000001") t0) `shouldReturn` []
 
 testSameSecondOrder :: IO ()
 testSameSecondOrder = withServiceStore $ \st -> do
@@ -624,7 +625,7 @@ testSameSecondOrder = withServiceStore $ \st -> do
     placePaid st rid ownerA (order ("alicebakery" <> rid) n) (at 60) `shouldReturn` Right ()
     r <- reg st rid
     write st r {nrPhase = PQueued} `shouldReturn` Written 2
-  map nrId <$> withTransaction st (`findRegistrations` ownerA) `shouldReturn` map RegistrationId ["r3", "r2", "r1"]
+  map (nrId . fst) <$> withTransaction st (\db -> findRegistrations db ownerA t0) `shouldReturn` map RegistrationId ["r3", "r2", "r1"]
   map nrId <$> withTransaction st activeRegistrations `shouldReturn` map RegistrationId ["r1", "r2", "r3"]
   forM_ ["r5", "r4"] $ \rid -> do
     placePaid st rid ownerB o (at 60) `shouldReturn` Right ()

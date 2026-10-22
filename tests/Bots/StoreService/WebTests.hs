@@ -842,6 +842,7 @@ data StubCall
   | StubRead Text
   | StubCancel Text
   | StubListOpen
+  | StubRate CryptoCurrency
   deriving (Eq, Show)
 
 data StubState = StubState
@@ -857,7 +858,8 @@ data StubState = StubState
     ssVerifyResult :: Either WebhookError (Maybe Text),
     ssVerifyThrows :: Bool,
     ssWebhooks :: [([Header], ByteString)],
-    ssReadDelay :: Int
+    ssReadDelay :: Int,
+    ssRate :: Either ProviderError Rate
   }
 
 newStubState :: Either ProviderError ProviderInvoice -> StubState
@@ -874,8 +876,13 @@ newStubState ssCreateResult =
       ssVerifyResult = Right Nothing,
       ssVerifyThrows = False,
       ssWebhooks = [],
-      ssReadDelay = 0
+      ssReadDelay = 0,
+      ssRate = Right stubRate
     }
+
+-- | Below the stored invoices' rate of 62500.
+stubRate :: Rate
+stubRate = Rate {rateText = "60000.5", rateValue = 60000.5}
 
 record :: IORef StubState -> StubCall -> IO ()
 record ref call = atomicModifyIORef' ref $ \s -> (s {ssCalls = ssCalls s ++ [call]}, ())
@@ -906,6 +913,9 @@ stubProvider ref =
         pure $ case ssListError stub of
           Just e -> Left e
           Nothing -> Right ListPass {lpMoved = Map.toList (ssInvoices stub), lpSkipped = ssSkipped stub},
+      pCurrentRate = Just $ \cc -> do
+        record ref (StubRate cc)
+        ssRate <$> readIORef ref,
       pVerifyWebhook = const (verifyRecording ref)
     }
 
@@ -2124,8 +2134,18 @@ replayAt = addUTCTime 3600 settleAt
 detectedAt :: UTCTime
 detectedAt = addUTCTime 300 settleAt
 
+-- | Nothing confirmed and no units, as the badge paths read it.
 rcv :: Word32 -> Maybe Text -> Received
-rcv amount crypto = Received {rcvAmount = CurrencyAmount amount, rcvCrypto = crypto, rcvDue = Nothing}
+rcv amount crypto =
+  Received
+    { rcvAmount = CurrencyAmount amount,
+      rcvCrypto = crypto,
+      rcvDue = Nothing,
+      rcvUnits = Nothing,
+      rcvRate = Nothing,
+      rcvConfirmed = Confirmed {cfCents = CurrencyAmount 0, cfUnits = Nothing},
+      rcvUncreditable = Nothing
+    }
 
 settle :: DBStore -> InvoiceId -> PaymentSignal -> UTCTime -> IO (Either Text InvoiceStatus)
 settle st iid signal at = newWaiters >>= \waiters -> settleOrder st waiters Nothing iid signal at
@@ -2435,8 +2455,8 @@ testSettledPaymentIsNotDowngraded :: IO ()
 testSettledPaymentIsNotDowngraded = bounded "settled is not downgraded" $ withServiceStore $ \st -> do
   iid <- seedOpen st
   row <- getInvoice st iid >>= maybe (failWith "no invoice row") pure
-  withTransaction st $ \db -> upsertPayment db row PSSettled (CurrencyAmount 500) (Just "0.00050000") Nothing False settleAt
-  withTransaction st $ \db -> upsertPayment db row PSPending (CurrencyAmount 200) (Just "0.00020000") Nothing False replayAt
+  withTransaction st $ \db -> upsertPayment db row PSSettled (rcv 500 (Just "0.00050000")) False settleAt
+  withTransaction st $ \db -> upsertPayment db row PSPending (rcv 200 (Just "0.00020000")) False replayAt
   p <- paymentRow st iid
   ipStatus p `shouldBe` "settled"
   ipUpdatedAt p `shouldBe` settleAt
@@ -2445,8 +2465,8 @@ testSettledPaymentIsNotDowngraded = bounded "settled is not downgraded" $ withSe
   let second' = sampleInvoice {niInvoiceId = InvoiceId "inv-pending", niProviderRef = "p-pending", niCodeHash = digestFixture 16}
   createInvoiceRows st second' `shouldReturn` Right ()
   row' <- getInvoice st (niInvoiceId second') >>= maybe (failWith "no invoice row") pure
-  withTransaction st $ \db -> upsertPayment db row' PSPending (CurrencyAmount 100) Nothing Nothing False settleAt
-  withTransaction st $ \db -> upsertPayment db row' PSSettled (CurrencyAmount 500) (Just "0.00050000") Nothing False replayAt
+  withTransaction st $ \db -> upsertPayment db row' PSPending (rcv 100 Nothing) False settleAt
+  withTransaction st $ \db -> upsertPayment db row' PSSettled (rcv 500 (Just "0.00050000")) False replayAt
   p' <- paymentRow st (niInvoiceId second')
   ipStatus p' `shouldBe` "settled"
   ipUpdatedAt p' `shouldBe` replayAt

@@ -12,7 +12,8 @@ where
 
 import StoreService.Config (StripeConfig (..))
 import StoreService.Providers
-  ( ListPass (..),
+  ( Confirmed (..),
+    ListPass (..),
     OrderDraft (..),
     PaymentSignal (..),
     Provider (..),
@@ -121,6 +122,7 @@ stripeProvider cfg = do
         pReadInvoice = readInvoice env,
         pCancelInvoice = cancelInvoice env,
         pListOpen = listOpen env,
+        pCurrentRate = Nothing,
         pVerifyWebhook = verifyStripeSig (sWebhookSecret cfg)
       }
 
@@ -263,13 +265,23 @@ readInvoice env pid = do
 signalOf :: UTCTime -> IntentRead -> Either ProviderError (Maybe PaymentSignal)
 signalOf now IntentRead {irStatus, irAmountReceived, irChargeCreated} =
   case irStatus of
-    "succeeded" -> Right (Just (SigSettled (received irAmountReceived) settledAt))
-    "canceled" -> Right (Just (SigClosed (received 0)))
+    "succeeded" -> Right (Just (SigSettled (received irAmountReceived irAmountReceived) settledAt))
+    "canceled" -> Right (Just (SigClosed (received 0 0)))
     s | s `elem` openStatuses -> Right Nothing
       | otherwise -> Left (ProviderError ("stripe payment_intent: unknown status " <> s))
   where
     openStatuses = ["requires_payment_method", "requires_confirmation", "requires_action", "processing", "requires_capture"]
-    received amt = Received {rcvAmount = amountFrom amt, rcvCrypto = Nothing, rcvDue = Nothing}
+    -- only a succeeded intent's money is confirmed
+    received amt confirmed =
+      Received
+        { rcvAmount = amountFrom amt,
+          rcvCrypto = Nothing,
+          rcvDue = Nothing,
+          rcvUnits = Nothing,
+          rcvRate = Nothing,
+          rcvConfirmed = Confirmed {cfCents = amountFrom confirmed, cfUnits = Nothing},
+          rcvUncreditable = Nothing
+        }
     settledAt = maybe now posixSecondsToUTCTime irChargeCreated
 
 -- Clamp stops a wildly wrong figure wrapping Word32 and coming out small.

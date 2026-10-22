@@ -16,22 +16,27 @@ module StoreService.Providers.BTCPay
   )
 where
 
-import StoreService.Config (BTCPayConfig (..), speedPolicyName)
+import StoreService.Catalog (catalogCurrency)
+import StoreService.Config (BTCPayConfig (..), SpeedPolicy (..), speedPolicyName)
 import StoreService.Providers
-  ( ListPass (..),
+  ( Confirmed (..),
+    ListPass (..),
     OrderDraft (..),
     PaymentSignal (..),
     Provider (..),
     ProviderError (..),
     ProviderInvoice (..),
     Funded (..),
+    Rate (..),
     Received (..),
+    Uncreditable (..),
     settleWindow,
+    unitDecimals,
     WebhookError (..),
   )
 import Control.Exception (try)
 import StoreService.Log (logError, logInfo, logWarn)
-import Control.Monad (unless)
+import Control.Monad (unless, (<=<))
 import Crypto.Hash (Digest, SHA256)
 import Crypto.MAC.HMAC (HMAC, hmac, hmacGetDigest)
 import qualified Data.Aeson as J
@@ -45,8 +50,8 @@ import qualified Data.ByteString.Lazy as LB
 import Data.Char (toLower)
 import Data.Int (Int64)
 import Data.List (find)
-import Data.Maybe (fromMaybe, mapMaybe)
-import Data.Scientific (FPFormat (Fixed), Scientific, base10Exponent, formatScientific)
+import Data.Maybe (fromMaybe, isNothing, mapMaybe)
+import Data.Scientific (FPFormat (Fixed), Scientific, base10Exponent, formatScientific, scientific, toBoundedInteger)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
@@ -74,12 +79,33 @@ import Simplex.Chat.PaymentService.Types
   )
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 
+-- Shapes cited from BTCPay Server v2.4.5 (https://github.com/btcpayserver/btcpayserver/tree/v2.4.5):
+-- - payment methods, GET stores/{storeId}/invoices/{invoiceId}/payment-methods: BTCPayServer.Client/Models/InvoicePaymentMethodDataModel.cs,
+--   each method's rate, paymentMethodPaid, due, amount, paymentMethodFee and payments, each payment's id, receivedDate, value, fee and
+--   status (Invalid, Processing or Settled), the decimals as strings;
+-- - an invoice's checkout.speedPolicy, GET stores/{storeId}/invoices/{invoiceId} and the list: BTCPayServer.Client/Models/InvoiceData.cs,
+--   nullable; HighSpeed settles at 0 confirmations, MediumSpeed at 1, LowMediumSpeed at 2, LowSpeed at 6
+--   (wwwroot/swagger/v1/swagger.template.json, SpeedPolicy). The Monero plugin (btcpay-monero/btcpayserver-monero-plugin v1.4.0,
+--   Plugins/Monero/Services/MoneroListener.cs, ConfirmationsRequired) maps the policies the same way, unless the store sets its own
+--   InvoiceSettledConfirmationThreshold, which settles a payment at that many confirmations. Greenfield's payment model
+--   (Controllers/GreenField/GreenfieldInvoiceController.cs, ToPaymentModel) carries no payment's confirmations; the method's
+--   additionalData (Payments/MoneroLikeOnChainPaymentMethodDetails.cs, camel-cased by Data/BlobSerializer.cs) carries the invoice's
+--   invoiceSettledConfirmationThreshold, so a Settled XMR payment shows a confirmation only when it is at least 1;
+-- - the store's rates, GET stores/{storeId}/rates?currencyPair=BTC_USD: Controllers/GreenField/GreenfieldStoreRatesController.cs and
+--   Models/StoreRateResult.cs, a list of {currencyPair, errors, rate}, rate null when errors is not empty; it needs canviewstoresettings.
 btcMethodId, xmrMethodId :: Text
 btcMethodId = "BTC-CHAIN"
 xmrMethodId = "XMR-CHAIN"
 
+methodCurrencies :: [(Text, CryptoCurrency)]
+methodCurrencies = [(btcMethodId, CCBtc), (xmrMethodId, CCXmr)]
+
 knownMethodIds :: [Text]
-knownMethodIds = [btcMethodId, xmrMethodId]
+knownMethodIds = map fst methodCurrencies
+
+-- | The policies that settle a payment only after at least one confirmation.
+confirmingPolicies :: [SpeedPolicy]
+confirmingPolicies = [MediumSpeed, LowMediumSpeed, LowSpeed]
 
 -- The last two are the only events a payment into a closed invoice sends.
 actedOnEventTypes :: [Text]
@@ -148,6 +174,7 @@ data GInvoice = GInvoice
   { giId :: Text,
     giStatus :: Text,
     giAdditionalStatus :: Maybe Text,
+    giSpeedPolicy :: Maybe Text,
     giPaymentMethods :: Maybe [GPaymentMethod]
   }
   deriving (Show)
@@ -158,6 +185,7 @@ instance J.FromJSON GInvoice where
       <$> o J..: "id"
       <*> o J..: "status"
       <*> o J..:? "additionalStatus"
+      <*> (maybe (pure Nothing) (J..:? "speedPolicy") =<< o J..:? "checkout")
       <*> o J..:? "paymentMethods"
 
 -- totalPaid is not decoded because it counts every method's payment in this currency, so it is non-zero
@@ -169,7 +197,8 @@ data GPaymentMethod = GPaymentMethod
     gpmRate :: Maybe WireNum,
     gpmPaid :: Maybe WireNum,
     gpmDue :: Maybe WireNum,
-    gpmPayments :: [GPayment]
+    gpmPayments :: [GPayment],
+    gpmSettledThreshold :: Maybe Int
   }
   deriving (Show)
 
@@ -183,16 +212,34 @@ instance J.FromJSON GPaymentMethod where
       <*> o J..:? "paymentMethodPaid"
       <*> o J..:? "due"
       <*> (fromMaybe [] <$> o J..:? "payments")
+      <*> (settledThreshold <$> o J..:? "additionalData")
+    where
+      -- read leniently: another plugin's additionalData must not fail the read
+      settledThreshold = \case
+        Just (J.Object d) | Just (J.Number n) <- KM.lookup "invoiceSettledConfirmationThreshold" d -> toBoundedInteger n
+        _ -> Nothing
 
+-- | A payment without a value is read, and only its units cannot be counted.
 data GPayment = GPayment
   { gpStatus :: Text,
-    gpReceivedDate :: WireNum
+    gpReceivedDate :: WireNum,
+    gpValue :: Maybe WireNum
   }
   deriving (Show)
 
 instance J.FromJSON GPayment where
   parseJSON = J.withObject "payment" $ \o ->
-    GPayment <$> o J..: "status" <*> o J..: "receivedDate"
+    GPayment <$> o J..: "status" <*> o J..: "receivedDate" <*> o J..:? "value"
+
+data GRate = GRate
+  { grPair :: Text,
+    grErrors :: [Text],
+    grRate :: Maybe WireNum
+  }
+
+instance J.FromJSON GRate where
+  parseJSON = J.withObject "store rate" $ \o ->
+    GRate <$> o J..: "currencyPair" <*> (fromMaybe [] <$> o J..:? "errors") <*> o J..:? "rate"
 
 newtype GCreated = GCreated {gcId :: Text}
   deriving (Show)
@@ -226,6 +273,7 @@ btcpayProvider cfg = do
         pReadInvoice = readInvoice env,
         pCancelInvoice = cancelInvoice env,
         pListOpen = listOpen env,
+        pCurrentRate = Just (currentRate env),
         pVerifyWebhook = const (verifyBTCPaySig (bWebhookSecret cfg))
       }
 
@@ -305,11 +353,11 @@ readInvoice env ref = do
   inv <- greenfield env what methodGet ["invoices", ref] [] Nothing
   case inv >>= decodeGreenfield what of
     Left e -> pure (Left e)
-    Right GInvoice {giStatus, giAdditionalStatus} -> do
+    Right GInvoice {giStatus, giAdditionalStatus, giSpeedPolicy} -> do
       logAdditionalStatus ref giAdditionalStatus
       ms <- greenfield env what methodGet ["invoices", ref, "payment-methods"] [] Nothing
       now <- getCurrentTime
-      pure (ms >>= paymentMethodsSignal now ref giStatus)
+      pure (ms >>= paymentMethodsSignal now ref giStatus giSpeedPolicy)
   where
     what = "read invoice"
 
@@ -356,11 +404,11 @@ invoicesPass now invs = foldr add (Right ListPass {lpMoved = [], lpSkipped = []}
     add v (Right pass) = case J.fromJSON v of
       J.Error e -> Right pass {lpSkipped = (invoiceIdOf v, T.pack e) : lpSkipped pass}
       J.Success gi -> addInvoice gi pass
-    addInvoice GInvoice {giId, giStatus, giPaymentMethods} pass = case giPaymentMethods of
+    addInvoice GInvoice {giId, giStatus, giSpeedPolicy, giPaymentMethods} pass = case giPaymentMethods of
       Nothing ->
         Left . ProviderError $
           listWhat <> ": invoice " <> giId <> " carries no paymentMethods, so includePaymentMethods was not honoured"
-      Just ms -> case invoiceSignal now giId giStatus ms of
+      Just ms -> case invoiceSignal now giId giStatus giSpeedPolicy ms of
         Left (ProviderError e) -> Right pass {lpSkipped = (Just giId, e) : lpSkipped pass}
         Right Nothing -> Right pass
         Right (Just sig) -> Right pass {lpMoved = (giId, sig) : lpMoved pass}
@@ -377,17 +425,21 @@ logAdditionalStatus ref = \case
   Just s | s /= "None" -> logInfo ("btcpay: invoice " <> ref <> " additionalStatus " <> s)
   _ -> pure ()
 
-paymentMethodsSignal :: UTCTime -> Text -> Text -> LB.ByteString -> Either ProviderError (Maybe PaymentSignal)
-paymentMethodsSignal now ref status body =
-  decodeGreenfield "read invoice" body >>= invoiceSignal now ref status
+-- | The status and speed policy are the invoice's, the body its payment methods.
+paymentMethodsSignal :: UTCTime -> Text -> Text -> Maybe Text -> LB.ByteString -> Either ProviderError (Maybe PaymentSignal)
+paymentMethodsSignal now ref status policy body =
+  decodeGreenfield "read invoice" body >>= invoiceSignal now ref status policy
 
 -- Complete is the old API's status name and never matches, so it has no case here.
-invoiceSignal :: UTCTime -> Text -> Text -> [GPaymentMethod] -> Either ProviderError (Maybe PaymentSignal)
-invoiceSignal now ref status ms = do
-  m@GPaymentMethod {gpmRate, gpmPaid, gpmDue} <- chooseMethod ref ms
+invoiceSignal :: UTCTime -> Text -> Text -> Maybe Text -> [GPaymentMethod] -> Either ProviderError (Maybe PaymentSignal)
+invoiceSignal now ref status policy ms = do
+  (m@GPaymentMethod {gpmRate, gpmPaid, gpmDue, gpmPayments, gpmSettledThreshold}, cc) <- chooseMethod ref ms
   rate <- priced "rate" gpmRate
   paid <- priced "paymentMethodPaid" gpmPaid
-  let received = receivedOf rate paid gpmDue
+  let decimals = unitDecimals cc
+      confirming = maybe False (`elem` map speedPolicyName confirmingPolicies) policy
+      shown = cc /= CCXmr || maybe False (>= 1) gpmSettledThreshold
+      received = receivedOf decimals confirming shown (status == "Settled") rate paid gpmDue gpmPayments
   case status of
     "Settled" -> Right (Just (SigSettled received (fromMaybe now (latestSettledAt m))))
     "Processing" -> Right (Just (SigFunded received PaidInFull))
@@ -399,9 +451,9 @@ invoiceSignal now ref status ms = do
     priced field =
       maybe (Left (ProviderError ("btcpay invoice " <> ref <> ": its payment method carries no " <> field))) Right
 
-chooseMethod :: Text -> [GPaymentMethod] -> Either ProviderError GPaymentMethod
-chooseMethod ref ms = case filter ((`elem` knownMethodIds) . gpmId) ms of
-  m : _ -> Right m
+chooseMethod :: Text -> [GPaymentMethod] -> Either ProviderError (GPaymentMethod, CryptoCurrency)
+chooseMethod ref ms = case [(m, cc) | m <- ms, Just cc <- [lookup (gpmId m) methodCurrencies]] of
+  known : _ -> Right known
   [] ->
     Left . ProviderError $
       "btcpay invoice "
@@ -427,13 +479,53 @@ findMethod what ref methodId body = do
           <> T.intercalate ", " (map gpmId ms)
           <> "]"
 
-receivedOf :: WireNum -> WireNum -> Maybe WireNum -> Received
-receivedOf rate paid due =
+-- | The confirmed crypto shares paymentMethodPaid's basis, whatever it nets out: all of it once the invoice or every payment is Settled,
+-- else the Settled payments' value capped at it. An amount with a non-zero digit past its unit leaves every figure in units out.
+receivedOf :: Int -> Bool -> Bool -> Bool -> WireNum -> WireNum -> Maybe WireNum -> [GPayment] -> Received
+receivedOf decimals confirming shown invoiceSettled rate paid due payments =
   Received
     { rcvAmount = toMinorUnits (wnValue paid * wnValue rate),
       rcvCrypto = if wnValue paid > 0 then Just (wnText paid) else Nothing,
-      rcvDue = wnText <$> due
+      rcvDue = wnText <$> due,
+      rcvUnits = fst <$> counted,
+      rcvRate = Just (wnText rate),
+      rcvConfirmed = case uncreditable of
+        Nothing -> Confirmed {cfCents = toMinorUnits (scientific (maybe 0 (toInteger . snd) counted) (negate decimals) * wnValue rate), cfUnits = snd <$> counted}
+        Just _ -> Confirmed {cfCents = CurrencyAmount 0, cfUnits = Just 0},
+      rcvUncreditable = uncreditable
     }
+  where
+    settled = filter ((== "Settled") . gpStatus) payments
+    allSettled = invoiceSettled || (not (null payments) && length settled == length payments)
+    counted = do
+      paidUnits <- toUnits (wnValue paid)
+      settledUnits <- mapM (toUnits . wnValue <=< gpValue) settled
+      pure (paidUnits, if allSettled then paidUnits else fromInteger (min (toInteger paidUnits) (sum (map toInteger settledUnits))))
+    uncreditable
+      | isNothing counted = Just UCUncounted
+      | not confirming = Just UCHighSpeed
+      | not shown = Just UCNoConfirmationShown
+      | otherwise = Nothing
+    toUnits v
+      | v < 0 = Nothing
+      | otherwise = toBoundedInteger (v * scientific 1 decimals) :: Maybe Int64
+
+-- | Of the coin against the catalog's currency, as the invoices are priced, so it compares with an invoice's rate.
+currentRate :: BTCPayEnv -> CryptoCurrency -> IO (Either ProviderError Rate)
+currentRate env cc = (>>= rateOf) <$> greenfield env what methodGet ["rates"] [("currencyPair", Just (TE.encodeUtf8 pair))] Nothing
+  where
+    what = "read rate " <> pair
+    pair = coinCode <> "_" <> T.toUpper catalogCurrency
+    coinCode = case cc of
+      CCBtc -> "BTC"
+      CCXmr -> "XMR"
+    rateOf body = do
+      rates :: [GRate] <- decodeGreenfield what body
+      GRate {grErrors, grRate} <- maybe (failed "the answer has no such pair") Right (find ((== pair) . grPair) rates)
+      unless (null grErrors) $ failed (T.intercalate "; " grErrors)
+      WireNum {wnText, wnValue} <- maybe (failed "no rate") Right grRate
+      if wnValue > 0 then Right Rate {rateText = wnText, rateValue = wnValue} else failed ("the rate " <> wnText <> " is not above 0")
+    failed e = Left (ProviderError (what <> ": " <> e))
 
 -- Clamp stops a wildly wrong figure wrapping Word32 and coming out small.
 toMinorUnits :: Scientific -> CurrencyAmount

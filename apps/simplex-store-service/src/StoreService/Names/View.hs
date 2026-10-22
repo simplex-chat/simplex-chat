@@ -36,7 +36,7 @@ import StoreService.Names.Abi (hex)
 import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Contracts (Contracts, sponsorNonce)
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Store (Balance (..), BalanceHold (..), NamePhase (..), NameRegistration (..), NameReveal (..), getBalance, getRegistration, heldBy)
+import StoreService.Names.Store (Balance (..), BalanceHold (..), LateWait (..), NamePhase (..), NameRegistration (..), NameReveal (..), RegistrationPayment (..), getBalance, getRegistration, heldBy, lateWait)
 
 -- | The view's chain reads; a field whose read failed is null and named in vrUnread.
 data ViewReads = ViewReads
@@ -45,11 +45,16 @@ data ViewReads = ViewReads
   }
   deriving (Eq, Show)
 
--- | The balance as it reads at the given time, when a hold may have become overdue.
+-- | The balance as it reads at the given time, when a hold may have become overdue, and what a closed order's late money waits on.
 registrationView :: DBStore -> NamesConfig -> Contracts -> UTCTime -> NameRegistration -> IO J.Value
 registrationView st cfg ct now r = do
-  balance <- withTransaction st $ \db -> getBalance db (nrId r) now
-  viewJSON cfg r balance <$> readViewChain ct r
+  (balance, late) <- withTransaction st $ \db -> do
+    balance <- getBalance db (nrId r) now
+    late <- case nrPayment r of
+      RPInvoice _ invId -> lateWait db invId
+      _ -> pure Nothing
+    pure (balance, late)
+  viewJSON cfg r balance late <$> readViewChain ct r
 
 -- | The intent nonce only in committed.
 readViewChain :: Contracts -> NameRegistration -> IO ViewReads
@@ -61,8 +66,8 @@ readViewChain ct NameRegistration {nrPhase, nrOwner} = case nrPhase of
   where
     none = ViewReads {vrIntentNonce = Nothing, vrUnread = []}
 
-viewJSON :: NamesConfig -> NameRegistration -> Maybe Balance -> ViewReads -> J.Value
-viewJSON NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResolver, cSponsor}} r balance ViewReads {vrIntentNonce, vrUnread} =
+viewJSON :: NamesConfig -> NameRegistration -> Maybe Balance -> Maybe LateWait -> ViewReads -> J.Value
+viewJSON NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResolver, cSponsor}} r balance late ViewReads {vrIntentNonce, vrUnread} =
   J.object
     [ "id" .= rid,
       "version" .= nrVersion,
@@ -83,6 +88,7 @@ viewJSON NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResolver, cSponsor}
       "price" .= nrPrice,
       "fromBalance" .= nrBalanceUsed,
       "balance" .= (balanceJSON <$> balance),
+      "latePayment" .= ((\w -> J.object ["waiting" .= waitingText w]) <$> late),
       "commitTx" .= (txText <$> nrCommitTx),
       "registerTx" .= (txText <$> nrRegisterTx),
       "revealAfter" .= nrRevealAfter,
@@ -96,13 +102,19 @@ viewJSON NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResolver, cSponsor}
     NameRegistration {nrId = RegistrationId rid, nrVersion, nrMoves, nrLinksRefusedAt, nrPhase, nrLabelHash = LabelHash lh, nrReveal, nrOwner, nrCommitment, nrSealed} = r
     NameRegistration {nrYears, nrDuration, nrPrice, nrBalanceUsed, nrCommitTx, nrRegisterTx, nrRevealAfter, nrRevealBefore, nrExpiresAt, nrError} = r
     txText (TxHash h) = hex h
+    waitingText :: LateWait -> Text
+    waitingText = \case
+      LWConfirming -> "confirming"
+      LWCrediting -> "crediting"
+      LWSupport -> "support"
 
--- | The holder is not named, so an order's link discloses no other order.
+-- | The holder is not named, so an order's link discloses no other order. A funded hold has no end time.
 balanceJSON :: Balance -> J.Value
 balanceJSON b@Balance {blAmount, blRefunded} =
-  J.object ["amount" .= blAmount, "held" .= isJust hold, "heldUntil" .= (bhUntil <$> hold), "refunded" .= blRefunded]
+  J.object ["amount" .= blAmount, "held" .= isJust hold, "heldUntil" .= (bhUntil <$> (hold >>= unfunded)), "refunded" .= blRefunded]
   where
     hold = heldBy b
+    unfunded h@BalanceHold {bhFunded} = if bhFunded then Nothing else Just h
 
 -- | EIP-55, as the page compares owners.
 addressText :: Address -> Text

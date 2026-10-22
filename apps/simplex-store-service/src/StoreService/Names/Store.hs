@@ -23,6 +23,8 @@ module StoreService.Names.Store
     LateCreditState (..),
     LatePending (..),
     LateAlert (..),
+    LateSupport (..),
+    LateWait (..),
     CleanupKept (..),
     PrepaidCode (..),
     NewPrepaidCode (..),
@@ -71,6 +73,8 @@ module StoreService.Names.Store
     uncreditedLateInvoices,
     lateAlertDue,
     claimLateAlert,
+    setLateSupport,
+    lateWait,
     insertPrepaidCode,
     getPrepaidCode,
     getPrepaidCodeById,
@@ -126,7 +130,7 @@ import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Signatures (OrderFields (..), parseSignature)
 import StoreService.Store (RevokeResult (..))
-import StoreService.Store.Invoices (StoreDecodeError (..), executeChanging, invoiceStatusText, lockInvoice, newInvoiceId, truncateToSecond, unfundedQuery)
+import StoreService.Store.Invoices (StoreDecodeError (..), executeChanging, invoiceStatusText, lockInvoice, newInvoiceId, textToCryptoCurrency, truncateToSecond, unfundedQuery)
 
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..), Query, (:.) (..))
@@ -262,10 +266,12 @@ data Balance = Balance
   deriving (Eq, Show)
 
 -- | The order whose open invoice holds a balance, until that invoice expires; overdue past it with no money received.
+-- Funded once money reached it: it then holds until its payment settles or the provider closes it, whatever the time.
 data BalanceHold = BalanceHold
   { bhHolder :: RegistrationId,
     bhUntil :: UTCTime,
-    bhOverdue :: Bool
+    bhOverdue :: Bool,
+    bhFunded :: Bool
   }
   deriving (Eq, Show)
 
@@ -293,13 +299,15 @@ data LateCredit = LateCredit
   }
   deriving (Eq, Show)
 
--- | A name invoice's payment figures, what was credited from it, and its order's phase and live flag. Card money is counted in cents, crypto in units.
+-- | A name invoice's payment figures, what was credited from it, and its order's phase and live flag. Card money (no coin) is counted in cents,
+-- crypto in units. lsSupport: why its money will not be credited by itself, once known.
 data LateCreditState = LateCreditState
   { lsInvoice :: InvoiceId,
     lsRegistration :: RegistrationId,
     lsPhase :: NamePhase,
     lsLive :: Bool,
-    lsCard :: Bool,
+    lsCoin :: Maybe CryptoCurrency,
+    lsSupport :: Maybe LateSupport,
     lsReceivedCents :: Int,
     lsConfirmedCents :: Int,
     lsReceivedUnits :: Maybe Int64,
@@ -326,6 +334,28 @@ instance TextEncoding LatePending where
   textDecode t = lookup t [(textEncode p, p) | p <- [minBound .. maxBound]]
 
 instance FromField LatePending where fromField = fromTextField_ textDecode
+
+-- | What a closed order's late money waits on, for the view: confirmation, the credit, or support.
+data LateWait = LWConfirming | LWCrediting | LWSupport
+  deriving (Eq, Show)
+
+-- | Why a closed order's money will not be credited by itself: an invoice made under HighSpeed, an amount that could not be counted in units,
+-- a current rate below the floor, unconfirmed money alerted past the read window, or money the provider shows no confirmation of.
+data LateSupport = LSHighSpeed | LSUnits | LSRateFloor | LSUnconfirmed | LSNoConfirmation
+  deriving (Eq, Show, Enum, Bounded)
+
+instance TextEncoding LateSupport where
+  textEncode = \case
+    LSHighSpeed -> "high_speed"
+    LSUnits -> "units"
+    LSRateFloor -> "rate_floor"
+    LSUnconfirmed -> "unconfirmed"
+    LSNoConfirmation -> "no_confirmation"
+  textDecode t = lookup t [(textEncode s, s) | s <- [minBound .. maxBound]]
+
+instance FromField LateSupport where fromField = fromTextField_ textDecode
+
+instance ToField LateSupport where toField = toField . textEncode
 
 -- | A closed order's pending money to alert on, with the received figure the alert names and the one the last alert named.
 data LateAlert = LateAlert
@@ -683,19 +713,16 @@ closeOverdue db r@NameRegistration {nrId = regId@(RegistrationId rid), nrVersion
 
 -- | Whether an order can still progress to a registration for its name. The unique live indexes allow one such order per commitment,
 -- and one per owner and label hash, so a wallet can order a name again once its registration is done.
--- An unpaid order is live while its invoice is open, which nrLive carries; a paid order that lost its name can move to another one.
+-- An unpaid order is live while its invoice is open, which nrLive carries; a taken order is final, its worth kept as a balance.
 orderLive :: NameRegistration -> Bool
-orderLive NameRegistration {nrPhase, nrPayment, nrLive} = case nrPhase of
+orderLive NameRegistration {nrPhase, nrLive} = case nrPhase of
   PUnpaid -> nrLive
   PQueued -> True
   PCommitting -> True
   PCommitted -> True
   PRegistering -> True
   PFailed -> True
-  PTaken -> case nrPayment of
-    RPInvoice {} -> True
-    RPBalance -> True
-    RPCode _ -> False
+  PTaken -> False
   PRegistered -> False
 
 -- | Writes every changeable field of a registration read at its nrVersion, unless it changed since, with live as orderLive decides.
@@ -762,12 +789,26 @@ retargetRegistration db r OrderFields {ofLabelHash, ofLength, ofDuration, ofComm
       }
 
 -- | Newest first: findLimit of them, then every older one holding a balance above 0, since a balance never expires.
-findRegistrations :: DB.Connection -> Address -> IO [NameRegistration]
-findRegistrations db owner = do
-  newest <- DB.query db (selectRegistrations <> " WHERE r.owner = ?" <> newestFirst <> " LIMIT ?") (Binary $ unAddress owner, findLimit) >>= decodeAll toRegistration
-  holding <- DB.query db (selectRegistrations <> " WHERE r.owner = ?" <> withBalance <> newestFirst) (Only $ Binary $ unAddress owner) >>= decodeAll toRegistration
-  pure $ newest <> filter ((`notElem` map nrId newest) . nrId) holding
+-- Each with the order holding its balance, as getBalance reads the hold at the given time.
+findRegistrations :: DB.Connection -> Address -> UTCTime -> IO [(NameRegistration, Maybe RegistrationId)]
+findRegistrations db owner now = do
+  newest <- DB.query db (selectHeld <> " WHERE r.owner = ?" <> newestFirst <> " LIMIT ?") (holdParams :. (Binary $ unAddress owner, findLimit)) >>= decodeAll found
+  holding <- DB.query db (selectHeld <> " WHERE r.owner = ?" <> withBalance <> newestFirst) (holdParams :. Only (Binary $ unAddress owner)) >>= decodeAll found
+  pure $ newest <> filter ((`notElem` map (nrId . fst) newest) . nrId . fst) holding
   where
+    selectHeld =
+      registrationColumns
+        <> ", (SELECT b.reserved_by FROM sx_badge_service_name_balances b"
+        <> " JOIN sx_badge_service_name_registrations h ON h.registration_id = b.reserved_by"
+        <> " JOIN sx_badge_service_name_invoices hni ON hni.registration_id = b.reserved_by"
+        <> " JOIN sx_badge_service_invoices i ON i.invoice_id = hni.invoice_id"
+        <> " WHERE b.registration_id = r.registration_id AND NOT ("
+        <> holdOverdue
+        <> "))"
+        <> registrationFrom
+    holdParams = (PUnpaid, invoiceStatusText ISPaid, truncateToSecond now)
+    found :: RegistrationRow :. Only (Maybe Text) -> Either Text (NameRegistration, Maybe RegistrationId)
+    found (row :. Only holder) = (\r -> (r, RegistrationId <$> holder)) <$> toRegistration row
     newestFirst = " ORDER BY r.created_at DESC, r.registration_id DESC"
     withBalance = " AND EXISTS (SELECT 1 FROM sx_badge_service_name_balances b WHERE b.registration_id = r.registration_id AND b.amount > 0)"
 
@@ -846,16 +887,22 @@ heldBy Balance {blHold} = case blHold of
   Just BalanceHold {bhOverdue = False} -> blHold
   _ -> Nothing
 
--- | A holder is overdue as getLiveOrders reads an order overdue: its invoice past its expiry, not paid, and holding no money.
+-- | A holder h with invoice i is overdue as getLiveOrders reads an order overdue: its invoice past its expiry, not paid, and holding no money.
+-- Takes the unpaid phase, the paid status and the time.
+holdOverdue :: Query
+holdOverdue = " h.phase = ? AND i.status <> ? AND i.expires_at < ?" <> unfunded
+
 getBalance :: DB.Connection -> RegistrationId -> UTCTime -> IO (Maybe Balance)
 getBalance db (RegistrationId rid) now =
   firstDecoded toBalance $
     DB.query
       db
       ( "SELECT b.registration_id, b.amount, b.credited, b.refunded, b.reserved_by, i.expires_at,"
-          <> " CASE WHEN h.phase = ? AND i.status <> ? AND i.expires_at < ?"
+          <> " CASE WHEN"
+          <> holdOverdue
+          <> " THEN 1 ELSE 0 END, CASE WHEN i.invoice_id IS NOT NULL"
           <> unfunded
-          <> " THEN 1 ELSE 0 END, b.refunded_at"
+          <> " THEN 0 ELSE 1 END, b.refunded_at"
           <> " FROM sx_badge_service_name_balances b"
           <> " LEFT JOIN sx_badge_service_name_registrations h ON h.registration_id = b.reserved_by"
           <> " LEFT JOIN sx_badge_service_name_invoices ni ON ni.registration_id = b.reserved_by"
@@ -864,11 +911,11 @@ getBalance db (RegistrationId rid) now =
       )
       (PUnpaid, invoiceStatusText ISPaid, truncateToSecond now, rid)
 
-toBalance :: (Text, Int, Int, Int, Maybe Text, Maybe UTCTime, BoolInt, Maybe UTCTime) -> Either Text Balance
-toBalance (rid, blAmount, blCredited, blRefunded, holder_, until_, BI overdue, blRefundedAt) = do
+toBalance :: (Text, Int, Int, Int, Maybe Text, Maybe UTCTime, BoolInt, BoolInt, Maybe UTCTime) -> Either Text Balance
+toBalance (rid, blAmount, blCredited, blRefunded, holder_, until_, BI bhOverdue, BI bhFunded, blRefundedAt) = do
   blHold <- case (holder_, until_) of
     (Nothing, _) -> Right Nothing
-    (Just holder, Just bhUntil) -> Right $ Just BalanceHold {bhHolder = RegistrationId holder, bhUntil, bhOverdue = overdue}
+    (Just holder, Just bhUntil) -> Right $ Just BalanceHold {bhHolder = RegistrationId holder, bhUntil, bhOverdue, bhFunded}
     (Just _, Nothing) -> Left $ "name_balances holder without an invoice: " <> rid
   pure Balance {blRegistration = RegistrationId rid, blAmount, blCredited, blRefunded, blHold, blRefundedAt}
 
@@ -1046,25 +1093,26 @@ receivedFigure = " CASE WHEN" <> cardInvoice <> " THEN p.amount ELSE COALESCE(p.
 
 lateColumns :: Query
 lateColumns =
-  "SELECT ni.invoice_id, ni.registration_id, r.phase, r.live, CASE WHEN" <> cardInvoice <> " THEN 1 ELSE 0 END, COALESCE(p.amount, 0), p.confirmed_amount,"
+  "SELECT ni.invoice_id, ni.registration_id, r.phase, r.live, i.payment_crypto_currency, ni.late_support, COALESCE(p.amount, 0), p.confirmed_amount,"
     <> " p.received_units, p.confirmed_units, p.invoice_rate,"
     <> creditedTotal "units"
     <> ","
     <> creditedTotal "cents"
     <> ", (SELECT COUNT(*) FROM sx_badge_service_name_late_credits c WHERE c.invoice_id = ni.invoice_id), p.created_at"
 
-type LateRow = (Text, Text, NamePhase, BoolInt, BoolInt, Int, Int, Maybe Int64, Maybe Int64, Maybe Text) :. (Int64, Int, Int, UTCTime)
+type LateRow = (Text, Text, NamePhase, BoolInt, Maybe Text, Maybe LateSupport, Int, Int, Maybe Int64, Maybe Int64) :. (Maybe Text, Int64, Int, Int, UTCTime)
 
-toLateState :: LateRow -> LateCreditState
+toLateState :: LateRow -> Either Text LateCreditState
 toLateState
-  ( (inv, reg, lsPhase, BI lsLive, BI lsCard, lsReceivedCents, lsConfirmedCents, lsReceivedUnits, lsConfirmedUnits, lsInvoiceRate)
-      :. (lsCreditedUnits, lsCreditedCents, lsCredits, lsPaymentCreatedAt)
-    ) =
-    LateCreditState {lsInvoice = InvoiceId inv, lsRegistration = RegistrationId reg, lsPhase, lsLive, lsCard, lsReceivedCents, lsConfirmedCents, lsReceivedUnits, lsConfirmedUnits, lsInvoiceRate, lsCreditedUnits, lsCreditedCents, lsCredits, lsPaymentCreatedAt}
+  ( (inv, reg, lsPhase, BI lsLive, coin_, lsSupport, lsReceivedCents, lsConfirmedCents, lsReceivedUnits, lsConfirmedUnits)
+      :. (lsInvoiceRate, lsCreditedUnits, lsCreditedCents, lsCredits, lsPaymentCreatedAt)
+    ) = do
+    lsCoin <- traverse (\c -> note ("invoices.payment_crypto_currency: " <> c) (textToCryptoCurrency c)) coin_
+    pure LateCreditState {lsInvoice = InvoiceId inv, lsRegistration = RegistrationId reg, lsPhase, lsLive, lsCoin, lsSupport, lsReceivedCents, lsConfirmedCents, lsReceivedUnits, lsConfirmedUnits, lsInvoiceRate, lsCreditedUnits, lsCreditedCents, lsCredits, lsPaymentCreatedAt}
 
 -- | Nothing without a payment row.
 lateCreditState :: DB.Connection -> InvoiceId -> IO (Maybe LateCreditState)
-lateCreditState db (InvoiceId invId) = maybeFirstRow toLateState $ DB.query db (lateColumns <> lateFrom <> " WHERE ni.invoice_id = ?") (Only invId)
+lateCreditState db (InvoiceId invId) = firstDecoded toLateState $ DB.query db (lateColumns <> lateFrom <> " WHERE ni.invoice_id = ?") (Only invId)
 
 -- | Run after the invoice's lock. The order's balance is credited only when the credit's row is new, so a taken credit number changes neither.
 creditLatePayment :: DB.Connection -> LateCredit -> UTCTime -> IO Bool
@@ -1089,11 +1137,29 @@ latePending db (InvoiceId invId) =
   maybe Nothing fromOnly . listToMaybe
     <$> DB.query db ("SELECT" <> pendingCase <> lateFrom <> " WHERE ni.invoice_id = ? AND" <> closedUnpaid) (invId, PUnpaid)
 
--- | Closed orders' invoices with confirmed money not all credited, for the poller's credit pass.
+-- | Nothing once all of the closed order's money is credited, whatever support reason was given before.
+lateWait :: DB.Connection -> InvoiceId -> IO (Maybe LateWait)
+lateWait db (InvoiceId invId) =
+  maybe Nothing waitOf . listToMaybe
+    <$> DB.query db ("SELECT" <> pendingCase <> ", ni.late_support" <> lateFrom <> " WHERE ni.invoice_id = ? AND" <> closedUnpaid) (invId, PUnpaid)
+  where
+    waitOf :: (Maybe LatePending, Maybe LateSupport) -> Maybe LateWait
+    waitOf = \case
+      (Nothing, _) -> Nothing
+      (Just _, Just _) -> Just LWSupport
+      (Just LPUncounted, Nothing) -> Just LWSupport
+      (Just LPUncredited, Nothing) -> Just LWCrediting
+      (Just LPConfirming, Nothing) -> Just LWConfirming
+      (Just LPUnconfirmed, Nothing) -> Just LWConfirming
+
+-- | Closed orders' invoices with confirmed money not all credited, for the poller's credit pass; none a rate below the floor sent to support.
 uncreditedLateInvoices :: DB.Connection -> IO [InvoiceId]
 uncreditedLateInvoices db =
   map (InvoiceId . fromOnly)
-    <$> DB.query db ("SELECT ni.invoice_id" <> lateFrom <> " WHERE" <> closedUnpaid <> " AND" <> uncreditedMoney <> " ORDER BY p.created_at, ni.invoice_id") (Only PUnpaid)
+    <$> DB.query
+      db
+      ("SELECT ni.invoice_id" <> lateFrom <> " WHERE" <> closedUnpaid <> " AND" <> uncreditedMoney <> " AND (ni.late_support IS NULL OR ni.late_support <> ?) ORDER BY p.created_at, ni.invoice_id")
+      (PUnpaid, LSRateFloor)
 
 -- | Pending money whose payment row was created before the cutoff, never alerted, or alerted for less money than now received.
 lateAlertDue :: DB.Connection -> UTCTime -> IO [LateAlert]
@@ -1120,22 +1186,29 @@ lateAlertDue db cutoff =
   where
     toAlert :: LateRow :. (Maybe LatePending, Maybe Int64, Maybe UTCTime, Maybe Int64) -> Either Text LateAlert
     toAlert (row :. (pending_, laReceived, laAlertedAt, laAlertedReceived)) = case pending_ of
-      Just laPending -> Right LateAlert {laState = toLateState row, laPending, laReceived, laAlertedAt, laAlertedReceived}
+      Just laPending -> (\laState -> LateAlert {laState, laPending, laReceived, laAlertedAt, laAlertedReceived}) <$> toLateState row
       Nothing -> Left "name invoice alert without pending money"
 
--- | Marks the alert sent, unless another instance marked it since it was read; only the instance that marks it logs it.
-claimLateAlert :: DB.Connection -> LateAlert -> UTCTime -> IO Bool
-claimLateAlert db LateAlert {laState = LateCreditState {lsInvoice = InvoiceId invId}, laReceived, laAlertedAt, laAlertedReceived} now =
+-- | Marks the alert sent, with the support reason it gives unless one is set, unless another instance marked it since it was read;
+-- only the instance that marks it logs it.
+claimLateAlert :: DB.Connection -> LateAlert -> Maybe LateSupport -> UTCTime -> IO Bool
+claimLateAlert db LateAlert {laState = LateCreditState {lsInvoice = InvoiceId invId}, laReceived, laAlertedAt, laAlertedReceived} support now =
   (> 0)
     <$> executeChanging
       db
-      ( "UPDATE sx_badge_service_name_invoices SET late_alerted_at = ?, late_alerted_units = ? WHERE invoice_id = ? AND late_alerted_at"
+      ( "UPDATE sx_badge_service_name_invoices SET late_alerted_at = ?, late_alerted_units = ?, late_support = COALESCE(late_support, ?)"
+          <> " WHERE invoice_id = ? AND late_alerted_at"
           <> notDistinctFrom
           <> "? AND late_alerted_units"
           <> notDistinctFrom
           <> "?"
       )
-      (truncateToSecond now, laReceived, invId, laAlertedAt, laAlertedReceived)
+      (truncateToSecond now, laReceived, support, invId, laAlertedAt, laAlertedReceived)
+
+-- | The first reason given stays.
+setLateSupport :: DB.Connection -> InvoiceId -> LateSupport -> IO ()
+setLateSupport db (InvoiceId invId) support =
+  DB.execute db "UPDATE sx_badge_service_name_invoices SET late_support = COALESCE(late_support, ?) WHERE invoice_id = ?" (support, invId)
 
 insertPrepaidCode :: DB.Connection -> NewPrepaidCode -> UTCTime -> IO (Either CodeHashTaken Int64)
 insertPrepaidCode db NewPrepaidCode {npcCodeHash, npcMinLength, npcYears, npcPaymentStatus, npcExpiresAt} now = do

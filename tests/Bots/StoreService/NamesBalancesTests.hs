@@ -5,7 +5,7 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Bots.StoreService.NamesBalancesTests (namesBalancesTests) where
+module Bots.StoreService.NamesBalancesTests (namesBalancesTests, fieldsN, figures, holdPrice, holder, invariantHolds, placeOrderRow, source) where
 
 import Bots.StoreService.NamesOrdersTests (Ctx (..), withOrders)
 import Bots.StoreService.NamesStoreTests (at, btc, invoiceStatus, newReg, ownerA, ownerB, paidOrder, reg, signature, t0, write)
@@ -20,7 +20,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime, addUTCTime)
-import Simplex.Chat.PaymentService.Types (CardProvider (..), InvoiceId (..), InvoiceStatus (..), ServicePaymentMethod (..))
+import Simplex.Chat.PaymentService.Types (CardProvider (..), CryptoCurrency (..), InvoiceId (..), InvoiceStatus (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
@@ -150,7 +150,7 @@ holder st r src seen expiresAt = withTransaction st $ \db -> do
   createPaidRegistration db (newReg r ownerA (fieldsN r)) (holdTerms src seen) (paidOrder ("inv-" <> r)) {poPrice = holdPrice} t0
 
 hold :: Text -> UTCTime -> Bool -> BalanceHold
-hold h bhUntil bhOverdue = BalanceHold {bhHolder = RegistrationId h, bhUntil, bhOverdue}
+hold h bhUntil bhOverdue = BalanceHold {bhHolder = RegistrationId h, bhUntil, bhOverdue, bhFunded = False}
 
 coveredSpend :: DBStore -> Text -> Text -> Int -> Int -> IO (Either RegistrationRefused ())
 coveredSpend st r src price seen = withTransaction st $ \db -> createBalanceRegistration db (newReg r ownerA (fieldsN r)) (RegistrationId src) price seen t0
@@ -462,7 +462,7 @@ testFindBalances = withServiceStore $ \st -> do
   credit st "r1" 5000
   credit st "r2" 3000
   refund st "r2" 3000 `shouldReturn` True
-  map nrId <$> withTransaction st (`findRegistrations` ownerA) `shouldReturn` map (RegistrationId . rid) ([52, 51 .. 3] <> [1])
+  map (nrId . fst) <$> withTransaction st (\db -> findRegistrations db ownerA t0) `shouldReturn` map (RegistrationId . rid) ([52, 51 .. 3] <> [1])
 
 -- closes
 
@@ -517,7 +517,7 @@ testNamedHolders = withOrders $ \Ctx {cStore = st, cOrders, cWeb} -> do
   h2 <- reg st "h2"
   payment st "inv-h2" (cardPaid 100 0) (at 61)
   Just funded <- withTransaction st $ \db -> getBalance db (RegistrationId "s2") now
-  blHold funded `shouldBe` Just (hold "h2" (at 60) False)
+  blHold funded `shouldBe` Just (hold "h2" (at 60) False) {bhFunded = True}
   closedIds <$> Orders.placeOrder cOrders (orderRequest "c2") [h2] (spendInsert "c2" "s2" 6000 10000) `shouldReturn` Left (ORBalanceChanged $ Just funded)
   absent st "c2"
   nrLive <$> reg st "h2" `shouldReturn` True
@@ -620,7 +620,8 @@ testLateScans = withServiceStore $ \st -> do
           lsRegistration = RegistrationId "part",
           lsPhase = PUnpaid,
           lsLive = False,
-          lsCard = False,
+          lsCoin = Just CCBtc,
+          lsSupport = Nothing,
           lsReceivedCents = 20000,
           lsConfirmedCents = 0,
           lsReceivedUnits = Just 300000,
@@ -665,7 +666,7 @@ testLateAlerts = withServiceStore $ \st -> do
       marks :: LateAlert -> (InvoiceId, LatePending, Maybe Int64, Maybe UTCTime, Maybe Int64)
       marks LateAlert {laState = LateCreditState {lsInvoice}, laPending, laReceived, laAlertedAt, laAlertedReceived} = (lsInvoice, laPending, laReceived, laAlertedAt, laAlertedReceived)
       claim :: LateAlert -> UTCTime -> IO Bool
-      claim alert t = withTransaction st $ \db -> claimLateAlert db alert t
+      claim alert t = withTransaction st $ \db -> claimLateAlert db alert Nothing t
   [old, card] <- due
   map marks [old, card]
     `shouldBe` [(InvoiceId "inv-old", LPUnconfirmed, Just 300000, Nothing, Nothing), (InvoiceId "inv-card", LPUnconfirmed, Just 5000, Nothing, Nothing)]
@@ -688,7 +689,7 @@ testUncountedAlertRepeats = withServiceStore $ \st -> do
       due = withTransaction st $ \db -> lateAlertDue db (at 60)
   [alert] <- due
   (laPending alert, laReceived alert) `shouldBe` (LPUncounted, Just 5000)
-  withTransaction st (\db -> claimLateAlert db alert (at 61)) `shouldReturn` True
+  withTransaction st (\db -> claimLateAlert db alert Nothing (at 61)) `shouldReturn` True
   due `shouldReturn` []
   withTransaction st $ \db -> DB.execute db "UPDATE sx_badge_service_payments SET amount = ? WHERE invoice_id = ?" (6000 :: Int, "inv-x" :: Text)
   map (\LateAlert {laPending, laReceived, laAlertedReceived} -> (laPending, laReceived, laAlertedReceived)) <$> due `shouldReturn` [(LPUncounted, Just 6000, Just 5000)]
