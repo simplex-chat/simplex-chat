@@ -194,11 +194,12 @@ actual suspend fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>? 
 }
 
 // https://developer.android.com/topic/performance/graphics/load-bitmap#load-bitmap
-private fun decodeSampledBitmapFromByteArray(data: ByteArray, reqWidth: Int, reqHeight: Int): Bitmap {
+internal fun decodeSampledBitmapFromByteArray(data: ByteArray, reqWidth: Int, reqHeight: Int, maxDimension: Int = Int.MAX_VALUE): Bitmap {
   // First decode with inJustDecodeBounds=true to check dimensions
   return BitmapFactory.Options().run {
     inJustDecodeBounds = true
     BitmapFactory.decodeByteArray(data, 0, data.size, this)
+    if (outWidth > maxDimension || outHeight > maxDimension) throw IOException("Image dimensions exceed limit")
     // Calculate inSampleSize
     inSampleSize = calculateInSampleSize(this, reqWidth, reqHeight)
     // Decode bitmap with inSampleSize set

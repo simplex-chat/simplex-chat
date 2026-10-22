@@ -2,17 +2,42 @@ import {execFile, spawnSync} from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 import {core} from "../src/index";
+import * as libs from "../src/libs";
+import * as simplex from "../src/simplex";
 
 describe("Core tests", () => {
+  let libPath: string;
+  let addonPath: string;
+  // the first run downloads libsimplex
+  beforeAll(async () => {
+    const libsDir = await libs.resolveLibsDir("sqlite");
+    libPath = libs.libPath(libsDir);
+    addonPath = await libs.resolveAddonPath();
+    await core.loadLibrary("sqlite");
+  }, 300000);
   const tmpDir = "./tests/tmp";
   const dbPath = path.join(tmpDir, "simplex_v1");
+  const templateDir = "./tests/template";
+  const templateDbPath = path.join(templateDir, "simplex_v1");
 
-  beforeEach(() => fs.mkdirSync(tmpDir, {recursive: true}));
+  beforeAll(async () => {
+    fs.mkdirSync(templateDir, {recursive: true});
+    await stopAndClose(await core.chatMigrateInit(templateDbPath, "key", core.MigrationConfirmation.YesUp));
+  }, 30000);
+  afterAll(() => fs.rmSync(templateDir, {recursive: true, force: true}));
+  beforeEach(() => {
+    fs.mkdirSync(tmpDir, {recursive: true});
+    copyTemplateDb(dbPath);
+  });
   afterEach(() => fs.rmSync(tmpDir, {recursive: true, force: true}));
 
   async function stopAndClose(ctrl: bigint): Promise<void> {
     await expect(core.chatSendCmd(ctrl, "/_stop")).resolves.toMatchObject({type: "chatStopped"});
     await core.chatCloseStore(ctrl);
+  }
+
+  function copyTemplateDb(dbFilePrefix: string): void {
+    for (const suffix of ["_chat.db", "_agent.db"]) fs.copyFileSync(templateDbPath + suffix, dbFilePrefix + suffix);
   }
 
   it("should initialize chat controller", async () => {
@@ -121,13 +146,14 @@ describe("Core tests", () => {
 
   it("should not block the libuv pool while receiving", async () => {
     const ctrl = await core.chatMigrateInit(dbPath, "key", core.MigrationConfirmation.YesUp);
-    const receives = [1, 2, 3, 4].map(() => core.chatRecvMsgWait(ctrl, 2_000_000));
+    const receives = [1, 2, 3, 4].map(() => core.chatRecvMsgWait(ctrl, 500_000));
     const start = Date.now();
     await fs.promises.stat(tmpDir);
     expect(Date.now() - start).toBeLessThan(200);
+    // one receiver thread per controller runs the 4 receives in turn
     await Promise.all(receives);
     await stopAndClose(ctrl);
-  }, 10000);
+  }, 30000);
 
   const itOnLinux = process.platform === "linux" ? it : it.skip;
 
@@ -147,8 +173,10 @@ describe("Core tests", () => {
   }, 30000);
 
   it("should receive on two controllers concurrently", async () => {
-    const ctrlA = await core.chatMigrateInit(path.join(tmpDir, "simplex_a"), "key", core.MigrationConfirmation.YesUp);
-    const ctrlB = await core.chatMigrateInit(path.join(tmpDir, "simplex_b"), "key", core.MigrationConfirmation.YesUp);
+    const dbPathB = path.join(tmpDir, "simplex_b");
+    copyTemplateDb(dbPathB);
+    const ctrlA = await core.chatMigrateInit(dbPath, "key", core.MigrationConfirmation.YesUp);
+    const ctrlB = await core.chatMigrateInit(dbPathB, "key", core.MigrationConfirmation.YesUp);
     const start = Date.now();
     await expect(Promise.all([core.chatRecvMsgWait(ctrlA, 1_000_000), core.chatRecvMsgWait(ctrlB, 1_000_000)]))
       .resolves.toEqual([undefined, undefined]);
@@ -157,7 +185,7 @@ describe("Core tests", () => {
     expect(elapsed).toBeLessThan(1800);
     await stopAndClose(ctrlA);
     await stopAndClose(ctrlB);
-  }, 10000);
+  });
 
   it("should receive events of one controller in order", async () => {
     const ctrl = await core.chatMigrateInit(dbPath, "key", core.MigrationConfirmation.YesUp);
@@ -171,7 +199,7 @@ describe("Core tests", () => {
       {type: "timedAction", action: "second"}
     ]);
     await stopAndClose(ctrl);
-  }, 10000);
+  });
 
   it("should close the store while a receive is in flight", async () => {
     const ctrl = await core.chatMigrateInit(dbPath, "key", core.MigrationConfirmation.YesUp);
@@ -189,36 +217,70 @@ describe("Core tests", () => {
     expect({closed, timerDelayBelow100ms: timerDelay < 100}).toEqual({closed: false, timerDelayBelow100ms: true});
     await close;
     expect(await receives).toEqual([{event: undefined}, {error: "chat receiver stopped"}]);
-  }, 10000);
+  });
+
+  it("should accept loading libsimplex again from the same path", () => {
+    expect(() => simplex.load(addonPath, libPath)).not.toThrow();
+  });
+
+  it("should refuse to load libsimplex from another path", () => {
+    expect(() => simplex.load(addonPath, path.resolve("other", "libsimplex.so"))).toThrow(`libsimplex already loaded from ${libPath}`);
+  });
+
+  it("should load libsimplex after a failed load and in several workers", () => {
+    const addon = path.resolve(__dirname, "..", "build", "Release", "simplex.node");
+    const childDbPath = path.resolve(tmpDir, "simplex_workers");
+    const script = `
+      const {Worker} = require("worker_threads");
+      const simplex = require(${JSON.stringify(addon)});
+      try { simplex.load(${JSON.stringify(addon)}) } catch (e) { console.log(JSON.stringify(e.message.endsWith("does not export hs_init_with_rtsopts"))) }
+      const load = ${JSON.stringify(`require(${JSON.stringify(addon)}).load(${JSON.stringify(libPath)})`)};
+      const workers = Array.from({length: 4}, () => new Worker(load, {eval: true}));
+      Promise.all(workers.map((w) => new Promise((resolve, reject) => w.on("exit", resolve).on("error", reject))))
+        .then(async (codes) => {
+          simplex.load(${JSON.stringify(libPath)});
+          const [ctrl] = await simplex.chat_migrate_init(${JSON.stringify(childDbPath)}, "key", "yesUp");
+          await simplex.chat_send_cmd(ctrl, "/_stop");
+          console.log(JSON.stringify({codes, closed: await simplex.chat_close_store(ctrl) === ""}));
+        });
+    `;
+    const child = spawnSync(process.execPath, ["-e", script], {timeout: 30000, encoding: "utf8"});
+    if (child.status !== 0 || child.signal !== null) console.log("child stderr:", child.stderr);
+    expect({status: child.status, signal: child.signal, stdout: child.stdout.trim()})
+      .toEqual({status: 0, signal: null, stdout: 'true\n{"codes":[0,0,0,0],"closed":true}'});
+  }, 35000);
 
   it("should let the process exit while a receiver is idle", () => {
-    const childDbPath = path.resolve(tmpDir, "simplex_child");
+    const childDbPath = path.resolve(dbPath);
     const script = `
       const simplex = require("./build/Release/simplex.node");
+      simplex.load(${JSON.stringify(libPath)});
       simplex.chat_migrate_init(${JSON.stringify(childDbPath)}, "key", "yesUp")
         .then(([ctrl]) => simplex.chat_recv_msg_wait(ctrl, 1))
         .then((res) => console.log("received " + JSON.stringify(res)));
     `;
-    const child = spawnSync(process.execPath, ["-e", script], {cwd: path.join(__dirname, ".."), timeout: 10000, encoding: "utf8"});
+    const child = spawnSync(process.execPath, ["-e", script], {cwd: path.join(__dirname, ".."), timeout: 25000, encoding: "utf8"});
     if (child.status !== 0 || child.signal !== null) console.log("child stderr:", child.stderr);
     expect({status: child.status, signal: child.signal, stdout: child.stdout.trim()})
       .toEqual({status: 0, signal: null, stdout: 'received ""'});
-  }, 15000);
+  });
 
   it("should not crash when closing stopped controllers repeatedly", async () => {
     const script = `
       const fs = require("fs"), path = require("path");
       const simplex = require("./build/Release/simplex.node");
+      simplex.load(${JSON.stringify(libPath)});
       (async () => {
+        // a new database runs every migration, each committed with a disk flush that takes up to 30 ms on CI runners
+        const dir = fs.mkdtempSync(path.join(${JSON.stringify(path.resolve(tmpDir))}, "close-"));
         for (let i = 0; i < 40; i++) {
-          const dir = fs.mkdtempSync(path.join(${JSON.stringify(path.resolve(tmpDir))}, "close-"));
           const [ctrl] = await simplex.chat_migrate_init(path.join(dir, "simplex"), "key", "yesUp");
           await simplex.chat_send_cmd(ctrl, "/v");
           await simplex.chat_send_cmd(ctrl, "/_stop");
           const res = await simplex.chat_close_store(ctrl);
-          fs.rmSync(dir, {recursive: true, force: true});
           if (res !== "") throw new Error("close failed: " + res);
         }
+        fs.rmSync(dir, {recursive: true, force: true});
       })();
     `;
     const runChild = () => new Promise<{code: number | null, signal: NodeJS.Signals | null, stderr: string}>((resolve) => {
