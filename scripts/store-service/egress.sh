@@ -22,7 +22,7 @@ V4_EMBEDDING_PREFIXES=(:: ::ffff: 64:ff9b::)
 
 usage() {
   cat <<EOF
-Usage: $0 [--dry-run | --check] (--uid UID | --bridge IFACE) [--ini FILE] [--db CONN]
+Usage: $0 [--dry-run | --check | --remove] (--uid UID | --bridge IFACE) [--ini FILE] [--db CONN]
           [--resolv-conf FILE] [--allow HOST:PORT]...
 
 Installs the egress rule as the iptables and ip6tables chain $CHAIN, rebuilt on every run.
@@ -30,6 +30,7 @@ Installs the egress rule as the iptables and ip6tables chain $CHAIN, rebuilt on 
   --dry-run          print the commands an install would run, and change nothing
   --check            exit 1 unless every rule and jump an install writes is in place and the chain
                      holds no other rule
+  --remove           delete the jumps an install adds for this --uid or --bridge, then the chain
   --uid UID          host networking: match the service's user, which must have no login shell
   --bridge IFACE     a Docker bridge network: match traffic from IFACE ($DOCKER_CHAIN and INPUT)
   --ini FILE         store_service.ini, read for [chain] rpc_url and [btcpay] host
@@ -58,6 +59,7 @@ while (($#)); do
   case $1 in
     --dry-run) mode=dry-run ;;
     --check) mode=check ;;
+    --remove) mode=remove ;;
     --uid) uid=${2:?--uid needs a value}; shift ;;
     --bridge) bridge=${2:?--bridge needs a value}; shift ;;
     --ini) ini=${2:?--ini needs a value}; shift ;;
@@ -310,12 +312,28 @@ check_family() {
   return "$failed"
 }
 
+remove_family() {
+  local tool=$1 line parent
+  local -a args
+  while read -r parent line; do
+    read -ra args <<<"$line"
+    while "$tool" -w -C "$parent" "${args[@]}" -j "$CHAIN" 2>/dev/null; do
+      "$tool" -w -D "$parent" "${args[@]}" -j "$CHAIN"
+    done
+  done < <(jumps_for "$tool")
+  if "$tool" -w -S "$CHAIN" >/dev/null 2>&1; then
+    "$tool" -w -F "$CHAIN"
+    "$tool" -w -X "$CHAIN"
+  fi
+}
+
 case $mode in
   install | dry-run)
     if [[ ! $bridge ]]; then refuse_login_user; fi
     collect_allowed
     ;;
   check) collect_allowed ;;
+  remove) ;;
   *) die "unknown mode $mode" ;;
 esac
 
@@ -326,6 +344,7 @@ for family in 4 6; do
   [[ $mode == dry-run ]] || command -v "$tool" >/dev/null || die "$tool is not installed"
   case $mode in
     check) check_family "$tool" "$family" || status=1 ;;
+    remove) remove_family "$tool" ;;
     *) install_family "$tool" "$family" ;;
   esac
 done
