@@ -1,0 +1,398 @@
+# Plan: several directories, configured like chat relays
+
+Page for ep: (published after the review round; its link goes here)
+
+Run: 009-directory-operators · Repo: simplex-chat · Estimated diff: ~3,900 changed lines in three pull requests (core ~900, iOS ~1,550, Kotlin ~1,450, CI included), plus an optional directory pull request (~250) · Bases and order: section 6
+
+## Summary: what ep decides
+
+Directories become a fifth list in each operator's servers and under Your servers, stored, preset and merged at start-up exactly like chat relays, with SimpleX Directory preset for the SimpleX Chat operator (boards 10–12). A search asks every directory in use at once and shows one list, with a retry row per failed directory and a submenu saying which directories listed a result (boards 13–17). This is plan 015's option A, re-checked against today's code, with its open review notes folded in and two answers changed: a preset its operator drops is kept turned off rather than deleted (section 4.2), and the release order (open question 3).
+
+ep's newest direction, a generic MCP-style service layer in which a service fills a role when it offers the role's tools, is answered in section 4.6, against his own draft (docs/protocol/agent-protocols.md, 2026-10-19). Plainly: this design replaces "a role inferred from the tools a service offers" with "the user puts a directory in the Directories list". How a request travels (a service request) is shared, and what a request looks like (his envelope with MCP inside) can be adopted for directories whenever it is final, without moving where directories are configured. A later move to a services list keeps the storage, the search and the consent; it replaces the directory settings screens, adds a services list, migrates the rows and keeps the old settings key for a release (~1,500 lines, section 4.6.3). Telemetry, the next service ep named, has one receiver per operator and needs explicit consent, so in this design it is a switch on the operator's screen; either design needs the same privacy-policy change first (section 4.6.2).
+
+Decisions asked of ep (open questions 1, 2, 3, 13 and 14): this design or the service layer first; if this design, the core pull request to master right away, ideally before directory search is released; whether directory search ships before several directories (recommended) or waits for them; when the directory should answer his MCP envelope (recommended: together with the core's `protocols` declarations from his draft, not before); and whether to ship while colluding directories can link one search (recommended: yes).
+
+## 1. Goal and acceptance criteria
+
+What the user gets, all parts together: directories are listed and added like chat relays; each search goes to every directory in use (section 4.1) and the results arrive as one list; a directory that fails gets its own retry row while the others' results stay; the enable alert names every directory a search will reach and asks again before an operator's directory the user hasn't agreed to receives a search; a result's long-press menu shows which directories listed it, each opening that directory's settings.
+
+Core (pull request 1; tests in the container except Postgres):
+
+- AC1: a user's servers carry a list of directories beside the chat relays. `/_servers <userId>` returns, per operator group, `directories` with address, name, domains, preset, tested, enabled; `/_servers <userId> <json>` saves them (add, rename, turn off, delete). A requested name is normalised, and an empty result is stored as "" and stays "" on every later save. Test: `testGetSetDirectories` (new, tests/ChatTests/Directories.hs).
+- AC2: SimpleX Directory (`https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok`) is preset for the SimpleX Chat operator, enabled, for new users and, on the next start, for existing ones; a stored preset keeps its enabled flag across starts; a directory the user added at a preset's address becomes that preset, keeping its id and enabled flag; a stored preset that its operator, still preset, no longer lists is kept, turned off, under Your servers, where the user can delete it; a whole operator dropped from the presets, and the CLI's `-s` with `--xftp-server`, leave every stored directory as it is. Tests: tests/OperatorTests.hs cases on the start-up pass and the merge, each asserting over every group (slices 3a and 3b), and a restart test in tests/ChatTests/Directories.hs that switches configs on one database.
+- AC3: two directories with the same address are an error (`USEDuplicateDirectoryAddress`), from `/_validate_servers` and on save. Tests: `validateServersTest` cases; a `/_validate_servers 1 <json>` step in `testGetSetDirectories`.
+- AC4: compatibility both ways. A `/_servers` JSON without `directories` (an older app, or an older desktop's command through a newer phone's core) saves no change to directories and keeps the stored ones; validation can't raise a directory error without directories. A servers response without `directories` (an older phone's core, read by a newer desktop's core) parses, with no directories. Tests: a JSON test decoding `UserOperatorServers`, and `CRUserServers` through `RRResult ChatResponse`, without the key; `testGetSetDirectories` saving and validating a JSON without `directories` and reading the stored ones back.
+- AC5: a new chat profile copies the current profile's directories, as it copies relays. Test: `testCreateUserSameServers` extended.
+- AC6: the migration goes up and down on SQLite and Postgres, the table is STRICT with its foreign key indexed, schema dumps regenerate. Tests: tests/SchemaDump.hs (SQLite, container); Postgres on the host.
+- AC7: no change to the bot API: no new command, response or store error, and no new warning; the generated bot API files stay the same. Test: `-m "Bot API docs"`.
+- AC8: the preset lists can't break start-up: every preset directory's domains are its operator's, no address is preset twice, in `defaultChatConfig` and `terminalChatConfig`, and the SimpleX Chat operator presets the same directories in both. Test: a pure OperatorTests case over both configs.
+
+Apps (pull requests 2 and 3; not compiled in the container, checked on the runners):
+
+- AC9: settings: boards 10–12 work like chat relays on both platforms: the operator screen's "Directories" section, Your servers' section and "Directory" under Add server, the New directory screen with "Test directory" and "Use for search", and "No directory is in use" when none is.
+- AC10: search: every network action (search, Load more, retry) reads the active profile's servers right before it asks for consent, and sends nothing if the profile, the remote host or the search changed meanwhile; one request per directory in use, concurrently, for that profile; a directory's rows appear once every directory before it has answered, failed or passed 15 s; for a link several directories list, the earliest directory's entry; per-directory retry; the footer rows once the load is complete; the load row across directories; at most 50 entries taken from one response; counts summed without overflow; the consent rules of section 4.4.
+- AC11: the long-press Directories submenu (boards 16–17).
+- AC12: CI no longer edits app sources. The test backends start two directories, "CI Directory A" and "CI Directory B", with overlapping listings and one shared channel whose stored description is changed in B's database (sqlite3, while B is stopped), since a directory sends a channel's own profile text. First, with the preset still on and nothing sent: turn the switch on in Privacy settings, search, and check that the second alert names only SimpleX Directory and that Cancel leaves no spinner and no rows (proving forgetting would need agreeing, which sends to the live directory, so that is checked on a device). Then turn the preset off, add A and then B in Settings, and check: the first alert names both "(added by you)"; one list with the shared channel once, with A's description; "about N left"; with B stopped, B's own retry row and A's results kept; the submenu listing both; footer rows in both list layouts. The one-time upgrade step is checked on a device.
+
+Directory service (optional pull request 4; container tests):
+
+- AC13: SimpleX Directory also answers ep's envelope `{"protocol":"mcp","request":<JSON-RPC>}` with `server/discover`, `tools/list` (one tool, `search`) and `tools/call` of `search`, with the same entries as the legacy request where the page fits both forms, which keeps working unchanged. Tests: tests/Bots/DirectoryTests.hs.
+
+## 2. Non-goals
+
+- The service layer itself, telemetry, and a merged services list (the other design; section 4.6 says how they would fit).
+- Sending the apps' search through MCP (section 4.6.4).
+- Sorting results across directories by member count (a directory could inflate its counts).
+- Linking-resistant reply queues (a simplexmq change the search review proposed; open question 14).
+- CLI commands for directories (tests use `/_servers` JSON, as `enableNamesRole` does).
+- Documenting the servers API for bots (it is undocumented today).
+- Raising the remote-desktop minimum versions.
+
+## 3. Current state
+
+From research.md, checked against `4afce4931` (the search branch) and `origin/master` (`cfcce1b43`):
+
+- Nothing in the servers code moved since plan 015. Master gained three Kotlin UI fixes outside servers and search; the branch changes none of Operators.hs, Presets.hs, Chat.hs, Store/Profiles.hs, Terminal.hs, View.hs. Line numbers below hold on both; Commands.hs is given as master / branch. The branch and the core change both edit Commands.hs, tests/ChatClient.hs, tests/ChatTests/Direct.hs and simplex-chat.cabal, in different places, and both change `chat_query_plans.txt`, which is regenerated on the host rather than merged by hand.
+- Chat relays are the fourth list of each operator group: `UserOperatorServers` / `UpdatedUserOperatorServers` (Operators.hs:200-214), the `UserServersClass` (:219-248), presets with operator `domains` (Presets.hs:93-98, Chat.hs:81-105), merged into every user's list on each start (`agentServers` Chat.hs:295-318, `updatedUserServers` Operators.hs:411-447), grouped by operator domain (Operators.hs:496-521), stored in `chat_relays` (M20260222_chat_relays: STRICT, `user_id … REFERENCES users ON DELETE CASCADE`, unique `(user_id, address)`), read by `getUserServers` as a 4-tuple (Profiles.hs:775-781), saved by `setUserServers'` (:1003-1009), validated by `validateUserServers` (Operators.hs:537-597), exposed by `/_servers` and `/_validate_servers` (Commands.hs 1813-1831 / 1819-1837).
+- Start-up merges and saves each group in turn inside one transaction, operator groups first and the custom group last (Chat.hs:171, :316; Operators.hs:505-507), so a row in two groups' results would be saved twice and the custom group's write would win; an insert that hits the unique index fails the whole start.
+- The merge matches a preset only within its own operator's group (Operators.hs:444-447); a stored preset its operator no longer lists drops out of the update list and is never saved or deleted (:434-439); delete-on-save never deletes a preset (`preset = 0`, Profiles.hs:1042). Tagged operators no longer preset are dropped from the start-up operator list, which also carries untagged stored operators without a preset (Operators.hs:397-408), so a dropped operator's rows fall into the custom group, which keeps stored rows as they are (:417-418).
+- `-s` with `--xftp-server` replaces every operator with one custom preset (Chat.hs:277); the CLI and every Haskell bot run `terminalChatConfig`, which presets the SimpleX Chat operator only (Terminal.hs:36-66).
+- Validation: errors for other users are only missing-server errors (Operators.hs:541); warnings come from the request's own groups and other users' stored groups (:581-582). Both apps decode warnings and errors as closed types (AppAPITypes.swift:1968-2065, SimpleXAPI.kt:4961-5050); one they don't know fails the whole response and the screen silently keeps stale errors (NetworkAndServers.swift:361-363, NetworkAndServers.kt:942).
+- In a remote-desktop session the desktop's core forwards the command text and decodes the phone's reply into `ChatResponse` (Remote/Protocol.hs:185, Controller.hs:1936), re-encoding it for the desktop app (Mobile.hs:381-382). Desktops accept phones from 7.1.0.11 (Remote.hs:77-82; this core is 7.1.0.14). The codebase's type for an optional list is `ListDef` (Types/Preferences.hs:488-494).
+- `StoreError` is a documented bot-API type (bots/src/API/Docs/Types.hs:394), generated into TypeScript and Python; the servers commands, responses and types are not.
+- The apps search one constant directory (`DIRECTORY_SERVICE_LINK`, DirectorySearch.swift:14, DirectorySearch.kt:14), only from `apiSearchDirectory` (SimpleXAPI.swift:1043-1058, SimpleXAPI.kt:1676-1685); the CI workflows rewrite the constant before building (ios-sim.yml:235-241, desktop-linux.yml:237-244), and the CI backends start one directory named "SimpleX Directory" (scripts/ci/ios-sim/backend.sh:21, :109-123, and the desktop twin). `OnlineSearchModel` holds one cursor, count and failure (DirectorySearchView.swift:17-161, .kt:34-183). The apps read servers only on demand, in the settings and channel screens (NetworkAndServers.swift:140, :481; AddChannelView.swift:234, :273; AddGroupRelayView.swift:90). The store returns relays in no set order and grouping prepends each one (Profiles.hs:709-719, Operators.hs:504, :521), while servers are reversed before grouping to keep their order (:502). Every network path (first search, Load more, retry) goes through one consent check of one device-wide boolean (DirectorySearchView.swift:321-327, .kt:326-332). The alert says "Search text is sent to SimpleX Directory, each search separately and without your profile." The results reset on a profile switch in the chat list view (ChatListView.swift:239-245; ChatListView.kt:246-253). The long-press menu has Open only (DirectorySearchView.swift:290-313, .kt:295-318). Today's dedupe keeps the first entry seen (DirectorySearchView.swift:129-131).
+- On iOS the request's blocking FFI call runs inside `withCheckedContinuation` on the calling task's thread (SimpleXAPI.swift:224-229), a cooperative-pool thread for up to 10 s (inference from the concurrency rules; not observed). Kotlin sends on `Dispatchers.IO` (SimpleXAPI.kt:972-994), through the phone's core when connected to one; it keeps any non-negative `Int` count (DirectorySearch.kt:85).
+- A service reply is bounded in the core on the branch: compressed body ≤ 10,737 bytes, decompressed ≤ 64 KiB, JSON nesting ≤ 32 (Protocol.hs:946-947, :1066-1110 at 4afce4931). The apps take every entry of a response; each kept entry gets a local connection plan, one after another (DirectorySearchView.swift:117-132).
+- Each request uses a new connection whose reply queue is on one of the user's own storage servers, preferring an operator other than the address's (simplexmq Agent/Client.hs:2498-2536 at the pinned commit). The directory's link data is fetched and its queue reached as the user's private-routing setting decides (Agent/Client.hs:2014-2016).
+- The directory's service-request handling (Rpc.hs, `DEServiceRequest`) exists only on the search branch; its event drops the requester's `signerKey` (Events.hs:116 at 4afce4931); over its in-flight cap it rejects at the agent level ("service is busy"); it answers anything but a search with `{"type":"error","errorMessage":"unsupported request"}`.
+
+Invariants to keep: presets can be turned off, never deleted by the user; a stored preset keeps the user's enabled flag across starts; saving one group never deletes entries absent from it (only entries flagged `deleted`); warnings never block saving, errors do; every warning or error the core returns is one the app that asked can decode; every core in a supported remote pair can decode the other's replies; no search text leaves the device for a directory the user hasn't agreed to, or for a profile other than the one the user searched in; results already shown don't move under the user's finger (one exception, as built: a result that is one of your chats joins your chats at the top).
+
+## 4. Design
+
+### 4.1 The model
+
+Directories become a fifth list of each operator group, stored and preset as chat relays are, so every layer that handles relays gains a list rather than a new concept: the operator screens get a "Directories" section where they have "Chat relays", Add server gets "Directory" where it has "Chat relay". The apps search the directories in use of the active profile instead of one constant, keeping per directory the state they keep today for one (cursor, count, failure), and merge the pages into the one list they already draw.
+
+**In use:** a directory is in use when it is enabled, not deleted, and its group's operator is enabled (the custom group counts as enabled). One rule decides who receives a search, who the alerts name, whether "Search in Directory" shows, and the "No directory is in use" note. A user who turns the SimpleX Chat operator off sends no searches to SimpleX Directory, as channel creation already skips a disabled operator's relays (open question 9). The apps compute the rule from `/_servers`.
+
+### 4.2 Core: storage, presets, start-up
+
+New mechanisms, each with its requirement:
+
+- Type `UserDirectory' s {directoryId :: DBEntityId' s, address :: ShortLinkContact, displayName :: Text, domains :: [Text], preset :: Bool, tested :: Maybe Bool, enabled :: Bool, deleted :: Bool}`, with `UserDirectory`, `NewUserDirectory`, `AUserDirectory = AUD (SDBStored s) (UserDirectory' s)` — boards 10–12 (a list with name, test state and "Use for search"). `deleted` is the API's delete-on-save flag, as for relays; there is no `deleted` column (nothing references a directory, so delete is a plain DELETE).
+- `directories :: ListDef UserDirectory` in `UserOperatorServers` and `directories :: ListDef AUserDirectory` in `UpdatedUserOperatorServers`, so a servers response or request without the key (an older phone's core in a remote session; an older app saving) parses as an empty list. An empty list in a request saves nothing and keeps the stored rows (a save only upserts the listed rows and deletes the ones flagged `deleted`) and can raise no directory error, so no "app doesn't know directories" state is needed. `ADirectory`, `directories'`, `aUserDirectory'` in `UserServersClass`. Rejected: a plain list (a missing key fails to parse); `Maybe` in the request (it would distinguish nothing); a hand-written parser with `.:? … .!= []` (an instance where the codebase already has a type).
+- Table `directories (directory_id INTEGER PRIMARY KEY, address BLOB NOT NULL, display_name TEXT NOT NULL, domains TEXT NOT NULL, preset INTEGER NOT NULL DEFAULT 0, tested INTEGER, enabled INTEGER NOT NULL DEFAULT 1, user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE, created_at, updated_at) STRICT`, `idx_directories_user_id`, unique `idx_directories_user_id_address`; Postgres with `BIGINT … GENERATED ALWAYS AS IDENTITY`, `BYTEA`, `SMALLINT` as `chat_relays` — per-profile storage, "stored like chat relays" (the teal note). The cascade removes a deleted profile's rows. `domains` is comma-joined text as for relays; the store reads "" as `[]`. `getDirectories` orders by `directory_id`, and grouping takes the list reversed, as it does for servers (it prepends each row), so every group keeps the order in which its directories were added; that is the "settings order" of section 4.4. The id follows `chat_relays`; master switched eight entity tables to AUTOINCREMENT on 2026-10-19 without a stated reason, so the core pull request's reviewer should confirm (nothing keeps a directory's id beyond one save: the apps identify directories by address).
+- Presets: `simplexDirectories :: [NewUserDirectory]` in Presets.hs, each built from its operator (`presetDirectory operatorSimpleXChat "SimpleX Directory" <the address above>` takes the operator's `serverDomains` as its domains, so a preset can't name another operator); a `directories` field in `PresetOperator`, set for the SimpleX Chat operator in both `defaultChatConfig` and `terminalChatConfig` (the same list: a config that presets fewer directories under the same operator would retire the others on each start); Flux and the CLI's custom preset have none — "SimpleX Directory preset" (the orange note). A pure test asserts, for both configs, that every preset directory's domains are its operator's and that no address is preset twice (AC8): either mistake would make the operator's merge insert a row that already exists and fail every start.
+- One pure pass over the user's flat list of stored directories at start-up, before grouping, in `getServers` (Chat.hs:309-318), with two rules, in this order:
+  1. **Adopt.** A row at the address of a directory preset by an operator with a preset entry in the start-up list (`sameShortLinkContact`) is rewritten to that preset's `domains` with `preset = True`, keeping its id, name, tested and enabled flag. Grouping by domains then puts it in the operator's group only, and the per-group merge stays exactly like relays' (a preset matched within its group). This is what makes a third-party directory becoming a preset safe: without it the preset would be inserted beside the user's row and hit the unique index inside the start-up transaction. If that operator is turned off, the adopted directory stops being searched and its section is hidden until the operator is turned on (the in-use rule; open question 9). Rejected: adopting inside `updatedUserServers` (the row stays in the custom group's result too, and the custom group, saved last, turns it back on every start); an upsert on insert (the same save-order problem).
+  2. **Retire.** A row with `preset = True` whose domains name an operator with a preset entry in the start-up list, and whose address that operator no longer presets, is rewritten to `preset = False`, `domains = []`, `enabled = False`, keeping its id and name. Grouping then puts it under Your servers, where it stays turned off and the user can delete it (the operator screen has no delete). An operator that drops a directory thereby stops the searches it gets, with no new store function; if a later version presets the address again, rule 1 adopts it, still off. Scoping by operators with a preset entry keeps `-s` with `--xftp-server` (no preset operator at all), the CLI and bots (which don't preset Flux), and untagged operators the user made from touching any stored row. Rejected: deleting the row (plan 015's answer): a store delete outside the preset guard, and a later re-preset would insert the address enabled while the consent set (section 4.4) already holds it, so a directory the user had turned off would receive searches without a question.
+
+  Invariants: the pass never changes a row with `preset = False` except to adopt it; it never retires a row at any preset's address; apart from adopting a row at a preset's address, it leaves every row alone whose domains name no operator with a preset entry. Directories of an operator a later version drops entirely stay stored and in use, as its servers and relays do today (Operators.hs:464-465); the plan claims nothing more.
+
+  Costs of retiring, accepted: the pass can't tell "the operator dropped it" from "this binary presets less". An older binary that already has the table (a later version's CLI is newer than an app, or the reverse) opening the same database retires the directories it doesn't preset, and the next start of the newer one adopts them back turned off, though the user never turned them off. A directory the user added, adopted as a preset by one version and dropped by a later one, comes back turned off. Both are silent and fail safe (off, so no search text goes anywhere new).
+- Merge in `updatedUserServers`: `updatedDirectories`, every preset directory of the group's operator matched by address to the group's stored rows (kept as stored, so a renamed preset keeps its stored name, as relays do) or new, plus the group's stored custom rows; the same shape as `updatedRelays` (Operators.hs:434-447).
+- Validation: `USEDuplicateDirectoryAddress {duplicateDirectory :: Text, duplicateAddress :: ShortLinkContact}` over the request's groups — so the settings screens can mark a duplicate. A request without directories carries an empty list, so it can't raise this error; no other user's directories are checked (other users get only missing-server errors today). No "no directories" warning: an app shows that note from its own data (section 4.3), which needs no new case in the apps' closed warning types and doesn't nag a profile whose user turned directories off on purpose.
+- A directory's name is normalised where app input enters the core: the `APISetUserServers` and `APIValidateServers` handlers pass each requested directory's name through `mkValidName` (Commands.hs:6948 / 6968) before validating and saving; an empty result is stored as "", and the apps show "Unnamed directory" where the name is empty (not the address's host, which is its router and can look official, section 4.7). The name comes from the directory's own profile and is shown in the consent alert, so this bounds what a directory can put there (section 5.4).
+- `copyServers` (Commands.hs:501-511) copies directories to a new profile as new rows, as it copies relays.
+- The CLI view gains a "Directories" part in `viewUserServers` (View.hs:1668-1674).
+
+Shared code, not copies (CODE.md: parameterise): the duplicate-address fold (Operators.hs:575-580) becomes one function over `[ShortLinkContact]`, used by the relay and the directory errors, extracted in the structural slice with relays as its only user. The store's insert, update and delete-on-save keep one small function per table (different columns), as relays do.
+
+No new command, response, store error or warning: the apps learn a directory's name from `APIConnectPlan` and test it with a search request (section 4.3), so the bot API and its generated files don't change (AC7).
+
+### 4.3 Settings screens (boards 10–12)
+
+As drawn, built from `ChatRelayView`'s shared pieces, not a copy of it:
+
+- Board 10: the operator screen's "Directories" section below "Chat relays", shown when the operator is enabled and has directories; footer "Directories answer your searches for public groups and channels."; rows open `DirectoryView` (a preset: read-only address and name, "Use for search").
+- Board 11: Your servers gets a "Directories" section with delete, and "Directory" after "Chat relay" in Add server.
+- Board 12: New directory: "Your directory address", "Your directory name" (read-only, filled by the test), "Test directory" with its result, "Use for search". Added below the address: "The directory receives the text of each search, without your profile." — what a user is told about a directory they add, and the consent for it (section 4.4).
+- "Test directory" runs two steps in the apps: the address's connect plan (`APIConnectPlan`; it must be a contact address; its profile's display name fills the name) and one search request with empty text (it must answer with search results; empty text matches every listing, so no words are sent). A failure says which step failed. No core command, so the core stays unaware of the directory's JSON. "Test servers" on the operator and Your servers screens tests enabled directories the same way, whatever the Directory search switch says: it sends no words, only the empty search the user asked for by pressing it.
+- When no directory is in use, Network & servers says "No directory is in use, so search finds only your chats." beside its other notes, computed in the app.
+
+### 4.4 Search with several directories (boards 13–17)
+
+- **Which directories.** Every network action (a search, Load more, a retry) reads the active profile's servers (`/_servers`, a local call) right before it asks for consent and sends, and computes from them the directories it will contact: a search, every directory in use; Load more, the search's directories still in use that have more; a retry, that directory if still in use. It captures, with that read, the user id, the remote host and the model's generation; after any alert it sends nothing if one of them changed (a profile switch from a notification tap, a reset), and every request it sends carries that user id rather than looking up the current user again. "Search in Directory" and the Search key use a model value refreshed when chat starts, the active user or remote host changes, servers are saved (Network & servers and the submenu's sheet) and operators change; a stale value can only show or hide the row, never decide where text goes. If the fresh read finds no directory in use, nothing is sent.
+- **Sending.** One request per directory, all at once, each with today's 10 s timeout (which the core starts after fetching the address's link data, so a request to an unreachable server takes longer). iOS sends each blocking call from a dispatch queue rather than the cooperative pool (otherwise a few slow directories stall the app's async work for that long); Kotlin already sends on `Dispatchers.IO`. The sender knows nothing of directories (one request to many addresses, each answer or failure reported), so another role can reuse it (section 4.6.3).
+- **State.** `OnlineSearchModel` keeps, per directory address: name, whether the user added it, cursor, count, loading, failed. The results reset on a profile switch in the chat list view, unchanged.
+- **Order.** Your chats first (as built); then each load's results in settings order (the operators' directories in operator order, then yours, each group in the order its directories were added), each in the directory's own order. A directory's rows appear once every directory before it in that order has answered or failed in this load, so results already shown don't move. The app gives each directory 15 s from the start of the load (its 10 s plus time to fetch the link): one that hasn't answered by then counts as failed, gets its retry row, and its late answer is ignored; so a slow earlier directory delays the later ones' rows by at most 15 s. A link several directories list shows once, with the entry of the earliest directory in settings order: within a load the hold rule gives that for free; when an earlier directory lists, in a later load, a link already shown from a later one, the row keeps its place and takes the earlier directory's name, description, image and counts (Open goes to the same link). The result remembers every directory that listed it (for the submenu). One exception, as built: a result that is one of your chats joins your chats at the top. No sorting across directories (open question 6).
+- **Cancel.** The spinner's Cancel (today it drops the running request) marks every directory that hasn't answered as failed, each with its retry row, and shows the held rows of those that have; the same on both platforms.
+- **Footer.** The footer rows appear when the load is complete (every directory answered, failed or past its 15 s), so they don't move as rows are added above them. One retry row per failed directory, in settings order: with one directory in use, today's "Search failed, tap to retry"; with two or more, "[name]: search failed, tap to retry", which retries that directory's last request alone while the others' results stay (board 15). Then the load row, last, when any directory that hasn't failed has more: "Load more · N left" when one directory sent a count, "Load more · about N left" when two or more did (N their sum, saturated, summed in 64 bits on both platforms; "about" because a group listed by two is counted twice), "Load more" without counts (open question 5). The spinner in the field shows while any request runs (after 1 s, as built); the load row greys out while a load runs.
+- **Bounds.** At most 50 entries are taken from one response (the directory sends 10); the rest are dropped. Each kept entry costs a local connection plan, so this caps the local work one directory can cause per page.
+- **Consent** (board 13). The one "Directory search" switch in Privacy settings stays, device-wide. Beside it the apps remember the addresses of the operators' preset directories the user has agreed to: public addresses, the same for every user, never a directory a user added. A directory the user adds is agreed to by adding it or turning it on, on the screen that says what it receives. Before an action sends:
+  - with the switch off: "Enable Directory search?" — "Search text is sent to SimpleX Directory and Your directory (added by you), each search separately and without your profile." — naming every directory the action contacts, the user's own marked "(added by you)"; Enable turns the switch on, remembers the preset ones and sends; Cancel sends nothing;
+  - with the switch on, if the action would contact a preset directory not remembered (an app update presets one, the user turns an operator on, or the switch was turned on in Privacy settings, which names nothing): "Search in these directories?" — "Search text is sent to [names], each search separately and without your profile." — naming only those; Search remembers them and sends to every directory of the action; Cancel sends nothing and leaves the results as they are;
+  - turning the switch off forgets the remembered addresses.
+  
+  Board 13's last clause, "so they can't build your search history", is dropped (it no longer holds: section 5.4). With one directory in use, the first alert is today's wording with that directory's name, marked "(added by you)" when it is the user's. If directory search ships a release before several directories (open question 3, recommended), a one-time step on the first start of the new version remembers exactly the address that release searched (today's `DIRECTORY_SERVICE_LINK`, kept as a literal in the step), only if the switch is on (the user agreed to SimpleX Directory by name), and records in its own key that it ran, which turning the switch off doesn't clear, so the step never runs again. Accepted: a down migration drops the table while the remembered address stays, so after a downgrade and an upgrade SimpleX Directory comes back enabled and receives searches without a question, though the user may have turned it off before; a down migration loses every directory setting anyway, and the user agreed to that directory by name.
+- **Submenu** (boards 16–17). With two or more directories in use, the long-press menu gains "Directories ›" listing the directories that listed the result, the user's own marked "(added by you)"; a tap opens that directory's settings screen in a sheet, which saves like Network & servers. With one directory in use the menu keeps Open only (as built). It is also how a user sees where a result came from.
+- **Remote desktop.** The desktop reads the phone's profile's directories through `/_servers` and sends each request through the phone's core, as today. Its consent switch and remembered addresses are the desktop's own.
+
+### 4.5 What gets removed
+
+`DIRECTORY_SERVICE_LINK` in both apps and the CI steps that rewrite it before building: the preset in core replaces it, and CI adds its test directories in Settings, which also exercises boards 11–12. The specs that name the constant change with it.
+
+### 4.6 Other services, and a service layer later
+
+#### 4.6.1 What is generic today, and what is per kind
+
+Generic already: the transport (a service request: one request, one response, a new connection each time, no profile), the bounds on a reply (the branch), the reply-queue choice. Per kind: where the address comes from (a constant in the apps for the directory, a core config value for badges, Chat.hs:74), consent, and the message shapes: three envelopes exist today (badges `{version, purchaseKey, request}`, the directory `{type:"search"}`, ep's draft `{protocol, request}`).
+
+ep's direction makes a role a set of required tools and lets any service whose tools include them fill it. This design doesn't infer roles: the user puts an address in the Directories list, and it is a directory. It configures each kind where its nature puts it: directories are many and chosen by the user, so they are a list per operator and under Your servers; a service with one receiver per operator is an operator setting; a service of the app vendor alone (badges) stays a core config value.
+
+#### 4.6.2 Telemetry in this design
+
+- Configured: each operator that wants it presets one telemetry address in its `PresetOperator` (not user-added, so no list); the user turns it on per operator on the operator's screen ("Send usage statistics", off by default), stored as one more column of `server_operators`, which is device-wide like the operators themselves. A sketch of that screen is on the page.
+- Run: a core worker, like the badge retry worker, sends an unsigned service request to each consenting operator's address at most once a day at a random time, with aggregates only (app version and platform, feature switches, counts in coarse buckets), no identifiers, each time on a new connection.
+- What the operator can learn or link: the request carries no profile, but its reply queue is on one of the user's servers (a self-hosting user names the same host every time), and a rare combination of buckets can single out a device; a request needs one profile's servers, so the worker must use the same profile every time or the operator could correlate profiles. These hold in any design.
+- Before any of this: the privacy policy, which the core shows as the operators' usage conditions, says the apps "should not include any tracking or analytics code" and "must not send anything not directly required for users communications without explicit users' consent" (PRIVACY.md:201, :203). Telemetry needs that text changed, a new conditions version users review, and explicit consent, whichever design carries it.
+- Cost here: ~500 core lines (preset field, a column and migration, the worker, the payload, tests), ~200 per app (the switch, its alert), and the policy change. A services list doesn't reduce this: consent, payload and policy are the cost.
+
+#### 4.6.3 Moving to a service layer after this ships
+
+If ep later picks a services list, from this design:
+
+- Kept: the stored rows (one migration copies `directories` into a services table: nothing references them), the start-up pass and merge (they work for any kind configured per operator), validation, and the search: fan-out, per-directory state, order, retry rows, load row, consent naming each receiver, submenu, bounds.
+- Replaced or added: the "Directories" sections on the operator screens and Your servers and the New directory screen (~450 lines per platform, about a third of each app's part) give way to a services list; the `directories` key in `/_servers` stays a release beside a new key, for older apps and remote desktops; the apps' legacy search request moves to the services protocol if that is MCP.
+- Cost: ~1,500 new lines, mostly the services list's screens on both platforms, plus the migration and the settings format.
+
+Choices in this design that keep the move cheap:
+
+1. Storage: a table nothing references, whose row (address, name, domains, preset, tested, enabled) is a service row without its tools.
+2. API: `directories` optional both ways (`ListDef` in responses and requests), so a later key can sit beside it and old apps ignore it.
+3. Protocol: the core stays unaware of the search JSON; it only bounds bodies. The request and response live in the apps and the directory.
+4. Discovery: nothing here depends on how a service declares what it does; when the core reads ep's `protocols` declaration from link data (his draft, :124-171, planned), "Test directory" can check it instead of sending a search.
+5. The apps' sender is role-agnostic (section 4.4).
+
+#### 4.6.4 What to include now
+
+Cheap but not yet useful: **slice 4, SimpleX Directory answers ep's envelope with MCP** (~250 lines in the directory service, no core or app change). Nothing can find or call it over Service RPC until the core publishes a profile's `protocols` (planned in the draft, :457-458: `mcp_call` uses Service RPC only for an address that declares `transports.rpc`), so its value now is proving the envelope on a real service. Recommended together with the core's `protocols` declarations (open question 13).
+
+Not now: a generic services table or a `tools` column (nothing would read it; the move later is one migration); the apps' search over MCP (it doubles the protocol the apps speak before the envelope is final; later it is a change of request and parser in two files per platform); telemetry (the policy change comes first).
+
+Free now, and in the plan: the role-agnostic sender, the optional settings key both ways, and a core that doesn't know the search JSON.
+
+### 4.7 Alternatives considered
+
+- **The service layer first** (the other design): one list of services, a role matched by tools. It pays when several kinds of user-chosen services are coming; telemetry is not one (section 4.6.2). It needs a design pass for the merged list (not drawn), tool lists parsed on phones, and the envelope settled before the first directory can be added.
+- **One list on screen, separate storage** (plan 015's B1): this design's core, plus a kind per row and merged screens nobody has drawn.
+- **Presets in config only, overrides stored** (the round-1 review's suggestion): the table holds the user's own directories plus, per preset address, the user's on/off; the readers (`APIGetUserServers`, validation, `copyServers`, new-profile setup) join config presets with stored rows at read time. Adopt, retire, the start-up writes and their unique-index failure class disappear; an older binary changes nothing; a user's own directory that a version presets becomes theirs again when dropped. Rejected for now: presets would work two ways in one codebase (relays stored at start-up, directories joined at read time), which is worse for the next reader than either way alone; the right change would move relays too, in its own pull request.
+- **Directories in `chat_relays` with a kind column:** one table, but one type for two business concepts, and every relay query filters by kind; relays are referenced by groups, directories by nothing.
+- **App-local storage:** no migration, but presets duplicated in two apps, no per-profile lists, and a desktop connected to a phone would show the desktop's list for the phone's profiles.
+- **A core command that searches every directory:** it would fix the iOS thread issue once, but it returns only when the slowest directory answers or times out; the apps' sender is ~40 lines per platform.
+- **A core `APITestDirectory`** like "Test relay": the core would learn the search request's shape (open question 7).
+- **`getUserServers` returning a record:** clearer than a 5-tuple, but a structural change to every caller for no behaviour.
+- **The host beside a user-added directory's name:** rejected: a link's host is its SMP router, by default SimpleX Chat's or Flux's, so it would make a look-alike look official; "(added by you)" says where it came from.
+
+## 5. Compatibility and security
+
+### 5.1 Protocols
+
+None changes for this design: the chat protocol, the agent and the directory's legacy request are untouched. Slice 4 adds a second request form to the directory, which old apps never send.
+
+### 5.2 Database
+
+One migration, `M2026MMDD_directories`, dated after the newest migration on master and on the branch when the core pull request starts (today: SQLite `20261018_autoincrement_ids`, Postgres `20261016_badge_store_receipts`; the branch adds none), up and down, SQLite and Postgres, registered in both Migrations.hs and simplex-chat.cabal. No backfill: the preset arrives through the start-up merge. While unreleased, the migration is edited in place; once a release ships it, a change (a consent column, or a services table later) is a second migration.
+
+### 5.3 Older and newer apps and cores
+
+- An older app (or an older desktop's command through a newer phone's core) sends `/_servers <json>` and `/_validate_servers` without `directories`: the core parses an empty list, saves no change to directories, and returns no directory error (AC4).
+- An older phone's core answers a newer desktop's core: no `directories` key; `ListDef []` parses (AC4's JSON test). The desktop shows no directories for that phone and can't search through it, until the phone updates. If the core pull request lands before directory search is released, that release's phones already answer with directories and SimpleX Directory preset, so this case can't arise with any phone that has directory search.
+- A newer core answers an older app or an older desktop's core: the key is ignored. A newer desktop saving through an older phone loses directories silently (the phone ignores the key); harmless.
+- An older desktop of a search-only release, connected to a newer phone, still sends every search to the address built into it, through the phone's core, which can't tell a directory search from any service request: SimpleX Directory receives that desktop's searches even if the phone's user turned it or its operator off. The desktop's own consent still applies. Until the desktop updates. Exists only if directory search ships before several directories (open question 3).
+- The apps decode `directories` with their normal decoding (Swift synthesized; Kotlin default `emptyList()`): an app only ever reads its own core, which always sends the key (a desktop's core re-encodes a phone's reply with it). They add `duplicateDirectoryAddress` to their closed error types in the same release that the core can send it.
+
+### 5.4 Threat model
+
+Who can do what, and what bounds it. Today's only directory is the SimpleX Chat operator's; this design lets a user add any address, so a directory is untrusted.
+
+| Adversary | What it can do | What bounds it | Test |
+|---|---|---|---|
+| A directory the user added | Receives every search text, unsigned, without a profile, with a reply queue on one of the user's servers; may store the texts (the SimpleX Directory policy says it stores search requests, PRIVACY.md:126) | The New directory screen says what it receives; it is named "(added by you)" in the first alert; turning it off stops it at the next action (each action re-reads the servers) | runner: alert names both test directories; settings off → no request |
+| A hostile reply | A large, deep or malformed body; hundreds of entries; a huge count; bad links; any image up to the body bound (decoded with no dimension check, the same exposure as any profile image today) | The core: ≤ 10,737 bytes compressed, ≤ 64 KiB decompressed, depth ≤ 32; the apps: entries decoded one by one, bad ones dropped, ≤ 50 taken, counts clamped and summed without overflow, only group and channel links | the core's parser tests; the apps' decoding, cap and sums checked by review (the apps have no unit tests for this, by the team's choice) |
+| A slow directory | Holds a request; under the hold rule delays later directories' rows | At most 15 s from the start of the load, then its own retry row | runner: one test directory stopped |
+| A fast directory | Answers first to put its claims (name, description, image, counts) on channels another directory lists | The earliest directory in settings order wins for a shared link; the operators' directories come first | runner: a shared channel described differently by the two test directories |
+| A look-alike | A user-added directory calls itself "SimpleX Directory"; it lists a channel named like a known one | Names normalised by `mkValidName` (≤ 50 characters, no direction-changing or format characters); "(added by you)" in the alert and the submenu; the submenu shows who listed a result | `testGetSetDirectories` (normalised name) |
+| The directory's own server | Sees the user's IP when it fetches the address's link data or receives the request, if private routing doesn't cover that server | The user's private-routing setting: by default the apps always reach other servers through a proxy | none (documented) |
+| Colluding directories, or a directory and a server operator | Link one search across directories by text and timing; link a self-hosting user's searches by the reply queue's host; with default servers, the reply queue can be on a server of the directory's own operator | Not bounded: the alerts promise only "each search separately and without your profile"; the fix is a simplexmq change (reply queues on their own transport session; count the target's operator as used), proposed by the search review, not planned (open question 14) | none (documented) |
+| Another app or a backup on the device | Reads app preferences | They hold the switch and the operators' public directory addresses only | none |
+| Many directories | Each search opens one connection and one reply queue per directory | The user adds each directory; no cap planned (open question 11) | none |
+
+## 6. Slices
+
+Pull requests and their order:
+
+1. **Core** (slices 1–3b), base master, once open question 1 is this design, and ideally before directory search is released (section 5.3). It changes nothing users see.
+2. **iOS** (slices 5–8), base master after directory search (#7588) and the core pull request have merged (or the search branch with master merged in after the core lands).
+3. **Kotlin** (slices 9–12), the same base, after iOS (iOS first, per the team's rule).
+4. **Directory MCP** (slice 4), optional, base the search branch or master after #7588 (the directory's service-request code exists only there), any time after.
+
+The smallest useful first release is pull requests 1, 2 and 3: without the settings screens nobody can add a directory, and with SimpleX Directory alone several directories change nothing. Whether that release is directory search's own release or a later one is open question 3.
+
+### Pull request 1: core (base master; ~900 lines)
+
+#### Slice 1: directories in the servers types and the 5-tuple, all empty; the shared duplicate check (structural)
+
+- Size and risk: small · low (no behaviour change apart from an empty key in responses; the compiler finds every call site; the relay tests prove the extraction)
+- Estimate: ~60 min
+- Files: src/Simplex/Chat/Operators.hs (`UserDirectory'`, its aliases and JSON; `directories` in both group types and `UserServersClass`; `directories :: [NewUserDirectory]` in `PresetOperator`, `[]` at all four constructions (Chat.hs:84, :93, :283-291 and Terminal.hs:42, also in this slice's files); `presetUserServers`, `updatedUserServers`, `groupByOperator_`'s `mkUS` passing empty values; the duplicate-address fold extracted, used by relays only), src/Simplex/Chat/Terminal.hs, src/Simplex/Chat/Store/Profiles.hs (`getUserServers` returns a 5-tuple with `[]`; `setUserServers'`'s returned record), src/Simplex/Chat/Library/Commands.hs (`onlyProtocolServers`, `onlyRelays`, `copyServers`, `updatedServers` and `updatedRelays` passing an empty list, `APISetServerOperators`' own `getServers`, `validateAllUsersServers`), src/Simplex/Chat.hs (`getServers`), src/Simplex/Chat/View.hs (the pattern at :1669), tests/ChatClient.hs (`enableNamesRole` passes an empty list), tests/OperatorTests.hs (fixtures gain empty directories), tests/JSONTests.hs.
+- Change: the type and the field everywhere, every value empty; `/_servers` responses gain `"directories": []` per group, which today's apps ignore.
+- Tests: JSON tests decoding a `UserOperatorServers` object without `directories`, and `CRUserServers` through `RRResult ChatResponse`; existing tests compile and pass unchanged.
+- Verify: `GHCRTS=-M2600m cabal build lib:simplex-chat`, then `cabal build simplex-chat-test` and run `-m "Operators"`, `-m "chat relay tests"`, `-m "get and set SMP servers"`, `-m "create user with same servers"`, `-m "JSON Tests"`, `-m "Bot API docs"`, checking each example count is not zero.
+- Done when: all pass with no existing test expectation changed.
+
+#### Slice 2: the table, store, grouping and save, end to end (behavioural)
+
+- Size and risk: medium · high (migration: database format)
+- Estimate: ~90 min
+- Files: src/Simplex/Chat/Store/SQLite/Migrations/M2026MMDD_directories.hs and its Postgres twin (new), both Migrations.hs, simplex-chat.cabal, src/Simplex/Chat/Store/Profiles.hs (`getDirectories` ordered by `directory_id`, `insertDirectory`, `updateDirectory`, `upsertOrDeleteDirectory`; `getUserServers` reads directories; `setUserServers'` saves the listed ones), src/Simplex/Chat/Operators.hs (grouping directories by `domains` in `groupByOperator_`, as `addChatRelay` does at :516-521, over the list reversed as servers are at :502), src/Simplex/Chat/Library/Commands.hs (name normalisation in `APISetUserServers` and `APIValidateServers`), src/Simplex/Chat/View.hs (a "Directories" part), tests/ChatTests/Directories.hs (new, registered as `describe "directory tests"` beside "chat relay tests" in tests/ChatTests.hs, and in simplex-chat.cabal).
+- Change: the table of section 4.2; a new entry inserts, a stored one updates, a stored one flagged `deleted` is deleted when not a preset (`… AND preset = 0`, as relays); an empty list saves nothing; requested names normalised, empty kept "".
+- Tests: schema dump, down migrations, STRICT and foreign-key-index checks regenerate (tests/SchemaDump.hs; the dumps are regenerated by the tests, not edited); `testGetSetDirectories`, asserting values read with `APIGetUserServers` (as `enableNamesRole` does) rather than view lines: add a custom directory through `/_servers 1 <json>`, rename it, turn it off, delete it, reading back each time; a name with prohibited characters is stored normalised; a name that normalises to nothing is stored "" and still "" after a second save; two directories added in turn read back in that order after another save; a JSON without `directories` keeps them.
+- Verify: build, then `-m "Schema dump"`, `-m "directory tests"`, plus slice 1's commands.
+- Done when: the library and tests build, the schema tests pass with the regenerated SQLite dump, and AC1 and AC4's save case pass.
+
+#### Slice 3a: the start-up pass (behavioural)
+
+- Size and risk: small · high (it runs for every user on every start; inert here, as nothing presets a directory yet)
+- Estimate: ~60 min
+- Files: src/Simplex/Chat/Operators.hs (the pass, pure), src/Simplex/Chat.hs (`getServers` reads directories, runs the pass, then groups), tests/OperatorTests.hs.
+- Change: section 4.2's two rules, wired before grouping.
+- Tests (pure, with test presets): adopt (a custom row, `domains = []`, `enabled = False`, at a preset's address comes back with the operator's domains, `preset = True`, its id and `enabled = False`); adopt under a turned-off operator (same rewrite; the row lands in that operator's group); retire (a preset its operator no longer lists comes back `preset = False`, `domains = []`, `enabled = False`, its id); `-s` with `--xftp-server` (the start-up list holds only the custom preset) leaves every row unchanged; an operator missing from the presets (a Flux row under the CLI's config) leaves its rows unchanged; an untagged operator without a preset entry leaves its rows unchanged; a turned-off preset whose address another operator now presets is adopted by that operator, still off, and not retired; a QuickCheck property over generated rows and presets: never a changed row with `preset = False` other than an adoption, never a retired row at any preset's address.
+- Verify: build `simplex-chat-test`, then `-m "Operators"`, plus slice 1's commands.
+- Done when: all pass; one lean review of slices 1–3a before 3b builds on them.
+
+#### Slice 3b: presets, merge, validation, new profiles (behavioural)
+
+- Size and risk: medium · high (the merge writes every user's rows on start)
+- Estimate: ~120 min
+- Files: src/Simplex/Chat/Operators.hs (`presetDirectory` from the operator, `newDirectory`, `updatedDirectories`, `presetUserServers` (:391) taking the operator's directories, `USEDuplicateDirectoryAddress` with slice 1's fold), src/Simplex/Chat/Operators/Presets.hs (`simplexDirectories`), src/Simplex/Chat.hs (the SimpleX Chat operator's `directories = simplexDirectories` in `defaultChatConfig`), src/Simplex/Chat/Terminal.hs (the same), src/Simplex/Chat/Library/Commands.hs (`copyServers` copies directories).
+- Change: section 4.2's presets, merge and validation.
+- Tests:
+  - tests/OperatorTests.hs, the merge over every group: the preset added to stored groups without directories; a stored preset with `enabled = False` stays off; an adopted row appears exactly once, in the operator's group, and the same again on a second merge of the saved result; a retired row appears once, in the custom group, and stays so on a second pass; the presets' invariants over `defaultChatConfig` and `terminalChatConfig` (AC8).
+  - `validateServersTest`: duplicate address error; duplicate names allowed; a request whose groups carry no directories raises no directory error. Changed expectations: none (no new warning).
+  - tests/ChatTests/Directories.hs: `testGetSetDirectories` gains `/_validate_servers 1 <json>` steps (a duplicate address gives the error; a JSON without `directories` gives none, with a second user present); a restart test on one database: start with a config whose SimpleX Chat operator presets a test directory, `smpServers = [], xftpServers = []` (presets in use offline, as `testOperators` does, Direct.hs:1226-1254), add a custom directory; restart with `-s` and `--xftp-server`: both unchanged; restart with a config whose operator presets none: the preset is under Your servers, turned off, the custom one unchanged; restart with the first config: the preset is back under the operator, still off. Values are read with `APIGetUserServers`, not view lines (real presets print random "disabled" markers).
+  - tests/ChatTests/Direct.hs: `testCreateUserSameServers` checks a second profile gets the first one's directories; `testOperators` checks `/_servers 1` lists SimpleX Directory under SimpleX Chat (by value).
+- Verify: build `simplex-chat-test`, then `-m "Operators"`, `-m "directory tests"`, `-m "get and enable operators"`, `-m "chat relay tests"`, `-m "get and set SMP servers"`, `-m "create user with same servers"`, `-m "JSON Tests"`, `-m "Bot API docs"`.
+- Done when: all pass; AC1–AC8 have passing tests.
+
+### Pull request 2: iOS (~1,550 lines; not compiled in the container)
+
+#### Slice 5: types and settings state (structural)
+
+- Size and risk: small · low · ~100 lines
+- Files: apps/ios/Shared/Model/AppAPITypes.swift (`UserDirectory`, `directories` in `UserOperatorServers` with synthesized decoding, `duplicateDirectoryAddress`), apps/ios/SimpleXChat/ChatTypes.swift if the type lives there as relays' does, NetworkAndServers.swift (`bindingForDirectories`, `findDuplicateDirectoryAddresses`, the in-use rule as one function).
+- Change: types and helpers, no visible change.
+
+#### Slice 6a: adding a directory, boards 11–12 (behavioural)
+
+- Size and risk: medium · low · ~250 lines
+- Files: DirectoryView.swift (new: `DirectoryView`, `NewDirectoryView`, `DirectoryViewLink` showing "Unnamed directory" when the name is empty, `addDirectory`, the two-step test), ProtocolServersView.swift (Your servers' section with delete, Add server's "Directory", `TestServersButton` covering directories), built from `ChatRelayView`'s shared pieces.
+- Change: section 4.3 for Your servers and New directory.
+
+#### Slice 6b: the operator's directories, board 10 (behavioural)
+
+- Size and risk: small · low · ~200 lines
+- Files: OperatorView.swift (the section, preset `DirectoryView`, `TestServersButton` covering directories), NetworkAndServers.swift (the "No directory is in use" note).
+- Change: section 4.3 for the operator screen and the note.
+
+#### Slice 7a: the sender takes an address and leaves the cooperative pool (structural)
+
+- Size and risk: small · low · ~60 lines
+- Files: SimpleXAPI.swift (`apiSearchDirectory(address:…)` running the blocking call on a dispatch queue), DirectorySearchView.swift (passes the constant for now).
+- Change: no visible change; one directory still.
+
+#### Slice 7b: search across directories, boards 14–15 (behavioural)
+
+- Size and risk: large · high (who receives the search text) · ~350 lines
+- Files: DirectorySearch.swift (`DIRECTORY_SERVICE_LINK` removed; the 50-entry cap; counts summed saturating), DirectorySearchView.swift (`OnlineSearchModel` per directory; the fresh servers read before each action, with the user id, remote host and generation captured and the user id passed to every request; the hold rule with its 15 s deadline, the earliest-wins rule and Cancel; footer rows once the load completes; load row text), ChatListView.swift and NewChatMenuButton.swift (footer rows; the row's visibility value and its refresh points), the specs and product docs that describe search.
+- Change: section 4.4 except consent and the submenu; consent stays today's single switch until 7c, applied to every directory the action contacts.
+- Pushed together with slice 7d (the workflow's rewrite of the constant fails once the constant is gone).
+
+#### Slice 7c: consent naming every directory, board 13 (behavioural)
+
+- Size and risk: medium · high (privacy) · ~200 lines
+- Files: DirectorySearchView.swift (`confirmDirectorySearch` with the two alerts, the remembered preset addresses, the one-time step if open question 3 is answered as recommended), SettingsView.swift (the key for the remembered addresses), PrivacySettings.swift (turning the switch off forgets them).
+- Change: section 4.4's consent.
+
+#### Slice 7d: CI with two directories (CI only, kind 2)
+
+- Size and risk: medium · low · ~250 lines
+- Files: scripts/ci/ios-sim/backend.sh (two directory services, "CI Directory A" and "CI Directory B" (`--service-name` and the bot's display name, today both "SimpleX Directory", backend.sh:21), overlapping listings, one shared channel whose stored description B's database changes with sqlite3 while B is stopped; `directory-stop` and `directory-start` per directory), scripts/ci/ios-sim/smoke-test.sh (AC12's steps in order: the second alert with the preset on and Cancel; the preset turned off before anything else, "Test servers" included; A then B added in Settings; the checks in both layouts), device-test-plan.md (the one-time step, forgetting on switch-off), claude-prompt.md, .github/workflows/ios-sim.yml (the step that rewrites the constant removed).
+- Change: AC12 on iOS.
+
+#### Slice 8: the Directories submenu, boards 16–17 (behavioural)
+
+- Size and risk: small · low · ~150 lines
+- Files: DirectorySearchView.swift (`DirectoryResultMenu`), a sheet hosting `DirectoryView` that saves like Network & servers and refreshes the row's visibility value.
+- Change: section 4.4's submenu; the one-hand preview attached before the flip, as built.
+
+Verification for slices 5–8: the ios-sim workflow builds and runs the scripted test on GitHub's runners after a push; the device test plan covers boards 10–17 with the two CI directories.
+
+### Pull request 3: Kotlin (Android and desktop; ~1,450 lines)
+
+#### Slices 9, 10a, 10b, 11a–11d, 12: slices 5, 6a, 6b, 7a–7d and 8 mirrored file for file
+
+Same files under apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/ (model/SimpleXAPI.kt, model/DirectorySearch.kt, views/usersettings/networkAndServers/*, views/chatlist/DirectorySearchView.kt, ChatListView.kt, views/newchat/NewChatSheet.kt, views/usersettings/PrivacySettings.kt), strings in moko-resources, specs and product docs; CI slice 11d covers scripts/ci/desktop-linux (backend.sh, smoke-test.sh, claude-search.md), the Android emulator test and .github/workflows/desktop-linux.yml. Differences from Swift, each with its reason: slice 11a only takes the address (Kotlin already sends on `Dispatchers.IO`); slice 11b sums counts in `Long` and saturates (today's `Int` would overflow, DirectorySearch.kt:85), checked by review; the one-hand list uses `reverseLayout`, so the menu needs no preview handling. Verified on the desktop-linux and android-emu workflows.
+
+### Pull request 4: the directory answers MCP (base the search branch, or master after #7588; ~250 lines; optional)
+
+#### Slice 4: ep's envelope and MCP `tools/list` / `tools/call search` (behavioural)
+
+- Size and risk: small · low (additive; the legacy request is untouched; the directory can be redeployed at any time)
+- Estimate: ~90 min
+- Files: apps/simplex-directory-service/src/Directory/Rpc.hs (the envelope and the three JSON-RPC methods beside `DirectoryRequest`; `searchResultsPage` takes the response wrapper as a parameter, so a page is fitted to the body bound in the form it is sent), Directory/Events.hs (keep the requester's `signerKey` in `DEServiceRequest`), Directory/Service.hs (dispatch in the service-request handler, the same text limit), tests/Bots/DirectoryTests.hs.
+- Change: a request with `"protocol":"mcp"` is answered per ep's draft (agent-protocols.md:272-362): `server/discover`; `tools/list` with one tool `search` (`inputSchema` with `text` required and `cursor` optional); `tools/call` of `search` with `structuredContent` = the results object and a short text `content`; a request with `requestKey` that is unsigned or signed by another key gets `{"error":{"code":"bad_request"}}` (draft :339); an unknown protocol gets `unsupported_protocol`; a revision it doesn't serve gets MCP's -32022 error; over the in-flight cap the request is still rejected at the agent level ("service is busy") before it is parsed, as today, which the draft's `rate_limited` doesn't cover; anything else is answered as today.
+- Tests: `tools/list` lists `search`; `tools/call search` returns the same entries, cursor and count as the legacy request for a page that fits both forms; a full page with images still fits in the MCP form; the legacy request still works; `requestKey` unsigned and mismatched give `bad_request`; an unknown method and an unknown protocol get their errors; the in-flight cap holds for both forms.
+- Verify: `cabal build simplex-chat-test`, then `-m "SimpleX Directory service bot"` (no other test run in parallel).
+- Done when: the directory's tests pass, old and new.
+
+## 7. Test plan
+
+- New tests and what each proves: sections 1 and 6 (AC1–AC13).
+- Existing tests that must stay green: "Operators", "chat relay tests", "SMP servers" and "XFTP servers", "create user with same servers", "get and enable operators", "JSON Tests", "Schema dump", "Bot API docs", "SimpleX Directory service bot", "group link connection plan".
+- Full-suite command for the final check: on the host, `cabal test simplex-chat-test` (it also regenerates `chat_query_plans.txt` with the new queries), and the Postgres build and tests (`cabal build --flags=+client_postgres`, then the Postgres test run) for the Postgres migration.
+- Remote desktop: no runner pairs a desktop with a phone; AC4's JSON test through `RRResult ChatResponse` stands in, and a manual check on the host (a desktop with the new core connected to a phone of the previous release: Network & servers opens, "Search in Directory" hides) is listed in the report.
+- Pace: pull request 1: slice 1 structural, built and tested alone, committed, no review; slice 2 high risk (migration), built and tested alone; slice 3a high risk, built and tested, then a lean review of slices 1–3a; slice 3b built and tested, then one lean review loop over the pull request (~6 h with reviews). Pull requests 2 and 3: slices committed one by one and read against the task, 7b with 7d in one push, one review loop per pull request, then the runner workflows (~7 h and ~6 h, plus runner time). Pull request 4: one slice, built and tested, one lean review (~2 h). Host steps (Postgres, full suite, remote check) listed in each report.
+
+## 8. Risks
+
+- Riskiest assumption: the start-up pass and merge add the preset to every existing user without touching their servers or relays, keep a turned-off preset off, adopt a user's row at a preset's address once, and retire a dropped preset without a start-up error. Slice 3a's pure and property tests and slice 3b's merge, invariant and restart tests check it before anything depends on it.
+- Retiring fails safe but silently: a version that presets fewer directories (an older or newer binary on the same database) turns the others off (section 4.2).
+- The 5-tuple: every caller of `getUserServers` changes; the compiler finds them all, in slice 1, with no behaviour change.
+- Remote pairs: only a JSON test covers a newer desktop with an older phone in the container; the older-desktop bypass exists if search ships first (section 5.3).
+- CI for pull requests 2 and 3 (two directory services in the backends; adding them through Settings with the `ui` helpers; turning the preset off before any search or "Test servers" press, and tapping only Cancel on the alert while it is on, so CI never reaches the live directory) is new scripted UI work; desktop's text-recognition driver is the slower part. Pull request 2's run should rehearse it first.
+- The live directory must have address ratchet keys before any app searches it (an operator step from the search work); several directories don't change that.
+- ep's envelope is a draft: slice 4 follows it as written; if it changes, the directory changes with it (no app depends on it).
+
+## 9. Open questions
+
+1. **This design or the service layer first** (ep). Recommended: this design now. It is drawn, needs no protocol change for search, reuses every layer relays built, and leaves storage, search and consent in place if a services list comes later (~1,500 lines, section 4.6.3). If not: the services design comes first, and the search side of this plan (section 4.4) carries over.
+2. **The core pull request to master right after question 1** (ep). Recommended: yes, if question 1 is this design, and before directory search is released if timing allows: then every phone with directory search already answers with its directories, which removes question 3's first cost. It is invisible to users and settles storage, presets and compatibility before the apps start. Merging it into a release freezes the migration and writes a SimpleX Directory row into every profile, so a later change of storage (a services table) is a second migration. If not: it waits, and the apps' work waits for it.
+3. **Release order** (ep and the user). Recommended: ship directory search when it is ready, and several directories in a later release. Shipping them together delays directory search, already reviewed, by the core and both apps' pull requests (~3,900 lines and two runner passes), while several directories add little until other directories exist. Costs of shipping separately, accepted: a newer desktop paired with a phone of the search-only release can't search through it (gone if the core lands before that release, question 2); an older desktop paired with a newer phone sends its searches to SimpleX Directory even if the phone's user turned it off (section 5.3); a user who turned the SimpleX Chat operator's servers off can search in the search-only release (it ignores operators) and loses search on the upgrade, with only Network & servers' note saying why (question 9); the consent text changes in two releases; the one-time consent step is needed. If together: none of these, and directory search waits.
+4. **Consent with several directories.** Recommended: section 4.4 (one switch; remembered operator directories only; a user-added directory agreed to by adding it; a second alert for a preset not yet agreed to). If you'd rather keep the user's own directories in the alerts too: their addresses would sit in app preferences outside the encrypted database, including those of hidden profiles; or a consent column in the core, per profile, decided before the core migration ships.
+5. **The load row with two or more directories.** Recommended: "Load more · about N left" (the wording you chose for one directory, with "about"). If the board's "Load up to 20 more · about 34 left": the apps read `pageSize` (sent since the search work) and add the directories' page sizes.
+6. **Order and arrival.** Recommended: section 4.4 (settings order; a directory's rows appear once every earlier one has answered, failed or passed 15 s; the earliest directory's entry for a shared link; footer rows once the load is complete). Alternatives: arrival order (no waiting, but the fastest directory's rows and claims come first, and the order changes from search to search); placing rows in settings order as they arrive (rows move under the user's finger); waiting for all (the slowest holds every result for up to 15 s, the same bound without showing anyone's results early).
+7. **"Test directory".** Recommended: in the apps, the connect plan for the name plus one empty-text search. If you'd rather have a core command like "Test relay": the core learns the search request's shape.
+8. **No directory in use.** Recommended: "Search in Directory" hides, the Search key searches nothing beyond your chats, and Network & servers says so. If not: the row stays and a tap says no directory is in use.
+9. **The operator switch and directories.** Recommended: turning an operator's servers off also stops its directories, as it stops its relays for new channels. Costs: a directory the user added, which a later version presets under an operator the user turned off, stops being searched and is hidden with that operator's section until it is turned on; and a user who turned the SimpleX Chat operator off but searched in the search-only release loses search on the upgrade (question 3). If a directory's own switch alone decides: an operator turned off for its servers still receives searches.
+10. **Retry rows.** Recommended: as drawn (one per failed directory, the others' results stay).
+11. **A cap on directories searched at once.** Recommended: none for now (each one is added by the user; iOS requests are off the cooperative pool). If wanted: search the first N in settings order and say so in Settings.
+12. **A directory a later version no longer presets.** Recommended: keep it, turned off, under Your servers (section 4.2, rule 2), with its stated costs (a binary that presets fewer turns directories off silently). If deleting is preferred: a store delete outside the preset guard, and a later re-preset turns it back on without asking.
+13. **When the directory answers ep's MCP envelope** (ep). Recommended: together with the core's `protocols` declarations from his draft; before them nothing can find or call it over Service RPC. If now: ~250 lines, a proof of the envelope on a real service.
+14. **Shipping while searches can be linked** (ep). Recommended: ship. The alerts promise only "each search separately and without your profile", which holds; colluding directories can link one search by its text and time, and a self-hosting user's searches can be linked by their reply server, as with one directory today. The simplexmq fix (reply queues on their own transport session) is proposed and unplanned. If not: several directories wait for it.
+
+## 10. Out of scope (noticed, not doing)
+
+- The live directory's address upgrade (rotating its address keys): an operator step written up by the search work.
+- Chat relays' latent start-up collision when a later version presets an address a user added as a custom relay: the same adopt rule would fix it, in its own change.
+- Kotlin's `moreCount` check rejects `5.0`, which iOS accepts (DirectorySearch.kt:85 vs DirectorySearch.swift:102); harmless with today's directory.
+- The desktop layout's placement of "Add list" beside the search rows.
+
+## 11. Follow-up runs
+
+Each pull request is one run, planned in full from this design when it starts:
+
+- Core (slices 1–3b): `/ship` from this plan's slices as written.
+- iOS (slices 5–8), then Kotlin (slices 9–12), each with its CI slice and a runner pass.
+- Directory MCP (slice 4): `/quick` or `/ship`, when open question 13 says so.
