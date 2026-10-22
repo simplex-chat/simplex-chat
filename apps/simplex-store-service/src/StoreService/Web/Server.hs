@@ -268,18 +268,6 @@ readName OrdersEnv {oeStore, oeNow} row rid = do
   now <- oeNow
   fmap (\r -> (now, invoiceAt now row, registrationAt now r)) <$> withTransaction oeStore (`getRegistration` rid)
 
--- | An open name invoice past its expiry with no money received reads expired before the sweep marks it.
-invoiceAt :: UTCTime -> InvoiceRow -> InvoiceRow
-invoiceAt now row = case expiryMoment row of
-  Just expiry | now > expiry -> row {irStatus = ISExpired}
-  _ -> row
-
--- | A funded open invoice stays open until it settles.
-expiryMoment :: InvoiceRow -> Maybe UTCTime
-expiryMoment InvoiceRow {irStatus, irExpiresAt, irPayment}
-  | irStatus == ISOpen && not (maybe False paymentHolds irPayment) = Just irExpiresAt
-  | otherwise = Nothing
-
 -- | The counter a hold watches starts at zero, so a payment recorded before this request arrived cannot wake it.
 samePayment :: Request -> InvoiceRow -> Bool
 samePayment req row = maybe True (== paymentMark row) (paidParam req)

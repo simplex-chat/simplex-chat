@@ -101,6 +101,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "answers an exact resend with its invoice, also with a new timestamp and signature, and after the timestamp window" testExactResend
     it "answers an exact resend after its order went past unpaid, before any chain read" testResendPastUnpaid
     it "answers an exact resend of an expired order with its expired invoice" testResendExpired
+    it "reads an exact resend's unpaid invoice past its expiry as expired, and its lapsed commitment as failed, writing neither" testResendReadsTime
     it "refuses a resend differing in any one field, or a new commitment, with a bare order_exists" testOneFieldDiffers
     it "refuses an order carrying another wallet's commitment without disclosing anything" testForeignCommitment
     it "refuses a bad signature, or another signer's" testBadSignature
@@ -450,7 +451,7 @@ testExactResend = withOrders $ \ctx -> do
   advance ctx 60
   resigned <- placed ctx aliceOrder {oTimestamp = seconds orderTime + 60}
   resigned `shouldBe` (invId, first')
-  advance ctx 3600
+  advance ctx 600
   postOrder ctx body `shouldReturn` (200, Just first')
   length <$> stubCalls (cStub ctx) `shouldReturn` 1
   length <$> registrationsOf ctx ownerA `shouldReturn` 1
@@ -474,6 +475,28 @@ testResendExpired = withOrders $ \ctx -> do
   status `shouldBe` 200
   (field "invoiceId" =<< v) `shouldBe` Just (J.String invId)
   (field "status" =<< v) `shouldBe` Just "expired"
+
+testResendReadsTime :: IO ()
+testResendReadsTime = do
+  withOrders $ \ctx -> do
+    (invId, _) <- placed ctx aliceOrder
+    advance ctx (45 * 60 + 1)
+    (status, v) <- placeOrder ctx aliceOrder
+    (status, field "status" =<< v, field "phase" . registrationOf =<< v) `shouldBe` (200, Just "expired", Just "unpaid")
+    fmap irStatus <$> getInvoice (cStore ctx) invId `shouldReturn` Just ISOpen
+  withOrders $ \ctx@Ctx {cStore, cClock} -> do
+    (invId, _) <- placed ctx aliceOrder
+    settleNow ctx invId settled `shouldReturn` Right ISPaid
+    r <- invoiceRegistration ctx invId
+    now <- readIORef cClock
+    let lapse = seconds now + 600
+    Written version <- withTransaction cStore $ \db ->
+      updateRegistration db r {nrPhase = PCommitted, nrRevealAfter = Just (lapse - 3600), nrRevealBefore = Just lapse} now
+    let resend = (\(status, v) -> (status, field "status" =<< v, (field "phase" &&& field "error") . registrationOf <$> v)) <$> placeOrder ctx aliceOrder
+    resend `shouldReturn` (200, Just "paid", Just (Just "committed", Just J.Null))
+    advance ctx 601
+    resend `shouldReturn` (200, Just "paid", Just (Just "failed", Just "The name was not signed in time"))
+    (nrPhase &&& nrVersion) <$> invoiceRegistration ctx invId `shouldReturn` (PCommitted, version)
 
 testOneFieldDiffers :: IO ()
 testOneFieldDiffers = withOrders $ \ctx -> do

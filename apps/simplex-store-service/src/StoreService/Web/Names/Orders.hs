@@ -35,8 +35,9 @@ import StoreService.Orders (publishRegistration)
 import StoreService.Providers (OrderDraft (..), Provider (..), ProviderError (..), ProviderInvoice (..), expiresItself)
 import StoreService.Store.Invoices (InvoiceRow (..), NewNameInvoice (..), getInvoice, insertNameInvoice, newInvoiceId, truncateToSecond)
 import StoreService.Waiters (Waiters, publish)
-import StoreService.Web.Http (Respond, badRequest, confirmationsFor, internalError, invalidName, invoicePairs, invoiceWindow, jsonError, jsonResponse, nameBodyBytes, notFound, providerFor, providerNamed, providerUnavailable, readBoundedBody)
+import StoreService.Web.Http (Respond, badRequest, confirmationsFor, internalError, invalidName, invoiceAt, invoicePairs, invoiceWindow, jsonError, jsonResponse, nameBodyBytes, notFound, providerFor, providerNamed, providerUnavailable, readBoundedBody)
 import StoreService.Web.Names.Codes (codeRefusalResponse)
+import StoreService.Web.Names.Registration (registrationAt)
 
 data InvoiceOrder = InvoiceOrder
   { ioRequest :: OrderRequest,
@@ -76,15 +77,15 @@ nameInvoiceHandler env@OrdersEnv {oeStore, oeTurns, oeNow} cfg providers waiters
           now <- oeNow
           let hash = orderHash orOwner orFields (OTInvoice ioMethod $ fromIntegral ioPrice)
           withTransaction oeStore (\db -> existingOrder db req hash now) >>= \case
-            EOResent r -> answerResend r
+            EOResent r -> answerResend now r
             EOMeets -> refuse OROrderExists
             EONew _ -> newOrder order
   where
     refuse refusal = do
       logInfo ("POST /api/invoice (name) refused: " <> tshow refusal)
       pure $ answerNow $ orderRefusalResponse refusal
-    answerResend r@NameRegistration {nrPayment} = case nrPayment of
-      RPInvoice _ invId -> getInvoice oeStore invId >>= maybe (refuse OROrderExists) (fmap answerNow . viewOf r)
+    answerResend now r@NameRegistration {nrPayment} = case nrPayment of
+      RPInvoice _ invId -> getInvoice oeStore invId >>= maybe (refuse OROrderExists) (fmap answerNow . viewOf (registrationAt now r) . invoiceAt now)
       RPCode _ -> refuse OROrderExists
     viewOf r row = jsonResponse status200 <$> nameInvoiceView env (confirmationsFor cfg) row r
     newOrder order@InvoiceOrder {ioRequest = OrderRequest {orFields = OrderFields {ofLabelHash, ofLength, ofDuration}, orTimestamp}, ioMethod, ioPrice} = do
@@ -222,11 +223,12 @@ nameInvoiceView OrdersEnv {oeStore, oeConfig, oeContracts} confirmations row@Inv
 
 -- | The registration's current view, for a request that lost the race to change it.
 registrationChangedResponse :: OrdersEnv -> RegistrationId -> IO Response
-registrationChangedResponse OrdersEnv {oeStore, oeConfig, oeContracts} rid =
+registrationChangedResponse OrdersEnv {oeStore, oeConfig, oeContracts, oeNow} rid =
   withTransaction oeStore (`getRegistration` rid) >>= \case
     Nothing -> pure notFound
     Just r -> do
-      view <- registrationView oeStore oeConfig oeContracts r
+      now <- oeNow
+      view <- registrationView oeStore oeConfig oeContracts (registrationAt now r)
       pure $ jsonResponse status409 $ J.object ["error" .= ("registration_changed" :: Text), "registration" .= view]
 
 orderRefusalResponse :: OrderRefusal -> Response

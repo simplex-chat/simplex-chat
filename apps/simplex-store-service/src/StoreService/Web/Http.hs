@@ -36,6 +36,8 @@ module StoreService.Web.Http
     nameBodyBytes,
     parseCodeHash,
     invoicePairs,
+    invoiceAt,
+    expiryMoment,
     destinationPairs,
     amountJSON,
     confirmationsFor,
@@ -71,7 +73,7 @@ import Simplex.Chat.PaymentService.Types (CardProvider (..), CurrencyAmount (..)
 import Simplex.Messaging.Util (safeDecodeUtf8)
 import StoreService.Config (BTCPayConfig (..), ListenerConfig (..), ServiceConfig (..), SpeedPolicy (..), StripeConfig (..), defaultExpiryMinutes, defaultSessionMinutes)
 import StoreService.Providers (Provider (..))
-import StoreService.Store.Invoices (InvoicePayment (..), InvoiceRow (..), cryptoCurrencyText, invoiceStatusText)
+import StoreService.Store.Invoices (InvoicePayment (..), InvoiceRow (..), cryptoCurrencyText, invoiceStatusText, paymentHolds)
 import Text.Read (readMaybe)
 
 data HttpEnv = HttpEnv
@@ -300,6 +302,18 @@ parseCodeHash t
       _ -> Nothing
   where
     canonical = T.filter (/= '=') . safeDecodeUtf8 . B64U.encode
+
+-- | An open name invoice past its expiry with no money received reads expired before the sweep marks it.
+invoiceAt :: UTCTime -> InvoiceRow -> InvoiceRow
+invoiceAt now row = case expiryMoment row of
+  Just expiry | now > expiry -> row {irStatus = ISExpired}
+  _ -> row
+
+-- | A funded open invoice stays open until it settles.
+expiryMoment :: InvoiceRow -> Maybe UTCTime
+expiryMoment InvoiceRow {irStatus, irExpiresAt, irPayment}
+  | irStatus == ISOpen && not (maybe False paymentHolds irPayment) = Just irExpiresAt
+  | otherwise = Nothing
 
 -- | The fields every invoice view has, a badge's and a name's.
 invoicePairs :: Maybe Int -> InvoiceRow -> [Pair]
