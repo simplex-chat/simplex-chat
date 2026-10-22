@@ -216,9 +216,18 @@ rateCalls Late {lStub} = length . filter isRate <$> stubCalls lStub
 lateWaitOf :: DBStore -> Text -> IO (Maybe LateWait)
 lateWaitOf st r = withTransaction st $ \db -> lateWait db (invOf r)
 
--- | A log line of the level holding the text.
+-- | A log record of the level holding the text.
 logged :: Text -> Text -> Text -> Bool
-logged level needle = any (\ln -> ("[" <> level) `T.isPrefixOf` ln && needle `T.isInfixOf` ln) . T.lines
+logged level needle = any (\r -> ("[" <> level <> " ") `T.isPrefixOf` r && needle `T.isInfixOf` r) . concatMap logRecords . T.lines
+
+-- | Specs running alongside log to the same stderr, so a record can start mid-line, after another's text and before its newline.
+logRecords :: Text -> [Text]
+logRecords ln = foldl (\parts header -> concatMap (splitBefore header) parts) [ln] ["[INFO ", "[WARN ", "[ERROR "]
+  where
+    splitBefore :: Text -> Text -> [Text]
+    splitBefore header part = case T.splitOn header part of
+      first : rest -> first : map (header <>) rest
+      [] -> []
 
 count :: Text -> Text -> Int
 count needle = length . T.breakOnAll needle
