@@ -242,9 +242,15 @@ class ChatScreen(private val s: UiScope) {
 
   fun itemId(text: String): Long {
     var id: Long? = null
+    var revealed = false
     s.poll(what = "chat item `$text`") {
       id = chatModel.chatsContext.chatItems.value.lastOrNull { it.content.text == text }?.id
-      id != null && s.exists(Ui.Chat.Item(id!!))
+      val shown = id != null && s.exists(Ui.Chat.Item(id!!))
+      if (id != null && !shown && !revealed && s.exists(Ui.Chat.ScrollToBottom)) {
+        revealed = true
+        s.click(Ui.Chat.ScrollToBottom)
+      }
+      shown
     }
     return id!!
   }
@@ -305,10 +311,16 @@ class ChatScreen(private val s: UiScope) {
 
   fun itemId(what: String, match: (ChatItem) -> Boolean): Long {
     var id: Long? = null
+    var revealed = false
     s.poll(timeoutMs = CONNECT_TIMEOUT_MS, what = what) {
       val found = chatModel.chatsContext.chatItems.value.lastOrNull(match)?.id
       id = found
-      found != null && s.exists(Ui.Chat.Item(found))
+      val shown = found != null && s.exists(Ui.Chat.Item(found))
+      if (found != null && !shown && !revealed && s.exists(Ui.Chat.ScrollToBottom)) {
+        revealed = true
+        s.click(Ui.Chat.ScrollToBottom)
+      }
+      shown
     }
     return id!!
   }

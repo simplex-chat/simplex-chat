@@ -5,7 +5,6 @@ import chat.simplex.app.ui.harness.chatConsole
 import chat.simplex.app.ui.harness.closeDeveloperTools
 import chat.simplex.app.ui.harness.consoleShows
 import chat.simplex.app.ui.harness.developerTools
-import chat.simplex.common.BuildConfigCommon
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.platform.chatController
@@ -27,9 +26,7 @@ private const val TALK_TO_SOMEONE = "Talk to someone"
 class VersionDevToolsTest : UiTest() {
   @Test fun version_screenShowsVersions() = uiTest {
     val alice = app("alice")
-    val (name, code) =
-      if (appPlatform.isDesktop) BuildConfigCommon.DESKTOP_VERSION_NAME to BuildConfigCommon.DESKTOP_VERSION_CODE
-      else BuildConfigCommon.ANDROID_VERSION_NAME to BuildConfigCommon.ANDROID_VERSION_CODE
+    val (name, code) = appVersion()
     val core = runBlocking { chatController.apiGetVersion() } ?: error("the core did not return its version")
     alice.settings()
     assertEquals("$name ($code)", textOf(Ui.Settings.Version))

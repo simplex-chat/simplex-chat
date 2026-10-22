@@ -423,6 +423,8 @@ class UiScope(val ui: SkikoComposeUiTest, private val dir: File) {
       .flatMap { it.config.getOrElseNullable(androidx.compose.ui.semantics.SemanticsProperties.Text) { null }.orEmpty() }
       .map { it.text }
 
+  fun appVersion(): Pair<String, Int> = chat.simplex.common.BuildConfigCommon.DESKTOP_VERSION_NAME to chat.simplex.common.BuildConfigCommon.DESKTOP_VERSION_CODE
+
   fun assumeCamera() {}
 
   fun hideKeyboard() {}
