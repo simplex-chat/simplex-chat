@@ -545,7 +545,8 @@ testExpiredIntent = withWorker $ \w@W {wCtx = ctx} -> do
   r <- paidIn ctx aliceOrder (\o -> (openPhase o) {nrRevealBefore = Just (rvDeadline reveal)}) >>= revealed ctx keyA "alicebakery"
   answerAvailable w True
   advance ctx $ fromIntegral (rvDeadline reveal - orderSeconds) + 1
-  steps w r >>= done
+  logs <- capturingStderr $ steps w r >>= done
+  logs `shouldSatisfy` T.isInfixOf "intent expired"
   nrPhase <$> stored ctx r `shouldReturn` PFailed
   sent w `shouldReturn` []
 

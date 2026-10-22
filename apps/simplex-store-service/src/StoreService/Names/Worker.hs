@@ -26,6 +26,7 @@ import Data.Int (Int64)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Word (Word64)
@@ -237,12 +238,14 @@ committed w@Worker {wkSender} now r@NameRegistration {nrId, nrReveal, nrRevealAf
 
 -- | The stored intent is checked before its dry run, whose revert decides at once; no label turn is held across the send.
 sendRegister :: Worker -> UTCTime -> NameRegistration -> NameReveal -> IO Next
-sendRegister w@Worker {wkOrders = OrdersEnv {oeConfig = cfg@NamesConfig {nChain = ChainConfig {cChainId, cSponsor}}}, wkSender} now r@NameRegistration {nrId} rv =
+sendRegister w@Worker {wkOrders = OrdersEnv {oeConfig = cfg@NamesConfig {nChain = ChainConfig {cChainId, cSponsor}}}, wkSender} now r@NameRegistration {nrId = regId@(RegistrationId rid)} rv =
   verifyRegisterIntent (sponsorDomain cChainId cSponsor) (fromInteger $ unixSeconds now) intent >>= \case
-    -- past its deadline, the commitment it was signed for has lapsed too
-    Left _ -> judge w now r Nothing
+    -- past its deadline the commitment has lapsed too; a wrong signer follows a change of the chain settings since the reveal
+    Left refusal -> do
+      logWarn $ "names worker: registration " <> rid <> ": its stored intent is refused, " <> T.pack refusal
+      judge w now r Nothing
     Right () ->
-      submitTransaction wkSender (TxRegister nrId) cSponsor (registerWithCreditCalldata intent) >>= \case
+      submitTransaction wkSender (TxRegister regId) cSponsor (registerWithCreditCalldata intent) >>= \case
         Right p -> registerSent w now r p
         Left SEInFlight -> pure Again
         Left (SEChain (ChainReverted reason)) -> judge w now r reason
