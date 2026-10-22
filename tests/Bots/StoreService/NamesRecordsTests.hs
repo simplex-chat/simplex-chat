@@ -68,6 +68,7 @@ namesRecordsTests = describe "StoreService names: records" $ do
   describe "relay" $ do
     it "relays an edit with viem's calldata and answers its hash once mined" $ testRelayMined g
     it "refuses a wrong signer or a passed deadline before any row or gas" $ testRefusedBeforeRow g
+    it "refuses an edit of a name on another resolver, or past its expiry and grace, before any row or gas" $ testRefusedNameState g
     it "leaves the owner's cap untouched by ten edits a non-owner signs" $ testNonOwnerCap g
     it "checks a refused edit's repeat anew" $ testRefusedRepeat g
     it "refuses the eleventh relayed edit of a name within an hour, with the real wait" $ testCap g
@@ -277,6 +278,19 @@ testRefusedBeforeRow g = withSetup g $ \s@Setup {node, records} -> do
   (relayEdit records =<< signEdit s other (channel viemChannelLink) 0 deadline) `shouldReturn` EARefused
   setBlock node 2 deadline
   (relayEdit records =<< ownerEdit s viemChannelLink) `shouldReturn` EARefused
+  editRows s `shouldReturn` 0
+  sentTransactions node `shouldReturn` []
+
+testRefusedNameState :: TVar ChaChaDRG -> IO ()
+testRefusedNameState g = withSetup g $ \s@Setup {node, records} -> do
+  req <- ownerEdit s viemChannelLink
+  answerCall node registry (selector "resolver(bytes32)" <> nodeBytes aliceNode) $ Returns $ addressWord otherResolver
+  relayEdit records req `shouldReturn` EARefused
+  answerCall node registry (selector "resolver(bytes32)" <> nodeBytes aliceNode) $ Returns $ addressWord fakeResolver
+  -- the registry still names the owner, but the name lapsed: expiry and grace are before the latest block
+  answerCall node fakeBaseRegistrar (selector "nameExpires(uint256)" <> unLabel alice) $ Returns $ uint256 (genesis - gracePeriod - 1)
+  answerCall node fakeController (selector "reservedNames(bytes32)" <> unLabel alice) $ Returns $ uint256 (0 :: Int)
+  relayEdit records req `shouldReturn` EARefused
   editRows s `shouldReturn` 0
   sentTransactions node `shouldReturn` []
 
@@ -637,8 +651,13 @@ nameExpiry, gracePeriod :: Word64
 nameExpiry = 1861833600
 gracePeriod = 7776000
 
-registry :: Address
+registry, otherResolver :: Address
 registry = address "0x5fbdb2315678afecb367f032d93f642f64180aa3"
+otherResolver = address "0x4826533b4897376654bb4d4ad88b7fafd0c98528"
+
+-- | The fake node's first block time.
+genesis :: Word64
+genesis = deadline - 3600
 
 -- | The name code of BIP-39 entropy zero, the wallet of "abandon ... about".
 viemCode :: Text
