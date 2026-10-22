@@ -51,7 +51,7 @@ import StoreService.Names.Phases (RegistrationId (..), publish)
 import StoreService.Names.Registration (Registration (..), makeCommitment, registerIntentDigest, sponsorDomain)
 import StoreService.Names.Signatures (OrderFields (..))
 import StoreService.Names.Store (NamePhase (..), NameRegistration (..), NameReveal (..), VersionWrite (..), getRegistration, retargetRegistration)
-import StoreService.Names.Turns (withLabelTurns)
+import StoreService.Names.Turns (labelTurnCount, withLabelTurns)
 import StoreService.Web.Http (holdMicros, maxBodyBytes, nameBodyBytes, readLimit)
 import StoreService.Web.Names (Route (..), namesApp)
 import StoreService.Web.Names.Registration (registrationHandler, revealHandler)
@@ -252,6 +252,11 @@ moveName ctx@Ctx {cStore, cOrders = OrdersEnv {oeTurns, oePhases}} inTurns rid n
         withTransaction cStore (\db -> retargetRegistration db r new nrPrice orderTime) >>= \case
           Written v -> Right v <$ atomically (publish oePhases rid v)
           other -> pure $ Left $ tshow other
+
+-- | Waits until this many requests hold or wait for the label's turn.
+queuedOn :: Ctx -> LabelHash -> Int -> IO ()
+queuedOn Ctx {cOrders = OrdersEnv {oeTurns}} lh n =
+  timeout prompt (atomically $ labelTurnCount oeTurns lh >>= check . (== n)) >>= maybe (fail $ show n <> " requests did not queue on the turn") pure
 
 fieldsOf :: Registration -> OrderFields
 fieldsOf r@Registration {rLabel, rDuration} =
@@ -494,7 +499,7 @@ testRacesName = bounded "races /name" $ withReveals $ \Fx {fCtx = ctx, fGate} ->
   rid <- committed ctx (orderOf alice)
   inFlight <- pausedAtChainRead fGate (ownerReveal ctx rid alice)
   move <- async $ moveName ctx (pure ()) rid (fieldsOf moved)
-  timeout 300000 (wait move) >>= (`shouldSatisfy` isNothing)
+  queuedOn ctx (labelHash "alicebakery") 2
   releaseRead fGate
   wait inFlight `shouldReturn` accepted
   wait move `shouldReturn` Left "bad_request"
@@ -510,7 +515,7 @@ testRacesName = bounded "races /name" $ withReveals $ \Fx {fCtx = ctx, fGate} ->
   move' <- async $ moveName ctx (putMVar entered () >> takeMVar release) refusedRid (fieldsOf moved {rLabel = "dynamit"})
   takeMVar entered
   late <- async $ reveal ctx refusedRid body
-  timeout 300000 (wait late) >>= (`shouldSatisfy` isNothing)
+  queuedOn ctx (labelHash "dynamis") 2
   putMVar release ()
   Right v <- wait move'
   (status, answer) <- wait late
