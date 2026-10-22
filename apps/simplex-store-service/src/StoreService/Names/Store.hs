@@ -1137,7 +1137,7 @@ claimLateAlert db LateAlert {laState = LateCreditState {lsInvoice = InvoiceId in
       )
       (truncateToSecond now, laReceived, invId, laAlertedAt, laAlertedReceived)
 
-insertPrepaidCode ::DB.Connection -> NewPrepaidCode -> UTCTime -> IO (Either CodeHashTaken Int64)
+insertPrepaidCode :: DB.Connection -> NewPrepaidCode -> UTCTime -> IO (Either CodeHashTaken Int64)
 insertPrepaidCode db NewPrepaidCode {npcCodeHash, npcMinLength, npcYears, npcPaymentStatus, npcExpiresAt} now = do
   inserted <-
     executeChanging
