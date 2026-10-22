@@ -52,6 +52,11 @@ module Simplex.Chat.Store.Files
     createRcvStandaloneFileTransfer,
     appendRcvFD,
     getRcvFileDescrByRcvFileId,
+    fwdFileUnavailableError,
+    setFwdRcvFilesUnavailable,
+    unsetRcvFileUnavailable,
+    resetRcvXFTPFileStatus,
+    setGroupMsgReceivedDirectly,
     getRcvFileDescrBySndFileId,
     updateRcvFileAgentId,
     getRcvFileTransferById,
@@ -651,6 +656,75 @@ getRcvFileDescrByRcvFileId_ db fileId =
       |]
       (Only fileId)
 
+fwdFileUnavailableError :: FileError
+fwdFileUnavailableError = FileErrOther "file was sent before you connected to the sender"
+
+setFwdRcvFilesUnavailable :: DB.Connection -> User -> GroupMember -> IO [FileTransferId]
+setFwdRcvFilesUnavailable db User {userId} GroupMember {groupId, groupMemberId} = do
+  currentTs <- getCurrentTime
+  map fromOnly
+    <$> DB.query
+      db
+      [sql|
+        UPDATE files SET ci_file_status = ?, updated_at = ?
+        WHERE COALESCE(cancelled, 0) = 0 AND file_max_size IS NULL
+          AND file_id IN (
+            SELECT f.file_id
+            FROM rcv_files r
+            CROSS JOIN files f
+            JOIN chat_items i ON i.chat_item_id = f.chat_item_id
+            LEFT JOIN xftp_file_descriptions d ON d.file_descr_id = r.file_descr_id
+            WHERE f.file_id = r.file_id AND f.user_id = ? AND f.group_id = ? AND r.group_member_id = ?
+              AND f.protocol = ? AND r.file_status IN (?,?)
+              AND i.forwarded_by_group_member_id IS NOT NULL
+              AND (d.file_descr_id IS NULL OR d.file_descr_part_no = 0)
+              AND NOT EXISTS (
+                SELECT 1 FROM messages m
+                WHERE m.group_id = f.group_id AND m.shared_msg_id = i.shared_msg_id
+                  AND m.author_group_member_id = r.group_member_id AND m.forwarded_by_group_member_id IS NULL
+              )
+          )
+        RETURNING file_id
+      |]
+      ((CIFSRcvError fwdFileUnavailableError, currentTs, userId, groupId, groupMemberId) :. (FPXFTP, FSNew, FSAccepted))
+
+-- on Postgres the marked row is locked first, so that rcv_files status is read after a concurrent accept or cancel commits
+unsetRcvFileUnavailable :: DB.Connection -> StoreCxt -> User -> FileTransferId -> ExceptT StoreError IO (Maybe AChatItem)
+unsetRcvFileUnavailable db cxt user@User {userId} fileId = do
+  marked :: [Only Int] <-
+    liftIO $
+      DB.query
+        db
+        ( "SELECT 1 FROM files WHERE user_id = ? AND file_id = ? AND ci_file_status = ?"
+#if defined(dbPostgres)
+            <> " FOR UPDATE"
+#endif
+        )
+        (userId, fileId, CIFSRcvError fwdFileUnavailableError)
+  if null marked
+    then pure Nothing
+    else do
+      status_ <- liftIO $ maybeFirstRow fromOnly $ DB.query db "SELECT file_status FROM rcv_files WHERE file_id = ?" (Only fileId)
+      liftIO $ updateCIFileStatus db user fileId $ if status_ == Just FSAccepted then CIFSRcvAccepted else CIFSRcvInvitation
+      Just <$> getChatItemByFileId db cxt user fileId
+
+resetRcvXFTPFileStatus :: DB.Connection -> User -> FileTransferId -> IO ()
+resetRcvXFTPFileStatus db User {userId} fileId = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    "UPDATE files SET ci_file_status = CASE WHEN ci_file_status = ? THEN ci_file_status ELSE ? END, updated_at = ? WHERE user_id = ? AND file_id = ?"
+    (CIFSRcvError fwdFileUnavailableError, CIFSRcvInvitation, currentTs, userId, fileId)
+  updateRcvFileStatus db fileId FSNew
+  updateRcvFileAgentId db fileId Nothing
+
+setGroupMsgReceivedDirectly :: DB.Connection -> GroupId -> GroupMemberId -> SharedMsgId -> IO ()
+setGroupMsgReceivedDirectly db groupId authorGroupMemberId sharedMsgId =
+  DB.execute
+    db
+    "UPDATE messages SET forwarded_by_group_member_id = NULL WHERE group_id = ? AND shared_msg_id = ? AND author_group_member_id = ?"
+    (groupId, sharedMsgId, authorGroupMemberId)
+
 getRcvFileDescrBySndFileId :: DB.Connection -> FileTransferId -> ExceptT StoreError IO RcvFileDescr
 getRcvFileDescrBySndFileId db fileId = do
   liftIO (getRcvFileDescrBySndFileId_ db fileId) >>= \case
@@ -771,8 +845,8 @@ acceptRcvFT_ :: DB.Connection -> User -> FileTransferId -> FilePath -> Bool -> M
 acceptRcvFT_ db User {userId} fileId filePath userApprovedRelays rcvFileInline currentTs = do
   DB.execute
     db
-    "UPDATE files SET file_path = ?, ci_file_status = ?, updated_at = ? WHERE user_id = ? AND file_id = ?"
-    (filePath, CIFSRcvAccepted, currentTs, userId, fileId)
+    "UPDATE files SET file_path = ?, ci_file_status = CASE WHEN ci_file_status = ? THEN ci_file_status ELSE ? END, updated_at = ? WHERE user_id = ? AND file_id = ?"
+    (filePath, CIFSRcvError fwdFileUnavailableError, CIFSRcvAccepted, currentTs, userId, fileId)
   DB.execute
     db
     "UPDATE rcv_files SET user_approved_relays = ?, rcv_file_inline = ?, file_status = ?, updated_at = ? WHERE file_id = ?"
