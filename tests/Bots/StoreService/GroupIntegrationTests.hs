@@ -510,7 +510,7 @@ testMissedOwnerPromotedOnStart :: HasCallStack => TestParams -> IO ()
 testMissedOwnerPromotedOnStart ps = do
   svc <- prepareGroupService ps
   -- A demoted owner with the flag cleared looks like a join the lane never handled.
-  withTwoMembersOwnerUnset svc $ \cc gid _ -> setMemberRole cc gid "alice" "member"
+  withTwoMembersOwnerUnset svc $ \cc gid alice bob -> setMemberRoleSeen cc gid [alice, bob] "alice" "member"
   runGroupService svc $ \cc env gid -> do
     waitMemberRole cc gid "alice" "owner"
     awaitLane cc env
@@ -530,8 +530,8 @@ testEarliestPromotedOnLaterJoin ps = do
 testJoiningMemberSkippedOnStart :: HasCallStack => TestParams -> IO ()
 testJoiningMemberSkippedOnStart ps = do
   svc <- prepareGroupService ps
-  withTwoMembersOwnerUnset svc $ \cc gid _ -> do
-    setMemberRole cc gid "alice" "member"
+  withTwoMembersOwnerUnset svc $ \cc gid alice bob -> do
+    setMemberRoleSeen cc gid [alice, bob] "alice" "member"
     withTransaction (chatStore cc) $ \db ->
       DB.execute db "UPDATE group_members SET member_status = 'accepted' WHERE group_id = ? AND local_display_name = 'alice'" (Only gid)
   runGroupService svc $ \cc env gid -> do
@@ -542,9 +542,9 @@ testJoiningMemberSkippedOnStart ps = do
 testHandMadeOwnerKeptOnStart :: HasCallStack => TestParams -> IO ()
 testHandMadeOwnerKeptOnStart ps = do
   svc <- prepareGroupService ps
-  withTwoMembersOwnerUnset svc $ \cc gid _ -> do
-    setMemberRole cc gid "bob" "owner"
-    setMemberRole cc gid "alice" "member"
+  withTwoMembersOwnerUnset svc $ \cc gid alice bob -> do
+    setMemberRoleSeen cc gid [alice, bob] "bob" "owner"
+    setMemberRoleSeen cc gid [alice, bob] "alice" "member"
   runGroupService svc $ \cc env gid -> do
     awaitLane cc env
     memberRoles cc gid `shouldReturn` [("alice", "member"), ("bob", "owner")]
@@ -608,17 +608,19 @@ listening port =
 testLeftOwnerReplacedOnStart :: HasCallStack => TestParams -> IO ()
 testLeftOwnerReplacedOnStart ps = do
   svc <- prepareGroupService ps
-  withTwoMembersOwnerUnset svc $ \cc gid bob -> do
-    setMemberRole cc gid "bob" "owner"
-    setMemberRole cc gid "alice" "member"
+  withTwoMembersOwnerUnset svc $ \cc gid alice bob -> do
+    setMemberRoleSeen cc gid [alice, bob] "bob" "owner"
+    setMemberRoleSeen cc gid [alice, bob] "alice" "member"
     send bob ("/l " <> groupName)
     pollUntilTrue $ (== Just "left") <$> memberStatus cc gid "bob"
+    drainUntil bob ["#" <> groupName <> ": you left the group"]
+    drainUntil alice ["#" <> groupName <> ": bob left the group"]
   runGroupService svc $ \cc _ gid -> waitMemberRole cc gid "alice" "owner"
 
 testSetUpOwnerNotReplacedOnStart :: HasCallStack => TestParams -> IO ()
 testSetUpOwnerNotReplacedOnStart ps = do
   svc <- prepareGroupService ps
-  runWithOwner svc $ \cc _ gid _ -> setMemberRole cc gid "alice" "member"
+  runWithOwner svc $ \cc _ gid alice -> setMemberRoleSeen cc gid [alice] "alice" "member"
   runGroupService svc $ \cc env gid -> do
     awaitLane cc env
     memberRoles cc gid `shouldReturn` [("alice", "member")]
@@ -632,13 +634,13 @@ memberStatus cc gid name =
       <> T.unpack name
       <> "'"
 
-withTwoMembersOwnerUnset :: HasCallStack => GroupSvc -> (ChatController -> Int64 -> TestCC -> IO ()) -> IO ()
+withTwoMembersOwnerUnset :: HasCallStack => GroupSvc -> (ChatController -> Int64 -> TestCC -> TestCC -> IO ()) -> IO ()
 withTwoMembersOwnerUnset svc@GroupSvc {gsPs = ps} action =
   runWithOwner svc $ \cc env gid alice ->
     withMemberJoined ps cc alice $ \bob -> do
       -- The lane must handle bob's join before the flag is cleared, or it would act on the cleared flag in this run.
       awaitLaneOnConsoles cc env [alice, bob]
-      action cc gid bob
+      action cc gid alice bob
       executeSql cc "UPDATE sx_badge_service_group SET owner_bootstrapped = 0"
 
 testFirstJoinerPromoted :: HasCallStack => TestParams -> IO ()
@@ -1513,6 +1515,16 @@ setMemberRole :: HasCallStack => ChatController -> Int64 -> Text -> Text -> IO (
 setMemberRole cc gid name role = do
   sendChatCmdStr cc ("/mr #" <> groupName <> " " <> T.unpack name <> " " <> T.unpack role) >>= (`shouldSatisfy` isRight)
   waitMemberRole cc gid name role
+
+-- Each member's console shows the bot's role change, naming the member or "your role".
+setMemberRoleSeen :: HasCallStack => ChatController -> Int64 -> [TestCC] -> Text -> Text -> IO ()
+setMemberRoleSeen cc gid members name role = do
+  from <- fromMaybe (error $ "no member " <> T.unpack name) . lookup name <$> memberRoles cc gid
+  setMemberRole cc gid name role
+  forM_ members $ \member -> do
+    viewer <- userName member
+    let whose = if viewer == T.unpack name then "your role" else "the role of " <> T.unpack name
+    drainUntil member ["#" <> groupName <> ": " <> botName <> " changed " <> whose <> " from " <> T.unpack from <> " to " <> T.unpack role]
 
 waitMemberBlocked :: HasCallStack => ChatController -> Int64 -> Text -> IO ()
 waitMemberBlocked cc gid name =
