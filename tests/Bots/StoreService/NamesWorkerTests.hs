@@ -64,6 +64,7 @@ namesWorkerTests = describe "StoreService names: worker" $ do
   describe "register" $ do
     it "ends the later of two wallets' paid orders for one name taken, with its value kept" testTwoWallets
     it "ends taken on any revert while the name is not available, releasing a code" testRevertTaken
+    it "keeps the phase on NameNotAvailable while the name still reads available, as for a pending competitor" testPendingCompetitor
     it "ends failed on a revert while the name is available, alerting on InsufficientAllowance and keeping a code" testRevertFailed
     it "clears the reveal on InvalidNonce, staying committed" testInvalidNonce
     it "relays no intent past its deadline, ending failed" testExpiredIntent
@@ -444,6 +445,20 @@ testTwoWallets = withWorker $ \w@W {wCtx = ctx} -> do
   x <- stored ctx b
   (nrPhase x, nrLive x, nrPrice x, nrPayment x, nrError x) `shouldBe` (PTaken, True, nrPrice b, nrPayment b, Nothing)
   length <$> sent w `shouldReturn` 1
+
+testPendingCompetitor :: IO ()
+testPendingCompetitor = withWorker $ \w@W {wCtx = ctx} -> do
+  (r, code) <- codeIn ctx 8 aliceOrder openPhase >>= traverseFst (revealed ctx keyA "alicebakery")
+  -- a competitor's register in the node's pending block, never mined
+  answerAvailable w True
+  dryRunsRevert w "NameNotAvailable(string)" $ abiTuple [Dynamic $ abiBytes "alicebakery"]
+  steps w r >>= retrying
+  stored ctx r `shouldReturn` r
+  pcReservedBy <$> codeOf ctx code `shouldReturn` Just (nrId r)
+  -- the competitor's register dropped
+  dryRunsPass w
+  void $ steps w r >>= awaiting
+  nrPhase <$> stored ctx r `shouldReturn` PRegistering
 
 testRevertTaken :: IO ()
 testRevertTaken = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do

@@ -263,8 +263,8 @@ registering w@Worker {wkSender} now r@NameRegistration {nrId} =
     Nothing -> judge w now r Nothing
 
 -- | A register that did not go through, by its dry run's revert or once every transaction settled: registered when one mined
--- with status 1 or the owner holds the name; committed again on InvalidNonce, for the page to sign again; taken on
--- NameNotAvailable, NameReserved, or any revert while the name is not available; failed otherwise.
+-- with status 1 or the owner holds the name; committed again on InvalidNonce, for the page to sign again; taken on any revert
+-- while the name is not available at the latest block; failed otherwise, unless the dry run named the name as gone.
 judge :: Worker -> UTCTime -> NameRegistration -> Maybe RevertName -> IO Next
 judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {nrReveal} reason =
   inTurn w r $
@@ -275,13 +275,15 @@ judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {n
       LNotLanded -> case reason of
         Just RNInvalidNonce -> store w now r {nrReveal = Nothing}
         Just RNCommitmentTooNew -> pure (Nothing, waitUntil r $ addUTCTime chainSecond now)
-        Just name | name `elem` [RNNameNotAvailable, RNNameReserved] -> taken w now r
         _ -> case nrReveal of
           Just NameReveal {rvLabel} ->
             controllerAvailable oeContracts rvLabel >>= \case
               Left e -> pure (Nothing, failure r e)
               Right False -> taken w now r
-              Right True -> failed w now r reason
+              -- the dry run runs on the pending block, where a competitor's register that may never mine can hold the name
+              Right True
+                | reason `elem` map Just [RNNameNotAvailable, RNNameReserved] -> pure (Nothing, Retry (nrVersion r) "the dry run reverted the name as gone, but it reads available")
+                | otherwise -> failed w now r reason
           Nothing -> failed w now r reason
 
 -- | The payment is kept, and a code order's code released.
