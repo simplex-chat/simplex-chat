@@ -229,6 +229,7 @@ chatGroupTests = do
     it "multiple groups with same member, update is applied only once" testMembershipProfileUpdateSameMember
     it "member contact is active" testMembershipProfileUpdateContactActive
     it "member contact is deleted" testMembershipProfileUpdateContactDeleted
+    it "member contact is deleted, peer type is updated" testMembershipProfileUpdateContactDeletedPeerType
     it "member contact is deleted silently, then considered disabled" testMembershipProfileUpdateContactDisabled
     it "profile update without change is ignored" testMembershipProfileUpdateNoChangeIgnored
     it "change of profile contact link is ignored" testMembershipProfileUpdateContactLinkIgnored
@@ -7424,6 +7425,26 @@ testMembershipProfileUpdateContactDeleted =
       bob <##. "sending messages via"
       bob <## "connection not verified, use /code command to see security code"
       bob <## currentChatVRangeInfo
+
+testMembershipProfileUpdateContactDeletedPeerType :: HasCallStack => TestParams -> IO ()
+testMembershipProfileUpdateContactDeletedPeerType =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+
+      alice ##> "/d bob"
+      alice <## "bob: contact is deleted"
+      bob <## "alice (Alice) deleted contact with you"
+
+      alice ##> "/_profile 1 {\"displayName\": \"alisa\", \"fullName\": \"\", \"peerType\": \"bot\"}"
+      alice <## "user profile is changed to alisa (your 0 contacts are notified)"
+
+      alice #> "#team hello"
+      bob <## "contact alice changed to alisa"
+      bob <## "use @alisa <message> to send messages"
+      bob <# "#team alisa> hello"
+
+      memberAddressPeerType bob "alisa" `shouldReturn` [(Nothing, Just CPTBot)]
 
 testMembershipProfileUpdateContactDisabled :: HasCallStack => TestParams -> IO ()
 testMembershipProfileUpdateContactDisabled =

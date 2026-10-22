@@ -25,7 +25,7 @@ from packages_release import (
     TYPES_DIR,
     TYPES_README,
     ADDON_PLATFORMS,
-    BuildPlan,
+    BUILD_WORKFLOW,
     LIBS_ASSETS,
     Package,
     Pins,
@@ -34,7 +34,6 @@ from packages_release import (
     addon_notes,
     addon_release,
     build_matrix,
-    build_plan,
     bump_npm_version,
     bump_python_version,
     changed_since,
@@ -48,7 +47,9 @@ from packages_release import (
     package_state,
     pin_problems,
     prepare,
+    print_build_plan,
     publish_plan,
+    pull_request_paths,
     record_releases,
     recorded_commit,
     release_status,
@@ -238,13 +239,11 @@ class PlanTest(unittest.TestCase):
 
 
 class BuildPlanTest(unittest.TestCase):
-    def test_pull_request_tests_with_the_pinned_libs(self):
-        self.assertEqual(build_plan(core_changed=False, addon_changed=False), BuildPlan(ADDON_PLATFORMS, test=True))
-        self.assertEqual(build_plan(core_changed=False, addon_changed=True), BuildPlan(ADDON_PLATFORMS, test=True))
-
-    def test_core_change_leaves_tests_to_build_yml(self):
-        self.assertEqual(build_plan(core_changed=True, addon_changed=False), BuildPlan([], test=False))
-        self.assertEqual(build_plan(core_changed=True, addon_changed=True), BuildPlan(ADDON_PLATFORMS, test=False))
+    def test_reads_the_pull_request_paths_of_build_yml(self):
+        paths = pull_request_paths((packages_release.ROOT / BUILD_WORKFLOW).read_text())
+        self.assertIn("src/**", paths)
+        self.assertIn(".github/**", paths)
+        self.assertFalse([path for path in paths if path.startswith("packages/")])
 
     def test_matrix_names_the_runner_of_each_platform(self):
         self.assertEqual(
@@ -404,6 +403,40 @@ class GitRepoTest(unittest.TestCase):
         return subprocess.run(
             ["git", "rev-parse", "HEAD"], cwd=self.repo, capture_output=True, text=True
         ).stdout.strip()
+
+
+class PrintBuildPlanTest(GitRepoTest):
+    def setUp(self):
+        super().setUp()
+        self.write(BUILD_WORKFLOW, 'on:\n  pull_request:\n    paths:\n      - "src/**"\n      - "Dockerfile*"\n\nenv:\n')
+        self.write("packages/pkg/src.txt", "a")
+        self.commit("base")
+        self.base = self.head()
+
+    def platforms(self):
+        output = io.StringIO()
+        with mock.patch.object(packages_release, "ROOT", self.repo), contextlib.redirect_stdout(output):
+            print_build_plan(argparse.Namespace(base=self.base))
+        return [entry["platform"] for entry in json.loads(output.getvalue().removeprefix("platforms="))]
+
+    def test_package_change_is_tested_on_every_platform(self):
+        self.write("packages/pkg/src.txt", "b")
+        self.commit("package change")
+        self.assertEqual(self.platforms(), ADDON_PLATFORMS)
+
+    def test_change_that_runs_build_yml_is_tested_there(self):
+        self.write("packages/pkg/src.txt", "b")
+        self.write("src/Lib/Module.hs", "m")
+        self.commit("package and core change")
+        self.assertEqual(self.platforms(), [])
+
+    def test_patterns_match_as_path_filters(self):
+        self.write("packages/pkg/Dockerfile", "d")
+        self.commit("nested Dockerfile")
+        self.assertEqual(self.platforms(), ADDON_PLATFORMS)
+        self.write("Dockerfile.build", "d")
+        self.commit("top-level Dockerfile")
+        self.assertEqual(self.platforms(), [])
 
 
 class PackageStateTest(GitRepoTest):
