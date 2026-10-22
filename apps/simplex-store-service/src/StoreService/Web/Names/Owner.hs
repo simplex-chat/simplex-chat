@@ -30,10 +30,10 @@ import StoreService.Names.Phases (RegistrationId (..), publish)
 import StoreService.Names.Signatures (OrderFields (..), findMessage, parseAnyCaseAddress, parseSignature, retargetMessage, takenCodeMessage)
 import StoreService.Names.Store (NamePhase (..), NameRegistration (..), RegistrationPayment (..), findRegistrations, getRegistration)
 import StoreService.Names.Turns (withLabelTurn, withLabelTurns)
-import StoreService.Names.View (registrationView)
+import StoreService.Names.View (registrationAt, registrationView)
 import StoreService.Web.Http (Respond, internalError, jsonResponse, maxBodyBytes, nameBodyBytes, notFound, parseCodeHash, readBoundedBody)
 import StoreService.Web.Names.Orders (Answer (..), answerNow, firstRefusal, orderRefusalResponse, sendAnswer)
-import StoreService.Web.Names.Registration (registrationAt, registrationChangedResponse, registrationRefusalResponse)
+import StoreService.Web.Names.Registration (registrationChangedResponse, registrationRefusalResponse)
 
 data FindRequest = FindRequest
   { frOwner :: Address,

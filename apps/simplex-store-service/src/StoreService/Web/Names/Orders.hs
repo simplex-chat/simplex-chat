@@ -40,14 +40,13 @@ import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Signatures (OrderFields (..))
 import StoreService.Names.Store (NameRegistration (..), NewRegistration (..), OrderTerms (..), PaidOrder (..), PrepaidCode (..), RegistrationPayment (..), createPaidRegistration, getRegistration, newRegistrationId, orderHash, textMethod)
 import StoreService.Names.Turns (withLabelTurn)
-import StoreService.Names.View (registrationView)
+import StoreService.Names.View (registrationAt, registrationView)
 import StoreService.Orders (publishRegistration)
 import StoreService.Providers (OrderDraft (..), Provider (..), ProviderError (..), ProviderInvoice (..), expiresItself)
 import StoreService.Store.Invoices (InvoiceRow (..), NewNameInvoice (..), getInvoice, insertNameInvoice, newInvoiceId, truncateToSecond)
 import StoreService.Waiters (Waiters, publish)
 import StoreService.Web.Http (Respond, badRequest, codeConflict, confirmationsFor, internalError, invalidName, invoiceAt, invoicePairs, invoiceWindow, jsonError, jsonResponse, nameBodyBytes, providerFor, providerNamed, providerUnavailable, readBoundedBody)
 import StoreService.Web.Names.Codes (codeRefusalResponse)
-import StoreService.Web.Names.Registration (registrationAt)
 
 data InvoiceOrder = InvoiceOrder
   { ioRequest :: OrderRequest,
