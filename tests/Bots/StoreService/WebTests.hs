@@ -230,6 +230,10 @@ badgeWebTests = do
     it "answers a hold from the row it read, not from the status it woke on" testHoldReportsTheRowNotTheWake
     it "answers a hold that timed out with a change nothing published" testHoldTimeoutReportsAnUnpublishedChange
     it "answers a handler exception with 500 internal, and keeps serving" testHandlerExceptionIsContained
+  describe "StoreService names: sites" $ do
+    it "exports both sites, each with the publishable key" testExportsBothSites
+    it "picks the site by Host against names_hosts" testHostPicksTheSite
+    it "serves a names asset with its type" testServesANamesAsset
   describe "store service settlement" $ do
     it "settles an open invoice: paid, a settled payment row, and the code" testSettlesAnOpenInvoice
     it "settles an expired invoice, because late settlement is routine" testLateSettlementIsLegal
@@ -1041,6 +1045,100 @@ testExportWebapp = do
     LB.toStrict idx `shouldSatisfy` BC.isInfixOf "content=\"pk_test_injected\""
     LB.readFile (outDir </> "sw.js") >>= (`shouldBe` workerJs)
     LB.readFile (outDir </> "assets" </> buildHash </> "main.js") >>= (`shouldBe` assetJs)
+
+namesShellHtml :: LB.ByteString
+namesShellHtml = "<!doctype html><title>simplex.domains</title><meta name=\"stripe-publishable-key\" content=\"\">"
+
+namesShellWithKey :: LB.ByteString
+namesShellWithKey = "<!doctype html><title>simplex.domains</title><meta name=\"stripe-publishable-key\" content=\"pk_test_injected\">"
+
+namesFont :: LB.ByteString
+namesFont = "wOF2 Manrope Bold"
+
+namesFontPath :: FilePath
+namesFontPath = "fonts" </> "Manrope" </> "Manrope-Bold.woff2"
+
+namesManifest :: LB.ByteString
+namesManifest = "{\"name\":\"SimpleX names\"}"
+
+namesHost :: ByteString
+namesHost = "simplex.domains"
+
+prepareNamesDir :: FilePath -> IO FilePath
+prepareNamesDir root = do
+  let namesDir = root </> "names"
+  createDirectoryIfMissing True (namesDir </> "fonts" </> "Manrope")
+  LB.writeFile (namesDir </> "index.html") namesShellHtml
+  LB.writeFile (namesDir </> namesFontPath) namesFont
+  LB.writeFile (namesDir </> "manifest.webmanifest") namesManifest
+  pure namesDir
+
+testExportsBothSites :: IO ()
+testExportsBothSites = do
+  createDirectoryIfMissing True "tests/tmp"
+  withTempDirectory "tests/tmp" "names-export" $ \root -> do
+    staticDir <- prepareStaticDir root
+    namesDir <- prepareNamesDir root
+    let badgesOut = root </> "badges-out"
+        namesOut = root </> "names-out"
+        lc = (listener (testServiceConfig staticDir False)) {lServeWebapp = False, lWebappExportDir = Just badgesOut, lNamesStaticDir = Just namesDir, lNamesExportDir = Just namesOut}
+    exportWebapp lc (Just publishTestStripe)
+    badgesShell <- LB.readFile (badgesOut </> "index.html")
+    LB.toStrict badgesShell `shouldSatisfy` BC.isInfixOf "content=\"pk_test_injected\""
+    LB.readFile (badgesOut </> "assets" </> buildHash </> "main.js") >>= (`shouldBe` assetJs)
+    doesFileExist (badgesOut </> namesFontPath) `shouldReturn` False
+    LB.readFile (namesOut </> "index.html") >>= (`shouldBe` namesShellWithKey)
+    LB.readFile (namesOut </> namesFontPath) >>= (`shouldBe` namesFont)
+    LB.readFile (namesOut </> "manifest.webmanifest") >>= (`shouldBe` namesManifest)
+    doesFileExist (namesOut </> "sw.js") `shouldReturn` False
+
+withBothSites :: (WebClient -> IO a) -> IO a
+withBothSites action =
+  withServiceStore $ \st -> do
+    createDirectoryIfMissing True "tests/tmp"
+    withTempDirectory "tests/tmp" "names-static" $ \root -> do
+      staticDir <- prepareStaticDir root
+      namesDir <- prepareNamesDir root
+      let base = testServiceConfig staticDir True
+          cfg = base {listener = (listener base) {lNamesStaticDir = Just namesDir, lNamesHosts = [safeDecodeUtf8 namesHost]}, stripe = Just publishTestStripe}
+      withListener [] True holdMicros st cfg (const action)
+
+webGetAt :: WebClient -> ByteString -> String -> IO (Response LB.ByteString)
+webGetAt client host target = webRequest client "GET" target [("Host", host)]
+
+testHostPicksTheSite :: IO ()
+testHostPicksTheSite = bounded "host picks the site" $ withBothSites $ \client -> do
+  forM_ [namesHost, "SIMPLEX.Domains:8443", "simplex.domains:80"] $ \host -> do
+    shell <- webGetAt client host "/"
+    (statusOf shell, responseBody shell) `shouldBe` (200, namesShellWithKey)
+    headerOf shell hContentType `shouldBe` Just "text/html; charset=utf-8"
+  namesIndex <- webGetAt client namesHost "/index.html"
+  (statusOf namesIndex, responseBody namesIndex) `shouldBe` (200, namesShellWithKey)
+  forM_ ["badges.simplex.chat", "www.simplex.domains", "simplex.domains.example.org"] $ \host -> do
+    shell <- webGetAt client host "/"
+    statusOf shell `shouldBe` 200
+    LB.toStrict (responseBody shell) `shouldSatisfy` BC.isInfixOf "SimpleX badges"
+    LB.toStrict (responseBody shell) `shouldSatisfy` BC.isInfixOf "content=\"pk_test_injected\""
+  plain <- webGet client "/"
+  LB.toStrict (responseBody plain) `shouldSatisfy` BC.isInfixOf "SimpleX badges"
+  (statusOf <$> webGetAt client namesHost ("/assets/" <> buildHash <> "/main.js")) `shouldReturn` 404
+  (statusOf <$> webGetAt client namesHost "/sw.js") `shouldReturn` 404
+  (statusOf <$> webGetAt client "badges.simplex.chat" ("/" <> namesFontPath)) `shouldReturn` 404
+  postShell <- webRequest client "POST" "/" [("Host", namesHost)]
+  statusOf postShell `shouldBe` 405
+  api <- webGetAt client namesHost "/api/invoice"
+  statusOf api `shouldBe` 405
+  headerOf api "Allow" `shouldBe` Just "POST"
+
+testServesANamesAsset :: IO ()
+testServesANamesAsset = bounded "names asset" $ withBothSites $ \client -> do
+  font <- webGetAt client namesHost ("/" <> namesFontPath)
+  (statusOf font, responseBody font) `shouldBe` (200, namesFont)
+  headerOf font hContentType `shouldBe` Just "font/woff2"
+  manifest <- webGetAt client namesHost "/manifest.webmanifest"
+  (statusOf manifest, responseBody manifest) `shouldBe` (200, namesManifest)
+  headerOf manifest hContentType `shouldBe` Just "application/manifest+json"
+  (statusOf <$> webGetAt client namesHost "/fonts/Manrope/absent.woff2") `shouldReturn` 404
 
 type WebClient = (Manager, String)
 
