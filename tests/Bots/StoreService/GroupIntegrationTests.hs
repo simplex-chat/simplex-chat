@@ -20,10 +20,10 @@ import StoreService.Names.Store (NamePhase (..), NameRegistration (..), PrepaidC
 import StoreService.Names.Turns (newTurns, withCodeTurn)
 import StoreService.Options (StoreServiceOpts (..))
 import StoreService.Orders (cancelOpenInvoice, expireOverdue)
-import StoreService.Service (ServiceState (..), storeService, newServiceState)
+import StoreService.Service (ServiceState (..), newServiceState, storeService, trustDevKeys)
 import StoreService.Store (ManagedGroup (..), getManagedGroup)
 import StoreService.Waiters (newWaiters)
-import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, badgeTypeOf, credentialOf, entryOf, issueCode, issueRaw, mkStoreServiceOpts, newPurchaseKeys, operatorCmd, redeemWithQueue, requestObject, revokeRaw, serviceDbPrefix, shouldAnswerError, statementOf, stopStoreService, testIssuerKeyIdx, withStoreService)
+import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, badgeTypeOf, credentialOf, devKeysIni, entryOf, issueCode, issueRaw, mkStoreServiceOpts, newPurchaseKeys, operatorCmd, redeemWithQueue, requestObject, revokeRaw, serviceDbPrefix, shouldAnswerError, statementOf, stopStoreService, testIssuerKeyIdx, withStoreService)
 import Bots.StoreService.ConfigTests (chainSection, controllerAddr, namesSection)
 import Bots.StoreService.FakeEthNode (CallAnswer (..), FakeEthNode (..), answerCall, awaitSent, withFakeEthNode)
 import Bots.StoreService.WebTests (capturingStderr, digestFixture)
@@ -142,7 +142,21 @@ badgeGroupIntegrationTests = do
   it "leaves a tracker it cannot edit alone rather than publishing the code again" testUneditableTrackerLeftAlone
 
 namesBootTests :: SpecWith TestParams
-namesBootTests = it "boots with [names] and [chain], routing fixed /api/name paths ahead of a search, find ahead of registrations, registrations to GET, another name, a reveal, a spend and a retry to POST, a path no route knows and a taken order's code to 404, code checks and orders under one limit, and another name and retries under another" testNamesBoot
+namesBootTests = do
+  it "warns naming the indexes of trusted dev_keys, and says nothing without them" testDevKeysWarned
+  it "boots with [names] and [chain], routing fixed /api/name paths ahead of a search, find ahead of registrations, registrations to GET, another name, a reveal, a spend and a retry to POST, a path no route knows and a taken order's code to 404, code checks and orders under one limit, and another name and retries under another" testNamesBoot
+
+testDevKeysWarned :: HasCallStack => TestParams -> IO ()
+testDevKeysWarned _ = do
+  Right (pk, sk) <- bbsKeyGen
+  Right (_, devSk) <- bbsKeyGen
+  let cfg = testCfg {badgePublicKeys = M.singleton testIssuerKeyIdx pk}
+  Right withDev <- devKeysIni chainSection 9 devSk [(9, devSk), (12, devSk)]
+  warned <- capturingStderr $ trustDevKeys (Just withDev) cfg >>= (`shouldSatisfy` isRight) . fmap badgePublicKeys
+  filter ("[WARN " `T.isInfixOf`) (T.lines warned) `shouldSatisfy` any ("trusting issuer dev_keys at indexes 9, 12" `T.isInfixOf`)
+  Right withoutDev <- devKeysIni chainSection testIssuerKeyIdx sk []
+  quiet <- capturingStderr $ trustDevKeys (Just withoutDev) cfg >>= (`shouldSatisfy` isRight) . fmap badgePublicKeys
+  filter ("dev_keys" `T.isInfixOf`) (T.lines quiet) `shouldBe` []
 
 testNamesBoot :: HasCallStack => TestParams -> IO ()
 testNamesBoot ps = do

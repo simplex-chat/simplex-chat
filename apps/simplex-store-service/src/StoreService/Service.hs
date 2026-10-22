@@ -46,7 +46,7 @@ import StoreService.Waiters (Waiters, newWaiters)
 import StoreService.Web.Server (exportWebapp, newWebEnv, runWebListener)
 import Control.Applicative (optional)
 import Control.Concurrent.STM
-import StoreService.Log (logError, logInfo)
+import StoreService.Log (logError, logInfo, logWarn)
 import Control.Monad
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.Aeson as J
@@ -55,7 +55,7 @@ import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Bifunctor (first)
 import Data.ByteString.Char8 (ByteString)
 import Data.Char (isSpace)
-import Data.Either (fromRight)
+import Data.Either (fromRight, isRight)
 import Data.Functor (($>), (<&>))
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust, maybeToList)
@@ -110,9 +110,13 @@ welcomeGetOpts = do
 
 -- | The ini's dev_keys, trusted beside the clients' keys; the config accepts them only on the local chain.
 trustDevKeys :: Maybe ServiceConfig -> ChatConfig -> IO (Either String ChatConfig)
-trustDevKeys serviceCfg cfg@ChatConfig {badgePublicKeys} =
-  fmap trusted . sequence <$> mapM publicKey (maybe [] devIssuerKeys serviceCfg)
+trustDevKeys serviceCfg cfg@ChatConfig {badgePublicKeys} = do
+  r <- fmap trusted . sequence <$> mapM publicKey devKeys
+  when (isRight r && not (null devKeys)) $
+    logWarn $ "trusting issuer dev_keys at indexes " <> T.intercalate ", " (map (\BadgeIssuerKey {keyIdx} -> tshow keyIdx) devKeys) <> "; no client trusts them, never set them in production"
+  pure r
   where
+    devKeys = maybe [] devIssuerKeys serviceCfg
     trusted ks = cfg {badgePublicKeys = M.union badgePublicKeys (M.fromList ks)}
     publicKey BadgeIssuerKey {keyIdx, secretKey}
       | M.member keyIdx badgePublicKeys = pure $ Left $ "issuer.dev_keys index " <> show keyIdx <> " is the index of a key clients trust"
