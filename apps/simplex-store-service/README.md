@@ -877,9 +877,8 @@ automatically, and the service never learns where to send money. Support records
    and part of a balance is never refunded. Other cents record nothing, and the answer gives the
    balance.
 3. The answer, `Recorded a refund of $100.00 for order <id>. Refund it now, by: …`, repeats the
-   chain. Pay the money back now, by the methods it lists: a card payment as a refund in the Stripe
-   Dashboard, crypto to an address the buyer gives, at that day's rate, since the balance is in US
-   cents. The refund is recorded first so that the buyer cannot spend the money while it is paid
+   chain. Pay the balance's amount in US dollars back now, by the methods it lists. The refund is
+   recorded first so that the buyer cannot spend the money while it is paid
    back. The service logs each recorded refund at info with the order's registration id and the
    cents.
 
