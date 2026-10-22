@@ -238,8 +238,10 @@ codeOrderInsert :: NewRegistration -> PrepaidCode -> DB.Connection -> UTCTime ->
 codeOrderInsert new@NewRegistration {nrgId, nrgOrder = OrderFields {ofLength}} code@PrepaidCode {pcCodeHash} db now =
   createCodeRegistration db new code now >>= \case
     Right () -> pure $ Right ()
+    Left RRLiveOrder -> pure $ Left OROrderExists
     Left RRCodeNotReservable -> Left . ORCode <$> reserveRefusal db now pcCodeHash nrgId ofLength
-    Left _ -> pure $ Left OROrderExists
+    -- a code order holds no balance
+    Left RRBalanceChanged -> pure $ Left OROrderExists
 
 checkTimestamp :: UTCTime -> Word64 -> Either OrderRefusal ()
 checkTimestamp now timestamp =
