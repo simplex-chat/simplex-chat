@@ -10,6 +10,7 @@ module StoreService.Names.Signatures
     orderMessage,
     findMessage,
     retargetMessage,
+    spendMessage,
     parseChecksumAddress,
     parseAnyCaseAddress,
   )
@@ -98,6 +99,10 @@ findMessage owner timestamp = message ["find", hex $ unAddress owner, tshow time
 
 retargetMessage :: RegistrationId -> OrderFields -> Word64 -> ByteString
 retargetMessage (RegistrationId rid) order timestamp = message $ ["name", rid] <> orderWords order <> [tshow timestamp]
+
+-- | The registration id is the order whose balance pays; the fields are the new order's.
+spendMessage :: RegistrationId -> OrderFields -> Word64 -> ByteString
+spendMessage (RegistrationId rid) order timestamp = message $ ["spend", rid] <> orderWords order <> [tshow timestamp]
 
 message :: [Text] -> ByteString
 message = encodeUtf8 . T.unwords . ("simplex.domains" :)
