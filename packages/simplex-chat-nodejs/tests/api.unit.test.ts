@@ -26,6 +26,17 @@ describe("documented success responses", () => {
     await expect(chat.apiUpdateChatItem(T.ChatType.Direct, 1, 2, {type: "text", text: "same"}, false)).resolves.toEqual(chatItem)
   })
 
+  it("apiUpdateChatItem updates and finalizes a live message", async () => {
+    const chatItem = {meta: {itemId: 2}}
+    const chat = await chatWithResponse({type: "chatItemUpdated", user, chatItem: {chatItem}})
+    await expect(chat.apiUpdateChatItem(T.ChatType.Group, 1, 2, {type: "text", text: "partial"}, true)).resolves.toEqual(chatItem)
+    await expect(chat.apiUpdateChatItem(T.ChatType.Group, 1, 2, {type: "text", text: "final"})).resolves.toEqual(chatItem)
+    expect(jest.mocked(core.chatSendCmd).mock.calls.map(([, cmd]) => cmd)).toEqual([
+      '/_update item #1 2 live=on json {"msgContent":{"type":"text","text":"partial"},"mentions":{}}',
+      '/_update item #1 2 json {"msgContent":{"type":"text","text":"final"},"mentions":{}}',
+    ])
+  })
+
   it("apiSetProfileAddress accepts userProfileNoChange", async () => {
     const chat = await chatWithResponse({type: "userProfileNoChange", user})
     await expect(chat.apiSetProfileAddress(1, true)).resolves.toEqual({updateSuccesses: 0, updateFailures: 0, changedContacts: []})
@@ -126,6 +137,122 @@ describe("startChat lifecycle", () => {
     const chat = await chatWithResponses()
     await chat.recvChatEvent()
     expect(core.chatRecvMsgWait).toHaveBeenCalledWith(BigInt(1), 500_000)
+  })
+})
+
+describe("LiveMessage", () => {
+  const interval = 50
+  const json = JSON.stringify
+
+  function recordingChat() {
+    const calls: string[] = []
+    let itemId = 0
+    const ref = (chatType: T.ChatType, chatId: number) => T.ChatType.cmdString(chatType) + chatId
+    const chat = {
+      apiSendMessages: async ([chatType, chatId]: [T.ChatType, number], [{msgContent}]: T.ComposedMessage[], live: boolean) => {
+        calls.push(`send ${ref(chatType, chatId)} ${json(msgContent.text)} live=${live}`)
+        return [{chatItem: {meta: {itemId: ++itemId}}}] as unknown as T.AChatItem[]
+      },
+      apiUpdateChatItem: async (chatType: T.ChatType, chatId: number, chatItemId: number, msgContent: T.MsgContent, live: boolean) => {
+        calls.push(`update ${ref(chatType, chatId)} ${chatItemId} ${json(msgContent.text)} live=${live}`)
+        return {} as T.ChatItem
+      },
+      apiDeleteChatItems: async (chatType: T.ChatType, chatId: number, chatItemIds: number[], deleteMode: T.CIDeleteMode) => {
+        calls.push(`delete ${ref(chatType, chatId)} ${chatItemIds} ${deleteMode}`)
+        return [] as T.ChatItemDeletion[]
+      },
+    }
+    return {chat, calls}
+  }
+
+  function recordingLiveMessage(): {live: api.LiveMessage, calls: string[]} {
+    const {chat, calls} = recordingChat()
+    return {live: new api.LiveMessage(chat, T.ChatType.Group, 5, interval), calls}
+  }
+
+  function wait(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms))
+  }
+
+  it("sends the first text at once, updates at most once per interval and finalizes", async () => {
+    const {live, calls} = recordingLiveMessage()
+    live.update("")
+    live.update("Hel")
+    live.update("Hello")
+    await wait(interval / 5)
+    expect(calls).toEqual(['send #5 "" live=true'])
+    await wait(interval * 2)
+    expect(calls).toEqual(['send #5 "" live=true', 'update #5 1 "Hello" live=true'])
+    await live.end("Hello world")
+    expect(calls).toEqual(['send #5 "" live=true', 'update #5 1 "Hello" live=true', 'update #5 1 "Hello world" live=false'])
+  })
+
+  it("does not repeat unchanged text", async () => {
+    const {live, calls} = recordingLiveMessage()
+    live.update("Hello")
+    live.update("Hello")
+    await wait(interval * 2)
+    await live.end()
+    expect(calls).toEqual(['send #5 "Hello" live=true', 'update #5 1 "Hello" live=false'])
+  })
+
+  it("deletes a live message without text", async () => {
+    const {live, calls} = recordingLiveMessage()
+    live.update("")
+    await live.end()
+    expect(calls).toEqual(['send #5 "" live=true', "delete #5 1 broadcast"])
+  })
+
+  it("sends the final text without a live message", async () => {
+    const {live, calls} = recordingLiveMessage()
+    await live.end()
+    await live.end("Done")
+    expect(calls).toEqual(['send #5 "Done" live=false'])
+  })
+
+  it("finalizes the last text", async () => {
+    const {live, calls} = recordingLiveMessage()
+    live.update("")
+    live.update("partial")
+    await live.end()
+    expect(calls).toEqual(['send #5 "" live=true', 'update #5 1 "partial" live=false'])
+  })
+
+  it("starts the next live message after the end", async () => {
+    const {live, calls} = recordingLiveMessage()
+    live.update("")
+    void live.end("first")
+    live.update("")
+    await live.end("second")
+    expect(calls).toEqual([
+      'send #5 "" live=true',
+      'update #5 1 "first" live=false',
+      'send #5 "" live=true',
+      'update #5 2 "second" live=false',
+    ])
+  })
+
+  it("passes errors to the handler and repeats the change with the next text", async () => {
+    const {chat, calls} = recordingChat()
+    const error = new Error("update failed")
+    chat.apiUpdateChatItem = jest.fn(chat.apiUpdateChatItem).mockRejectedValueOnce(error)
+    const errors: unknown[] = []
+    const live = new api.LiveMessage(chat, T.ChatType.Group, 5, interval, e => errors.push(e))
+    live.update("")
+    live.update("Hello")
+    await wait(interval * 2)
+    await live.end("Hello world")
+    expect(errors).toEqual([error])
+    expect(calls).toEqual(['send #5 "" live=true', 'update #5 1 "Hello world" live=false'])
+  })
+
+  it("logs errors by default", async () => {
+    const {chat} = recordingChat()
+    const error = new Error("send failed")
+    chat.apiSendMessages = jest.fn(chat.apiSendMessages).mockRejectedValueOnce(error)
+    const log = jest.spyOn(console, "log").mockImplementation(() => {})
+    await new api.LiveMessage(chat, T.ChatType.Group, 5).end("Hello")
+    expect(log).toHaveBeenCalledWith("live message error", error)
   })
 })
 

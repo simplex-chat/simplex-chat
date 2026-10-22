@@ -8,7 +8,7 @@
 
 > **DbConfig** = \{ `encryptionKey?`: `string`; `filePrefix`: `string`; `type`: `"sqlite"`; \} \| \{ `connectionString`: `string`; `schemaPrefix?`: `string`; `type`: `"postgres"`; \}
 
-Defined in: [src/api.ts:63](../src/api.ts#L63)
+Defined in: [src/api.ts:63](../api.ts#L63)
 
 Database configuration. `type` selects the libsimplex backend loaded by
 `ChatApi.init`; one backend per process.
