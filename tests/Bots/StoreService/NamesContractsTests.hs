@@ -197,26 +197,26 @@ testNonces g = withContracts g $ \node ct -> do
 testOwnerOfNobody :: TVar ChaChaDRG -> IO ()
 testOwnerOfNobody g = withContracts g $ \node ct -> do
   answerCall node (registrarOf node) ownerOfCall $ Returns $ addressWord owner
-  ownerOfToken ct alice `shouldReturn` Right (Just owner)
+  ownerOfToken ct Latest alice `shouldReturn` Right (Just owner)
   -- the registrar's require(expiries[tokenId] > block.timestamp), as anvil answers it with "0x" and reth without data
   answerCall node (registrarOf node) ownerOfCall $ Reverts ""
-  ownerOfToken ct alice `shouldReturn` Right Nothing
+  ownerOfToken ct Latest alice `shouldReturn` Right Nothing
   setFault node "eth_call" $ RpcError 3 "execution reverted" Nothing
-  ownerOfToken ct alice `shouldReturn` Right Nothing
+  ownerOfToken ct Latest alice `shouldReturn` Right Nothing
 
 testOwnerOfFailed :: TVar ChaChaDRG -> IO ()
 testOwnerOfFailed g = withContracts g $ \node ct -> do
   -- viem's encodeErrorResult of Error("ERC721: invalid token ID")
   answerCall node (registrarOf node) ownerOfCall $ Reverts $ unhex "08c379a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000184552433732313a20696e76616c696420746f6b656e2049440000000000000000"
-  ownerOfToken ct alice `shouldReturn` Left (ChainReverted Nothing)
+  ownerOfToken ct Latest alice `shouldReturn` Left (ChainReverted Nothing)
   -- viem's encodeErrorResult of ReentrantCall()
   answerCall node (registrarOf node) ownerOfCall $ Reverts $ unhex "37ed32e8"
-  ownerOfToken ct alice `shouldReturn` Left (ChainReverted $ Just RNReentrantCall)
+  ownerOfToken ct Latest alice `shouldReturn` Left (ChainReverted $ Just RNReentrantCall)
   -- a node or proxy that keeps the reason in the message but drops the data
   setFault node "eth_call" $ RpcError (-32000) "execution reverted: ERC721: invalid token ID" Nothing
-  ownerOfToken ct alice `shouldReturn` Left (ChainReverted Nothing)
+  ownerOfToken ct Latest alice `shouldReturn` Left (ChainReverted Nothing)
   setFault node "eth_call" HttpFailure
-  ownerOfToken ct alice `shouldReturn` Left (ChainUnavailable "eth_call: HTTP 502")
+  ownerOfToken ct Latest alice `shouldReturn` Left (ChainUnavailable "eth_call: HTTP 502")
 
 testCommitmentTime :: TVar ChaChaDRG -> IO ()
 testCommitmentTime g = withContracts g $ \node ct -> do
@@ -232,7 +232,7 @@ testAvailability g = withContracts g $ \node ct -> do
   answerCall node fakeController availableCall $ Returns $ uint256 (0 :: Int)
   controllerAvailable ct "alicebakery" `shouldReturn` Right False
   answerCall node (registrarOf node) nameExpiresCall $ Returns $ uint256 (now + year)
-  nameExpires ct alice `shouldReturn` Right (now + year)
+  nameExpires ct Latest alice `shouldReturn` Right (now + year)
 
 testCommitmentAges :: TVar ChaChaDRG -> IO ()
 testCommitmentAges g = withContracts g $ \node ct -> do
@@ -259,7 +259,7 @@ testFailedRead g = withContracts g $ \node ct -> do
 testMalformed :: TVar ChaChaDRG -> IO ()
 testMalformed g = withContracts g $ \node ct -> do
   answerCall node (registrarOf node) nameExpiresCall $ Returns $ B.replicate 31 0
-  nameExpires ct alice `shouldReturn` Left (ChainUnavailable "eth_call: nameExpires(uint256) answered AEShort")
+  nameExpires ct Latest alice `shouldReturn` Left (ChainUnavailable "eth_call: nameExpires(uint256) answered AEShort")
   answerCall node fakeSponsor noncesCall $ Returns $ uint256 (toInteger (maxBound :: Word64) + 1)
   sponsorNonce ct owner `shouldReturn` Left (ChainUnavailable "eth_call: nonces(address) answered AERange")
   answerCall node fakeController pricesCall $ Returns $ addressWord oracle

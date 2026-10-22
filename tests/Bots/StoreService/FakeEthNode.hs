@@ -11,6 +11,7 @@ module Bots.StoreService.FakeEthNode
     fakeChainConfig,
     answerCall,
     answerCallOnce,
+    answerCallFrom,
     forgetCall,
     setFault,
     clearFault,
@@ -97,6 +98,8 @@ data FakeState = FakeState
   { fsCalls :: Map (ByteString, ByteString) CallAnswer,
     -- | answered once, before 'fsCalls'
     fsCallsOnce :: Map (ByteString, ByteString) CallAnswer,
+    -- | answered from the block on, before 'fsCalls'
+    fsCallsFrom :: Map (ByteString, ByteString) (Word64, CallAnswer),
     fsFaults :: Map Text Fault,
     -- | every raw transaction received, newest first
     fsSent :: [ByteString],
@@ -145,6 +148,7 @@ withFakeEthNode action = do
       FakeState
         { fsCalls = M.empty,
           fsCallsOnce = M.empty,
+          fsCallsFrom = M.empty,
           fsFaults = M.empty,
           fsSent = [],
           fsPool = M.empty,
@@ -181,6 +185,10 @@ answerCall FakeEthNode {fnState} to calldata a = atomically $ modifyTVar' fnStat
 -- | The next call only is answered this way, then the call answers as before.
 answerCallOnce :: FakeEthNode -> Address -> ByteString -> CallAnswer -> IO ()
 answerCallOnce FakeEthNode {fnState} to calldata a = atomically $ modifyTVar' fnState $ \s -> s {fsCallsOnce = M.insert (unAddress to, calldata) a $ fsCallsOnce s}
+
+-- | At this block and later ones the call answers this way, at earlier blocks as before.
+answerCallFrom :: FakeEthNode -> Word64 -> Address -> ByteString -> CallAnswer -> IO ()
+answerCallFrom FakeEthNode {fnState} block to calldata a = atomically $ modifyTVar' fnState $ \s -> s {fsCallsFrom = M.insert (unAddress to, calldata) (block, a) $ fsCallsFrom s}
 
 -- | The call has no answer any more, as if the node failed it.
 forgetCall :: FakeEthNode -> Address -> ByteString -> IO ()
@@ -298,10 +306,11 @@ fakeApp st req respond = do
 
 answer :: TVar FakeState -> Text -> [J.Value] -> STM [JT.Pair]
 answer st method params = do
-  s@FakeState {fsCalls, fsCallsOnce, fsSent, fsPool, fsReceipts, fsDryRuns, fsUsed, fsBlock = (number, time), fsBlockTimes, fsFees = (tip, baseFee)} <- readTVar st
+  s@FakeState {fsCalls, fsCallsOnce, fsCallsFrom, fsSent, fsPool, fsReceipts, fsDryRuns, fsUsed, fsBlock = (number, time), fsBlockTimes, fsFees = (tip, baseFee)} <- readTVar st
   case (method, params) of
-    ("eth_call", [call, _])
-      | Just (to, calldata) <- JT.parseMaybe callTarget call ->
+    ("eth_call", [call, J.String tag])
+      | Just (to, calldata) <- JT.parseMaybe callTarget call,
+        Just at <- if tag == "latest" then Just number else fromQuantity tag ->
           let key = (unAddress to, calldata)
               callAnswer = \case
                 Just (Returns ret) -> result $ hex ret
@@ -309,7 +318,9 @@ answer st method params = do
                 Nothing -> rpcError (-32000) "no fake answer for this call" Nothing
            in case M.lookup key fsCallsOnce of
                 Just a -> callAnswer (Just a) <$ writeTVar st s {fsCallsOnce = M.delete key fsCallsOnce}
-                Nothing -> pure $ callAnswer $ M.lookup key fsCalls
+                Nothing -> pure $ callAnswer $ case M.lookup key fsCallsFrom of
+                  Just (from, a) | at >= from -> Just a
+                  _ -> M.lookup key fsCalls
     ("eth_estimateGas", call : _)
       | Just (_, calldata) <- JT.parseMaybe callTarget call,
         Just revertData <- M.lookup calldata fsDryRuns ->

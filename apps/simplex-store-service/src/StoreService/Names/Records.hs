@@ -237,11 +237,11 @@ recordsRound rs@Records {rsChain} = void $ safely "names records: the round" $ d
 
 -- | The newest block at the configured confirmation depth, as the sender counts it.
 deepBlock :: ChainClient -> Block -> IO (Either ChainError Block)
-deepBlock c@ChainClient {ccConfig = ChainConfig {cConfirmations}} tip@Block {blockNumber}
-  | depth == 0 = pure $ Right tip
-  | otherwise = blockAt c $ if blockNumber >= depth then blockNumber - depth else 0
+deepBlock c tip@Block {blockNumber}
+  | deep == blockNumber = pure $ Right tip
+  | otherwise = blockAt c deep
   where
-    depth = fromIntegral (max 1 cConfirmations) - 1
+    deep = confirmedNumber c blockNumber
 
 -- | One step for a pending edit, from its transactions' statuses as the sender settled them.
 follow :: Records -> Block -> Block -> RecordEdit -> IO ()

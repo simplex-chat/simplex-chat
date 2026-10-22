@@ -3,7 +3,26 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 
-module Bots.StoreService.NamesOwnerTests (namesOwnerTests, answerFree, moveBody, moveTo, postMove) where
+module Bots.StoreService.NamesOwnerTests
+  ( namesOwnerTests,
+    answerExpiry,
+    answerFree,
+    answerOwner,
+    answerUnowned,
+    codeIn,
+    committedPhase,
+    dynamisOrder,
+    failedPhase,
+    labelBytes,
+    moveBody,
+    moveTo,
+    ownerOfSelector,
+    paidIn,
+    postMove,
+    rewrite,
+    stored,
+  )
+where
 
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (launchPricesAnswer, oracle, pricesAnswer, pricesCall, registrarOf, rentPriceAnswer, rentPriceCall, unhex)

@@ -17,6 +17,7 @@ module StoreService.Names.Contracts
     codeLengthFor,
     sponsorNonce,
     resolverNonce,
+    confirmedTag,
     ownerOfToken,
     nameExpires,
     commitmentTime,
@@ -43,7 +44,7 @@ import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Abi
-import StoreService.Names.Chain (Block (..), ChainClient (..), ChainError (..), ethCall, latestBlock)
+import StoreService.Names.Chain (Block (..), BlockTag (..), ChainClient (..), ChainError (..), confirmedNumber, ethCallAt, latestBlock)
 import StoreService.Names.Registration (channelRecordKey, contactRecordKey, labelNode, nodeBytes)
 import StoreService.Names.Revert (RevertName (..))
 import System.Timeout (timeout)
@@ -98,7 +99,7 @@ newContracts ctTLD ctChain = do
 nameStatus :: Contracts -> LabelHash -> IO (Either ChainError NameStatus)
 nameStatus ct@Contracts {ctChain} lh = withinDeadline ct "name status" $ runExceptT $ do
   (RegistrarConstants {rcRegistry, rcGracePeriod}, expires, Block {blockTimestamp}) <-
-    ExceptT $ together $ (,,) <$> concurrent (registrarConstants ct) <*> concurrent (nameExpires ct lh) <*> concurrent (latestBlock ctChain)
+    ExceptT $ together $ (,,) <$> concurrent (registrarConstants ct) <*> concurrent (nameExpires ct Latest lh) <*> concurrent (latestBlock ctChain)
   if toInteger expires + rcGracePeriod >= toInteger blockTimestamp
     then do
       let node = nodeArg ct lh
@@ -153,16 +154,20 @@ sponsorNonce ct owner = call ct (cSponsor $ chainConfig ct) ("nonces(address)", 
 resolverNonce :: Contracts -> Address -> IO (Either ChainError Word64)
 resolverNonce ct owner = call ct (resolver ct) ("nonces(address)", addressWord owner) decodeWord64
 
+-- | The newest block at the configured confirmation depth, so a read there sees only what a reorg cannot undo.
+confirmedTag :: Contracts -> IO (Either ChainError BlockTag)
+confirmedTag Contracts {ctChain} = fmap (AtBlock . confirmedNumber ctChain . blockNumber) <$> latestBlock ctChain
+
 -- | Nothing when nobody holds the name: @ownerOf@ then fails the registrar's bare @require@ on the expiry,
 -- a revert without data. Any other revert is a failed read.
-ownerOfToken :: Contracts -> LabelHash -> IO (Either ChainError (Maybe Address))
-ownerOfToken ct lh =
-  call ct (baseRegistrar ct) ("ownerOf(uint256)", labelHashArg lh) decodeAddress >>= \case
+ownerOfToken :: Contracts -> BlockTag -> LabelHash -> IO (Either ChainError (Maybe Address))
+ownerOfToken ct tag lh =
+  callAt ct tag (baseRegistrar ct) ("ownerOf(uint256)", labelHashArg lh) decodeAddress >>= \case
     Left (ChainReverted (Just RNWithoutData)) -> pure $ Right Nothing
     r -> pure $ Just <$> r
 
-nameExpires :: Contracts -> LabelHash -> IO (Either ChainError Word64)
-nameExpires ct lh = call ct (baseRegistrar ct) ("nameExpires(uint256)", labelHashArg lh) decodeWord64
+nameExpires :: Contracts -> BlockTag -> LabelHash -> IO (Either ChainError Word64)
+nameExpires ct tag lh = callAt ct tag (baseRegistrar ct) ("nameExpires(uint256)", labelHashArg lh) decodeWord64
 
 -- | The block time of the commitment, Nothing when the controller holds none.
 commitmentTime :: Contracts -> ByteString -> IO (Either ChainError (Maybe Word64))
@@ -202,10 +207,13 @@ concurrent = Compose . Concurrently
 withinDeadline :: Contracts -> Text -> IO (Either ChainError a) -> IO (Either ChainError a)
 withinDeadline Contracts {ctDeadline} what action = fromMaybe (Left $ ChainUnavailable $ what <> ": timed out") <$> timeout ctDeadline action
 
--- | An answer that does not decode is a node failure, as an RPC error is.
 call :: Contracts -> Address -> (ByteString, ByteString) -> (ByteString -> Either AbiError a) -> IO (Either ChainError a)
-call Contracts {ctChain} to (signature, args) decode =
-  (>>= first malformed . decode) <$> ethCall ctChain to (selector signature <> args)
+call ct = callAt ct Latest
+
+-- | An answer that does not decode is a node failure, as an RPC error is.
+callAt :: Contracts -> BlockTag -> Address -> (ByteString, ByteString) -> (ByteString -> Either AbiError a) -> IO (Either ChainError a)
+callAt Contracts {ctChain} tag to (signature, args) decode =
+  (>>= first malformed . decode) <$> ethCallAt ctChain tag to (selector signature <> args)
   where
     malformed e = ChainUnavailable $ "eth_call: " <> decodeLatin1 signature <> " answered " <> tshow e
 

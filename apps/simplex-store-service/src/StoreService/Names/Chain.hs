@@ -16,8 +16,10 @@ module StoreService.Names.Chain
     BlockTag (..),
     newChainClient,
     ethCall,
+    ethCallAt,
     latestBlock,
     blockAt,
+    confirmedNumber,
     transactionReceipt,
     transactionByHash,
     transactionCount,
@@ -103,7 +105,7 @@ data Receipt = Receipt {receiptSuccess :: Bool, receiptBlock :: Word64}
 data TxState = TxPending | TxMined Word64
   deriving (Eq, Show)
 
-data BlockTag = Latest | Pending
+data BlockTag = Latest | Pending | AtBlock Word64
 
 rpcTimeout :: Int
 rpcTimeout = 10000000
@@ -133,14 +135,21 @@ newChainClient g ccConfig@ChainConfig {cServiceKey} = do
   pure ChainClient {ccManager, ccConfig, ccRegistrar, ccTimeout = rpcTimeout}
 
 ethCall :: ChainClient -> Address -> ByteString -> IO (Either ChainError ByteString)
-ethCall c to calldata = rpc c "eth_call" [J.object ["to" .= to, "data" .= hex calldata], "latest"] bytes
+ethCall c = ethCallAt c Latest
+
+ethCallAt :: ChainClient -> BlockTag -> Address -> ByteString -> IO (Either ChainError ByteString)
+ethCallAt c tag to calldata = rpc c "eth_call" [J.object ["to" .= to, "data" .= hex calldata], blockTagParam tag] bytes
 
 latestBlock :: ChainClient -> IO (Either ChainError Block)
 latestBlock c = blockByNumber c "latest"
 
 -- | A block the node does not have is a failed read.
 blockAt :: ChainClient -> Word64 -> IO (Either ChainError Block)
-blockAt c number = blockByNumber c $ J.String $ "0x" <> T.pack (showHex number "")
+blockAt c = blockByNumber c . blockTagParam . AtBlock
+
+-- | The newest block at the configured confirmation depth below this latest one, as the sender counts it.
+confirmedNumber :: ChainClient -> Word64 -> Word64
+confirmedNumber ChainClient {ccConfig = ChainConfig {cConfirmations}} latest = latest - min latest (fromIntegral (max 1 cConfirmations) - 1)
 
 blockByNumber :: ChainClient -> J.Value -> IO (Either ChainError Block)
 blockByNumber c tag =
@@ -166,11 +175,13 @@ transactionByHash c (TxHash h) =
     maybe TxPending TxMined <$> (traverse quantity =<< t .:? "blockNumber")
 
 transactionCount :: ChainClient -> Address -> BlockTag -> IO (Either ChainError Word64)
-transactionCount c a tag = rpc c "eth_getTransactionCount" [J.toJSON a, blockTag] quantity
-  where
-    blockTag = case tag of
-      Latest -> "latest"
-      Pending -> "pending"
+transactionCount c a tag = rpc c "eth_getTransactionCount" [J.toJSON a, blockTagParam tag] quantity
+
+blockTagParam :: BlockTag -> J.Value
+blockTagParam = \case
+  Latest -> "latest"
+  Pending -> "pending"
+  AtBlock number -> J.String $ "0x" <> T.pack (showHex number "")
 
 -- | The dry run of a registrar transaction; an estimate above the configured cap is refused.
 estimateGas :: ChainClient -> Address -> ByteString -> IO (Either ChainError Word64)
