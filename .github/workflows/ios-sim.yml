@@ -1,13 +1,6 @@
 name: ios-sim
 
 on:
-  push:
-    branches:
-      # only f/ branches, so other branches' pull requests don't list skipped runs; elsewhere, run it by hand
-      - 'f/*'
-      # a squash merge's message lists the merged commits' subjects, with their tags
-      - '!master'
-      - '!stable'
   workflow_dispatch:
     inputs:
       claude:
@@ -24,8 +17,7 @@ permissions:
   actions: read
 
 concurrency:
-  # a push that asks for no run must not cancel one that does
-  group: ios-sim-${{ github.ref }}-${{ (github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[app-ci]') || contains(github.event.head_commit.message, '[app-ci:ios]') || contains(github.event.head_commit.message, '[claude-test]') || contains(github.event.head_commit.message, '[claude-test:ios]')) && 'requested' || github.run_id }}
+  group: ios-sim-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -41,13 +33,6 @@ env:
 jobs:
   plan:
     name: choose jobs, find earlier builds
-    # the concurrency group repeats this test, as it can't read job outputs
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      contains(github.event.head_commit.message, '[app-ci]') ||
-      contains(github.event.head_commit.message, '[app-ci:ios]') ||
-      contains(github.event.head_commit.message, '[claude-test]') ||
-      contains(github.event.head_commit.message, '[claude-test:ios]')
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     outputs:
@@ -62,8 +47,8 @@ jobs:
       - name: Choose jobs
         id: jobs
         env:
-          CLAUDE: ${{ inputs.claude || contains(github.event.head_commit.message, '[claude-test]') || contains(github.event.head_commit.message, '[claude-test:ios]') }}
-          BACKEND: ${{ inputs.backend || contains(github.event.head_commit.message, '[ci-backend]') }}
+          CLAUDE: ${{ inputs.claude }}
+          BACKEND: ${{ inputs.backend }}
         run: |
           echo "claude=$CLAUDE" | tee -a "$GITHUB_OUTPUT"
           echo "backend=$BACKEND" | tee -a "$GITHUB_OUTPUT"
