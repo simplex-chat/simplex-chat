@@ -272,6 +272,13 @@ service_account_file = /etc/simplex-badge-service/play-service-account.json
   it credits is read once more to acknowledge it), so made-up tokens can spend at most a tenth of
   the quota renewal checks share.
 
+While a subscription's paid coverage runs, as an annual plan's does for a year, the service asks
+its store before it issues each new month, at most once an hour. When the store reports the
+subscription ended, or the charge the service granted revoked, the months not yet issued are debited
+as a refund and the badge ends with the month already issued; a store that fails or does not answer
+ends nothing. A Play refund that leaves the subscription active is not seen: the service does not
+read Play's voided purchases.
+
 Which answers are terminal for a purchase and which leave it to be presented again is listed per
 store in [`docs/protocol/badges-rpc.md`](../../docs/protocol/badges-rpc.md#commands).
 
@@ -324,12 +331,12 @@ check_store_during_coverage = on
 ```
 
 With `check_store_during_coverage` on as well, the service asks its store, the mock or a real one
-with `credit_test_purchases` on (below), at every `issueBadge` for a subscription, while its paid
-coverage runs too, rather than once coverage has ended and at most once an hour. A charge it
-reports during coverage is banked: a charge row, the plan's months added to what is left and a
+with `credit_test_purchases` on (below), at every `issueBadge` for a subscription, rather than at
+most once an hour and only when a month is due. A charge it reports during coverage is banked,
+where a deployment without the setting only records it: a charge row, the plan's months added to what is left and a
 later paid-through date, and those months are issued once coverage reaches them. So a renewal
 shows at once, though its credential waits for the paid month to end on the service's clock, and
-after a restart the mock answers the subscription ended at once. The mock charges anew at every
+after a restart the mock answers the subscription ended at once, so the months banked are refunded. The mock charges anew at every
 check, so every such request banks the plan's months again; space requests over a minute apart, as
 the mock dates a charge a minute back and the app fails a ledger row dated before the one it
 follows. The service logs each banked charge as
