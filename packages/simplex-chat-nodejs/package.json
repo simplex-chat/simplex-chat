@@ -41,7 +41,8 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/simplex-chat/simplex-chat.git"
+    "url": "git+https://github.com/simplex-chat/simplex-chat.git",
+    "directory": "packages/simplex-chat-nodejs"
   },
   "keywords": [
     "messenger",
