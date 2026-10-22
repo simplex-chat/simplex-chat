@@ -68,9 +68,7 @@ fun showCustomTimePickerDialog(
       SectionItemView({
         AlertManager.shared.hideAlert()
         confirmButtonAction(selection.value)
-      },
-        uiKey = Ui.TimePicker.Confirm
-      ) {
+      }, uiKey = Ui.TimePicker.Confirm) {
         Text(
           confirmButtonText,
           Modifier.fillMaxWidth(),

@@ -84,7 +84,7 @@ private fun ShareListNavLinkLayout(
   chatLinkPreview: @Composable () -> Unit,
   click: () -> Unit,
   stopped: Boolean,
-  uiKey: UiKey,
+  uiKey: UiKey? = null,
 ) {
   SectionItemView(padding = PaddingValues(horizontal = DEFAULT_PADDING, vertical = 8.dp), click = click, disabled = stopped, uiKey = uiKey) {
     chatLinkPreview()

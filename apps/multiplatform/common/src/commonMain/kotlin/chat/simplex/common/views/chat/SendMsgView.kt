@@ -278,7 +278,7 @@ expect fun VoiceButtonWithoutPermissionByPlatform()
 @Composable
 private fun CustomDisappearingMessageDialog(
   showMenu: MutableState<Boolean>,
-  uiKey: UiKey?,
+  uiKey: UiKey? = null,
   sendMessage: (Int?) -> Unit,
   customDisappearingMessageTimePref: SharedPreference<Int>?
 ) {
@@ -320,7 +320,7 @@ private fun CustomDisappearingMessageDialog(
 }
 
 @Composable
-private fun BoxScope.DeleteTextButton(composeState: MutableState<ComposeState>, uiKey: UiKey?) {
+private fun BoxScope.DeleteTextButton(composeState: MutableState<ComposeState>, uiKey: UiKey? = null) {
   IconButton(
     { composeState.value = composeState.value.copy(message = ComposeMessage()) },
     Modifier.ui(uiKey).align(Alignment.TopEnd).size(36.dp)
@@ -465,7 +465,7 @@ private fun SendMsgButton(
   enabled: Boolean,
   sendToConnect: (() -> Unit)?,
   sendMessage: (Int?) -> Unit,
-  uiKey: UiKey?,
+  uiKey: UiKey? = null,
   onLongClick: (() -> Unit)? = null
 ) {
   val interactionSource = remember { MutableInteractionSource() }
@@ -505,7 +505,7 @@ private fun SendMsgButton(
 }
 
 @Composable
-private fun StartLiveMessageButton(uiKey: UiKey?, onClick: () -> Unit) {
+private fun StartLiveMessageButton(uiKey: UiKey? = null, onClick: () -> Unit) {
   val interactionSource = remember { MutableInteractionSource() }
   val ripple = remember { ripple(bounded = false, radius = 24.dp) }
   Box(

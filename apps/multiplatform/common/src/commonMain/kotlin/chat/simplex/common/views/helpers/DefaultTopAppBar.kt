@@ -34,8 +34,8 @@ fun DefaultAppBar(
   searchPlaceholder: String? = null,
   onSearchValueChanged: (String) -> Unit = {},
   searchTrailingContent: @Composable (() -> Unit)? = null,
-  buttons: @Composable RowScope.() -> Unit = {},
   uiKey: UiKey? = null,
+  buttons: @Composable RowScope.() -> Unit = {},
 ) {
   // If I just disable clickable modifier when don't need it, it will stop passing clicks to search. Replacing the whole modifier
   val modifier = if (!showSearch) {

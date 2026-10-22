@@ -543,7 +543,7 @@ fun LeaveGroupAction(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, sh
 }
 
 @Composable
-fun ContactRequestMenuItems(rhId: Long?, contactRequestId: Long, chatModel: ChatModel, showMenu: MutableState<Boolean>, onSuccess: ((chat: Chat) -> Unit)? = null, chatId: String? = null) {
+fun ContactRequestMenuItems(rhId: Long?, contactRequestId: Long, chatModel: ChatModel, showMenu: MutableState<Boolean>, chatId: String? = null, onSuccess: ((chat: Chat) -> Unit)? = null) {
   ItemAction(
     stringResource(MR.strings.accept_contact_button),
     painterResource(MR.images.ic_check),
