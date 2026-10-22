@@ -219,10 +219,11 @@ holdStoreReceipt db g User {userId} origin invoiceId_ txRef@StoreTransactionRef 
         |]
         ((userId, invoiceId', provider, transactionRef, paymentJSON, now) :. (purchaseKey, purchasePrivKey, Binary mk, holdKind, now))
 
--- | Restore's hand-over of a transaction already recorded: a record that funds no purchase of this profile, or only one
--- its payment moved away from, is taken by this profile and held as a move of its payment to it. True when its last refusal was transfer_limited, which the hand-over answers.
+-- | Restore's hand-over of a transaction already recorded: a record that funds no purchase of this profile, only one
+-- its payment moved away from, or one neither shown nor this profile's newest, which no resume reaches, is taken by
+-- this profile and held as a move of its payment to it. True when its last refusal was transfer_limited, which the hand-over answers.
 holdStoreTransfer :: DB.Connection -> TVar ChaChaDRG -> User -> StoreTransactionRef -> ServicePayment -> UTCTime -> IO Bool
-holdStoreTransfer db g User {userId} txRef payment now =
+holdStoreTransfer db g user@User {userId} txRef payment now =
   getReceiptRecord db txRef >>= \case
     Just BadgeReceiptRecord {receiptId, status = RSHeld {stash, holdKind = SHKPurchase}} ->
       getStashBadgePurchase db stash >>= \case
@@ -251,7 +252,15 @@ holdStoreTransfer db g User {userId} txRef payment now =
   where
     movesHere ownerId badgePurchaseId
       | ownerId /= userId = pure True
-      | otherwise = purchaseMovedOut db badgePurchaseId
+      | otherwise = do
+          movedOut <- purchaseMovedOut db badgePurchaseId
+          p_ <- getBadgePurchase db badgePurchaseId
+          newestId <- fmap (\UserBadgePurchase {badgePurchaseId = i} -> i) <$> getUserBadgePurchase db user
+          let unreached = case p_ of
+                -- a one-time purchase is never moved, as its months were issued when it was bought
+                Just UserBadgePurchase {shown = False, purchaseKind = PKSubscription _} -> newestId /= Just badgePurchaseId
+                _ -> False
+          pure $ movedOut || unreached
     holdTransfer receiptId =
       DB.execute
         db

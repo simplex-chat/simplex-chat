@@ -225,6 +225,7 @@ badgeServiceTests = do
       it "should hold a tier change at once after a move of its subscription was refused transfer_limited" testRefusedMoveKeepsTierChange
       it "should give a move held for a deleted profile back to the profile whose purchase it funds" testRestoreHeldProfileDeleted
       it "should take a purchase hand-over held for one profile to the profile that restores it, and credit it there" testRestoreTakesHeldPurchase
+      it "should move a subscription on Restore on the same profile when its purchase is neither shown nor the profile's newest" testRestoreOnSameProfile
   describe "subscriptions" $ do
     it "should credit a subscription's charge from the store's period start, and answer replays from the record" testSubscriptionPurchase
     it "should credit nothing for a subscription with no charge it can grant, retrying as the charge may still come" testSubscriptionPurchaseNotGrantable
@@ -3251,6 +3252,39 @@ testRestoreTakesHeldPurchase ps =
         shownBadges a `shouldEventuallyReturn` [(1, Nothing), (2, Just 1)]
         purchaseReceiptLinks a `shouldReturn` [(2, True)]
         mapM_ dropOutput [alice, bob]
+
+testRestoreOnSameProfile :: HasCallStack => TestParams -> IO ()
+testRestoreOnSameProfile ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      let a = chatController alice
+      (_, rows) <- clientSubscribedMonthly env alice
+      -- the subscription lapses: retired once the recovery window passed while Play retried the payment
+      storeReports store $ subscriptionCheck SSBillingRetry Nothing
+      t0 <- firstUnrenewedAnswer alice bsClock rows []
+      [Just wake] <- nextWakes a
+      setClockAt bsClock $ max wake $ addUTCTime (subscriptionRecoveryWindow + 3600) t0
+      activateAnswered alice ["badge alert: subscription_ended "]
+      waitShownBadge a Nothing
+      -- a code's badge, now the profile's newest purchase, which then ends too, as Restore is refused while a badge shows
+      code <- issueCode cc BTSupporter 1
+      dropOutput alice
+      alice ##> ("/_redeem_badge_code 1 " <> codeArg code)
+      expectLinesWithin 30 alice ["badge redeemed", "supporter badge - active", "expires "] ["1: supporter", "2: supporter", "badge alert: "]
+      waitShownBadge a (Just 2)
+      codeEnds <- dueAtOf <$> ledgerRows a "badge_ledger"
+      setClockAt bsClock $ addUTCTime 3600 codeEnds
+      alice `send` "/_app activate"
+      waitShownBadge a Nothing
+      dropOutput alice
+      -- Play charges the subscription again, and Restore on the same profile moves it to fresh keys
+      resubscribedAt <- serviceNow env
+      storeReports store $ subscriptionCheck SSRenewing $ Just (storeCharge "subscr-badge-supporter-month-02" (addUTCTime (-3600) resubscribedAt) 1) {chargeRef = "GPA.resubscribed"}
+      alice `send` restoredCmd 1 subscriptionPlay
+      waitShownBadge a (Just 3)
+      storeReceiptCreditErrors a `shouldReturn` []
+      purchaseReceiptLinks a `shouldReturn` [(1, False), (1, False), (1, True)]
+      dropOutput alice
 
 testRestoreLeavesResumeHold :: HasCallStack => TestParams -> IO ()
 testRestoreLeavesResumeHold ps =
