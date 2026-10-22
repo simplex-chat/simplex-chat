@@ -29,6 +29,7 @@ class ForwardTest : UiTest() {
     val alice = app("alice"); val bob = cli("bob"); val cath = cli("cath")
     connect(bob); connect(cath)
     bob sends "@alice hey"
+    awaitRowText(alice, "bob", "hey")
     alice.chatList.open("bob").forwardTo("hey", "cath")
     cath.eventuallyMessage("alice> -> forwarded", CONNECT_TIMEOUT_MS)
     cath expects "      hey"
@@ -38,6 +39,7 @@ class ForwardTest : UiTest() {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)
     bob sends "@alice hey"
+    awaitRowText(alice, "bob", "hey")
     val chat = alice.chatList.open("bob")
     chat.forwardTo("hey", "Private notes")
     val notes = alice.chatList.chatId("Private notes")

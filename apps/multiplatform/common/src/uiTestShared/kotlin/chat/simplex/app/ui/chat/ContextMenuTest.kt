@@ -2,6 +2,7 @@ package chat.simplex.app.ui.chat
 
 import chat.simplex.app.ui.harness.UiScope
 import chat.simplex.app.ui.harness.UiTest
+import chat.simplex.app.ui.harness.awaitRowItem
 import chat.simplex.app.ui.harness.connect
 import chat.simplex.app.ui.harness.sendsFileTo
 import chat.simplex.common.ui.Ui
@@ -19,6 +20,7 @@ class ContextMenuTest : UiTest() {
     bob sends "@alice to be deleted"
     bob sends "\\@alice to be deleted"
     bob expects "message marked deleted"
+    awaitRowItem(alice, "bob", "bob's deleted message") { it.meta.itemDeleted != null }
     val chat = alice.chatList.open("bob")
     val text = chat.itemId("copy me")
     val file = chat.itemId("bob's offer of offer.txt") { it.file?.fileName == "offer.txt" }

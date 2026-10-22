@@ -2,6 +2,7 @@ package chat.simplex.app.ui.chat
 
 import chat.simplex.app.ui.harness.CONNECT_TIMEOUT_MS
 import chat.simplex.app.ui.harness.UiTest
+import chat.simplex.app.ui.harness.awaitRowText
 import chat.simplex.app.ui.harness.connect
 import chat.simplex.common.model.ChatFeature
 import chat.simplex.common.model.ChatInfo
@@ -20,6 +21,7 @@ class DeleteMessageTest : UiTest() {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)
     bob sends "@alice hello"
+    awaitRowText(alice, "bob", "hello")
     val chat = alice.chatList.open("bob")
     val id = chat.itemId("hello")
     chat.menu("hello", "delete")
@@ -79,6 +81,7 @@ class DeleteMessageTest : UiTest() {
     bob sends "@alice keep"
     bob sends "@alice one"
     bob sends "@alice two"
+    awaitRowText(alice, "bob", "two")
     val chat = alice.chatList.open("bob")
     val keep = chat.itemId("keep"); val one = chat.itemId("one"); val two = chat.itemId("two")
     check(textsOf(Ui.Chat.Item(one)).let { t -> t.any { "one" in it } && "marked deleted" !in t }) { "`one` is not shown as sent before bob deletes it" }

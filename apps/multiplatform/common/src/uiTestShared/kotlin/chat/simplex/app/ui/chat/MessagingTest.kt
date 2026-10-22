@@ -3,6 +3,7 @@ package chat.simplex.app.ui.chat
 import chat.simplex.app.ui.harness.connect
 import chat.simplex.app.ui.harness.PeerFlags
 import chat.simplex.app.ui.harness.UiTest
+import chat.simplex.app.ui.harness.awaitRowText
 import chat.simplex.common.ui.Ui
 import org.junit.Assert.assertFalse
 import org.junit.Test
@@ -25,6 +26,7 @@ class MessagingTest : UiTest() {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)
     bob sends "@alice hello! how are you?"
+    awaitRowText(alice, "bob", "hello! how are you?")
     val chat = alice.chatList.open("bob")
     chat.menu("hello! how are you?", "reply")
     chat.send("all good - you?")
@@ -47,6 +49,7 @@ class MessagingTest : UiTest() {
     val alice = app("alice"); val bob = cli("bob", PeerFlags(reactions = true))
     connect(bob)
     bob sends "@alice hi"
+    awaitRowText(alice, "bob", "hi")
     alice.chatList.open("bob").react("hi", "👍")
     bob expectsMessage "alice> >> hi"
     bob expects "    + 👍"

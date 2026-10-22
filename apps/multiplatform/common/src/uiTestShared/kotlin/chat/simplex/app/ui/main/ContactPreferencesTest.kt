@@ -2,6 +2,7 @@ package chat.simplex.app.ui.main
 
 import chat.simplex.app.ui.harness.CONNECT_TIMEOUT_MS
 import chat.simplex.app.ui.harness.UiTest
+import chat.simplex.app.ui.harness.awaitRowText
 import chat.simplex.app.ui.harness.closeContactInfo
 import chat.simplex.app.ui.harness.connect
 import chat.simplex.app.ui.harness.contactOf
@@ -21,6 +22,7 @@ class ContactPreferencesTest : UiTest() {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)
     bob sends "@alice one"
+    awaitRowText(alice, "bob", "one")
     val chat = alice.chatList.open("bob")
     val one = chat.itemId("one")
     bob sends "\\@alice one"

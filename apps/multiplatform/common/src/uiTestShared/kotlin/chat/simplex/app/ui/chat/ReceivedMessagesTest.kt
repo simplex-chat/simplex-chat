@@ -7,6 +7,7 @@ import chat.simplex.app.ui.harness.CliPeer
 import chat.simplex.app.ui.harness.PeerFlags
 import chat.simplex.app.ui.harness.UiScope
 import chat.simplex.app.ui.harness.UiTest
+import chat.simplex.app.ui.harness.awaitRowText
 import chat.simplex.app.ui.harness.backToChatList
 import chat.simplex.app.ui.harness.connect
 import chat.simplex.app.ui.harness.connectPeers
@@ -97,6 +98,7 @@ class ReceivedMessagesTest : UiTest() {
     val alice = app("alice"); val bob = cli("bob", PeerFlags(markRead = true))
     connect(bob)
     bob sends "@alice before"
+    awaitRowText(alice, "bob", "before")
     val chat = alice.chatList.open("bob")
     val before = chat.itemId("before")
     bob sends "/set disappear @alice yes $TIMER_S"

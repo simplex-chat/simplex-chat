@@ -3,6 +3,7 @@ package chat.simplex.app.ui.main
 import chat.simplex.app.ui.harness.CONNECT_TIMEOUT_MS
 import chat.simplex.app.ui.harness.UiScope
 import chat.simplex.app.ui.harness.UiTest
+import chat.simplex.app.ui.harness.awaitRowText
 import chat.simplex.app.ui.harness.archiveContact
 import chat.simplex.app.ui.harness.backToChatList
 import chat.simplex.app.ui.harness.connect
@@ -125,6 +126,7 @@ class DeleteContactTest : UiTest() {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)
     bob sends "@alice hello"
+    awaitRowText(alice, "bob", "hello")
     val chat = alice.chatList.open("bob")
     chat.itemId("hello")
     check(contactOf("bob").active && !seesText("contact deleted")) { "bob's contact is inactive before he deletes it" }

@@ -1,6 +1,7 @@
 package chat.simplex.app.ui.desktop
 
 import chat.simplex.app.ui.harness.UiTest
+import chat.simplex.app.ui.harness.awaitRowText
 import chat.simplex.app.ui.harness.connect
 import chat.simplex.common.model.localTimestamp
 import chat.simplex.common.platform.chatModel
@@ -12,6 +13,7 @@ class ItemInfoDesktopTest : UiTest() {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)
     bob sends "@alice question"
+    awaitRowText(alice, "bob", "question")
     val chat = alice.chatList.open("bob")
     chat.itemId("question")
     chat.menu("question", "reply")

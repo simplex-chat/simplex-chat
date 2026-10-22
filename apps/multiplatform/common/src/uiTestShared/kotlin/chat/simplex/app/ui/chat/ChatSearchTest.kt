@@ -64,6 +64,7 @@ class ChatSearchTest : UiTest() {
     bob sends "@alice alpha"
     bob sends "@alice the needle"
     bob sends "@alice omega"
+    awaitRowText(alice, "bob", "omega")
     val chat = alice.chatList.open("bob")
     val alpha = chat.itemId("alpha"); val needle = chat.itemId("the needle"); val omega = chat.itemId("omega")
     val goTo = Ui.Chat.Item(needle).part("goTo")

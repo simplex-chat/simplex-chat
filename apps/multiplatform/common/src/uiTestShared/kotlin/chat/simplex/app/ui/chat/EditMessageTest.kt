@@ -2,6 +2,7 @@ package chat.simplex.app.ui.chat
 
 import chat.simplex.app.ui.harness.UiScope
 import chat.simplex.app.ui.harness.UiTest
+import chat.simplex.app.ui.harness.awaitRowText
 import chat.simplex.app.ui.harness.connect
 import chat.simplex.app.ui.harness.described
 import chat.simplex.common.platform.chatModel
@@ -54,6 +55,7 @@ class EditMessageTest : UiTest() {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)
     bob sends "@alice theirs"
+    awaitRowText(alice, "bob", "theirs")
     val chat = alice.chatList.open("bob")
     val received = chat.itemId("theirs")
     chat.send("mine")
@@ -75,6 +77,7 @@ class EditMessageTest : UiTest() {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)
     bob sends "@alice hello"
+    awaitRowText(alice, "bob", "hello")
     val chat = alice.chatList.open("bob")
     val id = chat.itemId("hello")
     check(textsOf(Ui.Chat.Item(id)).any { "hello" in it }) { "bob's bubble does not show `hello` before the edit" }

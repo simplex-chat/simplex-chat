@@ -7,6 +7,7 @@ import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.test.withKeyDown
 import chat.simplex.app.ui.harness.UiScope
 import chat.simplex.app.ui.harness.UiTest
+import chat.simplex.app.ui.harness.awaitRowText
 import chat.simplex.app.ui.harness.connect
 import chat.simplex.common.ui.Ui
 import org.junit.Test
@@ -16,6 +17,7 @@ class TextSelectionDesktopTest : UiTest() {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)
     for (m in MESSAGES) bob sends "@alice $m"
+    awaitRowText(alice, "bob", MESSAGES.last())
     val chat = alice.chatList.open("bob")
     val ids = MESSAGES.map { chat.itemId(it) }
     check(!exists(Ui.Chat.TextSelectionCopy)) { "the selection Copy button is shown before a selection" }
@@ -33,6 +35,7 @@ class TextSelectionDesktopTest : UiTest() {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)
     for (m in MESSAGES) bob sends "@alice $m"
+    awaitRowText(alice, "bob", MESSAGES.last())
     val chat = alice.chatList.open("bob")
     val ids = MESSAGES.map { chat.itemId(it) }
     setClipboardText(UNRELATED)
