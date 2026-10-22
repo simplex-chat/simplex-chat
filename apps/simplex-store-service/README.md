@@ -25,7 +25,7 @@ At this stage the service:
 - does not accept contact requests: the address is for RPC only,
 - in service mode with `[group]` in the ini, manages one SimpleX group and serves `/issue`, `/bulk`
   and `/revoke` in it (see [Issuing codes](#issuing-codes)),
-- in service mode with `--service-config`, also serves the built web app (`npm run build` in `web/`), `POST /api/invoice` and `GET /api/invoice/:id`, the BTCPay and Stripe webhook routes, and a payment poller, seeding its price/offer catalog on every start,
+- in service mode with `--service-config`, also serves the built web app (`npm run build` in `web/`) and, on the hosts in `names_hosts`, the names site (see [Deployment](#deployment)), `POST /api/invoice` and `GET /api/invoice/:id`, the BTCPay and Stripe webhook routes, and a payment poller, seeding its price/offer catalog on every start,
 - owns the `sx_badge_service_`-prefixed tables and its own migrations table (`sx_badge_service_migrations`).
 
 Every other command answers `unsupported_version`, or `unknown_purchase_key` when the key that
@@ -153,7 +153,8 @@ absent `[btcpay]` does for Bitcoin and Monero. Its keys:
 The service fills `publishable_key` into the shell at boot: the built `index.html` ships
 with an empty `<meta id="stripe-publishable-key" name="stripe-publishable-key" content="">`
 (`web/public/index.html`), and the listener serves a copy with the configured key
-substituted in, so the ini is the only place the key is set. With no `[stripe]` section the
+substituted in, so the ini is the only place the key is set. The names site's shell carries the
+same meta without the `id`, and is filled the same way. With no `[stripe]` section the
 pristine (empty) shell is served and the page shows its development stand-in card form. The
 dev mock (`web/mock/server.py`) does the same substitution from `$STRIPE_PUBLISHABLE_KEY`,
 since it runs without an ini.
@@ -171,6 +172,8 @@ script:
 script-src 'self' https://js.stripe.com https://*.js.stripe.com;
 frame-src https://js.stripe.com https://*.js.stripe.com https://hooks.stripe.com
 ```
+
+The full policies of both sites are in [Caddy](#caddy).
 
 **Stripe Link must be disabled in the Dashboard.** Left on, it needs `link.com` in the
 CSP above and reintroduces an email prompt of its own, which this design otherwise avoids.
@@ -208,6 +211,248 @@ the exception: each answers 200, 400 or 413 with an empty body, because its prov
 caller and nothing it could read would change what the route does. A wrong verb on any route, those
 two included, answers `method_not_allowed`.
 
+## Deployment
+
+`scripts/store-service/` holds the production deployment: the image (`Dockerfile`, built from
+the repository root), `compose.yml`, the ini template `store_service.ini.example` and the egress
+rule `egress.sh`. The service runs with `+client_postgres` and host networking; one Caddy serves
+both sites from the folders the service exports at boot and proxies the API to it.
+
+### Upgrading from the badge service
+
+The rename to StoreService changed what the operator runs:
+
+| Before | After |
+|---|---|
+| `scripts/badge-service/` | `scripts/store-service/` |
+| compose service `badge-service`, image `simplex-badge-service` | compose service `store-service`, image `simplex-store-service` |
+| `badge_service.ini`, mounted at `/etc/simplex-badge-service/badge_service.ini` | `store_service.ini`, mounted at `/etc/simplex-store-service/store_service.ini` |
+| the binary `simplex-badge-service` | `simplex-store-service` |
+
+Move `badge_service.ini` to `scripts/store-service/store_service.ini`, and point Caddy's badges
+root at `scripts/store-service/web`, which the service fills at boot. Then start the new service
+with
+
+```
+docker compose up -d --build --remove-orphans
+```
+
+from `scripts/store-service/`. Without `--remove-orphans` the old `badge-service` container keeps
+running beside the new one, on the same port and database. The database `badge_service`,
+`BADGE_DB_CONN`, the `sx_badge_service_` tables and the chat database prefix
+`simplex_badge_service` are unchanged.
+
+### Two sites
+
+The image carries the badges build at `/srv/web` (`static_dir`). The names site (simplex.domains)
+is configured beside it in `[listener]`. The image does not build the names site yet, so mount a
+names build into the container for `names_static_dir` until it does.
+
+- `names_static_dir`: the names build, the directory `npm run build` writes in the names webapp
+  (`dist/`);
+- `names_export_dir`: where the service writes the names site at boot, with the Stripe
+  publishable key in its shell, as `webapp_export_dir` is for the badges site. `compose.yml`
+  bind-mounts `./names` there (`/srv/names-export`), and `./web` at `/srv/webapp`;
+- `names_hosts`: the comma-separated hosts the names site is served on when `serve_webapp = on`.
+
+The service refuses to start with `names_hosts` or `names_export_dir` but no `names_static_dir`.
+
+With `serve_webapp = on` (all in one), the listener picks the site by the request's `Host`, in
+lower case and without its port or a trailing dot (an IPv6 literal whole, in brackets), as
+`names_hosts` entries are read: a host in
+`names_hosts` gets the names site, any other host or none the badges site. Every path
+outside `/api/` and `/webhooks/` is a file of the chosen site, `/` and `/index.html` its shell. The
+API answers on every host.
+
+### Caddy
+
+The Caddyfile is not in this repository. Its two host blocks, with the exported folders at
+`/srv/store-service/web` and `/srv/store-service/names` and the listener at `127.0.0.1:8080`:
+
+```
+badges.simplex.chat {
+	encode zstd gzip
+	handle /api/* {
+		reverse_proxy 127.0.0.1:8080
+	}
+	handle /webhooks/* {
+		reverse_proxy 127.0.0.1:8080
+	}
+	handle {
+		root * /srv/store-service/web
+		file_server
+	}
+	@shell path / /index.html /sw.js
+	header @shell Cache-Control "no-cache"
+	header /assets/* {
+		Cache-Control "public, max-age=31536000, immutable"
+		match status 2xx
+	}
+	header Content-Security-Policy "default-src 'self'; script-src 'self' https://js.stripe.com https://*.js.stripe.com; frame-src https://js.stripe.com https://*.js.stripe.com https://hooks.stripe.com; connect-src 'self' https://api.stripe.com; img-src 'self' https://*.stripe.com; frame-ancestors 'self' https://simplex.chat https://*.simplex.chat"
+}
+
+simplex.domains {
+	encode zstd gzip
+	handle /api/* {
+		reverse_proxy 127.0.0.1:8080
+	}
+	handle {
+		root * /srv/store-service/names
+		file_server
+	}
+	@shell path / /index.html /sw.js
+	header @shell Cache-Control "no-cache"
+	header /assets/* {
+		Cache-Control "public, max-age=31536000, immutable"
+		match status 2xx
+	}
+	header /manifest.webmanifest Content-Type "application/manifest+json"
+	@media path /fonts/* /img/*
+	header @media {
+		Cache-Control "public, max-age=86400"
+		match status 2xx
+	}
+	header {
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'sha256-i5ar+ITNdQiucbmin4/AN6DAY5LbAWeq3at+RiFoUoY=' 'sha256-Jhsw0wf9pI4icAxqab9mIjf34YdecDZeLVN+/KVZW+4=' https://js.stripe.com https://*.js.stripe.com; frame-src https://js.stripe.com https://*.js.stripe.com https://hooks.stripe.com; connect-src 'self' https://api.stripe.com; img-src 'self' data: https://*.stripe.com; style-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
+		Strict-Transport-Security "max-age=63072000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Cross-Origin-Opener-Policy "same-origin-allow-popups"
+	}
+}
+```
+
+- Both sites call `/api/*` on their own origin, so there is no CORS.
+- `/webhooks/*` is proxied on badges.simplex.chat only. BTCPay and Stripe send every event there,
+  names payments included.
+- The shell and `/sw.js` are `no-cache`, since they name the build's hashed files, and Caddy's
+  `file_server` sends no `Cache-Control` of its own. `/assets/*` file names carry a content hash.
+  The long lifetimes apply to found files only, so a missing asset is not cached for a year.
+- `file_server` sends no type for `.webmanifest`, which the names site's manifest needs.
+- The badges policy is `web/README.md`'s. The names policy is the names webapp's (its README,
+  "Hosting"), with `https://*.stripe.com` added to `img-src` beside `data:`, which the link
+  profiles' pictures need. Its two hashes are those of the inline theme and font-preload scripts
+  in the names `index.html`, and change with them. It allows no inline style.
+- Stripe.js runs on simplex.domains itself, in the document that keeps the owner codes and prepaid
+  codes in `localStorage`. The owner accepted this on 2026-10-20, rather than a Checkout redirect
+  or a separate card origin. Scripts and frames are allowed only from this origin and Stripe's
+  hosts.
+
+### Egress rule
+
+The link previews check a link's hosts before the chat core fetches it, but the core resolves the
+host again when it connects, so a name that changes its answer in between (DNS rebinding) can
+reach a private address. The guard is a firewall rule: the service's new outbound connections to
+unspecified, private, CGNAT, loopback, link-local, benchmarking, multicast and reserved IPv4
+ranges, and to unique-local, link-local, site-local and multicast IPv6 ranges (with IPv4-mapped,
+IPv4-compatible and NAT64 forms of the IPv4 ones), are rejected, and so are those to any of the
+host's own addresses, public ones included, since a rebinding name can answer with them too and
+reach whatever listens on the host. The exceptions are the
+endpoints the service is configured to use, on their ports: the RPC node (`[chain] rpc_url`),
+BTCPay (`[btcpay] host`), the database and the DNS resolvers in `/etc/resolv.conf`. Replies on
+connections already open, such as Caddy's requests, pass, and so does IPv6 neighbour discovery on
+the link.
+
+`egress.sh` writes this as the chain `STORE_SERVICE_EGRESS` in `iptables` and `ip6tables`, and
+rebuilds it on every run. With compose's host networking it matches the service's user in
+`OUTPUT` (`-m owner --uid-owner`). That rule covers every process of that user on the host, so
+the service must run as a dedicated user. `--uid` is required, and the script refuses a uid whose
+host account has a login shell (anything but `nologin` or `false`). Compose's `USER_UID` default
+of 1000 is often the operator's own login, so create a user for the service and run compose with
+its ids, set as `USER_UID` and `USER_GID` in `scripts/store-service/.env`; they are build
+arguments too, so rebuild the image:
+
+```
+sudo useradd --system --no-create-home --shell /usr/sbin/nologin simplex-store
+id simplex-store
+mkdir -p web names
+sudo chown -R simplex-store:simplex-store web names
+sudo chown simplex-store store_service.ini && sudo chmod 600 store_service.ini
+docker compose up -d --build --remove-orphans
+```
+
+On a Docker bridge network instead, `--bridge <interface>` matches traffic from that network's
+bridge interface in `DOCKER-USER` (traffic forwarded to other hosts) and `INPUT` (the host's own
+addresses), and needs no `--uid`. The script refuses an interface that is not a bridge or that holds a default route (a bridge
+carrying the host's uplink, such as `br0` or `vmbr0`, whose inbound connections it would refuse),
+and stops when `DOCKER-USER` is missing (Docker's nftables backend, `"iptables": false` or
+`"ip6tables": false` in its daemon config, or Docker not started yet): the forwarded traffic would
+then pass unfiltered. Docker before 27 creates the IPv6 `DOCKER-USER` only with both
+`"ip6tables": true` and `"experimental": true`. The interface is `docker0` for the default network; for another, it is the network's
+`com.docker.network.bridge.name` option when set, else `br-` and the first 12 characters of its id:
+
+```
+docker network inspect -f '{{.Id}} {{index .Options "com.docker.network.bridge.name"}}' <network>
+```
+
+Install it as root from `scripts/store-service/`, here for a service uid of 998. `--db` defaults to
+the environment's `BADGE_DB_CONN`, else to compose's default
+(`postgresql://simplex@127.0.0.1:5432/badge_service`); `sudo` drops the environment, so pass it
+when compose runs with another value:
+
+```
+sudo ./egress.sh --dry-run --uid 998
+sudo ./egress.sh --uid 998
+sudo ./egress.sh --check --uid 998
+```
+
+- `--dry-run` prints the `iptables-restore` input an install would commit, read against the
+  current rules, and changes nothing; read the allowed endpoints in it.
+- `--check` exits 1 and names what differs unless every rule is in place, the chain holds nothing
+  else, and each jump is the first rule of its chain.
+- Names are resolved when the rule is installed: run it again after changing the ini, the
+  database string or the resolvers, and after a private endpoint's address changes. A name the
+  host cannot resolve (a container name) stops the install; pass its address with
+  `--allow ADDRESS:PORT`, as for any other endpoint the service needs, such as a SOCKS proxy.
+- Every address of this host is refused unless allowed, public ones included. An SMP or XFTP
+  server on the same host, which the service reaches by its public name, needs
+  `--allow <name>:<port>` (5223 for SMP, 443 for XFTP by default), as does anything else on this
+  host the service connects to.
+- The DNS resolvers allowed are those in `--resolv-conf` (default `/etc/resolv.conf`). With host
+  networking that is what the service queries, systemd-resolved's stub included. On a bridge
+  network of a host with systemd-resolved, Docker sends the containers' queries to the upstream
+  servers in `/run/systemd/resolve/resolv.conf`, so pass that file.
+- On a bridge network every container on it is matched, and the service cannot open connections
+  to another container there unless it is listed with `--allow`. Give the service a network of its
+  own.
+- The rules do not survive a reboot. Run the script at boot after Docker and DNS are up, from a
+  unit ordered after `docker.service` and `network-online.target`: the names in the ini must
+  resolve, and bridge mode needs Docker's `DOCKER-USER`. The service is unguarded from its start
+  until then. With host networking, saving the rules with `netfilter-persistent` restores them
+  before Docker starts.
+
+Check it by hand from inside the container, once the service runs. Each check below fails when the
+rule is missing:
+
+```
+docker compose exec store-service bash -c ': </dev/tcp/10.255.255.1/80'
+```
+
+With host networking:
+
+```
+docker compose exec store-service bash -c ': </dev/tcp/127.0.0.1/8080'
+docker compose exec store-service bash -c ': </dev/tcp/127.0.0.1/5432 && echo allowed'
+```
+
+On a bridge network, with the network's gateway (the host's address on it) and a port the host
+listens on for every address, such as Caddy's 443:
+
+```
+docker network inspect -f '{{(index .IPAM.Config 0).Gateway}}' <network>
+docker compose exec store-service bash -c ': </dev/tcp/<gateway>/443'
+```
+
+- A refused connection answers `Connection refused` at once, sent by the rule. Without the rule
+  the connection to 10.255.255.1 waits for a timeout instead, and the one to 127.0.0.1:8080 (the
+  service's own listener) or to the gateway connects.
+- `allowed` is printed for the database. With the RPC node on this host, the same command with its
+  port (`8545` for a local reth) prints it too.
+
+`sudo ./egress.sh --remove --uid 998` (or `--bridge <interface>`) deletes the jumps an install
+adds for that user or network, then the chain, in `iptables` and `ip6tables`. Running it again
+changes nothing, and `--check` then reports the chain absent.
+
 ## Issuing codes
 
 Operators issue codes two ways: from the service's own command line in `--run-cli` mode, and from the
@@ -221,6 +466,8 @@ The command is sent to the running service in `--run-cli` mode, not a way to sta
 ```
 //issue <badge_type> [months] [paid|unpaid|free]
 //issue supporter 12
+//issue name <length> [years <Y>] [paid|unpaid|free]
+//issue name 7 years 5
 ```
 
 `months` defaults to 1 and must be between 1 and 255; the status defaults to `free` and records
@@ -228,10 +475,14 @@ whether the code was sold (`paid`), is awaiting payment (`unpaid`), or was issue
 (`free`). Redemption refuses an `unpaid` code with `payment_pending`: the web checkout writes the
 code row when the invoice is created, and settlement is what marks it paid.
 
+`//issue name` makes a prepaid name code (`SN<length>-…`): it pays for one name of at least
+`<length>` letters, 6 to 63, for `years` years, 2 to 10 (default 2). The status is as above: an
+order refuses an `unpaid` name code with `payment_pending`.
+
 The code is printed once and only its `SHA-256` is stored, so a code that is not copied when it is
 shown cannot be recovered.
 
-A code that leaked, or that was refunded, is withdrawn the same way:
+A code that leaked, or that was refunded, is withdrawn the same way, badge and name codes alike:
 
 ```
 //revoke <code>
@@ -252,8 +503,11 @@ why issuing codes lives in the service rather than in core.
 With `[group]` in `store_service.ini`, the service manages one group and serves three commands in
 it: `/issue <type> [months <M>] [uses <N>]` and `/bulk <type> [months <M>] count <B>` for moderators
 and above, `/revoke <code>` for admins and owners. `months` is 1 to 255, `uses` 1 to 1000 and
-`count` 1 to 100; a value outside these gets the usage reply. A member's role is checked as the
-service last saw it, so a command sent by a moderator just demoted or removed can still run if it
+`count` 1 to 100; a value outside these gets the usage reply. The name forms are
+`/issue name <length> [years <Y>]` and `/bulk name <length> [years <Y>] count <B>`, with the
+bounds of `//issue name`; a name code issued in the group is single-use and `free`. `/revoke`
+takes badge codes only: withdraw a name code with `//revoke` in `--run-cli` mode. A member's role
+is checked as the service last saw it, so a command sent by a moderator just demoted or removed can still run if it
 reaches the service first; revoke any code the service posts for them after the change. `uses`
 above 1 makes a multi-use code, tracked by a group message showing its remaining uses and the time
 of the last one; when every use is redeemed, the same message says so. Every reply carrying a code is read by every member,

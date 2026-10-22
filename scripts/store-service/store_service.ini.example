@@ -9,6 +9,11 @@ serve_webapp = off
 ; the webapp is written here at boot with the publishable key injected; compose bind-mounts it to a
 ; host path Caddy serves. Unset it when serve_webapp = on.
 webapp_export_dir = /srv/webapp
+; the names site (simplex.domains): its build and the folder it is exported to, which compose
+; bind-mounts to ./names for Caddy. The image does not build the names site yet, so set both once a
+; names build is mounted into the container at /srv/names.
+;names_static_dir = /srv/names
+;names_export_dir = /srv/names-export
 ; on because Caddy proxies /api and /webhooks to this service; without it the rate limiter keys on
 ; Caddy's address and shares one bucket across all callers
 trust_forwarded_for = on

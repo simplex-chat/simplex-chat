@@ -15,7 +15,7 @@ module StoreService.Web.Server
 where
 
 import StoreService.Catalog (PricedOffer (..), priceOffer)
-import StoreService.Config (ListenerConfig (..), ServiceConfig (..), StripeConfig (..))
+import StoreService.Config (ListenerConfig (..), ServiceConfig (..), StripeConfig (..), hostName)
 import StoreService.Names.Env (NamesEnv)
 import StoreService.Names.Orders (OrdersEnv (..), ordersEnv)
 import StoreService.Names.Phases (RegistrationId, awaitChange)
@@ -56,7 +56,7 @@ import Simplex.Chat.Badges.Types (BadgeOfferId (..), BadgePriceId (..))
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), InvoiceStatus (..), PaymentProvider (..), ServicePaymentDestination (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Encoding.String (textEncode)
-import Simplex.Messaging.Util (tshow)
+import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import System.Directory (canonicalizePath, copyFile, createDirectoryIfMissing, doesDirectoryExist, doesFileExist, listDirectory, removePathForcibly)
 import System.FilePath (pathSeparator, takeExtension, (</>))
 
@@ -68,19 +68,31 @@ data WebEnv = WebEnv
     weHoldMicros :: Int,
     weHints :: ReadHints,
     weHttp :: HttpEnv,
-    -- | @Nothing@ when no Stripe key is configured, and the pristine @static_dir@ shell is served instead.
-    weShell :: Maybe LB.ByteString,
+    weBadgesSite :: Site,
+    -- | @Nothing@ when @names_static_dir@ is unset.
+    weNamesSite :: Maybe Site,
     -- | @Nothing@ when the ini has no @[names]@ section.
     weNames :: Maybe NamesEnv,
     -- | The name orders' part of weNames, which tests set without a chat controller.
     weOrders :: Maybe OrdersEnv
   }
 
+-- | A built site, served when @serve_webapp@ is on.
+data Site = Site
+  { siteDir :: FilePath,
+    -- | @Nothing@ when no Stripe key is configured, and the pristine shell is served instead.
+    siteShell :: Maybe LB.ByteString
+  }
+
 newWebEnv :: DBStore -> ServiceConfig -> Waiters -> ReadHints -> [Provider] -> Maybe NamesEnv -> IO WebEnv
 newWebEnv weStore weConfig weWaiters weHints weProviders weNames = do
-  weHttp <- newHttpEnv (listener weConfig)
-  weShell <- prepareShell (listener weConfig) (stripe weConfig)
-  pure WebEnv {weStore, weConfig, weWaiters, weProviders, weHoldMicros = holdMicros, weHints, weHttp, weShell, weNames, weOrders = ordersEnv <$> weNames}
+  weHttp <- newHttpEnv lc
+  weBadgesSite <- loadSite (lStaticDir lc)
+  weNamesSite <- mapM loadSite (lNamesStaticDir lc)
+  pure WebEnv {weStore, weConfig, weWaiters, weProviders, weHoldMicros = holdMicros, weHints, weHttp, weBadgesSite, weNamesSite, weNames, weOrders = ordersEnv <$> weNames}
+  where
+    lc = listener weConfig
+    loadSite dir = Site dir <$> prepareShell dir (stripe weConfig)
 
 listenerConfig :: WebEnv -> ListenerConfig
 listenerConfig WebEnv {weConfig} = listener weConfig
@@ -101,11 +113,7 @@ webhookResponse st = responseLBS st [(hCacheControl, "no-store")] ""
 
 webApp :: WebEnv -> Application
 webApp env@WebEnv {weHttp} req respond = case pathInfo req of
-  [] | serving -> only "GET" req respond $ case weShell env of
-    Just shell -> respond (responseLBS status200 shellHeaders shell)
-    Nothing -> serveStatic env ["index.html"] respond
-  "assets" : rest | serving -> only "GET" req respond $ serveStatic env ("assets" : rest) respond
-  ["sw.js"] | serving -> only "GET" req respond $ serveStatic env ["sw.js"] respond
+  path | Just site <- servedSite env req, sitePath path -> only "GET" req respond $ serveSite site path respond
   ["api", "invoice"] -> only "POST" req respond $ limited weHttp createLimit req respond $ createInvoiceHandler env req respond
   ["api", "invoice", iid] -> only "GET" req respond $ limited weHttp readLimit req respond $ readInvoiceHandler env (InvoiceId iid) req respond
   ["api", "invoice", iid, "cancel"] -> only "POST" req respond $ limited weHttp createLimit req respond $ cancelInvoiceHandler env (InvoiceId iid) respond
@@ -113,35 +121,56 @@ webApp env@WebEnv {weHttp} req respond = case pathInfo req of
   ["webhooks", "stripe"] -> only "POST" req respond $ webhookHandler env PPStripe "POST /webhooks/stripe" req respond
   _ -> fromMaybe (respond notFound) names
   where
-    serving = lServeWebapp (listenerConfig env)
     names = weNames env >>= \n -> namesApp weHttp (namesRoutes n) req respond
 
+-- | The names site on a names host, the badges site on any other.
+servedSite :: WebEnv -> Request -> Maybe Site
+servedSite env@WebEnv {weBadgesSite, weNamesSite} req
+  | not lServeWebapp = Nothing
+  | Just site <- weNamesSite, maybe False (`elem` lNamesHosts) (requestHost req) = Just site
+  | otherwise = Just weBadgesSite
+  where
+    ListenerConfig {lServeWebapp, lNamesHosts} = listenerConfig env
+
+requestHost :: Request -> Maybe Text
+requestHost req = hostName . safeDecodeUtf8 <$> requestHeaderHost req
+
+-- | The names build keeps files at its root, so every path outside the API and the webhooks is the site's.
+sitePath :: [Text] -> Bool
+sitePath = \case
+  "api" : _ -> False
+  "webhooks" : _ -> False
+  _ -> True
+
 -- | A @".."@ check would miss separators WAI has already decoded, an absolute path, and a symlink out of the tree.
-serveStatic :: WebEnv -> [Text] -> Respond -> IO ResponseReceived
-serveStatic env segments respond =
-  resolveInside (lStaticDir (listenerConfig env)) segments >>= \case
+serveSite :: Site -> [Text] -> Respond -> IO ResponseReceived
+serveSite Site {siteDir, siteShell} path respond =
+  resolveInside siteDir (if null path then [T.pack shellFile] else path) >>= \case
     Nothing -> respond notFound
-    Just (root, file) -> respond (responseFile status200 (staticHeaders root file) file Nothing)
+    Just (root, file)
+      | Just shell <- siteShell, file == root </> shellFile -> respond (responseLBS status200 (staticHeaders root file) shell)
+      | otherwise -> respond (responseFile status200 (staticHeaders root file) file Nothing)
 
-shellHeaders :: [Header]
-shellHeaders = [(hContentType, "text/html; charset=utf-8"), (hCacheControl, "no-cache")]
+shellFile :: FilePath
+shellFile = "index.html"
 
+-- | The badges shell also has an @id@ before @name@, and the names shell has none.
 publishableKeyMeta :: Text
-publishableKeyMeta = "id=\"stripe-publishable-key\" name=\"stripe-publishable-key\" content=\""
+publishableKeyMeta = "name=\"stripe-publishable-key\" content=\""
 
 -- | @Nothing@ (serve the pristine file) when no key is set, no shell is present, or it cannot be read.
-prepareShell :: ListenerConfig -> Maybe StripeConfig -> IO (Maybe LB.ByteString)
+prepareShell :: FilePath -> Maybe StripeConfig -> IO (Maybe LB.ByteString)
 prepareShell _ Nothing = pure Nothing
-prepareShell ListenerConfig {lStaticDir} (Just StripeConfig {sPublishableKey}) =
+prepareShell dir (Just StripeConfig {sPublishableKey}) =
   E.try attempt >>= \case
     Right out -> pure out
     Left (e :: E.IOException) -> do
-      logWarn ("could not read the shell in " <> T.pack lStaticDir <> ", serving the pristine one: " <> tshow e)
+      logWarn ("could not read the shell in " <> T.pack dir <> ", serving the pristine one: " <> tshow e)
       pure Nothing
   where
     attempt :: IO (Maybe LB.ByteString)
     attempt = do
-      let shell = lStaticDir </> "index.html"
+      let shell = dir </> shellFile
       present <- doesFileExist shell
       if not present
         then pure Nothing
@@ -150,17 +179,20 @@ prepareShell ListenerConfig {lStaticDir} (Just StripeConfig {sPublishableKey}) =
           bytes <- BS.readFile shell
           case decodeUtf8' bytes of
             Left e -> do
-              logWarn ("the shell in " <> T.pack lStaticDir <> " is not valid UTF-8, serving the pristine one: " <> tshow e)
+              logWarn ("the shell in " <> T.pack dir <> " is not valid UTF-8, serving the pristine one: " <> tshow e)
               pure Nothing
             Right html -> pure (Just (LB.fromStrict (encodeUtf8 (injectPublishableKey sPublishableKey html))))
 
 exportWebapp :: ListenerConfig -> Maybe StripeConfig -> IO ()
-exportWebapp lc@ListenerConfig {lStaticDir, lWebappExportDir} stripeCfg =
-  forM_ lWebappExportDir $ \out -> do
-    emptyDir out
-    copyTree lStaticDir out
-    prepareShell lc stripeCfg >>= mapM_ (LB.writeFile (out </> "index.html"))
-    logInfo ("store service: exported the webapp to " <> T.pack out)
+exportWebapp ListenerConfig {lStaticDir, lWebappExportDir, lNamesStaticDir, lNamesExportDir} stripeCfg = do
+  forM_ lWebappExportDir $ exportSite lStaticDir
+  forM_ ((,) <$> lNamesStaticDir <*> lNamesExportDir) $ uncurry exportSite
+  where
+    exportSite dir out = do
+      emptyDir out
+      copyTree dir out
+      prepareShell dir stripeCfg >>= mapM_ (LB.writeFile (out </> shellFile))
+      logInfo ("store service: exported " <> T.pack dir <> " to " <> T.pack out)
 
 -- | Contents only: the directory itself may be a bind or volume mount point that cannot be removed.
 emptyDir :: FilePath -> IO ()

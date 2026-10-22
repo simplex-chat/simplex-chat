@@ -18,6 +18,7 @@ module StoreService.Config
     defaultExpiryMinutes,
     defaultSessionMinutes,
     minNameYears,
+    hostName,
     readServiceConfig,
     unknownKeys,
   )
@@ -31,7 +32,7 @@ import qualified Data.ByteArray as BA
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import qualified Data.ByteString.Char8 as B
 import Data.Ini (Ini, iniGlobals, iniParser, keys, lookupValue, sections)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -218,6 +219,17 @@ trailingNoise = skipSpace *> skipMany (comment *> skipSpace)
   where
     comment = satisfy (\c -> c == ';' || c == '#') *> skipWhile (not . isEndOfLine)
 
+-- | A host as names_hosts compares it: in lower case, without a port or the root's trailing dot,
+-- and an IPv6 literal whole in brackets, as a Host header carries it.
+hostName :: Text -> Text
+hostName h
+  | "[" `T.isPrefixOf` host = T.takeWhile (/= ']') host <> "]"
+  | T.count ":" host > 1 = "[" <> host <> "]"
+  | otherwise = fromMaybe name (T.stripSuffix "." name)
+  where
+    host = T.toLower (T.strip h)
+    name = T.takeWhile (/= ':') host
+
 knownSettings :: [(Text, [Text])]
 knownSettings =
   [ ("listener", ["host", "port", "static_dir", "serve_webapp", "webapp_export_dir", "trust_forwarded_for", "names_static_dir", "names_export_dir", "names_hosts"]),
@@ -254,7 +266,9 @@ parseConfig ini = do
   lTrustForwardedFor <- bool "listener" "trust_forwarded_for" False
   let lNamesStaticDir = T.unpack <$> present "listener" "names_static_dir"
       lNamesExportDir = T.unpack <$> present "listener" "names_export_dir"
-      lNamesHosts = maybe [] (filter (not . T.null) . map (T.toLower . T.strip) . T.splitOn ",") (present "listener" "names_hosts")
+      lNamesHosts = maybe [] (filter (not . T.null) . map hostName . T.splitOn ",") (present "listener" "names_hosts")
+  when (isNothing lNamesStaticDir && (not (null lNamesHosts) || isJust lNamesExportDir)) $
+    Left "listener.names_static_dir is required with names_hosts or names_export_dir"
   btc <- btcpaySection
   str <- stripeSection
   iss <- issuerSection
