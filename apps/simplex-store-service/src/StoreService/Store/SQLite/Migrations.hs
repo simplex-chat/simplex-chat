@@ -20,7 +20,8 @@ schemaMigrations :: [(String, Query, Maybe Query)]
 schemaMigrations =
   [ ("20260915_badge_service_schema", m20260915_badge_service_schema, Just down_m20260915_badge_service_schema),
     ("20260918_badge_group_ops", m20260918_badge_group_ops, Just down_m20260918_badge_group_ops),
-    ("20261010_names", m20261010_names, Just down_m20261010_names)
+    ("20261010_names", m20261010_names, Just down_m20261010_names),
+    ("20261022_drop_taken_codes", m20261022_drop_taken_codes, Just down_m20261022_drop_taken_codes)
   ]
 
 -- | The client tables share this database, so the service tables are the same names behind a prefix.
@@ -330,6 +331,29 @@ UPDATE @name_prepaid_codes SET reserved_by = NULL;
 DROP TABLE @name_registrations;
 
 DROP TABLE @name_prepaid_codes;
+|]
+
+-- A code_issued order's worth went into its code, which stays a valid prepaid code, so it ends taken with nothing left.
+m20261022_drop_taken_codes :: Query
+m20261022_drop_taken_codes =
+  withPrefix
+    servicePrefix
+    [sql|
+UPDATE @name_registrations SET phase = 'taken', price = 0, live = 0 WHERE phase = 'code_issued';
+
+DROP INDEX @idx_name_registrations_issued_code;
+
+ALTER TABLE @name_registrations DROP COLUMN issued_code_id;
+|]
+
+down_m20261022_drop_taken_codes :: Query
+down_m20261022_drop_taken_codes =
+  withPrefix
+    servicePrefix
+    [sql|
+ALTER TABLE @name_registrations ADD COLUMN issued_code_id INTEGER REFERENCES @name_prepaid_codes;
+
+CREATE INDEX @idx_name_registrations_issued_code ON @name_registrations(issued_code_id);
 |]
 
 {- TODO [badges] deferred with the draft in M20260915_user_badges, service only.
