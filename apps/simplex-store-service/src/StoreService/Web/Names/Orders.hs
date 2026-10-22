@@ -147,7 +147,7 @@ createAtProvider env@OrdersEnv {oeStore, oeConfig, oeNow} cfg providers waiters 
             `E.catch` strandedBy provider piProviderRef
             >>= \case
             Left refusal -> do
-              logWarn (what <> ": the order lost to another, so invoice " <> piProviderRef <> " is cancelled at the provider")
+              logWarn (what <> ": the order was refused, so invoice " <> piProviderRef <> " is cancelled at the provider")
               (\a -> a {aAfter = cancelAtProvider provider piProviderRef}) <$> refused what refusal
             Right closed -> do
               row_ <- getInvoice oeStore invId

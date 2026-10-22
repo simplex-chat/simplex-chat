@@ -9,7 +9,7 @@ import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (reservedNamesCall)
 import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), advance, aliceOrder, commitmentOf, field, fieldsOf, invoiceRegistration, keyB, orderTime, placeOrder, post, refusedWith, registrationById, registrationOf, settleNow, withOrdersVia, yearsDuration)
 import Bots.StoreService.NamesStoreTests (at, order, ownerA, placePaid, reg, t0, write)
-import Bots.StoreService.WebTests (StubCall (..), StubState (..), jsonObject, rcv, sampleProviderInvoice, statusOf, stubCalls, webGet, webRequestBody)
+import Bots.StoreService.WebTests (StubCall (..), capturingStderr, StubState (..), jsonObject, rcv, sampleProviderInvoice, statusOf, stubCalls, webGet, webRequestBody)
 import Control.Concurrent.Async (Async, async, cancel, concurrently, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (atomically, check)
@@ -521,7 +521,10 @@ testWriteRefusedAtBalance = withSpendHook $ \hook ctx@Ctx {cOpenStore} -> do
   src <- sourceOf ctx "src" 6000
   other <- cOpenStore
   onCreate hook $ credit other "src" 500
-  answer <- spend ctx src (difference 6000)
+  answered <- newIORef Nothing
+  logs <- capturingStderr $ spend ctx src (difference 6000) >>= writeIORef answered . Just
+  logs `shouldSatisfy` T.isInfixOf "the order was refused, so invoice pref-1 is cancelled at the provider"
+  Just answer <- readIORef answered
   current <- balanceOf ctx src
   (fmap blAmount current, blHold =<< current) `shouldBe` (Just 6500, Nothing)
   answer `shouldBe` balanceChanged current
