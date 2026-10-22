@@ -252,7 +252,7 @@ fun showBadgeInfoAlert(name: String, badge: LocalBadge, uriHandler: UriHandler) 
           text = supports,
           confirmText = generalGetString(MR.strings.ok),
           dismissText = generalGetString(MR.strings.badges_support_simplex_title),
-          onDismiss = ::openBadgesView
+          onDismiss = { if (!appPlatform.isDesktop || !ModalManager.end.hasModalOpen(ModalViewId.BADGES)) openBadgesView() }
         )
       } else {
         AlertManager.shared.showAlertMsg(title = title, text = supports)
