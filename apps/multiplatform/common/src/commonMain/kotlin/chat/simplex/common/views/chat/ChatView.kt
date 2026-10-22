@@ -730,35 +730,39 @@ fun ChatView(
                 ciInfo
               }
               groupMembersJob.cancel()
-              groupMembersJob = scope.launch(Dispatchers.Default) {
-                var initialCiInfo = loadChatItemInfo() ?: return@launch
+              groupMembersJob = scope.launch {
+                var initialCiInfo = withContext(Dispatchers.Default) { loadChatItemInfo() } ?: return@launch
                 if (!ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
                   ModalManager.end.closeModals()
+                } else if (ModalManager.end.isTopModalOpen(ModalViewId.CHAT_ITEM_INFO)) {
+                  ModalManager.end.closeModal()
                 }
-                ModalManager.end.showModalCloseable(endButtons = {
+                ModalManager.end.showModalCloseable(id = ModalViewId.CHAT_ITEM_INFO, endButtons = {
                   ShareButton {
                     clipboard.shareText(itemInfoShareText(chatModel, initialCiInfo.first, initialCiInfo.second, chatModel.controller.appPrefs.developerTools.get()))
                   }
                 }) { close ->
-                  var ciInfo by remember(cItem.id) { mutableStateOf(initialCiInfo) }
-                  val (item, info) = ciInfo
-                  ChatItemInfoView(chatRh, item, info, devTools = chatModel.controller.appPrefs.developerTools.get(), chatInfo)
-                  LaunchedEffect(cItem.id) {
-                    withContext(Dispatchers.Default) {
-                      for (msg in controller.messagesChannel) {
-                        if (msg.rhId == chatRh &&
-                          msg is API.Result &&
-                          msg.res is CR.ChatItemsStatusesUpdated &&
-                          msg.res.chatItems.any { it.chatItem.id == cItem.id }
-                        ) {
-                          ciInfo = loadChatItemInfo() ?: return@withContext
-                          initialCiInfo = ciInfo
+                  key(this) {
+                    var ciInfo by remember(cItem.id) { mutableStateOf(initialCiInfo) }
+                    val (item, info) = ciInfo
+                    ChatItemInfoView(chatRh, item, info, devTools = chatModel.controller.appPrefs.developerTools.get(), chatInfo)
+                    LaunchedEffect(cItem.id) {
+                      withContext(Dispatchers.Default) {
+                        for (msg in controller.messagesChannel) {
+                          if (msg.rhId == chatRh &&
+                            msg is API.Result &&
+                            msg.res is CR.ChatItemsStatusesUpdated &&
+                            msg.res.chatItems.any { it.chatItem.id == cItem.id }
+                          ) {
+                            ciInfo = loadChatItemInfo() ?: return@withContext
+                            initialCiInfo = ciInfo
+                          }
                         }
                       }
                     }
-                  }
-                  KeyChangeEffect(chatModel.chatId.value) {
-                    close()
+                    KeyChangeEffect(chatModel.chatId.value) {
+                      close()
+                    }
                   }
                 }
               }
