@@ -24,6 +24,7 @@ module StoreService.Web.Http
     jsonError,
     notFound,
     badRequest,
+    invalidName,
     codeConflict,
     providerUnavailable,
     rateLimited,
@@ -33,18 +34,26 @@ module StoreService.Web.Http
     maxBodyBytes,
     nameBodyBytes,
     parseCodeHash,
+    invoicePairs,
+    destinationPairs,
+    amountJSON,
+    confirmationsFor,
+    invoiceWindow,
+    providerFor,
+    providerNamed,
   )
 where
 
 import Control.Concurrent.STM
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
+import Data.Aeson.Types (Pair)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base64.URL as B64U
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy as LB
-import Data.List (sortOn)
+import Data.List (find, sortOn)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (fromMaybe)
@@ -57,8 +66,11 @@ import Network.HTTP.Types (Header, Method, Status, hCacheControl, hContentType, 
 import Network.Socket (SockAddr (..), hostAddress6ToTuple, hostAddressToTuple)
 import Network.Wai
 import Numeric (showHex)
+import Simplex.Chat.PaymentService.Types (CardProvider (..), CurrencyAmount (..), InvoiceStatus (..), PaymentProvider (..), ServicePaymentDestination (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Util (safeDecodeUtf8)
-import StoreService.Config (ListenerConfig (..))
+import StoreService.Config (BTCPayConfig (..), ListenerConfig (..), ServiceConfig (..), SpeedPolicy (..), StripeConfig (..), defaultExpiryMinutes, defaultSessionMinutes)
+import StoreService.Providers (Provider (..))
+import StoreService.Store.Invoices (InvoicePayment (..), InvoiceRow (..), cryptoCurrencyText, invoiceStatusText)
 import Text.Read (readMaybe)
 
 data HttpEnv = HttpEnv
@@ -239,6 +251,9 @@ notFound = jsonError status404 "not_found"
 badRequest :: Response
 badRequest = jsonError status400 "bad_request"
 
+invalidName :: Response
+invalidName = jsonError status400 "invalid_name"
+
 codeConflict :: Response
 codeConflict = jsonError status409 "code_conflict"
 
@@ -281,3 +296,70 @@ parseCodeHash t
       _ -> Nothing
   where
     canonical = T.filter (/= '=') . safeDecodeUtf8 . B64U.encode
+
+-- | The fields every invoice view has, a badge's and a name's.
+invoicePairs :: Maybe Int -> InvoiceRow -> [Pair]
+invoicePairs confirmations InvoiceRow {irAmount, irCurrency, irDestination, irExpiresAt, irStatus, irPayment} =
+  [ "status" .= invoiceStatusText irStatus,
+    "amount" .= amountJSON irAmount,
+    "currency" .= irCurrency,
+    "expiresAt" .= irExpiresAt
+  ]
+    <> destinationPairs confirmations irDestination
+    <> maybe [] paymentPairs irPayment
+  where
+    paymentPairs p =
+      concat
+        [ maybe [] (\a -> ["amountPaid" .= amountJSON a]) (ipAmount p),
+          maybe [] (\a -> ["cryptoAmountPaid" .= a]) (ipCryptoPaid p),
+          maybe [] (\a -> ["cryptoAmountDue" .= a]) (ipCryptoDue p),
+          ["paidInFull" .= ipPaidInFull p],
+          ["settledAt" .= ipUpdatedAt p | irStatus == ISPaid]
+        ]
+
+destinationPairs :: Maybe Int -> ServicePaymentDestination -> [Pair]
+destinationPairs confirmations = \case
+  SPDCard _ url -> ["clientSecret" .= url]
+  SPDCrypto currency address cryptoAmount ->
+    [ "address" .= address,
+      "cryptoAmount" .= cryptoAmount,
+      "cryptoCurrency" .= cryptoCurrencyText currency
+    ]
+      <> maybe [] (\n -> ["requiredConfirmations" .= n]) confirmations
+
+amountJSON :: CurrencyAmount -> J.Value
+amountJSON (CurrencyAmount a) = J.toJSON a
+
+-- | Greenfield reports no confirmation count, so this comes from the store's speed policy.
+confirmationsFor :: ServiceConfig -> Maybe Int
+confirmationsFor cfg = speedPolicyConfirmations . bSpeedPolicy <$> btcpay cfg
+
+-- | BTCPay's own store setting, whose numbering is not in speed order.
+speedPolicyConfirmations :: SpeedPolicy -> Int
+speedPolicyConfirmations = \case
+  HighSpeed -> 0
+  MediumSpeed -> 1
+  LowMediumSpeed -> 2
+  LowSpeed -> 6
+
+secondsPerMinute :: Int
+secondsPerMinute = 60
+
+-- | The expiry shown and stored must come from the same key the provider sets the invoice's real expiry from.
+invoiceWindow :: ServiceConfig -> ServicePaymentMethod -> NominalDiffTime
+invoiceWindow cfg = \case
+  SPMCard CPStripe -> minutes (maybe defaultSessionMinutes sSessionMinutes (stripe cfg))
+  SPMCrypto _ -> minutes (maybe defaultExpiryMinutes bExpiryMinutes (btcpay cfg))
+  where
+    minutes n = fromIntegral (secondsPerMinute * n)
+
+providerFor :: [Provider] -> ServicePaymentMethod -> Maybe Provider
+providerFor providers method = providerNamed providers (providerOf method)
+
+providerNamed :: [Provider] -> PaymentProvider -> Maybe Provider
+providerNamed providers provider = find ((== provider) . pProvider) providers
+
+providerOf :: ServicePaymentMethod -> PaymentProvider
+providerOf = \case
+  SPMCard CPStripe -> PPStripe
+  SPMCrypto _ -> PPCrypto

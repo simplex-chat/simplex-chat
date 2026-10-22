@@ -32,6 +32,7 @@ module StoreService.Names.Store
     orderLive,
     newRegistrationId,
     methodText,
+    textMethod,
     createPaidRegistration,
     createCodeRegistration,
     getRegistration,
@@ -205,7 +206,8 @@ data RegistrationRefused = RRLiveOrder | RRCodeNotReservable
   deriving (Eq, Show)
 
 -- | NotLive: the write would make a closed order live. LiveOrderExists: another live order holds its commitment, or its owner and label hash.
-data VersionWrite = Written Int64 | VersionChanged | NotLive | LiveOrderExists
+-- NotOverdue: closeOverdue found the order's invoice no longer open, or holding money.
+data VersionWrite = Written Int64 | VersionChanged | NotLive | LiveOrderExists | NotOverdue
   deriving (Eq, Show)
 
 -- | A live order an order request meets; overdue when its open invoice is past its expiry time.
@@ -247,7 +249,7 @@ data CodeHashTaken = CodeHashTaken
 data TxFor = TxCommit RegistrationId | TxRegister RegistrationId | TxEdit Int64
   deriving (Eq, Show)
 
--- | A dropped transaction was never mined and its registrar nonce went to another one.
+-- | A dropped transaction has no receipt and its registrar nonce is used.
 data TxStatus = TSPending | TSMined | TSReverted | TSDropped
   deriving (Eq, Show, Enum, Bounded)
 
@@ -478,13 +480,15 @@ getRegistrationByOrderHash db hash =
   firstDecoded toRegistration $
     DB.query db (selectRegistrations <> " WHERE r.order_hash = ? ORDER BY r.created_at DESC, r.registration_id DESC LIMIT 1") (Only $ Binary hash)
 
--- | Overdue whatever status the poller has marked, as long as the invoice is not paid.
+-- | Overdue whatever status the poller has marked, as long as the invoice is not paid and holds no money, as the sweep decides.
 getLiveOrders :: DB.Connection -> ByteString -> Address -> LabelHash -> UTCTime -> IO [LiveOrder]
 getLiveOrders db commitment owner (LabelHash lh) now =
   DB.query
     db
     ( registrationColumns
-        <> ", CASE WHEN r.phase = ? AND i.status <> ? AND i.expires_at < ? THEN 1 ELSE 0 END"
+        <> ", CASE WHEN r.phase = ? AND i.status <> ? AND i.expires_at < ?"
+        <> unfunded
+        <> " THEN 1 ELSE 0 END"
         <> registrationFrom
         <> " LEFT JOIN sx_badge_service_invoices i ON i.invoice_id = ni.invoice_id"
         <> " WHERE r.live = 1 AND (r.commitment = ? OR (r.owner = ? AND r.label_hash = ?))"
@@ -494,24 +498,43 @@ getLiveOrders db commitment owner (LabelHash lh) now =
   where
     toLiveOrder (row :. Only (BI loOverdue)) = (\loRegistration -> LiveOrder {loRegistration, loOverdue}) <$> toRegistration row
 
--- | Run in the transaction that inserts the next order, so the unique constraints let it in.
-closeOverdue :: DB.Connection -> NameRegistration -> UTCTime -> IO VersionWrite
-closeOverdue db r@NameRegistration {nrId = RegistrationId rid} now = do
-  written <- updateRegistration db r {nrLive = False} now
-  when (isWritten written) $
-    DB.execute
-      db
-      [sql|
-        UPDATE sx_badge_service_invoices SET status = ?, updated_at = ?
-        WHERE status = ? AND invoice_id IN (SELECT invoice_id FROM sx_badge_service_name_invoices WHERE registration_id = ?)
-      |]
-      (invoiceStatusText ISExpired, truncateToSecond now, invoiceStatusText ISOpen, rid)
-  pure written
+-- | A payment holding money, as the sweep's own check reads one, makes the invoice i funded.
+unfunded :: Query
+unfunded =
+  " "
+    <> [sql|
+    AND NOT EXISTS (
+      SELECT 1 FROM sx_badge_service_payments p
+      WHERE p.invoice_id = i.invoice_id AND (COALESCE(p.amount, 0) > 0 OR p.crypto_paid IS NOT NULL OR p.paid_in_full = 1)
+    )
+  |]
 
-isWritten :: VersionWrite -> Bool
-isWritten = \case
-  Written _ -> True
-  _ -> False
+-- | Run in the transaction that inserts the next order, so the unique constraints let it in. The invoice is written before
+-- the registration, as settlement, cancel and the sweep write them; a registration write that loses after it leaves the
+-- caller to roll back.
+closeOverdue :: DB.Connection -> NameRegistration -> UTCTime -> IO VersionWrite
+closeOverdue db r@NameRegistration {nrId = RegistrationId rid, nrVersion} now = do
+  expired <-
+    executeChanging
+      db
+      ( [sql|
+          UPDATE sx_badge_service_invoices SET status = ?, updated_at = ?
+          WHERE status = ? AND invoice_id IN (
+            SELECT i.invoice_id FROM sx_badge_service_name_invoices ni
+            JOIN sx_badge_service_name_registrations r ON r.registration_id = ni.registration_id
+            JOIN sx_badge_service_invoices i ON i.invoice_id = ni.invoice_id
+            WHERE ni.registration_id = ? AND r.version = ? AND r.live = 1
+        |]
+          <> unfunded
+          <> " )"
+      )
+      (invoiceStatusText ISExpired, truncateToSecond now, invoiceStatusText ISOpen, rid, nrVersion)
+  if expired > 0
+    then updateRegistration db r {nrLive = False} now
+    else
+      DB.query db "SELECT version FROM sx_badge_service_name_registrations WHERE registration_id = ?" (Only rid) >>= \case
+        [Only version] | version == nrVersion -> pure NotOverdue
+        _ -> pure VersionChanged
 
 -- | Whether an order can still progress to a registration for its name. The unique live indexes allow one such order per commitment,
 -- and one per owner and label hash, so a wallet can order a name again once its registration is done.

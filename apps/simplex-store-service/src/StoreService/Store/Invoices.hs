@@ -7,12 +7,16 @@
 
 module StoreService.Store.Invoices
   ( InvoiceRow (..),
+    InvoiceProduct (..),
     InvoicePayment (..),
     paymentHolds,
     NewInvoice (..),
+    NewNameInvoice (..),
     CreateError (..),
     StoreDecodeError (..),
+    ProviderRefConflict (..),
     createInvoiceRows,
+    insertNameInvoice,
     executeChanging,
     getInvoice,
     getInvoiceByProviderRef,
@@ -21,8 +25,7 @@ module StoreService.Store.Invoices
     codeHashExists,
     OverdueInvoice (..),
     overdueInvoices,
-    expireOverdue,
-    cancelOpenInvoice,
+    expireOverdueInvoice,
     newInvoiceId,
     readCatalogRows,
     seedCatalog,
@@ -41,7 +44,6 @@ where
 
 import Control.Exception (Exception)
 import qualified Control.Exception as E
-import Control.Monad (filterM)
 import Crypto.Random (getRandomBytes)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64.URL as B64U
@@ -61,6 +63,7 @@ import Simplex.Messaging.Agent.Store.Common (DBStore, withConnection, withTransa
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Encoding.String (textEncode)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
+import StoreService.Names.Phases (RegistrationId (..))
 
 #if defined(dbPostgres)
 import StoreService.Store.Postgres.Migrations (servicePrefix, withPrefix)
@@ -77,8 +80,7 @@ data InvoiceRow = InvoiceRow
   { irInvoiceId :: InvoiceId,
     irProvider :: PaymentProvider,
     irProviderRef :: Text,
-    irBadgeType :: BadgeType,
-    irMonths :: Word8,
+    irProduct :: InvoiceProduct,
     irPrice :: CurrencyAmount,
     irAmount :: CurrencyAmount,
     irCurrency :: Text,
@@ -88,6 +90,10 @@ data InvoiceRow = InvoiceRow
     irCreatedAt :: UTCTime,
     irPayment :: Maybe InvoicePayment
   }
+  deriving (Eq, Show)
+
+-- | A badge's type and months, or the name registration the invoice pays for.
+data InvoiceProduct = IPBadge BadgeType Word8 | IPName RegistrationId
   deriving (Eq, Show)
 
 paymentHolds :: InvoicePayment -> Bool
@@ -121,6 +127,17 @@ data NewInvoice = NewInvoice
     niCreatedAt :: UTCTime
   }
 
+-- | The invoice row of a name order; the registration links it, with its provider ref, in the same transaction.
+data NewNameInvoice = NewNameInvoice
+  { nniInvoiceId :: InvoiceId,
+    nniProvider :: PaymentProvider,
+    nniAmount :: CurrencyAmount,
+    nniCurrency :: Text,
+    nniDestination :: ServicePaymentDestination,
+    nniExpiresAt :: UTCTime,
+    nniCreatedAt :: UTCTime
+  }
+
 data CreateError = CECodeConflict | CERefConflict | CEOther Text
   deriving (Eq, Show)
 
@@ -128,6 +145,12 @@ newtype StoreDecodeError = StoreDecodeError Text
   deriving (Eq, Show)
 
 instance Exception StoreDecodeError
+
+-- | A provider ref held by both a badge invoice and a name invoice, so a payment to it cannot be credited to either.
+newtype ProviderRefConflict = ProviderRefConflict Text
+  deriving (Eq, Show)
+
+instance Exception ProviderRefConflict
 
 -- | SQLite stores timestamps as text, so `expires_at < ?` compares as strings and only sorts chronologically when every value has the same width.
 truncateToSecond :: UTCTime -> UTCTime
@@ -164,28 +187,45 @@ qInsertBadgeCode =
     "INSERT INTO @badge_codes (code_hash, badge_type, months, code_payment_status, created_at) "
       <> "VALUES (?,?,?,?,?)"
 
+-- | Every invoice has a badge code row or a name registration row, never both.
+productJoins :: Text
+productJoins =
+  "LEFT JOIN @badge_code_invoices ci ON ci.invoice_id = i.invoice_id "
+    <> "LEFT JOIN @badge_codes bc ON bc.badge_code_id = ci.badge_code_id "
+    <> "LEFT JOIN @name_invoices ni ON ni.invoice_id = i.invoice_id "
+
+providerRefColumn :: Text
+providerRefColumn = "COALESCE(ci.provider_ref, ni.provider_ref)"
+
 invoiceRowSelect :: Text
 invoiceRowSelect =
-  "SELECT i.invoice_id, i.provider, ci.provider_ref, bc.badge_type, bc.months, "
+  "SELECT i.invoice_id, i.provider, "
+    <> providerRefColumn
+    <> ", bc.badge_type, bc.months, ni.registration_id, "
     <> "i.price, i.amount, i.currency, i.payment_url, i.payment_address, i.payment_crypto_currency, "
     <> "i.payment_crypto_amount, i.expires_at, i.status, i.created_at, "
     <> "p.amount, p.crypto_paid, p.crypto_due, p.paid_in_full, p.status, p.updated_at "
     <> "FROM @invoices i "
-    <> "JOIN @badge_code_invoices ci ON ci.invoice_id = i.invoice_id "
-    <> "JOIN @badge_codes bc ON bc.badge_code_id = ci.badge_code_id "
+    <> productJoins
     <> "LEFT JOIN @payments p ON p.invoice_id = i.invoice_id "
 
 qGetInvoice :: Query
 qGetInvoice = mkQuery (invoiceRowSelect <> "WHERE i.invoice_id = ?")
 
 qGetInvoiceByProviderRef :: Query
-qGetInvoiceByProviderRef = mkQuery (invoiceRowSelect <> "WHERE ci.provider_ref = ?")
+qGetInvoiceByProviderRef =
+  mkQuery $
+    invoiceRowSelect
+      <> "WHERE i.invoice_id IN (SELECT invoice_id FROM @badge_code_invoices WHERE provider_ref = ? "
+      <> "UNION ALL SELECT invoice_id FROM @name_invoices WHERE provider_ref = ?)"
 
 qUnpaidRefs :: Query
 qUnpaidRefs =
   mkQuery $
-    "SELECT i.provider, ci.provider_ref FROM @invoices i "
-      <> "JOIN @badge_code_invoices ci ON ci.invoice_id = i.invoice_id "
+    "SELECT i.provider, "
+      <> providerRefColumn
+      <> " FROM @invoices i "
+      <> productJoins
       <> "WHERE i.status <> 'paid' AND i.created_at >= ? "
       <> "ORDER BY i.created_at"
 
@@ -201,8 +241,9 @@ unfundedOnly =
 qOverdueInvoices :: Query
 qOverdueInvoices =
   mkQuery $
-    "SELECT @invoices.invoice_id, @invoices.provider, ci.provider_ref, @invoices.created_at FROM @invoices "
-      <> "JOIN @badge_code_invoices ci ON ci.invoice_id = @invoices.invoice_id "
+    "SELECT @invoices.invoice_id, @invoices.provider, COALESCE(ci.provider_ref, ni.provider_ref), @invoices.created_at FROM @invoices "
+      <> "LEFT JOIN @badge_code_invoices ci ON ci.invoice_id = @invoices.invoice_id "
+      <> "LEFT JOIN @name_invoices ni ON ni.invoice_id = @invoices.invoice_id "
       <> "WHERE status = 'open' AND expires_at < ? "
       <> unfundedOnly
       <> "ORDER BY @invoices.created_at"
@@ -213,7 +254,6 @@ qExpireOverdue =
     "UPDATE @invoices SET status = 'expired', updated_at = ? "
       <> "WHERE status = 'open' AND expires_at < ? AND invoice_id = ? "
       <> unfundedOnly
-      <> "AND EXISTS (SELECT 1 FROM @badge_code_invoices ci WHERE ci.invoice_id = @invoices.invoice_id)"
 
 qCodeHashForInvoice :: Query
 qCodeHashForInvoice =
@@ -368,19 +408,23 @@ note :: Text -> Maybe a -> Either Text a
 note ctx = maybe (Left ctx) Right
 
 type InvoiceCols =
-  (Text, Text, Text, BadgeType, Word32)
+  (Text, Text, Text, Maybe BadgeType, Maybe Word32, Maybe Text)
     :. (Word32, Word32, Text, Maybe Text, Maybe Text, Maybe Text)
     :. (Maybe Text, UTCTime, Text, UTCTime)
     :. (Maybe Word32, Maybe Text, Maybe Text, Maybe Int, Maybe Text, Maybe UTCTime)
 
 mkInvoiceRow :: InvoiceCols -> Either Text InvoiceRow
 mkInvoiceRow
-  ( (invId, providerTxt, providerRef, badgeType, months)
+  ( (invId, providerTxt, providerRef, badgeType, months, registrationId)
       :. (price, amount, currency, url, addr, cryptoCur)
       :. (cryptoAmt, expiresAt, statusTxt, createdAt)
       :. (pAmount, pCryptoPaid, pCryptoDue, pPaidInFull, pStatus, pUpdatedAt)
     ) = do
     provider <- note "invoices.provider" (textToProvider providerTxt)
+    invoiceProduct <- case (badgeType, months, registrationId) of
+      (Just bt, Just m, Nothing) -> Right (IPBadge bt (fromIntegral m))
+      (Nothing, Nothing, Just rid) -> Right (IPName (RegistrationId rid))
+      _ -> Left ("invoice product: " <> invId)
     status <- note "invoices.status" (textToInvoiceStatus statusTxt)
     destination <- note "invoice payment destination" (mkDestination url addr cryptoCur cryptoAmt)
     pure
@@ -388,8 +432,7 @@ mkInvoiceRow
         { irInvoiceId = InvoiceId invId,
           irProvider = provider,
           irProviderRef = providerRef,
-          irBadgeType = badgeType,
-          irMonths = fromIntegral months,
+          irProduct = invoiceProduct,
           irPrice = CurrencyAmount price,
           irAmount = CurrencyAmount amount,
           irCurrency = currency,
@@ -409,7 +452,10 @@ selectInvoiceRow db q param = do
   rows <- DB.query db q (Only param)
   case rows of
     [] -> pure Nothing
-    (row : _) -> either (E.throwIO . StoreDecodeError) (pure . Just) (mkInvoiceRow row)
+    (row : _) -> Just <$> decodeInvoiceRow row
+
+decodeInvoiceRow :: InvoiceCols -> IO InvoiceRow
+decodeInvoiceRow = either (E.throwIO . StoreDecodeError) pure . mkInvoiceRow
 
 type BadgePriceCols = (Text, BadgeType, Word32, Text, Text, UTCTime)
 
@@ -452,19 +498,11 @@ insertInvoiceRows db NewInvoice {..} = do
   let InvoiceId invId = niInvoiceId
       CurrencyAmount price = niPrice
       CurrencyAmount amount = niAmount
-      discountAmount = price - amount
-      (url, addr, cryptoCur, cryptoAmt) = destinationCols niDestination
-      expiresAt = truncateToSecond niExpiresAt
       createdAt = truncateToSecond niCreatedAt
       BadgePriceId priceId = niPriceId
       offerId = (\(BadgeOfferId o) -> o) <$> niOfferId
       months = fromIntegral niMonths :: Word32
-  DB.execute
-    db
-    qInsertInvoice
-    ( (invId, providerText niProvider, price, discountAmount, Nothing :: Maybe Word32, amount, niCurrency)
-        :. (url, addr, cryptoCur, cryptoAmt, expiresAt, invoiceStatusText ISOpen, createdAt, createdAt)
-    )
+  insertInvoiceRow db niInvoiceId niProvider price amount niCurrency niDestination niExpiresAt createdAt
   DB.execute
     db
     qInsertBadgeCode
@@ -474,6 +512,25 @@ insertInvoiceRows db NewInvoice {..} = do
     db
     qInsertBadgeCodeInvoice
     (invId, badgeCodeId, priceId, offerId, niProviderRef, createdAt)
+
+-- | A name is sold at its chain price, with no discount.
+insertNameInvoice :: DB.Connection -> NewNameInvoice -> IO ()
+insertNameInvoice db NewNameInvoice {..} =
+  insertInvoiceRow db nniInvoiceId nniProvider amount amount nniCurrency nniDestination nniExpiresAt nniCreatedAt
+  where
+    CurrencyAmount amount = nniAmount
+
+insertInvoiceRow :: DB.Connection -> InvoiceId -> PaymentProvider -> Word32 -> Word32 -> Text -> ServicePaymentDestination -> UTCTime -> UTCTime -> IO ()
+insertInvoiceRow db (InvoiceId invId) provider price amount currency destination expiresAt' createdAt' =
+  DB.execute
+    db
+    qInsertInvoice
+    ( (invId, providerText provider, price, price - amount, Nothing :: Maybe Word32, amount, currency)
+        :. (url, addr, cryptoCur, cryptoAmt, truncateToSecond expiresAt', invoiceStatusText ISOpen, createdAt, createdAt)
+    )
+  where
+    (url, addr, cryptoCur, cryptoAmt) = destinationCols destination
+    createdAt = truncateToSecond createdAt'
 
 #if defined(dbPostgres)
 classifyCreateError :: DB.SQLError -> CreateError
@@ -503,8 +560,13 @@ classifyCreateError e
 getInvoice :: DBStore -> InvoiceId -> IO (Maybe InvoiceRow)
 getInvoice st (InvoiceId invId) = withConnection st $ \db -> selectInvoiceRow db qGetInvoice invId
 
+-- | Throws ProviderRefConflict for a ref both a badge invoice and a name invoice hold.
 getInvoiceByProviderRef :: DBStore -> Text -> IO (Maybe InvoiceRow)
-getInvoiceByProviderRef st ref = withConnection st $ \db -> selectInvoiceRow db qGetInvoiceByProviderRef ref
+getInvoiceByProviderRef st ref = withConnection st $ \db ->
+  DB.query db qGetInvoiceByProviderRef (ref, ref) >>= \case
+    [] -> pure Nothing
+    [row] -> Just <$> decodeInvoiceRow row
+    _ -> E.throwIO (ProviderRefConflict ref)
 
 unpaidRefs :: DBStore -> UTCTime -> IO [(Text, Text)]
 unpaidRefs st since = withConnection st $ \db -> DB.query db qUnpaidRefs (Only since)
@@ -530,14 +592,11 @@ overdueInvoices st cutoff = withConnection st $ \db -> do
       Just oiProvider -> Right OverdueInvoice {oiInvoiceId = InvoiceId i, oiProvider, oiProviderRef, oiCreatedAt}
       Nothing -> Left ("invoices.provider: " <> providerTxt)
 
--- | Of the given invoices, expire those that are still open, have received no money, and are past their deadline.
-expireOverdue :: DBStore -> UTCTime -> [InvoiceId] -> IO [InvoiceId]
-expireOverdue st cutoff' invIds = withTransaction st $ \db -> do
-  let cutoff = truncateToSecond cutoff'
-  filterM (\(InvoiceId i) -> (> 0) <$> executeChanging db qExpireOverdue (cutoff, cutoff, i)) invIds
-
-cancelOpenInvoice :: DBStore -> InvoiceId -> UTCTime -> IO Bool
-cancelOpenInvoice st invId at = withTransaction st $ \db -> updateInvoiceStatus db invId ISOpen ISExpired at
+-- | Expires the invoice if it is still open, has received no money, and is past the cutoff.
+expireOverdueInvoice :: DB.Connection -> UTCTime -> InvoiceId -> IO Bool
+expireOverdueInvoice db cutoff' (InvoiceId i) = (> 0) <$> executeChanging db qExpireOverdue (cutoff, cutoff, i)
+  where
+    cutoff = truncateToSecond cutoff'
 
 readCatalogRows :: DBStore -> IO ([BadgePrice], [BadgeOffer])
 readCatalogRows st = withConnection st $ \db -> do
