@@ -69,6 +69,10 @@
         <target>%@ / %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="%@ accepted the call without end-to-end encryption." xml:space="preserve">
+        <source>%@ accepted the call without end-to-end encryption.</source>
+        <note>alert message</note>
+      </trans-unit>
       <trans-unit id="%@ and %@" xml:space="preserve">
         <source>%@ and %@</source>
         <target>%@ та %@</target>
@@ -154,6 +158,14 @@
         <target>%@, %@ та %lld інші підключені учасники</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="%@/month" xml:space="preserve">
+        <source>%@/month</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%@/year" xml:space="preserve">
+        <source>%@/year</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="%@:" xml:space="preserve">
         <source>%@:</source>
         <target>%@:</target>
@@ -170,17 +182,17 @@
       </trans-unit>
       <trans-unit id="%d file(s) are still being downloaded." xml:space="preserve">
         <source>%d file(s) are still being downloaded.</source>
-        <target>%их файл(ів) ще досі завантажуються.</target>
+        <target>%d файл(ів) ще досі завантажуються.</target>
         <note>forward confirmation reason</note>
       </trans-unit>
       <trans-unit id="%d file(s) failed to download." xml:space="preserve">
         <source>%d file(s) failed to download.</source>
-        <target>%их файлів не вийшло завантажити.</target>
+        <target>%d файлів не вийшло завантажити.</target>
         <note>forward confirmation reason</note>
       </trans-unit>
       <trans-unit id="%d file(s) were deleted." xml:space="preserve">
         <source>%d file(s) were deleted.</source>
-        <target>%их файл(ів) було видалено.</target>
+        <target>%d файл(ів) було видалено.</target>
         <note>forward confirmation reason</note>
       </trans-unit>
       <trans-unit id="%d file(s) were not downloaded." xml:space="preserve">
@@ -201,6 +213,10 @@
       <trans-unit id="%d min" xml:space="preserve">
         <source>%d min</source>
         <target>%d хв</target>
+        <note>time interval</note>
+      </trans-unit>
+      <trans-unit id="%d month" xml:space="preserve">
+        <source>%d month</source>
         <note>time interval</note>
       </trans-unit>
       <trans-unit id="%d months" xml:space="preserve">
@@ -378,6 +394,10 @@ channel relay bar</note>
       <trans-unit id="%lld seconds" xml:space="preserve">
         <source>%lld seconds</source>
         <target>%lld секунд</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%lld%% off" xml:space="preserve">
+        <source>%lld%% off</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lldd" xml:space="preserve">
@@ -630,6 +650,14 @@ time interval</note>
 &lt;p&gt;&lt;a href="%@"&gt;Зв'яжіться зі мною через SimpleX Chat&lt;/a&gt;&lt;/p&gt;</target>
         <note>email text</note>
       </trans-unit>
+      <trans-unit id="A badge can be added to another profile, or here once this badge ends." xml:space="preserve">
+        <source>A badge can be added to another profile, or here once this badge ends.</source>
+        <note>badge link, profile has a badge</note>
+      </trans-unit>
+      <trans-unit id="A badge is an anonymous credential stored in your profile on your device. This credential is never sent to anyone." xml:space="preserve">
+        <source>A badge is an anonymous credential stored in your profile on your device. This credential is never sent to anyone.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="A few more things" xml:space="preserve">
         <source>A few more things</source>
         <target>Ще кілька речей</target>
@@ -774,6 +802,14 @@ swipe action</note>
       <trans-unit id="Add address to your profile, so that your SimpleX contacts can share it with other people. Profile update will be sent to your SimpleX contacts." xml:space="preserve">
         <source>Add address to your profile, so that your SimpleX contacts can share it with other people. Profile update will be sent to your SimpleX contacts.</source>
         <target>Додайте адресу до свого профілю, щоб ваші контакти в SimpleX могли поділитися нею з іншими людьми. Інформація про оновлення профілю буде надіслана вашим контактам у SimpleX.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Add badge" xml:space="preserve">
+        <source>Add badge</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Add badge to your profile?" xml:space="preserve">
+        <source>Add badge to your profile?</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add contributors." xml:space="preserve">
@@ -1204,6 +1240,14 @@ swipe action</note>
         <target>Створюється порожній профіль чату з вказаним ім'ям, і додаток відкривається у звичайному режимі.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Anchor" xml:space="preserve">
+        <source>Anchor</source>
+        <note>ledger entry field</note>
+      </trans-unit>
+      <trans-unit id="Annual" xml:space="preserve">
+        <source>Annual</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Another reason" xml:space="preserve">
         <source>Another reason</source>
         <target>Інша причина</target>
@@ -1429,9 +1473,37 @@ swipe action</note>
         <target>Поганий хеш повідомлення</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Badge added" xml:space="preserve">
+        <source>Badge added</source>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Badge cannot be verified" xml:space="preserve">
         <source>Badge cannot be verified</source>
         <note>badge alert title</note>
+      </trans-unit>
+      <trans-unit id="Badge ledger" xml:space="preserve">
+        <source>Badge ledger</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Badge renewal failed" xml:space="preserve">
+        <source>Badge renewal failed</source>
+        <note>alert title</note>
+      </trans-unit>
+      <trans-unit id="Badge type" xml:space="preserve">
+        <source>Badge type</source>
+        <note>ledger entry field</note>
+      </trans-unit>
+      <trans-unit id="Badges cannot be bought in the app yet." xml:space="preserve">
+        <source>Badges cannot be bought in the app yet.</source>
+        <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="Balance" xml:space="preserve">
+        <source>Balance</source>
+        <note>ledger entry field</note>
+      </trans-unit>
+      <trans-unit id="Balance start" xml:space="preserve">
+        <source>Balance start</source>
+        <note>ledger entry field</note>
       </trans-unit>
       <trans-unit id="Be free&#10;in your network" xml:space="preserve">
         <source>Be free
@@ -1630,6 +1702,10 @@ in your network</source>
         <target>Бізнеси</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Buy in browser" xml:space="preserve">
+        <source>Buy in browser</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve">
         <source>By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</source>
         <target>Через профіль чату (за замовчуванням) або [за з'єднанням](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</target>
@@ -1639,6 +1715,10 @@ in your network</source>
         <source>Call already ended!</source>
         <target>Дзвінок вже закінчився!</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Call is not encrypted" xml:space="preserve">
+        <source>Call is not encrypted</source>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Calls prohibited!" xml:space="preserve">
         <source>Calls prohibited!</source>
@@ -1710,10 +1790,22 @@ new chat action</note>
         <target>Неможливо переслати повідомлення</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Cannot generate random database passphrase" xml:space="preserve">
+        <source>Cannot generate random database passphrase</source>
+        <note>alert message</note>
+      </trans-unit>
       <trans-unit id="Cannot receive file" xml:space="preserve">
         <source>Cannot receive file</source>
         <target>Не вдається отримати файл</target>
         <note>alert title</note>
+      </trans-unit>
+      <trans-unit id="Cannot redeem code" xml:space="preserve">
+        <source>Cannot redeem code</source>
+        <note>alert title</note>
+      </trans-unit>
+      <trans-unit id="Cannot verify this purchase" xml:space="preserve">
+        <source>Cannot verify this purchase</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Capacity exceeded - recipient did not receive previously sent messages." xml:space="preserve">
         <source>Capacity exceeded - recipient did not receive previously sent messages.</source>
@@ -1853,6 +1945,10 @@ alert subtitle</note>
       <trans-unit id="Channels" xml:space="preserve">
         <source>Channels</source>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Charge ID" xml:space="preserve">
+        <source>Charge ID</source>
+        <note>ledger entry field</note>
       </trans-unit>
       <trans-unit id="Chat" xml:space="preserve">
         <source>Chat</source>
@@ -2035,6 +2131,14 @@ chat toolbar</note>
         <target>Перевірте адресу сервера та спробуйте ще раз.</target>
         <note>alert title</note>
       </trans-unit>
+      <trans-unit id="Check your order" xml:space="preserve">
+        <source>Check your order</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Checking your purchases" xml:space="preserve">
+        <source>Checking your purchases</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Chinese and Spanish interface" xml:space="preserve">
         <source>Chinese and Spanish interface</source>
         <target>Інтерфейс китайською та іспанською мовами</target>
@@ -2053,6 +2157,10 @@ chat toolbar</note>
       <trans-unit id="Choose from library" xml:space="preserve">
         <source>Choose from library</source>
         <target>Виберіть з бібліотеки</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Choose your badge" xml:space="preserve">
+        <source>Choose your badge</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chunks deleted" xml:space="preserve">
@@ -2436,6 +2544,10 @@ This is your own one-time link!</source>
         <source>Contact</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Contact SimpleX team" xml:space="preserve">
+        <source>Contact SimpleX team</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Contact address" xml:space="preserve">
         <source>Contact address</source>
         <note>chat link info line</note>
@@ -2489,6 +2601,14 @@ This is your own one-time link!</source>
         <target>Контакт буде видалено - це неможливо скасувати!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Contact's badge expired." xml:space="preserve">
+        <source>Contact's badge expired.</source>
+        <note>file alert</note>
+      </trans-unit>
+      <trans-unit id="Contact's badge verification failed." xml:space="preserve">
+        <source>Contact's badge verification failed.</source>
+        <note>file alert</note>
+      </trans-unit>
       <trans-unit id="Contacts" xml:space="preserve">
         <source>Contacts</source>
         <target>Контакти</target>
@@ -2531,6 +2651,10 @@ This is your own one-time link!</source>
       <trans-unit id="Copy error" xml:space="preserve">
         <source>Copy error</source>
         <target>Помилка копіювання</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Copy purchase key" xml:space="preserve">
+        <source>Copy purchase key</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Core version: v%@" xml:space="preserve">
@@ -2660,6 +2784,10 @@ This is your own one-time link!</source>
       <trans-unit id="Creating link…" xml:space="preserve">
         <source>Creating link…</source>
         <target>Створення посилання…</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Credential" xml:space="preserve">
+        <source>Credential</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Crowdfunding investors can reserve names before the sale starts: [simplex.domains](https://simplex.domains/)" xml:space="preserve">
@@ -2821,6 +2949,10 @@ This is your own one-time link!</source>
         <source>Database will be migrated when the app restarts</source>
         <target>База даних буде перенесена під час перезапуску програми</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Date" xml:space="preserve">
+        <source>Date</source>
+        <note>ledger entry field</note>
       </trans-unit>
       <trans-unit id="Debug delivery" xml:space="preserve">
         <source>Debug delivery</source>
@@ -3067,6 +3199,14 @@ alert button</note>
         <target>Видалити скаргу</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Delete temp data" xml:space="preserve">
+        <source>Delete temp data</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Delete temp data?" xml:space="preserve">
+        <source>Delete temp data?</source>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Delete up to 20 messages at once." xml:space="preserve">
         <source>Delete up to 20 messages at once.</source>
         <target>Видаляйте до 20 повідомлень одночасно.</target>
@@ -3308,6 +3448,10 @@ alert button</note>
         <source>Discover via local network</source>
         <target>Відкриття через локальну мережу</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Dismiss" xml:space="preserve">
+        <source>Dismiss</source>
+        <note>alert button</note>
       </trans-unit>
       <trans-unit id="Do NOT send messages directly, even if your or destination server does not support private routing." xml:space="preserve">
         <source>Do NOT send messages directly, even if your or destination server does not support private routing.</source>
@@ -3650,6 +3794,18 @@ chat item action</note>
         <target>Виконується повторне узгодження шифрування.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="End call" xml:space="preserve">
+        <source>End call</source>
+        <note>alert action</note>
+      </trans-unit>
+      <trans-unit id="Ends" xml:space="preserve">
+        <source>Ends</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Ends on %@." xml:space="preserve">
+        <source>Ends on %@.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Enter Passcode" xml:space="preserve">
         <source>Enter Passcode</source>
         <target>Введіть пароль</target>
@@ -3724,6 +3880,10 @@ chat item action</note>
         <source>Enter your name…</source>
         <target>Введіть своє ім'я…</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Entry ID" xml:space="preserve">
+        <source>Entry ID</source>
+        <note>ledger entry field</note>
       </trans-unit>
       <trans-unit id="Error" xml:space="preserve">
         <source>Error</source>
@@ -3965,6 +4125,10 @@ chat item action</note>
         <target>Помилка відкриття чату</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error reading file" xml:space="preserve">
+        <source>Error reading file</source>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Error receiving file" xml:space="preserve">
         <source>Error receiving file</source>
         <target>Помилка отримання файлу</target>
@@ -4038,6 +4202,10 @@ chat item action</note>
         <target>Помилка збереження пароля на keychain</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error saving profile" xml:space="preserve">
+        <source>Error saving profile</source>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Error saving servers" xml:space="preserve">
         <source>Error saving servers</source>
         <target>Сервери збереження помилок</target>
@@ -4056,7 +4224,7 @@ chat item action</note>
       <trans-unit id="Error scanning code: %@" xml:space="preserve">
         <source>Error scanning code: %@</source>
         <target>Код помилки сканування: %@</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Error sending email" xml:space="preserve">
         <source>Error sending email</source>
@@ -4213,6 +4381,10 @@ server test error</note>
         <target>Термін дії закінчився</target>
         <note>token status text</note>
       </trans-unit>
+      <trans-unit id="Expires" xml:space="preserve">
+        <source>Expires</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Export database" xml:space="preserve">
         <source>Export database</source>
         <target>Експорт бази даних</target>
@@ -4278,6 +4450,10 @@ server test error</note>
         <target>Вибране</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="File available until" xml:space="preserve">
+        <source>File available until</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="File error" xml:space="preserve">
         <source>File error</source>
         <target>Помилка файлу</target>
@@ -4289,6 +4465,10 @@ server test error</note>
         <target>Помилки файлів:
 %@</target>
         <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="File expired" xml:space="preserve">
+        <source>File expired</source>
+        <note>file error alert title</note>
       </trans-unit>
       <trans-unit id="File is blocked by server operator:&#10;%@." xml:space="preserve">
         <source>File is blocked by server operator:
@@ -4324,6 +4504,14 @@ server test error</note>
         <source>File status: %@</source>
         <target>Статус файлу: %@</target>
         <note>copied message info</note>
+      </trans-unit>
+      <trans-unit id="File was available until" xml:space="preserve">
+        <source>File was available until</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="File was available until %@." xml:space="preserve">
+        <source>File was available until %@.</source>
+        <note>file error text</note>
       </trans-unit>
       <trans-unit id="File will be deleted from servers." xml:space="preserve">
         <source>File will be deleted from servers.</source>
@@ -4377,6 +4565,22 @@ server test error</note>
       <trans-unit id="Files and media prohibited!" xml:space="preserve">
         <source>Files and media prohibited!</source>
         <target>Файли та медіа заборонені!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Files being sent or received will never complete. Videos in unsent drafts will be sent without the file." xml:space="preserve">
+        <source>Files being sent or received will never complete. Videos in unsent drafts will be sent without the file.</source>
+        <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="Files larger than %@ cannot be sent in incognito chats." xml:space="preserve">
+        <source>Files larger than %@ cannot be sent in incognito chats.</source>
+        <note>file alert</note>
+      </trans-unit>
+      <trans-unit id="Files up to 2 GB" xml:space="preserve">
+        <source>Files up to 2 GB</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Files up to 5 GB" xml:space="preserve">
+        <source>Files up to 5 GB</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Filter" xml:space="preserve">
@@ -4456,6 +4660,14 @@ server test error</note>
         <target>Виправлення не підтримується учасником групи</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Follow SimpleX Network News" xml:space="preserve">
+        <source>Follow SimpleX Network News</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="For %@ only" xml:space="preserve">
+        <source>For %@ only</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="For all moderators" xml:space="preserve">
         <source>For all moderators</source>
         <target>Для всіх модераторів</target>
@@ -4494,6 +4706,10 @@ servers warning</note>
       <trans-unit id="For social media" xml:space="preserve">
         <source>For social media</source>
         <target>Для соціальних мереж</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="For you only" xml:space="preserve">
+        <source>For you only</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Forward" xml:space="preserve">
@@ -4580,6 +4796,10 @@ Error: %2$@</source>
         <target>Французький інтерфейс</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="From purchase key" xml:space="preserve">
+        <source>From purchase key</source>
+        <note>ledger entry field</note>
+      </trans-unit>
       <trans-unit id="Full link" xml:space="preserve">
         <source>Full link</source>
         <target>Повне посилання</target>
@@ -4612,6 +4832,14 @@ Error: %2$@</source>
       </trans-unit>
       <trans-unit id="Get SimpleX name (BETA)" xml:space="preserve">
         <source>Get SimpleX name (BETA)</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Get a badge to send larger files (2-5GB) that stay available longer (7-21 days), and to show it on your profile." xml:space="preserve">
+        <source>Get a badge to send larger files (2-5GB) that stay available longer (7-21 days), and to show it on your profile.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Get badge + better files" xml:space="preserve">
+        <source>Get badge + better files</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Get link" xml:space="preserve">
@@ -4764,6 +4992,10 @@ Error: %2$@</source>
         <target>Допоможіть адміністраторам модерувати їхні групи.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Help keep the network running — send files up to 2 GB." xml:space="preserve">
+        <source>Help keep the network running — send files up to 2 GB.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Hidden" xml:space="preserve">
         <source>Hidden</source>
         <target>Приховано</target>
@@ -4818,6 +5050,10 @@ Error: %2$@</source>
         <target>Як працює SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="How badges protect your privacy" xml:space="preserve">
+        <source>How badges protect your privacy</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="How it affects privacy" xml:space="preserve">
         <source>How it affects privacy</source>
         <target>Як це впливає на конфіденційність</target>
@@ -4832,6 +5068,10 @@ Error: %2$@</source>
         <source>How it works</source>
         <target>Як це працює</target>
         <note>alert button</note>
+      </trans-unit>
+      <trans-unit id="How long?" xml:space="preserve">
+        <source>How long?</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="How to" xml:space="preserve">
         <source>How to</source>
@@ -5112,7 +5352,7 @@ More improvements are coming soon!</source>
       <trans-unit id="Invalid QR code" xml:space="preserve">
         <source>Invalid QR code</source>
         <target>Неправильний QR-код</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Invalid connection link" xml:space="preserve">
         <source>Invalid connection link</source>
@@ -5162,6 +5402,14 @@ More improvements are coming soon!</source>
         <target>Недійсний статус</target>
         <note>item status text</note>
       </trans-unit>
+      <trans-unit id="Invest in SimpleX Chat!" xml:space="preserve">
+        <source>Invest in SimpleX Chat!</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Investor" xml:space="preserve">
+        <source>Investor</source>
+        <note>badge type</note>
+      </trans-unit>
       <trans-unit id="Invitation expired!" xml:space="preserve">
         <source>Invitation expired!</source>
         <target>Термін дії запрошення закінчився!</target>
@@ -5195,6 +5443,10 @@ More improvements are coming soon!</source>
         <target>Запросити до групи</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Invoice ID" xml:space="preserve">
+        <source>Invoice ID</source>
+        <note>ledger entry field</note>
+      </trans-unit>
       <trans-unit id="Irreversible message deletion" xml:space="preserve">
         <source>Irreversible message deletion</source>
         <target>Безповоротне видалення повідомлення</target>
@@ -5208,6 +5460,10 @@ More improvements are coming soon!</source>
       <trans-unit id="Irreversible message deletion is prohibited." xml:space="preserve">
         <source>Irreversible message deletion is prohibited.</source>
         <target>У цій групі заборонено безповоротне видалення повідомлень.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Issuing your badge" xml:space="preserve">
+        <source>Issuing your badge</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="It allows having many anonymous connections without any shared data between them in a single chat profile." xml:space="preserve">
@@ -5249,6 +5505,10 @@ More improvements are coming soon!</source>
         <source>Italian interface</source>
         <target>Італійський інтерфейс</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Its code is on the page you bought it on, under Show code." xml:space="preserve">
+        <source>Its code is on the page you bought it on, under Show code.</source>
+        <note>badge link, profile has a badge</note>
       </trans-unit>
       <trans-unit id="Japanese interface" xml:space="preserve">
         <source>Japanese interface</source>
@@ -5348,6 +5608,14 @@ This is your link for group %@!</source>
       <trans-unit id="Large file!" xml:space="preserve">
         <source>Large file!</source>
         <target>Великий файл!</target>
+        <note>file alert title</note>
+      </trans-unit>
+      <trans-unit id="Larger files that stay available longer." xml:space="preserve">
+        <source>Larger files that stay available longer.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Last attempt" xml:space="preserve">
+        <source>Last attempt</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Learn more" xml:space="preserve">
@@ -5386,6 +5654,14 @@ This is your link for group %@!</source>
       <trans-unit id="Leave group?" xml:space="preserve">
         <source>Leave group?</source>
         <target>Покинути групу?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Legend" xml:space="preserve">
+        <source>Legend</source>
+        <note>badge type</note>
+      </trans-unit>
+      <trans-unit id="Legend: 5 GB files available for 21 days." xml:space="preserve">
+        <source>Legend: 5 GB files available for 21 days.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Less traffic on mobile networks." xml:space="preserve">
@@ -5473,6 +5749,10 @@ This is your link for group %@!</source>
         <target>Завантаження профілю…</target>
         <note>in progress text</note>
       </trans-unit>
+      <trans-unit id="Loading…" xml:space="preserve">
+        <source>Loading…</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Local name" xml:space="preserve">
         <source>Local name</source>
         <target>Місцева назва</target>
@@ -5536,6 +5816,10 @@ This is your link for group %@!</source>
         <source>Max 30 seconds, received instantly.</source>
         <target>Максимум 30 секунд, отримується миттєво.</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Maximum supported file size is %1$@, with a %2$@." xml:space="preserve">
+        <source>Maximum supported file size is %1$@, with a %2$@.</source>
+        <note>file alert</note>
       </trans-unit>
       <trans-unit id="Media &amp; file servers" xml:space="preserve">
         <source>Media &amp; file servers</source>
@@ -5887,6 +6171,14 @@ This is your link for group %@!</source>
         <target>Модерується за: %@</target>
         <note>copied message info</note>
       </trans-unit>
+      <trans-unit id="Monthly" xml:space="preserve">
+        <source>Monthly</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Months left" xml:space="preserve">
+        <source>Months left</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="More" xml:space="preserve">
         <source>More</source>
         <target>Більше</target>
@@ -5935,6 +6227,10 @@ This is your link for group %@!</source>
         <source>Muted when inactive!</source>
         <target>Вимкнено, коли неактивний!</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="My nickname" xml:space="preserve">
+        <source>My nickname</source>
+        <note>badges preview placeholder</note>
       </trans-unit>
       <trans-unit id="Name" xml:space="preserve">
         <source>Name</source>
@@ -6101,6 +6397,10 @@ who talks to whom</source>
         <target>Новий сервер</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Next check" xml:space="preserve">
+        <source>Next check</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="No" xml:space="preserve">
         <source>No</source>
         <target>Ні</target>
@@ -6177,6 +6477,10 @@ The most secure encryption.</source>
         <target>Прямого зв'язку ще немає, повідомлення пересилається адміністратором.</target>
         <note>item status description</note>
       </trans-unit>
+      <trans-unit id="No entries" xml:space="preserve">
+        <source>No entries</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="No filtered chats" xml:space="preserve">
         <source>No filtered chats</source>
         <target>Немає фільтрованих чатів</target>
@@ -6196,6 +6500,10 @@ The most secure encryption.</source>
         <source>No info, try to reload</source>
         <target>Немає інформації, спробуйте перезавантажити</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No key to verify contact's badge." xml:space="preserve">
+        <source>No key to verify contact's badge.</source>
+        <note>file alert</note>
       </trans-unit>
       <trans-unit id="No media &amp; file servers." xml:space="preserve">
         <source>No media &amp; file servers.</source>
@@ -6289,6 +6597,10 @@ The most secure encryption.</source>
         <source>No valid link</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Nobody can link two different proofs to each other or to the purchase." xml:space="preserve">
+        <source>Nobody can link two different proofs to each other or to the purchase.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Nobody tracked your conversations. No one drew a map of where you'd been. Privacy was never a feature - it was the way of life." xml:space="preserve">
         <source>Nobody tracked your conversations. No one drew a map of where you'd been. Privacy was never a feature - it was the way of life.</source>
         <note>No comment provided by engineer.</note>
@@ -6309,6 +6621,10 @@ The most secure encryption.</source>
         <source>Not all relays connected</source>
         <note>alert title</note>
       </trans-unit>
+      <trans-unit id="Not available" xml:space="preserve">
+        <source>Not available</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Not compatible!" xml:space="preserve">
         <source>Not compatible!</source>
         <target>Не сумісні!</target>
@@ -6317,6 +6633,10 @@ The most secure encryption.</source>
       <trans-unit id="Notes" xml:space="preserve">
         <source>Notes</source>
         <target>Нотатки</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Nothing has been charged." xml:space="preserve">
+        <source>Nothing has been charged.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Nothing selected" xml:space="preserve">
@@ -6743,6 +7063,10 @@ alert button</note>
         <target>Показати пароль</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Paste" xml:space="preserve">
+        <source>Paste</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Paste desktop address" xml:space="preserve">
         <source>Paste desktop address</source>
         <target>Вставте адресу робочого столу</target>
@@ -6762,9 +7086,29 @@ alert button</note>
         <target>Вставте посилання для підключення!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Paste the code you received." xml:space="preserve">
+        <source>Paste the code you received.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Paste the link you received" xml:space="preserve">
         <source>Paste the link you received</source>
         <target>Вставте отримане посилання</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Paused since" xml:space="preserve">
+        <source>Paused since</source>
+        <note>ledger entry field</note>
+      </trans-unit>
+      <trans-unit id="Pay %@" xml:space="preserve">
+        <source>Pay %@</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Pay %@/month" xml:space="preserve">
+        <source>Pay %@/month</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Pay %@/year" xml:space="preserve">
+        <source>Pay %@/year</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Pending" xml:space="preserve">
@@ -6906,6 +7250,10 @@ Error: %@</source>
         <target>Порт</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Prepaid months have no billing date. The badge is reissued each month from the balance you already paid for, and ends when it runs out." xml:space="preserve">
+        <source>Prepaid months have no billing date. The badge is reissued each month from the balance you already paid for, and ends when it runs out.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Preserve the last message draft, with attachments." xml:space="preserve">
         <source>Preserve the last message draft, with attachments.</source>
         <target>Зберегти чернетку останнього повідомлення з вкладеннями.</target>
@@ -6996,6 +7344,10 @@ Error: %@</source>
         <source>Private routing timeout</source>
         <target>Тайм-аут приватної маршрутизації</target>
         <note>alert title</note>
+      </trans-unit>
+      <trans-unit id="Profile already has a badge" xml:space="preserve">
+        <source>Profile already has a badge</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Profile and server connections" xml:space="preserve">
         <source>Profile and server connections</source>
@@ -7145,6 +7497,14 @@ Enable in *Network &amp; servers* settings.</source>
         <source>Public names for your channel or business.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Purchase ID" xml:space="preserve">
+        <source>Purchase ID</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Purchase error" xml:space="preserve">
+        <source>Purchase error</source>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Push notifications" xml:space="preserve">
         <source>Push notifications</source>
         <target>Push-сповіщення</target>
@@ -7193,6 +7553,10 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="Read more in our GitHub repository." xml:space="preserve">
         <source>Read more in our GitHub repository.</source>
         <target>Читайте більше в нашому GitHub репозиторії.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Read more in our blog." xml:space="preserve">
+        <source>Read more in our blog.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Receipts are disabled" xml:space="preserve">
@@ -7310,6 +7674,18 @@ Enable in *Network &amp; servers* settings.</source>
         <target>Запис оновлено за: %@</target>
         <note>copied message info</note>
       </trans-unit>
+      <trans-unit id="Redeem" xml:space="preserve">
+        <source>Redeem</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Redeem badge code" xml:space="preserve">
+        <source>Redeem badge code</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Redeem code" xml:space="preserve">
+        <source>Redeem code</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Reduced battery usage" xml:space="preserve">
         <source>Reduced battery usage</source>
         <target>Зменшення використання акумулятора</target>
@@ -7398,6 +7774,10 @@ swipe action</note>
         <source>Reliability: many relays per channel.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Remind me later" xml:space="preserve">
+        <source>Remind me later</source>
+        <note>alert button</note>
+      </trans-unit>
       <trans-unit id="Remove" xml:space="preserve">
         <source>Remove</source>
         <target>Видалити</target>
@@ -7470,6 +7850,10 @@ swipe action</note>
       <trans-unit id="Renegotiate encryption?" xml:space="preserve">
         <source>Renegotiate encryption?</source>
         <target>Переузгодьте шифрування?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Renews on %@. Cancel anytime." xml:space="preserve">
+        <source>Renews on %@. Cancel anytime.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Repeat download" xml:space="preserve">
@@ -7727,6 +8111,14 @@ swipe action</note>
         <source>Safer groups</source>
         <target>Безпечніші групи</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Sandbox purchase" xml:space="preserve">
+        <source>Sandbox purchase</source>
+        <note>alert title</note>
+      </trans-unit>
+      <trans-unit id="Sandbox purchases are not credited. Badges can only be bought in the App Store version of the app." xml:space="preserve">
+        <source>Sandbox purchases are not credited. Badges can only be bought in the App Store version of the app.</source>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Save" xml:space="preserve">
         <source>Save</source>
@@ -8233,6 +8625,10 @@ chat item action</note>
         <source>Server %@ does not support name resolution. Configure servers, or use a connection link.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Server %@ has more than two host names." xml:space="preserve">
+        <source>Server %@ has more than two host names.</source>
+        <note>servers error</note>
+      </trans-unit>
       <trans-unit id="Server added to operator %@." xml:space="preserve">
         <source>Server added to operator %@.</source>
         <target>Сервер додано до оператора %@.</target>
@@ -8729,6 +9125,10 @@ copied message info</note>
         <target>Спрощений режим інкогніто</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Since" xml:space="preserve">
+        <source>Since</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Size" xml:space="preserve">
         <source>Size</source>
         <target>Розмір</target>
@@ -8846,6 +9246,10 @@ report reason</note>
         <target>Припинити чат</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Stop chat in Settings → Chat data → Database passphrase &amp; export to delete temp data." xml:space="preserve">
+        <source>Stop chat in Settings → Chat data → Database passphrase &amp; export to delete temp data.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." xml:space="preserve">
         <source>Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped.</source>
         <target>Зупиніть чат, щоб експортувати, імпортувати або видалити базу даних чату. Ви не зможете отримувати та надсилати повідомлення, поки чат зупинено.</target>
@@ -8889,6 +9293,14 @@ report reason</note>
       <trans-unit id="Storage" xml:space="preserve">
         <source>Storage</source>
         <target>Зберігання</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Stored for 7 days" xml:space="preserve">
+        <source>Stored for 7 days</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Stored for 21 days" xml:space="preserve">
+        <source>Stored for 21 days</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Strong" xml:space="preserve">
@@ -8973,8 +9385,33 @@ Relay address was used to set up this relay for the channel.</source>
         <target>Підписки ігноруються</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Support SimpleX" xml:space="preserve">
+        <source>Support SimpleX</source>
+        <note>alert button
+alert title</note>
+      </trans-unit>
+      <trans-unit id="Support SimpleX to send larger files that stay available longer" xml:space="preserve">
+        <source>Support SimpleX to send larger files that stay available longer</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Support the project" xml:space="preserve">
         <source>Support the project</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Supporter" xml:space="preserve">
+        <source>Supporter</source>
+        <note>badge type</note>
+      </trans-unit>
+      <trans-unit id="Supporter badge ❤️" xml:space="preserve">
+        <source>Supporter badge ❤️</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Supporter perks" xml:space="preserve">
+        <source>Supporter perks</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Supporter: 2 GB files available for 7 days." xml:space="preserve">
+        <source>Supporter: 2 GB files available for 7 days.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Switch audio and video during the call." xml:space="preserve">
@@ -9072,6 +9509,10 @@ Relay address was used to set up this relay for the channel.</source>
       <trans-unit id="Tap button " xml:space="preserve">
         <source>Tap button </source>
         <target>Натисніть кнопку </target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Tap for details" xml:space="preserve">
+        <source>Tap for details</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap to Connect" xml:space="preserve">
@@ -9214,14 +9655,66 @@ It can happen because of some bug or when the connection is compromised.</source
         <source>The badge is signed with a key that this version of the app does not recognize. Update the app to verify this badge.</source>
         <note>badge alert</note>
       </trans-unit>
+      <trans-unit id="The badge issued by the service cannot be verified." xml:space="preserve">
+        <source>The badge issued by the service cannot be verified.</source>
+        <note>badge renewal error</note>
+      </trans-unit>
+      <trans-unit id="The badge service could not be reached." xml:space="preserve">
+        <source>The badge service could not be reached.</source>
+        <note>badge renewal error</note>
+      </trans-unit>
+      <trans-unit id="The badge service did not respond." xml:space="preserve">
+        <source>The badge service did not respond.</source>
+        <note>badge renewal error</note>
+      </trans-unit>
+      <trans-unit id="The badge service does not recognize this badge." xml:space="preserve">
+        <source>The badge service does not recognize this badge.</source>
+        <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="The badge service refused the purchase: %@" xml:space="preserve">
+        <source>The badge service refused the purchase: %@</source>
+        <note>badge purchase error</note>
+      </trans-unit>
+      <trans-unit id="The badge service refused the renewal: %@" xml:space="preserve">
+        <source>The badge service refused the renewal: %@</source>
+        <note>badge renewal error</note>
+      </trans-unit>
+      <trans-unit id="The badge service reported an internal error." xml:space="preserve">
+        <source>The badge service reported an internal error.</source>
+        <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="The badge service sent an unexpected response: %@" xml:space="preserve">
+        <source>The badge service sent an unexpected response: %@</source>
+        <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="The badge was added to the profile %@." xml:space="preserve">
+        <source>The badge was added to the profile %@.</source>
+        <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="The badge will be added to the profile %@." xml:space="preserve">
+        <source>The badge will be added to the profile %@.</source>
+        <note>badge link confirmation</note>
+      </trans-unit>
+      <trans-unit id="The badge will be added to this profile." xml:space="preserve">
+        <source>The badge will be added to this profile.</source>
+        <note>badge link, being issued</note>
+      </trans-unit>
       <trans-unit id="The channel required this message to be signed, but the signature is missing." xml:space="preserve">
         <source>The channel required this message to be signed, but the signature is missing.</source>
+        <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="The code was accepted, but the badge it grants has already ended." xml:space="preserve">
+        <source>The code was accepted, but the badge it grants has already ended.</source>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The code you scanned is not a SimpleX link QR code." xml:space="preserve">
         <source>The code you scanned is not a SimpleX link QR code.</source>
         <target>Відсканований вами код не є QR-кодом посилання SimpleX.</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The code you scanned is not a badge code." xml:space="preserve">
+        <source>The code you scanned is not a badge code.</source>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="The connection reached the limit of undelivered messages" xml:space="preserve">
         <source>The connection reached the limit of undelivered messages</source>
@@ -9296,6 +9789,10 @@ your contacts and groups.</source>
         <source>The oldest human freedom - to speak to another person without being watched - built on infrastructure that cannot betray it.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="The payment has not been confirmed yet." xml:space="preserve">
+        <source>The payment has not been confirmed yet.</source>
+        <note>alert message</note>
+      </trans-unit>
       <trans-unit id="The same conditions will apply to operator **%@**." xml:space="preserve">
         <source>The same conditions will apply to operator **%@**.</source>
         <target>Такі ж умови діятимуть і для оператора **%@**.</target>
@@ -9329,6 +9826,22 @@ your contacts and groups.</source>
       <trans-unit id="The servers for new files of your current chat profile **%@**." xml:space="preserve">
         <source>The servers for new files of your current chat profile **%@**.</source>
         <target>Сервери для нових файлів вашого поточного профілю чату **%@**.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The service did not respond. Please try again." xml:space="preserve">
+        <source>The service did not respond. Please try again.</source>
+        <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="The store could not be reached." xml:space="preserve">
+        <source>The store could not be reached.</source>
+        <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="The store did not confirm this purchase." xml:space="preserve">
+        <source>The store did not confirm this purchase.</source>
+        <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="The store returned a transaction that Apple has not signed. SimpleX cannot verify this purchase with the App Store." xml:space="preserve">
+        <source>The store returned a transaction that Apple has not signed. SimpleX cannot verify this purchase with the App Store.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The text you pasted is not a SimpleX link." xml:space="preserve">
@@ -9393,9 +9906,29 @@ your contacts and groups.</source>
         <target>Цю дію неможливо скасувати - ваш профіль, контакти, повідомлення та файли будуть безповоротно втрачені.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="This app version cannot buy badges." xml:space="preserve">
+        <source>This app version cannot buy badges.</source>
+        <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="This app version cannot redeem badge codes." xml:space="preserve">
+        <source>This app version cannot redeem badge codes.</source>
+        <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="This app version cannot verify this badge. Please update the app." xml:space="preserve">
+        <source>This app version cannot verify this badge. Please update the app.</source>
+        <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="This app version is too old for the badge service. Please update the app." xml:space="preserve">
+        <source>This app version is too old for the badge service. Please update the app.</source>
+        <note>alert message</note>
+      </trans-unit>
       <trans-unit id="This badge could not be verified and may not be genuine." xml:space="preserve">
         <source>This badge could not be verified and may not be genuine.</source>
         <note>badge alert</note>
+      </trans-unit>
+      <trans-unit id="This badge is not on sale." xml:space="preserve">
+        <source>This badge is not on sale.</source>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="This chat is protected by end-to-end encryption." xml:space="preserve">
         <source>This chat is protected by end-to-end encryption.</source>
@@ -9407,6 +9940,22 @@ your contacts and groups.</source>
         <target>Цей чат захищений квантово-стійким наскрізним шифруванням.</target>
         <note>E2EE info chat item</note>
       </trans-unit>
+      <trans-unit id="This code has already been used." xml:space="preserve">
+        <source>This code has already been used.</source>
+        <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="This code has expired." xml:space="preserve">
+        <source>This code has expired.</source>
+        <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="This code is not valid." xml:space="preserve">
+        <source>This code is not valid.</source>
+        <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="This code was not recognized." xml:space="preserve">
+        <source>This code was not recognized.</source>
+        <note>alert message</note>
+      </trans-unit>
       <trans-unit id="This device name" xml:space="preserve">
         <source>This device name</source>
         <target>Це ім'я пристрою</target>
@@ -9415,6 +9964,10 @@ your contacts and groups.</source>
       <trans-unit id="This display name is invalid. Please choose another name." xml:space="preserve">
         <source>This display name is invalid. Please choose another name.</source>
         <target>Це ім'я для відображення є недійсним. Будь ласка, виберіть інше ім'я.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="This file has text direction characters. The text can be shown in a different order than it is written." xml:space="preserve">
+        <source>This file has text direction characters. The text can be shown in a different order than it is written.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This group has over %lld members, delivery receipts are not sent." xml:space="preserve">
@@ -9444,6 +9997,10 @@ alert subtitle</note>
         <source>This is your link for channel %@!</source>
         <note>new chat action</note>
       </trans-unit>
+      <trans-unit id="This link is not supported by this app version. Please check for app updates." xml:space="preserve">
+        <source>This link is not supported by this app version. Please check for app updates.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link." xml:space="preserve">
         <source>This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link.</source>
         <target>Це посилання вимагає новішої версії додатку. Будь ласка, оновіть додаток або попросіть вашого контакту надіслати сумісне посилання.</target>
@@ -9458,6 +10015,18 @@ alert subtitle</note>
         <source>This message was deleted or not received yet.</source>
         <target>Це повідомлення було видалено або ще не отримано.</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="This profile already has a badge." xml:space="preserve">
+        <source>This profile already has a badge.</source>
+        <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="This profile already has a badge. Redeem the code on another profile, or once this badge ends." xml:space="preserve">
+        <source>This profile already has a badge. Redeem the code on another profile, or once this badge ends.</source>
+        <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="This purchase was already credited to a badge on another device or profile." xml:space="preserve">
+        <source>This purchase was already credited to a badge on another device or profile.</source>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="This setting applies to messages in your current chat profile **%@**." xml:space="preserve">
         <source>This setting applies to messages in your current chat profile **%@**.</source>
@@ -9524,6 +10093,14 @@ You will be prompted to complete authentication before this feature is enabled.<
         <source>To protect your privacy, SimpleX uses separate IDs for each of your contacts.</source>
         <target>Щоб захистити конфіденційність, замість ідентифікаторів користувачів, які використовуються на всіх інших платформах, SimpleX має ідентифікатори для черг повідомлень, окремі для кожного з ваших контактів.</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="To prove to a contact or a server that you have a badge, the app generates a new proof that reveals only the badge type and the expiry date, rounded to a week." xml:space="preserve">
+        <source>To prove to a contact or a server that you have a badge, the app generates a new proof that reveals only the badge type and the expiry date, rounded to a week.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="To purchase key" xml:space="preserve">
+        <source>To purchase key</source>
+        <note>ledger entry field</note>
       </trans-unit>
       <trans-unit id="To receive" xml:space="preserve">
         <source>To receive</source>
@@ -9596,6 +10173,10 @@ You will be prompted to complete authentication before this feature is enabled.<
         <source>Token status: %@.</source>
         <target>Статус токена: %@.</target>
         <note>token status</note>
+      </trans-unit>
+      <trans-unit id="Too many attempts. Please try again later." xml:space="preserve">
+        <source>Too many attempts. Please try again later.</source>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Toolbar opacity" xml:space="preserve">
         <source>Toolbar opacity</source>
@@ -9682,6 +10263,10 @@ You will be prompted to complete authentication before this feature is enabled.<
         <source>Undelivered messages</source>
         <target>Недоставлені повідомлення</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Unexpected error: %@" xml:space="preserve">
+        <source>Unexpected error: %@</source>
+        <note>badge renewal error</note>
       </trans-unit>
       <trans-unit id="Unexpected migration state" xml:space="preserve">
         <source>Unexpected migration state</source>
@@ -10123,6 +10708,10 @@ alert title</note>
         <target>Переглянути оновлені умови</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="View your badge" xml:space="preserve">
+        <source>View your badge</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Visible history" xml:space="preserve">
         <source>Visible history</source>
         <target>Видима історія</target>
@@ -10165,6 +10754,10 @@ alert title</note>
       <trans-unit id="Wait response" xml:space="preserve">
         <source>Wait response</source>
         <note>relay test step</note>
+      </trans-unit>
+      <trans-unit id="Waiting for approval" xml:space="preserve">
+        <source>Waiting for approval</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Waiting for channel owner to add relays." xml:space="preserve">
         <source>Waiting for channel owner to add relays.</source>
@@ -10396,7 +10989,7 @@ alert title</note>
       </trans-unit>
       <trans-unit id="You are already connecting via this one-time link!" xml:space="preserve">
         <source>You are already connecting via this one-time link!</source>
-        <target>Ви вже підключаєтеся до %@.Ви вже підключаєтеся за цим одноразовим посиланням!</target>
+        <target>Ви вже підключаєтеся за цим одноразовим посиланням!</target>
         <note>new chat sheet message</note>
       </trans-unit>
       <trans-unit id="You are already in group %@." xml:space="preserve">
@@ -10550,9 +11143,9 @@ Repeat join request?</source>
         <target>Ви все ще можете переглянути розмову з %@ у списку чатів.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can support SimpleX starting from v7 of the app." xml:space="preserve">
-        <source>You can support SimpleX starting from v7 of the app.</source>
-        <note>badge alert</note>
+      <trans-unit id="You can support SimpleX later in Settings." xml:space="preserve">
+        <source>You can support SimpleX later in Settings.</source>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="You can turn on SimpleX Lock via Settings." xml:space="preserve">
         <source>You can turn on SimpleX Lock via Settings.</source>
@@ -10635,6 +11228,10 @@ Repeat connection request?</source>
         <source>You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts.</source>
         <target>Ви повинні використовувати найновішу версію бази даних чату ТІЛЬКИ на одному пристрої, інакше ви можете перестати отримувати повідомлення від деяких контактів.</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You need a %1$@ to send files larger than %2$@." xml:space="preserve">
+        <source>You need a %1$@ to send files larger than %2$@.</source>
+        <note>file alert</note>
       </trans-unit>
       <trans-unit id="You need to allow your contact to call to be able to call them." xml:space="preserve">
         <source>You need to allow your contact to call to be able to call them.</source>
@@ -10743,6 +11340,22 @@ Repeat connection request?</source>
         <source>Your SimpleX name</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Your badge" xml:space="preserve">
+        <source>Your badge</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your badge expired" xml:space="preserve">
+        <source>Your badge expired</source>
+        <note>alert title</note>
+      </trans-unit>
+      <trans-unit id="Your badge expired on %@." xml:space="preserve">
+        <source>Your badge expired on %@.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your badge expired." xml:space="preserve">
+        <source>Your badge expired.</source>
+        <note>file alert</note>
+      </trans-unit>
       <trans-unit id="Your business contact" xml:space="preserve">
         <source>Your business contact</source>
         <target>Ваш діловий контакт</target>
@@ -10794,11 +11407,6 @@ To connect, ask your contact to create a new link.</source>
 Щоб підключитися, попросіть вашого контакта створити інше посилання і перевірте, чи маєте ви стабільне з'єднання з мережею.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your contact sent a file that is larger than currently supported maximum size (%@)." xml:space="preserve">
-        <source>Your contact sent a file that is larger than currently supported maximum size (%@).</source>
-        <target>Ваш контакт надіслав файл, розмір якого перевищує підтримуваний на цей момент максимальний розмір (%@).</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Your contacts can allow full message deletion." xml:space="preserve">
         <source>Your contacts can allow full message deletion.</source>
         <target>Ваші контакти можуть дозволити повне видалення повідомлень.</target>
@@ -10841,6 +11449,10 @@ To connect, ask your contact to create a new link.</source>
         <source>Your new channel %1$@ is connected to %2$d of %3$d relays.
 If you cancel, the channel will be deleted - you can create it again.</source>
         <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="Your payment is complete. The badge will be added to this profile." xml:space="preserve">
+        <source>Your payment is complete. The badge will be added to this profile.</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your preferences" xml:space="preserve">
         <source>Your preferences</source>
@@ -11529,6 +12141,10 @@ pref value</note>
         <target>ліворуч</target>
         <note>rcv group event chat item</note>
       </trans-unit>
+      <trans-unit id="legend badge" xml:space="preserve">
+        <source>legend badge</source>
+        <note>badge required to send a large file</note>
+      </trans-unit>
       <trans-unit id="link" xml:space="preserve">
         <source>link</source>
         <target>посилання</target>
@@ -11568,6 +12184,10 @@ pref value</note>
         <source>message received</source>
         <target>повідомлення отримано</target>
         <note>notification</note>
+      </trans-unit>
+      <trans-unit id="message rejected: bad signature" xml:space="preserve">
+        <source>message rejected: bad signature</source>
+        <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="minutes" xml:space="preserve">
         <source>minutes</source>
@@ -11720,6 +12340,10 @@ time to disappear</note>
         <target>отримали підтвердження…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="reconnecting…" xml:space="preserve">
+        <source>reconnecting…</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="rejected" xml:space="preserve">
         <source>rejected</source>
         <target>відхилено</target>
@@ -11859,6 +12483,10 @@ last received msg: %2$@</source>
         <target>встановити нове зображення профілю</target>
         <note>profile update event chat item</note>
       </trans-unit>
+      <trans-unit id="shown on your profile" xml:space="preserve">
+        <source>shown on your profile</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="standard end-to-end encryption" xml:space="preserve">
         <source>standard end-to-end encryption</source>
         <target>стандартне наскрізне шифрування</target>
@@ -11877,6 +12505,10 @@ last received msg: %2$@</source>
       <trans-unit id="subscriber" xml:space="preserve">
         <source>subscriber</source>
         <note>member role</note>
+      </trans-unit>
+      <trans-unit id="supporter badge" xml:space="preserve">
+        <source>supporter badge</source>
+        <note>badge required to send a large file</note>
       </trans-unit>
       <trans-unit id="this contact" xml:space="preserve">
         <source>this contact</source>
@@ -12238,14 +12870,13 @@ last received msg: %2$@</source>
         <target>Неможливо переслати повідомлення</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Cannot generate random database passphrase" xml:space="preserve">
+        <source>Cannot generate random database passphrase</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Comment" xml:space="preserve">
         <source>Comment</source>
         <target>Коментар</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Currently maximum supported file size is %@." xml:space="preserve">
-        <source>Currently maximum supported file size is %@.</source>
-        <target>Наразі максимальний підтримуваний розмір файлу - %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database downgrade required" xml:space="preserve">
