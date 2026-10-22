@@ -105,15 +105,15 @@
   </g>
   <circle cx="811.6" cy="468" r="6" fill="#ffffff" stroke="#3a3fa6" stroke-width="2"/>
   <text x="250" y="452" font-size="11.5" fill="#5b6577">no reply: the run unchanged, nothing retired</text>
-  <text x="218.2" y="496" font-size="11.5" fill="#1a2030">a service that never replies keeps the badge</text>
+  <text x="218.2" y="496" font-size="11.5" fill="#1a2030">a service that never replies keeps the badge, unless the device reports ended</text>
   <text x="826" y="472" font-size="11.5" fill="#3a3fa6">next answer:</text>
   <text x="826" y="488" font-size="11.5" fill="#3a3fa6">fresh run</text>
 
   <!-- the rule -->
   <rect x="24" y="524" width="932" height="74" rx="8" fill="#eef1f5"/>
   <g font-size="11.5" fill="#1a2030">
-    <text x="40" y="545">Library/Commands.hs:5700-5712. On any pass after which the ledger covers now, the run is cleared. After an answered request</text>
-    <text x="40" y="562">that left nothing covered, last_unrenewed_at moves to now if it is under 67 days old, and otherwise a fresh run starts.</text>
-    <text x="40" y="579">Retire if the answer is ended, or 67 days have passed since unrenewed_since. Dots are illustrative: an open app asks daily.</text>
+    <text x="40" y="545">On any pass after which the ledger covers now, the run is cleared. After an answered request that left nothing covered,</text>
+    <text x="40" y="562">last_unrenewed_at moves to now if it is under 67 days old, and otherwise a fresh run starts. Retire if the answer is ended, if</text>
+    <text x="40" y="579">67 days have passed since unrenewed_since, or, past paidThrough, if the device reported ended. Dots: an open app asks daily.</text>
   </g>
 </svg>

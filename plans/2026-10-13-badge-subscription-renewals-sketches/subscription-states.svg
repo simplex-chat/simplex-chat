@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="980" height="600" viewBox="0 0 980 600" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="Subscription states: Apple status 1 and Play active or paused map to renewing or cancelled by auto-renew; Apple 3 and 4 and Play grace and hold to billingRetry; Apple 2 and 5 and Play expired, pending purchase canceled or HTTP 410 to ended. Each state sets the Your badge row and a chat-list banner: renews soon for annual plans, subscription cancelled, payment problem, and subscription ended once retired.">
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="600" viewBox="0 0 980 600" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="Subscription states: Apple status 1 and Play active or paused map to renewing or cancelled by auto-renew; Apple 3 and 4 and Play grace and hold to billingRetry; Apple 2 and 5, Play expired, pending purchase canceled or HTTP 410, and a subscription moved away by Restore to ended. Each state sets the Your badge row and a chat-list banner: renews soon for annual plans, subscription cancelled, payment problem, and subscription ended once retired.">
   <defs>
     <marker id="s-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#5b6577"/></marker>
   </defs>
@@ -54,18 +54,19 @@
   <rect x="24" y="354" width="932" height="74" rx="8" fill="#ffffff" stroke="#d9dde5"/>
   <text x="38" y="380" font-size="11.5" fill="#0b5cbf">Apple: status 2 (expired), 5 (revoked)</text>
   <text x="38" y="400" font-size="11.5" fill="#11713f">Play: expired, pending purchase canceled, HTTP 410</text>
+  <text x="38" y="420" font-size="11.5" fill="#5b6577">Service: the subscription moved by Restore</text>
   <line x1="372" y1="391" x2="402" y2="391" stroke="#5b6577" stroke-width="1.4" marker-end="url(#s-arr)"/>
   <rect x="404" y="376" width="140" height="30" rx="15" fill="#fdecea" stroke="#e8a59f"/>
   <text x="474" y="396" font-size="12.5" font-weight="600" fill="#b3261e" text-anchor="middle">ended</text>
   <line x1="546" y1="391" x2="576" y2="391" stroke="#5b6577" stroke-width="1.4" marker-end="url(#s-arr)"/>
   <text x="588" y="375" font-size="11.5" fill="#1a2030">From the service: badge retired, banner</text>
-  <text x="588" y="393" font-size="11.5" fill="#1a2030">“Your subscription ended”. From the device</text>
-  <text x="588" y="411" font-size="11.5" fill="#1a2030">only the row changes: “Ended”</text>
+  <text x="588" y="393" font-size="11.5" fill="#1a2030">“Your subscription ended”. From the device: the</text>
+  <text x="588" y="411" font-size="11.5" fill="#1a2030">row reads “Ended”, and the same once paidThrough passes</text>
 
   <!-- notes -->
   <rect x="24" y="446" width="932" height="134" rx="8" fill="#eef1f5"/>
   <g font-size="12" fill="#1a2030">
-    <text x="40" y="468">Writers: the service, at the credit and in any answer past the coverage the client asserted; and the device's report after each</text>
+    <text x="40" y="468">Writers: the service, at the credit and in an answer past the asserted coverage or saying ended; and the device's report after each</text>
     <text x="40" y="485">sweep, which never replaces billingRetry or ended with renewing (Play lists a subscription in its grace period as auto-renewing).</text>
     <text x="40" y="508">No state yet, or one this version does not know: shown as renewing, no banner. Play's pending subscription: payment_pending, no state.</text>
     <text x="40" y="531">Also retired without ended: once 67 days have passed since the first answer that renewed nothing, again “Your subscription ended”.</text>

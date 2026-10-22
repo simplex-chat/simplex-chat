@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="764" viewBox="0 0 980 764" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="Changing tier in the App Store: the user raises the tier in Apple's sheet and Apple charges at once; the app hands the new transaction to core, which holds it as a tier change when it raises the tier and was bought within a day; core sends upgradeBadgeSubscription on the same key; the service asks Apple, ends the old tier's remaining months, grants the new tier from the charge and issues its month; core shows it at once. A lower tier or a late raise waits for the renewal check; a Play plan change is a new purchase.">
+  <defs>
+    <marker id="t-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#5b6577"/></marker>
+  </defs>
+  <rect width="980" height="764" fill="#f7f8fb"/>
+
+  <text x="24" y="36" font-size="18" font-weight="600" fill="#1a2030">Changing tier in the App Store</text>
+  <text x="24" y="57" font-size="12.5" fill="#5b6577">The user changes plan in Apple's sheet; the original transaction id stays, so the purchase and its key stay. Supporter to legend shown.</text>
+
+  <!-- lifelines -->
+  <line x1="130" y1="108" x2="130" y2="664" stroke="#c9cfdb" stroke-width="1.2" stroke-dasharray="4 4"/>
+  <line x1="390" y1="108" x2="390" y2="664" stroke="#c9cfdb" stroke-width="1.2" stroke-dasharray="4 4"/>
+  <line x1="650" y1="108" x2="650" y2="664" stroke="#c9cfdb" stroke-width="1.2" stroke-dasharray="4 4"/>
+  <line x1="890" y1="108" x2="890" y2="664" stroke="#c9cfdb" stroke-width="1.2" stroke-dasharray="4 4"/>
+
+  <rect x="40" y="72" width="180" height="36" rx="8" fill="#eef1f5" stroke="#c9cfdb"/>
+  <text x="130" y="95" font-size="12.5" font-weight="600" fill="#334155" text-anchor="middle">iOS app · StoreKit 2</text>
+  <rect x="300" y="72" width="180" height="36" rx="8" fill="#e3f1f3" stroke="#b5dadd"/>
+  <text x="390" y="95" font-size="12.5" font-weight="600" fill="#0f5f69" text-anchor="middle">Chat core</text>
+  <rect x="560" y="72" width="180" height="36" rx="8" fill="#eceefe" stroke="#c5c8f0"/>
+  <text x="650" y="95" font-size="12.5" font-weight="600" fill="#3a3fa6" text-anchor="middle">Badge service</text>
+  <rect x="800" y="72" width="170" height="36" rx="8" fill="#e9f1fc" stroke="#8db4e8"/>
+  <text x="885" y="95" font-size="12.5" font-weight="600" fill="#0b5cbf" text-anchor="middle">App Store Server API</text>
+
+  <!-- step numbers -->
+  <g font-size="11" font-weight="600" fill="#8a93a6" text-anchor="middle">
+    <text x="14" y="144">1</text>
+    <text x="14" y="204">2</text>
+    <text x="14" y="252">3</text>
+    <text x="14" y="340">4</text>
+    <text x="14" y="388">5</text>
+    <text x="14" y="448">6</text>
+    <text x="14" y="522">7</text>
+    <text x="14" y="592">8</text>
+    <text x="14" y="636">9</text>
+  </g>
+
+  <!-- 1 -->
+  <rect x="30" y="122" width="200" height="54" rx="6" fill="#f3f5f8" stroke="#cfd5df"/>
+  <text x="40" y="137" font-size="11.5" fill="#1a2030">Manage subscription → Apple's</text>
+  <text x="40" y="152" font-size="11.5" fill="#1a2030">sheet: legend charged now,</text>
+  <text x="40" y="167" font-size="11.5" fill="#1a2030">the rest of supporter refunded</text>
+
+  <!-- 2 -->
+  <line x1="130" y1="200" x2="388" y2="200" stroke="#5b6577" stroke-width="1.4" marker-end="url(#t-arr)"/>
+  <text x="260" y="194" font-size="11" fill="#334155" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">/_badge purchase {apple} listed</text>
+  <text x="260" y="215" font-size="11" fill="#5b6577" text-anchor="middle">the new transaction, same original id</text>
+
+  <!-- 3 -->
+  <rect x="275" y="230" width="230" height="82" rx="6" fill="#eef7f8" stroke="#b5dadd"/>
+  <text x="285" y="245" font-size="11.5" fill="#1a2030">credited record; a higher tier,</text>
+  <text x="285" y="260" font-size="11.5" fill="#1a2030">bought within a day of now?</text>
+  <text x="285" y="275" font-size="11.5" fill="#1a2030">yes → held as a tier change</text>
+  <text x="285" y="290" font-size="11.5" fill="#1a2030">no → answered from the record;</text>
+  <text x="285" y="305" font-size="11.5" fill="#1a2030">the renewal check grants it later</text>
+
+  <!-- 4 -->
+  <line x1="390" y1="336" x2="648" y2="336" stroke="#5b6577" stroke-width="1.4" marker-end="url(#t-arr)"/>
+  <text x="520" y="330" font-size="11" fill="#334155" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">upgradeBadgeSubscription</text>
+  <text x="520" y="351" font-size="11" fill="#5b6577" text-anchor="middle">the transaction + balance, same key</text>
+
+  <!-- 5 -->
+  <rect x="525" y="366" width="250" height="54" rx="6" fill="#f3f4ff" stroke="#c5c8f0"/>
+  <text x="535" y="381" font-size="11.5" fill="#1a2030">renewal lane; its own subscription,</text>
+  <text x="535" y="396" font-size="11.5" fill="#1a2030">not yet legend; asked &lt; 1 h ago →</text>
+  <text x="535" y="411" font-size="11.5" fill="#1a2030">payment_pending; else stamp, ask</text>
+
+  <!-- 6 -->
+  <line x1="650" y1="444" x2="888" y2="444" stroke="#5b6577" stroke-width="1.4" marker-end="url(#t-arr)"/>
+  <text x="770" y="438" font-size="11.5" fill="#1a2030" text-anchor="middle">Get All Subscription Statuses</text>
+  <line x1="890" y1="476" x2="652" y2="476" stroke="#5b6577" stroke-width="1.2" stroke-dasharray="5 3" marker-end="url(#t-arr)"/>
+  <text x="770" y="470" font-size="11.5" fill="#1a2030" text-anchor="middle">latest charge: legend, its period</text>
+
+  <!-- 7 -->
+  <rect x="525" y="492" width="250" height="70" rx="6" fill="#f3f4ff" stroke="#c5c8f0"/>
+  <text x="535" y="507" font-size="11.5" fill="#1a2030">one transaction: debit the rest of</text>
+  <text x="535" y="522" font-size="11.5" fill="#1a2030">the supporter run (upgrade), grant</text>
+  <text x="535" y="537" font-size="11.5" fill="#1a2030">legend from the charge's period</text>
+  <text x="535" y="552" font-size="11.5" fill="#1a2030">start, issue its month; tier = legend</text>
+
+  <!-- 8 -->
+  <line x1="650" y1="588" x2="392" y2="588" stroke="#5b6577" stroke-width="1.4" marker-end="url(#t-arr)"/>
+  <text x="520" y="582" font-size="11.5" fill="#1a2030" text-anchor="middle">badgeCredential: legend</text>
+  <text x="520" y="603" font-size="11" fill="#5b6577" text-anchor="middle">before the grant: payment_pending, never supporter</text>
+
+  <!-- 9 -->
+  <rect x="275" y="618" width="230" height="38" rx="6" fill="#eef7f8" stroke="#b5dadd"/>
+  <text x="285" y="633" font-size="11.5" fill="#1a2030">shown and sent to contacts at</text>
+  <text x="285" y="648" font-size="11.5" fill="#1a2030">once, not at the old expiry</text>
+
+  <!-- footer -->
+  <rect x="24" y="676" width="932" height="68" rx="8" fill="#eef1f5"/>
+  <text x="40" y="696" font-size="12" fill="#1a2030">Any other change (a lower tier, which Apple charges from the next renewal, or a change of plan length): the app sends nothing, and</text>
+  <text x="40" y="713" font-size="12" fill="#1a2030">the renewal check after the old coverage ends grants what Apple charged. A raise the device sees more than a day late waits the same way.</text>
+  <text x="40" y="730" font-size="12" fill="#1a2030">Play: the app starts no plan change; one made in Play gets a new purchase token, which arrives as a new purchase under a new key.</text>
+</svg>
