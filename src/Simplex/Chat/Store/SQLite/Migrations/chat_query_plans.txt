@@ -3830,12 +3830,11 @@ SEARCH cp USING INTEGER PRIMARY KEY (rowid=?)
 Query: 
         SELECT credential FROM badge_issuances
         WHERE badge_purchase_id = ?
-        ORDER BY period_end DESC
+        ORDER BY entry_id DESC
         LIMIT 1
-      
+
 Plan:
 SEARCH badge_issuances USING INDEX idx_badge_issuances_purchase_entry (badge_purchase_id=?)
-USE TEMP B-TREE FOR ORDER BY
 
 Query: 
         SELECT ct.contact_id
@@ -5471,17 +5470,17 @@ SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE contact_profiles
-      SET display_name = ?, full_name = ?, short_descr = ?, description = ?, image = ?, contact_link = ?, chat_peer_type = ?, preferences = NULL, preferences_json = NULL, updated_at = ?,
+      SET display_name = ?, full_name = ?, short_descr = ?, description = ?, image = ?, chat_peer_type = ?, updated_at = ?,
           badge_proof = ?, badge_pres_header = ?, badge_expiry = ?, badge_type = ?, badge_verified = ?, badge_extra = ?, badge_master_key = ?, badge_signature = ?, badge_key_idx = ?,
           contact_domain = ?, contact_domain_proof = ?
       WHERE user_id = ? AND contact_profile_id = ?
-    
+
 Plan:
 SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: 
+Query:
       UPDATE contact_profiles
-      SET display_name = ?, full_name = ?, short_descr = ?, description = ?, image = ?, updated_at = ?,
+      SET display_name = ?, full_name = ?, short_descr = ?, description = ?, image = ?, contact_link = ?, chat_peer_type = ?, preferences = NULL, preferences_json = NULL, updated_at = ?,
           badge_proof = ?, badge_pres_header = ?, badge_expiry = ?, badge_type = ?, badge_verified = ?, badge_extra = ?, badge_master_key = ?, badge_signature = ?, badge_key_idx = ?,
           contact_domain = ?, contact_domain_proof = ?
       WHERE user_id = ? AND contact_profile_id = ?

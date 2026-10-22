@@ -595,9 +595,8 @@ object ChatController {
   }
 
   // log = false because a store receipt is a bearer secret, like a badge code - it is in the command.
-  // listed: found in the store's list rather than bought or restored here, so core records it only into a record it has.
-  suspend fun apiPurchaseBadge(rh: Long?, userId: Long, echoedInvoiceId: String?, listed: Boolean, payment: ServicePayment): BadgePurchaseResult {
-    val r = sendCmd(rh, CC.ApiPurchaseBadge(userId, echoedInvoiceId, listed, payment), log = false)
+  suspend fun apiPurchaseBadge(rh: Long?, userId: Long, echoedInvoiceId: String?, origin: StoreReceiptOrigin, payment: ServicePayment): BadgePurchaseResult {
+    val r = sendCmd(rh, CC.ApiPurchaseBadge(userId, echoedInvoiceId, origin, payment), log = false)
     return when {
       r is API.Result && r.res is CR.BadgeStateR -> BadgePurchaseResult.Held(r.res.user, r.res.badgeState, r.res.storePurchases)
       r is API.Result && r.res is CR.BadgeRedeemed -> BadgePurchaseResult.Credited(r.res.user.updateRemoteHostId(rh), r.res.badgeState)
@@ -2197,8 +2196,8 @@ object ChatController {
     return r.result is CR.CmdOk
   }
 
-  suspend fun apiSendCallExtraInfo(rh: Long?, contact: Contact, rtcIceCandidates: String): Boolean {
-    val extraInfo = WebRTCExtraInfo(rtcIceCandidates)
+  suspend fun apiSendCallExtraInfo(rh: Long?, contact: Contact, rtcSession: String?, rtcIceCandidates: String): Boolean {
+    val extraInfo = WebRTCExtraInfo(rtcSession, rtcIceCandidates)
     val r = sendCmd(rh, CC.ApiSendCallExtraInfo(contact, extraInfo))
     return r.result is CR.CmdOk
   }
@@ -3448,7 +3447,7 @@ object ChatController {
       }
       is CR.CallExtraInfo -> {
         withCall(r, r.contact) { _ ->
-          chatModel.callCommand.add(WCallCommand.Ice(iceCandidates = r.extraInfo.rtcIceCandidates))
+          chatModel.callCommand.add(WCallCommand.Ice(iceCandidates = r.extraInfo.rtcIceCandidates, session = r.extraInfo.rtcSession))
         }
       }
       is CR.CallEnded -> {
@@ -4173,7 +4172,7 @@ sealed class CC {
   class ApiStandaloneFileInfo(val url: String): CC()
   // badges
   class ApiRedeemBadgeCode(val userId: Long, val code: String): CC()
-  class ApiPurchaseBadge(val userId: Long, val echoedInvoiceId: String?, val listed: Boolean, val payment: ServicePayment): CC()
+  class ApiPurchaseBadge(val userId: Long, val echoedInvoiceId: String?, val origin: StoreReceiptOrigin, val payment: ServicePayment): CC()
   class ApiSetBadgeSubscriptionStatus(val status: BadgeSubscriptionState, val payment: ServicePayment): CC()
   class ApiCreateBadgeInvoice(val userId: Long): CC()
   class ApiGetBadgeState(val userId: Long): CC()
@@ -4401,7 +4400,7 @@ sealed class CC {
     is ApiDownloadStandaloneFile -> "/_download $userId $url ${file.filePath}"
     is ApiStandaloneFileInfo -> "/_download info $url"
     is ApiRedeemBadgeCode -> "/_redeem_badge_code $userId $code"
-    is ApiPurchaseBadge -> "/_badge purchase $userId${echoedInvoiceId?.let { " invoice=$it" } ?: ""}${if (listed) " listed" else ""} ${json.encodeToString(payment)}"
+    is ApiPurchaseBadge -> "/_badge purchase $userId${echoedInvoiceId?.let { " invoice=$it" } ?: ""}${storeReceiptOriginParam(origin)} ${json.encodeToString(payment)}"
     is ApiSetBadgeSubscriptionStatus -> "/_badge subscription ${status.text} ${json.encodeToString(payment)}"
     is ApiCreateBadgeInvoice -> "/_badge invoice $userId"
     is ApiGetBadgeState -> "/_badge state $userId"
@@ -4617,7 +4616,7 @@ sealed class CC {
       is TestStorageEncryption -> TestStorageEncryption(obfuscate(key))
       // a code or a store receipt is a bearer secret until it is redeemed, and the terminal shows and copies cmdString
       is ApiRedeemBadgeCode -> ApiRedeemBadgeCode(userId, obfuscate(code))
-      is ApiPurchaseBadge -> ApiPurchaseBadge(userId, echoedInvoiceId, listed, when (payment) {
+      is ApiPurchaseBadge -> ApiPurchaseBadge(userId, echoedInvoiceId, origin, when (payment) {
         is ServicePayment.Google -> ServicePayment.Google(payment.productId, obfuscate(payment.token))
       })
       is ApiSetBadgeSubscriptionStatus -> ApiSetBadgeSubscriptionStatus(status, when (payment) {
@@ -4662,6 +4661,14 @@ sealed class ServicePayment {
   @Serializable @SerialName("google") class Google(val productId: String, val token: String): ServicePayment()
 }
 
+enum class StoreReceiptOrigin {
+  Purchased,
+  // found in the store's list rather than bought or restored here, so core records it only into a record it has
+  Listed,
+  // Restore: core claims it for this profile, moving it from another device or profile it was credited to
+  Restored
+}
+
 fun onOff(b: Boolean): String = if (b) "on" else "off"
 
 // /_badge ack takes the kind in core's text encoding, not the JSON tag; an unknown kind has no banner to dismiss, so it is never acked
@@ -4674,6 +4681,12 @@ private fun badgeAlertKindParam(kind: BadgeAlertKind): String = when (kind) {
   is BadgeAlertKind.SupportEnded -> "support_ended"
   is BadgeAlertKind.IssueFailed -> "issue_failed"
   is BadgeAlertKind.Unknown -> kind.kind
+}
+
+private fun storeReceiptOriginParam(origin: StoreReceiptOrigin): String = when (origin) {
+  StoreReceiptOrigin.Purchased -> ""
+  StoreReceiptOrigin.Listed -> " listed"
+  StoreReceiptOrigin.Restored -> " restored"
 }
 
 @Serializable
@@ -7515,6 +7528,7 @@ sealed class BadgeServiceErrorCode {
   object ReceiptInvalid: BadgeServiceErrorCode()
   object ReceiptUsed: BadgeServiceErrorCode()
   object TestPurchase: BadgeServiceErrorCode()
+  object TransferLimited: BadgeServiceErrorCode()
   object Internal: BadgeServiceErrorCode()
   data class Unknown(val code: String): BadgeServiceErrorCode()
 
@@ -7538,6 +7552,7 @@ sealed class BadgeServiceErrorCode {
       is ReceiptInvalid -> "receipt_invalid"
       is ReceiptUsed -> "receipt_used"
       is TestPurchase -> "test_purchase"
+      is TransferLimited -> "transfer_limited"
       is Internal -> "internal"
       is Unknown -> code
     }
@@ -7554,6 +7569,7 @@ fun badgeServiceErrorText(code: BadgeServiceErrorCode): String? = when (code) {
   is BadgeServiceErrorCode.ReceiptInvalid -> generalGetString(MR.strings.badges_error_receipt_invalid)
   is BadgeServiceErrorCode.TestPurchase -> generalGetString(MR.strings.badges_error_test_purchase)
   is BadgeServiceErrorCode.ReceiptUsed -> generalGetString(MR.strings.badges_error_receipt_used)
+  is BadgeServiceErrorCode.TransferLimited -> generalGetString(MR.strings.badges_error_transfer_limited)
   is BadgeServiceErrorCode.PaymentPending -> generalGetString(MR.strings.badges_error_payment_pending)
   is BadgeServiceErrorCode.ProviderUnavailable -> generalGetString(MR.strings.badges_error_provider_unavailable)
   is BadgeServiceErrorCode.ProviderNotConfigured -> generalGetString(MR.strings.badges_error_provider_not_configured)
@@ -7583,6 +7599,7 @@ object BadgeServiceErrorCodeSerializer : KSerializer<BadgeServiceErrorCode> {
       "receipt_invalid" -> BadgeServiceErrorCode.ReceiptInvalid
       "receipt_used" -> BadgeServiceErrorCode.ReceiptUsed
       "test_purchase" -> BadgeServiceErrorCode.TestPurchase
+      "transfer_limited" -> BadgeServiceErrorCode.TransferLimited
       "internal" -> BadgeServiceErrorCode.Internal
       else -> BadgeServiceErrorCode.Unknown(v)
     }

@@ -64,6 +64,8 @@ data FakeStore = FakeStore
     appleRenewalSubscriptionJWS :: Text,
     appleSandboxSubscriptionJWS :: Text,
     appleRevokedSubscriptionJWS :: Text,
+    -- a transaction of the same subscription after it was changed to annual Legend
+    appleLegendSubscriptionJWS :: Text,
     -- two other subscriptions, the first under appleSecondSubscriptionOriginalId and the second one the store does not know
     appleSecondSubscriptionJWS :: Text,
     appleThirdSubscriptionJWS :: Text,
@@ -87,6 +89,7 @@ newFakeStore = do
       appleRenewalSubscriptionJWS = subscriptionJWS appleSubscriptionOriginalId "2000000812345683" [purchasedAt 1769904000000]
       appleSandboxSubscriptionJWS = subscriptionJWS appleSubscriptionOriginalId "2000000812345682" [purchasedAt 1767225600000]
       appleRevokedSubscriptionJWS = subscriptionJWS appleSubscriptionOriginalId "2000000812345684" [purchasedAt 1769904000000, "revocationDate" J..= (1770000000000 :: Int64)]
+      appleLegendSubscriptionJWS = subscriptionJWS appleSubscriptionOriginalId "2000000812345688" [purchasedAt 1769904000000, "productId" J..= ("SUBSCR_BADGE_LEGEND_YEAR_01" :: Text)]
       appleSecondSubscriptionJWS = subscriptionJWS appleSecondSubscriptionOriginalId "2000000812345701" [purchasedAt 1767225600000]
       appleThirdSubscriptionJWS = subscriptionJWS "2000000812345710" "2000000812345711" [purchasedAt 1767225600000]
   pendingSettled <- newIORef False
@@ -104,6 +107,7 @@ newFakeStore = do
           (appleSubscriptionJWS, appleSubscription appleSubscriptionJWS False),
           (appleRenewalSubscriptionJWS, appleSubscription appleRenewalSubscriptionJWS False),
           (appleSandboxSubscriptionJWS, appleSubscription appleSandboxSubscriptionJWS True),
+          (appleLegendSubscriptionJWS, appleTransaction appleSubscriptionOriginalId "SUBSCR_BADGE_LEGEND_YEAR_01" False 7000),
           (appleSecondSubscriptionJWS, appleSubscription appleSecondSubscriptionJWS False),
           (appleThirdSubscriptionJWS, appleSubscription appleThirdSubscriptionJWS False)
         ]
@@ -129,6 +133,7 @@ newFakeStore = do
         appleRenewalSubscriptionJWS,
         appleSandboxSubscriptionJWS,
         appleRevokedSubscriptionJWS,
+        appleLegendSubscriptionJWS,
         appleSecondSubscriptionJWS,
         appleThirdSubscriptionJWS,
         pendingSettled,

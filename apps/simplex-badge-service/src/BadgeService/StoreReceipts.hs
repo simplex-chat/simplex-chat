@@ -22,6 +22,7 @@ module BadgeService.StoreReceipts
   )
 where
 
+import BadgeService.Log (logInfo)
 import Control.Exception (Exception, catch, evaluate, try)
 import qualified Data.ByteString.Lazy as LB
 import Data.Char (isAlphaNum, isAscii, isAsciiLower, isAsciiUpper, isControl, isDigit, isPrint, isSpace)
@@ -64,6 +65,17 @@ data StoreRefusal
   | SRNotConfigured -- no verifier for this store is deployed; the purchase may be real
   deriving (Eq, Show)
 
+-- | What a refusal was, for a log. The reasons carry no receipt, token or key: a store request's
+-- exceptions are reduced to their kind, and an unsendable token to its shape.
+refusalLabel :: StoreRefusal -> Text
+refusalLabel = \case
+  SRInvalid reason -> "invalid: " <> reason
+  SRTestPurchase -> "a test purchase"
+  SRPending -> "not settled yet"
+  SRUnreachable reason -> "no answer: " <> reason
+  SRVerifierFailed reason -> "this service failed: " <> reason
+  SRNotConfigured -> "no verifier configured"
+
 -- | Apple's receipt is verified offline, from the certificate chain it ships; a Play token is opaque
 -- and must be asked about, and a subscription's charges are known only to its store, so those fields are in IO.
 data StoreVerifier = StoreVerifier
@@ -82,7 +94,7 @@ data StoreVerifier = StoreVerifier
   }
 
 -- | When a subscription's store is asked about it. A real store's next charge has not started while coverage
--- runs, and asking spends the quota every subscriber shares, so only the dev mock checks at every request.
+-- runs, and asking spends the quota every subscriber shares, so only a dev deployment checks at every request.
 data StoreChecks = ChecksAfterCoverage | ChecksAtEveryRequest
   deriving (Eq, Show)
 
@@ -159,9 +171,12 @@ toStoreReceipt StoreVerifier {verifyApple, verifyGoogle, acknowledgeGoogle, ackn
   where
     unconfigured = pure $ Left SRNotConfigured
     -- nothing was fetched, so a throw or an overrun is this service's failure or a shape it does not know, never an outage
-    offline verdict =
-      (fromMaybe (Left $ SRVerifierFailed "apple verifier timed out") <$> timeout verifyTimeout (forced verdict))
-        `catchOwn'` \_ -> pure $ Left $ SRVerifierFailed "apple verifier threw"
+    offline verdict = do
+      r <-
+        (fromMaybe (Left $ SRVerifierFailed "apple verifier timed out") <$> timeout verifyTimeout (forced verdict))
+          `catchOwn'` \_ -> pure $ Left $ SRVerifierFailed "apple verifier threw"
+      logInfo $ "apple receipt: " <> either refusalLabel (const "vouched") r
+      pure r
     online = askStore verifyTimeout
 
 -- | Both stores are asked online about a subscription, so a throw or an overrun is no verdict. A test
@@ -182,9 +197,13 @@ newtype StoreVerifierFailure = StoreVerifierFailure Text
 instance Exception StoreVerifierFailure
 
 askStore :: Int -> Text -> IO (Either StoreRefusal a) -> IO (Either StoreRefusal a)
-askStore limit what call =
-  (fromMaybe (Left $ SRUnreachable $ what <> " timed out") <$> timeout limit ((call >>= forced) `catch` verifierFailed))
-    `catchOwn'` \_ -> pure $ Left $ SRUnreachable $ what <> " threw"
+askStore limit what call = do
+  r <-
+    (fromMaybe (Left $ SRUnreachable $ what <> " timed out") <$> timeout limit ((call >>= forced) `catch` verifierFailed))
+      `catchOwn'` \_ -> pure $ Left $ SRUnreachable $ what <> " threw"
+  -- that the store was asked and what came of it, since not every path answers with the refusal
+  logInfo $ what <> ": " <> either refusalLabel (const "vouched") r
+  pure r
   where
     verifierFailed (StoreVerifierFailure reason) = pure $ Left $ SRVerifierFailed reason
 

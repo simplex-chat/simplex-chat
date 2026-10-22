@@ -68,6 +68,7 @@ appleTransactionRef = applePayloadRef <=< applePayload
 -- presents next: the service verifies whatever it is sent.
 data AppleTransactionFacts = AppleTransactionFacts
   { transactionId :: Text,
+    productId :: Maybe Text,
     purchaseDate :: Maybe Int64, -- epoch milliseconds
     expiresDate :: Maybe Int64, -- epoch milliseconds
     revoked :: Bool,
@@ -81,12 +82,13 @@ appleTransactionFacts = JT.parseMaybe facts <=< applePayload
   where
     facts o = do
       transactionId <- o J..: "transactionId"
+      productId <- o J..:? "productId" <|> pure Nothing
       purchaseDate <- o J..:? "purchaseDate" <|> pure Nothing
       expiresDate <- o J..:? "expiresDate" <|> pure Nothing
       -- as the service reads it: null is not revoked
       revoked <- isJust <$> (o J..:? "revocationDate" :: JT.Parser (Maybe J.Value))
       type_ <- o J..:? "type" <|> pure Nothing
-      pure AppleTransactionFacts {transactionId, purchaseDate, expiresDate, revoked, autoRenewable = type_ == Just ("Auto-Renewable Subscription" :: Text)}
+      pure AppleTransactionFacts {transactionId, productId, purchaseDate, expiresDate, revoked, autoRenewable = type_ == Just ("Auto-Renewable Subscription" :: Text)}
 
 -- | A subscription is named by its original transaction id, which every renewal keeps, so all its
 -- charges claim one purchase; any other transaction by its own id.

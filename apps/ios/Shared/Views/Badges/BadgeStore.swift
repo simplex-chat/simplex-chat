@@ -237,7 +237,7 @@ final class BadgeStore: ObservableObject {
                 }
             }
             if case let .purchased(receipt) = outcome, receipt.signatureVerified {
-                try await handOver(receipt, listed: false)
+                try await handOver(receipt, origin: .purchased)
             }
             await MainActor.run { buying = false }
             return outcome
@@ -261,11 +261,11 @@ final class BadgeStore: ObservableObject {
 
     // Core holds the receipt and credits it; the transaction stays unfinished until core answers it credited
     // or refused, as an unfinished transaction is what the store re-delivers if anything is lost on the way.
-    private func handOver(_ receipt: BadgeStoreReceipt, listed: Bool) async throws {
+    private func handOver(_ receipt: BadgeStoreReceipt, origin: StoreReceiptOrigin) async throws {
         guard let userId = await MainActor.run(body: { ChatModel.shared.currentUser?.userId }) else { return }
         // a refusal is announced from core's event for it, so only an unexpected answer reaches the buyer
         do {
-            switch try await apiPurchaseBadge(userId, receipt.echoedInvoiceId, listed: listed, .apple(jws: receipt.jws)) {
+            switch try await apiPurchaseBadge(userId, receipt.echoedInvoiceId, origin: origin, .apple(jws: receipt.jws)) {
             case let .held(user, badgeState, storePurchases):
                 await MainActor.run {
                     // the answer is the owner's, which may be another profile and a hidden one
@@ -290,6 +290,8 @@ final class BadgeStore: ObservableObject {
         } catch let error where badgeReceiptRefused(error) {
             logger.error("BadgeStore.handOver: \(responseError(error))")
             await receipt.transaction.finish()
+            // a limited move raises no event, so Restore learns of it only from this answer
+            if origin == .restored && badgeServiceErrorCode(error) == .transferLimited { throw error }
         }
     }
 
@@ -353,7 +355,7 @@ final class BadgeStore: ObservableObject {
     // the store lists an Apple ID's transactions on every device signed into it, so these are handed over as listed
     private func reconcileListed(_ verification: VerificationResult<Transaction>) async {
         // the receipt stays unfinished, so the next sweep hands it over again
-        do { try await reconcile(verification, listed: true) } catch let error {
+        do { try await reconcile(verification, origin: .listed) } catch let error {
             logger.error("BadgeStore.reconcile: \(responseError(error))")
             await MainActor.run {
                 // showAlert presents on the top view controller, which the launch sweep can precede;
@@ -367,7 +369,7 @@ final class BadgeStore: ObservableObject {
     }
 
     // an unverified transaction is never sent, and left unfinished rather than lost
-    private func reconcile(_ verification: VerificationResult<Transaction>, listed: Bool) async throws {
+    private func reconcile(_ verification: VerificationResult<Transaction>, origin: StoreReceiptOrigin) async throws {
         let receipt = storeReceipt(verification)
         let t = receipt.transaction
         if t.productType == .autoRenewable { await MainActor.run { _ = priorSubscriptions?.insert(String(t.originalID)) } }
@@ -377,7 +379,7 @@ final class BadgeStore: ObservableObject {
         } else if !badgeProductIds.contains(receipt.productId) {
             await t.finish()
         } else if receipt.signatureVerified {
-            try await handOver(receipt, listed: listed)
+            try await handOver(receipt, origin: origin)
         }
     }
 
@@ -424,17 +426,20 @@ final class BadgeStore: ObservableObject {
         await loadCurrentBadgeState()
     }
 
-    // Hands over as the device's own whatever the store lists, so a purchase no record here has is claimed by this profile.
+    // Hands over as restored whatever the store lists, so this profile claims it, also from another install or profile.
     // Answers whether a badge is shown, or a purchase is being added or awaits approval, afterwards.
-    // Reading currentEntitlements would not restore a subscription on another install or profile: the service credited
-    // the payment to the purchase key of the install that bought it, and answers any other key receipt_used.
     func restorePurchases() async throws -> Bool {
         try await AppStore.sync()
         var handOverError: Error? = nil
-        for await verification in Transaction.unfinished {
-            do { try await reconcile(verification, listed: false) } catch let error {
-                logger.error("BadgeStore.restorePurchases: \(responseError(error))")
-                if handOverError == nil { handOverError = error }
+        var handedOver: Set<UInt64> = []
+        for transactions in [Transaction.currentEntitlements, Transaction.unfinished] {
+            for await verification in transactions {
+                // a repeat would be refused once the first hand-over's badge is shown
+                guard handedOver.insert(verification.unsafePayloadValue.id).inserted else { continue }
+                do { try await reconcile(verification, origin: .restored) } catch let error {
+                    logger.error("BadgeStore.restorePurchases: \(responseError(error))")
+                    if handOverError == nil { handOverError = error }
+                }
             }
         }
         await reportSubscriptionStates()
@@ -507,8 +512,11 @@ private func storeReceipt(_ verification: VerificationResult<Transaction>) -> Ba
 // the codes core refuses a receipt with for good, after which the store may stop re-delivering it;
 // a sweep that hands over a receipt refused while the app was not running learns it only from this answer
 private func badgeReceiptRefused(_ error: Error) -> Bool {
-    if case let .error(.badgeRedeemError(.serviceError(code))) = error as? ChatError {
-        return code == .receiptInvalid || code == .receiptUsed || code == .testPurchase
-    }
-    return false
+    let code = badgeServiceErrorCode(error)
+    return code == .receiptInvalid || code == .receiptUsed || code == .testPurchase || code == .transferLimited
+}
+
+private func badgeServiceErrorCode(_ error: Error) -> BadgeServiceErrorCode? {
+    if case let .error(.badgeRedeemError(.serviceError(code))) = error as? ChatError { return code }
+    return nil
 }

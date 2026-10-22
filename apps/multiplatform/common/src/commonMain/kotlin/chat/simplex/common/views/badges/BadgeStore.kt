@@ -244,7 +244,7 @@ object BadgeStore {
     try {
       val outcome = storePurchase(id, invoiceId)
       if (outcome is BadgePurchaseOutcome.Purchased) {
-        handOver(outcome.receipt, listed = false)
+        handOver(outcome.receipt, StoreReceiptOrigin.Purchased)
       }
       return outcome
     } finally {
@@ -271,10 +271,10 @@ object BadgeStore {
 
   // Core holds the receipt and credits it; the purchase stays unfinished until core answers it credited
   // or refused, as an unfinished purchase is what the store re-delivers if anything is lost on the way.
-  private suspend fun handOver(receipt: BadgeStoreReceipt, listed: Boolean) {
+  private suspend fun handOver(receipt: BadgeStoreReceipt, origin: StoreReceiptOrigin) {
     val rhId = chatModel.remoteHostId()
     val userId = chatModel.currentUser.value?.userId ?: return
-    when (val r = chatModel.controller.apiPurchaseBadge(rhId, userId, receipt.invoiceId, listed, ServicePayment.Google(receipt.productId, receipt.token))) {
+    when (val r = chatModel.controller.apiPurchaseBadge(rhId, userId, receipt.invoiceId, origin, ServicePayment.Google(receipt.productId, receipt.token))) {
       is BadgePurchaseResult.Held -> {
         // core holds it durably now, so Play must not refund it after three days unacknowledged;
         // a subscription is acknowledged by the service when it credits it
@@ -305,6 +305,8 @@ object BadgeStore {
         if (badgeReceiptRefused(r.err)) {
           Log.e(TAG, "BadgeStore.handOver: ${r.err?.string}")
           finish(receipt)
+          // a limited move raises no event, so Restore learns of it only from this answer
+          if (origin == StoreReceiptOrigin.Restored && r.err != null && badgeServiceErrorCode(r.err) is BadgeServiceErrorCode.TransferLimited) throw BadgeStoreError.ApiError(r.err)
         } else {
           throw r.err?.let(BadgeStoreError::ApiError) ?: Exception("apiPurchaseBadge: unexpected response")
         }
@@ -376,7 +378,7 @@ object BadgeStore {
   suspend fun reconcileListed(outcome: BadgePurchaseOutcome) {
     // the purchase stays unfinished, so the next sweep hands it over again
     try {
-      reconcile(outcome, listed = true)
+      reconcile(outcome, StoreReceiptOrigin.Listed)
     } catch (e: Exception) {
       if (e is CancellationException) throw e
       Log.e(TAG, "BadgeStore.reconcile: ${e.stackTraceToString()}")
@@ -393,11 +395,11 @@ object BadgeStore {
     }
   }
 
-  private suspend fun reconcile(outcome: BadgePurchaseOutcome, listed: Boolean) {
+  private suspend fun reconcile(outcome: BadgePurchaseOutcome, origin: StoreReceiptOrigin) {
     when (outcome) {
       is BadgePurchaseOutcome.Purchased ->
         if (outcome.receipt.productId !in badgeProductIds) finish(outcome.receipt)
-        else handOver(outcome.receipt, listed)
+        else handOver(outcome.receipt, origin)
       is BadgePurchaseOutcome.Pending ->
         if (outcome.invoiceId != null) withContext(Dispatchers.Main) { waitingForApproval.value += outcome.invoiceId }
       is BadgePurchaseOutcome.Cancelled -> {}
@@ -436,16 +438,14 @@ object BadgeStore {
     platform.androidManageBadgeSubscription(badgeStoreProductId(level, BadgePeriod.Monthly).productId)
   }
 
-  // Hands over as the device's own whatever the store lists, so a purchase no record here has is claimed by this profile.
+  // Hands over as restored whatever the store lists, so this profile claims it, also from another install or profile.
   // Answers whether a badge is shown, or a purchase is being added or awaits approval, afterwards.
-  // Play's list does include the subscription, yet it is not restored on another install or profile: the service credited
-  // the payment to the purchase key of the install that bought it, and answers any other key receipt_used.
   suspend fun restorePurchases(): Boolean {
     var handOverError: Exception? = null
     val purchases = if (useBadgeTestProducts) emptyList() else platform.androidUnfinishedBadgePurchases()
     for (outcome in purchases) {
       try {
-        reconcile(outcome, listed = false)
+        reconcile(outcome, StoreReceiptOrigin.Restored)
       } catch (e: Exception) {
         if (e is CancellationException) throw e
         Log.e(TAG, "BadgeStore.restorePurchases: ${e.stackTraceToString()}")
@@ -518,7 +518,11 @@ private fun compactPrice(product: BadgeProduct): String {
 // the codes core refuses a receipt with for good, after which the store may stop re-delivering it;
 // a sweep that hands over a receipt refused while the app was not running learns it only from this answer
 private fun badgeReceiptRefused(err: ChatError?): Boolean {
+  val code = badgeServiceErrorCode(err)
+  return code is BadgeServiceErrorCode.ReceiptInvalid || code is BadgeServiceErrorCode.ReceiptUsed || code is BadgeServiceErrorCode.TestPurchase || code is BadgeServiceErrorCode.TransferLimited
+}
+
+private fun badgeServiceErrorCode(err: ChatError?): BadgeServiceErrorCode? {
   val redeemError = ((err as? ChatError.ChatErrorChat)?.errorType as? ChatErrorType.CEBadgeRedeemError)?.badgeRedeemError
-  val code = (redeemError as? BadgeRedeemError.ServiceError)?.serviceError
-  return code is BadgeServiceErrorCode.ReceiptInvalid || code is BadgeServiceErrorCode.ReceiptUsed || code is BadgeServiceErrorCode.TestPurchase
+  return (redeemError as? BadgeRedeemError.ServiceError)?.serviceError
 }

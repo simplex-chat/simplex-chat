@@ -54,7 +54,7 @@ pypi.<package>.<version>    commit of the publication
 
 3. Run of `build.yml`:
    - `maybe-release`: version claimed for the commit in `releases.toml`, draft `core-<version>` created
-   - build jobs: 6 library zips uploaded
+   - build jobs: 6 library zips uploaded; macOS libraries signed with the Developer ID and notarized
    - `releases`: release published
    - `publish`: `@simplex-chat/types` published, when its version is unpublished
    - `record`: types version recorded
@@ -141,13 +141,12 @@ Versions unpublished after a failure: published by the next push to the branch.
 
 - simplex-chat-libs: release immutability enabled
 - secret `NODEJS_REPO_TOKEN`: contents of simplex-chat-libs, read and write
+- secrets `APPLE_SIMPLEX_SIGNING_KEYCHAIN`, `APPLE_SIMPLEX_NOTARIZATION_APPLE_ID` and `APPLE_SIMPLEX_NOTARIZATION_PASSWORD`: signing and notarization of the macOS libraries, shared with the desktop app build
 - trusted publisher of `simplex-chat` and `@simplex-chat/types` on npm and of `simplex-chat` on PyPI: workflow `build.yml`
 - secrets `NPM_TOKEN` and `PYPI_API_TOKEN`: used instead of trusted publishing when set
 - variables `NPM_SCOPE`, `PYPI_PROJECT`, `PYPI_URL` and `PYPI_UPLOAD_URL`: publication under other names, for test repositories
 
 ## Pull requests
 
-- `packages.yml`, for package changes:
-  - core unchanged: add-on built and packages tested on 5 platforms
-  - core changed: add-on built on 5 platforms when its sources changed
-- `build.yml`, for core changes: package tests on Linux x86_64 with the library built from the pull request
+- `build.yml`, for every pull request it runs for: add-on built and packages tested on 4 platforms (Linux aarch64 excluded); Linux x86_64 uses the library built from the pull request when the core changed, other platforms the pinned library
+- `packages.yml`, for package changes in a pull request without `build.yml` paths: add-on built and packages tested on 5 platforms

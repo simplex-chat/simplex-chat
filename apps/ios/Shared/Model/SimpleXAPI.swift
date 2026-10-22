@@ -1850,8 +1850,8 @@ func apiSendCallAnswer(_ contact: Contact, _ rtcSession: String, _ rtcIceCandida
     try await sendCommandOkResp(.apiSendCallAnswer(contact: contact, answer: answer))
 }
 
-func apiSendCallExtraInfo(_ contact: Contact, _ rtcIceCandidates: String) async throws {
-    let extraInfo = WebRTCExtraInfo(rtcIceCandidates: rtcIceCandidates)
+func apiSendCallExtraInfo(_ contact: Contact, _ rtcSession: String?, _ rtcIceCandidates: String) async throws {
+    let extraInfo = WebRTCExtraInfo(rtcSession: rtcSession, rtcIceCandidates: rtcIceCandidates)
     try await sendCommandOkResp(.apiSendCallExtraInfo(contact: contact, extraInfo: extraInfo))
 }
 
@@ -2209,9 +2209,8 @@ enum BadgePurchaseResult {
 }
 
 // log: false because a store receipt is a bearer secret, like a badge code - it is in the command.
-// listed: found in the store's list rather than bought or restored here, so core records it only into a record it has.
-func apiPurchaseBadge(_ userId: Int64, _ echoedInvoiceId: String?, listed: Bool, _ payment: ServicePayment) async throws -> BadgePurchaseResult {
-    let r: ChatResponse2 = try await chatSendCmd(.apiPurchaseBadge(userId: userId, echoedInvoiceId: echoedInvoiceId, listed: listed, payment: payment), log: false)
+func apiPurchaseBadge(_ userId: Int64, _ echoedInvoiceId: String?, origin: StoreReceiptOrigin, _ payment: ServicePayment) async throws -> BadgePurchaseResult {
+    let r: ChatResponse2 = try await chatSendCmd(.apiPurchaseBadge(userId: userId, echoedInvoiceId: echoedInvoiceId, origin: origin, payment: payment), log: false)
     switch r {
     case let .badgeState(user, badgeState, storePurchases): return .held(user: user, badgeState: badgeState, storePurchases: storePurchases ?? [])
     case let .badgeRedeemed(user, _, _, badgeState): return .credited(user: user, badgeState: badgeState)
@@ -3005,7 +3004,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
         }
     case let .callExtraInfo(_, contact, extraInfo):
         await withCall(contact) { _ in
-            await m.callCommand.processCommand(.ice(iceCandidates: extraInfo.rtcIceCandidates))
+            await m.callCommand.processCommand(.ice(iceCandidates: extraInfo.rtcIceCandidates, session: extraInfo.rtcSession))
         }
     case let .callEnded(_, contact):
         if let invitation = await MainActor.run(body: { m.callInvitations.removeValue(forKey: contact.id) }) {

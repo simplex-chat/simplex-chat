@@ -25,6 +25,7 @@ module BadgeService.Store
     getStorePaymentCredit,
     purchaseKeyExists,
     getPurchaseByKey,
+    setPurchaseBadgeType,
     getLedgerTip,
     getLedgerEntryId,
     getLedgerEntries,
@@ -32,6 +33,9 @@ module BadgeService.Store
     appendLedgerPlan,
     createCodePurchase,
     createStorePurchase,
+    PaymentRebind (..),
+    rebindStorePayment,
+    getMovedFromExpiry,
     PurchaseSubscription (..),
     getPurchaseSubscription,
     stampSubscriptionCheck,
@@ -59,7 +63,7 @@ import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import Simplex.Chat.Badges (BadgeCredential, BadgeMasterKey (..), BadgeType)
 import Simplex.Chat.Badges.Ledger
-import Simplex.Chat.Badges.Service (StatementCreditType (..), StatementEntry (..), StatementEntryType (..), SubscriptionState)
+import Simplex.Chat.Badges.Service (StatementCreditType (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..), SubscriptionState)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus, BadgePurchaseStatus (..))
 import Simplex.Chat.PaymentService.Types (CurrencyAmount (..), InvoiceId (..), PaymentProvider (..), PaymentStatus (..))
 import Simplex.Chat.Store.Shared (insertedRowId)
@@ -202,7 +206,7 @@ getCodePurchaseForKey db badgeCodeId key =
         FROM sx_badge_service_badge_purchases p
         LEFT JOIN sx_badge_service_badge_issuances i ON i.badge_purchase_id = p.badge_purchase_id
         WHERE p.badge_code_id = ? AND p.purchase_key = ?
-        ORDER BY i.period_end DESC
+        ORDER BY i.entry_id DESC
         LIMIT 1
       |]
       (badgeCodeId, key)
@@ -222,7 +226,7 @@ getStorePaymentCredit db provider providerRef =
         JOIN sx_badge_service_badge_purchases p ON p.payment_id = pay.payment_id
         LEFT JOIN sx_badge_service_badge_issuances i ON i.badge_purchase_id = p.badge_purchase_id
         WHERE pay.provider = ? AND pay.provider_ref = ?
-        ORDER BY i.period_end DESC
+        ORDER BY i.entry_id DESC
         LIMIT 1
       |]
       (textEncode provider, providerRef)
@@ -254,6 +258,11 @@ getPurchaseByKey db key =
     toPurchase (badgePurchaseId, Binary mk, badgeType) =
       ServicePurchase {badgePurchaseId, masterKey = BadgeMasterKey mk, badgeType}
 
+-- | In the transaction that writes the ledger rows of that tier.
+setPurchaseBadgeType :: DB.Connection -> Int64 -> BadgeType -> UTCTime -> IO ()
+setPurchaseBadgeType db purchaseId badgeType now =
+  DB.execute db "UPDATE sx_badge_service_badge_purchases SET current_badge_type = ?, updated_at = ? WHERE badge_purchase_id = ?" (badgeType, now, purchaseId)
+
 getLedgerTip :: DB.Connection -> Int64 -> IO (Maybe StatementEntry)
 getLedgerTip db purchaseId =
   maybeFirstRow' Nothing toEntry $
@@ -261,9 +270,12 @@ getLedgerTip db purchaseId =
       db
       [sql|
         SELECT l.entry_uuid, l.change_months, l.balance_months, l.balance_start_ts, l.balance_anchor_ts, l.balance_badge_type,
-               l.entry_type, l.entry_credit_type, l.entry_debit_type, l.service_created_at, l.payment_id, pay.invoice_id, l.charge_id
+               l.entry_type, l.entry_credit_type, l.entry_debit_type, l.service_created_at, l.payment_id, pay.invoice_id, l.charge_id,
+               fp.purchase_key, tp.purchase_key
         FROM sx_badge_service_badge_ledger l
         LEFT JOIN sx_badge_service_payments pay ON pay.payment_id = l.payment_id
+        LEFT JOIN sx_badge_service_badge_purchases fp ON fp.badge_purchase_id = l.from_purchase_id
+        LEFT JOIN sx_badge_service_badge_purchases tp ON tp.badge_purchase_id = l.to_purchase_id
         WHERE l.badge_purchase_id = ?
         ORDER BY l.entry_id DESC
         LIMIT 1
@@ -286,37 +298,48 @@ getLedgerEntries db purchaseId afterEntryId =
       db
       [sql|
         SELECT l.entry_uuid, l.change_months, l.balance_months, l.balance_start_ts, l.balance_anchor_ts, l.balance_badge_type,
-               l.entry_type, l.entry_credit_type, l.entry_debit_type, l.service_created_at, l.payment_id, pay.invoice_id, l.charge_id
+               l.entry_type, l.entry_credit_type, l.entry_debit_type, l.service_created_at, l.payment_id, pay.invoice_id, l.charge_id,
+               fp.purchase_key, tp.purchase_key
         FROM sx_badge_service_badge_ledger l
         LEFT JOIN sx_badge_service_payments pay ON pay.payment_id = l.payment_id
+        LEFT JOIN sx_badge_service_badge_purchases fp ON fp.badge_purchase_id = l.from_purchase_id
+        LEFT JOIN sx_badge_service_badge_purchases tp ON tp.badge_purchase_id = l.to_purchase_id
         WHERE l.badge_purchase_id = ? AND l.entry_id > ?
         ORDER BY l.entry_id
       |]
       (purchaseId, afterEntryId)
 
-toEntry :: (Text, Int, Int, UTCTime, UTCTime, BadgeType, Text, Maybe Text, Maybe Text, UTCTime) :. (Maybe Text, Maybe Text, Maybe Text) -> Maybe StatementEntry
-toEntry ((entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, entryType_, credit_, debit_, createdAt) :. (paymentId_, invoiceId_, chargeId_)) =
+toEntry :: (Text, Int, Int, UTCTime, UTCTime, BadgeType, Text, Maybe Text, Maybe Text, UTCTime) :. (Maybe Text, Maybe Text, Maybe Text, Maybe C.PublicKeyEd25519, Maybe C.PublicKeyEd25519) -> Maybe StatementEntry
+toEntry ((entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, entryType_, credit_, debit_, createdAt) :. (paymentId_, invoiceId_, chargeId_, fromKey_, toKey_)) =
   (\entryType -> StatementEntry {entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, wasPausedSince = Nothing, createdAt, entryType})
-    <$> entryTypeFromColumns ((InvoiceId <$> invoiceId_) <$ paymentId_) chargeId_ entryType_ credit_ debit_
+    <$> entryTypeFromColumns references entryType_ credit_ debit_
+  where
+    references =
+      EntryReferences
+        { refPayment = (InvoiceId <$> invoiceId_) <$ paymentId_,
+          refChargeId = chargeId_,
+          refFromPurchaseKey = fromKey_,
+          refToPurchaseKey = toKey_
+        }
 
+-- | The newest issuance, and only while it runs: after a tier change the superseded tier's month can end later.
 getCurrentIssuance :: DB.Connection -> Int64 -> UTCTime -> IO (Maybe BadgeCredential)
 getCurrentIssuance db purchaseId now = do
   rs <-
     DB.query
       db
       [sql|
-        SELECT credential FROM sx_badge_service_badge_issuances
-        WHERE badge_purchase_id = ? AND period_end > ?
-        ORDER BY period_end DESC
+        SELECT credential, period_end FROM sx_badge_service_badge_issuances
+        WHERE badge_purchase_id = ?
+        ORDER BY entry_id DESC
         LIMIT 1
       |]
-      (purchaseId, now)
+      (Only purchaseId)
   pure $ case rs of
-    [Only (Binary bs)] -> J.decodeStrict' bs
+    [(Binary bs, periodEnd)] | periodEnd > now -> J.decodeStrict' bs
     _ -> Nothing
 
 -- | creditPaymentId_ names the payment behind a payment credit among the rows.
--- TODO write the other reference columns (from_purchase_id, to_purchase_id) for entry types that carry one; only the tag is written today.
 appendLedgerPlan :: DB.Connection -> Int64 -> Maybe Text -> [StatementEntry] -> Maybe (StatementEntry, StatementEntry, BadgeCredential) -> IO ()
 appendLedgerPlan db purchaseId creditPaymentId_ rows issuance_ = do
   mapM_ appendRow rows
@@ -337,20 +360,31 @@ appendLedgerPlan db purchaseId creditPaymentId_ rows issuance_ = do
   where
     appendRow StatementEntry {entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, createdAt, entryType} = do
       let (entryTypeT, creditType, debitType) = entryTypeColumns entryType
-          (paymentId_, chargeId_) = case entryType of
-            SECredit SCPayment {} -> (creditPaymentId_, Nothing)
-            SECredit SCCharge {chargeId} -> (Nothing, Just chargeId)
-            _ -> (Nothing, Nothing)
+          (paymentId_, chargeId_, fromKey_, toKey_) = case entryType of
+            SECredit SCPayment {} -> (creditPaymentId_, Nothing, Nothing, Nothing)
+            SECredit SCCharge {chargeId} -> (Nothing, Just chargeId, Nothing, Nothing)
+            SECredit SCTransferIn {fromPurchaseKey} -> (Nothing, Nothing, Just fromPurchaseKey, Nothing)
+            SEDebit SDUpgrade {toPurchaseKey} -> (Nothing, Nothing, Nothing, Just toPurchaseKey)
+            SEDebit SDTransferOut {toPurchaseKey} -> (Nothing, Nothing, Nothing, Just toPurchaseKey)
+            _ -> (Nothing, Nothing, Nothing, Nothing)
+      fromPurchaseId_ <- mapM purchaseIdOf fromKey_
+      toPurchaseId_ <- mapM purchaseIdOf toKey_
       DB.execute
         db
         [sql|
           INSERT INTO sx_badge_service_badge_ledger
             (entry_uuid, badge_purchase_id, change_months, balance_months, balance_start_ts, balance_anchor_ts,
-             balance_badge_type, service_created_at, created_at, entry_type, entry_credit_type, entry_debit_type, payment_id, charge_id)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+             balance_badge_type, service_created_at, created_at, entry_type, entry_credit_type, entry_debit_type, payment_id, charge_id,
+             from_purchase_id, to_purchase_id)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         |]
-        ((entryId, purchaseId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs) :. (balanceBadgeType, createdAt, createdAt, entryTypeT, creditType, debitType, paymentId_, chargeId_))
+        ((entryId, purchaseId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs) :. (balanceBadgeType, createdAt, createdAt, entryTypeT, creditType, debitType, paymentId_, chargeId_) :. (fromPurchaseId_, toPurchaseId_))
       insertedRowId db
+    -- a row whose reference is lost can never be read back, so the write fails and its transaction rolls back
+    purchaseIdOf :: C.PublicKeyEd25519 -> IO Int64
+    purchaseIdOf key =
+      maybeFirstRow fromOnly (DB.query db "SELECT badge_purchase_id FROM sx_badge_service_badge_purchases WHERE purchase_key = ?" (Only key))
+        >>= maybe (fail "badge ledger row names a purchase key with no purchase") pure
 
 -- The claim takes one use before adding the purchase, so a concurrent revoke or redemption waits on this row and sees the new count.
 -- Run it in the credential's transaction.
@@ -402,6 +436,65 @@ createStorePurchase db NewStorePurchase {paymentId, provider, providerRef, paid,
         |]
         (purchaseKey, Binary mk, badgeType, badgeType, PSIssued, paymentId, now, now)
       Just <$> insertedRowId db
+
+-- | A payment's move from the purchase holding it to a new purchase under another key. fromRows are the old
+-- purchase's rows that end its share, written after the new purchase exists, as they name its key.
+data PaymentRebind = PaymentRebind
+  { paymentId :: Text,
+    fromPurchaseId :: Int64,
+    fromTipId :: Text,
+    fromRows :: [StatementEntry],
+    purchaseKey :: C.PublicKeyEd25519,
+    masterKey :: BadgeMasterKey,
+    badgeType :: BadgeType
+  }
+
+-- | In the transaction of the new purchase's own rows. Writes nothing and returns Nothing when another request
+-- moved the payment or the old purchase's ledger since fromTipId was read.
+rebindStorePayment :: DB.Connection -> PaymentRebind -> UTCTime -> IO (Maybe Int64)
+rebindStorePayment db PaymentRebind {paymentId, fromPurchaseId, fromTipId, fromRows, purchaseKey, masterKey = BadgeMasterKey mk, badgeType} now = do
+  tip <- getLedgerTip db fromPurchaseId
+  if fmap entryId tip /= Just fromTipId
+    then pure Nothing
+    else do
+      released <-
+        executeChanging
+          db
+          "UPDATE sx_badge_service_badge_purchases SET payment_id = NULL, updated_at = ? WHERE badge_purchase_id = ? AND payment_id = ?"
+          (now, fromPurchaseId, paymentId)
+      if released == 0
+        then pure Nothing
+        else do
+          DB.execute
+            db
+            [sql|
+              INSERT INTO sx_badge_service_badge_purchases
+                (purchase_key, master_key, initial_badge_type, current_badge_type, status, payment_id, created_at, updated_at)
+              VALUES (?,?,?,?,?,?,?,?)
+            |]
+            (purchaseKey, Binary mk, badgeType, badgeType, PSIssued, paymentId, now, now)
+          purchaseId <- insertedRowId db
+          appendLedgerPlan db fromPurchaseId Nothing fromRows Nothing
+          DB.execute db "UPDATE sx_badge_service_payments SET rebound_at = ?, updated_at = ? WHERE payment_id = ?" (now, now, paymentId)
+          pure $ Just purchaseId
+
+-- | The latest credential expiry of the purchase the payment last moved from; Nothing if it never moved.
+-- Only that purchase's transferOut names the holder, as a payment moves only to a key that held no purchase.
+getMovedFromExpiry :: DB.Connection -> Text -> IO (Maybe UTCTime)
+getMovedFromExpiry db paymentId =
+  maybeFirstRow fromOnly $
+    DB.query
+      db
+      [sql|
+        SELECT i.expiry
+        FROM sx_badge_service_badge_purchases p
+        JOIN sx_badge_service_badge_ledger l ON l.to_purchase_id = p.badge_purchase_id
+        JOIN sx_badge_service_badge_issuances i ON i.badge_purchase_id = l.badge_purchase_id
+        WHERE p.payment_id = ? AND l.entry_type = 'debit' AND l.entry_debit_type = 'transferOut'
+        ORDER BY i.expiry DESC
+        LIMIT 1
+      |]
+      (Only paymentId)
 
 -- | What a renewal asks the store about, for a purchase a subscription funds.
 data PurchaseSubscription = PurchaseSubscription

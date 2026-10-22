@@ -193,7 +193,7 @@ enum ChatCommand: ChatCmdProtocol {
     case apiStandaloneFileInfo(url: String)
     // badges
     case apiRedeemBadgeCode(userId: Int64, code: String)
-    case apiPurchaseBadge(userId: Int64, echoedInvoiceId: String?, listed: Bool, payment: ServicePayment)
+    case apiPurchaseBadge(userId: Int64, echoedInvoiceId: String?, origin: StoreReceiptOrigin, payment: ServicePayment)
     case apiSetBadgeSubscriptionStatus(status: BadgeSubscriptionState, payment: ServicePayment)
     case apiCreateBadgeInvoice(userId: Int64)
     case apiGetBadgeState(userId: Int64)
@@ -422,8 +422,8 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiDownloadStandaloneFile(userId, link, file): return "/_download \(userId) \(link) \(file.filePath)"
             case let .apiStandaloneFileInfo(link): return "/_download info \(link)"
             case let .apiRedeemBadgeCode(userId, code): return "/_redeem_badge_code \(userId) \(code)"
-            case let .apiPurchaseBadge(userId, echoedInvoiceId, listed, payment):
-                return "/_badge purchase \(userId)\(echoedInvoiceId.map { " invoice=\($0)" } ?? "")\(listed ? " listed" : "") \(encodeJSON(payment))"
+            case let .apiPurchaseBadge(userId, echoedInvoiceId, origin, payment):
+                return "/_badge purchase \(userId)\(echoedInvoiceId.map { " invoice=\($0)" } ?? "")\(storeReceiptOriginParam(origin)) \(encodeJSON(payment))"
             case let .apiSetBadgeSubscriptionStatus(status, payment): return "/_badge subscription \(status.text) \(encodeJSON(payment))"
             case let .apiCreateBadgeInvoice(userId): return "/_badge invoice \(userId)"
             case let .apiGetBadgeState(userId): return "/_badge state \(userId)"
@@ -680,8 +680,8 @@ enum ChatCommand: ChatCmdProtocol {
         // a code or a store receipt is a bearer secret until it is redeemed, and the terminal shows and copies cmdString
         case let .apiRedeemBadgeCode(userId, code):
             return .apiRedeemBadgeCode(userId: userId, code: obfuscate(code))
-        case let .apiPurchaseBadge(userId, echoedInvoiceId, listed, .apple(jws)):
-            return .apiPurchaseBadge(userId: userId, echoedInvoiceId: echoedInvoiceId, listed: listed, payment: .apple(jws: obfuscate(jws)))
+        case let .apiPurchaseBadge(userId, echoedInvoiceId, origin, .apple(jws)):
+            return .apiPurchaseBadge(userId: userId, echoedInvoiceId: echoedInvoiceId, origin: origin, payment: .apple(jws: obfuscate(jws)))
         case let .apiSetBadgeSubscriptionStatus(status, .apple(jws)):
             return .apiSetBadgeSubscriptionStatus(status: status, payment: .apple(jws: obfuscate(jws)))
         default: return self
@@ -724,6 +724,14 @@ enum ChatCommand: ChatCmdProtocol {
         }
     }
 
+    private func storeReceiptOriginParam(_ origin: StoreReceiptOrigin) -> String {
+        switch origin {
+        case .purchased: ""
+        case .listed: " listed"
+        case .restored: " restored"
+        }
+    }
+
     private func maybeContent(_ mc: MsgContent?) -> String {
         if case let .text(s) = mc, s.isEmpty {
             ""
@@ -750,6 +758,14 @@ enum ServicePayment: Encodable {
     private enum CodingKeys: String, CodingKey {
         case type, jws
     }
+}
+
+enum StoreReceiptOrigin {
+    case purchased
+    // found in the store's list rather than bought or restored here, so core records it only into a record it has
+    case listed
+    // Restore: core claims it for this profile, moving it from another device or profile it was credited to
+    case restored
 }
 
 struct OpenStorePurchase: Decodable {

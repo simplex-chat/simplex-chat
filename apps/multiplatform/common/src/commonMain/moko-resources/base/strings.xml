@@ -1301,6 +1301,7 @@
   <string name="callstate_received_answer">received answer…</string>
   <string name="callstate_received_confirmation">received confirmation…</string>
   <string name="callstate_connecting">connecting…</string>
+  <string name="callstate_reconnecting">reconnecting…</string>
   <string name="callstate_connected">connected</string>
   <string name="callstate_ended">ended</string>
 
@@ -3250,6 +3251,7 @@
   <string name="badges_error_service_internal">The badge service reported an internal error.</string>
   <string name="badges_error_receipt_invalid">The store did not confirm this purchase.</string>
   <string name="badges_error_receipt_used">This purchase was already credited to a badge on another device or profile.</string>
+  <string name="badges_error_transfer_limited">This purchase was moved to another device or profile recently.</string>
   <string name="badges_error_test_purchase">Test purchases are not credited. Badges can only be bought with a real purchase.</string>
   <string name="badges_error_payment_pending">The payment has not been confirmed yet.</string>
   <string name="badges_error_provider_unavailable">The store could not be reached.</string>
@@ -3287,7 +3289,7 @@
   <string name="badges_ledger_from_purchase_key">From purchase key</string>
   <string name="badges_ledger_to_purchase_key">To purchase key</string>
   <string name="badges_renewal_failed">Badge renewal failed</string>
-  <string name="badges_tap_for_details">Tap for details</string>
+  <string name="badges_renewal_failed_unknown">Your badge could not be renewed.</string>
   <string name="badges_error_service_refused">The badge service refused the renewal: %1$s</string>
   <string name="badges_error_purchase_refused">The badge service refused the purchase: %1$s</string>
   <string name="badges_error_no_response">The badge service did not respond.</string>
@@ -3325,6 +3327,7 @@
   <string name="badges_subscription_ended_title">Your subscription ended</string>
   <string name="badges_subscription_ended_on">Your badge subscription ended on %1$s.</string>
   <string name="badges_payment_problem_title">Badge payment problem</string>
+  <string name="badges_payment_problem_subtitle">The store could not charge your payment method.</string>
   <string name="badges_subscription_cancelled_title">Subscription cancelled</string>
   <string name="badges_stays_until">Your badge stays until %1$s.</string>
   <string name="badges_renews_soon">Your badge renews soon</string>
