@@ -69,6 +69,7 @@ namesLateCreditTests = describe "StoreService names: balance life" $ do
     it "credits nothing below the rate floor and never after, logging an error, and alerts support naming both rates" testRateFloor
     it "logs the rate floor of an invoice once while the price moves below it" testFloorLoggedOnce
     it "alerts confirmed money waiting on the rate read as such, whatever reason was stored before" testWaitingOutranksStoredReason
+    it "warns once of an invoice no provider reads a rate for, and names an invoice with no recorded rate" testRateProblemsNamed
     it "reads one rate per coin per pass for several invoices, and none when nothing is due" testOneRateReadPerPass
     it "never credits a late Settled payment on an invoice made under HighSpeed, alerting it past the window" testHighSpeed
     it "credits at the next pass a late Settled invoice and a settlement whose credit step did not run" testCreditedByPass
@@ -447,6 +448,17 @@ testWaitingOutranksStoredReason = withLate $ \l@Late {lStore = st} -> do
   settleAt l "outranked" (SigClosed (btcPaid lateUnits lateUnits)) (at 70) `shouldReturn` Right ISExpired
   alertsAt l (Left $ ProviderError "rates down for outranked") (pastWindow (at 70) 60)
     >>= (`shouldSatisfy` logged "ERROR" "invoice inv-outranked of order outranked: 320000 satoshi received, 320000 satoshi confirmed, 0 satoshi credited; confirmed, the credit waits on the rate read; do not refund; fix the rate read")
+
+testRateProblemsNamed :: IO ()
+testRateProblemsNamed = withLate $ \l@Late {lStore = st} -> do
+  closedOrder l "noprovider" False
+  settleAt l "noprovider" (SigClosed (btcPaid lateUnits lateUnits)) (at 70) `shouldReturn` Right ISExpired
+  withTransaction st $ \db -> DB.execute_ db "UPDATE sx_badge_service_invoices SET provider = 'apple' WHERE invoice_id = 'inv-noprovider'"
+  closedOrder l "norate" False
+  settleAt l "norate" (SigClosed (btcPaid lateUnits lateUnits) {rcvRate = Nothing}) (at 70) `shouldReturn` Right ISExpired
+  logs <- (<>) <$> passAt l (at 71) <*> passAt l (at 72)
+  count "invoice inv-noprovider has late money to credit, but no provider" logs `shouldBe` 1
+  logs `shouldSatisfy` logged "ERROR" "invoice inv-norate has confirmed late money, but no invoice rate was recorded to credit it at"
 
 testOneRateReadPerPass :: IO ()
 testOneRateReadPerPass = withLate $ \l@Late {lStore = st} -> do

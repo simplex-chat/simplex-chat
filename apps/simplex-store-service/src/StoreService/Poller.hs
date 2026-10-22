@@ -341,7 +341,9 @@ creditPass env@PollerEnv {peStore, peProviders} now = do
       safely ("names: crediting invoice " <> invText) $
         getInvoice peStore invId >>= \case
           Just InvoiceRow {irProvider} | Just p <- find ((== irProvider) . pProvider) peProviders -> void $ creditLate env p now invId
-          _ -> logWarn ("names: invoice " <> invText <> " has late money to credit, but no provider is configured to read its rate")
+          _ -> do
+            due' <- dueToWarn env now ("no rate provider: " <> invText)
+            when due' $ logWarn ("names: invoice " <> invText <> " has late money to credit, but no provider is configured to read its rate")
 
 -- | The pass's rate of a coin at a provider, read at most once.
 cachedRate :: PollerEnv -> Provider -> CryptoCurrency -> IO (Either ProviderError Rate)
@@ -367,6 +369,9 @@ creditLate env@PollerEnv {peStore} p now invId@(InvoiceId invText) = do
       logInfo $
         "names: invoice " <> invText <> " credited " <> tshow lcCents <> " cents to the balance of registration " <> rid
           <> maybe "" (\units -> " for " <> tshow units <> " units at " <> fromMaybe "?" lcRateUsed <> " (invoice " <> fromMaybe "?" lcInvoiceRate <> ", current " <> fromMaybe "?" lcCurrentRate <> ")") lcUnits
+    CONoInvoiceRate -> do
+      due <- dueToWarn env now ("no invoice rate: " <> invText)
+      when due $ logError ("names: invoice " <> invText <> " has confirmed late money, but no invoice rate was recorded to credit it at; check it at the provider")
     CORateFailed (ProviderError e) -> do
       due <- dueToWarn env now ("rate read failed: " <> tshow (pProvider p))
       when due $ logWarn ("names: late credits wait, as the current rate cannot be read; each pass tries again: " <> e)

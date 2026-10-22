@@ -31,10 +31,12 @@ import Text.Read (readMaybe)
 minCurrentRateFraction :: Rational
 minCurrentRateFraction = 1 % 2
 
--- | CORefused: the credit's number was taken meanwhile, which the invoice's lock rules out.
+-- | CONoInvoiceRate: crypto due with no invoice rate recorded to credit it at. CORefused: the credit's number was taken meanwhile,
+-- which the invoice's lock rules out.
 data CreditOutcome
   = CONothingDue
   | COCredited LateCredit
+  | CONoInvoiceRate
   | CORateFailed ProviderError
   | CORateFloor Text Rate
   | CORefused
@@ -45,12 +47,12 @@ creditLateInvoice st readRate invId now =
   withTransaction st (`lateCreditState` invId) >>= \case
     Just s | creditable s && moneyDue s -> case lsCoin s of
       Nothing -> credit Nothing
-      Just coin ->
-        readRate coin >>= \case
-          Left e -> pure $ CORateFailed e
-          Right rate -> case invoiceRate s of
-            Nothing -> pure $ CORateFailed $ ProviderError "the invoice's rate is not stored"
-            Just (invoiceText, invoiceValue)
+      Just coin -> case invoiceRate s of
+        Nothing -> pure CONoInvoiceRate
+        Just (invoiceText, invoiceValue) ->
+          readRate coin >>= \case
+            Left e -> pure $ CORateFailed e
+            Right rate
               | toRational (rateValue rate) < minCurrentRateFraction * toRational invoiceValue ->
                   CORateFloor invoiceText rate <$ withTransaction st (\db -> setLateSupport db invId LSRateFloor)
               | otherwise -> credit (Just rate)
