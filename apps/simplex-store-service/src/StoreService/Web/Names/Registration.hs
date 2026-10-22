@@ -5,6 +5,7 @@
 
 module StoreService.Web.Names.Registration
   ( registrationHandler,
+    registrationChangedResponse,
     registrationAt,
     registrationVersion,
     lapseMoment,
@@ -14,6 +15,8 @@ module StoreService.Web.Names.Registration
 where
 
 import Control.Monad (join)
+import Data.Aeson ((.=))
+import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isDigit)
 import Data.Int (Int64)
@@ -21,8 +24,8 @@ import Data.Maybe (maybeToList)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime, diffUTCTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
-import Network.HTTP.Types (status200)
-import Network.Wai (Request, ResponseReceived, queryString)
+import Network.HTTP.Types (status200, status409)
+import Network.Wai (Request, Response, ResponseReceived, queryString)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import StoreService.Names.Orders (OrdersEnv (..))
 import StoreService.Names.Phases (RegistrationId (..), awaitChange)
@@ -45,6 +48,16 @@ registrationHandler OrdersEnv {oeStore, oeConfig, oeContracts, oePhases, oeNow} 
     rid = RegistrationId ridText
     readNow = oeNow >>= \now -> fmap (now,) <$> withTransaction oeStore (`getRegistration` rid)
     answer (now, r) = respond . jsonResponse status200 =<< registrationView oeStore oeConfig oeContracts (registrationAt now r)
+
+-- | The registration's current view, for a request that lost the race to change it.
+registrationChangedResponse :: OrdersEnv -> RegistrationId -> IO Response
+registrationChangedResponse OrdersEnv {oeStore, oeConfig, oeContracts, oeNow} rid =
+  withTransaction oeStore (`getRegistration` rid) >>= \case
+    Nothing -> pure notFound
+    Just r -> do
+      now <- oeNow
+      view <- registrationView oeStore oeConfig oeContracts (registrationAt now r)
+      pure $ jsonResponse status409 $ J.object ["error" .= ("registration_changed" :: Text), "registration" .= view]
 
 -- | Versions start at 1, so a registration deleted during a hold reads as changed.
 registrationVersion :: DBStore -> RegistrationId -> IO Int64
