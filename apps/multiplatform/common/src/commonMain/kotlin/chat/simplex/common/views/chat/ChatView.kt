@@ -408,13 +408,14 @@ fun ChatView(
                 // The idea is to preload information before showing a modal because large groups can take time to load all members
                 var preloadedContactInfo: Pair<ConnectionStats?, Profile?>? = null
                 var preloadedCode: String? = null
-                var preloadedLink: GroupLink? = null
+                val preloadedLink = mutableStateOf<GroupLink?>(null)
+                var preloadedChatId: ChatId? = chatInfo.id
                 if (chatInfo is ChatInfo.Direct) {
                   preloadedContactInfo = chatModel.controller.apiContactInfo(chatRh, chatInfo.apiId)
                   preloadedCode = chatModel.controller.apiGetContactCode(chatRh, chatInfo.apiId)?.second
                 } else if (chatInfo is ChatInfo.Group) {
                   setGroupMembers(chatRh, chatInfo.groupInfo, chatModel)
-                  preloadedLink = chatModel.controller.apiGetGroupLink(chatRh, chatInfo.groupInfo.groupId)
+                  preloadedLink.value = chatModel.controller.apiGetGroupLink(chatRh, chatInfo.groupInfo.groupId)
                 }
                 if (!isActive) return@launch
 
@@ -424,27 +425,32 @@ fun ChatView(
                   ModalView(close, cardScreen = true, appBar = appBar.value) {
                     val chatInfo = remember { activeChat }.value?.chatInfo
                     if (chatInfo is ChatInfo.Direct) {
-                      var contactInfo: Pair<ConnectionStats?, Profile?>? by remember { mutableStateOf(preloadedContactInfo) }
-                      var code: String? by remember { mutableStateOf(preloadedCode) }
-                      KeyChangeEffect(chatInfo.id) {
+                      var contactInfo: Pair<ConnectionStats?, Profile?>? by remember(chatInfo.id) { mutableStateOf(if (chatInfo.id == preloadedChatId) preloadedContactInfo else null) }
+                      var code: String? by remember(chatInfo.id) { mutableStateOf(if (chatInfo.id == preloadedChatId) preloadedCode else null) }
+                      LaunchedEffect(chatInfo.id) {
+                        if (chatInfo.id == preloadedChatId) return@LaunchedEffect
+                        preloadedChatId = null
                         contactInfo = chatModel.controller.apiContactInfo(chatRh, chatInfo.apiId)
                         preloadedContactInfo = contactInfo
                         code = chatModel.controller.apiGetContactCode(chatRh, chatInfo.apiId)?.second
                         preloadedCode = code
+                        preloadedChatId = chatInfo.id
                       }
                       ChatInfoView(chatsCtx, chatModel, chatInfo.contact, contactInfo?.first, contactInfo?.second, chatInfo.localAlias, code, close) {
                         showSearch.value = true
                       }
                     } else if (chatInfo is ChatInfo.Group) {
-                      var link: GroupLink? by remember(chatInfo.id) { mutableStateOf(preloadedLink) }
-                      KeyChangeEffect(chatInfo.id) {
+                      var linkLoaded by remember(chatInfo.id) { mutableStateOf(chatInfo.id == preloadedChatId) }
+                      LaunchedEffect(chatInfo.id) {
+                        if (chatInfo.id == preloadedChatId && chatModel.membersLoaded.value) return@LaunchedEffect
+                        preloadedChatId = null
                         setGroupMembers(chatRh, chatInfo.groupInfo, chatModel)
-                        link = chatModel.controller.apiGetGroupLink(chatRh, chatInfo.groupInfo.groupId)
-                        preloadedLink = link
+                        preloadedLink.value = chatModel.controller.apiGetGroupLink(chatRh, chatInfo.groupInfo.groupId)
+                        linkLoaded = true
+                        preloadedChatId = chatInfo.id
                       }
-                      GroupChatInfoView(chatsCtx, chatRh, chatInfo.id, link, selectedItems, appBar, scrollToItemId, {
-                        link = it
-                        preloadedLink = it
+                      GroupChatInfoView(chatsCtx, chatRh, chatInfo.id, if (linkLoaded) preloadedLink.value else null, linkLoaded, selectedItems, appBar, scrollToItemId, {
+                        if (chatInfo.id == preloadedChatId) preloadedLink.value = it
                       }, close, { showSearch.value = true })
                     } else {
                       LaunchedEffect(Unit) {

@@ -63,6 +63,7 @@ fun ModalData.GroupChatInfoView(
   rhId: Long?,
   chatId: String,
   groupLink: GroupLink?,
+  groupLinkLoaded: Boolean,
   selectedItems: MutableState<Set<Long>?>,
   appBar: MutableState<@Composable (BoxScope.() -> Unit)?>,
   scrollToItemId: MutableState<Long?>,
@@ -109,6 +110,7 @@ fun ModalData.GroupChatInfoView(
       developerTools,
       onLocalAliasChanged = { setGroupAlias(chat, it, chatModel) },
       groupLink,
+      groupLinkLoaded,
       selectedItems,
       appBar,
       scrollToItemId,
@@ -440,17 +442,19 @@ fun MuteButton(
 fun AddGroupMembersButton(
   modifier: Modifier,
   chat: Chat,
-  groupInfo: GroupInfo
+  groupInfo: GroupInfo,
+  groupLinkLoaded: Boolean,
+  manageGroupLink: () -> Unit
 ) {
   InfoViewActionButton(
     modifier = modifier,
     icon =  if (groupInfo.incognito) painterResource(MR.images.ic_add_link) else painterResource(MR.images.ic_person_add_500),
     title = stringResource(MR.strings.action_button_add_members),
-    disabled = !groupInfo.ready,
-    disabledLook = !groupInfo.ready,
+    disabled = !groupInfo.ready || (groupInfo.incognito && !groupLinkLoaded),
+    disabledLook = !groupInfo.ready || (groupInfo.incognito && !groupLinkLoaded),
     onClick = {
       if (groupInfo.incognito) {
-        openGroupLink(groupInfo = groupInfo, rhId = chat.remoteHostId)
+        manageGroupLink()
       } else {
         addGroupMembers(groupInfo = groupInfo, rhId = chat.remoteHostId)
       }
@@ -462,14 +466,15 @@ fun AddGroupMembersButton(
 fun ChannelLinkActionButton(
   modifier: Modifier,
   groupInfo: GroupInfo,
+  groupLinkLoaded: Boolean,
   manageGroupLink: () -> Unit
 ) {
   InfoViewActionButton(
     modifier = modifier,
     icon = painterResource(MR.images.ic_link),
     title = stringResource(MR.strings.action_button_channel_link),
-    disabled = !groupInfo.ready,
-    disabledLook = !groupInfo.ready,
+    disabled = !groupInfo.ready || !groupLinkLoaded,
+    disabledLook = !groupInfo.ready || !groupLinkLoaded,
     onClick = manageGroupLink
   )
 }
@@ -521,6 +526,7 @@ fun ModalData.GroupChatInfoLayout(
   developerTools: Boolean,
   onLocalAliasChanged: (String) -> Unit,
   groupLink: GroupLink?,
+  groupLinkLoaded: Boolean,
   selectedItems: MutableState<Set<Long>?>,
   appBar: MutableState<@Composable (BoxScope.() -> Unit)?>,
   scrollToItemId: MutableState<Long?>,
@@ -606,11 +612,11 @@ fun ModalData.GroupChatInfoLayout(
         ) {
           if (groupInfo.useRelays && groupInfo.isOwner) {
             SearchButton(modifier = Modifier.fillMaxWidth(0.33f), chat, groupInfo, close, onSearchClicked)
-            ChannelLinkActionButton(modifier = Modifier.fillMaxWidth(0.5f), groupInfo, manageGroupLink)
+            ChannelLinkActionButton(modifier = Modifier.fillMaxWidth(0.5f), groupInfo, groupLinkLoaded, manageGroupLink)
             MuteButton(modifier = Modifier.fillMaxWidth(1f), chat, groupInfo)
           } else if (!groupInfo.useRelays && groupInfo.canAddMembers) {
             SearchButton(modifier = Modifier.fillMaxWidth(0.33f), chat, groupInfo, close, onSearchClicked)
-            AddGroupMembersButton(modifier = Modifier.fillMaxWidth(0.5f), chat, groupInfo)
+            AddGroupMembersButton(modifier = Modifier.fillMaxWidth(0.5f), chat, groupInfo, groupLinkLoaded, manageGroupLink)
             MuteButton(modifier = Modifier.fillMaxWidth(1f), chat, groupInfo)
           } else {
             SearchButton(modifier = Modifier.fillMaxWidth(0.5f), chat, groupInfo, close, onSearchClicked)
@@ -642,7 +648,7 @@ fun ModalData.GroupChatInfoLayout(
           if (groupInfo.isOwner && groupLink != null) {
             anyTopSectionRowShow = true
             ChannelLinkButton(manageGroupLink)
-          } else if (channelLink != null) {
+          } else if (channelLink != null && (groupLinkLoaded || !groupInfo.isOwner)) {
             anyTopSectionRowShow = true
             ChannelLinkQRCodeSection(channelLink)
             ShareViaChatButton {
@@ -681,7 +687,7 @@ fun ModalData.GroupChatInfoLayout(
         }
       } else {
         SectionView {
-          if (groupInfo.canAddMembers && groupInfo.businessChat == null) {
+          if (groupInfo.canAddMembers && groupInfo.businessChat == null && groupLinkLoaded) {
             anyTopSectionRowShow = true
             if (groupLink == null) {
               CreateGroupLinkButton(manageGroupLink)
@@ -1460,6 +1466,7 @@ fun PreviewGroupChatInfoLayout() {
       developerTools = false,
       onLocalAliasChanged = {},
       groupLink = null,
+      groupLinkLoaded = true,
       selectedItems = remember { mutableStateOf(null) },
       appBar = remember { mutableStateOf(null) },
       scrollToItemId = remember { mutableStateOf(null) },
