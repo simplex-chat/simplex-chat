@@ -106,7 +106,7 @@ reserveCode turns st now codeHash rid len write =
         | pcReservedBy == Just rid -> Right <$> write db
         | otherwise ->
             reservePrepaidCode db pcId rid now >>= \case
-              -- Only a change outside the code's turn, such as an operator's revoke, can refuse it here.
+              -- Only a writer outside this process, which takes no turn here, can refuse it.
               False -> Left . maybe CRInvalid (fromMaybe CRReserved . codeRefusal now rid len) <$> getPrepaidCode db codeHash
               True ->
                 write db >>= \case
@@ -139,10 +139,9 @@ issueNameCode cc len years paymentStatus = do
     Left e -> Left e
 
 -- | Left is a refusal or a failure; both sides are the text to show the operator.
-revokeNameCode :: ChatController -> NamePrepaidCode -> IO (Either Text Text)
-revokeNameCode cc code = do
+revokeNameCode :: Turns -> ChatController -> NamePrepaidCode -> IO (Either Text Text)
+revokeNameCode turns cc code = withCodeTurn turns codeHash $ do
   now <- getCurrentTime
-  let codeHash = namePrepaidCodeHash code
   withDB' "revokeNameCode" cc (\db -> (,) <$> revokePrepaidCode db codeHash now <*> getPrepaidCode db codeHash) <&> \case
     Right (Revoked _, Just PrepaidCode {pcReservedBy = Just _}) -> Right "Revoked. The order holding it keeps it."
     Right (Revoked _, _) -> Right "Revoked."
@@ -150,3 +149,5 @@ revokeNameCode cc code = do
     Right (AlreadyRedeemed, _) -> Left "Already used. It cannot be revoked."
     Right (NoSuchCode, _) -> Left "No such code."
     Left _ -> Left "The code could not be revoked."
+  where
+    codeHash = namePrepaidCodeHash code

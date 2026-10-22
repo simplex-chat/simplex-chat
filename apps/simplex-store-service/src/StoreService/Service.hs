@@ -26,6 +26,7 @@ import StoreService.Group.Command (badgeTypeP, codeP, maxMonths, maxNameYears, n
 import StoreService.Names.Codes (issueNameCode, revokeNameCode)
 import StoreService.Names.Env (NamesEnv (..), newNamesEnv)
 import StoreService.Names.Sender (runSender)
+import StoreService.Names.Turns (Turns, newTurns)
 import StoreService.Options
 import StoreService.Poller (newPollerEnv, newReadHints, runPoller)
 import StoreService.Providers.BTCPay (btcpayProvider)
@@ -129,6 +130,8 @@ storeService opts@StoreServiceOpts {serviceConfigFile} cfg env = do
   serviceCfg <- traverse readConfigOrExit serviceConfigFile
   key <- requireIssuerKey opts serviceCfg cfg
   waiters <- newWaiters
+  -- The hooks' //revoke takes a prepaid code's turn, so the turns exist before the chat starts.
+  turns <- newTurns
   let groupCfg = serviceCfg >>= \ServiceConfig {group} -> group
       trackerQ_ = groupEventQ env <$ groupCfg
       readEvents cc =
@@ -140,7 +143,7 @@ storeService opts@StoreServiceOpts {serviceConfigFile} cfg env = do
               | isJust groupCfg -> forM_ (groupEvent ev) $ atomically . writeTQueue (groupEventQ env)
             _ -> pure ()
       startLanes cc = do
-        lanes <- maybe (pure []) (serviceLanes waiters cc) serviceCfg
+        lanes <- maybe (pure []) (serviceLanes waiters turns cc) serviceCfg
         -- The group is resolved before the other lanes start, so a failed lookup exits at once rather than waiting for them to end.
         groupLane_ <- forM groupCfg $ \gc -> runGroupLane cc (groupEventQ env) <$> ensureManagedGroup cc gc
         raceAny_ $ processQueuedRequests key trackerQ_ env : maybeToList groupLane_ <> lanes
@@ -148,32 +151,32 @@ storeService opts@StoreServiceOpts {serviceConfigFile} cfg env = do
         defaultChatHooks
           { preStartHook = Just $ badgePreStartHook opts,
             postStartHook = Just $ badgePostStartHook opts env,
-            preCmdHook = Just badgeCmdHook
+            preCmdHook = Just $ badgeCmdHook turns
           }
   -- The reader runs from the start and must not block, since outputQ carries every chat event and a full queue stalls the core.
   simplexChatCore cfg {chatHooks} (mkChatOpts opts) $ \_ cc -> raceAny_ [readEvents cc, startLanes cc]
   where
-    serviceLanes :: Waiters -> ChatController -> ServiceConfig -> IO [IO ()]
-    serviceLanes ws cc@ChatController {chatStore} sc = do
+    serviceLanes :: Waiters -> Turns -> ChatController -> ServiceConfig -> IO [IO ()]
+    serviceLanes ws turns cc@ChatController {chatStore} sc = do
       -- Seed before the listener accepts anything, since every checkout is priced from these.
       seedServiceCatalog chatStore
       btc <- maybe (pure []) (fmap (: []) . btcpayProvider) (btcpay sc)
       str <- maybe (pure []) (fmap (: []) . stripeProvider) (stripe sc)
       let providers = btc <> str
       hints <- newReadHints
-      namesEnv <- forM (names sc) (startNames cc)
+      namesEnv <- forM (names sc) (startNames cc turns)
       webEnv <- newWebEnv chatStore sc ws hints providers namesEnv
       exportWebapp (listener sc) (stripe sc)
       pollerEnv <- newPollerEnv chatStore ws hints providers (poll sc)
       pure $ [runWebListener webEnv, runPoller pollerEnv] <> maybe [] (\ne -> [runSender (neSender ne)]) namesEnv
 
-startNames :: ChatController -> NamesConfig -> IO NamesEnv
-startNames cc@ChatController {chatStore} nc@NamesConfig {nTLD, nChain = ChainConfig {cChainId}} =
+startNames :: ChatController -> Turns -> NamesConfig -> IO NamesEnv
+startNames cc@ChatController {chatStore} turns nc@NamesConfig {nTLD, nChain = ChainConfig {cChainId}} =
   readTVarIO (currentUser cc) >>= \case
     Nothing -> putStrLn "No current user" >> exitFailure
     Just User {userId} -> do
       logInfo $ "names: on, TLD " <> safeDecodeUtf8 (strEncode nTLD) <> ", chain " <> tshow cChainId
-      newNamesEnv cc userId nc chatStore
+      newNamesEnv cc userId nc chatStore turns
 
 seedServiceCatalog :: DBStore -> IO ()
 seedServiceCatalog st = do
@@ -189,6 +192,8 @@ storeServiceCLI opts@StoreServiceOpts {serviceConfigFile} = do
   serviceCfg <- traverse readConfigOrExit serviceConfigFile
   key <- requireIssuerKey opts serviceCfg terminalChatConfig
   env <- newServiceState
+  -- This mode runs no names lanes, so only its own //revoke takes these turns.
+  turns <- newTurns
   let eventHook _cc ev = do
         case ev of
           Right (CEvtServiceRequest u reqId sigKey reqData) ->
@@ -199,7 +204,7 @@ storeServiceCLI opts@StoreServiceOpts {serviceConfigFile} = do
         defaultChatHooks
           { preStartHook = Just $ badgePreStartHook opts,
             postStartHook = Just $ badgePostStartHook opts env,
-            preCmdHook = Just badgeCmdHook,
+            preCmdHook = Just $ badgeCmdHook turns,
             eventHook = Just eventHook
           }
   raceAny_
@@ -207,19 +212,19 @@ storeServiceCLI opts@StoreServiceOpts {serviceConfigFile} = do
       processQueuedRequests key Nothing env
     ]
 
-badgeCmdHook :: ChatController -> ChatCommand -> IO (Either (Either ChatError ChatResponse) ChatCommand)
-badgeCmdHook cc = \case
-  CustomChatCommand cmd -> Left <$> runBadgeCmd cc cmd
+badgeCmdHook :: Turns -> ChatController -> ChatCommand -> IO (Either (Either ChatError ChatResponse) ChatCommand)
+badgeCmdHook turns cc = \case
+  CustomChatCommand cmd -> Left <$> runBadgeCmd turns cc cmd
   cmd -> pure $ Right cmd
 
-runBadgeCmd :: ChatController -> ByteString -> IO (Either ChatError ChatResponse)
-runBadgeCmd cc cmd
+runBadgeCmd :: Turns -> ChatController -> ByteString -> IO (Either ChatError ChatResponse)
+runBadgeCmd turns cc cmd
   | Right issueOpts <- A.parseOnly issueCmdP cmd =
       issuedReply formatBadgeCode <$> issueBadgeCode cc issueOpts
   | Right (len, years, paymentStatus) <- A.parseOnly issueNameCmdP cmd =
       issuedReply (formatNameCode . NCPrepaid) <$> issueNameCode cc len years paymentStatus
   | Right code <- A.parseOnly revokeCmdP cmd = revokedReply <$> revokeWithTracker cc code
-  | Right code <- A.parseOnly revokeNameCmdP cmd = revokedReply <$> revokeNameCode cc code
+  | Right code <- A.parseOnly revokeNameCmdP cmd = revokedReply <$> revokeNameCode turns cc code
   | otherwise =
       pure $ chatCmdError $
         "Usage: //issue supporter|legend|investor [months 1-" <> show maxMonths <> "] [paid|unpaid|free], //issue name <length "

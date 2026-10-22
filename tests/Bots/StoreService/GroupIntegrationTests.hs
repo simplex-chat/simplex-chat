@@ -13,19 +13,22 @@ module Bots.StoreService.GroupIntegrationTests (badgeGroupIntegrationTests, name
 import StoreService.Config (BadgeIssuerKey (..), GroupConfig (..))
 import StoreService.Group (GroupAction (..), GroupEvent (..), codeInTracker, ensureManagedGroup)
 import StoreService.Group.Command (maxUses)
+import StoreService.Names.Codes (reserveCode, revokeNameCode)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Store (PrepaidCode (..), getPrepaidCode, spendPrepaidCode)
+import StoreService.Names.Turns (newTurns, withCodeTurn)
 import StoreService.Options (StoreServiceOpts (..))
 import StoreService.Service (ServiceState (..), storeService, newServiceState)
 import StoreService.Store (ManagedGroup (..), getManagedGroup)
 import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, badgeTypeOf, credentialOf, entryOf, issueCode, issueRaw, mkStoreServiceOpts, newPurchaseKeys, redeemWithQueue, requestObject, revokeRaw, serviceDbPrefix, shouldAnswerError, statementOf, stopStoreService, testIssuerKeyIdx)
 import Bots.StoreService.ConfigTests (chainSection, namesSection)
-import Bots.StoreService.NamesStoreTests (order, ownerA, placeCode)
+import Bots.StoreService.NamesStoreTests (order, ownerA, placeCode, placePaid)
 import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async (Async, async, cancel, poll, waitCatchSTM)
+import Control.Concurrent.MVar (MVar, newEmptyMVar, putMVar, takeMVar)
+import Control.Concurrent.Async (Async, async, cancel, poll, wait, waitCatchSTM)
 import Control.Concurrent.STM (TQueue, atomically, newTQueueIO, orElse, readTMVar, readTQueue, readTVarIO, tryReadTMVar, writeTQueue)
 import Control.Exception (IOException, bracket, catch, finally, throwIO, try)
 import Control.Monad (forM_, guard, mfilter, replicateM_, unless, void, when)
@@ -147,6 +150,7 @@ namesCodesChatTests :: SpecWith TestParams
 namesCodesChatTests = describe "StoreService names: prepaid codes" $ do
   it "issues prepaid codes on /issue name and /bulk name, answering the usage to years below 2" testGroupNameCodes
   it "issues prepaid codes on //issue name, checks them through the names router and revokes them on //revoke" testOperatorNameCodes
+  it "revokes a prepaid code in the code's turn, after a reservation holding it" testRevokeTakesCodeTurn
 
 testGroupNameCodes :: HasCallStack => TestParams -> IO ()
 testGroupNameCodes ps =
@@ -197,6 +201,48 @@ testOperatorNameCodes ps = do
     revoke held `shouldReturn` Right "Revoked. The order holding it keeps it."
     revoke spent `shouldReturn` Left "Already used. It cannot be revoked."
     check spent `shouldReturn` coverage 8 2 "used"
+
+testRevokeTakesCodeTurn :: HasCallStack => TestParams -> IO ()
+testRevokeTakesCodeTurn ps = do
+  svc <- prepareGroupService ps
+  (t, cc, _, port) <- startGroupService svc {gsIniSections = "" : namesSection <> chainSection} Nothing
+  flip finally (stopGroupService t cc) $ do
+    pollUntilTrue (listening port)
+    turns <- newTurns
+    let st = chatStore cc
+        revokeAfter code release = do
+          revoking <- async $ revokeNameCode turns cc code
+          threadDelay 200000
+          poll revoking >>= (`shouldSatisfy` isNothing)
+          release
+          finished revoking
+    held <- issueNameRaw cc "name 8"
+    holder <- holdTurn $ \body -> withCodeTurn turns (namePrepaidCodeHash held) body
+    revokeAfter held (releaseTurn holder) `shouldReturn` Right "Revoked."
+    finished (thAction holder) `shouldReturn` ()
+    now <- getCurrentTime
+    placePaid st "r1" ownerA (order "alicebakery" 1) (addUTCTime 3600 now) `shouldReturn` Right ()
+    reserved <- issueNameRaw cc "name 8"
+    reserving <- holdTurn $ \body -> reserveCode turns st now (namePrepaidCodeHash reserved) (RegistrationId "r1") 8 (\_ -> Right <$> body :: IO (Either Text ()))
+    revokeAfter reserved (releaseTurn reserving) `shouldReturn` Right "Revoked. The order holding it keeps it."
+    finished (thAction reserving) `shouldReturn` Right (Right ())
+
+data TurnHolder a = TurnHolder {thAction :: Async a, thRelease :: MVar ()}
+
+-- | Runs the action until its body is inside the turn, where the body waits for the release.
+holdTurn :: (IO () -> IO a) -> IO (TurnHolder a)
+holdTurn inTurn = do
+  entered <- newEmptyMVar
+  thRelease <- newEmptyMVar
+  thAction <- async $ inTurn $ putMVar entered () >> takeMVar thRelease
+  takeMVar entered
+  pure TurnHolder {thAction, thRelease}
+
+releaseTurn :: TurnHolder a -> IO ()
+releaseTurn TurnHolder {thRelease} = putMVar thRelease ()
+
+finished :: Async a -> IO a
+finished a = timeout 5000000 (wait a) >>= maybe (fail "did not finish") pure
 
 issueNameRaw :: HasCallStack => ChatController -> String -> IO NamePrepaidCode
 issueNameRaw cc args =
