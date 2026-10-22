@@ -4,6 +4,7 @@
 
 module Bots.StoreService.NamesOrdersTests (namesOrdersTests) where
 
+import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), setInvoiceState, withFakeBTCPay)
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (alice, answerRegistered, answerRegistrar, launchPricesAnswer, nameExpiresCall, noncesCall, oracle, pricesCall, registrarOf, rentPriceAnswer, rentPriceCall, reservedNamesCall, unhex)
 import Bots.StoreService.NamesStoreTests (issue, order, ownerA, ownerB, placeCode, placePaid, t0, usable)
@@ -14,6 +15,7 @@ import Control.Concurrent.STM (TVar)
 import qualified Control.Exception as E
 import Control.Monad (forM_, void)
 import Crypto.Random (ChaChaDRG)
+import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Key as K
 import qualified Data.Aeson.KeyMap as KM
@@ -52,8 +54,9 @@ import StoreService.Names.Signatures (OrderFields (..), orderMessage, personalDi
 import StoreService.Names.Store
 import StoreService.Names.Turns (newTurns)
 import StoreService.Names.View (ViewReads (..), readViewChain, viewJSON)
-import StoreService.Orders (expireOverdue, settleOrder)
-import StoreService.Poller (cleanupUnpaid, newPollerEnv, newReadHints, unpaidRetention)
+import StoreService.Orders (cancelOpenInvoice, expireOverdue, settleOrder)
+import StoreService.Poller (cleanupUnpaid, drainHints, newPollerEnv, newReadHints, queueReadHint, unpaidRetention)
+import StoreService.Providers.BTCPay (btcpayProvider)
 import StoreService.Providers (Funded (..), OrderDraft (..), PaymentSignal (..), Provider (..), ProviderError (..), ProviderInvoice (..))
 import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), ProviderRefConflict (..), getInvoice, getInvoiceByProviderRef, overdueInvoices, unpaidRefs)
 import StoreService.Waiters (newWaiters)
@@ -87,6 +90,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "accepts a new order of the same wallet and name after a cancel" testOrderAfterCancel
     it "closes an overdue order of the same wallet and name before the poller marks it, cancelling its invoice after" testOverdueClosed
     it "records a payment of the closed order as a late payment, leaving the newer order alone" testLatePaymentAfterNewOrder
+    it "alerts on a late payment as BTCPay reports it for an expired, cancelled or swept invoice, once" testLateBTCPayPayments
     it "answers cancel with funded, not_open, paid when settlement won, and expired with the payment read meanwhile" testCancelAnswers
     it "leaves a late payment of a cancelled invoice unpaid and alerts" testLatePayment
     it "queues an order settled while open and publishes its version" testSettlementQueues
@@ -225,7 +229,11 @@ freshRefs counter p = p {pCreateInvoice = \method draft -> pCreateInvoice p meth
         _ -> pinv {piProviderRef = ref}
 
 withOrders :: (Ctx -> IO a) -> IO a
-withOrders action = withServiceStore $ \cStore -> withFakeEthNode $ \cNode -> do
+withOrders = withOrdersVia id
+
+-- | With the providers changed as a test needs them.
+withOrdersVia :: (Provider -> Provider) -> (Ctx -> IO a) -> IO a
+withOrdersVia via action = withServiceStore $ \cStore -> withFakeEthNode $ \cNode -> do
   cRandom <- C.newRandom
   ct <- newContracts TLDSimplex =<< newChainClient cRandom (fakeChainConfig cNode)
   turns <- newTurns
@@ -240,8 +248,8 @@ withOrders action = withServiceStore $ \cStore -> withFakeEthNode $ \cNode -> do
     staticDir <- prepareStaticDir root
     let cfg = (testServiceConfig staticDir True) {btcpay = Just testBTCPayConfig}
         cOrders = OrdersEnv {oeStore = cStore, oeConfig = testNamesConfig cNode, oeContracts = ct, oeTurns = turns, oePhases = phases, oeNow = readIORef cClock}
-        crypto = freshRefs counter (stubProvider cStub)
-        card = freshRefs counter (stubProvider cStub) {pProvider = PPStripe}
+        crypto = via $ freshRefs counter (stubProvider cStub)
+        card = via $ freshRefs counter (stubProvider cStub) {pProvider = PPStripe}
     waiters <- newWaiters
     hints <- newReadHints
     built <- newWebEnv cStore cfg waiters hints [crypto, card] Nothing
@@ -582,6 +590,37 @@ testLatePaymentAfterNewOrder = withOrders $ \ctx -> do
   (nrPhase new, nrLive new, nrVersion new) `shouldBe` (PUnpaid, True, 1)
   settleNow ctx newInv settled `shouldReturn` Right ISPaid
   (nrPhase <$> invoiceRegistration ctx newInv) `shouldReturn` PQueued
+
+-- | The real BTCPay adapter against the fake: a payment into an expired invoice reads Expired with PaidLate,
+-- into a cancelled one Invalid, and into one only we closed New and paid in part.
+testLateBTCPayPayments :: IO ()
+testLateBTCPayPayments = withFakeBTCPay $ \fake -> do
+  btcpay <- btcpayProvider (fbConfig fake)
+  withOrdersVia (const btcpay) $ \ctx@Ctx {cStore = st, cWeb} -> do
+    poller <- newPollerEnv st (weWaiters cWeb) (Just $ oePhases $ cOrders ctx) (weHints cWeb) (weProviders cWeb) (poll $ weConfig cWeb)
+    let refOf inv = maybe (error "no invoice") irProviderRef <$> getInvoice st inv
+        readAt ref = queueReadHint (weHints cWeb) ref >> drainHints poller
+        paidLate ref fields = capturingStderr $ setInvoiceState fake ref fields >> readAt ref
+        alerted logs = T.isInfixOf "stays unpaid; refund the payment" logs
+        later = addUTCTime 3600 orderTime
+    (expired, _) <- placed ctx aliceOrder
+    expiredRef <- refOf expired
+    setInvoiceState fake expiredRef ["status" .= ("Expired" :: Text)]
+    readAt expiredRef
+    (irStatus <$>) <$> getInvoice st expired `shouldReturn` Just ISExpired
+    paidLate expiredRef ["additionalStatus" .= ("PaidLate" :: Text), "paymentMethodPaid" .= ("0.00050000" :: Text)] >>= (`shouldSatisfy` alerted)
+    capturingStderr (readAt expiredRef) >>= (`shouldNotSatisfy` alerted)
+    (cancelled, _) <- placed ctx aliceOrder {oLabel = "dynamis", oPrice = 20000, oCommitment = commitmentOf 2}
+    cancelledRef <- refOf cancelled
+    cancelOpenInvoice st (weWaiters cWeb) (Just $ oePhases $ cOrders ctx) cancelled later `shouldReturn` True
+    paidLate cancelledRef ["status" .= ("Invalid" :: Text), "paymentMethodPaid" .= ("0.00078000" :: Text)] >>= (`shouldSatisfy` alerted)
+    (swept, _) <- placed ctx aliceOrder {oOwner = ownerBText, oKey = keyB, oCommitment = commitmentOf 3}
+    sweptRef <- refOf swept
+    expireOverdue st (weWaiters cWeb) (Just $ oePhases $ cOrders ctx) later later [swept] `shouldReturn` [swept]
+    paidLate sweptRef ["paymentMethodPaid" .= ("0.00025000" :: Text)] >>= (`shouldSatisfy` alerted)
+    forM_ [expired, cancelled, swept] $ \inv -> do
+      r <- invoiceRegistration ctx inv
+      (nrPhase r, nrLive r) `shouldBe` (PUnpaid, False)
 
 testCancelAnswers :: IO ()
 testCancelAnswers = withOrders $ \ctx -> do
