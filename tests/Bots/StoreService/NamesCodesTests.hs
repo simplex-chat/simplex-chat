@@ -34,7 +34,7 @@ import StoreService.Config (ListenerConfig (..))
 import StoreService.Group.Command (CmdAction (..), GroupCmd (..), groupCmdAction)
 import StoreService.Names.Codes
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Store (NewPrepaidCode (..), PrepaidCode (..), getPrepaidCode, insertPrepaidCode, revokePrepaidCode, spendPrepaidCode)
+import StoreService.Names.Store (NewPrepaidCode (..), PrepaidCode (..), getPrepaidCode, insertPrepaidCode, reservePrepaidCode, revokePrepaidCode, spendPrepaidCode)
 import StoreService.Names.Turns (Turns, newTurns)
 import StoreService.Store (RevokeResult (..))
 import StoreService.Web.Http (codeLimit, newHttpEnv, notFound)
@@ -53,11 +53,12 @@ namesCodesTests = describe "StoreService names: prepaid codes" $ do
     it "answers bad_request to a body that is not an object with a code text, and 405 to GET" testCheckBadBody
     it "takes a code token for every check, whatever its outcome" testCheckLimit
   describe "reservations" $ do
-    it "reserves an unused code in the transaction of the registration's write" testReserve
+    it "reserves an unused code after the registration's write, in its transaction" testReserve
     it "refuses each unusable code with its tag, before the write runs" testReserveRefusals
     it "keeps a code its registration holds even if revoked or expired since, still checking the length" testReserveHeld
     it "refuses a spent code to its own registration with code_used, before the write runs" testReserveSpent
-    it "gives the code back when the write refuses" testReserveWriteRefused
+    it "reserves nothing when the write refuses" testReserveWriteRefused
+    it "rolls the write back when the code's reservation is refused after it" testReserveRollsBack
     it "lets one of two concurrent reservations of a code win, the other answered code_reserved" testConcurrentReserve
     it "releases and spends a code only after the write, and only for its holder" testReleaseSpend
   describe "group commands" $ do
@@ -238,7 +239,8 @@ testReserve = withOrders $ \turns st -> do
   code <- newCode 8
   PrepaidCode {pcCodeHash} <- issueAs st code usable
   let holderInWrite db = Right . (pcReservedBy =<<) <$> getPrepaidCode db pcCodeHash :: IO (Either Text (Maybe RegistrationId))
-  reserveCode turns st tNow pcCodeHash r1 8 holderInWrite `shouldReturn` Right (Right (Just r1))
+  reserveCode turns st tNow pcCodeHash r1 8 holderInWrite `shouldReturn` Right (Right Nothing)
+  (pcReservedBy =<<) <$> withTransaction st (`getPrepaidCode` pcCodeHash) `shouldReturn` Just r1
   reserveCode turns st tNow pcCodeHash r1 11 holderInWrite `shouldReturn` Right (Right (Just r1))
 
 testReserveRefusals :: IO ()
@@ -306,6 +308,15 @@ testReserveWriteRefused = withOrders $ \turns st -> do
   (pcReservedBy =<<) <$> readCode st row `shouldReturn` Nothing
   reserveCode turns st tNow pcCodeHash r2 8 writeOk `shouldReturn` Right (Right ())
   (pcReservedBy =<<) <$> readCode st row `shouldReturn` Just r2
+
+-- | The write reserves the code for another registration, as a writer outside this process could between the check and the reservation.
+testReserveRollsBack :: IO ()
+testReserveRollsBack = withOrders $ \turns st -> do
+  code <- newCode 8
+  row@PrepaidCode {pcId, pcCodeHash} <- issueAs st code usable
+  let takenMeanwhile db = Right () <$ reservePrepaidCode db pcId r2 tNow :: IO (Either Text ())
+  reserveCode turns st tNow pcCodeHash r1 8 takenMeanwhile `shouldReturn` Left CRReserved
+  readCode st row `shouldReturn` Just row
 
 testConcurrentReserve :: IO ()
 testConcurrentReserve = withOrders $ \turns st -> do

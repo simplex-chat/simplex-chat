@@ -21,6 +21,7 @@ module StoreService.Names.Codes
 where
 
 import Control.Applicative ((<|>))
+import qualified Control.Exception as E
 import Data.ByteString (ByteString)
 import Data.Functor ((<&>))
 import Data.Int (Int64)
@@ -102,24 +103,31 @@ reserveRefusal db now codeHash rid len = maybe CRInvalid (fromMaybe CRReserved .
 readPrepaidCode :: DBStore -> NamePrepaidCode -> IO (Maybe PrepaidCode)
 readPrepaidCode st code = withTransaction st (`getPrepaidCode` namePrepaidCodeHash code)
 
--- | In the code's turn and one transaction, the code is checked and reserved for the registration, then
--- the write runs. A write that refuses gives the code back.
+newtype ReservationRefused = ReservationRefused CodeRefusal
+  deriving (Show)
+
+instance E.Exception ReservationRefused
+
+-- | In the code's turn and one transaction, the code is checked, the write runs, then the code is reserved for the
+-- registration, so the registration's row is locked before the code's. A refused reservation rolls the write back.
 reserveCode :: Turns -> DBStore -> UTCTime -> ByteString -> RegistrationId -> Int -> (DB.Connection -> IO (Either e a)) -> IO (Either CodeRefusal (Either e a))
 reserveCode turns st now codeHash rid len write =
-  withCodeTurn turns codeHash $ withTransaction st $ \db ->
-    getPrepaidCode db codeHash >>= \case
-      Nothing -> pure $ Left CRInvalid
-      Just code@PrepaidCode {pcId, pcReservedBy}
-        | Just refusal <- codeRefusal now rid len code -> pure $ Left refusal
-        | pcReservedBy == Just rid -> Right <$> write db
-        | otherwise ->
-            reservePrepaidCode db pcId rid now >>= \case
-              -- Only a writer outside this process, which takes no turn here, can refuse it.
-              False -> Left <$> reserveRefusal db now codeHash rid len
-              True ->
-                write db >>= \case
-                  refused@(Left _) -> Right refused <$ releasePrepaidCode db pcId rid
-                  written -> pure $ Right written
+  withCodeTurn turns codeHash $ either (\(ReservationRefused refusal) -> Left refusal) id <$> E.try (withTransaction st reserve)
+  where
+    reserve db =
+      getPrepaidCode db codeHash >>= \case
+        Nothing -> pure $ Left CRInvalid
+        Just code@PrepaidCode {pcId, pcReservedBy}
+          | Just refusal <- codeRefusal now rid len code -> pure $ Left refusal
+          | otherwise ->
+              write db >>= \case
+                written@(Right _)
+                  | pcReservedBy /= Just rid ->
+                      reservePrepaidCode db pcId rid now >>= \case
+                        True -> pure $ Right written
+                        -- Only a writer outside this process, which takes no turn here, can refuse it.
+                        False -> E.throwIO . ReservationRefused =<< reserveRefusal db now codeHash rid len
+                written -> pure $ Right written
 
 -- | The write runs first, and the code is released only if it succeeds. False when the registration did not hold the code.
 releaseCode :: Turns -> DBStore -> Int64 -> RegistrationId -> (DB.Connection -> IO (Either e a)) -> IO (Either e (a, Bool))
