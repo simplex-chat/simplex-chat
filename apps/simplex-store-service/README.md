@@ -390,28 +390,54 @@ sudo ./egress.sh --uid 998
 sudo ./egress.sh --check --uid 998
 ```
 
-- `--dry-run` prints the commands and changes nothing; read the allowed endpoints in it.
-- `--check` exits 1 and names what differs unless every rule and jump is in place and the chain
-  holds nothing else.
+- `--dry-run` prints the `iptables-restore` input an install would commit, read against the
+  current rules, and changes nothing; read the allowed endpoints in it.
+- `--check` exits 1 and names what differs unless every rule is in place, the chain holds nothing
+  else, and each jump is the first rule of its chain.
 - Names are resolved when the rule is installed: run it again after changing the ini, the
   database string or the resolvers, and after a private endpoint's address changes. A name the
   host cannot resolve (a container name) stops the install; pass its address with
   `--allow ADDRESS:PORT`, as for any other endpoint the service needs, such as a SOCKS proxy.
-- The rules do not survive a reboot. Run the script from a boot unit ordered before Docker, or
-  save them with `netfilter-persistent`.
+- The DNS resolvers allowed are those in `--resolv-conf` (default `/etc/resolv.conf`). With host
+  networking that is what the service queries, systemd-resolved's stub included. On a bridge
+  network of a host with systemd-resolved, Docker sends the containers' queries to the upstream
+  servers in `/run/systemd/resolve/resolv.conf`, so pass that file.
+- On a bridge network every container on it is matched, and the service cannot open connections
+  to another container there unless it is listed with `--allow`. Give the service a network of its
+  own.
+- The rules do not survive a reboot. Run the script at boot after Docker and DNS are up, from a
+  unit ordered after `docker.service` and `network-online.target`: the names in the ini must
+  resolve, and bridge mode needs Docker's `DOCKER-USER`. The service is unguarded from its start
+  until then. With host networking, saving the rules with `netfilter-persistent` restores them
+  before Docker starts.
 
-Check it by hand from inside the container, once the service runs:
+Check it by hand from inside the container, once the service runs. Each check below fails when the
+rule is missing:
 
 ```
 docker compose exec store-service bash -c ': </dev/tcp/10.255.255.1/80'
+```
+
+With host networking:
+
+```
 docker compose exec store-service bash -c ': </dev/tcp/127.0.0.1/8080'
 docker compose exec store-service bash -c ': </dev/tcp/127.0.0.1/5432 && echo allowed'
 ```
 
-- The first two answer `Connection refused` at once, sent by the rule. Without it the second would
-  reach the service's own listener.
-- The third prints `allowed`. With the RPC node on this host, the same command with its port
-  (`8545` for a local reth) does too.
+On a bridge network, with the network's gateway (the host's address on it) and a port the host
+listens on for every address, such as Caddy's 443:
+
+```
+docker network inspect -f '{{(index .IPAM.Config 0).Gateway}}' <network>
+docker compose exec store-service bash -c ': </dev/tcp/<gateway>/443'
+```
+
+- A refused connection answers `Connection refused` at once, sent by the rule. Without the rule
+  the connection to 10.255.255.1 waits for a timeout instead, and the one to 127.0.0.1:8080 (the
+  service's own listener) or to the gateway connects.
+- `allowed` is printed for the database. With the RPC node on this host, the same command with its
+  port (`8545` for a local reth) prints it too.
 
 `sudo ./egress.sh --remove --uid 998` (or `--bridge <interface>`) deletes the jumps an install
 adds for that user or network, then the chain, in `iptables` and `ip6tables`. Running it again
