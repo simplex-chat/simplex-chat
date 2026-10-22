@@ -4,7 +4,7 @@
 
 ## Running it
 
-The workflow runs only when asked: by a run tag in a commit pushed to an `f/…` branch, or by hand from the Actions tab on any branch. [App tests on GitHub's runners](../README.md) lists the tags and inputs.
+The workflow runs only when started by hand, on any branch, from the Actions tab or with `gh workflow run`: [App tests on GitHub's runners](../README.md) says how and lists the inputs.
 
 Results: the job logs, the Claude job's summary (Claude's usage) and the artifacts `ios-sim-smoke-test` (a screenshot, a 1000-px view and an accessibility tree per step, the app log), `ios-sim-backend-logs` and `ios-sim-claude-test` (the Claude job's smoke test in `smoke-test/`, and per session: `prompt.md`, `report.md`, `shots/`, `transcript.jsonl`, `usage.json`). Read them with `gh run view <id> --log` and `gh run download <id> -n <artifact>`.
 
@@ -40,7 +40,7 @@ Haiku 5.5 drives the app well: the smoke plan takes a few dozen turns and cents;
 
 ## The test backend
 
-`backend.sh start <backend zip> <work dir>` (with `[ci-backend]` or the `backend` input) starts, on the runner, against the preset SMP and XFTP servers:
+`backend.sh start <backend zip> <work dir>` (with the `backend` input) starts, on the runner, against the preset SMP and XFTP servers:
 
 - a chat relay for channels, and a SimpleX Directory whose address it writes to `<work dir>/directory-link`;
 - a CLI peer `ci_admin` that creates, registers and gets approved groups and channels with the profile JSON the app sends: `ci_group` and `ci_channel` ("ci seed"), `ci_cards`, six entries with app-size avatars made by `avatar.swift` ("ci avatar"), a long name, markdown in a description, and `cinews`, `cinews_digest`, `cinews_weekly`;
