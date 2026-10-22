@@ -23,7 +23,7 @@ Single-owner channels, and channels whose owner invitations nobody accepted, kee
 
 ## How it works
 
-The channel's link data lives on one SMP server, the link server, which already orders every write to it. The design makes it order everything the owners share ([diagram 1](2026-10-15-channel-multi-owner-s3min-sketches/1-components.svg), [diagram 7](2026-10-15-channel-multi-owner-s3min-sketches/7-data-model.svg)):
+The channel's link data lives on one SMP server, the link server, which already orders every write to it. The design makes it order everything the owners share ([diagram 1](2026-10-15-channel-multi-owner-s3min-sketches/1-components.svg)):
 
 - **One new server command, `LSWP`.** An owner reads the link data, makes its one change, and writes it back with the hash of what it read; the server accepts it only if the data is unchanged, replacing the owner keys in the same step. Otherwise the owner reads again and re-applies its change ([diagram 2](2026-10-15-channel-multi-owner-s3min-sketches/2-owner-write.svg)).
 - **Role changes are numbered on the link server**, claimed with the same command from the complete current roster, so each version has one author who had all earlier ones, as members and relays expect today ([diagram 3](2026-10-15-channel-multi-owner-s3min-sketches/3-roster-claims.svg)).
@@ -50,7 +50,7 @@ The channel's link data lives on one SMP server, the link server, which already 
 - **Edits over a changed profile are refused**, and the current profile is shown.
 - **A new owner's device connects to the link server directly**, revealing its IP address to that server's operator; the invitation says so, and private-routing settings need an explicit confirmation. Link reads stay private.
 - **The link server learns when owners act and how many there are.**
-- **A promotion wins over a removal at the same moment**: devices that applied the removal first take the member as an owner at their next link read. If the member's own device applied it first, it has left, and the member stays listed as an owner without a device until another owner removes it ([diagram 6](2026-10-15-channel-multi-owner-s3min-sketches/6-promotion-removal-race.svg)).
+- **A promotion wins over a removal at the same moment**: devices that applied the removal first take the member as an owner at their next link read. If the member's own device applied it first, it has left, and the member stays listed as an owner without a device until another owner removes it.
 - **Old apps and servers.** Promotion needs every relay and the link server upgraded; subscribers on older apps reject a new owner's actions until they upgrade.
 - **A new owner's profile reaches every subscriber**; the member is told before it accepts.
 

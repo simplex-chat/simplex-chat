@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="960" height="1290" viewBox="0 0 960 1290" role="img" aria-label="Removing an owner and leaving. To remove owner X, O1 swaps the link to revoke X and drop X's key, then sends x.grp.mem.del, which relays deliver to X first and then to everyone; X erases its keys and any later write by X gets AUTH. To leave, an owner is refused if no other current owner remains; if its own last roster claim was not stored or delivered, it first re-signs it with its own link write and waits for its agent to report the roster sent; then it swaps to revoke itself, sends x.grp.leave and erases its keys.">
+<svg xmlns="http://www.w3.org/2000/svg" width="840" height="560" viewBox="0 0 840 560" role="img" aria-label="Removing an owner, and leaving. To remove owner X, owner O1 reads the link and swaps it with LSWP to revoke X, which drops X's key from the key set; then it sends x.grp.mem.del, which relays deliver first to X and then to everyone else. Relays delete their connection to X, X applies the removal and erases its keys, others hold X as departed, and the link server answers AUTH to any later LSWP or DEL by X. An owner that leaves is refused if no other current owner remains; if its own last roster was not stored or sent, it re-signs it with one more LSWP and waits up to 30 seconds for it to be sent, or the leave is refused; then it swaps to revoke itself, sends x.grp.leave and erases its keys.">
   <defs>
     <marker id="d5-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M0,0 L10,5 L0,10 z" fill="#24292f"/>
@@ -6,122 +6,73 @@
     <marker id="d5-arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M0,0 L10,5 L0,10 z" fill="#b42318"/>
     </marker>
-    <marker id="d5-arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M0,0 L10,5 L0,10 z" fill="#1a7f37"/>
-    </marker>
   </defs>
-  <rect width="960" height="1290" fill="#fbfaf7"/>
-  <rect x="0.5" y="0.5" width="959" height="1289" fill="none" stroke="#d9d5cc"/>
+  <rect width="840" height="560" fill="#fbfaf7"/>
+  <rect x="0.5" y="0.5" width="839" height="559" fill="none" stroke="#d9d5cc"/>
   <g font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#1f2328">
-    <text x="24" y="34" font-size="17" font-weight="700">5 · Removing an owner, and leaving</text>
-    <text x="24" y="56" fill="#5b636e">Both land on the link first: the swap drops the owner's key at once, and the announcement follows.</text>
+    <text x="20" y="30" font-size="16" font-weight="700">Removing an owner, and leaving</text>
+    <text x="20" y="50" fill="#5b636e">Both land on the link first: the swap drops the owner's key at once, then the announcement follows.</text>
 
-    <rect x="20" y="72" width="920" height="22" fill="#ece8df"/>
-    <text x="28" y="88" font-weight="700" fill="#5b636e">A · An owner removes owner X [§4.8]</text>
-    <line x1="100" y1="136" x2="100" y2="516" stroke="#d7b48c" stroke-dasharray="4 4"/>
-    <line x1="290" y1="136" x2="290" y2="516" stroke="#b9c4d0" stroke-dasharray="4 4"/>
-    <line x1="480" y1="136" x2="480" y2="516" stroke="#9cc9a3" stroke-dasharray="4 4"/>
-    <line x1="670" y1="136" x2="670" y2="516" stroke="#b9c4d0" stroke-dasharray="4 4"/>
-    <line x1="860" y1="136" x2="860" y2="516" stroke="#c3b5e3" stroke-dasharray="4 4"/>
-    <rect x="40" y="104" width="120" height="32" rx="7" fill="#fdf2e4" stroke="#b8661a" stroke-width="1.5"/>
-    <text x="100" y="125" text-anchor="middle" font-size="13" font-weight="700">Link server</text>
-    <rect x="225" y="104" width="130" height="32" rx="7" fill="#e9f1fb" stroke="#2f6db5" stroke-width="1.5"/>
-    <text x="290" y="125" text-anchor="middle" font-size="13" font-weight="700">Owner O1</text>
-    <rect x="420" y="104" width="120" height="32" rx="7" fill="#eaf6ec" stroke="#2e7d32" stroke-width="1.5"/>
-    <text x="480" y="125" text-anchor="middle" font-size="13" font-weight="700">Relays</text>
-    <rect x="605" y="104" width="130" height="32" rx="7" fill="#e9f1fb" stroke="#2f6db5" stroke-width="1.5"/>
-    <text x="670" y="125" text-anchor="middle" font-size="13" font-weight="700">Owner X</text>
-    <rect x="790" y="104" width="140" height="32" rx="7" fill="#f2edfa" stroke="#6a4bb0" stroke-width="1.5"/>
-    <text x="860" y="125" text-anchor="middle" font-size="13" font-weight="700">Everyone else</text>
+    <text x="20" y="78" font-weight="700" fill="#5b636e">An owner removes owner X</text>
+    <line x1="150" y1="114" x2="150" y2="398" stroke="#c9ced6" stroke-dasharray="4 4"/>
+    <line x1="310" y1="114" x2="310" y2="398" stroke="#c9ced6" stroke-dasharray="4 4"/>
+    <line x1="470" y1="114" x2="470" y2="398" stroke="#c9ced6" stroke-dasharray="4 4"/>
+    <line x1="620" y1="114" x2="620" y2="398" stroke="#c9ced6" stroke-dasharray="4 4"/>
+    <line x1="760" y1="114" x2="760" y2="398" stroke="#c9ced6" stroke-dasharray="4 4"/>
+    <rect x="90" y="86" width="120" height="28" rx="6" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+    <text x="150" y="105" text-anchor="middle" font-size="13" font-weight="700">Link server</text>
+    <rect x="250" y="86" width="120" height="28" rx="6" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+    <text x="310" y="105" text-anchor="middle" font-size="13" font-weight="700">Owner O1</text>
+    <rect x="410" y="86" width="120" height="28" rx="6" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+    <text x="470" y="105" text-anchor="middle" font-size="13" font-weight="700">Relays</text>
+    <rect x="560" y="86" width="120" height="28" rx="6" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+    <text x="620" y="105" text-anchor="middle" font-size="13" font-weight="700">Owner X</text>
+    <rect x="700" y="86" width="120" height="28" rx="6" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+    <text x="760" y="105" text-anchor="middle" font-size="13" font-weight="700">Everyone else</text>
 
-    <line x1="290" y1="162" x2="102" y2="162" stroke="#24292f" stroke-width="1.5" marker-end="url(#d5-arrow)"/>
-    <text x="195" y="155" text-anchor="middle">read</text>
-    <line x1="100" y1="186" x2="288" y2="186" stroke="#24292f" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#d5-arrow)"/>
-    <text x="195" y="179" text-anchor="middle">data, hash</text>
-    <rect x="165" y="198" width="250" height="42" rx="5" fill="#ffffff" stroke="#2f6db5"/>
-    <text x="290" y="215" text-anchor="middle"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">CLCRevokeOwner X</tspan>; refused if</text>
-    <text x="290" y="232" text-anchor="middle">no other owner would remain</text>
-    <line x1="290" y1="266" x2="102" y2="266" stroke="#24292f" stroke-width="1.5" marker-end="url(#d5-arrow)"/>
-    <text x="195" y="259" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5">LSWP</text>
-    <rect x="20" y="278" width="160" height="42" rx="5" fill="#e6f4ea" stroke="#1a7f37"/>
-    <text x="100" y="295" text-anchor="middle" fill="#1a7f37">X in revokedOwners,</text>
-    <text x="100" y="312" text-anchor="middle" fill="#1a7f37">X's key out of the set</text>
-    <line x1="100" y1="342" x2="288" y2="342" stroke="#1a7f37" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#d5-arrow-green)"/>
-    <text x="195" y="335" text-anchor="middle" fill="#1a7f37" font-weight="700">OK</text>
-    <line x1="290" y1="368" x2="478" y2="368" stroke="#24292f" stroke-width="1.5" marker-end="url(#d5-arrow)"/>
-    <text x="385" y="361" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5">x.grp.mem.del X</text>
-    <line x1="480" y1="394" x2="668" y2="394" stroke="#24292f" stroke-width="1.5" marker-end="url(#d5-arrow)"/>
-    <text x="575" y="387" text-anchor="middle">first to X</text>
-    <line x1="480" y1="420" x2="858" y2="420" stroke="#24292f" stroke-width="1.5" marker-end="url(#d5-arrow)"/>
-    <text x="765" y="413" text-anchor="middle">then to everyone</text>
-    <rect x="395" y="432" width="170" height="42" rx="5" fill="#ffffff" stroke="#2e7d32"/>
-    <text x="480" y="449" text-anchor="middle">delete their</text>
-    <text x="480" y="466" text-anchor="middle">connection to X</text>
-    <rect x="585" y="432" width="170" height="42" rx="5" fill="#ffffff" stroke="#2f6db5"/>
-    <text x="670" y="449" text-anchor="middle">applies it on receipt,</text>
-    <text x="670" y="466" text-anchor="middle">erases its keys</text>
-    <rect x="775" y="432" width="170" height="42" rx="5" fill="#ffffff" stroke="#6a4bb0"/>
-    <text x="860" y="449" text-anchor="middle">X departed,</text>
-    <text x="860" y="466" text-anchor="middle">as today</text>
-    <line x1="670" y1="500" x2="102" y2="500" stroke="#b42318" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#d5-arrow-red)"/>
-    <text x="386" y="493" text-anchor="middle" fill="#b42318">any later LSWP or DEL by X: AUTH (its key is gone)</text>
-    <text x="28" y="544" fill="#5b636e">Two owners removing each other: the first swap drops the other's key; the second gets AUTH, or CONFLICT and then reads itself revoked.</text>
-    <text x="28" y="562" fill="#5b636e">One owner remains. A removed owner's rows are kept.</text>
+    <line x1="310" y1="138" x2="152" y2="138" stroke="#24292f" stroke-width="1.5" marker-end="url(#d5-arrow)"/>
+    <text x="230" y="131" text-anchor="middle">read</text>
+    <line x1="150" y1="158" x2="308" y2="158" stroke="#24292f" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#d5-arrow)"/>
+    <text x="230" y="151" text-anchor="middle">data, hash</text>
+    <line x1="310" y1="182" x2="152" y2="182" stroke="#24292f" stroke-width="1.5" marker-end="url(#d5-arrow)"/>
+    <text x="230" y="175" text-anchor="middle"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5">LSWP</tspan>: revoke X</text>
+    <rect x="50" y="192" width="200" height="36" rx="5" fill="#ffffff" stroke="#8c959f"/>
+    <text x="150" y="206" text-anchor="middle" font-size="11.5">X revoked;</text>
+    <text x="150" y="221" text-anchor="middle" font-size="11.5">X's key out of the key set</text>
+    <line x1="150" y1="248" x2="308" y2="248" stroke="#24292f" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#d5-arrow)"/>
+    <text x="230" y="241" text-anchor="middle" font-weight="700">OK</text>
+    <line x1="310" y1="272" x2="468" y2="272" stroke="#24292f" stroke-width="1.5" marker-end="url(#d5-arrow)"/>
+    <text x="390" y="265" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">x.grp.mem.del X</text>
+    <line x1="470" y1="294" x2="618" y2="294" stroke="#24292f" stroke-width="1.5" marker-end="url(#d5-arrow)"/>
+    <text x="545" y="287" text-anchor="middle" font-size="11">first to X</text>
+    <line x1="470" y1="316" x2="758" y2="316" stroke="#24292f" stroke-width="1.5" marker-end="url(#d5-arrow)"/>
+    <text x="690" y="309" text-anchor="middle" font-size="11">then to everyone else</text>
+    <rect x="398" y="328" width="144" height="34" rx="5" fill="#ffffff" stroke="#8c959f"/>
+    <text x="470" y="342" text-anchor="middle" font-size="11.5">delete their</text>
+    <text x="470" y="356" text-anchor="middle" font-size="11.5">connection to X</text>
+    <rect x="548" y="328" width="144" height="34" rx="5" fill="#ffffff" stroke="#8c959f"/>
+    <text x="620" y="342" text-anchor="middle" font-size="11.5">applies it,</text>
+    <text x="620" y="356" text-anchor="middle" font-size="11.5">erases its keys</text>
+    <rect x="704" y="328" width="112" height="34" rx="5" fill="#ffffff" stroke="#8c959f"/>
+    <text x="760" y="349" text-anchor="middle" font-size="11.5">X departed</text>
+    <line x1="150" y1="388" x2="618" y2="388" stroke="#b42318" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#d5-arrow-red)"/>
+    <text x="390" y="381" text-anchor="middle" fill="#b42318">AUTH to any later LSWP or DEL by X</text>
 
-    <rect x="20" y="584" width="920" height="22" fill="#ece8df"/>
-    <text x="28" y="600" font-weight="700" fill="#5b636e">B · An owner leaves, the creator included [§4.9]</text>
-    <line x1="100" y1="648" x2="100" y2="1176" stroke="#d7b48c" stroke-dasharray="4 4"/>
-    <line x1="290" y1="648" x2="290" y2="1176" stroke="#b9c4d0" stroke-dasharray="4 4"/>
-    <line x1="480" y1="648" x2="480" y2="1176" stroke="#9cc9a3" stroke-dasharray="4 4"/>
-    <line x1="670" y1="648" x2="670" y2="1176" stroke="#c3b5e3" stroke-dasharray="4 4"/>
-    <rect x="40" y="616" width="120" height="32" rx="7" fill="#fdf2e4" stroke="#b8661a" stroke-width="1.5"/>
-    <text x="100" y="637" text-anchor="middle" font-size="13" font-weight="700">Link server</text>
-    <rect x="225" y="616" width="130" height="32" rx="7" fill="#e9f1fb" stroke="#2f6db5" stroke-width="1.5"/>
-    <text x="290" y="637" text-anchor="middle" font-size="13" font-weight="700">Owner L</text>
-    <rect x="420" y="616" width="120" height="32" rx="7" fill="#eaf6ec" stroke="#2e7d32" stroke-width="1.5"/>
-    <text x="480" y="637" text-anchor="middle" font-size="13" font-weight="700">Relays</text>
-    <rect x="600" y="616" width="140" height="32" rx="7" fill="#f2edfa" stroke="#6a4bb0" stroke-width="1.5"/>
-    <text x="670" y="637" text-anchor="middle" font-size="13" font-weight="700">Everyone else</text>
+    <text x="20" y="430" font-weight="700" fill="#5b636e">An owner leaves, the creator included</text>
+    <rect x="20" y="444" width="200" height="70" rx="5" fill="#ffffff" stroke="#8c959f"/>
+    <text x="120" y="475" text-anchor="middle" font-size="11.5">refused if no other</text>
+    <text x="120" y="490" text-anchor="middle" font-size="11.5">current owner remains</text>
+    <line x1="222" y1="479" x2="262" y2="479" stroke="#24292f" stroke-width="1.5" marker-end="url(#d5-arrow)"/>
+    <rect x="264" y="444" width="270" height="70" rx="5" fill="#ffffff" stroke="#8c959f"/>
+    <text x="399" y="461" text-anchor="middle" font-size="11.5">if its own last roster isn't stored</text>
+    <text x="399" y="476" text-anchor="middle" font-size="11.5">or sent: re-sign it with one more LSWP</text>
+    <text x="399" y="491" text-anchor="middle" font-size="11.5">and wait up to 30 s for it to be sent;</text>
+    <text x="399" y="506" text-anchor="middle" font-size="11.5">if it isn't, the leave is refused</text>
+    <line x1="536" y1="479" x2="572" y2="479" stroke="#24292f" stroke-width="1.5" marker-end="url(#d5-arrow)"/>
+    <rect x="574" y="444" width="246" height="70" rx="5" fill="#ffffff" stroke="#8c959f"/>
+    <text x="697" y="475" text-anchor="middle" font-size="11.5"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">LSWP</tspan>: revoke itself, drop its key;</text>
+    <text x="697" y="490" text-anchor="middle" font-size="11.5">then <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">x.grp.leave</tspan>, erase its keys</text>
 
-    <line x1="290" y1="674" x2="102" y2="674" stroke="#24292f" stroke-width="1.5" marker-end="url(#d5-arrow)"/>
-    <text x="195" y="667" text-anchor="middle">read</text>
-    <line x1="100" y1="698" x2="288" y2="698" stroke="#24292f" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#d5-arrow)"/>
-    <text x="195" y="691" text-anchor="middle">data, hash</text>
-    <rect x="160" y="710" width="260" height="26" rx="5" fill="#fbe9e7" stroke="#b42318"/>
-    <text x="290" y="727" text-anchor="middle" fill="#b42318">no other current owner: CLELastOwner</text>
-    <rect x="160" y="748" width="260" height="42" rx="5" fill="#ffffff" stroke="#2f6db5"/>
-    <text x="290" y="765" text-anchor="middle">its own last roster claim not stored</text>
-    <text x="290" y="782" text-anchor="middle">or not delivered: re-sign it first</text>
-    <line x1="290" y1="816" x2="102" y2="816" stroke="#24292f" stroke-width="1.5" marker-end="url(#d5-arrow)"/>
-    <text x="195" y="809" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">read + LSWP roster {v+1, L}</text>
-    <line x1="100" y1="842" x2="288" y2="842" stroke="#1a7f37" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#d5-arrow-green)"/>
-    <text x="195" y="835" text-anchor="middle" fill="#1a7f37" font-weight="700">OK</text>
-    <line x1="290" y1="868" x2="478" y2="868" stroke="#24292f" stroke-width="1.5" marker-end="url(#d5-arrow)"/>
-    <text x="385" y="861" text-anchor="middle">roster v+1 + a role event</text>
-    <rect x="136" y="880" width="308" height="42" rx="5" fill="#ffffff" stroke="#2f6db5"/>
-    <text x="290" y="897" text-anchor="middle">waits ≤ 30 s for its agent's SENT of the</text>
-    <text x="290" y="914" text-anchor="middle">last chunk; else CLERelaysUnreachable</text>
-    <line x1="290" y1="948" x2="102" y2="948" stroke="#24292f" stroke-width="1.5" marker-end="url(#d5-arrow)"/>
-    <text x="195" y="941" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">read + LSWP: revoke L</text>
-    <rect x="20" y="960" width="160" height="42" rx="5" fill="#e6f4ea" stroke="#1a7f37"/>
-    <text x="100" y="977" text-anchor="middle" fill="#1a7f37">L revoked, key out;</text>
-    <text x="100" y="994" text-anchor="middle" fill="#1a7f37">entry kept as a signer</text>
-    <line x1="100" y1="1024" x2="288" y2="1024" stroke="#1a7f37" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#d5-arrow-green)"/>
-    <text x="195" y="1017" text-anchor="middle" fill="#1a7f37" font-weight="700">OK</text>
-    <line x1="290" y1="1050" x2="478" y2="1050" stroke="#24292f" stroke-width="1.5" marker-end="url(#d5-arrow)"/>
-    <text x="385" y="1043" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5">x.grp.leave</text>
-    <line x1="480" y1="1076" x2="668" y2="1076" stroke="#24292f" stroke-width="1.5" marker-end="url(#d5-arrow)"/>
-    <text x="575" y="1069" text-anchor="middle">forwarded</text>
-    <rect x="160" y="1088" width="260" height="58" rx="5" fill="#ffffff" stroke="#2f6db5"/>
-    <text x="290" y="1105" text-anchor="middle">erases its member key; the creator</text>
-    <text x="290" y="1122" text-anchor="middle">keeps only the root public key and</text>
-    <text x="290" y="1139" text-anchor="middle">deletes the link locally (DEL: AUTH)</text>
-    <rect x="600" y="1088" width="140" height="26" rx="5" fill="#ffffff" stroke="#6a4bb0"/>
-    <text x="670" y="1105" text-anchor="middle">L departed</text>
-
-    <rect x="24" y="1194" width="912" height="80" rx="8" fill="#f3f1ec" stroke="#d9d5cc"/>
-    <text x="40" y="1216">A leave stopped after its swap completes at the next link read. A single-owner creator reads the link first; a failed read refuses its leave.</text>
-    <text x="40" y="1236">A relay that learns of a departure from a read keeps that owner's connection for its queued roster, but accepts only its leave and</text>
-    <text x="40" y="1254">roster messages up to the link's roster version [§4.13]. Destroying: any owner reads, deletes the link queue, then sends x.grp.del [§4.14].</text>
+    <text x="20" y="546" fill="#5b636e">Solid arrow: request, message or next step · dashed arrow: reply · red: refused</text>
   </g>
 </svg>
