@@ -551,6 +551,8 @@ object ChatController {
 
   fun getChatCtrl(): ChatCtrl? = chatCtrl
 
+  fun currentCtrl(): ChatCtrl? = chatCtrl?.takeIf { it != -1L }
+
   fun setChatCtrl(ctrl: ChatCtrl?) {
     val wasRunning = receiverJob != null
     stopReceiver()
@@ -1531,8 +1533,8 @@ object ChatController {
     return false
   }
 
-  suspend fun apiSetNetworkInfo(networkInfo: UserNetworkInfo): Boolean =
-    sendCommandOkResp(null, CC.APISetNetworkInfo(networkInfo))
+  suspend fun apiSetNetworkInfo(networkInfo: UserNetworkInfo, ctrl: ChatCtrl): Boolean =
+    sendCommandOkResp(null, CC.APISetNetworkInfo(networkInfo), ctrl)
 
   suspend fun apiSetMemberSettings(rh: Long?, groupId: Long, groupMemberId: Long, memberSettings: GroupMemberSettings): Boolean =
     sendCommandOkResp(rh, CC.ApiSetMemberSettings(groupId, groupMemberId, memberSettings))
