@@ -466,6 +466,7 @@ issueTracked :: HasCallStack => ChatController -> TestCC -> String -> Int -> IO 
 issueTracked cc member badgeType uses = do
   sendGroupCmd member ("/issue " <> badgeType <> " uses " <> show uses)
   (citemId, body) <- waitTrackerItemOf cc uses
+  awaitTrackerOnConsole member body
   pure (citemId, body, extractCode body)
 
 testGroupCreateReuse :: HasCallStack => TestParams -> IO ()
@@ -851,6 +852,7 @@ testMultiUseTracker ps =
     usedUp <- waitItemText cc trackerItemId "All 2 uses redeemed"
     sentItemsWithCode cc code `shouldReturn` [usedUp]
     redeemViaService gsKey cc env code >>= (`shouldAnswerError` STECodeUsed)
+    awaitTrackerOnConsole alice usedUp
 
 testStaleRefreshIgnored :: HasCallStack => TestParams -> IO ()
 testStaleRefreshIgnored ps =
@@ -871,8 +873,9 @@ testCountersKeptApart ps =
     void $ waitItemText cc firstItemId "2 of 5 uses remaining"
     (secondItemId, _, secondCode) <- issueTracked cc alice "legend" 3
     replicateM_ 3 (redeemOk gsKey cc env secondCode)
-    void $ waitItemText cc secondItemId "All 3 uses redeemed"
+    secondUsedUp <- waitItemText cc secondItemId "All 3 uses redeemed"
     readItemText cc firstItemId >>= (`shouldSatisfy` T.isInfixOf "2 of 5 uses remaining")
+    awaitTrackerOnConsole alice secondUsedUp
 
 testLanelessRedeemRefreshesTracker :: HasCallStack => TestParams -> IO ()
 testLanelessRedeemRefreshesTracker ps =
@@ -885,15 +888,17 @@ testLanelessRedeemRefreshesTracker ps =
     t1 `shouldSatisfy` T.isInfixOf "1 of 2 uses remaining"
     t1 `shouldSatisfy` T.isInfixOf "last used"
     redeemOkWith gsKey cc Nothing code
-    readItemText cc trackerItemId >>= (`shouldSatisfy` T.isInfixOf "All 2 uses redeemed")
+    usedUp <- readItemText cc trackerItemId
+    usedUp `shouldSatisfy` T.isInfixOf "All 2 uses redeemed"
     redeemedTrackerCount cc `shouldReturn` 1
+    awaitTrackerOnConsole alice usedUp
 
 testQueuedRequestRefreshesTracker :: HasCallStack => TestParams -> IO ()
 testQueuedRequestRefreshesTracker ps =
   withGroupOwner ps $ \_ cc env alice -> do
     (trackerItemId, _, code) <- issueTracked cc alice "supporter" 2
     queueRedemption cc env code
-    void $ waitItemText cc trackerItemId "1 of 2 uses remaining"
+    waitItemText cc trackerItemId "1 of 2 uses remaining" >>= awaitTrackerOnConsole alice
 
 testQueuedRequestWithoutGroupConfig :: HasCallStack => TestParams -> IO ()
 testQueuedRequestWithoutGroupConfig ps = do
@@ -915,6 +920,7 @@ testTrackerRepost ps =
     readItemText cc itemId0 `shouldReturn` tracker0
     sentAt <- trackerSentAt cc 2
     sentAt `shouldSatisfy` (> backdated)
+    awaitTrackerOnConsole alice tracker1
 
 testRefusedEditReposted :: HasCallStack => TestParams -> IO ()
 testRefusedEditReposted ps =
@@ -927,6 +933,7 @@ testRefusedEditReposted ps =
     redeemOk gsKey cc env code
     usedUp <- waitItemText cc itemId1 "All 2 uses redeemed"
     sentItemsWithCode cc code `shouldReturn` [tracker0, usedUp]
+    awaitTrackerOnConsole alice usedUp
 
 testFailedRepostDropped :: HasCallStack => TestParams -> IO ()
 testFailedRepostDropped ps =
@@ -943,6 +950,7 @@ testFailedRepostDropped ps =
     redeemOk gsKey cc env code
     (_, tracker1) <- waitTrackerRepost cc 2 itemId0
     tracker1 `shouldSatisfy` T.isInfixOf "All 2 uses redeemed"
+    awaitTrackerOnConsole alice tracker1
 
 testDeletedTrackerNotReposted :: HasCallStack => TestParams -> IO ()
 testDeletedTrackerNotReposted ps =
@@ -1198,6 +1206,7 @@ testServiceRevokeRepairsTracker ps =
     revokeRaw cc code `shouldReturn` Right "Already revoked."
     readItemText cc trackerItemId `shouldReturn` retiredText code
     revokedTrackerCount cc `shouldReturn` 1
+    awaitTrackerOnConsole alice (retiredText code)
 
 -- A discarded code makes later code ids differ from the group id, so swapped arguments fail.
 offsetCodeIds :: HasCallStack => ChatController -> IO ()
@@ -1536,6 +1545,10 @@ replyTo cc member cmd = do
 awaitOnConsole :: HasCallStack => TestCC -> Text -> IO ()
 awaitOnConsole member reply =
   drainUntil member ["#" <> groupName <> " " <> botName <> "> " <> T.unpack (T.takeWhile (/= '\n') reply)]
+
+-- A tracker shows as its code line, then its state line, which tells its post and its edits apart.
+awaitTrackerOnConsole :: HasCallStack => TestCC -> Text -> IO ()
+awaitTrackerOnConsole member body = drainUntil member [T.unpack $ T.drop 1 $ T.dropWhile (/= '\n') body]
 
 maxChatItemId :: ChatController -> IO Int64
 maxChatItemId cc = fromMaybe 0 <$> queryFirst cc "SELECT COALESCE(MAX(chat_item_id), 0) FROM chat_items"
