@@ -17,6 +17,7 @@ module Directory.Service
     newServiceState,
     directoryService,
     directoryServiceCLI,
+    forkWithinCap,
   )
 where
 
@@ -326,6 +327,13 @@ readBlockedWordsConfig DirectoryOpts {blockedFragmentsFile, blockedWordsFile, na
   unless testing $ putStrLn $ "Blocked fragments: " <> show (length blockedFragments) <> ", blocked words: " <> show (length blockedWords) <> ", spelling rules: " <> show (M.size spelling)
   pure BlockedWordsConfig {blockedFragments, blockedWords, extensionRules, spelling}
 
+-- the place is freed however the action ends, so a failed search can't shrink the cap
+forkWithinCap :: TVar Int -> Int -> IO () -> IO Bool
+forkWithinCap inFlight cap action = do
+  accepted <- atomically $ stateTVar inFlight $ \n -> if n < cap then (True, n + 1) else (False, n)
+  when accepted $ void $ forkIO $ action `finally` atomically (modifyTVar' inFlight (subtract 1))
+  pure accepted
+
 directoryServiceEvent :: DirectoryOpts -> ServiceState -> User -> ChatController -> DirectoryEvent -> IO ()
 directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, ownersGroup, searchResults, maxServiceRequestsInFlight, prohibitedToObserver, alwaysCaptcha, alwaysObserver} env@ServiceState {searchRequests, serviceRequestsInFlight} user@User {userId} cc = \case
     DEContactConnected ct -> deContactConnected ct
@@ -360,13 +368,9 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
     deServiceRequest :: AgentInvId -> J.Object -> IO ()
     deServiceRequest reqId req = do
       -- the event loop is shared with registrations and captchas, so the bound is on the forked handlers
-      accepted <- atomically $ stateTVar serviceRequestsInFlight $ \n ->
-        if n < maxServiceRequestsInFlight then (True, n + 1) else (False, n)
-      if accepted
-        then void $ forkIO $ (respond =<< requestResponse) `finally` releaseSlot
-        else reject "service is busy"
+      accepted <- forkWithinCap serviceRequestsInFlight maxServiceRequestsInFlight (respond =<< requestResponse)
+      unless accepted $ reject "service is busy"
       where
-        releaseSlot = atomically $ modifyTVar' serviceRequestsInFlight (subtract 1)
         -- this runs on the shared event loop, so the reject is enqueued rather than sent here
         reject reason =
           sendChatCmd cc (APIRejectServiceRequest userId reqId $ Just reason) >>= \case

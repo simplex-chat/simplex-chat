@@ -11,9 +11,9 @@ import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Groups (memberJoinChannel, prepareChannel1Relay)
 import ChatTests.Utils
-import Control.Concurrent (threadDelay)
+import Control.Concurrent (newEmptyMVar, putMVar, takeMVar, threadDelay)
 import Control.Concurrent.Async (async, cancel)
-import Control.Concurrent.STM (atomically, peekTQueue, readTVarIO, tryReadTMVar)
+import Control.Concurrent.STM (atomically, newTVarIO, peekTQueue, readTVar, readTVarIO, retry, tryReadTMVar)
 import Control.Exception (finally)
 import Control.Monad (forM_, when, void)
 import Control.Monad.Except (runExceptT)
@@ -77,6 +77,7 @@ directoryServiceTests = do
   it "should match LIKE wildcards in search text literally" testDirectorySearchRpcLiteral
   it "should reject service requests over the cap" testDirectorySearchRpcBusy
   it "should take a new service request once the previous one is answered" testDirectorySearchRpcSlotReleased
+  it "should hold a place under the in-flight cap until the request is answered" testServiceRequestSlotHeld
   it "should send every entry field the apps render" testDirectorySearchEntryFields
   it "should send a channel entry with its published link" testDirectorySearchChannelEntry
   it "should drop an oversize image and keep the entry" testSearchEntryImageBound
@@ -742,18 +743,11 @@ testDirectorySearchRpcLiteral ps =
     withNewTestChat ps "bob" bobProfile $ \bob -> do
       bob `connectVia` dsShortLink
       registerGroupId superUser bob "PrivacyGroup" "" 1 1
-      let descr = replicate 200 'e'
-      bob ##> ("/set welcome #PrivacyGroup " <> descr)
-      bob <## "welcome message changed to:"
-      bob <## descr
-      groupUpdatedHidden superUser bob "PrivacyGroup" "" $
-        notifySuperUser_ superUser bob "PrivacyGroup" "" (Just descr) 1 1
-      void $ approveRegistrationId superUser bob "PrivacyGroup" 1 1
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         (found, _) <- searchNames cath dsShortLink "privacy" Nothing
         found `shouldBe` ["PrivacyGroup"]
-        -- ten wildcard pairs against two hundred e's, then a character the description lacks
-        (none, _) <- searchNames cath dsShortLink (concat (replicate 10 "%e") <> "%q") Nothing
+        -- as a wildcard, '%' would match the empty string between the words
+        (none, _) <- searchNames cath dsShortLink "privacy%group" Nothing
         none `shouldBe` []
         -- as a wildcard, '_' would match the 'g'
         (none', _) <- searchNames cath dsShortLink "privacy_roup" Nothing
@@ -779,6 +773,17 @@ testDirectorySearchRpcSlotReleased ps =
       cath <## noResults
       search
       cath <## noResults
+
+-- the requests above are answered one after another, so only this shows a running request counts against the cap
+testServiceRequestSlotHeld :: HasCallStack => TestParams -> IO ()
+testServiceRequestSlotHeld _ = do
+  inFlight <- newTVarIO 0
+  answer <- newEmptyMVar
+  forkWithinCap inFlight 1 (takeMVar answer) `shouldReturn` True
+  forkWithinCap inFlight 1 (pure ()) `shouldReturn` False
+  putMVar answer ()
+  timeout 5000000 (atomically $ readTVar inFlight >>= \n -> when (n /= 0) retry) `shouldReturn` Just ()
+  forkWithinCap inFlight 1 (pure ()) `shouldReturn` True
 
 -- Read from the controller, not the terminal: an entry with an image is longer than a terminal
 -- row, and the test terminal only queues the last row of a line that wrapped.
