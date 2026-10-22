@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
@@ -14,7 +15,7 @@ import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async (concurrently_)
+import Control.Concurrent.Async (concurrently, concurrently_)
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.Reader (runReaderT)
@@ -5148,14 +5149,24 @@ testShortLinkInvitationChangeUser = testChat2 aliceProfile bobProfile test
         <### [ "alisa: connection started",
                WithTime "@alisa hello"
              ]
-      concurrently_
-        (bob <## "alisa: contact is connected")
-        ( alice
-            <### [ WithTime "bob> hello",
-                   "bob (Bob): contact is connected"
-                 ]
-        )
-      alice <##> bob
+      (_, connectedFirst) <-
+        concurrently
+          (bob <## "alisa: contact is connected")
+          ( getTermLine alice >>= \case
+              "bob (Bob): contact is connected" -> do
+                alice <## "bob: standard end-to-end encryption enabled"
+                alice <# "bob> hello"
+                pure True
+              l -> do
+                dropTime l `shouldBe` "bob> hello"
+                alice <## "bob (Bob): contact is connected"
+                pure False
+          )
+      alice #> "@bob hi"
+      bob <# "alisa> hi"
+      bob #> "@alisa hey"
+      when connectedFirst $ alice <## "bob: quantum resistant end-to-end encryption enabled"
+      alice <# "bob> hey"
 
 testShortLinkAddressChangeProfile :: HasCallStack => TestParams -> IO ()
 testShortLinkAddressChangeProfile = testChat2 aliceProfile bobProfile test

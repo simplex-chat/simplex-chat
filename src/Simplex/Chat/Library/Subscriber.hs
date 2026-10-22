@@ -664,7 +664,6 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             XOk -> pure ()
             _ -> messageError "INFO for existing contact must have x.grp.mem.info, x.info or x.ok"
         CON pqEnc -> do
-          liftIO $ putStrLn $ "PQ-DEBUG con " <> show (localDisplayName' ct) <> " " <> show pqEnc
           when (pqEnc == PQEncOn) $ withStore' $ \db -> updateConnPQEnabledCON db connId pqEnc
           let conn' = conn {pqSndEnabled = Just pqEnc, pqRcvEnabled = Just pqEnc} :: Connection
               ct' = ct {activeConn = Just conn'} :: Contact
