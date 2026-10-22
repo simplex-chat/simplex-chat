@@ -1,6 +1,6 @@
 # A page that opens after a load opens twice on a double click
 
-Follow-up to #7725 ("Async openers" in its plan), stacked on its branch.
+Follow-up to #7725 ("Async openers" in its plan).
 
 ## Problem
 
