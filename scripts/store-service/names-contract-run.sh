@@ -69,14 +69,35 @@ cleanup() {
 trap cleanup EXIT
 trap 'exit 130' INT TERM
 
-listening() {
-  curl -s -o /dev/null --retry "$STARTUP_SECONDS" --retry-delay 1 --retry-connrefused --retry-all-errors "$@"
+# Waits until the server started as PID answers the curl arguments, failing at once if it exits first.
+answering() {
+  local pid=$1 probe ended status=0
+  shift
+  curl -s -o /dev/null --retry "$STARTUP_SECONDS" --retry-delay 1 --retry-connrefused --retry-all-errors "$@" &
+  probe=$!
+  wait -n -p ended "$pid" "$probe" || status=$?
+  if [ "$ended" != "$probe" ]; then
+    echo "process $pid ended before it answered; see the logs" >&2
+    exit 1
+  fi
+  return "$status"
+}
+
+# Another chain on the port would take the deployment, and the cases would read that chain.
+refuse_taken_ports() {
+  local url
+  for url in "$RPC_URL" "$SERVICE_URL" "$CODES_URL"; do
+    if curl -s -o /dev/null "$url"; then
+      echo "something already answers on $url; stop it first" >&2
+      exit 1
+    fi
+  done
 }
 
 start_chain() {
   "$ANVIL" --chain-id "$CHAIN_ID" --host 127.0.0.1 --port "$RPC_PORT" --block-time 1 --prune-history "$MEMORY_STATES" --silent \
     > "$RUN_DIR/anvil.log" 2>&1 &
-  listening -X POST -H 'content-type: application/json' --data '{"jsonrpc":"2.0","id":1,"method":"eth_chainId"}' "$RPC_URL"
+  answering $! -X POST -H 'content-type: application/json' --data '{"jsonrpc":"2.0","id":1,"method":"eth_chainId"}' "$RPC_URL"
   (cd "$WEBAPP_DIR" && RPC_URL="$RPC_URL" LOCAL_CHAIN_OUT="$RUN_DIR/chain.json" MIN_COMMITMENT_AGE="$MIN_COMMITMENT_AGE" \
     ENS_CONTRACTS_DIR="$ENS_CONTRACTS_DIR" node dev/deploy.ts) > "$RUN_DIR/deploy.log" 2>&1
   if ! cmp -s "$RUN_DIR/chain.json" "$WEBAPP_DIR/dev/local-chain-0.json"; then
@@ -126,7 +147,7 @@ INI
 start_service() {
   "$STORE_SERVICE_BIN" --no-address --service-config "$INI" -d "$DB" >> "$RUN_DIR/service.log" 2>&1 &
   SERVICE_PID=$!
-  listening "$SERVICE_URL/"
+  answering "$SERVICE_PID" "$SERVICE_URL/"
 }
 
 # The console started on a new database leaves its terminal in line mode and reads no keys, so the
@@ -142,7 +163,7 @@ make_database() {
 issue_codes() {
   python3 -I - "$CLI_TIMEOUT_SECONDS" "$RUN_DIR/codes.json" "${CODES[@]}" -- \
     "$STORE_SERVICE_BIN" --run-cli --no-address --service-config "$INI" -d "$DB" > "$RUN_DIR/issue.log" 2>&1 <<'PY'
-import fcntl, json, os, pty, re, select, struct, sys, termios, time
+import fcntl, json, os, pty, re, select, signal, struct, sys, termios, time
 
 args = sys.argv[1:]
 timeout, out = float(args[0]), args[1]
@@ -159,25 +180,29 @@ if pid == 0:
 fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack("HHHH", 50, 200, 0, 0))
 seen = b""
 
+def fail(message):
+    os.kill(pid, signal.SIGTERM)
+    sys.exit(message)
+
 def expect(pattern):
     global seen
     deadline = time.monotonic() + timeout
     while True:
         text = ANSI.sub(b"", seen)
         if (refused := REFUSED.search(text)):
-            sys.exit(f"refused: {text[refused.start():].splitlines()[0].decode(errors='replace')}")
+            fail(f"refused: {text[refused.start():].splitlines()[0].decode(errors='replace')}")
         if (found := pattern.search(text)):
             seen = text[found.end():]
             return found
         left = deadline - time.monotonic()
         if left <= 0 or not select.select([fd], [], [], left)[0]:
-            sys.exit(f"no {pattern.pattern!r} within {timeout} s")
+            fail(f"no {pattern.pattern!r} within {timeout} s")
         try:
             chunk = os.read(fd, 65536)
         except OSError:
             chunk = b""
         if not chunk:
-            sys.exit(f"the console ended before {pattern.pattern!r}")
+            fail(f"the console ended before {pattern.pattern!r}")
         sys.stdout.buffer.write(chunk)
         seen += chunk
 
@@ -237,23 +262,45 @@ function control(path, body) {
   return [501, { error: `${path} ${JSON.stringify(body)} is the mock's control, which the service has not` }]
 }
 
-createServer(async (req, res) => {
-  const body = await bodyOf(req)
-  if (req.url.startsWith("/control/")) {
-    const [status, answer] = control(req.url, body.length ? JSON.parse(body) : {})
-    console.log(req.url, status, JSON.stringify(answer))
-    return json(res, status, answer)
-  }
-  if (!req.url.startsWith("/api/")) return json(res, 404, { error: "not_found" })
+// fetch has decoded and measured the body itself, so these headers no longer describe it
+const NOT_PASSED = new Set(["content-encoding", "content-length", "transfer-encoding", "connection"])
+
+async function proxy(req, res, body) {
   const answer = await fetch(`${service}${req.url}`, {
     method: req.method,
     headers: { "content-type": req.headers["content-type"] ?? "application/json" },
     body: req.method === "GET" ? undefined : body,
   })
-  res.writeHead(answer.status, { "content-type": answer.headers.get("content-type") ?? "application/json" }).end(Buffer.from(await answer.arrayBuffer()))
+  const headers = Object.fromEntries([...answer.headers].filter(([name]) => !NOT_PASSED.has(name)))
+  res.writeHead(answer.status, headers).end(Buffer.from(await answer.arrayBuffer()))
+}
+
+async function serve(req, res) {
+  const body = await bodyOf(req)
+  if (req.url.startsWith("/control/")) {
+    let parsed
+    try {
+      parsed = body.length ? JSON.parse(body) : {}
+    } catch {
+      return json(res, 400, { error: "bad_request" })
+    }
+    const [status, answer] = control(req.url, parsed)
+    console.log(req.url, status, JSON.stringify(answer))
+    return json(res, status, answer)
+  }
+  if (!req.url.startsWith("/api/")) return json(res, 404, { error: "not_found" })
+  await proxy(req, res, body)
+}
+
+createServer((req, res) => {
+  serve(req, res).catch((e) => {
+    console.error(req.url, e)
+    if (!res.headersSent) json(res, 502, { error: "the service did not answer" })
+    else res.destroy()
+  })
 }).listen(Number(port), "127.0.0.1")
 JS
-  listening -X POST "$CODES_URL/control/none"
+  answering $! -X POST "$CODES_URL/control/none"
 }
 
 escape_regex() {
@@ -274,6 +321,7 @@ run_cases() {
     npx playwright test --project=chromium --output "$RUN_DIR/test-results" "${filter[@]}")
 }
 
+refuse_taken_ports
 start_chain
 build_site
 write_ini
