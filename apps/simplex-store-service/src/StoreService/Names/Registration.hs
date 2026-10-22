@@ -19,6 +19,8 @@ module StoreService.Names.Registration
     verifyRegisterIntent,
     setTextDigest,
     clearRecordsDigest,
+    setTextWithSigCalldata,
+    clearRecordsWithSigCalldata,
   )
 where
 
@@ -123,6 +125,23 @@ clearRecordsDigest domain node nonce deadline =
     domain
     "ClearRecords(bytes32 node,uint256 nonce,uint256 deadline)"
     [bytes32 node, VUint $ fromIntegral nonce, VUint $ fromIntegral deadline]
+
+setTextWithSigCalldata :: Node -> Text -> Text -> Word64 -> Word64 -> RecoverableSignature -> ByteString
+setTextWithSigCalldata (Node node) key value nonce deadline sig =
+  selector "setTextWithSig(bytes32,string,string,uint256,uint256,bytes)"
+    <> abiTuple
+      [ Static node,
+        Dynamic $ abiBytes $ encodeUtf8 key,
+        Dynamic $ abiBytes $ encodeUtf8 value,
+        Static $ uint256 nonce,
+        Static $ uint256 deadline,
+        Dynamic $ abiBytes $ serializeSignature sig
+      ]
+
+clearRecordsWithSigCalldata :: Node -> Word64 -> Word64 -> RecoverableSignature -> ByteString
+clearRecordsWithSigCalldata (Node node) nonce deadline sig =
+  selector "clearRecordsWithSig(bytes32,uint256,uint256,bytes)"
+    <> abiTuple [Static node, Static $ uint256 nonce, Static $ uint256 deadline, Dynamic $ abiBytes $ serializeSignature sig]
 
 bytes32 :: Node -> Eip712Value
 bytes32 (Node node) = VUint $ fromInteger $ os2ip node

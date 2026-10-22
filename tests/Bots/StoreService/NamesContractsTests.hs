@@ -122,6 +122,7 @@ testRecords g = withContracts g $ \node ct -> do
   answerCall node resolver noncesCall $ Returns $ uint256 (3 :: Int)
   nameRecords ct alice (registeredAlice resolver $ now + year)
     `shouldReturn` Right (Just NameRecords {rdContact = "https://smp8.simplex.im/a#Y8m3", rdChannel = "", rdNonce = 3})
+  textRecord ct alice "simplex.contact" `shouldReturn` Right "https://smp8.simplex.im/a#Y8m3"
 
 testOtherResolver :: TVar ChaChaDRG -> IO ()
 testOtherResolver g = withContracts g $ \_ ct -> do
