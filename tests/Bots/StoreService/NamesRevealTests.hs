@@ -369,13 +369,12 @@ testCommitmentRefusals = withReveals $ \Fx {fCtx = ctx} -> do
   unwritten <$> stored ctx rid `shouldReturn` unchanged
   ownerReveal ctx rid alice `shouldReturn` accepted
 
--- | The page signs and commits one duration, the order states another; the service rebuilds with the order's.
+-- | The commitment is of another duration than the order states; the intent, of the order's, passes on its own.
 testWrongDuration :: IO ()
 testWrongDuration = withReveals $ \Fx {fCtx = ctx} -> do
-  let longer = alice {rDuration = rDuration alice + 1}
-  rid <- committed ctx (orderOf longer)
+  rid <- committed ctx (orderOf alice {rDuration = rDuration alice + 1})
   nrDuration <$> stored ctx rid `shouldReturn` rDuration alice
-  ownerReveal ctx rid longer `shouldReturn` badRequest
+  ownerReveal ctx rid alice `shouldReturn` badRequest
   nrReveal <$> stored ctx rid `shouldReturn` Nothing
 
 testSecondLink :: IO ()
