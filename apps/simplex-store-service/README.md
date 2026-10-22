@@ -351,19 +351,32 @@ connections already open, such as Caddy's requests, pass.
 `egress.sh` writes this as the chain `STORE_SERVICE_EGRESS` in `iptables` and `ip6tables`, and
 rebuilds it on every run. With compose's host networking it matches the service's user in
 `OUTPUT` (`-m owner --uid-owner`). That rule covers every process of that user on the host, so
-set `USER_UID` (and `USER_GID`) in compose's environment to ids no other process runs as. On a
-Docker bridge network instead, `--bridge <interface>` matches traffic from that network in
-`DOCKER-USER` and `INPUT`.
-
-Install it as root from `scripts/store-service/`. `--uid` and `--db` default to the environment's
-`USER_UID` and `BADGE_DB_CONN`, else to compose's defaults (1000 and
-`postgresql://simplex@127.0.0.1:5432/badge_service`). `sudo` drops the environment, so pass them
-when compose runs with other values, here a uid of 1001:
+the service must run as a dedicated user. `--uid` is required, and the script refuses a uid whose
+host account has a login shell (anything but `nologin` or `false`). Compose's `USER_UID` default
+of 1000 is often the operator's own login, so create a user for the service and run compose with
+its ids, set as `USER_UID` and `USER_GID` in `scripts/store-service/.env`; they are build
+arguments too, so rebuild the image:
 
 ```
-sudo ./egress.sh --dry-run --uid 1001
-sudo ./egress.sh --uid 1001
-sudo ./egress.sh --check --uid 1001
+sudo useradd --system --no-create-home --shell /usr/sbin/nologin simplex-store
+id simplex-store
+sudo chown -R simplex-store:simplex-store web names
+sudo chown simplex-store store_service.ini && sudo chmod 600 store_service.ini
+docker compose up -d --build --remove-orphans
+```
+
+On a Docker bridge network instead, `--bridge <interface>` matches traffic from that network in
+`DOCKER-USER` and `INPUT`, and needs no `--uid`.
+
+Install it as root from `scripts/store-service/`, here for a service uid of 998. `--db` defaults to
+the environment's `BADGE_DB_CONN`, else to compose's default
+(`postgresql://simplex@127.0.0.1:5432/badge_service`); `sudo` drops the environment, so pass it
+when compose runs with another value:
+
+```
+sudo ./egress.sh --dry-run --uid 998
+sudo ./egress.sh --uid 998
+sudo ./egress.sh --check --uid 998
 ```
 
 - `--dry-run` prints the commands and changes nothing; read the allowed endpoints in it.
@@ -389,13 +402,9 @@ docker compose exec store-service bash -c ': </dev/tcp/127.0.0.1/5432 && echo al
 - The third prints `allowed`. With the RPC node on this host, the same command with its port
   (`8545` for a local reth) does too.
 
-To remove it, delete the jump and the chain, in `iptables` and in `ip6tables` alike:
-
-```
-sudo iptables -D OUTPUT -m owner --uid-owner 1001 -j STORE_SERVICE_EGRESS
-sudo iptables -F STORE_SERVICE_EGRESS
-sudo iptables -X STORE_SERVICE_EGRESS
-```
+`sudo ./egress.sh --remove --uid 998` (or `--bridge <interface>`) deletes the jumps an install
+adds for that user or network, then the chain, in `iptables` and `ip6tables`. Running it again
+changes nothing, and `--check` then reports the chain absent.
 
 ## Issuing codes
 
