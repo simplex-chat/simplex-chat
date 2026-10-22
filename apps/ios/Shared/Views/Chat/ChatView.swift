@@ -37,6 +37,61 @@ private func shouldShowAvatar(_ current: ChatItem, _ older: ChatItem?) -> Bool {
     }
 }
 
+private func continuesSenderRun(_ merged: MergedItem) -> Bool {
+    let item = merged.newest().item
+    if case .groupRcv = item.chatDir, let older = merged.oldest().nextItem {
+        return !shouldShowAvatar(item, older) && item.meta.showGroupAsSender == older.meta.showGroupAsSender
+    }
+    return false
+}
+
+private let chatItemCoordinateSpace = "chatItem"
+
+struct PinnedAvatar: Equatable {
+    let member: GroupMember
+    let showGroupAsSender: Bool
+    let y: CGFloat
+    let rowId: Int64?
+}
+
+class PinnedAvatarModel: NSObject, ObservableObject, UIGestureRecognizerDelegate {
+    @Published var pinned: PinnedAvatar? = nil
+    let hiddenRow = HiddenAvatarRow()
+    var memberImageTops: [Int64: CGFloat] = [:] {
+        didSet { onMemberImageTopsChange() }
+    }
+    var onMemberImageTopsChange: () -> Void = {}
+    var onTap: (PinnedAvatar) -> Void = { _ in }
+    // the pinned avatar is drawn above the scroll view, so the scroll view recognizes taps on it to keep drags on it scrolling
+    lazy var tapRecognizer: UITapGestureRecognizer = {
+        let r = UITapGestureRecognizer(target: self, action: #selector(tapped))
+        r.cancelsTouchesInView = false
+        r.delegate = self
+        return r
+    }()
+
+    @objc private func tapped() {
+        if let pinned { onTap(pinned) }
+    }
+
+    // a tap that stops a fling should not open member info
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+        guard let pinned, let scrollView = gestureRecognizer.view as? EndlessScrollView<MergedItem>, !scrollView.isDecelerating else { return false }
+        let p = touch.location(in: scrollView)
+        let x = scrollView.effectiveUserInterfaceLayoutDirection == .rightToLeft ? scrollView.bounds.width - p.x : p.x
+        let y = p.y - scrollView.contentOffset.y - scrollView.insetTop
+        return x >= 12 && x <= 12 + memberImageSize && y >= pinned.y && y <= pinned.y + memberImageSize
+    }
+
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+        true
+    }
+}
+
+class HiddenAvatarRow: ObservableObject {
+    @Published var id: Int64? = nil
+}
+
 // Spec: spec/client/chat-view.md#ChatView
 struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
@@ -51,6 +106,7 @@ struct ChatView: View {
     @ObservedObject var im: ItemsModel
     @State var mergedItems: BoxedValue<MergedItems>
     @State var floatingButtonModel: FloatingButtonModel
+    @State private var pinnedAvatarModel = PinnedAvatarModel()
     @Binding var scrollToItemId: ChatItem.ID?
     @State private var showChatInfoSheet: Bool = false
     @State private var showAddMembersSheet: Bool = false
@@ -134,6 +190,9 @@ struct ChatView: View {
                         }
                     } else {
                         chatItemsList()
+                    }
+                    if case let .group(groupInfo, _) = chat.chatInfo {
+                        PinnedSenderAvatar(model: pinnedAvatarModel, groupInfo: groupInfo, selecting: selectedChatItems != nil)
                     }
                     if let groupInfo = chat.chatInfo.groupInfo, !composeState.message.isEmpty {
                         GroupMentionsView(im: im, groupInfo: groupInfo, composeState: $composeState, selectedRange: $selectedRange, keyboardVisible: $keyboardVisible)
@@ -323,6 +382,11 @@ struct ChatView: View {
         .onAppear {
             ConnectProgressManager.shared.cancelConnectProgress()
             scrollView.listState.onUpdateListener = onChatItemsUpdated
+            pinnedAvatarModel.onMemberImageTopsChange = updatePinnedAvatar
+            pinnedAvatarModel.onTap = showPinnedMemberInfo
+            if pinnedAvatarModel.tapRecognizer.view == nil {
+                scrollView.addGestureRecognizer(pinnedAvatarModel.tapRecognizer)
+            }
             selectedChatItems = nil
             revealedItems = Set()
             initChatView()
@@ -945,6 +1009,7 @@ struct ChatView: View {
                             composeState: $composeState,
                             selectedMember: $selectedMember,
                             showChatInfoSheet: $showChatInfoSheet,
+                            pinnedAvatarModel: pinnedAvatarModel,
                             revealedItems: $revealedItems,
                             selectedChatItems: $selectedChatItems,
                             forwardedChatItems: $forwardedChatItems,
@@ -1670,6 +1735,7 @@ struct ChatView: View {
             return
         }
         floatingButtonModel.updateOnListChange(scrollView.listState)
+        updatePinnedAvatar()
         preloadIfNeeded(
             im,
             $allowLoadMoreItems,
@@ -1691,6 +1757,100 @@ struct ChatView: View {
         )
     }
 
+    private func updatePinnedAvatar() {
+        let p = pinnedAvatar()
+        if pinnedAvatarModel.pinned != p {
+            pinnedAvatarModel.pinned = p
+        }
+        if pinnedAvatarModel.hiddenRow.id != p?.rowId {
+            pinnedAvatarModel.hiddenRow.id = p?.rowId
+        }
+    }
+
+    private func pinnedAvatar() -> PinnedAvatar? {
+        if chat.chatInfo.isChannel || chat.chatInfo.groupInfo?.membership.memberPending == true { return nil }
+        let items = scrollView.listState.items
+        let visible = scrollView.listState.visibleItems
+        let listTop = scrollView.contentOffset.y + scrollView.insetTop
+        let pinLine = listTop + 4
+        guard let atTop = visible.first(where: { $0.view.frame.minY <= pinLine }), atTop.index < items.count else { return nil }
+        let lowest = visible[0].index
+        let highest = min(visible[visible.count - 1].index, items.count - 1)
+        var last = atTop.index
+        while last >= lowest && last > 0 && continuesSenderRun(items[last - 1]) {
+            last -= 1
+        }
+        let runBottom = visible.first(where: { $0.index == last })?.view.frame.maxY ?? .infinity
+        let pinnedTop = min(pinLine, runBottom - memberImageSize)
+        var top = atTop.index
+        while top < highest && continuesSenderRun(items[top]) {
+            top += 1
+        }
+        let rowId: Int64? = continuesSenderRun(items[top]) ? nil : items[top].oldest().item.id
+        if let rowId, let firstRow = visible.first(where: { $0.index == top }),
+           firstRow.view.frame.minY + (pinnedAvatarModel.memberImageTops[rowId] ?? 0) >= pinnedTop {
+            return nil
+        }
+        let shownItem = items[top].newest().item
+        guard case let .groupRcv(member) = shownItem.chatDir else { return nil }
+        return PinnedAvatar(member: member, showGroupAsSender: shownItem.meta.showGroupAsSender, y: pinnedTop - listTop, rowId: rowId)
+    }
+
+    private func showPinnedMemberInfo(_ pinned: PinnedAvatar) {
+        if selectedChatItems != nil { return }
+        if pinned.showGroupAsSender {
+            showChatInfoSheet = true
+        } else if let mem = chatModel.getGroupMember(pinned.member.groupMemberId) {
+            selectedMember = mem
+        } else {
+            let mem = GMember.init(pinned.member)
+            chatModel.groupMembers.append(mem)
+            chatModel.groupMembersIndexes[pinned.member.groupMemberId] = chatModel.groupMembers.count - 1
+            selectedMember = mem
+        }
+    }
+
+    private struct PinnedSenderAvatar: View {
+        @EnvironmentObject var theme: AppTheme
+        @ObservedObject var model: PinnedAvatarModel
+        let groupInfo: GroupInfo
+        let selecting: Bool
+
+        var body: some View {
+            if let pinned = model.pinned {
+                Group {
+                    if pinned.showGroupAsSender {
+                        ProfileImage(imageStr: groupInfo.image, icon: Image(systemName: groupInfo.chatIconName), size: memberImageSize, backgroundColor: theme.colors.background)
+                    } else {
+                        MemberProfileImage(pinned.member, size: memberImageSize, backgroundColor: theme.colors.background)
+                    }
+                }
+                .padding(.leading, 12 + (selecting ? 12 + 24 : 0))
+                .offset(y: pinned.y)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .clipped()
+                .allowsHitTesting(false)
+            }
+        }
+    }
+
+    private struct PinnedAvatarSource: ViewModifier {
+        let model: PinnedAvatarModel
+        @ObservedObject var hiddenRow: HiddenAvatarRow
+        let rowId: Int64
+
+        func body(content: Content) -> some View {
+            content
+                .opacity(hiddenRow.id == rowId ? 0 : 1)
+                .background(GeometryReader { g in
+                    let top = g.frame(in: .named(chatItemCoordinateSpace)).minY
+                    Color.clear
+                        .onAppear { model.memberImageTops[rowId] = top }
+                        .onChange(of: top) { model.memberImageTops[rowId] = $0 }
+                })
+        }
+    }
+
     // Spec: spec/client/chat-view.md#ChatItemWithMenu
     private struct ChatItemWithMenu: View {
         @ObservedObject var im: ItemsModel
@@ -1709,6 +1869,7 @@ struct ChatView: View {
         @Binding var composeState: ComposeState
         @Binding var selectedMember: GMember?
         @Binding var showChatInfoSheet: Bool
+        let pinnedAvatarModel: PinnedAvatarModel
         @Binding var revealedItems: Set<Int64>
 
         @State private var deletingItem: ChatItem? = nil
@@ -1800,6 +1961,7 @@ struct ChatView: View {
                     DateSeparator(date: date).padding(8)
                 }
             }
+            .coordinateSpace(name: chatItemCoordinateSpace)
             .onAppear {
                 if markedRead {
                     return
@@ -2057,6 +2219,7 @@ struct ChatView: View {
                                         .simultaneousGesture(TapGesture().onEnded {
                                             showChatInfoSheet = true
                                         })
+                                        .modifier(PinnedAvatarSource(model: pinnedAvatarModel, hiddenRow: pinnedAvatarModel.hiddenRow, rowId: chatItem.id))
                                 } else {
                                     MemberProfileImage(member, size: memberImageSize, backgroundColor: theme.colors.background)
                                         .simultaneousGesture(TapGesture().onEnded {
@@ -2069,6 +2232,7 @@ struct ChatView: View {
                                                 selectedMember = mem
                                             }
                                         })
+                                        .modifier(PinnedAvatarSource(model: pinnedAvatarModel, hiddenRow: pinnedAvatarModel.hiddenRow, rowId: chatItem.id))
                                 }
                                 chatItemWithMenu(ci, range, maxWidth, itemSeparation)
                                     .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }

@@ -16,8 +16,15 @@ import androidx.compose.ui.draw.*
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.layer.GraphicsLayer
+import androidx.compose.ui.input.pointer.PointerEvent
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.layoutId
+import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.node.ModifierNodeElement
+import androidx.compose.ui.node.PointerInputModifierNode
 import androidx.compose.ui.platform.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -1922,6 +1929,28 @@ fun BoxScope.ChatItemsList(
     }
   )
 
+  val listCoordinates = remember { mutableStateOf<LayoutCoordinates?>(null) }
+
+  fun Density.pinnedAvatarTop(index: Int, avatarHeight: Int): Float {
+    val belowTopBar = (topPaddingToContentPx.value + 4.dp.roundToPx()).toFloat()
+    val runBottom = senderRunBottom(listState.value.layoutInfo, mergedItems.value.items, index) ?: return belowTopBar
+    return min(belowTopBar, runBottom - avatarHeight)
+  }
+
+  // reading coordinates during placement re-runs it on every scroll frame
+  fun Modifier.stickyInSenderRun(itemId: Long): Modifier = layout { measurable, constraints ->
+    val avatar = measurable.measure(constraints)
+    layout(avatar.width, avatar.height) {
+      val list = listCoordinates.value
+      val self = coordinates
+      val index = mergedItems.value.indexInParentItems[itemId]?.takeIf { i -> listState.value.layoutInfo.visibleItemsInfo.any { it.index == i } }
+      val shift = if (list != null && self != null && index != null) {
+        max(0f, pinnedAvatarTop(index, avatar.height) - list.localPositionOf(self).y)
+      } else 0f
+      avatar.place(0, shift.roundToInt())
+    }
+  }
+
   @Composable
   fun ChatViewListItem(
     itemAtZeroIndexInWholeList: Boolean,
@@ -2087,7 +2116,7 @@ fun BoxScope.ChatItemsList(
                       }
                       Row(Modifier.graphicsLayer { translationX = selectionOffset.toPx() }) {
                         val member = cItem.chatDir.groupMember
-                        Box(Modifier.clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
+                        Box((if (chatInfo.isChannel || selectedChatItems.value != null) Modifier else Modifier.stickyInSenderRun(cItem.id)).clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
                           MemberImage(member)
                         }
                         Box(modifier = Modifier.padding(top = 2.dp, start = 4.dp).chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)) {
@@ -2387,7 +2416,7 @@ fun BoxScope.ChatItemsList(
   val modifier = if (appPlatform.isDesktop && manager != null) SelectionHandler(manager, listState, mergedItems, revealedItems, linkMode) else Modifier
 
   LazyColumnWithScrollBar(
-    modifier.align(Alignment.BottomCenter),
+    modifier.align(Alignment.BottomCenter).onPlaced { listCoordinates.value = it },
     state = listState.value,
     contentPadding = PaddingValues(
       top = topPaddingToContent,
@@ -2481,6 +2510,40 @@ fun BoxScope.ChatItemsList(
     loadMessages
   )
   FloatingDate(Modifier.padding(top = 10.dp + topPaddingToContent).align(Alignment.TopCenter), topPaddingToContentPx, mergedItems, listState)
+  // a lambda has its own restart scope, so the reads below don't recompose ChatItemsList
+  val PinnedSenderAvatar: @Composable (GroupInfo) -> Unit = pinned@{ groupInfo ->
+    fun topItem(): Pair<Int, MergedItem>? {
+      val index = listState.value.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: return null
+      return mergedItems.value.items.getOrNull(index)?.let { index to it }
+    }
+    if (selectedChatItems.value != null) return@pinned
+    val memberAtTop = remember { derivedStateOf { topItem()?.let { (it.second.newest().item.chatDir as? CIDirection.GroupRcv)?.groupMember } } }
+    val member = memberAtTop.value ?: return@pinned
+    Box(
+      Modifier
+        .align(Alignment.TopStart)
+        .layout { measurable, constraints ->
+          val avatar = measurable.measure(constraints)
+          layout(avatar.width, avatar.height) {
+            val (index, top) = topItem() ?: return@layout
+            if (continuesSenderRun(top) && (top.newest().item.chatDir as CIDirection.GroupRcv).groupMember.memberId == member.memberId) {
+              val y = pinnedAvatarTop(index, avatar.height).roundToInt()
+              if (y + avatar.height > topPaddingToContentPx.value) {
+                avatar.placeRelative(8.dp.roundToPx(), y)
+              }
+            }
+          }
+        }
+        .clickable { showMemberInfo(groupInfo, member) }
+        .then(ShareTouchesWithList)
+    ) {
+      MemberImage(member)
+    }
+  }
+
+  if (chatInfo is ChatInfo.Group && !chatInfo.isChannel) {
+    PinnedSenderAvatar(chatInfo.groupInfo)
+  }
 
   LaunchedEffect(Unit) {
     snapshotFlow { listState.value.isScrollInProgress }
@@ -3801,6 +3864,33 @@ private fun shouldShowAvatar(current: ChatItem, older: ChatItem?): Boolean {
     current.chatDir is CIDirection.ChannelRcv -> older == null || !oldIsGroupRcv || !sameMember
     else -> false
   }
+}
+
+// the list under the stand-in avatar still gets the drags and wheel events that scroll it
+private data object ShareTouchesWithList : ModifierNodeElement<Modifier.Node>() {
+  override fun create(): Modifier.Node = object : Modifier.Node(), PointerInputModifierNode {
+    override fun onPointerEvent(pointerEvent: PointerEvent, pass: PointerEventPass, bounds: IntSize) {}
+    override fun onCancelPointerInput() {}
+    override fun sharePointerInputWithSiblings(): Boolean = true
+  }
+  override fun update(node: Modifier.Node) {}
+}
+
+private fun continuesSenderRun(merged: MergedItem): Boolean {
+  val item = merged.newest().item
+  return item.chatDir is CIDirection.GroupRcv && !shouldShowAvatar(item, merged.oldest().nextItem)
+}
+
+// in list coordinates, null when the run continues below the visible items
+private fun senderRunBottom(layoutInfo: LazyListLayoutInfo, items: List<MergedItem>, index: Int): Float? {
+  val firstVisibleIndex = layoutInfo.visibleItemsInfo.firstOrNull()?.index ?: return null
+  var last = index
+  while (items.getOrNull(last - 1)?.let(::continuesSenderRun) == true) {
+    last--
+    if (last < firstVisibleIndex) return null
+  }
+  val lastItem = layoutInfo.visibleItemsInfo.firstOrNull { it.index == last } ?: return null
+  return (layoutInfo.viewportEndOffset - lastItem.offset).toFloat()
 }
 
 
