@@ -1021,7 +1021,7 @@ testLatePaymentAfterNewOrder = withOrders $ \ctx -> do
   now <- readIORef (cClock ctx)
   (newInv, _) <- placed ctx aliceOrder {oCommitment = commitmentOf 2, oTimestamp = seconds now, oDuration = durationAt now}
   logs <- capturingStderr $ settleNow ctx oldInv settled `shouldReturn` Right ISPaid
-  logs `shouldSatisfy` T.isInfixOf "refund"
+  logs `shouldSatisfy` T.isInfixOf "credited to its balance"
   old <- invoiceRegistration ctx oldInv
   (nrPhase old, nrLive old) `shouldBe` (PUnpaid, False)
   new <- invoiceRegistration ctx newInv
@@ -1055,7 +1055,7 @@ testLateBTCPayPayments = withFakeBTCPay $ \fake -> do
     let refOf inv = maybe (error "no invoice") irProviderRef <$> getInvoice st inv
         readAt ref = queueReadHint (weHints cWeb) ref >> drainHints poller
         paidLate ref fields = capturingStderr $ setInvoiceState fake ref fields >> readAt ref
-        alerted logs = T.isInfixOf "stays unpaid; refund the payment" logs
+        alerted logs = T.isInfixOf "credited to its balance" logs
         later = addUTCTime 3600 orderTime
     (expired, _) <- placed ctx aliceOrder
     expiredRef <- refOf expired
@@ -1076,7 +1076,7 @@ testLateBTCPayPayments = withFakeBTCPay $ \fake -> do
       r <- invoiceRegistration ctx inv
       (nrPhase r, nrLive r) `shouldBe` (PUnpaid, False)
 
--- | Paid in part while open, then expired by BTCPay with the same figures: one refund line, none from a restarted poller.
+-- | Paid in part while open, then expired by BTCPay with the same figures: one late payment line, none from a restarted poller.
 testOneLateAlert :: IO ()
 testOneLateAlert = withOrders $ \ctx@Ctx {cStore = st, cWeb} -> do
   (inv, _) <- placed ctx aliceOrder
@@ -1084,14 +1084,14 @@ testOneLateAlert = withOrders $ \ctx@Ctx {cStore = st, cWeb} -> do
   let paid = rcv 5000 (Just "0.00078")
       newPoller = newPollerEnv st (weWaiters cWeb) (Just $ oePhases $ cOrders ctx) (weHints cWeb) (weProviders cWeb) (poll $ weConfig cWeb)
       readWith poller = capturingStderr $ queueReadHint (weHints cWeb) ref >> drainHints poller
-      refunds = length . T.breakOnAll "refund"
+      refunds = length . T.breakOnAll "received money after"
   poller <- newPoller
   setSignals (cStub ctx) [(ref, SigFunded paid PaidInPart)]
   refunds <$> readWith poller `shouldReturn` 0
   setSignals (cStub ctx) [(ref, SigClosed paid)]
   logs <- readWith poller
   refunds logs `shouldBe` 1
-  logs `shouldSatisfy` T.isInfixOf "stays unpaid; refund the payment"
+  logs `shouldSatisfy` T.isInfixOf "it stays unpaid, and its confirmed money is credited to its balance"
   restarted <- newPoller
   refunds <$> readWith restarted `shouldReturn` 0
   (nrPhase &&& nrLive) <$> invoiceRegistration ctx inv `shouldReturn` (PUnpaid, False)
@@ -1133,7 +1133,7 @@ testCancelAlertsFunded = withOrdersCancelling (SigFunded paid PaidInPart) $ \ctx
   where
     paid = rcv 5000 (Just "0.00078")
     invoiceText (InvoiceId t) = t
-    alertOf invId = "invoice " <> invoiceText invId <> " was paid after its order closed"
+    alertOf invId = "invoice " <> invoiceText invId <> " received money after"
 
 testNamesOff :: IO ()
 testNamesOff = withOrders $ \ctx -> do
@@ -1168,7 +1168,7 @@ testLatePayment = withOrders $ \ctx -> do
   fst <$> post ctx ("/api/invoice/" <> T.unpack t <> "/cancel") "" `shouldReturn` 200
   closed <- invoiceRegistration ctx invId
   logs <- capturingStderr $ settleNow ctx invId settled `shouldReturn` Right ISPaid
-  logs `shouldSatisfy` T.isInfixOf ("registration " <> (\(RegistrationId r) -> r) (nrId closed) <> " stays unpaid")
+  logs `shouldSatisfy` T.isInfixOf ("registration " <> (\(RegistrationId r) -> r) (nrId closed) <> " closed; it stays unpaid")
   invoiceRegistration ctx invId `shouldReturn` closed
   r <- webGet (cClient ctx) ("/api/invoice/" <> T.unpack t)
   v <- jsonObject r
@@ -1269,7 +1269,7 @@ testCleanupIn ctx@Ctx {cStore = st} = do
   isNothing <$> getInvoice st (InvoiceId "inv-gone") `shouldReturn` True
   Just InvoiceRow {irPayment = latePayment} <- getInvoice st (InvoiceId "inv-late")
   (ipCryptoPaid <$> latePayment) `shouldBe` Just (Just "0.00078")
-  logs `shouldSatisfy` T.isInfixOf "registration late is kept because invoice inv-late received a payment"
+  logs `shouldSatisfy` T.isInfixOf "registration late is kept with its balance, because invoice inv-late received a payment"
   logs `shouldSatisfy` T.isInfixOf "registration unread is kept until the next run"
   reads' <- stubReads
   sort reads' `shouldBe` [ref "gone", ref "late"]
@@ -1345,12 +1345,15 @@ testViewFields :: IO ()
 testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   Right () <- placePaid st "r1" ownerA (order "alicebakery" 1) (addUTCTime 3600 t0)
   r <- withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "r1")
-  let v = objectOf $ viewJSON (testNamesConfig node) r Nothing ViewReads {vrIntentNonce = Nothing, vrUnread = []}
+  let v = objectOf $ viewJSON (testNamesConfig node) r Nothing Nothing ViewReads {vrIntentNonce = Nothing, vrUnread = []}
   sort (KM.keys v)
     `shouldBe` sort
       [ "id", "version", "moves", "linksRefused", "phase", "labelHash", "label", "owner", "commitment", "sealed", "resolver", "sponsor", "chainId", "tld",
-        "years", "duration", "price", "fromBalance", "balance", "commitTx", "registerTx", "revealAfter", "revealBefore", "intentNonce", "unread", "expiresAt", "error"
+        "years", "duration", "price", "fromBalance", "balance", "latePayment", "commitTx", "registerTx", "revealAfter", "revealBefore", "intentNonce", "unread", "expiresAt", "error"
       ]
+  field "latePayment" v `shouldBe` Just J.Null
+  let waiting w = field "latePayment" $ objectOf $ viewJSON (testNamesConfig node) r Nothing (Just w) ViewReads {vrIntentNonce = Nothing, vrUnread = []}
+  map waiting [LWConfirming, LWCrediting, LWSupport] `shouldBe` map (\t -> Just $ J.object ["waiting" .= (t :: Text)]) ["confirming", "crediting", "support"]
   map (`field` v) ["id", "phase", "owner", "tld", "chainId", "linksRefused", "label", "unread", "sponsor", "fromBalance", "balance"]
     `shouldBe` map
       Just
@@ -1391,7 +1394,7 @@ testViewUnread = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   r <- withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "paid")
   readViewChain ct r {nrPhase = PCommitted} `shouldReturn` ViewReads Nothing ["intentNonce"]
   readViewChain ct r {nrPhase = PTaken} `shouldReturn` ViewReads Nothing []
-  let v = objectOf $ viewJSON (testNamesConfig node) r {nrPhase = PCommitted} Nothing (ViewReads Nothing ["intentNonce"])
+  let v = objectOf $ viewJSON (testNamesConfig node) r {nrPhase = PCommitted} Nothing Nothing (ViewReads Nothing ["intentNonce"])
   (field "intentNonce" v, field "unread" v) `shouldBe` (Just J.Null, Just (J.toJSON ["intentNonce" :: Text]))
 
 testViewBalance :: IO ()

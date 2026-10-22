@@ -23,6 +23,8 @@ module StoreService.Names.Store
     LateCreditState (..),
     LatePending (..),
     LateAlert (..),
+    LateSupport (..),
+    LateWait (..),
     CleanupKept (..),
     PrepaidCode (..),
     NewPrepaidCode (..),
@@ -71,6 +73,8 @@ module StoreService.Names.Store
     uncreditedLateInvoices,
     lateAlertDue,
     claimLateAlert,
+    setLateSupport,
+    lateWait,
     insertPrepaidCode,
     getPrepaidCode,
     getPrepaidCodeById,
@@ -126,7 +130,7 @@ import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Signatures (OrderFields (..), parseSignature)
 import StoreService.Store (RevokeResult (..))
-import StoreService.Store.Invoices (StoreDecodeError (..), executeChanging, invoiceStatusText, lockInvoice, newInvoiceId, truncateToSecond, unfundedQuery)
+import StoreService.Store.Invoices (StoreDecodeError (..), executeChanging, invoiceStatusText, lockInvoice, newInvoiceId, textToCryptoCurrency, truncateToSecond, unfundedQuery)
 
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..), Query, (:.) (..))
@@ -293,13 +297,15 @@ data LateCredit = LateCredit
   }
   deriving (Eq, Show)
 
--- | A name invoice's payment figures, what was credited from it, and its order's phase and live flag. Card money is counted in cents, crypto in units.
+-- | A name invoice's payment figures, what was credited from it, and its order's phase and live flag. Card money (no coin) is counted in cents,
+-- crypto in units. lsSupport: why its money will not be credited by itself, once known.
 data LateCreditState = LateCreditState
   { lsInvoice :: InvoiceId,
     lsRegistration :: RegistrationId,
     lsPhase :: NamePhase,
     lsLive :: Bool,
-    lsCard :: Bool,
+    lsCoin :: Maybe CryptoCurrency,
+    lsSupport :: Maybe LateSupport,
     lsReceivedCents :: Int,
     lsConfirmedCents :: Int,
     lsReceivedUnits :: Maybe Int64,
@@ -326,6 +332,27 @@ instance TextEncoding LatePending where
   textDecode t = lookup t [(textEncode p, p) | p <- [minBound .. maxBound]]
 
 instance FromField LatePending where fromField = fromTextField_ textDecode
+
+-- | What a closed order's late money waits on, for the view: confirmation, the credit, or support.
+data LateWait = LWConfirming | LWCrediting | LWSupport
+  deriving (Eq, Show)
+
+-- | Why a closed order's money will not be credited by itself: an invoice made under HighSpeed, an amount that could not be counted in units,
+-- a current rate below the floor, or unconfirmed money alerted past the read window.
+data LateSupport = LSHighSpeed | LSUnits | LSRateFloor | LSUnconfirmed
+  deriving (Eq, Show, Enum, Bounded)
+
+instance TextEncoding LateSupport where
+  textEncode = \case
+    LSHighSpeed -> "high_speed"
+    LSUnits -> "units"
+    LSRateFloor -> "rate_floor"
+    LSUnconfirmed -> "unconfirmed"
+  textDecode t = lookup t [(textEncode s, s) | s <- [minBound .. maxBound]]
+
+instance FromField LateSupport where fromField = fromTextField_ textDecode
+
+instance ToField LateSupport where toField = toField . textEncode
 
 -- | A closed order's pending money to alert on, with the received figure the alert names and the one the last alert named.
 data LateAlert = LateAlert
@@ -1043,25 +1070,26 @@ receivedFigure = " CASE WHEN" <> cardInvoice <> " THEN p.amount ELSE COALESCE(p.
 
 lateColumns :: Query
 lateColumns =
-  "SELECT ni.invoice_id, ni.registration_id, r.phase, r.live, CASE WHEN" <> cardInvoice <> " THEN 1 ELSE 0 END, COALESCE(p.amount, 0), p.confirmed_amount,"
+  "SELECT ni.invoice_id, ni.registration_id, r.phase, r.live, i.payment_crypto_currency, ni.late_support, COALESCE(p.amount, 0), p.confirmed_amount,"
     <> " p.received_units, p.confirmed_units, p.invoice_rate,"
     <> creditedTotal "units"
     <> ","
     <> creditedTotal "cents"
     <> ", (SELECT COUNT(*) FROM sx_badge_service_name_late_credits c WHERE c.invoice_id = ni.invoice_id), p.created_at"
 
-type LateRow = (Text, Text, NamePhase, BoolInt, BoolInt, Int, Int, Maybe Int64, Maybe Int64, Maybe Text) :. (Int64, Int, Int, UTCTime)
+type LateRow = (Text, Text, NamePhase, BoolInt, Maybe Text, Maybe LateSupport, Int, Int, Maybe Int64, Maybe Int64) :. (Maybe Text, Int64, Int, Int, UTCTime)
 
-toLateState :: LateRow -> LateCreditState
+toLateState :: LateRow -> Either Text LateCreditState
 toLateState
-  ( (inv, reg, lsPhase, BI lsLive, BI lsCard, lsReceivedCents, lsConfirmedCents, lsReceivedUnits, lsConfirmedUnits, lsInvoiceRate)
-      :. (lsCreditedUnits, lsCreditedCents, lsCredits, lsPaymentCreatedAt)
-    ) =
-    LateCreditState {lsInvoice = InvoiceId inv, lsRegistration = RegistrationId reg, lsPhase, lsLive, lsCard, lsReceivedCents, lsConfirmedCents, lsReceivedUnits, lsConfirmedUnits, lsInvoiceRate, lsCreditedUnits, lsCreditedCents, lsCredits, lsPaymentCreatedAt}
+  ( (inv, reg, lsPhase, BI lsLive, coin_, lsSupport, lsReceivedCents, lsConfirmedCents, lsReceivedUnits, lsConfirmedUnits)
+      :. (lsInvoiceRate, lsCreditedUnits, lsCreditedCents, lsCredits, lsPaymentCreatedAt)
+    ) = do
+    lsCoin <- traverse (\c -> note ("invoices.payment_crypto_currency: " <> c) (textToCryptoCurrency c)) coin_
+    pure LateCreditState {lsInvoice = InvoiceId inv, lsRegistration = RegistrationId reg, lsPhase, lsLive, lsCoin, lsSupport, lsReceivedCents, lsConfirmedCents, lsReceivedUnits, lsConfirmedUnits, lsInvoiceRate, lsCreditedUnits, lsCreditedCents, lsCredits, lsPaymentCreatedAt}
 
 -- | Nothing without a payment row.
 lateCreditState :: DB.Connection -> InvoiceId -> IO (Maybe LateCreditState)
-lateCreditState db (InvoiceId invId) = maybeFirstRow toLateState $ DB.query db (lateColumns <> lateFrom <> " WHERE ni.invoice_id = ?") (Only invId)
+lateCreditState db (InvoiceId invId) = firstDecoded toLateState $ DB.query db (lateColumns <> lateFrom <> " WHERE ni.invoice_id = ?") (Only invId)
 
 -- | Run after the invoice's lock. The order's balance is credited only when the credit's row is new, so a taken credit number changes neither.
 creditLatePayment :: DB.Connection -> LateCredit -> UTCTime -> IO Bool
@@ -1085,6 +1113,21 @@ latePending :: DB.Connection -> InvoiceId -> IO (Maybe LatePending)
 latePending db (InvoiceId invId) =
   maybe Nothing fromOnly . listToMaybe
     <$> DB.query db ("SELECT" <> pendingCase <> lateFrom <> " WHERE ni.invoice_id = ? AND" <> closedUnpaid) (invId, PUnpaid)
+
+-- | Nothing once all of the closed order's money is credited, whatever support reason was given before.
+lateWait :: DB.Connection -> InvoiceId -> IO (Maybe LateWait)
+lateWait db (InvoiceId invId) =
+  maybe Nothing waitOf . listToMaybe
+    <$> DB.query db ("SELECT" <> pendingCase <> ", ni.late_support" <> lateFrom <> " WHERE ni.invoice_id = ? AND" <> closedUnpaid) (invId, PUnpaid)
+  where
+    waitOf :: (Maybe LatePending, Maybe LateSupport) -> Maybe LateWait
+    waitOf = \case
+      (Nothing, _) -> Nothing
+      (Just _, Just _) -> Just LWSupport
+      (Just LPUncounted, Nothing) -> Just LWSupport
+      (Just LPUncredited, Nothing) -> Just LWCrediting
+      (Just LPConfirming, Nothing) -> Just LWConfirming
+      (Just LPUnconfirmed, Nothing) -> Just LWConfirming
 
 -- | Closed orders' invoices with confirmed money not all credited, for the poller's credit pass.
 uncreditedLateInvoices :: DB.Connection -> IO [InvoiceId]
@@ -1117,22 +1160,29 @@ lateAlertDue db cutoff =
   where
     toAlert :: LateRow :. (Maybe LatePending, Maybe Int64, Maybe UTCTime, Maybe Int64) -> Either Text LateAlert
     toAlert (row :. (pending_, laReceived, laAlertedAt, laAlertedReceived)) = case pending_ of
-      Just laPending -> Right LateAlert {laState = toLateState row, laPending, laReceived, laAlertedAt, laAlertedReceived}
+      Just laPending -> (\laState -> LateAlert {laState, laPending, laReceived, laAlertedAt, laAlertedReceived}) <$> toLateState row
       Nothing -> Left "name invoice alert without pending money"
 
--- | Marks the alert sent, unless another instance marked it since it was read; only the instance that marks it logs it.
-claimLateAlert :: DB.Connection -> LateAlert -> UTCTime -> IO Bool
-claimLateAlert db LateAlert {laState = LateCreditState {lsInvoice = InvoiceId invId}, laReceived, laAlertedAt, laAlertedReceived} now =
+-- | Marks the alert sent, with the support reason it gives unless one is set, unless another instance marked it since it was read;
+-- only the instance that marks it logs it.
+claimLateAlert :: DB.Connection -> LateAlert -> Maybe LateSupport -> UTCTime -> IO Bool
+claimLateAlert db LateAlert {laState = LateCreditState {lsInvoice = InvoiceId invId}, laReceived, laAlertedAt, laAlertedReceived} support now =
   (> 0)
     <$> executeChanging
       db
-      ( "UPDATE sx_badge_service_name_invoices SET late_alerted_at = ?, late_alerted_units = ? WHERE invoice_id = ? AND late_alerted_at"
+      ( "UPDATE sx_badge_service_name_invoices SET late_alerted_at = ?, late_alerted_units = ?, late_support = COALESCE(late_support, ?)"
+          <> " WHERE invoice_id = ? AND late_alerted_at"
           <> notDistinctFrom
           <> "? AND late_alerted_units"
           <> notDistinctFrom
           <> "?"
       )
-      (truncateToSecond now, laReceived, invId, laAlertedAt, laAlertedReceived)
+      (truncateToSecond now, laReceived, support, invId, laAlertedAt, laAlertedReceived)
+
+-- | The first reason given stays.
+setLateSupport :: DB.Connection -> InvoiceId -> LateSupport -> IO ()
+setLateSupport db (InvoiceId invId) support =
+  DB.execute db "UPDATE sx_badge_service_name_invoices SET late_support = COALESCE(late_support, ?) WHERE invoice_id = ?" (support, invId)
 
 insertPrepaidCode :: DB.Connection -> NewPrepaidCode -> UTCTime -> IO (Either CodeHashTaken Int64)
 insertPrepaidCode db NewPrepaidCode {npcCodeHash, npcMinLength, npcYears, npcPaymentStatus, npcExpiresAt} now = do

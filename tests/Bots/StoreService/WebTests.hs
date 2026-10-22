@@ -2455,8 +2455,8 @@ testSettledPaymentIsNotDowngraded :: IO ()
 testSettledPaymentIsNotDowngraded = bounded "settled is not downgraded" $ withServiceStore $ \st -> do
   iid <- seedOpen st
   row <- getInvoice st iid >>= maybe (failWith "no invoice row") pure
-  withTransaction st $ \db -> upsertPayment db row PSSettled (CurrencyAmount 500) (Just "0.00050000") Nothing False settleAt
-  withTransaction st $ \db -> upsertPayment db row PSPending (CurrencyAmount 200) (Just "0.00020000") Nothing False replayAt
+  withTransaction st $ \db -> upsertPayment db row PSSettled (rcv 500 (Just "0.00050000")) False settleAt
+  withTransaction st $ \db -> upsertPayment db row PSPending (rcv 200 (Just "0.00020000")) False replayAt
   p <- paymentRow st iid
   ipStatus p `shouldBe` "settled"
   ipUpdatedAt p `shouldBe` settleAt
@@ -2465,8 +2465,8 @@ testSettledPaymentIsNotDowngraded = bounded "settled is not downgraded" $ withSe
   let second' = sampleInvoice {niInvoiceId = InvoiceId "inv-pending", niProviderRef = "p-pending", niCodeHash = digestFixture 16}
   createInvoiceRows st second' `shouldReturn` Right ()
   row' <- getInvoice st (niInvoiceId second') >>= maybe (failWith "no invoice row") pure
-  withTransaction st $ \db -> upsertPayment db row' PSPending (CurrencyAmount 100) Nothing Nothing False settleAt
-  withTransaction st $ \db -> upsertPayment db row' PSSettled (CurrencyAmount 500) (Just "0.00050000") Nothing False replayAt
+  withTransaction st $ \db -> upsertPayment db row' PSPending (rcv 100 Nothing) False settleAt
+  withTransaction st $ \db -> upsertPayment db row' PSSettled (rcv 500 (Just "0.00050000")) False replayAt
   p' <- paymentRow st (niInvoiceId second')
   ipStatus p' `shouldBe` "settled"
   ipUpdatedAt p' `shouldBe` replayAt
