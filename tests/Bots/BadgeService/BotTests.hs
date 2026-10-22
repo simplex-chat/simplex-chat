@@ -2323,7 +2323,7 @@ testSubscriptionChargeNotGranted ps =
         checkedAt i = addUTCTime (3 * nominalDay + fromIntegral (i :: Int) * 3700) (addMonths 1 firstStart)
         notGranted =
           [ (monthlyCharge monthly firstStart 1) {revoked = True},
-            (monthlyCharge monthly firstStart 3) {offer = True},
+            (monthlyCharge monthly firstStart 1) {offer = True, chargeRef = "GPA.offer"},
             (monthlyCharge monthly firstStart 4) {periodStart = addUTCTime nominalDay (checkedAt 3), periodEnd = addMonths 1 (addUTCTime nominalDay (checkedAt 3))},
             (monthlyCharge monthly firstStart 5) {periodStart = firstStart, periodEnd = addMonths 1 firstStart},
             -- an unsold Play plan, given an empty period
