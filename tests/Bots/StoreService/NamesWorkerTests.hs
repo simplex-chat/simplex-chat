@@ -516,8 +516,9 @@ testFailedOnlySettled = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}, wSender} -> d
   answerOwner ctx "alicebakery" (nrOwner r2)
   answerExpiry ctx "alicebakery" expiry
   steps w r2 >>= done
+  -- judged from chain state with no hash known to have mined: no register transaction (contract section 6)
   x2 <- stored ctx r2
-  (nrPhase x2, nrExpiresAt x2) `shouldBe` (PRegistered, Just expiry)
+  (nrPhase x2, nrExpiresAt x2, nrRegisterTx x2, nrRegisterBlock x2) `shouldBe` (PRegistered, Just expiry, Nothing, Nothing)
 
 testLapseFailed :: IO ()
 testLapseFailed = withWorker $ \w@W {wCtx = ctx} -> do

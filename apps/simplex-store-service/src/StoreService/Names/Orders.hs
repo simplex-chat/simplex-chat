@@ -44,7 +44,6 @@ module StoreService.Names.Orders
   )
 where
 
-import Control.Applicative ((<|>))
 import qualified Control.Exception as E
 import Control.Monad (forM, unless, when)
 import Control.Monad.Except (ExceptT (..), runExceptT)
@@ -334,7 +333,7 @@ versionWritten = \case
 -- went through with only its confirmation lost. The order then becomes registered by a compare-and-set on the version read, a code order spending its code.
 -- The caller holds the turn of the order's label hash and passes the order as registrationAt reads it.
 confirmLanded :: OrdersEnv -> NameRegistration -> IO Landing
-confirmLanded OrdersEnv {oeStore, oeContracts, oeTurns, oeNow} r@NameRegistration {nrId, nrOwner, nrLabelHash, nrPayment, nrRegisterTx, nrRegisterBlock} = do
+confirmLanded OrdersEnv {oeStore, oeContracts, oeTurns, oeNow} r@NameRegistration {nrId, nrOwner, nrLabelHash, nrPayment} = do
   txs <- withTransaction oeStore (`registrationTransactions` nrId)
   let mined = [(ntHash, ntMinedBlock) | NameTransaction {ntFor = TxRegister _, ntStatus = TSMined, ntHash, ntMinedBlock} <- txs]
   runExceptT (landed mined) >>= \case
@@ -353,8 +352,9 @@ confirmLanded OrdersEnv {oeStore, oeContracts, oeTurns, oeNow} r@NameRegistratio
       let registered =
             r
               { nrPhase = PRegistered,
-                nrRegisterTx = (fst <$> tx) <|> nrRegisterTx,
-                nrRegisterBlock = (snd =<< tx) <|> nrRegisterBlock,
+                -- judged by ownerOf alone, no hash is known to have mined: none is shown (contract section 6)
+                nrRegisterTx = fst <$> tx,
+                nrRegisterBlock = snd =<< tx,
                 nrExpiresAt = Just expiry,
                 nrRegisteredAt = Just now,
                 nrFailedAt = Nothing,
