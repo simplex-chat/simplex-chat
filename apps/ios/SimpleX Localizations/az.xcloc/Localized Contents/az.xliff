@@ -11093,6 +11093,42 @@ last received msg: %2$@</source>
         <source>Crowdfunding investors can reserve names before the sale starts: [simplex.domains](https://simplex.domains/)</source>
         <target state="translated">Kütləvi maliyyələşdirmə investorları satış başlamazdan əvvəl adları sifariş edə bilərlər: [simplex.domains](https://simplex.domains/)</target>
       </trans-unit>
+      <trans-unit id="forwarded from" xml:space="preserve">
+        <source>forwarded from</source>
+      </trans-unit>
+      <trans-unit id="SimpleX name sale starts in" xml:space="preserve">
+        <source>SimpleX name sale starts in</source>
+      </trans-unit>
+      <trans-unit id="Update the app to register a SimpleX domain" xml:space="preserve">
+        <source>Update the app to register a SimpleX domain</source>
+      </trans-unit>
+      <trans-unit id="You are a moderator" xml:space="preserve">
+        <source>You are a moderator</source>
+      </trans-unit>
+      <trans-unit id="until you can register a SimpleX domain" xml:space="preserve">
+        <source>until you can register a SimpleX domain</source>
+      </trans-unit>
+      <trans-unit id="You are a member" xml:space="preserve">
+        <source>You are a member</source>
+      </trans-unit>
+      <trans-unit id="You are an admin" xml:space="preserve">
+        <source>You are an admin</source>
+      </trans-unit>
+      <trans-unit id="You are a contributor" xml:space="preserve">
+        <source>You are a contributor</source>
+      </trans-unit>
+      <trans-unit id="saved from" xml:space="preserve">
+        <source>saved from</source>
+      </trans-unit>
+      <trans-unit id="You are an owner" xml:space="preserve">
+        <source>You are an owner</source>
+      </trans-unit>
+      <trans-unit id="You are a subscriber" xml:space="preserve">
+        <source>You are a subscriber</source>
+      </trans-unit>
+      <trans-unit id="You are an observer" xml:space="preserve">
+        <source>You are an observer</source>
+      </trans-unit>
     </body>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="az" datatype="plaintext">
