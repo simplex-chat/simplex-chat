@@ -20,6 +20,7 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import Data.ByteString (ByteString)
+import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as LB
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -30,11 +31,12 @@ import Network.HTTP.Client (RequestBody (..), defaultManagerSettings, httpLbs, m
 import Network.HTTP.Types (hContentType, statusCode)
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
+import Simplex.Messaging.Agent.Store.DB (Binary (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..), signRecoverable)
 import Simplex.Messaging.Encoding.String (strDecode)
-import Simplex.Messaging.Eth.Address (Address, recoverAddress)
+import Simplex.Messaging.Eth.Address (Address, recoverAddress, unAddress)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain, serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
 import StoreService.Config (ChainConfig (..))
@@ -93,6 +95,7 @@ namesRecordsTests = describe "StoreService names: records" $ do
   describe "restarts" $ do
     it "sends a saved edit that was never sent, and follows a sent one to its receipt" $ testResume g
     it "forgets a saved edit that was never sent once its dry run reverts or its deadline passes" $ testUnsentForgotten g
+    it "goes on to the next edit when one row fails to decode" $ testBadRowSkipped g
     it "answers an identical repeat after a restart from the stored edit, with no chain read" $ testRepeatAfterRestart g
     it "finds an edit that expired across a restart applied, and makes it mined" $ testRestartExpiredApplied g
     it "frees an edit past its deadline while its transaction is still rebroadcast" $ testExpiryFreesNonce g
@@ -561,6 +564,22 @@ testResume g = withSetup g $ \s@Setup {node, owner} -> do
   h' <- mineSent s'' 3 True
   stateOf s sent `shouldReturn` Just (ESMined $ Just h')
   TxHash (C.keccak256 raw) `shouldBe` h'
+
+testBadRowSkipped :: TVar ChaChaDRG -> IO ()
+testBadRowSkipped g = withSetup g $ \s@Setup {store, clock} -> do
+  now <- readTVarIO clock
+  -- a text record with a key and no value, which no edit can be
+  withTransaction store $ \db ->
+    DB.execute
+      db
+      "INSERT INTO sx_badge_service_name_record_edits (label_hash, owner, nonce, record_key, record_value, deadline, signature, body_hash, state, created_at) VALUES (?,?,5,'simplex.channel',NULL,?,?,?,'pending',?)"
+      (Binary $ unLabel alice, Binary $ unAddress viemAddress, deadline, Binary $ serializeSignature viemSetSignature, Binary $ B.replicate 32 0, now)
+  req <- ownerEdit s viemChannelLink
+  saveUnsent s req
+  s' <- restart s
+  recordsRound (records s')
+  h <- mineSent s' 1 True
+  stateOf s req `shouldReturn` Just (ESMined $ Just h)
 
 testUnsentForgotten :: TVar ChaChaDRG -> IO ()
 testUnsentForgotten g = withSetup g $ \s@Setup {node, owner} -> do

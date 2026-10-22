@@ -19,7 +19,7 @@ where
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.STM
 import Control.Exception (bracket)
-import Control.Monad (forM, forever, unless, void, when)
+import Control.Monad (forM, forM_, forever, unless, void, when)
 import Control.Monad.Except (ExceptT (..), runExceptT)
 import Control.Monad.IO.Class (liftIO)
 import Data.ByteString (ByteString)
@@ -231,14 +231,16 @@ awaitEdit rs@Records {rsChanges, rsStalled} timer editId = loop
 runRecordEdits :: Records -> IO ()
 runRecordEdits rs = forever $ recordsRound rs >> threadDelay recordsInterval
 
--- | One pass over the pending edits that no request is sending. A pass that fails is logged, and the lane goes on.
+-- | One pass over the pending edits that no request is sending. A pass or an edit that fails is logged, and the lane goes on.
 recordsRound :: Records -> IO ()
 recordsRound rs@Records {rsChain} = void $ safely "names records: the round" $ do
   editIds <- withStore rs pendingEditIds
   unless (null editIds) $
     runExceptT (ExceptT (latestBlock rsChain) >>= \tip -> (tip,) <$> ExceptT (deepBlock rsChain tip)) >>= \case
       Left e -> mapM_ (\editId -> stall rs editId e) editIds
-      Right (tip, deep) -> mapM_ (\editId -> withClaim rs editId () $ withStore rs (`getRecordEdit` editId) >>= mapM_ (follow rs tip deep)) editIds
+      -- each edit on its own, so a row that fails stops no other edit
+      Right (tip, deep) -> forM_ editIds $ \editId ->
+        safely ("names records: edit " <> tshow editId) $ withClaim rs editId () $ withStore rs (`getRecordEdit` editId) >>= mapM_ (follow rs tip deep)
 
 -- | The newest block at the configured confirmation depth, as the sender counts it.
 deepBlock :: ChainClient -> Block -> IO (Either ChainError Block)
