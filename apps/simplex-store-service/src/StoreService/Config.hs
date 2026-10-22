@@ -18,6 +18,7 @@ module StoreService.Config
     defaultExpiryMinutes,
     defaultSessionMinutes,
     minNameYears,
+    hostName,
     readServiceConfig,
     unknownKeys,
   )
@@ -218,6 +219,12 @@ trailingNoise = skipSpace *> skipMany (comment *> skipSpace)
   where
     comment = satisfy (\c -> c == ';' || c == '#') *> skipWhile (not . isEndOfLine)
 
+-- | A host as names_hosts compares it: in lower case, without a port or the root's trailing dot.
+hostName :: Text -> Text
+hostName h = fromMaybe name (T.stripSuffix "." name)
+  where
+    name = T.takeWhile (/= ':') (T.toLower (T.strip h))
+
 knownSettings :: [(Text, [Text])]
 knownSettings =
   [ ("listener", ["host", "port", "static_dir", "serve_webapp", "webapp_export_dir", "trust_forwarded_for", "names_static_dir", "names_export_dir", "names_hosts"]),
@@ -254,7 +261,7 @@ parseConfig ini = do
   lTrustForwardedFor <- bool "listener" "trust_forwarded_for" False
   let lNamesStaticDir = T.unpack <$> present "listener" "names_static_dir"
       lNamesExportDir = T.unpack <$> present "listener" "names_export_dir"
-      lNamesHosts = maybe [] (filter (not . T.null) . map (T.toLower . T.strip) . T.splitOn ",") (present "listener" "names_hosts")
+      lNamesHosts = maybe [] (filter (not . T.null) . map hostName . T.splitOn ",") (present "listener" "names_hosts")
   when (isNothing lNamesStaticDir && (not (null lNamesHosts) || isJust lNamesExportDir)) $
     Left "listener.names_static_dir is required with names_hosts or names_export_dir"
   btc <- btcpaySection

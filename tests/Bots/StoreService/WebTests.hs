@@ -1112,7 +1112,7 @@ webGetAt client host target = webRequest client "GET" target [("Host", host)]
 
 testHostPicksTheSite :: IO ()
 testHostPicksTheSite = bounded "host picks the site" $ withBothSites $ \client -> do
-  forM_ [namesHost, "SIMPLEX.Domains:8443", "simplex.domains:80"] $ \host -> do
+  forM_ [namesHost, "SIMPLEX.Domains:8443", "simplex.domains:80", "simplex.domains.", "simplex.domains.:443"] $ \host -> do
     shell <- webGetAt client host "/"
     (statusOf shell, responseBody shell) `shouldBe` (200, namesShellWithKey)
     headerOf shell hContentType `shouldBe` Just "text/html; charset=utf-8"

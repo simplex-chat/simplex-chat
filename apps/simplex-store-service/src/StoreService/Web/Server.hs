@@ -15,7 +15,7 @@ module StoreService.Web.Server
 where
 
 import StoreService.Catalog (PricedOffer (..), priceOffer)
-import StoreService.Config (ListenerConfig (..), ServiceConfig (..), StripeConfig (..))
+import StoreService.Config (ListenerConfig (..), ServiceConfig (..), StripeConfig (..), hostName)
 import StoreService.Names.Env (NamesEnv)
 import StoreService.Names.Orders (OrdersEnv (..), ordersEnv)
 import StoreService.Names.Phases (RegistrationId, awaitChange)
@@ -132,9 +132,8 @@ servedSite env@WebEnv {weBadgesSite, weNamesSite} req
   where
     ListenerConfig {lServeWebapp, lNamesHosts} = listenerConfig env
 
--- | The Host header without its port, in lower case as names_hosts is read.
 requestHost :: Request -> Maybe Text
-requestHost req = T.takeWhile (/= ':') . T.toLower . safeDecodeUtf8 <$> requestHeaderHost req
+requestHost req = hostName . safeDecodeUtf8 <$> requestHeaderHost req
 
 -- | The names build keeps files at its root, so every path outside the API and the webhooks is the site's.
 sitePath :: [Text] -> Bool

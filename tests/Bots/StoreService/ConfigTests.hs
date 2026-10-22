@@ -422,6 +422,7 @@ namesConfigTests = describe "StoreService names: config" $ do
   it "reads every [names] and [chain] setting written out" testNamesWrittenOut
   it "reads the names keys of [listener]" testNamesListenerKeys
   it "refuses names_hosts or names_export_dir without names_static_dir" testNamesSiteNeedsItsBuild
+  it "reads names_hosts entries without a port or the root's trailing dot" testNamesHostsNormalised
   it "leaves the names side off when [names] is absent" testNamesAbsent
   it "refuses [names] without [chain], and [chain] without [names]" testNamesNeedsChain
   it "refuses years below 2" testNamesYearsBelowTwo
@@ -532,6 +533,12 @@ testNamesSiteNeedsItsBuild =
     let withKey = T.replace "static_dir = /srv/badges\n" ("static_dir = /srv/badges\n" <> key <> "\n") fullIni
     r <- parseIni withKey
     either id (const "parsed") r `shouldBe` "listener.names_static_dir is required with names_hosts or names_export_dir"
+
+testNamesHostsNormalised :: IO ()
+testNamesHostsNormalised = do
+  let withHosts = T.replace "static_dir = /srv/badges\n" "static_dir = /srv/badges\nnames_static_dir = /srv/names\nnames_hosts = simplex.domains:8443, Names.Example., www.simplex.domains.:443\n" fullIni
+  Right cfg <- parseIni withHosts
+  lNamesHosts (listener cfg) `shouldBe` ["simplex.domains", "names.example", "www.simplex.domains"]
 
 testNamesAbsent :: IO ()
 testNamesAbsent = do
