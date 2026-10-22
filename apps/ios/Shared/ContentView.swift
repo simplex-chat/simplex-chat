@@ -471,7 +471,7 @@ struct ContentView: View {
             } else if path == "/r" {
                 showAlert(
                     NSLocalizedString("Relay address", comment: "alert title"),
-                    message: NSLocalizedString("This is a chat relay address, it cannot be used to connect.", comment: "alert message")
+                    message: NSLocalizedString("This is a chat relay address, it cannot be used to connect. To use it, open Network & servers, Your servers, Add server, then Chat relay, paste the address, then Test relay.", comment: "alert message")
                 )
             } else if (path == "/contact" || path == "/invitation" || path == "/a" || path == "/c" || path == "/g" || path == "/i") {
                 path.removeFirst()

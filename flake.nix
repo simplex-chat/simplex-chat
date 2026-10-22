@@ -469,6 +469,7 @@
                   "chat_migrate_init_queue"
                   "chat_parse_markdown"
                   "chat_parse_server"
+                  "chat_check_link"
                   "chat_parse_uri"
                   "chat_password_hash"
                   "chat_read_file"

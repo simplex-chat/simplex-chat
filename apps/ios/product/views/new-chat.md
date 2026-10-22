@@ -111,7 +111,7 @@ Calls `apiNewPublicGroup(incognito:relayIds:groupProfile:)` which returns `publi
 
 ### Relay Link Blocking
 
-When `planAndConnect` encounters a `.simplexLink(_, .relay, _, _)`, it shows a "Relay address" alert: "This is a chat relay address, it cannot be used to connect." Connection is blocked.
+When `planAndConnect` encounters a `.simplexLink(_, .relay, _, _)`, it shows a "Relay address" alert: "This is a chat relay address, it cannot be used to connect. To use it, open Network & servers, Your servers, Add server, then Chat relay, paste the address, then Test relay." Connection is blocked.
 
 ### Channel Prepare/Join Alerts
 
@@ -147,6 +147,7 @@ When preparing a channel link, `groupShortLinkInfo.groupRelays` (hostnames) are 
 - `Shared/Views/NewChat/NewChatView.swift` -- Main view with invite/connect tabs, link generation
 - `Shared/Views/NewChat/NewChatMenuButton.swift` -- Dropdown menu (new chat, create group, create channel)
 - `Shared/Views/NewChat/QRCode.swift` -- QR code generation and display
+- `Shared/Views/NewChat/WrongQRCode.swift` -- Message and alert shown when a scanner is given a valid SimpleX code of another kind
 - `Shared/Views/NewChat/AddGroupView.swift` -- Group creation form
 - `Shared/Views/NewChat/AddChannelView.swift` -- Channel creation wizard (3 steps)
 - `Shared/Views/NewChat/AddContactLearnMore.swift` -- Info sheet explaining connection process

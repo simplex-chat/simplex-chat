@@ -39,6 +39,7 @@ external fun chatWriteFile(ctrl: ChatCtrl, path: String, buffer: ByteBuffer): St
 external fun chatReadFile(path: String, key: String, nonce: String): Array<Any>
 external fun chatEncryptFile(ctrl: ChatCtrl, fromPath: String, toPath: String): String
 external fun chatDecryptFile(fromPath: String, key: String, nonce: String, toPath: String): String
+external fun chatCheckLink(link: String): String
 
 // the code in core's canonical form (prefix and 20 characters, no separators), or null when core rejects it.
 // The check character is verified by core via FFI, not re-implemented here, so the two cannot disagree.

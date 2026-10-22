@@ -26,6 +26,7 @@ import chat.simplex.common.views.database.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.helpers.DatabaseUtils.ksDatabasePassword
 import chat.simplex.common.views.newchat.QRCodeScanner
+import chat.simplex.common.views.newchat.showWrongQRCodeAlert
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.views.usersettings.networkAndServers.OnionRelatedLayout
@@ -524,31 +525,40 @@ private fun ProgressView() {
 }
 
 private suspend fun MutableState<MigrationToState?>.checkUserLink(link: String): Boolean {
-  return if (strHasSimplexFileLink(link.trim())) {
-    val data = MigrationFileLinkData.readFromLink(link)
-    val hasProxyConfigured = data?.networkConfig?.hasProxyConfigured() ?: false
-    val networkConfig = data?.networkConfig?.transformToPlatformSupported()
-    // If any of iOS or Android had onion enabled, show onion screen
-    if (hasProxyConfigured && networkConfig?.hostMode != null && networkConfig.requiredHostMode != null) {
-      state = MigrationToState.Onion(link.trim(), networkConfig.legacySocksProxy, networkConfig.networkProxy, networkConfig.hostMode, networkConfig.requiredHostMode)
-      MigrationToDeviceState.save(MigrationToDeviceState.Onion(link.trim(), networkConfig.legacySocksProxy, networkConfig.networkProxy, networkConfig.hostMode, networkConfig.requiredHostMode))
-    } else {
-      val current = getNetCfg()
-      state = MigrationToState.DatabaseInit(link.trim(), current.copy(
-        socksProxy = null,
-        hostMode = networkConfig?.hostMode ?: current.hostMode,
-        requiredHostMode = networkConfig?.requiredHostMode ?: current.requiredHostMode
-      ),
-        networkProxy = null
-      )
+  val trimmed = link.trim()
+  return when (val type = checkLink(trimmed)) {
+    ScannedLinkType.FileDescription -> {
+      val data = MigrationFileLinkData.readFromLink(trimmed)
+      val hasProxyConfigured = data?.networkConfig?.hasProxyConfigured() ?: false
+      val networkConfig = data?.networkConfig?.transformToPlatformSupported()
+      // If any of iOS or Android had onion enabled, show onion screen
+      if (hasProxyConfigured && networkConfig?.hostMode != null && networkConfig.requiredHostMode != null) {
+        state = MigrationToState.Onion(trimmed, networkConfig.legacySocksProxy, networkConfig.networkProxy, networkConfig.hostMode, networkConfig.requiredHostMode)
+        MigrationToDeviceState.save(MigrationToDeviceState.Onion(trimmed, networkConfig.legacySocksProxy, networkConfig.networkProxy, networkConfig.hostMode, networkConfig.requiredHostMode))
+      } else {
+        val current = getNetCfg()
+        state = MigrationToState.DatabaseInit(trimmed, current.copy(
+          socksProxy = null,
+          hostMode = networkConfig?.hostMode ?: current.hostMode,
+          requiredHostMode = networkConfig?.requiredHostMode ?: current.requiredHostMode
+        ),
+          networkProxy = null
+        )
+      }
+      true
     }
-    true
-  } else {
-    AlertManager.shared.showAlertMsg(
-      title = generalGetString(MR.strings.invalid_file_link),
-      text = generalGetString(MR.strings.the_text_you_pasted_is_not_a_link)
-    )
-    false
+    null -> {
+      AlertManager.shared.showAlertMsg(
+        title = generalGetString(MR.strings.invalid_file_link),
+        text = generalGetString(MR.strings.the_text_you_pasted_is_not_a_link)
+      )
+      false
+    }
+    // shared with the paste button, so the title is neutral ("Wrong link")
+    else -> {
+      showWrongQRCodeAlert(type, title = generalGetString(MR.strings.wrong_link))
+      false
+    }
   }
 }
 
@@ -726,9 +736,6 @@ private suspend fun MutableState<MigrationToState?>.cleanUpOnBack(chatReceiver: 
   MigrationToDeviceState.save(null)
   chatModel.migrationState.value = null
 }
-
-private fun strHasSimplexFileLink(text: String): Boolean =
-  text.startsWith("simplex:/file") || text.startsWith("https://simplex.chat/file")
 
 private fun fileForTemporaryDatabase(): File =
   File(getMigrationTempFilesDirectory(), generateNewFileName("migration", "db", getMigrationTempFilesDirectory()))
