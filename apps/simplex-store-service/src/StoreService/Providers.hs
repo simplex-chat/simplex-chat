@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module StoreService.Providers
   ( ProviderError (..),
@@ -8,6 +9,8 @@ module StoreService.Providers
     Confirmed (..),
     Uncreditable (..),
     Rate (..),
+    unitDecimals,
+    unitName,
     PaymentSignal (..),
     ProviderInvoice (..),
     Funded (..),
@@ -25,7 +28,7 @@ import Data.Scientific (Scientific)
 import Data.Text (Text)
 import Data.Time.Clock (NominalDiffTime, UTCTime)
 import Network.HTTP.Types.Header (Header)
-import Simplex.Chat.PaymentService.Types (CryptoCurrency, CurrencyAmount, PaymentProvider (..), ServicePaymentDestination, ServicePaymentMethod)
+import Simplex.Chat.PaymentService.Types (CryptoCurrency (..), CurrencyAmount, PaymentProvider (..), ServicePaymentDestination, ServicePaymentMethod)
 
 newtype ProviderError = ProviderError Text deriving (Eq, Show)
 
@@ -59,6 +62,17 @@ data Uncreditable = UCHighSpeed | UCUncounted | UCNoConfirmationShown
 -- | A coin's current price in the service's currency, above 0: as the provider wrote it, and as a decimal to compute with.
 data Rate = Rate {rateText :: Text, rateValue :: Scientific}
   deriving (Eq, Show)
+
+-- | The decimals of each coin's atomic unit.
+unitDecimals :: CryptoCurrency -> Int
+unitDecimals = \case
+  CCBtc -> 8
+  CCXmr -> 12
+
+unitName :: CryptoCurrency -> Text
+unitName = \case
+  CCBtc -> "satoshi"
+  CCXmr -> "piconero"
 
 -- The provider applies its own tolerance, so this cannot be recomputed from the amounts.
 data Funded = PaidInFull | PaidInPart

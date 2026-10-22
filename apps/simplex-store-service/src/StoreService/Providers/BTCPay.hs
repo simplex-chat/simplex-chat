@@ -7,7 +7,6 @@ module StoreService.Providers.BTCPay
   ( btcpayProvider,
     btcMethodId,
     xmrMethodId,
-    unitDecimals,
     minorToDecimal,
     paymentMethodsSignal,
     listSignals,
@@ -32,6 +31,7 @@ import StoreService.Providers
     Received (..),
     Uncreditable (..),
     settleWindow,
+    unitDecimals,
     WebhookError (..),
   )
 import Control.Exception (try)
@@ -102,12 +102,6 @@ methodCurrencies = [(btcMethodId, CCBtc), (xmrMethodId, CCXmr)]
 
 knownMethodIds :: [Text]
 knownMethodIds = map fst methodCurrencies
-
--- | The decimals of each coin's atomic unit: satoshi and piconero.
-unitDecimals :: CryptoCurrency -> Int
-unitDecimals = \case
-  CCBtc -> 8
-  CCXmr -> 12
 
 -- | The policies that settle a payment only after at least one confirmation.
 confirmingPolicies :: [SpeedPolicy]
