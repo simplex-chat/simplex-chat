@@ -84,6 +84,8 @@ namesRecordsTests = describe "StoreService names: records" $ do
     it "answers a dry run's InvalidNonce revert of an edit another relayer applied as applied with no hash, storing nothing" $ testDryRunAppliedByAnother g
     it "answers a SignatureExpired revert of an edit another relayer applied as mined with no hash" $ testExpiredAppliedByAnother g
     it "answers record_reverted InvalidNonce when another body used the nonce with another value" $ testNonceTakenByAnother g
+    it "relays a clear edit with viem's calldata, applied by another relayer when both records read empty" $ testClearApplied g
+    it "answers a clear edit record_reverted InvalidNonce when either record holds a value after the nonce moved" $ testClearNonceTaken g
     it "frees a reverted edit's nonce for a new body, and answers the reverted edit's repeat while the new one is pending" $ testRevertFreesNonce g
     it "keeps an edit pending when the re-read after a mined revert fails, and settles it in a later round" $ testFailedReRead g
   describe "restarts" $ do
@@ -461,6 +463,34 @@ testNonceTakenByAnother g = withSetup g $ \s@Setup {node} -> do
   _ <- mineSent s 1 False
   answerOf r `shouldReturn` EAReverted (Just "InvalidNonce")
   stateOf s req `shouldReturn` Just (ESReverted $ Just "InvalidNonce")
+
+testClearApplied :: TVar ChaChaDRG -> IO ()
+testClearApplied g = withSetup g $ \s -> do
+  setRecord s contactKey "https://smp8.simplex.im/a#Y8m3"
+  setRecord s channelKey viemChannelLink
+  r <- relayClear s
+  setRecord s contactKey ""
+  setRecord s channelKey ""
+  _ <- mineSent s 1 False
+  answerOf r `shouldReturn` EAApplied Nothing
+
+testClearNonceTaken :: TVar ChaChaDRG -> IO ()
+testClearNonceTaken g = forM_ [contactKey, channelKey] $ \held -> withSetup g $ \s -> do
+  r <- relayClear s
+  setRecord s held "https://smp9.simplex.im/c#held"
+  _ <- mineSent s 1 False
+  answerOf r `shouldReturn` EAReverted (Just "InvalidNonce")
+
+-- | viem's clear edit, with nonce 1, sent; then the owner's nonce moves past it.
+relayClear :: Setup -> IO (Async EditAnswer)
+relayClear s@Setup {node, owner} = do
+  setNonce s 1
+  req <- signEdit s owner RCClear 1 deadline
+  r <- relay s req
+  [raw] <- within $ awaitSent node 1
+  fmap trData (decodeSignedTx raw) `shouldBe` Right viemClearCall
+  setNonce s 2
+  pure r
 
 testRevertFreesNonce :: TVar ChaChaDRG -> IO ()
 testRevertFreesNonce g = withSetup g $ \s@Setup {node, records} -> do
