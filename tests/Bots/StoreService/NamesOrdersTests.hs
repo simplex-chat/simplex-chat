@@ -97,6 +97,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "leaves a late payment of a cancelled invoice unpaid and alerts" testLatePayment
     it "queues an order settled while open and publishes its version" testSettlementQueues
     it "closes the order of an invoice the provider closed or the sweep expired" testExpiryCloses
+    it "sweeps each invoice on its own, skipping one whose order cannot be read" testSweepSkipsBadRow
     it "cleans up unpaid orders after 30 days, reading the provider first" testCleanup
     it "answers 503 for a name invoice while names are off, cancelling nothing" testNamesOff
   describe "invoice side" $ do
@@ -740,6 +741,21 @@ testExpiryCloses = withOrders $ \ctx -> do
   expireOverdue (cStore ctx) (weWaiters $ cWeb ctx) (Just $ oePhases $ cOrders ctx) later later [swept] `shouldReturn` [swept]
   s <- invoiceRegistration ctx swept
   (nrPhase s, nrLive s, nrVersion s) `shouldBe` (PUnpaid, False, 2)
+
+testSweepSkipsBadRow :: IO ()
+testSweepSkipsBadRow = withOrders $ \ctx@Ctx {cStore = st} -> do
+  (bad, _) <- placed ctx aliceOrder
+  (good, _) <- placed ctx aliceOrder {oLabel = "dynamis", oPrice = 20000, oCommitment = commitmentOf 2}
+  NameRegistration {nrId = RegistrationId badId} <- invoiceRegistration ctx bad
+  withConnection st $ \db -> DB.execute db "UPDATE sx_badge_service_name_registrations SET phase = 'lost' WHERE registration_id = ? AND phase = ?" (badId, "unpaid" :: Text)
+  let later = addUTCTime 3600 orderTime
+  logs <- capturingStderr $ expireOverdue st (weWaiters $ cWeb ctx) (Just $ oePhases $ cOrders ctx) later later [bad, good] `shouldReturn` [good]
+  logs `shouldSatisfy` T.isInfixOf ("invoice " <> invoiceText bad)
+  (irStatus <$>) <$> getInvoice st bad `shouldReturn` Just ISOpen
+  r <- invoiceRegistration ctx good
+  (nrLive r, nrVersion r) `shouldBe` (False, 2)
+  where
+    invoiceText (InvoiceId t) = t
 
 testCleanup :: IO ()
 testCleanup = withOrders $ \ctx -> testCleanupIn ctx

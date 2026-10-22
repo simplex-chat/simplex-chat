@@ -1,7 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TupleSections #-}
 
 module StoreService.Orders
   ( RegistrationChanged (..),
@@ -14,7 +13,7 @@ module StoreService.Orders
   )
 where
 
-import StoreService.Log (logError)
+import StoreService.Log (logError, safelyWith)
 import StoreService.Names.Phases (Phases, RegistrationId (..))
 import qualified StoreService.Names.Phases as Phases
 import StoreService.Names.Store (NamePhase (..), NameRegistration (..), VersionWrite (..), getRegistration, updateRegistration)
@@ -169,6 +168,8 @@ nameSettled db before after wrotePayment r@NameRegistration {nrId, nrPhase} now
             updateRegistration db r {nrPhase = PQueued} now >>= \case
               Written v -> pure [NOWritten nrId v]
               NotLive -> pure [NOLate nrId]
+              -- another live order holds the name, so this payment can only be refunded; it is still recorded
+              LiveOrderExists -> pure [NOLate nrId]
               _ -> E.throwIO (RegistrationChanged nrId)
       Just ISExpired -> (<> late) . maybe [] (\(rid, v) -> [NOWritten rid v]) <$> closeOrder db r now
       _ -> pure $ if before /= ISOpen then late else []
@@ -201,15 +202,16 @@ cancelOpenInvoice st waiters phases invId now = do
   pure (isJust closed)
 
 -- | Of the given invoices, expires those still open, with no money received, and past the cutoff, closing their orders.
+-- Each in its own transaction, so an invoice that fails is logged and skipped, and the others still expire.
 expireOverdue :: DBStore -> Waiters -> Maybe Phases -> UTCTime -> UTCTime -> [InvoiceId] -> IO [InvoiceId]
-expireOverdue st waiters phases now cutoff invIds = do
-  expired <- withTransaction st $ \db -> catMaybes <$> mapM (expire db) invIds
-  atomically $ forM_ expired $ \(invId, order) -> publish waiters invId ISExpired >> mapM_ (publishRegistration phases) order
-  pure (map fst expired)
+expireOverdue st waiters phases now cutoff = fmap catMaybes . mapM expire
   where
-    expire db invId = do
-      moved <- expireOverdueInvoice db cutoff invId
-      if moved then Just . (invId,) <$> closeInvoiceOrder db invId now else pure Nothing
+    expire invId@(InvoiceId invText) = safelyWith ("expiring invoice " <> invText) Nothing $ do
+      expired <- withTransaction st $ \db -> do
+        moved <- expireOverdueInvoice db cutoff invId
+        if moved then Just <$> closeInvoiceOrder db invId now else pure Nothing
+      forM_ expired $ \order -> atomically $ publish waiters invId ISExpired >> mapM_ (publishRegistration phases) order
+      pure (invId <$ expired)
 
 publishRegistration :: Maybe Phases -> (RegistrationId, Int64) -> STM ()
 publishRegistration phases (rid, v) = mapM_ (\p -> Phases.publish p rid v) phases

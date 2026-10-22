@@ -142,7 +142,8 @@ runOnePass env@PollerEnv {peStore, peProviders} = do
         when listNow $ mapM_ (listPass env now) peProviders
         pure read'
   pruneSkipLog env now
-  when (accounted && not (null peProviders)) $ sweepExpired env now
+  -- the cleanup runs whatever the sweep met
+  when (accounted && not (null peProviders)) $ void $ safely "badge poller: the sweep" (sweepExpired env now)
   cleanupDue env now >>= (`when` cleanupUnpaid env now)
 
 -- | The cases the stray list catches are rare and not urgent, so minutes, not the pass cadence.
