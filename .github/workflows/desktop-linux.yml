@@ -306,14 +306,14 @@ jobs:
       # the app points at this backend's directory, so the Claude job starts this backend again rather than a new one
       - name: Pack backend state
         if: ${{ !cancelled() && steps.backend.outcome == 'success' && steps.stop-backend.outcome == 'success' && needs.plan.outputs.claude-backend == 'yes' }}
-        run: scripts/ci/backend-state.sh pack "$RUNNER_TEMP/backend" "$RUNNER_TEMP/backend-state.cms"
+        run: tar -czf "$RUNNER_TEMP/backend-state.tar.gz" --exclude=./bin -C "$RUNNER_TEMP/backend" .
 
       - name: Upload backend state
         if: ${{ !cancelled() && steps.backend.outcome == 'success' && steps.stop-backend.outcome == 'success' && needs.plan.outputs.claude-backend == 'yes' }}
         uses: actions/upload-artifact@v7
         with:
           name: desktop-backend-state
-          path: ${{ runner.temp }}/backend-state.cms
+          path: ${{ runner.temp }}/backend-state.tar.gz
           compression-level: 0
           retention-days: 1
           if-no-files-found: error
@@ -405,18 +405,14 @@ jobs:
           name: desktop-backend-state
           path: ${{ runner.temp }}
 
-      # only this step gets the key, so nothing the backend or Claude starts later inherits it
-      - name: Unpack backend state
-        if: needs.plan.outputs.claude-backend == 'yes'
-        env:
-          BACKEND_STATE_KEY: ${{ secrets.BACKEND_STATE_KEY }}
-        run: scripts/ci/backend-state.sh unpack "$RUNNER_TEMP/backend-state.cms" "$RUNNER_TEMP/backend"
-
       - name: Start the app job's test backend again
         id: backend
         if: needs.plan.outputs.claude-backend == 'yes'
         timeout-minutes: 10
-        run: scripts/ci/desktop-linux/backend.sh resume ~/backend/${{ env.BACKEND_PKG }} "$RUNNER_TEMP/backend"
+        run: |
+          mkdir -p "$RUNNER_TEMP/backend"
+          tar -xzf "$RUNNER_TEMP/backend-state.tar.gz" -C "$RUNNER_TEMP/backend"
+          scripts/ci/desktop-linux/backend.sh resume ~/backend/${{ env.BACKEND_PKG }} "$RUNNER_TEMP/backend"
 
       # ui goes on every shell's PATH, where Claude's Bash tool finds it whatever environment it builds
       - name: Install Claude Code and the ui command
