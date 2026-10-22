@@ -8,7 +8,7 @@
 
 > **ciBotCommand**(`chatItem`): [`BotCommand`](util.Interface.BotCommand.md) \| `undefined`
 
-Defined in: [src/util.ts:78](../src/util.ts#L78)
+Defined in: [src/util.ts:78](../util.ts#L78)
 
 ## Parameters
 
