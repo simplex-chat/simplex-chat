@@ -2,7 +2,23 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Bots.StoreService.NamesOrdersTests (namesOrdersTests) where
+module Bots.StoreService.NamesOrdersTests
+  ( namesOrdersTests,
+    Ctx (..),
+    Order (..),
+    withOrders,
+    withOrdersCancelling,
+    aliceOrder,
+    commitmentOf,
+    orderTime,
+    placed,
+    post,
+    settleNow,
+    settled,
+    invoiceRegistration,
+    registrationOf,
+  )
+where
 
 import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), setInvoiceState, withFakeBTCPay)
 import Bots.StoreService.FakeEthNode

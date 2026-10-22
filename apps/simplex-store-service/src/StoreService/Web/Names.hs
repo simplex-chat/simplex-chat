@@ -8,9 +8,11 @@ import Data.Text (Text)
 import Network.HTTP.Types (Method)
 import Network.Wai (Request, ResponseReceived, pathInfo)
 import StoreService.Names.Env (NamesEnv (..))
-import StoreService.Web.Http (HttpEnv, Limit, Respond, codeLimit, limited, only, previewLimit, recordsLimit, searchLimit)
+import StoreService.Names.Orders (ordersEnv)
+import StoreService.Web.Http (HttpEnv, Limit, Respond, codeLimit, holdMicros, limited, only, previewLimit, readLimit, recordsLimit, searchLimit)
 import StoreService.Web.Names.Codes (codeCheckHandler)
 import StoreService.Web.Names.Records (recordsHandler)
+import StoreService.Web.Names.Registration (registrationHandler)
 import StoreService.Web.Names.Search (previewHandler, searchHandler)
 
 data Route = Route
@@ -20,12 +22,13 @@ data Route = Route
   }
 
 namesRoutes :: NamesEnv -> [Text] -> Maybe Route
-namesRoutes NamesEnv {neConfig, neStore, neContracts, neProfiles, neRecords} = \case
+namesRoutes env@NamesEnv {neConfig, neStore, neContracts, neProfiles, neRecords} = \case
   ["api", "name", "records"] -> Just Route {rMethod = "POST", rLimit = recordsLimit, rHandler = recordsHandler neRecords}
   ["api", "code", "check"] -> Just Route {rMethod = "POST", rLimit = codeLimit, rHandler = codeCheckHandler neStore}
   ["api", "link", "preview"] -> Just Route {rMethod = "POST", rLimit = previewLimit, rHandler = previewHandler neProfiles}
   -- below every fixed /api/name/<word> route, which it would otherwise match
   ["api", "name", hash] -> Just Route {rMethod = "GET", rLimit = searchLimit, rHandler = searchHandler neConfig neStore neContracts neProfiles hash}
+  ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler (ordersEnv env) holdMicros rid}
   _ -> Nothing
 
 -- | Nothing for a path no route knows. The limit is taken only once the route and the method match.

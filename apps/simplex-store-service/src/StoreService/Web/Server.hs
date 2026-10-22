@@ -18,7 +18,8 @@ import StoreService.Catalog (PricedOffer (..), priceOffer)
 import StoreService.Config (ListenerConfig (..), ServiceConfig (..), StripeConfig (..))
 import StoreService.Names.Env (NamesEnv)
 import StoreService.Names.Orders (OrdersEnv (..), ordersEnv)
-import StoreService.Names.Store (getRegistration, textMethod)
+import StoreService.Names.Phases (RegistrationId, awaitChange)
+import StoreService.Names.Store (NamePhase (..), NameRegistration (..), getRegistration, textMethod)
 import StoreService.Orders (RegistrationChanged (..), cancelOpenInvoice)
 import StoreService.Poller (ReadHints, queueReadHint)
 import StoreService.Providers (OrderDraft (..), Provider (..), ProviderError (..), ProviderInvoice (..), WebhookError (..))
@@ -27,9 +28,11 @@ import StoreService.Waiters (Seen, Waiters, awaitStatus)
 import StoreService.Web.Http
 import StoreService.Web.Names (namesApp, namesRoutes)
 import StoreService.Web.Names.Orders (nameInvoiceHandler, nameInvoiceView, registrationChangedResponse)
+import StoreService.Web.Names.Registration (heldFor, lapseMoment, registrationAt, registrationVersion, versionParam)
+import Control.Concurrent.Async (race)
 import qualified Control.Exception as E
 import StoreService.Log (logError, logInfo, logWarn)
-import Control.Monad (forM_, when)
+import Control.Monad (forM_, void, when)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
@@ -38,7 +41,7 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as LB
 import Data.Char (toLower)
 import Data.List (isPrefixOf)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (catMaybes, fromMaybe)
 import Data.String (fromString)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -221,38 +224,91 @@ readInvoiceHandler :: WebEnv -> InvoiceId -> Request -> Respond -> IO ResponseRe
 readInvoiceHandler env@WebEnv {weStore} invId req respond =
   getInvoice weStore invId >>= \case
     Nothing -> respond notFound
+    Just row@InvoiceRow {irProduct = IPName rid} | Just orders <- weOrders env -> readNameInvoice env orders row rid req respond
     Just row -> case holdFor row of
       Nothing -> respondInvoice env row respond
       Just seen -> do
         -- Settlement publishes after it commits, so the row read below is at least as new as whatever woke us.
-        _ <- awaitStatus (weWaiters env) invId readSeen seen (weHoldMicros env)
-        getInvoice weStore invId >>= maybe (respond notFound) (\row' -> respondInvoice env row' respond)
+        _ <- awaitStatus (weWaiters env) invId (readSeen env invId (pure id)) seen (weHoldMicros env)
+        respondCurrent env invId respond
   where
     holdFor :: InvoiceRow -> Maybe Seen
     holdFor row@InvoiceRow {irStatus} = case waitParam req of
-      Just seen | seen == irStatus, seen /= ISPaid, samePayment -> Just (irStatus, paymentMark row)
+      Just seen | seen == irStatus, seen /= ISPaid, samePayment req row -> Just (seenOf row)
       _ -> Nothing
-      where
-        -- The counter a hold watches starts at zero, so a payment recorded before this request arrived cannot wake it.
-        samePayment = case paidParam req of
-          Nothing -> True
-          Just seen -> seen == paymentMark row
-    readSeen :: IO Seen
-    readSeen = maybe (ISOpen, ("", False)) (\row -> (irStatus row, paymentMark row)) <$> getInvoice weStore invId
+
+-- | A name invoice also holds while its registration's version is seenVersion, a paid one on that alone,
+-- except one paid after its order closed, which has nothing more to wait for.
+readNameInvoice :: WebEnv -> OrdersEnv -> InvoiceRow -> RegistrationId -> Request -> Respond -> IO ResponseReceived
+readNameInvoice env@WebEnv {weConfig, weWaiters, weHoldMicros} orders@OrdersEnv {oeStore, oeNow, oePhases} stored@InvoiceRow {irInvoiceId = invId} rid req respond =
+  readName orders stored rid >>= \case
+    Nothing -> respond notFound
+    Just (now, row, r) -> case waitParam req of
+      Just wait | holds wait row r -> hold now row r >> respondCurrent env invId respond
+      _ -> respond . jsonResponse status200 =<< nameInvoiceView orders (confirmationsFor weConfig) row r
+  where
+    seenVersion = versionParam req
+    holds wait row@InvoiceRow {irStatus} NameRegistration {nrPhase, nrVersion} =
+      wait == irStatus
+        && not (irStatus == ISPaid && nrPhase == PUnpaid)
+        && samePayment req row
+        && maybe (irStatus /= ISPaid) (== nrVersion) seenVersion
+    hold now row r = do
+      let micros = heldFor weHoldMicros now $ catMaybes [expiryMoment row, lapseMoment r]
+          onStatus = awaitStatus weWaiters invId (readSeen env invId (invoiceAt <$> oeNow)) (seenOf row) micros
+          onVersion v = awaitChange oePhases rid (registrationVersion oeStore rid) v micros
+      case (irStatus row, seenVersion) of
+        (ISPaid, Just v) -> void $ onVersion v
+        (_, Just v) -> void $ race onStatus (onVersion v)
+        (_, Nothing) -> void onStatus
+
+-- | The invoice and its registration as a read now shows them.
+readName :: OrdersEnv -> InvoiceRow -> RegistrationId -> IO (Maybe (UTCTime, InvoiceRow, NameRegistration))
+readName OrdersEnv {oeStore, oeNow} row rid = do
+  now <- oeNow
+  fmap (\r -> (now, invoiceAt now row, registrationAt now r)) <$> withTransaction oeStore (`getRegistration` rid)
+
+-- | An open name invoice past its expiry with no money received reads expired before the sweep marks it.
+invoiceAt :: UTCTime -> InvoiceRow -> InvoiceRow
+invoiceAt now row = case expiryMoment row of
+  Just expiry | now > expiry -> row {irStatus = ISExpired}
+  _ -> row
+
+-- | A funded open invoice stays open until it settles.
+expiryMoment :: InvoiceRow -> Maybe UTCTime
+expiryMoment InvoiceRow {irStatus, irExpiresAt, irPayment}
+  | irStatus == ISOpen && not (maybe False paymentHolds irPayment) = Just irExpiresAt
+  | otherwise = Nothing
+
+-- | The counter a hold watches starts at zero, so a payment recorded before this request arrived cannot wake it.
+samePayment :: Request -> InvoiceRow -> Bool
+samePayment req row = maybe True (== paymentMark row) (paidParam req)
+
+seenOf :: InvoiceRow -> Seen
+seenOf row@InvoiceRow {irStatus} = (irStatus, paymentMark row)
+
+-- | What a hold compares, read as the answer would show it.
+readSeen :: WebEnv -> InvoiceId -> IO (InvoiceRow -> InvoiceRow) -> IO Seen
+readSeen WebEnv {weStore} invId reading = do
+  readAs <- reading
+  maybe (ISOpen, ("", False)) (seenOf . readAs) <$> getInvoice weStore invId
+
+respondCurrent :: WebEnv -> InvoiceId -> Respond -> IO ResponseReceived
+respondCurrent env@WebEnv {weStore} invId respond = getInvoice weStore invId >>= maybe (respond notFound) (\row -> respondInvoice env row respond)
 
 respondInvoice :: WebEnv -> InvoiceRow -> Respond -> IO ResponseReceived
 respondInvoice env row respond = invoiceViewOf env row >>= respond . either id (jsonResponse status200)
 
 -- | A badge's view, or a name's with its registration.
 invoiceViewOf :: WebEnv -> InvoiceRow -> IO (Either Response J.Value)
-invoiceViewOf env@WebEnv {weConfig, weStore} row@InvoiceRow {irInvoiceId = InvoiceId invId, irProduct} = case irProduct of
+invoiceViewOf env@WebEnv {weConfig} row@InvoiceRow {irInvoiceId = InvoiceId invId, irProduct} = case irProduct of
   IPBadge badgeType months -> pure $ Right $ badgeInvoiceView (confirmationsFor weConfig) badgeType months row
   IPName rid -> case weOrders env of
     Nothing -> Left providerUnavailable <$ namesOff invId
     Just orders ->
-      withTransaction weStore (`getRegistration` rid) >>= \case
+      readName orders row rid >>= \case
         Nothing -> pure $ Left notFound
-        Just r -> Right <$> nameInvoiceView orders (confirmationsFor weConfig) row r
+        Just (_, row', r) -> Right <$> nameInvoiceView orders (confirmationsFor weConfig) row' r
 
 namesOff :: Text -> IO ()
 namesOff invId = logError ("invoice " <> invId <> " is a name's, and this service sells no names")
@@ -285,7 +341,7 @@ cancelInvoiceHandler env@WebEnv {weStore, weProviders} invId@(InvoiceId invText)
       now <- getCurrentTime
       E.try (cancelOpenInvoice weStore (weWaiters env) (oePhases <$> weOrders env) invId now) >>= \case
         Left (RegistrationChanged rid) -> maybe (pure providerUnavailable) (`registrationChangedResponse` rid) (weOrders env) >>= respond
-        Right _ -> getInvoice weStore invId >>= maybe (respond notFound) (\row' -> respondInvoice env row' respond)
+        Right _ -> respondCurrent env invId respond
 
 paidParam :: Request -> Maybe (Text, Bool)
 paidParam req = case lookup "seenPaid" (queryString req) of
