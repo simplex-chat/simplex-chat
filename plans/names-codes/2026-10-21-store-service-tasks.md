@@ -1,6 +1,6 @@
 # StoreService names backend: tasks for stages 2–4
 
-This is the implementation plan for the names backend in StoreService: stages 2, 3 and 4 of [`2026-10-09-names-web-store-plan.md`](2026-10-09-names-web-store-plan.md), and the service side of stages 6 and 7. Every endpoint must answer as [`2026-10-21-store-api.md`](2026-10-21-store-api.md) says; the plan says how. Tasks are numbered T1–T21 (T7 split into T7a and T7b), each with its goal, files, acceptance, tests and dependencies. The owner's answers and the decisions taken here close the document.
+This is the implementation plan for the names backend in StoreService: stages 2, 3 and 4 of [`2026-10-09-names-web-store-plan.md`](2026-10-09-names-web-store-plan.md), and the service side of stages 6 and 7. Every endpoint must answer as [`2026-10-21-store-api.md`](2026-10-21-store-api.md) says; the plan says how. Tasks are numbered T1–T26 (T7 split into T7a and T7b), each with its goal, files, acceptance, tests and dependencies; T22–T26 follow the owner's decisions of 2026-10-22 (balances), and the webapp's tasks for them, W1f-1 to W1f-3, come after the waves. The owner's answers and the decisions taken here close the document.
 
 ## Where and how
 
@@ -48,7 +48,7 @@ This is the implementation plan for the names backend in StoreService: stages 2,
 - **Test labels.** Each new spec sits under `describe "StoreService names: <part>"`, so `-m "StoreService names"` runs them all and `-m "StoreService names: <part>"` one task's. Badge specs keep their labels and must stay green.
 - **Shared files.**
   - *Registration lists*, where each task adds only its own lines: `simplex-chat.cabal` (each task adds its own modules to the executable's and the test suite's `other-modules` once they compile), `tests/Test.hs` (its specs), `StoreService/Web/Names.hs` (its handler module's routes), `StoreService/Names/Env.hs` (its part's field and its construction in `newNamesEnv`). The manager resolves the line conflicts at merge.
-  - *Owned files*: within a wave, each of these has one owner task, given in the wave table; no other task of the wave edits it: `StoreService/Web/Server.hs`, `StoreService/Web/Http.hs`, `StoreService/Service.hs`, `StoreService/Names/Store.hs`, `StoreService/Names/Turns.hs`, the two migration modules, `StoreService/Names/Orders.hs`, `StoreService/Store/Invoices.hs`, `StoreService/Orders.hs`, `StoreService/Poller.hs`, `StoreService/Web/Names/Registration.hs`, `StoreService/Names/Worker.hs`, `tests/Bots/StoreService/NameRegistrationTests.hs`, `tests/Bots/StoreService/FakeEthNode.hs`, `apps/simplex-store-service/README.md`.
+  - *Owned files*: within a wave, each of these has one owner task, given in the wave table; no other task of the wave edits it: `StoreService/Web/Server.hs`, `StoreService/Web/Http.hs`, `StoreService/Service.hs`, `StoreService/Names/Store.hs`, `StoreService/Names/Turns.hs`, the two migration modules, `StoreService/Names/Orders.hs`, `StoreService/Store/Invoices.hs`, `StoreService/Orders.hs`, `StoreService/Poller.hs`, `StoreService/Web/Names/Registration.hs`, `StoreService/Names/Worker.hs`, `StoreService/Names/View.hs`, `StoreService/Names/Signatures.hs`, `StoreService/Names/Balances.hs`, `StoreService/Web/Names/Orders.hs`, `StoreService/Web/Names/Owner.hs`, `tests/Bots/StoreService/NameRegistrationTests.hs`, `tests/Bots/StoreService/FakeEthNode.hs`, `apps/simplex-store-service/README.md`.
   - A task that needs a change in a file it does not own stops and tells the manager, who moves the change into the owner's task or the next wave.
 - **Fakes.** `tests/Bots/StoreService/FakeEthNode.hs` (96 lines on the branch) is extended by T5 into a scriptable JSON-RPC node. `FakeBTCPay` and `FakeStripe` are in-process test fixtures for paid orders. The local anvil chain and deploy script are the webapp's (`simplex.domains/webapp/dev/start.sh`, `dev/deploy.ts`; see memory "names local chain").
 
@@ -65,7 +65,7 @@ This is the implementation plan for the names backend in StoreService: stages 2,
   - `parseNameCode :: Text -> Maybe NameCode` dispatches on the body's length after `SN`, separators removed: 30 is an owner code, 21 or 22 a prepaid code. The 20-character body folds as badge codes do (case, `I`/`L` → `1`, `O` → `0`); the length must be ASCII digits, as the webapp's `parsePrepaid` requires.
   - `NamePrepaidCode`: the length digits (1–2, value 6–63) and 20 characters, the last a Luhn mod-32 check over the length digits' values and the 19 payload values. `randomNamePrepaidCode :: TVar ChaChaDRG -> Int -> IO NamePrepaidCode`, `namePrepaidCodeText` (canonical, `SN<len><20>`), `formatNameCode` (display, `SN<len>-XXXXX-…`), `namePrepaidCodeHash` (raw SHA-256 bytes of the canonical text, stored as a blob as `badgeCodeHash` is; unpadded base64url only on the wire), `namePrepaidCodeLength`.
 - **Acceptance:** an owner code never parses as prepaid and the reverse; a single-character change fails the check, and so does an adjacent swap except `0`↔`Z` (Luhn mod 32's blind spot, as for badge codes); the base64url of the hash equals the webapp's `codeHash` for the same code.
-- **Tests** (`describe "StoreService names: codes"` in `BadgeTests.hs`): the branch's owner-code vectors; prepaid vectors copied from `simplex.domains/webapp/test/crypto.test.ts` (parse, canonical, display, hash); the taken-order code derivation vector (`takenOrderCode`) as a parse vector; random codes round-trip; a letter in the length refused.
+- **Tests** (`describe "StoreService names: codes"` in `BadgeTests.hs`): the branch's owner-code vectors; prepaid vectors copied from `simplex.domains/webapp/test/crypto.test.ts` (parse, canonical, display, hash); the taken-order code derivation vector (`takenOrderCode`) as a parse vector (removed by T22); random codes round-trip; a letter in the length refused.
 - **Depends on:** stage 1.
 
 #### T2. The label rule
@@ -86,7 +86,7 @@ This is the implementation plan for the names backend in StoreService: stages 2,
 - **Do (`Signatures`):**
   - `parseSignature :: Text -> Either SignatureError RecoverableSignature`: `0x` and 130 lowercase hex, `v` 27 or 28, `s` at most half the curve order. Recovery is simplexmq's `recoverAddress`.
   - `personalDigest :: ByteString -> ByteString` (EIP-191).
-  - The messages of the contract, exactly: `orderMessage`, `findMessage`, `retargetMessage` (with `duration`), `takenCodeMessage` (with `codeLength`).
+  - The messages of the contract, exactly: `orderMessage`, `findMessage`, `retargetMessage` (with `duration`), `takenCodeMessage` (with `codeLength`; removed by T22, which T25's `spendMessage` follows).
   - The address decoder goes through `strDecode` of the hex (there is no constructor). `parseChecksumAddress` (for order bodies) accepts only text equal to `strEncode` of the decoded address, since `strP` accepts one-case hex unchecked; `parseAnyCaseAddress` (for `find`) lower-cases first.
 - **Acceptance:** the digests and recovered signers equal viem's for the webapp's vectors.
 - **Tests:** `RegisterName`, `SetText`, `ClearRecords` digests and EIP-191 messages against `webapp/test/crypto.test.ts` and `flow.test.ts` vectors; a high-`s` signature refused though recovery accepts it; `v` 0, 1 and 29 refused; a wrong-case and an all-lowercase checksum refused by `parseChecksumAddress`; `NameRegistrationTests` green with its one-link vector.
@@ -132,7 +132,7 @@ This is the implementation plan for the names backend in StoreService: stages 2,
   - `nameStatus :: LabelHash -> IO (Either ChainError NameStatus)`: registered while `nameExpires + GRACE_PERIOD ≥ latest block time`, with the registry's `owner(node)` and `resolver(node)` (registry from `baseRegistrar.ens()`, read once) and `GRACE_PERIOD`; else reserved when `reservedNames ≠ 0`; else available.
   - `nameRecords`: on the default resolver only, `text(node, "simplex.contact")`, `text(node, "simplex.channel")`, `nonces(owner)`.
   - `chainPriceCents :: Int -> Int -> IO …`: `rentPriceUSD(replicate length 'a', years × 31536000).base `div` 10^16`.
-  - `codeLengthFor :: Int -> Int -> IO (Either ChainError (Maybe Int))`: reads the oracle (`controller.prices()`, then its `prices()`) once, and returns the shortest `L` from 6 such that every length from `L` to 63 costs at most the given cents for the years; `Nothing` when none does.
+  - `codeLengthFor :: Int -> Int -> IO (Either ChainError (Maybe Int))`: reads the oracle (`controller.prices()`, then its `prices()`) once, and returns the shortest `L` from 6 such that every length from `L` to 63 costs at most the given cents for the years; `Nothing` when none does. Removed by T22 with `/code`.
   - `sponsorNonce`, `resolverNonce`, `ownerOfToken` (a revert is `Nothing`), `nameExpires`, `commitmentTime`, `controllerAvailable label`, `commitmentAges` (read once at startup).
 - **Acceptance:** each read's calldata equals viem's `encodeFunctionData` for the same call (vectors computed once and pasted).
 - **Tests:** against `FakeEthNode`: the three statuses, grace period, another resolver, prices for 6, 7 and 12 letters at the launch list (40000, 20000, 10000 cents for 2 years), `codeLengthFor` 6, 7 and 8 for those prices, a non-monotone list (6 letters cheaper than 7), no qualifying length, a failed read.
@@ -201,7 +201,7 @@ This is the implementation plan for the names backend in StoreService: stages 2,
 - **Files:** new `StoreService/Names/Orders.hs` (the order checks shared with T12 and T15: formats, the order signature, existing orders, the timestamp, the duration, the chain, the price; one at a time per label hash); new `StoreService/Names/View.hs` (the registration view of the contract's section 6, with `version`, `moves`, `linksRefused` from `links_refused_at`, `codeLength` from T6 and `unread`); new `StoreService/Web/Names/Orders.hs`; `StoreService/Web/Server.hs` (`createInvoiceHandler` dispatches on `kind`; the name invoice view); `StoreService/Web/Http.hs` (the shared invoice view helpers); `StoreService/Store/Invoices.hs` (every invoice query gains the name side; provider-ref lookups across both tables, refusing a ref found in both); `StoreService/Orders.hs` (settling a name invoice queues its registration in the same transaction, only while open, then publishes; a late payment of a closed one alerts and leaves it `unpaid`); `StoreService/Poller.hs` (the 30-day cleanup with a provider read first; the overdue sweep for names); `StoreService/Providers/BTCPay.hs` (`InvoiceReceivedPayment`, `InvoicePaymentSettled` as read hints); `StoreService/Names/Store.hs` if a query is missing; new `tests/Bots/StoreService/NamesOrdersTests.hs`.
 - **Do:** the contract's section 5 for `/api/invoice` and cancel, in its order of checks; publish after every commit.
   - Orders run under `withLabelTurn` (T4's `Turns`).
-  - **`live`:** every transition that changes it is in this task, in the same transaction as the change: settlement (past `unpaid`, live), cancel (`cancelOpenInvoice`), the poller's overdue sweep (`expireOverdue`) and its expiry of an invoice it reads, a late payment of a closed invoice (stays not live), the 30-day cleanup (deleted), and phase changes to `taken` or `code_issued` (not live).
+  - **`live`:** every transition that changes it is in this task, in the same transaction as the change: settlement (past `unpaid`, live), cancel (`cancelOpenInvoice`), the poller's overdue sweep (`expireOverdue`) and its expiry of an invoice it reads, a late payment of a closed invoice (stays not live), the 30-day cleanup (deleted), and phase changes to `taken` or `code_issued` (not live; `code_issued` removed by T22).
   - **An overdue order is closed by the next one:** a new order from the same wallet and name that meets a live order whose invoice is past its expiry time with no money received calls `closeOverdue` in its own transaction, then inserts; after the commit it asks the provider to cancel the old invoice, best effort.
   - **Settlement queues only a live registration.** A settled signal for a closed one (cancelled, expired, or closed by a newer order) is a late payment: the invoice is marked paid, the registration stays `unpaid`, the operator is alerted, support refunds it.
 - **Acceptance:** badge invoices unchanged (their tests green); a name invoice's view, and the registration view inside it, as the contract's.
@@ -234,7 +234,7 @@ This is the implementation plan for the names backend in StoreService: stages 2,
 
 #### T15. Owner-signed requests: find, another name, a code instead
 
-- **Goal:** `find`, `/name` and `/code`.
+- **Goal:** `find`, `/name` and `/code`. Its `/code`, and `/name` from `taken`, are removed by T22 and T24 (owner, 2026-10-22).
 - **Files:** new `StoreService/Web/Names/Owner.hs`; `StoreService/Names/Orders.hs` (the retarget and the taken code; owned in wave 6); new `tests/Bots/StoreService/NamesOwnerTests.hs`.
 - **Do:** the contract's section 8, each write a compare-and-set on `version`, then publish:
   - Every lost compare-and-set answers `409 registration_changed` with the current view.
@@ -282,6 +282,72 @@ This is the implementation plan for the names backend in StoreService: stages 2,
 - **Tests** (the plan's `name_record_edits` list): a wrong signer, a high `s` or a passed deadline refused before any row or gas; ten edits signed by a non-owner leaving the owner's cap untouched; a refused edit's repeat checked anew; a pending edit resumed after a restart; one past its deadline freed while its transaction is still rebroadcast; `InvalidNonce` and `SignatureExpired` reverts of an edit another relayer applied answered `{tx: null}`; a nonce consumed by another body with a different value answered `record_reverted` `InvalidNonce`; a restart-expired edit found applied becoming `mined`; an identical repeat after a restart; a concurrent twin losing the unique insert before signing; a reverted edit's repeat answered `record_reverted` while a new edit with its nonce is pending; a revert freeing the nonce; a failed re-read retried with the edit pending; the cap; `edit_pending` and its repeat answered `{tx}` once mined; the link bound.
 - **Depends on:** T3, T6, T7a, T8, T16.
 
+### Balances (owner, 2026-10-22)
+
+The owner's decisions of 2026-10-22 remove the code for a taken order and keep a taken paid order's payment as a balance, which buys another name paying only the difference (contract section 8, Balances and `/spend`). T22 removes what T15 built for `/code`; T23 to T26 build the balance.
+
+#### T22. Remove the taken-order code
+
+- **Goal:** nothing of `/code` is left in the service (contract Appendix A, item 36).
+- **Files:** `StoreService/Web/Names/Owner.hs`; `StoreService/Web/Names.hs` (its route line); `StoreService/Names/Orders.hs`; `StoreService/Web/Names/Orders.hs` (the refusals' responses); `StoreService/Names/Signatures.hs`; `StoreService/Names/Contracts.hs`; `StoreService/Names/Abi.hs`; `StoreService/Names/Store.hs`; `StoreService/Names/View.hs`; the two migration modules (migration `20261022_drop_taken_codes`); `tests/BadgeTests.hs`; `tests/Bots/StoreService/` `NamesOwnerTests.hs`, `NamesOrdersTests.hs`, `NamesStoreTests.hs`, `NamesContractsTests.hs`, `NamesSignatureTests.hs`, `NamesWiringTests.hs`.
+- **Do:**
+  - Delete `takenCodeHandler`, `TakenCodeRequest`, `parseTakenCode` and the route; `issuable`, `issuedCodeHash`, `checkTakenCodeLength`, `issueTakenCode`, `TakenCodeConflict`; the refusals `ORCodeLengthChanged`, `ORCodeUnavailable`, `ORCodeConflict`, and `ORProviderUnavailable` once nothing else uses it, with their lines in `orderRefusalResponse`; `takenCodeMessage`; `codeLengthFor`, and `decodePrices`, its only caller's decoder; `PCodeIssued`, `nrIssuedCodeId`, `setIssuedCode`; the view's `codeLength`, `vrCodeLength` and `readViewChain`'s `taken` and `code_issued` branches, so `unread` names only `intentNonce`.
+  - Migration `20261022_drop_taken_codes`, SQLite and Postgres: `DROP INDEX` of `idx_name_registrations_issued_code`, then `ALTER TABLE … DROP COLUMN issued_code_id`; the down migration adds both back. SQLite 3.45 drops a column with a `REFERENCES` clause once its index is gone (checked 2026-10-22 with the `sqlite3` CLI); the migration test runs it on the bundled SQLite.
+  - `codeConflict` in `Web/Http.hs` stays: badge invoices answer it. `/name` from `taken` stays until T24.
+- **Acceptance:** `rg -n 'code_issued|PCodeIssued|takenCode|TakenCode|issued_code_id|IssuedCode|codeLengthFor|decodePrices|"codeLength"|code_length_changed|code_unavailable' apps/simplex-store-service/src src tests` finds nothing; `POST /api/registration/<id>/code` answers `404 not_found`; the badge specs green, their `code_conflict` included.
+- **Tests:** deleted with the code: the "a code instead" block, the `/code` half of the polls test, the `codeLengthFor` and `decodePrices` vectors, `takenCodeMessage`'s vector, the taken-order code vectors in `BadgeTests`. Changed: the live table without `code_issued`; the view's field list and `readViewChain`'s cases without `codeLength`; the store's column list; migration up and down with `20261022_drop_taken_codes`, on SQLite and Postgres; the wiring test's `404` for `/code`.
+- **Depends on:** T15 (merged). It runs in wave 8 beside T18, which owns none of its files; both add lines to `Web/Names.hs` and `NamesOwnerTests.hs`, which the integrator merges.
+
+#### T23. Balances: storage, turns and the view
+
+- **Goal:** the balance of contract section 8 stored, with every query the later tasks use, its turn, its fields in the view, and `placeOrder` able to close a balance's overdue holder. Nothing credits, holds or spends yet.
+- **Files:** the two migration modules (migration `20261023_name_balances`); `StoreService/Names/Store.hs`; `StoreService/Names/Turns.hs`; new `StoreService/Names/Balances.hs`; `StoreService/Names/View.hs`; `StoreService/Names/Orders.hs`; the modules matching on `RegistrationPayment` (`rg -n 'RPInvoice|RPCode' apps/simplex-store-service/src`), for the new constructor only; `simplex-chat.cabal`; `tests/Test.hs`; `tests/Bots/StoreService/NamesStoreTests.hs`; new `tests/Bots/StoreService/NamesBalancesTests.hs`; `tests/Bots/StoreService/NamesOrdersTests.hs` (the view).
+- **Do:**
+  - **Schema:** table `name_balances`: `registration_id` (the primary key: the order the balance belongs to), `amount` (cents left, `CHECK (amount >= 0)`), `credited`, `refunded` (default 0), `reserved_by` (the holder; unique, nullable), `refunded_at`, `created_at`, `updated_at`. Registrations gain `balance_source` (the order whose balance paid, indexed) and `balance_used` (cents, default 0). Up and down, SQLite and Postgres.
+  - **Types:** `RPBalance`, the payment of an order with neither invoice nor code; `nrBalanceSource`, `nrBalanceUsed`; `Balance`; `OTBalance` in `orderHash`, tagged `name-balance`, over the order fields, the owner, the source's id, `price`, the balance seen and the method or "".
+  - **Queries**, each one conditional statement reporting whether it applied: `getBalance` (a hold by an order whose invoice is past its expiry with no money received reads as free, by the sweep's `unfundedQuery`); `overdueHolder`; `balanceByReference` (a registration id, or a name invoice id); `creditBalance` (an upsert adding to `amount` and `credited`); `createBalanceRegistration` (a `queued` order, and its price spent where `amount` is the amount seen and nothing holds it); `createPaidRegistration` with an optional held part (the hold written after the registration's insert, on the same condition); `spendHeldBalance` (where this holder holds it and `amount ≥ used`; the hold cleared); `releaseHeldBalance` (by holder); `refundBalance` (where `amount` equals the cents given, above 0, and nothing holds it: `amount` 0, `refunded` and `refunded_at` set).
+  - **Turns:** `withBalanceTurn :: Turns -> RegistrationId -> IO a -> IO a`, taken after any label turn and never with a code turn; the module's header says so.
+  - **`Names/Balances.hs`:** `freeOverdueHold` (in the caller's transaction, closes the balance's overdue holder by `closeOverdue` and returns it as a `ClosedOrder`); `recordRefund :: Turns -> DBStore -> Text -> Int -> UTCTime -> IO (Either RefundRefusal RefundRecord)` (in the balance's turn and one transaction: the reference resolved, an overdue hold freed, then `refundBalance`; the record names the order, the cents, and what paid for it: the order's invoice and method, and the source of a part paid from a balance).
+  - **`placeOrder`** closes, besides the overdue orders of the same wallet and name, the extra overdue orders its caller names (a balance's holder) in its transaction, and returns them all for `announceClosed`.
+  - **The view:** `balance` and `fromBalance` (contract section 6), read with `getBalance` in `registrationView`; `find`'s `invoiceId` null for `RPBalance`.
+  - **`RPBalance` everywhere** behaves as a paid order: no code to reserve, release or spend; `/name`'s price cap; the worker keeps it through `taken` as it keeps an invoice order.
+- **Acceptance:** migration up and down on SQLite and Postgres; for orders without a balance every answer is as before, except the view's new `balance` (null) and `fromBalance` (0).
+- **Tests:** each query's effect, and its refusal leaving the row unchanged; two holds of one balance, one winning; a refund refused while held and accepted once released; `spendHeldBalance` refused for another holder; `amount = credited − spent − refunded` after a sequence of credits, a spend at once, a held spend and a refund; a hold by an overdue holder read as free and freed by `freeOverdueHold` (its invoice `expired`, its registration not live, the hold gone, all in the caller's transaction); a hold and a spend read back through a new store connection (a restart); `balanceByReference` by either id; the `name-balance` `order_hash` changing with each field and not with the timestamp or the signature; `recordRefund`'s refusals (no balance, another amount, held) and its record; `withBalanceTurn` running two holders of one balance one after the other, and nested in `withLabelTurn` without deadlock; the view's `balance` and `fromBalance`.
+- **Depends on:** T22.
+
+#### T24. The balance's life: taken, settlement, closes and moves
+
+- **Goal:** a paid order that ends `taken` keeps its worth as a balance; a difference invoice spends its hold when paid and releases it when it closes; `/name` no longer moves a taken order, and a move to a cheaper name keeps the difference.
+- **Files:** `StoreService/Names/Worker.hs`; `StoreService/Orders.hs`; `StoreService/Names/Store.hs`; `StoreService/Names/Orders.hs`; `StoreService/Web/Names/Owner.hs`; `tests/Bots/StoreService/` `NamesWorkerTests.hs`, `NamesOrdersTests.hs`, `NamesOwnerTests.hs`, `NamesStoreTests.hs`, `NamesPhasesTests.hs`.
+- **Do:**
+  - The worker's `taken` for a paid order (invoice, balance or both): the `taken` write and `creditBalance` of its `price` in one transaction (registration before balance), in the name's turn and then the balance's turn. A code order releases its code as now.
+  - `orderLive`: `taken` is not live. `movable` drops `taken`, so `/name` from `taken` answers `bad_request`.
+  - Settlement (`nameSettled`): the queue write and `spendHeldBalance` in one transaction. A held spend that does not apply cannot happen while every close releases its hold; if it does, the order is queued all the same, as the buyer paid the difference, and the operator is alerted with both ids.
+  - Every close of an unpaid order releases its hold in the transaction that clears `live`: `closeOrder` (settlement's expiry, cancel, the poller's sweep) and `closeOverdue` (a next order, `/spend`, `recordRefund`). A late payment leaves the balance alone.
+  - `/name` of a paid order to a cheaper name: `price` lowered and the difference credited to the order's balance in the move's transaction (registration before balance), in the label turns and then the balance's turn.
+- **Tests:** two wallets' paid orders for one name, the later `taken` with a balance of its price and not live; a taken order paid wholly from a balance and one paid partly, each credited its whole `price` as a balance of its own, the source's balance untouched; a code order taken: its code released, no balance; a refused credit write leaving the order as it was (one transaction); a held order settled: `queued`, the hold spent, the source's `amount` down by `fromBalance`; its invoice cancelled, expired by the sweep, expired at settlement's read, and closed as overdue by a next order, each releasing the hold; a late payment after the close leaving the balance and alerting; settlement racing `recordRefund` (the refund refused while held, the balance spent after); the alert when the held spend does not apply (a hold removed by hand); `/name` from `taken` refused; a cheaper move crediting the difference, and a dearer one still `price_too_high`; a held poll woken by the `taken` write and not by a balance change.
+- **Depends on:** T23, T18.
+
+#### T25. Spending a balance
+
+- **Goal:** `POST /api/registration/:id/spend`.
+- **Files:** `StoreService/Web/Names/Orders.hs` (the handler; `createAtProvider` takes the invoice's amount and the insert, shared with `/api/invoice`; the resend answer for `RPBalance`); `StoreService/Names/Balances.hs` (the balance check and the order's placement); `StoreService/Names/Signatures.hs` (`spendMessage`); `StoreService/Web/Names.hs` (its route); new `tests/Bots/StoreService/NamesSpendTests.hs`; `tests/Bots/StoreService/NamesWiringTests.hs` (the route's `405` with `Allow`); `tests/Test.hs`; `simplex-chat.cabal`.
+- **Do:** the contract's `/spend` in its order of checks, under the new name's label turn and then the balance's turn: the order fields by `parseOrderFields`; existing orders by `existingOrder` with the `name-balance` hash; the balance's overdue holder closed with the wallet's overdue orders in `placeOrder`'s transaction; a covered price by `createBalanceRegistration`, a difference by the provider and then `createPaidRegistration` with its hold; a write refused at the balance answering `balance_changed`, with the provider's invoice cancelled as for an order that lost; answers after the turn (`Answer`), publishing closed orders and cancelling their invoices at the provider.
+- **Tests:** a covered spend (`queued`, `fromBalance` the price, the source's `amount` less the price) and an exact one (`amount` 0); a difference spend (the invoice view with `amount` the difference, the registration `unpaid` with `fromBalance` the balance, the source's `reservedBy` its id); an exact resend in `unpaid` and in later phases (moved there by T23's store writes), with a new timestamp and signature, after the balance changed; `balance_changed` for a stale `balance`, a held balance, and an order with none (`balance: null`); a `method` with a covered price, and none with a difference, `bad_request`; another signer, a stale timestamp, an unknown id `404`; `order_exists`; `name_taken`; `catalog_changed`; `name_check_unavailable`; `provider_unavailable`; a balance held by an overdue order spent (that order closed, its invoice `expired`, published, cancelled at the provider); two concurrent spends of one balance for two names, one winning and the other `balance_changed` with its provider invoice cancelled; a spend racing `recordRefund`, one winning; the create limit; the `sealed` and body caps.
+- **Depends on:** T23. Its paid path is end to end only with T24's settlement: the wave-10 integrator adds that spec (below).
+
+#### T26. The operator's refund
+
+- **Goal:** support records a refund, which zeroes a balance (contract section 8, Balances).
+- **Files:** `StoreService/Service.hs` (the `//refund` parser, its run and replies, the usage line); `apps/simplex-store-service/README.md` (the operator commands, `//refund` with support's steps); `tests/Bots/StoreService/GroupIntegrationTests.hs` (the operator command specs); `tests/Bots/StoreService/BotTests.hs` (`badgeCmdUsage`).
+- **Do:**
+  - `//refund <reference>` answers the balance and the command that records it: "Order <id>: balance $100.00 (credited $100.00, refunded $0.00), paid by btc, invoice <invoiceId>. To record its refund: //refund <reference> 10000". A held balance names its holder, to wait for its invoice to close; an order without a balance says so.
+  - `//refund <reference> <cents>` runs `recordRefund` and answers "Recorded a refund of $100.00 for order <id>. Refund it now: <what paid for it>", or why nothing was recorded: no balance; the balance is $X now, not the cents given; held by <id>.
+  - The reference is an invoice id or a registration id, as the page shows it. The command is the service console's `//` only, as `//revoke` of a prepaid code is: it takes the balance's turn, which the group lane does not hold. A second process on the same database (the CLI mode) is kept safe by the conditional write, not the turn.
+  - Each recorded refund is logged with its reference and cents.
+- **Tests:** a refund shown, recorded, then shown as refunded; each refusal; a held balance refused, then recorded once its holder's invoice is cancelled; an overdue holder freed by the refund; a reference by invoice id and by registration id; the usage line.
+- **Depends on:** T23.
+
 ### Stages 6 and 7: the service side
 
 #### T20. Both sites from one service
@@ -298,7 +364,7 @@ This is the implementation plan for the names backend in StoreService: stages 2,
 - **Files:** new `scripts/store-service/names-contract-run.sh`; `apps/simplex-store-service/README.md` (how to run it).
 - **Do:** start anvil and deploy with the webapp's `dev/deploy.ts`; write an ini for that deployment with no payment provider configured (the cases below need no paid order, and the fake providers are in-process test fixtures); seed prepaid codes with `//issue name`; serve the names build all-in-one; run the webapp's e2e cases that need no `/control` endpoint and no payment (search answers, Check your code, a code order to `registered` with links, the reveal from another browser with the name code, Edit links) with `BASE_URL` at the service.
 - **Acceptance:** those cases pass in Chromium against the service, unchanged from their run against the mock.
-- **Depends on:** T10–T20 merged (it runs in wave 9, after T18's merge), and the mock's Appendix A changes in the webapp.
+- **Depends on:** T10–T20 and T22–T26 merged (it runs in wave 11), and the mock's Appendix A changes in the webapp, W1f-1 to W1f-3 included. The balance needs a paid order, which this run has no provider for; the service's own specs (T23–T25 and the wave-10 integrator's) and the webapp's e2e against the mock cover it.
 
 ## Waves, owners and merges
 
@@ -313,10 +379,52 @@ Each wave starts from `sh/store-service` as merged at the end of the last one. "
 | 5 | T12, T13 | T12: `Names/Orders.hs`, `Names/Store.hs`. T13: `Web/Server.hs`, `Web/Names/Registration.hs` |
 | 6 | T14, T15, T20 | T14: `Web/Names/Registration.hs`. T15: `Names/Orders.hs`. T20: `Web/Server.hs`, `README.md` |
 | 7 | T17 | `Service.hs`, `Names/Worker.hs`, `FakeEthNode.hs` |
-| 8 | T18 | `Web/Names/Registration.hs`, `Names/Worker.hs` |
-| 9 | T21 | `README.md` |
+| 8 | T18, T22 | T18: `Web/Names/Registration.hs`, `Names/Worker.hs`. T22: `Names/Orders.hs`, `Names/Store.hs`, the migrations, `Names/View.hs`, `Names/Signatures.hs`, `Web/Names/Orders.hs`, `Web/Names/Owner.hs` |
+| 9 | T23 | `Names/Store.hs`, the migrations, `Names/Turns.hs`, `Names/Balances.hs`, `Names/View.hs`, `Names/Orders.hs`, and, for `RPBalance`'s case only, `Names/Worker.hs`, `Web/Names/Orders.hs`, `Web/Names/Owner.hs` |
+| 10 | T24, T25, T26 | T24: `Names/Worker.hs`, `Orders.hs`, `Names/Store.hs`, `Names/Orders.hs`, `Web/Names/Owner.hs`. T25: `Web/Names/Orders.hs`, `Names/Balances.hs`, `Names/Signatures.hs`. T26: `Service.hs`, `README.md` |
+| 11 | T21 | `README.md` |
+
+The wave-10 integrator, after merging T24, T25 and T26, adds one end-to-end spec to `NamesSpendTests.hs`: a difference spend paid at `FakeBTCPay` and settled (the order `queued`, the hold spent); the same cancelled (the hold released); a covered spend's order ending `taken` (a balance of its own, its whole `price`); and a `//refund` of the rest.
 
 Each task is one or more atomic commits (`<scope>: <subject>`, no body) on its own branch. It ends with the build and its `-m "StoreService names: <part>"` tests green in its worktree, and the badge specs green. The manager merges the wave's branches one at a time and runs the build and all `StoreService` specs after each merge.
+
+## Webapp tasks for the balance
+
+In simplex.domains, branch `sh/names-webapp`, in the webapp's workstream beside waves 8 to 10. They follow the contract alone, and land before T21, which runs the webapp's e2e cases against the service. The mockup (ep's, v15) still shows Take a code; its balance screens are drawn with W1f-3 and go to ep with its review.
+
+#### W1f-1. Remove the taken-order code from the mock and the page
+
+- **Goal:** contract Appendix A, item 36, in the mock and the page.
+- **Files:** `dev/mock.ts`; `dev/mock/service.ts`; `src/api.ts`; `src/crypto/code.ts`; `src/flow.ts`; `src/store.ts`; `src/screens/order.ts`, `search.ts`, `names.ts`; `src/views/order.ts`, `search.ts`, `names.ts`; the tests that use them (`rg -l 'code_issued|takenCode|takenOrderCode|takeCode|codeLength|code-issued|codeOffer' src dev test e2e`).
+- **Do:** delete the mock's `takenCode`, its route, `codeLengthFor`, `issuedCodeLength` and the `code_issued` phase; `api.takeCode`, the view's `codeLength`, and `code_issued` in `Phase` and `PHASES`; `takenOrderCode`; `flow.takeCodeFor` and `flow.takenCodeOf`; the record's `takenCode`; the `code-issued` kind, `buildCodeIssued`, `takeCode` and Take a code on the taken page; `codeOffer` and "Take a code instead"; the "Code taken" chip. The taken page keeps Choose another name until W1f-3.
+- **Acceptance:** the `rg` above finds nothing; vitest, and the e2e in Chromium, Firefox and WebKit, green.
+- **Tests:** deleted with the code: the `takenOrderCode` vectors, the code-issued screens, the code cases of `e2e/taken.spec.ts`; the rest adjusted.
+- **Depends on:** the contract (commit "plans: names taken orders keep a balance").
+
+#### W1f-2. Balances in the mock and the API client
+
+- **Goal:** the mock serves the contract's balances and `/spend`; `src/api.ts` and `src/flow.ts` use them.
+- **Files:** `dev/mock/service.ts`; `dev/mock.ts`; `src/api.ts`; `src/flow.ts`; `src/store.ts`; `test/api.test.ts`; `test/flow.test.ts`; the mock's tests.
+- **Do (mock):** a balance per order (`amount`, `credited`, `refunded`, the holder); credited with `price` when a paid order is taken (`/control/take`), and with the difference on a cheaper `retarget`; `taken` not live and not movable; `spend` in the contract's order of checks, with `balance_changed`; settlement (`/control/settle`) queues the order and spends its hold; a cancel, an expiry (`/control/expire`, `/control/overdue`) and an overdue order closed by a next order or a spend release it; a hold by an overdue order reads free; `POST /control/refund/:reference`, with optional `cents`, answering as `recordRefund`; the view's `balance` and `fromBalance`; `find`'s `invoiceId` null for an order paid wholly from a balance.
+- **Do (client):** `RegistrationView` gains `balance` and `fromBalance`; `api.spend`; `flow.spendBalance(record, label, links, quote, method)` builds the order with the source record's owner code (the same owner, `sealed` under it), signs `simplex.domains spend …`, and keeps the new order's record with that owner code and `method` (`"balance"` when the balance covers it); `OrderRecord.method` gains `"balance"`; `balance_changed` gives the current balance to the caller.
+- **Tests:** the mock's `spend` in each answer and refusal of T25's list; settlement and every close of a hold; a refund; `spendBalance`'s message and body against a vector from a fixed key, the same vector T25's test pastes.
+- **Depends on:** W1f-1.
+
+#### W1f-3. The balance on the page
+
+- **Goal:** the buyer sees and uses a balance in Your names, the search, Check your order, the taken page and the payment page.
+- **Files:** `src/views/names.ts`, `search.ts`, `checkout.ts`, `order.ts`, `shell.ts` (the support popup); `src/screens/names.ts`, `search.ts`, `checkout.ts`, `order.ts`; their unit tests; `e2e/taken.spec.ts`; new `e2e/balance.spec.ts`.
+- **Do:**
+  - **Your names:** an order whose view has a `balance` with an `amount` shows "Balance $X" with **Use** (the search, `?balance=<registrationId>`) and **Refund** (a popup: "Write to <support address> with the reference <id>; support refunds it by hand", the reference being the order's invoice id, else its registration id); a held balance says which order holds it and links to it; a refunded one "Refunded $X by support". An order paid from a balance says so in its line.
+  - **The search with a balance:** "Your balance: $X" in place of the retarget alert; an available name says "Covered by your balance; $Y stays" or "Pay $Z more".
+  - **Check your order** with a balance: the price, "Balance −$X", then either "Nothing to pay" with Register, or "Pay $Z more" with the payment methods; the order goes out by `flow.spendBalance`; on `balance_changed` the page reads the balance again and says what changed.
+  - **The taken page:** "Someone registered it first. Your payment of $X is kept as a balance: use it for another name, paying only the difference, or ask support for a refund." with Use and Refund; Choose another name leaves it.
+  - **The payment page** of a difference invoice: "$X from your balance; this invoice is the rest, $Z."
+  - A failed order keeps Choose another name; its cheaper-name line says the rest stays as balance.
+  - The support address is `CONTACT_EMAIL` (`src/views/shell.ts`), as on every support line.
+- **Acceptance:** the flows against the mock in Chromium, Firefox (158 included) and WebKit, with motion and no flashes; Lighthouse as before.
+- **Tests:** unit tests of each state above; e2e: a paid order taken, then its balance spent on a cheaper name (covered, the rest kept) and on a dearer one (the difference paid by card in the mock, the name registered, the balance 0); a difference invoice cancelled, the balance free again; a refund by `/control/refund`, shown as refunded; the name code restored in another browser showing the balance.
+- **Depends on:** W1f-2.
 
 ## Owner answers (2026-10-21, binding)
 
@@ -333,6 +441,15 @@ Manager rulings on the second round: `/name` only from `failed`, a reveal refuse
 
 Still open and not backend: the dApp host, and the app's menu path in "Use in the app".
 
+## Owner decisions (2026-10-22, binding)
+
+1. **No code when a paid name is taken.** `/code`, `code_issued`, the view's `codeLength` and the page's Take a code go, though T15 built them (ep had asked to keep them; the owner overrules). T22 removes them.
+2. **A balance per order.** A taken paid order's payment becomes a balance owned by that order's name code, never merged across orders or wallets. Your names shows it; buying another name with it pays only the difference by card, BTC or XMR, or nothing when it covers the price.
+3. **Leftover** stays as balance, usable again, or the buyer asks support for a refund by hand (a popup: write to the support address with the reference).
+4. **Refunds** by support on request only: no automatic refund, no refund address screen. The operator records one with `//refund` (T26).
+5. **A balance never expires.**
+6. **Prepaid codes are unchanged:** a code order that ends taken releases its code and gets no balance.
+
 ## Decided here
 
 - **Label rule:** simplexmq's `SimplexDomain` parser on `label.tld`, not #7390's `validLabel`, which is unmerged and refuses `--` only at positions 3–4. One rule with the relays.
@@ -341,7 +458,16 @@ Still open and not backend: the dApp host, and the app's menu path in "Use in th
 - **The term check:** `duration` in every order, register and retarget body, checked within 1 hour of `max(0, termStart − now)` and stored; returned in the view so the name code alone rebuilds the commitment; in the order and retarget signatures.
 - **A new commitment per new order**, with one live order per wallet and name (by commitment, or owner and label hash), enforced by the order lock and unique constraints.
 - **Signed orders:** the owner signs every order, which proves the owner (so nobody fills another wallet's `find` list) and lets the service refuse every non-identical order with a bare `order_exists`.
-- **A taken order's code** pays for any name no dearer than the order, for its years: the shortest length from which every length is no dearer, given as `codeLength`, kept after `code_issued`.
+- **A balance is its own table, keyed by the order it belongs to**, not columns of the registration: other orders' spends, settlement and the operator write it, and none of them may bump that registration's `version` or lock its row out of order. Rows lock invoice, registration, then balance.
+- **US cents**, as every price and invoice amount; refunds are of that amount, paid back as support decides.
+- **A spend is a new order**, `POST /api/registration/:id/spend`, signed by the balance's owner, for a new order of that owner: the same name code owns the new name, as `/name` keeps the owner. It is not an `/api/invoice` field, since a covered spend has no invoice, and not `/name`, which moves an order instead of paying for one.
+- **A hold, not a deduction, while the difference invoice is open**: only one order's open invoice can hold a balance (a unique `reserved_by`), settlement spends it, and every close releases it in the transaction that closes the order. A hold by an overdue order reads free and is closed by the next spend or refund, as section 1 closes an overdue order.
+- **The page states the balance it saw** (`balance` in the body), so the buyer never pays a difference other than the one shown; `balance_changed` carries the current balance.
+- **`/name` no longer moves a taken order**: the balance spend replaces it, so one path buys another name with a taken order's money. `/name` from `failed` and after refused links stays.
+- **A move to a cheaper name keeps the difference as balance** instead of refunding nothing, as the owner's leftover rule does for a spend (owner to confirm; dropping it removes one step of T24).
+- **A taken order credits its whole `price`**, including any part from another balance, as a balance of its own: two balances, never merged.
+- **Balance changes leave `version` alone**: the order is final once `taken`, and the page reads the view for its balance.
+- **Refunds by the `//refund` console command only**, as `//revoke` of a prepaid code: it takes the balance's turn, which the group lane does not hold. It names the reference the page shows (invoice id, else registration id), shows the balance first, and records only the whole amount given.
 - **A revoked code** answers `state: revoked`; a `reserved` code names no registration.
 - **`find` returns `labelHash` and `sealed`**, the 50 newest, so a name code's verdict names its orders in one request.
 - **The intent is signed at the reveal** (gap 34): the mock and the mockup's copy ("keep this page open, or reopen its link within 24 hours") assume it, and the service learns no name before the commit.
