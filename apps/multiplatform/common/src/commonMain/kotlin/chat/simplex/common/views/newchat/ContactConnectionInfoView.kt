@@ -66,8 +66,9 @@ fun ContactConnectionInfoView(
     deleteConnection = { deleteContactConnectionAlert(rhId, contactConnection, chatModel, close) },
     onLocalAliasChanged = { setContactAlias(rhId, contactConnection, it, chatModel) },
     learnMore = {
+      if (appPlatform.isDesktop) ModalManager.end.closeModals()
       ModalManager.end.showModalCloseable { close ->
-        AddContactLearnMore(close)
+        key(this) { AddContactLearnMore(close) }
       }
     }
   )
@@ -90,7 +91,10 @@ private fun ContactConnectionInfoLayout(
       SettingsActionItemWithContent(
         icon = painterResource(MR.images.ic_theater_comedy_filled),
         text = null,
-        click = { ModalManager.end.showModal { IncognitoView() } },
+        click = {
+          if (appPlatform.isDesktop) ModalManager.end.closeModals()
+          ModalManager.end.showModal { key(this) { IncognitoView() } }
+        },
         iconColor = Indigo,
         extraPadding = false
       ) {
