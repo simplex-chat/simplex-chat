@@ -83,7 +83,7 @@ namesOwnerTests = describe "StoreService names: owner" $ do
     it "lists the owner's orders newest first, a moved, an unpaid and a lapsed one read failed included, at most 50, and 404 for none" testFind
     it "refuses another signer's signature, a stale timestamp and a malformed body" testFindRefused
   describe "another name" $ do
-    it "refuses a move from registered, queued, and committed without a refused reveal" testMoveRefusedPhases
+    it "refuses a move from registered, queued, taken, and committed without a refused reveal" testMoveRefusedPhases
     it "moves a failed order, a lapsed one, and a committed one whose links were refused, to the same name with other links too" testMoveAccepted
     it "answers a body equal to the current fields with the view unchanged, counting no move, whatever its timestamp" testMoveRepeat
     it "answers the fourth move move_limit with the current view, changing nothing" testMoveLimit
@@ -386,7 +386,8 @@ testMoveRefusedPhases = withOwner $ \ctx -> do
   registeredOrder <- paidIn ctx aliceOrder registeredPhase
   committedOrder <- paidIn ctx aliceOrder {oCommitment = commitmentOf 2, oTimestamp = seconds orderTime + 1} committedPhase
   queuedOrder <- paidIn ctx dynamisOrder id
-  forM_ [registeredOrder, committedOrder, queuedOrder] $ \r -> do
+  takenOrder <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 4} takenPhase
+  forM_ [registeredOrder, committedOrder, queuedOrder, takenOrder] $ \r -> do
     (nrPhase r,) <$> move ctx keyA r to `shouldReturn` (nrPhase r, refusedWith 400 "bad_request")
     stored ctx r `shouldReturn` r
 

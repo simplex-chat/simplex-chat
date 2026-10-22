@@ -683,19 +683,16 @@ closeOverdue db r@NameRegistration {nrId = regId@(RegistrationId rid), nrVersion
 
 -- | Whether an order can still progress to a registration for its name. The unique live indexes allow one such order per commitment,
 -- and one per owner and label hash, so a wallet can order a name again once its registration is done.
--- An unpaid order is live while its invoice is open, which nrLive carries; a paid order that lost its name can move to another one.
+-- An unpaid order is live while its invoice is open, which nrLive carries; a taken order is final, its worth kept as a balance.
 orderLive :: NameRegistration -> Bool
-orderLive NameRegistration {nrPhase, nrPayment, nrLive} = case nrPhase of
+orderLive NameRegistration {nrPhase, nrLive} = case nrPhase of
   PUnpaid -> nrLive
   PQueued -> True
   PCommitting -> True
   PCommitted -> True
   PRegistering -> True
   PFailed -> True
-  PTaken -> case nrPayment of
-    RPInvoice {} -> True
-    RPBalance -> True
-    RPCode _ -> False
+  PTaken -> False
   PRegistered -> False
 
 -- | Writes every changeable field of a registration read at its nrVersion, unless it changed since, with live as orderLive decides.

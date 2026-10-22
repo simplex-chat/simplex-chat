@@ -276,11 +276,9 @@ checkPrice ct len years price =
 unixSeconds :: UTCTime -> Integer
 unixSeconds = floor . utcTimeToPOSIXSeconds
 
--- | A paid order that lost its name, any failed order, and one whose reveal was refused for its links can move to another name.
+-- | A failed order, and one whose reveal was refused for its links, can move to another name.
 movable :: NameRegistration -> Bool
-movable NameRegistration {nrPhase, nrPayment, nrLinksRefusedAt} = case nrPhase of
-  PTaken | RPInvoice {} <- nrPayment -> True
-  PTaken | RPBalance <- nrPayment -> True
+movable NameRegistration {nrPhase, nrLinksRefusedAt} = case nrPhase of
   PFailed -> True
   PCommitted -> isJust nrLinksRefusedAt
   _ -> False

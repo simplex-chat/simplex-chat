@@ -49,7 +49,7 @@ import StoreService.Names.Reveal (intentOf)
 import StoreService.Names.Revert (RevertName (..))
 import StoreService.Names.Sender (PendingTx, SendError (..), Sender, awaitOutcome, inFlightTransaction, ptHash, submitTransaction)
 import StoreService.Names.Store
-import StoreService.Names.Turns (withLabelTurn)
+import StoreService.Names.Turns (withBalanceTurn, withLabelTurn)
 import StoreService.Names.View (lapseMoment, notSignedInTime, registrationAt, registrationVersion)
 
 data Worker = Worker
@@ -323,14 +323,16 @@ judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {n
                 | otherwise -> failed w now r reason
           Nothing -> failed w now r reason
 
--- | The payment is kept, and a code order's code released.
+-- | A paid order keeps its whole price as a balance of its own, credited in the taken write's transaction, registration before balance,
+-- in the balance's turn after the name's; a code order's code is released.
 taken :: Worker -> UTCTime -> NameRegistration -> IO (Maybe Int64, Next)
-taken Worker {wkOrders = OrdersEnv {oeStore, oeTurns}} now r@NameRegistration {nrId, nrPayment} = case nrPayment of
-  RPInvoice {} -> written r <$> withTransaction oeStore write
-  RPBalance -> written r <$> withTransaction oeStore write
+taken Worker {wkOrders = OrdersEnv {oeStore, oeTurns}} now r@NameRegistration {nrId, nrPayment, nrPrice} = case nrPayment of
+  RPInvoice {} -> credited
+  RPBalance -> credited
   RPCode codeId -> written r . fmap fst <$> releaseCode oeTurns oeStore codeId nrId write
   where
     write db = versionWritten <$> updateRegistration db r {nrPhase = PTaken, nrError = Nothing} now
+    credited = written r <$> withBalanceTurn oeTurns nrId (withTransaction oeStore $ \db -> write db >>= traverse (\v -> v <$ creditBalance db nrId nrPrice now))
 
 -- | A code order keeps its code for Try again.
 failed :: Worker -> UTCTime -> NameRegistration -> Maybe RevertName -> IO (Maybe Int64, Next)
