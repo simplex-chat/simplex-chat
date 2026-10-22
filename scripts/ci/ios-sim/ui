@@ -71,6 +71,7 @@ point() {
 
 wait_for() {
   local text=$1 secs=${2:-30}
+  number "$secs"
   local deadline=$((SECONDS + secs)) t
   until t=$(tree 2> /dev/null) && grep -qF -- "$text" <<< "$t"; do
     if [ "$SECONDS" -ge "$deadline" ]; then

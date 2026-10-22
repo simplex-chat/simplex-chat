@@ -236,6 +236,7 @@ case "${1:-}" in
     ;;
   wait)
     secs=${3:-30}
+    number "$secs"
     if ! pos=$(wait_for "$2" "$secs"); then
       log "wait \"$2\": not on screen after $secs s"
       exit 1
@@ -253,6 +254,7 @@ case "${1:-}" in
     ;;
   click-text)
     secs=${3:-20}
+    number "$secs"
     if ! pos=$(wait_for "$2" "$secs"); then
       log "click-text \"$2\": not on screen after $secs s"
       exit 1
