@@ -36,6 +36,7 @@ module StoreService.Names.Orders
     checkMoveMeets,
     checkMovePrice,
     retargetOrder,
+    versionWritten,
     confirmLanded,
     issuedCodeHash,
     checkTakenCodeLength,

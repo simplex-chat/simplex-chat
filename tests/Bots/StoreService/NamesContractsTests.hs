@@ -25,6 +25,9 @@ module Bots.StoreService.NamesContractsTests
     pricesAnswer,
     oracle,
     alice,
+    availableCall,
+    minCommitmentAgeCall,
+    maxCommitmentAgeCall,
     unhex,
   )
 where

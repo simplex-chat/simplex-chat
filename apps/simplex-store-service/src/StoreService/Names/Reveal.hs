@@ -15,6 +15,7 @@ module StoreService.Names.Reveal
     checkIntent,
     linksValid,
     revealOf,
+    intentOf,
   )
 where
 
@@ -124,3 +125,10 @@ linksValid Registration {rContactLink, rChannelLink} = all (ofKind LKContact) rC
 revealOf :: RegisterIntent -> NameReveal
 revealOf RegisterIntent {riRegistration = Registration {rLabel, rSecret, rContactLink, rChannelLink}, riNonce, riDeadline, riSignature} =
   NameReveal {rvLabel = rLabel, rvSecret = rSecret, rvContactLink = rContactLink, rvChannelLink = rChannelLink, rvNonce = riNonce, rvDeadline = riDeadline, rvSignature = riSignature}
+
+-- | The intent an accepted reveal stored, as the register sends it.
+intentOf :: NamesConfig -> NameRegistration -> NameReveal -> RegisterIntent
+intentOf NamesConfig {nTLD, nChain = ChainConfig {cResolver}} NameRegistration {nrOwner, nrDuration} NameReveal {rvLabel, rvSecret, rvContactLink, rvChannelLink, rvNonce, rvDeadline, rvSignature} =
+  RegisterIntent {riRegistration = registration, riNonce = rvNonce, riDeadline = rvDeadline, riSignature = rvSignature}
+  where
+    registration = Registration {rLabel = rvLabel, rTLD = nTLD, rOwner = nrOwner, rDuration = nrDuration, rSecret = rvSecret, rResolver = cResolver, rContactLink = rvContactLink, rChannelLink = rvChannelLink}

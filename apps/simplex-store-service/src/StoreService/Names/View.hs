@@ -11,6 +11,7 @@ module StoreService.Names.View
     tldText,
     registrationAt,
     lapseMoment,
+    notSignedInTime,
     registrationVersion,
   )
 where

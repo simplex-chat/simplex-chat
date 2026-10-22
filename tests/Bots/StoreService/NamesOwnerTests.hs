@@ -9,6 +9,7 @@ module Bots.StoreService.NamesOwnerTests
     answerFree,
     answerOwner,
     answerUnowned,
+    byB,
     codeIn,
     committedPhase,
     dynamisOrder,
