@@ -124,7 +124,7 @@ fun MarkdownBlocks(
         is MarkdownBlock.Rule -> Box(Modifier.padding(vertical = 6.dp).fillMaxWidth().height(1.dp).background(lineColor))
       }
     }
-    if (!lastIsText) metaLine()
+    if (!lastIsText && !LocalTerminalLayout.current) metaLine()
   }
 }
 

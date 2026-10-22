@@ -228,6 +228,7 @@ fun MarkdownText (
     }
     return
   }
+  val reserveMeta = if (LocalTerminalLayout.current) null else meta
   val reserve = if (textLayoutDirection != (parentDirection ?: LocalLayoutDirection.current) && meta != null) {
     "\n"
   } else if (meta != null) {
@@ -284,7 +285,7 @@ fun MarkdownText (
         if (meta?.isLive == true) {
           append(typingIndicator(meta.recent, typingIdx))
         }
-        if (meta != null) withStyle(reserveTimestampStyle) { append(reserve) }
+        if (reserveMeta != null) withStyle(reserveTimestampStyle) { append(reserve) }
       }
       val clampedRange = textSelection?.highlightRange?.let { it.first .. minOf(it.last, selectableEnd - 1) }?.takeUnless { it.isEmpty() }
       if (textSelection != null) {
@@ -440,7 +441,7 @@ fun MarkdownText (
         // With RTL language set globally links looks bad sometimes, better to add a new line to bo sure everything looks good
         /*if (metaText != null && hasLinks && LocalLayoutDirection.current == LayoutDirection.Rtl)
           withStyle(reserveTimestampStyle) { append("\n" + metaText) }
-        else */if (meta != null) withStyle(reserveTimestampStyle) { append(reserve) }
+        else */if (reserveMeta != null) withStyle(reserveTimestampStyle) { append(reserve) }
       }
       val clampedRange = textSelection?.highlightRange?.let { it.first .. minOf(it.last, selectableEnd - 1) }?.takeUnless { it.isEmpty() }
       val layoutResult = remember { mutableStateOf<TextLayoutResult?>(null) }

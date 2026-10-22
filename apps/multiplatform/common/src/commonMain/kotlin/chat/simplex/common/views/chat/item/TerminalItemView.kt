@@ -105,11 +105,12 @@ fun ItemWithMeta(meta: @Composable () -> Unit, overlayMeta: (@Composable () -> U
 @Composable
 private fun TerminalMetaLayout(contentWithMeta: @Composable () -> Unit) {
   Layout(contentWithMeta) { measurables, constraints ->
-    val content = measurables[0].measure(constraints.copy(minWidth = 0))
     val metaConstraints = constraints.copy(minWidth = 0, minHeight = 0)
     val meta = measurables[1].measure(metaConstraints)
     val overlay = measurables.getOrNull(2)?.measure(metaConstraints)
-    val width = if (constraints.hasBoundedWidth) constraints.maxWidth else max(content.width, meta.width)
+    val contentMaxWidth = if (overlay == null && constraints.hasBoundedWidth) (constraints.maxWidth - meta.width).coerceAtLeast(0) else constraints.maxWidth
+    val content = measurables[0].measure(constraints.copy(minWidth = 0, maxWidth = contentMaxWidth))
+    val width = if (constraints.hasBoundedWidth) constraints.maxWidth else content.width + meta.width
     val textBottom = content[MessageTextBottom]
     val metaBottom = if (textBottom == AlignmentLine.Unspecified) content.height else textBottom + CHAT_ITEM_TEXT_VERTICAL_PADDING.roundToPx()
     layout(width, content.height) {

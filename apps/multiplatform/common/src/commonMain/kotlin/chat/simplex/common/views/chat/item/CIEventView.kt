@@ -21,15 +21,9 @@ fun CIEventView(text: AnnotatedString) {
 fun chatEventHorizontalPadding(): Dp = if (LocalTerminalLayout.current) CHAT_ITEM_TEXT_PADDING else 6.dp
 
 @Composable
-fun ChatEventWithMeta(ci: ChatItem, content: @Composable (ts: AnnotatedString) -> Unit) {
+fun ChatEventWithMeta(ci: ChatItem, content: @Composable (ts: String) -> Unit) {
   ItemWithMeta(meta = { CIMetaView(ci, timedMessagesTTL = null, showStatus = false, showEdited = false, showViaProxy = false, showTimestamp = true) }) { inlineMeta ->
-    content(
-      if (inlineMeta != null) {
-        AnnotatedString(ci.timestampText)
-      } else {
-        AnnotatedString("\u00A0" + reserveSpaceForMeta(ci.meta, null, null, MaterialTheme.colors.secondary, showStatus = false, showEdited = false, showTimestamp = true), reserveTimestampStyle)
-      }
-    )
+    content(if (inlineMeta != null) ci.timestampText else "")
   }
 }
 @Preview/*(

@@ -362,11 +362,13 @@ fun FramedItemView(
                   horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                   EmojiText(ci.content.text)
-                  Text(
-                    reserveSpaceForMeta(ci.meta, chatTTL, null, secondaryColor = MaterialTheme.colors.secondary, showViaProxy = showViaProxy, showTimestamp = showTimestamp),
-                    color = Color.Transparent,
-                    style = MaterialTheme.typography.body1
-                  )
+                  if (!terminal) {
+                    Text(
+                      reserveSpaceForMeta(ci.meta, chatTTL, null, secondaryColor = MaterialTheme.colors.secondary, showViaProxy = showViaProxy, showTimestamp = showTimestamp),
+                      color = Color.Transparent,
+                      style = MaterialTheme.typography.body1
+                    )
+                  }
                 }
               }
             } else {

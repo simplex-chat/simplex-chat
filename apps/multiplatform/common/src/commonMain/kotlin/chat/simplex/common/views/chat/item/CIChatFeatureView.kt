@@ -8,7 +8,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
@@ -107,7 +106,7 @@ private fun FeatureIconView(f: FeatureInfo) {
   if (f.param != null) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
       icon()
-      Text(chatEventText(f.param, AnnotatedString("")), maxLines = 1)
+      Text(chatEventText(f.param, ""), maxLines = 1)
     }
   } else {
     icon()

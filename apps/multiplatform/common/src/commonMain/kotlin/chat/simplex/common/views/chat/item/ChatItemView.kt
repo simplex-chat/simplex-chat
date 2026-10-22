@@ -50,12 +50,12 @@ private val msgTailMaxHeightDp = msgTailWidthDp * 1.732f // 60deg
 
 val chatEventStyle = SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.Light, color = CurrentColors.value.colors.secondary)
 
-fun chatEventText(ci: ChatItem, isChannel: Boolean = false, ts: AnnotatedString): AnnotatedString =
+fun chatEventText(ci: ChatItem, isChannel: Boolean = false, ts: String): AnnotatedString =
   chatEventText(ci.content.text(isChannel), ts)
 
-fun chatEventText(eventText: String, ts: AnnotatedString): AnnotatedString =
+fun chatEventText(eventText: String, ts: String): AnnotatedString =
   buildAnnotatedString {
-    withStyle(chatEventStyle) { append(AnnotatedString("$eventText  ") + ts) }
+    withStyle(chatEventStyle) { append("$eventText  $ts") }
   }
 
 data class ChatItemReactionMenuItem (
@@ -565,7 +565,7 @@ fun ChatItemView(
               }
             }
 
-            fun eventItemViewText(reversedChatItems: List<ChatItem>, ts: AnnotatedString): AnnotatedString {
+            fun eventItemViewText(reversedChatItems: List<ChatItem>, ts: String): AnnotatedString {
               val memberDisplayName = cItem.memberDisplayName
               val t = mergedGroupEventText(cItem, reversedChatItems)
               return if (!revealed.value && t != null) {
