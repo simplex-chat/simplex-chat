@@ -92,6 +92,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "queues an order settled while open and publishes its version" testSettlementQueues
     it "closes the order of an invoice the provider closed or the sweep expired" testExpiryCloses
     it "cleans up unpaid orders after 30 days, reading the provider first" testCleanup
+    it "answers 503 for a name invoice while names are off, cancelling nothing" testNamesOff
   describe "invoice side" $ do
     it "finds an invoice by provider ref in either table, refusing a ref both hold" testProviderRefs
     it "reads and sweeps name invoices with the badge ones" testPollerQueries
@@ -605,6 +606,21 @@ testCancelAnswers = withOrders $ \ctx -> do
     (nrLive r, nrVersion r) `shouldBe` (False, 2)
   where
     cancelAt c (InvoiceId t) = post c ("/api/invoice/" <> T.unpack t <> "/cancel") ""
+
+testNamesOff :: IO ()
+testNamesOff = withOrders $ \ctx -> do
+  (invId@(InvoiceId t), _) <- placed ctx aliceOrder
+  mgr <- newManager defaultManagerSettings
+  Warp.testWithApplication (pure $ webApp (cWeb ctx) {weOrders = Nothing}) $ \port -> do
+    let off = ctx {cClient = (mgr, "http://127.0.0.1:" <> show port)}
+    logs <- capturingStderr $ do
+      r <- webGet (cClient off) ("/api/invoice/" <> T.unpack t)
+      (statusOf r, J.decode (responseBody r)) `shouldBe` refusedWith 503 "provider_unavailable"
+      post off ("/api/invoice/" <> T.unpack t <> "/cancel") "" `shouldReturn` refusedWith 503 "provider_unavailable"
+    logs `shouldSatisfy` T.isInfixOf ("invoice " <> t <> " is a name's, and this service sells no names")
+  calls <- stubCalls (cStub ctx)
+  [c | c@StubCancel {} <- calls] `shouldBe` []
+  (irStatus <$>) <$> getInvoice (cStore ctx) invId `shouldReturn` Just ISOpen
 
 -- | The provider's cancel settles the invoice with the signal before it answers.
 withOrdersCancelling :: PaymentSignal -> (Ctx -> IO a) -> IO a

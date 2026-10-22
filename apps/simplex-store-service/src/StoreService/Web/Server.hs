@@ -248,11 +248,14 @@ invoiceViewOf :: WebEnv -> InvoiceRow -> IO (Either Response J.Value)
 invoiceViewOf env@WebEnv {weConfig, weStore} row@InvoiceRow {irInvoiceId = InvoiceId invId, irProduct} = case irProduct of
   IPBadge badgeType months -> pure $ Right $ badgeInvoiceView (confirmationsFor weConfig) badgeType months row
   IPName rid -> case weOrders env of
-    Nothing -> Left internalError <$ logError ("invoice " <> invId <> " is a name's, and this service sells no names")
+    Nothing -> Left providerUnavailable <$ namesOff invId
     Just orders ->
       withTransaction weStore (`getRegistration` rid) >>= \case
         Nothing -> pure $ Left notFound
         Just r -> Right <$> nameInvoiceView orders (confirmationsFor weConfig) row r
+
+namesOff :: Text -> IO ()
+namesOff invId = logError ("invoice " <> invId <> " is a name's, and this service sells no names")
 
 -- | Monero reports a payment as confirming while its figures are zero, so the verdict counts as much as the figure.
 paymentMark :: InvoiceRow -> (Text, Bool)
@@ -261,11 +264,13 @@ paymentMark InvoiceRow {irPayment} =
 
 -- | The provider is cancelled first, because cancelling our record first would leave an address the buyer can still pay into with nothing watching it.
 cancelInvoiceHandler :: WebEnv -> InvoiceId -> Respond -> IO ResponseReceived
-cancelInvoiceHandler env@WebEnv {weStore, weProviders} invId respond =
+cancelInvoiceHandler env@WebEnv {weStore, weProviders} invId@(InvoiceId invText) respond =
   getInvoice weStore invId >>= \case
     Nothing -> respond notFound
     Just InvoiceRow {irStatus} | irStatus /= ISOpen -> respond (jsonError status409 "not_open")
     Just row | funded row -> respond (jsonError status409 "funded")
+    -- refused before the provider's cancel, since the answer could not show the order
+    Just InvoiceRow {irProduct = IPName _} | Nothing <- weOrders env -> namesOff invText >> respond providerUnavailable
     Just InvoiceRow {irProvider, irProviderRef} -> case providerNamed weProviders irProvider of
       Nothing -> respond providerUnavailable
       Just Provider {pCancelInvoice} ->
@@ -279,7 +284,7 @@ cancelInvoiceHandler env@WebEnv {weStore, weProviders} invId respond =
     finish = do
       now <- getCurrentTime
       E.try (cancelOpenInvoice weStore (weWaiters env) (oePhases <$> weOrders env) invId now) >>= \case
-        Left (RegistrationChanged rid) -> maybe (pure internalError) (`registrationChangedResponse` rid) (weOrders env) >>= respond
+        Left (RegistrationChanged rid) -> maybe (pure providerUnavailable) (`registrationChangedResponse` rid) (weOrders env) >>= respond
         Right _ -> getInvoice weStore invId >>= maybe (respond notFound) (\row' -> respondInvoice env row' respond)
 
 paidParam :: Request -> Maybe (Text, Bool)
