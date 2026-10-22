@@ -4834,7 +4834,9 @@ testStoreChecksDuringCoverageGrantedOnce ps =
   withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsController = cc, bsStore = store} -> do
     (purchaseKey, _, purchased) <- subscribedMonthly env
     ledger <- ledgerRows cc "sx_badge_service_badge_ledger"
+    checks <- subscriptionChecks store
     answered <- serviceCmd env {bsVerifier = (fakeVerifier store) {storeChecks = ChecksAtEveryRequest}} purchaseKey BSCIssueBadge {balance = BadgeBalance {lastEntry = last purchased}}
+    subscriptionChecks store `shouldReturn` checks + 1
     map entryTag (fst $ statementOf answered) `shouldBe` []
     ledgerRows cc "sx_badge_service_badge_ledger" `shouldReturn` ledger
     rowCount cc "sx_badge_service_subscription_charges" `shouldReturn` 1
