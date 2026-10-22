@@ -504,6 +504,7 @@ struct DatabaseView: View {
             }
             do {
                 try await apiDeleteStorage()
+                await MainActor.run { ChatModel.shared.clearDroppedUpdates() }
                 try? FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true)
                 do {
                     let config = ArchiveConfig(archivePath: archivePath.path)
@@ -658,6 +659,7 @@ func stopChatAsync() async throws {
 
 func deleteChatAsync() async throws {
     try await apiDeleteStorage()
+    await MainActor.run { ChatModel.shared.clearDroppedUpdates() }
     _ = kcDatabasePassword.remove()
     storeDBPassphraseGroupDefault.set(true)
     deleteAppDatabaseAndFiles()

@@ -545,6 +545,7 @@ struct MigrateToDevice: View {
                     try await stopChatAsync()
                 }
                 try await apiDeleteStorage()
+                await MainActor.run { ChatModel.shared.clearDroppedUpdates() }
                 try? FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true)
                 do {
                     let config = ArchiveConfig(archivePath: archivePath)

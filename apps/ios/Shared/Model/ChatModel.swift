@@ -69,6 +69,8 @@ enum SecondaryItemsModelFilter {
     }
 }
 
+private let MAX_DROPPED_UPDATES = 100
+
 // analogue for ChatsContext in Kotlin
 // Spec: spec/state.md#ItemsModel
 class ItemsModel: ObservableObject {
@@ -85,6 +87,8 @@ class ItemsModel: ObservableObject {
     }
 
     let chatState = ActiveChatState()
+    var droppedUpdatesChatId: ChatId? = nil
+    var droppedUpdates: [Int64: ChatItem] = [:]
 
     // Publishes directly to `objectWillChange` publisher,
     // this will cause reversedChatItems to be rendered without throttling
@@ -96,6 +100,11 @@ class ItemsModel: ObservableObject {
 
     var lastItemsLoaded: Bool {
         chatState.splits.isEmpty || chatState.splits.first != reversedChatItems.first?.id
+    }
+
+    func clearDroppedUpdates() {
+        droppedUpdatesChatId = nil
+        droppedUpdates.removeAll()
     }
 
     init(secondaryIMFilter: SecondaryItemsModelFilter? = nil) {
@@ -744,7 +753,15 @@ final class ChatModel: ObservableObject {
         }
         // add to current scope
         if let ciIM = getCIItemsModel(cInfo, cItem) {
-            _ = _upsertChatItem(ciIM, cInfo, cItem)
+            var ci = cItem
+            if ciIM.droppedUpdatesChatId == cInfo.id, let kept = ciIM.droppedUpdates.removeValue(forKey: cItem.id) {
+                if kept.meta.updatedAt >= cItem.meta.updatedAt {
+                    ci = kept
+                } else if shouldKeepOldSndCIStatus(oldStatus: kept.meta.itemStatus, newStatus: cItem.meta.itemStatus) {
+                    ci.meta.itemStatus = kept.meta.itemStatus
+                }
+            }
+            _ = _upsertChatItem(ciIM, cInfo, ci, add: true)
         }
     }
 
@@ -774,10 +791,12 @@ final class ChatModel: ObservableObject {
     func upsertChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) -> Bool {
         // update chat list
         var itemAdded: Bool = false
+        var lastItemId: Int64 = 0
         if cInfo.groupChatScope() == nil {
             if let chat = getChat(cInfo.id) {
                 if let pItem = chat.chatItems.last {
-                    if pItem.id == cItem.id || (chatId == cInfo.id && im.reversedChatItems.first(where: { $0.id == cItem.id }) == nil) {
+                    lastItemId = pItem.id
+                    if pItem.id == cItem.id || (chatId == cInfo.id && (im.chatState.splits.isEmpty || im.chatState.splits.last != im.reversedChatItems.first?.id) && cItem.id > max(pItem.id, im.reversedChatItems.lazy.map(\.id).max() ?? 0)) {
                         chat.chatItems = [cItem]
                     }
                 } else {
@@ -793,12 +812,13 @@ final class ChatModel: ObservableObject {
         }
         // update current scope
         if let ciIM = getCIItemsModel(cInfo, cItem) {
-            itemAdded = _upsertChatItem(ciIM, cInfo, cItem)
+            let add = (ciIM.chatState.splits.isEmpty || ciIM.chatState.splits.last != ciIM.reversedChatItems.first?.id) && cItem.id >= lastItemId && cItem.id > (ciIM.reversedChatItems.lazy.map(\.id).max() ?? 0)
+            itemAdded = _upsertChatItem(ciIM, cInfo, cItem, add: add)
         }
         return itemAdded
     }
 
-    private func _upsertChatItem(_ ciIM: ItemsModel, _ cInfo: ChatInfo, _ cItem: ChatItem) -> Bool {
+    private func _upsertChatItem(_ ciIM: ItemsModel, _ cInfo: ChatInfo, _ cItem: ChatItem, add: Bool) -> Bool {
         if let i = getChatItemIndex(ciIM, cItem) {
             let oldStatus = ciIM.reversedChatItems[i].meta.itemStatus
             let newStatus = cItem.meta.itemStatus
@@ -809,12 +829,27 @@ final class ChatModel: ObservableObject {
             _updateChatItem(ciIM: ciIM, at: i, with: ci)
             ChatItemDummyModel.shared.sendUpdate() // TODO [knocking] review what's this
             return false
-        } else {
+        } else if add {
             ciIM.reversedChatItems.insert(cItem, at: hasLiveDummy ? 1 : 0)
             ciIM.chatState.itemAdded((cItem.id, cItem.isRcvNew), hasLiveDummy ? 1 : 0)
             ciIM.itemAdded = true
             ChatItemDummyModel.shared.sendUpdate()
             return true
+        } else {
+            if ciIM.droppedUpdatesChatId != cInfo.id {
+                ciIM.droppedUpdatesChatId = cInfo.id
+                ciIM.droppedUpdates.removeAll()
+            }
+            var ci = cItem
+            if let kept = ciIM.droppedUpdates[cItem.id],
+               shouldKeepOldSndCIStatus(oldStatus: kept.meta.itemStatus, newStatus: cItem.meta.itemStatus) {
+                ci.meta.itemStatus = kept.meta.itemStatus
+            }
+            ciIM.droppedUpdates[cItem.id] = ci
+            if ciIM.droppedUpdates.count > MAX_DROPPED_UPDATES, let minId = ciIM.droppedUpdates.keys.min() {
+                ciIM.droppedUpdates.removeValue(forKey: minId)
+            }
+            return false
         }
 
         func itemAnimation() -> Animation? {
@@ -1020,6 +1055,11 @@ final class ChatModel: ObservableObject {
             chat.chatStats.unreadChat = unreadChat
             ChatTagsModel.shared.updateChatTagRead(chat, wasUnread: wasUnread)
         }
+    }
+
+    func clearDroppedUpdates() {
+        im.clearDroppedUpdates()
+        secondaryIM?.clearDroppedUpdates()
     }
 
     func clearChat(_ cInfo: ChatInfo) {

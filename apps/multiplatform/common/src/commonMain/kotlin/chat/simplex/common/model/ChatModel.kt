@@ -134,6 +134,8 @@ enum class ChatListBanner { BadgeExpired, BadgeIssueFailed, BadgePitch, GetStake
 
 data class FileToOpen(val fileId: Long, val inChatList: Boolean)
 
+private const val MAX_DROPPED_UPDATES = 100
+
 /*
  * Without this annotation an animation from ChatList to ChatView has 1 frame per the whole animation. Don't delete it
  * */
@@ -431,6 +433,8 @@ object ChatModel {
     val chatItems = mutableStateOf(SnapshotStateList<ChatItem>())
     // set listener here that will be notified on every add/delete of a chat item
     val chatState = ActiveChatState()
+    private var droppedUpdatesChat: Pair<Long?, String>? = null
+    private val droppedUpdates = mutableMapOf<Long, ChatItem>()
 
     fun hasChat(rhId: Long?, id: String): Boolean = chats.value.firstOrNull { it.id == id && it.remoteHostId == rhId } != null
     fun getChat(id: String): Chat? = chats.value.firstOrNull { it.id == id }
@@ -638,12 +642,19 @@ object ChatModel {
       // add to current scope
       withContext(Dispatchers.Main) {
         if (chatItemBelongsToScope(cInfo, cItem)) {
+          val kept = if (droppedUpdatesChat == (rhId to cInfo.id)) droppedUpdates.remove(cItem.id) else null
+          val ci = when {
+            kept == null -> cItem
+            kept.meta.updatedAt >= cItem.meta.updatedAt -> kept
+            shouldKeepOldSndCIStatus(kept.meta.itemStatus, cItem.meta.itemStatus) -> cItem.copy(meta = cItem.meta.copy(itemStatus = kept.meta.itemStatus))
+            else -> cItem
+          }
           // Prevent situation when chat item already in the list received from backend
           if (chatItems.value.none { it.id == cItem.id }) {
             if (chatItems.value.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
-              addToChatItems(kotlin.math.max(0, chatItems.value.lastIndex), cItem)
+              addToChatItems(kotlin.math.max(0, chatItems.value.lastIndex), ci)
             } else {
-              addToChatItems(cItem)
+              addToChatItems(ci)
             }
           }
         }
@@ -668,6 +679,7 @@ object ChatModel {
 
     suspend fun upsertChatItem(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem): Boolean {
       var itemAdded = false
+      var lastItemId: Long? = null
       // update chat list
       if (cInfo.groupChatScope() == null) {
         val i = getChatIndex(rhId, cInfo.id)
@@ -675,6 +687,7 @@ object ChatModel {
         if (i >= 0) {
           chat = chats[i]
           val pItem = chat.chatItems.lastOrNull()
+          lastItemId = pItem?.id
           if (pItem?.id == cItem.id) {
             chats[i] = chat.copy(chatItems = arrayListOf(cItem))
             if (pItem.isRcvNew && !cItem.isRcvNew) {
@@ -704,13 +717,36 @@ object ChatModel {
               cItem
             }
             items[itemIndex] = ci
-          } else {
+          } else if (
+            (chatState.splits.value.isEmpty() || chatState.splits.value.last() != items.lastOrNull()?.id)
+            && cItem.id >= (lastItemId ?: 0)
+            && cItem.id > (items.maxOfOrNull { it.id } ?: 0)
+          ) {
             addToChatItems(cItem)
             itemAdded = true
+          } else {
+            if (droppedUpdatesChat != (rhId to cInfo.id)) {
+              droppedUpdatesChat = rhId to cInfo.id
+              droppedUpdates.clear()
+            }
+            val kept = droppedUpdates[cItem.id]
+            droppedUpdates[cItem.id] = if (kept != null && shouldKeepOldSndCIStatus(kept.meta.itemStatus, cItem.meta.itemStatus)) {
+              cItem.copy(meta = cItem.meta.copy(itemStatus = kept.meta.itemStatus))
+            } else {
+              cItem
+            }
+            if (droppedUpdates.size > MAX_DROPPED_UPDATES) {
+              droppedUpdates.remove(droppedUpdates.keys.min())
+            }
           }
         }
       }
       return  itemAdded
+    }
+
+    fun clearDroppedUpdates() {
+      droppedUpdatesChat = null
+      droppedUpdates.clear()
     }
 
     suspend fun updateChatItem(cInfo: ChatInfo, cItem: ChatItem, status: CIStatus? = null, atIndex: Int? = null) {
@@ -1123,6 +1159,11 @@ object ChatModel {
       presetTags[PresetTagKind.GROUP_REPORTS] = kotlin.math.max(0, (presetTags[PresetTagKind.GROUP_REPORTS] ?: 0) + by)
       clearActiveChatFilterIfNeeded()
     }
+  }
+
+  fun clearDroppedUpdates() {
+    chatsContext.clearDroppedUpdates()
+    secondaryChatsContext.value?.clearDroppedUpdates()
   }
 
   fun clearActiveChatFilterIfNeeded() {
