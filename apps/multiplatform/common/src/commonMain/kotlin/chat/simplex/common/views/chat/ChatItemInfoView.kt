@@ -26,6 +26,8 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.group.MemberProfileImage
 import chat.simplex.common.views.chat.item.*
@@ -134,7 +136,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
 
     Column {
       Box(
-        Modifier.clipChatItem().background(quoteColor).padding(bottom = 3.dp)
+        Modifier.ui(Ui.ItemInfo.Quote).clipChatItem().background(quoteColor).padding(bottom = 3.dp)
           .combinedClickable(onLongClick = { showMenu.value = true }, onClick = {})
           .onRightClick { showMenu.value = true }
       ) {
@@ -219,7 +221,8 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
             ModalManager.end.closeModals()
           }
         },
-        padding = PaddingValues(start = 17.dp, end = DEFAULT_PADDING)
+        padding = PaddingValues(start = 17.dp, end = DEFAULT_PADDING),
+        uiKey = Ui.ItemInfo.ForwardedFrom
       ) {
         ForwardedFromSender(forwardedFromItem)
       }
@@ -375,7 +378,8 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
   @Composable
   fun MemberDeliveryStatusView(member: GroupMember, status: GroupSndStatus, sentViaProxy: Boolean?) {
     SectionItemView(
-      padding = PaddingValues(horizontal = 0.dp)
+      padding = PaddingValues(horizontal = 0.dp),
+      uiKey = Ui.ItemInfo.Member(member.groupMemberId)
     ) {
       MemberProfileImage(size = 36.dp, member)
       Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
@@ -413,7 +417,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
       Box(modifier, contentAlignment = Alignment.Center) {
         Icon(
           painterResource(icon),
-          contentDescription = null,
+          contentDescription = status.statusDescription,
           tint = statusColor
         )
       }
@@ -557,6 +561,12 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
       HistoryTab()
     }
   }
+}
+
+private val GroupSndStatus.statusDescription: String? get() = when (this) {
+  is GroupSndStatus.Sent -> generalGetString(MR.strings.icon_descr_sent_msg_status_sent)
+  is GroupSndStatus.Rcvd -> generalGetString(MR.strings.icon_descr_sent_msg_status_rcvd)
+  else -> statusInto?.first
 }
 
 private fun membersStatuses(chatModel: ChatModel, memberDeliveryStatuses: List<MemberDeliveryStatus>): List<Triple<GroupMember, GroupSndStatus, Boolean?>> {

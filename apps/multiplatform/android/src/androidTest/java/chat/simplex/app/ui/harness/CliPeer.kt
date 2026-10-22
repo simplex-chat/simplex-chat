@@ -35,12 +35,56 @@ object Bridge {
   }
 
   fun servers(): Pair<String, String> = call("servers").first().split(" ").let { it[1] to it[2] }
+
+  fun remoteCtrlPort(): Int = call("remotePort").first().removePrefix("ok ").toInt()
+}
+
+object TestServers {
+  fun start(name: String): String = Bridge.call("server start $name").first().removePrefix("ok ")
+
+  fun stop(name: String) { Bridge.call("server stop $name") }
+
+  fun reset(name: String): String = Bridge.call("server reset $name").first().removePrefix("ok ")
+
+  fun address(name: String): String = Bridge.call("server address $name").first().removePrefix("ok ")
+
+  fun restoreBaseline() { Bridge.call("server baseline") }
+}
+
+object SocksProxy {
+  private var started: Int? = null
+
+  val port: Int get() = started ?: error("the SOCKS proxy is not started; SocksProxy.start() starts it")
+
+  fun start() {
+    if (started == null) started = Bridge.call("socks start").first().removePrefix("ok ").toInt()
+  }
+
+  fun connections(): List<SocksConnection> =
+    Bridge.call("socks connections").map { line ->
+      val (host, port, username) = line.split(" ", limit = 3)
+      SocksConnection(host, port.toInt(), username.takeIf { it != "-" })
+    }
+
+  fun stop() {
+    if (started == null) return
+    started = null
+    Bridge.call("socks stop")
+  }
 }
 
 class CliPeer(name: String, private val flags: PeerFlags, waiter: Waiter) : PeerLines(name, waiter) {
+  private var relayLink: String? = null
+
+  val relayAddress: String
+    get() = relayLink ?: error("$name printed no chat relay address; start it with PeerFlags(relay = true) on a new database")
+
   fun start() {
-    val f = listOfNotNull("reactions".takeIf { flags.reactions }, "markRead".takeIf { flags.markRead }, "fullLinks".takeIf { flags.fullLinks })
-    Bridge.call("start $name ${f.joinToString(",")}")
+    val f = listOfNotNull(
+      "reactions".takeIf { flags.reactions }, "markRead".takeIf { flags.markRead }, "fullLinks".takeIf { flags.fullLinks }, "relay".takeIf { flags.relay },
+      "smp=${flags.smpServer}".takeIf { flags.smpServer != PeerFlags().smpServer }, "xftp=${flags.xftpServer}".takeIf { flags.xftpServer != PeerFlags().xftpServer }
+    )
+    Bridge.call("start $name ${f.joinToString(",")}").first().removePrefix("ok").trim().takeIf { it.isNotEmpty() }?.let { relayLink = it }
   }
 
   fun stop() { runCatching { Bridge.call("stop $name") } }

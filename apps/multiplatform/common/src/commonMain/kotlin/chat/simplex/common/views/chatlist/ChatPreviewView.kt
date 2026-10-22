@@ -357,7 +357,7 @@ fun ChatPreviewView(
       }
       is MsgContent.MCChat -> SmallContentPreview(borderColor = if (mc.chatLink.image != null) MaterialTheme.colors.onSurface.copy(alpha = 0.12f) else Color.Transparent) {
         Box(
-          Modifier.fillMaxSize().clickable { withBGApi { planAndConnect(chat.remoteHostId, mc.chatLink.connLinkStr, linkOwnerSig = mc.ownerSig, close = null) } },
+          Modifier.fillMaxSize().ui(Ui.ChatList.Row(chat.id, chat.remoteHostId).part("link")).clickable { withBGApi { planAndConnect(chat.remoteHostId, mc.chatLink.connLinkStr, linkOwnerSig = mc.ownerSig, close = null) } },
           contentAlignment = Alignment.Center
         ) {
           val image = mc.chatLink.image

@@ -16,6 +16,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.platform.BackHandler
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.ui
 import chat.simplex.common.views.helpers.*
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.res.*
@@ -52,7 +53,7 @@ fun BoxScope.SelectedItemsCounterToolbar(selectedItems: MutableState<Set<Long>?>
 
 @Composable
 private fun SelectAllButton(onClick: () -> Unit) {
-  IconButton(onClick) {
+  IconButton(onClick, Modifier.ui(Ui.Chat.Selection.part("selectAll"))) {
     Icon(
       painterResource(MR.images.ic_checklist), stringResource(MR.strings.back), Modifier.height(24.dp), tint = MaterialTheme.colors.primary
     )
@@ -94,7 +95,7 @@ fun SelectedItemsButtonsToolbar(
       horizontalArrangement = Arrangement.SpaceBetween,
       verticalAlignment = Alignment.CenterVertically
     ) {
-      IconButton({ if (canArchiveReports.value) archiveItems() else deleteItems(deleteForEveryoneEnabled.value) }, enabled = deleteEnabled.value && !deleteCountProhibited.value) {
+      IconButton({ if (canArchiveReports.value) archiveItems() else deleteItems(deleteForEveryoneEnabled.value) }, Modifier.ui(Ui.Chat.Selection.part("delete")), enabled = deleteEnabled.value && !deleteCountProhibited.value) {
         Icon(
           painterResource(MR.images.ic_delete),
           null,
@@ -103,7 +104,7 @@ fun SelectedItemsButtonsToolbar(
         )
       }
 
-      IconButton({ moderateItems() }, Modifier.alpha(if (canModerate.value) 1f else 0f), enabled = moderateEnabled.value && !deleteCountProhibited.value && chatsCtx.secondaryContextFilter == null) {
+      IconButton({ moderateItems() }, Modifier.ui(Ui.Chat.Selection.part("moderate")).alpha(if (canModerate.value) 1f else 0f), enabled = moderateEnabled.value && !deleteCountProhibited.value && chatsCtx.secondaryContextFilter == null) {
         Icon(
           painterResource(MR.images.ic_flag),
           null,
@@ -112,7 +113,7 @@ fun SelectedItemsButtonsToolbar(
         )
       }
 
-      IconButton({ forwardItems() }, enabled = forwardEnabled.value && !forwardCountProhibited.value && chatsCtx.secondaryContextFilter == null) {
+      IconButton({ forwardItems() }, Modifier.ui(Ui.Chat.Selection.part("forward")), enabled = forwardEnabled.value && !forwardCountProhibited.value && chatsCtx.secondaryContextFilter == null) {
         Icon(
           painterResource(MR.images.ic_forward),
           null,

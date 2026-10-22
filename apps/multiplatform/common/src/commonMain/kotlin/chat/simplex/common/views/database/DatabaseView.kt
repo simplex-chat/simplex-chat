@@ -22,7 +22,10 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.UiKey
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.ui.ui
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.platform.*
@@ -125,7 +128,7 @@ fun DatabaseLayout(
 
     if (!chatModel.desktopNoUserNoRemote) {
       SectionView(stringResource(MR.strings.messages_section_title)) {
-        TtlOptions(chatItemTTL, enabled = rememberUpdatedState(!stopped && !progressIndicator), onChatItemTTLSelected)
+        TtlOptions(chatItemTTL, enabled = rememberUpdatedState(!stopped && !progressIndicator), uiKey = Ui.Database.Ttl, onSelected = onChatItemTTLSelected)
       }
       SectionTextFooter(
         remember(currentUser?.displayName) {
@@ -149,7 +152,8 @@ fun DatabaseLayout(
         stringResource(MR.strings.database_passphrase_and_export),
         click = showDatabaseManagement,
         iconColor = if (unencrypted || (appPlatform.isDesktop && passphraseSaved)) WarningOrange else MaterialTheme.colors.secondary,
-        disabled = operationsDisabled
+        disabled = operationsDisabled,
+        uiKey = Ui.Database.Management
       )
     }
     SectionDividerSpaced()
@@ -158,7 +162,8 @@ fun DatabaseLayout(
       val deleteFilesDisabled = operationsDisabled || appFilesCountAndSize.value.first == 0
       SectionItemView(
         deleteAppFilesAndMedia,
-        disabled = deleteFilesDisabled
+        disabled = deleteFilesDisabled,
+        uiKey = Ui.Database.DeleteFiles
       ) {
         Text(
           stringResource(if (users.size > 1) MR.strings.delete_files_and_media_for_all_users else MR.strings.delete_files_and_media_all),
@@ -234,7 +239,8 @@ fun DatabaseManagementView() {
           stringResource(MR.strings.database_passphrase),
           click = { ModalManager.start.showModal(cardScreen = true) { DatabaseEncryptionView(chatModel, false) } },
           iconColor = if (unencrypted || (appPlatform.isDesktop && prefs.storeDBPassphrase.state.value)) WarningOrange else MaterialTheme.colors.secondary,
-          disabled = operationsDisabled
+          disabled = operationsDisabled,
+          uiKey = Ui.Database.Passphrase
         )
         if (appPlatform.isDesktop) {
           SettingsActionItem(
@@ -261,7 +267,8 @@ fun DatabaseManagementView() {
           },
           textColor = MaterialTheme.colors.primary,
           iconColor = MaterialTheme.colors.primary,
-          disabled = operationsDisabled
+          disabled = operationsDisabled,
+          uiKey = Ui.Database.Export
         )
         SettingsActionItem(
           painterResource(MR.images.ic_download),
@@ -269,7 +276,8 @@ fun DatabaseManagementView() {
           { withLongRunningApi { importArchiveLauncher.launch("application/zip") } },
           textColor = Color.Red,
           iconColor = Color.Red,
-          disabled = operationsDisabled
+          disabled = operationsDisabled,
+          uiKey = Ui.Database.Import
         )
         SettingsActionItem(
           painterResource(MR.images.ic_delete_forever),
@@ -284,7 +292,8 @@ fun DatabaseManagementView() {
           },
           textColor = Color.Red,
           iconColor = Color.Red,
-          disabled = operationsDisabled
+          disabled = operationsDisabled,
+          uiKey = Ui.Database.Delete
         )
       }
 
@@ -347,6 +356,7 @@ private fun setChatItemTTLAlert(
 fun TtlOptions(
   current: State<ChatItemTTL?>,
   enabled: State<Boolean>,
+  uiKey: UiKey? = null,
   onSelected: (ChatItemTTL?) -> Unit,
   default: State<ChatItemTTL>? = null
 ) {
@@ -370,6 +380,7 @@ fun TtlOptions(
     current,
     icon = null,
     enabled = enabled,
+    uiKey = uiKey,
     onSelected = onSelected
   )
 }
@@ -389,6 +400,7 @@ fun RunChatSetting(
   ) {
     DefaultSwitch(
       checked = !stopped,
+      modifier = Modifier.ui(Ui.Database.RunChat),
       onCheckedChange = { runChatSwitch ->
         if (runChatSwitch) {
           startChat()

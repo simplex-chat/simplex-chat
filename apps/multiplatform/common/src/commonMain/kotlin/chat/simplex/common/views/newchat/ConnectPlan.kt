@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.dp
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
 import chat.simplex.common.views.chat.subscriberCountStr
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.helpers.*
@@ -471,7 +472,7 @@ fun askCurrentOrIncognitoProfileAlert(
           withBGApi {
             connectViaUri(chatModel, rhId, connectionLink, incognito = false, connectionPlan, close, cleanup)
           }
-        }) {
+        }, uiKey = Ui.Alert.Option(Ui.AlertSource.PrivacySensitive, "useCurrentProfile")) {
           Text(generalGetString(MR.strings.connect_use_current_profile), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = connectColor)
         }
         SectionItemView({
@@ -479,7 +480,7 @@ fun askCurrentOrIncognitoProfileAlert(
           withBGApi {
             connectViaUri(chatModel, rhId, connectionLink, incognito = true, connectionPlan, close, cleanup)
           }
-        }) {
+        }, uiKey = Ui.Alert.Option(Ui.AlertSource.PrivacySensitive, "useIncognito")) {
           Text(generalGetString(MR.strings.connect_use_new_incognito_profile), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = connectColor)
         }
         if (connectOtherButton != null && connectOtherLink != null) {
@@ -493,7 +494,7 @@ fun askCurrentOrIncognitoProfileAlert(
         SectionItemView({
           AlertManager.privacySensitive.hideAlert()
           cleanup?.invoke()
-        }) {
+        }, uiKey = Ui.Alert.Option(Ui.AlertSource.PrivacySensitive, "cancel")) {
           Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
       }
@@ -606,7 +607,7 @@ fun ownGroupLinkConfirmConnect(
             AlertManager.privacySensitive.hideAlert()
             openKnownGroup(chatModel, rhId, close, groupInfo)
             cleanup?.invoke()
-          }) {
+          }, uiKey = Ui.Alert.Option(Ui.AlertSource.PrivacySensitive, "openGroup")) {
             Text(generalGetString(MR.strings.connect_plan_open_group), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
           }
           // Use current profile
@@ -615,7 +616,7 @@ fun ownGroupLinkConfirmConnect(
             withBGApi {
               connectViaUri(chatModel, rhId, connectionLink, incognito = false, connectionPlan, close, cleanup)
             }
-          }) {
+          }, uiKey = Ui.Alert.Option(Ui.AlertSource.PrivacySensitive, "useCurrentProfile")) {
             Text(generalGetString(MR.strings.connect_use_current_profile), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
           }
           // Use new incognito profile

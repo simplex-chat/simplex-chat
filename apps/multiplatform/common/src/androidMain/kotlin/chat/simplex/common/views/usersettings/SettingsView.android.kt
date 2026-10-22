@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
 import com.jakewharton.processphoenix.ProcessPhoenix
@@ -24,7 +25,7 @@ actual fun AdvancedSettingsAppSection(
   withAuth: (title: String, desc: String, block: () -> Unit) -> Unit,
 ) {
   SectionView {
-    SettingsActionItem(painterResource(MR.images.ic_code), stringResource(MR.strings.settings_developer_tools), showSettingsModal { DeveloperView(withAuth) })
+    SettingsActionItem(painterResource(MR.images.ic_code), stringResource(MR.strings.settings_developer_tools), showSettingsModal { DeveloperView(withAuth) }, uiKey = Ui.Settings.DeveloperTools)
   }
 }
 
@@ -50,7 +51,7 @@ private fun shutdownAppAlert() {
     text = generalGetString(MR.strings.shutdown_alert_desc),
     buttons = {
       Column {
-        SectionItemView({ AlertManager.shared.hideAlert() }) {
+        SectionItemView({ AlertManager.shared.hideAlert() }, uiKey = Ui.Alert.Dismiss(Ui.AlertSource.Shared)) {
           Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
         }
         SectionItemView({

@@ -294,6 +294,7 @@ fun GroupLinkLayout(
               click = close,
               iconColor = MaterialTheme.colors.primary,
               textColor = MaterialTheme.colors.primary,
+              uiKey = Ui.GroupLink.Continue,
             )
           }
         }
@@ -316,7 +317,8 @@ private fun RoleSelectionRow(groupInfo: GroupInfo, selectedRole: MutableState<Gr
       values,
       selectedRole,
       icon = null,
-      enabled = rememberUpdatedState(enabled)
+      enabled = rememberUpdatedState(enabled),
+      uiKey = Ui.GroupLink.Role
     ) { selectedRole.value = it }
   }
 }

@@ -5,6 +5,8 @@ import chat.simplex.common.model.ChatItem
 import chat.simplex.common.model.GroupMemberRole
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.UiKey
+import chat.simplex.common.views.helpers.AlertManager
 import chat.simplex.common.views.helpers.ModalManager
 
 class App(private val s: UiScope) {
@@ -79,7 +81,11 @@ class ChatListScreen(private val s: UiScope) {
   }
 
   fun open(name: String): ChatScreen {
-    s.click(Ui.ChatList.Row(chatId(name)))
+    val id = chatId(name)
+    s.click(Ui.ChatList.Row(id))
+    s.poll(what = "chat `$name` to open, or an alert instead") {
+      chatModel.chatId.value == id || AlertManager.shared.hasAlertsShown() || AlertManager.privacySensitive.hasAlertsShown()
+    }
     return ChatScreen(s)
   }
 
@@ -88,6 +94,13 @@ class ChatListScreen(private val s: UiScope) {
   fun shown(name: String): Boolean = s.exists(Ui.ChatList.Row(chatId(name)))
 
   fun shareTo(name: String) = s.click(Ui.Share.Row(chatId(name)))
+
+  fun shareSearch(text: String) {
+    s.click(described("Search"))
+    s.typeInto(Ui.Share.Bar.part("search"), text)
+  }
+
+  fun shareShown(name: String): Boolean = s.exists(Ui.Share.Row(chatId(name)))
 
   fun rowTexts(name: String): List<String> = s.textsOf(Ui.ChatList.Row(chatId(name)))
 
@@ -187,6 +200,13 @@ class AppearanceScreen(private val s: UiScope) {
 
   fun colorModeText(): String? = s.textOf(Ui.Appearance.ColorMode)
 
+  fun darkModeColors(theme: String) {
+    s.click(Ui.Appearance.DarkModeColors)
+    s.click(Ui.Appearance.DarkModeColors.option(theme))
+  }
+
+  fun darkModeColorsText(): String? = s.textOf(Ui.Appearance.DarkModeColors)
+
   var fontScale: Float
     get() = s.sliderValue(Ui.Appearance.FontScale)
     set(v) = s.setSlider(Ui.Appearance.FontScale, v)
@@ -245,6 +265,27 @@ class ChatScreen(private val s: UiScope) {
     s.click(Ui.Chat.ItemMenu(id, action))
   }
 
+  fun select(text: String) {
+    menu(text, "select")
+    s.waitFor(Ui.Chat.Selection.part("title"))
+  }
+
+  fun toggle(id: Long) = s.click(Ui.Chat.Item(id))
+
+  fun selectionTitle(): String? = Ui.Chat.Selection.part("title").let { k -> if (s.exists(k)) s.textsOf(k).firstOrNull() else null }
+
+  fun itemInfo(text: String): ItemInfoScreen {
+    menu(text, "info")
+    s.poll(what = "the item info with `Sent message` and `History`") { s.seesText("Sent message") && s.seesText("History") }
+    return ItemInfoScreen(s)
+  }
+
+  fun receivedItemInfo(text: String): ItemInfoScreen {
+    menu(text, "info")
+    s.poll(what = "the item info with `Received message`") { s.seesText("Received message") }
+    return ItemInfoScreen(s)
+  }
+
   fun react(text: String, emoji: String) {
     val id = itemId(text)
     s.rightClick(Ui.Chat.Item(id))
@@ -259,6 +300,31 @@ class ChatScreen(private val s: UiScope) {
     ChatListScreen(s).shareTo(chatName)
     s.poll(what = "the send button to be enabled for forwarding") { s.isEnabled(Ui.Chat.Send) }
     s.click(Ui.Chat.Send)
+  }
+
+  fun itemId(what: String, match: (ChatItem) -> Boolean): Long {
+    var id: Long? = null
+    s.poll(timeoutMs = CONNECT_TIMEOUT_MS, what = what) {
+      val found = chatModel.chatsContext.chatItems.value.lastOrNull(match)?.id
+      id = found
+      found != null && s.exists(Ui.Chat.Item(found))
+    }
+    return id!!
+  }
+
+  fun forwardItemTo(id: Long, chatName: String) {
+    s.rightClick(Ui.Chat.Item(id))
+    s.click(Ui.Chat.ItemMenu(id, "forward"))
+    ChatListScreen(s).shareTo(chatName)
+    s.poll(what = "the send button to be enabled for forwarding") { s.isEnabled(Ui.Chat.Send) }
+    s.click(Ui.Chat.Send)
+  }
+
+  fun forwardSelected() = s.click(Ui.Chat.Selection.part("forward"))
+
+  fun sendComposed() {
+    s.click(Ui.Chat.Send)
+    s.poll(what = "the message field to clear after Send") { s.editableText(Ui.Chat.Message).isNullOrEmpty() }
   }
 
   fun openSearch() {
@@ -334,6 +400,28 @@ class GroupInfoScreen(private val s: UiScope) {
     return link!!
   }
 
+  fun preferences(): GroupPreferencesScreen {
+    s.click(Ui.GroupInfo.Preferences)
+    return GroupPreferencesScreen(s)
+  }
+
+  fun chatsWithMembers(): MemberSupportScreen {
+    s.click(Ui.GroupInfo.MemberSupport)
+    return MemberSupportScreen(s)
+  }
+
+  fun reportsTexts(): List<String> = s.textsOf(Ui.GroupInfo.Reports)
+
+  fun reports(): MemberReportsScreen {
+    s.click(Ui.GroupInfo.Reports)
+    return MemberReportsScreen(s)
+  }
+
+  fun close() {
+    s.escape()
+    s.poll(what = "group info to close") { !ModalManager.end.hasModalsOpen() }
+  }
+
   private fun memberId(name: String): Long {
     var id: Long? = null
     s.poll(what = "member `$name` in the model") {
@@ -362,6 +450,37 @@ class MemberInfoScreen(private val s: UiScope) {
     s.click(Ui.MemberInfo.Remove)
     s.click(Ui.Alert.Option(Ui.AlertSource.Shared, "remove"))
   }
+
+  fun removeWithMessages() {
+    s.click(Ui.MemberInfo.Remove)
+    val option = Ui.Alert.Option(Ui.AlertSource.Shared, "removeWithMessages")
+    s.poll(what = "the `Remove member?` alert with `Remove and delete messages`") {
+      s.seesText("Remove member?") && s.exists(option) && "Remove and delete messages" in s.textsOf(option)
+    }
+    s.click(option)
+  }
+
+  fun pickRole(role: GroupMemberRole) {
+    s.click(Ui.MemberInfo.Role)
+    s.click(Ui.MemberInfo.Role.option(role))
+    s.poll(what = "the `Change role?` alert with `Change`") { s.seesText("Change role?") && "Change" in s.textsOf(Ui.Alert.Confirm(Ui.AlertSource.Shared)) }
+  }
+
+  fun block(name: String) = confirm(Ui.MemberInfo.Block, "Block member?", "All new messages from $name will be hidden!", "Block")
+
+  fun unblock(name: String) = confirm(Ui.MemberInfo.Unblock, "Unblock member?", "Messages from $name will be shown!", "Unblock")
+
+  fun unblockForAll(name: String) = confirm(Ui.MemberInfo.UnblockForAll, "Unblock member for all?", "Messages from $name will be shown!", "Unblock for all")
+
+  private fun confirm(button: UiKey, title: String, text: String, action: String) {
+    s.click(button)
+    s.poll(what = "the `$title` alert saying `$text` with `$action`") {
+      s.seesText(title) && s.seesText(text) && action in s.textsOf(Ui.Alert.Confirm(Ui.AlertSource.Shared))
+    }
+    s.click(Ui.Alert.Confirm(Ui.AlertSource.Shared))
+  }
+
+  fun message() = s.click(Ui.MemberInfo.Message)
 }
 
 fun UiScope.emptyGroup(app: App, group: String): ChatScreen {

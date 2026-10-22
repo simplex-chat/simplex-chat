@@ -9,6 +9,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import chat.simplex.common.model.CustomTimeUnit
 import chat.simplex.common.model.timeText
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.UiKey
 import chat.simplex.res.*
 
 @Composable
@@ -66,7 +68,8 @@ fun showCustomTimePickerDialog(
       SectionItemView({
         AlertManager.shared.hideAlert()
         confirmButtonAction(selection.value)
-      }
+      },
+        uiKey = Ui.TimePicker.Confirm
       ) {
         Text(
           confirmButtonText,
@@ -88,6 +91,7 @@ fun DropdownCustomTimePickerSettingRow(
   customPickerTitle: String,
   customPickerConfirmButtonText: String,
   customPickerTimeUnitsLimits: List<TimeUnitLimits> = TimeUnitLimits.defaultUnitsLimits,
+  uiKey: UiKey? = null,
   onSelected: (Int?) -> Unit
 ) {
   fun getValues(selectedValue: Int?): List<DropdownSelection> =
@@ -120,6 +124,8 @@ fun DropdownCustomTimePickerSettingRow(
       }
     },
     dropdownSelection,
+    uiKey = uiKey,
+    optionKey = { sel -> if (sel is DropdownSelection.DropdownValue) sel.value else "custom" },
     onSelected = { sel: DropdownSelection ->
       when (sel) {
         is DropdownSelection.DropdownValue -> updateValue(sel.value)

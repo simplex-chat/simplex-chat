@@ -11,7 +11,7 @@ object UiJvm {
     Runtime.getRuntime().addShutdownHook(Thread {
       runCatching { UiTestApp.stopCore() }
       Peers.stopAll()
-      TestServers.stop()
+      TestServers.shutdown()
       ProcessHandle.current().descendants().forEach { it.destroyForcibly() }
     })
   }

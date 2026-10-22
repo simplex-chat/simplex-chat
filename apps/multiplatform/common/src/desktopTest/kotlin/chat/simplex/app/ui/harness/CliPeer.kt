@@ -6,7 +6,7 @@ import java.io.File
 import java.io.InputStreamReader
 import java.util.concurrent.TimeUnit
 
-class CliPeer(name: String, private val dir: File, private val smpServer: String, private val flags: PeerFlags, waiter: Waiter) : PeerLines(name, waiter) {
+class CliPeer(name: String, private val dir: File, private val flags: PeerFlags, waiter: Waiter) : PeerLines(name, waiter) {
   private val transcript = File(dir, "transcript.log")
   private lateinit var screen: VtScreen
   private var proc: PtyProcess? = null
@@ -20,10 +20,11 @@ class CliPeer(name: String, private val dir: File, private val smpServer: String
     if (!File(dir, "simplex_v1_chat.db").exists()) {
       File(UiEnv.runDir, "peer-template").listFiles { f -> f.name.startsWith("simplex_v1_") }?.forEach { it.copyTo(File(dir, it.name)) }
     }
-    val args = mutableListOf(UiEnv.cli, "-d", File(dir, "simplex_v1").absolutePath, "--user-display-name", name, "-s", smpServer, "--xftp-server", TestServers.xftp1)
+    val args = mutableListOf(UiEnv.cli, "-d", File(dir, "simplex_v1").absolutePath, "--user-display-name", name, "-s", TestServers.address(flags.smpServer), "--xftp-server", TestServers.address(flags.xftpServer))
     if (flags.reactions) args += "--reactions"
     if (flags.markRead) args += "--mark-read"
     if (flags.fullLinks) args += "--show-full-links"
+    if (flags.relay) args += "--relay"
     val cmd = arrayOf("setpriv", "--pdeathsig", "KILL", "sh", "-c", "stty -echo -icanon; exec \"\$0\" \"\$@\"") + args
     val env = System.getenv().toMutableMap().apply {
       put("HOME", dir.absolutePath); put("TMPDIR", File(dir, "tmp").absolutePath)
@@ -45,11 +46,22 @@ class CliPeer(name: String, private val dir: File, private val smpServer: String
       } catch (_: Exception) {}
     }, "cli-$name").apply { isDaemon = true; start() }
     started = false
+    relayPromptAnswered = false
     startDeadline = System.currentTimeMillis() + START_TIMEOUT_MS
   }
 
   private var started = true
   private var startDeadline = 0L
+  private var relayPromptAnswered = false
+
+  var relayLink: String? = null
+    private set
+
+  val relayAddress: String
+    get() {
+      ensureStarted()
+      return relayLink ?: error("$name printed no chat relay address; start it with PeerFlags(relay = true) on a new database")
+    }
 
   fun awaitStart() = ensureStarted()
 
@@ -58,9 +70,14 @@ class CliPeer(name: String, private val dir: File, private val smpServer: String
   private fun ensureStarted() {
     if (started) return
     waiter.waitUntil((startDeadline - System.currentTimeMillis()).coerceAtLeast(0), "$name to start") {
+      answerRelayAddressPrompt()
       synchronized(lines) { lines.any { it.startsWith("Current user: ") } } && promptShown()
     }
-    synchronized(lines) { lines.clear() }
+    synchronized(lines) {
+      val i = lines.indexOfFirst { it.endsWith(RELAY_ADDRESS_CREATED) }
+      if (i >= 0) relayLink = lines.getOrNull(i + 1)
+      lines.clear()
+    }
     started = true
   }
 
@@ -84,6 +101,13 @@ class CliPeer(name: String, private val dir: File, private val smpServer: String
   private fun inputLine(): String = screen.cursorRowText().let { if (it.startsWith(PROMPT)) it.removePrefix(PROMPT) else it.removePrefix(">") }
 
   private fun promptShown(): Boolean = screen.cursorRowText().startsWith(">")
+
+  private fun answerRelayAddressPrompt() {
+    if (flags.relay && !relayPromptAnswered && screen.cursorRowText().startsWith(RELAY_ADDRESS_PROMPT)) {
+      write("y\n")
+      relayPromptAnswered = true
+    }
+  }
 
   private fun write(s: String) {
     val out = proc!!.outputStream
@@ -128,6 +152,8 @@ class CliPeer(name: String, private val dir: File, private val smpServer: String
     const val COLUMNS = 4000
     const val ROWS = 50
     private const val PROMPT = "> "
+    private const val RELAY_ADDRESS_PROMPT = "Create relay address (Yn):"
+    private const val RELAY_ADDRESS_CREATED = "Chat relay address is created:"
     private const val START_TIMEOUT_MS = 60_000L
     private const val TYPE_ATTEMPTS = 5
     private const val UNCHANGED_MS = 1_500L

@@ -106,6 +106,7 @@ fun SharedPreferenceToggleWithIcon(
   text: String,
   icon: Painter,
   stopped: Boolean = false,
+  uiKey: UiKey? = null,
   onClickInfo: () -> Unit,
   preference: SharedPreference<Boolean>,
   preferenceState: MutableState<Boolean>? = null
@@ -126,6 +127,7 @@ fun SharedPreferenceToggleWithIcon(
         preference.set(it)
         prefState.value = it
       },
+      modifier = Modifier.ui(uiKey),
       enabled = !stopped
     )
   }
@@ -137,6 +139,7 @@ fun SharedPreferenceToggleWithIcon(
   icon: Painter,
   onClickInfo: () -> Unit,
   checked: Boolean,
+  uiKey: UiKey? = null,
   onCheckedChange: (Boolean) -> Unit,
 ) {
   Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -151,6 +154,7 @@ fun SharedPreferenceToggleWithIcon(
     DefaultSwitch(
       checked = checked,
       onCheckedChange = onCheckedChange,
+      modifier = Modifier.ui(uiKey),
     )
   }
 }

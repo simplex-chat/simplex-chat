@@ -187,7 +187,8 @@ private fun SMPServerView(srvSumm: SMPServerSummary, statsStartedAt: Instant, rh
           statsStartedAt = statsStartedAt
         )
       }
-    }
+    },
+    uiKey = Ui.ServersSummary.SmpServer(serverAddress(srvSumm.smpServer))
   ) {
     Text(
       serverAddress(srvSumm.smpServer),
@@ -312,7 +313,8 @@ private fun SMPStatsView(stats: AgentSMPServerStatsData, statsStartedAt: Instant
           stats = stats,
           statsStartedAt = statsStartedAt)
         }
-      }
+      },
+      uiKey = Ui.ServersSummary.Details
     ) {
       Text(text = generalGetString(MR.strings.servers_info_details), color = MaterialTheme.colors.onBackground)
     }
@@ -817,6 +819,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
                 selectedUserCategory,
                 icon = null,
                 enabled = remember { mutableStateOf(true) },
+                uiKey = Ui.ServersSummary.UserCategory,
                 onSelected = {
                   selectedUserCategory.value = it
                 }
@@ -928,7 +931,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
 
 @Composable
 private fun ReconnectAllServersButton(rh: RemoteHostInfo?) {
-  SectionItemView(click = { reconnectAllServersAlert(rh) }) {
+  SectionItemView(click = { reconnectAllServersAlert(rh) }, uiKey = Ui.ServersSummary.ReconnectAll) {
     Text(
       stringResource(MR.strings.servers_info_reconnect_all_servers_button),
       color = MaterialTheme.colors.primary
@@ -957,7 +960,7 @@ private fun reconnectAllServersAlert(rh: RemoteHostInfo?) {
 
 @Composable
 private fun ResetStatisticsButton(rh: RemoteHostInfo?, resetStats: () -> Unit) {
-  SectionItemView(click = { resetStatisticsAlert(rh, resetStats) }) {
+  SectionItemView(click = { resetStatisticsAlert(rh, resetStats) }, uiKey = Ui.ServersSummary.ResetStats) {
     Text(
       stringResource(MR.strings.servers_info_reset_stats),
       color = MaterialTheme.colors.primary

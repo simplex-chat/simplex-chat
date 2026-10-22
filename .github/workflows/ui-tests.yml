@@ -1,0 +1,431 @@
+name: ui-tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Which app's UI tests to run
+        type: choice
+        options:
+          - desktop
+          - android
+          - both
+        default: desktop
+      tests:
+        description: >-
+          Only these tests, comma- or space-separated: class names (chat.simplex.app.ui.main.ChatListRowsTest) or
+          Class#method; desktop also takes Gradle patterns with *. Empty runs all, in four shards per platform
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: ui-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GHC_VER: 9.6.3
+  CABAL_VER: 3.10.2.0
+  JAVA_VER: 17
+  DESKTOP_CORE_PKG: desktop-core-linux-x86_64.tar.gz
+  ANDROID_CORE_PKG: android-core-arm64-v8a.tar.gz
+  BIN_PKG: ui-tests-bin-linux-x86_64.tar.gz
+  APK: android-foss-arm64-v8a-debug.apk
+
+jobs:
+  plan:
+    name: choose jobs, find earlier builds
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      run-desktop: ${{ steps.jobs.outputs.desktop }}
+      run-android: ${{ steps.jobs.outputs.android }}
+      desktop-shards: ${{ steps.jobs.outputs.desktop-shards }}
+      android-shards: ${{ steps.jobs.outputs.android-shards }}
+      desktop-core: ${{ steps.names.outputs.desktop-core }}
+      desktop-core-run: ${{ steps.desktop-core.outputs.run-id }}
+      android-core: ${{ steps.names.outputs.android-core }}
+      android-core-run: ${{ steps.android-core.outputs.run-id }}
+      bin: ${{ steps.names.outputs.bin }}
+      bin-run: ${{ steps.bin.outputs.run-id }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Choose jobs
+        id: jobs
+        env:
+          PLATFORM: ${{ inputs.platform }}
+          TESTS: ${{ inputs.tests }}
+        run: scripts/ci/ui-tests/plan.sh
+
+      # artifacts are named after the sources they are built from, so a run uses one that an earlier run uploaded;
+      # the core libraries have desktop-linux's and android-emu's names and sources, so these workflows reuse each other's
+      - name: Artifact names
+        id: names
+        run: |
+          echo "desktop-core=desktop-linux-core-${{ hashFiles('src/**', 'cabal.project', 'simplex-chat.cabal', 'PRIVACY.md', 'scripts/desktop/build-lib-linux.sh', 'scripts/ci/desktop-linux/build-core.sh') }}" >> "$GITHUB_OUTPUT"
+          echo "android-core=android-core-${{ hashFiles('src/**', 'cabal.project', 'simplex-chat.cabal', 'PRIVACY.md', 'flake.nix', 'flake.lock', 'scripts/nix/**', 'scripts/ci/android/build-core.sh') }}" >> "$GITHUB_OUTPUT"
+          echo "bin=ui-tests-bin-${{ hashFiles('src/**', 'apps/simplex-chat/**', 'tests/UITestServers.hs', 'tests/ChatClient.hs', 'tests/NameResolver.hs', 'tests/ChatTests/DBUtils.hs', 'tests/ChatTests/DBUtils/**', 'cabal.project', 'simplex-chat.cabal', 'PRIVACY.md', 'scripts/ci/ui-tests/build-bin.sh') }}" >> "$GITHUB_OUTPUT"
+
+      - name: Find desktop core library
+        id: desktop-core
+        if: steps.jobs.outputs.desktop == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/ci/desktop-linux/earlier-run.sh "${{ steps.names.outputs.desktop-core }}"
+
+      - name: Find Android core library
+        id: android-core
+        if: steps.jobs.outputs.android == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/ci/desktop-linux/earlier-run.sh "${{ steps.names.outputs.android-core }}"
+
+      - name: Find CLI and test servers
+        id: bin
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/ci/desktop-linux/earlier-run.sh "${{ steps.names.outputs.bin }}"
+
+  desktop-core:
+    name: core library for Linux
+    needs: plan
+    if: needs.plan.outputs.run-desktop == 'true' && needs.plan.outputs.desktop-core-run == ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Show runner
+        run: |
+          lsb_release -ds
+          nproc
+          free -h
+          df -h /
+
+      - name: Setup Haskell
+        uses: simplex-chat/setup-haskell-action@v2
+        with:
+          ghc-version: ${{ env.GHC_VER }}
+          cabal-version: ${{ env.CABAL_VER }}
+
+      - name: Install libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libffi-dev libgmp-dev libnuma-dev libssl-dev zlib1g-dev patchelf
+
+      - name: Build core library
+        run: scripts/ci/desktop-linux/build-core.sh ~/core/${{ env.DESKTOP_CORE_PKG }}
+
+      - name: Upload core library
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ needs.plan.outputs.desktop-core }}
+          path: ~/core/${{ env.DESKTOP_CORE_PKG }}
+          compression-level: 0
+          retention-days: 30
+          if-no-files-found: error
+
+  android-core:
+    name: core library for Android arm64
+    needs: plan
+    if: needs.plan.outputs.run-android == 'true' && needs.plan.outputs.android-core-run == ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          filter: tree:0
+
+      - name: Show runner
+        run: |
+          lsb_release -ds
+          nproc
+          free -h
+          df -h /
+
+      - name: Build core library
+        run: scripts/ci/android/build-core.sh ~/core/${{ env.ANDROID_CORE_PKG }}
+
+      - name: Upload core library
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ needs.plan.outputs.android-core }}
+          path: ~/core/${{ env.ANDROID_CORE_PKG }}
+          compression-level: 0
+          retention-days: 30
+          if-no-files-found: error
+
+  bin:
+    name: CLI and test servers
+    needs: plan
+    if: needs.plan.outputs.bin-run == ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Show runner
+        run: |
+          lsb_release -ds
+          nproc
+          free -h
+          df -h /
+
+      - name: Setup Haskell
+        uses: simplex-chat/setup-haskell-action@v2
+        with:
+          ghc-version: ${{ env.GHC_VER }}
+          cabal-version: ${{ env.CABAL_VER }}
+
+      - name: Install libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libffi-dev libgmp-dev libnuma-dev libssl-dev zlib1g-dev
+
+      - name: Build CLI and test servers
+        run: scripts/ci/ui-tests/build-bin.sh ~/bin/${{ env.BIN_PKG }}
+
+      - name: Upload CLI and test servers
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ needs.plan.outputs.bin }}
+          path: ~/bin/${{ env.BIN_PKG }}
+          compression-level: 0
+          retention-days: 30
+          if-no-files-found: error
+
+  desktop:
+    name: desktop UI tests (${{ matrix.shard }})
+    needs: [plan, desktop-core, bin]
+    # the builds are skipped when an earlier run built them
+    if: ${{ !cancelled() && !failure() && needs.plan.result == 'success' && needs.plan.outputs.run-desktop == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.plan.outputs.desktop-shards) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Show runner
+        run: |
+          lsb_release -ds
+          nproc
+          free -h
+          df -h /
+          sysctl kernel.apparmor_restrict_unprivileged_userns || true
+
+      # the CLI's and test servers' libraries; the tests render headless, with these fonts
+      - name: Install libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libffi-dev libgmp-dev libnuma-dev libssl-dev zlib1g-dev fonts-dejavu-core
+          dpkg-query -W libffi-dev libgmp-dev libnuma-dev libssl-dev zlib1g-dev fonts-dejavu-core
+
+      # uitest.sh runs the tests in their own user, PID and network namespaces, which Ubuntu 24.04 restricts
+      - name: Allow user namespaces
+        run: |
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          unshare -rn --pid --fork --kill-child --mount-proc sh -c 'ip link set lo up && ip -brief addr'
+
+      - name: Download core library
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.plan.outputs.desktop-core }}
+          path: ~/core
+          run-id: ${{ needs.plan.outputs.desktop-core-run || github.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Install core library
+        run: scripts/ci/desktop-linux/install-core.sh ~/core/${{ env.DESKTOP_CORE_PKG }}
+
+      - name: Download CLI and test servers
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.plan.outputs.bin }}
+          path: ~/bin
+          run-id: ${{ needs.plan.outputs.bin-run || github.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Install CLI and test servers
+        run: scripts/ci/ui-tests/install-bin.sh ~/bin/${{ env.BIN_PKG }} "$RUNNER_TEMP/bin"
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: corretto
+          java-version: ${{ env.JAVA_VER }}
+
+      # uitest.sh builds the native library and the tests, then runs them with as many test JVMs as memory allows
+      - name: Run UI tests
+        id: run
+        working-directory: apps/multiplatform
+        env:
+          TESTS: ${{ matrix.tests }}
+        run: |
+          read -r -a patterns <<< "$TESTS"
+          args=()
+          for p in "${patterns[@]}"; do
+            args+=(--tests "$p")
+          done
+          scripts/uitest.sh "${args[@]}"
+
+      - name: Report UI tests
+        if: ${{ !cancelled() && steps.run.outcome != 'skipped' }}
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: |
+          echo "## Desktop UI tests, shard $SHARD" >> "$GITHUB_STEP_SUMMARY"
+          scripts/ci/desktop-linux/test-summary.py apps/multiplatform/common/build/test-results/desktopUiTest/pass1
+
+      # a test's directory, with its peers' transcripts, is kept only when the test failed
+      - name: Upload UI test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: ui-tests-desktop-${{ matrix.shard }}
+          path: |
+            apps/multiplatform/common/build/reports/tests/desktopUiTest
+            apps/multiplatform/common/build/test-results/desktopUiTest/*/*.xml
+            apps/multiplatform/build/uitest/run-*/failures
+            apps/multiplatform/build/uitest/run-*/jvm-*/t*/peers/*/transcript.log
+            apps/multiplatform/build/uitest/run-*/hs_err_pid*.log
+          retention-days: 7
+          if-no-files-found: warn
+
+  # an emulator runs one test at a time, so the tests are split over several. Each shard builds the APKs itself: it
+  # compiles the host-side bridge anyway, whose classpath names files in the job's own Gradle cache
+  android:
+    name: Android UI tests (${{ matrix.shard }})
+    needs: [plan, android-core, bin]
+    # the builds are skipped when an earlier run built them
+    if: ${{ !cancelled() && !failure() && needs.plan.result == 'success' && needs.plan.outputs.run-android == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.plan.outputs.android-shards) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Show runner
+        run: |
+          lsb_release -ds
+          nproc
+          free -h
+          df -h /
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          ls "$ANDROID_HOME/platforms" "$ANDROID_HOME/build-tools" "$ANDROID_HOME/ndk" || true
+
+      # the emulator's qemu needs libpulse0 and libegl1, the CLI and test servers the rest
+      - name: Install libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpulse0 libegl1 libffi-dev libgmp-dev libnuma-dev libssl-dev zlib1g-dev
+          dpkg-query -W libpulse0 libegl1 libffi-dev libgmp-dev libnuma-dev libssl-dev zlib1g-dev
+
+      - name: Download core library
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.plan.outputs.android-core }}
+          path: ~/core
+          run-id: ${{ needs.plan.outputs.android-core-run || github.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Install core library
+        run: scripts/ci/android/install-core.sh ~/core/${{ env.ANDROID_CORE_PKG }}
+
+      - name: Download CLI and test servers
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.plan.outputs.bin }}
+          path: ~/bin
+          run-id: ${{ needs.plan.outputs.bin-run || github.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Install CLI and test servers
+        run: scripts/ci/ui-tests/install-bin.sh ~/bin/${{ env.BIN_PKG }} "$RUNNER_TEMP/bin"
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: corretto
+          java-version: ${{ env.JAVA_VER }}
+
+      # as android-emu builds its APK, plus the test APK and the host-side bridge's classpath, which uitest-android.sh
+      # then finds up to date; all before install-sdk.sh points ANDROID_HOME at an SDK with only the emulator
+      - name: Build app, tests and bridge
+        working-directory: apps/multiplatform
+        run: |
+          ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets -Pandroid.injected.build.abi=arm64-v8a \
+            :android:assembleFossDebug :android:assembleFossDebugAndroidTest :common:uitestBridgeClasspath
+          pkill -f KotlinCompileDaemon || true
+          mkdir -p "$RUNNER_TEMP/apk"
+          cp "android/build/intermediates/apk/foss/debug/$APK" "$RUNNER_TEMP/apk"
+          test_apk=$(find android/build -name 'android-foss-debug-androidTest.apk' | head -n 1)
+          [ -n "$test_apk" ] || { echo "error: no androidTest APK"; find android/build -name '*.apk'; exit 1; }
+          cp "$test_apk" "$RUNNER_TEMP/apk/androidTest.apk"
+          ls -la "$RUNNER_TEMP/apk"
+          unzip -l "$RUNNER_TEMP/apk/$APK" | grep -E ' lib/'
+
+      - name: Prepare test peers and servers
+        working-directory: apps/multiplatform
+        run: scripts/uitest.sh --prepare-only
+
+      - name: Install emulator and system image
+        run: scripts/ci/android/install-sdk.sh "$RUNNER_TEMP/android-sdk"
+
+      - name: Boot emulator
+        run: scripts/ci/android/emulator.sh start apps/multiplatform/build/uitest-android/emulator
+
+      # without local.properties' application_id.suffix the debug app's id is chat.simplex.app
+      - name: Run UI tests
+        id: run
+        working-directory: apps/multiplatform
+        env:
+          ARGS: ${{ matrix.args }}
+        run: |
+          read -r -a args <<< "$ARGS"
+          serial=$("$ANDROID_HOME/platform-tools/adb" devices | awk 'NR > 1 && $2 == "device" {print $1; exit}')
+          echo "device $serial"
+          free -m
+          export ADB="$ANDROID_HOME/platform-tools/adb" UITEST_SERIAL="$serial" UITEST_APP_ID=chat.simplex.app
+          scripts/uitest-android.sh "$RUNNER_TEMP/apk/$APK" "$RUNNER_TEMP/apk/androidTest.apk" "${args[@]}"
+
+      - name: Report UI tests
+        if: ${{ !cancelled() && steps.run.outcome != 'skipped' }}
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: |
+          echo "## Android UI tests, shard $SHARD" >> "$GITHUB_STEP_SUMMARY"
+          run=$(ls -1dt apps/multiplatform/build/uitest-android/run-* | head -n 1)
+          scripts/ci/ui-tests/android-summary.py "$run"
+
+      # the bridge keeps its peers' transcripts for every test
+      - name: Upload UI test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: ui-tests-android-${{ matrix.shard }}
+          path: |
+            apps/multiplatform/build/uitest-android
+            apps/multiplatform/build/uitest/run-*/jvm-*/bridge-peers/*/transcript.log
+          retention-days: 7
+          if-no-files-found: warn

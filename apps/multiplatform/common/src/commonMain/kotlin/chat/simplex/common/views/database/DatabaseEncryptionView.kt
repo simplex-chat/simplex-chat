@@ -32,7 +32,10 @@ import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.UiKey
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.ui.ui
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.res.*
@@ -130,7 +133,8 @@ fun DatabaseEncryptionLayout(
           useKeychain.value,
           initialRandomDBPassphrase.value,
           storedKey.value,
-          enabled = (!initialRandomDBPassphrase.value && !progressIndicator.value) || migration
+          enabled = (!initialRandomDBPassphrase.value && !progressIndicator.value) || migration,
+          uiKey = Ui.DbPassphrase.Save
         ) { checked ->
           if (checked) {
             setUseKeychain(true, useKeychain, migration)
@@ -151,7 +155,7 @@ fun DatabaseEncryptionLayout(
           PassphraseField(
             currentKey,
             generalGetString(MR.strings.current_passphrase),
-            modifier = Modifier.padding(horizontal = DEFAULT_PADDING),
+            modifier = Modifier.ui(Ui.DbPassphrase.Current).padding(horizontal = DEFAULT_PADDING),
             isValid = ::validKey,
             keyboardActions = KeyboardActions(onNext = { defaultKeyboardAction(ImeAction.Next) }),
           )
@@ -160,7 +164,7 @@ fun DatabaseEncryptionLayout(
         PassphraseField(
           newKey,
           generalGetString(MR.strings.new_passphrase),
-          modifier = Modifier.padding(horizontal = DEFAULT_PADDING),
+          modifier = Modifier.ui(Ui.DbPassphrase.New).padding(horizontal = DEFAULT_PADDING),
           showStrength = true,
           isValid = ::validKey,
           keyboardActions = KeyboardActions(onNext = { defaultKeyboardAction(ImeAction.Next) }),
@@ -192,7 +196,7 @@ fun DatabaseEncryptionLayout(
         PassphraseField(
           confirmNewKey,
           generalGetString(MR.strings.confirm_new_passphrase),
-          modifier = Modifier.padding(horizontal = DEFAULT_PADDING),
+          modifier = Modifier.ui(Ui.DbPassphrase.Confirm).padding(horizontal = DEFAULT_PADDING),
           isValid = { confirmNewKey.value == "" || newKey.value == confirmNewKey.value },
           contentType = newKeyContentType,
           keyboardActions = KeyboardActions(onDone = {
@@ -201,7 +205,7 @@ fun DatabaseEncryptionLayout(
           }),
         )
 
-        SectionItemViewSpaceBetween(onClickUpdate, disabled = disabled, minHeight = TextFieldDefaults.MinHeight) {
+        SectionItemViewSpaceBetween(onClickUpdate, disabled = disabled, minHeight = TextFieldDefaults.MinHeight, uiKey = Ui.DbPassphrase.Update) {
           Text(generalGetString(if (migration) MR.strings.set_passphrase else MR.strings.update_database_passphrase), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
         }
       }
@@ -257,6 +261,7 @@ expect fun SavePassphraseSetting(
   minHeight: Dp = TextFieldDefaults.MinHeight,
   enabled: Boolean,
   smallPadding: Boolean = true,
+  uiKey: UiKey? = null,
   onCheckedChange: (Boolean) -> Unit,
 )
 

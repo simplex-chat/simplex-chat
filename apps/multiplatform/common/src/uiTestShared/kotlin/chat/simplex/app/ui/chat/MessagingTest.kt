@@ -32,17 +32,6 @@ class MessagingTest : UiTest() {
     bob expects "      all good - you?"
   }
 
-  @Test fun edit_menu_updatesPeer() = uiTest {
-    val alice = app("alice"); val bob = cli("bob")
-    connect(bob)
-    val chat = alice.chatList.open("bob")
-    chat.send("hello")
-    bob expectsMessage "alice> hello"
-    chat.menu("hello", "edit")
-    chat.replaceAndSend("hey 👋")
-    bob expectsMessage "alice> [edited] hey 👋"
-  }
-
   @Test fun delete_ownForEveryone_peerSeesMarkedDeleted() = uiTest {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)

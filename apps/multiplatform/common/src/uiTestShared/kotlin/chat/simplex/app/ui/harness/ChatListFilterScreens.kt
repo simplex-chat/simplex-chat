@@ -77,11 +77,15 @@ fun UiScope.businessChat(biz: CliPeer) {
   quiesce()
 }
 
-fun CliPeer.createAddress(business: Boolean = false): String {
+fun CliPeer.createAddress(business: Boolean = false, autoAccept: Boolean = true): String {
   this sends "/ad"
   this expects "Your new chat address is created!"
   this expects ""
   val link = nextLine()
+  if (!autoAccept) {
+    eventually("to delete it: /da (accepted contacts will remain connected)")
+    return link
+  }
   this sends (if (business) "/auto_accept on business" else "/auto_accept on")
   eventually(if (business) "auto_accept on, business" else "auto_accept on")
   return link
@@ -94,8 +98,6 @@ fun CliPeer.createGroupLink(group: String): String {
   this expects ""
   return nextLine()
 }
-
-val planConfirm = Ui.Alert.Confirm(Ui.AlertSource.PrivacySensitive)
 
 fun UiScope.enterLinkInSearch(link: String) = enterText(Ui.ChatList.Search, link)
 

@@ -23,6 +23,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.chatlist.UserProfilePickerItem
@@ -225,7 +226,7 @@ private fun UserView(
   Box(Modifier.padding(horizontal = DEFAULT_PADDING)) {
     DefaultDropdownMenu(showMenu) {
       if (user.hidden) {
-        ItemAction(stringResource(MR.strings.user_unhide), painterResource(MR.images.ic_lock_open_right), onClick = {
+        ItemAction(stringResource(MR.strings.user_unhide), painterResource(MR.images.ic_lock_open_right), uiKey = Ui.Profiles.UserMenu(user.userId, "unhide"), onClick = {
           showMenu.value = false
           unhideUser(user)
         })
@@ -237,12 +238,12 @@ private fun UserView(
           })
         }
         if (user.showNtfs) {
-          ItemAction(stringResource(MR.strings.user_mute), painterResource(MR.images.ic_notifications_off), onClick = {
+          ItemAction(stringResource(MR.strings.user_mute), painterResource(MR.images.ic_notifications_off), uiKey = Ui.Profiles.UserMenu(user.userId, "mute"), onClick = {
             showMenu.value = false
             muteUser(user)
           })
         } else {
-          ItemAction(stringResource(MR.strings.user_unmute), painterResource(MR.images.ic_notifications), onClick = {
+          ItemAction(stringResource(MR.strings.user_unmute), painterResource(MR.images.ic_notifications), uiKey = Ui.Profiles.UserMenu(user.userId, "unmute"), onClick = {
             showMenu.value = false
             unmuteUser(user)
           })
@@ -279,9 +280,9 @@ private fun ProfileActionView(action: UserProfileAction, user: User, doAction: (
     @Composable fun PasswordAndAction(label: StringResource, color: Color = MaterialTheme.colors.primary) {
       SectionView() {
         SectionItemViewWithoutMinPadding {
-          PassphraseField(actionPassword, generalGetString(MR.strings.profile_password), isValid = { passwordValid }, showStrength = true, contentType = null)
+          PassphraseField(actionPassword, generalGetString(MR.strings.profile_password), modifier = Modifier.ui(Ui.ProfileAction.Password), isValid = { passwordValid }, showStrength = true, contentType = null)
         }
-        SectionItemViewSpaceBetween({ doAction(actionPassword.value) }, disabled = !actionEnabled, minHeight = TextFieldDefaults.MinHeight) {
+        SectionItemViewSpaceBetween({ doAction(actionPassword.value) }, disabled = !actionEnabled, minHeight = TextFieldDefaults.MinHeight, uiKey = Ui.ProfileAction.Submit) {
           Text(generalGetString(label), color = if (actionEnabled) color else MaterialTheme.colors.secondary)
         }
       }

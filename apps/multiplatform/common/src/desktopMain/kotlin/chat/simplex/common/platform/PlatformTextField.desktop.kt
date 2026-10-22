@@ -20,7 +20,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.UiKey
 import chat.simplex.common.ui.ui
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
@@ -56,6 +56,7 @@ actual fun PlatformTextField(
   onUpArrow: () -> Unit,
   onFilesPasted: (List<URI>) -> Unit,
   focusRequester: FocusRequester?,
+  uiKey: UiKey?,
   onDone: () -> Unit,
 ) {
 
@@ -118,7 +119,7 @@ actual fun PlatformTextField(
       autoCorrectEnabled = true
     ),
     modifier = Modifier
-      .ui(Ui.Chat.Message)
+      .ui(uiKey)
       .padding(start = startPadding, end = endPadding)
       .offset(y = (-5).dp)
       .fillMaxWidth()

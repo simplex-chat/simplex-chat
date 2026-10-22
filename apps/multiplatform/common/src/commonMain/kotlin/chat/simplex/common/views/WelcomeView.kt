@@ -132,7 +132,7 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
             val validName = mkValidName(name)
             Spacer(Modifier.height(20.dp))
             if (name != validName) {
-              IconButton({ showInvalidNameAlert(mkValidName(displayName.value), displayName) }, Modifier.size(20.dp)) {
+              IconButton({ showInvalidNameAlert(mkValidName(displayName.value), displayName) }, Modifier.size(20.dp).ui(Ui.NewProfile.Name.part("invalid"))) {
                 Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.error)
               }
             }

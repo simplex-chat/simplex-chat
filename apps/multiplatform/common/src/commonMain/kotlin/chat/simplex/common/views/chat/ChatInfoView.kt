@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.*
 import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.UiKey
 import chat.simplex.common.views.call.CallMediaType
 import chat.simplex.common.views.chatlist.*
 import androidx.compose.ui.text.*
@@ -262,7 +263,7 @@ private fun deleteContactOrConversationDialog(chat: Chat, contact: Contact, chat
           if (chatModel.controller.appPrefs.showDeleteConversationNotice.get()) {
             showDeleteConversationNotice(contact)
           }
-        }) {
+        }, uiKey = Ui.Alert.Option(Ui.AlertSource.Shared, "onlyConversation")) {
           Text(generalGetString(MR.strings.only_delete_conversation), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
         }
         // Delete contact
@@ -275,7 +276,7 @@ private fun deleteContactOrConversationDialog(chat: Chat, contact: Contact, chat
         // Cancel
         SectionItemView({
           AlertManager.shared.hideAlert()
-        }) {
+        }, uiKey = Ui.Alert.Option(Ui.AlertSource.Shared, "cancel")) {
           Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
       }
@@ -330,6 +331,7 @@ private fun deleteActiveContactDialog(chat: Chat, contact: Contact, chatModel: C
                 contactDeleteMode.value =
                   if (it) ContactDeleteMode.Entity() else ContactDeleteMode.Full()
               },
+              modifier = Modifier.ui(Ui.Alert.Option(Ui.AlertSource.Shared, "keepConversation")),
             )
           }
         }
@@ -340,7 +342,7 @@ private fun deleteActiveContactDialog(chat: Chat, contact: Contact, chatModel: C
           if (contactDeleteMode.value is ContactDeleteMode.Entity && chatModel.controller.appPrefs.showDeleteContactNotice.get()) {
             showDeleteContactNotice(contact)
           }
-        }) {
+        }, uiKey = Ui.Alert.Option(Ui.AlertSource.Shared, "deleteWithoutNotification")) {
           Text(generalGetString(MR.strings.delete_without_notification), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
         }
         // Delete contact and notify
@@ -380,7 +382,7 @@ private fun deleteContactWithoutConversation(chat: Chat, chatModel: ChatModel, c
             close,
             chatDeleteMode = ContactDeleteMode.Full().toChatDeleteMode(notify = true)
           )
-        }) {
+        }, uiKey = Ui.Alert.Option(Ui.AlertSource.Shared, "deleteAndNotify")) {
           Text(
             generalGetString(MR.strings.delete_and_notify_contact),
             Modifier.fillMaxWidth(),
@@ -397,7 +399,7 @@ private fun deleteContactWithoutConversation(chat: Chat, chatModel: ChatModel, c
             close,
             chatDeleteMode = ContactDeleteMode.Full().toChatDeleteMode(notify = false)
           )
-        }) {
+        }, uiKey = Ui.Alert.Option(Ui.AlertSource.Shared, "deleteWithoutNotification")) {
           Text(
             generalGetString(MR.strings.delete_without_notification),
             Modifier.fillMaxWidth(),
@@ -409,7 +411,7 @@ private fun deleteContactWithoutConversation(chat: Chat, chatModel: ChatModel, c
       // Cancel
       SectionItemView({
         AlertManager.shared.hideAlert()
-      }) {
+      }, uiKey = Ui.Alert.Option(Ui.AlertSource.Shared, "cancel")) {
         Text(
           stringResource(MR.strings.cancel_verb),
           Modifier.fillMaxWidth(),
@@ -436,7 +438,7 @@ private fun deleteNotReadyContact(chat: Chat, chatModel: ChatModel, close: (() -
           close,
           chatDeleteMode = ContactDeleteMode.Full().toChatDeleteMode(notify = false)
         )
-      }) {
+      }, uiKey = Ui.Alert.Option(Ui.AlertSource.Shared, "confirm")) {
         Text(
           generalGetString(MR.strings.confirm_verb),
           Modifier.fillMaxWidth(),
@@ -447,7 +449,7 @@ private fun deleteNotReadyContact(chat: Chat, chatModel: ChatModel, close: (() -
       // Cancel
       SectionItemView({
         AlertManager.shared.hideAlert()
-      }) {
+      }, uiKey = Ui.Alert.Option(Ui.AlertSource.Shared, "cancel")) {
         Text(
           stringResource(MR.strings.cancel_verb),
           Modifier.fillMaxWidth(),
@@ -575,7 +577,7 @@ fun ChatInfoLayout(
         verticalAlignment = Alignment.CenterVertically
       ) {
         SearchButton(modifier = Modifier.fillMaxWidth(0.25f), chat, contact, close, onSearchClicked)
-        AudioCallButton(modifier = Modifier.fillMaxWidth(0.33f), chat, contact, connStats)
+        AudioCallButton(modifier = Modifier.fillMaxWidth(0.33f), chat, contact, connStats, uiKey = Ui.Info.Call)
         VideoButton(modifier = Modifier.fillMaxWidth(0.5f), chat, contact, connStats)
         MuteButton(modifier = Modifier.fillMaxWidth(1f), chat, contact)
       }
@@ -621,7 +623,7 @@ fun ChatInfoLayout(
     SectionDividerSpaced()
 
     SectionView {
-      ChatTTLOption(chatItemTTL, setChatItemTTL, deletingItems)
+      ChatTTLOption(chatItemTTL, setChatItemTTL, deletingItems, uiKey = Ui.Info.Ttl)
     }
     SectionTextFooter(stringResource(MR.strings.chat_ttl_options_footer))
     SectionDividerSpaced()
@@ -660,21 +662,23 @@ fun ChatInfoLayout(
         if (cStats != null) {
           SwitchAddressButton(
             disabled = cStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null } || cStats.ratchetSyncSendProhibited,
+            uiKey = Ui.Info.SwitchAddress,
             switchAddress = switchContactAddress
           )
           if (cStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null }) {
             AbortSwitchAddressButton(
               disabled = cStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null && !it.canAbortSwitch } || cStats.ratchetSyncSendProhibited,
+              uiKey = Ui.Info.AbortSwitchAddress,
               abortSwitchAddress = abortSwitchContactAddress
             )
           }
           val rcvServers = cStats.rcvQueuesInfo.map { it.rcvServer }
           if (rcvServers.isNotEmpty()) {
-            SimplexServers(stringResource(MR.strings.receiving_via), rcvServers)
+            SimplexServers(stringResource(MR.strings.receiving_via), rcvServers, Ui.Info.ReceivingVia)
           }
           val sndServers = cStats.sndQueuesInfo.map { it.sndServer }
           if (sndServers.isNotEmpty()) {
-            SimplexServers(stringResource(MR.strings.sending_via), sndServers)
+            SimplexServers(stringResource(MR.strings.sending_via), sndServers, Ui.Info.SendingVia)
           }
         }
       }
@@ -713,7 +717,7 @@ fun ChatInfoLayout(
 @Composable
 fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
   Column(
-    Modifier.padding(horizontal = DEFAULT_PADDING),
+    Modifier.ui(Ui.Info.Header).padding(horizontal = DEFAULT_PADDING),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
     ChatInfoImage(cInfo, size = 192.dp, iconColor = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
@@ -757,7 +761,7 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
       textAlign = TextAlign.Center,
       maxLines = 3,
       overflow = TextOverflow.Ellipsis,
-      modifier = Modifier.combinedClickable(onClick = copyDisplayName, onLongClick = copyDisplayName).onRightClick(copyDisplayName)
+      modifier = Modifier.ui(Ui.Info.Name).combinedClickable(onClick = copyDisplayName, onLongClick = copyDisplayName).onRightClick(copyDisplayName)
     )
     ChatInfoDescription(cInfo, displayName, copyNameToClipboard)
     ContactSimplexNameView(contact)
@@ -921,6 +925,7 @@ fun MuteButton(
     title = stringResource(nextNtfMode.text(false)),
     disabled = disabled,
     disabledLook = disabled,
+    uiKey = Ui.Info.Mute,
     onClick = {
       toggleNotifications(chat.remoteHostId, chat.chatInfo, nextNtfMode, chatModel, enableNtfs)
     }
@@ -932,7 +937,8 @@ fun AudioCallButton(
   modifier: Modifier,
   chat: Chat,
   contact: Contact,
-  connectionStats: MutableState<ConnectionStats?>
+  connectionStats: MutableState<ConnectionStats?>,
+  uiKey: UiKey? = null
 ) {
   CallButton(
     modifier = modifier,
@@ -941,7 +947,8 @@ fun AudioCallButton(
     connectionStats,
     icon = painterResource(MR.images.ic_call),
     title = generalGetString(MR.strings.info_view_call_button),
-    mediaType = CallMediaType.Audio
+    mediaType = CallMediaType.Audio,
+    uiKey = uiKey
   )
 }
 
@@ -971,7 +978,8 @@ fun CallButton(
   connectionStats: MutableState<ConnectionStats?>,
   icon: Painter,
   title: String,
-  mediaType: CallMediaType
+  mediaType: CallMediaType,
+  uiKey: UiKey? = null
 ) {
   val canCall = contact.ready && contact.active && contact.mergedPreferences.calls.enabled.forUser && chatModel.activeCall.value == null
   val needToAllowCallsToContact = remember(chat.chatInfo) {
@@ -988,6 +996,7 @@ fun CallButton(
     title = title,
     disabled = chatModel.activeCall.value != null,
     disabledLook = !canCall,
+    uiKey = uiKey,
     onClick =
       when {
         canCall -> { {
@@ -1069,6 +1078,7 @@ fun InfoViewActionButton(
   title: String,
   disabled: Boolean,
   disabledLook: Boolean,
+  uiKey: UiKey? = null,
   onClick: () -> Unit
 ) {
   Box(modifier) {
@@ -1080,6 +1090,7 @@ fun InfoViewActionButton(
     ) {
       IconButton(
         onClick = onClick,
+        modifier = Modifier.ui(uiKey),
         enabled = !disabled
       ) {
         Box(
@@ -1158,18 +1169,18 @@ private fun ServerImage(subStatus: SubscriptionStatus) {
 }
 
 @Composable
-fun SimplexServers(text: String, servers: List<String>) {
+fun SimplexServers(text: String, servers: List<String>, uiKey: UiKey? = null) {
   val info = servers.joinToString(separator = ", ") { it.substringAfter("@") }
   val clipboardManager: ClipboardManager = LocalClipboardManager.current
-  InfoRowEllipsis(text, info) {
+  InfoRowEllipsis(text, info, uiKey) {
     clipboardManager.setText(AnnotatedString(servers.joinToString(separator = ",")))
     showToast(generalGetString(MR.strings.copied))
   }
 }
 
 @Composable
-fun SwitchAddressButton(disabled: Boolean, switchAddress: () -> Unit) {
-  SectionItemView(switchAddress, disabled = disabled) {
+fun SwitchAddressButton(disabled: Boolean, uiKey: UiKey? = null, switchAddress: () -> Unit) {
+  SectionItemView(switchAddress, disabled = disabled, uiKey = uiKey) {
     Text(
       stringResource(MR.strings.switch_receiving_address),
       color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
@@ -1178,8 +1189,8 @@ fun SwitchAddressButton(disabled: Boolean, switchAddress: () -> Unit) {
 }
 
 @Composable
-fun AbortSwitchAddressButton(disabled: Boolean, abortSwitchAddress: () -> Unit) {
-  SectionItemView(abortSwitchAddress, disabled = disabled) {
+fun AbortSwitchAddressButton(disabled: Boolean, uiKey: UiKey? = null, abortSwitchAddress: () -> Unit) {
+  SectionItemView(abortSwitchAddress, disabled = disabled, uiKey = uiKey) {
     Text(
       stringResource(MR.strings.abort_switch_receiving_address),
       color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
@@ -1226,7 +1237,8 @@ private fun ContactPreferencesButton(onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_toggle_on),
     stringResource(MR.strings.contact_preferences),
-    click = onClick
+    click = onClick,
+    uiKey = Ui.Info.Preferences,
   )
 }
 
@@ -1241,6 +1253,8 @@ private fun SendReceiptsOption(currentUser: User, state: State<SendReceipts>, on
     state,
     icon = painterResource(MR.images.ic_double_check),
     enabled = remember { mutableStateOf(true) },
+    uiKey = Ui.Info.SendReceipts,
+    optionKey = { it.bool ?: "default" },
     onSelected = onSelected
   )
 }
@@ -1262,6 +1276,7 @@ fun ClearChatButton(onClick: () -> Unit) {
     click = onClick,
     textColor = WarningOrange,
     iconColor = WarningOrange,
+    uiKey = Ui.Info.ClearChat,
   )
 }
 

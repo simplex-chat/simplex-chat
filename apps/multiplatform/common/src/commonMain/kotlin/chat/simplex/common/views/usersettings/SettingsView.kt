@@ -27,6 +27,7 @@ import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.Ui
 import chat.simplex.common.ui.UiKey
+import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.badges.BadgesView
 import chat.simplex.common.views.database.DatabaseView
@@ -105,7 +106,7 @@ fun SettingsLayout(
       SettingsActionItem(painterResource(MR.images.ic_lock), stringResource(MR.strings.your_privacy), showSettingsModal { PrivacySettingsView(it, showSettingsModal, setPerformLA) }, disabled = stopped, uiKey = Ui.Settings.Privacy)
       SettingsActionItem(painterResource(MR.images.ic_help), stringResource(MR.strings.help_and_support), showSettingsModal { HelpAndSupportView(it, showModal, showCustomModal) }, uiKey = Ui.Settings.Help)
       DatabaseItem(encrypted, passphraseSaved, showSettingsModal { DatabaseView() }, stopped)
-      SettingsActionItem(painterResource(MR.images.ic_ios_share), stringResource(MR.strings.migrate_from_device_to_another_device), { withAuth(generalGetString(MR.strings.auth_open_migration_to_another_device), generalGetString(MR.strings.auth_log_in_using_credential)) { ModalManager.fullscreen.showCustomModal { close -> MigrateFromDeviceView(close) } } }, disabled = stopped)
+      SettingsActionItem(painterResource(MR.images.ic_ios_share), stringResource(MR.strings.migrate_from_device_to_another_device), { withAuth(generalGetString(MR.strings.auth_open_migration_to_another_device), generalGetString(MR.strings.auth_log_in_using_credential)) { ModalManager.fullscreen.showCustomModal { close -> MigrateFromDeviceView(close) } } }, disabled = stopped, uiKey = Ui.Settings.Migrate)
     }
     SectionDividerSpaced()
 
@@ -122,11 +123,11 @@ fun SettingsLayout(
     SectionDividerSpaced()
 
     SectionView(stringResource(MR.strings.advanced_settings)) {
-      SettingsActionItem(painterResource(MR.images.ic_wifi_tethering), stringResource(MR.strings.network_and_servers), showCustomModal { _, close -> NetworkAndServersView(close) }, disabled = stopped)
+      SettingsActionItem(painterResource(MR.images.ic_wifi_tethering), stringResource(MR.strings.network_and_servers), showCustomModal { _, close -> NetworkAndServersView(close) }, disabled = stopped, uiKey = Ui.Settings.Network)
       if (appPlatform == AppPlatform.ANDROID) {
         SettingsActionItem(painterResource(if (notificationsMode.value == NotificationsMode.OFF) MR.images.ic_bolt_off else MR.images.ic_bolt), stringResource(MR.strings.notifications), showSettingsModal { NotificationsSettingsView(it) }, disabled = stopped)
       }
-      SettingsActionItem(painterResource(MR.images.ic_videocam), stringResource(MR.strings.settings_audio_video_calls), showSettingsModal { CallSettingsView(it, showModal) }, disabled = stopped)
+      SettingsActionItem(painterResource(MR.images.ic_videocam), stringResource(MR.strings.settings_audio_video_calls), showSettingsModal { CallSettingsView(it, showModal) }, disabled = stopped, uiKey = Ui.Settings.Calls)
       AppShutdownItem()
       AppVersionItem(showVersion)
     }
@@ -158,9 +159,9 @@ fun HelpAndSupportView(
     AppBarTitle(stringResource(MR.strings.help_and_support))
 
     SectionView(stringResource(MR.strings.settings_section_title_help)) {
-      SettingsActionItem(painterResource(MR.images.ic_help), stringResource(MR.strings.how_to_use_simplex_chat), showModal { HelpView(userDisplayName) }, disabled = stopped)
+      SettingsActionItem(painterResource(MR.images.ic_help), stringResource(MR.strings.how_to_use_simplex_chat), showModal { HelpView(userDisplayName) }, disabled = stopped, uiKey = Ui.Help.HowToUse)
       SettingsActionItem(painterResource(MR.images.ic_add), stringResource(MR.strings.whats_new), showCustomModal { _, close -> WhatsNewView(viaSettings = true, close = close) }, disabled = stopped, uiKey = Ui.Help.WhatsNew)
-      SettingsActionItem(painterResource(MR.images.ic_info), stringResource(MR.strings.about_simplex_chat), showModal { SimpleXInfo(it, onboarding = false) })
+      SettingsActionItem(painterResource(MR.images.ic_info), stringResource(MR.strings.about_simplex_chat), showModal { SimpleXInfo(it, onboarding = false) }, uiKey = Ui.Help.About)
     }
     SectionDividerSpaced()
 
@@ -169,7 +170,7 @@ fun HelpAndSupportView(
         SettingsActionItem(painterResource(MR.images.ic_bigtop_updates), stringResource(MR.strings.follow_simplex_network_news), { uriHandler.openVerifiedSimplexUri(simplexNewsUri) }, textColor = MaterialTheme.colors.primary, disabled = stopped)
         SettingsActionItem(painterResource(MR.images.ic_tag), stringResource(MR.strings.chat_with_the_founder), { uriHandler.openVerifiedSimplexUri(simplexTeamUri) }, textColor = MaterialTheme.colors.primary, disabled = stopped)
       }
-      SettingsActionItem(painterResource(MR.images.ic_mail), stringResource(MR.strings.send_us_an_email), { uriHandler.openUriCatching("mailto:chat@simplex.chat") }, textColor = MaterialTheme.colors.primary)
+      SettingsActionItem(painterResource(MR.images.ic_mail), stringResource(MR.strings.send_us_an_email), { uriHandler.openUriCatching("mailto:chat@simplex.chat") }, textColor = MaterialTheme.colors.primary, uiKey = Ui.Help.Email)
     }
     SectionDividerSpaced()
 
@@ -197,7 +198,7 @@ expect fun AdvancedSettingsAppSection(
 expect fun AppShutdownItem()
 
 @Composable private fun DatabaseItem(encrypted: Boolean, saved: Boolean, openDatabaseView: () -> Unit, stopped: Boolean) {
-  SectionItemView(openDatabaseView) {
+  SectionItemView(openDatabaseView, uiKey = Ui.Settings.Database) {
     Row(
       Modifier.fillMaxWidth(),
       verticalAlignment = Alignment.CenterVertically,
@@ -248,14 +249,15 @@ fun ChatLockItem(
     click = showSettingsModal { SimplexLockView(ChatModel, currentLAMode, setPerformLA) },
     icon = if (performLA.value) painterResource(MR.images.ic_lock_filled) else painterResource(MR.images.ic_lock),
     text = stringResource(MR.strings.chat_lock),
-    iconColor = if (performLA.value) SimplexGreen else MaterialTheme.colors.secondary
+    iconColor = if (performLA.value) SimplexGreen else MaterialTheme.colors.secondary,
+    uiKey = Ui.Privacy.Lock
   ) {
     Text(if (performLA.value) remember { currentLAMode.state }.value.text else generalGetString(MR.strings.la_mode_off), color = MaterialTheme.colors.secondary)
   }
 }
 
 @Composable fun ContributeItem(uriHandler: UriHandler) {
-  SectionItemView({ uriHandler.openExternalLink("https://github.com/simplex-chat/simplex-chat#contribute") }) {
+  SectionItemView({ uriHandler.openExternalLink("https://github.com/simplex-chat/simplex-chat#contribute") }, uiKey = Ui.Help.Contribute) {
     Icon(
       painterResource(MR.images.ic_keyboard),
       contentDescription = "GitHub",
@@ -283,7 +285,7 @@ fun ChatLockItem(
 }
 
 @Composable fun StarOnGithubItem(uriHandler: UriHandler) {
-  SectionItemView({ uriHandler.openExternalLink("https://github.com/simplex-chat/simplex-chat") }) {
+  SectionItemView({ uriHandler.openExternalLink("https://github.com/simplex-chat/simplex-chat") }, uiKey = Ui.Help.Star) {
     Icon(
       painter = painterResource(MR.images.ic_github),
       contentDescription = "GitHub",
@@ -295,7 +297,7 @@ fun ChatLockItem(
 }
 
 @Composable fun ChatConsoleItem(showTerminal: () -> Unit) {
-  SectionItemView(showTerminal) {
+  SectionItemView(showTerminal, uiKey = Ui.DevTools.Console) {
     Icon(
       painter = painterResource(MR.images.ic_outline_terminal),
       contentDescription = stringResource(MR.strings.chat_console),
@@ -331,7 +333,7 @@ fun ChatLockItem(
   SectionItemView({
     resetHintPreferences()
     unchangedHints.value = true
-  }, disabled = unchangedHints.value) {
+  }, disabled = unchangedHints.value, uiKey = Ui.DevTools.ResetHints) {
     Icon(
       painter = painterResource(MR.images.ic_lightbulb),
       contentDescription = "Lightbulb",
@@ -350,7 +352,7 @@ fun unchangedHintPreferences(): Boolean = appPreferences.hintPreferences.all { i
 
 @Composable
 fun AppVersionItem(showVersion: () -> Unit) {
-  SectionItemView(showVersion) { AppVersionText() }
+  SectionItemView(showVersion, uiKey = Ui.Settings.Version) { AppVersionText() }
 }
 
 @Composable fun AppVersionText() {
@@ -392,7 +394,7 @@ fun SettingsActionItem(icon: Painter, text: String, click: (() -> Unit)? = null,
 }
 
 @Composable
-fun SettingsActionItemWithContent(icon: Painter?, text: String? = null, click: (() -> Unit)? = null, iconColor: Color = MaterialTheme.colors.secondary, textColor: Color = MaterialTheme.colors.onBackground, disabled: Boolean = false, extraPadding: Boolean = false, content: @Composable RowScope.() -> Unit) {
+fun SettingsActionItemWithContent(icon: Painter?, text: String? = null, click: (() -> Unit)? = null, iconColor: Color = MaterialTheme.colors.secondary, textColor: Color = MaterialTheme.colors.onBackground, disabled: Boolean = false, extraPadding: Boolean = false, uiKey: UiKey? = null, content: @Composable RowScope.() -> Unit) {
   SectionItemView(
     click,
     extraPadding = extraPadding,
@@ -400,7 +402,8 @@ fun SettingsActionItemWithContent(icon: Painter?, text: String? = null, click: (
       PaddingValues(start = DEFAULT_PADDING * 1.7f, end = itemHPadding)
     else
       PaddingValues(horizontal = itemHPadding),
-    disabled = disabled
+    disabled = disabled,
+    uiKey = uiKey
   ) {
     if (icon != null) {
       Icon(icon, text, Modifier, tint = if (disabled) MaterialTheme.colors.secondary else iconColor)
@@ -441,12 +444,14 @@ fun PreferenceToggle(
   text: String,
   disabled: Boolean = false,
   checked: Boolean,
+  uiKey: UiKey? = null,
   onChange: (Boolean) -> Unit = {},
 ) {
   SettingsActionItemWithContent(null, text, disabled = disabled) {
     DefaultSwitch(
       checked = checked,
       onCheckedChange = onChange,
+      modifier = Modifier.ui(uiKey),
       enabled = !disabled
     )
   }
@@ -460,6 +465,7 @@ fun PreferenceToggleWithIcon(
   disabled: Boolean = false,
   checked: Boolean,
   extraPadding: Boolean = false,
+  uiKey: UiKey? = null,
   onChange: (Boolean) -> Unit = {},
 ) {
   SettingsActionItemWithContent(icon, text, iconColor = iconColor ?: MaterialTheme.colors.secondary, extraPadding = extraPadding) {
@@ -468,6 +474,7 @@ fun PreferenceToggleWithIcon(
       onCheckedChange = {
         onChange(it)
       },
+      modifier = Modifier.ui(uiKey),
       enabled = !disabled
     )
   }
@@ -501,6 +508,7 @@ fun doWithAuth(title: String, desc: String, block: () -> Unit) {
           SimpleButton(
             stringResource(MR.strings.auth_unlock),
             icon = painterResource(MR.images.ic_lock),
+            uiKey = Ui.Lock.Unlock,
             click = {
               runAuth(title, desc, onFinishAuth)
             }

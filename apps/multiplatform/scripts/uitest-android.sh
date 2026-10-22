@@ -1,6 +1,6 @@
 #!/bin/sh
 # Usage: scripts/uitest-android.sh <app.apk> <androidTest.apk> [am instrument -e args...]
-# Needs scripts/uitest.sh to have run once (it builds the CLI and test servers and writes build/uitest/env.properties).
+# Needs scripts/uitest.sh to have run once, or `scripts/uitest.sh --prepare-only` (it builds the CLI and test servers and writes build/uitest/env.properties).
 # Env:
 #   UITEST_SERIAL  adb serial of the device or emulator to use; when unset, a Waydroid instance is claimed with scripts/waydroid/wd.sh
 #   WD_SH          another wd.sh to use (default scripts/waydroid/wd.sh; see scripts/waydroid/README.md)
@@ -25,10 +25,10 @@ bridge_log="$out/bridge.log"
 avail_mb=$(awk '/^MemAvailable:/ {print int($2 / 1024)}' /proc/meminfo)
 [ "$avail_mb" -ge 4500 ] || { echo "uitest-android: only $avail_mb MB available, need 4500 (bridge + Waydroid); free memory first" >&2; exit 1; }
 java="${JAVA_HOME:+$JAVA_HOME/bin/}java"
-[ -s "$mp/build/uitest/env.properties" ] || { echo "uitest-android: run scripts/uitest.sh once first; it builds the CLI and test servers and writes build/uitest/env.properties" >&2; exit 1; }
+[ -s "$mp/build/uitest/env.properties" ] || { echo "uitest-android: run scripts/uitest.sh (or scripts/uitest.sh --prepare-only) once first; it builds the CLI and test servers and writes build/uitest/env.properties" >&2; exit 1; }
 cp_file="$mp/build/uitest/bridge.classpath"
 h="$mp/common/src/desktopTest/kotlin/chat/simplex/app/ui/harness"
-bridge_srcs="$h/UiBridge.kt $h/CliPeer.kt $h/VtScreen.kt $h/TestServers.kt $h/UiEnv.kt $h/UiJvm.kt $mp/common/src/uiTestShared/kotlin/chat/simplex/app/ui/harness/ServersConfig.kt $mp/common/src/uiTestShared/kotlin/chat/simplex/app/ui/harness/PeerLines.kt"
+bridge_srcs="$h/UiBridge.kt $h/CliPeer.kt $h/VtScreen.kt $h/TestServers.kt $h/Socks5Stub.kt $h/UiEnv.kt $h/UiJvm.kt $mp/common/src/uiTestShared/kotlin/chat/simplex/app/ui/harness/ServersConfig.kt $mp/common/src/uiTestShared/kotlin/chat/simplex/app/ui/harness/PeerLines.kt"
 wd_pid=
 cleanup() {
   [ -z "${bridge_pid:-}" ] || kill -TERM "$bridge_pid" 2>/dev/null || true
@@ -80,7 +80,7 @@ else
 fi
 adb -s "$serial" install -r -t "$test_apk"
 step "APKs installed"
-for p in 7777 $((base + 1)) $((base + 2)); do adb -s "$serial" reverse "tcp:$p" "tcp:$p" >/dev/null; done
+for p in 7777 $((base + 1)) $((base + 2)) $((base + 11)) $((base + 12)) $((base + 20)) $((base + 90)); do adb -s "$serial" reverse "tcp:$p" "tcp:$p" >/dev/null; done
 prepare_app() {
   adb -s "$serial" shell pm clear "$pkg" >/dev/null
   adb -s "$serial" shell settings put global heads_up_notifications_enabled 0

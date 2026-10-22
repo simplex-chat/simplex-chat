@@ -31,6 +31,7 @@ import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.common.model.GroupInfo
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.ui
 import chat.simplex.res.*
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
@@ -215,7 +216,7 @@ private fun SearchRowView(
     Icon(painterResource(MR.images.ic_search), stringResource(MR.strings.search_verb), tint = MaterialTheme.colors.secondary)
   }
   Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
-  SearchTextField(Modifier.fillMaxWidth(), searchText = searchText, alwaysVisible = true) {
+  SearchTextField(Modifier.fillMaxWidth().ui(Ui.InviteMembers.Search), searchText = searchText, alwaysVisible = true) {
     searchText.value = searchText.value.copy(it)
   }
 }
@@ -235,7 +236,8 @@ private fun RoleSelectionRow(groupInfo: GroupInfo, selectedRole: MutableState<Gr
       values,
       selectedRole,
       icon = null,
-      enabled = rememberUpdatedState(enabled)
+      enabled = rememberUpdatedState(enabled),
+      uiKey = Ui.InviteMembers.Role
     ) { selectedRole.value = it }
   }
 }
@@ -261,6 +263,7 @@ fun SkipInvitingButton(onClick: () -> Unit) {
     click = onClick,
     textColor = MaterialTheme.colors.primary,
     iconColor = MaterialTheme.colors.primary,
+    uiKey = Ui.InviteMembers.Skip,
   )
 }
 
@@ -279,7 +282,7 @@ fun InviteSectionFooter(selectedContactsCount: Int, enabled: Boolean, clearSelec
         fontSize = 14.sp
       )
       Box(
-        Modifier.clickable { if (enabled) clearSelection() }
+        Modifier.ui(Ui.InviteMembers.Clear).clickable { if (enabled) clearSelection() }
       ) {
         Text(
           stringResource(MR.strings.clear_contacts_selection_button),

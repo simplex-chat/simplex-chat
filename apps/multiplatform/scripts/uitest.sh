@@ -1,5 +1,7 @@
 #!/bin/sh
 # Usage: scripts/uitest.sh [gradle args]   e.g. --tests '*ChatListMenuTest', -PuiForks=2, -PuiForkEvery=N
+#        scripts/uitest.sh --prepare-only   only the CLI, test servers, peer template and build/uitest/env.properties (for uitest-android.sh)
+# Env: UITEST_CLI and UITEST_SERVERS, absolute paths of a prebuilt CLI and uitest-servers (cabal -f uitest), skip the cabal build.
 # Runs the desktop UI tests (common/src/uiTestShared + desktopTest/.../ui) in a private network namespace with local servers.
 # Needs cabal/GHC for the CLI peers and test servers, and the desktop native libs (./gradlew :desktop:cmakeBuildAndCopy).
 # Results: common/build/reports/tests/desktopUiTest/pass1; run directories (failure screenshots) in build/uitest/run-*.
@@ -17,6 +19,12 @@ if [ "${1:-}" = "--inside" ]; then
   SIMPLEX_UITEST_RUNNER=1 ./gradlew -g "$home" --offline --no-daemon "$kotlin_in_process" :common:desktopUiTest -PuiRunDir="$run" -PuiPass=1 "$@"
   exit $?
 fi
+prepare_only=
+if [ "${1:-}" = "--prepare-only" ]; then
+  shift
+  [ "$#" -eq 0 ] || { echo "uitest: --prepare-only takes no other arguments" >&2; exit 1; }
+  prepare_only=1
+fi
 
 avail_mb=$(awk '/^MemAvailable:/ {print int($2 / 1024)}' /proc/meminfo)
 [ "$avail_mb" -ge 3000 ] || { echo "uitest: only $avail_mb MB available, need 3000; free memory first" >&2; exit 1; }
@@ -28,9 +36,17 @@ mkdir -p "$run/jvmtmp" "$run/cache"
 ls -1dt build/uitest/run-* 2>/dev/null | tail -n +7 | xargs -r rm -rf
 
 repo=$(cd ../.. && pwd)
-(cd "$repo" && cabal build -O0 -f uitest --builddir=dist-uitest exe:simplex-chat exe:uitest-servers)
-cli=$(cd "$repo" && cabal list-bin -O0 -f uitest --builddir=dist-uitest exe:simplex-chat)
-servers=$(cd "$repo" && cabal list-bin -O0 -f uitest --builddir=dist-uitest exe:uitest-servers)
+if [ -n "${UITEST_CLI:-}${UITEST_SERVERS:-}" ]; then
+  for exe in "${UITEST_CLI:-}" "${UITEST_SERVERS:-}"; do
+    case "$exe" in /*) [ -x "$exe" ] ;; *) false ;; esac || { echo "uitest: UITEST_CLI and UITEST_SERVERS must both be absolute paths of executables" >&2; exit 1; }
+  done
+  cli=$UITEST_CLI
+  servers=$UITEST_SERVERS
+else
+  (cd "$repo" && cabal build -O0 -f uitest --builddir=dist-uitest exe:simplex-chat exe:uitest-servers | tail -n 1)
+  cli=$(cd "$repo" && cabal list-bin -O0 -f uitest --builddir=dist-uitest exe:simplex-chat | tail -n 1)
+  servers=$(cd "$repo" && cabal list-bin -O0 -f uitest --builddir=dist-uitest exe:uitest-servers | tail -n 1)
+fi
 
 peer_template() {
   t="$run/peer-template.tmp"
@@ -45,13 +61,26 @@ peer_template() {
 peer_template &
 template_pid=$!
 
+lib=common/src/commonMain/cpp/desktop/libs/linux-x86_64/libapp-lib.so
+cat > build/uitest/env.properties <<ENV
+libAppLib=$PWD/$lib
+runDir=$run
+repoRoot=$repo
+cli=$cli
+servers=$servers
+ENV
+if [ -n "$prepare_only" ]; then
+  wait "$template_pid"
+  echo "uitest: prepared $run and build/uitest/env.properties"
+  exit 0
+fi
+
 [ -d common/src/commonMain/cpp/desktop/libs/linux-x86_64 ] || { echo "uitest: native libs missing in common/src/commonMain/cpp/desktop/libs/linux-x86_64; build the desktop app once (./gradlew :desktop:cmakeBuildAndCopy)" >&2; exit 1; }
 prepare_key=$({
   find . -path ./build -prune -o -path ./.gradle -prune -o -path '*/build' -prune -o \( -name '*.gradle.kts' -o -name gradle.properties -o -name '*.versions.toml' \) -type f -print
   find common/src/commonMain/cpp -path '*/libs' -prune -o -type f -print
 } | LC_ALL=C sort | xargs sha256sum | sha256sum; ls -l --time-style=full-iso common/src/commonMain/cpp/desktop/libs/linux-x86_64 | grep -v libapp-lib.so)
 prepare_key=$(printf '%s' "$prepare_key" | sha256sum | cut -d' ' -f1)
-lib=common/src/commonMain/cpp/desktop/libs/linux-x86_64/libapp-lib.so
 if [ "$prepare_key" = "$(cat build/uitest/prepare.key 2>/dev/null)" ] && [ -f "$lib" ]; then
   echo "uitest: build files and native libs unchanged, skipping the outside Gradle step"
 else
@@ -60,14 +89,6 @@ else
   ./gradlew -g "$home" --stop >/dev/null 2>&1 || true
   echo "$prepare_key" > build/uitest/prepare.key
 fi
-
-cat > build/uitest/env.properties <<ENV
-libAppLib=$PWD/$lib
-runDir=$run
-repoRoot=$repo
-cli=$cli
-servers=$servers
-ENV
 wait "$template_pid"
 
 case " $* " in

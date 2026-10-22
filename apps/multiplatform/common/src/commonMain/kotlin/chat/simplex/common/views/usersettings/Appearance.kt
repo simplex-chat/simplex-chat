@@ -378,6 +378,7 @@ object AppearanceScope {
         val checked = (background == null && (selectedWallpaper == null || selectedWallpaper == WallpaperType.Empty)) || selectedWallpaper?.samePreset(background) == true
         Box(
           Modifier
+            .ui(Ui.Appearance.Wallpaper(background?.filename ?: "none"))
             .size(width, height)
             .clip(RoundedCornerShape(percent = cornerRadius))
             .border(1.dp, if (checked) MaterialTheme.colors.primary.copy(0.8f) else MaterialTheme.colors.onBackground.copy(if (isInDarkTheme()) 0.2f else 0.1f), RoundedCornerShape(percent = cornerRadius))
@@ -416,6 +417,7 @@ object AppearanceScope {
             .size(width, height)
             .clip(RoundedCornerShape(percent = cornerRadius))
             .border(1.dp, if (type is WallpaperType.Image) MaterialTheme.colors.primary.copy(0.8f) else MaterialTheme.colors.onBackground.copy(0.1f), RoundedCornerShape(percent = cornerRadius))
+            .ui(Ui.Appearance.WallpaperImage)
             .clickable { onChooseType(WallpaperType.Image("", null, null)) },
           contentAlignment = Alignment.Center
         ) {
@@ -595,7 +597,7 @@ object AppearanceScope {
       }
       val type = MaterialTheme.wallpaper.type
       if (type is WallpaperType.Image && (themeUserDestination.value == null || perUserTheme.value.wallpaper?.imageFile != null)) {
-        SectionItemView(disabled = chatModel.remoteHostId != null && themeUserDestination.value != null, click = {
+        SectionItemView(disabled = chatModel.remoteHostId != null && themeUserDestination.value != null, uiKey = Ui.Appearance.RemoveImage, click = {
           if (themeUserDestination.value == null) {
             val defaultActiveTheme = ThemeManager.defaultActiveTheme(appPrefs.themeOverrides.get())
             ThemeManager.saveAndApplyWallpaper(baseTheme, null)
@@ -655,7 +657,7 @@ object AppearanceScope {
             UserWallpaperEditorModal(chatModel.remoteHostId(), user.first, close)
           }
         }
-      }) {
+      }, uiKey = Ui.Appearance.Customize) {
         Text(stringResource(MR.strings.customize_theme_title))
       }
     }
@@ -744,7 +746,7 @@ object AppearanceScope {
           SectionItemView({
             ThemeManager.resetAllThemeColors()
             saveThemeToDatabase(null)
-          }) {
+          }, uiKey = Ui.Appearance.ResetColors) {
             Text(generalGetString(MR.strings.reset_color), color = colors.primary)
           }
         }
@@ -767,7 +769,7 @@ object AppearanceScope {
           // Removing theme id without using custom serializer or data class
           theme.value = lines.subList(1, lines.size).joinToString("\n")
           withLongRunningApi { exportThemeLauncher.launch("simplex.theme") }
-        }) {
+        }, uiKey = Ui.Appearance.ExportTheme) {
           Text(generalGetString(MR.strings.export_theme), color = colors.primary)
         }
         val importThemeLauncher = rememberFileChooserLauncher(true) { to: URI? ->
@@ -780,7 +782,7 @@ object AppearanceScope {
           }
         }
         // Can not limit to YAML mime type since it's unsupported by Android
-        SectionItemView({ withLongRunningApi { importThemeLauncher.launch("*/*") } }) {
+        SectionItemView({ withLongRunningApi { importThemeLauncher.launch("*/*") } }, uiKey = Ui.Appearance.ImportTheme) {
           Text(generalGetString(MR.strings.import_theme), color = colors.primary)
         }
       }
@@ -805,6 +807,7 @@ object AppearanceScope {
     }
     Box(
       modifier = Modifier
+        .ui(Ui.UserPicker.ColorMode)
         .clip(CircleShape)
         .combinedClickable(
           onClick = {
@@ -1019,6 +1022,7 @@ object AppearanceScope {
         themeUserDest,
         icon = null,
         enabled = remember { mutableStateOf(true) },
+        uiKey = Ui.Appearance.ApplyTo,
         onSelected = { userId ->
           themeUserDest.value = userId
           if (userId != null) {
@@ -1043,7 +1047,7 @@ object AppearanceScope {
   @Composable
   fun CustomizeThemeColorsSection(currentTheme: ThemeManager.ActiveTheme, editColor: (ThemeColor) -> Unit) {
     SectionView(stringResource(MR.strings.theme_colors_section_title)) {
-      SectionItemViewSpaceBetween({ editColor(ThemeColor.PRIMARY) }) {
+      SectionItemViewSpaceBetween({ editColor(ThemeColor.PRIMARY) }, uiKey = Ui.Appearance.Accent) {
         val title = generalGetString(MR.strings.color_primary)
         Text(title)
         Icon(painterResource(MR.images.ic_circle_filled), title, tint = currentTheme.colors.primary)
@@ -1156,7 +1160,7 @@ object AppearanceScope {
             textFieldState.value = textFieldState.value.copy(hexTrimmed)
           }
           DefaultBasicTextField(
-            Modifier.fillMaxWidth(),
+            Modifier.fillMaxWidth().ui(Ui.Appearance.ColorHex),
             textFieldState,
             leadingIcon = {
               IconButton(onClick = { clipboard.shareText(hexTrimmed) }) {
@@ -1228,6 +1232,7 @@ object AppearanceScope {
       state,
       icon = null,
       enabled = remember { mutableStateOf(true) },
+      uiKey = Ui.Appearance.Language,
       onSelected = onSelected
     )
   }
@@ -1269,6 +1274,7 @@ object AppearanceScope {
       state,
       icon = null,
       enabled = remember { mutableStateOf(true) },
+      uiKey = Ui.Appearance.DarkModeColors,
       onSelected = { if (it != null) onSelected(it) }
     )
   }

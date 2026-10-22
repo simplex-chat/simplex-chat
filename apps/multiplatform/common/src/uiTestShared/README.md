@@ -75,6 +75,19 @@ colour; `groupInvitation_tapRowShowsJoinAlert` never checked the alert.
 - Peer output that looks like an error and that the test did not consume explicitly fails the test (section 6).
 - The CLI inserts the open chat's name after a leading `> `, `! ` or `\ `. Write these commands without the space (`>@alice (quoted) reply`, `!@alice new text`), or the typed line will not match.
 
+### Servers and the SOCKS stub
+
+- `TestServers.stop(name)`, `start(name)` (returns the address) and `reset(name)` (restart without the store) control
+  `smp1`, `xftp1`, `smp2` and `xftp2` (plan §0.5.6). Each test JVM has its own servers, and every reset restores the
+  baseline (`smp1` and `xftp1` running, `smp2` and `xftp2` stopped), so start what the test needs and never rely on
+  what another test left.
+- A peer on the second server: `TestServers.start("smp2")`, then `cli("bob", PeerFlags(smpServer = "smp2"))`.
+- Keep outages to a few seconds and use `CONNECT_TIMEOUT_MS` for waits after a start: the agents back off.
+- Around an outage CLI peers print `disconnected N connections on server …` and `subscribed N connections on server …`,
+  so use `eventually*` for the next line after a stop or start, not `expects`.
+- `SocksProxy.start()`, `SocksProxy.port` (host `SOCKS_HOST`) and `SocksProxy.connections()` (each CONNECT the stub
+  received, with the target host, port and username); the harness stops it at the end of the test.
+
 ### Persistence
 
 "Persists across restart" means: change the setting through the UI, check `storedSetting(...)` (what is on disk),

@@ -21,7 +21,9 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ServerAddress.Companion.parseServerAddress
+import chat.simplex.common.ui.Ui
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.ui.ui
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.QRCode
 import chat.simplex.common.model.ChatModel
@@ -180,7 +182,7 @@ fun CustomServer(
     val testedPreviously = remember { mutableMapOf<String, Boolean?>() }
     TextEditor(
       serverAddress,
-      Modifier.height(144.dp)
+      Modifier.height(144.dp).ui(Ui.Servers.Address)
     )
     LaunchedEffect(Unit) {
       snapshotFlow { serverAddress.value }
@@ -250,7 +252,7 @@ private fun UseServerSection(
   onDelete: (() -> Unit)? = null,
 ) {
   SectionView(stringResource(MR.strings.smp_servers_use_server)) {
-    SectionItemViewSpaceBetween(testServer, disabled = !valid || testing) {
+    SectionItemViewSpaceBetween(testServer, disabled = !valid || testing, uiKey = Ui.Servers.Test) {
       Text(stringResource(MR.strings.smp_servers_test_server), color = if (valid && !testing) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
       ShowTestStatus(server.value)
     }
@@ -259,13 +261,14 @@ private fun UseServerSection(
     PreferenceToggle(
       stringResource(MR.strings.smp_servers_use_server_for_new_conn),
       disabled = testing,
-      checked = enabled.value
+      checked = enabled.value,
+      uiKey = Ui.Servers.Use
     ) {
       server.value = server.value.copy(enabled = it)
     }
 
     if (onDelete != null) {
-      SectionItemView(onDelete, disabled = testing) {
+      SectionItemView(onDelete, disabled = testing, uiKey = Ui.Servers.Delete) {
         Text(stringResource(MR.strings.smp_servers_delete_server), color = if (testing) MaterialTheme.colors.secondary else MaterialTheme.colors.error)
       }
     }

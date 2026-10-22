@@ -13,6 +13,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.chatModel
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.ui
 import chat.simplex.common.views.chat.group.removeMember
 import chat.simplex.common.views.chat.group.removeMemberDialog
 import chat.simplex.common.views.helpers.*
@@ -41,6 +43,7 @@ fun ComposeContextPendingMemberActionsView(
     ) {
       Column(
         Modifier
+          .ui(Ui.Chat.PendingReject)
           .fillMaxWidth()
           .fillMaxHeight()
           .weight(1F)
@@ -55,6 +58,7 @@ fun ComposeContextPendingMemberActionsView(
 
       Column(
         Modifier
+          .ui(Ui.Chat.PendingAccept)
           .fillMaxWidth()
           .fillMaxHeight()
           .weight(1F)
@@ -91,14 +95,14 @@ fun acceptMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, c
         SectionItemView({
           AlertManager.shared.hideAlert()
           acceptMember(rhId, groupInfo, member, GroupMemberRole.Member, close)
-        }) {
+        }, uiKey = Ui.Alert.Option(Ui.AlertSource.Shared, "acceptAsMember")) {
           Text(generalGetString(MR.strings.accept_pending_member_alert_confirmation_as_member), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
         // Accept as observer
         SectionItemView({
           AlertManager.shared.hideAlert()
           acceptMember(rhId, groupInfo, member, GroupMemberRole.Observer, close)
-        }) {
+        }, uiKey = Ui.Alert.Option(Ui.AlertSource.Shared, "acceptAsObserver")) {
           Text(generalGetString(MR.strings.accept_pending_member_alert_confirmation_as_observer), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
         // Cancel

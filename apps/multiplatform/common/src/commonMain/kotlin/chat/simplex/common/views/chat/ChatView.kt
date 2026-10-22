@@ -737,7 +737,7 @@ fun ChatView(
                   ModalManager.end.closeModal()
                 }
                 ModalManager.end.showModalCloseable(id = ModalViewId.CHAT_ITEM_INFO, endButtons = {
-                  ShareButton {
+                  ShareButton(uiKey = Ui.ItemInfo.Share) {
                     clipboard.shareText(itemInfoShareText(chatModel, initialCiInfo.first, initialCiInfo.second, chatModel.controller.appPrefs.developerTools.get()))
                   }
                 }) { close ->
@@ -1253,7 +1253,7 @@ fun BoxScope.ChatInfoToolbar(
           {
             showMenu.value = false
             showSearch.value = true
-          }, enabled = chatInfo.noteFolder.ready
+          }, Modifier.ui(Ui.Chat.SearchButton), enabled = chatInfo.noteFolder.ready
         ) {
           Icon(
             painterResource(MR.images.ic_search),
@@ -1315,7 +1315,7 @@ fun BoxScope.ChatInfoToolbar(
       if (chatInfo.groupInfo.canAddMembers) {
         if (!chatInfo.incognito && !chatInfo.groupInfo.useRelays) {
           menuItems.add {
-            ItemAction(stringResource(MR.strings.icon_descr_add_members), painterResource(MR.images.ic_person_add_500), onClick = {
+            ItemAction(stringResource(MR.strings.icon_descr_add_members), painterResource(MR.images.ic_person_add_500), uiKey = Ui.Chat.BarMenuItem("addMembers"), onClick = {
               showMenu.value = false
               addMembers(chatInfo.groupInfo)
             })
@@ -1352,6 +1352,7 @@ fun BoxScope.ChatInfoToolbar(
     barButtons.add {
       IconButton(
         { showContentFilterMenu.value = true },
+        Modifier.ui(Ui.Chat.ContentFilter),
         enabled = enabled
       ) {
         Icon(
@@ -1371,6 +1372,7 @@ fun BoxScope.ChatInfoToolbar(
       ItemAction(
         stringResource(nextNtfMode.text(chatInfo.hasMentions)),
         painterResource(nextNtfMode.icon),
+        uiKey = Ui.Chat.BarMenuItem("ntf"),
         onClick = {
           showMenu.value = false
           // Just to make a delay before changing state of ntfsEnabled, otherwise it will redraw menu item with new value before closing the menu
@@ -1440,7 +1442,7 @@ fun BoxScope.ChatInfoToolbar(
   val oneHandUI = remember { appPrefs.oneHandUI.state }
   val chatBottomBar = remember { appPrefs.chatBottomBar.state }
   val searchTrailingContent: @Composable (() -> Unit)? = if (showContentFilterButton) {{
-    IconButton({ showContentFilterMenu.value = true }) {
+    IconButton({ showContentFilterMenu.value = true }, Modifier.ui(Ui.Chat.ContentFilter)) {
       Icon(
         painterResource(if (contentFilter.value == null) MR.images.ic_photo_library else MR.images.ic_photo_library_filled),
         null,
@@ -1499,6 +1501,7 @@ fun BoxScope.ChatInfoToolbar(
               stringResource(filter.label),
               painterResource(if (isSelected) filter.iconFilled else filter.icon),
               color = if (isSelected) MaterialTheme.colors.primary else Color.Unspecified,
+              uiKey = Ui.Chat.ContentFilter.option(filter.name),
               onClick = {
                 showContentFilterMenu.value = false
                 if (contentFilter.value == filter) return@ItemAction
@@ -1519,6 +1522,7 @@ fun BoxScope.ChatInfoToolbar(
             ItemAction(
               stringResource(MR.strings.content_filter_all_messages),
               painterResource(MR.images.ic_forum),
+              uiKey = Ui.Chat.ContentFilter.option("all"),
               onClick = {
                 showContentFilterMenu.value = false
                 contentFilter.value = null
@@ -1693,6 +1697,7 @@ private fun SupportChatsCountToolbar(
       ) {
         Row(
           Modifier
+            .ui(Ui.Chat.Reports)
             .fillMaxWidth()
             .weight(1F)
             .height(AppBarHeight * fontSizeSqrtMultiplier + statusBarPadding)
@@ -1718,6 +1723,7 @@ private fun SupportChatsCountToolbar(
       if (supportUnreadCount > 0) {
         Row(
           Modifier
+            .ui(Ui.Chat.SupportChats)
             .fillMaxWidth()
             .weight(1F)
             .height(AppBarHeight * fontSizeSqrtMultiplier + statusBarPadding)
@@ -2740,7 +2746,7 @@ fun BoxScope.FloatingButtons(
   val showDropDown = remember { mutableStateOf(false) }
 
   TopEndFloatingButton(
-    Modifier.padding(end = DEFAULT_PADDING, top = 24.dp + topPaddingToContent).align(Alignment.TopEnd),
+    Modifier.ui(Ui.Chat.UnreadAbove).padding(end = DEFAULT_PADDING, top = 24.dp + topPaddingToContent).align(Alignment.TopEnd),
     topUnreadCount,
     requestedTopScroll,
     animatedScrollingInProgress,
@@ -2766,6 +2772,7 @@ fun BoxScope.FloatingButtons(
       ItemAction(
         generalGetString(MR.strings.mark_read),
         painterResource(MR.images.ic_check),
+        uiKey = Ui.Chat.UnreadAbove.part("markRead"),
         onClick = {
           markChatRead()
           showDropDown.value = false
@@ -3049,7 +3056,7 @@ private fun DownloadFilesButton(
   if (user != null) {
     TextButton(
       contentPadding = contentPadding,
-      modifier = modifier,
+      modifier = modifier.ui(Ui.Alert.Option(Ui.AlertSource.Shared, "download")),
       onClick = {
         AlertManager.shared.hideAlert()
 
@@ -3079,7 +3086,7 @@ private fun ForwardButton(
       forwardContent(forwardPlan.chatItemIds, chatInfo)
       AlertManager.shared.hideAlert()
     },
-    modifier = modifier,
+    modifier = modifier.ui(Ui.Alert.Option(Ui.AlertSource.Shared, "forward")),
     contentPadding = contentPadding
   ) {
     Text(stringResource(MR.strings.forward_chat_item), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)

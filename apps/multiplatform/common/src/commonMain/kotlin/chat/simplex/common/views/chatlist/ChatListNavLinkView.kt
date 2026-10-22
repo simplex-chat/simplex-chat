@@ -344,7 +344,7 @@ fun GroupMenuItems(
       ToggleNotificationsChatAction(chat, chatModel, groupInfo.chatSettings.enableNtfs.nextMode(true), showMenu)
       TagListAction(chat, showMenu)
       if (chat.chatStats.reportsCount > 0 && groupInfo.membership.memberRole >= GroupMemberRole.Moderator) {
-        ArchiveAllReportsItemAction(showMenu) {
+        ArchiveAllReportsItemAction(showMenu, Ui.ChatList.RowMenu(chat.id, "archiveReports", chat.remoteHostId)) {
           archiveAllReportsForMe(chat.remoteHostId, chat.chatInfo.apiId)
         }
       }
@@ -496,7 +496,8 @@ fun DeleteGroupAction(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, sh
       deleteGroupDialog(chat, groupInfo, chatModel)
       showMenu.value = false
     },
-    color = Color.Red
+    color = Color.Red,
+    uiKey = Ui.ChatList.RowMenu(chat.id, "delete", chat.remoteHostId)
   )
 }
 
@@ -519,6 +520,7 @@ fun JoinGroupAction(
     if (chat.chatInfo.incognito) stringResource(MR.strings.join_group_incognito_button) else stringResource(MR.strings.join_group_button),
     if (chat.chatInfo.incognito) painterResource(MR.images.ic_theater_comedy_filled) else painterResource(MR.images.ic_login),
     color = if (chat.chatInfo.incognito) Indigo else MaterialTheme.colors.onBackground,
+    uiKey = Ui.ChatList.RowMenu(chat.id, "join", chat.remoteHostId),
     onClick = {
       joinGroup()
       showMenu.value = false
@@ -651,10 +653,11 @@ private fun InvalidDataView() {
 }
 
 @Composable
-private fun ArchiveAllReportsItemAction(showMenu: MutableState<Boolean>, archiveReports: () -> Unit) {
+private fun ArchiveAllReportsItemAction(showMenu: MutableState<Boolean>, uiKey: UiKey? = null, archiveReports: () -> Unit) {
   ItemAction(
     stringResource(MR.strings.archive_reports),
     painterResource(MR.images.ic_inventory_2),
+    uiKey = uiKey,
     onClick = {
       showArchiveAllReportsForMeAlert(archiveReports)
       showMenu.value = false
