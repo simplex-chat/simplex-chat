@@ -362,6 +362,7 @@ arguments too, so rebuild the image:
 ```
 sudo useradd --system --no-create-home --shell /usr/sbin/nologin simplex-store
 id simplex-store
+mkdir -p web names
 sudo chown -R simplex-store:simplex-store web names
 sudo chown simplex-store store_service.ini && sudo chmod 600 store_service.ini
 docker compose up -d --build --remove-orphans
