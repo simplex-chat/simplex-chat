@@ -6,6 +6,7 @@ module Bots.StoreService.FakeEthNode
   ( FakeEthNode (..),
     CallAnswer (..),
     Fault (..),
+    Gate,
     withFakeEthNode,
     fakeChainConfig,
     answerCall,
@@ -13,6 +14,10 @@ module Bots.StoreService.FakeEthNode
     forgetCall,
     setFault,
     clearFault,
+    gateNext,
+    awaitGate,
+    releaseGate,
+    pausedAt,
     setBlock,
     setFees,
     revertDryRun,
@@ -37,6 +42,7 @@ module Bots.StoreService.FakeEthNode
 where
 
 import Control.Concurrent (threadDelay)
+import Control.Concurrent.Async (Async, async, cancel)
 import Control.Concurrent.STM
 import Control.Exception (finally)
 import Data.Aeson ((.:), (.=))
@@ -63,6 +69,7 @@ import Simplex.Messaging.Util (eitherToMaybe)
 import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Abi (hex)
 import StoreService.Names.Chain (TxRequest (..), decodeSignedTx)
+import System.Timeout (timeout)
 
 data FakeEthNode = FakeEthNode
   { fnUrl :: String,
@@ -81,6 +88,10 @@ data Fault
   | Answers J.Value
   | -- | answers as usual after this many microseconds
     Slow Int
+  | -- | the next request waits at the gate until it is released, then answers as usual; later ones pass
+    Gated Gate
+
+data Gate = Gate {gArrived :: TMVar (), gRelease :: TMVar ()}
 
 data FakeState = FakeState
   { fsCalls :: Map (ByteString, ByteString) CallAnswer,
@@ -182,6 +193,30 @@ setFault FakeEthNode {fnState} method f = atomically $ modifyTVar' fnState $ \s 
 clearFault :: FakeEthNode -> Text -> IO ()
 clearFault FakeEthNode {fnState} method = atomically $ modifyTVar' fnState $ \s -> s {fsFaults = M.delete method $ fsFaults s}
 
+-- | The next request for the method stops at the gate it returns.
+gateNext :: FakeEthNode -> Text -> IO Gate
+gateNext node method = do
+  gate <- Gate <$> newEmptyTMVarIO <*> newEmptyTMVarIO
+  gate <$ setFault node method (Gated gate)
+
+-- | Returns once a request is held at the gate.
+awaitGate :: Gate -> IO ()
+awaitGate Gate {gArrived} = atomically $ readTMVar gArrived
+
+releaseGate :: Gate -> IO ()
+releaseGate Gate {gRelease} = atomically $ putTMVar gRelease ()
+
+-- | Far longer than a request takes to reach its first chain read.
+gateArrival :: Int
+gateArrival = 5000000
+
+-- | The action, run until its first request for the method is held at the gate.
+pausedAt :: FakeEthNode -> Text -> IO a -> IO (Async a, Gate)
+pausedAt node method action = do
+  gate <- gateNext node method
+  inFlight <- async action
+  timeout gateArrival (awaitGate gate) >>= maybe (cancel inFlight >> fail ("no " <> T.unpack method <> " reached the gate")) (const $ pure (inFlight, gate))
+
 revertFault :: ByteString -> Fault
 revertFault = RpcError 3 "execution reverted" . Just
 
@@ -243,12 +278,22 @@ fakeApp st req respond = do
         Just (RpcError code message revertData) -> reply $ rpcError code message revertData
         Just NotJson -> respond $ responseLBS ok200 [] "<html>Sign in to provider-api-key</html>"
         Just (Answers v) -> reply ["result" .= v]
-        Just (Slow delay) -> threadDelay delay >> (reply =<< atomically (answer st method params))
-        Nothing -> reply =<< atomically (answer st method params)
+        Just (Slow delay) -> threadDelay delay >> answered method params
+        Just (Gated Gate {gArrived, gRelease}) -> do
+          atomically $ putTMVar gArrived ()
+          atomically $ takeTMVar gRelease `orElse` (readTVar st >>= check . fsClosed)
+          answered method params
+        Nothing -> answered method params
     Nothing -> respond $ responseLBS badRequest400 [] "not a JSON-RPC request"
   where
     request = J.withObject "request" $ \o -> (,) <$> o .: "method" <*> o .: "params"
-    fault method = M.lookup method . fsFaults <$> readTVarIO st
+    -- a gate holds one request only
+    fault method = atomically $ do
+      s <- readTVar st
+      case M.lookup method $ fsFaults s of
+        f@(Just Gated {}) -> f <$ writeTVar st s {fsFaults = M.delete method $ fsFaults s}
+        f -> pure f
+    answered method params = reply =<< atomically (answer st method params)
     reply r = respond $ responseLBS ok200 [(hContentType, "application/json")] $ J.encode $ J.object $ ["jsonrpc" .= ("2.0" :: Text), "id" .= (1 :: Int)] <> r
 
 answer :: TVar FakeState -> Text -> [J.Value] -> STM [JT.Pair]

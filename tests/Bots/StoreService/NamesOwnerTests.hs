@@ -16,7 +16,7 @@ import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (Async, async, cancel, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (atomically, check)
-import Control.Monad (forM, forM_, unless, void)
+import Control.Monad (forM, forM_, void)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import Data.ByteString (ByteString)
@@ -50,7 +50,7 @@ import StoreService.Names.Orders (OrdersEnv (..), signedRequestSeconds)
 import StoreService.Names.Phases (RegistrationId (..), phasesWaiting)
 import StoreService.Names.Signatures (OrderFields (..), findMessage, parseAnyCaseAddress, personalDigest, retargetMessage, takenCodeMessage)
 import StoreService.Names.Store hiding (findLimit)
-import StoreService.Names.Turns (turnsCount, withLabelTurn)
+import StoreService.Names.Turns (withLabelTurn)
 import StoreService.Store (RevokeResult (..))
 import StoreService.Web.Http (createLimit, findLimit, holdMicros, readLimit)
 import StoreService.Web.Names (Route (..), namesApp)
@@ -319,12 +319,6 @@ codeRow Ctx {cStore} PrepaidCode {pcId} = withTransaction cStore $ \db -> fromJu
 within :: String -> IO a -> IO a
 within what action = timeout 10000000 action >>= maybe (error $ what <> " did not finish") pure
 
--- | Waits until the turns have at least this many label or code hashes held or waited on.
-awaitTurns :: Ctx -> Int -> IO ()
-awaitTurns Ctx {cOrders} n = within "turns" loop
-  where
-    loop = turnsCount (oeTurns cOrders) >>= \count -> unless (count >= n) (threadDelay 1000 >> loop)
-
 -- | A registration poll at the order's version, once the server holds it.
 held :: Ctx -> NameRegistration -> IO (Async (Int, J.Object))
 held ctx@Ctx {cOrders} NameRegistration {nrId, nrVersion} = do
@@ -339,14 +333,6 @@ woken poll = timeout 5000000 (wait poll) >>= maybe (cancel poll >> error "the po
 -- | Long enough for a request just sent to reach its turns.
 parkDelay :: Int
 parkDelay = 200000
-
--- | Each eth_call's delay in the lost-race tests, far longer than a request takes to read its registration.
-slowRead :: Int
-slowRead = 3000000
-
--- | How long after the turns are held the lost-race tests change the order: past the request's read, before its write.
-raceDelay :: Int
-raceDelay = 1000000
 
 -- tests
 
@@ -679,12 +665,10 @@ testMoveLostRace = withOwner $ \ctx@Ctx {cNode} -> do
   answerFree ctx "alicebakers"
   r <- paidIn ctx aliceOrder failedPhase
   to <- moveTo ctx "alicebakers" 10
-  setFault cNode "eth_call" (Slow slowRead)
-  moving <- async $ move ctx keyA r to
-  awaitTurns ctx 2
-  threadDelay raceDelay
+  -- held at the register check's ownerOf read, inside the turns
+  (moving, gate) <- pausedAt cNode "eth_call" $ move ctx keyA r to
   changed <- rewrite ctx r id
-  clearFault cNode "eth_call"
+  releaseGate gate
   answer <- within "the move" $ wait moving
   view <- getView ctx changed
   answer `shouldBe` refusedWithView "registration_changed" view
@@ -821,12 +805,10 @@ testCodeLostRace :: IO ()
 testCodeLostRace = withOwner $ \ctx@Ctx {cNode, cStore} -> do
   r <- takenTwelve ctx
   let (hashText, hash) = takenCodeHash 1
-  setFault cNode "eth_call" (Slow slowRead)
-  issuing <- async $ takeCode ctx keyA r hashText 8
-  awaitTurns ctx 1
-  threadDelay raceDelay
+  -- held at the length read, inside the turn
+  (issuing, gate) <- pausedAt cNode "eth_call" $ takeCode ctx keyA r hashText 8
   changed <- rewrite ctx r id
-  clearFault cNode "eth_call"
+  releaseGate gate
   answer <- within "the code" $ wait issuing
   view <- getView ctx changed
   answer `shouldBe` refusedWithView "registration_changed" view
