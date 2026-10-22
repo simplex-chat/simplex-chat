@@ -227,7 +227,8 @@ qUnpaidRefs =
       <> " FROM @invoices i "
       <> productJoins
       <> "WHERE i.status <> 'paid' AND i.created_at >= ? "
-      <> "ORDER BY i.created_at"
+      -- created_at is whole seconds; the id breaks ties the same way on SQLite and Postgres
+      <> "ORDER BY i.created_at, i.invoice_id"
 
 qCodeHashExists :: Query
 qCodeHashExists = mkQuery "SELECT 1 FROM @badge_codes WHERE code_hash = ? LIMIT 1"
