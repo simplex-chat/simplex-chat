@@ -14,6 +14,7 @@ import Control.Concurrent.Async (async, concurrently, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (TVar, atomically, check, modifyTVar', newTVarIO, readTVar)
 import qualified Control.Exception as E
+import Control.Arrow ((&&&))
 import Control.Monad (forM_, void)
 import Crypto.Random (ChaChaDRG)
 import Data.Aeson ((.=))
@@ -29,7 +30,7 @@ import Data.List (sort)
 import Data.Maybe (fromJust, isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime)
+import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Word (Word64)
 import Network.HTTP.Client (defaultManagerSettings, newManager, responseBody)
@@ -56,7 +57,7 @@ import StoreService.Names.Store
 import StoreService.Names.Turns (newTurns)
 import StoreService.Names.View (ViewReads (..), readViewChain, viewJSON)
 import StoreService.Orders (cancelOpenInvoice, expireOverdue, settleOrder)
-import StoreService.Poller (cleanupInterval, cleanupReadsPerPass, cleanupUnpaid, drainHints, newPollerEnv, newReadHints, queueReadHint, unpaidRetention)
+import StoreService.Poller (cleanupInterval, cleanupReadsPerPass, cleanupUnpaid, drainHints, newPollerEnv, newReadHints, queueReadHint, runOnePass, unpaidRetention)
 import StoreService.Providers.BTCPay (btcpayProvider)
 import StoreService.Providers (Funded (..), OrderDraft (..), PaymentSignal (..), Provider (..), ProviderError (..), ProviderInvoice (..))
 import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), ProviderRefConflict (..), getInvoice, getInvoiceByProviderRef, overdueInvoices, unpaidRefs)
@@ -95,17 +96,21 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "records a payment of the closed order as a late payment, leaving the newer order alone" testLatePaymentAfterNewOrder
     it "keeps an overdue order whose invoice holds money, refusing the next order, and settles it" testFundedOverdueKept
     it "alerts on a late payment as BTCPay reports it for an expired, cancelled or swept invoice, once" testLateBTCPayPayments
+    it "alerts once on money read while open when the provider then closes the invoice, also after a restart" testOneLateAlert
     it "answers cancel with funded, not_open, paid when settlement won, and expired with the payment read meanwhile" testCancelAnswers
     it "leaves a late payment of a cancelled invoice unpaid and alerts" testLatePayment
     it "queues an order settled while open and publishes its version" testSettlementQueues
+    it "takes the invoice's row before recording a payment that moves no status" testSettlementLocksInvoice
     it "closes the order of an invoice the provider closed or the sweep expired" testExpiryCloses
     it "sweeps each invoice on its own, skipping one whose order cannot be read" testSweepSkipsBadRow
+    it "keeps out of a pass's sweep only the invoices whose read or settlement failed" testPassSweepsAroundFailures
     it "cleans up unpaid orders after 30 days, reading the provider first" testCleanup
     it "reads at most a pass's share of the provider in a cleanup, carrying the rest to the next pass" testCleanupCapped
     it "answers 503 for a name invoice while names are off, cancelling nothing" testNamesOff
   describe "invoice side" $ do
     it "finds an invoice by provider ref in either table, refusing a ref both hold" testProviderRefs
     it "reads and sweeps name invoices with the badge ones" testPollerQueries
+    it "agrees between the sweep and the overdue close on which invoices hold money" testFundedAgreement
   describe "registration view" $ do
     it "has the contract's fields" testViewFields
     it "reads the intent nonce in committed and the code length in taken and code_issued" testViewReads
@@ -646,7 +651,7 @@ testFundedOverdueKept = withOrders $ \ctx -> do
   placeOrder ctx aliceOrder {oCommitment = commitmentOf 2, oTimestamp = seconds now, oDuration = durationAt now} `shouldReturn` refusedWith 409 "order_exists"
   r <- invoiceRegistration ctx inv
   (nrLive r, nrPhase r) `shouldBe` (True, PUnpaid)
-  withTransaction (cStore ctx) (\db -> closeOverdue db r now) >>= (`shouldNotBe` Written (nrVersion r + 1))
+  withTransaction (cStore ctx) (\db -> closeOverdue db r now) `shouldReturn` Nothing
   (irStatus <$>) <$> getInvoice (cStore ctx) inv `shouldReturn` Just ISOpen
   settleNow ctx inv settled `shouldReturn` Right ISPaid
   nrPhase <$> invoiceRegistration ctx inv `shouldReturn` PQueued
@@ -681,6 +686,26 @@ testLateBTCPayPayments = withFakeBTCPay $ \fake -> do
     forM_ [expired, cancelled, swept] $ \inv -> do
       r <- invoiceRegistration ctx inv
       (nrPhase r, nrLive r) `shouldBe` (PUnpaid, False)
+
+-- | Paid in part while open, then expired by BTCPay with the same figures: one refund line, none from a restarted poller.
+testOneLateAlert :: IO ()
+testOneLateAlert = withOrders $ \ctx@Ctx {cStore = st, cWeb} -> do
+  (inv, _) <- placed ctx aliceOrder
+  Just InvoiceRow {irProviderRef = ref} <- getInvoice st inv
+  let paid = rcv 5000 (Just "0.00078")
+      newPoller = newPollerEnv st (weWaiters cWeb) (Just $ oePhases $ cOrders ctx) (weHints cWeb) (weProviders cWeb) (poll $ weConfig cWeb)
+      readWith poller = capturingStderr $ queueReadHint (weHints cWeb) ref >> drainHints poller
+      refunds = length . T.breakOnAll "refund"
+  poller <- newPoller
+  setSignals (cStub ctx) [(ref, SigFunded paid PaidInPart)]
+  refunds <$> readWith poller `shouldReturn` 0
+  setSignals (cStub ctx) [(ref, SigClosed paid)]
+  logs <- readWith poller
+  refunds logs `shouldBe` 1
+  logs `shouldSatisfy` T.isInfixOf "stays unpaid; refund the payment"
+  restarted <- newPoller
+  refunds <$> readWith restarted `shouldReturn` 0
+  (nrPhase &&& nrLive) <$> invoiceRegistration ctx inv `shouldReturn` (PUnpaid, False)
 
 testCancelAnswers :: IO ()
 testCancelAnswers = withOrders $ \ctx -> do
@@ -758,6 +783,16 @@ testSettlementQueues = withOrders $ \ctx -> do
   r <- invoiceRegistration ctx invId
   (nrPhase r, nrLive r, nrVersion r) `shouldBe` (PQueued, True, 2)
 
+-- | Postgres serializes the payment with a concurrent overdue close only on this row; SQLite shows that it is written.
+testSettlementLocksInvoice :: IO ()
+testSettlementLocksInvoice = withOrders $ \ctx -> do
+  (inv@(InvoiceId t), _) <- placed ctx aliceOrder
+  advance ctx 60
+  settleNow ctx inv (SigFunded (rcv 10000 (Just "0.00156")) PaidInFull) `shouldReturn` Right ISOpen
+  now <- readIORef (cClock ctx)
+  withConnection (cStore ctx) (\db -> DB.query db "SELECT updated_at, status FROM sx_badge_service_invoices WHERE invoice_id = ?" [t])
+    `shouldReturn` [(now, "open" :: Text)]
+
 testExpiryCloses :: IO ()
 testExpiryCloses = withOrders $ \ctx -> do
   (closedByProvider, _) <- placed ctx aliceOrder
@@ -784,6 +819,28 @@ testSweepSkipsBadRow = withOrders $ \ctx@Ctx {cStore = st} -> do
   (nrLive r, nrVersion r) `shouldBe` (False, 2)
   where
     invoiceText (InvoiceId t) = t
+
+-- | The poller reads by the wall clock, so the orders are placed two hours ago by it.
+testPassSweepsAroundFailures :: IO ()
+testPassSweepsAroundFailures = do
+  unreadable <- newIORef ""
+  let failing p = p {pReadInvoice = \r -> readIORef unreadable >>= \u -> if r == u then pure (Left $ ProviderError "down") else pReadInvoice p r}
+  withOrdersVia failing $ \ctx@Ctx {cStore = st, cWeb} -> do
+    placedAt <- addUTCTime (-7200) <$> getCurrentTime
+    writeIORef (cClock ctx) placedAt
+    let at' o = o {oTimestamp = seconds placedAt, oDuration = durationAt placedAt}
+        refOf inv = maybe (error "no invoice") irProviderRef <$> getInvoice st inv
+    (poisoned, _) <- placed ctx $ at' aliceOrder
+    (unread, _) <- placed ctx $ at' aliceOrder {oLabel = "dynamis", oPrice = 20000, oCommitment = commitmentOf 2}
+    (good, _) <- placed ctx $ at' aliceOrder {oOwner = ownerBText, oKey = keyB, oCommitment = commitmentOf 3}
+    NameRegistration {nrId = RegistrationId poisonedId} <- invoiceRegistration ctx poisoned
+    withConnection st $ \db -> DB.execute db "UPDATE sx_badge_service_name_registrations SET phase = 'lost' WHERE registration_id = ? AND phase = ?" (poisonedId, "unpaid" :: Text)
+    poisonedRef <- refOf poisoned
+    refOf unread >>= writeIORef unreadable
+    setSignals (cStub ctx) [(poisonedRef, SigClosed (rcv 0 Nothing))]
+    poller <- newPollerEnv st (weWaiters cWeb) (Just $ oePhases $ cOrders ctx) (weHints cWeb) (weProviders cWeb) (poll $ weConfig cWeb)
+    void $ capturingStderr $ runOnePass poller
+    mapM (fmap (irStatus <$>) . getInvoice st) [poisoned, unread, good] `shouldReturn` map Just [ISOpen, ISOpen, ISExpired]
 
 testCleanup :: IO ()
 testCleanup = withOrders $ \ctx -> testCleanupIn ctx
@@ -857,6 +914,28 @@ testPollerQueries = withServiceStore $ \st -> do
   unpaidRefs st (addUTCTime (-60) t0) `shouldReturn` [("crypto", "ref-inv-r1")]
   map oiProviderRef <$> overdueInvoices st (addUTCTime 7200 t0) `shouldReturn` ["ref-inv-r1"]
   overdueInvoices st t0 `shouldReturn` []
+
+testFundedAgreement :: IO ()
+testFundedAgreement = withServiceStore $ \st -> do
+  waiters <- newWaiters
+  let now = addUTCTime 3600 t0
+      shapes =
+        [ ("amount", Just (SigFunded (rcv 100 Nothing) PaidInPart), True),
+          ("crypto", Just (SigFunded (rcv 0 (Just "0.00001")) PaidInPart), True),
+          ("verdict", Just (SigFunded (rcv 0 Nothing) PaidInFull), True),
+          ("nothing", Nothing, False)
+        ]
+  forM_ (zip [1 ..] shapes) $ \(n, (rid, signal, _)) -> do
+    placePaid st rid ownerA (order ("fundname" <> rid) n) t0 `shouldReturn` Right ()
+    forM_ signal $ \sig -> void $ settleOrder st waiters Nothing (InvoiceId $ "inv-" <> rid) sig t0
+  listed <- map oiInvoiceId <$> overdueInvoices st now
+  forM_ (zip [1 ..] shapes) $ \(n, (rid, _, funded)) -> do
+    let o = order ("fundname" <> rid) n
+    (InvoiceId ("inv-" <> rid) `elem` listed) `shouldBe` not funded
+    [LiveOrder {loRegistration, loOverdue}] <- withTransaction st $ \db -> getLiveOrders db (ofCommitment o) ownerA (ofLabelHash o) now
+    (rid, loOverdue) `shouldBe` (rid, not funded)
+    closed <- withTransaction st $ \db -> closeOverdue db loRegistration now
+    (rid, closed) `shouldBe` (rid, if funded then Nothing else Just (nrVersion loRegistration + 1))
 
 testViewFields :: IO ()
 testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do

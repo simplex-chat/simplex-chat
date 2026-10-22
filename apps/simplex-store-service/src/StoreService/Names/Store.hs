@@ -77,6 +77,7 @@ import Data.ByteArray.Encoding (Base (Base16), convertToBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import Data.Int (Int64)
+import Data.Functor ((<&>))
 import Data.Maybe (isJust, listToMaybe)
 import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
@@ -99,7 +100,7 @@ import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Signatures (OrderFields (..), parseSignature)
 import StoreService.Store (RevokeResult (..))
-import StoreService.Store.Invoices (StoreDecodeError (..), executeChanging, invoiceStatusText, newInvoiceId, truncateToSecond)
+import StoreService.Store.Invoices (StoreDecodeError (..), executeChanging, invoiceStatusText, lockInvoice, newInvoiceId, truncateToSecond, unfundedQuery)
 
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..), Query, (:.) (..))
@@ -208,8 +209,7 @@ data RegistrationRefused = RRLiveOrder | RRCodeNotReservable
   deriving (Eq, Show)
 
 -- | NotLive: the write would make a closed order live. LiveOrderExists: another live order holds its commitment, or its owner and label hash.
--- NotOverdue: closeOverdue found the order's invoice no longer open, or holding money.
-data VersionWrite = Written Int64 | VersionChanged | NotLive | LiveOrderExists | NotOverdue
+data VersionWrite = Written Int64 | VersionChanged | NotLive | LiveOrderExists
   deriving (Eq, Show)
 
 -- | A live order an order request meets; overdue when its open invoice is past its expiry time.
@@ -500,22 +500,19 @@ getLiveOrders db commitment owner (LabelHash lh) now =
   where
     toLiveOrder (row :. Only (BI loOverdue)) = (\loRegistration -> LiveOrder {loRegistration, loOverdue}) <$> toRegistration row
 
--- | A payment holding money, as the sweep's own check reads one, makes the invoice i funded.
+-- | The sweep's own check, on the invoice joined as i.
 unfunded :: Query
-unfunded =
-  " "
-    <> [sql|
-    AND NOT EXISTS (
-      SELECT 1 FROM sx_badge_service_payments p
-      WHERE p.invoice_id = i.invoice_id AND (COALESCE(p.amount, 0) > 0 OR p.crypto_paid IS NOT NULL OR p.paid_in_full = 1)
-    )
-  |]
+unfunded = unfundedQuery "i.invoice_id"
 
--- | Run in the transaction that inserts the next order, so the unique constraints let it in. The invoice is written before
--- the registration, as settlement, cancel and the sweep write them; a registration write that loses after it leaves the
--- caller to roll back.
-closeOverdue :: DB.Connection -> NameRegistration -> UTCTime -> IO VersionWrite
-closeOverdue db r@NameRegistration {nrId = RegistrationId rid, nrVersion} now = do
+-- | Run in the transaction that inserts the next order, so the unique constraints let it in; the registration's new version.
+-- Nothing when the order changed since it was read, or its invoice is no longer open or holds money: the caller rolls back,
+-- since the invoice is written before the registration, as settlement, cancel and the sweep write them.
+closeOverdue :: DB.Connection -> NameRegistration -> UTCTime -> IO (Maybe Int64)
+closeOverdue db r@NameRegistration {nrId = RegistrationId rid, nrVersion, nrPayment} now = do
+  -- locked first, so the funding check below, a later statement, sees a payment a concurrent settlement committed
+  mapM_ (\invId -> lockInvoice db invId now) $ case nrPayment of
+    RPInvoice _ invId -> Just invId
+    RPCode _ -> Nothing
   expired <-
     executeChanging
       db
@@ -532,11 +529,11 @@ closeOverdue db r@NameRegistration {nrId = RegistrationId rid, nrVersion} now = 
       )
       (invoiceStatusText ISExpired, truncateToSecond now, invoiceStatusText ISOpen, rid, nrVersion)
   if expired > 0
-    then updateRegistration db r {nrLive = False} now
-    else
-      DB.query db "SELECT version FROM sx_badge_service_name_registrations WHERE registration_id = ?" (Only rid) >>= \case
-        [Only version] | version == nrVersion -> pure NotOverdue
-        _ -> pure VersionChanged
+    then
+      updateRegistration db r {nrLive = False} now <&> \case
+        Written v -> Just v
+        _ -> Nothing
+    else pure Nothing
 
 -- | Whether an order can still progress to a registration for its name. The unique live indexes allow one such order per commitment,
 -- and one per owner and label hash, so a wallet can order a name again once its registration is done.

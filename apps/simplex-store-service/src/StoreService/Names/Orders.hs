@@ -51,7 +51,7 @@ import StoreService.Names.Env (NamesEnv (..))
 import StoreService.Names.Phases (Phases)
 import StoreService.Names.Abi (bytes32FromHex)
 import StoreService.Names.Signatures (OrderFields (..), orderMessage, parseChecksumAddress, parseSignature, personalDigest)
-import StoreService.Names.Store (LiveOrder (..), NameRegistration (..), RegistrationRefused (..), VersionWrite (..), closeOverdue, getLiveOrders, getRegistrationByOrderHash, isLabelRegistering)
+import StoreService.Names.Store (LiveOrder (..), NameRegistration (..), RegistrationRefused (..), closeOverdue, getLiveOrders, getRegistrationByOrderHash, isLabelRegistering)
 import StoreService.Names.Turns (Turns)
 
 data OrdersEnv = OrdersEnv
@@ -167,8 +167,8 @@ placeOrder OrdersEnv {oeStore, oeNow} req insert = do
         Nothing -> E.throwIO $ OrderRefused OROrderExists
     close db now r =
       closeOverdue db r now >>= \case
-        Written v -> pure ClosedOrder {coRegistration = r, coVersion = v}
-        _ -> E.throwIO $ OrderRefused OROrderExists
+        Just v -> pure ClosedOrder {coRegistration = r, coVersion = v}
+        Nothing -> E.throwIO $ OrderRefused OROrderExists
 
 checkTimestamp :: UTCTime -> Word64 -> Either OrderRefusal ()
 checkTimestamp now timestamp =

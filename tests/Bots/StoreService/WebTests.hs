@@ -284,7 +284,7 @@ badgeWebTests = do
     it "warns once for all the invoices it did not sell, not once per invoice" testStrangerSkipsShareOneWarning
     it "raises a skip naming an invoice this service sold" testSkipNamingOurInvoiceIsRaised
     it "holds the sweep back until a pass has accounted for every invoice" testSweepWaitsForAPassThatSawEverything
-    it "settles the rest of the pass around an invoice that throws" testOneBadInvoiceDoesNotStopThePass
+    it "settles and sweeps the rest of the pass around an invoice that throws" testOneBadInvoiceDoesNotStopThePass
     it "pages past a hundred open invoices, a request per hundred" testListPaginates
     it "stops paging at its ceiling rather than looping on a server that ignores take" testPagingStopsAtTheCeiling
   describe "store service webhook" $ do
@@ -2923,12 +2923,8 @@ testOneBadInvoiceDoesNotStopThePass = bounded "one bad invoice" $ withStubPoller
   setSignals ref [("p-bad", settledSignal), ("p-good", settledSignal)]
   runOnePass poller
   invoiceStatus (weStore env) good `shouldReturn` ISPaid
-  invoiceStatus (weStore env) overdue `shouldReturn` ISOpen
-
-  setSignals ref []
-  setSkipped ref [(Just "p-bad", "some reason the provider gave")]
-  runOnePass poller
-  invoiceStatus (weStore env) overdue `shouldReturn` ISOpen
+  -- only the invoice that failed is kept out of the sweep
+  invoiceStatus (weStore env) overdue `shouldReturn` ISExpired
 
 testSweepWaitsForAPassThatSawEverything :: IO ()
 testSweepWaitsForAPassThatSawEverything = bounded "sweep guards" $ withStubPoller raceHold $ \ref poller env _ -> do
