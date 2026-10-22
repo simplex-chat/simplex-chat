@@ -3262,6 +3262,10 @@ testRestoreOnSameProfile ps =
       -- the subscription lapses: retired once the recovery window passed while Play retried the payment
       storeReports store $ subscriptionCheck SSBillingRetry Nothing
       t0 <- firstUnrenewedAnswer alice bsClock rows []
+      -- an answer within the window keeps the run going, so the one past it retires the badge
+      let beforeEnd = addUTCTime (subscriptionRecoveryWindow - 3600) t0
+      activateAt alice bsClock beforeEnd
+      fst <$> answeredRun a beforeEnd `shouldReturn` t0
       [Just wake] <- nextWakes a
       setClockAt bsClock $ max wake $ addUTCTime (subscriptionRecoveryWindow + 3600) t0
       activateAnswered alice ["badge alert: subscription_ended "]
