@@ -60,7 +60,7 @@ import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
 import Crypto.Random (ChaChaDRG)
 import Simplex.Messaging.Session (SessionVar (..), withGetSessVar')
-import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey, BadgeType, LocalBadge (..), ProofPresHeader (..), badgeGraceInterval, badgeServerCredential, mkBadgeStatus, maxSndXFTPFileSize, verifyCredential)
+import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey, BadgeType (..), LocalBadge (..), ProofPresHeader (..), badgeGraceInterval, badgeServerCredential, mkBadgeStatus, maxSndXFTPFileSize, verifyCredential)
 import qualified Simplex.Chat.Badges.Ledger as L
 import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind (..), BadgeIssueError (..), BadgeIssueFailure (..), BadgeState (..), BadgeSubscription (..), OpenStorePurchase (..), StoreReceiptOrigin (..))
 import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
@@ -5393,7 +5393,7 @@ handOverStoreReceipt presentingUser echoedInvoiceId origin payment = do
             Just tier
               | not (answeredHeld || refusalRecorded) ->
                   withStore' (`getBadgePurchase` badgePurchaseId) >>= \case
-                    Just UserBadgePurchase {badgeType} | badgeType /= tier -> rehold SHKTierChange
+                    Just UserBadgePurchase {badgeType} | raisesTier badgeType tier -> rehold SHKTierChange
                     _ -> pure False
             _ -> pure False
           if answeredHeld || tierChangeHeld
@@ -5479,6 +5479,11 @@ tierChangeCharge now = \case
       abs (diffUTCTime (posixSecondsToUTCTime $ fromIntegral purchased / 1000) now) < tierChangeWindow ->
         Just tier
   _ -> Nothing
+
+-- | Whether a charge of the second tier raises a purchase of the first: any other change waits for the renewal check.
+raisesTier :: BadgeType -> BadgeType -> Bool
+raisesTier BTSupporter BTLegend = True
+raisesTier _ _ = False
 
 -- | The same reference the service claims a transaction by, read without verifying anything.
 storeTransactionRef :: ServicePayment -> Maybe StoreTransactionRef
@@ -5781,15 +5786,15 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
                   pure $ SROCredited (Just user')
             -- the service's own check interval
             _ -> notCredited $ failed ri delay BIFServiceError {code = BSEPaymentPending, retryable = True} (Just 3600)
-    -- Settles with nothing to announce: past the window the renewal check grants the change, at the tier charged there is
-    -- nothing to change, and a badge no longer shown is resumed by the charge's next hand-over.
+    -- Settles with nothing to announce: past the window, or to a tier that is not higher, the renewal check grants the
+    -- change, and a badge no longer shown is resumed by the charge's next hand-over.
     changeTier ri delay purchaseId = do
       user <- withStore $ \db -> getUser db userId
       p_ <- withStore' (`getBadgePurchase` purchaseId)
       now <- badgeNow
       case (p_, decodeJSON payment) of
         (Just p@UserBadgePurchase {badgeType, shown = True}, Just payment')
-          | Just tier <- tierChangeCharge now payment', tier /= badgeType -> upgradeIssue ri delay user p payment' tier now
+          | Just tier <- tierChangeCharge now payment', raisesTier badgeType tier -> upgradeIssue ri delay user p payment' tier now
         _ -> SRODeferred <$ withStore' (`settleStoreReceipt` receiptId)
     -- the receipt's failures are recorded on the record, not as the purchase's failed renewal, as the badge shown still covers
     upgradeIssue ri delay user p@UserBadgePurchase {badgePurchaseId} payment' tier now = do
