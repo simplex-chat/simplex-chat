@@ -184,6 +184,9 @@ testOwnerOfFailed g = withContracts g $ \node ct -> do
   -- viem's encodeErrorResult of ReentrantCall()
   answerCall node (registrarOf node) ownerOfCall $ Reverts $ unhex "37ed32e8"
   ownerOfToken ct alice `shouldReturn` Left (ChainReverted $ Just RNReentrantCall)
+  -- a node or proxy that keeps the reason in the message but drops the data
+  setFault node "eth_call" $ RpcError (-32000) "execution reverted: ERC721: invalid token ID" Nothing
+  ownerOfToken ct alice `shouldReturn` Left (ChainReverted Nothing)
   setFault node "eth_call" HttpFailure
   ownerOfToken ct alice `shouldReturn` Left (ChainUnavailable "eth_call: HTTP 502")
 

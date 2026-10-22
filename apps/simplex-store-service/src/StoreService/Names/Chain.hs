@@ -115,6 +115,9 @@ maxRpcResponseBytes = 1024 * 1024
 revertCode :: Int
 revertCode = 3
 
+revertMessage :: Text
+revertMessage = "execution reverted"
+
 -- | A node's error message is cut to this many characters.
 maxNodeMessageLength :: Int
 maxNodeMessageLength = 200
@@ -273,10 +276,14 @@ rpc ChainClient {ccManager, ccConfig = ChainConfig {cRpcUrl}, ccTimeout} method 
       message <- e .: "message"
       revertData <- e .:? "data"
       pure $
-        if code == revertCode || "execution reverted" `T.isPrefixOf` message
-          then ChainReverted $ maybe (Just RNWithoutData) (decodeRevert <=< JT.parseMaybe bytes) revertData
+        if code == revertCode || revertMessage `T.isPrefixOf` message
+          then ChainReverted $ maybe (dataless message) (decodeRevert <=< JT.parseMaybe bytes) revertData
           else unavailable $ "error " <> tshow code <> ": " <> T.take maxNodeMessageLength message
     unavailable reason = ChainUnavailable $ method <> ": " <> reason
+    -- a node or proxy that drops the data can keep a reason in the message, as in "execution reverted: ERC721: invalid token ID"
+    dataless message
+      | message == revertMessage = Just RNWithoutData
+      | otherwise = Nothing
 
 -- | Only the kind of failure, for callers: an exception's text can hold the URL or its host.
 httpFailure :: HTTP.HttpException -> Text

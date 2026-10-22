@@ -31,7 +31,7 @@ namesChainTests = describe "StoreService names: chain" $ do
     it "reads a dry run's revert with data by its name" $ testDryRunRevertNamed g
     it "reads an eth_call revert with data by its name" $ testCallRevertNamed g
     it "reads ownerOf of a name nobody holds as a revert" $ testOwnerOfRevert g
-    it "reads a revert without code 3 or data as a revert without data" $ testRevertWithoutData g
+    it "reads a bare revert message without data as a revert without data, and one with a reason as unknown" $ testRevertWithoutData g
     it "reads a revert of an unknown error as an unnamed revert" $ testUnknownRevert g
   describe "failures" $ do
     it "reads an RPC error as unavailable, without the URL" $ testRpcError g
@@ -127,6 +127,9 @@ testRevertWithoutData :: TVar ChaChaDRG -> IO ()
 testRevertWithoutData g = withChain g $ \node c -> do
   setFault node "eth_call" $ RpcError (-32000) "execution reverted" Nothing
   ethCall c fakeController availableCall `shouldReturn` Left (ChainReverted $ Just RNWithoutData)
+  -- a reason kept in the message names a revert that had data, so it is not read as one without
+  setFault node "eth_call" $ RpcError 3 "execution reverted: ERC721: invalid token ID" Nothing
+  ethCall c fakeController availableCall `shouldReturn` Left (ChainReverted Nothing)
 
 testUnknownRevert :: TVar ChaChaDRG -> IO ()
 testUnknownRevert g = withChain g $ \node c -> do
