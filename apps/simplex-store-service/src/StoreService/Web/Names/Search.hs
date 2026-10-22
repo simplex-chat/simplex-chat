@@ -33,6 +33,7 @@ import StoreService.Names.Contracts
 import StoreService.Names.Links (LinkKind (..), linkKindOf)
 import StoreService.Names.Profiles (Entity, Profiles, linkEntity, linkPreview)
 import StoreService.Names.Store (isLabelRegistering)
+import StoreService.Names.View (tldText)
 import StoreService.Web.Http (Respond, badRequest, invalidLink, invalidName, jsonResponse, maxBodyBytes, providerUnavailable, readBoundedBody)
 import System.Timeout (timeout)
 import Text.Read (readMaybe)
@@ -85,7 +86,7 @@ searchAnswer NamesConfig {nTLD, nYears, nTermStart, nChain = ChainConfig {cChain
       ["status" .= ("available" :: Text), "price" .= price, "currency" .= ("usd" :: Text), "years" .= nYears, "termStart" .= termStart]
         <> ["resolver" .= addressText cResolver, "sponsor" .= addressText cSponsor]
         <> chain
-  FRegistering -> ok ["status" .= ("registered" :: Text), "entities" .= ([] :: [Entity]), "tld" .= nTLD]
+  FRegistering -> ok ["status" .= ("registered" :: Text), "entities" .= ([] :: [Entity]), "tld" .= tldText nTLD]
   FReserved -> ok ["status" .= ("reserved" :: Text)]
   FRegistered RegisteredName {rnOwner, rnResolver, rnExpiresAt, rnGracePeriod} records_ -> do
     entities <- maybe (pure []) (recordEntities ps) records_
@@ -97,7 +98,7 @@ searchAnswer NamesConfig {nTLD, nYears, nTermStart, nChain = ChainConfig {cChain
   where
     ok :: [JT.Pair] -> IO Response
     ok = pure . jsonResponse status200 . J.object
-    chain = ["chainId" .= cChainId, "tld" .= nTLD]
+    chain = ["chainId" .= cChainId, "tld" .= tldText nTLD]
     termStart = floor (utcTimeToPOSIXSeconds nTermStart) :: Integer
     recordsJSON NameRecords {rdContact, rdChannel} = J.object ["contact" .= rdContact, "channel" .= rdChannel]
 
