@@ -29,8 +29,8 @@ import Control.Monad.Except (ExceptT (..), runExceptT)
 import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
-import Data.IORef (IORef, atomicWriteIORef, newIORef, readIORef)
 import Data.Functor.Compose (Compose (..))
+import Data.IORef (IORef, atomicWriteIORef, newIORef, readIORef)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
@@ -137,7 +137,8 @@ codeLengthFor :: Contracts -> Int -> Int -> IO (Either ChainError (Maybe Int))
 codeLengthFor ct cents years = runExceptT $ do
   oracle <- ExceptT $ call ct (controller ct) ("prices()", "") decodeAddress
   (basePerYear, exceptions) <- ExceptT $ call ct oracle ("prices()", "") decodePrices
-  let perYear len = M.findWithDefault basePerYear (toInteger len) $ M.fromList exceptions
+  let exceptionPrices = M.fromList exceptions
+      perYear len = M.findWithDefault basePerYear (toInteger len) exceptionPrices
       covered len = perYear len * toInteger years <= toInteger cents
   pure $ case takeWhile covered [maxNameLength, maxNameLength - 1 .. minNameLength] of
     [] -> Nothing
