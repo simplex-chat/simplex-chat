@@ -24,7 +24,7 @@ import qualified Data.ByteString.Lazy as LB
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
-import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime)
+import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
 import Data.Word (Word64)
 import Network.HTTP.Client (RequestBody (..), defaultManagerSettings, httpLbs, method, newManager, parseRequest, requestBody, requestHeaders, responseBody, responseHeaders, responseStatus)
 import Network.HTTP.Types (hContentType, statusCode)
@@ -80,6 +80,7 @@ namesRecordsTests = describe "StoreService names: records" $ do
     it "lets a concurrent twin lose the unique insert before any signing, and answers both" $ testConcurrentTwin g
     it "answers edit_pending after the wait, and its repeat with the hash once mined" $ testPendingThenMined g
     it "answers edit_pending at once when the chain stops answering after the send" $ testChainStopsAfterSend g
+    it "bounds the wait for edit_pending from the request's arrival, counting the checks and the send" $ testPendingFromArrival g
   describe "outcomes" $ do
     it "answers an InvalidNonce revert of an edit another relayer applied as mined with no hash, and its repeat too" $ testAppliedByAnother g
     it "answers a dry run's InvalidNonce revert of an edit another relayer applied as applied with no hash, storing nothing" $ testDryRunAppliedByAnother g
@@ -401,6 +402,22 @@ testPendingThenMined g = withSetup g $ \s@Setup {records} -> do
   relayEdit records {rsPendingAfter = shortWait} req `shouldReturn` EAPending
   h <- mineSent s 1 True
   relayEdit records req `shouldReturn` EAApplied (Just h)
+
+testPendingFromArrival :: TVar ChaChaDRG -> IO ()
+testPendingFromArrival g = withSetup g $ \s@Setup {node, records} -> do
+  req <- ownerEdit s viemChannelLink
+  -- three block reads before the send: the deadline check, the name status and the market's fees
+  setFault node "eth_getBlockByNumber" $ Slow slowBlock
+  arrived <- getCurrentTime
+  answer <- timeout (4 * waitFromArrival) $ relayEdit records {rsPendingAfter = waitFromArrival} req
+  elapsed <- (`diffUTCTime` arrived) <$> getCurrentTime
+  answer `shouldBe` Just EAPending
+  length <$> sentTransactions node `shouldReturn` 1
+  -- the checks and the send take about 4.5 s, so a wait started after them would end near 7 s
+  elapsed `shouldSatisfy` (< 5.6)
+  where
+    slowBlock = 1500000
+    waitFromArrival = 2500000
 
 testChainStopsAfterSend :: TVar ChaChaDRG -> IO ()
 testChainStopsAfterSend g = withSetup g $ \s@Setup {node, records} -> do

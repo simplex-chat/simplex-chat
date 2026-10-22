@@ -126,29 +126,31 @@ newRecords rsStore rsTurns rsContracts rsChain rsSender rsTLD rsNow = do
   pure Records {rsStore, rsTurns, rsContracts, rsChain, rsSender, rsTLD, rsNow, rsPendingAfter = editPendingAfter, rsClaimed, rsStalled, rsChanges}
 
 -- | An identical repeat of a sent edit is answered from it, before any chain read.
+-- The wait for an outcome is bounded from the request's arrival, so the checks and the send count toward it.
 relayEdit :: Records -> EditRequest -> IO EditAnswer
-relayEdit rs req@EditRequest {erSignature} =
+relayEdit rs@Records {rsPendingAfter} req@EditRequest {erSignature} = do
+  timer <- registerDelay rsPendingAfter
   recoverAddress erSignature digest >>= \case
     Left _ -> pure EARefused
     Right signer ->
       withStore rs (`getRecordEditByBody` bodyHash) >>= \case
-        Just RecordEdit {reId} -> awaitEdit rs reId
-        Nothing -> newEdit rs req signer bodyHash
+        Just RecordEdit {reId} -> awaitEdit rs timer reId
+        Nothing -> newEdit rs timer req signer bodyHash
   where
     digest = editDigest rs req
     bodyHash = sha256Hash $ digest <> serializeSignature erSignature
 
-newEdit :: Records -> EditRequest -> Address -> ByteString -> IO EditAnswer
-newEdit rs req signer bodyHash =
+newEdit :: Records -> TVar Bool -> EditRequest -> Address -> ByteString -> IO EditAnswer
+newEdit rs timer req signer bodyHash =
   chainAccepts rs req signer >>= \case
     Left _ -> pure EAUnavailable
     Right False -> pure EARefused
     Right True ->
       insertEdit rs req signer bodyHash >>= \case
         Left wait -> pure $ EACapped wait
-        Right (Just editId) -> sendNew rs editId
+        Right (Just editId) -> sendNew rs timer editId
         -- a pending or mined edit holds the nonce: the identical twin is waited for, any other body refused
-        Right Nothing -> withStore rs (`getRecordEditByBody` bodyHash) >>= maybe (pure EARefused) (awaitEdit rs . reId)
+        Right Nothing -> withStore rs (`getRecordEditByBody` bodyHash) >>= maybe (pure EARefused) (awaitEdit rs timer . reId)
 
 -- | The deadline after the latest block's time, the signer the registry's owner on the default resolver, the nonce the owner's next.
 chainAccepts :: Records -> EditRequest -> Address -> IO (Either ChainError Bool)
@@ -177,9 +179,9 @@ insertEdit Records {rsStore, rsTurns, rsNow} EditRequest {erLabelHash, erChange,
     edit = NewRecordEdit {nreLabelHash = erLabelHash, nreOwner = signer, nreNonce = erNonce, nreChange = erChange, nreDeadline = erDeadline, nreSignature = erSignature, nreBodyHash = bodyHash}
 
 -- | An edit that was not sent is answered and deleted while still claimed, so the lane cannot send it after.
-sendNew :: Records -> Int64 -> IO EditAnswer
-sendNew rs editId =
-  withClaim rs editId Nothing (withStore rs (`getRecordEdit` editId) >>= maybe (pure Nothing) send) >>= maybe (awaitEdit rs editId) pure
+sendNew :: Records -> TVar Bool -> Int64 -> IO EditAnswer
+sendNew rs timer editId =
+  withClaim rs editId Nothing (withStore rs (`getRecordEdit` editId) >>= maybe (pure Nothing) send) >>= maybe (awaitEdit rs timer editId) pure
   where
     send edit =
       sendEdit rs edit >>= \case
@@ -207,11 +209,11 @@ sendEdit rs@Records {rsSender} edit@RecordEdit {reId} =
 forget :: Records -> Int64 -> IO ()
 forget rs editId = withStore rs (`deleteUnsentEdit` editId) >> settled rs editId
 
--- | Waits until the edit settles, the chain stops answering for it, or 'rsPendingAfter' passes.
-awaitEdit :: Records -> Int64 -> IO EditAnswer
-awaitEdit rs@Records {rsChanges, rsStalled, rsPendingAfter} editId = registerDelay rsPendingAfter >>= loop
+-- | Waits until the edit settles, the chain stops answering for it, or the timer fires.
+awaitEdit :: Records -> TVar Bool -> Int64 -> IO EditAnswer
+awaitEdit rs@Records {rsChanges, rsStalled} timer editId = loop
   where
-    loop timer = do
+    loop = do
       -- read before the row, so a change committed after the read still wakes this request
       seen <- readTVarIO rsChanges
       withStore rs (`getRecordEdit` editId) >>= \case
@@ -224,7 +226,7 @@ awaitEdit rs@Records {rsChanges, rsStalled, rsPendingAfter} editId = registerDel
             then pure EAPending
             else do
               changed <- atomically $ (True <$ (readTVar rsChanges >>= check . (/= seen))) `orElse` (False <$ (readTVar timer >>= check))
-              if changed then loop timer else pure EAPending
+              if changed then loop else pure EAPending
 
 runRecordEdits :: Records -> IO ()
 runRecordEdits rs = forever $ recordsRound rs >> threadDelay recordsInterval
