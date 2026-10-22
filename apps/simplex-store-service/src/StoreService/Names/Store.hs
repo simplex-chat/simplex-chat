@@ -32,6 +32,7 @@ module StoreService.Names.Store
     orderLive,
     newRegistrationId,
     methodText,
+    textMethod,
     createPaidRegistration,
     createCodeRegistration,
     getRegistration,
@@ -247,7 +248,7 @@ data CodeHashTaken = CodeHashTaken
 data TxFor = TxCommit RegistrationId | TxRegister RegistrationId | TxEdit Int64
   deriving (Eq, Show)
 
--- | A dropped transaction was never mined and its registrar nonce went to another one.
+-- | A dropped transaction has no receipt and its registrar nonce is used.
 data TxStatus = TSPending | TSMined | TSReverted | TSDropped
   deriving (Eq, Show, Enum, Bounded)
 

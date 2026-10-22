@@ -31,10 +31,10 @@ import StoreService.Store (RevokeResult (..))
 import Test.Hspec
 
 #if defined(dbPostgres)
-import Database.PostgreSQL.Simple (Only (..))
+import Database.PostgreSQL.Simple (Only (..), (:.) (..))
 import StoreService.Store.Postgres.Migrations (storeServiceSchemaMigrations)
 #else
-import Database.SQLite.Simple (Only (..))
+import Database.SQLite.Simple (Only (..), (:.) (..))
 import StoreService.Store.SQLite.Migrations (storeServiceSchemaMigrations)
 #endif
 
@@ -132,8 +132,8 @@ insertInvoiceRow :: DB.Connection -> Text -> UTCTime -> Text -> IO ()
 insertInvoiceRow db invId expiresAt status =
   DB.execute
     db
-    "INSERT INTO sx_badge_service_invoices (invoice_id, provider, price, amount, currency, expires_at, status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
-    (invId, "crypto" :: Text, price, price, "usd" :: Text, expiresAt, status, t0, t0)
+    "INSERT INTO sx_badge_service_invoices (invoice_id, provider, price, amount, currency, payment_address, payment_crypto_currency, payment_crypto_amount, expires_at, status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
+    ((invId, "crypto" :: Text, price, price, "usd" :: Text, "bc1qexampleaddress" :: Text, "btc" :: Text, "0.00312" :: Text) :. (expiresAt, status, t0, t0))
 
 -- | A paid order whose invoice, named after the registration, expires at the given time.
 placePaid :: DBStore -> Text -> Address -> OrderFields -> UTCTime -> IO (Either RegistrationRefused ())

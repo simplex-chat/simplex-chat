@@ -24,14 +24,19 @@ module StoreService.Poller
     readsPerPass,
     skipWarnInterval,
     maxSkipReasons,
+    cleanupInterval,
+    unpaidRetention,
+    cleanupUnpaid,
   )
 where
 
 import StoreService.Config (PollConfig (..))
-import StoreService.Orders (decide, settleOrder)
+import StoreService.Names.Phases (Phases, RegistrationId (..))
+import StoreService.Names.Store (deleteUnpaidRegistration, unpaidCleanupCandidates)
+import StoreService.Orders (decide, expireOverdue, settleOrder)
 import StoreService.Providers (ListPass (..), PaymentSignal (..), Provider (..), ProviderError (..), Received (..), expiresItself, settleWindow)
-import StoreService.Store.Invoices (InvoiceRow (..), OverdueInvoice (..), expireOverdue, getInvoiceByProviderRef, overdueInvoices, providerText, unpaidRefs)
-import StoreService.Waiters (Waiters, publish, waitingCount, waitingCountSTM)
+import StoreService.Store.Invoices (InvoiceRow (..), OverdueInvoice (..), getInvoice, getInvoiceByProviderRef, overdueInvoices, providerText, unpaidRefs)
+import StoreService.Waiters (Waiters, waitingCount, waitingCountSTM)
 import Control.Concurrent.STM
 import StoreService.Log (logError, logInfo, logWarn, safely, safelyWith)
 import Control.Monad (filterM, forever, unless, void, when)
@@ -44,13 +49,21 @@ import qualified Data.Set as S
 import Data.Text (Text)
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
 import Numeric.Natural (Natural)
-import Simplex.Chat.PaymentService.Types (InvoiceStatus (..), PaymentProvider (..))
-import Simplex.Messaging.Agent.Store.Common (DBStore)
+import Simplex.Chat.PaymentService.Types (InvoiceId (..), InvoiceStatus (..), PaymentProvider (..))
+import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Util (tshow)
 
 -- | Allows for our clock running ahead of the provider's; an expired invoice can still be marked paid.
 expiryGrace :: NominalDiffTime
 expiryGrace = 600
+
+-- | How often unpaid name orders are cleaned up; a provider that does not answer keeps an order until the next run.
+cleanupInterval :: NominalDiffTime
+cleanupInterval = 24 * 3600
+
+-- | How long an unpaid name order is kept after its invoice expired.
+unpaidRetention :: NominalDiffTime
+unpaidRetention = 30 * 24 * 3600
 
 -- | Give up on a failing cancel only after an hour, not on the first failure.
 cancelGiveUpDelay :: NominalDiffTime
@@ -90,6 +103,8 @@ minCadenceSeconds = 1
 data PollerEnv = PollerEnv
   { peStore :: DBStore,
     peWaiters :: Waiters,
+    -- | Nothing when the service sells no names.
+    pePhases :: Maybe Phases,
     peHints :: ReadHints,
     peProviders :: [Provider],
     pePoll :: PollConfig,
@@ -97,15 +112,17 @@ data PollerEnv = PollerEnv
     peListedAt :: TVar (Maybe UTCTime),
     peStrayEvery :: NominalDiffTime,
     -- When the cancel first failed, for orders older than 72 hours.
-    peCancelFailed :: TVar (Map Text UTCTime)
+    peCancelFailed :: TVar (Map Text UTCTime),
+    peCleanedAt :: TVar (Maybe UTCTime)
   }
 
-newPollerEnv :: DBStore -> Waiters -> ReadHints -> [Provider] -> PollConfig -> IO PollerEnv
-newPollerEnv peStore peWaiters peHints peProviders pePoll = do
+newPollerEnv :: DBStore -> Waiters -> Maybe Phases -> ReadHints -> [Provider] -> PollConfig -> IO PollerEnv
+newPollerEnv peStore peWaiters pePhases peHints peProviders pePoll = do
   peSkipped <- newTVarIO M.empty
   peListedAt <- newTVarIO Nothing
   peCancelFailed <- newTVarIO M.empty
-  pure PollerEnv {peStore, peWaiters, peHints, peProviders, pePoll, peSkipped, peListedAt, peStrayEvery = strayListInterval, peCancelFailed}
+  peCleanedAt <- newTVarIO Nothing
+  pure PollerEnv {peStore, peWaiters, pePhases, peHints, peProviders, pePoll, peSkipped, peListedAt, peStrayEvery = strayListInterval, peCancelFailed, peCleanedAt}
 
 -- | Read providers before the sweep, and skip the sweep entirely when a read failed, so an
 -- invoice with money in it is never expired.
@@ -126,6 +143,7 @@ runOnePass env@PollerEnv {peStore, peProviders} = do
         pure read'
   pruneSkipLog env now
   when (accounted && not (null peProviders)) $ sweepExpired env now
+  cleanupDue env now >>= (`when` cleanupUnpaid env now)
 
 -- | The cases the stray list catches are rare and not urgent, so minutes, not the pass cadence.
 strayListInterval :: NominalDiffTime
@@ -189,11 +207,11 @@ listPass env now p =
 
 -- | provider_ref is unique table-wide, not per provider, so check the provider too.
 settleMoved :: PollerEnv -> PaymentProvider -> UTCTime -> (Text, PaymentSignal) -> IO ()
-settleMoved env@PollerEnv {peStore, peWaiters} provider now (ref, signal) =
+settleMoved env@PollerEnv {peStore, peWaiters, pePhases} provider now (ref, signal) =
   getInvoiceByProviderRef peStore ref >>= \case
     Just InvoiceRow {irInvoiceId, irStatus, irProvider} | irProvider == provider ->
       when (isJust (decide irStatus signal)) $
-        settleOrder peStore peWaiters irInvoiceId signal now >>= \case
+        settleOrder peStore peWaiters pePhases irInvoiceId signal now >>= \case
           Left e -> logError ("badge poller: settling order " <> ref <> " failed: " <> e)
           Right status -> reportSettled irStatus status
     _ -> pure ()
@@ -226,17 +244,44 @@ readHint env@PollerEnv {peStore, peProviders} now ref =
           Right (Just signal) -> settleMoved env irProvider now (ref, signal)
 
 sweepExpired :: PollerEnv -> UTCTime -> IO ()
-sweepExpired env@PollerEnv {peStore, peWaiters, peCancelFailed} now = do
+sweepExpired env@PollerEnv {peStore, peWaiters, pePhases, peCancelFailed} now = do
   let cutoff = addUTCTime (negate expiryGrace) now
   (selfExpiring, payable) <- partition (expiresItself . oiProvider) <$> overdueInvoices peStore cutoff
   atomically $ modifyTVar' peCancelFailed (`M.restrictKeys` S.fromList (map oiProviderRef payable))
   -- Cancel only a few orders per pass, so a long list does not block other work.
   cancelled <- filterM (closedAtProvider env now) (take readsPerPass payable)
-  expired <- expireOverdue peStore cutoff (map oiInvoiceId (selfExpiring <> cancelled))
-  -- publish only after the write commits, or a woken reader will not see it
-  unless (null expired) $ do
-    atomically $ mapM_ (\invId -> publish peWaiters invId ISExpired) expired
-    logInfo ("badge poller: expired " <> tshow (length expired) <> " invoice(s) past their window")
+  expired <- expireOverdue peStore peWaiters pePhases now cutoff (map oiInvoiceId (selfExpiring <> cancelled))
+  unless (null expired) $ logInfo ("badge poller: expired " <> tshow (length expired) <> " invoice(s) past their window")
+
+cleanupDue :: PollerEnv -> UTCTime -> IO Bool
+cleanupDue PollerEnv {peCleanedAt} now = atomically $ do
+  due <- maybe True (\at -> diffUTCTime now at >= cleanupInterval) <$> readTVar peCleanedAt
+  when due $ writeTVar peCleanedAt (Just now)
+  pure due
+
+-- | The poller reads an invoice only within settleWindow of its creation, so each order's invoice is read once more
+-- before the order goes: a payment whose webhook was lost is recorded then, and the order is kept for support.
+cleanupUnpaid :: PollerEnv -> UTCTime -> IO ()
+cleanupUnpaid env@PollerEnv {peStore} now = do
+  candidates <- withTransaction peStore (`unpaidCleanupCandidates` addUTCTime (negate unpaidRetention) now)
+  deleted <- filterM (\c@(RegistrationId rid, _) -> safelyWith ("names cleanup: registration " <> rid) False (cleanOne c)) candidates
+  unless (null deleted) $ logInfo ("names cleanup: deleted " <> tshow (length deleted) <> " unpaid order(s)")
+  where
+    cleanOne (rid@(RegistrationId ridText), invId@(InvoiceId invText)) =
+      getInvoice peStore invId >>= \case
+        Nothing -> pure False
+        Just InvoiceRow {irProvider, irProviderRef} -> case find ((== irProvider) . pProvider) (peProviders env) of
+          Nothing -> keep ("no " <> tshow irProvider <> " provider is configured to read invoice " <> invText)
+          Just p ->
+            pReadInvoice p irProviderRef >>= \case
+              Left (ProviderError e) -> keep ("reading invoice " <> invText <> " failed: " <> e)
+              Right signal_ -> do
+                mapM_ (\signal -> settleMoved env irProvider now (irProviderRef, signal)) signal_
+                deleted <- withTransaction peStore (`deleteUnpaidRegistration` rid)
+                unless deleted $ logError ("names cleanup: unpaid registration " <> ridText <> " is kept because invoice " <> invText <> " received a payment; refund it")
+                pure deleted
+      where
+        keep why = False <$ logWarn ("names cleanup: unpaid registration " <> ridText <> " is kept until the next run, " <> why)
 
 -- | Cancel the order at the provider first, so the buyer can no longer pay it.
 closedAtProvider :: PollerEnv -> UTCTime -> OverdueInvoice -> IO Bool

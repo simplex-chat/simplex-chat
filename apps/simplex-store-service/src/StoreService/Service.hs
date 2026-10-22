@@ -167,7 +167,7 @@ storeService opts@StoreServiceOpts {serviceConfigFile} cfg env = do
       namesEnv <- forM (names sc) (startNames cc turns)
       webEnv <- newWebEnv chatStore sc ws hints providers namesEnv
       exportWebapp (listener sc) (stripe sc)
-      pollerEnv <- newPollerEnv chatStore ws hints providers (poll sc)
+      pollerEnv <- newPollerEnv chatStore ws (nePhases <$> namesEnv) hints providers (poll sc)
       pure $ [runWebListener webEnv, runPoller pollerEnv] <> maybe [] (\ne -> [runSender (neSender ne)]) namesEnv
 
 startNames :: ChatController -> Turns -> NamesConfig -> IO NamesEnv

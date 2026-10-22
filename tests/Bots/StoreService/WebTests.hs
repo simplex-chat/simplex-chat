@@ -5,11 +5,37 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 
-module Bots.StoreService.WebTests (badgeWebTests, withServiceStore, columnsOf, runMigrations, digestFixture, capturingStderr) where
+module Bots.StoreService.WebTests
+  ( badgeWebTests,
+    withServiceStore,
+    columnsOf,
+    runMigrations,
+    digestFixture,
+    capturingStderr,
+    StubState (..),
+    StubCall (..),
+    newStubState,
+    stubProvider,
+    stubCalls,
+    setSignals,
+    sampleProviderInvoice,
+    prepareStaticDir,
+    testServiceConfig,
+    testBTCPayConfig,
+    WebClient,
+    webRequestBody,
+    webGet,
+    statusOf,
+    jsonObject,
+    fieldOf,
+    rcv,
+    bounded,
+  )
+where
 
 import StoreService.Catalog (catalogCurrency, defaultCatalog)
 import StoreService.Config (BTCPayConfig (..), ListenerConfig (..), PollConfig (..), ServiceConfig (..), SpeedPolicy (..), StripeConfig (..))
-import StoreService.Orders (codeLifetime, settleOrder)
+import StoreService.Orders (cancelOpenInvoice, codeLifetime, expireOverdue, settleOrder)
 import StoreService.Poller
 import StoreService.Providers
 import StoreService.Providers.BTCPay (btcpayProvider, listPageSize, maxListPages)
@@ -524,13 +550,16 @@ testExpireOverdueMovesOnlyTheNamed = withServiceStore $ \st -> do
       unnamed = sampleInvoice {niInvoiceId = InvoiceId "inv-unnamed", niProviderRef = "p-unnamed", niCodeHash = digestFixture 13, niExpiresAt = pastExpiry}
   createInvoiceRows st named `shouldReturn` Right ()
   createInvoiceRows st unnamed `shouldReturn` Right ()
-  expireOverdue st now [niInvoiceId named] `shouldReturn` [niInvoiceId named]
+  expireNamed st now [niInvoiceId named] `shouldReturn` [niInvoiceId named]
   invoiceStatus st (niInvoiceId named) `shouldReturn` ISExpired
   invoiceStatus st (niInvoiceId unnamed) `shouldReturn` ISOpen
-  expireOverdue st now [niInvoiceId named] `shouldReturn` []
+  expireNamed st now [niInvoiceId named] `shouldReturn` []
 
 expireAllOverdue :: DBStore -> UTCTime -> IO [InvoiceId]
-expireAllOverdue st now = overdueInvoices st now >>= expireOverdue st now . map oiInvoiceId
+expireAllOverdue st now = overdueInvoices st now >>= expireNamed st now . map oiInvoiceId
+
+expireNamed :: DBStore -> UTCTime -> [InvoiceId] -> IO [InvoiceId]
+expireNamed st now invIds = newWaiters >>= \waiters -> expireOverdue st waiters Nothing now now invIds
 
 testRevokeAndRedeemExcludeEachOther :: IO ()
 testRevokeAndRedeemExcludeEachOther = withServiceStore $ \st -> do
@@ -1620,8 +1649,7 @@ testCreateInvoice = bounded "create invoice" $ withCheckout $ \ref env client ->
   irStatus row `shouldBe` ISOpen
   irProvider row `shouldBe` PPCrypto
   irProviderRef row `shouldBe` piProviderRef sampleProviderInvoice
-  irBadgeType row `shouldBe` BTSupporter
-  irMonths row `shouldBe` 1
+  irProduct row `shouldBe` IPBadge BTSupporter 1
   irPrice row `shouldBe` CurrencyAmount 500
   irAmount row `shouldBe` CurrencyAmount 500
   irDestination row `shouldBe` piDestination sampleProviderInvoice
@@ -1678,8 +1706,7 @@ testCreateDerivesFromCatalog = bounded "derived from the catalog" $ withCheckout
   fieldOf o "amount" `shouldBe` Just (J.Number 5400)
   invId <- InvoiceId <$> stringField o "invoiceId"
   Just row <- getInvoice (weStore env) invId
-  irBadgeType row `shouldBe` BTLegend
-  irMonths row `shouldBe` 3
+  irProduct row `shouldBe` IPBadge BTLegend 3
   irPrice row `shouldBe` CurrencyAmount 6000
   irAmount row `shouldBe` CurrencyAmount 5400
 
@@ -1961,7 +1988,7 @@ rcv :: Word32 -> Maybe Text -> Received
 rcv amount crypto = Received {rcvAmount = CurrencyAmount amount, rcvCrypto = crypto, rcvDue = Nothing}
 
 settle :: DBStore -> InvoiceId -> PaymentSignal -> UTCTime -> IO (Either Text InvoiceStatus)
-settle st iid signal at = newWaiters >>= \waiters -> settleOrder st waiters iid signal at
+settle st iid signal at = newWaiters >>= \waiters -> settleOrder st waiters Nothing iid signal at
 
 seedOpen :: HasCallStack => DBStore -> IO InvoiceId
 seedOpen st = do
@@ -2191,7 +2218,7 @@ testPublishIsAfterCommit = bounded "publish after commit" $ withServiceStore $ \
     visible <- independentStatus st iid
     putMVar seen (woken, visible)
   threadDelay 100000
-  settleOrder st waiters iid (SigSettled (rcv 500 Nothing) settleAt) settleAt `shouldReturn` Right ISPaid
+  settleOrder st waiters Nothing iid (SigSettled (rcv 500 Nothing) settleAt) settleAt `shouldReturn` Right ISPaid
   takeMVar seen `shouldReturn` (ISPaid, Just "paid")
 
 waitCeiling :: Int
@@ -2201,7 +2228,7 @@ testSettlementWakesAHeldRequest :: IO ()
 testSettlementWakesAHeldRequest = bounded "settlement wakes a hold" $ withWebApp $ \env client -> do
   iid <- seedOpenInvoice env
   let settled =
-        settleOrder (weStore env) (weWaiters env) iid (SigSettled (rcv 500 (Just "0.00050000")) settleAt) settleAt
+        settleOrder (weStore env) (weWaiters env) Nothing iid (SigSettled (rcv 500 (Just "0.00050000")) settleAt) settleAt
           `shouldReturn` Right ISPaid
   o <- wokenBy client iid settled "paid"
   fieldOf o "amountPaid" `shouldBe` Just (J.Number 500)
@@ -2253,7 +2280,7 @@ testLosingTheStatusGuardStillWakesTheHold = bounded "losing the guard" $ withWeb
 
 settledIntoAnExpiredRow :: HasCallStack => WebEnv -> InvoiceId -> IO ()
 settledIntoAnExpiredRow env iid = do
-  settleOrder (weStore env) (weWaiters env) iid (SigSettled (rcv 500 (Just "0.00050000")) settleAt) settleAt
+  settleOrder (weStore env) (weWaiters env) Nothing iid (SigSettled (rcv 500 (Just "0.00050000")) settleAt) settleAt
     `shouldReturn` Right ISExpired
   invoiceStatus (weStore env) iid `shouldReturn` ISExpired
   code <- settledCode (weStore env) iid
@@ -2295,7 +2322,7 @@ testCryptoAmountFillsInFromNull = bounded "crypto fills in" $ withServiceStore $
 
 pollerFor :: WebEnv -> IO PollerEnv
 pollerFor WebEnv {weStore, weConfig, weWaiters, weHints, weProviders} =
-  newPollerEnv weStore weWaiters weHints weProviders (poll weConfig)
+  newPollerEnv weStore weWaiters Nothing weHints weProviders (poll weConfig)
 
 withStubPoller :: Int -> (IORef StubState -> PollerEnv -> WebEnv -> WebClient -> IO a) -> IO a
 withStubPoller = withStubPollerOf stubProvider
@@ -2555,7 +2582,7 @@ testHintsDoNotPostponeThePass :: IO ()
 testHintsDoNotPostponeThePass = bounded "hints do not postpone the pass" $ withStubPoller raceHold $ \ref _ env _ -> do
   seedBadgePrice (weStore env) "price1"
   mapM_ (\i -> seedOpenRef (weStore env) i (burstRef i) someExpiry) burstRefs
-  built <- newPollerEnv (weStore env) (weWaiters env) (weHints env) (weProviders env) PollConfig {pWaitingSeconds = 1, pIdleSeconds = 1}
+  built <- newPollerEnv (weStore env) (weWaiters env) Nothing (weHints env) (weProviders env) PollConfig {pWaitingSeconds = 1, pIdleSeconds = 1}
   let poller = built {peStrayEvery = 0}
   setSignals ref [(burstRef i, settledSignal) | i <- burstRefs]
   runOnePass poller
@@ -2587,7 +2614,7 @@ awaitCalls ref p = do
 testWaiterCutsTheIdleSleepShort :: IO ()
 testWaiterCutsTheIdleSleepShort = bounded "waiter cuts the sleep" $ withStubPoller raceHold $ \_ _ env client -> do
   iid <- seedOpenInvoice env
-  poller <- newPollerEnv (weStore env) (weWaiters env) (weHints env) (weProviders env) PollConfig {pWaitingSeconds = 1, pIdleSeconds = 10}
+  poller <- newPollerEnv (weStore env) (weWaiters env) Nothing (weHints env) (weProviders env) PollConfig {pWaitingSeconds = 1, pIdleSeconds = 10}
   started <- getCurrentTime
   slept <- async (passDue poller >>= atomically)
   threadDelay 200000
@@ -3444,7 +3471,7 @@ testCancelExpiresAFundedInvoice = withServiceStore $ \st -> do
   let iid = niInvoiceId sampleInvoice
   createInvoiceRows st sampleInvoice `shouldReturn` Right ()
   settle st iid (SigFunded (rcv 500 (Just "0.00050000")) PaidInPart) now `shouldReturn` Right ISOpen
-  cancelOpenInvoice st iid now `shouldReturn` True
+  newWaiters >>= \waiters -> cancelOpenInvoice st waiters Nothing iid now `shouldReturn` True
   Just row <- getInvoice st iid
   irStatus row `shouldBe` ISExpired
   (ipCryptoPaid <$> irPayment row) `shouldBe` Just (Just "0.00050000")
@@ -3482,7 +3509,7 @@ testHeldWaitWakesOnAPaymentThatDoesNotSettle = bounded "funded wakes a hold" $ w
   held <- async $ webGet client (invoicePath iid <> "?wait=open")
   awaitWaitingCount env 1
   waitingCount (weWaiters env) `shouldReturn` 1
-  settleOrder (weStore env) (weWaiters env) iid (SigFunded (rcv 500 (Just "0.00050000")) PaidInPart) someCreated
+  settleOrder (weStore env) (weWaiters env) Nothing iid (SigFunded (rcv 500 (Just "0.00050000")) PaidInPart) someCreated
     `shouldReturn` Right ISOpen
   r <- wait held
   statusOf r `shouldBe` 200
@@ -3494,17 +3521,17 @@ testARepeatedSignalDoesNotWakeAHold :: IO ()
 testARepeatedSignalDoesNotWakeAHold = bounded "repeat signal" $ withWebApp $ \env client -> do
   iid <- seedOpenInvoice env
   let funded = SigFunded (rcv 500 (Just "0.00050000")) PaidInPart
-  settleOrder (weStore env) (weWaiters env) iid funded settleAt `shouldReturn` Right ISOpen
+  settleOrder (weStore env) (weWaiters env) Nothing iid funded settleAt `shouldReturn` Right ISOpen
   held <- async $ webGet client (invoicePath iid <> "?wait=open&seenPaid=0.00050000&seenFull=0")
   threadDelay holdParkDelay
   Async.poll held >>= (`shouldSatisfy` isNothing)
 
-  settleOrder (weStore env) (weWaiters env) iid funded settleAt `shouldReturn` Right ISOpen
+  settleOrder (weStore env) (weWaiters env) Nothing iid funded settleAt `shouldReturn` Right ISOpen
   threadDelay holdParkDelay
   stillParked <- Async.poll held
   stillParked `shouldSatisfy` isNothing
 
-  settleOrder (weStore env) (weWaiters env) iid (SigSettled (rcv 500 (Just "0.00050000")) settleAt) settleAt
+  settleOrder (weStore env) (weWaiters env) Nothing iid (SigSettled (rcv 500 (Just "0.00050000")) settleAt) settleAt
     `shouldReturn` Right ISPaid
   r <- wait held
   statusOf r `shouldBe` 200
@@ -3516,7 +3543,7 @@ testHeldWaitIsNotWokenByAPassThatWroteNothing = bounded "no churn" $ withCheckou
   iid <- seedOpenInvoice env
   markPaid (weStore env) iid
   waitingBefore <- waitingCount (weWaiters env)
-  settleOrder (weStore env) (weWaiters env) iid (SigFunded (rcv 500 (Just "0.00050000")) PaidInPart) someCreated
+  settleOrder (weStore env) (weWaiters env) Nothing iid (SigFunded (rcv 500 (Just "0.00050000")) PaidInPart) someCreated
     `shouldReturn` Right ISPaid
   waitingAfter <- waitingCount (weWaiters env)
   waitingAfter `shouldBe` waitingBefore
@@ -3524,7 +3551,7 @@ testHeldWaitIsNotWokenByAPassThatWroteNothing = bounded "no churn" $ withCheckou
 testViewCarriesTheProvidersPaidVerdict :: IO ()
 testViewCarriesTheProvidersPaidVerdict = bounded "paid in full" $ withCheckout $ \_ env client -> do
   iid <- seedOpenInvoice env
-  settleOrder (weStore env) (weWaiters env) iid (SigFunded (rcv 400 (Just "0.00040000")) PaidInFull) someCreated
+  settleOrder (weStore env) (weWaiters env) Nothing iid (SigFunded (rcv 400 (Just "0.00040000")) PaidInFull) someCreated
     `shouldReturn` Right ISOpen
   o <- jsonObject =<< webGet client (invoicePath iid)
   fieldOf o "status" `shouldBe` Just (J.String "open")
@@ -3534,9 +3561,9 @@ testViewCarriesTheProvidersPaidVerdict = bounded "paid in full" $ withCheckout $
 testPaidVerdictIsNotWithdrawnByALaterRead :: IO ()
 testPaidVerdictIsNotWithdrawnByALaterRead = bounded "verdict sticks" $ withCheckout $ \_ env client -> do
   iid <- seedOpenInvoice env
-  settleOrder (weStore env) (weWaiters env) iid (SigFunded (rcv 500 (Just "0.00050000")) PaidInFull) someCreated
+  settleOrder (weStore env) (weWaiters env) Nothing iid (SigFunded (rcv 500 (Just "0.00050000")) PaidInFull) someCreated
     `shouldReturn` Right ISOpen
-  settleOrder (weStore env) (weWaiters env) iid (SigFunded (rcv 500 (Just "0.00050000")) PaidInPart) someCreated
+  settleOrder (weStore env) (weWaiters env) Nothing iid (SigFunded (rcv 500 (Just "0.00050000")) PaidInPart) someCreated
     `shouldReturn` Right ISOpen
   o <- jsonObject =<< webGet client (invoicePath iid)
   fieldOf o "paidInFull" `shouldBe` Just (J.Bool True)
