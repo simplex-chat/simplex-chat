@@ -9,19 +9,25 @@ module Bots.StoreService.FakeEthNode
     withFakeEthNode,
     fakeChainConfig,
     answerCall,
+    answerCallOnce,
+    forgetCall,
     setFault,
     clearFault,
     setBlock,
     setFees,
+    revertDryRun,
     mine,
     dropTransaction,
     pruneReceipt,
     useNextNonce,
     sentTransactions,
+    awaitSent,
     revertFault,
     fakeChainId,
     fakeController,
     fakeSponsor,
+    fakeBaseRegistrar,
+    fakeResolver,
     fakeRegistrarKey,
     fakeGas,
     fakeTip,
@@ -48,7 +54,7 @@ import Data.Word (Word64)
 import Network.HTTP.Types (badGateway502, badRequest400, hContentType, ok200)
 import Network.Wai (Application, responseLBS, strictRequestBody)
 import qualified Network.Wai.Handler.Warp as Warp
-import Numeric (showHex)
+import Numeric (readHex, showHex)
 import Simplex.Messaging.Crypto (keccak256)
 import qualified Simplex.Messaging.Crypto.Secp256k1 as S
 import Simplex.Messaging.Encoding.String (strDecode)
@@ -78,15 +84,21 @@ data Fault
 
 data FakeState = FakeState
   { fsCalls :: Map (ByteString, ByteString) CallAnswer,
+    -- | answered once, before 'fsCalls'
+    fsCallsOnce :: Map (ByteString, ByteString) CallAnswer,
     fsFaults :: Map Text Fault,
     -- | every raw transaction received, newest first
     fsSent :: [ByteString],
     -- | the transactions the node knows and has not mined, by nonce
     fsPool :: Map Word64 ByteString,
     fsReceipts :: Map ByteString (Bool, Word64),
+    -- | the revert data of the dry runs of these calldata
+    fsDryRuns :: Map ByteString ByteString,
     -- | the key's transaction count at the latest block
     fsUsed :: Word64,
     fsBlock :: (Word64, Word64),
+    -- | the times of the blocks mined or set, by number
+    fsBlockTimes :: Map Word64 Word64,
     -- | the suggested tip and the base fee
     fsFees :: (Word64, Word64),
     fsClosed :: Bool
@@ -110,7 +122,7 @@ fakeResolver = address "0x2279b7a0a67db372996a5fab50d91eaa73d2ebe6"
 fakeRegistrarKey :: S.Secp256k1PrivateKey
 fakeRegistrarKey = either error id $ S.mkPrivateKey $ BA.replicate 32 0x46
 
--- | 2026-01-01, block 1; each mined block is this many seconds later.
+-- | 2026-01-01, block 1 after the genesis block 0; each mined block is this many seconds later.
 genesisTime, blockSeconds :: Word64
 genesisTime = 1767225600
 blockSeconds = 12
@@ -121,12 +133,15 @@ withFakeEthNode action = do
     newTVarIO
       FakeState
         { fsCalls = M.empty,
+          fsCallsOnce = M.empty,
           fsFaults = M.empty,
           fsSent = [],
           fsPool = M.empty,
           fsReceipts = M.empty,
+          fsDryRuns = M.empty,
           fsUsed = 0,
           fsBlock = (1, genesisTime),
+          fsBlockTimes = M.fromList [(0, genesisTime - blockSeconds), (1, genesisTime)],
           fsFees = (fakeTip, fakeBaseFee),
           fsClosed = False
         }
@@ -152,6 +167,14 @@ fakeChainConfig FakeEthNode {fnUrl} =
 answerCall :: FakeEthNode -> Address -> ByteString -> CallAnswer -> IO ()
 answerCall FakeEthNode {fnState} to calldata a = atomically $ modifyTVar' fnState $ \s -> s {fsCalls = M.insert (unAddress to, calldata) a $ fsCalls s}
 
+-- | The next call only is answered this way, then the call answers as before.
+answerCallOnce :: FakeEthNode -> Address -> ByteString -> CallAnswer -> IO ()
+answerCallOnce FakeEthNode {fnState} to calldata a = atomically $ modifyTVar' fnState $ \s -> s {fsCallsOnce = M.insert (unAddress to, calldata) a $ fsCallsOnce s}
+
+-- | The call has no answer any more, as if the node failed it.
+forgetCall :: FakeEthNode -> Address -> ByteString -> IO ()
+forgetCall FakeEthNode {fnState} to calldata = atomically $ modifyTVar' fnState $ \s -> s {fsCalls = M.delete (unAddress to, calldata) $ fsCalls s}
+
 -- | Every request for the method fails this way until 'clearFault'.
 setFault :: FakeEthNode -> Text -> Fault -> IO ()
 setFault FakeEthNode {fnState} method f = atomically $ modifyTVar' fnState $ \s -> s {fsFaults = M.insert method f $ fsFaults s}
@@ -164,7 +187,11 @@ revertFault = RpcError 3 "execution reverted" . Just
 
 -- | Sets the latest block's number and time.
 setBlock :: FakeEthNode -> Word64 -> Word64 -> IO ()
-setBlock FakeEthNode {fnState} number time = atomically $ modifyTVar' fnState $ \s -> s {fsBlock = (number, time)}
+setBlock FakeEthNode {fnState} number time = atomically $ modifyTVar' fnState $ \s -> s {fsBlock = (number, time), fsBlockTimes = M.insert number time $ fsBlockTimes s}
+
+-- | The dry run of this calldata reverts with this data, or passes again with Nothing.
+revertDryRun :: FakeEthNode -> ByteString -> Maybe ByteString -> IO ()
+revertDryRun FakeEthNode {fnState} calldata revertData = atomically $ modifyTVar' fnState $ \s -> s {fsDryRuns = M.alter (const revertData) calldata $ fsDryRuns s}
 
 setFees :: FakeEthNode -> Word64 -> Word64 -> IO ()
 setFees FakeEthNode {fnState} tip baseFee = atomically $ modifyTVar' fnState $ \s -> s {fsFees = (tip, baseFee)}
@@ -177,7 +204,7 @@ mine FakeEthNode {fnState} txs = atomically $ do
   let number' = number + 1
       mined = M.fromList [(h, (ok, number')) | (h, ok) <- txs]
       used = maximum $ fsUsed : [nonce + 1 | (nonce, raw) <- M.toList fsPool, keccak256 raw `M.member` mined]
-  writeTVar fnState s {fsBlock = (number', time + blockSeconds), fsReceipts = M.union mined fsReceipts, fsPool = M.dropWhileAntitone (< used) fsPool, fsUsed = used}
+  writeTVar fnState s {fsBlock = (number', time + blockSeconds), fsBlockTimes = M.insert number' (time + blockSeconds) $ fsBlockTimes s, fsReceipts = M.union mined fsReceipts, fsPool = M.dropWhileAntitone (< used) fsPool, fsUsed = used}
   pure number'
 
 -- | The node forgets a transaction it has not mined, as after its own restart.
@@ -195,6 +222,13 @@ useNextNonce FakeEthNode {fnState} = atomically $ modifyTVar' fnState $ \s@FakeS
 -- | The raw transactions in the order they were sent.
 sentTransactions :: FakeEthNode -> IO [ByteString]
 sentTransactions FakeEthNode {fnState} = reverse . fsSent <$> readTVarIO fnState
+
+-- | Waits until the node has received at least this many raw transactions, and returns them in the order they were sent.
+awaitSent :: FakeEthNode -> Int -> IO [ByteString]
+awaitSent FakeEthNode {fnState} n = atomically $ do
+  sent <- fsSent <$> readTVar fnState
+  check $ length sent >= n
+  pure $ reverse sent
 
 fakeApp :: TVar FakeState -> Application
 fakeApp st req respond = do
@@ -219,21 +253,33 @@ fakeApp st req respond = do
 
 answer :: TVar FakeState -> Text -> [J.Value] -> STM [JT.Pair]
 answer st method params = do
-  s@FakeState {fsCalls, fsSent, fsPool, fsReceipts, fsUsed, fsBlock = (number, time), fsFees = (tip, baseFee)} <- readTVar st
+  s@FakeState {fsCalls, fsCallsOnce, fsSent, fsPool, fsReceipts, fsDryRuns, fsUsed, fsBlock = (number, time), fsBlockTimes, fsFees = (tip, baseFee)} <- readTVar st
   case (method, params) of
     ("eth_call", [call, _])
       | Just (to, calldata) <- JT.parseMaybe callTarget call ->
-          pure $ case M.lookup (unAddress to, calldata) fsCalls of
-            Just (Returns ret) -> result $ hex ret
-            Just (Reverts revertData) -> rpcError 3 "execution reverted" (Just revertData)
-            Nothing -> rpcError (-32000) "no fake answer for this call" Nothing
+          let key = (unAddress to, calldata)
+              callAnswer = \case
+                Just (Returns ret) -> result $ hex ret
+                Just (Reverts revertData) -> rpcError 3 "execution reverted" (Just revertData)
+                Nothing -> rpcError (-32000) "no fake answer for this call" Nothing
+           in case M.lookup key fsCallsOnce of
+                Just a -> callAnswer (Just a) <$ writeTVar st s {fsCallsOnce = M.delete key fsCallsOnce}
+                Nothing -> pure $ callAnswer $ M.lookup key fsCalls
+    ("eth_estimateGas", call : _)
+      | Just (_, calldata) <- JT.parseMaybe callTarget call,
+        Just revertData <- M.lookup calldata fsDryRuns ->
+          pure $ rpcError 3 "execution reverted" (Just revertData)
     ("eth_estimateGas", _) -> pure $ result $ quantity fakeGas
     ("eth_getTransactionCount", [_, J.String "latest"]) -> pure $ result $ quantity $ toInteger fsUsed
     ("eth_getTransactionCount", [_, J.String "pending"]) ->
       pure $ result $ quantity $ toInteger $ fsUsed + fromIntegral (length $ takeWhile (`M.member` fsPool) [fsUsed ..])
     ("eth_maxPriorityFeePerGas", _) -> pure $ result $ quantity $ toInteger tip
-    ("eth_getBlockByNumber", [J.String "latest", _]) ->
-      pure $ result $ J.object ["number" .= quantity (toInteger number), "timestamp" .= quantity (toInteger time), "baseFeePerGas" .= quantity (toInteger baseFee)]
+    ("eth_getBlockByNumber", [J.String "latest", _]) -> pure $ result $ blockJson baseFee number time
+    -- a block not mined or set here has the time of the last one before it
+    ("eth_getBlockByNumber", [J.String n, _])
+      | Just at <- fromQuantity n -> pure $ result $ case M.lookupLE at fsBlockTimes of
+          Just (_, t) | at <= number -> blockJson baseFee at t
+          _ -> J.Null
     ("eth_getTransactionReceipt", [J.String h]) | Just hash <- fromHex h -> pure $ result $ case M.lookup hash fsReceipts of
       Just (ok, block) -> J.object ["transactionHash" .= h, "status" .= quantity (if ok then 1 else 0), "blockNumber" .= quantity (toInteger block)]
       Nothing -> J.Null
@@ -260,11 +306,19 @@ answer st method params = do
     result v = ["result" .= v]
     callTarget = J.withObject "call" $ \o -> (,) <$> o .: "to" <*> (maybe (fail "not hex data") pure . fromHex =<< o .: "data")
 
+blockJson :: Word64 -> Word64 -> Word64 -> J.Value
+blockJson baseFee number time = J.object ["number" .= quantity (toInteger number), "timestamp" .= quantity (toInteger time), "baseFeePerGas" .= quantity (toInteger baseFee)]
+
 rpcError :: Int -> Text -> Maybe ByteString -> [JT.Pair]
 rpcError code message revertData = ["error" .= J.object (["code" .= code, "message" .= message] <> maybe [] (\d -> ["data" .= hex d]) revertData)]
 
 quantity :: Integer -> Text
 quantity n = "0x" <> T.pack (showHex n "")
+
+fromQuantity :: Text -> Maybe Word64
+fromQuantity t = case T.stripPrefix "0x" t of
+  Just h | [(n, "")] <- readHex (T.unpack h) -> Just n
+  _ -> Nothing
 
 fromHex :: Text -> Maybe ByteString
 fromHex t = T.stripPrefix "0x" t >>= eitherToMaybe . convertFromBase Base16 . encodeUtf8

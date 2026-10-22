@@ -25,6 +25,7 @@ import StoreService.Group (GroupEvent, ensureManagedGroup, groupEvent, hasTracke
 import StoreService.Group.Command (badgeTypeP, codeP, maxMonths, maxNameYears, nameCodeP, textTokenP)
 import StoreService.Names.Codes (issueNameCode, revokeNameCode)
 import StoreService.Names.Env (NamesEnv (..), newNamesEnv)
+import StoreService.Names.Records (runRecordEdits)
 import StoreService.Names.Sender (runSender)
 import StoreService.Names.Turns (Turns, newTurns)
 import StoreService.Options
@@ -168,7 +169,7 @@ storeService opts@StoreServiceOpts {serviceConfigFile} cfg env = do
       webEnv <- newWebEnv chatStore sc ws hints providers namesEnv
       exportWebapp (listener sc) (stripe sc)
       pollerEnv <- newPollerEnv chatStore ws hints providers (poll sc)
-      pure $ [runWebListener webEnv, runPoller pollerEnv] <> maybe [] (\ne -> [runSender (neSender ne)]) namesEnv
+      pure $ [runWebListener webEnv, runPoller pollerEnv] <> maybe [] (\ne -> [runSender (neSender ne), runRecordEdits (neRecords ne)]) namesEnv
 
 startNames :: ChatController -> Turns -> NamesConfig -> IO NamesEnv
 startNames cc@ChatController {chatStore} turns nc@NamesConfig {nTLD, nChain = ChainConfig {cChainId}} =

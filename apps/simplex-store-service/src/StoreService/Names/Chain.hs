@@ -17,6 +17,7 @@ module StoreService.Names.Chain
     newChainClient,
     ethCall,
     latestBlock,
+    blockAt,
     transactionReceipt,
     transactionByHash,
     transactionCount,
@@ -50,7 +51,7 @@ import Network.HTTP.Client (Manager)
 import qualified Network.HTTP.Client as HTTP
 import Network.HTTP.Client.TLS (newTlsManager)
 import Network.HTTP.Types (hContentType, methodPost, statusCode, statusIsSuccessful)
-import Numeric (readHex)
+import Numeric (readHex, showHex)
 import Simplex.Messaging.Crypto (keccak256)
 import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey)
 import Simplex.Messaging.Eth.RLP (RLPItem (..))
@@ -135,8 +136,15 @@ ethCall :: ChainClient -> Address -> ByteString -> IO (Either ChainError ByteStr
 ethCall c to calldata = rpc c "eth_call" [J.object ["to" .= to, "data" .= hex calldata], "latest"] bytes
 
 latestBlock :: ChainClient -> IO (Either ChainError Block)
-latestBlock c =
-  rpc c "eth_getBlockByNumber" ["latest", J.Bool False] $ J.withObject "block" $ \b ->
+latestBlock c = blockByNumber c "latest"
+
+-- | A block the node does not have is a failed read.
+blockAt :: ChainClient -> Word64 -> IO (Either ChainError Block)
+blockAt c number = blockByNumber c $ J.String $ "0x" <> T.pack (showHex number "")
+
+blockByNumber :: ChainClient -> J.Value -> IO (Either ChainError Block)
+blockByNumber c tag =
+  rpc c "eth_getBlockByNumber" [tag, J.Bool False] $ J.withObject "block" $ \b ->
     Block <$> (quantity =<< b .: "number") <*> (quantity =<< b .: "timestamp") <*> (quantity =<< b .: "baseFeePerGas")
 
 -- | Nothing while the transaction is not mined, or after the node pruned its receipt.

@@ -28,6 +28,7 @@ namesChainTests = describe "StoreService names: chain" $ do
   g <- runIO C.newRandom
   describe "reverts" $ do
     it "names every contract error by the selector viem encodes it with" testRevertSelectors
+    it "writes a revert's name as the contracts declare it, none for a revert without data" testRevertText
     it "reads a dry run's revert with data by its name" $ testDryRunRevertNamed g
     it "reads an eth_call revert with data by its name" $ testCallRevertNamed g
     it "reads ownerOf of a name nobody holds as a revert" $ testOwnerOfRevert g
@@ -46,6 +47,7 @@ namesChainTests = describe "StoreService names: chain" $ do
   describe "reads" $ do
     it "answers eth_call from the node by contract and calldata" $ testEthCall g
     it "reads the latest block's number, time and base fee" $ testLatestBlock g
+    it "reads a block by its number, and one the node does not have as a failed read" $ testBlockAt g
     it "follows a transaction from sent to mined with its receipt and the nonces" $ testFollowTransaction g
   describe "transactions" $ do
     it "signs a transaction whose hash is the node's keccak256 of the raw bytes" $ testSignedHash g
@@ -105,6 +107,12 @@ testRevertSelectors = do
   [(n, decodeRevert $ unhex sel <> uint256 (0 :: Int)) | (sel, n) <- viemSelectors] `shouldBe` [(n, Just n) | (_, n) <- viemSelectors]
   decodeRevert (B.take 3 $ unhex "74480cc9") `shouldBe` Nothing
   decodeRevert "" `shouldBe` Just RNWithoutData
+
+testRevertText :: IO ()
+testRevertText = do
+  revertText RNInvalidNonce `shouldBe` Just "InvalidNonce"
+  revertText RNSignatureExpired `shouldBe` Just "SignatureExpired"
+  revertText RNWithoutData `shouldBe` Nothing
 
 testDryRunRevertNamed :: TVar ChaChaDRG -> IO ()
 testDryRunRevertNamed g = withChain g $ \node c -> do
@@ -223,6 +231,14 @@ testLatestBlock :: TVar ChaChaDRG -> IO ()
 testLatestBlock g = withChain g $ \node c -> do
   setBlock node 21000000 1798761600
   latestBlock c `shouldReturn` Right Block {blockNumber = 21000000, blockTimestamp = 1798761600, blockBaseFee = fakeBaseFee}
+
+testBlockAt :: TVar ChaChaDRG -> IO ()
+testBlockAt g = withChain g $ \node c -> do
+  setBlock node 100 1798761600
+  mined <- mine node []
+  blockAt c 100 `shouldReturn` Right Block {blockNumber = 100, blockTimestamp = 1798761600, blockBaseFee = fakeBaseFee}
+  blockAt c mined `shouldReturn` Right Block {blockNumber = 101, blockTimestamp = 1798761612, blockBaseFee = fakeBaseFee}
+  blockAt c 102 >>= (`shouldSatisfy` \case Left (ChainUnavailable _) -> True; _ -> False)
 
 testFollowTransaction :: TVar ChaChaDRG -> IO ()
 testFollowTransaction g = withChain g $ \node c@ChainClient {ccRegistrar} -> do

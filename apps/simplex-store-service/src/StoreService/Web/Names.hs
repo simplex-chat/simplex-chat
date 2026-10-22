@@ -8,8 +8,9 @@ import Data.Text (Text)
 import Network.HTTP.Types (Method)
 import Network.Wai (Request, ResponseReceived, pathInfo)
 import StoreService.Names.Env (NamesEnv (..))
-import StoreService.Web.Http (HttpEnv, Limit, Respond, codeLimit, limited, only, previewLimit, searchLimit)
+import StoreService.Web.Http (HttpEnv, Limit, Respond, codeLimit, limited, only, previewLimit, recordsLimit, searchLimit)
 import StoreService.Web.Names.Codes (codeCheckHandler)
+import StoreService.Web.Names.Records (recordsHandler)
 import StoreService.Web.Names.Search (previewHandler, searchHandler)
 
 data Route = Route
@@ -19,7 +20,8 @@ data Route = Route
   }
 
 namesRoutes :: NamesEnv -> [Text] -> Maybe Route
-namesRoutes NamesEnv {neConfig, neStore, neContracts, neProfiles} = \case
+namesRoutes NamesEnv {neConfig, neStore, neContracts, neProfiles, neRecords} = \case
+  ["api", "name", "records"] -> Just Route {rMethod = "POST", rLimit = recordsLimit, rHandler = recordsHandler neRecords}
   ["api", "code", "check"] -> Just Route {rMethod = "POST", rLimit = codeLimit, rHandler = codeCheckHandler neStore}
   ["api", "link", "preview"] -> Just Route {rMethod = "POST", rLimit = previewLimit, rHandler = previewHandler neProfiles}
   -- below every fixed /api/name/<word> route, which it would otherwise match

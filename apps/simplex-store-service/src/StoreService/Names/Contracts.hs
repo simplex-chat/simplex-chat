@@ -12,6 +12,7 @@ module StoreService.Names.Contracts
     secondsPerYear,
     nameStatus,
     nameRecords,
+    textRecord,
     chainPriceCents,
     codeLengthFor,
     sponsorNonce,
@@ -115,11 +116,13 @@ nameRecords ct lh RegisteredName {rnOwner, rnResolver}
   | otherwise =
       withinDeadline ct "name records" $ together $
         (\rdContact rdChannel rdNonce -> Just NameRecords {rdContact, rdChannel, rdNonce})
-          <$> textRecord contactRecordKey
-          <*> textRecord channelRecordKey
+          <$> concurrent (textRecord ct lh contactRecordKey)
+          <*> concurrent (textRecord ct lh channelRecordKey)
           <*> concurrent (resolverNonce ct rnOwner)
-  where
-    textRecord key = concurrent $ call ct (resolver ct) ("text(bytes32,string)", abiTuple [Static $ nodeArg ct lh, Dynamic $ abiBytes key]) decodeString
+
+-- | The default resolver's record, "" when unset.
+textRecord :: Contracts -> LabelHash -> ByteString -> IO (Either ChainError Text)
+textRecord ct lh key = call ct (resolver ct) ("text(bytes32,string)", abiTuple [Static $ nodeArg ct lh, Dynamic $ abiBytes key]) decodeString
 
 -- | Cents for a label of this length and these years. The oracle prices by length only,
 -- so a placeholder label of that length keeps the label from the RPC node.
