@@ -56,6 +56,7 @@ namesCodesTests = describe "StoreService names: prepaid codes" $ do
     it "reserves an unused code in the transaction of the registration's write" testReserve
     it "refuses each unusable code with its tag, before the write runs" testReserveRefusals
     it "keeps a code its registration holds even if revoked or expired since, still checking the length" testReserveHeld
+    it "refuses a spent code to its own registration with code_used, before the write runs" testReserveSpent
     it "gives the code back when the write refuses" testReserveWriteRefused
     it "lets one of two concurrent reservations of a code win, the other answered code_reserved" testConcurrentReserve
     it "releases and spends a code only after the write, and only for its holder" testReleaseSpend
@@ -283,6 +284,19 @@ testReserveHeld = withOrders $ \turns st -> do
   reserveCode turns st tNow pcCodeHash r3 7 writeOk `shouldReturn` Left CRNotCovering
   reserveCode turns st tNow pcCodeHash r1 9 writeOk `shouldReturn` Left CRInvalid
   readCode st row `shouldReturn` held
+
+testReserveSpent :: IO ()
+testReserveSpent = withOrders $ \turns st -> do
+  code <- newCode 8
+  row@PrepaidCode {pcCodeHash} <- issueAs st code usable
+  placeCode st "r3" ownerB (order "carolsbakery" 3) row `shouldReturn` Right ()
+  let r3 = RegistrationId "r3"
+  withTransaction st (\db -> spendPrepaidCode db (pcId row) r3 tNow) `shouldReturn` True
+  spent <- readCode st row
+  wrote <- newIORef False
+  reserveCode turns st tNow pcCodeHash r3 8 (\_ -> Right () <$ writeIORef wrote True :: IO (Either Text ())) `shouldReturn` Left CRUsed
+  readIORef wrote `shouldReturn` False
+  readCode st row `shouldReturn` spent
 
 testReserveWriteRefused :: IO ()
 testReserveWriteRefused = withOrders $ \turns st -> do

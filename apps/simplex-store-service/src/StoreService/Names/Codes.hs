@@ -72,9 +72,10 @@ codeRefusalTag = \case
   CRNotCovering -> "code_not_covering"
 
 -- | Why the code cannot pay for the registration's name of this length. A code the registration
--- already holds stays good for it, even if revoked or expired since.
+-- already holds stays good for it until spent, even if revoked or expired since.
 codeRefusal :: UTCTime -> RegistrationId -> Int -> PrepaidCode -> Maybe CodeRefusal
-codeRefusal now rid len code@PrepaidCode {pcReservedBy, pcMinLength}
+codeRefusal now rid len code@PrepaidCode {pcReservedBy, pcSpentAt, pcMinLength}
+  | isJust pcSpentAt = Just CRUsed
   | pcReservedBy == Just rid = covering
   | otherwise = stateRefusal (codeState now code) <|> covering
   where
