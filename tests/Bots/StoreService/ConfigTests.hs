@@ -432,6 +432,8 @@ namesConfigTests = describe "StoreService names: config" $ do
   it "refuses a bad service key without quoting it" testNamesBadServiceKey
   it "keeps the RPC URL and the service key out of errors and the shown config" testNamesSecretsHidden
   it "names a [names] or [chain] setting nothing reads, and still boots" testNamesUnknownKeys
+  it "accepts [issuer] dev_keys on chain 31337 only, with [names] on" testDevKeysLocalChain
+  it "refuses a malformed dev_keys entry or an index named twice, quoting no secret" testDevKeysMalformed
 
 rpcUrl :: T.Text
 rpcUrl = "https://eth.example.org/v2/rpc-token-value"
@@ -618,3 +620,36 @@ testNamesUnknownKeys = do
     unknownKeys ini `shouldMatchList` ["names.yeers", "chain.rpc"]
   NamesConfig {nYears} <- parsedNames (namesSection <> ["yeers = 3"]) (chainSection <> ["rpc = x"])
   nYears `shouldBe` 2
+
+devKeysIssuer :: T.Text -> [T.Text]
+devKeysIssuer keys = ["[issuer]", "index = 1", "private_key = " <> issuerSecret, "dev_keys = " <> keys]
+
+withChainId :: T.Text -> [T.Text]
+withChainId v = map (\l -> if "chain_id =" `T.isPrefixOf` l then "chain_id = " <> v else l) chainSection
+
+testDevKeysLocalChain :: IO ()
+testDevKeysLocalChain = do
+  Right sk <- pure (strDecode (B.pack (T.unpack issuerSecret)))
+  Right local <- parseIni (namesIni namesSection chainSection <> T.unlines (devKeysIssuer ("9:" <> issuerSecret <> ", 12:" <> issuerSecret)))
+  devIssuerKeys local `shouldBe` [BadgeIssuerKey {keyIdx = 9, secretKey = sk}, BadgeIssuerKey {keyIdx = 12, secretKey = sk}]
+  Right without <- parseIni (namesIni namesSection chainSection)
+  devIssuerKeys without `shouldBe` []
+  let refused = "issuer.dev_keys is accepted only with [names] on the local chain, [chain] chain_id = 31337" :: String
+  forM_ ["1", "11155111", "31338"] $ \chainId ->
+    parseIni (namesIni namesSection (withChainId chainId) <> T.unlines (devKeysIssuer ("9:" <> issuerSecret))) `shouldReturn` Left refused
+  parseIni (fullIni <> T.unlines (devKeysIssuer ("9:" <> issuerSecret))) `shouldReturn` Left refused
+
+testDevKeysMalformed :: IO ()
+testDevKeysMalformed = do
+  forM_ [issuerSecret, "9=" <> issuerSecret] $ \keys -> do
+    e <- refusal keys
+    e `shouldBe` "issuer.dev_keys must be <index>:<secret> entries separated by commas"
+    e `shouldNotContain` T.unpack issuerSecret
+  refusal ("0:" <> issuerSecret) `shouldReturn` "issuer.dev_keys index must be a positive whole number"
+  refusal "9:not-a-key" `shouldReturn` "issuer.dev_keys secret is not a valid issuer secret; use the value from `simplex-chat badge keygen`"
+  refusal ("9:" <> issuerSecret <> ",9:" <> issuerSecret) `shouldReturn` "issuer.dev_keys names an index twice"
+  where
+    refusal :: T.Text -> IO String
+    refusal keys =
+      parseIni (namesIni namesSection chainSection <> T.unlines (devKeysIssuer keys))
+        >>= either pure (\_ -> "" <$ expectationFailure (T.unpack keys <> " must not boot"))

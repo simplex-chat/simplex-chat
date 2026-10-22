@@ -18,6 +18,7 @@ module StoreService.Config
     defaultExpiryMinutes,
     defaultSessionMinutes,
     minNameYears,
+    localChainId,
     hostName,
     readServiceConfig,
     unknownKeys,
@@ -32,6 +33,7 @@ import qualified Data.ByteArray as BA
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import qualified Data.ByteString.Char8 as B
 import Data.Ini (Ini, iniGlobals, iniParser, keys, lookupValue, sections)
+import Data.List (nub)
 import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -159,6 +161,8 @@ data ServiceConfig = ServiceConfig
     stripe :: Maybe StripeConfig,
     poll :: PollConfig,
     issuer :: Maybe BadgeIssuerKey,
+    -- | Trusted beside the clients' keys; only with names on the local chain.
+    devIssuerKeys :: [BadgeIssuerKey],
     group :: Maybe GroupConfig,
     names :: Maybe NamesConfig
   }
@@ -187,6 +191,10 @@ requireHttps u
 -- | The controller refuses a registration under 730 days.
 minNameYears :: Int
 minNameYears = 2
+
+-- | anvil's chain id, the only chain [issuer] dev_keys are accepted on.
+localChainId :: Word64
+localChainId = 31337
 
 -- | 100 gwei.
 defaultMaxFeePerGas :: Word64
@@ -237,7 +245,7 @@ knownSettings =
     ("stripe", ["secret_key", "publishable_key", "webhook_secret", "session_minutes"]),
     ("poll", ["waiting_seconds", "idle_seconds"]),
     ("group", ["display_name", "description"]),
-    ("issuer", ["index", "private_key"]),
+    ("issuer", ["index", "private_key", "dev_keys"]),
     ("names", ["tld", "years", "term_start", "term_slack_seconds", "reveal_margin_seconds", "max_order_moves"]),
     ("chain", ["rpc_url", "chain_id", "controller", "sponsor", "base_registrar", "resolver", "service_key", "confirmations", "gas_limit_cap", "max_fee_per_gas"])
   ]
@@ -274,6 +282,9 @@ parseConfig ini = do
   iss <- issuerSection
   grp <- groupSection
   nms <- namesSection
+  devKeys <- devKeysSetting
+  unless (null devKeys || maybe False onLocalChain nms) $
+    Left ("issuer.dev_keys is accepted only with [names] on the local chain, [chain] chain_id = " <> show localChainId)
   pWaitingSeconds <- cadence "waiting_seconds" 3
   pIdleSeconds <- cadence "idle_seconds" 60
   pure
@@ -283,6 +294,7 @@ parseConfig ini = do
         stripe = str,
         poll = PollConfig {pWaitingSeconds, pIdleSeconds},
         issuer = iss,
+        devIssuerKeys = devKeys,
         group = grp,
         names = nms
       }
@@ -313,15 +325,27 @@ parseConfig ini = do
           keyIdx <- issuerIndex
           secretKey <- issuerSecret
           pure (Just BadgeIssuerKey {keyIdx, secretKey})
-    issuerIndex = do
-      v <- required "issuer" "index"
-      case readMaybe (T.unpack v) of
-        Just n | n >= 1, n <= toInteger (maxBound :: Int) -> Right (fromInteger n)
-        _ -> Left "issuer.index must be a positive whole number"
-    issuerSecret = do
-      v <- required "issuer" "private_key"
-      either (const (Left "issuer.private_key is not a valid issuer secret; use the value from `simplex-chat badge keygen`")) Right $
+    issuerIndex = required "issuer" "index" >>= keyIndex "issuer.index"
+    issuerSecret = required "issuer" "private_key" >>= keySecret "issuer.private_key"
+    keyIndex k v = case readMaybe (T.unpack v) of
+      Just n | n >= 1, n <= toInteger (maxBound :: Int) -> Right (fromInteger n)
+      _ -> Left (k <> " must be a positive whole number")
+    keySecret k v =
+      either (const (Left (k <> " is not a valid issuer secret; use the value from `simplex-chat badge keygen`"))) Right $
         strDecode (B.pack (T.unpack v))
+    -- No error quotes an entry, since each holds a secret.
+    devKeysSetting = do
+      ks <- mapM devKey $ filter (not . T.null) $ map T.strip $ maybe [] (T.splitOn ",") (present "issuer" "dev_keys")
+      let idxs = map (\BadgeIssuerKey {keyIdx} -> keyIdx) ks
+      unless (length (nub idxs) == length idxs) $ Left "issuer.dev_keys names an index twice"
+      pure ks
+    devKey entry = case T.breakOn ":" entry of
+      (i, sk) | not (T.null sk) -> do
+        keyIdx <- keyIndex "issuer.dev_keys index" (T.strip i)
+        secretKey <- keySecret "issuer.dev_keys secret" (T.strip (T.drop 1 sk))
+        pure BadgeIssuerKey {keyIdx, secretKey}
+      _ -> Left "issuer.dev_keys must be <index>:<secret> entries separated by commas"
+    onLocalChain NamesConfig {nChain = ChainConfig {cChainId}} = cChainId == localChainId
     btcpaySection
       | not (hasSection "btcpay") = Right Nothing
       | otherwise = do

@@ -8,6 +8,7 @@ module StoreService.Service
   ( ServiceState (..),
     newServiceState,
     welcomeGetOpts,
+    trustDevKeys,
     checkIssuerKey,
     storeService,
     storeServiceCLI,
@@ -51,6 +52,7 @@ import Control.Monad.IO.Class (liftIO)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Attoparsec.ByteString.Char8 as A
+import Data.Bifunctor (first)
 import Data.ByteString.Char8 (ByteString)
 import Data.Char (isSpace)
 import Data.Either (fromRight)
@@ -106,6 +108,16 @@ welcomeGetOpts = do
     putStrLn $ "Service name: " ++ T.unpack serviceName
   pure opts
 
+-- | The ini's dev_keys, trusted beside the clients' keys; the config accepts them only on the local chain.
+trustDevKeys :: Maybe ServiceConfig -> ChatConfig -> IO (Either String ChatConfig)
+trustDevKeys serviceCfg cfg@ChatConfig {badgePublicKeys} =
+  fmap trusted . sequence <$> mapM publicKey (maybe [] devIssuerKeys serviceCfg)
+  where
+    trusted ks = cfg {badgePublicKeys = M.union badgePublicKeys (M.fromList ks)}
+    publicKey BadgeIssuerKey {keyIdx, secretKey}
+      | M.member keyIdx badgePublicKeys = pure $ Left $ "issuer.dev_keys index " <> show keyIdx <> " is the index of a key clients trust"
+      | otherwise = fmap (keyIdx,) . first (("issuer.dev_keys secret at index " <> show keyIdx <> " is not a valid key: ") <>) <$> bbsPublicKey secretKey
+
 checkIssuerKey :: StoreServiceOpts -> Maybe ServiceConfig -> ChatConfig -> IO (Either String BadgeIssuerKey)
 checkIssuerKey StoreServiceOpts {issuerKey} serviceCfg cfg = case issuerKey of
   Left e -> pure (Left e)
@@ -125,7 +137,13 @@ checkOne ChatConfig {badgePublicKeys} k@BadgeIssuerKey {keyIdx, secretKey} =
 
 requireIssuerKey :: StoreServiceOpts -> Maybe ServiceConfig -> ChatConfig -> IO BadgeIssuerKey
 requireIssuerKey opts serviceCfg cfg =
-  checkIssuerKey opts serviceCfg cfg >>= either (\e -> putStrLn ("Error: " <> e) >> exitFailure) pure
+  checkIssuerKey opts serviceCfg cfg >>= orExit
+
+requireDevKeys :: Maybe ServiceConfig -> ChatConfig -> IO ChatConfig
+requireDevKeys serviceCfg cfg = trustDevKeys serviceCfg cfg >>= orExit
+
+orExit :: Either String a -> IO a
+orExit = either (\e -> putStrLn ("Error: " <> e) >> exitFailure) pure
 
 readConfigOrExit :: FilePath -> IO ServiceConfig
 readConfigOrExit path =
@@ -134,8 +152,9 @@ readConfigOrExit path =
     Right sc -> pure sc
 
 storeService :: StoreServiceOpts -> ChatConfig -> ServiceState -> IO ()
-storeService opts@StoreServiceOpts {serviceConfigFile} cfg env = do
+storeService opts@StoreServiceOpts {serviceConfigFile} baseCfg env = do
   serviceCfg <- traverse readConfigOrExit serviceConfigFile
+  cfg <- requireDevKeys serviceCfg baseCfg
   key <- requireIssuerKey opts serviceCfg cfg
   waiters <- newWaiters
   -- The hooks' //revoke takes a prepaid code's turn, so the turns exist before the chat starts.
@@ -205,7 +224,8 @@ seedServiceCatalog st = do
 storeServiceCLI :: StoreServiceOpts -> IO ()
 storeServiceCLI opts@StoreServiceOpts {serviceConfigFile} = do
   serviceCfg <- traverse readConfigOrExit serviceConfigFile
-  key <- requireIssuerKey opts serviceCfg terminalChatConfig
+  cfg <- requireDevKeys serviceCfg terminalChatConfig
+  key <- requireIssuerKey opts serviceCfg cfg
   env <- newServiceState
   -- This mode runs no names lanes, so only its own //revoke takes these turns.
   turns <- newTurns
@@ -223,7 +243,7 @@ storeServiceCLI opts@StoreServiceOpts {serviceConfigFile} = do
             eventHook = Just eventHook
           }
   raceAny_
-    [ simplexChatCLI' terminalChatConfig {chatHooks} (mkChatOpts opts) Nothing,
+    [ simplexChatCLI' cfg {chatHooks} (mkChatOpts opts) Nothing,
       processQueuedRequests key Nothing env
     ]
 

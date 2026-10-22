@@ -11,9 +11,9 @@
 module Bots.StoreService.BotTests where
 
 import StoreService.Codes (issueOneCode)
-import StoreService.Config (BadgeIssuerKey (..), readServiceConfig)
+import StoreService.Config (BadgeIssuerKey (..), ServiceConfig, readServiceConfig)
 import StoreService.Group (GroupEvent)
-import Bots.StoreService.ConfigTests (withIssuer)
+import Bots.StoreService.ConfigTests (chainSection, namesIni, namesSection, withIni, withIssuer)
 import StoreService.Options
 import StoreService.Service
 import StoreService.Store (IssuedCode (..), getBadgeCode)
@@ -91,6 +91,7 @@ storeServiceTests = do
   it "should refuse a request whose purchaseKey is not the verified signer" testPurchaseKeyMismatch
   it "should refuse to start unless the issuer secret is the key trusted at its index" testIssuerKeyMustMatchConfig
   it "should refuse to start when the [issuer] key is not one clients trust" testIssuerIniKeyMustBeTrusted
+  it "should trust [issuer] dev_keys beside the clients' keys, and refuse one at a trusted index" testDevKeysTrusted
   it "should credit a code's months and issue one credential per month" testCodeMonthsRenew
   it "should return the stored credential for a repeat inside an issued period" testRepeatInsideIssuedPeriod
   it "should redeem a multi-use code to its limit with no group to track it" testMultiUseWithoutGroup
@@ -1494,6 +1495,30 @@ testIssuerIniKeyMustBeTrusted ps = do
   Right unknownIndex <- iniWith (testIssuerKeyIdx + 8) sk
   checkIssuerKey fromIni (Just unknownIndex) cfg
     `shouldReturn` Left ("no configured badge key at index " <> show (testIssuerKeyIdx + 8) <> ", clients could not verify what this service signs")
+
+testDevKeysTrusted :: HasCallStack => TestParams -> IO ()
+testDevKeysTrusted ps = do
+  Right (pk, sk) <- bbsKeyGen
+  Right (_, devSk) <- bbsKeyGen
+  let cfg = testCfg {badgePublicKeys = M.singleton testIssuerKeyIdx pk}
+      devIdx = testIssuerKeyIdx + 8
+      fromIni = (mkStoreServiceOpts ps sk) {issuerKey = Right Nothing}
+  Right withDev <- devIni devIdx devSk devIdx devSk
+  checkIssuerKey fromIni (Just withDev) cfg >>= (`shouldSatisfy` isLeft)
+  Right trusted <- trustDevKeys (Just withDev) cfg
+  checkIssuerKey fromIni (Just withDev) trusted `shouldReturn` Right (BadgeIssuerKey devIdx devSk)
+  M.keys (badgePublicKeys trusted) `shouldBe` [testIssuerKeyIdx, devIdx]
+  trustedIndexes cfg Nothing `shouldReturn` Right [testIssuerKeyIdx]
+  Right atClientIndex <- devIni testIssuerKeyIdx sk testIssuerKeyIdx devSk
+  trustedIndexes cfg (Just atClientIndex) `shouldReturn` Left ("issuer.dev_keys index " <> show testIssuerKeyIdx <> " is the index of a key clients trust")
+  where
+    trustedIndexes :: ChatConfig -> Maybe ServiceConfig -> IO (Either String [Int])
+    trustedIndexes cfg sc = fmap (M.keys . badgePublicKeys) <$> trustDevKeys sc cfg
+    devIni :: Int -> BBSSecretKey -> Int -> BBSSecretKey -> IO (Either String ServiceConfig)
+    devIni idx k devIdx devK =
+      withIni (namesIni namesSection chainSection <> T.unlines ["[issuer]", "index = " <> tshow idx, "private_key = " <> keyText k, "dev_keys = " <> tshow devIdx <> ":" <> keyText devK]) readServiceConfig
+    keyText :: BBSSecretKey -> T.Text
+    keyText = safeDecodeUtf8 . strEncode
 
 testRedeemUnpaidCode :: HasCallStack => TestParams -> IO ()
 testRedeemUnpaidCode ps =

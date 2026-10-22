@@ -1033,6 +1033,7 @@ testServiceConfig staticDir trustForwarded =
       stripe = Nothing,
       poll = PollConfig {pWaitingSeconds = 3, pIdleSeconds = 60},
       issuer = Nothing,
+      devIssuerKeys = [],
       group = Nothing,
       names = Nothing
     }

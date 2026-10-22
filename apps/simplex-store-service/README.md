@@ -79,6 +79,21 @@ Note that a secret passed as a flag is visible to every user on the machine thro
 in the ini is only as readable as the file: `store_service.ini` is gitignored and already holds the
 provider API keys and webhook secrets.
 
+For a local run, where no client key's secret is at hand, `[issuer] dev_keys` lists keys the service
+trusts beside the clients' keys, as `<index>:<secret>` entries separated by commas, each secret from
+`simplex-chat badge keygen`:
+
+```ini
+[issuer]
+index = 999
+private_key = <secret>
+dev_keys = 999:<secret>
+```
+
+The service refuses to start with `dev_keys` unless `[names]` is on and `[chain] chain_id` is 31337,
+anvil's local chain, and refuses a dev key at the index of a key clients trust. Clients never trust a
+dev key, so nothing it signs verifies outside that run. Leave it out everywhere else.
+
 Other options:
 
 - `--service-config INI_FILE`: path to `store_service.ini`. Omit it to run the chat/RPC side
