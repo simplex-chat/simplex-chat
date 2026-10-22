@@ -4,6 +4,7 @@ import chat.simplex.app.ui.harness.CONNECT_TIMEOUT_MS
 import chat.simplex.app.ui.harness.KnownAppIssue
 import chat.simplex.app.ui.harness.PeerFlags
 import chat.simplex.app.ui.harness.UiTest
+import chat.simplex.app.ui.harness.awaitRowText
 import chat.simplex.app.ui.harness.closeContactInfo
 import chat.simplex.app.ui.harness.connect
 import chat.simplex.app.ui.harness.offeredReactions
@@ -74,6 +75,7 @@ class ReactionTest : UiTest() {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)
     bob sends "@alice hi"
+    awaitRowText(alice, "bob", "hi")
     val chat = alice.chatList.open("bob")
     val hi = chat.itemId("hi")
     assertTrue("the menu of `hi` does not offer 👍 while reactions are allowed", "👍" in offeredReactions(hi))

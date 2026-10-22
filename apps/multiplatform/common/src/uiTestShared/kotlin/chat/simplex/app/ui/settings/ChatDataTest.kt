@@ -7,6 +7,7 @@ import chat.simplex.app.ui.harness.KnownAppIssue
 import chat.simplex.app.ui.harness.PassphraseScreen
 import chat.simplex.app.ui.harness.UiScope
 import chat.simplex.app.ui.harness.UiTest
+import chat.simplex.app.ui.harness.awaitRowText
 import chat.simplex.app.ui.harness.backToChatList
 import chat.simplex.app.ui.harness.chatData
 import chat.simplex.app.ui.harness.chatRunningInCore
@@ -225,6 +226,7 @@ class ChatDataTest : UiTest() {
     bob expects "use /fc 1 to cancel sending"
     bob.eventually("completed uploading file 1 (test.jpg) for alice", CONNECT_TIMEOUT_MS)
     bob sends "@alice $KEPT"
+    awaitRowText(alice, "bob", KEPT)
     val chat = alice.chatList.open("bob")
     chat.itemId(KEPT)
     poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "bob's image to be received") { imageStatus() is CIFileStatus.RcvComplete }

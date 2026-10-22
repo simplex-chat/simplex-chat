@@ -4,6 +4,7 @@ import chat.simplex.app.ui.harness.CONNECT_TIMEOUT_MS
 import chat.simplex.app.ui.harness.CliPeer
 import chat.simplex.app.ui.harness.UiScope
 import chat.simplex.app.ui.harness.UiTest
+import chat.simplex.app.ui.harness.awaitRowItem
 import chat.simplex.app.ui.harness.connect
 import chat.simplex.common.model.CIFile
 import chat.simplex.common.model.CIFileStatus
@@ -56,6 +57,7 @@ class FilesTest : UiTest() {
     bob expectsMessage "/f @alice $FIXTURE_JPG"
     bob expects "use /fc 2 to cancel sending"
     bob.eventually("completed uploading file 2 (test.jpg) for alice", CONNECT_TIMEOUT_MS)
+    awaitRowItem(alice, "bob", "test.jpg as an image") { it.content.msgContent is MsgContent.MCImage && it.file?.fileName == "test.jpg" }
     alice.chatList.open("bob")
     val asFile = itemId("test.jpg sent as a file") { it.content.msgContent is MsgContent.MCFile && it.file?.fileName == "test.jpg" }
     val asImage = itemId("test.jpg sent as an image") { it.content.msgContent is MsgContent.MCImage && it.file?.fileName == "test.jpg" }

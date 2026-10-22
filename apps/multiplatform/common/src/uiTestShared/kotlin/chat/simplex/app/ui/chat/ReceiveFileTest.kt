@@ -4,6 +4,7 @@ import chat.simplex.app.ui.harness.CONNECT_TIMEOUT_MS
 import chat.simplex.app.ui.harness.TestServers
 import chat.simplex.app.ui.harness.PREVIEW_IMAGE_DATA
 import chat.simplex.app.ui.harness.UiTest
+import chat.simplex.app.ui.harness.awaitRowItem
 import chat.simplex.app.ui.harness.attachFile
 import chat.simplex.app.ui.harness.closeItemMenu
 import chat.simplex.app.ui.harness.connect
@@ -60,6 +61,7 @@ class ReceiveFileTest : UiTest() {
     bob expectsMessage "/f @alice $FIXTURE_JPG"
     bob expects "use /fc 1 to cancel sending"
     bob.eventually("completed uploading file 1 (test.jpg) for alice", CONNECT_TIMEOUT_MS)
+    awaitRowItem(alice, "bob", "bob's image") { it.content.msgContent is MsgContent.MCImage }
     val chat = alice.chatList.open("bob")
     val id = chat.itemId("bob's image") { it.content.msgContent is MsgContent.MCImage }
     poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "the image received and shown in full") {
@@ -80,6 +82,7 @@ class ReceiveFileTest : UiTest() {
     TestServers.stop("xftp1")
     bob sends "/f @alice $path"
     bob expects "use /fc 1 to cancel sending"
+    awaitRowItem(alice, "bob", "bob's $WAITING_NAME") { it.file?.fileName == WAITING_NAME }
     val chat = alice.chatList.open("bob")
     val id = chat.itemId("bob's $WAITING_NAME") { it.file?.fileName == WAITING_NAME }
     check(itemFileOf(id)?.fileStatus is CIFileStatus.RcvInvitation) { "$WAITING_NAME before the click: ${itemFileOf(id)?.fileStatus}" }
@@ -111,6 +114,7 @@ class ReceiveFileTest : UiTest() {
     bob.eventually("completed uploading file 1 ($LARGE_PNG_NAME) for alice", CONNECT_TIMEOUT_MS)
     bob sends "/img @alice $FIXTURE_JPG"
     bob.eventually("completed uploading file 2 (test.jpg) for alice", CONNECT_TIMEOUT_MS)
+    awaitRowItem(alice, "bob", "bob's test.jpg") { it.file?.fileName == "test.jpg" }
     val chat = alice.chatList.open("bob")
     val large = chat.itemId("bob's large image") { it.content.msgContent is MsgContent.MCImage && it.file?.fileName == LARGE_PNG_NAME }
     val small = chat.itemId("bob's small image") { it.content.msgContent is MsgContent.MCImage && it.file?.fileName == "test.jpg" }
@@ -140,6 +144,7 @@ class ReceiveFileTest : UiTest() {
     val aliceId = bob.contactId("alice")
     bob sends """/_send @$aliceId json [{"filePath": "$path", "msgContent": {"type": "text", "text": "$CAPTION"}}]"""
     bob.eventually("completed uploading file 1 ($DELETED_NAME) for alice", CONNECT_TIMEOUT_MS)
+    awaitRowItem(alice, "bob", "bob's $DELETED_NAME") { it.file?.fileName == DELETED_NAME }
     val chat = alice.chatList.open("bob")
     val id = chat.itemId("`$CAPTION` with $DELETED_NAME") { it.content.text == CAPTION && it.file?.fileName == DELETED_NAME }
     rightClick(Ui.Chat.Item(id))

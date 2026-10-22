@@ -2,6 +2,7 @@ package chat.simplex.app.ui.chat
 
 import chat.simplex.app.ui.harness.CONNECT_TIMEOUT_MS
 import chat.simplex.app.ui.harness.UiTest
+import chat.simplex.app.ui.harness.awaitRowText
 import chat.simplex.app.ui.harness.connect
 import chat.simplex.app.ui.harness.described
 import chat.simplex.app.ui.harness.ownGroup
@@ -43,6 +44,7 @@ class ReplyTest : UiTest() {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)
     bob sends "@alice hello"
+    awaitRowText(alice, "bob", "hello")
     val chat = alice.chatList.open("bob")
     chat.itemId("hello")
     waitFor(Ui.Chat.Message)
@@ -61,6 +63,7 @@ class ReplyTest : UiTest() {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)
     bob sends "@alice question"
+    awaitRowText(alice, "bob", "question")
     val chat = alice.chatList.open("bob")
     chat.itemId("question")
     chat.send("draft answer")

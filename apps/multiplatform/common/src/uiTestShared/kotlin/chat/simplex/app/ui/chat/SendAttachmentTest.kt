@@ -2,6 +2,7 @@ package chat.simplex.app.ui.chat
 
 import chat.simplex.app.ui.harness.CONNECT_TIMEOUT_MS
 import chat.simplex.app.ui.harness.UiTest
+import chat.simplex.app.ui.harness.awaitRowText
 import chat.simplex.app.ui.harness.attachFile
 import chat.simplex.app.ui.harness.attachImage
 import chat.simplex.app.ui.harness.connect
@@ -72,6 +73,7 @@ class SendAttachmentTest : UiTest() {
     connect(bob)
     val photo = jpegFile(PHOTO_NAME)
     bob sends "@alice $QUESTION"
+    awaitRowText(alice, "bob", QUESTION)
     val chat = alice.chatList.open("bob")
     chat.menu(QUESTION, "reply")
     poll(what = "the reply bar and no image preview") { seesDescription("Context icon") && !seesDescription("Cancel image preview") }

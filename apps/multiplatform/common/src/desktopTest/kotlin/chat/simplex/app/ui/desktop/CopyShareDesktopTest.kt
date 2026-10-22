@@ -2,6 +2,7 @@ package chat.simplex.app.ui.desktop
 
 import chat.simplex.app.ui.harness.CONNECT_TIMEOUT_MS
 import chat.simplex.app.ui.harness.UiTest
+import chat.simplex.app.ui.harness.awaitRowText
 import chat.simplex.app.ui.harness.connect
 import chat.simplex.app.ui.harness.itemFileOf
 import chat.simplex.app.ui.harness.sendsFileTo
@@ -18,6 +19,7 @@ class CopyShareDesktopTest : UiTest() {
     connect(bob)
     bob sends "@alice hello there"
     bob sends "@alice second line"
+    awaitRowText(alice, "bob", "second line")
     val chat = alice.chatList.open("bob")
     chat.itemId("hello there")
     chat.itemId("second line")
