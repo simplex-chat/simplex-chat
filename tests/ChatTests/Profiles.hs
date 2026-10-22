@@ -102,6 +102,7 @@ chatProfileTests = do
     it "supporter badge in link data without a proof is not shown" testUserBadgeLinkDataNoProof
   describe "user contact link" $ do
     it "create and connect via contact link" testUserContactLink
+    it "accepting contact request twice fails" testAcceptContactRequestTwice
     it "rotate address ratchet keys" testRotateAddressRatchetKeys
     it "create address on specified server" testCreateAddressOnServer
     it "retry connecting via contact link" testRetryConnectingViaContactLink
@@ -190,6 +191,7 @@ shortLinkTests = do
   it "prepare business chat using address short link data and connect" testShortLinkAddressPrepareBusiness
   it "connect to business address with request message" testBusinessAddressRequestMessage
   it "prepare group using group short link data and connect" testShortLinkPrepareGroup
+  it "prepare group and connect twice" testShortLinkPrepareGroupConnectTwice
   it "prepare group using group short link data and connect, host rejects" testShortLinkPrepareGroupReject
   it "connect to group with welcome message via short link" testGroupShortLinkWelcome
   it "retry connecting to group via short link" testShortLinkGroupRetry
@@ -1391,6 +1393,24 @@ testUserContactLink =
       threadDelay 100000
       alice @@@ [("@cath", lastChatFeature), ("@bob", "hey")]
       alice <##> cath
+
+testAcceptContactRequestTwice :: HasCallStack => TestParams -> IO ()
+testAcceptContactRequestTwice =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      alice ##> "/ad"
+      cLink <- getContactLink alice True
+      bob ##> ("/c " <> cLink)
+      alice <#? bob
+      alice ##> "/ac bob"
+      alice <## "bob (Bob): accepting contact request, you can send messages to contact"
+      concurrently_
+        (bob <## "alice (Alice): contact is connected")
+        (alice <## "bob (Bob): contact is connected")
+      -- the request is not deleted when accepted, accepting it again fails without using the invitation
+      alice ##> "/_accept 1"
+      alice <## "bad chat command: contact request already accepted"
+      alice <##> bob
 
 testRotateAddressRatchetKeys :: HasCallStack => TestParams -> IO ()
 testRotateAddressRatchetKeys =
@@ -4554,6 +4574,36 @@ testShortLinkPrepareGroup = testChat3 aliceProfile bobProfile cathProfile test
       bob ##> ("/_connect plan 1 " <> shortLink)
       bob <## "group link: ok to connect directly"
       void $ getTermLine bob
+
+testShortLinkPrepareGroupConnectTwice :: HasCallStack => TestParams -> IO ()
+testShortLinkPrepareGroupConnectTwice = testChat3 aliceProfile bobProfile cathProfile test
+  where
+    test alice bob cath = do
+      createGroup2 "team" alice cath
+      alice ##> "/create link #team"
+      (shortLink, fullLink) <- getGroupLinks alice "team" GRMember True
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "group link: ok to connect directly"
+      groupSLinkData <- getTermLine bob
+      bob ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " " <> groupSLinkData)
+      bob <## "#team: group is prepared"
+      bob ##> "/_connect group #1"
+      bob <## "#team: connection started"
+      alice <## "bob (Bob): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: bob joined the group",
+          do
+            bob <## "#team: joining the group..."
+            bob <## "#team: you joined the group"
+            bob <## "#team: member cath (Catherine) is connected",
+          do
+            cath <## "#team: alice added bob (Bob) to the group (connecting...)"
+            cath <## "#team: new member bob is connected"
+        ]
+      bob ##> "/_connect group #1"
+      bob <## "bad chat command: group is already being joined"
+      alice #> "#team 1"
+      [bob, cath] *<# "#team alice> 1"
 
 testShortLinkPrepareGroupReject :: HasCallStack => TestParams -> IO ()
 testShortLinkPrepareGroupReject = testChatCfg3 cfg aliceProfile bobProfile cathProfile test

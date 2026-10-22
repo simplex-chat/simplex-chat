@@ -2339,7 +2339,7 @@ processChatCommand cxt nm = \case
                   Just GroupOwnerContact {contactId, memberId}
                     | memberId == MemberId ownerId -> Just contactId
                   _ -> Nothing
-            void $ createLinkOwnerMember db cxt user gInfo' ctId_ (MemberId ownerId) ownerKey
+            void $ getCreateLinkOwnerMember db cxt user gInfo' ctId_ (MemberId ownerId) ownerKey
           pure g'
         rs <- withGroupLock "connectPreparedGroup" groupId $
           mapConcurrently (connectToRelay user g') relays
@@ -3917,7 +3917,7 @@ processChatCommand cxt nm = \case
           Nothing -> connect' groupLinkId Nothing (Just $ Just gInfo)
           Just conn@Connection {connStatus, xContactId} -> case connStatus of
             ConnPrepared -> joinPreparedConn' xContactId conn (Just $ Just gInfo)
-            _ -> connect' groupLinkId xContactId (Just $ Just gInfo) -- why not "already connected" for host member?
+            _ -> throwCmdError "group is already being joined"
         Nothing ->
           withFastStore' (\db -> getConnReqContactXContactId db cxt user cReqHash1 cReqHash2) >>= \case
             Right ct@Contact {activeConn} -> case groupLinkId of

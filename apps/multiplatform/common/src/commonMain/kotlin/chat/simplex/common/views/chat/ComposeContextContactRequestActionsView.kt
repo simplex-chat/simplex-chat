@@ -16,6 +16,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.views.chatlist.acceptContactRequest
+import chat.simplex.common.views.chatlist.rememberAcceptingContactRequest
 import chat.simplex.common.views.chatlist.rejectContactRequest
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
@@ -28,19 +29,11 @@ fun ComposeContextContactRequestActionsView(
   rhId: Long?,
   contactRequestId: Long
 ) {
-  val inProgress = rememberSaveable { mutableStateOf(false) }
+  val inProgress = rememberAcceptingContactRequest(contactRequestId)
   var progressByTimeout by rememberSaveable { mutableStateOf(false) }
-
-  KeyChangeEffect(chatModel.chatId.value) {
-    if (inProgress.value) {
-      inProgress.value = false
-      progressByTimeout = false
-    }
-  }
-
   LaunchedEffect(inProgress.value) {
     progressByTimeout = if (inProgress.value) {
-      delay(1000)
+      delay(500)
       inProgress.value
     } else {
       false
@@ -89,9 +82,9 @@ fun ComposeContextContactRequestActionsView(
           else
             acceptButtonModifier.clickable {
               if (chatModel.addressShortLinkDataSet()) {
-                acceptContactRequest(rhId, incognito = false, contactRequestId, isCurrentUser = true, chatModel = chatModel, close = null, inProgress = inProgress)
+                acceptContactRequest(rhId, incognito = false, contactRequestId, isCurrentUser = true, chatModel = chatModel, close = null)
               } else {
-                showAcceptRequestAlert(rhId, contactRequestId, inProgress = inProgress)
+                showAcceptRequestAlert(rhId, contactRequestId)
               }
             }
         Row(
@@ -133,7 +126,7 @@ fun showRejectRequestAlert(rhId: Long?, contactRequestId: Long) {
   )
 }
 
-fun showAcceptRequestAlert(rhId: Long?, contactRequestId: Long, inProgress: MutableState<Boolean>) {
+fun showAcceptRequestAlert(rhId: Long?, contactRequestId: Long) {
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.accept_contact_request),
     buttons = {
@@ -141,14 +134,14 @@ fun showAcceptRequestAlert(rhId: Long?, contactRequestId: Long, inProgress: Muta
         // Accept
         SectionItemView({
           AlertManager.shared.hideAlert()
-          acceptContactRequest(rhId, incognito = false, contactRequestId, isCurrentUser = true, chatModel = chatModel, close = null, inProgress = inProgress)
+          acceptContactRequest(rhId, incognito = false, contactRequestId, isCurrentUser = true, chatModel = chatModel, close = null)
         }) {
           Text(generalGetString(MR.strings.accept_contact_button), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
         // Accept incognito
         SectionItemView({
           AlertManager.shared.hideAlert()
-          acceptContactRequest(rhId, incognito = true, contactRequestId, isCurrentUser = true, chatModel = chatModel, close = null, inProgress = inProgress)
+          acceptContactRequest(rhId, incognito = true, contactRequestId, isCurrentUser = true, chatModel = chatModel, close = null)
         }) {
           Text(generalGetString(MR.strings.accept_contact_incognito_button), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }

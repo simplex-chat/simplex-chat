@@ -1684,7 +1684,7 @@ fun ComposeView(
 
   LaunchedEffect(composeState.value.inProgress) {
     val newProgressByTimeout = if (composeState.value.inProgress) {
-      delay(1000)
+      delay(500)
       composeState.value.inProgress
     } else {
       false
@@ -1777,7 +1777,7 @@ fun ComposeView(
 
     Surface(color = MaterialTheme.colors.background, contentColor = MaterialTheme.colors.onBackground) {
       Divider()
-      if (chat.chatInfo is ChatInfo.Group && chat.chatInfo.groupInfo.nextConnectPrepared) {
+      if (chat.chatInfo is ChatInfo.Group && chat.chatInfo.groupInfo.nextConnectPrepared && chat.chatInfo.groupChatScope() == null) {
         if (chat.chatInfo.groupInfo.businessChat == null) {
           val isChannel = chat.chatInfo.groupInfo.useRelays
           ConnectButtonView(

@@ -10,11 +10,13 @@ import SwiftUI
 import SimpleXChat
 
 struct ContextContactRequestActionsView: View {
+    @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
     var contactRequestId: Int64
     @UserDefault(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
-    @State private var inProgress = false
     @State private var progressByTimeout = false
+
+    private var inProgress: Bool { chatModel.acceptingContactRequests.contains(contactRequestId) }
 
     var body: some View {
         HStack(spacing: 0) {
@@ -46,7 +48,7 @@ struct ContextContactRequestActionsView: View {
         }
         .onChange(of: inProgress) { inPrgrs in
             if inPrgrs {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     progressByTimeout = inProgress
                 }
             } else {
@@ -85,7 +87,7 @@ struct ContextContactRequestActionsView: View {
 
     private func acceptRequest(incognito: Bool = false) {
         Task {
-            await acceptContactRequest(incognito: incognito, contactRequestId: contactRequestId, inProgress: $inProgress)
+            await acceptContactRequest(incognito: incognito, contactRequestId: contactRequestId)
         }
     }
 }

@@ -39,7 +39,7 @@ fun ComposeContextMemberContactActionsView(
 
   LaunchedEffect(inProgress.value) {
     progressByTimeout = if (inProgress.value) {
-      delay(1000)
+      delay(500)
       inProgress.value
     } else {
       false
