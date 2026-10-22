@@ -185,7 +185,7 @@ data ProfileRead = ProfileOk LinkProfile | ProfileUnread | ProfileUnavailable
 data Preview = Preview {previewType :: LinkKind, previewProfile :: ProfileRead}
   deriving (Eq, Show)
 
-data Entity = Entity {entityPreview :: Preview, link :: Text, deepLink :: Text}
+data Entity = Entity {entityPreview :: Preview, link :: Text, deepLink :: Maybe Text}
   deriving (Eq, Show)
 
 instance J.ToJSON Preview where
@@ -228,11 +228,11 @@ chatKindText = \case
   CKChannel -> "channel"
 
 -- | A search answer's entity, within the search bound. Every server host of the link must pass the host rule.
--- The deep link is the core's @simplex:/@ form, which carries the server; a link the core cannot parse keeps its own text.
+-- The deep link is the core's @simplex:/@ form, which carries the server; a link the core cannot parse has none.
 linkEntity :: Profiles -> LinkKind -> Text -> IO Entity
 linkEntity ps@Profiles {searchSlots} t link = do
   r <- boundedProfile ps searchSlots link sl_
-  pure Entity {entityPreview = Preview t r, link, deepLink = maybe link (safeDecodeUtf8 . strEncode . simplexShortLink) sl_}
+  pure Entity {entityPreview = Preview t r, link, deepLink = safeDecodeUtf8 . strEncode . simplexShortLink <$> sl_}
   where
     sl_ = parseShortLink link
 
