@@ -18,6 +18,8 @@ on:
       - "apps/simplex-badge-service/**"
       - "apps/simplex-broadcast-bot/**"
       - "apps/simplex-directory-service/**"
+      - "apps/multiplatform/**"
+      - "apps/ios/**"
       - "tests/**"
       - "bots/src/**"
       - "simplex-chat.cabal"
@@ -91,6 +93,8 @@ jobs:
     outputs:
       libs_tag: ${{ steps.libs.outputs.tag }}
       core_changed: ${{ steps.core.outputs.core }}
+      kotlin: ${{ steps.changes.outputs.kotlin }}
+      ios: ${{ steps.changes.outputs.ios }}
       addon_tag: ${{ steps.addon.outputs.tag }}
       addon_draft: ${{ steps.addon.outputs.draft }}
       libs_latest: ${{ steps.latest_libs.outputs.tag }}
@@ -113,6 +117,23 @@ jobs:
         run: |
           git fetch -q --depth=1 origin "$BASE"
           python3 scripts/ci/packages_release.py changes "$BASE" | grep '^core=' >> "$GITHUB_OUTPUT"
+
+      - name: Check app changes
+        id: changes
+        if: github.event_name == 'push' || github.event_name == 'pull_request'
+        shell: bash
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          changed() { ! git diff --quiet "$BASE" HEAD -- "$@"; }
+          if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
+            git fetch -q --depth=1 origin "$BASE"
+            if changed apps/multiplatform .github/workflows/build.yml; then echo "kotlin=true"; fi
+            if changed apps/ios scripts/ci/ios-stub-libs.sh .github/workflows/build.yml; then echo "ios=true"; fi
+          elif [ "$GITHUB_REF_TYPE" = branch ]; then
+            echo "kotlin=true"
+            echo "ios=true"
+          fi >> "$GITHUB_OUTPUT"
 
       - name: Build changelog
         id: build_changelog
@@ -237,6 +258,7 @@ jobs:
             should_run: true
             ghc: ${{ needs.variables.outputs.GHC_VER }}
             hash: 'sha256:98ff7968124952e719a8a69bb3cccdd217f5fe758108ac4f21ad22e1df44d237'
+            kotlin: ${{ needs.maybe-release.outputs.kotlin == 'true' }}
     steps: &linux-steps
       - name: Checkout Code
         if: matrix.should_run == true
@@ -620,6 +642,20 @@ jobs:
             exit 1
           fi
 
+      # Compiling the desktop and Android targets of :common in parallel exceeds the 2 GB Kotlin daemon heap.
+      # cmakeBuildAndCopy links the JNI library against libsimplex, which this job does not build.
+      - name: Build and test Kotlin apps
+        if: ${{ !cancelled() && matrix.kotlin == true }}
+        timeout-minutes: 90
+        shell: docker exec -t builder sh -eu {0}
+        run: |
+          cd apps/multiplatform
+          ./gradlew --no-daemon --max-workers=1 \
+            :common:desktopTest \
+            :desktop:compileKotlinJvm -x :desktop:cmakeBuildAndCopy \
+            :android:compileGoogleDebugKotlin \
+            :android:testFossDebugUnitTest
+
       - name: Setup Node.js
         id: setup-node
         if: ${{ !cancelled() && matrix.libs && (github.event_name == 'pull_request' || needs.maybe-release.outputs.addon_draft || needs.maybe-release.outputs.publish) }}
@@ -741,6 +777,7 @@ jobs:
             ghc: ${{ needs.variables.outputs.GHC_VER }}
             hash: 'sha256:6a62a4157b8775eaf4959cb629e757d32d39d1f4c8ac1b0ddc2510b555cf72f3'
             libs: true
+            kotlin: false
           - os: 24.04
             os_underscore: 24_04
             arch: aarch64
@@ -748,6 +785,7 @@ jobs:
             should_run: true
             ghc: ${{ needs.variables.outputs.GHC_VER }}
             hash: 'sha256:68434214381cb38287104e629fe8ee720167dd98cbb36ab1cbbab342515fa6ab'
+            kotlin: false
     steps: *linux-steps
 
   build-linux-ghc8:
@@ -773,6 +811,7 @@ jobs:
             ghc: "8.10.7"
             hash: 'sha256:5c8b2c0a6c745bc177669abfaa716b4bc57d58e2ea3882fb5da67f4d59e3dda5'
             should_run: true
+            kotlin: false
     steps: *linux-steps
 
 # =================================
@@ -911,6 +950,7 @@ jobs:
             cli_asset_name: simplex-chat-macos-aarch64
             desktop_asset_name: simplex-desktop-macos-aarch64.dmg
             openssl_dir: "/opt/homebrew/opt"
+            ios: ${{ needs.maybe-release.outputs.ios == 'true' }}
           - os: macos-15-intel
             arch: x86_64
             ghc: ${{ needs.variables.outputs.GHC_VER }}
@@ -1140,6 +1180,23 @@ jobs:
             echo "All "$attempts" attempts failed."
             exit 1
           fi
+
+      - name: Build iOS app
+        if: ${{ !cancelled() && matrix.ios == true }}
+        timeout-minutes: 60
+        shell: bash
+        run: |
+          scripts/ci/ios-stub-libs.sh
+          xcodebuild build -quiet \
+            -project apps/ios/SimpleX.xcodeproj \
+            -scheme "SimpleX (iOS)" \
+            -configuration Debug \
+            -destination "generic/platform=iOS Simulator" \
+            -onlyUsePackageVersionsFromResolvedFile \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
+            ARCHS=arm64 \
+            CODE_SIGNING_ALLOWED=NO
 
       - name: Build library
         id: mac_lib_build
