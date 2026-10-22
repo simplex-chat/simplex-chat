@@ -29,7 +29,7 @@ where
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (registrarOf, unhex)
 import Bots.StoreService.NamesOrdersTests
-import Bots.StoreService.NamesStoreTests (order, ownerA, t0)
+import Bots.StoreService.NamesStoreTests (btc, insertInvoiceRow, order, ownerA, paidOrder, t0)
 import Bots.StoreService.WebTests (capturingStderr, digestFixture, jsonObject, statusOf, webGet)
 import Control.Applicative ((<|>))
 import Control.Arrow ((&&&))
@@ -92,7 +92,9 @@ namesOwnerTests = describe "StoreService names: owner" $ do
     it "registers a failed order whose register went through, by its mined register or by ownerOf, answering registration_changed and spending a code" testMoveLanded
     it "answers name_check_unavailable when the register check cannot read the chain, changing nothing" testMoveLandedUnread
     it "spends a released code still unused when its failed order turns out registered, and alerts once when it was spent elsewhere meanwhile" testMoveLandedReleasedCode
-    it "answers a dearer name price_too_high with its price, and moves to a cheaper one at its price" testMovePrice
+    it "answers a dearer name price_too_high with its price, and moves to a cheaper one at its price, crediting the difference to its balance" testMovePrice
+    it "credits nothing for a cheaper move whose compare-and-set loses" testCheaperMoveLostRace
+    it "keeps fromBalance through a move to a cheaper name" testMoveKeepsFromBalance
     it "checks a code order's code again: code_not_covering for a shorter name, a held code kept though revoked and expired since" testMoveCodeOrder
     it "reserves a released code again while unused, else answers code_used, code_reserved, code_invalid or code_expired" testMoveReleasedCode
     it "refuses sealed over 11095 characters, a body over 16384 bytes and malformed fields, accepting the longest" testMoveSizes
@@ -208,6 +210,10 @@ rewrite Ctx {cStore, cClock} NameRegistration {nrId} change = do
     updateRegistration db (change current) t >>= \case
       Written _ -> fromJust <$> getRegistration db nrId
       refused -> error $ "not written: " <> show refused
+
+-- | The amount and credited of the order's balance.
+balanceOf :: Ctx -> NameRegistration -> IO (Maybe (Int, Int))
+balanceOf Ctx {cStore} NameRegistration {nrId} = fmap (\Balance {blAmount, blCredited} -> (blAmount, blCredited)) <$> withTransaction cStore (\db -> getBalance db nrId orderTime)
 
 stored :: Ctx -> NameRegistration -> IO NameRegistration
 stored ctx = registrationById ctx . nrId
@@ -563,11 +569,46 @@ testMovePrice = withOwner $ \ctx -> do
   toDynamis <- moveTo ctx "dynamis" 10
   move ctx keyA cheap toDynamis `shouldReturn` (409, Just $ KM.fromList [("error", "price_too_high"), ("price", J.Number 20000)])
   stored ctx cheap `shouldReturn` cheap
-  dear <- paidIn ctx (byB dynamisOrder) takenPhase
+  balanceOf ctx cheap `shouldReturn` Nothing
+  dear <- paidIn ctx (byB dynamisOrder) failedPhase
   toCheaper <- moveTo ctx "alicebakers" 11
   v <- moved ctx keyB dear toCheaper
-  (field "price" v, field "phase" v) `shouldBe` (Just (J.Number 10000), Just "queued")
+  (field "price" v, field "phase" v, field "fromBalance" v) `shouldBe` (Just (J.Number 10000), Just "queued", Just (J.Number 0))
+  field "balance" v `shouldBe` Just (J.object ["amount" J..= (10000 :: Int), "held" J..= False, "heldUntil" J..= J.Null, "refunded" J..= (0 :: Int)])
   nrPrice <$> stored ctx dear `shouldReturn` 10000
+  balanceOf ctx dear `shouldReturn` Just (10000, 10000)
+
+testCheaperMoveLostRace :: IO ()
+testCheaperMoveLostRace = withOwner $ \ctx@Ctx {cNode} -> do
+  answerFree ctx "alicebakers"
+  r <- paidIn ctx dynamisOrder failedPhase
+  to <- moveTo ctx "alicebakers" 10
+  -- held at the register check's ownerOf read, inside the turns
+  (moving, gate) <- pausedAt cNode "eth_call" $ move ctx keyA r to
+  changed <- rewrite ctx r id
+  releaseGate gate
+  fst <$> within "the move" (wait moving) `shouldReturn` 409
+  stored ctx r `shouldReturn` changed
+  balanceOf ctx r `shouldReturn` Nothing
+
+-- | dynamis for 20000, 5000 of it from another order's balance, moved to alicebakers for 10000.
+testMoveKeepsFromBalance :: IO ()
+testMoveKeepsFromBalance = withOwner $ \ctx@Ctx {cStore} -> do
+  answerFree ctx "alicebakers"
+  paying <- paidIn ctx (byB aliceOrder) failedPhase
+  withTransaction cStore $ \db -> creditBalance db (nrId paying) 5000 orderTime
+  let fields = OrderFields {ofLabelHash = labelHash "dynamis", ofLength = 7, ofDuration = yearsDuration 2 orderTime, ofCommitment = commitmentOf 3, ofSealed = "sealed-dynamis-3"}
+      new = NewRegistration {nrgId = RegistrationId "diff", nrgOwner = ownerA, nrgOrder = fields, nrgYears = 2}
+  withTransaction cStore $ \db -> do
+    insertInvoiceRow db "inv-diff" (addUTCTime 3600 orderTime) "open"
+    createPaidRegistration db new (OTBalance (nrId paying) 20000 5000 (Just btc)) (paidOrder "inv-diff") {poPrice = 20000} orderTime `shouldReturn` Right ()
+  settleNow ctx (InvoiceId "inv-diff") settled `shouldReturn` Right ISPaid
+  r <- registrationById ctx (RegistrationId "diff") >>= \d -> rewrite ctx d failedPhase
+  to <- moveTo ctx "alicebakers" 11
+  v <- moved ctx keyA r to
+  (field "price" v, field "fromBalance" v) `shouldBe` (Just (J.Number 10000), Just (J.Number 5000))
+  balanceOf ctx r `shouldReturn` Just (10000, 10000)
+  balanceOf ctx paying `shouldReturn` Just (0, 5000)
 
 testMoveCodeOrder :: IO ()
 testMoveCodeOrder = withOwner $ \ctx@Ctx {cStore} -> do

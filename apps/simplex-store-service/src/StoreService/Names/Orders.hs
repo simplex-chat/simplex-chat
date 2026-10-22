@@ -70,8 +70,8 @@ import StoreService.Names.Env (NamesEnv (..))
 import StoreService.Names.Phases (Phases, RegistrationId (..))
 import StoreService.Names.Abi (bytes32FromHex, hex)
 import StoreService.Names.Signatures (OrderFields (..), orderMessage, parseChecksumAddress, parseSignature, personalDigest)
-import StoreService.Names.Store (Balance, LiveOrder (..), NamePhase (..), NameRegistration (..), NewRegistration (..), PrepaidCode (..), RegistrationPayment (..), RegistrationRefused (..), NameTransaction (..), TxFor (..), TxStatus (..), VersionWrite (..), closeOverdue, createCodeRegistration, getBalance, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistration, getRegistrationByOrderHash, isLabelRegistering, registrationTransactions, retargetRegistration, updateRegistration)
-import StoreService.Names.Turns (Turns, withCodeTurn)
+import StoreService.Names.Store (Balance, LiveOrder (..), NamePhase (..), NameRegistration (..), NewRegistration (..), PrepaidCode (..), RegistrationPayment (..), RegistrationRefused (..), NameTransaction (..), TxFor (..), TxStatus (..), VersionWrite (..), closeOverdue, createCodeRegistration, creditBalance, getBalance, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistration, getRegistrationByOrderHash, isLabelRegistering, registrationTransactions, retargetRegistration, updateRegistration)
+import StoreService.Names.Turns (Turns, withBalanceTurn, withCodeTurn)
 
 data OrdersEnv = OrdersEnv
   { oeStore :: DBStore,
@@ -303,13 +303,17 @@ checkMovePrice ct NameRegistration {nrPrice, nrYears} len =
       | otherwise -> pure $ Right price
 
 -- | The move's write, a compare-and-set on the version read. A code order's code is checked and reserved again in the code's turn.
+-- A paid order moved to a cheaper name keeps the difference as its balance, credited in the move's transaction and the balance's turn.
 retargetOrder :: OrdersEnv -> NameRegistration -> OrderFields -> Int -> IO (Either WriteRefusal Int64)
-retargetOrder OrdersEnv {oeStore, oeTurns, oeNow} r@NameRegistration {nrId, nrPayment} fields@OrderFields {ofLength} price = do
+retargetOrder OrdersEnv {oeStore, oeTurns, oeNow} r@NameRegistration {nrId, nrPayment, nrPrice} fields@OrderFields {ofLength} price = do
   now <- oeNow
   let write db = versionWritten <$> retargetRegistration db r fields price now
+      paidMove
+        | price < nrPrice = withBalanceTurn oeTurns nrId $ withTransaction oeStore $ \db -> write db >>= traverse (\v -> v <$ creditBalance db nrId (nrPrice - price) now)
+        | otherwise = withTransaction oeStore write
   case nrPayment of
-    RPInvoice {} -> withTransaction oeStore write
-    RPBalance -> withTransaction oeStore write
+    RPInvoice {} -> paidMove
+    RPBalance -> paidMove
     RPCode codeId ->
       withTransaction oeStore (`getPrepaidCodeById` codeId) >>= \case
         Nothing -> pure $ Left $ WRRefused $ ORCode CRInvalid
