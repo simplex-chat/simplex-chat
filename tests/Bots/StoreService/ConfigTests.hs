@@ -4,6 +4,7 @@
 module Bots.StoreService.ConfigTests where
 
 import StoreService.Config
+import Control.Monad (forM_)
 import qualified Data.ByteArray as BA
 import qualified Data.ByteString.Char8 as B
 import Data.Either (isLeft)
@@ -420,6 +421,7 @@ namesConfigTests = describe "StoreService names: config" $ do
   it "reads [names] and [chain], applying every documented default" testNamesDefaults
   it "reads every [names] and [chain] setting written out" testNamesWrittenOut
   it "reads the names keys of [listener]" testNamesListenerKeys
+  it "refuses names_hosts or names_export_dir without names_static_dir" testNamesSiteNeedsItsBuild
   it "leaves the names side off when [names] is absent" testNamesAbsent
   it "refuses [names] without [chain], and [chain] without [names]" testNamesNeedsChain
   it "refuses years below 2" testNamesYearsBelowTwo
@@ -523,6 +525,13 @@ testNamesListenerKeys = do
   Right plain <- parseIni fullIni
   let ListenerConfig {lNamesStaticDir = noDir, lNamesExportDir = noExport, lNamesHosts = noHosts} = listener plain
   (noDir, noExport, noHosts) `shouldBe` (Nothing, Nothing, [])
+
+testNamesSiteNeedsItsBuild :: IO ()
+testNamesSiteNeedsItsBuild =
+  forM_ ["names_hosts = simplex.domains", "names_export_dir = /srv/names-out"] $ \key -> do
+    let withKey = T.replace "static_dir = /srv/badges\n" ("static_dir = /srv/badges\n" <> key <> "\n") fullIni
+    r <- parseIni withKey
+    either id (const "parsed") r `shouldBe` "listener.names_static_dir is required with names_hosts or names_export_dir"
 
 testNamesAbsent :: IO ()
 testNamesAbsent = do

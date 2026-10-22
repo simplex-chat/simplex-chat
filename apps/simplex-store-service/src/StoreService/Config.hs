@@ -31,7 +31,7 @@ import qualified Data.ByteArray as BA
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import qualified Data.ByteString.Char8 as B
 import Data.Ini (Ini, iniGlobals, iniParser, keys, lookupValue, sections)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -255,6 +255,8 @@ parseConfig ini = do
   let lNamesStaticDir = T.unpack <$> present "listener" "names_static_dir"
       lNamesExportDir = T.unpack <$> present "listener" "names_export_dir"
       lNamesHosts = maybe [] (filter (not . T.null) . map (T.toLower . T.strip) . T.splitOn ",") (present "listener" "names_hosts")
+  when (isNothing lNamesStaticDir && (not (null lNamesHosts) || isJust lNamesExportDir)) $
+    Left "listener.names_static_dir is required with names_hosts or names_export_dir"
   btc <- btcpaySection
   str <- stripeSection
   iss <- issuerSection
