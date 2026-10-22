@@ -245,7 +245,7 @@ rules_for() {
 jumps_for() {
   local tool=$1
   if [[ $bridge ]]; then
-    if [[ $mode == dry-run ]] || "$tool" -w -S "$DOCKER_CHAIN" >/dev/null 2>&1; then
+    if "$tool" -w -S "$DOCKER_CHAIN" >/dev/null 2>&1; then
       echo "$DOCKER_CHAIN -i $bridge"
     fi
     echo "INPUT -i $bridge"
@@ -254,44 +254,51 @@ jumps_for() {
   fi
 }
 
-run() {
-  if [[ $mode == dry-run ]]; then
-    echo "$*"
-  else
-    "$@"
-  fi
+# The rules of a chain as `iptables -S` prints them, in order.
+chain_rules() {
+  local tool=$1 chain=$2 listing
+  listing=$("$tool" -w -S "$chain" 2>/dev/null) || die "cannot read the $tool chain $chain; run as root"
+  grep '^-A ' <<<"$listing" || true
+}
+
+# A jump must be the first rule of its parent, or a rule above it could accept what the chain refuses.
+# Its other copies are deleted by number, counted after the insert.
+jump_restore() {
+  local tool=$1 parent match jump rules position
+  local -a copies
+  while read -r parent match; do
+    jump="-A $parent $match -j $CHAIN"
+    rules=$(chain_rules "$tool" "$parent")
+    [[ ${rules%%$'\n'*} == "$jump" ]] && continue
+    mapfile -t copies < <(grep -nxF -- "$jump" <<<"$rules" | cut -d: -f1 | sort -rn)
+    echo "-I $parent 1 $match -j $CHAIN"
+    for position in "${copies[@]}"; do echo "-D $parent $((position + 1))"; done
+  done < <(jumps_for "$tool")
 }
 
 # With --noflush the chain line empties an existing chain, and the restore commits all or nothing,
 # so the chain is never open or half filled.
-chain_restore() {
-  local family=$1 line
+family_restore() {
+  local tool=$1 family=$2 line
   echo "*filter"
   echo ":$CHAIN - [0:0]"
   while read -r line; do echo "-A $CHAIN $line"; done < <(rules_for "$family")
+  jump_restore "$tool"
   echo "COMMIT"
 }
 
 install_family() {
-  local tool=$1 family=$2 line parent
-  local -a args
+  local tool=$1 family=$2 payload
+  payload=$(family_restore "$tool" "$family")
   if [[ $mode == dry-run ]]; then
-    echo "$tool-restore -w --noflush <<EOF"
-    chain_restore "$family"
-    echo "EOF"
+    printf '%s\n' "$tool-restore -w --noflush <<EOF" "$payload" "EOF"
   else
-    chain_restore "$family" | "$tool-restore" -w --noflush
+    "$tool-restore" -w --noflush <<<"$payload"
   fi
-  while read -r parent line; do
-    read -ra args <<<"$line"
-    if [[ $mode == dry-run ]] || ! "$tool" -w -C "$parent" "${args[@]}" -j "$CHAIN" 2>/dev/null; then
-      run "$tool" -w -I "$parent" 1 "${args[@]}" -j "$CHAIN"
-    fi
-  done < <(jumps_for "$tool")
 }
 
 check_family() {
-  local tool=$1 family=$2 line parent expected installed failed=0
+  local tool=$1 family=$2 line parent jump rules expected installed failed=0
   local -a args
   if ! "$tool" -w -S "$CHAIN" >/dev/null 2>&1; then
     echo "$tool: no chain $CHAIN" >&2
@@ -311,9 +318,10 @@ check_family() {
     fi
   done < <(rules_for "$family")
   while read -r parent line; do
-    read -ra args <<<"$line"
-    if ! "$tool" -w -C "$parent" "${args[@]}" -j "$CHAIN" 2>/dev/null; then
-      echo "$tool: missing jump: $parent $line -j $CHAIN" >&2
+    jump="-A $parent $line -j $CHAIN"
+    rules=$(chain_rules "$tool" "$parent")
+    if [[ ${rules%%$'\n'*} != "$jump" ]]; then
+      echo "$tool: the first rule of $parent is not $jump" >&2
       failed=1
     fi
   done < <(jumps_for "$tool")
@@ -349,7 +357,7 @@ status=0
 for family in 4 6; do
   tool=iptables
   [[ $family == 6 ]] && tool=ip6tables
-  [[ $mode == dry-run ]] || command -v "$tool" >/dev/null || die "$tool is not installed"
+  command -v "$tool" >/dev/null || die "$tool is not installed"
   case $mode in
     check) check_family "$tool" "$family" || status=1 ;;
     remove) remove_family "$tool" ;;
