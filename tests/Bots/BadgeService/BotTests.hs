@@ -4583,7 +4583,8 @@ testPurchaseChecksBounded :: HasCallStack => TestParams -> IO ()
 testPurchaseChecksBounded _ = do
   PurchaseChecks {appleChecks = checks, googleChecks} <- newPurchaseChecks
   now <- getCurrentTime
-  let waitAt t ref = atomically $ purchaseCheckWait checks t ref
+  let waitAt t ref = atomically $ purchaseCheckWait checks t (purchaseClaim ref)
+      purchaseClaim ref = ClaimKey {claimRef = ref, claimPurpose = ClaimPurchase}
       size = M.size <$> readTVarIO checks
   waitAt now "claim" `shouldReturn` Nothing
   waitAt (addUTCTime 600 now) "claim" `shouldReturn` Just 3000
@@ -4592,9 +4593,11 @@ testPurchaseChecksBounded _ = do
   waitAt now "new" `shouldReturn` Nothing
   waitAt now "new" `shouldReturn` Nothing
   size `shouldReturn` maxPurchaseChecks
-  atomically (purchaseCheckWait googleChecks now "play claim") `shouldReturn` Nothing
-  atomically (purchaseCheckWait googleChecks now "play claim") `shouldReturn` Just 3600
-  M.size <$> readTVarIO googleChecks `shouldReturn` 1
+  atomically (purchaseCheckWait googleChecks now (purchaseClaim "play claim")) `shouldReturn` Nothing
+  atomically (purchaseCheckWait googleChecks now (purchaseClaim "play claim")) `shouldReturn` Just 3600
+  -- a restore is not held off by the purchase's own check of the same subscription
+  atomically (purchaseCheckWait googleChecks now ClaimKey {claimRef = "play claim", claimPurpose = ClaimTransfer}) `shouldReturn` Nothing
+  M.size <$> readTVarIO googleChecks `shouldReturn` 2
   waitAt (addUTCTime 3600 now) "new" `shouldReturn` Nothing
   size `shouldReturn` 1
 
