@@ -34,7 +34,7 @@ import ChatTests.Utils
 import Control.Concurrent (newEmptyMVar, putMVar, takeMVar, threadDelay)
 import Control.Concurrent.Async (async, cancel)
 import Control.Concurrent.STM (TQueue, atomically, readTMVar, readTQueue, readTVarIO)
-import Control.Monad (forM_, replicateM, void, when)
+import Control.Monad (forM, forM_, replicateM, void, when)
 import Control.Monad.Except (runExceptT)
 import Control.Exception (finally)
 import qualified Data.Aeson as J
@@ -212,6 +212,7 @@ badgeServiceTests = do
       it "should credit a transfer of a payment credited nowhere as a first purchase" testTransferUncredited
       it "should answer a repeated transfer from the record, without asking the store or limiting it" testTransferReplayAnswered
       it "should refuse a transfer to a key that holds a purchase, without asking the store" testTransferKnownKeyRefused
+      it "should answer a transfer of a one-time purchase credited to another key receipt_used, moving nothing" testTransferOneTimeRefused
     describe "restore" $ do
       it "should move a subscription to another device on Restore, retire it on the old one, and credit one credited nowhere" testRestoreOnNewDevice
       it "should move a subscription to another profile on Restore, and refuse a move on before the first key's credential expires, once" testRestoreOnOtherProfile
@@ -2941,6 +2942,25 @@ testTransferKnownKeyRefused ps =
     ledgerRows cc "sx_badge_service_badge_ledger" `shouldReturn` ledger
     rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 2
     reboundPayments cc `shouldReturn` 0
+
+-- | Restore presents every transaction it finds as a transfer, a one-time purchase bought on another device included.
+testTransferOneTimeRefused :: HasCallStack => TestParams -> IO ()
+testTransferOneTimeRefused ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsController = cc, bsStore = store@FakeStore {appleSupporterJWS}} -> do
+    let oneTime = [supporterPlay, SPApple {jws = appleSupporterJWS}]
+    owned <- forM oneTime $ \payment -> do
+      (ownerKey, ownerMasterKey) <- newPurchaseKeys
+      purchased <- serviceCmd env ownerKey $ purchaseCmd ownerMasterKey payment
+      pure (ownerKey, ownerMasterKey, payment, purchased)
+    checks <- subscriptionChecks store
+    ledger <- ledgerRows cc "sx_badge_service_badge_ledger"
+    forM_ oneTime $ \payment -> refusalOf . snd <$> transferWithNewKey env payment `shouldReturn` (BSEReceiptUsed, Nothing)
+    subscriptionChecks store `shouldReturn` checks
+    ledgerRows cc "sx_badge_service_badge_ledger" `shouldReturn` ledger
+    rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 2
+    reboundPayments cc `shouldReturn` 0
+    forM_ owned $ \(ownerKey, ownerMasterKey, payment, purchased) ->
+      credentialOf <$> serviceCmd env ownerKey (purchaseCmd ownerMasterKey payment) `shouldReturn` credentialOf purchased
 
 restoredCmd :: Int64 -> ServicePayment -> String
 restoredCmd userId payment = "/_badge purchase " <> show userId <> " restored " <> paymentArg payment
