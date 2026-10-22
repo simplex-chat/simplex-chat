@@ -365,8 +365,17 @@ sudo chown simplex-store store_service.ini && sudo chmod 600 store_service.ini
 docker compose up -d --build --remove-orphans
 ```
 
-On a Docker bridge network instead, `--bridge <interface>` matches traffic from that network in
-`DOCKER-USER` and `INPUT`, and needs no `--uid`.
+On a Docker bridge network instead, `--bridge <interface>` matches traffic from that network's
+bridge interface in `DOCKER-USER` (traffic forwarded to other hosts) and `INPUT` (the host's own
+addresses), and needs no `--uid`. The script refuses an interface that is not a bridge, and stops
+when `DOCKER-USER` is missing (Docker's nftables backend, `"iptables": false` or `"ip6tables":
+false` in its daemon config, or Docker not started yet): the forwarded traffic would then pass
+unfiltered. The interface is `docker0` for the default network; for another, it is the network's
+`com.docker.network.bridge.name` option when set, else `br-` and the first 12 characters of its id:
+
+```
+docker network inspect -f '{{.Id}} {{index .Options "com.docker.network.bridge.name"}}' <network>
+```
 
 Install it as root from `scripts/store-service/`, here for a service uid of 998. `--db` defaults to
 the environment's `BADGE_DB_CONN`, else to compose's default

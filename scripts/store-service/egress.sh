@@ -32,7 +32,8 @@ Installs the egress rule as the iptables and ip6tables chain $CHAIN, rebuilt on 
                      holds no other rule
   --remove           delete the jumps an install adds for this --uid or --bridge, then the chain
   --uid UID          host networking: match the service's user, which must have no login shell
-  --bridge IFACE     a Docker bridge network: match traffic from IFACE ($DOCKER_CHAIN and INPUT)
+  --bridge IFACE     a Docker bridge network: match traffic from its interface IFACE
+                     ($DOCKER_CHAIN, which must exist, and INPUT)
   --ini FILE         store_service.ini, read for [chain] rpc_url and [btcpay] host
                      (default ./store_service.ini)
   --db CONN          the database connection string the service is started with
@@ -72,7 +73,13 @@ while (($#)); do
   shift
 done
 
-if [[ ! $bridge ]]; then
+if [[ $bridge ]]; then
+  [[ $bridge =~ ^[A-Za-z0-9_.-]+$ ]] || die "--bridge must be an interface name"
+  # A network's name or a typo matches no traffic, and a host interface would filter inbound connections.
+  if [[ $mode != remove && ! -d /sys/class/net/$bridge/bridge ]]; then
+    die "$bridge is not a bridge interface; a Docker network's is br- and the first 12 characters of its id, or docker0"
+  fi
+else
   [[ $uid ]] || die "--uid is required with host networking: the uid the service runs as (USER_UID in compose)"
   [[ $uid =~ ^[0-9]+$ ]] || die "--uid must be a numeric user id"
 fi
@@ -242,11 +249,14 @@ rules_for() {
 }
 
 # "PARENT match..." per line: where the service's traffic enters the chain.
+# Container traffic to other hosts is forwarded, and only DOCKER-USER sees it before Docker's rules.
 jumps_for() {
   local tool=$1
   if [[ $bridge ]]; then
     if "$tool" -w -S "$DOCKER_CHAIN" >/dev/null 2>&1; then
       echo "$DOCKER_CHAIN -i $bridge"
+    elif [[ $mode != remove ]]; then
+      die "$tool has no $DOCKER_CHAIN chain, so the bridge's forwarded traffic could not be filtered; start Docker with its iptables firewall (and \"ip6tables\": true) first"
     fi
     echo "INPUT -i $bridge"
   else
@@ -264,8 +274,9 @@ chain_rules() {
 # A jump must be the first rule of its parent, or a rule above it could accept what the chain refuses.
 # Its other copies are deleted by number, counted after the insert.
 jump_restore() {
-  local tool=$1 parent match jump rules position
+  local tool=$1 parent match jump jumps rules position
   local -a copies
+  jumps=$(jumps_for "$tool")
   while read -r parent match; do
     jump="-A $parent $match -j $CHAIN"
     rules=$(chain_rules "$tool" "$parent")
@@ -273,7 +284,7 @@ jump_restore() {
     mapfile -t copies < <(grep -nxF -- "$jump" <<<"$rules" | cut -d: -f1 | sort -rn)
     echo "-I $parent 1 $match -j $CHAIN"
     for position in "${copies[@]}"; do echo "-D $parent $((position + 1))"; done
-  done < <(jumps_for "$tool")
+  done <<<"$jumps"
 }
 
 # With --noflush the chain line empties an existing chain, and the restore commits all or nothing,
@@ -298,7 +309,7 @@ install_family() {
 }
 
 check_family() {
-  local tool=$1 family=$2 line parent jump rules expected installed failed=0
+  local tool=$1 family=$2 line parent jump jumps rules expected installed failed=0
   local -a args
   if ! "$tool" -w -S "$CHAIN" >/dev/null 2>&1; then
     echo "$tool: no chain $CHAIN" >&2
@@ -317,6 +328,7 @@ check_family() {
       failed=1
     fi
   done < <(rules_for "$family")
+  jumps=$(jumps_for "$tool")
   while read -r parent line; do
     jump="-A $parent $line -j $CHAIN"
     rules=$(chain_rules "$tool" "$parent")
@@ -324,19 +336,20 @@ check_family() {
       echo "$tool: the first rule of $parent is not $jump" >&2
       failed=1
     fi
-  done < <(jumps_for "$tool")
+  done <<<"$jumps"
   return "$failed"
 }
 
 remove_family() {
-  local tool=$1 line parent
+  local tool=$1 line parent jumps
   local -a args
+  jumps=$(jumps_for "$tool")
   while read -r parent line; do
     read -ra args <<<"$line"
     while "$tool" -w -C "$parent" "${args[@]}" -j "$CHAIN" 2>/dev/null; do
       "$tool" -w -D "$parent" "${args[@]}" -j "$CHAIN"
     done
-  done < <(jumps_for "$tool")
+  done <<<"$jumps"
   if "$tool" -w -S "$CHAIN" >/dev/null 2>&1; then
     "$tool" -w -F "$CHAIN"
     "$tool" -w -X "$CHAIN"
