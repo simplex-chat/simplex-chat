@@ -48,7 +48,6 @@ class ReceivedMessagesTest : UiTest() {
     }
     assumeTrue("Android: the chat does not reach bob's reply before the quote can be clicked (plan 15.4.1c, open)", !appPlatform.isAndroid)
     hideKeyboard()
-    chat.scrollToBottom()
     assertFalse("the quoted message is out of view before the quote is clicked", exists(Ui.Chat.Item(original)))
     click(Ui.Chat.Item(reply).part("quote"))
     poll(what = "the quoted message scrolled into view") { exists(Ui.Chat.Item(original)) }
