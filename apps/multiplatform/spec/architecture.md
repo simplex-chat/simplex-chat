@@ -380,7 +380,7 @@ var platform: PlatformInterface = object : PlatformInterface {}
 | `androidApiLevel` | `null` | `Build.VERSION.SDK_INT` |
 | `androidIsPlayStoreBuild` | `false` | `BuildConfig.PLAY_STORE` |
 | `androidLoadPlayStoreCountry()` | no-op | Request the Play account country (google flavor only) |
-| `androidLockPortraitOrientation()` | no-op | Lock to `SCREEN_ORIENTATION_PORTRAIT` |
+| `androidLockPortraitOrientation()` | no-op | Lock to `SCREEN_ORIENTATION_LOCKED` (current orientation) |
 | `androidAskToAllowBackgroundCalls()` | `true` | Show battery restriction dialog |
 | `desktopShowAppUpdateNotice()` | no-op | Show update notice (Desktop only) |
 

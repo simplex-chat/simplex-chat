@@ -1,6 +1,5 @@
 package chat.simplex.app
 
-import android.annotation.SuppressLint
 import android.app.*
 import android.content.Context
 import chat.simplex.common.platform.Log
@@ -361,14 +360,12 @@ class SimplexApp: Application(), LifecycleEventObserver {
 
       override suspend fun androidUnfinishedBadgePurchases(): List<BadgePurchaseOutcome> = unfinishedBadgePurchases()
 
-      @SuppressLint("SourceLockedOrientationActivity")
       @Composable
       override fun androidLockPortraitOrientation() {
         val context = LocalContext.current
         DisposableEffect(Unit) {
           val activity = context as? Activity ?: return@DisposableEffect onDispose {}
-          // Lock orientation to portrait in order to have good experience with calls
-          activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+          activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LOCKED
           onDispose {
             // Unlock orientation
             activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
