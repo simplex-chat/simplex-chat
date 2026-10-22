@@ -10,6 +10,7 @@ import Crypto.Random (ChaChaDRG)
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
+import Data.Time.Clock (NominalDiffTime, diffUTCTime, getCurrentTime)
 import Data.Word (Word64)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (strDecode)
@@ -53,6 +54,8 @@ namesContractsTests = describe "StoreService names: contracts" $ do
   describe "failures" $ do
     it "fails a status on a failed read, never reading it as available" $ testFailedRead g
     it "fails a read whose answer does not decode or does not fit" $ testMalformed g
+    it "fails a status within its deadline when one method hangs" $ testStatusDeadline g
+    it "fails records within their deadline when the calls hang" $ testRecordsDeadline g
 
 testNode :: IO ()
 testNode = do
@@ -232,7 +235,34 @@ testMalformed g = withContracts g $ \node ct -> do
   answerCall node oracle pricesCall $ Returns $ B.dropEnd 32 launchPricesAnswer
   codeLengthFor ct 40000 2 `shouldReturn` Left (ChainUnavailable "eth_call: prices() answered AEShort")
 
+testStatusDeadline :: TVar ChaChaDRG -> IO ()
+testStatusDeadline g = withContracts g $ \node ct -> do
+  answerRegistrar node
+  answerCall node (registrarOf node) nameExpiresCall $ Returns $ uint256 (0 :: Int)
+  answerCall node fakeController reservedNamesCall $ Returns $ uint256 (0 :: Int)
+  setFault node "eth_getBlockByNumber" Hang
+  elapsed <- timed $ nameStatus ct {ctDeadline = testDeadline} alice `shouldReturn` Left (ChainUnavailable "name status: timed out")
+  elapsed `shouldSatisfy` (< 2)
+  clearFault node "eth_getBlockByNumber"
+  nameStatus ct {ctDeadline = testDeadline} alice `shouldReturn` Right NSAvailable
+
+testRecordsDeadline :: TVar ChaChaDRG -> IO ()
+testRecordsDeadline g = withContracts g $ \node ct -> do
+  setFault node "eth_call" Hang
+  elapsed <- timed $ nameRecords ct {ctDeadline = testDeadline} alice (registeredAlice (resolverOf node) $ now + year) `shouldReturn` Left (ChainUnavailable "name records: timed out")
+  elapsed `shouldSatisfy` (< 2)
+
 -- fixtures
+
+-- | Far below a call's 10-second timeout, so only the deadline can end a hung read in time.
+testDeadline :: Int
+testDeadline = 300000
+
+timed :: IO () -> IO NominalDiffTime
+timed action = do
+  start <- getCurrentTime
+  action
+  (`diffUTCTime` start) <$> getCurrentTime
 
 withContracts :: TVar ChaChaDRG -> (FakeEthNode -> Contracts -> IO a) -> IO a
 withContracts g action = withFakeEthNode $ \node -> do

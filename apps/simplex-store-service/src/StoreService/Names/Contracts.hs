@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module StoreService.Names.Contracts
-  ( Contracts,
+  ( Contracts (ctDeadline),
     NameStatus (..),
     RegisteredName (..),
     NameRecords (..),
@@ -24,12 +24,15 @@ module StoreService.Names.Contracts
   )
 where
 
+import Control.Concurrent.Async (Concurrently (..))
 import Control.Monad.Except (ExceptT (..), runExceptT)
 import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.IORef (IORef, atomicWriteIORef, newIORef, readIORef)
+import Data.Functor.Compose (Compose (..))
 import qualified Data.Map.Strict as M
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Word (Word64)
@@ -42,12 +45,15 @@ import StoreService.Names.Abi
 import StoreService.Names.Chain (Block (..), ChainClient (..), ChainError (..), ethCall, latestBlock)
 import StoreService.Names.Registration (channelRecordKey, contactRecordKey, labelNode, nodeBytes)
 import StoreService.Names.Revert (RevertName (..))
+import System.Timeout (timeout)
 
 data Contracts = Contracts
   { ctChain :: ChainClient,
     ctTLD :: SimplexTLD,
     ctRegistrar :: IORef (Maybe RegistrarConstants),
-    ctCommitmentAges :: IORef (Maybe CommitmentAges)
+    ctCommitmentAges :: IORef (Maybe CommitmentAges),
+    -- | microseconds for all the reads of one name status or of one name's records
+    ctDeadline :: Int
   }
 
 data RegistrarConstants = RegistrarConstants {rcRegistry :: Address, rcGracePeriod :: Integer}
@@ -76,24 +82,27 @@ secondsPerYear = 31536000
 attoUsdPerCent :: Integer
 attoUsdPerCent = 10 ^ (16 :: Int)
 
+-- | One call's timeout, so a node that hangs fails a status or a records read once, not once per read.
+nameReadsDeadline :: Int
+nameReadsDeadline = 10000000
+
 -- | Reads nothing: the registrar's constants and the commitment ages are read on first use and kept once read.
 newContracts :: SimplexTLD -> ChainClient -> IO Contracts
 newContracts ctTLD ctChain = do
   ctRegistrar <- newIORef Nothing
   ctCommitmentAges <- newIORef Nothing
-  pure Contracts {ctChain, ctTLD, ctRegistrar, ctCommitmentAges}
+  pure Contracts {ctChain, ctTLD, ctRegistrar, ctCommitmentAges, ctDeadline = nameReadsDeadline}
 
 -- | Registered while @nameExpires + GRACE_PERIOD@ is not before the latest block's time.
 nameStatus :: Contracts -> LabelHash -> IO (Either ChainError NameStatus)
-nameStatus ct lh = runExceptT $ do
-  RegistrarConstants {rcRegistry, rcGracePeriod} <- ExceptT $ registrarConstants ct
-  expires <- ExceptT $ nameExpires ct lh
-  Block {blockTimestamp} <- ExceptT $ latestBlock $ ctChain ct
+nameStatus ct@Contracts {ctChain} lh = withinDeadline ct "name status" $ runExceptT $ do
+  (RegistrarConstants {rcRegistry, rcGracePeriod}, expires, Block {blockTimestamp}) <-
+    ExceptT $ together $ (,,) <$> concurrent (registrarConstants ct) <*> concurrent (nameExpires ct lh) <*> concurrent (latestBlock ctChain)
   if toInteger expires + rcGracePeriod >= toInteger blockTimestamp
     then do
       let node = nodeArg ct lh
-      rnOwner <- ExceptT $ call ct rcRegistry ("owner(bytes32)", node) decodeAddress
-      rnResolver <- ExceptT $ call ct rcRegistry ("resolver(bytes32)", node) decodeAddress
+          registryRead signature = concurrent $ call ct rcRegistry (signature, node) decodeAddress
+      (rnOwner, rnResolver) <- ExceptT $ together $ (,) <$> registryRead "owner(bytes32)" <*> registryRead "resolver(bytes32)"
       pure $ NSRegistered RegisteredName {rnOwner, rnResolver, rnExpiresAt = expires, rnGracePeriod = rcGracePeriod}
     else do
       reason <- ExceptT $ call ct (controller ct) ("reservedNames(bytes32)", labelHashArg lh) decodeUint256
@@ -103,13 +112,14 @@ nameStatus ct lh = runExceptT $ do
 nameRecords :: Contracts -> LabelHash -> RegisteredName -> IO (Either ChainError (Maybe NameRecords))
 nameRecords ct lh RegisteredName {rnOwner, rnResolver}
   | rnResolver /= resolver ct = pure $ Right Nothing
-  | otherwise = runExceptT $ do
-      rdContact <- ExceptT $ textRecord contactRecordKey
-      rdChannel <- ExceptT $ textRecord channelRecordKey
-      rdNonce <- ExceptT $ resolverNonce ct rnOwner
-      pure $ Just NameRecords {rdContact, rdChannel, rdNonce}
+  | otherwise =
+      withinDeadline ct "name records" $ together $
+        (\rdContact rdChannel rdNonce -> Just NameRecords {rdContact, rdChannel, rdNonce})
+          <$> textRecord contactRecordKey
+          <*> textRecord channelRecordKey
+          <*> concurrent (resolverNonce ct rnOwner)
   where
-    textRecord key = call ct (resolver ct) ("text(bytes32,string)", abiTuple [Static $ nodeArg ct lh, Dynamic $ abiBytes key]) decodeString
+    textRecord key = concurrent $ call ct (resolver ct) ("text(bytes32,string)", abiTuple [Static $ nodeArg ct lh, Dynamic $ abiBytes key]) decodeString
 
 -- | Cents for a label of this length and these years. The oracle prices by length only,
 -- so a placeholder label of that length keeps the label from the RPC node.
@@ -177,6 +187,16 @@ readOnce ref readChain =
   readIORef ref >>= \case
     Just a -> pure $ Right a
     Nothing -> readChain >>= either (pure . Left) (\a -> Right a <$ atomicWriteIORef ref (Just a))
+
+-- | Reads run at once; the first failure in argument order is the answer.
+together :: Compose Concurrently (Either ChainError) a -> IO (Either ChainError a)
+together = runConcurrently . getCompose
+
+concurrent :: IO (Either ChainError a) -> Compose Concurrently (Either ChainError) a
+concurrent = Compose . Concurrently
+
+withinDeadline :: Contracts -> Text -> IO (Either ChainError a) -> IO (Either ChainError a)
+withinDeadline Contracts {ctDeadline} what action = fromMaybe (Left $ ChainUnavailable $ what <> ": timed out") <$> timeout ctDeadline action
 
 -- | An answer that does not decode is a node failure, as an RPC error is.
 call :: Contracts -> Address -> (ByteString, ByteString) -> (ByteString -> Either AbiError a) -> IO (Either ChainError a)
