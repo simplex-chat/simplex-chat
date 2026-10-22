@@ -145,6 +145,15 @@ For a scope lacking CI tests, in the pull request that changes it:
 
 The scope commands run in build-linux after the core tests, with Node 22 and Python 3.12 (steps "Setup Node.js" and "Setup Python"). For a scope that needs other versions, a setup step is added before "Test changed scopes", conditioned on the scope name in `needs.maybe-release.outputs.scopes`. A scope that needs macOS is a BUILD_CHANGES entry with a separate maybe-release output, as ios is, and a step in build-ios; the `if` of build-ios includes that output.
 
+## UI tests
+
+`ui-tests` runs the Compose UI tests (`apps/multiplatform/common/src/uiTestShared`, desktop and Android) with `apps/multiplatform/scripts/uitest.sh` and `uitest-android.sh`: the desktop tests on the runner, the Android tests in android-emu's emulator, each platform in four parallel jobs. It is started by hand like the others, and reuses the core libraries that `desktop-linux` and `android-emu` built on the branch, and they its own. Details: [UI tests](ui-tests/README.md).
+
+```sh
+gh workflow run ui-tests.yml --ref <branch> -f platform=both
+gh workflow run ui-tests.yml --ref <branch> -f platform=android -f tests=chat.simplex.app.ui.main.ChatListRowsTest
+```
+
 ## Starting a run
 
 Pushes start none of the app workflows: a run is started by hand, on any branch, with inputs that are off by default and combine.
