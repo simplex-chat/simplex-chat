@@ -1,0 +1,55 @@
+{
+  "name": "@simplex-chat/mcp",
+  "version": "0.1.0",
+  "description": "MCP server that gives an AI agent its own SimpleX profile",
+  "bin": {
+    "simplex-mcp": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepack": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc",
+    "test": "jest test/unit",
+    "test:e2e": "jest test/e2e"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/node": "^2.1.1",
+    "@modelcontextprotocol/server": "^2.3.1",
+    "@simplex-chat/types": "^7.1.0-beta.6.2",
+    "qrcode": "^1.5",
+    "simplex-chat": "^7.1.0-beta.6.6"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^22.0.0",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.6",
+    "typescript": "^5.9.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/simplex-chat/simplex-chat.git",
+    "directory": "packages/simplex-chat-mcp"
+  },
+  "keywords": [
+    "simplex",
+    "mcp",
+    "agent",
+    "privacy"
+  ],
+  "author": "SimpleX Chat",
+  "license": "AGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/simplex-chat/simplex-chat/issues"
+  },
+  "homepage": "https://github.com/simplex-chat/simplex-chat/tree/master/packages/simplex-chat-mcp#readme"
+}
