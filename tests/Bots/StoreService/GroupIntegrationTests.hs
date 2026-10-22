@@ -155,6 +155,7 @@ revokeInGroup :: HasCallStack => ChatController -> TestCC -> Text -> Text -> IO 
 revokeInGroup cc member code outcome = do
   sendGroupCmd member (revokeCmd code)
   waitStoredItem cc (revokeReply code outcome)
+  awaitOnConsole member (revokeReply code outcome)
 
 -- The name is quoted because console output quotes a name with a space.
 botName :: String
@@ -537,6 +538,7 @@ testBlockedMemberCommandIgnored ps = do
       deleted `shouldBe` blockedByAdminMark
       content `shouldSatisfy` T.isInfixOf "/bulk legend months 255 count 100"
       ownerIssuesNext cc alice 1
+      awaitOnConsole alice "Code: SB-"
 
 -- The lane is a single FIFO drainer, so the owner's next code proves every earlier command was handled.
 ownerIssuesNext :: HasCallStack => ChatController -> TestCC -> Int -> IO ()
@@ -555,6 +557,7 @@ testSupportScopeIgnored ps =
     send alice "/_send #1(_support) text /issue legend"
     waitStoredItem cc "/issue legend"
     ownerIssuesNext cc alice 1
+    awaitOnConsole alice "Code: SB-"
 
 testLiveMessageIgnored :: HasCallStack => TestParams -> IO ()
 testLiveMessageIgnored ps =
@@ -562,6 +565,7 @@ testLiveMessageIgnored ps =
     send alice ("/live #" <> groupName <> " /issue legend")
     waitStoredItem cc "/issue legend"
     ownerIssuesNext cc alice 1
+    awaitOnConsole alice "Code: SB-"
 
 testOtherGroupEventIgnored :: HasCallStack => TestParams -> IO ()
 testOtherGroupEventIgnored ps = do
@@ -591,6 +595,7 @@ testIssueMonths ps =
   withGroupOwner ps $ \_ cc _ alice -> do
     sendGroupCmd alice "/issue legend months 12"
     waitCodeMonths cc "legend" `shouldReturn` 12
+    awaitOnConsole alice "Code: SB-"
     freeCodeCount cc `shouldReturn` 1
 
 testBulkPartialFailureListsIssued :: HasCallStack => TestParams -> IO ()
@@ -849,6 +854,7 @@ testGroupRevokeRepairsTracker ps =
     retired <- waitItemText cc trackerItemId "Revoked"
     retired `shouldBe` retiredText code
     waitStoredItem cc (revokeReply code "Already revoked.")
+    awaitOnConsole alice (revokeReply code "Already revoked.")
     revokedTrackerCount cc `shouldReturn` 1
 
 testRevokeRepeatPastWindow :: HasCallStack => TestParams -> IO ()
@@ -1336,7 +1342,14 @@ replyTo :: HasCallStack => ChatController -> TestCC -> String -> IO Text
 replyTo cc member cmd = do
   lastId <- maxChatItemId cc
   sendGroupCmd member cmd
-  waitReceivedItemId cc lastId (T.pack cmd) >>= waitReplyAfter cc
+  reply <- waitReceivedItemId cc lastId (T.pack cmd) >>= waitReplyAfter cc
+  awaitOnConsole member reply
+  pure reply
+
+-- A line left unread when the test ends fails the per-core teardown check, however late the bot's reply arrives.
+awaitOnConsole :: HasCallStack => TestCC -> Text -> IO ()
+awaitOnConsole member reply =
+  drainUntil member ["#" <> groupName <> " " <> botName <> "> " <> T.unpack (T.takeWhile (/= '\n') reply)]
 
 maxChatItemId :: ChatController -> IO Int64
 maxChatItemId cc = fromMaybe 0 <$> queryFirst cc "SELECT COALESCE(MAX(chat_item_id), 0) FROM chat_items"
