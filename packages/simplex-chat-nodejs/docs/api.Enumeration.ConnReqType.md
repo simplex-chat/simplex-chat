@@ -6,7 +6,7 @@
 
 # Enumeration: ConnReqType
 
-Defined in: [src/api.ts:15](../src/api.ts#L15)
+Defined in: [src/api.ts:15](../api.ts#L15)
 
 Connection request types.
 
@@ -16,7 +16,7 @@ Connection request types.
 
 > **Contact**: `"contact"`
 
-Defined in: [src/api.ts:17](../src/api.ts#L17)
+Defined in: [src/api.ts:17](../api.ts#L17)
 
 ***
 
@@ -24,4 +24,4 @@ Defined in: [src/api.ts:17](../src/api.ts#L17)
 
 > **Invitation**: `"invitation"`
 
-Defined in: [src/api.ts:16](../src/api.ts#L16)
+Defined in: [src/api.ts:16](../api.ts#L16)
