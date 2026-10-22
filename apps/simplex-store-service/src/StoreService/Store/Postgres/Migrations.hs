@@ -337,7 +337,7 @@ m20261022_drop_taken_codes =
   withPrefix
     servicePrefix
     [r|
-UPDATE @name_registrations SET phase = 'taken', price = 0, live = 0 WHERE phase = 'code_issued';
+UPDATE @name_registrations SET version = version + 1, phase = 'taken', price = 0, live = 0 WHERE phase = 'code_issued';
 
 DROP INDEX @idx_name_registrations_issued_code;
 

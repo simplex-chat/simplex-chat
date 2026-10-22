@@ -43,7 +43,7 @@ namesStoreTests = describe "StoreService names: store" $ do
   describe "migration" $ do
     it "creates the names tables with the planned columns" testNamesColumns
     it "rolls back and re-applies only the names migrations, with rows in them, leaving the badge tables and paid invoices as they were" testNamesDownUp
-    it "turns a code_issued order taken at price 0 and not live, dropping issued_code_id and its index, which the down migration restores" testDropTakenCodes
+    it "turns a code_issued order taken at price 0 and not live at its next version, dropping issued_code_id and its index, which the down migration restores" testDropTakenCodes
   describe "order hash" $ do
     it "is equal for the same order fields, and differs when any one field differs" testOrderHashFields
     it "keeps field boundaries, so moving a byte between two fields changes it" testOrderHashBoundaries
@@ -203,7 +203,7 @@ testDropTakenCodes :: IO ()
 testDropTakenCodes = withServiceStore $ \st -> do
   let dropCodes = [m | m@Migration {name = "20261022_drop_taken_codes"} <- storeServiceSchemaMigrations]
       issuedCode = (,) <$> (elem "issued_code_id" <$> columnsOf st "sx_badge_service_name_registrations") <*> indexExists st "sx_badge_service_idx_name_registrations_issued_code"
-      worth r = (nrPhase r, nrPrice r, nrLive r)
+      worth r = (nrPhase r, nrPrice r, nrLive r, nrVersion r)
   length dropCodes `shouldBe` 1
   runMigrations st $ MTRDown (mapMaybe toDownMigration dropCodes)
   issuedCode `shouldReturn` (True, True)
@@ -216,12 +216,12 @@ testDropTakenCodes = withServiceStore $ \st -> do
   taken <- reg st "r2"
   runMigrations st $ MTRUp dropCodes
   issuedCode `shouldReturn` (False, False)
-  worth <$> reg st "r1" `shouldReturn` (PTaken, 0, False)
+  worth <$> reg st "r1" `shouldReturn` (PTaken, 0, False, 2)
   reg st "r2" `shouldReturn` taken
   withTransaction st (\db -> getPrepaidCodeById db (pcId code)) `shouldReturn` Just code
   runMigrations st $ MTRDown (mapMaybe toDownMigration dropCodes)
   issuedCode `shouldReturn` (True, True)
-  worth <$> reg st "r1" `shouldReturn` (PTaken, 0, False)
+  worth <$> reg st "r1" `shouldReturn` (PTaken, 0, False, 2)
 
 testOrderHashFields :: IO ()
 testOrderHashFields = do
