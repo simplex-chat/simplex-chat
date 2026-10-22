@@ -37,7 +37,7 @@ import Crypto.Random (ChaChaDRG)
 import Data.Aeson ((.:), (.:?), (.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Types as JT
-import Data.ByteArray.Encoding (Base (Base16), convertFromBase, convertToBase)
+import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as LB
@@ -52,14 +52,13 @@ import Network.HTTP.Client.TLS (newTlsManager)
 import Network.HTTP.Types (hContentType, methodPost, statusCode, statusIsSuccessful)
 import Numeric (readHex)
 import Simplex.Messaging.Crypto (keccak256)
-import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey)
 import Simplex.Messaging.Eth.RLP (RLPItem (..))
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..), signEip1559Tx)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..))
 import StoreService.Log (logWarn)
-import StoreService.Names.Abi (hex)
+import StoreService.Names.Abi (addressFromBytes, hex)
 import StoreService.Names.Revert (RevertName (..), decodeRevert)
 import System.Timeout (timeout)
 
@@ -202,7 +201,7 @@ decodeSignedTx :: ByteString -> Either String TxRequest
 decodeSignedTx raw = case B.uncons raw of
   Just (txType, encoded) | txType == eip1559TxType -> case rlpItem encoded of
     Right (RLPList [_chainId, nonce, tip, maxFee, gas, RLPBytes to, _value, RLPBytes trData, _accessList, _yParity, _r, _s], "") -> do
-      trTo <- either (const $ Left "transaction: not an address") Right $ strDecode $ convertToBase Base16 to
+      trTo <- maybe (Left "transaction: not an address") Right $ addressFromBytes to
       TxRequest trTo trData <$> scalar nonce <*> scalar gas <*> scalar maxFee <*> scalar tip
     Right _ -> Left "transaction: not a signed EIP-1559 transaction"
     Left e -> Left e

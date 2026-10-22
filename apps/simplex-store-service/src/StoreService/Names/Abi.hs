@@ -10,6 +10,7 @@ module StoreService.Names.Abi
     abiArray,
     uint256,
     addressWord,
+    addressFromBytes,
     selector,
     hex,
     decodeUint256,
@@ -92,8 +93,11 @@ decodeAddress :: ByteString -> Either AbiError Address
 decodeAddress ret = do
   (padding, a) <- B.splitAt addressPadding <$> wordAt 0 ret
   unless (B.all (== 0) padding) $ Left AENotAddress
-  -- Address has no exported constructor; its parser takes lowercase hex without the EIP-55 check
-  first (const AENotAddress) $ strDecode $ convertToBase Base16 a
+  maybe (Left AENotAddress) Right $ addressFromBytes a
+
+-- | Address has no exported constructor; its parser takes lowercase hex without the EIP-55 check.
+addressFromBytes :: ByteString -> Maybe Address
+addressFromBytes = either (const Nothing) Just . strDecode . convertToBase Base16
 
 decodeBool :: ByteString -> Either AbiError Bool
 decodeBool ret =
