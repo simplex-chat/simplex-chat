@@ -493,6 +493,7 @@ A generic wrapper providing `get()` and `set(value)` for a single preference. Al
 - `privacyEncryptLocalFiles` -- encrypt files at rest
 - `privacyAskToApproveRelays` -- prompt before using relays suggested by contacts
 - `privacyMediaBlurRadius` -- blur radius for media in notifications/previews
+- `privacyCallAudioFallback` -- use the system default audio device while the chosen one is disconnected (Desktop only)
 
 **Security:**
 - `performLA` -- require local authentication (biometric/PIN)
@@ -552,6 +553,7 @@ A generic wrapper providing `get()` and `set(value)` for a single preference. Al
 - `connectRemoteViaMulticast` -- use multicast discovery
 - `connectRemoteViaMulticastAuto` -- auto-connect via multicast
 - `desktopWindowState` -- persisted window position/size (Desktop only)
+- `desktopCallMic` / `desktopCallSpeaker` -- chosen call microphone and speaker, ID and name as JSON (Desktop only)
 
 **Migration:**
 - `migrationToStage` / `migrationFromStage` -- track migration progress

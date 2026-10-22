@@ -21,7 +21,7 @@ Make and receive end-to-end encrypted audio and video calls over WebRTC. The imp
 | WebRTC host | `WebView` with `WebViewAssetLoader` serving local assets | `NativeCallEngine` (webrtc-java, native libwebrtc) |
 | Call activity | `CallActivity` (separate Android Activity) with lifecycle management | Full-window composable over the app, collapsible to the floating call avatar |
 | PiP support | Native Android PiP via `CallActivity` | Not supported |
-| Audio management | `CallAudioDeviceManager` with Android `AudioManager`, proximity wake lock | System default microphone and speaker |
+| Audio management | `CallAudioDeviceManager` with Android `AudioManager`, proximity wake lock | Microphone and speaker pickers (System default or a device), remembered across calls |
 | Screen sharing | Not supported | Screen or window picker |
 
 ## Page Sections
@@ -61,7 +61,8 @@ Sound: `SoundPlayer.start()` plays ringtone while banner is visible (unless call
 | `NativeCallController` | Creates `NativeCallEngine` for the call and passes it commands from the `chatModel.callCommand` queue |
 | `NativeCallEngine` | Native WebRTC with `call.ts` semantics: transceivers, VP8, frame encryption, ICE batching, peer media detection |
 | `ActiveCallLayout` | Remote video or avatar, local camera preview, call state and encryption info |
-| Controls | Mic, peer audio, camera, screen share picker, camera picker, hang up; back button collapses the view |
+| Controls | Mic, peer audio, camera, screen share picker, camera, microphone and speaker pickers, hang up; back button collapses the view |
+| Audio device notices | Toast when the chosen microphone or speaker disconnects (System default used, or unavailable when the fallback is disabled) and when it reconnects |
 
 ### WebRTC Signaling Flow
 

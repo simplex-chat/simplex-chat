@@ -1409,6 +1409,13 @@
   <string name="call_desktop_permission_denied_title">To make calls, allow to use your microphone. End the call and try to call again.</string>
   <string name="call_desktop_engine_error">Calls are not available</string>
   <string name="call_screen_share_screen">Screen %d</string>
+  <string name="call_audio_device_system_default">System default</string>
+  <string name="call_mic_connected">Microphone %s connected</string>
+  <string name="call_mic_fallback">Microphone %s disconnected, using System default</string>
+  <string name="call_mic_unavailable">Microphone %s disconnected, select another microphone</string>
+  <string name="call_speaker_connected">Speaker %s connected</string>
+  <string name="call_speaker_fallback">Speaker %s disconnected, using System default</string>
+  <string name="call_speaker_unavailable">Speaker %s disconnected, select another speaker</string>
 
   <!-- Call settings -->
   <string name="settings_audio_video_calls">Audio &amp; video calls</string>
@@ -1492,6 +1499,8 @@
   <string name="sanitize_links_toggle">Remove link tracking</string>
   <string name="privacy_show_last_messages">Show last messages</string>
   <string name="privacy_message_draft">Message draft</string>
+  <string name="privacy_call_audio_fallback">Use system default audio device</string>
+  <string name="privacy_call_audio_fallback_desc">While the selected microphone or speaker is disconnected, calls use the system default device. When disabled, calls use no microphone or speaker until it is connected again or you select another one.</string>
   <string name="full_backup">App data backup</string>
   <string name="enable_lock">Enable lock</string>
   <string name="lock_mode">Lock mode</string>
