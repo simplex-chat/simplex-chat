@@ -133,6 +133,7 @@ retryHandler env@OrdersEnv {oeStore, oeTurns, oePhases} ridText _ respond =
         logInfo ("POST /api/registration/:id/retry refused: " <> tshow refusal)
         respond $ case refusal of
           RFNotFailed -> badRequest
+          RFLinksRefused -> badRequest
           RFCode code -> codeRefusalResponse code
           RFUnread -> providerUnavailable
 

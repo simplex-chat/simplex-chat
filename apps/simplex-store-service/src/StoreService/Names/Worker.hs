@@ -373,7 +373,7 @@ secondsTime = posixSecondsToUTCTime . fromInteger
 -- | What Try again did: the version it wrote, the order changed since it was read, or a refusal.
 data Retried = RTWritten Int64 | RTChanged | RTRefused RetryRefusal
 
-data RetryRefusal = RFNotFailed | RFCode CodeRefusal | RFUnread
+data RetryRefusal = RFNotFailed | RFLinksRefused | RFCode CodeRefusal | RFUnread
   deriving (Eq, Show)
 
 -- | Try again, in the caller's turn of the order's name: registered when its register went through; else a code order's code
@@ -382,6 +382,8 @@ retryRegistration :: OrdersEnv -> NameRegistration -> IO Retried
 retryRegistration oe@OrdersEnv {oeNow} current = do
   now <- oeNow
   case registrationAt now current of
+    -- its commitment fixes the refused links, so only another name can register
+    NameRegistration {nrPhase = PFailed, nrLinksRefusedAt = Just _} -> pure $ RTRefused RFLinksRefused
     r@NameRegistration {nrPhase = PFailed} ->
       confirmLanded oe r >>= \case
         LRegistered v -> pure $ RTWritten v

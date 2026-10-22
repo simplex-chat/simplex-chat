@@ -93,6 +93,7 @@ namesWorkerTests = describe "StoreService names: worker" $ do
     it "bounds the wait for a transaction's outcome" testOutcomeBound
   describe "retry" $ do
     it "refuses Try again outside failed with bad_request, changing nothing, and answers an unknown order 404" testRetryNotFailed
+    it "refuses Try again of a failed order whose links were refused with bad_request, changing nothing" testRetryLinksRefused
     it "registers a failed order whose register went through: by its mined register after a redeem, spending its code, and by ownerOf with no register shown" testRetryLanded
     it "answers provider_unavailable when the register check or a read for the stored intent fails, changing nothing" testRetryUnread
     it "answers a released code's error while it cannot pay again, before any read for the intent, and reserves it again while unused" testRetryReleasedCode
@@ -791,6 +792,14 @@ testRetryNotFailed = withWorker $ \W {wCtx = ctx} -> do
     (nrPhase r,) <$> retryOf ctx r `shouldReturn` (nrPhase r, refusedWith 400 "bad_request")
     stored ctx r `shouldReturn` r
   retryOf ctx queued {nrId = RegistrationId "t2Jk8RmQ4vXw9NcP3yLb6g"} `shouldReturn` refusedWith 404 "not_found"
+
+testRetryLinksRefused :: IO ()
+testRetryLinksRefused = withWorker $ \W {wCtx = ctx} -> do
+  r <- paidIn ctx aliceOrder $ \o -> (failedPhase o) {nrLinksRefusedAt = Just orderTime}
+  -- unowned with no reveal stored, so only its refused links keep it from being queued again
+  answerUnowned ctx "alicebakery"
+  retryOf ctx r `shouldReturn` refusedWith 400 "bad_request"
+  stored ctx r `shouldReturn` r
 
 testRetryLanded :: IO ()
 testRetryLanded = withWorker $ \W {wCtx = ctx} -> do
