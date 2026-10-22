@@ -261,11 +261,11 @@ This document specifies invariants enforced by the Android and Desktop (Kotlin/C
 
 **Invariant:** Directory results MUST NOT be stored, and MUST live only as long as the search text and the active profile: any text change or profile switch clears them, and a reply that arrives after that (or after the search was cancelled) MUST NOT be shown.
 
-**Enforcement:** `OnlineSearchModel.reset()` bumps `generation`, and every publish in `request` and `refreshStates` checks it; `cancelRequest()` bumps it too. `ChatListSearchBar` and `NewChatSheetLayout` call `reset()` from `KeyChangeEffect`s on the search text and on `chatModel.currentUser.value?.userId`. The model is kept in Compose `remember` only, so it is also dropped when its screen leaves composition (e.g. an Android rotation).
+**Enforcement:** `OnlineSearchModel.reset()` bumps `generation`, and every publish in `request` and `refreshStates` checks it; `cancelRequest()` bumps it too. `ChatListView` (which owns the search text and the model, not the search bar) and `NewChatSheetLayout` call `reset()` from `KeyChangeEffect`s on the search text and on `chatModel.currentUser.value?.userId`. The model is kept in Compose `remember` only, so it is also dropped when its screen leaves composition (e.g. an Android rotation).
 
 **Location:**
 - `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt` -- `OnlineSearchModel`
-- `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt` -- `ChatListSearchBar`
+- `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt` -- `ChatListView`
 - `common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt` -- `NewChatSheetLayout`
 
 **Spec:** [spec/client/chat-list.md](../spec/client/chat-list.md#11-online-search)
@@ -317,10 +317,10 @@ This document specifies invariants enforced by the Android and Desktop (Kotlin/C
 
 **Invariant:** The search text MUST NOT be sent online while the "Directory search" switch in Privacy settings is off, unless the user confirms the "Enable Directory search?" alert, which says the text goes to SimpleX Directory and turns the switch on. Cancel MUST send nothing. The search never resolves SimpleX names, so the directory is its only recipient.
 
-**Enforcement:** Both triggers (the "Search in Directory" row and the Search key / Enter) on the chat list and in New chat go through `confirmDirectorySearch()`, which runs the search at once only when `AppPreferences.privacyDirectorySearch` is on and otherwise shows the alert; Enable sets the preference, then searches. The preference is a setting, not a hint, so "Reset all hints" leaves it as it is.
+**Enforcement:** Both triggers (the "Search in Directory" row and the Search key / Enter) on the chat list and in New chat go through `confirmDirectorySearch()`, and so do the load and retry rows (`DirectoryLoadMoreRow`, `DirectoryRetryRow`), shared by both screens; it runs the search at once only when `AppPreferences.privacyDirectorySearch` is on and otherwise shows the alert; Enable sets the preference, then searches. The preference is a setting, not a hint, so "Reset all hints" leaves it as it is.
 
 **Location:**
-- `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt` -- `confirmDirectorySearch()`, `showDirectorySearchAlert()`
+- `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/DirectorySearchView.kt` -- `confirmDirectorySearch()`, `showDirectorySearchAlert()`, `DirectoryLoadMoreRow()`, `DirectoryRetryRow()`
 - `common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt` -- `AppPreferences.privacyDirectorySearch`
 - `common/src/commonMain/kotlin/chat/simplex/common/views/usersettings/PrivacySettings.kt` -- the switch
 

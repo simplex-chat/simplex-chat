@@ -236,6 +236,13 @@ struct ChatListView: View {
                 }
             }
         }
+        // here, not in the search bar: a profile switch can replace the search bar, and the new one never sees the change
+        .onChange(of: searchText) { _ in
+            onlineSearch.reset()
+        }
+        .onChange(of: chatModel.currentUser?.userId) { _ in
+            onlineSearch.reset()
+        }
         .environmentObject(chatTagsModel)
     }
     
@@ -910,12 +917,6 @@ struct ChatListSearchBar: View {
         }
         .onChange(of: searchFocussed) { sf in
             withAnimation { searchMode = sf }
-        }
-        .onChange(of: searchText) { _ in
-            onlineSearch.reset()
-        }
-        .onChange(of: m.currentUser?.userId) { _ in
-            onlineSearch.reset()
         }
         .onChange(of: searchText) { t in
             if ignoreSearchTextChange {

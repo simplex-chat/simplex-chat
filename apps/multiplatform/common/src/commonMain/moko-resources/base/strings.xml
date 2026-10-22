@@ -516,7 +516,7 @@
   <string name="search_or_paste_simplex_link">Search or paste SimpleX link</string>
   <string name="search_in_directory">Search in Directory</string>
   <string name="enable_directory_search_question">Enable Directory search?</string>
-  <string name="enable_directory_search_alert_desc">Search text is sent to SimpleX Directory, each search separately and without your profile, so it can\'t build your search history.</string>
+  <string name="enable_directory_search_alert_desc">Search text is sent to SimpleX Directory, each search separately and without your profile.</string>
   <string name="enable_verb">Enable</string>
   <string name="directory_search_n_members">%1$d members</string>
   <string name="directory_search_already_joining">Already joining</string>

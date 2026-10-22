@@ -244,6 +244,13 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
   val searchChatFilteredBySimplexLink = remember { mutableStateOf<Set<String>>(emptySet()) }
   val connectNameCandidate = remember { mutableStateOf<String?>(null) }
   val onlineSearch = remember { OnlineSearchModel() }
+  // here, not in the search bar: a profile switch can replace the search bar, and the new one never sees the change
+  KeyChangeEffect(searchText.value.text) {
+    onlineSearch.reset()
+  }
+  KeyChangeEffect(chatModel.currentUser.value?.userId) {
+    onlineSearch.reset()
+  }
   Box(Modifier.fillMaxSize()) {
     if (oneHandUI.value) {
       ChatListWithLoadingScreen(searchText, listState, searchShowingSimplexLink, searchChatFilteredBySimplexLink, connectNameCandidate, onlineSearch)
@@ -903,12 +910,6 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
         if (keyboardState.value == KeyboardState.Closed && focused.value) {
           focusManager.clearFocus()
         }
-      }
-      KeyChangeEffect(searchText.value.text) {
-        onlineSearch.reset()
-      }
-      KeyChangeEffect(chatModel.currentUser.value?.userId) {
-        onlineSearch.reset()
       }
       val view = LocalMultiplatformView()
       LaunchedEffect(Unit) {

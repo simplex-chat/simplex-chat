@@ -153,7 +153,7 @@
 
 ### RULE-24: Online results are never saved
 **Rule:** Directory results MUST NOT be stored, and MUST live only as long as the search text and the active profile: any text change or profile switch clears them, and a reply that arrives after that (or after the search was cancelled) MUST NOT be shown.
-**Enforced by:** `DirectorySearchView.swift` (`OnlineSearchModel.reset()` bumps `generation`; every publish checks it); `ChatListView.swift` (`ChatListSearchBar` resets on `searchText` and `currentUser?.userId` changes); `NewChatMenuButton.swift` (`NewChatSheet` resets on the same changes).
+**Enforced by:** `DirectorySearchView.swift` (`OnlineSearchModel.reset()` bumps `generation`; every publish checks it); `ChatListView.swift` (`ChatListView`, which owns the search text and the model, resets on `searchText` and `currentUser?.userId` changes); `NewChatMenuButton.swift` (`NewChatSheet` resets on the same changes).
 **Spec:** [spec/client/chat-list.md](../spec/client/chat-list.md#11-online-search)
 
 ### RULE-25: Only group and channel links are accepted from the directory
@@ -173,5 +173,5 @@
 
 ### RULE-28: Consent before the first online search
 **Rule:** The search text MUST NOT be sent online while the "Directory search" switch in Privacy settings is off, unless the user confirms the "Enable Directory search?" alert, which says the text goes to SimpleX Directory and turns the switch on. Cancel MUST send nothing. The search never resolves SimpleX names, so the directory is its only recipient.
-**Enforced by:** `DirectorySearchView.swift` (`confirmDirectorySearch`, `DEFAULT_PRIVACY_DIRECTORY_SEARCH`); `PrivacySettings.swift` (the switch); both triggers in `ChatListView.swift` and `NewChatMenuButton.swift` go through it.
+**Enforced by:** `DirectorySearchView.swift` (`confirmDirectorySearch`, `DEFAULT_PRIVACY_DIRECTORY_SEARCH`); `PrivacySettings.swift` (the switch); both triggers in `ChatListView.swift` and `NewChatMenuButton.swift` go through it, and so do the load and retry rows (`DirectoryLoadMoreRow`, `DirectoryRetryRow`).
 **Spec:** [spec/client/chat-list.md](../spec/client/chat-list.md#11-online-search)

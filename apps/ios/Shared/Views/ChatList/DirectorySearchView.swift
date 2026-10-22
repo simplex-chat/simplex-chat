@@ -250,7 +250,7 @@ struct DirectoryLoadMoreRow: View {
 
     var body: some View {
         Button {
-            Task { await onlineSearch.loadMore() }
+            confirmDirectorySearch { Task { await onlineSearch.loadMore() } }
         } label: {
             HStack(spacing: 4) {
                 Image(systemName: "plus.magnifyingglass")
@@ -276,7 +276,7 @@ struct DirectoryRetryRow: View {
 
     var body: some View {
         Button {
-            Task { await onlineSearch.retry() }
+            confirmDirectorySearch { Task { await onlineSearch.retry() } }
         } label: {
             HStack(spacing: 4) {
                 Image(systemName: "arrow.clockwise")
@@ -329,7 +329,7 @@ func confirmDirectorySearch(_ search: @escaping () -> Void) {
 private func showDirectorySearchAlert(onSearch: @escaping () -> Void) {
     showAlert(
         NSLocalizedString("Enable Directory search?", comment: "alert title"),
-        message: NSLocalizedString("Search text is sent to SimpleX Directory, each search separately and without your profile, so it can't build your search history.", comment: "alert message"),
+        message: NSLocalizedString("Search text is sent to SimpleX Directory, each search separately and without your profile.", comment: "alert message"),
         actions: {[
             UIAlertAction(title: NSLocalizedString("Cancel", comment: "alert action"), style: .cancel),
             UIAlertAction(

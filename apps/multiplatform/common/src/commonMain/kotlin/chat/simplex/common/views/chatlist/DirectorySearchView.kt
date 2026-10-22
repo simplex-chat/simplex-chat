@@ -262,7 +262,7 @@ fun DirectoryLoadMoreRow(onlineSearch: OnlineSearchModel) {
     Modifier
       .fillMaxWidth()
       .clickable(enabled = !onlineSearch.loading) {
-        withApi { onlineSearch.loadMore() }
+        confirmDirectorySearch { withApi { onlineSearch.loadMore() } }
       }
       .padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF),
     verticalAlignment = Alignment.CenterVertically
@@ -282,7 +282,7 @@ fun DirectoryRetryRow(onlineSearch: OnlineSearchModel) {
     Modifier
       .fillMaxWidth()
       .clickable {
-        withApi { onlineSearch.retry() }
+        confirmDirectorySearch { withApi { onlineSearch.retry() } }
       }
       .padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF),
     verticalAlignment = Alignment.CenterVertically
