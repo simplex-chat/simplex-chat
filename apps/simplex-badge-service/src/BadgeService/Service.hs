@@ -427,7 +427,7 @@ badgeServiceResponse key verifier checks cc trackerQ_ sigKey reqData = case J.fr
   J.Success BadgeServiceRequest {version, purchaseKey, request}
     | not (version `isCompatible` supportedBadgeServiceVRange) -> pure $ errorResponse BSEUnsupportedVersion
     | purchaseKey /= sigKey -> pure $ errorResponse BSEBadRequest
-    | otherwise -> logInfo ("badge request: " <> commandName request <> maybe "" ((" from " <>) . purchaseKeyPart) purchaseKey) >> case request of
+    | otherwise -> logInfo ("badge request: " <> commandName request) >> case request of
         BSCRedeemBadgeCode {masterKey, code} -> case purchaseKey of
           Just k -> redeemCode key cc trackerQ_ k masterKey code
           Nothing -> pure $ errorResponse BSEBadRequest
@@ -640,7 +640,7 @@ purchaseWithReceipt key cc verifier checks use purchaseKey masterKey StoreReceip
                   \db purchaseId paymentId -> do
                     insertSubscriptionCharge db paymentId chargeId charge now
                     firstMonthResponse db purchaseId Nothing (Just subscriptionState) firstMonth
-    moveSubscription presented CreditedPurchase {badgePurchaseId = fromPurchaseId, purchaseKey = fromKey} checked@SubscriptionCheck {subscriptionState, latestCharge}
+    moveSubscription presented CreditedPurchase {badgePurchaseId = fromPurchaseId} checked@SubscriptionCheck {subscriptionState, latestCharge}
       -- an older transaction stops moving the subscription once the store charges again, so a leaked receipt lapses
       | SubscriptionApple _ <- subscriptionRef,
         presented /= ((\StoreCharge {chargeRef} -> chargeRef) <$> latestCharge) =
@@ -679,7 +679,7 @@ purchaseWithReceipt key cc verifier checks use purchaseKey masterKey StoreReceip
                         setSubscriptionState db paymentId subscriptionState now
                         Just <$> firstMonthResponse db purchaseId Nothing (Just subscriptionState) firstMonth
                   case r of
-                    Right (Just resp) -> logInfo ("store subscription moved from " <> purchaseKeyPart fromKey <> " to " <> purchaseKeyPart purchaseKey) $> resp
+                    Right (Just resp) -> logInfo "store subscription moved to another key" $> resp
                     Right Nothing -> logError "badge service: a subscription moved, or its ledger changed, while its transfer was signed" $> errorResponse BSEInternal
                     Left _ -> pure $ errorResponse BSEInternal
     providerToken = case subscriptionRef of
@@ -697,7 +697,7 @@ purchaseWithReceipt key cc verifier checks use purchaseKey masterKey StoreReceip
           Nothing ->
             liftIO (getStorePaymentCredit db provider providerRef >>= creditedResponse db purchaseKey) >>= \case
               Left resp -> pure resp
-              Right () -> logError ("badge service: a payment for " <> providerRef <> " exists but funds no purchase") $> errorResponse BSEInternal
+              Right () -> logError "badge service: a store payment exists but funds no purchase" $> errorResponse BSEInternal
           Just purchaseId -> liftIO $ writeCredit db purchaseId paymentId
       pure $ fromRight (errorResponse BSEInternal) r
 
@@ -749,12 +749,6 @@ firstChargeNotGranted provider = \case
   NGNotStarted -> storeRefusalResponse SRPending
   -- a later charge, or an Apple resubscription under the same original id, may yet be credited from this receipt
   reason -> logInfo ("store subscription not credited yet: " <> tshow reason) $> BSPError {code = BSEPaymentPending, message = Nothing, retryAfter = Just 86400}
-
--- | Enough of the purchase key to follow one purchase through a log. It is a public key the request
--- is signed by and the service stores, so a part of it tells an operator nothing new. Taken from the
--- end, past the padding: every Ed25519 key shares the first 16 characters of this encoding.
-purchaseKeyPart :: C.PublicKeyEd25519 -> T.Text
-purchaseKeyPart = T.takeEnd 8 . T.dropWhileEnd (== '=') . safeDecodeUtf8 . strEncode
 
 -- | What each request was answered, to pair with its command in a log. No payload: a credential,
 -- an invoice and a statement are the client's, and an error's message can quote what it refused.
@@ -990,7 +984,7 @@ issueBadgeCmd key cc verifier purchaseKey upgrade_ BadgeBalance {lastEntry} = do
     withoutCredential = \case
       BSPBadgeCredential {receipt, statement, subscription} -> BSPBadgeCredential {credential = Nothing, receipt, statement, subscription}
       resp -> resp
-    logBanked months = logInfo $ "store subscription charge banked: " <> tshow months <> " months for " <> purchaseKeyPart purchaseKey
+    logBanked months = logInfo $ "store subscription charge banked: " <> tshow months <> " months"
     -- Only the asserted entry's identity is read, never the months it claims.
     issueResponse db purchaseId t subscription = do
       let StatementEntry {entryId = assertedUuid} = lastEntry

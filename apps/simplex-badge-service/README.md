@@ -323,7 +323,7 @@ after a restart the mock answers the subscription ended at once. The mock charge
 check, so every such request banks the plan's months again; space requests over a minute apart, as
 the mock dates a charge a minute back and the app fails a ledger row dated before the one it
 follows. The service logs each banked charge as
-`store subscription charge banked: <n> months for <purchase key part>`, which tells a banked month
+`store subscription charge banked: <n> months`, which tells a banked month
 from a repeated `badge issued`. Off by default, and the service refuses to start with it on unless
 `accept_unverified_store_receipts` or `credit_test_purchases` is on: a real store has not started
 its next charge while coverage runs, and asking it then would spend the quota every subscriber
