@@ -26,6 +26,7 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.SimplexName (labelHash)
 import StoreService.Config (ServiceConfig (..))
+import StoreService.Names.Balances
 import StoreService.Names.Orders (ClosedOrder (..), OrderRefusal (..), OrderRequest (..), OrdersEnv (..))
 import qualified StoreService.Names.Orders as Orders
 import StoreService.Names.Phases (RegistrationId (..))
@@ -71,6 +72,8 @@ namesBalancesTests = describe "StoreService names: balances" $ do
     it "reads an overdue holder's hold as none, and closes it in the transaction of the order placed" testOverdueHolderClosed
     it "skips a named holder no longer live, and refuses with the balance when a live one cannot be closed" testNamedHolders
     it "keeps at the cleanup, and logs, an unpaid order still holding a balance" testCleanupKeepsHolder
+  describe "refunds" $ do
+    it "refuses no order, no balance, a balance held by an open or overdue holder, and another amount, then records one with its chain" testRecordRefund
   describe "late credits" $ do
     it "credits a late payment once per credit number, a taken number changing neither the rows nor the balance" testCreditLatePayment
     it "tells each case of pending money and selects confirmed money not all credited, by the order whatever the invoice's status" testLateScans
@@ -505,6 +508,31 @@ testCleanupKeepsHolder = withOrders $ \Ctx {cStore = st, cWeb} -> do
   logs `shouldSatisfy` T.isInfixOf "unpaid registration h is kept because it still holds the balance of registration s"
   nrLive <$> reg st "h" `shouldReturn` True
   figures st "s" due `shouldReturn` Just (10000, 10000, 0, Just $ hold "h" t0 True)
+
+-- refunds
+
+testRecordRefund :: IO ()
+testRecordRefund = withServiceStore $ \st -> do
+  turns <- newTurns
+  waiters <- newWaiters
+  source st "s" 10000
+  placeOrderRow st "plain" False 20000 (at 60)
+  holder st "h" "s" 10000 (at 60) `shouldReturn` Right ()
+  let refundOf :: Text -> Int -> UTCTime -> IO (Either RefundRefusal RefundRecord)
+      refundOf ref cents now = recordRefund turns st ref cents now
+  refundOf "nothing" 10000 t0 `shouldReturn` Left RefundNoOrder
+  refundOf "plain" 20000 t0 `shouldReturn` Left RefundNoBalance
+  refundOf "s" 10000 t0 `shouldReturn` Left (RefundHeld $ hold "h" (at 60) False)
+  refundOf "inv-s" 10000 (at 61) `shouldReturn` Left (RefundHeld $ hold "h" (at 60) True)
+  figures st "s" t0 `shouldReturn` Just (10000, 10000, 0, Just $ hold "h" (at 60) False)
+  cancelOpenInvoice st waiters Nothing (InvoiceId "inv-h") (at 2) `shouldReturn` True
+  refundOf "s" 9000 t0 `shouldReturn` Left (RefundAmount 10000)
+  chain <- withTransaction st $ \db -> balanceChain db (RegistrationId "s")
+  chain `shouldBe` [BalanceLink {lkRegistration = RegistrationId "s", lkPayment = RPInvoice btc (InvoiceId "inv-s"), lkPaid = 10000, lkFromBalance = 0, lkLateCredits = []}]
+  refundOf "inv-s" 10000 t0 `shouldReturn` Right RefundRecord {rdRegistration = RegistrationId "s", rdCents = 10000, rdChain = chain}
+  figures st "s" t0 `shouldReturn` Just (0, 10000, 10000, Nothing)
+  refundOf "s" 10000 t0 `shouldReturn` Left (RefundAmount 0)
+  turnsCount turns `shouldReturn` 0
 
 -- late credits
 
