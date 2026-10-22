@@ -22,10 +22,11 @@ module BadgeService.StoreReceipts
   )
 where
 
-import BadgeService.Log (logInfo)
+import BadgeService.Log (logInfo, logWarn)
 import Control.Exception (Exception, catch, evaluate, try)
 import qualified Data.ByteString.Lazy as LB
 import Data.Char (isAlphaNum, isAscii, isAsciiLower, isAsciiUpper, isControl, isDigit, isPrint, isSpace)
+import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
@@ -184,11 +185,12 @@ toStoreReceipt StoreVerifier {verifyApple, verifyGoogle, acknowledgeGoogle, ackn
 checkStoreSubscription :: StoreVerifier -> SubscriptionRef -> Maybe Text -> IO (Either StoreRefusal SubscriptionCheck)
 checkStoreSubscription StoreVerifier {checkSubscription, verifyTimeout, creditTestPurchases} ref product_ = case checkSubscription of
   Nothing -> pure $ Left SRNotConfigured
-  Just check -> (>>= notTest) <$> askStore verifyTimeout "subscription check" (check ref product_)
+  Just check -> askStore verifyTimeout "subscription check" (check ref product_) >>= either (pure . Left) notTest
   where
-    notTest = \case
-      SubscriptionCheck {testSubscription = True} | not creditTestPurchases -> Left SRTestPurchase
-      checked -> Right checked
+    notTest checked@SubscriptionCheck {testSubscription}
+      | not testSubscription = pure $ Right checked
+      | creditTestPurchases = logWarn "[dev] a store test subscription is taken as paid: credit_test_purchases is on" $> Right checked
+      | otherwise = pure $ Left SRTestPurchase
 
 -- | Thrown by a verifier that cannot place what the store signed: its own failure, never the store's answer or silence.
 newtype StoreVerifierFailure = StoreVerifierFailure Text

@@ -141,7 +141,7 @@ checkOne ChatConfig {badgePublicKeys} k@BadgeIssuerKey {keyIdx, secretKey} =
 
 requireIssuerKey :: BadgeServiceOpts -> Maybe ServiceConfig -> ChatConfig -> IO BadgeIssuerKey
 requireIssuerKey opts serviceCfg cfg =
-  checkIssuerKey opts serviceCfg cfg >>= either (\e -> putStrLn ("Error: " <> e) >> exitFailure) pure
+  checkIssuerKey opts serviceCfg cfg >>= either (\e -> putStrLn ("Error: " <> e) >> exitFailure) (\k@BadgeIssuerKey {keyIdx} -> logInfo ("signing badges with issuer key " <> tshow keyIdx) $> k)
 
 readConfigOrExit :: FilePath -> IO ServiceConfig
 readConfigOrExit path =
@@ -578,11 +578,12 @@ purchaseWithReceipt key cc verifier checks use purchaseKey masterKey StoreReceip
         Right (Left resp) -> resp
         _ -> errorResponse BSEInternal
     -- the product is read only for a receipt not yet credited, so retiring it leaves its replays answered
-    newPurchase tx@VerifiedStoreTransaction {productId, paid} = case storeProduct provider productId of
+    newPurchase tx@VerifiedStoreTransaction {productId, paid, testPurchase} = case storeProduct provider productId of
       Nothing -> pure $ errorResponse BSEProductUnavailable
       -- an Apple subscription, whose JWS was verified offline
       Just StoreSubscription -> purchaseSubscription (Just productId) Uncredited
-      Just StoreOneTime {badgeType, months} ->
+      Just StoreOneTime {badgeType, months} -> do
+        when testPurchase $ logWarn "[dev] crediting a store test purchase as paid: credit_test_purchases is on"
         acknowledged (($ tx) <$> acknowledgeReceipt) $ do
           now <- badgeNow cc
           signFirstMonth key cc masterKey badgeType months (SCPayment Nothing) now >>= \case
