@@ -32,9 +32,10 @@ import Test.Hspec
 
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..), (:.) (..))
+import Database.PostgreSQL.Simple.Errors (ConstraintViolation (..), constraintViolation)
 import StoreService.Store.Postgres.Migrations (storeServiceSchemaMigrations)
 #else
-import Database.SQLite.Simple (Only (..), (:.) (..))
+import Database.SQLite.Simple (Error (ErrorConstraint), Only (..), SQLError (..), (:.) (..))
 import StoreService.Store.SQLite.Migrations (storeServiceSchemaMigrations)
 #endif
 
@@ -43,7 +44,7 @@ namesStoreTests = describe "StoreService names: store" $ do
   describe "migration" $ do
     it "creates the names tables with the planned columns" testNamesColumns
     it "rolls back and re-applies only the names migrations, with rows in them, leaving the badge tables and paid invoices as they were" testNamesDownUp
-    it "turns a code_issued order taken at price 0 and not live at its next version, dropping issued_code_id and its index, which the down migration restores" testDropTakenCodes
+    it "turns a code_issued order taken at price 0 and not live at its next version, dropping issued_code_id with its index and foreign key, which the down migration restores" testDropTakenCodes
   describe "order hash" $ do
     it "is equal for the same order fields, and differs when any one field differs" testOrderHashFields
     it "keeps field boundaries, so moving a byte between two fields changes it" testOrderHashBoundaries
@@ -222,6 +223,7 @@ testDropTakenCodes = withServiceStore $ \st -> do
   runMigrations st $ MTRDown (mapMaybe toDownMigration dropCodes)
   issuedCode `shouldReturn` (True, True)
   worth <$> reg st "r1" `shouldReturn` (PTaken, 0, False, 2)
+  withTransaction st (\db -> DB.execute db "UPDATE sx_badge_service_name_registrations SET issued_code_id = ? WHERE registration_id = 'r1'" (Only $ pcId code + 1)) `shouldThrow` foreignKeyViolation
 
 testOrderHashFields :: IO ()
 testOrderHashFields = do
@@ -621,6 +623,15 @@ insertPayment db invId =
     db
     "INSERT INTO sx_badge_service_payments (payment_id, invoice_id, provider, status, created_at, updated_at) VALUES (?,?,?,?,?,?)"
     (invId, invId, "crypto" :: Text, "pending" :: Text, t0, t0)
+
+foreignKeyViolation :: Selector DB.SQLError
+#if defined(dbPostgres)
+foreignKeyViolation e = case constraintViolation e of
+  Just ForeignKeyViolation {} -> True
+  _ -> False
+#else
+foreignKeyViolation e = sqlError e == ErrorConstraint && "FOREIGN KEY" `T.isInfixOf` sqlErrorDetails e
+#endif
 
 indexExists :: DBStore -> Text -> IO Bool
 indexExists st index = withTransaction st $ \db -> do
