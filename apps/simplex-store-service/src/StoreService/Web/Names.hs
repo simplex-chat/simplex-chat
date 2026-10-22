@@ -14,7 +14,7 @@ import StoreService.Web.Names.Codes (codeCheckHandler)
 import StoreService.Web.Names.Orders (codeOrderHandler)
 import StoreService.Web.Names.Owner (findHandler, retargetHandler, takenCodeHandler)
 import StoreService.Web.Names.Records (recordsHandler)
-import StoreService.Web.Names.Registration (registrationHandler, revealHandler)
+import StoreService.Web.Names.Registration (registrationHandler, retryHandler, revealHandler)
 import StoreService.Web.Names.Search (previewHandler, searchHandler)
 
 data Route = Route
@@ -37,6 +37,7 @@ namesRoutes env@NamesEnv {neConfig, neStore, neContracts, neProfiles, neRecords,
   ["api", "registration", rid, "name"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = retargetHandler (ordersEnv env) rid}
   ["api", "registration", rid, "code"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = takenCodeHandler (ordersEnv env) rid}
   ["api", "registration", rid, "reveal"] -> Just Route {rMethod = "POST", rLimit = readLimit, rHandler = revealHandler (ordersEnv env) rid}
+  ["api", "registration", rid, "retry"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = retryHandler (ordersEnv env) rid}
   _ -> Nothing
 
 -- | Nothing for a path no route knows. The limit is taken only once the route and the method match.

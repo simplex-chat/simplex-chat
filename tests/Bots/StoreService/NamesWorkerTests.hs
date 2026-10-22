@@ -6,19 +6,21 @@
 module Bots.StoreService.NamesWorkerTests (namesWorkerTests) where
 
 import Bots.StoreService.FakeEthNode
-import Bots.StoreService.NamesContractsTests (availableCall, maxCommitmentAgeCall, minCommitmentAgeCall, registrarOf, unhex)
+import Bots.StoreService.NamesContractsTests (availableCall, maxCommitmentAgeCall, minCommitmentAgeCall, noncesCall, registrarOf, unhex)
 import Bots.StoreService.NamesOrdersTests
-import Bots.StoreService.NamesOwnerTests (answerExpiry, answerOwner, answerUnowned, byB, codeIn, committedPhase, dynamisOrder, failedPhase, labelBytes, ownerOfSelector, paidIn, rewrite, stored)
+import Bots.StoreService.NamesOwnerTests (answerExpiry, answerFree, answerOwner, answerUnowned, byB, codeIn, committedPhase, dynamisOrder, failedPhase, labelBytes, ownerOfSelector, paidIn, rewrite, sentRegister, stored)
 import Bots.StoreService.NamesPhasesTests (held, prompt, registrationPath, woken)
 import Bots.StoreService.NamesStoreTests (reveal)
-import Bots.StoreService.WebTests (capturingStderr, jsonObject, statusOf, webGet)
+import Bots.StoreService.WebTests (capturingStderr, jsonObject, statusOf, webGet, webRequestBody)
 import Control.Applicative ((<|>))
+import Control.Arrow ((&&&))
 import Control.Concurrent.Async (wait, withAsync)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (atomically, check)
-import Control.Monad (forM_, replicateM_, void)
+import Control.Monad (forM_, replicateM, replicateM_, void)
 import Data.ByteString (ByteString)
 import qualified Data.Aeson as J
+import qualified Data.Aeson.KeyMap as KM
 import Data.IORef (readIORef)
 import Data.Maybe (fromJust, fromMaybe, isJust)
 import Data.Text (Text)
@@ -29,9 +31,12 @@ import Data.Word (Word64)
 import Network.HTTP.Client (defaultManagerSettings, newManager)
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto (keccak256)
 import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey, signRecoverable)
-import StoreService.Names.Abi (abiBytes, abiTuple, addressWord, AbiValue (..), selector, uint256)
+import Simplex.Messaging.SimplexName (labelHash)
+import Simplex.Messaging.Util (tshow)
+import StoreService.Names.Abi (abiBytes, abiTuple, addressWord, AbiValue (..), hex, selector, uint256)
 import StoreService.Names.Chain (Block (..), ChainClient, Receipt (..), TxHash (..), TxRequest (..), blockAt, decodeSignedTx, newChainClient)
 import StoreService.Names.Orders (Landing (..), OrdersEnv (..), confirmLanded)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange)
@@ -41,9 +46,9 @@ import StoreService.Names.Sender
 import StoreService.Names.Store
 import StoreService.Names.Turns (labelTurnCount, withLabelTurn)
 import StoreService.Names.Worker
-import StoreService.Web.Http (holdMicros, readLimit)
+import StoreService.Web.Http (createLimit, holdMicros, readLimit)
 import StoreService.Web.Names (Route (..), namesApp)
-import StoreService.Web.Names.Registration (registrationHandler)
+import StoreService.Web.Names.Registration (registrationHandler, retryHandler)
 import StoreService.Web.Server (WebEnv (..), webApp)
 import System.Timeout (timeout)
 import Test.Hspec
@@ -86,6 +91,20 @@ namesWorkerTests = describe "StoreService names: worker" $ do
     it "judges a register landed by ownerOf only once the owner holds the name at the confirmation depth" testLandedAtDepth
   describe "sender" $
     it "bounds the wait for a transaction's outcome" testOutcomeBound
+  describe "retry" $ do
+    it "refuses Try again outside failed with bad_request, changing nothing, and answers an unknown order 404" testRetryNotFailed
+    it "registers a failed order whose register went through: by its mined register after a redeem, spending its code, and by ownerOf with no register shown" testRetryLanded
+    it "answers provider_unavailable when the register check or a read for the stored intent fails, changing nothing" testRetryUnread
+    it "answers a released code's error while it cannot pay again, before any read for the intent, and reserves it again while unused" testRetryReleasedCode
+    it "requeues clearing failed_at, error and the register's hashes, waking a held poll" testRetryRequeue
+    it "keeps the intent while our commitment is live with revealMargin left, going straight to committed" testRetryLiveCommitment
+    it "clears the label and intent when the sponsor nonce moved, our live commit keeping its hashes" testRetryNonceMoved
+    it "clears the intent of a third party's live re-commit, and the worker the commit's hashes" testRetryThirdParty
+    it "clears the intent with less than revealMargin left, committing again a second after revealBefore" testRetryMargin
+    it "requeues a lapsed committed order, which reads failed, answering an old version at once after it" testRetryLapsed
+    it "answers registration_changed with the current view when the order changed during its checks, writing nothing" testRetryLostRace
+    it "runs in the name's turn, answering registration_changed for an order moved to another name meanwhile" testRetryInNameTurn
+    it "takes one create token per request" testRetryLimit
 
 -- fixtures
 
@@ -96,7 +115,7 @@ data W = W
     wWorker :: Worker
   }
 
--- | The worker over the orders' store and fake node, with the registration poll as namesRoutes registers it.
+-- | The worker over the orders' store and fake node, with the registration poll and Try again as namesRoutes registers them.
 withWorker :: (W -> IO a) -> IO a
 withWorker action = withOrders $ \ctx@Ctx {cNode, cOrders, cWeb} -> do
   answerCall cNode fakeController minCommitmentAgeCall $ Returns $ uint256 minAge
@@ -106,6 +125,7 @@ withWorker action = withOrders $ \ctx@Ctx {cNode, cOrders, cWeb} -> do
       routes path = registrationRoute path <|> codeRoutes cOrders (weProviders web) (weWaiters web) path
       registrationRoute = \case
         ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler cOrders holdMicros rid}
+        ["api", "registration", rid, "retry"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = retryHandler cOrders rid}
         _ -> Nothing
       app req respond = fromMaybe (webApp web req respond) (namesApp (weHttp web) routes req respond)
   mgr <- newManager defaultManagerSettings
@@ -139,17 +159,16 @@ day = 86400
 openPhase :: NameRegistration -> NameRegistration
 openPhase r = (committedPhase r) {nrRevealAfter = Just (orderSeconds - minAge), nrRevealBefore = Just (orderSeconds - minAge + maxAge)}
 
--- | The reveal the page sends for the label, its intent signed with the owner's key.
-signedReveal :: Ctx -> Secp256k1PrivateKey -> Text -> NameRegistration -> IO NameReveal
-signedReveal Ctx {cRandom, cOrders} key label r = do
-  let rv = reveal {rvLabel = label}
-      RegisterIntent {riRegistration} = intentOf (oeConfig cOrders) r rv
+-- | The reveal the page sends, its intent signed with the owner's key.
+signedReveal :: Ctx -> Secp256k1PrivateKey -> NameReveal -> NameRegistration -> IO NameReveal
+signedReveal Ctx {cRandom, cOrders} key rv r = do
+  let RegisterIntent {riRegistration} = intentOf (oeConfig cOrders) r rv
   sig <- either (error . show) id <$> signRecoverable cRandom key (registerIntentDigest (sponsorDomain fakeChainId fakeSponsor) riRegistration (rvNonce rv) (rvDeadline rv))
   pure rv {rvSignature = sig}
 
--- | The registration with the page's reveal accepted.
+-- | The registration with the page's reveal of the label accepted.
 revealed :: Ctx -> Secp256k1PrivateKey -> Text -> NameRegistration -> IO NameRegistration
-revealed ctx key label r = signedReveal ctx key label r >>= \rv -> rewrite ctx r (\o -> o {nrReveal = Just rv})
+revealed ctx key label r = signedReveal ctx key reveal {rvLabel = label} r >>= \rv -> rewrite ctx r (\o -> o {nrReveal = Just rv})
 
 -- | Steps until the worker has nothing to do at once.
 steps :: W -> NameRegistration -> IO Next
@@ -723,3 +742,257 @@ testOutcomeBound = withOrders $ \ctx@Ctx {cNode, cStore, cRandom, cClock} -> do
   stored ctx r `shouldReturn` r
   where
     shortWait = 300000
+
+-- retry
+
+retryOf :: Ctx -> NameRegistration -> IO (Int, Maybe J.Object)
+retryOf ctx NameRegistration {nrId} = post ctx (registrationPath nrId <> "/retry") ""
+
+-- | The view of an accepted Try again, failing the test otherwise.
+retried :: Ctx -> NameRegistration -> IO J.Object
+retried ctx r =
+  retryOf ctx r >>= \case
+    (200, Just v) -> pure v
+    other -> fail $ "retry refused: " <> show other
+
+viewOf :: Ctx -> NameRegistration -> IO J.Object
+viewOf Ctx {cClient} NameRegistration {nrId} = webGet cClient (registrationPath nrId) >>= jsonObject
+
+answerNonce :: W -> Word64 -> IO ()
+answerNonce W {wCtx = Ctx {cNode}} n = answerCall cNode fakeSponsor noncesCall $ Returns $ uint256 n
+
+txJSON :: Maybe TxHash -> Maybe J.Value
+txJSON = Just . maybe J.Null (\(TxHash h) -> J.String $ hex h)
+
+-- | Committed by the worker's own commit; its block's time.
+committedByUs :: W -> NameRegistration -> IO (NameRegistration, Word64)
+committedByUs w@W {wCtx = ctx} r = do
+  answerCommitment w r 0
+  void $ steps w r >>= awaiting
+  t <- mineNewest w True >>= blockTime w
+  answerCommitment w r t
+  void $ steps w r >>= waitingUntil
+  (,t) <$> stored ctx r
+
+-- | Failed after its register reverted, with the intent the page signed for the commit's window.
+failedAfterRegister :: W -> NameRegistration -> IO NameRegistration
+failedAfterRegister W {wCtx = ctx} r = do
+  rv <- signedReveal ctx keyA reveal {rvDeadline = fromJust $ nrRevealBefore r} r
+  h <- sentRegister ctx r 2 TSReverted
+  rewrite ctx r $ \o -> (failedPhase o) {nrReveal = Just rv, nrRegisterTx = Just h, nrRegisterBlock = Just 120}
+
+testRetryNotFailed :: IO ()
+testRetryNotFailed = withWorker $ \W {wCtx = ctx} -> do
+  queued <- paidIn ctx aliceOrder id
+  committed <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 2} committedPhase
+  registeredOrder <- paidIn ctx dynamisOrder $ \o -> o {nrPhase = PRegistered, nrExpiresAt = Just expiry}
+  taken <- paidIn ctx (byB dynamisOrder) {oCommitment = commitmentOf 4} $ \o -> o {nrPhase = PTaken}
+  forM_ [queued, committed, registeredOrder, taken] $ \r -> do
+    (nrPhase r,) <$> retryOf ctx r `shouldReturn` (nrPhase r, refusedWith 400 "bad_request")
+    stored ctx r `shouldReturn` r
+  retryOf ctx queued {nrId = RegistrationId "t2Jk8RmQ4vXw9NcP3yLb6g"} `shouldReturn` refusedWith 404 "not_found"
+
+testRetryLanded :: IO ()
+testRetryLanded = withWorker $ \W {wCtx = ctx} -> do
+  -- redeemed since its register mined: the name left the owner, and the register consumed its commitment
+  (redeemed, code) <- codeIn ctx 8 aliceOrder failedPhase
+  TxHash minedHash <- sentRegister ctx redeemed 1 TSMined
+  answerExpiry ctx "alicebakery" expiry
+  v <- retried ctx redeemed
+  (field "phase" v, field "registerTx" v, field "expiresAt" v, field "error" v) `shouldBe` (Just "registered", Just (J.String $ hex minedHash), Just (J.toJSON expiry), Just J.Null)
+  x <- stored ctx redeemed
+  (nrPhase x, nrVersion x, nrFailedAt x, nrLive x) `shouldBe` (PRegistered, nrVersion redeemed + 1, Nothing, False)
+  isJust . pcSpentAt <$> codeOf ctx code `shouldReturn` True
+  -- no register known to have mined: judged by ownerOf, none is shown
+  owned <- paidIn ctx dynamisOrder failedPhase
+  answerOwner ctx "dynamis" (nrOwner owned)
+  answerExpiry ctx "dynamis" expiry
+  v' <- retried ctx owned
+  (field "phase" v', field "registerTx" v', field "expiresAt" v') `shouldBe` (Just "registered", Just J.Null, Just (J.toJSON expiry))
+
+testRetryUnread :: IO ()
+testRetryUnread = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
+  r <- paidIn ctx aliceOrder failedPhase
+  -- a revert with data is a failed read, not an unowned name
+  answerCall cNode (registrarOf cNode) (ownerOfSelector <> labelBytes "alicebakery") $ Reverts $ unhex "37ed32e8"
+  retryOf ctx r `shouldReturn` refusedWith 503 "provider_unavailable"
+  stored ctx r `shouldReturn` r
+  -- with an intent stored, the sponsor nonce and then the commitment unanswered
+  p <- paidIn ctx dynamisOrder openPhase >>= revealed ctx keyA "dynamis" >>= \x -> rewrite ctx x failedPhase
+  answerUnowned ctx "dynamis"
+  retryOf ctx p `shouldReturn` refusedWith 503 "provider_unavailable"
+  answerNonce w $ rvNonce reveal
+  retryOf ctx p `shouldReturn` refusedWith 503 "provider_unavailable"
+  stored ctx p `shouldReturn` p
+
+testRetryReleasedCode :: IO ()
+testRetryReleasedCode = withWorker $ \W {wCtx = ctx@Ctx {cStore}} -> do
+  spender <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 20} id
+  holder <- paidIn ctx (byB dynamisOrder) {oCommitment = commitmentOf 21} id
+  let codeOrder n change = do
+        let label = "codeorder" <> tshow n
+        answerFree ctx label
+        codeIn ctx 8 aliceOrder {oLabel = label, oCommitment = commitmentOf (30 + n)} change
+      released (r, code) = (r, code) <$ (withTransaction cStore (\db -> releasePrepaidCode db (pcId code) (nrId r)) `shouldReturn` True)
+      refusals :: [(Text, PrepaidCode -> DB.Connection -> IO (), (Int, Maybe J.Object))]
+      refusals =
+        [ ("spent", \PrepaidCode {pcId} db -> reservePrepaidCode db pcId (nrId spender) orderTime >> void (spendPrepaidCode db pcId (nrId spender) orderTime), refusedWith 409 "code_used"),
+          ("held", \PrepaidCode {pcId} db -> void $ reservePrepaidCode db pcId (nrId holder) orderTime, refusedWith 409 "code_reserved"),
+          ("revoked", \PrepaidCode {pcCodeHash} db -> void $ revokePrepaidCode db pcCodeHash orderTime, refusedWith 400 "code_invalid"),
+          ("expired", \PrepaidCode {pcCodeHash} db -> expire db pcCodeHash, refusedWith 409 "code_expired")
+        ]
+      expire db codeHash = DB.execute db "UPDATE sx_badge_service_name_prepaid_codes SET expires_at = ? WHERE code_hash = ?" (orderTime, DB.Binary codeHash)
+  forM_ (zip [1 :: Int ..] refusals) $ \(n, (what, change, refusal)) -> do
+    (r, code) <- codeOrder n failedPhase >>= released
+    withTransaction cStore $ change code
+    (what,) <$> retryOf ctx r `shouldReturn` (what, refusal)
+    stored ctx r `shouldReturn` r
+  -- with an intent stored and the sponsor nonce unanswered, the code's error still comes first
+  (withIntent, spentCode) <- codeOrder 5 openPhase >>= traverseFst (revealed ctx keyA "codeorder5") >>= traverseFst (\x -> rewrite ctx x failedPhase) >>= released
+  -- a registration holds one code at most
+  answerFree ctx "anotherpays"
+  spender' <- paidIn ctx (byB aliceOrder) {oLabel = "anotherpays", oCommitment = commitmentOf 22} id
+  withTransaction cStore $ \db -> reservePrepaidCode db (pcId spentCode) (nrId spender') orderTime >> void (spendPrepaidCode db (pcId spentCode) (nrId spender') orderTime)
+  retryOf ctx withIntent `shouldReturn` refusedWith 409 "code_used"
+  -- a code its order still holds stays good for it, though revoked and expired since
+  (holding, heldCode@PrepaidCode {pcCodeHash}) <- codeOrder 6 failedPhase
+  withTransaction cStore $ \db -> revokePrepaidCode db pcCodeHash orderTime >> expire db pcCodeHash
+  field "phase" <$> retried ctx holding `shouldReturn` Just "queued"
+  pcReservedBy <$> codeOf ctx heldCode `shouldReturn` Just (nrId holding)
+  -- a released code still unused is reserved again
+  (unused, unusedCode) <- codeOrder 7 failedPhase >>= released
+  field "phase" <$> retried ctx unused `shouldReturn` Just "queued"
+  (pcReservedBy &&& pcSpentAt) <$> codeOf ctx unusedCode `shouldReturn` (Just (nrId unused), Nothing)
+
+testRetryRequeue :: IO ()
+testRetryRequeue = withWorker $ \w@W {wCtx = ctx} -> do
+  committed <- paidIn ctx aliceOrder openPhase
+  h <- sentRegister ctx committed 1 TSReverted
+  r <- rewrite ctx committed $ \o -> (failedPhase o) {nrRegisterTx = Just h, nrRegisterBlock = Just 120}
+  v <- published w r $ retried ctx r
+  (field "phase" v, field "registerTx" v, field "error" v, field "version" v) `shouldBe` (Just "queued", Just J.Null, Just J.Null, Just (J.toJSON $ nrVersion r + 1))
+  x <- stored ctx r
+  (nrPhase x, nrFailedAt x, nrError x, nrRegisterTx x, nrRegisterBlock x, nrLive x) `shouldBe` (PQueued, Nothing, Nothing, Nothing, Nothing, True)
+  (nrCommitTx x, nrCommitBlock x, nrRevealAfter x, nrRevealBefore x) `shouldBe` (nrCommitTx r, nrCommitBlock r, nrRevealAfter r, nrRevealBefore r)
+
+testRetryLiveCommitment :: IO ()
+testRetryLiveCommitment = withWorker $ \w@W {wCtx = ctx} -> do
+  (r, t) <- paidIn ctx aliceOrder id >>= committedByUs w
+  f <- failedAfterRegister w r
+  answerNonce w $ rvNonce reveal
+  v <- retried ctx f
+  (field "phase" v, field "label" v) `shouldBe` (Just "queued", Just "alicebakery")
+  steps w f >>= waitingUntil >>= (`shouldBe` at (t + minAge))
+  x <- stored ctx f
+  (nrPhase x, nrReveal x, nrCommitTx x, nrCommitBlock x, nrRevealBefore x) `shouldBe` (PCommitted, nrReveal f, nrCommitTx f, nrCommitBlock f, Just (t + maxAge))
+  length <$> sent w `shouldReturn` 1
+
+testRetryNonceMoved :: IO ()
+testRetryNonceMoved = withWorker $ \w@W {wCtx = ctx} -> do
+  (r, t) <- paidIn ctx aliceOrder id >>= committedByUs w
+  f <- failedAfterRegister w r
+  answerNonce w $ rvNonce reveal + 1
+  v <- retried ctx f
+  (field "phase" v, field "label" v, field "commitTx" v) `shouldBe` (Just "queued", Just J.Null, txJSON (nrCommitTx f))
+  nrReveal <$> stored ctx f `shouldReturn` Nothing
+  steps w f >>= waitingUntil >>= (`shouldBe` at (t + maxAge + 1))
+  x <- stored ctx f
+  (nrPhase x, nrReveal x, nrCommitTx x, nrCommitBlock x, nrRevealBefore x) `shouldBe` (PCommitted, Nothing, nrCommitTx f, nrCommitBlock f, Just (t + maxAge))
+  field "commitTx" <$> viewOf ctx f `shouldReturn` txJSON (nrCommitTx f)
+
+testRetryThirdParty :: IO ()
+testRetryThirdParty = withWorker $ \w@W {wCtx = ctx} -> do
+  (r, t) <- paidIn ctx aliceOrder id >>= committedByUs w
+  f <- failedAfterRegister w r
+  answerNonce w $ rvNonce reveal
+  -- our commitment lapsed, and someone committed it again
+  let t' = t + maxAge + 100
+  answerCommitment w f t'
+  advance ctx $ fromIntegral (t' + 10 - orderSeconds)
+  v <- retried ctx f
+  (field "label" v, field "commitTx" v) `shouldBe` (Just J.Null, txJSON (nrCommitTx f))
+  steps w f >>= waitingUntil >>= (`shouldBe` at (t' + maxAge + 1))
+  x <- stored ctx f
+  (nrPhase x, nrReveal x, nrCommitTx x, nrCommitBlock x, nrRevealBefore x) `shouldBe` (PCommitted, Nothing, Nothing, Nothing, Just (t' + maxAge))
+  field "commitTx" <$> viewOf ctx f `shouldReturn` Just J.Null
+  length <$> sent w `shouldReturn` 1
+
+testRetryMargin :: IO ()
+testRetryMargin = withWorker $ \w@W {wCtx = ctx} -> do
+  (r, t) <- paidIn ctx aliceOrder id >>= committedByUs w
+  f <- failedAfterRegister w r
+  answerNonce w $ rvNonce reveal
+  let lapse = t + maxAge
+  advance ctx $ fromIntegral (lapse - 600 - orderSeconds)
+  field "label" <$> retried ctx f `shouldReturn` Just J.Null
+  steps w f >>= waitingUntil >>= (`shouldBe` at (lapse + 1))
+  advance ctx 601
+  void $ steps w f >>= awaiting
+  commitTx <- newestHash w
+  x <- stored ctx f
+  (nrPhase x, nrReveal x, nrCommitTx x, nrRevealBefore x) `shouldBe` (PCommitting, Nothing, Just commitTx, Nothing)
+  length <$> sent w `shouldReturn` 2
+
+testRetryLapsed :: IO ()
+testRetryLapsed = withWorker $ \w@W {wCtx = ctx@Ctx {cClient}} -> do
+  (r, code) <- codeIn ctx 8 aliceOrder committedPhase
+  advance ctx $ day + 1
+  -- the lapse alone changes no version, so a poll with the version seen before it is held
+  let path = registrationPath (nrId r) <> "?seenVersion=" <> show (nrVersion r)
+  poll <- held ctx (0, 1) path
+  v <- retried ctx r
+  (field "phase" v, field "version" v, field "error" v) `shouldBe` (Just "queued", Just (J.toJSON $ nrVersion r + 1), Just J.Null)
+  (status, view) <- woken "the poll held at the lapse" poll
+  (status, field "phase" view) `shouldBe` (200, Just "queued")
+  -- prompt is far below the 30-second hold
+  (status', view') <- timeout prompt (webGet cClient path >>= \resp -> (statusOf resp,) <$> jsonObject resp) >>= maybe (fail "the old version was held") pure
+  (status', field "version" view') `shouldBe` (200, Just (J.toJSON $ nrVersion r + 1))
+  pcReservedBy <$> codeOf ctx code `shouldReturn` Just (nrId r)
+  -- the commitment lapsed, so the worker commits it again
+  answerCommitment w r $ fromJust (nrRevealBefore r) - maxAge
+  void $ steps w r >>= awaiting
+  nrPhase <$> stored ctx r `shouldReturn` PCommitting
+
+testRetryLostRace :: IO ()
+testRetryLostRace = withWorker $ \W {wCtx = ctx@Ctx {cNode}} -> do
+  r <- paidIn ctx aliceOrder failedPhase
+  -- held at the register check's ownerOf read, in the name's turn
+  (retrying', gate) <- pausedAt cNode "eth_call" $ retryOf ctx r
+  changed <- rewrite ctx r id
+  releaseGate gate
+  answer <- timeout prompt (wait retrying') >>= maybe (fail "the retry did not finish") pure
+  view <- viewOf ctx r
+  answer `shouldBe` (409, Just $ KM.fromList [("error", "registration_changed"), ("registration", J.Object view)])
+  field "version" view `shouldBe` Just (J.toJSON $ nrVersion r + 1)
+  stored ctx r `shouldReturn` changed
+
+testRetryInNameTurn :: IO ()
+testRetryInNameTurn = withWorker $ \W {wCtx = ctx@Ctx {cOrders}} -> do
+  r <- paidIn ctx aliceOrder failedPhase
+  moving <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 2} failedPhase
+  answerUnowned ctx "dynamis"
+  let turns = oeTurns cOrders
+      whileHeld :: IO a -> IO () -> IO a
+      whileHeld request meanwhile = do
+        holding <- newEmptyMVar
+        release <- newEmptyMVar
+        withAsync (withLabelTurn turns (nrLabelHash r) $ putMVar holding () >> takeMVar release) $ \_ -> do
+          takeMVar holding
+          withAsync request $ \requesting -> do
+            timeout prompt (atomically $ labelTurnCount turns (nrLabelHash r) >>= check . (== 2)) >>= maybe (fail "the retry did not queue on the turn") pure
+            meanwhile
+            putMVar release ()
+            timeout prompt (wait requesting) >>= maybe (fail "the retry did not finish") pure
+  (status, v) <- whileHeld (retryOf ctx r) (stored ctx r `shouldReturn` r)
+  (status, field "phase" =<< v) `shouldBe` (200, Just "queued")
+  -- moved to another name while the retry waited for the old name's turn
+  (status', v') <- whileHeld (retryOf ctx moving) (void $ rewrite ctx moving $ \o -> o {nrLabelHash = labelHash "dynamis", nrLength = 7})
+  (status', field "error" =<< v') `shouldBe` (409, Just "registration_changed")
+  nrPhase <$> stored ctx moving `shouldReturn` PFailed
+
+testRetryLimit :: IO ()
+testRetryLimit = withWorker $ \W {wCtx = ctx@Ctx {cClient}} -> do
+  r <- paidIn ctx aliceOrder id
+  let fromClient = statusOf <$> webRequestBody cClient "POST" (registrationPath (nrId r) <> "/retry") [("X-Forwarded-For", "203.0.113.8")] ""
+  replicateM 5 fromClient `shouldReturn` replicate 5 400
+  fromClient `shouldReturn` 429
