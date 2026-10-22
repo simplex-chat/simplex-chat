@@ -71,6 +71,7 @@ namesBalancesTests = describe "StoreService names: balances" $ do
     it "releases a hold at a cancel, the sweep's expiry, settlement's expiry and the next order's close" testClosesRelease
     it "reads an overdue holder's hold as none, and closes it in the transaction of the order placed" testOverdueHolderClosed
     it "skips a named holder no longer live, and refuses with the balance when a live one cannot be closed" testNamedHolders
+    it "refuses with the balance a named holder whose invoice has not expired, leaving it open and holding" testNamedHolderNotDue
     it "keeps at the cleanup, and logs, an unpaid order still holding a balance" testCleanupKeepsHolder
   describe "refunds" $ do
     it "refuses no order, no balance, a balance held by an open or overdue holder, and another amount, then records one with its chain" testRecordRefund
@@ -497,6 +498,21 @@ testNamedHolders = withOrders $ \Ctx {cStore = st, cOrders, cWeb} -> do
   absent st "c2"
   nrLive <$> reg st "h2" `shouldReturn` True
   invoiceStatus st "inv-h2" `shouldReturn` "open"
+
+testNamedHolderNotDue :: IO ()
+testNamedHolderNotDue = withOrders $ \Ctx {cStore = st, cOrders} -> do
+  now <- oeNow cOrders
+  let expiry = addUTCTime 600 now
+  source st "s" 10000
+  holder st "h" "s" 10000 expiry `shouldReturn` Right ()
+  h <- reg st "h"
+  Just held <- withTransaction st $ \db -> getBalance db (RegistrationId "s") now
+  blHold held `shouldBe` Just (hold "h" expiry False)
+  closedIds <$> Orders.placeOrder cOrders (orderRequest "c") [h] (spendInsert "c" "s" 6000 10000) `shouldReturn` Left (ORBalanceChanged $ Just held)
+  absent st "c"
+  invoiceStatus st "inv-h" `shouldReturn` "open"
+  nrLive <$> reg st "h" `shouldReturn` True
+  figures st "s" now `shouldReturn` Just (10000, 10000, 0, Just $ hold "h" expiry False)
 
 testCleanupKeepsHolder :: IO ()
 testCleanupKeepsHolder = withOrders $ \Ctx {cStore = st, cWeb} -> do

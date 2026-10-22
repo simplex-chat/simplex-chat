@@ -650,7 +650,7 @@ unfunded :: Query
 unfunded = unfundedQuery "i.invoice_id"
 
 -- | Run in the transaction that inserts the next order, so the unique constraints let it in; the registration's new version.
--- Nothing when the order changed since it was read, or its invoice is no longer open or holds money: the caller rolls back,
+-- Nothing when the order changed since it was read, or its invoice is no longer open, not past its expiry, or holds money: the caller rolls back,
 -- since the invoice is written before the registration, as settlement, cancel and the sweep write them. A balance it held is released.
 closeOverdue :: DB.Connection -> NameRegistration -> UTCTime -> IO (Maybe Int64)
 closeOverdue db r@NameRegistration {nrId = regId@(RegistrationId rid), nrVersion, nrPayment} now = do
@@ -668,12 +668,12 @@ closeOverdue db r@NameRegistration {nrId = regId@(RegistrationId rid), nrVersion
             SELECT i.invoice_id FROM sx_badge_service_name_invoices ni
             JOIN sx_badge_service_name_registrations r ON r.registration_id = ni.registration_id
             JOIN sx_badge_service_invoices i ON i.invoice_id = ni.invoice_id
-            WHERE ni.registration_id = ? AND r.version = ? AND r.live = 1
+            WHERE ni.registration_id = ? AND r.version = ? AND r.live = 1 AND i.expires_at < ?
         |]
           <> unfunded
           <> " )"
       )
-      (invoiceStatusText ISExpired, truncateToSecond now, invoiceStatusText ISOpen, rid, nrVersion)
+      (invoiceStatusText ISExpired, truncateToSecond now, invoiceStatusText ISOpen, rid, nrVersion, truncateToSecond now)
   if expired > 0
     then
       updateRegistration db r {nrLive = False} now >>= \case
