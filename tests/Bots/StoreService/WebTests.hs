@@ -5,7 +5,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 
-module Bots.StoreService.WebTests (badgeWebTests, withServiceStore, columnsOf, runMigrations, digestFixture) where
+module Bots.StoreService.WebTests (badgeWebTests, withServiceStore, columnsOf, runMigrations, digestFixture, capturingStderr) where
 
 import StoreService.Catalog (catalogCurrency, defaultCatalog)
 import StoreService.Config (BTCPayConfig (..), ListenerConfig (..), PollConfig (..), ServiceConfig (..), SpeedPolicy (..), StripeConfig (..))

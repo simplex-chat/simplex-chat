@@ -36,7 +36,8 @@ import Data.List.NonEmpty (NonEmpty (..), (<|))
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, isNothing)
+import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime)
 import Data.Word (Word64)
@@ -71,6 +72,8 @@ data InFlight = InFlight
     ifReplaceAt :: UTCTime,
     -- | the block at which the nonce was first seen used with no receipt for any hash
     ifUsedSince :: Maybe Word64,
+    -- | the last warning logged for this nonce, so a lasting failure is logged once
+    ifLastWarning :: Maybe Text,
     ifOutcome :: TMVar TxOutcome
   }
 
@@ -136,13 +139,14 @@ newSender snRandom snChain snStore snNow = do
               ifHashes = L.reverse $ L.map ntHash txs,
               ifReplaceAt = addUTCTime replaceAfter ntSentAt,
               ifUsedSince = Nothing,
+              ifLastWarning = Nothing,
               ifOutcome = outcome
             }
         )
 
 -- | Dry run, the next nonce, the market's fees, the signature, saved, then sent. A failed send is retried by 'followTransactions'.
 submitTransaction :: Sender -> TxFor -> Address -> ByteString -> IO (Either SendError PendingTx)
-submitTransaction Sender {snChain = c@ChainClient {ccRegistrar}, snRandom, snStore, snNow, snQueue, snNextNonce, snInFlight} for to calldata =
+submitTransaction s@Sender {snChain = c@ChainClient {ccRegistrar}, snRandom, snStore, snNow, snQueue, snNextNonce, snInFlight} for to calldata =
   withMVar snQueue $ \_ -> runExceptT $ do
     busy <- any ((== for) . ifFor) <$> liftIO (readTVarIO snInFlight)
     when busy $ throwError SEInFlight
@@ -159,8 +163,8 @@ submitTransaction Sender {snChain = c@ChainClient {ccRegistrar}, snRandom, snSto
       atomically $ do
         writeTVar snNextNonce $ nonce + 1
         modifyTVar' snInFlight $
-          M.insert nonce InFlight {ifFor = for, ifRequest = request, ifRaw = stRaw, ifHashes = stHash :| [], ifReplaceAt = addUTCTime replaceAfter now, ifUsedSince = Nothing, ifOutcome = outcome}
-      broadcast c nonce stRaw
+          M.insert nonce InFlight {ifFor = for, ifRequest = request, ifRaw = stRaw, ifHashes = stHash :| [], ifReplaceAt = addUTCTime replaceAfter now, ifUsedSince = Nothing, ifLastWarning = Nothing, ifOutcome = outcome}
+      broadcast s nonce stRaw
       pure PendingTx {ptHash = stHash, ptNonce = nonce, ptOutcome = outcome}
   where
     chain = withExceptT SEChain . ExceptT
@@ -193,7 +197,7 @@ followTransactions s@Sender {snChain = c@ChainClient {ccRegistrar}, snInFlight} 
 follow :: Sender -> Word64 -> Word64 -> Word64 -> InFlight -> IO ()
 follow s@Sender {snChain = c@ChainClient {ccConfig = ChainConfig {cConfirmations}}} latest used nonce tx@InFlight {ifHashes, ifUsedSince} =
   runExceptT (forM (L.toList ifHashes) $ \h -> (h,) <$> ExceptT (transactionReceipt c h)) >>= \case
-    Left e -> logWarn $ "names sender: nonce " <> tshow nonce <> ": " <> tshow e
+    Left e -> warnNonce s nonce $ tshow e
     Right receipts -> case [(h, r) | (h, Just r) <- receipts] of
       (h, r@Receipt {receiptBlock}) : _
         | deep receiptBlock -> settle s nonce tx $ TOConfirmed h r
@@ -210,21 +214,21 @@ follow s@Sender {snChain = c@ChainClient {ccConfig = ChainConfig {cConfirmations
 
 -- | A replacement when one is due and the market asks for it; otherwise the newest signature again if the node does not know it.
 resend :: Sender -> Word64 -> InFlight -> IO ()
-resend s@Sender {snChain = c, snNow} nonce tx@InFlight {ifRaw, ifHashes = newest :| _, ifReplaceAt} = do
+resend s@Sender {snChain = c, snNow} nonce tx@InFlight {ifRaw, ifHashes = newest :| _, ifReplaceAt, ifLastWarning} = do
   now <- snNow
   replaced <- if now >= ifReplaceAt then replace s nonce tx now else pure False
   unless replaced $
     transactionByHash c newest >>= \case
       Right Nothing -> do
-        logInfo $ "names sender: rebroadcasting nonce " <> tshow nonce
-        broadcast c nonce ifRaw
+        when (isNothing ifLastWarning) $ logInfo $ "names sender: rebroadcasting nonce " <> tshow nonce
+        broadcast s nonce ifRaw
       Right (Just _) -> pure ()
-      Left e -> logWarn $ "names sender: nonce " <> tshow nonce <> ": " <> tshow e
+      Left e -> warnNonce s nonce $ tshow e
 
 replace :: Sender -> Word64 -> InFlight -> UTCTime -> IO Bool
 replace s@Sender {snChain = c, snRandom, snStore} nonce InFlight {ifFor, ifRequest = old@TxRequest {trMaxFeePerGas, trMaxPriorityFeePerGas}} now =
   marketFees c >>= \case
-    Left e -> False <$ logWarn ("names sender: nonce " <> tshow nonce <> ": " <> tshow e)
+    Left e -> False <$ warnNonce s nonce (tshow e)
     Right (tip, maxFee)
       | tip <= trMaxPriorityFeePerGas && maxFee <= trMaxFeePerGas -> False <$ update s nonce (\t -> t {ifReplaceAt = later})
       | otherwise -> do
@@ -236,7 +240,7 @@ replace s@Sender {snChain = c, snRandom, snStore} nonce InFlight {ifFor, ifReque
               saveTransaction snStore ifFor stRaw stHash nonce now
               update s nonce $ \t -> t {ifRequest = request, ifRaw = stRaw, ifHashes = stHash <| ifHashes t, ifReplaceAt = later}
               logInfo $ "names sender: replacing nonce " <> tshow nonce <> " at max fee " <> tshow maxFee'
-              True <$ broadcast c nonce stRaw
+              True <$ broadcast s nonce stRaw
   where
     later = addUTCTime replaceAfter now
 
@@ -271,8 +275,26 @@ saveTransaction :: DBStore -> TxFor -> ByteString -> TxHash -> Word64 -> UTCTime
 saveTransaction st for raw hash nonce now =
   withTransaction st $ \db -> void $ insertTransaction db for NewTransaction {ntxRaw = raw, ntxHash = hash, ntxNonce = nonce} now
 
-broadcast :: ChainClient -> Word64 -> ByteString -> IO ()
-broadcast c nonce raw =
-  sendRawTransaction c raw >>= \case
-    Left e -> logWarn $ "names sender: nonce " <> tshow nonce <> " not sent: " <> tshow e
-    Right _ -> pure ()
+broadcast :: Sender -> Word64 -> ByteString -> IO ()
+broadcast s@Sender {snChain} nonce raw =
+  sendRawTransaction snChain raw >>= \case
+    Left e -> warnNonce s nonce $ "not sent: " <> tshow e
+    Right _ -> update s nonce $ \t -> t {ifLastWarning = Nothing}
+
+-- | Logged when it differs from the nonce's last warning. An underfunded key is an error, since only the operator can fund it.
+warnNonce :: Sender -> Word64 -> Text -> IO ()
+warnNonce Sender {snInFlight} nonce warning = do
+  changed <- atomically $ do
+    inFlight <- readTVar snInFlight
+    case M.lookup nonce inFlight of
+      Just tx@InFlight {ifLastWarning}
+        | ifLastWarning == Just warning -> pure False
+        | otherwise -> True <$ writeTVar snInFlight (M.insert nonce tx {ifLastWarning = Just warning} inFlight)
+      Nothing -> pure True
+  when changed $ (if underfundedMessage `T.isInfixOf` warning then logError else logWarn) message
+  where
+    message = "names sender: nonce " <> tshow nonce <> ": " <> warning
+
+-- | How geth, reth and erigon refuse a transaction whose key cannot pay gas × fee + value.
+underfundedMessage :: Text
+underfundedMessage = "insufficient funds"

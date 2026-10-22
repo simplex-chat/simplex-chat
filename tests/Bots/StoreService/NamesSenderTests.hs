@@ -6,16 +6,17 @@ module Bots.StoreService.NamesSenderTests (namesSenderTests) where
 
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesStoreTests (issue, order, ownerA, placeCode, t0, usable)
-import Bots.StoreService.WebTests (digestFixture, withServiceStore)
+import Bots.StoreService.WebTests (capturingStderr, digestFixture, withServiceStore)
 import Control.Concurrent.Async (concurrently)
 import Control.Concurrent.STM
-import Control.Monad (forM_)
+import Control.Monad (forM_, replicateM_)
 import Crypto.Random (ChaChaDRG)
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import Data.List (sort)
 import Data.String (fromString)
+import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime)
 import Data.Word (Word64, Word8)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
@@ -46,6 +47,7 @@ namesSenderTests = describe "StoreService names: sender" $ do
   it "hands a dropped transaction whose nonce was used to its owner, who judges it from chain state before any new signature" $ testDroppedNonceUsed g
   it "hands a mined transaction whose receipt was pruned to its owner, signing nothing more" $ testPrunedReceipt g
   it "logs a round that fails on the store, and settles the transaction in the next round" $ testFailedRound g
+  it "logs a send the node keeps refusing once per error, an underfunded key as an error" $ testRefusedSendLogged g
 
 data Setup = Setup
   { node :: FakeEthNode,
@@ -256,6 +258,30 @@ testFailedRound g = withSetup g $ \s@Setup {node, store} -> do
   map (\(_, status, _) -> status) <$> statuses store r1 `shouldReturn` [TSMined]
   where
     renameTransactions store from to = withTransaction store $ \db -> DB.execute_ db $ fromString $ "ALTER TABLE " <> from <> " RENAME TO " <> to
+
+testRefusedSendLogged :: TVar ChaChaDRG -> IO ()
+testRefusedSendLogged g = withSetup g $ \s@Setup {node} -> do
+  sender <- start s
+  -- the specs run in parallel, so this one's lines are told apart by a nonce no other spec reaches
+  replicateM_ 9 $ useNextNonce node
+  let underfunded = "insufficient funds for gas * price + value: balance 0, tx cost 4600000000000000, overshot 4600000000000000"
+  logged <- capturingStderr $ do
+    setFault node "eth_sendRawTransaction" $ RpcError (-32000) underfunded Nothing
+    Right p <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
+    ptNonce p `shouldBe` 9
+    followTransactions sender
+    followTransactions sender
+    setFault node "eth_sendRawTransaction" HttpFailure
+    followTransactions sender
+    followTransactions sender
+    clearFault node "eth_sendRawTransaction"
+    followTransactions sender
+  let linesWith tag message = length $ filter (\l -> tag `T.isPrefixOf` l && message `T.isInfixOf` l) $ T.lines logged
+  linesWith "[ERROR" "names sender: nonce 9: not sent: ChainUnavailable \"eth_sendRawTransaction: error -32000: insufficient funds" `shouldBe` 1
+  linesWith "[WARN" "names sender: nonce 9: not sent: ChainUnavailable \"eth_sendRawTransaction: HTTP 502\"" `shouldBe` 1
+  linesWith "[" "names sender: nonce 9" `shouldBe` 2
+  linesWith "[" "names sender: rebroadcasting nonce 9" `shouldBe` 0
+  length <$> sentTransactions node `shouldReturn` 1
 
 -- fixtures
 
