@@ -11,6 +11,7 @@ import StoreService.Names.Chain (ChainClient, newChainClient)
 import StoreService.Names.Contracts (Contracts, newContracts)
 import StoreService.Names.Phases (Phases, newPhases)
 import StoreService.Names.Profiles (Profiles, chatProfile, defaultProfileLimits, monotonicSeconds, newProfiles, systemResolver)
+import StoreService.Names.Records (Records, newRecords)
 import StoreService.Names.Sender (Sender, newSender)
 import StoreService.Names.Turns (Turns)
 
@@ -24,7 +25,8 @@ data NamesEnv = NamesEnv
     neChain :: ChainClient,
     neContracts :: Contracts,
     neProfiles :: Profiles,
-    neSender :: Sender
+    neSender :: Sender,
+    neRecords :: Records
   }
 
 newNamesEnv :: ChatController -> UserId -> NamesConfig -> DBStore -> Turns -> IO NamesEnv
@@ -34,4 +36,5 @@ newNamesEnv neChat@ChatController {random} neUserId neConfig@NamesConfig {nTLD, 
   neContracts <- newContracts nTLD neChain
   neProfiles <- newProfiles defaultProfileLimits monotonicSeconds (chatProfile neChat neUserId) systemResolver
   neSender <- newSender random neChain neStore getCurrentTime
-  pure NamesEnv {neChat, neUserId, neConfig, neStore, nePhases, neTurns, neChain, neContracts, neProfiles, neSender}
+  neRecords <- newRecords neStore neTurns neContracts neChain neSender nTLD getCurrentTime
+  pure NamesEnv {neChat, neUserId, neConfig, neStore, nePhases, neTurns, neChain, neContracts, neProfiles, neSender, neRecords}
