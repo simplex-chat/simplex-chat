@@ -46,7 +46,7 @@ fun CIMemberCreatedContactView(
           withAnnotation(tag = "Open", annotation = "Open") {
             withStyle(openChatStyle) { append(generalGetString(MR.strings.rcv_group_event_open_chat) + "  ") }
           }
-          append(ts)
+          withStyle(chatEventStyle) { append(ts) }
         }
 
         fun open(offset: Int): Boolean = annotatedText.getStringAnnotations(tag = "Open", start = offset, end = offset).isNotEmpty()
@@ -63,7 +63,7 @@ fun CIMemberCreatedContactView(
         val annotatedText = buildAnnotatedString {
           append(eventText())
           append("  ")
-          append(ts)
+          withStyle(chatEventStyle) { append(ts) }
         }
         Text(annotatedText)
       }

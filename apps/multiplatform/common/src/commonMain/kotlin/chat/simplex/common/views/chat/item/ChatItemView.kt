@@ -55,8 +55,7 @@ fun chatEventText(ci: ChatItem, isChannel: Boolean = false, ts: AnnotatedString)
 
 fun chatEventText(eventText: String, ts: AnnotatedString): AnnotatedString =
   buildAnnotatedString {
-    withStyle(chatEventStyle) { append("$eventText  ") }
-    append(ts)
+    withStyle(chatEventStyle) { append(AnnotatedString("$eventText  ") + ts) }
   }
 
 data class ChatItemReactionMenuItem (

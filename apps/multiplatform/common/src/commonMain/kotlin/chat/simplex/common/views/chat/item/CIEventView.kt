@@ -25,9 +25,9 @@ fun ChatEventWithMeta(ci: ChatItem, content: @Composable (ts: AnnotatedString) -
   ItemWithMeta(meta = { CIMetaView(ci, timedMessagesTTL = null, showStatus = false, showEdited = false, showViaProxy = false, showTimestamp = true) }) { inlineMeta ->
     content(
       if (inlineMeta != null) {
-        AnnotatedString(ci.timestampText, chatEventStyle)
+        AnnotatedString(ci.timestampText)
       } else {
-        AnnotatedString("\u00A0" + reserveSpaceForMeta(ci.meta, null, null, MaterialTheme.colors.secondary, showStatus = false, showEdited = false, showTimestamp = true), chatEventStyle.merge(reserveTimestampStyle))
+        AnnotatedString("\u00A0" + reserveSpaceForMeta(ci.meta, null, null, MaterialTheme.colors.secondary, showStatus = false, showEdited = false, showTimestamp = true), reserveTimestampStyle)
       }
     )
   }

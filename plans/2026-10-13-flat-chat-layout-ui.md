@@ -38,7 +38,7 @@ sender groups     new sender row after an event or a sender change, as classic: 
 time, status      at the end of the row, level with the last text line, for every item with a time
                   images and videos without caption: over the media in white, as classic, when the row has no space beside them
 quote             Markdown quote design: bar, text at 70%
-headers           forwarded and report headers without background
+headers           all item headers without background
 media             message corner clip, start at the text edge
 cards             link preview and chat link in the quote colour, message corner radius
 message text      onSurface at 87% in dark themes, both layouts
@@ -69,13 +69,15 @@ Paths are relative to `apps/multiplatform/common/src/commonMain/kotlin/chat/simp
 views/chat/ChatView.kt
   ChatView (:269-:274)                   terminal = activeChatLayout == Terminal; LocalTerminalLayout provided
   ChatLayout composable (:1007)          chatViewBackgroundModifier(drawWallpaperImage = !LocalTerminalLayout.current)
-  ChatItemsList (:2458)                  showAvatar = terminalItemShowsSender(item, older) when terminal
-  local ChatItemView (:2031)             terminal branch:
+  ChatItemsList (:2405)                  showAvatar = terminalItemShowsSender(item, older) when terminal
+  local ChatItemView (:2045)             terminal branch:
                                            ChatItemBox with the row tint and terminalRowIndication
                                            SelectedListItem when selecting
-                                           TerminalChatItemRow(terminalSender or null, terminalGutter, itemTopGap, terminalStartOffset and swipeableModifier, GoToItemButton)
+                                           TerminalChatItemRow(chatItemSender or null, terminalGutter, itemTopGap, terminalStartOffset and swipeableModifier, GoToItemButton)
                                            ChatItemViewShortHand with the row interaction source
-views/chat/item/TerminalItemView.kt      LocalTerminalLayout, sender rule, row interaction, ItemWithMeta, TerminalChatItemRow, terminalSender
+  shared with classic                    showsSender, sameSender (:3846-:3863); ChatItemSender, chatItemSender, SenderNameAndRole (:3496-:3574)
+                                         classic BubbleSenderNameAndRole (:2033)
+views/chat/item/TerminalItemView.kt      LocalTerminalLayout, terminal sender condition, row interaction, ItemWithMeta, TerminalChatItemRow
 views/chat/item/ChatItemView.kt          alignEnd = sent && !terminal; item click without indication; reactions at the text edge
                                          GoToItemButton and GO_TO_ITEM_BUTTON_SIZE at top level
                                          chatItemTailEnabled false

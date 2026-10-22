@@ -3479,7 +3479,7 @@ private fun markUnreadChatAsRead(chatId: String) {
 }
 
 @Composable
-fun memberNames(member: GroupMember, prevMember: GroupMember?, memCount: Int): String {
+private fun memberNames(member: GroupMember, prevMember: GroupMember?, memCount: Int): String {
   val name = member.displayName
   val prevName = prevMember?.displayName
   return if (prevName != null) {
@@ -3496,7 +3496,7 @@ fun memberNames(member: GroupMember, prevMember: GroupMember?, memCount: Int): S
 class ChatItemSender(val name: String, val badge: LocalBadge?, val role: String?, val own: Boolean, val image: (@Composable () -> Unit)?)
 
 @Composable
-fun chatItemSender(
+private fun chatItemSender(
   chatInfo: ChatInfo,
   cItem: ChatItem,
   range: State<IntRange?>,

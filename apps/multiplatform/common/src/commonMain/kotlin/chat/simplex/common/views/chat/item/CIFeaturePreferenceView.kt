@@ -38,7 +38,7 @@ fun CIFeaturePreferenceView(
           withAnnotation(tag = "Accept", annotation = "Accept") {
             withStyle(acceptStyle) { append(generalGetString(acceptTextId) + "  ") }
           }
-          append(ts)
+          withStyle(chatEventStyle) { append(ts) }
         }
         fun accept(offset: Int): Boolean = annotatedText.getStringAnnotations(tag = "Accept", start = offset, end = offset).isNotEmpty()
         ClickableText(
