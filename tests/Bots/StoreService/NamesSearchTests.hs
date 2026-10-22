@@ -4,7 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 
-module Bots.StoreService.NamesSearchTests (namesSearchTests) where
+module Bots.StoreService.NamesSearchTests (namesSearchTests, aliceHex) where
 
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests

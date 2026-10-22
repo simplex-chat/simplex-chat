@@ -22,6 +22,7 @@ import StoreService.Service (ServiceState (..), storeService, newServiceState)
 import StoreService.Store (ManagedGroup (..), getManagedGroup)
 import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, badgeTypeOf, credentialOf, entryOf, issueCode, issueRaw, mkStoreServiceOpts, newPurchaseKeys, redeemWithQueue, requestObject, revokeRaw, serviceDbPrefix, shouldAnswerError, statementOf, stopStoreService, testIssuerKeyIdx)
 import Bots.StoreService.ConfigTests (chainSection, namesSection)
+import Bots.StoreService.NamesSearchTests (aliceHex)
 import Bots.StoreService.NamesStoreTests (order, ownerA, placeCode, placePaid)
 import ChatClient
 import ChatTests.DBUtils
@@ -133,7 +134,7 @@ badgeGroupIntegrationTests = do
   it "leaves a tracker it cannot edit alone rather than publishing the code again" testUneditableTrackerLeftAlone
 
 namesBootTests :: SpecWith TestParams
-namesBootTests = it "boots with [names] and [chain], leaving a path no route knows to 404" testNamesBoot
+namesBootTests = it "boots with [names] and [chain], routing fixed /api/name paths ahead of a search and a path no route knows to 404" testNamesBoot
 
 testNamesBoot :: HasCallStack => TestParams -> IO ()
 testNamesBoot ps = do
@@ -142,8 +143,15 @@ testNamesBoot ps = do
   flip finally (stopGroupService t cc) $ do
     pollUntilTrue (listening port)
     mgr <- newManager defaultManagerSettings
-    req <- parseRequest $ "http://127.0.0.1:" <> show port <> "/api/names/unknown"
-    statusCode . responseStatus <$> httpLbs req mgr `shouldReturn` 404
+    let request path = parseRequest $ "http://127.0.0.1:" <> show port <> path
+        answer req = (\r -> (statusCode $ responseStatus r, J.decode $ responseBody r)) <$> httpLbs req mgr
+        refused tag = (400, Just $ J.object ["error" J..= (tag :: Text)])
+    unknown <- request "/api/names/unknown"
+    statusCode . responseStatus <$> httpLbs unknown mgr `shouldReturn` 404
+    records <- request "/api/name/records"
+    answer records {method = "POST", requestBody = RequestBodyLBS "{}"} `shouldReturn` refused "bad_request"
+    search <- request $ "/api/name/" <> T.unpack aliceHex <> "?length=5"
+    answer search `shouldReturn` refused "invalid_name"
     poll t >>= (`shouldSatisfy` isNothing)
 
 namesCodesChatTests :: SpecWith TestParams
