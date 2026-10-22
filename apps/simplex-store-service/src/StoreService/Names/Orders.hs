@@ -36,6 +36,7 @@ module StoreService.Names.Orders
     checkMoveMeets,
     checkMovePrice,
     retargetOrder,
+    versionWritten,
     confirmLanded,
     issuedCodeHash,
     checkTakenCodeLength,
@@ -43,7 +44,6 @@ module StoreService.Names.Orders
   )
 where
 
-import Control.Applicative ((<|>))
 import qualified Control.Exception as E
 import Control.Monad (forM, unless, when)
 import Control.Monad.Except (ExceptT (..), runExceptT)
@@ -70,7 +70,7 @@ import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig (..))
 import StoreService.Log (logError, logWarn)
 import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, reserveCode, reserveRefusal, spendLandedCode)
-import StoreService.Names.Contracts (Contracts, NameStatus (..), chainPriceCents, codeLengthFor, nameExpires, nameStatus, ownerOfToken, secondsPerYear)
+import StoreService.Names.Contracts (Contracts, NameStatus (..), chainPriceCents, codeLengthFor, confirmedTag, nameExpires, nameStatus, ownerOfToken, secondsPerYear)
 import StoreService.Names.Env (NamesEnv (..))
 import StoreService.Names.Phases (Phases, RegistrationId (..))
 import StoreService.Names.Abi (bytes32FromHex, hex)
@@ -329,11 +329,11 @@ versionWritten = \case
   LiveOrderExists -> Left $ WRRefused OROrderExists
   NotLive -> Left $ WRRefused ORBadRequest
 
--- | /retry's first check, on the order's current name: a register mined with status 1, or the owner holding the name, went through
--- with only its confirmation lost. The order then becomes registered by a compare-and-set on the version read, a code order spending its code.
+-- | /retry's first check, on the order's current name: a register mined with status 1, or the owner holding the name at the confirmation depth,
+-- went through with only its confirmation lost. The order then becomes registered by a compare-and-set on the version read, a code order spending its code.
 -- The caller holds the turn of the order's label hash and passes the order as registrationAt reads it.
 confirmLanded :: OrdersEnv -> NameRegistration -> IO Landing
-confirmLanded OrdersEnv {oeStore, oeContracts, oeTurns, oeNow} r@NameRegistration {nrId, nrOwner, nrLabelHash, nrPayment, nrRegisterTx, nrRegisterBlock} = do
+confirmLanded OrdersEnv {oeStore, oeContracts, oeTurns, oeNow} r@NameRegistration {nrId, nrOwner, nrLabelHash, nrPayment} = do
   txs <- withTransaction oeStore (`registrationTransactions` nrId)
   let mined = [(ntHash, ntMinedBlock) | NameTransaction {ntFor = TxRegister _, ntStatus = TSMined, ntHash, ntMinedBlock} <- txs]
   runExceptT (landed mined) >>= \case
@@ -342,17 +342,19 @@ confirmLanded OrdersEnv {oeStore, oeContracts, oeTurns, oeNow} r@NameRegistratio
     Right (Just (tx, expiry)) -> either (const LChanged) LRegistered <$> markRegistered tx expiry
   where
     landed mined = do
+      confirmed <- ExceptT $ confirmedTag oeContracts
       registerTx <- case mined of
         tx : _ -> pure $ Just $ Just tx
-        [] -> (\holder -> if holder == Just nrOwner then Just Nothing else Nothing) <$> ExceptT (ownerOfToken oeContracts nrLabelHash)
-      forM registerTx $ \tx -> (tx,) <$> ExceptT (nameExpires oeContracts nrLabelHash)
+        [] -> (\holder -> if holder == Just nrOwner then Just Nothing else Nothing) <$> ExceptT (ownerOfToken oeContracts confirmed nrLabelHash)
+      forM registerTx $ \tx -> (tx,) <$> ExceptT (nameExpires oeContracts confirmed nrLabelHash)
     markRegistered tx expiry = do
       now <- oeNow
       let registered =
             r
               { nrPhase = PRegistered,
-                nrRegisterTx = (fst <$> tx) <|> nrRegisterTx,
-                nrRegisterBlock = (snd =<< tx) <|> nrRegisterBlock,
+                -- judged by ownerOf alone, no hash is known to have mined: none is shown (contract section 6)
+                nrRegisterTx = fst <$> tx,
+                nrRegisterBlock = snd =<< tx,
                 nrExpiresAt = Just expiry,
                 nrRegisteredAt = Just now,
                 nrFailedAt = Nothing,

@@ -8,9 +8,6 @@ module StoreService.Web.Names.Registration
     revealHandler,
     registrationChangedResponse,
     registrationRefusalResponse,
-    registrationAt,
-    registrationVersion,
-    lapseMoment,
     heldFor,
     versionParam,
   )
@@ -26,10 +23,9 @@ import Data.Int (Int64)
 import Data.Maybe (isJust, maybeToList)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime, diffUTCTime)
-import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Network.HTTP.Types (status200, status409)
 import Network.Wai (Request, Response, ResponseReceived, queryString)
-import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
+import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Log (logInfo)
 import StoreService.Names.Orders (OrdersEnv (..))
@@ -38,7 +34,7 @@ import StoreService.Names.Registration (RegisterIntent (..))
 import StoreService.Names.Reveal (RevealFields (..), RevealRefusal (..), SignedLabel (..), checkIntent, committedRegistration, isRepeat, linksValid, parseRevealFields, parseSignedLabel, revealOf)
 import StoreService.Names.Store (NamePhase (..), NameRegistration (..), VersionWrite (..), getRegistration, updateRegistration)
 import StoreService.Names.Turns (withLabelTurn)
-import StoreService.Names.View (registrationView)
+import StoreService.Names.View (lapseMoment, registrationAt, registrationVersion, registrationView)
 import StoreService.Web.Http (Respond, badRequest, invalidLink, jsonResponse, nameBodyBytes, notFound, providerUnavailable, readBoundedBody)
 import Text.Read (readMaybe)
 
@@ -125,24 +121,6 @@ registrationRefusalResponse OrdersEnv {oeStore, oeConfig, oeContracts, oeNow} ta
       now <- oeNow
       view <- registrationView oeStore oeConfig oeContracts (registrationAt now r)
       pure $ jsonResponse status409 $ J.object ["error" .= tag, "registration" .= view]
-
--- | Versions start at 1, so a registration deleted during a hold reads as changed.
-registrationVersion :: DBStore -> RegistrationId -> IO Int64
-registrationVersion st rid = maybe 0 nrVersion <$> withTransaction st (`getRegistration` rid)
-
-notSignedInTime :: Text
-notSignedInTime = "The name was not signed in time"
-
--- | Past revealBefore with no reveal, the commitment can no longer register, so it reads failed.
-registrationAt :: UTCTime -> NameRegistration -> NameRegistration
-registrationAt now r = case lapseMoment r of
-  Just lapse | now > lapse -> r {nrPhase = PFailed, nrError = Just notSignedInTime}
-  _ -> r
-
-lapseMoment :: NameRegistration -> Maybe UTCTime
-lapseMoment = \case
-  NameRegistration {nrPhase = PCommitted, nrReveal = Nothing, nrRevealBefore = Just before} -> Just $ posixSecondsToUTCTime $ fromIntegral before
-  _ -> Nothing
 
 -- | The hold, cut to end just past the next moment at which the answer changes with time alone.
 heldFor :: Int -> UTCTime -> [UTCTime] -> Int

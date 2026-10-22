@@ -183,8 +183,11 @@ inFlightTransaction Sender {snInFlight} for =
   where
     pending (nonce, InFlight {ifHashes, ifOutcome}) = PendingTx {ptHash = L.head ifHashes, ptNonce = nonce, ptOutcome = ifOutcome}
 
-awaitOutcome :: PendingTx -> IO TxOutcome
-awaitOutcome = atomically . readTMVar . ptOutcome
+-- | Nothing when the transaction is not settled within the microseconds.
+awaitOutcome :: Int -> PendingTx -> IO (Maybe TxOutcome)
+awaitOutcome micros PendingTx {ptOutcome} = do
+  timer <- registerDelay micros
+  atomically $ (Just <$> readTMVar ptOutcome) `orElse` (Nothing <$ (readTVar timer >>= check))
 
 runSender :: Sender -> IO ()
 runSender s = forever $ senderRound s >> threadDelay followInterval

@@ -2,13 +2,28 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module StoreService.Names.View (ViewReads (..), registrationView, readViewChain, viewJSON, addressText, tldText) where
+module StoreService.Names.View
+  ( ViewReads (..),
+    registrationView,
+    readViewChain,
+    viewJSON,
+    addressText,
+    tldText,
+    registrationAt,
+    lapseMoment,
+    notSignedInTime,
+    registrationVersion,
+  )
+where
 
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
+import Data.Int (Int64)
 import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Time.Clock (UTCTime)
+import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Data.Word (Word64)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Encoding.String (strEncode, textEncode)
@@ -20,7 +35,7 @@ import StoreService.Names.Abi (hex)
 import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Contracts (Contracts, codeLengthFor, sponsorNonce)
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Store (NamePhase (..), NameRegistration (..), NameReveal (..), PrepaidCode (..), RegistrationPayment (..), getPrepaidCodeById)
+import StoreService.Names.Store (NamePhase (..), NameRegistration (..), NameReveal (..), PrepaidCode (..), RegistrationPayment (..), getPrepaidCodeById, getRegistration)
 
 -- | The view's chain reads; a field whose read failed is null and named in vrUnread.
 data ViewReads = ViewReads
@@ -91,3 +106,21 @@ addressText = safeDecodeUtf8 . strEncode
 -- | The TLD as the page shows it after the name's dot.
 tldText :: SimplexTLD -> Text
 tldText = T.dropWhile (== '.') . safeDecodeUtf8 . strEncode
+
+-- | Versions start at 1, so a registration deleted during a hold reads as changed.
+registrationVersion :: DBStore -> RegistrationId -> IO Int64
+registrationVersion st rid = maybe 0 nrVersion <$> withTransaction st (`getRegistration` rid)
+
+notSignedInTime :: Text
+notSignedInTime = "The name was not signed in time"
+
+-- | Past revealBefore with no reveal, the commitment can no longer register, so it reads failed.
+registrationAt :: UTCTime -> NameRegistration -> NameRegistration
+registrationAt now r = case lapseMoment r of
+  Just lapse | now > lapse -> r {nrPhase = PFailed, nrError = Just notSignedInTime}
+  _ -> r
+
+lapseMoment :: NameRegistration -> Maybe UTCTime
+lapseMoment = \case
+  NameRegistration {nrPhase = PCommitted, nrReveal = Nothing, nrRevealBefore = Just before} -> Just $ posixSecondsToUTCTime $ fromIntegral before
+  _ -> Nothing

@@ -13,10 +13,10 @@ import Bots.StoreService.NamesOwnerTests (answerFree, moveBody, moveTo, postMove
 import Bots.StoreService.NamesPhasesTests (change, held, prompt, registrationPath, seenVersion, woken)
 import Bots.StoreService.NamesStoreTests (ownerA)
 import Bots.StoreService.WebTests (bounded, jsonObject, statusOf, webGet, webRequestBody)
-import Control.Concurrent.Async (Async, async, cancel, wait)
+import Control.Concurrent.Async (Async, async, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM
-import Control.Monad (forM_, replicateM, when)
+import Control.Monad (forM_, replicateM)
 import Crypto.Number.Serialize (i2ospOf_, os2ip)
 import qualified Crypto.PubKey.ECC.Types as ECC
 import qualified Data.Aeson as J
@@ -32,19 +32,16 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Word (Word64)
-import Network.HTTP.Client (Manager, RequestBody (..), defaultManagerSettings, httpLbs, method, newManager, parseRequest, requestBody, requestHeaders, responseBody, responseStatus)
+import Network.HTTP.Client (defaultManagerSettings, newManager)
 import Network.HTTP.Types (hContentType)
-import Network.Wai (Application, responseLBS, strictRequestBody)
+import Network.Wai (Application)
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Chat.PaymentService.Types (InvoiceStatus (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..), Secp256k1PrivateKey, signRecoverable)
 import Simplex.Messaging.Eth.EIP712 (serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
-import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Abi (hex, uint256)
-import StoreService.Names.Chain (newChainClient)
-import StoreService.Names.Contracts (newContracts)
 import StoreService.Names.Links (linkMaxBytes)
 import StoreService.Names.Orders (OrdersEnv (..))
 import StoreService.Names.Phases (RegistrationId (..))
@@ -85,49 +82,26 @@ namesRevealTests = describe "StoreService names: reveal" $ do
 
 -- fixtures
 
--- | The fake node behind a proxy that, once armed, holds the next eth_call until released.
-data Gate = Gate {gArmed :: TVar Bool, gArrived :: TMVar (), gRelease :: TMVar ()}
-
-data Fx = Fx {fCtx :: Ctx, fGate :: Gate, fApp :: Application}
+data Fx = Fx {fCtx :: Ctx, fApp :: Application}
 
 -- | The registration routes as namesRoutes registers them, the reveal's and another name's included.
 withReveals :: (Fx -> IO a) -> IO a
-withReveals action = withOrders $ \ctx@Ctx {cNode, cOrders, cWeb, cRandom} -> do
-  gate <- Gate <$> newTVarIO False <*> newEmptyTMVarIO <*> newEmptyTMVarIO
-  mgr <- newManager defaultManagerSettings
+withReveals action = withOrders $ \ctx@Ctx {cNode, cOrders, cWeb} -> do
   answerCall cNode fakeSponsor noncesCall $ Returns $ uint256 (0 :: Int)
-  Warp.testWithApplication (pure $ gatedNode gate mgr cNode) $ \nodePort -> do
-    ct <- newContracts TLDSimplex =<< newChainClient cRandom (fakeChainConfig cNode) {cRpcUrl = "http://127.0.0.1:" <> show nodePort}
-    let orders = cOrders {oeContracts = ct}
-        web = cWeb {weOrders = Just orders}
-        routes = \case
-          ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler orders holdMicros rid}
-          ["api", "registration", rid, "reveal"] -> Just Route {rMethod = "POST", rLimit = readLimit, rHandler = revealHandler orders rid}
-          ["api", "registration", rid, "name"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = retargetHandler orders rid}
-          _ -> Nothing
-        app req respond = fromMaybe (webApp web req respond) (namesApp (weHttp web) routes req respond)
-    Warp.testWithApplication (pure app) $ \port ->
-      action Fx {fCtx = ctx {cOrders = orders, cWeb = web, cClient = (mgr, "http://127.0.0.1:" <> show port)}, fGate = gate, fApp = app}
-
-gatedNode :: Gate -> Manager -> FakeEthNode -> Application
-gatedNode Gate {gArmed, gArrived, gRelease} mgr FakeEthNode {fnUrl} req respond = do
-  body <- strictRequestBody req
-  paused <- atomically $ readTVar gArmed >>= \armed -> armed <$ when armed (writeTVar gArmed False >> putTMVar gArrived ())
-  when paused $ atomically $ takeTMVar gRelease
-  forward <- parseRequest fnUrl
-  r <- httpLbs forward {method = "POST", requestBody = RequestBodyLBS body, requestHeaders = [(hContentType, "application/json")]} mgr
-  respond $ responseLBS (responseStatus r) [(hContentType, "application/json")] (responseBody r)
+  let web = cWeb {weOrders = Just cOrders}
+      routes = \case
+        ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler cOrders holdMicros rid}
+        ["api", "registration", rid, "reveal"] -> Just Route {rMethod = "POST", rLimit = readLimit, rHandler = revealHandler cOrders rid}
+        ["api", "registration", rid, "name"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = retargetHandler cOrders rid}
+        _ -> Nothing
+      app req respond = fromMaybe (webApp web req respond) (namesApp (weHttp web) routes req respond)
+  mgr <- newManager defaultManagerSettings
+  Warp.testWithApplication (pure app) $ \port ->
+    action Fx {fCtx = ctx {cWeb = web, cClient = (mgr, "http://127.0.0.1:" <> show port)}, fApp = app}
 
 -- | The request, held at its first chain read: a reveal's nonce read, its last check before it writes, or /name's name check, in its turns.
-pausedAtChainRead :: Gate -> IO a -> IO (Async a)
-pausedAtChainRead Gate {gArmed, gArrived} request = do
-  atomically $ writeTVar gArmed True
-  inFlight <- async request
-  timeout prompt (atomically $ takeTMVar gArrived) >>= maybe (cancel inFlight >> fail "the request did not reach a chain read") pure
-  pure inFlight
-
-releaseRead :: Gate -> IO ()
-releaseRead Gate {gRelease} = atomically $ putTMVar gRelease ()
+pausedAtChainRead :: Ctx -> IO a -> IO (Async a, Gate)
+pausedAtChainRead Ctx {cNode} = pausedAt cNode "eth_call"
 
 orderSeconds :: Word64
 orderSeconds = floor $ utcTimeToPOSIXSeconds orderTime
@@ -461,14 +435,14 @@ testNoRefusalRecorded = withReveals $ \Fx {fCtx = ctx} -> do
 
 -- | A writer that takes no turn, as the worker re-committing, moves the version while the reveal reads the nonce.
 testLostRace :: IO ()
-testLostRace = bounded "lost race" $ withReveals $ \Fx {fCtx = ctx, fGate} -> do
+testLostRace = bounded "lost race" $ withReveals $ \Fx {fCtx = ctx} -> do
   let overBound = dynamis {rContactLink = Just $ padded "a" (linkMaxBytes + 1)}
   forM_ [(alice, "accepted"), (overBound, "links refused")] $ \(r, what :: String) -> do
     rid <- committed ctx (orderOf r)
     body <- ownerBody ctx r
-    inFlight <- pausedAtChainRead fGate (reveal ctx rid body)
+    (inFlight, gate) <- pausedAtChainRead ctx (reveal ctx rid body)
     v <- change ctx rid $ \x -> x {nrRevealAfter = (+ 60) <$> nrRevealAfter x, nrRevealBefore = (+ 60) <$> nrRevealBefore x}
-    releaseRead fGate
+    releaseGate gate
     (status, answer) <- wait inFlight
     let view = registrationOf $ fromJust answer
     (what, status, field "error" =<< answer, field "version" view, field "label" view, field "linksRefused" view, field "revealBefore" view)
@@ -476,15 +450,15 @@ testLostRace = bounded "lost race" $ withReveals $ \Fx {fCtx = ctx, fGate} -> do
     (what,) . unwritten <$> stored ctx rid `shouldReturn` (what, (v, Nothing, False))
 
 testRacesName :: IO ()
-testRacesName = bounded "races /name" $ withReveals $ \Fx {fCtx = ctx, fGate} -> do
+testRacesName = bounded "races /name" $ withReveals $ \Fx {fCtx = ctx} -> do
   -- the reveal holds the name's turn while it reads the nonce, so /name waits and then finds it revealed
   rid <- committed ctx (orderOf alice)
   answerFree ctx "alicebakers"
   toAlicebakers <- moveTo ctx "alicebakers" 1
-  inFlight <- pausedAtChainRead fGate (ownerReveal ctx rid alice)
+  (inFlight, gate) <- pausedAtChainRead ctx (ownerReveal ctx rid alice)
   move <- async $ postMove ctx rid =<< moveBody ctx keyA rid toAlicebakers
   queuedOn ctx (labelHash "alicebakery") 2
-  releaseRead fGate
+  releaseGate gate
   wait inFlight `shouldReturn` accepted
   wait move `shouldReturn` badRequest
   NameRegistration {nrLabelHash, nrReveal, nrMoves} <- stored ctx rid
@@ -496,10 +470,10 @@ testRacesName = bounded "races /name" $ withReveals $ \Fx {fCtx = ctx, fGate} ->
   body <- ownerBody ctx overBound
   reveal ctx refusedRid body `shouldReturn` refused 400 "invalid_link"
   toDynamit <- moveTo ctx "dynamit" 2
-  move' <- pausedAtChainRead fGate (postMove ctx refusedRid =<< moveBody ctx keyA refusedRid toDynamit)
+  (move', gate') <- pausedAtChainRead ctx (postMove ctx refusedRid =<< moveBody ctx keyA refusedRid toDynamit)
   late <- async $ reveal ctx refusedRid body
   queuedOn ctx (labelHash "dynamis") 2
-  releaseRead fGate
+  releaseGate gate'
   (200, Just movedView) <- wait move'
   (status, answer) <- wait late
   let view = registrationOf $ fromJust answer

@@ -30,7 +30,6 @@ import StoreService.Names.Registration (commitCalldata)
 import StoreService.Names.Revert (RevertName (..))
 import StoreService.Names.Sender
 import StoreService.Names.Store (NameTransaction (..), TxFor (..), TxStatus (..), pendingTransactions, registrationTransactions)
-import System.Timeout (timeout)
 import Test.Hspec
 
 namesSenderTests :: Spec
@@ -356,7 +355,7 @@ confirmedAs hash = \case
   _ -> False
 
 outcomeOf :: PendingTx -> IO TxOutcome
-outcomeOf p = timeout 2000000 (awaitOutcome p) >>= maybe (fail "the transaction is not settled") pure
+outcomeOf p = awaitOutcome 2000000 p >>= maybe (fail "the transaction is not settled") pure
 
 settled :: Sender -> TxFor -> IO Bool
 settled sender for = null <$> inFlightTransaction sender for
