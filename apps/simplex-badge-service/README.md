@@ -72,7 +72,8 @@ private_key = <secret from `simplex-chat badge keygen`>
 
 `index` is the index clients verify against (`badgePublicKeys` in `ChatConfig`), and `private_key`
 is the secret that signs. Both are required, and the key is checked at startup like the flags.
-Rotating is a change to both and a restart, once clients trust the new index.
+Rotating is a change to both and a restart, once clients trust the new index. The service logs the
+index it signs with at startup.
 
 The command line wins over the file when both `--issuer-key-idx` and `--issuer-secret` are given.
 Note that a secret passed as a flag is visible to every user on the machine through `ps`, where one
@@ -247,7 +248,10 @@ service_account_file = /etc/simplex-badge-service/play-service-account.json
   them, one-time purchases verify as before and every subscription is answered
   `provider_not_configured`. The three are set together or not at all. `api_host` defaults to the
   production host, `https://api.storekit.itunes.apple.com`, which answers nothing about a Sandbox
-  transaction; a test deployment sets `https://api.storekit-sandbox.itunes.apple.com`. A 401 or 403
+  transaction; a test deployment with `[dev] credit_test_purchases = on` (below) sets
+  `https://api.storekit-sandbox.itunes.apple.com`. The service refuses to start with any other host,
+  or with the Sandbox host while `credit_test_purchases` is off, as the Sandbox never charges anyone;
+  the host's case and a trailing slash do not matter. A 401 or 403
   from Apple, the key refused, is answered `internal` and logged. Keep the key file readable by this
   service alone.
 - `[google]` asks the Google Play Developer API about each purchase and subscription, and
@@ -299,8 +303,9 @@ It acknowledges nothing, so Play refunds a licence tester's subscription it cred
 acknowledgement window lapses.
 
 With it on, anyone who can reach the service address can mint badges by sending a made-up receipt.
-That is harmless only while this deployment signs with an issuer key released apps do not carry, so
-they refuse what it signs — never turn it on where the key is one those apps trust.
+The service starts only with an issuer key released apps trust, so they accept every badge it
+mints this way, and a subscription credited so renews at every check for as long as the process
+runs. Never turn it on where anyone but you can reach the service.
 
 ```ini
 [dev]
@@ -336,9 +341,14 @@ buy in) or a Play licence tester's, is refused `test_purchase` by default, which
 can never be credited. With this on, the service credits it as a real one, one-time purchases and
 subscriptions alike. It applies beside a real `[apple]` or `[google]` section, which still verifies
 every receipt, and changes nothing beside `accept_unverified_store_receipts`, whose mock reports
-no test purchase. The service logs a warning at every start while it is on. Off by default, and only
-`on`/`off` parse. A Sandbox subscription is read only through the sandbox host, so `[apple]` also
-sets `api_host = https://api.storekit-sandbox.itunes.apple.com`.
+no test purchase. The service logs a warning at every start while it is on, and at every test
+purchase and test subscription it takes as paid. Off by default, and only `on`/`off` parse.
+
+Beside `[apple]` the service starts with it on only when `[apple]` sets the server API key with
+`api_host = https://api.storekit-sandbox.itunes.apple.com`: a Sandbox receipt verifies offline like
+any other, so beside the production host, or without the key, Sandbox purchases would be credited as
+real ones. Beside `[google]` it is allowed, as Play calls a purchase a test only for the licence
+testers the Play Console lists.
 
 ```ini
 [dev]
@@ -349,9 +359,10 @@ check_store_during_coverage = on
 With both on, the real store is asked at every `issueBadge` for a subscription, as above, to watch
 its renewals by hand: a Sandbox subscription renews every few minutes.
 
-No setting marks a production deployment, so the service cannot refuse this flag there: never turn
-it on where released apps trust the issuer key, or anyone with a TestFlight build or a licence
-tester's account gets a badge without paying.
+The service starts only with an issuer key released apps trust, so they accept every badge it
+credits this way. Nothing tells a production `[google]` from a test one, so never turn this on
+beside the production Play app's `[google]`, or every licence tester the Play Console lists gets a
+badge without paying.
 
 ## Issuing codes
 

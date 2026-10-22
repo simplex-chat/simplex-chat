@@ -47,8 +47,10 @@ idle_seconds = 60
 ; When Apple adds a root, list it beside the old one rather than in its place.
 ; The api_ keys verify subscriptions through the App Store Server API, with the in-app purchase key
 ; App Store Connect issues: its .p8 file, its key id and the account's issuer id, set together. Without
-; them every App Store subscription is answered provider_not_configured. api_host defaults to production;
-; a test deployment sets https://api.storekit-sandbox.itunes.apple.com. Keep the key file readable by this service alone.
+; them every App Store subscription is answered provider_not_configured. api_host defaults to production,
+; the only host accepted unless [dev] credit_test_purchases = on, which needs
+; https://api.storekit-sandbox.itunes.apple.com instead; case and a trailing slash do not matter.
+; Keep the key file readable by this service alone.
 ;[apple]
 ;bundle_id = chat.simplex.app
 ;root_certificates = /etc/simplex-badge-service/AppleRootCA-G3.cer
@@ -90,7 +92,8 @@ idle_seconds = 60
 
 ; local testing only, in both run modes: accepts any well-formed App Store or Play receipt without
 ; verifying it, so anyone who can reach this service can mint badges. The service refuses to start
-; with this on beside an [apple] or [google] section.
+; with this on beside an [apple] or [google] section. Its issuer key is always one released apps
+; trust, so they accept every badge minted this way.
 ; A subscription is answered renewing and charged for its plan: the App Store product's, the base
 ; plan a Play test token test.<basePlanId>.<uuid> names, or the Play product's monthly one. The
 ; plans are kept in memory, so a restart answers later renewals as ended. Nothing is acknowledged,
@@ -105,6 +108,10 @@ check_store_during_coverage = off
 ; local testing only, beside a real [apple] or [google]: credits a purchase the store itself calls a
 ; test - an App Store sandbox purchase, or a Play licence tester's - which no real buyer pays for.
 ; Without it such a purchase is refused as test_purchase, which is terminal, so it can never be credited.
-; The service refuses to start with this on while apple.api_host is the production App Store, since a
-; sandbox receipt verifies like any other and would then be credited as a real purchase.
+; Beside [apple] the service starts with this on only when its api_ keys are set with
+; api_host = https://api.storekit-sandbox.itunes.apple.com, since a sandbox receipt verifies like any
+; other and would otherwise be credited as a real purchase. Beside [google] it is allowed: never turn it
+; on beside the production app's [google], as the issuer key is one released apps trust and every
+; licence tester the Play Console lists would get a badge without paying. Each test purchase or test
+; subscription taken as paid is logged as a warning.
 credit_test_purchases = off

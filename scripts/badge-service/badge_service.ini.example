@@ -42,7 +42,8 @@ idle_seconds = 60
 ; When Apple adds a root, list it beside the old one rather than in its place.
 ; the api_ keys, set together, verify subscriptions with the in-app purchase key App Store Connect
 ; issues; without them every App Store subscription is answered provider_not_configured. Place the .p8
-; in config/; it must be readable by the service's user alone. api_host defaults to production.
+; in config/; it must be readable by the service's user alone. api_host defaults to production, the
+; only host accepted unless [dev] credit_test_purchases = on, which needs the Sandbox host instead.
 ;[apple]
 ;bundle_id = chat.simplex.app
 ;root_certificates = /etc/simplex-badge-service/AppleRootCA-G3.cer
@@ -78,7 +79,8 @@ private_key = replace-me
 
 ; local testing only, in both run modes: accepts any well-formed App Store or Play receipt without
 ; verifying it, so anyone who can reach this service can mint badges. The service refuses to start
-; with this on beside an [apple] or [google] section.
+; with this on beside an [apple] or [google] section. Its issuer key is always one released apps
+; trust, so they accept every badge minted this way.
 ; A subscription is answered renewing and charged for its plan: the App Store product's, the base
 ; plan a Play test token test.<basePlanId>.<uuid> names, or the Play product's monthly one. The
 ; plans are kept in memory, so a restart answers later renewals as ended. Nothing is acknowledged,
