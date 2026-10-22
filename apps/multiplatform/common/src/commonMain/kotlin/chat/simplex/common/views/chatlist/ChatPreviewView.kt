@@ -226,6 +226,9 @@ fun ChatPreviewView(
   fun chatPreviewText() {
     val previewText = chatPreviewInfoText()
     val ci = chat.chatItems.lastOrNull()
+    val memberPending = cInfo.groupInfo_?.membership?.memberPending == true
+    val itemHasText = ci?.content?.hasMsgContent == true
+    val itemContentShown = showChatPreviews && memberPending && ci?.content?.msgContent != null
     if (chatModelDraftChatId == chat.id && chatModelDraft != null) {
       val sp20 = with(LocalDensity.current) { 20.sp.toDp() }
       val (text: CharSequence, inlineTextContent) = remember(chatModelDraft) { chatModelDraft.message.text to messageDraft(chatModelDraft, sp20) }
@@ -246,7 +249,7 @@ fun ChatPreviewView(
         inlineContent = inlineTextContent,
         modifier = Modifier.fillMaxWidth()
       )
-    } else if (ci?.content?.hasMsgContent != true && previewText != null) {
+    } else if (!itemHasText && !itemContentShown && previewText != null) {
       Text(previewText.first, color = previewText.second)
     } else if (ci != null && showChatPreviews) {
       val (text: CharSequence, inlineTextContent) = when {
