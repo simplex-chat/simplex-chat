@@ -133,6 +133,12 @@ class UiScope(val rule: ComposeTestRule) {
     poll(what = "the soft keyboard to hide") { !keyboardShown() }
   }
 
+  fun appVersion(): Pair<String, Int> {
+    val ctx = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext
+    val info = ctx.packageManager.getPackageInfo(ctx.packageName, 0)
+    return info.versionName!! to info.longVersionCode.toInt()
+  }
+
   fun assumeCamera() {
     val cameras = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext
       .getSystemService(android.hardware.camera2.CameraManager::class.java).cameraIdList

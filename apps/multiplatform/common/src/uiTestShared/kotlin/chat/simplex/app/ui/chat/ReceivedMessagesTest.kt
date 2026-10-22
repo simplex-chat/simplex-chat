@@ -42,7 +42,13 @@ class ReceivedMessagesTest : UiTest() {
     bob types ">@alice (hello) all good - you?"
     bob expectsMessage "@alice > hello! how are you?"
     bob expects "      all good - you?"
-    val reply = chat.itemId("all good - you?")
+    var reply = 0L
+    poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "bob's reply `all good - you?` in alice's chat") {
+      reply = chatModel.chatsContext.chatItems.value.lastOrNull { it.content.text == "all good - you?" }?.id ?: 0L
+      reply != 0L
+    }
+    hideKeyboard()
+    poll(what = "bob's reply scrolled into view") { exists(Ui.Chat.Item(reply)) || run { scrollChatTowardNewer(); false } }
     poll(what = "bob's reply bubble quoting `you` / `hello! how are you?` above `all good - you?`") {
       textsOf(Ui.Chat.Item(reply)).let { t -> "you" in t && t.any { "hello! how are you?" in it } && t.any { "all good - you?" in it } }
     }

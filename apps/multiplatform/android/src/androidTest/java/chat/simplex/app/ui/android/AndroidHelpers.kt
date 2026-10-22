@@ -45,11 +45,16 @@ internal fun serviceNotification(): Notification? =
 internal fun receiverState(receiver: Class<*>): Int =
   androidAppContext.packageManager.getComponentEnabledSetting(ComponentName(androidAppContext.packageName, receiver.name))
 
-internal fun uniqueWorkActive(name: String): Boolean =
-  androidAppContext.getWorkManagerInstance().getWorkInfosForUniqueWork(name).get().any { !it.state.isFinished }
+internal fun uniqueWorkActive(name: String): Boolean = uniqueWorkInfos(name).any { !it.state.isFinished }
 
-internal fun workStates(name: String): List<WorkInfo.State> =
-  androidAppContext.getWorkManagerInstance().getWorkInfosForUniqueWork(name).get().map { it.state }
+internal fun workStates(name: String): List<WorkInfo.State> = uniqueWorkInfos(name).map { it.state }
+
+@Suppress("UNCHECKED_CAST")
+private fun uniqueWorkInfos(name: String): List<WorkInfo> {
+  val wm = androidAppContext.getWorkManagerInstance()
+  val future = wm.javaClass.getMethod("getWorkInfosForUniqueWork", String::class.java).invoke(wm, name) as java.util.concurrent.Future<*>
+  return future.get() as List<WorkInfo>
+}
 
 internal fun UiScope.withBackgroundServiceAllowed(body: () -> Unit) {
   val pkg = androidAppContext.packageName
