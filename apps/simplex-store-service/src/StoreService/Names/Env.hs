@@ -2,6 +2,7 @@
 
 module StoreService.Names.Env (NamesEnv (..), newNamesEnv) where
 
+import Data.Time.Clock (getCurrentTime)
 import Simplex.Chat.Controller (ChatController (..))
 import Simplex.Messaging.Agent.Protocol (UserId)
 import Simplex.Messaging.Agent.Store.Common (DBStore)
@@ -10,6 +11,7 @@ import StoreService.Names.Chain (ChainClient, newChainClient)
 import StoreService.Names.Contracts (Contracts, newContracts)
 import StoreService.Names.Phases (Phases, newPhases)
 import StoreService.Names.Profiles (Profiles, chatProfile, defaultProfileLimits, monotonicSeconds, newProfiles, systemResolver)
+import StoreService.Names.Sender (Sender, newSender)
 import StoreService.Names.Turns (Turns, newTurns)
 
 data NamesEnv = NamesEnv
@@ -21,7 +23,8 @@ data NamesEnv = NamesEnv
     neTurns :: Turns,
     neChain :: ChainClient,
     neContracts :: Contracts,
-    neProfiles :: Profiles
+    neProfiles :: Profiles,
+    neSender :: Sender
   }
 
 newNamesEnv :: ChatController -> UserId -> NamesConfig -> DBStore -> IO NamesEnv
@@ -31,4 +34,5 @@ newNamesEnv neChat@ChatController {random} neUserId neConfig@NamesConfig {nTLD, 
   neChain <- newChainClient random nChain
   neContracts <- newContracts nTLD neChain
   neProfiles <- newProfiles defaultProfileLimits monotonicSeconds (chatProfile neChat neUserId) systemResolver
-  pure NamesEnv {neChat, neUserId, neConfig, neStore, nePhases, neTurns, neChain, neContracts, neProfiles}
+  neSender <- newSender random neChain neStore getCurrentTime
+  pure NamesEnv {neChat, neUserId, neConfig, neStore, nePhases, neTurns, neChain, neContracts, neProfiles, neSender}
