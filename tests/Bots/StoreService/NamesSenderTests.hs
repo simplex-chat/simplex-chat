@@ -47,6 +47,7 @@ namesSenderTests = describe "StoreService names: sender" $ do
   it "hands a mined transaction whose receipt was pruned to its owner, signing nothing more" $ testPrunedReceipt g
   it "logs a round that fails on the store, and settles the transaction in the next round" $ testFailedRound g
   it "logs a send the node keeps refusing once per error, an underfunded key as an error" $ testRefusedSendLogged g
+  it "logs anvil's capitalized underfunded refusal as an error once" $ testCapitalizedUnderfundedLogged g
   it "refuses a transaction whose block needs more than the fee cap, saving nothing, and signs at most the cap" $ testFeeCapSubmit g
   it "clamps a replacement at the fee cap, and keeps rebroadcasting once a replacement would pass it" $ testFeeCapReplace g
 
@@ -286,6 +287,22 @@ testRefusedSendLogged g = withSetup g $ \s@Setup {node} -> do
   linesWith "[" "names sender: nonce 9" `shouldBe` 2
   linesWith "[" "names sender: rebroadcasting nonce 9" `shouldBe` 0
   length <$> sentTransactions node `shouldReturn` 1
+
+testCapitalizedUnderfundedLogged :: TVar ChaChaDRG -> IO ()
+testCapitalizedUnderfundedLogged g = withSetup g $ \s@Setup {node} -> do
+  sender <- start s
+  -- a nonce no other spec reaches, as in testRefusedSendLogged
+  replicateM_ 13 $ useNextNonce node
+  logged <- capturingStderr $ do
+    setFault node "eth_sendRawTransaction" $ RpcError (-32003) "Insufficient funds for gas * price + value" Nothing
+    Right p <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
+    ptNonce p `shouldBe` 13
+    followTransactions sender
+    followTransactions sender
+  let linesWith :: T.Text -> T.Text -> Int
+      linesWith tag message = length $ filter (\l -> tag `T.isPrefixOf` l && message `T.isInfixOf` l) $ T.lines logged
+  linesWith "[ERROR" "names sender: nonce 13: not sent: ChainUnavailable \"eth_sendRawTransaction: error -32003: Insufficient funds" `shouldBe` 1
+  linesWith "[" "names sender: nonce 13" `shouldBe` 1
 
 testFeeCapSubmit :: TVar ChaChaDRG -> IO ()
 testFeeCapSubmit g = withSetup g $ \s@Setup {node, store} -> do
