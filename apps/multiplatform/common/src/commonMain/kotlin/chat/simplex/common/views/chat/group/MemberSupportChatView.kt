@@ -19,6 +19,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
+import java.util.concurrent.atomic.AtomicBoolean
 
 @Composable
 private fun MemberSupportChatView(
@@ -156,9 +157,16 @@ fun MemberSupportChatToolbarTitle(member: GroupMember, imageSize: Dp = 40.dp, ic
   }
 }
 
+val secondaryChatOpening = AtomicBoolean(false)
+
 suspend fun showMemberSupportChatView(staleChatId: State<String?>, scrollToItemId: MutableState<Long?>, chatInfo: ChatInfo, scopeInfo: GroupChatScopeInfo) {
+  if (!secondaryChatOpening.compareAndSet(false, true)) return
   val memberSupportChatsCtx = ChatModel.ChatsContext(secondaryContextFilter = SecondaryContextFilter.GroupChatScopeContext(scopeInfo))
-  openChat(secondaryChatsCtx = memberSupportChatsCtx, chatModel.remoteHostId(), chatInfo)
+  try {
+    openChat(secondaryChatsCtx = memberSupportChatsCtx, chatModel.remoteHostId(), chatInfo)
+  } finally {
+    secondaryChatOpening.set(false)
+  }
   ModalManager.end.showCustomModal(true, id = ModalViewId.SECONDARY_CHAT) { close ->
     ModalView({}, showAppBar = false) {
       if (chatInfo is ChatInfo.Group && chatInfo.groupChatScope != null) {

@@ -52,6 +52,7 @@ import chat.simplex.common.views.newchat.SimpleXLinkQRCode
 import chat.simplex.res.*
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
+import java.util.concurrent.atomic.AtomicBoolean
 
 const val SMALL_GROUPS_RCPS_MEM_LIMIT: Int = 20
 val MEMBER_ROW_AVATAR_SIZE = 42.dp
@@ -113,14 +114,16 @@ fun ModalData.GroupChatInfoView(
       appBar,
       scrollToItemId,
       addMembers = {
+        if (!addGroupMembersOpening.compareAndSet(false, true)) return@GroupChatInfoLayout
         scope.launch(Dispatchers.Default) {
+          if (ModalManager.end.isTopModalOpen(ModalViewId.ADD_GROUP_MEMBERS)) return@launch
           setGroupMembers(rhId, groupInfo, chatModel)
           if (!isActive) return@launch
 
-          ModalManager.end.showModalCloseable(showClose = true) { close ->
+          ModalManager.end.showModalCloseable(showClose = true, id = ModalViewId.ADD_GROUP_MEMBERS) { close ->
             AddGroupMembersView(rhId, groupInfo, false, chatModel, close)
           }
-        }
+        }.invokeOnCompletion { addGroupMembersOpening.set(false) }
       },
       showMemberInfo = { member, groupRelay ->
         val connStats = mutableStateOf<ConnectionStats?>(null)
@@ -489,6 +492,7 @@ fun UserSupportChatButton(
       val scopeInfo = GroupChatScopeInfo.MemberSupport(groupMember_ = null)
       val supportChatInfo = ChatInfo.Group(groupInfo, groupChatScope = scopeInfo)
       scope.launch {
+        if (ModalManager.end.isTopModalOpen(ModalViewId.SECONDARY_CHAT)) return@launch
         showMemberSupportChatView(
           chatModel.chatId,
           scrollToItemId = scrollToItemId,
@@ -697,6 +701,7 @@ fun ModalData.GroupChatInfoLayout(
             anyTopSectionRowShow = true
             GroupReportsButton(chat) {
               scope.launch {
+                if (ModalManager.end.isTopModalOpen(ModalViewId.SECONDARY_CHAT)) return@launch
                 showGroupReportsView(chatModel.chatId, scrollToItemId, chat.chatInfo)
               }
             }
@@ -1293,6 +1298,8 @@ private fun ShareViaChatButton(onClick: () -> Unit) {
   }
 }
 
+private val channelMembersOpening = AtomicBoolean(false)
+
 @Composable
 private fun ChannelMembersButton(rhId: Long?, groupInfo: GroupInfo, showMemberInfo: (GroupMember, GroupRelay?) -> Unit) {
   val title = if (groupInfo.isOwner) {
@@ -1304,16 +1311,20 @@ private fun ChannelMembersButton(rhId: Long?, groupInfo: GroupInfo, showMemberIn
     painterResource(MR.images.ic_group),
     title,
     click = {
+      if (!channelMembersOpening.compareAndSet(false, true)) return@SettingsActionItem
       withBGApi {
+        if (ModalManager.end.isTopModalOpen(ModalViewId.CHANNEL_MEMBERS)) return@withBGApi
         setGroupMembers(rhId, groupInfo, chatModel)
-        ModalManager.end.showModalCloseable(true) { close ->
+        ModalManager.end.showModalCloseable(true, id = ModalViewId.CHANNEL_MEMBERS) { close ->
           ChannelMembersView(rhId, groupInfo, chatModel, close) { member -> showMemberInfo(member, null) }
         }
-      }
+      }.invokeOnCompletion { channelMembersOpening.set(false) }
     },
     iconColor = MaterialTheme.colors.secondary
   )
 }
+
+private val channelRelaysOpening = AtomicBoolean(false)
 
 @Composable
 private fun ChannelRelaysButton(rhId: Long?, groupInfo: GroupInfo, showMemberInfo: (GroupMember, GroupRelay?) -> Unit) {
@@ -1321,12 +1332,14 @@ private fun ChannelRelaysButton(rhId: Long?, groupInfo: GroupInfo, showMemberInf
     painterResource(MR.images.ic_wifi_tethering),
     stringResource(MR.strings.button_channel_relays),
     click = {
+      if (!channelRelaysOpening.compareAndSet(false, true)) return@SettingsActionItem
       withBGApi {
+        if (ModalManager.end.isTopModalOpen(ModalViewId.CHANNEL_RELAYS)) return@withBGApi
         setGroupMembers(rhId, groupInfo, chatModel)
-        ModalManager.end.showModalCloseable(true) { close ->
+        ModalManager.end.showModalCloseable(true, id = ModalViewId.CHANNEL_RELAYS) { close ->
           ChannelRelaysView(rhId, groupInfo, chatModel, close, showMemberInfo)
         }
-      }
+      }.invokeOnCompletion { channelRelaysOpening.set(false) }
     },
     iconColor = MaterialTheme.colors.secondary
   )

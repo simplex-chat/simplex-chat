@@ -52,6 +52,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.datetime.*
 import java.io.File
 import java.net.URI
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.*
 
 @Stable
@@ -3233,15 +3234,19 @@ private fun findQuotedItemFromItem(
 
 val chatViewScrollState = MutableStateFlow(false)
 
+val addGroupMembersOpening = AtomicBoolean(false)
+
 fun addGroupMembers(groupInfo: GroupInfo, rhId: Long?, view: Any? = null, close: (() -> Unit)? = null) {
+  if (!addGroupMembersOpening.compareAndSet(false, true)) return
   hideKeyboard(view)
   withBGApi {
+    if (close == null && ModalManager.end.isTopModalOpen(ModalViewId.ADD_GROUP_MEMBERS)) return@withBGApi
     setGroupMembers(rhId, groupInfo, chatModel)
     close?.invoke()
-    ModalManager.end.showModalCloseable(showClose = true) { close ->
+    ModalManager.end.showModalCloseable(showClose = true, id = ModalViewId.ADD_GROUP_MEMBERS) { close ->
       AddGroupMembersView(rhId, groupInfo, false, chatModel, close)
     }
-  }
+  }.invokeOnCompletion { addGroupMembersOpening.set(false) }
 }
 
 fun openGroupLink(groupInfo: GroupInfo, rhId: Long?, view: Any? = null, close: (() -> Unit)? = null) {
