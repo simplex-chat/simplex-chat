@@ -45,7 +45,7 @@ import StoreService.Orders (publishRegistration)
 import StoreService.Providers (OrderDraft (..), Provider (..), ProviderError (..), ProviderInvoice (..), expiresItself)
 import StoreService.Store.Invoices (InvoiceRow (..), NewNameInvoice (..), getInvoice, insertNameInvoice, newInvoiceId, truncateToSecond)
 import StoreService.Waiters (Waiters, publish)
-import StoreService.Web.Http (Respond, badRequest, codeConflict, confirmationsFor, internalError, invalidName, invoiceAt, invoicePairs, invoiceWindow, jsonError, jsonResponse, nameBodyBytes, providerFor, providerNamed, providerUnavailable, readBoundedBody)
+import StoreService.Web.Http (Respond, badRequest, confirmationsFor, internalError, invalidName, invoiceAt, invoicePairs, invoiceWindow, jsonError, jsonResponse, nameBodyBytes, providerFor, providerNamed, providerUnavailable, readBoundedBody)
 import StoreService.Web.Names.Codes (codeRefusalResponse)
 
 data InvoiceOrder = InvoiceOrder
@@ -236,7 +236,3 @@ orderRefusalResponse = \case
   ORCatalogChanged price -> jsonResponse status409 $ J.object ["error" .= ("catalog_changed" :: Text), "price" .= price]
   ORCode refusal -> codeRefusalResponse refusal
   ORPriceTooHigh price -> jsonResponse status409 $ J.object ["error" .= ("price_too_high" :: Text), "price" .= price]
-  ORCodeLengthChanged len -> jsonResponse status409 $ J.object ["error" .= ("code_length_changed" :: Text), "codeLength" .= len]
-  ORCodeUnavailable -> jsonError status409 "code_unavailable"
-  ORCodeConflict -> codeConflict
-  ORProviderUnavailable -> providerUnavailable

@@ -10,7 +10,6 @@ module StoreService.Names.Signatures
     orderMessage,
     findMessage,
     retargetMessage,
-    takenCodeMessage,
     parseChecksumAddress,
     parseAnyCaseAddress,
   )
@@ -99,9 +98,6 @@ findMessage owner timestamp = message ["find", hex $ unAddress owner, tshow time
 
 retargetMessage :: RegistrationId -> OrderFields -> Word64 -> ByteString
 retargetMessage (RegistrationId rid) order timestamp = message $ ["name", rid] <> orderWords order <> [tshow timestamp]
-
-takenCodeMessage :: RegistrationId -> Text -> Int -> Word64 -> ByteString
-takenCodeMessage (RegistrationId rid) codeHash codeLength timestamp = message ["code", rid, codeHash, tshow codeLength, tshow timestamp]
 
 message :: [Text] -> ByteString
 message = encodeUtf8 . T.unwords . ("simplex.domains" :)

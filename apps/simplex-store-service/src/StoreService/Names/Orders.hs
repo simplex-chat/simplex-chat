@@ -31,16 +31,12 @@ module StoreService.Names.Orders
     checkNameFree,
     checkPrice,
     movable,
-    issuable,
     orderFieldsOf,
     checkMoveMeets,
     checkMovePrice,
     retargetOrder,
     versionWritten,
     confirmLanded,
-    issuedCodeHash,
-    checkTakenCodeLength,
-    issueTakenCode,
   )
 where
 
@@ -60,7 +56,6 @@ import Data.Time.Clock (UTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import Data.Word (Word64)
 import Simplex.Chat.Badges.Code (maxNameLength, minNameLength)
-import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
@@ -70,12 +65,12 @@ import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig (..))
 import StoreService.Log (logError, logWarn)
 import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, reserveCode, reserveRefusal, spendLandedCode)
-import StoreService.Names.Contracts (Contracts, NameStatus (..), chainPriceCents, codeLengthFor, confirmedTag, nameExpires, nameStatus, ownerOfToken, secondsPerYear)
+import StoreService.Names.Contracts (Contracts, NameStatus (..), chainPriceCents, confirmedTag, nameExpires, nameStatus, ownerOfToken, secondsPerYear)
 import StoreService.Names.Env (NamesEnv (..))
 import StoreService.Names.Phases (Phases, RegistrationId (..))
 import StoreService.Names.Abi (bytes32FromHex, hex)
 import StoreService.Names.Signatures (OrderFields (..), orderMessage, parseChecksumAddress, parseSignature, personalDigest)
-import StoreService.Names.Store (CodeHashTaken, LiveOrder (..), NamePhase (..), NameRegistration (..), NewPrepaidCode (..), NewRegistration (..), PrepaidCode (..), RegistrationPayment (..), RegistrationRefused (..), NameTransaction (..), TxFor (..), TxStatus (..), VersionWrite (..), closeOverdue, createCodeRegistration, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistrationByOrderHash, insertPrepaidCode, isLabelRegistering, registrationTransactions, retargetRegistration, setIssuedCode, updateRegistration)
+import StoreService.Names.Store (LiveOrder (..), NamePhase (..), NameRegistration (..), NewRegistration (..), PrepaidCode (..), RegistrationPayment (..), RegistrationRefused (..), NameTransaction (..), TxFor (..), TxStatus (..), VersionWrite (..), closeOverdue, createCodeRegistration, getLiveOrders, getPrepaidCode, getPrepaidCodeById, getRegistrationByOrderHash, isLabelRegistering, registrationTransactions, retargetRegistration, updateRegistration)
 import StoreService.Names.Turns (Turns, withCodeTurn)
 
 data OrdersEnv = OrdersEnv
@@ -108,10 +103,6 @@ data OrderRefusal
   | ORCatalogChanged Int
   | ORCode CodeRefusal
   | ORPriceTooHigh Int
-  | ORCodeLengthChanged Int
-  | ORCodeUnavailable
-  | ORCodeConflict
-  | ORProviderUnavailable
   deriving (Eq, Show)
 
 newtype OrderRefused = OrderRefused OrderRefusal
@@ -133,11 +124,6 @@ data WriteRefusal = WRChanged | WRRefused OrderRefusal
 -- the order changed since it was read, or a failed chain read.
 data Landing = LNotLanded | LRegistered Int64 | LChanged | LUnread
   deriving (Eq, Show)
-
-newtype TakenCodeConflict = TakenCodeConflict CodeHashTaken
-  deriving (Show)
-
-instance E.Exception TakenCodeConflict
 
 maxSealedChars :: Int
 maxSealedChars = 11095
@@ -285,12 +271,6 @@ movable NameRegistration {nrPhase, nrPayment, nrLinksRefusedAt} = case nrPhase o
   PCommitted -> isJust nrLinksRefusedAt
   _ -> False
 
--- | Only a paid order that lost its name turns into a code.
-issuable :: NameRegistration -> Bool
-issuable NameRegistration {nrPhase, nrPayment} = case (nrPhase, nrPayment) of
-  (PTaken, RPInvoice {}) -> True
-  _ -> False
-
 orderFieldsOf :: NameRegistration -> OrderFields
 orderFieldsOf NameRegistration {nrLabelHash, nrLength, nrDuration, nrCommitment, nrSealed} =
   OrderFields {ofLabelHash = nrLabelHash, ofLength = nrLength, ofDuration = nrDuration, ofCommitment = nrCommitment, ofSealed = nrSealed}
@@ -372,35 +352,3 @@ confirmLanded OrdersEnv {oeStore, oeContracts, oeTurns, oeNow} r@NameRegistratio
             <> ", which was released and then spent, revoked or expired: the name was paid with it"
       pure v
     ridText (RegistrationId t) = t
-
--- | The hash of the code a taken order was turned into.
-issuedCodeHash :: DBStore -> NameRegistration -> IO (Maybe ByteString)
-issuedCodeHash st NameRegistration {nrIssuedCodeId} = case nrIssuedCodeId of
-  Just codeId -> fmap pcCodeHash <$> withTransaction st (`getPrepaidCodeById` codeId)
-  Nothing -> pure Nothing
-
--- | The code's minLength for the order's price and years must be the length the page derived the code with.
-checkTakenCodeLength :: Contracts -> NameRegistration -> Int -> IO (Either OrderRefusal ())
-checkTakenCodeLength ct NameRegistration {nrPrice, nrYears} sent =
-  codeLengthFor ct nrPrice nrYears >>= \case
-    Left e -> Left ORProviderUnavailable <$ logWarn ("names: a taken code's length read failed: " <> tshow e)
-    Right Nothing -> pure $ Left ORCodeUnavailable
-    Right (Just len)
-      | len /= sent -> pure $ Left $ ORCodeLengthChanged len
-      | otherwise -> pure $ Right ()
-
--- | The order becomes code_issued by a compare-and-set on the version read, then its code is inserted and linked, in one
--- transaction, so the registration's row is locked before the code's. A hash another code has rolls the order's write back.
-issueTakenCode :: OrdersEnv -> NameRegistration -> ByteString -> Int -> IO (Either WriteRefusal Int64)
-issueTakenCode OrdersEnv {oeStore, oeNow} r@NameRegistration {nrId, nrYears} codeHash minLength = do
-  now <- oeNow
-  let code = NewPrepaidCode {npcCodeHash = codeHash, npcMinLength = minLength, npcYears = nrYears, npcPaymentStatus = CPSPaid, npcExpiresAt = Nothing}
-      issue db =
-        updateRegistration db r {nrPhase = PCodeIssued} now >>= \case
-          Written v ->
-            insertPrepaidCode db code now >>= \case
-              Right codeId -> Right v <$ setIssuedCode db nrId codeId
-              Left taken -> E.throwIO $ TakenCodeConflict taken
-          -- a code_issued order is not live, so only a changed version refuses the write
-          _ -> pure $ Left WRChanged
-  either (\(TakenCodeConflict _) -> Left $ WRRefused ORCodeConflict) id <$> E.try (withTransaction oeStore issue)

@@ -252,7 +252,6 @@ testCreatePaid = withServiceStore $ \st -> do
         nrRevealAfter = Nothing,
         nrRevealBefore = Nothing,
         nrExpiresAt = Nothing,
-        nrIssuedCodeId = Nothing,
         nrRegisteredAt = Nothing,
         nrFailedAt = Nothing,
         nrError = Nothing,
@@ -386,7 +385,6 @@ testVersionBumps = withServiceStore $ \st -> do
 testRoundTrip :: IO ()
 testRoundTrip = withServiceStore $ \st -> do
   code <- issue st 1 usable
-  issued <- issue st 2 usable
   placeCode st "r1" ownerA (order "alicebakery" 1) code `shouldReturn` Right ()
   r <- reg st "r1"
   let changed =
@@ -400,7 +398,6 @@ testRoundTrip = withServiceStore $ \st -> do
             nrRevealAfter = Just 1792828800,
             nrRevealBefore = Just 1792915140,
             nrExpiresAt = Just 1861833600,
-            nrIssuedCodeId = Just (pcId issued),
             nrRegisteredAt = Just (at 3),
             nrFailedAt = Just (at 2),
             nrError = Just "The name was not signed in time",
@@ -425,7 +422,6 @@ testLiveFollowsPhase = withServiceStore $ \st -> do
   step "r1" PTaken True
   step "r1" PFailed True
   step "r1" PTaken True
-  step "r1" PCodeIssued False
   step "r2" PRegistering True
   step "r2" PTaken False
   placePaid st "r3" ownerA (order "carolsbakery" 3) (at 60) `shouldReturn` Right ()
@@ -440,7 +436,7 @@ testOrderLive = withServiceStore $ \st -> do
   let code = paid {nrPayment = RPCode 1}
       liveIn r phase = (phase, orderLive r {nrPhase = phase})
   map (liveIn paid) [minBound .. maxBound]
-    `shouldBe` [(PUnpaid, True), (PQueued, True), (PCommitting, True), (PCommitted, True), (PRegistering, True), (PRegistered, False), (PTaken, True), (PFailed, True), (PCodeIssued, False)]
+    `shouldBe` [(PUnpaid, True), (PQueued, True), (PCommitting, True), (PCommitted, True), (PRegistering, True), (PRegistered, False), (PTaken, True), (PFailed, True)]
   map (liveIn code) [PTaken, PFailed, PRegistered] `shouldBe` [(PTaken, False), (PFailed, True), (PRegistered, False)]
   orderLive paid {nrLive = False} `shouldBe` False
   orderLive paid {nrLive = False, nrPhase = PQueued} `shouldBe` True

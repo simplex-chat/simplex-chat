@@ -26,7 +26,7 @@ module Bots.StoreService.NamesOwnerTests
 where
 
 import Bots.StoreService.FakeEthNode
-import Bots.StoreService.NamesContractsTests (launchPricesAnswer, oracle, pricesAnswer, pricesCall, registrarOf, rentPriceAnswer, rentPriceCall, unhex)
+import Bots.StoreService.NamesContractsTests (registrarOf, unhex)
 import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesStoreTests (order, ownerA, t0)
 import Bots.StoreService.WebTests (capturingStderr, digestFixture, jsonObject, statusOf, webGet)
@@ -40,8 +40,6 @@ import Control.Monad (forM, forM_, void)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import Data.ByteString (ByteString)
-import qualified Data.ByteString.Base64.URL as B64U
-import qualified Data.ByteString.Char8 as BC
 import Data.IORef (readIORef)
 import Data.Foldable (toList)
 import Data.List (find, sort, sortOn)
@@ -53,28 +51,26 @@ import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import Data.Word (Word64, Word8)
 import Network.HTTP.Client (defaultManagerSettings, newManager)
 import qualified Network.Wai.Handler.Warp as Warp
-import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), InvoiceStatus (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
-import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey, signRecoverable)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Eth.EIP712 (serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..), labelHash)
-import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
+import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig (..))
 import StoreService.Names.Abi (addressWord, hex, uint256)
 import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Orders (OrdersEnv (..), signedRequestSeconds)
 import StoreService.Names.Phases (RegistrationId (..), phasesWaiting)
-import StoreService.Names.Signatures (OrderFields (..), findMessage, parseAnyCaseAddress, personalDigest, retargetMessage, takenCodeMessage)
+import StoreService.Names.Signatures (OrderFields (..), findMessage, parseAnyCaseAddress, personalDigest, retargetMessage)
 import StoreService.Names.Store hiding (findLimit)
 import StoreService.Names.Turns (withLabelTurn)
 import StoreService.Store (RevokeResult (..))
 import StoreService.Web.Http (createLimit, findLimit, holdMicros, readLimit)
 import StoreService.Web.Names (Route (..), namesApp)
-import StoreService.Web.Names.Owner (findHandler, retargetHandler, takenCodeHandler)
+import StoreService.Web.Names.Owner (findHandler, retargetHandler)
 import StoreService.Web.Names.Registration (registrationHandler)
 import StoreService.Web.Server (WebEnv (..), webApp)
 import System.Timeout (timeout)
@@ -102,16 +98,8 @@ namesOwnerTests = describe "StoreService names: owner" $ do
     it "refuses another signer's signature and a stale timestamp, and answers an unknown order 404" testMoveRefusedSigner
     it "answers registration_changed with the current view when the order changed during the checks, writing nothing" testMoveLostRace
     it "moves A to B while another order moves B to A, in the turns' hash order, without deadlock" testMovesCross
-  describe "a code instead" $ do
-    it "issues a code for a paid taken order, its minLength 6, 7 and 8 for 6, 7 and 12 letters at the launch prices, kept in the view" testTakenCode
-    it "answers an identical repeat 200 whatever its codeLength and timestamp, even after a price change" testTakenCodeRepeat
-    it "answers code_length_changed with the current length after a price change, issuing nothing" testCodeLengthChanged
-    it "answers code_unavailable when no length qualifies, and 503 provider_unavailable when the prices cannot be read" testCodeUnavailable
-    it "refuses a code for an order that is not a paid taken one, another signer, a stale timestamp and a malformed hash" testTakenCodeRefused
-    it "answers code_conflict for a hash another code has, changing nothing" testCodeConflict
-    it "answers registration_changed with the current view when the order changed during the length read, issuing nothing" testCodeLostRace
   describe "polls" $
-    it "wakes a held registration poll by another name and by a code" testPollsWoken
+    it "wakes a held registration poll by another name" testPollsWoken
 
 -- fixtures
 
@@ -135,7 +123,6 @@ ownerRoutes orders = \case
   ["api", "registration", "find"] -> Just Route {rMethod = "POST", rLimit = findLimit, rHandler = findHandler orders}
   ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler orders holdMicros rid}
   ["api", "registration", rid, "name"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = retargetHandler orders rid}
-  ["api", "registration", rid, "code"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = takenCodeHandler orders rid}
   _ -> Nothing
 
 signWith :: Ctx -> Secp256k1PrivateKey -> ByteString -> IO Text
@@ -195,12 +182,6 @@ answerReserved Ctx {cNode} label reason = do
   answerCall cNode fakeController (reservedNamesSelector <> lh) $ Returns $ uint256 reason
   where
     LabelHash lh = labelHash label
-
--- | The oracle's price list, as codeLengthFor reads it.
-answerPrices :: Ctx -> ByteString -> IO ()
-answerPrices Ctx {cNode} prices = do
-  answerCall cNode fakeController pricesCall $ Returns $ addressWord oracle
-  answerCall cNode oracle pricesCall $ Returns prices
 
 -- | A paid order, settled, then written as the worker would write it.
 paidIn :: Ctx -> Order -> (NameRegistration -> NameRegistration) -> IO NameRegistration
@@ -294,32 +275,12 @@ findBody ctx key owner timestamp = do
 postFind :: Ctx -> J.Object -> IO (Int, Maybe J.Object)
 postFind ctx = post ctx "/api/registration/find" . J.encode
 
--- | A code hash as the page sends it: unpadded base64url of a SHA-256.
-takenCodeHash :: Int -> (Text, ByteString)
-takenCodeHash n = (T.filter (/= '=') $ safeDecodeUtf8 $ B64U.encode h, h)
-  where
-    h = C.sha256Hash $ "taken code " <> BC.pack (show n)
-
-codeBodyAt :: Ctx -> Secp256k1PrivateKey -> RegistrationId -> Text -> Int -> Word64 -> IO J.Object
-codeBodyAt ctx key rid codeHash codeLength timestamp = do
-  sig <- signWith ctx key $ takenCodeMessage rid codeHash codeLength timestamp
-  pure $ KM.fromList [("codeHash", J.String codeHash), ("codeLength", J.toJSON codeLength), ("timestamp", J.toJSON timestamp), ("signature", J.String sig)]
-
-postCode :: Ctx -> RegistrationId -> J.Object -> IO (Int, Maybe J.Object)
-postCode ctx rid = post ctx (registrationPath rid <> "/code") . J.encode
-
-takeCode :: Ctx -> Secp256k1PrivateKey -> NameRegistration -> Text -> Int -> IO (Int, Maybe J.Object)
-takeCode ctx key NameRegistration {nrId} codeHash codeLength = clockSeconds ctx >>= codeBodyAt ctx key nrId codeHash codeLength >>= postCode ctx nrId
-
 currentFields :: NameRegistration -> OrderFields
 currentFields NameRegistration {nrLabelHash, nrLength, nrDuration, nrCommitment, nrSealed} =
   OrderFields {ofLabelHash = nrLabelHash, ofLength = nrLength, ofDuration = nrDuration, ofCommitment = nrCommitment, ofSealed = nrSealed}
 
 fieldsIn :: J.Object -> [(Text, J.Value)] -> Expectation
 fieldsIn v = mapM_ (\(k, value) -> (k, field k v) `shouldBe` (k, Just value))
-
-answered :: Maybe J.Object
-answered = Just KM.empty
 
 refusedWithView :: Text -> J.Object -> (Int, Maybe J.Object)
 refusedWithView tag view = (409, Just $ KM.fromList [("error", J.String tag), ("registration", J.Object view)])
@@ -328,9 +289,6 @@ labelHashText :: Text -> J.Value
 labelHashText label = J.String $ hex lh
   where
     LabelHash lh = labelHash label
-
-issuedCode :: Ctx -> NameRegistration -> IO PrepaidCode
-issuedCode Ctx {cStore} NameRegistration {nrIssuedCodeId} = withTransaction cStore $ \db -> fromJust <$> getPrepaidCodeById db (fromJust nrIssuedCodeId)
 
 codeRow :: Ctx -> PrepaidCode -> IO PrepaidCode
 codeRow Ctx {cStore} PrepaidCode {pcId} = withTransaction cStore $ \db -> fromJust <$> getPrepaidCodeById db pcId
@@ -728,113 +686,6 @@ testMovesCross = withOwnerAs (\cfg -> cfg {nMaxOrderMoves = 100}) $ \ctx -> do
   where
     hashOf label = (\(LabelHash h) -> h) (labelHash label)
 
-testTakenCode :: IO ()
-testTakenCode = withOwner $ \ctx@Ctx {cNode} -> do
-  answerPrices ctx launchPricesAnswer
-  answerCall cNode fakeController (rentPriceCall 6) $ Returns $ rentPriceAnswer 40000
-  answerCall cNode fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000
-  forM_ (zip [1 :: Int ..] [("bakery", 40000, 6), ("dynamis", 20000, 7), ("alicebakery2", 10000, 8)]) $ \(n, (label, price, len)) -> do
-    answerFree ctx label
-    r <- paidIn ctx aliceOrder {oLabel = label, oPrice = price, oCommitment = commitmentOf (70 + n)} takenPhase
-    field "codeLength" <$> getView ctx r `shouldReturn` Just (J.toJSON len)
-    let (hashText, hash) = takenCodeHash n
-    takeCode ctx keyA r hashText len `shouldReturn` (200, answered)
-    written <- stored ctx r
-    (nrPhase written, nrLive written, nrVersion written) `shouldBe` (PCodeIssued, False, nrVersion r + 1)
-    PrepaidCode {pcCodeHash, pcMinLength, pcYears, pcPaymentStatus, pcReservedBy, pcSpentAt, pcRevokedAt, pcExpiresAt} <- issuedCode ctx written
-    (pcCodeHash, pcMinLength, pcYears, pcPaymentStatus) `shouldBe` (hash, len, 2, CPSPaid)
-    (pcReservedBy, pcSpentAt, pcRevokedAt, pcExpiresAt) `shouldBe` (Nothing, Nothing, Nothing, Nothing)
-    v <- getView ctx r
-    (field "phase" v, field "codeLength" v) `shouldBe` (Just "code_issued", Just (J.toJSON len))
-
--- | 12 letters paid 10000 cents: with these prices 8 letters and longer cost that or less.
-takenTwelve :: Ctx -> IO NameRegistration
-takenTwelve ctx@Ctx {cNode} = do
-  answerPrices ctx launchPricesAnswer
-  answerCall cNode fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000
-  answerFree ctx "alicebakery2"
-  paidIn ctx aliceOrder {oLabel = "alicebakery2", oPrice = 10000} takenPhase
-
-testTakenCodeRepeat :: IO ()
-testTakenCodeRepeat = withOwner $ \ctx -> do
-  r <- takenTwelve ctx
-  let (hashText, _) = takenCodeHash 1
-  body <- clockSeconds ctx >>= codeBodyAt ctx keyA (nrId r) hashText 8
-  postCode ctx (nrId r) body `shouldReturn` (200, answered)
-  issued <- stored ctx r
-  -- 9 letters and longer now cost 10000 cents, so a fresh computation would answer 9
-  answerPrices ctx $ pricesAnswer 5000 [(8, 6000), (7, 10000), (6, 20000)]
-  advance ctx 3600
-  postCode ctx (nrId r) body `shouldReturn` (200, answered)
-  takeCode ctx keyA r hashText 9 `shouldReturn` (200, answered)
-  stored ctx r `shouldReturn` issued
-  field "codeLength" <$> getView ctx r `shouldReturn` Just (J.Number 8)
-  takeCode ctx keyA r (fst $ takenCodeHash 2) 9 `shouldReturn` refusedWith 400 "bad_request"
-
-testCodeLengthChanged :: IO ()
-testCodeLengthChanged = withOwner $ \ctx@Ctx {cStore} -> do
-  r <- takenTwelve ctx
-  field "codeLength" <$> getView ctx r `shouldReturn` Just (J.Number 8)
-  answerPrices ctx $ pricesAnswer 5000 [(8, 6000), (7, 10000), (6, 20000)]
-  let (hashText, hash) = takenCodeHash 1
-  takeCode ctx keyA r hashText 8 `shouldReturn` (409, Just $ KM.fromList [("error", "code_length_changed"), ("codeLength", J.Number 9)])
-  stored ctx r `shouldReturn` r
-  withTransaction cStore (`getPrepaidCode` hash) `shouldReturn` Nothing
-  takeCode ctx keyA r hashText 9 `shouldReturn` (200, answered)
-  pcMinLength <$> (issuedCode ctx =<< stored ctx r) `shouldReturn` 9
-
-testCodeUnavailable :: IO ()
-testCodeUnavailable = withOwner $ \ctx@Ctx {cNode} -> do
-  r <- takenTwelve ctx
-  answerPrices ctx $ pricesAnswer 6000 []
-  let (hashText, _) = takenCodeHash 1
-  takeCode ctx keyA r hashText 8 `shouldReturn` refusedWith 409 "code_unavailable"
-  field "codeLength" <$> getView ctx r `shouldReturn` Just J.Null
-  setFault cNode "eth_call" HttpFailure
-  takeCode ctx keyA r hashText 8 `shouldReturn` refusedWith 503 "provider_unavailable"
-  stored ctx r `shouldReturn` r
-
-testTakenCodeRefused :: IO ()
-testTakenCodeRefused = withOwner $ \ctx -> do
-  r <- takenTwelve ctx
-  let (hashText, _) = takenCodeHash 1
-  takeCode ctx keyB r hashText 8 `shouldReturn` refusedWith 400 "bad_request"
-  ts <- clockSeconds ctx
-  (codeBodyAt ctx keyA (nrId r) hashText 8 (ts - signedWindow - 1) >>= postCode ctx (nrId r)) `shouldReturn` refusedWith 400 "bad_request"
-  body <- codeBodyAt ctx keyA (nrId r) hashText 8 ts
-  forM_ [KM.insert "codeHash" (J.String $ T.drop 1 hashText) body, KM.insert "codeLength" "8" body, KM.delete "timestamp" body] $ \malformed ->
-    postCode ctx (nrId r) malformed `shouldReturn` refusedWith 400 "bad_request"
-  stored ctx r `shouldReturn` r
-  (codeOrder, _) <- codeIn ctx 8 aliceOrder {oCommitment = commitmentOf 5} takenPhase
-  committedOrder <- paidIn ctx dynamisOrder committedPhase
-  forM_ [codeOrder, committedOrder] $ \o -> do
-    takeCode ctx keyA o hashText 8 `shouldReturn` refusedWith 400 "bad_request"
-    stored ctx o `shouldReturn` o
-  let unknown = RegistrationId "t2Jk8RmQ4vXw9NcP3yLb6g"
-  (codeBodyAt ctx keyA unknown hashText 8 ts >>= postCode ctx unknown) `shouldReturn` refusedWith 404 "not_found"
-
-testCodeConflict :: IO ()
-testCodeConflict = withOwner $ \ctx@Ctx {cStore} -> do
-  r <- takenTwelve ctx
-  let (hashText, hash) = takenCodeHash 1
-  Right _ <- withTransaction cStore $ \db -> insertPrepaidCode db NewPrepaidCode {npcCodeHash = hash, npcMinLength = 8, npcYears = 2, npcPaymentStatus = CPSPaid, npcExpiresAt = Nothing} orderTime
-  takeCode ctx keyA r hashText 8 `shouldReturn` refusedWith 409 "code_conflict"
-  stored ctx r `shouldReturn` r
-
-testCodeLostRace :: IO ()
-testCodeLostRace = withOwner $ \ctx@Ctx {cNode, cStore} -> do
-  r <- takenTwelve ctx
-  let (hashText, hash) = takenCodeHash 1
-  -- held at the length read, inside the turn
-  (issuing, gate) <- pausedAt cNode "eth_call" $ takeCode ctx keyA r hashText 8
-  changed <- rewrite ctx r id
-  releaseGate gate
-  answer <- within "the code" $ wait issuing
-  view <- getView ctx changed
-  answer `shouldBe` refusedWithView "registration_changed" view
-  stored ctx r `shouldReturn` changed
-  withTransaction cStore (`getPrepaidCode` hash) `shouldReturn` Nothing
-
 testPollsWoken :: IO ()
 testPollsWoken = withOwner $ \ctx -> do
   answerFree ctx "alicebakers"
@@ -844,8 +695,3 @@ testPollsWoken = withOwner $ \ctx -> do
   void $ moved ctx keyA r to
   (status, v) <- woken poll
   (status, field "version" v, field "phase" v) `shouldBe` (200, Just (J.toJSON $ nrVersion r + 1), Just "queued")
-  t <- takenTwelve ctx
-  poll' <- held ctx t
-  takeCode ctx keyA t (fst $ takenCodeHash 1) 8 `shouldReturn` (200, answered)
-  (status', v') <- woken poll'
-  (status', field "version" v', field "phase" v') `shouldBe` (200, Just (J.toJSON $ nrVersion t + 1), Just "code_issued")
