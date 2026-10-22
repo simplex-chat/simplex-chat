@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 
 module StoreService.Orders
   ( RegistrationChanged (..),
@@ -88,7 +89,7 @@ data Product = PBadge (Maybe ByteString) | PName NameRegistration
 data NameOutcome = NOWritten RegistrationId Int64 | NOLate RegistrationId
 
 settleOrder :: DBStore -> Waiters -> Maybe Phases -> InvoiceId -> PaymentSignal -> UTCTime -> IO (Either Text InvoiceStatus)
-settleOrder st waiters phases invId@(InvoiceId invText) signal now' = do
+settleOrder st waiters phases invId signal now' = do
   outcome <- withTransaction st $ \db ->
     settlementInvoice db invId >>= \case
       Just InvoiceRow {irStatus}
@@ -111,7 +112,7 @@ settleOrder st waiters phases invId@(InvoiceId invText) signal now' = do
           NOWritten rid v -> publishRegistration phases (rid, v)
           NOLate _ -> pure ()
       forM_ name $ \case
-        NOLate (RegistrationId rid) -> logError ("names: invoice " <> invText <> " was paid after its order closed, so registration " <> rid <> " stays unpaid; refund the payment")
+        NOLate rid -> latePayment invId rid
         NOWritten {} -> pure ()
       pure (Right status)
   where
@@ -199,14 +200,30 @@ closeInvoiceOrder db invId now =
     Just InvoiceRow {irProduct = IPName rid} -> getRegistration db rid >>= maybe (pure Nothing) (\r -> closeOrder db r now)
     _ -> pure Nothing
 
+latePayment :: InvoiceId -> RegistrationId -> IO ()
+latePayment (InvoiceId invText) (RegistrationId rid) =
+  logError ("names: invoice " <> invText <> " was paid after its order closed, so registration " <> rid <> " stays unpaid; refund the payment")
+
 -- | False when the invoice was no longer open. Throws RegistrationChanged, changing nothing, when its order changed meanwhile.
+-- The provider has taken the cancel, so a name invoice a payment landed on meanwhile expires too, and its payment is late.
 cancelOpenInvoice :: DBStore -> Waiters -> Maybe Phases -> InvoiceId -> UTCTime -> IO Bool
 cancelOpenInvoice st waiters phases invId now = do
   closed <- withTransaction st $ \db -> do
-    cancelled <- updateInvoiceStatus db invId ISOpen ISExpired now
-    if cancelled then Just <$> closeInvoiceOrder db invId now else pure Nothing
-  forM_ closed $ \order -> atomically $ publish waiters invId ISExpired >> mapM_ (publishRegistration phases) order
+    -- On Postgres, a settlement holding the row is waited for, and the read below sees its payment.
+    lockInvoice db invId now
+    settlementInvoice db invId >>= \case
+      Just row@InvoiceRow {irStatus = ISOpen} -> do
+        cancelled <- updateInvoiceStatus db invId ISOpen ISExpired now
+        if cancelled then Just . (,lateOf row) <$> closeInvoiceOrder db invId now else pure Nothing
+      _ -> pure Nothing
+  forM_ closed $ \(order, late) -> do
+    atomically $ publish waiters invId ISExpired >> mapM_ (publishRegistration phases) order
+    mapM_ (latePayment invId) late
   pure (isJust closed)
+  where
+    lateOf InvoiceRow {irProduct, irPayment} = case irProduct of
+      IPName rid | maybe False paymentHolds irPayment -> Just rid
+      _ -> Nothing
 
 -- | Of the given invoices, expires those still open, with no money received, and past the cutoff, closing their orders.
 -- Each in its own transaction, so an invoice that fails is logged and skipped, and the others still expire.

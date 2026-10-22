@@ -2,7 +2,23 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Bots.StoreService.NamesOrdersTests (namesOrdersTests) where
+module Bots.StoreService.NamesOrdersTests
+  ( namesOrdersTests,
+    Ctx (..),
+    Order (..),
+    withOrders,
+    withOrdersCancelling,
+    aliceOrder,
+    commitmentOf,
+    orderTime,
+    placed,
+    post,
+    settleNow,
+    settled,
+    invoiceRegistration,
+    registrationOf,
+  )
+where
 
 import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), setInvoiceState, withFakeBTCPay)
 import Bots.StoreService.FakeEthNode
@@ -123,6 +139,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "alerts on a late payment as BTCPay reports it for an expired, cancelled or swept invoice, once" testLateBTCPayPayments
     it "alerts once on money read while open when the provider then closes the invoice, also after a restart" testOneLateAlert
     it "answers cancel with funded, not_open, paid when settlement won, and expired with the payment read meanwhile" testCancelAnswers
+    it "alerts once when a cancel expires an invoice a payment landed on while the provider was told" testCancelAlertsFunded
     it "leaves a late payment of a cancelled invoice unpaid and alerts" testLatePayment
     it "queues an order settled while open and publishes its version" testSettlementQueues
     it "takes the invoice's row before recording a payment that moves no status" testSettlementLocksInvoice
@@ -1066,6 +1083,21 @@ testCancelAnswers = withOrders $ \ctx -> do
     (nrLive r, nrVersion r) `shouldBe` (False, 2)
   where
     cancelAt c (InvoiceId t) = post c ("/api/invoice/" <> T.unpack t <> "/cancel") ""
+
+-- | Cancel takes the invoice row and decides on the payment it then reads, as settlement does.
+testCancelAlertsFunded :: IO ()
+testCancelAlertsFunded = withOrdersCancelling (SigFunded paid PaidInPart) $ \ctx -> do
+  (invId, _) <- placed ctx aliceOrder
+  logs <- capturingStderr $ do
+    (status, v) <- post ctx ("/api/invoice/" <> T.unpack (invoiceText invId) <> "/cancel") ""
+    (status, field "status" =<< v, field "cryptoAmountPaid" =<< v) `shouldBe` (200, Just "expired", Just "0.00078")
+  length (T.breakOnAll (alertOf invId) logs) `shouldBe` 1
+  capturingStderr (settleNow ctx invId (SigClosed paid) `shouldReturn` Right ISExpired) >>= (`shouldNotSatisfy` T.isInfixOf (alertOf invId))
+  (nrPhase &&& nrLive) <$> invoiceRegistration ctx invId `shouldReturn` (PUnpaid, False)
+  where
+    paid = rcv 5000 (Just "0.00078")
+    invoiceText (InvoiceId t) = t
+    alertOf invId = "invoice " <> invoiceText invId <> " was paid after its order closed"
 
 testNamesOff :: IO ()
 testNamesOff = withOrders $ \ctx -> do

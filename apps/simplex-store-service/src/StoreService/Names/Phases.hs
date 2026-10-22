@@ -1,6 +1,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 
-module StoreService.Names.Phases (Phases, RegistrationId (..), newPhases, publish, awaitChange, phasesCount) where
+module StoreService.Names.Phases (Phases, RegistrationId (..), newPhases, publish, awaitChange, phasesCount, phasesWaiting) where
 
 import Control.Concurrent.STM
 import Control.Exception (bracket)
@@ -28,6 +28,10 @@ publish (Phases watches) rid version =
 -- | The registrations with a waiter.
 phasesCount :: Phases -> IO Int
 phasesCount (Phases watches) = Map.size <$> readTVarIO watches
+
+-- | The waiters across all registrations.
+phasesWaiting :: Phases -> STM Int
+phasesWaiting (Phases watches) = readTVar watches >>= fmap sum . mapM (\Watch {wRefs} -> readTVar wRefs) . Map.elems
 
 subscribe :: Phases -> RegistrationId -> STM Watch
 subscribe (Phases watches) rid =

@@ -476,6 +476,7 @@ executable simplex-store-service
       StoreService.Web.Names.Codes
       StoreService.Web.Names.Orders
       StoreService.Web.Names.Records
+      StoreService.Web.Names.Registration
       StoreService.Web.Names.Search
       StoreService.Web.Server
       Paths_simplex_chat
@@ -769,6 +770,7 @@ test-suite simplex-chat-test
       Bots.StoreService.NamesLabelTests
       Bots.StoreService.NamesLinksTests
       Bots.StoreService.NamesOrdersTests
+      Bots.StoreService.NamesPhasesTests
       Bots.StoreService.NamesProfilesTests
       Bots.StoreService.NamesRecordsTests
       Bots.StoreService.NamesSearchTests
@@ -831,6 +833,7 @@ test-suite simplex-chat-test
       StoreService.Web.Names.Codes
       StoreService.Web.Names.Orders
       StoreService.Web.Names.Records
+      StoreService.Web.Names.Registration
       StoreService.Web.Names.Search
       StoreService.Web.Server
       Paths_simplex_chat
