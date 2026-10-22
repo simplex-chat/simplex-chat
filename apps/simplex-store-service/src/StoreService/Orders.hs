@@ -177,7 +177,7 @@ nameSettled db before after wrotePayment holdsMoney r@NameRegistration {nrId, nr
             updateRegistration db r {nrPhase = PQueued} now >>= \case
               Written v -> pure [NOWritten nrId v]
               NotLive -> pure [NOLate nrId]
-              -- another live order holds the name, so this payment can only be refunded; it is still recorded
+              -- not expected while this order is live; kept so the payment is still recorded
               LiveOrderExists -> pure [NOLate nrId]
               _ -> E.throwIO (RegistrationChanged nrId)
       Just ISExpired -> (<> [NOLate nrId | holdsMoney]) . maybe [] (\(rid, v) -> [NOWritten rid v]) <$> closeOrder db r now

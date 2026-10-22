@@ -651,7 +651,7 @@ testFundedOverdueKept = withOrders $ \ctx -> do
   placeOrder ctx aliceOrder {oCommitment = commitmentOf 2, oTimestamp = seconds now, oDuration = durationAt now} `shouldReturn` refusedWith 409 "order_exists"
   r <- invoiceRegistration ctx inv
   (nrLive r, nrPhase r) `shouldBe` (True, PUnpaid)
-  withTransaction (cStore ctx) (\db -> closeOverdue db r now) >>= (`shouldNotBe` Written (nrVersion r + 1))
+  withTransaction (cStore ctx) (\db -> closeOverdue db r now) `shouldReturn` Nothing
   (irStatus <$>) <$> getInvoice (cStore ctx) inv `shouldReturn` Just ISOpen
   settleNow ctx inv settled `shouldReturn` Right ISPaid
   nrPhase <$> invoiceRegistration ctx inv `shouldReturn` PQueued
@@ -935,7 +935,7 @@ testFundedAgreement = withServiceStore $ \st -> do
     [LiveOrder {loRegistration, loOverdue}] <- withTransaction st $ \db -> getLiveOrders db (ofCommitment o) ownerA (ofLabelHash o) now
     (rid, loOverdue) `shouldBe` (rid, not funded)
     closed <- withTransaction st $ \db -> closeOverdue db loRegistration now
-    (rid, closed == Written (nrVersion loRegistration + 1)) `shouldBe` (rid, not funded)
+    (rid, closed) `shouldBe` (rid, if funded then Nothing else Just (nrVersion loRegistration + 1))
 
 testViewFields :: IO ()
 testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do

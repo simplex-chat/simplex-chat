@@ -304,7 +304,7 @@ testOrderHashLookup = withServiceStore $ \st -> do
   placePaid st "r1" ownerA o (at 1) `shouldReturn` Right ()
   r <- reg st "r1"
   closed <- withTransaction st $ \db -> closeOverdue db r (at 2)
-  closed `shouldBe` Written 2
+  closed `shouldBe` Just 2
   found <- withTransaction st $ \db -> getRegistrationByOrderHash db (orderHash ownerA o (OTInvoice btc price))
   (nrId <$> found, nrLive <$> found) `shouldBe` (Just (RegistrationId "r1"), Just False)
   withTransaction st (\db -> getRegistrationByOrderHash db (orderHash ownerA o (OTInvoice btc (price + 1)))) `shouldReturn` Nothing
@@ -346,7 +346,7 @@ testCloseOverdueStale = withServiceStore $ \st -> do
   placePaid st "r1" ownerA (order "alicebakery" 1) (at 60) `shouldReturn` Right ()
   r <- reg st "r1"
   write st r {nrPhase = PQueued} `shouldReturn` Written 2
-  withTransaction st (\db -> closeOverdue db r (at 61)) `shouldReturn` VersionChanged
+  withTransaction st (\db -> closeOverdue db r (at 61)) `shouldReturn` Nothing
   invoiceStatus st "inv-r1" `shouldReturn` "open"
   (nrLive &&& nrPhase) <$> reg st "r1" `shouldReturn` (True, PQueued)
 
@@ -462,7 +462,7 @@ testLatePayment = withServiceStore $ \st -> do
       o' = o {ofCommitment = digestFixture 2, ofSealed = "new"}
   placePaid st "r1" ownerA o (at 60) `shouldReturn` Right ()
   closed <- reg st "r1"
-  withTransaction st (\db -> closeOverdue db closed (at 61)) `shouldReturn` Written 2
+  withTransaction st (\db -> closeOverdue db closed (at 61)) `shouldReturn` Just 2
   r1 <- reg st "r1"
   write st r1 {nrPhase = PQueued} `shouldReturn` NotLive
   reg st "r1" `shouldReturn` r1
@@ -549,7 +549,7 @@ testSameSecondOrder = withServiceStore $ \st -> do
   forM_ ["r5", "r4"] $ \rid -> do
     placePaid st rid ownerB o (at 60) `shouldReturn` Right ()
     r <- reg st rid
-    withTransaction st (\db -> closeOverdue db r (at 61)) `shouldReturn` Written 2
+    withTransaction st (\db -> closeOverdue db r (at 61)) `shouldReturn` Just 2
   found <- withTransaction st $ \db -> getRegistrationByOrderHash db (orderHash ownerB o (OTInvoice btc price))
   nrId <$> found `shouldBe` Just (RegistrationId "r5")
 
