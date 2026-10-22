@@ -34,7 +34,7 @@ import ChatTests.Utils
 import Control.Concurrent (newEmptyMVar, putMVar, takeMVar, threadDelay)
 import Control.Concurrent.Async (async, cancel)
 import Control.Concurrent.STM (TQueue, atomically, readTMVar, readTQueue, readTVarIO)
-import Control.Monad (forM_, replicateM, void, when)
+import Control.Monad (forM, forM_, replicateM, void, when)
 import Control.Monad.Except (runExceptT)
 import Control.Exception (finally)
 import qualified Data.Aeson as J
@@ -206,12 +206,13 @@ badgeServiceTests = do
     describe "transfers" $ do
       it "should move a store subscription to a new key, ending the old key's share, and renew it for the new key" testStoreRebind
       it "should move a payment again only once the credential of the key it last moved from has expired" testStoreRebindCapped
-      it "should fund the new key from a charge the service never recorded, ending the idle old key at zero months" testStoreRebindNewCharge
+      it "should fund the new key from a charge the service never recorded, ending the idle old key at zero months, and grant that charge once" testStoreRebindNewCharge
       it "should answer the old key ended with no credential, without asking the store, and its purchase receipt_used" testStoreRebindOldKeyEnded
       it "should move an App Store subscription only with its latest transaction, writing nothing for an older one" testStoreRebindStaleAppleTransaction
       it "should credit a transfer of a payment credited nowhere as a first purchase" testTransferUncredited
       it "should answer a repeated transfer from the record, without asking the store or limiting it" testTransferReplayAnswered
       it "should refuse a transfer to a key that holds a purchase, without asking the store" testTransferKnownKeyRefused
+      it "should answer a transfer of a one-time purchase credited to another key receipt_used, moving nothing" testTransferOneTimeRefused
     describe "restore" $ do
       it "should move a subscription to another device on Restore, retire it on the old one, and credit one credited nowhere" testRestoreOnNewDevice
       it "should move a subscription to another profile on Restore, and refuse a move on before the first key's credential expires, once" testRestoreOnOtherProfile
@@ -288,8 +289,7 @@ badgeServiceTests = do
     it "should allow the purchase path at most the maximum of Play reads in a minute, counted from its first read" testPlayReadsBounded
     it "should answer a Play subscription rate_limited without asking Play once the minute's reads are used, and not hold it off" testPlayPurchaseReadsLimited
     it "should refuse an App Store Sandbox subscription as a test purchase without asking Apple" testAppleSandboxSubscriptionNotAsked
-    it "should answer an App Store subscription provider_not_configured without an API key, and credit a one-time purchase" testAppleSubscriptionWithoutApiKey
-    it "should answer an App Store subscription provider_not_configured every time when only Play's subscriptions are checked" testAppleSubscriptionWithPlayChecker
+    it "should answer an App Store subscription provider_not_configured every time without an API key, and credit a one-time purchase" testAppleSubscriptionWithoutApiKey
     it "should acknowledge a Play subscription as a subscription before crediting it, and credit nothing when acknowledging fails" testPlaySubscriptionAcknowledgedBeforeCrediting
     it "should credit a Play subscription Play reports, beside a one-time purchase, and answer provider_not_configured without [google]" testPlaySubscriptionThroughPlay
     it "should have the dev mock credit and renew the plan a subscription names, end one it does not know, and still vouch for a one-time purchase" testMockSubscriptions
@@ -2323,7 +2323,7 @@ testSubscriptionChargeNotGranted ps =
         checkedAt i = addUTCTime (3 * nominalDay + fromIntegral (i :: Int) * 3700) (addMonths 1 firstStart)
         notGranted =
           [ (monthlyCharge monthly firstStart 1) {revoked = True},
-            (monthlyCharge monthly firstStart 3) {offer = True},
+            (monthlyCharge monthly firstStart 1) {offer = True, chargeRef = "GPA.offer"},
             (monthlyCharge monthly firstStart 4) {periodStart = addUTCTime nominalDay (checkedAt 3), periodEnd = addMonths 1 (addUTCTime nominalDay (checkedAt 3))},
             (monthlyCharge monthly firstStart 5) {periodStart = firstStart, periodEnd = addMonths 1 firstStart},
             -- an unsold Play plan, given an empty period
@@ -2815,8 +2815,9 @@ testStoreRebindNewCharge ps =
         verifiedAfter tip_ rows = do
           now <- serviceNow env
           map snd (balanceChecked now BTSupporter tip_ rows) `shouldBe` map (const $ Just True) rows
-    -- the old key went idle after its first month, and the store has since charged a month the service never recorded
-    storeReports store $ subscriptionCheck SSRenewing $ Just $ monthlyCharge "subscr-badge-supporter-month-02" firstStart 2
+    -- the old key went idle after its first month, and the store has since charged a month the service never recorded;
+    -- its period runs past the month the move funds, so the charge is still current once that month is spent
+    storeReports store $ subscriptionCheck SSRenewing $ Just (monthlyCharge "subscr-badge-supporter-month-02" firstStart 2) {periodEnd = addUTCTime (10 * nominalDay) (addMonths 1 chargeStart)}
     setClockAt bsClock $ addUTCTime (3 * nominalDay) chargeStart
     (newKey, moved) <- transferWithNewKey env subscriptionPlay
     let movedRows = fst $ statementOf moved
@@ -2832,6 +2833,14 @@ testStoreRebindNewCharge ps =
     again <- assertBalance env newKey (last movedRows)
     map entryTag (fst $ statementOf again) `shouldBe` []
     credentialOf again `shouldBe` credentialOf moved
+    ledgerRows cc "sx_badge_service_badge_ledger" `shouldReturn` ledger
+    -- the store still reports that charge once the month it funded has run out, and it is not granted again
+    checks <- subscriptionChecks store
+    setClockAt bsClock $ addUTCTime (3 * nominalDay) (addMonths 1 chargeStart)
+    reported <- assertBalance env newKey (last movedRows)
+    subscriptionChecks store `shouldReturn` checks + 1
+    map entryTag (fst $ statementOf reported) `shouldBe` []
+    credentialOf reported `shouldBe` Nothing
     ledgerRows cc "sx_badge_service_badge_ledger" `shouldReturn` ledger
 
 testStoreRebindCapped :: HasCallStack => TestParams -> IO ()
@@ -2932,6 +2941,25 @@ testTransferKnownKeyRefused ps =
     ledgerRows cc "sx_badge_service_badge_ledger" `shouldReturn` ledger
     rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 2
     reboundPayments cc `shouldReturn` 0
+
+-- | Restore presents every transaction it finds as a transfer, a one-time purchase bought on another device included.
+testTransferOneTimeRefused :: HasCallStack => TestParams -> IO ()
+testTransferOneTimeRefused ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsController = cc, bsStore = store@FakeStore {appleSupporterJWS}} -> do
+    let oneTime = [supporterPlay, SPApple {jws = appleSupporterJWS}]
+    owned <- forM oneTime $ \payment -> do
+      (ownerKey, ownerMasterKey) <- newPurchaseKeys
+      purchased <- serviceCmd env ownerKey $ purchaseCmd ownerMasterKey payment
+      pure (ownerKey, ownerMasterKey, payment, purchased)
+    checks <- subscriptionChecks store
+    ledger <- ledgerRows cc "sx_badge_service_badge_ledger"
+    forM_ oneTime $ \payment -> refusalOf . snd <$> transferWithNewKey env payment `shouldReturn` (BSEReceiptUsed, Nothing)
+    subscriptionChecks store `shouldReturn` checks
+    ledgerRows cc "sx_badge_service_badge_ledger" `shouldReturn` ledger
+    rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 2
+    reboundPayments cc `shouldReturn` 0
+    forM_ owned $ \(ownerKey, ownerMasterKey, payment, purchased) ->
+      credentialOf <$> serviceCmd env ownerKey (purchaseCmd ownerMasterKey payment) `shouldReturn` credentialOf purchased
 
 restoredCmd :: Int64 -> ServicePayment -> String
 restoredCmd userId payment = "/_badge purchase " <> show userId <> " restored " <> paymentArg payment
@@ -4632,18 +4660,7 @@ testAppleSandboxSubscriptionNotAsked ps = do
       nothingPurchased cc
 
 testAppleSubscriptionWithoutApiKey :: HasCallStack => TestParams -> IO ()
-testAppleSubscriptionWithoutApiKey = appleSubscriptionNotConfigured id
-
--- | [google] beside an [apple] with no API key: configureStoreVerifier builds a checker that answers App Store refs not configured.
-testAppleSubscriptionWithPlayChecker :: HasCallStack => TestParams -> IO ()
-testAppleSubscriptionWithPlayChecker = appleSubscriptionNotConfigured $ \v -> v {checkSubscription = Just playOnly}
-  where
-    playOnly ref _ = case ref of
-      SubscriptionApple _ -> pure $ Left SRNotConfigured
-      SubscriptionGoogle _ -> pure $ Left $ SRUnreachable "no Play in this test"
-
-appleSubscriptionNotConfigured :: HasCallStack => (StoreVerifier -> StoreVerifier) -> TestParams -> IO ()
-appleSubscriptionNotConfigured withChecker ps = do
+testAppleSubscriptionWithoutApiKey ps = do
   chain <- trustedChain
   createDirectoryIfMissing True "tests/tmp"
   withTempDirectory "tests/tmp" "apple-no-api-key" $ \d -> do
@@ -4652,7 +4669,7 @@ appleSubscriptionNotConfigured withChecker ps = do
     Right cfg <- readServiceConfig (d </> "badge_service.ini")
     let apple = AppleStoreConfig {aBundleId = ourBundleId, aRootCertificates = (d </> "root.cer") :| [], aServerApi = Nothing}
     ServiceState {storeVerifier} <- newServiceState >>= configureStoreVerifier (Just cfg {appleStore = Just apple})
-    withBadgeServiceVerifier ps (const $ withChecker storeVerifier) $ \env@BadgeServiceEnv {bsController = cc} -> do
+    withBadgeServiceVerifier ps (const storeVerifier) $ \env@BadgeServiceEnv {bsController = cc} -> do
       (purchaseKey, masterKey) <- newPurchaseKeys
       subscription <- signedBy chain $ subscriptionPayload [] []
       let presentSubscription = refusalOf <$> serviceCmd env purchaseKey (purchaseCmd masterKey SPApple {jws = subscription})
@@ -4817,7 +4834,9 @@ testStoreChecksDuringCoverageGrantedOnce ps =
   withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsController = cc, bsStore = store} -> do
     (purchaseKey, _, purchased) <- subscribedMonthly env
     ledger <- ledgerRows cc "sx_badge_service_badge_ledger"
+    checks <- subscriptionChecks store
     answered <- serviceCmd env {bsVerifier = (fakeVerifier store) {storeChecks = ChecksAtEveryRequest}} purchaseKey BSCIssueBadge {balance = BadgeBalance {lastEntry = last purchased}}
+    subscriptionChecks store `shouldReturn` checks + 1
     map entryTag (fst $ statementOf answered) `shouldBe` []
     ledgerRows cc "sx_badge_service_badge_ledger" `shouldReturn` ledger
     rowCount cc "sx_badge_service_subscription_charges" `shouldReturn` 1
