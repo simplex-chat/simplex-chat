@@ -2054,7 +2054,9 @@ appendFileChunk ft@RcvFileTransfer {fileId, fileStatus, cryptoArgs, fileInvitati
           tryAllErrors (liftError encryptErr $ encryptFile fsFilePath tmpFile cfArgs) >>= \case
             Right () -> do
               removeFile fsFilePath `catchAllErrors` \_ -> pure ()
-              renameFile tmpFile fsFilePath
+              renameFile tmpFile fsFilePath `catchAllErrors` \_ -> do
+                copyFile tmpFile fsFilePath
+                removeFile tmpFile `catchAllErrors` \_ -> pure ()
             Left e -> do
               eToView e
               removeFile tmpFile `catchAllErrors` \_ -> pure ()
