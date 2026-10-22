@@ -9,9 +9,11 @@ module StoreService.Group.Command
     groupCommands,
     codeP,
     badgeTypeP,
+    nameCodeP,
     textTokenP,
     maxMonths,
     maxUses,
+    maxNameYears,
   )
 where
 
@@ -26,20 +28,24 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Badges (BadgeType (..))
-import Simplex.Chat.Badges.Code (BadgeCode, parseBadgeCode)
+import Simplex.Chat.Badges.Code (BadgeCode, maxNameLength, minNameLength, parseBadgeCode)
 import Simplex.Chat.Types.Preferences (ChatBotCommand (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import Simplex.Messaging.Util (safeDecodeUtf8)
+import StoreService.Config (minNameYears)
 
-maxBulk, maxUses, maxMonths :: Int
+maxBulk, maxUses, maxMonths, maxNameYears :: Int
 maxBulk = 100
 maxUses = 1000
 maxMonths = 255
+maxNameYears = 10
 
 data GroupCmd
   = GCIssue BadgeType Int Int
   | GCBulk BadgeType Int Int
+  | GCIssueName Int Int
+  | GCBulkName Int Int Int
   | GCRevoke BadgeCode
   deriving (Eq, Show)
 
@@ -68,13 +74,30 @@ cmdActionP = A.choice (map cmdP [minBound .. maxBound])
 
 cmdArgsP :: CmdTag -> A.Parser GroupCmd
 cmdArgsP = \case
-  CTIssue -> GCIssue <$> badgeTypeP <*> monthsOpt <*> keyOpt "uses" maxUses
-  CTBulk -> GCBulk <$> badgeTypeP <*> monthsOpt <*> (A.space *> keyValue "count" maxBulk)
+  CTIssue -> uncurry GCIssueName <$> nameCodeP <|> GCIssue <$> badgeTypeP <*> monthsOpt <*> keyOpt "uses" 1 maxUses
+  CTBulk -> uncurry GCBulkName <$> nameCodeP <*> countP <|> GCBulk <$> badgeTypeP <*> monthsOpt <*> countP
   CTRevoke -> GCRevoke <$> codeP
   where
-    monthsOpt = keyOpt "months" maxMonths
-    keyOpt kw hi = fromMaybe 1 <$> optional (A.space *> keyValue kw hi)
-    keyValue kw hi = A.string kw *> A.space *> boundedInt kw hi
+    monthsOpt = keyOpt "months" 1 maxMonths
+    countP = A.space *> keyValue "count" 1 maxBulk
+
+-- | The default is the lowest value.
+keyOpt :: ByteString -> Int -> Int -> A.Parser Int
+keyOpt kw lo hi = fromMaybe lo <$> optional (A.space *> keyValue kw lo hi)
+
+keyValue :: ByteString -> Int -> Int -> A.Parser Int
+keyValue kw lo hi = A.string kw *> A.space *> boundedInt kw lo hi
+
+-- | "name <length> [years <Y>]", the length and years of a prepaid name code.
+nameCodeP :: A.Parser (Int, Int)
+nameCodeP = "name " *> ((,) <$> nameLengthP <*> keyOpt "years" minNameYears maxNameYears)
+
+-- | A code's text carries the length as typed, so a leading zero is refused.
+nameLengthP :: A.Parser Int
+nameLengthP =
+  A.peekChar' >>= \case
+    '0' -> fail "leading zero in the name length"
+    _ -> boundedInt "length" minNameLength maxNameLength
 
 groupCommands :: [ChatBotCommand]
 groupCommands = map command [minBound .. maxBound]
@@ -85,10 +108,10 @@ codeP :: A.Parser BadgeCode
 codeP = A.takeWhile1 (not . isSpace) >>= maybe (fail "not a badge code") pure . parseBadgeCode . safeDecodeUtf8
 
 -- attoparsec's decimal wraps silently at Int, so the bound is checked on the wider Integer.
-boundedInt :: ByteString -> Int -> A.Parser Int
-boundedInt kw hi = do
+boundedInt :: ByteString -> Int -> Int -> A.Parser Int
+boundedInt kw lo hi = do
   n <- A.decimal :: A.Parser Integer
-  if n >= 1 && n <= fromIntegral hi
+  if n >= fromIntegral lo && n <= fromIntegral hi
     then pure (fromInteger n)
     else fail (B.unpack kw <> " out of range")
 
@@ -116,15 +139,15 @@ cmdName = \case
 
 cmdLabel :: CmdTag -> Text
 cmdLabel = \case
-  CTIssue -> "Generate a badge code"
+  CTIssue -> "Generate a badge or name code"
   CTBulk -> "Generate many single-use codes"
   CTRevoke -> "Revoke a code"
 
 -- | The parameters are quoted in the usage reply and advertised to the group, so the two cannot drift apart.
 cmdParams :: CmdTag -> Text
 cmdParams = \case
-  CTIssue -> "<type> [months <M>] [uses <N>]"
-  CTBulk -> "<type> [months <M>] count <B>"
+  CTIssue -> "<type> [months <M>] [uses <N>], or name <length> [years <Y>]"
+  CTBulk -> "<type> [months <M>] count <B>, or name <length> [years <Y>] count <B>"
   CTRevoke -> "<code>"
 
 cmdMinRole :: CmdTag -> GroupMemberRole

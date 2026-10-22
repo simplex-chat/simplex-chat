@@ -17,6 +17,7 @@ module StoreService.Config
     ServiceConfig (..),
     defaultExpiryMinutes,
     defaultSessionMinutes,
+    minNameYears,
     readServiceConfig,
     unknownKeys,
   )

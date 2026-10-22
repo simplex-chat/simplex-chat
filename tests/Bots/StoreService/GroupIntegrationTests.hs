@@ -5,18 +5,22 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 
 -- Members' messages reach a console over separate connections in no fixed order, so gating is asserted from the bot's store.
-module Bots.StoreService.GroupIntegrationTests (badgeGroupIntegrationTests, namesBootTests) where
+module Bots.StoreService.GroupIntegrationTests (badgeGroupIntegrationTests, namesBootTests, namesCodesChatTests) where
 
 import StoreService.Config (BadgeIssuerKey (..), GroupConfig (..))
 import StoreService.Group (GroupAction (..), GroupEvent (..), codeInTracker, ensureManagedGroup)
 import StoreService.Group.Command (maxUses)
+import StoreService.Names.Phases (RegistrationId (..))
+import StoreService.Names.Store (PrepaidCode (..), getPrepaidCode, spendPrepaidCode)
 import StoreService.Options (StoreServiceOpts (..))
 import StoreService.Service (ServiceState (..), storeService, newServiceState)
 import StoreService.Store (ManagedGroup (..), getManagedGroup)
-import Bots.StoreService.BotTests (badgeBotName, badgeProfile, badgeTypeOf, credentialOf, entryOf, issueCode, issueRaw, mkStoreServiceOpts, newPurchaseKeys, redeemWithQueue, requestObject, revokeRaw, serviceDbPrefix, shouldAnswerError, statementOf, stopStoreService, testIssuerKeyIdx)
+import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, badgeTypeOf, credentialOf, entryOf, issueCode, issueRaw, mkStoreServiceOpts, newPurchaseKeys, redeemWithQueue, requestObject, revokeRaw, serviceDbPrefix, shouldAnswerError, statementOf, stopStoreService, testIssuerKeyIdx)
 import Bots.StoreService.ConfigTests (chainSection, namesSection)
+import Bots.StoreService.NamesStoreTests (order, ownerA, placeCode)
 import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
@@ -25,6 +29,7 @@ import Control.Concurrent.Async (Async, async, cancel, poll, waitCatchSTM)
 import Control.Concurrent.STM (TQueue, atomically, newTQueueIO, orElse, readTMVar, readTQueue, readTVarIO, tryReadTMVar, writeTQueue)
 import Control.Exception (IOException, bracket, catch, finally, throwIO, try)
 import Control.Monad (forM_, guard, mfilter, replicateM_, unless, void, when)
+import qualified Data.Aeson as J
 import Data.Either (isRight)
 import Data.Int (Int64)
 import Data.List (isInfixOf)
@@ -37,14 +42,15 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, getCurrentTime)
-import Network.HTTP.Client (defaultManagerSettings, httpLbs, newManager, parseRequest, responseStatus)
+import Network.HTTP.Client (RequestBody (..), defaultManagerSettings, httpLbs, method, newManager, parseRequest, requestBody, responseBody, responseStatus)
 import Network.HTTP.Types.Status (statusCode)
 import Network.Socket (Family (..), SockAddr (..), SocketType (..), close, connect, defaultProtocol, socket, tupleToHostAddress)
 import Network.Wai.Handler.Warp (openFreePort)
 import Simplex.Chat.Badges (BadgeType (..))
-import Simplex.Chat.Badges.Code (formatBadgeCode, parseBadgeCode, randomBadgeCode)
+import Simplex.Chat.Badges.Code (NameCode (..), NamePrepaidCode, formatBadgeCode, formatNameCode, namePrepaidCodeHash, namePrepaidCodeLength, parseBadgeCode, parseNameCode, randomBadgeCode, randomNamePrepaidCode)
+import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.StoreService
-import Simplex.Chat.Controller (ChatCommand (APIDeleteChatItem), ChatConfig (..), ChatController (..), ChatResponse (CRChatItemsDeleted))
+import Simplex.Chat.Controller (ChatCommand (APIDeleteChatItem), ChatConfig (..), ChatController (..), ChatResponse (CRChatItemsDeleted, CRCustomChatResponse))
 import Simplex.Chat.Core (sendChatCmd, sendChatCmdStr)
 import Simplex.Chat.Messages (ChatRef (ChatRef), ChatType (CTGroup))
 import Simplex.Chat.Messages.CIContent (CIDeleteMode (CIDMInternal))
@@ -55,6 +61,7 @@ import Simplex.Messaging.Agent (disposeAgentClient)
 import Simplex.Messaging.Agent.Protocol (AConnShortLink (..), ConnShortLink (..), ContactConnType (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
+import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (bbsKeyGen)
 import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Util (tshow)
@@ -135,6 +142,84 @@ testNamesBoot ps = do
     req <- parseRequest $ "http://127.0.0.1:" <> show port <> "/api/names/unknown"
     statusCode . responseStatus <$> httpLbs req mgr `shouldReturn` 404
     poll t >>= (`shouldSatisfy` isNothing)
+
+namesCodesChatTests :: SpecWith TestParams
+namesCodesChatTests = describe "StoreService names: prepaid codes" $ do
+  it "issues prepaid codes on /issue name and /bulk name, answering the usage to years below 2" testGroupNameCodes
+  it "issues prepaid codes on //issue name, checks them through the names router and revokes them on //revoke" testOperatorNameCodes
+
+testGroupNameCodes :: HasCallStack => TestParams -> IO ()
+testGroupNameCodes ps =
+  withGroupOwner ps $ \_ cc _ alice -> do
+    one <- prepaidIn . T.stripPrefix "Code: " =<< replyTo cc alice "/issue name 8 years 5"
+    namePrepaidCodeLength one `shouldBe` 8
+    prepaidTerms cc one `shouldReturn` Just (8, 5, CPSFree)
+    bulk <- mapM (prepaidIn . Just) . T.lines =<< replyTo cc alice "/bulk name 6 count 3"
+    length bulk `shouldBe` 3
+    forM_ bulk $ \code -> (namePrepaidCodeLength code,) <$> prepaidTerms cc code `shouldReturn` (6, Just (6, 2, CPSFree))
+    replyTo cc alice "/issue name 8 years 1" `shouldReturn` "Usage: /issue <type> [months <M>] [uses <N>], or name <length> [years <Y>]"
+    countRows cc "sx_badge_service_name_prepaid_codes" `shouldReturn` 4
+
+testOperatorNameCodes :: HasCallStack => TestParams -> IO ()
+testOperatorNameCodes ps = do
+  svc <- prepareGroupService ps
+  (t, cc, _, port) <- startGroupService svc {gsIniSections = "" : namesSection <> chainSection} Nothing
+  flip finally (stopGroupService t cc) $ do
+    pollUntilTrue (listening port)
+    forM_ ["name", "name 5", "name 64", "name 07", "name 7 years 1", "name 7 years 11", "name 7 gratis"] $ \args ->
+      (args,) <$> issueRaw cc args `shouldReturn` (args, Left badgeCmdUsage)
+    countRows cc "sx_badge_service_name_prepaid_codes" `shouldReturn` 0
+    paid <- issueNameRaw cc "name 7 years 3 paid"
+    unpaid <- issueNameRaw cc "name 6 unpaid"
+    prepaidTerms cc paid `shouldReturn` Just (7, 3, CPSPaid)
+    prepaidTerms cc unpaid `shouldReturn` Just (6, 2, CPSUnpaid)
+    let check code = checkPrepaid port (formatNameCode (NCPrepaid code))
+        coverage :: Int -> Int -> Text -> (Int, Maybe J.Value)
+        coverage minLength years state = (200, Just $ J.object ["minLength" J..= minLength, "years" J..= years, "state" J..= state])
+        revoke = revokeRaw cc . formatNameCode . NCPrepaid
+    check paid `shouldReturn` coverage 7 3 "unused"
+    check unpaid `shouldReturn` coverage 6 2 "unpaid"
+    revokeRaw cc (formatNameCode (NCPrepaid paid) <> " junk") `shouldReturn` Left badgeCmdUsage
+    revoke paid `shouldReturn` Right "Revoked."
+    revoke paid `shouldReturn` Right "Already revoked."
+    check paid `shouldReturn` coverage 7 3 "revoked"
+    unknown <- C.newRandom >>= (`randomNamePrepaidCode` 7)
+    revoke unknown `shouldReturn` Left "No such code."
+    held <- issueNameRaw cc "name 8"
+    spent <- issueNameRaw cc "name 8"
+    let st = chatStore cc
+        rowOf code = fromMaybe (error "no prepaid code row") <$> withTransaction st (`getPrepaidCode` namePrepaidCodeHash code)
+    rowOf held >>= placeCode st "r1" ownerA (order "alicebakery" 1) >>= (`shouldBe` Right ())
+    rowOf spent >>= placeCode st "r2" ownerA (order "bobsbakery" 2) >>= (`shouldBe` Right ())
+    spentAt <- getCurrentTime
+    PrepaidCode {pcId = spentId} <- rowOf spent
+    withTransaction st (\db -> spendPrepaidCode db spentId (RegistrationId "r2") spentAt) `shouldReturn` True
+    revoke held `shouldReturn` Right "Revoked. The order holding it keeps it."
+    revoke spent `shouldReturn` Left "Already used. It cannot be revoked."
+    check spent `shouldReturn` coverage 8 2 "used"
+
+issueNameRaw :: HasCallStack => ChatController -> String -> IO NamePrepaidCode
+issueNameRaw cc args =
+  sendChatCmdStr cc ("//issue " <> args) >>= \case
+    Right (CRCustomChatResponse _ response) -> prepaidIn (T.stripPrefix "Code: " response)
+    r -> error $ "issue failed: " <> show (() <$ r)
+
+prepaidIn :: HasCallStack => Maybe Text -> IO NamePrepaidCode
+prepaidIn t = case parseNameCode =<< t of
+  Just (NCPrepaid code) -> pure code
+  _ -> error $ "no prepaid name code in: " <> show t
+
+prepaidTerms :: ChatController -> NamePrepaidCode -> IO (Maybe (Int, Int, BadgeCodePaymentStatus))
+prepaidTerms cc code =
+  fmap (\PrepaidCode {pcMinLength, pcYears, pcPaymentStatus} -> (pcMinLength, pcYears, pcPaymentStatus))
+    <$> withTransaction (chatStore cc) (`getPrepaidCode` namePrepaidCodeHash code)
+
+checkPrepaid :: Int -> Text -> IO (Int, Maybe J.Value)
+checkPrepaid port code = do
+  mgr <- newManager defaultManagerSettings
+  req <- parseRequest $ "http://127.0.0.1:" <> show port <> "/api/code/check"
+  r <- httpLbs req {method = "POST", requestBody = RequestBodyLBS (J.encode (J.object ["code" J..= code]))} mgr
+  pure (statusCode (responseStatus r), J.decode (responseBody r))
 
 groupName :: String
 groupName = "testbadges"
@@ -513,7 +598,7 @@ testRoleGatedIssue ps = do
         waitStoredItem cc "/issue legend"
         ownerIssuesNext cc alice 2
         sendGroupCmd alice "/issue supporter uses 0"
-        waitStoredItem cc "Usage: /issue <type> [months <M>] [uses <N>]"
+        waitStoredItem cc "Usage: /issue <type> [months <M>] [uses <N>], or name <length> [years <Y>]"
         codeCount cc `shouldReturn` 2
         drainUntil alice [usageReply, newMember "bob", newMember "cath"]
         drainUntil bob [usageReply, preMember "alice", newMember "cath"]
@@ -1130,8 +1215,8 @@ singleRow sql = \case
 -- The list is spelled out rather than taken from the service, so a change there fails here.
 expectedCommands :: [ChatBotCommand]
 expectedCommands =
-  [ CBCCommand "issue" "Generate a badge code" (Just "<type> [months <M>] [uses <N>]"),
-    CBCCommand "bulk" "Generate many single-use codes" (Just "<type> [months <M>] count <B>"),
+  [ CBCCommand "issue" "Generate a badge or name code" (Just "<type> [months <M>] [uses <N>], or name <length> [years <Y>]"),
+    CBCCommand "bulk" "Generate many single-use codes" (Just "<type> [months <M>] count <B>, or name <length> [years <Y>] count <B>"),
     CBCCommand "revoke" "Revoke a code" (Just "<code>")
   ]
 

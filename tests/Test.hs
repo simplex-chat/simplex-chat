@@ -11,6 +11,7 @@ import Bots.StoreService.GroupIntegrationTests
 import Bots.StoreService.GroupTests
 import Bots.StoreService.NameRegistrationTests
 import Bots.StoreService.NamesChainTests
+import Bots.StoreService.NamesCodesTests
 import Bots.StoreService.NamesLabelTests
 import Bots.StoreService.NamesLinksTests
 import Bots.StoreService.NamesProfilesTests
@@ -95,6 +96,7 @@ main = do
         badgeNameRegistrationTests
       namesConfigTests
       namesChainTests
+      namesCodesTests
       namesLabelTests
       namesLinksTests
       namesProfilesTests
@@ -132,6 +134,7 @@ main = do
             storeServiceTests
             describe "managed group" badgeGroupIntegrationTests
           describe "StoreService names: boot" namesBootTests
+          namesCodesChatTests
           namesProfilesChatTests
           describe "Remote session" remoteTests
 #if !defined(dbPostgres)
