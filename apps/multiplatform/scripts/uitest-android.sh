@@ -74,7 +74,7 @@ installed_ver=$(adb -s "$serial" shell dumpsys package "$pkg" 2>/dev/null | tr -
 if [ -n "$installed_ver" ] && [ "$(cat "$stamp" 2>/dev/null)" = "$app_sum $installed_ver" ]; then
   echo "uitest-android: app APK unchanged on $serial, skipping its install"
 else
-  if [ -n "${UITEST_SERIAL:-}" ]; then adb -s "$serial" install -r -g "$app_apk" >/dev/null; else "$wd" install "$app_apk"; fi
+  if [ -n "${UITEST_SERIAL:-}" ]; then adb -s "$serial" install -r -t -g "$app_apk" >/dev/null; else "$wd" install "$app_apk"; fi
   installed_ver=$(adb -s "$serial" shell dumpsys package "$pkg" | tr -d '\r' | sed -n 's/^ *lastUpdateTime=//p' | head -1)
   echo "$app_sum $installed_ver" > "$stamp"
 fi
