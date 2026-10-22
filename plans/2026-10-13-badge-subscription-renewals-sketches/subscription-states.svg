@@ -60,8 +60,8 @@
   <text x="474" y="396" font-size="12.5" font-weight="600" fill="#b3261e" text-anchor="middle">ended</text>
   <line x1="546" y1="391" x2="576" y2="391" stroke="#5b6577" stroke-width="1.4" marker-end="url(#s-arr)"/>
   <text x="588" y="375" font-size="11.5" fill="#1a2030">From the service: badge retired, banner</text>
-  <text x="588" y="393" font-size="11.5" fill="#1a2030">“Your subscription ended”. From the device: the</text>
-  <text x="588" y="411" font-size="11.5" fill="#1a2030">row reads “Ended”, and the same once paidThrough passes</text>
+  <text x="588" y="393" font-size="11.5" fill="#1a2030">“Your subscription ended”. From the device: “Ended”;</text>
+  <text x="588" y="411" font-size="11.5" fill="#1a2030">past paidThrough the badge is retired too, as above</text>
 
   <!-- notes -->
   <rect x="24" y="446" width="932" height="134" rx="8" fill="#eef1f5"/>

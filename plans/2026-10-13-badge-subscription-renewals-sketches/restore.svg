@@ -1,8 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="980" height="830" viewBox="0 0 980 830" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="Restore on another device or profile: the app hands the store's current subscriptions to core as restored; core refuses while the profile shows a badge, otherwise holds each as a move under fresh keys of the active profile and sends transferBadge; the service asks the store, refuses an older App Store transaction, a payment moved too recently or a charge it could not credit, and otherwise ends the old purchase, moves the payment and credits the new key, issuing its month. The old key is answered ended from then on.">
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="864" viewBox="0 0 980 864" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="Restore on another device or profile: the app hands the store's current subscriptions to core as restored; core refuses while the profile shows a badge, otherwise holds each as a move under fresh keys of the active profile and sends transferBadge; the service asks the store, refuses an older App Store transaction, a payment moved too recently or a charge it could not credit, and otherwise ends the old purchase, moves the payment and credits the new key, issuing its month. The old key is answered ended from then on.">
   <defs>
     <marker id="m-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#5b6577"/></marker>
   </defs>
-  <rect width="980" height="830" fill="#f7f8fb"/>
+  <rect width="980" height="864" fill="#f7f8fb"/>
 
   <text x="24" y="36" font-size="18" font-weight="600" fill="#1a2030">Restore on another device or profile</text>
   <text x="24" y="57" font-size="12.5" fill="#5b6577">Restore moves a store subscription to fresh keys of the active profile; from then on the service answers the old key ended.</text>
@@ -92,9 +92,11 @@
   <text x="520" y="705" font-size="11" fill="#5b6577" text-anchor="middle">shown and sent to contacts at once</text>
 
   <!-- footer -->
-  <rect x="24" y="726" width="932" height="84" rx="8" fill="#eef1f5"/>
+  <rect x="24" y="726" width="932" height="118" rx="8" fill="#eef1f5"/>
   <text x="40" y="746" font-size="12" fill="#1a2030">The device it left keeps the credential it holds; its next request is answered ended with no credential, and it retires the badge.</text>
   <text x="40" y="763" font-size="12" fill="#1a2030">The service now links the two purchase keys, as the same store transaction funds both; it still links neither to a profile.</text>
-  <text x="40" y="780" font-size="12" fill="#1a2030">A payment moves again only once the last credential of the key it moved from has expired, up to 39 days, so each paid month stays</text>
-  <text x="40" y="797" font-size="12" fill="#1a2030">with at most two keys. The first Restore refused as limited shows nothing; the next says why. Card, crypto and code badges don't move.</text>
+  <text x="40" y="780" font-size="12" fill="#1a2030">Whoever holds a store receipt can move the badge to their own keys: an App Store receipt until the store charges again, a Play token</text>
+  <text x="40" y="797" font-size="12" fill="#1a2030">for the subscription's life. A payment moves again only once the last credential of the key it moved from has expired, up to 39 days,</text>
+  <text x="40" y="814" font-size="12" fill="#1a2030">so each paid month stays with at most two keys. The first Restore refused as limited may say nothing; the next says why.</text>
+  <text x="40" y="831" font-size="12" fill="#1a2030">Card, crypto and code badges don't move.</text>
 </svg>

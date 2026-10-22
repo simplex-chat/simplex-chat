@@ -5,7 +5,7 @@
   <rect width="980" height="584" fill="#f7f8fb"/>
 
   <text x="24" y="36" font-size="18" font-weight="600" fill="#1a2030">Request lanes and the store limits on each</text>
-  <text x="24" y="57" font-size="12.5" fill="#5b6577">requestLane reads the request, and for issueBadge the purchase, and never writes. Each lane answers one request at a time.</text>
+  <text x="24" y="57" font-size="12.5" fill="#5b6577">requestLane reads the request, and for issueBadge and a tier raise the purchase, and never writes. Each lane answers one at a time.</text>
 
   <!-- incoming -->
   <rect x="24" y="86" width="166" height="410" rx="10" fill="#ffffff" stroke="#c9cfdb"/>
