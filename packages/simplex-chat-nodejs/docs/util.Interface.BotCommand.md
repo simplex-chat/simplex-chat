@@ -6,7 +6,7 @@
 
 # Interface: BotCommand
 
-Defined in: [src/util.ts:72](../src/util.ts#L72)
+Defined in: [src/util.ts:72](../util.ts#L72)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [src/util.ts:72](../src/util.ts#L72)
 
 > **keyword**: `string`
 
-Defined in: [src/util.ts:73](../src/util.ts#L73)
+Defined in: [src/util.ts:73](../util.ts#L73)
 
 ***
 
@@ -22,4 +22,4 @@ Defined in: [src/util.ts:73](../src/util.ts#L73)
 
 > **params**: `string`
 
-Defined in: [src/util.ts:74](../src/util.ts#L74)
+Defined in: [src/util.ts:74](../util.ts#L74)

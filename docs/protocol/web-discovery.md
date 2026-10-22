@@ -9,10 +9,8 @@ Evgeny Poberezkin
 - [Abstract](#abstract)
 - [Conventions](#conventions)
 - [Terms](#terms)
-- [Link relation types](#link-relation-types)
-  - [simplex-channel](#simplex-channel)
-  - [simplex-group](#simplex-group)
-  - [simplex-contact](#simplex-contact)
+- [Link relation type](#link-relation-type)
+  - [simplex](#simplex)
   - [Owner's and described addresses](#owners-and-described-addresses)
   - [Target attributes](#target-attributes)
   - [HTML](#html)
@@ -25,7 +23,7 @@ Evgeny Poberezkin
 - [Security considerations](#security-considerations)
 - [Privacy considerations](#privacy-considerations)
 - [IANA considerations](#iana-considerations)
-  - [Link relation types registration](#link-relation-types-registration)
+  - [Link relation type registration](#link-relation-type-registration)
   - [Well-known URI registration](#well-known-uri-registration)
 - [HTML link type extensions](#html-link-type-extensions)
 - [References](#references)
@@ -34,7 +32,7 @@ Evgeny Poberezkin
 
 This document defines how a website publishes SimpleX channels, groups and contact addresses:
 
-- the link relation types `simplex-channel`, `simplex-group` and `simplex-contact`, for the HTML elements `link`, `a` and `area`, and for the HTTP `Link` header field. Their targets are the addresses of the website's owner, or the addresses a page describes, such as the entries of a directory;
+- the link relation type `simplex`, for the HTML elements `link`, `a` and `area`, and for the HTTP `Link` header field. Its targets are the addresses of the website's owner, or the addresses a page describes, such as the entries of a directory;
 - the well-known URI `simplex.json`: a JSON document with the owner's channels, groups and contact addresses, their audience, the update frequency of each channel, and the kind and the protocols of each contact address.
 
 People and software agents subscribe to a channel to receive updates, join a group to take part in its conversations, and connect to a contact address to send requests. [Agent protocols over SimpleX](./agent-protocols.md) defines the requests an agent sends to a contact address, and an `llms.txt` section with the same addresses.
@@ -47,59 +45,51 @@ JSON schemas use JSON Type Definition [RFC8927].
 
 ## Terms
 
-- **SimpleX link**: a connection link of the SimpleX Agent protocol, in the full or the short syntax, with the `https` or the `simplex` scheme [AGENT].
-- **Channel link**: a short SimpleX link of type `c`, for example `https://smp12.simplex.im/c#<key>`.
-- **Group link**: a short SimpleX link of type `g`, for example `https://smp12.simplex.im/g#<key>`, or a full SimpleX link of a group.
-- **Contact address link**: a short SimpleX link of type `a`, for example `https://smp12.simplex.im/a#<key>`, or a full SimpleX link of type `contact`.
+- **SimpleX link**: a short connection link of the SimpleX Agent protocol, with the `https` or the `simplex` scheme [AGENT]. The type in the link is the kind of the address.
+- **Channel link**: a SimpleX link of type `c`, for example `https://smp12.simplex.im/c#<key>`.
+- **Group link**: a SimpleX link of type `g`, for example `https://smp12.simplex.im/g#<key>`.
+- **Contact address link**: a SimpleX link of type `a`, for example `https://smp12.simplex.im/a#<key>`.
 - **SimpleX name**: a name in the SimpleX name service [NAMES]. `#example.simplex` is the name of a channel, `@example.simplex` the name of a contact address.
 - **Owner**: the person or organization that publishes the website.
 
-## Link relation types
+## Link relation type
 
-### simplex-channel
+### simplex
 
-The target of a `simplex-channel` link is a SimpleX channel of the owner of the link context, or a SimpleX channel described by the link context. The target MUST be a channel link.
-
-### simplex-group
-
-The target of a `simplex-group` link is a SimpleX group of the owner of the link context, or a SimpleX group described by the link context. The target MUST be a group link.
-
-### simplex-contact
-
-The target of a `simplex-contact` link is a SimpleX contact address of the owner of the link context, or a SimpleX contact address described by the link context. The target MUST be a contact address link.
+The target of a `simplex` link is a SimpleX channel, group or contact address of the owner of the link context, or described by the link context. The target MUST be a channel link, a group link or a contact address link. The type in the link tells which.
 
 ### Owner's and described addresses
 
-A page that describes the addresses of others, such as a directory or a catalogue, uses the relation types on its entries. The owner's own addresses are listed in the [well-known document](#well-known-uri).
+A page that describes the addresses of others, such as a directory or a catalogue, uses the relation type on its entries. The owner's own addresses are listed in the [well-known document](#well-known-uri).
 
 ### Target attributes
 
 - `title`: the name of the channel, the group or the address, for display. In HTTP, a title with non-ASCII characters is sent as `title*` [RFC8187].
 - `hreflang`: the language of the channel's posts, or of the conversations [BCP47].
 
-A link context MAY have several links of one relation type. Their order is the owner's order of preference: document order in HTML, and the order of link values in HTTP.
+A link context MAY have several `simplex` links of one kind. Their order is the owner's order of preference: document order in HTML, and the order of link values in HTTP.
 
 ### HTML
 
 In the document head:
 
 ```html
-<link rel="simplex-channel" href="https://smp12.simplex.im/c#…" hreflang="en" title="Ridgeline updates">
-<link rel="simplex-contact" href="https://smp12.simplex.im/a#…" hreflang="en" title="Ask Ridgeline">
+<link rel="simplex" href="https://smp12.simplex.im/c#…" hreflang="en" title="Acme news">
+<link rel="simplex" href="https://smp12.simplex.im/a#…" hreflang="en" title="Ask Acme">
 ```
 
-In the document body, the relation types are used on visible links, for example on the entries of a directory:
+In the document body, the relation type is used on visible links, for example on the entries of a directory:
 
 ```html
-<a rel="simplex-contact" href="https://smp12.simplex.im/a#…">Chat with us</a>
-<a rel="simplex-group" href="https://smp12.simplex.im/g#…">Ridgeline hikers</a>
+<a rel="simplex" href="https://smp12.simplex.im/a#…">Chat with us</a>
+<a rel="simplex" href="https://smp12.simplex.im/g#…">Acme customers</a>
 ```
 
 ### HTTP
 
 ```
-Link: <https://smp12.simplex.im/c#…>; rel="simplex-channel"; hreflang="en"; title="Ridgeline updates"
-Link: <https://smp12.simplex.im/a#…>; rel="simplex-contact"; hreflang="en"; title="Ask Ridgeline"
+Link: <https://smp12.simplex.im/c#…>; rel="simplex"; hreflang="en"; title="Acme news"
+Link: <https://smp12.simplex.im/a#…>; rel="simplex"; hreflang="en"; title="Ask Acme"
 ```
 
 ## Well-known URI
@@ -163,8 +153,8 @@ A site omits the lists it does not use.
   "channels": [
     {
       "link": "https://smp12.simplex.im/c#…",
-      "name": "#ridgeline.simplex",
-      "title": "Ridgeline updates",
+      "name": "#acme.simplex",
+      "title": "Acme news",
       "lang": "en",
       "audience": ["people", "agents"],
       "changeFrequency": "weekly"
@@ -173,15 +163,15 @@ A site omits the lists it does not use.
   "groups": [
     {
       "link": "https://smp12.simplex.im/g#…",
-      "title": "Ridgeline hikers",
+      "title": "Acme customers",
       "lang": "en"
     }
   ],
   "contacts": [
     {
       "link": "https://smp12.simplex.im/a#…",
-      "name": "@ridgeline.simplex",
-      "title": "Ask Ridgeline",
+      "name": "@acme.simplex",
+      "title": "Ask Acme",
       "lang": "en",
       "audience": ["agents"],
       "business": true,
@@ -194,7 +184,7 @@ A site omits the lists it does not use.
 ## Processing
 
 - A consumer MUST ignore unknown fields and unknown `audience` values.
-- A consumer MUST ignore a link of a type other than the one its relation type or its list requires.
+- A consumer MUST ignore a `simplex` link that is not a channel, group or contact address link, and an entry of `simplex.json` whose link is of a type other than its list requires.
 - The values on the website are hints. The data retrieved with the link is authoritative: an audience, an update frequency, the business flag or protocols declared there [AGENTS] take precedence over the website's values.
 - A consumer MAY connect by `link` or by `name`. Resolving a name reveals interest in it to one names router, and verifies that the name's record and the profile's claim match [NAMES].
 
@@ -207,29 +197,19 @@ A site omits the lists it does not use.
 
 ## Privacy considerations
 
-- The relation types and the well-known document are intended for owners who want to be reachable, such as channels, communities, businesses and services, and for pages that describe them, such as directories.
+- The relation type and the well-known document are intended for owners who want to be reachable, such as channels, communities, businesses and services, and for pages that describe them, such as directories.
 - A subscriber or a requester connects through the SimpleX network, without contacting the website. Retrieving a page or the well-known document is an ordinary web request.
 
 ## IANA considerations
 
-### Link relation types registration
+### Link relation type registration
 
-Three registrations in the "Link Relation Types" registry [RFC8288]:
+One registration in the "Link Relation Types" registry [RFC8288]:
 
-- Relation Name: `simplex-channel`
-- Description: Refers to a SimpleX channel of the owner of the link context, or described by the link context.
-- Reference: https://github.com/simplex-chat/simplex-chat/blob/stable/docs/protocol/web-discovery.md#simplex-channel
-- Notes: The target is a SimpleX channel link [AGENT], with the `https` scheme or the provisionally registered `simplex` scheme.
-
-- Relation Name: `simplex-group`
-- Description: Refers to a SimpleX group of the owner of the link context, or described by the link context.
-- Reference: https://github.com/simplex-chat/simplex-chat/blob/stable/docs/protocol/web-discovery.md#simplex-group
-- Notes: The target is a SimpleX group link [AGENT], with the `https` scheme or the provisionally registered `simplex` scheme.
-
-- Relation Name: `simplex-contact`
-- Description: Refers to a SimpleX contact address of the owner of the link context, or described by the link context.
-- Reference: https://github.com/simplex-chat/simplex-chat/blob/stable/docs/protocol/web-discovery.md#simplex-contact
-- Notes: The target is a SimpleX contact address link [AGENT], with the `https` scheme or the provisionally registered `simplex` scheme.
+- Relation Name: `simplex`
+- Description: Refers to a SimpleX channel, group or contact address of the owner of the link context, or described by the link context.
+- Reference: https://github.com/simplex-chat/simplex-chat/blob/stable/docs/protocol/web-discovery.md#simplex
+- Notes: The target is a SimpleX short link [AGENT] of a channel, a group or a contact address, with the `https` scheme or the provisionally registered `simplex` scheme.
 
 ### Well-known URI registration
 
@@ -243,35 +223,19 @@ One registration in the "Well-Known URIs" registry [RFC8615]:
 
 ## HTML link type extensions
 
-The HTML standard requires extension link types to be registered on the microformats page "existing-rel-values" [HTML] [MF-REL]. The entries:
+The HTML standard requires extension link types to be registered on the microformats page "existing-rel-values" [HTML] [MF-REL]. The entry:
 
-- Keyword: `simplex-channel`
+- Keyword: `simplex`
 - Effect on `link`: Hyperlink
 - Effect on `a`, `area`: Hyperlink
 - Effect on `form`: not allowed
-- Brief description: Refers to a SimpleX channel of the page's owner, or described by the page.
-- Specification: https://github.com/simplex-chat/simplex-chat/blob/stable/docs/protocol/web-discovery.md#simplex-channel
-- Status: proposed
-
-- Keyword: `simplex-group`
-- Effect on `link`: Hyperlink
-- Effect on `a`, `area`: Hyperlink
-- Effect on `form`: not allowed
-- Brief description: Refers to a SimpleX group of the page's owner, or described by the page.
-- Specification: https://github.com/simplex-chat/simplex-chat/blob/stable/docs/protocol/web-discovery.md#simplex-group
-- Status: proposed
-
-- Keyword: `simplex-contact`
-- Effect on `link`: Hyperlink
-- Effect on `a`, `area`: Hyperlink
-- Effect on `form`: not allowed
-- Brief description: Refers to a SimpleX contact address of the page's owner, or described by the page.
-- Specification: https://github.com/simplex-chat/simplex-chat/blob/stable/docs/protocol/web-discovery.md#simplex-contact
+- Brief description: Refers to a SimpleX channel, group or contact address of the page's owner, or described by the page.
+- Specification: https://github.com/simplex-chat/simplex-chat/blob/stable/docs/protocol/web-discovery.md#simplex
 - Status: proposed
 
 ## References
 
-- [AGENT] SimpleX Agent protocol, connection links: https://github.com/simplex-chat/simplexmq/blob/stable/protocol/agent-protocol.md#connection-link-1-time-invitation-and-contact-address
+- [AGENT] SimpleX Agent protocol, short connection links: https://github.com/simplex-chat/simplexmq/blob/stable/protocol/agent-protocol.md#short-connection-link-syntax
 - [AGENTS] Agent protocols over SimpleX: [agent-protocols.md](./agent-protocols.md)
 - [BCP47] Tags for Identifying Languages: https://www.rfc-editor.org/info/bcp47
 - [BUSINESS] Using SimpleX Chat in business: [BUSINESS.md](../BUSINESS.md)
