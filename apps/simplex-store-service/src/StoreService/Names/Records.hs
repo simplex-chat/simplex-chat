@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -47,12 +46,6 @@ import StoreService.Names.Revert (RevertName (..), revertText)
 import StoreService.Names.Sender (SendError (..), Sender, submitTransaction)
 import StoreService.Names.Store
 import StoreService.Names.Turns (Turns, withLabelTurn)
-
-#if defined(dbPostgres)
-import Database.PostgreSQL.Simple (Only (..))
-#else
-import Database.SQLite.Simple (Only (..))
-#endif
 
 data Records = Records
   { rsStore :: DBStore,
@@ -368,16 +361,3 @@ signatureExpired = revertText RNSignatureExpired
 
 withStore :: Records -> (DB.Connection -> IO a) -> IO a
 withStore Records {rsStore} = withTransaction rsStore
-
-pendingEditIds :: DB.Connection -> IO [Int64]
-pendingEditIds db = map fromOnly <$> DB.query db "SELECT name_record_edit_id FROM sx_badge_service_name_record_edits WHERE state = ? ORDER BY name_record_edit_id" (Only pendingState)
-
-deleteUnsentEdit :: DB.Connection -> Int64 -> IO ()
-deleteUnsentEdit db editId =
-  DB.execute
-    db
-    "DELETE FROM sx_badge_service_name_record_edits WHERE name_record_edit_id = ? AND state = ? AND NOT EXISTS (SELECT 1 FROM sx_badge_service_name_transactions WHERE name_record_edit_id = ?)"
-    (editId, pendingState, editId)
-
-pendingState :: Text
-pendingState = "pending"

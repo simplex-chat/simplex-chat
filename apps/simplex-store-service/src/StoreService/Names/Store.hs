@@ -64,6 +64,8 @@ module StoreService.Names.Store
     getRecordEditByBody,
     getRecordEditByNonce,
     settleRecordEdit,
+    pendingEditIds,
+    deleteUnsentEdit,
     relayedEditTimes,
   )
 where
@@ -921,6 +923,16 @@ settleRecordEdit db editId state =
       ESPending -> (pendingEdit, Nothing, Nothing)
       ESMined tx -> (minedEdit, Nothing, tx)
       ESReverted name -> (revertedEdit, name, Nothing)
+
+pendingEditIds :: DB.Connection -> IO [Int64]
+pendingEditIds db = map fromOnly <$> DB.query db "SELECT name_record_edit_id FROM sx_badge_service_name_record_edits WHERE state = ? ORDER BY name_record_edit_id" (Only pendingEdit)
+
+deleteUnsentEdit :: DB.Connection -> Int64 -> IO ()
+deleteUnsentEdit db editId =
+  DB.execute
+    db
+    "DELETE FROM sx_badge_service_name_record_edits WHERE name_record_edit_id = ? AND state = ? AND NOT EXISTS (SELECT 1 FROM sx_badge_service_name_transactions WHERE name_record_edit_id = ?)"
+    (editId, pendingEdit, editId)
 
 -- | When each edit relayed for the name since the given time was sent, oldest first.
 relayedEditTimes :: DB.Connection -> LabelHash -> UTCTime -> IO [UTCTime]
