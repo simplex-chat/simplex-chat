@@ -8,4 +8,4 @@
 
 > **Backend** = `"sqlite"` \| `"postgres"`
 
-Defined in: [src/core.ts:5](../src/core.ts#L5)
+Defined in: [src/core.ts:5](../core.ts#L5)
