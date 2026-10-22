@@ -14,9 +14,10 @@ where
 
 import Control.Exception (SomeAsyncException, SomeException, fromException, throwIO, try)
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import qualified Data.ByteString.Char8 as B
 import Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.Text.IO as T
+import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import Data.Time.LocalTime (getZonedTime)
 import GHC.Stack (CallStack, HasCallStack, callStack, getCallStack, srcLocFile, srcLocStartLine)
@@ -35,7 +36,8 @@ logError = logAt "ERROR" callStack
 logAt :: MonadIO m => Text -> CallStack -> Text -> m ()
 logAt tag cs msg = liftIO $ do
   ts <- formatTime defaultTimeLocale "%Y-%m-%d %H:%M:%S %z" <$> getZonedTime
-  T.hPutStrLn stderr $ "[" <> tag <> " " <> T.pack ts <> " " <> loc <> "] " <> msg
+  -- One hPut holds the handle's lock for the whole line; T.hPutStr writes char by char unbuffered and buffer by buffer otherwise.
+  B.hPut stderr $ encodeUtf8 $ "[" <> tag <> " " <> T.pack ts <> " " <> loc <> "] " <> msg <> "\n"
   where
     loc = case getCallStack cs of
       ((_, l) : _) -> T.pack (srcLocFile l) <> ":" <> T.pack (show (srcLocStartLine l))
