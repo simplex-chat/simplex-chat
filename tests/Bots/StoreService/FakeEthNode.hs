@@ -15,8 +15,6 @@ module Bots.StoreService.FakeEthNode
     forgetCall,
     setFault,
     clearFault,
-    gateNext,
-    awaitGate,
     releaseGate,
     pausedAt,
     setBlock,
