@@ -27,6 +27,7 @@ module StoreService.Store.Invoices
     overdueInvoices,
     expireOverdueInvoice,
     lockInvoice,
+    unfundedQuery,
     newInvoiceId,
     readCatalogRows,
     seedCatalog,
@@ -233,11 +234,19 @@ qUnpaidRefs =
 qCodeHashExists :: Query
 qCodeHashExists = mkQuery "SELECT 1 FROM @badge_codes WHERE code_hash = ? LIMIT 1"
 
-unfundedOnly :: Text
-unfundedOnly =
+-- | No payment holding money was read for the invoice whose id is in this column, as paymentHolds reads one.
+-- The sweep and the overdue close of a name order must agree on it, so both use this.
+unfundedBy :: Text -> Text
+unfundedBy invoiceId =
   "AND NOT EXISTS (SELECT 1 FROM @payments p "
-    <> "WHERE p.invoice_id = @invoices.invoice_id AND ("
+    <> ("WHERE p.invoice_id = " <> invoiceId <> " AND (")
     <> "COALESCE(p.amount, 0) > 0 OR p.crypto_paid IS NOT NULL OR p.paid_in_full = 1)) "
+
+unfundedQuery :: Text -> Query
+unfundedQuery = mkQuery . (" " <>) . unfundedBy
+
+unfundedOnly :: Text
+unfundedOnly = unfundedBy "@invoices.invoice_id"
 
 qOverdueInvoices :: Query
 qOverdueInvoices =

@@ -110,6 +110,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
   describe "invoice side" $ do
     it "finds an invoice by provider ref in either table, refusing a ref both hold" testProviderRefs
     it "reads and sweeps name invoices with the badge ones" testPollerQueries
+    it "agrees between the sweep and the overdue close on which invoices hold money" testFundedAgreement
   describe "registration view" $ do
     it "has the contract's fields" testViewFields
     it "reads the intent nonce in committed and the code length in taken and code_issued" testViewReads
@@ -913,6 +914,28 @@ testPollerQueries = withServiceStore $ \st -> do
   unpaidRefs st (addUTCTime (-60) t0) `shouldReturn` [("crypto", "ref-inv-r1")]
   map oiProviderRef <$> overdueInvoices st (addUTCTime 7200 t0) `shouldReturn` ["ref-inv-r1"]
   overdueInvoices st t0 `shouldReturn` []
+
+testFundedAgreement :: IO ()
+testFundedAgreement = withServiceStore $ \st -> do
+  waiters <- newWaiters
+  let now = addUTCTime 3600 t0
+      shapes =
+        [ ("amount", Just (SigFunded (rcv 100 Nothing) PaidInPart), True),
+          ("crypto", Just (SigFunded (rcv 0 (Just "0.00001")) PaidInPart), True),
+          ("verdict", Just (SigFunded (rcv 0 Nothing) PaidInFull), True),
+          ("nothing", Nothing, False)
+        ]
+  forM_ (zip [1 ..] shapes) $ \(n, (rid, signal, _)) -> do
+    placePaid st rid ownerA (order ("fundname" <> rid) n) t0 `shouldReturn` Right ()
+    forM_ signal $ \sig -> void $ settleOrder st waiters Nothing (InvoiceId $ "inv-" <> rid) sig t0
+  listed <- map oiInvoiceId <$> overdueInvoices st now
+  forM_ (zip [1 ..] shapes) $ \(n, (rid, _, funded)) -> do
+    let o = order ("fundname" <> rid) n
+    (InvoiceId ("inv-" <> rid) `elem` listed) `shouldBe` not funded
+    [LiveOrder {loRegistration, loOverdue}] <- withTransaction st $ \db -> getLiveOrders db (ofCommitment o) ownerA (ofLabelHash o) now
+    (rid, loOverdue) `shouldBe` (rid, not funded)
+    closed <- withTransaction st $ \db -> closeOverdue db loRegistration now
+    (rid, closed == Written (nrVersion loRegistration + 1)) `shouldBe` (rid, not funded)
 
 testViewFields :: IO ()
 testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do

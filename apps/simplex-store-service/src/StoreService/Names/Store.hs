@@ -97,7 +97,7 @@ import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Signatures (OrderFields (..), parseSignature)
 import StoreService.Store (RevokeResult (..))
-import StoreService.Store.Invoices (StoreDecodeError (..), executeChanging, invoiceStatusText, lockInvoice, newInvoiceId, truncateToSecond)
+import StoreService.Store.Invoices (StoreDecodeError (..), executeChanging, invoiceStatusText, lockInvoice, newInvoiceId, truncateToSecond, unfundedQuery)
 
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..), Query, (:.) (..))
@@ -498,16 +498,9 @@ getLiveOrders db commitment owner (LabelHash lh) now =
   where
     toLiveOrder (row :. Only (BI loOverdue)) = (\loRegistration -> LiveOrder {loRegistration, loOverdue}) <$> toRegistration row
 
--- | A payment holding money, as the sweep's own check reads one, makes the invoice i funded.
+-- | The sweep's own check, on the invoice joined as i.
 unfunded :: Query
-unfunded =
-  " "
-    <> [sql|
-    AND NOT EXISTS (
-      SELECT 1 FROM sx_badge_service_payments p
-      WHERE p.invoice_id = i.invoice_id AND (COALESCE(p.amount, 0) > 0 OR p.crypto_paid IS NOT NULL OR p.paid_in_full = 1)
-    )
-  |]
+unfunded = unfundedQuery "i.invoice_id"
 
 -- | Run in the transaction that inserts the next order, so the unique constraints let it in. The invoice is written before
 -- the registration, as settlement, cancel and the sweep write them; a registration write that loses after it leaves the
