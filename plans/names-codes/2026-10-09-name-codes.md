@@ -204,7 +204,7 @@ How the code and the address are handled:
     - `not_open`, a `200` `paid`, or a `200` `expired` with payment marks: the page re-reads the invoice. Paid, with its registration past `unpaid`: the page shows its order. Paid, with the registration still `unpaid`: the page orders again. Otherwise an invoice holding a payment is kept, and one expired with nothing received orders again.
     - a `200` still `open`: the page shows `CANCEL_STILL_OPEN` and keeps the old order.
     - `provider_unavailable`: the page keeps the old order. The service also answers this when Stripe refuses to cancel a card already processing.
-  - A crypto payment the service has not yet read when the cancel goes through becomes a refund case. The poller alerts on it.
+  - A crypto payment the service has not yet read when the cancel goes through is a late payment once reported: it is credited to that order's balance.
   - These checks run before the chain read. So a resend never meets its own registration as `name_taken`.
 - **One order at a time (N3e).** This browser's open order may have a submitted card payment awaiting confirmation. Then Check your order's Pay is off until the payment settles or expires. The badge checkout refuses a second order in the same case (it shows no Pay button). An open invoice not yet paid only shows a link to the waiting order, and Continue stays on.
 - **Before paying (N3h).** The name code step comes before Check your order, for paid and prepaid-code orders alike. It shows the code hidden, with Show and Copy, "Private windows and Tor Browser forget it when closed", and a checkbox, "I have saved my name code", which enables Continue. The order is created only from Check your order. After this point, a crash or cleared storage loses nothing that the code cannot rebuild.
@@ -263,7 +263,7 @@ This section follows a name from the order to the chain. The service commits, wa
    - with `bad_request`, a duration outside the hour's slack.
 
    **Closed invoices.** An invoice that expires or is canceled leaves its registration `unpaid`.
-   - A late payment of that invoice does not queue the registration. Support refunds it. This is because a new order of the same wallet for the name may have been paid meanwhile.
+   - A late payment of that invoice does not queue the registration. What arrived is credited to that order's balance (owner, 2026-10-22), which Your names shows and which buys a name or is refunded by support on request. This is because a new order of the same wallet for the name may have been paid meanwhile.
    - Get a new invoice, on an expired invoice, makes a new order for the same name and wallet.
    - A canceled invoice offers Order the name again instead. It leads to the name's search result, where the buyer orders anew and chooses how to pay. Nothing is ordered until then.
 
@@ -528,7 +528,7 @@ Migration `20261010_names` runs in SQLite and Postgres. The badge tables (`sx_ba
 - **`sx_badge_service_name_invoices`:** `invoice_id`, `registration_id`, `provider_ref`.
   - Today's invoice queries are badge-only. So each of these gains this table: `GET /api/invoice/:id`, cancel, settlement, the poller's unpaid and overdue scans and its expiry update, and the lookups by `provider_ref`.
   - Settling a name invoice queues its registration, instead of requiring a code hash. This happens in the transaction that marks the invoice paid; the invoice's and the registration's changes are published to the long poll only after that commit. It applies only to an invoice still open.
-  - An invoice settled after it expired or was canceled leaves its registration `unpaid` and alerts the operator to refund. Its order page and history row say "Paid after the invoice closed; support refunds it", with the reference.
+  - An invoice settled after it expired or was canceled leaves its registration `unpaid` and credits what arrived to that order's balance. Its order page and history row say "Paid after the invoice closed; kept as your balance", with Use and Refund.
   - The lookups by `provider_ref` cover both this table and `sx_badge_service_badge_code_invoices`.
   - As in `Web/Server.hs` today, a row whose provider differs from the webhook's is ignored. This guards against a collision between providers.
   - A ref must also be unique across the two tables. The lookup checks both and refuses a ref found in both.

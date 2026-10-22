@@ -241,7 +241,7 @@ sequenceDiagram
   - the invoice becomes paid;
   - the registration goes `unpaid` → `queued`, only while it is still live. A payment for an order that was closed (cancelled, expired, or closed by a newer order of the same wallet and name) is a late payment.
   - Both changes are published to the long poll after the commit.
-- **Late payment:** an invoice paid after it expired or was canceled leaves the registration `unpaid`. The operator is alerted to refund it (gap 26).
+- **Late payment:** an invoice paid after it expired or was canceled leaves the registration `unpaid`. What arrived is credited to that order's balance (owner, 2026-10-22), which Your names shows and which buys a name or is refunded by support on request; each reported figure credits only its increase, and the service logs it (gap 26).
 - **The long poll** carries `wait` and `seenVersion`, so it also wakes on every change of the registration (its `version`).
 
 **Get a new invoice.** The old invoice may still be open when the card form does not load, or the payment details are unavailable. The page then cancels it before ordering again:
@@ -506,7 +506,7 @@ sequenceDiagram
     5. the balance: its amount equals the `balance` sent and no open invoice holds it (an overdue holder counts as none), else `409 balance_changed` with the current balance;
     6. the chain (`name_taken`, `name_check_unavailable`), then the price (`catalog_changed`), then the provider for a difference (`provider_unavailable`).
   - **Writes:** one transaction: an overdue holder of the balance closed (a holder no longer live is skipped; one that cannot be closed answers `balance_changed`), then the new order and either the spend of its price or its invoice and the hold. Each balance write is conditional on the amount and the holder, so another process can only make it refuse.
-  - **After:** settlement queues the new order and spends the hold; a cancel, an expiry or the sweep releases it. A payment after the close is a late payment, refunded by support; the balance is untouched.
+  - **After:** settlement queues the new order and spends the hold; a cancel, an expiry or the sweep releases it. A payment after the close is a late payment, credited to the closed order's own balance; the released balance is untouched.
 - **Refunding it (`//refund`):** on the service console, by the reference the page shows (invoice id, else registration id). Without cents it shows the balance and every invoice that funded it, back along the chain of balances; with the cents it sets the balance to 0 and records them. A held balance is refused, an overdue holder included, until the poller has closed the holder.
 - **Another name for a failed order, or refused links (`/name`):** it uses the create rate limit.
   - **Checks, in order:**
@@ -921,12 +921,12 @@ Each gap says what the problem is, why it matters, and what is decided, or that 
       - The name side checks the invoice's prior state.
       - A late payment of a closed invoice does not queue its registration. That registration stays `unpaid`.
       - The 30-day cleanup never deletes it, because the cleanup spares any invoice that received a payment.
-      - The late payment is kept for support to refund.
+      - The late payment is credited to that order's balance (owner, 2026-10-22), which Your names shows and which buys a name or is refunded by support on request (it was kept for support to refund until then).
       - So one wallet never has two paid registrations for one name. The other guards for this, by commitment or by owner and label hash:
         - an exact resend gets its own order; any other order while a live order holds the name is refused with `order_exists`, which names nothing;
         - orders run one at a time per label hash, and unique constraints allow one live registration per owner and label hash;
         - Get a new invoice cancels an open invoice first, and orders again only after the cancel succeeds.
-      - The page shows "Paid after the invoice closed; support refunds it" with the reference, in the order and in history.
+      - The page shows "Paid after the invoice closed; kept as your balance", with Use and Refund, in the order and in history.
       - The poller and the provider list pass read an invoice only within about 72 hours of its creation (`settleWindow` ‡). After that, only a webhook brings a payment.
       - The BTCPay handler gains `InvoiceReceivedPayment` and `InvoicePaymentSettled` as read hints. Today it acts only on `InvoiceProcessing`, `InvoiceSettled`, `InvoiceExpired` and `InvoiceInvalid`.
       - Before deleting, the 30-day cleanup reads the invoice from the provider itself (`pReadInvoice`, then settlement). If the provider does not answer, it keeps the registration until the next daily run. So a lost webhook does not lose the payment.

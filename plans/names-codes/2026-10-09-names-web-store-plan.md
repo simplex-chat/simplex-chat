@@ -334,17 +334,16 @@ An order carries the name's hash and length, the duration, the owner address, th
   - Stripe may refuse to cancel an intent already processing. That arrives as this `503`.
     - The invoice stays open until the intent succeeds or the overdue sweep closes it, since `signalOf` reads `processing` and a failed payment's `requires_payment_method` as open.
     - Once `settleWindow` and an hour of refused cancels have passed, the sweep marks it expired locally, without cancelling at Stripe.
-    - An intent that succeeds after that is a late payment, refunded.
+    - An intent that succeeds after that is a late payment, credited to its order's balance.
   - The re-read is new. The badges webapp's `main.ts` shows `CANCEL_NOT_OPEN` on `not_open` and checks only a `200` answer.
   - Cancel judges `funded` only from payments the service has read.
-    - So a crypto payment not yet read is invalidated with the invoice and becomes a refund case.
-    - The poller already alerts on it ("expired holding … needs a refund"), and no twin registration results.
+    - So a crypto payment not yet read is invalidated with the invoice; when the provider reports it, it is a late payment credited to the order's balance, and no twin registration results.
     - The badges webapp's `newInvoice()` only clears the session today.
   - Get a new invoice makes a new order for the same name and wallet with the current duration, so with a new commitment, once the old invoice is closed. A cancel that lost to settlement leaves a live order: the new order meets it as `order_exists`, and the page opens it through `find`.
 - **Closed invoices and cleanup:**
   - An invoice that expires or is canceled leaves its registration `unpaid`.
-  - A late payment of it does not queue it, since a new order for the same name and wallet may have been paid meanwhile. It is kept for support to refund.
-  - An `unpaid` registration is deleted, with its `name_invoices` and `invoices` rows, in one transaction 30 days after its invoice closed. One whose invoice received any payment, partial or late, stays for support.
+  - A late payment of it does not queue it, since a new order for the same name and wallet may have been paid meanwhile. What arrived is credited to that order's balance (owner, 2026-10-22), which Your names shows and which buys a name or is refunded by support on request.
+  - An `unpaid` registration is deleted, with its `name_invoices` and `invoices` rows, in one transaction 30 days after its invoice closed. One whose invoice received any payment, partial or late, stays, with that payment as its balance.
   - The cleanup first reads the invoice from the provider itself (`pReadInvoice`, then settlement as for any read). The poller and the provider list pass read an invoice only within about 72 hours of its creation (`settleWindow`). After that only a webhook brings a payment.
   - Today's BTCPay handler acts only on `InvoiceProcessing`, `InvoiceSettled`, `InvoiceExpired` and `InvoiceInvalid`. It gains `InvoiceReceivedPayment` and `InvoicePaymentSettled`, as read hints for a payment into a closed invoice.
   - The cleanup's read is the backstop. A payment whose webhook was lost is still recorded and alerted. If the provider does not answer, the registration is kept until the next daily run.
@@ -592,7 +591,7 @@ An order carries the name's hash and length, the duration, the owner address, th
       - in the same database transaction that marks the invoice paid;
       - with both publishes after it commits, so a long poll never reads `paid` with a stale `unpaid`.
     - Today a settled signal marks even an expired invoice paid (`Orders.hs` `decide`, the poller's "an expired invoice can still be marked paid"), with no alert.
-    - For a name invoice already expired or canceled, settlement marks it paid, leaves the registration `unpaid`, and alerts the operator to refund, since a new order of the same wallet for the name may have been paid meanwhile. The order page and history then show "Paid after the invoice closed; support refunds it" with the reference (not drawn).
+    - For a name invoice already expired or canceled, settlement marks it paid, leaves the registration `unpaid`, and credits what arrived to that order's balance, logged at info (an alert only when the provider reports no cents figure), since a new order of the same wallet for the name may have been paid meanwhile. The order page and history then show "Paid after the invoice closed; kept as your balance", with Use and Refund (not drawn).
     - `InvoiceRow`'s `irBadgeType` and `irMonths` become the product: a badge's type and months, or a name's registration id.
   - **Provider-ref lookups:** the webhook and poller queries that find an invoice by `provider_ref` cover both `badge_code_invoices` and `name_invoices`.
     - As in `Web/Server.hs` today, a row whose provider differs from the webhook's is ignored, as a guard against a collision between providers.
@@ -929,7 +928,7 @@ How each part is checked before release: Haskell tests, web tests, the Docker bu
     - a cancel answering `200` `paid`, or `200` `expired` with payment marks, re-read; and `200` `open` shown as `CANCEL_STILL_OPEN`;
     - two orders for one name (the later one taken);
   - closed invoices:
-    - a late payment of a closed name invoice leaving its registration `unpaid`;
+    - a late payment of a closed name invoice leaving its registration `unpaid` and credited to its balance, each figure once;
     - the 30-day cleanup deleting an `unpaid` registration, but sparing one whose invoice received any payment;
     - the cleanup recording and alerting a payment the provider reports only at cleanup, and keeping the registration when the provider does not answer;
   - `name_record_edits`:
