@@ -8,8 +8,6 @@ shopt -s inherit_errexit
 
 : "${WEBAPP_DIR:?set WEBAPP_DIR to the names webapp (simplex.domains/webapp)}"
 : "${ENS_CONTRACTS_DIR:?set ENS_CONTRACTS_DIR to a compiled ens-contracts checkout, as for the webapp dev/start.sh}"
-: "${ISSUER_INDEX:?set ISSUER_INDEX to the index of an issuer key the service trusts}"
-: "${ISSUER_SECRET:?set ISSUER_SECRET to the secret of that key}"
 ANVIL="${ANVIL:-anvil}"
 SERVICE_PORT="${SERVICE_PORT:-8180}"
 CODES_PORT="${CODES_PORT:-8199}"
@@ -28,6 +26,10 @@ SERVICE_URL="http://127.0.0.1:$SERVICE_PORT"
 CODES_URL="http://127.0.0.1:$CODES_PORT"
 STARTUP_SECONDS=120
 CLI_TIMEOUT_SECONDS=120
+# A test issuer key, trusted through [issuer] dev_keys, which the service accepts only on chain 31337.
+# The service refuses it if a client key ever takes its index.
+DEV_ISSUER_INDEX=999
+DEV_ISSUER_SECRET=Ea5wG-J2mQjPBu9YfSJRKPnGnzoIdEE-8VaMh_wY2Bg=
 
 # The cases at webapp f53b765, run from one client, so they stay within the service's 10 code checks
 # a minute. Each takes its prepaid code from POST /control/code, which the code server below answers
@@ -102,8 +104,9 @@ names_hosts = 127.0.0.1
 trust_forwarded_for = off
 
 [issuer]
-index = $ISSUER_INDEX
-private_key = $ISSUER_SECRET
+index = $DEV_ISSUER_INDEX
+private_key = $DEV_ISSUER_SECRET
+dev_keys = $DEV_ISSUER_INDEX:$DEV_ISSUER_SECRET
 
 [names]
 tld = $(jq -r .tld "$chain")

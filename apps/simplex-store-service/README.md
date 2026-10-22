@@ -933,7 +933,8 @@ payment against this service in Chromium, as they run against the webapp's mock.
    age of 5 seconds;
 2. builds the names site (`vite build`) into the run's folder;
 3. writes an ini for that deployment with `[names]` and `[chain]` and no `[btcpay]` or `[stripe]`,
-   serving the names site all in one on the host `127.0.0.1`;
+   serving the names site all in one on the host `127.0.0.1`, and signing with a fixed test key
+   trusted through `[issuer] dev_keys`;
 4. starts the service once to make its database, stops it, and issues the prepaid codes the cases
    need with `//issue name` in `--run-cli`;
 5. starts the service on 8180 and a code server on 8199, and runs the cases with `BASE_URL` at the
@@ -952,11 +953,9 @@ compiled as the webapp's `dev/start.sh` needs. The cases read the chain's addres
 ```
 cabal build exe:simplex-store-service
 WEBAPP_DIR=../simplex.domains/webapp ENS_CONTRACTS_DIR=<ens-contracts> ANVIL=<anvil> \
-  ISSUER_INDEX=<index> ISSUER_SECRET=<secret> scripts/store-service/names-contract-run.sh
+  scripts/store-service/names-contract-run.sh
 ```
 
-- `ISSUER_INDEX` and `ISSUER_SECRET`: an issuer key the binary trusts, as for any start of the service
-  (see [Run](#run)).
 - `STORE_SERVICE_BIN`: the service binary (default: `cabal list-bin exe:simplex-store-service`).
 - `SERVICE_PORT`, `CODES_PORT`: the service's and the code server's ports (8180 and 8199).
 - Arguments, if given, are passed to `playwright test` in place of the default cases' title filter.
