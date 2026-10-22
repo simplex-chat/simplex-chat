@@ -17,6 +17,7 @@ import Control.Monad (join, replicateM_)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.Int (Int64)
 import Data.IORef (IORef, modifyIORef', newIORef, readIORef, writeIORef)
 import Data.List (sort)
 import Data.Maybe (fromMaybe)
@@ -71,6 +72,8 @@ namesSpendTests = describe "StoreService names: spend" $ do
     it "counts spends against the create limit" testSpendLimit
   describe "holders" $ do
     it "closes the balance's overdue unfunded holder in the spend's transaction, publishing it and cancelling its invoice" testOverdueHolderSpent
+    it "closes an overdue unfunded holder of another name for a difference spend, the new invoice holding the balance" testDifferenceClosesHolder
+    it "makes a new invoice of the same name over its overdue difference order, closing and cancelling that order once" testSpendAgain
     it "goes through when the overdue holder was cancelled meanwhile" testHolderCancelledMeanwhile
     it "answers balance_changed when the overdue holder was funded meanwhile, cancelling the new invoice" testHolderFundedMeanwhile
   describe "races" $ do
@@ -419,6 +422,51 @@ testOverdueHolderSpent = withSpend $ \ctx@Ctx {cStore, cClock} -> do
   cancels ctx `shouldReturn` [holderRef]
   (\r -> (nrPhase r, nrBalanceUsed r)) <$> registrationById ctx rid `shouldReturn` (PQueued, 10000)
   fmap (\b -> (blAmount b, blHold b)) <$> balanceOf ctx src `shouldReturn` Just (0, Nothing)
+
+-- | By card, whose invoice does not expire by itself at the provider, past its 60 minutes.
+overdueCardHolder :: Ctx -> RegistrationId -> IO (NameRegistration, Text)
+overdueCardHolder ctx src = do
+  (200, held) <- spend ctx src (difference 6000) {sbMethod = Just "card"}
+  let holderInv = invoiceIdOf held
+  holder <- invoiceRegistration ctx holderInv
+  holderRef <- providerRef ctx holderInv
+  advance ctx (61 * 60)
+  pure (holder, holderRef)
+
+-- | Whether the holder is live, its version, and its invoice's status.
+holderAfter :: Ctx -> NameRegistration -> IO (Bool, Int64, Maybe InvoiceStatus)
+holderAfter ctx@Ctx {cStore} NameRegistration {nrPayment} = case nrPayment of
+  RPInvoice _ invId -> do
+    r <- invoiceRegistration ctx invId
+    status <- fmap irStatus <$> getInvoice cStore invId
+    pure (nrLive r, nrVersion r, status)
+  other -> error $ "not a paid order: " <> show other
+
+testDifferenceClosesHolder :: IO ()
+testDifferenceClosesHolder = withSpend $ \ctx@Ctx {cClock} -> do
+  src <- sourceOf ctx "src" 6000
+  (holder, holderRef) <- overdueCardHolder ctx src
+  now <- readIORef cClock
+  (status, v) <- spend ctx src (timedAt now $ dynamis 6000 (Just "btc"))
+  status `shouldBe` 200
+  next <- invoiceRegistration ctx (invoiceIdOf v)
+  holderAfter ctx holder `shouldReturn` (False, nrVersion holder + 1, Just ISExpired)
+  cancels ctx `shouldReturn` [holderRef]
+  fmap (fmap bhHolder . blHold) <$> balanceOf ctx src `shouldReturn` Just (Just $ nrId next)
+
+-- | The page's "Get a new invoice": the same name with a new commitment, its earlier difference order overdue.
+testSpendAgain :: IO ()
+testSpendAgain = withSpend $ \ctx@Ctx {cClock} -> do
+  src <- sourceOf ctx "src" 6000
+  (holder, holderRef) <- overdueCardHolder ctx src
+  now <- readIORef cClock
+  (status, v) <- spend ctx src $ timedAt now SpendBody {sbOrder = aliceOrder {oCommitment = commitmentOf 5}, sbBalance = 6000, sbMethod = Just "card"}
+  status `shouldBe` 200
+  next <- invoiceRegistration ctx (invoiceIdOf v)
+  (nrLive next, nrLabelHash next) `shouldBe` (True, nrLabelHash holder)
+  holderAfter ctx holder `shouldReturn` (False, nrVersion holder + 1, Just ISExpired)
+  cancels ctx `shouldReturn` [holderRef]
+  fmap (fmap bhHolder . blHold) <$> balanceOf ctx src `shouldReturn` Just (Just $ nrId next)
 
 testHolderCancelledMeanwhile :: IO ()
 testHolderCancelledMeanwhile = withSpendHook $ \hook ctx@Ctx {cStore, cWeb, cClock} -> do
