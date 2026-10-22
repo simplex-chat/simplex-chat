@@ -35,7 +35,7 @@ import StoreService.Names.Abi (abiBytes, abiTuple, addressWord, AbiValue (..), s
 import StoreService.Names.Chain (Block (..), ChainClient, Receipt (..), TxHash (..), TxRequest (..), blockAt, decodeSignedTx, newChainClient)
 import StoreService.Names.Orders (Landing (..), OrdersEnv (..), confirmLanded)
 import StoreService.Names.Phases (awaitChange)
-import StoreService.Names.Registration (RegisterIntent (..), commitCalldata, registerIntentDigest, sponsorDomain)
+import StoreService.Names.Registration (RegisterIntent (..), commitCalldata, registerIntentDigest, registerWithCreditCalldata, sponsorDomain)
 import StoreService.Names.Reveal (intentOf)
 import StoreService.Names.Sender
 import StoreService.Names.Store
@@ -67,12 +67,16 @@ namesWorkerTests = describe "StoreService names: worker" $ do
     it "ends failed on a revert while the name is available, alerting on InsufficientAllowance and keeping a code" testRevertFailed
     it "clears the reveal on InvalidNonce, staying committed" testInvalidNonce
     it "relays no intent past its deadline, ending failed" testExpiredIntent
+    it "keeps the phase when a read of the final check fails" testCheckUnread
+    it "waits a second when the dry run reverts CommitmentTooNew" testCommitmentTooNew
+    it "ends a register mined with status 0 taken while the name is not available, releasing a code" testMinedRevertTaken
     it "writes failed only once no register can still be mined, and registered when the owner holds the name" testFailedOnlySettled
   describe "lapse" $ do
     it "ends a committed order not revealed by revealBefore failed, keeping its code" testLapseFailed
     it "wakes a held poll with failed at the lapse, and answers an old version at once after it" testLapsePoll
-  describe "restart" $
+  describe "restart" $ do
     it "resumes every phase after a restart, a commit saved but not recorded included" testRestart
+    it "waits for a register saved but not recorded before a restart, sending no other" testRestartRegisterSaved
   describe "lanes" $ do
     it "starts a worker for each registration in its phases" testRunWorkers
     it "releases the codes of code orders failed for 30 days, and no others" testCodeSweep
@@ -484,6 +488,43 @@ testInvalidNonce = withWorker $ \w@W {wCtx = ctx} -> do
   (nrPhase x, nrReveal x, nrVersion x, nrRevealBefore x) `shouldBe` (PCommitted, Nothing, nrVersion r + 1, nrRevealBefore r)
   sent w `shouldReturn` []
 
+testCheckUnread :: IO ()
+testCheckUnread = withWorker $ \w@W {wCtx = ctx@Ctx {cNode}} -> do
+  r <- paidIn ctx aliceOrder openPhase >>= revealed ctx keyA "alicebakery"
+  setFault cNode "eth_estimateGas" $ RpcError (-32000) "execution reverted" Nothing
+  -- no answer for available(label)
+  steps w r >>= retrying
+  stored ctx r `shouldReturn` r
+  -- ownerOf reverting with data is a failed read, not an unowned name
+  answerAvailable w False
+  answerCall cNode (registrarOf cNode) (ownerOfSelector <> labelBytes "alicebakery") $ Reverts $ unhex "37ed32e8"
+  steps w r >>= retrying
+  stored ctx r `shouldReturn` r
+  sent w `shouldReturn` []
+
+testCommitmentTooNew :: IO ()
+testCommitmentTooNew = withWorker $ \w@W {wCtx = ctx} -> do
+  r <- paidIn ctx aliceOrder openPhase >>= revealed ctx keyA "alicebakery"
+  answerAvailable w True
+  -- the node's latest block still before revealAfter
+  dryRunsRevert w "CommitmentTooNew(bytes32,uint256,uint256)" $ nrCommitment r <> uint256 (orderSeconds - minAge) <> uint256 orderSeconds
+  steps w r >>= waitingUntil >>= (`shouldBe` addUTCTime 1 orderTime)
+  stored ctx r `shouldReturn` r
+  sent w `shouldReturn` []
+
+testMinedRevertTaken :: IO ()
+testMinedRevertTaken = withWorker $ \w@W {wCtx = ctx} -> do
+  (r, code) <- codeIn ctx 8 aliceOrder openPhase >>= traverseFst (revealed ctx keyA "alicebakery")
+  answerAvailable w True
+  void $ steps w r >>= awaiting
+  -- another register for the name mined first
+  answerAvailable w False
+  void $ mineNewest w False
+  steps w r >>= done
+  x <- stored ctx r
+  (nrPhase x, nrLive x) `shouldBe` (PTaken, False)
+  pcReservedBy <$> codeOf ctx code `shouldReturn` Nothing
+
 testExpiredIntent :: IO ()
 testExpiredIntent = withWorker $ \w@W {wCtx = ctx} -> do
   r <- paidIn ctx aliceOrder (\o -> (openPhase o) {nrRevealBefore = Just (rvDeadline reveal)}) >>= revealed ctx keyA "alicebakery"
@@ -577,6 +618,19 @@ testRestart = withWorker $ \w@W {wCtx = ctx@Ctx {cStore}, wSender} -> do
   isJust . pcSpentAt <$> codeOf ctx code `shouldReturn` True
   map ntStatus <$> withTransaction cStore (`registrationTransactions` nrId r) `shouldReturn` [TSMined, TSMined]
   length <$> sent w `shouldReturn` 2
+
+testRestartRegisterSaved :: IO ()
+testRestartRegisterSaved = withWorker $ \w@W {wCtx = ctx@Ctx {cOrders}, wSender} -> do
+  r <- paidIn ctx aliceOrder openPhase >>= revealed ctx keyA "alicebakery"
+  rv <- maybe (fail "no reveal") pure $ nrReveal r
+  -- the register saved and sent, the service stopped before recording registering
+  Right p <- submitTransaction wSender (TxRegister $ nrId r) fakeSponsor (registerWithCreditCalldata $ intentOf (oeConfig cOrders) r rv)
+  w1 <- started ctx
+  steps w1 r >>= awaiting >>= (`shouldBe` ptHash p) . ptHash
+  x <- stored ctx r
+  (nrPhase x, nrRegisterTx x) `shouldBe` (PRegistering, Just (ptHash p))
+  steps w1 r >>= awaiting >>= (`shouldBe` ptHash p) . ptHash
+  length <$> sent w `shouldReturn` 1
 
 testRunWorkers :: IO ()
 testRunWorkers = withWorker $ \w@W {wCtx = ctx@Ctx {cNode, cOrders}, wWorker} -> do
