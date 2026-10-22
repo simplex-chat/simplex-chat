@@ -166,6 +166,7 @@ alice =
 dynamis :: Registration
 dynamis = alice {rLabel = "dynamis"}
 
+-- | At the launch prices for 2 years that the orders fixture answers: 7 letters 20000 cents, 11 letters 10000.
 orderOf :: Registration -> Order
 orderOf r@Registration {rLabel} = aliceOrder {oLabel = rLabel, oCommitment = makeCommitment r, oPrice = if T.length rLabel == 7 then 20000 else 10000}
 
