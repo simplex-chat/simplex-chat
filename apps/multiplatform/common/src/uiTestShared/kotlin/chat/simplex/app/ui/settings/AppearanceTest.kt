@@ -153,6 +153,7 @@ class AppearanceTest : UiTest() {
     click(Ui.Appearance.Accent)
     replaceText(Ui.Appearance.ColorHex, "#ff0000")
     poll(what = "the red accent applied and stored in themes.yaml") { CurrentColors.value.colors.primary == Color.Red && StoredThemes.active(base)?.colors?.primary == RED_HEX }
+    hideKeyboard()
     escape()
     poll(what = "Customize theme with Reset colors") { exists(Ui.Appearance.ResetColors) && !exists(Ui.Appearance.ColorHex) }
     click(Ui.Appearance.ResetColors)

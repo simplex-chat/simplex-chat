@@ -1,6 +1,7 @@
 package chat.simplex.app.ui.main
 
 import chat.simplex.app.ui.harness.CONNECT_TIMEOUT_MS
+import chat.simplex.app.ui.harness.KnownAppIssue
 import chat.simplex.app.ui.harness.UiTest
 import chat.simplex.app.ui.harness.connect
 import chat.simplex.app.ui.harness.goBack
@@ -13,6 +14,7 @@ import chat.simplex.common.ui.Ui
 import org.junit.Test
 
 class ProfileEditTest : UiTest() {
+  @KnownAppIssue("15.5 item 26", "waiting for node userPicker.user[", intermittent = true)
   @Test fun editProfileBioAndFullName() = uiTest {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)

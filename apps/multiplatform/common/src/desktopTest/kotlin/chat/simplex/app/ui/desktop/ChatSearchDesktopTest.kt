@@ -9,7 +9,7 @@ import org.junit.Test
 import java.io.File
 
 class ChatSearchDesktopTest : UiTest() {
-  @KnownAppIssue("15.5 item NEW", "waiting for `Files` in the content filter menu after a file note was added")
+  @KnownAppIssue("15.5 item 28", "waiting for `Files` in the content filter menu after a file note was added")
   @Test fun contentFilter_fileAddedInOpenChat_listsFiles() = uiTest {
     val alice = app("alice")
     val source = File(exchangeDir(), "list.txt").apply { writeText("apples") }

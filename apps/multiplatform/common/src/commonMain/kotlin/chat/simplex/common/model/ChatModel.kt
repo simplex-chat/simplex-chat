@@ -845,7 +845,7 @@ object ChatModel {
       private val subject = MutableSharedFlow<Unit>()
       private var remoteHostId: Long? = null
       private val chatsToPop = mutableMapOf<ChatId, Instant>()
-      @Volatile private var pendingIdle = 0L
+      private val pendingIdle = java.util.concurrent.atomic.AtomicLong()
 
       init {
         withLongRunningApi(idle = false) {
@@ -854,8 +854,7 @@ object ChatModel {
             .collect {
               withContext(Dispatchers.Main) {
                 chatsCtx.chats.replaceAll(popCollectedChats())
-                UiIdle.finish(pendingIdle)
-                pendingIdle = 0L
+                UiIdle.finish(pendingIdle.getAndSet(0))
               }
             }
         }
@@ -868,15 +867,22 @@ object ChatModel {
         }
         if (currentPosition > 0 || chatsToPop.isNotEmpty()) {
           chatsToPop[chatId] = Clock.System.now()
-          if (pendingIdle == 0L) pendingIdle = UiIdle.start { "chat list reorder" }
-          subject.emit(Unit)
+          if (pendingIdle.get() == 0L) {
+            val id = UiIdle.start { "chat list reorder" }
+            if (!pendingIdle.compareAndSet(0, id)) UiIdle.finish(id)
+          }
+          try {
+            subject.emit(Unit)
+          } catch (e: CancellationException) {
+            UiIdle.finish(pendingIdle.getAndSet(0))
+            throw e
+          }
         }
       }
 
       fun clear() {
         chatsToPop.clear()
-        UiIdle.finish(pendingIdle)
-        pendingIdle = 0L
+        UiIdle.finish(pendingIdle.getAndSet(0))
       }
 
       private fun popCollectedChats(): List<Chat> {

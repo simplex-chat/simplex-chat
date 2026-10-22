@@ -85,6 +85,7 @@ class ContactInfoTest : UiTest() {
     poll(what = "the alias `friend` in the name field of contact info") { exists(Ui.Info.Alias) && editableText(Ui.Info.Alias) == "friend" }
     replaceText(Ui.Info.Alias, "")
     poll(what = "bob's alias cleared in the model") { (chatModel.chats.value.first { it.id == id }.chatInfo as ChatInfo.Direct).contact.localAlias.isEmpty() }
+    hideKeyboard()
     closeContactInfo()
     backToChatList()
     poll(what = "bob's row named `bob` again") { alice.chatList.rowTexts("bob").let { "bob" in it && "friend" !in it } }

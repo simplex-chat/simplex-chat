@@ -1,8 +1,16 @@
 package chat.simplex.app.ui.back
 
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.isFocused
+import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry
+import androidx.test.runner.lifecycle.Stage
+import chat.simplex.app.MainActivity
 import chat.simplex.app.ui.harness.ChatScreen
 import chat.simplex.app.ui.harness.KnownAppIssue
+import chat.simplex.app.ui.harness.UiScope
 import chat.simplex.app.ui.harness.UiTest
+import chat.simplex.app.ui.harness.UiTestApp
 import chat.simplex.app.ui.harness.connect
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatInfo
@@ -111,8 +119,9 @@ class BackKeyTest : UiTest() {
     val alice = app("alice")
     alice.userPicker()
     waitFor(Ui.UserPicker.Sheet)
+    val before = backState()
     escape()
-    poll(what = "the user picker to hide") { !exists(Ui.UserPicker.Sheet) }
+    poll(what = "the user picker to hide (before Back: $before)") { !exists(Ui.UserPicker.Sheet) }
     check(chatModel.chatId.value == null && !ModalManager.start.hasModalsOpen() && !mainActivityFinished()) { "Back did not return to the chat list" }
   }
 
@@ -187,5 +196,15 @@ class BackKeyTest : UiTest() {
       poll(what = "Your network again") { seesText("Your network") }
       check(appPrefs.onboardingStage.get() == OnboardingStage.Step3_ChooseServerOperators) { "relaunch changed the onboarding stage" }
     }
+  }
+
+  private fun UiScope.backState(): String {
+    var state = ""
+    UiTestApp.onMain {
+      val activity = ActivityLifecycleMonitorRegistry.getInstance().getActivitiesInStage(Stage.RESUMED).filterIsInstance<MainActivity>().firstOrNull()
+      state = "touch mode ${activity?.window?.decorView?.isInTouchMode}, enabled back callbacks ${activity?.onBackPressedDispatcher?.hasEnabledCallbacks()}"
+    }
+    val focused = rule.onAllNodes(isFocused()).fetchSemanticsNodes().map { it.config.getOrNull(SemanticsProperties.TestTag) ?: "untagged" }
+    return "$state, focused nodes $focused"
   }
 }

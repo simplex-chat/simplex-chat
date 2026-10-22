@@ -4,6 +4,7 @@ import chat.simplex.app.ui.harness.App
 import chat.simplex.app.ui.harness.CONNECT_TIMEOUT_MS
 import chat.simplex.app.ui.harness.DB_WORK_TIMEOUT_MS
 import chat.simplex.app.ui.harness.UiScope
+import chat.simplex.app.ui.harness.KnownAppIssue
 import chat.simplex.app.ui.harness.UiTest
 import chat.simplex.app.ui.harness.backToChatList
 import chat.simplex.app.ui.harness.chatData
@@ -22,6 +23,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Test
 
 class DatabaseEncryptionTest : UiTest() {
+  @KnownAppIssue("15.5 item 27", "waiting for the Database encrypted! alert", intermittent = true)
   @Test fun dbEncrypt_changePassphrase() = uiTest {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)

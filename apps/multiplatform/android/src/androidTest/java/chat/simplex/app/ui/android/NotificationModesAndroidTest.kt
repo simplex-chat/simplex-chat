@@ -7,17 +7,21 @@ import chat.simplex.app.SimplexService
 import chat.simplex.app.ui.harness.App
 import chat.simplex.app.ui.harness.UiScope
 import chat.simplex.app.ui.harness.UiTest
+import chat.simplex.app.ui.harness.UiTestApp
 import chat.simplex.app.ui.harness.described
 import chat.simplex.common.model.NotificationsMode
 import chat.simplex.common.platform.androidAppContext
+import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.Ui
 import chat.simplex.common.views.helpers.AlertManager
+import chat.simplex.common.views.usersettings.changeNotificationsMode
 import org.junit.Test
 
 class NotificationModesAndroidTest : UiTest() {
   @Test fun ntfMode_switchToService_startsForegroundService() = uiTest {
     val alice = app("alice")
     requireNotificationPermission()
+    UiTestApp.onMain { changeNotificationsMode(NotificationsMode.OFF, chatModel) }
     withBackgroundServiceAllowed {
       openNotificationSettings(alice)
       check(OFF_TITLE in textsOf(Ui.Notifications.Mode)) { "Notification service row: ${textsOf(Ui.Notifications.Mode)}" }

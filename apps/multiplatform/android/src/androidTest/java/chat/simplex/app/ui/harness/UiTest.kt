@@ -35,6 +35,7 @@ abstract class UiTest {
     val watchdog = Watchdog.start(HARD_TIMEOUT_MS)
     try {
       UiTestApp.bootOnce()
+      rule.mainClock.autoAdvance = false
       AppCrashes.install()
       AppCrashes.clear()
       withKnownIssue(knownIssue.issue) {
@@ -186,7 +187,13 @@ class UiScope(val rule: ComposeTestRule) {
     var workEnded = false
     while (true) {
       rule.mainClock.advanceTimeBy(48, ignoreFrameDuration = true)
-      rule.waitForIdle()
+      try {
+        rule.waitForIdle()
+      } catch (e: RuntimeException) {
+        if (e.javaClass.simpleName != "ComposeNotIdleException") throw e
+        val shot = if (screenshot) FailureShots.take("UI not idle while waiting for $what") else null
+        throw AssertionError("the app's UI did not become idle while waiting for $what; in flight: ${UiIdle.inFlight().joinToString { it.what }}; screenshot: $shot", e)
+      }
       AppCrashes.failIfAny()
       if (runCatching(cond).onFailure { lastError = it }.getOrDefault(false)) {
         Timing.wait(what, System.currentTimeMillis() - start)
@@ -281,13 +288,18 @@ class UiScope(val rule: ComposeTestRule) {
   private fun centerInScrollParent(key: UiKey) {
     val node = rule.onAllNodes(matcher(key)).fetchSemanticsNodes().firstOrNull() ?: return
     var parent = node.parent
-    while (parent != null && !parent.config.contains(SemanticsActions.ScrollBy)) parent = parent.parent
+    while (parent != null && !(parent.config.contains(SemanticsActions.ScrollBy) && parent.scrollsVertically())) parent = parent.parent
     val scroller = parent ?: return
-    val dy = node.boundsInRoot.center.y - scroller.boundsInRoot.center.y
+    val offset = node.positionInRoot.y + node.size.height / 2f - scroller.boundsInRoot.center.y
+    val reversed = scroller.config.getOrElseNullable(androidx.compose.ui.semantics.SemanticsProperties.VerticalScrollAxisRange) { null }?.reverseScrolling == true
+    val dy = if (reversed) -offset else offset
     if (kotlin.math.abs(dy) < 1f) return
     rule.runOnUiThread { scroller.config[SemanticsActions.ScrollBy].action?.invoke(0f, dy) }
     rule.waitForIdle()
   }
+
+  private fun androidx.compose.ui.semantics.SemanticsNode.scrollsVertically(): Boolean =
+    config.getOrElseNullable(androidx.compose.ui.semantics.SemanticsProperties.VerticalScrollAxisRange) { null }?.let { it.maxValue() > 0f } == true
 
   fun rightClick(key: UiKey) {
     waitFor(key)
@@ -468,6 +480,7 @@ private class CommitText(private val value: String) : androidx.test.espresso.Vie
     editText.requestFocus()
     val ic = editText.onCreateInputConnection(android.view.inputmethod.EditorInfo()) ?: error("the message field has no input connection")
     ic.beginBatchEdit()
+    ic.finishComposingText()
     ic.setSelection(0, editText.text.length)
     ic.commitText(value, 1)
     ic.endBatchEdit()

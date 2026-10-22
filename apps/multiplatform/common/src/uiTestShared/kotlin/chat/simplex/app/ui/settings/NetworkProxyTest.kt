@@ -134,6 +134,7 @@ class NetworkProxyTest : UiTest() {
     socks = network.socks()
     check(editableText(Ui.Socks.Host) == "localhost" && editableText(Ui.Socks.Port) == "9050") { "the invalid values were kept" }
     replaceText(Ui.Socks.Port, PROXY_PORT)
+    hideKeyboard()
     goBack()
     awaitUnsavedAlert()
     click(ALERT_DISMISS)
@@ -142,6 +143,7 @@ class NetworkProxyTest : UiTest() {
     socks = network.socks()
     check(editableText(Ui.Socks.Port) == "9050") { "the discarded port is shown: ${editableText(Ui.Socks.Port)}" }
     replaceText(Ui.Socks.Port, PROXY_PORT)
+    hideKeyboard()
     goBack()
     awaitUnsavedAlert()
     click(ALERT_CONFIRM)

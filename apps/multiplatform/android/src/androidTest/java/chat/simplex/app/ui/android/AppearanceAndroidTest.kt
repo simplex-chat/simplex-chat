@@ -14,7 +14,7 @@ class AppearanceAndroidTest : UiTest() {
     val alice = app("alice")
     waitFor(Ui.ChatList.Search)
     check(storedSetting(ONE_HAND) == null && storedSetting(CHAT_BOTTOM) == null) { "the toolbar prefs are not at their defaults: ${storedSetting(ONE_HAND)}, ${storedSetting(CHAT_BOTTOM)}" }
-    poll(what = "the chat list search field and toolbar at the bottom of the screen") { lowerHalf(Ui.ChatList.Search) == true && lowerHalf(Ui.ChatList.Bar) == true }
+    poll(what = "the chat list search field and toolbar at the bottom of the screen") { lowerHalf(Ui.ChatList.Search) == true && lowerHalf(CHAT_LIST_BAR) == true }
     alice.chatList.open(NOTES)
     poll(what = "the notes toolbar at the bottom of the screen") { lowerHalf(CHAT_TITLE) == true }
     backToChatList()
@@ -30,7 +30,7 @@ class AppearanceAndroidTest : UiTest() {
       storedSetting(ONE_HAND) == "false" && toggleState(Ui.Appearance.OneHandUI) == ToggleableState.Off && !exists(Ui.Appearance.ChatBottomBar)
     }
     closeAppearance()
-    poll(what = "the chat list search field and toolbar at the top of the screen") { lowerHalf(Ui.ChatList.Search) == false && lowerHalf(Ui.ChatList.Bar) == false }
+    poll(what = "the chat list search field and toolbar at the top of the screen") { lowerHalf(Ui.ChatList.Search) == false && lowerHalf(CHAT_LIST_BAR) == false }
 
     alice.appearance()
     click(Ui.Appearance.OneHandUI)
@@ -54,5 +54,6 @@ class AppearanceAndroidTest : UiTest() {
     const val CHAT_BOTTOM = "ChatBottomBar"
     const val NOTES = "Private notes"
     val CHAT_TITLE = Ui.Chat.Bar.part("title")
+    val CHAT_LIST_BAR = Ui.ChatList.Bar.part("title")
   }
 }

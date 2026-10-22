@@ -67,6 +67,7 @@ class WelcomeMessageScreen(private val s: UiScope) {
   fun save() = s.click(Ui.Welcome.Save)
 
   fun close() {
+    s.hideKeyboard()
     s.goBack()
     s.poll(what = "the welcome message screen to close without an alert") {
       !s.exists(Ui.Welcome.Text) && !s.exists(Ui.Welcome.Preview) && !s.seesText("Save welcome message?")
