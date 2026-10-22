@@ -343,7 +343,9 @@ host again when it connects, so a name that changes its answer in between (DNS r
 reach a private address. The guard is a firewall rule: the service's new outbound connections to
 unspecified, private, CGNAT, loopback, link-local, benchmarking, multicast and reserved IPv4
 ranges, and to unique-local, link-local, site-local and multicast IPv6 ranges (with IPv4-mapped,
-IPv4-compatible and NAT64 forms of the IPv4 ones), are rejected. The exceptions are the
+IPv4-compatible and NAT64 forms of the IPv4 ones), are rejected, and so are those to any of the
+host's own addresses, public ones included, since a rebinding name can answer with them too and
+reach whatever listens on the host. The exceptions are the
 endpoints the service is configured to use, on their ports: the RPC node (`[chain] rpc_url`),
 BTCPay (`[btcpay] host`), the database and the DNS resolvers in `/etc/resolv.conf`. Replies on
 connections already open, such as Caddy's requests, pass.

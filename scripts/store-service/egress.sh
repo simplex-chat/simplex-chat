@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Denies the store service's new outbound connections to private, loopback, link-local, unique-local,
-# CGNAT, unspecified and multicast addresses, except the RPC node, BTCPay and the database it is
-# configured with and the system's DNS resolvers. Run as root; see the README's egress section.
+# CGNAT, unspecified and multicast addresses and to the host's own addresses, except the RPC node,
+# BTCPay and the database it is configured with and the system's DNS resolvers. Run as root; see the
+# README's egress section.
 set -euo pipefail
 shopt -s inherit_errexit
 
@@ -228,6 +229,7 @@ v4_in_v6() {
 }
 
 # One rule per line, in chain order: replies, then the allowed endpoints, then the denied ranges.
+# A rebinding name can also answer with one of the host's own public addresses, so those are denied too.
 rules_for() {
   local family=$1 entry address address_family proto port range prefix
   echo "-m conntrack --ctstate ESTABLISHED,RELATED -j RETURN"
@@ -238,6 +240,7 @@ rules_for() {
       echo "-d $address -p $proto --dport $port -j RETURN"
     fi
   done
+  echo "-m addrtype --dst-type LOCAL -j REJECT"
   if [[ $family == 4 ]]; then
     for range in "${DENIED_V4[@]}"; do echo "-d $range -j REJECT"; done
   else
