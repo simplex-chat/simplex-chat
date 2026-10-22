@@ -167,17 +167,24 @@ commit w@Worker {wkOrders = OrdersEnv {oeContracts}, wkSender} now r@NameRegistr
         Right (_, Nothing) -> sendCommit w now r
         Right (ages, Just t) -> fromCommitment w now r ages t
 
--- | A live commitment is reused while revealMargin is left before its lapse. At the lapse second it can neither register
--- nor be committed again, so the worker waits a second past it, then commits again with the stale fields cleared.
+-- | At the lapse second a commitment can neither register nor be committed again, so the worker waits a second past it,
+-- then commits again with the stale fields cleared.
 fromCommitment :: Worker -> UTCTime -> NameRegistration -> CommitmentAges -> Word64 -> IO Next
-fromCommitment w@Worker {wkOrders = OrdersEnv {oeConfig = NamesConfig {nRevealMarginSeconds}}} now r ages@CommitmentAges {caMax} t
-  | left >= toInteger nRevealMarginSeconds = toCommitted w now r ages t
-  | left >= 0 = pure $ waitUntil r $ addUTCTime chainSecond $ secondsTime lapse
+fromCommitment w@Worker {wkOrders = OrdersEnv {oeConfig}} now r ages t
+  | reusable oeConfig now lapse = toCommitted w now r ages t
+  | lapse >= unixSeconds now = pure $ waitUntil r $ addUTCTime chainSecond $ secondsTime lapse
   | lapsedFields r /= r = save w now $ lapsedFields r
   | otherwise = sendCommit w now r
   where
-    lapse = toInteger t + caMax
-    left = lapse - unixSeconds now
+    lapse = commitmentLapse ages t
+
+-- | The revealBefore of a commitment committed at this time.
+commitmentLapse :: CommitmentAges -> Word64 -> Integer
+commitmentLapse CommitmentAges {caMax} t = toInteger t + caMax
+
+-- | A live commitment is reused while revealMargin is left before its lapse, time for the page's reveal and the register to mine.
+reusable :: NamesConfig -> UTCTime -> Integer -> Bool
+reusable NamesConfig {nRevealMarginSeconds} now lapse = lapse - unixSeconds now >= toInteger nRevealMarginSeconds
 
 -- | The intent's deadline is the lapsed revealBefore, so it goes with the old transactions and reveal times; the page signs again.
 lapsedFields :: NameRegistration -> NameRegistration
