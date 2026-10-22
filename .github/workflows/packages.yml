@@ -26,7 +26,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       platforms: ${{ steps.plan.outputs.platforms }}
-      test: ${{ steps.plan.outputs.test }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6
@@ -70,5 +69,4 @@ jobs:
         run: scripts/ci/package-tests.sh build ${{ matrix.platform }}
 
       - name: Test simplex-chat (npm and PyPI)
-        if: needs.addon.outputs.test
         run: scripts/ci/package-tests.sh test
