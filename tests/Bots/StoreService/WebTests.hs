@@ -84,6 +84,8 @@ import GHC.IO.Handle (hDuplicate, hDuplicateTo)
 import Network.HTTP.Client (Manager, Request (..), RequestBody (..), Response, defaultManagerSettings, httpLbs, newManager, parseRequest, responseBody, responseHeaders, responseStatus, responseTimeoutMicro)
 import Network.HTTP.Types (Header, HeaderName, hCacheControl, hContentType)
 import Network.HTTP.Types.Status (statusCode)
+import qualified Network.Socket as N
+import qualified Network.Socket.ByteString as NB
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey (..), BadgeType (..))
 import Simplex.Chat.StoreService (BadgeOffer (..), BadgePrice (..))
@@ -234,6 +236,8 @@ badgeWebTests = do
     it "exports both sites, each with the publishable key" testExportsBothSites
     it "picks the site by Host against names_hosts" testHostPicksTheSite
     it "serves a names asset with its type" testServesANamesAsset
+    it "keeps every traversal spelling on the names host inside the names build" testNamesTraversalRefused
+    it "serves the badges site to a request with no Host header" testNoHostIsBadges
   describe "store service settlement" $ do
     it "settles an open invoice: paid, a settled payment row, and the code" testSettlesAnOpenInvoice
     it "settles an expired invoice, because late settlement is routine" testLateSettlementIsLegal
@@ -1139,6 +1143,35 @@ testServesANamesAsset = bounded "names asset" $ withBothSites $ \client -> do
   (statusOf manifest, responseBody manifest) `shouldBe` (200, namesManifest)
   headerOf manifest hContentType `shouldBe` Just "application/manifest+json"
   (statusOf <$> webGetAt client namesHost "/fonts/Manrope/absent.woff2") `shouldReturn` 404
+
+namesTraversalSpellings :: [String]
+namesTraversalSpellings =
+  [ "/../dist/index.html",
+    "/%2e%2e/dist/index.html",
+    "/..%2fdist%2findex.html",
+    "/fonts/../../dist/index.html",
+    "/fonts/Manrope/%2e%2e/%2e%2e/%2e%2e/secret.txt",
+    "/..%2fsecret.txt"
+  ]
+
+testNamesTraversalRefused :: IO ()
+testNamesTraversalRefused = bounded "names traversal" $ withBothSites $ \client ->
+  forM_ namesTraversalSpellings $ \target -> do
+    r <- webGetAt client namesHost target
+    (target, statusOf r, responseBody r) `shouldBe` (target, 404, notFoundBody)
+
+-- | http-client always sends a Host header, so this request is written on a socket.
+testNoHostIsBadges :: IO ()
+testNoHostIsBadges = bounded "no Host header" $ withBothSites $ \(_, base) -> do
+  let port = reverse (takeWhile (/= ':') (reverse base))
+  addr : _ <- N.getAddrInfo (Just N.defaultHints {N.addrSocketType = N.Stream}) (Just "127.0.0.1") (Just port)
+  answer <- E.bracket (N.openSocket addr) N.close $ \sock -> do
+    N.connect sock (N.addrAddress addr)
+    NB.sendAll sock "GET / HTTP/1.0\r\n\r\n"
+    let readAll acc = NB.recv sock 4096 >>= \chunk -> if BS.null chunk then pure (BS.concat (reverse acc)) else readAll (chunk : acc)
+    readAll []
+  answer `shouldSatisfy` BC.isPrefixOf "HTTP/1.0 200"
+  answer `shouldSatisfy` BC.isInfixOf "SimpleX badges"
 
 type WebClient = (Manager, String)
 
