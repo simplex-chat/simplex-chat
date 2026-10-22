@@ -22,7 +22,8 @@ schemaMigrations =
     ("20260918_badge_group_ops", m20260918_badge_group_ops, Just down_m20260918_badge_group_ops),
     ("20261010_names", m20261010_names, Just down_m20261010_names),
     ("20261022_drop_taken_codes", m20261022_drop_taken_codes, Just down_m20261022_drop_taken_codes),
-    ("20261022_name_balances", m20261022_name_balances, Just down_m20261022_name_balances)
+    ("20261022_name_balances", m20261022_name_balances, Just down_m20261022_name_balances),
+    ("20261022_name_late_wait", m20261022_name_late_wait, Just down_m20261022_name_late_wait)
   ]
 
 -- | The client tables share this database, so the service tables are the same names behind a prefix.
@@ -441,6 +442,23 @@ ALTER TABLE @name_registrations DROP COLUMN balance_source;
 
 DROP INDEX @idx_name_balances_reserved_by;
 DROP TABLE @name_balances;
+|]
+
+-- Why a closed order's late money will not be credited by itself: high_speed, units, rate_floor or unconfirmed. Never cleared.
+m20261022_name_late_wait :: Query
+m20261022_name_late_wait =
+  withPrefix
+    servicePrefix
+    [sql|
+ALTER TABLE @name_invoices ADD COLUMN late_support TEXT;
+|]
+
+down_m20261022_name_late_wait :: Query
+down_m20261022_name_late_wait =
+  withPrefix
+    servicePrefix
+    [sql|
+ALTER TABLE @name_invoices DROP COLUMN late_support;
 |]
 
 {- TODO [badges] deferred with the draft in M20260915_user_badges, service only.

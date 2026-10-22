@@ -183,7 +183,7 @@ testNamesColumns = withServiceStore $ \st -> do
       "years", "duration", "expires_at", "price", "name_prepaid_code_id", "registered_at", "failed_at", "error", "created_at",
       "updated_at", "version", "live", "order_hash", "method", "moves", "links_refused_at", "balance_source", "balance_used"
     ]
-  has "sx_badge_service_name_invoices" ["invoice_id", "registration_id", "provider_ref", "late_alerted_at", "late_alerted_units"]
+  has "sx_badge_service_name_invoices" ["invoice_id", "registration_id", "provider_ref", "late_alerted_at", "late_alerted_units", "late_support"]
   has "sx_badge_service_name_balances" ["registration_id", "amount", "credited", "refunded", "reserved_by", "refunded_at", "created_at", "updated_at"]
   has "sx_badge_service_name_late_credits" ["invoice_id", "credit_no", "registration_id", "units", "invoice_rate", "current_rate", "rate_used", "cents", "created_at"]
   has "sx_badge_service_payments" balancePaymentColumns
@@ -194,7 +194,7 @@ testNamesDownUp :: IO ()
 testNamesDownUp = withServiceStore $ \st -> do
   let names = dropWhile ((/= "20261010_names") . name) storeServiceSchemaMigrations
       badgeColumns = mapM (fmap sort . columnsOf st) badgeTables
-  map name names `shouldBe` ["20261010_names", "20261022_drop_taken_codes", "20261022_name_balances"]
+  map name names `shouldBe` ["20261010_names", "20261022_drop_taken_codes", "20261022_name_balances", "20261022_name_late_wait"]
   badgeBefore <- badgeColumns
   code <- issue st 1 usable
   placeCode st "r1" ownerA (order "alicebakery" 1) code `shouldReturn` Right ()
