@@ -514,11 +514,29 @@ Only the guardian, the controller's beneficiary, can set the allowance:
 cast call $CONTROLLER 'beneficiary()(address)' --rpc-url $RPC
 ```
 
-The guardian sends from its own wallet (here a Ledger; `--interactive` prompts for a raw key), then
-anyone can check the result:
+The guardian sends this call to `$SPONSOR`, with no value, from whatever wallet holds its key. Its
+calldata, here for $1,000:
 
 ```
-cast send $SPONSOR 'setRegistrarAllowance(address,uint256)' $REGISTRAR $(cast parse-units 1000) --rpc-url $RPC --ledger
+cast calldata 'setRegistrarAllowance(address,uint256)' $REGISTRAR $(cast parse-units 1000)
+```
+
+```
+0x7f8ac8b8000000000000000000000000b2590b3a4fa5bedda803f5f1f605803438c3f71e00000000000000000000000000000000000000000000003635c9adc5dea00000
+```
+
+- From a key, with cast (`--interactive` prompts for the key; `--ledger` signs on a Ledger instead):
+
+  ```
+  cast send $SPONSOR 'setRegistrarAllowance(address,uint256)' $REGISTRAR $(cast parse-units 1000) --rpc-url $RPC --interactive
+  ```
+
+- From a multisig such as Safe: submit that calldata to the sponsor address as a transaction with
+  value 0 in the Safe app.
+
+Then anyone can check the result:
+
+```
 cast call $SPONSOR 'registrarAllowance(address)(uint256)' $REGISTRAR --rpc-url $RPC
 ```
 
@@ -545,10 +563,10 @@ cast call $SPONSOR 'registrarAllowance(address)(uint256)' $REGISTRAR --rpc-url $
 
 #### Fund the key
 
-Send ETH on the chain of `[chain] chain_id` from any wallet, and top it up the same way:
+Send ETH on the chain of `[chain] chain_id` from any wallet, and top it up the same way. With cast:
 
 ```
-cast send $REGISTRAR --value 1ether --rpc-url $RPC --ledger
+cast send $REGISTRAR --value 1ether --rpc-url $RPC --interactive
 ```
 
 The gas below was measured on a local anvil deployment of the contracts (the names webapp's
@@ -652,10 +670,11 @@ row:
    cast wallet address "$(sudo sed -n 's/^service_key *= *//p' store_service.ini)"
    ```
 
-4. The guardian zeroes the old key's allowance (`OLD` is its address):
+4. The guardian zeroes the old key's allowance (`OLD` is its address), sending this calldata as in
+   [Grant the allowance](#grant-the-allowance), then anyone checks it reads 0:
 
    ```
-   cast send $SPONSOR 'setRegistrarAllowance(address,uint256)' $OLD 0 --rpc-url $RPC --ledger
+   cast calldata 'setRegistrarAllowance(address,uint256)' $OLD 0
    cast call $SPONSOR 'registrarAllowance(address)(uint256)' $OLD --rpc-url $RPC
    ```
 
