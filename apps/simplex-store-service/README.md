@@ -403,6 +403,10 @@ sudo ./egress.sh --check --uid 998
   database string or the resolvers, and after a private endpoint's address changes. A name the
   host cannot resolve (a container name) stops the install; pass its address with
   `--allow ADDRESS:PORT`, as for any other endpoint the service needs, such as a SOCKS proxy.
+- Every address of this host is refused unless allowed, public ones included. An SMP or XFTP
+  server on the same host, which the service reaches by its public name, needs
+  `--allow <name>:<port>` (5223 for SMP, 443 for XFTP by default), as does anything else on this
+  host the service connects to.
 - The DNS resolvers allowed are those in `--resolv-conf` (default `/etc/resolv.conf`). With host
   networking that is what the service queries, systemd-resolved's stub included. On a bridge
   network of a host with systemd-resolved, Docker sends the containers' queries to the upstream
