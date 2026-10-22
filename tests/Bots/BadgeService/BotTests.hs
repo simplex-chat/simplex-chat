@@ -4355,6 +4355,10 @@ testPlaySubscriptionResumes ps =
       (_, rows) <- clientSubscribedMonthly env alice
       storeReports store $ subscriptionCheck SSBillingRetry Nothing
       t0 <- firstUnrenewedAnswer alice bsClock rows []
+      -- an answer within the window keeps the run going, so the one past it retires the badge
+      let beforeEnd = addUTCTime (subscriptionRecoveryWindow - 3600) t0
+      activateAt alice bsClock beforeEnd
+      fst <$> answeredRun (chatController alice) beforeEnd `shouldReturn` t0
       [Just wake] <- nextWakes (chatController alice)
       setClockAt bsClock $ max wake $ addUTCTime (subscriptionRecoveryWindow + 3600) t0
       activateAnswered alice ["badge alert: subscription_ended "]
