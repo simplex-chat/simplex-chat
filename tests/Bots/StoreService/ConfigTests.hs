@@ -485,7 +485,7 @@ testNamesDefaults = do
   nTermSlackSeconds `shouldBe` 3600
   nRevealMarginSeconds `shouldBe` 900
   nMaxOrderMoves `shouldBe` 3
-  let ChainConfig {cRpcUrl, cChainId, cController, cSponsor, cBaseRegistrar, cResolver, cServiceKey, cConfirmations, cGasLimitCap} = nChain
+  let ChainConfig {cRpcUrl, cChainId, cController, cSponsor, cBaseRegistrar, cResolver, cServiceKey, cConfirmations, cGasLimitCap, cMaxFeePerGas} = nChain
   cRpcUrl `shouldBe` T.unpack rpcUrl
   cChainId `shouldBe` 31337
   (cController, cSponsor, cBaseRegistrar, cResolver) `shouldBe` (address controllerAddr, address sponsorAddr, address registrarAddr, address resolverAddr)
@@ -493,19 +493,22 @@ testNamesDefaults = do
   (cServiceKey == expectedKey) `shouldBe` True
   cConfirmations `shouldBe` 3
   cGasLimitCap `shouldBe` 8000000
+  cMaxFeePerGas `shouldBe` 100000000000
 
 testNamesWrittenOut :: IO ()
 testNamesWrittenOut = do
   let ns = ["[names]", "tld = simplex", "years = 5", "term_start = 2027-03-01T12:00:00Z", "term_slack_seconds = 60", "reveal_margin_seconds = 0", "max_order_moves = 0"]
-      cs = chainSection <> ["confirmations = 0", "gas_limit_cap = 500000"]
-  NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves, nChain = ChainConfig {cConfirmations, cGasLimitCap}} <- parsedNames ns cs
+      cs = chainSection <> ["confirmations = 0", "gas_limit_cap = 500000", "max_fee_per_gas = 30000000000"]
+  NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves, nChain = ChainConfig {cConfirmations, cGasLimitCap, cMaxFeePerGas}} <- parsedNames ns cs
   nTLD `shouldBe` TLDSimplex
   nYears `shouldBe` 5
   nTermStart `shouldBe` UTCTime (fromGregorian 2027 3 1) (12 * 3600)
   (nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves) `shouldBe` (60, 0, 0)
-  (cConfirmations, cGasLimitCap) `shouldBe` (0, 500000)
+  (cConfirmations, cGasLimitCap, cMaxFeePerGas) `shouldBe` (0, 500000, 30000000000)
   namesRefusal ns (chainSection <> ["confirmations = -1"]) `shouldReturn` "chain.confirmations must be at least 0"
   namesRefusal ns (chainSection <> ["gas_limit_cap = 0"]) `shouldReturn` "chain.gas_limit_cap must be a positive whole number"
+  namesRefusal ns (chainSection <> ["max_fee_per_gas = 0"]) `shouldReturn` "chain.max_fee_per_gas must be a positive whole number"
+  namesRefusal ns (chainSection <> ["max_fee_per_gas = 18446744073709551616"]) `shouldReturn` "chain.max_fee_per_gas must be a positive whole number"
   namesRefusal ns (filter (not . ("chain_id" `T.isPrefixOf`)) chainSection) `shouldReturn` "chain.chain_id is required"
   namesRefusal (namesSection <> ["max_order_moves = -1"]) chainSection `shouldReturn` "names.max_order_moves must be at least 0"
 

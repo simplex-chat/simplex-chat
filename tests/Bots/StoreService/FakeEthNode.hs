@@ -26,6 +26,7 @@ module Bots.StoreService.FakeEthNode
     fakeGas,
     fakeTip,
     fakeBaseFee,
+    fakeMaxFeePerGas,
   )
 where
 
@@ -91,10 +92,11 @@ data FakeState = FakeState
     fsClosed :: Bool
   }
 
-fakeGas, fakeTip, fakeBaseFee :: Num a => a
+fakeGas, fakeTip, fakeBaseFee, fakeMaxFeePerGas :: Num a => a
 fakeGas = 200000
 fakeTip = 1000000000
 fakeBaseFee = 2000000000
+fakeMaxFeePerGas = 100000000000
 
 fakeChainId :: Word64
 fakeChainId = 31337
@@ -143,7 +145,8 @@ fakeChainConfig FakeEthNode {fnUrl} =
       cResolver = fakeResolver,
       cServiceKey = fakeRegistrarKey,
       cConfirmations = 3,
-      cGasLimitCap = 8000000
+      cGasLimitCap = 8000000,
+      cMaxFeePerGas = fakeMaxFeePerGas
     }
 
 answerCall :: FakeEthNode -> Address -> ByteString -> CallAnswer -> IO ()

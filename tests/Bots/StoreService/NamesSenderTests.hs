@@ -48,6 +48,8 @@ namesSenderTests = describe "StoreService names: sender" $ do
   it "hands a mined transaction whose receipt was pruned to its owner, signing nothing more" $ testPrunedReceipt g
   it "logs a round that fails on the store, and settles the transaction in the next round" $ testFailedRound g
   it "logs a send the node keeps refusing once per error, an underfunded key as an error" $ testRefusedSendLogged g
+  it "refuses a transaction whose block needs more than the fee cap, saving nothing, and signs at most the cap" $ testFeeCapSubmit g
+  it "clamps a replacement at the fee cap, and keeps rebroadcasting once a replacement would pass it" $ testFeeCapReplace g
 
 data Setup = Setup
   { node :: FakeEthNode,
@@ -57,14 +59,17 @@ data Setup = Setup
     random :: TVar ChaChaDRG
   }
 
--- | Two code orders, r1 and r2, and two confirmations.
 withSetup :: TVar ChaChaDRG -> (Setup -> IO a) -> IO a
-withSetup random action = withFakeEthNode $ \node -> withServiceStore $ \store -> do
+withSetup = withCapSetup fakeMaxFeePerGas
+
+-- | Two code orders, r1 and r2, two confirmations, and this max fee per gas.
+withCapSetup :: Word64 -> TVar ChaChaDRG -> (Setup -> IO a) -> IO a
+withCapSetup cap random action = withFakeEthNode $ \node -> withServiceStore $ \store -> do
   forM_ [(1, "r1", "alicebakery"), (2, "r2", "bobbakery")] $ \(n, rid, label) -> do
     code <- issue store n usable
     placeCode store rid ownerA (order label n) code `shouldReturn` Right ()
   clock <- newTVarIO t0
-  chain <- newChainClient random (fakeChainConfig node) {cConfirmations = 2}
+  chain <- newChainClient random (fakeChainConfig node) {cConfirmations = 2, cMaxFeePerGas = cap}
   action Setup {node, store, clock, chain, random}
 
 start :: Setup -> IO Sender
@@ -282,6 +287,49 @@ testRefusedSendLogged g = withSetup g $ \s@Setup {node} -> do
   linesWith "[" "names sender: nonce 9" `shouldBe` 2
   linesWith "[" "names sender: rebroadcasting nonce 9" `shouldBe` 0
   length <$> sentTransactions node `shouldReturn` 1
+
+testFeeCapSubmit :: TVar ChaChaDRG -> IO ()
+testFeeCapSubmit g = withSetup g $ \s@Setup {node, store} -> do
+  sender <- start s
+  setFees node fakeTip (fakeMaxFeePerGas - fakeTip + 1)
+  submitTransaction sender (TxCommit r1) fakeController (commit 1) `refusedWith` SEFeeAboveCap (fakeMaxFeePerGas + 1)
+  -- twice the base fee is past Word64, which would wrap to a near-zero fee
+  let hugeBaseFee = maxBound `div` 2 + 1 :: Word64
+  setFees node fakeTip hugeBaseFee
+  submitTransaction sender (TxCommit r1) fakeController (commit 1) `refusedWith` SEFeeAboveCap (toInteger hugeBaseFee + fakeTip)
+  withTransaction store pendingTransactions `shouldReturn` []
+  sentTransactions node `shouldReturn` []
+  let baseFee = fakeMaxFeePerGas `div` 2
+  setFees node fakeTip baseFee
+  Right p <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
+  ptNonce p `shouldBe` 0
+  [raw] <- sentTransactions node
+  (\TxRequest {trMaxPriorityFeePerGas, trMaxFeePerGas} -> (trMaxPriorityFeePerGas, trMaxFeePerGas)) <$> decodeSignedTx raw `shouldBe` Right (fakeTip, fakeMaxFeePerGas)
+
+testFeeCapReplace :: TVar ChaChaDRG -> IO ()
+testFeeCapReplace g = withCapSetup cap g $ \s@Setup {node} -> do
+  sender <- start s
+  Right p <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
+  [firstRaw] <- sentTransactions node
+  Right first <- pure $ decodeSignedTx firstRaw
+  trMaxFeePerGas first `shouldBe` 2 * fakeBaseFee + fakeTip
+  setFees node fakeTip (2 * fakeBaseFee)
+  passTime s replaceAfter
+  followTransactions sender
+  [_, bumpedRaw] <- sentTransactions node
+  decodeSignedTx bumpedRaw `shouldBe` Right first {trMaxPriorityFeePerGas = fakeTip + fakeTip `div` 8 + 1, trMaxFeePerGas = cap}
+  passTime s replaceAfter
+  followTransactions sender
+  length <$> sentTransactions node `shouldReturn` 2
+  let bumpedHash = C.keccak256 bumpedRaw
+  dropTransaction node bumpedHash
+  followTransactions sender
+  sentTransactions node `shouldReturn` [firstRaw, bumpedRaw, bumpedRaw]
+  (fmap ptHash <$> inFlightTransaction sender (TxCommit r1)) `shouldReturn` Just (TxHash bumpedHash)
+  ptNonce p `shouldBe` 0
+  where
+    -- above the first max fee and its bump, below the market's headroom fee and a second bump
+    cap = 2 * fakeBaseFee + fakeTip + 1000000000
 
 -- fixtures
 

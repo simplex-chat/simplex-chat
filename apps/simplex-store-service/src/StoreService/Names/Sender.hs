@@ -84,6 +84,8 @@ data SendError
   | SESigning String
   | -- | this registration's or edit's transaction of this kind is still in flight
     SEInFlight
+  | -- | the wei per gas the latest block needs is above the configured max fee per gas
+    SEFeeAboveCap Integer
   deriving (Eq, Show)
 
 -- | Settled at the configured confirmation depth.
@@ -109,11 +111,11 @@ followInterval :: Int
 followInterval = 4000000
 
 -- | The max fee covers six full blocks in a row, each raising the base fee by 12.5%.
-baseFeeHeadroom :: Word64
+baseFeeHeadroom :: Integer
 baseFeeHeadroom = 2
 
 -- | Nodes accept a replacement only with both fees at least 10% higher.
-bumped :: Word64 -> Word64
+bumped :: Integer -> Integer
 bumped fee = fee + fee `div` 8 + 1
 
 -- | Resumes every saved transaction without a receipt. Owners resuming after a restart find theirs with 'inFlightTransaction'.
@@ -153,8 +155,14 @@ submitTransaction s@Sender {snChain = c@ChainClient {ccRegistrar}, snRandom, snS
     gas <- chain $ estimateGas c to calldata
     used <- chain $ transactionCount c ccRegistrar Latest
     nonce <- max used <$> liftIO (readTVarIO snNextNonce)
-    (tip, maxFee) <- chain $ marketFees c
-    let request = TxRequest {trTo = to, trData = calldata, trNonce = nonce, trGasLimit = gas, trMaxFeePerGas = maxFee, trMaxPriorityFeePerGas = tip}
+    market@(tip, baseFee) <- chain $ marketFees c
+    let needed = baseFee + tip
+        cap = feeCap c
+    when (needed > cap) $ do
+      logWarn $ "names sender: the latest block needs " <> tshow needed <> " wei per gas, above max_fee_per_gas " <> tshow cap <> "; the transaction waits"
+      throwError $ SEFeeAboveCap needed
+    -- both fit Word64: the tip is at most the needed fee, and the max fee at most the cap
+    let request = TxRequest {trTo = to, trData = calldata, trNonce = nonce, trGasLimit = gas, trMaxFeePerGas = fromInteger $ min cap $ headroomFee market, trMaxPriorityFeePerGas = fromInteger tip}
     SignedTx {stRaw, stHash} <- withExceptT SESigning $ ExceptT $ signTransaction snRandom c request
     liftIO $ do
       now <- snNow
@@ -229,11 +237,16 @@ replace :: Sender -> Word64 -> InFlight -> UTCTime -> IO Bool
 replace s@Sender {snChain = c, snRandom, snStore} nonce InFlight {ifFor, ifRequest = old@TxRequest {trMaxFeePerGas, trMaxPriorityFeePerGas}} now =
   marketFees c >>= \case
     Left e -> False <$ warnNonce s nonce (tshow e)
-    Right (tip, maxFee)
-      | tip <= trMaxPriorityFeePerGas && maxFee <= trMaxFeePerGas -> False <$ update s nonce (\t -> t {ifReplaceAt = later})
+    Right market@(tip, _)
+      | tip <= oldTip && headroomFee market <= oldMax -> False <$ update s nonce (\t -> t {ifReplaceAt = later})
+      | bumped oldMax > cap -> do
+          update s nonce $ \t -> t {ifReplaceAt = later}
+          False <$ warnNonce s nonce ("not replaced: a replacement would pay over max_fee_per_gas " <> tshow cap)
       | otherwise -> do
-          let maxFee' = max maxFee $ bumped trMaxFeePerGas
-              request = old {trMaxPriorityFeePerGas = max tip $ bumped trMaxPriorityFeePerGas, trMaxFeePerGas = maxFee'}
+          -- the bumped fees are at most the cap, so the replacement still outbids the old signature
+          let maxFee' = min cap $ max (headroomFee market) (bumped oldMax)
+              tip' = min maxFee' $ max tip (bumped oldTip)
+              request = old {trMaxPriorityFeePerGas = fromInteger tip', trMaxFeePerGas = fromInteger maxFee'}
           signTransaction snRandom c request >>= \case
             Left e -> False <$ logError ("names sender: replacement for nonce " <> tshow nonce <> " not signed: " <> T.pack e)
             Right SignedTx {stRaw, stHash} -> do
@@ -243,6 +256,9 @@ replace s@Sender {snChain = c, snRandom, snStore} nonce InFlight {ifFor, ifReque
               True <$ broadcast s nonce stRaw
   where
     later = addUTCTime replaceAfter now
+    oldTip = toInteger trMaxPriorityFeePerGas
+    oldMax = toInteger trMaxFeePerGas
+    cap = feeCap c
 
 -- | The confirmed hash gets its receipt's status; every other hash of the nonce can no longer be mined.
 settle :: Sender -> Word64 -> InFlight -> TxOutcome -> IO ()
@@ -264,12 +280,18 @@ settle Sender {snStore, snInFlight} nonce InFlight {ifHashes, ifOutcome} outcome
 update :: Sender -> Word64 -> (InFlight -> InFlight) -> IO ()
 update Sender {snInFlight} nonce f = atomically $ modifyTVar' snInFlight $ M.adjust f nonce
 
--- | The tip the node suggests, and the max fee from the latest base fee.
-marketFees :: ChainClient -> IO (Either ChainError (Word64, Word64))
+-- | The tip the node suggests and the latest base fee, as Integer so that no fee arithmetic wraps.
+marketFees :: ChainClient -> IO (Either ChainError (Integer, Integer))
 marketFees c = runExceptT $ do
   tip <- ExceptT $ maxPriorityFee c
   Block {blockBaseFee} <- ExceptT $ latestBlock c
-  pure (tip, baseFeeHeadroom * blockBaseFee + tip)
+  pure (toInteger tip, toInteger blockBaseFee)
+
+headroomFee :: (Integer, Integer) -> Integer
+headroomFee (tip, baseFee) = baseFeeHeadroom * baseFee + tip
+
+feeCap :: ChainClient -> Integer
+feeCap ChainClient {ccConfig = ChainConfig {cMaxFeePerGas}} = toInteger cMaxFeePerGas
 
 saveTransaction :: DBStore -> TxFor -> ByteString -> TxHash -> Word64 -> UTCTime -> IO ()
 saveTransaction st for raw hash nonce now =

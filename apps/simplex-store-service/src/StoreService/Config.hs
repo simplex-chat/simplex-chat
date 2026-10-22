@@ -142,7 +142,9 @@ data ChainConfig = ChainConfig
     cResolver :: Address,
     cServiceKey :: Secp256k1PrivateKey,
     cConfirmations :: Int,
-    cGasLimitCap :: Word64
+    cGasLimitCap :: Word64,
+    -- | wei; no transaction is signed with a higher max fee per gas
+    cMaxFeePerGas :: Word64
   }
   deriving (Eq)
 
@@ -185,6 +187,10 @@ requireHttps u
 minNameYears :: Int
 minNameYears = 2
 
+-- | 100 gwei.
+defaultMaxFeePerGas :: Word64
+defaultMaxFeePerGas = 100000000000
+
 defaultTermStart :: String
 defaultTermStart = "2027-01-01T00:00:00Z"
 
@@ -221,7 +227,7 @@ knownSettings =
     ("group", ["display_name", "description"]),
     ("issuer", ["index", "private_key"]),
     ("names", ["tld", "years", "term_start", "term_slack_seconds", "reveal_margin_seconds", "max_order_moves"]),
-    ("chain", ["rpc_url", "chain_id", "controller", "sponsor", "base_registrar", "resolver", "service_key", "confirmations", "gas_limit_cap"])
+    ("chain", ["rpc_url", "chain_id", "controller", "sponsor", "base_registrar", "resolver", "service_key", "confirmations", "gas_limit_cap", "max_fee_per_gas"])
   ]
 
 unknownKeys :: Ini -> [Text]
@@ -391,7 +397,8 @@ parseConfig ini = do
       cServiceKey <- serviceKey
       cConfirmations <- atLeast 0 "chain" "confirmations" 3
       cGasLimitCap <- positiveWord "gas_limit_cap" (Just 8000000)
-      pure ChainConfig {cRpcUrl, cChainId, cController, cSponsor, cBaseRegistrar, cResolver, cServiceKey, cConfirmations, cGasLimitCap}
+      cMaxFeePerGas <- positiveWord "max_fee_per_gas" (Just defaultMaxFeePerGas)
+      pure ChainConfig {cRpcUrl, cChainId, cController, cSponsor, cBaseRegistrar, cResolver, cServiceKey, cConfirmations, cGasLimitCap, cMaxFeePerGas}
     rpcUrl = do
       v <- required "chain" "rpc_url"
       unless (any (`T.isPrefixOf` v) ["http://", "https://"]) $ Left "chain.rpc_url must be an http or https URL"
