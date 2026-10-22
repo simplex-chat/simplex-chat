@@ -10,6 +10,7 @@ import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.TextDecoration
 import chat.simplex.common.model.MsgFilter.*
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.UiIdle
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.chat.*
@@ -844,6 +845,7 @@ object ChatModel {
       private val subject = MutableSharedFlow<Unit>()
       private var remoteHostId: Long? = null
       private val chatsToPop = mutableMapOf<ChatId, Instant>()
+      @Volatile private var pendingIdle = 0L
 
       init {
         withLongRunningApi(idle = false) {
@@ -852,6 +854,8 @@ object ChatModel {
             .collect {
               withContext(Dispatchers.Main) {
                 chatsCtx.chats.replaceAll(popCollectedChats())
+                UiIdle.finish(pendingIdle)
+                pendingIdle = 0L
               }
             }
         }
@@ -864,11 +868,16 @@ object ChatModel {
         }
         if (currentPosition > 0 || chatsToPop.isNotEmpty()) {
           chatsToPop[chatId] = Clock.System.now()
+          if (pendingIdle == 0L) pendingIdle = UiIdle.start { "chat list reorder" }
           subject.emit(Unit)
         }
       }
 
-      fun clear() = chatsToPop.clear()
+      fun clear() {
+        chatsToPop.clear()
+        UiIdle.finish(pendingIdle)
+        pendingIdle = 0L
+      }
 
       private fun popCollectedChats(): List<Chat> {
         val chs = mutableListOf<Chat>()

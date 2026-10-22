@@ -352,6 +352,7 @@ jobs:
         working-directory: apps/multiplatform
         run: |
           ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets -Pandroid.injected.build.abi=arm64-v8a \
+            -Pkotlin.daemon.jvmargs=-Xmx4g \
             :android:assembleFossDebug :android:assembleFossDebugAndroidTest
           mkdir -p "$RUNNER_TEMP/apk"
           cp "android/build/intermediates/apk/foss/debug/$APK" "$RUNNER_TEMP/apk"
