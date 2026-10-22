@@ -639,7 +639,10 @@ testConcurrentCredits = withServiceStores $ \open -> do
   st <- open
   other <- open
   withLateOn st $ \l -> do
-    let due r = closedOrder l r False >> settleAt l r (SigClosed (btcPaid lateUnits lateUnits)) (at 70) `shouldReturn` Right ISExpired
+    let due :: Text -> IO ()
+        due r = do
+          closedOrder l r False
+          settleAt l r (SigClosed (btcPaid lateUnits lateUnits)) (at 70) `shouldReturn` Right ISExpired
     forM_ [1 .. rounds] $ \n -> do
       let r = "x" <> T.pack (show n)
       due r
