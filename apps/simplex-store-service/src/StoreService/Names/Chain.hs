@@ -30,7 +30,7 @@ where
 
 import Control.Concurrent.STM (TVar)
 import Control.Exception (evaluate, try)
-import Control.Monad ((>=>))
+import Control.Monad ((<=<), (>=>))
 import Crypto.Random (ChaChaDRG)
 import Data.Aeson ((.:), (.:?), (.=))
 import qualified Data.Aeson as J
@@ -55,7 +55,7 @@ import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..))
 import StoreService.Log (logWarn)
 import StoreService.Names.Abi (hex)
-import StoreService.Names.Revert (RevertName, decodeRevert)
+import StoreService.Names.Revert (RevertName (..), decodeRevert)
 import System.Timeout (timeout)
 
 data ChainClient = ChainClient
@@ -227,7 +227,7 @@ rpc ChainClient {ccManager, ccConfig = ChainConfig {cRpcUrl}, ccTimeout} method 
       revertData <- e .:? "data"
       pure $
         if code == revertCode || "execution reverted" `T.isPrefixOf` message
-          then ChainReverted $ decodeRevert =<< (JT.parseMaybe bytes =<< revertData)
+          then ChainReverted $ maybe (Just RNWithoutData) (decodeRevert <=< JT.parseMaybe bytes) revertData
           else unavailable $ "error " <> tshow code <> ": " <> T.take maxNodeMessageLength message
     unavailable reason = ChainUnavailable $ method <> ": " <> reason
 

@@ -41,6 +41,7 @@ import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Abi
 import StoreService.Names.Chain (Block (..), ChainClient (..), ChainError (..), ethCall, latestBlock)
 import StoreService.Names.Registration (channelRecordKey, contactRecordKey, labelNode, nodeBytes)
+import StoreService.Names.Revert (RevertName (..))
 
 data Contracts = Contracts
   { ctChain :: ChainClient,
@@ -138,11 +139,12 @@ sponsorNonce ct owner = call ct (cSponsor $ chainConfig ct) ("nonces(address)", 
 resolverNonce :: Contracts -> Address -> IO (Either ChainError Word64)
 resolverNonce ct owner = call ct (resolver ct) ("nonces(address)", addressWord owner) decodeWord64
 
--- | Nothing when nobody holds the name: @ownerOf@ reverts for it, and that revert is the answer.
+-- | Nothing when nobody holds the name: @ownerOf@ then fails the registrar's bare @require@ on the expiry,
+-- a revert without data. Any other revert is a failed read.
 ownerOfToken :: Contracts -> LabelHash -> IO (Either ChainError (Maybe Address))
 ownerOfToken ct lh =
   call ct (baseRegistrar ct) ("ownerOf(uint256)", labelHashArg lh) decodeAddress >>= \case
-    Left (ChainReverted _) -> pure $ Right Nothing
+    Left (ChainReverted (Just RNWithoutData)) -> pure $ Right Nothing
     r -> pure $ Just <$> r
 
 nameExpires :: Contracts -> LabelHash -> IO (Either ChainError Word64)

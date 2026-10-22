@@ -20,6 +20,7 @@ import StoreService.Names.Abi
 import StoreService.Names.Chain
 import StoreService.Names.Contracts
 import StoreService.Names.Registration (labelNode, namehash, nodeBytes)
+import StoreService.Names.Revert (RevertName (..))
 import Test.Hspec
 
 namesContractsTests :: Spec
@@ -44,7 +45,8 @@ namesContractsTests = describe "StoreService names: contracts" $ do
     it "reads the oracle from the controller on each call" $ testOracleReplaced g
   describe "other reads" $ do
     it "reads the sponsor's and the resolver's nonces from their own contracts" $ testNonces g
-    it "reads ownerOf's revert as nobody, and a failed read as a failure" $ testOwnerOf g
+    it "reads ownerOf's revert without data as nobody" $ testOwnerOfNobody g
+    it "reads any other ownerOf revert or failure as a failed read" $ testOwnerOfFailed g
     it "reads a commitment's time, none as Nothing" $ testCommitmentTime g
     it "reads the controller's availability and the name's expiry" $ testAvailability g
     it "reads the commitment ages once" $ testCommitmentAges g
@@ -161,12 +163,24 @@ testNonces g = withContracts g $ \node ct -> do
   sponsorNonce ct owner `shouldReturn` Right 5
   resolverNonce ct owner `shouldReturn` Right 3
 
-testOwnerOf :: TVar ChaChaDRG -> IO ()
-testOwnerOf g = withContracts g $ \node ct -> do
+testOwnerOfNobody :: TVar ChaChaDRG -> IO ()
+testOwnerOfNobody g = withContracts g $ \node ct -> do
   answerCall node (registrarOf node) ownerOfCall $ Returns $ addressWord owner
   ownerOfToken ct alice `shouldReturn` Right (Just owner)
+  -- the registrar's require(expiries[tokenId] > block.timestamp), as anvil answers it with "0x" and reth without data
   answerCall node (registrarOf node) ownerOfCall $ Reverts ""
   ownerOfToken ct alice `shouldReturn` Right Nothing
+  setFault node "eth_call" $ RpcError 3 "execution reverted" Nothing
+  ownerOfToken ct alice `shouldReturn` Right Nothing
+
+testOwnerOfFailed :: TVar ChaChaDRG -> IO ()
+testOwnerOfFailed g = withContracts g $ \node ct -> do
+  -- viem's encodeErrorResult of Error("ERC721: invalid token ID")
+  answerCall node (registrarOf node) ownerOfCall $ Reverts $ unhex "08c379a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000184552433732313a20696e76616c696420746f6b656e2049440000000000000000"
+  ownerOfToken ct alice `shouldReturn` Left (ChainReverted Nothing)
+  -- viem's encodeErrorResult of ReentrantCall()
+  answerCall node (registrarOf node) ownerOfCall $ Reverts $ unhex "37ed32e8"
+  ownerOfToken ct alice `shouldReturn` Left (ChainReverted $ Just RNReentrantCall)
   setFault node "eth_call" HttpFailure
   ownerOfToken ct alice `shouldReturn` Left (ChainUnavailable "eth_call: HTTP 502")
 
@@ -200,13 +214,13 @@ testFailedRead g = withContracts g $ \node ct -> do
   setBlock node 100 now
   answerCall node fakeController reservedNamesCall $ Returns $ uint256 (0 :: Int)
   answerCall node (registrarOf node) nameExpiresCall $ Reverts ""
-  nameStatus ct alice `shouldReturn` Left (ChainReverted Nothing)
+  nameStatus ct alice `shouldReturn` Left (ChainReverted $ Just RNWithoutData)
   answerCall node (registrarOf node) nameExpiresCall $ Returns $ uint256 (0 :: Int)
   setFault node "eth_getBlockByNumber" HttpFailure
   nameStatus ct alice `shouldReturn` Left (ChainUnavailable "eth_getBlockByNumber: HTTP 502")
   clearFault node "eth_getBlockByNumber"
   answerCall node fakeController reservedNamesCall $ Reverts ""
-  nameStatus ct alice `shouldReturn` Left (ChainReverted Nothing)
+  nameStatus ct alice `shouldReturn` Left (ChainReverted $ Just RNWithoutData)
 
 testMalformed :: TVar ChaChaDRG -> IO ()
 testMalformed g = withContracts g $ \node ct -> do
