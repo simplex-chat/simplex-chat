@@ -30,7 +30,7 @@ import Data.List (sort)
 import Data.Maybe (fromJust, isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime)
+import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Word (Word64)
 import Network.HTTP.Client (defaultManagerSettings, newManager, responseBody)
@@ -57,7 +57,7 @@ import StoreService.Names.Store
 import StoreService.Names.Turns (newTurns)
 import StoreService.Names.View (ViewReads (..), readViewChain, viewJSON)
 import StoreService.Orders (cancelOpenInvoice, expireOverdue, settleOrder)
-import StoreService.Poller (cleanupInterval, cleanupReadsPerPass, cleanupUnpaid, drainHints, newPollerEnv, newReadHints, queueReadHint, unpaidRetention)
+import StoreService.Poller (cleanupInterval, cleanupReadsPerPass, cleanupUnpaid, drainHints, newPollerEnv, newReadHints, queueReadHint, runOnePass, unpaidRetention)
 import StoreService.Providers.BTCPay (btcpayProvider)
 import StoreService.Providers (Funded (..), OrderDraft (..), PaymentSignal (..), Provider (..), ProviderError (..), ProviderInvoice (..))
 import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), ProviderRefConflict (..), getInvoice, getInvoiceByProviderRef, overdueInvoices, unpaidRefs)
@@ -103,6 +103,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "takes the invoice's row before recording a payment that moves no status" testSettlementLocksInvoice
     it "closes the order of an invoice the provider closed or the sweep expired" testExpiryCloses
     it "sweeps each invoice on its own, skipping one whose order cannot be read" testSweepSkipsBadRow
+    it "keeps out of a pass's sweep only the invoices whose read or settlement failed" testPassSweepsAroundFailures
     it "cleans up unpaid orders after 30 days, reading the provider first" testCleanup
     it "reads at most a pass's share of the provider in a cleanup, carrying the rest to the next pass" testCleanupCapped
     it "answers 503 for a name invoice while names are off, cancelling nothing" testNamesOff
@@ -817,6 +818,28 @@ testSweepSkipsBadRow = withOrders $ \ctx@Ctx {cStore = st} -> do
   (nrLive r, nrVersion r) `shouldBe` (False, 2)
   where
     invoiceText (InvoiceId t) = t
+
+-- | The poller reads by the wall clock, so the orders are placed two hours ago by it.
+testPassSweepsAroundFailures :: IO ()
+testPassSweepsAroundFailures = do
+  unreadable <- newIORef ""
+  let failing p = p {pReadInvoice = \r -> readIORef unreadable >>= \u -> if r == u then pure (Left $ ProviderError "down") else pReadInvoice p r}
+  withOrdersVia failing $ \ctx@Ctx {cStore = st, cWeb} -> do
+    placedAt <- addUTCTime (-7200) <$> getCurrentTime
+    writeIORef (cClock ctx) placedAt
+    let at' o = o {oTimestamp = seconds placedAt, oDuration = durationAt placedAt}
+        refOf inv = maybe (error "no invoice") irProviderRef <$> getInvoice st inv
+    (poisoned, _) <- placed ctx $ at' aliceOrder
+    (unread, _) <- placed ctx $ at' aliceOrder {oLabel = "dynamis", oPrice = 20000, oCommitment = commitmentOf 2}
+    (good, _) <- placed ctx $ at' aliceOrder {oOwner = ownerBText, oKey = keyB, oCommitment = commitmentOf 3}
+    NameRegistration {nrId = RegistrationId poisonedId} <- invoiceRegistration ctx poisoned
+    withConnection st $ \db -> DB.execute db "UPDATE sx_badge_service_name_registrations SET phase = 'lost' WHERE registration_id = ? AND phase = ?" (poisonedId, "unpaid" :: Text)
+    poisonedRef <- refOf poisoned
+    refOf unread >>= writeIORef unreadable
+    setSignals (cStub ctx) [(poisonedRef, SigClosed (rcv 0 Nothing))]
+    poller <- newPollerEnv st (weWaiters cWeb) (Just $ oePhases $ cOrders ctx) (weHints cWeb) (weProviders cWeb) (poll $ weConfig cWeb)
+    void $ capturingStderr $ runOnePass poller
+    mapM (fmap (irStatus <$>) . getInvoice st) [poisoned, unread, good] `shouldReturn` map Just [ISOpen, ISOpen, ISExpired]
 
 testCleanup :: IO ()
 testCleanup = withOrders $ \ctx -> testCleanupIn ctx
