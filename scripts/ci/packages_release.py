@@ -11,7 +11,7 @@ check-pins        check the pins of the packages against the published releases
 download          download a release asset and check its digest
 download-pinned   download a pinned asset and check its pin
 changes           print whether the changes since a commit touch the chat core and the add-on
-build-plan        print the platforms to build the add-on on and whether to run the package tests
+build-plan        print the platforms to test the packages on, none when build.yml runs for the pull request
 prepare           update pins and versions of the packages
 publish-plan      print the package versions that are not published yet
 record            record releases and published versions in releases.toml of simplex-chat-libs
@@ -47,6 +47,7 @@ RELEASE_FILE = f"{NODEJS_DIR}/src/release.ts"
 PYTHON_VERSION_FILE = f"{PYTHON_DIR}/src/simplex_chat/_version.py"
 ADDON_SOURCES = [f"{NODEJS_DIR}/binding.gyp", f"{NODEJS_DIR}/cpp"]
 CORE_SOURCES = ["src", "simplex-chat.cabal", "cabal.project"]
+BUILD_WORKFLOW = ".github/workflows/build.yml"
 CABAL_FILE = "simplex-chat.cabal"
 CABAL_VERSION = re.compile(r"^(version:\s*)(\S+)", re.M)
 TYPES_SOURCES = [f"{TYPES_DIR}/src"]
@@ -357,17 +358,11 @@ def plan(state: State) -> Plan:
     )
 
 
-@dataclass(frozen=True)
-class BuildPlan:
-    platforms: list[str]
-    test: bool
-
-
-def build_plan(core_changed: bool, addon_changed: bool) -> BuildPlan:
-    """The package tests of a pull request that changes the core run in build.yml, with its own libsimplex."""
-    if core_changed:
-        return BuildPlan(ADDON_PLATFORMS if addon_changed else [], test=False)
-    return BuildPlan(ADDON_PLATFORMS, test=True)
+def pull_request_paths(workflow: str) -> list[str]:
+    found = re.search(r'^  pull_request:\n    paths:\n((?:      - ".*"\n)+)', workflow, re.M)
+    if not found:
+        raise ValueError(f"no pull_request paths in {BUILD_WORKFLOW}")
+    return re.findall(r'^      - "(.*)"$', found[1], re.M)
 
 
 def build_matrix(platforms: list[str]) -> str:
@@ -491,12 +486,9 @@ def changes(base: str) -> None:
 
 
 def print_build_plan(args: argparse.Namespace) -> None:
-    result = build_plan(
-        core_changed=changed_since(args.base, CORE_SOURCES),
-        addon_changed=changed_since(args.base, ADDON_SOURCES),
-    )
-    print(f"platforms={build_matrix(result.platforms)}")
-    print(f"test={'true' if result.test else ''}")
+    build_paths = [f":(glob){path}" for path in pull_request_paths(read_text(BUILD_WORKFLOW))]
+    platforms = [] if changed_since(args.base, build_paths) else ADDON_PLATFORMS
+    print(f"platforms={build_matrix(platforms)}")
 
 
 def package_state(
