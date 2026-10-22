@@ -401,7 +401,8 @@ registrationColumns =
 
 registrationFrom :: Query
 registrationFrom =
-  [sql|
+  " "
+    <> [sql|
     FROM sx_badge_service_name_registrations r
     LEFT JOIN sx_badge_service_name_invoices ni ON ni.registration_id = r.registration_id
   |]
