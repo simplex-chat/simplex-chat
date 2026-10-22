@@ -35,6 +35,7 @@ import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Word (Word64)
 import Network.HTTP.Client (defaultManagerSettings, newManager, responseBody)
 import Network.HTTP.Types (hContentType)
+import Network.Wai (Application, requestHeaders)
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Chat.Badges.Code (NameCode (..), formatNameCode, namePrepaidCodeHash, randomNamePrepaidCode)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
@@ -98,6 +99,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "refuses sealed missing or over 11095 characters and a body over 16384 bytes, accepting the longest order" testSizes
     it "refuses malformed fields, an unknown kind, and an order outside 6-63 letters" testFormats
     it "accepts orders for one name from two wallets" testTwoWallets
+    it "answers after the name's turn, so a slow reader of one answer holds no other order for the name, paid or by code" testSlowReaderHoldsNoTurn
   describe "code orders" $ do
     it "places a code order as a queued live registration holding its code, answering only its id" testCodeOrder
     it "answers an exact resend with its id in any phase, the code spent or not, before any chain read" testCodeResend
@@ -291,10 +293,12 @@ withOrdersVia via action = withServiceStore $ \cStore -> withFakeEthNode $ \cNod
     hints <- newReadHints
     built <- newWebEnv cStore cfg waiters hints [crypto, card] Nothing
     let cWeb = built {weOrders = Just cOrders}
-        app req respond = fromMaybe (webApp cWeb req respond) (namesApp (weHttp cWeb) (codeRoutes cOrders [crypto, card] waiters) req respond)
     mgr <- newManager defaultManagerSettings
-    Warp.testWithApplicationSettings (webSettings (listener cfg)) (pure app) $ \port ->
+    Warp.testWithApplicationSettings (webSettings (listener cfg)) (pure $ ordersApp cWeb cOrders) $ \port ->
       action Ctx {cStore, cNode, cOrders, cWeb, cClient = (mgr, "http://127.0.0.1:" <> show port), cStub, cClock, cRandom, cIps}
+
+ordersApp :: WebEnv -> OrdersEnv -> Application
+ordersApp web orders req respond = fromMaybe (webApp web req respond) (namesApp (weHttp web) (codeRoutes orders (weProviders web) (weWaiters web)) req respond)
 
 -- | The routes as namesRoutes registers them, since a NamesEnv needs a running chat controller.
 codeRoutes :: OrdersEnv -> [Provider] -> Waiters -> [Text] -> Maybe Route
@@ -897,6 +901,34 @@ testCodeLimitShared = withOrders $ \ctx@Ctx {cClient} -> do
   codeCheck `shouldReturn` 429
   codeOrder `shouldReturn` 429
   fst <$> register ctx code aliceOrder `shouldReturn` 200
+
+-- | A response held before it is written, as for a client that reads it slowly, must not hold the name's turn.
+testSlowReaderHoldsNoTurn :: IO ()
+testSlowReaderHoldsNoTurn = withOrders $ \ctx@Ctx {cWeb, cOrders} -> do
+  (codeA, _) <- issueCode ctx 7 2 id
+  (codeB, _) <- issueCode ctx 7 2 id
+  writing <- newEmptyMVar
+  release <- newEmptyMVar
+  let app = ordersApp cWeb cOrders
+      slow req respond
+        | isJust (lookup slowReader $ requestHeaders req) = app req $ \r -> putMVar writing () >> takeMVar release >> respond r
+        | otherwise = app req respond
+  mgr <- newManager defaultManagerSettings
+  Warp.testWithApplication (pure slow) $ \port -> do
+    let c = ctx {cClient = (mgr, "http://127.0.0.1:" <> show port)}
+        slowPost path body = statusOf <$> webRequestBody (cClient c) "POST" path [(hContentType, "application/json"), (slowReader, "1")] (J.encode body)
+        whileHeld first second = do
+          held <- async first
+          takeMVar writing
+          timeout 2000000 second >>= (`shouldSatisfy` maybe False ((== 200) . fst))
+          putMVar release ()
+          wait held `shouldReturn` 200
+        byB o = o {oOwner = ownerBText, oKey = keyB, oCommitment = commitmentOf 2}
+    whileHeld (signedBody (cRandom c) aliceOrder >>= slowPost "/api/invoice") (placeOrder c $ byB aliceOrder)
+    let dynamis = aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 3}
+    whileHeld (signedCodeBody c codeA dynamis >>= slowPost "/api/name/register") (register c codeB (byB dynamis) {oCommitment = commitmentOf 4})
+  where
+    slowReader = "x-slow-reader"
 
 testOrderAfterCancel :: IO ()
 testOrderAfterCancel = withOrders $ \ctx -> do
