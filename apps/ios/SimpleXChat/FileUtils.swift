@@ -70,14 +70,32 @@ func getAppDirectory() -> URL {
     : getDocumentsDirectory()
 }
 
-public func excludeAppDataFromBackup() {
+public func excludeAppDataFromBackup(_ exclude: Bool) {
+    excludeNonAppDataFromBackup()
+    setExcludedFromBackup([getGroupContainerDirectory()], exclude)
+}
+
+public func appDataIncludedInBackup() -> Bool {
+    (try? getGroupContainerDirectory().resourceValues(forKeys: [.isExcludedFromBackupKey]).isExcludedFromBackup) == false
+}
+
+public func excludeNonAppDataFromBackup() {
+    let dbPath = getAppDatabasePath().path
+    func existing(_ paths: [String]) -> [URL] {
+        paths.filter { FileManager.default.fileExists(atPath: $0) }.map { URL(fileURLWithPath: $0) }
+    }
+    setExcludedFromBackup(existing([dbPath + CHAT_DB, dbPath + AGENT_DB]), false)
+    setExcludedFromBackup([getDocumentsDirectory()] + existing([getTempFilesDirectory().path, dbPath + CHAT_DB_BAK, dbPath + AGENT_DB_BAK]), true)
+}
+
+public func setExcludedFromBackup(_ urls: [URL], _ exclude: Bool) {
     var values = URLResourceValues()
-    values.isExcludedFromBackup = true
-    for var dir in [getGroupContainerDirectory(), getDocumentsDirectory()] {
+    values.isExcludedFromBackup = exclude
+    for var url in urls {
         do {
-            try dir.setResourceValues(values)
+            try url.setResourceValues(values)
         } catch {
-            logger.error("FileUtils.excludeAppDataFromBackup error: \(error.localizedDescription)")
+            logger.error("FileUtils.setExcludedFromBackup error: \(error.localizedDescription)")
         }
     }
 }
@@ -145,6 +163,7 @@ public func deleteTempFiles() {
     do {
         try fm.removeItem(at: getTempFilesDirectory())
         try fm.createDirectory(at: getTempFilesDirectory(), withIntermediateDirectories: true)
+        setExcludedFromBackup([getTempFilesDirectory()], true)
     } catch {
         logger.error("FileUtils deleteTempFiles error: \(error.localizedDescription)")
     }

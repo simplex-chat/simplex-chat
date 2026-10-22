@@ -176,6 +176,7 @@ struct DatabaseEncryptionView: View {
                 await resetFormAfterEncryption()
                 await operationEnded(.databaseEncrypted)
             }
+            updateAppDataBackup()
             return true
         } catch let error {
             if case .errorDatabase(.errorExport(.errorNotADatabase)) = error as? ChatError {

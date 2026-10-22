@@ -43,7 +43,9 @@ class AudioRecorder {
             ]
             let url = getAppFilePath(fileName)
             audioRecorder = try AVAudioRecorder(url: url, settings: settings)
-            audioRecorder?.record(forDuration: MAX_VOICE_MESSAGE_LENGTH)
+            if audioRecorder?.record(forDuration: MAX_VOICE_MESSAGE_LENGTH) == true {
+                setExcludedFromBackup([url], true)
+            }
 
             await MainActor.run {
                 AppDelegate.keepScreenOn(true)
