@@ -8,11 +8,12 @@
 {-# LANGUAGE TupleSections #-}
 
 -- Members' messages reach a console over separate connections in no fixed order, so gating is asserted from the bot's store.
-module Bots.StoreService.GroupIntegrationTests (badgeGroupIntegrationTests, namesBootTests, namesCodesChatTests) where
+module Bots.StoreService.GroupIntegrationTests (badgeGroupIntegrationTests, namesBootTests, namesCodesChatTests, namesWorkerBootTests) where
 
 import StoreService.Config (BadgeIssuerKey (..), GroupConfig (..))
 import StoreService.Group (GroupAction (..), GroupEvent (..), codeInTracker, ensureManagedGroup)
 import StoreService.Group.Command (maxUses)
+import StoreService.Names.Abi (selector, uint256)
 import StoreService.Names.Codes (issueNameCode, reserveCode, revokeNameCode)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Store (PrepaidCode (..), getPrepaidCode, spendPrepaidCode)
@@ -21,7 +22,9 @@ import StoreService.Options (StoreServiceOpts (..))
 import StoreService.Service (ServiceState (..), storeService, newServiceState)
 import StoreService.Store (ManagedGroup (..), getManagedGroup)
 import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, badgeTypeOf, credentialOf, entryOf, issueCode, issueRaw, mkStoreServiceOpts, newPurchaseKeys, redeemWithQueue, requestObject, revokeRaw, serviceDbPrefix, shouldAnswerError, statementOf, stopStoreService, testIssuerKeyIdx)
-import Bots.StoreService.ConfigTests (chainSection, namesSection)
+import Bots.StoreService.ConfigTests (chainSection, controllerAddr, namesSection)
+import Bots.StoreService.FakeEthNode (CallAnswer (..), FakeEthNode (..), answerCall, awaitSent, withFakeEthNode)
+import Bots.StoreService.WebTests (digestFixture)
 import Bots.StoreService.NamesSearchTests (aliceHex)
 import Bots.StoreService.NamesStoreTests (order, ownerA, placeCode, placePaid)
 import ChatClient
@@ -173,6 +176,27 @@ testNamesBoot ps = do
     let codeRequest path = request path >>= \r -> statusCode . responseStatus <$> httpLbs r {method = "POST", requestBody = RequestBodyLBS "{}"} mgr
     forM_ (take 9 $ cycle ["/api/code/check", "/api/name/register"]) $ \path -> (path,) <$> codeRequest path `shouldReturn` (path, 400)
     forM_ ["/api/code/check", "/api/name/register"] $ \path -> (path,) <$> codeRequest path `shouldReturn` (path, 429)
+    poll t >>= (`shouldSatisfy` isNothing)
+
+namesWorkerBootTests :: SpecWith TestParams
+namesWorkerBootTests = it "starts the workers with the service, sending the commit of an order queued after the start" testWorkerBoot
+
+testWorkerBoot :: HasCallStack => TestParams -> IO ()
+testWorkerBoot ps = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
+  svc <- prepareGroupService ps
+  let onFakeNode line = if "rpc_url" `T.isPrefixOf` line then "rpc_url = " <> T.pack fnUrl else line
+      controller = either error id $ strDecode $ encodeUtf8 controllerAddr
+  -- the order's commitment, digestFixture 1, not yet committed
+  forM_ [("minCommitmentAge()", "", 60 :: Int), ("maxCommitmentAge()", "", 86400), ("commitments(bytes32)", digestFixture 1, 0)] $ \(signature, args, value) ->
+    answerCall node controller (selector signature <> args) $ Returns $ uint256 value
+  (t, cc, _, port) <- startGroupService svc {gsIniSections = "" : namesSection <> map onFakeNode chainSection} Nothing
+  flip finally (stopGroupService t cc) $ do
+    pollUntilTrue (listening port)
+    let st = chatStore cc
+    code <- issueNameRaw cc "name 8"
+    row <- fromMaybe (error "no prepaid code row") <$> withTransaction st (`getPrepaidCode` namePrepaidCodeHash code)
+    placeCode st "r1" ownerA (order "alicebakery" 1) row `shouldReturn` Right ()
+    timeout waitLimit (awaitSent node 1) >>= (`shouldSatisfy` isJust)
     poll t >>= (`shouldSatisfy` isNothing)
 
 namesCodesChatTests :: SpecWith TestParams

@@ -152,6 +152,7 @@ main = do
             storeServiceTests
             describe "managed group" badgeGroupIntegrationTests
           describe "StoreService names: boot" namesBootTests
+          describe "StoreService names: worker" namesWorkerBootTests
           namesCodesChatTests
           namesProfilesChatTests
           describe "Remote session" remoteTests

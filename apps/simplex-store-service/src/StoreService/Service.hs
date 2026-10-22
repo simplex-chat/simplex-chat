@@ -25,9 +25,11 @@ import StoreService.Group (GroupEvent, ensureManagedGroup, groupEvent, hasTracke
 import StoreService.Group.Command (badgeTypeP, codeP, maxMonths, maxNameYears, nameCodeP, textTokenP)
 import StoreService.Names.Codes (issueNameCode, revokeNameCode)
 import StoreService.Names.Env (NamesEnv (..), newNamesEnv)
+import StoreService.Names.Orders (ordersEnv)
 import StoreService.Names.Records (runRecordEdits)
 import StoreService.Names.Sender (runSender)
 import StoreService.Names.Turns (Turns, newTurns)
+import StoreService.Names.Worker (newWorker, runCodeSweep, runWorkers)
 import StoreService.Options
 import StoreService.Poller (newPollerEnv, newReadHints, runPoller)
 import StoreService.Providers (Provider)
@@ -170,7 +172,8 @@ storeService opts@StoreServiceOpts {serviceConfigFile} cfg env = do
       webEnv <- newWebEnv chatStore sc ws hints providers namesEnv
       exportWebapp (listener sc) (stripe sc)
       pollerEnv <- newPollerEnv chatStore ws (nePhases <$> namesEnv) hints providers (poll sc)
-      pure $ [runWebListener webEnv, runPoller pollerEnv] <> maybe [] (\ne -> [runSender (neSender ne), runRecordEdits (neRecords ne)]) namesEnv
+      nameLanes <- maybe (pure []) namesLanes namesEnv
+      pure $ [runWebListener webEnv, runPoller pollerEnv] <> nameLanes
 
 startNames :: ChatController -> Turns -> Waiters -> [Provider] -> NamesConfig -> IO NamesEnv
 startNames cc@ChatController {chatStore} turns waiters providers nc@NamesConfig {nTLD, nChain = ChainConfig {cChainId}} =
@@ -179,6 +182,12 @@ startNames cc@ChatController {chatStore} turns waiters providers nc@NamesConfig 
     Just User {userId} -> do
       logInfo $ "names: on, TLD " <> safeDecodeUtf8 (strEncode nTLD) <> ", chain " <> tshow cChainId
       newNamesEnv cc userId nc chatStore turns waiters providers
+
+-- | The workers resume every registration in their phases, and the code sweep runs at the start and then daily.
+namesLanes :: NamesEnv -> IO [IO ()]
+namesLanes ne@NamesEnv {neChain, neSender, neRecords} = do
+  worker <- newWorker (ordersEnv ne) neChain neSender
+  pure [runSender neSender, runRecordEdits neRecords, runWorkers worker, runCodeSweep worker]
 
 seedServiceCatalog :: DBStore -> IO ()
 seedServiceCatalog st = do
