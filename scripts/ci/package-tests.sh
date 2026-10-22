@@ -26,7 +26,7 @@ build_package() {
 }
 
 test_nodejs() {
-  (cd "$nodejs" && npx jest --forceExit --testNamePattern '^(?!.*use preset servers)')
+  (cd "$nodejs" && npx jest --forceExit)
 }
 
 test_python() {
