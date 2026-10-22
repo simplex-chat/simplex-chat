@@ -55,7 +55,7 @@ import StoreService.Names.Store
 import StoreService.Names.Turns (newTurns)
 import StoreService.Names.View (ViewReads (..), readViewChain, viewJSON)
 import StoreService.Orders (cancelOpenInvoice, expireOverdue, settleOrder)
-import StoreService.Poller (cleanupUnpaid, drainHints, newPollerEnv, newReadHints, queueReadHint, unpaidRetention)
+import StoreService.Poller (cleanupInterval, cleanupReadsPerPass, cleanupUnpaid, drainHints, newPollerEnv, newReadHints, queueReadHint, unpaidRetention)
 import StoreService.Providers.BTCPay (btcpayProvider)
 import StoreService.Providers (Funded (..), OrderDraft (..), PaymentSignal (..), Provider (..), ProviderError (..), ProviderInvoice (..))
 import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), ProviderRefConflict (..), getInvoice, getInvoiceByProviderRef, overdueInvoices, unpaidRefs)
@@ -99,6 +99,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "closes the order of an invoice the provider closed or the sweep expired" testExpiryCloses
     it "sweeps each invoice on its own, skipping one whose order cannot be read" testSweepSkipsBadRow
     it "cleans up unpaid orders after 30 days, reading the provider first" testCleanup
+    it "reads at most a pass's share of the provider in a cleanup, carrying the rest to the next pass" testCleanupCapped
     it "answers 503 for a name invoice while names are off, cancelling nothing" testNamesOff
   describe "invoice side" $ do
     it "finds an invoice by provider ref in either table, refusing a ref both hold" testProviderRefs
@@ -785,12 +786,26 @@ testCleanupIn ctx@Ctx {cStore = st} = do
   reads' <- stubReads
   sort reads' `shouldBe` [ref "gone", ref "late"]
   writeIORef failing False
-  cleanupUnpaid poller due
+  cleanupUnpaid poller (addUTCTime cleanupInterval due)
   mapM present ["unread", "recent"] `shouldReturn` [False, True]
   drop (length reads') <$> stubReads `shouldReturn` [ref "unread"]
   where
     stubReads = (\calls -> [r | StubRead r <- calls]) <$> stubCalls (cStub ctx)
     ref rid = "ref-inv-" <> rid
+
+testCleanupCapped :: IO ()
+testCleanupCapped = withOrders $ \ctx@Ctx {cStore = st} -> do
+  let extra = 3
+      count = cleanupReadsPerPass + extra
+      due = addUTCTime (unpaidRetention + 1) t0
+      reads' = (\calls -> length [() | StubRead _ <- calls]) <$> stubCalls (cStub ctx)
+  forM_ [1 .. count] $ \n -> placePaid st ("old" <> tshow n) ownerA (order ("oldname" <> tshow n) (fromIntegral n)) t0 `shouldReturn` Right ()
+  poller <- newPollerEnv st (weWaiters $ cWeb ctx) Nothing (weHints $ cWeb ctx) (weProviders $ cWeb ctx) (poll $ weConfig $ cWeb ctx)
+  cleanupUnpaid poller due
+  reads' `shouldReturn` cleanupReadsPerPass
+  cleanupUnpaid poller (addUTCTime 1 due)
+  reads' `shouldReturn` count
+  length <$> registrationsOf ctx ownerA `shouldReturn` 0
 
 testProviderRefs :: IO ()
 testProviderRefs = withServiceStore $ \st -> do

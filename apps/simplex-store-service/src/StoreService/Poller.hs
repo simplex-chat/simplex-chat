@@ -25,6 +25,7 @@ module StoreService.Poller
     skipWarnInterval,
     maxSkipReasons,
     cleanupInterval,
+    cleanupReadsPerPass,
     unpaidRetention,
     cleanupUnpaid,
   )
@@ -60,6 +61,10 @@ expiryGrace = 600
 -- | How often unpaid name orders are cleaned up; a provider that does not answer keeps an order until the next run.
 cleanupInterval :: NominalDiffTime
 cleanupInterval = 24 * 3600
+
+-- | The provider reads one pass's cleanup makes, so settlement reads are not held up; the rest wait for the next pass.
+cleanupReadsPerPass :: Int
+cleanupReadsPerPass = 25
 
 -- | How long an unpaid name order is kept after its invoice expired.
 unpaidRetention :: NominalDiffTime
@@ -113,7 +118,9 @@ data PollerEnv = PollerEnv
     peStrayEvery :: NominalDiffTime,
     -- When the cancel first failed, for orders older than 72 hours.
     peCancelFailed :: TVar (Map Text UTCTime),
-    peCleanedAt :: TVar (Maybe UTCTime)
+    peCleanedAt :: TVar (Maybe UTCTime),
+    -- | The orders of the day's cleanup not read yet.
+    peCleanupLeft :: TVar [(RegistrationId, InvoiceId)]
   }
 
 newPollerEnv :: DBStore -> Waiters -> Maybe Phases -> ReadHints -> [Provider] -> PollConfig -> IO PollerEnv
@@ -122,7 +129,8 @@ newPollerEnv peStore peWaiters pePhases peHints peProviders pePoll = do
   peListedAt <- newTVarIO Nothing
   peCancelFailed <- newTVarIO M.empty
   peCleanedAt <- newTVarIO Nothing
-  pure PollerEnv {peStore, peWaiters, pePhases, peHints, peProviders, pePoll, peSkipped, peListedAt, peStrayEvery = strayListInterval, peCancelFailed, peCleanedAt}
+  peCleanupLeft <- newTVarIO []
+  pure PollerEnv {peStore, peWaiters, pePhases, peHints, peProviders, pePoll, peSkipped, peListedAt, peStrayEvery = strayListInterval, peCancelFailed, peCleanedAt, peCleanupLeft}
 
 -- | Read providers before the sweep, and skip the sweep entirely when a read failed, so an
 -- invoice with money in it is never expired.
@@ -144,7 +152,7 @@ runOnePass env@PollerEnv {peStore, peProviders} = do
   pruneSkipLog env now
   -- the cleanup runs whatever the sweep met
   when (accounted && not (null peProviders)) $ void $ safely "badge poller: the sweep" (sweepExpired env now)
-  cleanupDue env now >>= (`when` cleanupUnpaid env now)
+  cleanupUnpaid env now
 
 -- | The cases the stray list catches are rare and not urgent, so minutes, not the pass cadence.
 strayListInterval :: NominalDiffTime
@@ -262,9 +270,12 @@ cleanupDue PollerEnv {peCleanedAt} now = atomically $ do
 
 -- | The poller reads an invoice only within settleWindow of its creation, so each order's invoice is read once more
 -- before the order goes: a payment whose webhook was lost is recorded then, and the order is kept for support.
+-- Each pass reads at most cleanupReadsPerPass of the day's orders.
 cleanupUnpaid :: PollerEnv -> UTCTime -> IO ()
-cleanupUnpaid env@PollerEnv {peStore} now = do
-  candidates <- withTransaction peStore (`unpaidCleanupCandidates` addUTCTime (negate unpaidRetention) now)
+cleanupUnpaid env@PollerEnv {peStore, peCleanupLeft} now = do
+  due <- cleanupDue env now
+  when due $ withTransaction peStore (`unpaidCleanupCandidates` addUTCTime (negate unpaidRetention) now) >>= atomically . writeTVar peCleanupLeft
+  candidates <- atomically $ stateTVar peCleanupLeft (splitAt cleanupReadsPerPass)
   deleted <- filterM (\c@(RegistrationId rid, _) -> safelyWith ("names cleanup: registration " <> rid) False (cleanOne c)) candidates
   unless (null deleted) $ logInfo ("names cleanup: deleted " <> tshow (length deleted) <> " unpaid order(s)")
   where
