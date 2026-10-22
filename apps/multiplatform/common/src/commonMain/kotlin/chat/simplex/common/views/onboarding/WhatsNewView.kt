@@ -900,7 +900,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
       VersionFeature.FeatureView(
         icon = null,
         titleId = MR.strings.v6_4_1_short_address,
-        view = { modalManager -> CreateUpdateAddressShortLinkView(modalManager) }
+        view = { CreateUpdateAddressShortLinkView() }
       ),
       VersionFeature.FeatureDescription(
         icon = MR.images.ic_translate,
@@ -1323,7 +1323,7 @@ private fun Modifier.pinchZoom(): Modifier {
 }
 
 @Composable
-fun CreateUpdateAddressShortLinkView(modalManager: ModalManager) {
+fun CreateUpdateAddressShortLinkView() {
   val clipboard = LocalClipboardManager.current
   val progressIndicator = remember { mutableStateOf(false) }
 
@@ -1392,7 +1392,8 @@ fun CreateUpdateAddressShortLinkView(modalManager: ModalManager) {
             interactionSource = remember { MutableInteractionSource() },
             indication = null
           ) {
-            modalManager.showModalCloseable { close ->
+            if (appPlatform.isDesktop && ModalManager.start.hasModalOpen(ModalViewId.USER_ADDRESS)) return@clickable
+            ModalManager.start.showModalCloseable(id = ModalViewId.USER_ADDRESS) { close ->
               UserAddressView(chatModel = chatModel, shareViaProfile = false, autoCreateAddress = true, close = close)
             }
           }
