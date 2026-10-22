@@ -102,15 +102,15 @@ The owner's decisions on the store, one per topic. The stages below implement th
 | Results | One row. Available, with its price for 2 years and Register. Taken, with the chats it opens as small icons (the app's default icon per kind, or the profile picture), each opening a popup modelled on the app's connection-plan alert: picture, display name, `@name.simplex` or `#name.simplex`, full name, a channel's subscriber count, the link's QR on desktop, Open in SimpleX and Copy link (ep's mockup, 2026-10-21). Taken with no links: "Taken". Reserved, with "Contact the SimpleX team". So the name answer carries, per linked chat, its kind (contact, channel, business, bot), display name, full name, picture if any and a channel's subscriber count |
 | Price | From the chain: `controller.rentPriceUSD` for the paid years, no service price table (2026-10-20). The page shows only the searched name's price. The launch list is $100, $200 and $400 for 2 years: `setPrices` with base 5000 cents a year, 7 letters 10000, 6 letters 20000, no per-name prices (2026-10-21) |
 | Term | 2 paid years for a paid name, no term screen. A prepaid code pays for its own `years` (investor codes: 5). The term starts on 1 January 2027: the page adds `max(0, termStart − now)` to the duration, and the service owns `termStart` and checks the duration within a slack (2026-10-20). The flat 30 bonus days are gone |
-| No hold, hash until reveal | The service sees only keccak(label) and its length until the register step, so it holds nothing. Two buyers may pay for one name, and the later one gets the taken outcome with the payment kept. Once its own register is sent, search answers registered |
-| Wallet | The browser generates a wallet for each order: 128-bit entropy, shown as an owner code (`SN-…`). A taken order retargeted to another name keeps it. All key cryptography is in the browser. The code is shown before paying and confirmed as saved. Everything else is derived from it, so the code alone finishes or restores an order if the browser loses its storage. For that, the order keeps the name and links sealed under a key from the code. The code is the only form shown: no 12-word phrase, and no export to another wallet (2026-10-15) |
+| No hold, hash until reveal | The service sees only keccak(label) and its length until the register step, so it holds nothing. Two buyers may pay for one name, and the later one gets the taken outcome with the payment kept as a balance. Once its own register is sent, search answers registered |
+| Wallet | The browser generates a wallet for each order: 128-bit entropy, shown as an owner code (`SN-…`). A taken order's balance spent on another name, and a failed order moved to another, keep it. All key cryptography is in the browser. The code is shown before paying and confirmed as saved. Everything else is derived from it, so the code alone finishes or restores an order if the browser loses its storage. For that, the order keeps the name and links sealed under a key from the code. The code is the only form shown: no 12-word phrase, and no export to another wallet (2026-10-15) |
 | Chain access | The service talks to the Ethereum RPC directly: a reth node, or a hosted provider such as Alchemy. It reads availability, owners, resolver contracts, text records and nonces itself, and sends every transaction (2026-10-15). There is no resolver service: the SMP relays and the app read the chain from their own node, reth with nimbus (2026-10-21) |
 | Registration | The browser sends the owner address and the commitment. After the wait it reveals the registration and signs the owner's `RegisterName` intent. The service sends `commit` and `registerWithCredit` from its registrar key, owner = that address. The page shows Committing → Waiting 60s → Registering, as in the app (canvas 9) |
 | Codes | Two kinds, one sum type in core. The name code (owner code, `SN-` and 30 characters) is a wallet: whoever holds it owns the name. The prepaid code (`SN6-…` to `SN9-…`, 20 characters after the length) pays for one name of at least that many letters for its years. The number is a convention; the service's table is the source of truth. The page asks the service what a prepaid code is for |
 | Paying with a code | Codes are entered only on Check your code (2026-10-21). A prepaid code kept there makes a covered name's price $0 at search and on Check your order, with its years. There is no "I have a code" at checkout |
 | Check your code | A text link in the top bar opens a whole screen with one code field (2026-10-21). A prepaid code shows what it covers and is kept in Your names. A name code shows the name it owns and adds it to Your names. Anything else says it is not a SimpleX names code |
-| Codes not sold | Codes are not sold on the web. They come from the app, from the operator (CLI, group), or from the page for a taken order, which the service stores as a hash. Each registers one name. Codes from the app are an owner decision: #7530 defers in-app purchase, and the names v2 RFC (`origin/ab/names-gui:docs/rfcs/2026-08-05-simplex-names-v2.md`) has in-app purchase buy a name directly |
-| History | "Your names" lists names with Name code and Edit links, and prepaid codes. Codes are added through Check your code. A name code there replaces Restore: it finds the code's orders with `find` and adds them (2026-10-21) |
+| Codes not sold | Codes are not sold on the web. They come from the app, and from the operator (CLI, group); a taken order gets a balance, not a code (2026-10-22). Each registers one name. Codes from the app are an owner decision: #7530 defers in-app purchase, and the names v2 RFC (`origin/ab/names-gui:docs/rfcs/2026-08-05-simplex-names-v2.md`) has in-app purchase buy a name directly |
+| History | "Your names" lists names with Name code and Edit links, a taken order's balance with Use and Refund (2026-10-22), and prepaid codes. Codes are added through Check your code. A name code there replaces Restore: it finds the code's orders with `find` and adds them (2026-10-21) |
 | Investors | A line closing every page, as badges: "Invest in SimpleX Chat and get a free name." and a link to Wefunder. A link, not a button (2026-10-20) |
 | Storage | Prepaid codes in their own table, not a kind column on the badge code table. Registrations in their own table. Owner codes are never stored by the service |
 | Ethereum | Check your order, the page before payment, has one line, "Paying with ETH? Register in the dApp", linking the dApp (`https://app.simplex.domains`, host not yet confirmed). No order is made. ep, 2026-10-21 08:43: "remove dapp footer from here, it will be on invoice", recorded in the owner decisions of 2026-10-21, replacing the 2026-10-20 placement on the available answer |
@@ -139,9 +139,10 @@ What the buyer sees, in order, and the outcomes off the main path. ep's mockup (
 
 **Outcomes off the path:**
 - **Taken between search and registration** (by another registrar, or by another order here that registered first): the order keeps its value.
-  - Paid: the buyer has two choices.
-    - Register another name at most its price, searched on the order's own page. A cheaper one refunds nothing, which the page says first.
-    - Or take a prepaid code that pays for any name no dearer than the order, for the order's years. The page derives it, and the service stores its hash.
+  - Paid: the order's price becomes a balance owned by its name code (owner, 2026-10-22), shown in Your names. It never expires and is never merged with another.
+    - Use it for another name: the buyer pays only the difference, by card, BTC or XMR, or nothing when the balance covers the price; what is left stays as balance.
+    - Or ask support for a refund: a popup says to write to chat@simplex.chat with the order's reference. Support records it with `//refund` and pays it back by hand. Nothing is refunded automatically.
+    - There is no code for a taken order.
   - By code: the code is released, unspent, for another name.
 - **Registration failed after paying:** the service's own retries gave up. The page shows "Not registered yet", and Try again charges nothing. Refunds are manual, by support.
 - **A code that does not work** (on Check your code, or when an order or Try again spends it): unknown, revoked, already used, held by another unfinished registration, expired, not yet paid, or not covering this name.
@@ -226,7 +227,7 @@ It builds on `origin/ab/names-registration-primitives-sponsored`. That branch al
 
 ### 3. Service: search, codes, orders
 
-This stage adds the service's names endpoints: search, link previews, code checks, orders, the reveal, finding an order, link edits, the taken outcomes and retry. It also adds the tables, the wire errors and the operator commands.
+This stage adds the service's names endpoints: search, link previews, code checks, orders, the reveal, finding an order, link edits, a taken order's balance and retry. It also adds the tables, the wire errors and the operator commands.
 
 The contract [`2026-10-21-store-api.md`](2026-10-21-store-api.md) defines every endpoint below to the field; this section says how the service builds them.
 
@@ -306,8 +307,8 @@ An order carries the name's hash and length, the duration, the owner address, th
   - Each order carries `timestamp` and the owner's EIP-191 signature over `simplex.domains order <labelHash> <length> <duration> <commitment> <sha256(sealed)> <timestamp>`. So nobody places orders in another wallet's name.
   - An **exact resend** (every field equal to a stored order, including `sealed`, the method and price or the code, and the signature recovering the owner) is answered with that order, in any phase, whatever the timestamp's age.
   - Anything else that meets a live order of the same commitment, or of the same owner and label hash, is `409 order_exists`, with no other field. The page then finds its order with the signed `find`. The commitment is public on chain once committed, so it proves nothing on its own.
-  - A registration is live while it has an open invoice, or is past `unpaid` and not `taken` or `code_issued`.
-- **One request at a time per name and per code.** Orders, the reveal, `/name`, `/code` and `/retry` run one at a time per label hash; every reservation, release and spending of a prepaid code one at a time per code, reserving by one conditional update in the transaction that creates, moves or requeues the registration. The turns live in their own module (`StoreService.Names.Turns`). Every registration write is a compare-and-set on its `version`; a lost race on any endpoint answers `409 registration_changed` with the current view. Unique constraints back it: one live registration per commitment, one per owner and label hash, one registration per reserved code.
+  - A registration is live while it has an open invoice, or is past `unpaid` and not `registered` or `taken`.
+- **One request at a time per name and per code.** Orders, the reveal, `/name`, `/spend` and `/retry` run one at a time per label hash; every reservation, release and spending of a prepaid code one at a time per code, and every hold, spending and refund of a balance one at a time per balance, reserving by one conditional update in the transaction that creates, moves or requeues the registration. The turns live in their own module (`StoreService.Names.Turns`). Every registration write is a compare-and-set on its `version`; a lost race on any endpoint answers `409 registration_changed` with the current view. Unique constraints back it: one live registration per commitment, one per owner and label hash, one registration per reserved code.
 - **An overdue order is closed by the next one.** A new order from the same wallet and name that meets a live order whose invoice is past its expiry time (the poller may not have marked it yet) marks that invoice `expired` and clears its registration's `live` in its own transaction, then inserts; the provider's cancel follows, best effort. Settlement queues a registration only while it is still live; a payment for a closed order is a late payment (stays `unpaid`, alert, support refunds).
 - **`POST /api/invoice {kind: "name", labelHash, length, duration, price, method, owner, commitment, sealed, timestamp, signature}`** creates a paid order. `sealed` is required.
   - Its checks, in this order:
@@ -460,41 +461,38 @@ An order carries the name's hash and length, the duration, the owner address, th
   - Your names hides Edit links once the registered answer carries an `owner` other than the code's address (after redeeming).
   - PR #35 has no edit credits. So the service bounds edits with its own rate limit and a per-name cap.
 
-#### Taken orders, the registration view and retry
+#### Taken orders and their balances, moves, the registration view and retry
 
-- **A `taken` order** has two ways on, both signed by the owner, as `find` is.
+- **A `taken` order is final.** A paid one keeps its `price` as a balance (contract section 8, Balances): credited in the write that makes it `taken`; spent by `/spend`, at once when it covers the new name's price, or held by the new order's invoice for the difference, spent at settlement and released when that invoice closes unpaid; refunded only by support with `//refund`, which refuses a held balance. A code order's code is released. `/spend` and `/name` (for a failed order, or refused links) are signed by the owner, as `find` is.
   - The signature is read the same way, and the timestamp must be within 10 minutes. The owner signs because the registration id is readable by anyone holding the order link.
   - The signed messages (EIP-191):
     - `simplex.domains name <registrationId> <labelHash> <length> <duration> <commitment> <sha256(sealed)> <timestamp>`;
-    - `simplex.domains code <registrationId> <codeHash> <codeLength> <timestamp>`.
+    - `simplex.domains spend <registrationId> <labelHash> <length> <duration> <commitment> <sha256(sealed)> <timestamp>`.
   - Their fields:
     - `length` and `duration` in decimal;
     - `labelHash`, `commitment` and `sha256(sealed)` as lowercase `0x` hex. `sha256(sealed)` is the SHA-256 of the `sealed` string's ASCII bytes;
-    - `codeHash` as the badge codes' unpadded base64url SHA-256 of the canonical code;
     - `timestamp` in decimal Unix seconds.
   - **`POST /api/registration/:id/name {labelHash, length, duration, commitment, sealed, timestamp, signature}`** retargets the order to another name, or to the same name with other links.
-    - Allowed only for a paid registration in `taken`, for any registration in `failed`, and for a registration in `committed` whose reveal was refused for its links (`invalid_link`, recorded as `links_refused_at`); never from a healthy `committed` (manager's ruling, 2026-10-21). Else `bad_request`. So links a reveal refuses, which are fixed in the commitment, can be corrected without support.
-    - At most `[names] max_order_moves` (3) successful moves per order over its life, counted on success; past that `409 move_limit` with the current view. Each move costs the service a new commit, so the cap bounds what one order can spend. The order then stays as it is (`failed`, `taken`, or `committed` with its links refused); the page shows its state with a line to contact SimpleX support and the reference, and support settles it by hand, refunding a paid order.
+    - Allowed only for any registration in `failed`, and for a registration in `committed` whose reveal was refused for its links (`invalid_link`, recorded as `links_refused_at`); never from a healthy `committed` (manager's ruling, 2026-10-21), nor from `taken` (2026-10-22). Else `bad_request`. So links a reveal refuses, which are fixed in the commitment, can be corrected without support.
+    - At most `[names] max_order_moves` (3) successful moves per order over its life, counted on success; past that `409 move_limit` with the current view. Each move costs the service a new commit, so the cap bounds what one order can spend. The order then stays as it is (`failed`, or `committed` with its links refused); the page shows its state with a line to contact SimpleX support and the reference, and support settles it by hand, refunding a paid order.
     - A body equal to the registration's current fields is a repeat: it answers the view unchanged and counts no move. A page whose response was lost re-reads the view, which shows the retarget.
     - It holds the old and the new label hash's turn, taken in hash order, and writes by compare-and-set on `version`.
     - A code order's code is checked and reserved again under its per-code turn, as `/retry` does (`code_used` when the sweep released it and it was spent elsewhere, `code_reserved`, `code_invalid`, `code_expired`, `code_not_covering`).
     - It runs the order's checks on the new fields: `invalid_name`, the existing-order rule for the new commitment or this owner and the new hash, other than this registration (`order_exists`), the duration for the registration's `years`, `name_taken`.
-    - A paid order: the new name's chain price for those years must be at most the registration's `price`, else `409 price_too_high` with that price. A cheaper name refunds nothing; the page says so before the buyer chooses. A code order: the code must cover the new name (`code_not_covering`), and stays reserved.
+    - A paid order: the new name's chain price for those years must be at most the registration's `price`, else `409 price_too_high` with that price. A cheaper name adds the difference to the order's balance (manager's ruling, 2026-10-22); the page says so before the buyer chooses. A code order: the code must cover the new name (`code_not_covering`), and stays reserved.
     - It sets a paid registration's `price` to the new name's price, which caps a further move.
     - It replaces the hash, length, duration, commitment and sealed order.
     - It clears `label`, `secret`, `records`, `intent_*`, the transaction hashes and blocks, `reveal_after`, `reveal_before` and `error`. So the worker cannot register with the old intent, and the view shows no old transaction.
     - It commits again, and the page reveals again.
-  - **`POST /api/registration/:id/code {codeHash, codeLength, timestamp, signature}`** takes a prepaid code instead. `codeLength` is the length the page put in the code's text; a different current value is `409 code_length_changed` with it, and nothing is issued.
-    - An identical repeat (the registration's `issued_code_id` has this hash) is answered 200 again, whatever `codeLength` it carries and whatever the prices are now. This is checked after the rate limit and the owner's signature, before any length check; in `code_issued` the stored row is the only reference.
-    - Otherwise only a paid registration in `taken` gets a code, for the registration's `years`, paid and without expiry. Its `min_length` is the shortest length `L` from 6 such that every length from `L` to 63 has a chain price for those years at most the registration's `price`: the code pays for any name no dearer than the order (`SN6` to `SN8` with the launch prices). The service reads the oracle's whole list once (`controller.prices()`, then its `prices()`), so a non-monotone list is handled. When no length qualifies, `/code` is `409 code_unavailable`. A failed read is `503 provider_unavailable`.
-    - The registration view carries that length as `codeLength` in `taken`, and the issued code's `min_length` in `code_issued`, so the owner code recovers the code on any browser. The page puts it in the code's text (1–2 digits) before hashing it.
-    - The page derives the code from the owner code's seed. Its payload comes from `HMAC-SHA256(seed, "simplex.domains taken code " + registrationId)`. So the owner code recovers it, and a repeat sends the same hash. The page sends only the hash.
-    - `code_conflict` keeps its badge meaning: a hash another code already has. A derived code cannot be regenerated. But with the registration id in it and a 95-bit payload, a conflict is a practical impossibility, and the order page would show the error with the reference.
-    - The service inserts a `name_prepaid_codes` row for the hash and sets `issued_code_id` to it. The service sets `min_length` and `years` from the registration, not from the code's text.
+  - **`POST /api/registration/:id/spend {labelHash, length, duration, commitment, sealed, price, balance, method, timestamp, signature}`** buys another name with the order's balance, for a new order of the same owner (contract section 8).
+    - `balance` is the amount the page read, and must still be the balance's, with no open invoice holding it, else `409 balance_changed` with the current balance; `method` is sent exactly when `price` is more than `balance`.
+    - It runs under the new name's label turn, then the balance's turn, with the order's checks: existing orders (an exact resend by its `name-balance` hash), the timestamp and duration, the chain, the price.
+    - Covered: the new order is `queued` and its price spent from the balance in one transaction; the rest stays. Otherwise: an invoice for the difference, and the new order `unpaid` holding the balance, in one transaction. An overdue holder of the balance is closed first, in the same transaction.
+    - Every balance write is conditional on the balance's amount and holder, so a second process can only make it refuse.
 - **`GET /api/registration/:id`** is the long-poll view a code registration uses. `GET /api/invoice/:id` carries the same object for a paid one.
-  - Its fields: `{id, version, phase, labelHash, label (null until the reveal), owner, commitment, sealed, resolver, sponsor, chainId, tld, years, duration, price, codeLength, commitTx, registerTx, revealAfter, revealBefore, intentNonce, unread, expiresAt, error}`. `codeLength` is null except for a paid registration in `taken` or `code_issued`.
-  - `version` grows with every change to the registration; the long polls hold on it.
-  - `unread` names the fields (`intentNonce`, `codeLength`) left null because their chain read failed; the view itself never fails for them. The page reads the view again without `seenVersion` after 5 s, then 15 s, then every 30 s while `unread` is not empty.
+  - Its fields: `{id, version, moves, linksRefused, phase, labelHash, label (null until the reveal), owner, commitment, sealed, resolver, sponsor, chainId, tld, years, duration, price, fromBalance, balance, commitTx, registerTx, revealAfter, revealBefore, intentNonce, unread, expiresAt, error}`. `balance` is `{amount, held, heldUntil, refunded}` or null; `fromBalance` the cents paid from another order's balance when the order was made.
+  - `version` grows with every change to the registration; the long polls hold on it. A balance change leaves it as it is.
+  - `unread` names the fields (`intentNonce`) left null because their chain read failed; the view itself never fails for them. The page reads the view again without `seenVersion` after 5 s, then 15 s, then every 30 s while `unread` is not empty.
   - `moves` counts the order's successful `/name` moves.
   - `commitTx` and `registerTx`: each is chosen among the hashes kept since they were last cleared. It is the one that mined with `status` 1, else the latest sent. It is null when judged mined from chain state with no hash known to have mined with `status` 1.
   - `revealBefore` is the commit's block time + `maxCommitmentAge` (24 h in PR #35's deploy).
@@ -505,11 +503,11 @@ An order carries the name's hash and length, the duration, the owner address, th
   - `queued`: paid, or code reserved.
   - `committed`: waiting for `minCommitmentAge` and the reveal.
   - A commitment not revealed within the controller's `maxCommitmentAge` lapses to `failed`.
-  - From `taken`, a paid order goes back to `queued` with its new label hash, or ends `code_issued`. A code order ends at `taken`, with its code released.
+  - `taken` is final: a paid order keeps its `price` as a balance; a code order's code is released.
   - A code's reservation is described with its table below.
 - **Chain reads:** a chain read that fails answers `provider_unavailable` (503) and changes nothing.
-  - This applies in search, the reveal, the records relay (nothing sent, nothing stored), `/code` and `/retry`.
-  - The view reads `intentNonce` only in `committed` and `codeLength` only in `taken`, and on a failed read leaves them null and named in `unread`. So a chain outage never blocks an order's page.
+  - This applies in search, the reveal, the records relay (nothing sent, nothing stored) and `/retry`.
+  - The view reads `intentNonce` only in `committed`, and on a failed read leaves it null and named in `unread`. So a chain outage never blocks an order's page.
   - A failed read is the node unreachable or answering an error. An RPC error is a failed read like any other.
   - These are not failed reads:
     - A revert that is itself the answer, as `ownerOf` for a name not held, counts as not this owner's.
@@ -524,7 +522,7 @@ An order carries the name's hash and length, the duration, the owner address, th
   - Record edits have a per-name cap of 10 relayed edits an hour, counted over sent `name_record_edits` rows; its `Retry-After` is the real wait, which the page clamps to 300 seconds and asks again.
   - `/api/name/register` shares the code check's.
   - `GET /api/registration/:id` and the reveal take the read limit, like the invoice long poll.
-  - `/name`, `/code` and `/retry` on a registration take the create limit.
+  - `/name`, `/spend` and `/retry` on a registration take the create limit.
 - **`POST /api/registration/:id/retry`** is Try again. It works from `failed` only (else `bad_request`), in this order:
   1. A register of this registration that went through, with only its confirmation lost.
      - Either one of its sent register transactions has a receipt with `status` 1. Every hash is kept, fee-bumped replacements included.
@@ -560,15 +558,16 @@ An order carries the name's hash and length, the duration, the owner address, th
     - A daily sweep releases codes whose registration is still `failed` with a `failed_at` 30 days old.
     - A later retry reserves the code again if it is still unused. Otherwise it answers `code_used`, `code_invalid` (revoked) or `code_expired`, or `code_reserved` when another registration holds it.
   - **`name_registrations`:**
-    - Columns: `registration_id`, `label_hash`, `length`, `label`, `secret`, `records`, `intent_nonce`, `intent_deadline` and `intent_signature` (null until the reveal), `sealed`, `owner`, `commitment`, `phase`, transaction hashes and blocks, `reveal_after`, `reveal_before`, `years`, `duration`, `expires_at`, `price`, `name_prepaid_code_id`, `issued_code_id`, `registered_at`, `failed_at`, `error`, `created_at`, `updated_at`.
+    - Columns: `registration_id`, `label_hash`, `length`, `label`, `secret`, `records`, `intent_nonce`, `intent_deadline` and `intent_signature` (null until the reveal), `sealed`, `owner`, `commitment`, `phase`, transaction hashes and blocks, `reveal_after`, `reveal_before`, `years`, `duration`, `expires_at`, `price`, `name_prepaid_code_id`, `balance_source`, `balance_used`, `registered_at`, `failed_at`, `error`, `created_at`, `updated_at`.
     - Transactions: every one sent, fee-bumped replacements included, is a `name_transactions` row (below), saved with its raw signed transaction once signed and before it is sent.
-    - `version`, `live` (an open invoice, or past `unpaid` and not `taken` or `code_issued`; a new order from the same wallet and name closes an overdue one, clearing it in the same transaction), `order_hash` (the order's fields, never the timestamp or signature, for exact resends), the order's method, `moves` (successful `/name` moves) and `links_refused_at` (a reveal refused for its links).
+    - `version`, `live` (an open invoice, or past `unpaid` and not `registered` or `taken`; a new order from the same wallet and name closes an overdue one, clearing it in the same transaction), `order_hash` (the order's fields, never the timestamp or signature, for exact resends), the order's method, `moves` (successful `/name` moves) and `links_refused_at` (a reveal refused for its links).
     - Unique `commitment` and unique `(owner, label_hash)` among rows with `live` set.
     - `reveal_after` and `reveal_before`: the commit's block time plus the controller's ages, read at the commit.
     - `duration`: the term in seconds the commitment was built with, checked at the order or the retarget.
     - `price`: what the order is worth in cents, the chain's price when ordered, replaced at retarget; 0 when paid by code. There is no price table: prices are the chain's.
     - `name_prepaid_code_id`: the code paying; null when paid.
-    - `issued_code_id`: the code taken instead of a taken name.
+    - `balance_source`, `balance_used`: the order whose balance paid for this one, and the cents it paid.
+  - **`sx_badge_service_name_balances`:** one row per order holding a balance: `registration_id`, `amount`, `credited`, `refunded`, `reserved_by` (the holder, unique), `refunded_at`.
     - The invoice links through `name_invoices.registration_id`.
     - Indexed by `label_hash` with `phase` (search and orders), and by `owner` (find).
     - A restart rebroadcasts each saved raw transaction that has no receipt. It rebroadcasts it again after a timeout, while the node does not know it and its registrar nonce is unused.
@@ -611,8 +610,9 @@ An order carries the name's hash and length, the duration, the owner address, th
   - `catalog_changed` now carries the chain's `price`.
   - `order_exists` (409): an order meeting another live order that is not its exact resend; it names nothing.
   - `price_too_high` (409, with `price`): a retarget to a name dearer than the order.
-  - `code_unavailable` (409): `/code` when no length is as cheap as the order.
+  - `balance_changed` (409, with `balance`): a `/spend` whose balance changed, or is held by an open invoice.
 - **Operator:**
+  - `//refund <reference> [<cents>]` on the service console shows a balance and every invoice that funded it, then records a refund of all of it (contract section 8; task T26).
   - `//issue name <length> [years <Y>] [paid|unpaid|free]`, and group `/issue name <length> [years <Y>]` / `/bulk name <length> [years <Y>] count <N>`, issue single-use prepaid codes. The length is 6–9 in practice (`SN6` to `SN9`); 6–63 is accepted.
     - Without years, a code covers 2. Codes and the paid years are at least 2.
     - Fewer than 2 is refused, since the controller reverts `DurationTooShort` below 730 days.
@@ -654,7 +654,7 @@ It uses the branch's chain client (`BadgeService/Names/Chain.hs`, `sendCommit`, 
   - **A separate phase map** tracks the registration's phase.
     - It is keyed by registration id, since a prepaid-code registration has no invoice.
     - It is left out of `waitingCount`, which sets the payment poller's cadence (`waiting_seconds` against `idle_seconds`).
-    - The phase is published on every phase change, by the worker or the service (settlement, `/retry`, `/name`, `/code`), after its database transaction commits.
+    - The phase is published on every phase change, by the worker or the service (settlement, `/retry`, `/name`), after its database transaction commits.
   - **`GET /api/invoice/:id`** takes a `seenVersion` parameter beside `wait`.
     - It holds while its status and payment marks are the ones seen and, for a name invoice, its registration's `version` is `seenVersion`. It wakes on a change to any of them, so a label, intent or reveal-time change inside a phase reaches the page at once.
     - A paid name invoice, whose status cannot change, holds on the phase map alone. So it adds nothing to `waitingCount`.
@@ -663,7 +663,7 @@ It uses the branch's chain client (`BadgeService/Names/Chain.hs`, `sendCommit`, 
   - **The library:**
     - `waitForChange` sends `seenVersion` for an invoice with a registration. It returns when its status, payment mark or registration changes. It treats `paid` as terminal only for an invoice without a registration.
     - A new `waitForRegistration(id, seenVersion)` long-polls `GET /api/registration/:id` the same way.
-    - Both stop at `registered`, `code_issued`, `taken` and `failed`. `waitForChange` also stops at `unpaid` once the invoice is no longer `open` (expired, canceled, or paid after it closed).
+    - Both stop at `registered`, `taken` and `failed`. `waitForChange` also stops at `unpaid` once the invoice is no longer `open` (expired, canceled, or paid after it closed).
     - The page polls again after the buyer's own action (a retarget, a code, Try again).
 - **The branch's "left to the plumbing PR"** is this stage's checklist:
   - verify the intent before sending;
@@ -733,7 +733,7 @@ This stage builds two webapps that share logic, not screens.
   - The QR encoder from `qr.ts`: `encodeQr`, `paymentUri`, the `QrSymbol` type, and the steps its tests check (`generatorPoly`, `eccOf`, `rawDataModules`, `numDataCodewords`, `byteCapacity`, `alignmentPositions`, `dataCodewords`, `interleave`, `formatBits`, `versionBits`). `qrSvg` builds DOM nodes and stays in each webapp.
   - From `crowdfunding.ts`: the Wefunder link, taking its `utm_source` (`badges` today, `domains` as simplex.domains links it), and `dollars`. The perks are keyed by badge type and stay. The names app has its own placeholder amount.
 - **New for names:**
-  - `api.ts` gains `checkName`, `checkCode`, `previewLink`, name orders, the reveal, `find`, the retarget (`/name`), the taken code (`/code`), `/retry`, `records`, registration views with `waitForRegistration`, and the new errors, as the contract defines them;
+  - `api.ts` gains `checkName`, `checkCode`, `previewLink`, name orders, the reveal, `find`, the retarget (`/name`), the balance spend (`/spend`), `/retry`, `records`, registration views with `waitForRegistration`, and the new errors, as the contract defines them;
   - `catalog_changed` carries the new price.
 - **Shape:**
   - ES modules compiled by `tsc` with the webapp's strictness, but with its own `tsconfig.json`:
@@ -843,7 +843,7 @@ Changes:
 This stage keeps the names webapp's mock and the service on one API.
 
 - **The names mock** lives with the webapp, `simplex.domains/webapp/dev/mock/` (`service.ts`, `chain.ts`, served by `dev/mock.ts`, deployed by `dev/deploy.ts`). It drives the real contracts on a local anvil chain, reads them directly, and keeps orders in memory. `/control/*` endpoints settle, expire and fail orders, take names, and inject errors for tests.
-- **It follows the contract** [`2026-10-21-store-api.md`](2026-10-21-store-api.md). Its Appendix A lists what the mock and the page change: chain prices, `termStart` and `duration`, signed orders and `order_exists`, the retarget message, the revoked code state, the taken code's length, `find`'s new fields, edit repeats, `version` and `unread`, `/name` bounds, the reveal's race, link `profile` states, `/code`'s `codeLength`, `gracePeriod`.
+- **It follows the contract** [`2026-10-21-store-api.md`](2026-10-21-store-api.md). Its Appendix A lists what the mock and the page change: chain prices, `termStart` and `duration`, signed orders and `order_exists`, the retarget message, the revoked code state, `find`'s new fields, edit repeats, `version` and `unread`, `/name` bounds, the reveal's race, link `profile` states, `gracePeriod`, and from 2026-10-22 no taken code and the balances (items 36–38).
 - **The badges mock** (`web/mock/server.py`) gains no names endpoints. Both sites' webapps are tested against their own mocks.
 - **The service is checked against the same contract:**
   - Haskell API tests walk every endpoint and outcome of the contract against a fake JSON-RPC node.
@@ -867,7 +867,7 @@ What each stage waits for, and what to agree with others first.
 - **simplexmq dependence:**
   - These wait for simplexmq `names` (#1843, #1887's signing) and for the EIP-712 hashing and `recoverAddress` of `ab/name-registration-primitives-sponsored` to reach the simplexmq the service builds against:
     - stage 2 (on Alain's branch, whose owner code uses simplexmq's BIP-39 from #1843, and whose `Registration` encoding uses its EIP-712);
-    - stage 3's relay, reveal intent check, and signed `find`, `/name` and `/code`;
+    - stage 3's relay, reveal intent check, and signed `find`, `/name` and `/spend`;
     - stage 4.
   - Alain's branch (`f06910698`, merged with `names`) pins simplexmq `4e6f5586` ("add EIP712 (#1941)") in `cabal.project`, with its hash in `scripts/nix/sha256map.nix`. That commit has `Simplex.Messaging.Eth.Address` (`recoverAddress`, `addressFromPrivateKey`; the EIP-55 form is `strEncode`, since `checksumAddress` is not exported), `Eth.EIP712` (`hashTypedData`, `Eip712Value`), `Eth.Transaction` (`signEip1559Tx`) and `Eth.RLP` (checked 2026-10-21 in the store worktree's cabal source cache). It has no EIP-191 helper, so the service hashes `"\x19Ethereum Signed Message:\n" ‖ length ‖ message` itself. The backend branch `sh/store-service` starts from it.
   - A paid order waits in `queued` until stage 4 lands.
@@ -906,17 +906,15 @@ How each part is checked before release: Haskell tests, web tests, the Docker bu
     - a duration within the slack accepted, one outside it (too long, too short, or negative free days) refused, before and after `termStart`;
     - the reveal rebuilding the commitment with the stored duration;
     - a second order of one wallet for one name with a new commitment refused `order_exists`; accepted after the old invoice's cancel, or after its expiry time even before the poller marks it;
-    - a taken order's `codeLength` from the chain prices, a non-monotone list, none qualifying, and `codeLength` kept in `code_issued`;
+    - a taken paid order credited a balance of its price; a spend covered, one with a difference settled and one cancelled (the hold spent, then released); two spends of one balance, one winning; a refund refused while held;
     - exact resends answered, any other order meeting a live one `order_exists` with no fields, an unsigned or wrongly signed order refused;
     - two concurrent orders for one owner and name, and two for one code, one winning;
-    - `/name` from `failed`, `taken` and after a reveal refused for its links, refused from a healthy `committed`, `move_limit` on the fourth move, a repeat counting no move, a code order's code re-reserved, and `price_too_high`;
+    - `/name` from `failed` and after a reveal refused for its links, refused from `taken`, refused from a healthy `committed`, `move_limit` on the fourth move, a repeat counting no move, a code order's code re-reserved, and `price_too_high`;
     - a reveal racing a `/name`, one taking effect and the other answered `registration_changed`;
-    - `/code` answering `code_length_changed` after a price change;
     - link previews: a public IP literal fetched, private, CGNAT, unique-local, `.onion` and unresolvable hosts `unavailable`, a link with one private host of several `unavailable`, previews unable to starve search;
     - a new order closing an overdue order of the same wallet and name, and a payment of the closed one recorded as a late payment;
     - a reveal with uncommitted links or a wrong signer recording no links refusal;
-    - a `/code` repeat answered 200 after a price change;
-    - a failed `intentNonce` or `codeLength` read leaving the view with `unread`;
+    - a failed `intentNonce` read leaving the view with `unread`;
   - orders, the reveal and the records relay:
     - orders by payment and by code;
     - the reveal and its checks: with and without links, a high-s intent refused, the sponsor nonce from a fake JSON-RPC node;
@@ -951,7 +949,7 @@ How each part is checked before release: Haskell tests, web tests, the Docker bu
     - the link bound at preview, reveal and records;
     - `sealed` over 11095 characters refused at `/api/invoice`, `/api/name/register` and `/name`;
     - a longest order and a reveal with two records at the link bound passing the body cap;
-  - `find`, `/name` and `/code` with their owner signatures and 10-minute window (a wrong signer and a stale timestamp refused), and `/retry` (re-reserving a released code, the lost-confirmation path);
+  - `find`, `/name` and `/spend` with their owner signatures and 10-minute window (a wrong signer and a stale timestamp refused), and `/retry` (re-reserving a released code, the lost-confirmation path);
   - the worker against a fake JSON-RPC node:
     - each change (phase, label, reveal times, error) waking a long poll held on a paid invoice with `seenVersion`, and one held on `GET /api/registration/:id?seenVersion`;
     - an unpaid name invoice held on its status waking on its expiry, and one paid after it closed answered at once and not polled again;
