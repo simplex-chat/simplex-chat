@@ -84,7 +84,9 @@ compose {
           infoPlist {
             extraKeysRawXml = """
               <key>NSMicrophoneUsageDescription</key>
-              <string>SimpleX needs microphone access to record voice messages</string>
+              <string>SimpleX needs microphone access for calls and voice messages</string>
+              <key>NSCameraUsageDescription</key>
+              <string>SimpleX needs camera access for video calls</string>
               <key>CFBundleURLTypes</key>
               <array>
                 <dict>
@@ -99,6 +101,9 @@ compose {
               </array>
             """
           }
+          // Compose default entitlements plus camera and microphone, required for calls under the hardened runtime
+          entitlementsFile.set(project.file("src/jvmMain/resources/distribute/entitlements.plist"))
+          runtimeEntitlementsFile.set(project.file("src/jvmMain/resources/distribute/entitlements.plist"))
           val identity = rootProject.extra["desktop.mac.signing.identity"] as String?
           val keychain = rootProject.extra["desktop.mac.signing.keychain"] as String?
           val appleId = rootProject.extra["desktop.mac.notarization.apple_id"] as String?
