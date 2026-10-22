@@ -90,7 +90,7 @@ Each section shows the calls first. The bullets under it hold the exact rules.
 5. Reveal: the owner signs the registration
 6. Register and confirm
 7. A prepaid code
-8. Taken: another name, or a prepaid code
+8. Taken: a balance for another name
 9. Failed, retried, lapsed
 10. A name code on Check your code
 11. Links: preview before the order, edit later
@@ -211,7 +211,7 @@ sequenceDiagram
   - An exact resend, every field equal to the stored order including `sealed`, the method and the price, is answered with that order, in any phase and however late.
   - A live order of the same wallet and name whose invoice has passed its expiry time is closed inside the new order's transaction (invoice `expired`, `live` cleared, the provider's cancel after, best effort); the new order then goes on.
   - Anything else gets `409 order_exists`, which names nothing. The page then runs the signed `find` (section 10) and opens its order. A commitment is public on chain once committed, so it alone proves nothing.
-  - Orders, `/name`, `/code` and `/retry` run one at a time per label hash; unique constraints back it.
+  - Orders, `/name`, `/spend` and `/retry` run one at a time per label hash; a balance's holds, spends and refunds one at a time per balance; unique constraints back it.
 - **Storage:** the service inserts `name_registrations` (phase `unpaid`), `name_invoices` and `invoices` ‡.
 
 ## 3. Payment and settlement
@@ -466,53 +466,59 @@ sequenceDiagram
   7. **The code:** its state, then its cover. Reserving is one conditional update in the transaction that creates the registration, one at a time per code.
 - **Code errors:** `code_invalid`, `code_used`, `code_reserved`, `code_expired`, `payment_pending` or `code_not_covering`. They show on the page that sent the order, and the name shows its price again.
 
-## 8. Taken: another name, or a prepaid code
+## 8. Taken: a balance for another name
 
-The name went to someone else before the register. A paid order can then switch to another name, or take a prepaid code instead.
+The name went to someone else before the register. A paid order keeps its `price` as a balance, owned by its name code (owner, 2026-10-22; contract section 8). The balance buys another name, paying only the difference, or support refunds it on request. There is no code for a taken order.
 
 ```mermaid
 sequenceDiagram
   autonumber
   participant W as Webapp
   participant S as Service
-  S-->>W: phase taken (long poll)
-  alt another name (N8a)
-    W->>S: GET /api/name/:hash (section 1), chain price ≤ the order's price
+  S-->>W: phase taken (long poll); the view's balance
+  alt use the balance (N8a)
+    W->>S: GET /api/name/:hash (section 1), the chain price
     W->>W: new duration, commitment and sealed for the same wallet
-    W->>W: sign "simplex.domains name …" with the owner key
-    W->>S: POST /api/registration/:id/name (labelHash, length, duration, commitment, sealed, timestamp, signature)
-    S->>S: checks, then queued with the new name
-    Note over W,S: then sections 4 to 6 again
-  else a prepaid code (N8b)
-    W->>W: derive the code (SN + codeLength) from the seed and registrationId
-    W->>W: sign "simplex.domains code …" with the owner key
-    W->>S: POST /api/registration/:id/code (codeHash, codeLength, timestamp, signature)
-    S->>S: save the code, phase code_issued
-    S-->>W: 200
+    W->>W: sign "simplex.domains spend …" with the owner key
+    W->>S: POST /api/registration/:id/spend (order fields, price, balance, method when price > balance, timestamp, signature)
+    alt the balance covers the price
+      S->>S: new order queued, the price spent, the rest stays
+      S-->>W: registrationId
+    else a difference
+      S->>S: invoice for price − balance, new order unpaid holding the balance
+      S-->>W: the invoice view
+      Note over W,S: section 3; settlement spends the hold, a closed invoice releases it
+    end
+    Note over W,S: then sections 4 to 6 for the new order
+  else a refund
+    W->>W: popup: write to chat@simplex.chat with the reference
+    Note over S: support runs //refund on the service console and pays it back by hand
   end
 ```
 
-- **Another name (`/name`):** it uses the create rate limit.
+- **The balance:** credited with the order's `price` in the write that makes it `taken`, in one transaction. Never merged across orders or wallets; never expires. A code order taken gets none: its code is released.
+- **Spending it (`/spend`):** it uses the create rate limit, the new name's label turn, then the balance's turn.
+  - **Checks, in order:**
+    1. formats, and `method` present exactly when `price > balance`;
+    2. the order at `:id`, and the owner's signature over `simplex.domains spend <registrationId> <labelHash> <length> <duration> <commitment> <sha256(sealed)> <timestamp>`;
+    3. existing orders: an exact resend (by its `name-balance` hash) is answered as it is now; an overdue order of the same wallet and name is closed; anything else live is `order_exists`;
+    4. the timestamp and the duration;
+    5. the balance: its amount equals the `balance` sent and no open invoice holds it (an overdue holder counts as none), else `409 balance_changed` with the current balance;
+    6. the chain (`name_taken`, `name_check_unavailable`), then the price (`catalog_changed`), then the provider for a difference (`provider_unavailable`).
+  - **Writes:** one transaction: an overdue holder of the balance closed (a holder no longer live is skipped; one that cannot be closed answers `balance_changed`), then the new order and either the spend of its price or its invoice and the hold. Each balance write is conditional on the amount and the holder, so another process can only make it refuse.
+  - **After:** settlement queues the new order and spends the hold; a cancel, an expiry or the sweep releases it. A payment after the close is a late payment, refunded by support; the balance is untouched.
+- **Refunding it (`//refund`):** on the service console, by the reference the page shows (invoice id, else registration id). Without cents it shows the balance and every invoice that funded it, back along the chain of balances; with the cents it sets the balance to 0 and records them. A held balance is refused, an overdue holder included, until the poller has closed the holder.
+- **Another name for a failed order, or refused links (`/name`):** it uses the create rate limit.
   - **Checks, in order:**
     1. the owner's signature and timestamp;
-    2. a paid registration in `taken`, or any registration in `failed`, or one in `committed` whose reveal was refused for its links (to correct them; the same name is allowed); never a healthy `committed`. At most 3 successful moves per order; after the last, `409 move_limit` answers the order's state, shown with a support line and the reference; a body equal to the current fields answers the view unchanged. Both label hashes' turns are taken in hash order;
+    2. any registration in `failed`, or one in `committed` whose reveal was refused for its links (to correct them; the same name is allowed); never a healthy `committed`, nor `taken`. At most 3 successful moves per order; after the last, `409 move_limit` answers the order's state, shown with a support line and the reference; a body equal to the current fields answers the view unchanged. Both label hashes' turns are taken in hash order;
     3. the order's checks: `sealed` within its bound, `invalid_name`, other live orders for the new commitment or this owner and the new hash (`order_exists`), the duration, and `name_taken`. A failed chain read is `name_check_unavailable`, and nothing changes;
-    4. a paid order: the new name's chain price must be ≤ the order's `price`, else `409 price_too_high` with that price. A cheaper name refunds nothing, which the page says first. A code order: the code is checked and reserved again under its per-code turn (`code_used` when spent elsewhere after the sweep released it, `code_reserved`, `code_invalid`, `code_expired`) and must cover the new name (`code_not_covering`).
+    4. a paid order: the new name's chain price must be ≤ the order's `price`, else `409 price_too_high` with that price. A cheaper name adds the difference to the order's balance, which the page says first. A code order: the code is checked and reserved again under its per-code turn (`code_used` when spent elsewhere after the sweep released it, `code_reserved`, `code_invalid`, `code_expired`) and must cover the new name (`code_not_covering`).
   - **The signed message** includes the duration: `simplex.domains name <registrationId> <labelHash> <length> <duration> <commitment> <sha256(sealed)> <timestamp>`.
   - **On success:**
     - `price` becomes the new name's price, which caps a further move.
     - The registration goes to `queued` with the new hash, length, duration, commitment and `sealed`.
     - `label`, `secret`, `records`, `intent_*`, the tx hashes and blocks, `reveal_after`, `reveal_before` and `error` are cleared.
-- **A prepaid code instead (`/code`):** it uses the create rate limit, then checks the owner's signature and timestamp.
-  - **The code:** `SN<codeLength>` + a payload from `HMAC-SHA256(seed, "simplex.domains taken code " + registrationId)`. `codeLength` is the shortest length `L` from 6 such that every length from `L` to 63 costs at most the order's price, from the oracle's whole list: the code pays for any name no dearer than the order. The view carries it in `taken` and still in `code_issued`, so the name code recovers the code on any browser. The page keeps it under Your names.
-  - **The length moved** since the view was read (a price change): `409 code_length_changed` with the current value, and nothing is issued; the page derives the code again. So the issued row's length always equals the code's text.
-  - **No length qualifies** (the prices rose above the order's): `409 code_unavailable`; the view's `codeLength` is null, and the page offers only another name. A failed read is `503 provider_unavailable`.
-  - **A repeat:** if `issued_code_id` already has this hash, the answer is 200 again, whatever `codeLength` it carries; this is checked before the length.
-  - **Otherwise:** only a paid registration in `taken` qualifies. The service then:
-    - inserts the code (`codeLength`, the order's years, paid, no expiry);
-    - sets `issued_code_id`;
-    - moves the phase to `code_issued`.
-  - **Collisions:** a hash that another code already has is `code_conflict`. For a derived code this is unreachable in practice.
 - **A prepaid-code order that is taken** ends there. The worker released its code at `taken`.
 
 ## 9. Failed, retried, lapsed
@@ -607,8 +613,8 @@ sequenceDiagram
   W->>W: check the owner, open sealed → name, links, secret
   alt committed, not revealed
     W->>S: reveal (section 5)
-  else code_issued
-    W->>W: derive the taken code, keep it under Your names
+  else taken, paid
+    W->>W: show its balance, with Use and Refund
   else
     W->>W: show the phase or the name
   end
