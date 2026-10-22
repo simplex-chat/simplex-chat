@@ -349,7 +349,8 @@ host's own addresses, public ones included, since a rebinding name can answer wi
 reach whatever listens on the host. The exceptions are the
 endpoints the service is configured to use, on their ports: the RPC node (`[chain] rpc_url`),
 BTCPay (`[btcpay] host`), the database and the DNS resolvers in `/etc/resolv.conf`. Replies on
-connections already open, such as Caddy's requests, pass.
+connections already open, such as Caddy's requests, pass, and so does IPv6 neighbour discovery on
+the link.
 
 `egress.sh` writes this as the chain `STORE_SERVICE_EGRESS` in `iptables` and `ip6tables`, and
 rebuilds it on every run. With compose's host networking it matches the service's user in

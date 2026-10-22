@@ -18,6 +18,10 @@ DOCKER_CHAIN=DOCKER-USER
 # apps/simplex-store-service/src/StoreService/Names/Profiles.hs).
 DENIED_V4=(0.0.0.0/8 10.0.0.0/8 100.64.0.0/10 127.0.0.0/8 169.254.0.0/16 172.16.0.0/12 192.168.0.0/16 198.18.0.0/15 224.0.0.0/4 240.0.0.0/4)
 DENIED_V6=(fc00::/7 fe80::/10 fec0::/10 ff00::/8)
+# Conntrack leaves neighbour discovery untracked, and RFC 4861 sends it with hop limit 255, which a
+# routed packet cannot keep, so these pass only on the link.
+NEIGHBOUR_DISCOVERY=(router-solicitation neighbour-solicitation neighbour-advertisement)
+NEIGHBOUR_DISCOVERY_HOP_LIMIT=255
 # IPv4-compatible, IPv4-mapped and NAT64 addresses carry an IPv4 address in their last 32 bits.
 V4_EMBEDDING_PREFIXES=(:: ::ffff: 64:ff9b::)
 
@@ -233,8 +237,13 @@ v4_in_v6() {
 # One rule per line, in chain order: replies, then the allowed endpoints, then the denied ranges.
 # A rebinding name can also answer with one of the host's own public addresses, so those are denied too.
 rules_for() {
-  local family=$1 entry address address_family proto port range prefix
+  local family=$1 entry address address_family proto port range prefix type
   echo "-m conntrack --ctstate ESTABLISHED,RELATED -j RETURN"
+  if [[ $family == 6 ]]; then
+    for type in "${NEIGHBOUR_DISCOVERY[@]}"; do
+      echo "-p ipv6-icmp --icmpv6-type $type -m hl --hl-eq $NEIGHBOUR_DISCOVERY_HOP_LIMIT -j RETURN"
+    done
+  fi
   for entry in "${allowed[@]}"; do
     read -r address proto port <<<"$entry"
     if [[ $address == *:* ]]; then address_family=6; else address_family=4; fi
