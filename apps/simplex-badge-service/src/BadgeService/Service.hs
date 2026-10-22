@@ -17,6 +17,8 @@ module BadgeService.Service
     requestLane,
     PurchaseChecks (..),
     ClaimChecks,
+    ClaimKey (..),
+    ClaimPurpose (..),
     newPurchaseChecks,
     purchaseCheckWait,
     maxPurchaseChecks,
@@ -589,7 +591,7 @@ purchaseWithReceipt key cc verifier checks use purchaseKey masterKey StoreReceip
               claimPurchase now (\paymentId -> NewStorePurchase {paymentId, provider, providerRef, paid, purchaseKey, masterKey, badgeType, subscriptionState = Nothing, providerToken = Nothing}) $
                 \db purchaseId paymentId -> firstMonthResponse db purchaseId (Just paymentId) Nothing firstMonth
     -- another key's credit is told only once the store vouched for the subscription, as for a one-time purchase;
-    -- the store is asked about a claim at most once an interval on this path, whoever presents it
+    -- the store is asked at most once an interval per subscription and per purpose, whoever presents it
     purchaseSubscription product_ credit = do
       now <- badgeNow cc
       atomically (subscriptionAsk now) >>= \case
@@ -600,20 +602,24 @@ purchaseWithReceipt key cc verifier checks use purchaseKey masterKey StoreReceip
         AskStore ->
           checkStoreSubscription verifier subscriptionRef product_ >>= \case
             -- no store was asked, so the claim is not held off
-            Left SRNotConfigured -> atomically (modifyTVar' claimChecks $ M.delete providerRef) >> storeRefusalResponse SRNotConfigured
+            Left SRNotConfigured -> atomically (modifyTVar' claimChecks $ M.delete claimKey) >> storeRefusalResponse SRNotConfigured
             Left refusal -> atLeastCheckInterval <$> storeRefusalResponse refusal
             Right checked -> atLeastCheckInterval <$> case (credit, use) of
               (Uncredited, _) -> newSubscription checked
               (Credited from, RUTransfer presented) -> moveSubscription presented from checked
               _ -> answerCredit credit
     subscriptionAsk now =
-      purchaseCheckWait claimChecks now providerRef >>= \case
+      purchaseCheckWait claimChecks now claimKey >>= \case
         Just remaining -> pure $ ClaimHeld remaining
         Nothing ->
           maybe (pure Nothing) (`playReadWait` now) playReads_ >>= \case
             Nothing -> pure AskStore
             -- a claim refused a read is not held, as Play was not asked
-            Just wait -> modifyTVar' claimChecks (M.delete providerRef) $> NoPlayRead wait
+            Just wait -> modifyTVar' claimChecks (M.delete claimKey) $> NoPlayRead wait
+    claimKey = ClaimKey {claimRef = providerRef, claimPurpose}
+    claimPurpose = case use of
+      RUPurchase -> ClaimPurchase
+      RUTransfer _ -> ClaimTransfer
     (claimChecks, playReads_) = case subscriptionRef of
       SubscriptionApple _ -> (appleChecks checks, Nothing)
       SubscriptionGoogle _ -> (googleChecks checks, Just $ playReads checks)
@@ -1025,7 +1031,15 @@ atLeastCheckInterval = \case
 -- and the minute's allowance of Play reads.
 data PurchaseChecks = PurchaseChecks {appleChecks :: ClaimChecks, googleChecks :: ClaimChecks, playReads :: PlayReads}
 
-type ClaimChecks = TVar (M.Map T.Text UTCTime)
+type ClaimChecks = TVar (M.Map ClaimKey UTCTime)
+
+-- | A claim is held per subscription and per what its receipt was presented for, so a restore on another
+-- device is not held off by the purchase the buyer made minutes earlier, and each still asks at most once an interval.
+data ClaimKey = ClaimKey {claimRef :: T.Text, claimPurpose :: ClaimPurpose}
+  deriving (Eq, Ord)
+
+data ClaimPurpose = ClaimPurchase | ClaimTransfer
+  deriving (Eq, Ord)
 
 -- | The Play subscription checks the purchase path made in the current minute, counted as the web listener counts requests.
 type PlayReads = TVar (Maybe Bucket)
@@ -1035,14 +1049,14 @@ newPurchaseChecks = PurchaseChecks <$> newTVarIO M.empty <*> newTVarIO M.empty <
 
 -- | How long a claim waits before its store is asked again; Nothing records a check at now. A claim that finds
 -- the table full of checks inside the interval is asked without being recorded, so a full table refuses no one.
-purchaseCheckWait :: ClaimChecks -> UTCTime -> T.Text -> STM (Maybe NominalDiffTime)
-purchaseCheckWait checks now ref = stateTVar checks $ \m ->
+purchaseCheckWait :: ClaimChecks -> UTCTime -> ClaimKey -> STM (Maybe NominalDiffTime)
+purchaseCheckWait checks now key = stateTVar checks $ \m ->
   let live = M.filter (\t -> diffUTCTime now t < subscriptionCheckInterval) m
-   in case M.lookup ref live of
+   in case M.lookup key live of
         Just t -> (Just $ subscriptionCheckInterval - diffUTCTime now t, live)
         Nothing
           | M.size live >= maxPurchaseChecks -> (Nothing, live)
-          | otherwise -> (Nothing, M.insert ref now live)
+          | otherwise -> (Nothing, M.insert key now live)
 
 -- | Per store, far above an hour of genuine purchases: every App Store key is one Apple signed for this app,
 -- while Play keys cost nothing to make up, so a full Play map only stops recording Play claims.
