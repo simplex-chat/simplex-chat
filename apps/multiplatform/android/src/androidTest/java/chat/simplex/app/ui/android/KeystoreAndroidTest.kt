@@ -25,48 +25,50 @@ import java.security.KeyStore
 class KeystoreAndroidTest : UiTest() {
   @Test fun keystore_freshDb_randomPassphraseFooter() = uiTest {
     val alice = app(null)
-    freshInstallDatabaseViaApi()
-    val randomKey = DatabaseUtils.ksDatabasePassword.get()
-    check(!randomKey.isNullOrEmpty() && chatModel.chatDbEncrypted.value == true && storedSetting("InitialRandomDBPassphrase") == "true") {
-      "the fresh database: key in the Keystore ${!randomKey.isNullOrEmpty()}, encrypted ${chatModel.chatDbEncrypted.value}, random ${storedSetting("InitialRandomDBPassphrase")}"
-    }
-    val o = onboarding()
-    o.createProfile("alice")
-    check(o.stage == OnboardingStage.Step3_ChooseServerOperators) { "the step after Create profile is ${o.stage}, not Your network" }
-    click(Ui.Onboarding.Continue)
-    poll(what = "Network commitments") { o.stage == OnboardingStage.Step4_NetworkCommitments && exists(Ui.Onboarding.Accept) }
-    click(Ui.Onboarding.Accept)
-    o.waitForChatList()
-    check(DatabaseUtils.ksDatabasePassword.get() == randomKey && storedSetting("StoreDBPassphrase") == "true") { "onboarding changed the random key or stopped storing it" }
+    withBackgroundServiceAllowed {
+      freshInstallDatabaseViaApi()
+      val randomKey = DatabaseUtils.ksDatabasePassword.get()
+      check(!randomKey.isNullOrEmpty() && chatModel.chatDbEncrypted.value == true && storedSetting("InitialRandomDBPassphrase") == "true") {
+        "the fresh database: key in the Keystore ${!randomKey.isNullOrEmpty()}, encrypted ${chatModel.chatDbEncrypted.value}, random ${storedSetting("InitialRandomDBPassphrase")}"
+      }
+      val o = onboarding()
+      o.createProfile("alice")
+      check(o.stage == OnboardingStage.Step3_ChooseServerOperators) { "the step after Create profile is ${o.stage}, not Your network" }
+      click(Ui.Onboarding.Continue)
+      poll(what = "Network commitments with no alert over it") { o.stage == OnboardingStage.Step4_NetworkCommitments && exists(Ui.Onboarding.Accept) && !AlertManager.shared.hasAlertsShown() }
+      click(Ui.Onboarding.Accept)
+      o.waitForChatList()
+      check(DatabaseUtils.ksDatabasePassword.get() == randomKey && storedSetting("StoreDBPassphrase") == "true") { "onboarding changed the random key or stopped storing it" }
 
-    chatData(alice).management().passphrase()
-    val stored = storedFooter()
-    poll(what = "the random-passphrase footers") { seesText(stored) && seesText(RANDOM) }
-    check(toggleState(Ui.DbPassphrase.Save) == ToggleableState.On && !isEnabled(Ui.DbPassphrase.Save)) {
-      "Save passphrase in Keystore: ${toggleState(Ui.DbPassphrase.Save)}, enabled ${isEnabled(Ui.DbPassphrase.Save)}"
-    }
-    check(!exists(Ui.DbPassphrase.Current) && !seesText(NO_RECOVERY, substring = true)) { "the random passphrase screen asks for the current passphrase or shows the no-recovery note" }
+      chatData(alice).management().passphrase()
+      val stored = storedFooter()
+      poll(what = "the random-passphrase footers") { seesText(stored) && seesText(RANDOM) }
+      check(toggleState(Ui.DbPassphrase.Save) == ToggleableState.On && !isEnabled(Ui.DbPassphrase.Save)) {
+        "Save passphrase in Keystore: ${toggleState(Ui.DbPassphrase.Save)}, enabled ${isEnabled(Ui.DbPassphrase.Save)}"
+      }
+      check(!exists(Ui.DbPassphrase.Current) && !seesText(NO_RECOVERY, substring = true)) { "the random passphrase screen asks for the current passphrase or shows the no-recovery note" }
 
-    typeSecret(Ui.DbPassphrase.New, NEW)
-    typeSecret(Ui.DbPassphrase.Confirm, NEW)
-    hideKeyboard()
-    click(Ui.DbPassphrase.Update)
-    poll(what = "the Change database passphrase? alert naming the Keystore") {
-      seesText("Change database passphrase?") && seesText(WILL_STORE, substring = true) && seesText(STORE_SECURELY, substring = true) &&
-        "Update" in textsOf(Ui.Alert.Confirm(Ui.AlertSource.Shared))
-    }
-    click(Ui.Alert.Confirm(Ui.AlertSource.Shared))
-    poll(timeoutMs = DB_WORK_TIMEOUT_MS, what = "the Database encrypted! alert") { seesText("Database encrypted!") }
-    click(Ui.Alert.Confirm(Ui.AlertSource.Shared))
-    poll(timeoutMs = DB_WORK_TIMEOUT_MS, what = "the chat running again and the Current passphrase field") {
-      !AlertManager.shared.hasAlertsShown() && chatModel.chatRunning.value == true && exists(Ui.DbPassphrase.Current)
-    }
-    poll(what = "the stored-passphrase footers without the random one") { seesText(stored) && seesText(NO_RECOVERY, substring = true) && !seesText(RANDOM) }
-    check(toggleState(Ui.DbPassphrase.Save) == ToggleableState.On && isEnabled(Ui.DbPassphrase.Save)) {
-      "Save passphrase in Keystore after the change: ${toggleState(Ui.DbPassphrase.Save)}, enabled ${isEnabled(Ui.DbPassphrase.Save)}"
-    }
-    check(DatabaseUtils.ksDatabasePassword.get() == NEW && storedSetting("InitialRandomDBPassphrase") == "false") {
-      "after the change: Keystore holds the new passphrase ${DatabaseUtils.ksDatabasePassword.get() == NEW}, random ${storedSetting("InitialRandomDBPassphrase")}"
+      typeSecret(Ui.DbPassphrase.New, NEW)
+      typeSecret(Ui.DbPassphrase.Confirm, NEW)
+      hideKeyboard()
+      click(Ui.DbPassphrase.Update)
+      poll(what = "the Change database passphrase? alert naming the Keystore") {
+        seesText("Change database passphrase?") && seesText(WILL_STORE, substring = true) && seesText(STORE_SECURELY, substring = true) &&
+          "Update" in textsOf(Ui.Alert.Confirm(Ui.AlertSource.Shared))
+      }
+      click(Ui.Alert.Confirm(Ui.AlertSource.Shared))
+      poll(timeoutMs = DB_WORK_TIMEOUT_MS, what = "the Database encrypted! alert") { seesText("Database encrypted!") }
+      click(Ui.Alert.Confirm(Ui.AlertSource.Shared))
+      poll(timeoutMs = DB_WORK_TIMEOUT_MS, what = "the chat running again and the Current passphrase field") {
+        !AlertManager.shared.hasAlertsShown() && chatModel.chatRunning.value == true && exists(Ui.DbPassphrase.Current)
+      }
+      poll(what = "the stored-passphrase footers without the random one") { seesText(stored) && seesText(NO_RECOVERY, substring = true) && !seesText(RANDOM) }
+      check(toggleState(Ui.DbPassphrase.Save) == ToggleableState.On && isEnabled(Ui.DbPassphrase.Save)) {
+        "Save passphrase in Keystore after the change: ${toggleState(Ui.DbPassphrase.Save)}, enabled ${isEnabled(Ui.DbPassphrase.Save)}"
+      }
+      check(DatabaseUtils.ksDatabasePassword.get() == NEW && storedSetting("InitialRandomDBPassphrase") == "false") {
+        "after the change: Keystore holds the new passphrase ${DatabaseUtils.ksDatabasePassword.get() == NEW}, random ${storedSetting("InitialRandomDBPassphrase")}"
+      }
     }
   }
 

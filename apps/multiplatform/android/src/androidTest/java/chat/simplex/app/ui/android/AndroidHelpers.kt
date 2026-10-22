@@ -5,7 +5,7 @@ import android.app.NotificationManager
 import android.content.ComponentName
 import android.os.ParcelFileDescriptor
 import android.os.PowerManager
-import android.view.KeyEvent
+import android.text.InputType
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.EditText
@@ -120,11 +120,14 @@ internal fun pressImeEnter() {
 
 private class ImeEnterKey : ViewAction {
   override fun getConstraints(): Matcher<View> = ViewMatchers.isAssignableFrom(EditText::class.java)
-  override fun getDescription() = "send the Enter key through the input connection, as the soft keyboard does"
+  override fun getDescription() = "press Enter on the soft keyboard: a line break committed through the input connection, unless the field asks for an Enter action"
   override fun perform(uiController: UiController, view: View) {
-    val ic = (view as EditText).onCreateInputConnection(EditorInfo()) ?: error("the message field has no input connection")
-    ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER))
-    ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ENTER))
+    val info = EditorInfo()
+    val ic = (view as EditText).onCreateInputConnection(info) ?: error("the message field has no input connection")
+    check((info.inputType and InputType.TYPE_TEXT_FLAG_MULTI_LINE) != 0 && (info.imeOptions and EditorInfo.IME_FLAG_NO_ENTER_ACTION) != 0) {
+      "the soft keyboard's Enter is an editor action for the message field: inputType 0x${info.inputType.toString(16)}, imeOptions 0x${info.imeOptions.toString(16)}"
+    }
+    ic.commitText("\n", 1)
     uiController.loopMainThreadUntilIdle()
   }
 }

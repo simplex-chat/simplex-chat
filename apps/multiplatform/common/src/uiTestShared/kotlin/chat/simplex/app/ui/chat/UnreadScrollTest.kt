@@ -88,7 +88,7 @@ class UnreadScrollTest : UiTest() {
     switchAwayFromChat(alice)
     for (i in 1..FAR) bob sends "@alice f$i"
     bob types ">@alice (the original) far reply"
-    bob expectsMessage "@alice > the original"
+    bob.eventuallyMessage("@alice > the original")
     bob expects "      far reply"
     awaitRowText(alice, "bob", "far reply")
     alice.chatList.rowMenu("bob", "markRead")

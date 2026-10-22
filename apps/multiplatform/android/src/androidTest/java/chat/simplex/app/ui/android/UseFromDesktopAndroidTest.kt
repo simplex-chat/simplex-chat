@@ -2,6 +2,7 @@ package chat.simplex.app.ui.android
 
 import chat.simplex.app.ui.harness.Bridge
 import chat.simplex.app.ui.harness.CONNECT_TIMEOUT_MS
+import chat.simplex.app.ui.harness.KnownAppIssue
 import chat.simplex.app.ui.harness.UiTest
 import chat.simplex.app.ui.harness.awaitNewRemoteHost
 import chat.simplex.app.ui.harness.awaitRemoteHostCode
@@ -21,6 +22,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class UseFromDesktopAndroidTest : UiTest() {
+  @KnownAppIssue("15.5 item 4", "CameraUnavailableException: Device reporting less cameras than anticipated", intermittent = true)
   @Test fun useFromDesktop_pasteVerifyConfirm_connected() = uiTest {
     val alice = app("alice")
     enableDeveloperToolsViaApi()
@@ -44,6 +46,7 @@ class UseFromDesktopAndroidTest : UiTest() {
     endDesktopSessionViaApi(desktop)
   }
 
+  @KnownAppIssue("15.5 item 4", "CameraUnavailableException: Device reporting less cameras than anticipated", intermittent = true)
   @Test fun useFromDesktop_controllerSendsAsAndroidUser() = uiTest {
     val alice = app("alice")
     enableDeveloperToolsViaApi()

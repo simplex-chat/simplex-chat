@@ -124,6 +124,7 @@ state does not test persistence.
 | Context menu | right click | long press | `rightClick(key)` |
 | Pending-connection info | stays in the center pane, no close control | closable | `closePendingConnectionInfo()` |
 | Camera / QR scanner | none | Waydroid has no camera | `assumeCamera()` (skips, never passes) |
+| A received file that was tapped before it arrived | the save dialog opens | an Open / Save menu opens | on Android tap `described("Save")` inside `saveFileAs` |
 
 Use `appPlatform.isDesktop/isAndroid` in a shared test only for one of these real UI differences, and say which in
 the PR. Behaviour that exists on one platform only belongs in a `desktop/` or `android/` test.

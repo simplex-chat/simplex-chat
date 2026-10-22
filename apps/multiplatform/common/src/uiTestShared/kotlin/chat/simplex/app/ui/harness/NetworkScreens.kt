@@ -160,6 +160,7 @@ class ServerScreen(private val s: UiScope) {
   }
 
   fun back() {
+    s.hideKeyboard()
     s.goBack()
     awaitClosed()
   }
@@ -246,6 +247,7 @@ class SocksScreen(private val s: UiScope) {
   }
 
   fun back() {
+    s.hideKeyboard()
     s.goBack()
     s.poll(what = "`SOCKS proxy settings` to close") { !s.exists(Ui.Socks.Save) && s.exists(Ui.Network.SaveServers) }
   }

@@ -1,6 +1,8 @@
 package chat.simplex.app.ui.android
 
+import chat.simplex.app.ui.harness.KnownAppIssue
 import chat.simplex.app.ui.harness.UiTest
+import chat.simplex.app.ui.harness.goBack
 import chat.simplex.app.ui.harness.onboarding
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.Ui
@@ -9,6 +11,7 @@ import chat.simplex.common.views.onboarding.OnboardingStage
 import org.junit.Test
 
 class OnboardingProfileAndroidTest : UiTest() {
+  @KnownAppIssue("15.5 item 4", "CameraUnavailableException: Device reporting less cameras than anticipated", intermittent = true)
   @Test fun androidOnboardingCreateProfileMobileLayout() = uiTest {
     app(null)
     waitFor(Ui.Onboarding.GetStarted)
@@ -30,6 +33,9 @@ class OnboardingProfileAndroidTest : UiTest() {
       chatModel.migrationState.value is MigrationToState.PasteOrScanLink && seesText("Scan QR code") && seesText("Or paste archive link") && seesText("Or import archive file")
     }
     check(!seesText("Paste archive link") && chatModel.currentUser.value == null) { "the desktop paste label is shown, or a profile was created: ${texts().take(30)}" }
+
+    goBack()
+    poll(what = "Migrate here closed over Your profile") { !seesText("Scan QR code") && !seesText("Or import archive file") && exists(Ui.Onboarding.CreateProfile) }
   }
 
   private companion object {

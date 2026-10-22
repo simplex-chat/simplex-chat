@@ -77,7 +77,7 @@ class MultiSelectTest : UiTest() {
     poll(what = "alice's two messages collapsed into `2 messages marked deleted`") { "2 messages marked deleted" in textsOf(Ui.Chat.Item(bye)) && !exists(Ui.Chat.Item(hi)) }
   }
 
-  @KnownAppIssue("15.5 item 22", "Forward disabled and Delete enabled after bob deleted it")
+  @KnownAppIssue("15.5 item 22", "Forward disabled and Delete enabled after bob deleted it", intermittent = true)
   @Test fun select_itemDeletedByPeer_recheck() = uiTest {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)

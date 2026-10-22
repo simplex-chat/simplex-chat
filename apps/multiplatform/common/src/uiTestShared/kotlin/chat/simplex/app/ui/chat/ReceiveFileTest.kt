@@ -8,10 +8,12 @@ import chat.simplex.app.ui.harness.awaitRowItem
 import chat.simplex.app.ui.harness.attachFile
 import chat.simplex.app.ui.harness.closeItemMenu
 import chat.simplex.app.ui.harness.connect
+import chat.simplex.app.ui.harness.described
 import chat.simplex.app.ui.harness.itemFileOf
 import chat.simplex.app.ui.harness.plainBytesOf
 import chat.simplex.common.model.CIFileStatus
 import chat.simplex.common.model.MsgContent
+import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.Ui
 import chat.simplex.common.views.helpers.MAX_IMAGE_SIZE_AUTO_RCV
@@ -100,6 +102,7 @@ class ReceiveFileTest : UiTest() {
     bob.eventually("completed uploading file 1 ($WAITING_NAME) for alice", CONNECT_TIMEOUT_MS)
     saveFileAs(saved) {
       poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "$WAITING_NAME received once xftp1 is back") { itemFileOf(id)?.fileStatus is CIFileStatus.RcvComplete }
+      if (appPlatform.isAndroid) click(described("Save"))
     }
     assertEquals(WAITING, plainBytesOf(itemFileOf(id)!!).toString(Charsets.UTF_8))
     poll(what = "the received $WAITING_NAME written to ${saved.name}") { saved.length() == WAITING.length.toLong() }
