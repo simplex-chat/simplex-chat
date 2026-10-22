@@ -108,6 +108,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "closes an overdue paid order of the same wallet and name, cancelling its invoice after" testCodeClosesOverdue
     it "refuses each code that cannot pay with its tag, the state before the cover" testCodeRefusals
     it "checks the duration for the code's years" testCodeYears
+    it "answers name_taken and name_check_unavailable before the code's state and cover, leaving the code unreserved" testCodeNameChecks
     it "refuses sealed over 11095 characters, a body over 16384 bytes and malformed fields, accepting the longest order" testCodeSizes
     it "lets one of two concurrent orders spending one code for two names win, the other answered code_reserved" testConcurrentCodeOrders
     it "answers the code's refusal when its reservation fails in the insert, writing nothing" testCodeNotReservable
@@ -802,6 +803,29 @@ testCodeYears = withOrders $ \ctx -> do
   register ctx code aliceOrder `shouldReturn` refusedWith 400 "bad_request"
   rid <- registered ctx code aliceOrder {oDuration = yearsDuration 5 orderTime}
   (nrYears &&& nrDuration) <$> registrationById ctx rid `shouldReturn` (5, yearsDuration 5 orderTime)
+
+testCodeNameChecks :: IO ()
+testCodeNameChecks = withOrders $ \ctx@Ctx {cNode = node} -> do
+  (code, issued) <- issueCode ctx 8 2 id
+  (long, _) <- issueCode ctx 12 2 id
+  let unreserved = pcReservedBy <$> readCode ctx issued `shouldReturn` Nothing
+  answerCall node fakeController reservedNamesCall $ Returns $ uint256 (1 :: Int)
+  register ctx code aliceOrder `shouldReturn` refusedWith 409 "name_taken"
+  register ctx long aliceOrder `shouldReturn` refusedWith 409 "name_taken"
+  answerCall node fakeController reservedNamesCall $ Returns $ uint256 (0 :: Int)
+  answerRegistered node (cResolver $ fakeChainConfig node)
+  answerCall node (registrarOf node) nameExpiresCall $ Returns $ uint256 (seconds orderTime + yearSeconds)
+  register ctx code aliceOrder `shouldReturn` refusedWith 409 "name_taken"
+  register ctx long aliceOrder `shouldReturn` refusedWith 409 "name_taken"
+  unreserved
+  answerCall node (registrarOf node) nameExpiresCall $ Returns $ uint256 (0 :: Int)
+  setFault node "eth_call" HttpFailure
+  register ctx code aliceOrder `shouldReturn` refusedWith 503 "name_check_unavailable"
+  register ctx long aliceOrder `shouldReturn` refusedWith 503 "name_check_unavailable"
+  unreserved
+  length <$> registrationsOf ctx ownerA `shouldReturn` 0
+  clearFault node "eth_call"
+  void $ registered ctx code aliceOrder
 
 testCodeSizes :: IO ()
 testCodeSizes = withOrders $ \ctx -> do
