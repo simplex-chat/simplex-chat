@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 
-module Bots.StoreService.NamesPhasesTests (namesPhasesTests) where
+module Bots.StoreService.NamesPhasesTests (namesPhasesTests, change, held, woken, prompt, registrationPath, seenVersion) where
 
 import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesStoreTests (reveal)
