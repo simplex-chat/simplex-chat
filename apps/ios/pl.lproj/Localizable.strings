@@ -2364,7 +2364,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Error saving user password" = "Błąd zapisu hasła użytkownika";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Error scanning code: %@" = "Błąd skanowanie kodu: %@";
 
 /* No comment provided by engineer. */
@@ -3027,7 +3027,7 @@ servers warning */
 /* alert title */
 "Invalid name!" = "Nieprawidłowa nazwa!";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Invalid QR code" = "Nieprawidłowy kod QR";
 
 /* No comment provided by engineer. */
@@ -3162,7 +3162,7 @@ servers warning */
 /* No comment provided by engineer. */
 "KeyChain error" = "Błąd pęku kluczy";
 
-/* No comment provided by engineer. */
+/* file alert title */
 "Large file!" = "Duży plik!";
 
 /* badge alert button */
@@ -6310,9 +6310,6 @@ alert title */
 
 /* No comment provided by engineer. */
 "Your contact removed this link, or it was a one-time link that was already used.\nTo connect, ask your contact to create a new link." = "O ile Twój kontakt nie usunął połączenia lub ten link był już użyty, może to być błąd - zgłoś go.\nAby się połączyć, poproś Twój kontakt o utworzenie kolejnego linku połączenia i sprawdź, czy masz stabilne połączenie z siecią.";
-
-/* No comment provided by engineer. */
-"Your contact sent a file that is larger than currently supported maximum size (%@)." = "Twój kontakt wysłał plik, który jest większy niż obecnie obsługiwany maksymalny rozmiar (%@).";
 
 /* No comment provided by engineer. */
 "Your contacts can allow full message deletion." = "Twoje kontakty mogą zezwolić na pełne usunięcie wiadomości.";
