@@ -279,6 +279,7 @@ badgeServiceTests = do
     it "should resume a retired Apple subscription on the same purchase when its store charges it again" testAppleResubscribeResumes
     it "should resume an Apple subscription retired within its coverage by a refund, once its store charges it again" testAppleResubscribeResumesWithinCoverage
     it "should hold an Apple charge of another tier while its badge is shown, grant it through the worker and show it at once, and send nothing for one of the same tier" testAppleTierChangeHandOver
+    it "should tell the apps a granted Apple tier change and show it to a contact at once" testTierChangeReachesContacts
     it "should keep an Apple tier change held while the store reports the old tier, without failing the renewal, and grant it once the store reports the new one" testAppleTierChangeStoreLags
     it "should settle an Apple tier change with no change and no request once its window has passed" testAppleTierChangeWindowEnds
     it "should show the purchase a tier change credits, though a retire cleared it while the change was with the service" testAppleTierChangeKeepsPurchaseShown
@@ -914,6 +915,11 @@ peerBadgeExpiry ChatController {chatStore} = do
   pure $ case rows of
     ((t, _) : _) -> t
     [] -> Nothing
+
+peerBadgeTypes :: ChatController -> IO [Text]
+peerBadgeTypes ChatController {chatStore} =
+  withTransaction chatStore $ \db ->
+    map fromOnly <$> DB.query_ db "SELECT badge_type FROM contact_profiles WHERE badge_proof IS NOT NULL ORDER BY contact_profile_id"
 
 setBadgeExpiry :: ChatController -> String -> UTCTime -> IO ()
 setBadgeExpiry ChatController {chatStore} whichBadge t =
@@ -4409,6 +4415,47 @@ testAppleTierChangeHandOver ps =
       handOver appleLegendSubscriptionJWS
       alice <## "badge already redeemed"
       subscriptionChecks store `shouldReturn` checks + 1
+
+testTierChangeReachesContacts :: HasCallStack => TestParams -> IO ()
+testTierChangeReachesContacts ps = do
+  legend <- legendInTwoHours
+  withBadgeServiceVerifier ps (vouchingFor legend fakeVerifier) $ \env@BadgeServiceEnv {bsClientCfg} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice ->
+      withNewTestChatCfg ps bsClientCfg "bob" bobProfile $ \bob -> do
+        raised <- supporterRaisedToLegend env alice bob
+        alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = legend})
+        expectLinesWithin 30 alice [raised] ["1: supporter", "store purchase open", "subscribed "]
+        heldStoreReceipts (chatController alice) `shouldEventuallyReturn` 0
+        peerBadgeTypes (chatController bob) `shouldEventuallyReturn` ["legend"]
+
+-- | A Legend year of the fake Apple subscription bought two hours from now, which the fake store does not list.
+-- Not appleLegendSubscriptionJWS: its date is fixed, and an own badge long expired by the real clock is never presented.
+legendInTwoHours :: IO Text
+legendInTwoHours = do
+  boughtAt <- addUTCTime 7200 <$> getCurrentTime
+  pure $ subscriptionJWS appleSubscriptionOriginalId "2000000812345699" ["purchaseDate" J..= (round (utcTimeToPOSIXSeconds boughtAt * 1000) :: Int64), "productId" J..= ("SUBSCR_BADGE_LEGEND_YEAR_01" :: Text)]
+
+-- | The verifier made of the fake store, vouching for jws as that store vouches for its own Legend year.
+vouchingFor :: Text -> (FakeStore -> StoreVerifier) -> FakeStore -> StoreVerifier
+vouchingFor jws verifierOf store@FakeStore {appleLegendSubscriptionJWS} = v {verifyApple = (\verify j -> verify $ if j == jws then appleLegendSubscriptionJWS else j) <$> verifyApple v}
+  where
+    v = verifierOf store
+
+-- | A monthly Apple Supporter subscription bought now and shown to bob, then the clock two hours on, past the hour the
+-- purchase's store check holds an upgrade off, with the store reporting a Legend year from then: what the apps are told once it is granted.
+supporterRaisedToLegend :: HasCallStack => BadgeServiceEnv -> TestCC -> TestCC -> IO String
+supporterRaisedToLegend env@BadgeServiceEnv {bsClock, bsStore = store@FakeStore {appleSubscriptionJWS}} alice bob = do
+  connectUsers alice bob
+  boughtAt <- serviceNow env
+  appleStoreReports store $ subscriptionCheck SSRenewing $ Just $ storeCharge "SUBSCR_BADGE_SUPPORTER_MONTH_01" (addUTCTime (-3600) boughtAt) 1
+  alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = appleSubscriptionJWS})
+  inAnyOrder alice [[openPurchase ""], ["1: supporter"]]
+  waitWakeArmed (chatController alice)
+  peerBadgeTypes (chatController bob) `shouldEventuallyReturn` ["supporter"]
+  let raisedAt = addUTCTime 7200 boughtAt
+  setClockAt bsClock raisedAt
+  appleStoreReports store $ subscriptionCheck SSRenewing $ Just (storeCharge "SUBSCR_BADGE_LEGEND_YEAR_01" raisedAt 12) {chargeRef = "2000000812345699"}
+  pure $ "1: legend, 11 months left, paid through " <> formatTime defaultTimeLocale "%Y-%m-%d" (addMonths 12 raisedAt)
 
 testAppleTierChangeStoreLags :: HasCallStack => TestParams -> IO ()
 testAppleTierChangeStoreLags ps =
