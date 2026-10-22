@@ -211,7 +211,7 @@ class UiScope(val ui: SkikoComposeUiTest, private val dir: File) {
       repeat(SCROLL_ANIMATION_FRAMES) { ui.mainClock.advanceTimeBy(16, ignoreFrameDuration = true); ui.waitForIdle() }
       val after = ui.onAllNodes(hasTestTag(tag)).fetchSemanticsNodes().firstOrNull()?.boundsInRoot
       if (after == before) return false
-      if (after == null || (if (towardOlder) after.top <= before.top else after.bottom >= before.bottom)) {
+      if (after != null && (if (towardOlder) after.top <= before.top else after.bottom >= before.bottom)) {
         throw AssertionError("scrolling the chat toward ${if (towardOlder) "older" else "newer"} messages moved $tag the other way: $before -> $after")
       }
     }

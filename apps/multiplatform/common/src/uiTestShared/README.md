@@ -111,6 +111,7 @@ state does not test persistence.
 - **Timeouts.** The default `poll` timeout is for local UI. Anything that crosses the network (connecting, joining,
   delivery to a peer) uses `CONNECT_TIMEOUT_MS`; Android runs arm64 code under translation and is slower. Never raise a
   timeout to make a flaky test pass; find what it is waiting for.
+- **Opening a chat** with `ChatListScreen.open()` first waits for app events to settle, because a message that arrives while a chat is being opened can go missing from it (plan §15.5 item 25). A test that is about acting while events arrive clicks the row key directly.
 - **Group sends**: wait for each member's `#g: member X is connected` before sending, or messages arrive forwarded.
 
 ### Platform differences (shared tests run on both)

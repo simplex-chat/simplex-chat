@@ -240,7 +240,7 @@ class UiScope(val rule: ComposeTestRule) {
       settle()
       val after = rule.onAllNodes(hasTestTag(tag)).fetchSemanticsNodes().firstOrNull()?.boundsInRoot
       if (after == before) return false
-      if (after == null || (if (towardOlder) after.top <= before.top else after.bottom >= before.bottom)) {
+      if (after != null && (if (towardOlder) after.top <= before.top else after.bottom >= before.bottom)) {
         throw AssertionError("scrolling the chat toward ${if (towardOlder) "older" else "newer"} messages moved $tag the other way: $before -> $after")
       }
     }

@@ -23,6 +23,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import chat.simplex.common.platform.appPlatform
+import chat.simplex.app.ui.harness.KnownAppIssue
 import org.junit.Test
 
 private const val FILLERS = 30
@@ -151,4 +152,18 @@ class ReceivedMessagesTest : UiTest() {
   }
 
   private fun ChatItem.isFrom(name: String) = (chatDir as? CIDirection.GroupRcv)?.groupMember?.memberProfile?.displayName == name
+
+  @KnownAppIssue("15.5 item 25", "all five of bob's messages in the open chat", intermittent = true)
+  @Test fun openChat_whileMessagesArrive_showsAll() = uiTest {
+    val alice = app("alice"); val bob = cli("bob")
+    connect(bob)
+    val id = alice.chatList.chatId("bob")
+    val texts = (1..5).map { "burst $it" }
+    texts.forEach { bob types "@alice $it" }
+    click(Ui.ChatList.Row(id))
+    poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "all five of bob's messages in the open chat") {
+      chatModel.chatId.value == id && chatModel.chatsContext.chatItems.value.map { it.content.text }.containsAll(texts)
+    }
+  }
+
 }
