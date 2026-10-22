@@ -23,13 +23,14 @@ import qualified Data.Aeson.KeyMap as KM
 import Data.Bifunctor (first)
 import Data.Maybe (isJust)
 import Data.Text (Text)
-import Data.Time.Clock (addUTCTime)
+import Data.Time.Clock (UTCTime, addUTCTime)
 import Data.Word (Word32)
 import Network.HTTP.Types (status200, status409, status503)
 import Network.Wai (Request, Response, ResponseReceived)
 import Simplex.Chat.Badges.Code (NameCode (..), parseNameCode)
 import Simplex.Chat.PaymentService.Types (CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), ServicePaymentMethod)
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Util (tshow)
 import StoreService.Catalog (catalogCurrency)
 import StoreService.Config (NamesConfig (..), ServiceConfig)
@@ -86,69 +87,96 @@ nameInvoiceHandler env@OrdersEnv {oeStore, oeTurns, oeNow} cfg providers waiters
           now <- oeNow
           let hash = orderHash orOwner orFields (OTInvoice ioMethod $ fromIntegral ioPrice)
           withTransaction oeStore (\db -> existingOrder db req hash now) >>= \case
-            EOResent r -> answerResend now r
+            EOResent r -> resentOrder env cfg what now r
             EOMeets -> refuse OROrderExists
             EONew _ -> newOrder order
   where
-    refuse refusal = do
-      logInfo ("POST /api/invoice (name) refused: " <> tshow refusal)
-      pure $ answerNow $ orderRefusalResponse refusal
-    answerResend now r@NameRegistration {nrPayment} = case nrPayment of
-      RPInvoice _ invId -> getInvoice oeStore invId >>= maybe (refuse OROrderExists) (fmap answerNow . viewOf (registrationAt now r) . invoiceAt now)
-      RPCode _ -> refuse OROrderExists
-      RPBalance -> refuse OROrderExists
-    viewOf r row = jsonResponse status200 <$> nameInvoiceView env (confirmationsFor cfg) row r
-    newOrder order@InvoiceOrder {ioRequest = OrderRequest {orFields = OrderFields {ofLabelHash, ofLength, ofDuration}, orTimestamp}, ioMethod, ioPrice} = do
+    what = "POST /api/invoice (name)"
+    refuse = refused what
+    newOrder InvoiceOrder {ioRequest = req@OrderRequest {orFields = OrderFields {ofLabelHash, ofLength, ofDuration}, orTimestamp}, ioMethod, ioPrice} = do
       now <- oeNow
       let years = nYears $ oeConfig env
+          price = fromIntegral ioPrice
           checks =
             [ pure $ checkTimestamp now orTimestamp,
               pure $ checkDuration (oeConfig env) now years ofDuration,
               checkNameFree (oeContracts env) oeStore ofLabelHash,
-              checkPrice (oeContracts env) ofLength years (fromIntegral ioPrice)
+              checkPrice (oeContracts env) ofLength years price
             ]
+          insert new paid db at = first (const OROrderExists) <$> createPaidRegistration db new (OTInvoice ioMethod price) paid at
       firstRefusal checks >>= \case
         Just refusal -> refuse refusal
-        Nothing -> case providerFor providers ioMethod of
-          Nothing -> do
-            logInfo ("POST /api/invoice (name) refused: no provider configured for " <> tshow ioMethod)
-            pure $ answerNow providerUnavailable
-          Just provider -> createAtProvider order provider
-    createAtProvider InvoiceOrder {ioRequest = req@OrderRequest {orOwner, orFields}, ioMethod, ioPrice} provider = do
+        Nothing -> createAtProvider env cfg providers waiters what InvoicedOrder {ivRequest = req, ivHolders = [], ivMethod = ioMethod, ivPrice = price, ivAmount = ioPrice, ivInsert = insert}
+
+-- | An order paid by invoice: the holders its transaction closes, the order's price, what its invoice asks
+-- (less than the price when a balance paid the rest), and its insert after the invoice row's.
+data InvoicedOrder = InvoicedOrder
+  { ivRequest :: OrderRequest,
+    ivHolders :: [NameRegistration],
+    ivMethod :: ServicePaymentMethod,
+    ivPrice :: Int,
+    ivAmount :: Word32,
+    ivInsert :: NewRegistration -> PaidOrder -> DB.Connection -> UTCTime -> IO (Either OrderRefusal ())
+  }
+
+-- | The invoice is made at the provider first, then the order is written with its invoice row; an order not written has its invoice cancelled there.
+createAtProvider :: OrdersEnv -> ServiceConfig -> [Provider] -> Waiters -> Text -> InvoicedOrder -> IO Answer
+createAtProvider env@OrdersEnv {oeStore, oeConfig, oeNow} cfg providers waiters what InvoicedOrder {ivRequest = req@OrderRequest {orOwner, orFields}, ivHolders, ivMethod, ivPrice, ivAmount, ivInsert} =
+  case providerFor providers ivMethod of
+    Nothing -> do
+      logInfo (what <> " refused: no provider configured for " <> tshow ivMethod)
+      pure $ answerNow providerUnavailable
+    Just provider -> do
       invId <- newInvoiceId
       now <- truncateToSecond <$> oeNow
-      let amount = CurrencyAmount ioPrice
-          price = fromIntegral ioPrice
-      pCreateInvoice provider ioMethod OrderDraft {odAmount = amount, odCurrency = catalogCurrency} >>= \case
+      let amount = CurrencyAmount ivAmount
+      pCreateInvoice provider ivMethod OrderDraft {odAmount = amount, odCurrency = catalogCurrency} >>= \case
         Left (ProviderError e) -> do
-          logError ("POST /api/invoice (name) failed: provider refused to create an invoice: " <> e)
+          logError (what <> " failed: provider refused to create an invoice: " <> e)
           pure $ answerNow providerUnavailable
         Right ProviderInvoice {piProviderRef, piDestination} -> do
           rid <- newRegistrationId
-          let invoice = NewNameInvoice {nniInvoiceId = invId, nniProvider = pProvider provider, nniAmount = amount, nniCurrency = catalogCurrency, nniDestination = piDestination, nniExpiresAt = addUTCTime (invoiceWindow cfg ioMethod) now, nniCreatedAt = now}
-              registration = NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = orFields, nrgYears = nYears $ oeConfig env}
-              paid = PaidOrder {poMethod = ioMethod, poPrice = price, poInvoiceId = invId, poProviderRef = piProviderRef}
-          placeOrder env req [] (\db at -> insertNameInvoice db invoice >> first (const OROrderExists) <$> createPaidRegistration db registration (OTInvoice ioMethod price) paid at)
+          let invoice = NewNameInvoice {nniInvoiceId = invId, nniProvider = pProvider provider, nniAmount = amount, nniCurrency = catalogCurrency, nniDestination = piDestination, nniExpiresAt = addUTCTime (invoiceWindow cfg ivMethod) now, nniCreatedAt = now}
+              registration = NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = orFields, nrgYears = nYears oeConfig}
+              paid = PaidOrder {poMethod = ivMethod, poPrice = ivPrice, poInvoiceId = invId, poProviderRef = piProviderRef}
+          placeOrder env req ivHolders (\db at -> insertNameInvoice db invoice >> ivInsert registration paid db at)
             `E.catch` strandedBy provider piProviderRef
             >>= \case
             Left refusal -> do
-              logWarn ("POST /api/invoice (name): the order lost to another, so invoice " <> piProviderRef <> " is cancelled at the provider")
-              (\a -> a {aAfter = cancelAtProvider provider piProviderRef}) <$> refuse refusal
+              logWarn (what <> ": the order lost to another, so invoice " <> piProviderRef <> " is cancelled at the provider")
+              (\a -> a {aAfter = cancelAtProvider provider piProviderRef}) <$> refused what refusal
             Right closed -> do
               row_ <- getInvoice oeStore invId
               registration_ <- withTransaction oeStore (`getRegistration` rid)
               response <- case (row_, registration_) of
-                (Just row, Just r) -> viewOf r row
-                _ -> internalError <$ logError ("POST /api/invoice (name): order " <> invText invId <> " is not readable after its commit")
+                (Just row, Just r) -> invoiceViewResponse env cfg r row
+                _ -> internalError <$ logError (what <> ": order " <> invText invId <> " is not readable after its commit")
               pure Answer {aResponse = response, aAfter = announceClosed env providers waiters closed}
+  where
     -- An invoice created at the provider for an order that was not written would stay payable with nothing watching it.
     strandedBy :: Provider -> Text -> E.SomeException -> IO a
     strandedBy provider ref e = do
       unless (isAsync e) $ do
-        logError ("POST /api/invoice (name): the order was not written, so invoice " <> ref <> " is cancelled at the provider: " <> tshow e)
+        logError (what <> ": the order was not written, so invoice " <> ref <> " is cancelled at the provider: " <> tshow e)
         cancelAtProvider provider ref
       E.throwIO e
     isAsync e = isJust (E.fromException e :: Maybe E.SomeAsyncException)
+
+-- | An exact resend, answered with its order as it reads now: the invoice view, or the id of an order without an invoice.
+resentOrder :: OrdersEnv -> ServiceConfig -> Text -> UTCTime -> NameRegistration -> IO Answer
+resentOrder env@OrdersEnv {oeStore} cfg what now r@NameRegistration {nrPayment} = case nrPayment of
+  RPInvoice _ invId -> getInvoice oeStore invId >>= maybe (refused what OROrderExists) (fmap answerNow . invoiceViewResponse env cfg (registrationAt now r) . invoiceAt now)
+  RPCode _ -> refused what OROrderExists
+  RPBalance -> refused what OROrderExists
+
+invoiceViewResponse :: OrdersEnv -> ServiceConfig -> NameRegistration -> InvoiceRow -> IO Response
+invoiceViewResponse env cfg r row = jsonResponse status200 <$> nameInvoiceView env (confirmationsFor cfg) row r
+
+registrationAnswer :: RegistrationId -> Response
+registrationAnswer (RegistrationId rid) = jsonResponse status200 $ J.object ["registrationId" .= rid]
+
+refused :: Text -> OrderRefusal -> IO Answer
+refused what refusal = answerNow (orderRefusalResponse refusal) <$ logInfo (what <> " refused: " <> tshow refusal)
 
 -- | POST /api/name/register, an order paid with a prepaid code, in the contract's order of checks.
 codeOrderHandler :: OrdersEnv -> [Provider] -> Waiters -> Request -> Respond -> IO ResponseReceived
@@ -187,7 +215,6 @@ codeOrderHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} 
           placeCodeOrder env order rid code >>= \case
             Left refusal -> refuse refusal
             Right closed -> pure Answer {aResponse = registrationAnswer rid, aAfter = announceClosed env providers waiters closed}
-    registrationAnswer (RegistrationId rid) = jsonResponse status200 $ J.object ["registrationId" .= rid]
 
 parseCodeOrder :: J.Object -> Either OrderRefusal (OrderRequest, Text)
 parseCodeOrder o = do
