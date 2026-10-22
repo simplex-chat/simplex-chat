@@ -13,7 +13,7 @@ module Bots.StoreService.GroupIntegrationTests (badgeGroupIntegrationTests, name
 import StoreService.Config (BadgeIssuerKey (..), GroupConfig (..))
 import StoreService.Group (GroupAction (..), GroupEvent (..), codeInTracker, ensureManagedGroup)
 import StoreService.Group.Command (maxUses)
-import StoreService.Names.Codes (reserveCode, revokeNameCode)
+import StoreService.Names.Codes (issueNameCode, reserveCode, revokeNameCode)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Store (PrepaidCode (..), getPrepaidCode, spendPrepaidCode)
 import StoreService.Names.Turns (newTurns, withCodeTurn)
@@ -33,7 +33,7 @@ import Control.Concurrent.STM (TQueue, atomically, newTQueueIO, orElse, readTMVa
 import Control.Exception (IOException, bracket, catch, finally, throwIO, try)
 import Control.Monad (forM_, guard, mfilter, replicateM_, unless, void, when)
 import qualified Data.Aeson as J
-import Data.Either (isRight)
+import Data.Either (isLeft, isRight)
 import Data.Int (Int64)
 import Data.List (isInfixOf)
 import Data.List.NonEmpty (NonEmpty (..))
@@ -172,6 +172,8 @@ testOperatorNameCodes ps = do
     pollUntilTrue (listening port)
     forM_ ["name", "name 5", "name 64", "name 07", "name 7 years 1", "name 7 years 11", "name 7 gratis"] $ \args ->
       (args,) <$> issueRaw cc args `shouldReturn` (args, Left badgeCmdUsage)
+    forM_ [(5, 2), (64, 2), (7, 1), (7, 11)] $ \(len, years) ->
+      ((len, years),) . isLeft <$> issueNameCode cc len years CPSFree `shouldReturn` ((len, years), True)
     countRows cc "sx_badge_service_name_prepaid_codes" `shouldReturn` 0
     paid <- issueNameRaw cc "name 7 years 3 paid"
     unpaid <- issueNameRaw cc "name 6 unpaid"

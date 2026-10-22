@@ -26,12 +26,14 @@ import Data.Int (Int64)
 import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime, getCurrentTime)
-import Simplex.Chat.Badges.Code (NamePrepaidCode, namePrepaidCodeHash, randomNamePrepaidCode)
+import Simplex.Chat.Badges.Code (NamePrepaidCode, maxNameLength, minNameLength, namePrepaidCodeHash, randomNamePrepaidCode)
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.Bot.Store (withDB')
 import Simplex.Chat.Controller (ChatController (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
+import StoreService.Config (minNameYears)
+import StoreService.Group.Command (maxNameYears)
 import StoreService.Names.Phases (RegistrationId)
 import StoreService.Names.Store (CodeHashTaken (..), NewPrepaidCode (..), PrepaidCode (..), getPrepaidCode, getPrepaidCodeById, insertPrepaidCode, releasePrepaidCode, reservePrepaidCode, revokePrepaidCode, spendPrepaidCode)
 import StoreService.Names.Turns (Turns, withCodeTurn)
@@ -128,16 +130,19 @@ afterWrite turns st codeId change write = do
   let run = withTransaction st $ \db -> write db >>= traverse (\a -> (a,) <$> change db)
   maybe run (\codeHash -> withCodeTurn turns codeHash run) codeHash_
 
--- | The code table keeps only the hash, so the caller must deliver the code. The length and years are checked by the command's parser.
+-- | The code table keeps only the hash, so the caller must deliver the code.
 issueNameCode :: ChatController -> Int -> Int -> BadgeCodePaymentStatus -> IO (Either String NamePrepaidCode)
-issueNameCode cc len years paymentStatus = do
-  code <- randomNamePrepaidCode (random cc) len
-  now <- getCurrentTime
-  let new = NewPrepaidCode {npcCodeHash = namePrepaidCodeHash code, npcMinLength = len, npcYears = years, npcPaymentStatus = paymentStatus, npcExpiresAt = Nothing}
-  withDB' "issueNameCode" cc (\db -> insertPrepaidCode db new now) <&> \case
-    Right (Right _) -> Right code
-    Right (Left CodeHashTaken) -> Left "prepaid code hash taken"
-    Left e -> Left e
+issueNameCode cc len years paymentStatus
+  | len < minNameLength || len > maxNameLength = pure $ Left $ "name code length " <> show len <> " is outside " <> show minNameLength <> "-" <> show maxNameLength
+  | years < minNameYears || years > maxNameYears = pure $ Left $ "name code years " <> show years <> " is outside " <> show minNameYears <> "-" <> show maxNameYears
+  | otherwise = do
+      code <- randomNamePrepaidCode (random cc) len
+      now <- getCurrentTime
+      let new = NewPrepaidCode {npcCodeHash = namePrepaidCodeHash code, npcMinLength = len, npcYears = years, npcPaymentStatus = paymentStatus, npcExpiresAt = Nothing}
+      withDB' "issueNameCode" cc (\db -> insertPrepaidCode db new now) <&> \case
+        Right (Right _) -> Right code
+        Right (Left CodeHashTaken) -> Left "prepaid code hash taken"
+        Left e -> Left e
 
 -- | Left is a refusal or a failure; both sides are the text to show the operator.
 revokeNameCode :: Turns -> ChatController -> NamePrepaidCode -> IO (Either Text Text)
