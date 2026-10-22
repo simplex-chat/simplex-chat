@@ -11,11 +11,23 @@ plugins {
 group = "chat.simplex"
 version = extra["android.version_name"] as String
 
+repositories {
+  exclusiveContent {
+    forRepository {
+      ivy("https://github.com/shumvgolove/webrtc-java/releases/download") {
+        patternLayout { artifact("v[revision]/[artifact]-[revision](-[classifier]).[ext]") }
+        metadataSources { artifact() }
+      }
+    }
+    filter { includeGroup("dev.onvoid.webrtc") }
+  }
+}
+
 val simplexAssetsDir = rootProject.findProperty("simplex.assets.dir") as String?
 val simplexAssetsLocal = file("src/commonMain/resources/assets/simplex")
 val hasSimplexAssets = simplexAssetsDir != null
 
-val webrtcJavaVersion = "0.19.0"
+val webrtcJavaVersion = "0.19.0-simplex.2"
 // Desktop packages are built on the target machine, so only the host's native library is bundled
 val webrtcJavaNativeClassifier: String = run {
   val os = System.getProperty("os.name").lowercase()

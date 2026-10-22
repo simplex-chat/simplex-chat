@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<verification-metadata xmlns="https://schema.gradle.org/dependency-verification" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://schema.gradle.org/dependency-verification https://schema.gradle.org/dependency-verification/dependency-verification-1.3.xsd">
+   <configuration>
+      <verify-metadata>false</verify-metadata>
+      <verify-signatures>false</verify-signatures>
+      <trusted-artifacts>
+         <trust group="^(?!dev[.]onvoid[.]webrtc$).*$" regex="true"/>
+      </trusted-artifacts>
+   </configuration>
+   <components>
+      <component group="dev.onvoid.webrtc" name="webrtc-java" version="0.19.0-simplex.2">
+         <artifact name="webrtc-java-0.19.0-simplex.2.jar">
+            <sha256 value="5501ff06f31f7da02df9ecaafa8540a96421b25297932a3ba7d918a6cd7cbf4d" origin="Release v0.19.0-simplex.2"/>
+         </artifact>
+         <artifact name="webrtc-java-0.19.0-simplex.2-linux-aarch64.jar">
+            <sha256 value="3606893a3715930befe2943e1f0b4924855784eaf8971c266f4a2a7b5d9e13b3" origin="Release v0.19.0-simplex.2"/>
+         </artifact>
+         <artifact name="webrtc-java-0.19.0-simplex.2-linux-x86_64.jar">
+            <sha256 value="1eaae4c30c054f0c6c3c979674df672b14c52e19ea40d665b0b53ae33dd2996b" origin="Release v0.19.0-simplex.2"/>
+         </artifact>
+         <artifact name="webrtc-java-0.19.0-simplex.2-macos-aarch64.jar">
+            <sha256 value="da516c9964c0cc7ef553e35a83c1d59c19c94b84aca56ba38e2642340396c61f" origin="Release v0.19.0-simplex.2"/>
+         </artifact>
+         <artifact name="webrtc-java-0.19.0-simplex.2-macos-x86_64.jar">
+            <sha256 value="193a988f6768febcd31670a20fb5d08a0b85b2fc168baf98c85b83641a64a831" origin="Release v0.19.0-simplex.2"/>
+         </artifact>
+         <artifact name="webrtc-java-0.19.0-simplex.2-windows-x86_64.jar">
+            <sha256 value="6bd1f5e5a000fcc5514d5b599db7db2ce8ccecdf5e2ced5a27f5ccecabdfc3b2" origin="Release v0.19.0-simplex.2"/>
+         </artifact>
+      </component>
+   </components>
+</verification-metadata>
