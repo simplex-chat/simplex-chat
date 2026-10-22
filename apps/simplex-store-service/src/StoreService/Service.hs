@@ -21,17 +21,20 @@ where
 import StoreService.Catalog (defaultCatalog)
 import StoreService.Codes (issueFailedText, issueOneCode, singleUse)
 import StoreService.Config (BadgeIssuerKey (..), ChainConfig (..), NamesConfig (..), ServiceConfig (..), minNameYears, readServiceConfig)
-import StoreService.Group (GroupEvent, ensureManagedGroup, groupEvent, hasTracker, refreshTracker, revokeWithTracker, runGroupLane)
+import StoreService.Group (GroupEvent, ensureManagedGroup, fmtTime, groupEvent, hasTracker, refreshTracker, revokeWithTracker, runGroupLane)
 import StoreService.Group.Command (badgeTypeP, codeP, maxMonths, maxNameYears, nameCodeP, textTokenP)
+import StoreService.Names.Balances (RefundRecord (..), RefundRefusal (..), recordRefund)
 import StoreService.Names.Codes (issueNameCode, revokeNameCode)
 import StoreService.Names.Env (NamesEnv (..), newNamesEnv)
 import StoreService.Names.Orders (ordersEnv)
+import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Records (runRecordEdits)
 import StoreService.Names.Sender (runSender)
+import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceLink (..), LateCredit (..), RegistrationPayment (..), balanceByReference, balanceChain, methodText)
 import StoreService.Names.Turns (Turns, newTurns)
 import StoreService.Names.Worker (newWorker, runCodeSweep, runWorkers)
 import StoreService.Options
-import StoreService.Poller (newPollerEnv, newReadHints, runPoller)
+import StoreService.Poller (expiryGrace, newPollerEnv, newReadHints, runPoller)
 import StoreService.Providers (Provider)
 import StoreService.Providers.BTCPay (btcpayProvider)
 import StoreService.Providers.Stripe (stripeProvider)
@@ -51,11 +54,11 @@ import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
 import Data.Char (isSpace)
 import Data.Either (fromRight)
-import Data.Functor (($>))
+import Data.Functor (($>), (<&>))
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust, maybeToList)
 import qualified Data.Text as T
-import Data.Time.Clock (UTCTime, getCurrentTime)
+import Data.Time.Clock (NominalDiffTime, UTCTime, getCurrentTime)
 import Data.Word (Word32)
 import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Code
@@ -67,6 +70,7 @@ import Simplex.Chat.Bot.Store (withDB, withDB')
 import Simplex.Chat.Controller
 import Simplex.Chat.Core (sendChatCmd, simplexChatCore)
 import Simplex.Chat.Options (printDbOpts)
+import Simplex.Chat.PaymentService.Types (InvoiceId (..))
 import Simplex.Chat.Terminal (terminalChatConfig)
 import Simplex.Chat.Terminal.Main (simplexChatCLI')
 import Simplex.Chat.Types (AgentInvId (..), User (..))
@@ -74,7 +78,7 @@ import Simplex.Messaging.Agent.Store.Common (DBStore)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (bbsPublicKey)
 import Simplex.Messaging.Encoding.String (strEncode)
-import Simplex.Messaging.Util (raceAny_, safeDecodeUtf8, tshow)
+import Simplex.Messaging.Util (catchOwn, raceAny_, safeDecodeUtf8, tshow)
 import Simplex.Messaging.Version (isCompatible)
 import System.Directory (getAppUserDataDirectory)
 import System.Exit (exitFailure)
@@ -234,19 +238,20 @@ runBadgeCmd turns cc cmd
       issuedReply formatBadgeCode <$> issueBadgeCode cc issueOpts
   | Right (len, years, paymentStatus) <- A.parseOnly issueNameCmdP cmd =
       issuedReply (formatNameCode . NCPrepaid) <$> issueNameCode cc len years paymentStatus
-  | Right code <- A.parseOnly revokeCmdP cmd = revokedReply <$> revokeWithTracker cc code
-  | Right code <- A.parseOnly revokeNameCmdP cmd = revokedReply <$> revokeNameCode turns cc code
+  | Right code <- A.parseOnly revokeCmdP cmd = textReply <$> revokeWithTracker cc code
+  | Right code <- A.parseOnly revokeNameCmdP cmd = textReply <$> revokeNameCode turns cc code
+  | Right (ref, cents_) <- A.parseOnly refundCmdP cmd = textReply <$> maybe (showRefund cc ref) (refundBalanceCmd turns cc ref) cents_
   | otherwise =
       pure $ chatCmdError $
         "Usage: //issue supporter|legend|investor [months 1-" <> show maxMonths <> "] [paid|unpaid|free], //issue name <length "
           <> show minNameLength <> "-" <> show maxNameLength <> "> [years " <> show minNameYears <> "-" <> show maxNameYears
-          <> "] [paid|unpaid|free], or //revoke <code>"
+          <> "] [paid|unpaid|free], //revoke <code>, or //refund <reference> [<cents>]"
   where
     issuedReply :: (c -> T.Text) -> Either String c -> Either ChatError ChatResponse
     issuedReply format = \case
       Right code -> Right CRCustomChatResponse {user_ = Nothing, response = "Code: " <> format code}
       Left _ -> chatCmdError (T.unpack issueFailedText)
-    revokedReply = \case
+    textReply = \case
       Right response -> Right CRCustomChatResponse {user_ = Nothing, response}
       Left e -> chatCmdError (T.unpack e)
 
@@ -260,6 +265,93 @@ revokeNameCmdP = "revoke " *> prepaidCodeP <* (A.skipSpace *> A.endOfInput)
       parseNameCode . safeDecodeUtf8 <$> A.takeWhile1 (not . isSpace) >>= \case
         Just (NCPrepaid code) -> pure code
         _ -> fail "not a prepaid name code"
+
+-- | The reference, and the cents of the balance to refund; without them the balance is shown.
+refundCmdP :: A.Parser (T.Text, Maybe Int)
+refundCmdP = do
+  ref <- "refund " *> (safeDecodeUtf8 <$> A.takeWhile1 (not . isSpace))
+  cents_ <- optional (A.space *> (A.decimal :: A.Parser Integer))
+  A.skipSpace
+  A.endOfInput
+  (ref,) <$> mapM checkCents cents_
+  where
+    -- Integer, as in issueCmdP, so a figure past Int is refused rather than wrapped.
+    checkCents n
+      | n >= 1 && n <= toInteger (maxBound :: Int) = pure (fromInteger n)
+      | otherwise = fail "cents out of range"
+
+-- | Left is a refusal or a failure; both sides are the text to show the operator.
+showRefund :: ChatController -> T.Text -> IO (Either T.Text T.Text)
+showRefund cc ref = do
+  now <- getCurrentTime
+  withDB' "showRefund" cc (\db -> balanceByReference db ref now >>= mapM (withChain db)) <&> \case
+    Right Nothing -> Left $ "No order has the reference " <> ref <> "."
+    Right (Just (RegistrationId rid, Nothing)) -> Left $ "Order " <> rid <> " has no balance."
+    Right (Just (RegistrationId rid, Just (balance@Balance {blAmount, blCredited, blRefunded}, chain))) ->
+      Right $
+        "Order " <> rid <> ": balance " <> dollars blAmount <> " (credited " <> dollars blCredited <> ", refunded " <> dollars blRefunded
+          <> "). Paid by: " <> chainText chain <> ". " <> nextStep now balance
+    Left _ -> Left "The balance could not be read."
+  where
+    withChain db (rid, balance_) = (rid,) <$> mapM (\balance -> (balance,) <$> balanceChain db rid) balance_
+    nextStep now Balance {blAmount, blHold} = case blHold of
+      Just hold -> "It cannot be refunded now: " <> heldText now hold <> "."
+      Nothing
+        | blAmount > 0 -> "To record its refund: //refund " <> ref <> " " <> tshow blAmount
+        | otherwise -> "Nothing to refund."
+
+-- | The refund is recorded before support pays it, so the balance cannot be spent meanwhile.
+refundBalanceCmd :: Turns -> ChatController -> T.Text -> Int -> IO (Either T.Text T.Text)
+refundBalanceCmd turns ChatController {chatStore} ref cents = do
+  now <- getCurrentTime
+  ((Right <$> recordRefund turns chatStore ref cents now) `catchOwn` (pure . Left)) >>= \case
+    Right (Right RefundRecord {rdRegistration = RegistrationId rid, rdCents, rdChain}) -> do
+      -- The registration id, not the reference, since an invoice id is kept out of the logs.
+      logInfo $ "names: recorded a refund of " <> tshow rdCents <> " cents for order " <> rid
+      pure $ Right $ "Recorded a refund of " <> dollars rdCents <> " for order " <> rid <> ". Refund it now, by: " <> chainText rdChain <> "."
+    Right (Left refusal) -> pure $ Left $ "Nothing recorded: " <> refusalText now refusal <> "."
+    Left e -> Left "The refund could not be recorded." <$ logError ("names: recording a refund failed: " <> tshow e)
+  where
+    refusalText now = \case
+      RefundNoOrder -> "no order has the reference " <> ref
+      RefundNoBalance -> "the order of " <> ref <> " has no balance"
+      RefundAmount amount -> "the balance is " <> dollars amount <> " now, not " <> dollars cents
+      RefundHeld hold -> heldText now hold
+
+heldText :: UTCTime -> BalanceHold -> T.Text
+heldText now BalanceHold {bhHolder = RegistrationId holder, bhUntil, bhOverdue}
+  | bhOverdue = heldBy <> "its invoice expired at " <> fmtTime bhUntil <> "; start the service so the poller closes that order, " <> tshow graceMinutes <> " minutes after the expiry at the earliest, then stop it and run //refund again"
+  | bhUntil < now = heldBy <> "whose invoice expired at " <> fmtTime bhUntil <> " holding money; it holds until that payment settles or the invoice closes; run the command again then"
+  | otherwise = heldBy <> "its invoice open until " <> fmtTime bhUntil <> "; run the command again then"
+  where
+    heldBy = "held by order " <> holder <> ", "
+    graceMinutes = round (expiryGrace / minute) :: Int
+    minute = 60 :: NominalDiffTime
+
+-- | From the balance's own order back to the first; a part paid from a balance names the next order, whose balance paid it.
+chainText :: [BalanceLink] -> T.Text
+chainText chain = T.intercalate "; " $ zipWith linkText chain (map (Just . lkRegistration) (drop 1 chain) <> [Nothing])
+  where
+    linkText BalanceLink {lkRegistration = RegistrationId rid, lkPayment, lkPaid, lkFromBalance, lkLateCredits} source_ =
+      "order " <> rid <> ": " <> case paid lkPayment lkPaid lkLateCredits <> fromBalance lkFromBalance source_ of
+        [] -> "no payment recorded"
+        parts -> T.intercalate ", " parts
+    paid payment cents lateCredits = case payment of
+      RPInvoice method (InvoiceId invId) ->
+        let by = " by " <> methodText method <> " on invoice " <> invId
+            late = sum $ map lcCents lateCredits
+         in [dollars cents <> by | cents > 0] <> [dollars late <> " late" <> by | late > 0]
+      RPCode _ -> ["a prepaid code"]
+      RPBalance -> []
+    fromBalance cents = \case
+      Just (RegistrationId source) | cents > 0 -> [dollars cents <> " from the balance of order " <> source]
+      _ -> []
+
+dollars :: Int -> T.Text
+dollars cents = "$" <> tshow whole <> "." <> T.justifyRight 2 '0' (tshow part)
+  where
+    (whole, part) = cents `quotRem` centsPerDollar
+    centsPerDollar = 100
 
 issueNameCmdP :: A.Parser (Int, Int, BadgeCodePaymentStatus)
 issueNameCmdP = do
