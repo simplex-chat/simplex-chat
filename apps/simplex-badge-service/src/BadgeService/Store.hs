@@ -206,7 +206,7 @@ getCodePurchaseForKey db badgeCodeId key =
         FROM sx_badge_service_badge_purchases p
         LEFT JOIN sx_badge_service_badge_issuances i ON i.badge_purchase_id = p.badge_purchase_id
         WHERE p.badge_code_id = ? AND p.purchase_key = ?
-        ORDER BY i.entry_id DESC
+        ORDER BY i.entry_id DESC, i.period_end DESC
         LIMIT 1
       |]
       (badgeCodeId, key)
@@ -226,7 +226,7 @@ getStorePaymentCredit db provider providerRef =
         JOIN sx_badge_service_badge_purchases p ON p.payment_id = pay.payment_id
         LEFT JOIN sx_badge_service_badge_issuances i ON i.badge_purchase_id = p.badge_purchase_id
         WHERE pay.provider = ? AND pay.provider_ref = ?
-        ORDER BY i.entry_id DESC
+        ORDER BY i.entry_id DESC, i.period_end DESC
         LIMIT 1
       |]
       (textEncode provider, providerRef)
@@ -331,7 +331,7 @@ getCurrentIssuance db purchaseId now = do
       [sql|
         SELECT credential, period_end FROM sx_badge_service_badge_issuances
         WHERE badge_purchase_id = ?
-        ORDER BY entry_id DESC
+        ORDER BY entry_id DESC, period_end DESC
         LIMIT 1
       |]
       (Only purchaseId)
