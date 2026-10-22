@@ -30,7 +30,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, addUTCTime)
 import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
-import Data.Word (Word64)
+import Data.Word (Word64, Word8)
 import Network.HTTP.Client (defaultManagerSettings, newManager)
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
@@ -39,6 +39,7 @@ import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey, signRecoverable)
+import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Eth.EIP712 (serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..), labelHash)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
@@ -71,6 +72,8 @@ namesOwnerTests = describe "StoreService names: owner" $ do
     it "answers the fourth move move_limit with the current view, changing nothing" testMoveLimit
     it "refuses a move meeting another live order of the wallet's or the commitment with a bare order_exists, before the price" testMoveMeetsOrder
     it "runs the order checks on the new fields: invalid_name, the duration, name_taken, name_check_unavailable" testMoveOrderChecks
+    it "registers a failed order whose register went through, by its mined register or by ownerOf, answering registration_changed and spending a code" testMoveLanded
+    it "answers name_check_unavailable when the register check cannot read the chain, changing nothing" testMoveLandedUnread
     it "answers a dearer name price_too_high with its price, and moves to a cheaper one at its price" testMovePrice
     it "checks a code order's code again: code_not_covering for a shorter name, a held code kept though revoked and expired since" testMoveCodeOrder
     it "reserves a released code again while unused, else answers code_used, code_reserved, code_invalid or code_expired" testMoveReleasedCode
@@ -101,9 +104,10 @@ withOwnerAs change action = withOrders $ \ctx@Ctx {cOrders, cWeb} -> do
       web = cWeb {weOrders = Just orders}
       routes path = ownerRoutes orders path <|> codeRoutes orders (weProviders web) (weWaiters web) path
       app req respond = fromMaybe (webApp web req respond) (namesApp (weHttp web) routes req respond)
+      ctx' = ctx {cOrders = orders, cWeb = web}
+  forM_ ["alicebakery", "dynamis"] $ answerUnowned ctx'
   mgr <- newManager defaultManagerSettings
-  Warp.testWithApplication (pure app) $ \port ->
-    action ctx {cOrders = orders, cWeb = web, cClient = (mgr, "http://127.0.0.1:" <> show port)}
+  Warp.testWithApplication (pure app) $ \port -> action ctx' {cClient = (mgr, "http://127.0.0.1:" <> show port)}
 
 ownerRoutes :: OrdersEnv -> [Text] -> Maybe Route
 ownerRoutes orders = \case
@@ -131,14 +135,38 @@ byB o = o {oOwner = ownerBText, oKey = keyB}
 dynamisOrder :: Order
 dynamisOrder = aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 3, oSealed = "sealed-dynamis-3", oPrice = 20000}
 
--- viem's selectors of nameExpires(uint256) and reservedNames(bytes32), as in the dynamis calls of the orders tests
-nameExpiresSelector, reservedNamesSelector :: ByteString
+-- viem's selectors of nameExpires(uint256), reservedNames(bytes32) and ownerOf(uint256), as in the calls of the contracts tests
+nameExpiresSelector, reservedNamesSelector, ownerOfSelector :: ByteString
 nameExpiresSelector = unhex "d6e4fa86"
 reservedNamesSelector = unhex "389c0748"
+ownerOfSelector = unhex "6352211e"
 
--- | The chain answers the name as available.
+labelBytes :: Text -> ByteString
+labelBytes label = lh
+  where
+    LabelHash lh = labelHash label
+
+-- | ownerOf of a name nobody holds: the registrar's bare require, a revert without data.
+answerUnowned :: Ctx -> Text -> IO ()
+answerUnowned Ctx {cNode} label = answerCall cNode (registrarOf cNode) (ownerOfSelector <> labelBytes label) $ Reverts ""
+
+answerOwner :: Ctx -> Text -> Address -> IO ()
+answerOwner Ctx {cNode} label owner = answerCall cNode (registrarOf cNode) (ownerOfSelector <> labelBytes label) $ Returns $ addressWord owner
+
+answerExpiry :: Ctx -> Text -> Word64 -> IO ()
+answerExpiry Ctx {cNode} label expiry = answerCall cNode (registrarOf cNode) (nameExpiresSelector <> labelBytes label) $ Returns $ uint256 expiry
+
+-- | A register transaction of the order as the sender saves it, then moved to this outcome.
+sentRegister :: Ctx -> NameRegistration -> Word8 -> TxStatus -> IO TxHash
+sentRegister Ctx {cStore} NameRegistration {nrId} n status = withTransaction cStore $ \db -> do
+  let h = TxHash $ digestFixture n
+  void $ insertTransaction db (TxRegister nrId) NewTransaction {ntxRaw = "raw", ntxHash = h, ntxNonce = fromIntegral n} orderTime
+  recordTransactionOutcome db h TSPending status (Just 120) `shouldReturn` True
+  pure h
+
+-- | The chain answers the name as available and held by nobody.
 answerFree :: Ctx -> Text -> IO ()
-answerFree ctx label = answerReserved ctx label 0
+answerFree ctx label = answerReserved ctx label 0 >> answerUnowned ctx label
 
 answerReserved :: Ctx -> Text -> Int -> IO ()
 answerReserved Ctx {cNode} label reason = do
@@ -313,6 +341,7 @@ testFind = withOwner $ \ctx@Ctx {cStore} -> do
     let new = NewRegistration {nrgId = oldOrder i, nrgOwner = ownerA, nrgOrder = order ("alicebakery" <> tshow i) (fromIntegral i), nrgYears = 2}
     withTransaction cStore (\db -> createCodeRegistration db new code (addUTCTime (fromIntegral i) t0)) `shouldReturn` Right ()
   answerFree ctx "alicebakers"
+  answerUnowned ctx "alicebakery50"
   movedOrder <- registrationById ctx (oldOrder 50) >>= \r -> rewrite ctx r failedPhase
   to <- moveTo ctx "alicebakers" 10
   void $ moved ctx keyA movedOrder to
@@ -475,6 +504,41 @@ testMoveOrderChecks = withOwner $ \ctx@Ctx {cNode} -> do
   answerReserved ctx "alicebakers" 1
   move ctx keyA r to `shouldReturn` refusedWith 409 "name_taken"
   setFault cNode "eth_call" HttpFailure
+  move ctx keyA r to `shouldReturn` refusedWith 503 "name_check_unavailable"
+  stored ctx r `shouldReturn` r
+
+testMoveLanded :: IO ()
+testMoveLanded = withOwner $ \ctx -> do
+  answerFree ctx "alicebakers"
+  minedOrder <- paidIn ctx aliceOrder failedPhase
+  (ownedOrder, code) <- codeIn ctx 7 dynamisOrder failedPhase
+  notLanded <- paidIn ctx (byB aliceOrder) {oCommitment = commitmentOf 2} failedPhase
+  let expiry = seconds orderTime + 2 * 31536000
+  forM_ ["alicebakery", "dynamis"] $ \label -> answerExpiry ctx label expiry
+  TxHash minedHash <- sentRegister ctx minedOrder 1 TSMined
+  answerOwner ctx "dynamis" (nrOwner ownedOrder)
+  void $ sentRegister ctx notLanded 2 TSReverted
+  answerOwner ctx "alicebakery" (nrOwner minedOrder)
+  forM_ [(minedOrder, Just minedHash), (ownedOrder, Nothing)] $ \(r, hash) -> do
+    to <- moveTo ctx "alicebakers" 10
+    answer <- move ctx keyA r to
+    view <- getView ctx r
+    answer `shouldBe` refusedWithView "registration_changed" view
+    fieldsIn view [("phase", "registered"), ("expiresAt", J.toJSON expiry), ("moves", J.Number 0), ("error", J.Null), ("registerTx", maybe J.Null (J.String . hex) hash)]
+    written <- stored ctx r
+    (nrPhase written, nrLive written, nrVersion written, nrLabelHash written) `shouldBe` (PRegistered, False, nrVersion r + 1, nrLabelHash r)
+  pcSpentAt <$> codeRow ctx code `shouldReturn` Just orderTime
+  to <- moveTo ctx "alicebakers" 11
+  v <- moved ctx keyB notLanded to
+  fieldsIn v [("phase", "queued"), ("moves", J.Number 1)]
+
+testMoveLandedUnread :: IO ()
+testMoveLandedUnread = withOwner $ \ctx@Ctx {cNode} -> do
+  answerFree ctx "alicebakers"
+  r <- paidIn ctx aliceOrder failedPhase
+  -- a revert with data is a failed read, not an unowned name
+  answerCall cNode (registrarOf cNode) (ownerOfSelector <> labelBytes "alicebakery") $ Reverts $ unhex "37ed32e8"
+  to <- moveTo ctx "alicebakers" 10
   move ctx keyA r to `shouldReturn` refusedWith 503 "name_check_unavailable"
   stored ctx r `shouldReturn` r
 

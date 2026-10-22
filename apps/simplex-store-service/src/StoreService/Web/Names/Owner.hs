@@ -28,7 +28,7 @@ import StoreService.Names.Abi (hex)
 import StoreService.Names.Orders
 import StoreService.Names.Phases (RegistrationId (..), publish)
 import StoreService.Names.Signatures (OrderFields (..), findMessage, parseAnyCaseAddress, parseSignature, retargetMessage, takenCodeMessage)
-import StoreService.Names.Store (NameRegistration (..), RegistrationPayment (..), findRegistrations, getRegistration)
+import StoreService.Names.Store (NamePhase (..), NameRegistration (..), RegistrationPayment (..), findRegistrations, getRegistration)
 import StoreService.Names.Turns (withLabelTurn, withLabelTurns)
 import StoreService.Names.View (registrationView)
 import StoreService.Web.Http (Respond, internalError, jsonResponse, maxBodyBytes, nameBodyBytes, notFound, parseCodeHash, readBoundedBody)
@@ -113,10 +113,18 @@ retargetHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} r
         Just stored
           | nrLabelHash stored `notElem` held -> changed
           | otherwise -> moveTo now (registrationAt now stored) fields timestamp
-    moveTo now r@NameRegistration {nrMoves, nrYears, nrPrice, nrPayment} fields@OrderFields {ofLabelHash, ofLength, ofDuration} timestamp
+    moveTo now r@NameRegistration {nrPhase} fields timestamp
       | orderFieldsOf r == fields = answerNow . jsonResponse status200 <$> registrationView oeStore oeConfig oeContracts r
       | Left refusal <- checkTimestamp now timestamp = refuse refusal
       | not (movable r) = refuse ORBadRequest
+      | nrPhase == PFailed =
+          confirmLanded env r >>= \case
+            LNotLanded -> moveChecked now r fields
+            LRegistered v -> written env rid v <$> registrationChangedResponse env rid
+            LChanged -> changed
+            LUnread -> refuse ORNameCheckUnavailable
+      | otherwise = moveChecked now r fields
+    moveChecked now r@NameRegistration {nrMoves, nrYears, nrPrice, nrPayment} fields@OrderFields {ofLabelHash, ofLength, ofDuration}
       | nrMoves >= nMaxOrderMoves oeConfig = answerNow <$> registrationRefusalResponse env "move_limit" rid
       | otherwise =
           firstRefusal [checkMoveMeets oeStore r fields now, pure $ checkDuration oeConfig now nrYears ofDuration, checkNameFree oeContracts oeStore ofLabelHash] >>= \case
