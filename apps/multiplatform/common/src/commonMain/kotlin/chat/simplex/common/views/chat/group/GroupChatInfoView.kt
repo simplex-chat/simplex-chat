@@ -116,10 +116,11 @@ fun ModalData.GroupChatInfoView(
       addMembers = {
         if (!addGroupMembersOpening.compareAndSet(false, true)) return@GroupChatInfoLayout
         scope.launch(Dispatchers.Default) {
+          if (ModalManager.end.isTopModalOpen(ModalViewId.ADD_GROUP_MEMBERS)) return@launch
           setGroupMembers(rhId, groupInfo, chatModel)
           if (!isActive) return@launch
 
-          ModalManager.end.showModalCloseable(showClose = true) { close ->
+          ModalManager.end.showModalCloseable(showClose = true, id = ModalViewId.ADD_GROUP_MEMBERS) { close ->
             AddGroupMembersView(rhId, groupInfo, false, chatModel, close)
           }
         }.invokeOnCompletion { addGroupMembersOpening.set(false) }
@@ -491,6 +492,7 @@ fun UserSupportChatButton(
       val scopeInfo = GroupChatScopeInfo.MemberSupport(groupMember_ = null)
       val supportChatInfo = ChatInfo.Group(groupInfo, groupChatScope = scopeInfo)
       scope.launch {
+        if (ModalManager.end.isTopModalOpen(ModalViewId.SECONDARY_CHAT)) return@launch
         showMemberSupportChatView(
           chatModel.chatId,
           scrollToItemId = scrollToItemId,
@@ -699,6 +701,7 @@ fun ModalData.GroupChatInfoLayout(
             anyTopSectionRowShow = true
             GroupReportsButton(chat) {
               scope.launch {
+                if (ModalManager.end.isTopModalOpen(ModalViewId.SECONDARY_CHAT)) return@launch
                 showGroupReportsView(chatModel.chatId, scrollToItemId, chat.chatInfo)
               }
             }
@@ -1310,8 +1313,9 @@ private fun ChannelMembersButton(rhId: Long?, groupInfo: GroupInfo, showMemberIn
     click = {
       if (!channelMembersOpening.compareAndSet(false, true)) return@SettingsActionItem
       withBGApi {
+        if (ModalManager.end.isTopModalOpen(ModalViewId.CHANNEL_MEMBERS)) return@withBGApi
         setGroupMembers(rhId, groupInfo, chatModel)
-        ModalManager.end.showModalCloseable(true) { close ->
+        ModalManager.end.showModalCloseable(true, id = ModalViewId.CHANNEL_MEMBERS) { close ->
           ChannelMembersView(rhId, groupInfo, chatModel, close) { member -> showMemberInfo(member, null) }
         }
       }.invokeOnCompletion { channelMembersOpening.set(false) }
@@ -1330,8 +1334,9 @@ private fun ChannelRelaysButton(rhId: Long?, groupInfo: GroupInfo, showMemberInf
     click = {
       if (!channelRelaysOpening.compareAndSet(false, true)) return@SettingsActionItem
       withBGApi {
+        if (ModalManager.end.isTopModalOpen(ModalViewId.CHANNEL_RELAYS)) return@withBGApi
         setGroupMembers(rhId, groupInfo, chatModel)
-        ModalManager.end.showModalCloseable(true) { close ->
+        ModalManager.end.showModalCloseable(true, id = ModalViewId.CHANNEL_RELAYS) { close ->
           ChannelRelaysView(rhId, groupInfo, chatModel, close, showMemberInfo)
         }
       }.invokeOnCompletion { channelRelaysOpening.set(false) }

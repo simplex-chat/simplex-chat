@@ -415,6 +415,7 @@ fun GroupMemberInfoLayout(
         val scopeInfo = GroupChatScopeInfo.MemberSupport(groupMember_ = member)
         val supportChatInfo = ChatInfo.Group(groupInfo, groupChatScope = scopeInfo)
         scope.launch {
+          if (ModalManager.end.isTopModalOpen(ModalViewId.SECONDARY_CHAT)) return@launch
           showMemberSupportChatView(
             chatModel.chatId,
             scrollToItemId = scrollToItemId,

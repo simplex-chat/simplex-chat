@@ -98,7 +98,10 @@ enum class ModalViewId {
   CREATE_PROFILE,
   PROFILE_DESCRIPTION,
   MARKDOWN_FILE,
-  CHAT_ITEM_INFO
+  CHAT_ITEM_INFO,
+  ADD_GROUP_MEMBERS,
+  CHANNEL_MEMBERS,
+  CHANNEL_RELAYS
 }
 
 class ModalManager(private val placement: ModalPlacement? = null) {

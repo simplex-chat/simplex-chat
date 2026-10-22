@@ -3240,9 +3240,10 @@ fun addGroupMembers(groupInfo: GroupInfo, rhId: Long?, view: Any? = null, close:
   if (!addGroupMembersOpening.compareAndSet(false, true)) return
   hideKeyboard(view)
   withBGApi {
+    if (close == null && ModalManager.end.isTopModalOpen(ModalViewId.ADD_GROUP_MEMBERS)) return@withBGApi
     setGroupMembers(rhId, groupInfo, chatModel)
     close?.invoke()
-    ModalManager.end.showModalCloseable(showClose = true) { close ->
+    ModalManager.end.showModalCloseable(showClose = true, id = ModalViewId.ADD_GROUP_MEMBERS) { close ->
       AddGroupMembersView(rhId, groupInfo, false, chatModel, close)
     }
   }.invokeOnCompletion { addGroupMembersOpening.set(false) }
