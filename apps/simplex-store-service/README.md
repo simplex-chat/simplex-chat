@@ -128,6 +128,15 @@ The BTCPay API key needs four permissions, each scoped to the one store:
 `canmodifyinvoices` so `POST /api/invoice/:id/cancel` can invalidate an invoice at BTCPay
 rather than only in this store.
 
+**Do not set `speed_policy = HighSpeed` when names are sold** (`[names]` configured). Under it
+BTCPay can mark a payment `Settled` with no confirmation, so the service never credits crypto that
+reaches a name invoice after the invoice closed: the money stays pending, the poller alerts about it
+once it is older than its read window (about 72 hours), and support settles it by hand. The service
+judges each invoice by the policy it was created with, so changing the setting later credits nothing
+that arrived under `HighSpeed`. With `MediumSpeed` (the template's value) or a slower policy, late
+money is credited to the order's balance once confirmed, at the lower of the invoice's rate and the
+rate when it is credited.
+
 Give the service a BTCPay store of its own, and a Stripe account of its own if card payments are
 on. The poller lists every invoice and payment intent of the last three days or so, and one it did
 not create and cannot read is reported in a warning once an hour until it falls out of that window.
@@ -766,7 +775,8 @@ were already given out, and the command answers with an error. A multi-use code 
 be revoked, which stops the uses that remain.
 
 Core parses `//...` into `CustomChatCommand` and leaves it to the service's `preCmdHook`, which is
-why issuing codes lives in the service rather than in core.
+why issuing codes lives in the service rather than in core. `//refund`, the other command of this
+console, is in [Refunding a name balance](#refunding-a-name-balance).
 
 ### From the group
 
@@ -776,7 +786,8 @@ and above, `/revoke <code>` for admins and owners. `months` is 1 to 255, `uses` 
 `count` 1 to 100; a value outside these gets the usage reply. The name forms are
 `/issue name <length> [years <Y>]` and `/bulk name <length> [years <Y>] count <B>`, with the
 bounds of `//issue name`; a name code issued in the group is single-use and `free`. `/revoke`
-takes badge codes only: withdraw a name code with `//revoke` in `--run-cli` mode. A member's role
+takes badge codes only: withdraw a name code with `//revoke` in `--run-cli` mode. The group has no
+`/refund`. A member's role
 is checked as the service last saw it, so a command sent by a moderator just demoted or removed can still run if it
 reaches the service first; revoke any code the service posts for them after the change. `uses`
 above 1 makes a multi-use code, tracked by a group message showing its remaining uses and the time
@@ -835,3 +846,62 @@ join link still works and its messages hold every code posted there.
 
 The configured `display_name` and `description` apply only to the group the service creates. Editing
 them later is logged as not applied and changes nothing.
+
+## Refunding a name balance
+
+A paid name order keeps its money as a balance when it ends `taken` (another buyer registered the
+name first), when it moves to a cheaper name (the difference), and when a payment reaches its invoice
+after the invoice closed. The buyer spends a balance on another name from Your names, or asks for it
+back: the page tells them to write to chat@simplex.chat with the order's reference, which is its
+invoice id, or its registration id for an order without an invoice. Nothing is refunded
+automatically, and the service never learns where to send money. Support records each refund in
+`--run-cli` mode, as `//revoke` of a name code:
+
+```
+//refund <reference>
+//refund <reference> <cents>
+```
+
+1. Run `//refund <reference>` with the reference the buyer sent. It records nothing and answers the
+   balance, what paid for it and the command that refunds it:
+
+   ```
+   Order <id>: balance $100.00 (credited $100.00, refunded $0.00). Paid by: order <id>: $100.00 by btc on invoice <invoice id>. To record its refund: //refund <reference> 10000
+   ```
+
+   `Paid by` starts at this order and follows every balance the money came through back to the
+   first order: each order with what its invoice paid and by which method (`card`, `btc` or
+   `xmr`), the part paid from the balance of the next order listed, and, marked `late`, money
+   credited after its invoice closed.
+2. Run the command the answer ends with. The cents must equal the whole balance: a refund zeroes it,
+   and part of a balance is never refunded. If the balance changed since step 1, by a spend or a
+   late credit, nothing is recorded and the answer gives the balance now; start again at step 1.
+3. The answer, `Recorded a refund of $100.00 for order <id>. Refund it now, by: …`, repeats the
+   chain. Pay the money back now, by the methods it lists: a card payment as a refund in the Stripe
+   Dashboard, crypto to an address the buyer gives, at that day's rate, since the balance is in US
+   cents. The refund is recorded first so that the buyer cannot spend the money while it is paid
+   back. The service logs each recorded refund at info with the order's registration id and the
+   cents.
+
+A balance that an open order holds is never refunded: that order is buying another name with it and
+its invoice is waiting for the difference. The command names the order and its invoice's expiry
+instead:
+
+- `its invoice open until <time>`: if the buyer pays it, the balance is spent; if not, it is released
+  once the invoice expires and the poller closes the order. Run the command again then.
+- `its invoice expired at <time>; the poller closes it within 10 minutes`: the poller closes the
+  order at its first pass 10 minutes after the expiry and releases the hold; run the command again
+  then. The poller runs only in service mode, and closes a card order only once Stripe accepts the
+  cancel.
+- `whose invoice expired at <time> holding money`: a payment reached the invoice; the hold stays
+  until that payment settles, which spends the balance, or the provider closes the invoice, which
+  releases it.
+
+The command also answers when the reference matches no order, when the order has no balance, and
+when the cents are not the balance. A refunded balance shows `amount` 0 and its `refunded` total in
+Your names; a later late payment credits it again, and a second refund adds to `refunded`.
+
+The service may spend, settle or credit the same balance from the same database while the command
+runs. The refund and every spend are conditional on the amount they read, and the refund also on no
+order holding the balance, so the money is never both spent and refunded; a refund that loses
+answers with the balance now.
