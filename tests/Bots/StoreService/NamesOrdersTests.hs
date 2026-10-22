@@ -9,9 +9,10 @@ import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (alice, answerRegistered, answerRegistrar, launchPricesAnswer, nameExpiresCall, noncesCall, oracle, pricesCall, registrarOf, rentPriceAnswer, rentPriceCall, reservedNamesCall, unhex)
 import Bots.StoreService.NamesStoreTests (issue, order, ownerA, ownerB, placeCode, placePaid, t0, usable)
 import Bots.StoreService.WebTests
+import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (async, concurrently, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
-import Control.Concurrent.STM (TVar)
+import Control.Concurrent.STM (TVar, atomically, check, modifyTVar', newTVarIO, readTVar)
 import qualified Control.Exception as E
 import Control.Monad (forM_, void)
 import Crypto.Random (ChaChaDRG)
@@ -78,7 +79,8 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "refuses an order carrying another wallet's commitment without disclosing anything" testForeignCommitment
     it "refuses a bad signature, or another signer's" testBadSignature
     it "refuses a stale timestamp on a new order" testStaleTimestamp
-    it "lets one of two concurrent orders for one owner and name win" testConcurrentOrders
+    it "lets one of two concurrent orders for one owner and name win, the other never reaching the provider" testConcurrentOrders
+    it "cancels the provider invoice of an order whose insert lost to another with the same commitment" testLostInsertCancels
     it "cancels the provider invoice and logs it when the order's insert fails" testInsertFailureCancels
     it "checks the duration within the slack, before and after the term start" testDurationSlack
     it "answers catalog_changed with the chain price" testCatalogChanged
@@ -330,6 +332,11 @@ settleNow Ctx {cStore, cWeb, cOrders, cClock} invId signal = readIORef cClock >>
 settled :: PaymentSignal
 settled = SigSettled (rcv 10000 (Just "0.00156")) orderTime
 
+textOf :: Text -> Maybe J.Object -> Text
+textOf k v = case field k =<< v of
+  Just (J.String t) -> t
+  other -> error $ T.unpack k <> ": " <> show other
+
 objectOf :: J.Value -> J.Object
 objectOf = \case
   J.Object o -> o
@@ -454,12 +461,32 @@ testStaleTimestamp = withOrders $ \ctx -> do
   placeOrder ctx aliceOrder {oTimestamp = maxBound} `shouldReturn` refusedWith 400 "bad_request"
   fst <$> placeOrder ctx (at (-600)) `shouldReturn` 200
 
+-- | The provider is slow, so without the name's turn both orders would pass the existing-order check and create an invoice.
 testConcurrentOrders :: IO ()
-testConcurrentOrders = withOrders $ \ctx -> do
+testConcurrentOrders = withOrdersVia (\p -> p {pCreateInvoice = \m d -> threadDelay 300000 >> pCreateInvoice p m d}) $ \ctx -> do
   (a, b) <- concurrently (placeOrder ctx aliceOrder) (placeOrder ctx aliceOrder {oCommitment = commitmentOf 2})
   sort [fst a, fst b] `shouldBe` [200, 409]
   filter ((== 409) . fst) [a, b] `shouldBe` [refusedWith 409 "order_exists"]
   length <$> registrationsOf ctx ownerA `shouldReturn` 1
+  length <$> stubCalls (cStub ctx) `shouldReturn` 1
+
+-- | Two names take two turns, and both creates are let through together, so both orders reach the insert.
+testLostInsertCancels :: IO ()
+testLostInsertCancels = do
+  arrived <- newTVarIO (0 :: Int)
+  let meet = atomically (modifyTVar' arrived (+ 1)) >> atomically (readTVar arrived >>= check . (>= 2))
+  withOrdersVia (\p -> p {pCreateInvoice = \m d -> meet >> pCreateInvoice p m d}) $ \ctx -> do
+    (a, b) <- concurrently (placeOrder ctx aliceOrder) (placeOrder ctx aliceOrder {oLabel = "dynamis", oPrice = 20000})
+    sort [fst a, fst b] `shouldBe` [200, 409]
+    filter ((== 409) . fst) [a, b] `shouldBe` [refusedWith 409 "order_exists"]
+    [(_, winner)] <- pure $ filter ((== 200) . fst) [a, b]
+    Just InvoiceRow {irProviderRef = won} <- getInvoice (cStore ctx) (InvoiceId $ textOf "invoiceId" winner)
+    calls <- stubCalls (cStub ctx)
+    let created = length [() | StubCreate {} <- calls]
+        cancelled = [r | StubCancel r <- calls]
+    created `shouldBe` 2
+    length cancelled `shouldBe` 1
+    cancelled `shouldNotBe` [won]
 
 -- | The stub gives every invoice one ref, so the second order's insert breaks the unique ref.
 testInsertFailureCancels :: IO ()
