@@ -82,6 +82,7 @@ badgeBTCPayTests = describe "badge btcpay adapter" $ do
     it "confirms all of paymentMethodPaid when every payment reads Settled, whatever their values" testConfirmedAllSettled
     it "confirms the Settled payments' value otherwise, rounded to cents once and capped at paymentMethodPaid" testConfirmedSettledSum
     it "counts BTC in satoshi and XMR in piconero" testConfirmedUnits
+    it "confirms XMR only when the invoice's settled-confirmation threshold is at least 1, never with 0 or none" testXmrConfirmations
     it "confirms nothing under HighSpeed, or with no or an unknown speed policy, an invoice-level Settled included" testHighSpeedConfirmsNothing
     it "accepts trailing zeros past the unit" testTrailingZeros
     it "drops only the units of an amount with a non-zero digit past its unit, the signal and its cents as before" testDigitPastUnit
@@ -144,8 +145,9 @@ paymentOf status value =
       "fee" .= ("0.00000100" :: Text)
     ]
 
-xmrPaid :: Text -> [J.Value] -> J.Value
-xmrPaid paid payments =
+-- | The Monero plugin's method, its additionalData carrying the invoice's settled-confirmation threshold when given.
+xmrPaid :: Maybe Int -> Text -> [J.Value] -> J.Value
+xmrPaid threshold paid payments =
   J.object
     [ "paymentMethodId" .= xmrMethodId,
       "destination" .= ("44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A" :: Text),
@@ -153,7 +155,8 @@ xmrPaid paid payments =
       "rate" .= ("168.25" :: Text),
       "paymentMethodPaid" .= paid,
       "due" .= ("0.00000000" :: Text),
-      "payments" .= payments
+      "payments" .= payments,
+      "additionalData" .= J.object (maybe [] (\n -> ["invoiceSettledConfirmationThreshold" .= n]) threshold)
     ]
 
 testConfirmedInvoiceSettled :: IO ()
@@ -178,8 +181,20 @@ testConfirmedSettledSum = do
 testConfirmedUnits :: IO ()
 testConfirmedUnits = do
   (rcvUnitsOf =<<) <$> signalOf "Settled" [btcPaid "0.00050000" []] `shouldBe` Right (Just 50000)
-  signalOf "Settled" [xmrPaid "0.32095000" [paymentOf "Settled" "0.32095000"]]
-    `shouldBe` Right (Just (SigSettled xmrReceived {rcvConfirmed = Confirmed {cfCents = CurrencyAmount 5400, cfUnits = Just 320950000000}} (posixSecondsToUTCTime 1700000000)))
+  signalOf "Settled" [xmrPaid (Just 1) "0.32095000" [paymentOf "Settled" "0.32095000"]]
+    `shouldBe` Right (Just (SigSettled xmrConfirmed (posixSecondsToUTCTime 1700000000)))
+
+xmrConfirmed :: Received
+xmrConfirmed = xmrReceived {rcvConfirmed = Confirmed {cfCents = CurrencyAmount 5400, cfUnits = Just 320950000000}, rcvUncreditable = Nothing}
+
+-- | A Monero payment's own confirmations are not in Greenfield's payment model, so only the invoice's threshold shows one.
+testXmrConfirmations :: IO ()
+testXmrConfirmations = do
+  let settledWith threshold = signalOf "Settled" [xmrPaid threshold "0.32095000" [paymentOf "Settled" "0.32095000"]]
+      settled r = Right (Just (SigSettled r (posixSecondsToUTCTime 1700000000)))
+  settledWith (Just 0) `shouldBe` settled xmrReceived
+  settledWith Nothing `shouldBe` settled xmrReceived
+  mapM_ (\n -> settledWith (Just n) `shouldBe` settled xmrConfirmed) [1, 10]
 
 rcvUnitsOf :: PaymentSignal -> Maybe Int64
 rcvUnitsOf = \case
@@ -618,7 +633,7 @@ xmrReceived =
       rcvUnits = Just 320950000000,
       rcvRate = Just "168.25",
       rcvConfirmed = Confirmed {cfCents = CurrencyAmount 0, cfUnits = Just 0},
-      rcvUncreditable = Nothing
+      rcvUncreditable = Just UCNoConfirmationShown
     }
 
 fiftyFourDollars :: OrderDraft

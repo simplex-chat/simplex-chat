@@ -86,7 +86,11 @@ import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 -- - an invoice's checkout.speedPolicy, GET stores/{storeId}/invoices/{invoiceId} and the list: BTCPayServer.Client/Models/InvoiceData.cs,
 --   nullable; HighSpeed settles at 0 confirmations, MediumSpeed at 1, LowMediumSpeed at 2, LowSpeed at 6
 --   (wwwroot/swagger/v1/swagger.template.json, SpeedPolicy). The Monero plugin (btcpay-monero/btcpayserver-monero-plugin v1.4.0,
---   Plugins/Monero/Services/MoneroListener.cs, ConfirmationsRequired) maps the policies the same way, unless the store sets its own threshold;
+--   Plugins/Monero/Services/MoneroListener.cs, ConfirmationsRequired) maps the policies the same way, unless the store sets its own
+--   InvoiceSettledConfirmationThreshold, which settles a payment at that many confirmations. Greenfield's payment model
+--   (Controllers/GreenField/GreenfieldInvoiceController.cs, ToPaymentModel) carries no payment's confirmations; the method's
+--   additionalData (Payments/MoneroLikeOnChainPaymentMethodDetails.cs, camel-cased by Data/BlobSerializer.cs) carries the invoice's
+--   invoiceSettledConfirmationThreshold, so a Settled XMR payment shows a confirmation only when it is at least 1;
 -- - the store's rates, GET stores/{storeId}/rates?currencyPair=BTC_USD: Controllers/GreenField/GreenfieldStoreRatesController.cs and
 --   Models/StoreRateResult.cs, a list of {currencyPair, errors, rate}, rate null when errors is not empty; it needs canviewstoresettings.
 btcMethodId, xmrMethodId :: Text
@@ -199,7 +203,8 @@ data GPaymentMethod = GPaymentMethod
     gpmRate :: Maybe WireNum,
     gpmPaid :: Maybe WireNum,
     gpmDue :: Maybe WireNum,
-    gpmPayments :: [GPayment]
+    gpmPayments :: [GPayment],
+    gpmSettledThreshold :: Maybe Int
   }
   deriving (Show)
 
@@ -213,6 +218,12 @@ instance J.FromJSON GPaymentMethod where
       <*> o J..:? "paymentMethodPaid"
       <*> o J..:? "due"
       <*> (fromMaybe [] <$> o J..:? "payments")
+      <*> (settledThreshold <$> o J..:? "additionalData")
+    where
+      -- read leniently: another plugin's additionalData must not fail the read
+      settledThreshold = \case
+        Just (J.Object d) | Just (J.Number n) <- KM.lookup "invoiceSettledConfirmationThreshold" d -> toBoundedInteger n
+        _ -> Nothing
 
 -- | A payment without a value is read, and only its units cannot be counted.
 data GPayment = GPayment
@@ -428,12 +439,13 @@ paymentMethodsSignal now ref status policy body =
 -- Complete is the old API's status name and never matches, so it has no case here.
 invoiceSignal :: UTCTime -> Text -> Text -> Maybe Text -> [GPaymentMethod] -> Either ProviderError (Maybe PaymentSignal)
 invoiceSignal now ref status policy ms = do
-  (m@GPaymentMethod {gpmRate, gpmPaid, gpmDue, gpmPayments}, cc) <- chooseMethod ref ms
+  (m@GPaymentMethod {gpmRate, gpmPaid, gpmDue, gpmPayments, gpmSettledThreshold}, cc) <- chooseMethod ref ms
   rate <- priced "rate" gpmRate
   paid <- priced "paymentMethodPaid" gpmPaid
   let decimals = unitDecimals cc
       confirming = maybe False (`elem` map speedPolicyName confirmingPolicies) policy
-      received = receivedOf decimals confirming (status == "Settled") rate paid gpmDue gpmPayments
+      shown = cc /= CCXmr || maybe False (>= 1) gpmSettledThreshold
+      received = receivedOf decimals confirming shown (status == "Settled") rate paid gpmDue gpmPayments
   case status of
     "Settled" -> Right (Just (SigSettled received (fromMaybe now (latestSettledAt m))))
     "Processing" -> Right (Just (SigFunded received PaidInFull))
@@ -475,8 +487,8 @@ findMethod what ref methodId body = do
 
 -- | The confirmed crypto shares paymentMethodPaid's basis, whatever it nets out: all of it once the invoice or every payment is Settled,
 -- else the Settled payments' value capped at it. An amount with a non-zero digit past its unit leaves every figure in units out.
-receivedOf :: Int -> Bool -> Bool -> WireNum -> WireNum -> Maybe WireNum -> [GPayment] -> Received
-receivedOf decimals confirming invoiceSettled rate paid due payments =
+receivedOf :: Int -> Bool -> Bool -> Bool -> WireNum -> WireNum -> Maybe WireNum -> [GPayment] -> Received
+receivedOf decimals confirming shown invoiceSettled rate paid due payments =
   Received
     { rcvAmount = toMinorUnits (wnValue paid * wnValue rate),
       rcvCrypto = if wnValue paid > 0 then Just (wnText paid) else Nothing,
@@ -498,6 +510,7 @@ receivedOf decimals confirming invoiceSettled rate paid due payments =
     uncreditable
       | isNothing counted = Just UCUncounted
       | not confirming = Just UCHighSpeed
+      | not shown = Just UCNoConfirmationShown
       | otherwise = Nothing
     toUnits v
       | v < 0 = Nothing

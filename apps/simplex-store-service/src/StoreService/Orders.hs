@@ -221,6 +221,7 @@ lateSupportOf :: Uncreditable -> LateSupport
 lateSupportOf = \case
   UCHighSpeed -> LSHighSpeed
   UCUncounted -> LSUnits
+  UCNoConfirmationShown -> LSNoConfirmation
 
 latePayment :: InvoiceId -> RegistrationId -> IO ()
 latePayment (InvoiceId invText) (RegistrationId rid) =

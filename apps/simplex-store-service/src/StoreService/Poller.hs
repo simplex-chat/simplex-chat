@@ -399,6 +399,7 @@ lateReason :: PollerEnv -> LateAlert -> IO (Text, Maybe LateSupport)
 lateReason env@PollerEnv {peStore, peProviders} LateAlert {laPending, laState = LateCreditState {lsInvoice, lsCoin, lsSupport, lsInvoiceRate}} = case laPending of
   LPUncounted -> pure (uncounted, Nothing)
   _ | lsSupport == Just LSHighSpeed -> pure (highSpeed, Nothing)
+  _ | lsSupport == Just LSNoConfirmation -> pure (noConfirmation, Nothing)
   LPUncredited -> case lsCoin of
     Nothing -> pure (cardWaits, Nothing)
     Just coin
@@ -411,6 +412,7 @@ lateReason env@PollerEnv {peStore, peProviders} LateAlert {laPending, laState = 
   where
     unconfirmed = "refund by hand only a transaction confirmed on chain that BTCPay no longer monitors; one still Processing there waits"
     highSpeed = "the invoice was made under HighSpeed, so its money is never credited by itself; refund by hand only a transaction confirmed on chain"
+    noConfirmation = "the Monero plugin shows no confirmation of this money (the invoice's settled-confirmation threshold is 0 or not given), so it is never credited by itself; refund by hand only a transaction confirmed on chain"
     rateRead = "confirmed, the credit waits on the rate read; do not refund; fix the rate read"
     cardWaits = "confirmed, the credit waits on the poller's credit pass; do not refund; check the service log"
     rateFloor current = "confirmed; the coin's price fell by more than half since the invoice (" <> fromMaybe "?" lsInvoiceRate <> ", " <> current <> "); the owner decides: credit at the current rate, or refund by hand"

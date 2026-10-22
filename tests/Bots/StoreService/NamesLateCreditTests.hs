@@ -75,6 +75,7 @@ namesLateCreditTests = describe "StoreService names: balance life" $ do
     it "keeps the confirmed figure and the credit when the settled sum falls, crediting nothing on the same sum again" testFallingSum
     it "credits an invoice past the read window after a hinted read" testHintPastWindow
     it "credits Stripe's succeeded amount without reading a rate" testStripeCredited
+    it "credits late XMR in piconero when the plugin shows a confirmation, and alerts it to support when it shows none" testXmrLate
   describe "balances with late credits" $ do
     it "keeps a credit made while the balance is held, the held spend settling" testCreditWhileHeld
     it "refuses a covered spend that read the amount before a credit" testSpendBeforeCredit
@@ -506,6 +507,35 @@ testStripeCredited = withLate $ \l@Late {lStore = st} -> do
   creditsOf st "c" `shouldReturn` [(Nothing, Nothing, Nothing, Nothing, 20000)]
   balanceOf st "c" `shouldReturn` Just (20000, 20000, 0)
   rateCalls l `shouldReturn` 0
+
+-- | 0.32095 XMR at the invoice's rate of 168.25, all of it Settled; uncreditable unless the plugin shows a confirmation.
+xmrPaid :: Maybe Uncreditable -> Received
+xmrPaid uncreditable =
+  Received
+    { rcvAmount = CurrencyAmount 5400,
+      rcvCrypto = Just "0.32095000",
+      rcvDue = Nothing,
+      rcvUnits = Just xmrUnits,
+      rcvRate = Just "168.25",
+      rcvConfirmed = maybe (Confirmed {cfCents = CurrencyAmount 5400, cfUnits = Just xmrUnits}) (const Confirmed {cfCents = CurrencyAmount 0, cfUnits = Just 0}) uncreditable,
+      rcvUncreditable = uncreditable
+    }
+  where
+    xmrUnits = 320950000000
+
+testXmrLate :: IO ()
+testXmrLate = withLate $ \l@Late {lStore = st} -> do
+  mapM_ (\r -> closedOrder l r False) ["xmrshown", "xmrnone"]
+  withTransaction st $ \db -> DB.execute_ db "UPDATE sx_badge_service_invoices SET payment_crypto_currency = 'xmr' WHERE invoice_id IN ('inv-xmrshown', 'inv-xmrnone')"
+  setRate l (Right $ rateOf "150" 150)
+  void $ readSignal l "xmrshown" (SigSettled (xmrPaid Nothing) (at 70))
+  creditsOf st "xmrshown" `shouldReturn` [(Just 320950000000, Just "168.25", Just "150", Just "150", 4814)]
+  void $ readSignal l "xmrnone" (SigSettled (xmrPaid $ Just UCNoConfirmationShown) (at 70))
+  balanceOf st "xmrnone" `shouldReturn` Nothing
+  lateWaitOf st "xmrnone" `shouldReturn` Just LWSupport
+  now <- getCurrentTime
+  alertsAt l (Right stubRate) (pastWindow now 60)
+    >>= (`shouldSatisfy` logged "ERROR" "invoice inv-xmrnone of order xmrnone: 320950000000 piconero received, 0 piconero confirmed, 0 piconero credited; the Monero plugin shows no confirmation")
 
 -- balances with late credits
 

@@ -52,8 +52,8 @@ data Confirmed = Confirmed {cfCents :: CurrencyAmount, cfUnits :: Maybe Int64}
   deriving (Eq, Show)
 
 -- | Why money on an invoice is never credited by itself: it was made under a policy that settles at zero confirmations,
--- or its crypto could not be counted in atomic units. Such money confirms nothing.
-data Uncreditable = UCHighSpeed | UCUncounted
+-- its crypto could not be counted in atomic units, or the provider shows no confirmation of it. Such money confirms nothing.
+data Uncreditable = UCHighSpeed | UCUncounted | UCNoConfirmationShown
   deriving (Eq, Show)
 
 -- | A coin's current price in the service's currency, above 0: as the provider wrote it, and as a decimal to compute with.

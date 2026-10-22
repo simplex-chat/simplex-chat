@@ -340,8 +340,8 @@ data LateWait = LWConfirming | LWCrediting | LWSupport
   deriving (Eq, Show)
 
 -- | Why a closed order's money will not be credited by itself: an invoice made under HighSpeed, an amount that could not be counted in units,
--- a current rate below the floor, or unconfirmed money alerted past the read window.
-data LateSupport = LSHighSpeed | LSUnits | LSRateFloor | LSUnconfirmed
+-- a current rate below the floor, unconfirmed money alerted past the read window, or money the provider shows no confirmation of.
+data LateSupport = LSHighSpeed | LSUnits | LSRateFloor | LSUnconfirmed | LSNoConfirmation
   deriving (Eq, Show, Enum, Bounded)
 
 instance TextEncoding LateSupport where
@@ -350,6 +350,7 @@ instance TextEncoding LateSupport where
     LSUnits -> "units"
     LSRateFloor -> "rate_floor"
     LSUnconfirmed -> "unconfirmed"
+    LSNoConfirmation -> "no_confirmation"
   textDecode t = lookup t [(textEncode s, s) | s <- [minBound .. maxBound]]
 
 instance FromField LateSupport where fromField = fromTextField_ textDecode

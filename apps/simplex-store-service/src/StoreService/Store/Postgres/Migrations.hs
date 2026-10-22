@@ -442,7 +442,7 @@ DROP INDEX @idx_name_balances_reserved_by;
 DROP TABLE @name_balances;
 |]
 
--- Why a closed order's late money will not be credited by itself: high_speed, units, rate_floor or unconfirmed. Never cleared.
+-- Why a closed order's late money will not be credited by itself: high_speed, units, rate_floor, unconfirmed or no_confirmation. Never cleared.
 m20261022_name_late_wait :: Text
 m20261022_name_late_wait =
   withPrefix
