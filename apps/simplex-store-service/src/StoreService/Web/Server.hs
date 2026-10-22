@@ -122,7 +122,7 @@ webApp env@WebEnv {weHttp} req respond = case pathInfo req of
   ["webhooks", "stripe"] -> only "POST" req respond $ webhookHandler env PPStripe "POST /webhooks/stripe" req respond
   _ -> fromMaybe (respond notFound) names
   where
-    names = weNames env >>= \n -> namesApp weHttp (namesRoutes n) req respond
+    names = weNames env >>= \n -> namesApp weHttp (namesRoutes (weConfig env) n) req respond
 
 -- | The names site on a names host, the badges site on any other.
 servedSite :: WebEnv -> Request -> Maybe Site

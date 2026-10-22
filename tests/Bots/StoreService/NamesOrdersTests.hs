@@ -7,10 +7,13 @@ module Bots.StoreService.NamesOrdersTests
     Ctx (..),
     Order (..),
     withOrders,
+    withOrdersVia,
     withOrdersCancelling,
     aliceOrder,
     commitmentOf,
+    fieldsOf,
     orderTime,
+    placeOrder,
     placed,
     post,
     settleNow,
@@ -26,6 +29,7 @@ module Bots.StoreService.NamesOrdersTests
     issueCode,
     registered,
     registrationById,
+    registrationsOf,
     field,
     advance,
     refusedWith,
@@ -273,6 +277,8 @@ withSignature sig = KM.insert "signature" (J.String sig)
 
 data Ctx = Ctx
   { cStore :: DBStore,
+    -- | Another store over the same database, as a second process opens one.
+    cOpenStore :: IO DBStore,
     cNode :: FakeEthNode,
     cOrders :: OrdersEnv,
     cWeb :: WebEnv,
@@ -303,7 +309,7 @@ withOrders = withOrdersVia id
 
 -- | With the providers changed as a test needs them.
 withOrdersVia :: (Provider -> Provider) -> (Ctx -> IO a) -> IO a
-withOrdersVia via action = withServiceStore $ \cStore -> withFakeEthNode $ \cNode -> do
+withOrdersVia via action = withServiceStores $ \cOpenStore -> cOpenStore >>= \cStore -> withFakeEthNode $ \cNode -> do
   cRandom <- C.newRandom
   ct <- newContracts TLDSimplex =<< newChainClient cRandom (fakeChainConfig cNode)
   turns <- newTurns
@@ -326,7 +332,7 @@ withOrdersVia via action = withServiceStore $ \cStore -> withFakeEthNode $ \cNod
     let cWeb = built {weOrders = Just cOrders}
     mgr <- newManager defaultManagerSettings
     Warp.testWithApplicationSettings (webSettings (listener cfg)) (pure $ ordersApp cWeb cOrders) $ \port ->
-      action Ctx {cStore, cNode, cOrders, cWeb, cClient = (mgr, "http://127.0.0.1:" <> show port), cStub, cClock, cRandom, cIps}
+      action Ctx {cStore, cOpenStore, cNode, cOrders, cWeb, cClient = (mgr, "http://127.0.0.1:" <> show port), cStub, cClock, cRandom, cIps}
 
 ordersApp :: WebEnv -> OrdersEnv -> Application
 ordersApp web orders req respond = fromMaybe (webApp web req respond) (namesApp (weHttp web) (codeRoutes orders (weProviders web) (weWaiters web)) req respond)

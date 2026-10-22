@@ -54,6 +54,12 @@ namesSignatureTests = describe "StoreService names: signatures" $ do
         "simplex.domains name t2Jk8RmQ4vXw9NcP3yLb6g 0x5bfbbf75311ec002834031d73fa30bfe8bdf675f4a3df72443841490c4b49d02 7 69259500 0x9cf04ddef2eedfb02e6e7ba58f879c0636c584b6acc67ffe9f97a06bfb016ac1 0xb1971beb567c8dc1b2f01f0d823754c6168d8d6830db2221702a7678e1804674 1792574100"
         "0x8bc79aa98fbd53013e8961db27554ecd17139e14ec168b86afbaf2fc910bfc52"
         "0xe3d680bcc62255179d5260beeb920319c86bd919f6b01927bee01509cf6c1fe3121151947fb9e3a310e6652c0c9a9bf7ceb48e8d903774a38a3162d916e8b4591b"
+    it "signs a spend from an order's balance, as the webapp signs it" $
+      testMessage
+        (spendMessage registrationId spendOrder timestamp)
+        "simplex.domains spend t2Jk8RmQ4vXw9NcP3yLb6g 0x5bfbbf75311ec002834031d73fa30bfe8bdf675f4a3df72443841490c4b49d02 7 69259500 0xbb87d2d7aa14251a04cdd68b5d878d0b4c44c6c76486d90a534dab9525105e33 0x51431a705eb4903084cc8dbf3c1b966c9372914511c4623c889d49fdb8047da4 1792574100"
+        "0x72c2f4b7d84839fb97eb78668355a02fc0b18e211f264fca97d19a8f36decde3"
+        "0x8668cb4b72295479b4f9bcc2fd07fabfec2b4b8ae9230f2553536acb93c3e0cf6b2dad928a9a11b003c43ab43edeec117ce01c9214b8e99fe75fd547425e74481b"
   describe "signature format" $ do
     it "refuses a high s, though recovery accepts it" testHighS
     it "refuses v other than 27 or 28" $
@@ -134,6 +140,17 @@ dynamisOrder =
       ofDuration = duration,
       ofCommitment = commitment,
       ofSealed = "q3Zk0Yx7c2VhbGVkLW9yZGVyLWZpeHR1cmU"
+    }
+
+-- the webapp's spend vector (test/flow.test.ts, SPEND): "another" with no links, sealed under a zero IV
+spendOrder :: OrderFields
+spendOrder =
+  OrderFields
+    { ofLabelHash = labelHash "another",
+      ofLength = 7,
+      ofDuration = duration,
+      ofCommitment = hx "0xbb87d2d7aa14251a04cdd68b5d878d0b4c44c6c76486d90a534dab9525105e33",
+      ofSealed = "AAAAAAAAAAAAAAAACWgxqMk-UKfpra_bgbzR57AIDvSNmCR_G7IYbN7DX70sL2FVRHB1VfC0wdF-tc3ajHM3o8koM159Ja8hyg"
     }
 
 commitment :: ByteString

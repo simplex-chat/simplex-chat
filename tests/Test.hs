@@ -26,6 +26,7 @@ import Bots.StoreService.NamesRevealTests
 import Bots.StoreService.NamesSearchTests
 import Bots.StoreService.NamesSenderTests
 import Bots.StoreService.NamesSignatureTests
+import Bots.StoreService.NamesSpendTests
 import Bots.StoreService.NamesStoreTests
 import Bots.StoreService.NamesWiringTests
 import Bots.StoreService.NamesWorkerTests
@@ -122,6 +123,7 @@ main = do
       namesSearchTests
       namesSenderTests
       namesSignatureTests
+      namesSpendTests
       namesStoreTests
       namesWiringTests
       namesWorkerTests
