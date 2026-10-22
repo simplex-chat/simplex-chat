@@ -277,18 +277,18 @@ chain_rules() {
 }
 
 # A jump must be the first rule of its parent, or a rule above it could accept what the chain refuses.
-# Its other copies are deleted by number, counted after the insert.
+# Its copies are deleted by their text in the same commit, since another tool may insert rules
+# between this read and the restore and shift every number.
 jump_restore() {
-  local tool=$1 parent match jump jumps rules position
-  local -a copies
+  local tool=$1 parent match jump jumps rules copies
   jumps=$(jumps_for "$tool")
   while read -r parent match; do
     jump="-A $parent $match -j $CHAIN"
     rules=$(chain_rules "$tool" "$parent")
     [[ ${rules%%$'\n'*} == "$jump" ]] && continue
-    mapfile -t copies < <(grep -nxF -- "$jump" <<<"$rules" | cut -d: -f1 | sort -rn)
+    copies=$(grep -cxF -- "$jump" <<<"$rules" || true)
+    for ((; copies > 0; copies--)); do echo "-D $parent $match -j $CHAIN"; done
     echo "-I $parent 1 $match -j $CHAIN"
-    for position in "${copies[@]}"; do echo "-D $parent $((position + 1))"; done
   done <<<"$jumps"
 }
 
