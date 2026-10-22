@@ -335,10 +335,10 @@ An Android foreground `Service` that keeps the call alive when the app is in the
 
 *See:* `android/src/main/java/chat/simplex/app/CallService.kt`
 
-### Desktop: Browser-based WebRTC via NanoWSD
-On Desktop, calls are implemented by opening the system browser to a locally-hosted WebSocket server. A `NanoHTTPD`/`NanoWSD` server runs on `localhost:50395`, serving the WebRTC call page and communicating with the Kotlin app via WebSocket messages. Commands are sent as JSON-serialized `WVAPICall` objects; responses are parsed as `WVAPIMessage` objects.
+### Desktop: Native WebRTC via webrtc-java
+On Desktop, calls run in-process in `NativeCallEngine`, built on webrtc-java (native libwebrtc). It consumes the same `WCallCommand` commands and reports the same `WCallResponse` responses as the Android WebView, so the shared state machine and peers on other platforms are unchanged.
 
-*See:* `common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt`
+*See:* `common/src/desktopMain/kotlin/chat/simplex/common/views/call/NativeCallEngine.kt`
 
 ### ICE Servers
 STUN/TURN servers used for WebRTC NAT traversal. Configurable via `AppPreferences.webrtcIceServers`. The relay policy (`AppPreferences.webrtcPolicyRelay`) controls whether calls must use TURN relays (for IP privacy) or can attempt direct connections.

@@ -12,7 +12,7 @@
 
 ## Executive Summary
 
-WebRTC calling in SimpleX Chat operates over SMP (SimpleX Messaging Protocol) for signaling, with platform-specific WebRTC media implementations. Android uses a WebView-based approach with a dedicated `CallActivity` and foreground `CallService`, while Desktop opens the system browser and communicates via a NanoWSD WebSocket server on localhost. Both platforms share a common `CallManager` for call lifecycle and a `CallState` enum for state tracking. Call commands and responses are serialized as JSON and exchanged between the native layer and the WebRTC JavaScript layer.
+WebRTC calling in SimpleX Chat operates over SMP (SimpleX Messaging Protocol) for signaling, with platform-specific WebRTC media implementations. Android uses a WebView-based approach with a dedicated `CallActivity` and foreground `CallService`, while Desktop runs native WebRTC in-process through webrtc-java. Both platforms share a common `CallManager` for call lifecycle and a `CallState` enum for state tracking. Both use the same `WCallCommand`/`WCallResponse` protocol: Android exchanges it as JSON with the WebRTC JavaScript layer, Desktop passes it to `NativeCallEngine`.
 
 ---
 
@@ -21,7 +21,7 @@ WebRTC calling in SimpleX Chat operates over SMP (SimpleX Messaging Protocol) fo
 Call signaling uses the same SMP protocol on all platforms -- call invitations, offers, answers, ICE candidates, and status updates flow through the chat backend via API commands. The WebRTC media plane, however, is implemented differently per platform:
 
 - **Android**: WebView loads `call.html` from bundled assets; a `@JavascriptInterface` bridge (`WebRTCInterface`) forwards JSON messages between Kotlin and JavaScript.
-- **Desktop**: The system browser opens `http://localhost:50395/simplex/call/`; a NanoWSD HTTP+WebSocket server serves `call.html` from classpath resources and relays JSON commands/responses over WebSocket.
+- **Desktop**: `NativeCallEngine` handles the same commands with webrtc-java (native libwebrtc), interoperating with `call.ts` and iOS peers: same transceiver layout, VP8, frame encryption format and SDP/ICE encoding.
 
 Both platforms share the [`CallManager`](../../common/src/commonMain/kotlin/chat/simplex/common/views/call/CallManager.kt) class (119 lines), which orchestrates incoming call acceptance, call ending, and notification management.
 
@@ -116,19 +116,19 @@ The `actual` platform implementation of `ActiveCallView()` and supporting compos
 
 ## 4. Desktop Implementation
 
-### 4.1 CallView.desktop.kt (308 lines)
+### 4.1 CallView.desktop.kt and NativeCallEngine.kt
 
-[`CallView.desktop.kt`](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt)
+[`CallView.desktop.kt`](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt) shows the call in the main window; [`NativeCallEngine.kt`](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/NativeCallEngine.kt) runs WebRTC in-process:
 
-Desktop calls run WebRTC in the system browser, not an embedded WebView:
-
-- **NanoWSD server** ([line 215](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt#L215)): `startServer()` creates a `NanoWSD` instance bound to `localhost:50395`. If that port is already in use it falls back to an OS-assigned free port (`port 0`); `WebRTCController` reads `server.listeningPort` for the browser URL. The server serves `call.html` from JAR resources at `/assets/www/desktop/call.html` for the path `/simplex/call/` when the request includes a valid `token` query parameter. All other paths serve resources from `/assets/www/`.
-- **Call token** ([line 271](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt#L271)): `newCallServerToken()` returns 32 random bytes, base64url-encoded. `hasValidCallServerToken()` ([line 277](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt#L277)) checks the `token` query parameter.
-- **WebSocket upgrade** ([line 238](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt#L238)): Each server instance accepts one WebSocket upgrade. The upgrade request must include `Origin: http://localhost:<listeningPort>` and a valid token. Other upgrade requests receive `401 Unauthorized`.
-- **WebSocket communication** ([line 283](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt#L283)): `MyWebSocket` handles WebSocket frames from the browser. `onMessage` deserializes JSON into `WVAPIMessage` and forwards to the response handler. `onClose` triggers `WCallResponse.End`.
-- **WebRTCController** ([line 157](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt#L157)): Generates the call token, starts the server, then opens `http://localhost:<listeningPort>/simplex/call/?token=<token>` (normally `50395`) via `LocalUriHandler`. Processes `WCallCommand` queue by sending JSON over the WebSocket. On dispose, sends `WCallCommand.End` and stops the server.
-- **SendStateUpdates** ([line 141](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt#L141)): Sends `WCallCommand.Description` with call state and encryption info text to the browser for display.
-- **ActiveCallView** ([line 32](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt#L32)): Handles `WCallResponse` messages identically to Android (same state machine), plus a `WCallCommand.Permission` message on `Capabilities` error for browser permission denial guidance.
+- **ActiveCallView** ([line 56](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt#L56)): Handles `WCallResponse` messages with the same state machine as Android. A `Capabilities` error (no microphone) shows an alert and ends the call.
+- **NativeCallController** ([line 169](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt#L169)): Creates the engine for the call, drains the `chatModel.callCommand` queue into it, and closes it on dispose.
+- **ActiveCallLayout** ([line 200](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt#L200)): Full-window call view over the app: remote screen or camera video, local camera preview, state and encryption info, and controls for mic, peer audio, camera, screen share (screen or window picker), camera picker and hang up. The back button collapses the view to the floating call avatar, which expands it again.
+- **NativeCallEngine** ([line 29](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/NativeCallEngine.kt#L29)): Processes `WCallCommand` on a single thread and reports `WCallResponse` with `call.ts` semantics: four transceivers (mic, camera, screen audio, screen video), VP8 preferred, ICE candidates batched as in `call.ts`, connection state and peer media changes reported.
+- **Audio sending** ([line 305](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/NativeCallEngine.kt#L305)): Device-captured audio reaches every audio sender, so the mic is muted and the screen audio sender silenced by deactivating the sender's encoding, which stops RTP.
+- **Peer media** ([line 545](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/NativeCallEngine.kt#L545)): A received source is reported muted after 3 seconds without received bytes, as in `call.ts`.
+- **Reconnection** ([line 442](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/NativeCallEngine.kt#L442)): As in `call.ts`, a connected call that loses its connection is reported as `"reconnecting"`. The party that sent the initial offer restarts ICE every 10 seconds and sends the restart offer in `WCallResponse.Ice` with `session`; the other party answers it the same way. The call ends as `"disconnected"` if it does not reconnect in 30 seconds.
+- **Frame encryption** ([`CallFrameCipher.kt`](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallFrameCipher.kt)): AES-256-GCM in the `call.ts` frame layout, applied as encoded-frame transforms on senders and receivers.
+- **Audio devices**: Calls use the system default microphone and speaker. webrtc-java selects audio devices by GUID, which the Linux and macOS backends of libwebrtc do not report.
 
 ---
 
@@ -171,7 +171,8 @@ An in-app notification banner shown when a call invitation arrives while the app
 |---|---|---|---|
 | `CallView.kt` | [`common/src/commonMain/.../views/call/CallView.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/views/call/CallView.kt) | 28 | `expect fun ActiveCallView()`, delivery receipt waiting |
 | `CallView.android.kt` | [`common/src/androidMain/.../views/call/CallView.android.kt`](../../common/src/androidMain/kotlin/chat/simplex/common/views/call/CallView.android.kt) | 891 | Android WebView WebRTC, overlay, permissions |
-| `CallView.desktop.kt` | [`common/src/desktopMain/.../views/call/CallView.desktop.kt`](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt) | 308 | Desktop browser WebRTC via NanoWSD |
+| `CallView.desktop.kt` | [`common/src/desktopMain/.../views/call/CallView.desktop.kt`](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt) | 400 | Desktop call view and state machine |
+| `NativeCallEngine.kt` | [`common/src/desktopMain/.../views/call/NativeCallEngine.kt`](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/NativeCallEngine.kt) | 729 | Desktop native WebRTC engine (webrtc-java) |
 | `CallActivity.kt` | [`android/src/main/java/.../views/call/CallActivity.kt`](../../android/src/main/java/chat/simplex/app/views/call/CallActivity.kt) | 472 | Android call Activity, PiP, lock screen |
 | `CallService.kt` | [`android/src/main/java/.../CallService.kt`](../../android/src/main/java/chat/simplex/app/CallService.kt) | 207 | Android foreground service for calls |
 | `CallManager.kt` | [`common/src/commonMain/.../views/call/CallManager.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/views/call/CallManager.kt) | 119 | Call lifecycle management |

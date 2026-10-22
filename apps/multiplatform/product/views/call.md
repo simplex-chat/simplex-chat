@@ -4,7 +4,7 @@
 
 ## Purpose
 
-Make and receive end-to-end encrypted audio and video calls over WebRTC. The implementation differs significantly between Android (WebView-based with `CallActivity` and PiP support) and Desktop (browser-based WebRTC via NanoHTTPD server on localhost).
+Make and receive end-to-end encrypted audio and video calls over WebRTC. The implementation differs significantly between Android (WebView-based with `CallActivity` and PiP support) and Desktop (native WebRTC in-process via webrtc-java, shown in the main window).
 
 ## Route / Navigation
 
@@ -18,11 +18,11 @@ Make and receive end-to-end encrypted audio and video calls over WebRTC. The imp
 
 | Aspect | Android | Desktop |
 |---|---|---|
-| WebRTC host | `WebView` with `WebViewAssetLoader` serving local assets | NanoHTTPD server on `localhost:50395` opened in system browser |
-| Call activity | `CallActivity` (separate Android Activity) with lifecycle management | Inline composable with `WebRTCController` |
+| WebRTC host | `WebView` with `WebViewAssetLoader` serving local assets | `NativeCallEngine` (webrtc-java, native libwebrtc) |
+| Call activity | `CallActivity` (separate Android Activity) with lifecycle management | Full-window composable over the app, collapsible to the floating call avatar |
 | PiP support | Native Android PiP via `CallActivity` | Not supported |
-| Audio management | `CallAudioDeviceManager` with Android `AudioManager`, proximity wake lock | System browser audio routing |
-| WebSocket | N/A | `NanoWSD` WebSocket server for bidirectional WebRTC signaling |
+| Audio management | `CallAudioDeviceManager` with Android `AudioManager`, proximity wake lock | System default microphone and speaker |
+| Screen sharing | Not supported | Screen or window picker |
 
 ## Page Sections
 
@@ -58,11 +58,10 @@ Sound: `SoundPlayer.start()` plays ringtone while banner is visible (unless call
 
 | Element | Description |
 |---|---|
-| NanoHTTPD server | HTTP server on `localhost:50395` serving `call.html` and assets |
-| NanoWSD WebSocket | WebSocket endpoint for bidirectional signaling between Kotlin and browser JS |
-| `WebRTCController` | Processes `WCallCommand`/`WCallResponse` messages via `chatModel.callCommand` channel |
-| Browser launch | `LocalUriHandler.openUri("http://localhost:50395/call.html")` opens system browser |
-| Connection list | `connections: ArrayList<WebSocket>` tracks active WebSocket connections |
+| `NativeCallController` | Creates `NativeCallEngine` for the call and passes it commands from the `chatModel.callCommand` queue |
+| `NativeCallEngine` | Native WebRTC with `call.ts` semantics: transceivers, VP8, frame encryption, ICE batching, peer media detection |
+| `ActiveCallLayout` | Remote video or avatar, local camera preview, call state and encryption info |
+| Controls | Mic, peer audio, camera, screen share picker, camera picker, hang up; back button collapses the view |
 
 ### WebRTC Signaling Flow
 

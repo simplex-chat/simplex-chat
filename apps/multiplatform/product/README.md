@@ -118,7 +118,7 @@ End-to-end encrypted audio and video communication.
 | Incoming call view | Dedicated UI for incoming call notifications | `common/src/commonMain/kotlin/chat/simplex/common/views/call/IncomingCallAlertView.kt` |
 | Android CallService | Foreground service for active calls on Android | `android/src/main/java/chat/simplex/app/CallService.kt` |
 | Android CallActivity | Dedicated Activity for call UI on Android | `android/src/main/java/chat/simplex/app/views/call/CallActivity.kt` |
-| Desktop inline calls | Browser-based WebRTC rendered inline in desktop window | `common/src/commonMain/kotlin/chat/simplex/common/views/call/CallView.kt` |
+| Desktop inline calls | Native WebRTC rendered inline in desktop window | `common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt` |
 
 ### 5. Privacy & Security
 

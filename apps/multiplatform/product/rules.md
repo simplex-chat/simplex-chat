@@ -242,9 +242,9 @@ This document specifies invariants enforced by the Android and Desktop (Kotlin/C
 - Lock-screen behavior controlled by `AppPreferences.callOnLockScreen` (DISABLE / SHOW / ACCEPT).
 
 **Desktop enforcement:**
-- Calls run in the system browser via the NanoWSD WebSocket server on `localhost:50395`.
-- The `WebRTCController` composable manages the WebSocket lifecycle.
-- On dispose, `WCallCommand.End` is sent and the server is stopped.
+- Calls run in-process in `NativeCallEngine` (webrtc-java), one engine per call.
+- `NativeCallController` creates the engine and passes it the `callCommand` queue.
+- On dispose, the engine closes the peer connection and releases devices.
 
 **Location:**
 - `common/src/commonMain/kotlin/chat/simplex/common/views/call/CallManager.kt`
