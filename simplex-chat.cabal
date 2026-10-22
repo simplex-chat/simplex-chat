@@ -767,6 +767,7 @@ test-suite simplex-chat-test
       Bots.StoreService.GroupIntegrationTests
       Bots.StoreService.GroupTests
       Bots.StoreService.NameRegistrationTests
+      Bots.StoreService.NamesBalancesTests
       Bots.StoreService.NamesChainTests
       Bots.StoreService.NamesCodesTests
       Bots.StoreService.NamesContractsTests

@@ -40,7 +40,7 @@ import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Signatures (OrderFields (..))
 import StoreService.Names.Store (NameRegistration (..), NewRegistration (..), OrderTerms (..), PaidOrder (..), PrepaidCode (..), RegistrationPayment (..), createPaidRegistration, getRegistration, newRegistrationId, orderHash, textMethod)
 import StoreService.Names.Turns (withLabelTurn)
-import StoreService.Names.View (registrationAt, registrationView)
+import StoreService.Names.View (balanceJSON, registrationAt, registrationView)
 import StoreService.Orders (publishRegistration)
 import StoreService.Providers (OrderDraft (..), Provider (..), ProviderError (..), ProviderInvoice (..), expiresItself)
 import StoreService.Store.Invoices (InvoiceRow (..), NewNameInvoice (..), getInvoice, insertNameInvoice, newInvoiceId, truncateToSecond)
@@ -96,6 +96,7 @@ nameInvoiceHandler env@OrdersEnv {oeStore, oeTurns, oeNow} cfg providers waiters
     answerResend now r@NameRegistration {nrPayment} = case nrPayment of
       RPInvoice _ invId -> getInvoice oeStore invId >>= maybe (refuse OROrderExists) (fmap answerNow . viewOf (registrationAt now r) . invoiceAt now)
       RPCode _ -> refuse OROrderExists
+      RPBalance -> refuse OROrderExists
     viewOf r row = jsonResponse status200 <$> nameInvoiceView env (confirmationsFor cfg) row r
     newOrder order@InvoiceOrder {ioRequest = OrderRequest {orFields = OrderFields {ofLabelHash, ofLength, ofDuration}, orTimestamp}, ioMethod, ioPrice} = do
       now <- oeNow
@@ -117,6 +118,7 @@ nameInvoiceHandler env@OrdersEnv {oeStore, oeTurns, oeNow} cfg providers waiters
       invId <- newInvoiceId
       now <- truncateToSecond <$> oeNow
       let amount = CurrencyAmount ioPrice
+          price = fromIntegral ioPrice
       pCreateInvoice provider ioMethod OrderDraft {odAmount = amount, odCurrency = catalogCurrency} >>= \case
         Left (ProviderError e) -> do
           logError ("POST /api/invoice (name) failed: provider refused to create an invoice: " <> e)
@@ -125,8 +127,8 @@ nameInvoiceHandler env@OrdersEnv {oeStore, oeTurns, oeNow} cfg providers waiters
           rid <- newRegistrationId
           let invoice = NewNameInvoice {nniInvoiceId = invId, nniProvider = pProvider provider, nniAmount = amount, nniCurrency = catalogCurrency, nniDestination = piDestination, nniExpiresAt = addUTCTime (invoiceWindow cfg ioMethod) now, nniCreatedAt = now}
               registration = NewRegistration {nrgId = rid, nrgOwner = orOwner, nrgOrder = orFields, nrgYears = nYears $ oeConfig env}
-              paid = PaidOrder {poMethod = ioMethod, poPrice = fromIntegral ioPrice, poInvoiceId = invId, poProviderRef = piProviderRef}
-          placeOrder env req (\db at -> insertNameInvoice db invoice >> first (const OROrderExists) <$> createPaidRegistration db registration paid at)
+              paid = PaidOrder {poMethod = ioMethod, poPrice = price, poInvoiceId = invId, poProviderRef = piProviderRef}
+          placeOrder env req [] (\db at -> insertNameInvoice db invoice >> first (const OROrderExists) <$> createPaidRegistration db registration (OTInvoice ioMethod price) paid Nothing at)
             `E.catch` strandedBy provider piProviderRef
             >>= \case
             Left refusal -> do
@@ -206,6 +208,7 @@ announceClosed OrdersEnv {oeStore, oePhases} providers waiters closed = do
     paidInvoice = \case
       RPInvoice _ invId -> Just invId
       RPCode _ -> Nothing
+      RPBalance -> Nothing
 
 cancelAtProvider :: Provider -> Text -> IO ()
 cancelAtProvider Provider {pCancelInvoice} ref =
@@ -222,8 +225,9 @@ firstRefusal = \case
   check : rest -> check >>= either (pure . Just) (const $ firstRefusal rest)
 
 nameInvoiceView :: OrdersEnv -> Maybe Int -> InvoiceRow -> NameRegistration -> IO J.Value
-nameInvoiceView OrdersEnv {oeStore, oeConfig, oeContracts} confirmations row@InvoiceRow {irInvoiceId = InvoiceId invId} r = do
-  view <- registrationView oeStore oeConfig oeContracts r
+nameInvoiceView OrdersEnv {oeStore, oeConfig, oeContracts, oeNow} confirmations row@InvoiceRow {irInvoiceId = InvoiceId invId} r = do
+  now <- oeNow
+  view <- registrationView oeStore oeConfig oeContracts now r
   pure $ J.object $ ["invoiceId" .= invId, "kind" .= ("name" :: Text), "registration" .= view] <> invoicePairs confirmations row
 
 orderRefusalResponse :: OrderRefusal -> Response
@@ -236,3 +240,4 @@ orderRefusalResponse = \case
   ORCatalogChanged price -> jsonResponse status409 $ J.object ["error" .= ("catalog_changed" :: Text), "price" .= price]
   ORCode refusal -> codeRefusalResponse refusal
   ORPriceTooHigh price -> jsonResponse status409 $ J.object ["error" .= ("price_too_high" :: Text), "price" .= price]
+  ORBalanceChanged balance -> jsonResponse status409 $ J.object ["error" .= ("balance_changed" :: Text), "balance" .= (balanceJSON <$> balance)]

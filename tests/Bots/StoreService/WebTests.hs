@@ -8,6 +8,7 @@
 module Bots.StoreService.WebTests
   ( badgeWebTests,
     withServiceStore,
+    withServiceStores,
     columnsOf,
     runMigrations,
     digestFixture,
@@ -67,7 +68,7 @@ import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (toLower)
 import Data.Either (isLeft)
-import Data.IORef (IORef, atomicModifyIORef', newIORef, readIORef)
+import Data.IORef (IORef, atomicModifyIORef', modifyIORef', newIORef, readIORef)
 import Data.Int (Int64)
 import Data.List (isInfixOf, sort, sortOn)
 import qualified Data.Map.Strict as Map
@@ -122,32 +123,37 @@ import Simplex.Messaging.Agent.Store.DB (TrackQueries (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
 #endif
 
-#if defined(dbPostgres)
 withServiceStore :: (DBStore -> IO a) -> IO a
-withServiceStore action = do
+withServiceStore action = withServiceStores (>>= action)
+
+-- | Each store the action opens is a new one over the same test database, as a restarted service opens; all are closed at the end.
+withServiceStores :: (IO DBStore -> IO a) -> IO a
+withServiceStores action = withServiceDBOpts $ \opts -> do
+  opened <- newIORef []
+  let open = do
+        Right st <- createDBStore opts storeServiceSchemaMigrations (MigrationConfig MCError Nothing)
+        st <$ modifyIORef' opened (st :)
+  action open `E.finally` (readIORef opened >>= mapM_ closeDBStore)
+
+withServiceDBOpts :: (DBOpts -> IO a) -> IO a
+#if defined(dbPostgres)
+withServiceDBOpts action = do
   n <- atomicModifyIORef' serviceSchemaCounter (\i -> (i + 1, i))
-  Right st <- createDBStore (serviceDBOpts n) storeServiceSchemaMigrations (MigrationConfig MCError Nothing)
-  action st `E.finally` closeDBStore st
-  where
-    serviceDBOpts :: Int -> DBOpts
-    serviceDBOpts n =
-      DBOpts
-        { connstr = BC.pack testDBConnstr,
-          schema = "sx_badge_service_web_test_" <> BC.pack (show n),
-          poolSize = 4,
-          createSchema = True
-        }
+  action
+    DBOpts
+      { connstr = BC.pack testDBConnstr,
+        schema = "sx_badge_service_web_test_" <> BC.pack (show n),
+        poolSize = 4,
+        createSchema = True
+      }
 
 serviceSchemaCounter :: IORef Int
 serviceSchemaCounter = unsafePerformIO $ newIORef 0
 {-# NOINLINE serviceSchemaCounter #-}
 #else
-withServiceStore :: (DBStore -> IO a) -> IO a
-withServiceStore action = do
+withServiceDBOpts action = do
   createDirectoryIfMissing True "tests/tmp"
-  withTempDirectory "tests/tmp" "badge-web" $ \dir -> do
-    Right st <- createDBStore (DBOpts (dir </> "badge_service_test.db") [] "" False True TQOff) storeServiceSchemaMigrations (MigrationConfig MCError Nothing)
-    action st `E.finally` closeDBStore st
+  withTempDirectory "tests/tmp" "badge-web" $ \dir -> action (DBOpts (dir </> "badge_service_test.db") [] "" False True TQOff)
 #endif
 
 columnsOf :: DBStore -> Text -> IO [Text]

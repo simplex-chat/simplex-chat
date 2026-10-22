@@ -33,7 +33,7 @@ where
 
 import StoreService.Config (PollConfig (..))
 import StoreService.Names.Phases (Phases, RegistrationId (..))
-import StoreService.Names.Store (deleteUnpaidRegistration, unpaidCleanupCandidates)
+import StoreService.Names.Store (CleanupKept (..), deleteUnpaidRegistration, unpaidCleanupCandidates)
 import StoreService.Orders (decide, expireOverdue, settleOrder)
 import StoreService.Providers (ListPass (..), PaymentSignal (..), Provider (..), ProviderError (..), Received (..), expiresItself, settleWindow)
 import StoreService.Store.Invoices (InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), getInvoice, getInvoiceByProviderRef, overdueInvoices, providerText, unpaidRefs)
@@ -296,9 +296,10 @@ cleanupUnpaid env@PollerEnv {peStore, peCleanupLeft} now = do
               Left (ProviderError e) -> keep ("reading invoice " <> invText <> " failed: " <> e)
               Right signal_ -> do
                 mapM_ (\signal -> settleMoved env irProvider now (irProviderRef, signal)) signal_
-                deleted <- withTransaction peStore (`deleteUnpaidRegistration` rid)
-                unless deleted $ logError ("names cleanup: unpaid registration " <> ridText <> " is kept because invoice " <> invText <> " received a payment; refund it")
-                pure deleted
+                withTransaction peStore (`deleteUnpaidRegistration` rid) >>= \case
+                  Right () -> pure True
+                  Left CKPaid -> False <$ logError ("names cleanup: unpaid registration " <> ridText <> " is kept because invoice " <> invText <> " received a payment; refund it")
+                  Left (CKHolder (RegistrationId source)) -> False <$ logError ("names cleanup: unpaid registration " <> ridText <> " is kept because it still holds the balance of registration " <> source)
       where
         keep why = False <$ logWarn ("names cleanup: unpaid registration " <> ridText <> " is kept until the next run, " <> why)
 
