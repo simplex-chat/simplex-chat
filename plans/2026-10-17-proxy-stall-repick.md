@@ -18,7 +18,7 @@ In simplexmq, the agent chooses one proxy for each destination relay and keeps i
 simplexmq: forget the chosen proxy when it keeps failing, so the next attempt chooses again. Details, timing and trade-offs: simplexmq `plans/2026-10-15-proxy-repick-on-failure.md` (simplexmq PR linked in this PR).
 
 - Case 1: at once. Without a live connection the proxy normally has not received the destination, so choosing again adds no proxy that learns it.
-- Case 2: when it keeps failing for 30 s. The first failure starts a failure streak; a forward that reaches the relay clears it; a failure at least 30 s after the start of the streak forgets the proxy. A single error, or a burst of errors (e.g. when the relay restarts), keeps the proxy.
+- Case 2: when it keeps failing for 30 s. The first failure starts a failure streak; a forward that reaches the relay clears it; a failure at least 30 s after the start of the streak forgets the proxy. A single failed forward, or a burst of them from requests in flight when the relay restarts, keeps the proxy. As before, a failed PRXY (the proxy can't create a session to the relay, e.g. while the relay is down) forgets the proxy at once.
 
 This repository only bumps simplexmq to that commit (`cabal.project`, `scripts/nix/sha256map.nix`). No app code changes; the app's network settings are unchanged.
 
