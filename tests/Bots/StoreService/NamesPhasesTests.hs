@@ -44,13 +44,13 @@ namesPhasesTests :: Spec
 namesPhasesTests = describe "StoreService names: phases" $ do
   describe "changes" $ do
     it "wakes a held invoice poll and a held registration poll on each change: phase, label set and cleared, reveal times, error" testEachChangeWakes
-    it "holds a paid name invoice on its registration's version alone" testPaidHoldsOnVersion
+    it "holds a paid name invoice on its registration's version alone, and answers at once without a valid version" testPaidHoldsOnVersion
     it "answers at once an invoice paid after its order closed" testLatePaidAnswersAtOnce
-    it "wakes an invoice poll held on its status and version by a version change" testOpenWakesOnVersion
+    it "wakes an open invoice poll by a version change, and holds it on its status without a valid version" testOpenWakesOnVersion
   describe "time" $ do
     it "wakes an unpaid invoice held on its status at its expiry, reading it expired" testExpiryWakes
     it "reads a funded open invoice past its expiry as open, and holds it" testFundedStaysOpen
-    it "reads a committed registration with no reveal past revealBefore as failed, waking a held poll" testLapseReadsFailed
+    it "reads a committed registration with no reveal past revealBefore as failed, waking held registration and invoice polls" testLapseReadsFailed
   describe "registration poll" $ do
     it "answers at once without seenVersion, with another version, or with one that is not a number" testAnswersAtOnce
     it "answers unchanged after the hold" testHoldTimesOut
@@ -127,8 +127,12 @@ registrationPath (RegistrationId t) = "/api/registration/" <> T.unpack t
 
 -- | The query the page sends to follow an invoice, as it last saw it.
 following :: InvoiceStatus -> Int64 -> Text -> Bool -> String
-following status version paid full =
-  "?wait=" <> statusText <> "&seenVersion=" <> show version <> "&seenPaid=" <> T.unpack paid <> "&seenFull=" <> (if full then "1" else "0")
+following status version = followingAs status (Just $ show version)
+
+-- | With seenVersion as given, a number or not, or left out.
+followingAs :: InvoiceStatus -> Maybe String -> Text -> Bool -> String
+followingAs status version paid full =
+  "?wait=" <> statusText <> maybe "" ("&seenVersion=" <>) version <> "&seenPaid=" <> T.unpack paid <> "&seenFull=" <> (if full then "1" else "0")
   where
     statusText = case status of
       ISOpen -> "open"
@@ -191,7 +195,8 @@ testPaidHoldsOnVersion = bounded "paid holds on version" $ withPolls holdMicros 
   settleNow ctx inv settled `shouldReturn` Right ISPaid
   NameRegistration {nrId, nrVersion} <- invoiceRegistration ctx inv
   -- without a version there is nothing a paid invoice could wait for
-  (fst <$> answeredAtOnce ctx (invoicePath inv <> "?wait=paid&seenPaid=" <> T.unpack settledPaid <> "&seenFull=1")) `shouldReturn` 200
+  forM_ [Nothing, Just "two"] $ \version ->
+    (fst <$> answeredAtOnce ctx (invoicePath inv <> followingAs ISPaid version settledPaid True)) `shouldReturn` 200
   poll <- held ctx (0, 1) $ invoicePath inv <> following ISPaid nrVersion settledPaid True
   atomically $ publishPayment (weWaiters cWeb) inv
   threadDelay parkDelay
@@ -221,6 +226,11 @@ testOpenWakesOnVersion = bounded "open wakes on version" $ withPolls holdMicros 
   v' <- change ctx nrId $ \r -> r {nrError = Just "Checking the payment"}
   (_, o) <- woken "open invoice poll" poll
   (key "status" o, key "version" (registrationOf o)) `shouldBe` (Just "open", Just (J.toJSON v'))
+  -- a seenVersion that is no version leaves the hold on the status and payment alone
+  byStatus <- held ctx (1, 0) $ invoicePath inv <> followingAs ISOpen (Just "two") "" False
+  settleNow ctx inv (SigFunded (rcv 5000 (Just "0.00078")) PaidInPart) `shouldReturn` Right ISOpen
+  (_, paidInPart) <- woken "open invoice poll without a version" byStatus
+  (key "status" paidInPart, key "cryptoAmountPaid" paidInPart) `shouldBe` (Just "open", Just "0.00078")
 
 -- | The stub's crypto invoice expires 45 minutes after the order; the clock is set just short of it.
 testExpiryWakes :: IO ()
@@ -229,7 +239,7 @@ testExpiryWakes = bounded "expiry wakes" $ withPolls holdMicros $ \Polls {pCtx =
   Just InvoiceRow {irExpiresAt} <- getInvoice (cStore ctx) inv
   NameRegistration {nrVersion} <- invoiceRegistration ctx inv
   pSetNow $ addUTCTime (negate shortOfMoment) irExpiresAt
-  poll <- held ctx (1, 1) $ invoicePath inv <> following ISOpen nrVersion "" False
+  poll <- held ctx (1, 0) $ invoicePath inv <> followingAs ISOpen Nothing "" False
   (status, o) <- woken "unpaid invoice poll" poll
   (status, key "status" o, key "version" (registrationOf o)) `shouldBe` (200, Just "expired", Just (J.toJSON nrVersion))
   -- read so, not written: the sweep or the next order closes it
@@ -260,11 +270,12 @@ testLapseReadsFailed = bounded "lapse" $ withPolls holdMicros $ \Polls {pCtx = c
   v <- change ctx nrId $ \r -> r {nrPhase = PCommitted, nrRevealAfter = Just (fromInteger $ revealBefore - 3600), nrRevealBefore = Just (fromInteger revealBefore)}
   (_, r) <- get ctx (registrationPath nrId)
   key "phase" r `shouldBe` Just "committed"
+  invoicePoll <- held ctx (0, 1) $ invoicePath inv <> following ISPaid v settledPaid True
   poll <- held ctx (0, 1) $ registrationPath nrId <> seenVersion v
   (status, lapsed) <- woken "registration poll at the lapse" poll
   (status, key "phase" lapsed, key "error" lapsed, key "version" lapsed) `shouldBe` (200, Just "failed", Just "The name was not signed in time", Just (J.toJSON v))
-  (_, o) <- get ctx (invoicePath inv)
-  (key "phase" (registrationOf o), key "error" (registrationOf o)) `shouldBe` (Just "failed", Just "The name was not signed in time")
+  (_, o) <- woken "invoice poll at the lapse" invoicePoll
+  (key "status" o, key "phase" (registrationOf o), key "error" (registrationOf o)) `shouldBe` (Just "paid", Just "failed", Just "The name was not signed in time")
   (nrPhase <$> invoiceRegistration ctx inv) `shouldReturn` PCommitted
   -- one with a reveal set stays committed past revealBefore
   revealed <- change ctx nrId $ \r' -> r' {nrReveal = Just reveal}
