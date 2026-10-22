@@ -20,7 +20,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/simplex-chat/simplex-chat.git",
-    "directory": "/packages/simplex-chat-client/types/typescript"
+    "directory": "packages/simplex-chat-client/types/typescript"
   },
   "keywords": [
     "simplex",
