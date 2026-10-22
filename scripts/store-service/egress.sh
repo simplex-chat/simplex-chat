@@ -7,7 +7,6 @@ shopt -s inherit_errexit
 
 CHAIN=STORE_SERVICE_EGRESS
 DEFAULT_DB_CONN=postgresql://simplex@127.0.0.1:5432/badge_service
-DEFAULT_UID=1000
 DNS_PORT=53
 POSTGRES_PORT=5432
 HTTP_PORT=80
@@ -23,7 +22,7 @@ V4_EMBEDDING_PREFIXES=(:: ::ffff: 64:ff9b::)
 
 usage() {
   cat <<EOF
-Usage: $0 [--dry-run | --check] [--uid UID | --bridge IFACE] [--ini FILE] [--db CONN]
+Usage: $0 [--dry-run | --check] (--uid UID | --bridge IFACE) [--ini FILE] [--db CONN]
           [--resolv-conf FILE] [--allow HOST:PORT]...
 
 Installs the egress rule as the iptables and ip6tables chain $CHAIN, rebuilt on every run.
@@ -31,7 +30,7 @@ Installs the egress rule as the iptables and ip6tables chain $CHAIN, rebuilt on 
   --dry-run          print the commands an install would run, and change nothing
   --check            exit 1 unless every rule and jump an install writes is in place and the chain
                      holds no other rule
-  --uid UID          host networking: match the service's user (default \$USER_UID, else $DEFAULT_UID)
+  --uid UID          host networking: match the service's user, which must have no login shell
   --bridge IFACE     a Docker bridge network: match traffic from IFACE ($DOCKER_CHAIN and INPUT)
   --ini FILE         store_service.ini, read for [chain] rpc_url and [btcpay] host
                      (default ./store_service.ini)
@@ -48,7 +47,7 @@ die() {
 }
 
 mode=install
-uid=${USER_UID:-$DEFAULT_UID}
+uid=
 bridge=
 ini=./store_service.ini
 db_conn=${BADGE_DB_CONN:-$DEFAULT_DB_CONN}
@@ -71,8 +70,10 @@ while (($#)); do
   shift
 done
 
-[[ -r $ini ]] || die "cannot read $ini"
-[[ $uid =~ ^[0-9]+$ ]] || die "--uid must be a numeric user id"
+if [[ ! $bridge ]]; then
+  [[ $uid ]] || die "--uid is required with host networking: the uid the service runs as (USER_UID in compose)"
+  [[ $uid =~ ^[0-9]+$ ]] || die "--uid must be a numeric user id"
+fi
 
 ini_value() {
   awk -v section="$1" -v key="$2" '
@@ -152,6 +153,18 @@ addresses_of() {
   echo "$found"
 }
 
+# The owner match covers every process of the uid, so a user who logs in would lose private
+# addresses too. An empty shell field in passwd means /bin/sh.
+refuse_login_user() {
+  local entry shell
+  entry=$(getent passwd "$uid") || return 0
+  shell=$(cut -d: -f7 <<<"$entry")
+  case ${shell##*/} in
+    nologin | false) ;;
+    *) die "uid $uid has the login shell ${shell:-/bin/sh}, and the rule would restrict its own traffic too; run the service as a dedicated user without a login shell (USER_UID in compose) and pass that uid" ;;
+  esac
+}
+
 allowed=()
 
 allow() {
@@ -172,29 +185,32 @@ allow_endpoint() {
   allow "$host" "$port" tcp
 }
 
-for setting in "chain rpc_url" "btcpay host"; do
-  read -r section key <<<"$setting"
-  url=$(ini_value "$section" "$key")
-  if [[ $url ]]; then
-    endpoint=$(url_endpoint "$url")
+collect_allowed() {
+  local setting section key url endpoint authority resolvers resolver
+  [[ -r $ini ]] || die "cannot read $ini"
+  for setting in "chain rpc_url" "btcpay host"; do
+    read -r section key <<<"$setting"
+    url=$(ini_value "$section" "$key")
+    if [[ $url ]]; then
+      endpoint=$(url_endpoint "$url")
+      allow_endpoint "$endpoint"
+    fi
+  done
+  endpoint=$(db_endpoint "$db_conn")
+  if [[ $endpoint ]]; then allow_endpoint "$endpoint"; fi
+  for authority in "${extra[@]}"; do
+    [[ $authority == *:* ]] || die "--allow needs HOST:PORT"
+    endpoint=$(authority_endpoint "$authority" "")
     allow_endpoint "$endpoint"
+  done
+  if [[ -r $resolv_conf ]]; then
+    resolvers=$(awk '$1 == "nameserver" { print $2 }' "$resolv_conf")
+    while read -r resolver; do
+      if [[ $resolver ]]; then allow "$resolver" "$DNS_PORT" udp tcp; fi
+    done <<<"$resolvers"
   fi
-done
-endpoint=$(db_endpoint "$db_conn")
-if [[ $endpoint ]]; then allow_endpoint "$endpoint"; fi
-for authority in "${extra[@]}"; do
-  [[ $authority == *:* ]] || die "--allow needs HOST:PORT"
-  endpoint=$(authority_endpoint "$authority" "")
-  allow_endpoint "$endpoint"
-done
-if [[ -r $resolv_conf ]]; then
-  resolvers=$(awk '$1 == "nameserver" { print $2 }' "$resolv_conf")
-  while read -r resolver; do
-    if [[ $resolver ]]; then allow "$resolver" "$DNS_PORT" udp tcp; fi
-  done <<<"$resolvers"
-fi
-
-if ((${#allowed[@]})); then mapfile -t allowed < <(printf '%s\n' "${allowed[@]}" | sort -u); fi
+  if ((${#allowed[@]})); then mapfile -t allowed < <(printf '%s\n' "${allowed[@]}" | sort -u); fi
+}
 
 v4_in_v6() {
   local prefix=$1 range=$2 a b c d bits
@@ -294,16 +310,24 @@ check_family() {
   return "$failed"
 }
 
+case $mode in
+  install | dry-run)
+    if [[ ! $bridge ]]; then refuse_login_user; fi
+    collect_allowed
+    ;;
+  check) collect_allowed ;;
+  *) die "unknown mode $mode" ;;
+esac
+
 status=0
 for family in 4 6; do
   tool=iptables
   [[ $family == 6 ]] && tool=ip6tables
   [[ $mode == dry-run ]] || command -v "$tool" >/dev/null || die "$tool is not installed"
-  if [[ $mode == check ]]; then
-    check_family "$tool" "$family" || status=1
-  else
-    install_family "$tool" "$family"
-  fi
+  case $mode in
+    check) check_family "$tool" "$family" || status=1 ;;
+    *) install_family "$tool" "$family" ;;
+  esac
 done
 if [[ $mode == check ]]; then
   ((status == 0)) && echo "egress rule installed as written"
