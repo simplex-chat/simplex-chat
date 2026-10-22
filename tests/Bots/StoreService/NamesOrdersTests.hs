@@ -1376,7 +1376,6 @@ testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do
         withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "paid")
   committed <- inPhase PCommitted
   readViewChain ct committed `shouldReturn` ViewReads (Just 4) []
-  -- the oracle's prices are not answered, so any read in taken would be named in unread
   taken <- inPhase PTaken
   readViewChain ct taken `shouldReturn` ViewReads Nothing []
 
