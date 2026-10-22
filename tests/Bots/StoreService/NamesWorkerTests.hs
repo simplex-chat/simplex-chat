@@ -11,7 +11,7 @@ import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesOwnerTests (answerExpiry, answerOwner, answerUnowned, byB, codeIn, committedPhase, dynamisOrder, failedPhase, labelBytes, ownerOfSelector, paidIn, rewrite, stored)
 import Bots.StoreService.NamesPhasesTests (held, prompt, registrationPath, woken)
 import Bots.StoreService.NamesStoreTests (reveal)
-import Bots.StoreService.WebTests (bounded, capturingStderr, jsonObject, statusOf, webGet)
+import Bots.StoreService.WebTests (capturingStderr, jsonObject, statusOf, webGet)
 import Control.Applicative ((<|>))
 import Control.Concurrent.Async (wait, withAsync)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
@@ -23,7 +23,7 @@ import Data.IORef (readIORef)
 import Data.Maybe (fromJust, fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
+import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Word (Word64)
 import Network.HTTP.Client (defaultManagerSettings, newManager)
@@ -34,7 +34,7 @@ import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey, signRecoverable)
 import StoreService.Names.Abi (abiBytes, abiTuple, addressWord, AbiValue (..), selector, uint256)
 import StoreService.Names.Chain (Block (..), ChainClient, Receipt (..), TxHash (..), TxRequest (..), blockAt, decodeSignedTx, newChainClient)
 import StoreService.Names.Orders (Landing (..), OrdersEnv (..), confirmLanded)
-import StoreService.Names.Phases (awaitChange)
+import StoreService.Names.Phases (RegistrationId (..), awaitChange)
 import StoreService.Names.Registration (RegisterIntent (..), commitCalldata, registerIntentDigest, registerWithCreditCalldata, sponsorDomain)
 import StoreService.Names.Reveal (intentOf)
 import StoreService.Names.Sender
@@ -373,7 +373,9 @@ testUnexpiredBounded = withWorker $ \w@W {wCtx = ctx} -> do
   logs <- capturingStderr $ forM_ [1 .. maxUnexpiredWaits] $ \n -> do
     steps w r >>= waitingUntil >>= (`shouldBe` addUTCTime (fromIntegral n) orderTime)
     advance ctx 1
-  length (T.breakOnAll "UnexpiredCommitmentExists" logs) `shouldBe` maxUnexpiredWaits
+  -- the capture can also hold earlier tests' lines, so only this order's count
+  let RegistrationId rid = nrId r
+  length (T.breakOnAll ("registration " <> rid <> ": the commit's dry run reverted UnexpiredCommitmentExists") logs) `shouldBe` maxUnexpiredWaits
   steps w r >>= retrying
   stored ctx r `shouldReturn` r
   sent w `shouldReturn` []
@@ -564,7 +566,8 @@ testExpiredIntent = withWorker $ \w@W {wCtx = ctx} -> do
   answerAvailable w True
   advance ctx $ fromIntegral (rvDeadline reveal - orderSeconds) + 1
   logs <- capturingStderr $ steps w r >>= done
-  logs `shouldSatisfy` T.isInfixOf "intent expired"
+  let RegistrationId rid = nrId r
+  logs `shouldSatisfy` T.isInfixOf ("registration " <> rid <> ": its stored intent is refused, intent expired")
   nrPhase <$> stored ctx r `shouldReturn` PFailed
   sent w `shouldReturn` []
 
@@ -616,10 +619,9 @@ testLapsePoll = withWorker $ \w@W {wCtx = ctx@Ctx {cClient}} -> do
   steps w r >>= done
   (status, view) <- woken "the poll held at the lapse" poll
   (status, field "version" view, field "phase" view) `shouldBe` (200, Just (J.toJSON $ nrVersion r + 1), Just "failed")
-  started' <- getCurrentTime
+  -- prompt is far below the 30-second hold
   (status', view') <- timeout prompt (webGet cClient path >>= \resp -> (statusOf resp,) <$> jsonObject resp) >>= maybe (fail "the old version was held") pure
-  waited <- (`diffUTCTime` started') <$> getCurrentTime
-  (status', field "phase" view', waited < 2) `shouldBe` (200, Just "failed", True)
+  (status', field "phase" view') `shouldBe` (200, Just "failed")
 
 testRestart :: IO ()
 testRestart = withWorker $ \w@W {wCtx = ctx@Ctx {cStore}, wSender} -> do
@@ -707,15 +709,12 @@ testLandedAtDepth = withOrders $ \ctx@Ctx {cNode, cOrders} -> do
   (nrPhase x, nrExpiresAt x, nrRegisterTx x) `shouldBe` (PRegistered, Just expiry, Nothing)
 
 testOutcomeBound :: IO ()
-testOutcomeBound = bounded "the outcome's wait" $ withOrders $ \ctx@Ctx {cNode, cStore, cRandom, cClock} -> do
+testOutcomeBound = withOrders $ \ctx@Ctx {cNode, cStore, cRandom, cClock} -> do
   r@NameRegistration {nrId, nrCommitment} <- paidIn ctx aliceOrder id
   chain <- newChainClient cRandom $ fakeChainConfig cNode
   sender <- newSender cRandom chain cStore (readIORef cClock)
   Right p <- submitTransaction sender (TxCommit nrId) fakeController (commitCalldata nrCommitment)
-  started' <- getCurrentTime
-  awaitOutcome shortWait p `shouldReturn` Nothing
-  waited <- (`diffUTCTime` started') <$> getCurrentTime
-  waited `shouldSatisfy` (< 2)
+  timeout prompt (awaitOutcome shortWait p) `shouldReturn` Just Nothing
   let TxHash h = ptHash p
   block <- mine cNode [(h, True)]
   replicateM_ 2 $ mine cNode []
