@@ -33,8 +33,7 @@ import StoreService.Providers (ListPass (..), PaymentSignal (..), Provider (..),
 import StoreService.Store.Invoices (InvoiceRow (..), OverdueInvoice (..), expireOverdue, getInvoiceByProviderRef, overdueInvoices, providerText, unpaidRefs)
 import StoreService.Waiters (Waiters, publish, waitingCount, waitingCountSTM)
 import Control.Concurrent.STM
-import Control.Exception (SomeAsyncException, SomeException, fromException, throwIO, try)
-import StoreService.Log (logError, logInfo, logWarn)
+import StoreService.Log (logError, logInfo, logWarn, safely, safelyWith)
 import Control.Monad (filterM, forever, unless, void, when)
 import Data.List (find, partition, sortOn)
 import Data.Map.Strict (Map)
@@ -159,7 +158,7 @@ readRows :: PollerEnv -> UTCTime -> [(Text, Text)] -> IO Bool
 readRows env now rows =
   and <$> mapM (\r -> safelyWith (readWhat r) False (readRow r)) rows
   where
-    readWhat (provider, ref) = "reading " <> provider <> " invoice " <> ref
+    readWhat (provider, ref) = "badge poller: reading " <> provider <> " invoice " <> ref
     readRow row@(_, ref) = coveringProvider env now row >>= maybe (pure False) (`readOne` ref)
     readOne p ref =
       pReadInvoice p ref >>= \case
@@ -185,8 +184,8 @@ listPass env now p =
       settled <- mapM (\m -> safely (settleWhat m) (settleMoved env (pProvider p) now m)) lpMoved
       pure (all (== SkipStranger) owners && and settled)
       where
-        settleWhat (ref, _) = "settling " <> tshow (pProvider p) <> " invoice " <> ref
-        skipWhat (ref, _) = "reading the skipped " <> tshow (pProvider p) <> " invoice " <> fromMaybe "the provider did not name" ref
+        settleWhat (ref, _) = "badge poller: settling " <> tshow (pProvider p) <> " invoice " <> ref
+        skipWhat (ref, _) = "badge poller: reading the skipped " <> tshow (pProvider p) <> " invoice " <> fromMaybe "the provider did not name" ref
 
 -- | provider_ref is unique table-wide, not per provider, so check the provider too.
 settleMoved :: PollerEnv -> PaymentProvider -> UTCTime -> (Text, PaymentSignal) -> IO ()
@@ -242,7 +241,7 @@ sweepExpired env@PollerEnv {peStore, peWaiters, peCancelFailed} now = do
 -- | Cancel the order at the provider first, so the buyer can no longer pay it.
 closedAtProvider :: PollerEnv -> UTCTime -> OverdueInvoice -> IO Bool
 closedAtProvider env@PollerEnv {peProviders} now oi@OverdueInvoice {oiProvider, oiProviderRef = ref} =
-  safelyWith ("cancelling " <> tshow oiProvider <> " invoice " <> ref) False $
+  safelyWith ("badge poller: cancelling " <> tshow oiProvider <> " invoice " <> ref) False $
     case find ((== oiProvider) . pProvider) peProviders of
       Nothing -> uncancelled env now oi "no provider is configured for it"
       Just p ->
@@ -372,19 +371,7 @@ drainHints :: PollerEnv -> IO ()
 drainHints env@PollerEnv {peHints = ReadHints q _} = serveHints env (isEmptyTBQueue q >>= check)
 
 passSafely :: PollerEnv -> IO ()
-passSafely env = void $ safely "the pass" (runOnePass env)
+passSafely env = void $ safely "badge poller: the pass" (runOnePass env)
 
 hintSafely :: PollerEnv -> UTCTime -> Text -> IO ()
-hintSafely env now ref = void $ safely ("the hinted read of " <> ref) (readHint env now ref)
-
-safely :: Text -> IO () -> IO Bool
-safely what action = safelyWith what False (True <$ action)
-
--- | Asynchronous exceptions are rethrown, since that is how the race stops this thread.
-safelyWith :: Text -> a -> IO a -> IO a
-safelyWith what fallback action =
-  try action >>= \case
-    Right a -> pure a
-    Left (e :: SomeException) -> case fromException e :: Maybe SomeAsyncException of
-      Just _ -> throwIO e
-      Nothing -> fallback <$ logError ("badge poller: " <> what <> " failed; the next pass will run: " <> tshow e)
+hintSafely env now ref = void $ safely ("badge poller: the hinted read of " <> ref) (readHint env now ref)

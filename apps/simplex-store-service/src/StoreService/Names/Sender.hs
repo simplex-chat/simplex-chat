@@ -17,6 +17,7 @@ module StoreService.Names.Sender
     awaitOutcome,
     followTransactions,
     runSender,
+    senderRound,
     replaceAfter,
   )
 where
@@ -43,7 +44,7 @@ import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..))
-import StoreService.Log (logError, logInfo, logWarn)
+import StoreService.Log (logError, logInfo, logWarn, safely)
 import StoreService.Names.Chain
 import StoreService.Names.Store (NameTransaction (..), NewTransaction (..), TxFor, TxStatus (..), insertTransaction, pendingTransactions, recordTransactionOutcome)
 import StoreService.Store.Invoices (StoreDecodeError (..))
@@ -174,7 +175,11 @@ awaitOutcome :: PendingTx -> IO TxOutcome
 awaitOutcome = atomically . readTMVar . ptOutcome
 
 runSender :: Sender -> IO ()
-runSender s = forever $ followTransactions s >> threadDelay followInterval
+runSender s = forever $ senderRound s >> threadDelay followInterval
+
+-- | A round that fails is logged, so the lane goes on to the next one.
+senderRound :: Sender -> IO ()
+senderRound s = void $ safely "names sender: the round" (followTransactions s)
 
 -- | One round over the transactions in flight, lowest nonce first. Only one thread may run it.
 followTransactions :: Sender -> IO ()

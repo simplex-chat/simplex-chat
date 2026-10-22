@@ -24,7 +24,8 @@ import StoreService.Config (BadgeIssuerKey (..), ChainConfig (..), NamesConfig (
 import StoreService.Group (GroupEvent, ensureManagedGroup, groupEvent, hasTracker, refreshTracker, revokeWithTracker, runGroupLane)
 import StoreService.Group.Command (badgeTypeP, codeP, maxMonths, maxNameYears, nameCodeP, textTokenP)
 import StoreService.Names.Codes (issueNameCode, revokeNameCode)
-import StoreService.Names.Env (NamesEnv, newNamesEnv)
+import StoreService.Names.Env (NamesEnv (..), newNamesEnv)
+import StoreService.Names.Sender (runSender)
 import StoreService.Options
 import StoreService.Poller (newPollerEnv, newReadHints, runPoller)
 import StoreService.Providers.BTCPay (btcpayProvider)
@@ -164,7 +165,7 @@ storeService opts@StoreServiceOpts {serviceConfigFile} cfg env = do
       webEnv <- newWebEnv chatStore sc ws hints providers namesEnv
       exportWebapp (listener sc) (stripe sc)
       pollerEnv <- newPollerEnv chatStore ws hints providers (poll sc)
-      pure [runWebListener webEnv, runPoller pollerEnv]
+      pure $ [runWebListener webEnv, runPoller pollerEnv] <> maybe [] (\ne -> [runSender (neSender ne)]) namesEnv
 
 startNames :: ChatController -> NamesConfig -> IO NamesEnv
 startNames cc@ChatController {chatStore} nc@NamesConfig {nTLD, nChain = ChainConfig {cChainId}} =

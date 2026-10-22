@@ -15,9 +15,11 @@ import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import Data.List (sort)
+import Data.String (fromString)
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime)
 import Data.Word (Word64, Word8)
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Abi (selector, uint256)
@@ -43,6 +45,7 @@ namesSenderTests = describe "StoreService names: sender" $ do
   it "rebroadcasts a saved raw transaction after a restart while the node does not know it" $ testRestartRebroadcast g
   it "hands a dropped transaction whose nonce was used to its owner, who judges it from chain state before any new signature" $ testDroppedNonceUsed g
   it "hands a mined transaction whose receipt was pruned to its owner, signing nothing more" $ testPrunedReceipt g
+  it "logs a round that fails on the store, and settles the transaction in the next round" $ testFailedRound g
 
 data Setup = Setup
   { node :: FakeEthNode,
@@ -237,6 +240,22 @@ testPrunedReceipt g = withSetup g $ \s@Setup {node, store} -> do
   followTransactions sender
   length <$> sentTransactions node `shouldReturn` 1
   withTransaction store pendingTransactions `shouldReturn` []
+
+testFailedRound :: TVar ChaChaDRG -> IO ()
+testFailedRound g = withSetup g $ \s@Setup {node, store} -> do
+  sender <- start s
+  Right p <- submitTransaction sender (TxCommit r1) fakeController (commit 1)
+  mineHash node (ptHash p)
+  _ <- mine node []
+  renameTransactions store "sx_badge_service_name_transactions" "name_transactions_away"
+  senderRound sender
+  settled sender (TxCommit r1) `shouldReturn` False
+  renameTransactions store "name_transactions_away" "sx_badge_service_name_transactions"
+  senderRound sender
+  outcomeOf p >>= (`shouldSatisfy` confirmedAs (ptHash p))
+  map (\(_, status, _) -> status) <$> statuses store r1 `shouldReturn` [TSMined]
+  where
+    renameTransactions store from to = withTransaction store $ \db -> DB.execute_ db $ fromString $ "ALTER TABLE " <> from <> " RENAME TO " <> to
 
 -- fixtures
 
