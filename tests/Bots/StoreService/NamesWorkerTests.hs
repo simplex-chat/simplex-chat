@@ -8,17 +8,24 @@ import Bots.StoreService.NamesContractsTests (registrarOf)
 import Bots.StoreService.NamesOrdersTests
 import Bots.StoreService.NamesOwnerTests (answerExpiry, answerUnowned, failedPhase, labelBytes, ownerOfSelector, paidIn, stored)
 import Control.Monad (replicateM_)
+import Data.IORef (readIORef)
+import Data.Time.Clock (diffUTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import Data.Word (Word64)
 import StoreService.Names.Abi (addressWord)
+import StoreService.Names.Chain (Receipt (..), TxHash (..), newChainClient)
 import StoreService.Names.Orders (Landing (..), confirmLanded)
-import StoreService.Names.Store (NamePhase (..), NameRegistration (..))
+import StoreService.Names.Registration (commitCalldata)
+import StoreService.Names.Sender
+import StoreService.Names.Store (NamePhase (..), NameRegistration (..), TxFor (..))
 import Test.Hspec
 
 namesWorkerTests :: Spec
 namesWorkerTests = describe "StoreService names: worker" $ do
   describe "confirmation depth" $
     it "judges a register landed by ownerOf only once the owner holds the name at the confirmation depth" testLandedAtDepth
+  describe "sender" $
+    it "bounds the wait for a transaction's outcome" testOutcomeBound
 
 -- fixtures
 
@@ -45,3 +52,22 @@ testLandedAtDepth = withOrders $ \ctx@Ctx {cNode, cOrders} -> do
   confirmLanded cOrders r `shouldReturn` LRegistered (nrVersion r + 1)
   NameRegistration {nrPhase, nrExpiresAt, nrRegisterTx} <- stored ctx r
   (nrPhase, nrExpiresAt, nrRegisterTx) `shouldBe` (PRegistered, Just expiry, Nothing)
+
+testOutcomeBound :: IO ()
+testOutcomeBound = withOrders $ \ctx@Ctx {cNode, cStore, cRandom, cClock} -> do
+  r@NameRegistration {nrId, nrCommitment} <- paidIn ctx aliceOrder id
+  chain <- newChainClient cRandom $ fakeChainConfig cNode
+  sender <- newSender cRandom chain cStore (readIORef cClock)
+  Right p <- submitTransaction sender (TxCommit nrId) fakeController (commitCalldata nrCommitment)
+  started <- getCurrentTime
+  awaitOutcome shortWait p `shouldReturn` Nothing
+  waited <- (`diffUTCTime` started) <$> getCurrentTime
+  waited `shouldSatisfy` (< 2)
+  let TxHash h = ptHash p
+  block <- mine cNode [(h, True)]
+  replicateM_ 2 $ mine cNode []
+  followTransactions sender
+  awaitOutcome shortWait p `shouldReturn` Just (TOConfirmed (ptHash p) Receipt {receiptSuccess = True, receiptBlock = block})
+  stored ctx r `shouldReturn` r
+  where
+    shortWait = 300000
