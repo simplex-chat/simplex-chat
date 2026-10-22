@@ -36,7 +36,7 @@ import StoreService.Names.Phases (Phases, RegistrationId (..))
 import StoreService.Names.Store (deleteUnpaidRegistration, unpaidCleanupCandidates)
 import StoreService.Orders (decide, expireOverdue, settleOrder)
 import StoreService.Providers (ListPass (..), PaymentSignal (..), Provider (..), ProviderError (..), Received (..), expiresItself, settleWindow)
-import StoreService.Store.Invoices (InvoiceRow (..), OverdueInvoice (..), getInvoice, getInvoiceByProviderRef, overdueInvoices, providerText, unpaidRefs)
+import StoreService.Store.Invoices (InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), getInvoice, getInvoiceByProviderRef, overdueInvoices, providerText, unpaidRefs)
 import StoreService.Waiters (Waiters, waitingCount, waitingCountSTM)
 import Control.Concurrent.STM
 import StoreService.Log (logError, logInfo, logWarn, safely, safelyWith)
@@ -218,16 +218,17 @@ listPass env now p =
 settleMoved :: PollerEnv -> PaymentProvider -> UTCTime -> (Text, PaymentSignal) -> IO ()
 settleMoved env@PollerEnv {peStore, peWaiters, pePhases} provider now (ref, signal) =
   getInvoiceByProviderRef peStore ref >>= \case
-    Just InvoiceRow {irInvoiceId, irStatus, irProvider} | irProvider == provider ->
+    Just InvoiceRow {irInvoiceId, irStatus, irProvider, irProduct} | irProvider == provider ->
       when (isJust (decide irStatus signal)) $
         settleOrder peStore peWaiters pePhases irInvoiceId signal now >>= \case
           Left e -> logError ("badge poller: settling order " <> ref <> " failed: " <> e)
-          Right status -> reportSettled irStatus status
+          Right status -> reportSettled irProduct irStatus status
     _ -> pure ()
   where
-    reportSettled before after
-      -- checked before the no-change case, so a refund still alerts when money lands after expiry
-      | after == ISExpired, SigClosed Received {rcvCrypto = Just paid} <- signal = do
+    reportSettled sold before after
+      -- checked before the no-change case, so a refund still alerts when money lands after expiry;
+      -- settlement itself alerts once for a name order's late payment
+      | IPBadge {} <- sold, after == ISExpired, SigClosed Received {rcvCrypto = Just paid} <- signal = do
           let alert = "badge poller: order " <> ref <> " expired holding " <> paid <> ", which needs a refund"
           due <- dueToWarn env now alert
           when due $ logError alert

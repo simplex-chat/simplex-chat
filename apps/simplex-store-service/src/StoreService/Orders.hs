@@ -18,7 +18,7 @@ import StoreService.Names.Phases (Phases, RegistrationId (..))
 import qualified StoreService.Names.Phases as Phases
 import StoreService.Names.Store (NamePhase (..), NameRegistration (..), VersionWrite (..), getRegistration, updateRegistration)
 import StoreService.Providers (Funded (..), PaymentSignal (..), Received (..))
-import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), expireOverdueInvoice, markCodePaid, paymentStatusText, settlementCodeHash, settlementInvoice, truncateToSecond, updateInvoiceStatus, upsertPayment)
+import StoreService.Store.Invoices (InvoicePayment (..), InvoiceProduct (..), InvoiceRow (..), expireOverdueInvoice, markCodePaid, paymentHolds, paymentStatusText, settlementCodeHash, settlementInvoice, truncateToSecond, updateInvoiceStatus, upsertPayment)
 import StoreService.Waiters (Waiters, publish, publishPayment)
 import Control.Concurrent.STM (STM, atomically)
 import Control.Exception (Exception)
@@ -148,7 +148,7 @@ settleOrder st waiters phases invId@(InvoiceId invText) signal now' = do
         then do
           name <- case sold of
             PBadge codeHash -> [] <$ mapM_ (\h -> markCodePaid db h (addUTCTime codeLifetime at)) codeHash
-            PName r -> nameSettled db irStatus wStatus wrotePayment r now
+            PName r -> nameSettled db irStatus wStatus wrotePayment (wrotePayment || maybe False paymentHolds (irPayment row)) r now
           pure (Right (fromMaybe irStatus wStatus, maybe (if wrotePayment then PubPayment else PubNothing) PubStatus wStatus, name))
         else do
           -- another writer moved the row first, so publish what we found
@@ -156,10 +156,11 @@ settleOrder st waiters phases invId@(InvoiceId invText) signal now' = do
           pure (Right (current, PubStatus current, []))
 
 -- | A paid open invoice queues its order only while the order is live; a payment of a closed one is late.
--- An invoice the provider closed closes its order. BTCPay reports money paid into a closed invoice as Expired or Invalid,
--- not Settled, so a new payment figure on a closed invoice is late too; the monotonic payment write reports each figure once.
-nameSettled :: DB.Connection -> InvoiceStatus -> Maybe InvoiceStatus -> Bool -> NameRegistration -> UTCTime -> IO [NameOutcome]
-nameSettled db before after wrotePayment r@NameRegistration {nrId, nrPhase} now
+-- An invoice the provider closed closes its order, and is late once if it holds money, read now or before.
+-- BTCPay reports money paid into a closed invoice as Expired or Invalid, not Settled, so a new payment figure
+-- on a closed invoice is late too; the monotonic payment write reports each figure once.
+nameSettled :: DB.Connection -> InvoiceStatus -> Maybe InvoiceStatus -> Bool -> Bool -> NameRegistration -> UTCTime -> IO [NameOutcome]
+nameSettled db before after wrotePayment holdsMoney r@NameRegistration {nrId, nrPhase} now
   | nrPhase /= PUnpaid = pure []
   | otherwise = case after of
       Just ISPaid
@@ -171,10 +172,8 @@ nameSettled db before after wrotePayment r@NameRegistration {nrId, nrPhase} now
               -- another live order holds the name, so this payment can only be refunded; it is still recorded
               LiveOrderExists -> pure [NOLate nrId]
               _ -> E.throwIO (RegistrationChanged nrId)
-      Just ISExpired -> (<> late) . maybe [] (\(rid, v) -> [NOWritten rid v]) <$> closeOrder db r now
-      _ -> pure $ if before /= ISOpen then late else []
-  where
-    late = [NOLate nrId | wrotePayment]
+      Just ISExpired -> (<> [NOLate nrId | holdsMoney]) . maybe [] (\(rid, v) -> [NOWritten rid v]) <$> closeOrder db r now
+      _ -> pure [NOLate nrId | before /= ISOpen, wrotePayment]
 
 -- | Clears a live unpaid order's live flag, as its invoice closes in the same transaction.
 closeOrder :: DB.Connection -> NameRegistration -> UTCTime -> IO (Maybe (RegistrationId, Int64))

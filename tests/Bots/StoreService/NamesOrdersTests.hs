@@ -14,6 +14,7 @@ import Control.Concurrent.Async (async, concurrently, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (TVar, atomically, check, modifyTVar', newTVarIO, readTVar)
 import qualified Control.Exception as E
+import Control.Arrow ((&&&))
 import Control.Monad (forM_, void)
 import Crypto.Random (ChaChaDRG)
 import Data.Aeson ((.=))
@@ -95,6 +96,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "records a payment of the closed order as a late payment, leaving the newer order alone" testLatePaymentAfterNewOrder
     it "keeps an overdue order whose invoice holds money, refusing the next order, and settles it" testFundedOverdueKept
     it "alerts on a late payment as BTCPay reports it for an expired, cancelled or swept invoice, once" testLateBTCPayPayments
+    it "alerts once on money read while open when the provider then closes the invoice, also after a restart" testOneLateAlert
     it "answers cancel with funded, not_open, paid when settlement won, and expired with the payment read meanwhile" testCancelAnswers
     it "leaves a late payment of a cancelled invoice unpaid and alerts" testLatePayment
     it "queues an order settled while open and publishes its version" testSettlementQueues
@@ -681,6 +683,26 @@ testLateBTCPayPayments = withFakeBTCPay $ \fake -> do
     forM_ [expired, cancelled, swept] $ \inv -> do
       r <- invoiceRegistration ctx inv
       (nrPhase r, nrLive r) `shouldBe` (PUnpaid, False)
+
+-- | Paid in part while open, then expired by BTCPay with the same figures: one refund line, none from a restarted poller.
+testOneLateAlert :: IO ()
+testOneLateAlert = withOrders $ \ctx@Ctx {cStore = st, cWeb} -> do
+  (inv, _) <- placed ctx aliceOrder
+  Just InvoiceRow {irProviderRef = ref} <- getInvoice st inv
+  let paid = rcv 5000 (Just "0.00078")
+      newPoller = newPollerEnv st (weWaiters cWeb) (Just $ oePhases $ cOrders ctx) (weHints cWeb) (weProviders cWeb) (poll $ weConfig cWeb)
+      readWith poller = capturingStderr $ queueReadHint (weHints cWeb) ref >> drainHints poller
+      refunds = length . T.breakOnAll "refund"
+  poller <- newPoller
+  setSignals (cStub ctx) [(ref, SigFunded paid PaidInPart)]
+  refunds <$> readWith poller `shouldReturn` 0
+  setSignals (cStub ctx) [(ref, SigClosed paid)]
+  logs <- readWith poller
+  refunds logs `shouldBe` 1
+  logs `shouldSatisfy` T.isInfixOf "stays unpaid; refund the payment"
+  restarted <- newPoller
+  refunds <$> readWith restarted `shouldReturn` 0
+  (nrPhase &&& nrLive) <$> invoiceRegistration ctx inv `shouldReturn` (PUnpaid, False)
 
 testCancelAnswers :: IO ()
 testCancelAnswers = withOrders $ \ctx -> do
