@@ -4,7 +4,7 @@
 
 ## Running it
 
-The workflow runs only when asked: by a run tag in a commit pushed to an `f/…` branch, or by hand from the Actions tab on any branch. [App tests on GitHub's runners](../README.md) lists the tags and inputs.
+The workflow runs only when started by hand, on any branch, from the Actions tab or with `gh workflow run`: [App tests on GitHub's runners](../README.md) says how and lists the inputs.
 
 Every run builds the core library, and the backend when it's asked for, from the branch's own Haskell code. It reuses an earlier build only when the sources are unchanged, as an artifact of the same branch named after a hash of its sources (30 days): for the core `src/**`, `cabal.project`, `simplex-chat.cabal`, `PRIVACY.md` and the build scripts, for the backend `src/**`, the CLI's and the directory's sources, `cabal.project`, `simplex-chat.cabal` and its build script. So a branch that changes core and app code together tests both. The workflow saves no Actions caches, which this repository evicts within hours and shares with `build.yml`.
 

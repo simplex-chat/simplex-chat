@@ -96,11 +96,14 @@ fun showMarkdownFile(file: CIFile) {
       formatted,
       bidiControlChar.containsMatchIn(text)
     )
-    ModalManager.center.showModal(endButtons = {
-      if (formatted != null) MarkdownViewSwitch()
-      MarkdownFileSaveButton(file, bytes)
-    }) {
-      MarkdownFileView(file.fileName, document)
+    withContext(Dispatchers.Main) {
+      if (appPlatform.isDesktop && ModalManager.center.isTopModalOpen(ModalViewId.MARKDOWN_FILE)) ModalManager.center.closeModal()
+      ModalManager.center.showModal(id = ModalViewId.MARKDOWN_FILE, endButtons = {
+        if (formatted != null) MarkdownViewSwitch()
+        MarkdownFileSaveButton(file, bytes)
+      }) {
+        key(this) { MarkdownFileView(file.fileName, document) }
+      }
     }
   }
 }
