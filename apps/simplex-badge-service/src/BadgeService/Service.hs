@@ -339,8 +339,8 @@ processQueuedRequests key trackerQ_ env = do
 data RequestLane = MainLane | PurchaseLane | RenewalLane
   deriving (Eq, Show)
 
--- | Store calls wait off the main lane, so appends to one ledger come from more than one lane: each write's tip
--- re-read guards them while transactions run one at a time (SQLite; Postgres at --pool-size 1).
+-- | Store calls wait off the main lane, so appends to one ledger come from more than one lane: each takes its
+-- purchase's row lock before re-reading the tip, so the lanes may run concurrently at any --pool-size.
 requestLane :: StoreChecks -> ChatController -> Maybe C.PublicKeyEd25519 -> J.Object -> IO RequestLane
 requestLane checks cc sigKey reqData = case J.fromJSON (J.Object reqData) of
   J.Success BadgeServiceRequest {request = BSCPurchaseBadge {payment = SPGoogle {}, upgrade = Nothing}} -> pure PurchaseLane
@@ -879,6 +879,7 @@ issueBadgeCmd key cc verifier purchaseKey upgrade_ BadgeBalance {lastEntry} = do
     -- Write only if the tip has not moved, since another request may have advanced it.
     writeIssued purchaseId tip rows t issuance_ state_ = do
       r <- withDB "issueBadge" cc $ \db -> liftIO $ do
+        lockPurchaseLedger db purchaseId t
         tip' <- getLedgerTip db purchaseId
         when (fmap entryId tip' == fmap entryId tip) $ appendLedgerPlan db purchaseId Nothing rows issuance_
         issueResponse db purchaseId t state_
@@ -921,6 +922,7 @@ issueBadgeCmd key cc verifier purchaseKey upgrade_ BadgeBalance {lastEntry} = do
                           Left resp -> pure resp
                           Right (rows, issuance) -> do
                             r <- withDB "renewSubscription" cc $ \db -> liftIO $ do
+                              lockPurchaseLedger db badgePurchaseId now
                               tip' <- getLedgerTip db badgePurchaseId
                               if fmap entryId tip' /= Just (entryId tip)
                                 then pure Nothing
@@ -956,6 +958,7 @@ issueBadgeCmd key cc verifier purchaseKey upgrade_ BadgeBalance {lastEntry} = do
               newChargeId <- randomId cc
               entryIds <- (,,,) <$> randomId cc <*> randomId cc <*> randomId cc <*> randomId cc
               r <- withDB' "checkStoreDuringCoverage" cc $ \db -> do
+                lockPurchaseLedger db badgePurchaseId now
                 tip' <- getLedgerTip db badgePurchaseId
                 banked <-
                   if fmap entryId tip' == Just (entryId tip)
