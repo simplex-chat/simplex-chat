@@ -20,12 +20,13 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
 import Data.ByteString (ByteString)
+import qualified Data.ByteString.Lazy as LB
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime)
 import Data.Word (Word64)
-import Network.HTTP.Client (RequestBody (..), defaultManagerSettings, httpLbs, method, newManager, parseRequest, requestBody, requestHeaders, responseBody, responseStatus)
+import Network.HTTP.Client (RequestBody (..), defaultManagerSettings, httpLbs, method, newManager, parseRequest, requestBody, requestHeaders, responseBody, responseHeaders, responseStatus)
 import Network.HTTP.Types (hContentType, statusCode)
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
@@ -94,8 +95,9 @@ namesRecordsTests = describe "StoreService names: records" $ do
     it "answers an identical repeat after a restart from the stored edit, with no chain read" $ testRepeatAfterRestart g
     it "finds an edit that expired across a restart applied, and makes it mined" $ testRestartExpiredApplied g
     it "frees an edit past its deadline while its transaction is still rebroadcast" $ testExpiryFreesNonce g
-  describe "http" $
+  describe "http" $ do
     it "answers the contract's statuses and bodies" $ testHttp g
+    it "answers 503, 504, and 429 with the real wait in Retry-After" $ testHttpUnsettled g
 
 data Setup = Setup
   { node :: FakeEthNode,
@@ -607,22 +609,44 @@ testExpiryFreesNonce g = withSetup g $ \s@Setup {node, records, sender} -> do
 -- http
 
 testHttp :: TVar ChaChaDRG -> IO ()
-testHttp g = withSetup g $ \s@Setup {records} -> Warp.testWithApplication (pure $ recordsHandler records) $ \port -> do
-  manager <- newManager defaultManagerSettings
-  let post body = do
-        req <- parseRequest $ "http://127.0.0.1:" <> show port <> "/api/name/records"
-        resp <- httpLbs req {method = "POST", requestHeaders = [(hContentType, "application/json")], requestBody = RequestBodyLBS body} manager
-        pure (statusCode $ responseStatus resp, J.decode $ responseBody resp :: Maybe J.Value)
-      editBody value = J.encode $ KM.insert "value" (J.String value) $ requestJson [("key", J.String channelKey)]
-  post "[]" `shouldReturn` (400, Just $ J.object ["error" .= ("bad_request" :: Text)])
-  post (editBody "https://x/a") `shouldReturn` (400, Just $ J.object ["error" .= ("invalid_link" :: Text)])
+testHttp g = withSetup g $ \s@Setup {records} -> withRecordsApp records $ \post -> do
+  let editBody value = J.encode $ KM.insert "value" (J.String value) $ requestJson [("key", J.String channelKey)]
+  post "[]" `shouldReturn` (400, Just $ errorJson "bad_request", Nothing)
+  post (editBody "https://x/a") `shouldReturn` (400, Just $ errorJson "invalid_link", Nothing)
   answer <- async $ post $ editBody viemChannelLink
   TxHash h <- mineSent s 1 True
-  within (wait answer) `shouldReturn` (200, Just $ J.object ["tx" .= hex h])
+  within (wait answer) `shouldReturn` (200, Just $ J.object ["tx" .= hex h], Nothing)
   setNonce s 1
   next <- async . post . J.encode . editJson =<< signEdit s (owner s) (channel "https://smp9.simplex.im/c#next") 1 deadline
   _ <- mineSent s 2 False
-  within (wait next) `shouldReturn` (409, Just $ J.object ["error" .= ("record_reverted" :: Text), "revert" .= J.Null])
+  within (wait next) `shouldReturn` (409, Just $ J.object ["error" .= ("record_reverted" :: Text), "revert" .= J.Null], Nothing)
+
+testHttpUnsettled :: TVar ChaChaDRG -> IO ()
+testHttpUnsettled g = withSetup g $ \s@Setup {node, records, owner} -> do
+  let quick = records {rsPendingAfter = shortWait}
+      edit n = signEdit s owner (channel viemChannelLink) n deadline
+  withRecordsApp quick $ \post -> do
+    setFault node "eth_call" HttpFailure
+    (post . J.encode . editJson =<< edit 0) `shouldReturn` (503, Just $ errorJson "provider_unavailable", Nothing)
+    clearFault node "eth_call"
+    (post . J.encode . editJson =<< edit 0) `shouldReturn` (504, Just $ errorJson "edit_pending", Nothing)
+    forM_ [1 .. 9] $ \n -> do
+      setNonce s n
+      (relayEdit quick =<< edit n) `shouldReturn` EAPending
+    setNonce s 10
+    (post . J.encode . editJson =<< edit 10) `shouldReturn` (429, Just $ errorJson "rate_limited", Just "3600")
+
+-- | Posts a body to the records handler, answering the status, the JSON body and Retry-After.
+withRecordsApp :: Records -> ((LB.ByteString -> IO (Int, Maybe J.Value, Maybe ByteString)) -> IO a) -> IO a
+withRecordsApp rs action = Warp.testWithApplication (pure $ recordsHandler rs) $ \port -> do
+  manager <- newManager defaultManagerSettings
+  action $ \body -> do
+    req <- parseRequest $ "http://127.0.0.1:" <> show port <> "/api/name/records"
+    resp <- httpLbs req {method = "POST", requestHeaders = [(hContentType, "application/json")], requestBody = RequestBodyLBS body} manager
+    pure (statusCode $ responseStatus resp, J.decode $ responseBody resp, lookup "Retry-After" $ responseHeaders resp)
+
+errorJson :: Text -> J.Value
+errorJson tag = J.object ["error" .= tag]
 
 -- fixtures
 
