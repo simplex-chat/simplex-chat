@@ -18,4 +18,4 @@ pluginManagement {
 
 rootProject.name = "app"
 
-include(":android", ":desktop", ":common", ":external:nanohttpd")
+include(":android", ":desktop", ":common")

@@ -16,7 +16,6 @@ android/build
 android/release
 common/build
 desktop/build
-external/nanohttpd/build
 release
 
 # Generated SimpleX assets
