@@ -395,6 +395,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
           Icon(
             painterResource(MR.images.ic_arrow_forward),
             contentDescription = null,
+            modifier = Modifier.mirrorIfRtl(),
             tint = CurrentColors.value.colors.secondary
           )
         }
@@ -414,6 +415,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
         Icon(
           painterResource(icon),
           contentDescription = null,
+          modifier = if (icon == MR.images.ic_chevron_right_2) Modifier.mirrorIfRtl() else Modifier,
           tint = statusColor
         )
       }

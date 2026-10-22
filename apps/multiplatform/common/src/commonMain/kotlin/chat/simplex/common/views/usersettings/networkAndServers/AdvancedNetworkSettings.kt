@@ -233,7 +233,7 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (@Composable ModalData.() -
       SectionView(generalGetString(MR.strings.settings_section_title_private_message_routing)) {
         SMPProxyModePicker(smpProxyMode, showModal, updateSMPProxyMode)
         SMPProxyFallbackPicker(smpProxyFallback, showModal, updateSMPProxyFallback, enabled = remember { derivedStateOf { smpProxyMode.value != SMPProxyMode.Never } })
-        SettingsPreferenceItem(painterResource(MR.images.ic_arrow_forward), stringResource(MR.strings.private_routing_show_message_status), chatModel.controller.appPrefs.showSentViaProxy)
+        SettingsPreferenceItem(painterResource(MR.images.ic_arrow_forward).mirrorIfRtl(), stringResource(MR.strings.private_routing_show_message_status), chatModel.controller.appPrefs.showSentViaProxy)
       }
       SectionTextFooter(stringResource(MR.strings.private_routing_explanation))
       SectionDividerSpaced()

@@ -551,7 +551,7 @@ fun PriorityLayout(
     ) {
       var y = 0
       placeables.forEach {
-        it.place(0, y)
+        it.placeRelative(0, y)
         y += it.measuredHeight
       }
     }
@@ -585,7 +585,7 @@ fun DependentLayout(
     ) {
       var y = 0
       placeables.forEach {
-        it.place(0, y)
+        it.placeRelative(0, y)
         y += it.measuredHeight
       }
     }
@@ -648,9 +648,9 @@ fun CenteredRowLayout(
     val second = measureable[1].measure(constraints.copy(minWidth = 0, minHeight = 0, maxWidth = (constraints.maxWidth - first.measuredWidth - third.measuredWidth).coerceAtLeast(0)))
     // Limit width for every other element to width of important element and height for a sum of all elements.
     layout(constraints.maxWidth, constraints.maxHeight) {
-      first.place(0, ((constraints.maxHeight - first.measuredHeight) / 2).coerceAtLeast(0))
-      second.place((constraints.maxWidth - second.measuredWidth) / 2, ((constraints.maxHeight - second.measuredHeight) / 2).coerceAtLeast(0))
-      third.place(constraints.maxWidth - third.measuredWidth, ((constraints.maxHeight - third.measuredHeight) / 2).coerceAtLeast(0))
+      first.placeRelative(0, ((constraints.maxHeight - first.measuredHeight) / 2).coerceAtLeast(0))
+      second.placeRelative((constraints.maxWidth - second.measuredWidth) / 2, ((constraints.maxHeight - second.measuredHeight) / 2).coerceAtLeast(0))
+      third.placeRelative(constraints.maxWidth - third.measuredWidth, ((constraints.maxHeight - third.measuredHeight) / 2).coerceAtLeast(0))
     }
   }
 }
