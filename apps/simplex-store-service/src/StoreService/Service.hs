@@ -320,7 +320,7 @@ refundBalanceCmd turns ChatController {chatStore} ref cents = do
 
 heldText :: UTCTime -> BalanceHold -> T.Text
 heldText now BalanceHold {bhHolder = RegistrationId holder, bhUntil, bhOverdue}
-  | bhOverdue = heldBy <> "its invoice expired at " <> fmtTime bhUntil <> "; the poller closes it within " <> tshow graceMinutes <> " minutes; run the command again then"
+  | bhOverdue = heldBy <> "its invoice expired at " <> fmtTime bhUntil <> "; start the service so the poller closes that order, " <> tshow graceMinutes <> " minutes after the expiry at the earliest, then stop it and run //refund again"
   | bhUntil < now = heldBy <> "whose invoice expired at " <> fmtTime bhUntil <> " holding money; it holds until that payment settles or the invoice closes; run the command again then"
   | otherwise = heldBy <> "its invoice open until " <> fmtTime bhUntil <> "; run the command again then"
   where

@@ -371,7 +371,7 @@ testRefundOverdueHolder ps = withStoreService ps $ \_ _ cc -> do
   now <- getCurrentTime
   let expiry = addUTCTime (-120) now
   heldSource cc expiry
-  heldRefusals cc $ "held by order h, its invoice expired at " <> minuteText expiry <> "; the poller closes it within 10 minutes; run the command again then"
+  heldRefusals cc $ "held by order h, its invoice expired at " <> minuteText expiry <> "; start the service so the poller closes that order, 10 minutes after the expiry at the earliest, then stop it and run //refund again"
   waiters <- newWaiters
   expireOverdue (chatStore cc) waiters Nothing now now [InvoiceId "inv-h"] `shouldReturn` [InvoiceId "inv-h"]
   refundRaw cc "s 10000" `shouldReturn` recordedS

@@ -855,7 +855,7 @@ after the invoice closed. The buyer spends a balance on another name from Your n
 back: the page tells them to write to chat@simplex.chat with the order's reference, which is its
 invoice id, or its registration id for an order without an invoice. Nothing is refunded
 automatically, and the service never learns where to send money. Support records each refund in
-`--run-cli` mode, as `//revoke` of a name code:
+`--run-cli` mode with the service stopped, like the other `//` commands:
 
 ```
 //refund <reference>
@@ -874,8 +874,8 @@ automatically, and the service never learns where to send money. Support records
    `xmr`), the part paid from the balance of the next order listed, and, marked `late`, money
    credited after its invoice closed.
 2. Run the command the answer ends with. The cents must equal the whole balance: a refund zeroes it,
-   and part of a balance is never refunded. If the balance changed since step 1, by a spend or a
-   late credit, nothing is recorded and the answer gives the balance now; start again at step 1.
+   and part of a balance is never refunded. Other cents record nothing, and the answer gives the
+   balance.
 3. The answer, `Recorded a refund of $100.00 for order <id>. Refund it now, by: …`, repeats the
    chain. Pay the money back now, by the methods it lists: a card payment as a refund in the Stripe
    Dashboard, crypto to an address the buyer gives, at that day's rate, since the balance is in US
@@ -888,11 +888,12 @@ its invoice is waiting for the difference. The command names the order and its i
 instead:
 
 - `its invoice open until <time>`: if the buyer pays it, the balance is spent; if not, it is released
-  once the invoice expires and the poller closes the order. Run the command again then.
-- `its invoice expired at <time>; the poller closes it within 10 minutes`: the poller closes the
-  order at its first pass 10 minutes after the expiry and releases the hold; run the command again
-  then. The poller runs only in service mode, and closes a card order only once Stripe accepts the
-  cancel.
+  once the invoice expires and the poller, in service mode, closes the order. Run the command again
+  then.
+- `its invoice expired at <time>; start the service so the poller closes that order, 10 minutes
+  after the expiry at the earliest, then stop it and run //refund again`: the poller runs only in
+  service mode. Its first pass from 10 minutes after the expiry closes the order and releases the
+  hold; a card order closes only once Stripe accepts the cancel.
 - `whose invoice expired at <time> holding money`: a payment reached the invoice; the hold stays
   until that payment settles, which spends the balance, or the provider closes the invoice, which
   releases it.
@@ -900,8 +901,3 @@ instead:
 The command also answers when the reference matches no order, when the order has no balance, and
 when the cents are not the balance. A refunded balance shows `amount` 0 and its `refunded` total in
 Your names; a later late payment credits it again, and a second refund adds to `refunded`.
-
-The service may spend, settle or credit the same balance from the same database while the command
-runs. The refund and every spend are conditional on the amount they read, and the refund also on no
-order holding the balance, so the money is never both spent and refunded; a refund that loses
-answers with the balance now.
