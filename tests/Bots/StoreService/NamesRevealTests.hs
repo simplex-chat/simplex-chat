@@ -9,6 +9,7 @@ module Bots.StoreService.NamesRevealTests (namesRevealTests) where
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (noncesCall)
 import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), aliceOrder, invoiceRegistration, orderTime, placed, post, registrationOf, settleNow, settled, withOrders)
+import Bots.StoreService.NamesOwnerTests (answerFree, moveBody, moveTo, postMove)
 import Bots.StoreService.NamesPhasesTests (change, held, prompt, registrationPath, seenVersion, woken)
 import Bots.StoreService.NamesStoreTests (ownerA)
 import Bots.StoreService.WebTests (bounded, jsonObject, statusOf, webGet, webRequestBody)
@@ -26,7 +27,7 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as LB
 import Data.IORef (writeIORef)
 import Data.Int (Int64)
-import Data.Maybe (fromJust, fromMaybe, isJust, isNothing, maybeToList)
+import Data.Maybe (fromJust, fromMaybe, isJust, maybeToList)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
@@ -40,20 +41,19 @@ import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..), Secp256k1PrivateKey, signRecoverable)
 import Simplex.Messaging.Eth.EIP712 (serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
-import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Abi (hex, uint256)
 import StoreService.Names.Chain (newChainClient)
 import StoreService.Names.Contracts (newContracts)
 import StoreService.Names.Links (linkMaxBytes)
 import StoreService.Names.Orders (OrdersEnv (..))
-import StoreService.Names.Phases (RegistrationId (..), publish)
+import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Registration (Registration (..), makeCommitment, registerIntentDigest, sponsorDomain)
-import StoreService.Names.Signatures (OrderFields (..))
-import StoreService.Names.Store (NamePhase (..), NameRegistration (..), NameReveal (..), VersionWrite (..), getRegistration, retargetRegistration)
-import StoreService.Names.Turns (labelTurnCount, withLabelTurns)
-import StoreService.Web.Http (holdMicros, maxBodyBytes, nameBodyBytes, readLimit)
+import StoreService.Names.Store (NamePhase (..), NameRegistration (..), NameReveal (..), getRegistration)
+import StoreService.Names.Turns (labelTurnCount)
+import StoreService.Web.Http (createLimit, holdMicros, maxBodyBytes, nameBodyBytes, readLimit)
 import StoreService.Web.Names (Route (..), namesApp)
+import StoreService.Web.Names.Owner (retargetHandler)
 import StoreService.Web.Names.Registration (registrationHandler, revealHandler)
 import StoreService.Web.Server (WebEnv (..), webApp)
 import System.Timeout (timeout)
@@ -90,7 +90,7 @@ data Gate = Gate {gArmed :: TVar Bool, gArrived :: TMVar (), gRelease :: TMVar (
 
 data Fx = Fx {fCtx :: Ctx, fGate :: Gate, fApp :: Application}
 
--- | The registration routes as namesRoutes registers them, the reveal's included.
+-- | The registration routes as namesRoutes registers them, the reveal's and another name's included.
 withReveals :: (Fx -> IO a) -> IO a
 withReveals action = withOrders $ \ctx@Ctx {cNode, cOrders, cWeb, cRandom} -> do
   gate <- Gate <$> newTVarIO False <*> newEmptyTMVarIO <*> newEmptyTMVarIO
@@ -103,6 +103,7 @@ withReveals action = withOrders $ \ctx@Ctx {cNode, cOrders, cWeb, cRandom} -> do
         routes = \case
           ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler orders holdMicros rid}
           ["api", "registration", rid, "reveal"] -> Just Route {rMethod = "POST", rLimit = readLimit, rHandler = revealHandler orders rid}
+          ["api", "registration", rid, "name"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = retargetHandler orders rid}
           _ -> Nothing
         app req respond = fromMaybe (webApp web req respond) (namesApp (weHttp web) routes req respond)
     Warp.testWithApplication (pure app) $ \port ->
@@ -117,7 +118,7 @@ gatedNode Gate {gArmed, gArrived, gRelease} mgr FakeEthNode {fnUrl} req respond 
   r <- httpLbs forward {method = "POST", requestBody = RequestBodyLBS body, requestHeaders = [(hContentType, "application/json")]} mgr
   respond $ responseLBS (responseStatus r) [(hContentType, "application/json")] (responseBody r)
 
--- | The request, held at its first chain read: a reveal's nonce read, its last check before it writes.
+-- | The request, held at its first chain read: a reveal's nonce read, its last check before it writes, or /name's name check, in its turns.
 pausedAtChainRead :: Gate -> IO a -> IO (Async a)
 pausedAtChainRead Gate {gArmed, gArrived} request = do
   atomically $ writeTVar gArmed True
@@ -239,28 +240,10 @@ highS sig@RecoverableSignature {rsS, rsRecId} = sig {rsS = i2ospOf_ 32 (n - os2i
   where
     n = ECC.ecc_n $ ECC.common_curve $ ECC.getCurveByName ECC.SEC_p256k1
 
--- | /name as section 8 runs it from committed: only after a reveal refused for its links, under both names' turns, a compare-and-set.
-moveName :: Ctx -> IO () -> RegistrationId -> OrderFields -> IO (Either Text Int64)
-moveName ctx@Ctx {cStore, cOrders = OrdersEnv {oeTurns, oePhases}} inTurns rid new@OrderFields {ofLabelHash} = do
-  NameRegistration {nrLabelHash} <- stored ctx rid
-  withLabelTurns oeTurns nrLabelHash ofLabelHash $ do
-    inTurns
-    r@NameRegistration {nrPhase, nrLinksRefusedAt, nrPrice} <- stored ctx rid
-    if nrPhase == PCommitted && isNothing nrLinksRefusedAt
-      then pure $ Left "bad_request"
-      else
-        withTransaction cStore (\db -> retargetRegistration db r new nrPrice orderTime) >>= \case
-          Written v -> Right v <$ atomically (publish oePhases rid v)
-          other -> pure $ Left $ tshow other
-
 -- | Waits until this many requests hold or wait for the label's turn.
 queuedOn :: Ctx -> LabelHash -> Int -> IO ()
 queuedOn Ctx {cOrders = OrdersEnv {oeTurns}} lh n =
   timeout prompt (atomically $ labelTurnCount oeTurns lh >>= check . (== n)) >>= maybe (fail $ show n <> " requests did not queue on the turn") pure
-
-fieldsOf :: Registration -> OrderFields
-fieldsOf r@Registration {rLabel, rDuration} =
-  OrderFields {ofLabelHash = labelHash rLabel, ofLength = T.length rLabel, ofDuration = rDuration, ofCommitment = makeCommitment r, ofSealed = "sealed-" <> rLabel}
 
 -- tests
 
@@ -494,35 +477,37 @@ testLostRace = bounded "lost race" $ withReveals $ \Fx {fCtx = ctx, fGate} -> do
 
 testRacesName :: IO ()
 testRacesName = bounded "races /name" $ withReveals $ \Fx {fCtx = ctx, fGate} -> do
-  let moved = dynamis {rContactLink = Just contactLink}
   -- the reveal holds the name's turn while it reads the nonce, so /name waits and then finds it revealed
   rid <- committed ctx (orderOf alice)
+  answerFree ctx "alicebakers"
+  toAlicebakers <- moveTo ctx "alicebakers" 1
   inFlight <- pausedAtChainRead fGate (ownerReveal ctx rid alice)
-  move <- async $ moveName ctx (pure ()) rid (fieldsOf moved)
+  move <- async $ postMove ctx rid =<< moveBody ctx keyA rid toAlicebakers
   queuedOn ctx (labelHash "alicebakery") 2
   releaseRead fGate
   wait inFlight `shouldReturn` accepted
-  wait move `shouldReturn` Left "bad_request"
-  NameRegistration {nrLabelHash, nrReveal} <- stored ctx rid
-  (nrLabelHash, rvLabel <$> nrReveal) `shouldBe` (labelHash "alicebakery", Just "alicebakery")
-  -- /name holds the turns of a reveal refused for its links, so the reveal waits and then finds the order moved
+  wait move `shouldReturn` badRequest
+  NameRegistration {nrLabelHash, nrReveal, nrMoves} <- stored ctx rid
+  (nrLabelHash, rvLabel <$> nrReveal, nrMoves) `shouldBe` (labelHash "alicebakery", Just "alicebakery", 0)
+  -- /name holds the turns of a reveal refused for its links while it checks the name, so the reveal waits and then finds the order moved
+  answerFree ctx "dynamit"
   let overBound = dynamis {rContactLink = Just $ padded "a" (linkMaxBytes + 1)}
   refusedRid <- committed ctx (orderOf overBound)
   body <- ownerBody ctx overBound
   reveal ctx refusedRid body `shouldReturn` refused 400 "invalid_link"
-  entered <- newEmptyMVar
-  release <- newEmptyMVar
-  move' <- async $ moveName ctx (putMVar entered () >> takeMVar release) refusedRid (fieldsOf moved {rLabel = "dynamit"})
-  takeMVar entered
+  toDynamit <- moveTo ctx "dynamit" 2
+  move' <- pausedAtChainRead fGate (postMove ctx refusedRid =<< moveBody ctx keyA refusedRid toDynamit)
   late <- async $ reveal ctx refusedRid body
   queuedOn ctx (labelHash "dynamis") 2
-  putMVar release ()
-  Right v <- wait move'
+  releaseRead fGate
+  (200, Just movedView) <- wait move'
   (status, answer) <- wait late
   let view = registrationOf $ fromJust answer
       LabelHash dynamit = labelHash "dynamit"
-  (status, field "error" =<< answer, field "version" view, field "phase" view, field "labelHash" view)
-    `shouldBe` (409, Just "registration_changed", Just (J.toJSON v), Just "queued", Just (J.String $ hex dynamit))
+  (status, field "error" =<< answer, field "version" view, field "phase" view, field "labelHash" view, field "moves" view)
+    `shouldBe` (409, Just "registration_changed", field "version" movedView, Just "queued", Just (J.String $ hex dynamit), Just (J.Number 1))
+  NameRegistration {nrLabelHash = movedHash, nrReveal = movedReveal, nrLinksRefusedAt} <- stored ctx refusedRid
+  (movedHash, movedReveal, nrLinksRefusedAt) `shouldBe` (labelHash "dynamit", Nothing, Nothing)
 
 testReadToken :: IO ()
 testReadToken = withReveals $ \Fx {fCtx = ctx@Ctx {cClient}} -> do

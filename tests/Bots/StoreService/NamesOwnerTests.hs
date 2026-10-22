@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 
-module Bots.StoreService.NamesOwnerTests (namesOwnerTests) where
+module Bots.StoreService.NamesOwnerTests (namesOwnerTests, answerFree, moveBody, moveTo, postMove) where
 
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (launchPricesAnswer, oracle, pricesAnswer, pricesCall, registrarOf, rentPriceAnswer, rentPriceCall, unhex)
