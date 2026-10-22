@@ -3635,6 +3635,7 @@ export interface NewUser {
   pastTimestamp: boolean
   userChatRelay: boolean
   clientService: boolean
+  keepActiveUser: boolean
 }
 
 export interface NoteFolder {

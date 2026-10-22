@@ -39,6 +39,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.CIFileViewScope
 import chat.simplex.common.views.chat.topPaddingToContent
+import chat.simplex.common.views.createProfileForInvitation
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.BuildConfigCommon
@@ -314,6 +315,51 @@ fun ActiveProfilePicker(
     }
   }
 
+  fun selectProfile(user: User) {
+    switchingProfile.value = true
+    withApi {
+      try {
+        appPreferences.incognito.set(false)
+        var updatedConn: PendingContactConnection? = null;
+
+        if (contactConnection != null) {
+          updatedConn = controller.apiChangeConnectionUser(rhId, contactConnection.pccConnId, user.userId)
+          if (updatedConn != null) {
+            withContext(Dispatchers.Main) {
+              chatModel.chatsContext.updateContactConnection(rhId, updatedConn)
+              updateShownConnection(updatedConn)
+            }
+          }
+        }
+
+        if ((contactConnection != null && updatedConn != null) || contactConnection == null) {
+          controller.changeActiveUser_(
+            rhId = user.remoteHostId,
+            toUserId = user.userId,
+            viewPwd = if (user.hidden) searchTextOrPassword.value else null
+          )
+
+          if (chatModel.currentUser.value?.userId != user.userId) {
+            AlertManager.shared.showAlertMsg(generalGetString(
+              MR.strings.switching_profile_error_title),
+              String.format(generalGetString(MR.strings.switching_profile_error_message), user.chatViewName)
+            )
+          }
+        }
+
+        if (updatedConn != null) {
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.updateContactConnection(user.remoteHostId, updatedConn)
+          }
+        }
+
+        close()
+      } finally {
+        switchingProfile.value = false
+      }
+    }
+  }
+
   @Composable
   fun ProfilePickerUserOption(user: User) {
     val selected = selectedProfile?.userId == user.userId && !incognito
@@ -322,52 +368,20 @@ fun ActiveProfilePicker(
       title = user.chatViewName,
       disabled = switchingProfile.value || selected,
       selected = selected,
-      onSelected = {
-        switchingProfile.value = true
-        withApi {
-          try {
-            appPreferences.incognito.set(false)
-            var updatedConn: PendingContactConnection? = null;
-
-            if (contactConnection != null) {
-              updatedConn = controller.apiChangeConnectionUser(rhId, contactConnection.pccConnId, user.userId)
-              if (updatedConn != null) {
-                withContext(Dispatchers.Main) {
-                  chatModel.chatsContext.updateContactConnection(rhId, updatedConn)
-                  updateShownConnection(updatedConn)
-                }
-              }
-            }
-
-            if ((contactConnection != null && updatedConn != null) || contactConnection == null) {
-              controller.changeActiveUser_(
-                rhId = user.remoteHostId,
-                toUserId = user.userId,
-                viewPwd = if (user.hidden) searchTextOrPassword.value else null
-              )
-
-              if (chatModel.currentUser.value?.userId != user.userId) {
-                AlertManager.shared.showAlertMsg(generalGetString(
-                  MR.strings.switching_profile_error_title),
-                  String.format(generalGetString(MR.strings.switching_profile_error_message), user.chatViewName)
-                )
-              }
-            }
-
-            if (updatedConn != null) {
-              withContext(Dispatchers.Main) {
-                chatModel.chatsContext.updateContactConnection(user.remoteHostId, updatedConn)
-              }
-            }
-
-            close()
-          } finally {
-            switchingProfile.value = false
-          }
-        }
-      },
+      onSelected = { selectProfile(user) },
         image = { ProfileImage(size = 42.dp, image = user.image) },
         badge = user.profile.localBadge
+    )
+  }
+
+  @Composable
+  fun NewProfileOption() {
+    ProfilePickerOption(
+      title = stringResource(MR.strings.users_add),
+      disabled = switchingProfile.value,
+      selected = false,
+      onSelected = { createProfileForInvitation(rhId) { selectProfile(it) } },
+      image = { AddProfileOptionImage() }
     )
   }
 
@@ -451,6 +465,11 @@ fun ActiveProfilePicker(
           }
           itemsIndexed(filteredProfiles) { _, p ->
             ProfilePickerUserOption(p)
+          }
+        }
+        if (contactConnection != null) {
+          item {
+            NewProfileOption()
           }
         }
         item {
@@ -591,6 +610,18 @@ fun ToggleShortLinkButton(short: MutableState<Boolean>) {
         indication = null
       ) { short.value = !short.value },
       style = MaterialTheme.typography.body2, fontSize = 14.sp, color = MaterialTheme.colors.primary
+    )
+  }
+}
+
+@Composable
+fun AddProfileOptionImage() {
+  Box(Modifier.size(42.dp), contentAlignment = Alignment.Center) {
+    Icon(
+      painterResource(MR.images.ic_manage_accounts),
+      contentDescription = null,
+      Modifier.size(24.dp),
+      tint = MaterialTheme.colors.primary,
     )
   }
 }
