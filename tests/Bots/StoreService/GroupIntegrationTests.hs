@@ -522,9 +522,9 @@ testEarliestPromotedOnLaterJoin ps = do
   runWithOwner svc $ \cc env gid alice -> do
     setMemberRole cc gid "alice" "member"
     executeSql cc "UPDATE sx_badge_service_group SET owner_bootstrapped = 0"
-    withMemberJoined ps cc alice $ \_ -> do
+    withMemberJoined ps cc alice $ \bob -> do
       waitMemberRole cc gid "alice" "owner"
-      awaitLane cc env
+      awaitLaneOnConsoles cc env [alice, bob]
       memberRoles cc gid `shouldReturn` [("alice", "owner"), ("bob", "member")]
 
 testJoiningMemberSkippedOnStart :: HasCallStack => TestParams -> IO ()
@@ -637,7 +637,7 @@ withTwoMembersOwnerUnset svc@GroupSvc {gsPs = ps} action =
   runWithOwner svc $ \cc env gid alice ->
     withMemberJoined ps cc alice $ \bob -> do
       -- The lane must handle bob's join before the flag is cleared, or it would act on the cleared flag in this run.
-      awaitLane cc env
+      awaitLaneOnConsoles cc env [alice, bob]
       action cc gid bob
       executeSql cc "UPDATE sx_badge_service_group SET owner_bootstrapped = 0"
 
@@ -664,9 +664,9 @@ testFailedPromotionNotRetried ps = do
     withNewTestChat ps "alice" aliceProfile $ \alice -> do
       joinGroup cc alice
       pollUntilTrue $ mgOwnerBootstrapped <$> storedGroup cc
-      awaitLane cc env
+      awaitLaneOnConsoles cc env [alice]
       setBotRole cc "owner"
-      withMemberJoined ps cc alice $ \_ -> awaitLane cc env
+      withMemberJoined ps cc alice $ \bob -> awaitLaneOnConsoles cc env [alice, bob]
       memberRoles cc gid `shouldReturn` [("alice", "member"), ("bob", "member")]
       drainConsole alice
 
@@ -726,6 +726,7 @@ testBlockedMemberCommandIgnored ps = do
       content `shouldSatisfy` T.isInfixOf "/bulk legend months 255 count 100"
       ownerIssuesNext cc alice 1
       awaitOnConsole alice "Code: SB-"
+      awaitOnConsole bob "Code: SB-"
 
 -- The lane is a single FIFO drainer, so the owner's next code proves every earlier command was handled.
 ownerIssuesNext :: HasCallStack => ChatController -> TestCC -> Int -> IO ()
@@ -862,7 +863,7 @@ testStaleRefreshIgnored ps =
     redeemOk gsKey cc env code
     usedUp <- waitItemText cc trackerItemId "All 2 uses redeemed"
     replayRefresh cc env code 2
-    awaitLane cc env
+    awaitLaneOnConsoles cc env [alice]
     sentItemsWithCode cc code `shouldReturn` [usedUp]
 
 testCountersKeptApart :: HasCallStack => TestParams -> IO ()
@@ -958,7 +959,7 @@ testDeletedTrackerNotReposted ps =
     (itemId0, _, code) <- issueTracked cc alice "supporter" 2
     deleteItem cc itemId0
     readItemText cc itemId0 `shouldReturn` ""
-    trackerNeverReposted gsKey cc env code itemId0 []
+    trackerNeverReposted gsKey cc env alice code itemId0 []
 
 testDeletedTrackerNotRepostedOnRevoke :: HasCallStack => TestParams -> IO ()
 testDeletedTrackerNotRepostedOnRevoke ps =
@@ -976,7 +977,7 @@ testDeletedTrackerUsedUp ps =
     (itemId0, _, code) <- issueTracked cc alice "supporter" 2
     deleteItem cc itemId0
     replicateM_ 2 $ redeemOk gsKey cc env code
-    awaitLane cc env
+    awaitLaneOnConsoles cc env [alice]
     sentItemsWithCode cc code `shouldReturn` []
 
 testModeratedTrackerNotRepostedOnRevoke :: HasCallStack => TestParams -> IO ()
@@ -997,7 +998,7 @@ testModeratedTrackerNotReposted ps =
     byMember `shouldSatisfy` isJust
     content `shouldSatisfy` T.isInfixOf code
     readItemText cc itemId0 `shouldReturn` tracker0
-    trackerNeverReposted gsKey cc env code itemId0 [tracker0]
+    trackerNeverReposted gsKey cc env alice code itemId0 [tracker0]
 
 -- This is the item_deleted value the core writes for a message a member deleted for everyone.
 moderatedMark :: Int
@@ -1005,15 +1006,15 @@ moderatedMark = 1
 
 -- The code must be the 2-use tracked one: two claims, the second past the edit window and using it up,
 -- leave the code's bot items as they were.
-trackerNeverReposted :: HasCallStack => BadgeIssuerKey -> ChatController -> ServiceState -> Text -> Int64 -> [Text] -> IO ()
-trackerNeverReposted key cc env code itemId0 codeItems = do
+trackerNeverReposted :: HasCallStack => BadgeIssuerKey -> ChatController -> ServiceState -> TestCC -> Text -> Int64 -> [Text] -> IO ()
+trackerNeverReposted key cc env member code itemId0 codeItems = do
   redeemOk key cc env code
-  awaitLane cc env
+  awaitLaneOnConsoles cc env [member]
   sentItemsWithCode cc code `shouldReturn` codeItems
   trackerAnchor cc 2 `shouldReturn` Just itemId0
   void $ backdateTracker cc 2
   redeemOk key cc env code
-  awaitLane cc env
+  awaitLaneOnConsoles cc env [member]
   sentItemsWithCode cc code `shouldReturn` codeItems
   trackerAnchor cc 2 `shouldReturn` Just itemId0
 
@@ -1100,7 +1101,7 @@ testStalledTrackerReconciledOnRestart ps = do
     (stalledItemId, _, code) <- issueTracked cc alice "supporter" 5
     redeemOk gsKey cc env code
     redeemOk gsKey cc env code
-    awaitLane cc env
+    awaitLaneOnConsoles cc env [alice]
     stalled <- waitItemText cc stalledItemId "3 of 5 uses remaining"
     redeemLosingRefresh gsKey cc code
     readItemText cc stalledItemId `shouldReturn` stalled
@@ -1175,7 +1176,7 @@ testRevokeRetiresTracker ps =
     retired `shouldBe` retiredText code
     revokedTrackerCount cc `shouldReturn` 1
     replayRefresh cc env code 2
-    awaitLane cc env
+    awaitLaneOnConsoles cc env [alice]
     readItemText cc trackerItemId `shouldReturn` retired
     revokedTrackerCount cc `shouldReturn` 1
     redeemViaService gsKey cc env code >>= (`shouldAnswerError` STECodeInvalid)
@@ -1266,6 +1267,10 @@ awaitLane cc env = do
   issued <- codeCount cc
   atomically $ writeTQueue (groupEventQ env) (GEInGroup mgGroupId (GACommand GROwner "/issue supporter"))
   pollUntilTrue $ (> issued) <$> codeCount cc
+
+-- The lane's reply to awaitLane's command reaches each member after every message the lane sent before it.
+awaitLaneOnConsoles :: HasCallStack => ChatController -> ServiceState -> [TestCC] -> IO ()
+awaitLaneOnConsoles cc env members = awaitLane cc env >> forM_ members (`awaitOnConsole` "Code: SB-")
 
 -- Saving a tracker's item id is the lane's last write for its command, so the lane is idle after it.
 settleLane :: HasCallStack => ChatController -> ServiceState -> Int64 -> IO ()
