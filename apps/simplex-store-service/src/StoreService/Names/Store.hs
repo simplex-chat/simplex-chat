@@ -1039,9 +1039,9 @@ pendingCase =
   where
     literal p = fromString $ "'" <> T.unpack (textEncode p) <> "'"
 
--- | What an alert names as received: cents for card, units for crypto.
+-- | What an alert names as received: units for crypto, and cents for card or for crypto that could not be counted in units.
 receivedFigure :: Query
-receivedFigure = " CASE WHEN" <> cardInvoice <> " THEN p.amount ELSE p.received_units END"
+receivedFigure = " CASE WHEN" <> cardInvoice <> " THEN p.amount ELSE COALESCE(p.received_units, p.amount) END"
 
 lateColumns :: Query
 lateColumns =
@@ -1112,7 +1112,7 @@ lateAlertDue db cutoff =
         <> pendingCase
         <> " IS NOT NULL AND (ni.late_alerted_at IS NULL OR"
         <> receivedFigure
-        <> " > ni.late_alerted_units) ORDER BY p.created_at, ni.invoice_id"
+        <> " > COALESCE(ni.late_alerted_units, -1)) ORDER BY p.created_at, ni.invoice_id"
     )
     (PUnpaid, truncateToSecond cutoff)
     >>= decodeAll toAlert

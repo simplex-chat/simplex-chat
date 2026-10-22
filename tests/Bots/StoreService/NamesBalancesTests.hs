@@ -81,6 +81,7 @@ namesBalancesTests = describe "StoreService names: balances" $ do
     it "tells each case of pending money and selects confirmed money not all credited, by the order whatever the invoice's status" testLateScans
     it "leaves 0.1 and 0.2 BTC credited against 0.3 confirmed neither pending nor selected" testExactUnits
     it "alerts on pending money past the cutoff once, again only when more arrives, claimed by one of two instances" testLateAlerts
+    it "alerts again on money that could not be counted in units when more of it arrives" testUncountedAlertRepeats
   describe "turns" $ do
     it "runs two holders of one balance one after the other, and nests in a label turn" testBalanceTurn
 #if defined(dbPostgres)
@@ -666,6 +667,18 @@ testLateAlerts = withServiceStore $ \st -> do
   claim more (at 63) `shouldReturn` False
   due `shouldReturn` []
   map marks <$> withTransaction st (\db -> lateAlertDue db (at 180)) `shouldReturn` [(InvoiceId "inv-new", LPUnconfirmed, Just 300000, Nothing, Nothing)]
+
+testUncountedAlertRepeats :: IO ()
+testUncountedAlertRepeats = withServiceStore $ \st -> do
+  closedWith st "x" False (cryptoPaid 0 0) {pCents = 5000, pUnits = Nothing} t0
+  let due :: IO [LateAlert]
+      due = withTransaction st $ \db -> lateAlertDue db (at 60)
+  [alert] <- due
+  (laPending alert, laReceived alert) `shouldBe` (LPUncounted, Just 5000)
+  withTransaction st (\db -> claimLateAlert db alert (at 61)) `shouldReturn` True
+  due `shouldReturn` []
+  withTransaction st $ \db -> DB.execute db "UPDATE sx_badge_service_payments SET amount = ? WHERE invoice_id = ?" (6000 :: Int, "inv-x" :: Text)
+  map (\LateAlert {laPending, laReceived, laAlertedReceived} -> (laPending, laReceived, laAlertedReceived)) <$> due `shouldReturn` [(LPUncounted, Just 6000, Just 5000)]
 
 -- turns
 
