@@ -17,6 +17,18 @@ module Bots.StoreService.NamesOrdersTests
     settled,
     invoiceRegistration,
     registrationOf,
+    keyA,
+    keyB,
+    ownerAText,
+    ownerBText,
+    yearsDuration,
+    codeRoutes,
+    issueCode,
+    registered,
+    registrationById,
+    field,
+    advance,
+    refusedWith,
   )
 where
 

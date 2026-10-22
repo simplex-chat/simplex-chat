@@ -41,6 +41,7 @@ module StoreService.Names.Store
     closeOverdue,
     updateRegistration,
     retargetRegistration,
+    setIssuedCode,
     findRegistrations,
     isLabelRegistering,
     activeRegistrations,
@@ -614,6 +615,10 @@ retargetRegistration db r OrderFields {ofLabelHash, ofLength, ofDuration, ofComm
         nrFailedAt = Nothing,
         nrError = Nothing
       }
+
+-- | Links the code a taken order was turned into, in the transaction that wrote its code_issued phase and version.
+setIssuedCode :: DB.Connection -> RegistrationId -> Int64 -> IO ()
+setIssuedCode db (RegistrationId rid) codeId = DB.execute db "UPDATE sx_badge_service_name_registrations SET issued_code_id = ? WHERE registration_id = ?" (codeId, rid)
 
 -- | Newest first, at most findLimit.
 findRegistrations :: DB.Connection -> Address -> IO [NameRegistration]
