@@ -972,9 +972,7 @@
     <string name="message_reactions_prohibited_in_this_chat">Reaksi pesan dilarang dalam obrolan ini.</string>
     <string name="migrate_from_device_to_another_device">Pindah ke perangkat lain</string>
     <string name="call_desktop_permission_denied_title">Untuk melakukan panggilan, izinkan penggunaan mikrofon. Akhiri panggilan dan coba panggil lagi.</string>
-    <string name="call_desktop_permission_denied_chrome">Klik tombol info di dekat kolom alamat untuk mengizinkan penggunaan mikrofon.</string>
     <string name="relay_server_protects_ip">Server relai melindungi alamat IP Anda, tetapi dapat mengamati durasi panggilan.</string>
-    <string name="call_desktop_permission_denied_safari">Buka Pengaturan Safari / Situs Web / Mikrofon, lalu pilih Izinkan untuk localhost.</string>
     <string name="open_simplex_chat_to_accept_call">Buka SimpleX Chat untuk terima panggilan</string>
     <string name="open_verb">Buka</string>
     <string name="status_e2e_encrypted">terenkripsi e2e</string>
@@ -1072,8 +1070,6 @@
     <string name="network_proxy_random_credentials">Gunakan kredensial acak</string>
     <string name="callstate_waiting_for_confirmation">menunggu konfirmasi…</string>
     <string name="permissions_required">Berikan izin</string>
-    <string name="unable_to_open_browser_title">Gagal membuka peramban</string>
-    <string name="unable_to_open_browser_desc">Peramban web bawaan diperlukan untuk panggilan. Harap konfigurasikan peramban bawaan dalam sistem, dan bagikan informasi lebih lanjut dengan pengembang.</string>
     <string name="receipts_contacts_enable_for_all">Aktifkan untuk semua</string>
     <string name="receipts_groups_disable_for_all">Nonaktifkan untuk semua grup</string>
     <string name="icon_descr_add_members">Undang anggota</string>

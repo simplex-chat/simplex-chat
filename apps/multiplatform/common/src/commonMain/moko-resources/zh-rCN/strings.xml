@@ -1555,8 +1555,6 @@
     <string name="call_service_notification_video_call">视频通话</string>
     <string name="call_service_notification_audio_call">语音通话</string>
     <string name="call_service_notification_end_call">结束通话</string>
-    <string name="unable_to_open_browser_title">打开浏览器出错</string>
-    <string name="unable_to_open_browser_desc">没有默认网络浏览器无法使用通话功能。请在系统中配置默认浏览器并和开发者分享更多信息。</string>
     <string name="e2ee_info_pq_short">此聊天受抗量子的端到端加密保护。</string>
     <string name="e2ee_info_no_pq_short">此聊天受端到端加密保护。</string>
     <string name="auth_open_migration_to_another_device">打开迁移屏幕</string>
@@ -2022,9 +2020,7 @@
     <string name="network_session_mode_session">应用会话</string>
     <string name="network_session_mode_session_description">每次启动应用都会使用新的 SOCKS 凭据。</string>
     <string name="network_session_mode_server">服务器</string>
-    <string name="call_desktop_permission_denied_safari">打开 Safari 设置/网站/麦克风，接着在 localhost 选择“允许”。</string>
     <string name="call_desktop_permission_denied_title">要进行通话，请允许使用设备麦克风。结束通话并尝试再次呼叫。</string>
-    <string name="call_desktop_permission_denied_chrome">单击地址栏附近的“信息”按钮允许使用麦克风。</string>
     <string name="network_session_mode_server_description">每个服务器都会使用新的 SOCKS 凭据。</string>
     <string name="v6_1_message_dates_descr">更好的消息日期。</string>
     <string name="v6_1_better_security">更佳的安全性✅</string>

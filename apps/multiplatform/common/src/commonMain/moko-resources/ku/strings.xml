@@ -422,7 +422,6 @@
     <string name="smp_servers_check_address">Adresa serverê kontrol bike û dîsa biceribîne.</string>
     <string name="migrate_from_device_check_connection_and_try_again">Girêdana xwe yî înternetê kontrol bike û dîsa biceribîne</string>
     <string name="clear_note_folder_question">Notên şexsî vala bike?</string>
-    <string name="call_desktop_permission_denied_chrome">Pêl pişkoka melûmatê ya nêzîkî cihê adresê bike ji bo destûrdana mîkrofonê.</string>
     <string name="color_mode">Moda reng</string>
     <string name="in_developing_title">Di wextekî nêzîk de tê!</string>
     <string name="smp_server_test_compare_file">Dosya qiyas bike</string>

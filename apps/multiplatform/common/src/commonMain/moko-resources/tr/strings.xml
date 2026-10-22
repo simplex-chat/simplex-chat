@@ -1565,11 +1565,9 @@
     <string name="message_too_large">Mesaj çok büyük</string>
     <string name="database_migration_in_progress">Veritabanı geçişi devam ediyor.
 \nBu birkaç dakika sürebilir.</string>
-    <string name="unable_to_open_browser_desc">Aramalar için varsayılan web tarayıcısı gereklidir. Lütfen sistemdeki varsayılan tarayıcıyı yapılandırın ve geliştiricilerle daha fazla bilgi paylaşın.</string>
     <string name="call_service_notification_audio_call">Sesli arama</string>
     <string name="call_service_notification_video_call">Görüntülü arama</string>
     <string name="call_service_notification_end_call">Aramayı bitir</string>
-    <string name="unable_to_open_browser_title">Tarayıcıyı açarken hata</string>
     <string name="e2ee_info_no_pq"><![CDATA[Mesajlar, dosyalar ve aramalar, mükemmel ileriye dönük gizlilik, reddetme ve izinsiz giriş kurtarması ile <b>uçtan uca şifreleme</b> ile korunmaktadır.]]></string>
     <string name="e2ee_info_no_pq_short">Bu sohbet uçtan uca şifrelemeyle korunmaktadır.</string>
     <string name="auth_open_migration_to_another_device">Taşıma ekranını aç</string>
@@ -2021,8 +2019,6 @@
     <string name="app_check_for_updates_stable">Stabil</string>
     <string name="app_check_for_updates_update_available">Güncelleme mevcut: %s</string>
     <string name="remote_ctrl_connection_stopped_identity_desc">Bu bağlantı başka bir mobil cihazda kullanıldı, lütfen masaüstünde yeni bir bağlantı oluşturun.</string>
-    <string name="call_desktop_permission_denied_chrome">Mikrofon kullanımına izin vermek için adres alanının yanındaki bilgi düğmesine tıklayın.</string>
-    <string name="call_desktop_permission_denied_safari">Safari Ayarları / Web Siteleri / Mikrofon\'u açın, ardından localhost için İzin Ver\'i seçin.</string>
     <string name="call_desktop_permission_denied_title">Arama yapmak için mikrofonunuzu kullanmanıza izin verin. Aramayı sonlandırın ve tekrar aramayı deneyin.</string>
     <string name="settings_message_shape_tail">Konuşma balonu</string>
     <string name="privacy_media_blur_radius_strong">Güçlü</string>

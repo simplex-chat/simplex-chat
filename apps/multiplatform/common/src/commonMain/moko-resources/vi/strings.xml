@@ -691,7 +691,6 @@
 \nLỗi: %s</string>
     <string name="error_removing_member">Lỗi xóa thành viên</string>
     <string name="error_with_info">Lỗi: %s</string>
-    <string name="unable_to_open_browser_title">Lỗi mở trình duyệt</string>
     <string name="error_joining_group">Lỗi tham gia nhóm</string>
     <string name="error_loading_details">Lỗi tải thông tin chi tiết</string>
     <string name="error_receiving_file">Lỗi nhận tệp</string>
@@ -866,7 +865,6 @@
     <string name="host_verb">Lưu trữ</string>
     <string name="network_session_mode_session">Phiên làm việc trên ứng dụng</string>
     <string name="how_to_use_markdown">Cách sử dụng markdown</string>
-    <string name="call_desktop_permission_denied_chrome">Nhấn nút thông tin gần trường địa chỉ để cho phép sử dụng microphone.</string>
     <string name="v6_1_better_calls">Trải nghiệm cuộc gọi tốt hơn</string>
     <string name="v6_1_better_security">Bảo mật hơn ✅</string>
     <string name="v6_1_better_user_experience">Trải nghiệm người dùng tuyệt vời hơn</string>
@@ -1209,7 +1207,6 @@
     <string name="permissions_open_settings">Mở cài đặt</string>
     <string name="migrate_from_device_or_share_this_file_link">Hoặc chia sẻ đường dẫn tệp này một cách an toàn.</string>
     <string name="open_simplex_chat_to_accept_call">Mở SimpleX Chat để chấp nhận cuộc gọi</string>
-    <string name="call_desktop_permission_denied_safari">Mở Cài đặt Safari / Trang Web / Mic, rồi chọn Cho phép với localhost.</string>
     <string name="la_mode_passcode">Mã truy cập</string>
     <string name="open_chat">Mở cuộc trò chuyện</string>
     <string name="app_check_for_updates_button_open">Mở vị trí tệp</string>
@@ -1884,7 +1881,6 @@
     <string name="privacy_chat_list_open_links">Mở các đường dẫn từ danh sách trò chuyện</string>
     <string name="connection_you_accepted_will_be_cancelled">Kết nối bạn đã chấp nhận sẽ bị hủy bỏ!</string>
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">Liên hệ mà bạn đã chia sẻ đường dẫn này sẽ không thể kết nối!</string>
-    <string name="unable_to_open_browser_desc">Trình duyệt web mặc định là cần thiết cho các cuộc gọi. Xin vui lòng thiết lập trình duyệt mặc định trong hệ thống, và chia sẻ thêm thông tin với các nhà phát triển.</string>
     <string name="onboarding_network_operators_app_will_use_different_operators">Ứng dụng bảo vệ sự riêng tư của bạn bằng cách sử dụng các bên vận hành khác nhau trong mỗi cuộc trò chuyện.</string>
     <string name="system_restricted_background_in_call_desc">Ứng dụng có thể bị đóng sau 1 phút chạy trong nền.</string>
     <string name="periodic_notifications_desc">Ứng dụng tìm nhận tin nhắn mới một cách định kỳ - nó tiêu tốn một vài phần trăm pin mỗi ngày. Ứng dụng không sử dụng thông báo đẩy - dữ liệu ở thiết bị của bạn không được gửi đi tới máy chủ nào.</string>

@@ -1454,7 +1454,6 @@
     <string name="block_member_confirmation">Bloquear</string>
     <string name="member_info_member_blocked">bloqueado</string>
     <string name="code_you_scanned_is_not_simplex_link_qr_code">O código que você escaneou não é um QR Code SimpleX.</string>
-    <string name="unable_to_open_browser_desc">O navegador padrão é necessário para chamadas. Configure o navegador padrão no sistema e compartilhe mais informações com os desenvolvedores.</string>
     <string name="these_settings_are_for_your_current_profile">Essas configurações são para o seu perfil atual</string>
     <string name="video_decoding_exception_desc">O vídeo não pode ser decodificado. Por favor, tente com um vídeo diferente ou entre em contato com os desenvolvedores.</string>
     <string name="connect_plan_this_is_your_own_one_time_link">Este é o seu próprio link de uso único!</string>
@@ -1482,7 +1481,6 @@
     <string name="disconnect_desktop_question">Desconectar desktop?</string>
     <string name="enable_camera_access">Habilitar o acesso à câmera</string>
     <string name="encryption_renegotiation_error">Erro de renegociação de criptografia</string>
-    <string name="unable_to_open_browser_title">Erro ao abrir o navegador</string>
     <string name="error_sending_message_contact_invitation">Erro ao enviar o convite</string>
     <string name="loading_chats">Carregando conversas…</string>
     <string name="remote_host_was_disconnected_toast"><![CDATA[Dispositivo Móvel <b>%s</b> foi desconectado]]></string>
@@ -2123,7 +2121,6 @@
     <string name="disable_automatic_deletion">Desativar exclusão de mensagens</string>
     <string name="encryption_renegotiation_in_progress">Renegociação de criptografia em andamento.</string>
     <string name="delete_chat_list_menu_action">Apagar</string>
-    <string name="call_desktop_permission_denied_chrome">Clique no botão de informação perto do campo de endereço para permitir usar o microfone.</string>
     <string name="onboarding_network_operators_app_will_use_for_routing">Por exemplo, se o seu contato receber mensagens por meio de um servidor SimpleX Chat, seu aplicativo as entregará por meio de um servidor Flux.</string>
     <string name="connection_not_ready">A conexão não está pronta.</string>
     <string name="errors_in_servers_configuration">Erros nas configurações de servidores.</string>
@@ -2203,7 +2200,6 @@
     <string name="no_message_servers_configured_for_private_routing">Nenhum servidor para roteamento de mensagens privadas.</string>
     <string name="no_media_servers_configured_for_private_routing">Nenhum servidor para receber arquivos.</string>
     <string name="no_message_servers_configured_for_receiving">Nenhum servidor para receber mensagens.</string>
-    <string name="call_desktop_permission_denied_safari">Abra Configurações do Safari / Websites / Microfone, e escolha Permitir para localhost.</string>
     <string name="operator_server_alert_title">Servidor do operador</string>
     <string name="no_chats_in_list">Nenhuma conversa na lista %s.</string>
     <string name="report_item_visibility_moderators">Somente o remetente e os moderadores podem vê-lo</string>

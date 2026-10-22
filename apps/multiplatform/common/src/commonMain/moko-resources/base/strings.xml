@@ -1306,8 +1306,6 @@
   <string name="callstate_ended">ended</string>
 
   <!-- CallView -->
-  <string name="unable_to_open_browser_title">Error opening browser</string>
-  <string name="unable_to_open_browser_desc">The default web browser is required for calls. Please configure the default browser in the system, and share more information with the developers.</string>
   <string name="permissions_required">Grant permissions</string>
   <string name="permissions_record_audio">Microphone</string>
   <string name="permissions_camera">Camera</string>
@@ -1409,8 +1407,8 @@
   <string name="icon_descr_video_call">video call</string>
   <string name="icon_descr_audio_call">audio call</string>
   <string name="call_desktop_permission_denied_title">To make calls, allow to use your microphone. End the call and try to call again.</string>
-  <string name="call_desktop_permission_denied_chrome">Click info button near address field to allow using microphone.</string>
-  <string name="call_desktop_permission_denied_safari">Open Safari Settings / Websites / Microphone, then choose Allow for localhost.</string>
+  <string name="call_desktop_engine_error">Calls are not available</string>
+  <string name="call_screen_share_screen">Screen %d</string>
 
   <!-- Call settings -->
   <string name="settings_audio_video_calls">Audio &amp; video calls</string>
@@ -1446,6 +1444,8 @@
   <string name="icon_descr_audio_on">Audio on</string>
   <string name="icon_descr_speaker_off">Speaker off</string>
   <string name="icon_descr_speaker_on">Speaker on</string>
+  <string name="icon_descr_screen_share_on">Share screen</string>
+  <string name="icon_descr_screen_share_off">Stop sharing screen</string>
   <string name="icon_descr_sound_muted">Sound muted</string>
   <string name="icon_descr_flip_camera">Flip camera</string>
 

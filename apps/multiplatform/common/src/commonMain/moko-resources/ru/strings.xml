@@ -1714,8 +1714,6 @@
     <string name="migrate_to_device_finalize_migration">Завершите миграцию на другом устройстве.</string>
     <string name="database_migration_in_progress">Выполняется миграция базы данных.
 \nЭто может занять несколько минут.</string>
-    <string name="unable_to_open_browser_title">Ошибка открытия браузера</string>
-    <string name="unable_to_open_browser_desc">Для звонков требуется веб-браузер по умолчанию. Пожалуйста, настройте браузер по умолчанию в системе и поделитесь дополнительной информацией с разработчиками.</string>
     <string name="network_type_other">Другaя сеть</string>
     <string name="network_type_network_wifi">WiFi</string>
     <string name="network_type_ethernet">Проводная сеть</string>
@@ -2096,8 +2094,6 @@
     <string name="network_session_mode_server">Сервер</string>
     <string name="settings_section_title_message_shape">Форма сообщений</string>
     <string name="settings_message_shape_tail">Хвост</string>
-    <string name="call_desktop_permission_denied_chrome">Нажмите кнопку информации рядом с адресной строкой, чтобы разрешить микрофон.</string>
-    <string name="call_desktop_permission_denied_safari">Откройте Настройки Safari / Веб-сайты / Микрофон, затем выберите Разрешить для localhost.</string>
     <string name="v6_1_better_calls">Улучшенные звонки</string>
     <string name="v6_1_message_dates_descr">Улучшенные даты сообщений.</string>
     <string name="v6_1_better_security">Улучшенная безопасность ✅</string>

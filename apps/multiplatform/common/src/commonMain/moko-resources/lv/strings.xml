@@ -423,8 +423,6 @@
     <string name="icon_descr_video_call">Ikonas apraksts videozvanam</string>
     <string name="icon_descr_audio_call">Ikona Audio zvans</string>
     <string name="call_desktop_permission_denied_title">Zvana piekļuves atļauja darbvirsmai noraidīta</string>
-    <string name="call_desktop_permission_denied_chrome">Zvana piekļuves atļauja darbvirsmai noraidīta Chrome pārlūkā</string>
-    <string name="call_desktop_permission_denied_safari">Zvana piekļuves atļauja darbvirsmai noraidīta Safari pārlūkā</string>
     <string name="settings_audio_video_calls">Audio un video zvanu iestatījumi</string>
     <string name="your_calls">Tavi zvani</string>
     <string name="always_use_relay">Vienmēr izmantot releju</string>
@@ -1483,8 +1481,6 @@
     <string name="callstate_connecting">Zvana stāvoklis savienojas</string>
     <string name="callstate_connected">Zvana stāvoklis savienots</string>
     <string name="callstate_ended">Zvana stāvoklis beidzies</string>
-    <string name="unable_to_open_browser_title">Nevar atvērt pārlūkprogrammu</string>
-    <string name="unable_to_open_browser_desc">Nevar atvērt pārlūkprogrammu</string>
     <string name="permissions_required">Nepieciešamas atļaujas</string>
     <string name="permissions_record_audio">Atļaujas audio ierakstīšanai</string>
     <string name="permissions_camera">Atļaujas kamerai</string>

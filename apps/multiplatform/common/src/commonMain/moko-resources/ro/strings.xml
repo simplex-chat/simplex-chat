@@ -959,7 +959,6 @@
     <string name="hide_profile">Ascunde profilul</string>
     <string name="display_name_cannot_contain_whitespace">Numele afișat nu poate conține spații albe.</string>
     <string name="invalid_name">Nume nevalid!</string>
-    <string name="unable_to_open_browser_title">Eroare la deschiderea browserului</string>
     <string name="how_it_works">Cum funcționează</string>
     <string name="app_check_for_updates_installed_successfully_title">Instalat cu succes</string>
     <string name="app_check_for_updates_notice_disable">Dezactivează</string>
@@ -1385,7 +1384,6 @@
     <string name="app_check_for_updates_button_download">Descărcați %s (%s)</string>
     <string name="app_check_for_updates_button_install">Instalează actualizarea</string>
     <string name="onboarding_network_operators_app_will_use_for_routing">De exemplu, dacă un contact al tău primește mesaje printr-un server SimpleX Chat, aplicația ta le va trimite printr-un server Flux.</string>
-    <string name="call_desktop_permission_denied_safari">Deschide Setările Safari / Site-uri web / Microfon, apoi selectează Permite pentru localhost.</string>
     <string name="icon_descr_call_missed">Apel ratat</string>
     <string name="alert_text_encryption_renegotiation_failed">Renegocierea criptării a eșuat.</string>
     <string name="la_mode_off">Oprit</string>
@@ -1867,7 +1865,6 @@
     <string name="info_view_video_button">video</string>
     <string name="using_simplex_chat_servers">Utilizarea serverelor SimpleX Chat.</string>
     <string name="network_enable_socks">Folosiți proxy SOCKS?</string>
-    <string name="unable_to_open_browser_desc">Browserul web implicit este necesar pentru apeluri. Vă rugăm să configurați browserul implicit în sistem și să partajați mai multe informații cu dezvoltatorii.</string>
     <string name="private_routing_show_message_status">Afișează statusul mesajului</string>
     <string name="network_smp_web_port_section_title">Port TCP pentru mesagerie</string>
     <string name="app_check_for_updates_canceled">Descărcarea actualizării a fost anulată</string>
@@ -2218,7 +2215,6 @@
     <string name="non_content_uri_alert_text">Ai partajat o cale de fișier nevalidă. Raportează problema dezvoltatorilor aplicației.</string>
     <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 mobil: atinge <b>Deschide în aplicația mobilă</b>, apoi atinge <b>Conectare</b> în aplicație.]]></string>
     <string name="add_short_link">Actualizează adresa</string>
-    <string name="call_desktop_permission_denied_chrome">Apasă pe butonul de informații de lângă bara de adrese pentru a permite accesul la microfon.</string>
     <string name="settings_message_shape_corner">Colţ</string>
     <string name="chat_database_exported_save">Puteți salva arhiva exportată.</string>
     <string name="you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved">Nu veți mai primi mesaje de la acest chat. Istoricul conversației va fi păstrat.</string>

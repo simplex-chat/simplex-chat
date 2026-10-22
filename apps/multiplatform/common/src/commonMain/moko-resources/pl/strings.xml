@@ -1563,8 +1563,6 @@
     <string name="call_service_notification_audio_call">Połączenie audio</string>
     <string name="call_service_notification_end_call">Zakończ połączenie</string>
     <string name="call_service_notification_video_call">Połączenie wideo</string>
-    <string name="unable_to_open_browser_title">Błąd podczas otwierania przeglądarki</string>
-    <string name="unable_to_open_browser_desc">Do wykonywania połączeń wymagana jest domyślna przeglądarka internetowa. Skonfiguruj domyślną przeglądarkę w systemie i przekaż więcej informacji programistom.</string>
     <string name="e2ee_info_pq_short">Ten czat jest chroniony przez szyfrowanie e2e odporne na ataki kwantowe.</string>
     <string name="e2ee_info_no_pq"><![CDATA[Wiadomości, pliki i połączenia są chronione przez <b>szyfrowanie end-to-end</b> z perfect forward secrecy, zaprzeczalnością i odzyskiwaniem bezpieczeństwa po kompromitacji.]]></string>
     <string name="auth_open_migration_to_another_device">Otwórz ekran migrowania</string>
@@ -2018,8 +2016,6 @@
     <string name="network_session_mode_session">Sesja aplikacji</string>
     <string name="network_session_mode_session_description">Nowe poświadczenia SOCKS będą używane przy każdym uruchomieniu aplikacji.</string>
     <string name="network_session_mode_server_description">Dla każdego serwera zostaną użyte nowe poświadczenia SOCKS.</string>
-    <string name="call_desktop_permission_denied_chrome">Kliknij przycisk informacji przy polu adresu, aby zezwolić na korzystanie z mikrofonu.</string>
-    <string name="call_desktop_permission_denied_safari">Otwórz Safari Ustawienia / Strony internetowe / Mikrofon, a następnie wybierz opcję Zezwalaj dla localhost.</string>
     <string name="network_proxy_auth_mode_isolate_by_auth_entity">Użyj różnych poświadczeń proxy dla każdego połączenia.</string>
     <string name="network_proxy_auth_mode_isolate_by_auth_user">Użyj różnych poświadczeń proxy dla każdego profilu.</string>
     <string name="network_proxy_random_credentials">Użyj losowych poświadczeń</string>

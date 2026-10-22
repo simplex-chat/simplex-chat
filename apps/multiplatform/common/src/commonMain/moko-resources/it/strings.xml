@@ -1563,8 +1563,6 @@
     <string name="call_service_notification_audio_call">Chiamata audio</string>
     <string name="call_service_notification_end_call">Termina chiamata</string>
     <string name="call_service_notification_video_call">Videochiamata</string>
-    <string name="unable_to_open_browser_title">Errore di apertura del browser</string>
-    <string name="unable_to_open_browser_desc">Il browser predefinito è necessario per le chiamate. Configura il browser predefinito nel sistema, poi condividi più informazioni con gli sviluppatori.</string>
     <string name="e2ee_info_no_pq_short">Questa chat è protetta da crittografia end-to-end.</string>
     <string name="e2ee_info_pq_short">Questa chat è protetta da crittografia end-to-end resistente alla quantistica.</string>
     <string name="migrate_from_device_start_chat">Avvia chat</string>
@@ -2034,8 +2032,6 @@
     <string name="network_session_mode_session_description">Le nuove credenziali SOCKS verranno usate ogni volta che avvii l\'app.</string>
     <string name="network_session_mode_server_description">Le nuove credenziali SOCKS verranno usate per ogni server.</string>
     <string name="network_session_mode_server">Server</string>
-    <string name="call_desktop_permission_denied_safari">Apri le impostazioni di Safari / Siti web / Microfono, quindi scegli Consenti per localhost.</string>
-    <string name="call_desktop_permission_denied_chrome">Clicca il pulsante info vicino al campo indirizzo per consentire l\'uso del microfono.</string>
     <string name="call_desktop_permission_denied_title">Per effettuare chiamate, consenti di usare il microfono. Termina la chiamata e cerca di richiamare.</string>
     <string name="v6_1_better_calls">Chiamate migliorate</string>
     <string name="v6_1_message_dates_descr">Date dei messaggi migliorate.</string>
