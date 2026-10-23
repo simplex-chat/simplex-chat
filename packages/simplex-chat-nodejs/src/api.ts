@@ -740,7 +740,8 @@ export class ChatApi {
    * Network usage: interactive.
    */
   async apiConnect(userId: number, incognito: boolean, preparedLink: T.CreatedConnLink): Promise<ConnReqType> {
-    return this.handleConnectResult(await this.apiConnectPreparedLink(userId, incognito, preparedLink))
+    const r = await this.sendChatCmd(CC.APIConnect.cmdString({userId, incognito, preparedLink_: preparedLink}))
+    return this.handleConnectResult(r)
   }
 
   async apiConnectPreparedLink(userId: number, incognito: boolean, preparedLink: T.CreatedConnLink): Promise<CR.SentConfirmation | CR.SentInvitation | CR.ContactAlreadyExists> {

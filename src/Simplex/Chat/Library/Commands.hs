@@ -4691,7 +4691,7 @@ processChatCommand cxt nm = \case
             _ -> processChatCommand cxt nm $ APIConnect userId incognito $ Just ccLink
       | otherwise = pure $ CRConnectionPlan user ccLink planSimplexName otherSimplexName plan
       where
-        vName = nameDomain <$> planSimplexName
+        vName = StrJSON . nameDomain <$> planSimplexName
         joinChannelViaRelays :: CreatedLinkContact -> GroupShortLinkData -> CM ChatResponse
         joinChannelViaRelays ccl gld = do
           GroupInfo {groupId} <- prepareChannelGroup
@@ -4701,7 +4701,7 @@ processChatCommand cxt nm = \case
               throwError e
           where
             prepareChannelGroup =
-              processChatCommand cxt nm (APIPrepareGroup userId ccl False (StrJSON <$> vName) gld) >>= \case
+              processChatCommand cxt nm (APIPrepareGroup userId ccl False vName gld) >>= \case
                 CRNewPreparedChat _ (AChat SCTGroup (Chat (GroupChat gInfo _) _ _)) -> pure gInfo
                 _ -> throwChatError $ CEException "joinChannelViaRelays: unexpected response from APIPrepareGroup"
             deletePreparedChannel groupId = do
@@ -4710,7 +4710,7 @@ processChatCommand cxt nm = \case
               withFastStore' $ \db -> deleteGroup db user gInfo
         connectContactViaName :: ContactShortLinkData -> CM ChatResponse
         connectContactViaName sld =
-          processChatCommand cxt nm (APIPrepareContact userId ccLink (StrJSON <$> vName) sld) >>= \case
+          processChatCommand cxt nm (APIPrepareContact userId ccLink vName sld) >>= \case
             CRNewPreparedChat _ (AChat SCTDirect (Chat (DirectChat Contact {contactId}) _ _)) ->
               processChatCommand cxt nm (APIConnectPreparedContact contactId incognito Nothing)
             _ -> throwChatError $ CEException "connectContactViaName: unexpected response from APIPrepareContact"

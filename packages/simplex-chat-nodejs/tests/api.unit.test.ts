@@ -121,6 +121,10 @@ describe("documented success responses", () => {
     const chat = await chatWithResponse(confirmation)
     await expect(chat.apiConnectPreparedLink(1, false, connLink)).resolves.toEqual(confirmation)
     await expect(chat.apiConnect(1, false, connLink)).resolves.toBe(api.ConnReqType.Invitation)
+    const invitation = {type: "sentInvitation", user, connection: {pccConnId: 2}}
+    nextResponse(invitation)
+    await expect(chat.apiConnectPreparedLink(1, false, connLink)).resolves.toEqual(invitation)
+    await expect(chat.apiConnect(1, false, connLink)).resolves.toBe(api.ConnReqType.Contact)
     const existing = {type: "contactAlreadyExists", user, contact: {contactId: 2}}
     nextResponse(existing)
     await expect(chat.apiConnectPreparedLink(1, false, connLink)).resolves.toEqual(existing)
@@ -131,8 +135,9 @@ describe("documented success responses", () => {
     const connectionPlan = {type: "contactAddress", contactAddressPlan: {type: "ok"}}
     const connLink = {connFullLink: "L"}
     const planSimplexName = {nameType: "contact", nameDomain: {nameTLD: "simplex", domain: "biz", subDomain: []}}
-    const chat = await chatWithResponse({type: "connectionPlan", user, connLink, planSimplexName, connectionPlan})
-    await expect(chat.apiConnectPlan(1, "@biz.simplex")).resolves.toEqual([connectionPlan, connLink, planSimplexName, undefined])
+    const otherSimplexName = {nameType: "publicGroup", nameDomain: {nameTLD: "simplex", domain: "news", subDomain: []}}
+    const chat = await chatWithResponse({type: "connectionPlan", user, connLink, planSimplexName, otherSimplexName, connectionPlan})
+    await expect(chat.apiConnectPlan(1, "@biz.simplex")).resolves.toEqual([connectionPlan, connLink, planSimplexName, otherSimplexName])
   })
 
   it("apiGetNetworkConfig returns the config, apiSetNetworkConfig accepts cmdOk", async () => {
