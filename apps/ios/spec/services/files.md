@@ -271,6 +271,8 @@ func getWallpaperDirectory() -> URL   // Documents/wallpapers/
    - ChatEvent.sndFileError (on failure)
 ```
 
+XFTP uploads started in foreground continue during suspension, within the suspend timeout.
+
 ### Receiving
 
 ```
