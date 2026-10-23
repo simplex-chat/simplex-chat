@@ -20,8 +20,8 @@ function parseArgs() {
     return { cmd, keyFile, dryRun: flags.includes('--dry-run'), migrateDecreases: flags.includes('--migrate-decreases') };
   }
   console.log(`Usage:
-  node prices.js export <service-account.json> [-o <file>]
-  node prices.js import <service-account.json> [--dry-run] [--migrate-decreases]
+  node play-prices.js export <service-account.json> [-o <file>]
+  node play-prices.js import <service-account.json> [--dry-run] [--migrate-decreases]
 export writes ${CSV_FILE} or <file> and refuses to overwrite an existing file; import reads ${CSV_FILE}.
 `);
   process.exit(1);

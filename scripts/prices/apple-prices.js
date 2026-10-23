@@ -9,15 +9,17 @@ const { stringify } = require('csv-stringify/sync');
 // ============ HARDCODE THIS ============
 const APP_ID = '1605771084'; // your numeric app ID
 // =======================================
+const CSV_FILE = 'apple-prices.csv';
+const POINTS_FILE = 'apple-price-points.csv';
 
 function usage() {
   console.log(`Usage:
-  node prices.js export <issuer_id> <path/to/AuthKey_XXXX.p8> [-o <file>]
-  node prices.js points <issuer_id> <path/to/AuthKey_XXXX.p8> [-o <file>]
-  node prices.js import <issuer_id> <path/to/AuthKey_XXXX.p8> [--start-date YYYY-MM-DD] [--preserve true|false] [--dry-run]
+  node apple-prices.js export <issuer_id> <path/to/AuthKey_XXXX.p8> [-o <file>]
+  node apple-prices.js points <issuer_id> <path/to/AuthKey_XXXX.p8> [-o <file>]
+  node apple-prices.js import <issuer_id> <path/to/AuthKey_XXXX.p8> [--start-date YYYY-MM-DD] [--preserve true|false] [--dry-run]
 
-export writes prices.csv and points writes apple-price-points.csv unless -o is given; neither overwrites an existing file.
-import reads prices.csv and changes the prices that differ from the current App Store prices.
+export writes ${CSV_FILE} and points writes ${POINTS_FILE} unless -o is given; neither overwrites an existing file.
+import reads ${CSV_FILE} and changes the prices that differ from the current App Store prices.
 `);
   process.exit(1);
 }
@@ -41,7 +43,7 @@ function parseArgs() {
     process.exit(1);
   }
 
-  let output = { export: 'prices.csv', points: 'apple-price-points.csv' }[cmd];
+  let output = { export: CSV_FILE, points: POINTS_FILE }[cmd];
   let startDate = null;
   let preserveCurrent = true;
   let dryRun = false;
@@ -399,7 +401,7 @@ async function applyChanges(changes) {
 }
 
 async function importPrices() {
-  const rows = parse(fs.readFileSync('prices.csv', 'utf8'), {
+  const rows = parse(fs.readFileSync(CSV_FILE, 'utf8'), {
     columns: true,
     skip_empty_lines: true,
     bom: true,
