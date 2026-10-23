@@ -2,7 +2,7 @@
 <title>Proposed: Test service fails</title>
 <style>.ph{fill:#f2f2f7;stroke:#c7c7cc}.g{fill:#fff}.t{font-size:14px;fill:#111}.p{font-size:14px;fill:#b0b0b5}.s{font-size:11px;fill:#6e6e73}.h{font-size:22px;font-weight:700;fill:#111}.b{font-size:14px;fill:#0071e3}.sep{stroke:#e3e3e8}.scrim{fill:#000;fill-opacity:.38}.al{fill:#f2f2f7}.at{font-size:15px;font-weight:600;fill:#111}.am{font-size:12px;fill:#111}.ab{font-size:15px;fill:#0071e3;font-weight:600}.new{fill:none;stroke:#1e8a55;stroke-width:2.5}</style>
 <rect class="ph" x="1" y="1" width="298" height="558" rx="34"/>
-<text class="b" x="14" y="52">‹ Your servers</text>
+<text class="b" x="14" y="52">‹ Back</text>
 <text class="h" x="16" y="86">New service</text>
 <text class="s" x="28" y="118">YOUR SERVICE ADDRESS</text>
 <rect class="g" x="12" y="124" width="276" height="72" rx="10"/>

@@ -1,33 +1,35 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 560" width="300" height="560" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
-<title>Proposed: results from two directories in one list</title>
-<style>.ph{fill:#f2f2f7;stroke:#c7c7cc}.g{fill:#fff}.t{font-size:14px;fill:#111}.tb{font-size:14px;fill:#111;font-weight:700}.s{font-size:11px;fill:#6e6e73}.b{font-size:14px;fill:#0071e3}.av{fill:#d9d9de}.sep{stroke:#e3e3e8}.new{fill:none;stroke:#1e8a55;stroke-width:2.5}.chg{fill:none;stroke:#b26a00;stroke-width:2.5}</style>
+<title>Proposed: results from two directories in one list (search field at the bottom)</title>
+<style>.ph{fill:#f2f2f7;stroke:#c7c7cc}.g{fill:#fff}.t{font-size:14px;fill:#111}.tb{font-size:14px;fill:#111;font-weight:700}.s{font-size:11px;fill:#6e6e73}.b{font-size:14px;fill:#0071e3}.av{fill:#d9d9de}.sep{stroke:#e3e3e8}.bar{font-size:15px;fill:#111;font-weight:600}.new{fill:none;stroke:#1e8a55;stroke-width:2.5}.chg{fill:none;stroke:#b26a00;stroke-width:2.5}</style>
 <rect class="ph" x="1" y="1" width="298" height="558" rx="34"/>
-<rect class="g" x="12" y="60" width="276" height="34" rx="10"/>
-<text class="t" x="24" y="82">cinews</text>
-<circle class="av" cx="34" cy="128" r="18"/>
-<text class="t" x="62" y="124">cinews_digest</text>
-<text class="s" x="62" y="140">[last message]</text>
-<text class="b" x="18" y="184">Connect to cinews.testing</text>
-<line class="sep" x1="12" y1="200" x2="288" y2="200"/>
-<circle class="av" cx="34" cy="234" r="18"/>
-<text class="tb" x="62" y="226">#cinews</text>
-<text class="s" x="62" y="242">CI news channel</text>
-<text class="s" x="62" y="256">2 subscribers</text>
-<text class="b" x="282" y="238" text-anchor="end">Open</text>
-<line class="sep" x1="12" y1="272" x2="288" y2="272"/>
-<circle class="av" cx="34" cy="306" r="18"/>
-<text class="tb" x="62" y="298">#cinews_weekly</text>
-<text class="s" x="62" y="314">CI news weekly</text>
-<text class="s" x="62" y="328">2 members</text>
-<text class="b" x="282" y="310" text-anchor="end">Open</text>
-<rect class="new" x="8" y="276" width="284" height="64" rx="8"/>
-<line class="sep" x1="12" y1="344" x2="288" y2="344"/>
-<circle class="av" cx="34" cy="378" r="18"/>
-<text class="tb" x="62" y="370">#[channel]</text>
-<text class="s" x="62" y="386">[description]</text>
-<text class="s" x="62" y="400">[N] subscribers</text>
-<text class="b" x="282" y="382" text-anchor="end">Open</text>
-<line class="sep" x1="12" y1="416" x2="288" y2="416"/>
-<text class="b" x="18" y="446">Load up to 20 more · about [N] left</text>
-<rect class="chg" x="8" y="424" width="284" height="34" rx="8"/>
+<text class="b" x="18" y="124">Load up to 20 more · about [N] left</text>
+<rect class="chg" x="8" y="104" width="284" height="30" rx="8"/>
+<line class="sep" x1="12" y1="140" x2="288" y2="140"/>
+<circle class="av" cx="34" cy="174" r="18"/>
+<text class="tb" x="62" y="166">#[channel]</text>
+<text class="s" x="62" y="182">[description]</text>
+<text class="s" x="62" y="196">[N] subscribers</text>
+<text class="b" x="282" y="178" text-anchor="end">Open</text>
+<line class="sep" x1="12" y1="212" x2="288" y2="212"/>
+<circle class="av" cx="34" cy="246" r="18"/>
+<text class="tb" x="62" y="238">#cinews_weekly</text>
+<text class="s" x="62" y="254">CI news weekly</text>
+<text class="s" x="62" y="268">2 members</text>
+<text class="b" x="282" y="250" text-anchor="end">Open</text>
+<rect class="new" x="8" y="216" width="284" height="64" rx="8"/>
+<line class="sep" x1="12" y1="284" x2="288" y2="284"/>
+<circle class="av" cx="34" cy="318" r="18"/>
+<text class="tb" x="62" y="310">#cinews</text>
+<text class="s" x="62" y="326">CI news channel</text>
+<text class="s" x="62" y="340">2 subscribers</text>
+<text class="b" x="282" y="322" text-anchor="end">Open</text>
+<line class="sep" x1="12" y1="356" x2="288" y2="356"/>
+<circle class="av" cx="34" cy="390" r="18"/>
+<text class="t" x="62" y="386">cinews_digest</text>
+<text class="s" x="62" y="402">[last message]</text>
+<text class="b" x="18" y="448">Connect to cinews.testing</text>
+<rect class="g" x="12" y="466" width="276" height="34" rx="10"/>
+<text class="t" x="24" y="488">cinews</text>
+<circle class="av" cx="30" cy="530" r="12"/>
+<text class="bar" x="150" y="535" text-anchor="middle">Chats</text>
 </svg>

@@ -20,9 +20,8 @@
 <text class="s" x="28" y="320">you create.</text>
 <text class="s" x="28" y="350">SERVICES</text>
 <rect class="g" x="12" y="356" width="276" height="54" rx="10"/>
-<text class="ok" x="26" y="388">✓</text>
-<text class="t" x="46" y="380">SimpleX Directory</text>
-<text class="s" x="46" y="396">Search</text>
+<text class="t" x="26" y="380">SimpleX Directory</text>
+<text class="s" x="26" y="396">Search · smp4.simplex.im</text>
 <text class="ch" x="272" y="388">›</text>
 <text class="s" x="28" y="426">Services answer your app's requests, like</text>
 <text class="s" x="28" y="440">searches.</text>

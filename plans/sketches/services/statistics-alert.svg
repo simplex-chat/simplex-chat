@@ -3,12 +3,12 @@
 <style>.ph{fill:#f2f2f7;stroke:#c7c7cc}.g{fill:#fff}.t{font-size:14px;fill:#111}.s{font-size:11px;fill:#6e6e73}.h{font-size:22px;font-weight:700;fill:#111}.b{font-size:14px;fill:#0071e3}.sep{stroke:#e3e3e8}.scrim{fill:#000;fill-opacity:.38}.al{fill:#f2f2f7}.at{font-size:15px;font-weight:600;fill:#111}.am{font-size:12px;fill:#111}.amb{font-size:12px;fill:#111;font-weight:700}.ab{font-size:15px;fill:#0071e3}.abb{font-size:15px;fill:#0071e3;font-weight:600}.new{fill:none;stroke:#1e8a55;stroke-width:2.5}</style>
 <rect class="ph" x="1" y="1" width="298" height="558" rx="34"/>
 <text class="b" x="14" y="52">‹ Settings</text>
-<text class="h" x="16" y="86">Privacy &amp; security</text>
+<text class="h" x="16" y="86">Your privacy</text>
 <rect class="scrim" x="1" y="1" width="298" height="558" rx="34"/>
 <rect class="al" x="30" y="190" width="240" height="190" rx="14"/>
 <text class="at" x="150" y="220" text-anchor="middle">Share usage statistics?</text>
-<text class="am" x="150" y="246" text-anchor="middle">Once a day your app sends SimpleX</text>
-<text class="am" x="150" y="262" text-anchor="middle">Chat statistics this report:</text>
+<text class="am" x="150" y="246" text-anchor="middle">Once a day your app sends</text>
+<text class="am" x="150" y="262" text-anchor="middle">[SimpleX Chat statistics] this report:</text>
 <text class="amb" x="150" y="282" text-anchor="middle">2026-10-22 · iOS · 7.1</text>
 <text class="am" x="150" y="302" text-anchor="middle">No profile or identifier is sent.</text>
 <line class="sep" x1="30" y1="334" x2="270" y2="334"/>
