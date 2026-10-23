@@ -21,6 +21,7 @@ import Control.Concurrent (ThreadId)
 import Control.Concurrent.Async (Async)
 import Control.Exception (Exception)
 import qualified Control.Exception as E
+import Control.Monad (when)
 import Control.Monad.Except
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
@@ -49,6 +50,7 @@ import Data.Time (NominalDiffTime, UTCTime)
 import Data.Time.Clock.System (SystemTime (..), systemToUTCTime)
 import Data.Version (showVersion)
 import Data.Word (Word16)
+import GHC.Stack (HasCallStack, callStack, prettyCallStack)
 import Language.Haskell.TH (Exp, Q, runIO)
 import Network.Socket (HostName)
 import Numeric.Natural
@@ -1764,24 +1766,26 @@ toViewTE = toView . CEvtTerminalEvent
 {-# INLINE toViewTE #-}
 
 -- | Emit local events.
-toView :: ChatEvent -> CM ()
+toView :: HasCallStack => ChatEvent -> CM ()
 toView = lift . toView'
 {-# INLINE toView #-}
 
-toView' :: ChatEvent -> CM' ()
+toView' :: HasCallStack => ChatEvent -> CM' ()
 toView' = toView_ . Right
 {-# INLINE toView' #-}
 
-eToView :: ChatError -> CM ()
+eToView :: HasCallStack => ChatError -> CM ()
 eToView = lift . eToView'
 {-# INLINE eToView #-}
 
-eToView' :: ChatError -> CM' ()
+eToView' :: HasCallStack => ChatError -> CM' ()
 eToView' = toView_ . Left
 {-# INLINE eToView' #-}
 
-toView_ :: Either ChatError ChatEvent -> CM' ()
+toView_ :: HasCallStack => Either ChatError ChatEvent -> CM' ()
 toView_ ev = do
+  when (any memberNotFound $ either pure eventErrors ev) $
+    liftIO $ putStrLn $ "MEMBER-NOT-FOUND\n" <> prettyCallStack callStack
   cc@ChatController {outputQ = localQ, remoteCtrlSession = session, config = ChatConfig {chatHooks}} <- ask
   event <- case eventHook chatHooks of
     Just hook -> liftIO $ hook cc ev
@@ -1792,6 +1796,13 @@ toView_ ev = do
         | either (const True) allowRemoteEvent event -> writeTBQueue remoteOutputQ event
       -- TODO potentially, it should hold some events while connecting
       _ -> writeTBQueue localQ (Nothing, event)
+  where
+    eventErrors = \case
+      CEvtChatErrors errs -> errs
+      _ -> []
+    memberNotFound = \case
+      ChatErrorStore SEGroupMemberNotFound {} -> True
+      _ -> False
 
 withStore' :: (DB.Connection -> IO a) -> CM a
 withStore' action = withStore $ liftIO . action
