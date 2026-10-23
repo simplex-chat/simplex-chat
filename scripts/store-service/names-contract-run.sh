@@ -31,10 +31,10 @@ CLI_TIMEOUT_SECONDS=120
 DEV_ISSUER_INDEX=999
 DEV_ISSUER_SECRET=Ea5wG-J2mQjPBu9YfSJRKPnGnzoIdEE-8VaMh_wY2Bg=
 
-# The cases at webapp f53b765, run from one client, so they stay within the service's 10 code checks
-# a minute. Each takes its prepaid code from POST /control/code, which the code server below answers
-# from the codes issued here, so CODES holds one per case that asks for one. "search answers every kind
-# of name" is not among them: it expects the mock's made-up profiles and sets /control/search.
+# The cases at webapp 915a550. Each case is its own client by X-Forwarded-For, which the service trusts
+# here, as the mock does. Each takes its prepaid code from POST /control/code, which the code server
+# below answers from the codes issued here, so CODES holds one per case that asks for one. "search
+# answers every kind of name" is not among them: it sets /control/search.
 CASES=(
   "a search link's name is shown folded to lower case"
   "Back to a search from the links step shows its answer at once"
@@ -46,8 +46,13 @@ CASES=(
   "the registering page keeps its heading still on a phone from the commit to the name being registered"
   "a registration's stages are said as each is reached, not each second of the wait"
   "Edit links keeps several links on chain as the contact address they hold, and emptying the field removes them"
+  "a prepaid code registers a name with its links, which its records on chain then hold"
+  "a code order's name code, entered in another browser before the reveal, lets that browser reveal and register the name"
+  "Edit links on a name registered with a code adds its links on chain, then changes one"
+  "a code check past the service's limit counts down its wait, then checks the code again by itself"
+  "a name's link whose data cannot be read now shows as its kind's default picture, and opens by the chat core's form"
 )
-CODES=("name 8" "name 6" "name 6 years 5" "name 6" "name 6")
+CODES=("name 8" "name 6" "name 6 years 5" "name 6" "name 6" "name 6" "name 6" "name 6" "name 6" "name 6")
 
 RUN_DIR="$(mktemp -d "${TMPDIR:-/tmp}/names-contract-run.XXXXXX")"
 INI="$RUN_DIR/store_service.ini"
@@ -122,7 +127,7 @@ static_dir = $REPO/apps/simplex-store-service/web/dist
 serve_webapp = on
 names_static_dir = $RUN_DIR/names
 names_hosts = 127.0.0.1
-trust_forwarded_for = off
+trust_forwarded_for = on
 
 [issuer]
 index = $DEV_ISSUER_INDEX
@@ -265,10 +270,13 @@ function control(path, body) {
 // fetch has decoded and measured the body itself, so these headers no longer describe it
 const NOT_PASSED = new Set(["content-encoding", "content-length", "transfer-encoding", "connection"])
 
+// the case's client, so a case's own requests and its page's share the service's rate limits
+const forwardedFor = (req) => (req.headers["x-forwarded-for"] ? { "x-forwarded-for": req.headers["x-forwarded-for"] } : {})
+
 async function proxy(req, res, body) {
   const answer = await fetch(`${service}${req.url}`, {
     method: req.method,
-    headers: { "content-type": req.headers["content-type"] ?? "application/json" },
+    headers: { "content-type": req.headers["content-type"] ?? "application/json", ...forwardedFor(req) },
     body: req.method === "GET" ? undefined : body,
   })
   const headers = Object.fromEntries([...answer.headers].filter(([name]) => !NOT_PASSED.has(name)))
