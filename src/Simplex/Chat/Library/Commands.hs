@@ -6251,10 +6251,10 @@ presentIssuedBadge user p@UserBadgePurchase {badgePurchaseId, shown} now
     shownType = (\(BadgeCredential _ _ _ BadgeInfo {badgeType}) -> badgeType) <$> shownCred
     -- Held back until the shown credential lapses, so the broadcast does not correlate with the
     -- request that produced it. Nothing shown at all is the state a lost profile write leaves.
-    -- A changed tier is presented at once, whichever request granted it: the store knows of the
-    -- change already, and showing the tier the subscriber now pays for is the point of it.
+    -- A raised tier is presented at once, whichever request granted it: the subscriber raised it in
+    -- the store, so the broadcast tells it nothing new; a lower tier keeps the hold-back.
     presentDue cred@(BadgeCredential _ _ _ BadgeInfo {badgeType}) =
-      Just cred /= shownCred && (Just badgeType /= shownType || maybe True ((<= now) . credentialExpiry) shownCred)
+      Just cred /= shownCred && (maybe False (`raisesTier` badgeType) shownType || maybe True ((<= now) . credentialExpiry) shownCred)
 
 -- | The visible half of "the badge ended".
 retireBadge :: User -> UserBadgePurchase -> CM Bool

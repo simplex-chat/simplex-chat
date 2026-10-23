@@ -2561,19 +2561,19 @@ testSubscriptionTierChangeAtRenewal ps =
           tiersOf = map (\(_, ch, m, start, tier, t) -> (ch, m, start, tier, t))
           renewAs plan n = do
             rows <- ledgerRows (chatController alice) "badge_ledger"
-            let (requestAt, presentAt) = renewalMoments rows
+            let (requestAt, _) = renewalMoments rows
             appleStoreReports store $ subscriptionCheck SSRenewing $ Just $ monthly plan n
             setClockAt bsClock requestAt
             alice ##> "/_app activate"
             alice <## "ok"
             renewed <- waitLedgerRows (chatController alice) (length rows + 2)
-            pure (drop (length rows) renewed, presentAt)
+            pure $ drop (length rows) renewed
       appleStoreReports store $ subscriptionCheck SSRenewing $ Just $ storeCharge "SUBSCR_BADGE_SUPPORTER_MONTH_01" firstStart 1
       alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = appleSubscriptionJWS})
       inAnyOrder alice [[openPurchase ""], ["1: supporter"]]
       waitWakeArmed (chatController alice)
       -- the store charges Legend at the renewal: a new run from its period start, on both sides
-      (upgraded, presentAt) <- renewAs "SUBSCR_BADGE_LEGEND_MONTH_01" 1
+      upgraded <- renewAs "SUBSCR_BADGE_LEGEND_MONTH_01" 1
       alice <##. "1: legend"
       let legendStart = addMonths 1 firstStart
       tiersOf upgraded `shouldBe` [(1, 1, legendStart, "legend", Just "charge"), (-1, 0, addMonths 1 legendStart, "legend", Just "badge")]
@@ -2581,12 +2581,10 @@ testSubscriptionTierChangeAtRenewal ps =
       purchaseBadgeTypes (chatController alice) "badge_purchases" `shouldReturn` ["legend"]
       purchaseBadgeTypes cc "sx_badge_service_badge_purchases" `shouldReturn` ["legend"]
       issuedBadgeTypes (chatController alice) `shouldReturn` ["supporter", "legend"]
-      setClockAt bsClock presentAt
-      alice ##> "/_app activate"
-      alice <## "ok"
+      -- the raised tier is shown without waiting for the Supporter credential to expire
       waitShownIssued (chatController alice)
       -- and back to Supporter at the next renewal
-      (downgraded, _) <- renewAs "SUBSCR_BADGE_SUPPORTER_MONTH_01" 2
+      downgraded <- renewAs "SUBSCR_BADGE_SUPPORTER_MONTH_01" 2
       alice <##. "1: supporter"
       tiersOf downgraded `shouldBe` [(1, 1, addMonths 2 firstStart, "supporter", Just "charge"), (-1, 0, addMonths 3 firstStart, "supporter", Just "badge")]
       balanceChecks (chatController alice) `shouldReturn` replicate 6 (Just True)
