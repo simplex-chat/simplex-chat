@@ -1,6 +1,7 @@
 package chat.simplex.app.ui.groups
 
 import chat.simplex.app.ui.harness.CONNECT_TIMEOUT_MS
+import chat.simplex.app.ui.harness.KnownAppIssue
 import chat.simplex.app.ui.harness.SupportChatScreen
 import chat.simplex.app.ui.harness.UiTest
 import chat.simplex.app.ui.harness.acceptAlert
@@ -52,6 +53,7 @@ class MemberAdmissionTest : UiTest() {
     poll(what = "`Review members` all when reopened") { "all" in a.review() }
   }
 
+  @KnownAppIssue("15.5 item 30", "Compose-Espresso link", intermittent = true)
   @Test fun review_acceptAsMember() = uiTest {
     val alice = app("alice"); val bob = cli("bob")
     val chat = pendingLinkJoin(alice, bob, "team")

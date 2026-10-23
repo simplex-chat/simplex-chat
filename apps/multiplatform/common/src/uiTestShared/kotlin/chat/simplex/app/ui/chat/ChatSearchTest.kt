@@ -1,6 +1,7 @@
 package chat.simplex.app.ui.chat
 
 import chat.simplex.app.ui.harness.CONNECT_TIMEOUT_MS
+import chat.simplex.app.ui.harness.KnownAppIssue
 import chat.simplex.app.ui.harness.UiScope
 import chat.simplex.app.ui.harness.UiTest
 import chat.simplex.app.ui.harness.awaitRowText
@@ -58,6 +59,7 @@ class ChatSearchTest : UiTest() {
     }
   }
 
+  @KnownAppIssue("15.5 item 30", "Compose-Espresso link", intermittent = true)
   @Test fun search_goToResult_opensAroundItem() = uiTest {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)

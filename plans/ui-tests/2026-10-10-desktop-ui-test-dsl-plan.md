@@ -1697,6 +1697,18 @@ Fixed in the same review: `createGroup_opensChatAndInviteSheet` now checks the o
 
 29. **A message received in an open group chat is missing from the chat, though the chat list shows it** (desktop, GitHub CI trial 6, 2026-10-23, 1 of 101 tests in the shard; `MemberReportTest.report_member_spam_moderatorsReceive`, marked `@KnownAppIssue("15.5 item 29", intermittent = true)`). alice's `team` chat was opened and settled (`chatModel.chatId` set, no API call in flight) before cath sent `inappropriate joke`. 60 s later the row showed `cath: inappropriate joke` with unread 1, but the open chat's `chatItems` did not have it; the chat showed only the merged `cath and bob connected and 1 other events`. Cause not found. Candidate, not confirmed: a pagination load after the open (`ChatView.kt:541-546` → `apiLoadMessages`) publishes a snapshot read before the message arrived, through the same two-step publication as item 25 (`ChatItemsLoader.kt:64-91`).
 
+30. **Loading newer messages repeats after a chat is opened around an item** (Android; go-to from search or from a forwarded item, and a member's support chat; `ChatSearchTest.search_goToResult_opensAroundItem`, `ForwardTest.forward_acrossChatTypes_peersReceiveAndSourceOpens`, `ItemInfoTest.info_forwardedTab_showsSource`, `MemberAdmissionTest.review_acceptAsMember`, marked `@KnownAppIssue("15.5 item 30", intermittent = true)` because they pass on desktop).
+    - **Mechanism:**
+      1. An Around load always adds a split at its newest loaded item (`ChatItemsLoader.kt:145`), even when nothing newer exists. An Initial load adds it only when `afterTotal > 0` (`:65`).
+      2. `preloadItemsAfter` then requests `After(newest)` (`ChatView.kt:2785`). Its empty result returns early (`ChatItemsLoader.kt:37-39`), so the split is never cleared.
+      3. The `PreloadItems` effect exists only while no load is running (`ChatView.kt:2779`). A frame drawn during a load removes it, and when the load ends it is added back and requests the same `After` page again.
+    - **Measured with temporary logging (Waydroid, 2026-10-23):**
+      - In the app without the test harness, three go-tos produced bursts of 27, 10 and 2 redundant `apiGetChat` After calls, over up to 1.3 s, and then stopped. There was no extra rendering afterwards.
+      - Under the Android test clock, which produces frames continuously, the loop never ends: 2,300–3,800 loads per test, and the UI never becomes idle (`ComposeNotIdleException`).
+      - Desktop's paused clock merges the load start and end into one frame, so the loop does not occur there.
+    - The member-support-chat case is inferred to start from an Initial load with `afterTotal > 0`, not confirmed.
+    - **Fix idea, not done:** add the Around split only when `navInfo.afterTotal > 0`, as Initial does, and drop the split when an `After` load comes back empty.
+
 ### 15.6 Catalogue corrections applied from passing tests (exhaustive pass)
 
 - 01:34 and 01:8: accepting conditions enables the operators selected in onboarding, not all preset ones.
