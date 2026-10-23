@@ -34,25 +34,23 @@ abstract class UiTest {
     try {
       AppCrashes.install()
       AppCrashes.clear()
-      withKnownIssue(knownIssue.issues) {
-        try {
-          runInternalSkikoComposeUiTest(width = 1600, height = 900, coroutineDispatcher = StandardTestDispatcher()) {
-            mainClock.autoAdvance = false
-            UiScope(this, dir).apply {
-              body()
-              failOnPeerErrors(Peers.all())
-              waitForAppWork()
-              failOnStuckWork(UiTestApp.drain())
-              AppCrashes.failIfAny()
-            }
+      try {
+        runInternalSkikoComposeUiTest(width = 1600, height = 900, coroutineDispatcher = StandardTestDispatcher()) {
+          mainClock.autoAdvance = false
+          UiScope(this, dir).apply {
+            body()
+            failOnPeerErrors(Peers.all())
+            waitForAppWork()
+            failOnStuckWork(UiTestApp.drain())
+            AppCrashes.failIfAny()
           }
-        } catch (e: Throwable) {
-          throw if (e.suppressed.isEmpty()) e else AssertionError("${e.message}; suppressed:\n" + e.suppressed.joinToString("\n") { it.stackTraceToString().lines().take(25).joinToString("\n") }, e)
         }
-        repeat(2) { javax.swing.SwingUtilities.invokeAndWait {} }
-        failOnStuckWork(UiTestApp.drain())
-        AppCrashes.failIfAny()
+      } catch (e: Throwable) {
+        throw if (e.suppressed.isEmpty()) e else AssertionError("${e.message}; suppressed:\n" + e.suppressed.joinToString("\n") { it.stackTraceToString().lines().take(25).joinToString("\n") }, e)
       }
+      repeat(2) { javax.swing.SwingUtilities.invokeAndWait {} }
+      failOnStuckWork(UiTestApp.drain())
+      AppCrashes.failIfAny()
       passed = true
     } finally {
       repeat(2) { javax.swing.SwingUtilities.invokeAndWait {} }
