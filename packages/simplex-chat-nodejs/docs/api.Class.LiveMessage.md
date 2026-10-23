@@ -6,7 +6,7 @@
 
 # Class: LiveMessage
 
-Defined in: [src/api.ts:1068](../api.ts#L1068)
+Defined in: [src/api.ts:1109](../api.ts#L1109)
 
 Text shown as a live message while it is written, e.g. a streamed reply.
 
@@ -16,7 +16,7 @@ Text shown as a live message while it is written, e.g. a streamed reply.
 
 > **new LiveMessage**(`chat`, `chatType`, `chatId`, `interval?`, `onError?`): `LiveMessage`
 
-Defined in: [src/api.ts:1082](../api.ts#L1082)
+Defined in: [src/api.ts:1123](../api.ts#L1123)
 
 #### Parameters
 
@@ -60,7 +60,7 @@ Error handler for sending, updating and deleting messages. Errors are logged whe
 
 > **end**(`text?`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:1112](../api.ts#L1112)
+Defined in: [src/api.ts:1153](../api.ts#L1153)
 
 Finalize the live message with the text, or with the last text when omitted.
 A message without text is deleted. The next update starts a new live message.
@@ -82,7 +82,7 @@ The returned promise resolves after all queued commands complete.
 
 > **update**(`text`): `void`
 
-Defined in: [src/api.ts:1094](../api.ts#L1094)
+Defined in: [src/api.ts:1135](../api.ts#L1135)
 
 Set the text of the live message.
 The first text is sent at once; later texts update the message at most once per interval.
