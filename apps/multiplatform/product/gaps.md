@@ -370,7 +370,7 @@ Play gives a resubscription a new purchase token, so subscribing again on the sa
 
 ### Impact
 
-A subscriber who moves the badge again before the previous key's credential expires waits until it does, and the first such Restore may give no reason. A badge bought with Stripe or crypto stays with the profile it was credited to. Should Play offer a plan change for these products, a subscriber who makes one keeps the old badge until its paid months end, and can lose the new plan to Play's refund before it is credited.
+A subscriber who moves the badge again before the previous key's credential expires waits until it does, and the first such Restore may give no reason. A badge bought with Stripe or crypto stays with the profile it was credited to. Should Play offer a plan change for these products, a subscriber who makes one keeps the old badge until its paid months end, or until the service reads the old subscription ended at a month's check, and can lose the new plan to Play's refund before it is credited.
 
 ### Recommendation
 
