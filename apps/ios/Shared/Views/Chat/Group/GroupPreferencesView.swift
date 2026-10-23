@@ -52,7 +52,7 @@ struct GroupPreferencesView: View {
                 } else {
                     featureSection(.signMessages, $preferences.signMessages.enable)
                         .onChange(of: preferences.signMessages.enable) { enable in
-                            if enable == .on {
+                            if enable == .on && currentPreferences.signMessages.enable != .on {
                                 showAlert(
                                     NSLocalizedString("Sign messages?", comment: "alert title"),
                                     message: NSLocalizedString("Messages sent before will show \"signature missing\" to subscribers who join later.", comment: "alert message"),

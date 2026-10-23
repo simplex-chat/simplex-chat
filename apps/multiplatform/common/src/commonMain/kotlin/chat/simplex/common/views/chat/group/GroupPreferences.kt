@@ -182,7 +182,7 @@ private fun GroupPreferencesLayout(
     val enableSignMessages = remember(preferences) { mutableStateOf(preferences.signMessages.enable) }
     FeatureSection(GroupFeature.SignMessages, enableSignMessages, null, groupInfo, preferences, onTTLUpdated) { enable, _ ->
       applyPrefs(preferences.copy(signMessages = GroupPreference(enable = enable)))
-      if (enable == GroupFeatureEnabled.ON) onEnable?.invoke {
+      if (enable == GroupFeatureEnabled.ON && currentPreferences.signMessages.enable != GroupFeatureEnabled.ON) onEnable?.invoke {
         enableSignMessages.value = GroupFeatureEnabled.OFF
         applyPrefs(preferences.copy(signMessages = GroupPreference(enable = GroupFeatureEnabled.OFF)))
       }
