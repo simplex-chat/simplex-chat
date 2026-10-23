@@ -20,6 +20,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.ui.Ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
@@ -110,6 +111,7 @@ fun TerminalLayout(
             sendLiveMessage = null,
             updateLiveMessage = null,
             editPrevMessage = {},
+            uiKey = Ui.Chat.Message,
             onMessageChange = ::onMessageChange,
             onFilesPasted = {},
             textStyle = textStyle,

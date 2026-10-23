@@ -14,6 +14,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.chatModel
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
@@ -74,7 +76,7 @@ fun ComposeContextMemberContactActionsView(
             .fillMaxWidth(),
           horizontalArrangement = Arrangement.SpaceEvenly,
         ) {
-          var rejectButtonModifier = Modifier.fillMaxWidth().fillMaxHeight().weight(1F)
+          var rejectButtonModifier = Modifier.ui(Ui.Chat.RequestReject).fillMaxWidth().fillMaxHeight().weight(1F)
           rejectButtonModifier =
             if (inProgress.value) rejectButtonModifier
             else rejectButtonModifier.clickable { showRejectMemberContactRequestAlert(rhId, contact) }
@@ -94,7 +96,7 @@ fun ComposeContextMemberContactActionsView(
               color = if (inProgress.value) MaterialTheme.colors.secondary else Color.Red
             )
           }
-          var acceptButtonModifier = Modifier.fillMaxWidth().fillMaxHeight().weight(1F)
+          var acceptButtonModifier = Modifier.ui(Ui.Chat.RequestAccept).fillMaxWidth().fillMaxHeight().weight(1F)
           acceptButtonModifier =
             if (inProgress.value) acceptButtonModifier
             else acceptButtonModifier.clickable { acceptMemberContact(rhId, contact.contactId, inProgress = inProgress) }

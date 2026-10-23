@@ -3,6 +3,7 @@ package chat.simplex.app
 import android.annotation.SuppressLint
 import android.app.*
 import android.content.Context
+import chat.simplex.common.ui.initUiTags
 import chat.simplex.common.platform.Log
 import android.content.Intent
 import android.content.pm.ActivityInfo
@@ -192,6 +193,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
 
   private fun initMultiplatform() {
     androidAppContext = this
+    initUiTags(this)
     APPLICATION_ID = BuildConfig.APPLICATION_ID
     ntfManager = object : chat.simplex.common.platform.NtfManager() {
       override fun notifyCallInvitation(invitation: RcvCallInvitation): Boolean = NtfManager.notifyCallInvitation(invitation)

@@ -11,6 +11,7 @@ import androidx.compose.ui.input.key.*
 import dev.icerock.moko.resources.compose.painterResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.views.chat.group.ProgressIndicator
 import chat.simplex.common.views.helpers.SimpleButton
@@ -76,9 +77,9 @@ fun PasscodeView(
       }
       PasscodeEntry(passcode, true, Modifier.weight(1f, fill = false))
       Row(Modifier.heightIn(min = 70.dp), verticalAlignment = Alignment.CenterVertically) {
-        SimpleButton(generalGetString(MR.strings.cancel_verb), icon = painterResource(MR.images.ic_close), disabled = !buttonsEnabled.value, click = cancel)
+        SimpleButton(generalGetString(MR.strings.cancel_verb), icon = painterResource(MR.images.ic_close), disabled = !buttonsEnabled.value, uiKey = Ui.Passcode.Cancel, click = cancel)
         Spacer(Modifier.size(20.dp))
-        SimpleButton(submitLabel, icon = painterResource(MR.images.ic_done_filled), disabled = submitEnabled?.invoke(passcode.value) == false || passcode.value.length < 4 || !buttonsEnabled.value, click = submit)
+        SimpleButton(submitLabel, icon = painterResource(MR.images.ic_done_filled), disabled = submitEnabled?.invoke(passcode.value) == false || passcode.value.length < 4 || !buttonsEnabled.value, uiKey = Ui.Passcode.Submit, click = submit)
       }
     }
   }

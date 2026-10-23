@@ -27,7 +27,9 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatController.getUsageConditions
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.ui.ui
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.*
@@ -187,7 +189,7 @@ fun OperatorViewLayout(
 
   Column {
     SectionView(generalGetString(MR.strings.operator)) {
-      SectionItemView({ ModalManager.start.showModalCloseable { _ -> OperatorInfoView(operator) } }) {
+      SectionItemView({ ModalManager.start.showModalCloseable { _ -> OperatorInfoView(operator) } }, uiKey = Ui.Operator.Info) {
         Row(
           Modifier.fillMaxWidth(),
           verticalAlignment = Alignment.CenterVertically
@@ -597,6 +599,7 @@ private fun UseOperatorToggle(
           changeOperatorEnabled(userServers, operatorIndex, false)
         }
       },
+      modifier = Modifier.ui(Ui.Operator.Use),
     )
   }
 }
@@ -639,6 +642,7 @@ private fun SingleOperatorUsageConditionsView(
 
     Column(Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING * 2), horizontalAlignment = Alignment.CenterHorizontally) {
       OnboardingActionButton(
+        modifier = Modifier.ui(Ui.Operator.AcceptConditions),
         labelId = MR.strings.accept_conditions,
         onboarding = null,
         enabled = operatorIds.isNotEmpty(),

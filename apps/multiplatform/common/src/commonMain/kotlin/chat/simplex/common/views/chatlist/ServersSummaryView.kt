@@ -47,6 +47,7 @@ import chat.simplex.common.model.ServerSessions
 import chat.simplex.common.model.XFTPServerSummary
 import chat.simplex.common.model.localTimestamp
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.SettingsPreferenceItem
@@ -186,7 +187,8 @@ private fun SMPServerView(srvSumm: SMPServerSummary, statsStartedAt: Instant, rh
           statsStartedAt = statsStartedAt
         )
       }
-    }
+    },
+    uiKey = Ui.ServersSummary.SmpServer(serverAddress(srvSumm.smpServer))
   ) {
     Text(
       serverAddress(srvSumm.smpServer),
@@ -311,7 +313,8 @@ private fun SMPStatsView(stats: AgentSMPServerStatsData, statsStartedAt: Instant
           stats = stats,
           statsStartedAt = statsStartedAt)
         }
-      }
+      },
+      uiKey = Ui.ServersSummary.Details
     ) {
       Text(text = generalGetString(MR.strings.servers_info_details), color = MaterialTheme.colors.onBackground)
     }
@@ -346,7 +349,7 @@ private fun SMPSubscriptionsSection(totals: SMPTotals) {
         generalGetString(MR.strings.servers_info_subscriptions_total),
         numOrDash(totals.subs.total)
       )
-      SettingsPreferenceItem(null, stringResource(MR.strings.subscription_percentage), chatModel.controller.appPrefs.networkShowSubscriptionPercentage)
+      SettingsPreferenceItem(null, stringResource(MR.strings.subscription_percentage), chatModel.controller.appPrefs.networkShowSubscriptionPercentage, uiKey = Ui.ServersSummary.ShowPercentage)
     }
   }
 }
@@ -816,6 +819,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
                 selectedUserCategory,
                 icon = null,
                 enabled = remember { mutableStateOf(true) },
+                uiKey = Ui.ServersSummary.UserCategory,
                 onSelected = {
                   selectedUserCategory.value = it
                 }
@@ -927,7 +931,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
 
 @Composable
 private fun ReconnectAllServersButton(rh: RemoteHostInfo?) {
-  SectionItemView(click = { reconnectAllServersAlert(rh) }) {
+  SectionItemView(click = { reconnectAllServersAlert(rh) }, uiKey = Ui.ServersSummary.ReconnectAll) {
     Text(
       stringResource(MR.strings.servers_info_reconnect_all_servers_button),
       color = MaterialTheme.colors.primary
@@ -956,7 +960,7 @@ private fun reconnectAllServersAlert(rh: RemoteHostInfo?) {
 
 @Composable
 private fun ResetStatisticsButton(rh: RemoteHostInfo?, resetStats: () -> Unit) {
-  SectionItemView(click = { resetStatisticsAlert(rh, resetStats) }) {
+  SectionItemView(click = { resetStatisticsAlert(rh, resetStats) }, uiKey = Ui.ServersSummary.ResetStats) {
     Text(
       stringResource(MR.strings.servers_info_reset_stats),
       color = MaterialTheme.colors.primary

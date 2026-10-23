@@ -11,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import chat.simplex.common.ui.Ui
 import chat.simplex.common.ui.theme.*
 import androidx.compose.ui.platform.LocalUriHandler
 import dev.icerock.moko.resources.compose.painterResource
@@ -104,7 +105,7 @@ fun YourServersViewLayout(
       SectionView(generalGetString(MR.strings.message_servers)) {
         userServers.value[operatorIndex].smpServers.forEachIndexed { i, server  ->
           if (server.deleted) return@forEachIndexed
-          SectionItemView({ navigateToProtocolView(i, server, ServerProtocol.SMP) }) {
+          SectionItemView({ navigateToProtocolView(i, server, ServerProtocol.SMP) }, uiKey = Ui.Servers.Server(server.server)) {
             ProtocolServerViewLink(
               srv = server,
               serverProtocol = ServerProtocol.SMP,
@@ -138,7 +139,7 @@ fun YourServersViewLayout(
       SectionView(generalGetString(MR.strings.media_and_file_servers)) {
         userServers.value[operatorIndex].xftpServers.forEachIndexed { i, server ->
           if (server.deleted) return@forEachIndexed
-          SectionItemView({ navigateToProtocolView(i, server, ServerProtocol.XFTP) }) {
+          SectionItemView({ navigateToProtocolView(i, server, ServerProtocol.XFTP) }, uiKey = Ui.Servers.Server(server.server)) {
             ProtocolServerViewLink(
               srv = server,
               serverProtocol = ServerProtocol.XFTP,
@@ -182,7 +183,8 @@ fun YourServersViewLayout(
         click = { showAddServerDialog(scope, userServers, serverErrors, serverWarnings, rhId) },
         disabled = testing.value,
         textColor = if (testing.value) MaterialTheme.colors.secondary else MaterialTheme.colors.primary,
-        iconColor = if (testing.value) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
+        iconColor = if (testing.value) MaterialTheme.colors.secondary else MaterialTheme.colors.primary,
+        uiKey = Ui.Servers.Add
       )
     }
     globalServersErrors(serverErrors.value).forEach { err ->
@@ -253,7 +255,8 @@ fun TestServersButton(
         testServers(testing, smpServers, xftpServers, chatRelays, chatModel, onUpdate, onUpdateRelays)
       }
     },
-    disabled = disabled.value
+    disabled = disabled.value,
+    uiKey = Ui.Servers.TestAll
   ) {
     Text(stringResource(MR.strings.smp_servers_test_servers), color = if (!disabled.value) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
   }
@@ -275,7 +278,7 @@ fun showAddServerDialog(
           ModalManager.start.showCustomModal { close ->
             NewServerView(userServers, serverErrors, serverWarnings, rhId, close)
           }
-        }) {
+        }, uiKey = Ui.Alert.Option(Ui.AlertSource.Shared, "enterManually")) {
           Text(stringResource(MR.strings.smp_servers_enter_manually), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
         if (appPlatform.isAndroid) {

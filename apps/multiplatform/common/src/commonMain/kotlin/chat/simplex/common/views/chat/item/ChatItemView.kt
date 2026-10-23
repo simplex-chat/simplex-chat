@@ -31,6 +31,9 @@ import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.currentUser
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.UiKey
+import chat.simplex.common.ui.ui
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chatlist.openChat
 import chat.simplex.common.views.helpers.*
@@ -153,7 +156,7 @@ fun ChatItemView(
             }
           }
 
-          var modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp).clip(RoundedCornerShape(8.dp))
+          var modifier = Modifier.ui(Ui.Chat.ReactionChip(cItem.id, r.reaction.text)).padding(horizontal = 5.dp, vertical = 2.dp).clip(RoundedCornerShape(8.dp))
           if (cInfo.featureEnabled(ChatFeature.Reactions)) {
             fun showReactionsMenu() {
               when (cInfo) {
@@ -221,7 +224,8 @@ fun ChatItemView(
                     }
                   },
                   lineLimit = 1,
-                  color = if (m.onClick == null) MaterialTheme.colors.secondary else MenuTextColor
+                  color = if (m.onClick == null) MaterialTheme.colors.secondary else MenuTextColor,
+                  uiKey = Ui.Chat.ReactionMember(cItem.id, m.name)
                 )
               }
             }
@@ -270,6 +274,7 @@ fun ChatItemView(
       IconButton(
         onClick,
         Modifier
+          .ui(Ui.Chat.Item(cItem.id).part("goTo"))
           .padding(start = if (alignStart) 0.dp else DEFAULT_PADDING_HALF + 3.dp, end = if (alignStart) DEFAULT_PADDING_HALF + 3.dp else 0.dp)
           .then(if (fullyVisible) Modifier.background(mixedBackgroundColor, CircleShape) else Modifier)
           .size(22.dp),
@@ -322,6 +327,7 @@ fun ChatItemView(
           }
           Column(
             Modifier
+              .ui(Ui.Chat.Item(cItem.id))
               .clipChatItem(cItem, itemSeparation.largeGap, revealed.value)
               .hoverable(bubbleInteractionSource)
               .combinedClickable(
@@ -360,7 +366,7 @@ fun ChatItemView(
                 Row(modifier = Modifier.padding(horizontal = DEFAULT_PADDING).horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically) {
                   rs.forEach() { r ->
                     Box(
-                      Modifier.size(36.dp).clip(CircleShape).clickable {
+                      Modifier.ui(Ui.Chat.ItemReaction(cItem.id, r.text)).size(36.dp).clip(CircleShape).clickable {
                         setReaction(cInfo, cItem, true, r)
                         showMenu.value = false
                       },
@@ -379,7 +385,7 @@ fun ChatItemView(
                 DeleteItemAction(chatsCtx, cInfo, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
                 if (cItem.canBeDeletedForSelf) {
                   Divider()
-                  SelectItemAction(showMenu, selectChatItem)
+                  SelectItemAction(showMenu, Ui.Chat.ItemMenu(cItem.id, "select"), selectChatItem)
                 }
               }
             }
@@ -396,7 +402,7 @@ fun ChatItemView(
                     }
                     DeleteItemAction(chatsCtx, cInfo, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages, buttonText = stringResource(MR.strings.delete_report))
                     Divider()
-                    SelectItemAction(showMenu, selectChatItem)
+                    SelectItemAction(showMenu, Ui.Chat.ItemMenu(cItem.id, "select"), selectChatItem)
                   }
                 }
                 cItem.content.msgContent != null && cItem.id >= 0 && !cItem.isReport -> {
@@ -405,7 +411,7 @@ fun ChatItemView(
                       MsgReactionsMenu()
                     }
                     if (cItem.meta.itemDeleted == null && !live && !cItem.localNote && cInfo.sendMsgEnabled) {
-                      ItemAction(stringResource(MR.strings.reply_verb), painterResource(MR.images.ic_reply), onClick = {
+                      ItemAction(stringResource(MR.strings.reply_verb), painterResource(MR.images.ic_reply), uiKey = Ui.Chat.ItemMenu(cItem.id, "reply"), onClick = {
                         if (composeState.value.editing) {
                           composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem), useLinkPreviews = useLinkPreviews)
                         } else {
@@ -423,7 +429,7 @@ fun ChatItemView(
                     }
 
                     if (copyAndShareAllowed) {
-                      ItemAction(stringResource(MR.strings.share_verb), painterResource(MR.images.ic_share), onClick = {
+                      ItemAction(stringResource(MR.strings.share_verb), painterResource(MR.images.ic_share), uiKey = Ui.Chat.ItemMenu(cItem.id, "share"), onClick = {
                         var fileSource = getLoadedFileSource(cItem.file)
                         val shareIfExists = {
                           when (val f = fileSource) {
@@ -442,7 +448,7 @@ fun ChatItemView(
                       })
                     }
                     if (copyAndShareAllowed) {
-                      ItemAction(stringResource(MR.strings.copy_verb), painterResource(MR.images.ic_content_copy), onClick = {
+                      ItemAction(stringResource(MR.strings.copy_verb), painterResource(MR.images.ic_content_copy), uiKey = Ui.Chat.ItemMenu(cItem.id, "copy"), onClick = {
                         copyItemToClipboard(cItem, clipboard)
                         showMenu.value = false
                       })
@@ -450,7 +456,7 @@ fun ChatItemView(
                     if (cItem.file != null && (getLoadedFilePath(cItem.file) != null || (chatModel.connectedToRemote() && cachedRemoteReqs[cItem.file.fileSource] != false && cItem.file.loaded))) {
                       SaveContentItemAction(cItem, saveFileLauncher, showMenu)
                     } else if (cItem.file != null && cItem.file.fileStatus is CIFileStatus.RcvInvitation && fileSizeValid(cItem.file)) {
-                      ItemAction(stringResource(MR.strings.download_file), painterResource(MR.images.ic_arrow_downward), onClick = {
+                      ItemAction(stringResource(MR.strings.download_file), painterResource(MR.images.ic_arrow_downward), uiKey = Ui.Chat.ItemMenu(cItem.id, "download"), onClick = {
                         withBGApi {
                           Log.d(TAG, "ChatItemView downloadFileAction")
                           val user = chatModel.currentUser.value
@@ -462,7 +468,7 @@ fun ChatItemView(
                       })
                     }
                     if (cItem.meta.editable && cItem.content.msgContent !is MsgContent.MCVoice && !live) {
-                      ItemAction(stringResource(MR.strings.edit_verb), painterResource(MR.images.ic_edit_filled), onClick = {
+                      ItemAction(stringResource(MR.strings.edit_verb), painterResource(MR.images.ic_edit_filled), uiKey = Ui.Chat.ItemMenu(cItem.id, "edit"), onClick = {
                         composeState.value = ComposeState(editingItem = cItem, useLinkPreviews = useLinkPreviews)
                         showMenu.value = false
                       })
@@ -471,17 +477,17 @@ fun ChatItemView(
                       (cItem.file == null || cItem.file.forwardingAllowed()) &&
                       !cItem.isLiveDummy && !live
                     ) {
-                      ItemAction(stringResource(MR.strings.forward_chat_item), painterResource(MR.images.ic_forward), onClick = {
+                      ItemAction(stringResource(MR.strings.forward_chat_item), painterResource(MR.images.ic_forward), uiKey = Ui.Chat.ItemMenu(cItem.id, "forward"), onClick = {
                         forwardItem(cInfo, cItem)
                         showMenu.value = false
                       })
                     }
                     ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
                     if (revealed.value) {
-                      HideItemAction(revealed, showMenu, reveal)
+                      HideItemAction(revealed, showMenu, Ui.Chat.ItemMenu(cItem.id, "hide"), reveal)
                     }
                     if (cItem.meta.itemDeleted == null && cItem.file != null && cItem.file.cancelAction != null && !cItem.localNote) {
-                      CancelFileItemAction(cItem.file.fileId, showMenu, cancelFile = cancelFile, cancelAction = cItem.file.cancelAction)
+                      CancelFileItemAction(cItem.file.fileId, showMenu, Ui.Chat.ItemMenu(cItem.id, "cancelFile"), cancelFile = cancelFile, cancelAction = cItem.file.cancelAction)
                     }
                     if (!(live && cItem.meta.isLive) && !preview) {
                       DeleteItemAction(chatsCtx, cInfo, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
@@ -496,24 +502,24 @@ fun ChatItemView(
                     }
                     if (cItem.canBeDeletedForSelf) {
                       Divider()
-                      SelectItemAction(showMenu, selectChatItem)
+                      SelectItemAction(showMenu, Ui.Chat.ItemMenu(cItem.id, "select"), selectChatItem)
                     }
                   }
                 }
                 cItem.meta.itemDeleted != null -> {
                   DefaultDropdownMenu(showMenu) {
                     if (revealed.value) {
-                      HideItemAction(revealed, showMenu, reveal)
+                      HideItemAction(revealed, showMenu, reveal = reveal)
                     } else if (!cItem.isDeletedContent) {
-                      RevealItemAction(revealed, showMenu, reveal)
+                      RevealItemAction(revealed, showMenu, reveal = reveal)
                     } else if (range.value != null) {
-                      ExpandItemAction(revealed, showMenu, reveal)
+                      ExpandItemAction(revealed, showMenu, Ui.Chat.ItemMenu(cItem.id, "expand"), reveal)
                     }
                     ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
                     DeleteItemAction(chatsCtx, cInfo, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
                     if (cItem.canBeDeletedForSelf) {
                       Divider()
-                      SelectItemAction(showMenu, selectChatItem)
+                      SelectItemAction(showMenu, Ui.Chat.ItemMenu(cItem.id, "select"), selectChatItem)
                     }
                   }
                 }
@@ -523,21 +529,21 @@ fun ChatItemView(
                     DeleteItemAction(chatsCtx, cInfo, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
                     if (cItem.canBeDeletedForSelf) {
                       Divider()
-                      SelectItemAction(showMenu, selectChatItem)
+                      SelectItemAction(showMenu, Ui.Chat.ItemMenu(cItem.id, "select"), selectChatItem)
                     }
                   }
                 }
                 cItem.mergeCategory != null && ((range.value?.count() ?: 0) > 1 || revealed.value) -> {
                   DefaultDropdownMenu(showMenu) {
                     if (revealed.value) {
-                      ShrinkItemAction(revealed, showMenu, reveal)
+                      ShrinkItemAction(revealed, showMenu, Ui.Chat.ItemMenu(cItem.id, "collapse"), reveal)
                     } else {
-                      ExpandItemAction(revealed, showMenu, reveal)
+                      ExpandItemAction(revealed, showMenu, Ui.Chat.ItemMenu(cItem.id, "expand"), reveal)
                     }
                     DeleteItemAction(chatsCtx, cInfo, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
                     if (cItem.canBeDeletedForSelf) {
                       Divider()
-                      SelectItemAction(showMenu, selectChatItem)
+                      SelectItemAction(showMenu, Ui.Chat.ItemMenu(cItem.id, "select"), selectChatItem)
                     }
                   }
                 }
@@ -546,7 +552,7 @@ fun ChatItemView(
                     DeleteItemAction(chatsCtx, cInfo, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
                     if (selectedChatItems.value == null) {
                       Divider()
-                      SelectItemAction(showMenu, selectChatItem)
+                      SelectItemAction(showMenu, Ui.Chat.ItemMenu(cItem.id, "select"), selectChatItem)
                     }
                   }
                 }
@@ -557,13 +563,13 @@ fun ChatItemView(
             fun MarkedDeletedItemDropdownMenu() {
               DefaultDropdownMenu(showMenu) {
                 if (!cItem.isDeletedContent) {
-                  RevealItemAction(revealed, showMenu, reveal)
+                  RevealItemAction(revealed, showMenu, Ui.Chat.ItemMenu(cItem.id, "reveal"), reveal)
                 }
                 ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
                 DeleteItemAction(chatsCtx, cInfo, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
                 if (cItem.canBeDeletedForSelf) {
                   Divider()
-                  SelectItemAction(showMenu, selectChatItem)
+                  SelectItemAction(showMenu, Ui.Chat.ItemMenu(cItem.id, "select"), selectChatItem)
                 }
               }
             }
@@ -592,7 +598,7 @@ fun ChatItemView(
                 DeleteItemAction(chatsCtx, cInfo, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
                 if (cItem.canBeDeletedForSelf) {
                   Divider()
-                  SelectItemAction(showMenu, selectChatItem)
+                  SelectItemAction(showMenu, Ui.Chat.ItemMenu(cItem.id, "select"), selectChatItem)
                 }
               }
             }
@@ -656,17 +662,17 @@ fun ChatItemView(
               MarkedDeletedItemView(chatsCtx, cItem, cInfo, cInfo.timedMessagesTTL, revealed, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
               DefaultDropdownMenu(showMenu) {
                 if (revealed.value) {
-                  HideItemAction(revealed, showMenu, reveal)
+                  HideItemAction(revealed, showMenu, reveal = reveal)
                 } else if (!cItem.isDeletedContent) {
-                  RevealItemAction(revealed, showMenu, reveal)
+                  RevealItemAction(revealed, showMenu, reveal = reveal)
                 } else if (range.value != null) {
-                  ExpandItemAction(revealed, showMenu, reveal)
+                  ExpandItemAction(revealed, showMenu, Ui.Chat.ItemMenu(cItem.id, "expand"), reveal)
                 }
                 ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
                 DeleteItemAction(chatsCtx, cInfo, cItem, revealed, showMenu, questionText = generalGetString(MR.strings.delete_message_cannot_be_undone_warning), deleteMessage, deleteMessages)
                 if (cItem.canBeDeletedForSelf) {
                   Divider()
-                  SelectItemAction(showMenu, selectChatItem)
+                  SelectItemAction(showMenu, Ui.Chat.ItemMenu(cItem.id, "select"), selectChatItem)
                 }
               }
             }
@@ -833,12 +839,14 @@ expect fun SaveContentItemAction(cItem: ChatItem, saveFileLauncher: FileChooserL
 fun CancelFileItemAction(
   fileId: Long,
   showMenu: MutableState<Boolean>,
+  uiKey: UiKey? = null,
   cancelFile: (Long) -> Unit,
   cancelAction: CancelAction
 ) {
   ItemAction(
     stringResource(cancelAction.uiActionId),
     painterResource(MR.images.ic_close),
+    uiKey = uiKey,
     onClick = {
       showMenu.value = false
       cancelFileAlertDialog(fileId, cancelFile = cancelFile, cancelAction = cancelAction)
@@ -857,6 +865,7 @@ fun ItemInfoAction(
   ItemAction(
     stringResource(MR.strings.info_menu),
     painterResource(MR.images.ic_info),
+    uiKey = Ui.Chat.ItemMenu(cItem.id, "info"),
     onClick = {
       showItemDetails(cInfo, cItem)
       showMenu.value = false
@@ -880,6 +889,7 @@ fun DeleteItemAction(
   ItemAction(
     buttonText,
     painterResource(MR.images.ic_delete),
+    uiKey = Ui.Chat.ItemMenu(cItem.id, "delete"),
     onClick = {
       showMenu.value = false
       if (!revealed.value) {
@@ -924,6 +934,7 @@ fun ModerateItemAction(
   ItemAction(
     stringResource(MR.strings.moderate_verb),
     painterResource(MR.images.ic_flag),
+    uiKey = Ui.Chat.ItemMenu(cItem.id, "moderate"),
     onClick = {
       showMenu.value = false
       moderateMessageAlertDialog(cItem, questionText, deleteMessage = deleteMessage)
@@ -935,11 +946,13 @@ fun ModerateItemAction(
 @Composable
 fun SelectItemAction(
   showMenu: MutableState<Boolean>,
+  uiKey: UiKey? = null,
   selectItem: () -> Unit,
 ) {
   ItemAction(
     stringResource(MR.strings.select_verb),
     painterResource(MR.images.ic_check_circle),
+    uiKey = uiKey,
     onClick = {
       showMenu.value = false
       selectItem()
@@ -948,10 +961,11 @@ fun SelectItemAction(
 }
 
 @Composable
-private fun RevealItemAction(revealed: State<Boolean>, showMenu: MutableState<Boolean>, reveal: (Boolean) -> Unit) {
+private fun RevealItemAction(revealed: State<Boolean>, showMenu: MutableState<Boolean>, uiKey: UiKey? = null, reveal: (Boolean) -> Unit) {
   ItemAction(
     stringResource(MR.strings.reveal_verb),
     painterResource(MR.images.ic_visibility),
+    uiKey = uiKey,
     onClick = {
       reveal(true)
       showMenu.value = false
@@ -960,10 +974,11 @@ private fun RevealItemAction(revealed: State<Boolean>, showMenu: MutableState<Bo
 }
 
 @Composable
-private fun HideItemAction(revealed: State<Boolean>, showMenu: MutableState<Boolean>, reveal: (Boolean) -> Unit) {
+private fun HideItemAction(revealed: State<Boolean>, showMenu: MutableState<Boolean>, uiKey: UiKey? = null, reveal: (Boolean) -> Unit) {
   ItemAction(
     stringResource(MR.strings.hide_verb),
     painterResource(MR.images.ic_visibility_off),
+    uiKey = uiKey,
     onClick = {
       reveal(false)
       showMenu.value = false
@@ -972,10 +987,11 @@ private fun HideItemAction(revealed: State<Boolean>, showMenu: MutableState<Bool
 }
 
 @Composable
-private fun ExpandItemAction(revealed: State<Boolean>, showMenu: MutableState<Boolean>, reveal: (Boolean) -> Unit) {
+private fun ExpandItemAction(revealed: State<Boolean>, showMenu: MutableState<Boolean>, uiKey: UiKey? = null, reveal: (Boolean) -> Unit) {
   ItemAction(
     stringResource(MR.strings.expand_verb),
     painterResource(MR.images.ic_expand_all),
+    uiKey = uiKey,
     onClick = {
       reveal(true)
       showMenu.value = false
@@ -984,10 +1000,11 @@ private fun ExpandItemAction(revealed: State<Boolean>, showMenu: MutableState<Bo
 }
 
 @Composable
-private fun ShrinkItemAction(revealed: State<Boolean>, showMenu: MutableState<Boolean>, reveal: (Boolean) -> Unit) {
+private fun ShrinkItemAction(revealed: State<Boolean>, showMenu: MutableState<Boolean>, uiKey: UiKey? = null, reveal: (Boolean) -> Unit) {
   ItemAction(
     stringResource(MR.strings.hide_verb),
     painterResource(MR.images.ic_collapse_all),
+    uiKey = uiKey,
     onClick = {
       reveal(false)
       showMenu.value = false
@@ -1004,6 +1021,7 @@ private fun ReportItemAction(
   ItemAction(
     stringResource(MR.strings.report_verb),
     painterResource(MR.images.ic_flag),
+    uiKey = Ui.Chat.ItemMenu(cItem.id, "report"),
     onClick = {
       AlertManager.shared.showAlertDialogButtons(
         title = generalGetString(MR.strings.report_reason_alert_title),
@@ -1024,13 +1042,13 @@ private fun ReportItemAction(
                 )
               }
               AlertManager.shared.hideAlert()
-            }) {
+            }, uiKey = Ui.Chat.ReportReason(reason.text)) {
               Text(reason.text, Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
             }
           }
           SectionItemView({
             AlertManager.shared.hideAlert()
-          }) {
+          }, uiKey = Ui.Alert.Dismiss(Ui.AlertSource.Shared)) {
             Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
           }
         }
@@ -1046,6 +1064,7 @@ private fun ArchiveReportItemAction(id: Long, allowForAll: Boolean, showMenu: Mu
   ItemAction(
     stringResource(MR.strings.archive_report),
     painterResource(MR.images.ic_inventory_2),
+    uiKey = Ui.Chat.ItemMenu(id, "archive"),
     onClick = {
       showArchiveReportsAlert(listOf(id), allowForAll, archiveReports)
       showMenu.value = false
@@ -1066,7 +1085,7 @@ fun showArchiveReportsAlert(ids: List<Long>, allowForAll: Boolean, archiveReport
       SectionItemView({
         AlertManager.shared.hideAlert()
         archiveReports(ids, false)
-      }) {
+      }, uiKey = Ui.Alert.Option(Ui.AlertSource.Shared, "archiveForMe")) {
         Text(
           generalGetString(MR.strings.report_archive_for_me),
           Modifier.fillMaxWidth(),
@@ -1079,7 +1098,7 @@ fun showArchiveReportsAlert(ids: List<Long>, allowForAll: Boolean, archiveReport
         SectionItemView({
           AlertManager.shared.hideAlert()
           archiveReports(ids, true)
-        }) {
+        }, uiKey = Ui.Alert.Option(Ui.AlertSource.Shared, "archiveForAll")) {
           Text(
             stringResource(MR.strings.report_archive_for_all_moderators),
             Modifier.fillMaxWidth(),
@@ -1093,11 +1112,11 @@ fun showArchiveReportsAlert(ids: List<Long>, allowForAll: Boolean, archiveReport
 }
 
 @Composable
-fun ItemAction(text: String, icon: Painter, color: Color = Color.Unspecified, onClick: () -> Unit) {
+fun ItemAction(text: String, icon: Painter, color: Color = Color.Unspecified, uiKey: UiKey? = null, onClick: () -> Unit) {
   val finalColor = if (color == Color.Unspecified) {
     MenuTextColor
   } else color
-  DropdownMenuItem(onClick, contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)) {
+  DropdownMenuItem(onClick, Modifier.ui(uiKey), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)) {
     Row(verticalAlignment = Alignment.CenterVertically) {
       Text(
         text,
@@ -1113,11 +1132,11 @@ fun ItemAction(text: String, icon: Painter, color: Color = Color.Unspecified, on
 }
 
 @Composable
-fun ItemAction(text: String, icon: ImageBitmap, textColor: Color = Color.Unspecified, iconColor: Color = Color.Unspecified, onClick: () -> Unit) {
+fun ItemAction(text: String, icon: ImageBitmap, textColor: Color = Color.Unspecified, iconColor: Color = Color.Unspecified, uiKey: UiKey? = null, onClick: () -> Unit) {
   val finalColor = if (textColor == Color.Unspecified) {
     MenuTextColor
   } else textColor
-  DropdownMenuItem(onClick, contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)) {
+  DropdownMenuItem(onClick, Modifier.ui(uiKey), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)) {
     Row(verticalAlignment = Alignment.CenterVertically) {
       Text(
         text,
@@ -1144,12 +1163,13 @@ fun ItemAction(
   composable: @Composable () -> Unit,
   color: Color = Color.Unspecified,
   onClick: () -> Unit,
-  lineLimit: Int = Int.MAX_VALUE
+  lineLimit: Int = Int.MAX_VALUE,
+  uiKey: UiKey? = null,
 ) {
   val finalColor = if (color == Color.Unspecified) {
     MenuTextColor
   } else color
-  DropdownMenuItem(onClick, contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)) {
+  DropdownMenuItem(onClick, Modifier.ui(uiKey), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)) {
     Row(verticalAlignment = Alignment.CenterVertically) {
       Text(
         text,
@@ -1167,11 +1187,11 @@ fun ItemAction(
 }
 
 @Composable
-fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit, color: Color = Color.Unspecified) {
+fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit, color: Color = Color.Unspecified, uiKey: UiKey? = null) {
   val finalColor = if (color == Color.Unspecified) {
     MenuTextColor
   } else color
-  DropdownMenuItem(onClick, contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)) {
+  DropdownMenuItem(onClick, Modifier.ui(uiKey), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)) {
     Row(verticalAlignment = Alignment.CenterVertically) {
       Text(
         text,
@@ -1187,11 +1207,11 @@ fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit, color: Colo
 }
 
 @Composable
-fun ItemAction(text: String, color: Color = Color.Unspecified, onClick: () -> Unit) {
+fun ItemAction(text: String, color: Color = Color.Unspecified, uiKey: UiKey? = null, onClick: () -> Unit) {
   val finalColor = if (color == Color.Unspecified) {
     MenuTextColor
   } else color
-  DropdownMenuItem(onClick, contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)) {
+  DropdownMenuItem(onClick, Modifier.ui(uiKey), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)) {
     Text(
       text,
       modifier = Modifier
@@ -1409,14 +1429,14 @@ fun deleteMessageAlertDialog(chatItem: ChatItem, questionText: String, chatInfo:
           TextButton(onClick = {
             deleteMessage(chatItem.id, CIDeleteMode.cidmInternal)
             AlertManager.shared.hideAlert()
-          }) { Text(stringResource(MR.strings.for_me_only), color = MaterialTheme.colors.error) }
+          }, Modifier.ui(Ui.Alert.Option(Ui.AlertSource.Shared, "forMe"))) { Text(stringResource(MR.strings.for_me_only), color = MaterialTheme.colors.error) }
         }
         if (canDeleteForEveryone) {
           Spacer(Modifier.padding(horizontal = 4.dp))
           TextButton(onClick = {
             deleteMessage(chatItem.id, CIDeleteMode.cidmBroadcast)
             AlertManager.shared.hideAlert()
-          }) { Text(stringResource(MR.strings.for_everybody), color = MaterialTheme.colors.error) }
+          }, Modifier.ui(Ui.Alert.Option(Ui.AlertSource.Shared, "forEveryone"))) { Text(stringResource(MR.strings.for_everybody), color = MaterialTheme.colors.error) }
         }
       }
     }
@@ -1437,13 +1457,13 @@ fun deleteMessagesAlertDialog(itemIds: List<Long>, questionText: String, forAll:
         TextButton(onClick = {
           deleteMessages(itemIds, false)
           AlertManager.shared.hideAlert()
-        }) { Text(stringResource(if (editorial) MR.strings.from_history else MR.strings.for_me_only), color = MaterialTheme.colors.error) }
+        }, Modifier.ui(Ui.Alert.Option(Ui.AlertSource.Shared, "forMe"))) { Text(stringResource(if (editorial) MR.strings.from_history else MR.strings.for_me_only), color = MaterialTheme.colors.error) }
 
         if (forAll) {
           TextButton(onClick = {
             deleteMessages(itemIds, true)
             AlertManager.shared.hideAlert()
-          }) { Text(stringResource(MR.strings.for_everybody), color = MaterialTheme.colors.error) }
+          }, Modifier.ui(Ui.Alert.Option(Ui.AlertSource.Shared, "forEveryone"))) { Text(stringResource(MR.strings.for_everybody), color = MaterialTheme.colors.error) }
         }
       }
     }

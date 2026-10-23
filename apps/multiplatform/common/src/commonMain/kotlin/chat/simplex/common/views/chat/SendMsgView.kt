@@ -20,6 +20,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.ui.UiKey
+import chat.simplex.common.ui.ui
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.ChatItem
@@ -60,6 +62,7 @@ fun SendMsgView(
   cancelLiveMessage: (() -> Unit)? = null,
   editPrevMessage: () -> Unit,
   onFilesPasted: (List<URI>) -> Unit,
+  uiKey: UiKey? = null,
   onMessageChange: (ComposeMessage) -> Unit,
   textStyle: MutableState<TextStyle>,
   focusRequester: FocusRequester? = null,
@@ -88,7 +91,8 @@ fun SendMsgView(
       onMessageChange,
       editPrevMessage,
       onFilesPasted,
-      focusRequester
+      focusRequester,
+      uiKey
     ) {
       if (!cs.inProgress) {
         if (sendToConnect != null) {
@@ -118,7 +122,7 @@ fun SendMsgView(
       }
     }
     if (showDeleteTextButton.value) {
-      DeleteTextButton(composeState)
+      DeleteTextButton(composeState, uiKey?.part("clearText"))
     }
     Box(Modifier.align(Alignment.BottomEnd).padding(bottom = if (appPlatform.isAndroid) 0.dp else 5.sp.toDp() * fontSizeSqrtMultiplier)) {
       val sendButtonSize = remember { Animatable(36f) }
@@ -133,7 +137,7 @@ fun SendMsgView(
       when {
         cs.progressByTimeout -> ComposeProgressIndicator()
         cs.contextItem is ComposeContextItem.ReportedItem -> {
-          SendMsgButton(painterResource(MR.images.ic_check_filled), sendButtonSize, sendButtonAlpha, sendButtonColor, !sendMsgButtonDisabled, sendToConnect, sendMessage)
+          SendMsgButton(painterResource(MR.images.ic_check_filled), sendButtonSize, sendButtonAlpha, sendButtonColor, !sendMsgButtonDisabled, sendToConnect, sendMessage, uiKey?.part("send"))
         }
         showVoiceButton && sendMsgEnabled -> {
           Row(verticalAlignment = Alignment.CenterVertically) {
@@ -159,7 +163,7 @@ fun SendMsgView(
               && cs.contextItem is ComposeContextItem.NoContextItem
             ) {
               Spacer(Modifier.width(12.dp))
-              StartLiveMessageButton {
+              StartLiveMessageButton(uiKey?.part("live")) {
                 if (composeState.value.preview is ComposePreview.NoPreview) {
                   startLiveMessage(scope, sendLiveMessage, updateLiveMessage, sendButtonSize, sendButtonAlpha, composeState, liveMessageAlertShown)
                 }
@@ -194,7 +198,8 @@ fun SendMsgView(
                     onClick = {
                       startLiveMessage(scope, sendLiveMessage, updateLiveMessage, sendButtonSize, sendButtonAlpha, composeState, liveMessageAlertShown)
                       showDropdown.value = false
-                    }
+                    },
+                    uiKey = uiKey?.part("sendLive")
                   )
                 }
               }
@@ -203,6 +208,7 @@ fun SendMsgView(
                   ItemAction(
                     generalGetString(MR.strings.disappearing_message),
                     painterResource(MR.images.ic_timer),
+                    uiKey = uiKey?.part("timed"),
                     onClick = {
                       showCustomDisappearingMessageDialog.value = true
                       showDropdown.value = false
@@ -243,17 +249,18 @@ fun SendMsgView(
           if (!hideSendButton) {
             val menuItems = MenuItems()
             if (menuItems.isNotEmpty()) {
-              SendMsgButton(icon, sendButtonSize, sendButtonAlpha, sendButtonColor, !sendMsgButtonDisabled, sendToConnect, sendMessage) { showDropdown.value = true }
+              SendMsgButton(icon, sendButtonSize, sendButtonAlpha, sendButtonColor, !sendMsgButtonDisabled, sendToConnect, sendMessage, uiKey?.part("send")) { showDropdown.value = true }
               DefaultDropdownMenu(showDropdown) {
                 menuItems.forEach { composable -> composable() }
               }
               CustomDisappearingMessageDialog(
                 showCustomDisappearingMessageDialog,
+                uiKey = uiKey?.part("timed"),
                 sendMessage = sendMessage,
                 customDisappearingMessageTimePref = customDisappearingMessageTimePref
               )
             } else {
-              SendMsgButton(icon, sendButtonSize, sendButtonAlpha, sendButtonColor, !sendMsgButtonDisabled, sendToConnect, sendMessage)
+              SendMsgButton(icon, sendButtonSize, sendButtonAlpha, sendButtonColor, !sendMsgButtonDisabled, sendToConnect, sendMessage, uiKey?.part("send"))
             }
           }
         }
@@ -271,6 +278,7 @@ expect fun VoiceButtonWithoutPermissionByPlatform()
 @Composable
 private fun CustomDisappearingMessageDialog(
   showMenu: MutableState<Boolean>,
+  uiKey: UiKey? = null,
   sendMessage: (Int?) -> Unit,
   customDisappearingMessageTimePref: SharedPreference<Int>?
 ) {
@@ -282,7 +290,7 @@ private fun CustomDisappearingMessageDialog(
       color = MaterialTheme.colors.secondary
     )
 
-    ItemAction(generalGetString(MR.strings.send_disappearing_message_30_seconds)) {
+    ItemAction(generalGetString(MR.strings.send_disappearing_message_30_seconds), uiKey = uiKey?.option(30)) {
       sendMessage(30)
       showMenu.value = false
     }
@@ -290,11 +298,11 @@ private fun CustomDisappearingMessageDialog(
       sendMessage(60)
       showMenu.value = false
     }
-    ItemAction(generalGetString(MR.strings.send_disappearing_message_5_minutes)) {
+    ItemAction(generalGetString(MR.strings.send_disappearing_message_5_minutes), uiKey = uiKey?.option(300)) {
       sendMessage(300)
       showMenu.value = false
     }
-    ItemAction(generalGetString(MR.strings.send_disappearing_message_custom_time)) {
+    ItemAction(generalGetString(MR.strings.send_disappearing_message_custom_time), uiKey = uiKey?.option("custom")) {
       showMenu.value = false
       val selectedDisappearingMessageTime = mutableStateOf(customDisappearingMessageTimePref?.get?.invoke() ?: 300)
       showCustomTimePickerDialog(
@@ -312,10 +320,10 @@ private fun CustomDisappearingMessageDialog(
 }
 
 @Composable
-private fun BoxScope.DeleteTextButton(composeState: MutableState<ComposeState>) {
+private fun BoxScope.DeleteTextButton(composeState: MutableState<ComposeState>, uiKey: UiKey? = null) {
   IconButton(
     { composeState.value = composeState.value.copy(message = ComposeMessage()) },
-    Modifier.align(Alignment.TopEnd).size(36.dp)
+    Modifier.ui(uiKey).align(Alignment.TopEnd).size(36.dp)
   ) {
     Icon(painterResource(MR.images.ic_close), null, Modifier.padding(7.dp).size(36.dp), tint = MaterialTheme.colors.secondary)
   }
@@ -457,12 +465,13 @@ private fun SendMsgButton(
   enabled: Boolean,
   sendToConnect: (() -> Unit)?,
   sendMessage: (Int?) -> Unit,
+  uiKey: UiKey? = null,
   onLongClick: (() -> Unit)? = null
 ) {
   val interactionSource = remember { MutableInteractionSource() }
   val ripple = remember { ripple(bounded = false, radius = 24.dp) }
   Box(
-    modifier = Modifier.requiredSize(36.dp)
+    modifier = Modifier.ui(uiKey).requiredSize(36.dp)
       .combinedClickable(
         onClick = {
           if (sendToConnect != null) {
@@ -496,11 +505,11 @@ private fun SendMsgButton(
 }
 
 @Composable
-private fun StartLiveMessageButton(onClick: () -> Unit) {
+private fun StartLiveMessageButton(uiKey: UiKey? = null, onClick: () -> Unit) {
   val interactionSource = remember { MutableInteractionSource() }
   val ripple = remember { ripple(bounded = false, radius = 24.dp) }
   Box(
-    modifier = Modifier.requiredSize(36.dp)
+    modifier = Modifier.ui(uiKey).requiredSize(36.dp)
       .clickable(
         onClick = onClick,
         role = Role.Button,

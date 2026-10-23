@@ -1,5 +1,7 @@
 package chat.simplex.common.views.chat.item
 
+import chat.simplex.common.ui.UiKey
+import chat.simplex.common.ui.ui
 import SectionItemView
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
@@ -38,6 +40,7 @@ fun CIFileView(
   showTimestamp: Boolean,
   showMenu: MutableState<Boolean>,
   smallView: Boolean = false,
+  uiKey: UiKey? = null,
   receiveFile: (Long) -> Unit
 ) {
   val saveFileLauncher = rememberSaveFileLauncher(ciFile = file)
@@ -201,6 +204,7 @@ fun CIFileView(
   if (file != null) OpenWhenReceivedEffect(file, smallView, onClick)
   Row(
     Modifier
+      .ui(uiKey)
       .combinedClickable(
         onClick = onClick,
         onLongClick = { showMenu.value = true }

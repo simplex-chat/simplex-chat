@@ -1,5 +1,7 @@
 package chat.simplex.app
 
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.ui
 import android.annotation.SuppressLint
 import android.app.*
 import android.content.*
@@ -495,7 +497,7 @@ class SimplexService: Service() {
           }
         },
         confirmButton = {
-          TextButton(onClick = AlertManager.shared::hideAlert) { Text(stringResource(MR.strings.ok)) }
+          TextButton(onClick = AlertManager.shared::hideAlert, Modifier.ui(Ui.Alert.Confirm(Ui.AlertSource.Shared))) { Text(stringResource(MR.strings.ok)) }
         },
         shape = RoundedCornerShape(corner = CornerSize(25.dp))
       )

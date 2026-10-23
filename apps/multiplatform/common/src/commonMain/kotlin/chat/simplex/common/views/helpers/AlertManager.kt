@@ -23,6 +23,8 @@ import androidx.compose.ui.unit.*
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.LocalBadge
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.res.*
 import dev.icerock.moko.resources.StringResource
@@ -155,11 +157,11 @@ class AlertManager {
               TextButton(onClick = {
                 onDismiss?.invoke()
                 hideAlert()
-              }) { Text(dismissText) }
+              }, Modifier.ui(Ui.Alert.Dismiss(uiSource))) { Text(dismissText) }
               TextButton(onClick = {
                 onConfirm?.invoke()
                 hideAlert()
-              }, Modifier.focusRequester(focusRequester)) { Text(confirmText, color = if (destructive) MaterialTheme.colors.error else Color.Unspecified) }
+              }, Modifier.ui(Ui.Alert.Confirm(uiSource)).focusRequester(focusRequester)) { Text(confirmText, color = if (destructive) MaterialTheme.colors.error else Color.Unspecified) }
             }
           }
           if (parseHtml) {
@@ -196,11 +198,11 @@ class AlertManager {
               TextButton(onClick = {
                 onDismiss?.invoke()
                 hideAlert()
-              }) { Text(dismissText) }
+              }, Modifier.ui(Ui.Alert.Dismiss(uiSource))) { Text(dismissText) }
               TextButton(onClick = {
                 onConfirm?.invoke()
                 hideAlert()
-              }) { Text(confirmText, color = if (destructive) Color.Red else Color.Unspecified, textAlign = TextAlign.End) }
+              }, Modifier.ui(Ui.Alert.Confirm(uiSource))) { Text(confirmText, color = if (destructive) Color.Red else Color.Unspecified, textAlign = TextAlign.End) }
             }
           }
         },
@@ -246,7 +248,7 @@ class AlertManager {
                   onConfirm?.invoke()
                   hideAlert()
                 },
-                Modifier.focusRequester(focusRequester)
+                Modifier.ui(Ui.Alert.Confirm(uiSource)).focusRequester(focusRequester)
               ) {
                 Text(confirmText, color = Color.Unspecified)
               }
@@ -400,7 +402,7 @@ class AlertManager {
                   TextButton(onClick = {
                     onConfirm.invoke()
                     hideAlert()
-                  }, Modifier.focusRequester(focusRequester)) {
+                  }, Modifier.ui(Ui.Alert.Confirm(uiSource)).focusRequester(focusRequester)) {
                     Text(confirmText)
                   }
                 }
@@ -415,7 +417,7 @@ class AlertManager {
                 TextButton(onClick = {
                   onDismiss?.invoke()
                   hideAlert()
-                }, if (confirmText == null) Modifier.focusRequester(focusRequester) else Modifier) {
+                }, Modifier.ui(Ui.Alert.Dismiss(uiSource)).then(if (confirmText == null) Modifier.focusRequester(focusRequester) else Modifier)) {
                   Text(dismissText)
                 }
               }
@@ -426,6 +428,9 @@ class AlertManager {
       )
     }
   }
+
+  private val uiSource: Ui.AlertSource
+    get() = if (this === privacySensitive) Ui.AlertSource.PrivacySensitive else Ui.AlertSource.Shared
 
   @Composable
   fun showInView() {

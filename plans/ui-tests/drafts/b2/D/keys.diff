@@ -1,0 +1,196 @@
+diff --git a/apps/multiplatform/common/src/androidMain/kotlin/chat/simplex/common/views/chatlist/TagListView.android.kt b/apps/multiplatform/common/src/androidMain/kotlin/chat/simplex/common/views/chatlist/TagListView.android.kt
+index a4be674..f294cde 100644
+--- a/apps/multiplatform/common/src/androidMain/kotlin/chat/simplex/common/views/chatlist/TagListView.android.kt
++++ b/apps/multiplatform/common/src/androidMain/kotlin/chat/simplex/common/views/chatlist/TagListView.android.kt
+@@ -13,6 +13,8 @@ import androidx.compose.ui.unit.dp
+ import androidx.compose.ui.viewinterop.AndroidView
+ import androidx.emoji2.emojipicker.EmojiPickerView
+ import chat.simplex.common.model.ChatController.appPrefs
++import chat.simplex.common.ui.Ui
++import chat.simplex.common.ui.ui
+ import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
+ import chat.simplex.common.views.chat.topPaddingToContent
+ import chat.simplex.common.views.helpers.*
+@@ -23,6 +25,7 @@ import dev.icerock.moko.resources.compose.painterResource
+ actual fun ChatTagInput(name: MutableState<String>, showError: State<Boolean>, emoji: MutableState<String?>) {
+   SectionItemView(padding = PaddingValues(horizontal = DEFAULT_PADDING_HALF)) {
+     Box(Modifier
++      .ui(Ui.TagEditor.Emoji)
+       .clip(shape = CircleShape)
+       .clickable {
+         ModalManager.start.showModalCloseable { close ->
+diff --git a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/ui/Ui.kt b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/ui/Ui.kt
+index 55c1670..9daa4ef 100644
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/ui/Ui.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/ui/Ui.kt
+@@ -31,10 +31,23 @@ object Ui {
+     val PresetMenu = UiKey("chatList.presetMenu")
+     fun PresetTag(kind: String) = UiKey("chatList.presetTag", kind)
+     fun PresetMenuItem(kind: String) = UiKey("chatList.presetMenu.item", kind)
++    val PresetMenuAll = UiKey("chatList.presetMenu.all")
++    val AddList = UiKey("chatList.addList")
++    fun UserTag(tagId: Long) = UiKey("chatList.userTag", tagId)
++    fun UserTagMenu(tagId: Long, action: String) = UiKey("chatList.userTag.menu.$action", tagId)
+     fun Row(chatId: String, remoteHostId: Long? = null) = UiKey("chatList.row", rowArg(chatId, remoteHostId))
+     fun RowMenu(chatId: String, action: String, remoteHostId: Long? = null) = UiKey("chatList.row.menu.$action", rowArg(chatId, remoteHostId))
+     private fun rowArg(chatId: String, rh: Long?) = if (rh == null) chatId else "$rh:$chatId"
+   }
++  object TagList {
++    fun Tag(tagId: Long) = UiKey("tagList.tag", tagId)
++  }
++  object TagEditor {
++    val Emoji = UiKey("tagEditor.emoji")
++    val Name = UiKey("tagEditor.name")
++    val Save = UiKey("tagEditor.save")
++    val Duplicate = UiKey("tagEditor.duplicate")
++  }
+   object NewChat {
+     val CreateLink = UiKey("newChat.createLink")
+     val PasteLink = UiKey("newChat.pasteLink")
+diff --git a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListNavLinkView.kt b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListNavLinkView.kt
+index fd921d4..07f8d31 100644
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListNavLinkView.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListNavLinkView.kt
+@@ -405,6 +405,7 @@ fun TagListAction(
+   ItemAction(
+     stringResource(if (chat.chatInfo.chatTags.isNullOrEmpty()) MR.strings.add_to_list else MR.strings.change_list),
+     painterResource(MR.images.ic_label),
++    uiKey = Ui.ChatList.RowMenu(chat.id, "tagList", chat.remoteHostId),
+     onClick = {
+       ModalManager.start.showModalCloseable { close ->
+         if (userTags.value.isEmpty()) {
+diff --git a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt
+index c84a1cb..b5c9766 100644
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt
+@@ -1321,6 +1321,7 @@ private fun TagsView(searchText: MutableState<TextFieldValue>) {
+       Box {
+         Row(
+           rowSizeModifier
++            .ui(Ui.ChatList.UserTag(tag.chatTagId))
+             .clip(shape = CircleShape)
+             .combinedClickable(
+               onClick = {
+@@ -1395,7 +1396,7 @@ private fun TagsView(searchText: MutableState<TextFieldValue>) {
+       }
+ 
+     if (userTags.value.isEmpty()) {
+-      Row(rowSizeModifier.clip(shape = CircleShape).then(plusClickModifier).padding(start = 2.dp, top = 4.dp, end = 6.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
++      Row(rowSizeModifier.ui(Ui.ChatList.AddList).clip(shape = CircleShape).then(plusClickModifier).padding(start = 2.dp, top = 4.dp, end = 6.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+         Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.chat_list_add_list), Modifier.size(18.sp.toDp()), tint = MaterialTheme.colors.secondary)
+         Spacer(Modifier.width(2.dp))
+         Text(stringResource(MR.strings.chat_list_add_list), color = MaterialTheme.colors.secondary, fontSize = 15.sp)
+@@ -1403,7 +1404,7 @@ private fun TagsView(searchText: MutableState<TextFieldValue>) {
+     } else {
+       Box(rowSizeModifier, contentAlignment = Alignment.Center) {
+         Icon(
+-          painterResource(MR.images.ic_add), stringResource(MR.strings.chat_list_add_list), Modifier.clip(shape = CircleShape).then(plusClickModifier).padding(2.dp), tint = MaterialTheme.colors.secondary
++          painterResource(MR.images.ic_add), stringResource(MR.strings.chat_list_add_list), Modifier.ui(Ui.ChatList.AddList).clip(shape = CircleShape).then(plusClickModifier).padding(2.dp), tint = MaterialTheme.colors.secondary
+         )
+       }
+     }
+@@ -1506,6 +1507,7 @@ private fun CollapsedTagsFilterView(searchText: MutableState<TextFieldValue>) {
+         ItemAction(
+           stringResource(MR.strings.chat_list_all),
+           painterResource(MR.images.ic_menu),
++          uiKey = Ui.ChatList.PresetMenuAll,
+           onClick = {
+             onCloseMenuAction.value = {
+               searchText.value = TextFieldValue()
+diff --git a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/TagListView.kt b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/TagListView.kt
+index 17e288f..f0327aa 100644
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/TagListView.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/TagListView.kt
+@@ -32,6 +32,8 @@ import chat.simplex.common.model.ChatController.apiSetChatTags
+ import chat.simplex.common.model.ChatController.appPrefs
+ import chat.simplex.common.model.ChatModel.clearActiveChatFilterIfNeeded
+ import chat.simplex.common.platform.*
++import chat.simplex.common.ui.Ui
++import chat.simplex.common.ui.ui
+ import chat.simplex.common.ui.theme.*
+ import chat.simplex.common.views.chat.item.ItemAction
+ import chat.simplex.common.views.chat.item.ReactionIcon
+@@ -110,6 +112,7 @@ fun TagListView(rhId: Long?, chat: Chat? = null, close: () -> Unit, reorderMode:
+ 
+             Row(
+               Modifier
++                .ui(Ui.TagList.Tag(tag.chatTagId))
+                 .fillMaxWidth()
+                 .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT)
+                 .clickable(
+@@ -261,7 +264,7 @@ fun ModalData.TagListEditor(
+         trimmedName.value.isEmpty() ||
+         isDuplicateEmojiOrName.value
+ 
+-    SectionItemView(click = { if (tagId == null) createTag() else updateTag() }, disabled = disabled) {
++    SectionItemView(click = { if (tagId == null) createTag() else updateTag() }, disabled = disabled, uiKey = Ui.TagEditor.Save) {
+       Text(
+         generalGetString(if (chat != null) MR.strings.add_to_list else MR.strings.save_list),
+         color = if (disabled) colors.secondary else colors.primary
+@@ -270,7 +273,7 @@ fun ModalData.TagListEditor(
+     val showErrorMessage = isDuplicateEmojiOrName.value && saving.value != false
+     SectionCustomFooter {
+       Row(
+-        Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING),
++        Modifier.ui(if (showErrorMessage) Ui.TagEditor.Duplicate else null).fillMaxWidth().padding(bottom = DEFAULT_PADDING),
+         verticalAlignment = Alignment.CenterVertically
+       ) {
+         Icon(
+@@ -311,7 +314,8 @@ private fun DeleteTagAction(rhId: Long?, tag: ChatTag, showMenu: MutableState<Bo
+       deleteTagDialog(rhId, tag, saving)
+       showMenu.value = false
+     },
+-    color = Color.Red
++    color = Color.Red,
++    uiKey = Ui.ChatList.UserTagMenu(tag.chatTagId, "delete")
+   )
+ }
+ 
+@@ -332,7 +336,8 @@ private fun EditTagAction(rhId: Long?, tag: ChatTag, showMenu: MutableState<Bool
+         )
+       }
+     },
+-    color = MenuTextColor
++    color = MenuTextColor,
++    uiKey = Ui.ChatList.UserTagMenu(tag.chatTagId, "edit")
+   )
+ }
+ 
+@@ -370,6 +375,7 @@ fun TagListNameTextField(name: MutableState<String>, showError: State<Boolean>)
+     onValueChange = { name.value = it },
+     interactionSource = interactionSource,
+     modifier = Modifier
++      .ui(Ui.TagEditor.Name)
+       .fillMaxWidth()
+       .indicatorLine(true, showError.value, interactionSource, colors)
+       .heightIn(min = TextFieldDefaults.MinHeight)
+@@ -483,7 +489,7 @@ private fun deleteTagDialog(rhId: Long?, tag: ChatTag, saving: MutableState<Bool
+       SectionItemView({
+         AlertManager.shared.hideAlert()
+         deleteTag(rhId, tag, saving)
+-      }) {
++      }, uiKey = Ui.Alert.Confirm(Ui.AlertSource.Shared)) {
+         Text(
+           generalGetString(MR.strings.confirm_verb),
+           Modifier.fillMaxWidth(),
+diff --git a/apps/multiplatform/common/src/desktopMain/kotlin/chat/simplex/common/views/chatlist/TagListView.desktop.kt b/apps/multiplatform/common/src/desktopMain/kotlin/chat/simplex/common/views/chatlist/TagListView.desktop.kt
+index dba5ddb..bfb3bad 100644
+--- a/apps/multiplatform/common/src/desktopMain/kotlin/chat/simplex/common/views/chatlist/TagListView.desktop.kt
++++ b/apps/multiplatform/common/src/desktopMain/kotlin/chat/simplex/common/views/chatlist/TagListView.desktop.kt
+@@ -13,6 +13,8 @@ import androidx.compose.ui.text.input.TextFieldValue
+ import androidx.compose.ui.text.style.TextAlign
+ import androidx.compose.ui.unit.dp
+ import androidx.compose.ui.unit.sp
++import chat.simplex.common.ui.Ui
++import chat.simplex.common.ui.ui
+ import chat.simplex.common.ui.theme.*
+ import chat.simplex.common.ui.theme.ThemeManager.colorFromReadableHex
+ import chat.simplex.common.views.chat.item.isHeartEmoji
+@@ -55,6 +57,7 @@ private fun SingleEmojiInput(
+     },
+     singleLine = true,
+     modifier = Modifier
++      .ui(Ui.TagEditor.Emoji)
+       .padding(4.dp)
+       .size(width = TextFieldDefaults.MinHeight.value.sp.toDp(), height = TextFieldDefaults.MinHeight),
+     textStyle = LocalTextStyle.current.copy(fontFamily = EmojiFont, textAlign = TextAlign.Center),

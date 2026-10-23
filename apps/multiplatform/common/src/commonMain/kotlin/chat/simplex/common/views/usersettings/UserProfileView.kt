@@ -18,6 +18,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.ReadableText
@@ -144,7 +146,7 @@ fun UserProfileLayout(
             Box(Modifier.weight(1f, fill = false).padding(bottom = DEFAULT_PADDING)) {
               TextEditor(
                 description,
-                Modifier.heightIn(min = 140.dp),
+                Modifier.heightIn(min = 140.dp).ui(Ui.Profile.DescriptionText),
                 placeholder = stringResource(MR.strings.enter_description_optional),
                 contentPadding = PaddingValues(),
                 focusRequester = descrFocusRequester,
@@ -192,12 +194,12 @@ fun UserProfileLayout(
               )
               if (!isValidNewProfileName(displayName.value, profile)) {
                 Spacer(Modifier.width(DEFAULT_PADDING_HALF))
-                IconButton({ showInvalidNameAlert(mkValidName(displayName.value), displayName) }, Modifier.size(20.dp)) {
+                IconButton({ showInvalidNameAlert(mkValidName(displayName.value), displayName) }, Modifier.size(20.dp).ui(Ui.Profile.Name.part("invalid"))) {
                   Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.error)
                 }
               }
             }
-            ProfileNameField(displayName, "", { isValidNewProfileName(it, profile) }, focusRequester)
+            ProfileNameField(displayName, "", { isValidNewProfileName(it, profile) }, focusRequester, uiKey = Ui.Profile.Name)
             if (showFullName(profile)) {
               Spacer(Modifier.height(DEFAULT_PADDING))
               Text(
@@ -205,7 +207,7 @@ fun UserProfileLayout(
                 fontSize = 16.sp,
                 modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
               )
-              ProfileNameField(fullName)
+              ProfileNameField(fullName, uiKey = Ui.Profile.FullName)
             }
 
             Spacer(Modifier.height(DEFAULT_PADDING))
@@ -219,24 +221,24 @@ fun UserProfileLayout(
                 Spacer(Modifier.size(DEFAULT_PADDING_HALF))
                 IconButton(
                   onClick = { AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.bio_too_large)) },
-                  Modifier.size(20.dp)
+                  Modifier.size(20.dp).ui(Ui.Profile.Bio.part("invalid"))
                 ) {
                   Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.error)
                 }
               }
             }
-            ProfileNameField(shortDescr)
+            ProfileNameField(shortDescr, uiKey = Ui.Profile.Bio)
 
             Spacer(Modifier.height(DEFAULT_PADDING))
             Text(
               stringResource(if (description.value.isBlank()) MR.strings.add_description else MR.strings.edit_description),
               color = MaterialTheme.colors.primary,
-              modifier = Modifier.clickable { editingDescription = true }
+              modifier = Modifier.ui(Ui.Profile.Description).clickable { editingDescription = true }
             )
 
             Spacer(Modifier.height(DEFAULT_PADDING))
             val enabled = !dataUnchanged() && canSaveProfile(displayName.value, shortDescr.value, profile)
-            val saveModifier: Modifier = Modifier.clickable(enabled) { saveProfile(displayName.value, fullName.value, shortDescr.value, description.value, profileImage.value) }
+            val saveModifier: Modifier = Modifier.ui(Ui.Profile.Save).clickable(enabled) { saveProfile(displayName.value, fullName.value, shortDescr.value, description.value, profileImage.value) }
             val saveColor: Color = if (enabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
             Text(
               stringResource(MR.strings.save_and_notify_contacts),

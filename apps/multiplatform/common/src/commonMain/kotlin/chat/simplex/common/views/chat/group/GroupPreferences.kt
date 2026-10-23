@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.runtime.saveable.rememberSaveable
 import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.compose.stringResource
+import chat.simplex.common.ui.Ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.PreferenceToggleWithIcon
@@ -258,7 +259,8 @@ private fun MemberAdmissionButton(onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_toggle_on),
     stringResource(MR.strings.member_admission),
-    click = onClick
+    click = onClick,
+    uiKey = Ui.GroupPrefs.MemberAdmission
   )
 }
 
@@ -286,6 +288,7 @@ private fun FeatureSection(
         iconTint,
         disabled = disabled,
         checked = enableFeature.value == GroupFeatureEnabled.ON,
+        uiKey = Ui.GroupPrefs.Toggle(feature),
       ) { checked ->
         onSelected(if (checked) GroupFeatureEnabled.ON else GroupFeatureEnabled.OFF, enableForRole?.value)
       }
@@ -298,6 +301,7 @@ private fun FeatureSection(
           dropdownValues = TimedMessagesPreference.ttlValues,
           customPickerTitle = generalGetString(MR.strings.delete_after),
           customPickerConfirmButtonText = generalGetString(MR.strings.custom_time_picker_select),
+          uiKey = Ui.GroupPrefs.Ttl,
           onSelected = onTTLUpdated
         )
       }
@@ -306,6 +310,7 @@ private fun FeatureSection(
           generalGetString(MR.strings.feature_enabled_for),
           featureRoles,
           enableForRole,
+          uiKey = Ui.GroupPrefs.Role(feature),
           onSelected = { value ->
             onSelected(enableFeature.value, value)
           }
@@ -340,10 +345,10 @@ private fun FeatureSection(
 @Composable
 private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Boolean, saveTextId: StringResource) {
   SectionView {
-    SectionItemView(reset, disabled = disabled) {
+    SectionItemView(reset, disabled = disabled, uiKey = Ui.GroupPrefs.Reset) {
       Text(stringResource(MR.strings.reset_verb), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
     }
-    SectionItemView(save, disabled = disabled) {
+    SectionItemView(save, disabled = disabled, uiKey = Ui.GroupPrefs.Save) {
       Text(stringResource(saveTextId), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
     }
   }

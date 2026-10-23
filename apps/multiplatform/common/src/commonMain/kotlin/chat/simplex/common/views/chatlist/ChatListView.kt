@@ -35,6 +35,9 @@ import chat.simplex.common.BuildConfigCommon
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatController.stopRemoteHostAndReloadHosts
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.UiKey
+import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.theme.*
 import SectionItemView
 import chat.simplex.common.views.helpers.*
@@ -142,6 +145,7 @@ fun ToggleChatListCard() {
   val selectedBg = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.92f)
   Row(
     Modifier
+      .ui(Ui.ChatList.OneHandCard)
       .padding(horizontal = 16.dp, vertical = 12.dp)
       .fillMaxWidth()
       .height(IntrinsicSize.Min)
@@ -154,7 +158,7 @@ fun ToggleChatListCard() {
       isSelected = oneHandUI.value,
       selectedBg = selectedBg,
       activeBg = activeBg,
-      modifier = Modifier.weight(1f)
+      modifier = Modifier.weight(1f).ui(Ui.ChatList.OneHandCard.part("bottom"))
     ) { appPrefs.oneHandUI.set(true) }
     Box(Modifier.weight(1f).fillMaxHeight()) {
       ToolbarSegment(
@@ -163,13 +167,14 @@ fun ToggleChatListCard() {
         isSelected = !oneHandUI.value,
         selectedBg = selectedBg,
         activeBg = activeBg,
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize().ui(Ui.ChatList.OneHandCard.part("top"))
       ) { appPrefs.oneHandUI.set(false) }
       Icon(
         painterResource(MR.images.ic_close), null,
         Modifier
           .align(Alignment.CenterEnd)
           .padding(end = 4.dp)
+          .ui(Ui.ChatList.OneHandCard.part("close"))
           .clip(CircleShape)
           .clickable(onClick = onClose)
           .padding(8.dp)
@@ -381,7 +386,7 @@ private fun ConnectBannerCard() {
         .clip(RoundedCornerShape(18.dp))
     ) {
       Column(
-        Modifier.weight(1f).clickable {
+        Modifier.weight(1f).ui(Ui.ChatList.ConnectBanner.part("newLink")).clickable {
           ModalManager.start.showModalCloseable { close ->
             NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = close)
           }
@@ -412,7 +417,7 @@ private fun ConnectBannerCard() {
       }
       Spacer(Modifier.width(2.dp).fillMaxHeight().background(MaterialTheme.colors.background))
       Column(
-        Modifier.weight(1f).clickable {
+        Modifier.weight(1f).ui(Ui.ChatList.ConnectBanner.part("pasteLink")).clickable {
           ModalManager.start.showModalCloseable { close ->
             NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = appPlatform.isAndroid, close = close)
           }
@@ -483,7 +488,7 @@ private fun BoxScope.NewChatSheetFloatingButton(oneHandUI: State<Boolean>, stopp
         showNewChatSheet(oneHandUI)
       }
     },
-    Modifier
+    Modifier.ui(Ui.ChatList.NewChatFab)
       .navigationBarsPadding()
       .padding(end = DEFAULT_PADDING, bottom = DEFAULT_PADDING)
       .align(Alignment.BottomEnd)
@@ -549,7 +554,7 @@ private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>
           generalGetString(MR.strings.chat_is_stopped_indication),
           generalGetString(MR.strings.you_can_start_chat_via_setting_or_by_restarting_the_app)
         )
-      }) {
+      }, Modifier.ui(Ui.ChatList.Stopped)) {
         Icon(
           painterResource(MR.images.ic_report_filled),
           generalGetString(MR.strings.chat_is_stopped_indication),
@@ -587,6 +592,7 @@ private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>
           onClick = {
             showNewChatSheet(oneHandUI)
           },
+          Modifier.ui(Ui.ChatList.NewChat),
         ) {
           Box(
             contentAlignment = Alignment.Center,
@@ -622,7 +628,7 @@ private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>
         val allRead = users
           .filter { u -> !u.user.activeUser && !u.user.hidden }
           .all { u -> u.unreadCount == 0 }
-        UserProfileButton(chatModel.currentUser.value?.profile?.image, allRead) {
+        UserProfileButton(chatModel.currentUser.value?.profile?.image, allRead, Ui.ChatList.UserPicker) {
             userPickerState.value = AnimatedViewState.VISIBLE
         }
       }
@@ -660,7 +666,8 @@ private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>
     onTitleClick = if (canScrollToZero.value) { { scrollToBottom(scope, listState) } } else null,
     onTop = !oneHandUI.value,
     onSearchValueChanged = {},
-    buttons = { barButtons.forEach { it() } }
+    buttons = { barButtons.forEach { it() } },
+    uiKey = Ui.ChatList.Bar,
   )
 }
 
@@ -694,6 +701,7 @@ fun SubscriptionStatusIndicator(click: (() -> Unit)) {
 
   SimpleButtonFrame(
     click = click,
+    Modifier.ui(Ui.ChatList.Subscriptions),
     disabled = chatModel.chatRunning.value != true
   ) {
     SubscriptionStatusIndicatorView(subs = subs, hasSess = hasSess)
@@ -701,9 +709,9 @@ fun SubscriptionStatusIndicator(click: (() -> Unit)) {
 }
 
 @Composable
-fun UserProfileButton(image: String?, allRead: Boolean, onButtonClicked: () -> Unit) {
+fun UserProfileButton(image: String?, allRead: Boolean, uiKey: UiKey? = null, onButtonClicked: () -> Unit) {
   Row(verticalAlignment = Alignment.CenterVertically) {
-    IconButton(onClick = onButtonClicked) {
+    IconButton(onClick = onButtonClicked, Modifier.ui(uiKey)) {
       Box {
         ProfileImage(
           image = image,
@@ -753,7 +761,7 @@ private fun ToggleFilterEnabledButton() {
     } else {
       chatModel.activeChatTagFilter.value = ActiveFilter.Unread
     }
-  }) {
+  }, Modifier.ui(Ui.ChatList.UnreadFilter)) {
     val sp16 = with(LocalDensity.current) { 16.sp.toDp() }
     Icon(
       painterResource(MR.images.ic_filter_list),
@@ -826,7 +834,7 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
         tint = MaterialTheme.colors.secondary
       )
       SearchTextField(
-        Modifier.weight(1f).onFocusChanged { focused = it.hasFocus }.focusRequester(focusRequester),
+        Modifier.ui(Ui.ChatList.Search).weight(1f).onFocusChanged { focused = it.hasFocus }.focusRequester(focusRequester),
         placeholder = stringResource(MR.strings.search_or_paste_simplex_link),
         alwaysVisible = true,
         searchText = searchText,
@@ -1237,6 +1245,7 @@ internal fun ConnectByNameRow(name: String, searchText: MutableState<TextFieldVa
   val view = LocalMultiplatformView()
   Row(
     Modifier
+      .ui(Ui.ChatList.ConnectByName)
       .fillMaxWidth()
       .clickable {
         hideKeyboard(view)
@@ -1272,7 +1281,7 @@ private fun NoChatsView(searchText: MutableState<TextFieldValue>) {
       is ActiveFilter.UserTag -> Text(String.format(generalGetString(MR.strings.no_chats_in_list), activeFilter.tag.chatTagText), color = MaterialTheme.colors.secondary, textAlign = TextAlign.Center)
       is ActiveFilter.Unread -> {
           Row(
-            Modifier.clip(shape = CircleShape).clickable { chatModel.activeChatTagFilter.value = null }.padding(DEFAULT_PADDING_HALF),
+            Modifier.ui(Ui.ChatList.NoUnreadChats).clip(shape = CircleShape).clickable { chatModel.activeChatTagFilter.value = null }.padding(DEFAULT_PADDING_HALF),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically
           ) {
@@ -1343,6 +1352,7 @@ private fun TagsView(searchText: MutableState<TextFieldValue>) {
       Box {
         Row(
           rowSizeModifier
+            .ui(Ui.ChatList.UserTag(tag.chatTagId))
             .clip(shape = CircleShape)
             .combinedClickable(
               onClick = {
@@ -1417,7 +1427,7 @@ private fun TagsView(searchText: MutableState<TextFieldValue>) {
       }
 
     if (userTags.value.isEmpty()) {
-      Row(rowSizeModifier.clip(shape = CircleShape).then(plusClickModifier).padding(start = 2.dp, top = 4.dp, end = 6.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+      Row(rowSizeModifier.ui(Ui.ChatList.AddList).clip(shape = CircleShape).then(plusClickModifier).padding(start = 2.dp, top = 4.dp, end = 6.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
         Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.chat_list_add_list), Modifier.size(18.sp.toDp()), tint = MaterialTheme.colors.secondary)
         Spacer(Modifier.width(2.dp))
         Text(stringResource(MR.strings.chat_list_add_list), color = MaterialTheme.colors.secondary, fontSize = 15.sp)
@@ -1425,7 +1435,7 @@ private fun TagsView(searchText: MutableState<TextFieldValue>) {
     } else {
       Box(rowSizeModifier, contentAlignment = Alignment.Center) {
         Icon(
-          painterResource(MR.images.ic_add), stringResource(MR.strings.chat_list_add_list), Modifier.clip(shape = CircleShape).then(plusClickModifier).padding(2.dp), tint = MaterialTheme.colors.secondary
+          painterResource(MR.images.ic_add), stringResource(MR.strings.chat_list_add_list), Modifier.ui(Ui.ChatList.AddList).clip(shape = CircleShape).then(plusClickModifier).padding(2.dp), tint = MaterialTheme.colors.secondary
         )
       }
     }
@@ -1447,6 +1457,7 @@ private fun ExpandedTagFilterView(tag: PresetTagKind) {
 
   Row(
     modifier = Modifier
+      .ui(Ui.ChatList.PresetTag(tag.name))
       .sizeIn(minHeight = TAG_MIN_HEIGHT * fontSizeSqrtMultiplier)
       .clip(shape = CircleShape)
       .clickable {
@@ -1498,6 +1509,7 @@ private fun CollapsedTagsFilterView(searchText: MutableState<TextFieldValue>) {
   }
 
   Box(Modifier
+    .ui(Ui.ChatList.PresetMenu)
     .clip(shape = CircleShape)
     .size(TAG_MIN_HEIGHT * fontSizeSqrtMultiplier)
     .clickable { showMenu.value = true },
@@ -1526,6 +1538,7 @@ private fun CollapsedTagsFilterView(searchText: MutableState<TextFieldValue>) {
         ItemAction(
           stringResource(MR.strings.chat_list_all),
           painterResource(MR.images.ic_menu),
+          uiKey = Ui.ChatList.PresetMenuAll,
           onClick = {
             onCloseMenuAction.value = {
               searchText.value = TextFieldValue()
@@ -1557,6 +1570,7 @@ fun ItemPresetFilterAction(
     stringResource(text),
     painterResource(icon),
     color = if (active) MaterialTheme.colors.primary else Color.Unspecified,
+    uiKey = Ui.ChatList.PresetMenuItem(presetTag.name),
     onClick = {
       onCloseMenuAction.value = {
         chatModel.activeChatTagFilter.value = ActiveFilter.PresetTag(presetTag)

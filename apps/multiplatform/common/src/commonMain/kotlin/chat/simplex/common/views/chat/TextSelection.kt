@@ -36,6 +36,8 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.ui
 import chat.simplex.common.views.chat.item.itemPrefixText
 import chat.simplex.common.views.chat.item.itemDisplay
 import chat.simplex.common.views.helpers.generalGetString
@@ -558,6 +560,7 @@ fun SelectionCopyButton() {
             .background(MaterialTheme.colors.surface, RoundedCornerShape(20.dp))
             .border(1.dp, MaterialTheme.colors.onSurface.copy(alpha = 0.12f), RoundedCornerShape(20.dp))
             .clip(RoundedCornerShape(20.dp))
+            .ui(Ui.Chat.TextSelectionCopy)
             .clickable {
                 manager.onCopySelection?.invoke()
                 manager.clearSelection()

@@ -15,6 +15,8 @@ import androidx.compose.ui.unit.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.ui.UiKey
+import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.CenteredRowLayout
 import chat.simplex.res.*
@@ -32,11 +34,12 @@ fun DefaultAppBar(
   searchPlaceholder: String? = null,
   onSearchValueChanged: (String) -> Unit = {},
   searchTrailingContent: @Composable (() -> Unit)? = null,
+  uiKey: UiKey? = null,
   buttons: @Composable RowScope.() -> Unit = {},
 ) {
   // If I just disable clickable modifier when don't need it, it will stop passing clicks to search. Replacing the whole modifier
   val modifier = if (!showSearch) {
-    Modifier.clickable(enabled = onTitleClick != null, onClick = onTitleClick ?: { })
+    Modifier.ui(uiKey?.part("title")).clickable(enabled = onTitleClick != null, onClick = onTitleClick ?: { })
   } else if (!onTop) Modifier.imePadding()
   else Modifier
 
@@ -81,7 +84,7 @@ fun DefaultAppBar(
         title = {
           if (showSearch) {
             val placeholder = searchPlaceholder ?: stringResource(MR.strings.search_verb)
-            SearchTextField(Modifier.fillMaxWidth(), alwaysVisible = searchAlwaysVisible, placeholder = placeholder, trailingContent = searchTrailingContent, reducedCloseButtonPadding = 12.dp, onValueChange = onSearchValueChanged)
+            SearchTextField(Modifier.ui(uiKey?.part("search")).fillMaxWidth(), alwaysVisible = searchAlwaysVisible, placeholder = placeholder, trailingContent = searchTrailingContent, reducedCloseButtonPadding = 12.dp, onValueChange = onSearchValueChanged)
           } else if (title != null) {
             title()
           } else if (titleText.value.isNotEmpty() && connection != null) {
@@ -143,8 +146,8 @@ fun NavigationButtonClose(onButtonClicked: (() -> Unit)?, tintColor: Color = if 
 }
 
 @Composable
-fun ShareButton(onButtonClicked: () -> Unit) {
-  IconButton(onButtonClicked) {
+fun ShareButton(uiKey: UiKey? = null, onButtonClicked: () -> Unit) {
+  IconButton(onButtonClicked, Modifier.ui(uiKey)) {
     Icon(
       painterResource(MR.images.ic_share), stringResource(MR.strings.share_verb), tint = MaterialTheme.colors.primary
     )

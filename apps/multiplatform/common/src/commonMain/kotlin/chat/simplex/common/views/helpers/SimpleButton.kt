@@ -19,14 +19,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.platform.appPlatform
+import chat.simplex.common.ui.UiKey
+import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.theme.SimpleXTheme
 import chat.simplex.res.*
 
 @Composable
 fun SimpleButton(text: String, icon: Painter,
                  color: Color = MaterialTheme.colors.primary,
+                 uiKey: UiKey? = null,
                  click: () -> Unit) {
-  SimpleButtonFrame(click) {
+  SimpleButtonFrame(click, Modifier.ui(uiKey)) {
     Icon(
       icon, text, tint = color,
       modifier = Modifier.padding(end = 8.dp)
@@ -55,9 +58,10 @@ fun SimpleButton(
   text: String, icon: Painter,
   color: Color = MaterialTheme.colors.primary,
   disabled: Boolean,
+  uiKey: UiKey? = null,
   click: () -> Unit
 ) {
-  SimpleButtonFrame(click, disabled = disabled) {
+  SimpleButtonFrame(click, Modifier.ui(uiKey), disabled = disabled) {
     Icon(
       icon, text, tint = if (disabled) MaterialTheme.colors.secondary else color,
       modifier = Modifier.padding(end = 8.dp)
@@ -73,9 +77,10 @@ fun SimpleButtonIconEnded(
   style: TextStyle = MaterialTheme.typography.caption,
   color: Color = MaterialTheme.colors.primary,
   disabled: Boolean = false,
+  uiKey: UiKey? = null,
   click: () -> Unit
 ) {
-  SimpleButtonFrame(click, disabled = disabled) {
+  SimpleButtonFrame(click, Modifier.ui(uiKey), disabled = disabled) {
     Text(text, style = style, color = color)
     Icon(
       icon, text, tint = color,

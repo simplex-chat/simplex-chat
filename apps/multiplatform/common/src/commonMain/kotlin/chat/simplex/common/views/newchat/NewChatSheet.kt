@@ -28,6 +28,9 @@ import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.UiKey
+import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.CIFileViewScope
 import chat.simplex.common.views.chat.topPaddingToContent
@@ -184,30 +187,19 @@ private fun ModalData.NewChatSheetLayout(
   }
 
   val actionButtonsOriginal = listOf(
-    Triple(
-      painterResource(MR.images.ic_add_link),
-      stringResource(MR.strings.create_1_time_link),
-      addContact,
-    ),
-    Triple(
+    NewChatAction(painterResource(MR.images.ic_add_link), stringResource(MR.strings.create_1_time_link), Ui.NewChat.CreateLink, addContact),
+    NewChatAction(
       painterResource(MR.images.ic_qr_code),
       if (appPlatform.isAndroid) stringResource(MR.strings.scan_paste_link) else stringResource(MR.strings.paste_link),
+      Ui.NewChat.PasteLink,
       scanPaste,
     ),
-    Triple(
-      painterResource(MR.images.ic_group),
-      stringResource(MR.strings.create_group_button),
-      createGroup,
-    ),
-    Triple(
-      painterResource(MR.images.ic_bigtop_updates),
-      stringResource(MR.strings.create_channel_button),
-      createChannel,
-    )
+    NewChatAction(painterResource(MR.images.ic_group), stringResource(MR.strings.create_group_button), Ui.NewChat.CreateGroup, createGroup),
+    NewChatAction(painterResource(MR.images.ic_bigtop_updates), stringResource(MR.strings.create_channel_button), Ui.NewChat.CreateChannel, createChannel),
   )
 
   @Composable
-  fun DeletedChatsItem(actionButtons: List<Triple<Painter, String, () -> Unit>>) {
+  fun DeletedChatsItem(actionButtons: List<NewChatAction>) {
     if (searchText.value.text.isEmpty()) {
       Spacer(Modifier.padding(bottom = 27.dp))
     }
@@ -217,9 +209,10 @@ private fun ModalData.NewChatSheetLayout(
         SectionView {
           actionButtons.map {
             NewChatButton(
-              icon = it.first,
-              text = it.second,
-              click = it.third,
+              icon = it.icon,
+              text = it.text,
+              click = it.click,
+              uiKey = it.uiKey,
             )
           }
         }
@@ -242,7 +235,8 @@ private fun ModalData.NewChatSheetLayout(
                   })
                 }
               }
-            }
+            },
+            uiKey = Ui.NewChat.Archived
           ) {
             Icon(
               painterResource(MR.images.ic_inventory_2),
@@ -454,6 +448,8 @@ private fun ModalData.NewChatSheetLayout(
   }
 }
 
+private class NewChatAction(val icon: Painter, val text: String, val uiKey: UiKey?, val click: () -> Unit)
+
 @Composable
 private fun NewChatButton(
   icon: Painter,
@@ -461,9 +457,10 @@ private fun NewChatButton(
   click: () -> Unit,
   textColor: Color = Color.Unspecified,
   iconColor: Color = MaterialTheme.colors.primary,
-  disabled: Boolean = false
+  disabled: Boolean = false,
+  uiKey: UiKey? = null,
 ) {
-  SectionItemView(click, disabled = disabled) {
+  SectionItemView(click, disabled = disabled, uiKey = uiKey) {
     Row {
       Icon(icon, text, tint = if (disabled) MaterialTheme.colors.secondary else iconColor)
       TextIconSpaced(false)
@@ -492,7 +489,7 @@ private fun ContactsSearchBar(
       tint = MaterialTheme.colors.secondary
     )
     SearchTextField(
-      Modifier.weight(1f).onFocusChanged { focused = it.hasFocus }.focusRequester(focusRequester),
+      Modifier.ui(Ui.NewChat.Search).weight(1f).onFocusChanged { focused = it.hasFocus }.focusRequester(focusRequester),
       placeholder = stringResource(MR.strings.search_or_paste_simplex_link),
       alwaysVisible = true,
       searchText = searchText,
@@ -577,7 +574,7 @@ private fun ContactsSearchBar(
 @Composable
 private fun ToggleFilterButton() {
   val pref = remember { appPrefs.showUnreadAndFavorites }
-  IconButton(onClick = { pref.set(!pref.get()) }) {
+  IconButton(onClick = { pref.set(!pref.get()) }, modifier = Modifier.ui(Ui.NewChat.Favorites)) {
     val sp16 = with(LocalDensity.current) { 16.sp.toDp() }
     Icon(
       painterResource(MR.images.ic_filter_list),

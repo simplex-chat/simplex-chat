@@ -29,6 +29,8 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.stopRemoteHostAndReloadHosts
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.chatlist.*
@@ -138,7 +140,7 @@ fun ConnectMobileLayout(
           }
         }
       }
-      SectionItemView(addMobileDevice) {
+      SectionItemView(addMobileDevice, uiKey = Ui.Remote.AddMobile) {
         Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.link_a_mobile), tint = MaterialTheme.colors.primary)
         Spacer(Modifier.padding(horizontal = 10.dp))
         Text(stringResource(MR.strings.link_a_mobile), color = MaterialTheme.colors.primary)
@@ -158,7 +160,7 @@ fun DeviceNameField(
   DefaultConfigurableTextField(
     state = state,
     placeholder = generalGetString(MR.strings.enter_this_device_name),
-    modifier = Modifier.fillMaxWidth().padding(start = DEFAULT_PADDING),
+    modifier = Modifier.ui(Ui.Remote.DeviceName).fillMaxWidth().padding(start = DEFAULT_PADDING),
     isValid = { true },
   )
   KeyChangeEffect(state.value) {
@@ -207,7 +209,7 @@ private fun ConnectMobileViewLayout(
         if (remember { controller.appPrefs.developerTools.state }.value) {
           val clipboard = LocalClipboardManager.current
           Spacer(Modifier.height(DEFAULT_PADDING_HALF))
-          SectionItemView({ clipboard.shareText(invitation) }) {
+          SectionItemView({ clipboard.shareText(invitation) }, uiKey = Ui.Remote.ShareLink) {
             Text(generalGetString(MR.strings.share_link), color = MaterialTheme.colors.primary)
           }
         }

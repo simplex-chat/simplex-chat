@@ -23,7 +23,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.UiKey
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.ui.ui
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.platform.ColumnWithScrollBar
@@ -259,32 +262,32 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (@Composable ModalData.() -
         SectionItemView {
           TimeoutSettingRow(
             stringResource(MR.strings.network_option_tcp_connection_timeout), networkTCPConnectTimeoutInteractive,
-            listOf(10_000000, 15_000000, 20_000000, 30_000000), secondsLabel
+            listOf(10_000000, 15_000000, 20_000000, 30_000000), secondsLabel, Ui.AdvancedNetwork.Setting("tcpConnectTimeout")
           )
         }
         SectionItemView {
           TimeoutSettingRow(
             stringResource(MR.strings.network_option_tcp_connection_timeout_background), networkTCPConnectTimeoutBackground,
-            listOf(30_000000, 45_000000, 60_000000, 90_000000), secondsLabel
+            listOf(30_000000, 45_000000, 60_000000, 90_000000), secondsLabel, Ui.AdvancedNetwork.Setting("tcpConnectTimeoutBackground")
           )
         }
         SectionItemView {
           TimeoutSettingRow(
             stringResource(MR.strings.network_option_protocol_timeout), networkTCPTimeoutInteractive,
-            listOf(5_000000, 7_000000, 10_000000, 15_000000, 20_000_000), secondsLabel
+            listOf(5_000000, 7_000000, 10_000000, 15_000000, 20_000_000), secondsLabel, Ui.AdvancedNetwork.Setting("tcpTimeout")
           )
         }
         SectionItemView {
           TimeoutSettingRow(
             stringResource(MR.strings.network_option_protocol_timeout_background), networkTCPTimeoutBackground,
-            listOf(15_000000, 20_000000, 30_000000, 45_000000, 60_000_000), secondsLabel
+            listOf(15_000000, 20_000000, 30_000000, 45_000000, 60_000_000), secondsLabel, Ui.AdvancedNetwork.Setting("tcpTimeoutBackground")
           )
         }
         SectionItemView {
           // can't be higher than 130ms to avoid overflow on 32bit systems
           TimeoutSettingRow(
             stringResource(MR.strings.network_option_protocol_timeout_per_kb), networkTCPTimeoutPerKb,
-            listOf(2_500, 5_000, 10_000, 15_000, 20_000, 30_000), secondsLabel
+            listOf(2_500, 5_000, 10_000, 15_000, 20_000, 30_000), secondsLabel, Ui.AdvancedNetwork.Setting("tcpTimeoutPerKb")
           )
         }
         // SectionItemView {
@@ -296,13 +299,13 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (@Composable ModalData.() -
         SectionItemView {
           TimeoutSettingRow(
             stringResource(MR.strings.network_option_ping_interval), networkSMPPingInterval,
-            listOf(120_000000, 300_000000, 600_000000, 1200_000000, 2400_000000, 3600_000000), secondsLabel
+            listOf(120_000000, 300_000000, 600_000000, 1200_000000, 2400_000000, 3600_000000), secondsLabel, Ui.AdvancedNetwork.Setting("smpPingInterval")
           )
         }
         SectionItemView {
           IntSettingRow(
             stringResource(MR.strings.network_option_ping_count), networkSMPPingCount,
-            listOf(1, 2, 3, 5, 8), ""
+            listOf(1, 2, 3, 5, 8), "", Ui.AdvancedNetwork.Setting("smpPingCount")
           )
         }
         SectionItemView {
@@ -310,13 +313,13 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (@Composable ModalData.() -
         }
         if (networkEnableKeepAlive.value) {
           SectionItemView {
-            IntSettingRow("TCP_KEEPIDLE", networkTCPKeepIdle, listOf(15, 30, 60, 120, 180), secondsLabel)
+            IntSettingRow("TCP_KEEPIDLE", networkTCPKeepIdle, listOf(15, 30, 60, 120, 180), secondsLabel, Ui.AdvancedNetwork.Setting("tcpKeepIdle"))
           }
           SectionItemView {
             IntSettingRow("TCP_KEEPINTVL", networkTCPKeepIntvl, listOf(5, 10, 15, 30, 60), secondsLabel)
           }
           SectionItemView {
-            IntSettingRow("TCP_KEEPCNT", networkTCPKeepCnt, listOf(1, 2, 4, 6, 8), "")
+            IntSettingRow("TCP_KEEPCNT", networkTCPKeepCnt, listOf(1, 2, 4, 6, 8), "", Ui.AdvancedNetwork.Setting("tcpKeepCnt"))
           }
         } else {
           SectionItemView {
@@ -335,10 +338,10 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (@Composable ModalData.() -
     SectionDividerSpaced()
 
     SectionView {
-      SectionItemView(reset, disabled = resetDisabled) {
+      SectionItemView(reset, disabled = resetDisabled, uiKey = Ui.AdvancedNetwork.Reset) {
         Text(stringResource(MR.strings.network_options_reset_to_defaults), color = if (resetDisabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
       }
-      SectionItemView(save, disabled = saveDisabled) {
+      SectionItemView(save, disabled = saveDisabled, uiKey = Ui.AdvancedNetwork.Save) {
         Text(stringResource(MR.strings.network_options_save_and_reconnect), color = if (saveDisabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
       }
     }
@@ -369,11 +372,12 @@ private fun SMPProxyModePicker(
     smpProxyMode,
     values,
     icon = painterResource(MR.images.ic_settings_ethernet),
+    uiKey = Ui.AdvancedNetwork.ProxyMode,
     onSelected = {
       showModal {
         ColumnWithScrollBar {
           AppBarTitle(stringResource(MR.strings.network_smp_proxy_mode_private_routing))
-          SectionViewSelectableCards(null, smpProxyMode, values, updateSMPProxyMode)
+          SectionViewSelectableCards(null, smpProxyMode, values, Ui.AdvancedNetwork.ProxyMode, updateSMPProxyMode)
         }
       }
     }
@@ -404,11 +408,12 @@ private fun SMPProxyFallbackPicker(
     values,
     icon = painterResource(MR.images.ic_arrows_left_right),
     enabled = enabled,
+    uiKey = Ui.AdvancedNetwork.ProxyFallback,
     onSelected = {
       showModal {
         ColumnWithScrollBar {
           AppBarTitle(stringResource(MR.strings.network_smp_proxy_fallback_allow_downgrade))
-          SectionViewSelectableCards(null, smpProxyFallback, values, updateSMPProxyFallback)
+          SectionViewSelectableCards(null, smpProxyFallback, values, Ui.AdvancedNetwork.ProxyFallback, updateSMPProxyFallback)
         }
       }
     }
@@ -428,12 +433,13 @@ fun EnableKeepAliveSwitch(
     DefaultSwitch(
       checked = networkEnableKeepAlive.value,
       onCheckedChange = { networkEnableKeepAlive.value = it },
+      modifier = Modifier.ui(Ui.AdvancedNetwork.KeepAlive),
     )
   }
 }
 
 @Composable
-fun IntSettingRow(title: String, selection: MutableState<Int>, values: List<Int>, label: String) {
+fun IntSettingRow(title: String, selection: MutableState<Int>, values: List<Int>, label: String, uiKey: UiKey? = null) {
   Row(
     Modifier.fillMaxWidth(),
     verticalAlignment = Alignment.CenterVertically,
@@ -447,7 +453,8 @@ fun IntSettingRow(title: String, selection: MutableState<Int>, values: List<Int>
       expanded = expanded.value,
       onExpandedChange = {
         expanded.value = !expanded.value
-      }
+      },
+      modifier = Modifier.ui(uiKey)
     ) {
       Row(
         Modifier.width(140.dp),
@@ -477,6 +484,7 @@ fun IntSettingRow(title: String, selection: MutableState<Int>, values: List<Int>
               selection.value = selectionOption
               expanded.value = false
             },
+            modifier = Modifier.ui(uiKey?.option(selectionOption)),
             contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)
           ) {
             Text(
@@ -492,7 +500,7 @@ fun IntSettingRow(title: String, selection: MutableState<Int>, values: List<Int>
 }
 
 @Composable
-fun TimeoutSettingRow(title: String, selection: MutableState<Long>, values: List<Long>, label: String) {
+fun TimeoutSettingRow(title: String, selection: MutableState<Long>, values: List<Long>, label: String, uiKey: UiKey? = null) {
   Row(
     Modifier.fillMaxWidth(),
     verticalAlignment = Alignment.CenterVertically,
@@ -506,7 +514,8 @@ fun TimeoutSettingRow(title: String, selection: MutableState<Long>, values: List
       expanded = expanded.value,
       onExpandedChange = {
         expanded.value = !expanded.value
-      }
+      },
+      modifier = Modifier.ui(uiKey)
     ) {
       val df = DecimalFormat("#.###")
       Row(
@@ -539,6 +548,7 @@ fun TimeoutSettingRow(title: String, selection: MutableState<Long>, values: List
               selection.value = selectionOption
               expanded.value = false
             },
+            modifier = Modifier.ui(uiKey?.option(selectionOption)),
             contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)
           ) {
             Text(

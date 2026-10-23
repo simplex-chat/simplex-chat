@@ -13,6 +13,7 @@ import chat.simplex.common.model.ChatItem
 import chat.simplex.common.model.MsgContent
 import chat.simplex.common.platform.FileChooserLauncher
 import chat.simplex.common.platform.saveImage
+import chat.simplex.common.ui.Ui
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
 import com.google.accompanist.permissions.PermissionStatus
@@ -28,7 +29,7 @@ actual fun ReactionIcon(text: String, fontSize: TextUnit) {
 @Composable
 actual fun SaveContentItemAction(cItem: ChatItem, saveFileLauncher: FileChooserLauncher, showMenu: MutableState<Boolean>) {
   val writePermissionState = rememberPermissionState(permission = Manifest.permission.WRITE_EXTERNAL_STORAGE)
-  ItemAction(stringResource(MR.strings.save_verb), painterResource(MR.images.ic_download), onClick = {
+  ItemAction(stringResource(MR.strings.save_verb), painterResource(MR.images.ic_download), uiKey = Ui.Chat.ItemMenu(cItem.id, "save"), onClick = {
     when (cItem.content.msgContent) {
       is MsgContent.MCImage -> {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R || writePermissionState.status == PermissionStatus.Granted) {

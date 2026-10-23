@@ -1,0 +1,89 @@
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/ui/Ui.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/ui/Ui.kt
+@@ -19,8 +19,15 @@
+ object Ui {
+   object ChatList {
+     val NewChat = UiKey("chatList.newChat")
++    val NewChatFab = UiKey("chatList.newChatFab")
+     val UserPicker = UiKey("chatList.userPicker")
+     val Search = UiKey("chatList.search")
++    val UnreadFilter = UiKey("chatList.unreadFilter")
++    val NoUnreadChats = UiKey("chatList.noUnreadChats")
++    val ConnectByName = UiKey("chatList.connectByName")
++    val PresetMenu = UiKey("chatList.presetMenu")
++    fun PresetTag(kind: String) = UiKey("chatList.presetTag", kind)
++    fun PresetMenuItem(kind: String) = UiKey("chatList.presetMenu.item", kind)
+     fun Row(chatId: String, remoteHostId: Long? = null) = UiKey("chatList.row", rowArg(chatId, remoteHostId))
+     fun RowMenu(chatId: String, action: String, remoteHostId: Long? = null) = UiKey("chatList.row.menu.$action", rowArg(chatId, remoteHostId))
+     private fun rowArg(chatId: String, rh: Long?) = if (rh == null) chatId else "$rh:$chatId"
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListNavLinkView.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListNavLinkView.kt
+@@ -608,6 +608,7 @@
+       }
+       showMenu.value = false
+     },
++    uiKey = Ui.ChatList.RowMenu(chatInfo.id, "setName", rhId),
+   )
+   ItemAction(
+     stringResource(MR.strings.delete_verb),
+--- a/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt
++++ b/apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt
+@@ -486,7 +486,7 @@
+         showNewChatSheet(oneHandUI)
+       }
+     },
+-    Modifier.ui(Ui.ChatList.NewChat)
++    Modifier.ui(Ui.ChatList.NewChatFab)
+       .navigationBarsPadding()
+       .padding(end = DEFAULT_PADDING, bottom = DEFAULT_PADDING)
+       .align(Alignment.BottomEnd)
+@@ -757,7 +757,7 @@
+     } else {
+       chatModel.activeChatTagFilter.value = ActiveFilter.Unread
+     }
+-  }) {
++  }, Modifier.ui(Ui.ChatList.UnreadFilter)) {
+     val sp16 = with(LocalDensity.current) { 16.sp.toDp() }
+     Icon(
+       painterResource(MR.images.ic_filter_list),
+@@ -1212,6 +1212,7 @@
+   val view = LocalMultiplatformView()
+   Row(
+     Modifier
++      .ui(Ui.ChatList.ConnectByName)
+       .fillMaxWidth()
+       .clickable {
+         hideKeyboard(view)
+@@ -1247,7 +1248,7 @@
+       is ActiveFilter.UserTag -> Text(String.format(generalGetString(MR.strings.no_chats_in_list), activeFilter.tag.chatTagText), color = MaterialTheme.colors.secondary, textAlign = TextAlign.Center)
+       is ActiveFilter.Unread -> {
+           Row(
+-            Modifier.clip(shape = CircleShape).clickable { chatModel.activeChatTagFilter.value = null }.padding(DEFAULT_PADDING_HALF),
++            Modifier.ui(Ui.ChatList.NoUnreadChats).clip(shape = CircleShape).clickable { chatModel.activeChatTagFilter.value = null }.padding(DEFAULT_PADDING_HALF),
+             horizontalArrangement = Arrangement.spacedBy(4.dp),
+             verticalAlignment = Alignment.CenterVertically
+           ) {
+@@ -1422,6 +1423,7 @@
+ 
+   Row(
+     modifier = Modifier
++      .ui(Ui.ChatList.PresetTag(tag.name))
+       .sizeIn(minHeight = TAG_MIN_HEIGHT * fontSizeSqrtMultiplier)
+       .clip(shape = CircleShape)
+       .clickable {
+@@ -1473,6 +1475,7 @@
+   }
+ 
+   Box(Modifier
++    .ui(Ui.ChatList.PresetMenu)
+     .clip(shape = CircleShape)
+     .size(TAG_MIN_HEIGHT * fontSizeSqrtMultiplier)
+     .clickable { showMenu.value = true },
+@@ -1532,6 +1535,7 @@
+     stringResource(text),
+     painterResource(icon),
+     color = if (active) MaterialTheme.colors.primary else Color.Unspecified,
++    uiKey = Ui.ChatList.PresetMenuItem(presetTag.name),
+     onClick = {
+       onCloseMenuAction.value = {
+         chatModel.activeChatTagFilter.value = ActiveFilter.PresetTag(presetTag)

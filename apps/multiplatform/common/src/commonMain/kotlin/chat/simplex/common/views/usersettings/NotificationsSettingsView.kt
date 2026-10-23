@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import chat.simplex.common.ui.Ui
 import chat.simplex.common.ui.theme.*
 import androidx.compose.ui.text.AnnotatedString
 import dev.icerock.moko.resources.compose.stringResource
@@ -45,7 +46,7 @@ fun NotificationsSettingsLayout(
     AppBarTitle(stringResource(MR.strings.notifications))
     SectionView(null) {
       if (appPlatform == AppPlatform.ANDROID) {
-        SettingsActionItemWithContent(null, stringResource(MR.strings.settings_notifications_mode_title), showNotificationsMode) {
+        SettingsActionItemWithContent(null, stringResource(MR.strings.settings_notifications_mode_title), showNotificationsMode, uiKey = Ui.Notifications.Mode) {
           Text(
             modes.firstOrNull { it.value == notificationsMode.value }?.title ?: "",
             maxLines = 1,
@@ -70,7 +71,7 @@ fun NotificationsModeView(
   val modes = remember { notificationModes() }
   ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.settings_notifications_mode_title).lowercase().capitalize(Locale.current))
-    SectionViewSelectable(null, notificationsMode, modes, onNotificationsModeSelected)
+    SectionViewSelectable(null, notificationsMode, modes, Ui.Notifications.Mode, onNotificationsModeSelected)
     if (platform.androidIsXiaomiDevice() && (notificationsMode.value == NotificationsMode.PERIODIC || notificationsMode.value == NotificationsMode.SERVICE)) {
       SectionTextFooter(annotatedStringResource(MR.strings.xiaomi_ignore_battery_optimization))
     }
@@ -85,7 +86,7 @@ fun NotificationPreviewView(
   val previewModes = remember { notificationPreviewModes() }
   ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.settings_notification_preview_title))
-    SectionViewSelectable(null, notificationPreviewMode, previewModes, onNotificationPreviewModeSelected)
+    SectionViewSelectable(null, notificationPreviewMode, previewModes, onSelected = onNotificationPreviewModeSelected)
   }
 }
 

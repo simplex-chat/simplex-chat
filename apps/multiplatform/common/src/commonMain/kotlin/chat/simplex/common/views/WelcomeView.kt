@@ -34,6 +34,9 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.UiKey
+import chat.simplex.common.ui.ui
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.migration.MigrateToDeviceView
@@ -129,12 +132,12 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
             val validName = mkValidName(name)
             Spacer(Modifier.height(20.dp))
             if (name != validName) {
-              IconButton({ showInvalidNameAlert(mkValidName(displayName.value), displayName) }, Modifier.size(20.dp)) {
+              IconButton({ showInvalidNameAlert(mkValidName(displayName.value), displayName) }, Modifier.size(20.dp).ui(Ui.NewProfile.Name.part("invalid"))) {
                 Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.error)
               }
             }
           }
-          ProfileNameField(displayName, "", { it.trim() == mkValidName(it) }, focusRequester)
+          ProfileNameField(displayName, "", { it.trim() == mkValidName(it) }, focusRequester, uiKey = Ui.NewProfile.Name)
 
           Spacer(Modifier.height(DEFAULT_PADDING))
 
@@ -157,6 +160,7 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
         SettingsActionItem(
           painterResource(MR.images.ic_check),
           stringResource(MR.strings.create_another_profile_button),
+          uiKey = Ui.NewProfile.Create,
           disabled = !canCreateProfile(displayName.value) || !bioFitsLimit(shortDescr.value),
           textColor = MaterialTheme.colors.primary,
           iconColor = MaterialTheme.colors.primary,
@@ -213,7 +217,7 @@ private fun RowScope.MigrateButton(refocusTrigger: MutableState<Int>) {
         }
       }
     },
-    modifier = Modifier.padding(end = DEFAULT_PADDING_HALF)
+    modifier = Modifier.padding(end = DEFAULT_PADDING_HALF).ui(Ui.Onboarding.Migrate)
   ) {
     Icon(painterResource(MR.images.ic_download), null, Modifier.size(22.dp), tint = MaterialTheme.colors.primary)
     Spacer(Modifier.width(4.dp))
@@ -283,13 +287,13 @@ private fun CreateFirstProfileMobile(chatModel: ChatModel, close: () -> Unit) {
           modifier = Modifier.padding(top = DEFAULT_PADDING_HALF)
         )
         Spacer(Modifier.height(DEFAULT_PADDING_HALF))
-        ProfileNameField(displayName, stringResource(MR.strings.enter_profile_name), { it.trim() == mkValidName(it) }, focusRequester)
+        ProfileNameField(displayName, stringResource(MR.strings.enter_profile_name), { it.trim() == mkValidName(it) }, focusRequester, uiKey = Ui.Onboarding.ProfileName)
 
         Spacer(Modifier.weight(1f))
 
         Column(Modifier.widthIn(max = 450.dp).padding(bottom = DEFAULT_PADDING * 2).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
           OnboardingActionButton(
-            Modifier.fillMaxWidth(),
+            Modifier.fillMaxWidth().ui(Ui.Onboarding.CreateProfile),
             labelId = MR.strings.create_profile,
             onboarding = null,
             enabled = canCreateProfile(displayName.value),
@@ -328,12 +332,12 @@ private fun CreateFirstProfileDesktop(chatModel: ChatModel, close: () -> Unit) {
           Spacer(Modifier.height(DEFAULT_PADDING))
           ReadableText(MR.strings.onboarding_no_account, TextAlign.Center, style = MaterialTheme.typography.body2.copy(color = MaterialTheme.colors.secondary))
           Spacer(Modifier.height(DEFAULT_PADDING))
-          ProfileNameField(displayName, stringResource(MR.strings.enter_profile_name), { it.trim() == mkValidName(it) }, focusRequester)
+          ProfileNameField(displayName, stringResource(MR.strings.enter_profile_name), { it.trim() == mkValidName(it) }, focusRequester, uiKey = Ui.Onboarding.ProfileName)
         }
         Spacer(Modifier.fillMaxHeight().weight(1f))
         Column(Modifier.widthIn(max = 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
           OnboardingActionButton(
-            Modifier.widthIn(min = 300.dp),
+            Modifier.widthIn(min = 300.dp).ui(Ui.Onboarding.CreateProfile),
             labelId = MR.strings.create_profile,
             onboarding = null,
             enabled = canCreateProfile(displayName.value),
@@ -412,7 +416,7 @@ fun createProfileOnboarding(chatModel: ChatModel, displayName: String, close: ()
 }
 
 @Composable
-fun ProfileNameField(name: MutableState<String>, placeholder: String = "", isValid: (String) -> Boolean = { true }, focusRequester: FocusRequester? = null) {
+fun ProfileNameField(name: MutableState<String>, placeholder: String = "", isValid: (String) -> Boolean = { true }, focusRequester: FocusRequester? = null, uiKey: UiKey? = null) {
   var valid by rememberSaveable { mutableStateOf(true) }
   var focused by rememberSaveable { mutableStateOf(false) }
   val strokeColor by remember {
@@ -427,6 +431,7 @@ fun ProfileNameField(name: MutableState<String>, placeholder: String = "", isVal
     }
   }
   val modifier = Modifier
+    .ui(uiKey)
     .fillMaxWidth()
     .heightIn(min = 50.dp)
     .onFocusChanged { focused = it.isFocused }
@@ -453,7 +458,7 @@ fun ProfileNameField(name: MutableState<String>, placeholder: String = "", isVal
           leadingIcon = null,
           trailingIcon = if (!valid && placeholder != "") {
             {
-              IconButton({ showInvalidNameAlert(mkValidName(name.value), name) }, Modifier.size(20.dp)) {
+              IconButton({ showInvalidNameAlert(mkValidName(name.value), name) }, Modifier.size(20.dp).ui(uiKey?.part("invalid"))) {
                 Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.error)
               }
             }

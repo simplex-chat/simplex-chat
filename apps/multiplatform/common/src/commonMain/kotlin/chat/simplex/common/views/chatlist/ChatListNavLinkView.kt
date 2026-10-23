@@ -21,6 +21,8 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.UiKey
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chat.group.*
@@ -80,6 +82,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
         disabled,
         selectedChat,
         nextChatSelected,
+        uiKey = Ui.ChatList.Row(chat.id, chat.remoteHostId),
       )
     }
     is ChatInfo.Group -> {
@@ -100,6 +103,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
         disabled,
         selectedChat,
         nextChatSelected,
+        uiKey = Ui.ChatList.Row(chat.id, chat.remoteHostId),
       )
     }
     is ChatInfo.Local -> {
@@ -120,6 +124,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
         disabled,
         selectedChat,
         nextChatSelected,
+        uiKey = Ui.ChatList.Row(chat.id, chat.remoteHostId),
       )
     }
     is ChatInfo.ContactRequest ->
@@ -132,13 +137,14 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
         click = { contactRequestAlertDialog(chat.remoteHostId, chat.chatInfo, chatModel) { onRequestAccepted(it) } },
         dropdownMenuItems = {
           tryOrShowError("${chat.id}ChatListNavLinkDropdown", error = {}) {
-            ContactRequestMenuItems(chat.remoteHostId, contactRequestId = chat.chatInfo.apiId, chatModel, showMenu)
+            ContactRequestMenuItems(chat.remoteHostId, contactRequestId = chat.chatInfo.apiId, chatModel, showMenu, chatId = chat.id)
           }
         },
         showMenu,
         disabled,
         selectedChat,
         nextChatSelected,
+        uiKey = Ui.ChatList.Row(chat.id, chat.remoteHostId),
       )
     is ChatInfo.ContactConnection ->
       ChatListNavLinkLayout(
@@ -159,6 +165,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
         disabled,
         selectedChat,
         nextChatSelected,
+        uiKey = Ui.ChatList.Row(chat.id, chat.remoteHostId),
       )
     is ChatInfo.InvalidJSON ->
       ChatListNavLinkLayout(
@@ -175,6 +182,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
         disabled,
         selectedChat,
         nextChatSelected,
+        uiKey = Ui.ChatList.Row(chat.id, chat.remoteHostId),
       )
   }
 }
@@ -278,7 +286,7 @@ suspend fun setGroupMembers(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatMo
 fun ContactMenuItems(chat: Chat, contact: Contact, chatModel: ChatModel, showMenu: MutableState<Boolean>, showMarkRead: Boolean) {
   if (contact.nextAcceptContactRequest) {
     if (contact.contactRequestId != null) {
-      ContactRequestMenuItems(chat.remoteHostId, contactRequestId = contact.contactRequestId, chatModel, showMenu)
+      ContactRequestMenuItems(chat.remoteHostId, contactRequestId = contact.contactRequestId, chatModel, showMenu, chatId = chat.id)
     } else if (contact.groupDirectInv != null && !contact.groupDirectInv.memberRemoved) {
       MemberContactRequestMenuItems(chat.remoteHostId, contact, showMenu)
     } else {
@@ -336,7 +344,7 @@ fun GroupMenuItems(
       ToggleNotificationsChatAction(chat, chatModel, groupInfo.chatSettings.enableNtfs.nextMode(true), showMenu)
       TagListAction(chat, showMenu)
       if (chat.chatStats.reportsCount > 0 && groupInfo.membership.memberRole >= GroupMemberRole.Moderator) {
-        ArchiveAllReportsItemAction(showMenu) {
+        ArchiveAllReportsItemAction(showMenu, Ui.ChatList.RowMenu(chat.id, "archiveReports", chat.remoteHostId)) {
           archiveAllReportsForMe(chat.remoteHostId, chat.chatInfo.apiId)
         }
       }
@@ -366,6 +374,7 @@ fun MarkReadChatAction(chat: Chat, showMenu: MutableState<Boolean>) {
   ItemAction(
     stringResource(MR.strings.mark_read),
     painterResource(MR.images.ic_check),
+    uiKey = Ui.ChatList.RowMenu(chat.id, "markRead", chat.remoteHostId),
     onClick = {
       markChatRead(chat)
       ntfManager.cancelNotificationsForChat(chat.id)
@@ -379,6 +388,7 @@ fun MarkUnreadChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableStat
   ItemAction(
     stringResource(MR.strings.mark_unread),
     painterResource(MR.images.ic_mark_chat_unread),
+    uiKey = Ui.ChatList.RowMenu(chat.id, "markUnread", chat.remoteHostId),
     onClick = {
       markChatUnread(chat, chatModel)
       showMenu.value = false
@@ -395,6 +405,7 @@ fun TagListAction(
   ItemAction(
     stringResource(if (chat.chatInfo.chatTags.isNullOrEmpty()) MR.strings.add_to_list else MR.strings.change_list),
     painterResource(MR.images.ic_label),
+    uiKey = Ui.ChatList.RowMenu(chat.id, "tagList", chat.remoteHostId),
     onClick = {
       ModalManager.start.showModalCloseable { close ->
         if (userTags.value.isEmpty()) {
@@ -413,6 +424,7 @@ fun ToggleFavoritesChatAction(chat: Chat, chatModel: ChatModel, favorite: Boolea
   ItemAction(
     if (favorite) stringResource(MR.strings.unfavorite_chat) else stringResource(MR.strings.favorite_chat),
     if (favorite) painterResource(MR.images.ic_star_off) else painterResource(MR.images.ic_star),
+    uiKey = Ui.ChatList.RowMenu(chat.id, if (favorite) "unfavorite" else "favorite", chat.remoteHostId),
     onClick = {
       toggleChatFavorite(chat.remoteHostId, chat.chatInfo, !favorite, chatModel)
       showMenu.value = false
@@ -425,6 +437,7 @@ fun ToggleNotificationsChatAction(chat: Chat, chatModel: ChatModel, nextMsgFilte
   ItemAction(
     generalGetString(nextMsgFilter.text(chat.chatInfo.hasMentions)),
     painterResource(nextMsgFilter.icon),
+    uiKey = Ui.ChatList.RowMenu(chat.id, "ntfs.${nextMsgFilter.name}", chat.remoteHostId),
     onClick = {
       toggleNotifications(chat.remoteHostId, chat.chatInfo, nextMsgFilter, chatModel)
       showMenu.value = false
@@ -441,7 +454,8 @@ fun ClearChatAction(chat: Chat, showMenu: MutableState<Boolean>) {
       clearChatDialog(chat)
       showMenu.value = false
     },
-    color = WarningOrange
+    color = WarningOrange,
+    uiKey = Ui.ChatList.RowMenu(chat.id, "clear", chat.remoteHostId)
   )
 }
 
@@ -454,7 +468,8 @@ fun ClearNoteFolderAction(chat: Chat, showMenu: MutableState<Boolean>) {
       clearNoteFolderDialog(chat)
       showMenu.value = false
     },
-    color = WarningOrange
+    color = WarningOrange,
+    uiKey = Ui.ChatList.RowMenu(chat.id, "clear", chat.remoteHostId)
   )
 }
 
@@ -467,7 +482,8 @@ fun DeleteContactAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState
       deleteContactDialog(chat, chatModel)
       showMenu.value = false
     },
-    color = Color.Red
+    color = Color.Red,
+    uiKey = Ui.ChatList.RowMenu(chat.id, "delete", chat.remoteHostId)
   )
 }
 
@@ -480,7 +496,8 @@ fun DeleteGroupAction(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, sh
       deleteGroupDialog(chat, groupInfo, chatModel)
       showMenu.value = false
     },
-    color = Color.Red
+    color = Color.Red,
+    uiKey = Ui.ChatList.RowMenu(chat.id, "delete", chat.remoteHostId)
   )
 }
 
@@ -503,6 +520,7 @@ fun JoinGroupAction(
     if (chat.chatInfo.incognito) stringResource(MR.strings.join_group_incognito_button) else stringResource(MR.strings.join_group_button),
     if (chat.chatInfo.incognito) painterResource(MR.images.ic_theater_comedy_filled) else painterResource(MR.images.ic_login),
     color = if (chat.chatInfo.incognito) Indigo else MaterialTheme.colors.onBackground,
+    uiKey = Ui.ChatList.RowMenu(chat.id, "join", chat.remoteHostId),
     onClick = {
       joinGroup()
       showMenu.value = false
@@ -519,16 +537,18 @@ fun LeaveGroupAction(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, sh
       leaveGroupDialog(rhId, groupInfo, chatModel)
       showMenu.value = false
     },
-    color = Color.Red
+    color = Color.Red,
+    uiKey = Ui.ChatList.RowMenu(groupInfo.id, "leave", rhId)
   )
 }
 
 @Composable
-fun ContactRequestMenuItems(rhId: Long?, contactRequestId: Long, chatModel: ChatModel, showMenu: MutableState<Boolean>, onSuccess: ((chat: Chat) -> Unit)? = null) {
+fun ContactRequestMenuItems(rhId: Long?, contactRequestId: Long, chatModel: ChatModel, showMenu: MutableState<Boolean>, chatId: String? = null, onSuccess: ((chat: Chat) -> Unit)? = null) {
   ItemAction(
     stringResource(MR.strings.accept_contact_button),
     painterResource(MR.images.ic_check),
     color = MaterialTheme.colors.onBackground,
+    uiKey = chatId?.let { Ui.ChatList.RowMenu(it, "accept", rhId) },
     onClick = {
       acceptContactRequest(rhId, incognito = false, contactRequestId, true, chatModel, onSuccess)
       showMenu.value = false
@@ -539,6 +559,7 @@ fun ContactRequestMenuItems(rhId: Long?, contactRequestId: Long, chatModel: Chat
       stringResource(MR.strings.accept_contact_incognito_button),
       painterResource(MR.images.ic_theater_comedy),
       color = MaterialTheme.colors.onBackground,
+      uiKey = chatId?.let { Ui.ChatList.RowMenu(it, "acceptIncognito", rhId) },
       onClick = {
         acceptContactRequest(rhId, incognito = true, contactRequestId, true, chatModel, onSuccess)
         showMenu.value = false
@@ -552,7 +573,8 @@ fun ContactRequestMenuItems(rhId: Long?, contactRequestId: Long, chatModel: Chat
       rejectContactRequest(rhId, contactRequestId, chatModel)
       showMenu.value = false
     },
-    color = Color.Red
+    color = Color.Red,
+    uiKey = chatId?.let { Ui.ChatList.RowMenu(it, "reject", rhId) }
   )
 }
 
@@ -591,6 +613,7 @@ fun ContactConnectionMenuItems(rhId: Long?, chatInfo: ChatInfo.ContactConnection
       }
       showMenu.value = false
     },
+    uiKey = Ui.ChatList.RowMenu(chatInfo.id, "setName", rhId),
   )
   ItemAction(
     stringResource(MR.strings.delete_verb),
@@ -601,7 +624,8 @@ fun ContactConnectionMenuItems(rhId: Long?, chatInfo: ChatInfo.ContactConnection
       }
       showMenu.value = false
     },
-    color = Color.Red
+    color = Color.Red,
+    uiKey = Ui.ChatList.RowMenu(chatInfo.id, "delete", rhId),
   )
 }
 
@@ -629,10 +653,11 @@ private fun InvalidDataView() {
 }
 
 @Composable
-private fun ArchiveAllReportsItemAction(showMenu: MutableState<Boolean>, archiveReports: () -> Unit) {
+private fun ArchiveAllReportsItemAction(showMenu: MutableState<Boolean>, uiKey: UiKey? = null, archiveReports: () -> Unit) {
   ItemAction(
     stringResource(MR.strings.archive_reports),
     painterResource(MR.images.ic_inventory_2),
+    uiKey = uiKey,
     onClick = {
       showArchiveAllReportsForMeAlert(archiveReports)
       showMenu.value = false
@@ -1032,6 +1057,7 @@ expect fun ChatListNavLinkLayout(
   disabled: Boolean,
   selectedChat: State<Boolean>,
   nextChatSelected: State<Boolean>,
+  uiKey: UiKey? = null,
 )
 
 @Preview/*(
