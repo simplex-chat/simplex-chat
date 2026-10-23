@@ -252,6 +252,7 @@ export type BadgeRedeemError =
   | BadgeRedeemError.InvalidReceipt
   | BadgeRedeemError.ServiceNotConfigured
   | BadgeRedeemError.BadgeActive
+  | BadgeRedeemError.StorePurchaseOpen
   | BadgeRedeemError.ServiceError
   | BadgeRedeemError.InvalidResponse
   | BadgeRedeemError.UnknownKeyIndex
@@ -263,6 +264,7 @@ export namespace BadgeRedeemError {
     | "invalidReceipt"
     | "serviceNotConfigured"
     | "badgeActive"
+    | "storePurchaseOpen"
     | "serviceError"
     | "invalidResponse"
     | "unknownKeyIndex"
@@ -286,6 +288,10 @@ export namespace BadgeRedeemError {
 
   export interface BadgeActive extends Interface {
     type: "badgeActive"
+  }
+
+  export interface StorePurchaseOpen extends Interface {
+    type: "storePurchaseOpen"
   }
 
   export interface ServiceError extends Interface {
@@ -325,6 +331,7 @@ export enum BadgeServiceErrorCode {
   Code_expired = "code_expired",
   Receipt_invalid = "receipt_invalid",
   Receipt_used = "receipt_used",
+  Transfer_limited = "transfer_limited",
   Test_purchase = "test_purchase",
   Internal = "internal",
 }

@@ -62,3 +62,13 @@ The Haskell Store modules (`Store/Direct.hs`, `Store/Groups.hs`, `Store/Messages
 
 ---
 
+## Badges: Store Purchases
+
+### GAP: A badge moves to another device or profile only once in a while, and is bought again only to continue the last purchase
+**Source:** [Shared/Views/Badges/BadgeStore.swift](../Shared/Views/Badges/BadgeStore.swift)
+`restorePurchases()` hands over `Transaction.currentEntitlements` and `Transaction.unfinished` as restored, and the service moves the subscription to the restoring profile's purchase key. Restore is refused while the restoring profile shows a badge. A payment moves again only once the credential issued to the key it last moved from has expired; until then the move is refused `transfer_limited`. The first Restore's own answer doesn't say so: the app hears of the refusal only from core's purchase-refused event, which core sends only for a record holding an invoice id, and the next Restore is answered `transfer_limited` itself. A badge bought with Stripe or crypto cannot be moved at all. On the same install a lapsed subscriber can subscribe again only to the badge the active profile's newest purchase retired: core resumes that purchase on the new charge, as Apple keeps the original transaction id. The app's gate (`forSale`, comparing the original ids in `Transaction.all`, read once a run, with the purchase's `transactionRef`) shuts subscriptions for any other profile, device or badge, and for the rest of the run after a purchase that awaits approval, which StoreKit does not list.
+
+**REC:** Restore by a receipt code for Stripe and crypto purchases, and announce a limited move on the first Restore.
+
+---
+

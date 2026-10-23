@@ -1,0 +1,162 @@
+<title>Badge Subscriptions</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+  :root {
+    --bg: #f4f5f8;
+    --surface: #ffffff;
+    --fg: #1b2030;
+    --muted: #5b6577;
+    --line: #dde1e8;
+    --accent: #3a3fa6;
+    --font-display: "Iowan Old Style", "Charter", "Bitstream Charter", "Palatino Linotype", Palatino, Georgia, serif;
+    --font-body: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #111318;
+      --surface: #181b22;
+      --fg: #e4e7ee;
+      --muted: #9aa3b4;
+      --line: #2c313c;
+      --accent: #a7acff;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #111318;
+    --surface: #181b22;
+    --fg: #e4e7ee;
+    --muted: #9aa3b4;
+    --line: #2c313c;
+    --accent: #a7acff;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 16px; line-height: 1.6; }
+  .page {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding-block: 40px 80px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); margin: 0; }
+  h1 { font-family: var(--font-display); font-weight: 600; font-size: clamp(30px, 5vw, 42px); line-height: 1.12; margin: 8px 0 16px; text-wrap: balance; }
+  h2 { font-family: var(--font-display); font-weight: 600; font-size: 25px; line-height: 1.25; margin: 0 0 12px; text-wrap: balance; }
+  p, li { max-width: 70ch; }
+  p { margin: 0 0 14px; }
+  ul { padding-left: 22px; margin: 0 0 14px; }
+  li { margin: 6px 0; }
+  strong { font-weight: 650; }
+  code { font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size: 0.88em; background: var(--line); padding: 0.08em 0.32em; border-radius: 4px; }
+  .lede { font-size: 18px; }
+  section { margin-top: 36px; padding-top: 30px; border-top: 1px solid var(--line); }
+  figure { margin: 24px 0; }
+  .fig-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+  .fig-scroll img { display: block; width: 100%; min-width: 760px; max-width: none; height: auto; }
+  @media (max-width: 640px) {
+    body { font-size: 15.5px; }
+    h2 { font-size: 22px; }
+    .lede { font-size: 16.5px; }
+  }
+</style>
+
+<div class="page">
+  <header>
+    <p class="eyebrow">PR #7716</p>
+    <h1>Badge subscriptions</h1>
+    <p class="lede">Supporter badges (supporter and legend tiers) were prepaid: a code bought on the web, or a one-month store purchase not yet offered. This PR sells them as App Store and Google Play subscriptions, monthly or annual, across the badge service, core and apps.</p>
+    <figure>
+      <div class="fig-scroll"><img src="components.svg" width="980" height="604" alt="Who holds what: the apps buy, restore and report; core holds receipts, each held for a purchase, a move or a tier change, and the client ledger, and talks only to the badge service; the service verifies with the App Store Server API and the Play Developer API, credits, renews, changes tier and moves a subscription to another key."></div>
+    </figure>
+  </header>
+
+  <section id="buying">
+    <h2>Buying</h2>
+    <p>The app passes the store's receipt, through core, to the badge service, which checks it with the store and credits the badge.</p>
+    <ul>
+      <li><strong>iOS:</strong> the service checks Apple's signature, then asks Apple about the subscription by its original transaction id, which renewals and tier changes keep. An Apple ID that subscribed before can subscribe again only to the badge its profile's last purchase retired, on the same device; core then resumes that purchase.</li>
+      <li><strong>Android:</strong> the service reads the subscription from Play by its purchase token and acknowledges it. Play refunds purchases left unacknowledged for three days.</li>
+    </ul>
+    <figure>
+      <div class="fig-scroll"><img src="buy-ios.svg" width="980" height="918" alt="Buying a subscription on iOS: the app creates the record in core, buys with StoreKit, hands the signed transaction to core, core's worker sends purchaseBadge, the service verifies the JWS offline and asks the App Store Server API by original transaction id, then credits the charge; the app finishes the transaction when core reports it credited."></div>
+    </figure>
+    <figure>
+      <div class="fig-scroll"><img src="buy-android.svg" width="980" height="1016" alt="Buying a subscription on Android: the app creates the record in core, buys with Play Billing, hands the token to core without acknowledging it, core's worker sends purchaseBadge, the service reads the subscription from Play by token, acknowledges it just before crediting, and writes the payment, charge and ledger in one transaction."></div>
+    </figure>
+  </section>
+
+  <section id="renewals">
+    <h2>Renewals</h2>
+    <p>The app requests each month's badge credential at the weekly moment all apps share, then daily, and before issuing a month the service asks the store, at most hourly per subscription. Once the paid months run out, a new charge funds the next month, from its billing-period start and as the tier the store charged; while they run, as in an annual plan, a refund or revocation the store reports ends the badge, its months not yet issued debited as a refund. The app also reports the device's view of the store, such as auto-renewal off, for the badge screen and banners.</p>
+    <figure>
+      <div class="fig-scroll"><img src="renewal-check.svg" width="980" height="786" alt="The renewal check: a request with no month due asks no store; otherwise the service asks the store at most once an hour, stamping the check first. During paid coverage a store that reports the subscription ended or the granted charge revoked ends it, the unissued months debited as a refund, and any other answer issues the month. After coverage a grantable charge, of any tier, is written with the issued month in one transaction that locks the purchase and re-reads the tip; otherwise the charge and state are recorded and the answer carries no credential."></div>
+    </figure>
+    <figure>
+      <div class="fig-scroll"><img src="subscription-states.svg" width="980" height="600" alt="Subscription states: renewing, cancelled, billingRetry and ended, what each store state maps to, and the Your badge row and chat-list banner each shows."></div>
+    </figure>
+  </section>
+
+  <section id="tier">
+    <h2>Changing tier</h2>
+    <p>The app never starts a change. On iOS the user changes plan in Apple's subscription sheet; all four subscriptions share one group, so the original transaction id, the purchase and its key stay.</p>
+    <ul>
+      <li><strong>Raising the tier:</strong> Apple charges the new tier at once and refunds the rest of the old period. When the device sees that transaction before it expires, core sends it to the service, retrying up to 24 times each time the device hands it over; the service asks Apple, ends the old tier's remaining months and grants the new tier from the charge. The new badge shows at once.</li>
+      <li><strong>Lowering the tier, or any other change:</strong> the app sends nothing, and the renewal check grants what Apple charged; Apple charges a lower tier from the next renewal.</li>
+      <li><strong>Play:</strong> each badge is its own product, the app starts no plan change, and Play's pages offered none in testing; another badge is a new purchase, which the app allows once the current badge has ended.</li>
+    </ul>
+    <figure>
+      <div class="fig-scroll"><img src="tier-change.svg" width="980" height="781" alt="Changing tier in the App Store: core holds a higher tier bought after the last charge credited and not expired as a tier change and sends upgradeBadgeSubscription on the same key, up to 24 times per hand-over; the service asks Apple, ends the old tier's remaining months, grants the new tier from the charge and issues its month, which core shows at once. A lower tier, or a raise whose transaction expired first, waits for the renewal check."></div>
+    </figure>
+  </section>
+
+  <section id="restore">
+    <h2>Restore: moving to another device or profile</h2>
+    <p>Restore purchases (Support SimpleX screen) hands the store's current subscriptions to core, which asks the service to move each to fresh keys of the active profile, unless that profile already shows a badge. The service asks the store, ends the old purchase, which it answers "ended" from then on, and credits the new key with the current charge; the new badge shows at once. The device it left keeps the badge it holds until that credential is due for renewal, then retires it.</p>
+    <p>A store receipt is no secret: whoever holds it can move the badge to their own keys. So a subscription moves again only once the badge already issued to the key it left has expired, up to 39 days, which keeps each paid month with at most two keys; an App Store receipt moves it only while it is the subscription's latest transaction, a Play token for the subscription's life. The service now links the two purchase keys, as the same store transaction funds both, but still not either to a profile. Badges bought by card, crypto or code don't move.</p>
+    <figure>
+      <div class="fig-scroll"><img src="restore.svg" width="980" height="864" alt="Restore on another device or profile: core holds each restored transaction as a move under fresh keys and sends transferBadge; the service refuses an older App Store transaction, a payment moved too recently or a charge it could not credit, and otherwise ends the old purchase, moves the payment and credits the new key, issuing its month."></div>
+    </figure>
+  </section>
+
+  <section id="ending">
+    <h2>How a subscription ends</h2>
+    <p>While the store retries a failed payment, the badge stays (on iOS, until the device reports it expired), though contacts see it as expired a week after its last credential expires, and the profile can't buy or redeem another. It is removed as soon as the service answers that the subscription ended; once the paid months have run out, when Apple's store on the device reports it expired; or after 67 days of answers that renewed nothing: 60 days, the longest either store retries, plus 7 days of contacts' grace. If the service never replies and the device reports nothing, the badge stays. A retired subscription the store charges again comes back when the device next hands that charge over, unless the profile has had another badge since; Restore then takes it once no badge shows.</p>
+    <figure>
+      <div class="fig-scroll"><img src="retirement-window.svg" width="980" height="610" alt="The retirement window on a day scale after paidThrough: the badge retires at the first answer 67 days after the first answer that renewed nothing; a long gap starts a fresh run, a renewal clears it, and requests that get no reply leave it unchanged."></div>
+    </figure>
+  </section>
+
+  <section id="protection">
+    <h2>Protecting the service and the stores</h2>
+    <p>Purchases and Restores that ask a store, requests with a month due and tier changes, and everything else run on separate queues, so fake purchases can delay only other purchases and Restores. Each subscription is checked at most hourly per purpose (purchase, Restore, renewal), and the purchase path makes at most 300 Play subscription checks a minute; a Play purchase turned away for three days is refunded.</p>
+    <figure>
+      <div class="fig-scroll"><img src="request-lanes.svg" width="980" height="584" alt="Request lanes: codes, invoices, App Store one-time purchases and issue requests with no month due go to the main lane, which asks no store; Play purchases, App Store subscription purchases and Restores to the purchase lane, limited per claim to once an hour and Play to 300 checks a minute; issue requests with a month due and App Store tier raises due a check to the renewal lane, limited to once an hour per subscription. Every write to a ledger locks its purchase first."></div>
+    </figure>
+  </section>
+
+  <section id="changes">
+    <h2>Protocol and database changes</h2>
+    <ul>
+      <li><strong>Badge RPC</strong> (still version 1): an optional subscription state in credential answers; charges use the existing <code>charge</code> ledger entry; <code>upgradeBadgeSubscription</code> for a raised App Store tier and <code>transferBadge</code> for Restore, with a <code>transfer_limited</code> error.</li>
+      <li><strong>Chat API:</strong> a command reporting the store's state, <code>listed</code> and <code>restored</code> receipt flags, a refusal while a store receipt may still be credited, and the subscription and its alerts in the badge state.</li>
+      <li><strong>Databases:</strong> four columns in core's, for the store's state, the answers that renewed nothing, and what a held receipt is held for; on the service, a charges table, the charge and the purchases a move links on ledger rows, and state, check time, Play token and move time on payments.</li>
+    </ul>
+  </section>
+
+  <section id="limits">
+    <h2>Known limits</h2>
+    <ul>
+      <li>Automated tests use fake stores built from the stores' documentation. On 22 October the lifecycle was walked by hand on an iPhone and an Android phone, against Apple's sandbox and Play's test purchases, with the real verifiers; the review fixes made that night are tested only automatically. Real money, real billing dates and the stores' own retries and refunds are still unexercised.</li>
+      <li>A purchase completing while another badge shows waits for it to end, and may meanwhile be refunded or lose paid periods.</li>
+      <li>A Restore refused because the subscription moved recently may say nothing the first time.</li>
+      <li>Play purchases are acknowledged before being signed and recorded; if either fails, Play won't refund, and only a later successful retry credits them.</li>
+    </ul>
+  </section>
+
+  <section id="before-sale">
+    <h2>Before sale</h2>
+    <p>Not built: iOS resubscription on another device or profile or to another badge, Restore for badges bought by card or crypto, seeing a Play refund that leaves the subscription active, and spreading the weekly moment.</p>
+    <p>Store setup: App Store: one subscription group with legend at a higher level than supporter, as only supporter to legend is treated as a raise; Billing Grace Period and Family Sharing off (once on, Family Sharing can't be undone). Play: minimum grace period, account hold on, pausing off. Both: no offers of any kind, server API credentials, enough quota, translations, store review (Sandbox purchases are refused as test purchases, an open question), and products hidden until these apps ship.</p>
+  </section>
+</div>

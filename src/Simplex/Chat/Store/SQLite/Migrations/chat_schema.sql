@@ -943,6 +943,9 @@ CREATE TABLE badge_purchases(
   issue_error TEXT,
   next_wake_at TEXT,
   badge_store_receipt_id INTEGER REFERENCES badge_store_receipts,
+  subscription_status TEXT,
+  unrenewed_since TEXT,
+  last_unrenewed_at TEXT,
   UNIQUE(purchase_key)
 ) STRICT;
 CREATE TABLE badge_ledger(
@@ -1012,6 +1015,7 @@ CREATE TABLE badge_store_receipts(
   retry_delay INTEGER,
   retry_count INTEGER NOT NULL DEFAULT 0,
   credit_error TEXT,
+  hold_kind TEXT NOT NULL DEFAULT 'purchase',
   UNIQUE(provider, transaction_ref)
 ) STRICT;
 CREATE INDEX contact_profiles_index ON contact_profiles(
