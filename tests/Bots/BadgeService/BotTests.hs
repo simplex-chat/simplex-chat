@@ -4678,18 +4678,18 @@ testAppleTierChangeAttemptsEnd ps =
       appleSupporterBeforeLegend env alice
       let a = chatController alice
           handOver = alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = appleLegendSubscriptionJWS})
-          pending = expectLinesWithin 30 alice ["bad chat command: badge service error: payment_pending"] ["1: supporter", "store purchase open", "subscribed "]
+          answeredPending = expectLinesWithin 30 alice ["bad chat command: badge service error: payment_pending"] ["1: supporter", "store purchase open", "subscribed "]
           attemptAt i = do
             setClockAt bsClock $ addUTCTime (3600 + fromIntegral i * 3700) legendBoughtAt
             alice ##> "/_app activate"
             alice <## "ok"
       -- the store keeps reporting Supporter, so each attempt, an hour apart, is answered payment_pending
       handOver
-      pending
+      answeredPending
       forM_ [1 .. heldChargeAttempts - 1] $ \i -> do
         storeReceiptRetries a `shouldEventuallyReturn` [i]
         attemptAt i
-        pending
+        answeredPending
       heldStoreReceipts a `shouldEventuallyReturn` 0
       storeReceiptCreditErrors a `shouldReturn` ["service_error retry payment_pending"]
       checks <- subscriptionChecks store
