@@ -72,9 +72,9 @@ struct BadgesCheckOrderView: View {
                                 Button("Privacy policy") { privacyPolicyActive = true }
                                 NavigationLink(isActive: $privacyPolicyActive) {
                                     ConditionsTextView()
-                                        .padding(.horizontal, 25)
+                                        .padding()
                                         .navigationTitle("Privacy policy")
-                                        .modifier(ThemedBackground())
+                                        .modifier(ThemedBackground(grouped: true))
                                 } label: {
                                     EmptyView()
                                 }
