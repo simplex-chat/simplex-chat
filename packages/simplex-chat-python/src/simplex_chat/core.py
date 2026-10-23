@@ -7,11 +7,12 @@ Users interact with `Bot` / `ChatApi`. This module is exposed as
 from __future__ import annotations
 
 import asyncio
+import base64
 import ctypes
 import json
 from concurrent.futures import Executor
 from enum import StrEnum
-from typing import Any, TypedDict
+from typing import Any, Literal, TypedDict
 
 from . import _native
 from .types import CR, CEvt, T
@@ -88,6 +89,12 @@ def _read_and_free(ptr: int | None) -> str:
         _native.libc().free(ctypes.c_void_p(ptr))
 
 
+def _check_c_int(name: str, value: int) -> None:
+    # ctypes silently wraps ints that do not fit C int.
+    if ctypes.c_int(value).value != value:
+        raise ValueError(f"{name} {value} does not fit C int")
+
+
 async def chat_send_cmd(ctrl: int, cmd: str) -> CR.ChatResponse:
     def _call() -> str:
         ptr = _native.lib().chat_send_cmd(ctrl, cmd.encode("utf-8"))
@@ -138,9 +145,8 @@ async def chat_migrate_init(
 
     `queue_size` is the size of internal queues; the core default is used when None.
     """
-    # ctypes silently wraps ints that do not fit C int.
-    if queue_size is not None and ctypes.c_int(queue_size).value != queue_size:
-        raise ValueError(f"queue_size {queue_size} does not fit C int")
+    if queue_size is not None:
+        _check_c_int("queue_size", queue_size)
 
     init_queue = _native.migrate_init_queue() if queue_size is not None else None
 
@@ -246,3 +252,36 @@ def _crypto_args_result(raw: str) -> CryptoArgs:
     if parsed.get("type") == "error":
         raise RuntimeError(parsed.get("writeError", "unknown write error"))
     raise RuntimeError(f"unexpected result: {raw[:200]}")
+
+
+async def chat_resize_image_uri(data: bytes, max_size: int) -> str:
+    """Resize image to a data URI of at most max_size characters."""
+    _check_c_int("len(data)", len(data))
+    _check_c_int("max_size", max_size)
+    resize = _native.resize_image_uri()
+
+    def _call() -> str:
+        return _read_and_free(resize(data, len(data), max_size))
+
+    return _resized_image(await asyncio.to_thread(_call))
+
+
+async def chat_resize_image(
+    data: bytes, max_size: int, image_format: Literal["jpeg", "png"]
+) -> bytes:
+    """Resize image to JPEG or PNG of at most max_size bytes."""
+    _check_c_int("len(data)", len(data))
+    _check_c_int("max_size", max_size)
+    resize = _native.resize_image()
+    png = 1 if image_format == "png" else 0
+
+    def _call() -> str:
+        return _read_and_free(resize(data, len(data), max_size, png))
+
+    return base64.b64decode(_resized_image(await asyncio.to_thread(_call)))
+
+
+def _resized_image(res: str) -> str:
+    if not res:
+        raise RuntimeError("image cannot be decoded or does not fit max_size")
+    return res
