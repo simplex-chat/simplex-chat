@@ -5744,15 +5744,17 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
     liftIO $ waitForUserNetwork a
     -- decided under the lock and acted on outside it: the retry sleeps, and announcing takes the chat lock
     outcome <- withEntityLock "badgePurchase" (CLBadgeUser userId) $
-      if holdKind == SHKTransfer
-        -- before the stash lookup: the record still links the purchase its payment moves from
-        then credit ri delay transferCmd
-        else
-          withStore' (`getStashBadgePurchase` stash) >>= \case
-            -- before the resume, which settles any record whose purchase is shown
-            Just purchaseId | holdKind == SHKTierChange -> changeTier ri delay purchaseId
-            Just purchaseId -> resume ri delay purchaseId
-            Nothing -> credit ri delay purchaseCmd
+      -- a Restore takes a held record without this lock, so one it took since it was read is left to its new owner's worker
+      ifM (not <$> withStore' (\db -> storeReceiptHeldFor db receiptId userId holdKind)) (pure SRODeferred) $
+        if holdKind == SHKTransfer
+          -- before the stash lookup: the record still links the purchase its payment moves from
+          then credit ri delay transferCmd
+          else
+            withStore' (`getStashBadgePurchase` stash) >>= \case
+              -- before the resume, which settles any record whose purchase is shown
+              Just purchaseId | holdKind == SHKTierChange -> changeTier ri delay purchaseId
+              Just purchaseId -> resume ri delay purchaseId
+              Nothing -> credit ri delay purchaseCmd
     -- the invoice id is the app's only key to the store transaction, so without one nothing is emitted and its sweep finishes it
     case outcome of
       SROCredited present_ -> do

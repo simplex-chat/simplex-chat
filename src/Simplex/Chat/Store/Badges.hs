@@ -36,6 +36,7 @@ module Simplex.Chat.Store.Badges
     getPendingStoreReceipts,
     getNextHeldStoreReceipt,
     getStoreReceiptFailures,
+    storeReceiptHeldFor,
     recordStoreReceiptFailure,
     refuseStoreReceipt,
     settleStoreReceipt,
@@ -368,6 +369,11 @@ getNextHeldStoreReceipt db userId =
   where
     toHeld (stashRow@(receiptId, _, _, _) :. (invoiceId, payment, nextAttemptAt, retryDelay, holdKind)) =
       BadgeReceiptRecord {receiptId, ownerId = userId, status = RSHeld {stash = toBadgeStash BSRStoreReceipt stashRow, invoiceId, payment, nextAttemptAt, retryDelay, holdKind}}
+
+storeReceiptHeldFor :: DB.Connection -> Int64 -> UserId -> StoreHoldKind -> IO Bool
+storeReceiptHeldFor db receiptId userId holdKind =
+  maybeFirstRow' False ((== (1 :: Int)) . fromOnly) $
+    DB.query db "SELECT 1 FROM badge_store_receipts WHERE badge_store_receipt_id = ? AND user_id = ? AND hold_kind = ? AND payment IS NOT NULL" (receiptId, userId, holdKind)
 
 -- | The attempts that failed since the record was last held: each hold resets the count.
 getStoreReceiptFailures :: DB.Connection -> Int64 -> IO Int64
