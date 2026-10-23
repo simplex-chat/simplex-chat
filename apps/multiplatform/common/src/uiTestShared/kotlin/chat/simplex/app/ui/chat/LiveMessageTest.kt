@@ -8,13 +8,16 @@ import chat.simplex.app.ui.harness.UiTest
 import chat.simplex.app.ui.harness.backToChatList
 import chat.simplex.app.ui.harness.connect
 import chat.simplex.app.ui.harness.described
+import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.Ui
 import org.junit.Assert.assertFalse
+import org.junit.Assume.assumeTrue
 import org.junit.Test
 
 class LiveMessageTest : UiTest() {
   @Test fun liveMessage_menuStart_alertConfirm_peerSeesStarted() = uiTest {
+    assumeTrue(LIVE_ON_ANDROID, !appPlatform.isAndroid)
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)
     bob sends "/show on"
@@ -45,6 +48,7 @@ class LiveMessageTest : UiTest() {
 
   @KnownAppIssue("15.5 item 13", "[LIVE started] use /show", intermittent = true)
   @Test fun liveMessage_boltButton_emptyStart() = uiTest {
+    assumeTrue(LIVE_ON_ANDROID, !appPlatform.isAndroid)
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)
     alice.chatList.open("bob")
@@ -95,6 +99,7 @@ class LiveMessageTest : UiTest() {
   }
 
   @Test fun liveMessage_chatSwitch_sendsToOriginalChat() = uiTest {
+    assumeTrue(LIVE_ON_ANDROID, !appPlatform.isAndroid)
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)
     val chat = alice.chatList.open("bob")
@@ -135,3 +140,5 @@ class LiveMessageTest : UiTest() {
     val CANCEL = described("Cancel live message")
   }
 }
+
+private const val LIVE_ON_ANDROID = "Android: the harness cannot type while a live message is active (plan 15.4.1d)"

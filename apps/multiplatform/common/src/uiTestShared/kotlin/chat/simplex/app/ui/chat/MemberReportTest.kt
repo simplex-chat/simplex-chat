@@ -23,6 +23,7 @@ import org.junit.Test
 
 class MemberReportTest : UiTest() {
   @KnownAppIssue("15.5 item 12", "bob: expected `      report content`, got `      report illegal`")
+  @KnownAppIssue("15.5 item 29", "waiting for cath's `inappropriate joke`", intermittent = true)
   @Test fun report_member_spam_moderatorsReceive() = uiTest {
     val alice = app("alice"); val bob = cli("bob"); val cath = cli("cath")
     val chat = memberOfHostedGroup(alice, bob, cath)

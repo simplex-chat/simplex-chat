@@ -7,29 +7,37 @@ import java.util.concurrent.ConcurrentLinkedQueue
 
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
+@Repeatable
 annotation class KnownAppIssue(val finding: String, val error: String, val intermittent: Boolean = false)
 
 class KnownIssueRule : TestWatcher() {
-  var issue: KnownAppIssue? = null
+  var issues: List<KnownAppIssue> = emptyList()
     private set
 
   override fun starting(description: Description) {
-    issue = description.getAnnotation(KnownAppIssue::class.java)
+    issues = description.annotations.flatMap { a ->
+      when {
+        a is KnownAppIssue -> listOf(a)
+        a.annotationClass.java.enclosingClass == KnownAppIssue::class.java -> (a.annotationClass.java.getMethod("value").invoke(a) as Array<*>).filterIsInstance<KnownAppIssue>()
+        else -> emptyList()
+      }
+    }
   }
 }
 
-fun withKnownIssue(issue: KnownAppIssue?, block: () -> Unit) {
-  if (issue == null) return block()
+fun withKnownIssue(issues: List<KnownAppIssue>, block: () -> Unit) {
+  if (issues.isEmpty()) return block()
   try {
     block()
   } catch (e: AssumptionViolatedException) {
     throw e
   } catch (e: Throwable) {
-    if (issue.error in e.stackTraceToString()) throw AssumptionViolatedException("known app issue (plan ${issue.finding}): ${issue.error}")
+    val trace = e.stackTraceToString()
+    issues.firstOrNull { it.error in trace }?.let { throw AssumptionViolatedException("known app issue (plan ${it.finding}): ${it.error}") }
     throw e
   }
-  if (!issue.intermittent) throw AssertionError("known app issue (plan ${issue.finding}) no longer reproduces; remove @KnownAppIssue")
-  println("UITEST known app issue (plan ${issue.finding}) did not reproduce in this run")
+  issues.firstOrNull { !it.intermittent }?.let { throw AssertionError("known app issue (plan ${it.finding}) no longer reproduces; remove @KnownAppIssue") }
+  issues.forEach { println("UITEST known app issue (plan ${it.finding}) did not reproduce in this run") }
 }
 
 object AppCrashes {

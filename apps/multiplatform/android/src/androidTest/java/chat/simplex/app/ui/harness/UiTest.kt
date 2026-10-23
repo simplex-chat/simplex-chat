@@ -35,10 +35,9 @@ abstract class UiTest {
     val watchdog = Watchdog.start(HARD_TIMEOUT_MS)
     try {
       UiTestApp.bootOnce()
-      rule.mainClock.autoAdvance = false
       AppCrashes.install()
       AppCrashes.clear()
-      withKnownIssue(knownIssue.issue) {
+      withKnownIssue(knownIssue.issues) {
         val scope = UiScope(rule)
         try {
           scope.body()
