@@ -3090,6 +3090,8 @@
   <!-- GroupMemberInfoView.kt channel-related -->
   <string name="member_info_section_title_relay">Relay</string>
   <string name="member_info_section_title_owner">Owner</string>
+  <string name="member_info_section_title_moderator">Moderator</string>
+  <string name="member_info_section_title_contributor">Contributor</string>
   <string name="member_info_section_title_subscriber">Subscriber</string>
   <string name="info_row_channel">Channel</string>
   <string name="info_row_relay_link">Relay link</string>
