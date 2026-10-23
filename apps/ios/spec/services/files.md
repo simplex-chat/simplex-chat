@@ -271,7 +271,7 @@ func getWallpaperDirectory() -> URL   // Documents/wallpapers/
    - ChatEvent.sndFileError (on failure)
 ```
 
-While the chat is suspending, XFTP uploads started in foreground by this app process continue, and the core sends `chatSuspended` after they end or at the suspend timeout; uploads resumed from an earlier process are not awaited.
+While the chat is suspending, the agent continues the XFTP uploads started in foreground by this app process, and the core sends `chatSuspended` after the agent ends these uploads, or at the suspend timeout; uploads resumed from an earlier process are not awaited.
 
 ### Receiving
 
