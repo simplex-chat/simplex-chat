@@ -5002,7 +5002,7 @@ Hiba: %2$@</target>
       </trans-unit>
       <trans-unit id="Get a badge to send larger files (2-5GB) that stay available longer (7-21 days), and to show it on your profile." xml:space="preserve" approved="no">
         <source>Get a badge to send larger files (2-5GB) that stay available longer (7-21 days), and to show it on your profile.</source>
-        <target state="translated">Szerezzen kitűzőt, hogy nagyméretű fájlokat (2-5 GB) küldhessen, amelyek tovább (7-21 napig) maradnak elérhetők, és hogy megjeleníthesse a profilján.</target>
+        <target state="translated">Szerezzen kitűzőt, hogy nagyméretű fájlokat (2-5 GB) küldhessen, amelyek tovább (7-21 napig) maradnak elérhetők az átjátszókon, és hogy megjeleníthesse azt a profilján.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Get badge + better files" xml:space="preserve" approved="no">
@@ -5804,7 +5804,7 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
       </trans-unit>
       <trans-unit id="Larger files that stay available longer." xml:space="preserve" approved="no">
         <source>Larger files that stay available longer.</source>
-        <target state="translated">Nagyméretű fájlok küldése, amelyek tovább maradnak elérhetők.</target>
+        <target state="translated">Nagyméretű fájlok küldése, amelyek tovább maradnak elérhetők az átjátszókon.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Last attempt" xml:space="preserve" approved="no">
