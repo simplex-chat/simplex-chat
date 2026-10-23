@@ -28,6 +28,7 @@ module StoreService.Names.Orders
     codeOrderInsert,
     checkTimestamp,
     checkDuration,
+    checkTerms,
     checkNameFree,
     checkPrice,
     movable,
@@ -66,6 +67,7 @@ import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig (..))
 import StoreService.Log (logError, logWarn)
 import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, reserveCode, reserveRefusal, spendLandedCode)
+import StoreService.Names.Community (communityJSON, termsFor, termsJSON)
 import StoreService.Names.Contracts (Contracts, NameStatus (..), chainPriceCents, confirmedTag, nameExpires, nameStatus, ownerOfToken, secondsPerYear)
 import StoreService.Names.Env (NamesEnv (..))
 import StoreService.Names.Phases (Phases, RegistrationId (..))
@@ -105,6 +107,8 @@ data OrderRefusal
   | ORCode CodeRefusal
   | ORPriceTooHigh Int
   | ORBalanceChanged (Maybe Balance)
+  | -- | the current terms and the name's community entry, as the answer carries them
+    ORTermsChanged J.Value J.Value
   deriving (Eq, Show)
 
 newtype OrderRefused = OrderRefused OrderRefusal
@@ -265,6 +269,11 @@ checkDuration NamesConfig {nTermStart, nTermSlackSeconds} now years duration = d
   let free = toInteger duration - toInteger years * secondsPerYear
       expected = max 0 (unixSeconds nTermStart - unixSeconds now)
   when (free < 0 || abs (free - expected) > toInteger nTermSlackSeconds) $ Left ORBadRequest
+
+-- | The terms the order signed must be the current ones for its name, the community variant for a listed name.
+checkTerms :: NamesConfig -> OrderFields -> Either OrderRefusal ()
+checkTerms cfg OrderFields {ofLabelHash, ofAgreedTerms} =
+  unless (ofAgreedTerms == termsFor cfg ofLabelHash) $ Left $ ORTermsChanged (termsJSON cfg) (communityJSON cfg ofLabelHash)
 
 -- | A name being registered here searches as available, so it is checked here too.
 checkNameFree :: Contracts -> DBStore -> LabelHash -> IO (Either OrderRefusal ())

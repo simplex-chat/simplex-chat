@@ -9,7 +9,8 @@ import Bots.StoreService.BotTests (operatorCmd, withStoreService)
 import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), setInvoiceState, setRates, webhookEvent, webhookSigHeader, withFakeBTCPay)
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (reservedNamesCall)
-import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), advance, aliceOrder, commitmentOf, field, fieldsOf, invoiceRegistration, keyA, keyB, malformedTerms, orderTime, ownerAText, placeOrder, placed, post, refusedWith, registrationById, registrationOf, registrationsOf, settleNow, withOrdersOn, yearsDuration)
+import Bots.StoreService.ConfigTests (termsVersion)
+import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), advance, aliceOrder, bakers, bumpedTerms, commitmentOf, communityTerms, configured, field, fieldsOf, invoiceRegistration, keyA, keyB, listName, malformedTerms, olderTerms, orderTime, ownerAText, placeOrder, placed, post, refusedWith, registrationById, registrationOf, registrationsOf, settleNow, termsChanged, withOrdersOn, yearsDuration)
 import Bots.StoreService.NamesOwnerTests (findBody, postFind)
 import Bots.StoreService.NamesStoreTests (at, order, ownerA, placePaid, reg, t0, write)
 import Bots.StoreService.WebTests (StubCall (..), capturingStderr, StubState (..), jsonObject, rcv, sampleProviderInvoice, statusOf, stubCalls, webGet, webRequestBody, withServiceStores)
@@ -83,6 +84,10 @@ namesSpendTests = describe "StoreService names: spend" $ do
     it "refuses a card difference below the card minimum after the price check, accepting it by crypto and at the minimum" testCardMinimum
     it "refuses sealed missing or over 11095 characters and a body over 16384 bytes, accepting the longest" testSpendSizes
     it "counts spends against the create limit" testSpendLimit
+  describe "terms" $ do
+    it "answers terms_changed for an old version or the wrong variant, listed or not, and stores the community terms, covered and by difference" testSpendTermsChanged
+    it "answers an exact resend after the version changed, covered and by difference" testSpendResendAfterBump
+    it "checks the terms after the timestamp and the duration, before the balance and the chain" testSpendTermsCheckOrder
   describe "holders" $ do
     it "closes the balance's overdue unfunded holder in the spend's transaction, publishing it and cancelling its invoice" testOverdueHolderSpent
     it "closes an overdue unfunded holder of another name for a difference spend, the new invoice holding the balance" testDifferenceClosesHolder
@@ -108,20 +113,22 @@ withSpendHook action = do
   hook <- newIORef (pure ())
   withServiceStores $ \open -> withSpendOn open (\p -> p {pCreateInvoice = \m d -> join (readIORef hook) >> pCreateInvoice p m d}) (action hook)
 
--- | The spend route beside find, the registration poll and the service's routes.
 withSpendOn :: IO DBStore -> (Provider -> Provider) -> (Ctx -> IO a) -> IO a
-withSpendOn open via action =
-  withOrdersOn open via $ \ctx@Ctx {cOrders, cWeb} -> do
-    let routes :: [Text] -> Maybe Route
-        routes = \case
-          ["api", "registration", "find"] -> Just Route {rMethod = "POST", rLimit = Http.findLimit, rHandler = findHandler cOrders}
-          ["api", "registration", rid, "spend"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = spendHandler cOrders (weConfig cWeb) (weProviders cWeb) (weWaiters cWeb) rid}
-          ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler cOrders holdMicros rid}
-          _ -> Nothing
-        app :: Application
-        app req respond = fromMaybe (webApp cWeb req respond) (namesApp (weHttp cWeb) routes req respond)
-    mgr <- newManager defaultManagerSettings
-    Warp.testWithApplication (pure app) $ \port -> action ctx {cClient = (mgr, "http://127.0.0.1:" <> show port)}
+withSpendOn open via action = withOrdersOn open via (`serveSpend` action)
+
+-- | The spend route beside find, the registration poll and the service's routes, over the context's settings.
+serveSpend :: Ctx -> (Ctx -> IO a) -> IO a
+serveSpend ctx@Ctx {cOrders, cWeb} action = do
+  let routes :: [Text] -> Maybe Route
+      routes = \case
+        ["api", "registration", "find"] -> Just Route {rMethod = "POST", rLimit = Http.findLimit, rHandler = findHandler cOrders}
+        ["api", "registration", rid, "spend"] -> Just Route {rMethod = "POST", rLimit = createLimit, rHandler = spendHandler cOrders (weConfig cWeb) (weProviders cWeb) (weWaiters cWeb) rid}
+        ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler cOrders holdMicros rid}
+        _ -> Nothing
+      app :: Application
+      app req respond = fromMaybe (webApp cWeb req respond) (namesApp (weHttp cWeb) routes req respond)
+  mgr <- newManager defaultManagerSettings
+  Warp.testWithApplication (pure app) $ \port -> action ctx {cClient = (mgr, "http://127.0.0.1:" <> show port)}
 
 withSpend :: (Ctx -> IO a) -> IO a
 withSpend action = withSpendHook (const action)
@@ -416,6 +423,50 @@ testCheckOrder = withSpend $ \ctx@Ctx {cNode = node, cStub} -> do
   spend ctx src (covered 30000) {sbOrder = aliceOrder {oKey = keyB}} `shouldReturn` refusedWith 400 "bad_request"
   spend ctx src (covered 31000) {sbOrder = aliceOrder {oCommitment = commitmentOf 3}} `shouldReturn` refusedWith 409 "order_exists"
   amountOf ctx src `shouldReturn` Just 20000
+
+testSpendTermsChanged :: IO ()
+testSpendTermsChanged = withSpend $ \ctx0 -> serveSpend (configured (listName "dynamis") ctx0) $ \ctx -> do
+  src <- sourceOf ctx "src" 30000
+  forM_ [olderTerms, communityTerms termsVersion] $ \t ->
+    spend ctx src (covered 30000) {sbOrder = aliceOrder {oTerms = t}} `shouldReturn` termsChanged termsVersion Nothing
+  forM_ [termsVersion, communityTerms olderTerms] $ \t ->
+    spend ctx src (dynamis 30000 Nothing) {sbOrder = dynamisOrder {oTerms = t}} `shouldReturn` termsChanged termsVersion (Just bakers)
+  amountOf ctx src `shouldReturn` Just 30000
+  rid <- registrationAnswer . snd <$> spend ctx src (dynamis 30000 Nothing) {sbOrder = dynamisOrder {oTerms = communityTerms termsVersion}}
+  nrAgreedTerms <$> registrationById ctx rid `shouldReturn` communityTerms termsVersion
+  serveSpend (configured (listName "alicebakery") ctx) $ \listing -> do
+    low <- sourceOf listing "low" 4000
+    (status, v) <- spend listing low (difference 4000) {sbOrder = aliceOrder {oTerms = communityTerms termsVersion}}
+    status `shouldBe` 200
+    nrAgreedTerms <$> invoiceRegistration listing (invoiceIdOf v) `shouldReturn` communityTerms termsVersion
+
+testSpendResendAfterBump :: IO ()
+testSpendResendAfterBump = withSpend $ \ctx0 -> do
+  src <- sourceOf ctx0 "src" 15000
+  low <- sourceOf ctx0 "low" 5000
+  coveredBody <- spendBody ctx0 src (covered 15000)
+  (200, Just coveredAnswer) <- postSpend ctx0 src coveredBody
+  differenceBody <- spendBody ctx0 low (dynamis 5000 (Just "btc"))
+  (200, Just differenceView) <- postSpend ctx0 low differenceBody
+  serveSpend (configured bumpedTerms ctx0) $ \ctx -> do
+    advance ctx 60
+    postSpend ctx src coveredBody `shouldReturn` (200, Just coveredAnswer)
+    postSpend ctx low differenceBody `shouldReturn` (200, Just differenceView)
+    mapM (fmap length . paidFrom ctx) [src, low] `shouldReturn` [1, 1]
+
+testSpendTermsCheckOrder :: IO ()
+testSpendTermsCheckOrder = withSpend $ \ctx@Ctx {cNode = node} -> do
+  src <- sourceOf ctx "src" 15000
+  let old = aliceOrder {oTerms = olderTerms}
+  spend ctx src (covered 15000) {sbOrder = old {oTimestamp = seconds orderTime + 601}} `shouldReturn` refusedWith 400 "bad_request"
+  spend ctx src (covered 15000) {sbOrder = old {oDuration = oDuration old + 3601}} `shouldReturn` refusedWith 400 "bad_request"
+  spend ctx src (covered 14000) {sbOrder = old} `shouldReturn` termsChanged termsVersion Nothing
+  answerCall node fakeController reservedNamesCall $ Returns $ uint256 (1 :: Int)
+  spend ctx src (covered 15000) {sbOrder = old {oPrice = 9000}} `shouldReturn` termsChanged termsVersion Nothing
+  setFault node "eth_call" HttpFailure
+  spend ctx src (covered 15000) {sbOrder = old} `shouldReturn` termsChanged termsVersion Nothing
+  amountOf ctx src `shouldReturn` Just 15000
+  paidFrom ctx src `shouldReturn` []
 
 testCardMinimum :: IO ()
 testCardMinimum = withSpend $ \ctx -> do

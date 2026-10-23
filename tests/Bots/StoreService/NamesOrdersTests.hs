@@ -37,6 +37,13 @@ module Bots.StoreService.NamesOrdersTests
     advance,
     refusedWith,
     malformedTerms,
+    listName,
+    bakers,
+    bumpedTerms,
+    newerTerms,
+    olderTerms,
+    communityTerms,
+    termsChanged,
   )
 where
 
@@ -154,6 +161,14 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "runs code orders in the code's turn, one of two spending one code for two names winning, the other answered code_reserved" testConcurrentCodeOrders
     it "answers the code's refusal when its reservation fails in the insert, writing nothing" testCodeNotReservable
     it "counts code orders and code checks against one code limit" testCodeLimitShared
+  describe "terms" $ do
+    it "answers terms_changed with the current terms and community for an old version or the wrong variant, listed or not, creating nothing" testTermsChanged
+    it "accepts the community terms for a listed name as Appendix C signs them, storing them" testCommunityTerms
+    it "answers an exact resend after the version changed, and takes the same fields under the new terms as another order" testResendAfterBump
+    it "checks the terms after the existing orders, the timestamp and the duration, before the chain and the price" testTermsCheckOrder
+    it "answers terms_changed for a code order under old terms, listed or not, leaving the code unreserved, and accepts the community terms" testCodeTermsChanged
+    it "answers a code order's exact resend after the version changed" testCodeResendAfterBump
+    it "checks a code order's terms after the timestamp, before the chain and the code's state" testCodeTermsCheckOrder
   describe "closed orders" $ do
     it "accepts a new order of the same wallet and name after a cancel" testOrderAfterCancel
     it "closes an overdue order of the same wallet and name before the poller marks it, cancelling its invoice after" testOverdueClosed
@@ -739,6 +754,38 @@ testFormats = withOrders $ \ctx -> do
   forM_ [5, 64] $ \len -> postOrder ctx (with "length" (J.Number len)) `shouldReturn` refusedWith 400 "invalid_name"
   stubCalls (cStub ctx) `shouldReturn` []
 
+-- | The name on the operator's community list.
+listName :: Text -> NamesConfig -> NamesConfig
+listName label cfg = cfg {nCommunity = M.insert lh bakers (nCommunity cfg)}
+  where
+    LabelHash lh = labelHash label
+
+bakers :: Text
+bakers = "bakers and bakeries in Portugal"
+
+-- | The operator's next terms version, after a restart.
+bumpedTerms :: NamesConfig -> NamesConfig
+bumpedTerms cfg@NamesConfig {nTerms} = cfg {nTerms = nTerms {tVersion = newerTerms}}
+
+newerTerms, olderTerms :: Text
+newerTerms = "2026-11-01"
+olderTerms = "2026-10-01"
+
+communityTerms :: Text -> Text
+communityTerms version = version <> "/community"
+
+-- | terms_changed with the current version, the terms' URL and the name's community entry.
+termsChanged :: Text -> Maybe Text -> (Int, Maybe J.Object)
+termsChanged version community =
+  ( 409,
+    Just $
+      KM.fromList
+        [ ("error", "terms_changed"),
+          ("terms", J.object ["version" .= version, "url" .= termsUrl]),
+          ("community", maybe J.Null (\t -> J.object ["for" .= t]) community)
+        ]
+  )
+
 -- | Signed as sent, so only their format refuses them.
 malformedTerms :: [Text]
 malformedTerms = ["", T.replicate 49 "a", "2026-10-23 community", "2026-10-23+community", "2026-10-23/communit\233"]
@@ -749,6 +796,64 @@ testTwoWallets = withOrders $ \ctx -> do
   (b, _) <- placed ctx aliceOrder {oOwner = ownerBText, oKey = keyB, oCommitment = commitmentOf 2}
   a `shouldNotBe` b
   mapM (fmap nrLive . invoiceRegistration ctx) [a, b] `shouldReturn` [True, True]
+
+testTermsChanged :: IO ()
+testTermsChanged = withOrders $ \ctx0 -> withSettings (listName "dynamis") ctx0 $ \ctx -> do
+  let dynamis = aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 2, oPrice = 20000}
+  -- 48 characters pass the format and meet the terms check
+  forM_ [olderTerms, communityTerms termsVersion, communityTerms olderTerms, T.replicate 48 "a"] $ \t ->
+    placeOrder ctx aliceOrder {oTerms = t} `shouldReturn` termsChanged termsVersion Nothing
+  forM_ [termsVersion, olderTerms, communityTerms olderTerms] $ \t ->
+    placeOrder ctx dynamis {oTerms = t} `shouldReturn` termsChanged termsVersion (Just bakers)
+  stubCalls (cStub ctx) `shouldReturn` []
+  registrationsOf ctx ownerA `shouldReturn` []
+  (invId, v) <- placed ctx dynamis {oTerms = communityTerms termsVersion}
+  field "terms" (registrationOf v) `shouldBe` Just (J.String $ communityTerms termsVersion)
+  nrAgreedTerms <$> invoiceRegistration ctx invId `shouldReturn` communityTerms termsVersion
+
+testCommunityTerms :: IO ()
+testCommunityTerms = withOrders $ \ctx0 -> withSettings (listName "alicebakery" . vectorTermStart) ctx0 $ \ctx -> do
+  writeIORef (cClock ctx) (posixSecondsToUTCTime $ fromIntegral $ oTimestamp vectorOrder)
+  postOrder ctx (withSignature vectorSignature $ unsignedBody vectorOrder) `shouldReturn` termsChanged termsVersion (Just bakers)
+  let community = vectorOrder {oTerms = communityTerms termsVersion}
+      communitySignature = "0x03eccb591b79ab4e3e6f22ccbeb77a6ac32c6dad8cb318557836258c390bc31d78852a3279c6c8cc2ef8d1025641d45ba4101f54dfd84c264deb2ab391c1cbc61c"
+  signedBody (cRandom ctx) community >>= (`shouldBe` withSignature communitySignature (unsignedBody community))
+  (status, v) <- postOrder ctx $ withSignature communitySignature (unsignedBody community)
+  (status, field "terms" . registrationOf =<< v, field "community" . registrationOf =<< v)
+    `shouldBe` (200, Just (J.String $ communityTerms termsVersion), Just (J.object ["for" .= bakers]))
+
+testResendAfterBump :: IO ()
+testResendAfterBump = withOrders $ \ctx0 -> do
+  body <- signedBody (cRandom ctx0) aliceOrder
+  (invId@(InvoiceId invText), view) <- placed ctx0 aliceOrder
+  withSettings bumpedTerms ctx0 $ \ctx -> do
+    advance ctx 60
+    let later = aliceOrder {oTimestamp = seconds orderTime + 60}
+    postOrder ctx body `shouldReturn` (200, Just view)
+    placed ctx later `shouldReturn` (invId, view)
+    placeOrder ctx later {oTerms = newerTerms} `shouldReturn` refusedWith 409 "order_exists"
+    fst <$> post ctx ("/api/invoice/" <> T.unpack invText <> "/cancel") "" `shouldReturn` 200
+    (newer, _) <- placed ctx later {oTerms = newerTerms}
+    newer `shouldNotBe` invId
+    [n, o] <- mapM (invoiceRegistration ctx) [newer, invId]
+    (nrAgreedTerms n, nrAgreedTerms o) `shouldBe` (newerTerms, termsVersion)
+    nrOrderHash n `shouldNotBe` nrOrderHash o
+    (status, v) <- postOrder ctx body
+    (status, field "invoiceId" =<< v, field "status" =<< v) `shouldBe` (200, Just (J.String invText), Just "expired")
+
+testTermsCheckOrder :: IO ()
+testTermsCheckOrder = withOrders $ \ctx@Ctx {cNode = node} -> do
+  let old = aliceOrder {oTerms = olderTerms}
+  void $ placed ctx aliceOrder {oOwner = ownerBText, oKey = keyB, oCommitment = commitmentOf 5}
+  placeOrder ctx old {oOwner = ownerBText, oKey = keyB, oCommitment = commitmentOf 6} `shouldReturn` refusedWith 409 "order_exists"
+  placeOrder ctx old {oTimestamp = seconds orderTime + 601} `shouldReturn` refusedWith 400 "bad_request"
+  placeOrder ctx old {oDuration = oDuration old + fromIntegral slackSeconds + 1} `shouldReturn` refusedWith 400 "bad_request"
+  placeOrder ctx old {oPrice = 9000} `shouldReturn` termsChanged termsVersion Nothing
+  answerCall node fakeController reservedNamesCall $ Returns $ uint256 (1 :: Int)
+  placeOrder ctx old `shouldReturn` termsChanged termsVersion Nothing
+  setFault node "eth_call" HttpFailure
+  placeOrder ctx old `shouldReturn` termsChanged termsVersion Nothing
+  length <$> stubCalls (cStub ctx) `shouldReturn` 1
 
 -- code orders
 
@@ -821,6 +926,46 @@ testCodeResend = withOrders $ \ctx -> do
   postRegister ctx body `shouldReturn` registrationAnswer rid
   register ctx code aliceOrder {oTimestamp = seconds orderTime + 3660} `shouldReturn` registrationAnswer rid
   length <$> registrationsOf ctx ownerA `shouldReturn` 1
+
+testCodeTermsChanged :: IO ()
+testCodeTermsChanged = withOrders $ \ctx0 -> withSettings (listName "dynamis") ctx0 $ \ctx -> do
+  (code, issued) <- issueCode ctx 7 2 id
+  let dynamis = aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 2}
+  forM_ [olderTerms, communityTerms termsVersion] $ \t ->
+    register ctx code aliceOrder {oTerms = t} `shouldReturn` termsChanged termsVersion Nothing
+  forM_ [termsVersion, communityTerms olderTerms] $ \t ->
+    register ctx code dynamis {oTerms = t} `shouldReturn` termsChanged termsVersion (Just bakers)
+  pcReservedBy <$> readCode ctx issued `shouldReturn` Nothing
+  rid <- registered ctx code dynamis {oTerms = communityTerms termsVersion}
+  nrAgreedTerms <$> registrationById ctx rid `shouldReturn` communityTerms termsVersion
+  pcReservedBy <$> readCode ctx issued `shouldReturn` Just rid
+
+testCodeResendAfterBump :: IO ()
+testCodeResendAfterBump = withOrders $ \ctx0 -> do
+  (code, _) <- issueCode ctx0 8 2 id
+  rid <- registered ctx0 code aliceOrder
+  withSettings bumpedTerms ctx0 $ \ctx -> do
+    advance ctx 60
+    register ctx code aliceOrder `shouldReturn` registrationAnswer rid
+    register ctx code aliceOrder {oTimestamp = seconds orderTime + 60} `shouldReturn` registrationAnswer rid
+    register ctx code aliceOrder {oTerms = newerTerms, oTimestamp = seconds orderTime + 60} `shouldReturn` refusedWith 409 "order_exists"
+
+testCodeTermsCheckOrder :: IO ()
+testCodeTermsCheckOrder = withOrders $ \ctx@Ctx {cStore, cNode = node} -> do
+  let old = aliceOrder {oTerms = olderTerms}
+  (code, _) <- issueCode ctx 8 2 id
+  register ctx code old {oTimestamp = seconds orderTime + 601} `shouldReturn` refusedWith 400 "bad_request"
+  register ctx code old {oDuration = oDuration old + fromIntegral slackSeconds + 1} `shouldReturn` refusedWith 400 "bad_request"
+  (reserved, reservedCode) <- issueCode ctx 8 2 id
+  placeCode cStore "holder" ownerB (order "holderone" 1) reservedCode `shouldReturn` Right ()
+  (long, _) <- issueCode ctx 12 2 id
+  (unpaid, _) <- issueCode ctx 8 2 $ \c -> c {npcPaymentStatus = CPSUnpaid}
+  forM_ [reserved, long, unpaid] $ \c -> register ctx c old `shouldReturn` termsChanged termsVersion Nothing
+  answerCall node fakeController reservedNamesCall $ Returns $ uint256 (1 :: Int)
+  register ctx code old `shouldReturn` termsChanged termsVersion Nothing
+  setFault node "eth_call" HttpFailure
+  register ctx code old `shouldReturn` termsChanged termsVersion Nothing
+  length <$> registrationsOf ctx ownerA `shouldReturn` 0
 
 testCodeOneFieldDiffers :: IO ()
 testCodeOneFieldDiffers = withOrders $ \ctx -> do
