@@ -1900,6 +1900,53 @@ export namespace ChatListQuery {
   }
 }
 
+export type ChatPagination = 
+  | ChatPagination.Last
+  | ChatPagination.After
+  | ChatPagination.Before
+  | ChatPagination.Around
+  | ChatPagination.Initial
+
+export namespace ChatPagination {
+  export type Tag = "last" | "after" | "before" | "around" | "initial"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Last extends Interface {
+    type: "last"
+    count: number // int
+  }
+
+  export interface After extends Interface {
+    type: "after"
+    chatItemId: number // int64
+    count: number // int
+  }
+
+  export interface Before extends Interface {
+    type: "before"
+    chatItemId: number // int64
+    count: number // int
+  }
+
+  export interface Around extends Interface {
+    type: "around"
+    chatItemId: number // int64
+    count: number // int
+  }
+
+  export interface Initial extends Interface {
+    type: "initial"
+    count: number // int
+  }
+
+  export function cmdString(self: ChatPagination): string {
+    return self.type == 'last' ? 'count=' + self.count : self.type == 'after' ? 'after=' + self.chatItemId + ' count=' + self.count : self.type == 'before' ? 'before=' + self.chatItemId + ' count=' + self.count : self.type == 'around' ? 'around=' + self.chatItemId + ' count=' + self.count : 'initial=' + self.count
+  }
+}
+
 export enum ChatPeerType {
   Human = "human",
   Bot = "bot",
@@ -2265,6 +2312,15 @@ export namespace ConnectionPlan {
     type: "error"
     chatError: ChatError
   }
+}
+
+export interface ConnectionStats {
+  connAgentVersion: number // int
+  rcvQueuesInfo: RcvQueueInfo[]
+  sndQueuesInfo: SndQueueInfo[]
+  ratchetSyncState: RatchetSyncState
+  ratchetSyncSupported: boolean
+  subStatus?: SubscriptionStatus
 }
 
 export interface Contact {
@@ -3083,6 +3139,17 @@ export enum GroupMemberStatus {
   Creator = "creator",
 }
 
+export interface GroupOwnerContact {
+  contactId: number // int64
+  memberId: string
+}
+
+export namespace GroupOwnerContact {
+  export function cmdString(self: GroupOwnerContact): string {
+    return 'contact=' + self.contactId + ' owner=' + self.memberId
+  }
+}
+
 export interface GroupPreference {
   enable: GroupFeatureEnabled
 }
@@ -3160,6 +3227,12 @@ export enum HandshakeError {
   BAD_SERVICE = "BAD_SERVICE",
 }
 
+export enum HostMode {
+  OnionViaSocks = "onionViaSocks",
+  Onion = "onion",
+  Public = "public",
+}
+
 export enum InlineFileMode {
   Offer = "offer",
   Sent = "sent",
@@ -3220,6 +3293,12 @@ export namespace InvitedBy {
   export interface Unknown extends Interface {
     type: "unknown"
   }
+}
+
+export interface KeepAliveOpts {
+  keepIdle: number // int
+  keepIntvl: number // int
+  keepCnt: number // int
 }
 
 export type LinkContent = LinkContent.Page | LinkContent.Image | LinkContent.Video | LinkContent.Unknown
@@ -3456,6 +3535,17 @@ export namespace MsgContent {
   }
 }
 
+export enum MsgContentTag {
+  Text = "text",
+  Link = "link",
+  Image = "image",
+  Video = "video",
+  Voice = "voice",
+  File = "file",
+  Report = "report",
+  Chat = "chat",
+}
+
 export enum MsgDecryptError {
   RatchetHeader = "ratchetHeader",
   TooManySkipped = "tooManySkipped",
@@ -3581,6 +3671,30 @@ export namespace NameErrorType {
   }
 }
 
+export interface NavigationInfo {
+  afterUnread: number // int
+  afterTotal: number // int
+}
+
+export interface NetworkConfig {
+  socksProxy?: string
+  socksMode: SocksMode
+  hostMode: HostMode
+  requiredHostMode: boolean
+  sessionMode: TransportSessionMode
+  smpProxyMode: SMPProxyMode
+  smpProxyFallback: SMPProxyFallback
+  smpWebPortServers: SMPWebPortServers
+  tcpConnectTimeout: NetworkTimeout
+  tcpTimeout: NetworkTimeout
+  tcpTimeoutPerKb: number // int64
+  rcvConcurrency: number // int
+  tcpKeepAlive?: KeepAliveOpts
+  smpPingInterval: number // int64
+  smpPingCount: number // int
+  logTLSErrors: boolean
+}
+
 export type NetworkError = 
   | NetworkError.ConnectError
   | NetworkError.TLSError
@@ -3628,6 +3742,11 @@ export namespace NetworkError {
     type: "subscribeError"
     subscribeError: string
   }
+}
+
+export interface NetworkTimeout {
+  backgroundTimeout: number // int
+  interactiveTimeout: number // int
 }
 
 export interface NewUser {
@@ -3703,6 +3822,12 @@ export enum PlanResolveMode {
   AllGroups = "allGroups",
   Unknown = "unknown",
   Never = "never",
+}
+
+export namespace PlanResolveMode {
+  export function cmdString(self: PlanResolveMode): string {
+    return self == 'allGroups' ? ' resolve=allGroups' : self == 'never' ? ' resolve=never' : ''
+  }
 }
 
 export interface PrefEnabled {
@@ -3821,6 +3946,14 @@ export interface PublicGroupProfile {
   groupLink: string
   publicGroupId: string
   publicGroupAccess?: PublicGroupAccess
+}
+
+export enum QueueStatus {
+  New = "new",
+  Confirmed = "confirmed",
+  Secured = "secured",
+  Active = "active",
+  Disabled = "disabled",
 }
 
 export type RCErrorType = 
@@ -4211,6 +4344,22 @@ export namespace RcvMsgError {
   }
 }
 
+export interface RcvQueueInfo {
+  rcvServer: string
+  status: QueueStatus
+  rcvSwitchStatus?: RcvSwitchStatus
+  canAbortSwitch: boolean
+  subStatus: SubscriptionStatus
+}
+
+export enum RcvSwitchStatus {
+  Switch_started = "switch_started",
+  Sending_qadd = "sending_qadd",
+  Sending_quse = "sending_quse",
+  Received_message = "received_message",
+  Received_qend = "received_qend",
+}
+
 export interface RelayCapabilities {
   webDomain?: string
 }
@@ -4394,6 +4543,25 @@ export namespace SMPAgentError {
     type: "A_SERVICE"
     serviceError: AgentServiceError
   }
+}
+
+export enum SMPProxyFallback {
+  Allow = "allow",
+  AllowProtected = "allowProtected",
+  Prohibit = "prohibit",
+}
+
+export enum SMPProxyMode {
+  Always = "always",
+  Unknown = "unknown",
+  Unprotected = "unprotected",
+  Never = "never",
+}
+
+export enum SMPWebPortServers {
+  All = "all",
+  Preset = "preset",
+  Off = "off",
 }
 
 export interface SecurityCode {
@@ -4635,6 +4803,24 @@ export namespace SndGroupEvent {
   export interface UserPendingReview extends Interface {
     type: "userPendingReview"
   }
+}
+
+export interface SndQueueInfo {
+  sndServer: string
+  status: QueueStatus
+  sndSwitchStatus?: SndSwitchStatus
+}
+
+export enum SndSwitchStatus {
+  Sending_qkey = "sending_qkey",
+  Sending_qtest = "sending_qtest",
+  Securing_queue = "securing_queue",
+  Sending_qend = "sending_qend",
+}
+
+export enum SocksMode {
+  Always = "always",
+  Onion = "onion",
 }
 
 export type SrvError = SrvError.Host | SrvError.Version | SrvError.Other
@@ -5377,6 +5563,13 @@ export namespace TransportError {
     type: "handshake"
     handshakeErr: HandshakeError
   }
+}
+
+export enum TransportSessionMode {
+  User = "user",
+  Session = "session",
+  Server = "server",
+  Entity = "entity",
 }
 
 export enum UIColorMode {

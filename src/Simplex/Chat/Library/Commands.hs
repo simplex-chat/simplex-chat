@@ -2205,7 +2205,7 @@ processChatCommand cxt nm = \case
                 groupPreferences = maybe defaultBusinessGroupPrefs businessGroupPrefs preferences
                 groupProfile = businessGroupProfile profile groupPreferences
             gVar <- asks random
-            (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar cxt user groupProfile True ccLink welcomeSharedMsgId False GRMember Nothing verifiedDomain
+            (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar cxt user groupProfile True ccLink welcomeSharedMsgId False GRMember Nothing (unStrJSON <$> verifiedDomain)
             hostMember <- maybe (throwCmdError "no host member") pure hostMember_
             void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing Nothing (Just epochStart)
             let cd = CDGroupRcv gInfo Nothing hostMember
@@ -2233,7 +2233,7 @@ processChatCommand cxt nm = \case
   APIPrepareGroup userId ccLink direct verifiedDomain groupSLinkData -> withUserId userId $ \user -> do
     let GroupShortLinkData {groupProfile = GroupProfile {description}} = groupSLinkData
     welcomeSharedMsgId <- forM description $ \_ -> getSharedMsgId
-    (gInfo, hostMember_) <- preparedGroupFromLink user ccLink direct groupSLinkData welcomeSharedMsgId verifiedDomain
+    (gInfo, hostMember_) <- preparedGroupFromLink user ccLink direct groupSLinkData welcomeSharedMsgId (unStrJSON <$> verifiedDomain)
     void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing Nothing (Just epochStart)
     let cd = maybe (CDChannelRcv gInfo Nothing) (CDGroupRcv gInfo Nothing) hostMember_
         cInfo = GroupChat gInfo Nothing
@@ -4701,7 +4701,7 @@ processChatCommand cxt nm = \case
               throwError e
           where
             prepareChannelGroup =
-              processChatCommand cxt nm (APIPrepareGroup userId ccl False vName gld) >>= \case
+              processChatCommand cxt nm (APIPrepareGroup userId ccl False (StrJSON <$> vName) gld) >>= \case
                 CRNewPreparedChat _ (AChat SCTGroup (Chat (GroupChat gInfo _) _ _)) -> pure gInfo
                 _ -> throwChatError $ CEException "joinChannelViaRelays: unexpected response from APIPrepareGroup"
             deletePreparedChannel groupId = do
@@ -4710,7 +4710,7 @@ processChatCommand cxt nm = \case
               withFastStore' $ \db -> deleteGroup db user gInfo
         connectContactViaName :: ContactShortLinkData -> CM ChatResponse
         connectContactViaName sld =
-          processChatCommand cxt nm (APIPrepareContact userId ccLink vName sld) >>= \case
+          processChatCommand cxt nm (APIPrepareContact userId ccLink (StrJSON <$> vName) sld) >>= \case
             CRNewPreparedChat _ (AChat SCTDirect (Chat (DirectChat Contact {contactId}) _ _)) ->
               processChatCommand cxt nm (APIConnectPreparedContact contactId incognito Nothing)
             _ -> throwChatError $ CEException "connectContactViaName: unexpected response from APIPrepareContact"
@@ -6557,8 +6557,8 @@ chatCommandP =
       "/_contacts " *> (APIListContacts <$> A.decimal),
       "/contacts" $> ListContacts,
       "/_connect plan " *> (APIConnectPlan <$> A.decimal <* A.space <*> ((Just <$> strP) <|> A.takeTill (== ' ') $> Nothing) <*> ((" resolve=" *> planResolveModeP) <|> pure PRMUnknown) <*> optional (" sig=" *> jsonP)),
-      "/_prepare contact " *> (APIPrepareContact <$> A.decimal <* A.space <*> connLinkP <*> optional (" domain=" *> strP) <* A.space <*> jsonP),
-      "/_prepare group " *> (APIPrepareGroup <$> A.decimal <* A.space <*> connLinkP' <*> (" direct=" *> onOffP <|> pure True) <*> optional (" domain=" *> strP) <* A.space <*> jsonP),
+      "/_prepare contact " *> (APIPrepareContact <$> A.decimal <* A.space <*> connLinkP <*> optional (" domain=" *> (StrJSON <$> strP)) <* A.space <*> jsonP),
+      "/_prepare group " *> (APIPrepareGroup <$> A.decimal <* A.space <*> connLinkP' <*> (" direct=" *> onOffP <|> pure True) <*> optional (" domain=" *> (StrJSON <$> strP)) <* A.space <*> jsonP),
       "/_set contact user @" *> (APIChangePreparedContactUser <$> A.decimal <* A.space <*> A.decimal),
       "/_set group user #" *> (APIChangePreparedGroupUser <$> A.decimal <* A.space <*> A.decimal),
       "/_connect contact @" *> (APIConnectPreparedContact <$> A.decimal <*> incognitoOnOffP <*> optional (A.space *> msgContentP)),

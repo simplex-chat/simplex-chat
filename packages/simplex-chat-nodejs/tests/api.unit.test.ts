@@ -11,6 +11,14 @@ async function chatWithResponse(response: object): Promise<api.ChatApi> {
   return api.ChatApi.init({type: "sqlite", filePrefix: "unused"})
 }
 
+function sentCommands(): string[] {
+  return jest.mocked(core.chatSendCmd).mock.calls.map(([, cmd]) => cmd)
+}
+
+function nextResponse(response: object): void {
+  jest.mocked(core.chatSendCmd).mockResolvedValue(response as ChatResponse)
+}
+
 afterEach(() => jest.restoreAllMocks())
 
 describe("documented success responses", () => {
@@ -31,7 +39,7 @@ describe("documented success responses", () => {
     const chat = await chatWithResponse({type: "chatItemUpdated", user, chatItem: {chatItem}})
     await expect(chat.apiUpdateChatItem(T.ChatType.Group, 1, 2, {type: "text", text: "partial"}, true)).resolves.toEqual(chatItem)
     await expect(chat.apiUpdateChatItem(T.ChatType.Group, 1, 2, {type: "text", text: "final"})).resolves.toEqual(chatItem)
-    expect(jest.mocked(core.chatSendCmd).mock.calls.map(([, cmd]) => cmd)).toEqual([
+    expect(sentCommands()).toEqual([
       '/_update item #1 2 live=on json {"msgContent":{"type":"text","text":"partial"},"mentions":{}}',
       '/_update item #1 2 json {"msgContent":{"type":"text","text":"final"},"mentions":{}}',
     ])
@@ -46,12 +54,102 @@ describe("documented success responses", () => {
     const chat = await chatWithResponse({type: "userProfileNoChange", user})
     await expect(chat.apiSetUserDomain(1, "calc.simplex")).resolves.toEqual(user)
     await expect(chat.apiSetUserDomain(1)).resolves.toEqual(user)
-    expect(jest.mocked(core.chatSendCmd).mock.calls.map(([, cmd]) => cmd)).toEqual(["/_set domain 1 calc.simplex", "/_set domain 1"])
+    expect(sentCommands()).toEqual(["/_set domain 1 calc.simplex", "/_set domain 1"])
   })
 
   it("apiReceiveFile reports a file cancelled by sender", async () => {
     const chat = await chatWithResponse({type: "rcvFileAcceptedSndCancelled", user, rcvFileTransfer: {}})
     await expect(chat.apiReceiveFile(3)).rejects.toThrow("file cancelled by sender")
+  })
+
+  it("apiReceiveFile receives to the file path", async () => {
+    const chatItem = {chatItem: {meta: {itemId: 2}}}
+    const chat = await chatWithResponse({type: "rcvFileAccepted", user, chatItem})
+    await expect(chat.apiReceiveFile(3, "./f.txt")).resolves.toEqual(chatItem)
+    expect(sentCommands()).toEqual(["/freceive 3 approved_relays=on ./f.txt"])
+  })
+
+  it("apiGetChat accepts a count or a pagination", async () => {
+    const aChat = {chatInfo: {type: "direct"}, chatItems: [], chatStats: {}}
+    const chat = await chatWithResponse({type: "apiChat", user, chat: aChat})
+    await expect(chat.apiGetChat(T.ChatType.Group, 1, 0)).resolves.toEqual(aChat)
+    await expect(chat.apiGetChat(T.ChatType.Direct, 2, {type: "around", chatItemId: 5, count: 0})).resolves.toEqual(aChat)
+    expect(sentCommands()).toEqual(["/_get chat #1 count=0", "/_get chat @2 around=5 count=0"])
+  })
+
+  it("apiChatItemsRead returns the chat info", async () => {
+    const chatInfo = {type: "direct", contact: {contactId: 2}}
+    const chat = await chatWithResponse({type: "itemsReadForChat", user, chatInfo})
+    await expect(chat.apiChatItemsRead(T.ChatType.Direct, 2, [3, 4])).resolves.toEqual(chatInfo)
+  })
+
+  it("apiContactInfo returns the response", async () => {
+    const info = {type: "contactInfo", user, contact: {contactId: 2}, customUserProfile: {displayName: "random", fullName: ""}}
+    const chat = await chatWithResponse(info)
+    await expect(chat.apiContactInfo(2)).resolves.toEqual(info)
+  })
+
+  it("apiPrepareContact and apiPrepareGroup return the prepared chat", async () => {
+    const aChat = {chatInfo: {type: "direct"}, chatItems: [], chatStats: {}}
+    const chat = await chatWithResponse({type: "newPreparedChat", user, chat: aChat})
+    const connLink = {connFullLink: "F", connShortLink: "S"}
+    await expect(chat.apiPrepareContact(1, connLink, {profile: {displayName: "bob", fullName: ""}, business: false}, "biz.simplex")).resolves.toEqual(aChat)
+    await expect(chat.apiPrepareGroup(1, connLink, false, {groupProfile: {displayName: "team", fullName: ""}})).resolves.toEqual(aChat)
+  })
+
+  it("apiConnectPreparedContact returns the started connection or the existing contact", async () => {
+    const started = {type: "startedConnectionToContact", user, contact: {contactId: 2}}
+    const chat = await chatWithResponse(started)
+    await expect(chat.apiConnectPreparedContact(2, false)).resolves.toEqual(started)
+    const existing = {type: "contactAlreadyExists", user, contact: {contactId: 2}}
+    nextResponse(existing)
+    await expect(chat.apiConnectPreparedContact(2, true, {type: "text", text: "hi"})).resolves.toEqual(existing)
+  })
+
+  it("apiConnectPreparedGroup and apiConnectContactViaAddress return the response", async () => {
+    const started = {type: "startedConnectionToGroup", user, groupInfo: {groupId: 3}, relayResults: []}
+    const chat = await chatWithResponse(started)
+    await expect(chat.apiConnectPreparedGroup(3, false)).resolves.toEqual(started)
+    const sent = {type: "sentInvitationToContact", user, contact: {contactId: 2}}
+    nextResponse(sent)
+    await expect(chat.apiConnectContactViaAddress(1, false, 2)).resolves.toEqual(sent)
+  })
+
+  it("apiConnectPreparedLink returns the response, apiConnect the link type", async () => {
+    const connLink = {connFullLink: "L"}
+    const confirmation = {type: "sentConfirmation", user, connection: {pccConnId: 1}}
+    const chat = await chatWithResponse(confirmation)
+    await expect(chat.apiConnectPreparedLink(1, false, connLink)).resolves.toEqual(confirmation)
+    await expect(chat.apiConnect(1, false, connLink)).resolves.toBe(api.ConnReqType.Invitation)
+    const existing = {type: "contactAlreadyExists", user, contact: {contactId: 2}}
+    nextResponse(existing)
+    await expect(chat.apiConnectPreparedLink(1, false, connLink)).resolves.toEqual(existing)
+    await expect(chat.apiConnect(1, false, connLink)).rejects.toThrow("contact already exists")
+  })
+
+  it("apiConnectPlan returns the SimpleX names", async () => {
+    const connectionPlan = {type: "contactAddress", contactAddressPlan: {type: "ok"}}
+    const connLink = {connFullLink: "L"}
+    const planSimplexName = {nameType: "contact", nameDomain: {nameTLD: "simplex", domain: "biz", subDomain: []}}
+    const chat = await chatWithResponse({type: "connectionPlan", user, connLink, planSimplexName, connectionPlan})
+    await expect(chat.apiConnectPlan(1, "@biz.simplex")).resolves.toEqual([connectionPlan, connLink, planSimplexName, undefined])
+  })
+
+  it("apiGetNetworkConfig returns the config, apiSetNetworkConfig accepts cmdOk", async () => {
+    const networkConfig = {socksMode: T.SocksMode.Always, logTLSErrors: false} as T.NetworkConfig
+    const chat = await chatWithResponse({type: "networkConfig", networkConfig})
+    await expect(chat.apiGetNetworkConfig()).resolves.toEqual(networkConfig)
+    nextResponse({type: "cmdOk"})
+    await expect(chat.apiSetNetworkConfig(networkConfig)).resolves.toBeUndefined()
+  })
+
+  it("apiCreateMemberContact returns the contact, apiSendMemberContactInvitation sends a text message as JSON", async () => {
+    const contact = {contactId: 2}
+    const chat = await chatWithResponse({type: "newMemberContact", user, contact, groupInfo: {}, member: {}})
+    await expect(chat.apiCreateMemberContact(1, 2)).resolves.toEqual(contact)
+    nextResponse({type: "newMemberContactSentInv", user, contact, groupInfo: {}, member: {}})
+    await expect(chat.apiSendMemberContactInvitation(2, "hi")).resolves.toEqual(contact)
+    expect(sentCommands()).toEqual(["/_create member contact #1 2", '/_invite member contact @2 json {"type":"text","text":"hi"}'])
   })
 })
 
