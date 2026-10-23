@@ -5470,18 +5470,17 @@ resumeHoldEnded :: UTCTime -> UTCTime -> Bool
 resumeHoldEnded now purchasedAt = resumeHoldLimit `addUTCTime` purchasedAt <= now
 
 -- | How long a resume the service answers without crediting keeps holding the profile: an Apple charge until
--- resumeHoldLimit after its purchase date, a Play token, which carries no date, for heldChargeAttempts attempts.
+-- resumeHoldLimit after its purchase date, a Play token, which carries no date, for heldChargeAttempts attempts per hand-over.
 data ResumeHold = RHPurchasedAt UTCTime | RHAttempts
 
--- | Play lists a subscription only while it is in a paid period, so its token may always resume it; a one-time
--- product's token funds no subscription purchase, which only reholdStoreReceipt holds.
+-- | Any Play token may resume, as reholdStoreReceipt and the worker's resume take only a subscription purchase.
 resumeHold :: UTCTime -> ServicePayment -> Maybe ResumeHold
 resumeHold now = \case
   SPGoogle {} -> Just RHAttempts
   payment -> RHPurchasedAt <$> resumableCharge now payment
 
--- | The attempts, failed ones included, that a Play resume or an App Store tier change is held for: whatever the device
--- sends, the service asks its store about a subscription at most once an hour, so a charge it never grants stops in about a day.
+-- | The attempts, thrown and failed ones included, that one hand-over of a Play resume or an App Store tier change is held
+-- for; then the record is set aside, and the next hand-over holds it again. The service still asks its store at most hourly.
 heldChargeAttempts :: Int64
 heldChargeAttempts = 24
 
@@ -5803,10 +5802,10 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
       answer <- tryAllErrors $ requireBadgeService >>= \sendTarget -> sendBadgeIssue sendTarget userId p BSCIssueBadge (recordBadgeIssueFailure p) now
       answeredAt <- badgeNow
       -- a charge the service does not grant, as a revoked one, stops holding the profile once its hold ends
-      let holdEnded = case hold of
-            RHPurchasedAt purchasedAt -> pure $ resumeHoldEnded answeredAt purchasedAt
-            RHAttempts -> heldAttemptsEnded
-          notCredited failure retryAfter = holdEnded >>= \ended -> if ended then refuse receiptInvalid else failed ri delay failure retryAfter
+      let notCredited failure retryAfter = case hold of
+            RHPurchasedAt purchasedAt | resumeHoldEnded answeredAt purchasedAt -> refuse receiptInvalid
+            RHAttempts -> failedHeld ri delay failure retryAfter
+            _ -> failed ri delay failure retryAfter
       serviceAnswered ri delay refuse notCredited answer $ \(balance, stored) ->
         withStore' (`getLatestIssuedCredential` badgePurchaseId) >>= \case
           Just cred@(BadgeCredential _ _ _ info)
@@ -5837,10 +5836,8 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
       answeredAt <- badgeNow
       recorded_ <- readTVarIO failure_
       let refusedInSilence failure = SRODeferred <$ withStore' (\db -> refuseStoreReceipt db receiptId failure)
-          -- a raise the service never grants, as one bought with an offer, is settled as refused once its attempts run out
-          notGranted failure retryAfter = heldAttemptsEnded >>= \ended -> if ended then refusedInSilence failure else failed ri delay failure retryAfter
-      serviceAnswered ri delay refusedInSilence notGranted answer $ \case
-        _ | Just failure <- recorded_ -> notGranted failure Nothing
+      serviceAnswered ri delay refusedInSilence (failedHeld ri delay) answer $ \case
+        _ | Just failure <- recorded_ -> failedHeld ri delay failure Nothing
         (_, stored) ->
           withStore' (`getLatestIssuedCredential` badgePurchaseId) >>= \case
             Just cred@(BadgeCredential _ _ _ info@BadgeInfo {badgeType = issuedType})
@@ -5850,9 +5847,14 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
                     setUserBadge db user (Just $ OwnBadge cred (mkBadgeStatus answeredAt (Just True) info))
                   lift $ startBadgeWork user'
                   pure $ SROCredited (Just user')
-            _ -> notGranted BIFServiceError {code = BSEPaymentPending, retryable = True} (Just 3600)
+            _ -> failedHeld ri delay BIFServiceError {code = BSEPaymentPending, retryable = True} (Just 3600)
+    -- out of attempts, the record is set aside without a refusal, so the next hand-over holds it again;
     -- this attempt's failure is not recorded yet, so it is counted here
-    heldAttemptsEnded = (>= heldChargeAttempts) . (+ 1) <$> withStore' (`getStoreReceiptFailures` receiptId)
+    failedHeld ri delay failure retryAfter = do
+      attempts <- withStore' (`getStoreReceiptFailures` receiptId)
+      if attempts + 1 >= heldChargeAttempts
+        then SRODeferred <$ withStore' (`settleStoreReceipt` receiptId)
+        else failed ri delay failure retryAfter
     receiptInvalid = BIFServiceError {code = BSEReceiptInvalid, retryable = False}
     refuse failure = SRORefused failure <$ withStore' (\db -> refuseStoreReceipt db receiptId failure)
     serviceFailure code retryAfter = BIFServiceError {code = boundedServiceErrorCode code, retryable = isJust retryAfter}

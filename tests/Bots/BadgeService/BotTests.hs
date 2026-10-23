@@ -282,6 +282,7 @@ badgeServiceTests = do
     it "should resume a retired Apple subscription on the same purchase when its store charges it again" testAppleResubscribeResumes
     it "should resume an Apple subscription retired within its coverage by a refund, once its store charges it again" testAppleResubscribeResumesWithinCoverage
     it "should resume a Play subscription retired past the recovery window when its token is handed over while Play charges it" testPlaySubscriptionResumes
+    it "should set aside without a refusal a Play resume after its held attempts, and hold it again at its next hand-over" testPlayResumeAttemptsEnd
     it "should not hold a Play subscription moved to another device as a resume of the purchase it left" testMovedOutPlayNotResumed
     it "should derive no alert for an Apple purchase Restore moved to another device, and not hold a later charge as a resume of it" testMovedOutAppleNoAlertNoResume
     it "should hold an Apple charge of another tier while its badge is shown, grant it through the worker and show it at once, and send nothing for one of the same tier" testAppleTierChangeHandOver
@@ -289,7 +290,7 @@ badgeServiceTests = do
     it "should keep an Apple tier change held while the store reports the old tier, without failing the renewal, and grant it once the store reports the new one" testAppleTierChangeStoreLags
     it "should settle an Apple tier change with no change and no request once its transaction has expired" testAppleTierChangeExpiredSettles
     it "should hold and grant an Apple tier change handed over two days after it was bought" testAppleTierChangeHandedOverLate
-    it "should settle an Apple tier change the service never grants as refused after its held attempts, asking no more" testAppleTierChangeAttemptsEnd
+    it "should set aside an Apple tier change after its held attempts, asking no more, and hold it again at its next hand-over" testAppleTierChangeAttemptsEnd
     it "should show the purchase a tier change credits, though a retire cleared it while the change was with the service" testAppleTierChangeKeepsPurchaseShown
     it "should refuse in silence an Apple tier change the store does not vouch for, keeping the badge shown, and answer it again from the record" testAppleTierChangeRefused
     it "should hold and credit an Apple tier change while another receipt of the owner is held" testAppleTierChangeBesideHeldReceipt
@@ -4389,17 +4390,7 @@ testPlaySubscriptionResumes ps =
   -- retired once the recovery window passed while Play retried the payment, then charged again on the same token
   withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsStore = store} ->
     withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
-      (_, rows) <- clientSubscribedMonthly env alice
-      storeReports store $ subscriptionCheck SSBillingRetry Nothing
-      t0 <- firstUnrenewedAnswer alice bsClock rows []
-      -- an answer within the window keeps the run going, so the one past it retires the badge
-      let beforeEnd = addUTCTime (subscriptionRecoveryWindow - 3600) t0
-      activateAt alice bsClock beforeEnd
-      fst <$> answeredRun (chatController alice) beforeEnd `shouldReturn` t0
-      [Just wake] <- nextWakes (chatController alice)
-      setClockAt bsClock $ max wake $ addUTCTime (subscriptionRecoveryWindow + 3600) t0
-      activateAnswered alice ["badge alert: subscription_ended "]
-      waitShownBadge (chatController alice) Nothing
+      playSubscriptionRetired env alice
       -- past the hour in which the service answers from the check that retired it
       resumedAt <- addUTCTime 7200 <$> serviceNow env
       setClockAt bsClock resumedAt
@@ -4410,6 +4401,47 @@ testPlaySubscriptionResumes ps =
       heldStoreReceipts (chatController alice) `shouldReturn` 0
       storeReceiptCreditErrors (chatController alice) `shouldReturn` []
       ledgerTags (chatController alice) `shouldReturn` [Just "charge", Just "badge", Just "charge", Just "badge"]
+
+-- | A monthly Play subscription the client bought, retired once the recovery window passed while Play retried the payment.
+playSubscriptionRetired :: HasCallStack => BadgeServiceEnv -> TestCC -> IO ()
+playSubscriptionRetired env@BadgeServiceEnv {bsClock, bsStore = store} alice = do
+  (_, rows) <- clientSubscribedMonthly env alice
+  storeReports store $ subscriptionCheck SSBillingRetry Nothing
+  t0 <- firstUnrenewedAnswer alice bsClock rows []
+  -- an answer within the window keeps the run going, so the one past it retires the badge
+  let beforeEnd = addUTCTime (subscriptionRecoveryWindow - 3600) t0
+  activateAt alice bsClock beforeEnd
+  fst <$> answeredRun (chatController alice) beforeEnd `shouldReturn` t0
+  [Just wake] <- nextWakes (chatController alice)
+  setClockAt bsClock $ max wake $ addUTCTime (subscriptionRecoveryWindow + 3600) t0
+  activateAnswered alice ["badge alert: subscription_ended "]
+  waitShownBadge (chatController alice) Nothing
+
+testPlayResumeAttemptsEnd :: HasCallStack => TestParams -> IO ()
+testPlayResumeAttemptsEnd ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      playSubscriptionRetired env alice
+      let a = chatController alice
+          handOver = alice `send` ("/_badge purchase 1 " <> paymentArg subscriptionPlay)
+      -- Play still retries the payment, so each attempt, an hour apart, credits nothing
+      start <- addUTCTime 7200 <$> serviceNow env
+      setClockAt bsClock start
+      handOver
+      forM_ [1 .. heldChargeAttempts - 1] $ \i -> do
+        storeReceiptRetries a `shouldEventuallyReturn` [i]
+        setClockAt bsClock $ addUTCTime (fromIntegral i * 3700) start
+        alice `send` "/_app activate"
+      -- set aside with no refusal recorded, and the next hand-over holds it again and credits it once Play charges
+      heldStoreReceipts a `shouldEventuallyReturn` 0
+      storeReceiptCreditErrors a `shouldReturn` []
+      resumedAt <- addUTCTime 3700 <$> serviceNow env
+      setClockAt bsClock resumedAt
+      storeReports store $ subscriptionCheck SSRenewing $ Just (storeCharge "subscr-badge-supporter-month-02" (addUTCTime (-3600) resumedAt) 1) {chargeRef = "GPA.resumed"}
+      handOver
+      waitShownBadge a (Just 1)
+      heldStoreReceipts a `shouldEventuallyReturn` 0
+      dropOutput alice
 
 testMovedOutPlayNotResumed :: HasCallStack => TestParams -> IO ()
 testMovedOutPlayNotResumed ps =
@@ -4690,15 +4722,19 @@ testAppleTierChangeAttemptsEnd ps =
         storeReceiptRetries a `shouldEventuallyReturn` [i]
         attemptAt i
         answeredPending
+      -- set aside with no refusal recorded, and asked about no more
       heldStoreReceipts a `shouldEventuallyReturn` 0
-      storeReceiptCreditErrors a `shouldReturn` ["service_error retry payment_pending"]
+      storeReceiptCreditErrors a `shouldReturn` []
       checks <- subscriptionChecks store
       attemptAt heldChargeAttempts
       threadDelay 2000000
       subscriptionChecks store `shouldReturn` checks
+      -- the next hand-over holds it again, and it is granted once the store reports Legend
+      appleReportsLegend store
       handOver
-      alice <## "badge already redeemed"
-      purchaseBadgeTypes a "badge_purchases" `shouldReturn` ["supporter"]
+      expectLinesWithin 30 alice ["1: legend"] ["1: supporter", "store purchase open", "subscribed "]
+      heldStoreReceipts a `shouldEventuallyReturn` 0
+      purchaseBadgeTypes a "badge_purchases" `shouldReturn` ["legend"]
 
 storeReceiptRetries :: ChatController -> IO [Int64]
 storeReceiptRetries ChatController {chatStore} =
