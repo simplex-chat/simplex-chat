@@ -69,6 +69,6 @@ source-repository-package
 -- backported fork due http-5.0
 source-repository-package
     type: git
-    location: https://github.com/simplex-chat/wai.git
-    tag: 2f6e5aa5f05ba9140ac99e195ee647b4f7d926b0
+    location: https://github.com/evgeny-simplex/wai.git
+    tag: 7aac44658eb0984df2e669aa88069319130f2e52
     subdir: warp

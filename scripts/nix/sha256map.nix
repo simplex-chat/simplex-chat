@@ -8,5 +8,5 @@
   "https://github.com/simplex-chat/android-support.git"."9aa09f148089d6752ce563b14c2df1895718d806" = "0pbf2pf13v2kjzi397nr13f1h3jv0imvsq8rpiyy2qyx5vd50pqn";
   "https://github.com/simplex-chat/zip.git"."2eff156c3aac389e35d38bf10a52733d7061640a" = "052vahd5d4lxnazjrb6l60i261aycn2js7jhzafyb72n15ns4r6p";
   "https://github.com/yesodweb/wai.git"."ec5e017d896a78e787a5acea62b37a4e677dec2e" = "1ckcpmpjfy9jiqrb52q20lj7ln4hmq9v2jk6kpkf3m68c1m9c2bx";
-  "https://github.com/simplex-chat/wai.git"."2f6e5aa5f05ba9140ac99e195ee647b4f7d926b0" = "199g4rjdf1zp1fcw8nqdsyr1h36hmg424qqx03071jk7j00z7ay4";
+  "https://github.com/evgeny-simplex/wai.git"."7aac44658eb0984df2e669aa88069319130f2e52" = "1nh4j3fnxbpkdhz1sfgpfhb7j0371apbmx1kv7aqa2zrdxc8gmzb";
 }
