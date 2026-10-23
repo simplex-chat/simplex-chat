@@ -5526,17 +5526,27 @@ requireBadgeService = asks (badgeServiceAddress . config) >>= maybe (throwRedeem
 refuseWhileBadgeHeld :: User -> CM ()
 refuseWhileBadgeHeld user = whenM (withStore' (`userHasBadge` user)) $ throwRedeemError BREBadgeActive
 
--- | A new badge would leave a held receipt waiting behind it. An Apple subscription always blocks, as Apple keeps
--- charging it; any other only while its last failure, if any, can clear, since one that failed for good waits anyway.
+-- | A new badge would leave a held receipt waiting behind it. An Apple subscription blocks until its charge lapses, as Apple
+-- keeps charging it; any other only while its last failure, if any, can clear, since one that failed for good waits anyway.
 refuseWhileStoreReceiptPending :: User -> CM ()
 refuseWhileStoreReceiptPending user = do
   pending <- withStore' (`getPendingStoreReceipts` user)
-  when (any blocks pending) $ throwRedeemError BREStorePurchaseOpen
+  now <- badgeNow
+  when (any blocks $ filter (not . appleChargeLapsed now . fst) pending) $ throwRedeemError BREStorePurchaseOpen
   where
     blocks (payment, failure_) = appleSubscription payment || maybe True badgeFailureTransient failure_
     appleSubscription payment = case decodeJSON payment of
       Just SPApple {jws} | Just AppleTransactionFacts {autoRenewable} <- appleTransactionFacts jws -> autoRenewable
       _ -> False
+
+-- | A held Apple subscription charge whose paid period ended more than a day ago, as one refunded before it was credited:
+-- it neither blocks a new badge nor shows as open, and its record stays held, as a later charge under its original id continues it.
+appleChargeLapsed :: UTCTime -> Text -> Bool
+appleChargeLapsed now payment = case decodeJSON payment of
+  Just SPApple {jws}
+    | Just AppleTransactionFacts {expiresDate = Just expires, autoRenewable = True} <- appleTransactionFacts jws ->
+        nominalDay `addUTCTime` posixSecondsToUTCTime (fromIntegral expires / 1000) <= now
+  _ -> False
 
 -- | One attempt to turn a stash into a badge. A refusal is answered rather than thrown, with the
 -- service's retryAfter.
@@ -5987,7 +5997,9 @@ emitBadgeAlert user emitted p@UserBadgePurchase {alertSnoozeUntil} shownCred now
 badgeStateResponse :: User -> CM ChatResponse
 badgeStateResponse user = do
   badgeState <- getUserBadgeState user
-  CRBadgeState user badgeState . map finalError <$> withStore' (`getOpenStorePurchases` user)
+  now <- badgeNow
+  open <- withStore' (`getOpenStorePurchases` user)
+  pure $ CRBadgeState user badgeState [finalError p | (payment_, p) <- open, not $ maybe False (appleChargeLapsed now) payment_]
   where
     -- like a renewal's, only a failure that cannot clear on its own is the user's to know about
     finalError p@OpenStorePurchase {creditError} = p {creditError = find (not . badgeFailureTransient) creditError}

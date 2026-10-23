@@ -326,21 +326,21 @@ createBadgeStoreReceipt db g User {userId} invoiceId now = do
     |]
     (userId, invoiceId, purchaseKey, purchasePrivKey, Binary mk, now)
 
--- | No receipt yet, or one held: a credited or refused record is resolved and not listed.
-getOpenStorePurchases :: DB.Connection -> User -> IO [OpenStorePurchase]
+-- | No receipt yet, or one held, with its payment: a credited or refused record is resolved and not listed.
+getOpenStorePurchases :: DB.Connection -> User -> IO [(Maybe Text, OpenStorePurchase)]
 getOpenStorePurchases db User {userId} =
   map toOpenStorePurchase
     <$> DB.query
       db
       [sql|
-        SELECT invoice_id, transaction_ref, credit_error
+        SELECT payment, invoice_id, transaction_ref, credit_error
         FROM badge_store_receipts
         WHERE user_id = ? AND (transaction_ref IS NULL OR payment IS NOT NULL)
         ORDER BY badge_store_receipt_id
       |]
       (Only userId)
   where
-    toOpenStorePurchase (invoiceId, transactionRef, creditError) = OpenStorePurchase {invoiceId, transactionRef, creditError}
+    toOpenStorePurchase (payment_, invoiceId, transactionRef, creditError) = (payment_, OpenStorePurchase {invoiceId, transactionRef, creditError})
 
 -- | Each held receipt's payment and its last attempt's failure, if any.
 getPendingStoreReceipts :: DB.Connection -> User -> IO [(Text, Maybe BadgeIssueFailure)]

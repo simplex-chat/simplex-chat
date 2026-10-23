@@ -177,6 +177,7 @@ badgeServiceTests = do
       it "should credit a purchase to a hidden profile without naming it" testPurchaseDeliveredToHiddenProfile
       it "should record a listed transaction only into a record it already has, and a Restore hand-over as its own" testListedReceiptNotRecorded
       it "should refuse a code or an invoice while a held receipt may be credited or is an Apple subscription, and not otherwise" testRedeemRefusedWhileReceiptHeld
+      it "should stop a held Apple subscription blocking an invoice or a code, or listing open, a day after its charge expired, keeping its record" testLapsedAppleChargeStopsBlocking
       it "should refuse an invoice while a held receipt's first attempt has not answered" testInvoiceRefusedWhileFirstAttemptOpen
     describe "invoice first" $ do
       it "should credit a receipt to the profile that created its invoice however late it arrives, and answer as that profile" testInvoiceOtherProfile
@@ -5411,6 +5412,37 @@ testRedeemRefusedWhileReceiptHeld ps =
       heldStoreReceiptErrors (chatController alice) `shouldEventuallyReturn` ["service_error retry payment_pending", finalError, finalError]
       issueCode cc BTSupporter 1 >>= \code' -> refused ("/_redeem_badge_code 3 " <> codeArg code')
       refused "/_badge invoice 3"
+
+-- | A first Apple purchase refunded while the service could not credit it: Apple charges it no more after its expiry.
+testLapsedAppleChargeStopsBlocking :: HasCallStack => TestParams -> IO ()
+testLapsedAppleChargeStopsBlocking ps =
+  withBadgeServiceVerifier ps (\store -> (fakeVerifier store) {verifyApple = Nothing}) $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      let a = chatController alice
+          openPurchases =
+            sendChatCmdStr a "/_badge state 1" >>= \case
+              Right (CRBadgeState _ _ open) -> pure $ length open
+              _ -> error "expected the badge state"
+      bought <- addUTCTime (-3600) <$> serviceNow env
+      let expires = addMonths 1 bought
+      alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = appleTransactionDated "2000000812345690" bought expires})
+      storePurchaseOpen alice ""
+      heldStoreReceiptErrors a `shouldEventuallyReturn` ["service_error final provider_not_configured"]
+      setClockAt bsClock $ addUTCTime (nominalDay - 60) expires
+      code <- issueCode cc BTSupporter 1
+      forM_ ["/_redeem_badge_code 1 " <> codeArg code, "/_badge invoice 1"] $ \cmd -> do
+        alice ##> cmd
+        alice <## "cannot get badge: store purchase open"
+      openPurchases `shouldReturn` 1
+      setClockAt bsClock $ addUTCTime (nominalDay + 60) expires
+      openPurchases `shouldReturn` 0
+      heldStoreReceipts a `shouldReturn` 1
+      void $ createInvoice alice 1
+      alice ##> ("/_redeem_badge_code 1 " <> codeArg code)
+      alice <## "badge redeemed"
+      alice <## "supporter badge - active"
+      alice <##. "expires "
+      dropOutput alice
 
 testInvoiceRefusedWhileFirstAttemptOpen :: HasCallStack => TestParams -> IO ()
 testInvoiceRefusedWhileFirstAttemptOpen ps = do
