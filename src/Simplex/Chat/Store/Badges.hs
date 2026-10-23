@@ -50,6 +50,7 @@ module Simplex.Chat.Store.Badges
     storeBadgeStatement,
     setBadgePurchaseType,
     getBadgeLedgerLastEntry,
+    getLastChargeCreditAt,
     getBadgeLedger,
     getBadgeLedgerEntryId,
   )
@@ -752,6 +753,20 @@ getBadgeLedgerLastEntry db badgePurchaseId =
                was_paused_since, service_created_at, entry_type, entry_credit_type, entry_debit_type, entry_type_value
         FROM badge_ledger
         WHERE badge_purchase_id = ?
+        ORDER BY entry_id DESC
+        LIMIT 1
+      |]
+      (Only badgePurchaseId)
+
+-- | When the service wrote the purchase's last charge credit, which it dates no earlier than the charge's period start.
+getLastChargeCreditAt :: DB.Connection -> Int64 -> IO (Maybe UTCTime)
+getLastChargeCreditAt db badgePurchaseId =
+  maybeFirstRow fromOnly $
+    DB.query
+      db
+      [sql|
+        SELECT service_created_at FROM badge_ledger
+        WHERE badge_purchase_id = ? AND entry_type = 'credit' AND entry_credit_type = 'charge'
         ORDER BY entry_id DESC
         LIMIT 1
       |]

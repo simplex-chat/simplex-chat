@@ -68,7 +68,7 @@ import qualified Simplex.Chat.Badges.Types as BT
 import Simplex.Chat.Bot.Store (withDB')
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatError (..), ChatErrorType (..), ChatResponse (CRBadgeState, CRCustomChatResponse))
 import Simplex.Chat.Core (sendChatCmdStr)
-import Simplex.Chat.Library.Commands (resumeHoldLimit, subscriptionRecoveryWindow)
+import Simplex.Chat.Library.Commands (heldChargeAttempts, resumeHoldLimit, subscriptionRecoveryWindow)
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Options.DB
 import Simplex.Chat.PaymentService (ServicePayment (..), googlePurchaseRef)
@@ -287,7 +287,9 @@ badgeServiceTests = do
     it "should hold an Apple charge of another tier while its badge is shown, grant it through the worker and show it at once, and send nothing for one of the same tier" testAppleTierChangeHandOver
     it "should tell the apps a granted Apple tier change and show it to a contact at once" testTierChangeReachesContacts
     it "should keep an Apple tier change held while the store reports the old tier, without failing the renewal, and grant it once the store reports the new one" testAppleTierChangeStoreLags
-    it "should settle an Apple tier change with no change and no request once its window has passed" testAppleTierChangeWindowEnds
+    it "should settle an Apple tier change with no change and no request once its transaction has expired" testAppleTierChangeExpiredSettles
+    it "should hold and grant an Apple tier change handed over two days after it was bought" testAppleTierChangeHandedOverLate
+    it "should settle an Apple tier change the service never grants as refused after its held attempts, asking no more" testAppleTierChangeAttemptsEnd
     it "should show the purchase a tier change credits, though a retire cleared it while the change was with the service" testAppleTierChangeKeepsPurchaseShown
     it "should refuse in silence an Apple tier change the store does not vouch for, keeping the badge shown, and answer it again from the record" testAppleTierChangeRefused
     it "should hold and credit an Apple tier change while another receipt of the owner is held" testAppleTierChangeBesideHeldReceipt
@@ -4630,16 +4632,16 @@ testAppleTierChangeStoreLags ps =
       heldStoreReceipts (chatController alice) `shouldEventuallyReturn` 0
       purchaseBadgeTypes (chatController alice) "badge_purchases" `shouldReturn` ["legend"]
 
-testAppleTierChangeWindowEnds :: HasCallStack => TestParams -> IO ()
-testAppleTierChangeWindowEnds ps =
-  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc, bsStore = store@FakeStore {appleLegendSubscriptionJWS}} ->
+testAppleTierChangeExpiredSettles :: HasCallStack => TestParams -> IO ()
+testAppleTierChangeExpiredSettles ps =
+  withBadgeServiceVerifier ps (vouchingFor legendForADay fakeVerifier) $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc, bsStore = store} ->
     withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
       appleSupporterBeforeLegend env alice
-      let handOver = alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = appleLegendSubscriptionJWS})
+      let handOver = alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = legendForADay})
       handOver
       heldStoreReceiptErrors (chatController alice) `shouldEventuallyReturn` ["service_error retry payment_pending"]
       expectLinesWithin 30 alice ["bad chat command: badge service error: payment_pending"] ["1: supporter", "store purchase open", "subscribed "]
-      -- past the window the record settles with no change and no request, and the renewal check is left to grant it
+      -- once the transaction has expired the record settles with no change and no request, and the renewal check is left to grant it
       checks <- subscriptionChecks store
       ledger <- ledgerRows cc "sx_badge_service_badge_ledger"
       appleReportsLegend store
@@ -4653,6 +4655,54 @@ testAppleTierChangeWindowEnds ps =
       handOver
       alice <## "badge already redeemed"
       heldStoreReceipts (chatController alice) `shouldReturn` 0
+  where
+    legendForADay = subscriptionJWS appleSubscriptionOriginalId "2000000812345689" ["purchaseDate" J..= epochMs legendBoughtAt, "expiresDate" J..= epochMs (addUTCTime nominalDay legendBoughtAt), "productId" J..= ("SUBSCR_BADGE_LEGEND_YEAR_01" :: Text)]
+    epochMs t = round (utcTimeToPOSIXSeconds t * 1000) :: Int64
+
+testAppleTierChangeHandedOverLate :: HasCallStack => TestParams -> IO ()
+testAppleTierChangeHandedOverLate ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsStore = store@FakeStore {appleLegendSubscriptionJWS}} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      appleSupporterBeforeLegend env alice
+      appleReportsLegend store
+      setClockAt bsClock $ addUTCTime (2 * nominalDay) legendBoughtAt
+      alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = appleLegendSubscriptionJWS})
+      expectLinesWithin 30 alice ["1: legend"] ["1: supporter", "store purchase open", "subscribed "]
+      heldStoreReceipts (chatController alice) `shouldEventuallyReturn` 0
+      purchaseBadgeTypes (chatController alice) "badge_purchases" `shouldReturn` ["legend"]
+
+testAppleTierChangeAttemptsEnd :: HasCallStack => TestParams -> IO ()
+testAppleTierChangeAttemptsEnd ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsStore = store@FakeStore {appleLegendSubscriptionJWS}} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      appleSupporterBeforeLegend env alice
+      let a = chatController alice
+          handOver = alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = appleLegendSubscriptionJWS})
+          pending = expectLinesWithin 30 alice ["bad chat command: badge service error: payment_pending"] ["1: supporter", "store purchase open", "subscribed "]
+          attemptAt i = do
+            setClockAt bsClock $ addUTCTime (3600 + fromIntegral i * 3700) legendBoughtAt
+            alice ##> "/_app activate"
+            alice <## "ok"
+      -- the store keeps reporting Supporter, so each attempt, an hour apart, is answered payment_pending
+      handOver
+      pending
+      forM_ [1 .. heldChargeAttempts - 1] $ \i -> do
+        storeReceiptRetries a `shouldEventuallyReturn` [i]
+        attemptAt i
+        pending
+      heldStoreReceipts a `shouldEventuallyReturn` 0
+      storeReceiptCreditErrors a `shouldReturn` ["service_error retry payment_pending"]
+      checks <- subscriptionChecks store
+      attemptAt heldChargeAttempts
+      threadDelay 2000000
+      subscriptionChecks store `shouldReturn` checks
+      handOver
+      alice <## "badge already redeemed"
+      purchaseBadgeTypes a "badge_purchases" `shouldReturn` ["supporter"]
+
+storeReceiptRetries :: ChatController -> IO [Int64]
+storeReceiptRetries ChatController {chatStore} =
+  withTransaction chatStore $ \db -> map fromOnly <$> DB.query_ db "SELECT retry_count FROM badge_store_receipts"
 
 testAppleTierChangeKeepsPurchaseShown :: HasCallStack => TestParams -> IO ()
 testAppleTierChangeKeepsPurchaseShown ps = do
