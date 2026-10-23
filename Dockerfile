@@ -26,6 +26,7 @@ WORKDIR /project
 
 # Adjust build
 RUN cp ./scripts/cabal.project.local.linux ./cabal.project.local
+RUN git submodule update --init external/libjpeg-turbo
 RUN LIBJPEG_TURBO_PREFIX=/usr/local scripts/desktop/prepare-libjpeg-turbo.sh
 
 # Compile simplex-chat
