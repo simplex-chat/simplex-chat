@@ -377,6 +377,7 @@ val appPrefs: AppPreferences by lazy { AppPreferences() }
 | `privacyEncryptLocalFiles` | `Boolean` | `true` | Encrypt local files |
 | `privacyAskToApproveRelays` | `Boolean` | `true` | Ask before using relays |
 | `privacyMediaBlurRadius` | `Int` | `0` | Blur radius for media |
+| `privacyCallAudioFallback` | `Boolean` | `true` | Desktop: use the system default audio device while the chosen one is disconnected |
 
 #### Network (lines 140-175)
 

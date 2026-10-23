@@ -1530,7 +1530,6 @@
     <string name="e2ee_info_pq_short">このチャットは耐量子エンドツーエンド暗号化により保護されています。</string>
     <string name="note_folder_local_display_name">プライベートノート</string>
     <string name="call_service_notification_end_call">通話終了</string>
-    <string name="unable_to_open_browser_title">ブラウザ起動エラー</string>
     <string name="migrate_from_another_device">別の端末から移行</string>
     <string name="set_passphrase">パスフレーズを設定</string>
     <string name="snd_group_event_member_blocked">%s をブロック済</string>
@@ -1636,7 +1635,6 @@
     <string name="profile_update_event_set_new_picture">新しいプロフィール画像が設定されました</string>
     <string name="profile_update_event_removed_picture">プロフィール画像が削除されました</string>
     <string name="auth_open_migration_to_another_device">移行画面を開く</string>
-    <string name="unable_to_open_browser_desc">通話には既定のウェブブラウザが必要です。既定のブラウザを設定し、開発者へ情報を共有してください。</string>
     <string name="profile_update_event_updated_profile">プロフィール更新済</string>
     <string name="profile_update_event_member_name_changed">メンバーの %1$sが %2$sに名前変更済</string>
     <string name="migrate_to_device_confirm_network_settings">ネットワーク設定を確認してください</string>
@@ -1862,7 +1860,6 @@
     <string name="cant_send_message_to_member_alert_title">グループメンバーにメッセージを送信できません。</string>
     <string name="v6_0_your_contacts_descr">後でチャットするために連絡先をアーカイブします。</string>
     <string name="v6_0_connection_servers_status_descr">接続とサーバーのステータス</string>
-    <string name="call_desktop_permission_denied_chrome">アドレスフィールドの近くにある情報ボタンをクリックして、マイクの使用を許可してください。</string>
     <string name="connections">接続</string>
     <string name="v6_1_customizable_message_descr">カスタマイズ可能なメッセージの形。</string>
     <string name="network_smp_proxy_fallback_prohibit_description">プライベートルーティングをサポートしていなくても、メッセージを直接送信しないでください。</string>
@@ -2317,8 +2314,6 @@
     <string name="onboarding_configure_routers">ルーターを設定</string>
     <string name="onboarding_configure_notifications">通知を設定</string>
     <string name="onboarding_network_commitments">ネットワークの取り組み</string>
-    <string name="call_desktop_permission_denied_title">通話するにはマイクの使用を許可してください。通話を終了して、もう一度かけ直してください。</string>
-    <string name="call_desktop_permission_denied_safari">Safariの「設定」/「Webサイト」/「マイク」を開き、localhost に対して「許可」を選択してください。</string>
     <string name="open_external_link_title">外部リンクを開きますか？</string>
     <string name="icon_descr_sound_muted">サウンドをミュート中</string>
     <string name="rcv_msg_error_dropped">破棄されました（%1$d回試行）</string>

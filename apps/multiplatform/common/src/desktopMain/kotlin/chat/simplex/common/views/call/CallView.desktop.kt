@@ -1,39 +1,65 @@
 package chat.simplex.common.views.call
 
+import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
-import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.toComposeImageBitmap
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
-import kotlinx.coroutines.delay
+import dev.icerock.moko.resources.StringResource
+import dev.icerock.moko.resources.compose.painterResource
+import dev.icerock.moko.resources.compose.stringResource
+import dev.onvoid.webrtc.media.FourCC
+import dev.onvoid.webrtc.media.audio.AudioDevice
+import dev.onvoid.webrtc.media.video.VideoBufferConverter
+import dev.onvoid.webrtc.media.video.VideoDevice
+import dev.onvoid.webrtc.media.video.VideoFrame
+import dev.onvoid.webrtc.media.video.VideoTrack
+import dev.onvoid.webrtc.media.video.VideoTrackSink
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.*
 import kotlinx.datetime.Clock
-import kotlinx.serialization.encodeToString
-import org.nanohttpd.protocols.http.IHTTPSession
-import org.nanohttpd.protocols.http.response.Response
-import org.nanohttpd.protocols.http.response.Response.newFixedLengthResponse
-import org.nanohttpd.protocols.http.response.Status
-import org.nanohttpd.protocols.websockets.*
-import java.io.IOException
-import java.net.BindException
-import java.security.SecureRandom
-import java.util.Base64
-import java.util.concurrent.atomic.AtomicBoolean
+import kotlinx.serialization.SerializationException
+import org.jetbrains.skia.ColorAlphaType
+import org.jetbrains.skia.ColorType
+import org.jetbrains.skia.Image
+import org.jetbrains.skia.ImageInfo
+import kotlin.math.min
 
-private const val SERVER_HOST = "localhost"
-private const val SERVER_PORT = 50395
-private const val CALL_SERVER_TOKEN_BYTES = 32
-val connections = ArrayList<WebSocket>()
+private val callForeground = Color(0xFFFFFFD8)
+private val controlButtonSize = 56.dp
+private val localVideoWidth = 240.dp
 
 // Spec: spec/services/calls.md#ActiveCallView
 @Composable
 actual fun ActiveCallView() {
   val scope = rememberCoroutineScope()
-  WebRTCController(chatModel.callCommand) { apiMsg ->
-    Log.d(TAG, "received from WebRTCController: ${apiMsg.resp.javaClass.simpleName}")
+  val engine = NativeCallController(chatModel.callCommand) { apiMsg ->
+    Log.d(TAG, "received from NativeCallEngine: ${apiMsg.resp.javaClass.simpleName}")
     val call = chatModel.activeCall.value
     if (call != null) {
       Log.d(TAG, "has active call $call")
@@ -111,24 +137,14 @@ actual fun ActiveCallView() {
               CallMediaSource.ScreenVideo -> chatModel.activeCall.value = call.copy(localMediaSources = sources.copy(screenVideo = cmd.enable))
             }
           }
-          is WCallCommand.Camera -> {
-            chatModel.activeCall.value = call.copy(localCamera = cmd.camera)
-            if (!call.localMediaSources.mic) {
-              chatModel.callCommand.add(WCallCommand.Media(CallMediaSource.Mic, enable = false))
-            }
-          }
           is WCallCommand.End ->
             chatModel.showCallView.value = false
           else -> {}
         }
         is WCallResponse.Error -> {
-          when (apiMsg.command) {
-            is WCallCommand.Capabilities -> chatModel.callCommand.add(WCallCommand.Permission(
-              title = generalGetString(MR.strings.call_desktop_permission_denied_title),
-              chrome = generalGetString(MR.strings.call_desktop_permission_denied_chrome),
-              safari = generalGetString(MR.strings.call_desktop_permission_denied_safari)
-            ))
-            else -> {}
+          if (apiMsg.command is WCallCommand.Capabilities) {
+            AlertManager.shared.showAlertMsg(generalGetString(MR.strings.call_desktop_engine_error), r.message)
+            withBGApi { chatModel.callManager.endCall(call) }
           }
           Log.e(TAG, "ActiveCallView: command error ${r.message}")
         }
@@ -136,7 +152,10 @@ actual fun ActiveCallView() {
     }
   }
 
-  SendStateUpdates()
+  val call = chatModel.activeCall.value
+  if (engine != null && call != null && !chatModel.activeCallViewIsCollapsed.value) {
+    ActiveCallLayout(engine, call)
+  }
   DisposableEffect(Unit) {
     chatModel.activeCallViewIsVisible.value = true
     // After the first call, End command gets added to the list which prevents making another calls
@@ -150,170 +169,294 @@ actual fun ActiveCallView() {
 }
 
 @Composable
-private fun SendStateUpdates() {
-  LaunchedEffect(Unit) {
-    snapshotFlow { chatModel.activeCall.value }
-      .distinctUntilChanged()
-      .filterNotNull()
-      .collect { call ->
-        val state = call.callState.text
-        val connInfo = call.connectionInfo
-        val connInfoText = if (connInfo == null) ""  else " (${connInfo.text})"
-        val description = call.encryptionStatus + connInfoText
-        chatModel.callCommand.add(WCallCommand.Description(state, description))
-      }
-  }
-}
-
-@Composable
-fun WebRTCController(callCommand: SnapshotStateList<WCallCommand>, onResponse: (WVAPIMessage) -> Unit) {
-  val uriHandler = LocalUriHandler.current
-  val token = remember { newCallServerToken() }
-  val endCall = {
-    val call = chatModel.activeCall.value
-    if (call != null) withBGApi { chatModel.callManager.endCall(call) }
-  }
-  val server = remember {
-    startServer(onResponse, token = token).apply {
-      try {
-        uriHandler.openUri("http://${SERVER_HOST}:${listeningPort}/simplex/call/?token=$token")
-      } catch (e: Exception) {
-        Log.e(TAG, "Unable to open browser: ${e.stackTraceToString()}")
-        AlertManager.shared.showAlertMsg(
-          title = generalGetString(MR.strings.unable_to_open_browser_title),
-          text = generalGetString(MR.strings.unable_to_open_browser_desc)
-        )
-        endCall()
-      }
+private fun NativeCallController(callCommand: SnapshotStateList<WCallCommand>, onResponse: (WVAPIMessage) -> Unit): NativeCallEngine? {
+  val engine = remember {
+    try {
+      NativeCallEngine(callAudioSettings(), ::showAudioDeviceNotice, onResponse)
+    } catch (e: Throwable) {
+      Log.e(TAG, "Unable to start call engine: ${e.stackTraceToString()}")
+      AlertManager.shared.showAlertMsg(generalGetString(MR.strings.call_desktop_engine_error), e.message)
+      chatModel.activeCall.value?.let { call -> withBGApi { chatModel.callManager.endCall(call) } }
+      null
     }
   }
-  fun processCommand(cmd: WCallCommand) {
-    val apiCall = WVAPICall(command = cmd)
-    for (connection in connections.toList()) {
-      try {
-        connection.send(json.encodeToString(apiCall))
-        break
-      } catch (e: Exception) {
-        Log.e(TAG, "Failed to send message to browser: ${e.stackTraceToString()}")
-      }
+  if (engine != null) {
+    DisposableEffect(engine) {
+      onDispose { engine.close() }
     }
-  }
-  DisposableEffect(Unit) {
-    onDispose {
-      processCommand(WCallCommand.End)
-      server.stop()
-      connections.clear()
-    }
-  }
-  LaunchedEffect(Unit) {
-    while (isActive) {
-      // waiting for the first command would miss a command equal to the previous one
-      snapshotFlow { callCommand.isNotEmpty() }.first { it }
-      while (connections.isEmpty()) {
-        delay(100)
-      }
-      while (callCommand.isNotEmpty()) {
-        val cmd = callCommand.removeFirstOrNull()
-        Log.d(TAG, "WebRTCController LaunchedEffect executing ${cmd?.javaClass?.simpleName}")
-        if (cmd != null) {
-          processCommand(cmd)
+    LaunchedEffect(engine) {
+      while (isActive) {
+        // waiting for the first command would miss a command equal to the previous one
+        snapshotFlow { callCommand.isNotEmpty() }.first { it }
+        while (callCommand.isNotEmpty()) {
+          val cmd = callCommand.removeFirstOrNull() ?: break
+          Log.d(TAG, "NativeCallController executing ${cmd.javaClass.simpleName}")
+          engine.process(cmd)
         }
       }
     }
   }
+  return engine
 }
 
-fun startServer(
-  onResponse: (WVAPIMessage) -> Unit,
-  port: Int = SERVER_PORT,
-  token: String = newCallServerToken(),
-): NanoWSD {
-  val server = object: NanoWSD(SERVER_HOST, port) {
-    override fun openWebSocket(session: IHTTPSession): WebSocket = MyWebSocket(onResponse, session)
-
-    fun resourcesToResponse(path: String): Response {
-      val uri = Class.forName("chat.simplex.common.AppKt").getResource("/assets/www$path") ?: return resourceNotFound
-      val response = newFixedLengthResponse(
-        Status.OK, getMimeTypeForFile(uri.file),
-        uri.openStream().readBytes()
-      )
-      response.setKeepAlive(true)
-      response.setUseGzip(true)
-      return response
+@Composable
+private fun ActiveCallLayout(engine: NativeCallEngine, call: Call) {
+  val remoteCamera by engine.remoteCamera.collectAsState()
+  val remoteScreen by engine.remoteScreen.collectAsState()
+  val localCamera by engine.localCamera.collectAsState()
+  val peer = call.peerMediaSources
+  val mainVideo = if (peer.screenVideo) remoteScreen else if (peer.camera) remoteCamera else null
+  Box(
+    Modifier
+      .fillMaxSize()
+      .background(Color.Black)
+      // consumes clicks so they don't reach the chat UI below
+      .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {})
+  ) {
+    if (mainVideo != null) {
+      CallVideoView(engine, mainVideo, Modifier.fillMaxSize())
+    } else {
+      Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
+        ProfileImage(size = 192.dp, image = call.contact.profile.image)
+        CallInfoView(call, showName = true)
+      }
     }
-
-    val resourceNotFound = newFixedLengthResponse(Status.NOT_FOUND, "text/plain", "This page couldn't be found")
-
-    val webSocketAccepted = AtomicBoolean(false)
-
-    override fun handle(session: IHTTPSession): Response {
-      return when {
-        session.headers["upgrade"] == "websocket" ->
-          if (
-            session.headers["origin"] == "http://${SERVER_HOST}:${listeningPort}"
-            && hasValidCallServerToken(session.parameters, token)
-            && webSocketAccepted.compareAndSet(false, true)
-          ) {
-            super.handle(session)
-          } else {
-            unauthorizedResponse()
+    Column(Modifier.align(Alignment.TopEnd).padding(DEFAULT_PADDING), horizontalAlignment = Alignment.End) {
+      val camera = localCamera
+      if (camera != null && call.localMediaSources.camera) {
+        CallVideoView(engine, camera, Modifier.width(localVideoWidth).clip(RoundedCornerShape(8.dp)), sizeToFrame = true)
+      }
+      val remoteCameraBesideScreen = remoteCamera
+      if (peer.screenVideo && peer.camera && remoteCameraBesideScreen != null) {
+        Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+        CallVideoView(engine, remoteCameraBesideScreen, Modifier.width(localVideoWidth).clip(RoundedCornerShape(8.dp)), sizeToFrame = true)
+      }
+    }
+    Column {
+      CallAppBar(
+        title = {
+          if (mainVideo != null) {
+            Text(call.contact.chatViewName, color = callForeground, style = MaterialTheme.typography.h2, overflow = TextOverflow.Ellipsis, maxLines = 1)
           }
-        session.uri.contains("/simplex/call/") ->
-          if (hasValidCallServerToken(session.parameters, token)) {
-            resourcesToResponse("/desktop/call.html")
-          } else {
-            unauthorizedResponse()
-          }
-        else -> resourcesToResponse(uriCreateOrNull(session.uri)?.path ?: return newFixedLengthResponse("Error parsing URL"))
+        },
+        onBack = { chatModel.activeCallViewIsCollapsed.value = true }
+      )
+      if (mainVideo != null) {
+        Box(Modifier.padding(horizontal = DEFAULT_PADDING)) { CallInfoView(call, showName = false) }
+      }
+    }
+    CallControls(engine, call, Modifier.align(Alignment.BottomCenter).padding(bottom = DEFAULT_PADDING * 3))
+  }
+}
+
+@Composable
+private fun CallInfoView(call: Call, showName: Boolean) {
+  Column(horizontalAlignment = if (showName) Alignment.CenterHorizontally else Alignment.Start) {
+    if (showName) Text(call.contact.chatViewName, color = callForeground, style = MaterialTheme.typography.h2)
+    Text(call.callState.text, color = callForeground, style = MaterialTheme.typography.body2)
+    val connInfo = call.connectionInfo
+    val connInfoText = if (connInfo == null) "" else " (${connInfo.text})"
+    Text(call.encryptionStatus + connInfoText, color = callForeground, style = MaterialTheme.typography.body2)
+  }
+}
+
+@Composable
+private fun CallControls(engine: NativeCallEngine, call: Call, modifier: Modifier) {
+  val remoteAudioEnabled = remember { mutableStateOf(true) }
+  // A video call starts with the camera marked on even when no camera could be opened
+  val cameraOn = call.localMediaSources.camera && engine.localCamera.collectAsState().value != null
+  Row(modifier, horizontalArrangement = Arrangement.spacedBy(DEFAULT_PADDING), verticalAlignment = Alignment.CenterVertically) {
+    val sources = call.localMediaSources
+    ControlButton(
+      painterResource(if (sources.mic) MR.images.ic_mic else MR.images.ic_mic_off),
+      if (sources.mic) MR.strings.icon_descr_audio_off else MR.strings.icon_descr_audio_on
+    ) { chatModel.callCommand.add(WCallCommand.Media(CallMediaSource.Mic, enable = !sources.mic)) }
+    ControlButton(
+      painterResource(if (remoteAudioEnabled.value) MR.images.ic_volume_up else MR.images.ic_volume_off),
+      if (remoteAudioEnabled.value) MR.strings.icon_descr_speaker_off else MR.strings.icon_descr_speaker_on
+    ) {
+      remoteAudioEnabled.value = !remoteAudioEnabled.value
+      engine.setRemoteAudioEnabled(remoteAudioEnabled.value)
+    }
+    ControlButton(
+      painterResource(if (cameraOn) MR.images.ic_videocam_filled else MR.images.ic_videocam_off),
+      if (cameraOn) MR.strings.icon_descr_video_off else MR.strings.icon_descr_video_on
+    ) { chatModel.callCommand.add(WCallCommand.Media(CallMediaSource.Camera, enable = !cameraOn)) }
+    ScreenShareButton(engine, sources.screenVideo)
+    DevicesButton(engine)
+    ControlButton(painterResource(MR.images.ic_call_end_filled), MR.strings.icon_descr_hang_up, background = Color.Red) {
+      withBGApi { chatModel.callManager.endCall(call) }
+    }
+  }
+}
+
+@Composable
+private fun ScreenShareButton(engine: NativeCallEngine, sharing: Boolean) {
+  val showMenu = remember { mutableStateOf(false) }
+  val sources = remember { mutableStateOf(emptyList<ScreenShareSource>()) }
+  Box {
+    ControlButton(
+      painterResource(if (sharing) MR.images.ic_stop_filled else MR.images.ic_desktop),
+      if (sharing) MR.strings.icon_descr_screen_share_off else MR.strings.icon_descr_screen_share_on
+    ) {
+      if (sharing) {
+        chatModel.callCommand.add(WCallCommand.Media(CallMediaSource.ScreenVideo, enable = false))
+      } else {
+        sources.value = NativeCallEngine.screenShareSources()
+        showMenu.value = true
+      }
+    }
+    DefaultDropdownMenu(showMenu) {
+      var screenNumber = 0
+      sources.value.forEach { source ->
+        val title = if (!source.isWindow) {
+          screenNumber++
+          source.title.ifEmpty { String.format(generalGetString(MR.strings.call_screen_share_screen), screenNumber) }
+        } else {
+          source.title
+        }
+        ItemAction(title, painterResource(if (source.isWindow) MR.images.ic_more_horiz else MR.images.ic_desktop), onClick = {
+          showMenu.value = false
+          engine.screenShareSource = source
+          chatModel.callCommand.add(WCallCommand.Media(CallMediaSource.ScreenVideo, enable = true))
+        })
       }
     }
   }
-  try {
-    server.start(60_000_000)
-  } catch (e: BindException) {
-    if (port == 0) throw e
-    Log.w(TAG, "Call server port $port is busy, using a random port: ${e.message}")
-    server.stop()
-    return startServer(onResponse, port = 0, token = token)
-  }
-  return server
 }
 
-internal fun newCallServerToken(): String {
-  val bytes = ByteArray(CALL_SERVER_TOKEN_BYTES)
-  SecureRandom().nextBytes(bytes)
-  return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)
-}
-
-internal fun hasValidCallServerToken(parameters: Map<String, List<String>>, token: String): Boolean =
-  token.isNotEmpty() && parameters["token"]?.any { it == token } == true
-
-private fun unauthorizedResponse(): Response =
-  newFixedLengthResponse(Status.UNAUTHORIZED, "text/plain", "Unauthorized")
-
-class MyWebSocket(val onResponse: (WVAPIMessage) -> Unit, handshakeRequest: IHTTPSession) : WebSocket(handshakeRequest) {
-  override fun onOpen() {
-    connections.add(this)
-  }
-
-  override fun onClose(closeCode: CloseCode?, reason: String?, initiatedByRemote: Boolean) {
-    onResponse(WVAPIMessage(null, WCallResponse.End))
-  }
-
-  override fun onMessage(message: WebSocketFrame) {
-    Log.d(TAG, "MyWebSocket.onMessage")
-    try {
-      // for debugging
-      // onResponse(message.textPayload)
-      onResponse(json.decodeFromString(message.textPayload))
-    } catch (e: Exception) {
-      Log.e(TAG, "failed parsing browser message")
+@Composable
+private fun DevicesButton(engine: NativeCallEngine) {
+  val showMenu = remember { mutableStateOf(false) }
+  val mics = remember { mutableStateOf(emptyList<AudioDevice>()) }
+  val speakers = remember { mutableStateOf(emptyList<AudioDevice>()) }
+  val cameras = remember { mutableStateOf(emptyList<VideoDevice>()) }
+  Box {
+    ControlButton(painterResource(MR.images.ic_settings), MR.strings.call_devices) {
+      mics.value = engine.audioDevices(AudioDeviceKind.Mic)
+      speakers.value = engine.audioDevices(AudioDeviceKind.Speaker)
+      cameras.value = NativeCallEngine.videoCaptureDevices()
+      showMenu.value = true
+    }
+    DefaultDropdownMenu(showMenu) {
+      AudioDeviceItems(engine, AudioDeviceKind.Mic, appPrefs.desktopCallMic, mics.value, MR.strings.permissions_record_audio, showMenu)
+      AudioDeviceItems(engine, AudioDeviceKind.Speaker, appPrefs.desktopCallSpeaker, speakers.value, MR.strings.audio_device_speaker, showMenu)
+      DevicesSectionTitle(MR.strings.permissions_camera)
+      if (cameras.value.isEmpty()) {
+        Text(stringResource(MR.strings.camera_not_available), Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF), color = MaterialTheme.colors.secondary)
+      }
+      cameras.value.forEach { camera ->
+        ItemAction(camera.name, onClick = {
+          showMenu.value = false
+          engine.selectCamera(camera)
+        })
+      }
     }
   }
+}
 
-  override fun onPong(pong: WebSocketFrame?) = Unit
+@Composable
+private fun AudioDeviceItems(engine: NativeCallEngine, kind: AudioDeviceKind, pref: SharedPreference<String?>, devices: List<AudioDevice>, title: StringResource, showMenu: MutableState<Boolean>) {
+  DevicesSectionTitle(title)
+  val chosenId = storedAudioDevice(pref.state.value)?.id
+  (listOf(null) + devices).forEach { device ->
+    ItemAction(
+      device?.name ?: stringResource(MR.strings.call_audio_device_system_default),
+      { if (device?.descriptor == chosenId) Icon(painterResource(MR.images.ic_check), null, tint = MenuTextColor) },
+      onClick = {
+        showMenu.value = false
+        pref.set(device?.let { json.encodeToString(SavedAudioDevice.serializer(), savedAudioDevice(it)) })
+        engine.selectAudioDevice(kind, device)
+      }
+    )
+  }
+}
 
-  override fun onException(exception: IOException) {
-    Log.e(TAG, "WebSocket exception: ${exception.stackTraceToString()}")
+@Composable
+private fun DevicesSectionTitle(title: StringResource) {
+  Text(stringResource(title), Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF), color = MaterialTheme.colors.secondary)
+}
+
+private fun callAudioSettings() = CallAudioSettings(
+  mic = storedAudioDevice(appPrefs.desktopCallMic.get()),
+  speaker = storedAudioDevice(appPrefs.desktopCallSpeaker.get()),
+  fallback = appPrefs.privacyCallAudioFallback.get()
+)
+
+private fun storedAudioDevice(stored: String?): SavedAudioDevice? =
+  try {
+    stored?.let { json.decodeFromString<SavedAudioDevice>(it) }
+  } catch (e: SerializationException) {
+    Log.e(TAG, "stored audio device: ${e.message}")
+    null
+  }
+
+private fun showAudioDeviceNotice(notice: AudioDeviceNotice) {
+  val text = when (notice.kind) {
+    AudioDeviceKind.Mic -> when (notice.state) {
+      AudioDeviceState.Connected -> MR.strings.call_mic_connected
+      AudioDeviceState.Fallback -> MR.strings.call_mic_fallback
+      AudioDeviceState.Unavailable -> MR.strings.call_mic_unavailable
+    }
+    AudioDeviceKind.Speaker -> when (notice.state) {
+      AudioDeviceState.Connected -> MR.strings.call_speaker_connected
+      AudioDeviceState.Fallback -> MR.strings.call_speaker_fallback
+      AudioDeviceState.Unavailable -> MR.strings.call_speaker_unavailable
+    }
+  }
+  showToast(String.format(generalGetString(text), notice.deviceName))
+}
+
+@Composable
+private fun ControlButton(icon: Painter, description: StringResource, background: Color = Color.White.copy(alpha = 0.2f), action: () -> Unit) {
+  Box(
+    Modifier
+      .size(controlButtonSize)
+      .background(background, CircleShape)
+      .clip(CircleShape)
+      .clickable(onClick = action, role = Role.Button),
+    contentAlignment = Alignment.Center
+  ) {
+    Icon(icon, stringResource(description), Modifier.padding(controlButtonSize * 0.2f).fillMaxSize(), tint = callForeground)
+  }
+}
+
+private class RenderedFrame(val image: ImageBitmap, val rotation: Int)
+
+@Composable
+private fun CallVideoView(engine: NativeCallEngine, track: VideoTrack, modifier: Modifier, sizeToFrame: Boolean = false) {
+  val frame = remember(track) { mutableStateOf<RenderedFrame?>(null) }
+  DisposableEffect(track) {
+    val sink = VideoTrackSink { videoFrame -> frame.value = RenderedFrame(videoFrame.toImageBitmap(), videoFrame.rotation) }
+    engine.addVideoSink(track, sink)
+    onDispose { engine.removeVideoSink(track, sink) }
+  }
+  val f = frame.value ?: return
+  val rotated = f.rotation % 180 != 0
+  val width = if (rotated) f.image.height else f.image.width
+  val height = if (rotated) f.image.width else f.image.height
+  Canvas(if (sizeToFrame) modifier.aspectRatio(width.toFloat() / height) else modifier) {
+    val scale = min(size.width / width, size.height / height)
+    val dstSize = IntSize((f.image.width * scale).toInt(), (f.image.height * scale).toInt())
+    translate(size.width / 2, size.height / 2) {
+      rotate(f.rotation.toFloat(), pivot = Offset.Zero) {
+        drawImage(f.image, dstOffset = IntOffset(-dstSize.width / 2, -dstSize.height / 2), dstSize = dstSize)
+      }
+    }
+  }
+}
+
+private fun VideoFrame.toImageBitmap(): ImageBitmap {
+  val i420 = buffer.toI420()
+  try {
+    val width = i420.width
+    val height = i420.height
+    val pixels = ByteArray(width * height * 4)
+    // libyuv names formats by 32-bit word, so ARGB is laid out in memory as B, G, R, A
+    VideoBufferConverter.convertFromI420(i420, pixels, FourCC.ARGB)
+    val info = ImageInfo(width, height, ColorType.BGRA_8888, ColorAlphaType.OPAQUE)
+    return Image.makeRaster(info, pixels, width * 4).toComposeImageBitmap()
+  } finally {
+    i420.release()
   }
 }

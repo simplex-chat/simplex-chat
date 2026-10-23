@@ -1306,8 +1306,6 @@
   <string name="callstate_ended">ended</string>
 
   <!-- CallView -->
-  <string name="unable_to_open_browser_title">Error opening browser</string>
-  <string name="unable_to_open_browser_desc">The default web browser is required for calls. Please configure the default browser in the system, and share more information with the developers.</string>
   <string name="permissions_required">Grant permissions</string>
   <string name="permissions_record_audio">Microphone</string>
   <string name="permissions_camera">Camera</string>
@@ -1408,9 +1406,16 @@
   <string name="call_already_ended">Call already ended!</string>
   <string name="icon_descr_video_call">video call</string>
   <string name="icon_descr_audio_call">audio call</string>
-  <string name="call_desktop_permission_denied_title">To make calls, allow to use your microphone. End the call and try to call again.</string>
-  <string name="call_desktop_permission_denied_chrome">Click info button near address field to allow using microphone.</string>
-  <string name="call_desktop_permission_denied_safari">Open Safari Settings / Websites / Microphone, then choose Allow for localhost.</string>
+  <string name="call_desktop_engine_error">Calls are not available</string>
+  <string name="call_screen_share_screen">Screen %d</string>
+  <string name="call_devices">Devices</string>
+  <string name="call_audio_device_system_default">System default</string>
+  <string name="call_mic_connected">Microphone %s connected</string>
+  <string name="call_mic_fallback">Microphone %s disconnected, using System default</string>
+  <string name="call_mic_unavailable">Microphone %s disconnected, select another microphone</string>
+  <string name="call_speaker_connected">Speaker %s connected</string>
+  <string name="call_speaker_fallback">Speaker %s disconnected, using System default</string>
+  <string name="call_speaker_unavailable">Speaker %s disconnected, select another speaker</string>
 
   <!-- Call settings -->
   <string name="settings_audio_video_calls">Audio &amp; video calls</string>
@@ -1446,6 +1451,8 @@
   <string name="icon_descr_audio_on">Audio on</string>
   <string name="icon_descr_speaker_off">Speaker off</string>
   <string name="icon_descr_speaker_on">Speaker on</string>
+  <string name="icon_descr_screen_share_on">Share screen</string>
+  <string name="icon_descr_screen_share_off">Stop sharing screen</string>
   <string name="icon_descr_sound_muted">Sound muted</string>
   <string name="icon_descr_flip_camera">Flip camera</string>
 
@@ -1492,6 +1499,8 @@
   <string name="sanitize_links_toggle">Remove link tracking</string>
   <string name="privacy_show_last_messages">Show last messages</string>
   <string name="privacy_message_draft">Message draft</string>
+  <string name="privacy_call_audio_fallback">Use system default audio device</string>
+  <string name="privacy_call_audio_fallback_desc">While the selected microphone or speaker is disconnected, calls use the system default device. When disabled, calls use no microphone or speaker until it is connected again or you select another one.</string>
   <string name="full_backup">App data backup</string>
   <string name="enable_lock">Enable lock</string>
   <string name="lock_mode">Lock mode</string>

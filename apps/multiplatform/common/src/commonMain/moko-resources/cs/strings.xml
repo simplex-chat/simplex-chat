@@ -1533,7 +1533,6 @@
 \nDoporučuje se restartovat aplikaci.</string>
     <string name="restart_chat_button">Restartovat chat</string>
     <string name="remote_host_error_disconnected"><![CDATA[Mobilní <b>%s</b> byl odpojen]]></string>
-    <string name="unable_to_open_browser_title">Chyba otevření prohlížeče</string>
     <string name="profile_update_event_removed_picture">odstraněn profilový obrázek</string>
     <string name="profile_update_event_set_new_address">nastavil novou kontaktní adresu</string>
     <string name="profile_update_event_set_new_picture">nastavil nový profilový obrázek</string>
@@ -1554,7 +1553,6 @@
     <string name="remote_host_error_timeout"><![CDATA[Vypršel čas při připojování k mobilnímu <b>%s</b>]]></string>
     <string name="call_service_notification_video_call">Videohovor</string>
     <string name="profile_update_event_updated_profile">profil aktualizován</string>
-    <string name="unable_to_open_browser_desc">Výchozí webový prohlížeč je vyžadován pro volání. Nakonfigurujte výchozí prohlížeč v systému a sdílejte s vývojáři více informací.</string>
     <string name="rcv_group_event_member_unblocked">odblokované %s</string>
     <string name="v5_5_private_notes_descr">S šifrovanými soubory a médii.</string>
     <string name="remote_ctrl_error_timeout">Vypršel čas při připojování k desktopu</string>
@@ -1913,8 +1911,6 @@
     <string name="settings_message_shape_corner">Roh</string>
     <string name="settings_section_title_message_shape">Tvar zpráv</string>
     <string name="chat_database_exported_continue">Pokračovat</string>
-    <string name="call_desktop_permission_denied_chrome">Klikněte na info tlačítko blízko pole adresy, pro použití mikrofonu.</string>
-    <string name="call_desktop_permission_denied_safari">Otevřete nastavení Safari / Webové stránky / mikrofon, vyberte možnost Povolit pro localhost.</string>
     <string name="appearance_font_size">Velikost písma</string>
     <string name="v6_0_upgrade_app_descr">Stáhnout nové verze z GitHubu.</string>
     <string name="v6_0_reachable_chat_toolbar">Dosažitelný panel nástrojů chatu</string>
@@ -2232,7 +2228,6 @@
     <string name="operator_use_for_sending">Pro odeslílání</string>
     <string name="operator_use_for_files">Použit pro soubory</string>
     <string name="v6_2_network_decentralization_descr">Druhý přednastavený operátor v aplikaci!</string>
-    <string name="call_desktop_permission_denied_title">Chcete-li volat, povolte použití mikrofonu. Ukončete hovor a zkuste to znovu.</string>
     <string name="servers_info_statistics_section_header">Statistiky</string>
     <string name="subscription_errors">Chyby odběru</string>
     <string name="onboarding_network_about_operators">O operátorech</string>

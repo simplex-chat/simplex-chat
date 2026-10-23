@@ -1469,7 +1469,6 @@
     <string name="rcv_group_and_other_events">בנוסף ל- %d אירועים אחרים</string>
     <string name="profile_update_event_set_new_address">איש הקשר הגדיר כתובת חדשה</string>
     <string name="contact_tap_to_connect">לחץ לחיבור</string>
-    <string name="unable_to_open_browser_desc">דפדפן האינטרנט המוגדר כברירת מחדל נדרש לשיחות. אנא הגדר דפדפן ברירת מחדל במערכת, ושתף מידע נוסף עם המפתחים.</string>
     <string name="e2ee_info_no_pq_short">השיחה הזו מוגנת באמצעות הצפנה קצה-אל-קצה.</string>
     <string name="e2ee_info_pq_short">השיחה הזו מוגנת באמצעות הצפנה קצה-אל-קצה עמידה בפני מחשוב קוונטי.</string>
     <string name="connect_plan_this_is_your_own_simplex_address">זהו כתובת ה-SimpleX שלך!</string>
@@ -1502,7 +1501,6 @@
     <string name="error_alert_title">שגיאה</string>
     <string name="error_creating_message">שגיאה ביצירת הודעה</string>
     <string name="migrate_from_device_error_exporting_archive">שגיאה בייצוא מסד נתוני צ\'אט</string>
-    <string name="unable_to_open_browser_title">שגיאה בפתיחת דפדפן</string>
     <string name="migrate_from_device_error_saving_settings">שגיאה בשמירת אפשרויות</string>
     <string name="migrate_to_device_finalize_migration">סיים את ההעברה על מכשיר נוסף.</string>
     <string name="invalid_qr_code">קוד QR לא חוקי</string>
@@ -1872,7 +1870,6 @@
     <string name="onboarding_notifications_mode_periodic_desc_short">בדוק עבור הודעות חדשות כל 10 דקות</string>
     <string name="operator_conditions_accepted_on">אישרת את תנאי השימוש ב:%s.</string>
     <string name="delete_chat_for_all_members_cannot_undo_warning">הצ\'אט יימחק עבור כל החברים - לא ניתן לבטל את זה!</string>
-    <string name="call_desktop_permission_denied_chrome">לחץ על כפתור מידע ליד שדה כתובת כדי לאפשר שימוש במיקרופון.</string>
     <string name="operator_conditions_accepted_for_some"><![CDATA[כבר הסכמת לתנאי שימוש למפעיל/ים האלו: <b>%s</b>.]]></string>
     <string name="operator_conditions_will_be_accepted_for_some"><![CDATA[התנאי שימוש יאושרו למפעיל/ים: <b>%s</b>.]]></string>
     <string name="v6_0_your_contacts_descr">העבר אנשי קשר לארכיון לשוחח מאוחר יותר</string>

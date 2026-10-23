@@ -621,7 +621,6 @@
     <string name="servers_info_reconnect_servers_error">Error en reconnectar els servidors</string>
     <string name="enter_welcome_message_optional">Introduïu el missatge de benvinguda… (opcional)</string>
     <string name="display_name">Introduïu el vostre nom:</string>
-    <string name="unable_to_open_browser_title">Error en obrir el navegador</string>
     <string name="error_exporting_chat_database">Error en exportar la base de dades de xat</string>
     <string name="error_deleting_database">S\'ha produït un error en suprimir la base de dades de xat</string>
     <string name="error_importing_database">Error en importar la base de dades de xat</string>
@@ -637,7 +636,6 @@
     <string name="chunks_uploaded">Blocs penjats</string>
     <string name="delete_chat_for_all_members_cannot_undo_warning">El xat se suprimirà per a tots els membres; això no es pot desfer!</string>
     <string name="colored_text">acolorit</string>
-    <string name="call_desktop_permission_denied_chrome">Feu clic al botó d\'informació al costat del camp d\'adreça per permetre l\'ús del micròfon.</string>
     <string name="completed">Completades</string>
     <string name="error_accepting_operator_conditions">Error en acceptar les condicions</string>
     <string name="smp_proxy_error_connecting">Error en connectar-se al servidor de reenviament %1$s. Si us plau, prova-ho més tard.</string>
@@ -1140,7 +1138,6 @@
     <string name="v5_7_network_descr">Connexió de xarxa més fiable.</string>
     <string name="new_mobile_device">Nou dispositiu mòbil</string>
     <string name="v6_2_improved_chat_navigation_descr">- El xat s\'obre amb al primer missatge no llegit.\n- Desplaçaments fins als missatges citats.</string>
-    <string name="call_desktop_permission_denied_safari">Obriu Configuració de Safari / Llocs web / Micròfon i, a continuació, trieu Permetre localhost.</string>
     <string name="operator_server_alert_title">Servidor de l\'operador</string>
     <string name="or_paste_archive_link">O enganxeu l\'enllaç de l\'arxiu</string>
     <string name="migrate_from_device_or_share_this_file_link">O compartiu aquest enllaç de fitxer de manera segura</string>
@@ -1177,7 +1174,6 @@
     <string name="callstate_waiting_for_answer">esperant resposta…</string>
     <string name="callstate_waiting_for_confirmation">esperant confirmació…</string>
     <string name="callstate_received_confirmation">confirmació rebuda…</string>
-    <string name="unable_to_open_browser_desc">Un navegador web predeterminat és necessari per a les trucades. Configura\'n un al sistema i comparteix més informació amb els desenvolupadors.</string>
     <string name="onboarding_notifications_mode_title">Notificacions privades</string>
     <string name="onboarding_notifications_mode_subtitle">Com afecta la bateria</string>
     <string name="onboarding_notifications_mode_periodic">Periòdic</string>
@@ -1190,7 +1186,6 @@
     <string name="video_call_no_encryption">videotrucada (sense xifrar)</string>
     <string name="ignore">Ignorar</string>
     <string name="reject">Rebutjar</string>
-    <string name="call_desktop_permission_denied_title">Per fer trucades, permet utilitzar el micròfon. Finalitza la trucada i prova de tornar a trucar.</string>
     <string name="icon_descr_video_call">Videotrucada</string>
     <string name="relay_server_if_necessary">El servidor de retransmissió només s\'utilitza si cal. Un tercer pot observar la vostra adreça IP.</string>
     <string name="show_call_on_lock_screen">Mostrar</string>

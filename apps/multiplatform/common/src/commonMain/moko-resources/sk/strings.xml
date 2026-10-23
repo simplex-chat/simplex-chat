@@ -734,7 +734,6 @@
     <string name="clear_chat_button">Vymazať obsah chatu</string>
     <string name="clear_chat_question">Vymazať obsah chatu?</string>
     <string name="clear_note_folder_question">Vymazať obsah súkromných poznámok?</string>
-    <string name="call_desktop_permission_denied_chrome">Kliknite na info tlačidlo blízko poľa adresy na povolenie použitia mikrofónu.</string>
     <string name="icon_descr_close_button">Tlačidlo zavrieť</string>
     <string name="v4_4_verify_connection_security_desc">Porovnajte bezpečnostné kódy s vašimi kontaktmi.</string>
     <string name="operator_conditions_accepted_for_some"><![CDATA[Podmienky už boli prijaté pre tohto/týchto operátora(ov): <b>%s</b>.]]></string>
@@ -829,7 +828,6 @@
     <string name="v5_3_new_desktop_app">Nová počítačová aplikácia!</string>
     <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Otvorte <i>Použiť z počítača</i> v mobilnej aplikácii a naskenujte QR kód.]]></string>
     <string name="settings_section_title_use_from_desktop">Použiť z počítača</string>
-    <string name="call_desktop_permission_denied_safari">Otvorte nastavenia Safari / Webové stránky / mikrofón, potom vyberte povoliť pre localhost.</string>
     <string name="paste_desktop_address">Vložiť adresu počítača</string>
     <string name="remote_ctrl_connection_stopped_desc">Prosím skontrolujte, že mobilná a počítačová aplikácia sú pripojené ku rovnakej miestnej sieti, a že počítačový firewall povoľuje pripojenie.\nProsím zdieľajte akékoľvek iné problémy s vývojármi.</string>
     <string name="scan_qr_code_from_desktop">Skenovať QR kód z počítača</string>
@@ -868,7 +866,6 @@
     <string name="v6_4_1_keep_chats_clean_descr">Povolenie miznúcich správ v predvolených nastaveniach.</string>
     <string name="network_options_reset_to_defaults">Obnoviť pôvodné nastavenia</string>
     <string name="chat_theme_set_default_theme">Obnoviť pôvodnú tému</string>
-    <string name="unable_to_open_browser_desc">Predvolený webový prehliadač je potrebný na hovory. Prosím, nakonfigurujte predvolený prehliadač v systéme a zdieľajte s vývojármi viac informácií.</string>
     <string name="disable_notifications_button">Vypnúť notifikácie</string>
     <string name="disappearing_message">Miznúca správa</string>
     <string name="timed_messages">Miznúce správy</string>
@@ -1282,7 +1279,6 @@
     <string name="error_initializing_web_view_wrong_arch">Chyba inicializácie WebView. Ujistite sa, že máte nainštalovaní WebView ktorý podporuje architektúru arm64.\nChyba: %s</string>
     <string name="error_loading_chat_tags">Chyba pri načítavaní zoznamov chatov</string>
     <string name="error_marking_member_support_chat_read">Chyba pri označovaní ako prečítané</string>
-    <string name="unable_to_open_browser_title">Chyba pri otváraní prehliadača</string>
     <string name="error_preparing_contact">Chyba pri otváraní chatu</string>
     <string name="error_preparing_group">Chyba pri otváraní skupiny</string>
     <string name="error_rejecting_contact_request">Chyba pri odmietaní žiadosti o kontakt</string>

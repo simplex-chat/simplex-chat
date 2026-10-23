@@ -48,6 +48,7 @@ private fun ActiveCallInteractiveAreaOneHand(call: Call, showMenu: MutableState<
     Modifier
       .minimumInteractiveComponentSize()
       .combinedClickable(onClick = {
+        chatModel.activeCallViewIsCollapsed.value = false
         val chat = chatModel.getChat(call.contact.id)
         if (chat != null) {
           withBGApi {
@@ -113,6 +114,7 @@ private fun ActiveCallInteractiveAreaNonOneHand(call: Call, showMenu: MutableSta
         .padding(end = 15.dp, bottom = 92.dp)
         .size(67.dp)
         .combinedClickable(onClick = {
+          chatModel.activeCallViewIsCollapsed.value = false
           val chat = chatModel.getChat(call.contact.id)
           if (chat != null) {
             withBGApi {

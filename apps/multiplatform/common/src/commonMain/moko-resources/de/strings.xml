@@ -1639,8 +1639,6 @@
     <string name="call_service_notification_audio_call">Audioanruf</string>
     <string name="call_service_notification_end_call">Anruf beenden</string>
     <string name="call_service_notification_video_call">Videoanruf</string>
-    <string name="unable_to_open_browser_title">Fehler beim Öffnen des Browsers</string>
-    <string name="unable_to_open_browser_desc">Für Anrufe ist ein Default-Webbrowser erforderlich. Bitte konfigurieren Sie einen Default-Browser für das System und teilen Sie den Entwicklern mehr Informationen dazu mit.</string>
     <string name="migrate_to_device_chat_migrated">Chat wurde migriert!</string>
     <string name="migrate_from_device_creating_archive_link">Archiv-Link erzeugen</string>
     <string name="migrate_from_device_choose_migrate_from_another_device"><![CDATA[Wählen Sie auf dem neuen Gerät <i>Von einem anderen Gerät migrieren</i> und scannen Sie den QR-Code.]]></string>
@@ -2105,9 +2103,6 @@
     <string name="network_session_mode_session">App-Sitzung</string>
     <string name="network_session_mode_server_description">Für jeden Server werden neue SOCKS-Anmeldeinformationen genutzt</string>
     <string name="network_session_mode_server">Server</string>
-    <string name="call_desktop_permission_denied_chrome">Klicken Sie auf die Info-Schaltfläche neben dem Adressfeld, um die Verwendung des Mikrofons zu erlauben.</string>
-    <string name="call_desktop_permission_denied_title">Um Anrufe durchzuführen, erlauben Sie die Nutzung Ihres Mikrofons. Beenden Sie den Anruf und versuchen Sie es erneut.</string>
-    <string name="call_desktop_permission_denied_safari">Öffnen Sie die Safari-Einstellungen / Webseiten / Mikrofon und wählen Sie dann \"Für Localhost erlauben\".</string>
     <string name="v6_1_better_calls">Verbesserte Anrufe</string>
     <string name="v6_1_customizable_message_descr">Anpassbares Format des Nachrichtenfelds</string>
     <string name="v6_1_delete_many_messages_descr">Bis zu 200 Nachrichten löschen oder moderieren</string>

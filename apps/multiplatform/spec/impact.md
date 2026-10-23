@@ -442,7 +442,9 @@ Path prefix: `common/src/desktopMain/kotlin/chat/simplex/common/`
 | `platform/Log.desktop.kt` | — | Low | Desktop log output |
 | `platform/Modifier.desktop.kt` | — | Low | Desktop modifier extensions |
 | `platform/Resources.desktop.kt` | — | Low | Desktop resource loading |
-| `views/call/CallView.desktop.kt` | PC17 | Medium | Desktop WebView-based WebRTC call |
+| `views/call/CallView.desktop.kt` | PC17 | Medium | Desktop call view and state machine |
+| `views/call/NativeCallEngine.kt` | PC17 | High | Desktop native WebRTC engine (webrtc-java) |
+| `views/call/CallAudioDevices.kt` | PC17 | Medium | Desktop microphone and speaker choice and fallback notices |
 | `views/chat/ComposeView.desktop.kt` | PC4, PC10 | Low | Desktop compose view (drag-and-drop, paste) |
 | `views/chat/SendMsgView.desktop.kt` | PC4 | Low | Desktop send shortcut (Enter key handling) |
 | `views/chat/ComposeEmojiPicker.desktop.kt` | PC4 | Low | Desktop emoji picker popup (data from `resources/emoji/emoji.txt`, search) |

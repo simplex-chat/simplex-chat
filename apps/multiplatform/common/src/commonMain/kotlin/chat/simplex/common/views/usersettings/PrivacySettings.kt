@@ -168,6 +168,13 @@ fun MorePrivacyView(chatModel: ChatModel) {
         stringResource(MR.strings.without_tor_or_vpn_ip_address_will_be_visible_to_file_servers)
       }
     )
+    if (appPlatform.isDesktop) {
+      SectionDividerSpaced()
+      SectionView(stringResource(MR.strings.settings_section_title_calls)) {
+        SettingsPreferenceItem(painterResource(MR.images.ic_headphones), stringResource(MR.strings.privacy_call_audio_fallback), chatModel.controller.appPrefs.privacyCallAudioFallback)
+      }
+      SectionTextFooter(stringResource(MR.strings.privacy_call_audio_fallback_desc))
+    }
     SectionDividerSpaced()
 
     SectionView(stringResource(MR.strings.notifications)) {

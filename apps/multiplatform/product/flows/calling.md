@@ -8,7 +8,7 @@ SimpleX Chat supports audio and video calls using WebRTC, with signaling deliver
 
 The architecture differs by platform:
 - **Android**: Calls run in a dedicated `CallActivity` (separate from `MainActivity`) with a `WebView` hosting the WebRTC JavaScript. A foreground `CallService` keeps the process alive and shows a persistent notification.
-- **Desktop**: Calls open the system browser pointed at a local NanoHTTPD/NanoWSD embedded server on `localhost:50395`, which serves the WebRTC HTML/JS and communicates with the app via WebSocket.
+- **Desktop**: Calls run in-process in `NativeCallEngine` (webrtc-java), shown full-window in the main window.
 
 Both platforms share a common signaling flow through the Haskell core API.
 
@@ -133,7 +133,7 @@ Reconnection: Connected -> Reconnecting -> Connected | Ended
 4. `ChatModel.showCallView` is set to `false`.
 5. `ChatModel.activeCall` is set to `null`.
 6. On Android, `CallService` is stopped and the `WebView` is destroyed.
-7. On Desktop, `WCallCommand.End` is sent to the browser via WebSocket, and the NanoWSD server is stopped.
+7. On Desktop, the call view leaves composition and `NativeCallEngine` closes the peer connection and releases devices.
 
 ---
 
@@ -165,24 +165,13 @@ Reconnection: Connected -> Reconnecting -> Connected | Ended
 
 ---
 
-## 6. Desktop-Specific: Browser-Based WebRTC
+## 6. Desktop-Specific: Native WebRTC
 
-### 6.1 NanoWSD Embedded Server
-
-1. When a call starts, `startServer(onResponse)` creates a `NanoWSD` server on `localhost:50395`.
-2. The server serves static WebRTC HTML/JS from bundled resources at `/assets/www/desktop/call.html`.
-3. The system browser is opened to `http://localhost:50395/simplex/call/`.
-
-### 6.2 WebSocket Communication
-
-1. The browser page connects back via WebSocket to the same `localhost:50395` server.
-2. Commands from the app to the browser are serialized as `WVAPICall(corrId, command)` JSON.
-3. Responses from the browser arrive as `WVAPIMessage(corrId, resp, command)` JSON.
-4. The `WebRTCController` composable manages the command queue:
-   - Collects commands from `ChatModel.callCommand` (a `SnapshotStateList<WCallCommand>`).
-   - Sends them to the browser via the WebSocket connection.
-   - Processes responses through the same `WCallResponse` handling as Android.
-5. On dispose, `WCallCommand.End` is sent, the server is stopped, and connections are cleared.
+1. When the call view is shown, `NativeCallController` creates a `NativeCallEngine`.
+2. Commands from `ChatModel.callCommand` (a `SnapshotStateList<WCallCommand>`) are passed to the engine in order.
+3. The engine reports `WVAPIMessage(corrId, resp, command)` and the responses go through the same `WCallResponse` handling as Android.
+4. The engine interoperates with `call.ts` (Android) and iOS peers: four transceivers (mic, camera, screen audio, screen video), VP8, AES-GCM frame encryption in the `call.ts` layout, SDP and ICE candidates as LZString-compressed JSON.
+5. On dispose, the engine closes the peer connection and releases camera, screen capture and audio devices.
 
 ---
 
@@ -227,4 +216,4 @@ Camera switching (front/back) is done via `WCallCommand.Camera(VideoCamera.User 
 | `WCallResponse` | `views/call/WebRTC.kt` | Responses from WebRTC: Capabilities, Offer, Answer, Ice, Connection, Connected, End |
 | `CallActivity` | `android/.../views/call/CallActivity.kt` | Android Activity hosting the call UI and WebView |
 | `CallService` | `android/.../CallService.kt` | Android foreground Service for call persistence |
-| `NanoWSD` | `desktopMain/.../views/call/CallView.desktop.kt` | Desktop embedded HTTP+WebSocket server |
+| `NativeCallEngine` | `desktopMain/.../views/call/NativeCallEngine.kt` | Desktop native WebRTC engine (webrtc-java) |

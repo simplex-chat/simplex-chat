@@ -11,9 +11,33 @@ plugins {
 group = "chat.simplex"
 version = extra["android.version_name"] as String
 
+repositories {
+  exclusiveContent {
+    forRepository {
+      ivy("https://github.com/shumvgolove/webrtc-java/releases/download") {
+        patternLayout { artifact("v[revision]/[artifact]-[revision](-[classifier]).[ext]") }
+        metadataSources { artifact() }
+      }
+    }
+    filter { includeGroup("dev.onvoid.webrtc") }
+  }
+}
+
 val simplexAssetsDir = rootProject.findProperty("simplex.assets.dir") as String?
 val simplexAssetsLocal = file("src/commonMain/resources/assets/simplex")
 val hasSimplexAssets = simplexAssetsDir != null
+
+val webrtcJavaVersion = "0.19.0-simplex.2"
+// Desktop packages are built on the target machine, so only the host's native library is bundled
+val webrtcJavaNativeClassifier: String = run {
+  val os = System.getProperty("os.name").lowercase()
+  val arch = if (System.getProperty("os.arch") in listOf("aarch64", "arm64")) "aarch64" else "x86_64"
+  when {
+    os.contains("win") -> "windows-$arch"
+    os.contains("mac") -> "macos-$arch"
+    else -> "linux-$arch"
+  }
+}
 
 if (simplexAssetsDir != null) {
   val resolvedAssetsDir = rootProject.rootDir.resolve(simplexAssetsDir)
@@ -142,8 +166,9 @@ kotlin {
         implementation("org.slf4j:slf4j-simple:2.0.12")
         implementation("uk.co.caprica:vlcj:4.8.3")
         implementation("net.java.dev.jna:jna:5.14.0")
-        implementation(project(":external:nanohttpd"))
         implementation("com.squareup.okhttp3:okhttp:4.12.0")
+        implementation("dev.onvoid.webrtc:webrtc-java:$webrtcJavaVersion")
+        implementation("dev.onvoid.webrtc:webrtc-java:$webrtcJavaVersion:$webrtcJavaNativeClassifier")
       }
     }
     val desktopTest by getting

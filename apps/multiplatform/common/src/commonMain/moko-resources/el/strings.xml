@@ -514,7 +514,6 @@
     <string name="clear_chat_question">Καθαρισμός συνομιλίας;</string>
     <string name="clear_note_folder_question">Καθαρισμός ιδιωτικών σημειώσεων;</string>
     <string name="clear_verification">Καθαρισμός επαλήθευσης</string>
-    <string name="call_desktop_permission_denied_chrome">Κάνε κλικ στο κουμπί πληροφοριών δίπλα στο πεδίο διεύθυνσης για να επιτρέψεις τη χρήση του μικροφώνου.</string>
     <string name="icon_descr_close_button">Κουμπί κλεισίματος</string>
     <string name="colored_text">χρωματισμένο</string>
     <string name="color_mode">Λειτουργία χρώματος</string>
@@ -1289,7 +1288,6 @@
     <string name="connection_you_accepted_will_be_cancelled">Η σύνδεση που αποδέχθηκες θα ακυρωθεί!</string>
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">Η επαφή με την οποία μοιράστηκες αυτόν το σύνδεσμο, ΔΕΝ θα μπορεί να συνδεθεί!</string>
     <string name="database_initialization_error_desc">Η βάση δεδομένων δεν λειτουργεί σωστά. Πάτησε για να μάθεις περισσότερα.</string>
-    <string name="unable_to_open_browser_desc">Για τις κλήσεις απαιτείται ο προεπιλεγμένος περιηγητής. Ρύθμισε τον προεπιλεγμένο περιηγητή στο σύστημα σου και μοιράσου περισσότερες πληροφορίες με τους προγραμματιστές.</string>
     <string name="this_device_name_shared_with_mobile">Το όνομα της συσκευής θα κοινοποιηθεί στην εφαρμογή του συνδεδεμένου κινητού.</string>
     <string name="sync_connection_force_desc">Η κρυπτογράφηση λειτουργεί και η νέα κρυπτογράφηση δεν είναι απαραίτητη. Μπορεί να προκαλέσει σφάλματα σύνδεσης!</string>
     <string name="alert_text_msg_bad_hash">Ο κωδικός ελέγχου του προηγούμενου μηνύματος είναι διαφορετικός.</string>
@@ -1346,7 +1344,6 @@
     <string name="scan_qr_to_connect_to_contact">Για να συνδεθείς, η επαφή σου μπορεί να σαρώσει τον κωδικό QR ή να χρησιμοποιήσει τον σύνδεσμο στην εφαρμογή.</string>
     <string name="v5_3_simpler_incognito_mode_descr">Ενεργοποίηση ανώνυμης λειτουργίας κατά τη σύνδεση.</string>
     <string name="v5_4_block_group_members_descr">Για απόκρυψη ανεπιθύμητων μηνυμάτων.</string>
-    <string name="call_desktop_permission_denied_title">Για να πραγματοποιήσεις κλήσεις, επέτρεψε τη χρήση του μικροφώνου σου. Τερμάτισε την κλήση και προσπάθησε να καλέσεις ξανά.</string>
     <string name="images_limit_title">Πάρα πολλές εικόνες!</string>
     <string name="videos_limit_title">Πάρα πολλά βίντεο!</string>
     <string name="to_protect_against_your_link_replaced_compare_codes">Για να προστατευτείς από αντικατάσταση του συνδέσμου σου, μπορείς να συγκρίνεις τους κωδικούς ασφαλείας των επαφών σου.</string>
@@ -1486,7 +1483,6 @@
     <string name="error_loading_chat_tags">Σφάλμα κατά τη φόρτωση των λιστών συνομιλιών</string>
     <string name="error_loading_details">Σφάλμα κατά τη φόρτωση των λεπτομερειών</string>
     <string name="error_marking_member_support_chat_read">Σφάλμα επισήμανσης ως αναγνωσμένου</string>
-    <string name="unable_to_open_browser_title">Σφάλμα κατά το άνοιγμα του προγράμματος περιήγησης</string>
     <string name="error_preparing_contact">Σφάλμα κατά το άνοιγμα της συνομιλίας</string>
     <string name="error_preparing_group">Σφάλμα κατά το άνοιγμα της ομάδας</string>
     <string name="error_reading_passphrase">Σφάλμα κατά την ανάγνωση της φράσης πρόσβασης της βάσης δεδομένων</string>
@@ -1705,7 +1701,6 @@
     <string name="connect_plan_open_new_chat">Άνοιξε νέα συνομιλία</string>
     <string name="connect_plan_open_new_group">Άνοιξε νέα ομάδα</string>
     <string name="open_port_in_firewall_title">Άνοιγμα θύρας στο τείχος προστασίας</string>
-    <string name="call_desktop_permission_denied_safari">Άνοιξε τις Ρυθμίσεις Safari / Ιστοσελίδες / Μικρόφωνο και στη συνέχεια επέλεξε Να επιτρέπεται για το localhost.</string>
     <string name="permissions_open_settings">Άνοιγμα ρυθμίσεων</string>
     <string name="open_simplex_chat_to_accept_call">Άνοιξε το SimpleX Chat για να αποδεχθείς την κλήση</string>
     <string name="open_to_accept">Άνοιξε για να αποδεχθείς</string>

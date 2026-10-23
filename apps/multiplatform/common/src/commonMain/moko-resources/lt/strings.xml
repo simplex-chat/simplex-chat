@@ -1122,7 +1122,6 @@
     <string name="is_verified">%s yra patvirtintas</string>
     <string name="tap_to_scan">Bakstelėkite, kad nuskanuoti</string>
     <string name="shutdown_alert_question">Išjungti?</string>
-    <string name="unable_to_open_browser_desc">Skambučiams reikalinga numatytoji žiniatinklio naršyklė. Sukonfigūruokite numatytąją sistemos naršyklę ir pasidalykite daugiau informacijos su kūrėjais.</string>
     <string name="receipts_section_groups">Mažos grupės (maks. 20)</string>
     <string name="color_title">Pavadinimas</string>
     <string name="v4_6_group_welcome_message_descr">Nustatykite žinutę rodomą naujiems nariams!</string>
@@ -1459,7 +1458,6 @@
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Prisijungsite kai jūsų konktakto įrenginys bus prisijungęs, palaukite arba patikrinkite vėliau!</string>
     <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 mobilusis: bakstelėkite <b>Atidaryti mobilioje programėlėje</b>, tada bakstelėkite <b>Prisijungti</b> programėlėje.]]></string>
     <string name="smp_servers_use_server_for_new_conn">Naudoti naujiems prisijungimams</string>
-    <string name="unable_to_open_browser_title">Įvyko klaida atveriant naršyklę</string>
     <string name="secret_text">paslaptis</string>
     <string name="shutdown_alert_desc">Pranešimai nustos veikti iki tol kol paleisite programėlę iš naujo</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">Galite naudoti markdown, kad formatuoti žinutes:</string>

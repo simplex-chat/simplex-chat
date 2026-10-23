@@ -1559,8 +1559,6 @@
     <string name="call_service_notification_video_call">Appel vidéo</string>
     <string name="call_service_notification_end_call">Fin de l\'appel</string>
     <string name="call_service_notification_audio_call">Appel audio</string>
-    <string name="unable_to_open_browser_desc">Le navigateur web par défaut est requis pour les appels. Veuillez configurer le navigateur par défaut dans le système et partager plus d\'informations avec les développeurs.</string>
-    <string name="unable_to_open_browser_title">Erreur lors de l\'ouverture du navigateur</string>
     <string name="migrate_from_device_confirm_you_remember_passphrase">Confirmer que vous vous souvenez de la phrase secrète de la base de données pour la transférer.</string>
     <string name="v5_6_app_data_migration">Transfert des données de l\'application</string>
     <string name="v5_6_safer_groups_descr">Les admins peuvent bloquer un membre pour tous.</string>
@@ -2015,7 +2013,6 @@
     <string name="forward_alert_forward_messages_without_files">Transférer les messages sans les fichiers ?</string>
     <string name="network_session_mode_session_description">De nouveaux identifiants SOCKS seront utilisés chaque fois que vous démarrerez l\'application.</string>
     <string name="forward_alert_title_nothing_to_forward">Rien à transférer !</string>
-    <string name="call_desktop_permission_denied_safari">Ouvrez Safari Paramètres / Sites web / Microphone, puis choisissez Autoriser pour localhost.</string>
     <string name="compose_save_messages_n">Sauvegarde de %1$s messages</string>
     <string name="migrate_from_device_uploaded_archive_will_be_removed">L\'archive de la base de données envoyée sera définitivement supprimée des serveurs.</string>
     <string name="network_proxy_auth_mode_isolate_by_auth_user">Utilisez des identifiants de proxy différents pour chaque profil.</string>
@@ -2031,8 +2028,6 @@
     <string name="settings_message_shape_corner">Coin</string>
     <string name="settings_section_title_message_shape">Forme du message</string>
     <string name="settings_message_shape_tail">Queue</string>
-    <string name="call_desktop_permission_denied_chrome">Cliquez sur le bouton info près du champ d\'adresse pour autoriser l\'utilisation du microphone.</string>
-    <string name="call_desktop_permission_denied_title">Pour passer des appels, autorisez l\'utilisation de votre microphone. Mettez fin à l\'appel et essayez d\'appeler à nouveau.</string>
     <string name="migrate_from_device_remove_archive_question">Supprimer l\'archive ?</string>
     <string name="v6_1_better_calls">Appels améliorés</string>
     <string name="v6_1_customizable_message_descr">Forme des messages personnalisable.</string>

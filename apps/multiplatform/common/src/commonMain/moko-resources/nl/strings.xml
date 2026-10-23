@@ -1563,8 +1563,6 @@
     <string name="call_service_notification_audio_call">Audio oproep</string>
     <string name="call_service_notification_end_call">Ophangen</string>
     <string name="call_service_notification_video_call">Video oproep</string>
-    <string name="unable_to_open_browser_title">Fout bij het openen van de browser</string>
-    <string name="unable_to_open_browser_desc">Voor oproepen is de standaard webbrowser vereist. Configureer de standaard browser in het systeem en deel meer informatie met de ontwikkelaars.</string>
     <string name="migrate_to_device_confirm_network_settings">Bevestig netwerk instellingen</string>
     <string name="migrate_from_device_archive_and_upload">Archiveren en uploaden</string>
     <string name="migrate_from_device_archiving_database">Database archiveren</string>
@@ -2033,9 +2031,6 @@
     <string name="network_session_mode_server_description">Voor elke server worden nieuwe SOCKS-inloggegevens gebruikt.</string>
     <string name="network_session_mode_server">Server</string>
     <string name="settings_message_shape_tail">Staart</string>
-    <string name="call_desktop_permission_denied_chrome">Klik op de infoknop naast het adresveld om het gebruik van de microfoon toe te staan.</string>
-    <string name="call_desktop_permission_denied_safari">Open Safari Instellingen / Websites / Microfoon en kies Toestaan voor localhost.</string>
-    <string name="call_desktop_permission_denied_title">Als u wilt bellen, geeft u toestemming om uw microfoon te gebruiken. Beëindig het gesprek en probeer opnieuw te bellen.</string>
     <string name="v6_1_better_security">Betere beveiliging ✅</string>
     <string name="v6_1_better_security_descr">SimpleX-protocollen beoordeeld door Trail of Bits.</string>
     <string name="v6_1_message_dates_descr">Betere datums voor berichten.</string>

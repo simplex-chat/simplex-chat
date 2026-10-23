@@ -1334,7 +1334,6 @@
     <string name="migrate_from_device_check_connection_and_try_again">Tarkista internetyhteys ja yritä uudelleen</string>
     <string name="multicast_connect_automatically">Yhdistä automaattisesti</string>
     <string name="migrate_from_device_delete_database_from_device">Poista tietokanta tältä laitteelta</string>
-    <string name="unable_to_open_browser_title">Virhe selainta avatessa</string>
     <string name="share_text_file_status">Tiedoston tila: %s</string>
     <string name="expand_verb">Laajenna</string>
     <string name="wallpaper_preview_hello_bob">Hyvää huomenta!</string>

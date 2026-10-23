@@ -1548,8 +1548,6 @@
     <string name="call_service_notification_video_call">مكالمة فيديو</string>
     <string name="call_service_notification_audio_call">مكالمة صوتية</string>
     <string name="call_service_notification_end_call">أنهيّ المكالمة</string>
-    <string name="unable_to_open_browser_desc">متصفح الويب الافتراضي مطلوب للمكالمات. يُرجى تضبيط المتصفح الافتراضي في النظام، ومشاركة المزيد من المعلومات مع المطوِّرين.</string>
-    <string name="unable_to_open_browser_title">حدث خطأ أثناء فتح المتصفح</string>
     <string name="migrate_from_device_archive_and_upload">أرشف وأرفع</string>
     <string name="v5_6_safer_groups_descr">يمكن للمُدراء حظر عضو للجميع.</string>
     <string name="v5_6_app_data_migration">ترحيل بيانات التطبيق</string>
@@ -2010,9 +2008,6 @@
     <string name="network_session_mode_server">الخادم</string>
     <string name="network_session_mode_session_description">سيتم استخدام بيانات اعتماد SOCKS الجديدة في كل مرة تبدأ فيها تشغيل التطبيق.</string>
     <string name="network_session_mode_server_description">سيتم استخدام بيانات اعتماد SOCKS الجديدة لكل خادم.</string>
-    <string name="call_desktop_permission_denied_chrome">انقر فوق زر المعلومات الموجود بالقرب من حقل العنوان للسماح باستخدام الميكروفون.</string>
-    <string name="call_desktop_permission_denied_safari">افتح إعدادات Safari / مواقع الويب / الميكروفون، ثم اختر السماح لـ localhost.</string>
-    <string name="call_desktop_permission_denied_title">لإجراء مكالمات، اسمح باستخدام الميكروفون. أنهِ المكالمة وحاول الاتصال مرة أخرى.</string>
     <string name="v6_1_better_user_experience">تجربة مستخدم أفضل</string>
     <string name="v6_1_customizable_message_descr">شكل الرسالة قابل للتخصيص.</string>
     <string name="v6_1_better_calls_descr">تبديل الصوت والفيديو أثناء المكالمة.</string>

@@ -139,6 +139,7 @@ class AppPreferences {
   val privacyEncryptLocalFiles = mkBoolPreference(SHARED_PREFS_PRIVACY_ENCRYPT_LOCAL_FILES, true)
   val privacyAskToApproveRelays = mkBoolPreference(SHARED_PREFS_PRIVACY_ASK_TO_APPROVE_RELAYS, true)
   val privacyMediaBlurRadius = mkIntPreference(SHARED_PREFS_PRIVACY_MEDIA_BLUR_RADIUS, 0)
+  val privacyCallAudioFallback = mkBoolPreference(SHARED_PREFS_PRIVACY_CALL_AUDIO_FALLBACK, true)
   // Blur broken on Android 12, see https://github.com/chrisbanes/haze/issues/77. And not available before 12
   val deviceSupportsBlur = appPlatform.isDesktop || (platform.androidApiLevel ?: 0) >= 32
   val appearanceBarsBlurRadius = mkIntPreference(SHARED_PREFS_APPEARANCE_BARS_BLUR_RADIUS, if (deviceSupportsBlur) 50 else 0)
@@ -266,6 +267,8 @@ class AppPreferences {
   val offerRemoteMulticast = mkBoolPreference(SHARED_PREFS_OFFER_REMOTE_MULTICAST, true)
 
   val desktopWindowState = mkStrPreference(SHARED_PREFS_DESKTOP_WINDOW_STATE, null)
+  val desktopCallMic = mkStrPreference(SHARED_PREFS_DESKTOP_CALL_MIC, null)
+  val desktopCallSpeaker = mkStrPreference(SHARED_PREFS_DESKTOP_CALL_SPEAKER, null)
 
   val showDeleteConversationNotice = mkBoolPreference(SHARED_PREFS_SHOW_DELETE_CONVERSATION_NOTICE, true)
   val showDeleteContactNotice = mkBoolPreference(SHARED_PREFS_SHOW_DELETE_CONTACT_NOTICE, true)
@@ -428,6 +431,7 @@ class AppPreferences {
     private const val SHARED_PREFS_PRIVACY_ENCRYPT_LOCAL_FILES = "PrivacyEncryptLocalFiles"
     private const val SHARED_PREFS_PRIVACY_ASK_TO_APPROVE_RELAYS = "PrivacyAskToApproveRelays"
     private const val SHARED_PREFS_PRIVACY_MEDIA_BLUR_RADIUS = "PrivacyMediaBlurRadius"
+    private const val SHARED_PREFS_PRIVACY_CALL_AUDIO_FALLBACK = "PrivacyCallAudioFallback"
     private const val SHARED_PREFS_APPEARANCE_BARS_BLUR_RADIUS = "AppearanceBarsBlurRadius"
     const val SHARED_PREFS_PRIVACY_FULL_BACKUP = "FullBackup"
     private const val SHARED_PREFS_EXPERIMENTAL_CALLS = "ExperimentalCalls"
@@ -522,6 +526,8 @@ class AppPreferences {
     private const val SHARED_PREFS_OFFER_REMOTE_MULTICAST = "OfferRemoteMulticast"
     private const val SHARED_PREFS_DESKTOP_WINDOW_STATE = "DesktopWindowState"
     private const val SHARED_PREFS_DESKTOP_CLOSE_BEHAVIOR = "DesktopCloseBehavior"
+    private const val SHARED_PREFS_DESKTOP_CALL_MIC = "DesktopCallMic"
+    private const val SHARED_PREFS_DESKTOP_CALL_SPEAKER = "DesktopCallSpeaker"
     private const val SHARED_PREFS_SHOW_DELETE_CONVERSATION_NOTICE = "showDeleteConversationNotice"
     private const val SHARED_PREFS_SHOW_DELETE_CONTACT_NOTICE = "showDeleteContactNotice"
     private const val SHARED_PREFS_SHOW_SENT_VIA_RPOXY = "showSentViaProxy"

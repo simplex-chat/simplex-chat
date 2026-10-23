@@ -1032,7 +1032,6 @@
     <string name="attempts_label">시도</string>
     <string name="network_session_mode_session">앱 세션</string>
     <string name="app_check_for_updates">업데이트 확인</string>
-    <string name="call_desktop_permission_denied_chrome">주소 필드 근처에 있는 정보 버튼을 클릭하여 마이크를 사용할 수 있습니다.</string>
     <string name="settings_message_shape_corner">모서리</string>
     <string name="chat_database_exported_title">채팅 데이터베이스를 내보냈습니다</string>
     <string name="cant_call_contact_alert_title">연락처에 전화를 걸 수 없음</string>
@@ -1225,7 +1224,6 @@
     <string name="app_check_for_updates_download_started">앱 업데이트를 다운로드하는 중입니다. 앱을 닫지 마세요</string>
     <string name="app_check_for_updates_button_download">%s (%s) 를 다운로드</string>
     <string name="app_check_for_updates_notice_disable">비활성화</string>
-    <string name="unable_to_open_browser_title">브라우저를 여는 중 오류</string>
     <string name="block_member_confirmation">차단</string>
     <string name="theme_black">검은색</string>
     <string name="receipts_contacts_disable_keep_overrides">사용 안 함 (변경 사항 유지)</string>

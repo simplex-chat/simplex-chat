@@ -1338,7 +1338,6 @@
     <string name="app_check_for_updates_disabled">已停用</string>
     <string name="app_check_for_updates_installed_successfully_title">安裝成功</string>
     <string name="create_address_button">建立</string>
-    <string name="unable_to_open_browser_title">打開瀏覽器出錯</string>
     <string name="receipts_contacts_enable_keep_overrides">啟用（保留覆蓋）</string>
     <string name="receipts_groups_disable_keep_overrides">禁用（保留組覆蓋）</string>
     <string name="receipts_groups_title_enable">為群組啟用回執？</string>
@@ -2319,7 +2318,6 @@
     <string name="bio_too_large">簡介太長</string>
     <string name="save_admission_question">要儲存加入審批設定嗎？</string>
     <string name="save_and_notify_channel_subscribers">儲存並通知頻道訂閱者</string>
-    <string name="unable_to_open_browser_desc">通話需要預設網頁瀏覽器。請在系統中設定預設瀏覽器，並向開發者分享更多資訊。</string>
     <string name="error_initializing_web_view_wrong_arch">初始化 WebView 時發生錯誤。請確認已安裝 WebView，且其支援的架構為 arm64。\n錯誤：%s</string>
     <string name="onboarding_be_free">在你的網路中\n自由交流</string>
     <string name="onboarding_private_and_secure">私密且安全的通訊。</string>
@@ -2354,9 +2352,6 @@
     <string name="onboarding_configure_routers">設定路由器</string>
     <string name="onboarding_configure_notifications">設定通知</string>
     <string name="onboarding_network_commitments">網路承諾</string>
-    <string name="call_desktop_permission_denied_title">若要通話，請允許使用麥克風。結束通話後再嘗試撥打。</string>
-    <string name="call_desktop_permission_denied_chrome">點按地址欄旁的資訊按鈕，以允許使用麥克風。</string>
-    <string name="call_desktop_permission_denied_safari">開啟 Safari 設定 / 網站 / 麥克風，然後為 localhost 選擇「允許」。</string>
     <string name="open_external_link_title">要開啟外部連結嗎？</string>
     <string name="rcv_msg_error_dropped">已丟棄（%1$d 次嘗試）</string>
     <string name="rcv_msg_error_parse">錯誤：%s</string>

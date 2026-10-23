@@ -1559,8 +1559,6 @@
     <string name="call_service_notification_audio_call">Llamada</string>
     <string name="call_service_notification_end_call">Llamada finalizada</string>
     <string name="call_service_notification_video_call">Videollamada</string>
-    <string name="unable_to_open_browser_title">Error al abrir navegador</string>
-    <string name="unable_to_open_browser_desc">Para llamadas se requiere el navegador web predeterminado. Por favor, configura el navegador predeterminado en el sistema y comparte más información con los desarrolladores.</string>
     <string name="migrate_from_device_archiving_database">Archivando base de datos</string>
     <string name="migrate_from_device_all_data_will_be_uploaded">Todos tus contactos, conversaciones y archivos serán cifrados, divididos y subidos de forma segura a los servidores XFTP configurados.</string>
     <string name="v5_6_safer_groups_descr">Los administradores pueden bloquear a un miembro para los demás</string>
@@ -2025,9 +2023,6 @@
     <string name="settings_message_shape_tail">Cola</string>
     <string name="network_session_mode_session_description">Se usarán credenciales SOCKS nuevas cada vez que inicies la aplicación.</string>
     <string name="network_session_mode_session">por sesión</string>
-    <string name="call_desktop_permission_denied_safari">Abre la configuración de Safari / Sitios Web / Micrófono y a continuación selecciona Permitir para localhost.</string>
-    <string name="call_desktop_permission_denied_chrome">Pulsa el botón info del campo dirección para permitir el uso del micrófono.</string>
-    <string name="call_desktop_permission_denied_title">Para hacer llamadas, permite el uso del micrófono. Cuelga e intenta llamar de nuevo.</string>
     <string name="network_session_mode_server_description">Se usarán credenciales SOCKS nuevas para cada servidor.</string>
     <string name="network_session_mode_server">por servidor</string>
     <string name="v6_1_better_calls">Llamadas mejoradas</string>

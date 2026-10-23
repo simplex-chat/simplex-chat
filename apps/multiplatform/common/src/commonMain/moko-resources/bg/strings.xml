@@ -1559,8 +1559,6 @@
     <string name="database_migration_in_progress">Извършва се миграция на базата данни.
 \nМоже да отнеме няколко минути.</string>
     <string name="call_service_notification_audio_call">Аудио разговор</string>
-    <string name="unable_to_open_browser_title">Грешка при отваряне на браузъра</string>
-    <string name="unable_to_open_browser_desc">За разговори е необходим уеб браузър по подразбиране. Моля, конфигурирайте браузъра по подразбиране в системните настройки и споделете повече информация с разработчиците.</string>
     <string name="call_service_notification_video_call">Видео разговор</string>
     <string name="call_service_notification_end_call">Край на разговора</string>
     <string name="e2ee_info_pq"><![CDATA[Съобщенията, файловете и разговорите са защитени чрез <b>квантово устойчиво e2e криптиране</b> с перфектна секретност при препращане, правдоподобно опровержение и възстановяване при взлом.]]></string>
@@ -2016,9 +2014,6 @@
     <string name="app_check_for_updates_canceled">Изтеглянето на актуализацията е отменено</string>
     <string name="migrate_from_device_remove_archive_question">Премахни архив?</string>
     <string name="migrate_from_device_uploaded_archive_will_be_removed">Каченият архив на базата данни ще бъде окончателно премахнат от сървърите.</string>
-    <string name="call_desktop_permission_denied_title">За да извършвате обаждания, разрешете да използва микрофона. Прекратете разговора и опитайте да се обадите отново.</string>
-    <string name="call_desktop_permission_denied_chrome">Натиснете бутона за информация близо до адресното поле, за да разрешите използването на микрофона.</string>
-    <string name="call_desktop_permission_denied_safari">Отворете Safari Настройки / Уеб страници / Микрофон, след което изберете Позволи за localhost.</string>
     <string name="v6_0_new_chat_experience">Нов интерфейс 🎉</string>
     <string name="v6_0_new_media_options">Нови медийни опции</string>
     <string name="v6_1_better_user_experience">Подобрен интерфейс</string>
