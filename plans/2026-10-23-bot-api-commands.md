@@ -1,13 +1,14 @@
 # Bot API: chat, connection, member contact and network commands
 
-Bot developers built the strings of twelve commands by hand: chat messages, prepared chats, member contacts and network configuration.
-The commands are documented in the API docs generator, their TypeScript and Python types and `cmdString` functions are generated, and every command of the Node library is sent through a generated `cmdString`.
+Twelve commands were undocumented, and their strings were built by hand: in bots, and in the Node and Python libraries for `APIGetChat`, `APICreateMemberContact` and `APISendMemberContactInvitation`.
+The commands are documented; in the core, six command constructors and `ChatPagination` are changed to record syntax, and `verifiedDomain` is typed as `StrJSON`.
+TypeScript and Python types are generated, with `cmdString` and `<Name>_cmd_string` functions; each command of the Node library is sent through its `cmdString`.
 
-References are to branch `ep/bot-api` at `b6b8a862f`. Haskell paths without a directory are in `src/Simplex/Chat/`. `docs/` is `bots/src/API/Docs/`. `TS/` is `packages/simplex-chat-client/types/typescript/src/`. `node/` is `packages/simplex-chat-nodejs/`. `SMQ/` is simplexmq `src/Simplex/Messaging/` at `8bc4d3601` (`cabal.project:24`).
+References are to branch `ep/bot-api` at `a4be6d1c0`. Haskell paths without a directory are in `src/Simplex/Chat/`. `Library/` is `src/Simplex/Chat/Library/`. `API/` is `bots/src/API/`. `TS/` is `packages/simplex-chat-client/types/typescript/src/`. `node/` is `packages/simplex-chat-nodejs/`. `SMQ/` is simplexmq `src/Simplex/Messaging/` at `8bc4d3601` (`cabal.project:24`).
 
 ## Decisions
 
-Documented commands. Each syntax is the input of the parser in `Library/Commands.hs`:
+Documented commands; strings in each syntax are parsed by `chatCommandP` at the `parser` line of `Library/Commands.hs`:
 ```
 category / command               network usage   parser   syntax
 Group commands
@@ -27,14 +28,16 @@ Chat management
   APIGetNetworkConfig            no              :6461    /network
   APISetNetworkConfig            background      :6459    /_network <json(networkConfig)>
 ```
+Changed documented syntax:
+- `APIConnectPlan`: `/_connect plan <userId> <connectTarget><str(resolveMode)>[ sig=<json(linkOwnerSig)>]` (parser `Library/Commands.hs:6559`).
+- `PlanResolveMode`: ` resolve=allGroups` and ` resolve=never`; `unknown`, the parser default (`Library/Commands.hs:6559`), as an empty string.
+
 Documented errors:
 ```
 APICreateMemberContact           CEGroupMemberNotActive
                                  CEPeerChatVRangeIncompatible
 APISendMemberContactInvitation   CEGroupMemberNotActive
 ```
-- `APIConnectPlan` syntax: `/_connect plan <userId> <connectTarget><str(resolveMode)>[ sig=<json(linkOwnerSig)>]` (parser `Library/Commands.hs:6559`).
-- `PlanResolveMode` syntax: `allGroups` and `never` are rendered as ` resolve=<mode>`; `unknown`, the parser default (`Library/Commands.hs:6559`), is rendered as an empty string.
 
 Documented responses:
 ```
@@ -74,9 +77,14 @@ enums
   SndSwitchStatus
   TransportSessionMode
 ```
-- `RcvSwitchStatus` and `SndSwitchStatus` values: their `strEncode` values (`SMQ/Agent/Protocol.hs:617-623`, `:651-656`), the JSON of both types (`:637-642`, `:669-674`).
-- `AChatInfo` is typed as `ChatInfo`: its JSON is the JSON of `ChatInfo` (`Messages.hs:254-256`).
-- `SocksProxyWithAuth` is typed as a string: its JSON is its `strEncode` (`SMQ/Transport/Client.hs:265-274`).
+Types generated from their JSON encoding:
+```
+type                 generated as        JSON
+AChatInfo            ChatInfo            JSON of ChatInfo (Messages.hs:254-256)
+SocksProxyWithAuth   string              strEncode (SMQ/Transport/Client.hs:265-274)
+RcvSwitchStatus      strEncode values    strEncode (SMQ/Agent/Protocol.hs:617-623, :637-642)
+SndSwitchStatus      strEncode values    strEncode (SMQ/Agent/Protocol.hs:651-656, :669-674)
+```
 
 Core:
 - Documented commands have named fields (`tests/APIDocs.hs:84-88`): six constructors are changed to record syntax.
@@ -86,10 +94,11 @@ Core:
 
 Node library:
 - Every command is sent as `CC.<Command>.cmdString(...)`.
-- A new method returns the response field other than `user` when the response has one such field and one response type is accepted; otherwise it returns the response.
-- Any other response causes a `ChatCommandError`.
+- Result of a new method: the response field other than `user`, when one response type is accepted and that response has one such field; otherwise the response.
+- Result of a method accepting only `CR.CmdOk`: void.
+- For any other response, a `ChatCommandError` is thrown.
 ```
-new method                    command                       returns
+new method                    command                       result
 apiConnectPreparedLink        APIConnect                    CR.SentConfirmation | CR.SentInvitation | CR.ContactAlreadyExists
 apiPrepareContact             APIPrepareContact             chat
 apiPrepareGroup               APIPrepareGroup               chat
@@ -103,15 +112,15 @@ apiSetNetworkConfig           APISetNetworkConfig           void, on CR.CmdOk
 ```
 ```
 changed method                   change
-stopChat                         APIStopChat; the string stays /_stop
+stopChat                         APIStopChat; string unchanged, /_stop
 apiReceiveFile                   optional filePath, passed to ReceiveFile
-apiConnectPlan                   returns [plan, link, planSimplexName?, otherSimplexName?]
-apiGetChat                       third parameter: a count or T.ChatPagination; a count is sent as {type: "last", count}; returns T.AChat
+apiConnectPlan                   result: [plan, link, planSimplexName?, otherSimplexName?]
+apiGetChat                       third parameter: a count or T.ChatPagination; a count is sent as {type: "last", count}; result: T.AChat
 apiCreateMemberContact           APICreateMemberContact; signature unchanged
 apiSendMemberContactInvitation   APISendMemberContactInvitation; a string message is sent as {type: "text", text}; JSDoc network usage: background
 ```
-- `apiConnect` returns `ConnReqType`, as before; for `contactAlreadyExists` a `ChatCommandError` "contact already exists" is thrown.
-- Package versions are unchanged. `@simplex-chat/types` with these commands is released before the library (`node/package.json:27`).
+- `apiConnect` is unchanged: `ConnReqType` is returned; for `contactAlreadyExists`, a `ChatCommandError` "contact already exists" is thrown.
+- Package versions are unchanged in this pull request. At release, `@simplex-chat/types` is published above 7.1.0-beta.6.2 with these commands, and the dependency at `node/package.json:27` is raised to that version before the library is published.
 
 ## Mechanics
 
@@ -154,24 +163,61 @@ connectWithPlan :4694       vName = StrJSON . nameDomain <$> planSimplexName, pa
 chatCommandP :6560          " domain=" *> (StrJSON <$> strP)
 chatCommandP :6561          " domain=" *> (StrJSON <$> strP)
 ```
-`docs/Commands.hs`:
-- Entries: `:130-131`, `:156-160`, `:170-172`, `:221-222`.
-- `APIConnectPlan` syntax: `:153`.
-- The twelve commands are removed from `undocumentedCommands` (`:359`); the placeholder comments of `APIChatItemsRead` and `APIGetChat` are removed.
-
-`docs/Responses.hs`:
-- Entries: `:50`, `:65`, `:85`, `:90`, `:92-94`.
-- The seven responses are removed from `undocumentedResponses`; the placeholder comments of `CRApiChat` and `CRItemsReadForChat` are removed.
-
-`docs/Types.hs`:
+`API/Docs/Commands.hs` entries:
+```
+Group commands        :130-131
+Connection commands   :156-160
+Chat commands         :170-172
+Chat management       :221-222
+APIConnectPlan        :153, syntax
+removed
+  the twelve commands, from undocumentedCommands (:359)
+  the placeholder comments of APIChatItemsRead and APIGetChat
+```
+`API/Docs/Responses.hs` entries:
+```
+CRApiChat                  :50
+CRContactInfo              :65
+CRItemsReadForChat         :85
+CRNetworkConfig            :90
+CRNewMemberContact         :92
+CRNewMemberContactSentInv  :93
+CRNewPreparedChat          :94
+removed
+  the seven responses, from undocumentedResponses (:130)
+  the placeholder comments of CRApiChat and CRItemsReadForChat
+```
+`API/Docs/Types.hs`:
 - Imports: `isLower` (`:19`); `KeepAliveOpts (..)` (`:53`).
-- `consSnake` (`:164-165`): the constructor name without the prefix, in lowercase, with `_` after each lowercase letter followed by an uppercase one; used for the switch statuses (`:450`, `:453`).
-- Entries in alphabetical order: `:313`, `:324`, `:328`, `:348`, `:350`, `:367`, `:398-400`, `:406`, `:416`.
+- `consSnake` (`:164-165`), new: the constructor name without the prefix, in lowercase, with `_` after each lowercase letter followed by an uppercase one.
 - `PlanResolveMode` syntax: `:355`.
-- Commented entries enabled in place: `:438-439`, `:443-444`, `:449-450`, `:452-453`.
-- `Generic` instances of the nineteen types.
+- `deriving instance Generic` of the nineteen types: eleven added, eight enabled from comments.
 
-`bots/src/API/TypeInfo.hs`:
+Entries:
+```
+new, in alphabetical order
+  GroupOwnerContact     :313
+  HostMode              :324
+  KeepAliveOpts         :328
+  NetworkConfig         :348
+  NetworkTimeout        :350
+  QueueStatus           :367
+  SMPProxyFallback      :398
+  SMPProxyMode          :399
+  SMPWebPortServers     :400
+  SocksMode             :406
+  TransportSessionMode  :416
+enabled from comments
+  ChatPagination        :438    STUnion, with syntax
+  ConnectionStats       :439
+  MsgContentTag         :443    suffix "_"
+  NavigationInfo        :444
+  RcvQueueInfo          :449
+  RcvSwitchStatus       :450    STEnum' (consSnake "RS")
+  SndQueueInfo          :452
+  SndSwitchStatus       :453    STEnum' (consSnake "SS")
+```
+`API/TypeInfo.hs`:
 - `AChatInfo` → `ChatInfo`: `:177`.
 - `SocksProxyWithAuth` in `stringTypes`: `:228`.
 
@@ -214,58 +260,100 @@ node/docs/api.Class.LiveMessage.md    line links only
 
 ## Tests
 
-`node/tests/commands.test.ts`, generated `cmdString`:
+`node/tests/commands.test.ts`, new tests of generated `cmdString`:
 ```
 APIConnectPlan :15              unknown: /_connect plan 1 L; allGroups and never: " resolve=<mode>"; linkOwnerSig: " sig=<json>"
 APIGetChat :33                  count=0; initial=1; around=5 count=0; after=5 count=100; before=5 count=10; content=image count=10 search=k
 APIChatItemsRead :49            /_read chat items @2 3,4
 APIPrepareContact :55           with and without " domain=biz.simplex"
 APIPrepareGroup :68             direct false: " direct=off domain=news.simplex"; direct true: both omitted
-prepared chat connection :81    /_connect contact @2 incognito=on json <msg>; /_connect group #3 contact=1 owner=abc; /_connect contact 1 incognito=on 2
+prepared chat connection :81    /_connect contact @2 incognito=on json <msg>; /_connect group #3 contact=1 owner=abc; /_connect group #3 json <msg>; /_connect contact 1 incognito=on 2
 member contact :98              /_create member contact #1 2; /_invite member contact @2 with and without json <msg>
 network config :109             /network; /_network <json>
 ```
-`node/tests/api.unit.test.ts`, `core.chatSendCmd` mocked; helpers `sentCommands` (`:14`) and `nextResponse` (`:18`):
-```
-:65    apiReceiveFile(3, "./f.txt") sends /freceive 3 approved_relays=on ./f.txt
-:72    apiGetChat with 0 sends count=0, with an around pagination sends around=5 count=0; chat is returned
-:80    apiChatItemsRead returns chatInfo
-:86    apiContactInfo returns the response
-:92    apiPrepareContact and apiPrepareGroup return chat
-:100   apiConnectPreparedContact returns startedConnectionToContact and contactAlreadyExists
-:109   apiConnectPreparedGroup and apiConnectContactViaAddress return the response
-:118   apiConnectPreparedLink returns each of its three responses; apiConnect returns Invitation, Contact, and throws "contact already exists"
-:134   apiConnectPlan returns [plan, link, planSimplexName, otherSimplexName]
-:143   apiGetNetworkConfig returns networkConfig; apiSetNetworkConfig resolves on cmdOk
-:151   apiCreateMemberContact returns contact; apiSendMemberContactInvitation(2, "hi") sends json {"type":"text","text":"hi"}
-```
-- Present: "stops the chat before closing the store" (`:191`) asserts `send /_stop` from `stopChat`.
+`node/tests/api.unit.test.ts`, `core.chatSendCmd` mocked.
 
-`node/tests/api.test.ts`, local SMP server:
+New helpers:
+```
+sentCommands :14    strings passed to the mocked core.chatSendCmd, in call order
+nextResponse :18    the response of later calls of the mocked core.chatSendCmd
+```
+New tests:
+```
+line   call                                                   sent string                                                  result
+:65    apiReceiveFile(3, "./f.txt")                           /freceive 3 approved_relays=on ./f.txt                       chatItem
+:72    apiGetChat, count 0                                    /_get chat #1 count=0                                        chat
+       apiGetChat, around pagination                          /_get chat @2 around=5 count=0                               chat
+:80    apiChatItemsRead                                                                                                    chatInfo
+:86    apiContactInfo                                                                                                      response
+:92    apiPrepareContact, apiPrepareGroup                                                                                  chat
+:100   apiConnectPreparedContact                                                                                           startedConnectionToContact; contactAlreadyExists
+:109   apiConnectPreparedGroup, apiConnectContactViaAddress                                                                response
+:118   apiConnectPreparedLink                                                                                              sentConfirmation; sentInvitation; contactAlreadyExists
+       apiConnect                                                                                                          Invitation; Contact; error "contact already exists"
+:134   apiConnectPlan                                                                                                      [plan, link, planSimplexName, otherSimplexName]
+:143   apiGetNetworkConfig                                                                                                 networkConfig
+       apiSetNetworkConfig                                                                                                 undefined, on cmdOk
+:151   apiCreateMemberContact                                 /_create member contact #1 2                                 contact
+       apiSendMemberContactInvitation(2, "hi")                /_invite member contact @2 json {"type":"text","text":"hi"}  contact
+```
+- Present test, unchanged: "stops the chat before closing the store" (`:191`): `send /_stop` is expected before `closeStore`.
+
+`node/tests/api.test.ts`, new tests with a local SMP server:
 ```
 :164   should connect via prepared contact and read messages
          plan of alice's address: contactAddress, ok, with link data; planSimplexName undefined
          apiPrepareContact: direct chat; apiConnectPreparedContact: startedConnectionToContact
-         after accept and connection: apiGetChat initial: "hello" rcvNew; apiChatItemsRead: direct chat info
+         after alice accepts the contact request and both clients receive contactConnected: apiGetChat initial: "hello" rcvNew; apiChatItemsRead: direct chat info
          apiGetChat around the item: rcvRead; apiContactInfo: contact, customUserProfile undefined
          apiConnectPreparedLink with alice's invitation: sentConfirmation, then both connected
 :205   should get and set network config
-         smpProxyFallback allowProtected and logTLSErrors true are set; the next get equals the set value
+         smpProxyFallback allowProtected and logTLSErrors true are set; the result of the next apiGetNetworkConfig is equal to the set configuration
 ```
-- Present: "should create member contact and send invitation" (`:81`) runs both member contact methods against the core with a string message (`:149`).
+- Present test, unchanged: "should create member contact and send invitation" (`:81`): both member contact methods are called against the core, with a string message (`:149`).
 
-Haskell:
-- "Bot API docs" (`tests/APIDocs.hs`): coverage of commands, responses and types (`:73-139`); each generated file is equal to its regenerated text (`:153-157`).
-- Present tests of the changed lines of `Library/Commands.hs`, in `tests/ChatTests/Names.hs`:
+`tests/ChatTests/Names.hs`, new test:
 ```
-testConnectByName :33                     /c @alice.simplex: connectContactViaName, APIPrepareContact with the name
-testConnectByChannelName :296             /c #team.simplex: joinChannelViaRelays, APIPrepareGroup with the name
-testConnectByNameBusinessAndChannel :388  /_prepare contact ... domain=biz.simplex (:407): business chat with the domain
+testPrepareChannelWithName :328   /_prepare group ... direct=off domain=team.simplex (:343), parsed at Library/Commands.hs:6561
+                                    plan of the prepared channel: "known prepared group #team", "SimpleX name: #team (verified)"
+```
+
+Haskell, present tests, unchanged:
+- "Bot API docs" (`tests/APIDocs.hs`): coverage of commands, their field names, responses, events and types, and of the responses of each command (`:73-151`); each generated file is equal to its regenerated text (`:153-157`).
+- Tests of the changed lines of `Library/Commands.hs`, in `tests/ChatTests/Names.hs`:
+```
+testConnectByName :34                     /c @alice.simplex: connectContactViaName, APIPrepareContact with the name
+testConnectByChannelName :297             /c #team.simplex: joinChannelViaRelays, APIPrepareGroup with the name
+testConnectByNameBusinessAndChannel :412  /_prepare contact ... domain=biz.simplex (:431): business chat with the domain
 ```
 
 ## Open questions
 
-1. `verifiedDomain` type (review comment 4364729789). Recommended: `StrJSON`, as now; the options are in the reply.
-2. Descriptions of the twelve commands (`docs/Commands.hs`) and the seven responses (`docs/Responses.hs`). Recommended: as written.
-3. Network commands in "Chat management", described as "These commands should not be used with CLI-based bots" (`docs/Commands.hs:218`). Recommended: as now; CLI bots set the network by options (`Options.hs:131-169`).
-4. The MCP server builds the strings of these commands (`packages/simplex-chat-mcp/src/messages.ts:179, 183`; `tools.ts:471, 520-539, 771`; `serve.ts:90`). Recommended: the library methods in the MCP in a following pull request, after the release of `@simplex-chat/types` and `simplex-chat`.
+1. `verifiedDomain` type (review comment 4364729789): `StrJSON` or another option of the reply? Recommended: `StrJSON`, as now.
+2. Descriptions of the new commands, errors and responses: as written? Recommended: as written.
+```
+APICreateMemberContact           Create a direct message contact with a group member.
+APISendMemberContactInvitation   Send a direct message invitation to a group member contact.
+APIPrepareContact                Prepare contact chat from link data before connecting.
+APIPrepareGroup                  Prepare group chat from link data before connecting.
+APIConnectPreparedContact        Connect to prepared contact.
+APIConnectPreparedGroup          Connect to prepared group.
+APIConnectContactViaAddress      Connect to existing contact via address in its profile.
+APIGetChat                       Get chat messages.
+APIChatItemsRead                 Mark messages as read.
+APIContactInfo                   Get contact information.
+APIGetNetworkConfig              Get network configuration.
+APISetNetworkConfig              Set network configuration.
+CEGroupMemberNotActive           Member is not connected yet
+CEPeerChatVRangeIncompatible     Member's client version is older than required
+CRApiChat                        Chat and messages
+CRContactInfo                    Contact information
+CRItemsReadForChat               Messages marked as read
+CRNetworkConfig                  Network configuration
+CRNewMemberContact               Member contact created
+CRNewMemberContactSentInv        Member contact invitation sent
+CRNewPreparedChat                Prepared chat
+```
+3. Network commands in "Chat management", described as "These commands should not be used with CLI-based bots" (`API/Docs/Commands.hs:218`): placed there? Recommended: as now.
+4. The strings of these commands are built by hand in the MCP server (`packages/simplex-chat-mcp/src/messages.ts:179, 183`; `tools.ts:471, 520-539, 771`; `serve.ts:90`): library methods in this pull request? Recommended: in a following pull request, after the release of `@simplex-chat/types` and `simplex-chat`.
+5. The strings of `APIGetChat`, `APICreateMemberContact` and `APISendMemberContactInvitation` are built by hand in the Python library (`packages/simplex-chat-python/src/simplex_chat/api.py:686`, `:764`, `:774-779`): the generated `<Name>_cmd_string` functions in this pull request? Cost: about 10 changed lines in `api.py`, and 3 tests of about 5 lines in `tests/test_api.py`. Recommended: in this pull request.
