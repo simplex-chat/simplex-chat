@@ -314,7 +314,8 @@ length of its plan:
   test products sign their tokens so), or else the product's monthly base plan, so a licence
   tester's purchase is credited too;
 - a renewal: a new charge for the plan it first charged. It keeps that plan in memory only, so after
-  a restart it answers a renewal of a subscription it credited before as ended.
+  a restart it answers a renewal of a subscription it credited before as ended, and the unissued
+  months of a plan still covered are refunded at its next month.
 
 It acknowledges nothing, so Play refunds a licence tester's subscription it credited once Play's
 acknowledgement window lapses.
@@ -332,11 +333,12 @@ check_store_during_coverage = on
 
 With `check_store_during_coverage` on as well, the service asks its store, the mock or a real one
 with `credit_test_purchases` on (below), at every `issueBadge` for a subscription, rather than at
-most once an hour and only when a month is due. A charge it reports during coverage is banked,
-where a deployment without the setting only records it: a charge row, the plan's months added to what is left and a
-later paid-through date, and those months are issued once coverage reaches them. So a renewal
-shows at once, though its credential waits for the paid month to end on the service's clock, and
-after a restart the mock answers the subscription ended at once, so the months banked are refunded. The mock charges anew at every
+most once an hour and only when a month is due. A charge it reports during coverage is banked: a
+charge row, the plan's months added to what is left and a later paid-through date, and those
+months are issued once coverage reaches them; a deployment without the setting only records it.
+So a renewal shows at once, though its credential waits for the paid month to end on the service's
+clock, and after a restart the mock answers the subscription ended at once, so the months banked
+are refunded. The mock charges anew at every
 check, so every such request banks the plan's months again; space requests over a minute apart, as
 the mock dates a charge a minute back and the app fails a ledger row dated before the one it
 follows. The service logs each banked charge as
