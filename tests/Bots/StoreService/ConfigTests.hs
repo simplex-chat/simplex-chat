@@ -449,8 +449,12 @@ sponsorAddr = "0x0B306BF915C4d645ff596e518fAf3F9669b97016"
 registrarAddr = "0x014f9c09CcEeDEF1B713110d04D3a07d5B5D9b73"
 resolverAddr = "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318"
 
+termsVersion, termsUrl :: T.Text
+termsVersion = "2026-10-23"
+termsUrl = "https://simplex.chat/"
+
 namesSection :: [T.Text]
-namesSection = ["[names]", "tld = testing"]
+namesSection = ["[names]", "tld = testing", "terms_version = " <> termsVersion, "terms_url = " <> termsUrl]
 
 chainSection :: [T.Text]
 chainSection =
@@ -503,10 +507,11 @@ testNamesDefaults = do
 
 testNamesWrittenOut :: IO ()
 testNamesWrittenOut = do
-  let ns = ["[names]", "tld = simplex", "years = 5", "term_start = 2027-03-01T12:00:00Z", "term_slack_seconds = 60", "reveal_margin_seconds = 0", "max_order_moves = 0"]
+  let ns = ["[names]", "tld = simplex", "terms_version = 2027-01.b", "terms_url = https://simplex.chat/names/terms", "years = 5", "term_start = 2027-03-01T12:00:00Z", "term_slack_seconds = 60", "reveal_margin_seconds = 0", "max_order_moves = 0"]
       cs = chainSection <> ["confirmations = 0", "gas_limit_cap = 500000", "max_fee_per_gas = 30000000000"]
-  NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves, nChain = ChainConfig {cConfirmations, cGasLimitCap, cMaxFeePerGas}} <- parsedNames ns cs
+  NamesConfig {nTLD, nTerms, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves, nChain = ChainConfig {cConfirmations, cGasLimitCap, cMaxFeePerGas}} <- parsedNames ns cs
   nTLD `shouldBe` TLDSimplex
+  nTerms `shouldBe` TermsConfig {tVersion = "2027-01.b", tUrl = "https://simplex.chat/names/terms"}
   nYears `shouldBe` 5
   nTermStart `shouldBe` UTCTime (fromGregorian 2027 3 1) (12 * 3600)
   (nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves) `shouldBe` (60, 0, 0)

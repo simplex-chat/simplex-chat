@@ -37,6 +37,7 @@ module Bots.StoreService.NamesOrdersTests
   )
 where
 
+import Bots.StoreService.ConfigTests (termsUrl, termsVersion)
 import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), setInvoiceState, withFakeBTCPay)
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (alice, answerRegistered, answerRegistrar, nameExpiresCall, noncesCall, registrarOf, rentPriceAnswer, rentPriceCall, reservedNamesCall, unhex)
@@ -60,6 +61,7 @@ import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.IORef (IORef, atomicModifyIORef', modifyIORef', newIORef, readIORef, writeIORef)
 import Data.List (sort)
+import qualified Data.Map.Strict as M
 import Data.Maybe (fromJust, fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -82,7 +84,7 @@ import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Eth.EIP712 (serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
-import StoreService.Config (ChainConfig (..), NamesConfig (..), ServiceConfig (..))
+import StoreService.Config (ChainConfig (..), NamesConfig (..), ServiceConfig (..), TermsConfig (..))
 import StoreService.Names.Abi (hex, uint256)
 import StoreService.Names.Chain (newChainClient)
 import StoreService.Names.Contracts (newContracts)
@@ -173,6 +175,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "agrees between the sweep and the overdue close on which invoices hold money" testFundedAgreement
   describe "registration view" $ do
     it "has the contract's fields" testViewFields
+    it "has the community entry of its label hash, null for an unlisted name" testViewCommunity
     it "reads the intent nonce in committed and nothing in taken" testViewReads
     it "leaves a failed intentNonce read null and named in unread, reading nothing in taken" testViewUnread
     it "reads the order's balance, held until its holder's invoice expires and free past it, and the cents its order took from another's" testViewBalance
@@ -292,7 +295,17 @@ data Ctx = Ctx
 
 testNamesConfig :: FakeEthNode -> NamesConfig
 testNamesConfig node =
-  NamesConfig {nTLD = TLDSimplex, nYears = 2, nTermStart = termStart, nTermSlackSeconds = slackSeconds, nRevealMarginSeconds = 900, nMaxOrderMoves = 3, nChain = fakeChainConfig node}
+  NamesConfig
+    { nTLD = TLDSimplex,
+      nYears = 2,
+      nTermStart = termStart,
+      nTermSlackSeconds = slackSeconds,
+      nRevealMarginSeconds = 900,
+      nMaxOrderMoves = 3,
+      nTerms = TermsConfig {tVersion = termsVersion, tUrl = termsUrl},
+      nCommunity = M.empty,
+      nChain = fakeChainConfig node
+    }
 
 -- | Each invoice the stub creates gets its own provider ref, and a card invoice its client secret.
 freshRefs :: IORef Int -> Provider -> Provider
@@ -1361,12 +1374,12 @@ testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   sort (KM.keys v)
     `shouldBe` sort
       [ "id", "version", "moves", "linksRefused", "phase", "labelHash", "label", "owner", "commitment", "sealed", "resolver", "sponsor", "chainId", "tld",
-        "years", "duration", "price", "fromBalance", "balance", "latePayment", "commitTx", "registerTx", "revealAfter", "revealBefore", "intentNonce", "unread", "expiresAt", "error"
+        "years", "duration", "price", "fromBalance", "balance", "latePayment", "commitTx", "registerTx", "revealAfter", "revealBefore", "intentNonce", "unread", "expiresAt", "error", "community"
       ]
   field "latePayment" v `shouldBe` Just J.Null
   let waiting w = field "latePayment" $ objectOf $ viewJSON (testNamesConfig node) r Nothing (Just w) ViewReads {vrIntentNonce = Nothing, vrUnread = []}
   map waiting [LWConfirming, LWCrediting, LWSupport] `shouldBe` map (\t -> Just $ J.object ["waiting" .= (t :: Text)]) ["confirming", "crediting", "support"]
-  map (`field` v) ["id", "phase", "owner", "tld", "chainId", "linksRefused", "label", "unread", "sponsor", "fromBalance", "balance"]
+  map (`field` v) ["id", "phase", "owner", "tld", "chainId", "linksRefused", "label", "unread", "sponsor", "fromBalance", "balance", "community"]
     `shouldBe` map
       Just
       [ "r1",
@@ -1379,8 +1392,20 @@ testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
         J.Array mempty,
         J.String $ safeDecodeUtf8 $ strEncode fakeSponsor,
         J.Number 0,
+        J.Null,
         J.Null
       ]
+
+testViewCommunity :: IO ()
+testViewCommunity = withServiceStore $ \st -> withFakeEthNode $ \node -> do
+  Right () <- placePaid st "r1" ownerA (order "alicebakery" 1) (addUTCTime 3600 t0)
+  r <- withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "r1")
+  let LabelHash aliceHash = labelHash "alicebakery"
+      listing :: [(ByteString, Text)] -> Maybe J.Value
+      listing entries = field "community" $ objectOf $ viewJSON (testNamesConfig node) {nCommunity = M.fromList entries} r Nothing Nothing ViewReads {vrIntentNonce = Nothing, vrUnread = []}
+  listing [(aliceHash, "bakers and bakeries in Lisbon")] `shouldBe` Just (J.object ["for" .= ("bakers and bakeries in Lisbon" :: Text)])
+  let LabelHash bobHash = labelHash "bobsbakery"
+  listing [(bobHash, "bakers of Porto")] `shouldBe` Just J.Null
 
 testViewReads :: IO ()
 testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do

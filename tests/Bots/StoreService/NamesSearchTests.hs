@@ -6,6 +6,7 @@
 
 module Bots.StoreService.NamesSearchTests (namesSearchTests, aliceHex) where
 
+import Bots.StoreService.ConfigTests (termsUrl, termsVersion)
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests
   ( answerRegistered,
@@ -33,9 +34,11 @@ import Control.Monad (forM_, replicateM_)
 import Crypto.Random (ChaChaDRG)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
+import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Aeson.Types as JT
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as LB
+import qualified Data.Map.Strict as M
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -51,8 +54,8 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.SimplexName (SimplexTLD (..))
 import Simplex.Messaging.Transport.Client (TransportHost (..))
-import StoreService.Config (ListenerConfig (..), NamesConfig (..))
-import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, uint256)
+import StoreService.Config (ListenerConfig (..), NamesConfig (..), TermsConfig (..))
+import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, bytes32FromHex, uint256)
 import StoreService.Names.Contracts (Contracts (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Profiles (ChatKind (..), HostResolver, LinkProfile (..), ProfileFetcher, ProfileLimits (..), defaultProfileLimits, monotonicSeconds, newProfiles)
@@ -70,6 +73,7 @@ namesSearchTests = describe "StoreService names: search" $ do
     it "answers a reserved name" $ testReserved g
     it "answers a name the chain has available as registered while its register here is sent, without a price" $ testRegistering g
     it "answers a registered name with its entities, raw records, owner, resolver, nonce, expiry and grace period" $ testRegistered g
+    it "answers a listed name's community entry when available, reserved, being registered here and registered" $ testCommunity g
     it "makes one entity per short link of its record's kind, splitting on ';', and none from other values" $ testRecordLinks g
     it "makes entities of the first 5 short links of a record only, fetching no other" $ testRecordLinksCap g
     it "reads no records from another resolver" $ testOtherResolver g
@@ -92,12 +96,12 @@ namesSearchTests = describe "StoreService names: search" $ do
 data Search = Search {node :: FakeEthNode, store :: DBStore, client :: (Manager, String), fetched :: TVar [Text]}
 
 -- | The routes as namesRoutes registers them, since a NamesEnv needs a running chat controller.
-withSearch :: TVar ChaChaDRG -> (Contracts -> Contracts) -> (Search -> IO a) -> IO a
-withSearch g adjust action = withServiceStore $ \store -> withContracts g $ \node ct -> do
+withSearch :: TVar ChaChaDRG -> (NamesConfig -> NamesConfig) -> (Contracts -> Contracts) -> (Search -> IO a) -> IO a
+withSearch g adjustConfig adjust action = withServiceStore $ \store -> withContracts g $ \node ct -> do
   fetched <- newTVarIO []
   ps <- newProfiles defaultProfileLimits {fetchTimeout = fetchMicros} monotonicSeconds (fakeFetch fetched) stubResolver
   http <- newHttpEnv ListenerConfig {lHost = "127.0.0.1", lPort = 0, lStaticDir = "", lServeWebapp = False, lWebappExportDir = Nothing, lTrustForwardedFor = False, lNamesStaticDir = Nothing, lNamesExportDir = Nothing, lNamesHosts = []}
-  let cfg = namesConfig node
+  let cfg = adjustConfig $ namesConfig node
       routes = \case
         ["api", "link", "preview"] -> Just Route {rMethod = "POST", rLimit = previewLimit, rHandler = previewHandler ps}
         ["api", "name", hash] -> Just Route {rMethod = "GET", rLimit = searchLimit, rHandler = searchHandler cfg store (adjust ct) ps hash}
@@ -115,8 +119,25 @@ namesConfig node =
       nTermSlackSeconds = 3600,
       nRevealMarginSeconds = 900,
       nMaxOrderMoves = 3,
+      nTerms = TermsConfig {tVersion = termsVersion, tUrl = termsUrl},
+      nCommunity = M.empty,
       nChain = fakeChainConfig node
     }
+
+aliceCommunity :: Text
+aliceCommunity = "bakers and bakeries in Lisbon"
+
+listAlice :: NamesConfig -> NamesConfig
+listAlice cfg = cfg {nCommunity = M.singleton (fromJust $ bytes32FromHex aliceHex) aliceCommunity}
+
+-- | The answer as it reads for a name on the community list.
+listed :: Answer -> Answer
+listed (status, answer) = (status, withEntry <$> answer)
+  where
+    withEntry :: J.Value -> J.Value
+    withEntry = \case
+      J.Object o -> J.Object $ KM.insert "community" (J.object ["for" .= aliceCommunity]) o
+      v -> v
 
 fetchMicros :: Int
 fetchMicros = 500000
@@ -234,7 +255,9 @@ availableAnswer price =
       "resolver" .= resolverText,
       "sponsor" .= sponsorText,
       "chainId" .= fakeChainId,
-      "tld" .= str "simplex"
+      "tld" .= str "simplex",
+      "community" .= J.Null,
+      "terms" .= J.object ["version" .= termsVersion, "url" .= termsUrl]
     ]
 
 registeredAnswer :: [J.Value] -> J.Value -> Text -> J.Value -> Answer
@@ -249,8 +272,13 @@ registeredAnswer entities records resolver nonce =
       "expiresAt" .= (now + year),
       "gracePeriod" .= gracePeriod,
       "chainId" .= fakeChainId,
-      "tld" .= str "simplex"
+      "tld" .= str "simplex",
+      "community" .= J.Null
     ]
+
+reservedAnswer, registeringAnswer :: Answer
+reservedAnswer = ok ["status" .= str "reserved", "community" .= J.Null]
+registeringAnswer = ok ["status" .= str "registered", "entities" .= ([] :: [J.Value]), "tld" .= str "simplex", "community" .= J.Null]
 
 recordsOf :: Text -> Text -> J.Value
 recordsOf contact channel = J.object ["contact" .= contact, "channel" .= channel]
@@ -299,7 +327,7 @@ setPhase st phase = withTransaction st $ \db -> do
 -- search
 
 testAvailable :: TVar ChaChaDRG -> IO ()
-testAvailable g = withSearch g id $ \s@Search {node} -> do
+testAvailable g = withSearch g id id $ \s@Search {node} -> do
   available node
   answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000
   answerCall node fakeController (rentPriceCall 6) $ Returns $ rentPriceAnswer 40000
@@ -307,24 +335,24 @@ testAvailable g = withSearch g id $ \s@Search {node} -> do
   searchAlice s 6 `shouldReturn` availableAnswer 40000
 
 testReserved :: TVar ChaChaDRG -> IO ()
-testReserved g = withSearch g id $ \s@Search {node} -> do
+testReserved g = withSearch g id id $ \s@Search {node} -> do
   reserved node
-  searchAlice s 12 `shouldReturn` ok ["status" .= str "reserved"]
+  searchAlice s 12 `shouldReturn` reservedAnswer
 
 testRegistering :: TVar ChaChaDRG -> IO ()
-testRegistering g = withSearch g id $ \s@Search {node, store} -> do
+testRegistering g = withSearch g id id $ \s@Search {node, store} -> do
   available node
   code <- issue store 1 usable
   placeCode store "r1" ownerA (order "alicebakery" 1) code `shouldReturn` Right ()
   setPhase store PRegistering
   -- no price is answered, so reading one would fail the search
-  searchAlice s 12 `shouldReturn` ok ["status" .= str "registered", "entities" .= ([] :: [J.Value]), "tld" .= str "simplex"]
+  searchAlice s 12 `shouldReturn` registeringAnswer
   setPhase store PRegistered
   answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000
   searchAlice s 12 `shouldReturn` availableAnswer 10000
 
 testRegistered :: TVar ChaChaDRG -> IO ()
-testRegistered g = withSearch g id $ \s@Search {node} -> do
+testRegistered g = withSearch g id id $ \s@Search {node} -> do
   registeredWith node bakeryLink newsLink
   searchAlice s 12
     `shouldReturn` registeredAnswer
@@ -335,8 +363,23 @@ testRegistered g = withSearch g id $ \s@Search {node} -> do
       resolverText
       (J.toJSON (0 :: Int))
 
+testCommunity :: TVar ChaChaDRG -> IO ()
+testCommunity g = withSearch g listAlice id $ \s@Search {node, store} -> do
+  available node
+  answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000
+  searchAlice s 12 `shouldReturn` listed (availableAnswer 10000)
+  reserved node
+  searchAlice s 12 `shouldReturn` listed reservedAnswer
+  available node
+  code <- issue store 1 usable
+  placeCode store "r1" ownerA (order "alicebakery" 1) code `shouldReturn` Right ()
+  setPhase store PRegistering
+  searchAlice s 12 `shouldReturn` listed registeringAnswer
+  registeredWith node fullLink ""
+  searchAlice s 12 `shouldReturn` listed (registeredAnswer [] (recordsOf fullLink "") resolverText (J.toJSON (0 :: Int)))
+
 testRecordLinks :: TVar ChaChaDRG -> IO ()
-testRecordLinks g = withSearch g id $ \s@Search {node} -> do
+testRecordLinks g = withSearch g id id $ \s@Search {node} -> do
   let botLink = taggedLink "smp8.simplex.im" 'a' "Bot"
       contact = bakeryLink <> ";" <> botLink <> " ; " <> newsLink <> ";" <> fullLink <> ";;"
       channel = " " <> newsLink <> ";" <> bakeryLink <> ";hello"
@@ -349,7 +392,7 @@ testRecordLinks g = withSearch g id $ \s@Search {node} -> do
   searchAlice s 12 `shouldReturn` registeredAnswer [] (recordsOf fullLink "") resolverText (J.toJSON (0 :: Int))
 
 testRecordLinksCap :: TVar ChaChaDRG -> IO ()
-testRecordLinksCap g = withSearch g id $ \s@Search {node} -> do
+testRecordLinksCap g = withSearch g id id $ \s@Search {node} -> do
   let contacts = map (\n -> taggedLink "smp8.simplex.im" 'a' ("Bot" <> T.pack (show n))) [1 .. 7 :: Int]
   -- a value of another kind first, so the cap counts only the record's own links
   registeredWith node (T.intercalate ";" $ newsLink : contacts) newsLink
@@ -359,13 +402,13 @@ testRecordLinksCap g = withSearch g id $ \s@Search {node} -> do
   length . filter (T.isInfixOf "#Bot") <$> fetchedLinks s `shouldReturn` 5
 
 testOtherResolver :: TVar ChaChaDRG -> IO ()
-testOtherResolver g = withSearch g id $ \s@Search {node} -> do
+testOtherResolver g = withSearch g id id $ \s@Search {node} -> do
   nameState node (toInteger $ now + year) 0
   answerRegistered node otherResolver
   searchAlice s 12 `shouldReturn` registeredAnswer [] J.Null otherResolverText J.Null
 
 testEntityProfiles :: TVar ChaChaDRG -> IO ()
-testEntityProfiles g = withSearch g id $ \s@Search {node} -> do
+testEntityProfiles g = withSearch g id id $ \s@Search {node} -> do
   let gone = taggedLink "smp8.simplex.im" 'a' "Gone"
       privateName = taggedLink "private.test" 'a' "Y8m3"
       privateLiteral = taggedLink "10.0.0.1" 'c' "Rk27"
@@ -384,7 +427,7 @@ testEntityProfiles g = withSearch g id $ \s@Search {node} -> do
     deepLinkAt host kind tag = "simplex:/" <> T.singleton kind <> "#" <> snd (T.breakOnEnd "#" $ taggedLink host kind tag) <> "?h=" <> host
 
 testFailedReads :: TVar ChaChaDRG -> IO ()
-testFailedReads g = withSearch g id $ \s@Search {node} -> do
+testFailedReads g = withSearch g id id $ \s@Search {node} -> do
   let unavailable = refused 503 "provider_unavailable"
   available node
   searchAlice s 12 `shouldReturn` unavailable
@@ -406,7 +449,7 @@ testFailedReads g = withSearch g id $ \s@Search {node} -> do
 
 -- | Each slow read takes 40% of the deadline: the status's two concurrent rounds meet it, the records' third round passes it.
 testOneDeadline :: TVar ChaChaDRG -> IO ()
-testOneDeadline g = withSearch g (\ct -> ct {ctDeadline = deadline}) $ \s@Search {node} -> do
+testOneDeadline g = withSearch g id (\ct -> ct {ctDeadline = deadline}) $ \s@Search {node} -> do
   registeredWith node bakeryLink newsLink
   -- reads the registrar's constants, which a running service has read once
   fst <$> searchAlice s 12 `shouldReturn` 200
@@ -420,7 +463,7 @@ testOneDeadline g = withSearch g (\ct -> ct {ctDeadline = deadline}) $ \s@Search
     deadline = 2000000
 
 testBadHash :: TVar ChaChaDRG -> IO ()
-testBadHash g = withSearch g id $ \s -> do
+testBadHash g = withSearch g id id $ \s -> do
   let hexDigits = T.drop 2 aliceHex
   forM_ [T.toUpper aliceHex, "0x" <> T.toUpper hexDigits, hexDigits, "0x" <> T.drop 1 hexDigits, aliceHex <> "0", "0x" <> T.replicate 64 "g", "0X" <> hexDigits] $ \h ->
     (h, searchName s h "?length=12") `shouldReturnPair` refused 400 "bad_request"
@@ -429,15 +472,15 @@ testBadHash g = withSearch g id $ \s -> do
     shouldReturnPair (h, act) expected = act >>= \a -> (h, a) `shouldBe` (h, expected)
 
 testBadLength :: TVar ChaChaDRG -> IO ()
-testBadLength g = withSearch g id $ \s@Search {node} -> do
+testBadLength g = withSearch g id id $ \s@Search {node} -> do
   reserved node
   forM_ ["?length=5", "?length=64", "", "?length=", "?length", "?length=abc", "?length=6.0", "?length=%2B7", "?length=-6", "?length=%207", "?length=0x6", "?length=18446744073709551622"] $ \q ->
     searchName s aliceHex q >>= \a -> (q, a) `shouldBe` (q, refused 400 "invalid_name")
   forM_ ["?length=6", "?length=63", "?length=007"] $ \q ->
-    searchName s aliceHex q >>= \a -> (q, a) `shouldBe` (q, ok ["status" .= str "reserved"])
+    searchName s aliceHex q >>= \a -> (q, a) `shouldBe` (q, reservedAnswer)
 
 testSearchLimit :: TVar ChaChaDRG -> IO ()
-testSearchLimit g = withSearch g id $ \s -> do
+testSearchLimit g = withSearch g id id $ \s -> do
   replicateM_ 30 $ searchName s "0x00" "?length=12" `shouldReturn` refused 400 "bad_request"
   r <- send s ("/api/name/" <> T.unpack aliceHex <> "?length=12") id
   answerOf r `shouldBe` refused 429 "rate_limited"
@@ -449,7 +492,7 @@ testSearchLimit g = withSearch g id $ \s -> do
 -- link preview
 
 testPreviewKinds :: TVar ChaChaDRG -> IO ()
-testPreviewKinds g = withSearch g id $ \s -> do
+testPreviewKinds g = withSearch g id id $ \s -> do
   previewOf s bakeryLink `shouldReturn` ok bakeryChat
   previewOf s newsLink `shouldReturn` ok newsChat
   previewOf s "simplex:/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4LmAAAAAAAAA?h=smp9.simplex.im" `shouldReturn` ok newsChat
@@ -457,7 +500,7 @@ testPreviewKinds g = withSearch g id $ \s -> do
   previewOf s (taggedLink "smp8.simplex.im" 'a' "Biz") `shouldReturn` ok (chat "address" "business" "helper" "" Nothing Nothing "ok")
 
 testPreviewInvalid :: TVar ChaChaDRG -> IO ()
-testPreviewInvalid g = withSearch g id $ \s -> do
+testPreviewInvalid g = withSearch g id id $ \s -> do
   let base = bakeryLink <> "?x="
       padded n = base <> T.replicate (n - T.length base) "a"
       invalid = refused 400 "invalid_link"
@@ -469,23 +512,23 @@ testPreviewInvalid g = withSearch g id $ \s -> do
   fst <$> previewOf s (padded 4096) `shouldReturn` 200
 
 testPreviewBadBody :: TVar ChaChaDRG -> IO ()
-testPreviewBadBody g = withSearch g id $ \s -> do
+testPreviewBadBody g = withSearch g id id $ \s -> do
   forM_ ["[]", "\"link\"", "not json", "", J.encode (J.object ["link" .= T.replicate 9000 "a"])] $ \body ->
     answerOf <$> postPreview s body >>= \a -> (body, a) `shouldBe` (body, refused 400 "bad_request")
 
 testPreviewPrivateHost :: TVar ChaChaDRG -> IO ()
-testPreviewPrivateHost g = withSearch g id $ \s -> do
+testPreviewPrivateHost g = withSearch g id id $ \s -> do
   previewOf s (taggedLink "10.0.0.1" 'a' "Y8m3") `shouldReturn` ok (unreadChat "address" "contact" "unavailable")
   previewOf s (taggedLink "private.test" 'c' "Rk27") `shouldReturn` ok (unreadChat "channel" "channel" "unavailable")
   fetchedLinks s `shouldReturn` []
 
 testPreviewUnread :: TVar ChaChaDRG -> IO ()
-testPreviewUnread g = withSearch g id $ \s -> do
+testPreviewUnread g = withSearch g id id $ \s -> do
   previewOf s (taggedLink "smp8.simplex.im" 'c' "Gone") `shouldReturn` ok (unreadChat "channel" "channel" "unread")
   length <$> fetchedLinks s `shouldReturn` 1
 
 testPreviewLimit :: TVar ChaChaDRG -> IO ()
-testPreviewLimit g = withSearch g id $ \s -> do
+testPreviewLimit g = withSearch g id id $ \s -> do
   replicateM_ 20 $ previewOf s "hello" `shouldReturn` refused 400 "invalid_link"
   r <- postPreview s (J.encode $ J.object ["link" .= bakeryLink])
   answerOf r `shouldBe` refused 429 "rate_limited"

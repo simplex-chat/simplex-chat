@@ -13,6 +13,7 @@ module StoreService.Config
     BadgeIssuerKey (..),
     GroupConfig (..),
     NamesConfig (..),
+    TermsConfig (..),
     ChainConfig (..),
     ServiceConfig (..),
     defaultExpiryMinutes,
@@ -26,14 +27,21 @@ module StoreService.Config
 where
 
 import qualified Control.Exception as E
-import StoreService.Log (logWarn)
-import Control.Monad (mfilter, unless, when)
+import StoreService.Log (logInfo, logWarn)
+import Control.Applicative (many)
+import Control.Monad (forM_, mfilter, unless, when)
+import Data.Attoparsec.Combinator (lookAhead)
 import Data.Attoparsec.Text (Parser, endOfInput, isEndOfLine, parseOnly, satisfy, skipMany, skipSpace, skipWhile)
+import Data.Bifunctor (first)
 import qualified Data.ByteArray as BA
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
+import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
-import Data.Ini (Ini, iniGlobals, iniParser, keys, lookupValue, sections)
-import Data.List (nub)
+import Data.Char (GeneralCategory (..), generalCategory, isAsciiLower, isAsciiUpper, isControl, isDigit, isSpace)
+import Data.Ini (Ini, iniGlobals, iniParser, keyValueParser, keys, lookupValue, sectionParser, sections)
+import Data.List (nub, (\\))
+import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -42,12 +50,15 @@ import qualified Data.Text.IO as TIO
 import Data.Time.Clock (UTCTime)
 import Data.Time.Format.ISO8601 (iso8601ParseM)
 import Data.Word (Word64)
+import Simplex.Chat.Badges.Code (maxNameLength, minNameLength)
 import Simplex.Chat.Library.Commands (mkValidName)
 import Simplex.Messaging.Crypto.BBS (BBSSecretKey)
 import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey, mkPrivateKey)
 import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Eth.Address (Address)
-import Simplex.Messaging.SimplexName (SimplexTLD (..))
+import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
+import Simplex.Messaging.Util (tshow)
+import StoreService.Names.Label (LabelError (..), validLabel)
 import System.IO.Error (ioeGetErrorString)
 import Text.Read (readMaybe)
 
@@ -132,8 +143,15 @@ data NamesConfig = NamesConfig
     nTermSlackSeconds :: Int,
     nRevealMarginSeconds :: Int,
     nMaxOrderMoves :: Int,
+    nTerms :: TermsConfig,
+    -- | The operator's community names, keyed by the label hash's bytes, as search receives a name.
+    nCommunity :: Map ByteString Text,
     nChain :: ChainConfig
   }
+  deriving (Eq, Show)
+
+-- | The name terms buyers agree to, and the page the order's checkbox links to.
+data TermsConfig = TermsConfig {tVersion :: Text, tUrl :: Text}
   deriving (Eq, Show)
 
 data ChainConfig = ChainConfig
@@ -188,6 +206,12 @@ requireHttps u
   | "https://" `T.isPrefixOf` u = Right u
   | otherwise = Left "btcpay.host must be an absolute https URL"
 
+maxTermsVersionLength :: Int
+maxTermsVersionLength = 32
+
+maxCommunityTextLength :: Int
+maxCommunityTextLength = 200
+
 -- | The controller refuses a registration under 730 days.
 minNameYears :: Int
 minNameYears = 2
@@ -215,11 +239,28 @@ readServiceConfig path =
   E.try (TIO.readFile path) >>= \case
     Left (e :: E.IOException) -> pure (Left (ioeGetErrorString e))
     -- Data.Ini stops at the first unparseable line and keeps what it has, so a missing `=` silently drops every section below.
-    Right text -> case parseOnly (iniParser <* trailingNoise <* endOfInput) text of
+    Right text -> case parseOnly ((,) <$> lookAhead (many keyValueParser *> many sectionParser) <*> iniParser <* trailingNoise <* endOfInput) text of
       Left _ -> pure (Left "could not be read as an ini file: a line is malformed")
-      Right ini -> do
-        mapM_ (\k -> logWarn (T.pack path <> ": nothing reads " <> k <> ", so it was ignored")) (unknownKeys ini)
-        pure (parseConfig ini)
+      Right (written, ini) -> case repeatedSetting written of
+        Just e -> pure (Left e)
+        Nothing -> do
+          mapM_ (\k -> logWarn (T.pack path <> ": nothing reads " <> k <> ", so it was ignored")) (unknownKeys ini)
+          let cfg = parseConfig ini
+          forM_ (either (const Nothing) names cfg) $ \NamesConfig {nCommunity} ->
+            logInfo ("names: " <> tshow (M.size nCommunity) <> " community names loaded")
+          pure cfg
+
+-- | Data.Ini keeps only the last section of a name and the first value of a key in a section,
+-- so the sections are read in order to refuse a repeated one.
+repeatedSetting :: [(Text, [(Text, Text)])] -> Maybe String
+repeatedSetting written = case repeated (map fst written) of
+  h : _ -> Just ("[" <> T.unpack h <> "] is written twice, and only the last of them would be read")
+  [] -> case [(s, k) | (s, kvs) <- written, k <- repeated (map fst kvs)] of
+    (s, k) : _ -> Just (T.unpack s <> "." <> T.unpack k <> " is written twice, and only the first of them would be read")
+    [] -> Nothing
+
+repeated :: Eq a => [a] -> [a]
+repeated xs = nub (xs \\ nub xs)
 
 -- | iniParser stops before a trailing comment, so endOfInput alone would reject a valid file.
 trailingNoise :: Parser ()
@@ -246,7 +287,7 @@ knownSettings =
     ("poll", ["waiting_seconds", "idle_seconds"]),
     ("group", ["display_name", "description"]),
     ("issuer", ["index", "private_key", "dev_keys"]),
-    ("names", ["tld", "years", "term_start", "term_slack_seconds", "reveal_margin_seconds", "max_order_moves"]),
+    ("names", ["tld", "terms_version", "terms_url", "years", "term_start", "term_slack_seconds", "reveal_margin_seconds", "max_order_moves"]),
     ("chain", ["rpc_url", "chain_id", "controller", "sponsor", "base_registrar", "resolver", "service_key", "confirmations", "gas_limit_cap", "max_fee_per_gas"])
   ]
 
@@ -254,7 +295,8 @@ unknownKeys :: Ini -> [Text]
 unknownKeys ini = beforeAnySection <> unknownSections <> settings
   where
     beforeAnySection = [k <> ", written above the first section header" | (k, _) <- iniGlobals ini]
-    unknownSections = ["[" <> s <> "]" | s <- sections ini, T.strip s `notElem` map fst knownSettings]
+    -- [community] keys are labels, which parseConfig checks.
+    unknownSections = ["[" <> s <> "]" | s <- sections ini, T.strip s `notElem` ("community" : map fst knownSettings)]
     settings =
       [ section <> "." <> key
         | (section, known) <- knownSettings,
@@ -403,7 +445,9 @@ parseConfig ini = do
           let sHost = defaultStripeHost
           pure (Just StripeConfig {sSecretKey, sPublishableKey, sWebhookSecret, sSessionMinutes, sHost})
     namesSection
-      | not (hasSection "names") = if hasSection "chain" then Left "[chain] is set but [names] is absent, so nothing would use it" else Right Nothing
+      | not (hasSection "names") = case filter hasSection ["chain", "community"] of
+          s : _ -> Left ("[" <> T.unpack s <> "] is set but [names] is absent, so nothing would use it")
+          [] -> Right Nothing
       | not (hasSection "chain") = Left "[names] needs a [chain] section"
       | otherwise = do
           nTLD <- tldSetting
@@ -413,8 +457,10 @@ parseConfig ini = do
           nTermSlackSeconds <- atLeast 0 "names" "term_slack_seconds" 3600
           nRevealMarginSeconds <- atLeast 0 "names" "reveal_margin_seconds" 900
           nMaxOrderMoves <- atLeast 0 "names" "max_order_moves" 3
+          nTerms <- termsSetting
+          nCommunity <- communityList nTLD
           nChain <- chainSection
-          pure (Just NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves, nChain})
+          pure (Just NamesConfig {nTLD, nYears, nTermStart, nTermSlackSeconds, nRevealMarginSeconds, nMaxOrderMoves, nTerms, nCommunity, nChain})
     tldSetting =
       required "names" "tld" >>= \case
         "simplex" -> Right TLDSimplex
@@ -423,6 +469,30 @@ parseConfig ini = do
     termStart =
       maybe (Left ("names.term_start must be an ISO 8601 UTC time such as " <> defaultTermStart)) Right $
         iso8601ParseM (maybe defaultTermStart T.unpack (present "names" "term_start"))
+    termsSetting = do
+      tVersion <- required "names" "terms_version"
+      unless (T.length tVersion <= maxTermsVersionLength && T.all versionChar tVersion) $
+        Left ("names.terms_version must be 1 to " <> show maxTermsVersionLength <> " letters, digits, dots, underscores or hyphens")
+      tUrl <- required "names" "terms_url"
+      unless (httpsUrl tUrl) $ Left "names.terms_url must be an https URL"
+      pure TermsConfig {tVersion, tUrl}
+    versionChar c = isAsciiUpper c || isAsciiLower c || isDigit c || c `elem` ("._-" :: String)
+    httpsUrl u = case T.stripPrefix "https://" u of
+      Just rest -> not (T.null rest) && T.all (\c -> not (isSpace c || isControl c)) rest
+      Nothing -> False
+    communityList tld = M.fromList <$> mapM (communityEntry tld) (either (const []) id (keys "community" ini))
+    communityEntry tld label = do
+      let k = "community." <> T.unpack label
+          text = fromMaybe "" (look "community" label)
+      valid <- first (labelRefusal k) (validLabel tld label)
+      when (T.null text || T.length text > maxCommunityTextLength) $ Left (k <> " must be 1 to " <> show maxCommunityTextLength <> " characters")
+      when (T.any invisible text) $ Left (k <> " has a control, format or line separator character")
+      let LabelHash h = labelHash valid
+      pure (h, text)
+    invisible c = isControl c || generalCategory c `elem` [Format, LineSeparator, ParagraphSeparator]
+    labelRefusal k = \case
+      LELength -> k <> " must be " <> show minNameLength <> " to " <> show maxNameLength <> " characters"
+      LEChars -> k <> " must be lower-case letters and digits, with single hyphens between them"
     atLeast lowest s k d = do
       v <- num s k d
       if v >= lowest then Right v else Left (T.unpack s <> "." <> T.unpack k <> " must be at least " <> show lowest)

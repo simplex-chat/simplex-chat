@@ -120,7 +120,11 @@ Other options:
 section (omitting it disables card payments), an optional `[group]` section (omitting it
 turns off the group's commands, though a group created earlier still has its code messages updated),
 the poll cadence, and optional `[names]` and `[chain]` sections for the names store (omitting both
-turns it off), whose `[chain] service_key` is [the gas key](#the-gas-key).
+turns it off), whose `[chain] service_key` is [the gas key](#the-gas-key). `[names]` requires
+`terms_version` and `terms_url`, and an optional `[community]` section lists the community names
+(see [Terms and community names](#terms-and-community-names)). Write every setting as
+`key = value`: the parser also reads `key: value`, but drops the first character of its value. A
+key written twice in one section, or a section header written twice, stops the service at startup.
 `store_service.ini.example` is the committed template; `store_service.ini` itself is
 gitignored, since a real one holds API keys and webhook secrets.
 
@@ -493,6 +497,36 @@ docker compose exec store-service bash -c ': </dev/tcp/<gateway>/443'
 adds for that user or network, then the chain, in `iptables` and `ip6tables`. Running it again
 changes nothing, and `--check` then reports the chain absent.
 
+### Terms and community names
+
+`[names]` needs two settings, with no default:
+
+- `terms_version`: the version of the name terms buyers agree to, 1 to 32 letters, digits, dots,
+  underscores or hyphens, such as `2026-10-23`. Change it whenever the terms change.
+- `terms_url`: the `https://` page of those terms, which the order's checkbox links to.
+
+**Upgrading:** an ini written before these settings existed stops the service at startup until both
+are added under `[names]`.
+
+`[community]` lists the community names, one line per name: the label, as it is searched, then `=`
+and what the name is for:
+
+```
+[community]
+bakers = bakers and bakeries in Portugal
+```
+
+Search answers and the registration view carry a listed name's text, which the page shows with the
+name as a community name. Each label must be a valid name in lower case and listed once; each text is
+1 to 200 characters with no control, format or line separator characters, and should not end with a
+full stop, since the page adds one. The service refuses to start, naming the setting, on any other
+entry, on `[community]` without `[names]`, on a key written twice in a section (only the first would
+be read) and on a section header written twice in the file (only the last would be read). It logs
+how many community names it loaded.
+
+Both the terms and the list are read only at startup, so an edit applies after a restart. After a
+restart, search each listed name on the names site and check that it shows as a community name.
+
 ### The gas key
 
 `[chain] service_key` is the registrar key: an Ethereum account (EOA) that sends every names
@@ -503,10 +537,10 @@ names.
 
 The commands run from `scripts/store-service/` on the service host, with Foundry's `cast`
 ([getfoundry.sh](https://getfoundry.sh), checked with 1.5.1) and `jq`. They read the ini through this
-shell function, which takes a key's value without surrounding spaces, tabs or a CR:
+shell function, which takes a `[chain]` key's value without surrounding spaces, tabs or a CR:
 
 ```
-ini() { sudo sed -n "s/^$1[[:space:]]*=[[:space:]]*\([^[:space:]]*\).*/\1/p" "${2:-store_service.ini}"; }
+ini() { sudo sed -n "/^\[chain\]/,/^\[/s/^$1[[:space:]]*=[[:space:]]*\([^[:space:]]*\).*/\1/p" "${2:-store_service.ini}"; }
 ```
 
 Keys and the RPC URL are read through `ini`, so they stay out of the shell history. A key is in
@@ -940,6 +974,8 @@ payment against this service in Chromium, as they run against the webapp's mock.
    age of 5 seconds;
 2. builds the names site (`vite build`) into the run's folder;
 3. writes an ini for that deployment with `[names]` and `[chain]` and no `[btcpay]` or `[stripe]`,
+   with the terms version `2026-10-23` and the one community name `bakers`, which the webapp's
+   community case searches for,
    serving the names site all in one on the host `127.0.0.1`, and signing with the test suite's
    public issuer secret (`issuerSecret` in `tests/Bots/StoreService/ConfigTests.hs`), trusted through
    `[issuer] dev_keys`. That secret is public: never use it outside this script;
