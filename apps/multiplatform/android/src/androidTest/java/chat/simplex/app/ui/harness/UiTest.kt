@@ -28,8 +28,8 @@ import chat.simplex.common.helpers.APPLICATION_ID
 import java.io.File
 
 abstract class UiTest {
-  @get:Rule val rule: ComposeTestRule = createEmptyComposeRule()
-  @get:Rule val knownIssue = KnownIssueRule()
+  @get:Rule(order = 0) val knownIssue = KnownIssueRule()
+  @get:Rule(order = 1) val rule: ComposeTestRule = createEmptyComposeRule()
 
   fun uiTest(body: UiScope.() -> Unit) {
     val watchdog = Watchdog.start(HARD_TIMEOUT_MS)
@@ -37,16 +37,14 @@ abstract class UiTest {
       UiTestApp.bootOnce()
       AppCrashes.install()
       AppCrashes.clear()
-      withKnownIssue(knownIssue.issues) {
-        val scope = UiScope(rule)
-        try {
-          scope.body()
-          scope.checkEnd()
-        } finally {
-          scope.finish()
-        }
-        AppCrashes.failIfAny()
+      val scope = UiScope(rule)
+      try {
+        scope.body()
+        scope.checkEnd()
+      } finally {
+        scope.finish()
       }
+      AppCrashes.failIfAny()
     } finally {
       watchdog.cancel()
     }
@@ -188,7 +186,7 @@ class UiScope(val rule: ComposeTestRule) {
       rule.mainClock.advanceTimeBy(48, ignoreFrameDuration = true)
       try {
         rule.waitForIdle()
-      } catch (e: RuntimeException) {
+      } catch (e: Exception) {
         if (e.javaClass.simpleName != "ComposeNotIdleException") throw e
         val shot = if (screenshot) FailureShots.take("UI not idle while waiting for $what") else null
         throw AssertionError("the app's UI did not become idle while waiting for $what; in flight: ${UiIdle.inFlight().joinToString { it.what }}; screenshot: $shot", e)
@@ -323,7 +321,7 @@ class UiScope(val rule: ComposeTestRule) {
     waitStable(key)
     settle()
     messageEditText(key).perform(CommitText(value))
-    poll(what = "the message field to hold `$value`") { editableText(key) == value }
+    poll(what = "the message field to hold `$value`") { editableText(key).let { check(it == value) { "the field holds `$it`" }; true } }
   }
 
   fun enterText(key: UiKey, text: String) {

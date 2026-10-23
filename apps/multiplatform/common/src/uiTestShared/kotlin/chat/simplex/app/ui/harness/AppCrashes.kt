@@ -1,8 +1,9 @@
 package chat.simplex.app.ui.harness
 
 import org.junit.AssumptionViolatedException
-import org.junit.rules.TestWatcher
+import org.junit.rules.TestRule
 import org.junit.runner.Description
+import org.junit.runners.model.Statement
 import java.util.concurrent.ConcurrentLinkedQueue
 
 @Target(AnnotationTarget.FUNCTION)
@@ -10,17 +11,16 @@ import java.util.concurrent.ConcurrentLinkedQueue
 @Repeatable
 annotation class KnownAppIssue(val finding: String, val error: String, val intermittent: Boolean = false)
 
-class KnownIssueRule : TestWatcher() {
-  var issues: List<KnownAppIssue> = emptyList()
-    private set
+class KnownIssueRule : TestRule {
+  override fun apply(base: Statement, description: Description): Statement = object : Statement() {
+    override fun evaluate() = withKnownIssue(knownIssues(description)) { base.evaluate() }
+  }
 
-  override fun starting(description: Description) {
-    issues = description.annotations.flatMap { a ->
-      when {
-        a is KnownAppIssue -> listOf(a)
-        a.annotationClass.java.enclosingClass == KnownAppIssue::class.java -> (a.annotationClass.java.getMethod("value").invoke(a) as Array<*>).filterIsInstance<KnownAppIssue>()
-        else -> emptyList()
-      }
+  private fun knownIssues(description: Description): List<KnownAppIssue> = description.annotations.flatMap { a ->
+    when {
+      a is KnownAppIssue -> listOf(a)
+      a.annotationClass.java.enclosingClass == KnownAppIssue::class.java -> (a.annotationClass.java.getMethod("value").invoke(a) as Array<*>).filterIsInstance<KnownAppIssue>()
+      else -> emptyList()
     }
   }
 }

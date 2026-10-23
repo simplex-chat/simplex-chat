@@ -127,7 +127,10 @@ private class ImeEnterKey : ViewAction {
     check((info.inputType and InputType.TYPE_TEXT_FLAG_MULTI_LINE) != 0 && (info.imeOptions and EditorInfo.IME_FLAG_NO_ENTER_ACTION) != 0) {
       "the soft keyboard's Enter is an editor action for the message field: inputType 0x${info.inputType.toString(16)}, imeOptions 0x${info.imeOptions.toString(16)}"
     }
+    ic.beginBatchEdit()
+    ic.finishComposingText()
     ic.commitText("\n", 1)
+    ic.endBatchEdit()
     uiController.loopMainThreadUntilIdle()
   }
 }

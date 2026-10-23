@@ -14,7 +14,7 @@ class ComposeKeyboardAndroidTest : UiTest() {
     val chat = alice.chatList.open("bob")
     typeInto(Ui.Chat.Message, "hello")
     pressImeEnter()
-    poll(what = "a line break after `hello` in the message field") { editableText(Ui.Chat.Message) == "hello\n" }
+    poll(what = "a line break after `hello` in the message field") { editableText(Ui.Chat.Message).let { check(it == "hello\n") { "the field holds `$it`" }; true } }
     check(chat.itemTexts().none { "hello" in it }) { "Enter sent the message: ${chat.itemTexts()}" }
     chat.send("there")
     bob.expectsMessage("alice> hello", CONNECT_TIMEOUT_MS)

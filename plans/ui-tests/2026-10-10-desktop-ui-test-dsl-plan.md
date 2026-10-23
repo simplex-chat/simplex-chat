@@ -1597,6 +1597,10 @@ Each entry gives the symptom, the cause (how it was confirmed), and the fix or m
 - Pausing the clock, as desktop does, breaks typing on Android instead (CI trial 6, 2026-10-23: 77 failures waiting for the message field to hold the typed text). The message field is an `AndroidView` `EditText`. Its update block reads `composeState`, so a text change re-runs it before the paused clock lets the field recompose. It then compares against `cs` captured at the last composition (`PlatformTextField.android.kt:69`, `:186-188`) and writes the old text back.
 - These three tests (`liveMessage_menuStart_alertConfirm_peerSeesStarted`, `liveMessage_boltButton_emptyStart`, `liveMessage_chatSwitch_sendsToOriginalChat`) type while the message is live, so they are skipped on Android with this reason (`assumeTrue`) and run on desktop. `liveMessage_received_showsLiveBadge` runs on both.
 
+### 15.4.1e Open flake: 60 messages from a CLI peer stopped at 52 (Android CI, 1 of 2 runs)
+
+- `UnreadScrollTest.unread_openChat_scrollsToFirstUnread` (GitHub emulator, trial 7, 2026-10-23): bob's CLI sent `m1`..`m60` to alice; after 60 s alice's row showed `m52` with unread 52, and nothing more arrived. In trial 5 the same wait took 574 ms. Logcat has no error in that window, and the bridge log has no per-message lines. So it is not known whether bob's CLI did not send the last eight messages or alice did not receive them. Next step: log bob's sent-message count when the wait times out.
+
 ### 15.4.2 Test strength limits (second review, 2026-10-14)
 
 Under the minimal-app-code rule (item 31) some states are asserted through the model, not the UI. These tests pass if the model is right even when the UI fails to render the state:
