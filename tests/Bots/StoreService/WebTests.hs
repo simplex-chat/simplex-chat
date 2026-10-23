@@ -36,6 +36,7 @@ where
 
 import StoreService.Catalog (catalogCurrency, defaultCatalog)
 import StoreService.Config (BTCPayConfig (..), ListenerConfig (..), PollConfig (..), ServiceConfig (..), SpeedPolicy (..), StripeConfig (..))
+import StoreService.Log (logInfo)
 import StoreService.Orders (cancelOpenInvoice, codeLifetime, expireOverdue, settleOrder)
 import StoreService.Poller
 import StoreService.Providers
@@ -56,7 +57,7 @@ import qualified Control.Concurrent.Async as Async
 import Control.Concurrent.MVar (MVar, newEmptyMVar, newMVar, putMVar, takeMVar, withMVar)
 import Control.Concurrent.STM (atomically, modifyTVar', readTVarIO)
 import qualified Control.Exception as E
-import Control.Monad (forM_, join, replicateM, replicateM_, void, when)
+import Control.Monad (forM, forM_, join, replicateM, replicateM_, void, when)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Key as K
@@ -73,6 +74,7 @@ import Data.Int (Int64)
 import Data.List (isInfixOf, sort, sortOn)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (catMaybes, isJust, isNothing, fromMaybe, mapMaybe)
+import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -102,7 +104,7 @@ import Simplex.Messaging.Encoding.String (textDecode, textEncode)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import System.Directory (createDirectoryIfMissing, createFileLink, doesFileExist, listDirectory)
 import System.FilePath ((</>))
-import System.IO (IOMode (..), hClose, hGetBuffering, hSetBuffering, stderr, withFile)
+import System.IO (BufferMode (..), IOMode (..), hClose, hGetBuffering, hSetBuffering, stderr, withFile)
 import System.IO.Unsafe (unsafePerformIO)
 import System.Timeout (timeout)
 import Test.Hspec
@@ -207,6 +209,8 @@ badgeWebTests = do
     it "constructs a Provider record and records every call, in order" testStubProviderRecordsCalls
     it "makes pCreateInvoice fail on demand, so provider_unavailable is exercisable" testStubProviderCreateFailsOnDemand
     it "records nothing when the caller never reaches the provider" testStubProviderNotCalledWhenSkipped
+  describe "store service log" $
+    it "keeps each record whole on its own line while many threads log at once, in every buffering mode" testLogRecordsWhole
   describe "store service web" $ do
     it "serves the shell at / and a hashed asset under /assets" testServesTheBuild
     it "fills the shell's publishable key from the ini at boot" testShellCarriesPublishableKey
@@ -2872,6 +2876,46 @@ capturingStderr action = withMVar stderrCaptureLock $ \_ -> do
       saved <- hDuplicate stderr
       (hDuplicateTo h stderr >> action) `E.finally` (hDuplicateTo saved stderr >> hClose saved >> hSetBuffering stderr buffering)
     T.readFile path
+
+logThreads :: Int
+logThreads = 16
+
+recordsPerThread :: Int
+recordsPerThread = 50
+
+-- | Every tenth record is longer than a handle's 8 KiB buffer, so a write committed buffer by buffer splits it.
+longRecordEvery, longRecordPad :: Int
+longRecordEvery = 10
+longRecordPad = 9000
+
+logRecordTag :: Text
+logRecordTag = "log-whole"
+
+logRecord :: Int -> Int -> Text
+logRecord t i = T.unwords [logRecordTag, tshow t, tshow i, T.replicate pad "x"]
+  where
+    pad :: Int
+    pad = if i `mod` longRecordEvery == 0 then longRecordPad else i
+
+infoRecord :: Text -> Maybe Text
+infoRecord ln = T.stripPrefix "[INFO " ln >>= T.stripPrefix "] " . snd . T.breakOn "] "
+
+testLogRecordsWhole :: IO ()
+testLogRecordsWhole = do
+  outcomes <- forM bufferModes $ \mode -> do
+    logs <- capturingStderr $ do
+      hSetBuffering stderr mode
+      Async.forConcurrently_ [1 .. logThreads] $ \t -> forM_ [1 .. recordsPerThread] $ logInfo . logRecord t
+    let ours = filter (logRecordTag `T.isInfixOf`) (T.lines logs)
+        whole :: Text -> Bool
+        whole ln = maybe False (`S.member` expected) (infoRecord ln)
+    pure (mode, length ours, S.size (S.fromList (mapMaybe infoRecord ours)), map (T.take 200) (take 3 (filter (not . whole) ours)))
+  outcomes `shouldBe` map (\mode -> (mode, S.size expected, S.size expected, [])) bufferModes
+  where
+    bufferModes :: [BufferMode]
+    bufferModes = [NoBuffering, LineBuffering, BlockBuffering Nothing]
+    expected :: S.Set Text
+    expected = S.fromList [logRecord t i | t <- [1 .. logThreads], i <- [1 .. recordsPerThread]]
 
 loggedError :: Text -> Text -> Bool
 loggedError message = any (\l -> "[ERROR " `T.isInfixOf` l && message `T.isInfixOf` l) . T.lines
