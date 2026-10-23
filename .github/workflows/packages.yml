@@ -1,64 +1,6 @@
 name: packages
 
-# Releases simplex-chat (npm, PyPI) and @simplex-chat/types (npm) from master and stable:
-# 1. A missing Node.js add-on release (nodejs-addon-<hash of its sources>) is built and uploaded to simplex-chat-libs.
-# 2. Versions that are not published yet are published, and recorded in releases.toml of simplex-chat-libs.
-#    npm prerelease versions get dist-tag beta, others latest.
-# 3. The release PR packages-release/<branch> pins new library and add-on releases with their SHA-256
-#    and bumps the versions of changed packages. Merging it publishes them (step 2).
-# Package tests run on every platform with the pinned libsimplex. build.yml runs them with the libsimplex it builds:
-# for pull requests that change the chat core (linux-x86_64), and for a new library release before its release PR.
-
-# Publishing uses trusted publishing (OIDC) for this workflow on npm and PyPI,
-# or the NPM_TOKEN and PYPI_API_TOKEN secrets when they are set.
-# Test repositories: variables NPM_SCOPE, PYPI_PROJECT and PYPI_URL / PYPI_UPLOAD_URL (TestPyPI)
-# publish under other names.
-
-# Secrets:
-# -------
-# NODEJS_REPO_TOKEN
-#  Only select repositories: simplex-chat-libs
-#  Permissions:
-#   * Contents (Read and Write)
-# RELEASE_PR_TOKEN
-#  Only select repositories: simplex-chat
-#  Permissions:
-#   * Contents (Read and Write)
-#   * Pull requests (Read and Write)
-#  A PR opened with GITHUB_TOKEN does not run the checks of other workflows.
-
 on:
-  workflow_dispatch:
-    inputs:
-      nodejs_version:
-        description: "simplex-chat npm version, bumped when needed by default"
-        required: false
-      types_version:
-        description: "@simplex-chat/types version, bumped when needed by default"
-        required: false
-      python_version:
-        description: "simplex-chat PyPI version, bumped when needed by default"
-        required: false
-  # build.yml: a pull request that changes the chat core, or a new library release
-  workflow_call:
-    inputs:
-      libs_artifact:
-        description: "test with simplex-chat-libs-linux-x86_64 built by the calling run"
-        type: boolean
-        default: false
-      libs_release:
-        description: "test with this simplex-chat-libs release"
-        type: string
-        default: ""
-  push:
-    branches:
-      - master
-      - stable
-    paths:
-      - "packages/simplex-chat-nodejs/**"
-      - "packages/simplex-chat-client/types/typescript/**"
-      - "packages/simplex-chat-python/**"
-      - ".github/workflows/packages.yml"
   pull_request:
     paths:
       - "packages/simplex-chat-nodejs/**"
@@ -83,48 +25,18 @@ jobs:
   addon:
     runs-on: ubuntu-latest
     outputs:
-      tag: ${{ steps.tag.outputs.tag }}
-      release_branch: ${{ steps.branch.outputs.release_branch }}
-      missing: ${{ steps.release.outputs.missing }}
       platforms: ${{ steps.plan.outputs.platforms }}
-      test: ${{ steps.plan.outputs.test }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6
 
-      - name: Add-on release tag
-        id: tag
-        run: echo "tag=$(python3 scripts/ci/packages_release.py addon-tag)" >> "$GITHUB_OUTPUT"
-
-      - name: Release branch
-        id: branch
-        if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/stable')
-        run: echo "release_branch=true" >> "$GITHUB_OUTPUT"
-
-      - name: Check the add-on release
-        id: release
-        if: steps.branch.outputs.release_branch
-        env:
-          GH_TOKEN: ${{ secrets.NODEJS_REPO_TOKEN }}
-          LIBS_REPOSITORY: ${{ github.repository }}-libs
-          TAG: ${{ steps.tag.outputs.tag }}
-        run: |
-          if ! gh release view "$TAG" --repo "$LIBS_REPOSITORY" > /dev/null 2>&1; then
-            echo "missing=true" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Build plan
         id: plan
         env:
-          EVENT: ${{ github.event_name }}
           BASE: ${{ github.event.pull_request.base.sha }}
-          RELEASE_MISSING: ${{ steps.release.outputs.missing }}
-          LIBS_ARTIFACT: ${{ inputs.libs_artifact }}
-          LIBS_RELEASE: ${{ inputs.libs_release }}
         run: |
-          if [ -n "$BASE" ]; then git fetch -q --depth=1 origin "$BASE"; fi
-          python3 scripts/ci/packages_release.py build-plan --event "$EVENT" --base "$BASE" \
-            --release-missing "$RELEASE_MISSING" --libs-artifact "$LIBS_ARTIFACT" --libs-release "$LIBS_RELEASE" >> "$GITHUB_OUTPUT"
+          git fetch -q --depth=1 origin "$BASE"
+          python3 scripts/ci/packages_release.py build-plan --base "$BASE" >> "$GITHUB_OUTPUT"
 
   build:
     name: "build ${{ matrix.platform }}"
@@ -139,7 +51,6 @@ jobs:
     defaults:
       run:
         shell: bash
-        working-directory: packages/simplex-chat-nodejs
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6
@@ -154,229 +65,8 @@ jobs:
         with:
           python-version: "3.12"
 
-      # The local types: the dependency can be bumped to a version that is not published yet.
       - name: Build simplex-chat (npm) and add-on
-        run: |
-          (cd ../simplex-chat-client/types/typescript && npm install --no-audit --no-fund && npx tsc)
-          npm install --ignore-scripts --no-save --no-audit --no-fund ../simplex-chat-client/types/typescript
-          npx --yes node-gyp rebuild
-          npx tsc && cp src/simplex.* dist
-          cp build/Release/simplex.node build/simplex-chat-nodejs-${{ matrix.platform }}.node
+        run: scripts/ci/package-tests.sh build ${{ matrix.platform }}
 
-      - name: Download libsimplex of this run
-        if: needs.addon.outputs.test && inputs.libs_artifact
-        uses: actions/download-artifact@v8
-        with:
-          name: simplex-chat-libs-${{ matrix.platform }}
-          path: ${{ runner.temp }}/libsimplex
-
-      - name: Download libsimplex release
-        if: needs.addon.outputs.test && inputs.libs_release
-        env:
-          URL: https://github.com/${{ github.repository }}-libs/releases/download/${{ inputs.libs_release }}/simplex-chat-libs-${{ matrix.platform }}.zip
-        run: curl -fsSL --create-dirs -o "$RUNNER_TEMP/libsimplex/simplex-chat-libs-${{ matrix.platform }}.zip" "$URL"
-
-      - name: Unpack libsimplex
-        if: needs.addon.outputs.test && (inputs.libs_artifact || inputs.libs_release)
-        run: python -m zipfile -e "$RUNNER_TEMP/libsimplex/simplex-chat-libs-${{ matrix.platform }}.zip" "$RUNNER_TEMP/libsimplex"
-
-      - name: Test simplex-chat (npm)
-        if: needs.addon.outputs.test
-        env:
-          SIMPLEX_LIBS_DIR: ${{ (inputs.libs_artifact || inputs.libs_release) && format('{0}/libsimplex/libs', runner.temp) || '' }}
-        # A failed test can leave chat controllers running, and jest then waits for them.
-        # Tests on the public preset servers fail in CI when a server is slow to connect.
-        run: npx jest --forceExit --testNamePattern '^(?!.*use preset servers)'
-
-      - name: Test simplex-chat (PyPI)
-        if: needs.addon.outputs.test
-        working-directory: packages/simplex-chat-python
-        run: |
-          python -m pip install -e ".[test]"
-          python -m pytest -q
-
-      - name: Upload add-on artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: simplex-nodejs-addon-${{ matrix.platform }}
-          path: packages/simplex-chat-nodejs/build/simplex-chat-nodejs-${{ matrix.platform }}.node
-          if-no-files-found: error
-
-  publish:
-    needs: addon
-    # Trusted publishing accepts this workflow only when it is not called by another one (build.yml).
-    if: needs.addon.outputs.release_branch && contains(github.workflow_ref, '/.github/workflows/packages.yml@')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-    # set by a publish step after it succeeds, so a failed publish still reports the earlier ones
-    outputs:
-      types: ${{ steps.types.outputs.version }}
-      nodejs: ${{ steps.nodejs.outputs.version }}
-      python: ${{ steps.python.outputs.version }}
-    env:
-      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v6
-
-      - name: Versions to publish
-        id: plan
-        env:
-          GH_TOKEN: ${{ github.token }}
-          LIBS_REPOSITORY: ${{ github.repository }}-libs
-        run: python3 scripts/ci/packages_release.py publish-plan >> "$GITHUB_OUTPUT"
-
-      - name: Setup Node.js
-        if: steps.plan.outputs.types_version || steps.plan.outputs.nodejs_version
-        uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          registry-url: https://registry.npmjs.org
-
-      - name: Setup Python
-        if: steps.plan.outputs.python_version
-        uses: actions/setup-python@v7
-        with:
-          python-version: "3.12"
-
-      # Before the test names: the build installs @simplex-chat/types from this repository.
-      - name: Build and test simplex-chat (npm)
-        if: steps.plan.outputs.nodejs_version
-        working-directory: packages/simplex-chat-nodejs
-        run: |
-          (cd ../simplex-chat-client/types/typescript && npm install --no-audit --no-fund && npx tsc)
-          npm install --ignore-scripts --no-save --no-audit --no-fund ../simplex-chat-client/types/typescript
-          npx tsc && cp src/simplex.* dist
-          npx jest tests/libs.test.ts tests/api.unit.test.ts
-
-      - name: Use test package names
-        if: vars.NPM_SCOPE || vars.PYPI_PROJECT
-        run: python3 scripts/ci/packages_release.py test-names
-
-      - name: Publish @simplex-chat/types
-        id: types
-        if: steps.plan.outputs.types_version
-        working-directory: packages/simplex-chat-client/types/typescript
-        env:
-          VERSION: ${{ steps.plan.outputs.types_version }}
-          DIST_TAG: ${{ steps.plan.outputs.types_dist_tag }}
-        run: |
-          npm install --no-audit --no-fund
-          npm publish --provenance --access public --tag "$DIST_TAG"
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
-      - name: Publish simplex-chat (npm)
-        id: nodejs
-        if: steps.plan.outputs.nodejs_version
-        working-directory: packages/simplex-chat-nodejs
-        env:
-          VERSION: ${{ steps.plan.outputs.nodejs_version }}
-          DIST_TAG: ${{ steps.plan.outputs.nodejs_dist_tag }}
-        run: |
-          npm publish --provenance --access public --tag "$DIST_TAG"
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
-      - name: Build and test simplex-chat (PyPI)
-        if: steps.plan.outputs.python_version
-        working-directory: packages/simplex-chat-python
-        run: |
-          python -m pip install build -e ".[test]"
-          python -m pytest -q
-          python -m build
-
-      - name: Publish simplex-chat (PyPI)
-        if: steps.plan.outputs.python_version
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          packages-dir: packages/simplex-chat-python/dist
-          repository-url: ${{ vars.PYPI_UPLOAD_URL || 'https://upload.pypi.org/legacy/' }}
-          password: ${{ secrets.PYPI_API_TOKEN }}
-
-      - name: Report the published PyPI version
-        id: python
-        if: steps.plan.outputs.python_version
-        env:
-          VERSION: ${{ steps.plan.outputs.python_version }}
-        run: echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
-  # The only job here that writes to simplex-chat-libs; publish runs npm and pip installs without its token.
-  record:
-    needs: publish
-    if: ${{ !cancelled() && (needs.publish.outputs.types || needs.publish.outputs.nodejs || needs.publish.outputs.python) }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v6
-
-      - name: Record published versions
-        env:
-          GH_TOKEN: ${{ secrets.NODEJS_REPO_TOKEN }}
-          LIBS_REPOSITORY: ${{ github.repository }}-libs
-          TYPES: ${{ needs.publish.outputs.types }}
-          NODEJS: ${{ needs.publish.outputs.nodejs }}
-          PYTHON: ${{ needs.publish.outputs.python }}
-        run: |
-          python3 scripts/ci/packages_release.py record --commit "$GITHUB_SHA" \
-            --types "$TYPES" --nodejs "$NODEJS" --python "$PYTHON"
-
-  release:
-    needs: [addon, build]
-    # A merged release PR changes only versions and pins.
-    if: >-
-      !cancelled() && needs.addon.outputs.release_branch && needs.build.result != 'failure'
-      && !startsWith(github.event.head_commit.message, 'packages: release')
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      # Outside the checkout: the release PR commits every change in it.
-      - name: Download add-on artifacts
-        if: needs.addon.outputs.missing
-        uses: actions/download-artifact@v8
-        with:
-          pattern: simplex-nodejs-addon-*
-          merge-multiple: true
-          path: ${{ runner.temp }}/addons
-
-      - name: Create add-on release
-        if: needs.addon.outputs.missing
-        uses: softprops/action-gh-release@v3
-        with:
-          repository: ${{ github.repository }}-libs
-          tag_name: ${{ needs.addon.outputs.tag }}
-          files: ${{ runner.temp }}/addons/*.node
-          token: ${{ secrets.NODEJS_REPO_TOKEN }}
-
-      - name: Update pins and versions
-        id: prepare
-        env:
-          GH_TOKEN: ${{ secrets.NODEJS_REPO_TOKEN }}
-          LIBS_REPOSITORY: ${{ github.repository }}-libs
-          NODEJS_VERSION: ${{ inputs.nodejs_version }}
-          TYPES_VERSION: ${{ inputs.types_version }}
-          PYTHON_VERSION: ${{ inputs.python_version }}
-        run: |
-          python3 scripts/ci/packages_release.py prepare \
-            --nodejs-version "$NODEJS_VERSION" \
-            --types-version "$TYPES_VERSION" \
-            --python-version "$PYTHON_VERSION" \
-            --summary "$RUNNER_TEMP/summary.md"
-          echo "title=$(head -n 1 "$RUNNER_TEMP/summary.md")" >> "$GITHUB_OUTPUT"
-
-      - name: Create or update release PR
-        uses: peter-evans/create-pull-request@v8
-        with:
-          token: ${{ secrets.RELEASE_PR_TOKEN }}
-          branch: packages-release/${{ github.ref_name }}
-          base: ${{ github.ref_name }}
-          title: ${{ steps.prepare.outputs.title }}
-          commit-message: ${{ steps.prepare.outputs.title }}
-          body-path: ${{ runner.temp }}/summary.md
-          author: SimpleX Chat <build@simplex.chat>
-          committer: SimpleX Chat <build@simplex.chat>
-          delete-branch: true
+      - name: Test simplex-chat (npm and PyPI)
+        run: scripts/ci/package-tests.sh test

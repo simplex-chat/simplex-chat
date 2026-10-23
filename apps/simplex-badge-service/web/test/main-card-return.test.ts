@@ -37,6 +37,9 @@ returnTest("main: a card return resumes the exact order it was for, not the newe
   assert.ok(codeShape.test(screenOf(app).serialize()), "the code the buyer paid for is on it");
   assert.ok(screenOf(app).serialize().includes(CODE), "and it is the code of inv_card, the order that was paid");
   assert.ok(!screenOf(app).serialize().includes("48HqK2Xmv"), "not the newer open order's address");
+  assert.ok(screenOf(app).textContent.includes("Settings → Supporter perks → Redeem code"),
+    "an order bought with no app flag ends as the page always has");
+  assert.equal(screenOf(app).all("iframe").length, 0, "with no link to try");
 });
 
 returnTest("main: the return is spent — the URL is the order and the remembered id is cleared", () => {
