@@ -63,20 +63,22 @@ Residual risks [Ov: Residual risks, §5]:
 
 ## Slices
 
-~2,260 production Haskell lines (simplexmq ~490 plus chat ~1,770) plus tests, and ~380 per app platform; each slice compiles and passes its tests alone [§6].
+~2,260 production Haskell lines (simplexmq ~490 plus chat ~1,770) plus tests, ~380 per app platform and ~850 of CI scripts, scripted checks and test plans; sixteen slices, each one unattended session, two a day; each compiles and passes its tests alone, and the app slices are built and tested on GitHub's runners [§6, §7.1].
 
 | Slices | What |
 |---|---|
-| S1–S3 | simplexmq: store and swap, SMP protocol v24, agent |
-| S4–S8 | chat: wire and data, link writes and reads, link syncs, profile, relays, count |
-| S9–S10 | promotion, member catch-up |
-| S11 | roster through the link |
-| S12–S13 | removal, leave, destroy; guards |
-| S14–S17 | iOS, then Kotlin |
+| S1–S2 | simplexmq: store and swap, SMP protocol v24, agent |
+| S3–S5 | chat: wire and data, link writes and reads, link syncs, profile, relays, count |
+| S6 | CI: a test backend with channels on a v24 link server |
+| S7–S8 | promotion, member catch-up; guards |
+| S9–S10 | roster through the link |
+| S11–S12 | apps: owner invitation and promotion, iOS then Kotlin |
+| S13–S14 | leave, removal, destroy |
+| S15–S16 | apps: owner management, iOS then Kotlin |
 
-**Risks** [§8, Ov: Not verified, size]: the riskiest assumption, which tests in S11 and S12 check, is that today's roster protocol converges when versions are claimed through the link from complete rosters and departed owners' roster messages are still applied. The next is that background callbacks, re-derived from the latest read and the database, are idempotent; one that isn't would send twice or never (test T17, in S9). S1–S2 first prove the swap's atomicity and the computed 50-owner size; the 100,000-member catch-up is an estimate. App code and Postgres tests run only on the host.
+**Risks** [§8, Ov: Not verified, size]: the riskiest assumption, which tests in S9, S10 and S13 check, is that today's roster protocol converges when versions are claimed through the link from complete rosters and departed owners' roster messages are still applied. The next is that background callbacks, re-derived from the latest read and the database, are idempotent; one that isn't would send twice or never (test T17, in S8). S1 first proves the swap's atomicity and the computed 50-owner size; the 100,000-member catch-up is an estimate. Postgres tests run only on the host.
 
-**Open in plan §9**, both taken as recommended unless a review shows otherwise, and built in S1–S2: `LSWP` sending only the user data, which leaves room for about 50 owner keys (computed from the encoders, not yet tested) instead of 6, and refusing `LSET` on multi-key queues, a server behaviour change that stops stale or downgraded single-owner writes from erasing other owners.
+**Open in plan §9**, the two design questions, taken as recommended unless a review shows otherwise, and built in S1: `LSWP` sending only the user data, which leaves room for about 50 owner keys (computed from the encoders, not yet tested) instead of 6, and refusing `LSET` on multi-key queues, a server behaviour change that stops stale or downgraded single-owner writes from erasing other owners.
 
 The rest of the page is reference for the programmers who build it.
 

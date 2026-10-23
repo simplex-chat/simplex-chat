@@ -570,22 +570,24 @@
   </ul>
 
   <h2 id="slices">Slices</h2>
-  <p>~2,260 production Haskell lines (simplexmq ~490 plus chat ~1,770) plus tests, and ~380 per app platform; each slice compiles and passes its tests alone <span class="cite">[§6]</span>.</p>
+  <p>~2,260 production Haskell lines (simplexmq ~490 plus chat ~1,770) plus tests, ~380 per app platform and ~850 of CI scripts, scripted checks and test plans; sixteen slices, each one unattended session, two a day; each compiles and passes its tests alone, and the app slices are built and tested on GitHub's runners <span class="cite">[§6, §7.1]</span>.</p>
   <div class="table-wrap">
     <table>
       <thead><tr><th>Slices</th><th>What</th></tr></thead>
       <tbody>
-        <tr><td class="nowrap">S1–S3</td><td>simplexmq: store and swap, SMP protocol v24, agent</td></tr>
-        <tr><td class="nowrap">S4–S8</td><td>chat: wire and data, link writes and reads, link syncs, profile, relays, count</td></tr>
-        <tr><td class="nowrap">S9–S10</td><td>promotion, member catch-up</td></tr>
-        <tr><td class="nowrap">S11</td><td>roster through the link</td></tr>
-        <tr><td class="nowrap">S12–S13</td><td>removal, leave, destroy; guards</td></tr>
-        <tr><td class="nowrap">S14–S17</td><td>iOS, then Kotlin</td></tr>
+        <tr><td class="nowrap">S1–S2</td><td>simplexmq: store and swap, SMP protocol v24, agent</td></tr>
+        <tr><td class="nowrap">S3–S5</td><td>chat: wire and data, link writes and reads, link syncs, profile, relays, count</td></tr>
+        <tr><td class="nowrap">S6</td><td>CI: a test backend with channels on a v24 link server</td></tr>
+        <tr><td class="nowrap">S7–S8</td><td>promotion, member catch-up; guards</td></tr>
+        <tr><td class="nowrap">S9–S10</td><td>roster through the link</td></tr>
+        <tr><td class="nowrap">S11–S12</td><td>apps: owner invitation and promotion, iOS then Kotlin</td></tr>
+        <tr><td class="nowrap">S13–S14</td><td>leave, removal, destroy</td></tr>
+        <tr><td class="nowrap">S15–S16</td><td>apps: owner management, iOS then Kotlin</td></tr>
       </tbody>
     </table>
   </div>
-  <p><b>Risks</b> <span class="cite">[§8, Ov: Not verified, size]</span>: the riskiest assumption, which tests in S11 and S12 check, is that today's roster protocol converges when versions are claimed through the link from complete rosters and departed owners' roster messages are still applied. The next is that background callbacks, re-derived from the latest read and the database, are idempotent; one that isn't would send twice or never (test T17, in S9). S1–S2 first prove the swap's atomicity and the computed 50-owner size; the 100,000-member catch-up is an estimate. App code and Postgres tests run only on the host.</p>
-  <p><b>Open in plan §9</b>, both taken as recommended unless a review shows otherwise, and built in S1–S2: <code>LSWP</code> sending only the user data, which leaves room for about 50 owner keys (computed from the encoders, not yet tested) instead of 6, and refusing <code>LSET</code> on multi-key queues, a server behaviour change that stops stale or downgraded single-owner writes from erasing other owners.</p>
+  <p><b>Risks</b> <span class="cite">[§8, Ov: Not verified, size]</span>: the riskiest assumption, which tests in S9, S10 and S13 check, is that today's roster protocol converges when versions are claimed through the link from complete rosters and departed owners' roster messages are still applied. The next is that background callbacks, re-derived from the latest read and the database, are idempotent; one that isn't would send twice or never (test T17, in S8). S1 first proves the swap's atomicity and the computed 50-owner size; the 100,000-member catch-up is an estimate. Postgres tests run only on the host.</p>
+  <p><b>Open in plan §9</b>, the two design questions, taken as recommended unless a review shows otherwise, and built in S1: <code>LSWP</code> sending only the user data, which leaves room for about 50 owner keys (computed from the encoders, not yet tested) instead of 6, and refusing <code>LSET</code> on multi-key queues, a server behaviour change that stops stale or downgraded single-owner writes from erasing other owners.</p>
   <p class="muted">The rest of the page is reference for the programmers who build it.</p>
 
   <h2 id="protocol">Protocol changes</h2>
