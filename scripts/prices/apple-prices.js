@@ -68,7 +68,7 @@ function getToken() {
   return jwt.sign(
     { iss: issuerId, aud: 'appstoreconnect-v1' },
     privateKey,
-    { algorithm: 'ES256', expiresIn: '20m', header: { kid: keyId, typ: 'JWT' } }
+    { algorithm: 'ES256', expiresIn: '5m', header: { kid: keyId, typ: 'JWT' } }
   );
 }
 
