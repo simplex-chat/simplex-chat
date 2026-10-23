@@ -13,13 +13,11 @@ import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.net.URI
+import java.util.Base64
 
 expect fun base64ToBitmap(base64ImageString: String): ImageBitmap
 expect fun decodeBase64Image(base64: String, width: Int): ImageBitmap?
-expect fun resizeImageToStrSize(image: ImageBitmap, maxDataSize: Long): String
-// expect fun resizeImageToDataSize(image: ImageBitmap, usePng: Boolean, maxDataSize: Long): ByteArrayOutputStream
 expect fun cropToSquare(image: ImageBitmap): ImageBitmap
-// expect fun compressImageStr(bitmap: ImageBitmap): String
 expect fun compressImageData(bitmap: ImageBitmap, usePng: Boolean): ByteArrayOutputStream
 
 expect fun GrayU8.toImageBitmap(): ImageBitmap
@@ -32,6 +30,17 @@ expect fun isImage(uri: URI): Boolean
 expect fun isAnimImage(uri: URI, drawable: Any?): Boolean
 
 expect fun loadImageBitmap(inputStream: InputStream): ImageBitmap
+
+fun resizeImageToStrSize(image: ImageBitmap, maxDataSize: Long): String =
+  chatResizeImageToStrSize(compressImageData(image, image.hasAlpha()).toByteArray().toDirectBuffer(), maxDataSize.toInt())
+
+fun resizeImageToDataSize(image: ImageBitmap, usePng: Boolean, maxDataSize: Long): ByteArrayOutputStream {
+  val str = chatResizeImageToDataSize(compressImageData(image, usePng).toByteArray().toDirectBuffer(), maxDataSize.toInt(), usePng)
+  if (str.isEmpty()) throw Exception("Image resize failed")
+  val stream = ByteArrayOutputStream()
+  stream.write(Base64.getDecoder().decode(str))
+  return stream
+}
 
 @Composable
 fun Base64AsyncImage(
