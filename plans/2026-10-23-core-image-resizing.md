@@ -78,7 +78,7 @@ Native code:
 - libturbojpeg is linked statically on every target.
 - hs-jpeg-turbo: gitlab.com/dpwiz/hs-jpeg-turbo at `f1bc073`, packages `jpeg-turbo` and `JuicyPixels-jpeg-turbo`.
 - JuicyPixels 3.3.8 and JuicyPixels-stbir 0.1.0.0 are taken from Hackage.
-- Later commits of this branch:
+- Planned, in later commits of this branch:
   - JuicyPixels-stbir pinned to a fork with nothings/stb as a submodule;
   - hs-jpeg-turbo pinned to github.com/simplex-chat/hs-jpeg-turbo at a commit with the git LFS fixtures replaced.
 
@@ -105,6 +105,8 @@ CI:
 - `submodules: recursive` is set on the checkouts of jobs that run the script or hash the submodule.
 - The hash of the submodule files is part of the `build.yml` cache keys and of the artifact names of cores and backends built with cabal.
 - `external/libjpeg-turbo` is added to the pull-request paths of `build.yml` and to `CORE_SOURCES` and the haskell `BUILD_CHANGES` of `packages_release.py`.
+
+Out of scope: `scripts/relay/Dockerfile`; the libjpeg-turbo steps are added to it when its `CHAT_REF` (`:3`) passes this change.
 
 ## Mechanics
 
@@ -242,9 +244,40 @@ CI:
 2. The text of the comment at `apps/ios/SimpleXChat/SimpleX.h:36` and `packages/simplex-chat-nodejs/cpp/simplex.h:38`, if question 1 is accepted? Recommended:
    `// chat_resize_image returns base64 of PNG (png > 0), JPEG (png == 0), or PNG for images with transparency and JPEG for others (png < 0), of at most maxSize bytes, or an empty string`
 3. The Python docstrings (`core.py:258, 272`) use `max_size` and a final period, as the other docstrings of `core.py`, in place of the approved `maxSize` without a period: keep them? Recommended: keep.
-4. libjpeg-turbo on Windows:
-   - (a) GHC's clang, lld and compiler-rt, the toolchain of the GHC link (`prepare-libjpeg-turbo.sh:15-18`, in the branch);
-   - (b) MSYS2 GCC with `-D_setjmp=__intrinsic_setjmpex`;
-   - (c) a DLL, as for OpenSSL.
+4. Manual builds by `docs/CLI.md:143-148` run a plain `cabal install simplex-chat` and need libjpeg-turbo installed first: which of these options?
+   - (a) the build script kept; `docs/CLI.md` gains a step: cmake, NASM and pkg-config installed, `scripts/desktop/prepare-libjpeg-turbo.sh` run, `PKG_CONFIG_PATH` set.
+   - (b) libjpeg-turbo compiled by cabal from the submodule (`c-sources`), as simplexmq compiles blst: one build path everywhere, without CMake, NASM, pkg-config and the script; costs: 4 configuration headers per target, a list of 113 C files kept per libjpeg-turbo release, x86-64 SIMD lost.
+   - (c) a cabal flag, off by default: manual builds encode JPEG with JuicyPixels `encodeJpegAtQuality`; libjpeg-turbo is turned on by the scripts, CI and nix; costs: a second encoder path behind the flag, JPEGs 7–33% larger at the same quality and encoded 3–7 times slower (`test.jpg` and `preview-issue1.png`, qualities 20 to 94).
 
-   Recommended: (a).
+   Recommended: (c), the cheapest option that keeps `docs/CLI.md` unchanged.
+5. The texts on the core modules: "unlikely to ever need" in Node, "Internal" and "8 C ABI functions" in Python? Recommended:
+   - `packages/simplex-chat-nodejs/README.md:137`:
+     `- [core](./docs/Namespace.core.md): a low level API to the core library - the same that is used in desktop clients. You are unlikely to ever need to use this module directly, except for image resizing.`
+   - `packages/simplex-chat-nodejs/src/index.ts:15`, generated into `docs/Namespace.core.md:10`:
+     ` * You are unlikely to ever need to use this module directly, except for image resizing.`
+   - `packages/simplex-chat-python/src/simplex_chat/core.py:1-5`:
+     ```
+     """Typed async wrapper around libsimplex's C ABI functions.
+
+     Users interact with `Bot` / `ChatApi`. This module is exposed as
+     `simplex_chat.core` for tests, the api.ChatApi class and image resizing
+     (`chat_resize_image`, `chat_resize_image_uri`).
+     """
+     ```
+6. License notices, on hold by the user. Recommended: added in this PR.
+   - `docs/dependencies/README.md`, with `LICENSE.md` and `README.ijg` of the submodule copied into `licences/apps/libjpeg-turbo/` and the license text of `stb_image_resize.h` into `licences/apps/stb_image_resize/LICENSE`:
+     ```
+     [libjpeg-turbo](https://github.com/libjpeg-turbo/libjpeg-turbo): JPEG encoding of resized images ([IJG and BSD-3-clause](./licences/apps/libjpeg-turbo/LICENSE.md)). This software is based in part on the work of the Independent JPEG Group.
+
+     [stb_image_resize](https://github.com/nothings/stb): image scaling ([MIT or public domain](./licences/apps/stb_image_resize/LICENSE))
+     ```
+   - `docs/dependencies/HASKELL.md`, with each package's `LICENSE` copied into `licences/haskell/<package>-<version>/`; direct dependencies, after `http2` (`:24`):
+     ```
+     | `JuicyPixels` | [`3.3.8`](http://hackage.haskell.org/package/JuicyPixels-3.3.8) | [`BSD-3-Clause`](./licences/haskell/JuicyPixels-3.3.8/LICENSE) | Picture loading/serialization (in png, jpeg, bitmap, gif, tga, tiff and radiance) | `JuicyPixels-jpeg-turbo`, `JuicyPixels-stbir` |
+     | `JuicyPixels-jpeg-turbo` | [`0.1.0.0`](https://gitlab.com/dpwiz/hs-jpeg-turbo/-/tree/f1bc073427e60341a3359e2345c1683d17ea2a35/JuicyPixels-jpeg-turbo) | [`BSD-3-Clause`](./licences/haskell/JuicyPixels-jpeg-turbo-0.1.0.0/LICENSE) | JuicyPixels wrappers for libjpeg-turbo |  |
+     | `JuicyPixels-stbir` | [`0.1.0.0`](http://hackage.haskell.org/package/JuicyPixels-stbir-0.1.0.0) | [`BSD-3-Clause`](./licences/haskell/JuicyPixels-stbir-0.1.0.0/LICENSE) | Scale JuicyPixels images with stb_image_resize |  |
+     ```
+     indirect dependencies, after `iso8601-time` (`:139`):
+     ```
+     | `jpeg-turbo` | [`0.1.0.0`](https://gitlab.com/dpwiz/hs-jpeg-turbo/-/tree/f1bc073427e60341a3359e2345c1683d17ea2a35/jpeg-turbo) | [`BSD-3-Clause`](./licences/haskell/jpeg-turbo-0.1.0.0/LICENSE) | FFI bindings to libjpeg-turbo | `JuicyPixels-jpeg-turbo` |
+     ```
