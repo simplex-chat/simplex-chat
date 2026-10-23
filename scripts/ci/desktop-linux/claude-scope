@@ -1,3 +1,4 @@
 # What the Claude job needs for the session claude-test.md describes.
 # backend: yes when the prompt uses the test backend; a run that asks for Claude must then start it too.
+# max-turns and max-budget-usd (optional) bound the session; claude-test.sh uses 60 and 3 when they're absent.
 backend: no
