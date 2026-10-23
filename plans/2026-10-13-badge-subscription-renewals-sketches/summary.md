@@ -49,7 +49,7 @@ While the store retries a failed payment, the badge stays (on iOS, until the dev
 
 ## Protecting the service and the stores
 
-Purchases and Restores that ask a store, requests with a month due and tier changes, and everything else run on separate queues, so fake purchases can delay only other purchases and Restores. Each subscription is checked at most hourly, and the purchase path makes at most 300 Play subscription checks a minute in total; a Play purchase turned away for three days is refunded.
+Purchases and Restores that ask a store, requests with a month due and tier changes, and everything else run on separate queues, so fake purchases can delay only other purchases and Restores. Each subscription is checked at most hourly per purpose (purchase, Restore, renewal), and the purchase path makes at most 300 Play subscription checks a minute; a Play purchase turned away for three days is refunded.
 
 ![Request lanes](request-lanes.svg)
 
@@ -61,7 +61,7 @@ Purchases and Restores that ask a store, requests with a month due and tier chan
 
 ## Known limits
 
-- Automated tests use fake stores built from the stores' documentation. On 22 October the lifecycle was walked by hand on an iPhone and an Android phone, against Apple's sandbox and Play's test purchases through a deployment with real verifiers; the review fixes made that night are tested only automatically. Real money, real billing dates and the stores' own retries and refunds are still unexercised.
+- Automated tests use fake stores built from the stores' documentation. On 22 October the lifecycle was walked by hand on an iPhone and an Android phone, against Apple's sandbox and Play's test purchases, with the real verifiers; the review fixes made that night are tested only automatically. Real money, real billing dates and the stores' own retries and refunds are still unexercised.
 - A purchase completing while another badge shows waits for it to end, and may meanwhile be refunded or lose paid periods.
 - A Restore refused because the subscription moved recently may say nothing the first time.
 - Play purchases are acknowledged before being signed and recorded; if either fails, Play won't refund, and only a later successful retry credits them.
