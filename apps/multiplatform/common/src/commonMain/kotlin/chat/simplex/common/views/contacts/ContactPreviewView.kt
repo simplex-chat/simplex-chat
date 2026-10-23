@@ -15,7 +15,7 @@ import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.newchat.ContactType
 import chat.simplex.common.views.newchat.chatContactType
-import chat.simplex.res.MR
+import chat.simplex.res.*
 
 @Composable
 fun ContactPreviewView(
@@ -54,8 +54,9 @@ fun ContactPreviewView(
                     if (cInfo.contact.verified) {
                         VerifiedIcon()
                     }
-                    Text(
+                    NameWithBadge(
                         cInfo.chatViewName,
+                        cInfo.nameBadge,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         color = textColor
@@ -63,8 +64,9 @@ fun ContactPreviewView(
                 }
             is ChatInfo.ContactRequest ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
+                    NameWithBadge(
                         cInfo.chatViewName,
+                        cInfo.nameBadge,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         color = textColor

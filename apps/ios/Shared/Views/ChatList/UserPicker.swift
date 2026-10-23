@@ -6,6 +6,7 @@
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/client/chat-list.md#UserPicker
 struct UserPicker: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
@@ -41,7 +42,8 @@ struct UserPicker: View {
                         HStack {
                             ProfileImage(imageStr: user.image, size: imageSize, color: Color(uiColor: .tertiarySystemGroupedBackground))
                                 .padding(.trailing, 6)
-                            profileName(user).lineLimit(1)
+                            NameWithBadge(profileName(user), user.profile.localBadge, .title2)
+                                .lineLimit(1)
                         }
                         .padding(rowPadding)
                         .frame(width: otherUsers.isEmpty ? sectionWidth : currentUserWidth, alignment: .leading)
@@ -128,7 +130,8 @@ struct UserPicker: View {
                 }
             }
             .padding(.trailing, 6)
-            Text(u.user.displayName).font(.title2).lineLimit(1)
+            NameWithBadge(Text(u.user.displayName).font(.title2), u.user.profile.localBadge, .title2)
+                .lineLimit(1)
         }
         .padding(rowPadding)
         .modifier(ListRow {

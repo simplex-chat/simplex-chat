@@ -42,7 +42,7 @@ chatDbOptsP _appDir defaultDbName = do
       ( long "pool-size"
           <> metavar "DB_POOL_SIZE"
           <> help "Database connection pool size"
-          <> value 10
+          <> value 1
           <> showDefault
       )
   dbCreateSchema <-
@@ -84,7 +84,7 @@ mobileDbOpts schemaPrefix connstr = do
     ChatDbOpts
       { dbConnstr,
         dbSchemaPrefix,
-        dbPoolSize = 10,
+        dbPoolSize = 1,
         dbCreateSchema = True
       }
 

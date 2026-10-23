@@ -13,7 +13,7 @@ import ChatTests.DBUtils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_, mapConcurrently_)
 import Control.Concurrent.STM
-import Control.Monad (unless, when)
+import Control.Monad (join, unless, when)
 import Control.Monad.Except (runExceptT)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64 as B64
@@ -23,27 +23,30 @@ import Data.List (isPrefixOf, isSuffixOf)
 import Data.Maybe (fromMaybe)
 import Data.String
 import qualified Data.Text as T
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..))
+import Simplex.Chat.Badges (BadgeProof (..), BadgeStatus, LocalBadge (..), ProofPresHeader (..))
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), storeCxt)
+import Simplex.Chat.Library.Commands (maxProfileImageSize)
 import Simplex.Chat.Markdown (viewName)
 import Simplex.Chat.Messages.CIContent (e2eInfoNoPQText, e2eInfoPQText)
 import Simplex.Chat.Protocol
-import Simplex.Chat.Store.Direct (getContact)
+import Simplex.Chat.Store.Direct (getContact, getContactIdByName, getContactRequest, getContactRequestIdByName)
+import Simplex.Chat.Store.Groups (getGroupIdByName, getGroupMember, getGroupMemberIdByName)
 import Simplex.Chat.Store.NoteFolders (createNoteFolder)
 import Simplex.Chat.Store.Profiles (getUserContactProfiles)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
-import Simplex.FileTransfer.Client.Main (xftpClientCLI)
+import Simplex.FileTransfer.Description (FileSize (..))
 import Simplex.Messaging.Agent.Client (agentClientStore)
 import Simplex.Messaging.Agent.Store.AgentStore (maybeFirstRow, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.BBS (BBSPresHeader (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff, pattern PQEncOn, pattern PQSupportOff)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Version
 import System.Directory (doesFileExist)
-import System.Environment (lookupEnv, withArgs)
-import System.IO.Silently (capture_)
+import System.Environment (lookupEnv)
 import System.Info (os)
 import Test.Hspec hiding (it)
 import qualified Test.Hspec as Hspec
@@ -75,25 +78,34 @@ danProfile = mkProfile "dan" "Daniel" Nothing
 eveProfile :: Profile
 eveProfile = mkProfile "eve" "Eve" Nothing
 
+frankProfile :: Profile
+frankProfile = mkProfile "frank" "Frank" Nothing
+
 businessProfile :: Profile
 businessProfile = mkProfile "biz" "Biz Inc" Nothing
 
-mkProfile :: T.Text -> T.Text -> Maybe ImageData -> Profile
-mkProfile displayName descr image = Profile {displayName, fullName = "", shortDescr = Just descr, image, contactLink = Nothing, peerType = Nothing, preferences = defaultPrefs}
+chatRelayProfile :: Profile
+chatRelayProfile = mkProfile "relay" "Relay" Nothing
 
-it :: HasCallStack => String -> (TestParams -> Expectation) -> SpecWith (Arg (TestParams -> Expectation))
+serviceProfile :: Profile
+serviceProfile = mkProfile "service_user" "Service user" Nothing
+
+mkProfile :: T.Text -> T.Text -> Maybe ImageData -> Profile
+mkProfile displayName descr image = Profile {displayName, fullName = "", shortDescr = Just descr, description = Nothing, image, contactLink = Nothing, peerType = Nothing, preferences = defaultPrefs, badge = Nothing, contactDomain = Nothing}
+
+it :: HasCallStack => String -> (ps -> Expectation) -> SpecWith (Arg (ps -> Expectation))
 it name test =
   Hspec.it name $ \tmp -> timeout t (test tmp) >>= maybe (error "test timed out") pure
   where
-    t = 90 * 1000000
+    t = 180 * 1000000
 
-xit' :: HasCallStack => String -> (TestParams -> Expectation) -> SpecWith (Arg (TestParams -> Expectation))
+xit' :: HasCallStack => String -> (ps -> Expectation) -> SpecWith (Arg (ps -> Expectation))
 xit' = if os == "linux" then xit else it
 
 xit'' :: (HasCallStack, Example a) => String -> a -> SpecWith (Arg a)
 xit'' = ifCI xit Hspec.it
 
-xitMacCI :: HasCallStack => String -> (TestParams -> Expectation) -> SpecWith (Arg (TestParams -> Expectation))
+xitMacCI :: HasCallStack => String -> (ps -> Expectation) -> SpecWith (Arg (ps -> Expectation))
 xitMacCI = ifCI (if os == "darwin" then xit else it) it
 
 xdescribe'' :: HasCallStack => String -> SpecWith a -> SpecWith a
@@ -114,17 +126,17 @@ skip = before_ . pendingWith
 versionTestMatrix2 :: (HasCallStack => Bool -> Bool -> TestCC -> TestCC -> IO ()) -> SpecWith TestParams
 versionTestMatrix2 runTest = do
   it "current" $ testChat2 aliceProfile bobProfile (runTest True True)
-  it "prev" $ testChatCfg2 testCfgVPrev aliceProfile bobProfile (runTest False True)
-  it "prev to curr" $ runTestCfg2 testCfg testCfgVPrev (runTest False True)
-  it "curr to prev" $ runTestCfg2 testCfgVPrev testCfg (runTest False True)
-  it "old (1st supported)" $ testChatCfg2 testCfgV1 aliceProfile bobProfile (runTest False False)
-  it "old to curr" $ runTestCfg2 testCfg testCfgV1 (runTest False True)
-  it "curr to old" $ runTestCfg2 testCfgV1 testCfg (runTest False False)
+  it "prev" $ runTestCfg2 testCfgVPrev testCfgVPrev (runTest True True)
+  it "prev to curr" $ runTestCfg2 testCfg testCfgVPrev (runTest True True)
+  it "curr to prev" $ runTestCfg2 testCfgVPrev testCfg (runTest True True)
+  it "old (1st supported)" $ testChatCfg2 testCfgV1 aliceProfile bobProfile (runTest True True)
+  it "old to curr" $ runTestCfg2 testCfg testCfgV1 (runTest True True)
+  it "curr to old" $ runTestCfg2 testCfgV1 testCfg (runTest True True)
 
 versionTestMatrix3 :: (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> SpecWith TestParams
 versionTestMatrix3 runTest = do
   it "current" $ testChat3 aliceProfile bobProfile cathProfile runTest
-  it "prev" $ testChatCfg3 testCfgVPrev aliceProfile bobProfile cathProfile runTest
+  it "prev" $ runTestCfg3 testCfgVPrev testCfgVPrev testCfgVPrev runTest
   it "prev to curr" $ runTestCfg3 testCfg testCfgVPrev testCfgVPrev runTest
   it "curr+prev to curr" $ runTestCfg3 testCfg testCfg testCfgVPrev runTest
   it "curr to prev" $ runTestCfg3 testCfgVPrev testCfg testCfg runTest
@@ -142,6 +154,9 @@ runTestCfg3 aliceCfg bobCfg cathCfg runTest ps =
     withNewTestChatCfg ps bobCfg "bob" bobProfile $ \bob ->
       withNewTestChatCfg ps cathCfg "cath" cathProfile $ \cath ->
         runTest alice bob cath
+
+withRelay :: HasCallStack => TestParams -> (TestCC -> IO ()) -> IO ()
+withRelay ps = withNewTestChatOpts ps relayTestOpts "relay" chatRelayProfile
 
 -- | test sending direct messages
 (<##>) :: HasCallStack => TestCC -> TestCC -> IO ()
@@ -171,7 +186,8 @@ cc ?#> cmd = do
 (#$>) :: (Eq a, Show a, HasCallStack) => TestCC -> (String, String -> a, a) -> Expectation
 cc #$> (cmd, f, res) = do
   cc ##> cmd
-  (f <$> getTermLine cc) `shouldReturn` res
+  let expected = "result of " <> cmd <> ": " <> show res
+  (f <$> getTermLine' (Just expected) cc) `shouldReturn` res
 
 -- / PQ combinators
 
@@ -228,7 +244,9 @@ genProfileImg = do
   g <- C.newRandom
   atomically $ B64.encode <$> C.randomBytes lrgLen g
   where
-    lrgLen = maxEncodedInfoLength * 3 `div` 4 - 420
+    -- raw bytes that base64-encode to fit maxProfileImageSize when prefixed with "data:image/png;base64,"
+    lrgLen = (maxProfileImageSize - imagePrefixLen) * 3 `div` 4 - 1
+    imagePrefixLen = 22
 
 -- PQ combinators /
 
@@ -283,7 +301,10 @@ groupFeatures :: [(Int, String)]
 groupFeatures = map (\(a, _, _) -> a) $ groupFeatures'' 0
 
 groupFeaturesNoE2E :: [(Int, String)]
-groupFeaturesNoE2E = map (\(a, _, _) -> a) $ ((1, "chat banner"), Nothing, Nothing) : groupFeatures_ 0
+groupFeaturesNoE2E = map (\(a, _, _) -> a) $ ((1, "chat banner"), Nothing, Nothing) : groupFeatures_ 0 False
+
+channelFeaturesNoE2E :: [(Int, String)]
+channelFeaturesNoE2E = map (\(a, _, _) -> a) $ ((1, "chat banner"), Nothing, Nothing) : groupFeatures_ 0 True
 
 sndGroupFeatures :: [(Int, String)]
 sndGroupFeatures = map (\(a, _, _) -> a) $ groupFeatures'' 1
@@ -292,20 +313,21 @@ groupFeatureStrs :: [String]
 groupFeatureStrs = map (\(a, _, _) -> snd a) $ groupFeatures'' 0
 
 groupFeatures'' :: Int -> [((Int, String), Maybe (Int, String), Maybe String)]
-groupFeatures'' dir = ((1, "chat banner"), Nothing, Nothing) : ((dir, e2eeInfoNoPQStr), Nothing, Nothing) : groupFeatures_ dir
+groupFeatures'' dir = ((1, "chat banner"), Nothing, Nothing) : ((dir, e2eeInfoNoPQStr), Nothing, Nothing) : groupFeatures_ dir False
 
-groupFeatures_ :: Int -> [((Int, String), Maybe (Int, String), Maybe String)]
-groupFeatures_ dir =
-  [ ((dir, "Disappearing messages: off"), Nothing, Nothing),
-    ((dir, "Direct messages: on"), Nothing, Nothing),
-    ((dir, "Full deletion: off"), Nothing, Nothing),
-    ((dir, "Message reactions: on"), Nothing, Nothing),
-    ((dir, "Voice messages: on"), Nothing, Nothing),
-    ((dir, "Files and media: on"), Nothing, Nothing),
-    ((dir, "SimpleX links: on"), Nothing, Nothing),
-    ((dir, "Member reports: on"), Nothing, Nothing),
-    ((dir, "Recent history: on"), Nothing, Nothing)
-  ]
+groupFeatures_ :: Int -> Bool -> [((Int, String), Maybe (Int, String), Maybe String)]
+groupFeatures_ dir isChannel =
+  [((dir, "Disappearing messages: off"), Nothing, Nothing)]
+    <> [((dir, "Direct messages: on"), Nothing, Nothing) | not isChannel]
+    <> [((dir, "Full deletion: off"), Nothing, Nothing)]
+    <> [((dir, "Message reactions: on"), Nothing, Nothing)]
+    <> [((dir, "Voice messages: on"), Nothing, Nothing) | not isChannel]
+    <> [((dir, "Files and media: on"), Nothing, Nothing) | not isChannel]
+    <> [((dir, "SimpleX links: on"), Nothing, Nothing) | not isChannel]
+    <> [((dir, "Member reports: on"), Nothing, Nothing) | not isChannel]
+    <> [((dir, "Recent history: on"), Nothing, Nothing)]
+    <> [((dir, "Chat with admins: " <> (if isChannel then "off" else "on")), Nothing, Nothing)]
+    <> [((dir, "Sign messages: off"), Nothing, Nothing) | isChannel]
 
 businessGroupFeatures :: [(Int, String)]
 businessGroupFeatures = map (\(a, _, _) -> a) $ businessGroupFeatures'' 0
@@ -322,7 +344,8 @@ businessGroupFeatures'' dir =
     ((dir, "Files and media: on"), Nothing, Nothing),
     ((dir, "SimpleX links: on"), Nothing, Nothing),
     ((dir, "Member reports: off"), Nothing, Nothing),
-    ((dir, "Recent history: on"), Nothing, Nothing)
+    ((dir, "Recent history: on"), Nothing, Nothing),
+    ((dir, "Chat with admins: on"), Nothing, Nothing)
   ]
 
 itemId :: Int -> String
@@ -345,7 +368,7 @@ chats = mapChats . read
 getChats :: HasCallStack => (Eq a, Show a) => ([(String, String, Maybe ConnStatus)] -> [a]) -> TestCC -> [a] -> Expectation
 getChats f cc res = do
   cc ##> "/_get chats 1 pcc=on"
-  line <- getTermLine cc
+  line <- getTermLine' (Just "chat list") cc
   f (read line) `shouldMatchList` res
 
 send :: TestCC -> String -> IO ()
@@ -353,41 +376,51 @@ send TestCC {chatController = cc} cmd = atomically $ writeTBQueue (inputQ cc) cm
 
 (<##) :: HasCallStack => TestCC -> String -> Expectation
 cc <## line = do
-  l <- getTermLine cc
+  l <- getTermLine' (Just line) cc
   when (l /= line) $ print ("expected: " <> line, ", got: " <> l)
   l `shouldBe` line
 
 (<##.) :: HasCallStack => TestCC -> String -> Expectation
 cc <##. line = do
-  l <- getTermLine cc
+  l <- getTermLine' (Just $ "prefix: " <> line) cc
   let prefix = line `isPrefixOf` l
   unless prefix $ print ("expected to start from: " <> line, ", got: " <> l)
   prefix `shouldBe` True
 
 (.<##) :: HasCallStack => TestCC -> String -> Expectation
 cc .<## line = do
-  l <- getTermLine cc
+  l <- getTermLine' (Just $ "suffix: " <> line) cc
   let suffix = line `isSuffixOf` l
   unless suffix $ print ("expected to end with: " <> line, ", got: " <> l)
   suffix `shouldBe` True
 
+(.<##.) :: HasCallStack => TestCC -> (String, String) -> Expectation
+cc .<##. (linePrefix, lineSuffix) = do
+  l <- getTermLine' (Just $ "prefix: " <> linePrefix <> "; suffix: " <> lineSuffix) cc
+  let prefix = linePrefix `isPrefixOf` l
+  unless prefix $ print ("expected to start from: " <> linePrefix, ", got: " <> l)
+  prefix `shouldBe` True
+  let suffix = lineSuffix `isSuffixOf` l
+  unless suffix $ print ("expected to end with: " <> lineSuffix, ", got: " <> l)
+  suffix `shouldBe` True
+
 (<#.) :: HasCallStack => TestCC -> String -> Expectation
 cc <#. line = do
-  l <- dropTime <$> getTermLine cc
+  l <- dropTime <$> getTermLine' (Just $ "prefix: " <> line) cc
   let prefix = line `isPrefixOf` l
   unless prefix $ print ("expected to start from: " <> line, ", got: " <> l)
   prefix `shouldBe` True
 
 (.<#) :: HasCallStack => TestCC -> String -> Expectation
 cc .<# line = do
-  l <- dropTime <$> getTermLine cc
+  l <- dropTime <$> getTermLine' (Just $ "suffix: " <> line) cc
   let suffix = line `isSuffixOf` l
   unless suffix $ print ("expected to end with: " <> line, ", got: " <> l)
   suffix `shouldBe` True
 
 (<##..) :: HasCallStack => TestCC -> [String] -> Expectation
 cc <##.. ls = do
-  l <- getTermLine cc
+  l <- getTermLine' (Just $ "one of prefixes: " <> show ls) cc
   let prefix = any (`isPrefixOf` l) ls
   unless prefix $ print ("expected to start from one of: " <> show ls, ", got: " <> l)
   prefix `shouldBe` True
@@ -395,7 +428,8 @@ cc <##.. ls = do
 (>*) :: HasCallStack => TestCC -> String -> IO ()
 cc >* note = do
   cc `send` ("/* " <> note)
-  (dropTime <$> getTermLine cc) `shouldReturn` ("* " <> note)
+  let expected = "* " <> note
+  (dropTime <$> getTermLine' (Just expected) cc) `shouldReturn` expected
 
 data ConsoleResponse
   = ConsoleString String
@@ -404,13 +438,21 @@ data ConsoleResponse
   | StartsWith String
   | Predicate (String -> Bool)
 
+instance Show ConsoleResponse where
+  show (ConsoleString s) = show s
+  show (WithTime s) = "WithTime " <> show s
+  show (EndsWith s) = "EndsWith " <> show s
+  show (StartsWith s) = "StartsWith " <> show s
+  show (Predicate _) = "<predicate>"
+
 instance IsString ConsoleResponse where fromString = ConsoleString
 
 -- this assumes that the string can only match one option
 getInAnyOrder :: HasCallStack => (String -> String) -> TestCC -> [ConsoleResponse] -> Expectation
 getInAnyOrder _ _ [] = pure ()
 getInAnyOrder f cc ls = do
-  line <- f <$> getTermLine cc
+  let expectedDesc = "one of " <> show (length ls) <> " responses: " <> show ls
+  line <- f <$> getTermLine' (Just expectedDesc) cc
   let rest = filterFirst (expected line) ls
   if length rest < length ls
     then getInAnyOrder f cc rest
@@ -436,25 +478,27 @@ getInAnyOrder f cc ls = do
 (<##?) = getInAnyOrder dropTime
 
 (<#) :: HasCallStack => TestCC -> String -> Expectation
-cc <# line = (dropTime <$> getTermLine cc) `shouldReturn` line
+cc <# line = (dropTime <$> getTermLine' (Just line) cc) `shouldReturn` line
 
 (*<#) :: HasCallStack => [TestCC] -> String -> Expectation
 ccs *<# line = mapConcurrently_ (<# line) ccs
 
 (?<#) :: HasCallStack => TestCC -> String -> Expectation
-cc ?<# line = (dropTime <$> getTermLine cc) `shouldReturn` "i " <> line
+cc ?<# line = do
+  let expected = "i " <> line
+  (dropTime <$> getTermLine' (Just expected) cc) `shouldReturn` expected
 
 ($<#) :: HasCallStack => (TestCC, String) -> String -> Expectation
-(cc, uName) $<# line = (dropTime . dropUser uName <$> getTermLine cc) `shouldReturn` line
+(cc, uName) $<# line = (dropTime . dropUser uName <$> getTermLine' (Just $ "for user " <> uName <> ": " <> line) cc) `shouldReturn` line
 
 (^<#) :: HasCallStack => (TestCC, String) -> String -> Expectation
-(cc, p) ^<# line = (dropTime . dropStrPrefix p <$> getTermLine cc) `shouldReturn` line
+(cc, p) ^<# line = (dropTime . dropStrPrefix p <$> getTermLine' (Just $ "without prefix " <> p <> ": " <> line) cc) `shouldReturn` line
 
 (⩗) :: HasCallStack => TestCC -> String -> Expectation
-cc ⩗ line = (dropTime . dropReceipt <$> getTermLine cc) `shouldReturn` line
+cc ⩗ line = (dropTime . dropReceipt <$> getTermLine' (Just $ "receipt: " <> line) cc) `shouldReturn` line
 
 (%) :: HasCallStack => TestCC -> String -> Expectation
-cc % line = (dropTime . dropPartialReceipt <$> getTermLine cc) `shouldReturn` line
+cc % line = (dropTime . dropPartialReceipt <$> getTermLine' (Just $ "partial receipt: " <> line) cc) `shouldReturn` line
 
 (</) :: HasCallStack => TestCC -> Expectation
 (</) = (<// 500000)
@@ -518,6 +562,12 @@ dropPartialReceipt_ msg = case splitAt 2 msg of
   ("% ", text) -> Just text
   _ -> Nothing
 
+getForOldClientsLine :: HasCallStack => TestCC -> String -> IO String
+getForOldClientsLine cc prefix =
+  timeout 500000 (getTermLine cc) >>= \case
+    Just line -> dropLinePrefix prefix line
+    Nothing -> pure ""
+
 getInvitation :: HasCallStack => TestCC -> IO String
 getInvitation cc = do
   (_, fullInv) <- getInvitations cc
@@ -527,7 +577,7 @@ getInvitations :: HasCallStack => TestCC -> IO (String, String)
 getInvitations cc = do
   shortInv <- getInvitation_ cc
   cc <##. "The invitation link for old clients:"
-  fullInv <- getTermLine cc
+  fullInv <- getTermLine' (Just "full invitation link") cc
   pure (shortInv, fullInv)
 
 getInvitationNoShortLink :: HasCallStack => TestCC -> IO String
@@ -537,7 +587,7 @@ getInvitation_ :: HasCallStack => TestCC -> IO String
 getInvitation_ cc = do
   cc <## "pass this invitation link to your contact (via another channel):"
   cc <## ""
-  inv <- getTermLine cc
+  inv <- getTermLine' (Just "invitation link") cc
   cc <## ""
   cc <## "and ask them to connect: /c <invitation_link_above>"
   pure inv
@@ -550,7 +600,7 @@ getContactLink cc created = do
 getContactLinks :: HasCallStack => TestCC -> Bool -> IO (String, String)
 getContactLinks cc created = do
   shortLink <- getContactLink_ cc created
-  fullLink <- dropLinePrefix "The contact link for old clients: " =<< getTermLine cc
+  fullLink <- getForOldClientsLine cc "The contact link for old clients: "
   pure (shortLink, fullLink)
 
 getContactLinkNoShortLink :: HasCallStack => TestCC -> Bool -> IO String
@@ -560,7 +610,7 @@ getContactLink_ :: HasCallStack => TestCC -> Bool -> IO String
 getContactLink_ cc created = do
   cc <## if created then "Your new chat address is created!" else "Your chat address:"
   cc <## ""
-  link <- getTermLine cc
+  link <- getTermLine' (Just "contact link") cc
   cc <## ""
   cc <## "Anybody can send you contact requests with: /c <contact_link_above>"
   cc <## "to show it again: /sa"
@@ -581,7 +631,7 @@ getGroupLink cc gName mRole created = do
 getGroupLinks :: HasCallStack => TestCC -> String -> GroupMemberRole -> Bool -> IO (String, String)
 getGroupLinks cc gName mRole created = do
   shortLink <- getGroupLink_ cc gName mRole created
-  fullLink <- dropLinePrefix "The group link for old clients: " =<< getTermLine cc
+  fullLink <- getForOldClientsLine cc "The group link for old clients: "
   pure (shortLink, fullLink)
 
 getGroupLinkNoShortLink :: HasCallStack => TestCC -> String -> GroupMemberRole -> Bool -> IO String
@@ -591,9 +641,9 @@ getGroupLink_ :: HasCallStack => TestCC -> String -> GroupMemberRole -> Bool -> 
 getGroupLink_ cc gName mRole created = do
   cc <## if created then "Group link is created!" else "Group link:"
   cc <## ""
-  link <- getTermLine cc
+  link <- getTermLine' (Just $ "group link for " <> gName) cc
   cc <## ""
-  cc <## ("Anybody can connect to you and join group as " <> B.unpack (strEncode mRole) <> " with: /c <group_link_above>")
+  cc <## ("Anybody can connect to you and join group as " <> T.unpack (textEncode mRole) <> " with: /c <group_link_above>")
   cc <## ("to show it again: /show link #" <> gName)
   cc <## ("to delete it: /delete link #" <> gName <> " (joined members will remain connected to you)")
   pure link
@@ -632,11 +682,24 @@ createCCNoteFolder cc =
     withCCUser cc $ \user ->
       runExceptT (createNoteFolder db user) >>= either (fail . show) pure
 
+shouldEventuallyReturn :: (HasCallStack, Eq a, Show a) => IO a -> a -> Expectation
+shouldEventuallyReturn action expected = go (200 :: Int)
+  where
+    go n = do
+      r <- action
+      if r == expected || n == 0
+        then r `shouldBe` expected
+        else threadDelay 100000 >> go (n - 1)
+
 getProfilePictureByName :: TestCC -> String -> IO (Maybe String)
 getProfilePictureByName cc displayName =
   withTransaction (chatStore $ chatController cc) $ \db ->
-    maybeFirstRow fromOnly $
-      DB.query db "SELECT image FROM contact_profiles WHERE display_name = ? LIMIT 1" (Only displayName)
+    join <$> maybeFirstRow fromOnly (DB.query db "SELECT image FROM contact_profiles WHERE display_name = ? LIMIT 1" (Only displayName))
+
+getProfileShortDescrByName :: TestCC -> String -> IO (Maybe String)
+getProfileShortDescrByName cc displayName =
+  withTransaction (chatStore $ chatController cc) $ \db ->
+    join <$> maybeFirstRow fromOnly (DB.query db "SELECT short_descr FROM contact_profiles WHERE display_name = ? LIMIT 1" (Only displayName))
 
 pqSndForContact :: TestCC -> ContactId -> IO PQEncryption
 pqSndForContact = pqForContact_ pqSndEnabled PQEncOff
@@ -661,15 +724,59 @@ getCtConn cc contactId = getTestCCContact cc contactId >>= maybe (fail "no conne
 
 getTestCCContact :: TestCC -> ContactId -> IO Contact
 getTestCCContact cc contactId = do
-  let TestCC {chatController = ChatController {config = ChatConfig {chatVRange = vr}}} = cc
+  let TestCC {chatController} = cc
   withCCTransaction cc $ \db ->
     withCCUser cc $ \user ->
-      runExceptT (getContact db vr user contactId) >>= either (fail . show) pure
+      runExceptT (getContact db (storeCxt chatController) user contactId) >>= either (fail . show) pure
+
+contactBadgeHeader :: TestCC -> ContactName -> IO (Maybe (String, BadgeStatus))
+contactBadgeHeader cc cName =
+  withCCTransaction cc $ \db ->
+    withCCUser cc $ \user ->
+      runExceptT (getContact db (storeCxt $ chatController cc) user =<< getContactIdByName db user cName)
+        >>= either (fail . show) (pure . storedBadgeHeader . profile')
+
+requestBadgeHeader :: TestCC -> ContactName -> IO (Maybe (String, BadgeStatus))
+requestBadgeHeader cc cName =
+  withCCTransaction cc $ \db ->
+    withCCUser cc $ \user@User {userId} ->
+      runExceptT (getContactRequest db user =<< getContactRequestIdByName db userId cName)
+        >>= either (fail . show) (\UserContactRequest {profile} -> pure $ storedBadgeHeader profile)
+
+memberBadgeHeader :: TestCC -> GroupName -> ContactName -> IO (Maybe (String, BadgeStatus))
+memberBadgeHeader cc gName mName = (\GroupMember {memberProfile} -> storedBadgeHeader memberProfile) <$> getTestMember cc gName mName
+
+memberProofHeader :: TestCC -> GroupName -> ContactName -> IO (Maybe String)
+memberProofHeader cc gName mName = (\GroupMember {memberBadgeProof} -> proofHeaderTag <$> unNoJSON memberBadgeProof) <$> getTestMember cc gName mName
+
+getTestMember :: TestCC -> GroupName -> ContactName -> IO GroupMember
+getTestMember cc gName mName =
+  withCCTransaction cc $ \db ->
+    withCCUser cc $ \user ->
+      runExceptT
+        ( do
+            gId <- getGroupIdByName db user gName
+            getGroupMember db (storeCxt $ chatController cc) user gId =<< getGroupMemberIdByName db user gId mName
+        )
+        >>= either (fail . show) pure
+
+storedBadgeHeader :: LocalProfile -> Maybe (String, BadgeStatus)
+storedBadgeHeader LocalProfile {localBadge} = case localBadge of
+  Just (PeerBadge b st) -> Just (proofHeaderTag b, st)
+  _ -> Nothing
+
+proofHeaderTag :: BadgeProof -> String
+proofHeaderTag (BadgeProof _ (BBSPresHeader ph) _ _) = case strDecode ph of
+  Right (PHChat b) -> 'C' : take 1 (B.unpack b)
+  Right (PHRequest _) -> "R"
+  Right (PHLink _) -> "L"
+  Right (PHTest _) -> "T"
+  _ -> "?"
 
 lastItemId :: HasCallStack => TestCC -> IO String
 lastItemId cc = do
   cc ##> "/last_item_id"
-  getTermLine cc
+  getTermLine' (Just "last item id") cc
 
 showActiveUser :: HasCallStack => TestCC -> String -> Expectation
 showActiveUser cc name = do
@@ -697,7 +804,7 @@ connectUsers_ cc1 cc2 noShortLink = do
     (cc1 <## (name2 <> ": contact is connected"))
 
 showName :: TestCC -> IO String
-showName (TestCC ChatController {currentUser} _ _ _ _ _) = do
+showName TestCC {chatController = ChatController {currentUser}} = do
   Just User {localDisplayName, profile = LocalProfile {fullName, shortDescr}} <- readTVarIO currentUser
   pure . T.unpack $ viewName localDisplayName <> optionalFullName localDisplayName fullName shortDescr
 
@@ -766,8 +873,10 @@ createGroup4 gName cc1 (cc2, role2) (cc3, role3) (cc4, role4) = do
     [ cc1 <## "#team: dan joined the group",
       do
         cc4 <## ("#" <> gName <> ": you joined the group")
-        cc4 <## ("#" <> gName <> ": member " <> sName2 <> " is connected")
-        cc4 <## ("#" <> gName <> ": member " <> sName3 <> " is connected"),
+        cc4
+          <### [ ConsoleString ("#" <> gName <> ": member " <> sName2 <> " is connected"),
+                 ConsoleString ("#" <> gName <> ": member " <> sName3 <> " is connected")
+               ],
       do
         cc2 <## ("#" <> gName <> ": " <> name1 <> " added " <> sName4 <> " to the group (connecting...)")
         cc2 <## ("#" <> gName <> ": new member " <> name4 <> " is connected"),
@@ -809,12 +918,12 @@ fullAddMember :: HasCallStack => String -> String -> TestCC -> TestCC -> GroupMe
 fullAddMember gName fullName inviting invitee role = do
   name1 <- userName inviting
   memName <- userName invitee
-  inviting ##> ("/a " <> gName <> " " <> memName <> " " <> B.unpack (strEncode role))
+  inviting ##> ("/a " <> gName <> " " <> memName <> " " <> T.unpack (textEncode role))
   let fullName' = if null fullName || fullName == gName then "" else " (" <> fullName <> ")"
   concurrentlyN_
     [ inviting <## ("invitation to join the group #" <> gName <> " sent to " <> memName),
       do
-        invitee <## ("#" <> gName <> fullName' <> ": " <> name1 <> " invites you to join the group as " <> B.unpack (strEncode role))
+        invitee <## ("#" <> gName <> fullName' <> ": " <> name1 <> " invites you to join the group as " <> T.unpack (textEncode role))
         invitee <## ("use /j " <> gName <> " to accept")
     ]
 
@@ -842,7 +951,12 @@ linkAnotherSchema link
   | otherwise = error "link starts with neither https://simplex.chat/ nor simplex:/"
 
 xftpCLI :: [String] -> IO [String]
-xftpCLI params = lines <$> capture_ (withArgs params xftpClientCLI)
+xftpCLI = \case
+  ["rand", path, size] -> do
+    let FileSize n = fromString size :: FileSize Int
+    B.writeFile path =<< atomically . C.randomBytes n =<< C.newRandom
+    pure ["File created: " <> path]
+  params -> error $ "unsupported xftp CLI command: " <> unwords params
 
 setRelativePaths :: HasCallStack => TestCC -> String -> String -> IO ()
 setRelativePaths cc filesFolder tempFolder = do

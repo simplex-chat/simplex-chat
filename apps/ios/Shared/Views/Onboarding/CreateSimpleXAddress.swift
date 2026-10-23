@@ -5,6 +5,7 @@
 //  Created by spaced4ndy on 28.04.2023.
 //  Copyright © 2023 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/navigation.md
 
 import SwiftUI
 import Contacts
@@ -85,12 +86,10 @@ struct CreateSimpleXAddress: View {
                         await MainActor.run { progressIndicator = false }
                     } catch let error {
                         logger.error("CreateSimpleXAddress create address: \(responseError(error))")
-                        await MainActor.run { progressIndicator = false }
-                        let a = getErrorAlert(error, "Error creating address")
-                        AlertManager.shared.showAlertMsg(
-                            title: a.title,
-                            message: a.message
-                        )
+                        await MainActor.run {
+                            progressIndicator = false
+                            showErrorAlert(error, NSLocalizedString("Error creating address", comment: ""))
+                        }
                     }
                 }
             } label: {
@@ -155,11 +154,7 @@ struct CreateSimpleXAddress: View {
                     }
                 case let .failure(error):
                     logger.error("CreateSimpleXAddress share via email: \(responseError(error))")
-                    let a = getErrorAlert(error, "Error sending email")
-                    AlertManager.shared.showAlertMsg(
-                        title: a.title,
-                        message: a.message
-                    )
+                    showErrorAlert(error, NSLocalizedString("Error sending email", comment: ""))
                 }
                 mailViewResult = nil
             }

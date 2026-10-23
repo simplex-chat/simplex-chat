@@ -9,6 +9,7 @@
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/client/chat-list.md#ChatPreviewView
 struct ChatPreviewView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
@@ -172,7 +173,9 @@ struct ChatPreviewView: View {
                 : !contact.sndReady
                 ? theme.colors.secondary
                 : nil
-            previewTitle(contact.verified == true ? verifiedIcon + t : t).foregroundColor(color)
+            NameWithBadge((contact.verified == true ? verifiedIcon + t : t).foregroundColor(color), chat.chatInfo.nameBadge, .title3)
+                .lineLimit(1)
+                .frame(alignment: .topLeading)
         case let .group(groupInfo, _):
             let color = if deleting {
                 theme.colors.secondary
@@ -295,10 +298,22 @@ struct ChatPreviewView: View {
     }
 
     func chatItemPreview(_ cItem: ChatItem) -> (Text, Bool) {
-        let itemText = cItem.meta.itemDeleted == nil ? cItem.text : markedDeletedText()
-        let itemFormattedText = cItem.meta.itemDeleted == nil ? cItem.formattedText : nil
-        let r = messageText(itemText, itemFormattedText, sender: cItem.meta.showGroupAsSender ? nil : cItem.memberDisplayName, preview: true, mentions: cItem.mentions, userMemberId: chat.chatInfo.groupInfo?.membership.memberId, showSecrets: nil, backgroundColor: UIColor(theme.colors.background), prefix: prefix())
+        let (itemText, itemFormattedText) = chatItemPreviewText(cItem)
+        let r = messageText(itemText, itemFormattedText, markdownBlocks: itemFormattedText == nil ? nil : cItem.markdownBlocks, sender: cItem.meta.showGroupAsSender ? nil : cItem.memberDisplayName, preview: true, mentions: cItem.mentions, userMemberId: chat.chatInfo.groupInfo?.membership.memberId, showSecrets: nil, backgroundColor: UIColor(theme.colors.background), prefix: prefix())
         return (Text(AttributedString(r.string)), r.hasSecrets)
+
+        func chatItemPreviewText(_ ci: ChatItem) -> (String, [FormattedText]?) {
+            if ci.meta.itemDeleted != nil {
+                return (markedDeletedText(), nil)
+            }
+            if case let .chat(_, chatLink, _) = ci.content.msgContent {
+                let descr = if let descr = chatLink.shortDescription?.trimmingCharacters(in: .whitespacesAndNewlines),
+                               descr != "" { "\n" + descr } else { "" }
+                let text = chatLink.displayName + descr
+                return (text, nil)
+            }
+            return (ci.text(isChannel: chat.chatInfo.isChannel), ci.formattedText)
+        }
 
         // same texts are in markedDeletedText in MarkedDeletedItemView, but it returns LocalizedStringKey;
         // can be refactored into a single function if functions calling these are changed to return same type
@@ -423,7 +438,19 @@ struct ChatPreviewView: View {
             }
         case .file:
             smallContentPreviewFile(size: dynamicMediaSize) {
-                CIFileView(file: ci.file, edited: ci.meta.itemEdited, smallViewSize: dynamicMediaSize)
+                CIFileView(chat: chat, file: ci.file, meta: ci.meta, smallViewSize: dynamicMediaSize)
+            }
+        case let .chat(_, chatLink, ownerSig):
+            smallContentPreview(size: dynamicMediaSize, borderColor: chatLink.image != nil ? .secondary : .clear) {
+                ProfileImage(
+                    imageStr: chatLink.image,
+                    icon: Image(systemName: chatLink.iconName),
+                    size: dynamicMediaSize,
+                    color: Color(uiColor: .tertiaryLabel)
+                )
+                .onTapGesture {
+                    planAndConnect(chatLink.connLinkStr, linkOwnerSig: ownerSig, theme: theme, dismiss: false)
+                }
             }
         default: EmptyView()
         }
@@ -498,12 +525,12 @@ func flagIcon(size: CGFloat, color: Color) -> some View {
         .foregroundColor(color)
 }
 
-func smallContentPreview(size: CGFloat, _ view: @escaping () -> some View) -> some View {
+func smallContentPreview(size: CGFloat, borderColor: Color = .secondary, _ view: @escaping () -> some View) -> some View {
     view()
     .frame(width: size, height: size)
     .cornerRadius(8)
     .overlay(RoundedRectangle(cornerSize: CGSize(width: 8, height: 8))
-        .strokeBorder(.secondary, lineWidth: 0.3, antialiased: true))
+        .strokeBorder(borderColor, lineWidth: 0.3, antialiased: true))
     .padding(.vertical, size / 6)
     .padding(.leading, 3)
     .offset(x: 6)

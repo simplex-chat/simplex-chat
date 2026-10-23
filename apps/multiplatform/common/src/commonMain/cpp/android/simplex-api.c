@@ -5,6 +5,9 @@
 #include <stdlib.h>
 //#include <android/log.h>
 
+// from libc (stdlib.h is not included because of the reallocarray stub below)
+void free(void *ptr);
+
 // from the RTS
 void hs_init_with_rtsopts(int * argc, char **argv[]);
 
@@ -50,6 +53,13 @@ Java_chat_simplex_common_platform_CoreKt_initHS(__unused JNIEnv *env, __unused j
 // from simplex-chat
 typedef long* chat_ctrl;
 
+// Strings returned by chat_* functions are allocated with malloc and owned by the caller.
+static jstring decode_and_free(JNIEnv *env, char *string) {
+    jstring res = (*env)->NewStringUTF(env, string);
+    free(string);
+    return res;
+}
+
 /*
    When you start using any new function from Haskell libraries,
    you have to add the function name to the file libsimplex.dll.def in the root directory.
@@ -68,6 +78,7 @@ extern char *chat_parse_server(const char *str);
 extern char *chat_parse_uri(const char *str, const int safe);
 extern char *chat_password_hash(const char *pwd, const char *salt);
 extern char *chat_valid_name(const char *name);
+extern char *chat_parse_badge_code(const char *code);
 extern int chat_json_length(const char *str);
 extern char *chat_write_file(chat_ctrl ctrl, const char *path, char *ptr, int length);
 extern char *chat_write_image(chat_ctrl ctrl, long max_size, const char *path, char *ptr, int length, bool encrypt);
@@ -102,7 +113,7 @@ Java_chat_simplex_common_platform_CoreKt_chatMigrateInit(JNIEnv *env, __unused j
     const char *_dbKey = (*env)->GetStringUTFChars(env, dbKey, JNI_FALSE);
     const char *_confirm = (*env)->GetStringUTFChars(env, confirm, JNI_FALSE);
     jlong _ctrl = (jlong) 0;
-    jstring res = (*env)->NewStringUTF(env, chat_migrate_init(_dbPath, _dbKey, _confirm, &_ctrl));
+    jstring res = decode_and_free(env, chat_migrate_init(_dbPath, _dbKey, _confirm, &_ctrl));
     (*env)->ReleaseStringUTFChars(env, dbPath, _dbPath);
     (*env)->ReleaseStringUTFChars(env, dbKey, _dbKey);
     (*env)->ReleaseStringUTFChars(env, confirm, _confirm);
@@ -121,7 +132,7 @@ Java_chat_simplex_common_platform_CoreKt_chatMigrateInit(JNIEnv *env, __unused j
 
 JNIEXPORT jstring JNICALL
 Java_chat_simplex_common_platform_CoreKt_chatCloseStore(JNIEnv *env, __unused jclass clazz, jlong controller) {
-    jstring res = (*env)->NewStringUTF(env, chat_close_store((void*)controller));
+    jstring res = decode_and_free(env, chat_close_store((void*)controller));
     return res;
 }
 
@@ -131,7 +142,7 @@ Java_chat_simplex_common_platform_CoreKt_chatSendCmdRetry(JNIEnv *env, __unused 
     //jint length = (jint) (*env)->GetStringUTFLength(env, msg);
     //for (int i = 0; i < length; ++i)
     //    __android_log_print(ANDROID_LOG_ERROR, "simplex", "%d: %02x\n", i, _msg[i]);
-    jstring res = (*env)->NewStringUTF(env, chat_send_cmd_retry((void*)controller, _msg, retryNum));
+    jstring res = decode_and_free(env, chat_send_cmd_retry((void*)controller, _msg, retryNum));
     (*env)->ReleaseStringUTFChars(env, msg, _msg);
     return res;
 }
@@ -139,25 +150,25 @@ Java_chat_simplex_common_platform_CoreKt_chatSendCmdRetry(JNIEnv *env, __unused 
 JNIEXPORT jstring JNICALL
 Java_chat_simplex_common_platform_CoreKt_chatSendRemoteCmdRetry(JNIEnv *env, __unused jclass clazz, jlong controller, jint rhId, jstring msg, jint retryNum) {
     const char *_msg = (*env)->GetStringUTFChars(env, msg, JNI_FALSE);
-    jstring res = (*env)->NewStringUTF(env, chat_send_remote_cmd_retry((void*)controller, rhId, _msg, retryNum));
+    jstring res = decode_and_free(env, chat_send_remote_cmd_retry((void*)controller, rhId, _msg, retryNum));
     (*env)->ReleaseStringUTFChars(env, msg, _msg);
     return res;
 }
 
 JNIEXPORT jstring JNICALL
 Java_chat_simplex_common_platform_CoreKt_chatRecvMsg(JNIEnv *env, __unused jclass clazz, jlong controller) {
-    return (*env)->NewStringUTF(env, chat_recv_msg((void*)controller));
+    return decode_and_free(env, chat_recv_msg((void*)controller));
 }
 
 JNIEXPORT jstring JNICALL
 Java_chat_simplex_common_platform_CoreKt_chatRecvMsgWait(JNIEnv *env, __unused jclass clazz, jlong controller, jint wait) {
-    return (*env)->NewStringUTF(env, chat_recv_msg_wait((void*)controller, wait));
+    return decode_and_free(env, chat_recv_msg_wait((void*)controller, wait));
 }
 
 JNIEXPORT jstring JNICALL
 Java_chat_simplex_common_platform_CoreKt_chatParseMarkdown(JNIEnv *env, __unused jclass clazz, jstring str) {
     const char *_str = (*env)->GetStringUTFChars(env, str, JNI_FALSE);
-    jstring res = (*env)->NewStringUTF(env, chat_parse_markdown(_str));
+    jstring res = decode_and_free(env, chat_parse_markdown(_str));
     (*env)->ReleaseStringUTFChars(env, str, _str);
     return res;
 }
@@ -165,7 +176,7 @@ Java_chat_simplex_common_platform_CoreKt_chatParseMarkdown(JNIEnv *env, __unused
 JNIEXPORT jstring JNICALL
 Java_chat_simplex_common_platform_CoreKt_chatParseServer(JNIEnv *env, __unused jclass clazz, jstring str) {
     const char *_str = (*env)->GetStringUTFChars(env, str, JNI_FALSE);
-    jstring res = (*env)->NewStringUTF(env, chat_parse_server(_str));
+    jstring res = decode_and_free(env, chat_parse_server(_str));
     (*env)->ReleaseStringUTFChars(env, str, _str);
     return res;
 }
@@ -173,7 +184,7 @@ Java_chat_simplex_common_platform_CoreKt_chatParseServer(JNIEnv *env, __unused j
 JNIEXPORT jstring JNICALL
 Java_chat_simplex_common_platform_CoreKt_chatParseUri(JNIEnv *env, __unused jclass clazz, jstring str, jint safe) {
     const char *_str = (*env)->GetStringUTFChars(env, str, JNI_FALSE);
-    jstring res = (*env)->NewStringUTF(env, chat_parse_uri(_str, safe));
+    jstring res = decode_and_free(env, chat_parse_uri(_str, safe));
     (*env)->ReleaseStringUTFChars(env, str, _str);
     return res;
 }
@@ -182,7 +193,7 @@ JNIEXPORT jstring JNICALL
 Java_chat_simplex_common_platform_CoreKt_chatPasswordHash(JNIEnv *env, __unused jclass clazz, jstring pwd, jstring salt) {
     const char *_pwd = (*env)->GetStringUTFChars(env, pwd, JNI_FALSE);
     const char *_salt = (*env)->GetStringUTFChars(env, salt, JNI_FALSE);
-    jstring res = (*env)->NewStringUTF(env, chat_password_hash(_pwd, _salt));
+    jstring res = decode_and_free(env, chat_password_hash(_pwd, _salt));
     (*env)->ReleaseStringUTFChars(env, pwd, _pwd);
     (*env)->ReleaseStringUTFChars(env, salt, _salt);
     return res;
@@ -191,8 +202,16 @@ Java_chat_simplex_common_platform_CoreKt_chatPasswordHash(JNIEnv *env, __unused 
 JNIEXPORT jstring JNICALL
 Java_chat_simplex_common_platform_CoreKt_chatValidName(JNIEnv *env, jclass clazz, jstring name) {
     const char *_name = (*env)->GetStringUTFChars(env, name, JNI_FALSE);
-    jstring res = (*env)->NewStringUTF(env, chat_valid_name(_name));
+    jstring res = decode_and_free(env, chat_valid_name(_name));
     (*env)->ReleaseStringUTFChars(env, name, _name);
+    return res;
+}
+
+JNIEXPORT jstring JNICALL
+Java_chat_simplex_common_platform_CoreKt_chatParseBadgeCode(JNIEnv *env, jclass clazz, jstring code) {
+    const char *_code = (*env)->GetStringUTFChars(env, code, JNI_FALSE);
+    jstring res = decode_and_free(env, chat_parse_badge_code(_code));
+    (*env)->ReleaseStringUTFChars(env, code, _code);
     return res;
 }
 
@@ -209,7 +228,7 @@ Java_chat_simplex_common_platform_CoreKt_chatWriteFile(JNIEnv *env, jclass clazz
     const char *_path = (*env)->GetStringUTFChars(env, path, JNI_FALSE);
     jbyte *buff = (jbyte *) (*env)->GetDirectBufferAddress(env, buffer);
     jlong capacity = (*env)->GetDirectBufferCapacity(env, buffer);
-    jstring res = (*env)->NewStringUTF(env, chat_write_file((void*)controller, _path, buff, capacity));
+    jstring res = decode_and_free(env, chat_write_file((void*)controller, _path, buff, capacity));
     (*env)->ReleaseStringUTFChars(env, path, _path);
     return res;
 }
@@ -253,6 +272,7 @@ Java_chat_simplex_common_platform_CoreKt_chatReadFile(JNIEnv *env, jclass clazz,
         arr = (*env)->NewByteArray(env, len);
         (*env)->SetByteArrayRegion(env, arr, 0, len, res + 1);
     }
+    free(res);
 
     jobjectArray ret = (jobjectArray)(*env)->NewObjectArray(env, 2, (*env)->FindClass(env, "java/lang/Object"), NULL);
     jobject statusObj = (*env)->NewObject(env, (*env)->FindClass(env, "java/lang/Integer"),
@@ -267,7 +287,7 @@ JNIEXPORT jstring JNICALL
 Java_chat_simplex_common_platform_CoreKt_chatEncryptFile(JNIEnv *env, jclass clazz, jlong controller, jstring from_path, jstring to_path) {
     const char *_from_path = (*env)->GetStringUTFChars(env, from_path, JNI_FALSE);
     const char *_to_path = (*env)->GetStringUTFChars(env, to_path, JNI_FALSE);
-    jstring res = (*env)->NewStringUTF(env, chat_encrypt_file((void*)controller, _from_path, _to_path));
+    jstring res = decode_and_free(env, chat_encrypt_file((void*)controller, _from_path, _to_path));
     (*env)->ReleaseStringUTFChars(env, from_path, _from_path);
     (*env)->ReleaseStringUTFChars(env, to_path, _to_path);
     return res;
@@ -279,7 +299,7 @@ Java_chat_simplex_common_platform_CoreKt_chatDecryptFile(JNIEnv *env, jclass cla
     const char *_key = (*env)->GetStringUTFChars(env, key, JNI_FALSE);
     const char *_nonce = (*env)->GetStringUTFChars(env, nonce, JNI_FALSE);
     const char *_to_path = (*env)->GetStringUTFChars(env, to_path, JNI_FALSE);
-    jstring res = (*env)->NewStringUTF(env, chat_decrypt_file(_from_path, _key, _nonce, _to_path));
+    jstring res = decode_and_free(env, chat_decrypt_file(_from_path, _key, _nonce, _to_path));
     (*env)->ReleaseStringUTFChars(env, from_path, _from_path);
     (*env)->ReleaseStringUTFChars(env, key, _key);
     (*env)->ReleaseStringUTFChars(env,  nonce, _nonce);

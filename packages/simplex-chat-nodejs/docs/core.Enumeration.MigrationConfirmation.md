@@ -1,0 +1,43 @@
+[**simplex-chat**](README.md)
+
+***
+
+[simplex-chat](README.md) / [core](Namespace.core.md) / MigrationConfirmation
+
+# Enumeration: MigrationConfirmation
+
+Defined in: [src/core.ts:126](../core.ts#L126)
+
+Migration confirmation mode
+
+## Enumeration Members
+
+### Console
+
+> **Console**: `"console"`
+
+Defined in: [src/core.ts:129](../core.ts#L129)
+
+***
+
+### Error
+
+> **Error**: `"error"`
+
+Defined in: [src/core.ts:130](../core.ts#L130)
+
+***
+
+### YesUp
+
+> **YesUp**: `"yesUp"`
+
+Defined in: [src/core.ts:127](../core.ts#L127)
+
+***
+
+### YesUpDown
+
+> **YesUpDown**: `"yesUpDown"`
+
+Defined in: [src/core.ts:128](../core.ts#L128)

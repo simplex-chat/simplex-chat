@@ -5,6 +5,7 @@
 //  Created by Evgeny on 26/04/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/api.md
 
 import Foundation
 import SwiftUI
@@ -22,6 +23,7 @@ public func onOff(_ b: Bool) -> String {
     b ? "on" : "off"
 }
 
+// Spec: spec/api.md#APIResult
 public enum APIResult<R>: Decodable where R: Decodable, R: ChatAPIResult {
     case result(R)
     case error(ChatError)
@@ -59,6 +61,7 @@ public enum APIResult<R>: Decodable where R: Decodable, R: ChatAPIResult {
     }
 }
 
+// Spec: spec/api.md#ChatAPIResult
 public protocol ChatAPIResult: Decodable {
     var responseType: String { get }
     var details: String { get }
@@ -79,11 +82,10 @@ extension ChatAPIResult {
     }
 }
 
+// Spec: spec/api.md#decodeAPIResult
 public func decodeAPIResult<R: ChatAPIResult>(_ d: Data) -> APIResult<R> {
-//    print("decodeAPIResult \(String(describing: R.self))")
     do {
-//        return try withStackSizeLimit { try jsonDecoder.decode(APIResult<R>.self, from: d) }
-        return try jsonDecoder.decode(APIResult<R>.self, from: d)
+        return try withLargeStack { try jsonDecoder.decode(APIResult<R>.self, from: d) }
     } catch {}
     if let j = try? JSONSerialization.jsonObject(with: d) as? NSDictionary {
         if let (_, jErr) = getOWSF(j, "error") {
@@ -102,31 +104,50 @@ public func decodeAPIResult<R: ChatAPIResult>(_ d: Data) -> APIResult<R> {
 // Default stack size for the main thread is 1mb, for secondary threads - 512 kb.
 // This function can be used to test what size is used (or to increase available stack size).
 // Stack size must be a multiple of system page size (16kb).
-//private let stackSizeLimit: Int = 256 * 1024
-//
-//private func withStackSizeLimit<T>(_ f: @escaping () throws -> T) throws -> T {
-//    let semaphore = DispatchSemaphore(value: 0)
-//    var result: Result<T, Error>?
-//    let thread = Thread {
-//        do {
-//            result = .success(try f())
-//        } catch {
-//            result = .failure(error)
-//        }
-//        semaphore.signal()
-//    }
-//
-//    thread.stackSize = stackSizeLimit
-//    thread.qualityOfService = Thread.current.qualityOfService
-//    thread.start()
-//
-//    semaphore.wait()
-//
-//    switch result! {
-//    case let .success(r): return r
-//    case let .failure(e): throw e
-//    }
-//}
+private let stackSizeLimit: Int = 16 * 1024 * 1024
+
+private final class LargeStackRunner: NSObject {
+    static let shared = LargeStackRunner()
+
+    private let serialize = NSLock()              // serialize submitters
+    private let jobReady = DispatchSemaphore(value: 0)
+    private let jobDone = DispatchSemaphore(value: 0)
+    private var job: (() -> Void)?
+    private var thread: Thread? = nil
+
+    private override init() {
+        super.init()
+        let t = Thread(target: self, selector: #selector(loop), object: nil)
+        t.stackSize = stackSizeLimit
+        t.name = "chat.simplex.decoding"
+        t.qualityOfService = .default
+        t.start()
+        thread = t
+    }
+
+    @objc private func loop() {
+        while true {
+            jobReady.wait()
+            job?()
+            jobDone.signal()
+        }
+    }
+
+    func run<T>(_ f: @escaping () throws -> T) throws -> T {
+        serialize.lock()
+        defer { serialize.unlock() }
+        var result: Result<T, Error>!
+        job = { result = Result(catching: f) }
+        jobReady.signal()
+        jobDone.wait()
+        job = nil
+        return try result.get()
+    }
+}
+
+func withLargeStack<T>(_ work: @escaping () throws -> T) throws -> T {
+    try LargeStackRunner.shared.run(work)
+}
 
 public func parseApiChats(_ jResp: NSDictionary) -> (user: UserRef, chats: [ChatData])? {
     if let jApiChats = jResp["apiChats"] as? NSDictionary,
@@ -162,6 +183,10 @@ public struct CreatedConnLink: Decodable, Hashable {
 
     public func simplexChatUri(short: Bool = true) -> String {
         short ? (connShortLink ?? simplexChatLink(connFullLink)) : simplexChatLink(connFullLink)
+    }
+
+    public var cmdString: String {
+        connFullLink + (connShortLink.map { " \($0)"} ?? "")
     }
 }
 
@@ -573,6 +598,7 @@ public enum RcvSwitchStatus: String, Decodable, Hashable {
     case sendingQADD = "sending_qadd"
     case sendingQUSE = "sending_quse"
     case receivedMessage = "received_message"
+    case receivedQEND = "received_qend"
 }
 
 public struct SndQueueInfo: Decodable, Hashable {
@@ -691,6 +717,7 @@ private func encodeCJSON<T: Encodable>(_ value: T) -> [CChar] {
     encodeJSON(value).cString(using: .utf8)!
 }
 
+// Spec: spec/api.md#ChatError
 public enum ChatError: Decodable, Hashable, Error {
     case error(errorType: ChatErrorType)
     case errorAgent(agentError: AgentErrorType)
@@ -713,6 +740,7 @@ public enum ChatError: Decodable, Hashable, Error {
     }
 }
 
+// Spec: spec/api.md#ChatErrorType
 public enum ChatErrorType: Decodable, Hashable {
     case noActiveUser
     case noConnectionUser(agentConnId: String)
@@ -721,6 +749,7 @@ public enum ChatErrorType: Decodable, Hashable {
     case userUnknown
     case activeUserExists
     case userExists
+    case chatRelayExists
     case invalidDisplayName
     case differentActiveUser(commandUserId: Int64, activeUserId: Int64)
     case cantDeleteActiveUser(userId: Int64)
@@ -734,6 +763,8 @@ public enum ChatErrorType: Decodable, Hashable {
     case chatNotStopped
     case chatStoreChanged
     case invalidConnReq
+    case simplexDomainNotReady(simplexDomain: SimplexDomain, simplexDomainError: SimplexDomainError)
+    case notResolvedLocally
     case unsupportedConnReq
     case invalidChatMessage(connection: Connection, message: String)
     case connReqMessageProhibited
@@ -782,19 +813,127 @@ public enum ChatErrorType: Decodable, Hashable {
     case agentVersion
     case agentNoSubResult(agentConnId: String)
     case commandError(message: String)
+    case badgeRedeemError(badgeRedeemError: BadgeRedeemError)
     case serverProtocol
     case agentCommandError(message: String)
     case invalidFileDescription(message: String)
     case connectionIncognitoChangeProhibited
     case connectionUserChangeProhibited
     case peerChatVRangeIncompatible
+    case relayTestError(message: String)
     case internalError(message: String)
     case exception(message: String)
+}
+
+public enum BadgeRedeemError: Decodable, Hashable {
+    case invalidCode
+    case invalidReceipt
+    case serviceNotConfigured
+    case badgeActive
+    case serviceError(serviceError: BadgeServiceErrorCode)
+    case invalidResponse(message: String)
+    case unknownKeyIndex
+    case credentialNotVerified
+}
+
+// the service is deployed ahead of clients, so a code this version does not know keeps its tag
+public enum BadgeServiceErrorCode: Decodable, Hashable {
+    case badRequest
+    case unsupportedVersion
+    case unknownPurchaseKey
+    case unknownOfferId
+    case offerDisabled
+    case offerMismatch
+    case productUnavailable
+    case paymentNotEntitled
+    case paymentPending
+    case providerUnavailable
+    case providerNotConfigured
+    case rateLimited
+    case codeInvalid
+    case codeUsed
+    case codeExpired
+    case receiptInvalid
+    case receiptUsed
+    case testPurchase
+    case internalError
+    case unknown(String)
+
+    public var text: String {
+        switch self {
+        case .badRequest: "bad_request"
+        case .unsupportedVersion: "unsupported_version"
+        case .unknownPurchaseKey: "unknown_purchase_key"
+        case .unknownOfferId: "unknown_offer_id"
+        case .offerDisabled: "offer_disabled"
+        case .offerMismatch: "offer_mismatch"
+        case .productUnavailable: "product_unavailable"
+        case .paymentNotEntitled: "payment_not_entitled"
+        case .paymentPending: "payment_pending"
+        case .providerUnavailable: "provider_unavailable"
+        case .providerNotConfigured: "provider_not_configured"
+        case .rateLimited: "rate_limited"
+        case .codeInvalid: "code_invalid"
+        case .codeUsed: "code_used"
+        case .codeExpired: "code_expired"
+        case .receiptInvalid: "receipt_invalid"
+        case .testPurchase: "test_purchase"
+        case .receiptUsed: "receipt_used"
+        case .internalError: "internal"
+        case let .unknown(s): s
+        }
+    }
+
+    public init(from decoder: Decoder) throws {
+        switch try decoder.singleValueContainer().decode(String.self) {
+        case "bad_request": self = .badRequest
+        case "unsupported_version": self = .unsupportedVersion
+        case "unknown_purchase_key": self = .unknownPurchaseKey
+        case "unknown_offer_id": self = .unknownOfferId
+        case "offer_disabled": self = .offerDisabled
+        case "offer_mismatch": self = .offerMismatch
+        case "product_unavailable": self = .productUnavailable
+        case "payment_not_entitled": self = .paymentNotEntitled
+        case "payment_pending": self = .paymentPending
+        case "provider_unavailable": self = .providerUnavailable
+        case "provider_not_configured": self = .providerNotConfigured
+        case "rate_limited": self = .rateLimited
+        case "code_invalid": self = .codeInvalid
+        case "code_used": self = .codeUsed
+        case "code_expired": self = .codeExpired
+        case "receipt_invalid": self = .receiptInvalid
+        case "test_purchase": self = .testPurchase
+        case "receipt_used": self = .receiptUsed
+        case "internal": self = .internalError
+        case let s: self = .unknown(s)
+        }
+    }
+}
+
+public func badgeServiceErrorText(_ code: BadgeServiceErrorCode) -> String? {
+    switch code {
+    case .codeInvalid: NSLocalizedString("This code was not recognized.", comment: "alert message")
+    case .codeUsed: NSLocalizedString("This code has already been used.", comment: "alert message")
+    case .codeExpired: NSLocalizedString("This code has expired.", comment: "alert message")
+    case .rateLimited: NSLocalizedString("Too many attempts. Please try again later.", comment: "alert message")
+    case .unsupportedVersion: NSLocalizedString("This app version is too old for the badge service. Please update the app.", comment: "alert message")
+    case .unknownPurchaseKey: NSLocalizedString("The badge service does not recognize this badge.", comment: "alert message")
+    case .internalError: NSLocalizedString("The badge service reported an internal error.", comment: "alert message")
+    case .receiptInvalid: NSLocalizedString("The store did not confirm this purchase.", comment: "alert message")
+    case .testPurchase: NSLocalizedString("Sandbox purchases are not credited. Badges can only be bought in the App Store version of the app.", comment: "alert message")
+    case .receiptUsed: NSLocalizedString("This purchase was already credited to a badge on another device or profile.", comment: "alert message")
+    case .paymentPending: NSLocalizedString("The payment has not been confirmed yet.", comment: "alert message")
+    case .providerUnavailable: NSLocalizedString("The store could not be reached.", comment: "alert message")
+    case .providerNotConfigured: NSLocalizedString("Badges cannot be bought in the app yet.", comment: "alert message")
+    case .productUnavailable: NSLocalizedString("This badge is not on sale.", comment: "alert message")
+    case .badRequest, .unknownOfferId, .offerDisabled, .offerMismatch, .paymentNotEntitled, .unknown: nil
+    }
 }
 
 public enum StoreError: Decodable, Hashable {
     case duplicateName
     case userNotFound(userId: Int64)
+    case relayUserNotFound
     case userNotFoundByName(contactName: ContactName)
     case userNotFoundByContactId(contactId: Int64)
     case userNotFoundByGroupId(groupId: Int64)
@@ -819,6 +958,7 @@ public enum StoreError: Decodable, Hashable {
     case memberContactGroupMemberNotFound(contactId: Int64)
     case groupWithoutUser
     case duplicateGroupMember
+    case duplicateMemberId
     case groupAlreadyJoined
     case groupInvitationNotFound
     case sndFileNotFound(fileId: Int64)
@@ -853,6 +993,9 @@ public enum StoreError: Decodable, Hashable {
     case hostMemberIdNotFound(groupId: Int64)
     case contactNotFoundByFileId(fileId: Int64)
     case noGroupSndStatus(itemId: Int64, groupMemberId: Int64)
+    case userChatRelayNotFound(chatRelayId: Int64)
+    case groupRelayNotFound(groupRelayId: Int64)
+    case groupRelayNotFoundByMemberId(groupMemberId: Int64)
     case dBException(message: String)
 }
 
@@ -883,6 +1026,13 @@ public enum AgentErrorType: Decodable, Hashable {
     case INTERNAL(internalErr: String)
     case CRITICAL(offerRestart: Bool, criticalErr: String)
     case INACTIVE
+    case NO_NAME_SERVERS
+}
+
+public enum NameErrorType: Decodable, Hashable {
+    case NO_RESOLVER
+    case NOT_FOUND
+    case RESOLVER(resolverErr: String)
 }
 
 public enum CommandErrorType: Decodable, Hashable {
@@ -924,6 +1074,7 @@ public enum ProtocolErrorType: Decodable, Hashable {
     case LARGE_MSG
     case EXPIRED
     case INTERNAL
+    case NAME(nameErr: NameErrorType)
 }
 
 public enum ProxyError: Decodable, Hashable {
@@ -1027,11 +1178,21 @@ public enum SMPHandshakeError: Decodable, Hashable {
 
 public enum SMPAgentError: Decodable, Hashable {
     case A_MESSAGE
-    case A_PROHIBITED
+    case A_PROHIBITED(prohibitedErr: String)
     case A_VERSION
+    case A_LINK(linkErr: String)
     case A_CRYPTO
     case A_DUPLICATE
     case A_QUEUE(queueErr: String)
+    case A_SERVICE(serviceError: AgentServiceError)
+}
+
+public enum AgentServiceError: Decodable, Hashable {
+    case rejected
+    case timeout
+    case noPendingRequest
+    case notDRAddress
+    case badSignature
 }
 
 public enum ArchiveError: Decodable, Hashable {

@@ -19,7 +19,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.themedBackground
 import chat.simplex.common.views.chat.topPaddingToContent
 import chat.simplex.common.views.newchat.ActiveProfilePicker
-import chat.simplex.res.MR
+import chat.simplex.res.*
 
 @Composable
 fun ShareListView(chatModel: ChatModel, stopped: Boolean) {
@@ -50,6 +50,9 @@ fun ShareListView(chatModel: ChatModel, stopped: Boolean) {
             hasSimplexLink = hasSimplexLink || hasSimplexLink(mc.text)
           }
         }
+      }
+      is SharedContent.ChatLink, is SharedContent.MyAddress -> {
+        hasSimplexLink = true
       }
       null -> {}
     }
@@ -96,9 +99,10 @@ private fun ShareListToolbar(chatModel: ChatModel, stopped: Boolean, onSearchVal
   }
   val users by remember { derivedStateOf { chatModel.users.filter { u -> u.user.activeUser || !u.user.hidden } } }
   val navButton: @Composable RowScope.() -> Unit = {
+    val sharedContent = remember { chatModel.sharedContent }.value
     when {
       showSearch -> NavigationButtonBack(hideSearchOnBack)
-      (users.size > 1 || chatModel.remoteHosts.isNotEmpty()) && remember { chatModel.sharedContent }.value !is SharedContent.Forward -> {
+      (users.size > 1 || chatModel.remoteHosts.isNotEmpty()) && sharedContent !is SharedContent.Forward && sharedContent !is SharedContent.ChatLink && sharedContent !is SharedContent.MyAddress -> {
         val allRead = users
           .filter { u -> !u.user.activeUser && !u.user.hidden }
           .all { u -> u.unreadCount == 0 }
@@ -124,11 +128,12 @@ private fun ShareListToolbar(chatModel: ChatModel, stopped: Boolean, onSearchVal
         }
       }
       else -> NavigationButtonBack(onButtonClicked = {
-        val sharedContent = chatModel.sharedContent.value
         // Drop shared content
         chatModel.sharedContent.value = null
         if (sharedContent is SharedContent.Forward) {
           chatModel.chatId.value = sharedContent.fromChatInfo.id
+        } else if (sharedContent is SharedContent.ChatLink) {
+          chatModel.chatId.value = sharedContent.groupInfo.id
         }
       })
     }
@@ -144,6 +149,8 @@ private fun ShareListToolbar(chatModel: ChatModel, stopped: Boolean, onSearchVal
             is SharedContent.Media -> stringResource(MR.strings.share_image)
             is SharedContent.File -> stringResource(MR.strings.share_file)
             is SharedContent.Forward -> if (v.chatItems.size > 1) stringResource(MR.strings.forward_multiple) else stringResource(MR.strings.forward_message)
+            is SharedContent.ChatLink -> stringResource(MR.strings.share_channel)
+            is SharedContent.MyAddress -> stringResource(MR.strings.share_address)
             null -> stringResource(MR.strings.share_message)
           },
           color = MaterialTheme.colors.onBackground,
@@ -190,8 +197,8 @@ private fun ShareList(
   val oneHandUI = remember { appPrefs.oneHandUI.state }
   val chats by remember(search) {
     derivedStateOf {
-      val sorted = chatModel.chats.value.toList().filter { it.chatInfo.ready }.sortedByDescending { it.chatInfo is ChatInfo.Local }
-      filteredChats(mutableStateOf(false), mutableStateOf(null), search, sorted)
+      val sorted = chatModel.chats.value.toList().filter { it.chatInfo.ready && it.chatInfo.sendMsgEnabled && !((chatModel.sharedContent.value is SharedContent.ChatLink || chatModel.sharedContent.value is SharedContent.MyAddress) && it.chatInfo is ChatInfo.Local) }.sortedByDescending { it.chatInfo is ChatInfo.Local }
+      filteredChats(mutableStateOf(false), mutableStateOf<Set<String>>(emptySet()), search, sorted)
     }
   }
   val topPaddingToContent = topPaddingToContent(false)

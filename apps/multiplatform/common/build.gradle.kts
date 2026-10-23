@@ -11,6 +11,31 @@ plugins {
 group = "chat.simplex"
 version = extra["android.version_name"] as String
 
+val simplexAssetsDir = rootProject.findProperty("simplex.assets.dir") as String?
+val simplexAssetsLocal = file("src/commonMain/resources/assets/simplex")
+val hasSimplexAssets = simplexAssetsDir != null
+
+if (simplexAssetsDir != null) {
+  val resolvedAssetsDir = rootProject.rootDir.resolve(simplexAssetsDir)
+  val srcImagesDir = resolvedAssetsDir.resolve("multiplatform/resources/MR/images")
+  val verifySimplexAssets = tasks.register("verifySimplexAssets") {
+    doLast {
+      if (!srcImagesDir.isDirectory) {
+        throw GradleException("Source assets not found: $srcImagesDir (run resize.sh first)")
+      }
+    }
+  }
+  tasks.register<Sync>("copySimplexAssets") {
+    dependsOn(verifySimplexAssets)
+    from(srcImagesDir)
+    into(simplexAssetsLocal.resolve("MR/images"))
+  }
+} else {
+  tasks.register<Delete>("cleanSimplexAssets") {
+    delete(simplexAssetsLocal)
+  }
+}
+
 kotlin {
   androidTarget()
   jvm("desktop")
@@ -42,19 +67,18 @@ kotlin {
         api("org.jetbrains.compose.ui:ui-text:${rootProject.extra["compose.version"] as String}")
         implementation("org.jetbrains.compose.material:material-icons-core:1.7.3")
         implementation("org.jetbrains.compose.material:material-icons-extended:1.7.3")
-        implementation("org.jetbrains.compose.components:components-animatedimage:${rootProject.extra["compose.version"] as String}")
         //Barcode
         api("org.boofcv:boofcv-core:1.1.3")
         implementation("com.godaddy.android.colorpicker:compose-color-picker-jvm:0.7.0")
         // Link Previews
         implementation("org.jsoup:jsoup:1.17.2")
         // Resources
-        api("dev.icerock.moko:resources:0.23.0")
-        api("dev.icerock.moko:resources-compose:0.23.0")
+        api("dev.icerock.moko:resources:0.27.1")
+        api("dev.icerock.moko:resources-compose:0.27.1")
 
         // Markdown
-        implementation("com.mikepenz:multiplatform-markdown-renderer:0.27.0")
-        implementation("com.mikepenz:multiplatform-markdown-renderer-m2:0.27.0")
+        implementation("com.mikepenz:multiplatform-markdown-renderer:0.34.0")
+        implementation("com.mikepenz:multiplatform-markdown-renderer-m2:0.34.0")
       }
     }
     val commonTest by getting {
@@ -66,7 +90,6 @@ kotlin {
       }
     }
     val androidMain by getting {
-      kotlin.srcDir("build/generated/moko/androidMain/src")
       dependencies {
         implementation("androidx.activity:activity-compose:1.9.1")
         val workVersion = "2.9.1"
@@ -114,12 +137,12 @@ kotlin {
         }
         // For jSystemThemeDetector only
         implementation("net.java.dev.jna:jna-platform:5.14.0")
+        implementation("com.github.oshi:oshi-core:6.4.13")
         implementation("com.sshtools:two-slices:0.9.1")
         implementation("org.slf4j:slf4j-simple:2.0.12")
         implementation("uk.co.caprica:vlcj:4.8.3")
         implementation("net.java.dev.jna:jna:5.14.0")
-        implementation("com.github.NanoHttpd.nanohttpd:nanohttpd:efb2ebf85a")
-        implementation("com.github.NanoHttpd.nanohttpd:nanohttpd-websocket:efb2ebf85a")
+        implementation(project(":external:nanohttpd"))
         implementation("com.squareup.okhttp3:okhttp:4.12.0")
       }
     }
@@ -129,27 +152,20 @@ kotlin {
 
 android {
   namespace = "chat.simplex.common"
-  compileSdk = 35
+  compileSdk = 36
   sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
   defaultConfig {
     minSdk = 26
   }
-  testOptions.targetSdk = 34
-  lint.targetSdk = 34
-  val isAndroid = gradle.startParameter.taskNames.find {
-    val lower = it.lowercase()
-    lower.contains("release") || lower.startsWith("assemble") || lower.startsWith("install")
-  } != null
-  if (isAndroid) {
-    // This is not needed on Android but can't be moved to desktopMain because MR lib don't support this.
-    // No other ways to exclude a file work, but it's large and should be excluded
-    kotlin.sourceSets["commonMain"].resources.exclude("/MR/fonts/NotoColorEmoji-Regular.ttf")
-  }
+  testOptions.targetSdk = 36
+  lint.targetSdk = 36
 }
 
 multiplatformResources {
-  multiplatformResourcesPackage = "chat.simplex.res"
-  //  multiplatformResourcesClassName = "MR"
+  resourcesPackage.set("chat.simplex.res")
+  resourcesSourceSets {
+    getByName("commonMain").srcDirs(if (hasSimplexAssets) simplexAssetsLocal.resolve("MR") else file("src/commonMain/resources/assets/default/MR"))
+  }
 }
 
 buildConfig {
@@ -159,13 +175,18 @@ buildConfig {
     buildConfigField("String", "DESKTOP_VERSION_NAME", "\"${extra["desktop.version_name"]}\"")
     buildConfigField("int", "DESKTOP_VERSION_CODE", "${extra["desktop.version_code"]}")
     buildConfigField("String", "DATABASE_BACKEND", "\"${extra["database.backend"]}\"")
-    buildConfigField("Boolean", "ANDROID_BUNDLE", "${extra["android.bundle"]}")
+    buildConfigField("Boolean", "SIMPLEX_ASSETS", "$hasSimplexAssets")
   }
 }
 
 afterEvaluate {
   tasks.named("generateMRcommonMain") {
     dependsOn("adjustFormatting")
+    if (hasSimplexAssets) {
+      dependsOn("copySimplexAssets")
+    } else {
+      dependsOn("cleanSimplexAssets")
+    }
   }
   tasks.create("adjustFormatting") {
     doLast {
@@ -178,7 +199,7 @@ afterEvaluate {
       val fontLtGtRegex = Regex("[^>]*>.*&lt;font[^>]*&gt;.*&lt;/font&gt;.*</string>")
       val unbracketedColorRegex = Regex("color=#[abcdefABCDEF0-9]{3,6}")
       val correctHtmlRegex = Regex("[^>]*>.*<b>.*</b>.*</string>|[^>]*>.*<i>.*</i>.*</string>|[^>]*>.*<u>.*</u>.*</string>|[^>]*>.*<font[^>]*>.*</font>.*</string>")
-      val possibleFormat = listOf("s", "d", "1\$s", "2\$s", "3\$s", "4\$s", "1\$d", "2\$d", "3\$d", "4\$d", "2s", "f")
+      val possibleFormat = listOf("s", "d", "1\$s", "2\$s", "3\$s", "4\$s", "1\$d", "2\$d", "3\$d", "4\$d", "1\$02d", "2\$02d", "3\$02d", "2s", "f")
 
       fun String.id(): String = replace("<string name=\"", "").trim().substringBefore("\"")
 
@@ -205,7 +226,7 @@ afterEvaluate {
           if (was.length == substring.length) break
         }
         return if (formats.any { it.startsWith("1$") || it.startsWith("2$") || it.startsWith("3$") || it.startsWith("4$") }) {
-          formats.sortedBy { it.trim('s', 'd', 'f', '$').toIntOrNull() ?: throw Exception("Formatting don't have positional arguments: $this \nin $filepath") }
+          formats.sortedBy { it.substringBefore('$').toIntOrNull() ?: throw Exception("Formatting don't have positional arguments: $this \nin $filepath") }
         } else {
           formats
         }
@@ -252,8 +273,8 @@ afterEvaluate {
         }
         return this
       }
-      val fileRegex = Regex("MR/../strings.xml$|MR/..-.../strings.xml$|MR/..-../strings.xml$|MR/base/strings.xml$")
-      val tree = kotlin.sourceSets["commonMain"].resources.filter { fileRegex.containsMatchIn(it.absolutePath.replace("\\", "/")) }.asFileTree
+      val fileRegex = Regex("moko-resources/../strings.xml$|moko-resources/..-.../strings.xml$|moko-resources/..-../strings.xml$|moko-resources/base/strings.xml$")
+      val tree = fileTree("src/commonMain/moko-resources").filter { fileRegex.containsMatchIn(it.absolutePath.replace("\\", "/")) }.asFileTree
       val baseStringsFile = tree.firstOrNull { it.absolutePath.replace("\\", "/").endsWith("base/strings.xml") } ?: throw Exception("No base/strings.xml found")
       val lvStringsFile = tree.firstOrNull { it.absolutePath.replace("\\", "/").endsWith("lv/strings.xml") } ?: throw Exception("No base/strings.xml found")
       val treeList = ArrayList(tree.toList())

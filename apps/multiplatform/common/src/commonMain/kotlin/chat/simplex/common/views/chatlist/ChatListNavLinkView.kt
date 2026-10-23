@@ -28,10 +28,11 @@ import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.contacts.onRequestAccepted
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
 
+// Spec: spec/client/chat-list.md#ChatListNavLinkView
 @Composable
 fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
   val showMenu = remember { mutableStateOf(false) }
@@ -228,6 +229,7 @@ suspend fun openChat(
     } else {
       ChatPagination.Initial(ChatPagination.INITIAL_COUNT)
     },
+    contentTag = null,
     "",
     openAroundItemId
   )
@@ -241,19 +243,20 @@ suspend fun openLoadedChat(chat: Chat) {
   }
 }
 
-suspend fun apiFindMessages(chatsCtx: ChatModel.ChatsContext, ch: Chat, search: String) {
+suspend fun apiFindMessages(chatsCtx: ChatModel.ChatsContext, ch: Chat, contentTag: MsgContentTag?, search: String) {
   withContext(Dispatchers.Main) {
     chatsCtx.chatItems.clearAndNotify()
   }
-  apiLoadMessages(chatsCtx, ch.remoteHostId, ch.chatInfo.chatType, ch.chatInfo.apiId, pagination = if (search.isNotEmpty()) ChatPagination.Last(ChatPagination.INITIAL_COUNT) else ChatPagination.Initial(ChatPagination.INITIAL_COUNT), search = search)
+  val pagination = if (search.isNotEmpty() || contentTag != null) ChatPagination.Last(ChatPagination.INITIAL_COUNT) else ChatPagination.Initial(ChatPagination.INITIAL_COUNT)
+  apiLoadMessages(chatsCtx, ch.remoteHostId, ch.chatInfo.chatType, ch.chatInfo.apiId, pagination, contentTag, search)
 }
 
 suspend fun setGroupMembers(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel) = coroutineScope {
   // groupMembers loading can take a long time and if the user already closed the screen, coroutine may be canceled
   val groupMembers = chatModel.controller.apiListMembers(rhId, groupInfo.groupId)
-  val currentMembers = chatModel.groupMembers.value
+  val currentMembersById = chatModel.groupMembers.value.associateBy { it.id }
   val newMembers = groupMembers.map { newMember ->
-    val currentMember = currentMembers.find { it.id == newMember.id }
+    val currentMember = currentMembersById[newMember.id]
     val currentMemberStats = currentMember?.activeConn?.connectionStats
     val newMemberConn = newMember.activeConn
     if (currentMemberStats != null && newMemberConn != null && newMemberConn.connectionStats == null) {
@@ -262,10 +265,13 @@ suspend fun setGroupMembers(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatMo
       newMember
     }
   }
-  chatModel.groupMembersIndexes.value = emptyMap()
-  chatModel.groupMembers.value = newMembers
-  chatModel.membersLoaded.value = true
-  chatModel.populateGroupMembersIndexes()
+  withContext(Dispatchers.Main) {
+    if (chatModel.chatId.value != groupInfo.id) return@withContext
+    chatModel.groupMembersIndexes.value = emptyMap()
+    chatModel.groupMembers.value = newMembers
+    chatModel.membersLoaded.value = true
+    chatModel.populateGroupMembersIndexes()
+  }
 }
 
 @Composable
@@ -313,7 +319,7 @@ fun GroupMenuItems(
       }
     }
     GroupMemberStatus.MemAccepted -> {
-      if (groupInfo.membership.memberCurrentOrPending) {
+      if (groupInfo.membership.memberCurrentOrPending && !(groupInfo.useRelays && groupInfo.isOwner)) {
         LeaveGroupAction(chat.remoteHostId, groupInfo, chatModel, showMenu)
       }
       if (groupInfo.canDelete) {
@@ -335,7 +341,7 @@ fun GroupMenuItems(
         }
       }
       ClearChatAction(chat, showMenu)
-      if (groupInfo.membership.memberCurrentOrPending) {
+      if (groupInfo.membership.memberCurrentOrPending && !(groupInfo.useRelays && groupInfo.isOwner)) {
         LeaveGroupAction(chat.remoteHostId, groupInfo, chatModel, showMenu)
       }
       if (groupInfo.canDelete) {
@@ -580,7 +586,7 @@ fun ContactConnectionMenuItems(rhId: Long?, chatInfo: ChatInfo.ContactConnection
     onClick = {
       ModalManager.center.closeModals()
       ModalManager.end.closeModals()
-      ModalManager.center.showModalCloseable(true, showClose = appPlatform.isAndroid) { close ->
+      ModalManager.center.showModalCloseable(settings = true, cardScreen = true) { close ->
         ContactConnectionInfoView(chatModel, rhId, chatInfo.contactConnection.connLinkInv, chatInfo.contactConnection, true, close)
       }
       showMenu.value = false
@@ -769,10 +775,11 @@ fun rejectContactRequest(rhId: Long?, contactRequestId: Long, chatModel: ChatMod
 fun deleteContactConnectionAlert(rhId: Long?, connection: PendingContactConnection, chatModel: ChatModel, onSuccess: () -> Unit) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.delete_pending_connection__question),
-    text = generalGetString(
+    text = "${connection.displayName}\n\n" + generalGetString(
       if (connection.initiated) MR.strings.contact_you_shared_link_with_wont_be_able_to_connect
       else MR.strings.connection_you_accepted_will_be_cancelled
     ),
+    parseHtml = false,
     confirmText = generalGetString(MR.strings.delete_verb),
     onConfirm = {
       withBGApi {

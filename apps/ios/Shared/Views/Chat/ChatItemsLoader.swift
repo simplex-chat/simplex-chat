@@ -15,6 +15,7 @@ func apiLoadMessages(
     _ chatId: ChatId,
     _ im: ItemsModel,
     _ pagination: ChatPagination,
+    _ contentTag: MsgContentTag? = nil,
     _ search: String = "",
     _ openAroundItemId: ChatItem.ID? = nil,
     _ visibleItemIndexesNonReversed: @MainActor () -> ClosedRange<Int> = { 0 ... 0 }
@@ -22,7 +23,7 @@ func apiLoadMessages(
     let chat: Chat
     let navInfo: NavigationInfo
     do {
-        (chat, navInfo) = try await apiGetChat(chatId: chatId, scope: im.groupScopeInfo?.toChatScope(), contentTag: im.contentTag, pagination: pagination, search: search)
+        (chat, navInfo) = try await apiGetChat(chatId: chatId, scope: im.groupScopeInfo?.toChatScope(), contentTag: contentTag ?? im.contentTag, pagination: pagination, search: search)
     } catch let error {
         logger.error("apiLoadMessages error: \(responseError(error))")
         return
@@ -30,11 +31,11 @@ func apiLoadMessages(
 
     let chatModel = ChatModel.shared
 
-    // For .initial allow the chatItems to be empty as well as chatModel.chatId to not match this chat because these values become set after .initial finishes
     let paginationIsInitial = switch pagination { case .initial: true; default: false }
     let paginationIsLast = switch pagination { case .last: true; default: false }
-    // When openAroundItemId is provided, chatId can be different too
-    if ((chatModel.chatId != chat.id || chat.chatItems.isEmpty) && !paginationIsInitial && !paginationIsLast && openAroundItemId == nil) || Task.isCancelled {
+    // For .initial allow the chatItems to be empty, as well as for .last that is used for searching
+    let allowEmptyItems = paginationIsInitial || paginationIsLast || openAroundItemId != nil
+    if chatWasSwitched(chat, pagination, openAroundItemId) || (!allowEmptyItems && chat.chatItems.isEmpty) || Task.isCancelled {
         return
     }
 
@@ -78,6 +79,7 @@ func apiLoadMessages(
         newItems.insert(contentsOf: chat.chatItems, at: insertAt)
         let newReversed: [ChatItem] = newItems.reversed()
         await MainActor.run {
+            if chatWasSwitched(chat, pagination, openAroundItemId) { return }
             im.reversedChatItems = newReversed
             im.chatState.splits = modifiedSplits.newSplits
             im.chatState.moveUnreadAfterItem(modifiedSplits.oldUnreadSplitIndex, modifiedSplits.newUnreadSplitIndex, oldItems)
@@ -98,6 +100,7 @@ func apiLoadMessages(
         let new: [ChatItem] = newItems
         let newReversed: [ChatItem] = newItems.reversed()
         await MainActor.run {
+            if chatWasSwitched(chat, pagination, openAroundItemId) { return }
             im.reversedChatItems = newReversed
             im.chatState.splits = newSplits
             im.chatState.moveUnreadAfterItem(im.chatState.splits.first ?? new.last!.id, new)
@@ -121,6 +124,7 @@ func apiLoadMessages(
         let newReversed: [ChatItem] = newItems.reversed()
         let orderedSplits = newSplits
         await MainActor.run {
+            if chatWasSwitched(chat, pagination, openAroundItemId) { return }
             im.reversedChatItems = newReversed
             im.chatState.splits = orderedSplits
             im.chatState.unreadAfterItemId = chat.chatItems.last!.id
@@ -146,6 +150,7 @@ func apiLoadMessages(
         newItems.append(contentsOf: chat.chatItems)
         let items = newItems
         await MainActor.run {
+            if chatWasSwitched(chat, pagination, openAroundItemId) { return }
             im.reversedChatItems = items.reversed()
             im.chatState.splits = newSplits
             if im.secondaryIMFilter == nil {
@@ -156,6 +161,14 @@ func apiLoadMessages(
     }
 }
 
+
+/// .initial pagination and opening around item set ChatModel.chatId themselves after the items are loaded.
+/// In other cases the chat could be switched while the items were loading, and the items of the previously opened chat
+/// must not be added to the items of the currently opened one
+private func chatWasSwitched(_ chat: Chat, _ pagination: ChatPagination, _ openAroundItemId: ChatItem.ID?) -> Bool {
+    let paginationIsInitial = switch pagination { case .initial: true; default: false }
+    return !paginationIsInitial && openAroundItemId == nil && ChatModel.shared.chatId != chat.id
+}
 
 private class ModifiedSplits {
     let oldUnreadSplitIndex: Int

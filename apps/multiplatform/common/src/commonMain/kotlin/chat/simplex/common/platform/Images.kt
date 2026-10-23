@@ -15,7 +15,7 @@ import java.io.InputStream
 import java.net.URI
 
 expect fun base64ToBitmap(base64ImageString: String): ImageBitmap
-// XXX: Not a part of platform services anymore?
+expect fun decodeBase64Image(base64: String, width: Int): ImageBitmap?
 expect fun resizeImageToStrSize(image: ImageBitmap, maxDataSize: Long): String
 // expect fun resizeImageToDataSize(image: ImageBitmap, usePng: Boolean, maxDataSize: Long): ByteArrayOutputStream
 expect fun cropToSquare(image: ImageBitmap): ImageBitmap

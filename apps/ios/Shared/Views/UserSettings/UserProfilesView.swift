@@ -2,6 +2,7 @@
 // Created by Avently on 17.01.2023.
 // Copyright (c) 2023 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/navigation.md
 
 import SwiftUI
 import SimpleXChat
@@ -318,8 +319,9 @@ struct UserProfilesView: View {
             }
         } catch let error {
             logger.error("Error deleting user profile: \(error)")
-            let a = getErrorAlert(error, "Error deleting user profile")
-            alert = .error(title: a.title, error: a.message)
+            await MainActor.run {
+                showErrorAlert(error, NSLocalizedString("Error deleting user profile", comment: ""))
+            }
         }
 
         func deleteUser() async throws {
@@ -344,7 +346,7 @@ struct UserProfilesView: View {
             HStack {
                 ProfileImage(imageStr: user.image, size: 38)
                     .padding(.trailing, 12)
-                Text(user.chatViewName)
+                NameWithBadge(Text(user.chatViewName), user.profile.localBadge)
                 Spacer()
                 if user.activeUser {
                     Image(systemName: "checkmark").foregroundColor(theme.colors.onBackground)
@@ -435,8 +437,9 @@ struct UserProfilesView: View {
                     }
                 }
             } catch let error {
-                let a = getErrorAlert(error, "Error updating user privacy")
-                alert = .error(title: a.title, error: a.message)
+                await MainActor.run {
+                    showErrorAlert(error, NSLocalizedString("Error updating user privacy", comment: ""))
+                }
             }
         }
     }

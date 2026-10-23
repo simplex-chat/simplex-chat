@@ -5,12 +5,14 @@
 //  Created by JRoberts on 14.07.2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/chat-view.md
 
 import SwiftUI
 import SimpleXChat
 
 let SMALL_GROUPS_RCPS_MEM_LIMIT: Int = 20
 
+// Spec: spec/client/chat-view.md#GroupChatInfoView
 struct GroupChatInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
@@ -18,8 +20,10 @@ struct GroupChatInfoView: View {
     @ObservedObject var chat: Chat
     @Binding var groupInfo: GroupInfo
     @Binding var scrollToItemId: ChatItem.ID?
+    @Binding var composeState: ComposeState
     var onSearch: () -> Void
     @State var localAlias: String
+    @State private var showSharePicker = false
     @FocusState private var aliasTextFieldFocused: Bool
     @State private var alert: GroupChatInfoViewAlert? = nil
     @State private var groupLink: GroupLink?
@@ -88,22 +92,81 @@ struct GroupChatInfoView: View {
                         .listRowSeparator(.hidden)
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
 
-                    Section {
-                        if groupInfo.canAddMembers && groupInfo.businessChat == nil {
-                            groupLinkButton()
+                    if groupInfo.useRelays && groupInfo.membership.memberIncognito {
+                        Section(header: Text("Incognito").foregroundColor(theme.colors.secondary)) {
+                            HStack {
+                                Text("Your random profile")
+                                Spacer()
+                                Text(groupInfo.membership.chatViewName)
+                                    .foregroundStyle(.indigo)
+                            }
                         }
-                        if groupInfo.businessChat == nil && groupInfo.membership.memberRole >= .moderator {
-                            memberSupportButton()
+                    }
+
+                    let showUserSupportChat = groupInfo.membership.memberActive
+                        && ((groupInfo.fullGroupPreferences.support.on && groupInfo.membership.memberRole < .moderator)
+                            || groupInfo.membership.supportChat != nil)
+
+                    if groupInfo.useRelays {
+                        Section {
+                            // TODO [relays] allow other owners to manage channel link (requires protocol changes to share link ownership)
+                            if groupInfo.isOwner && groupLink != nil {
+                                channelLinkButton()
+                            } else if let link = groupInfo.groupProfile.publicGroup?.groupLink {
+                                SimpleXLinkQRCode(uri: link)
+                                Button {
+                                    showShareSheet(items: [simplexChatLink(link)])
+                                } label: {
+                                    Label("Share link", systemImage: "square.and.arrow.up")
+                                }
+                                Button {
+                                    showSharePicker = true
+                                } label: {
+                                    Label("Share via chat", systemImage: "arrowshape.turn.up.forward")
+                                }
+                            }
+                            if groupInfo.isOwner || members.contains(where: { $0.wrapped.memberRole >= .owner }) {
+                                channelMembersButton()
+                            }
+                            if groupInfo.membership.memberRole >= .moderator {
+                                memberSupportButton()
+                            }
+                            if showUserSupportChat {
+                                UserSupportChatNavLink(chat: chat, groupInfo: groupInfo, scrollToItemId: $scrollToItemId)
+                            }
+                        } footer: {
+                            if !groupInfo.isOwner && groupInfo.groupProfile.publicGroup?.groupLink != nil {
+                                Text("You can share a link or a QR code - anybody will be able to join the channel.")
+                                    .foregroundColor(theme.colors.secondary)
+                            }
                         }
-                        if groupInfo.canModerate {
-                            GroupReportsChatNavLink(chat: chat, groupInfo: groupInfo, scrollToItemId: $scrollToItemId)
+                    } else {
+                        Section {
+                            if groupInfo.canAddMembers && groupInfo.businessChat == nil {
+                                groupLinkButton()
+                            }
+                            if groupInfo.businessChat == nil && groupInfo.membership.memberRole >= .moderator {
+                                memberSupportButton()
+                            }
+                            if groupInfo.canModerate {
+                                GroupReportsChatNavLink(chat: chat, groupInfo: groupInfo, scrollToItemId: $scrollToItemId)
+                            }
+                            if showUserSupportChat {
+                                UserSupportChatNavLink(chat: chat, groupInfo: groupInfo, scrollToItemId: $scrollToItemId)
+                            }
+                        } header: {
+                            Text("")
                         }
-                        if groupInfo.membership.memberActive
-                            && (groupInfo.membership.memberRole < .moderator || groupInfo.membership.supportChat != nil) {
-                            UserSupportChatNavLink(chat: chat, groupInfo: groupInfo, scrollToItemId: $scrollToItemId)
+                    }
+
+                    if groupInfo.useRelays && groupInfo.isOwner && groupLink != nil {
+                        Section {
+                            channelSimplexNameButton()
+                        } header: {
+                            if groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupDomainClaim?.shortName != nil {
+                                Text("Channel SimpleX name").foregroundColor(theme.colors.secondary)
+                            }
                         }
-                    } header: {
-                        Text("")
                     }
 
                     Section {
@@ -116,7 +179,9 @@ struct GroupChatInfoView: View {
                         GroupPreferencesButton(groupInfo: $groupInfo, preferences: groupInfo.fullGroupPreferences, currentPreferences: groupInfo.fullGroupPreferences)
                     } footer: {
                         let label: LocalizedStringKey = (
-                            groupInfo.businessChat == nil
+                            groupInfo.useRelays
+                            ? "Only channel owners can change channel preferences."
+                            : groupInfo.businessChat == nil
                             ? "Only group owners can change group preferences."
                             : "Only chat owners can change preferences."
                         )
@@ -125,10 +190,12 @@ struct GroupChatInfoView: View {
                     }
 
                     Section {
-                        if members.filter({ $0.wrapped.memberCurrent }).count <= SMALL_GROUPS_RCPS_MEM_LIMIT {
-                            sendReceiptsOption()
-                        } else {
-                            sendReceiptsOptionDisabled()
+                        if !groupInfo.useRelays {
+                            if members.filter({ $0.wrapped.memberCurrent }).count <= SMALL_GROUPS_RCPS_MEM_LIMIT {
+                                sendReceiptsOption()
+                            } else {
+                                sendReceiptsOptionDisabled()
+                            }
                         }
                         NavigationLink {
                             ChatWallpaperEditorSheet(chat: chat)
@@ -140,7 +207,7 @@ struct GroupChatInfoView: View {
                         Text("Delete chat messages from your device.")
                     }
 
-                    if !groupInfo.nextConnectPrepared {
+                    if !groupInfo.nextConnectPrepared && !groupInfo.useRelays {
                         Section(header: Text("\(members.count + 1) members").foregroundColor(theme.colors.secondary)) {
                             if groupInfo.canAddMembers {
                                 if (chat.chatInfo.incognito) {
@@ -172,12 +239,24 @@ struct GroupChatInfoView: View {
                     }
 
                     Section {
+                        if groupInfo.useRelays && (groupInfo.isOwner || members.contains(where: { $0.wrapped.memberRole == .relay })) {
+                            channelRelaysButton()
+                        }
                         clearChatButton()
                         if groupInfo.canDelete {
                             deleteGroupButton()
                         }
                         if groupInfo.membership.memberCurrentOrPending {
-                            leaveGroupButton()
+                            if !groupInfo.useRelays || !groupInfo.isOwner
+                                || members.contains(where: { $0.wrapped.memberRole == .owner && $0.wrapped.groupMemberId != groupInfo.membership.groupMemberId }) {
+                                leaveGroupButton()
+                            }
+                        }
+                    }
+
+                    if groupInfo.useRelays && groupInfo.isOwner {
+                        Section(header: Text("Advanced options").foregroundColor(theme.colors.secondary)) {
+                            channelWebAccessButton()
                         }
                     }
 
@@ -199,6 +278,9 @@ struct GroupChatInfoView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .sheet(isPresented: $showSharePicker) {
+            shareChannelPicker(groupInfo: groupInfo, composeState: $composeState)
+        }
         .alert(item: $alert) { alertItem in
             switch(alertItem) {
             case .deleteGroupAlert: return deleteGroupAlert()
@@ -218,13 +300,15 @@ struct GroupChatInfoView: View {
                 sendReceiptsUserDefault = currentUser.sendRcptsSmallGroups
             }
             sendReceipts = SendReceipts.fromBool(groupInfo.chatSettings.sendRcpts, userDefault: sendReceiptsUserDefault)
-            do {
-                if let gLink = try apiGetGroupLink(groupInfo.groupId) {
-                    groupLink = gLink
-                    groupLinkMemberRole = gLink.acceptMemberRole
+            if !groupInfo.useRelays || groupInfo.isOwner {
+                do {
+                    if let gLink = try apiGetGroupLink(groupInfo.groupId) {
+                        groupLink = gLink
+                        groupLinkMemberRole = gLink.acceptMemberRole
+                    }
+                } catch let error {
+                    logger.error("GroupChatInfoView apiGetGroupLink: \(responseError(error))")
                 }
-            } catch let error {
-                logger.error("GroupChatInfoView apiGetGroupLink: \(responseError(error))")
             }
         }
     }
@@ -256,6 +340,24 @@ struct GroupChatInfoView: View {
                     .multilineTextAlignment(.center)
                     .lineLimit(4)
                     .fixedSize(horizontal: false, vertical: true)
+            }
+            groupSimplexNameView(groupInfo) { groupInfo = $0 }
+            if let webPage = groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupWebPage,
+               let url = URL(string: webPage) {
+                Link(destination: url) {
+                    Text(webPage)
+                        .font(.subheadline)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                }
+            }
+            if groupInfo.useRelays,
+               let count = groupInfo.groupSummary.publicMemberCount,
+               count > 0 {
+                Text(subscriberCountStr(count))
+                    .font(.subheadline)
+                    .foregroundColor(theme.colors.secondary)
+                    .padding(.bottom, 2)
             }
         }
         .frame(maxWidth: .infinity, alignment: .center)
@@ -297,7 +399,9 @@ struct GroupChatInfoView: View {
             let buttonWidth = g.size.width / 4
             HStack(alignment: .center, spacing: 8) {
                 searchButton(width: buttonWidth)
-                if groupInfo.canAddMembers {
+                if groupInfo.useRelays && groupInfo.isOwner {
+                    channelLinkActionButton(width: buttonWidth)
+                } else if !groupInfo.useRelays && groupInfo.canAddMembers {
                     addMembersActionButton(width: buttonWidth)
                 }
                 if let nextNtfMode = chat.chatInfo.nextNtfMode {
@@ -358,6 +462,23 @@ struct GroupChatInfoView: View {
         .disabled(!groupInfo.ready)
     }
 
+    private func channelLinkActionButton(width: CGFloat) -> some View {
+        ZStack {
+            InfoViewButton(image: "link", title: "link", width: width) {
+                groupLinkNavLinkActive = true
+            }
+
+            NavigationLink(isActive: $groupLinkNavLinkActive) {
+                groupLinkDestinationView()
+            } label: {
+                EmptyView()
+            }
+            .frame(width: 1, height: 1)
+            .hidden()
+        }
+        .disabled(!groupInfo.ready)
+    }
+
     private func addMembersButton() -> some View {
         let label: LocalizedStringKey = switch groupInfo.businessChat?.chatType {
             case .customer: "Add team members"
@@ -398,7 +519,7 @@ struct GroupChatInfoView: View {
                 // TODO server connection status
                 VStack(alignment: .leading) {
                     let t = Text(member.chatViewName).foregroundColor(member.memberIncognito ? .indigo : theme.colors.onBackground)
-                    (member.verified ? memberVerifiedShield + t : t)
+                    NameWithBadge((member.verified ? memberVerifiedShield + t : t), member.nameBadge)
                         .lineLimit(1)
                     (user ? Text ("you: ") + Text(member.memberStatus.shortText) : Text(memberConnStatus(member)))
                         .lineLimit(1)
@@ -453,7 +574,9 @@ struct GroupChatInfoView: View {
         }
 
         private func memberConnStatus(_ member: GroupMember) -> LocalizedStringKey {
-            if member.activeConn?.connDisabled ?? false {
+            if case .failed = member.activeConn?.connStatus {
+                return "failed"
+            } else if member.activeConn?.connDisabled ?? false {
                 return "disabled"
             } else if member.activeConn?.connInactive ?? false {
                 return "inactive"
@@ -469,7 +592,7 @@ struct GroupChatInfoView: View {
             } else {
                 let role = member.memberRole
                 if [.owner, .admin, .moderator, .observer].contains(role) {
-                    Text(member.memberRole.text)
+                    Text(member.memberRole.text(isChannel: groupInfo.isChannel))
                         .foregroundColor(theme.colors.secondary)
                 }
             }
@@ -543,17 +666,94 @@ struct GroupChatInfoView: View {
         }
     }
 
+    private func channelLinkButton() -> some View {
+        NavigationLink {
+            groupLinkDestinationView()
+        } label: {
+            Label("Channel link", systemImage: "link")
+        }
+    }
+
+    private func channelWebAccessButton() -> some View {
+        let title: LocalizedStringKey = groupInfo.isChannel ? "Channel webpage" : "Group webpage"
+        return NavigationLink {
+            ChannelWebAccessView(groupInfo: $groupInfo)
+                .navigationBarTitle(title)
+                .navigationBarTitleDisplayMode(.large)
+        } label: {
+            Label(title, systemImage: "globe")
+        }
+    }
+
+    private func channelSimplexNameButton() -> some View {
+        NavigationLink {
+            let domain = if let d = groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupDomainClaim?.shortName { "#\(d)" } else { "" }
+            SetSimplexDomainView(
+                title: "SimpleX name",
+                footer: "Let people join via name registered with this channel link.",
+                prompt: "#channelname.testing",
+                simplexName: domain,
+                save: { domain in
+                    do {
+                        var access = groupInfo.groupProfile.publicGroup?.publicGroupAccess ?? PublicGroupAccess()
+                        access.groupDomainClaim = domain.map { SimplexDomainClaim(domain: $0) }
+                        let gInfo = try await apiSetPublicGroupAccess(groupInfo.groupId, access: access)
+                        await MainActor.run {
+                            chatModel.updateGroup(gInfo)
+                            groupInfo = gInfo
+                        }
+                        return true
+                    } catch {
+                        return false
+                    }
+                }
+            )
+        } label: {
+            if let d = groupInfo.groupProfile.publicGroup?.publicGroupAccess?.groupDomainClaim?.shortName {
+                Label("\(d)", systemImage: "number")
+            } else {
+                Label("Get SimpleX name (BETA)", systemImage: "number")
+            }
+        }
+    }
+
     private func groupLinkDestinationView() -> some View {
         GroupLinkView(
             groupId: groupInfo.groupId,
             groupLink: $groupLink,
             groupLinkMemberRole: $groupLinkMemberRole,
             showTitle: false,
-            creatingGroup: false
+            creatingGroup: false,
+            isChannel: groupInfo.useRelays,
+            groupInfo: groupInfo,
+            composeState: $composeState
         )
-        .navigationBarTitle("Group link")
+        .navigationBarTitle(groupInfo.useRelays ? "Channel link" : "Group link")
         .modifier(ThemedBackground(grouped: true))
         .navigationBarTitleDisplayMode(.large)
+    }
+
+    private func channelMembersButton() -> some View {
+        let label: LocalizedStringKey = groupInfo.isOwner ? "Subscribers" : "Owners & contributors"
+        return NavigationLink {
+            ChannelMembersView(chat: chat, groupInfo: groupInfo)
+                .navigationTitle(label)
+                .modifier(ThemedBackground(grouped: true))
+                .navigationBarTitleDisplayMode(.large)
+        } label: {
+            Label(label, systemImage: "person.2")
+        }
+    }
+
+    private func channelRelaysButton() -> some View {
+        NavigationLink {
+            ChannelRelaysView(chat: chat, groupInfo: groupInfo)
+                .navigationTitle("Chat relays")
+                .modifier(ThemedBackground(grouped: true))
+                .navigationBarTitleDisplayMode(.large)
+        } label: {
+            Label("Chat relays", systemImage: "externaldrive.connected.to.line.below")
+        }
     }
 
     struct UserSupportChatNavLink: View {
@@ -650,7 +850,7 @@ struct GroupChatInfoView: View {
                 groupProfile: groupInfo.groupProfile
             )
         } label: {
-            Label("Edit group profile", systemImage: "pencil")
+            Label(groupInfo.useRelays ? "Edit channel profile" : "Edit group profile", systemImage: "pencil")
         }
     }
 
@@ -672,7 +872,7 @@ struct GroupChatInfoView: View {
     }
 
     @ViewBuilder private func deleteGroupButton() -> some View {
-        let label: LocalizedStringKey = groupInfo.businessChat == nil ? "Delete group" : "Delete chat"
+        let label: LocalizedStringKey = groupInfo.useRelays ? "Delete channel" : groupInfo.businessChat == nil ? "Delete group" : "Delete chat"
         Button(role: .destructive) {
             alert = .deleteGroupAlert
         } label: {
@@ -691,7 +891,7 @@ struct GroupChatInfoView: View {
     }
 
     private func leaveGroupButton() -> some View {
-        let label: LocalizedStringKey = groupInfo.businessChat == nil ? "Leave group" : "Leave chat"
+        let label: LocalizedStringKey = groupInfo.useRelays ? "Leave channel" : groupInfo.businessChat == nil ? "Leave group" : "Leave chat"
         return Button(role: .destructive) {
             alert = .leaveGroupAlert
         } label: {
@@ -702,10 +902,10 @@ struct GroupChatInfoView: View {
 
     // TODO reuse this and clearChatAlert with ChatInfoView
     private func deleteGroupAlert() -> Alert {
-        let label: LocalizedStringKey = groupInfo.businessChat == nil ? "Delete group?" : "Delete chat?"
+        let label: LocalizedStringKey = groupInfo.useRelays ? "Delete channel?" : groupInfo.businessChat == nil ? "Delete group?" : "Delete chat?"
         return Alert(
             title: Text(label),
-            message: deleteGroupAlertMessage(groupInfo),
+            message: Text(chat.chatInfo.displayName + "\n\n") + deleteGroupAlertMessage(groupInfo),
             primaryButton: .destructive(Text("Delete")) {
                 Task {
                     do {
@@ -727,7 +927,7 @@ struct GroupChatInfoView: View {
     private func clearChatAlert() -> Alert {
         Alert(
             title: Text("Clear conversation?"),
-            message: Text("All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you."),
+            message: Text(chat.chatInfo.displayName + "\n\n") + Text("All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you."),
             primaryButton: .destructive(Text("Clear")) {
                 Task {
                     await clearChat(chat)
@@ -739,15 +939,17 @@ struct GroupChatInfoView: View {
     }
 
     private func leaveGroupAlert() -> Alert {
-        let titleLabel: LocalizedStringKey = groupInfo.businessChat == nil ? "Leave group?" : "Leave chat?"
+        let titleLabel: LocalizedStringKey = groupInfo.useRelays ? "Leave channel?" : groupInfo.businessChat == nil ? "Leave group?" : "Leave chat?"
         let messageLabel: LocalizedStringKey = (
-            groupInfo.businessChat == nil
+            groupInfo.useRelays
+            ? "You will stop receiving messages from this channel. Chat history will be preserved."
+            : groupInfo.businessChat == nil
             ? "You will stop receiving messages from this group. Chat history will be preserved."
             : "You will stop receiving messages from this chat. Chat history will be preserved."
         )
         return Alert(
             title: Text(titleLabel),
-            message: Text(messageLabel),
+            message: Text(chat.chatInfo.displayName + "\n\n") + Text(messageLabel),
             primaryButton: .destructive(Text("Leave")) {
                 Task {
                     await leaveGroup(chat.chatInfo.apiId)
@@ -791,22 +993,54 @@ struct GroupChatInfoView: View {
 }
 
 func showRemoveMemberAlert(_ groupInfo: GroupInfo, _ mem: GroupMember, dismiss: DismissAction? = nil) {
-    showAlert(
-        NSLocalizedString("Remove member?", comment: "alert title"),
-        message:
-            groupInfo.businessChat == nil
-            ? NSLocalizedString("Member will be removed from group - this cannot be undone!", comment: "alert message")
-            : NSLocalizedString("Member will be removed from chat - this cannot be undone!", comment: "alert message"),
-        actions: {[
-            UIAlertAction(title: NSLocalizedString("Remove", comment: "alert action"), style: .destructive) { _ in
-                removeMember(groupInfo, mem, withMessages: false, dismiss: dismiss)
-            },
-            UIAlertAction(title: NSLocalizedString("Remove and delete messages", comment: "alert action"), style: .destructive) { _ in
-                removeMember(groupInfo, mem, withMessages: true, dismiss: dismiss)
-            },
-            cancelAlertAction
-        ]}
-    )
+    if mem.memberRole == .relay {
+        let isLastActive = groupInfo.useRelays && mem.memberCurrent && {
+            let activeRelays = ChatModel.shared.groupMembers.filter { $0.wrapped.memberRole == .relay && $0.wrapped.memberCurrent }
+            return activeRelays.count <= 1
+        }()
+        showAlert(
+            NSLocalizedString("Remove relay?", comment: "alert title"),
+            message: isLastActive
+                ? NSLocalizedString("This is the last active relay. Removing it will prevent message delivery to subscribers.", comment: "alert message")
+                : NSLocalizedString("Relay will be removed from channel - this cannot be undone!", comment: "alert message"),
+            actions: {[
+                UIAlertAction(title: NSLocalizedString("Remove", comment: "alert action"), style: .destructive) { _ in
+                    removeMember(groupInfo, mem, withMessages: false, dismiss: dismiss)
+                },
+                cancelAlertAction
+            ]}
+        )
+    } else if groupInfo.useRelays {
+        showAlert(
+            NSLocalizedString("Remove subscriber?", comment: "alert title"),
+            message: NSLocalizedString("Subscriber will be removed from channel - this cannot be undone!", comment: "alert message"),
+            actions: {[
+                UIAlertAction(title: NSLocalizedString("Remove", comment: "alert action"), style: .destructive) { _ in
+                    removeMember(groupInfo, mem, withMessages: false, dismiss: dismiss)
+                },
+                UIAlertAction(title: NSLocalizedString("Remove and delete messages", comment: "alert action"), style: .destructive) { _ in
+                    removeMember(groupInfo, mem, withMessages: true, dismiss: dismiss)
+                },
+                cancelAlertAction
+            ]}
+        )
+    } else {
+        showAlert(
+            NSLocalizedString("Remove member?", comment: "alert title"),
+            message: groupInfo.businessChat == nil
+                ? NSLocalizedString("Member will be removed from group - this cannot be undone!", comment: "alert message")
+                : NSLocalizedString("Member will be removed from chat - this cannot be undone!", comment: "alert message"),
+            actions: {[
+                UIAlertAction(title: NSLocalizedString("Remove", comment: "alert action"), style: .destructive) { _ in
+                    removeMember(groupInfo, mem, withMessages: false, dismiss: dismiss)
+                },
+                UIAlertAction(title: NSLocalizedString("Remove and delete messages", comment: "alert action"), style: .destructive) { _ in
+                    removeMember(groupInfo, mem, withMessages: true, dismiss: dismiss)
+                },
+                cancelAlertAction
+            ]}
+        )
+    }
 }
 
 func removeMember(_ groupInfo: GroupInfo, _ mem: GroupMember, withMessages: Bool, dismiss: DismissAction?) {
@@ -836,10 +1070,18 @@ func removeMember(_ groupInfo: GroupInfo, _ mem: GroupMember, withMessages: Bool
 }
 
 func deleteGroupAlertMessage(_ groupInfo: GroupInfo) -> Text {
-    groupInfo.businessChat == nil ? (
-        groupInfo.membership.memberCurrent ? Text("Group will be deleted for all members - this cannot be undone!") : Text("Group will be deleted for you - this cannot be undone!")
+    groupInfo.useRelays ? (
+        groupInfo.membership.memberCurrent
+            ? Text("Channel will be deleted for all subscribers - this cannot be undone!")
+            : Text("Channel will be deleted for you - this cannot be undone!")
+    ) : groupInfo.businessChat == nil ? (
+        groupInfo.membership.memberCurrent
+            ? Text("Group will be deleted for all members - this cannot be undone!")
+            : Text("Group will be deleted for you - this cannot be undone!")
     ) : (
-        groupInfo.membership.memberCurrent ? Text("Chat will be deleted for all members - this cannot be undone!") : Text("Chat will be deleted for you - this cannot be undone!")
+        groupInfo.membership.memberCurrent
+            ? Text("Chat will be deleted for all members - this cannot be undone!")
+            : Text("Chat will be deleted for you - this cannot be undone!")
     )
 }
 
@@ -850,7 +1092,9 @@ struct GroupPreferencesButton: View {
     var creatingGroup: Bool = false
 
     private var label: LocalizedStringKey {
-        groupInfo.businessChat == nil ? "Group preferences" : "Chat preferences"
+        groupInfo.useRelays ? "Channel preferences"
+        : groupInfo.businessChat == nil ? "Group preferences"
+        : "Chat preferences"
     }
 
     var body: some View {
@@ -867,7 +1111,9 @@ struct GroupPreferencesButton: View {
             .navigationBarTitleDisplayMode(.large)
             .onDisappear {
                 let saveText = NSLocalizedString(
-                    creatingGroup ? "Save" : "Save and notify group members",
+                    creatingGroup ? "Save"
+                    : groupInfo.useRelays ? "Save and notify subscribers"
+                    : "Save and notify group members",
                     comment: "alert button"
                 )
 
@@ -922,12 +1168,67 @@ func largeGroupReceiptsDisabledAlert() -> Alert {
     )
 }
 
+@ViewBuilder
+func shareChannelPicker(groupInfo: GroupInfo, composeState: Binding<ComposeState>? = nil) -> some View {
+    let v = ChatItemForwardingView(
+        title: "Share channel",
+        isProhibited: { $0.prohibitedByPref(hasSimplexLink: true, isMediaOrFileAttachment: false, isVoice: false) },
+        onSelectChat: { chat in shareChatLink(chat, sourceGroupInfo: groupInfo, composeState: composeState) },
+        includeLocal: false
+    )
+    if #available(iOS 16.0, *) {
+        v.presentationDetents([.fraction(0.8)])
+    } else {
+        v
+    }
+}
+
+func shareChatLink(_ destChat: Chat, sourceGroupInfo: GroupInfo, composeState: Binding<ComposeState>? = nil) {
+    let sendAsGroup = if let gInfo = destChat.chatInfo.groupInfo { gInfo.useRelays && gInfo.membership.memberRole >= .owner } else { false }
+    Task {
+        do {
+            let mc = try await apiShareChatMsgContent(
+                shareChatType: .group, shareChatId: Int64(sourceGroupInfo.groupId),
+                toChatType: destChat.chatInfo.chatType, toChatId: destChat.chatInfo.apiId,
+                toScope: destChat.chatInfo.groupChatScope(), sendAsGroup: sendAsGroup
+            )
+            if case let .chat(_, chatLink, ownerSig) = mc {
+                await MainActor.run {
+                    dismissAllSheets {
+                        let cs = ComposeState(preview: .chatLinkPreview(chatLink: chatLink, ownerSig: ownerSig))
+                        if let composeState {
+                            composeState.wrappedValue = cs
+                        } else {
+                            ChatModel.shared.draft = cs
+                            ChatModel.shared.draftChatId = destChat.id
+                        }
+                        if destChat.id != ChatModel.shared.chatId {
+                            ItemsModel.shared.loadOpenChat(destChat.id)
+                        }
+                    }
+                }
+            } else {
+                logger.error("shareChatLink: unexpected MsgContent: \(String(describing: mc))")
+                await MainActor.run {
+                    showAlert(NSLocalizedString("Error sharing channel", comment: "alert title"), message: String(describing: mc))
+                }
+            }
+        } catch {
+            logger.error("shareChatLink error: \(error.localizedDescription)")
+            await MainActor.run {
+                showAlert(NSLocalizedString("Error sharing channel", comment: "alert title"), message: error.localizedDescription)
+            }
+        }
+    }
+}
+
 struct GroupChatInfoView_Previews: PreviewProvider {
     static var previews: some View {
         GroupChatInfoView(
             chat: Chat(chatInfo: ChatInfo.sampleData.group, chatItems: []),
             groupInfo: Binding.constant(GroupInfo.sampleData),
             scrollToItemId: Binding.constant(nil),
+            composeState: Binding.constant(ComposeState()),
             onSearch: {},
             localAlias: ""
         )

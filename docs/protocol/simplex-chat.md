@@ -90,7 +90,7 @@ The syntax of compressed message is defined by the following ABNF notation:
 compressedMessage = %s"X" 1*15780 OCTET; compressed message data
 ```
 
-Compressed message is required to fit into 13388 bytes, accounting for agent overhead (see Protocol's maxCompressedMsgLength).
+Compressed message is required to fit into 15602 bytes, or into 13380 bytes for a connection with PQ encryption, accounting for agent overhead (see Protocol's maxEncodedMsgLength and maxEncodedMsgLengthPQ).
 
 The actual JSON message is required to fit into 15610 bytes, accounting for group message forwarding (x.grp.msg.forward) overhead (see Protocol's maxEncodedMsgLength).
 
@@ -232,7 +232,9 @@ Currently members can have one of four roles - `owner`, `admin`, `member` and `o
 
 `x.grp.inv` message is sent to invite contact to the group via contact's direct connection and includes group member connection address. This message MUST only be sent by members with `admin` or `owner` role. Optional `groupLinkId` is included when this message is sent to contacts connected via the user's group link. This identifier is a random byte sequence, with no global or even local uniqueness - it is only used for the user's invitations to a given group to provide confirmation to the contact that the group invitation is for the same group the contact was connecting to via the group link, so that the invitation can be automatically accepted by the contact - the contact compares it with the group link id contained in the group link uri's data field.
 
-`x.grp.acpt` message is sent as part of group member connection handshake, only to the inviting user.
+`x.grp.inv` message can also be sent to a group member via the member connection, to invite the member to another group. In this case, the message MUST only be sent when direct messages are allowed for the sender in the group of the member connection, and receiving clients MUST ignore it otherwise.
+
+`x.grp.acpt` message is sent as part of group member connection handshake, only to the inviting user. It optionally includes the invited member's group profile. The inviting user replies with `x.grp.mem.info` that includes the inviting member's group profile.
 
 `x.grp.link.inv` message is sent as part of connection handshake to member joining via group link, and contains group profile and initial information about inviting and joining member.
 
@@ -264,7 +266,13 @@ Currently members can have one of four roles - `owner`, `admin`, `member` and `o
 
 `x.grp.direct.inv` message is sent to a group member to propose establishing a direct connection between members, thus creating a contact with another member.
 
-`x.grp.msg.forward` message is sent by inviting member to forward messages between introduced members, while they are connecting.
+`x.grp.msg.forward` message is sent by inviting member to forward messages between introduced members, while they are connecting. This message MUST NOT contain another `x.grp.msg.forward` message.
+
+### Channels: relay-mediated groups
+
+Channels are groups where message delivery is mediated by dedicated relay members rather than by direct connections between all members. Channels extend the group sub-protocol with additional roles (`relay`, `observer`), message signing for administrative actions, a binary batch format for signed and forwarded messages, and an asynchronous delivery pipeline.
+
+For architecture and design rationale, see [SimpleX Channels Overview](./channels-overview.md). For protocol-level detail - wire formats, message types, signing mechanics, delivery pipeline - see [SimpleX Channels Protocol](./channels-protocol.md).
 
 ## Sub-protocol for WebRTC audio/video calls
 
@@ -278,16 +286,25 @@ These message are used for WebRTC calls:
 
 3. `x.call.answer`: to continue with call connection the initiating clients must reply with `x.call.answer` message. This message contains WebRTC answer and collected ICE candidates. Additional ICE candidates can be sent in `x.call.extra` message.
 
-4. `x.call.end` message is sent to notify the other party that the call is terminated.
+4. `x.call.extra` with `rtcSession` property: when an established connection is lost, the client that sent `x.call.offer` restarts ICE and sends the new offer in `rtcSession` of `x.call.extra`. The other client replies with the answer in `rtcSession` of `x.call.extra`. Clients restart ICE only when the peer supports chat protocol version 22 or later, otherwise the call ends when the connection is lost.
+
+5. `x.call.end` message is sent to notify the other party that the call is terminated.
+
+Call messages have their own version, independent of the chat protocol version. The initiating client sends the range of call versions it supports in `callVRange` property of `x.call.inv`. The receiving client chooses the highest version supported by both clients and sends it in `callVersion` property of `x.call.offer`. The initiating client rejects the offer if this version is not in the range it sent. A missing range or version means version 1.
+
+Media frames are encrypted with AES-256-GCM using the key agreed via X25519 DH keys in `x.call.inv` and `x.call.offer`:
+- version 1: the key is the DH shared secret.
+- version 2: the key is 32 bytes of HKDF-SHA512 output, using the DH shared secret as input key material, call ID as salt and `SimpleXCallMediaKey` as info.
 
 ## Threat model
 
-This threat model compliments SMP, XFTP, push notifications and XRCP protocols threat models:
+This threat model complements SMP, XFTP, push notifications and XRCP protocols threat models, as well as the channel-specific threat model:
 
 - [SimpleX Messaging Protocol threat model](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md#threat-model);
 - [SimpleX File Transfer Protocol threat model](https://github.com/simplex-chat/simplexmq/blob/master/protocol/xftp.md#threat-model);
 - [Push notifications threat model](https://github.com/simplex-chat/simplexmq/blob/master/protocol/push-notifications.md#threat-model);
-- [SimpleX Remote Control Protocol threat model](https://github.com/simplex-chat/simplexmq/blob/master/protocol/xrcp.md#threat-model).
+- [SimpleX Remote Control Protocol threat model](https://github.com/simplex-chat/simplexmq/blob/master/protocol/xrcp.md#threat-model);
+- [SimpleX Channels threat model](./channels-overview.md#threat-model).
 
 #### A user's contact
 
@@ -342,3 +359,27 @@ This threat model compliments SMP, XFTP, push notifications and XRCP protocols t
 *cannot:*
 
 - prove that two group members with incognito profiles is the same user.
+
+#### A channel relay
+
+For the full channel threat model, see [SimpleX Channels: threat model](./channels-overview.md#threat-model).
+
+*can:*
+
+- send arbitrary unsigned content messages to subscribers, effectively fabricating the content stream while the channel identity and signed profile remain intact.
+
+- selectively drop any messages, both content and signed administrative events, for some or all subscribers.
+
+- ignore the "message from channel" directive, revealing which specific owner sent a message.
+
+- fabricate subscriber connections, inflating subscriber counts.
+
+*cannot:*
+
+- impersonate an owner - administrative messages (roster changes, profile updates, channel deletion) require valid cryptographic signatures that the relay cannot produce.
+
+- substitute the channel profile - profile changes require a valid owner signature.
+
+- redirect joining subscribers to a different channel - the channel's entity ID is baked into both the channel link and the relay link's immutable data.
+
+- determine the real-world identity of subscribers - subscriber connections carry no persistent identity.

@@ -1,0 +1,77 @@
+[listener]
+host = 0.0.0.0
+port = 8080
+; the built webapp in the image, read as the export source
+static_dir = /srv/web
+; split deployment: Caddy serves the exported folder; this service is the API and webhooks only.
+; Set to on for an all-in-one deployment where this service serves the webapp itself.
+serve_webapp = off
+; the webapp is written here at boot with the publishable key injected; compose bind-mounts it to a
+; host path Caddy serves. Unset it when serve_webapp = on.
+webapp_export_dir = /srv/webapp
+; on because Caddy proxies /api and /webhooks to this service; without it the rate limiter keys on
+; Caddy's address and shares one bucket across all callers
+trust_forwarded_for = on
+
+[btcpay]
+host = https://btcpay.example.org
+api_key = replace-me
+store_id = replace-me
+webhook_secret = replace-me
+expiry_minutes = 60
+speed_policy = MediumSpeed
+payment_tolerance = 0.5
+
+; optional; omit the whole [stripe] section to disable card payments
+[stripe]
+; restricted key (rk_): Payment Intents write + Charges read — never a full secret key (sk_)
+secret_key = rk_test_replace-me
+publishable_key = pk_test_replace-me
+; the signing secret of the /webhooks/stripe endpoint configured in the Dashboard
+webhook_secret = whsec_replace-me
+; minutes the service holds an unpaid card invoice open before it expires it; 1-1440
+session_minutes = 60
+
+[poll]
+waiting_seconds = 3
+idle_seconds = 60
+
+; optional; without it every App Store receipt is answered provider_not_configured, which the app retries later.
+; root_certificates lists, comma-separated, the roots trusted to sign receipts, each in DER and placed
+; in config/. Today that is https://www.apple.com/certificateauthority/AppleRootCA-G3.cer.
+; When Apple adds a root, list it beside the old one rather than in its place.
+;[apple]
+;bundle_id = chat.simplex.app
+;root_certificates = /etc/simplex-badge-service/AppleRootCA-G3.cer
+
+; optional; without it every Play receipt is answered provider_not_configured, which the app retries later.
+; service_account_file is the JSON key of a service account with the Play Console permissions "View
+; financial data, orders, and cancellation survey responses" and "Manage orders and subscriptions", to
+; read and acknowledge purchases. Without the second, a purchase the app has not already acknowledged
+; itself is answered internal until the permission is granted. Place it in config/; the file must be readable by the service's user alone.
+;[google]
+;package_name = chat.simplex.app
+;service_account_file = /etc/simplex-badge-service/play-service-account.json
+
+; index is the one clients verify against; private_key is from `simplex-chat badge keygen`.
+; To rotate, change both together, once clients trust the new index.
+[issuer]
+index = 1
+private_key = replace-me
+
+; Optional. When present, the service creates and manages one group on its first
+; start without --run-cli, and logs its join link once, on the start that creates it.
+; The link is a bearer secret that stays valid, so keep that log private. The first
+; member to join is promoted to owner, so join right away.
+; Moderators can /issue and /bulk codes; admins and owners can also /revoke.
+; display_name must be a name the chat core accepts unchanged: one it would spell
+; differently stops the whole service, payments included, from starting.
+;[group]
+;display_name = SimpleX Badges
+;description = Welcome to the badges group
+
+; local testing only, in both run modes: accepts any well-formed App Store or Play receipt without
+; verifying it, so anyone who can reach this service can mint badges. The service refuses to start
+; with this on beside an [apple] or [google] section.
+[dev]
+accept_unverified_store_receipts = off

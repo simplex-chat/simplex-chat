@@ -41,7 +41,8 @@ active_blog: true
 
 <section class="py-10 px-5 mt-[66px]" id="blog-list">
     <div class="container">
-        <h1 class="text-[38px] text-center font-bold mb-9">Latest news</h1>
+        <h1 class="text-[38px] md:text-[45px] text-center font-bold mb-2">Latest news</h1>
+        <p class="text-right mb-9"><a class="text-primary-light dark:text-[#70F0F9] text-sm font-medium tracking-[0.03em]" href="/news">Open SimpleX Network News channel</a></p>
 
         {% for blog in collections.blogs %}
         {% if not(blog.data.draft) %}
@@ -52,12 +53,15 @@ active_blog: true
                 <div class="min-h-[inherit] h-full w-full flex items-end px-4 pt-4 justify-center relative">
                     {% if blog.data.image %}
                     {% if blog.data.imageBottom %}
-                    <img class="w-full max-w-[240px] h-auto" src="{{ blog.data.image }}" alt="" srcset="" />
+                    <img class="w-full max-w-[240px] h-auto{% if blog.data.imageLight %} dark:hidden{% endif %}" src="{{ blog.data.image }}" alt="" srcset="" />
+                    {% if blog.data.imageLight %}<img class="w-full max-w-[240px] h-auto hidden dark:inline-block" src="{{ blog.data.imageLight }}" alt="" srcset="" />{% endif %}
                     {% elif blog.data.imageWide %}
-                    <img class="mb-4 self-center w-full h-auto" src="{{ blog.data.image }}" alt="" srcset="" />
+                    <img class="mb-4 self-center w-full h-auto{% if blog.data.imageLight %} dark:hidden{% endif %}" src="{{ blog.data.image }}" alt="" srcset="" />
+                    {% if blog.data.imageLight %}<img class="mb-4 self-center w-full h-auto hidden dark:inline-block" src="{{ blog.data.imageLight }}" alt="" srcset="" />{% endif %}
                     {% else %}
-                    <img class="mb-4 self-center w-full max-w-[240px] h-auto" src="{{ blog.data.image }}" alt=""
+                    <img class="mb-4 self-center w-full max-w-[240px] h-auto{% if blog.data.imageLight %} dark:hidden{% endif %}" src="{{ blog.data.image }}" alt=""
                         srcset="" />
+                    {% if blog.data.imageLight %}<img class="mb-4 self-center w-full max-w-[240px] h-auto hidden dark:inline-block" src="{{ blog.data.imageLight }}" alt="" srcset="" />{% endif %}
                     {% endif %}
                     {% else %}
                     <img class="h-[44px] self-center dark:hidden" src="/img/new/logo-symbol-light.svg" alt=""

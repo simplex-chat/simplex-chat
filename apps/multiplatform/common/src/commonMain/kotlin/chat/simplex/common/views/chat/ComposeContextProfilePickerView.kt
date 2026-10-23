@@ -21,7 +21,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.IncognitoOptionImage
 import chat.simplex.common.views.usersettings.IncognitoView
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 
@@ -146,9 +146,10 @@ fun ComposeContextProfilePickerView(
     ) {
       ProfileImage(size = USER_ROW_AVATAR_SIZE, image = user.image)
       TextIconSpaced(false)
-      Text(
+      NameWithBadge(
         user.chatViewName,
-        modifier = Modifier.align(Alignment.CenterVertically),
+        user.profile.localBadge,
+        Modifier.align(Alignment.CenterVertically),
         fontWeight = if (selectedUser.value.userId == user.userId && !incognitoDefault) FontWeight.Medium else FontWeight.Normal
       )
 

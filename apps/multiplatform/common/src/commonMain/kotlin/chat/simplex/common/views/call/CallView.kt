@@ -6,6 +6,7 @@ import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.platform.*
 import kotlinx.coroutines.*
 
+// Spec: spec/services/calls.md#ActiveCallView
 @Composable
 expect fun ActiveCallView()
 

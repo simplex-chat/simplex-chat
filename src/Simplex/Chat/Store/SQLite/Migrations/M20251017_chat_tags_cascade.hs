@@ -14,7 +14,7 @@ UPDATE sqlite_master
 SET sql = replace(sql, 'user_id INTEGER REFERENCES users', 'user_id INTEGER REFERENCES users ON DELETE CASCADE')
 WHERE name = 'chat_tags' AND type = 'table';
 
-PRAGMA writable_schema=0;
+PRAGMA writable_schema=RESET;
 |]
 
 down_m20251017_chat_tags_cascade :: Query
@@ -26,5 +26,5 @@ UPDATE sqlite_master
 SET sql = replace(sql, 'user_id INTEGER REFERENCES users ON DELETE CASCADE', 'user_id INTEGER REFERENCES users')
 WHERE name = 'chat_tags' AND type = 'table';
 
-PRAGMA writable_schema=0;
+PRAGMA writable_schema=RESET;
 |]

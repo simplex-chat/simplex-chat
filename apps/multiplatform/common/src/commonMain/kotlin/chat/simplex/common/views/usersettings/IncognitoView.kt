@@ -12,7 +12,7 @@ import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.views.helpers.AppBarTitle
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.common.views.onboarding.ReadableTextWithLink
-import chat.simplex.res.MR
+import chat.simplex.res.*
 
 @Composable
 fun IncognitoView() {

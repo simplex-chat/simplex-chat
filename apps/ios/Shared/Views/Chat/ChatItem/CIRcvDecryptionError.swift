@@ -5,12 +5,14 @@
 //  Created by Evgeny on 15/04/2023.
 //  Copyright © 2023 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/chat-view.md
 
 import SwiftUI
 import SimpleXChat
 
 let decryptErrorReason: LocalizedStringKey = "It can happen when you or your connection used the old database backup."
 
+// Spec: spec/client/chat-view.md#CIRcvDecryptionError
 struct CIRcvDecryptionError: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
@@ -183,9 +185,8 @@ struct CIRcvDecryptionError: View {
                 }
             } catch let error {
                 logger.error("syncMemberConnection apiSyncGroupMemberRatchet error: \(responseError(error))")
-                let a = getErrorAlert(error, "Error synchronizing connection")
                 await MainActor.run {
-                    alert = .error(title: a.title, error: a.message)
+                    showErrorAlert(error, NSLocalizedString("Error synchronizing connection", comment: ""))
                 }
             }
         }
@@ -200,9 +201,8 @@ struct CIRcvDecryptionError: View {
                 }
             } catch let error {
                 logger.error("syncContactConnection apiSyncContactRatchet error: \(responseError(error))")
-                let a = getErrorAlert(error, "Error synchronizing connection")
                 await MainActor.run {
-                    alert = .error(title: a.title, error: a.message)
+                    showErrorAlert(error, NSLocalizedString("Error synchronizing connection", comment: ""))
                 }
             }
         }

@@ -121,7 +121,7 @@ export class ChatClient {
 
   async apiSendMessages(chatType: T.ChatType, chatId: number, messages: T.ComposedMessage[]): Promise<T.AChatItem[]> {
     const r = await this.sendChatCmd(
-      CC.APISendMessages.cmdString({sendRef: {chatType, chatId}, composedMessages: messages, liveMessage: false})
+      CC.APISendMessages.cmdString({sendRef: {chatType, chatId}, composedMessages: messages, liveMessage: false, signMessages: false})
     )
     if (r.type === "newChatItems") return r.chatItems
     throw new ChatCommandError("unexpected response", r)
@@ -258,6 +258,12 @@ export class ChatClient {
   async apiAddMember(groupId: number, contactId: number, memberRole: T.GroupMemberRole): Promise<T.GroupMember> {
     const r = await this.sendChatCmd(CC.APIAddMember.cmdString({groupId, contactId, memberRole}))
     if (r.type === "sentGroupInvitation") return r.member
+    throw new ChatCommandError("error adding member", r)
+  }
+
+  async apiAddMemberViaGroup(groupId: number, viaGroupId: number, groupMemberId: number, memberRole: T.GroupMemberRole): Promise<T.GroupMember> {
+    const r = await this.sendChatCmd(CC.APIAddMemberViaGroup.cmdString({groupId, viaGroupId, groupMemberId, memberRole}))
+    if (r.type === "sentGroupInvitationViaGroup") return r.member
     throw new ChatCommandError("error adding member", r)
   }
 

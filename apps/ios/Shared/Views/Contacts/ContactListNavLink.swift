@@ -200,10 +200,9 @@ struct ContactListNavLink: View {
 
     private func previewTitle(_ contact: Contact, titleColor: Color) -> some View {
         let t = Text(chat.chatInfo.chatViewName).foregroundColor(titleColor)
-        return (
-            contact.verified == true
-            ? verifiedIcon + t
-            : t
+        return NameWithBadge(
+            contact.verified == true ? verifiedIcon + t : t,
+            chat.chatInfo.nameBadge
         )
         .lineLimit(1)
     }
@@ -318,8 +317,7 @@ struct ContactListNavLink: View {
         HStack{
             ProfileImage(imageStr: chat.chatInfo.image, size: 30)
 
-            Text(chat.chatInfo.chatViewName)
-                .foregroundColor(color)
+            NameWithBadge(Text(chat.chatInfo.chatViewName).foregroundColor(color), chat.chatInfo.nameBadge)
                 .lineLimit(1)
 
             Spacer()

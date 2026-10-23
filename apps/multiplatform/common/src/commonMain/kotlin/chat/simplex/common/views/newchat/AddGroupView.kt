@@ -27,7 +27,9 @@ import chat.simplex.common.views.*
 import chat.simplex.common.views.chat.group.GroupLinkView
 import chat.simplex.common.views.chatlist.openGroupChat
 import chat.simplex.common.views.usersettings.*
-import chat.simplex.res.MR
+import androidx.compose.ui.layout.ContentScale
+import chat.simplex.common.BuildConfigCommon
+import chat.simplex.res.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.*
@@ -37,8 +39,11 @@ import java.net.URI
 fun AddGroupView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit, closeAll: () -> Unit) {
   val rhId = rh?.remoteHostId
   val view = LocalMultiplatformView()
+  val inProgress = remember { mutableStateOf(false) }
   AddGroupLayout(
     createGroup = { incognito, groupProfile ->
+      if (inProgress.value) return@AddGroupLayout
+      inProgress.value = true
       hideKeyboard(view)
       withBGApi {
         val groupInfo = chatModel.controller.apiNewGroup(rhId, incognito, groupProfile)
@@ -51,14 +56,16 @@ fun AddGroupView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit, c
           closeAll.invoke()
 
           if (!groupInfo.incognito) {
-            ModalManager.end.showModalCloseable(true) { close ->
+            ModalManager.end.showModalCloseable(showClose = true) { close ->
               AddGroupMembersView(rhId, groupInfo, creatingGroup = true, chatModel, close)
             }
           } else {
-            ModalManager.end.showModalCloseable(true) { close ->
-              GroupLinkView(chatModel, rhId, groupInfo, groupLink = null, onGroupLinkUpdated = null, creatingGroup = true, close)
+            ModalManager.end.showModalCloseable(showClose = true, cardScreen = true) { close ->
+              GroupLinkView(chatModel, rhId, groupInfo, groupLink = null, onGroupLinkUpdated = null, creatingGroup = true, close = close)
             }
           }
+        } else {
+          inProgress.value = false
         }
       }
     },
@@ -99,21 +106,36 @@ fun AddGroupLayout(
     ) {
       ModalView(close = close) {
         ColumnWithScrollBar {
-          AppBarTitle(stringResource(MR.strings.create_secret_group_title), hostDevice(rhId))
-          Box(
+          AppBarTitle(stringResource(MR.strings.create_secret_group_title), hostDevice(rhId), bottomPadding = DEFAULT_PADDING_HALF)
+          Row(
             Modifier
               .fillMaxWidth()
-              .padding(bottom = 24.dp),
-            contentAlignment = Alignment.Center
+              .padding(vertical = DEFAULT_PADDING_HALF),
+            horizontalArrangement = if (BuildConfigCommon.SIMPLEX_ASSETS) Arrangement.SpaceEvenly else Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
           ) {
-            Box(contentAlignment = Alignment.TopEnd) {
-              Box(contentAlignment = Alignment.Center) {
-                ProfileImage(108.dp, image = profileImage.value)
-                EditImageButton { scope.launch { bottomSheetModalState.show() } }
+            // Padding offsets transparent space built into 3D asset
+            Box(
+              modifier = if (BuildConfigCommon.SIMPLEX_ASSETS) Modifier.padding(horizontal = 3.dp) else Modifier,
+              contentAlignment = Alignment.Center
+            ) {
+              Box(contentAlignment = Alignment.TopEnd) {
+                Box(contentAlignment = Alignment.Center) {
+                  ProfileImage(128.dp, image = profileImage.value, icon = MR.images.ic_supervised_user_circle_filled)
+                  EditImageButton { scope.launch { bottomSheetModalState.show() } }
+                }
+                if (profileImage.value != null) {
+                  DeleteImageButton { profileImage.value = null }
+                }
               }
-              if (profileImage.value != null) {
-                DeleteImageButton { profileImage.value = null }
-              }
+            }
+            if (BuildConfigCommon.SIMPLEX_ASSETS) {
+              Image(
+                painterResource(if (isInDarkTheme()) MR.images.create_group_light else MR.images.create_group),
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.height(140.dp)
+              )
             }
           }
           Row(Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING_HALF).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

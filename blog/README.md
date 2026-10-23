@@ -1,5 +1,37 @@
 # Blog
 
+Sep 19, 2026 [SimpleX Supporter Badges - Send Larger Files That Stay Available Longer, Without Being Identified](./20260919-simplex-supporter-badges.md)
+
+Supporter badges are available in v7.1 beta: a badge on your profile, larger files and longer file storage - and the purchase cannot be linked to your profile.
+
+Investors in our equity crowdfunding receive badges as perks. If you invest $500 or more by September 22, you will also receive a public SimpleX name for 7 years.
+
+
+---
+
+Aug 20, 2026 [Equity Crowdfunding Launched - You Can Get a Stake in SimpleX Chat](./20260819-simplex-chat-crowdfunding.md)
+
+SimpleX is the first and the only messaging network without user identifiers of any kind. Our equity crowdfunding round is now launched on Wefunder, so network users, and anybody else, can get a stake in SimpleX Chat - the company that builds it.
+
+Learn more and invest [on Wefunder](https://wefunder.com/simplex.chat?utm_source=blog).
+
+
+---
+
+Jul 22, 2026 [SimpleX Public Names - a Name Nobody Can Take From You](./20260722-simplex-public-names.md)
+
+You can now give your channel or business a test SimpleX name that people can remember and nobody can take from you. Test names are free in v7-beta.
+
+---
+
+Apr 30, 2026 [SimpleX Channels, SimpleX Network Consortium and Community Crowdfunding - to Preserve Freedom of Speech](./20260430-simplex-channels-v6-5-consortium-crowdfunding-freedom-of-speech.md)
+
+Freedom of speech needs infrastructure that protects it by design - protocols, governance and funding.
+
+v6.5 release brings SimpleX Channels: a new model for online publishing built for participation privacy.
+
+---
+
 Jul 29, 2025 [SimpleX Chat v6.4.1: welcome your contacts, review members to protect groups, and more.](./20250729-simplex-chat-v6-4-1-welcome-contacts-protect-groups-app-security.md)
 
 What's new in v6.4.1:

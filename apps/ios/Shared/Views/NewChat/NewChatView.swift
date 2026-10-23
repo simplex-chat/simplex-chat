@@ -5,6 +5,7 @@
 //  Created by spaced4ndy on 28.11.2023.
 //  Copyright © 2023 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/navigation.md
 
 import SwiftUI
 import SimpleXChat
@@ -73,11 +74,13 @@ func showKeepInvitationAlert() {
     ChatModel.shared.showingInvitation = nil
 }
 
+// Spec: spec/client/navigation.md#NewChatView
 struct NewChatView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
     @State var selection: NewChatOption
     @State var showQRCodeScanner = false
+    var onboarding: Bool = false
     @State private var invitationUsed: Bool = false
     @State private var connLinkInvitation: CreatedConnLink = CreatedConnLink(connFullLink: "", connShortLink: nil)
     @State private var showShortLink = true
@@ -89,17 +92,19 @@ struct NewChatView: View {
 
     var body: some View {
         VStack(alignment: .leading) {
-            Picker("New chat", selection: $selection) {
-                Label("1-time link", systemImage: "link")
-                    .tag(NewChatOption.invite)
-                Label("Connect via link", systemImage: "qrcode")
-                    .tag(NewChatOption.connect)
-            }
-            .pickerStyle(.segmented)
-            .padding()
-            .onChange(of: $selection.wrappedValue) { opt in
-                if opt == NewChatOption.connect {
-                    showQRCodeScanner = true
+            if !onboarding {
+                Picker("New chat", selection: $selection) {
+                    Label("1-time link", systemImage: "link")
+                        .tag(NewChatOption.invite)
+                    Label("Connect via link", systemImage: "qrcode")
+                        .tag(NewChatOption.connect)
+                }
+                .pickerStyle(.segmented)
+                .padding()
+                .onChange(of: $selection.wrappedValue) { opt in
+                    if opt == NewChatOption.connect {
+                        showQRCodeScanner = true
+                    }
                 }
             }
 
@@ -114,7 +119,7 @@ struct NewChatView: View {
                         }
                 }
                 if case .connect = selection {
-                    ConnectView(showQRCodeScanner: $showQRCodeScanner, pastedLink: $pastedLink, alert: $alert)
+                    ConnectView(showQRCodeScanner: $showQRCodeScanner, pastedLink: $pastedLink, alert: $alert, onboarding: onboarding)
                         .transition(.move(edge: .trailing))
                 }
             }
@@ -139,16 +144,22 @@ struct NewChatView: View {
                         }
                     default: ()
                     }
-                }
+                },
+                including: onboarding ? .subviews : .all
             )
         }
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                InfoSheetButton {
-                    AddContactLearnMore(showTitle: true)
+                if !onboarding {
+                    InfoSheetButton {
+                        AddContactLearnMore(showTitle: true)
+                    }
+                } else {
+                    Image(systemName: "info.circle").opacity(0)
                 }
             }
         }
+        .if(onboarding) { $0.navigationBarTitleDisplayMode(.inline) }
         .modifier(ThemedBackground(grouped: true))
         .onChange(of: invitationUsed) { used in
             if used && !(m.showingInvitation?.connChatUsed ?? true) {
@@ -177,7 +188,8 @@ struct NewChatView: View {
                     contactConnection: $contactConnection,
                     connLinkInvitation: $connLinkInvitation,
                     showShortLink: $showShortLink,
-                    choosingProfile: $choosingProfile
+                    choosingProfile: $choosingProfile,
+                    onboarding: onboarding
                 )
             } else if creatingConnReq {
                 creatingLinkProgressView()
@@ -192,8 +204,7 @@ struct NewChatView: View {
             creatingConnReq = true
             Task {
                 _ = try? await Task.sleep(nanoseconds: 250_000000)
-                let (r, apiAlert) = await apiAddContact(incognito: incognitoGroupDefault.get())
-                if let (connLink, pcc) = r {
+                if let (connLink, pcc) = await apiAddContact(incognito: incognitoGroupDefault.get()) {
                     await MainActor.run {
                         m.updateContactConnection(pcc)
                         m.showingInvitation = ShowingInvitation(pcc: pcc, connChatUsed: false)
@@ -203,9 +214,6 @@ struct NewChatView: View {
                 } else {
                     await MainActor.run {
                         creatingConnReq = false
-                        if let apiAlert = apiAlert {
-                            alert = .newChatSomeAlert(alert: SomeAlert(alert: apiAlert, id: "createInvitation error"))
-                        }
                     }
                 }
             }
@@ -237,6 +245,7 @@ private func incognitoProfileImage() -> some View {
 }
 
 private struct InviteView: View {
+    @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Binding var invitationUsed: Bool
@@ -244,18 +253,19 @@ private struct InviteView: View {
     @Binding var connLinkInvitation: CreatedConnLink
     @Binding var showShortLink: Bool
     @Binding var choosingProfile: Bool
+    var onboarding: Bool = false
 
     @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
 
     var body: some View {
         List {
-            Section(header: Text("Share this 1-time invite link").foregroundColor(theme.colors.secondary)) {
+            Section(header: sectionHeader) {
                 shareLinkView()
             }
             .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 10))
 
             qrCodeView()
-            if let selectedProfile = chatModel.currentUser {
+            if !onboarding, let selectedProfile = chatModel.currentUser {
                 Section {
                     NavigationLink {
                         ActiveProfilePicker(
@@ -279,9 +289,9 @@ private struct InviteView: View {
                 } header: {
                     Text("Share profile").foregroundColor(theme.colors.secondary)
                 } footer: {
-                     if incognitoDefault {
-                         Text("A new random profile will be shared.")
-                     }
+                    if incognitoDefault {
+                        Text("A new random profile will be shared.")
+                    }
                 }
             }
         }
@@ -293,8 +303,35 @@ private struct InviteView: View {
         }
     }
 
+    private var sectionHeader: some View {
+        #if SIMPLEX_ASSETS
+        VStack(alignment: .leading, spacing: 0) {
+            Image(colorScheme == .light
+                ? (onboarding ? "one-time-link" : "one-time-link-small")
+                : (onboarding ? "one-time-link-light" : "one-time-link-small-light"))
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: .infinity)
+            sectionHeaderText
+        }
+        .padding(.bottom, 6)
+        #else
+        sectionHeaderText
+            .if(onboarding) { $0.padding(.bottom, 6) }
+        #endif
+    }
+
+    @ViewBuilder private var sectionHeaderText: some View {
+        if onboarding {
+            Text("Send the link via any messenger - it's secure. Ask to paste into SimpleX.")
+                .font(.body).foregroundColor(theme.colors.onBackground).textCase(nil)
+        } else {
+            Text("Share this 1-time invite link").foregroundColor(theme.colors.secondary)
+        }
+    }
+
     private func shareLinkView() -> some View {
-        HStack {
+        HStack(spacing: 8) {
             let link = connLinkInvitation.simplexChatUri(short: showShortLink)
             linkTextView(link)
             Button {
@@ -303,6 +340,7 @@ private struct InviteView: View {
             } label: {
                 Image(systemName: "square.and.arrow.up")
                     .padding(.top, -7)
+                    .padding(.horizontal, 8)
             }
         }
         .frame(maxWidth: .infinity)
@@ -322,7 +360,11 @@ private struct InviteView: View {
                 .listRowSeparator(.hidden)
                 .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
         } header: {
-            ToggleShortLinkHeader(text: Text("Or show this code"), link: connLinkInvitation, short: $showShortLink)
+            if onboarding {
+                Text("Or show QR in person or via video call.").font(.body).foregroundColor(theme.colors.onBackground).textCase(nil)
+            } else {
+                ToggleShortLinkHeader(text: Text("Or show this code"), link: connLinkInvitation, short: $showShortLink)
+            }
         }
     }
 
@@ -388,15 +430,9 @@ private struct ActiveProfilePicker: View {
                         profileSwitchStatus = .idle
                         incognitoEnabled = !incognito
                         logger.error("apiSetConnectionIncognito error: \(responseError(error))")
-                        let err = getErrorAlert(error, "Error changing to incognito!")
-
-                        alert = SomeAlert(
-                            alert: Alert(
-                                title: Text(err.title),
-                                message: Text(err.message ?? "Error: \(responseError(error))")
-                            ),
-                            id: "setConnectionIncognitoError"
-                        )
+                        await MainActor.run {
+                            showErrorAlert(error, NSLocalizedString("Error changing to incognito!", comment: ""))
+                        }
                     }
                 }
             }
@@ -448,14 +484,7 @@ private struct ActiveProfilePicker: View {
                             if let currentUser = chatModel.currentUser {
                                 selectedProfile = currentUser
                             }
-                            let err = getErrorAlert(error, "Error changing connection profile")
-                            alert = SomeAlert(
-                                alert: Alert(
-                                    title: Text(err.title),
-                                    message: Text(err.message ?? "Error: \(responseError(error))")
-                                ),
-                                id: "changeConnectionUserError"
-                            )
+                            showErrorAlert(error, NSLocalizedString("Error changing connection profile", comment: ""))
                         }
                     }
                 }
@@ -514,9 +543,11 @@ private struct ActiveProfilePicker: View {
             HStack {
                 ProfileImage(imageStr: user.image, size: 30)
                     .padding(.trailing, 2)
-                Text(user.chatViewName)
-                    .foregroundColor(theme.colors.onBackground)
-                    .lineLimit(1)
+                NameWithBadge(
+                    Text(user.chatViewName).foregroundColor(theme.colors.onBackground),
+                    user.profile.localBadge
+                )
+                .lineLimit(1)
                 Spacer()
                 if selectedProfile == user, !incognitoEnabled {
                     Image(systemName: "checkmark")
@@ -585,20 +616,24 @@ private struct ActiveProfilePicker: View {
 }
 
 private struct ConnectView: View {
+    @Environment(\.colorScheme) var colorScheme
     @StateObject private var connectProgressManager = ConnectProgressManager.shared
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var theme: AppTheme
     @Binding var showQRCodeScanner: Bool
     @Binding var pastedLink: String
     @Binding var alert: NewChatViewAlert?
+    var onboarding: Bool = false
     @State var scannerPaused: Bool = false
     @State private var pasteboardHasStrings = UIPasteboard.general.hasStrings
 
     var body: some View {
         List {
-            Section(header: Text("Paste the link you received").foregroundColor(theme.colors.secondary)) {
+            Section(header: connectSectionHeader) {
                 pasteLinkView()
             }
+            .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
+
             Section(header: Text("Or scan QR code").foregroundColor(theme.colors.secondary)) {
                 ScannerInView(showQRCodeScanner: $showQRCodeScanner, scannerPaused: $scannerPaused, processQRCode: processQRCode)
             }
@@ -613,14 +648,14 @@ private struct ConnectView: View {
             ZStack(alignment: .trailing) {
                 Button {
                     if let str = UIPasteboard.general.string {
-                        if let link = strHasSingleSimplexLink(str.trimmingCharacters(in: .whitespaces)) {
-                            pastedLink = link.text
-                            // It would be good to hide it, but right now it is not clear how to release camera in CodeScanner
-                            // https://github.com/twostraws/CodeScanner/issues/121
-                            // No known tricks worked (changing view ID, wrapping it in another view, etc.)
-                            // showQRCodeScanner = false
+                        switch strConnectTarget(str.trimmingCharacters(in: .whitespaces)) {
+                        case let .link(text, _, _):
+                            pastedLink = text
                             connect(pastedLink)
-                        } else {
+                        case let .name(text, _):
+                            pastedLink = text
+                            connect(pastedLink)
+                        case .none:
                             alert = .newChatSomeAlert(alert: SomeAlert(
                                 alert: mkAlert(title: "Invalid link", message: "The text you pasted is not a SimpleX link."),
                                 id: "pasteLinkView: code is not a SimpleX link"
@@ -628,7 +663,7 @@ private struct ConnectView: View {
                         }
                     }
                 } label: {
-                    Text("Tap to paste link")
+                    Text("Tap to paste link").foregroundColor(theme.colors.primary)
                 }
                 .disabled(!pasteboardHasStrings)
                 .frame(maxWidth: .infinity, alignment: .center)
@@ -667,6 +702,23 @@ private struct ConnectView: View {
         }
     }
 
+    private var connectSectionHeader: some View {
+        #if SIMPLEX_ASSETS
+        VStack(alignment: .leading, spacing: 0) {
+            Image(colorScheme == .light
+                ? (onboarding ? "connect-via-link" : "connect-via-link-small")
+                : (onboarding ? "connect-via-link-light" : "connect-via-link-small-light"))
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: .infinity)
+            Text("Paste the link you received").foregroundColor(theme.colors.secondary)
+        }
+        .padding(.bottom, 4)
+        #else
+        Text("Paste the link you received").foregroundColor(theme.colors.secondary)
+        #endif
+    }
+
     private func connect(_ link: String) {
         scannerPaused = true
         planAndConnect(
@@ -687,6 +739,7 @@ struct ScannerInView: View {
     let processQRCode: (_ resp: Result<ScanResult, ScanError>) -> Void
     @State private var cameraAuthorizationStatus: AVAuthorizationStatus?
     var scanMode: ScanMode = .continuous
+    var placeholderBackground = Color(uiColor: .secondarySystemGroupedBackground)
 
     var body: some View {
         Group {
@@ -725,7 +778,7 @@ struct ScannerInView: View {
                 .padding()
                 .background(
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(Color(uiColor: .secondarySystemGroupedBackground))
+                        .fill(placeholderBackground)
                 )
                 .padding(.horizontal)
                 .listRowBackground(Color.clear)
@@ -763,7 +816,7 @@ struct ScannerInView: View {
 }
 
 
-private func linkTextView(_ link: String) -> some View {
+func linkTextView(_ link: String) -> some View {
     Text(link)
         .lineLimit(1)
         .font(.caption)
@@ -799,16 +852,22 @@ func strIsSimplexLink(_ str: String) -> Bool {
     }
 }
 
-func strHasSingleSimplexLink(_ str: String) -> FormattedText? {
-    if let parsedMd = parseSimpleXMarkdown(str) {
-       let parsedLinks = parsedMd.filter({ $0.format?.isSimplexLink ?? false })
-        if parsedLinks.count == 1 {
-            return parsedLinks[0]
-        } else {
-            return nil
-        }
+enum ConnectTarget {
+    case link(text: String, linkType: SimplexLinkType, linkText: String)
+    case name(text: String, nameInfo: SimplexNameInfo)
+}
+
+func strConnectTarget(_ str: String) -> ConnectTarget? {
+    let parsedMd = parseSimpleXMarkdown(str)
+    let links = parsedMd?.filter { $0.format?.isSimplexLink ?? false } ?? []
+    return if links.count == 1, case let .simplexLink(showText, linkType, simplexUri, smpHosts) = links[0].format {
+        .link(text: showText != nil ? simplexUri : links[0].text, linkType: linkType, linkText: simplexLinkText(linkType, smpHosts))
+    } else if links.isEmpty,
+              let nameFt = parsedMd?.first(where: { if case .simplexName = $0.format { true } else { false } }),
+              case let .simplexName(nameInfo) = nameFt.format {
+        .name(text: nameFt.text, nameInfo: nameInfo)
     } else {
-        return nil
+        nil
     }
 }
 
@@ -914,11 +973,13 @@ private func showAskCurrentOrIncognitoProfileSheet(
     actionStyle: UIAlertAction.Style = .default,
     connectionLink: CreatedConnLink,
     connectionPlan: ConnectionPlan?,
+    ownerVerification: OwnerVerification? = nil,
     dismiss: Bool,
     cleanup: (() -> Void)?
 ) {
     showSheet(
         title,
+        message: ownerVerificationMessage(ownerVerification),
         actions: {[
             UIAlertAction(
                 title: NSLocalizedString("Use current profile", comment: "new chat action"),
@@ -988,47 +1049,76 @@ private func showOwnGroupLinkConfirmConnectSheet(
     dismiss: Bool,
     cleanup: (() -> Void)?
 ) {
-    showSheet(
-        String.localizedStringWithFormat(
-            NSLocalizedString("Join your group?\nThis is your link for group %@!", comment: "new chat action"),
-            groupInfo.displayName
-        ),
-        actions: {[
-            UIAlertAction(
-                title: NSLocalizedString("Open group", comment: "new chat action"),
-                style: .default,
-                handler: { _ in
-                    openKnownGroup(groupInfo, dismiss: dismiss, cleanup: cleanup)
-                }
+    if groupInfo.useRelays {
+        showSheet(
+            String.localizedStringWithFormat(
+                NSLocalizedString("This is your link for channel %@!", comment: "new chat action"),
+                groupInfo.displayName
             ),
-            UIAlertAction(
-                title: NSLocalizedString("Use current profile", comment: "new chat action"),
-                style: .destructive,
-                handler: { _ in
-                    connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: false, cleanup: cleanup)
-                }
+            actions: {[
+                UIAlertAction(
+                    title: NSLocalizedString("Open channel", comment: "new chat action"),
+                    style: .default,
+                    handler: { _ in
+                        openKnownGroup(groupInfo, dismiss: dismiss, cleanup: cleanup)
+                    }
+                ),
+                UIAlertAction(
+                    title: NSLocalizedString("Cancel", comment: "new chat action"),
+                    style: .default,
+                    handler: { _ in
+                        cleanup?()
+                    }
+                )
+            ]}
+        )
+    } else {
+        showSheet(
+            String.localizedStringWithFormat(
+                NSLocalizedString("Join your group?\nThis is your link for group %@!", comment: "new chat action"),
+                groupInfo.displayName
             ),
-            UIAlertAction(
-                title: NSLocalizedString("Use new incognito profile", comment: "new chat action"),
-                style: .destructive,
-                handler: { _ in
-                    connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: true, cleanup: cleanup)
-                }
-            ),
-            UIAlertAction(
-                title: NSLocalizedString("Cancel", comment: "new chat action"),
-                style: .default,
-                handler: { _ in
-                    cleanup?()
-                }
-            )
-        ]}
-    )
+            actions: {[
+                UIAlertAction(
+                    title: NSLocalizedString("Open group", comment: "new chat action"),
+                    style: .default,
+                    handler: { _ in
+                        openKnownGroup(groupInfo, dismiss: dismiss, cleanup: cleanup)
+                    }
+                ),
+                UIAlertAction(
+                    title: NSLocalizedString("Use current profile", comment: "new chat action"),
+                    style: .destructive,
+                    handler: { _ in
+                        connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: false, cleanup: cleanup)
+                    }
+                ),
+                UIAlertAction(
+                    title: NSLocalizedString("Use new incognito profile", comment: "new chat action"),
+                    style: .destructive,
+                    handler: { _ in
+                        connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: true, cleanup: cleanup)
+                    }
+                ),
+                UIAlertAction(
+                    title: NSLocalizedString("Cancel", comment: "new chat action"),
+                    style: .default,
+                    handler: { _ in
+                        cleanup?()
+                    }
+                )
+            ]}
+        )
+    }
 }
 
 private func showPrepareContactAlert(
     connectionLink: CreatedConnLink,
     contactShortLinkData: ContactShortLinkData,
+    ownerVerification: OwnerVerification? = nil,
+    verifiedDomain: SimplexDomain? = nil,
+    connectOtherButton: String? = nil,
+    connectOtherLink: String? = nil,
     theme: AppTheme,
     dismiss: Bool,
     cleanup: (() -> Void)?
@@ -1039,21 +1129,22 @@ private func showPrepareContactAlert(
         profileImage:
             ProfileImage(
                 imageStr: contactShortLinkData.profile.image,
-                iconName: contactShortLinkData.business
-                            ? "briefcase.circle.fill"
-                            : contactShortLinkData.profile.peerType == .bot
-                            ? "cube.fill"
-                            : "person.crop.circle.fill",
+                icon: contactShortLinkData.business
+                            ? Image(systemName: "briefcase.circle.fill")
+                            : peerTypeIcon(contactShortLinkData.profile.peerType),
                 size: alertProfileImageSize
             ),
+        profileBadge: contactShortLinkData.localBadge,
         theme: theme,
+        information: ownerVerificationMessage(ownerVerification),
         cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
         confirmTitle: NSLocalizedString("Open new chat", comment: "new chat action"),
+        secondTitle: connectOtherButton,
         onCancel: { cleanup?() },
         onConfirm: {
             Task {
                 do {
-                    let chat = try await apiPrepareContact(connLink: connectionLink, contactShortLinkData: contactShortLinkData)
+                    let chat = try await apiPrepareContact(connLink: connectionLink, contactShortLinkData: contactShortLinkData, verifiedDomain: verifiedDomain)
                     await MainActor.run {
                         ChatModel.shared.addChat(Chat(chat))
                         openKnownChat(chat.id, dismiss: dismiss, cleanup: cleanup)
@@ -1066,41 +1157,70 @@ private func showPrepareContactAlert(
                     }
                 }
             }
+        },
+        onSecond: connectOtherLink.map { link in
+            { planAndConnect(link, theme: theme, dismiss: dismiss, cleanup: cleanup) }
         }
     )
 }
 
 private func showPrepareGroupAlert(
     connectionLink: CreatedConnLink,
+    groupShortLinkInfo: GroupShortLinkInfo?,
     groupShortLinkData: GroupShortLinkData,
+    ownerVerification: OwnerVerification? = nil,
+    verifiedDomain: SimplexDomain? = nil,
+    connectOtherButton: String? = nil,
+    connectOtherLink: String? = nil,
     theme: AppTheme,
     dismiss: Bool,
     cleanup: (() -> Void)?
 ) {
+    let isChannel = !(groupShortLinkInfo?.direct ?? true)
+    let subscriberCount = groupShortLinkData.publicGroupData.map { "\($0.publicMemberCount) subscribers" }
     showOpenChatAlert(
         profileName: groupShortLinkData.groupProfile.displayName,
         profileFullName: groupShortLinkData.groupProfile.fullName,
-        profileImage: ProfileImage(imageStr: groupShortLinkData.groupProfile.image, iconName: "person.2.circle.fill", size: alertProfileImageSize),
+        profileImage:
+            ProfileImage(
+                imageStr: groupShortLinkData.groupProfile.image,
+                icon: Image(systemName: isChannel
+                            ? "antenna.radiowaves.left.and.right.circle.fill"
+                            : "person.2.circle.fill"),
+                size: alertProfileImageSize
+            ),
         theme: theme,
+        subtitle: isChannel ? subscriberCount : nil,
+        information: ownerVerificationMessage(ownerVerification),
         cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
-        confirmTitle: NSLocalizedString("Open new group", comment: "new chat action"),
+        confirmTitle: isChannel
+            ? NSLocalizedString("Open channel", comment: "new chat action")
+            : NSLocalizedString("Open group", comment: "new chat action"),
+        secondTitle: connectOtherButton,
         onCancel: { cleanup?() },
         onConfirm: {
             Task {
                 do {
-                    let chat = try await apiPrepareGroup(connLink: connectionLink, groupShortLinkData: groupShortLinkData)
+                    let chat = try await apiPrepareGroup(connLink: connectionLink, directLink: groupShortLinkInfo?.direct ?? true, groupShortLinkData: groupShortLinkData, verifiedDomain: verifiedDomain)
                     await MainActor.run {
+                        if let relays = groupShortLinkInfo?.groupRelays, !relays.isEmpty,
+                           case let .group(gInfo, _) = chat.chatInfo {
+                            ChatModel.shared.channelRelayHostnames[gInfo.groupId] = relays
+                        }
                         ChatModel.shared.addChat(Chat(chat))
                         openKnownChat(chat.id, dismiss: dismiss, cleanup: cleanup)
                     }
                 } catch let error {
                     logger.error("showPrepareGroupAlert apiPrepareGroup error: \(error.localizedDescription)")
-                    showAlert(NSLocalizedString("Error opening group", comment: ""), message: responseError(error))
+                    showAlert(NSLocalizedString(isChannel ? "Error opening channel" : "Error opening group", comment: "alert title"), message: responseError(error))
                     await MainActor.run {
                         cleanup?()
                     }
                 }
             }
+        },
+        onSecond: connectOtherLink.map { link in
+            { planAndConnect(link, theme: theme, dismiss: dismiss, cleanup: cleanup) }
         }
     )
 }
@@ -1108,7 +1228,9 @@ private func showPrepareGroupAlert(
 private func showOpenKnownContactAlert(
     _ contact: Contact,
     theme: AppTheme,
-    dismiss: Bool
+    dismiss: Bool,
+    connectOtherButton: String? = nil,
+    connectOtherLink: String? = nil
 ) {
     showOpenChatAlert(
         profileName: contact.profile.displayName,
@@ -1116,61 +1238,107 @@ private func showOpenKnownContactAlert(
         profileImage:
             ProfileImage(
                 imageStr: contact.profile.image,
-                iconName: contact.chatIconName,
+                icon: contact.chatIcon,
                 size: alertProfileImageSize
             ),
+        profileBadge: contact.active ? contact.profile.localBadge : nil,
         theme: theme,
         cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
         confirmTitle:
             contact.nextConnectPrepared
             ? NSLocalizedString("Open new chat", comment: "new chat action")
             : NSLocalizedString("Open chat", comment: "new chat action"),
+        secondTitle: connectOtherButton,
         onConfirm: {
             openKnownContact(contact, dismiss: dismiss, cleanup: nil)
+        },
+        onSecond: connectOtherLink.map { link in
+            { planAndConnect(link, theme: theme, dismiss: dismiss) }
         }
     )
+}
+
+private func memberRoleInformation(_ role: GroupMemberRole, isChannel: Bool) -> String {
+    switch role {
+    case .observer: isChannel
+        ? NSLocalizedString("You are a subscriber", comment: "new chat alert")
+        : NSLocalizedString("You are an observer", comment: "new chat alert")
+    case .moderator: NSLocalizedString("You are a moderator", comment: "new chat alert")
+    case .admin: NSLocalizedString("You are an admin", comment: "new chat alert")
+    case .owner: NSLocalizedString("You are an owner", comment: "new chat alert")
+    default: isChannel
+        ? NSLocalizedString("You are a contributor", comment: "new chat alert")
+        : NSLocalizedString("You are a member", comment: "new chat alert")
+    }
 }
 
 private func showOpenKnownGroupAlert(
     _ groupInfo: GroupInfo,
     theme: AppTheme,
-    dismiss: Bool
+    dismiss: Bool,
+    connectOtherButton: String? = nil,
+    connectOtherLink: String? = nil
 ) {
+    let subscriberCount = groupInfo.groupSummary.publicMemberCount.map { "\($0) subscribers" }
     showOpenChatAlert(
         profileName: groupInfo.groupProfile.displayName,
         profileFullName: groupInfo.groupProfile.fullName,
         profileImage:
             ProfileImage(
                 imageStr: groupInfo.groupProfile.image,
-                iconName: groupInfo.chatIconName,
+                icon: Image(systemName: groupInfo.chatIconName),
                 size: alertProfileImageSize
             ),
         theme: theme,
+        subtitle: groupInfo.useRelays ? subscriberCount : nil,
+        information: groupInfo.nextConnectPrepared || groupInfo.businessChat != nil
+            ? nil
+            : memberRoleInformation(groupInfo.membership.memberRole, isChannel: groupInfo.useRelays),
+        secondaryInformation: true,
         cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
         confirmTitle:
-            groupInfo.businessChat == nil
-            ? ( groupInfo.nextConnectPrepared
-                ? NSLocalizedString("Open new group", comment: "new chat action")
-                : NSLocalizedString("Open group", comment: "new chat action")
-              )
+            groupInfo.useRelays
+            ? NSLocalizedString("Open channel", comment: "new chat action")
+            : groupInfo.businessChat == nil
+            ? NSLocalizedString("Open group", comment: "new chat action")
             : ( groupInfo.nextConnectPrepared
                 ? NSLocalizedString("Open new chat", comment: "new chat action")
                 : NSLocalizedString("Open chat", comment: "new chat action")
               ),
+        secondTitle: connectOtherButton,
         onConfirm: {
             openKnownGroup(groupInfo, dismiss: dismiss, cleanup: nil)
+        },
+        onSecond: connectOtherLink.map { link in
+            { planAndConnect(link, theme: theme, dismiss: dismiss) }
         }
     )
 }
 
+// Spec: spec/client/navigation.md#planAndConnect
 func planAndConnect(
     _ shortOrFullLink: String,
+    linkOwnerSig: LinkOwnerSig? = nil,
     theme: AppTheme,
     dismiss: Bool,
     cleanup: (() -> Void)? = nil,
     filterKnownContact: ((Contact) -> Void)? = nil,
     filterKnownGroup: ((GroupInfo) -> Void)? = nil
 ) {
+    switch strConnectTarget(shortOrFullLink) {
+    case let .link(_, linkType, _):
+        if linkType == .relay {
+            showAlert(
+                NSLocalizedString("Relay address", comment: "alert title"),
+                message: NSLocalizedString("This is a chat relay address, it cannot be used to connect.", comment: "alert message")
+            )
+            cleanup?()
+            return
+        }
+    // A SimplexName falls through to apiConnectPlan, which resolves it on the
+    // core (the /_connect plan command accepts a name target, not only a link).
+    case .name, .none: break
+    }
     ConnectProgressManager.shared.cancelConnectProgress()
     let inProgress = BoxedValue(true)
     connectTask(inProgress)
@@ -1181,22 +1349,36 @@ func planAndConnect(
 
     func connectTask(_ inProgress: BoxedValue<Bool>) {
         Task {
-            let (result, alert) = await apiConnectPlan(connLink: shortOrFullLink, inProgress: inProgress)
+            let result = await apiConnectPlan(connLink: shortOrFullLink, linkOwnerSig: linkOwnerSig, inProgress: inProgress)
             await MainActor.run {
                 ConnectProgressManager.shared.stopConnectProgress()
             }
             if !inProgress.boxedValue { return }
-            if let (connectionLink, connectionPlan) = result {
+            if let result {
+                let connectionLink = result.connLink
+                let connectionPlan = result.connectionPlan
+                let planSimplexName = result.planSimplexName
+                // the name can also resolve to the other kind; its type picks the verb, its short form the label and target
+                let connectOtherLink = result.otherSimplexName?.shortStr
+                let connectOtherButton: String? = result.otherSimplexName.map { info in
+                    String.localizedStringWithFormat(
+                        info.nameType == .publicGroup
+                            ? NSLocalizedString("Join channel %@", comment: "new chat action")
+                            : NSLocalizedString("Connect to %@", comment: "new chat action"),
+                        info.shortStr
+                    )
+                }
                 switch connectionPlan {
                 case let .invitationLink(ilp):
                     switch ilp {
-                    case let .ok(contactSLinkData_):
+                    case let .ok(contactSLinkData_, ownerVerification):
                         if let contactSLinkData = contactSLinkData_ {
                             logger.debug("planAndConnect, .invitationLink, .ok, short link data present")
                             await MainActor.run {
                                 showPrepareContactAlert(
                                     connectionLink: connectionLink,
                                     contactShortLinkData: contactSLinkData,
+                                    ownerVerification: ownerVerification,
                                     theme: theme,
                                     dismiss: dismiss,
                                     cleanup: cleanup
@@ -1209,6 +1391,7 @@ func planAndConnect(
                                     title: NSLocalizedString("Connect via one-time link", comment: "new chat sheet title"),
                                     connectionLink: connectionLink,
                                     connectionPlan: connectionPlan,
+                                    ownerVerification: ownerVerification,
                                     dismiss: dismiss,
                                     cleanup: cleanup
                                 )
@@ -1251,13 +1434,17 @@ func planAndConnect(
                     }
                 case let .contactAddress(cap):
                     switch cap {
-                    case let .ok(contactSLinkData_):
+                    case let .ok(contactSLinkData_, ownerVerification):
                         if let contactSLinkData = contactSLinkData_ {
                             logger.debug("planAndConnect, .contactAddress, .ok, short link data present")
                             await MainActor.run {
                                 showPrepareContactAlert(
                                     connectionLink: connectionLink,
                                     contactShortLinkData: contactSLinkData,
+                                    ownerVerification: ownerVerification,
+                                    verifiedDomain: planSimplexName?.nameDomain,
+                                    connectOtherButton: connectOtherButton,
+                                    connectOtherLink: connectOtherLink,
                                     theme: theme,
                                     dismiss: dismiss,
                                     cleanup: cleanup
@@ -1270,6 +1457,7 @@ func planAndConnect(
                                     title: NSLocalizedString("Connect via contact address", comment: "new chat sheet title"),
                                     connectionLink: connectionLink,
                                     connectionPlan: connectionPlan,
+                                    ownerVerification: ownerVerification,
                                     dismiss: dismiss,
                                     cleanup: cleanup
                                 )
@@ -1305,16 +1493,19 @@ func planAndConnect(
                             if let f = filterKnownContact {
                                 f(contact)
                             } else {
-                                showOpenKnownContactAlert(contact, theme: theme, dismiss: dismiss)
+                                showOpenKnownContactAlert(contact, theme: theme, dismiss: dismiss, connectOtherButton: connectOtherButton, connectOtherLink: connectOtherLink)
                             }
                         }
                     case let .known(contact):
                         logger.debug("planAndConnect, .contactAddress, .known")
                         await MainActor.run {
+                            if ChatModel.shared.getContactChat(contact.contactId) == nil {
+                                ChatModel.shared.addChat(Chat(chatInfo: .direct(contact: contact)))
+                            }
                             if let f = filterKnownContact {
                                 f(contact)
                             } else {
-                                showOpenKnownContactAlert(contact, theme: theme, dismiss: dismiss)
+                                showOpenKnownContactAlert(contact, theme: theme, dismiss: dismiss, connectOtherButton: connectOtherButton, connectOtherLink: connectOtherLink)
                             }
                         }
                     case let .contactViaAddress(contact):
@@ -1329,13 +1520,18 @@ func planAndConnect(
                     }
                 case let .groupLink(glp):
                     switch glp {
-                    case let .ok(groupSLinkData_):
+                    case let .ok(groupShortLinkInfo_, groupSLinkData_, ownerVerification):
                         if let groupSLinkData = groupSLinkData_ {
                             logger.debug("planAndConnect, .groupLink, .ok, short link data present")
                             await MainActor.run {
                                 showPrepareGroupAlert(
                                     connectionLink: connectionLink,
+                                    groupShortLinkInfo: groupShortLinkInfo_,
                                     groupShortLinkData: groupSLinkData,
+                                    ownerVerification: ownerVerification,
+                                    verifiedDomain: planSimplexName?.nameDomain,
+                                    connectOtherButton: connectOtherButton,
+                                    connectOtherLink: connectOtherLink,
                                     theme: theme,
                                     dismiss: dismiss,
                                     cleanup: cleanup
@@ -1348,6 +1544,7 @@ func planAndConnect(
                                     title: NSLocalizedString("Join group", comment: "new chat sheet title"),
                                     connectionLink: connectionLink,
                                     connectionPlan: connectionPlan,
+                                    ownerVerification: ownerVerification,
                                     dismiss: dismiss,
                                     cleanup: cleanup
                                 )
@@ -1387,10 +1584,67 @@ func planAndConnect(
                     case let .known(groupInfo):
                         logger.debug("planAndConnect, .groupLink, .known")
                         await MainActor.run {
+                            if ChatModel.shared.getGroupChat(groupInfo.groupId) == nil {
+                                ChatModel.shared.addChat(Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: nil)))
+                            }
                             if let f = filterKnownGroup {
                                 f(groupInfo)
                             } else {
-                                showOpenKnownGroupAlert(groupInfo, theme: theme, dismiss: dismiss)
+                                showOpenKnownGroupAlert(groupInfo, theme: theme, dismiss: dismiss, connectOtherButton: connectOtherButton, connectOtherLink: connectOtherLink)
+                            }
+                        }
+                    case let .noRelays(groupSLinkData_):
+                        logger.debug("planAndConnect, .groupLink, .noRelays")
+                        await MainActor.run {
+                            if let groupSLinkData = groupSLinkData_ {
+                                showOpenChatAlert(
+                                    profileName: groupSLinkData.groupProfile.displayName,
+                                    profileFullName: groupSLinkData.groupProfile.fullName,
+                                    profileImage:
+                                        ProfileImage(
+                                            imageStr: groupSLinkData.groupProfile.image,
+                                            icon: Image(systemName: "antenna.radiowaves.left.and.right.circle.fill"),
+                                            size: alertProfileImageSize
+                                        ),
+                                    theme: theme,
+                                    subtitle: NSLocalizedString("Channel has no active relays. Please try to join later.", comment: "alert subtitle"),
+                                    cancelTitle: NSLocalizedString("OK", comment: "alert button"),
+                                    confirmTitle: nil,
+                                    onCancel: { cleanup?() }
+                                )
+                            } else {
+                                showAlert(
+                                    NSLocalizedString("Channel temporarily unavailable", comment: "alert title"),
+                                    message: NSLocalizedString("Channel has no active relays. Please try to join later.", comment: "alert message")
+                                )
+                                cleanup?()
+                            }
+                        }
+                    case let .updateRequired(groupSLinkData_):
+                        logger.debug("planAndConnect, .groupLink, .updateRequired")
+                        await MainActor.run {
+                            if let groupSLinkData = groupSLinkData_ {
+                                showOpenChatAlert(
+                                    profileName: groupSLinkData.groupProfile.displayName,
+                                    profileFullName: groupSLinkData.groupProfile.fullName,
+                                    profileImage:
+                                        ProfileImage(
+                                            imageStr: groupSLinkData.groupProfile.image,
+                                            icon: Image(systemName: "person.2.circle.fill"),
+                                            size: alertProfileImageSize
+                                        ),
+                                    theme: theme,
+                                    subtitle: NSLocalizedString("This group requires a newer version of the app. Please update the app to join.", comment: "alert subtitle"),
+                                    cancelTitle: NSLocalizedString("OK", comment: "alert button"),
+                                    confirmTitle: nil,
+                                    onCancel: { cleanup?() }
+                                )
+                            } else {
+                                showAlert(
+                                    NSLocalizedString("App update required", comment: "alert title"),
+                                    message: NSLocalizedString("This group requires a newer version of the app. Please update the app to join.", comment: "alert message")
+                                )
+                                cleanup?()
                             }
                         }
                     }
@@ -1404,17 +1658,8 @@ func planAndConnect(
                         cleanup: cleanup
                     )
                 }
-            } else {
-                await MainActor.run {
-                    if let alert {
-                        dismissAllSheets(animated: true) {
-                            AlertManager.shared.showAlert(alert)
-                            cleanup?()
-                        }
-                    } else {
-                        cleanup?()
-                    }
-                }
+            } else if let cleanup {
+                await MainActor.run { cleanup() }
             }
         }
     }
@@ -1538,6 +1783,14 @@ private func planToConnReqType(_ connectionPlan: ConnectionPlan) -> ConnReqType?
     case .contactAddress: .contact
     case .groupLink: .groupLink
     case .error: nil
+    }
+}
+
+private func ownerVerificationMessage(_ ov: OwnerVerification?) -> String? {
+    switch ov {
+    case .verified: NSLocalizedString("Link signature verified.", comment: "owner verification")
+    case let .failed(reason): String.localizedStringWithFormat(NSLocalizedString("⚠️ Signature verification failed: %@.", comment: "owner verification"), reason)
+    case .none: nil
     }
 }
 

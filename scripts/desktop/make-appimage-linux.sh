@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -e
 
@@ -18,7 +18,12 @@ libcrypto_path=$(ldd common/src/commonMain/cpp/desktop/libs/*/libHSdirect-sqlcip
 trap "rm common/src/commonMain/cpp/desktop/libs/*/`basename $libcrypto_path` 2> /dev/null || true" EXIT
 cp $libcrypto_path common/src/commonMain/cpp/desktop/libs/*
 
-./gradlew createDistributable
+if [ -n "${ASSETS_DIR:-}" ]; then
+  set -- -Psimplex.assets.dir="$ASSETS_DIR"
+else
+  set --
+fi
+./gradlew "$@" createDistributable
 rm common/src/commonMain/cpp/desktop/libs/*/`basename $libcrypto_path`
 
 rm -rf $release_app_dir/AppDir 2>/dev/null
@@ -34,7 +39,7 @@ cp usr/lib/simplex.png usr/share/icons
 
 ln -s usr/bin/*imple* AppRun
 cp $multiplatform_dir/desktop/src/jvmMain/resources/distribute/*imple*.desktop chat.simplex.app.desktop
-sed -i 's|Exec=.*|Exec=simplex|g' *imple*.desktop
+sed -i 's|^Exec=[^ ]*|Exec=simplex|' *imple*.desktop
 sed -i 's|Icon=.*|Icon=simplex|g' *imple*.desktop
 cp *imple*.desktop usr/share/applications/
 cp $multiplatform_dir/desktop/src/jvmMain/resources/distribute/*.appdata.xml usr/share/metainfo

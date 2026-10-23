@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import SwiftUI
 
 public protocol ChatLike {
     var chatInfo: ChatInfo { get }
@@ -25,7 +26,9 @@ extension ChatLike {
             case .files: p.files.on(for: groupInfo.membership)
             case .simplexLinks: p.simplexLinks.on(for: groupInfo.membership)
             case .history: p.history.on
+            case .support: p.support.on
             case .reports: p.reports.on
+            case .signMessages: p.signMessages.on
             }
         } else {
             return true
@@ -52,11 +55,11 @@ extension ChatLike {
     }
 }
 
-public func filterChatsToForwardTo<C: ChatLike>(chats: [C]) -> [C] {
+public func filterChatsToForwardTo<C: ChatLike>(chats: [C], includeLocal: Bool = true) -> [C] {
     var filteredChats = chats.filter { c in
         c.chatInfo.chatType != .local && canForwardToChat(c.chatInfo)
     }
-    if let privateNotes = chats.first(where: { $0.chatInfo.chatType == .local }) {
+    if includeLocal, let privateNotes = chats.first(where: { $0.chatInfo.chatType == .local }) {
         filteredChats.insert(privateNotes, at: 0)
     }
     return filteredChats
@@ -89,13 +92,13 @@ private func canForwardToChat(_ cInfo: ChatInfo) -> Bool {
     }
 }
 
-public func chatIconName(_ cInfo: ChatInfo) -> String {
+public func chatIcon(_ cInfo: ChatInfo) -> Image {
     switch cInfo {
-    case let .direct(contact): contact.chatIconName
-    case let .group(groupInfo, _): groupInfo.chatIconName
-    case .local: "folder.circle.fill"
-    case .contactRequest: "person.crop.circle.fill"
-    default:  "circle.fill"
+    case let .direct(contact): contact.chatIcon
+    case let .group(groupInfo, _): Image(systemName: groupInfo.chatIconName)
+    case .local: Image(systemName: "folder.circle.fill")
+    case .contactRequest: Image(systemName: "person.crop.circle.fill")
+    default:  Image(systemName: "circle.fill")
     }
 }
 

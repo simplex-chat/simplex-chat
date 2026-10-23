@@ -17,6 +17,7 @@ export type ChatEvent =
   | CEvt.GroupChatItemsDeleted
   | CEvt.ChatItemsStatusesUpdated
   | CEvt.ReceivedGroupInvitation
+  | CEvt.ReceivedGroupInvitationViaGroup
   | CEvt.UserJoinedGroup
   | CEvt.GroupUpdated
   | CEvt.JoinedGroupMember
@@ -29,6 +30,8 @@ export type ChatEvent =
   | CEvt.MemberAcceptedByOther
   | CEvt.MemberBlockedForAll
   | CEvt.GroupMemberUpdated
+  | CEvt.GroupLinkDataUpdated
+  | CEvt.GroupRelayUpdated
   | CEvt.RcvFileDescrReady
   | CEvt.RcvFileComplete
   | CEvt.SndFileCompleteXFTP
@@ -44,8 +47,14 @@ export type ChatEvent =
   | CEvt.ContactConnecting
   | CEvt.BusinessLinkConnecting
   | CEvt.JoinedGroupMemberConnecting
-  | CEvt.SentGroupInvitation
   | CEvt.GroupLinkConnecting
+  | CEvt.HostConnected
+  | CEvt.HostDisconnected
+  | CEvt.SubscriptionStatus
+  | CEvt.ServiceRequest
+  | CEvt.ServiceReplySent
+  | CEvt.RemoteCtrlSessionCode
+  | CEvt.RemoteCtrlStopped
   | CEvt.MessageError
   | CEvt.ChatError
   | CEvt.ChatErrors
@@ -65,6 +74,7 @@ export namespace CEvt {
     | "groupChatItemsDeleted"
     | "chatItemsStatusesUpdated"
     | "receivedGroupInvitation"
+    | "receivedGroupInvitationViaGroup"
     | "userJoinedGroup"
     | "groupUpdated"
     | "joinedGroupMember"
@@ -77,6 +87,8 @@ export namespace CEvt {
     | "memberAcceptedByOther"
     | "memberBlockedForAll"
     | "groupMemberUpdated"
+    | "groupLinkDataUpdated"
+    | "groupRelayUpdated"
     | "rcvFileDescrReady"
     | "rcvFileComplete"
     | "sndFileCompleteXFTP"
@@ -92,8 +104,14 @@ export namespace CEvt {
     | "contactConnecting"
     | "businessLinkConnecting"
     | "joinedGroupMemberConnecting"
-    | "sentGroupInvitation"
     | "groupLinkConnecting"
+    | "hostConnected"
+    | "hostDisconnected"
+    | "subscriptionStatus"
+    | "serviceRequest"
+    | "serviceReplySent"
+    | "remoteCtrlSessionCode"
+    | "remoteCtrlStopped"
     | "messageError"
     | "chatError"
     | "chatErrors"
@@ -194,6 +212,16 @@ export namespace CEvt {
     memberRole: T.GroupMemberRole
   }
 
+  export interface ReceivedGroupInvitationViaGroup extends Interface {
+    type: "receivedGroupInvitationViaGroup"
+    user: T.User
+    groupInfo: T.GroupInfo
+    viaGroupInfo: T.GroupInfo
+    viaMember: T.GroupMember
+    fromMemberRole: T.GroupMemberRole
+    memberRole: T.GroupMemberRole
+  }
+
   export interface UserJoinedGroup extends Interface {
     type: "userJoinedGroup"
     user: T.User
@@ -207,6 +235,7 @@ export namespace CEvt {
     fromGroup: T.GroupInfo
     toGroup: T.GroupInfo
     member_?: T.GroupMember
+    msgSigned?: T.MsgSigStatus
   }
 
   export interface JoinedGroupMember extends Interface {
@@ -224,6 +253,7 @@ export namespace CEvt {
     member: T.GroupMember
     fromRole: T.GroupMemberRole
     toRole: T.GroupMemberRole
+    msgSigned?: T.MsgSigStatus
   }
 
   export interface DeletedMember extends Interface {
@@ -233,6 +263,7 @@ export namespace CEvt {
     byMember: T.GroupMember
     deletedMember: T.GroupMember
     withMessages: boolean
+    msgSigned?: T.MsgSigStatus
   }
 
   export interface LeftMember extends Interface {
@@ -240,6 +271,7 @@ export namespace CEvt {
     user: T.User
     groupInfo: T.GroupInfo
     member: T.GroupMember
+    msgSigned?: T.MsgSigStatus
   }
 
   export interface DeletedMemberUser extends Interface {
@@ -248,6 +280,7 @@ export namespace CEvt {
     groupInfo: T.GroupInfo
     member: T.GroupMember
     withMessages: boolean
+    msgSigned?: T.MsgSigStatus
   }
 
   export interface GroupDeleted extends Interface {
@@ -255,6 +288,7 @@ export namespace CEvt {
     user: T.User
     groupInfo: T.GroupInfo
     member: T.GroupMember
+    msgSigned?: T.MsgSigStatus
   }
 
   export interface ConnectedToGroupMember extends Interface {
@@ -280,6 +314,7 @@ export namespace CEvt {
     byMember: T.GroupMember
     member: T.GroupMember
     blocked: boolean
+    msgSigned?: T.MsgSigStatus
   }
 
   export interface GroupMemberUpdated extends Interface {
@@ -288,6 +323,23 @@ export namespace CEvt {
     groupInfo: T.GroupInfo
     fromMember: T.GroupMember
     toMember: T.GroupMember
+  }
+
+  export interface GroupLinkDataUpdated extends Interface {
+    type: "groupLinkDataUpdated"
+    user: T.User
+    groupInfo: T.GroupInfo
+    groupLink: T.GroupLink
+    groupRelays: T.GroupRelay[]
+    relaysChanged: boolean
+  }
+
+  export interface GroupRelayUpdated extends Interface {
+    type: "groupRelayUpdated"
+    user: T.User
+    groupInfo: T.GroupInfo
+    member: T.GroupMember
+    groupRelay: T.GroupRelay
   }
 
   export interface RcvFileDescrReady extends Interface {
@@ -396,19 +448,55 @@ export namespace CEvt {
     member: T.GroupMember
   }
 
-  export interface SentGroupInvitation extends Interface {
-    type: "sentGroupInvitation"
-    user: T.User
-    groupInfo: T.GroupInfo
-    contact: T.Contact
-    member: T.GroupMember
-  }
-
   export interface GroupLinkConnecting extends Interface {
     type: "groupLinkConnecting"
     user: T.User
     groupInfo: T.GroupInfo
     hostMember: T.GroupMember
+  }
+
+  export interface HostConnected extends Interface {
+    type: "hostConnected"
+    protocol: string
+    transportHost: string
+  }
+
+  export interface HostDisconnected extends Interface {
+    type: "hostDisconnected"
+    protocol: string
+    transportHost: string
+  }
+
+  export interface SubscriptionStatus extends Interface {
+    type: "subscriptionStatus"
+    server: string
+    subscriptionStatus: T.SubscriptionStatus
+    connections: string[]
+  }
+
+  export interface ServiceRequest extends Interface {
+    type: "serviceRequest"
+    user: T.User
+    requestId: string
+    signerKey?: string
+    requestData: object
+  }
+
+  export interface ServiceReplySent extends Interface {
+    type: "serviceReplySent"
+    connectionId: string
+  }
+
+  export interface RemoteCtrlSessionCode extends Interface {
+    type: "remoteCtrlSessionCode"
+    remoteCtrl_?: T.RemoteCtrlInfo
+    sessionCode: string
+  }
+
+  export interface RemoteCtrlStopped extends Interface {
+    type: "remoteCtrlStopped"
+    rcsState: T.RemoteCtrlSessionState
+    rcStopReason: T.RemoteCtrlStopReason
   }
 
   export interface MessageError extends Interface {

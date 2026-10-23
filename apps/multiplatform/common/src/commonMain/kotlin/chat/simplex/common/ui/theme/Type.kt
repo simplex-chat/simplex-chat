@@ -10,7 +10,7 @@ val Typography = Typography(
   h1 = TextStyle(
     fontFamily = Inter,
     fontWeight = FontWeight.Bold,
-    fontSize = 32.sp,
+    fontSize = 33.5.sp,
   ),
   h2 = TextStyle(
     fontFamily = Inter,

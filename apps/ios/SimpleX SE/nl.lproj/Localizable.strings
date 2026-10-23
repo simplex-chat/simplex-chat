@@ -17,9 +17,6 @@
 "Comment" = "Opmerking";
 
 /* No comment provided by engineer. */
-"Currently maximum supported file size is %@." = "De momenteel maximaal ondersteunde bestandsgrootte is %@.";
-
-/* No comment provided by engineer. */
 "Database downgrade required" = "Database downgrade vereist";
 
 /* No comment provided by engineer. */
@@ -105,7 +102,4 @@
 
 /* No comment provided by engineer. */
 "Wrong database passphrase" = "Verkeerde database wachtwoord";
-
-/* No comment provided by engineer. */
-"You can allow sharing in Privacy & Security / SimpleX Lock settings." = "U kunt delen toestaan in de instellingen voor Privacy en beveiliging / SimpleX Lock.";
 

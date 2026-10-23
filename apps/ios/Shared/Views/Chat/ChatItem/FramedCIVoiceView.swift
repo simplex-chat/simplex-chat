@@ -5,12 +5,14 @@
 //  Created by JRoberts on 22.11.2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/chat-view.md
 
 import SwiftUI
 
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/client/chat-view.md#FramedCIVoiceView
 struct FramedCIVoiceView: View {
     @EnvironmentObject var theme: AppTheme
     @ObservedObject var chat: Chat

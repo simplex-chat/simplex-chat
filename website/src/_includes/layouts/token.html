@@ -8,6 +8,7 @@
 
   <head>
     <meta charset="UTF-8" />
+    {% include "dark-mode.html" %}
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{ title }}</title>
@@ -19,6 +20,8 @@
     <meta property="og:image" content="{% cfg 'siteLocation' %}/img/share_simplex.jpg" />
     <meta name="twitter:card" content="summary" />
     <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico" />
+    {% include "markdown-alternate.html" %}
+    <meta name="theme-color" content="#F3FAFF">
     <link href="/css/tailwind.css" rel="stylesheet" />
     <link rel="stylesheet" href="/css/blog.css" />
     <link id="prism-theme" rel="stylesheet" href="/css/prism-light.min.css"/>
@@ -583,7 +586,7 @@
                             } else {
                                 content.innerHTML += `<p class="no-metamask"><img src="/img/design_3/simplex_nft_smpx.jpg"></p>
                                     <p class="no-metamask">
-                                        <a href="https://metamask.io/download/" target="_blank">Install MetaMask wallet</a>
+                                        <a href="https://metamask.io/download/" target="_blank" rel="noopener">Install MetaMask wallet</a>
                                     </p>`;
                             }
                             break;
@@ -617,7 +620,7 @@
                                 html += renderAttributes(meta.attributes, appState.openedTraits);
                                 html += '<p>';
                                 html += `<strong>${appState.totalMinted} NFTs minted</strong>. `;
-                                html += `<a href="https://${currentConfig.explorerHost}/nft/${appState.nftAddress}/${appState.tokenId}" target="_blank"><span>Explorer ${linkSvg}</span></a>`;
+                                html += `<a href="https://${currentConfig.explorerHost}/nft/${appState.nftAddress}/${appState.tokenId}" target="_blank" rel="noopener"><span>Explorer ${linkSvg}</span></a>`;
                                 html += '</p>';
                             }
                             html += `</div></div>`;
@@ -671,7 +674,7 @@
                         if (nextMeta.description) html += `<p>${nextMeta.description}</p>`;
                         html += '<p>';
                         html += `<strong>${appState.totalMinted} NFTs minted</strong>. `;
-                        html += `<a href="https://${currentConfig.explorerHost}/token/${appState.nftAddress}" target="_blank"><span>Explorer ${linkSvg}</span></a>`;
+                        html += `<a href="https://${currentConfig.explorerHost}/token/${appState.nftAddress}" target="_blank" rel="noopener"><span>Explorer ${linkSvg}</span></a>`;
                         html += '</p>';
                         if (withAttributes) {
                             html += renderAttributes(nextMeta.attributes, appState.nextOpenedTraits);

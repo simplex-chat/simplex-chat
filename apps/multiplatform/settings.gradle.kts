@@ -3,7 +3,6 @@ pluginManagement {
         google()
         gradlePluginPortal()
         mavenCentral()
-        maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
     }
 
     plugins {
@@ -19,4 +18,4 @@ pluginManagement {
 
 rootProject.name = "app"
 
-include(":android", ":desktop", ":common")
+include(":android", ":desktop", ":common", ":external:nanohttpd")

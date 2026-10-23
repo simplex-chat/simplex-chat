@@ -5,74 +5,91 @@
 //  Created by Evgeny on 07/05/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/navigation.md
 
 import SwiftUI
 import SimpleXChat
 
 struct SimpleXInfo: View {
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @Environment(\.colorScheme) var colorScheme: ColorScheme
-    @State private var showHowItWorks = false
+    @State private var showWhyBuilt = false
     @State private var createProfileNavLinkActive = false
     var onboarding: Bool
 
     var body: some View {
         GeometryReader { g in
-            let v = ScrollView {
-                VStack(alignment: .leading) {
-                    VStack(alignment: .center, spacing: 10) {
-                        Image(colorScheme == .light ? "logo" : "logo-light")
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: g.size.width * 0.67)
-                            .padding(.bottom, 8)
-                            .padding(.leading, 4)
-                            .frame(maxWidth: .infinity, minHeight: 48, alignment: .top)
-                        
-                        Button {
-                            showHowItWorks = true
-                        } label: {
-                            Label("The future of messaging", systemImage: "info.circle")
-                                .font(.headline)
-                        }
-                    }
+            VStack(alignment: .center, spacing: 10) {
+                Image(colorScheme == .light ? "logo" : "logo-light")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: (g.size.width - 50) * 0.55)
+                    .padding(.leading, 4)
+                    .frame(maxWidth: .infinity, minHeight: 48, alignment: .top)
 
-                    Spacer()
+                #if SIMPLEX_ASSETS
+                Image(colorScheme == .light ? "intro" : "intro-light")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: .infinity)
+                #else
+                ZStack {
+                    let gp = OnboardingCardView.gradientPoints(aspectRatio: 1.0, scale: colorScheme == .light ? 1.2 : 1.5)
+                    LinearGradient(
+                        stops: colorScheme == .light ? OnboardingCardView.lightStops : OnboardingCardView.darkStops,
+                        startPoint: gp.start,
+                        endPoint: gp.end
+                    )
+                    Image(systemName: "bubble.left.and.bubble.right")
+                        .font(.system(size: 72))
+                        .foregroundColor(theme.colors.primary)
+                }
+                .aspectRatio(1.0, contentMode: .fit)
+                .clipShape(RoundedRectangle(cornerRadius: 24))
+                .padding(.horizontal, 25)
+                .frame(maxWidth: .infinity)
+                #endif
 
-                    VStack(alignment: .leading) {
-                        onboardingInfoRow("privacy", "Privacy redefined",
-                                "No user identifiers.", width: 48)
-                        onboardingInfoRow("shield", "Immune to spam",
-                                "You decide who can connect.", width: 46)
-                        onboardingInfoRow(colorScheme == .light ? "decentralized" : "decentralized-light", "Decentralized",
-                                "Anybody can host servers.", width: 46)
-                    }
-                    .padding(.leading, 16)
+                Text("Be free\nin your network")
+                    .font(.largeTitle)
+                    .bold()
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
 
-                    Spacer()
+                Text("Private and secure messaging.")
+                    .font(.title3)
+                    .fontWeight(.medium)
+                    .foregroundColor(theme.colors.secondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
 
-                    if onboarding {
-                        VStack(spacing: 10) {
-                            createFirstProfileButton()
+                Text("The first network where you own\nyour contacts and groups.")
+                    .font(.footnote)
+                    .foregroundColor(theme.colors.secondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
 
-                            Button {
-                                m.migrationState = .pasteOrScanLink
-                            } label: {
-                                Label("Migrate from another device", systemImage: "tray.and.arrow.down")
-                                    .font(.system(size: 17, weight: .semibold))
-                                    .frame(minHeight: 40)
-                            }
-                            .frame(maxWidth: .infinity)
-                        }
+                if onboarding {
+                    Spacer(minLength: 0)
+
+                    createFirstProfileButton()
+                        .padding(.vertical, 10)
+
+                    Button {
+                        showWhyBuilt = true
+                    } label: {
+                        Label("Why SimpleX is built.", systemImage: "info.circle")
+                            .font(.headline)
                     }
                 }
-                .padding(.horizontal, 25)
-                .padding(.top, 75)
-                .padding(.bottom, 25)
-                .frame(minHeight: g.size.height)
             }
+            .padding(.horizontal, 25)
+            .padding(.top, 28)
+            .padding(.bottom, 20)
+            .frame(minHeight: g.size.height)
             .sheet(isPresented: Binding(
-                get: { m.migrationState != nil },
+                get: { m.migrationState != nil && !createProfileNavLinkActive },
                 set: { _ in
                     m.migrationState = nil
                     MigrationToDeviceState.save(nil) }
@@ -85,16 +102,11 @@ struct SimpleXInfo: View {
                     .modifier(ThemedBackground(grouped: true))
                 }
             }
-            .sheet(isPresented: $showHowItWorks) {
-                HowItWorks(
+            .sheet(isPresented: $showWhyBuilt) {
+                WhySimpleX(
                     onboarding: onboarding,
                     createProfileNavLinkActive: $createProfileNavLinkActive
                 )
-            }
-            if #available(iOS 16.4, *) {
-                v.scrollBounceBehavior(.basedOnSize)
-            } else {
-                v
             }
         }
         .onAppear() {
@@ -104,32 +116,12 @@ struct SimpleXInfo: View {
         .navigationBarHidden(true) // necessary on iOS 15
     }
 
-    private func onboardingInfoRow(_ image: String, _ title: LocalizedStringKey, _ text: LocalizedStringKey, width: CGFloat) -> some View {
-        HStack(alignment: .top) {
-            Image(image)
-                .resizable()
-                .scaledToFit()
-                .frame(width: width, height: 54)
-                .frame(width: 54)
-                .padding(.trailing, 10)
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title).font(.headline)
-                Text(text).frame(minHeight: 40, alignment: .top)
-                    .font(.callout)
-                    .lineLimit(3)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(.top, 4)
-        }
-        .padding(.bottom, 12)
-    }
-
     private func createFirstProfileButton() -> some View {
         ZStack {
             Button {
                 createProfileNavLinkActive = true
             } label: {
-                Text("Create your profile")
+                Text("Get started")
             }
             .buttonStyle(OnboardingButtonStyle(isDisabled: false))
 

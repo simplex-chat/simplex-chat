@@ -1,6 +1,6 @@
 module.exports = {
   darkMode : 'class',
-  content: ["./src/**/*.{html,js,njk}"],
+  content: ["./src/**/*.{html,js,njk}", "!./src/file-assets/**"],
   theme: {
     extend: {
       backgroundImage: {

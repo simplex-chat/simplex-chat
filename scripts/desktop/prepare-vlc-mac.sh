@@ -2,7 +2,7 @@
 
 set -e
 
-ARCH="${1:-`uname -a | rev | cut -d' ' -f1 | rev`}"
+ARCH="${1:-$(uname -m)}" 
 if [ "$ARCH" == "arm64" ]; then
     ARCH=aarch64
     vlc_arch=arm64
@@ -10,7 +10,7 @@ else
     vlc_arch=intel64
 fi
 
-vlc_tag='v3.0.21-1'
+vlc_tag='v3.0.23-2'
 vlc_url="https://github.com/simplex-chat/vlc/releases/download/${vlc_tag}/vlc-macos-${ARCH}.zip"
 
 function readlink() {

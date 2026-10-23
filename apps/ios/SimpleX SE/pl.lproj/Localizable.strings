@@ -17,9 +17,6 @@
 "Comment" = "Komentarz";
 
 /* No comment provided by engineer. */
-"Currently maximum supported file size is %@." = "Obecnie maksymalny obsługiwany rozmiar pliku to %@.";
-
-/* No comment provided by engineer. */
 "Database downgrade required" = "Wymagane obniżenie wersji bazy danych";
 
 /* No comment provided by engineer. */
@@ -105,7 +102,4 @@
 
 /* No comment provided by engineer. */
 "Wrong database passphrase" = "Nieprawidłowe hasło bazy danych";
-
-/* No comment provided by engineer. */
-"You can allow sharing in Privacy & Security / SimpleX Lock settings." = "Możesz zezwolić na udostępnianie w ustawieniach Prywatność i bezpieczeństwo / Blokada SimpleX.";
 

@@ -5,10 +5,12 @@
 //  Created by JRoberts on 22.11.2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/chat-view.md
 
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/client/chat-view.md#CIVoiceView
 struct CIVoiceView: View {
     @ObservedObject var chat: Chat
     @EnvironmentObject var theme: AppTheme
@@ -176,7 +178,7 @@ struct VoiceMessagePlayer: View {
                         .simultaneousGesture(TapGesture().onEnded {
                             showFileErrorAlert(sndFileError, temporary: true)
                         })
-                case .rcvInvitation: downloadButton(recordingFile, "play.fill")
+                case .rcvInvitation: downloadButton(recordingFile, recordingFile.expired ? "multiply" : "play.fill")
                 case .rcvAccepted: loadingIcon()
                 case .rcvTransfer: loadingIcon()
                 case .rcvAborted: downloadButton(recordingFile, "exclamationmark.arrow.circlepath")
@@ -185,7 +187,7 @@ struct VoiceMessagePlayer: View {
                 case let .rcvError(rcvFileError):
                     fileStatusIcon("multiply", 14)
                         .simultaneousGesture(TapGesture().onEnded {
-                            showFileErrorAlert(rcvFileError)
+                            showFileErrorAlert(rcvFileError, recordingFile)
                         })
                 case let .rcvWarning(rcvFileError):
                     fileStatusIcon("exclamationmark.triangle.fill", 16)
@@ -301,6 +303,11 @@ struct VoiceMessagePlayer: View {
     private func downloadButton(_ recordingFile: CIFile, _ icon: String) -> some View {
         playPauseIcon(icon, theme.colors.primary)
             .simultaneousGesture(TapGesture().onEnded {
+                chatModel.openWhenReceived(recordingFile) { file in
+                    if let recordingSource = getLoadedFileSource(file) {
+                        startPlayback(recordingSource)
+                    }
+                }
                 Task {
                     if let user = chatModel.currentUser {
                         await receiveFile(user: user, fileId: recordingFile.fileId)

@@ -17,9 +17,6 @@
 "Comment" = "Kommentieren";
 
 /* No comment provided by engineer. */
-"Currently maximum supported file size is %@." = "Die maximal erlaubte Dateigröße beträgt aktuell %@.";
-
-/* No comment provided by engineer. */
 "Database downgrade required" = "Datenbank-Herunterstufung ist erforderlich";
 
 /* No comment provided by engineer. */
@@ -65,7 +62,7 @@
 "No active profile" = "Kein aktives Profil";
 
 /* No comment provided by engineer. */
-"Ok" = "OK";
+"Ok" = "Ok";
 
 /* No comment provided by engineer. */
 "Open the app to downgrade the database." = "Öffnen Sie die App, um die Datenbank herunterzustufen.";
@@ -80,7 +77,7 @@
 "Please create a profile in the SimpleX app" = "Bitte erstellen Sie in der SimpleX-App ein Profil";
 
 /* No comment provided by engineer. */
-"Selected chat preferences prohibit this message." = "Die gewählten Chat-Einstellungen erlauben diese Nachricht nicht.";
+"Selected chat preferences prohibit this message." = "Diese Nachricht ist wegen der gewählten Chat-Präferenzen nicht erlaubt.";
 
 /* No comment provided by engineer. */
 "Sending a message takes longer than expected." = "Das Senden einer Nachricht dauert länger als erwartet.";
@@ -107,5 +104,5 @@
 "Wrong database passphrase" = "Falsches Datenbank-Passwort";
 
 /* No comment provided by engineer. */
-"You can allow sharing in Privacy & Security / SimpleX Lock settings." = "Sie können das Teilen in den Einstellungen zu Datenschutz & Sicherheit / SimpleX-Sperre erlauben.";
+"You can allow sharing in Your privacy / SimpleX Lock settings." = "Sie können das Teilen in Ihren Privatsphäre‑ / SimpleX-Sperre‑Einstellungen erlauben.";
 

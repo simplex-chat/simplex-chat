@@ -54,6 +54,8 @@ let inactiveCallMediaSources = {
 let activeCall;
 let notConnectedCall;
 let answerTimeout = 30000;
+let reconnectTimeout = 30000;
+let iceRestartInterval = 10000;
 var useWorker = false;
 var isDesktop = false;
 var localizedState = "";
@@ -75,7 +77,8 @@ const processCommand = (function () {
         return {
             peerConnectionConfig: {
                 iceServers: iceServers !== null && iceServers !== void 0 ? iceServers : defaultIceServers,
-                iceCandidatePoolSize: 10,
+                // Chrome gathers no candidates on ICE restart when candidates pool is used
+                iceCandidatePoolSize: 0,
                 encodedInsertableStreams,
                 iceTransportPolicy: relay ? "relay" : "all",
                 // needed for Android WebView >= 69 && <= 72 where default was "plan-b" which is incompatible with transceivers
@@ -142,7 +145,7 @@ const processCommand = (function () {
             }
         });
     }
-    async function initializeCall(config, mediaType, aesKey) {
+    async function initializeCall(config, mediaType, aesKey, canReconnect) {
         var _a, _b, _c;
         let pc;
         try {
@@ -202,10 +205,14 @@ const processCommand = (function () {
             layout: (_c = notConnectedCall === null || notConnectedCall === void 0 ? void 0 : notConnectedCall.layout) !== null && _c !== void 0 ? _c : LayoutType.Default,
             cameraTrackWasSetBefore: localStream.getVideoTracks().length > 0,
             peerHasOldVersion: false,
+            receiveRestartSession,
         };
         localOrPeerMediaSourcesChanged(call);
         await setupMediaStreams(call);
         let connectionTimeout = setTimeout(connectionHandler, answerTimeout);
+        let reconnectingTimeout;
+        let iceRestartTimeout;
+        let wasConnected = false;
         if (pc.connectionState) {
             pc.addEventListener("connectionstatechange", connectionStateChange);
         }
@@ -216,30 +223,49 @@ const processCommand = (function () {
         async function connectionStateChange() {
             // "failed" means the second party did not answer in time (15 sec timeout in Chrome WebView)
             // See https://source.chromium.org/chromium/chromium/src/+/main:third_party/webrtc/p2p/base/p2p_constants.cc;l=70)
-            if (pc.connectionState !== "failed")
+            if (pc.connectionState !== "failed" || wasConnected)
                 connectionHandler();
         }
-        async function connectionHandler() {
+        async function connectionHandler(reconnectTimedOut = false) {
             var _a;
+            let state = (_a = pc.connectionState) !== null && _a !== void 0 ? _a : (pc.iceConnectionState != "completed" && pc.iceConnectionState != "checking"
+                ? pc.iceConnectionState
+                : pc.iceConnectionState == "completed"
+                    ? "connected"
+                    : "connecting"); /* webView 69-70 doesn't have connectionState yet */
+            if (wasConnected && canReconnect) {
+                if (reconnectTimedOut) {
+                    reconnectingTimeout = undefined;
+                    if (activeCall !== call || state == "connected")
+                        return;
+                    state = "disconnected";
+                }
+                else if (state == "disconnected" || state == "failed") {
+                    if (reconnectingTimeout !== undefined)
+                        return;
+                    reconnectingTimeout = setTimeout(() => connectionHandler(true), reconnectTimeout);
+                    if (isIceRestarter())
+                        restartIce();
+                    state = "reconnecting";
+                }
+                else if (state == "connecting" || state == "new") {
+                    return;
+                }
+            }
             sendMessageToNative({
                 resp: {
                     type: "connection",
                     state: {
-                        connectionState: (_a = pc.connectionState) !== null && _a !== void 0 ? _a : (pc.iceConnectionState != "completed" && pc.iceConnectionState != "checking"
-                            ? pc.iceConnectionState
-                            : pc.iceConnectionState == "completed"
-                                ? "connected"
-                                : "connecting") /* webView 69-70 doesn't have connectionState yet */,
+                        connectionState: state,
                         iceConnectionState: pc.iceConnectionState,
                         iceGatheringState: pc.iceGatheringState,
                         signalingState: pc.signalingState,
                     },
                 },
             });
-            if (pc.connectionState == "disconnected" ||
-                pc.connectionState == "failed" ||
-                (!pc.connectionState && (pc.iceConnectionState == "disconnected" || pc.iceConnectionState == "failed"))) {
+            if (state == "disconnected" || state == "failed") {
                 clearConnectionTimeout();
+                clearReconnecting();
                 if (pc.connectionState) {
                     pc.removeEventListener("connectionstatechange", connectionStateChange);
                 }
@@ -251,8 +277,10 @@ const processCommand = (function () {
                 }
                 endCall();
             }
-            else if (pc.connectionState == "connected" || (!pc.connectionState && pc.iceConnectionState == "connected")) {
+            else if (state == "connected") {
                 clearConnectionTimeout();
+                clearReconnecting();
+                wasConnected = true;
                 const stats = (await pc.getStats());
                 for (const stat of stats.values()) {
                     const { type, state } = stat;
@@ -278,6 +306,53 @@ const processCommand = (function () {
                 connectionTimeout = undefined;
             }
         }
+        function clearReconnecting() {
+            clearTimeout(reconnectingTimeout);
+            reconnectingTimeout = undefined;
+            clearTimeout(iceRestartTimeout);
+            iceRestartTimeout = undefined;
+        }
+        // Only the party that sent the initial offer restarts ICE, so that restart offers never collide
+        function isIceRestarter() {
+            var _a;
+            return ((_a = pc.localDescription) === null || _a === void 0 ? void 0 : _a.type) == "offer";
+        }
+        async function restartIce() {
+            if (activeCall !== call || reconnectingTimeout === undefined)
+                return;
+            iceRestartTimeout = setTimeout(restartIce, iceRestartInterval);
+            // the previous restart offer is not answered yet
+            if (pc.signalingState != "stable")
+                return;
+            try {
+                const iceCandidates = getIceCandidates(pc, config);
+                const offer = await pc.createOffer({ iceRestart: true });
+                await pc.setLocalDescription(offer);
+                sendMessageToNative({ resp: { type: "ice", session: serialize(offer), iceCandidates: await iceCandidates } });
+            }
+            catch (e) {
+                console.log("ICE restart error", e);
+            }
+        }
+        async function receiveRestartSession(session, iceCandidates) {
+            const desc = parse(session);
+            const remoteDesc = new RTCSessionDescription(!webView69Or70() ? desc : adaptSdpToOldWebView(desc));
+            if (desc.type == "offer" && !isIceRestarter()) {
+                await pc.setRemoteDescription(remoteDesc);
+                const localIceCandidates = getIceCandidates(pc, config);
+                const answer = await pc.createAnswer();
+                await pc.setLocalDescription(answer);
+                addIceCandidates(pc, iceCandidates);
+                sendMessageToNative({ resp: { type: "ice", session: serialize(answer), iceCandidates: await localIceCandidates } });
+            }
+            else if (desc.type == "answer" && pc.signalingState == "have-local-offer") {
+                await pc.setRemoteDescription(remoteDesc);
+                addIceCandidates(pc, iceCandidates);
+            }
+            else {
+                throw new Error(`unexpected ICE restart ${desc.type} in ${pc.signalingState} state`);
+            }
+        }
     }
     function serialize(x) {
         return LZString.compressToBase64(JSON.stringify(x));
@@ -296,6 +371,8 @@ const processCommand = (function () {
                     console.log("starting outgoing call - capabilities");
                     if (activeCall)
                         endCall();
+                    // Stop a preview stream from an earlier pre-connect outgoing call being replaced (activeCall may be null here)
+                    stopNotConnectedCall();
                     let localStream = null;
                     try {
                         localStream = await getLocalMediaStream(true, command.media == CallMediaType.Video && (await browserHasCamera()), VideoCamera.User);
@@ -332,15 +409,16 @@ const processCommand = (function () {
                     if (activeCall)
                         endCall();
                     // It can be already defined on Android when switching calls (if the previous call was outgoing)
-                    notConnectedCall = undefined;
+                    // Stop its preview tracks before clearing, otherwise camera/mic stay live
+                    stopNotConnectedCall();
                     inactiveCallMediaSources.mic = true;
                     inactiveCallMediaSources.camera = command.media == CallMediaType.Video;
                     inactiveCallMediaSourcesChanged(inactiveCallMediaSources);
                     setupLocalVideoRatio(getVideoElements().local);
-                    const { media, iceServers, relay } = command;
+                    const { media, iceServers, relay, canReconnect } = command;
                     const encryption = supportsInsertableStreams(useWorker);
                     const aesKey = encryption ? command.aesKey : undefined;
-                    activeCall = await initializeCall(getCallConfig(encryption && !!aesKey, iceServers, relay), media, aesKey);
+                    activeCall = await initializeCall(getCallConfig(encryption && !!aesKey, iceServers, relay), media, aesKey, canReconnect);
                     await setupLocalStream(true, activeCall);
                     setupCodecPreferences(activeCall);
                     const pc = activeCall.connection;
@@ -380,8 +458,8 @@ const processCommand = (function () {
                     else {
                         const offer = parse(command.offer);
                         const remoteIceCandidates = parse(command.iceCandidates);
-                        const { media, aesKey, iceServers, relay } = command;
-                        activeCall = await initializeCall(getCallConfig(!!aesKey, iceServers, relay), media, aesKey);
+                        const { media, aesKey, iceServers, relay, canReconnect } = command;
+                        activeCall = await initializeCall(getCallConfig(!!aesKey, iceServers, relay), media, aesKey, canReconnect);
                         const pc = activeCall.connection;
                         // console.log("offer remoteIceCandidates", JSON.stringify(remoteIceCandidates))
                         await pc.setRemoteDescription(new RTCSessionDescription(!webView69Or70() ? offer : adaptSdpToOldWebView(offer)));
@@ -436,7 +514,11 @@ const processCommand = (function () {
                     break;
                 case "ice":
                     const remoteIceCandidates = parse(command.iceCandidates);
-                    if (pc) {
+                    if (activeCall && command.session) {
+                        await activeCall.receiveRestartSession(command.session, remoteIceCandidates);
+                        resp = { type: "ok" };
+                    }
+                    else if (pc) {
                         addIceCandidates(pc, remoteIceCandidates);
                         resp = { type: "ok" };
                     }
@@ -1129,6 +1211,13 @@ const processCommand = (function () {
         if (activeCall) {
             activeCall.localStream.getTracks().forEach((track) => track.stop());
             activeCall.localScreenStream.getTracks().forEach((track) => track.stop());
+        }
+    }
+    // Call on any path that abandons notConnectedCall, otherwise its preview camera/mic tracks stay live.
+    function stopNotConnectedCall() {
+        if (notConnectedCall) {
+            notConnectedCall.localStream.getTracks().forEach((track) => track.stop());
+            notConnectedCall = undefined;
         }
     }
     function resetVideoElements() {

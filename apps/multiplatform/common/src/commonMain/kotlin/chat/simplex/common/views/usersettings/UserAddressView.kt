@@ -1,13 +1,17 @@
 package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
+import SectionCardShape
 import SectionDividerSpaced
 import SectionItemView
 import SectionTextFooter
 import SectionView
 import SectionViewWithButton
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -28,13 +32,17 @@ import chat.simplex.common.model.MsgContent
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.newchat.*
-import chat.simplex.res.MR
+import chat.simplex.common.BuildConfigCommon
+import chat.simplex.res.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Composable
 fun UserAddressView(
   chatModel: ChatModel,
   shareViaProfile: Boolean = false,
   autoCreateAddress: Boolean = false,
+  onboarding: Boolean = false,
   close: () -> Unit
 ) {
   // TODO close when remote host changes
@@ -55,6 +63,7 @@ fun UserAddressView(
           chatModel.updateUser(u)
         }
       } catch (e: Exception) {
+        shareViaProfile.value = !on
         Log.e(TAG, "UserAddressView apiSetProfileAddress: ${e.stackTraceToString()}")
       } finally {
         progressIndicator.value = false
@@ -75,17 +84,31 @@ fun UserAddressView(
           addressSettings = AddressSettings(businessAddress = false, autoAccept = null, autoReply = null)
         )
 
-        AlertManager.shared.showAlertDialog(
-          title = generalGetString(MR.strings.share_address_with_contacts_question),
-          text = generalGetString(MR.strings.add_address_to_your_profile),
-          confirmText = generalGetString(MR.strings.share_verb),
-          onConfirm = {
-            setProfileAddress(true)
-            shareViaProfile.value = true
-          }
-        )
+        val hasRelevantContacts = chatModel.chats.value.any { chat ->
+          val ci = chat.chatInfo
+          ci is ChatInfo.Direct &&
+            ci.contact.active &&
+            !ci.contact.isContactCard &&
+            !ci.contact.contactConnIncognito
+        }
+        if (hasRelevantContacts) {
+          AlertManager.shared.showAlertDialog(
+            title = generalGetString(MR.strings.share_address_with_contacts_question),
+            text = generalGetString(MR.strings.add_address_to_your_profile),
+            confirmText = generalGetString(MR.strings.share_verb),
+            onConfirm = {
+              setProfileAddress(true)
+              shareViaProfile.value = true
+            }
+          )
+          progressIndicator.value = false
+        } else {
+          setProfileAddress(true)
+          shareViaProfile.value = true
+        }
+      } else {
+        progressIndicator.value = false
       }
-      progressIndicator.value = false
     }
   }
 
@@ -103,6 +126,7 @@ fun UserAddressView(
       user = user.value,
       userAddress = userAddress.value,
       shareViaProfile,
+      onboarding = onboarding,
       createAddress = ::createAddress,
       showAddShortLinkAlert = { shareAddress: (() -> Unit)? ->
         showAddShortLinkAlert(progressIndicator = progressIndicator, share = ::share, shareAddress = shareAddress)
@@ -152,7 +176,7 @@ fun UserAddressView(
     )
   }
 
-  ModalView(close = close) {
+  ModalView(close = close, cardScreen = true) {
     showLayout()
   }
 
@@ -249,6 +273,7 @@ private fun UserAddressLayout(
   user: User?,
   userAddress: UserContactLinkRec?,
   shareViaProfile: MutableState<Boolean>,
+  onboarding: Boolean = false,
   createAddress: () -> Unit,
   showAddShortLinkAlert: ((() -> Unit)?) -> Unit,
   learnMore: () -> Unit,
@@ -259,67 +284,139 @@ private fun UserAddressLayout(
   saveAddressSettings: (AddressSettingsState, MutableState<AddressSettingsState>) -> Unit,
 ) {
   ColumnWithScrollBar {
-    AppBarTitle(stringResource(MR.strings.simplex_address), hostDevice(user?.remoteHostId))
+    if (!onboarding) {
+      AppBarTitle(stringResource(MR.strings.simplex_address), hostDevice(user?.remoteHostId))
+    }
+    if (BuildConfigCommon.SIMPLEX_ASSETS && userAddress != null) {
+      Image(
+        painterResource(if (isInDarkTheme()) {
+          if (onboarding) MR.images.simplex_address_light else MR.images.simplex_address_small_light
+        } else {
+          if (onboarding) MR.images.simplex_address else MR.images.simplex_address_small
+        }),
+        contentDescription = null,
+        contentScale = ContentScale.Fit,
+        modifier = Modifier.fillMaxWidth()
+      )
+    }
     Column(
       Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING_HALF),
       horizontalAlignment = Alignment.CenterHorizontally,
       verticalArrangement = Arrangement.SpaceEvenly
     ) {
       if (userAddress == null) {
-        SectionView(generalGetString(MR.strings.for_social_media).uppercase()) {
-          CreateAddressButton(createAddress)
-        }
+        if (!onboarding) {
+          SectionView(generalGetString(MR.strings.for_social_media)) {
+            CreateAddressButton(createAddress)
+          }
 
-        SectionDividerSpaced()
-        SectionView(generalGetString(MR.strings.or_to_share_privately).uppercase()) {
-          CreateOneTimeLinkButton()
-        }
+          SectionDividerSpaced()
+          SectionView(generalGetString(MR.strings.or_to_share_privately)) {
+            CreateOneTimeLinkButton()
+          }
 
-        SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
-        SectionView {
-          LearnMoreButton(learnMore)
+          SectionDividerSpaced()
+          SectionView {
+            LearnMoreButton(learnMore)
+          }
         }
       } else {
-        val addressSettingsState = remember { mutableStateOf(AddressSettingsState(settings = userAddress.addressSettings)) }
-        val savedAddressSettingsState = remember { mutableStateOf(addressSettingsState.value) }
         val showShortLink = remember { mutableStateOf(true) }
 
-        SectionViewWithButton(
-          stringResource(MR.strings.for_social_media).uppercase(),
-          titleButton = if (userAddress.connLinkContact.connShortLink != null) {{ ToggleShortLinkButton(showShortLink) }} else null
-        ) {
+        if (onboarding) {
+          Text(
+            stringResource(MR.strings.onboarding_post_address),
+            Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF),
+            style = MaterialTheme.typography.body1
+          )
+          LinkTextView(userAddress.connLinkContact.simplexChatUri(short = showShortLink.value), true)
+          Text(
+            stringResource(MR.strings.onboarding_or_use_qr_code),
+            Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF),
+            style = MaterialTheme.typography.body1
+          )
           SimpleXCreatedLinkQRCode(userAddress.connLinkContact, short = showShortLink.value)
-          if (userAddress.shouldBeUpgraded) {
-            AddShortLinkButton(text = stringResource(MR.strings.add_short_link)) { showAddShortLinkAlert(null) }
-          }
-          ShareAddressButton {
-            if (userAddress.shouldBeUpgraded) {
-              showAddShortLinkAlert { share(userAddress.connLinkContact.simplexChatUri(short = showShortLink.value)) }
-            } else {
-              share(userAddress.connLinkContact.simplexChatUri(short = showShortLink.value))
-            }
-          }
-          // ShareViaEmailButton { sendEmail(userAddress) }
-          BusinessAddressToggle(addressSettingsState) { saveAddressSettings(addressSettingsState.value, savedAddressSettingsState) }
-          AddressSettingsButton(user, userAddress, shareViaProfile, setProfileAddress, saveAddressSettings)
+        } else {
+          val addressSettingsState = remember { mutableStateOf(AddressSettingsState(settings = userAddress.addressSettings)) }
+          val savedAddressSettingsState = remember { mutableStateOf(addressSettingsState.value) }
 
+          SectionViewWithButton(
+            stringResource(MR.strings.for_social_media),
+            titleButton = if (userAddress.connLinkContact.connShortLink != null) {{ ToggleShortLinkButton(showShortLink) }} else null
+          ) {
+            SimpleXCreatedLinkQRCode(userAddress.connLinkContact, short = showShortLink.value)
+            if (userAddress.shouldBeUpgraded) {
+              AddShortLinkButton(text = stringResource(MR.strings.add_short_link)) { showAddShortLinkAlert(null) }
+            }
+            ShareAddressButton {
+              if (userAddress.shouldBeUpgraded) {
+                showAddShortLinkAlert { share(userAddress.connLinkContact.simplexChatUri(short = showShortLink.value)) }
+              } else {
+                share(userAddress.connLinkContact.simplexChatUri(short = showShortLink.value))
+              }
+            }
+            ShareViaChatButton {
+              val shareViaChat = {
+                chatModel.sharedContent.value = SharedContent.MyAddress
+                chatModel.chatId.value = null
+                ModalManager.closeAllModalsEverywhere()
+              }
+              if (userAddress.shouldBeUpgraded) showAddShortLinkAlert { shareViaChat() } else shareViaChat()
+            }
+            // ShareViaEmailButton { sendEmail(userAddress) }
+            BusinessAddressToggle(addressSettingsState) { saveAddressSettings(addressSettingsState.value, savedAddressSettingsState) }
+            AddressSettingsButton(user, userAddress, shareViaProfile, setProfileAddress, saveAddressSettings)
+          }
           if (addressSettingsState.value.businessAddress) {
             SectionTextFooter(stringResource(MR.strings.add_your_team_members_to_conversations))
           }
-        }
 
-        SectionDividerSpaced(maxTopPadding = addressSettingsState.value.businessAddress)
-        SectionView(generalGetString(MR.strings.or_to_share_privately).uppercase()) {
-          CreateOneTimeLinkButton()
-        }
-        SectionDividerSpaced(maxBottomPadding = false)
-        SectionView {
-          LearnMoreButton(learnMore)
-        }
+          SectionDividerSpaced()
+          val domain = user?.profile?.contactDomain?.domain
+          SectionView(title = if (domain != null) generalGetString(MR.strings.your_simplex_name) else null) {
+            SettingsActionItem(
+              painterResource(MR.images.ic_at),
+              if (domain != null) "$domain" else generalGetString(MR.strings.get_simplex_name_beta),
+              click = {
+                ModalManager.start.showCustomModal { close ->
+                  SetSimplexDomainView(
+                    title = generalGetString(MR.strings.set_simplex_name),
+                    footer = generalGetString(MR.strings.set_user_simplex_name_footer),
+                    placeholder = "@yourname.testing",
+                    simplexName = if (domain == null) "" else "@$domain",
+                    registerBackgroundClose = true,
+                    broadcastWarning = generalGetString(MR.strings.profile_update_will_be_sent_to_contacts),
+                    save = { simplexDomain ->
+                      try {
+                        val u = chatModel.controller.apiSetUserDomain(user?.remoteHostId, simplexDomain)
+                        withContext(Dispatchers.Main) { chatModel.updateUser(u) }
+                        true
+                      } catch (e: Exception) {
+                        Log.e(TAG, "apiSetUserDomain: ${e.message}")
+                        false
+                      }
+                    },
+                    close = close
+                  )
+                }
+              },
+              iconColor = MaterialTheme.colors.secondary
+            )
+          }
 
-        SectionDividerSpaced(maxBottomPadding = false)
-        SectionView {
-          DeleteAddressButton(deleteAddress)
+          SectionDividerSpaced()
+          SectionView(generalGetString(MR.strings.or_to_share_privately)) {
+            CreateOneTimeLinkButton()
+          }
+          SectionDividerSpaced()
+          SectionView {
+            LearnMoreButton(learnMore)
+          }
+
+          SectionDividerSpaced()
+          SectionView {
+            DeleteAddressButton(deleteAddress)
+          }
           SectionTextFooter(stringResource(MR.strings.your_contacts_will_remain_connected))
         }
       }
@@ -344,6 +441,17 @@ private fun AddShortLinkButton(text: String, onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_arrow_upward),
     text,
+    onClick,
+    iconColor = MaterialTheme.colors.primary,
+    textColor = MaterialTheme.colors.primary,
+  )
+}
+
+@Composable
+private fun ShareViaChatButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    painterResource(MR.images.ic_forward),
+    stringResource(MR.strings.share_via_chat),
     onClick,
     iconColor = MaterialTheme.colors.primary,
     textColor = MaterialTheme.colors.primary,
@@ -443,7 +551,7 @@ private fun ModalData.UserAddressSettings(
     }
   }
 
-  ModalView(close = { onClose(close) }) {
+  ModalView(close = { onClose(close) }, cardScreen = true) {
     ColumnWithScrollBar {
       AppBarTitle(stringResource(MR.strings.address_settings), hostDevice(user?.remoteHostId))
       Column(
@@ -460,10 +568,10 @@ private fun ModalData.UserAddressSettings(
         }
         SectionDividerSpaced()
 
-        SectionView(stringResource(MR.strings.address_welcome_message).uppercase()) {
+        SectionView(stringResource(MR.strings.address_welcome_message)) {
           AutoReplyEditor(addressSettingsState)
         }
-        SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+        SectionDividerSpaced()
 
         saveAddressSettingsButton(addressSettingsState.value == savedAddressSettingsState.value) {
           saveAddressSettings(addressSettingsState.value, savedAddressSettingsState)
@@ -647,7 +755,13 @@ private fun AcceptIncognitoToggle(addressSettingsState: MutableState<AddressSett
 @Composable
 private fun AutoReplyEditor(addressSettingsState: MutableState<AddressSettingsState>) {
   val autoReply = rememberSaveable { mutableStateOf(addressSettingsState.value.autoReply) }
-  TextEditor(autoReply, Modifier.height(100.dp), placeholder = stringResource(MR.strings.enter_welcome_message_optional))
+  TextEditor(
+    autoReply,
+    Modifier.height(100.dp),
+    placeholder = stringResource(MR.strings.enter_welcome_message_optional),
+    contentPadding = PaddingValues(),
+    shape = SectionCardShape
+  )
   LaunchedEffect(autoReply.value) {
     if (autoReply.value != addressSettingsState.value.autoReply) {
       addressSettingsState.value = AddressSettingsState(

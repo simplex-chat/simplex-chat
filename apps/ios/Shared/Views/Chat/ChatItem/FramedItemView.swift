@@ -5,10 +5,12 @@
 //  Created by Evgeny Poberezkin on 04/02/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/chat-view.md
 
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/client/chat-view.md#FramedItemView
 struct FramedItemView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
@@ -73,7 +75,35 @@ struct FramedItemView: View {
                             }
                         })
                 } else if let itemForwarded = chatItem.meta.itemForwarded {
-                    framedItemHeader(icon: "arrowshape.turn.up.forward", caption: Text(itemForwarded.text(chat.chatInfo.chatType)).italic(), pad: true)
+                    let twoRowHeader: Bool = if chat.chatInfo.chatType == .local {
+                        itemForwarded.chatTypeApiIdMsgId != nil || itemForwarded.sourceGroupLink != nil
+                    } else {
+                        switch itemForwarded {
+                        case let .group(_, _, _, _, _, _, groupType): groupType != nil
+                        case .groupLink: true
+                        default: false
+                        }
+                    }
+                    if twoRowHeader {
+                        let caption: LocalizedStringKey = chat.chatInfo.chatType == .local ? "saved from" : "forwarded from"
+                        headerFrame(pad: true) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                headerRow(icon: "arrowshape.turn.up.forward", caption: Text(caption).italic())
+                                Text(itemForwarded.chatName)
+                                    .font(.subheadline)
+                                    .lineLimit(1)
+                            }
+                        }
+                        .simultaneousGesture(TapGesture().onEnded {
+                            if let (chatType, apiId, msgId) = itemForwarded.chatTypeApiIdMsgId {
+                                im.loadOpenChatNoWait("\(chatType.rawValue)\(apiId)", msgId)
+                            } else if let link = itemForwarded.sourceGroupLink {
+                                planAndConnect(link, theme: theme, dismiss: false)
+                            }
+                        })
+                    } else {
+                        framedItemHeader(icon: "arrowshape.turn.up.forward", caption: Text(itemForwarded.text(chat.chatInfo.chatType)).italic(), pad: true)
+                    }
                 }
 
                 ChatItemContentView(chat: chat, im: im, chatItem: chatItem, msgContentView: framedMsgContentView)
@@ -97,7 +127,7 @@ struct FramedItemView: View {
             .background { chatItemFrameColorMaybeImageOrVideo(chatItem, theme).modifier(ChatTailPadding()) }
             .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
 
-        if let (title, text) = chatItem.meta.itemStatus.statusInfo {
+        if let (title, text) = chatItem.meta.itemStatus.statusInfo ?? chatItem.meta.msgVerified?.sigMissingInfo {
             v.simultaneousGesture(TapGesture().onEnded {
                 AlertManager.shared.showAlert(
                     Alert(
@@ -165,8 +195,18 @@ struct FramedItemView: View {
             case let .report(text, reason):
                 ciMsgContentView(chatItem, txtPrefix: reason.attrString)
             case let .link(_, preview):
-                CILinkView(linkPreview: preview)
+                CILinkView(linkPreview: preview, maxWidth: maxWidth)
                 ciMsgContentView(chatItem)
+            case let .chat(text, chatLink, ownerSig):
+                let hasText = text != chatLink.connLinkStr
+                CIChatLinkHeader(chatItem: chatItem, chatLink: chatLink, ownerSig: ownerSig, hasText: hasText)
+                    .overlay(DetermineWidth())
+                    .simultaneousGesture(TapGesture().onEnded {
+                        planAndConnect(chatLink.connLinkStr, linkOwnerSig: ownerSig, theme: theme, dismiss: false)
+                    })
+                if hasText {
+                    ciMsgContentView(chatItem, stripLink: chatLink.connLinkStr)
+                }
             case let .unknown(_, text: text):
                 if chatItem.file == nil {
                     ciMsgContentView(chatItem)
@@ -179,8 +219,14 @@ struct FramedItemView: View {
         }
     }
 
-    @ViewBuilder func framedItemHeader(icon: String? = nil, iconColor: Color? = nil, caption: Text, pad: Bool = false) -> some View {
-        let v = HStack(spacing: 6) {
+    func framedItemHeader(icon: String? = nil, iconColor: Color? = nil, caption: Text, pad: Bool = false) -> some View {
+        headerFrame(pad: pad) {
+            headerRow(icon: icon, iconColor: iconColor, caption: caption)
+        }
+    }
+
+    private func headerRow(icon: String?, iconColor: Color? = nil, caption: Text) -> some View {
+        HStack(spacing: 6) {
             if let icon = icon {
                 Image(systemName: icon)
                     .resizable()
@@ -192,13 +238,17 @@ struct FramedItemView: View {
                 .font(.caption)
                 .lineLimit(1)
         }
-        .foregroundColor(theme.colors.secondary)
-        .padding(.horizontal, 12)
-        .padding(.top, 6)
-        .padding(.bottom, pad || (chatItem.quotedItem == nil && chatItem.meta.itemForwarded == nil) ? 6 : 0)
-        .overlay(DetermineWidth())
-        .frame(minWidth: msgWidth, alignment: .leading)
-        .background(chatItemFrameContextColor(chatItem, theme))
+    }
+
+    @ViewBuilder private func headerFrame(pad: Bool = false, @ViewBuilder _ content: () -> some View) -> some View {
+        let v = content()
+            .foregroundColor(theme.colors.secondary)
+            .padding(.horizontal, 12)
+            .padding(.top, 6)
+            .padding(.bottom, pad || (chatItem.quotedItem == nil && chatItem.meta.itemForwarded == nil) ? 6 : 0)
+            .overlay(DetermineWidth())
+            .frame(minWidth: msgWidth, alignment: .leading)
+            .background(chatItemFrameContextColor(chatItem, theme))
         if let mediaWidth = maxMediaWidth(), mediaWidth < maxWidth {
             v.frame(maxWidth: mediaWidth, alignment: .leading)
         } else {
@@ -242,6 +292,11 @@ struct FramedItemView: View {
                 ciQuotedMsgView(qi)
                     .padding(.trailing, 20).frame(minWidth: msgWidth, alignment: .leading)
                 ciQuoteIconView("mic.fill")
+            case let .chat(text, chatLink, _):
+                let prefix = NSAttributedString(string: chatLink.displayName + (text != chatLink.connLinkStr ? " - " : ""))
+                ciQuotedMsgView(qi, stripLink: chatLink.connLinkStr, prefix: prefix)
+                    .padding(.trailing, 20).frame(minWidth: msgWidth, alignment: .leading)
+                ciQuoteIconView(chatLink.smallIconName)
             default:
                 ciQuotedMsgView(qi)
             }
@@ -258,7 +313,7 @@ struct FramedItemView: View {
         }
     }
     
-    private func ciQuotedMsgView(_ qi: CIQuote) -> some View {
+    private func ciQuotedMsgView(_ qi: CIQuote, stripLink: String? = nil, prefix: NSAttributedString? = nil) -> some View {
         Group {
             if let sender = qi.getSender(membership()) {
                 VStack(alignment: .leading, spacing: 2) {
@@ -266,10 +321,10 @@ struct FramedItemView: View {
                         .font(.caption)
                         .foregroundColor(qi.chatDir == .groupSnd ? .accentColor : theme.colors.secondary)
                         .lineLimit(1)
-                    ciQuotedMsgTextView(qi, lines: 2)
+                    ciQuotedMsgTextView(qi, lines: 2, stripLink: stripLink, prefix: prefix)
                 }
             } else {
-                ciQuotedMsgTextView(qi, lines: 3)
+                ciQuotedMsgTextView(qi, lines: 3, stripLink: stripLink, prefix: prefix)
             }
         }
         .fixedSize(horizontal: false, vertical: true)
@@ -278,8 +333,8 @@ struct FramedItemView: View {
     }
 
     @inline(__always)
-    private func ciQuotedMsgTextView(_ qi: CIQuote, lines: Int) -> some View {
-        MsgContentView(chat: chat, text: qi.text, formattedText: qi.formattedText, textStyle: .subheadline)
+    private func ciQuotedMsgTextView(_ qi: CIQuote, lines: Int, stripLink: String? = nil, prefix: NSAttributedString? = nil) -> some View {
+        MsgContentView(chat: chat, text: qi.text, formattedText: qi.formattedText, markdownBlocks: qi.markdownBlocks, textStyle: .subheadline, prefix: prefix, stripLink: stripLink)
             .lineLimit(lines)
             .padding(.bottom, 6)
     }
@@ -301,7 +356,7 @@ struct FramedItemView: View {
         }
     }
     
-    @ViewBuilder private func ciMsgContentView(_ ci: ChatItem, txtPrefix: NSAttributedString? = nil) -> some View {
+    @ViewBuilder private func ciMsgContentView(_ ci: ChatItem, txtPrefix: NSAttributedString? = nil, stripLink: String? = nil) -> some View {
         let text = ci.meta.isLive ? ci.content.msgContent?.text ?? ci.text : ci.text
         let rtl = isRightToLeft(text)
         let ft = text == "" ? [] : ci.formattedText
@@ -309,12 +364,16 @@ struct FramedItemView: View {
             chat: chat,
             text: text,
             formattedText: ft,
+            markdownBlocks: text == "" ? nil : ci.markdownBlocks,
             textStyle: .body,
             meta: ci.meta,
             mentions: ci.mentions,
             userMemberId: chat.chatInfo.groupInfo?.membership.memberId,
             rightToLeft: rtl,
-            prefix: txtPrefix
+            prefix: txtPrefix,
+            stripLink: stripLink,
+            blockLayout: true,
+            cardColor: ci.chatDir.sent ? theme.appColors.sentQuote : theme.appColors.receivedQuote
         )
         .environment(\.containerBackground, UIColor(chatItemFrameColor(ci, theme)))
         .multilineTextAlignment(rtl ? .trailing : .leading)
@@ -331,7 +390,7 @@ struct FramedItemView: View {
     }
 
     @ViewBuilder private func ciFileView(_ ci: ChatItem, _ text: String) -> some View {
-        CIFileView(file: chatItem.file, edited: chatItem.meta.itemEdited)
+        CIFileView(chat: chat, file: chatItem.file, meta: chatItem.meta)
             .overlay(DetermineWidth())
         if text != "" || ci.meta.isLive {
             ciMsgContentView (chatItem)

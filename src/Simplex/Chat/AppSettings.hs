@@ -33,6 +33,7 @@ data AppSettings = AppSettings
     privacyAskToApproveRelays :: Maybe Bool,
     privacyAcceptImages :: Maybe Bool,
     privacyLinkPreviews :: Maybe Bool,
+    privacySanitizeLinks :: Maybe Bool,
     privacyShowChatPreviews :: Maybe Bool,
     privacySaveLastDraft :: Maybe Bool,
     privacyProtectScreen :: Maybe Bool,
@@ -83,6 +84,7 @@ defaultAppSettings =
       privacyAskToApproveRelays = Just True,
       privacyAcceptImages = Just True,
       privacyLinkPreviews = Just True,
+      privacySanitizeLinks = Just False,
       privacyShowChatPreviews = Just True,
       privacySaveLastDraft = Just True,
       privacyProtectScreen = Just False,
@@ -120,6 +122,7 @@ defaultParseAppSettings =
       privacyAskToApproveRelays = Nothing,
       privacyAcceptImages = Nothing,
       privacyLinkPreviews = Nothing,
+      privacySanitizeLinks = Nothing,
       privacyShowChatPreviews = Nothing,
       privacySaveLastDraft = Nothing,
       privacyProtectScreen = Nothing,
@@ -157,6 +160,7 @@ combineAppSettings platformDefaults storedSettings =
       privacyAskToApproveRelays = p privacyAskToApproveRelays,
       privacyAcceptImages = p privacyAcceptImages,
       privacyLinkPreviews = p privacyLinkPreviews,
+      privacySanitizeLinks = p privacySanitizeLinks,
       privacyShowChatPreviews = p privacyShowChatPreviews,
       privacySaveLastDraft = p privacySaveLastDraft,
       privacyProtectScreen = p privacyProtectScreen,
@@ -210,6 +214,7 @@ instance FromJSON AppSettings where
     privacyAskToApproveRelays <- p "privacyAskToApproveRelays"
     privacyAcceptImages <- p "privacyAcceptImages"
     privacyLinkPreviews <- p "privacyLinkPreviews"
+    privacySanitizeLinks <- p "privacySanitizeLinks"
     privacyShowChatPreviews <- p "privacyShowChatPreviews"
     privacySaveLastDraft <- p "privacySaveLastDraft"
     privacyProtectScreen <- p "privacyProtectScreen"
@@ -244,6 +249,7 @@ instance FromJSON AppSettings where
           privacyAskToApproveRelays,
           privacyAcceptImages,
           privacyLinkPreviews,
+          privacySanitizeLinks,
           privacyShowChatPreviews,
           privacySaveLastDraft,
           privacyProtectScreen,

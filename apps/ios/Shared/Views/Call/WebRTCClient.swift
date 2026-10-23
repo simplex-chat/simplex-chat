@@ -2,12 +2,14 @@
 // Created by Avently on 09.02.2023.
 // Copyright (c) 2023 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/services/calls.md
 
 import WebRTC
 import LZString
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/services/calls.md#WebRTCClient
 final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDelegate, RTCFrameDecryptorDelegate {
     private static let factory: RTCPeerConnectionFactory = {
         RTCInitializeSSL()
@@ -18,6 +20,8 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
     }()
     private static let ivTagBytes: Int = 28
     private static let enableEncryption: Bool = true
+    private static let reconnectTimeout: UInt64 = 30_000_000_000
+    private static let iceRestartInterval: UInt64 = 10_000_000_000
     private var chat_ctrl = getChatCtrl()
 
     struct Call {
@@ -35,6 +39,9 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         var frameEncryptor: RTCFrameEncryptor?
         var frameDecryptor: RTCFrameDecryptor?
         var peerHasOldVersion: Bool
+        var wasConnected = false
+        var reconnection: Task<Void, Never>? = nil
+        var iceRestarts: Task<Void, Never>? = nil
     }
 
     struct NotConnectedCall {
@@ -87,6 +94,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         WebRTC.RTCIceServer(urlStrings: ["turns:turn.simplex.im:443?transport=tcp"], username: "private2", credential: "Hxuq2QxUjnhj96Zq2r4HjqHRj"),
     ]
 
+    // Spec: spec/services/calls.md#initializeCall
     func initializeCall(_ iceServers: [WebRTC.RTCIceServer]?, _ mediaType: CallMediaType, _ aesKey: String?, _ relay: Bool?) -> Call {
         let connection = createPeerConnection(iceServers ?? getWebRTCIceServers() ?? defaultIceServers, relay)
         connection.delegate = self
@@ -114,7 +122,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
             encryptor.delegate = self
             frameEncryptor = encryptor
 
-            let decryptor = RTCFrameDecryptor.init(sizeChange: -Int32(WebRTCClient.ivTagBytes))
+            let decryptor = RTCFrameDecryptor.init(sizeChange: 0)
             decryptor.delegate = self
             frameDecryptor = decryptor
         }
@@ -132,6 +140,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         )
     }
 
+    // Spec: spec/services/calls.md#createPeerConnection
     func createPeerConnection(_ iceServers: [WebRTC.RTCIceServer], _ relay: Bool?) -> RTCPeerConnection {
         let constraints = RTCMediaConstraints(mandatoryConstraints: nil,
             optionalConstraints: ["DtlsSrtpKeyAgreement": kRTCMediaConstraintsValueTrue])
@@ -157,6 +166,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         return config
     }
 
+    // Spec: spec/services/calls.md#addIceCandidates
     func addIceCandidates(_ connection: RTCPeerConnection, _ remoteIceCandidates: [RTCIceCandidate]) {
         remoteIceCandidates.forEach { candidate in
             connection.add(candidate.toWebRTCCandidate()) { error in
@@ -167,6 +177,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         }
     }
 
+    // Spec: spec/services/calls.md#sendCallCommand
     func sendCallCommand(command: WCallCommand) async {
         var resp: WCallResponse? = nil
         let pc = activeCall?.connection
@@ -251,11 +262,15 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
                     resp = .error(message: "answer: remote description is not set")
                 }
             }
-        case let .ice(iceCandidates):
+        case let .ice(iceCandidates, session):
             if let pc = pc,
                let remoteIceCandidates: [RTCIceCandidate] = decodeJSON(decompressFromBase64(input: iceCandidates)) {
-                addIceCandidates(pc, remoteIceCandidates)
-                resp = .ok
+                if let session {
+                    resp = await receiveRestartSession(pc, session, remoteIceCandidates)
+                } else {
+                    addIceCandidates(pc, remoteIceCandidates)
+                    resp = .ok
+                }
             } else {
                 resp = .error(message: "ice: call not started")
             }
@@ -295,6 +310,102 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         }
     }
 
+    private func startReconnecting(_ connection: RTCPeerConnection) async {
+        activeCall?.reconnection = Task {
+            _ = try? await Task.sleep(nanoseconds: WebRTCClient.reconnectTimeout)
+            if Task.isCancelled { return }
+            await sendConnectionState(connection, "disconnected")
+            endCall()
+        }
+        // Only the party that sent the initial offer restarts ICE, so that restart offers never collide
+        if connection.localDescription?.type == .offer {
+            activeCall?.iceRestarts = Task {
+                while !Task.isCancelled {
+                    await restartIce(connection)
+                    _ = try? await Task.sleep(nanoseconds: WebRTCClient.iceRestartInterval)
+                }
+            }
+        }
+        await sendConnectionState(connection, "reconnecting")
+    }
+
+    private func stopReconnecting() {
+        activeCall?.reconnection?.cancel()
+        activeCall?.reconnection = nil
+        activeCall?.iceRestarts?.cancel()
+        activeCall?.iceRestarts = nil
+    }
+
+    private func restartIce(_ connection: RTCPeerConnection) async {
+        // the previous restart offer is not answered yet
+        if connection.signalingState != .stable { return }
+        let (offer, error) = await connection.offer(iceRestart: true)
+        if let offer {
+            await sendRestartSession(offer)
+        } else {
+            logger.error("WebRTCClient: ICE restart error: \(error?.localizedDescription ?? "unknown error")")
+        }
+    }
+
+    private func receiveRestartSession(_ pc: RTCPeerConnection, _ session: String, _ remoteIceCandidates: [RTCIceCandidate]) async -> WCallResponse {
+        guard let desc: CustomRTCSessionDescription = decodeJSON(decompressFromBase64(input: session)),
+              let type = desc.type, let sdp = desc.sdp else {
+            return .error(message: "ice: invalid session")
+        }
+        let remoteDesc = RTCSessionDescription(type: type.toWebRTCSdpType(), sdp: sdp)
+        if type == .offer && pc.localDescription?.type != .offer {
+            if (try? await pc.setRemoteDescription(remoteDesc)) == nil {
+                return .error(message: "ice: remote offer is not set")
+            }
+            let (answer, error) = await pc.answer()
+            guard let answer else {
+                return .error(message: "ice: answer error: \(error?.localizedDescription ?? "unknown error")")
+            }
+            addIceCandidates(pc, remoteIceCandidates)
+            await sendRestartSession(answer)
+        } else if type == .answer && pc.signalingState == .haveLocalOffer {
+            if (try? await pc.setRemoteDescription(remoteDesc)) == nil {
+                return .error(message: "ice: remote answer is not set")
+            }
+            addIceCandidates(pc, remoteIceCandidates)
+        } else {
+            return .error(message: "ice: unexpected ICE restart \(type.rawValue)")
+        }
+        return .ok
+    }
+
+    private func sendRestartSession(_ desc: RTCSessionDescription) async {
+        await sendCallResponse(.init(
+            corrId: nil,
+            resp: .ice(
+                iceCandidates: compressToBase64(input: encodeJSON(await getInitialIceCandidates())),
+                session: compressToBase64(input: encodeJSON(CustomRTCSessionDescription(type: desc.type.toSdpType(), sdp: desc.sdp)))
+            ),
+            command: nil)
+        )
+        waitForMoreIceCandidates()
+    }
+
+    private func sendConnectionState(_ connection: RTCPeerConnection, _ connectionState: String) async {
+        guard let iceConnectionState = connection.iceConnectionState.toString(),
+              let iceGatheringState = connection.iceGatheringState.toString(),
+              let signalingState = connection.signalingState.toString()
+        else {
+            return
+        }
+        await sendCallResponse(.init(
+            corrId: nil,
+            resp: .connection(state: ConnectionState(
+                connectionState: connectionState,
+                iceConnectionState: iceConnectionState,
+                iceGatheringState: iceGatheringState,
+                signalingState: signalingState)
+            ),
+            command: nil)
+        )
+    }
+
+    // Spec: spec/services/calls.md#sendIceCandidates
     func sendIceCandidates(_ candidates: [RTCIceCandidate]) async {
         await self.sendCallResponse(.init(
             corrId: nil,
@@ -353,6 +464,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         }
     }
 
+    // Spec: spec/services/calls.md#enableMedia
     @MainActor
     func enableMedia(_ source: CallMediaSource, _ enable: Bool) {
         logger.debug("WebRTCClient: enabling media \(source.rawValue) \(enable)")
@@ -411,6 +523,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         localRendererAspectRatio.wrappedValue = size.width / size.height
     }
 
+    // Spec: spec/services/calls.md#setupLocalTracks
     func setupLocalTracks(_ incomingCall: Bool, _ call: Call) {
         let pc = call.connection
         let transceivers = call.connection.transceivers
@@ -490,6 +603,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
     }
 
     // Should be called after local description set
+    // Spec: spec/services/calls.md#setupEncryptionForLocalTracks
     func setupEncryptionForLocalTracks(_ call: Call) {
         if let encryptor = call.frameEncryptor {
             call.connection.senders.forEach { $0.setRtcFrameEncryptor(encryptor) }
@@ -498,11 +612,12 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
 
     func frameDecryptor(_ decryptor: RTCFrameDecryptor, mediaType: RTCRtpMediaType, withFrame encrypted: Data) -> Data? {
         guard encrypted.count > 0 else { return nil }
+        let isKeyFrame = encrypted[0] & 1 == 0
+        let clearTextBytesSize = mediaType.rawValue == 0 ? 1 : isKeyFrame ? 10 : 3
+        guard encrypted.count >= clearTextBytesSize + WebRTCClient.ivTagBytes else { return nil }
         if var key: [CChar] = activeCall?.aesKey?.cString(using: .utf8),
            let pointer: UnsafeMutableRawPointer = malloc(encrypted.count) {
             memcpy(pointer, (encrypted as NSData).bytes, encrypted.count)
-            let isKeyFrame = encrypted[0] & 1 == 0
-            let clearTextBytesSize = mediaType.rawValue == 0 ? 1 : isKeyFrame ? 10 : 3
             logCrypto("decrypt", chat_decrypt_media(&key, pointer.advanced(by: clearTextBytesSize), Int32(encrypted.count - clearTextBytesSize)))
             return Data(bytes: pointer, count: encrypted.count - WebRTCClient.ivTagBytes)
         } else {
@@ -512,11 +627,12 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
 
     func frameEncryptor(_ encryptor: RTCFrameEncryptor, mediaType: RTCRtpMediaType, withFrame unencrypted: Data) -> Data? {
         guard unencrypted.count > 0 else { return nil }
+        let isKeyFrame = unencrypted[0] & 1 == 0
+        let clearTextBytesSize = mediaType.rawValue == 0 ? 1 : isKeyFrame ? 10 : 3
+        guard unencrypted.count >= clearTextBytesSize else { return nil }
         if var key: [CChar] = activeCall?.aesKey?.cString(using: .utf8),
            let pointer: UnsafeMutableRawPointer = malloc(unencrypted.count + WebRTCClient.ivTagBytes) {
             memcpy(pointer, (unencrypted as NSData).bytes, unencrypted.count)
-            let isKeyFrame = unencrypted[0] & 1 == 0
-            let clearTextBytesSize = mediaType.rawValue == 0 ? 1 : isKeyFrame ? 10 : 3
             logCrypto("encrypt", chat_encrypt_media(chat_ctrl, &key, pointer.advanced(by: clearTextBytesSize), Int32(unencrypted.count + WebRTCClient.ivTagBytes - clearTextBytesSize)))
             return Data(bytes: pointer, count: unencrypted.count + WebRTCClient.ivTagBytes)
         } else {
@@ -567,6 +683,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         }
     }
 
+    // Spec: spec/services/calls.md#startCaptureLocalVideo
     func startCaptureLocalVideo(_ device: AVCaptureDevice.Position?, _ capturer: RTCVideoCapturer?) {
 #if targetEnvironment(simulator)
         guard
@@ -630,6 +747,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         return (localCamera, localVideoTrack)
     }
 
+    // Spec: spec/services/calls.md#endCall
     func endCall() {
         if #available(iOS 16.0, *) {
             _endCall()
@@ -643,6 +761,8 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         (notConnectedCall?.localCameraAndTrack?.0 as? RTCCameraVideoCapturer)?.stopCapture()
         guard let call = activeCall else { return }
         logger.debug("WebRTCClient: ending the call")
+        call.reconnection?.cancel()
+        call.iceRestarts?.cancel()
         call.connection.close()
         call.connection.delegate = nil
         call.frameEncryptor?.delegate = nil
@@ -664,16 +784,18 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
 
 
 extension WebRTC.RTCPeerConnection {
-    func mediaConstraints() -> RTCMediaConstraints {
-        RTCMediaConstraints(
-            mandatoryConstraints: [kRTCMediaConstraintsOfferToReceiveAudio: kRTCMediaConstraintsValueTrue,
-                                   kRTCMediaConstraintsOfferToReceiveVideo: kRTCMediaConstraintsValueTrue],
-            optionalConstraints: nil)
+    func mediaConstraints(iceRestart: Bool = false) -> RTCMediaConstraints {
+        var constraints = [kRTCMediaConstraintsOfferToReceiveAudio: kRTCMediaConstraintsValueTrue,
+                           kRTCMediaConstraintsOfferToReceiveVideo: kRTCMediaConstraintsValueTrue]
+        if iceRestart {
+            constraints[kRTCMediaConstraintsIceRestart] = kRTCMediaConstraintsValueTrue
+        }
+        return RTCMediaConstraints(mandatoryConstraints: constraints, optionalConstraints: nil)
     }
 
-    func offer() async -> (RTCSessionDescription?, Error?) {
+    func offer(iceRestart: Bool = false) async -> (RTCSessionDescription?, Error?) {
         await withCheckedContinuation { cont in
-            offer(for: mediaConstraints()) { (sdp, error) in
+            offer(for: mediaConstraints(iceRestart: iceRestart)) { (sdp, error) in
                 self.processSDP(cont, sdp, error)
             }
         }
@@ -752,24 +874,20 @@ extension WebRTCClient: RTCPeerConnectionDelegate {
     func peerConnection(_ connection: RTCPeerConnection, didChange newState: RTCIceConnectionState) {
         debugPrint("Connection new connection state: \(newState.toString() ?? "" + newState.rawValue.description) \(connection.receivers)")
 
-        guard let connectionStateString = newState.toString(),
-              let iceConnectionStateString = connection.iceConnectionState.toString(),
-              let iceGatheringStateString = connection.iceGatheringState.toString(),
-              let signalingStateString = connection.signalingState.toString()
-        else {
-            return
-        }
+        guard let connectionStateString = newState.toString() else { return }
         Task {
-            await sendCallResponse(.init(
-                corrId: nil,
-                resp: .connection(state: ConnectionState(
-                    connectionState: connectionStateString,
-                    iceConnectionState: iceConnectionStateString,
-                    iceGatheringState: iceGatheringStateString,
-                    signalingState: signalingStateString)
-                ),
-                command: nil)
-            )
+            if activeCall?.wasConnected == true && ChatModel.shared.activeCall?.contact.callReconnectSupported == true {
+                switch newState {
+                case .disconnected, .failed:
+                    if activeCall?.reconnection == nil {
+                        await startReconnecting(connection)
+                    }
+                    return
+                case .new, .checking: return
+                default: ()
+                }
+            }
+            await sendConnectionState(connection, connectionStateString)
 
             switch newState {
             case .checking:
@@ -778,7 +896,10 @@ extension WebRTCClient: RTCPeerConnectionDelegate {
                 }
                 let enableSpeaker: Bool = ChatModel.shared.activeCall?.localMediaSources.hasVideo == true
                 setSpeakerEnabledAndConfigureSession(enableSpeaker)
-            case .connected: sendConnectedEvent(connection)
+            case .connected:
+                stopReconnecting()
+                activeCall?.wasConnected = true
+                sendConnectedEvent(connection)
             case .disconnected, .failed: endCall()
             default: ()
             }

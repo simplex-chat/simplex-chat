@@ -36,9 +36,14 @@ mkdir -p "${init_dir}/${TAG}-${repo_name}/from-source" "${init_dir}/${TAG}-${rep
 
 git -C "${tempdir}" clone "${repo}.git" &&\
     cd "${tempdir}/${repo_name}" &&\
-    git checkout "${TAG}"
+    git checkout "${TAG}" &&\
+    git submodule update --init --recursive
 
-for os in '22.04' '24.04'; do
+oses="22.04@sha256:5c8b2c0a6c745bc177669abfaa716b4bc57d58e2ea3882fb5da67f4d59e3dda5 24.04@sha256:98ff7968124952e719a8a69bb3cccdd217f5fe758108ac4f21ad22e1df44d237"
+
+for os_pair in ${oses}; do
+    os="${os_pair%@*}"
+    hash="${os_pair#*@}"
     os_url="$(printf '%s' "${os}" | tr '.' '_')"
 
     cli_name="simplex-chat-ubuntu-${os_url}-x86_64"
@@ -49,6 +54,7 @@ for os in '22.04' '24.04'; do
     docker build \
         --no-cache \
         --build-arg TAG="${os}" \
+        --build-arg HASH="${hash}" \
         --build-arg GHC="${ghc}" \
         --build-arg=USER_UID="$(id -u)" \
         --build-arg=USER_GID="$(id -g)" \
@@ -105,7 +111,7 @@ for os in '22.04' '24.04'; do
     # Desktop: deb
     docker exec \
         -t "${container_name}" \
-        sh -c './scripts/desktop/make-deb-linux.sh'
+        sh -c "export ASSETS_DIR='../../assets'; ./scripts/desktop/make-deb-linux.sh"
 
     # Copy deb
     docker cp \
@@ -123,7 +129,7 @@ for os in '22.04' '24.04'; do
             # Appimage
             docker exec \
                 -t "${container_name}" \
-                sh -c './scripts/desktop/make-appimage-linux.sh && mv ./apps/multiplatform/release/main/*imple*.AppImage ./apps/multiplatform/release/main/simplex.appimage'
+                sh -c "export ASSETS_DIR='../../assets'; ./scripts/desktop/make-appimage-linux.sh && mv ./apps/multiplatform/release/main/*imple*.AppImage ./apps/multiplatform/release/main/simplex.appimage"
 
             # Copy appimage
             docker cp \
@@ -142,8 +148,9 @@ for os in '22.04' '24.04'; do
         -t "${container_name}" \
         sh -c 'rm -rf ./dist-newstyle ./apps/multiplatform'
 
-    # Also restore git to previous state
+    # Also restore git to previous state + re-initialize submodules
     git reset --hard && git clean -dfx
+    git submodule update --init --recursive
 
     # Stop containers, delete images
     docker stop "${container_name}"

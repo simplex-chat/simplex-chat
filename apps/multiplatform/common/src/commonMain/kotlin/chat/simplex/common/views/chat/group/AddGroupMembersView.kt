@@ -5,7 +5,6 @@ import SectionCustomFooter
 import SectionDividerSpaced
 import SectionItemView
 import SectionItemViewWithoutMinPadding
-import SectionSpacer
 import SectionView
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -31,7 +30,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.common.model.GroupInfo
 import chat.simplex.common.platform.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
 
@@ -161,7 +160,7 @@ fun AddGroupMembersLayout(
         iconColor = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight
       )
     }
-    SectionSpacer()
+    SectionDividerSpaced()
 
     if (contactsToAdd.isEmpty() && searchText.value.text.isEmpty()) {
       Row(
@@ -195,8 +194,8 @@ fun AddGroupMembersLayout(
       SectionCustomFooter {
         InviteSectionFooter(selectedContactsCount = selectedContacts.size, allowModifyMembers, clearSelection)
       }
-      SectionDividerSpaced(maxTopPadding = true)
-      SectionView(stringResource(MR.strings.select_contacts).uppercase()) {
+      SectionDividerSpaced()
+      SectionView(stringResource(MR.strings.select_contacts)) {
         SectionItemView(padding = PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF)) {
           SearchRowView(searchText)
         }
@@ -229,7 +228,7 @@ private fun RoleSelectionRow(groupInfo: GroupInfo, selectedRole: MutableState<Gr
   ) {
     val values = GroupMemberRole.selectableRoles
       .filter { it <= groupInfo.membership.memberRole }
-      .map { it to it.text }
+      .map { it to it.text(isChannel = groupInfo.isChannel) }
     ExposedDropDownSettingRow(
       generalGetString(MR.strings.new_member_role),
       values,
@@ -354,9 +353,10 @@ fun ContactCheckRow(
   ) {
     ProfileImage(size = 36.dp, contact.image)
     Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
-    Text(
+    NameWithBadge(
       contact.chatViewName,
-      modifier = Modifier.weight(10f, fill = true),
+      if (contact.active) contact.profile.localBadge else null,
+      Modifier.weight(10f, fill = true),
       maxLines = 1,
       overflow = TextOverflow.Ellipsis,
       color = if (prohibitedToInviteIncognito) MaterialTheme.colors.secondary else Color.Unspecified

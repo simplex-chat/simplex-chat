@@ -12,7 +12,7 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.coroutines.launch
 
 @Composable
@@ -104,8 +104,8 @@ private fun SharePreviewView(chat: Chat, disabled: Boolean) {
       } else {
         ProfileImage(size = 42.dp, chat.chatInfo.image)
       }
-      Text(
-        chat.chatInfo.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis,
+      NameWithBadge(
+        chat.chatInfo.chatViewName, chat.chatInfo.nameBadge, maxLines = 1, overflow = TextOverflow.Ellipsis,
         color = if (disabled) MaterialTheme.colors.secondary else if (chat.chatInfo.incognito) Indigo else Color.Unspecified
       )
     }

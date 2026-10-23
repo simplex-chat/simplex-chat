@@ -5,7 +5,6 @@
 
 module SchemaDump where
 
-import ChatClient (withTmpFiles)
 import ChatTests.DBUtils
 import Control.Concurrent.STM
 import Control.DeepSeq
@@ -17,7 +16,7 @@ import Data.Maybe (fromJust, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
-import Database.SQLite.Simple (Query (..))
+import Database.SQLite.Simple (Only (..), Query (..))
 import Simplex.Chat.Options.SQLite (chatDBFunctions)
 import Simplex.Chat.Store (createChatStore)
 import qualified Simplex.Chat.Store as Store
@@ -59,9 +58,10 @@ schemaDumpTest = do
   it "verify and overwrite schema dump" testVerifySchemaDump
   it "verify .lint fkey-indexes" testVerifyLintFKeyIndexes
   it "verify schema down migrations" testSchemaMigrations
+  it "verify strict tables" testVerifyStrict
 
 testVerifySchemaDump :: IO ()
-testVerifySchemaDump = withTmpFiles $ do
+testVerifySchemaDump = do
   savedSchema <- ifM (doesFileExist appSchema) (readFile appSchema) (pure "")
   savedSchema `deepseq` pure ()
   void $ createChatStore (DBOpts testDB chatDBFunctions "" False True TQOff) (MigrationConfig MCError Nothing)
@@ -69,7 +69,7 @@ testVerifySchemaDump = withTmpFiles $ do
   removeFile testDB
 
 testVerifyLintFKeyIndexes :: IO ()
-testVerifyLintFKeyIndexes = withTmpFiles $ do
+testVerifyLintFKeyIndexes = do
   savedLint <- ifM (doesFileExist appLint) (readFile appLint) (pure "")
   savedLint `deepseq` pure ()
   void $ createChatStore (DBOpts testDB chatDBFunctions "" False True TQOff) (MigrationConfig MCError Nothing)
@@ -77,7 +77,7 @@ testVerifyLintFKeyIndexes = withTmpFiles $ do
   removeFile testDB
 
 testSchemaMigrations :: IO ()
-testSchemaMigrations = withTmpFiles $ do
+testSchemaMigrations = do
   let noDownMigrations = dropWhileEnd (\Migration {down} -> isJust down) Store.migrations
   Right st <- createDBStore (DBOpts testDB chatDBFunctions "" False True TQOff) noDownMigrations (MigrationConfig MCError Nothing)
   mapM_ (testDownMigration st) $ drop (length noDownMigrations) Store.migrations
@@ -100,6 +100,12 @@ testSchemaMigrations = withTmpFiles $ do
       Migrations.run st Nothing True $ MTRUp [m]
       schema''' <- getSchema testDB testSchema
       schema''' `shouldBe` schema'
+
+testVerifyStrict :: IO ()
+testVerifyStrict = do
+  Right st <- createDBStore (DBOpts testDB chatDBFunctions "" False True TQOff) Store.migrations (MigrationConfig MCConsole Nothing)
+  withConnection st (`DB.query_` "SELECT name FROM sqlite_master WHERE type = 'table' AND name != 'sqlite_sequence' AND sql NOT LIKE '% STRICT'")
+    `shouldReturn` ([] :: [Only Text])
 
 skipComparisonForUpMigrations :: [String]
 skipComparisonForUpMigrations =
@@ -132,7 +138,16 @@ skipComparisonForDownMigrations =
     -- index moves down to the end of the file
     "20250721_indexes",
     -- indexes move down to the end of the file
-    "20250922_remove_unused_connections"
+    "20250922_remove_unused_connections",
+    -- group_member_intros table moves down to the end of the file
+    "20251128_migrate_member_relations",
+    -- on down migration single_sender_group_member_id column and its index
+    -- are re-added at the end of the table / file (ALTER TABLE ADD COLUMN
+    -- appends; CREATE INDEX appends).
+    "20260529_delivery_job_senders",
+    -- group_domain is removed
+    "20260603_simplex_name",
+    "20261018_autoincrement_ids"
   ]
 
 getSchema :: FilePath -> FilePath -> IO String

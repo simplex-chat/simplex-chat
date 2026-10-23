@@ -10,7 +10,7 @@ m20230511_reactions =
   [sql|
 CREATE TABLE chat_item_reactions (
   chat_item_reaction_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  item_member_id BLOB, -- member that created item, NULL for items in direct chats
+  item_member_id BLOB,
   shared_msg_id BLOB NOT NULL,
   contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
   group_id INTEGER REFERENCES groups ON DELETE CASCADE,

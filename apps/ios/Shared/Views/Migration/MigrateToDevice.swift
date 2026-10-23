@@ -5,6 +5,7 @@
 //  Created by Avently on 23.02.2024.
 //  Copyright © 2024 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/database.md
 
 import SwiftUI
 import SimpleXChat
@@ -373,10 +374,12 @@ struct MigrateToDevice: View {
                     "Upgrade and open chat",
                      "",
                      .yesUp)
-                case .downgrade:
+                case let .downgrade(downMigrations):
                     ("Database downgrade",
                     "Downgrade and open chat",
-                     NSLocalizedString("Warning: you may lose some data!", comment: ""),
+                     ([NSLocalizedString("Warning: you may lose some data!", comment: "")]
+                        + downMigrationWarnings(downMigrations).reversed())
+                        .joined(separator: "\n"),
                     .yesUpDown)
                 case let .migrationError(mtrError):
                     ("Incompatible database version",
@@ -536,7 +539,7 @@ struct MigrateToDevice: View {
         Task {
             do {
                 if !hasChatCtrl() {
-                    chatInitControllerRemovingDatabases()
+                    try chatInitControllerRemovingDatabases()
                 } else if ChatModel.shared.chatRunning == true {
                     // cannot delete storage if chat is running
                     try await stopChatAsync()
@@ -732,6 +735,8 @@ private func showErrorOnMigrationIfNeeded(_ status: DBMigrationResult, _ alert: 
         alert.wrappedValue = .wrongPassphrase()
     case .errorKeychain:
         alert.wrappedValue = .keychainError()
+    case .errorKeyGeneration:
+        alert.wrappedValue = .databaseError(message: NSLocalizedString("Cannot generate random database passphrase", comment: "alert message"))
     case let .errorSQL(_, error):
         alert.wrappedValue = .databaseError(message: error)
     case let .unknown(error):

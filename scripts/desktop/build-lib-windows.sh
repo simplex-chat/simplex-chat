@@ -19,7 +19,7 @@ BUILD_DIR=dist-newstyle/build/$ARCH-$OS/ghc-*/simplex-chat-*
 
 exports=( $(sed 's/foreign export ccall "chat_migrate_init_key"//' src/Simplex/Chat/Mobile.hs | sed 's/foreign export ccall "chat_reopen_store"//' |grep "foreign export ccall" | cut -d '"' -f2) )
 for elem in "${exports[@]}"; do count=$(grep -R "$elem$" libsimplex.dll.def | wc -l); if [ $count -ne 1 ]; then echo Wrong exports in libsimplex.dll.def. Add \"$elem\" to that file; exit 1; fi ; done
-for elem in "${exports[@]}"; do count=$(grep -R "\"$elem\"" flake.nix | wc -l); if [ $count -ne 2 ]; then echo Wrong exports in flake.nix. Add \"$elem\" in two places of the file; exit 1; fi ; done
+for elem in "${exports[@]}"; do count=$(grep -R "\"$elem\"" flake.nix | wc -l); if [ $count -ne 1 ]; then echo Wrong exports in flake.nix. Add \"$elem\" to aarch64-android:lib:simplex-chat; exit 1; fi ; done
 
 # IMPORTANT: in order to get a working build you should use x86_64 MinGW with make, cmake, gcc.
 # 100% working MinGW is https://github.com/brechtsanders/winlibs_mingw/releases/download/13.1.0-16.0.5-11.0.0-ucrt-r5/winlibs-x86_64-posix-seh-gcc-13.1.0-mingw-w64ucrt-11.0.0-r5.zip
@@ -38,8 +38,9 @@ scripts/desktop/prepare-openssl-windows.sh
 
 openssl_windows_style_path=$(echo `pwd`/dist-newstyle/openssl-3.0.15 | sed 's#/\([a-zA-Z]\)#\1:#' | sed 's#/#\\#g')
 rm -rf $BUILD_DIR 2>/dev/null || true
-# Existence of this directory produces build error: cabal's bug
-rm -rf dist-newstyle/src/direct-sq* 2>/dev/null || true
+# Existence of these directories produces build error: cabal's bug
+# (simplexmq is removed because cabal cannot delete its read-only git submodule pack files - blst, libbbs - on Windows)
+rm -rf dist-newstyle/src/direct-sq* dist-newstyle/src/simplexmq* 2>/dev/null || true
 rm cabal.project.local 2>/dev/null || true
 echo "ignore-project: False" >> cabal.project.local
 echo "package direct-sqlcipher" >> cabal.project.local
@@ -63,7 +64,7 @@ cp dist-newstyle/openssl-3.0.15/libcrypto-3-x64.dll apps/multiplatform/common/sr
 cp /mingw64/bin/libturbojpeg.dll apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
 cp libsimplex.dll apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
 
-scripts/desktop/prepare-vlc-windows.sh
+[ -n "$SKIP_VLC" ] || scripts/desktop/prepare-vlc-windows.sh
 
 links_dir=apps/multiplatform/build/links
 mkdir -p $links_dir

@@ -26,7 +26,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.chatlist.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
 import kotlinx.coroutines.*
 
@@ -116,7 +116,10 @@ private fun ModalData.MemberSupportViewLayout(
     if (membersWithChats.isEmpty()) {
       item {
         Box(Modifier.fillMaxSize().padding(horizontal = DEFAULT_PADDING), contentAlignment = Alignment.Center) {
-          Text(generalGetString(MR.strings.no_support_chats), color = MaterialTheme.colors.secondary, textAlign = TextAlign.Center)
+          Text(
+            generalGetString(if (groupInfo.fullGroupPreferences.support.on) MR.strings.no_support_chats else MR.strings.support_chats_disabled),
+            color = MaterialTheme.colors.secondary, textAlign = TextAlign.Center
+          )
         }
       }
     } else {
@@ -147,7 +150,7 @@ private fun ModalData.MemberSupportViewLayout(
         ) {
           Box(contentAlignment = Alignment.CenterStart) {
             DropDownMenuForSupportChat(chat.remoteHostId, member, groupInfo, showMenu)
-            SupportChatRow(member)
+            SupportChatRow(member, isChannel = groupInfo.isChannel)
           }
         }
       }
@@ -160,16 +163,18 @@ private fun ModalData.MemberSupportViewLayout(
 }
 
 @Composable
-fun SupportChatRow(member: GroupMember) {
+fun SupportChatRow(member: GroupMember, isChannel: Boolean) {
   fun memberStatus(): String {
-    return if (member.activeConn?.connDisabled == true) {
+    return if (member.activeConn?.connStatus is ConnStatus.Failed) {
+      generalGetString(MR.strings.member_info_member_failed)
+    } else if (member.activeConn?.connDisabled == true) {
       generalGetString(MR.strings.member_info_member_disabled)
     } else if (member.activeConn?.connInactive == true) {
       generalGetString(MR.strings.member_info_member_inactive)
     } else if (member.memberPending) {
       member.memberStatus.text
     } else {
-      member.memberRole.text
+      member.memberRole.text(isChannel = isChannel)
     }
   }
 
@@ -229,8 +234,8 @@ fun SupportChatRow(member: GroupMember) {
           if (member.verified) {
             MemberVerifiedShield()
           }
-          Text(
-            member.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis,
+          NameWithBadge(
+            member.chatViewName, member.nameBadge, maxLines = 1, overflow = TextOverflow.Ellipsis,
             color = if (member.memberIncognito) Indigo else Color.Unspecified
           )
         }

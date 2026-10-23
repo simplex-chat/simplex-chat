@@ -10,6 +10,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
+import androidx.compose.foundation.background
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,12 +31,16 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import com.mikepenz.markdown.compose.Markdown
+import com.mikepenz.markdown.compose.components.MarkdownComponents
 import com.mikepenz.markdown.compose.components.markdownComponents
 import com.mikepenz.markdown.compose.elements.MarkdownHeader
 import com.mikepenz.markdown.m2.markdownColor
 import com.mikepenz.markdown.m2.markdownTypography
+import com.mikepenz.markdown.model.MarkdownColors
+import com.mikepenz.markdown.model.MarkdownPadding
+import com.mikepenz.markdown.model.MarkdownTypography
 import com.mikepenz.markdown.model.markdownPadding
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -47,6 +52,7 @@ fun OperatorView(
   currUserServers: MutableState<List<UserOperatorServers>>,
   userServers: MutableState<List<UserOperatorServers>>,
   serverErrors: MutableState<List<UserServersError>>,
+  serverWarnings: MutableState<List<UserServersWarning>>,
   operatorIndex: Int,
   rhId: Long?
 ) {
@@ -57,7 +63,7 @@ fun OperatorView(
   LaunchedEffect(userServers) {
     snapshotFlow { userServers.value }
       .collect { updatedServers ->
-        validateServers_(rhId = rhId, userServersToValidate = updatedServers, serverErrors = serverErrors)
+        validateServers_(rhId = rhId, userServersToValidate = updatedServers, serverErrors = serverErrors, serverWarnings = serverWarnings)
       }
   }
 
@@ -68,9 +74,10 @@ fun OperatorView(
         currUserServers,
         userServers,
         serverErrors,
+        serverWarnings,
         operatorIndex,
         navigateToProtocolView = { serverIndex, server, protocol ->
-          navigateToProtocolView(userServers, serverErrors, operatorIndex, rhId, serverIndex, server, protocol)
+          navigateToProtocolView(userServers, serverErrors, serverWarnings, operatorIndex, rhId, serverIndex, server, protocol)
         },
         currentUser,
         rhId,
@@ -87,6 +94,7 @@ fun OperatorView(
 fun navigateToProtocolView(
   userServers: MutableState<List<UserOperatorServers>>,
   serverErrors: MutableState<List<UserServersError>>,
+  serverWarnings: MutableState<List<UserServersWarning>>,
   operatorIndex: Int,
   rhId: Long?,
   serverIndex: Int,
@@ -100,6 +108,7 @@ fun navigateToProtocolView(
       serverProtocol = protocol,
       userServers = userServers,
       serverErrors = serverErrors,
+      serverWarnings = serverWarnings,
       onDelete = {
         if (protocol == ServerProtocol.SMP) {
           deleteSMPServer(userServers, operatorIndex, serverIndex)
@@ -130,11 +139,42 @@ fun navigateToProtocolView(
   }
 }
 
+fun navigateToChatRelayView(
+  userServers: MutableState<List<UserOperatorServers>>,
+  serverErrors: MutableState<List<UserServersError>>,
+  serverWarnings: MutableState<List<UserServersWarning>>,
+  operatorIndex: Int,
+  relayIndex: Int,
+  relay: UserChatRelay,
+  rhId: Long?
+) {
+  ModalManager.start.showCustomModal { close ->
+    ChatRelayView(
+      relay = relay,
+      onDelete = {
+        deleteChatRelay(userServers, operatorIndex, relayIndex)
+        close()
+      },
+      onUpdate = { updatedRelay ->
+        userServers.value = userServers.value.toMutableList().apply {
+          this[operatorIndex] = this[operatorIndex].copy(
+            chatRelays = this[operatorIndex].chatRelays.toMutableList().apply {
+              this[relayIndex] = updatedRelay
+            }
+          )
+        }
+      },
+      close = close
+    )
+  }
+}
+
 @Composable
 fun OperatorViewLayout(
   currUserServers: MutableState<List<UserOperatorServers>>,
   userServers: MutableState<List<UserOperatorServers>>,
   serverErrors: MutableState<List<UserServersError>>,
+  serverWarnings: MutableState<List<UserServersWarning>>,
   operatorIndex: Int,
   navigateToProtocolView: (Int, UserServer, ServerProtocol) -> Unit,
   currentUser: User?,
@@ -146,7 +186,7 @@ fun OperatorViewLayout(
   val duplicateHosts = findDuplicateHosts(serverErrors.value)
 
   Column {
-    SectionView(generalGetString(MR.strings.operator).uppercase()) {
+    SectionView(generalGetString(MR.strings.operator)) {
       SectionItemView({ ModalManager.start.showModalCloseable { _ -> OperatorInfoView(operator) } }) {
         Row(
           Modifier.fillMaxWidth(),
@@ -170,14 +210,24 @@ fun OperatorViewLayout(
         currUserServers = currUserServers,
         userServers = userServers,
         serverErrors = serverErrors,
+        serverWarnings = serverWarnings,
         operatorIndex = operatorIndex,
         rhId = rhId
       )
     }
-    val serversErr = globalServersError(serverErrors.value)
-    if (serversErr != null) {
-      SectionCustomFooter {
-        ServersErrorFooter(serversErr)
+    val serversErrs = globalServersErrors(serverErrors.value)
+    val serversWarns = globalServersWarnings(serverWarnings.value)
+    if (serversErrs.isNotEmpty()) {
+      serversErrs.forEach { err ->
+        SectionCustomFooter {
+          ServersErrorFooter(err)
+        }
+      }
+    } else if (serversWarns.isNotEmpty()) {
+      serversWarns.forEach { warn ->
+        SectionCustomFooter {
+          ServersWarningFooter(warn)
+        }
       }
     } else {
       val footerText = when (val c = operator.conditionsAcceptance) {
@@ -194,9 +244,24 @@ fun OperatorViewLayout(
     }
 
     if (operator.enabled) {
+      if (userServers.value[operatorIndex].chatRelays.any { !it.deleted }) {
+        val duplicateRelayAddresses = findDuplicateRelayAddresses(serverErrors.value)
+        SectionDividerSpaced()
+        SectionView(generalGetString(MR.strings.chat_relays)) {
+          userServers.value[operatorIndex].chatRelays.forEachIndexed { index, relay ->
+            if (!relay.deleted) {
+              ChatRelayViewLink(relay, duplicateRelayAddresses) {
+                navigateToChatRelayView(userServers, serverErrors, serverWarnings, operatorIndex, index, relay, rhId)
+              }
+            }
+          }
+        }
+        SectionTextFooter(generalGetString(MR.strings.chat_relays_forward_messages_in_channels))
+      }
+
       if (userServers.value[operatorIndex].smpServers.any { !it.deleted }) {
         SectionDividerSpaced()
-        SectionView(generalGetString(MR.strings.operator_use_for_messages).uppercase()) {
+        SectionView(generalGetString(MR.strings.operator_use_for_messages)) {
           SectionItemView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
             Text(
               stringResource(MR.strings.operator_use_for_messages_receiving),
@@ -210,7 +275,7 @@ fun OperatorViewLayout(
                 userServers.value = userServers.value.toMutableList().apply {
                   this[operatorIndex] = this[operatorIndex].copy(
                     operator = this[operatorIndex].operator?.copy(
-                      smpRoles = this[operatorIndex].operator?.smpRoles?.copy(storage = enabled) ?: ServerRoles(storage = enabled, proxy = false)
+                      smpRoles = this[operatorIndex].operator?.smpRoles?.copy(storage = enabled) ?: ServerRoles(storage = enabled, proxy = false, names = false)
                     )
                   )
                 }
@@ -230,7 +295,27 @@ fun OperatorViewLayout(
                 userServers.value = userServers.value.toMutableList().apply {
                   this[operatorIndex] = this[operatorIndex].copy(
                     operator = this[operatorIndex].operator?.copy(
-                      smpRoles = this[operatorIndex].operator?.smpRoles?.copy(proxy = enabled) ?: ServerRoles(storage = false, proxy = enabled)
+                      smpRoles = this[operatorIndex].operator?.smpRoles?.copy(proxy = enabled) ?: ServerRoles(storage = false, proxy = enabled, names = false)
+                    )
+                  )
+                }
+              }
+            )
+          }
+          SectionItemView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+            Text(
+              stringResource(MR.strings.operator_use_for_names),
+              Modifier.padding(end = 24.dp),
+              color = Color.Unspecified
+            )
+            Spacer(Modifier.fillMaxWidth().weight(1f))
+            DefaultSwitch(
+              checked = userServers.value[operatorIndex].operator_.smpRoles.names,
+              onCheckedChange = { enabled ->
+                userServers.value = userServers.value.toMutableList().apply {
+                  this[operatorIndex] = this[operatorIndex].copy(
+                    operator = this[operatorIndex].operator?.copy(
+                      smpRoles = this[operatorIndex].operator?.smpRoles?.copy(names = enabled) ?: ServerRoles(storage = false, proxy = false, names = enabled)
                     )
                   )
                 }
@@ -250,7 +335,7 @@ fun OperatorViewLayout(
       // Preset servers can't be deleted
       if (userServers.value[operatorIndex].smpServers.any { it.preset }) {
         SectionDividerSpaced()
-        SectionView(generalGetString(MR.strings.message_servers).uppercase()) {
+        SectionView(generalGetString(MR.strings.message_servers)) {
           userServers.value[operatorIndex].smpServers.forEachIndexed { i, server  ->
             if (!server.preset) return@forEachIndexed
             SectionItemView({ navigateToProtocolView(i, server, ServerProtocol.SMP) }) {
@@ -284,7 +369,7 @@ fun OperatorViewLayout(
 
       if (userServers.value[operatorIndex].smpServers.any { !it.preset && !it.deleted }) {
         SectionDividerSpaced()
-        SectionView(generalGetString(MR.strings.operator_added_message_servers).uppercase()) {
+        SectionView(generalGetString(MR.strings.operator_added_message_servers)) {
           userServers.value[operatorIndex].smpServers.forEachIndexed { i, server ->
             if (server.deleted || server.preset) return@forEachIndexed
             SectionItemView({ navigateToProtocolView(i, server, ServerProtocol.SMP) }) {
@@ -300,7 +385,7 @@ fun OperatorViewLayout(
 
       if (userServers.value[operatorIndex].xftpServers.any { !it.deleted }) {
         SectionDividerSpaced()
-        SectionView(generalGetString(MR.strings.operator_use_for_files).uppercase()) {
+        SectionView(generalGetString(MR.strings.operator_use_for_files)) {
           SectionItemView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
             Text(
               stringResource(MR.strings.operator_use_for_sending),
@@ -314,7 +399,7 @@ fun OperatorViewLayout(
                 userServers.value = userServers.value.toMutableList().apply {
                   this[operatorIndex] = this[operatorIndex].copy(
                     operator = this[operatorIndex].operator?.copy(
-                      xftpRoles = this[operatorIndex].operator?.xftpRoles?.copy(storage = enabled) ?: ServerRoles(storage = enabled, proxy = false)
+                      xftpRoles = this[operatorIndex].operator?.xftpRoles?.copy(storage = enabled) ?: ServerRoles(storage = enabled, proxy = false, names = false)
                     )
                   )
                 }
@@ -333,7 +418,7 @@ fun OperatorViewLayout(
       // Preset servers can't be deleted
       if (userServers.value[operatorIndex].xftpServers.any { it.preset }) {
         SectionDividerSpaced()
-        SectionView(generalGetString(MR.strings.media_and_file_servers).uppercase()) {
+        SectionView(generalGetString(MR.strings.media_and_file_servers)) {
           userServers.value[operatorIndex].xftpServers.forEachIndexed { i, server ->
             if (!server.preset) return@forEachIndexed
             SectionItemView({ navigateToProtocolView(i, server, ServerProtocol.XFTP) }) {
@@ -367,7 +452,7 @@ fun OperatorViewLayout(
 
       if (userServers.value[operatorIndex].xftpServers.any { !it.preset && !it.deleted}) {
         SectionDividerSpaced()
-        SectionView(generalGetString(MR.strings.operator_added_xftp_servers).uppercase()) {
+        SectionView(generalGetString(MR.strings.operator_added_xftp_servers)) {
           userServers.value[operatorIndex].xftpServers.forEachIndexed { i, server ->
             if (server.deleted || server.preset) return@forEachIndexed
             SectionItemView({ navigateToProtocolView(i, server, ServerProtocol.XFTP) }) {
@@ -387,21 +472,30 @@ fun OperatorViewLayout(
           testing = testing,
           smpServers = userServers.value[operatorIndex].smpServers,
           xftpServers = userServers.value[operatorIndex].xftpServers,
-        ) { p, l ->
-          when (p) {
-            ServerProtocol.XFTP -> userServers.value = userServers.value.toMutableList().apply {
-              this[operatorIndex] = this[operatorIndex].copy(
-                xftpServers = l
-              )
-            }
+          chatRelays = userServers.value[operatorIndex].chatRelays,
+          onUpdate = { p, l ->
+            when (p) {
+              ServerProtocol.XFTP -> userServers.value = userServers.value.toMutableList().apply {
+                this[operatorIndex] = this[operatorIndex].copy(
+                  xftpServers = l
+                )
+              }
 
-            ServerProtocol.SMP -> userServers.value = userServers.value.toMutableList().apply {
+              ServerProtocol.SMP -> userServers.value = userServers.value.toMutableList().apply {
+                this[operatorIndex] = this[operatorIndex].copy(
+                  smpServers = l
+                )
+              }
+            }
+          },
+          onUpdateRelays = { relays ->
+            userServers.value = userServers.value.toMutableList().apply {
               this[operatorIndex] = this[operatorIndex].copy(
-                smpServers = l
+                chatRelays = relays
               )
             }
           }
-        }
+        )
       }
 
       SectionBottomSpacer()
@@ -425,7 +519,7 @@ fun OperatorInfoView(serverOperator: ServerOperator) {
       }
     }
 
-    SectionDividerSpaced(maxBottomPadding = false)
+    SectionDividerSpaced()
 
     val uriHandler = LocalUriHandler.current
     SectionView {
@@ -435,18 +529,18 @@ fun OperatorInfoView(serverOperator: ServerOperator) {
             Text(d)
           }
           val website = serverOperator.info.website
-          Text(website, color = MaterialTheme.colors.primary, modifier = Modifier.clickable { uriHandler.openUriCatching(website) })
+          Text(website, color = MaterialTheme.colors.primary, modifier = Modifier.clickable { uriHandler.openExternalLink(website) })
         }
       }
     }
 
     val selfhost = serverOperator.info.selfhost
     if (selfhost != null) {
-      SectionDividerSpaced(maxBottomPadding = false)
+      SectionDividerSpaced()
       SectionView {
         SectionItemView {
           val (text, link) = selfhost
-          Text(text, color = MaterialTheme.colors.primary, modifier = Modifier.clickable { uriHandler.openUriCatching(link) })
+          Text(text, color = MaterialTheme.colors.primary, modifier = Modifier.clickable { uriHandler.openExternalLink(link) })
         }
       }
     }
@@ -458,6 +552,7 @@ private fun UseOperatorToggle(
   currUserServers: MutableState<List<UserOperatorServers>>,
   userServers: MutableState<List<UserOperatorServers>>,
   serverErrors: MutableState<List<UserServersError>>,
+  serverWarnings: MutableState<List<UserServersWarning>>,
   operatorIndex: Int,
   rhId: Long?
 ) {
@@ -485,6 +580,7 @@ private fun UseOperatorToggle(
                     currUserServers = currUserServers,
                     userServers = userServers,
                     serverErrors = serverErrors,
+                    serverWarnings = serverWarnings,
                     operatorIndex = operatorIndex,
                     rhId = rhId,
                     close = close
@@ -510,6 +606,7 @@ private fun SingleOperatorUsageConditionsView(
   currUserServers: MutableState<List<UserOperatorServers>>,
   userServers: MutableState<List<UserOperatorServers>>,
   serverErrors: MutableState<List<UserServersError>>,
+  serverWarnings: MutableState<List<UserServersWarning>>,
   operatorIndex: Int,
   rhId: Long?,
   close: () -> Unit
@@ -678,22 +775,36 @@ expect fun ConditionsBox(modifier: Modifier, scrollState: ScrollState, content: 
 
 @Composable
 private fun ConditionsMarkdown(text: String) {
+  val style = documentMarkdownStyle()
   Markdown(text,
-    markdownColor(linkText = MaterialTheme.colors.primary),
+    style.colors,
+    style.typography,
+    Modifier.padding(8.dp),
+    // using CommonMarkFlavourDescriptor instead of GFMFlavourDescriptor because it shows `https://simplex.chat/` (link inside backticks) incorrectly
+    flavour = CommonMarkFlavourDescriptor(),
+    components = style.components,
+    padding = style.padding
+  )
+}
+
+class DocumentMarkdownStyle(val colors: MarkdownColors, val typography: MarkdownTypography, val components: MarkdownComponents, val padding: MarkdownPadding)
+
+@Composable
+fun documentMarkdownStyle(h1: TextStyle = MaterialTheme.typography.body1): DocumentMarkdownStyle =
+  DocumentMarkdownStyle(
+    markdownColor(),
     markdownTypography(
-      h1 = MaterialTheme.typography.body1,
+      h1 = h1,
       h2 = MaterialTheme.typography.h3.copy(fontSize = 22.sp, fontWeight = FontWeight.Bold),
       h3 = MaterialTheme.typography.h4.copy(fontWeight = FontWeight.Bold),
       h4 = MaterialTheme.typography.h5.copy(fontSize = 16.sp, fontWeight = FontWeight.Bold),
       h5 = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Bold),
       link = MaterialTheme.typography.body1.copy(
+        color = MaterialTheme.colors.primary,
         textDecoration = TextDecoration.Underline
       )
     ),
-    Modifier.padding(8.dp),
-    // using CommonMarkFlavourDescriptor instead of GFMFlavourDescriptor because it shows `https://simplex.chat/` (link inside backticks) incorrectly
-    flavour = CommonMarkFlavourDescriptor(),
-    components = markdownComponents(
+    markdownComponents(
       heading2 = {
         Spacer(Modifier.height(10.dp))
         MarkdownHeader(it.content, it.node, it.typography.h2)
@@ -710,16 +821,15 @@ private fun ConditionsMarkdown(text: String) {
         Spacer(Modifier.height(4.dp))
       },
     ),
-    padding = markdownPadding(block = 4.dp)
+    markdownPadding(block = 4.dp)
   )
-}
 
 @Composable
 private fun ConditionsLinkView(conditionsLink: String) {
   SectionItemView {
     val uriHandler = LocalUriHandler.current
     Text(stringResource(MR.strings.operator_conditions_failed_to_load), color = MaterialTheme.colors.onBackground)
-    Text(conditionsLink, color = MaterialTheme.colors.primary, modifier = Modifier.clickable { uriHandler.openUriCatching(conditionsLink) })
+    Text(conditionsLink, color = MaterialTheme.colors.primary, modifier = Modifier.clickable { uriHandler.openExternalLink(conditionsLink) })
   }
 }
 
@@ -753,13 +863,13 @@ fun ConditionsLinkButton() {
       val commit = chatModel.conditions.value.currentConditions.conditionsCommit
       ItemAction(stringResource(MR.strings.operator_open_conditions), painterResource(MR.images.ic_draft), onClick = {
         val mdUrl = "https://github.com/simplex-chat/simplex-chat/blob/$commit/PRIVACY.md"
-        uriHandler.openUriCatching(mdUrl)
         showMenu.value = false
+        uriHandler.openExternalLink(mdUrl)
       })
       ItemAction(stringResource(MR.strings.operator_open_changes), painterResource(MR.images.ic_more_horiz), onClick = {
         val commitUrl = "https://github.com/simplex-chat/simplex-chat/commit/$commit"
-        uriHandler.openUriCatching(commitUrl)
         showMenu.value = false
+        uriHandler.openExternalLink(commitUrl)
       })
     }
     IconButton({ showMenu.value = true }) {
@@ -770,11 +880,7 @@ fun ConditionsLinkButton() {
 
 private fun internalUriHandler(parentUriHandler: UriHandler): UriHandler = object: UriHandler {
   override fun openUri(uri: String) {
-    if (uri.startsWith("https://simplex.chat/contact#")) {
-      openVerifiedSimplexUri(uri)
-    } else {
-      parentUriHandler.openUriCatching(uri)
-    }
+    parentUriHandler.openExternalLink(uri)
   }
 }
 

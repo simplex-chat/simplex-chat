@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
@@ -15,13 +16,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.ChatModel
+import chat.simplex.common.model.LocalBadge
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -75,6 +78,8 @@ class AlertManager {
     onDismissRequest: (() -> Unit)? = null,
     hostDevice: Pair<Long?, String>? = null,
     belowTextContent: @Composable (() -> Unit) = {},
+    // When false, [text] is rendered as literal text — use for user-controlled content.
+    parseHtml: Boolean = true,
     buttons: @Composable () -> Unit,
   ) {
     showAlert {
@@ -82,8 +87,14 @@ class AlertManager {
         onDismissRequest = { onDismissRequest?.invoke(); if (dismissible) hideAlert() },
         title = alertTitle(title),
         buttons = {
-          AlertContent(text, hostDevice, extraPadding = true, textAlign = textAlign, belowTextContent = belowTextContent) {
-            buttons()
+          if (parseHtml) {
+            AlertContent(text, hostDevice, extraPadding = true, textAlign = textAlign, belowTextContent = belowTextContent) {
+              buttons()
+            }
+          } else {
+            AlertContent(text?.let { AnnotatedString(it) }, hostDevice, extraPadding = true) {
+              buttons()
+            }
           }
         },
         shape = RoundedCornerShape(corner = CornerSize(25.dp))
@@ -122,13 +133,15 @@ class AlertManager {
     onDismissRequest: (() -> Unit)? = null,
     destructive: Boolean = false,
     hostDevice: Pair<Long?, String>? = null,
+    // When false, [text] is rendered as literal text — use for user-controlled content.
+    parseHtml: Boolean = true,
   ) {
     showAlert {
       AlertDialog(
         onDismissRequest = { onDismissRequest?.invoke(); hideAlert() },
         title = alertTitle(title),
         buttons = {
-          AlertContent(text, hostDevice, true) {
+          val buttonRow: @Composable () -> Unit = {
             Row(
               Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING),
               horizontalArrangement = Arrangement.SpaceBetween
@@ -148,6 +161,11 @@ class AlertManager {
                 hideAlert()
               }, Modifier.focusRequester(focusRequester)) { Text(confirmText, color = if (destructive) MaterialTheme.colors.error else Color.Unspecified) }
             }
+          }
+          if (parseHtml) {
+            AlertContent(text, hostDevice, true, content = buttonRow)
+          } else {
+            AlertContent(text?.let { AnnotatedString(it) }, hostDevice, true, content = buttonRow)
           }
         },
         shape = RoundedCornerShape(corner = CornerSize(25.dp))
@@ -272,10 +290,17 @@ class AlertManager {
     profileName: String,
     profileFullName: String,
     profileImage: @Composable () -> Unit,
-    confirmText: String = generalGetString(MR.strings.connect_plan_open_chat),
-    onConfirm: () -> Unit,
+    profileBadge: LocalBadge? = null,
+    nameCaption: String? = null,
+    subtitle: String? = null,
+    information: String? = null,
+    secondaryInformation: Boolean = false,
+    confirmText: String? = generalGetString(MR.strings.connect_plan_open_chat),
+    onConfirm: (() -> Unit)? = null,
+    connectOtherButton: String? = null,
+    onConnectOther: (() -> Unit)? = null,
     dismissText: String = generalGetString(MR.strings.cancel_verb),
-    onDismiss: (() -> Unit)?,
+    onDismiss: (() -> Unit)? = null,
   ) {
     showAlert {
       AlertDialog(
@@ -297,8 +322,17 @@ class AlertManager {
               ) {
                 profileImage()
                 Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+                val nameFontSize = MaterialTheme.typography.h4.fontSize
                 Text(
-                  profileName,
+                  buildAnnotatedString {
+                    append(profileName)
+                    if (profileBadge != null) {
+                      append(" ")
+                      appendInlineContent(id = "nameBadge")
+                    }
+                  },
+                  inlineContent =
+                    if (profileBadge != null) mapOf("nameBadge" to nameBadgeInline(profileBadge, nameFontSize)) else emptyMap(),
                   textAlign = TextAlign.Center,
                   style = MaterialTheme.typography.h4,
                   lineHeight = 20.sp,
@@ -307,6 +341,17 @@ class AlertManager {
                   modifier = Modifier.fillMaxWidth()
                 )
 
+                if (nameCaption != null) {
+                  Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+                  Text(
+                    nameCaption,
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.body2,
+                    color = MaterialTheme.colors.secondary,
+                    maxLines = 1,
+                    modifier = Modifier.fillMaxWidth()
+                  )
+                }
                 if (profileFullName.isNotEmpty() && profileFullName != profileName) {
                   Spacer(Modifier.height(DEFAULT_PADDING_HALF))
                   Text(
@@ -314,6 +359,28 @@ class AlertManager {
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.body2,
                     maxLines = 2,
+                    modifier = Modifier.fillMaxWidth()
+                  )
+                }
+                if (subtitle != null) {
+                  Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+                  Text(
+                    subtitle,
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.body2,
+                    color = MaterialTheme.colors.secondary,
+                    maxLines = 3,
+                    modifier = Modifier.fillMaxWidth()
+                  )
+                }
+                if (information != null) {
+                  Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+                  Text(
+                    information,
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.body2,
+                    color = if (secondaryInformation) MaterialTheme.colors.secondary else Color.Unspecified,
+                    maxLines = 3,
                     modifier = Modifier.fillMaxWidth()
                   )
                 }
@@ -329,16 +396,26 @@ class AlertManager {
                   delay(200)
                   focusRequester.requestFocus()
                 }
-                TextButton(onClick = {
-                  onConfirm.invoke()
-                  hideAlert()
-                }, Modifier.focusRequester(focusRequester)) {
-                  Text(confirmText)
+                if (confirmText != null && onConfirm != null) {
+                  TextButton(onClick = {
+                    onConfirm.invoke()
+                    hideAlert()
+                  }, Modifier.focusRequester(focusRequester)) {
+                    Text(confirmText)
+                  }
+                }
+                if (connectOtherButton != null && onConnectOther != null) {
+                  TextButton(onClick = {
+                    onConnectOther.invoke()
+                    hideAlert()
+                  }) {
+                    Text(connectOtherButton)
+                  }
                 }
                 TextButton(onClick = {
                   onDismiss?.invoke()
                   hideAlert()
-                }) {
+                }, if (confirmText == null) Modifier.focusRequester(focusRequester) else Modifier) {
                   Text(dismissText)
                 }
               }

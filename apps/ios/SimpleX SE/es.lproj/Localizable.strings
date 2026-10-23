@@ -17,9 +17,6 @@
 "Comment" = "Comentario";
 
 /* No comment provided by engineer. */
-"Currently maximum supported file size is %@." = "El tamaño máximo de archivo admitido es %@.";
-
-/* No comment provided by engineer. */
 "Database downgrade required" = "Se requiere volver a versión anterior de la base de datos";
 
 /* No comment provided by engineer. */
@@ -98,7 +95,7 @@
 "Unknown database error: %@" = "Error desconocido en la base de datos: %@";
 
 /* No comment provided by engineer. */
-"Unsupported format" = "Formato sin soporte";
+"Unsupported format" = "Formato no compatible";
 
 /* No comment provided by engineer. */
 "Wait" = "Espera";
@@ -107,5 +104,5 @@
 "Wrong database passphrase" = "Contraseña incorrecta de la base de datos";
 
 /* No comment provided by engineer. */
-"You can allow sharing in Privacy & Security / SimpleX Lock settings." = "Puedes dar permiso para compartir en Privacidad y Seguridad / Bloque SimpleX.";
+"You can allow sharing in Your privacy / SimpleX Lock settings." = "Puedes habilitar el uso compartido en el menú Privacidad / Bloqueo Simplex.";
 

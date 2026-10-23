@@ -22,7 +22,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Simplex.Chat.Markdown
 import Simplex.Chat.Styled
-import Simplex.Chat.Types (LocalProfile (..), User (..))
+import Simplex.Chat.Types (BoolDef (..), LocalProfile (..), User (..))
 import System.Console.ANSI.Types
 
 highlight :: Text -> Markdown
@@ -187,8 +187,6 @@ contactsHelpInfo =
       indent <> highlight "/verify @<name>          " <> " - clear security code verification",
       indent <> highlight "/info @<name>            " <> " - info about contact connection",
       indent <> highlight "/switch @<name>          " <> " - switch receiving messages to another SMP relay",
-      indent <> highlight "/pq @<name> on/off       " <> " - [BETA] toggle quantum resistant / standard e2e encryption for a contact",
-      indent <>           "                         " <> "   (both have to enable for quantum resistance)",
       "",
       green "Contact chat preferences:",
       indent <> highlight "/set voice @<name> yes/no/always   " <> " - allow/prohibit voice messages with the contact",
@@ -311,7 +309,7 @@ markdownInfo =
   map
     styleMarkdown
     [ green "Markdown:",
-      indent <> highlight "*bold*         " <> " - " <> markdown Bold "bold text",
+      indent <> highlight "*bold*         " <> " - " <> markdown (Bold $ BoolDef True) "bold text",
       indent <> highlight "_italic_       " <> " - " <> markdown Italic "italic text" <> " (shown as underlined)",
       indent <> highlight "~strikethrough~" <> " - " <> markdown StrikeThrough "strikethrough text" <> " (shown as inverse)",
       indent <> highlight "`code snippet` " <> " - " <> markdown Snippet "a + b // no *markdown* here",
@@ -324,16 +322,13 @@ settingsInfo =
   map
     styleMarkdown
     [ green "Chat settings:",
-      indent <> highlight "/pq on/off               " <> " - [BETA] toggle quantum resistant / standard e2e encryption for the new contacts",
       indent <> highlight "/network                 " <> " - show / set network access options",
       indent <> highlight "/smp                     " <> " - show / set configured SMP servers",
       indent <> highlight "/xftp                    " <> " - show / set configured XFTP servers",
       indent <> highlight "/info <contact>          " <> " - information about contact connection",
       indent <> highlight "/info #<group> <member>  " <> " - information about member connection",
       indent <> highlight "/(un)mute <contact>      " <> " - (un)mute contact, the last messages can be printed with /tail command",
-      indent <> highlight "/(un)mute #<group>       " <> " - (un)mute group",
-      indent <> highlight "/get stats               " <> " - get usage statistics",
-      indent <> highlight "/reset stats             " <> " - reset usage statistics"
+      indent <> highlight "/(un)mute #<group>       " <> " - (un)mute group"
     ]
 
 databaseHelpInfo :: [StyledString]

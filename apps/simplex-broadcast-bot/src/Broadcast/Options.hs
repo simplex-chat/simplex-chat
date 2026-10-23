@@ -90,10 +90,12 @@ mkChatOpts BroadcastBotOpts {coreOptions, botDisplayName} =
       optFilesFolder = Nothing,
       optTempDirectory = Nothing,
       showReactions = False,
+      showFullLinks = False,
       allowInstantFiles = True,
       autoAcceptFileSize = 0,
       muteNotifications = True,
       markRead = False,
-      createBot = Just CreateBotOpts {botDisplayName, allowFiles = False},
-      maintenance = False
+      createBot = Just CreateBotOpts {botDisplayName, allowFiles = False, clientService = False},
+      userDisplayName = Nothing,
+      userImageFile = Nothing
     }

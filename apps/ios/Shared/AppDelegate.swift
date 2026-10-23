@@ -5,6 +5,7 @@
 //  Created by Evgeny on 30/03/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/services/notifications.md
 
 import Foundation
 import UIKit
@@ -122,6 +123,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
     private func prepareForLaunch() {
         try? FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true)
+        excludeAppDataFromBackup()
     }
 
     static func keepScreenOn(_ on: Bool) {

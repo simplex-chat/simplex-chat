@@ -5,6 +5,7 @@
 //  Created by Avently on 14.02.2024.
 //  Copyright © 2024 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/database.md
 
 import SwiftUI
 import SimpleXChat
@@ -708,6 +709,8 @@ private func showErrorOnMigrationIfNeeded(_ status: DBMigrationResult, _ alert: 
         alert.wrappedValue = .wrongPassphrase()
     case .errorKeychain:
         alert.wrappedValue = .keychainError()
+    case .errorKeyGeneration:
+        alert.wrappedValue = .databaseError(message: NSLocalizedString("Cannot generate random database passphrase", comment: "alert message"))
     case let .errorSQL(_, error):
         alert.wrappedValue = .databaseError(message: error)
     case let .unknown(error):

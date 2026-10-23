@@ -43,7 +43,7 @@ To distinguish SimpleX user profile as a bot, set its `peerType` property to `"b
 
 ### Configure bot commands
 
-Bot commands are messages that start from `/` character. Normally, they would consist of lowercase latin letters, but commands can use any letters, digits and underscores. Commands can have parameters.
+Bot commands are messages that start from `/` character. Normally, they would consist of lowercase latin letters, but commands can use any characters, including symbols such as `/+` or `/-`. Commands can have parameters.
 
 All commands in messages will be highlighted in the chats with the bot, and when users tap them, they will be instantly sent. If the message has a single line and starts from `/` character, the whole message will be highlighted. Otherwise, if command is included as part of the message, it will be highlighted until the first space after `/` character: e.g., `/list` command in Directory service shows user's groups.
 
@@ -192,8 +192,16 @@ It is usually simpler to run your bot process on the same machine where you run 
 If you have to run your bot on another machine, you need to secure access to bot CLI via any web proxy that supports WebSockets, e.g. Caddy or Nginx. You must configure TLS termination in the proxy and connect CLI process from bot via a secure TLS connection. If you connect to bot via a public network, you also must configure HTTP basic auth to prevent unauthorized access. You can validate TLS security of your proxy via a free test at [SSLLabs.com](https://www.ssllabs.com/ssltest/). You can also configure firewall on the machine where you run SimpleX CLI to only allow connections from the IP address of your bot.
 
 
+## Available libraries
+
+#### Libraries with full bot API support
+
+- [The official TypeScript SDK](https://www.npmjs.com/package/simplex-chat)
+- [Unofficial Rust SDK](https://crates.io/crates/simploxide-client)
+
 ## Useful bots
 
 - [Broadcast bot](../apps/simplex-broadcast-bot/) (Haskell) - we use it to send [status and release updates](https://status.simplex.chat/status/public).
 - [Moderation bot](https://github.com/NCalex42/simplex-bot) (Java)
 - [Matterbridge bot](https://github.com/UnkwUsr/matterbridge-simplex) (JavaScript)
+- [Nodify](https://nodify.ie) (Low-Code)

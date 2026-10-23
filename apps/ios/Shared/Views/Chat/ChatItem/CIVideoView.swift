@@ -5,12 +5,14 @@
 //  Created by Avently on 30/03/2023.
 //  Copyright © 2023 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/chat-view.md
 
 import SwiftUI
 import AVKit
 import SimpleXChat
 import Combine
 
+// Spec: spec/client/chat-view.md#CIVideoView
 struct CIVideoView: View {
     @EnvironmentObject var m: ChatModel
     private let chatItem: ChatItem
@@ -118,6 +120,25 @@ struct CIVideoView: View {
         }
     }
 
+    private func playReceived(_ file: CIFile) {
+        setupPlayer(file)
+        if urlDecrypted == nil {
+            decrypt(file: file, completed: playVideo)
+        } else {
+            playVideo()
+        }
+    }
+
+    private func playVideo() {
+        if smallView {
+            showFullScreenPlayer = urlDecrypted != nil
+        } else if let urlDecrypted {
+            m.stopPreviousRecPlay = urlDecrypted
+            videoPlaying = true
+            player?.play()
+        }
+    }
+
     private func setupPlayer(_ file: CIFile?) {
         let newUrl = getLoadedVideo(file)
         if newUrl == url {
@@ -185,7 +206,8 @@ struct CIVideoView: View {
             ZStack(alignment: .center) {
                 let canBePlayed = !chatItem.chatDir.sent || file.fileStatus == CIFileStatus.sndComplete || (file.fileStatus == .sndStored && file.fileProtocol == .local)
                 VideoPlayerView(player: player, url: url, showControls: false)
-                .frame(width: w, height: w * preview.size.height / preview.size.width)
+                .frame(width: w, height: w * heightRatio(preview.size))
+                .clipped()
                 .onChange(of: m.stopPreviousRecPlay) { playingUrl in
                     if playingUrl != url {
                         player.pause()
@@ -313,8 +335,9 @@ struct CIVideoView: View {
         return ZStack(alignment: .topTrailing) {
             Image(uiImage: img)
             .resizable()
-            .scaledToFit()
-            .frame(width: w)
+            .scaledToFill()
+            .frame(width: w, height: w * heightRatio(img.size))
+            .clipped()
             .modifier(PrivacyBlur(blurred: $blurred))
             if !blurred || !showDownloadButton(chatItem.file?.fileStatus) {
                 fileStatusIcon()
@@ -362,7 +385,7 @@ struct CIVideoView: View {
                     .simultaneousGesture(TapGesture().onEnded {
                         showFileErrorAlert(sndFileError, temporary: true)
                     })
-            case .rcvInvitation: fileIcon("arrow.down", 10, 13)
+            case .rcvInvitation: fileIcon(file.expired && fileSizeValid(file) ? "xmark" : "arrow.down", 10, 13)
             case .rcvAccepted: fileIcon("ellipsis", 14, 11)
             case let .rcvTransfer(rcvProgress, rcvTotal):
                 if file.fileProtocol == .xftp && rcvProgress < rcvTotal {
@@ -376,7 +399,7 @@ struct CIVideoView: View {
             case let .rcvError(rcvFileError):
                 fileIcon("xmark", 10, 13)
                     .simultaneousGesture(TapGesture().onEnded {
-                        showFileErrorAlert(rcvFileError)
+                        showFileErrorAlert(rcvFileError, file)
                     })
             case let .rcvWarning(rcvFileError):
                 fileIcon("exclamationmark.triangle.fill", 10, 13)
@@ -417,9 +440,14 @@ struct CIVideoView: View {
 
     // TODO encrypt: where file size is checked?
     private func receiveFileIfValidSize(file: CIFile, receiveFile: @escaping (User, Int64, Bool, Bool) async -> Void) {
-        Task {
-            if let user = m.currentUser {
-                await receiveFile(user, file.fileId, false, false)
+        if let prohibited = file.fileProhibited {
+            showProhibitedFileAlert(file, prohibited)
+        } else {
+            m.openWhenReceived(file, open: playReceived)
+            Task {
+                if let user = m.currentUser {
+                    await receiveFile(user, file.fileId, false, false)
+                }
             }
         }
     }

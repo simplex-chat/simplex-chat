@@ -10,6 +10,10 @@ export type ChatResponse =
   | CR.ChatItemReaction
   | CR.ChatItemUpdated
   | CR.ChatItemsDeleted
+  | CR.ChatMsgContent
+  | CR.ChatRunning
+  | CR.ChatStarted
+  | CR.ChatStopped
   | CR.CmdOk
   | CR.ChatCmdError
   | CR.ConnectionPlan
@@ -24,9 +28,16 @@ export type ChatResponse =
   | CR.GroupLinkCreated
   | CR.GroupLinkDeleted
   | CR.GroupCreated
+  | CR.PublicGroupCreated
+  | CR.PublicGroupCreationFailed
+  | CR.GroupRelays
+  | CR.GroupRelaysAdded
+  | CR.GroupRelaysAddFailed
+  | CR.RelayGroupAllowed
   | CR.GroupMembers
   | CR.GroupUpdated
   | CR.GroupsList
+  | CR.GroupDomainVerified
   | CR.Invitation
   | CR.LeftMemberUser
   | CR.MemberAccepted
@@ -36,10 +47,17 @@ export type ChatResponse =
   | CR.RcvFileAccepted
   | CR.RcvFileAcceptedSndCancelled
   | CR.RcvFileCancelled
+  | CR.RemoteCtrlConnected
+  | CR.RemoteCtrlConnecting
   | CR.SentConfirmation
   | CR.SentGroupInvitation
+  | CR.SentGroupInvitationViaGroup
   | CR.SentInvitation
+  | CR.SentInvitationToContact
+  | CR.ServiceReplyAccepted
   | CR.SndFileCancelled
+  | CR.StartedConnectionToContact
+  | CR.StartedConnectionToGroup
   | CR.UserAcceptedGroupSent
   | CR.UserContactLink
   | CR.UserContactLinkCreated
@@ -49,6 +67,7 @@ export type ChatResponse =
   | CR.UserProfileUpdated
   | CR.UserProfileNoChange
   | CR.UsersList
+  | CR.ApiChats
 
 export namespace CR {
   export type Tag = 
@@ -58,6 +77,10 @@ export namespace CR {
     | "chatItemReaction"
     | "chatItemUpdated"
     | "chatItemsDeleted"
+    | "chatMsgContent"
+    | "chatRunning"
+    | "chatStarted"
+    | "chatStopped"
     | "cmdOk"
     | "chatCmdError"
     | "connectionPlan"
@@ -72,9 +95,16 @@ export namespace CR {
     | "groupLinkCreated"
     | "groupLinkDeleted"
     | "groupCreated"
+    | "publicGroupCreated"
+    | "publicGroupCreationFailed"
+    | "groupRelays"
+    | "groupRelaysAdded"
+    | "groupRelaysAddFailed"
+    | "relayGroupAllowed"
     | "groupMembers"
     | "groupUpdated"
     | "groupsList"
+    | "groupDomainVerified"
     | "invitation"
     | "leftMemberUser"
     | "memberAccepted"
@@ -84,10 +114,17 @@ export namespace CR {
     | "rcvFileAccepted"
     | "rcvFileAcceptedSndCancelled"
     | "rcvFileCancelled"
+    | "remoteCtrlConnected"
+    | "remoteCtrlConnecting"
     | "sentConfirmation"
     | "sentGroupInvitation"
+    | "sentGroupInvitationViaGroup"
     | "sentInvitation"
+    | "sentInvitationToContact"
+    | "serviceReplyAccepted"
     | "sndFileCancelled"
+    | "startedConnectionToContact"
+    | "startedConnectionToGroup"
     | "userAcceptedGroupSent"
     | "userContactLink"
     | "userContactLinkCreated"
@@ -97,6 +134,7 @@ export namespace CR {
     | "userProfileUpdated"
     | "userProfileNoChange"
     | "usersList"
+    | "apiChats"
 
   interface Interface {
     type: Tag
@@ -140,6 +178,24 @@ export namespace CR {
     timed: boolean
   }
 
+  export interface ChatMsgContent extends Interface {
+    type: "chatMsgContent"
+    user: T.User
+    msgContent: T.MsgContent
+  }
+
+  export interface ChatRunning extends Interface {
+    type: "chatRunning"
+  }
+
+  export interface ChatStarted extends Interface {
+    type: "chatStarted"
+  }
+
+  export interface ChatStopped extends Interface {
+    type: "chatStopped"
+  }
+
   export interface CmdOk extends Interface {
     type: "cmdOk"
     user_?: T.User
@@ -154,6 +210,8 @@ export namespace CR {
     type: "connectionPlan"
     user: T.User
     connLink: T.CreatedConnLink
+    planSimplexName?: T.SimplexNameInfo
+    otherSimplexName?: T.SimplexNameInfo
     connectionPlan: T.ConnectionPlan
   }
 
@@ -199,6 +257,8 @@ export namespace CR {
     type: "groupDeletedUser"
     user: T.User
     groupInfo: T.GroupInfo
+    msgSigned: boolean
+    localDeletion: boolean
   }
 
   export interface GroupLink extends Interface {
@@ -227,6 +287,47 @@ export namespace CR {
     groupInfo: T.GroupInfo
   }
 
+  export interface PublicGroupCreated extends Interface {
+    type: "publicGroupCreated"
+    user: T.User
+    groupInfo: T.GroupInfo
+    groupLink: T.GroupLink
+    groupRelays: T.GroupRelay[]
+  }
+
+  export interface PublicGroupCreationFailed extends Interface {
+    type: "publicGroupCreationFailed"
+    user: T.User
+    addRelayResults: T.AddRelayResult[]
+  }
+
+  export interface GroupRelays extends Interface {
+    type: "groupRelays"
+    user: T.User
+    groupInfo: T.GroupInfo
+    groupRelays: T.GroupRelay[]
+  }
+
+  export interface GroupRelaysAdded extends Interface {
+    type: "groupRelaysAdded"
+    user: T.User
+    groupInfo: T.GroupInfo
+    groupLink: T.GroupLink
+    groupRelays: T.GroupRelay[]
+  }
+
+  export interface GroupRelaysAddFailed extends Interface {
+    type: "groupRelaysAddFailed"
+    user: T.User
+    addRelayResults: T.AddRelayResult[]
+  }
+
+  export interface RelayGroupAllowed extends Interface {
+    type: "relayGroupAllowed"
+    user: T.User
+    groupInfo: T.GroupInfo
+  }
+
   export interface GroupMembers extends Interface {
     type: "groupMembers"
     user: T.User
@@ -239,12 +340,20 @@ export namespace CR {
     fromGroup: T.GroupInfo
     toGroup: T.GroupInfo
     member_?: T.GroupMember
+    msgSigned: boolean
   }
 
   export interface GroupsList extends Interface {
     type: "groupsList"
     user: T.User
     groups: T.GroupInfo[]
+  }
+
+  export interface GroupDomainVerified extends Interface {
+    type: "groupDomainVerified"
+    user: T.User
+    groupInfo: T.GroupInfo
+    verificationFailure?: string
   }
 
   export interface Invitation extends Interface {
@@ -273,6 +382,7 @@ export namespace CR {
     groupInfo: T.GroupInfo
     members: T.GroupMember[]
     blocked: boolean
+    msgSigned: boolean
   }
 
   export interface MembersRoleUser extends Interface {
@@ -281,6 +391,7 @@ export namespace CR {
     groupInfo: T.GroupInfo
     members: T.GroupMember[]
     toRole: T.GroupMemberRole
+    msgSigned: boolean
   }
 
   export interface NewChatItems extends Interface {
@@ -308,6 +419,19 @@ export namespace CR {
     rcvFileTransfer: T.RcvFileTransfer
   }
 
+  export interface RemoteCtrlConnected extends Interface {
+    type: "remoteCtrlConnected"
+    remoteCtrl: T.RemoteCtrlInfo
+    compression: boolean
+  }
+
+  export interface RemoteCtrlConnecting extends Interface {
+    type: "remoteCtrlConnecting"
+    remoteCtrl_?: T.RemoteCtrlInfo
+    ctrlAppInfo: T.CtrlAppInfo
+    appVersion: string
+  }
+
   export interface SentConfirmation extends Interface {
     type: "sentConfirmation"
     user: T.User
@@ -323,11 +447,33 @@ export namespace CR {
     member: T.GroupMember
   }
 
+  export interface SentGroupInvitationViaGroup extends Interface {
+    type: "sentGroupInvitationViaGroup"
+    user: T.User
+    groupInfo: T.GroupInfo
+    member: T.GroupMember
+    viaGroupInfo: T.GroupInfo
+    viaMember: T.GroupMember
+  }
+
   export interface SentInvitation extends Interface {
     type: "sentInvitation"
     user: T.User
     connection: T.PendingContactConnection
     customUserProfile?: T.Profile
+  }
+
+  export interface SentInvitationToContact extends Interface {
+    type: "sentInvitationToContact"
+    user: T.User
+    contact: T.Contact
+    customUserProfile?: T.Profile
+  }
+
+  export interface ServiceReplyAccepted extends Interface {
+    type: "serviceReplyAccepted"
+    user: T.User
+    connectionId: string
   }
 
   export interface SndFileCancelled extends Interface {
@@ -336,6 +482,21 @@ export namespace CR {
     chatItem_?: T.AChatItem
     fileTransferMeta: T.FileTransferMeta
     sndFileTransfers: T.SndFileTransfer[]
+  }
+
+  export interface StartedConnectionToContact extends Interface {
+    type: "startedConnectionToContact"
+    user: T.User
+    contact: T.Contact
+    customUserProfile?: T.Profile
+  }
+
+  export interface StartedConnectionToGroup extends Interface {
+    type: "startedConnectionToGroup"
+    user: T.User
+    groupInfo: T.GroupInfo
+    customUserProfile?: T.Profile
+    relayResults: T.RelayConnectionResult[]
   }
 
   export interface UserAcceptedGroupSent extends Interface {
@@ -374,6 +535,7 @@ export namespace CR {
     groupInfo: T.GroupInfo
     members: T.GroupMember[]
     withMessages: boolean
+    msgSigned: boolean
   }
 
   export interface UserProfileUpdated extends Interface {
@@ -392,5 +554,11 @@ export namespace CR {
   export interface UsersList extends Interface {
     type: "usersList"
     users: T.UserInfo[]
+  }
+
+  export interface ApiChats extends Interface {
+    type: "apiChats"
+    user: T.User
+    chats: T.AChat[]
   }
 }

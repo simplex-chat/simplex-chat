@@ -4,6 +4,7 @@
 //
 //  Created by Evgeny Poberezkin on 17/01/2022.
 //
+// Spec: spec/client/navigation.md
 
 import SwiftUI
 import Intents
@@ -19,15 +20,18 @@ private enum NoticesSheet: Identifiable {
     }
 }
 
+// Spec: spec/client/navigation.md#ContentView
 struct ContentView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var alertManager = AlertManager.shared
     @ObservedObject var callController = CallController.shared
+    // Spec: spec/client/navigation.md#AppSheetState
     @ObservedObject var appSheetState = AppSheetState.shared
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var theme: AppTheme
     @EnvironmentObject var sceneDelegate: SceneDelegate
 
+    // Spec: spec/client/navigation.md#contentAccessAuthenticationExtended
     var contentAccessAuthenticationExtended: Bool
 
     @Environment(\.scenePhase) var scenePhase
@@ -161,6 +165,7 @@ struct ContentView: View {
         }
     }
 
+    // Spec: spec/client/navigation.md#contentView
     @ViewBuilder private func contentView() -> some View {
         if let status = chatModel.chatDbStatus, status != .ok {
             DatabaseErrorView(status: status)
@@ -176,6 +181,7 @@ struct ContentView: View {
         }
     }
 
+    // Spec: spec/client/navigation.md#callView
     @ViewBuilder private func callView(_ call: Call) -> some View {
         if CallController.useCallKit() {
             ActiveCallView(call: call, canConnectCall: Binding.constant(true))
@@ -193,6 +199,7 @@ struct ContentView: View {
         }
     }
 
+    // Spec: spec/client/navigation.md#callBanner
     private func activeCallInteractiveArea(_ call: Call) -> some View {
         HStack {
             Text(call.contact.displayName).font(.body).foregroundColor(.white)
@@ -227,6 +234,7 @@ struct ContentView: View {
         }
     }
 
+    // Spec: spec/client/navigation.md#lockButton
     private func lockButton() -> some View {
         Button(action: authenticateContentViewAccess) { Label("Unlock", systemImage: "lock") }
     }
@@ -249,26 +257,33 @@ struct ContentView: View {
             ChatListView(activeUserPickerSheet: $chatListUserPickerSheet)
                 .redacted(reason: appSheetState.redactionReasons(protectScreen))
             .onAppear {
-                requestNtfAuthorization()
-                // Local Authentication notice is to be shown on next start after onboarding is complete
-                if (!prefLANoticeShown && prefShowLANotice && chatModel.chats.count > 2) {
-                    prefLANoticeShown = true
-                    alertManager.showAlert(laNoticeAlert())
-                } else if !chatModel.showCallView && CallController.shared.activeCallInvitation == nil {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                        if !noticesShown {
-                            let showWhatsNew = shouldShowWhatsNew()
-                            let showUpdatedConditions = chatModel.conditions.conditionsAction?.showNotice ?? false
-                            noticesShown = showWhatsNew || showUpdatedConditions
-                            if showWhatsNew || showUpdatedConditions {
-                                noticesSheetItem = .whatsNew(updatedConditions: showUpdatedConditions)
+                // Connect only after the notifications prompt is resolved: the system prompt suspends
+                // the app (scene .inactive), which kills an in-flight connect and makes
+                // getTopViewController() nil. Deferring keeps the URL until the app is active again.
+                let openingViaLink = pendingConnectUrl != nil
+                requestNtfAuthorization(showDeniedAlert: !openingViaLink) {
+                    connectViaUrl()
+                }
+                if !openingViaLink {
+                    // Local Authentication notice is to be shown on next start after onboarding is complete
+                    if (!prefLANoticeShown && prefShowLANotice && chatModel.chats.count > 2) {
+                        prefLANoticeShown = true
+                        alertManager.showAlert(laNoticeAlert())
+                    } else if !chatModel.showCallView && CallController.shared.activeCallInvitation == nil {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                            if !noticesShown {
+                                let showWhatsNew = shouldShowWhatsNew()
+                                let showUpdatedConditions = chatModel.conditions.conditionsAction?.showNotice ?? false
+                                noticesShown = showWhatsNew || showUpdatedConditions
+                                if showWhatsNew || showUpdatedConditions {
+                                    noticesSheetItem = .whatsNew(updatedConditions: showUpdatedConditions)
+                                }
                             }
                         }
                     }
+                    showReRegisterTokenAlert()
                 }
                 prefShowLANotice = true
-                connectViaUrl()
-                showReRegisterTokenAlert()
             }
             .onChange(of: chatModel.appOpenUrl) { _ in connectViaUrl() }
             .onChange(of: chatModel.reRegisterTknStatus) { _ in showReRegisterTokenAlert() }
@@ -339,6 +354,7 @@ struct ContentView: View {
         }
     }
 
+    // Spec: spec/client/navigation.md#unlockedRecently
     private func unlockedRecently() -> Bool {
         if let lastSuccessfulUnlock = lastSuccessfulUnlock {
             return ProcessInfo.processInfo.systemUptime - lastSuccessfulUnlock < 2
@@ -374,15 +390,16 @@ struct ContentView: View {
         }
     }
 
-    func requestNtfAuthorization() {
+    func requestNtfAuthorization(showDeniedAlert: Bool = true, whenDone: (() -> Void)? = nil) {
         NtfManager.shared.requestAuthorization(
             onDeny: {
-                if (!notificationAlertShown) {
+                if showDeniedAlert, !notificationAlertShown {
                     notificationAlertShown = true
                     alertManager.showAlert(notificationAlert())
                 }
             },
-            onAuthorized: { notificationAlertShown = false }
+            onAuthorized: { notificationAlertShown = false },
+            whenDone: { if let whenDone { DispatchQueue.main.async(execute: whenDone) } }
         )
     }
 
@@ -426,22 +443,37 @@ struct ContentView: View {
         )
     }
 
+    // Spec: spec/client/navigation.md#connectViaUrl
+    // a URL opened via link that is ready to be connected now (appOpenUrl immediately, or
+    // appOpenUrlLater once the app is active — see .onChange(of: scenePhase) in SimpleXApp)
+    private var pendingConnectUrl: URL? {
+        let m = ChatModel.shared
+        if let url = m.appOpenUrl { return url }
+        if let url = m.appOpenUrlLater, AppChatState.shared.value == .active, scenePhase == .active { return url }
+        return nil
+    }
+
     func connectViaUrl() {
         let m = ChatModel.shared
-        if let url = m.appOpenUrl {
-            m.appOpenUrl = nil
-            connectViaUrl_(url)
-        } else if let url = m.appOpenUrlLater, AppChatState.shared.value == .active, scenePhase == .active {
-            // correcting branch in case .onChange(of: scenePhase) in SimpleXApp doesn't trigger and transfer appOpenUrlLater into appOpenUrl
-            m.appOpenUrlLater = nil
-            connectViaUrl_(url)
-        }
+        guard let url = pendingConnectUrl else { return }
+        if m.appOpenUrl != nil { m.appOpenUrl = nil } else { m.appOpenUrlLater = nil }
+        connectViaUrl_(url)
     }
 
     func connectViaUrl_(_ url: URL) {
+        // an app link must not tear down a redemption in flight
+        if isAppLink(url) && isBadgeLinkIssuing() { return }
         dismissAllSheets() {
             var path = url.path
-            if (path == "/contact" || path == "/invitation" || path == "/a" || path == "/c" || path == "/g" || path == "/i") {
+            if isAppLink(url) {
+                // branched on the scheme before the connection dispatch, which an app link must never reach
+                openAppLink(url)
+            } else if path == "/r" {
+                showAlert(
+                    NSLocalizedString("Relay address", comment: "alert title"),
+                    message: NSLocalizedString("This is a chat relay address, it cannot be used to connect.", comment: "alert message")
+                )
+            } else if (path == "/contact" || path == "/invitation" || path == "/a" || path == "/c" || path == "/g" || path == "/i") {
                 path.removeFirst()
                 let link = url.absoluteString.replacingOccurrences(of: "///\(path)", with: "/\(path)")
                 planAndConnect(
@@ -468,6 +500,24 @@ struct ContentView: View {
                 ))
             }
         }
+    }
+}
+
+// the app's own scheme, for every link that is not a connection link, which stays on simplex:
+private let appLinkScheme = "simplexchat"
+private let badgeLinkPath = "/badge/code/"
+
+func isAppLink(_ url: URL) -> Bool {
+    url.scheme?.lowercased() == appLinkScheme
+}
+
+// a link type added in a later version reaches this build too, so an unknown path asks for an update
+private func openAppLink(_ url: URL) {
+    let path = url.path
+    if path.hasPrefix(badgeLinkPath) {
+        openBadgeLink(String(path.dropFirst(badgeLinkPath.count)))
+    } else {
+        AlertManager.shared.showAlert(Alert(title: Text("This link is not supported by this app version. Please check for app updates.")))
     }
 }
 

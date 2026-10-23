@@ -8,13 +8,14 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ServerAddress.Companion.parseServerAddress
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.platform.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.coroutines.*
 
 @Composable
 fun ModalData.NewServerView(
   userServers: MutableState<List<UserOperatorServers>>,
   serverErrors: MutableState<List<UserServersError>>,
+  serverWarnings: MutableState<List<UserServersWarning>>,
   rhId: Long?,
   close: () -> Unit
 ) {
@@ -28,6 +29,7 @@ fun ModalData.NewServerView(
       newServer.value,
       userServers,
       serverErrors,
+      serverWarnings,
       rhId,
       close = close
     )
@@ -101,6 +103,7 @@ fun addServer(
   server: UserServer,
   userServers: MutableState<List<UserOperatorServers>>,
   serverErrors: MutableState<List<UserServersError>>,
+  serverWarnings: MutableState<List<UserServersWarning>>? = null,
   rhId: Long?,
   close: () -> Unit
 ) {

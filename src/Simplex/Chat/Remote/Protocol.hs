@@ -11,6 +11,7 @@
 
 module Simplex.Chat.Remote.Protocol where
 
+import qualified Codec.Compression.Zstd as Z1
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.Reader
@@ -27,6 +28,7 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import Data.ByteString.Builder (Builder, byteString, lazyByteString)
 import qualified Data.ByteString.Lazy as LB
+import qualified Data.ByteString.Lazy.Internal as LB
 import Data.String (fromString)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeUtf8)
@@ -37,7 +39,9 @@ import Network.Transport.Internal (decodeWord32, encodeWord32)
 import Simplex.Chat.Controller
 import Simplex.Chat.Remote.Transport
 import Simplex.Chat.Remote.Types
-import Simplex.FileTransfer.Description (FileDigest (..))
+import Simplex.Chat.Types (BoolDef (..))
+import Simplex.FileTransfer.Description (FileDigest (..), mb)
+import Simplex.Messaging.Compression (limitDecompress')
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import Simplex.Messaging.Crypto.Lazy (LazyByteString)
@@ -102,10 +106,10 @@ $(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "RR") ''RemoteResponse)
 -- * Client side / desktop
 
 mkRemoteHostClient :: HTTP2Client -> HostSessKeys -> SessionCode -> FilePath -> HostAppInfo -> CM RemoteHostClient
-mkRemoteHostClient httpClient sessionKeys sessionCode storePath HostAppInfo {encoding, deviceName, encryptFiles} = do
+mkRemoteHostClient httpClient sessionKeys sessionCode storePath HostAppInfo {encoding, deviceName, encryptFiles, compression} = do
   let HostSessKeys {chainKeys, idPrivKey, sessPrivKey} = sessionKeys
       signatures = RSSign {idPrivKey, sessPrivKey}
-  encryption <- liftIO $ mkRemoteCrypto sessionCode chainKeys signatures
+  encryption <- mkRemoteCrypto sessionCode chainKeys signatures $ isTrue compression
   pure
     RemoteHostClient
       { hostEncoding = encoding,
@@ -116,17 +120,19 @@ mkRemoteHostClient httpClient sessionKeys sessionCode storePath HostAppInfo {enc
         storePath
       }
 
-mkCtrlRemoteCrypto :: CtrlSessKeys -> SessionCode -> CM RemoteCrypto
-mkCtrlRemoteCrypto CtrlSessKeys {chainKeys, idPubKey, sessPubKey} sessionCode =
+mkCtrlRemoteCrypto :: CtrlSessKeys -> SessionCode -> Maybe CtrlAppInfo -> CM RemoteCrypto
+mkCtrlRemoteCrypto CtrlSessKeys {chainKeys, idPubKey, sessPubKey} sessionCode ctrlAppInfo_ = do
   let signatures = RSVerify {idPubKey, sessPubKey}
-   in liftIO $ mkRemoteCrypto sessionCode chainKeys signatures
+      peerCompression = maybe False (\CtrlAppInfo {compression} -> isTrue compression) ctrlAppInfo_
+  mkRemoteCrypto sessionCode chainKeys signatures peerCompression
 
-mkRemoteCrypto :: SessionCode -> TSbChainKeys -> RemoteSignatures -> IO RemoteCrypto
-mkRemoteCrypto sessionCode chainKeys signatures = do
+mkRemoteCrypto :: SessionCode -> TSbChainKeys -> RemoteSignatures -> Bool -> CM RemoteCrypto
+mkRemoteCrypto sessionCode chainKeys signatures peerCompression = do
   sndCounter <- newTVarIO 0
   rcvCounter <- newTVarIO 0
   skippedKeys <- liftIO TM.emptyIO
-  pure RemoteCrypto {sessionCode, sndCounter, rcvCounter, chainKeys, skippedKeys, signatures}
+  useCompression <- asks $ remoteCompression . config
+  pure RemoteCrypto {sessionCode, sndCounter, rcvCounter, chainKeys, skippedKeys, signatures, compression = peerCompression && useCompression}
 
 closeRemoteHostClient :: RemoteHostClient -> IO ()
 closeRemoteHostClient RemoteHostClient {httpClient} = closeHTTP2Client httpClient
@@ -175,8 +181,8 @@ sendRemoteCommand RemoteHostClient {httpClient, hostEncoding, encryption} file_ 
   encFile_ <- mapM (prepareEncryptedFile sfKN) file_
   let req = httpRequest encFile_ encCmd
   HTTP2Response {response, respBody} <- liftError' (RPEHTTP2 . tshow) $ sendRequestDirect httpClient req Nothing
-  (rfKN, header, getNext) <- parseDecryptHTTP2Body encryption response respBody
-  rr <- liftEitherWith (RPEInvalidJSON . fromString) $ J.eitherDecode header >>= JT.parseEither J.parseJSON . convertJSON hostEncoding localEncoding
+  (rfKN, header, getNext) <- parseDecryptHTTP2Body maxResponseBodySize encryption response respBody
+  rr <- liftEitherWith (RPEInvalidJSON . fromString) $ J.eitherDecodeStrict header >>= JT.parseEither J.parseJSON . convertJSON hostEncoding localEncoding
   pure (rfKN, getNext, rr)
   where
     httpRequest encFile_ cmdBld = H.requestStreaming N.methodPost "/" mempty $ \send flush -> do
@@ -247,8 +253,11 @@ pattern OwsfTag = (SingleFieldJSONTag, J.Bool True)
 -- See https://github.com/simplex-chat/simplexmq/blob/master/rfcs/2023-10-25-remote-control.md for encoding
 
 encryptEncodeHTTP2Body :: Word32 -> C.SbKeyNonce -> RemoteCrypto -> LazyByteString -> ExceptT RemoteProtocolError IO Builder
-encryptEncodeHTTP2Body corrId cmdKN RemoteCrypto {sessionCode, signatures} s = do
-  ct <- liftError PRERemoteControl $ RC.rcEncryptBody cmdKN $ LB.fromStrict (smpEncode sessionCode) <> s
+encryptEncodeHTTP2Body corrId cmdKN RemoteCrypto {sessionCode, signatures, compression} s = do
+  let s'
+        | compression = LB.fromStrict $ Z1.compress 3 $ LB.toStrict s
+        | otherwise = s
+  ct <- liftError PRERemoteControl $ RC.rcEncryptBody cmdKN $ LB.Chunk (smpEncode sessionCode) s'
   let ctLen = encodeWord32 (fromIntegral $ LB.length ct)
       signed = LB.fromStrict (encodeWord32 corrId <> ctLen) <> ct
   sigs <- bodySignatures signed
@@ -265,13 +274,19 @@ encryptEncodeHTTP2Body corrId cmdKN RemoteCrypto {sessionCode, signatures} s = d
     sign :: C.PrivateKeyEd25519 -> CH.Context SHA512 -> ByteString
     sign k = C.signatureBytes . C.sign' k . BA.convert . CH.hashFinalize
 
+maxCommandBodySize :: Int
+maxCommandBodySize = mb 64
+
+maxResponseBodySize :: Int
+maxResponseBodySize = mb 512
+
 -- | Parse and decrypt HTTP2 request/response
-parseDecryptHTTP2Body :: HTTP2BodyChunk a => RemoteCrypto -> a -> HTTP2Body -> ExceptT RemoteProtocolError IO (C.SbKeyNonce, LazyByteString, Int -> IO ByteString)
-parseDecryptHTTP2Body rc@RemoteCrypto {sessionCode, signatures} hr HTTP2Body {bodyBuffer} = do
+parseDecryptHTTP2Body :: HTTP2BodyChunk a => Int -> RemoteCrypto -> a -> HTTP2Body -> ExceptT RemoteProtocolError IO (C.SbKeyNonce, ByteString, Int -> IO ByteString)
+parseDecryptHTTP2Body maxSize rc@RemoteCrypto {sessionCode, signatures, compression} hr HTTP2Body {bodyBuffer} = do
   (corrId, ct) <- getBody
   (cmdKN, rfKN) <- ExceptT $ atomically $ getRemoteRcvKeys rc corrId
   s <- liftError PRERemoteControl $ RC.rcDecryptBody cmdKN ct
-  s' <- parseBody s
+  s' <- decompress =<< parseBody s
   pure (rfKN, s', getNext)
   where
     getBody :: ExceptT RemoteProtocolError IO (Word32, LazyByteString)
@@ -279,7 +294,7 @@ parseDecryptHTTP2Body rc@RemoteCrypto {sessionCode, signatures} hr HTTP2Body {bo
       corrIdStr <- liftIO $ getNext 4
       ctLenStr <- liftIO $ getNext 4
       let ctLen = decodeWord32 ctLenStr
-      when (ctLen > fromIntegral (maxBound :: Int)) $ throwError RPEInvalidSize
+      when (ctLen > fromIntegral maxSize) $ throwError RPEInvalidSize
       chunks <- liftIO $ getLazy $ fromIntegral ctLen
       let hc = CH.hashUpdates (CH.hashInit @SHA512) [corrIdStr, ctLenStr]
           hc' = CH.hashUpdates hc chunks
@@ -320,3 +335,7 @@ parseDecryptHTTP2Body rc@RemoteCrypto {sessionCode, signatures} hr HTTP2Body {bo
           unless (LB.length bs == n) $ throwError PRESessionCode
           pure (LB.toStrict bs, rest)
     getNext sz = getBuffered bodyBuffer sz Nothing $ getBodyChunk hr
+    decompress :: LazyByteString -> ExceptT RemoteProtocolError IO ByteString
+    decompress s
+      | compression = liftEitherWith RPEInvalidBody $ limitDecompress' maxSize $ LB.toStrict s
+      | otherwise = pure $ LB.toStrict s

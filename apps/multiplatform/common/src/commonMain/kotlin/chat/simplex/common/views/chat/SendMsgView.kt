@@ -24,13 +24,13 @@ import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.ChatItem
 import chat.simplex.common.platform.*
-import chat.simplex.common.views.usersettings.showInDevelopingAlert
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.stringResource
 import dev.icerock.moko.resources.compose.painterResource
 import kotlinx.coroutines.*
 import java.net.URI
 
+// Spec: spec/client/compose.md#SendMsgView
 @Composable
 fun SendMsgView(
   composeState: MutableState<ComposeState>,
@@ -49,9 +49,12 @@ fun SendMsgView(
   sendButtonColor: Color = MaterialTheme.colors.primary,
   allowVoiceToContact: () -> Unit,
   timedMessageAllowed: Boolean = false,
+  showSign: Boolean = false,
+  signMessageAlertShown: SharedPreference<Boolean> = SharedPreference(get = { false }, set = {}),
   customDisappearingMessageTimePref: SharedPreference<Int>? = null,
   placeholder: String,
   sendMessage: (Int?) -> Unit,
+  sendSignedMessage: () -> Unit = {},
   sendLiveMessage: (suspend () -> Unit)? = null,
   updateLiveMessage: (suspend () -> Unit)? = null,
   cancelLiveMessage: (() -> Unit)? = null,
@@ -195,7 +198,7 @@ fun SendMsgView(
                   )
                 }
               }
-              if (timedMessageAllowed) {
+              if (timedMessageAllowed && !cs.editing) {
                 menuItems.add {
                   ItemAction(
                     generalGetString(MR.strings.disappearing_message),
@@ -207,6 +210,31 @@ fun SendMsgView(
                   )
                 }
               }
+              // hidden until message signing is user-facing (recipient-only stage)
+//              if (showSign && !cs.editing) {
+//                menuItems.add {
+//                  ItemAction(
+//                    generalGetString(MR.strings.sign_message),
+//                    painterResource(MR.images.ic_verified),
+//                    onClick = {
+//                      if (signMessageAlertShown.state.value) {
+//                        sendSignedMessage()
+//                      } else {
+//                        AlertManager.shared.showAlertDialog(
+//                          title = generalGetString(MR.strings.sign_message),
+//                          text = generalGetString(MR.strings.sign_message_desc),
+//                          confirmText = generalGetString(MR.strings.send_verb),
+//                          onConfirm = {
+//                            signMessageAlertShown.set(true)
+//                            sendSignedMessage()
+//                          }
+//                        )
+//                      }
+//                      showDropdown.value = false
+//                    }
+//                  )
+//                }
+//              }
             }
 
             return menuItems
@@ -312,21 +340,19 @@ private fun RecordVoiceView(recState: MutableState<RecordingState>, stopRecOnNex
     LockToCurrentOrientationUntilDispose()
     StopRecordButton(stopRecordingAndAddAudio)
   } else {
-    val startRecording: () -> Unit = out@ {
-      if (appPlatform.isDesktop) {
-        return@out showInDevelopingAlert()
+    val startRecording: () -> Unit = {
+      val filePath = rec.start { progress: Int?, finished: Boolean ->
+        val state = recState.value
+        if (state is RecordingState.Started && progress != null) {
+          recState.value = if (!finished)
+            RecordingState.Started(state.filePath, progress)
+          else
+            RecordingState.Finished(state.filePath, progress)
+        }
       }
-      recState.value = RecordingState.Started(
-        filePath = rec.start { progress: Int?, finished: Boolean ->
-          val state = recState.value
-          if (state is RecordingState.Started && progress != null) {
-            recState.value = if (!finished)
-              RecordingState.Started(state.filePath, progress)
-            else
-              RecordingState.Finished(state.filePath, progress)
-          }
-        },
-      )
+      if (filePath.isNotEmpty()) {
+        recState.value = RecordingState.Started(filePath = filePath)
+      }
     }
     val interactionSource = interactionSourceWithTapDetection(
       onPress = { if (recState.value is RecordingState.NotStarted) startRecording() },

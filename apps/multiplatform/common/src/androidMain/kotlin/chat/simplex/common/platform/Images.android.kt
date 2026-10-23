@@ -13,6 +13,7 @@ import androidx.core.graphics.scale
 import boofcv.android.ConvertBitmap
 import boofcv.struct.image.GrayU8
 import chat.simplex.common.R
+import chat.simplex.common.views.helpers.decodeSampledBitmapFromByteArray
 import chat.simplex.common.views.helpers.errorBitmap
 import chat.simplex.common.views.helpers.generateNewFileName
 import chat.simplex.common.views.helpers.getFileName
@@ -25,6 +26,8 @@ import java.net.URI
 import kotlin.math.min
 import kotlin.math.sqrt
 
+private const val MAX_IMAGE_DIMENSION = 4320
+
 actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
   val imageString = base64ImageString
     .removePrefix("data:image/png;base64,")
@@ -32,12 +35,25 @@ actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
     .removePrefix("data:image/jpeg;base64,")
   return try {
     val imageBytes = Base64.decode(imageString, Base64.NO_WRAP)
+    val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size, options)
+    if (options.outWidth <= 0 || options.outHeight <= 0 || options.outWidth > MAX_IMAGE_DIMENSION || options.outHeight > MAX_IMAGE_DIMENSION || options.outHeight > options.outWidth * 256) {
+      return errorBitmap.asImageBitmap()
+    }
     BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size).asImageBitmap()
   } catch (e: Exception) {
     Log.e(TAG, "base64ToBitmap error: $e for input '$base64ImageString' -> '$imageString'")
     errorBitmap.asImageBitmap()
   }
 }
+
+actual fun decodeBase64Image(base64: String, width: Int): ImageBitmap? =
+  try {
+    decodeSampledBitmapFromByteArray(Base64.decode(base64, Base64.DEFAULT), width, width, MAX_IMAGE_DIMENSION).asImageBitmap()
+  } catch (e: Exception) {
+    Log.e(TAG, "decodeBase64Image error: $e")
+    null
+  }
 
 actual fun resizeImageToStrSize(image: ImageBitmap, maxDataSize: Long): String {
   val tmpFileName = generateNewFileName("IMG", "png", tmpDir)

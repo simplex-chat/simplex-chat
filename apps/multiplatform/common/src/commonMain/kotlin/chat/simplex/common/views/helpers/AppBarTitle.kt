@@ -12,7 +12,7 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.unit.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chatlist.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
 import kotlin.math.absoluteValue
 
@@ -22,22 +22,28 @@ fun AppBarTitle(
   hostDevice: Pair<Long?, String>? = null,
   withPadding: Boolean = true,
   bottomPadding: Dp = DEFAULT_PADDING * 1.5f + 8.dp,
-  enableAlphaChanges: Boolean = true
+  enableAlphaChanges: Boolean = true,
+  overrideTitleColor: Color? = null,
+  textAlign: TextAlign = TextAlign.Start,
+  lineHeight: TextUnit = TextUnit.Unspecified
 ) {
   val handler = LocalAppBarHandler.current
   val connection = if (enableAlphaChanges) handler?.connection else null
   LaunchedEffect(title) {
     if (enableAlphaChanges) {
-      handler?.title?.value = title
+      // the app bar shows a single line, so the line breaks of the large title are replaced with spaces
+      handler?.title?.value = title.replace("\n", " ")
     } else {
       handler?.connection?.scrollTrackingEnabled = false
     }
   }
   val theme = CurrentColors.collectAsState()
-  val titleColor = MaterialTheme.appColors.title
-  val brush = if (theme.value.base == DefaultTheme.SIMPLEX)
+  val titleColor = overrideTitleColor ?: MaterialTheme.appColors.title
+  val brush = if (overrideTitleColor != null)
+    Brush.linearGradient(listOf(titleColor, titleColor), Offset(0f, Float.POSITIVE_INFINITY), Offset(Float.POSITIVE_INFINITY, 0f))
+  else if (theme.value.base == DefaultTheme.SIMPLEX)
     Brush.linearGradient(listOf(titleColor.darker(0.2f), titleColor.lighter(0.35f)), Offset(0f, Float.POSITIVE_INFINITY), Offset(Float.POSITIVE_INFINITY, 0f))
-  else // color is not updated when changing themes if I pass null here
+  else
     Brush.linearGradient(listOf(titleColor, titleColor), Offset(0f, Float.POSITIVE_INFINITY), Offset(Float.POSITIVE_INFINITY, 0f))
   Column {
     Text(
@@ -48,9 +54,9 @@ fun AppBarTitle(
           alpha = bottomTitleAlpha(connection)
         },
       overflow = TextOverflow.Ellipsis,
-      style = MaterialTheme.typography.h1.copy(brush = brush),
+      style = MaterialTheme.typography.h1.copy(brush = brush, lineHeight = lineHeight),
       color = MaterialTheme.colors.primaryVariant,
-      textAlign = TextAlign.Start
+      textAlign = textAlign
     )
     if (hostDevice != null) {
       Box(Modifier.padding(start = if (withPadding) DEFAULT_PADDING else 0.dp, end = if (withPadding) DEFAULT_PADDING else 0.dp).graphicsLayer {

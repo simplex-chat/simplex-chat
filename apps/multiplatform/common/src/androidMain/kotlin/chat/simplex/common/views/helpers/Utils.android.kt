@@ -1,7 +1,5 @@
 package chat.simplex.common.views.helpers
 
-import android.content.ClipboardManager
-import android.content.Context
 import android.content.res.Resources
 import android.graphics.*
 import android.graphics.Typeface
@@ -14,7 +12,6 @@ import android.text.SpannedString
 import android.text.style.*
 import android.util.Base64
 import android.view.WindowManager
-import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.*
@@ -27,7 +24,7 @@ import androidx.core.text.HtmlCompat
 import chat.simplex.common.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.StringResource
 import java.io.*
 import java.net.URI
@@ -54,19 +51,6 @@ fun keepScreenOn(on: Boolean) {
       window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     } else {
       window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-    }
-  }
-}
-
-@Composable
-actual fun SetupClipboardListener() {
-  DisposableEffect(Unit) {
-    val service = androidAppContext.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    val listener = { chatModel.clipboardHasText.value = service.hasPrimaryClip() }
-    chatModel.clipboardHasText.value = service.hasPrimaryClip()
-    service.addPrimaryClipChangedListener(listener)
-    onDispose {
-      service.removePrimaryClipChangedListener(listener)
     }
   }
 }
@@ -182,6 +166,8 @@ private fun spannableStringToAnnotatedString(
 actual fun getAppFileUri(fileName: String): URI =
   FileProvider.getUriForFile(androidAppContext, "$APPLICATION_ID.provider", if (File(fileName).isAbsolute) File(fileName) else File(getAppFilePath(fileName))).toURI()
 
+actual fun clearImageCaches() {}
+
 // https://developer.android.com/training/data-storage/shared/documents-files#bitmap
 actual suspend fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>? {
   val filePath = getLoadedFilePath(file)
@@ -208,17 +194,19 @@ actual suspend fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>? 
 }
 
 // https://developer.android.com/topic/performance/graphics/load-bitmap#load-bitmap
-private fun decodeSampledBitmapFromByteArray(data: ByteArray, reqWidth: Int, reqHeight: Int): Bitmap {
+internal fun decodeSampledBitmapFromByteArray(data: ByteArray, reqWidth: Int, reqHeight: Int, maxDimension: Int = Int.MAX_VALUE): Bitmap {
   // First decode with inJustDecodeBounds=true to check dimensions
   return BitmapFactory.Options().run {
     inJustDecodeBounds = true
-    BitmapFactory.decodeByteArray(data, 0, data.size)
+    BitmapFactory.decodeByteArray(data, 0, data.size, this)
+    if (outWidth > maxDimension || outHeight > maxDimension) throw IOException("Image dimensions exceed limit")
     // Calculate inSampleSize
     inSampleSize = calculateInSampleSize(this, reqWidth, reqHeight)
     // Decode bitmap with inSampleSize set
     inJustDecodeBounds = false
 
-    BitmapFactory.decodeByteArray(data, 0, data.size)
+    BitmapFactory.decodeByteArray(data, 0, data.size, this)
+      ?: throw IOException("Unable to decode image")
   }
 }
 
@@ -246,7 +234,8 @@ actual fun getFileName(uri: URI): String? {
       val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
       cursor.moveToFirst()
       // Can make an exception
-      cursor.getString(nameIndex)
+      // the provider controls this value, and callers use it as a bare file name
+      cursor.getString(nameIndex)?.let { File(it).name }
     }
   } catch (e: Exception) {
     null
@@ -353,6 +342,19 @@ actual suspend fun getBitmapFromVideo(uri: URI, timestamp: Long?, random: Boolea
 
     VideoPlayerInterface.PreviewAndDuration(null, 0, 0)
   }
+
+actual suspend fun hasVideoTrack(uri: URI): Boolean {
+  val mmr = MediaMetadataRetriever()
+  return try {
+    mmr.setDataSource(androidAppContext, uri.toUri())
+    mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_VIDEO) == "yes"
+  } catch (e: Exception) {
+    Log.e(TAG, "Utils.android hasVideoTrack error: ${e.message}")
+    false
+  } finally {
+    mmr.release()
+  }
+}
 
 actual fun ByteArray.toBase64StringForPassphrase(): String = Base64.encodeToString(this, Base64.DEFAULT)
 

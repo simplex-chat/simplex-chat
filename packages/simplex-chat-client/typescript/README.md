@@ -1,4 +1,8 @@
-# SimpleX Chat JavaScript client
+# SimpleX Chat JavaScript WebRTC client
+
+**THIS PACKAGE IS DEPRECATED**
+
+Use [SimpleX Chat Node.js library](https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-nodejs#readme) instead of this package.
 
 This is a TypeScript library that defines WebSocket API client for [SimpleX Chat terminal CLI](https://github.com/simplex-chat/simplex-chat/blob/stable/docs/CLI.md) that should be run as a WebSockets server on any port:
 
@@ -24,7 +28,7 @@ Please share your use cases and implementations.
 ## Quick start
 
 ```
-npm i simplex-chat
+npm i @simplex-chat/webrtc-client@6.5.0-beta.3
 npm run build
 ```
 

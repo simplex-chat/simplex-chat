@@ -1,6 +1,7 @@
 module ChatTests where
 
 import ChatTests.ChatList
+import ChatTests.ChatRelays
 import ChatTests.DBUtils
 import ChatTests.Direct
 import ChatTests.Files
@@ -15,6 +16,7 @@ chatTests = do
   describe "direct tests" chatDirectTests
   describe "forward tests" chatForwardTests
   describe "group tests" chatGroupTests
+  describe "chat relay tests" chatRelayTests
   describe "local chats tests" chatLocalChatsTests
   describe "file tests" chatFileTests
   describe "profile tests" chatProfileTests

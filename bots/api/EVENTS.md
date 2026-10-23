@@ -25,6 +25,7 @@ This file is generated automatically.
 [Group events](#group-events)
 - Main events
   - [ReceivedGroupInvitation](#receivedgroupinvitation)
+  - [ReceivedGroupInvitationViaGroup](#receivedgroupinvitationviagroup)
   - [UserJoinedGroup](#userjoinedgroup)
   - [GroupUpdated](#groupupdated)
   - [JoinedGroupMember](#joinedgroupmember)
@@ -38,6 +39,8 @@ This file is generated automatically.
   - [MemberAcceptedByOther](#memberacceptedbyother)
   - [MemberBlockedForAll](#memberblockedforall)
   - [GroupMemberUpdated](#groupmemberupdated)
+  - [GroupLinkDataUpdated](#grouplinkdataupdated)
+  - [GroupRelayUpdated](#grouprelayupdated)
 
 [File events](#file-events)
 - Main events
@@ -59,8 +62,20 @@ This file is generated automatically.
 - [ContactConnecting](#contactconnecting)
 - [BusinessLinkConnecting](#businesslinkconnecting)
 - [JoinedGroupMemberConnecting](#joinedgroupmemberconnecting)
-- [SentGroupInvitation](#sentgroupinvitation)
 - [GroupLinkConnecting](#grouplinkconnecting)
+
+[Network connection events](#network-connection-events)
+- [HostConnected](#hostconnected)
+- [HostDisconnected](#hostdisconnected)
+- [SubscriptionStatus](#subscriptionstatus)
+
+[Service events](#service-events)
+- [ServiceRequest](#servicerequest)
+- [ServiceReplySent](#servicereplysent)
+
+[Remote control events](#remote-control-events)
+- [RemoteCtrlSessionCode](#remotectrlsessioncode)
+- [RemoteCtrlStopped](#remotectrlstopped)
 
 [Error events](#error-events)
 - [MessageError](#messageerror)
@@ -272,6 +287,22 @@ Received group invitation.
 ---
 
 
+### ReceivedGroupInvitationViaGroup
+
+Received group invitation from member of another group.
+
+**Record type**:
+- type: "receivedGroupInvitationViaGroup"
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- viaGroupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- viaMember: [GroupMember](./TYPES.md#groupmember)
+- fromMemberRole: [GroupMemberRole](./TYPES.md#groupmemberrole)
+- memberRole: [GroupMemberRole](./TYPES.md#groupmemberrole)
+
+---
+
+
 ### UserJoinedGroup
 
 Bot user joined group. Received when connection via group link completes.
@@ -295,6 +326,7 @@ Group profile or preferences updated.
 - fromGroup: [GroupInfo](./TYPES.md#groupinfo)
 - toGroup: [GroupInfo](./TYPES.md#groupinfo)
 - member_: [GroupMember](./TYPES.md#groupmember)?
+- msgSigned: [MsgSigStatus](./TYPES.md#msgsigstatus)?
 
 ---
 
@@ -324,6 +356,7 @@ Member (or bot user's) group role changed.
 - member: [GroupMember](./TYPES.md#groupmember)
 - fromRole: [GroupMemberRole](./TYPES.md#groupmemberrole)
 - toRole: [GroupMemberRole](./TYPES.md#groupmemberrole)
+- msgSigned: [MsgSigStatus](./TYPES.md#msgsigstatus)?
 
 ---
 
@@ -339,6 +372,7 @@ Another member is removed from the group.
 - byMember: [GroupMember](./TYPES.md#groupmember)
 - deletedMember: [GroupMember](./TYPES.md#groupmember)
 - withMessages: bool
+- msgSigned: [MsgSigStatus](./TYPES.md#msgsigstatus)?
 
 ---
 
@@ -352,6 +386,7 @@ Another member left the group.
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - member: [GroupMember](./TYPES.md#groupmember)
+- msgSigned: [MsgSigStatus](./TYPES.md#msgsigstatus)?
 
 ---
 
@@ -366,6 +401,7 @@ Bot user was removed from the group.
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - member: [GroupMember](./TYPES.md#groupmember)
 - withMessages: bool
+- msgSigned: [MsgSigStatus](./TYPES.md#msgsigstatus)?
 
 ---
 
@@ -379,6 +415,7 @@ Group was deleted by the owner (not bot user).
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - member: [GroupMember](./TYPES.md#groupmember)
+- msgSigned: [MsgSigStatus](./TYPES.md#msgsigstatus)?
 
 ---
 
@@ -422,6 +459,7 @@ Another member blocked for all members.
 - byMember: [GroupMember](./TYPES.md#groupmember)
 - member: [GroupMember](./TYPES.md#groupmember)
 - blocked: bool
+- msgSigned: [MsgSigStatus](./TYPES.md#msgsigstatus)?
 
 ---
 
@@ -436,6 +474,35 @@ Another group member profile updated.
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - fromMember: [GroupMember](./TYPES.md#groupmember)
 - toMember: [GroupMember](./TYPES.md#groupmember)
+
+---
+
+
+### GroupLinkDataUpdated
+
+Group link data updated.
+
+**Record type**:
+- type: "groupLinkDataUpdated"
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- groupLink: [GroupLink](./TYPES.md#grouplink)
+- groupRelays: [[GroupRelay](./TYPES.md#grouprelay)]
+- relaysChanged: bool
+
+---
+
+
+### GroupRelayUpdated
+
+Group relay member updated.
+
+**Record type**:
+- type: "groupRelayUpdated"
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- member: [GroupMember](./TYPES.md#groupmember)
+- groupRelay: [GroupRelay](./TYPES.md#grouprelay)
 
 ---
 
@@ -658,20 +725,6 @@ Group member is announced to the group and will be connecting to bot.
 ---
 
 
-### SentGroupInvitation
-
-Sent when another user joins group via bot's link.
-
-**Record type**:
-- type: "sentGroupInvitation"
-- user: [User](./TYPES.md#user)
-- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
-- contact: [Contact](./TYPES.md#contact)
-- member: [GroupMember](./TYPES.md#groupmember)
-
----
-
-
 ### GroupLinkConnecting
 
 Sent when bot joins group via another user link.
@@ -681,6 +734,113 @@ Sent when bot joins group via another user link.
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - hostMember: [GroupMember](./TYPES.md#groupmember)
+
+---
+
+
+## Network connection events
+
+
+
+
+### HostConnected
+
+Messaging or file server connected
+
+**Record type**:
+- type: "hostConnected"
+- protocol: string
+- transportHost: string
+
+---
+
+
+### HostDisconnected
+
+Messaging or file server disconnected
+
+**Record type**:
+- type: "hostDisconnected"
+- protocol: string
+- transportHost: string
+
+---
+
+
+### SubscriptionStatus
+
+Messaging subscription status changed
+
+**Record type**:
+- type: "subscriptionStatus"
+- server: string
+- subscriptionStatus: [SubscriptionStatus](./TYPES.md#subscriptionstatus)
+- connections: [string]
+
+---
+
+
+## Service events
+
+Bots with a double ratchet address, started with service request processing enabled, can answer service requests - a single request with a single response (RPC).
+
+
+### ServiceRequest
+
+Service request received.
+
+The request needs to be answered using [APISendServiceResponse](./COMMANDS.md#apisendserviceresponse) command.
+
+**Record type**:
+- type: "serviceRequest"
+- user: [User](./TYPES.md#user)
+- requestId: string
+- signerKey: string?
+- requestData: JSONObject
+
+---
+
+
+### ServiceReplySent
+
+Service reply was sent (delivered to the server).
+
+Correlate `connectionId` with the connection ID from the response to [APISendServiceResponse](./COMMANDS.md#apisendserviceresponse) to learn when the reply is delivered.
+
+**Record type**:
+- type: "serviceReplySent"
+- connectionId: string
+
+---
+
+
+## Remote control events
+
+Bots that act as remote control hosts receive these events during the remote control session lifecycle.
+
+
+### RemoteCtrlSessionCode
+
+Remote controller session code ready for verification.
+
+Use [VerifyRemoteCtrlSession](./COMMANDS.md#verifyremotectrlsession) to complete the connection.
+
+**Record type**:
+- type: "remoteCtrlSessionCode"
+- remoteCtrl_: [RemoteCtrlInfo](./TYPES.md#remotectrlinfo)?
+- sessionCode: string
+
+---
+
+
+### RemoteCtrlStopped
+
+Remote controller session stopped.
+
+**Record type**:
+- type: "remoteCtrlStopped"
+- rcsState: [RemoteCtrlSessionState](./TYPES.md#remotectrlsessionstate)
+- rcStopReason: [RemoteCtrlStopReason](./TYPES.md#remotectrlstopreason)
 
 ---
 
@@ -705,7 +865,7 @@ Message error.
 
 ### ChatError
 
-Chat error.
+Chat error (only used in WebSockets API).
 
 **Record type**:
 - type: "chatError"

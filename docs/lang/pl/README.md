@@ -32,11 +32,11 @@
 &nbsp;
 [<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/testflight.png" alt="iOS TestFlight" height="41">](https://testflight.apple.com/join/DWuT2LQu)
 &nbsp;
-[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/apk_icon.png" alt="APK" height="41">](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk)
+[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/apk_icon.png" alt="APK" height="41">](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk)
 
 - 🖲 Chroni Twoje wiadomości i metadane - z kim rozmawiasz i kiedy.
 - 🔐 Szyfrowanie end-to-end double ratchet, z dodatkową warstwą szyfrowania.
-- 📱 Aplikacje mobilne dla Androida ([Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app), [APK](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk)) oraz [iOS](https://apps.apple.com/us/app/simplex-chat/id1605771084).
+- 📱 Aplikacje mobilne dla Androida ([Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app), [APK](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk)) oraz [iOS](https://apps.apple.com/us/app/simplex-chat/id1605771084).
 - 🚀 [TestFlight dla iOS](https://testflight.apple.com/join/DWuT2LQu) z nowymi funkcjami na tydzień-dwa wcześniej - **limitowane do 10,000 użytkowników**!
 - 🖥 Dostępny jako terminalowa (konsolowa) [aplikacja / CLI](#zap-quick-installation-of-a-terminal-app) na Linuxa, MacOSa, Windowsa.
 
@@ -164,14 +164,11 @@ Możesz nas wesprzeć za pomocą:
 
 - [GitHuba](https://github.com/sponsors/simplex-chat) - jest to dla nas wolne od prowizji.
 - [OpenCollective](https://opencollective.com/simplex-chat) - pobiera prowizję, a także przyjmuje darowizny w kryptowalutach.
-- Monero: 8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt
-- Bitcoin: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
-- BCH: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
-- USDT:
-  - BNB Smart Chain: 0x83fd788f7241a2be61780ea9dc72d2151e6843e2
-  - Tron: TNnTrKLBmdy2Wn3cAQR98dAVvWhLskQGfW
-- Ethereum: 0x83fd788f7241a2be61780ea9dc72d2151e6843e2
-- Solana: 43tWFWDczgAcn4Rzwkpqg2mqwnQETSiTwznmCgA2tf1L
+- Monero: 8A3ZWAXrrQddvnT1fPrtbK86ZAoM4nai3Gjg1LEow3JWcryJtovMnHYZnxTJpCLmAbfWbnPMeTzPmMBjAhyd4xoM89hYq1c
+- Bitcoin: bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u
+- BCH: bitcoincash:qq6c8vfvxqrk6rhdysgvkhqc24sggkfsx5nqvdlqcg
+- ETH/USDT (Ethereum, Arbitrum One): 0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a (donate.simplexchat.eth)
+- Solana: 7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu
 
 Dziękuję,
 
@@ -198,9 +195,9 @@ Twórca SimpleX Chat.
 
 ## Dlaczego prywatność ma znaczenie
 
-Każdy powinien dbać o prywatność i bezpieczeństwo swojej komunikacji - nieszkodliwe rozmowy mogą narazić Cię na niebezpieczeństwo, nawet jeśli nie masz nic do ukrycia. 
+Każdy powinien dbać o prywatność i bezpieczeństwo swojej komunikacji - nieszkodliwe rozmowy mogą narazić Cię na niebezpieczeństwo, nawet jeśli nie masz nic do ukrycia.
 
-Jedną z najbardziej wstrząsających historii jest doświadczenie [Mohamedou Ould Salahi](https://en.wikipedia.org/wiki/Mohamedou_Ould_Slahi). opisane w jego pamiętniku i pokazane w filmie Mauretańczyk (2021). Został on umieszczony w obozie Guantanamo, bez procesu, i był tam torturowany przez 15 lat po telefonie do swojego krewnego w Afganistanie, pod zarzutem udziału w atakach 9/11, mimo że przez poprzednie 10 lat mieszkał w Niemczech. 
+Jedną z najbardziej wstrząsających historii jest doświadczenie [Mohamedou Ould Salahi](https://en.wikipedia.org/wiki/Mohamedou_Ould_Slahi). opisane w jego pamiętniku i pokazane w filmie Mauretańczyk (2021). Został on umieszczony w obozie Guantanamo, bez procesu, i był tam torturowany przez 15 lat po telefonie do swojego krewnego w Afganistanie, pod zarzutem udziału w atakach 9/11, mimo że przez poprzednie 10 lat mieszkał w Niemczech.
 
 Używanie szyfrowanego komunikatora end-to-end nie jest wystarczające. Powinniśmy używać komunikatorów, które zapewniają prywatność naszym powiązaniom, czyli tym z kim jesteśmy jakkolwiek połączeni.
 
@@ -432,4 +429,4 @@ Prosimy o traktowanie wszelkich ustaleń dotyczących możliwych ataków korelac
 &nbsp;
 [<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/testflight.png" alt="iOS TestFlight" height="41">](https://testflight.apple.com/join/DWuT2LQu)
 &nbsp;
-[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/apk_icon.png" alt="APK" height="41">](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk)
+[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/apk_icon.png" alt="APK" height="41">](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk)

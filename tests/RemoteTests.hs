@@ -2,6 +2,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 
 module RemoteTests where
 
@@ -9,19 +10,33 @@ import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Logger.Simple
+import Control.Monad
+import Control.Monad.Except (runExceptT)
 import qualified Data.Aeson as J
 import qualified Data.ByteString as B
+import Data.ByteString.Builder (toLazyByteString)
 import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.List (find, isPrefixOf)
 import qualified Data.Map.Strict as M
-import Simplex.Chat.Controller (versionNumber)
+import Data.Word (Word32)
+import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), versionNumber)
+import Simplex.Chat.Files (safeFileNameStr)
+import Simplex.Chat.Library.Commands (parseChatCommand)
 import qualified Simplex.Chat.Controller as Controller
 import Simplex.Chat.Mobile.File
-import Simplex.Chat.Remote (remoteFilesFolder)
+import Simplex.Chat.Remote (remoteFilesFolder, validRemoteFileName)
+import Simplex.Chat.Remote.Protocol (encryptEncodeHTTP2Body, parseDecryptHTTP2Body, remoteStoreFile)
 import Simplex.Chat.Remote.Types
+import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
+import Simplex.Messaging.Encoding (smpEncode)
 import Simplex.Messaging.Encoding.String (strEncode)
+import qualified Simplex.Messaging.TMap as TM
+import Simplex.Messaging.Transport (TSbChainKeys (..))
+import Simplex.Messaging.Transport.HTTP2 (HTTP2BodyChunk (..), getHTTP2Body)
 import Simplex.Messaging.Util
-import System.FilePath ((</>))
+import Simplex.RemoteControl.Types (RCCtrlAddress (..))
+import System.FilePath (takeFileName, (</>))
 import Test.Hspec hiding (it)
 import UnliftIO
 import UnliftIO.Concurrent
@@ -29,6 +44,70 @@ import UnliftIO.Directory
 
 remoteTests :: SpecWith TestParams
 remoteTests = describe "Remote" $ do
+  describe "/start remote host parser" $ do
+    it "parses iface name with a space followed by port=" $ \_ ->
+      parseChatCommand "/start remote host new addr=192.168.1.5 iface=\"Ethernet 2\" port=12345"
+        `shouldSatisfy` \case
+          Right (StartRemoteHost Nothing (Just (RCCtrlAddress _ "Ethernet 2")) (Just 12345)) -> True
+          _ -> False
+  describe "stored file name" $ do
+    it "rejects names with directory components" $ \_ ->
+      filter validRemoteFileName ["../x", "../../etc/passwd", "/etc/cron.d/x", "a/b", "x/", "", ".", ".."]
+        `shouldBe` []
+    it "accepts bare file names" $ \_ ->
+      filter (not . validRemoteFileName) ["test.pdf", "test_1.pdf", ".hidden", "a b.tar.gz"]
+        `shouldBe` []
+    it "sanitizes any name to a real file name" $ \_ ->
+      filter (not . sanitized) fileNames `shouldBe` []
+    it "sanitizes to a name with no directory components" $ \_ ->
+      filter (not . bareName) fileNames `shouldBe` []
+  describe "skipped keys" $ do
+    it "keeps the most recent skipped keys" $ \_ -> do
+      (_, pk) <- atomically . C.generateKeyPair =<< C.newRandom
+      let (ck, _) = C.sbcInit "" ("secret" :: B.ByteString)
+      sndCounter <- newTVarIO 0
+      rcvCounter <- newTVarIO 0
+      sndKey <- newTVarIO ck
+      rcvKey <- newTVarIO ck
+      skippedKeys <- newTVarIO M.empty
+      let rc = RemoteCrypto {sessionCode = "", sndCounter, rcvCounter, chainKeys = TSbChainKeys {sndKey, rcvKey}, skippedKeys, signatures = RSSign pk pk, compression = False}
+          receive corrId = eitherToMaybe <$> atomically (getRemoteRcvKeys rc corrId)
+      sent <- replicateM 1280 $ atomically $ getRemoteSndKeys rc
+      let sentKeys = M.fromList [(corrId, (cmdKN, fileKN)) | (corrId, cmdKN, fileKN) <- sent]
+      forM_ [256, 512 .. 1280] $ \corrId -> receive corrId `shouldReturn` M.lookup corrId sentKeys
+      M.size <$> readTVarIO skippedKeys `shouldReturn` 1024
+      receive 251 `shouldReturn` Nothing
+      receive 252 `shouldReturn` M.lookup 252 sentKeys
+  describe "body size limit" $ do
+    it "rejects encrypted body above limit without reading it" $ \_ -> do
+      rc <- testRemoteCrypto
+      chunks <- newIORef [smpEncode (1 :: Word32, 1025 :: Word32), "body"]
+      r <- parseDecryptChunks 1024 rc chunks
+      r `shouldSatisfy` \case
+        Left RPEInvalidSize -> True
+        _ -> False
+      readIORef chunks `shouldReturn` ["body"]
+    it "rejects decompressed body above limit" $ \_ -> do
+      rc <- testRemoteCrypto
+      (corrId, cmdKN, _) <- atomically $ getRemoteSndKeys rc
+      Right encBody <- runExceptT $ encryptEncodeHTTP2Body corrId cmdKN rc $ LB.replicate 1025 'a'
+      chunks <- newIORef $ LB.toChunks $ toLazyByteString encBody
+      r <- parseDecryptChunks 1024 rc chunks
+      r `shouldSatisfy` \case
+        Left (RPEInvalidBody _) -> True
+        _ -> False
+  xdescribe "No compression" $ aroundWith (. ((False, False),)) runRemoteTests
+  xdescribe "Mobile offers compression" $ aroundWith (. ((True, False),)) runRemoteTests
+  xdescribe "Desktop offers compression" $ aroundWith (. ((False, True),)) runRemoteTests
+  describe "With compression" $ aroundWith (. ((True, True),)) runRemoteTests
+  where
+    fileNames :: [FilePath]
+    fileNames = ["", ".", "..", "...", "../x", "../../etc/passwd", "/etc/cron.d/x", "a/b", "x/", "test.pdf", ".hidden", "a b.tar.gz"]
+    sanitized n = let n' = safeFileNameStr n in n' /= "" && n' /= "." && n' /= ".."
+    bareName n = let n' = safeFileNameStr n in n' == takeFileName n'
+
+runRemoteTests :: SpecWith ((Bool, Bool), TestParams)
+runRemoteTests = do
   describe "protocol handshake" $ do
     it "connects with new pairing (stops mobile)" $ remoteHandshakeTest False
     it "connects with new pairing (stops desktop)" $ remoteHandshakeTest True
@@ -46,14 +125,14 @@ remoteTests = describe "Remote" $ do
 
 -- * Chat commands
 
-remoteHandshakeTest :: HasCallStack => Bool -> TestParams -> IO ()
-remoteHandshakeTest viaDesktop = testChat2 aliceProfile aliceDesktopProfile $ \mobile desktop -> do
+remoteHandshakeTest :: HasCallStack => Bool -> ((Bool, Bool), TestParams) -> IO ()
+remoteHandshakeTest viaDesktop = testRemote $ \compress mobile desktop -> do
   desktop ##> "/list remote hosts"
   desktop <## "No remote hosts"
   mobile ##> "/list remote ctrls"
   mobile <## "No remote controllers"
 
-  startRemote mobile desktop
+  startRemote compress mobile desktop
 
   desktop ##> "/list remote hosts"
   desktop <## "Remote hosts:"
@@ -75,14 +154,14 @@ remoteHandshakeTest viaDesktop = testChat2 aliceProfile aliceDesktopProfile $ \m
   mobile ##> "/list remote ctrls"
   mobile <## "No remote controllers"
 
-remoteHandshakeStoredTest :: HasCallStack => TestParams -> IO ()
-remoteHandshakeStoredTest = testChat2 aliceProfile aliceDesktopProfile $ \mobile desktop -> do
+remoteHandshakeStoredTest :: HasCallStack => ((Bool, Bool), TestParams) -> IO ()
+remoteHandshakeStoredTest = testRemote $ \compress mobile desktop -> do
   logNote "Starting new session"
-  startRemote mobile desktop
+  startRemote compress mobile desktop
   stopMobile mobile desktop `catchAny` (logError . tshow)
 
   logNote "Starting stored session"
-  startRemoteStored mobile desktop
+  startRemoteStored compress mobile desktop
   stopDesktop mobile desktop `catchAny` (logError . tshow)
 
   desktop ##> "/list remote hosts"
@@ -93,29 +172,30 @@ remoteHandshakeStoredTest = testChat2 aliceProfile aliceDesktopProfile $ \mobile
   mobile <## "1. My desktop"
 
   logNote "Starting stored session again"
-  startRemoteStored mobile desktop
+  startRemoteStored compress mobile desktop
   stopMobile mobile desktop `catchAny` (logError . tshow)
 
-remoteHandshakeDiscoverTest :: HasCallStack => TestParams -> IO ()
-remoteHandshakeDiscoverTest = testChat2 aliceProfile aliceDesktopProfile $ \mobile desktop -> do
+remoteHandshakeDiscoverTest :: HasCallStack => ((Bool, Bool), TestParams) -> IO ()
+remoteHandshakeDiscoverTest = testRemote $ \compress mobile desktop -> do
   logNote "Preparing new session"
-  startRemote mobile desktop
+  startRemote compress mobile desktop
   stopMobile mobile desktop `catchAny` (logError . tshow)
 
   logNote "Starting stored session with multicast"
-  startRemoteDiscover mobile desktop
+  startRemoteDiscover compress mobile desktop
   stopMobile mobile desktop `catchAny` (logError . tshow)
 
-remoteHandshakeRejectTest :: HasCallStack => TestParams -> IO ()
-remoteHandshakeRejectTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop mobileBob -> do
+remoteHandshakeRejectTest :: HasCallStack => ((Bool, Bool), TestParams) -> IO ()
+remoteHandshakeRejectTest = testRemote3 $ \compress mobile desktop mobileBob -> do
   logNote "Starting new session"
-  startRemote mobile desktop
+  startRemote compress mobile desktop
   stopMobile mobile desktop
 
   mobileBob ##> "/set device name MobileBob"
   mobileBob <## "ok"
   desktop ##> "/start remote host 1"
   desktop <##. "remote host 1 started on "
+  desktop <##. "other addresses: "
   desktop <## "Remote session invitation:"
   inv <- getTermLine desktop
   mobileBob ##> ("/connect remote ctrl " <> inv)
@@ -132,19 +212,29 @@ remoteHandshakeRejectTest = testChat3 aliceProfile aliceDesktopProfile bobProfil
   mobile <## "Compare session code with controller and use:"
   mobile <## ("/verify remote ctrl " <> sessId)
   mobile ##> ("/verify remote ctrl " <> sessId)
-  mobile <## "remote controller 1 session started with My desktop"
-  desktop <## "remote host 1 connected"
+  mobile <## ("remote controller 1 session started with My desktop" <> compress)
+  desktop <## ("remote host 1 connected" <> compress)
   stopMobile mobile desktop
 
-storedBindingsTest :: HasCallStack => TestParams -> IO ()
-storedBindingsTest = testChat2 aliceProfile aliceDesktopProfile $ \mobile desktop -> do
+storedBindingsTest :: HasCallStack => ((Bool, Bool), TestParams) -> IO ()
+storedBindingsTest = testRemote $ \compress mobile desktop -> do
   desktop ##> "/set device name My desktop"
   desktop <## "ok"
   mobile ##> "/set device name Mobile"
   mobile <## "ok"
 
-  desktop ##> "/start remote host new addr=127.0.0.1 iface=\"lo\" port=52230"
-  desktop <##. "new remote host started on 127.0.0.1:52230" -- TODO: show ip?
+  desktop ##> "/start remote host new"
+  desktop <##. "new remote host started on "
+  addrs <- words . dropStrPrefix "other addresses: " <$> getTermLine desktop
+  Just localAddress <- pure $ find ("127." `isPrefixOf`) addrs
+  desktop <## "Remote session invitation:"
+  void $ getTermLine desktop
+  desktop ##> "/stop remote host new"
+  desktop <## "ok"
+
+  desktop ##> ("/start remote host new addr=" <> localAddress <> " iface=\"lo\" port=" <> remoteTestPort desktop)
+  desktop <## ("new remote host started on " <> localAddress <> ":" <> remoteTestPort desktop)
+  desktop <##. "other addresses: "
   desktop <## "Remote session invitation:"
   inv <- getTermLine desktop
 
@@ -153,9 +243,9 @@ storedBindingsTest = testChat2 aliceProfile aliceDesktopProfile $ \mobile deskto
   desktop <## "new remote host connecting"
   mobile <## "new remote controller connected"
   verifyRemoteCtrl mobile desktop
-  mobile <## "remote controller 1 session started with My desktop"
+  mobile <## ("remote controller 1 session started with My desktop" <> compress)
   desktop <## "new remote host 1 added: Mobile"
-  desktop <## "remote host 1 connected"
+  desktop <## ("remote host 1 connected" <> compress)
 
   desktop ##> "/list remote hosts"
   desktop <## "Remote hosts:"
@@ -167,9 +257,9 @@ storedBindingsTest = testChat2 aliceProfile aliceDesktopProfile $ \mobile deskto
 
 -- TODO: more parser tests
 
-remoteMessageTest :: HasCallStack => TestParams -> IO ()
-remoteMessageTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob -> do
-  startRemote mobile desktop
+remoteMessageTest :: HasCallStack => ((Bool, Bool), TestParams) -> IO ()
+remoteMessageTest = testRemote3 $ \compress mobile desktop bob -> do  
+  startRemote compress mobile desktop
   contactBob desktop bob
 
   logNote "sending messages"
@@ -193,29 +283,30 @@ remoteMessageTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mob
   threadDelay 1000000
   logNote "done"
 
-remoteStoreFileTest :: HasCallStack => TestParams -> IO ()
+remoteStoreFileTest :: HasCallStack => ((Bool, Bool), TestParams) -> IO ()
 remoteStoreFileTest =
-  testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob ->
-    withXFTPServer $ do
-      let mobileFiles = "./tests/tmp/mobile_files"
+  testRemote3 $ \compress mobile desktop bob ->
+    withXFTPServer mobile $ do
+      let mobileFiles = tmpFile mobile "mobile_files"
       mobile ##> ("/_files_folder " <> mobileFiles)
       mobile <## "ok"
-      let desktopFiles = "./tests/tmp/desktop_files"
+      let desktopFiles = tmpFile desktop "desktop_files"
       desktop ##> ("/_files_folder " <> desktopFiles)
       desktop <## "ok"
-      let desktopHostFiles = "./tests/tmp/remote_hosts_data"
+      let desktopHostFiles = tmpFile desktop "remote_hosts_data"
       desktop ##> ("/remote_hosts_folder " <> desktopHostFiles)
       desktop <## "ok"
-      let bobFiles = "./tests/tmp/bob_files"
+      let bobFiles = tmpFile bob "bob_files"
       bob ##> ("/_files_folder " <> bobFiles)
       bob <## "ok"
 
-      startRemote mobile desktop
+      startRemote compress mobile desktop
       contactBob desktop bob
 
       rhs <- readTVarIO (Controller.remoteHostSessions $ chatController desktop)
-      desktopHostStore <- case M.lookup (RHId 1) rhs of
-        Just (_, RHSessionConnected {storePath}) -> pure $ desktopHostFiles </> storePath </> remoteFilesFolder
+      (rhClient, desktopHostStore) <- case M.lookup (RHId 1) rhs of
+        Just (_, RHSessionConnected {rhClient, storePath}) ->
+          pure (rhClient, desktopHostFiles </> storePath </> remoteFilesFolder)
         _ -> fail "Host session 1 should be started"
       desktop ##> "/store remote file 1 tests/fixtures/test.pdf"
       desktop <## "file test.pdf stored on remote host 1"
@@ -231,6 +322,17 @@ remoteStoreFileTest =
       Just cfArgs@(CFArgs key nonce) <- J.decode . LB.pack <$> getTermLine desktop
       chatReadFile (mobileFiles </> "test_2.pdf") (strEncode key) (strEncode nonce) `shouldReturn` Right (LB.fromStrict src)
       chatReadFile (desktopHostStore </> "test_2.pdf") (strEncode key) (strEncode nonce) `shouldReturn` Right (LB.fromStrict src)
+
+      -- the host rejects a traversal name before draining the attachment; only calling the protocol
+      -- directly can put such a name on the wire, as /store remote file sanitizes it controller-side
+      runExceptT (remoteStoreFile rhClient "tests/fixtures/test.pdf" "../x") >>= \case
+        Left (RPEInvalidBody _) -> pure ()
+        r -> fail $ "expected RPEInvalidBody, got " <> show r
+      doesFileExist (tmpFile mobile "x") `shouldReturn` False
+      -- the undrained attachment did not break the session
+      desktop ##> "/store remote file 1 tests/fixtures/test.pdf"
+      desktop <## "file test_3.pdf stored on remote host 1"
+      B.readFile (mobileFiles </> "test_3.pdf") `shouldReturn` src
 
       removeFile (desktopHostStore </> "test_1.pdf")
       removeFile (desktopHostStore </> "test_2.pdf")
@@ -251,8 +353,10 @@ remoteStoreFileTest =
         [ do
             desktop <## "completed uploading file 1 (test_1.pdf) for bob",
           do
-            bob <## "saving file 1 from alice to test_1.pdf"
-            bob <## "started receiving file 1 (test_1.pdf) from alice"
+            bob
+              <### [ "saving file 1 from alice to test_1.pdf",
+                     "started receiving file 1 (test_1.pdf) from alice"
+                   ]
             bob <## "completed receiving file 1 (test_1.pdf) from alice"
         ]
       B.readFile (bobFiles </> "test_1.pdf") `shouldReturn` src
@@ -279,8 +383,10 @@ remoteStoreFileTest =
         [ do
             desktop <## "completed uploading file 2 (test_2.pdf) for bob",
           do
-            bob <## "saving file 2 from alice to test_2.pdf"
-            bob <## "started receiving file 2 (test_2.pdf) from alice"
+            bob
+              <### [ "saving file 2 from alice to test_2.pdf",
+                     "started receiving file 2 (test_2.pdf) from alice"
+                   ]
             bob <## "completed receiving file 2 (test_2.pdf) from alice"
         ]
       B.readFile (bobFiles </> "test_2.pdf") `shouldReturn` src
@@ -296,8 +402,10 @@ remoteStoreFileTest =
         [ do
             bob <## "completed uploading file 3 (test.jpg) for alice",
           do
-            desktop <## "saving file 3 from bob to test.jpg"
-            desktop <## "started receiving file 3 (test.jpg) from bob"
+            desktop
+              <### [ "saving file 3 from bob to test.jpg",
+                     "started receiving file 3 (test.jpg) from bob"
+                   ]
             desktop <## "completed receiving file 3 (test.jpg) from bob"
         ]
       Just cfArgs'@(CFArgs key' nonce') <- J.decode . LB.pack <$> getTermLine desktop
@@ -323,18 +431,18 @@ remoteStoreFileTest =
       r `shouldStartWith` "remote host 1 error"
       r `shouldContain` err
 
-remoteCLIFileTest :: HasCallStack => TestParams -> IO ()
-remoteCLIFileTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob -> withXFTPServer $ do
-  let mobileFiles = "./tests/tmp/mobile_files"
+remoteCLIFileTest :: HasCallStack => ((Bool, Bool), TestParams) -> IO ()
+remoteCLIFileTest = testRemote3 $ \compress mobile desktop bob -> withXFTPServer mobile $ do
+  let mobileFiles = tmpFile mobile "mobile_files"
   mobile ##> ("/_files_folder " <> mobileFiles)
   mobile <## "ok"
-  let bobFiles = "./tests/tmp/bob_files/"
+  let bobFiles = tmpFile bob "bob_files/"
   createDirectoryIfMissing True bobFiles
-  let desktopHostFiles = "./tests/tmp/remote_hosts_data"
+  let desktopHostFiles = tmpFile desktop "remote_hosts_data"
   desktop ##> ("/remote_hosts_folder " <> desktopHostFiles)
   desktop <## "ok"
 
-  startRemote mobile desktop
+  startRemote compress mobile desktop
   contactBob desktop bob
 
   rhs <- readTVarIO (Controller.remoteHostSessions $ chatController desktop)
@@ -354,8 +462,10 @@ remoteCLIFileTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mob
     [ do
         bob <## "completed uploading file 1 (test.pdf) for alice",
       do
-        desktop <## "saving file 1 from bob to test.pdf"
-        desktop <## "started receiving file 1 (test.pdf) from bob"
+        desktop
+          <### [ "saving file 1 from bob to test.pdf",
+                 "started receiving file 1 (test.pdf) from bob"
+               ]
         desktop <## "completed receiving file 1 (test.pdf) from bob"
     ]
 
@@ -380,8 +490,10 @@ remoteCLIFileTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mob
     [ do
         desktop <## "completed uploading file 2 (test.jpg) for bob",
       do
-        bob <## "saving file 2 from alice to ./tests/tmp/bob_files/test.jpg"
-        bob <## "started receiving file 2 (test.jpg) from alice"
+        bob
+          <### [ ConsoleString ("saving file 2 from alice to " <> bobFiles <> "test.jpg"),
+                 "started receiving file 2 (test.jpg) from alice"
+               ]
         bob <## "completed receiving file 2 (test.jpg) from alice"
     ]
 
@@ -392,9 +504,9 @@ remoteCLIFileTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mob
 
   stopMobile mobile desktop
 
-switchRemoteHostTest :: TestParams -> IO ()
-switchRemoteHostTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob -> do
-  startRemote mobile desktop
+switchRemoteHostTest :: HasCallStack => ((Bool, Bool), TestParams) -> IO ()
+switchRemoteHostTest = testRemote3 $ \compress mobile desktop bob -> do
+  startRemote compress mobile desktop
   contactBob desktop bob
 
   desktop ##> "/contacts"
@@ -418,10 +530,10 @@ switchRemoteHostTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \
   desktop <## "remote host 1 error: RHEInactive"
   desktop ##> "/contacts"
 
-indicateRemoteHostTest :: TestParams -> IO ()
-indicateRemoteHostTest = testChat4 aliceProfile aliceDesktopProfile bobProfile cathProfile $ \mobile desktop bob cath -> do
+indicateRemoteHostTest :: HasCallStack => ((Bool, Bool), TestParams) -> IO ()
+indicateRemoteHostTest = testRemote4 $ \compress mobile desktop bob cath -> do
   connectUsers desktop cath
-  startRemote mobile desktop
+  startRemote compress mobile desktop
   contactBob desktop bob
   -- remote contact -> remote host
   bob #> "@alice hi"
@@ -442,8 +554,8 @@ indicateRemoteHostTest = testChat4 aliceProfile aliceDesktopProfile bobProfile c
   desktop <##> cath
   cath <##> desktop
 
-multipleProfilesTest :: TestParams -> IO ()
-multipleProfilesTest = testChat4 aliceProfile aliceDesktopProfile bobProfile cathProfile $ \mobile desktop bob cath -> do
+multipleProfilesTest :: HasCallStack => ((Bool, Bool), TestParams) -> IO ()
+multipleProfilesTest = testRemote4 $ \compress mobile desktop bob cath -> do
   connectUsers desktop cath
 
   desktop ##> "/create user desk_bottom"
@@ -453,7 +565,7 @@ multipleProfilesTest = testChat4 aliceProfile aliceDesktopProfile bobProfile cat
   desktop <## "alice_desktop (Alice Desktop)"
   desktop <## "desk_bottom (active)"
 
-  startRemote mobile desktop
+  startRemote compress mobile desktop
   contactBob desktop bob
   desktop ##> "/users"
   desktop <## "alice (Alice) (active)"
@@ -489,14 +601,35 @@ multipleProfilesTest = testChat4 aliceProfile aliceDesktopProfile bobProfile cat
 
 -- * Utils
 
-startRemote :: TestCC -> TestCC -> IO ()
-startRemote mobile desktop = do
+testRemote :: HasCallStack => (String -> TestCC -> TestCC -> IO()) -> ((Bool, Bool), TestParams) -> IO ()
+testRemote test ((mobileCompression, desktopCompression), ps) =
+  withNewTestChatCfg ps testCfg {remoteCompression = mobileCompression} "mobile" aliceProfile $ \mobile ->
+    withNewTestChatCfg ps testCfg {remoteCompression = desktopCompression} "desktop" aliceDesktopProfile $ \desktop ->
+      let compress = " (" <> (if mobileCompression && desktopCompression then "with" else "no") <> " compression)"
+       in test compress mobile desktop
+  
+
+testRemote3 :: HasCallStack => (String -> TestCC -> TestCC -> TestCC -> IO()) -> ((Bool, Bool), TestParams) -> IO ()
+testRemote3 test ps =
+  testRemote
+    (\compress mobile desktop -> withNewTestChat (snd ps) "bob" bobProfile $ test compress mobile desktop)
+    ps
+
+testRemote4 :: HasCallStack => (String -> TestCC -> TestCC -> TestCC -> TestCC -> IO()) -> ((Bool, Bool), TestParams) -> IO ()
+testRemote4 test ps =
+  testRemote3
+    (\compress mobile desktop bob -> withNewTestChat (snd ps) "cath" cathProfile $ test compress mobile desktop bob)
+    ps
+
+startRemote :: String -> TestCC -> TestCC -> IO ()
+startRemote compress mobile desktop = do
   desktop ##> "/set device name My desktop"
   desktop <## "ok"
   mobile ##> "/set device name Mobile"
   mobile <## "ok"
   desktop ##> "/start remote host new"
   desktop <##. "new remote host started on "
+  desktop <##. "other addresses: "
   desktop <## "Remote session invitation:"
   inv <- getTermLine desktop
   mobile ##> ("/connect remote ctrl " <> inv)
@@ -504,14 +637,15 @@ startRemote mobile desktop = do
   desktop <## "new remote host connecting"
   mobile <## "new remote controller connected"
   verifyRemoteCtrl mobile desktop
-  mobile <## "remote controller 1 session started with My desktop"
+  mobile <## ("remote controller 1 session started with My desktop" <> compress)
   desktop <## "new remote host 1 added: Mobile"
-  desktop <## "remote host 1 connected"
+  desktop <## ("remote host 1 connected" <> compress)
 
-startRemoteStored :: TestCC -> TestCC -> IO ()
-startRemoteStored mobile desktop = do
+startRemoteStored :: String -> TestCC -> TestCC -> IO ()
+startRemoteStored compress mobile desktop = do
   desktop ##> "/start remote host 1"
   desktop <##. "remote host 1 started on "
+  desktop <##. "other addresses: "
   desktop <## "Remote session invitation:"
   inv <- getTermLine desktop
   mobile ##> ("/connect remote ctrl " <> inv)
@@ -519,13 +653,14 @@ startRemoteStored mobile desktop = do
   desktop <## "remote host 1 connecting"
   mobile <## "remote controller 1 connected"
   verifyRemoteCtrl mobile desktop
-  mobile <## "remote controller 1 session started with My desktop"
-  desktop <## "remote host 1 connected"
+  mobile <## ("remote controller 1 session started with My desktop" <> compress)
+  desktop <## ("remote host 1 connected" <> compress)
 
-startRemoteDiscover :: TestCC -> TestCC -> IO ()
-startRemoteDiscover mobile desktop = do
+startRemoteDiscover :: String -> TestCC -> TestCC -> IO ()
+startRemoteDiscover compress mobile desktop = do
   desktop ##> "/start remote host 1 multicast=on"
   desktop <##. "remote host 1 started on "
+  desktop <##. "other addresses: "
   desktop <## "Remote session invitation:"
   _inv <- getTermLine desktop -- will use multicast instead
   mobile ##> "/find remote ctrl"
@@ -538,8 +673,8 @@ startRemoteDiscover mobile desktop = do
   desktop <## "remote host 1 connecting"
   mobile <## "remote controller 1 connected"
   verifyRemoteCtrl mobile desktop
-  mobile <## "remote controller 1 session started with My desktop"
-  desktop <## "remote host 1 connected"
+  mobile <## ("remote controller 1 session started with My desktop" <> compress)
+  desktop <## ("remote host 1 connected" <> compress)
 
 verifyRemoteCtrl :: TestCC -> TestCC -> IO ()
 verifyRemoteCtrl mobile desktop = do
@@ -582,3 +717,28 @@ eventually retries action =
     Left err | retries == 0 -> throwIO err
     Left _ -> eventually (retries - 1) action
     Right r -> pure r
+
+newtype TestBody = TestBody (IORef [B.ByteString])
+
+instance HTTP2BodyChunk TestBody where
+  getBodyChunk (TestBody chunks) = atomicModifyIORef' chunks $ \case
+    c : cs -> (cs, c)
+    [] -> ([], "")
+  getBodySize _ = Nothing
+
+testRemoteCrypto :: IO RemoteCrypto
+testRemoteCrypto = do
+  drg <- C.newRandom
+  (_, idPrivKey) <- atomically $ C.generateKeyPair drg
+  (_, sessPrivKey) <- atomically $ C.generateKeyPair drg
+  let (chainKey, _) = C.sbcInit "" ("secret" :: B.ByteString)
+  chainKeys <- TSbChainKeys <$> newTVarIO chainKey <*> newTVarIO chainKey
+  sndCounter <- newTVarIO 0
+  rcvCounter <- newTVarIO 0
+  skippedKeys <- TM.emptyIO
+  pure RemoteCrypto {sessionCode = "", sndCounter, rcvCounter, chainKeys, skippedKeys, signatures = RSSign {idPrivKey, sessPrivKey}, compression = True}
+
+parseDecryptChunks :: Int -> RemoteCrypto -> IORef [B.ByteString] -> IO (Either RemoteProtocolError ())
+parseDecryptChunks maxSize rc chunks = do
+  body <- getHTTP2Body (TestBody chunks) 0
+  runExceptT . void $ parseDecryptHTTP2Body maxSize rc (TestBody chunks) body

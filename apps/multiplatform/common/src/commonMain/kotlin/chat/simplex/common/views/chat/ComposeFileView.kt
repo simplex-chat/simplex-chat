@@ -12,7 +12,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.ui.theme.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 
 @Composable
 fun ComposeFileView(fileName: String, cancelFile: () -> Unit, cancelEnabled: Boolean) {
@@ -33,8 +33,7 @@ fun ComposeFileView(fileName: String, cancelFile: () -> Unit, cancelEnabled: Boo
         .size(36.dp),
       tint = if (isInDarkTheme()) FileDark else FileLight
     )
-    Text(fileName)
-    Spacer(Modifier.weight(1f))
+    Text(fileName, maxLines = 1, modifier = Modifier.weight(1f))
     if (cancelEnabled) {
       IconButton(onClick = cancelFile, modifier = Modifier.padding(0.dp)) {
         Icon(

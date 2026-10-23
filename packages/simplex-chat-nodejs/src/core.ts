@@ -1,0 +1,240 @@
+import {ChatEvent, ChatResponse, T} from "@simplex-chat/types"
+import * as libs from "./libs"
+import * as simplex from "./simplex"
+
+export type Backend = "sqlite" | "postgres"
+
+let loading: {backend: Backend, promise: Promise<void>} | undefined
+
+/**
+ * Resolve (downloading on first use) and load libsimplex for the backend.
+ * One libsimplex per process: the Haskell runtime is initialized once, and another backend is rejected.
+ */
+export function loadLibrary(backend: Backend): Promise<void> {
+  if (loading) {
+    if (loading.backend === backend) return loading.promise
+    return Promise.reject(new Error(`libsimplex already loaded with backend=${loading.backend}; cannot switch to ${backend} in the same process`))
+  }
+  const promise = Promise.all([libs.resolveLibsDir(backend), libs.resolveAddonPath()])
+    .then(([dir, addon]) => simplex.load(addon, libs.libPath(dir)))
+  loading = {backend, promise}
+  // a failed download or load can be retried
+  promise.catch(() => { loading = undefined })
+  return promise
+}
+
+/**
+ * Initialize chat controller
+ * @param {number} [queueSize] - Size of internal queues, the core default is used when omitted.
+ */
+export async function chatMigrateInit(dbPath: string, dbKey: string, confirm: MigrationConfirmation, queueSize?: number): Promise<bigint> {
+  const [ctrl, res] = queueSize === undefined
+    ? await simplex.chat_migrate_init(dbPath, dbKey, confirm)
+    : await simplex.chat_migrate_init_queue(dbPath, dbKey, confirm, queueSize)
+  const json = JSON.parse(res)
+  if (json.type === 'ok') return ctrl
+  throw new ChatInitError("Database or migration error (see dbMigrationError property)", json as DBMigrationError)
+}
+
+/**
+ * Close chat store
+ */
+export async function chatCloseStore(ctrl: bigint): Promise<void> {
+  const res = await simplex.chat_close_store(ctrl)
+  if (res !== "") throw new Error(res)
+}
+
+/**
+ * Send chat command as string
+ */
+export async function chatSendCmd(ctrl: bigint, cmd: string): Promise<ChatResponse> {
+  const res = await simplex.chat_send_cmd(ctrl, cmd)
+  const json = JSON.parse(res) as APIResult<ChatResponse>
+  // console.log(cmd.slice(0, 16), json.result?.type || json.error)
+  if (typeof json.result === 'object') return json.result
+  if (typeof json.error === 'object') throw new ChatAPIError("Chat command error (see chatError property)", json.error as T.ChatError)
+  throw new ChatAPIError("Invalid chat command result")
+}
+
+/**
+ * Receive chat event
+ */
+export async function chatRecvMsgWait(ctrl: bigint, wait: number): Promise<ChatEvent | undefined> {
+  const res = await simplex.chat_recv_msg_wait(ctrl, wait)
+  if (res === "") return undefined
+  const json = JSON.parse(res) as APIResult<ChatEvent>
+  // if (json.result) console.log("event", json.result.type)
+  if (typeof json.result === 'object') return json.result
+  if (typeof json.error === 'object') throw new ChatAPIError("Chat event error (see chatError property)", json.error as T.ChatError)
+  throw new ChatAPIError("Invalid chat event")  
+}
+
+/**
+ * Write buffer to encrypted file
+ */
+export async function chatWriteFile(ctrl: bigint, path: string, buffer: ArrayBuffer | Uint8Array): Promise<CryptoArgs> {
+  const res = await simplex.chat_write_file(ctrl, path, buffer)
+  return cryptoArgsResult(res)
+}
+
+/**
+ * Read buffer from encrypted file
+ */
+export async function chatReadFile(path: string, {fileKey, fileNonce}: CryptoArgs): Promise<Buffer> {
+  return await simplex.chat_read_file(path, fileKey, fileNonce)
+}
+
+/**
+ * Encrypt file
+ */
+export async function chatEncryptFile(ctrl: bigint, fromPath: string, toPath: string): Promise<CryptoArgs> {
+  const res = await simplex.chat_encrypt_file(ctrl, fromPath, toPath)
+  return cryptoArgsResult(res)
+}
+
+/**
+ * Decrypt file
+ */
+export async function chatDecryptFile(fromPath: string, {fileKey, fileNonce}: CryptoArgs, toPath: string): Promise<void> {
+  const res = await simplex.chat_decrypt_file(fromPath, fileKey, fileNonce, toPath)
+  if (res !== "") throw new Error(res)
+}
+
+function cryptoArgsResult(res: string): CryptoArgs {
+  const json = JSON.parse(res)
+  switch (json.type) {
+    case "result": return json.cryptoArgs as CryptoArgs
+    case "error": throw Error(json.writeError)
+    default: throw Error("unexpected chat_write_file result: " + res)
+  }  
+}
+
+export interface APIResult<R> {
+  result?: R
+  error?: T.ChatError
+}
+
+export class ChatAPIError extends Error {
+  constructor(public message: string, public chatError: T.ChatError | undefined = undefined) {
+    super(message)
+  }
+}
+
+/**
+ * Migration confirmation mode
+ */
+export enum MigrationConfirmation {
+  YesUp = "yesUp",
+  YesUpDown = "yesUpDown",
+  Console = "console",
+  Error = "error"
+}
+
+/**
+ * File encryption key and nonce
+ */
+export interface CryptoArgs {
+  fileKey: string
+  fileNonce: string
+}
+
+export class ChatInitError extends Error {
+  constructor(public message: string, public dbMigrationError: DBMigrationError) {
+    super(message)
+  }
+}
+
+export type DBMigrationError = 
+  | DBMigrationError.InvalidConfirmation
+  | DBMigrationError.InvalidQueueSize
+  | DBMigrationError.ErrorNotADatabase // invalid/corrupt database file or incorrect encryption key
+  | DBMigrationError.ErrorMigration
+  | DBMigrationError.ErrorSQL
+
+export namespace DBMigrationError {
+  export type Tag = "invalidConfirmation" | "invalidQueueSize" | "errorNotADatabase" | "errorMigration" | "errorSQL"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface InvalidConfirmation extends Interface {
+    type: "invalidConfirmation"
+  }
+
+  export interface InvalidQueueSize extends Interface {
+    type: "invalidQueueSize"
+  }
+
+  export interface ErrorNotADatabase extends Interface {
+    type: "errorNotADatabase"
+    dbFile: string
+  }
+
+  export interface ErrorMigration extends Interface {
+    type: "errorMigration"
+    dbFile: string
+    migrationError: MigrationError
+  }
+
+  export interface ErrorSQL extends Interface {
+    type: "errorSQL"
+    dbFile: string
+    migrationSQLError: string
+  }
+}
+
+export type MigrationError =
+  | MigrationError.MEUpgrade
+  | MigrationError.MEDowngrade
+  | MigrationError.MigrationError
+
+export namespace MigrationError {
+  export type Tag = "upgrade" | "downgrade" | "migrationError"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface MEUpgrade extends Interface {
+    type: "upgrade"
+    upMigrations: UpMigration[]
+  }
+
+  export interface MEDowngrade extends Interface {
+    type: "downgrade"
+    downMigrations: string[]
+  }
+
+  export interface MigrationError extends Interface {
+    type: "migrationError"
+    mtrError: MTRError
+  }  
+}
+
+export interface UpMigration {
+  upName: string
+  withDown: boolean
+}
+
+export type MTRError =
+  | MTRError.MTRENoDown
+  | MTRError.MTREDifferent
+
+export namespace MTRError {
+  export type Tag = "noDown" | "different"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface MTRENoDown extends Interface {
+    type: "noDown"
+    dbMigrations: string[]
+  }
+
+  export interface MTREDifferent extends Interface {
+    type: "different"
+    downMigrations: string[]
+  }
+}

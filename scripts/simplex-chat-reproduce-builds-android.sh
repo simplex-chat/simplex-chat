@@ -18,6 +18,7 @@ CMDS="curl git docker"
 
 INIT_DIR="$PWD"
 TEMPDIR="$(mktemp -d)"
+PID_MAX_ORIGINAL="$(sysctl -n kernel.pid_max)"
 
 ARCHES="${ARCHES:-aarch64 armv7a}"
 
@@ -32,26 +33,46 @@ cleanup() {
   rm -rf -- "${TEMPDIR}"
   docker rm --force "${CONTAINER_NAME}" 2>/dev/null || :
   docker image rm "${IMAGE_NAME}" 2>/dev/null || :
+
+  if [ "$(sysctl -n kernel.pid_max)" != "$PID_MAX_ORIGINAL" ]; then
+    printf 'Adjusting kernel.pid_max back to original value...\n'
+    if $SUDO sysctl kernel.pid_max="$PID_MAX_ORIGINAL"; then
+      printf 'Successfully adjusted kernel.pid_max\n'
+    else
+      printf 'Failed to adjust kernel.pid_max. Please set the value manually with: %s sysctl kernel.pid_max=%s\n' "$SUDO" "$PID_MAX_ORIGINAL"
+    fi
+  fi
 }
 trap 'cleanup' EXIT INT
 
 check() {
+  commands="$1"
+
   set +u
 
   for i in $commands; do
-    case $i in
-      *)
-        if ! command -v "$i" > /dev/null 2>&1; then
-          commands_failed="$i $commands_failed"
-        fi
-        ;;
-    esac
+    if ! command -v "$i" > /dev/null 2>&1; then
+      commands_failed="$i $commands_failed"
+    fi
   done
 
   if [ -n "$commands_failed" ]; then
     commands_failed=${commands_failed% *}
     printf "%s is not found in your \$PATH. Please install them and re-run the script.\n" "$commands_failed"
     exit 1
+  fi
+
+  if [ "$PID_MAX_ORIGINAL" -gt 65535 ]; then
+    SUDO=$(command -v sudo || command -v doas) || { echo "No sudo or doas"; exit 1; }
+
+    printf 'Adjusting kernel.pid_max value to 65535...\n'
+
+    if $SUDO sysctl kernel.pid_max=65535; then
+      printf 'Successfully adjusted kernel.pid_max\n'
+    else
+      printf 'Failed to adjust kernel.pid_max, aborting.\n'
+      exit 1
+    fi
   fi
 
   set -u
@@ -97,9 +118,14 @@ check_apk() {
 verify_apk() {
   apk_name="$1"
 
+  # Release APKs are packaged by AGP (gradle :android:assembleFossRelease; AGP version is
+  # gradle.plugin.version in apps/multiplatform/gradle.properties), which zero-pads ZIP
+  # alignment. Do NOT add --pad-like-apksigner (standalone apksigner >= 35.0.0-rc1 uses
+  # the 0xd935 extra-field padding) unless AGP is bumped to a packager that uses it —
+  # otherwise apksigcopier aborts with "APK Signing Block offset < central directory offset".
   # https://github.com/obfusk/apksigcopier?tab=readme-ov-file#what-about-signatures-made-by-apksigner-from-build-tools--3500-rc1
-  docker exec "${CONTAINER_NAME}" repro-apk zipalign --page-size 16 --pad-like-apksigner --replace "${DOCKER_PATH_VERIFY}/${apk_name}.${SUFFIX_BUILT}" \
-                                                                                                   "${DOCKER_PATH_VERIFY}/${apk_name}.aligned"
+  docker exec "${CONTAINER_NAME}" repro-apk zipalign --page-size 16 --replace "${DOCKER_PATH_VERIFY}/${apk_name}.${SUFFIX_BUILT}" \
+                                                                              "${DOCKER_PATH_VERIFY}/${apk_name}.aligned"
   docker exec "${CONTAINER_NAME}" mv "${DOCKER_PATH_VERIFY}/${apk_name}.aligned" \
                                      "${DOCKER_PATH_VERIFY}/${apk_name}.${SUFFIX_BUILT}"
 
@@ -184,11 +210,14 @@ main() {
 3) build core library with nix (12-24 hours).
 4) build APK and compare with downloaded one
 
+The script will ask for sudo password to adjust kernel.pid_max (needed for armv7a build)
+and set it back to otiginal value when the build is done.
+
 Continue?'
 
   read _
 
-  check
+  check "$CMDS"
 
   mkdir -p "${apk_directory}"
 
@@ -217,7 +246,12 @@ Continue?'
   for arch in $ARCHES; do
     case "$arch" in
       armv7a)
-        build_tag="${tag}-armv7a"
+        # Releases made before the master-android branch was merged have armv7a in a separate tag.
+        if git -C "$build_directory" rev-parse -q --verify "refs/tags/${tag}-armv7a" > /dev/null; then
+          build_tag="${tag}-armv7a"
+        else
+          build_tag="${tag}"
+        fi
         ;;
       aarch64)
         build_tag="${tag}"

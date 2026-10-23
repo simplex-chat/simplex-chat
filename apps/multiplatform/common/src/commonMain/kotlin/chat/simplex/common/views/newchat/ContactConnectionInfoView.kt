@@ -7,6 +7,7 @@ import SectionView
 import SectionViewWithButton
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,7 +26,7 @@ import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.PendingContactConnection
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.usersettings.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import kotlinx.coroutines.*
 
 @Composable
@@ -65,8 +66,9 @@ fun ContactConnectionInfoView(
     deleteConnection = { deleteContactConnectionAlert(rhId, contactConnection, chatModel, close) },
     onLocalAliasChanged = { setContactAlias(rhId, contactConnection, it, chatModel) },
     learnMore = {
+      if (appPlatform.isDesktop) ModalManager.end.closeModals()
       ModalManager.end.showModalCloseable { close ->
-        AddContactLearnMore(close)
+        key(this) { AddContactLearnMore(close) }
       }
     }
   )
@@ -89,7 +91,10 @@ private fun ContactConnectionInfoLayout(
       SettingsActionItemWithContent(
         icon = painterResource(MR.images.ic_theater_comedy_filled),
         text = null,
-        click = { ModalManager.end.showModal { IncognitoView() } },
+        click = {
+          if (appPlatform.isDesktop) ModalManager.end.closeModals()
+          ModalManager.end.showModal { key(this) { IncognitoView() } }
+        },
         iconColor = Indigo,
         extraPadding = false
       ) {
@@ -130,7 +135,7 @@ private fun ContactConnectionInfoLayout(
     if (connLink != null && connLink.connFullLink.isNotEmpty() && contactConnection.initiated) {
       Spacer(Modifier.height(DEFAULT_PADDING))
       SectionViewWithButton(
-        stringResource(MR.strings.one_time_link).uppercase(),
+        stringResource(MR.strings.one_time_link),
         titleButton = if (connLink.connShortLink == null) null else {{ ToggleShortLinkButton(showShortLink) }}
       ) {
         SimpleXCreatedLinkQRCode(connLink, short = showShortLink.value)
@@ -146,7 +151,7 @@ private fun ContactConnectionInfoLayout(
     }
     SectionTextFooter(sharedProfileInfo(chatModel, contactConnection.incognito))
 
-    SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+    SectionDividerSpaced()
 
     DeleteButton(deleteConnection)
 

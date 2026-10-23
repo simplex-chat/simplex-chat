@@ -482,4 +482,4 @@ Możliwe jest również udostępnienie adresu swojego serwera znajomym, pozwalaj
 
 _Uwaga_: Do obsługi haseł wymagany jest serwer SMP w wersji 4.0. Jeśli już posiadasz serwer, możesz dodać hasło do niego poprzez wpisanie hasła do pliku INI serwera.
 
-<img src="./server_config_1.png" width="288"> &nbsp;&nbsp; <img src="./server_config_2.png" width="288"> &nbsp;&nbsp; <img src="./server_config_3.png" width="288">
+<img src="/docs/server_config_1.png" width="288"> &nbsp;&nbsp; <img src="/docs/server_config_2.png" width="288"> &nbsp;&nbsp; <img src="/docs/server_config_3.png" width="288">

@@ -12,7 +12,7 @@ import SimpleXChat
 struct NewChatMenuButton: View {
     // do not use chatModel here because it prevents showing AddGroupMembersView after group creation and QR code after link creation on iOS 16
 //    @EnvironmentObject var chatModel: ChatModel
-    @State private var showNewChatSheet = false
+    @Binding var showNewChatSheet: Bool
     @State private var alert: SomeAlert? = nil
 
     var body: some View {
@@ -24,10 +24,6 @@ struct NewChatMenuButton: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: 24, height: 24)
-        }
-        .appSheet(isPresented: $showNewChatSheet) {
-            NewChatSheet()
-                .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
         }
         .alert(item: $alert) { a in
             return a.alert
@@ -45,6 +41,8 @@ struct NewChatSheet: View {
     @State private var searchText = ""
     @State private var searchShowingSimplexLink = false
     @State private var searchChatFilteredBySimplexLink: String? = nil
+    // when the search text is a SimpleX name, the string to connect to (with @/# preserved); nil otherwise
+    @State private var connectNameCandidate: String? = nil
     @State private var alert: SomeAlert?
 
     // Sheet height management
@@ -59,7 +57,7 @@ struct NewChatSheet: View {
         let showArchive = chatModel.chats.contains { $0.chatInfo.contact?.chatDeleted == true }
         let v = NavigationView {
             viewBody(showArchive)
-                .navigationTitle("New message")
+                .navigationTitle("New chat")
                 .navigationBarTitleDisplayMode(.large)
                 .navigationBarHidden(searchMode)
                 .modifier(ThemedBackground(grouped: true))
@@ -85,15 +83,25 @@ struct NewChatSheet: View {
 
     private func viewBody(_ showArchive: Bool) -> some View {
         List {
-            HStack {
+            VStack(spacing: 12) {
                 ContactsListSearchBar(
                     searchMode: $searchMode,
                     searchFocussed: $searchFocussed,
                     searchText: $searchText,
                     searchShowingSimplexLink: $searchShowingSimplexLink,
-                    searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
+                    searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink,
+                    connectNameCandidate: $connectNameCandidate
                 )
                 .frame(maxWidth: .infinity)
+                if let candidate = connectNameCandidate {
+                    ConnectByNameRow(
+                        name: candidate,
+                        searchText: $searchText,
+                        connectNameCandidate: $connectNameCandidate,
+                        searchFocussed: $searchFocussed,
+                        dismiss: true
+                    )
+                }
             }
             .listRowSeparator(.hidden)
             .listRowBackground(Color.clear)
@@ -103,9 +111,8 @@ struct NewChatSheet: View {
                 Section {
                     NavigationLink(isActive: $isAddContactActive) {
                         NewChatView(selection: .invite)
-                            .navigationTitle("New chat")
                             .modifier(ThemedBackground(grouped: true))
-                            .navigationBarTitleDisplayMode(.large)
+                            .navigationBarTitleDisplayMode(.inline)
                     } label: {
                         navigateOnTap(Label("Create 1-time link", systemImage: "link.badge.plus")) {
                             isAddContactActive = true
@@ -113,9 +120,8 @@ struct NewChatSheet: View {
                     }
                     NavigationLink(isActive: $isScanPasteLinkActive) {
                         NewChatView(selection: .connect, showQRCodeScanner: true)
-                            .navigationTitle("New chat")
                             .modifier(ThemedBackground(grouped: true))
-                            .navigationBarTitleDisplayMode(.large)
+                            .navigationBarTitleDisplayMode(.inline)
                     } label: {
                         navigateOnTap(Label("Scan / Paste link", systemImage: "qrcode")) {
                             isScanPasteLinkActive = true
@@ -128,6 +134,14 @@ struct NewChatSheet: View {
                             .navigationBarTitleDisplayMode(.large)
                     } label: {
                         Label("Create group", systemImage: "person.2.circle.fill")
+                    }
+                    NavigationLink {
+                        AddChannelView()
+                            .navigationTitle("Create public channel")
+                            .modifier(ThemedBackground(grouped: true))
+                            .navigationBarTitleDisplayMode(.large)
+                    } label: {
+                        Label("Create public channel", systemImage: "antenna.radiowaves.left.and.right")
                     }
                 }
                 
@@ -325,6 +339,7 @@ struct ContactsListSearchBar: View {
     @Binding var searchText: String
     @Binding var searchShowingSimplexLink: Bool
     @Binding var searchChatFilteredBySimplexLink: String?
+    @Binding var connectNameCandidate: String?
     @State private var ignoreSearchTextChange = false
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
 
@@ -379,23 +394,32 @@ struct ContactsListSearchBar: View {
             if ignoreSearchTextChange {
                 ignoreSearchTextChange = false
             } else {
-                if let link = strHasSingleSimplexLink(t.trimmingCharacters(in: .whitespaces)) { // if SimpleX link is pasted, show connection dialogue
+                let s = t.trimmingCharacters(in: .whitespaces)
+                switch strConnectTarget(s) {
+                case let .link(text, _, linkText):
                     searchFocussed = false
-                    if case let .simplexLink(_, linkType, _, smpHosts) = link.format {
-                        ignoreSearchTextChange = true
-                        searchText = simplexLinkText(linkType, smpHosts)
-                    }
+                    ignoreSearchTextChange = true
+                    searchText = linkText
                     searchShowingSimplexLink = true
                     searchChatFilteredBySimplexLink = nil
-                    connect(link.text)
-                } else {
-                    if t != "" { // if some other text is pasted, enter search mode
-                        searchFocussed = true
-                    } else {
-                        connectProgressManager.cancelConnectProgress()
+                    connectNameCandidate = nil
+                    connect(text)
+                default:
+                    // A name is resolved only when its "Connect to …" row is tapped, not on every keystroke.
+                    // The simplex-name filter is chat-list only: this contacts/deleted view is a scoped
+                    // subset, so a resolved chat id (channel, business, unlisted or active-only contact)
+                    // may not be present in it.
+                    let candidate = nameSearchCandidate(s)
+                    connectNameCandidate = candidate
+                    if candidate == nil {
+                        if t != "" {
+                            searchFocussed = true
+                        } else {
+                            connectProgressManager.cancelConnectProgress()
+                        }
+                        searchShowingSimplexLink = false
+                        searchChatFilteredBySimplexLink = nil
                     }
-                    searchShowingSimplexLink = false
-                    searchChatFilteredBySimplexLink = nil
                 }
             }
         }
@@ -437,7 +461,9 @@ struct DeletedChats: View {
     @State private var searchText = ""
     @State private var searchShowingSimplexLink = false
     @State private var searchChatFilteredBySimplexLink: String? = nil
-    
+    // deleted contacts are not connected to by name, so this candidate only stops per-keystroke resolution
+    @State private var connectNameCandidate: String? = nil
+
     var body: some View {
         List {
             ContactsListSearchBar(
@@ -445,7 +471,8 @@ struct DeletedChats: View {
                 searchFocussed: $searchFocussed,
                 searchText: $searchText,
                 searchShowingSimplexLink: $searchShowingSimplexLink,
-                searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
+                searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink,
+                connectNameCandidate: $connectNameCandidate
             )
             .listRowSeparator(.hidden)
             .listRowBackground(Color.clear)
@@ -471,5 +498,5 @@ struct DeletedChats: View {
 }
 
 #Preview {
-    NewChatMenuButton()
+    NewChatMenuButton(showNewChatSheet: Binding.constant(false))
 }

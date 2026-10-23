@@ -16,7 +16,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
+import chat.simplex.res.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 
@@ -76,23 +76,27 @@ fun MemberSupportChatAppBar(
       navigationButton = { NavigationButtonBack(onBackClicked) },
       title = { MemberSupportChatToolbarTitle(scopeMember_) },
       onTitleClick = {
+        val connStats = mutableStateOf<ConnectionStats?>(null)
+        val connectionCode = mutableStateOf<String?>(null)
+        val connectionLoaded = mutableStateOf(false)
+        ModalManager.end.showModalCloseable(showClose = true, cardScreen = true) { closeCurrent ->
+          GroupMemberInfoView(rhId, groupInfo, scopeMember_, scrollToItemId, connStats, connectionCode, connectionLoaded, chatModel, openedFromSupportChat = true, close = closeCurrent) {
+            closeCurrent()
+            close()
+          }
+        }
         withBGApi {
           val r = chatModel.controller.apiGroupMemberInfo(rhId, groupInfo.groupId, scopeMember_.groupMemberId)
           val stats = r?.second
-          val code = if (scopeMember_.memberActive) {
+          val code = if ((scopeMember_.memberActive || (groupInfo.useRelays && scopeMember_.memberCurrent)) && scopeMember_.memberRole != GroupMemberRole.Relay) {
             val memCode = chatModel.controller.apiGetGroupMemberCode(rhId, groupInfo.apiId, scopeMember_.groupMemberId)
             memCode?.second
           } else {
             null
           }
-          ModalManager.end.showModalCloseable(true) { closeCurrent ->
-            remember { derivedStateOf { chatModel.getGroupMember(scopeMember_.groupMemberId) } }.value?.let { mem ->
-              GroupMemberInfoView(rhId, groupInfo, mem, scrollToItemId, stats, code, chatModel, openedFromSupportChat = true, close = closeCurrent) {
-                closeCurrent()
-                close()
-              }
-            }
-          }
+          connStats.value = stats
+          connectionCode.value = code
+          connectionLoaded.value = true
         }
       },
       onTop = !oneHandUI.value || !chatBottomBar.value,
@@ -137,8 +141,8 @@ fun MemberSupportChatToolbarTitle(member: GroupMember, imageSize: Dp = 40.dp, ic
         if (member.verified) {
           MemberVerifiedShield()
         }
-        Text(
-          member.displayName, fontWeight = FontWeight.SemiBold,
+        NameWithBadge(
+          member.displayName, member.nameBadge, fontWeight = FontWeight.SemiBold,
           maxLines = 1, overflow = TextOverflow.Ellipsis
         )
       }

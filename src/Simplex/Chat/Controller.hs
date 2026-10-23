@@ -39,6 +39,7 @@ import Data.Char (ord)
 import Data.Int (Int64)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict (Map)
+import Data.Set (Set)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe)
 import Data.String
@@ -69,16 +70,24 @@ import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.Chat.Util (liftIOEither)
 import Simplex.FileTransfer.Description (FileDescriptionURI)
+import Simplex.Messaging.Server.Information (ServerPublicInfo)
 import Simplex.Messaging.Agent (AgentClient, DatabaseDiff, SubscriptionsInfo)
 import Simplex.Messaging.Agent.Client (AgentLocks, AgentQueuesInfo (..), AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure, SMPServerSubs, ServerQueueInfo, UserNetworkInfo)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig, ServerCfg, Worker)
 import Simplex.Messaging.Agent.Lock
+import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..))
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction, withTransactionPriority)
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation, UpMigration)
+import Simplex.Messaging.Agent.Store.DB (SQLError)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (HostMode (..), SMPProxyFallback (..), SMPProxyMode (..), SMPWebPortServers (..), SocksMode (..))
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Chat.Badges (BadgeCredential, FileSizeLimits, LocalBadge)
+import Simplex.Chat.Badges.Service (BadgeServiceErrorCode, StatementEntry)
+import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind, BadgeIssueFailure, BadgeState (..), OpenStorePurchase (..))
+import Simplex.Chat.PaymentService (ServicePayment)
+import Simplex.Messaging.Crypto.BBS (BBSPublicKey)
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption)
@@ -86,10 +95,11 @@ import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), MsgId, NMsgMeta (..), NtfServer, ProtocolType (..), QueueId, SMPMsgMeta (..), SubscriptionMode (..), XFTPServer)
+import Simplex.Messaging.Session (SessionVar)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (TLS, TransportPeer (..), simplexMQVersion)
 import Simplex.Messaging.Transport.Client (SocksProxyWithAuth, TransportHost)
-import Simplex.Messaging.Util (AnyError (..), catchAllErrors, (<$$>))
+import Simplex.Messaging.Util (AnyError (..), catchAllErrors, catchOwn', (<$$>))
 import Simplex.RemoteControl.Client
 import Simplex.RemoteControl.Invitation (RCSignedInvitation, RCVerifiedInvitation)
 import Simplex.RemoteControl.Types
@@ -97,7 +107,6 @@ import System.IO (Handle)
 import System.Mem.Weak (Weak)
 import UnliftIO.STM
 #if !defined(dbPostgres)
-import Database.SQLite.Simple (SQLError)
 import qualified Database.SQLite.Simple as SQL
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 #endif
@@ -136,16 +145,30 @@ coreVersionInfo simplexmqCommit =
 data ChatConfig = ChatConfig
   { agentConfig :: AgentConfig,
     chatVRange :: VersionRangeChat,
+    callVRange :: VersionRangeCall,
+    -- issuer public keys by index: credentials and proofs name the key that signed them, for rotation
+    badgePublicKeys :: Map Int BBSPublicKey,
+    -- Nothing until the badge service is deployed
+    badgeServiceAddress :: Maybe (ConnectTarget 'CMContact),
+    -- the only clock badge code reads, so tests can shift it; production arithmetic is unchanged
+    badgeCurrentTime :: IO UTCTime,
+    -- how long a badge worker waits before repeating a renewal that failed for a passing reason
+    badgeRetryInterval :: RetryInterval,
+    -- attempts a store receipt gets in one turn before its next one waits for the stored schedule
+    badgeConsecutiveRetries :: Int,
     confirmMigrations :: MigrationConfirmation,
     presetServers :: PresetServers,
     shortLinkPresetServers :: NonEmpty SMPServer,
     presetDomains :: [HostName],
     tbqSize :: Natural,
+    maxChats :: Int,
     fileChunkSize :: Integer,
     xftpDescrPartSize :: Int,
     inlineFiles :: InlineFilesConfig,
     autoAcceptFileSize :: Integer,
+    fileSizeLimits :: FileSizeLimits,
     showReactions :: Bool,
+    showFullLinks :: Bool,
     showReceipts :: Bool,
     subscriptionEvents :: Bool,
     hostEvents :: Bool,
@@ -155,12 +178,64 @@ data ChatConfig = ChatConfig
     cleanupManagerInterval :: NominalDiffTime,
     cleanupManagerStepDelay :: Int64,
     ciExpirationInterval :: Int64, -- microseconds
+    callInvitationTTL :: NominalDiffTime,
     deliveryWorkerDelay :: Int64, -- microseconds
     deliveryBucketSize :: Int,
+    webPreviewConfig :: Maybe WebPreviewConfig,
+    channelSubscriberRole :: GroupMemberRole, -- TODO [relays] starting role should be communicated in protocol from owner to relays
+    relayChecksInterval :: NominalDiffTime,
+    relayInactiveTTL :: NominalDiffTime,
+    relayRequestRetryInterval :: RetryInterval,
+    relayRequestExpiry :: (Int, NominalDiffTime),
     highlyAvailable :: Bool,
     deviceNameForRemote :: Text,
+    remoteCompression :: Bool,
+    updateGroupLinksFromApp :: Bool,
     chatHooks :: ChatHooks
   }
+
+data WebPreviewConfig = WebPreviewConfig
+  { webDomain :: Text,
+    webJsonDir :: FilePath,
+    webCorsFile :: Maybe FilePath,
+    webUpdateInterval :: Int, -- seconds
+    webPreviewItemCount :: Int
+  }
+
+data PublishableGroup = PublishableGroup
+  { pgFileName :: FilePath,
+    pgCorsEntry :: Maybe (Text, CorsOrigin)
+  }
+
+data CorsOrigin = CorsAny | CorsOrigins [Text]
+  deriving (Show)
+
+data WebPreviewState = WebPreviewState
+  { publishableGroupIds :: TVar (Map Int64 PublishableGroup),
+    priorityRender :: TQueue Int64,
+    filesToRemove :: TQueue FilePath,
+    corsNeeded :: TVar Bool,
+    routinePending :: TVar (Set Int64),
+    wakeSignal :: TMVar (),
+    webPreviewWorkerAsync :: TVar (Maybe (Async ()))
+  }
+
+newWebPreviewState :: IO WebPreviewState
+newWebPreviewState = do
+  publishableGroupIds <- newTVarIO mempty
+  priorityRender <- newTQueueIO
+  filesToRemove <- newTQueueIO
+  corsNeeded <- newTVarIO False
+  routinePending <- newTVarIO mempty
+  wakeSignal <- newEmptyTMVarIO
+  webPreviewWorkerAsync <- newTVarIO Nothing
+  pure WebPreviewState {publishableGroupIds, priorityRender, filesToRemove, corsNeeded, routinePending, wakeSignal, webPreviewWorkerAsync}
+
+-- | Builds the read-only context threaded through store functions from chat config.
+-- The single construction point, so new store-wide config (e.g. server keys) is added in one place.
+storeCxt :: ChatController -> StoreCxt
+storeCxt ChatController {config = ChatConfig {chatVRange, badgePublicKeys}, random} = StoreCxt chatVRange badgePublicKeys random
+{-# INLINE storeCxt #-}
 
 data RandomAgentServers = RandomAgentServers
   { smpServers :: NonEmpty (ServerCfg 'PSMP),
@@ -217,6 +292,12 @@ defaultInlineFilesConfig =
 
 data ChatDatabase = ChatDatabase {chatStore :: DBStore, agentStore :: DBStore}
 
+-- | Signalling badgeWork wakes the worker from its own wait; a full var means it has work to do.
+data BadgeWorker = BadgeWorker
+  { badgeWorkerAsync :: Async (),
+    badgeWork :: TMVar ()
+  }
+
 data ChatController = ChatController
   { currentUser :: TVar (Maybe User),
     randomPresetServers :: NonEmpty PresetOperator,
@@ -232,6 +313,7 @@ data ChatController = ChatController
     inputQ :: TBQueue String,
     outputQ :: TBQueue (Maybe RemoteHostId, Either ChatError ChatEvent),
     subscriptionMode :: TVar SubscriptionMode,
+    processServiceRequests :: TVar Bool,
     chatLock :: Lock,
     entityLocks :: TMap ChatLockEntity Lock,
     sndFiles :: TVar (Map Int64 Handle),
@@ -247,6 +329,14 @@ data ChatController = ChatController
     filesFolder :: TVar (Maybe FilePath), -- path to files folder for mobile apps,
     deliveryTaskWorkers :: TMap DeliveryWorkerKey Worker,
     deliveryJobWorkers :: TMap DeliveryWorkerKey Worker,
+    relayRequestWorkers :: TMap Int Worker, -- single global worker with key 1 is used to fit into existing worker management framework
+    -- one badge worker per user: badge state is per profile, and one profile must not stall another
+    badgeWorkers :: TMap UserId (SessionVar BadgeWorker),
+    storeReceiptWorkers :: TMap UserId Worker,
+    badgeSeq :: TVar Int,
+    relayGroupLinkChecksAsync :: TVar (Maybe (Async ())),
+    webPreviewState :: Maybe WebPreviewState,
+    chatRelayTests :: TMap ConnId RelayTest,
     expireCIThreads :: TMap UserId (Maybe (Async ())),
     expireCIFlags :: TMap UserId Bool,
     cleanupManagerAsync :: TVar (Maybe (Async ())),
@@ -274,8 +364,10 @@ data ChatCommand
   | SetUserContactReceipts UserMsgReceiptSettings
   | APISetUserGroupReceipts UserId UserMsgReceiptSettings
   | SetUserGroupReceipts UserMsgReceiptSettings
-  | APISetUserAutoAcceptMemberContacts UserId Bool
+  | APISetUserAutoAcceptMemberContacts {userId :: UserId, onOff :: Bool}
   | SetUserAutoAcceptMemberContacts Bool
+  | APISetUserAutoAcceptGroupInvitations {userId :: UserId, onOff :: Bool}
+  | SetUserAutoAcceptGroupInvitations Bool
   | APIHideUser UserId UserPwd
   | APIUnhideUser UserId UserPwd
   | APIMuteUser UserId
@@ -284,9 +376,10 @@ data ChatCommand
   | UnhideUser UserPwd
   | MuteUser
   | UnmuteUser
+  | SetClientService UserId ContactName Bool
   | APIDeleteUser {userId :: UserId, delSMPQueues :: Bool, viewPwd :: Maybe UserPwd}
   | DeleteUser UserName Bool (Maybe UserPwd)
-  | StartChat {mainApp :: Bool, enableSndFiles :: Bool} -- enableSndFiles has no effect when mainApp is True
+  | StartChat {mainApp :: Bool, enableSndFiles :: Bool, serviceRequests :: Bool} -- enableSndFiles has no effect when mainApp is True
   | CheckChatRunning
   | APIStopChat
   | APIActivateChat {restoreChat :: Bool}
@@ -313,11 +406,12 @@ data ChatCommand
   | APISaveAppSettings AppSettings
   | APIGetAppSettings (Maybe AppSettings)
   | APIGetChatTags UserId
-  | APIGetChats {userId :: UserId, pendingConnections :: Bool, pagination :: PaginationByTime, query :: ChatListQuery}
+  | APIGetChats {userId :: UserId, pendingConnections :: Bool, pagination :: Maybe PaginationByTime, query :: ChatListQuery}
   | APIGetChat {chatRef :: ChatRef, contentTag :: Maybe MsgContentTag, chatPagination :: ChatPagination, search :: Maybe Text}
+  | APIGetChatContentTypes ChatRef
   | APIGetChatItems {chatPagination :: ChatPagination, search :: Maybe Text}
   | APIGetChatItemInfo {chatRef :: ChatRef, chatItemId :: ChatItemId}
-  | APISendMessages {sendRef :: SendRef, liveMessage :: Bool, ttl :: Maybe Int, composedMessages :: NonEmpty ComposedMessage}
+  | APISendMessages {sendRef :: SendRef, liveMessage :: Bool, ttl :: Maybe Int, signMessages :: Bool, composedMessages :: NonEmpty ComposedMessage}
   | APICreateChatTag ChatTagData
   | APISetChatTags ChatRef (Maybe (NonEmpty ChatTagId))
   | APIDeleteChatTag ChatTagId
@@ -334,7 +428,9 @@ data ChatCommand
   | APIChatItemReaction {chatRef :: ChatRef, chatItemId :: ChatItemId, add :: Bool, reaction :: MsgReaction}
   | APIGetReactionMembers {userId :: UserId, groupId :: GroupId, chatItemId :: ChatItemId, reaction :: MsgReaction}
   | APIPlanForwardChatItems {fromChatRef :: ChatRef, chatItemIds :: NonEmpty ChatItemId}
-  | APIForwardChatItems {toChatRef :: ChatRef, fromChatRef :: ChatRef, chatItemIds :: NonEmpty ChatItemId, ttl :: Maybe Int}
+  | APIForwardChatItems {toChatRef :: ChatRef, sendAsGroup :: ShowGroupAsSender, fromChatRef :: ChatRef, chatItemIds :: NonEmpty ChatItemId, ttl :: Maybe Int}
+  | APIShareChatMsgContent {shareChatRef :: ChatRef, toSendRef :: SendRef}
+  | APIShareMyAddress {toSendRef :: SendRef}
   | APIUserRead UserId
   | UserRead
   | APIChatRead {chatRef :: ChatRef}
@@ -343,7 +439,9 @@ data ChatCommand
   | APIDeleteChat {chatRef :: ChatRef, chatDeleteMode :: ChatDeleteMode} -- currently delete mode settings are only applied to direct chats
   | APIClearChat {chatRef :: ChatRef}
   | APIAcceptContact {incognito :: IncognitoEnabled, contactReqId :: Int64}
-  | APIRejectContact {contactReqId :: Int64}
+  | APIRejectContact {contactReqId :: Int64, notify :: Bool}
+  | APISendServiceRequest {userId :: UserId, sendTarget :: ConnectTarget 'CMContact, requestTimeout :: Maybe NominalDiffTime, signKey :: Maybe (C.StoredPrivateKey 'C.Ed25519), request :: J.Object}
+  | APISendServiceResponse {userId :: UserId, requestId :: AgentInvId, responseData :: J.Object}
   | APISendCallInvitation ContactId CallType
   | SendCallInvitation ContactName CallType
   | APIRejectCall ContactId
@@ -354,12 +452,15 @@ data ChatCommand
   | APIGetCallInvitations
   | APICallStatus ContactId WebRTCCallStatus
   | APIUpdateProfile {userId :: UserId, profile :: Profile}
+  | APISetUserDomain {userId :: UserId, simplexDomain :: Maybe (StrJSON "SimplexDomain" SimplexDomain)}
   | APISetContactPrefs {contactId :: ContactId, preferences :: Preferences}
   | APISetContactAlias {contactId :: ContactId, localAlias :: LocalAlias}
   | APISetGroupAlias {groupId :: GroupId, localAlias :: LocalAlias}
   | APISetConnectionAlias {connectionId :: Int64, localAlias :: LocalAlias}
   | APISetUserUIThemes UserId (Maybe UIThemeEntityOverrides)
   | APISetChatUIThemes ChatRef (Maybe UIThemeEntityOverrides)
+  | APISetGroupCustomData {groupId :: GroupId, customData :: Maybe CustomData}
+  | APISetContactCustomData {contactId :: ContactId, customData :: Maybe CustomData}
   | APIGetNtfToken
   | APIRegisterToken DeviceToken NotificationsMode
   | APIVerifyToken DeviceToken C.CbNonce ByteString
@@ -368,6 +469,7 @@ data ChatCommand
   | APIGetNtfConns {nonce :: C.CbNonce, encNtfInfo :: ByteString}
   | APIGetConnNtfMessages (NonEmpty ConnMsgReq)
   | APIAddMember {groupId :: GroupId, contactId :: ContactId, memberRole :: GroupMemberRole}
+  | APIAddMemberViaGroup {groupId :: GroupId, viaGroupId :: GroupId, groupMemberId :: GroupMemberId, memberRole :: GroupMemberRole}
   | APIJoinGroup {groupId :: GroupId, enableNtfs :: MsgFilter}
   | APIAcceptMember {groupId :: GroupId, groupMemberId :: GroupMemberId, memberRole :: GroupMemberRole}
   | APIDeleteMemberSupportChat GroupId GroupMemberId
@@ -377,6 +479,7 @@ data ChatCommand
   | APILeaveGroup {groupId :: GroupId}
   | APIListMembers {groupId :: GroupId}
   | APIUpdateGroupProfile {groupId :: GroupId, groupProfile :: GroupProfile}
+  | APISetPublicGroupAccess GroupId PublicGroupAccess
   | APICreateGroupLink {groupId :: GroupId, memberRole :: GroupMemberRole}
   | APIGroupLinkMemberRole {groupId :: GroupId, memberRole :: GroupMemberRole}
   | APIDeleteGroupLink {groupId :: GroupId}
@@ -389,6 +492,11 @@ data ChatCommand
   | SetUserProtoServers AProtocolType [AProtoServerWithAuth]
   | APITestProtoServer UserId AProtoServerWithAuth
   | TestProtoServer AProtoServerWithAuth
+  | GetUserChatRelays
+  | SetUserChatRelays [CLINewRelay]
+  | APITestChatRelay UserId ShortLinkContact
+  | TestChatRelay ShortLinkContact
+  | APIAllowRelayGroup {groupId :: GroupId}
   | APIGetServerOperators
   | APISetServerOperators (NonEmpty ServerOperator)
   | SetServerOperators (NonEmpty ServerOperatorRoles)
@@ -415,6 +523,7 @@ data ChatCommand
   | APISetMemberSettings GroupId GroupMemberId GroupMemberSettings
   | APIContactInfo ContactId
   | APIGroupInfo GroupId
+  | APIGetUpdatedGroupLinkData {groupId :: GroupId}
   | APIGroupMemberInfo GroupId GroupMemberId
   | APIContactQueueInfo ContactId
   | APIGroupMemberQueueInfo GroupId GroupMemberId
@@ -456,37 +565,42 @@ data ChatCommand
   | AddContact IncognitoEnabled
   | APISetConnectionIncognito Int64 IncognitoEnabled
   | APIChangeConnectionUser Int64 UserId -- new user id to switch connection to
-  | APIConnectPlan {userId :: UserId, connectionLink :: Maybe AConnectionLink} -- Maybe is used to report link parsing failure as special error
-  | APIPrepareContact UserId ACreatedConnLink ContactShortLinkData
-  | APIPrepareGroup UserId CreatedLinkContact GroupShortLinkData
+  | APIConnectPlan {userId :: UserId, connectTarget :: Maybe AConnectTarget, resolveMode :: PlanResolveMode, linkOwnerSig :: Maybe LinkOwnerSig} -- Maybe AConnectTarget is used to report parsing failure as special error
+  | APIPrepareContact UserId ACreatedConnLink (Maybe SimplexDomain) ContactShortLinkData
+  | APIPrepareGroup UserId CreatedLinkContact DirectLink (Maybe SimplexDomain) GroupShortLinkData
   | APIChangePreparedContactUser ContactId UserId
   | APIChangePreparedGroupUser GroupId UserId
   | APIConnectPreparedContact {contactId :: ContactId, incognito :: IncognitoEnabled, msgContent_ :: Maybe MsgContent}
-  | APIConnectPreparedGroup GroupId IncognitoEnabled (Maybe MsgContent)
+  | APIConnectPreparedGroup {groupId :: GroupId, incognito :: IncognitoEnabled, ownerContact :: Maybe GroupOwnerContact, msgContent_ :: Maybe MsgContent}
   | APIConnect {userId :: UserId, incognito :: IncognitoEnabled, preparedLink_ :: Maybe ACreatedConnLink} -- Maybe is used to report link parsing failure as special error
-  | Connect {incognito :: IncognitoEnabled, connLink_ :: Maybe AConnectionLink}
+  | Connect {incognito :: IncognitoEnabled, connTarget_ :: Maybe AConnectTarget}
+  | APIVerifyContactDomain {contactId :: ContactId}
+  | APIVerifyGroupDomain {groupId :: GroupId}
   | APIConnectContactViaAddress UserId IncognitoEnabled ContactId
   | ConnectSimplex IncognitoEnabled -- UserId (not used in UI)
   | DeleteContact ContactName ChatDeleteMode
   | ClearContact ContactName
   | APIListContacts {userId :: UserId}
   | ListContacts
-  | APICreateMyAddress {userId :: UserId}
-  | CreateMyAddress
+  | APICreateMyAddress {userId :: UserId, server_ :: Maybe SMPServerWithAuth, pqRatchet :: Maybe Bool}
+  | CreateMyAddress {pqRatchet :: Maybe Bool}
   | APIDeleteMyAddress {userId :: UserId}
   | DeleteMyAddress
   | APIShowMyAddress {userId :: UserId}
   | ShowMyAddress
-  | APIAddMyAddressShortLink UserId
+  | APIAddMyAddressShortLink {userId :: UserId, pqRatchet :: Maybe Bool}
+  | APIRotateAddressRatchetKeys UserId
   | APISetProfileAddress {userId :: UserId, enable :: Bool}
   | SetProfileAddress Bool
-  | APISetAddressSettings {userId :: UserId, settings :: AddressSettings}
-  | SetAddressSettings AddressSettings
+  | APISetAddressSettings {userId :: UserId, pqRatchet :: Maybe Bool, settings :: AddressSettings}
+  | SetAddressSettings {pqRatchet :: Maybe Bool, settings :: AddressSettings}
   | AcceptContact IncognitoEnabled ContactName
-  | RejectContact ContactName
+  | RejectContact ContactName Bool
   | ForwardMessage {toChatName :: ChatName, fromContactName :: ContactName, forwardedMsg :: Text}
   | ForwardGroupMessage {toChatName :: ChatName, fromGroupName :: GroupName, fromMemberName_ :: Maybe ContactName, forwardedMsg :: Text}
   | ForwardLocalMessage {toChatName :: ChatName, forwardedMsg :: Text}
+  | SharePublicGroup {shareGroupName :: GroupName, toChatName :: ChatName}
+  | ShareMyAddress {toChatName :: ChatName}
   | SendMessage SendName Text
   | SendMemberContactMessage GroupName ContactName Text
   | AcceptMemberContact ContactName
@@ -500,6 +614,11 @@ data ChatCommand
   | ReactToMessage {add :: Bool, reaction :: MsgReaction, chatName :: ChatName, reactToMessage :: Text}
   | APINewGroup {userId :: UserId, incognito :: IncognitoEnabled, groupProfile :: GroupProfile}
   | NewGroup IncognitoEnabled GroupProfile
+  -- TODO [relays] starting role should be communicated in protocol from owner to relays (see channelSubscriberRole config)
+  | APINewPublicGroup {userId :: UserId, incognito :: IncognitoEnabled, relayIds :: NonEmpty Int64, groupProfile :: GroupProfile}
+  | APIGetGroupRelays {groupId :: GroupId}
+  | APIAddGroupRelays {groupId :: GroupId, relayIds :: NonEmpty Int64}
+  | NewPublicGroup IncognitoEnabled (NonEmpty Int64) GroupProfile
   | AddMember GroupName ContactName GroupMemberRole
   | JoinGroup {groupName :: GroupName, enableNtfs :: MsgFilter}
   | AcceptMember GroupName ContactName GroupMemberRole
@@ -507,6 +626,7 @@ data ChatCommand
   | BlockForAll GroupName ContactName Bool
   | RemoveMembers {groupName :: GroupName, members :: NonEmpty ContactName, withMessages :: Bool}
   | LeaveGroup GroupName
+  | AllowRelayGroup GroupName
   | DeleteGroup GroupName
   | ClearGroup GroupName
   | ListMembers GroupName
@@ -517,6 +637,7 @@ data ChatCommand
   | ShowGroupProfile GroupName
   | UpdateGroupDescription GroupName (Maybe Text)
   | ShowGroupDescription GroupName
+  | SetPublicGroupAccess GroupName PublicGroupAccess
   | CreateGroupLink GroupName GroupMemberRole
   | GroupLinkMemberRole GroupName GroupMemberRole
   | DeleteGroupLink GroupName
@@ -542,6 +663,16 @@ data ChatCommand
   | SetBotCommands [ChatBotCommand]
   | UpdateProfile ContactName (Maybe Text) -- UserId (not used in UI)
   | UpdateProfileImage (Maybe ImageData) -- UserId (not used in UI)
+  | UpdateProfileImageFromFile FilePath -- set profile image from a .png/.jpg/.jpeg file
+  | AddBadge BadgeCredential -- attach an issued badge credential (testing; credential from `simplex-chat badge sign`)
+  | APIRedeemBadgeCode {userId :: UserId, code :: Text} -- redeem a badge code with the configured badge service
+  | APIPurchaseBadge {userId :: UserId, echoedInvoiceId :: Maybe Text, payment :: ServicePayment} -- hand over an App Store or Google Play receipt, held until a worker credits it; answers from the record and sends nothing
+  | APICreateBadgeInvoice {userId :: UserId} -- the record of a store purchase, created before the store charges; answers the id the store echoes
+  | APIGetBadgeState {userId :: UserId} -- the user's badges, their balances and any current alert
+  | APIGetBadgeLedger {userId :: UserId, badgePurchaseId :: Int64} -- the purchase's ledger, oldest first
+  -- episode is last because it is free text: it is the value that makes one occurrence of an
+  -- alert distinct from the next, and the app returns whatever it was given
+  | APIAckBadgeAlert {userId :: UserId, badgePurchaseId :: Int64, alertKind :: BadgeAlertKind, snooze :: Bool, episode :: Text}
   | ShowProfileImage
   | SetUserFeature AChatFeature FeatureAllowed -- UserId (not used in UI)
   | SetContactFeature AChatFeature ContactName (Maybe FeatureAllowed)
@@ -559,10 +690,10 @@ data ChatCommand
   | DeleteRemoteHost RemoteHostId -- Unregister remote host and remove its data
   | StoreRemoteFile {remoteHostId :: RemoteHostId, storeEncrypted :: Maybe Bool, localPath :: FilePath}
   | GetRemoteFile {remoteHostId :: RemoteHostId, file :: RemoteFile}
-  | ConnectRemoteCtrl RCSignedInvitation -- Connect new or existing controller via OOB data
+  | ConnectRemoteCtrl {remoteInvitation :: RCSignedInvitation} -- Connect new or existing controller via OOB data
   | FindKnownRemoteCtrl -- Start listening for announcements from all existing controllers
   | ConfirmRemoteCtrl RemoteCtrlId -- Confirm the connection with found controller
-  | VerifyRemoteCtrlSession Text -- Verify remote controller session
+  | VerifyRemoteCtrlSession {sessionCode :: Text} -- Verify remote controller session
   | ListRemoteCtrls
   | StopRemoteCtrl -- Stop listening for announcements or terminate an active session
   | DeleteRemoteCtrl RemoteCtrlId -- Remove all local data associated with a remote controller session
@@ -585,6 +716,27 @@ data ChatCommand
     -- This command should be processed in preCmdHook
     CustomChatCommand ByteString
   deriving (Show)
+
+data PlanResolveMode
+  = PRMAllGroups -- resolve all known groups and all unknown chats
+  | PRMUnknown -- only resolve if chat is unknown (default)
+  | PRMNever -- do not resolve links and names, only do local search
+  deriving (Eq, Show)
+
+planResolveModeP :: A.Parser PlanResolveMode
+planResolveModeP =
+  A.takeTill (== ' ') >>= \case
+    "allGroups" -> pure PRMAllGroups
+    "on" -> pure PRMAllGroups
+    "unknown" -> pure PRMUnknown
+    "off" -> pure PRMUnknown
+    "never" -> pure PRMNever
+    _ -> fail "bad PlanResolveMode"
+
+data CommandSource
+  = CSLocal -- entered on this device
+  | CSRemoteHost RemoteHostId -- forwarded to a paired remote host
+  | CSRemoteCtrl -- received from a paired remote controller
 
 allowRemoteCommand :: ChatCommand -> Bool -- XXX: consider using Relay/Block/ForceLocal
 allowRemoteCommand = \case
@@ -626,6 +778,38 @@ allowRemoteCommand = \case
   ExecAgentStoreSQL _ -> False
   _ -> True
 
+data RelayConnectionResult = RelayConnectionResult
+  { relayMember :: GroupMember,
+    relayError :: Maybe ChatError
+  }
+  deriving (Show)
+
+data AddRelayResult = AddRelayResult
+  { relay :: UserChatRelay,
+    relayError :: Maybe ChatError
+  }
+  deriving (Show)
+
+data RelayTestStep
+  = RTSGetLink
+  | RTSDecodeLink
+  | RTSConnect
+  | RTSWaitResponse
+  | RTSVerify
+  deriving (Show)
+
+data RelayTestFailure = RelayTestFailure
+  { rtfStep :: RelayTestStep,
+    rtfError :: ChatError
+  }
+  deriving (Show)
+
+data RelayTest = RelayTest
+  { challenge :: ByteString,
+    rootKey :: C.PublicKeyEd25519,
+    result :: TMVar (Maybe RelayTestFailure)
+  }
+
 data ChatResponse
   = CRActiveUser {user :: User}
   | CRUsersList {users :: [UserInfo]}
@@ -636,14 +820,16 @@ data ChatResponse
   | CRApiChats {user :: User, chats :: [AChat]}
   | CRChats {chats :: [AChat]}
   | CRApiChat {user :: User, chat :: AChat, navInfo :: Maybe NavigationInfo}
+  | CRChatContentTypes {contentTypes :: [MsgContentTag]}
   | CRChatTags {user :: User, userTags :: [ChatTag]}
   | CRChatItems {user :: User, chatName_ :: Maybe ChatName, chatItems :: [AChatItem]}
   | CRChatItemInfo {user :: User, chatItem :: AChatItem, chatItemInfo :: ChatItemInfo}
   | CRChatItemId User (Maybe ChatItemId)
-  | CRServerTestResult {user :: User, testServer :: AProtoServerWithAuth, testFailure :: Maybe ProtocolTestFailure}
+  | CRServerTestResult {user :: User, testServer :: AProtoServerWithAuth, testFailure :: Maybe ProtocolTestFailure, serverInfo :: Maybe (Either String ServerPublicInfo)}
+  | CRChatRelayTestResult {user :: User, relayProfile :: Maybe RelayProfile, relayTestFailure :: Maybe RelayTestFailure}
   | CRServerOperatorConditions {conditions :: ServerOperatorConditions}
   | CRUserServers {user :: User, userServers :: [UserOperatorServers]}
-  | CRUserServersValidation {user :: User, serverErrors :: [UserServersError]}
+  | CRUserServersValidation {user :: User, serverErrors :: [UserServersError], serverWarnings :: [UserServersWarning]}
   | CRUsageConditions {usageConditions :: UsageConditions, conditionsText :: Text, acceptedConditions :: Maybe UsageConditions}
   | CRChatItemTTL {user :: User, chatItemTTL :: Maybe Int64}
   | CRNetworkConfig {networkConfig :: NetworkConfig}
@@ -660,6 +846,8 @@ data ChatResponse
   | CRContactCode {user :: User, contact :: Contact, connectionCode :: Text}
   | CRGroupMemberCode {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionCode :: Text}
   | CRConnectionVerified {user :: User, verified :: Bool, expectedCode :: Text}
+  | CRContactDomainVerified {user :: User, contact :: Contact, verificationFailure :: Maybe Text}
+  | CRGroupDomainVerified {user :: User, groupInfo :: GroupInfo, verificationFailure :: Maybe Text}
   | CRTagsUpdated {user :: User, userTags :: [ChatTag], chatTags :: [ChatTagId]}
   | CRNewChatItems {user :: User, chatItems :: [AChatItem]}
   | CRChatItemUpdated {user :: User, chatItem :: AChatItem}
@@ -673,6 +861,12 @@ data ChatResponse
   | CRChatHelp {helpSection :: HelpSection}
   | CRWelcome {user :: User}
   | CRGroupCreated {user :: User, groupInfo :: GroupInfo}
+  | CRPublicGroupCreated {user :: User, groupInfo :: GroupInfo, groupLink :: GroupLink, groupRelays :: [GroupRelay]}
+  | CRPublicGroupCreationFailed {user :: User, addRelayResults :: [AddRelayResult]}
+  | CRGroupRelays {user :: User, groupInfo :: GroupInfo, groupRelays :: [GroupRelay]}
+  | CRRelayGroupAllowed {user :: User, groupInfo :: GroupInfo}
+  | CRGroupRelaysAdded {user :: User, groupInfo :: GroupInfo, groupLink :: GroupLink, groupRelays :: [GroupRelay]}
+  | CRGroupRelaysAddFailed {user :: User, addRelayResults :: [AddRelayResult]}
   | CRGroupMembers {user :: User, group :: Group}
   | CRMemberSupportChats {user :: User, groupInfo :: GroupInfo, members :: [GroupMember]}
   -- | CRGroupConversationsArchived {user :: User, groupInfo :: GroupInfo, archivedGroupConversations :: [GroupConversation]}
@@ -681,10 +875,17 @@ data ChatResponse
   | CRUserContactLink {user :: User, contactLink :: UserContactLink}
   | CRUserContactLinkUpdated {user :: User, contactLink :: UserContactLink}
   | CRContactRequestRejected {user :: User, contactRequest :: UserContactRequest, contact_ :: Maybe Contact}
+  | CRServiceResponse {user :: User, responseData :: J.Object}
+  | CRServiceReplyAccepted {user :: User, connectionId :: AgentConnId}
+  | CRBadgeRedeemed {user :: User, redeemedBadge :: LocalBadge, newBadge :: Bool, badgeState :: Maybe BadgeState}
+  | CRBadgeInvoice {user :: User, invoiceId :: Text}
+  | CRBadgeState {user :: User, badgeState :: Maybe BadgeState, storePurchases :: [OpenStorePurchase]}
+  | CRBadgeLedger {user :: User, badgeLedger :: [StatementEntry]}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
-  | CRUserDeletedMembers {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], withMessages :: Bool}
+  | CRUserDeletedMembers {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], withMessages :: Bool, msgSigned :: Bool}
   | CRGroupsList {user :: User, groups :: [GroupInfo]}
   | CRSentGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember}
+  | CRSentGroupInvitationViaGroup {user :: User, groupInfo :: GroupInfo, member :: GroupMember, viaGroupInfo :: GroupInfo, viaMember :: GroupMember}
   | CRFileTransferStatus User (FileTransfer, [Integer]) -- TODO refactor this type to FileTransferStatus
   | CRFileTransferStatusXFTP User AChatItem
   | CRUserProfile {user :: User, profile :: Profile}
@@ -694,14 +895,14 @@ data ChatResponse
   | CRInvitation {user :: User, connLinkInvitation :: CreatedLinkInvitation, connection :: PendingContactConnection}
   | CRConnectionIncognitoUpdated {user :: User, toConnection :: PendingContactConnection, customUserProfile :: Maybe Profile}
   | CRConnectionUserChanged {user :: User, fromConnection :: PendingContactConnection, toConnection :: PendingContactConnection, newUser :: User}
-  | CRConnectionPlan {user :: User, connLink :: ACreatedConnLink, connectionPlan :: ConnectionPlan}
+  | CRConnectionPlan {user :: User, connLink :: ACreatedConnLink, planSimplexName :: Maybe SimplexNameInfo, otherSimplexName :: Maybe SimplexNameInfo, connectionPlan :: ConnectionPlan}
   | CRNewPreparedChat {user :: User, chat :: AChat}
   | CRContactUserChanged {user :: User, fromContact :: Contact, newUser :: User, toContact :: Contact}
   | CRGroupUserChanged {user :: User, fromGroup :: GroupInfo, newUser :: User, toGroup :: GroupInfo}
   | CRSentConfirmation {user :: User, connection :: PendingContactConnection, customUserProfile :: Maybe Profile}
   | CRSentInvitation {user :: User, connection :: PendingContactConnection, customUserProfile :: Maybe Profile}
   | CRStartedConnectionToContact {user :: User, contact :: Contact, customUserProfile :: Maybe Profile}
-  | CRStartedConnectionToGroup {user :: User, groupInfo :: GroupInfo, customUserProfile :: Maybe Profile}
+  | CRStartedConnectionToGroup {user :: User, groupInfo :: GroupInfo, customUserProfile :: Maybe Profile, relayResults :: [RelayConnectionResult]}
   | CRSentInvitationToContact {user :: User, contact :: Contact, customUserProfile :: Maybe Profile}
   | CRItemsReadForChat {user :: User, chatInfo :: AChatInfo}
   | CRContactDeleted {user :: User, contact :: Contact}
@@ -711,8 +912,9 @@ data ChatResponse
   | CRAcceptingContactRequest {user :: User, contact :: Contact}
   | CRContactAlreadyExists {user :: User, contact :: Contact}
   | CRLeftMemberUser {user :: User, groupInfo :: GroupInfo}
-  | CRGroupDeletedUser {user :: User, groupInfo :: GroupInfo}
+  | CRGroupDeletedUser {user :: User, groupInfo :: GroupInfo, msgSigned :: Bool, localDeletion :: Bool}
   | CRForwardPlan {user :: User, itemsCount :: Int, chatItemIds :: [ChatItemId], forwardConfirmation :: Maybe ForwardConfirmation}
+  | CRChatMsgContent {user :: User, msgContent :: MsgContent}
   | CRRcvFileAccepted {user :: User, chatItem :: AChatItem}
   -- TODO add chatItem :: AChatItem
   | CRRcvFileAcceptedSndCancelled {user :: User, rcvFileTransfer :: RcvFileTransfer}
@@ -731,9 +933,9 @@ data ChatResponse
   | CRMemberAccepted {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRMemberSupportChatRead {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRMemberSupportChatDeleted {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
-  | CRMembersRoleUser {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], toRole :: GroupMemberRole}
-  | CRMembersBlockedForAllUser {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], blocked :: Bool}
-  | CRGroupUpdated {user :: User, fromGroup :: GroupInfo, toGroup :: GroupInfo, member_ :: Maybe GroupMember}
+  | CRMembersRoleUser {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], toRole :: GroupMemberRole, msgSigned :: Bool}
+  | CRMembersBlockedForAllUser {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], blocked :: Bool, msgSigned :: Bool}
+  | CRGroupUpdated {user :: User, fromGroup :: GroupInfo, toGroup :: GroupInfo, member_ :: Maybe GroupMember, msgSigned :: Bool}
   | CRGroupProfile {user :: User, groupInfo :: GroupInfo}
   | CRGroupDescription {user :: User, groupInfo :: GroupInfo} -- only used in CLI
   | CRGroupLinkCreated {user :: User, groupInfo :: GroupInfo, groupLink :: GroupLink}
@@ -754,7 +956,7 @@ data ChatResponse
   | CRRemoteFileStored {remoteHostId :: RemoteHostId, remoteFileSource :: CryptoFile}
   | CRRemoteCtrlList {remoteCtrls :: [RemoteCtrlInfo]}
   | CRRemoteCtrlConnecting {remoteCtrl_ :: Maybe RemoteCtrlInfo, ctrlAppInfo :: CtrlAppInfo, appVersion :: AppVersion}
-  | CRRemoteCtrlConnected {remoteCtrl :: RemoteCtrlInfo}
+  | CRRemoteCtrlConnected {remoteCtrl :: RemoteCtrlInfo, compression :: Bool}
   | CRSQLResult {rows :: [Text]}
 #if !defined(dbPostgres)
   | CRArchiveExported {archiveErrors :: [ArchiveError]}
@@ -791,11 +993,17 @@ data ChatEvent
   | CEvtUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact} -- there is the same command response
   | CEvtGroupLinkConnecting {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember}
   | CEvtBusinessLinkConnecting {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember, fromContact :: Contact}
-  | CEvtSentGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember} -- there is the same command response
   | CEvtContactUpdated {user :: User, fromContact :: Contact, toContact :: Contact}
   | CEvtGroupMemberUpdated {user :: User, groupInfo :: GroupInfo, fromMember :: GroupMember, toMember :: GroupMember}
   | CEvtContactDeletedByContact {user :: User, contact :: Contact}
   | CEvtReceivedContactRequest {user :: User, contactRequest :: UserContactRequest, chat_ :: Maybe AChat}
+  | CEvtServiceRequest {user :: User, requestId :: AgentInvId, signerKey :: Maybe C.PublicKeyEd25519, requestData :: J.Object}
+  | CEvtServiceReplySent {connectionId :: AgentConnId}
+  | CEvtBadgeChanged {user :: User, badgeState :: Maybe BadgeState} -- badge state changed, including a renewal that arrived without a command
+  | CEvtBadgeAlert {user :: User, badgeAlert :: BadgeAlert}
+  | CEvtStorePurchaseCredited {user :: User, invoiceId :: Text} -- the held store receipt of this invoice was credited, so its store transaction can be finished
+  | CEvtStorePurchaseRefused {user :: User, invoiceId :: Text, refusal :: BadgeIssueFailure} -- the held store receipt of this invoice was refused
+  | CEvtContactRequestRejected {user :: User, contact :: Contact, rejectionReason :: Maybe ContactRejectionReason}
   | CEvtAcceptingContactRequest {user :: User, contact :: Contact} -- there is the same command response
   | CEvtAcceptingBusinessRequest {user :: User, groupInfo :: GroupInfo}
   | CEvtContactRequestAlreadyAccepted {user :: User, contact :: Contact}
@@ -827,24 +1035,29 @@ data ChatEvent
   | CEvtConnectionsDiff {userIds :: DatabaseDiff AgentUserId, connIds :: DatabaseDiff AgentConnId}
   | CEvtSubscriptionEnd {user :: User, connectionEntity :: ConnectionEntity}
   | CEvtSubscriptionStatus {server :: SMPServer, subscriptionStatus :: SubscriptionStatus, connections :: [AgentConnId]}
+  | CEvtServiceSubStatus {server :: SMPServer, serviceSubEvent :: ServiceSubEvent}
   | CEvtHostConnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CEvtHostDisconnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CEvtReceivedGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, fromMemberRole :: GroupMemberRole, memberRole :: GroupMemberRole}
+  | CEvtReceivedGroupInvitationViaGroup {user :: User, groupInfo :: GroupInfo, viaGroupInfo :: GroupInfo, viaMember :: GroupMember, fromMemberRole :: GroupMemberRole, memberRole :: GroupMemberRole}
   | CEvtUserJoinedGroup {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember}
+  | CEvtGroupLinkDataUpdated {user :: User, groupInfo :: GroupInfo, groupLink :: GroupLink, groupRelays :: [GroupRelay], relaysChanged :: Bool}
+  | CEvtGroupRelayUpdated {user :: User, groupInfo :: GroupInfo, member :: GroupMember, groupRelay :: GroupRelay}
   | CEvtJoinedGroupMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember} -- there is the same command response
   | CEvtJoinedGroupMemberConnecting {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember, member :: GroupMember}
   | CEvtMemberAcceptedByOther {user :: User, groupInfo :: GroupInfo, acceptingMember :: GroupMember, member :: GroupMember}
-  | CEvtMemberRole {user :: User, groupInfo :: GroupInfo, byMember :: GroupMember, member :: GroupMember, fromRole :: GroupMemberRole, toRole :: GroupMemberRole}
-  | CEvtMemberBlockedForAll {user :: User, groupInfo :: GroupInfo, byMember :: GroupMember, member :: GroupMember, blocked :: Bool}
+  | CEvtMemberRole {user :: User, groupInfo :: GroupInfo, byMember :: GroupMember, member :: GroupMember, fromRole :: GroupMemberRole, toRole :: GroupMemberRole, msgSigned :: Maybe MsgSigStatus}
+  | CEvtMemberBlockedForAll {user :: User, groupInfo :: GroupInfo, byMember :: GroupMember, member :: GroupMember, blocked :: Bool, msgSigned :: Maybe MsgSigStatus}
   | CEvtConnectedToGroupMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember, memberContact :: Maybe Contact}
-  | CEvtDeletedMember {user :: User, groupInfo :: GroupInfo, byMember :: GroupMember, deletedMember :: GroupMember, withMessages :: Bool}
-  | CEvtDeletedMemberUser {user :: User, groupInfo :: GroupInfo, member :: GroupMember, withMessages :: Bool}
-  | CEvtLeftMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
+  | CEvtDeletedMember {user :: User, groupInfo :: GroupInfo, byMember :: GroupMember, deletedMember :: GroupMember, withMessages :: Bool, msgSigned :: Maybe MsgSigStatus}
+  | CEvtDeletedMemberUser {user :: User, groupInfo :: GroupInfo, member :: GroupMember, withMessages :: Bool, msgSigned :: Maybe MsgSigStatus}
+  | CEvtLeftMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember, msgSigned :: Maybe MsgSigStatus}
   | CEvtUnknownMemberCreated {user :: User, groupInfo :: GroupInfo, forwardedByMember :: GroupMember, member :: GroupMember}
   | CEvtUnknownMemberBlocked {user :: User, groupInfo :: GroupInfo, blockedByMember :: GroupMember, member :: GroupMember}
   | CEvtUnknownMemberAnnounced {user :: User, groupInfo :: GroupInfo, announcingMember :: GroupMember, unknownMember :: GroupMember, announcedMember :: GroupMember}
-  | CEvtGroupDeleted {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
-  | CEvtGroupUpdated {user :: User, fromGroup :: GroupInfo, toGroup :: GroupInfo, member_ :: Maybe GroupMember} -- there is the same command response
+  | CEvtDuplicateGroupMessage {user :: User, member :: GroupMember}
+  | CEvtGroupDeleted {user :: User, groupInfo :: GroupInfo, member :: GroupMember, msgSigned :: Maybe MsgSigStatus}
+  | CEvtGroupUpdated {user :: User, fromGroup :: GroupInfo, toGroup :: GroupInfo, member_ :: Maybe GroupMember, msgSigned :: Maybe MsgSigStatus} -- there is the same command response
   | CEvtAcceptingGroupJoinRequestMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CEvtNoMemberContactCreating {user :: User, groupInfo :: GroupInfo, member :: GroupMember} -- only used in CLI
   | CEvtNewMemberContactReceivedInv {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
@@ -857,7 +1070,7 @@ data ChatEvent
   | CEvtNtfMessage {user :: User, connEntity :: ConnectionEntity, ntfMessage :: NtfMsgAckInfo}
   | CEvtRemoteHostSessionCode {remoteHost_ :: Maybe RemoteHostInfo, sessionCode :: Text}
   | CEvtNewRemoteHost {remoteHost :: RemoteHostInfo}
-  | CEvtRemoteHostConnected {remoteHost :: RemoteHostInfo}
+  | CEvtRemoteHostConnected {remoteHost :: RemoteHostInfo, compression :: Bool}
   | CEvtRemoteHostStopped {remoteHostId_ :: Maybe RemoteHostId, rhsState :: RemoteHostSessionState, rhStopReason :: RemoteHostStopReason}
   | CEvtRemoteCtrlFound {remoteCtrl :: RemoteCtrlInfo, ctrlAppInfo_ :: Maybe CtrlAppInfo, appVersion :: AppVersion, compatible :: Bool}
   | CEvtRemoteCtrlSessionCode {remoteCtrl_ :: Maybe RemoteCtrlInfo, sessionCode :: Text}
@@ -878,6 +1091,7 @@ data ChatEvent
 
 data TerminalEvent
   = TEGroupLinkRejected {user :: User, groupInfo :: GroupInfo, groupRejectionReason :: GroupRejectionReason}
+  | TERelayRejected {user :: User, groupInfo :: GroupInfo, relayRejectionReason :: RelayRejectionReason}
   | TERejectingGroupJoinRequestMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember, groupRejectionReason :: GroupRejectionReason}
   | TENewMemberContact {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
   | TEContactVerificationReset {user :: User, contact :: Contact}
@@ -897,7 +1111,7 @@ allowRemoteEvent = \case
   CEvtChatSuspended -> False
   CEvtRemoteHostSessionCode {} -> False
   CEvtNewRemoteHost _ -> False
-  CEvtRemoteHostConnected _ -> False
+  CEvtRemoteHostConnected {} -> False
   CEvtRemoteHostStopped {} -> False
   CEvtRemoteCtrlFound {} -> False
   CEvtRemoteCtrlSessionCode {} -> False
@@ -919,13 +1133,8 @@ logEventToFile = \case
 
 data SendRef
   = SRDirect ContactId
-  | SRGroup GroupId (Maybe GroupChatScope)
+  | SRGroup GroupId (Maybe GroupChatScope) ShowGroupAsSender
   deriving (Eq, Show)
-
-sendToChatRef :: SendRef -> ChatRef
-sendToChatRef = \case
-  SRDirect cId -> ChatRef CTDirect cId Nothing
-  SRGroup gId scope -> ChatRef CTGroup gId scope
 
 data ChatPagination
   = CPLast Int
@@ -936,7 +1145,7 @@ data ChatPagination
   deriving (Show)
 
 data PaginationByTime
-  = PTLast Int
+  = PTLast {count :: Int}
   | PTAfter UTCTime Int
   | PTBefore UTCTime Int
   deriving (Show)
@@ -963,14 +1172,14 @@ data ConnectionPlan
   deriving (Show)
 
 data InvitationLinkPlan
-  = ILPOk {contactSLinkData_ :: Maybe ContactShortLinkData}
+  = ILPOk {contactSLinkData_ :: Maybe ContactShortLinkData, ownerVerification :: Maybe OwnerVerification}
   | ILPOwnLink
   | ILPConnecting {contact_ :: Maybe Contact}
   | ILPKnown {contact :: Contact}
   deriving (Show)
 
 data ContactAddressPlan
-  = CAPOk {contactSLinkData_ :: Maybe ContactShortLinkData}
+  = CAPOk {contactSLinkData_ :: Maybe ContactShortLinkData, ownerVerification :: Maybe OwnerVerification}
   | CAPOwnLink
   | CAPConnectingConfirmReconnect
   | CAPConnectingProhibit {contact :: Contact}
@@ -979,29 +1188,59 @@ data ContactAddressPlan
   deriving (Show)
 
 data GroupLinkPlan
-  = GLPOk {groupSLinkData_ :: Maybe GroupShortLinkData}
+  = GLPOk {groupSLinkInfo_ :: Maybe GroupShortLinkInfo, groupSLinkData_ :: Maybe GroupShortLinkData, ownerVerification :: Maybe OwnerVerification}
   | GLPOwnLink {groupInfo :: GroupInfo}
   | GLPConnectingConfirmReconnect
   | GLPConnectingProhibit {groupInfo_ :: Maybe GroupInfo}
-  | GLPKnown {groupInfo :: GroupInfo}
+  | GLPKnown {groupInfo :: GroupInfo, groupUpdated :: Bool, ownerVerification :: Maybe OwnerVerification, linkOwners :: ListDef GroupLinkOwner}
+  | GLPNoRelays {groupSLinkData_ :: Maybe GroupShortLinkData}
+  | GLPUpdateRequired {groupSLinkData_ :: Maybe GroupShortLinkData}
+  deriving (Show)
+
+data GroupLinkOwner = GroupLinkOwner
+  { memberId :: MemberId,
+    memberKey :: C.PublicKeyEd25519
+  }
+  deriving (Show)
+
+data OwnerVerification
+  = OVVerified
+  | OVFailed {reason :: Text}
+  deriving (Show)
+
+data GroupOwnerContact = GroupOwnerContact
+  { contactId :: ContactId,
+    memberId :: MemberId
+  }
+  deriving (Show)
+
+type DirectLink = Bool
+
+data GroupShortLinkInfo = GroupShortLinkInfo
+  { direct :: Bool,
+    groupRelays :: [ShortLinkContact],
+    publicGroupId :: Maybe B64UrlByteString
+  }
   deriving (Show)
 
 connectionPlanProceed :: ConnectionPlan -> Bool
 connectionPlanProceed = \case
   CPInvitationLink ilp -> case ilp of
-    ILPOk _ -> True
+    ILPOk {} -> True
     ILPOwnLink -> True
     _ -> False
   CPContactAddress cap -> case cap of
-    CAPOk _ -> True
+    CAPOk {} -> True
     CAPOwnLink -> True
     CAPConnectingConfirmReconnect -> True
     CAPContactViaAddress _ -> True
     _ -> False
   CPGroupLink glp -> case glp of
-    GLPOk _ -> True
+    GLPOk {} -> True
     GLPOwnLink _ -> True
     GLPConnectingConfirmReconnect -> True
+    GLPNoRelays _ -> False
+    GLPUpdateRequired _ -> False
     _ -> False
   CPError _ -> True
 
@@ -1215,6 +1454,13 @@ data ChatItemDeletion = ChatItemDeletion
   }
   deriving (Show)
 
+data ServiceSubEvent
+  = ServiceSubUp {serviceError :: Maybe Text, queueCount :: Int64}
+  | ServiceSubDown {queueCount :: Int64}
+  | ServiceSubAll
+  | ServiceSubEnd {queueCount :: Int64}
+  deriving (Show)
+  
 data ChatLogLevel = CLLDebug | CLLInfo | CLLWarning | CLLError | CLLImportant
   deriving (Eq, Ord, Show)
 
@@ -1242,14 +1488,32 @@ data ChatError
   | ChatErrorRemoteHost {rhKey :: RHKey, remoteHostError :: RemoteHostError}
   deriving (Show, Exception)
 
+-- why a resolved SimpleX name could not be used (the name itself resolved; an unregistered name is the agent's NAME NOT_FOUND)
+data SimplexDomainError
+  = SDENoValidLink -- the name's record has no usable contact/channel link
+  | SDEUnknownDomain -- the resolved link's profile has no name, or a different name
+  deriving (Eq, Show)
+
+-- | Why acquiring a badge failed, for a code and for a store purchase alike.
+data BadgeRedeemError
+  = BREInvalidCode -- format or check character
+  | BREInvalidReceipt -- names no transaction, or is not a store payment
+  | BREServiceNotConfigured
+  | BREBadgeActive
+  | BREServiceError {serviceError :: BadgeServiceErrorCode}
+  | BREInvalidResponse {message :: String}
+  | BREUnknownKeyIndex
+  | BRECredentialNotVerified
+  deriving (Eq, Show)
+
 data ChatErrorType
   = CENoActiveUser
   | CENoConnectionUser {agentConnId :: AgentConnId}
   | CENoSndFileUser {agentSndFileId :: AgentSndFileId}
   | CENoRcvFileUser {agentRcvFileId :: AgentRcvFileId}
   | CEUserUnknown
-  | CEActiveUserExists -- TODO delete
   | CEUserExists {contactName :: ContactName}
+  | CEChatRelayExists
   | CEDifferentActiveUser {commandUserId :: UserId, activeUserId :: UserId}
   | CECantDeleteActiveUser {userId :: UserId}
   | CECantDeleteLastUser {userId :: UserId}
@@ -1263,6 +1527,8 @@ data ChatErrorType
   | CEChatNotStopped
   | CEChatStoreChanged
   | CEInvalidConnReq
+  | CESimplexDomainNotReady {simplexDomain :: SimplexDomain, simplexDomainError :: SimplexDomainError}
+  | CENotResolvedLocally -- a name or link is not a known chat in the local store and online resolution is off (PRMNever)
   | CEUnsupportedConnReq
   | CEInvalidChatMessage {connection :: Connection, msgMeta :: Maybe MsgMetaJSON, messageData :: Text, message :: String}
   | CEConnReqMessageProhibited
@@ -1312,12 +1578,14 @@ data ChatErrorType
   | CEAgentVersion
   | CEAgentNoSubResult {agentConnId :: AgentConnId}
   | CECommandError {message :: String}
+  | CEBadgeRedeemError {badgeRedeemError :: BadgeRedeemError}
   | CEServerProtocol {serverProtocol :: AProtocolType}
   | CEAgentCommandError {message :: String}
   | CEInvalidFileDescription {message :: String}
   | CEConnectionIncognitoChangeProhibited
   | CEConnectionUserChangeProhibited
   | CEPeerChatVRangeIncompatible
+  | CERelayTestError {message :: String}
   | CEInternalError {message :: String}
   | CEException {message :: String}
   deriving (Show, Exception)
@@ -1335,6 +1603,9 @@ data SQLiteError = SQLiteErrorNotADatabase | SQLiteError {dbError :: String}
 
 throwDBError :: DatabaseError -> CM ()
 throwDBError = throwError . ChatErrorDatabase
+
+chatErrorAgent :: AgentErrorType -> ChatError
+chatErrorAgent e = ChatErrorAgent e (AgentConnId B.empty) Nothing
 
 -- TODO review errors, some of it can be covered by HTTP2 errors
 data RemoteHostError
@@ -1397,7 +1668,8 @@ data RemoteCtrlSession
   | RCSessionConnecting
       { remoteCtrlId_ :: Maybe RemoteCtrlId,
         rcsClient :: RCCtrlClient,
-        rcsWaitSession :: Async ()
+        rcsWaitSession :: Async (),
+        ctrlAppInfo :: CtrlAppInfo
       }
   | RCSessionPendingConfirmation
       { remoteCtrlId_ :: Maybe RemoteCtrlId,
@@ -1406,7 +1678,8 @@ data RemoteCtrlSession
         tls :: TLS 'TClient,
         sessionCode :: Text,
         rcsWaitSession :: Async (),
-        rcsWaitConfirmation :: TMVar (Either RCErrorType (RCCtrlSession, RCCtrlPairing))
+        rcsWaitConfirmation :: TMVar (Either RCErrorType (RCCtrlSession, RCCtrlPairing)),
+        ctrlAppInfo :: CtrlAppInfo
       }
   | RCSessionConnected
       { remoteCtrlId :: RemoteCtrlId,
@@ -1414,7 +1687,8 @@ data RemoteCtrlSession
         tls :: TLS 'TClient,
         rcsSession :: RCCtrlSession,
         http2Server :: Async (),
-        remoteOutputQ :: TBQueue (Either ChatError ChatEvent)
+        remoteOutputQ :: TBQueue (Either ChatError ChatEvent),
+        ctrlAppInfo :: CtrlAppInfo
       }
 
 data RemoteCtrlSessionState
@@ -1538,25 +1812,24 @@ withFastStore = withStorePriority True
 withStorePriority :: Bool -> (DB.Connection -> ExceptT StoreError IO a) -> CM a
 withStorePriority priority action = do
   ChatController {chatStore} <- ask
-  liftIOEither $ withTransactionPriority chatStore priority (runExceptT . withExceptT ChatErrorStore . action) `E.catches` handleDBErrors
+  liftIOEither $ withTransactionPriority chatStore priority (runExceptT . withExceptT ChatErrorStore . action) `catchOwn'` handleDBErrors
 
 withStoreBatch :: Traversable t => (DB.Connection -> t (IO (Either ChatError a))) -> CM' (t (Either ChatError a))
 withStoreBatch actions = do
   ChatController {chatStore} <- ask
-  liftIO $ withTransaction chatStore $ mapM (`E.catches` handleDBErrors) . actions
+  liftIO $ withTransaction chatStore $ mapM (`catchOwn'` handleDBErrors) . actions
 
--- TODO [postgres] postgres specific error handling
-handleDBErrors :: [E.Handler (Either ChatError a)]
-handleDBErrors =
-#if !defined(dbPostgres)
-  ( E.Handler $ \(e :: SQLError) ->
-      let se = SQL.sqlError e
-          busy = se == SQL.ErrorBusy || se == SQL.ErrorLocked
-       in pure . Left . ChatErrorStore $ if busy then SEDBBusyError $ show se else SEDBException $ show e
-  ) :
+handleDBErrors :: E.SomeException -> IO (Either ChatError a)
+handleDBErrors e = pure $ Left $ ChatErrorStore $ case E.fromException e of
+  Just (e' :: SQLError) ->
+#if defined(dbPostgres)
+    SEDBException $ show e'
+#else
+    let se = SQL.sqlError e'
+        busy = se == SQL.ErrorBusy || se == SQL.ErrorLocked
+     in (if busy then SEDBBusyError else SEDBException) $ show e'
 #endif
-  [ E.Handler $ \(E.SomeException e) -> pure . Left . ChatErrorStore . SEDBException $ show e
-  ]
+  Nothing -> SEDBException $ show e
 
 withStoreBatch' :: Traversable t => (DB.Connection -> t (IO a)) -> CM' (t (Either ChatError a))
 withStoreBatch' actions = withStoreBatch $ fmap (fmap Right) . actions
@@ -1565,7 +1838,7 @@ withAgent :: (AgentClient -> ExceptT AgentErrorType IO a) -> CM a
 withAgent action =
   asks smpAgent
     >>= liftIO . runExceptT . action
-    >>= liftEither . first (\e -> ChatErrorAgent e (AgentConnId "") Nothing)
+    >>= liftEither . first chatErrorAgent
 
 withAgent' :: (AgentClient -> IO a) -> CM' a
 withAgent' action = asks smpAgent >>= liftIO . action
@@ -1574,13 +1847,23 @@ $(JQ.deriveJSON (enumJSON $ dropPrefix "HS") ''HelpSection)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CLQ") ''ChatListQuery)
 
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "OV") ''OwnerVerification)
+
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "ILP") ''InvitationLinkPlan)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CAP") ''ContactAddressPlan)
 
+$(JQ.deriveJSON defaultJSON ''GroupShortLinkInfo)
+
+$(JQ.deriveJSON defaultJSON ''GroupLinkOwner)
+
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GLP") ''GroupLinkPlan)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "FC") ''ForwardConfirmation)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SDE") ''SimplexDomainError)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "BRE") ''BadgeRedeemError)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CE") ''ChatErrorType)
 
@@ -1624,6 +1907,8 @@ $(JQ.deriveJSON defaultJSON ''ParsedServerAddress)
 
 $(JQ.deriveJSON defaultJSON ''ChatItemDeletion)
 
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "ServiceSub") ''ServiceSubEvent)
+
 $(JQ.deriveJSON defaultJSON ''CoreVersionInfo)
 
 #if !defined(dbPostgres)
@@ -1639,6 +1924,14 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RCSR") ''RemoteCtrlStopReason)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RHSR") ''RemoteHostStopReason)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "TE") ''TerminalEvent)
+
+$(JQ.deriveJSON defaultJSON ''RelayConnectionResult)
+
+$(JQ.deriveJSON defaultJSON ''AddRelayResult)
+
+$(JQ.deriveJSON (enumJSON $ dropPrefix "RTS") ''RelayTestStep)
+
+$(JQ.deriveJSON defaultJSON ''RelayTestFailure)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CR") ''ChatResponse)
 

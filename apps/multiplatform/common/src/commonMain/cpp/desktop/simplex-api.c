@@ -41,6 +41,7 @@ extern char *chat_parse_server(const char *str);
 extern char *chat_parse_uri(const char *str, const int safe);
 extern char *chat_password_hash(const char *pwd, const char *salt);
 extern char *chat_valid_name(const char *name);
+extern char *chat_parse_badge_code(const char *code);
 extern int chat_json_length(const char *str);
 extern char *chat_write_file(chat_ctrl ctrl, const char *path, char *ptr, int length);
 extern char *chat_write_image(chat_ctrl ctrl, long max_size, const char *path, char *ptr, int length, bool encrypt);
@@ -66,6 +67,7 @@ jstring decode_to_utf8_string(JNIEnv *env, char *string) {
     (*env)->DeleteLocalRef(env, bb);
     (*env)->DeleteLocalRef(env, charset);
     (*env)->DeleteLocalRef(env, cb);
+    free(string);
     return res;
 }
 
@@ -186,6 +188,14 @@ Java_chat_simplex_common_platform_CoreKt_chatValidName(JNIEnv *env, jclass clazz
     return res;
 }
 
+JNIEXPORT jstring JNICALL
+Java_chat_simplex_common_platform_CoreKt_chatParseBadgeCode(JNIEnv *env, jclass clazz, jstring code) {
+    const char *_code = encode_to_utf8_chars(env, code);
+    jstring res = decode_to_utf8_string(env, chat_parse_badge_code(_code));
+    (*env)->ReleaseStringUTFChars(env, code, _code);
+    return res;
+}
+
 JNIEXPORT int JNICALL
 Java_chat_simplex_common_platform_CoreKt_chatJsonLength(JNIEnv *env, jclass clazz, jstring str) {
     const char *_str = encode_to_utf8_chars(env, str);
@@ -243,6 +253,7 @@ Java_chat_simplex_common_platform_CoreKt_chatReadFile(JNIEnv *env, jclass clazz,
         arr = (*env)->NewByteArray(env, len);
         (*env)->SetByteArrayRegion(env, arr, 0, len, res + 1);
     }
+    free(res);
 
     jobjectArray ret = (jobjectArray)(*env)->NewObjectArray(env, 2, (*env)->FindClass(env, "java/lang/Object"), NULL);
     jobject statusObj = (*env)->NewObject(env, (*env)->FindClass(env, "java/lang/Integer"),

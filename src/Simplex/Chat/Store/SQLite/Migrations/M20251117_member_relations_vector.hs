@@ -15,7 +15,7 @@ import Simplex.Messaging.Agent.Store.SQLite.Util (SQLiteFunc, SQLiteFuncFinal, m
 
 -- This module defines custom aggregate function migrate_relations_vector(idx, direction, intro_status).
 -- It is passed via DBOpts and registered on DB open.
--- Used in live migration and stage 2 migration (M20251128_member_relations_vector_stage_2).
+-- Used in live migration and stage 2 migration (M20251128_migrate_member_relations).
 --
 -- Vector byte encoding: 4 reserved | 1 direction | 3 status
 -- Direction: 0 = IDSubjectIntroduced, 1 = IDReferencedIntroduced

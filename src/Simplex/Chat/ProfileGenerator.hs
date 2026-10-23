@@ -1,16 +1,17 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Simplex.Chat.ProfileGenerator where
 
 import Data.Text (Text)
-import Simplex.Chat.Types (Profile (..))
+import Simplex.Chat.Types (ChatPeerType, Profile (..))
 import System.Random (randomRIO)
 
-generateRandomProfile :: IO Profile
-generateRandomProfile = do
+generateRandomProfile :: Maybe ChatPeerType -> IO Profile
+generateRandomProfile peerType = do
   adjective <- pick adjectives
   noun <- pickNoun adjective 2
-  pure $ Profile {displayName = adjective <> noun, fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = Nothing}
+  pure $ Profile {displayName = adjective <> noun, fullName = "", shortDescr = Nothing, description = Nothing, image = Nothing, contactLink = Nothing, peerType, preferences = Nothing, badge = Nothing, contactDomain = Nothing}
   where
     pick :: [a] -> IO a
     pick xs = (xs !!) <$> randomRIO (0, length xs - 1)

@@ -5,10 +5,12 @@
 //  Created by JRoberts on 12/04/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/chat-view.md
 
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/client/chat-view.md#CIImageView
 struct CIImageView: View {
     @EnvironmentObject var m: ChatModel
     let chatItem: ChatItem
@@ -49,9 +51,14 @@ struct CIImageView: View {
                         if let file = file {
                             switch file.fileStatus {
                             case .rcvInvitation, .rcvAborted:
-                                Task {
-                                    if let user = m.currentUser {
-                                        await receiveFile(user: user, fileId: file.fileId)
+                                if let prohibited = file.fileProhibited {
+                                    showProhibitedFileAlert(file, prohibited)
+                                } else {
+                                    m.openWhenReceived(file) { _ in showFullScreenImage = true }
+                                    Task {
+                                        if let user = m.currentUser {
+                                            await receiveFile(user: user, fileId: file.fileId)
+                                        }
                                     }
                                 }
                             case .rcvAccepted:
@@ -72,7 +79,7 @@ struct CIImageView: View {
                             case .rcvComplete: () // ?
                             case .rcvCancelled: () // TODO
                             case let .rcvError(rcvFileError):
-                                showFileErrorAlert(rcvFileError)
+                                showFileErrorAlert(rcvFileError, file)
                             case let .rcvWarning(rcvFileError):
                                 showFileErrorAlert(rcvFileError, temporary: true)
                             case let .sndError(sndFileError):
@@ -96,12 +103,13 @@ struct CIImageView: View {
             if img.imageData == nil {
                 Image(uiImage: img)
                         .resizable()
-                        .scaledToFit()
-                        .frame(width: w)
+                        .scaledToFill()
+                        .frame(width: w, height: w * heightRatio(img.size))
+                        .clipped()
             } else {
-                SwiftyGif(image: img)
-                        .frame(width: w, height: w * img.size.height / img.size.width)
-                        .scaledToFit()
+                SwiftyGif(image: img, contentMode: .scaleAspectFill)
+                        .frame(width: w, height: w * heightRatio(img.size))
+                        .clipped()
             }
             if !blurred || !showDownloadButton(chatItem.file?.fileStatus) {
                 loadingIndicator()
@@ -140,7 +148,7 @@ struct CIImageView: View {
             case .sndCancelled: fileIcon("xmark", 10, 13)
             case .sndError: fileIcon("xmark", 10, 13)
             case .sndWarning: fileIcon("exclamationmark.triangle.fill", 10, 13)
-            case .rcvInvitation: fileIcon("arrow.down", 10, 13)
+            case .rcvInvitation: fileIcon(file.expired && fileSizeValid(file) ? "xmark" : "arrow.down", 10, 13)
             case .rcvAccepted: fileIcon("ellipsis", 14, 11)
             case .rcvTransfer: progressView()
             case .rcvAborted: fileIcon("exclamationmark.arrow.circlepath", 14, 11)

@@ -1,0 +1,27 @@
+services:
+  support-bot-light:
+    build:
+      # The repository root: the image is built from the Haskell core and the
+      # Python library in this tree, neither of them released.
+      context: ../..
+      dockerfile: apps/simplex-support-bot-light/Dockerfile
+      args:
+        # Defaults to 1000. Set both to your own ids to own ./state yourself.
+        USER_UID: ${USER_UID:-1000}
+        USER_GID: ${USER_GID:-1000}
+    # Bounded on purpose. A config that will not load is not fixed by retrying,
+    # and an unbounded policy turns it into a log flood that also makes Ctrl+C
+    # wait out the grace period. Five is enough to ride out a transient fault.
+    restart: on-failure:5
+    volumes:
+      # Directory, not a single file: bot.image resolves relative paths against
+      # the directory holding config.toml.
+      - ./bot-config:/etc/support-bot-light:ro
+      # Holds the bot's identity, address, roster group and roster. Deleting it
+      # means a new address and every roster member redoing the handshake.
+      - ./state:/data
+    stop_grace_period: 10s
+    ports:
+      # GET /health. Published on the host loopback because the endpoint has no
+      # authentication; widen it only for a monitoring system that needs it.
+      - "127.0.0.1:7777:8080"

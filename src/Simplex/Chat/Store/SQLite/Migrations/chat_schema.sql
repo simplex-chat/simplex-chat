@@ -2,7 +2,7 @@ CREATE TABLE migrations(
   name TEXT NOT NULL PRIMARY KEY,
   ts TEXT NOT NULL,
   down TEXT
-);
+) STRICT;
 CREATE TABLE contact_profiles(
   -- remote user profile
   contact_profile_id INTEGER PRIMARY KEY,
@@ -19,10 +19,24 @@ CREATE TABLE contact_profiles(
   preferences TEXT,
   contact_link BLOB,
   short_descr TEXT,
-  chat_peer_type TEXT
-);
+  chat_peer_type TEXT,
+  badge_proof BLOB,
+  badge_pres_header BLOB,
+  badge_expiry TEXT,
+  badge_type TEXT,
+  badge_verified INTEGER,
+  badge_extra TEXT,
+  badge_master_key BLOB,
+  badge_signature BLOB,
+  badge_key_idx INTEGER,
+  contact_domain TEXT,
+  contact_domain_proof TEXT,
+  contact_domain_verified INTEGER,
+  description TEXT,
+  preferences_json TEXT
+) STRICT;
 CREATE TABLE users(
-  user_id INTEGER PRIMARY KEY,
+  user_id INTEGER PRIMARY KEY AUTOINCREMENT,
   contact_id INTEGER NOT NULL UNIQUE REFERENCES contacts ON DELETE RESTRICT
   DEFERRABLE INITIALLY DEFERRED,
   local_display_name TEXT NOT NULL UNIQUE,
@@ -38,13 +52,18 @@ CREATE TABLE users(
   user_member_profile_updated_at TEXT,
   ui_themes TEXT,
   active_order INTEGER NOT NULL DEFAULT 0,
-  auto_accept_member_contacts INTEGER NOT NULL DEFAULT 0, -- 1 for active user
+  auto_accept_member_contacts INTEGER NOT NULL DEFAULT 0,
+  is_user_chat_relay INTEGER NOT NULL DEFAULT 0,
+  client_service INTEGER NOT NULL DEFAULT 0,
+  auto_accept_group_invitations INTEGER NOT NULL DEFAULT 0,
+  shown_badge_id INTEGER REFERENCES badge_purchases ON DELETE SET NULL, -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE RESTRICT
   ON UPDATE CASCADE
   DEFERRABLE INITIALLY DEFERRED
-);
+) STRICT;
+CREATE TABLE sqlite_sequence(name,seq);
 CREATE TABLE display_names(
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   local_display_name TEXT NOT NULL,
@@ -54,9 +73,9 @@ CREATE TABLE display_names(
   updated_at TEXT CHECK(updated_at NOT NULL),
   PRIMARY KEY(user_id, local_display_name) ON CONFLICT FAIL,
   UNIQUE(user_id, ldn_base, ldn_suffix) ON CONFLICT FAIL
-) WITHOUT ROWID;
+) WITHOUT ROWID, STRICT;
 CREATE TABLE contacts(
-  contact_id INTEGER PRIMARY KEY,
+  contact_id INTEGER PRIMARY KEY AUTOINCREMENT,
   contact_profile_id INTEGER REFERENCES contact_profiles ON DELETE SET NULL,
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   local_display_name TEXT NOT NULL,
@@ -96,7 +115,7 @@ CREATE TABLE contacts(
   ON UPDATE CASCADE,
   UNIQUE(user_id, local_display_name),
   UNIQUE(user_id, contact_profile_id)
-);
+) STRICT;
 CREATE TABLE known_servers(
   server_id INTEGER PRIMARY KEY,
   host TEXT NOT NULL,
@@ -106,7 +125,7 @@ CREATE TABLE known_servers(
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL),
   UNIQUE(user_id, host, port)
-) WITHOUT ROWID;
+) WITHOUT ROWID, STRICT;
 CREATE TABLE group_profiles(
   -- shared group profiles
   group_profile_id INTEGER PRIMARY KEY,
@@ -121,10 +140,19 @@ CREATE TABLE group_profiles(
   preferences TEXT,
   description TEXT NULL,
   member_admission TEXT,
-  short_descr TEXT
-);
+  short_descr TEXT,
+  group_type TEXT,
+  group_link BLOB,
+  public_group_id BLOB,
+  group_web_page TEXT,
+  group_domain TEXT,
+  domain_web_page INTEGER,
+  allow_embedding INTEGER,
+  group_domain_proof TEXT,
+  preferences_json TEXT
+) STRICT;
 CREATE TABLE groups(
-  group_id INTEGER PRIMARY KEY, -- local group ID
+  group_id INTEGER PRIMARY KEY AUTOINCREMENT, -- local group ID
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   local_display_name TEXT NOT NULL, -- local group name without spaces
   group_profile_id INTEGER REFERENCES group_profiles ON DELETE SET NULL, -- shared group profile
@@ -156,17 +184,46 @@ CREATE TABLE groups(
   conn_link_prepared_connection INTEGER NOT NULL DEFAULT 0,
   via_group_link_uri BLOB,
   summary_current_members_count INTEGER NOT NULL DEFAULT 0,
-  member_index INTEGER NOT NULL DEFAULT 0, -- received
+  member_index INTEGER NOT NULL DEFAULT 0,
+  use_relays INTEGER NOT NULL DEFAULT 0,
+  creating_in_progress INTEGER NOT NULL DEFAULT 0,
+  relay_own_status TEXT,
+  relay_request_inv_id BLOB,
+  relay_request_group_link BLOB,
+  relay_request_peer_chat_min_version INTEGER,
+  relay_request_peer_chat_max_version INTEGER,
+  relay_request_failed INTEGER DEFAULT 0,
+  relay_request_err_reason TEXT,
+  root_priv_key BLOB,
+  root_pub_key BLOB,
+  member_priv_key BLOB,
+  public_member_count INTEGER,
+  relay_request_retries INTEGER NOT NULL DEFAULT 0,
+  relay_request_delay INTEGER NOT NULL DEFAULT 0,
+  relay_request_execute_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00',
+  relay_inactive_at TEXT,
+  relay_sent_web_domain TEXT,
+  roster_version INTEGER,
+  roster_msg_body BLOB,
+  roster_msg_chat_binding TEXT,
+  roster_msg_signatures BLOB,
+  roster_sending_owner_gm_id INTEGER,
+  roster_broker_ts TEXT,
+  roster_blob BLOB,
+  group_domain_verified INTEGER,
+  stored_roster_version INTEGER,
+  applied_complete_roster_version INTEGER,
+  relay_request_public_group_id BLOB, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
   ON UPDATE CASCADE,
   UNIQUE(user_id, local_display_name),
   UNIQUE(user_id, group_profile_id)
-);
+) STRICT;
 CREATE TABLE group_members(
   -- group members, excluding the local user
-  group_member_id INTEGER PRIMARY KEY,
+  group_member_id INTEGER PRIMARY KEY AUTOINCREMENT,
   group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
   member_id BLOB NOT NULL, -- shared member ID, unique per group
   member_role TEXT NOT NULL, -- owner, admin, member
@@ -198,12 +255,19 @@ CREATE TABLE group_members(
   member_welcome_shared_msg_id BLOB,
   index_in_group INTEGER NOT NULL DEFAULT 0,
   member_relations_vector BLOB,
+  relay_link BLOB,
+  member_pub_key BLOB,
+  removed_at TEXT,
+  roster_served_version INTEGER,
+  member_security_code TEXT,
+  member_security_code_verified_at TEXT,
+  invited_via_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE SET NULL,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
   ON UPDATE CASCADE,
   UNIQUE(group_id, member_id)
-);
+) STRICT;
 CREATE TABLE group_member_intros(
   group_member_intro_id INTEGER PRIMARY KEY,
   re_group_member_id INTEGER NOT NULL REFERENCES group_members(group_member_id) ON DELETE CASCADE,
@@ -215,9 +279,9 @@ CREATE TABLE group_member_intros(
   updated_at TEXT CHECK(updated_at NOT NULL),
   intro_chat_protocol_version INTEGER NOT NULL DEFAULT 3, -- see GroupMemberIntroStatus
   UNIQUE(re_group_member_id, to_group_member_id)
-);
+) STRICT;
 CREATE TABLE files(
-  file_id INTEGER PRIMARY KEY,
+  file_id INTEGER PRIMARY KEY AUTOINCREMENT,
   contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
   group_id INTEGER REFERENCES groups ON DELETE CASCADE,
   file_name TEXT NOT NULL,
@@ -239,8 +303,15 @@ CREATE TABLE files(
   file_crypto_key BLOB,
   file_crypto_nonce BLOB,
   note_folder_id INTEGER DEFAULT NULL REFERENCES note_folders ON DELETE CASCADE,
-  redirect_file_id INTEGER REFERENCES files ON DELETE CASCADE
-);
+  redirect_file_id INTEGER REFERENCES files ON DELETE CASCADE,
+  shared_msg_id BLOB,
+  file_type TEXT NOT NULL DEFAULT 'normal',
+  roster_transfer_id INTEGER,
+  file_digest BLOB,
+  file_expires_at TEXT,
+  file_max_size INTEGER,
+  file_badge_status TEXT
+) STRICT;
 CREATE TABLE snd_files(
   file_id INTEGER NOT NULL REFERENCES files ON DELETE CASCADE,
   connection_id INTEGER NOT NULL REFERENCES connections ON DELETE CASCADE,
@@ -253,7 +324,7 @@ CREATE TABLE snd_files(
   file_descr_id INTEGER NULL
   REFERENCES xftp_file_descriptions ON DELETE SET NULL,
   PRIMARY KEY(file_id, connection_id)
-) WITHOUT ROWID;
+) WITHOUT ROWID, STRICT;
 CREATE TABLE rcv_files(
   file_id INTEGER PRIMARY KEY REFERENCES files ON DELETE CASCADE,
   file_status TEXT NOT NULL, -- new, accepted, connected, completed
@@ -270,7 +341,7 @@ CREATE TABLE rcv_files(
   agent_rcv_file_deleted INTEGER DEFAULT 0 CHECK(agent_rcv_file_deleted NOT NULL),
   to_receive INTEGER,
   user_approved_relays INTEGER NOT NULL DEFAULT 0
-);
+) STRICT;
 CREATE TABLE rcv_file_chunks(
   file_id INTEGER NOT NULL REFERENCES rcv_files ON DELETE CASCADE,
   chunk_number INTEGER NOT NULL,
@@ -279,10 +350,10 @@ CREATE TABLE rcv_file_chunks(
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL), -- 0(received), 1(appended to file)
   PRIMARY KEY(file_id, chunk_number)
-) WITHOUT ROWID;
+) WITHOUT ROWID, STRICT;
 CREATE TABLE connections(
   -- all SMP agent connections
-  connection_id INTEGER PRIMARY KEY,
+  connection_id INTEGER PRIMARY KEY AUTOINCREMENT,
   agent_conn_id BLOB NOT NULL UNIQUE,
   conn_level INTEGER NOT NULL DEFAULT 0,
   via_contact INTEGER REFERENCES contacts(contact_id) ON DELETE SET NULL,
@@ -302,7 +373,7 @@ CREATE TABLE connections(
   REFERENCES user_contact_links(user_contact_link_id) ON DELETE SET NULL,
   custom_user_profile_id INTEGER REFERENCES contact_profiles ON DELETE SET NULL,
   conn_req_inv BLOB,
-  local_alias DEFAULT '' CHECK(local_alias NOT NULL),
+  local_alias TEXT DEFAULT '' CHECK(local_alias NOT NULL),
   via_group_link INTEGER DEFAULT 0 CHECK(via_group_link NOT NULL),
   group_link_id BLOB,
   security_code TEXT NULL,
@@ -321,11 +392,13 @@ CREATE TABLE connections(
   short_link_inv BLOB,
   via_short_link_contact BLOB,
   via_contact_uri BLOB,
+  relay_test INTEGER NOT NULL DEFAULT 0,
+  pres_header BLOB,
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE
   DEFERRABLE INITIALLY DEFERRED
-);
+) STRICT;
 CREATE TABLE user_contact_links(
   user_contact_link_id INTEGER PRIMARY KEY,
   conn_req_contact BLOB NOT NULL,
@@ -343,10 +416,11 @@ CREATE TABLE user_contact_links(
   short_link_contact BLOB,
   short_link_data_set INTEGER NOT NULL DEFAULT 0,
   short_link_large_data_set INTEGER NOT NULL DEFAULT 0,
+  link_priv_sig_key BLOB,
   UNIQUE(user_id, local_display_name)
-);
+) STRICT;
 CREATE TABLE contact_requests(
-  contact_request_id INTEGER PRIMARY KEY,
+  contact_request_id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_contact_link_id INTEGER REFERENCES user_contact_links
   ON UPDATE CASCADE ON DELETE SET NULL,
   agent_invitation_id BLOB NOT NULL,
@@ -365,6 +439,7 @@ CREATE TABLE contact_requests(
   business_group_id INTEGER REFERENCES groups(group_id) ON DELETE CASCADE,
   welcome_shared_msg_id BLOB,
   request_shared_msg_id BLOB,
+  rejection_supported INTEGER NOT NULL DEFAULT 0,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON UPDATE CASCADE
@@ -372,7 +447,7 @@ CREATE TABLE contact_requests(
   DEFERRABLE INITIALLY DEFERRED,
   UNIQUE(user_id, local_display_name),
   UNIQUE(user_id, contact_profile_id)
-);
+) STRICT;
 CREATE TABLE messages(
   message_id INTEGER PRIMARY KEY,
   msg_sent INTEGER NOT NULL, -- 0 for received, 1 for sent
@@ -387,16 +462,17 @@ CREATE TABLE messages(
   shared_msg_id_user INTEGER,
   author_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
   forwarded_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
-  broker_ts TEXT
-);
+  broker_ts TEXT,
+  msg_chat_binding TEXT,
+  msg_signatures BLOB
+) STRICT;
 CREATE TABLE pending_group_messages(
   pending_group_message_id INTEGER PRIMARY KEY,
   group_member_id INTEGER NOT NULL REFERENCES group_members ON DELETE CASCADE,
   message_id INTEGER NOT NULL REFERENCES messages ON DELETE CASCADE,
-  group_member_intro_id INTEGER REFERENCES group_member_intros ON DELETE CASCADE,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
-);
+) STRICT;
 CREATE TABLE chat_items(
   chat_item_id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
@@ -441,30 +517,41 @@ CREATE TABLE chat_items(
   user_mention INTEGER NOT NULL DEFAULT 0,
   group_scope_tag TEXT,
   group_scope_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
-  show_group_as_sender INTEGER NOT NULL DEFAULT 0
-);
-CREATE TABLE sqlite_sequence(name,seq);
+  show_group_as_sender INTEGER NOT NULL DEFAULT 0,
+  has_link INTEGER NOT NULL DEFAULT 0,
+  msg_signed TEXT,
+  item_viewed INTEGER NOT NULL DEFAULT 0,
+  item_msg_body BLOB,
+  item_chat_binding TEXT,
+  item_signatures BLOB,
+  item_signed_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
+  fwd_from_group_type TEXT,
+  fwd_from_group_link BLOB,
+  fwd_from_public_group_id BLOB,
+  fwd_from_member_id BLOB,
+  fwd_from_shared_msg_id BLOB
+) STRICT;
 CREATE TABLE chat_item_messages(
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
   message_id INTEGER NOT NULL UNIQUE REFERENCES messages ON DELETE CASCADE,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now')),
   UNIQUE(chat_item_id, message_id)
-);
+) STRICT;
 CREATE TABLE calls(
   -- stores call invitations state for communicating state between NSE and app when call notification comes
   call_id INTEGER PRIMARY KEY,
   contact_id INTEGER NOT NULL REFERENCES contacts ON DELETE CASCADE,
   shared_call_id BLOB NOT NULL,
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
-  call_state BLOB NOT NULL,
+  call_state TEXT NOT NULL,
   call_ts TEXT NOT NULL,
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
   ,
   call_uuid TEXT NOT NULL DEFAULT ""
-);
+) STRICT;
 CREATE TABLE commands(
   command_id INTEGER PRIMARY KEY AUTOINCREMENT, -- used as ACorrId
   connection_id INTEGER REFERENCES connections ON DELETE CASCADE,
@@ -473,14 +560,14 @@ CREATE TABLE commands(
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
-);
+) STRICT;
 CREATE TABLE settings(
   settings_id INTEGER PRIMARY KEY,
   chat_item_ttl INTEGER,
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
-);
+) STRICT;
 CREATE TABLE IF NOT EXISTS "protocol_servers"(
   smp_server_id INTEGER PRIMARY KEY,
   host TEXT NOT NULL,
@@ -494,8 +581,11 @@ CREATE TABLE IF NOT EXISTS "protocol_servers"(
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now')),
   protocol TEXT NOT NULL DEFAULT 'smp',
+  role_storage INTEGER,
+  role_proxy INTEGER,
+  role_names INTEGER,
   UNIQUE(user_id, host, port)
-);
+) STRICT;
 CREATE TABLE xftp_file_descriptions(
   file_descr_id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
@@ -504,7 +594,7 @@ CREATE TABLE xftp_file_descriptions(
   file_descr_complete INTEGER NOT NULL DEFAULT(0),
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
-);
+) STRICT;
 CREATE TABLE extra_xftp_file_descriptions(
   extra_file_descr_id INTEGER PRIMARY KEY,
   file_id INTEGER NOT NULL REFERENCES files ON DELETE CASCADE,
@@ -512,7 +602,7 @@ CREATE TABLE extra_xftp_file_descriptions(
   file_descr_text TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
-);
+) STRICT;
 CREATE TABLE chat_item_versions(
   -- contains versions only for edited chat items, including current version
   chat_item_version_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -521,10 +611,10 @@ CREATE TABLE chat_item_versions(
   item_version_ts TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
-);
+) STRICT;
 CREATE TABLE chat_item_reactions(
   chat_item_reaction_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  item_member_id BLOB, -- member that created item, NULL for items in direct chats
+  item_member_id BLOB,
   shared_msg_id BLOB NOT NULL,
   contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
   group_id INTEGER REFERENCES groups ON DELETE CASCADE,
@@ -535,7 +625,7 @@ CREATE TABLE chat_item_reactions(
   reaction_ts TEXT NOT NULL, -- broker_ts of creating message for received, created_at for sent
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
-);
+) STRICT;
 CREATE TABLE chat_item_moderations(
   chat_item_moderation_id INTEGER PRIMARY KEY,
   group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
@@ -546,7 +636,7 @@ CREATE TABLE chat_item_moderations(
   moderated_at TEXT NOT NULL, -- broker_ts of creating message
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
-);
+) STRICT;
 CREATE TABLE group_snd_item_statuses(
   group_snd_item_status_id INTEGER PRIMARY KEY,
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
@@ -556,7 +646,7 @@ CREATE TABLE group_snd_item_statuses(
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
   ,
   via_proxy INTEGER
-);
+) STRICT;
 CREATE TABLE IF NOT EXISTS "sent_probes"(
   sent_probe_id INTEGER PRIMARY KEY,
   contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
@@ -566,7 +656,7 @@ CREATE TABLE IF NOT EXISTS "sent_probes"(
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL),
   UNIQUE(user_id, probe)
-);
+) STRICT;
 CREATE TABLE IF NOT EXISTS "sent_probe_hashes"(
   sent_probe_hash_id INTEGER PRIMARY KEY,
   sent_probe_id INTEGER NOT NULL REFERENCES "sent_probes" ON DELETE CASCADE,
@@ -575,7 +665,7 @@ CREATE TABLE IF NOT EXISTS "sent_probe_hashes"(
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL)
-);
+) STRICT;
 CREATE TABLE IF NOT EXISTS "received_probes"(
   received_probe_id INTEGER PRIMARY KEY,
   contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
@@ -585,7 +675,7 @@ CREATE TABLE IF NOT EXISTS "received_probes"(
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL)
-);
+) STRICT;
 CREATE TABLE remote_hosts(
   -- e.g., mobiles known to a desktop app
   remote_host_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -600,7 +690,7 @@ CREATE TABLE remote_hosts(
   bind_addr TEXT,
   bind_iface TEXT,
   bind_port INTEGER
-);
+) STRICT;
 CREATE TABLE remote_controllers(
   -- e.g., desktops known to a mobile app
   remote_ctrl_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -611,7 +701,7 @@ CREATE TABLE remote_controllers(
   id_pub BLOB NOT NULL, -- remote controller long-term/identity key to verify signatures
   dh_priv_key BLOB NOT NULL, -- last session DH key
   prev_dh_priv_key BLOB -- previous session DH key
-);
+) STRICT;
 CREATE TABLE IF NOT EXISTS "msg_deliveries"(
   msg_delivery_id INTEGER PRIMARY KEY,
   message_id INTEGER NOT NULL REFERENCES messages ON DELETE CASCADE, -- non UNIQUE for group messages and for batched messages
@@ -622,7 +712,7 @@ CREATE TABLE IF NOT EXISTS "msg_deliveries"(
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL),
   delivery_status TEXT -- MsgDeliveryStatus
-);
+) STRICT;
 CREATE TABLE note_folders(
   note_folder_id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
@@ -631,8 +721,8 @@ CREATE TABLE note_folders(
   chat_ts TEXT NOT NULL DEFAULT(datetime('now')),
   favorite INTEGER NOT NULL DEFAULT 0,
   unread_chat INTEGER NOT NULL DEFAULT 0
-);
-CREATE TABLE app_settings(app_settings TEXT NOT NULL);
+) STRICT;
+CREATE TABLE app_settings(app_settings TEXT NOT NULL) STRICT;
 CREATE TABLE server_operators(
   server_operator_id INTEGER PRIMARY KEY AUTOINCREMENT,
   server_operator_tag TEXT,
@@ -646,14 +736,16 @@ CREATE TABLE server_operators(
   xftp_role_proxy INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
-);
+  ,
+  smp_role_names INTEGER NOT NULL DEFAULT 0
+) STRICT;
 CREATE TABLE usage_conditions(
   usage_conditions_id INTEGER PRIMARY KEY AUTOINCREMENT,
   conditions_commit TEXT NOT NULL UNIQUE,
   notified_at TEXT,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
-);
+) STRICT;
 CREATE TABLE operator_usage_conditions(
   operator_usage_conditions_id INTEGER PRIMARY KEY AUTOINCREMENT,
   server_operator_id INTEGER REFERENCES server_operators(server_operator_id) ON DELETE SET NULL ON UPDATE CASCADE,
@@ -663,26 +755,26 @@ CREATE TABLE operator_usage_conditions(
   created_at TEXT NOT NULL DEFAULT(datetime('now'))
   ,
   auto_accepted INTEGER DEFAULT 0
-);
+) STRICT;
 CREATE TABLE chat_tags(
   chat_tag_id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER REFERENCES users ON DELETE CASCADE,
   chat_tag_text TEXT NOT NULL,
   chat_tag_emoji TEXT,
   tag_order INTEGER NOT NULL
-);
+) STRICT;
 CREATE TABLE chat_tags_chats(
   contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
   group_id INTEGER REFERENCES groups ON DELETE CASCADE,
   chat_tag_id INTEGER NOT NULL REFERENCES chat_tags ON DELETE CASCADE
-);
+) STRICT;
 CREATE TABLE chat_item_mentions(
   chat_item_mention_id INTEGER PRIMARY KEY AUTOINCREMENT,
   group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
   member_id BLOB NOT NULL,
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
   display_name TEXT NOT NULL
-);
+) STRICT;
 CREATE TABLE delivery_tasks(
   delivery_task_id INTEGER PRIMARY KEY AUTOINCREMENT,
   group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
@@ -698,7 +790,7 @@ CREATE TABLE delivery_tasks(
   failed INTEGER DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
-);
+) STRICT;
 CREATE TABLE delivery_jobs(
   delivery_job_id INTEGER PRIMARY KEY AUTOINCREMENT,
   group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
@@ -706,7 +798,6 @@ CREATE TABLE delivery_jobs(
   job_scope_spec_tag TEXT,
   job_scope_include_pending INTEGER,
   job_scope_support_gm_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
-  single_sender_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
   body BLOB,
   cursor_group_member_id INTEGER,
   job_status TEXT NOT NULL,
@@ -714,16 +805,215 @@ CREATE TABLE delivery_jobs(
   failed INTEGER DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
-);
+  ,
+  sender_group_member_ids TEXT,
+  notification INTEGER NOT NULL DEFAULT 0
+) STRICT;
 CREATE TABLE group_member_status_predicates(
   member_status TEXT NOT NULL PRIMARY KEY,
   current_member INTEGER NOT NULL DEFAULT 0
-);
+) STRICT;
 CREATE TABLE connections_sync(
   connections_sync_id INTEGER PRIMARY KEY AUTOINCREMENT,
   should_sync INTEGER NOT NULL DEFAULT 0,
   last_sync_ts TEXT
-);
+) STRICT;
+CREATE TABLE chat_relays(
+  chat_relay_id INTEGER PRIMARY KEY,
+  address BLOB NOT NULL,
+  display_name TEXT NOT NULL,
+  full_name TEXT NOT NULL DEFAULT '',
+  short_descr TEXT,
+  image TEXT,
+  domains TEXT NOT NULL,
+  preset INTEGER NOT NULL DEFAULT 0,
+  tested INTEGER,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  deleted INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+) STRICT;
+CREATE TABLE group_relays(
+  group_relay_id INTEGER PRIMARY KEY,
+  group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
+  group_member_id INTEGER NOT NULL REFERENCES group_members ON DELETE CASCADE,
+  chat_relay_id INTEGER NOT NULL REFERENCES chat_relays ON DELETE CASCADE,
+  relay_status TEXT NOT NULL,
+  relay_link BLOB,
+  conf_id BLOB,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+  ,
+  base_web_url TEXT
+) STRICT;
+CREATE TABLE rcv_roster_transfers(
+  roster_transfer_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
+  from_member_id INTEGER NOT NULL REFERENCES group_members ON DELETE CASCADE,
+  roster_version INTEGER NOT NULL,
+  roster_digest BLOB NOT NULL,
+  sending_owner_gm_id INTEGER NOT NULL,
+  broker_ts TEXT NOT NULL,
+  roster_msg_body BLOB,
+  roster_msg_chat_binding TEXT,
+  roster_msg_signatures BLOB,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+) STRICT;
+CREATE TABLE file_badge_proofs(
+  badge_proof_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  file_id INTEGER NOT NULL REFERENCES files ON DELETE CASCADE,
+  proof_kind TEXT NOT NULL,
+  badge_proof BLOB NOT NULL,
+  badge_pres_header BLOB NOT NULL,
+  badge_key_idx INTEGER NOT NULL,
+  badge_type TEXT NOT NULL,
+  badge_expiry TEXT NOT NULL,
+  badge_extra TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+) STRICT;
+CREATE TABLE invoices(
+  invoice_id TEXT NOT NULL PRIMARY KEY,
+  provider TEXT NOT NULL,
+  price INTEGER NOT NULL,
+  discount_amount INTEGER,
+  credit_amount INTEGER,
+  amount INTEGER NOT NULL,
+  currency TEXT NOT NULL,
+  payment_url TEXT,
+  payment_address TEXT,
+  payment_crypto_currency TEXT,
+  payment_crypto_amount TEXT,
+  expires_at TEXT NOT NULL,
+  status TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+) STRICT;
+CREATE TABLE payments(
+  payment_id TEXT NOT NULL PRIMARY KEY,
+  invoice_id TEXT REFERENCES invoices,
+  provider TEXT NOT NULL,
+  provider_ref TEXT,
+  amount INTEGER,
+  currency TEXT,
+  status TEXT NOT NULL,
+  exception TEXT,
+  subscription_renews_at TEXT,
+  grace_until TEXT,
+  cancelled INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+) STRICT;
+CREATE TABLE badge_prices(
+  price_id TEXT NOT NULL PRIMARY KEY,
+  badge_type TEXT NOT NULL,
+  month_price INTEGER NOT NULL,
+  currency TEXT NOT NULL,
+  status TEXT NOT NULL,
+  created_at TEXT NOT NULL
+) STRICT;
+CREATE TABLE badge_offers(
+  offer_id TEXT NOT NULL PRIMARY KEY,
+  price_id TEXT REFERENCES badge_prices,
+  months INTEGER NOT NULL,
+  free_months INTEGER,
+  discount INTEGER,
+  status TEXT NOT NULL,
+  created_at TEXT NOT NULL
+) STRICT;
+CREATE TABLE badge_purchases(
+  badge_purchase_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  purchase_key BLOB NOT NULL,
+  master_key BLOB NOT NULL,
+  initial_badge_type TEXT NOT NULL,
+  current_badge_type TEXT NOT NULL,
+  status TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  user_id INTEGER REFERENCES users ON DELETE CASCADE,
+  purchase_priv_key BLOB,
+  alert_acked_kind TEXT,
+  alert_acked_episode TEXT,
+  alert_snooze_until TEXT,
+  badge_code_redemption_id INTEGER REFERENCES badge_code_redemptions,
+  issue_failed_since TEXT,
+  issue_error_at TEXT,
+  issue_error TEXT,
+  next_wake_at TEXT,
+  badge_store_receipt_id INTEGER REFERENCES badge_store_receipts,
+  UNIQUE(purchase_key)
+) STRICT;
+CREATE TABLE badge_ledger(
+  entry_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  entry_uuid TEXT NOT NULL,
+  badge_purchase_id INTEGER NOT NULL REFERENCES badge_purchases ON DELETE CASCADE,
+  change_months INTEGER NOT NULL,
+  balance_months INTEGER NOT NULL,
+  balance_start_ts TEXT NOT NULL,
+  balance_anchor_ts TEXT NOT NULL,
+  balance_badge_type TEXT NOT NULL,
+  was_paused_since TEXT,
+  service_created_at TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  entry_type TEXT NOT NULL,
+  entry_credit_type TEXT,
+  entry_debit_type TEXT
+  ,
+  entry_type_unknown INTEGER NOT NULL DEFAULT 0,
+  entry_type_value TEXT,
+  balance_checked INTEGER
+) STRICT;
+CREATE TABLE badge_issuances(
+  issuance_id TEXT NOT NULL PRIMARY KEY,
+  badge_purchase_id INTEGER NOT NULL REFERENCES badge_purchases ON DELETE CASCADE,
+  entry_id INTEGER REFERENCES badge_ledger,
+  badge_type TEXT NOT NULL,
+  period_start TEXT NOT NULL,
+  period_end TEXT NOT NULL,
+  expiry TEXT NOT NULL,
+  credential BLOB NOT NULL,
+  created_at TEXT NOT NULL
+) STRICT;
+CREATE TABLE badge_code_redemptions(
+  badge_code_redemption_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  code TEXT NOT NULL,
+  purchase_key BLOB NOT NULL,
+  purchase_priv_key BLOB NOT NULL,
+  master_key BLOB NOT NULL,
+  created_at TEXT NOT NULL,
+  UNIQUE(user_id, code)
+) STRICT;
+CREATE TABLE group_member_badge_proofs(
+  group_member_id INTEGER PRIMARY KEY REFERENCES group_members ON DELETE CASCADE,
+  badge_proof BLOB NOT NULL,
+  badge_pres_header BLOB NOT NULL,
+  badge_key_idx INTEGER NOT NULL,
+  badge_type TEXT NOT NULL,
+  badge_expiry TEXT NOT NULL,
+  badge_extra TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+) STRICT;
+CREATE TABLE badge_store_receipts(
+  badge_store_receipt_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  invoice_id TEXT UNIQUE,
+  provider TEXT,
+  transaction_ref TEXT,
+  purchase_key BLOB NOT NULL,
+  purchase_priv_key BLOB NOT NULL,
+  master_key BLOB NOT NULL,
+  created_at TEXT NOT NULL,
+  payment TEXT,
+  next_attempt_at TEXT,
+  retry_delay INTEGER,
+  retry_count INTEGER NOT NULL DEFAULT 0,
+  credit_error TEXT,
+  UNIQUE(provider, transaction_ref)
+) STRICT;
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
   full_name
@@ -804,9 +1094,6 @@ CREATE INDEX idx_group_profiles_user_id ON group_profiles(user_id);
 CREATE INDEX idx_groups_chat_item_id ON groups(chat_item_id);
 CREATE INDEX idx_groups_group_profile_id ON groups(group_profile_id);
 CREATE INDEX idx_messages_group_id ON messages(group_id);
-CREATE INDEX idx_pending_group_messages_group_member_intro_id ON pending_group_messages(
-  group_member_intro_id
-);
 CREATE INDEX idx_pending_group_messages_message_id ON pending_group_messages(
   message_id
 );
@@ -1166,9 +1453,6 @@ CREATE INDEX idx_delivery_jobs_group_id ON delivery_jobs(group_id);
 CREATE INDEX idx_delivery_jobs_job_scope_support_gm_id ON delivery_jobs(
   job_scope_support_gm_id
 );
-CREATE INDEX idx_delivery_jobs_single_sender_group_member_id ON delivery_jobs(
-  single_sender_group_member_id
-);
 CREATE INDEX idx_delivery_jobs_next ON delivery_jobs(
   group_id,
   worker_scope,
@@ -1190,6 +1474,115 @@ CREATE INDEX idx_connections_to_subscribe ON connections(
 CREATE UNIQUE INDEX idx_group_members_group_id_index_in_group ON group_members(
   group_id,
   index_in_group
+);
+CREATE INDEX idx_chat_items_contacts_msg_content_tag_created_at ON chat_items(
+  user_id,
+  contact_id,
+  msg_content_tag,
+  created_at
+);
+CREATE INDEX idx_chat_items_note_folder_msg_content_tag_created_at ON chat_items(
+  user_id,
+  note_folder_id,
+  msg_content_tag,
+  created_at
+);
+CREATE INDEX idx_chat_items_groups_has_link_item_ts ON chat_items(
+  user_id,
+  group_id,
+  has_link,
+  item_ts
+);
+CREATE INDEX idx_chat_items_contacts_has_link_created_at ON chat_items(
+  user_id,
+  contact_id,
+  has_link,
+  created_at
+);
+CREATE INDEX idx_chat_items_note_folder_has_link_created_at ON chat_items(
+  user_id,
+  note_folder_id,
+  has_link,
+  created_at
+);
+CREATE INDEX idx_chat_relays_user_id ON chat_relays(user_id);
+CREATE UNIQUE INDEX idx_chat_relays_user_id_address ON chat_relays(
+  user_id,
+  address
+);
+CREATE INDEX idx_group_relays_group_id ON group_relays(group_id);
+CREATE UNIQUE INDEX idx_group_relays_group_member_id ON group_relays(
+  group_member_id
+);
+CREATE INDEX idx_group_relays_chat_relay_id ON group_relays(chat_relay_id);
+CREATE INDEX idx_chat_items_contacts_item_viewed ON chat_items(
+  user_id,
+  contact_id,
+  item_viewed,
+  created_at
+);
+CREATE INDEX idx_chat_items_groups_item_viewed ON chat_items(
+  user_id,
+  group_id,
+  item_viewed,
+  item_ts
+);
+CREATE INDEX idx_groups_relay_request_group_link
+ON groups(
+  user_id,
+  relay_request_group_link
+)
+WHERE relay_request_group_link IS NOT NULL;
+CREATE UNIQUE INDEX idx_rcv_roster_transfers_group_id_from_member_id ON rcv_roster_transfers(
+  group_id,
+  from_member_id
+);
+CREATE INDEX idx_rcv_roster_transfers_from_member_id ON rcv_roster_transfers(
+  from_member_id
+);
+CREATE INDEX idx_files_group_id_shared_msg_id ON files(
+  group_id,
+  shared_msg_id
+);
+CREATE INDEX idx_files_roster_transfer_id ON files(roster_transfer_id);
+CREATE INDEX idx_chat_items_item_signed_by_group_member_id ON chat_items(
+  item_signed_by_group_member_id
+);
+CREATE UNIQUE INDEX idx_file_badge_proofs_file_id_kind ON file_badge_proofs(
+  file_id,
+  proof_kind
+);
+CREATE INDEX idx_payments_provider_ref ON payments(provider, provider_ref);
+CREATE INDEX idx_payments_invoice ON payments(invoice_id);
+CREATE INDEX idx_badge_offers_price ON badge_offers(price_id);
+CREATE UNIQUE INDEX idx_badge_ledger_uuid ON badge_ledger(entry_uuid);
+CREATE INDEX idx_badge_ledger_purchase ON badge_ledger(
+  badge_purchase_id,
+  entry_id
+);
+CREATE INDEX idx_badge_issuances_purchase ON badge_issuances(
+  badge_purchase_id,
+  issuance_id
+);
+CREATE INDEX idx_badge_issuances_entry ON badge_issuances(entry_id);
+CREATE UNIQUE INDEX idx_badge_issuances_purchase_entry ON badge_issuances(
+  badge_purchase_id,
+  entry_id
+);
+CREATE INDEX idx_badge_purchases_user ON badge_purchases(user_id);
+CREATE INDEX idx_users_shown_badge ON users(shown_badge_id);
+CREATE INDEX idx_badge_code_redemptions_user ON badge_code_redemptions(
+  user_id
+);
+CREATE UNIQUE INDEX idx_badge_purchases_code_redemption ON badge_purchases(
+  badge_code_redemption_id
+);
+CREATE INDEX idx_group_members_invited_via_group_member_id ON group_members(
+  invited_via_group_member_id
+);
+CREATE INDEX idx_badge_store_receipts_user ON badge_store_receipts(user_id);
+CREATE UNIQUE INDEX idx_badge_purchases_store_receipt ON badge_purchases(
+  badge_store_receipt_id
 );
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members

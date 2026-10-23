@@ -13,6 +13,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module Simplex.Chat.Library.Commands where
@@ -37,6 +38,7 @@ import Data.Constraint (Dict (..))
 import Data.Either (fromRight, partitionEithers, rights)
 import Data.Foldable (foldr')
 import Data.Functor (($>))
+import Data.Functor.Identity (Identity (..), runIdentity)
 import Data.Int (Int64)
 import Data.List (dropWhileEnd, find, foldl', isSuffixOf, partition, sortOn, zipWith4)
 import Data.List.NonEmpty (NonEmpty (..))
@@ -49,20 +51,33 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time (NominalDiffTime, addUTCTime, defaultTimeLocale, formatTime)
-import Data.Time.Clock (UTCTime, getCurrentTime, nominalDay)
+import Data.Word (Word32)
+import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDay)
 import Data.Type.Equality
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
+import Crypto.Random (ChaChaDRG)
+import Simplex.Messaging.Session (SessionVar (..), withGetSessVar')
+import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey, BadgeType, LocalBadge (..), ProofPresHeader (..), badgeServerCredential, mkBadgeStatus, maxSndXFTPFileSize, verifyCredential)
+import qualified Simplex.Chat.Badges.Ledger as L
+import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind (..), BadgeIssueError (..), BadgeIssueFailure (..), BadgeState (..), OpenStorePurchase (..))
+import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
+import Simplex.Chat.Badges.Service (BadgeBalance (..), BadgeServiceCommand (..), BadgeServiceErrorCode (..), BadgeServiceRequest (..), BadgeServiceResponse (..), BadgeStatement (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..), currentBadgeServiceVersion)
+import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
+import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
 import Simplex.Chat.Files
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
+import Simplex.Chat.Messages.Batch (BatchMode, encodeBatchElement)
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.Operators
 import Simplex.Chat.Options
+import Simplex.Chat.PaymentService (ServicePayment (..), appleTransactionId, googlePurchaseRef)
+import Simplex.Chat.PaymentService.Types (PaymentProvider (..), StoreTransactionRef (..))
 import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Remote
@@ -71,6 +86,7 @@ import Simplex.Chat.Library.Internal
 import Simplex.Chat.Stats
 import Simplex.Chat.Store
 import Simplex.Chat.Store.AppSettings
+import Simplex.Chat.Store.Badges
 import Simplex.Chat.Store.ContactRequest
 import Simplex.Chat.Store.Connections
 import Simplex.Chat.Store.Delivery
@@ -86,23 +102,29 @@ import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Util (liftIOEither, zipWith3')
 import qualified Simplex.Chat.Util as U
-import Simplex.FileTransfer.Description (FileDescriptionURI (..), maxFileSize, maxFileSizeHard)
+import Simplex.Chat.Web (webPreviewWorker)
+import Simplex.FileTransfer.Description (FileDescriptionURI (..), maxFileSizeHard)
 import Simplex.Messaging.Agent
-import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..), allRoles)
+import Simplex.Messaging.Agent.Client (getAgentWorker, waitForUserNetwork, waitForWork, waitWhileSuspended, withWork_)
+import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..), Worker (..), allRoles)
 import Simplex.Messaging.Agent.Protocol
+import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..), nextRetryDelay, withRetryInterval, withRetryIntervalCount)
 import Simplex.Messaging.Agent.Store.Entity
 import Simplex.Messaging.Agent.Store.Interface (execSQL)
 import Simplex.Messaging.Agent.Store.Shared (upMigration)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.Interface (getCurrentMigrations)
-import Simplex.Messaging.Client (NetworkConfig (..), NetworkRequestMode (..), NetworkTimeout (..), SMPWebPortServers (..), SocksMode (SMAlways), textToHostMode)
+import Simplex.Messaging.Client (NetworkConfig (..), NetworkRequestMode (..), NetworkTimeout (..), SMPWebPortServers (..), SocksMode (SMAlways), pattern NRMInteractive, textToHostMode)
 import qualified Simplex.Messaging.Crypto as C
+import qualified Simplex.Messaging.Crypto.ShortLink as SL
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
-import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..), pattern IKPQOff, pattern IKPQOn, pattern PQEncOff, pattern PQSupportOff, pattern PQSupportOn)
+import Simplex.Messaging.Crypto.Ratchet (E2ERatchetParamsUri (..), InitialKeys (..), PQEncryption (..), PQSupport (..), pattern IKPQOff, pattern IKPQOn, pattern PQSupportOff, pattern PQSupportOn)
+import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (base64P)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), MsgFlags (..), NtfServer, ProtoServerWithAuth (..), ProtocolServer, ProtocolType (..), ProtocolTypeI (..), SProtocolType (..), SubscriptionMode (..), UserProtocol, userProtocol)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), ErrorType (NAME), MsgFlags (..), NameRecord (..), NameRegistration (..), NameResponse (..), NtfServer, ProtoServerWithAuth (..), ProtocolServer, ProtocolType (..), ProtocolTypeI (..), SProtocolType (..), SubscriptionMode (..), UserProtocol, userProtocol)
+import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.ServiceScheme (ServiceScheme (..))
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (defaultSocksProxyWithAuth)
@@ -113,22 +135,24 @@ import Simplex.RemoteControl.Types (RCCtrlAddress (..))
 import System.Exit (ExitCode, exitSuccess)
 import System.FilePath (takeExtension, takeFileName, (</>))
 import System.IO (Handle, IOMode (..))
+import System.Mem.Weak (deRefWeak)
 import System.Random (randomRIO)
+import System.Timeout (timeout)
 import UnliftIO.Async
-import UnliftIO.Concurrent (forkIO, threadDelay)
+import UnliftIO.Concurrent (forkIO, killThread, threadDelay)
 import UnliftIO.Directory
 import qualified UnliftIO.Exception as E
 import UnliftIO.IO (hClose)
 import UnliftIO.STM
 #if defined(dbPostgres)
-import Data.Bifunctor (bimap, second)
-import Simplex.Messaging.Agent.Client (SubInfo (..), getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary)
+import Data.Bifunctor (bimap, first, second)
+import Simplex.Messaging.Agent.Client (SubInfo (..), cancelWorker, getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary, temporaryOrHostError)
 #else
 import Data.Bifunctor (bimap, first, second)
 import qualified Data.ByteArray as BA
 import qualified Database.SQLite.Simple as SQL
 import Simplex.Chat.Archive
-import Simplex.Messaging.Agent.Client (SubInfo (..), agentClientStore, getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary)
+import Simplex.Messaging.Agent.Client (SubInfo (..), agentClientStore, cancelWorker, getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary, temporaryOrHostError)
 import Simplex.Messaging.Agent.Store.Common (withConnection)
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 #endif
@@ -143,8 +167,56 @@ _defaultNtfServers =
 maxImageSize :: Integer
 maxImageSize = 261120 * 2 -- auto-receive on mobiles
 
+-- matches the cap mobile and desktop UIs pass to resizeImageToStrSize for profile images
+maxProfileImageSize :: Int
+maxProfileImageSize = 12500
+
+checkProfileImageSize :: Maybe ImageData -> CM ()
+checkProfileImageSize = mapM_ $ \(ImageData t) ->
+  let size = T.length t
+   in when (size > maxProfileImageSize) $ throwCmdError $ "Profile image is too large " <> show size
+
+checkProfileSize :: Profile -> CM ()
+checkProfileSize p@Profile {contactDomain} = checkInfoSize "Profile" (XInfo p' Nothing)
+  where
+    p' = (p :: Profile) {badge = Nothing, contactDomain = (\d -> d {proof = Nothing} :: SimplexDomainClaim) <$> contactDomain}
+
+checkGroupProfileSize :: GroupProfile -> CM ()
+checkGroupProfileSize p = checkInfoSize "Group profile" (XGrpInfo p)
+
+-- validates that the profile update event fits into the connection info sent to peers
+checkInfoSize :: String -> ChatMsgEvent 'Json -> CM ()
+checkInfoSize what event = do
+  vr <- chatVersionRange
+  let info = ChatMessage {chatVRange = vr, msgId = Nothing, chatMsgEvent = event}
+  case encodeChatMessage maxEncodedInfoLength info of
+    ECMEncoded _ -> pure ()
+    ECMLarge -> throwCmdError $ what <> " is too large"
+
 imageExtensions :: [String]
 imageExtensions = [".jpg", ".jpeg", ".png", ".gif"]
+
+-- read a .png/.jpg/.jpeg image file and encode it as a data: URL ImageData, or return an error message
+loadImageData :: FilePath -> IO (Either String ImageData)
+loadImageData path = case map toLower (takeExtension path) of
+  ".png" -> readImage "image/png"
+  ".jpg" -> readImage "image/jpg"
+  ".jpeg" -> readImage "image/jpg"
+  _ -> pure $ Left $ "unsupported image extension in " <> path <> " (only .png, .jpg, .jpeg)"
+  where
+    readImage mime = do
+      exists <- doesFileExist path
+      if not exists
+        then pure $ Left $ "image file not found: " <> path
+        else do
+          bs <- B.readFile path
+          pure $
+            if B.null bs
+              then Left $ "image file is empty: " <> path
+              else Right $ ImageData $ "data:" <> mime <> ";base64," <> safeDecodeUtf8 (B64.encode bs)
+
+readProfileImageFile :: FilePath -> CM ImageData
+readProfileImageFile path = liftIO (loadImageData path) >>= either throwCmdError pure
 
 fixedImagePreview :: ImageData
 fixedImagePreview = ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAKVJREFUeF7t1kENACEUQ0FQhnVQ9lfGO+xggITQdvbMzArPey+8fa3tAfwAEdABZQspQStgBssEcgAIkSAJkiAJljtEgiRIgmUCSZAESZAESZAEyx0iQRIkwTKBJEiCv5fgvTd1wDmn7QAP4AeIgA4oW0gJWgEzWCZwbQ7gAA7ggLKFOIADOKBMIAeAEAmSIAmSYLlDJEiCJFgmkARJkARJ8N8S/ADTZUewBvnTOQAAAABJRU5ErkJggg=="
@@ -159,16 +231,14 @@ videoFilePrefix :: String
 videoFilePrefix = "video_"
 
 -- enableSndFiles has no effect when mainApp is True
-startChatController :: Bool -> Bool -> CM' (Async ())
-startChatController mainApp enableSndFiles = do
+startChatController :: Bool -> Bool -> Bool -> CM' (Async ())
+startChatController mainApp enableSndFiles serviceRequests = do
   asks smpAgent >>= liftIO . resumeAgentClient
+  chatWriteVar' processServiceRequests serviceRequests
   unless mainApp $ chatWriteVar' subscriptionMode SMOnlyCreate
   users <- fromRight [] <$> runExceptT (withFastStore' getUsers)
   runExceptT (syncConnections' users) >>= \case
     Left e -> liftIO $ putStrLn $ "Error synchronizing connections: " <> show e
-    Right _ -> pure ()
-  runExceptT migrateMemberRelations >>= \case
-    Left e -> liftIO $ putStrLn $ "Error migrating member relations: " <> show e
     Right _ -> pure ()
   restoreCalls
   s <- asks agentAsync
@@ -181,10 +251,6 @@ startChatController mainApp enableSndFiles = do
         (userDiff, connDiff) <- withAgent (\a -> syncConnections a aUserIds connIds)
         withFastStore' setConnectionsSyncTs
         toView $ CEvtConnectionsDiff (AgentUserId <$> userDiff) (AgentConnId <$> connDiff)
-    migrateMemberRelations =
-      when mainApp $
-        whenM (withStore' hasMembersWithoutVector) $
-          void $ forkIO runRelationsVectorMigration
     start s users = do
       a1 <- async agentSubscriber
       a2 <-
@@ -197,8 +263,13 @@ startChatController mainApp enableSndFiles = do
           startXFTP xftpStartWorkers
           void $ forkIO $ startFilesToReceive users
           startDeliveryWorkers
+          startRelayRequestWorker_
           startCleanupManager
+          mapM_ startBadgeWork users
+          startStoreReceiptWorkers users
           void $ forkIO $ mapM_ startExpireCIs users
+          startRelayChecks users
+          startWebPreview users
         else when enableSndFiles $ startXFTP xftpStartSndWorkers
       pure a1
     startXFTP startWorkers = do
@@ -210,12 +281,43 @@ startChatController mainApp enableSndFiles = do
       runExceptT (startDeliveryTaskWorkers >> startDeliveryJobWorkers) >>= \case
         Left e -> liftIO $ putStrLn $ "Error starting delivery workers: " <> show e
         Right _ -> pure ()
+    startRelayRequestWorker_ =
+      runExceptT startRelayRequestWorker >>= \case
+        Left e -> liftIO $ putStrLn $ "Error starting relay request worker: " <> show e
+        Right _ -> pure ()
+    startStoreReceiptWorkers users =
+      runExceptT (mapM_ startStoreReceiptWork users) >>= \case
+        Left e -> liftIO $ putStrLn $ "Error starting store receipt workers: " <> show e
+        Right _ -> pure ()
     startCleanupManager = do
       cleanupAsync <- asks cleanupManagerAsync
       readTVarIO cleanupAsync >>= \case
         Nothing -> do
           a <- Just <$> async (void $ runExceptT cleanupManager)
           atomically $ writeTVar cleanupAsync a
+        _ -> pure ()
+    startRelayChecks users = do
+      let relayUser_ = find (\User {userChatRelay} -> isTrue userChatRelay) users
+      forM_ relayUser_ $ \relayUser -> do
+        relayAsync <- asks relayGroupLinkChecksAsync
+        readTVarIO relayAsync >>= \case
+          Nothing -> do
+            a <- Just <$> async (void $ runExceptT $ runRelayGroupLinkChecks relayUser)
+            atomically $ writeTVar relayAsync a
+          _ -> pure ()
+    startWebPreview users = do
+      let relayUsers = filter (\User {userChatRelay} -> isTrue userChatRelay) users
+      ChatConfig {webPreviewConfig = cfg_} <- asks config
+      case (relayUsers, cfg_) of
+        (_ : _, Just cfg) -> do
+          wps_ <- asks webPreviewState
+          forM_ wps_ $ \WebPreviewState {webPreviewWorkerAsync} ->
+            readTVarIO webPreviewWorkerAsync >>= \case
+              Nothing -> do
+                cc <- ask
+                a <- Just <$> async (liftIO $ webPreviewWorker cfg cc relayUsers)
+                atomically $ writeTVar webPreviewWorkerAsync a
+              _ -> pure ()
         _ -> pure ()
     startExpireCIs user = whenM shouldExpireChats $ do
       startExpireCIThread user
@@ -259,17 +361,29 @@ startReceiveUserFiles user = do
 
 restoreCalls :: CM' ()
 restoreCalls = do
-  savedCalls <- fromRight [] <$> runExceptT (withFastStore' getCalls)
+  ttl <- asks (callInvitationTTL . config)
+  cutoffTs <- addUTCTime (-ttl) <$> liftIO getCurrentTime
+  savedCalls <- fromRight [] <$> runExceptT (withFastStore' $ \db -> expireCalls db cutoffTs >> getCalls db)
   let callsMap = M.fromList $ map (\call@Call {contactId} -> (contactId, call)) savedCalls
   calls <- asks currentCalls
   atomically $ writeTVar calls callsMap
 
 stopChatController :: ChatController -> IO ()
-stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles, expireCIFlags, remoteHostSessions, remoteCtrlSession} = do
+stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles, expireCIFlags, remoteHostSessions, remoteCtrlSession, cleanupManagerAsync, relayGroupLinkChecksAsync, webPreviewState, expireCIThreads, timedItemThreads, deliveryTaskWorkers, deliveryJobWorkers, relayRequestWorkers, badgeWorkers, storeReceiptWorkers} = do
   readTVarIO remoteHostSessions >>= mapM_ (cancelRemoteHost False . snd)
   atomically (stateTVar remoteCtrlSession (,Nothing)) >>= mapM_ (cancelRemoteCtrl False . snd)
   disconnectAgentClient smpAgent
   readTVarIO s >>= mapM_ (\(a1, a2) -> uninterruptibleCancel a1 >> mapM_ uninterruptibleCancel a2)
+  cancelAsync cleanupManagerAsync
+  cancelAsync relayGroupLinkChecksAsync
+  forM_ webPreviewState $ \WebPreviewState {webPreviewWorkerAsync} -> cancelAsync webPreviewWorkerAsync
+  clearMap expireCIThreads >>= mapM_ (mapM_ uninterruptibleCancel)
+  clearMap timedItemThreads >>= mapM_ (readTVarIO >=> mapM_ (deRefWeak >=> mapM_ killThread))
+  clearMap deliveryTaskWorkers >>= mapM_ cancelWorker
+  clearMap deliveryJobWorkers >>= mapM_ cancelWorker
+  clearMap relayRequestWorkers >>= mapM_ cancelWorker
+  stopBadgeWorkers badgeWorkers
+  clearMap storeReceiptWorkers >>= mapM_ cancelWorker
   closeFiles sndFiles
   closeFiles rcvFiles
   atomically $ do
@@ -277,6 +391,10 @@ stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles,
     forM_ keys $ \k -> TM.insert k False expireCIFlags
     writeTVar s Nothing
   where
+    cancelAsync :: TVar (Maybe (Async ())) -> IO ()
+    cancelAsync a = atomically (swapTVar a Nothing) >>= mapM_ uninterruptibleCancel
+    clearMap :: TM.TMap k a -> IO (Map k a)
+    clearMap m = atomically $ swapTVar m M.empty
     closeFiles :: TVar (Map Int64 Handle) -> IO ()
     closeFiles files = do
       fs <- readTVarIO files
@@ -297,24 +415,29 @@ useServers as opDomains uss =
       xftp' = useServerCfgs SPXFTP as opDomains $ concatMap (servers' SPXFTP) uss
    in (smp', xftp')
 
-execChatCommand :: Maybe RemoteHostId -> ByteString -> Int -> CM' (Either ChatError ChatResponse)
-execChatCommand rh s retryNum =
+execChatCommand :: CommandSource -> ByteString -> Int -> CM' (Either ChatError ChatResponse)
+execChatCommand src s retryNum =
   case parseChatCommand s of
     Left e -> pure $ chatCmdError e
-    Right cmd -> case rh of
-      Just rhId
+    Right cmd -> case src of
+      CSRemoteHost rhId
         | allowRemoteCommand cmd -> execRemoteCommand rhId cmd s retryNum
         | otherwise -> pure $ Left $ ChatErrorRemoteHost (RHId rhId) $ RHELocalCommand
-      _ -> do
-        cc@ChatController {config = ChatConfig {chatHooks}} <- ask
-        case preCmdHook chatHooks of
-          Just hook -> liftIO (hook cc cmd) >>= either pure (`execChatCommand'` retryNum)
-          Nothing -> execChatCommand' cmd retryNum
+      CSRemoteCtrl
+        | allowRemoteCommand cmd -> execLocal cmd
+        | otherwise -> pure $ Left $ ChatErrorRemoteCtrl $ RCEProtocolError $ RPEInvalidBody "prohibited command"
+      CSLocal -> execLocal cmd
+  where
+    execLocal cmd = do
+      cc@ChatController {config = ChatConfig {chatHooks}} <- ask
+      case preCmdHook chatHooks of
+        Just hook -> liftIO (hook cc cmd) >>= either pure (`execChatCommand'` retryNum)
+        Nothing -> execChatCommand' cmd retryNum
 
 execChatCommand' :: ChatCommand -> Int -> CM' (Either ChatError ChatResponse)
 execChatCommand' cmd retryNum = handleCommandError $ do
-  vr <- chatVersionRange
-  processChatCommand vr (NRMInteractive' retryNum) cmd
+  cxt <- chatStoreCxt
+  processChatCommand cxt (NRMInteractive' retryNum) cmd
 
 execRemoteCommand :: RemoteHostId -> ChatCommand -> ByteString -> Int -> CM' (Either ChatError ChatResponse)
 execRemoteCommand rhId cmd s retryNum = handleCommandError $ getRemoteHostClient rhId >>= \rh -> processRemoteCommand rhId rh cmd s retryNum
@@ -331,22 +454,27 @@ parseChatCommand :: ByteString -> Either String ChatCommand
 parseChatCommand = A.parseOnly chatCommandP . B.dropWhileEnd isSpace
 
 -- | Chat API commands interpreted in context of a local zone
-processChatCommand :: VersionRangeChat -> NetworkRequestMode -> ChatCommand -> CM ChatResponse
-processChatCommand vr nm = \case
+processChatCommand :: StoreCxt -> NetworkRequestMode -> ChatCommand -> CM ChatResponse
+processChatCommand cxt nm = \case
   ShowActiveUser -> withUser' $ pure . CRActiveUser
-  CreateActiveUser NewUser {profile, pastTimestamp} -> do
-    forM_ profile $ \Profile {displayName} -> checkValidName displayName
-    p@Profile {displayName} <- liftIO $ maybe generateRandomProfile pure profile
+  CreateActiveUser NewUser {profile, pastTimestamp, userChatRelay, clientService} -> do
+    forM_ profile $ \p@Profile {displayName, image} -> do
+      checkValidName displayName
+      checkProfileImageSize image
+      checkProfileSize p
+    p@Profile {displayName} <- liftIO $ maybe (generateRandomProfile Nothing) pure profile
     u <- asks currentUser
     users <- withFastStore' getUsers
-    forM_ users $ \User {localDisplayName = n, activeUser, viewPwdHash} ->
+    forM_ users $ \User {profile = LocalProfile {displayName = n}, activeUser, viewPwdHash, userChatRelay = userChatRelay'} -> do
       when (n == displayName) . throwChatError $
         if activeUser || isNothing viewPwdHash then CEUserExists displayName else CEInvalidDisplayName {displayName, validName = ""}
+      when (isTrue userChatRelay && isTrue userChatRelay') $ throwChatError CEChatRelayExists
     (uss, (smp', xftp')) <- chooseServers =<< readTVarIO u
-    auId <- withAgent $ \a -> createUser a smp' xftp'
+    let service = isTrue clientService
+    auId <- withAgent $ \a -> createUser a service smp' xftp'
     ts <- liftIO $ getCurrentTime >>= if pastTimestamp then coupleDaysAgo else pure
     user <- withFastStore $ \db -> do
-      user <- createUserRecordAt db (AgentUserId auId) p True ts
+      user <- createUserRecordAt db (AgentUserId auId) (isTrue userChatRelay) service p True ts
       mapM_ (setUserServers db user ts) uss
       createPresetContactCards db user `catchAllErrors` \_ -> pure ()
       createNoteFolder db user
@@ -356,8 +484,7 @@ processChatCommand vr nm = \case
     where
       createPresetContactCards :: DB.Connection -> User -> ExceptT StoreError IO ()
       createPresetContactCards db user = do
-        createContact db user simplexStatusContactProfile
-        createContact db user simplexTeamContactProfile
+        createContact db cxt user simplexTeamContactProfile
       chooseServers :: Maybe User -> CM ([UpdatedUserOperatorServers], (NonEmpty (ServerCfg 'PSMP), NonEmpty (ServerCfg 'PXFTP)))
       chooseServers user_ = do
         as <- asks randomAgentServers
@@ -372,9 +499,16 @@ processChatCommand vr nm = \case
             let RandomAgentServers {smpServers = smp', xftpServers = xftp'} = as
             pure (uss, (smp', xftp'))
       copyServers :: UserOperatorServers -> UpdatedUserOperatorServers
-      copyServers UserOperatorServers {operator, smpServers, xftpServers} =
-        let new srv = AUS SDBNew srv {serverId = DBNewEntity}
-         in UpdatedUserOperatorServers {operator, smpServers = map new smpServers, xftpServers = map new xftpServers}
+      copyServers UserOperatorServers {operator, smpServers, xftpServers, chatRelays} =
+        let newSrv srv = AUS SDBNew srv {serverId = DBNewEntity}
+            newCRelay chatRelay = AUCR SDBNew chatRelay {chatRelayId = DBNewEntity}
+         in
+          UpdatedUserOperatorServers {
+            operator,
+            smpServers = map newSrv smpServers,
+            xftpServers = map newSrv xftpServers,
+            chatRelays = map newCRelay chatRelays
+          }
       coupleDaysAgo t = (`addUTCTime` t) . fromInteger . negate . (+ (2 * day)) <$> randomRIO (0, day)
       day = 86400
   ListUsers -> CRUsersList <$> withFastStore' getUsersInfo
@@ -389,26 +523,32 @@ processChatCommand vr nm = \case
   SetActiveUser uName viewPwd_ -> do
     tryAllErrors (withFastStore (`getUserIdByName` uName)) >>= \case
       Left _ -> throwChatError CEUserUnknown
-      Right userId -> processChatCommand vr nm $ APISetActiveUser userId viewPwd_
+      Right userId -> processChatCommand cxt nm $ APISetActiveUser userId viewPwd_
   SetAllContactReceipts onOff -> withUser $ \_ -> withFastStore' (`updateAllContactReceipts` onOff) >> ok_
   APISetUserContactReceipts userId' settings -> withUser $ \user -> do
     user' <- privateGetUser userId'
     validateUserPassword user user' Nothing
     withFastStore' $ \db -> updateUserContactReceipts db user' settings
     ok user
-  SetUserContactReceipts settings -> withUser $ \User {userId} -> processChatCommand vr nm $ APISetUserContactReceipts userId settings
+  SetUserContactReceipts settings -> withUser $ \User {userId} -> processChatCommand cxt nm $ APISetUserContactReceipts userId settings
   APISetUserGroupReceipts userId' settings -> withUser $ \user -> do
     user' <- privateGetUser userId'
     validateUserPassword user user' Nothing
     withFastStore' $ \db -> updateUserGroupReceipts db user' settings
     ok user
-  SetUserGroupReceipts settings -> withUser $ \User {userId} -> processChatCommand vr nm $ APISetUserGroupReceipts userId settings
+  SetUserGroupReceipts settings -> withUser $ \User {userId} -> processChatCommand cxt nm $ APISetUserGroupReceipts userId settings
   APISetUserAutoAcceptMemberContacts userId' onOff -> withUser $ \user -> do
     user' <- privateGetUser userId'
     validateUserPassword user user' Nothing
     withFastStore' $ \db -> updateUserAutoAcceptMemberContacts db user' onOff
     ok user
-  SetUserAutoAcceptMemberContacts onOff -> withUser $ \User {userId} -> processChatCommand vr nm $ APISetUserAutoAcceptMemberContacts userId onOff
+  SetUserAutoAcceptMemberContacts onOff -> withUser $ \User {userId} -> processChatCommand cxt nm $ APISetUserAutoAcceptMemberContacts userId onOff
+  APISetUserAutoAcceptGroupInvitations userId' onOff -> withUser $ \user -> do
+    user' <- privateGetUser userId'
+    validateUserPassword user user' Nothing
+    withFastStore' $ \db -> updateUserAutoAcceptGroupInvitations db user' onOff
+    ok user
+  SetUserAutoAcceptGroupInvitations onOff -> withUser $ \User {userId} -> processChatCommand cxt nm $ APISetUserAutoAcceptGroupInvitations userId onOff
   APIHideUser userId' (UserPwd viewPwd) -> withUser $ \user -> do
     user' <- privateGetUser userId'
     case viewPwdHash user' of
@@ -434,20 +574,33 @@ processChatCommand vr nm = \case
         setUserPrivacy user user' {viewPwdHash = Nothing, showNtfs = True}
   APIMuteUser userId' -> setUserNotifications userId' False
   APIUnmuteUser userId' -> setUserNotifications userId' True
-  HideUser viewPwd -> withUser $ \User {userId} -> processChatCommand vr nm $ APIHideUser userId viewPwd
-  UnhideUser viewPwd -> withUser $ \User {userId} -> processChatCommand vr nm $ APIUnhideUser userId viewPwd
-  MuteUser -> withUser $ \User {userId} -> processChatCommand vr nm $ APIMuteUser userId
-  UnmuteUser -> withUser $ \User {userId} -> processChatCommand vr nm $ APIUnmuteUser userId
+  HideUser viewPwd -> withUser $ \User {userId} -> processChatCommand cxt nm $ APIHideUser userId viewPwd
+  UnhideUser viewPwd -> withUser $ \User {userId} -> processChatCommand cxt nm $ APIUnhideUser userId viewPwd
+  MuteUser -> withUser $ \User {userId} -> processChatCommand cxt nm $ APIMuteUser userId
+  UnmuteUser -> withUser $ \User {userId} -> processChatCommand cxt nm $ APIUnmuteUser userId
+  SetClientService userId' name enable -> checkChatStopped $ withUser' $ \currUser@User {userId} -> do
+    user@User {agentUserId = AgentUserId auId, clientService, profile = LocalProfile {displayName}} <-
+      if userId == userId' then pure currUser else privateGetUser userId'
+    unless (name == displayName) $ throwChatError CEUserUnknown
+    if enable == isTrue clientService
+      then ok user
+      else do
+        withStore' $ \db -> updateClientService db userId' enable
+        withAgent $ \a -> setUserService a auId enable
+        let user' = user {clientService = BoolDef enable} :: User
+        when (userId == userId') $ chatWriteVar currentUser $ Just user'
+        setStoreChanged
+        ok user'
   APIDeleteUser userId' delSMPQueues viewPwd_ -> withUser $ \user -> do
     user' <- privateGetUser userId'
     validateUserPassword user user' viewPwd_
     checkDeleteChatUser user'
     withChatLock "deleteUser" $ deleteChatUser user' delSMPQueues
   DeleteUser uName delSMPQueues viewPwd_ -> withUserName uName $ \userId -> APIDeleteUser userId delSMPQueues viewPwd_
-  StartChat {mainApp, enableSndFiles} -> withUser' $ \_ ->
+  StartChat {mainApp, enableSndFiles, serviceRequests} -> withUser' $ \_ ->
     asks agentAsync >>= readTVarIO >>= \case
       Just _ -> pure CRChatRunning
-      _ -> checkStoreNotChanged . lift $ startChatController mainApp enableSndFiles $> CRChatStarted
+      _ -> checkStoreNotChanged . lift $ startChatController mainApp enableSndFiles serviceRequests $> CRChatStarted
   CheckChatRunning -> maybe CRChatStopped (const CRChatRunning) <$> chatReadVar agentAsync
   APIStopChat -> do
     ask >>= liftIO . stopChatController
@@ -462,6 +615,8 @@ processChatCommand vr nm = \case
         void . forkIO $ subscribeUsers True users
         void . forkIO $ startFilesToReceive users
         setAllExpireCIFlags True
+        mapM_ startBadgeWork users
+      mapM_ startStoreReceiptWork users
     ok_
   APISuspendChat t -> do
     chatWriteVar chatActivated False
@@ -507,7 +662,7 @@ processChatCommand vr nm = \case
   ExportArchive -> do
     ts <- liftIO getCurrentTime
     let filePath = "simplex-chat." <> formatTime defaultTimeLocale "%FT%H%M%SZ" ts <> ".zip"
-    processChatCommand vr nm $ APIExportArchive $ ArchiveConfig filePath Nothing Nothing
+    processChatCommand cxt nm $ APIExportArchive $ ArchiveConfig filePath Nothing Nothing
   APIImportArchive cfg -> checkChatStopped $ do
     fileErrs <- lift $ importArchive cfg
     setStoreChanged
@@ -536,22 +691,22 @@ processChatCommand vr nm = \case
     tags <- withFastStore' (`getUserChatTags` user)
     pure $ CRChatTags user tags
   APIGetChats {userId, pendingConnections, pagination, query} -> withUserId' userId $ \user -> do
-    (errs, previews) <- partitionEithers <$> withFastStore' (\db -> getChatPreviews db vr user pendingConnections pagination query)
+    ChatConfig {maxChats} <- asks config
+    let pagination' = fromMaybe (PTLast maxChats) pagination
+    (errs, previews) <- partitionEithers <$> withFastStore' (\db -> getChatPreviews db cxt user pendingConnections pagination' query)
     unless (null errs) $ toView $ CEvtChatErrors (map ChatErrorStore errs)
     pure $ CRApiChats user previews
   APIGetChat (ChatRef cType cId scope_) contentFilter pagination search -> withUser $ \user -> case cType of
     -- TODO optimize queries calculating ChatStats, currently they're disabled
     CTDirect -> do
-      when (isJust contentFilter) $ throwCmdError "content filter not supported"
-      (directChat, navInfo) <- withFastStore (\db -> getDirectChat db vr user cId pagination search)
+      (directChat, navInfo) <- withFastStore (\db -> getDirectChat db cxt user cId contentFilter pagination search)
       pure $ CRApiChat user (AChat SCTDirect directChat) navInfo
     CTGroup -> do
-      (groupChat, navInfo) <- withFastStore (\db -> getGroupChat db vr user cId scope_ contentFilter pagination search)
+      (groupChat, navInfo) <- withFastStore (\db -> getGroupChat db cxt user cId scope_ contentFilter pagination search)
       groupChat' <- checkSupportChatAttention user groupChat
       pure $ CRApiChat user (AChat SCTGroup groupChat') navInfo
     CTLocal -> do
-      when (isJust contentFilter) $ throwCmdError "content filter not supported"
-      (localChat, navInfo) <- withFastStore (\db -> getLocalChat db user cId pagination search)
+      (localChat, navInfo) <- withFastStore (\db -> getLocalChat db user cId contentFilter pagination search)
       pure $ CRApiChat user (AChat SCTLocal localChat) navInfo
     CTContactRequest -> throwCmdError "not implemented"
     CTContactConnection -> throwCmdError "not supported"
@@ -563,7 +718,7 @@ processChatCommand vr nm = \case
             case correctedMemAttention (groupMemberId' scopeMem) suppChat chatItems of
               Just newMemAttention -> do
                 (gInfo', scopeMem') <-
-                  withFastStore' $ \db -> setSupportChatMemberAttention db vr user gInfo scopeMem newMemAttention
+                  withFastStore' $ \db -> setSupportChatMemberAttention db cxt user gInfo scopeMem newMemAttention
                 pure (groupChat {chatInfo = GroupChat gInfo' (Just $ GCSIMemberSupport (Just scopeMem'))} :: Chat 'CTGroup)
               Nothing -> pure groupChat
           _ -> pure groupChat
@@ -577,48 +732,56 @@ processChatCommand vr nm = \case
               newFromMember (CChatItem _ ChatItem {chatDir = CIGroupRcv m, meta = CIMeta {itemStatus = CISRcvNew}}) =
                 groupMemberId' m == scopeGMId
               newFromMember _ = False
+  APIGetChatContentTypes chatRef -> withUser $ \user ->
+    CRChatContentTypes <$> withStore (\db -> getChatContentTypes db user chatRef)
   APIGetChatItems pagination search -> withUser $ \user -> do
-    chatItems <- withFastStore $ \db -> getAllChatItems db vr user pagination search
+    chatItems <- withFastStore $ \db -> getAllChatItems db cxt user pagination search
     pure $ CRChatItems user Nothing chatItems
   APIGetChatItemInfo chatRef itemId -> withUser $ \user -> do
     (aci@(AChatItem cType dir _ ci), versions) <- withFastStore $ \db ->
-      (,) <$> getAChatItem db vr user chatRef itemId <*> liftIO (getChatItemVersions db itemId)
+      (,) <$> getAChatItem db cxt user chatRef itemId <*> liftIO (getChatItemVersions db itemId)
     let itemVersions = if null versions then maybeToList $ mkItemVersion ci else versions
     memberDeliveryStatuses <- case (cType, dir) of
       (SCTGroup, SMDSnd) -> L.nonEmpty <$> withFastStore' (`getGroupSndStatuses` itemId)
       _ -> pure Nothing
     forwardedFromChatItem <- getForwardedFromItem user ci
-    pure $ CRChatItemInfo user aci ChatItemInfo {itemVersions, memberDeliveryStatuses, forwardedFromChatItem}
+    fileXftpServers <- getChatItemFileServers user dir ci
+    pure $ CRChatItemInfo user aci ChatItemInfo {itemVersions, memberDeliveryStatuses, forwardedFromChatItem, fileXftpServers}
     where
       getForwardedFromItem :: User -> ChatItem c d -> CM (Maybe AChatItem)
       getForwardedFromItem user ChatItem {meta = CIMeta {itemForwarded}} = case itemForwarded of
         Just (CIFFContact _ _ (Just ctId) (Just fwdItemId)) ->
-          Just <$> withFastStore (\db -> getAChatItem db vr user (ChatRef CTDirect ctId Nothing) fwdItemId)
-        Just (CIFFGroup _ _ (Just gId) (Just fwdItemId)) ->
+          Just <$> withFastStore (\db -> getAChatItem db cxt user (ChatRef CTDirect ctId Nothing) fwdItemId)
+        Just (CIFFGroup _ _ (Just gId) (Just fwdItemId) _ _ _) ->
           -- TODO [knocking] getAChatItem doesn't differentiate how to read based on scope - it should, instead of using group filter
-          Just <$> withFastStore (\db -> getAChatItem db vr user (ChatRef CTGroup gId Nothing) fwdItemId)
+          Just <$> withFastStore (\db -> getAChatItem db cxt user (ChatRef CTGroup gId Nothing) fwdItemId)
         _ -> pure Nothing
-  APISendMessages sendRef live itemTTL cms -> withUser $ \user -> mapM_ assertAllowedContent' cms >> case sendRef of
+  APISendMessages sendRef live itemTTL sign cms -> withUser $ \user -> mapM_ assertAllowedContent' cms >> case sendRef of
     SRDirect chatId -> do
       mapM_ assertNoMentions cms
       withContactLock "sendMessage" chatId $
         sendContactContentMessages user chatId live itemTTL (L.map composedMessageReq cms)
-    SRGroup chatId gsScope ->
+    SRGroup chatId gsScope asGroup -> do
+      case gsScope of
+        Just (GCSMemberSupport _) -> when asGroup $ throwCmdError "cannot send as group in support scope"
+        Nothing -> pure ()
       withGroupLock "sendMessage" chatId $ do
         (gInfo, cmrs) <- withFastStore $ \db -> do
-          g <- getGroupInfo db vr user chatId
-          (g,) <$> mapM (composedMessageReqMentions db user g) cms
-        sendGroupContentMessages user gInfo gsScope live itemTTL cmrs
+          gik@(GIK g _) <- getGroupInfoKeys db cxt user chatId
+          (gik,) <$> mapM (composedMessageReqMentions db user g) cms
+        sendGroupContentMessages user gInfo gsScope asGroup live itemTTL sign cmrs
   APICreateChatTag (ChatTagData emoji text) -> withUser $ \user -> withFastStore' $ \db -> do
     _ <- createChatTag db user emoji text
     CRChatTags user <$> getUserChatTags db user
   APISetChatTags (ChatRef cType chatId scope) tagIds -> withUser $ \user -> case cType of
-    CTDirect -> withFastStore' $ \db -> do
-      updateDirectChatTags db chatId (maybe [] L.toList tagIds)
-      CRTagsUpdated user <$> getUserChatTags db user <*> getDirectChatTags db chatId
-    CTGroup | isNothing scope -> withFastStore' $ \db -> do
-      updateGroupChatTags db chatId (maybe [] L.toList tagIds)
-      CRTagsUpdated user <$> getUserChatTags db user <*> getGroupChatTags db chatId
+    CTDirect -> withFastStore $ \db -> do
+      Contact {contactId} <- getContact db cxt user chatId
+      liftIO $ updateDirectChatTags db contactId (maybe [] L.toList tagIds)
+      CRTagsUpdated user <$> liftIO (getUserChatTags db user) <*> liftIO (getDirectChatTags db contactId)
+    CTGroup | isNothing scope -> withFastStore $ \db -> do
+      GroupInfo {groupId} <- getGroupInfo db cxt user chatId
+      liftIO $ updateGroupChatTags db groupId (maybe [] L.toList tagIds)
+      CRTagsUpdated user <$> liftIO (getUserChatTags db user) <*> liftIO (getGroupChatTags db groupId)
     _ -> throwCmdError "not supported"
   APIDeleteChatTag tagId -> withUser $ \user -> do
     withFastStore' $ \db -> deleteChatTag db user tagId
@@ -634,18 +797,18 @@ processChatCommand vr nm = \case
     createNoteFolderContentItems user folderId (L.map composedMessageReq cms)
   APIReportMessage gId reportedItemId reportReason reportText -> withUser $ \user ->
     withGroupLock "reportMessage" gId $ do
-      gInfo <- withFastStore $ \db -> getGroupInfo db vr user gId
+      gInfo <- withFastStore $ \db -> getGroupInfoKeys db cxt user gId
       let mc = MCReport reportText reportReason
           cm = ComposedMessage {fileSource = Nothing, quotedItemId = Just reportedItemId, msgContent = mc, mentions = M.empty}
-      sendGroupContentMessages user gInfo (Just $ GCSMemberSupport Nothing) False Nothing [composedMessageReq cm]
+      sendGroupContentMessages user gInfo (Just $ GCSMemberSupport Nothing) False False Nothing False [composedMessageReq cm]
   ReportMessage {groupName, contactName_, reportReason, reportedMessage} -> withUser $ \user -> do
     gId <- withFastStore $ \db -> getGroupIdByName db user groupName
     reportedItemId <- withFastStore $ \db -> getGroupChatItemIdByText db user gId contactName_ reportedMessage
-    processChatCommand vr nm $ APIReportMessage gId reportedItemId reportReason ""
+    processChatCommand cxt nm $ APIReportMessage gId reportedItemId reportReason ""
   APIUpdateChatItem (ChatRef cType chatId scope) itemId live (UpdatedMessage mc mentions) -> withUser $ \user -> assertAllowedContent mc >> case cType of
     CTDirect -> withContactLock "updateChatItem" chatId $ do
       unless (null mentions) $ throwCmdError "mentions are not supported in this chat"
-      ct@Contact {contactId} <- withFastStore $ \db -> getContact db vr user chatId
+      ct@Contact {contactId} <- withFastStore $ \db -> getContact db cxt user chatId
       assertDirectAllowed user MDSnd ct XMsgUpdate_
       cci <- withFastStore $ \db -> getDirectCIWithReactions db user ct itemId
       case cci of
@@ -655,7 +818,7 @@ processChatCommand vr nm = \case
               let changed = mc /= oldMC
               if changed || fromMaybe False itemLive
                 then do
-                  let event = XMsgUpdate itemSharedMId mc M.empty (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive) Nothing
+                  let event = XMsgUpdate itemSharedMId mc M.empty (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive) Nothing Nothing
                   (SndMessage {msgId}, _) <- sendDirectContactMessage user ct event
                   ci' <- withFastStore' $ \db -> do
                     currentTs <- liftIO getCurrentTime
@@ -669,28 +832,29 @@ processChatCommand vr nm = \case
             _ -> throwChatError CEInvalidChatItemUpdate
         CChatItem SMDRcv _ -> throwChatError CEInvalidChatItemUpdate
     CTGroup -> withGroupLock "updateChatItem" chatId $ do
-      gInfo@GroupInfo {groupId, membership} <- withFastStore $ \db -> getGroupInfo db vr user chatId
+      g@(GIK gInfo@GroupInfo {groupId, membership} _) <- withFastStore $ \db -> getGroupInfoKeys db cxt user chatId
       when (isNothing scope) $ assertUserGroupRole gInfo GRAuthor
-      let (_, ft_) = msgContentTexts mc
-      if prohibitedSimplexLinks gInfo membership ft_
+      let (_, ParsedMarkdown ft_ _) = msgContentTexts mc
+      if prohibitedSimplexLinks gInfo membership mc ft_
         then throwCmdError ("feature not allowed " <> T.unpack (groupFeatureNameText GFSimplexLinks))
         else do
           -- TODO [knocking] check chat item scope?
           cci <- withFastStore $ \db -> getGroupCIWithReactions db user gInfo itemId
           case cci of
-            CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive, editable}, content = ciContent} -> do
+            CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive, editable, showGroupAsSender, msgVerified}, content = ciContent} -> do
               case (ciContent, itemSharedMsgId, editable) of
                 (CISndMsgContent oldMC, Just itemSharedMId, True) -> do
-                  chatScopeInfo <- mapM (getChatScopeInfo vr user) scope
-                  recipients <- getGroupRecipients vr user gInfo chatScopeInfo groupKnockingVersion
+                  chatScopeInfo <- mapM (getChatScopeInfo cxt user) scope
+                  recipients <- getGroupRecipients cxt user gInfo chatScopeInfo groupKnockingVersion
                   let changed = mc /= oldMC
                   if changed || fromMaybe False itemLive
                     then do
                       ciMentions <- withFastStore $ \db -> getCIMentions db user gInfo ft_ mentions
                       let msgScope = toMsgScope gInfo <$> chatScopeInfo
                           mentions' = M.map (\CIMention {memberId} -> MsgMention {memberId}) ciMentions
-                          event = XMsgUpdate itemSharedMId mc mentions' (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive) msgScope
-                      SndMessage {msgId} <- sendGroupMessage user gInfo scope recipients event
+                          event = XMsgUpdate itemSharedMId mc mentions' (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive) msgScope (Just showGroupAsSender)
+                          reuseSign = case msgVerified of Just (MVSigned _) -> True; _ -> False
+                      SndMessage {msgId} <- sendGroupMessage user g scope recipients reuseSign event
                       ci' <- withFastStore' $ \db -> do
                         currentTs <- liftIO getCurrentTime
                         when changed $
@@ -723,11 +887,12 @@ processChatCommand vr nm = \case
       deletions <- case mode of
         CIDMInternal -> deleteDirectCIs user ct items
         CIDMInternalMark -> markDirectCIsDeleted user ct items =<< liftIO getCurrentTime
+        CIDMHistory -> throwChatError CEInvalidChatItemDelete
         CIDMBroadcast -> do
           assertDeletable items
           assertDirectAllowed user MDSnd ct XMsgDel_
           let msgIds = itemsMsgIds items
-              events = map (\msgId -> XMsgDel msgId Nothing Nothing) msgIds
+              events = map (\msgId -> XMsgDel msgId Nothing Nothing False) msgIds
           forM_ (L.nonEmpty events) $ \events' ->
             sendDirectContactMessages user ct events'
           if featureAllowed SCFFullDelete forUser ct
@@ -735,22 +900,27 @@ processChatCommand vr nm = \case
             else markDirectCIsDeleted user ct items =<< liftIO getCurrentTime
       pure $ CRChatItemsDeleted user deletions True False
     CTGroup -> withGroupLock "deleteChatItem" chatId $ do
-      (gInfo, items) <- getCommandGroupChatItems user chatId itemIds
+      (g@(GIK gInfo _), items) <- getCommandGroupChatItems user chatId itemIds
       -- TODO [knocking] check scope for all items?
-      chatScopeInfo <- mapM (getChatScopeInfo vr user) scope
+      chatScopeInfo <- mapM (getChatScopeInfo cxt user) scope
       deletions <- case mode of
-        CIDMInternal -> do
-          deleteGroupCIs user gInfo chatScopeInfo items Nothing =<< liftIO getCurrentTime
+        CIDMInternal
+          | publicGroupEditor gInfo (membership gInfo) -> throwChatError CEInvalidChatItemDelete
+          | otherwise -> deleteGroupCIs user gInfo chatScopeInfo items Nothing =<< liftIO getCurrentTime
         CIDMInternalMark -> do
           markGroupCIsDeleted user gInfo chatScopeInfo items Nothing =<< liftIO getCurrentTime
         CIDMBroadcast -> do
-          recipients <- getGroupRecipients vr user gInfo chatScopeInfo groupKnockingVersion
+          recipients <- getGroupRecipients cxt user gInfo chatScopeInfo groupKnockingVersion
           assertDeletable items
           assertUserGroupRole gInfo GRObserver -- can still delete messages sent earlier
-          let msgIds = itemsMsgIds items
-              events = L.nonEmpty $ map (\msgId -> XMsgDel msgId Nothing $ toMsgScope gInfo <$> chatScopeInfo) msgIds
-          mapM_ (sendGroupMessages user gInfo Nothing recipients) events
-          -- TODO delGroupChatItems sends deletion events too. Are they needed?
+          let signedEvents = L.nonEmpty $ mapMaybe (delEventSigned g chatScopeInfo False) items
+          mapM_ (sendGroupSignedMessages user g Nothing False recipients) signedEvents
+          delGroupChatItems user gInfo chatScopeInfo items False
+        CIDMHistory -> do
+          unless (publicGroupEditor gInfo (membership gInfo)) $ throwChatError CEInvalidChatItemDelete
+          recipients <- getGroupRecipients cxt user gInfo chatScopeInfo groupKnockingVersion
+          let signedEvents = L.nonEmpty $ mapMaybe (delEventSigned g chatScopeInfo True) items
+          mapM_ (sendGroupSignedMessages user g Nothing False recipients) signedEvents
           delGroupChatItems user gInfo chatScopeInfo items False
       pure $ CRChatItemsDeleted user deletions True False
     CTLocal -> do
@@ -772,30 +942,40 @@ processChatCommand vr nm = \case
               SMDRcv -> False
       itemsMsgIds :: [CChatItem c] -> [SharedMsgId]
       itemsMsgIds = mapMaybe (\(CChatItem _ ChatItem {meta = CIMeta {itemSharedMsgId}}) -> itemSharedMsgId)
+      -- history delete always signs (attributable owner action); self-delete signs iff the target was held signed (deniability)
+      delEventSigned :: GroupInfoKeys -> Maybe GroupChatScopeInfo -> Bool -> CChatItem 'CTGroup -> Maybe (Maybe MsgSigning, ChatMsgEvent 'Json)
+      delEventSigned g@(GIK gInfo _) chatScopeInfo onlyHistory (CChatItem _ ChatItem {meta = CIMeta {itemSharedMsgId, msgVerified}}) =
+        delEvent <$> itemSharedMsgId
+        where
+          delEvent msgId =
+            let evt = XMsgDel msgId Nothing (toMsgScope gInfo <$> chatScopeInfo) onlyHistory
+             in (groupMsgSigning (onlyHistory || itemSigned) g evt, evt)
+          itemSigned = case msgVerified of Just (MVSigned _) -> True; _ -> False
   APIDeleteMemberChatItem gId itemIds -> withUser $ \user -> withGroupLock "deleteChatItem" gId $ do
-    (gInfo, items) <- getCommandGroupChatItems user gId itemIds
+    (g@(GIK gInfo _), items) <- getCommandGroupChatItems user gId itemIds
     -- TODO [knocking] check scope is Nothing for all items? (prohibit moderation in support chats?)
-    ms <- withFastStore' $ \db -> getGroupMembers db vr user gInfo
+    ms <- withFastStore' $ \db -> getGroupMembers db cxt user gInfo
     let recipients = filter memberCurrent ms
-    deletions <- delGroupChatItemsForMembers user gInfo Nothing recipients items
+    deletions <- delGroupChatItemsForMembers user g Nothing recipients items
     pure $ CRChatItemsDeleted user deletions True False
   APIArchiveReceivedReports gId -> withUser $ \user -> withFastStore $ \db -> do
-    g <- getGroupInfo db vr user gId
+    g <- getGroupInfo db cxt user gId
     deleteTs <- liftIO getCurrentTime
     ciIds <- liftIO $ markReceivedGroupReportsDeleted db user g deleteTs
     pure $ CRGroupChatItemsDeleted user g ciIds True (Just $ membership g)
   APIDeleteReceivedReports gId itemIds mode -> withUser $ \user -> withGroupLock "deleteReports" gId $ do
-    (gInfo, items) <- getCommandGroupChatItems user gId itemIds
+    (g@(GIK gInfo _), items) <- getCommandGroupChatItems user gId itemIds
     unless (all isRcvReport items) $ throwCmdError "some items are not received reports"
     -- TODO [knocking] scope can be different for each item if reports are from different members
     -- TODO            (currently we pass Nothing as scope which is wrong)
     deletions <- case mode of
       CIDMInternal -> deleteGroupCIs user gInfo Nothing items Nothing =<< liftIO getCurrentTime
       CIDMInternalMark -> markGroupCIsDeleted user gInfo Nothing items Nothing =<< liftIO getCurrentTime
+      CIDMHistory -> throwChatError CEInvalidChatItemDelete
       CIDMBroadcast -> do
-        ms <- withFastStore' $ \db -> getGroupModerators db vr user gInfo
+        ms <- withFastStore' $ \db -> getGroupModerators db cxt user gInfo
         let recipients = filter memberCurrent ms
-        delGroupChatItemsForMembers user gInfo Nothing recipients items
+        delGroupChatItemsForMembers user g Nothing recipients items
     pure $ CRChatItemsDeleted user deletions True False
     where
       isRcvReport = \case
@@ -804,7 +984,7 @@ processChatCommand vr nm = \case
   APIChatItemReaction (ChatRef cType chatId scope) itemId add reaction -> withUser $ \user -> case cType of
     CTDirect ->
       withContactLock "chatItemReaction" chatId $
-        withFastStore (\db -> (,) <$> getContact db vr user chatId <*> getDirectChatItem db user chatId itemId) >>= \case
+        withFastStore (\db -> (,) <$> getContact db cxt user chatId <*> getDirectChatItem db user chatId itemId) >>= \case
           (ct, CChatItem md ci@ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}}) -> do
             unless (featureAllowed SCFReactions forUser ct) $
               throwCmdError $ "feature not allowed " <> T.unpack (chatFeatureNameText CFReactions)
@@ -824,21 +1004,21 @@ processChatCommand vr nm = \case
     CTGroup ->
       withGroupLock "chatItemReaction" chatId $ do
         -- TODO [knocking] check chat item scope?
-        (g@GroupInfo {membership}, CChatItem md ci) <- withFastStore $ \db -> do
-          g <- getGroupInfo db vr user chatId
-          (g,) <$> getGroupCIWithReactions db user g itemId
-        chatScopeInfo <- mapM (getChatScopeInfo vr user) scope
-        recipients <- getGroupRecipients vr user g chatScopeInfo groupKnockingVersion
+        (gik@(GIK g@GroupInfo {membership} _), CChatItem md ci) <- withFastStore $ \db -> do
+          gik@(GIK g _) <- getGroupInfoKeys db cxt user chatId
+          (gik,) <$> getGroupCIWithReactions db user g itemId
+        chatScopeInfo <- mapM (getChatScopeInfo cxt user) scope
+        recipients <- getGroupRecipients cxt user g chatScopeInfo groupKnockingVersion
         case ci of
           ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}} -> do
             unless (groupFeatureAllowed SGFReactions g) $
               throwCmdError $ "feature not allowed " <> T.unpack (chatFeatureNameText CFReactions)
             unless (ciReactionAllowed ci) $
               throwCmdError "reaction not allowed - chat item has no content"
-            let GroupMember {memberId = itemMemberId} = chatItemMember g ci
+            let itemMemberId = memberId' <$> chatItemMember g ci
             rs <- withFastStore' $ \db -> getGroupReactions db g membership itemMemberId itemSharedMId True
             checkReactionAllowed rs
-            SndMessage {msgId} <- sendGroupMessage user g scope recipients (XMsgReact itemSharedMId (Just itemMemberId) (toMsgScope g <$> chatScopeInfo) reaction add)
+            SndMessage {msgId} <- sendGroupMessage user gik scope recipients False (XMsgReact itemSharedMId itemMemberId (toMsgScope g <$> chatScopeInfo) reaction add)
             createdAt <- liftIO getCurrentTime
             reactions <- withFastStore' $ \db -> do
               setGroupReaction db g membership itemMemberId itemSharedMId True reaction add msgId createdAt
@@ -859,7 +1039,7 @@ processChatCommand vr nm = \case
   APIGetReactionMembers userId groupId itemId reaction -> withUserId userId $ \user -> do
     memberReactions <- withStore $ \db -> do
       CChatItem _ ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}} <- getGroupChatItem db user groupId itemId
-      liftIO $ getReactionMembers db vr user groupId itemSharedMId reaction
+      liftIO $ getReactionMembers db cxt user groupId itemSharedMId reaction
     pure $ CRReactionMembers user memberReactions
   -- TODO [knocking] forward from scope?
   APIPlanForwardChatItems (ChatRef fromCType fromChatId _scope) itemIds -> withUser $ \user -> case fromCType of
@@ -910,7 +1090,7 @@ processChatCommand vr nm = \case
                 MCChat {} -> True
                 MCUnknown {} -> True
   -- TODO [knocking] forward from / to scope
-  APIForwardChatItems toChat@(ChatRef toCType toChatId toScope) fromChat@(ChatRef fromCType fromChatId _fromScope) itemIds itemTTL -> withUser $ \user -> case toCType of
+  APIForwardChatItems toChat@(ChatRef toCType toChatId toScope) sendAsGroup fromChat@(ChatRef fromCType fromChatId _fromScope) itemIds itemTTL -> withUser $ \user -> case toCType of
     CTDirect -> do
       cmrs <- prepareForward user
       case L.nonEmpty cmrs of
@@ -923,8 +1103,8 @@ processChatCommand vr nm = \case
       case L.nonEmpty cmrs of
         Just cmrs' ->
           withGroupLock "forwardChatItem, to group" toChatId $ do
-            gInfo <- withFastStore $ \db -> getGroupInfo db vr user toChatId
-            sendGroupContentMessages user gInfo toScope False itemTTL cmrs'
+            gInfo <- withFastStore $ \db -> getGroupInfoKeys db cxt user toChatId
+            sendGroupContentMessages user gInfo toScope sendAsGroup False itemTTL False cmrs'
         Nothing -> pure $ CRNewChatItems user []
     CTLocal -> do
       cmrs <- prepareForward user
@@ -953,13 +1133,15 @@ processChatCommand vr nm = \case
                   | otherwise = displayName
         -- TODO [knocking] from scope?
         CTGroup -> withGroupLock "forwardChatItem, from group" fromChatId $ do
-          (gInfo, items) <- getCommandGroupChatItems user fromChatId itemIds
+          (GIK gInfo _, items) <- getCommandGroupChatItems user fromChatId itemIds
           catMaybes <$> mapM (\ci -> ciComposeMsgReq gInfo ci <$$> prepareMsgReq ci) items
           where
             ciComposeMsgReq :: GroupInfo -> CChatItem 'CTGroup -> (MsgContent, Maybe CryptoFile) -> ComposedMessageReq
-            ciComposeMsgReq gInfo (CChatItem md ci@ChatItem {mentions, formattedText}) (mc, file) = do
+            ciComposeMsgReq gInfo (CChatItem md ci@ChatItem {mentions, formattedText, meta = CIMeta {itemSharedMsgId}}) (mc, file) = do
               let itemId = chatItemId' ci
-                  ciff = forwardCIFF ci $ Just (CIFFGroup (forwardName gInfo) (toMsgDirection md) (Just fromChatId) (Just itemId))
+                  fwdMemberId = memberId' <$> chatItemMember gInfo ci
+                  fwdGroupType = itemSharedMsgId *> sourceGroupType gInfo
+                  ciff = forwardCIFF ci $ Just (CIFFGroup (forwardName gInfo) (toMsgDirection md) (Just fromChatId) (Just itemId) fwdMemberId itemSharedMsgId fwdGroupType)
                   -- updates text to reflect current mentioned member names
                   (mc', _, mentions') = updatedMentionNames mc formattedText mentions
                   -- only includes mentions when forwarding to the same group
@@ -969,6 +1151,8 @@ processChatCommand vr nm = \case
               where
                 forwardName :: GroupInfo -> ContactName
                 forwardName GroupInfo {groupProfile = GroupProfile {displayName}} = displayName
+                sourceGroupType :: GroupInfo -> Maybe GroupType
+                sourceGroupType GroupInfo {groupProfile = GroupProfile {publicGroup}} = (\PublicGroupProfile {groupType} -> groupType) <$> publicGroup
         CTLocal -> do
           (_, items) <- getCommandLocalChatItems user fromChatId itemIds
           catMaybes <$> mapM (\ci -> ciComposeMsgReq ci <$$> prepareMsgReq ci) items
@@ -981,7 +1165,13 @@ processChatCommand vr nm = \case
         CTContactConnection -> throwCmdError "not supported"
         where
           prepareMsgReq :: CChatItem c -> CM (Maybe (MsgContent, Maybe CryptoFile))
-          prepareMsgReq (CChatItem _ ci) = forwardMsgContent ci $>>= forwardContent ci
+          prepareMsgReq (CChatItem md ci) = forwardMsgContent ci $>>= forwardContent ci . dropOwnerSig
+            where
+              dropOwnerSig = \case
+                mc@MCChat {text, chatLink}
+                  | SMDSnd <- md, fromChat == toChat -> mc
+                  | otherwise -> MCChat {text, chatLink, ownerSig = Nothing}
+                mc -> mc
           forwardCIFF :: ChatItem c d -> Maybe CIForwardedFrom -> Maybe CIForwardedFrom
           forwardCIFF ChatItem {meta = CIMeta {itemForwarded}} ciff = case itemForwarded of
             Nothing -> ciff
@@ -1049,8 +1239,36 @@ processChatCommand vr nm = \case
             let formattedDate = formatTime defaultTimeLocale "%Y%m%d_%H%M%S" currentDate
             let ext = takeExtension fileName
             pure $ prefix <> formattedDate <> ext
+  APIShareChatMsgContent (ChatRef CTGroup groupId _) toSendRef -> withUser $ \user -> do
+    GIK GroupInfo {groupProfile = gp@GroupProfile {publicGroup}, membership = GroupMember {memberId, memberRole}} gks <-
+      withFastStore $ \db -> getGroupInfoKeys db cxt user groupId
+    case publicGroup of
+      Nothing -> throwCmdError "not a public group"
+      Just PublicGroupProfile {groupLink} -> do
+        let signingKeys = case (memberRole, gks) of
+              (GROwner, GKPublicGroup {groupRootKey = GRKPrivate _, memberPrivKey}) -> Just memberPrivKey
+              _ -> Nothing
+        ownerSig <-
+          pure signingKeys $>>= \memberPrivKey ->
+            mkLinkOwnerSig memberPrivKey groupLink (Just memberId) <$$> shareChatBinding user toSendRef
+        let text = safeDecodeUtf8 $ strEncode groupLink
+        pure $ CRChatMsgContent user MCChat {text, chatLink = MCLGroup groupLink gp, ownerSig}
+  APIShareChatMsgContent _ _ -> throwCmdError "sharing is only supported for public groups"
+  APIShareMyAddress toSendRef -> withUser $ \user -> do
+    UserContactLink {connLinkContact = CCLink _ sl_, addressSettings} <- withFastStore (`getUserAddress` user)
+    case sl_ of
+      Nothing -> throwCmdError "your address has no short link to share"
+      Just connLink -> do
+        conn <- withFastStore $ \db -> getUserAddressConnection db cxt user
+        ownerSig <-
+          withAgent (`getConnLinkPrivKey` aConnId conn) $>>= \privKey ->
+            mkLinkOwnerSig privKey connLink Nothing <$$> shareChatBinding user toSendRef
+        let business = businessAddress addressSettings
+            profile = userProfileDirect user Nothing Nothing True
+            text = safeDecodeUtf8 $ strEncode connLink
+        pure $ CRChatMsgContent user MCChat {text, chatLink = MCLContact {connLink, profile, business}, ownerSig}
   APIUserRead userId -> withUserId userId $ \user -> withFastStore' (`setUserChatsRead` user) >> ok user
-  UserRead -> withUser $ \User {userId} -> processChatCommand vr nm $ APIUserRead userId
+  UserRead -> withUser $ \User {userId} -> processChatCommand cxt nm $ APIUserRead userId
   APIChatRead chatRef@(ChatRef cType chatId scope_) -> withUser $ \_ -> case cType of
     CTDirect -> do
       user <- withFastStore $ \db -> getUserByContactId db chatId
@@ -1064,7 +1282,7 @@ processChatCommand vr nm = \case
     CTGroup -> do
       (user, gInfo) <- withFastStore $ \db -> do
         user <- getUserByGroupId db chatId
-        gInfo <- getGroupInfo db vr user chatId
+        gInfo <- getGroupInfo db cxt user chatId
         pure (user, gInfo)
       ts <- liftIO getCurrentTime
       case scope_ of
@@ -1076,10 +1294,10 @@ processChatCommand vr nm = \case
           forM_ timedItems $ \(itemId, deleteAt) -> startProximateTimedItemThread user (chatRef, itemId) deleteAt
           ok user
         Just scope -> do
-          scopeInfo <- getChatScopeInfo vr user scope
+          scopeInfo <- getChatScopeInfo cxt user scope
           (gInfo', m', timedItems) <- withFastStore' $ \db -> do
             timedItems <- getGroupUnreadTimedItems db user chatId (Just scope)
-            (gInfo', m') <- updateSupportChatItemsRead db vr user gInfo scopeInfo
+            (gInfo', m') <- updateSupportChatItemsRead db cxt user gInfo scopeInfo
             timedItems' <- setGroupChatItemsDeleteAt db user chatId timedItems ts
             pure (gInfo', m', timedItems')
           forM_ timedItems $ \(itemId, deleteAt) -> startProximateTimedItemThread user (chatRef, itemId) deleteAt
@@ -1094,7 +1312,7 @@ processChatCommand vr nm = \case
     CTDirect -> do
       (user, ct) <- withFastStore $ \db -> do
         user <- getUserByContactId db chatId
-        ct <- getContact db vr user chatId
+        ct <- getContact db cxt user chatId
         pure (user, ct)
       timedItems <- withFastStore' $ \db -> do
         timedItems <- updateDirectChatItemsReadList db user chatId itemIds
@@ -1104,11 +1322,11 @@ processChatCommand vr nm = \case
     CTGroup -> do
       (user, gInfo) <- withFastStore $ \db -> do
         user <- getUserByGroupId db chatId
-        gInfo <- getGroupInfo db vr user chatId
+        gInfo <- getGroupInfo db cxt user chatId
         pure (user, gInfo)
-      chatScopeInfo <- mapM (getChatScopeInfo vr user) scope
+      chatScopeInfo <- mapM (getChatScopeInfo cxt user) scope
       (timedItems, gInfo') <- withFastStore $ \db -> do
-        (timedItems, gInfo') <- updateGroupChatItemsReadList db vr user gInfo chatScopeInfo itemIds
+        (timedItems, gInfo') <- updateGroupChatItemsReadList db cxt user gInfo chatScopeInfo itemIds
         timedItems' <- liftIO $ setGroupChatItemsDeleteAt db user chatId timedItems =<< getCurrentTime
         pure (timedItems', gInfo')
       forM_ timedItems $ \(itemId, deleteAt) -> startProximateTimedItemThread user (chatRef, itemId) deleteAt
@@ -1119,13 +1337,13 @@ processChatCommand vr nm = \case
   APIChatUnread (ChatRef cType chatId scope) unreadChat -> withUser $ \user -> case cType of
     CTDirect -> do
       withFastStore $ \db -> do
-        ct <- getContact db vr user chatId
+        ct <- getContact db cxt user chatId
         liftIO $ updateContactUnreadChat db user ct unreadChat
       ok user
     -- TODO [knocking] set support chat as unread?
     CTGroup | isNothing scope -> do
       withFastStore $ \db -> do
-        gInfo <- getGroupInfo db vr user chatId
+        gInfo <- getGroupInfo db cxt user chatId
         liftIO $ updateGroupUnreadChat db user gInfo unreadChat
       ok user
     CTLocal -> do
@@ -1136,7 +1354,7 @@ processChatCommand vr nm = \case
     _ -> throwCmdError "not supported"
   APIDeleteChat cRef@(ChatRef cType chatId scope) cdm -> withUser $ \user@User {userId} -> case cType of
     CTDirect -> do
-      ct <- withFastStore $ \db -> getContact db vr user chatId
+      ct <- withFastStore $ \db -> getContact db cxt user chatId
       filesInfo <- withFastStore' $ \db -> getContactFileInfo db user ct
       withContactLock "deleteChat direct" chatId $
         case cdm of
@@ -1156,17 +1374,17 @@ processChatCommand vr nm = \case
             ct' <- withFastStore $ \db -> do
               liftIO $ deleteContactConnections db user ct
               liftIO $ void $ updateContactStatus db user ct CSDeletedByUser
-              getContact db vr user chatId
+              getContact db cxt user chatId
             pure $ CRContactDeleted user ct'
           CDMMessages -> do
-            void $ processChatCommand vr nm $ APIClearChat cRef
+            void $ processChatCommand cxt nm $ APIClearChat cRef
             withFastStore' $ \db -> setContactChatDeleted db user ct True
             pure $ CRContactDeleted user ct {chatDeleted = True}
       where
         sendDelDeleteConns ct notify = do
           let doSendDel = contactReady ct && contactActive ct && notify
           when doSendDel $ void (sendDirectContactMessage user ct XDirectDel) `catchAllErrors` const (pure ())
-          contactConnIds <- map aConnId <$> withFastStore' (\db -> getContactConnections db vr userId ct)
+          contactConnIds <- map aConnId <$> withFastStore' (\db -> getContactConnections db cxt userId ct)
           deleteAgentConnectionsAsync' contactConnIds doSendDel
     CTContactConnection -> withConnectionLock "deleteChat contactConnection" chatId $ do
       conn@PendingContactConnection {pccAgentConnId = AgentConnId acId} <- withFastStore $ \db -> getPendingContactConnection db userId chatId
@@ -1174,17 +1392,21 @@ processChatCommand vr nm = \case
       withFastStore' $ \db -> deletePendingContactConnection db userId chatId
       pure $ CRContactConnectionDeleted user conn
     CTGroup | isNothing scope -> do
-      gInfo@GroupInfo {membership} <- withFastStore $ \db -> getGroupInfo db vr user chatId
-      let GroupMember {memberRole = membershipMemRole} = membership
-      let isOwner = membershipMemRole == GROwner
+      g@(GIK gInfo@GroupInfo {membership} _) <- withFastStore $ \db -> getGroupInfoKeys db cxt user chatId
+      let isOwner = memberRole' membership == GROwner
           canDelete = isOwner || not (memberCurrent membership)
       unless canDelete $ throwChatError $ CEGroupUserRole gInfo GROwner
       filesInfo <- withFastStore' $ \db -> getGroupFileInfo db user gInfo
       withGroupLock "deleteChat group" chatId $ do
         deleteCIFiles user filesInfo
+        -- the roster blob file has no chat item, so it is missed by getGroupFileInfo above
+        cleanupGroupRosterFile user gInfo
         (members, recipients) <- getRecipients gInfo
         let doSendDel = memberActive membership && isOwner
-        when doSendDel . void $ sendGroupMessage' user gInfo recipients XGrpDel
+        msgSigned <-
+          if doSendDel
+            then (\SndMessage {signedMsg_} -> isJust signedMsg_) <$> sendGroupMessage' user g recipients XGrpDel
+            else pure False
         deleteGroupLinkIfExists user gInfo
         deleteMembersConnections' user members doSendDel
         updateCIGroupInvitationStatus user gInfo CIGISRejected `catchAllErrors` \_ -> pure ()
@@ -1192,29 +1414,29 @@ processChatCommand vr nm = \case
         withFastStore' $ \db -> cleanupHostGroupLinkConn db user gInfo
         withFastStore' $ \db -> deleteGroupMembers db user gInfo
         withFastStore' $ \db -> deleteGroup db user gInfo
-        pure $ CRGroupDeletedUser user gInfo
+        pure $ CRGroupDeletedUser user gInfo msgSigned (not doSendDel)
         where
-          getRecipients gInfo@GroupInfo {useRelays}
-            | isTrue useRelays = do
-                relays <- withFastStore' $ \db -> getGroupRelays db vr user gInfo
+          getRecipients gInfo
+            | useRelays' gInfo = do
+                relays <- withFastStore' $ \db -> getGroupRelayMembers db cxt user gInfo
                 pure (relays, relays)
             | otherwise = do
-                ms <- withFastStore' $ \db -> getGroupMembers db vr user gInfo
+                ms <- withFastStore' $ \db -> getGroupMembers db cxt user gInfo
                 pure (ms, filter memberCurrentOrPending ms)
     _ -> throwCmdError "not supported"
   APIClearChat (ChatRef cType chatId scope) -> withUser $ \user@User {userId} -> case cType of
     CTDirect -> do
-      ct <- withFastStore $ \db -> getContact db vr user chatId
+      ct <- withFastStore $ \db -> getContact db cxt user chatId
       filesInfo <- withFastStore' $ \db -> getContactFileInfo db user ct
       deleteCIFiles user filesInfo
       withFastStore' $ \db -> deleteContactCIs db user ct
       pure $ CRChatCleared user (AChatInfo SCTDirect $ DirectChat ct)
     CTGroup | isNothing scope -> do
-      gInfo <- withFastStore $ \db -> getGroupInfo db vr user chatId
+      gInfo <- withFastStore $ \db -> getGroupInfo db cxt user chatId
       filesInfo <- withFastStore' $ \db -> getGroupFileInfo db user gInfo
       deleteCIFiles user filesInfo
       withFastStore' $ \db -> deleteGroupChatItemsMessages db user gInfo
-      membersToDelete <- withFastStore' $ \db -> getGroupMembersForExpiration db vr user gInfo
+      membersToDelete <- withFastStore' $ \db -> getGroupMembersForExpiration db cxt user gInfo
       forM_ membersToDelete $ \m -> withFastStore' $ \db -> deleteGroupMember db user m
       pure $ CRChatCleared user (AChatInfo SCTGroup $ GroupChat gInfo Nothing)
     CTLocal -> do
@@ -1259,32 +1481,39 @@ processChatCommand vr nm = \case
       sendWelcomeMsg user ct ucl UserContactRequest {welcomeSharedMsgId} =
         forM_ (autoReply $ addressSettings ucl) $ \mc -> case welcomeSharedMsgId of
           Just smId ->
-            void $ sendDirectContactMessage user ct $ XMsgUpdate smId mc M.empty Nothing Nothing Nothing
+            void $ sendDirectContactMessage user ct $ XMsgUpdate smId mc M.empty Nothing Nothing Nothing Nothing
           Nothing -> do
-            (msg, _) <- sendDirectContactMessage user ct $ XMsgNew $ MCSimple $ extMsgContent mc Nothing
+            (msg, _) <- sendDirectContactMessage user ct $ XMsgNew $ mcSimple mc
             ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc)
             toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDSnd (DirectChat ct) ci]
-  APIRejectContact connReqId -> withUser $ \user -> do
+  APIRejectContact connReqId notify -> withUser $ \user -> do
     uclId_ <- withFastStore $ \db -> getUserContactLinkIdByCReq db connReqId
     withContactRequestLock "rejectContact" connReqId $ case uclId_ of
       Nothing -> rejectCReq user -- address was deleted
       Just uclId -> withUserContactLock "rejectContact" uclId $ rejectCReq user
     where
       rejectCReq user = do
-        (cReq@UserContactRequest {agentInvitationId = AgentInvId invId}, ct_) <-
+        cReq@UserContactRequest {agentInvitationId = AgentInvId invId, contactId_} <-
+          withFastStore $ \db -> getContactRequest db user connReqId
+        withAgent $ \a -> rejectContact a NRMInteractive (aUserId user) invId (if notify then Just (strEncode CRRUserRejected) else Nothing)
+        ct_ <-
           withFastStore $ \db -> do
-            cReq@UserContactRequest {contactId_} <- getContactRequest db user connReqId
             ct_ <- forM contactId_ $ \contactId -> do
-              ct <- getContact db vr user contactId
+              ct <- getContact db cxt user contactId
               deleteContact db user ct
               pure ct
             liftIO $ deleteContactRequest db user connReqId
-            pure (cReq, ct_)
-        withAgent (`rejectContact` invId)
+            pure ct_
         pure $ CRContactRequestRejected user cReq ct_
+  APISendServiceRequest userId sendTarget requestTimeout signKey request -> withUserId userId $ \user ->
+    CRServiceResponse user <$> sendServiceRequestTo nm user sendTarget requestTimeout (C.unStored <$> signKey) request
+  APISendServiceResponse userId requestId responseData -> withUserId userId $ \user -> do
+    let AgentInvId invId = requestId
+    connId <- withAgent $ \a -> sendServiceReplyAsync a "" (aUserId user) invId (LB.toStrict $ J.encode responseData)
+    pure $ CRServiceReplyAccepted user (AgentConnId connId)
   APISendCallInvitation contactId callType -> withUser $ \user -> do
     -- party initiating call
-    ct <- withFastStore $ \db -> getContact db vr user contactId
+    ct <- withFastStore $ \db -> getContact db cxt user contactId
     assertDirectAllowed user MDSnd ct XCallInv_
     if featureAllowed SCFCalls forUser ct
       then do
@@ -1294,7 +1523,8 @@ processChatCommand vr nm = \case
           callId <- atomically $ CallId <$> C.randomBytes 16 g
           callUUID <- UUID.toText <$> liftIO V4.nextRandom
           dhKeyPair <- atomically $ if encryptedCall callType then Just <$> C.generateKeyPair g else pure Nothing
-          let invitation = CallInvitation {callType, callDhPubKey = fst <$> dhKeyPair}
+          ChatConfig {callVRange = callVR} <- asks config
+          let invitation = CallInvitation {callType, callDhPubKey = fst <$> dhKeyPair, callVRange = Just $ CallVersionRange callVR}
               callState = CallInvitationSent {localCallType = callType, localDhPrivKey = snd <$> dhKeyPair}
           (msg, _) <- sendDirectContactMessage user ct (XCallInv callId invitation)
           ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndCall CISCallPending 0)
@@ -1306,7 +1536,7 @@ processChatCommand vr nm = \case
       else throwCmdError $ "feature not allowed " <> T.unpack (chatFeatureNameText CFCalls)
   SendCallInvitation cName callType -> withUser $ \user -> do
     contactId <- withFastStore $ \db -> getContactIdByName db user cName
-    processChatCommand vr nm $ APISendCallInvitation contactId callType
+    processChatCommand cxt nm $ APISendCallInvitation contactId callType
   APIRejectCall contactId ->
     -- party accepting call
     withCurrentCall contactId $ \user ct Call {chatItemId, callState} -> case callState of
@@ -1322,9 +1552,9 @@ processChatCommand vr nm = \case
   APISendCallOffer contactId WebRTCCallOffer {callType, rtcSession} ->
     -- party accepting call
     withCurrentCall contactId $ \user ct call@Call {callId, chatItemId, callState} -> case callState of
-      CallInvitationReceived {peerCallType, localDhPubKey, sharedKey} -> do
+      CallInvitationReceived {peerCallType, localDhPubKey, sharedKey, callVersion} -> do
         let callDhPubKey = if encryptedCall callType then localDhPubKey else Nothing
-            offer = CallOffer {callType, rtcSession, callDhPubKey}
+            offer = CallOffer {callType, rtcSession, callDhPubKey, callVersion}
             callState' = CallOfferSent {localCallType = callType, peerCallType, localCallSession = rtcSession, sharedKey}
             aciContent = ACIContent SMDRcv $ CIRcvCall CISCallAccepted 0
         (SndMessage {msgId}, _) <- sendDirectContactMessage user ct (XCallOffer callId offer)
@@ -1373,23 +1603,42 @@ processChatCommand vr nm = \case
         _ -> Nothing
       rcvCallInvitation (contactId, callUUID, callTs, peerCallType, sharedKey) = runExceptT . withFastStore $ \db -> do
         user <- getUserByContactId db contactId
-        contact <- getContact db vr user contactId
+        contact <- getContact db cxt user contactId
         pure RcvCallInvitation {user, contact, callType = peerCallType, sharedKey, callUUID, callTs}
   APICallStatus contactId receivedStatus ->
     withCurrentCall contactId $ \user ct call ->
       updateCallItemStatus user ct call receivedStatus Nothing $> Just call
-  APIUpdateProfile userId profile -> withUserId userId (`updateProfile` profile)
+  APIUpdateProfile userId profile -> withUserProfileLock "updateProfile" $ withUserId userId (`updateProfile` profile)
+  APISetUserDomain userId strDomain_ -> withUserProfileLock "setUserDomain" $ withUserId userId $ \user@User {profile = p@LocalProfile {contactLink, contactDomain}} -> do
+    let domain_ = unStrJSON <$> strDomain_
+    if (claimDomain <$> contactDomain) == domain_
+      then pure $ CRUserProfileNoChange user
+      else do
+        cl' <- case domain_ of
+          Nothing -> pure contactLink
+          Just domain -> do
+            UserContactLink {shortLinkDataSet, connLinkContact = CCLink _ sl_} <- withFastStore (`getUserAddress` user)
+            case sl_ of
+              Just sl | shortLinkDataSet -> do
+                NameRecord {nrSimplexContact} <- resolveNameRecord user nm domain
+                unless (nameResolvesTo sl nrSimplexContact) $ throwChatError $ CESimplexDomainNotReady domain SDENoValidLink
+                pure $ Just (CLShort sl)
+              _ -> throwCmdError "create the address short link and add it to name"
+        let p' = (fromLocalProfile p :: Profile) {contactDomain = mkDomainClaim <$> domain_, contactLink = cl'}
+        updateProfile_ user p' True $ withFastStore $ \db -> do
+          user' <- updateUserProfile db user p'
+          liftIO $ setUserSimplexDomain db user' domain_
   APISetContactPrefs contactId prefs' -> withUser $ \user -> do
-    ct <- withFastStore $ \db -> getContact db vr user contactId
+    ct <- withFastStore $ \db -> getContact db cxt user contactId
     updateContactPrefs user ct prefs'
   APISetContactAlias contactId localAlias -> withUser $ \user@User {userId} -> do
     ct' <- withFastStore $ \db -> do
-      ct <- getContact db vr user contactId
+      ct <- getContact db cxt user contactId
       liftIO $ updateContactAlias db userId ct localAlias
     pure $ CRContactAliasUpdated user ct'
   APISetGroupAlias gId localAlias -> withUser $ \user@User {userId} -> do
     gInfo' <- withFastStore $ \db -> do
-      gInfo <- getGroupInfo db vr user gId
+      gInfo <- getGroupInfo db cxt user gId
       liftIO $ updateGroupAlias db userId gInfo localAlias
     pure $ CRGroupAliasUpdated user gInfo'
   APISetConnectionAlias connId localAlias -> withUser $ \user@User {userId} -> do
@@ -1400,22 +1649,32 @@ processChatCommand vr nm = \case
   APISetUserUIThemes uId uiThemes -> withUser $ \user@User {userId} -> do
     user'@User {userId = uId'} <- withFastStore $ \db -> do
       user' <- getUser db uId
-      liftIO $ setUserUIThemes db user uiThemes
+      liftIO $ setUserUIThemes db user' uiThemes
       pure user'
     when (userId == uId') $ chatWriteVar currentUser $ Just (user :: User) {uiThemes}
     ok user'
   APISetChatUIThemes (ChatRef cType chatId scope) uiThemes -> withUser $ \user -> case cType of
     CTDirect -> do
       withFastStore $ \db -> do
-        ct <- getContact db vr user chatId
+        ct <- getContact db cxt user chatId
         liftIO $ setContactUIThemes db user ct uiThemes
       ok user
     CTGroup | isNothing scope -> do
       withFastStore $ \db -> do
-        g <- getGroupInfo db vr user chatId
+        g <- getGroupInfo db cxt user chatId
         liftIO $ setGroupUIThemes db user g uiThemes
       ok user
     _ -> throwCmdError "not supported"
+  APISetGroupCustomData groupId customData_ -> withUser $ \user -> do
+    withFastStore $ \db -> do
+      g <- getGroupInfo db cxt user groupId
+      liftIO $ setGroupCustomData db user g customData_
+    ok user
+  APISetContactCustomData contactId customData_ -> withUser $ \user -> do
+    withFastStore $ \db -> do
+      ct <- getContact db cxt user contactId
+      liftIO $ setContactCustomData db user ct customData_
+    ok user
   APIGetNtfToken -> withUser' $ \_ -> crNtfToken <$> withAgent getNtfToken
   APIRegisterToken token mode -> withUser $ \_ ->
     CRNtfTokenStatus <$> withAgent (\a -> registerNtfToken a nm token mode)
@@ -1434,14 +1693,14 @@ processChatCommand vr nm = \case
         let agentConnId = AgentConnId ntfConnId
             mkNtfConn user connEntity = NtfConn {user, agentConnId, agentDbQueueId = ntfDbQueueId, connEntity, expectedMsg_ = expectedMsgInfo <$> nMsgMeta}
         getUserByAConnId db agentConnId
-          $>>= \user -> fmap (mkNtfConn user) . eitherToMaybe <$> runExceptT (getConnectionEntity db vr user agentConnId)
+          $>>= \user -> fmap (mkNtfConn user) . eitherToMaybe <$> runExceptT (getConnectionEntity db cxt user agentConnId)
   APIGetConnNtfMessages connMsgs -> withUser $ \_ -> do
     msgs <- lift $ withAgent' (`getConnectionMessages` connMsgs)
     let ntfMsgs = L.map receivedMsgInfo msgs
     pure $ CRConnNtfMessages ntfMsgs
   GetUserProtoServers (AProtocolType p) -> withUser $ \user -> withServerProtocol p $ do
     srvs <- withFastStore (`getUserServers` user)
-    liftIO $ CRUserServers user <$> groupByOperator (protocolServers p srvs)
+    liftIO $ CRUserServers user <$> groupByOperator (onlyProtocolServers p srvs)
   SetUserProtoServers (AProtocolType (p :: SProtocolType p)) srvs -> withUser $ \user@User {userId} -> withServerProtocol p $ do
     userServers_ <- liftIO . groupByOperator =<< withFastStore (`getUserServers` user)
     case L.nonEmpty userServers_ of
@@ -1450,16 +1709,75 @@ processChatCommand vr nm = \case
         [] -> throwCmdError "no servers"
         _ -> do
           srvs' <- mapM aUserServer srvs
-          processChatCommand vr nm $ APISetUserServers userId $ L.map (updatedServers p srvs') userServers
+          processChatCommand cxt nm $ APISetUserServers userId $ L.map (updatedServers p srvs') userServers
     where
       aUserServer :: AProtoServerWithAuth -> CM (AUserServer p)
       aUserServer (AProtoServerWithAuth p' srv) = case testEquality p p' of
         Just Refl -> pure $ AUS SDBNew $ newUserServer srv
         Nothing -> throwCmdError $ "incorrect server protocol: " <> B.unpack (strEncode srv)
-  APITestProtoServer userId srv@(AProtoServerWithAuth _ server) -> withUserId userId $ \user ->
-    lift $ CRServerTestResult user srv <$> withAgent' (\a -> testProtocolServer a nm (aUserId user) server)
+  APITestProtoServer userId srv@(AProtoServerWithAuth _ server) -> withUserId userId $ \user -> do
+    r <- lift $ withAgent' $ \a -> testProtocolServer a nm (aUserId user) server
+    pure $ uncurry (CRServerTestResult user srv) $ either ((,Nothing) . Just) (Nothing,) r
   TestProtoServer srv -> withUser $ \User {userId} ->
-    processChatCommand vr nm $ APITestProtoServer userId srv
+    processChatCommand cxt nm $ APITestProtoServer userId srv
+  APITestChatRelay userId address -> withUserId userId $ \user -> do
+    let failAt step e = pure $ CRChatRelayTestResult user Nothing (Just $ RelayTestFailure step e)
+    r <- tryAllErrors $ getShortLinkConnReq nm user address
+    case r of
+      Left e -> failAt RTSGetLink e
+      Right (FixedLinkData {rootKey}, cData, cReq) -> do
+        relayProfile_ <- liftIO $ decodeLinkUserData cData
+        case relayProfile_ of
+          Nothing -> failAt RTSDecodeLink (ChatError $ CERelayTestError "no relay address link data")
+          Just RelayAddressLinkData {relayProfile} -> do
+            let failWithProfile step e =
+                  pure $ CRChatRelayTestResult user (Just relayProfile) (Just $ RelayTestFailure step e)
+            lift (withAgent' (`connRequestAgentVersion` cReq)) >>= \case
+              Nothing -> failWithProfile RTSConnect (ChatError $ CERelayTestError "invalid connection request")
+              Just _ -> do
+                let chatV = initialChatVersion
+                subMode <- chatReadVar subscriptionMode
+                (connId, _) <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
+                conn@Connection {connId = testCId} <- withFastStore $ \db ->
+                  createRelayTestConnection db cxt user connId ConnPrepared chatV subMode
+                challenge <- drgRandomBytes 32
+                testVar <- newEmptyTMVarIO
+                let acId = aConnId conn
+                    relayTest = RelayTest {challenge, rootKey, result = testVar}
+                chatRelayTests_ <- asks chatRelayTests
+                atomically $ TM.insert acId relayTest chatRelayTests_
+                testResult <- tryAllErrors $ do
+                  dm <- encodeConnInfo $ XGrpRelayTest challenge Nothing
+                  void $ withAgent $ \a -> joinConnection a nm (aUserId user) acId True cReq dm PQSupportOff subMode
+                  liftIO $ timeout 40000000 $ atomically $ takeTMVar testVar
+                atomically $ TM.delete acId chatRelayTests_
+                withFastStore' $ \db -> deleteConnectionRecord db user testCId
+                deleteAgentConnectionAsync acId
+                case testResult of
+                  Left e -> failWithProfile RTSConnect e
+                  Right Nothing -> failWithProfile RTSWaitResponse (ChatError $ CERelayTestError "timeout")
+                  Right (Just Nothing) -> pure $ CRChatRelayTestResult user (Just relayProfile) Nothing
+                  Right (Just (Just failure)) -> pure $ CRChatRelayTestResult user (Just relayProfile) (Just failure)
+  TestChatRelay address -> withUser $ \User {userId} ->
+    processChatCommand cxt nm $ APITestChatRelay userId address
+  APIAllowRelayGroup groupId -> withUser $ \user -> do
+    gInfo' <- withStore $ \db -> allowRelayGroup db cxt user groupId
+    pure $ CRRelayGroupAllowed user gInfo'
+  GetUserChatRelays -> withUser $ \user -> do
+    srvs <- withFastStore (`getUserServers` user)
+    liftIO $ CRUserServers user <$> groupByOperator (onlyRelays srvs)
+  SetUserChatRelays relays -> withUser $ \user@User {userId} -> do
+    userServers_ <- liftIO . groupByOperator =<< withFastStore (`getUserServers` user)
+    case L.nonEmpty userServers_ of
+      Nothing -> throwCmdError "no relays"
+      Just userServers -> case relays of
+        [] -> throwCmdError "no relays"
+        _ -> do
+          let relays' = map aUserRelay relays
+          processChatCommand cxt nm $ APISetUserServers userId $ L.map (updatedRelays relays') userServers
+    where
+      aUserRelay :: CLINewRelay -> AUserChatRelay
+      aUserRelay CLINewRelay {address, name} = AUCR SDBNew $ newChatRelay (mkRelayProfile name Nothing) [""] address
   APIGetServerOperators -> CRServerOperatorConditions <$> withFastStore getServerOperators
   APISetServerOperators operators -> do
     as <- asks randomAgentServers
@@ -1479,12 +1797,13 @@ processChatCommand vr nm = \case
       getServers db as ops opDomains user = do
         smpSrvs <- getProtocolServers db SPSMP user
         xftpSrvs <- getProtocolServers db SPXFTP user
-        uss <- groupByOperator (ops, smpSrvs, xftpSrvs)
+        chatRelays <- getChatRelays db user
+        uss <- groupByOperator (ops, smpSrvs, xftpSrvs, chatRelays)
         pure $ (aUserId user,) $ useServers as opDomains uss
   SetServerOperators operatorsRoles -> do
     ops <- serverOperators <$> withFastStore getServerOperators
     ops' <- mapM (updateOp ops) operatorsRoles
-    processChatCommand vr nm $ APISetServerOperators ops'
+    processChatCommand cxt nm $ APISetServerOperators ops'
     where
       updateOp :: [ServerOperator] -> ServerOperatorRoles -> CM ServerOperator
       updateOp ops r =
@@ -1494,8 +1813,9 @@ processChatCommand vr nm = \case
   APIGetUserServers userId -> withUserId userId $ \user -> withFastStore $ \db -> do
     CRUserServers user <$> (liftIO . groupByOperator =<< getUserServers db user)
   APISetUserServers userId userServers -> withUserId userId $ \user -> do
-    errors <- validateAllUsersServers userId $ L.toList userServers
+    (errors, warnings) <- validateAllUsersServers userId $ L.toList userServers
     unless (null errors) $ throwCmdError $ "user servers validation error(s): " <> show errors
+    unless (null warnings) $ logWarn $ "user servers validation warning(s): " <> tshow warnings
     uss <- withFastStore $ \db -> do
       ts <- liftIO getCurrentTime
       mapM (setUserServers db user ts) userServers
@@ -1508,7 +1828,7 @@ processChatCommand vr nm = \case
       setProtocolServers a auId xftp'
     ok_
   APIValidateServers userId userServers -> withUserId userId $ \user ->
-    CRUserServersValidation user <$> validateAllUsersServers userId userServers
+    uncurry (CRUserServersValidation user) <$> validateAllUsersServers userId userServers
   APIGetUsageConditions -> do
     (usageConditions, acceptedConditions) <- withFastStore $ \db -> do
       usageConditions <- getCurrentUsageConditions db
@@ -1531,8 +1851,11 @@ processChatCommand vr nm = \case
     CRServerOperatorConditions <$> getServerOperators db
   APISetChatTTL userId (ChatRef cType chatId scope) newTTL_ ->
     withUserId userId $ \user -> checkStoreNotChanged $ withChatLock "setChatTTL" $ do
-      (oldTTL_, globalTTL, ttlCount) <- withStore' $ \db ->
-        (,,) <$> getSetChatTTL db <*> getChatItemTTL db user <*> getChatTTLCount db user
+      (oldTTL_, globalTTL, ttlCount) <- withStore $ \db -> do
+        oldTTL <- getSetChatTTL db user
+        globalTTL <- liftIO $ getChatItemTTL db user
+        ttlCount <- liftIO $ getChatTTLCount db user
+        pure (oldTTL, globalTTL, ttlCount)
       let newTTL = fromMaybe globalTTL newTTL_
           oldTTL = fromMaybe globalTTL oldTTL_
       when (newTTL > 0 && (newTTL < oldTTL || oldTTL == 0)) $ do
@@ -1541,21 +1864,25 @@ processChatCommand vr nm = \case
       lift $ setChatItemsExpiration user globalTTL ttlCount
       ok user
     where
-      getSetChatTTL db = case cType of
-        CTDirect -> getDirectChatTTL db chatId <* setDirectChatTTL db chatId newTTL_
-        CTGroup | isNothing scope -> getGroupChatTTL db chatId <* setGroupChatTTL db chatId newTTL_
+      getSetChatTTL db currentUser = case cType of
+        CTDirect -> do
+          Contact {contactId} <- getContact db cxt currentUser chatId
+          liftIO $ getDirectChatTTL db contactId <* setDirectChatTTL db contactId newTTL_
+        CTGroup | isNothing scope -> do
+          GroupInfo {groupId} <- getGroupInfo db cxt currentUser chatId
+          liftIO $ getGroupChatTTL db groupId <* setGroupChatTTL db groupId newTTL_
         _ -> pure Nothing
       expireChat user globalTTL = do
         currentTs <- liftIO getCurrentTime
         case cType of
-          CTDirect -> expireContactChatItems user vr globalTTL chatId
+          CTDirect -> expireContactChatItems user cxt globalTTL chatId
           CTGroup | isNothing scope ->
             let createdAtCutoff = addUTCTime (-43200 :: NominalDiffTime) currentTs
-              in expireGroupChatItems user vr globalTTL createdAtCutoff chatId
+              in expireGroupChatItems user cxt globalTTL createdAtCutoff chatId
           _ -> throwCmdError "not supported"
   SetChatTTL chatName newTTL -> withUser' $ \user@User {userId} -> do
     chatRef <- getChatRef user chatName
-    processChatCommand vr nm $ APISetChatTTL userId chatRef newTTL
+    processChatCommand cxt nm $ APISetChatTTL userId chatRef newTTL
   GetChatTTL chatName -> withUser' $ \user -> do
     -- TODO [knocking] support scope in CLI apis
     ChatRef cType chatId _ <- getChatRef user chatName
@@ -1575,18 +1902,18 @@ processChatCommand vr nm = \case
         lift $ setChatItemsExpiration user newTTL ttlCount
         ok user
   SetChatItemTTL newTTL_ -> withUser' $ \User {userId} -> do
-    processChatCommand vr nm $ APISetChatItemTTL userId newTTL_
+    processChatCommand cxt nm $ APISetChatItemTTL userId newTTL_
   APIGetChatItemTTL userId -> withUserId' userId $ \user -> do
     ttl <- withFastStore' (`getChatItemTTL` user)
     pure $ CRChatItemTTL user (Just ttl)
   GetChatItemTTL -> withUser' $ \User {userId} -> do
-    processChatCommand vr nm $ APIGetChatItemTTL userId
-  APISetNetworkConfig cfg -> withUser' $ \_ -> lift (withAgent' (`setNetworkConfig` cfg)) >> ok_
+    processChatCommand cxt nm $ APIGetChatItemTTL userId
+  APISetNetworkConfig cfg -> withUser' $ \_ -> withAgent (`setNetworkConfig` cfg) >> ok_
   APIGetNetworkConfig -> withUser' $ \_ ->
     CRNetworkConfig <$> lift getNetworkConfig
   SetNetworkConfig simpleNetCfg -> do
     cfg <- (`updateNetworkConfig` simpleNetCfg) <$> lift getNetworkConfig
-    void . processChatCommand vr nm $ APISetNetworkConfig cfg
+    void . processChatCommand cxt nm $ APISetNetworkConfig cfg
     pure $ CRNetworkConfig cfg
   APISetNetworkInfo info -> lift (withAgent' (`setUserNetworkInfo` info)) >> ok_
   ReconnectAllServers -> withUser' $ \_ -> lift (withAgent' reconnectAllServers) >> ok_
@@ -1596,7 +1923,7 @@ processChatCommand vr nm = \case
   APISetChatSettings (ChatRef cType chatId scope) chatSettings -> withUser $ \user -> case cType of
     CTDirect -> do
       ct <- withFastStore $ \db -> do
-        ct <- getContact db vr user chatId
+        ct <- getContact db cxt user chatId
         liftIO $ updateContactSettings db user chatId chatSettings
         pure ct
       forM_ (contactConnId ct) $ \connId ->
@@ -1604,7 +1931,7 @@ processChatCommand vr nm = \case
       ok user
     CTGroup | isNothing scope -> do
       ms <- withFastStore $ \db -> do
-        gInfo <- getGroupInfo db vr user chatId
+        gInfo <- getGroupInfo db cxt user chatId
         ms <- liftIO $ getMembers db gInfo
         liftIO $ updateGroupSettings db user chatId chatSettings
         pure ms
@@ -1612,20 +1939,20 @@ processChatCommand vr nm = \case
         withAgent (\a -> toggleConnectionNtfs a connId $ chatHasNtfs chatSettings) `catchAllErrors` eToView
       ok user
       where
-        getMembers db gInfo@GroupInfo {useRelays}
-          | isTrue useRelays = getGroupRelays db vr user gInfo
-          | otherwise = getGroupMembers db vr user gInfo
+        getMembers db gInfo
+          | useRelays' gInfo = getGroupRelayMembers db cxt user gInfo
+          | otherwise = getGroupMembers db cxt user gInfo
     _ -> throwCmdError "not supported"
   APISetMemberSettings gId gMemberId settings -> withUser $ \user -> do
     m <- withFastStore $ \db -> do
       liftIO $ updateGroupMemberSettings db user gId gMemberId settings
-      getGroupMember db vr user gId gMemberId
+      getGroupMember db cxt user gId gMemberId
     let ntfOn = not (memberBlocked m)
     toggleNtf m ntfOn
     ok user
   APIContactInfo contactId -> withUser $ \user@User {userId} -> do
     -- [incognito] print user's incognito profile for this contact
-    ct@Contact {activeConn} <- withFastStore $ \db -> getContact db vr user contactId
+    ct@Contact {activeConn} <- withFastStore $ \db -> getContact db cxt user contactId
     incognitoProfile <- case activeConn of
       Nothing -> pure Nothing
       Just Connection {customUserProfileId} ->
@@ -1633,51 +1960,65 @@ processChatCommand vr nm = \case
     connectionStats <- mapM (withAgent . flip getConnectionServers) (contactConnId ct)
     pure $ CRContactInfo user ct connectionStats (fmap fromLocalProfile incognitoProfile)
   APIContactQueueInfo contactId -> withUser $ \user -> do
-    ct@Contact {activeConn} <- withFastStore $ \db -> getContact db vr user contactId
+    ct@Contact {activeConn} <- withFastStore $ \db -> getContact db cxt user contactId
     case activeConn of
       Just conn -> getConnQueueInfo user conn
       Nothing -> throwChatError $ CEContactNotActive ct
   APIGroupInfo gId -> withUser $ \user ->
-    CRGroupInfo user <$> withFastStore (\db -> getGroupInfo db vr user gId)
+    CRGroupInfo user <$> withFastStore (\db -> getGroupInfo db cxt user gId)
+  APIGetUpdatedGroupLinkData groupId -> withUser $ \user -> do
+    gInfo@GroupInfo {groupProfile = p} <- withFastStore $ \db -> getGroupInfo db cxt user groupId
+    case p of
+      GroupProfile {publicGroup = Just PublicGroupProfile {groupLink = sLnk}} | useRelays' gInfo -> do
+        (_, cData@(ContactLinkData _ UserContactData {relays = currentRelayLinks}), _) <- getShortLinkConnReq' nm user sLnk
+        groupSLinkData_ <- liftIO $ decodeLinkUserData cData
+        gInfo' <- case groupSLinkData_ of
+          Just sLinkData -> fst <$> updateGroupFromLinkData user gInfo sLinkData Nothing
+          _ -> pure gInfo
+        when (memberRole' (membership gInfo) /= GROwner && memberCurrent (membership gInfo)) $
+          withGroupLock "syncSubscriberRelays" groupId $
+            syncSubscriberRelays user gInfo' currentRelayLinks
+        pure $ CRGroupInfo user gInfo'
+      _ -> throwCmdError "group link data not available"
   APIGroupMemberInfo gId gMemberId -> withUser $ \user -> do
-    (g, m) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user gId <*> getGroupMember db vr user gId gMemberId
+    (g, m) <- withFastStore $ \db -> (,) <$> getGroupInfo db cxt user gId <*> getGroupMember db cxt user gId gMemberId
     connectionStats <- mapM (withAgent . flip getConnectionServers) (memberConnId m)
     pure $ CRGroupMemberInfo user g m connectionStats
   APIGroupMemberQueueInfo gId gMemberId -> withUser $ \user -> do
-    GroupMember {activeConn} <- withFastStore $ \db -> getGroupMember db vr user gId gMemberId
+    GroupMember {activeConn} <- withFastStore $ \db -> getGroupMember db cxt user gId gMemberId
     case activeConn of
       Just conn -> getConnQueueInfo user conn
       Nothing -> throwChatError CEGroupMemberNotActive
   APISwitchContact contactId -> withUser $ \user -> do
-    ct <- withFastStore $ \db -> getContact db vr user contactId
+    ct <- withFastStore $ \db -> getContact db cxt user contactId
     case contactConnId ct of
       Just connId -> do
         connectionStats <- withAgent $ \a -> switchConnectionAsync a "" connId
         pure $ CRContactSwitchStarted user ct connectionStats
       Nothing -> throwChatError $ CEContactNotActive ct
   APISwitchGroupMember gId gMemberId -> withUser $ \user -> do
-    (g, m) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user gId <*> getGroupMember db vr user gId gMemberId
+    (g, m) <- withFastStore $ \db -> (,) <$> getGroupInfo db cxt user gId <*> getGroupMember db cxt user gId gMemberId
     case memberConnId m of
       Just connId -> do
         connectionStats <- withAgent (\a -> switchConnectionAsync a "" connId)
         pure $ CRGroupMemberSwitchStarted user g m connectionStats
       _ -> throwChatError CEGroupMemberNotActive
   APIAbortSwitchContact contactId -> withUser $ \user -> do
-    ct <- withFastStore $ \db -> getContact db vr user contactId
+    ct <- withFastStore $ \db -> getContact db cxt user contactId
     case contactConnId ct of
       Just connId -> do
         connectionStats <- withAgent $ \a -> abortConnectionSwitch a connId
         pure $ CRContactSwitchAborted user ct connectionStats
       Nothing -> throwChatError $ CEContactNotActive ct
   APIAbortSwitchGroupMember gId gMemberId -> withUser $ \user -> do
-    (g, m) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user gId <*> getGroupMember db vr user gId gMemberId
+    (g, m) <- withFastStore $ \db -> (,) <$> getGroupInfo db cxt user gId <*> getGroupMember db cxt user gId gMemberId
     case memberConnId m of
       Just connId -> do
         connectionStats <- withAgent $ \a -> abortConnectionSwitch a connId
         pure $ CRGroupMemberSwitchAborted user g m connectionStats
       _ -> throwChatError CEGroupMemberNotActive
   APISyncContactRatchet contactId force -> withUser $ \user -> withContactLock "syncContactRatchet" contactId $ do
-    ct <- withFastStore $ \db -> getContact db vr user contactId
+    ct <- withFastStore $ \db -> getContact db cxt user contactId
     case contactConn ct of
       Just conn@Connection {pqSupport} -> do
         cStats@ConnectionStats {ratchetSyncState = rss} <- withAgent $ \a -> synchronizeRatchet a (aConnId conn) pqSupport force
@@ -1685,7 +2026,7 @@ processChatCommand vr nm = \case
         pure $ CRContactRatchetSyncStarted user ct cStats
       Nothing -> throwChatError $ CEContactNotActive ct
   APISyncGroupMemberRatchet gId gMemberId force -> withUser $ \user -> withGroupLock "syncGroupMemberRatchet" gId $ do
-    (g, m) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user gId <*> getGroupMember db vr user gId gMemberId
+    (g, m) <- withFastStore $ \db -> (,) <$> getGroupInfo db cxt user gId <*> getGroupMember db cxt user gId gMemberId
     case memberConnId m of
       Just connId -> do
         cStats@ConnectionStats {ratchetSyncState = rss} <- withAgent $ \a -> synchronizeRatchet a connId PQSupportOff force
@@ -1694,7 +2035,7 @@ processChatCommand vr nm = \case
         pure $ CRGroupMemberRatchetSyncStarted user g' m' cStats
       _ -> throwChatError CEGroupMemberNotActive
   APIGetContactCode contactId -> withUser $ \user -> do
-    ct@Contact {activeConn} <- withFastStore $ \db -> getContact db vr user contactId
+    ct@Contact {activeConn} <- withFastStore $ \db -> getContact db cxt user contactId
     case activeConn of
       Just conn@Connection {connId} -> do
         code <- getConnectionCode $ aConnId conn
@@ -1708,38 +2049,51 @@ processChatCommand vr nm = \case
         pure $ CRContactCode user ct' code
       Nothing -> throwChatError $ CEContactNotActive ct
   APIGetGroupMemberCode gId gMemberId -> withUser $ \user -> do
-    (g, m@GroupMember {activeConn}) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user gId <*> getGroupMember db vr user gId gMemberId
-    case activeConn of
-      Just conn@Connection {connId} -> do
-        code <- getConnectionCode $ aConnId conn
+    (g, m@GroupMember {activeConn}) <- withFastStore $ \db -> (,) <$> getGroupInfo db cxt user gId <*> getGroupMember db cxt user gId gMemberId
+    if useRelays' g
+      then do
+        code <- getChannelMemberCode g m
         m' <- case memberSecurityCode m of
           Just SecurityCode {securityCode}
             | sameVerificationCode code securityCode -> pure m
             | otherwise -> do
-                withFastStore' $ \db -> setConnectionVerified db user connId Nothing
-                pure (m :: GroupMember) {activeConn = Just $ (conn :: Connection) {connectionCode = Nothing}}
+                withFastStore' $ \db -> setGroupMemberVerified db user (groupMemberId' m) Nothing
+                pure m {memberVerifiedCode = Nothing}
           _ -> pure m
         pure $ CRGroupMemberCode user g m' code
-      _ -> throwChatError CEGroupMemberNotActive
+      else case activeConn of
+        Just conn@Connection {connId} -> do
+          code <- getConnectionCode $ aConnId conn
+          m' <- case memberSecurityCode m of
+            Just SecurityCode {securityCode}
+              | sameVerificationCode code securityCode -> pure m
+              | otherwise -> do
+                  withFastStore' $ \db -> setConnectionVerified db user connId Nothing
+                  pure (m :: GroupMember) {activeConn = Just $ (conn :: Connection) {connectionCode = Nothing}}
+            _ -> pure m
+          pure $ CRGroupMemberCode user g m' code
+        _ -> throwChatError CEGroupMemberNotActive
   APIVerifyContact contactId code -> withUser $ \user -> do
-    ct@Contact {activeConn} <- withFastStore $ \db -> getContact db vr user contactId
+    ct@Contact {activeConn} <- withFastStore $ \db -> getContact db cxt user contactId
     case activeConn of
       Just conn -> verifyConnectionCode user conn code
       Nothing -> throwChatError $ CEContactNotActive ct
   APIVerifyGroupMember gId gMemberId code -> withUser $ \user -> do
-    GroupMember {activeConn} <- withFastStore $ \db -> getGroupMember db vr user gId gMemberId
-    case activeConn of
-      Just conn -> verifyConnectionCode user conn code
-      _ -> throwChatError CEGroupMemberNotActive
+    (g, m@GroupMember {activeConn}) <- withFastStore $ \db -> (,) <$> getGroupInfo db cxt user gId <*> getGroupMember db cxt user gId gMemberId
+    if useRelays' g
+      then verifyChannelMemberCode user g m code
+      else case activeConn of
+        Just conn -> verifyConnectionCode user conn code
+        _ -> throwChatError CEGroupMemberNotActive
   APIEnableContact contactId -> withUser $ \user -> do
-    ct@Contact {activeConn} <- withFastStore $ \db -> getContact db vr user contactId
+    ct@Contact {activeConn} <- withFastStore $ \db -> getContact db cxt user contactId
     case activeConn of
       Just conn -> do
         withFastStore' $ \db -> setAuthErrCounter db user conn 0
         ok user
       Nothing -> throwChatError $ CEContactNotActive ct
   APIEnableGroupMember gId gMemberId -> withUser $ \user -> do
-    GroupMember {activeConn} <- withFastStore $ \db -> getGroupMember db vr user gId gMemberId
+    GroupMember {activeConn} <- withFastStore $ \db -> getGroupMember db cxt user gId gMemberId
     case activeConn of
       Just conn -> do
         withFastStore' $ \db -> setAuthErrCounter db user conn 0
@@ -1749,16 +2103,16 @@ processChatCommand vr nm = \case
   SetSendReceipts cName rcptsOn_ -> updateChatSettings cName (\cs -> cs {sendRcpts = rcptsOn_})
   SetShowMemberMessages gName mName showMessages -> withUser $ \user -> do
     (gId, mId) <- getGroupAndMemberId user gName mName
-    gInfo <- withFastStore $ \db -> getGroupInfo db vr user gId
-    m <- withFastStore $ \db -> getGroupMember db vr user gId mId
+    gInfo <- withFastStore $ \db -> getGroupInfo db cxt user gId
+    m <- withFastStore $ \db -> getGroupMember db cxt user gId mId
     let GroupInfo {membership = GroupMember {memberRole = membershipRole}} = gInfo
     when (membershipRole >= GRModerator) $ throwChatError $ CECantBlockMemberForSelf gInfo m showMessages
     let settings = (memberSettings m) {showMessages}
-    processChatCommand vr nm $ APISetMemberSettings gId mId settings
+    processChatCommand cxt nm $ APISetMemberSettings gId mId settings
   ContactInfo cName -> withContactName cName APIContactInfo
   ShowGroupInfo gName -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user gName
-    processChatCommand vr nm $ APIGroupInfo groupId
+    processChatCommand cxt nm $ APIGroupInfo groupId
   GroupMemberInfo gName mName -> withMemberName gName mName APIGroupMemberInfo
   ContactQueueInfo cName -> withContactName cName APIContactQueueInfo
   GroupMemberQueueInfo gName mName -> withMemberName gName mName APIGroupMemberQueueInfo
@@ -1778,31 +2132,32 @@ processChatCommand vr nm = \case
   Welcome -> withUser $ pure . CRWelcome
   APIAddContact userId incognito -> withUserId userId $ \user -> do
     -- [incognito] generate profile for connection
-    incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
+    incognitoProfile <- if incognito then Just <$> liftIO (generateIncognitoProfile user) else pure Nothing
     subMode <- chatReadVar subscriptionMode
-    let userData = contactShortLinkData (userProfileDirect user incognitoProfile Nothing True) Nothing
+    (preparedReq, preparedParams@PreparedLinkParams {plpLinkKey = LinkKey linkKey}) <- withAgent $ \a -> prepareInvitationLink a (aUserId user) IKUsePQ Nothing
+    linkProfile <- presentUserBadge user incognitoProfile (Just $ PHLink linkKey) $ userProfileDirect user incognitoProfile Nothing True
+    let userData = contactShortLinkData linkProfile {contactDomain = Nothing} Nothing
         userLinkData = UserInvLinkData userData
-    -- TODO [certs rcv]
-    (connId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) True False SCMInvitation (Just userLinkData) Nothing IKPQOn subMode
+    (connId, ccLink) <- withAgent $ \a -> createInvitationForLink a nm (aUserId user) True preparedReq preparedParams userLinkData subMode
     ccLink' <- shortenCreatedLink ccLink
     -- TODO PQ pass minVersion from the current range
     conn <- withFastStore' $ \db -> createDirectConnection db user connId ccLink' Nothing ConnNew incognitoProfile subMode initialChatVersion PQSupportOn
     pure $ CRInvitation user ccLink' conn
   AddContact incognito -> withUser $ \User {userId} ->
-    processChatCommand vr nm $ APIAddContact userId incognito
+    processChatCommand cxt nm $ APIAddContact userId incognito
   APISetConnectionIncognito connId incognito -> withUser $ \user@User {userId} -> do
     conn <- withFastStore $ \db -> getPendingContactConnection db userId connId
-    let PendingContactConnection {pccConnStatus, customUserProfileId} = conn
+    let PendingContactConnection {pccConnStatus, customUserProfileId, connLinkInv} = conn
     case (pccConnStatus, customUserProfileId, incognito) of
       (ConnNew, Nothing, True) -> do
-        incognitoProfile <- liftIO generateRandomProfile
+        incognitoProfile <- liftIO $ generateIncognitoProfile user
         sLnk <- updatePCCShortLinkData conn $ userProfileDirect user (Just incognitoProfile) Nothing True
         conn' <- withFastStore' $ \db -> do
           pId <- createIncognitoProfile db user incognitoProfile
           updatePCCIncognito db user conn (Just pId) sLnk
         pure $ CRConnectionIncognitoUpdated user conn' (Just incognitoProfile)
       (ConnNew, Just pId, False) -> do
-        sLnk <- updatePCCShortLinkData conn $ userProfileDirect user Nothing Nothing True
+        sLnk <- updatePCCShortLinkData conn =<< presentUserBadge user Nothing (linkPresHeader <$> (connShortLink' =<< connLinkInv)) (userProfileDirect user Nothing Nothing True)
         conn' <- withFastStore' $ \db -> do
           deletePCCIncognitoProfile db user pId
           updatePCCIncognito db user conn Nothing sLnk
@@ -1812,7 +2167,7 @@ processChatCommand vr nm = \case
     conn <- withFastStore $ \db -> getPendingContactConnection db userId connId
     let PendingContactConnection {pccConnStatus, connLinkInv} = conn
     case (pccConnStatus, connLinkInv) of
-      (ConnNew, Just _ссLink) -> do
+      (ConnNew, Just _ccLink) -> do
         newUser <- privateGetUser newUserId
         conn' <- recreateConn user conn newUser
         pure $ CRConnectionUserChanged user conn conn' newUser
@@ -1820,12 +2175,14 @@ processChatCommand vr nm = \case
     where
       recreateConn user conn@PendingContactConnection {customUserProfileId, connLinkInv} newUser = do
         subMode <- chatReadVar subscriptionMode
-        let short = isJust $ connShortLink =<< connLinkInv
-            userLinkData_
-              | short = Just $ UserInvLinkData $ contactShortLinkData (userProfileDirect newUser Nothing Nothing True) Nothing
-              | otherwise = Nothing
-        -- TODO [certs rcv]
-        (agConnId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId newUser) True False SCMInvitation userLinkData_ Nothing IKPQOn subMode
+        let short = isJust $ connShortLink' =<< connLinkInv
+        (agConnId, ccLink) <-
+          if short
+            then do
+              (preparedReq, preparedParams@PreparedLinkParams {plpLinkKey = LinkKey linkKey}) <- withAgent $ \a -> prepareInvitationLink a (aUserId newUser) IKPQOn Nothing
+              userLinkData <- UserInvLinkData . (`contactShortLinkData` Nothing) <$> presentUserBadge newUser Nothing (Just $ PHLink linkKey) (userProfileDirect newUser Nothing Nothing True)
+              withAgent $ \a -> createInvitationForLink a nm (aUserId newUser) True preparedReq preparedParams userLinkData subMode
+            else withAgent $ \a -> createConnection a nm (aUserId newUser) True False SCMInvitation Nothing Nothing IKPQOn True subMode
         ccLink' <- shortenCreatedLink ccLink
         conn' <- withFastStore' $ \db -> do
           deleteConnectionRecord db user connId
@@ -1834,10 +2191,11 @@ processChatCommand vr nm = \case
           createDirectConnection db newUser agConnId ccLink' Nothing ConnNew Nothing subMode initialChatVersion PQSupportOn
         deleteAgentConnectionAsync (aConnId' conn)
         pure conn'
-  APIConnectPlan userId (Just cLink) -> withUserId userId $ \user ->
-    uncurry (CRConnectionPlan user) <$> connectPlan user cLink
-  APIConnectPlan _ Nothing -> throwChatError CEInvalidConnReq
-  APIPrepareContact userId accLink contactSLinkData -> withUserId userId $ \user -> do
+  APIConnectPlan userId (Just ct) resolveMode linkOwnerSig_ -> withUserId userId $ \user -> do
+    (ccLink, planSimplexName, otherSimplexName, plan) <- connectPlan user ct resolveMode linkOwnerSig_ Nothing
+    pure $ CRConnectionPlan user ccLink planSimplexName otherSimplexName plan
+  APIConnectPlan _ Nothing _ _ -> throwChatError CEInvalidConnReq
+  APIPrepareContact userId accLink verifiedDomain contactSLinkData -> withUserId userId $ \user -> do
     let ContactShortLinkData {profile, message, business} = contactSLinkData
     welcomeSharedMsgId <- forM message $ \_ -> getSharedMsgId
     case accLink of
@@ -1846,10 +2204,12 @@ processChatCommand vr nm = \case
             let Profile {preferences} = profile
                 groupPreferences = maybe defaultBusinessGroupPrefs businessGroupPrefs preferences
                 groupProfile = businessGroupProfile profile groupPreferences
-            (gInfo, hostMember) <- withStore $ \db -> createPreparedGroup db vr user groupProfile True ccLink welcomeSharedMsgId
-            void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
+            gVar <- asks random
+            (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar cxt user groupProfile True ccLink welcomeSharedMsgId False GRMember Nothing verifiedDomain
+            hostMember <- maybe (throwCmdError "no host member") pure hostMember_
+            void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing Nothing (Just epochStart)
             let cd = CDGroupRcv gInfo Nothing hostMember
-                createItem sharedMsgId content = createChatItem user cd True content sharedMsgId Nothing
+                createItem sharedMsgId content = createChatItem user cd True content sharedMsgId Nothing Nothing
                 cInfo = GroupChat gInfo Nothing
             void $ createGroupFeatureItems_ user cd True CIRcvGroupFeature gInfo
             aci <- mapM (createItem welcomeSharedMsgId . CIRcvMsgContent) message
@@ -1857,65 +2217,71 @@ processChatCommand vr nm = \case
                   Just (AChatItem SCTGroup dir _ ci) -> Chat cInfo [CChatItem dir ci] emptyChatStats {unreadCount = 1, minUnreadItemId = chatItemId' ci}
                   _ -> Chat cInfo [] emptyChatStats
             pure $ CRNewPreparedChat user $ AChat SCTGroup chat
-      ACCL _ (CCLink cReq _) -> do
-        ct <- withStore $ \db -> createPreparedContact db vr user profile accLink welcomeSharedMsgId
-        void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing (Just epochStart)
+      ACCL _ (CCLink cReq sLnk) -> do
+        ct <- withStore $ \db -> createPreparedContact db cxt user (linkPresHeader <$> sLnk) profile accLink welcomeSharedMsgId (True <$ verifiedDomain)
+        void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing Nothing (Just epochStart)
         let cd = CDDirectRcv ct
-            createItem sharedMsgId content = createChatItem user cd False content sharedMsgId Nothing
+            createItem sharedMsgId content = createChatItem user cd False content sharedMsgId Nothing Nothing
             cInfo = DirectChat ct
-        void $ createItem Nothing $ CIRcvDirectE2EEInfo $ E2EInfo $ connRequestPQEncryption cReq
+        void $ createItem Nothing $ CIRcvDirectE2EEInfo $ e2eInfoEncrypted $ connRequestPQEncryption cReq
         void $ createFeatureEnabledItems_ user ct
         aci <- mapM (createItem welcomeSharedMsgId . CIRcvMsgContent) message
         let chat = case aci of
               Just (AChatItem SCTDirect dir _ ci) -> Chat cInfo [CChatItem dir ci] emptyChatStats {unreadCount = 1, minUnreadItemId = chatItemId' ci}
               _ -> Chat cInfo [] emptyChatStats
         pure $ CRNewPreparedChat user $ AChat SCTDirect chat
-  APIPrepareGroup userId ccLink groupSLinkData -> withUserId userId $ \user -> do
-    let GroupShortLinkData {groupProfile = gp@GroupProfile {description}} = groupSLinkData
+  APIPrepareGroup userId ccLink direct verifiedDomain groupSLinkData -> withUserId userId $ \user -> do
+    let GroupShortLinkData {groupProfile = GroupProfile {description}} = groupSLinkData
     welcomeSharedMsgId <- forM description $ \_ -> getSharedMsgId
-    (gInfo, hostMember) <- withStore $ \db -> createPreparedGroup db vr user gp False ccLink welcomeSharedMsgId
-    void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
-    let cd = CDGroupRcv gInfo Nothing hostMember
+    (gInfo, hostMember_) <- preparedGroupFromLink user ccLink direct groupSLinkData welcomeSharedMsgId verifiedDomain
+    void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing Nothing (Just epochStart)
+    let cd = maybe (CDChannelRcv gInfo Nothing) (CDGroupRcv gInfo Nothing) hostMember_
         cInfo = GroupChat gInfo Nothing
     void $ createGroupFeatureItems_ user cd True CIRcvGroupFeature gInfo
-    aci <- forM description $ \descr -> createChatItem user cd True (CIRcvMsgContent $ MCText descr) welcomeSharedMsgId Nothing
+    aci <- forM description $ \descr -> createChatItem user cd True (CIRcvMsgContent $ MCText descr) welcomeSharedMsgId Nothing Nothing
     let chat = case aci of
           Just (AChatItem SCTGroup dir _ ci) -> Chat cInfo [CChatItem dir ci] emptyChatStats {unreadCount = 1, minUnreadItemId = chatItemId' ci}
           _ -> Chat cInfo [] emptyChatStats
     pure $ CRNewPreparedChat user $ AChat SCTGroup chat
   APIChangePreparedContactUser contactId newUserId -> withUser $ \user -> do
-    ct@Contact {preparedContact} <- withFastStore $ \db -> getContact db vr user contactId
+    ct@Contact {preparedContact} <- withFastStore $ \db -> getContact db cxt user contactId
     when (isNothing preparedContact) $ throwCmdError "contact doesn't have link to connect"
     when (isJust $ contactConn ct) $ throwCmdError "contact already has connection"
     newUser <- privateGetUser newUserId
-    ct' <- withFastStore $ \db -> updatePreparedContactUser db vr user ct newUser
+    ct' <- withFastStore $ \db -> updatePreparedContactUser db cxt user ct newUser
     -- create changed feature items (new user may have different preferences)
     lift $ createContactChangedFeatureItems user ct ct'
     pure $ CRContactUserChanged user ct newUser ct'
   APIChangePreparedGroupUser groupId newUserId -> withUser $ \user -> do
-    (gInfo, hostMember) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user groupId <*> getHostMember db vr user groupId
+    gInfo <- withFastStore $ \db -> getGroupInfo db cxt user groupId
     when (isNothing $ preparedGroup gInfo) $ throwCmdError "group doesn't have link to connect"
-    when (isJust $ memberConn hostMember) $ throwCmdError "host member already has connection"
+    hostMember_ <-
+      if useRelays' gInfo
+        then pure Nothing
+        else do
+          hostMember <- withFastStore $ \db -> getHostMember db cxt user groupId
+          when (isJust $ memberConn hostMember) $ throwCmdError "host member already has connection"
+          pure $ Just hostMember
     newUser <- privateGetUser newUserId
-    gInfo' <- withFastStore $ \db -> updatePreparedGroupUser db vr user gInfo hostMember newUser
+    gInfo' <- withFastStore $ \db -> updatePreparedGroupUser db cxt user gInfo hostMember_ newUser
     pure $ CRGroupUserChanged user gInfo newUser gInfo'
   APIConnectPreparedContact contactId incognito msgContent_ -> withUser $ \user -> do
-    ct@Contact {preparedContact} <- withFastStore $ \db -> getContact db vr user contactId
+    ct@Contact {preparedContact} <- withFastStore $ \db -> getContact db cxt user contactId
     case preparedContact of
       Nothing -> throwCmdError "contact doesn't have link to connect"
       Just PreparedContact {connLinkToConnect = ACCL SCMInvitation ccLink} -> do
         (_, customUserProfile) <- connectViaInvitation user incognito ccLink (Just contactId) `catchAllErrors` \e -> do
           -- get updated contact, in case connection was started - in UI it would lock ability to change
           -- user or incognito profile for contact, in case server received request while client got network error
-          ct' <- withFastStore $ \db -> getContact db vr user contactId
+          ct' <- withFastStore $ \db -> getContact db cxt user contactId
           toView $ CEvtChatInfoUpdated user (AChatInfo SCTDirect $ DirectChat ct')
           throwError e
         -- get updated contact with connection
-        ct' <- withFastStore $ \db -> getContact db vr user contactId
+        ct' <- withFastStore $ \db -> getContact db cxt user contactId
         -- create changed feature items (connecting incognito sends default preferences, instead of user preferences)
         lift . when incognito $ createContactChangedFeatureItems user ct ct'
         forM_ msgContent_ $ \mc -> do
-          let evt = XMsgNew $ MCSimple (extMsgContent mc Nothing)
+          let evt = XMsgNew $ mcSimple mc
           (msg, _) <- sendDirectContactMessage user ct' evt
           ci <- saveSndChatItem user (CDDirectSnd ct') msg (CISndMsgContent mc)
           toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDSnd (DirectChat ct') ci]
@@ -1930,35 +2296,98 @@ processChatCommand vr nm = \case
         r <- connectViaContact user (Just $ PCEContact ct) incognito ccLink welcomeSharedMsgId msg_ `catchAllErrors` \e -> do
           -- get updated contact, in case connection was started - in UI it would lock ability to change
           -- user or incognito profile for contact, in case server received request while client got network error
-          ct' <- withFastStore $ \db -> getContact db vr user contactId
+          ct' <- withFastStore $ \db -> getContact db cxt user contactId
           toView $ CEvtChatInfoUpdated user (AChatInfo SCTDirect $ DirectChat ct')
           throwError e
         case r of
           CVRSentInvitation _conn customUserProfile -> do
             -- get updated contact with connection
-            ct' <- withFastStore $ \db -> getContact db vr user contactId
+            ct' <- withFastStore $ \db -> getContact db cxt user contactId
             -- create changed feature items (connecting incognito sends default preferences, instead of user preferences)
             lift . when incognito $ createContactChangedFeatureItems user ct ct'
             forM_ msg_ $ \(sharedMsgId, mc) -> do
-              ci <- createChatItem user (CDDirectSnd ct') False (CISndMsgContent mc) (Just sharedMsgId) Nothing
+              ci <- createChatItem user (CDDirectSnd ct') False (CISndMsgContent mc) (Just sharedMsgId) Nothing Nothing
               toView $ CEvtNewChatItems user [ci]
             pure $ CRStartedConnectionToContact user ct' customUserProfile
           CVRConnectedContact ct' -> pure $ CRContactAlreadyExists user ct'
-  APIConnectPreparedGroup groupId incognito msgContent_ -> withUser $ \user -> do
-    (gInfo, hostMember) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user groupId <*> getHostMember db vr user groupId
-    case preparedGroup gInfo of
-      Nothing -> throwCmdError "group doesn't have link to connect"
-      Just PreparedGroup {connLinkToConnect, welcomeSharedMsgId, requestSharedMsgId} -> do
+  APIConnectPreparedGroup {groupId, incognito, ownerContact, msgContent_} -> withUser $ \user -> do
+    g@(GIK gInfo _) <- withFastStore $ \db -> getGroupInfoKeys db cxt user groupId
+    case gInfo of
+      GroupInfo {preparedGroup = Nothing} -> throwCmdError "group doesn't have link to connect"
+      GroupInfo {useRelays = BoolDef True, preparedGroup = Just PreparedGroup {connLinkToConnect}} -> do
+        sLnk <- case connShortLink' connLinkToConnect of
+          Just sl -> pure sl
+          Nothing -> throwChatError $ CEException "failed to retrieve relays: no short link"
+        (FixedLinkData {linkEntityId, rootKey}, cData@(ContactLinkData _ UserContactData {owners, relays}), mainCReq@(CRContactUri crData e2e)) <- getShortLinkConnReq nm user sLnk
+        groupSLinkData_ <- liftIO $ decodeLinkUserData cData
+        -- Validate link entity ID matches group profile's publicGroupId (relay groups must have both)
+        case groupSLinkData_ of
+          Just GroupShortLinkData {groupProfile = GroupProfile {publicGroup = Just PublicGroupProfile {publicGroupId}}}
+            | (B64UrlByteString <$> linkEntityId) == Just publicGroupId -> pure ()
+          _ -> throwChatError CEInvalidConnReq
+        let publicGroupData_ = groupSLinkData_ >>= \GroupShortLinkData {publicGroupData} -> publicGroupData
+            publicMemberCount_ = (\PublicGroupData {publicMemberCount} -> publicMemberCount) <$> publicGroupData_
+        -- Prepare group record once before connecting to relays (updatePreparedRelayedGroup):
+        -- set group link info and incognito profile, generate and store membership keys
+        incognitoProfile <- if incognito then Just <$> liftIO (generateIncognitoProfile user) else pure Nothing
+        let cReqHash = contactCReqHash $ CRContactUri crData {crScheme = SSSimplex} e2e
+        g'@(GIK gInfo' _) <- withFastStore $ \db -> do
+          g'@(GIK gInfo' _) <- updatePreparedRelayedGroup db cxt user gInfo mainCReq cReqHash incognitoProfile rootKey publicMemberCount_
+          -- Pre-emptively create owner members with trusted keys from link data
+          forM_ owners $ \OwnerAuth {ownerId, ownerKey} -> do
+            let ctId_ = case ownerContact of
+                  Just GroupOwnerContact {contactId, memberId}
+                    | memberId == MemberId ownerId -> Just contactId
+                  _ -> Nothing
+            void $ createLinkOwnerMember db cxt user gInfo' ctId_ (MemberId ownerId) ownerKey
+          pure g'
+        rs <- withGroupLock "connectPreparedGroup" groupId $
+          mapConcurrently (connectToRelay user g') relays
+        let relayFailed = \case (_, _, Left _) -> True; _ -> False
+            (failed, succeeded) = partition relayFailed rs
+        if null succeeded
+          then do
+            -- Updated group info (connLinkPreparedConnection) - in UI it would lock ability to change
+            -- user or incognito profile for group, in case server received request while client got network error
+            toView $ CEvtChatInfoUpdated user (AChatInfo SCTGroup $ GroupChat gInfo' Nothing)
+            -- Prefer throwing temporary network connection error to enable retry
+            case find isTempErr failed <|> listToMaybe failed of
+              Just (_, _, Left e) -> throwError e
+              _ -> throwChatError $ CEException "no relay connection results" -- shouldn't happen
+          else do
+            gInfo'' <- withFastStore $ \db -> do
+              liftIO $ setPreparedGroupStartedConnection db groupId
+              getGroupInfo db cxt user groupId
+            -- Async retry failed relays with temporary errors
+            let retryable = [(l, m) | r@(l, m, _) <- failed, isTempErr r]
+            void $ mapConcurrently (uncurry $ retryRelayConnectionAsync gInfo') retryable
+            let relayResults = [RelayConnectionResult m (leftToMaybe r) | (_, m, r) <- rs]
+            pure $ CRStartedConnectionToGroup user gInfo'' incognitoProfile relayResults
+        where
+          leftToMaybe (Left e) = Just e
+          leftToMaybe _ = Nothing
+          isTempErr = \case
+            (_, _, Left ChatErrorAgent {agentError = e}) -> temporaryOrHostError e
+            _ -> False
+          retryRelayConnectionAsync gInfo' relayLink relayMember@GroupMember {activeConn} = do
+            forM_ activeConn $ \conn -> do
+              deleteAgentConnectionAsync $ aConnId conn
+              withStore' $ \db -> deleteConnectionRecord db user (dbConnId conn)
+            subMode <- chatReadVar subscriptionMode
+            newConnIds <- getAgentConnShortLinkAsync user CFGetRelayDataJoin Nothing relayLink
+            withStore' $ \db -> createRelayMemberConnectionAsync db user gInfo' relayMember relayLink newConnIds subMode
+      GroupInfo {preparedGroup = Just PreparedGroup {connLinkToConnect, welcomeSharedMsgId, requestSharedMsgId}} -> do
+        hostMember <- withFastStore $ \db -> getHostMember db cxt user groupId
         msg_ <- forM msgContent_ $ \mc -> case requestSharedMsgId of
           Just smId -> pure (smId, mc)
           Nothing -> do
             smId <- getSharedMsgId
             withFastStore' $ \db -> setRequestSharedMsgIdForGroup db groupId smId
             pure (smId, mc)
-        r <- connectViaContact user (Just $ PCEGroup gInfo hostMember) incognito connLinkToConnect welcomeSharedMsgId msg_ `catchAllErrors` \e -> do
+        r <- connectViaContact user (Just $ PCEGroup g hostMember) incognito connLinkToConnect welcomeSharedMsgId msg_ `catchAllErrors` \e -> do
           -- get updated group info, in case connection was started (connLinkPreparedConnection) - in UI it would lock ability to change
           -- user or incognito profile for group or business chat, in case server received request while client got network error
-          gInfo' <- withFastStore $ \db -> getGroupInfo db vr user groupId
+          gInfo' <- withFastStore $ \db -> getGroupInfo db cxt user groupId
           toView $ CEvtChatInfoUpdated user (AChatInfo SCTGroup $ GroupChat gInfo' Nothing)
           throwError e
         case r of
@@ -1966,94 +2395,139 @@ processChatCommand vr nm = \case
             -- get updated group info (connLinkStartedConnection and incognito membership)
             gInfo' <- withFastStore $ \db -> do
               liftIO $ setPreparedGroupStartedConnection db groupId
-              getGroupInfo db vr user groupId
+              getGroupInfo db cxt user groupId
             forM_ msg_ $ \(sharedMsgId, mc) -> do
-              ci <- createChatItem user (CDGroupSnd gInfo' Nothing) False (CISndMsgContent mc) (Just sharedMsgId) Nothing
+              ci <- createChatItem user (CDGroupSnd gInfo' Nothing) False (CISndMsgContent mc) (Just sharedMsgId) Nothing Nothing
               toView $ CEvtNewChatItems user [ci]
-            pure $ CRStartedConnectionToGroup user gInfo' customUserProfile
+            pure $ CRStartedConnectionToGroup user gInfo' customUserProfile []
           CVRConnectedContact _ct -> throwChatError $ CEException "contact already exists when connecting to group"
   APIConnect userId incognito (Just acl) -> withUserId userId $ \user -> case acl of
     ACCL SCMInvitation ccLink -> do
       (conn, incognitoProfile) <- connectViaInvitation user incognito ccLink Nothing
       let pcc = mkPendingContactConnection conn $ Just ccLink
       pure $ CRSentConfirmation user pcc incognitoProfile
-    ACCL SCMContact ccLink ->
+    ACCL SCMContact ccLink@(CCLink _ sLnk) -> do
+      case sLnk of
+        Just (CSLContact _ CCTChannel _ _) -> throwChatError $ CECommandError "channel links must be connected via APIConnectPreparedGroup"
+        _ -> pure ()
       connectViaContact user Nothing incognito ccLink Nothing Nothing >>= \case
         CVRConnectedContact ct -> pure $ CRContactAlreadyExists user ct
         CVRSentInvitation conn incognitoProfile -> pure $ CRSentInvitation user (mkPendingContactConnection conn Nothing) incognitoProfile
   APIConnect _ _ Nothing -> throwChatError CEInvalidConnReq
-  Connect incognito (Just cLink@(ACL m cLink')) -> withUser $ \user -> do
-    (ccLink, plan) <- connectPlan user cLink `catchAllErrors` \e -> case cLink' of CLFull cReq -> pure (ACCL m (CCLink cReq Nothing), CPInvitationLink (ILPOk Nothing)); _ -> throwError e
-    connectWithPlan user incognito ccLink plan
+  Connect incognito (Just ct) -> withUser $ \user -> do
+    let con m cReq = pure (ACCL m (CCLink cReq Nothing), Nothing, Nothing, CPInvitationLink (ILPOk Nothing Nothing))
+    (ccLink, planSimplexName, otherSimplexName, plan) <- connectPlan user ct PRMUnknown Nothing Nothing `catchAllErrors` \e -> case ct of
+      ACTarget m (CTFullContact cReq) -> con m cReq
+      ACTarget m (CTInv (CLFull cReq)) -> con m cReq
+      _ -> throwError e
+    connectWithPlan user incognito ccLink planSimplexName otherSimplexName plan
   Connect _ Nothing -> throwChatError CEInvalidConnReq
+  APIVerifyContactDomain contactId -> withUser $ \user -> do
+    ct@Contact {profile = LocalProfile {contactDomain}, preparedContact} <- withFastStore $ \db -> getContact db cxt user contactId
+    let connLink_ = preparedContact >>= \PreparedContact {connLinkToConnect = ACCL m (CCLink _ sLnk_)} -> ACSL m <$> sLnk_
+    domain <- maybe (throwCmdError "contact has no name to verify") pure contactDomain
+    (verified, reason) <- verifyEntityDomain user nm NTContact domain connLink_
+    ct' <- maybe (pure ct) (\v -> withFastStore' $ \db -> setContactDomainVerified db user ct v) verified
+    pure $ CRContactDomainVerified user ct' reason
+  APIVerifyGroupDomain groupId -> withUser $ \user -> do
+    g@GroupInfo {groupProfile = GroupProfile {publicGroup}} <- withFastStore $ \db -> getGroupInfo db cxt user groupId
+    PublicGroupProfile {groupLink, publicGroupAccess} <- maybe (throwCmdError "not a public group") pure publicGroup
+    claim <- maybe (throwCmdError "group has no name to verify") pure $ publicGroupAccess >>= groupDomainClaim
+    -- checks the profile link, not the link we joined through (which may have rotated)
+    (verified, reason) <-
+      tryAllErrors (resolveNameRecord user nm (claimDomain claim)) >>= \case
+        Right NameRecord {nrSimplexChannel}
+          | nameResolvesTo groupLink nrSimplexChannel -> pure (True, Nothing)
+          | otherwise -> pure (False, Just "the name does not resolve to the link in the group profile")
+        Left (ChatErrorAgent {agentError = SMP _ (NAME SMP.NOT_FOUND)}) -> pure (False, Just "the name is not registered")
+        Left e -> throwError e
+    g' <- withFastStore' $ \db -> setGroupDomainVerified db user g verified
+    pure $ CRGroupDomainVerified user g' reason
   APIConnectContactViaAddress userId incognito contactId -> withUserId userId $ \user -> do
-    ct@Contact {profile = LocalProfile {contactLink}} <- withFastStore $ \db -> getContact db vr user contactId
+    ct@Contact {profile = LocalProfile {contactLink}, groupDirectInv} <- withFastStore $ \db -> getContact db cxt user contactId
+    when (isJust groupDirectInv) $ throwCmdError "contact is a member contact request"
     ccLink <- case contactLink of
       Just (CLFull cReq) -> pure $ CCLink cReq Nothing
       Just (CLShort sLnk) -> do
-        (cReq, _cData) <- getShortLinkConnReq user sLnk
+        (_, _, cReq) <- getShortLinkConnReq nm user sLnk
         pure $ CCLink cReq $ Just sLnk
       Nothing -> throwCmdError "no address in contact profile"
     connectContactViaAddress user incognito ct ccLink `catchAllErrors` \e -> do
       -- get updated contact, in case connection was started - in UI it would lock ability to change incognito choice
       -- on next connection attempt, in case server received request while client got network error
-      ct' <- withFastStore $ \db -> getContact db vr user contactId
+      ct' <- withFastStore $ \db -> getContact db cxt user contactId
       toView $ CEvtChatInfoUpdated user (AChatInfo SCTDirect $ DirectChat ct')
       throwError e
   ConnectSimplex incognito -> withUser $ \user -> do
-    plan <- contactRequestPlan user adminContactReq Nothing `catchAllErrors` const (pure $ CPContactAddress (CAPOk Nothing))
-    connectWithPlan user incognito (ACCL SCMContact (CCLink adminContactReq Nothing)) plan
+    plan <- contactRequestPlan user adminContactReq Nothing Nothing `catchAllErrors` const (pure $ CPContactAddress (CAPOk Nothing Nothing))
+    connectWithPlan user incognito (ACCL SCMContact (CCLink adminContactReq Nothing)) Nothing Nothing plan
   DeleteContact cName cdm -> withContactName cName $ \ctId -> APIDeleteChat (ChatRef CTDirect ctId Nothing) cdm
   ClearContact cName -> withContactName cName $ \chatId -> APIClearChat $ ChatRef CTDirect chatId Nothing
   APIListContacts userId -> withUserId userId $ \user ->
-    CRContactsList user <$> withFastStore' (\db -> getUserContacts db vr user)
+    CRContactsList user <$> withFastStore' (\db -> getUserContacts db cxt user)
   ListContacts -> withUser $ \User {userId} ->
-    processChatCommand vr nm $ APIListContacts userId
-  APICreateMyAddress userId -> withUserId userId $ \user -> do
+    processChatCommand cxt nm $ APIListContacts userId
+  APICreateMyAddress userId server_ pqRatchet_ -> withUserId userId $ \user@User {userChatRelay} -> do
     withFastStore' (\db -> runExceptT $ getUserAddress db user) >>= \case
       Left SEUserContactLinkNotFound -> pure ()
       Left e -> throwError $ ChatErrorStore e
       Right _ -> throwError $ ChatErrorStore SEDuplicateContactLink
     subMode <- chatReadVar subscriptionMode
-    let userData = contactShortLinkData (userProfileDirect user Nothing Nothing True) Nothing
-        userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData}
-    -- TODO [certs rcv]
-    (connId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) True True SCMContact (Just userLinkData) Nothing IKPQOn subMode
+    rootKey@(rootPubKey, rootPrivKey) <- atomically . C.generateKeyPair =<< asks random
+    let entityId = C.sha256Hash $ C.pubKeyBytes rootPubKey
+    -- TODO [address DR] remove this option and switch to IKUsePQ True
+    let (pqInitKeys, useDR) = case pqRatchet_ of
+          Just True -> (IKUsePQ, True)
+          Just False -> (IKPQOn, True)
+          Nothing -> (IKPQOn, False)
+    (ccLink, preparedParams) <- withAgent $ \a -> prepareConnectionLink a (aUserId user) rootKey entityId True Nothing pqInitKeys useDR server_
     ccLink' <- shortenCreatedLink ccLink
-    withFastStore $ \db -> createUserContactLink db user connId ccLink' subMode
-    pure $ CRUserContactLinkCreated user ccLink'
-  CreateMyAddress -> withUser $ \User {userId} ->
-    processChatCommand vr nm $ APICreateMyAddress userId
-  APIDeleteMyAddress userId -> withUserId userId $ \user@User {profile = p} -> do
-    conn <- withFastStore $ \db -> getUserAddressConnection db vr user
+    -- TODO [relays] relay: add identity, key to link data?
+    userData <-
+      if isTrue userChatRelay
+        then pure $ relayShortLinkData (userProfileDirect user Nothing Nothing True)
+        else (`contactShortLinkData` Nothing) <$> presentUserBadge user Nothing (linkPresHeader <$> connShortLink' ccLink) (userProfileDirect user Nothing Nothing True)
+    let userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData, ratchetKeys = Nothing}
+    connId <- withAgent $ \a -> createConnectionForLink a nm (aUserId user) True ccLink preparedParams userLinkData subMode
+    let ccLink'' = if isTrue userChatRelay then setShortLinkType CCTRelay ccLink' else ccLink'
+    withFastStore $ \db -> createUserContactLink db user connId ccLink'' subMode rootPrivKey
+    pure $ CRUserContactLinkCreated user ccLink''
+  CreateMyAddress ratchetKeys_ -> withUser $ \User {userId} ->
+    processChatCommand cxt nm $ APICreateMyAddress userId Nothing ratchetKeys_
+  APIDeleteMyAddress userId -> withUserProfileLock "deleteMyAddress" $ withUserId userId $ \user@User {profile = p} -> do
+    conn <- withFastStore $ \db -> getUserAddressConnection db cxt user
     withChatLock "deleteMyAddress" $ do
       deleteAgentConnectionAsync $ aConnId conn
       withFastStore' (`deleteUserAddress` user)
-    let p' = (fromLocalProfile p :: Profile) {contactLink = Nothing}
+    let p' = (fromLocalProfile p :: Profile) {contactLink = Nothing, contactDomain = Nothing}
     r <- updateProfile_ user p' False $ withFastStore' $ \db -> setUserProfileContactLink db user Nothing
     let user' = case r of
           CRUserProfileUpdated u' _ _ _ -> u'
           _ -> user
     pure $ CRUserContactLinkDeleted user'
   DeleteMyAddress -> withUser $ \User {userId} ->
-    processChatCommand vr nm $ APIDeleteMyAddress userId
+    processChatCommand cxt nm $ APIDeleteMyAddress userId
   APIShowMyAddress userId -> withUserId' userId $ \user ->
     CRUserContactLink user <$> withFastStore (`getUserAddress` user)
   ShowMyAddress -> withUser' $ \User {userId} ->
-    processChatCommand vr nm $ APIShowMyAddress userId
-  APIAddMyAddressShortLink userId -> withUserId' userId $ \user ->
-    CRUserContactLink user <$> (withFastStore (`getUserAddress` user) >>= setMyAddressData user)
-  APISetProfileAddress userId False -> withUserId userId $ \user@User {profile = p} -> do
-    let p' = (fromLocalProfile p :: Profile) {contactLink = Nothing}
+    processChatCommand cxt nm $ APIShowMyAddress userId
+  APIAddMyAddressShortLink userId pqRatchet_ -> withUserId' userId $ \user -> do
+    -- TODO [address DR] remove the option, and use IKUsePQ
+    let pqInitKeys = (\case True -> IKUsePQ; False -> IKPQOn) <$> pqRatchet_
+    CRUserContactLink user <$> (withFastStore (`getUserAddress` user) >>= setMyAddressData False pqInitKeys user)
+  APIRotateAddressRatchetKeys userId -> withUserId' userId $ \user ->
+    CRUserContactLink user <$> (withFastStore (`getUserAddress` user) >>= setMyAddressData True (Just IKUsePQ) user)
+  APISetProfileAddress userId False -> withUserProfileLock "setProfileAddress" $ withUserId userId $ \user@User {profile = p} -> do
+    let p' = (fromLocalProfile p :: Profile) {contactLink = Nothing, contactDomain = Nothing}
     updateProfile_ user p' True $ withFastStore' $ \db -> setUserProfileContactLink db user Nothing
-  APISetProfileAddress userId True -> withUserId userId $ \user@User {profile = p} -> do
+  APISetProfileAddress userId True -> withUserProfileLock "setProfileAddress" $ withUserId userId $ \user@User {profile = p} -> do
     ucl <- withFastStore (`getUserAddress` user)
     -- TODO [short links] replace with short links
     let p' = (fromLocalProfile p :: Profile) {contactLink = Just $ profileContactLink ucl}
     updateProfile_ user p' True $ withFastStore' $ \db -> setUserProfileContactLink db user $ Just ucl
   SetProfileAddress onOff -> withUser $ \User {userId} ->
-    processChatCommand vr nm $ APISetProfileAddress userId onOff
-  APISetAddressSettings userId settings@AddressSettings {businessAddress, autoAccept} -> withUserId userId $ \user -> do
+    processChatCommand cxt nm $ APISetProfileAddress userId onOff
+  APISetAddressSettings userId pqRatchet_ settings@AddressSettings {businessAddress, autoAccept} -> withUserId userId $ \user -> do
     ucl@UserContactLink {userContactLinkId, shortLinkDataSet, addressSettings} <- withFastStore (`getUserAddress` user)
     forM_ autoAccept $ \AutoAccept {acceptIncognito} -> do
       when (shortLinkDataSet && acceptIncognito) $ throwCmdError "incognito not allowed for address with short link data"
@@ -2062,32 +2536,61 @@ processChatCommand vr nm = \case
       then pure $ CRUserContactLinkUpdated user ucl
       else do
         let ucl' = ucl {addressSettings = settings}
-        ucl'' <- if shortLinkDataSet then setMyAddressData user ucl' else pure ucl'
+            pqInitKeys = (\case True -> IKUsePQ; False -> IKPQOn) <$> pqRatchet_
+        ucl'' <- if shortLinkDataSet then setMyAddressData False pqInitKeys user ucl' else pure ucl'
         withFastStore' $ \db -> updateUserAddressSettings db userContactLinkId settings
         pure $ CRUserContactLinkUpdated user ucl''
-  SetAddressSettings settings -> withUser $ \User {userId} ->
-    processChatCommand vr nm $ APISetAddressSettings userId settings
+  SetAddressSettings pqRatchet_ settings -> withUser $ \User {userId} ->
+    processChatCommand cxt nm $ APISetAddressSettings userId pqRatchet_ settings
   AcceptContact incognito cName -> withUser $ \User {userId} -> do
     connReqId <- withFastStore $ \db -> getContactRequestIdByName db userId cName
-    processChatCommand vr nm $ APIAcceptContact incognito connReqId
-  RejectContact cName -> withUser $ \User {userId} -> do
+    processChatCommand cxt nm $ APIAcceptContact incognito connReqId
+  RejectContact cName notify -> withUser $ \User {userId} -> do
     connReqId <- withFastStore $ \db -> getContactRequestIdByName db userId cName
-    processChatCommand vr nm $ APIRejectContact connReqId
+    processChatCommand cxt nm $ APIRejectContact connReqId notify
   ForwardMessage toChatName fromContactName forwardedMsg -> withUser $ \user -> do
     contactId <- withFastStore $ \db -> getContactIdByName db user fromContactName
     forwardedItemId <- withFastStore $ \db -> getDirectChatItemIdByText' db user contactId forwardedMsg
     toChatRef <- getChatRef user toChatName
-    processChatCommand vr nm $ APIForwardChatItems toChatRef (ChatRef CTDirect contactId Nothing) (forwardedItemId :| []) Nothing
+    asGroup <- getSendAsGroup user toChatRef
+    processChatCommand cxt nm $ APIForwardChatItems toChatRef asGroup (ChatRef CTDirect contactId Nothing) (forwardedItemId :| []) Nothing
   ForwardGroupMessage toChatName fromGroupName fromMemberName_ forwardedMsg -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user fromGroupName
     forwardedItemId <- withFastStore $ \db -> getGroupChatItemIdByText db user groupId fromMemberName_ forwardedMsg
     toChatRef <- getChatRef user toChatName
-    processChatCommand vr nm $ APIForwardChatItems toChatRef (ChatRef CTGroup groupId Nothing) (forwardedItemId :| []) Nothing
+    asGroup <- getSendAsGroup user toChatRef
+    processChatCommand cxt nm $ APIForwardChatItems toChatRef asGroup (ChatRef CTGroup groupId Nothing) (forwardedItemId :| []) Nothing
   ForwardLocalMessage toChatName forwardedMsg -> withUser $ \user -> do
     folderId <- withFastStore (`getUserNoteFolderId` user)
     forwardedItemId <- withFastStore $ \db -> getLocalChatItemIdByText' db user folderId forwardedMsg
     toChatRef <- getChatRef user toChatName
-    processChatCommand vr nm $ APIForwardChatItems toChatRef (ChatRef CTLocal folderId Nothing) (forwardedItemId :| []) Nothing
+    asGroup <- getSendAsGroup user toChatRef
+    processChatCommand cxt nm $ APIForwardChatItems toChatRef asGroup (ChatRef CTLocal folderId Nothing) (forwardedItemId :| []) Nothing
+  SharePublicGroup shareGroupName toChatName -> withUser $ \user -> do
+    groupId <- withFastStore $ \db -> getGroupIdByName db user shareGroupName
+    toChatRef <- getChatRef user toChatName
+    sendRef <- case toChatRef of
+      ChatRef CTDirect ctId _ -> pure $ SRDirect ctId
+      ChatRef CTGroup gId scope_ -> do
+        gInfo <- withFastStore $ \db -> getGroupInfo db cxt user gId
+        pure $ SRGroup gId scope_ (useRelays' gInfo)
+      _ -> throwCmdError "unsupported share target"
+    processChatCommand cxt nm (APIShareChatMsgContent (ChatRef CTGroup groupId Nothing) sendRef) >>= \case
+      CRChatMsgContent _ mc ->
+        processChatCommand cxt nm $ APISendMessages sendRef False Nothing False [composedMessage Nothing mc]
+      r -> pure r
+  ShareMyAddress toChatName -> withUser $ \user -> do
+    toChatRef <- getChatRef user toChatName
+    sendRef <- case toChatRef of
+      ChatRef CTDirect ctId _ -> pure $ SRDirect ctId
+      ChatRef CTGroup gId scope_ -> do
+        gInfo <- withFastStore $ \db -> getGroupInfo db cxt user gId
+        pure $ SRGroup gId scope_ (useRelays' gInfo)
+      _ -> throwCmdError "unsupported share target"
+    processChatCommand cxt nm (APIShareMyAddress sendRef) >>= \case
+      CRChatMsgContent _ mc ->
+        processChatCommand cxt nm $ APISendMessages sendRef False Nothing False [composedMessage Nothing mc]
+      r -> pure r
   SendMessage sendName msg -> withUser $ \user -> do
     let mc = MCText msg
     case sendName of
@@ -2095,56 +2598,57 @@ processChatCommand vr nm = \case
         withFastStore' (\db -> runExceptT $ getContactIdByName db user name) >>= \case
           Right ctId -> do
             let sendRef = SRDirect ctId
-            processChatCommand vr nm $ APISendMessages sendRef False Nothing [composedMessage Nothing mc]
+            processChatCommand cxt nm $ APISendMessages sendRef False Nothing False [composedMessage Nothing mc]
           Left _ ->
-            withFastStore' (\db -> runExceptT $ getActiveMembersByName db vr user name) >>= \case
+            withFastStore' (\db -> runExceptT $ getActiveMembersByName db cxt user name) >>= \case
               Right [(gInfo, member)] -> do
                 let GroupInfo {localDisplayName = gName} = gInfo
                     GroupMember {localDisplayName = mName} = member
-                processChatCommand vr nm $ SendMemberContactMessage gName mName msg
+                processChatCommand cxt nm $ SendMemberContactMessage gName mName msg
               Right (suspectedMember : _) ->
                 throwChatError $ CEContactNotFound name (Just suspectedMember)
               _ ->
                 throwChatError $ CEContactNotFound name Nothing
       SNGroup name scope_ -> do
-        (gId, cScope_, mentions) <- withFastStore $ \db -> do
-          gId <- getGroupIdByName db user name
+        (gInfo, cScope_, mentions) <- withFastStore $ \db -> do
+          gInfo <- getGroupInfoByName db cxt user name
+          let gId = groupId' gInfo
           cScope_ <-
             forM scope_ $ \(GSNMemberSupport mName_) ->
               GCSMemberSupport <$> mapM (getGroupMemberIdByName db user gId) mName_
-          (gId,cScope_,) <$> liftIO (getMessageMentions db user gId msg)
-        let sendRef = SRGroup gId cScope_
-        processChatCommand vr nm $ APISendMessages sendRef False Nothing [ComposedMessage Nothing Nothing mc mentions]
+          (gInfo, cScope_,) <$> liftIO (getMessageMentions db user gId msg)
+        let sendRef = SRGroup (groupId' gInfo) cScope_ (sendAsGroup' gInfo cScope_)
+        processChatCommand cxt nm $ APISendMessages sendRef False Nothing False [ComposedMessage Nothing Nothing mc mentions]
       SNLocal -> do
         folderId <- withFastStore (`getUserNoteFolderId` user)
-        processChatCommand vr nm $ APICreateChatItems folderId [composedMessage Nothing mc]
+        processChatCommand cxt nm $ APICreateChatItems folderId [composedMessage Nothing mc]
   SendMemberContactMessage gName mName msg -> withUser $ \user -> do
     (gId, mId) <- getGroupAndMemberId user gName mName
-    m <- withFastStore $ \db -> getGroupMember db vr user gId mId
+    m <- withFastStore $ \db -> getGroupMember db cxt user gId mId
     let mc = MCText msg
     case memberContactId m of
       Nothing -> do
-        g <- withFastStore $ \db -> getGroupInfo db vr user gId
+        g <- withFastStore $ \db -> getGroupInfo db cxt user gId
         unless (groupFeatureUserAllowed SGFDirectMessages g) $ throwCmdError "direct messages not allowed"
         toView $ CEvtNoMemberContactCreating user g m
-        processChatCommand vr nm (APICreateMemberContact gId mId) >>= \case
+        processChatCommand cxt nm (APICreateMemberContact gId mId) >>= \case
           CRNewMemberContact _ ct@Contact {contactId} _ _ -> do
             toViewTE $ TENewMemberContact user ct g m
-            processChatCommand vr nm $ APISendMemberContactInvitation contactId (Just mc)
+            processChatCommand cxt nm $ APISendMemberContactInvitation contactId (Just mc)
           cr -> pure cr
       Just ctId -> do
         let sendRef = SRDirect ctId
-        processChatCommand vr nm $ APISendMessages sendRef False Nothing [composedMessage Nothing mc]
+        processChatCommand cxt nm $ APISendMessages sendRef False Nothing False [composedMessage Nothing mc]
   AcceptMemberContact cName -> withUser $ \user -> do
     contactId <- withFastStore $ \db -> getContactIdByName db user cName
-    processChatCommand vr nm $ APIAcceptMemberContact contactId
+    processChatCommand cxt nm $ APIAcceptMemberContact contactId
   SendLiveMessage chatName msg -> withUser $ \user -> do
     (chatRef, mentions) <- getChatRefAndMentions user chatName msg
-    withSendRef chatRef $ \sendRef -> do
+    withSendRef user chatRef $ \sendRef -> do
       let mc = MCText msg
-      processChatCommand vr nm $ APISendMessages sendRef True Nothing [ComposedMessage Nothing Nothing mc mentions]
+      processChatCommand cxt nm $ APISendMessages sendRef True Nothing False [ComposedMessage Nothing Nothing mc mentions]
   SendMessageBroadcast mc -> withUser $ \user -> do
-    contacts <- withFastStore' $ \db -> getUserContacts db vr user
+    contacts <- withFastStore' $ \db -> getUserContacts db cxt user
     withChatLock "sendMessageBroadcast" $ do
       let ctConns_ = L.nonEmpty $ foldr addContactConn [] contacts
       case ctConns_ of
@@ -2164,81 +2668,175 @@ processChatCommand vr nm = \case
           (errs, ctSndMsgs :: [(Contact, SndMessage)]) <-
             partitionEithers . L.toList . zipWith3' combineResults ctConns sndMsgs <$> deliverMessagesB msgReqs_
           timestamp <- liftIO getCurrentTime
-          lift . void $ withStoreBatch' $ \db -> map (createCI db user timestamp) ctSndMsgs
+          let hasLink = msgContentHasLink mc $ parseMaybeMarkdownList $ msgContentText mc
+          lift . void $ withStoreBatch' $ \db -> map (createCI db user hasLink timestamp) ctSndMsgs
           pure CRBroadcastSent {user, msgContent = mc, successes = length ctSndMsgs, failures = length errs, timestamp}
     where
       addContactConn :: Contact -> [(Contact, Connection)] -> [(Contact, Connection)]
       addContactConn ct ctConns = case contactSendConn_ ct of
         Right conn | directOrUsed ct -> (ct, conn) : ctConns
         _ -> ctConns
-      ctSndEvent :: (Contact, Connection) -> (ConnOrGroupId, ChatMsgEvent 'Json)
-      ctSndEvent (_, Connection {connId}) = (ConnectionId connId, XMsgNew $ MCSimple (extMsgContent mc Nothing))
+      ctSndEvent :: (Contact, Connection) -> (ConnOrGroupId, Maybe MsgSigning, ChatMsgEvent 'Json)
+      ctSndEvent (_, Connection {connId}) = (ConnectionId connId, Nothing, XMsgNew $ mcSimple mc)
       ctMsgReq :: (Contact, Connection) -> SndMessage -> ChatMsgReq
       ctMsgReq (_, conn) SndMessage {msgId, msgBody} = (conn, MsgFlags {notification = hasNotification XMsgNew_}, (vrValue msgBody, [msgId]))
       combineResults :: (Contact, Connection) -> Either ChatError SndMessage -> Either ChatError ([Int64], PQEncryption) -> Either ChatError (Contact, SndMessage)
       combineResults (ct, _) (Right msg') (Right _) = Right (ct, msg')
       combineResults _ (Left e) _ = Left e
       combineResults _ _ (Left e) = Left e
-      createCI :: DB.Connection -> User -> UTCTime -> (Contact, SndMessage) -> IO ()
-      createCI db user createdAt (ct, sndMsg) =
-        void $ createNewSndChatItem db user (CDDirectSnd ct) sndMsg (CISndMsgContent mc) Nothing Nothing Nothing False createdAt
+      createCI :: DB.Connection -> User -> Bool -> UTCTime -> (Contact, SndMessage) -> IO ()
+      createCI db user hasLink createdAt (ct, sndMsg) =
+        void $ createNewSndChatItem db user (CDDirectSnd ct) False sndMsg (CISndMsgContent mc) Nothing Nothing Nothing False hasLink (roundDownToSecond createdAt) createdAt
   SendMessageQuote cName (AMsgDirection msgDir) quotedMsg msg -> withUser $ \user@User {userId} -> do
     contactId <- withFastStore $ \db -> getContactIdByName db user cName
     quotedItemId <- withFastStore $ \db -> getDirectChatItemIdByText db userId contactId msgDir quotedMsg
     let mc = MCText msg
-    processChatCommand vr nm $ APISendMessages (SRDirect contactId) False Nothing [ComposedMessage Nothing (Just quotedItemId) mc M.empty]
+    processChatCommand cxt nm $ APISendMessages (SRDirect contactId) False Nothing False [ComposedMessage Nothing (Just quotedItemId) mc M.empty]
   DeleteMessage chatName deletedMsg -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     deletedItemId <- getSentChatItemIdByText user chatRef deletedMsg
-    processChatCommand vr nm $ APIDeleteChatItem chatRef (deletedItemId :| []) CIDMBroadcast
+    processChatCommand cxt nm $ APIDeleteChatItem chatRef (deletedItemId :| []) CIDMBroadcast
   DeleteMemberMessage gName mName deletedMsg -> withUser $ \user -> do
     gId <- withFastStore $ \db -> getGroupIdByName db user gName
     deletedItemId <- withFastStore $ \db -> getGroupChatItemIdByText db user gId (Just mName) deletedMsg
-    processChatCommand vr nm $ APIDeleteMemberChatItem gId (deletedItemId :| [])
+    processChatCommand cxt nm $ APIDeleteMemberChatItem gId (deletedItemId :| [])
   EditMessage chatName editedMsg msg -> withUser $ \user -> do
     (chatRef, mentions) <- getChatRefAndMentions user chatName msg
     editedItemId <- getSentChatItemIdByText user chatRef editedMsg
     let mc = MCText msg
-    processChatCommand vr nm $ APIUpdateChatItem chatRef editedItemId False $ UpdatedMessage mc mentions
+    processChatCommand cxt nm $ APIUpdateChatItem chatRef editedItemId False $ UpdatedMessage mc mentions
   UpdateLiveMessage chatName chatItemId live msg -> withUser $ \user -> do
     (chatRef, mentions) <- getChatRefAndMentions user chatName msg
     let mc = MCText msg
-    processChatCommand vr nm $ APIUpdateChatItem chatRef chatItemId live $ UpdatedMessage mc mentions
+    processChatCommand cxt nm $ APIUpdateChatItem chatRef chatItemId live $ UpdatedMessage mc mentions
   ReactToMessage add reaction chatName msg -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     chatItemId <- getChatItemIdByText user chatRef msg
-    processChatCommand vr nm $ APIChatItemReaction chatRef chatItemId add reaction
-  APINewGroup userId incognito gProfile@GroupProfile {displayName} -> withUserId userId $ \user -> do
-    checkValidName displayName
-    gVar <- asks random
-    -- [incognito] generate incognito profile for group membership
-    incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
-    gInfo <- withFastStore $ \db -> createNewGroup db vr gVar user gProfile incognitoProfile
-    let cd = CDGroupSnd gInfo Nothing
-    createInternalChatItem user cd CIChatBanner (Just epochStart)
-    createInternalChatItem user cd (CISndGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff}) Nothing
-    createGroupFeatureItems user cd CISndGroupFeature gInfo
+    processChatCommand cxt nm $ APIChatItemReaction chatRef chatItemId add reaction
+  APINewGroup userId incognito gProfile -> withUserId userId $ \user -> do
+    g <- asks random
+    memberId <- liftIO $ MemberId <$> encodedRandomBytes g 12
+    (_, memberPrivKey) <- atomically $ C.generateKeyPair g
+    gInfo <- newGroup user incognito gProfile memberId GKGroup {memberPrivKey} Nothing
+    createNewGroupItems user gInfo
     pure $ CRGroupCreated user gInfo
   NewGroup incognito gProfile -> withUser $ \User {userId} ->
-    processChatCommand vr nm $ APINewGroup userId incognito gProfile
+    processChatCommand cxt nm $ APINewGroup userId incognito gProfile
+  APINewPublicGroup userId incognito relayIds groupProfile -> withUserId userId $ \user -> do
+    (gProfile', memberId, groupKeys, setupLink) <- prepareGroupLink user
+    gInfo <- newGroup user incognito gProfile' memberId groupKeys (Just 1)
+    (gLink, results) <- setupLink gInfo `catchAllErrors` \e -> do
+      deleteInProgressGroup user gInfo
+      throwError e
+    case partitionEithers (map snd results) of
+      ([], groupRelays) -> do
+        createNewGroupItems user gInfo
+        pure $ CRPublicGroupCreated user gInfo gLink groupRelays
+      (errors@(e : _), _) -> do
+        deleteInProgressGroup user gInfo
+        -- If all errors are temporary (network, timeout, host), throw to allow retry
+        if all isTempErr errors
+          then throwError e
+          else do
+            let relayResults = map toRelayResult results
+                toRelayResult (r, Left e') = AddRelayResult r (Just e')
+                toRelayResult (r, Right _) = AddRelayResult r Nothing
+            pure $ CRPublicGroupCreationFailed user relayResults
+    where
+      isTempErr :: ChatError -> Bool
+      isTempErr = \case
+        ChatErrorAgent {agentError = e} -> temporaryOrHostError e
+        _ -> False
+      prepareGroupLink :: User -> CM (GroupProfile, MemberId, GroupKeys, GroupInfo -> CM (GroupLink, [(UserChatRelay, Either ChatError GroupRelay)]))
+      prepareGroupLink user = do
+        gVar <- asks random
+        groupLinkId <- GroupLinkId <$> drgRandomBytes 16
+        subMode <- chatReadVar subscriptionMode
+        -- generate root key pair; entity ID = sha256(rootPubKey) — see docs/rfcs/2026-03-28-group-identity-binding.md
+        rootKey@(rootPubKey, rootPrivKey) <- atomically $ C.generateKeyPair gVar
+        let entityId = C.sha256Hash $ C.pubKeyBytes rootPubKey
+            crClientData = encodeJSON $ CRDataGroup groupLinkId
+        -- prepare link with entityId as linkEntityId (no server request)
+        (ccLink, preparedParams) <- withAgent $ \a -> prepareConnectionLink a (aUserId user) rootKey entityId True (Just crClientData) IKPQOff False Nothing
+        ccLink' <- setShortLinkType CCTChannel <$> shortenCreatedLink ccLink
+        sLnk <- case connShortLink' ccLink' of
+          Just sl -> pure sl
+          Nothing -> throwChatError $ CEException "failed to create relayed group link: no short link"
+        -- generate owner key, OwnerAuth signed by root key
+        memberId <- MemberId <$> liftIO (encodedRandomBytes gVar 12)
+        (memberPrivKey, ownerAuth) <- liftIO $ SL.newOwnerAuth gVar (unMemberId memberId) rootPrivKey
+        -- TODO [channel web] pass publicGroupAccess from owner's profile
+        let groupProfile' = (groupProfile :: GroupProfile) {publicGroup = Just PublicGroupProfile {groupType = GTChannel, groupLink = sLnk, publicGroupId = B64UrlByteString entityId, publicGroupAccess = Nothing}}
+            userData = encodeShortLinkData $ GroupShortLinkData {groupProfile = groupProfile', publicGroupData = Just (PublicGroupData 1)}
+            userLinkData = UserContactLinkData UserContactData {direct = False, owners = [ownerAuth], relays = [], userData, ratchetKeys = Nothing}
+        -- create connection with prepared link (single network call)
+        connId <- withAgent $ \a -> createConnectionForLink a nm (aUserId user) True ccLink preparedParams userLinkData subMode
+        let groupKeys = GKPublicGroup {groupRootKey = GRKPrivate rootPrivKey, memberPrivKey}
+            setupLink gInfo = do
+              -- TODO [relays] starting role should be communicated in protocol from owner to relays
+              subRole <- asks $ channelSubscriberRole . config
+              gLink <- withFastStore $ \db -> createGroupLink db gVar user gInfo connId ccLink' groupLinkId subRole subMode
+              relays <- withFastStore $ \db -> mapM (getChatRelayById db user) (L.toList relayIds)
+              results <- addRelays user (GIK gInfo groupKeys) sLnk relays
+              pure (gLink, results)
+        pure (groupProfile', memberId, groupKeys, setupLink)
+  NewPublicGroup incognito relayIds gProfile -> withUser $ \User {userId} ->
+    processChatCommand cxt nm $ APINewPublicGroup userId incognito relayIds gProfile
+  APIGetGroupRelays groupId -> withUser $ \user -> do
+    (gInfo, relays) <- withFastStore $ \db -> do
+      gInfo <- getGroupInfo db cxt user groupId
+      relays <- liftIO $ getGroupRelays db gInfo
+      pure (gInfo, relays)
+    pure $ CRGroupRelays user gInfo relays
+  APIAddGroupRelays groupId relayIds -> withUser $ \user -> withGroupLock "addGroupRelays" groupId $ do
+    (g@(GIK gInfo _), existingRelays) <- withFastStore $ \db -> do
+      g@(GIK gi _) <- getGroupInfoKeys db cxt user groupId
+      rs <- liftIO $ getGroupRelays db gi
+      pure (g, rs)
+    assertUserGroupRole gInfo GROwner
+    unless (useRelays' gInfo) $ throwCmdError "group does not use relays"
+    let existingRelayIds = map (\GroupRelay {userChatRelay = UserChatRelay {chatRelayId = DBEntityId rId}} -> rId) existingRelays
+    when (any (`elem` existingRelayIds) relayIds) $ throwCmdError "some relays are already in the group"
+    gLink@GroupLink {connLinkContact = ccLink} <- withFastStore $ \db -> getGroupLink db user gInfo
+    sLnk <- case connShortLink' ccLink of
+      Just sl -> pure sl
+      Nothing -> throwChatError $ CEException "group link has no short link"
+    relays <- withFastStore $ \db -> mapM (getChatRelayById db user) (L.toList relayIds)
+    results <- addRelays user g sLnk relays
+    case partitionEithers (map snd results) of
+      ([], _) -> do
+        relays' <- withFastStore $ \db -> liftIO $ getGroupRelays db gInfo
+        pure $ CRGroupRelaysAdded user gInfo gLink relays'
+      (errors@(e : _), _) -> do
+        if all isTempErr errors
+          then throwError e
+          else do
+            let toRelayResult (r, Left e') = AddRelayResult r (Just e')
+                toRelayResult (r, Right _) = AddRelayResult r Nothing
+            pure $ CRGroupRelaysAddFailed user (map toRelayResult results)
+    where
+      isTempErr :: ChatError -> Bool
+      isTempErr = \case
+        ChatErrorAgent {agentError = e} -> temporaryOrHostError e
+        _ -> False
   APIAddMember groupId contactId memRole -> withUser $ \user -> withGroupLock "addMember" groupId $ do
     -- TODO for large groups: no need to load all members to determine if contact is a member
-    (group, contact) <- withFastStore $ \db -> (,) <$> getGroup db vr user groupId <*> getContact db vr user contactId
-    assertDirectAllowed user MDSnd contact XGrpInv_
+    ((group, gks), contact) <- withFastStore $ \db -> (,) <$> getGroupKeys_ db cxt user groupId <*> getContact db cxt user contactId
     let Group gInfo members = group
         Contact {localDisplayName = cName} = contact
+    when (useRelays' gInfo) $ throwCmdError "can't invite contact to channel"
+    assertDirectAllowed user MDSnd contact XGrpInv_
     assertUserGroupRole gInfo $ max GRAdmin memRole
     -- [incognito] forbid to invite contact to whom user is connected incognito
     when (contactConnIncognito contact) $ throwChatError CEContactIncognitoCantInvite
     -- [incognito] forbid to invite contacts if user joined the group using an incognito profile
     when (incognitoMembership gInfo) $ throwChatError CEGroupIncognitoCantInvite
-    let sendInvitation = sendGrpInvitation user contact gInfo
+    let sendInvitation = sendGrpInvitation user contact (GIK gInfo gks)
     case contactMember contact members of
       Nothing -> do
         gVar <- asks random
         subMode <- chatReadVar subscriptionMode
-        -- TODO [certs rcv]
-        (agentConnId, (CCLink cReq _, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) True False SCMInvitation Nothing Nothing IKPQOff subMode
+        (agentConnId, CCLink cReq _) <- withAgent $ \a -> createConnection a nm (aUserId user) True False SCMInvitation Nothing Nothing IKPQOff True subMode
         member <- withFastStore $ \db -> createNewContactMember db gVar user gInfo contact memRole agentConnId cReq subMode
         sendInvitation member cReq
         pure $ CRSentGroupInvitation user gInfo contact member
@@ -2251,22 +2849,57 @@ processChatCommand vr nm = \case
                 pure $ CRSentGroupInvitation user gInfo contact member {memberRole = memRole}
               Nothing -> throwChatError $ CEGroupCantResendInvitation gInfo cName
         | otherwise -> throwChatError $ CEGroupDuplicateMember cName
+  APIAddMemberViaGroup groupId viaGroupId gmId memRole -> withUser $ \user -> withGroupLock "addMember" groupId $ do
+    (g@(GIK gInfo _), viaGInfo, m) <- withFastStore $ \db ->
+      (,,) <$> getGroupInfoKeys db cxt user groupId <*> getGroupInfo db cxt user viaGroupId <*> getGroupMember db cxt user viaGroupId gmId
+    let GroupMember {localDisplayName = mName} = m
+    when (viaGroupId == groupId) $ throwChatError $ CEGroupDuplicateMember mName
+    when (useRelays' gInfo) $ throwCmdError "can't invite member to channel"
+    when (useRelays' viaGInfo) $ throwCmdError "can't invite member from channel"
+    assertUserGroupRole gInfo $ max GRAdmin memRole
+    assertUserGroupRole viaGInfo GRAuthor
+    unless (groupFeatureUserAllowed SGFDirectMessages viaGInfo) $ throwCmdError "direct messages not allowed"
+    when (incognitoMembership viaGInfo) $ throwChatError CEContactIncognitoCantInvite
+    when (incognitoMembership gInfo) $ throwChatError CEGroupIncognitoCantInvite
+    mConn <- case memberConn m of
+      Just conn | memberCurrent m -> pure conn
+      _ -> throwChatError CEGroupMemberNotActive
+    unless (m `supportsVersion` groupInvVersion) $ throwChatError CEPeerChatVRangeIncompatible
+    let sendInvitation = sendGrpInvitationViaGroup user viaGInfo m mConn g
+    withFastStore' (\db -> getMemberInvitedVia db cxt user gInfo m) >>= \case
+      Nothing -> do
+        gVar <- asks random
+        subMode <- chatReadVar subscriptionMode
+        (agentConnId, CCLink cReq _) <- withAgent $ \a -> createConnection a nm (aUserId user) True False SCMInvitation Nothing Nothing IKPQOff True subMode
+        member <- withFastStore $ \db -> createNewMemberViaGroup db gVar cxt user gInfo m mConn memRole agentConnId cReq subMode
+        sendInvitation member cReq
+        pure $ CRSentGroupInvitationViaGroup user gInfo member viaGInfo m
+      Just member@GroupMember {groupMemberId, memberStatus, memberRole = mRole}
+        | memberStatus == GSMemInvited -> do
+            unless (mRole == memRole) $ withFastStore' $ \db -> updateGroupMemberRole db user member memRole
+            withFastStore' (\db -> getMemberInvitation db user groupMemberId) >>= \case
+              Just cReq -> do
+                sendInvitation member {memberRole = memRole} cReq
+                pure $ CRSentGroupInvitationViaGroup user gInfo member {memberRole = memRole} viaGInfo m
+              Nothing -> throwChatError $ CEGroupCantResendInvitation gInfo mName
+        | otherwise -> throwChatError $ CEGroupDuplicateMember mName
   APIJoinGroup groupId enableNtfs -> withUser $ \user@User {userId} -> do
     withGroupLock "joinGroup" groupId $ do
-      (invitation, ct) <- withFastStore $ \db -> do
-        inv@ReceivedGroupInvitation {fromMember} <- getGroupInvitation db vr user groupId
-        (inv,) <$> getContactViaMember db vr user fromMember
-      let ReceivedGroupInvitation {fromMember, connRequest, groupInfo = g@GroupInfo {membership, chatSettings}} = invitation
-          GroupMember {memberId = membershipMemId} = membership
-          Contact {activeConn} = ct
-      case activeConn of
-        Just Connection {peerChatVRange} -> do
+      (invitation, ct_) <- withFastStore $ \db -> do
+        inv@ReceivedGroupInvitation {fromMember} <- getGroupInvitation db cxt user groupId
+        (inv,) <$> forM (memberContactId fromMember) (\_ -> getContactViaMember db cxt user fromMember)
+      let ReceivedGroupInvitation {fromMember, connRequest, groupInfo = g@GroupInfo {membership, chatSettings}, groupKeys = gks} = invitation
+          peerChatVRange_ = case ct_ of
+            Nothing -> Right $ memberChatVRange' fromMember
+            Just ct@Contact {activeConn} -> maybe (Left ct) (\Connection {peerChatVRange} -> Right peerChatVRange) activeConn
+      case peerChatVRange_ of
+        Right peerChatVRange -> do
           subMode <- chatReadVar subscriptionMode
-          dm <- encodeConnInfo $ XGrpAcpt membershipMemId
+          dm <- encodeXGrpAcpt user (GIK g gks) peerChatVRange
           agentConnId <- case memberConn fromMember of
             Nothing -> do
-              agentConnId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True connRequest PQSupportOff
-              let chatV = vr `peerConnChatVersion` peerChatVRange
+              (agentConnId, _) <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True connRequest PQSupportOff
+              let chatV = vr cxt `peerConnChatVersion` peerChatVRange
               void $ withFastStore' $ \db -> createMemberConnection db userId fromMember agentConnId chatV peerChatVRange subMode
               pure agentConnId
             Just conn -> pure $ aConnId conn
@@ -2281,13 +2914,15 @@ processChatCommand vr nm = \case
                 updateGroupMemberStatus db userId fromMember GSMemInvited
                 updateGroupMemberStatus db userId membership GSMemInvited
               throwError e
-          updateCIGroupInvitationStatus user g CIGISAccepted `catchAllErrors` eToView
+          updateCIGroupInvitationStatus user g CIGISAccepted `catchAllErrors` \case
+            ChatErrorStore SEChatItemNotFoundByGroupId {} -> pure ()
+            e -> eToView e
           pure $ CRUserAcceptedGroupSent user g {membership = membership {memberStatus = GSMemAccepted}} Nothing
-        Nothing -> throwChatError $ CEContactNotActive ct
+        Left ct -> throwChatError $ CEContactNotActive ct
   APIAcceptMember groupId gmId role -> withUser $ \user@User {userId} -> do
-    (gInfo, m) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user groupId <*> getGroupMemberById db vr user gmId
-    -- TODO check that user's role is > role, possibly restrict role to only observer and member
-    assertUserGroupRole gInfo GRModerator
+    (g@(GIK gInfo _), m) <- withFastStore $ \db -> (,) <$> getGroupInfoKeys db cxt user groupId <*> getGroupMemberById db cxt user gmId
+    -- same rule as role change (moderators grant up to member); pending member's role is a stand-in, so treat it as member
+    assertUserGroupRole gInfo $ roleRequiredToChange GRMember role
     case memberStatus m of
       GSMemPendingApproval | memberCategory m == GCInviteeMember -> do -- only host can approve
         let GroupInfo {groupProfile = GroupProfile {memberAdmission}} = gInfo
@@ -2295,14 +2930,14 @@ processChatCommand vr nm = \case
           Just mConn ->
             case memberAdmission >>= review of
               Just MCAll -> do
-                introduceToModerators vr user gInfo m
+                introduceToModerators cxt user g m
                 withFastStore' $ \db -> updateGroupMemberStatus db userId m GSMemPendingReview
                 let m' = m {memberStatus = GSMemPendingReview}
                 pure $ CRMemberAccepted user gInfo m'
               Nothing -> do
                 let msg = XGrpLinkAcpt GAAccepted role (memberId' m)
                 void $ sendDirectMemberMessage mConn msg groupId
-                introduceToRemaining vr user gInfo m {memberRole = role}
+                introduceToRemaining cxt user g m {memberRole = role}
                 when (groupFeatureAllowed SGFHistory gInfo) $ sendHistory user gInfo m
                 (m', gInfo') <- withFastStore' $ \db -> do
                   m' <- updateGroupMemberAccepted db user m GSMemConnected role
@@ -2317,16 +2952,16 @@ processChatCommand vr nm = \case
           Nothing -> throwChatError CEGroupMemberNotActive
       GSMemPendingReview -> do
         let scope = Just $ GCSMemberSupport $ Just (groupMemberId' m)
-        modMs <- withFastStore' $ \db -> getGroupModerators db vr user gInfo
+        modMs <- withFastStore' $ \db -> getGroupModerators db cxt user gInfo
         let rcpModMs' = filter memberCurrent modMs
             msg = XGrpLinkAcpt GAAccepted role (memberId' m)
-        void $ sendGroupMessage user gInfo scope ([m] <> rcpModMs') msg
+        void $ sendGroupMessage user g scope ([m] <> rcpModMs') False msg
         when (maxVersion (memberChatVRange m) < groupKnockingVersion) $
           forM_ (memberConn m) $ \mConn -> do
-            let msg2 = XMsgNew $ MCSimple $ extMsgContent (MCText acceptedToGroupMessage) Nothing
+            let msg2 = XMsgNew $ mcSimple (MCText acceptedToGroupMessage)
             void $ sendDirectMemberMessage mConn msg2 groupId
         when (memberCategory m == GCInviteeMember) $ do
-          introduceToRemaining vr user gInfo m {memberRole = role}
+          introduceToRemaining cxt user g m {memberRole = role}
           when (groupFeatureAllowed SGFHistory gInfo) $ sendHistory user gInfo m
         (m', gInfo') <- withFastStore' $ \db -> do
           m' <- updateGroupMemberAccepted db user m newMemberStatus role
@@ -2344,7 +2979,7 @@ processChatCommand vr nm = \case
             _ -> GSMemAnnounced
       _ -> throwCmdError "member should be pending approval and invitee, or pending review and not invitee"
   APIDeleteMemberSupportChat groupId gmId -> withUser $ \user -> do
-    (gInfo, m) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user groupId <*> getGroupMemberById db vr user gmId
+    (gInfo, m) <- withFastStore $ \db -> (,) <$> getGroupInfo db cxt user groupId <*> getGroupMemberById db cxt user gmId
     when (isNothing $ supportChat m) $ throwCmdError "member has no support chat"
     when (memberPending m) $ throwCmdError "member is pending"
     (gInfo', m') <- withFastStore' $ \db -> do
@@ -2357,64 +2992,85 @@ processChatCommand vr nm = \case
     pure $ CRMemberSupportChatDeleted user gInfo' m'
   APIMembersRole groupId memberIds newRole -> withUser $ \user ->
     withGroupLock "memberRole" groupId $ do
-      -- TODO [channels fwd] possible optimization is to read only required members + relays
-      g@(Group gInfo members) <- withFastStore $ \db -> getGroup db vr user groupId
+      -- TODO [relays] possible optimization is to read only required members + relays
+      (g@(Group gInfo members), gks) <- withFastStore $ \db -> getGroupKeys_ db cxt user groupId
       when (selfSelected gInfo) $ throwCmdError "can't change role for self"
-      let (invitedMems, currentMems, unchangedMems, maxRole, anyAdmin, anyPending) = selectMembers members
+      let (invitedMems, currentMems, unchangedMems, maxRole, anyAdmin, anyPending, anyPrivilegedTarget, anyRelay, anyRosterChange, finalPrivilegedCount) = selectMembers members
       when (length invitedMems + length currentMems + length unchangedMems /= length memberIds) $ throwChatError CEGroupMemberNotFound
       when (length memberIds > 1 && (anyAdmin || newRole >= GRAdmin)) $
         throwCmdError "can't change role of multiple members when admins selected, or new role is admin"
       when anyPending $ throwCmdError "can't change role of members pending approval"
+      when (anyRelay || newRole == GRRelay) $ throwCmdError "relay role can't be changed"
+      -- TODO [multi-owner] allow once owners are added via link data - until then promoted owner would lack link authority
+      when (useRelays' gInfo && newRole == GROwner) $ throwCmdError "owner role can't be assigned in channels"
+      -- TODO allow moderators (needs UI) - relay is rejected above (anyRelay), so drop the GRAdmin floor:
+      -- TODO   assertUserGroupRole gInfo (roleRequiredToChange maxRole newRole)
       assertUserGroupRole gInfo $ maximum ([GRAdmin, maxRole, newRole] :: [GroupMemberRole])
-      (errs1, changed1) <- changeRoleInvitedMems user gInfo invitedMems
-      (errs2, changed2, acis) <- changeRoleCurrentMems user g currentMems
+      -- in relay groups the roster has a single signer, so only the owner may change member/moderator/admin roles
+      when (useRelays' gInfo && (isRosterRole newRole || anyPrivilegedTarget) && memberRole' (membership gInfo) /= GROwner) $
+        throwCmdError "only the group owner can change moderator and admin roles"
+      when (useRelays' gInfo && isRosterRole newRole && finalPrivilegedCount > maxGroupRosterSize) $
+        throwCmdError $ "the number of members, moderators and admins would exceed the limit of " <> show maxGroupRosterSize
+      (errs1, changed1) <- changeRoleInvitedMems user (GIK gInfo gks) invitedMems
+      let doBumpRoster = useRelays' gInfo && memberRole' (membership gInfo) == GROwner && anyRosterChange
+      -- roster (with the change projected in) before the delta, so a relay stores the blob at this version before forwarding the delta
+      rosterVer <- if doBumpRoster then Just <$> broadcastRoster user (GIK gInfo gks) (RDRoleChanged newRole currentMems) else pure Nothing
+      (errs2, changed2, acis, msgSigned) <- changeRoleCurrentMems user g gks rosterVer currentMems
       unless (null acis) $ toView $ CEvtNewChatItems user acis
       let errs = errs1 <> errs2
       unless (null errs) $ toView $ CEvtChatErrors errs
-      pure $ CRMembersRoleUser {user, groupInfo = gInfo, members = changed1 <> changed2, toRole = newRole} -- same order is not guaranteed
+      pure $ CRMembersRoleUser {user, groupInfo = gInfo, members = changed1 <> changed2, toRole = newRole, msgSigned} -- same order is not guaranteed
     where
       selfSelected GroupInfo {membership} = elem (groupMemberId' membership) memberIds
-      selectMembers :: [GroupMember] -> ([GroupMember], [GroupMember], [GroupMember], GroupMemberRole, Bool, Bool)
-      selectMembers = foldr' addMember ([], [], [], GRObserver, False, False)
+      -- anyPrivilegedTarget: a target currently member/moderator/admin (gates the owner-only check); anyRosterChange:
+      -- a current member's role change that alters the roster blob - the only case that bumps the version, since a
+      -- bump with no delta reads as a gap to subscribers; finalPrivilegedCount: moderators + admins after the change.
+      selectMembers :: [GroupMember] -> ([GroupMember], [GroupMember], [GroupMember], GroupMemberRole, Bool, Bool, Bool, Bool, Bool, Int)
+      selectMembers = foldr' addMember ([], [], [], GRObserver, False, False, False, False, False, 0)
         where
-          addMember m@GroupMember {groupMemberId, memberStatus, memberRole} (invited, current, unchanged, maxRole, anyAdmin, anyPending)
+          addMember m@GroupMember {groupMemberId, memberStatus, memberRole} (invited, current, unchanged, maxRole, anyAdmin, anyPending, anyPrivTarget, anyRelay, anyRosterChange, privCount)
             | groupMemberId `elem` memberIds =
                 let maxRole' = max maxRole memberRole
                     anyAdmin' = anyAdmin || memberRole >= GRAdmin
                     anyPending' = anyPending || memberPending m
-                 in
-                  if
-                    | memberRole == newRole -> (invited, current, m : unchanged, maxRole', anyAdmin', anyPending')
-                    | memberStatus == GSMemInvited -> (m : invited, current, unchanged, maxRole', anyAdmin', anyPending')
-                    | otherwise -> (invited, m : current, unchanged, maxRole', anyAdmin', anyPending')
-            | otherwise = (invited, current, unchanged, maxRole, anyAdmin, anyPending)
-      changeRoleInvitedMems :: User -> GroupInfo -> [GroupMember] -> CM ([ChatError], [GroupMember])
-      changeRoleInvitedMems user gInfo memsToChange = do
+                    anyPrivTarget' = anyPrivTarget || isRosterRole memberRole
+                    anyRelay' = anyRelay || memberRole == GRRelay
+                    privCount' = if isRosterRole newRole then privCount + 1 else privCount
+                 in if
+                      | memberRole == newRole -> (invited, current, m : unchanged, maxRole', anyAdmin', anyPending', anyPrivTarget', anyRelay', anyRosterChange, privCount')
+                      | memberStatus == GSMemInvited -> (m : invited, current, unchanged, maxRole', anyAdmin', anyPending', anyPrivTarget', anyRelay', anyRosterChange, privCount')
+                      -- a current member's role actually changes here; it alters the roster iff the old or new role is on it
+                      | otherwise -> (invited, m : current, unchanged, maxRole', anyAdmin', anyPending', anyPrivTarget', anyRelay', anyRosterChange || isRosterRole newRole || isRosterRole memberRole, privCount')
+            | otherwise = (invited, current, unchanged, maxRole, anyAdmin, anyPending, anyPrivTarget, anyRelay, anyRosterChange, if isRosterRole memberRole then privCount + 1 else privCount)
+      changeRoleInvitedMems :: User -> GroupInfoKeys -> [GroupMember] -> CM ([ChatError], [GroupMember])
+      changeRoleInvitedMems user gInfo@(GIK g _) memsToChange = do
         -- not batched, as we need to send different invitations to different connections anyway
         mems_ <- forM memsToChange $ \m -> (Right <$> changeRole m) `catchAllErrors` (pure . Left)
         pure $ partitionEithers mems_
         where
           changeRole :: GroupMember -> CM GroupMember
           changeRole m@GroupMember {groupMemberId, memberContactId, localDisplayName = cName} = do
-            withFastStore (\db -> (,) <$> mapM (getContact db vr user) memberContactId <*> liftIO (getMemberInvitation db user groupMemberId)) >>= \case
+            withFastStore (\db -> (,) <$> mapM (getContact db cxt user) memberContactId <*> liftIO (getMemberInvitation db user groupMemberId)) >>= \case
               (Just ct, Just cReq) -> do
                 sendGrpInvitation user ct gInfo (m :: GroupMember) {memberRole = newRole} cReq
                 withFastStore' $ \db -> updateGroupMemberRole db user m newRole
                 pure (m :: GroupMember) {memberRole = newRole}
-              _ -> throwChatError $ CEGroupCantResendInvitation gInfo cName
-      changeRoleCurrentMems :: User -> Group -> [GroupMember] -> CM ([ChatError], [GroupMember], [AChatItem])
-      changeRoleCurrentMems user (Group gInfo members) memsToChange = case L.nonEmpty memsToChange of
-        Nothing -> pure ([], [], [])
+              _ -> throwChatError $ CEGroupCantResendInvitation g cName
+      changeRoleCurrentMems :: User -> Group -> GroupKeys -> Maybe VersionRoster -> [GroupMember] -> CM ([ChatError], [GroupMember], [AChatItem], Bool)
+      changeRoleCurrentMems user (Group gInfo members) gks rosterVer memsToChange = case L.nonEmpty memsToChange of
+        Nothing -> pure ([], [], [], False)
         Just memsToChange' -> do
-          let events = L.map (\GroupMember {memberId} -> XGrpMemRole memberId newRole) memsToChange'
+          let mKey m = if isJust rosterVer then MemberKey <$> memberPubKey m else Nothing
+              events = L.map (\m@GroupMember {memberId} -> XGrpMemRole memberId newRole (mKey m) rosterVer) memsToChange'
               recipients = filter memberCurrent members
-          (msgs_, _gsr) <- sendGroupMessages user gInfo Nothing recipients events
-          let itemsData = zipWith (fmap . sndItemData) memsToChange (L.toList msgs_)
-          cis_ <- saveSndChatItems user (CDGroupSnd gInfo Nothing) itemsData Nothing False
+          (msgs_, _gsr) <- sendGroupMessages user (GIK gInfo gks) Nothing False recipients False events
+          let signed = any (either (const False) (\SndMessage {signedMsg_} -> isJust signedMsg_)) msgs_
+              itemsData = zipWith (fmap . sndItemData) memsToChange (L.toList msgs_)
+          cis_ <- saveSndChatItems user (CDGroupSnd gInfo Nothing) False itemsData Nothing False
           when (length cis_ /= length memsToChange) $ logError "changeRoleCurrentMems: memsToChange and cis_ length mismatch"
-          (errs, changed) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (updMember db) memsToChange)
           let acis = map (AChatItem SCTGroup SMDSnd (GroupChat gInfo Nothing)) $ rights cis_
-          pure (errs, changed, acis)
+          (errs, changed) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (updMember db) memsToChange)
+          pure (errs, changed, acis, signed)
           where
             sndItemData :: GroupMember -> SndMessage -> NewSndChatItemData c
             sndItemData GroupMember {groupMemberId, memberProfile} msg =
@@ -2426,16 +3082,16 @@ processChatCommand vr nm = \case
               pure (m :: GroupMember) {memberRole = newRole}
   APIBlockMembersForAll groupId memberIds blockFlag -> withUser $ \user ->
     withGroupLock "blockForAll" groupId $ do
-      -- TODO [channels fwd] possible optimization is to read only required members + relays
-      Group gInfo members <- withFastStore $ \db -> getGroup db vr user groupId
+      -- TODO [relays] possible optimization is to read only required members + relays
+      (Group gInfo members, gks) <- withFastStore $ \db -> getGroupKeys_ db cxt user groupId
       when (selfSelected gInfo) $ throwCmdError "can't block/unblock self"
-      -- TODO [channels fwd] consider sending restriction to all members (remove filtering), as we do in delivery jobs
+      -- TODO [relays] consider sending restriction to all members (remove filtering), as we do in delivery jobs
       let (blockMems, remainingMems, maxRole, anyAdmin, anyPending) = selectMembers members
       when (length blockMems /= length memberIds) $ throwChatError CEGroupMemberNotFound
       when (length memberIds > 1 && anyAdmin) $ throwCmdError "can't block/unblock multiple members when admins selected"
       when anyPending $ throwCmdError "can't block/unblock members pending approval"
       assertUserGroupRole gInfo $ max GRModerator maxRole
-      blockMembers user gInfo blockMems remainingMems
+      blockMembers user (GIK gInfo gks) blockMems remainingMems
     where
       selfSelected GroupInfo {membership} = elem (groupMemberId' membership) memberIds
       selectMembers :: [GroupMember] -> ([GroupMember], [GroupMember], GroupMemberRole, Bool, Bool)
@@ -2448,16 +3104,17 @@ processChatCommand vr nm = \case
                     anyPending' = anyPending || memberPending m
                  in (m : block, remaining, maxRole', anyAdmin', anyPending')
             | otherwise = (block, m : remaining, maxRole, anyAdmin, anyPending)
-      blockMembers :: User -> GroupInfo -> [GroupMember] -> [GroupMember] -> CM ChatResponse
-      blockMembers user gInfo blockMems remainingMems = case L.nonEmpty blockMems of
+      blockMembers :: User -> GroupInfoKeys -> [GroupMember] -> [GroupMember] -> CM ChatResponse
+      blockMembers user g@(GIK gInfo _) blockMems remainingMems = case L.nonEmpty blockMems of
         Nothing -> throwCmdError "no members to block/unblock"
         Just blockMems' -> do
           let mrs = if blockFlag then MRSBlocked else MRSUnrestricted
               events = L.map (\GroupMember {memberId} -> XGrpMemRestrict memberId MemberRestrictions {restriction = mrs}) blockMems'
               recipients = filter memberCurrent remainingMems
-          (msgs_, _gsr) <- sendGroupMessages_ user gInfo recipients events
-          let itemsData = zipWith (fmap . sndItemData) blockMems (L.toList msgs_)
-          cis_ <- saveSndChatItems user (CDGroupSnd gInfo Nothing) itemsData Nothing False
+          (msgs_, _gsr) <- sendGroupMessages_ user g recipients False events
+          let msgSigned = any (either (const False) (\SndMessage {signedMsg_} -> isJust signedMsg_)) msgs_
+              itemsData = zipWith (fmap . sndItemData) blockMems (L.toList msgs_)
+          cis_ <- saveSndChatItems user (CDGroupSnd gInfo Nothing) False itemsData Nothing False
           when (length cis_ /= length blockMems) $ logError "blockMembers: blockMems and cis_ length mismatch"
           let acis = map (AChatItem SCTGroup SMDSnd (GroupChat gInfo Nothing)) $ rights cis_
           unless (null acis) $ toView $ CEvtNewChatItems user acis
@@ -2465,7 +3122,7 @@ processChatCommand vr nm = \case
           unless (null errs) $ toView $ CEvtChatErrors errs
           -- TODO not batched - requires agent batch api
           forM_ blocked $ \m -> toggleNtf m (not blockFlag)
-          pure CRMembersBlockedForAllUser {user, groupInfo = gInfo, members = blocked, blocked = blockFlag}
+          pure CRMembersBlockedForAllUser {user, groupInfo = gInfo, members = blocked, blocked = blockFlag, msgSigned}
         where
           sndItemData :: GroupMember -> SndMessage -> NewSndChatItemData c
           sndItemData GroupMember {groupMemberId, memberProfile} msg =
@@ -2474,46 +3131,59 @@ processChatCommand vr nm = \case
              in NewSndChatItemData msg content ts M.empty Nothing Nothing Nothing
   APIRemoveMembers {groupId, groupMemberIds, withMessages} -> withUser $ \user ->
     withGroupLock "removeMembers" groupId $ do
-      -- TODO [channels fwd] possible optimization is to read only required members + relays
-      Group gInfo members <- withFastStore $ \db -> getGroup db vr user groupId
-      let (count, invitedMems, pendingApprvMems, pendingRvwMems, currentMems, maxRole, anyAdmin) = selectMembers gmIds members
+      -- TODO [relays] possible optimization is to read only required members + relays
+      (Group gInfo members, gks) <- withFastStore $ \db -> getGroupKeys_ db cxt user groupId
+      let (count, invitedMems, pendingApprvMems, pendingRvwMems, currentMems, maxRole, anyAdmin, anyPrivilegedRemoved, anyRosterRemoved) = selectMembers gmIds members
           gmIds = S.fromList $ L.toList groupMemberIds
           memCount = length groupMemberIds
       when (count /= memCount) $ throwChatError CEGroupMemberNotFound
       when (memCount > 1 && anyAdmin) $ throwCmdError "can't remove multiple members when admins selected"
       assertUserGroupRole gInfo $ max GRAdmin maxRole
+      when (useRelays' gInfo && anyPrivilegedRemoved && memberRole' (membership gInfo) /= GROwner) $
+        throwCmdError "only the group owner can remove members, moderators and admins"
       (errs1, deleted1) <- deleteInvitedMems user invitedMems
       let recipients = filter memberCurrent members
-      (errs2, deleted2, acis2) <- deleteMemsSend user gInfo Nothing recipients currentMems
-      (errs3, deleted3, acis3) <-
-        foldM (\acc m -> deletePendingMember acc user gInfo [m] m) ([], [], []) pendingApprvMems
+      let doBumpRoster = useRelays' gInfo && memberRole' (membership gInfo) == GROwner && anyRosterRemoved
+      -- roster (excluding the removed members) before the delta, so a relay stores the blob at this version before forwarding the delta
+      rosterVer <- if doBumpRoster then Just <$> broadcastRoster user (GIK gInfo gks) (RDRemoved currentMems) else pure Nothing
+      (errs2, deleted2, acis2, signed2) <- deleteMemsSend user (GIK gInfo gks) Nothing rosterVer recipients currentMems
+      (errs3, deleted3, acis3, signed3) <-
+        foldM (\acc m -> deletePendingMember acc user (GIK gInfo gks) [m] m) ([], [], [], False) pendingApprvMems
       let moderators = filter (\GroupMember {memberRole} -> memberRole >= GRModerator) members
-      (errs4, deleted4, acis4) <-
-        foldM (\acc m -> deletePendingMember acc user gInfo (m : moderators) m) ([], [], []) pendingRvwMems
+      (errs4, deleted4, acis4, signed4) <-
+        foldM (\acc m -> deletePendingMember acc user (GIK gInfo gks) (m : moderators) m) ([], [], [], False) pendingRvwMems
       let acis = acis2 <> acis3 <> acis4
           errs = errs1 <> errs2 <> errs3 <> errs4
           deleted = deleted1 <> deleted2 <> deleted3 <> deleted4
-      -- Read group info with updated membersRequireAttention
-      gInfo' <- withFastStore $ \db -> getGroupInfo db vr user groupId
+          msgSigned = signed2 || signed3 || signed4
+      -- Read group info with updated membersRequireAttention and publicMemberCount
+      gInfo' <-
+        if useRelays' gInfo
+          then updatePublicGroupData user gInfo gks
+          else withFastStore $ \db -> getGroupInfo db cxt user groupId
       let acis' = map (updateACIGroupInfo gInfo') acis
       unless (null acis') $ toView $ CEvtNewChatItems user acis'
       unless (null errs) $ toView $ CEvtChatErrors errs
-      when withMessages $ deleteMessages user gInfo' deleted
-      pure $ CRUserDeletedMembers user gInfo' deleted withMessages -- same order is not guaranteed
+      pure $ CRUserDeletedMembers user gInfo' deleted withMessages msgSigned -- same order is not guaranteed
     where
-      selectMembers :: S.Set GroupMemberId -> [GroupMember] -> (Int, [GroupMember], [GroupMember], [GroupMember], [GroupMember], GroupMemberRole, Bool)
-      selectMembers gmIds = foldl' addMember (0, [], [], [], [], GRObserver, False)
+      -- anyPrivilegedRemoved: any removed member is member/moderator/admin (gates the owner-only check); anyRosterRemoved:
+      -- a current roster member is removed - the only case that alters the blob and so bumps the version (pending/
+      -- invited members aren't on the roster, and a bump with no delta reads as a gap to subscribers).
+      selectMembers :: S.Set GroupMemberId -> [GroupMember] -> (Int, [GroupMember], [GroupMember], [GroupMember], [GroupMember], GroupMemberRole, Bool, Bool, Bool)
+      selectMembers gmIds = foldl' addMember (0, [], [], [], [], GRObserver, False, False, False)
         where
-          addMember acc@(n, invited, pendingApprv, pendingRvw, current, maxRole, anyAdmin) m@GroupMember {groupMemberId, memberStatus, memberRole}
+          addMember acc@(n, invited, pendingApprv, pendingRvw, current, maxRole, anyAdmin, anyPrivRemoved, anyRosterRemoved) m@GroupMember {groupMemberId, memberStatus, memberRole}
             | groupMemberId `S.member` gmIds =
                 let maxRole' = max maxRole memberRole
                     anyAdmin' = anyAdmin || memberRole >= GRAdmin
+                    anyPrivRemoved' = anyPrivRemoved || isRosterRole memberRole
                     n' = n + 1
                  in case memberStatus of
-                      GSMemInvited -> (n', m : invited, pendingApprv, pendingRvw, current, maxRole', anyAdmin')
-                      GSMemPendingApproval -> (n', invited, m : pendingApprv, pendingRvw, current, maxRole', anyAdmin')
-                      GSMemPendingReview -> (n', invited, pendingApprv, m : pendingRvw, current, maxRole', anyAdmin')
-                      _ -> (n', invited, pendingApprv, pendingRvw, m : current, maxRole', anyAdmin')
+                      GSMemInvited -> (n', m : invited, pendingApprv, pendingRvw, current, maxRole', anyAdmin', anyPrivRemoved', anyRosterRemoved)
+                      GSMemPendingApproval -> (n', invited, m : pendingApprv, pendingRvw, current, maxRole', anyAdmin', anyPrivRemoved', anyRosterRemoved)
+                      GSMemPendingReview -> (n', invited, pendingApprv, m : pendingRvw, current, maxRole', anyAdmin', anyPrivRemoved', anyRosterRemoved)
+                      -- removed current member: alters the roster blob iff it currently holds a roster role
+                      _ -> (n', invited, pendingApprv, pendingRvw, m : current, maxRole', anyAdmin', anyPrivRemoved', anyRosterRemoved || isRosterRole memberRole)
             | otherwise = acc
       deleteInvitedMems :: User -> [GroupMember] -> CM ([ChatError], [GroupMember])
       deleteInvitedMems user memsToDelete = do
@@ -2523,30 +3193,34 @@ processChatCommand vr nm = \case
           delMember db m = do
             deleteGroupMember db user m
             pure m {memberStatus = GSMemRemoved}
-      deletePendingMember :: ([ChatError], [GroupMember], [AChatItem]) -> User -> GroupInfo -> [GroupMember] -> GroupMember -> CM ([ChatError], [GroupMember], [AChatItem])
-      deletePendingMember (accErrs, accDeleted, accACIs) user gInfo recipients m = do
+      deletePendingMember :: ([ChatError], [GroupMember], [AChatItem], Bool) -> User -> GroupInfoKeys -> [GroupMember] -> GroupMember -> CM ([ChatError], [GroupMember], [AChatItem], Bool)
+      deletePendingMember (accErrs, accDeleted, accACIs, accSigned) user gInfo recipients m = do
         (m', scopeInfo) <- mkMemberSupportChatInfo m
-        (errs, deleted, acis) <- deleteMemsSend user gInfo (Just scopeInfo) recipients [m']
-        pure (errs <> accErrs, deleted <> accDeleted, acis <> accACIs)
-      deleteMemsSend :: User -> GroupInfo -> Maybe GroupChatScopeInfo -> [GroupMember] -> [GroupMember] -> CM ([ChatError], [GroupMember], [AChatItem])
-      deleteMemsSend user gInfo chatScopeInfo recipients memsToDelete = case L.nonEmpty memsToDelete of
-        Nothing -> pure ([], [], [])
+        (errs, deleted, acis, signed) <- deleteMemsSend user gInfo (Just scopeInfo) Nothing recipients [m']
+        pure (errs <> accErrs, deleted <> accDeleted, acis <> accACIs, accSigned || signed)
+      deleteMemsSend :: User -> GroupInfoKeys -> Maybe GroupChatScopeInfo -> Maybe VersionRoster -> [GroupMember] -> [GroupMember] -> CM ([ChatError], [GroupMember], [AChatItem], Bool)
+      deleteMemsSend user g@(GIK gInfo _) chatScopeInfo rosterVer recipients memsToDelete = case L.nonEmpty memsToDelete of
+        Nothing -> pure ([], [], [], False)
         Just memsToDelete' -> do
           let chatScope = toChatScope <$> chatScopeInfo
-              events = L.map (\GroupMember {memberId} -> XGrpMemDel memberId withMessages) memsToDelete'
-          (msgs_, _gsr) <- sendGroupMessages user gInfo chatScope recipients events
-          let itemsData_ = zipWith (fmap . sndItemData) memsToDelete (L.toList msgs_)
+              events = L.map (\GroupMember {memberId} -> XGrpMemDel memberId withMessages rosterVer) memsToDelete'
+          (msgs_, _gsr) <- sendGroupMessages user g chatScope False recipients False events
+          let signed = any (either (const False) (\SndMessage {signedMsg_} -> isJust signedMsg_)) msgs_
+              itemsData_ = zipWith (fmap . sndItemData) memsToDelete (L.toList msgs_)
               skipUnwantedItem = \case
                 Right Nothing -> Nothing
                 Right (Just a) -> Just $ Right a
                 Left e -> Just $ Left e
               itemsData = mapMaybe skipUnwantedItem itemsData_
-          cis_ <- saveSndChatItems user (CDGroupSnd gInfo chatScopeInfo) itemsData Nothing False
+          cis_ <- saveSndChatItems user (CDGroupSnd gInfo chatScopeInfo) False itemsData Nothing False
+          -- MUST run before delMember so getGroupMemberFileInfo can still resolve file info under fullDelete.
+          when withMessages $ deleteMessages user gInfo memsToDelete
           deleteMembersConnections' user memsToDelete True
           (errs, deleted) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (delMember db) memsToDelete)
           let acis = map (AChatItem SCTGroup SMDSnd (GroupChat gInfo chatScopeInfo)) $ rights cis_
-          pure (errs, deleted, acis)
+          pure (errs, deleted, acis, signed)
           where
+            fullDelete = withMessages && groupFeatureUserAllowed SGFFullDelete gInfo
             sndItemData :: GroupMember -> SndMessage -> Maybe (NewSndChatItemData c)
             sndItemData GroupMember {groupMemberId, memberProfile, memberStatus} msg
               | memberStatus == GSMemRemoved || memberStatus == GSMemLeft = Nothing
@@ -2559,50 +3233,73 @@ processChatCommand vr nm = \case
               -- voided result (updated group info) may have incorrect state of membersRequireAttention.
               -- To avoid complicating code by chaining group info updates,
               -- instead we re-read it once after deleting all members before response.
-              void $ deleteOrUpdateMemberRecordIO db user gInfo m
+              if fullDelete
+                then void $ fullyDeleteMemberRecordIO db user gInfo m
+                else void $ deleteOrUpdateMemberRecordIO db user gInfo m
               pure m {memberStatus = GSMemRemoved}
       deleteMessages user gInfo@GroupInfo {membership} ms
-        | groupFeatureUserAllowed SGFFullDelete gInfo = deleteGroupMembersCIs user gInfo ms membership
+        | groupFeatureUserAllowed SGFFullDelete gInfo = deleteGroupMembersCIs user gInfo ms
         | otherwise = markGroupMembersCIsDeleted user gInfo ms membership
   APILeaveGroup groupId -> withUser $ \user@User {userId} -> do
-    gInfo@GroupInfo {membership} <- withFastStore $ \db -> getGroupInfo db vr user groupId
+    g@(GIK gInfo@GroupInfo {membership} _) <- withFastStore $ \db -> getGroupInfoKeys db cxt user groupId
     filesInfo <- withFastStore' $ \db -> getGroupFileInfo db user gInfo
     withGroupLock "leaveGroup" groupId $ do
       cancelFilesInProgress user filesInfo
-      (members, recipients) <- getRecipients user gInfo
-      msg <- sendGroupMessage' user gInfo recipients XGrpLeave
+      msg <-
+        if useRelays' gInfo && isRelay membership
+          then leaveChannelRelay g
+          else leaveGroupSendMsg user g
       (gInfo', scopeInfo) <- mkLocalGroupChatScope gInfo
       ci <- saveSndChatItem user (CDGroupSnd gInfo' scopeInfo) msg (CISndGroupEvent SGEUserLeft)
       toView $ CEvtNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat gInfo' scopeInfo) ci]
       -- TODO delete direct connections that were unused
       deleteGroupLinkIfExists user gInfo'
+      let relayRejected = useRelays' gInfo && isRelay membership
       -- member records are not deleted to keep history
-      deleteMembersConnections' user members True
-      withFastStore' $ \db -> updateGroupMemberStatus db userId membership GSMemLeft
-      pure $ CRLeftMemberUser user gInfo' {membership = membership {memberStatus = GSMemLeft}}
+      withFastStore' $ \db -> do
+        updateGroupMemberStatus db userId membership GSMemLeft
+        when relayRejected $ updateRelayOwnStatus_ db gInfo RSRejected
+      let relayOwnStatus' = if relayRejected then Just RSRejected else relayOwnStatus gInfo
+      pure $ CRLeftMemberUser user gInfo' {membership = membership {memberStatus = GSMemLeft}, relayOwnStatus = relayOwnStatus'}
     where
-      getRecipients user gInfo@GroupInfo {useRelays}
-        | isTrue useRelays = do
-            relays <- withFastStore' $ \db -> getGroupRelays db vr user gInfo
+      -- Relay leaving channel: create delivery job for cursor-based sending and async connection cleanup.
+      leaveChannelRelay g@(GIK gInfo _) = do
+        msg@SndMessage {msgBody, signedMsg_} <-
+          liftEither . runIdentity =<< lift (createSndMessages $ Identity (GroupId groupId, groupMsgSigning False g XGrpLeave, XGrpLeave))
+        let body = encodeBatchElement signedMsg_ msgBody
+        withFastStore' $ \db -> do
+          deleteGroupDeliveryTasks db gInfo
+          deleteGroupDeliveryJobs db gInfo
+          createMsgDeliveryJob db gInfo (DJSGroup {jobSpec = DJRelayRemoved}) [] (hasNotification XGrpLeave_) body
+        lift . void $ getDeliveryJobWorker True (groupId, DWSGroup)
+        pure msg
+      leaveGroupSendMsg user g@(GIK gInfo _) = do
+        (members, recipients) <- getRecipients user gInfo
+        msg <- sendGroupMessage' user g recipients XGrpLeave
+        deleteMembersConnections' user members True
+        pure msg
+      getRecipients user gInfo
+        | useRelays' gInfo = do
+            relays <- withFastStore' $ \db -> getGroupRelayMembers db cxt user gInfo
             pure (relays, relays)
         | otherwise = do
-            ms <- withFastStore' $ \db -> getGroupMembers db vr user gInfo
+            ms <- withFastStore' $ \db -> getGroupMembers db cxt user gInfo
             pure (ms, filter memberCurrentOrPending ms)
   APIListMembers groupId -> withUser $ \user ->
-    CRGroupMembers user <$> withFastStore (\db -> getGroup db vr user groupId)
+    CRGroupMembers user <$> withFastStore (\db -> getGroup db cxt user groupId)
   -- -- validate: prohibit to delete/archive if member is pending (has to communicate approval or rejection)
   -- APIDeleteGroupConversations groupId _gcId -> withUser $ \user -> do
-  --   _gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
+  --   _gInfo <- withFastStore $ \db -> getGroupInfo db cxt user groupId
   --   ok_ -- CRGroupConversationsArchived
   -- APIArchiveGroupConversations groupId _gcId -> withUser $ \user -> do
-  --   _gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
+  --   _gInfo <- withFastStore $ \db -> getGroupInfo db cxt user groupId
   --   ok_ -- CRGroupConversationsDeleted
   AddMember gName cName memRole -> withUser $ \user -> do
     (groupId, contactId) <- withFastStore $ \db -> (,) <$> getGroupIdByName db user gName <*> getContactIdByName db user cName
-    processChatCommand vr nm $ APIAddMember groupId contactId memRole
+    processChatCommand cxt nm $ APIAddMember groupId contactId memRole
   JoinGroup gName enableNtfs -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user gName
-    processChatCommand vr nm $ APIJoinGroup groupId enableNtfs
+    processChatCommand cxt nm $ APIJoinGroup groupId enableNtfs
   AcceptMember gName gMemberName memRole -> withMemberName gName gMemberName $ \gId gMemberId -> APIAcceptMember gId gMemberId memRole
   MemberRole gName gMemberName memRole -> withMemberName gName gMemberName $ \gId gMemberId -> APIMembersRole gId [gMemberId] memRole
   BlockForAll gName gMemberName blocked -> withMemberName gName gMemberName $ \gId gMemberId -> APIBlockMembersForAll gId [gMemberId] blocked
@@ -2611,57 +3308,70 @@ processChatCommand vr nm = \case
       gId <- getGroupIdByName db user gName
       gMemberIds <- mapM (getGroupMemberIdByName db user gId) gMemberNames
       pure (gId, gMemberIds)
-    processChatCommand vr nm $ APIRemoveMembers gId gMemberIds withMessages
+    processChatCommand cxt nm $ APIRemoveMembers gId gMemberIds withMessages
   LeaveGroup gName -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user gName
-    processChatCommand vr nm $ APILeaveGroup groupId
+    processChatCommand cxt nm $ APILeaveGroup groupId
+  AllowRelayGroup gName -> withUser $ \user -> do
+    groupId <- withFastStore $ \db -> getGroupIdByName db user gName
+    processChatCommand cxt nm $ APIAllowRelayGroup groupId
   DeleteGroup gName -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user gName
-    processChatCommand vr nm $ APIDeleteChat (ChatRef CTGroup groupId Nothing) (CDMFull True)
+    processChatCommand cxt nm $ APIDeleteChat (ChatRef CTGroup groupId Nothing) (CDMFull True)
   ClearGroup gName -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user gName
-    processChatCommand vr nm $ APIClearChat (ChatRef CTGroup groupId Nothing)
+    processChatCommand cxt nm $ APIClearChat (ChatRef CTGroup groupId Nothing)
   ListMembers gName -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user gName
-    processChatCommand vr nm $ APIListMembers groupId
+    processChatCommand cxt nm $ APIListMembers groupId
   ListMemberSupportChats gName -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user gName
-    (Group gInfo members) <- withFastStore $ \db -> getGroup db vr user groupId
+    (Group gInfo members) <- withFastStore $ \db -> getGroup db cxt user groupId
     let memberSupportChats = filter (isJust . supportChat) members
     pure $ CRMemberSupportChats user gInfo memberSupportChats
   APIListGroups userId contactId_ search_ -> withUserId userId $ \user ->
-    CRGroupsList user <$> withFastStore' (\db -> getBaseGroupDetails db vr user contactId_ search_)
+    CRGroupsList user <$> withFastStore' (\db -> getBaseGroupDetails db cxt user contactId_ search_)
   ListGroups cName_ search_ -> withUser $ \user@User {userId} -> do
-    ct_ <- forM cName_ $ \cName -> withFastStore $ \db -> getContactByName db vr user cName
-    processChatCommand vr nm $ APIListGroups userId (contactId' <$> ct_) search_
+    ct_ <- forM cName_ $ \cName -> withFastStore $ \db -> getContactByName db cxt user cName
+    processChatCommand cxt nm $ APIListGroups userId (contactId' <$> ct_) search_
   APIUpdateGroupProfile groupId p' -> withUser $ \user -> do
-    gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
-    runUpdateGroupProfile user gInfo p'
+    gInfo <- withFastStore $ \db -> getGroupInfoKeys db cxt user groupId
+    runUpdateGroupProfile user gInfo p' False
   UpdateGroupNames gName GroupProfile {displayName, fullName, shortDescr} ->
     updateGroupProfileByName gName $ \p -> p {displayName, fullName, shortDescr}
   ShowGroupProfile gName -> withUser $ \user ->
-    CRGroupProfile user <$> withFastStore (\db -> getGroupInfoByName db vr user gName)
+    CRGroupProfile user <$> withFastStore (\db -> getGroupInfoByName db cxt user gName)
   UpdateGroupDescription gName description ->
     updateGroupProfileByName gName $ \p -> p {description}
   ShowGroupDescription gName -> withUser $ \user ->
-    CRGroupDescription user <$> withFastStore (\db -> getGroupInfoByName db vr user gName)
+    CRGroupDescription user <$> withFastStore (\db -> getGroupInfoByName db cxt user gName)
+  APISetPublicGroupAccess gId access@PublicGroupAccess {groupDomainClaim = newClaim} -> withUser $ \user -> do
+    gInfo@(GIK GroupInfo {groupProfile = p@GroupProfile {publicGroup}} _) <- withStore $ \db -> getGroupInfoKeys db cxt user gId
+    case publicGroup of
+      Just pg@PublicGroupProfile {groupLink, publicGroupAccess = existingAccess} -> do
+        let domainChanged = (claimDomain <$> newClaim) /= (claimDomain <$> (existingAccess >>= groupDomainClaim))
+        forM_ (claimDomain <$> newClaim) $ \newDomain ->
+          when domainChanged $ do
+            NameRecord {nrSimplexChannel} <- resolveNameRecord user nm newDomain
+            unless (nameResolvesTo groupLink nrSimplexChannel) $ throwChatError $ CESimplexDomainNotReady newDomain SDENoValidLink
+        runUpdateGroupProfile user gInfo p {publicGroup = Just pg {publicGroupAccess = Just access}} (isJust newClaim && domainChanged)
+      Nothing -> throwChatError $ CECommandError "not a public group"
   APICreateGroupLink groupId mRole -> withUser $ \user -> withGroupLock "createGroupLink" groupId $ do
-    gInfo@GroupInfo {groupProfile} <- withFastStore $ \db -> getGroupInfo db vr user groupId
+    gInfo@GroupInfo {groupProfile} <- withFastStore $ \db -> getGroupInfo db cxt user groupId
     assertUserGroupRole gInfo GRAdmin
     when (mRole > GRMember) $ throwChatError $ CEGroupMemberInitialRole gInfo mRole
     groupLinkId <- GroupLinkId <$> drgRandomBytes 16
     subMode <- chatReadVar subscriptionMode
-    let userData = encodeShortLinkData $ GroupShortLinkData groupProfile
-        userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData}
+    let userData = encodeShortLinkData $ GroupShortLinkData {groupProfile, publicGroupData = Nothing}
+        userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData, ratchetKeys = Nothing}
         crClientData = encodeJSON $ CRDataGroup groupLinkId
-    -- TODO [certs rcv]
-    (connId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) True True SCMContact (Just userLinkData) (Just crClientData) IKPQOff subMode
-    ccLink' <- createdGroupLink <$> shortenCreatedLink ccLink
+    (connId, ccLink) <- withAgent $ \a -> createConnection a nm (aUserId user) True True SCMContact (Just userLinkData) (Just crClientData) IKPQOff False subMode
+    ccLink' <- setShortLinkType CCTGroup <$> shortenCreatedLink ccLink
     gVar <- asks random
     gLink <- withFastStore $ \db -> createGroupLink db gVar user gInfo connId ccLink' groupLinkId mRole subMode
     pure $ CRGroupLinkCreated user gInfo gLink
   APIGroupLinkMemberRole groupId mRole' -> withUser $ \user -> withGroupLock "groupLinkMemberRole" groupId $ do
-    gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
+    gInfo <- withFastStore $ \db -> getGroupInfo db cxt user groupId
     gLnk@GroupLink {acceptMemberRole} <- withFastStore $ \db -> getGroupLink db user gInfo
     assertUserGroupRole gInfo GRAdmin
     when (mRole' > GRMember) $ throwChatError $ CEGroupMemberInitialRole gInfo mRole'
@@ -2671,40 +3381,39 @@ processChatCommand vr nm = \case
         else pure gLnk
     pure $ CRGroupLink user gInfo gLnk'
   APIDeleteGroupLink groupId -> withUser $ \user -> withGroupLock "deleteGroupLink" groupId $ do
-    gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
+    gInfo <- withFastStore $ \db -> getGroupInfo db cxt user groupId
     deleteGroupLink' user gInfo
     pure $ CRGroupLinkDeleted user gInfo
   APIGetGroupLink groupId -> withUser $ \user -> do
-    gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
+    gInfo <- withFastStore $ \db -> getGroupInfo db cxt user groupId
     gLnk <- withFastStore $ \db -> getGroupLink db user gInfo
     pure $ CRGroupLink user gInfo gLnk
   APIAddGroupShortLink groupId -> withUser $ \user -> do
-    (gInfo, gLink) <- withFastStore $ \db -> do
-      gInfo <- getGroupInfo db vr user groupId
+    (g@(GIK gInfo _), gLink) <- withFastStore $ \db -> do
+      g@(GIK gInfo _) <- getGroupInfoKeys db cxt user groupId
       gLink <- getGroupLink db user gInfo
-      pure (gInfo, gLink)
-    gLink' <- setGroupLinkData nm user gInfo gLink
+      pure (g, gLink)
+    gLink' <- setGroupLinkData nm user g gLink
     pure $ CRGroupLink user gInfo gLink'
   APICreateMemberContact gId gMemberId -> withUser $ \user -> do
-    (g, m) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user gId <*> getGroupMember db vr user gId gMemberId
+    (g, m) <- withFastStore $ \db -> (,) <$> getGroupInfo db cxt user gId <*> getGroupMember db cxt user gId gMemberId
     assertUserGroupRole g GRAuthor
     unless (groupFeatureUserAllowed SGFDirectMessages g) $ throwCmdError "direct messages not allowed"
     case memberConn m of
       Just mConn@Connection {peerChatVRange} -> do
-        unless (maxVersion peerChatVRange >= groupDirectInvVersion) $ throwChatError CEPeerChatVRangeIncompatible
+        unless (maxVersion peerChatVRange >= initialChatVersion) $ throwChatError CEPeerChatVRangeIncompatible
         when (isJust $ memberContactId m) $ throwCmdError "member contact already exists"
         subMode <- chatReadVar subscriptionMode
         -- TODO PQ should negotitate contact connection with PQSupportOn?
-        -- TODO [certs rcv]
-        (connId, (CCLink cReq _, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) True False SCMInvitation Nothing Nothing IKPQOff subMode
+        (connId, CCLink cReq _) <- withAgent $ \a -> createConnection a nm (aUserId user) True False SCMInvitation Nothing Nothing IKPQOff True subMode
         -- [incognito] reuse membership incognito profile
         ct <- withFastStore' $ \db -> createMemberContact db user connId cReq g m mConn subMode
-        void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing (Just epochStart)
+        void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing Nothing (Just epochStart)
         -- TODO not sure it is correct to set connections status here?
         pure $ CRNewMemberContact user ct g m
       _ -> throwChatError CEGroupMemberNotActive
   APISendMemberContactInvitation contactId msgContent_ -> withUser $ \user -> do
-    (g@GroupInfo {groupId}, m, ct, cReq) <- withFastStore $ \db -> getMemberContact db vr user contactId
+    (g@GroupInfo {groupId}, m, ct, cReq) <- withFastStore $ \db -> getMemberContact db cxt user contactId
     when (contactGrpInvSent ct) $ throwCmdError "x.grp.direct.inv already sent"
     case memberConn m of
       Just mConn -> do
@@ -2719,17 +3428,17 @@ processChatCommand vr nm = \case
         pure $ CRNewMemberContactSentInv user ct' g m
       _ -> throwChatError CEGroupMemberNotActive
   APIAcceptMemberContact contactId -> withUser $ \user -> do
-    (g, mConn, ct, groupDirectInv) <- withFastStore $ \db -> getMemberContactInvited db vr user contactId
+    (g, mConn, ct, groupDirectInv) <- withFastStore $ \db -> getMemberContactInvited db cxt user contactId
     when (groupDirectInvStartedConnection groupDirectInv) $ throwCmdError "connection already started"
     connectMemberContact user g mConn ct groupDirectInv `catchAllErrors` \e -> do
       -- get updated contact, in case connection was started
-      ct' <- withFastStore $ \db -> getContact db vr user contactId
+      ct' <- withFastStore $ \db -> getContact db cxt user contactId
       toView $ CEvtChatInfoUpdated user (AChatInfo SCTDirect $ DirectChat ct')
       throwError e
     -- get updated contact (groupDirectInvStartedConnection) with connection
     ct' <- withFastStore $ \db -> do
       liftIO $ setMemberContactStartedConnection db ct
-      getContact db vr user contactId
+      getContact db cxt user contactId
     pure $ CRMemberContactAccepted user ct'
     where
       connectMemberContact user gInfo mConn Contact {activeConn} GroupDirectInvitation {groupDirectInvLink = cReq} =
@@ -2741,95 +3450,100 @@ processChatCommand vr nm = \case
             -- so incognito profile can be attached to it and be visible in UI before accepting
             Nothing -> joinNewConn subMode
             Just conn@Connection {connStatus} -> case connStatus of
-              ConnPrepared -> joinPreparedConn subMode conn
+              ConnPrepared -> joinPreparedConn subMode conn $ connPresHeader conn
               _ -> throwChatError $ CEException "connection already started (past prepared status)"
         where
           joinNewConn subMode = do
-            -- possible improvement: use agent connRequestPQSupport to determine pqSupport here;
+            -- possible improvement: use agent connRequestAgentVersion to determine pqSupport here;
             -- for joinPreparedConn below - same + encodeConnInfoPQ;
             -- same for auto-accept on xGrpDirectInv
-            acId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
+            (acId, binding) <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
             conn <- withStore $ \db -> do
               connId <- liftIO $ createMemberContactConn db user acId Nothing gInfo mConn ConnPrepared contactId subMode
-              getConnectionById db vr user connId
-            joinPreparedConn subMode conn
-          joinPreparedConn subMode conn = do
+              getConnectionById db cxt user connId
+            joinPreparedConn subMode conn $ pure $ Just $ directPresHeader binding
+          joinPreparedConn subMode conn getPresHeader = do
             -- [incognito] send membership incognito profile
-            let p = userProfileDirect user (fromLocalProfile <$> incognitoMembershipProfile gInfo) Nothing True
-            dm <- encodeConnInfo $ XInfo p
-            (sqSecured, _serviceId) <- withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm PQSupportOff subMode
+            p <- presentUserBadgeWith user (incognitoMembershipProfile gInfo) getPresHeader $ userProfileDirect user (fromLocalProfile <$> incognitoMembershipProfile gInfo) Nothing True
+            dm <- encodeConnInfo $ XInfo p Nothing
+            sqSecured <- withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm PQSupportOff subMode
             let newStatus = if sqSecured then ConnSndReady else ConnJoined
             void $ withFastStore' $ \db -> updateConnectionStatusFromTo db conn ConnPrepared newStatus
+  SetPublicGroupAccess gName access -> withUser $ \user -> do
+    groupId <- withFastStore $ \db -> getGroupIdByName db user gName
+    processChatCommand cxt nm $ APISetPublicGroupAccess groupId access
   CreateGroupLink gName mRole -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user gName
-    processChatCommand vr nm $ APICreateGroupLink groupId mRole
+    processChatCommand cxt nm $ APICreateGroupLink groupId mRole
   GroupLinkMemberRole gName mRole -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user gName
-    processChatCommand vr nm $ APIGroupLinkMemberRole groupId mRole
+    processChatCommand cxt nm $ APIGroupLinkMemberRole groupId mRole
   DeleteGroupLink gName -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user gName
-    processChatCommand vr nm $ APIDeleteGroupLink groupId
+    processChatCommand cxt nm $ APIDeleteGroupLink groupId
   ShowGroupLink gName -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user gName
-    processChatCommand vr nm $ APIGetGroupLink groupId
+    processChatCommand cxt nm $ APIGetGroupLink groupId
   SendGroupMessageQuote gName cName quotedMsg msg -> withUser $ \user -> do
-    (groupId, quotedItemId, mentions) <-
+    (gInfo, quotedItemId, mentions) <-
       withFastStore $ \db -> do
-        gId <- getGroupIdByName db user gName
+        gInfo <- getGroupInfoByName db cxt user gName
+        let gId = groupId' gInfo
         qiId <- getGroupChatItemIdByText db user gId cName quotedMsg
-        (gId, qiId,) <$> liftIO (getMessageMentions db user gId msg)
+        (gInfo, qiId,) <$> liftIO (getMessageMentions db user gId msg)
     let mc = MCText msg
-    processChatCommand vr nm $ APISendMessages (SRGroup groupId Nothing) False Nothing [ComposedMessage Nothing (Just quotedItemId) mc mentions]
+    processChatCommand cxt nm $ APISendMessages (SRGroup (groupId' gInfo) Nothing (sendAsGroup' gInfo Nothing)) False Nothing False [ComposedMessage Nothing (Just quotedItemId) mc mentions]
   ClearNoteFolder -> withUser $ \user -> do
     folderId <- withFastStore (`getUserNoteFolderId` user)
-    processChatCommand vr nm $ APIClearChat (ChatRef CTLocal folderId Nothing)
+    processChatCommand cxt nm $ APIClearChat (ChatRef CTLocal folderId Nothing)
   LastChats count_ -> withUser' $ \user -> do
-    let count = fromMaybe 5000 count_
-    (errs, previews) <- partitionEithers <$> withFastStore' (\db -> getChatPreviews db vr user False (PTLast count) clqNoFilters)
+    ChatConfig {maxChats} <- asks config
+    let count = fromMaybe maxChats count_
+    (errs, previews) <- partitionEithers <$> withFastStore' (\db -> getChatPreviews db cxt user False (PTLast count) clqNoFilters)
     unless (null errs) $ toView $ CEvtChatErrors (map ChatErrorStore errs)
     pure $ CRChats previews
   LastMessages (Just chatName) count search -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
-    chatResp <- processChatCommand vr nm $ APIGetChat chatRef Nothing (CPLast count) search
+    chatResp <- processChatCommand cxt nm $ APIGetChat chatRef Nothing (CPLast count) search
     pure $ CRChatItems user (Just chatName) (aChatItems . chat $ chatResp)
   LastMessages Nothing count search -> withUser $ \user -> do
-    chatItems <- withFastStore $ \db -> getAllChatItems db vr user (CPLast count) search
+    chatItems <- withFastStore $ \db -> getAllChatItems db cxt user (CPLast count) search
     pure $ CRChatItems user Nothing chatItems
   LastChatItemId (Just chatName) index -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
-    chatResp <- processChatCommand vr nm $ APIGetChat chatRef Nothing (CPLast $ index + 1) Nothing
+    chatResp <- processChatCommand cxt nm $ APIGetChat chatRef Nothing (CPLast $ index + 1) Nothing
     pure $ CRChatItemId user (fmap aChatItemId . listToMaybe . aChatItems . chat $ chatResp)
   LastChatItemId Nothing index -> withUser $ \user -> do
-    chatItems <- withFastStore $ \db -> getAllChatItems db vr user (CPLast $ index + 1) Nothing
+    chatItems <- withFastStore $ \db -> getAllChatItems db cxt user (CPLast $ index + 1) Nothing
     pure $ CRChatItemId user (fmap aChatItemId . listToMaybe $ chatItems)
   ShowChatItem (Just itemId) -> withUser $ \user -> do
     chatItem <- withFastStore $ \db -> do
       chatRef <- getChatRefViaItemId db user itemId
-      getAChatItem db vr user chatRef itemId
+      getAChatItem db cxt user chatRef itemId
     pure $ CRChatItems user Nothing ((: []) chatItem)
   ShowChatItem Nothing -> withUser $ \user -> do
-    chatItems <- withFastStore $ \db -> getAllChatItems db vr user (CPLast 1) Nothing
+    chatItems <- withFastStore $ \db -> getAllChatItems db cxt user (CPLast 1) Nothing
     pure $ CRChatItems user Nothing chatItems
   ShowChatItemInfo chatName msg -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     itemId <- getChatItemIdByText user chatRef msg
-    processChatCommand vr nm $ APIGetChatItemInfo chatRef itemId
+    processChatCommand cxt nm $ APIGetChatItemInfo chatRef itemId
   ShowLiveItems on -> withUser $ \_ ->
     asks showLiveItems >>= atomically . (`writeTVar` on) >> ok_
   SendFile chatName f -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     case chatRef of
-      ChatRef CTLocal folderId _ -> processChatCommand vr nm $ APICreateChatItems folderId [composedMessage (Just f) (MCFile "")]
-      _ -> withSendRef chatRef $ \sendRef -> processChatCommand vr nm $ APISendMessages sendRef False Nothing [composedMessage (Just f) (MCFile "")]
+      ChatRef CTLocal folderId _ -> processChatCommand cxt nm $ APICreateChatItems folderId [composedMessage (Just f) (MCFile "")]
+      _ -> withSendRef user chatRef $ \sendRef -> processChatCommand cxt nm $ APISendMessages sendRef False Nothing False [composedMessage (Just f) (MCFile "")]
   SendImage chatName f@(CryptoFile fPath _) -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
-    withSendRef chatRef $ \sendRef -> do
+    withSendRef user chatRef $ \sendRef -> do
       filePath <- lift $ toFSFilePath fPath
       unless (any (`isSuffixOf` map toLower fPath) imageExtensions) $ throwChatError CEFileImageType {filePath}
       fileSize <- getFileSize filePath
       unless (fileSize <= maxImageSize) $ throwChatError CEFileImageSize {filePath}
       -- TODO include file description for preview
-      processChatCommand vr nm $ APISendMessages sendRef False Nothing [composedMessage (Just f) (MCImage "" fixedImagePreview)]
+      processChatCommand cxt nm $ APISendMessages sendRef False Nothing False [composedMessage (Just f) (MCImage "" fixedImagePreview)]
   ForwardFile chatName fileId -> forwardFile chatName fileId SendFile
   ForwardImage chatName fileId -> forwardFile chatName fileId SendImage
   SendFileDescription _chatName _f -> throwCmdError "TODO"
@@ -2856,19 +3570,19 @@ processChatCommand vr nm = \case
           | otherwise -> do
               cancelSndFile user ftm fts True
               cref_ <- withFastStore' $ \db -> lookupChatRefByFileId db user fileId
-              aci_ <- withFastStore $ \db -> lookupChatItemByFileId db vr user fileId
+              aci_ <- withFastStore $ \db -> lookupChatItemByFileId db cxt user fileId
               case (cref_, aci_) of
                 (Nothing, _) ->
                   pure $ CRSndFileCancelled user Nothing ftm fts
                 (Just (ChatRef CTDirect contactId _), Just aci) -> do
-                  (contact, sharedMsgId) <- withFastStore $ \db -> (,) <$> getContact db vr user contactId <*> getSharedMsgIdByFileId db userId fileId
+                  (contact, sharedMsgId) <- withFastStore $ \db -> (,) <$> getContact db cxt user contactId <*> getSharedMsgIdByFileId db userId fileId
                   void . sendDirectContactMessage user contact $ XFileCancel sharedMsgId
                   pure $ CRSndFileCancelled user (Just aci) ftm fts
                 (Just (ChatRef CTGroup groupId scope), Just aci) -> do
-                  (gInfo, sharedMsgId) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user groupId <*> getSharedMsgIdByFileId db userId fileId
-                  chatScopeInfo <- mapM (getChatScopeInfo vr user) scope
-                  recipients <- getGroupRecipients vr user gInfo chatScopeInfo groupKnockingVersion
-                  void . sendGroupMessage user gInfo scope recipients $ XFileCancel sharedMsgId
+                  (g@(GIK gInfo _), sharedMsgId) <- withFastStore $ \db -> (,) <$> getGroupInfoKeys db cxt user groupId <*> getSharedMsgIdByFileId db userId fileId
+                  chatScopeInfo <- mapM (getChatScopeInfo cxt user) scope
+                  recipients <- getGroupRecipients cxt user gInfo chatScopeInfo groupKnockingVersion
+                  void . sendGroupMessage user g scope recipients False $ XFileCancel sharedMsgId
                   pure $ CRSndFileCancelled user (Just aci) ftm fts
                 (Just _, _) -> throwChatError $ CEFileInternal "invalid chat ref for file transfer"
           where
@@ -2880,7 +3594,7 @@ processChatCommand vr nm = \case
           | otherwise -> case xftpRcvFile of
               Nothing -> do
                 cancelRcvFileTransfer user ftr
-                ci <- withFastStore $ \db -> lookupChatItemByFileId db vr user fileId
+                ci <- withFastStore $ \db -> lookupChatItemByFileId db cxt user fileId
                 pure $ CRRcvFileCancelled user ci ftr
               Just XFTPRcvFile {agentRcvFileId} -> do
                 forM_ (liveRcvFileTransferPath ftr) $ \filePath -> do
@@ -2891,7 +3605,7 @@ processChatCommand vr nm = \case
                 aci_ <- resetRcvCIFileStatus user fileId CIFSRcvInvitation
                 pure $ CRRcvFileCancelled user aci_ ftr
   FileStatus fileId -> withUser $ \user -> do
-    withFastStore (\db -> lookupChatItemByFileId db vr user fileId) >>= \case
+    withFastStore (\db -> lookupChatItemByFileId db cxt user fileId) >>= \case
       Nothing -> do
         fileStatus <- withFastStore $ \db -> getFileTransferProgress db user fileId
         pure $ CRFileTransferStatus user fileStatus
@@ -2904,43 +3618,71 @@ processChatCommand vr nm = \case
           fileStatus <- withFastStore $ \db -> getFileTransferProgress db user fileId
           pure $ CRFileTransferStatus user fileStatus
   ShowProfile -> withUser $ \user@User {profile} -> pure $ CRUserProfile user (fromLocalProfile profile)
-  SetBotCommands commands -> withUser $ \user@User {profile} -> do
+  AddBadge cred -> withUser $ \user -> addUserBadge user cred >> ok user
+  APIRedeemBadgeCode userId codeText -> withUserId userId $ \user -> redeemBadgeCode nm user codeText
+  APIPurchaseBadge userId echoedInvoiceId payment -> withUserId userId $ \user -> handOverStoreReceipt user echoedInvoiceId payment
+  APICreateBadgeInvoice userId -> withUserId userId $ \user -> do
+    void requireBadgeService
+    refuseWhileBadgeHeld user
+    g <- asks random
+    now <- badgeNow
+    invoiceId <- UUID.toText <$> liftIO V4.nextRandom
+    withStore' $ \db -> createBadgeStoreReceipt db g user invoiceId now
+    pure $ CRBadgeInvoice user invoiceId
+  APIGetBadgeState userId -> withUserId' userId $ \user -> do
+    -- the read also signals the worker, whose results follow as CEvtBadgeChanged
+    lift $ startBadgeWork user
+    badgeStateResponse user
+  APIGetBadgeLedger userId badgePurchaseId -> withUserId userId $ \user ->
+    CRBadgeLedger user <$> withStore' (\db -> getBadgeLedger db user badgePurchaseId)
+  APIAckBadgeAlert userId badgePurchaseId alertKind snooze episode -> withUserId userId $ \user -> do
+    now <- badgeNow
+    let snoozeUntil = if snooze then Just (addUTCTime nominalDay now) else Nothing
+    withStore' $ \db -> setBadgeAlertAcked db user badgePurchaseId alertKind episode snoozeUntil
+    -- after the write, so the pass it signals arms a wake for the snooze rather than raising again
+    lift $ startBadgeWork user
+    badgeStateResponse user
+  SetBotCommands commands -> withUserProfileLock "updateProfile" $ withUser $ \user@User {profile} -> do
     let LocalProfile {preferences} = profile
         prefs = Just (fromMaybe emptyChatPrefs preferences :: Preferences) {commands = Just commands}
         p = (fromLocalProfile profile :: Profile) {preferences = prefs, peerType = Just CPTBot}
     updateProfile user p
-  UpdateProfile displayName shortDescr -> withUser $ \user@User {profile} -> do
+  UpdateProfile displayName shortDescr -> withUserProfileLock "updateProfile" $ withUser $ \user@User {profile} -> do
     let p = (fromLocalProfile profile :: Profile) {displayName, shortDescr, fullName = ""}
     updateProfile user p
-  UpdateProfileImage image -> withUser $ \user@User {profile} -> do
+  UpdateProfileImage image -> withUserProfileLock "updateProfile" $ withUser $ \user@User {profile} -> do
     let p = (fromLocalProfile profile :: Profile) {image}
     updateProfile user p
+  UpdateProfileImageFromFile path -> withUserProfileLock "updateProfile" $ withUser $ \user@User {profile} -> do
+    img <- readProfileImageFile path
+    let p = (fromLocalProfile profile :: Profile) {image = Just img}
+    updateProfile user p
   ShowProfileImage -> withUser $ \user@User {profile} -> pure $ CRUserProfileImage user $ fromLocalProfile profile
-  SetUserFeature (ACF f) allowed -> withUser $ \user@User {profile} -> do
+  SetUserFeature (ACF f) allowed -> withUserProfileLock "updateProfile" $ withUser $ \user@User {profile} -> do
     let p = (fromLocalProfile profile :: Profile) {preferences = Just . setPreference f (Just allowed) $ preferences' user}
     updateProfile user p
   SetContactFeature (ACF f) cName allowed_ -> withUser $ \user -> do
-    ct@Contact {userPreferences} <- withFastStore $ \db -> getContactByName db vr user cName
+    ct@Contact {userPreferences} <- withFastStore $ \db -> getContactByName db cxt user cName
     let prefs' = setPreference f allowed_ $ Just userPreferences
     updateContactPrefs user ct prefs'
   SetGroupFeature (AGFNR f) gName enabled ->
-    updateGroupProfileByName gName $ \p ->
+    updateGroupProfileByName_ (Just $ toGroupFeature f) gName $ \p ->
       p {groupPreferences = Just . setGroupPreference f enabled $ groupPreferences p}
   SetGroupFeatureRole (AGFR f) gName enabled role ->
-    updateGroupProfileByName gName $ \p ->
+    updateGroupProfileByName_ (Just $ toGroupFeature f) gName $ \p ->
       p {groupPreferences = Just . setGroupPreferenceRole f enabled role $ groupPreferences p}
   SetGroupMemberAdmissionReview gName reviewAdmissionApplication ->
     updateGroupProfileByName gName $ \p@GroupProfile {memberAdmission} ->
       case memberAdmission of
         Nothing -> p {memberAdmission = Just (emptyGroupMemberAdmission :: GroupMemberAdmission) {review = reviewAdmissionApplication}}
         Just ma -> p {memberAdmission = Just (ma :: GroupMemberAdmission) {review = reviewAdmissionApplication}}
-  SetUserTimedMessages onOff -> withUser $ \user@User {profile} -> do
+  SetUserTimedMessages onOff -> withUserProfileLock "updateProfile" $ withUser $ \user@User {profile} -> do
     let allowed = if onOff then FAYes else FANo
         pref = TimedMessagesPreference allowed Nothing
         p = (fromLocalProfile profile :: Profile) {preferences = Just . setPreference' SCFTimedMessages (Just pref) $ preferences' user}
     updateProfile user p
   SetContactTimedMessages cName timedMessagesEnabled_ -> withUser $ \user -> do
-    ct@Contact {userPreferences = userPreferences@Preferences {timedMessages}} <- withFastStore $ \db -> getContactByName db vr user cName
+    ct@Contact {userPreferences = userPreferences@Preferences {timedMessages}} <- withFastStore $ \db -> getContactByName db cxt user cName
     let currentTTL = timedMessages >>= \TimedMessagesPreference {ttl} -> ttl
         pref_ = tmeToPref currentTTL <$> timedMessagesEnabled_
         prefs' = setPreference' SCFTimedMessages pref_ $ Just userPreferences
@@ -2966,7 +3708,7 @@ processChatCommand vr nm = \case
   ConfirmRemoteCtrl rcId -> withUser_ $ do
     (rc, ctrlAppInfo) <- confirmRemoteCtrl rcId
     pure CRRemoteCtrlConnecting {remoteCtrl_ = Just rc, ctrlAppInfo, appVersion = currentAppVersion}
-  VerifyRemoteCtrlSession sessId -> withUser_ $ CRRemoteCtrlConnected <$> verifyRemoteCtrlSession (execChatCommand Nothing) sessId
+  VerifyRemoteCtrlSession sessId -> withUser_ $ verifyRemoteCtrlSession (execChatCommand CSRemoteCtrl) sessId
   StopRemoteCtrl -> withUser_ $ stopRemoteCtrl >> ok_
   ListRemoteCtrls -> withUser_ $ CRRemoteCtrlList <$> listRemoteCtrls
   DeleteRemoteCtrl rc -> withUser_ $ deleteRemoteCtrl rc >> ok_
@@ -2974,7 +3716,7 @@ processChatCommand vr nm = \case
     fsFilePath <- lift $ toFSFilePath filePath
     fileSize <- liftIO $ CF.getFileContentsSize file {filePath = fsFilePath}
     when (fileSize > toInteger maxFileSizeHard) $ throwChatError $ CEFileSize filePath
-    (_, _, fileTransferMeta) <- xftpSndFileTransfer_ user file fileSize 1 Nothing
+    (_, _, fileTransferMeta) <- xftpSndFileTransfer_ user file fileSize 1 Nothing Nothing
     pure CRSndStandaloneFileCreated {user, fileTransferMeta}
   APIStandaloneFileInfo FileDescriptionURI {clientData} -> pure . CRStandaloneFileInfo $ clientData >>= J.decodeStrict . encodeUtf8
   APIDownloadStandaloneFile userId uri file -> withUserId userId $ \user -> do
@@ -3002,6 +3744,8 @@ processChatCommand vr nm = \case
         CLUserContact ucId -> "UserContact " <> tshow ucId
         CLContactRequest crId -> "ContactRequest " <> tshow crId
         CLFile fId -> "File " <> tshow fId
+        CLBadgeUser uId -> "BadgeUser " <> tshow uId
+        CLUserProfile -> "UserProfile"
   DebugEvent event -> toView event >> ok_
   GetAgentSubsTotal userId -> withUserId userId $ \user -> do
     users <- withStore' $ \db -> getUsers db
@@ -3054,32 +3798,40 @@ processChatCommand vr nm = \case
           | otherwise -> throwCmdError "not supported"
         _ -> throwCmdError "not supported"
       pure $ ChatRef cType chatId Nothing
+    getSendAsGroup :: User -> ChatRef -> CM ShowGroupAsSender
+    getSendAsGroup user' (ChatRef CTGroup chatId scope) = (`sendAsGroup'` scope) <$> withFastStore (\db -> getGroupInfo db cxt user' chatId)
+    getSendAsGroup _ _ = pure False
     getChatRefAndMentions :: User -> ChatName -> Text -> CM (ChatRef, Map MemberName GroupMemberId)
     getChatRefAndMentions user cName msg = do
       chatRef@(ChatRef cType chatId _) <- getChatRef user cName
       (chatRef,) <$> case cType of
         CTGroup -> withFastStore' $ \db -> getMessageMentions db user chatId msg
         _ -> pure []
-#if !defined(dbPostgres)
     checkChatStopped :: CM ChatResponse -> CM ChatResponse
     checkChatStopped a = asks agentAsync >>= readTVarIO >>= maybe a (const $ throwChatError CEChatNotStopped)
     setStoreChanged :: CM ()
     setStoreChanged = asks chatStoreChanged >>= atomically . (`writeTVar` True)
+#if !defined(dbPostgres)
     withStoreChanged :: CM () -> CM ChatResponse
     withStoreChanged a = checkChatStopped $ a >> setStoreChanged >> ok_
 #endif
     checkStoreNotChanged :: CM ChatResponse -> CM ChatResponse
     checkStoreNotChanged = ifM (asks chatStoreChanged >>= readTVarIO) (throwChatError CEChatStoreChanged)
     withUserName :: UserName -> (UserId -> ChatCommand) -> CM ChatResponse
-    withUserName uName cmd = withFastStore (`getUserIdByName` uName) >>= processChatCommand vr nm . cmd
+    withUserName uName cmd = withFastStore (`getUserIdByName` uName) >>= processChatCommand cxt nm . cmd
     withContactName :: ContactName -> (ContactId -> ChatCommand) -> CM ChatResponse
     withContactName cName cmd = withUser $ \user ->
-      withFastStore (\db -> getContactIdByName db user cName) >>= processChatCommand vr nm . cmd
+      withFastStore (\db -> getContactIdByName db user cName) >>= processChatCommand cxt nm . cmd
     withMemberName :: GroupName -> ContactName -> (GroupId -> GroupMemberId -> ChatCommand) -> CM ChatResponse
     withMemberName gName mName cmd = withUser $ \user ->
-      getGroupAndMemberId user gName mName >>= processChatCommand vr nm . uncurry cmd
+      getGroupAndMemberId user gName mName >>= processChatCommand cxt nm . uncurry cmd
     getConnectionCode :: ConnId -> CM Text
-    getConnectionCode connId = verificationCode <$> withAgent (`getConnectionRatchetAdHash` connId)
+    getConnectionCode connId = verificationCode . codeAD <$> withAgent (`getConnectionVerifyCodes` connId)
+    getChannelMemberCode :: GroupInfo -> GroupMember -> CM Text
+    getChannelMemberCode GroupInfo {membership} m =
+      case (memberPubKey membership, memberPubKey m) of
+        (Just ownKey, Just memKey) -> pure $ channelMemberCode ownKey memKey
+        _ -> throwCmdError "no member key to compute security code"
     verifyConnectionCode :: User -> Connection -> Maybe Text -> CM ChatResponse
     verifyConnectionCode user conn@Connection {connId} (Just code) = do
       code' <- getConnectionCode $ aConnId conn
@@ -3089,6 +3841,16 @@ processChatCommand vr nm = \case
     verifyConnectionCode user conn@Connection {connId} _ = do
       code' <- getConnectionCode $ aConnId conn
       withFastStore' $ \db -> setConnectionVerified db user connId Nothing
+      pure $ CRConnectionVerified user False code'
+    verifyChannelMemberCode :: User -> GroupInfo -> GroupMember -> Maybe Text -> CM ChatResponse
+    verifyChannelMemberCode user g m (Just code) = do
+      code' <- getChannelMemberCode g m
+      let verified = sameVerificationCode code code'
+      when verified . withFastStore' $ \db -> setGroupMemberVerified db user (groupMemberId' m) $ Just code'
+      pure $ CRConnectionVerified user verified code'
+    verifyChannelMemberCode user g m _ = do
+      code' <- getChannelMemberCode g m
+      withFastStore' $ \db -> setGroupMemberVerified db user (groupMemberId' m) Nothing
       pure $ CRConnectionVerified user False code'
     getSentChatItemIdByText :: User -> ChatRef -> Text -> CM Int64
     getSentChatItemIdByText user@User {userId, localDisplayName} (ChatRef cType cId _scope) msg = case cType of
@@ -3106,31 +3868,33 @@ processChatCommand vr nm = \case
     connectViaInvitation user@User {userId} incognito (CCLink cReq@(CRInvitationUri crData e2e) sLnk_) contactId_ =
       withInvitationLock "connect" (strEncode cReq) $ do
         subMode <- chatReadVar subscriptionMode
-        lift (withAgent' $ \a -> connRequestPQSupport a PQSupportOn cReq) >>= \case
+        lift (withAgent' (`connRequestAgentVersion` cReq)) >>= \case
           Nothing -> throwChatError CEInvalidConnReq
           -- TODO PQ the error above should be CEIncompatibleConnReqVersion, also the same API should be called in Plan
-          Just (agentV, pqSup') -> do
-            let chatV = agentToChatVersion agentV
-            withFastStore' (\db -> getConnectionEntityByConnReq db vr user cReqs) >>= \case
+          Just _ -> do
+            let chatV = initialChatVersion
+            withFastStore' (\db -> getConnectionEntityByConnReq db cxt user cReqs) >>= \case
               Nothing -> joinNewConn chatV
               Just (RcvDirectMsgConnection conn@Connection {connStatus, contactConnInitiated, customUserProfileId} _ct_)
                 | connStatus == ConnNew && contactConnInitiated -> joinNewConn chatV -- own connection link
                 | connStatus == ConnPrepared -> do -- retrying join after error
                     localIncognitoProfile <- forM customUserProfileId $ \pId -> withFastStore $ \db -> getProfileById db userId pId
-                    joinPreparedConn conn (fromLocalProfile <$> localIncognitoProfile) chatV
+                    joinPreparedConn conn (fromLocalProfile <$> localIncognitoProfile) $ connPresHeader conn
               Just ent -> throwCmdError $ "connection is not RcvDirectMsgConnection: " <> show (connEntityInfo ent)
             where
+              -- all supported versions support PQ encryption
+              pqSup' = PQSupportOn
               joinNewConn chatV = do
                 -- [incognito] generate profile to send
-                incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
-                connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq pqSup'
+                incognitoProfile <- if incognito then Just <$> liftIO (generateIncognitoProfile user) else pure Nothing
+                (connId, binding) <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq pqSup'
                 let ccLink = CCLink cReq $ serverShortLink <$> sLnk_
                 conn <- withFastStore' $ \db -> createDirectConnection' db userId connId ccLink contactId_ ConnPrepared incognitoProfile subMode chatV pqSup'
-                joinPreparedConn conn incognitoProfile chatV
-              joinPreparedConn conn incognitoProfile chatV = do
-                let profileToSend = userProfileDirect user incognitoProfile Nothing True
-                dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
-                (sqSecured, _serviceId) <- withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm pqSup' subMode
+                joinPreparedConn conn incognitoProfile $ pure $ Just $ directPresHeader binding
+              joinPreparedConn conn incognitoProfile getPresHeader = do
+                profileToSend <- presentUserBadgeWith user incognitoProfile getPresHeader $ userProfileDirect user incognitoProfile Nothing True
+                dm <- encodeConnInfoPQ pqSup' $ XInfo profileToSend Nothing
+                sqSecured <- withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm pqSup' subMode
                 let newStatus = if sqSecured then ConnSndReady else ConnJoined
                 conn' <- withFastStore' $ \db -> updateConnectionStatusFromTo db conn ConnPrepared newStatus
                 pure (conn', incognitoProfile)
@@ -3139,23 +3903,23 @@ processChatCommand vr nm = \case
                   CRInvitationUri crData {crScheme = simplexChat} e2e
                 )
     connectViaContact :: User -> Maybe PreparedChatEntity -> IncognitoEnabled -> CreatedLinkContact -> Maybe SharedMsgId -> Maybe (SharedMsgId, MsgContent) -> CM ConnectViaContactResult
-    connectViaContact user@User {userId} preparedEntity_ incognito (CCLink cReq@(CRContactUri crData@ConnReqUriData {crClientData}) sLnk) welcomeSharedMsgId msg_ = withInvitationLock "connectViaContact" (strEncode cReq) $ do
+    connectViaContact user@User {userId} preparedEntity_ incognito (CCLink cReq@(CRContactUri crData@ConnReqUriData {crClientData} e2e) sLnk) welcomeSharedMsgId msg_ = withInvitationLock "connectViaContact" (strEncode cReq) $ do
       let groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli
       -- groupLinkId is Nothing for business chats
       when (isJust msg_ && isJust groupLinkId) $ throwChatError CEConnReqMessageProhibited
       case preparedEntity_ of
         Just (PCEContact ct@Contact {activeConn}) -> case activeConn of
-          Nothing -> connect' Nothing Nothing
+          Nothing -> connect' Nothing Nothing Nothing
           Just conn@Connection {connStatus, xContactId} -> case connStatus of
             ConnPrepared -> joinPreparedConn' xContactId conn Nothing
             _ -> pure $ CVRConnectedContact ct
         Just (PCEGroup gInfo GroupMember {activeConn}) -> case activeConn of
-          Nothing -> connect' groupLinkId Nothing
+          Nothing -> connect' groupLinkId Nothing (Just $ Just gInfo)
           Just conn@Connection {connStatus, xContactId} -> case connStatus of
-            ConnPrepared -> joinPreparedConn' xContactId conn $ Just (Just gInfo)
-            _ -> connect' groupLinkId xContactId -- why not "already connected" for host member?
+            ConnPrepared -> joinPreparedConn' xContactId conn (Just $ Just gInfo)
+            _ -> connect' groupLinkId xContactId (Just $ Just gInfo) -- why not "already connected" for host member?
         Nothing ->
-          withFastStore' (\db -> getConnReqContactXContactId db vr user cReqHash1 cReqHash2) >>= \case
+          withFastStore' (\db -> getConnReqContactXContactId db cxt user cReqHash1 cReqHash2) >>= \case
             Right ct@Contact {activeConn} -> case groupLinkId of
               Nothing -> case activeConn of
                 Just conn@Connection {connStatus = ConnPrepared, xContactId} -> joinPreparedConn' xContactId conn Nothing
@@ -3163,35 +3927,43 @@ processChatCommand vr nm = \case
               Just gLinkId ->
                 -- allow repeat contact request
                 -- TODO [short links] is this branch needed? it probably remained from the time we created host contact
-                connect' (Just gLinkId) Nothing
+                connect' (Just gLinkId) Nothing (Just Nothing)
             Left conn_ -> case conn_ of
-              Just conn@Connection {connStatus = ConnPrepared, xContactId} -> joinPreparedConn' xContactId conn $ groupLinkId $> Nothing
+              Just conn@Connection {connStatus = ConnPrepared, xContactId} -> joinPreparedConn' xContactId conn (groupLinkId $> Nothing)
               -- TODO [short links] this is executed on repeat request after success
               -- it probably should send the second message without creating the second connection?
-              Just Connection {xContactId} -> connect' groupLinkId xContactId
-              Nothing -> connect' groupLinkId Nothing
+              Just Connection {xContactId} -> connect' groupLinkId xContactId (groupLinkId $> Nothing)
+              Nothing -> connect' groupLinkId Nothing (groupLinkId $> Nothing)
       where
-        cReqHash = ConnReqUriHash . C.sha256Hash . strEncode
-        cReqHash1 = cReqHash $ CRContactUri crData {crScheme = SSSimplex}
-        cReqHash2 = cReqHash $ CRContactUri crData {crScheme = simplexChat}
-        joinPreparedConn' xContactId_ conn@Connection {customUserProfileId} gInfo_ = do
+        cReqHash1 = contactCReqHash $ CRContactUri crData {crScheme = SSSimplex} e2e
+        cReqHash2 = contactCReqHash $ CRContactUri crData {crScheme = simplexChat} e2e
+        -- relay-group joins (only via connectToRelay) carry the target relay member in preparedEntity_;
+        -- its memberId binds the join signature so a sibling relay can't replay it
+        relayMemberId_ = case preparedEntity_ of
+          Just (PCEGroup (GIK gInfo _) m) | useRelays' gInfo -> Just (memberId' m)
+          _ -> Nothing
+        joinPreparedConn' xContactId_ conn@Connection {connId, customUserProfileId} gInfo_ = do
           when (incognito /= isJust customUserProfileId) $ throwCmdError "incognito mode is different from prepared connection"
+          -- TODO [relays] member: refactor joinContact and up avoiding parallel ifs, xContactId is not used
           xContactId <- mkXContactId xContactId_
-          localIncognitoProfile <- forM customUserProfileId $ \pId -> withFastStore $ \db -> getProfileById db userId pId
+          ((cReq', reqHeader_), localIncognitoProfile) <- withFastStore $ \db -> (,) <$> getConnReqContact db connId <*> forM customUserProfileId (getProfileById db userId)
           let incognitoProfile = fromLocalProfile <$> localIncognitoProfile
-          conn' <- joinContact user conn cReq incognitoProfile xContactId welcomeSharedMsgId msg_ gInfo_ PQSupportOn
+          conn' <- joinContact user conn cReq' incognitoProfile reqHeader_ xContactId welcomeSharedMsgId msg_ gInfo_ relayMemberId_ PQSupportOn
           pure $ CVRSentInvitation conn' incognitoProfile
-        connect' groupLinkId xContactId_ = do
+        connect' groupLinkId xContactId_ gInfo_ = do
           let inGroup = isJust groupLinkId
               pqSup = if inGroup then PQSupportOff else PQSupportOn
-          (connId, chatV) <- prepareContact user cReq pqSup
+          (connId, chatV, reqHeader) <- prepareContact user cReq pqSup
           xContactId <- mkXContactId xContactId_
-          -- [incognito] generate profile to send
-          incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
+          -- [incognito] generate profile to send, or use membership profile for relay groups
+          incognitoProfile_ <- case gInfo_ of
+            Just (Just (GIK gInfo _)) | useRelays' gInfo -> pure $ ExistingIncognito <$> incognitoMembershipProfile gInfo
+            _ -> if incognito then Just . NewIncognito <$> liftIO (generateIncognitoProfile user) else pure Nothing
+          let incognitoProfile = fromIncognitoProfile <$> incognitoProfile_
           subMode <- chatReadVar subscriptionMode
           let sLnk' = serverShortLink <$> sLnk
-          conn <- withFastStore' $ \db -> createConnReqConnection db userId connId preparedEntity_ cReq cReqHash1 sLnk' xContactId incognitoProfile groupLinkId subMode chatV pqSup
-          conn' <- joinContact user conn cReq incognitoProfile xContactId welcomeSharedMsgId msg_ (groupLinkId $> Nothing) pqSup
+          conn <- withFastStore' $ \db -> createConnReqConnection db userId connId preparedEntity_ cReq reqHeader cReqHash1 sLnk' xContactId incognitoProfile_ groupLinkId subMode chatV pqSup
+          conn' <- joinContact user conn cReq incognitoProfile (Just reqHeader) xContactId welcomeSharedMsgId msg_ gInfo_ relayMemberId_ pqSup
           pure $ CVRSentInvitation conn' incognitoProfile
     connectContactViaAddress :: User -> IncognitoEnabled -> Contact -> CreatedLinkContact -> CM ChatResponse
     connectContactViaAddress user@User {userId} incognito ct@Contact {contactId, activeConn} (CCLink cReq shortLink) =
@@ -3199,83 +3971,142 @@ processChatCommand vr nm = \case
         case activeConn of
           Nothing -> do
             let pqSup = PQSupportOn
-            (connId, chatV) <- prepareContact user cReq pqSup
+            (connId, chatV, reqHeader) <- prepareContact user cReq pqSup
             newXContactId <- XContactId <$> drgRandomBytes 16
             -- [incognito] generate profile to send
-            incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
+            incognitoProfile <- if incognito then Just <$> liftIO (generateIncognitoProfile user) else pure Nothing
             subMode <- chatReadVar subscriptionMode
-            let cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
-            conn <- withFastStore' $ \db -> createConnReqConnection db userId connId (Just $ PCEContact ct) cReq cReqHash shortLink newXContactId incognitoProfile Nothing subMode chatV pqSup
-            void $ joinContact user conn cReq incognitoProfile newXContactId Nothing Nothing Nothing pqSup
-            ct' <- withStore $ \db -> getContact db vr user contactId
+            let cReqHash = contactCReqHash cReq
+            conn <- withFastStore' $ \db -> createConnReqConnection db userId connId (Just $ PCEContact ct) cReq reqHeader cReqHash shortLink newXContactId (NewIncognito <$> incognitoProfile) Nothing subMode chatV pqSup
+            void $ joinContact user conn cReq incognitoProfile (Just reqHeader) newXContactId Nothing Nothing Nothing Nothing pqSup
+            ct' <- withStore $ \db -> getContact db cxt user contactId
             pure $ CRSentInvitationToContact user ct' incognitoProfile
-          Just conn@Connection {connStatus, xContactId = xContactId_, customUserProfileId} -> case connStatus of
+          Just conn@Connection {connId, connStatus, xContactId = xContactId_, customUserProfileId} -> case connStatus of
             ConnPrepared -> do
               when (incognito /= isJust customUserProfileId) $ throwCmdError "incognito mode is different from prepared connection"
               xContactId <- mkXContactId xContactId_
-              localIncognitoProfile <- forM customUserProfileId $ \pId -> withFastStore $ \db -> getProfileById db userId pId
+              ((cReq', reqHeader_), localIncognitoProfile) <- withFastStore $ \db -> (,) <$> getConnReqContact db connId <*> forM customUserProfileId (getProfileById db userId)
               let incognitoProfile = fromLocalProfile <$> localIncognitoProfile
-              void $ joinContact user conn cReq incognitoProfile xContactId Nothing Nothing Nothing PQSupportOn
-              ct' <- withStore $ \db -> getContact db vr user contactId
+              void $ joinContact user conn cReq' incognitoProfile reqHeader_ xContactId Nothing Nothing Nothing Nothing PQSupportOn
+              ct' <- withStore $ \db -> getContact db cxt user contactId
               pure $ CRSentInvitationToContact user ct' incognitoProfile
             _ -> throwCmdError "contact already has connection"
-    prepareContact :: User -> ConnReqContact -> PQSupport -> CM (ConnId, VersionChat)
+    connectToRelay :: User -> GroupInfoKeys -> ShortLinkContact -> CM (ShortLinkContact, GroupMember, Either ChatError ())
+    connectToRelay user g@(GIK gInfo _) relayLink = do
+      gVar <- asks random
+      -- Save relayLink to re-use relay member record on retry (check by relayLink)
+      relayMember <- withFastStore $ \db -> getCreateRelayForMember db cxt gVar user gInfo relayLink
+      r <- tryAllErrors $ do
+        (FixedLinkData {rootKey = relayKey, linkEntityId}, cData, cReq) <- getShortLinkConnReq nm user relayLink
+        relayLinkData_ <- liftIO $ decodeLinkUserData cData
+        relayMemberId <- case (relayLinkData_, linkEntityId) of
+          (Just RelayShortLinkData {relayProfile = p}, Just entityId) -> do
+            withFastStore $ \db -> updateRelayMemberData db cxt user relayMember (MemberId entityId) (MemberKey relayKey) p
+            pure $ MemberId entityId
+          _ -> throwChatError $ CEException "relay link: no relay link data or entity id"
+        let relayLinkToConnect = CCLink cReq (Just relayLink)
+        void $ connectViaContact user (Just $ PCEGroup g (relayMember {memberId = relayMemberId})) (incognitoMembership gInfo) relayLinkToConnect Nothing Nothing
+      relayMember' <- withFastStore $ \db -> getGroupMember db cxt user (groupId' gInfo) (groupMemberId' relayMember)
+      pure (relayLink, relayMember', r)
+    syncSubscriberRelays :: User -> GroupInfo -> [ShortLinkContact] -> CM ()
+    syncSubscriberRelays user gInfo currentRelayLinks = void . tryAllErrors $ do
+      localRelayMembers <- withFastStore' $ \db -> getGroupRelayMembers db cxt user gInfo
+      let activeRelayMembers = filter memberCurrent localRelayMembers
+          memberRelayLink GroupMember {relayLink = rl} = rl
+          localRelayLinks = mapMaybe memberRelayLink activeRelayMembers
+          newRelayLinks = filter (`notElem` localRelayLinks) currentRelayLinks
+      forM_ newRelayLinks $ \rlnk -> void . tryAllErrors $
+        connectToRelayAsync user gInfo rlnk
+      forM_ localRelayMembers $ \m ->
+        case memberRelayLink m of
+          -- Remove relay if its link is no longer in the current link data.
+          -- Inactive relays (e.g. left) are only cleaned up when no active relays remain,
+          -- as that is the only case where the owner's relay removal can't be forwarded.
+          Just rlnk | rlnk `notElem` currentRelayLinks,
+                      memberCurrent m || null activeRelayMembers ->
+            void . tryAllErrors $ do
+              deleteMemberConnection m
+              deleteOrUpdateMemberRecord user gInfo m
+          _ -> pure ()
+    prepareContact :: User -> ConnReqContact -> PQSupport -> CM (ConnId, VersionChat, ProofPresHeader)
     prepareContact user cReq pqSup = do
-      -- 0) toggle disabled - PQSupportOff
-      -- 1) toggle enabled, address supports PQ (connRequestPQSupport returns Just True) - PQSupportOn, enable support with compression
-      -- 2) toggle enabled, address doesn't support PQ - PQSupportOn but without compression, with version range indicating support
-      lift (withAgent' $ \a -> connRequestPQSupport a pqSup cReq) >>= \case
+      lift (withAgent' (`connRequestAgentVersion` cReq)) >>= \case
         Nothing -> throwChatError CEInvalidConnReq
-        Just (agentV, _) -> do
-          let chatV = agentToChatVersion agentV
-          connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq pqSup
-          pure (connId, chatV)
+        Just _ -> do
+          let chatV = initialChatVersion
+          (connId, binding) <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq pqSup
+          pure (connId, chatV, directPresHeader binding)
     mkXContactId :: Maybe XContactId -> CM XContactId
     mkXContactId = maybe (XContactId <$> drgRandomBytes 16) pure
-    joinContact :: User -> Connection -> ConnReqContact -> Maybe Profile -> XContactId -> Maybe SharedMsgId -> Maybe (SharedMsgId, MsgContent) -> Maybe (Maybe GroupInfo) -> PQSupport -> CM Connection
-    joinContact user conn@Connection {connChatVersion = chatV} cReq incognitoProfile xContactId welcomeSharedMsgId msg_ gInfo_ pqSup = do
+    joinContact :: User -> Connection -> ConnReqContact -> Maybe Profile -> Maybe ProofPresHeader -> XContactId -> Maybe SharedMsgId -> Maybe (SharedMsgId, MsgContent) -> Maybe (Maybe GroupInfoKeys) -> Maybe MemberId -> PQSupport -> CM Connection
+    joinContact user conn cReq incognitoProfile reqHeader_ xContactId welcomeSharedMsgId msg_ gInfo_ relayMemberId_ pqSup = do
       -- gInfo_ is Maybe (Maybe GroupInfo), where Just Nothing means "some unknown group", e.g. when joining via link without profile
-      let profileToSend = case gInfo_ of
-            Just gInfo_' ->
-              let allowSimplexLinks = maybe True (groupFeatureUserAllowed SGFSimplexLinks) gInfo_'
-               in userProfileInGroup' user allowSimplexLinks incognitoProfile
-            Nothing -> userProfileDirect user incognitoProfile Nothing True
-      dm <- encodeConnInfoPQ pqSup chatV (XContact profileToSend (Just xContactId) welcomeSharedMsgId msg_)
+      profileToSend <-
+        presentUserBadge user incognitoProfile presHeader_ $ case gInfo_ of
+          Just gInfo_' -> userProfileInGroup' user ((\(GIK g _) -> g) <$> gInfo_') incognitoProfile
+          Nothing -> userProfileDirect user incognitoProfile Nothing True
+      dm <- case gInfo_ of
+        Just (Just gInfo@(GIK g gks))
+          | useRelays' g -> case relayMemberId_ of
+              Just relayMemberId -> encodeXMemberConnInfo pqSup gInfo relayMemberId profileToSend
+              Nothing -> throwChatError $ CEInternalError "relay group join without target relay memberId"
+          | otherwise -> encodeConnInfoPQ pqSup $ XContact profileToSend (Just $ groupMemberKey gks) (Just xContactId) welcomeSharedMsgId msg_
+        _ ->
+          encodeConnInfoPQ pqSup $ XContact profileToSend Nothing (Just xContactId) welcomeSharedMsgId msg_
       subMode <- chatReadVar subscriptionMode
       void $ withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm pqSup subMode
       withFastStore' $ \db -> updateConnectionStatusFromTo db conn ConnPrepared ConnJoined
+      where
+        presHeader_ = case gInfo_ of
+          Just (Just (GIK g _)) | useRelays' g -> groupPresHeader g
+          _ -> reqHeader_
     contactMember :: Contact -> [GroupMember] -> Maybe GroupMember
     contactMember Contact {contactId} =
       find $ \GroupMember {memberContactId = cId, memberStatus = s} ->
         cId == Just contactId && s /= GSMemRejected && s /= GSMemRemoved && s /= GSMemLeft
-    checkSndFile :: CryptoFile -> CM Integer
-    checkSndFile (CryptoFile f cfArgs) = do
+    checkSndFile :: Maybe LocalBadge -> CryptoFile -> CM Integer
+    checkSndFile sndBadge (CryptoFile f cfArgs) = do
       fsFilePath <- lift $ toFSFilePath f
       unlessM (doesFileExist fsFilePath) . throwChatError $ CEFileNotFound f
       fileSize <- liftIO $ CF.getFileContentsSize $ CryptoFile fsFilePath cfArgs
-      when (fromInteger fileSize > maxFileSize) $ throwChatError $ CEFileSize f
+      lims <- asks $ fileSizeLimits . config
+      now <- liftIO getCurrentTime
+      when (fileSize > maxSndXFTPFileSize lims now sndBadge) $ throwChatError $ CEFileSize f
       pure fileSize
     updateProfile :: User -> Profile -> CM ChatResponse
-    updateProfile user p' = updateProfile_ user p' True $ withFastStore $ \db -> updateUserProfile db user p'
+    updateProfile user@User {profile = LocalProfile {contactDomain}} p = updateProfile_ user p' True $ withFastStore $ \db -> updateUserProfile db user p'
+      where
+        p' = (p :: Profile) {contactDomain}
     updateProfile_ :: User -> Profile -> Bool -> CM User -> CM ChatResponse
-    updateProfile_ user@User {profile = p@LocalProfile {displayName = n}} p'@Profile {displayName = n'} shouldUpdateAddressData updateUser
+    updateProfile_ user@User {profile = p@LocalProfile {displayName = n}} p'@Profile {displayName = n', image = img'} shouldUpdateAddressData updateUser
       | p' == fromLocalProfile p = pure $ CRUserProfileNoChange user
       | otherwise = do
-          when (n /= n') $ checkValidName n'
+          when (n /= n') $ do
+            checkValidName n'
+            users <- withFastStore' getUsers
+            forM_ users $ \User {profile = LocalProfile {displayName}, activeUser, viewPwdHash} ->
+              when (displayName == n') . throwChatError $
+                if activeUser || isNothing viewPwdHash then CEUserExists n' else CEInvalidDisplayName {displayName = n', validName = ""}
+          checkProfileImageSize img'
+          checkProfileSize p'
+          when shouldUpdateAddressData $ do
+            ts <- liftIO getCurrentTime
+            setMyAddressData' (user :: User) {profile = updatedUserProfile user p' ts}
           -- read contacts before user update to correctly merge preferences
-          contacts <- withFastStore' $ \db -> getUserContacts db vr user
+          contacts <- withFastStore' $ \db -> getUserContacts db cxt user
           user' <- updateUser
           asks currentUser >>= atomically . (`writeTVar` Just user')
           withChatLock "updateProfile" $ do
-            when shouldUpdateAddressData $ setMyAddressData' user'
             summary <- sendUpdateToContacts user' contacts
             pure $ CRUserProfileUpdated user' (fromLocalProfile p) p' summary
       where
         setMyAddressData' :: User -> CM ()
         setMyAddressData' user' =
           withFastStore' (\db -> runExceptT $ getUserAddress db user) >>= \case
-            Right ucl@UserContactLink {shortLinkDataSet}
-              | shortLinkDataSet -> void $ setMyAddressData user' ucl
+            Right ucl@UserContactLink {shortLinkDataSet, connLinkContact = CCLink {connFullLink = CRContactUri _ e2e}}
+              | shortLinkDataSet ->
+                  let pqInitKeys = (\(_, E2ERatchetParamsUri _ _ _ pq) -> if isJust pq then IKUsePQ else IKPQOn) <$> e2e
+                   in void $ setMyAddressData False pqInitKeys user' ucl
             _ -> pure ()
         sendUpdateToContacts :: User -> [Contact] -> CM UserProfileUpdateSummary
         sendUpdateToContacts user' contacts = do
@@ -3283,7 +4114,8 @@ processChatCommand vr nm = \case
           case changedCts_ of
             Nothing -> pure $ UserProfileUpdateSummary 0 0 []
             Just changedCts -> do
-              let idsEvts = L.map ctSndEvent changedCts
+              presHeaders <- if presentsUserBadge user' then connsPresHeaders $ map (\ChangedProfileContact {conn} -> conn) $ L.toList changedCts else pure M.empty
+              idsEvts <- mapM (ctSndEvent presHeaders) changedCts
               msgReqs_ <- lift $ L.zipWith ctMsgReq changedCts <$> createSndMessages idsEvts
               (errs, cts) <- partitionEithers . L.toList . L.zipWith (second . const) changedCts <$> deliverMessagesB msgReqs_
               unless (null errs) $ toView $ CEvtChatErrors errs
@@ -3307,27 +4139,34 @@ processChatCommand vr nm = \case
                 mergedProfile = userProfileDirect user Nothing (Just ct) False
                 ct' = updateMergedPreferences user' ct
                 mergedProfile' = userProfileDirect user' Nothing (Just ct') False
-            ctSndEvent :: ChangedProfileContact -> (ConnOrGroupId, ChatMsgEvent 'Json)
-            ctSndEvent ChangedProfileContact {mergedProfile', conn = Connection {connId}} = (ConnectionId connId, XInfo mergedProfile')
+            -- non-incognito (filtered above), so the user's badge is presented; a profile update keeps the badge instead of clearing it
+            ctSndEvent :: Map ConnId ProofPresHeader -> ChangedProfileContact -> CM (ConnOrGroupId, Maybe MsgSigning, ChatMsgEvent 'Json)
+            ctSndEvent presHeaders ChangedProfileContact {mergedProfile', conn = conn@Connection {connId}} = do
+              p'' <- presentUserBadge user' Nothing (M.lookup (aConnId conn) presHeaders) mergedProfile'
+              pure (ConnectionId connId, Nothing, XInfo p'' Nothing)
             ctMsgReq :: ChangedProfileContact -> Either ChatError SndMessage -> Either ChatError ChatMsgReq
             ctMsgReq ChangedProfileContact {conn} =
               fmap $ \SndMessage {msgId, msgBody} ->
                 (conn, MsgFlags {notification = hasNotification XInfo_}, (vrValue msgBody, [msgId]))
-    setMyAddressData :: User -> UserContactLink -> CM UserContactLink
-    setMyAddressData user ucl@UserContactLink {userContactLinkId, connLinkContact = CCLink connFullLink _sLnk_, addressSettings} = do
-      conn <- withFastStore $ \db -> getUserAddressConnection db vr user
-      let shortLinkProfile = userProfileDirect user Nothing Nothing True
-          -- TODO [short links] do not save address to server if data did not change, spinners, error handling
-          userData = contactShortLinkData shortLinkProfile $ Just addressSettings
-          userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData}
-      sLnk <- shortenShortLink' =<< withAgent (\a -> setConnShortLink a nm (aConnId conn) SCMContact userLinkData Nothing)
+    setMyAddressData :: Bool -> Maybe InitialKeys -> User -> UserContactLink -> CM UserContactLink
+    setMyAddressData rotateKeys pqInitKeys user@User {userChatRelay} ucl@UserContactLink {userContactLinkId, connLinkContact = CCLink connFullLink sLnk_, addressSettings} = do
+      conn <- withFastStore $ \db -> getUserAddressConnection db cxt user
+      let getPresHeader = Just . linkPresHeader <$> maybe (withAgent $ \a -> prepareConnShortLink a (aConnId conn) Nothing) pure sLnk_
+      shortLinkProfile <- presentUserBadgeWith user Nothing getPresHeader (userProfileDirect user Nothing Nothing True)
+      -- TODO [short links] do not save address to server if data did not change, spinners, error handling
+      let userData
+            | isTrue userChatRelay = relayShortLinkData shortLinkProfile
+            | otherwise = contactShortLinkData shortLinkProfile $ Just addressSettings
+          userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData, ratchetKeys = Nothing}
+      -- TODO [address DR] remove parameter and switch to (Just IKUsePQ) after rotateKeys
+      sLnk <- shortenShortLink' =<< withAgent (\a -> setConnShortLink a nm (aConnId conn) SCMContact userLinkData Nothing rotateKeys pqInitKeys)
       withFastStore' $ \db -> setUserContactLinkShortLink db userContactLinkId sLnk
       let autoAccept' = (\aa -> aa {acceptIncognito = False}) <$> autoAccept addressSettings
           ucl' = (ucl :: UserContactLink) {connLinkContact = CCLink connFullLink (Just sLnk), shortLinkDataSet = True, shortLinkLargeDataSet = BoolDef True, addressSettings = addressSettings {autoAccept = autoAccept'}}
       pure ucl'
     updateContactPrefs :: User -> Contact -> Preferences -> CM ChatResponse
     updateContactPrefs _ ct@Contact {activeConn = Nothing} _ = throwChatError $ CEContactNotActive ct
-    updateContactPrefs user@User {userId} ct@Contact {activeConn = Just Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
+    updateContactPrefs user@User {userId} ct@Contact {activeConn = Just conn@Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
       | contactUserPrefs == contactUserPrefs' = pure $ CRContactPrefsUpdated user ct ct
       | otherwise = do
           assertDirectAllowed user MDSnd ct XInfo_
@@ -3337,44 +4176,51 @@ processChatCommand vr nm = \case
               mergedProfile' = userProfileDirect user (fromLocalProfile <$> incognitoProfile) (Just ct') False
           when (mergedProfile' /= mergedProfile) $
             withContactLock "updateContactPrefs" (contactId' ct) $ do
-              void (sendDirectContactMessage user ct' $ XInfo mergedProfile') `catchAllErrors` eToView
+              p <- presentUserBadgeWith user incognitoProfile (connPresHeader conn) mergedProfile'
+              void (sendDirectContactMessage user ct' $ XInfo p Nothing) `catchAllErrors` eToView
               lift . when (directOrUsed ct') $ createSndFeatureItems user ct ct'
           pure $ CRContactPrefsUpdated user ct ct'
-    runUpdateGroupProfile :: User -> GroupInfo -> GroupProfile -> CM ChatResponse
-    runUpdateGroupProfile user gInfo@GroupInfo {businessChat, groupProfile = p@GroupProfile {displayName = n}} p'@GroupProfile {displayName = n'} = do
+    runUpdateGroupProfile :: User -> GroupInfoKeys -> GroupProfile -> Bool -> CM ChatResponse
+    runUpdateGroupProfile user (GIK gInfo@GroupInfo {businessChat, groupProfile = p@GroupProfile {displayName = n}} gks) p'@GroupProfile {displayName = n', image = img', memberAdmission = ma'} domainVerified = do
       assertUserGroupRole gInfo GROwner
       when (n /= n') $ checkValidName n'
-      gInfo' <- withStore $ \db -> updateGroupProfile db user gInfo p'
+      checkProfileImageSize img'
+      checkGroupProfileSize p'
+      when (useRelays' gInfo && isJust (ma' >>= review)) $ throwCmdError "Admission review is not supported in channels"
+      -- updateGroupProfile clears domain verification; re-set it when the caller already re-resolved the name
+      gInfo' <- withStore $ \db -> do
+        g <- updateGroupProfile db user gInfo p'
+        if domainVerified then liftIO $ setGroupDomainVerified db user g True else pure g
       msg <- case businessChat of
         Just BusinessChatInfo {businessId} -> do
-          ms <- withStore' $ \db -> getGroupMembers db vr user gInfo'
+          ms <- withStore' $ \db -> getGroupMembers db cxt user gInfo'
           let (newMs, oldMs) = partition (\m -> maxVersion (memberChatVRange m) >= businessChatPrefsVersion) ms
           -- this is a fallback to send the members with the old version correct profile of the business when preferences change
           unless (null oldMs) $ do
             GroupMember {memberProfile = LocalProfile {displayName, fullName, shortDescr, image}} <-
-              withStore $ \db -> getGroupMemberByMemberId db vr user gInfo' businessId
+              withStore $ \db -> getGroupMemberByMemberId db cxt user gInfo' businessId
             let p'' = p' {displayName, fullName, shortDescr, image} :: GroupProfile
                 recipients = filter memberCurrentOrPending oldMs
-            void $ sendGroupMessage user gInfo' Nothing recipients (XGrpInfo p'')
+            void $ sendGroupMessage user (GIK gInfo' gks) Nothing recipients False (XGrpInfo p'')
           let ps' = fromMaybe defaultBusinessGroupPrefs $ groupPreferences p'
               recipients = filter memberCurrentOrPending newMs
-          sendGroupMessage user gInfo' Nothing recipients $ XGrpPrefs ps'
+          sendGroupMessage user (GIK gInfo' gks) Nothing recipients False $ XGrpPrefs ps'
         Nothing -> do
-          setGroupLinkData' nm user gInfo'
+          void $ setGroupLinkData' nm user (GIK gInfo' gks)
           recipients <- getRecipients
-          sendGroupMessage user gInfo' Nothing recipients (XGrpInfo p')
+          sendGroupMessage user (GIK gInfo' gks) Nothing recipients False (XGrpInfo p')
           where
             getRecipients
-              | isTrue (useRelays gInfo') = withFastStore' $ \db -> getGroupRelays db vr user gInfo'
+              | useRelays' gInfo' = withFastStore' $ \db -> getGroupRelayMembers db cxt user gInfo'
               | otherwise = do
-                  ms <- withFastStore' $ \db -> getGroupMembers db vr user gInfo'
+                  ms <- withFastStore' $ \db -> getGroupMembers db cxt user gInfo'
                   pure $ filter memberCurrentOrPending ms
       let cd = CDGroupSnd gInfo' Nothing
       unless (sameGroupProfileInfo p p') $ do
         ci <- saveSndChatItem user cd msg (CISndGroupEvent $ SGEGroupUpdated p')
         toView $ CEvtNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat gInfo' Nothing) ci]
       createGroupFeatureChangedItems user cd CISndGroupFeature gInfo gInfo'
-      pure $ CRGroupUpdated user gInfo gInfo' Nothing
+      pure $ CRGroupUpdated user gInfo gInfo' Nothing ((\SndMessage {signedMsg_} -> isJust signedMsg_) msg)
     checkValidName :: GroupName -> CM ()
     checkValidName displayName = do
       when (T.null displayName) $ throwChatError CEInvalidDisplayName {displayName, validName = ""}
@@ -3382,37 +4228,39 @@ processChatCommand vr nm = \case
       when (displayName /= validName) $ throwChatError CEInvalidDisplayName {displayName, validName}
     assertUserGroupRole :: GroupInfo -> GroupMemberRole -> CM ()
     assertUserGroupRole g@GroupInfo {membership} requiredRole = do
-      let GroupMember {memberRole = membershipMemRole} = membership
-      when (membershipMemRole < requiredRole) $ throwChatError $ CEGroupUserRole g requiredRole
+      when (memberRole' membership < requiredRole) $ throwChatError $ CEGroupUserRole g requiredRole
       when (memberStatus membership == GSMemInvited) $ throwChatError (CEGroupNotJoined g)
       when (memberRemoved membership) $ throwChatError CEGroupMemberUserRemoved
       unless (memberActive membership) $ throwChatError CEGroupMemberNotActive
-    delGroupChatItemsForMembers :: User -> GroupInfo -> Maybe GroupChatScopeInfo -> [GroupMember] -> [CChatItem 'CTGroup] -> CM [ChatItemDeletion]
-    delGroupChatItemsForMembers user gInfo chatScopeInfo ms items = do
+    delGroupChatItemsForMembers :: User -> GroupInfoKeys -> Maybe GroupChatScopeInfo -> [GroupMember] -> [CChatItem 'CTGroup] -> CM [ChatItemDeletion]
+    delGroupChatItemsForMembers user g@(GIK gInfo _) chatScopeInfo ms items = do
       assertDeletable gInfo items
       assertUserGroupRole gInfo GRModerator
       let msgMemIds = itemsMsgMemIds gInfo items
-          events = L.nonEmpty $ map (\(msgId, memId) -> XMsgDel msgId (Just memId) $ toMsgScope gInfo <$> chatScopeInfo) msgMemIds
-      mapM_ (sendGroupMessages_ user gInfo ms) events
+          -- moderation deletes always sign (attributable; avoids the catch-up-moderator divergence)
+          signedEvents = L.nonEmpty $ map (\(msgId, memId) -> let evt = XMsgDel msgId memId (toMsgScope gInfo <$> chatScopeInfo) False in (groupMsgSigning True g evt, evt)) msgMemIds
+      mapM_ (sendGroupSignedMessages_ gInfo ms) signedEvents
       delGroupChatItems user gInfo chatScopeInfo items True
       where
         assertDeletable :: GroupInfo -> [CChatItem 'CTGroup] -> CM ()
-        assertDeletable GroupInfo {membership = GroupMember {memberRole = membershipMemRole}} items' =
+        assertDeletable GroupInfo {membership} items' =
           unless (all itemDeletable items') $ throwChatError CEInvalidChatItemDelete
           where
             itemDeletable :: CChatItem 'CTGroup -> Bool
             itemDeletable (CChatItem _ ChatItem {chatDir, meta = CIMeta {itemSharedMsgId}}) =
               case chatDir of
-                CIGroupRcv GroupMember {memberRole} -> membershipMemRole >= memberRole && isJust itemSharedMsgId
+                CIGroupRcv GroupMember {memberRole} -> memberRole' membership >= memberRole && isJust itemSharedMsgId
                 CIGroupSnd -> isJust itemSharedMsgId
-        itemsMsgMemIds :: GroupInfo -> [CChatItem 'CTGroup] -> [(SharedMsgId, MemberId)]
+                CIChannelRcv -> memberRole' membership == GROwner && isJust itemSharedMsgId
+        itemsMsgMemIds :: GroupInfo -> [CChatItem 'CTGroup] -> [(SharedMsgId, Maybe MemberId)]
         itemsMsgMemIds GroupInfo {membership = GroupMember {memberId = membershipMemId}} = mapMaybe itemMsgMemIds
           where
-            itemMsgMemIds :: CChatItem 'CTGroup -> Maybe (SharedMsgId, MemberId)
+            itemMsgMemIds :: CChatItem 'CTGroup -> Maybe (SharedMsgId, Maybe MemberId)
             itemMsgMemIds (CChatItem _ ChatItem {chatDir, meta = CIMeta {itemSharedMsgId}}) =
               join <$> forM itemSharedMsgId $ \msgId -> Just $ case chatDir of
-                CIGroupRcv GroupMember {memberId} -> (msgId, memberId)
-                CIGroupSnd -> (msgId, membershipMemId)
+                CIGroupRcv GroupMember {memberId} -> (msgId, Just memberId)
+                CIGroupSnd -> (msgId, Just membershipMemId)
+                CIChannelRcv -> (msgId, Nothing)
 
     delGroupChatItems :: User -> GroupInfo -> Maybe GroupChatScopeInfo -> [CChatItem 'CTGroup] -> Bool -> CM [ChatItemDeletion]
     delGroupChatItems user gInfo@GroupInfo {membership} chatScopeInfo items moderation = do
@@ -3425,15 +4273,22 @@ processChatCommand vr nm = \case
         then deleteGroupCIs user gInfo chatScopeInfo items m deletedTs
         else markGroupCIsDeleted user gInfo chatScopeInfo items m deletedTs
     updateGroupProfileByName :: GroupName -> (GroupProfile -> GroupProfile) -> CM ChatResponse
-    updateGroupProfileByName gName update = withUser $ \user -> do
-      gInfo@GroupInfo {groupProfile = p} <- withStore $ \db ->
-        getGroupIdByName db user gName >>= getGroupInfo db vr user
-      runUpdateGroupProfile user gInfo $ update p
+    updateGroupProfileByName = updateGroupProfileByName_ Nothing
+    updateGroupProfileByName_ :: Maybe GroupFeature -> GroupName -> (GroupProfile -> GroupProfile) -> CM ChatResponse
+    updateGroupProfileByName_ feature_ gName update = withUser $ \user -> do
+      gInfo@(GIK g@GroupInfo {groupProfile = p} _) <- withStore $ \db ->
+        getGroupIdByName db user gName >>= getGroupInfoKeys db cxt user
+      forM_ feature_ $ \feature -> do
+        let channel = useRelays' g
+            applicable = if channel then groupFeatureInChannel feature else groupFeatureInRegularGroup feature
+        unless applicable $
+          throwCmdError $ T.unpack (groupFeatureNameText feature) <> " is not available in " <> (if channel then "channels" else "groups")
+      runUpdateGroupProfile user gInfo (update p) False
     withCurrentCall :: ContactId -> (User -> Contact -> Call -> CM (Maybe Call)) -> CM ChatResponse
     withCurrentCall ctId action = do
       (user, ct) <- withStore $ \db -> do
         user <- getUserByContactId db ctId
-        (user,) <$> getContact db vr user ctId
+        (user,) <$> getContact db cxt user ctId
       calls <- asks currentCalls
       withContactLock "currentCall" ctId $
         atomically (TM.lookup ctId calls) >>= \case
@@ -3454,7 +4309,7 @@ processChatCommand vr nm = \case
     withServerProtocol p action = case userProtocol p of
       Just Dict -> action
       _ -> throwChatError $ CEServerProtocol $ AProtocolType p
-    validateAllUsersServers :: UserServersClass u => Int64 -> [u] -> CM [UserServersError]
+    validateAllUsersServers :: UserServersClass u => Int64 -> [u] -> CM ([UserServersError], [UserServersWarning])
     validateAllUsersServers currUserId userServers = withFastStore $ \db -> do
       users' <- filter (\User {userId} -> userId /= currUserId) <$> liftIO (getUsers db)
       others <- mapM (getUserOperatorServers db) users'
@@ -3475,20 +4330,37 @@ processChatCommand vr nm = \case
         FTSnd {fileTransferMeta = FileTransferMeta {filePath, xftpSndFile}} -> forward filePath $ xftpSndFile >>= \XFTPSndFile {cryptoArgs} -> cryptoArgs
         _ -> throwChatError CEFileNotReceived {fileId}
       where
-        forward path cfArgs = processChatCommand vr nm $ sendCommand chatName $ CryptoFile path cfArgs
+        forward path cfArgs = processChatCommand cxt nm $ sendCommand chatName $ CryptoFile path cfArgs
     getGroupAndMemberId :: User -> GroupName -> ContactName -> CM (GroupId, GroupMemberId)
     getGroupAndMemberId user gName groupMemberName =
       withStore $ \db -> do
         groupId <- getGroupIdByName db user gName
         groupMemberId <- getGroupMemberIdByName db user groupId groupMemberName
         pure (groupId, groupMemberId)
-    sendGrpInvitation :: User -> Contact -> GroupInfo -> GroupMember -> ConnReqInvitation -> CM ()
-    sendGrpInvitation user ct@Contact {contactId, localDisplayName} gInfo@GroupInfo {groupId, groupProfile, membership, businessChat} GroupMember {groupMemberId, memberId, memberRole = memRole} cReq = do
-      currentMemCount <- withStore' $ \db -> getGroupCurrentMembersCount db user gInfo
-      let GroupMember {memberRole = userRole, memberId = userMemberId} = membership
+    newGroup :: User -> IncognitoEnabled -> GroupProfile -> MemberId -> GroupKeys -> Maybe Int64 -> CM GroupInfo
+    newGroup user incognito gProfile@GroupProfile {displayName, image, memberAdmission, publicGroup} memberId groupKeys publicMemberCount_ = do
+      checkValidName displayName
+      checkProfileImageSize image
+      checkGroupProfileSize gProfile
+      when (isPublicGroup groupKeys && isJust (memberAdmission >>= review)) $ throwCmdError "Admission review is not supported in channels"
+      when (not (isPublicGroup groupKeys) && isJust publicGroup) $ throwCmdError "publicGroup is not allowed in groups"
+      -- [incognito] generate incognito profile for group membership
+      incognitoProfile <- if incognito then Just <$> liftIO (generateIncognitoProfile user) else pure Nothing
+      withFastStore $ \db -> createNewGroup db cxt user gProfile incognitoProfile memberId groupKeys publicMemberCount_
+    createNewGroupItems :: User -> GroupInfo -> CM ()
+    createNewGroupItems user gInfo = do
+      let cd = CDGroupSnd gInfo Nothing
+      createInternalChatItem user cd CIChatBanner (Just epochStart)
+      createInternalChatItem user cd (CISndGroupE2EEInfo $ e2eInfoGroup gInfo) Nothing
+      createGroupFeatureItems user cd CISndGroupFeature gInfo
+    sendGrpInvitation :: User -> Contact -> GroupInfoKeys -> GroupMember -> ConnReqInvitation -> CM ()
+    sendGrpInvitation user ct@Contact {contactId, localDisplayName} (GIK gInfo@GroupInfo {groupId, groupProfile, membership, businessChat} gks) m@GroupMember {groupMemberId, memberId, memberRole = memRole} cReq = do
+      let currentMemCount = fromIntegral $ currentMembers $ groupSummary gInfo
+          GroupMember {memberRole = userRole, memberId = userMemberId} = membership
           groupInv =
             GroupInvitation
               { fromMember = MemberIdRole userMemberId userRole,
+                fromMemberKey = Just $ groupMemberKey gks,
                 invitedMember = MemberIdRole memberId memRole,
                 connRequest = cReq,
                 groupProfile,
@@ -3503,8 +4375,62 @@ processChatCommand vr nm = \case
       toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDSnd (DirectChat ct) ci]
       forM_ (timed_ >>= timedDeleteAt') $
         startProximateTimedItemThread user (ChatRef CTDirect contactId Nothing, chatItemId' ci)
-    drgRandomBytes :: Int -> CM ByteString
-    drgRandomBytes n = asks random >>= atomically . C.randomBytes n
+    sendGrpInvitationViaGroup :: User -> GroupInfo -> GroupMember -> Connection -> GroupInfoKeys -> GroupMember -> ConnReqInvitation -> CM ()
+    sendGrpInvitationViaGroup user viaGInfo GroupMember {localDisplayName} mConn (GIK gInfo@GroupInfo {groupId, groupProfile, membership, businessChat} gks) GroupMember {groupMemberId, memberId, memberRole = memRole} cReq = do
+      let currentMemCount = fromIntegral $ currentMembers $ groupSummary gInfo
+          GroupMember {memberRole = userRole, memberId = userMemberId} = membership
+          groupInv =
+            GroupInvitation
+              { fromMember = MemberIdRole userMemberId userRole,
+                fromMemberKey = Just $ groupMemberKey gks,
+                invitedMember = MemberIdRole memberId memRole,
+                connRequest = cReq,
+                groupProfile,
+                business = businessChat,
+                groupLinkId = Nothing,
+                groupSize = Just currentMemCount
+              }
+      (msg, _, _) <- sendDirectMemberMessage mConn (XGrpInv groupInv) (groupId' viaGInfo)
+      let content = CISndGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending}) memRole
+      ci <- saveSndChatItem user (CDGroupSnd viaGInfo Nothing) msg content
+      toView $ CEvtNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat viaGInfo Nothing) ci]
+    addRelays :: User -> GroupInfoKeys -> ShortLinkContact -> [UserChatRelay] -> CM [(UserChatRelay, Either ChatError GroupRelay)]
+    addRelays user g@(GIK gInfo@GroupInfo {membership} gks) groupSLink relays =
+      mapConcurrently addRelay relays
+      where
+        addRelay :: UserChatRelay -> CM (UserChatRelay, Either ChatError GroupRelay)
+        addRelay relay@UserChatRelay {address} = fmap (relay,) . tryAllErrors $ do
+          (_, _, cReq) <- getShortLinkConnReq nm user address
+          lift (withAgent' (`connRequestAgentVersion` cReq)) >>= \case
+            Nothing -> throwChatError CEInvalidConnReq
+            Just _ -> do
+              let chatV = initialChatVersion
+              gVar <- asks random
+              subMode <- chatReadVar subscriptionMode
+              (connId, _) <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
+              (relayMember, conn, groupRelay) <- withFastStore $ \db -> do
+                relayMember <- createRelayForOwner db cxt gVar user gInfo relay
+                groupRelay <- createGroupRelayRecord db gInfo relayMember relay
+                conn <- createRelayConnection db cxt user (groupMemberId' relayMember) connId ConnPrepared chatV subMode
+                pure (relayMember, conn, groupRelay)
+              let GroupMember {memberRole = userRole, memberId = userMemberId} = membership
+                  GroupMember {memberId = relayMemberId} = relayMember
+              membershipProfile <- membershipHandshakeProfile user gInfo
+              let relayInv = GroupRelayInvitation {
+                    fromMember = MemberIdRole userMemberId userRole,
+                    fromMemberProfile = membershipProfile,
+                    relayMemberId,
+                    groupLink = groupSLink,
+                    publicGroupId = (\PublicGroupProfile {publicGroupId = gId} -> gId) <$> publicGroup' gInfo,
+                    fromMemberKey = Just $ groupMemberKey gks
+                  }
+                  msg = XGrpRelayInv relayInv
+              dm <- encodeConnInfoSigning PQSupportOff (groupMsgSigning False g msg) msg
+              sqSecured <- withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm PQSupportOff subMode
+              let newConnStatus = if sqSecured then ConnSndReady else ConnJoined
+              withFastStore' $ \db -> do
+                void $ updateConnectionStatusFromTo db conn ConnPrepared newConnStatus
+                updateRelayStatusFromTo db groupRelay RSNew RSInvited
     privateGetUser :: UserId -> CM User
     privateGetUser userId =
       tryAllErrors (withStore (`getUser` userId)) >>= \case
@@ -3559,200 +4485,371 @@ processChatCommand vr nm = \case
       (chatId, chatSettings) <- case cType of
         CTDirect -> withFastStore $ \db -> do
           ctId <- getContactIdByName db user name
-          Contact {chatSettings} <- getContact db vr user ctId
+          Contact {chatSettings} <- getContact db cxt user ctId
           pure (ctId, chatSettings)
         CTGroup ->
           withFastStore $ \db -> do
             gId <- getGroupIdByName db user name
-            GroupInfo {chatSettings} <- getGroupInfo db vr user gId
+            GroupInfo {chatSettings} <- getGroupInfo db cxt user gId
             pure (gId, chatSettings)
         _ -> throwCmdError "not supported"
-      processChatCommand vr nm $ APISetChatSettings (ChatRef cType chatId Nothing) $ updateSettings chatSettings
-    connectPlan :: User -> AConnectionLink -> CM (ACreatedConnLink, ConnectionPlan)
-    connectPlan user (ACL SCMInvitation cLink) = case cLink of
-      CLFull cReq -> invitationReqAndPlan cReq Nothing Nothing
+      processChatCommand cxt nm $ APISetChatSettings (ChatRef cType chatId Nothing) $ updateSettings chatSettings
+    connectPlan :: User -> AConnectTarget -> PlanResolveMode -> Maybe LinkOwnerSig -> Maybe (Either ChatError NameRecord) -> CM (ACreatedConnLink, Maybe SimplexNameInfo, Maybe SimplexNameInfo, ConnectionPlan)
+    connectPlan user (ACTarget SCMInvitation (CTInv cLink)) _ sig_ _ = case cLink of
+      CLFull cReq -> invitationReqAndPlan cReq Nothing Nothing Nothing
       CLShort l -> do
         let l' = serverShortLink l
         knownLinkPlans l' >>= \case
-          Just r -> pure r
+          Just (createdLink, p) -> pure (createdLink, Nothing, Nothing, p)
           Nothing -> do
-            (cReq, cData) <- getShortLinkConnReq user l'
-            contactSLinkData_ <- liftIO $ decodeShortLinkData cData
-            invitationReqAndPlan cReq (Just l') contactSLinkData_
+            (FixedLinkData {rootKey}, cData, cReq) <- getShortLinkConnReq nm user l'
+            contactSLinkData_ <- mapM (linkDataBadge $ linkPresHeader l') =<< liftIO (decodeLinkUserData cData)
+            let ov = verifyLinkOwner rootKey [] l sig_
+            invitationReqAndPlan cReq (Just l') contactSLinkData_ ov
       where
         knownLinkPlans l' = withFastStore $ \db -> do
           let inv cReq = ACCL SCMInvitation $ CCLink cReq (Just l')
-          liftIO (getConnectionEntityViaShortLink db vr user l') >>= \case
-            Just (cReq, ent) -> pure $ Just (inv cReq, invitationEntityPlan Nothing ent)
+          liftIO (getConnectionEntityViaShortLink db cxt user l') >>= \case
+            Just (cReq, ent) -> pure $ Just (inv cReq, invitationEntityPlan Nothing Nothing ent)
             -- deleted contact is returned as known, as invitation link cannot be re-used too connect anyway
-            Nothing -> bimap inv (CPInvitationLink . ILPKnown) <$$> getContactViaShortLinkToConnect db vr user l'
-        invitationReqAndPlan cReq sLnk_ contactSLinkData_ = do
-          plan <- invitationRequestPlan user cReq contactSLinkData_ `catchAllErrors` (pure . CPError)
-          pure (ACCL SCMInvitation (CCLink cReq sLnk_), plan)
-    connectPlan user (ACL SCMContact cLink) = case cLink of
-      CLFull cReq -> do
+            Nothing -> bimap inv (CPInvitationLink . ILPKnown) <$$> getContactViaShortLinkToConnect db cxt user l'
+        invitationReqAndPlan cReq sLnk_ cld ov = do
+          plan <- invitationRequestPlan user cReq cld ov `catchAllErrors` (pure . CPError)
+          pure (ACCL SCMInvitation (CCLink cReq sLnk_), Nothing, Nothing,  plan)
+    connectPlan user (ACTarget SCMContact ct) resolveMode sig_ nameRec = case ct of
+      CTDomain d
+        -- local search only: look up #d then @d in the store, without online name resolution
+        | resolveMode == PRMNever -> connectPlanNoName $ ChatError CENotResolvedLocally
+        | otherwise ->
+            tryAllErrors (resolveNameRecord user nm d) >>= \case
+              Right nr
+                | isJust (firstNameLink CCTChannel (nrSimplexChannel nr)) ->
+                    (addOther nr <$> connectPlanName NTPublicGroup (Right nr)) `catchAllErrors` \e ->
+                      (addOther nr <$> connectPlanName NTContact (Right nr) `catchAllErrors` \_ -> throwError e)
+                | isJust (firstNameLink CCTContact (nrSimplexContact nr)) ->
+                    addOther nr <$> connectPlanName NTContact (Right nr)
+                | otherwise -> connectPlanNoName $ ChatError $ CESimplexDomainNotReady d SDENoValidLink
+              Left e -> connectPlanNoName e
+        where
+          connectPlanName nameType nr_ = connectPlan user connTarget resolveMode sig_ (Just nr_)
+            where
+              connTarget = ACTarget SCMContact $ CTShortContact $ CTName $ SimplexNameInfo nameType d
+          connectPlanNoName e =
+            connectPlanName NTPublicGroup (Left e) `catchAllErrors` \e' ->
+              (connectPlanName NTContact (Left e) `catchAllErrors` \_ -> throwError e')
+          -- the same domain can resolve to both an @ name (contact or business) and a # channel;
+          -- keyed off the resolved name's type, so a contact name returning a business group still offers the channel
+          addOther nr (l, planName, _, p) = (l, planName, otherName, p)
+            where
+              otherName = case planName of
+                Just (SimplexNameInfo NTContact _) | isJust (firstNameLink CCTChannel (nrSimplexChannel nr)) -> Just $ SimplexNameInfo NTPublicGroup d
+                Just (SimplexNameInfo NTPublicGroup _) | isJust (firstNameLink CCTContact (nrSimplexContact nr)) -> Just $ SimplexNameInfo NTContact d
+                _ -> Nothing
+      CTFullContact cReq -> do
         plan <- contactOrGroupRequestPlan user cReq `catchAllErrors` (pure . CPError)
-        pure (ACCL SCMContact $ CCLink cReq Nothing, plan)
-      CLShort l@(CSLContact _ ct _ _) -> do
-        let l' = serverShortLink l
-            con cReq = ACCL SCMContact $ CCLink cReq (Just l')
-            gPlan (cReq, g) = if memberRemoved (membership g) then Nothing else Just (con cReq, CPGroupLink (GLPKnown g))
-        case ct of
+        pure (ACCL SCMContact $ CCLink cReq Nothing, Nothing, Nothing, plan)
+      CTShortContact nl ->
+        (\(l, p) -> (l, simplexName_, Nothing, p)) <$> case ctType of
           CCTContact ->
             knownLinkPlans >>= \case
               Just r -> pure r
               Nothing -> do
-                (cReq, cData) <- getShortLinkConnReq user l'
-                withFastStore' (\db -> getContactWithoutConnViaShortAddress db vr user l') >>= \case
-                  Just ct' | not (contactDeleted ct') -> pure (con cReq, CPContactAddress (CAPContactViaAddress ct'))
+                when (resolveMode == PRMNever) $ throwChatError CENotResolvedLocally
+                l' <- resolveSLink
+                (FixedLinkData {rootKey}, cData, cReq) <- getShortLinkConnReq nm user l'
+                let presHeader = linkPresHeader l'
+                contactSLinkData_ <- mapM (linkDataBadge presHeader) =<< liftIO (decodeLinkUserData cData)
+                let linkProfile_ = (\ContactShortLinkData {profile} -> profile) <$> contactSLinkData_
+                    linkDomain_ = linkProfile_ >>= \Profile {contactDomain} -> claimDomain <$> contactDomain
+                    planDomain = case nl of CTName ni -> Just (nameDomain ni); _ -> Nothing
+                    refreshContact ct' = case (planDomain, linkProfile_) of
+                      (Just _, Just p) -> updateContactFromLinkData user ct' presHeader p
+                      _ -> pure ct'
+                forM_ planDomain $ \nameDomain ->
+                  unless (linkDomain_ == Just nameDomain) $ throwChatError $ CESimplexDomainNotReady nameDomain SDEUnknownDomain
+                withFastStore' (\db -> getContactWithoutConnViaShortAddress db cxt user l') >>= \case
+                  Just ct' | not (contactDeleted ct') -> do
+                    ct'' <- refreshContact ct'
+                    pure (con l' cReq, CPContactAddress (CAPContactViaAddress ct''))
                   _ -> do
-                    contactSLinkData_ <- liftIO $ decodeShortLinkData cData
-                    plan <- contactRequestPlan user cReq contactSLinkData_
-                    pure (con cReq, plan)
+                    let ContactLinkData _ UserContactData {owners} = cData
+                        ov = verifyLinkOwner rootKey owners l' sig_
+                    plan <- contactRequestPlan user cReq contactSLinkData_ ov
+                    case plan of
+                      CPContactAddress (CAPKnown ct') -> do
+                        ct'' <- refreshContact ct'
+                        pure (con l' cReq, CPContactAddress (CAPKnown ct''))
+                      CPContactAddress (CAPContactViaAddress ct') -> do
+                        ct'' <- refreshContact ct'
+                        pure (con l' cReq, CPContactAddress (CAPContactViaAddress ct''))
+                      _ -> pure (con l' cReq, plan)
             where
+              knownLinkPlans :: CM (Maybe (ACreatedConnLink, ConnectionPlan))
               knownLinkPlans = withFastStore $ \db ->
-                liftIO (getUserContactLinkViaShortLink db user l') >>= \case
-                  Just UserContactLink {connLinkContact = CCLink cReq _} -> pure $ Just (con cReq, CPContactAddress CAPOwnLink)
+                liftIO (getUserContactLinkViaTarget db user nl') >>= \case
+                  Just UserContactLink {connLinkContact} -> pure $ Just (ACCL SCMContact connLinkContact, CPContactAddress CAPOwnLink)
                   Nothing ->
-                    getContactViaShortLinkToConnect db vr user l' >>= \case
-                      Just (cReq, ct') -> pure $ if contactDeleted ct' then Nothing else Just (con cReq, CPContactAddress (CAPKnown ct'))
-                      Nothing -> (gPlan =<<) <$> getGroupViaShortLinkToConnect db vr user l'
-          CCTGroup ->
+                    getContactToConnect db cxt user nl' >>= \case
+                      Just (ccl, ct') -> pure $ if contactDeleted ct' then Nothing else Just (ACCL SCMContact ccl, CPContactAddress (CAPKnown ct'))
+                      Nothing -> (gPlan =<<) <$> getGroupToConnect db cxt user nl'
+          CCTGroup -> groupShortLinkPlan
+          CCTChannel -> groupShortLinkPlan
+          CCTRelay -> throwCmdError "chat relay links are not supported in this version"
+        where
+          (nl', simplexName_) = case nl of
+            CTLink sl -> (CTLink (serverShortLink sl), Nothing)
+            CTName ni -> (nl, Just ni)
+          ctType = case nl of
+            CTLink (CSLContact _ t _ _) -> t
+            CTName SimplexNameInfo {nameType = NTContact} -> CCTContact
+            CTName SimplexNameInfo {nameType = NTPublicGroup} -> CCTChannel
+          resolveSLink = case nl' of
+            CTLink l' -> pure l'
+            CTName n -> serverShortLink <$> resolveNameLink n
+          con l' cReq = ACCL SCMContact $ CCLink cReq (Just l')
+          gPlan (ccl, g) = if memberRemoved (membership g) then Nothing else Just (ACCL SCMContact ccl, CPGroupLink (GLPKnown g False Nothing (ListDef [])))
+          groupShortLinkPlan :: CM (ACreatedConnLink, ConnectionPlan)
+          groupShortLinkPlan =
             knownLinkPlans >>= \case
+              Just (_, CPGroupLink (GLPKnown g _ _ _))
+                | resolveMode == PRMAllGroups -> resolveKnownGroup g
               Just r -> pure r
               Nothing -> do
-                (cReq, cData) <- getShortLinkConnReq user l'
-                groupSLinkData_ <- liftIO $ decodeShortLinkData cData
-                plan <- groupJoinRequestPlan user cReq groupSLinkData_
-                pure (con cReq, plan)
+                when (resolveMode == PRMNever) $ throwChatError CENotResolvedLocally
+                l' <- resolveSLink
+                (fd, cData@(ContactLinkData _ UserContactData {direct, owners, relays}), cReq) <- getShortLinkConnReq' nm user l'
+                groupSLinkData_ <- liftIO $ decodeLinkUserData cData
+                if
+                  | not direct && unsupportedGroupType groupSLinkData_ -> pure (con l' cReq, CPGroupLink (GLPUpdateRequired groupSLinkData_))
+                  | not direct && null relays -> pure (con l' cReq, CPGroupLink (GLPNoRelays groupSLinkData_))
+                  | otherwise -> do
+                      let FixedLinkData {linkEntityId, rootKey} = fd
+                          linkInfo = GroupShortLinkInfo {direct, groupRelays = relays, publicGroupId = B64UrlByteString <$> linkEntityId}
+                      let profilePGId = groupSLinkData_ >>= \GroupShortLinkData {groupProfile = GroupProfile {publicGroup}} ->
+                            fmap (\PublicGroupProfile {publicGroupId} -> publicGroupId) publicGroup
+                      case (B64UrlByteString <$> linkEntityId, profilePGId) of
+                        (Just entityId, Just publicGroupId) | entityId == publicGroupId -> pure ()
+                        (Nothing, Nothing) -> pure ()
+                        _ -> throwChatError CEInvalidConnReq
+                      let ov = verifyLinkOwner rootKey owners l' sig_
+                          glOwners = map (\OwnerAuth {ownerId, ownerKey} -> GroupLinkOwner {memberId = MemberId ownerId, memberKey = ownerKey}) owners
+                          planDomain = case nl of CTName ni -> Just (nameDomain ni); _ -> Nothing
+                      plan0 <- groupJoinRequestPlan user cReq (Just linkInfo) groupSLinkData_ ov glOwners
+                      -- a joined channel is found by link but not by name (its domain is not verified locally,
+                      -- e.g. an un-upgraded relay dropped the claim); refresh its profile from the fresh link
+                      -- data and mark it verified, so the check below passes and future by-name lookups match
+                      plan <- case (planDomain, plan0, groupSLinkData_) of
+                        (Just nameDomain, CPGroupLink (GLPKnown g u o os), Just sLinkData) ->
+                          (\(g', _) -> CPGroupLink (GLPKnown g' u o os)) <$> updateGroupFromLinkData user g sLinkData (Just nameDomain)
+                        _ -> pure plan0
+                      forM_ planDomain $ \nameDomain ->
+                        let domain_ = (\GroupProfile {publicGroup} -> claimDomain <$> (publicGroup >>= publicGroupAccess >>= groupDomainClaim)) =<< case plan of
+                              CPGroupLink (GLPOk _ (Just GroupShortLinkData {groupProfile}) _) -> Just groupProfile
+                              CPGroupLink (GLPKnown GroupInfo {groupProfile} _ _ _) -> Just groupProfile
+                              CPGroupLink (GLPOwnLink GroupInfo {groupProfile}) -> Just groupProfile
+                              CPGroupLink (GLPConnectingProhibit (Just GroupInfo {groupProfile})) -> Just groupProfile
+                              _ -> (\GroupShortLinkData {groupProfile} -> groupProfile) <$> groupSLinkData_
+                         in unless (domain_ == Just nameDomain) $ throwChatError $ CESimplexDomainNotReady nameDomain SDEUnknownDomain
+                      pure (con l' cReq, plan)
             where
+              unsupportedGroupType = \case
+                Just GroupShortLinkData {groupProfile = GroupProfile {publicGroup = Just PublicGroupProfile {groupType}}} -> groupType /= GTChannel
+                _ -> False
+              knownLinkPlans :: CM (Maybe (ACreatedConnLink, ConnectionPlan))
               knownLinkPlans = withFastStore $ \db ->
-                liftIO (getGroupInfoViaUserShortLink db vr user l') >>= \case
-                  Just (cReq, g) -> pure $ Just (con cReq, CPGroupLink (GLPOwnLink g))
-                  Nothing -> (gPlan =<<) <$> getGroupViaShortLinkToConnect db vr user l'
-          CCTChannel -> throwCmdError "channel links are not supported in this version"
-          CCTRelay -> throwCmdError "chat relay links are not supported in this version"
-    connectWithPlan :: User -> IncognitoEnabled -> ACreatedConnLink -> ConnectionPlan -> CM ChatResponse
-    connectWithPlan user@User {userId} incognito ccLink plan
+                liftIO (getGroupInfoViaUserTarget db cxt user nl') >>= \case
+                  Just (ccl, g) -> pure $ Just (ACCL SCMContact ccl, CPGroupLink (GLPOwnLink g))
+                  Nothing -> (gPlan =<<) <$> getGroupToConnect db cxt user nl'
+              resolveKnownGroup g = do
+                l' <- resolveSLink
+                (FixedLinkData {rootKey = rk}, cData@(ContactLinkData _ UserContactData {owners}), cReq) <- getShortLinkConnReq' nm user l'
+                groupSLinkData_ <- liftIO $ decodeLinkUserData cData
+                let ov = verifyLinkOwner rk owners l' sig_
+                    glOwners = map (\OwnerAuth {ownerId, ownerKey} -> GroupLinkOwner {memberId = MemberId ownerId, memberKey = ownerKey}) owners
+                (g', updated) <- case groupSLinkData_ of
+                  Just sLinkData -> updateGroupFromLinkData user g sLinkData Nothing
+                  _ -> pure (g, False)
+                pure (con l' cReq, CPGroupLink (GLPKnown g' updated ov (ListDef glOwners)))
+          -- resolve a name to its first contact/channel short link
+          resolveNameLink :: SimplexNameInfo -> CM (ConnShortLink 'CMContact)
+          resolveNameLink SimplexNameInfo {nameType, nameDomain} = do
+            NameRecord {nrSimplexContact, nrSimplexChannel} <- maybe (resolveNameRecord user nm nameDomain) (ExceptT . pure) nameRec
+            let (candidates, ctType') = case nameType of
+                  NTContact -> (nrSimplexContact, CCTContact)
+                  NTPublicGroup -> (nrSimplexChannel, CCTChannel)
+            maybe (throwChatError $ CESimplexDomainNotReady nameDomain SDENoValidLink) pure $ firstNameLink ctType' candidates
+    connectWithPlan :: User -> IncognitoEnabled -> ACreatedConnLink -> Maybe SimplexNameInfo -> Maybe SimplexNameInfo -> ConnectionPlan -> CM ChatResponse
+    connectWithPlan user@User {userId} incognito ccLink planSimplexName otherSimplexName plan
       | connectionPlanProceed plan = do
           case plan of CPError e -> eToView e; _ -> pure ()
           case plan of
             CPContactAddress (CAPContactViaAddress Contact {contactId}) ->
-              processChatCommand vr nm $ APIConnectContactViaAddress userId incognito contactId
-            _ -> processChatCommand vr nm $ APIConnect userId incognito $ Just ccLink
-      | otherwise = pure $ CRConnectionPlan user ccLink plan
-    invitationRequestPlan :: User -> ConnReqInvitation -> Maybe ContactShortLinkData -> CM ConnectionPlan
-    invitationRequestPlan user cReq contactSLinkData_ = do
-      maybe (CPInvitationLink (ILPOk contactSLinkData_)) (invitationEntityPlan contactSLinkData_)
-        <$> withFastStore' (\db -> getConnectionEntityByConnReq db vr user $ invCReqSchemas cReq)
+              processChatCommand cxt nm $ APIConnectContactViaAddress userId incognito contactId
+            CPContactAddress (CAPOk (Just sld) _) | isJust vName -> connectContactViaName sld
+            CPGroupLink (GLPOk (Just GroupShortLinkInfo {direct = False}) (Just gld) _)
+              | ACCL SCMContact ccl <- ccLink -> joinChannelViaRelays ccl gld
+            _ -> processChatCommand cxt nm $ APIConnect userId incognito $ Just ccLink
+      | otherwise = pure $ CRConnectionPlan user ccLink planSimplexName otherSimplexName plan
+      where
+        vName = nameDomain <$> planSimplexName
+        joinChannelViaRelays :: CreatedLinkContact -> GroupShortLinkData -> CM ChatResponse
+        joinChannelViaRelays ccl gld = do
+          GroupInfo {groupId} <- prepareChannelGroup
+          processChatCommand cxt nm APIConnectPreparedGroup {groupId, incognito, ownerContact = Nothing, msgContent_ = Nothing}
+            `catchAllErrors` \e -> do
+              deletePreparedChannel groupId `catchAllErrors` eToView
+              throwError e
+          where
+            prepareChannelGroup =
+              processChatCommand cxt nm (APIPrepareGroup userId ccl False vName gld) >>= \case
+                CRNewPreparedChat _ (AChat SCTGroup (Chat (GroupChat gInfo _) _ _)) -> pure gInfo
+                _ -> throwChatError $ CEException "joinChannelViaRelays: unexpected response from APIPrepareGroup"
+            deletePreparedChannel groupId = do
+              gInfo <- withFastStore $ \db -> getGroupInfo db cxt user groupId
+              deleteGroupConnections user gInfo False
+              withFastStore' $ \db -> deleteGroup db user gInfo
+        connectContactViaName :: ContactShortLinkData -> CM ChatResponse
+        connectContactViaName sld =
+          processChatCommand cxt nm (APIPrepareContact userId ccLink vName sld) >>= \case
+            CRNewPreparedChat _ (AChat SCTDirect (Chat (DirectChat Contact {contactId}) _ _)) ->
+              processChatCommand cxt nm (APIConnectPreparedContact contactId incognito Nothing)
+            _ -> throwChatError $ CEException "connectContactViaName: unexpected response from APIPrepareContact"
+    invitationRequestPlan :: User -> ConnReqInvitation -> Maybe ContactShortLinkData -> Maybe OwnerVerification -> CM ConnectionPlan
+    invitationRequestPlan user cReq cld ov = do
+      maybe (CPInvitationLink (ILPOk cld ov)) (invitationEntityPlan cld ov)
+        <$> withFastStore' (\db -> getConnectionEntityByConnReq db cxt user $ invCReqSchemas cReq)
       where
         invCReqSchemas :: ConnReqInvitation -> (ConnReqInvitation, ConnReqInvitation)
         invCReqSchemas (CRInvitationUri crData e2e) =
           ( CRInvitationUri crData {crScheme = SSSimplex} e2e,
             CRInvitationUri crData {crScheme = simplexChat} e2e
           )
-    invitationEntityPlan :: Maybe ContactShortLinkData -> ConnectionEntity -> ConnectionPlan
-    invitationEntityPlan contactSLinkData_ = \case
+    invitationEntityPlan :: Maybe ContactShortLinkData -> Maybe OwnerVerification -> ConnectionEntity -> ConnectionPlan
+    invitationEntityPlan cld ov = \case
       RcvDirectMsgConnection Connection {connStatus, contactConnInitiated} ct_ -> case ct_ of
         Just ct
           | contactActive ct -> CPInvitationLink (ILPKnown ct)
-          | otherwise -> CPInvitationLink (ILPOk contactSLinkData_)
+          | otherwise -> CPInvitationLink (ILPOk cld ov)
         Nothing
           | connStatus == ConnNew && contactConnInitiated -> CPInvitationLink ILPOwnLink
-          | connStatus == ConnPrepared -> CPInvitationLink (ILPOk contactSLinkData_)
+          | connStatus == ConnPrepared -> CPInvitationLink (ILPOk cld ov)
           | otherwise -> CPInvitationLink (ILPConnecting Nothing)
       _ -> CPError $ ChatError $ CECommandError "found connection entity is not RcvDirectMsgConnection"
     contactOrGroupRequestPlan ::  User -> ConnReqContact -> CM ConnectionPlan
-    contactOrGroupRequestPlan user cReq@(CRContactUri crData) = do
-      let ConnReqUriData {crClientData} = crData
-          groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli
+    contactOrGroupRequestPlan user cReq@(CRContactUri ConnReqUriData {crClientData} _) = do
+      let groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli
       case groupLinkId of
-        Nothing -> contactRequestPlan user cReq Nothing
-        Just _ -> groupJoinRequestPlan user cReq Nothing
-    contactRequestPlan :: User -> ConnReqContact -> Maybe ContactShortLinkData -> CM ConnectionPlan
-    contactRequestPlan user (CRContactUri crData) contactSLinkData_ = do
-      let cReqSchemas = contactCReqSchemas crData
+        Nothing -> contactRequestPlan user cReq Nothing Nothing
+        Just _ -> groupJoinRequestPlan user cReq Nothing Nothing Nothing []
+    contactRequestPlan :: User -> ConnReqContact -> Maybe ContactShortLinkData -> Maybe OwnerVerification -> CM ConnectionPlan
+    contactRequestPlan user cReq cld ov = do
+      let cReqSchemas = contactCReqSchemas cReq
           cReqHashes = bimap contactCReqHash contactCReqHash cReqSchemas
+          plan p = pure $ CPContactAddress p
       withFastStore' (\db -> getUserContactLinkByConnReq db user cReqSchemas) >>= \case
-        Just _ -> pure $ CPContactAddress CAPOwnLink
+        Just _ -> plan $ CAPOwnLink
         Nothing ->
-          withFastStore' (\db -> getContactConnEntityByConnReqHash db vr user cReqHashes) >>= \case
+          withFastStore' (\db -> getContactConnEntityByConnReqHash db cxt user cReqHashes) >>= \case
             Nothing ->
-              withFastStore' (\db -> getContactWithoutConnViaAddress db vr user cReqSchemas) >>= \case
-                Just ct | not (contactDeleted ct) -> pure $ CPContactAddress (CAPContactViaAddress ct)
-                _ -> pure $ CPContactAddress (CAPOk contactSLinkData_)
+              withFastStore' (\db -> getContactWithoutConnViaAddress db cxt user cReqSchemas) >>= \case
+                Just ct | not (contactDeleted ct) -> plan $ CAPContactViaAddress ct
+                _ -> plan $ CAPOk cld ov
             Just (RcvDirectMsgConnection Connection {connStatus} Nothing)
-              | connStatus == ConnPrepared -> pure $ CPContactAddress (CAPOk contactSLinkData_)
-              | otherwise -> pure $ CPContactAddress CAPConnectingConfirmReconnect
+              | connStatus == ConnPrepared -> plan $ CAPOk cld ov
+              | otherwise -> plan CAPConnectingConfirmReconnect
             Just (RcvDirectMsgConnection _ (Just ct))
-              | not (contactReady ct) && contactActive ct -> pure $ CPContactAddress (CAPConnectingProhibit ct)
-              | contactDeleted ct -> pure $ CPContactAddress (CAPOk contactSLinkData_)
-              | otherwise -> pure $ CPContactAddress (CAPKnown ct)
+              | not (contactReady ct) && contactActive ct -> plan $ CAPConnectingProhibit ct
+              | contactDeleted ct -> plan $ CAPOk cld ov
+              | otherwise -> plan $ CAPKnown ct
             -- TODO [short links] RcvGroupMsgConnection branch is deprecated? (old group link protocol?)
-            Just (RcvGroupMsgConnection _ gInfo _) -> groupPlan gInfo Nothing
+            Just (RcvGroupMsgConnection _ gInfo _) -> groupPlan gInfo Nothing Nothing Nothing []
             Just _ -> throwCmdError "found connection entity is not RcvDirectMsgConnection or RcvGroupMsgConnection"
-    groupJoinRequestPlan :: User -> ConnReqContact -> Maybe GroupShortLinkData -> CM ConnectionPlan
-    groupJoinRequestPlan user (CRContactUri crData) groupSLinkData_ = do
-      let cReqSchemas = contactCReqSchemas crData
+    groupJoinRequestPlan :: User -> ConnReqContact -> Maybe GroupShortLinkInfo -> Maybe GroupShortLinkData -> Maybe OwnerVerification -> [GroupLinkOwner] -> CM ConnectionPlan
+    groupJoinRequestPlan user cReq linkInfo gld ov glOwners = do
+      let cReqSchemas = contactCReqSchemas cReq
           cReqHashes = bimap contactCReqHash contactCReqHash cReqSchemas
-      withFastStore' (\db -> getGroupInfoByUserContactLinkConnReq db vr user cReqSchemas) >>= \case
-        Just g -> pure $ CPGroupLink (GLPOwnLink g)
+          plan p = pure $ CPGroupLink p
+      withFastStore' (\db -> getGroupInfoByUserContactLinkConnReq db cxt user cReqSchemas) >>= \case
+        Just g -> plan $ GLPOwnLink g
         Nothing -> do
-          connEnt_ <- withFastStore' $ \db -> getContactConnEntityByConnReqHash db vr user cReqHashes
-          gInfo_ <- withFastStore' $ \db -> getGroupInfoByGroupLinkHash db vr user cReqHashes
+          connEnt_ <- withFastStore' $ \db -> getContactConnEntityByConnReqHash db cxt user cReqHashes
+          gInfo_ <- withFastStore' $ \db -> getGroupInfoByGroupLinkHash db cxt user cReqHashes
           case (gInfo_, connEnt_) of
-            (Nothing, Nothing) -> pure $ CPGroupLink (GLPOk groupSLinkData_)
+            (Nothing, Nothing) -> plan $ GLPOk linkInfo gld ov
             -- TODO [short links] RcvDirectMsgConnection branches are deprecated? (old group link protocol?)
-            (Nothing, Just (RcvDirectMsgConnection _conn Nothing)) -> pure $ CPGroupLink GLPConnectingConfirmReconnect
+            (Nothing, Just (RcvDirectMsgConnection _conn Nothing)) -> plan $ GLPConnectingConfirmReconnect
             (Nothing, Just (RcvDirectMsgConnection _ (Just ct)))
-              | not (contactReady ct) && contactActive ct -> pure $ CPGroupLink (GLPConnectingProhibit gInfo_)
-              | otherwise -> pure $ CPGroupLink (GLPOk groupSLinkData_)
+              | not (contactReady ct) && contactActive ct -> plan $ GLPConnectingProhibit gInfo_
+              | otherwise -> plan $ GLPOk linkInfo gld ov
             (Nothing, Just _) -> throwCmdError "found connection entity is not RcvDirectMsgConnection"
-            (Just gInfo, _) -> groupPlan gInfo groupSLinkData_
-    groupPlan :: GroupInfo -> Maybe GroupShortLinkData -> CM ConnectionPlan
-    groupPlan gInfo@GroupInfo {membership} groupSLinkData_
-      | memberStatus membership == GSMemRejected = pure $ CPGroupLink (GLPKnown gInfo)
+            (Just gInfo, _) -> groupPlan gInfo linkInfo gld ov glOwners
+    groupPlan :: GroupInfo -> Maybe GroupShortLinkInfo -> Maybe GroupShortLinkData -> Maybe OwnerVerification -> [GroupLinkOwner] -> CM ConnectionPlan
+    groupPlan gInfo@GroupInfo {membership} linkInfo gld ov glOwners
+      | memberStatus membership == GSMemRejected = plan $ GLPKnown gInfo False ov (ListDef glOwners)
       | not (memberActive membership) && not (memberRemoved membership) =
-          pure $ CPGroupLink (GLPConnectingProhibit $ Just gInfo)
-      | memberActive membership = pure $ CPGroupLink (GLPKnown gInfo)
-      | otherwise = pure $ CPGroupLink (GLPOk groupSLinkData_)
-    contactCReqSchemas :: ConnReqUriData -> (ConnReqContact, ConnReqContact)
-    contactCReqSchemas crData =
-      ( CRContactUri crData {crScheme = SSSimplex},
-        CRContactUri crData {crScheme = simplexChat}
+          plan $ GLPConnectingProhibit $ Just gInfo
+      | memberActive membership = plan $ GLPKnown gInfo False ov (ListDef glOwners)
+      | otherwise = plan $ GLPOk linkInfo gld ov
+      where
+        plan p = pure $ CPGroupLink p
+    contactCReqSchemas :: ConnReqContact -> (ConnReqContact, ConnReqContact)
+    contactCReqSchemas (CRContactUri crData e2e) =
+      ( CRContactUri crData {crScheme = SSSimplex} e2e,
+        CRContactUri crData {crScheme = simplexChat} e2e
       )
-    contactCReqHash :: ConnReqContact -> ConnReqUriHash
-    contactCReqHash = ConnReqUriHash . C.sha256Hash . strEncode
-    getShortLinkConnReq :: User -> ConnShortLink m -> CM (ConnectionRequestUri m, ConnLinkData m)
-    getShortLinkConnReq user l = do
-      l' <- restoreShortLink' l
-      (cReq, cData) <- withAgent $ \a -> getConnShortLink a nm (aUserId user) l'
-      case cData of
-        ContactLinkData _ UserContactData {direct} | not direct -> throwChatError CEUnsupportedConnReq
-        _ -> pure ()
-      pure (cReq, cData)
     -- This function is needed, as UI uses simplex:/ schema in message view, so that the links can be handled without browser,
     -- and short links are stored with server hostname schema, so they wouldn't match without it.
     serverShortLink :: ConnShortLink m -> ConnShortLink m
     serverShortLink = \case
       CSLInvitation _ srv lnkId linkKey -> CSLInvitation SLSServer srv lnkId linkKey
       CSLContact _ ct srv linkKey -> CSLContact SLSServer ct srv linkKey
-    restoreShortLink' l = (`restoreShortLink` l) <$> asks (shortLinkPresetServers . config)
+    mkLinkOwnerSig :: ConnectionModeI m => C.PrivateKeyEd25519 -> ConnShortLink m -> Maybe MemberId -> (ChatBinding, ByteString) -> LinkOwnerSig
+    mkLinkOwnerSig privKey connLink ownerMemberId (cbTag, bindingData) =
+      let ownerId = (\MemberId {unMemberId} -> B64UrlByteString unMemberId) <$> ownerMemberId
+          cb = encodeChatBinding cbTag bindingData
+          ownerSig = C.sign' privKey $ cb <> smpEncode connLink
+       in LinkOwnerSig {ownerId, chatBinding = B64UrlByteString cb, ownerSig}
+    shareChatBinding :: User -> SendRef -> CM (Maybe (ChatBinding, ByteString))
+    shareChatBinding u = \case
+      SRDirect contactId -> do
+        ct <- withFastStore $ \db -> getContact db cxt u contactId
+        forM (contactConn ct) $ \conn ->
+          (CBDirect,) . codeAD <$> withAgent (`getConnectionVerifyCodes` aConnId conn)
+      SRGroup toGroupId _ asGroup -> do
+        GroupInfo {groupProfile = GroupProfile {publicGroup}, membership = m} <- withFastStore $ \db -> getGroupInfo db cxt u toGroupId
+        pure $ mkBinding m <$> publicGroup
+        where
+          mkBinding GroupMember {memberId} PublicGroupProfile {publicGroupId = pgId}
+            | asGroup = (CBChannel, smpEncode pgId)
+            | otherwise = (CBGroup, smpEncode (pgId, memberId))
+    verifyLinkOwner :: ConnectionModeI m => C.PublicKeyEd25519 -> [OwnerAuth] -> ConnShortLink m -> Maybe LinkOwnerSig -> Maybe OwnerVerification
+    verifyLinkOwner rootKey owners connLink =
+      fmap $ \LinkOwnerSig {ownerId, chatBinding = B64UrlByteString bindingBytes, ownerSig} ->
+        let signedData = bindingBytes <> smpEncode connLink
+            findOwner (B64UrlByteString oId) = find (\OwnerAuth {ownerId = oId'} -> oId' == oId) owners
+         in case maybe (Just rootKey) (fmap ownerKey . findOwner) ownerId of
+              Nothing -> OVFailed "unknown owner"
+              Just key
+                | C.verify' key ownerSig signedData -> OVVerified
+                | otherwise -> OVFailed "signature verification failed"
     contactShortLinkData :: Profile -> Maybe AddressSettings -> UserLinkData
     contactShortLinkData p settings =
       let msg = autoReply =<< settings
           business = maybe False businessAddress settings
-          contactData = ContactShortLinkData p msg business
+          contactData = ContactShortLinkData p msg business Nothing
        in encodeShortLinkData contactData
+    relayShortLinkData :: Profile -> UserLinkData
+    relayShortLinkData Profile {displayName, fullName, shortDescr, image} =
+      encodeShortLinkData $ RelayAddressLinkData {relayProfile = RelayProfile {displayName, fullName, shortDescr, image}}
     updatePCCShortLinkData :: PendingContactConnection -> Profile -> CM (Maybe ShortLinkInvitation)
     updatePCCShortLinkData conn@PendingContactConnection {connLinkInv} profile =
-      forM (connShortLink =<< connLinkInv) $ \_ -> do
+      forM (connShortLink' =<< connLinkInv) $ \_ -> do
         let userData = contactShortLinkData profile Nothing
             userLinkData = UserInvLinkData userData
-        shortenShortLink' =<< withAgent (\a -> setConnShortLink a nm (aConnId' conn) SCMInvitation userLinkData Nothing)
+        shortenShortLink' =<< withAgent (\a -> setConnShortLink a nm (aConnId' conn) SCMInvitation userLinkData Nothing False Nothing)
     updateCIGroupInvitationStatus :: User -> GroupInfo -> CIGroupInvitationStatus -> CM ()
     updateCIGroupInvitationStatus user GroupInfo {groupId} newStatus = do
-      AChatItem _ _ cInfo ChatItem {content, meta = CIMeta {itemId}} <- withFastStore $ \db -> getChatItemByGroupId db vr user groupId
+      AChatItem _ _ cInfo ci@ChatItem {content, meta = meta@CIMeta {itemId}} <- withFastStore $ \db -> getChatItemByGroupId db cxt user groupId
       case (cInfo, content) of
         (DirectChat ct@Contact {contactId}, CIRcvGroupInvitation ciGroupInv@CIGroupInvitation {status} memRole)
           | status == CIGISPending -> do
@@ -3761,6 +4858,14 @@ processChatCommand vr nm = \case
               updateDirectChatItemView user ct itemId aciContent False False timed_ Nothing
               forM_ (timed_ >>= timedDeleteAt') $
                 startProximateTimedItemThread user (ChatRef CTDirect contactId Nothing, itemId)
+        (GroupChat g _, CIRcvGroupInvitation ciGroupInv@CIGroupInvitation {status} memRole)
+          | status == CIGISPending -> do
+              let content' = CIRcvGroupInvitation (ciGroupInv {status = newStatus} :: CIGroupInvitation) memRole
+              timed_ <- sndGroupCITimed False g Nothing
+              ci' <- withFastStore' $ \db -> updateGroupChatItem db user (groupId' g) ci {meta = meta {itemTimed = timed_}} content' False False Nothing
+              toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv cInfo ci')
+              forM_ (timed_ >>= timedDeleteAt') $
+                startProximateTimedItemThread user (ChatRef CTGroup (groupId' g) Nothing, itemId)
         _ -> pure () -- prohibited
     assertAllowedContent :: MsgContent -> CM ()
     assertAllowedContent = \case
@@ -3775,7 +4880,7 @@ processChatCommand vr nm = \case
     sendContactContentMessages :: User -> ContactId -> Bool -> Maybe Int -> NonEmpty ComposedMessageReq -> CM ChatResponse
     sendContactContentMessages user contactId live itemTTL cmrs = do
       assertMultiSendable live cmrs
-      ct <- withFastStore $ \db -> getContact db vr user contactId
+      ct <- withFastStore $ \db -> getContact db cxt user contactId
       assertDirectAllowed user MDSnd ct XMsgNew_
       assertVoiceAllowed ct
       processComposedMessages ct
@@ -3792,7 +4897,7 @@ processChatCommand vr nm = \case
           msgs_ <- sendDirectContactMessages user ct $ L.map XMsgNew msgContainers
           let itemsData = prepareSndItemsData (L.toList cmrs) (L.toList ciFiles_) (L.toList quotedItems_) msgs_
           when (length itemsData /= length cmrs) $ logError "sendContactContentMessages: cmrs and itemsData length mismatch"
-          r@(_, cis) <- partitionEithers <$> saveSndChatItems user (CDDirectSnd ct) itemsData timed_ live
+          r@(_, cis) <- partitionEithers <$> saveSndChatItems user (CDDirectSnd ct) False itemsData timed_ live
           processSendErrs r
           forM_ (timed_ >>= timedDeleteAt') $ \deleteAt ->
             forM_ cis $ \ci ->
@@ -3803,46 +4908,52 @@ processChatCommand vr nm = \case
             setupSndFileTransfers =
               forM cmrs $ \(ComposedMessage {fileSource = file_}, _, _, _) -> case file_ of
                 Just file -> do
-                  fileSize <- checkSndFile file
-                  (fInv, ciFile) <- xftpSndFileTransfer user file fileSize 1 $ CGContact ct
+                  let User {profile = LocalProfile {localBadge}} = user
+                  fileSize <- checkSndFile (if contactConnIncognito ct then Nothing else localBadge) file
+                  binding_ <- ifM ((not (contactConnIncognito ct) &&) <$> fileNeedsBadge fileSize) (directChatBinding ct) (pure Nothing)
+                  (fInv, ciFile) <- xftpSndFileTransfer user file fileSize 1 (CGContact ct) binding_
                   pure (Just fInv, Just ciFile)
                 Nothing -> pure (Nothing, Nothing)
             prepareMsgs :: NonEmpty (ComposedMessageReq, Maybe FileInvitation) -> Maybe CITimed -> CM (NonEmpty (MsgContainer, Maybe (CIQuote 'CTDirect)))
             prepareMsgs cmsFileInvs timed_ = withFastStore $ \db ->
               forM cmsFileInvs $ \((ComposedMessage {quotedItemId, msgContent = mc}, itemForwarded, _, _), fInv_) -> do
-                case (quotedItemId, itemForwarded) of
-                  (Nothing, Nothing) -> pure (MCSimple (ExtMsgContent mc M.empty fInv_ (ttl' <$> timed_) (justTrue live) Nothing), Nothing)
-                  (Nothing, Just _) -> pure (MCForward (ExtMsgContent mc M.empty fInv_ (ttl' <$> timed_) (justTrue live) Nothing), Nothing)
+                (mc', quotedItem_) <- case (quotedItemId, itemForwarded) of
+                  (Nothing, Nothing) -> pure (mcSimple mc, Nothing)
+                  (Nothing, Just ciff) -> do
+                    fl_ <- liftIO $ ciffForwardLink db ciff
+                    pure (mcForward fl_ mc, Nothing)
                   (Just qiId, Nothing) -> do
-                    CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, formattedText, file} <-
+                    CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, formattedText, markdownBlocks, file} <-
                       getDirectChatItem db user contactId qiId
                     (origQmc, qd, sent) <- quoteData qci
                     let msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = Nothing}
                         qmc = quoteContent mc origQmc file
-                        quotedItem = CIQuote {chatDir = qd, itemId = Just qiId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc, formattedText}
-                    pure (MCQuote QuotedMsg {msgRef, content = qmc} (ExtMsgContent mc M.empty fInv_ (ttl' <$> timed_) (justTrue live) Nothing), Just quotedItem)
+                        quotedItem = CIQuote {chatDir = qd, itemId = Just qiId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc, formattedText, markdownBlocks}
+                    pure (mcQuote QuotedMsg {msgRef, content = qmc} mc, Just quotedItem)
                   (Just _, Just _) -> throwError SEInvalidQuote
+                pure (mc' {file = fInv_, ttl = ttl' <$> timed_, live = justTrue live}, quotedItem_)
               where
                 quoteData :: ChatItem c d -> ExceptT StoreError IO (MsgContent, CIQDirection 'CTDirect, Bool)
                 quoteData ChatItem {meta = CIMeta {itemDeleted = Just _}} = throwError SEInvalidQuote
                 quoteData ChatItem {content = CISndMsgContent qmc} = pure (qmc, CIQDirectSnd, True)
                 quoteData ChatItem {content = CIRcvMsgContent qmc} = pure (qmc, CIQDirectRcv, False)
                 quoteData _ = throwError SEInvalidQuote
-    sendGroupContentMessages :: User -> GroupInfo -> Maybe GroupChatScope -> Bool -> Maybe Int -> NonEmpty ComposedMessageReq -> CM ChatResponse
-    sendGroupContentMessages user gInfo scope live itemTTL cmrs = do
+    sendGroupContentMessages :: User -> GroupInfoKeys -> Maybe GroupChatScope -> ShowGroupAsSender -> Bool -> Maybe Int -> Bool -> NonEmpty ComposedMessageReq -> CM ChatResponse
+    sendGroupContentMessages user gInfo@(GIK g _) scope showGroupAsSender live itemTTL sign cmrs = do
       assertMultiSendable live cmrs
-      chatScopeInfo <- mapM (getChatScopeInfo vr user) scope
-      recipients <- getGroupRecipients vr user gInfo chatScopeInfo modsCompatVersion
-      sendGroupContentMessages_ user gInfo scope chatScopeInfo recipients live itemTTL cmrs
+      chatScopeInfo <- mapM (getChatScopeInfo cxt user) scope
+      recipients <- getGroupRecipients cxt user g chatScopeInfo modsCompatVersion
+      sendGroupContentMessages_ user gInfo scope showGroupAsSender chatScopeInfo recipients live itemTTL sign cmrs
         where
           hasReport = any (\(ComposedMessage {msgContent}, _, _, _) -> isReport msgContent) cmrs
           modsCompatVersion = if hasReport then contentReportsVersion else groupKnockingVersion
-    sendGroupContentMessages_ :: User -> GroupInfo -> Maybe GroupChatScope -> Maybe GroupChatScopeInfo -> [GroupMember] -> Bool -> Maybe Int -> NonEmpty ComposedMessageReq -> CM ChatResponse
-    sendGroupContentMessages_ user gInfo@GroupInfo {groupId, membership} scope chatScopeInfo recipients live itemTTL cmrs = do
+    sendGroupContentMessages_ :: User -> GroupInfoKeys -> Maybe GroupChatScope -> ShowGroupAsSender -> Maybe GroupChatScopeInfo -> [GroupMember] -> Bool -> Maybe Int -> Bool -> NonEmpty ComposedMessageReq -> CM ChatResponse
+    sendGroupContentMessages_ user g@(GIK gInfo@GroupInfo {groupId, membership} _) scope showGroupAsSender chatScopeInfo recipients live itemTTL sign cmrs = do
       forM_ allowedRole $ assertUserGroupRole gInfo
       assertGroupContentAllowed
       processComposedMessages
       where
+        signMsgs = sign || groupFeatureAllowed SGFSignMessages gInfo
         allowedRole :: Maybe GroupMemberRole
         allowedRole = case scope of
           Nothing -> Just GRAuthor
@@ -3859,17 +4970,17 @@ processChatCommand vr nm = \case
             findProhibited :: [ComposedMessageReq] -> Maybe GroupFeature
             findProhibited =
               foldr'
-                (\(ComposedMessage {fileSource, msgContent = mc}, _, (_, ft), _) acc -> prohibitedGroupContent gInfo membership chatScopeInfo mc ft fileSource True <|> acc)
+                (\(ComposedMessage {fileSource, msgContent = mc}, _, (_, ParsedMarkdown ft _), _) acc -> prohibitedGroupContent gInfo membership chatScopeInfo mc ft fileSource True <|> acc)
                 Nothing
         processComposedMessages ::  CM ChatResponse
         processComposedMessages = do
-          -- TODO [channels fwd] single description for all recipients
+          -- TODO [relays] single description for all recipients
           (fInvs_, ciFiles_) <- L.unzip <$> setupSndFileTransfers (length recipients)
           timed_ <- sndGroupCITimed live gInfo itemTTL
           (chatMsgEvents, quotedItems_) <- L.unzip <$> prepareMsgs (L.zip cmrs fInvs_) timed_
-          (msgs_, gsr) <- sendGroupMessages user gInfo Nothing recipients chatMsgEvents
+          (msgs_, gsr) <- sendGroupMessages user g Nothing showGroupAsSender recipients signMsgs chatMsgEvents
           let itemsData = prepareSndItemsData (L.toList cmrs) (L.toList ciFiles_) (L.toList quotedItems_) (L.toList msgs_)
-          cis_ <- saveSndChatItems user (CDGroupSnd gInfo chatScopeInfo) itemsData timed_ live
+          cis_ <- saveSndChatItems user (CDGroupSnd gInfo chatScopeInfo) showGroupAsSender itemsData timed_ live
           when (length cis_ /= length cmrs) $ logError "sendGroupContentMessages: cmrs and cis_ length mismatch"
           createMemberSndStatuses cis_ msgs_ gsr
           let r@(_, cis) = partitionEithers cis_
@@ -3883,16 +4994,23 @@ processChatCommand vr nm = \case
             setupSndFileTransfers n =
               forM cmrs $ \(ComposedMessage {fileSource = file_}, _, _, _) -> case file_ of
                 Just file -> do
-                  fileSize <- checkSndFile file
-                  (fInv, ciFile) <- xftpSndFileTransfer user file fileSize n $ CGGroup gInfo recipients
-                  pure (Just fInv, Just ciFile)
+                  let User {profile = LocalProfile {localBadge}} = user
+                  fileSize <- checkSndFile (if incognitoMembership gInfo then Nothing else localBadge) file
+                  needsBadge <- fileNeedsBadge fileSize
+                  let binding_ = if needsBadge && not (incognitoMembership gInfo) then sndGroupChatBinding gInfo showGroupAsSender else Nothing
+                  (fInv, ciFile) <- xftpSndFileTransfer user file fileSize n (CGGroup gInfo recipients) binding_
+                  fInv' <-
+                    if signMsgs && useRelays' gInfo
+                      then (\d -> (fInv :: FileInvitation) {fileDigest = Just d}) <$> cryptoFileDigest file
+                      else pure fInv
+                  pure (Just fInv', Just ciFile)
                 Nothing -> pure (Nothing, Nothing)
             prepareMsgs :: NonEmpty (ComposedMessageReq, Maybe FileInvitation) -> Maybe CITimed -> CM (NonEmpty (ChatMsgEvent 'Json, Maybe (CIQuote 'CTGroup)))
             prepareMsgs cmsFileInvs timed_ = withFastStore $ \db ->
               forM cmsFileInvs $ \((ComposedMessage {quotedItemId, msgContent = mc}, itemForwarded, _, ciMentions), fInv_) ->
                 let msgScope = toMsgScope gInfo <$> chatScopeInfo
                     mentions = M.map (\CIMention {memberId} -> MsgMention {memberId}) ciMentions
-                 in prepareGroupMsg db user gInfo msgScope mc mentions quotedItemId itemForwarded fInv_ timed_ live
+                 in prepareGroupMsg db user gInfo msgScope showGroupAsSender mc mentions quotedItemId itemForwarded fInv_ timed_ live
             createMemberSndStatuses ::
               [Either ChatError (ChatItem 'CTGroup 'MDSnd)] ->
               NonEmpty (Either ChatError SndMessage) ->
@@ -3938,9 +5056,9 @@ processChatCommand vr nm = \case
           -- batching retrieval of quoted messages (prepareMsgs).
           when (live || length (L.filter (\(ComposedMessage {quotedItemId}, _, _, _) -> isJust quotedItemId) cmrs) > 1) $
             throwCmdError "invalid multi send: live and more than one quote not supported"
-    xftpSndFileTransfer :: User -> CryptoFile -> Integer -> Int -> ContactOrGroup -> CM (FileInvitation, CIFile 'MDSnd)
-    xftpSndFileTransfer user file fileSize n contactOrGroup = do
-      (fInv, ciFile, ft) <- xftpSndFileTransfer_ user file fileSize n $ Just contactOrGroup
+    xftpSndFileTransfer :: User -> CryptoFile -> Integer -> Int -> ContactOrGroup -> Maybe ByteString -> CM (FileInvitation, CIFile 'MDSnd)
+    xftpSndFileTransfer user file fileSize n contactOrGroup binding_ = do
+      (fInv, ciFile, ft) <- xftpSndFileTransfer_ user file fileSize n (Just contactOrGroup) binding_
       case contactOrGroup of
         CGContact Contact {activeConn} -> forM_ activeConn $ \conn ->
           withFastStore' $ \db -> createSndFTDescrXFTP db user Nothing conn ft dummyFileDescr
@@ -3977,19 +5095,19 @@ processChatCommand vr nm = \case
         throwError err
     getCommandDirectChatItems :: User -> Int64 -> NonEmpty ChatItemId -> CM (Contact, [CChatItem 'CTDirect])
     getCommandDirectChatItems user ctId itemIds = do
-      ct <- withFastStore $ \db -> getContact db vr user ctId
+      ct <- withFastStore $ \db -> getContact db cxt user ctId
       (errs, items) <- lift $ partitionEithers <$> withStoreBatch (\db -> map (getDirectCI db) (L.toList itemIds))
       unless (null errs) $ toView $ CEvtChatErrors errs
       pure (ct, items)
       where
         getDirectCI :: DB.Connection -> ChatItemId -> IO (Either ChatError (CChatItem 'CTDirect))
         getDirectCI db itemId = runExceptT . withExceptT ChatErrorStore $ getDirectChatItem db user ctId itemId
-    getCommandGroupChatItems :: User -> Int64 -> NonEmpty ChatItemId -> CM (GroupInfo, [CChatItem 'CTGroup])
+    getCommandGroupChatItems :: User -> Int64 -> NonEmpty ChatItemId -> CM (GroupInfoKeys, [CChatItem 'CTGroup])
     getCommandGroupChatItems user gId itemIds = do
-      gInfo <- withFastStore $ \db -> getGroupInfo db vr user gId
+      g@(GIK gInfo _) <- withFastStore $ \db -> getGroupInfoKeys db cxt user gId
       (errs, items) <- lift $ partitionEithers <$> withStoreBatch (\db -> map (getGroupCI db gInfo) (L.toList itemIds))
       unless (null errs) $ toView $ CEvtChatErrors errs
-      pure (gInfo, items)
+      pure (g, items)
       where
         getGroupCI :: DB.Connection -> GroupInfo -> ChatItemId -> IO (Either ChatError (CChatItem 'CTGroup))
         getGroupCI db gInfo itemId = runExceptT . withExceptT ChatErrorStore $ getGroupCIWithReactions db user gInfo itemId
@@ -4030,49 +5148,119 @@ processChatCommand vr nm = \case
               chunkSize <- asks $ fileChunkSize . config
               withFastStore' $ \db -> do
                 fileId <- createLocalFile CIFSSndStored db user nf createdAt cf fileSize chunkSize
-                pure CIFile {fileId, fileName = takeFileName filePath, fileSize, fileSource = Just cf, fileStatus = CIFSSndStored, fileProtocol = FPLocal}
+                pure CIFile {fileId, fileName = takeFileName filePath, fileSize, fileSource = Just cf, fileStatus = CIFSSndStored, fileProtocol = FPLocal, fileExpires = Nothing, fileProhibited = Nothing}
         prepareLocalItemsData ::
           NonEmpty ComposedMessageReq ->
           NonEmpty (Maybe (CIFile 'MDSnd)) ->
-          NonEmpty (CIContent 'MDSnd, Maybe (CIFile 'MDSnd), Maybe CIForwardedFrom, (Text, Maybe MarkdownList))
+          NonEmpty (CIContent 'MDSnd, Maybe (CIFile 'MDSnd), Maybe CIForwardedFrom, (Text, ParsedMarkdown))
         prepareLocalItemsData =
           L.zipWith $ \(ComposedMessage {msgContent = mc}, itemForwarded, ts, _) f ->
             (CISndMsgContent mc, f, itemForwarded, ts)
     getConnQueueInfo user Connection {connId, agentConnId = AgentConnId acId} = do
       msgInfo <- withFastStore' (`getLastRcvMsgInfo` connId)
       CRQueueInfo user msgInfo <$> withAgent (\a -> getConnectionQueueInfo a nm acId)
-    withSendRef :: ChatRef -> (SendRef -> CM ChatResponse) -> CM ChatResponse
-    withSendRef chatRef a = case chatRef of
+    withSendRef :: User -> ChatRef -> (SendRef -> CM ChatResponse) -> CM ChatResponse
+    withSendRef user chatRef a = case chatRef of
       ChatRef CTDirect cId _ -> a $ SRDirect cId
-      ChatRef CTGroup gId scope -> a $ SRGroup gId scope
+      ChatRef CTGroup gId scope -> do
+        gInfo <- withFastStore $ \db -> getGroupInfo db cxt user gId
+        a $ SRGroup gId scope (sendAsGroup' gInfo scope)
       _ -> throwCmdError "not supported"
+    preparedGroupFromLink :: User -> CreatedLinkContact -> DirectLink -> GroupShortLinkData -> Maybe SharedMsgId -> Maybe SimplexDomain -> CM (GroupInfo, Maybe GroupMember)
+    preparedGroupFromLink user ccLink direct groupSLinkData welcomeSharedMsgId verifiedDomain = do
+      let GroupShortLinkData {groupProfile = gp, publicGroupData = publicGroupData_} = groupSLinkData
+          publicMemberCount_ = (\PublicGroupData {publicMemberCount} -> publicMemberCount) <$> publicGroupData_
+          useRelays = not direct
+      subRole <- if useRelays then asks $ channelSubscriberRole . config else pure GRMember
+      gVar <- asks random
+      withStore $ \db -> createPreparedGroup db gVar cxt user gp False ccLink welcomeSharedMsgId useRelays subRole publicMemberCount_ verifiedDomain
+
     getSharedMsgId :: CM SharedMsgId
     getSharedMsgId = do
       gVar <- asks random
       liftIO $ SharedMsgId <$> encodedRandomBytes gVar 12
 
+firstNameLink :: ContactConnType -> [Text] -> Maybe (ConnShortLink 'CMContact)
+firstNameLink ctType = foldr (\t r -> nameLink t <|> r) Nothing
+  where
+    nameLink t = case strDecode @(ConnShortLink 'CMContact) (encodeUtf8 t) of
+      Right sl@(CSLContact _ ct _ _) | ct == ctType -> Just sl
+      _ -> Nothing
+
+nameResolvesTo :: ConnShortLink 'CMContact -> [Text] -> Bool
+nameResolvesTo sLnk = any (either (const False) (sameShortLinkContact sLnk) . strDecode . encodeUtf8)
+
+-- the resolver now also reports names that are not registered, which stay the agent's NAME NOT_FOUND
+resolveNameRecord :: User -> NetworkRequestMode -> SimplexDomain -> CM NameRecord
+resolveNameRecord user nm domain = do
+  NameResponse {registration} <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) domain
+  case registration of
+    NRRegistered {nameRecord} -> pure nameRecord
+    _ -> throwError $ chatErrorAgent $ SMP "" (NAME SMP.NOT_FOUND)
+
+verifyEntityDomain :: User -> NetworkRequestMode -> SimplexNameType -> SimplexDomainClaim -> Maybe AConnShortLink -> CM (Maybe Bool, Maybe Text)
+verifyEntityDomain user nm nameType SimplexDomainClaim {domain = StrJSON domain, proof = proof_} connLink_ = case (proof_, connLink_) of
+  (Nothing, _) -> pure (Nothing, Just "no name proof to verify")
+  (_, Nothing) -> pure (Nothing, Just "no connection link to check the name against")
+  (Just proof, Just (ACSL SCMContact profileSLnk)) -> do
+    NameRecord {nrSimplexContact, nrSimplexChannel} <- resolveNameRecord user nm domain
+    let resolvedLinks = case nameType of
+          NTContact -> nrSimplexContact
+          NTPublicGroup -> nrSimplexChannel
+    if not (nameResolvesTo profileSLnk resolvedLinks)
+      then pure (Just False, Just "the name does not resolve to this address")
+      else do
+        ok <- verifyDomainProof proof profileSLnk
+        pure (Just ok, if ok then Nothing else Just "the name proof was not signed by this address's owner")
+  (Just _, Just _) -> pure (Nothing, Just "unexpected connection link type for name verification")
+  where
+    verifyDomainProof :: SimplexDomainProof -> ShortLinkContact -> CM Bool
+    verifyDomainProof SimplexDomainProof {linkOwnerId, presHeader, signature} sLnk@(CSLContact _ ct srv key) = do
+      (FixedLinkData {rootKey}, ContactLinkData _ UserContactData {owners}, _) <- getShortLinkConnReq nm user sLnk
+      let ownerKey_ = case linkOwnerId of
+            Nothing -> Just rootKey
+            Just (StrJSON oid) -> ownerKey <$> find (\OwnerAuth {ownerId} -> ownerId == oid) owners
+      pure $ maybe False (\k -> C.verify' k signature proofPayload) ownerKey_
+      where
+        proofPayload = strEncode (Str "simplex_domain_v1", presHeader, domain, ct, srv, key)
+
 data ConnectViaContactResult
   = CVRConnectedContact Contact
   | CVRSentInvitation Connection (Maybe Profile)
 
-protocolServers :: UserProtocol p => SProtocolType p -> ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP]) -> ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP])
-protocolServers p (operators, smpServers, xftpServers) = case p of
-  SPSMP -> (operators, smpServers, [])
-  SPXFTP -> (operators, [], xftpServers)
+onlyProtocolServers :: UserProtocol p => SProtocolType p -> ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP], [UserChatRelay]) -> ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP], [UserChatRelay])
+onlyProtocolServers p (operators, smpServers, xftpServers, _chatRelays) = case p of
+  SPSMP -> (operators, smpServers, [], [])
+  SPXFTP -> (operators, [], xftpServers, [])
 
 -- disable preset and replace custom servers (groupByOperator always adds custom)
 updatedServers :: forall p. UserProtocol p => SProtocolType p -> [AUserServer p] -> UserOperatorServers -> UpdatedUserOperatorServers
-updatedServers p' srvs UserOperatorServers {operator, smpServers, xftpServers} = case p' of
-  SPSMP -> u (updateSrvs smpServers, map (AUS SDBStored) xftpServers)
-  SPXFTP -> u (map (AUS SDBStored) smpServers, updateSrvs xftpServers)
+updatedServers p' srvs UserOperatorServers {operator, smpServers, xftpServers, chatRelays} = case p' of
+  SPSMP -> u (updateSrvs smpServers, map (AUS SDBStored) xftpServers, map (AUCR SDBStored) chatRelays)
+  SPXFTP -> u (map (AUS SDBStored) smpServers, updateSrvs xftpServers, map (AUCR SDBStored) chatRelays)
   where
-    u = uncurry $ UpdatedUserOperatorServers operator
+    u = uncurry3 $ UpdatedUserOperatorServers operator
+    uncurry3 :: (a -> b -> c -> d) -> ((a, b, c) -> d)
+    uncurry3 f ~(a,b,c) = f a b c
     updateSrvs :: [UserServer p] -> [AUserServer p]
     updateSrvs pSrvs = map disableSrv pSrvs <> maybe srvs (const []) operator
     disableSrv srv@UserServer {preset} =
       AUS SDBStored $ if preset then srv {enabled = False} else srv {deleted = True}
 
-type ComposedMessageReq = (ComposedMessage, Maybe CIForwardedFrom, (Text, Maybe MarkdownList), Map MemberName CIMention)
+onlyRelays :: ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP], [UserChatRelay]) -> ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP], [UserChatRelay])
+onlyRelays (operators, _smpServers, _xftpServers, chatRelays) = (operators, [], [], chatRelays)
+
+-- disable preset and replace custom chat relays (groupByOperator always adds custom)
+updatedRelays :: [AUserChatRelay] -> UserOperatorServers -> UpdatedUserOperatorServers
+updatedRelays relays UserOperatorServers {operator, smpServers, xftpServers, chatRelays} =
+  UpdatedUserOperatorServers operator (map (AUS SDBStored) smpServers) (map (AUS SDBStored) xftpServers) (updateRelays chatRelays)
+  where
+    updateRelays :: [UserChatRelay] -> [AUserChatRelay]
+    updateRelays pRelays = map disableRelay pRelays <> maybe relays (const []) operator
+    disableRelay relay@UserChatRelay {preset} =
+      AUCR SDBStored $ if preset then relay {enabled = False} else relay {deleted = True}
+
+type ComposedMessageReq = (ComposedMessage, Maybe CIForwardedFrom, (Text, ParsedMarkdown), Map MemberName CIMention)
 
 composedMessage :: Maybe CryptoFile -> MsgContent -> ComposedMessage
 composedMessage f mc = ComposedMessage {fileSource = f, quotedItemId = Nothing, msgContent = mc, mentions = M.empty}
@@ -4082,7 +5270,7 @@ composedMessageReq cm@ComposedMessage {msgContent = mc} = (cm, Nothing, msgConte
 
 composedMessageReqMentions :: DB.Connection -> User -> GroupInfo -> ComposedMessage -> ExceptT StoreError IO ComposedMessageReq
 composedMessageReqMentions db user g cm@ComposedMessage {msgContent = mc, mentions} = do
-  let ts@(_, ft_) = msgContentTexts mc
+  let ts@(_, ParsedMarkdown ft_ _) = msgContentTexts mc
   (cm,Nothing,ts,) <$> getCIMentions db user g ft_ mentions
 
 data ChangedProfileContact = ChangedProfileContact
@@ -4100,6 +5288,707 @@ createContactsSndFeatureItems user cts =
     getPref ContactUserPreference {userPreference} = case userPreference of
       CUPContact {preference} -> preference
       CUPUser {preference} -> preference
+
+-- | Verify an own credential against the configured issuer keys.
+-- Nothing means its key index is not among them, so this version cannot verify it at all.
+verifyOwnBadge :: BadgeCredential -> CM (Maybe Bool)
+verifyOwnBadge cred@(BadgeCredential keyIdx _ _ _) = do
+  keys <- asks $ badgePublicKeys . config
+  forM (M.lookup keyIdx keys) $ \key -> liftIO $ verifyCredential key cred
+
+-- attach an issued badge credential to the user's own profile and present it to all current contacts.
+-- the credential is stored once; every profile send generates a fresh single-use proof (see presentUserBadge).
+addUserBadge :: User -> BadgeCredential -> CM ()
+addUserBadge user cred@(BadgeCredential _ _ _ info) =
+  verifyOwnBadge cred >>= \case
+    Nothing -> throwCmdError "unknown badge key index"
+    Just False -> throwCmdError "badge credential does not verify against configured key"
+    Just True -> do
+      now <- liftIO getCurrentTime
+      user' <- withFastStore $ \db -> setUserBadge db user (Just (OwnBadge cred (mkBadgeStatus now (Just True) info)))
+      presentUserBadgeToContacts user'
+
+presentUserBadgeToContacts :: User -> CM ()
+presentUserBadgeToContacts user'@User {userId, profile = LocalProfile {localBadge}} = do
+  -- a badge worker runs for every profile, not only the active one, so this refreshes the active
+  -- record where it is the same profile and must never switch to another
+  chatModifyVar currentUser $ \case
+    Just User {userId = activeId} | activeId == userId -> Just user'
+    active_ -> active_
+  lift $ withAgent' $ \a -> setUserEntitlement a (aUserId user') (badgeServerCredential localBadge)
+  cxt <- chatStoreCxt
+  contacts <- withFastStore' $ \db -> getUserContacts db cxt user'
+  let sendConns = [(ct, conn) | ct <- contacts, Right conn <- [contactSendConn_ ct], not (connIncognito conn)]
+  presHeaders <- if presentsUserBadge user' then connsPresHeaders $ map snd sendConns else pure M.empty
+  withChatLock "presentUserBadge" $ forM_ sendConns $ \(ct, conn) -> do
+    let ct' = updateMergedPreferences user' ct
+    p <- presentUserBadge user' Nothing (M.lookup (aConnId conn) presHeaders) $ userProfileDirect user' Nothing (Just ct') False
+    void (sendDirectContactMessage user' ct' (XInfo p Nothing)) `catchAllErrors` eToView
+
+-- | The check character is verified before anything leaves the device, and the signing keys are
+-- stashed before the request is sent, so a retry reaches the service as the same signer.
+-- A terminal answer drops the stash; a timeout keeps it.
+redeemBadgeCode :: NetworkRequestMode -> User -> Text -> CM ChatResponse
+redeemBadgeCode nm user@User {userId} codeText = do
+  code <- maybe (throwRedeemError BREInvalidCode) pure $ parseBadgeCode codeText
+  sendTarget <- requireBadgeService
+  g <- asks random
+  now <- liftIO getCurrentTime
+  let codeSent = badgeCodeText code
+  -- the guard, the request and the write are one section: without it two codes redeemed at once
+  -- both pass the guard and are both spent, for one badge
+  (present_, redeemed) <- withEntityLock "badgeRedeem" (CLBadgeUser userId) $ do
+    stash_ <- withStore' $ \db -> getBadgeCodeRedemption db user codeSent
+    stash@BadgeStash {masterKey} <- stashBadgeKeys user stash_ $ \db -> createBadgeCodeRedemption db g user codeSent now
+    requestBadgeStash nm user sendTarget stash BSCRedeemBadgeCode {masterKey, code = codeSent} >>= \case
+      Left (errCode, _) -> do
+        when (terminalCodeError errCode) $ withStore' $ \db -> deleteBadgeCodeRedemption db user codeSent
+        throwRedeemError $ BREServiceError errCode
+      Right redeemed -> pure redeemed
+  -- outside the badge lock: the chat lock must not be taken under it
+  mapM_ presentUserBadgeToContacts present_
+  pure redeemed
+  where
+    -- the code will never work, so the keys stashed for it are dead; a timeout keeps them
+    terminalCodeError = \case
+      BSECodeInvalid -> True
+      BSECodeUsed -> True
+      BSECodeExpired -> True
+      _ -> False
+
+-- | The app hands a receipt over until it is answered credited or refused, under whichever profile is
+-- active; the answer is the owner's, read from the record. Nothing is sent: the owner's receipt worker is.
+handOverStoreReceipt :: User -> Maybe Text -> ServicePayment -> CM ChatResponse
+handOverStoreReceipt presentingUser echoedInvoiceId payment = do
+  txRef <- maybe (throwRedeemError BREInvalidReceipt) pure $ storeTransactionRef payment
+  void requireBadgeService
+  g <- asks random
+  now <- badgeNow
+  BadgeReceiptRecord {ownerId, status} <-
+    withStore' (\db -> holdStoreReceipt db g presentingUser echoedInvoiceId txRef payment now)
+      >>= maybe (throwChatError $ CEInternalError "store receipt was not recorded") pure
+  owner <- withStore $ \db -> getUser db ownerId
+  case status of
+    RSHeld {} -> lift (resumeStoreReceiptWork ownerId) >> badgeStateResponse owner
+    RSCredited {badgePurchaseId} -> do
+      cred_ <- withStore' (`getLatestIssuedCredential` badgePurchaseId)
+      cred@(BadgeCredential _ _ _ info) <- maybe (throwChatError $ CEInternalError "credited store purchase has no credential") pure cred_
+      CRBadgeRedeemed owner (OwnBadge cred (mkBadgeStatus now (Just True) info)) False <$> getUserBadgeState owner
+    RSRefused {refusal = Just BIFServiceError {code}} -> throwRedeemError $ BREServiceError code
+    RSRefused {} -> throwChatError $ CEInternalError "store purchase refused for no recorded reason"
+
+-- | The receipt will never be credited to its key; any other refusal may pass on a retry.
+storeReceiptRefused :: BadgeServiceErrorCode -> Bool
+storeReceiptRefused = \case
+  BSEReceiptInvalid -> True
+  BSEReceiptUsed -> True
+  BSETestPurchase -> True
+  _ -> False
+
+-- | The same reference the service claims a transaction by, read without verifying anything.
+storeTransactionRef :: ServicePayment -> Maybe StoreTransactionRef
+storeTransactionRef = \case
+  SPApple {jws} -> StoreTransactionRef PPApple <$> appleTransactionId jws
+  SPGoogle {token} -> Just $ StoreTransactionRef PPGoogle $ googlePurchaseRef token
+  SPInvoice {} -> Nothing
+  SPReceipt {} -> Nothing
+
+-- | A stash that already bought a badge here passes, as re-sending it adds nothing; any other is
+-- refused while a badge is held, before its keys are stashed or sent, so the funding stays unspent.
+stashBadgeKeys :: User -> Maybe BadgeStash -> (DB.Connection -> IO BadgeStash) -> CM BadgeStash
+stashBadgeKeys user stash_ createStash = do
+  replaying <- maybe (pure False) (\s -> withStore' $ \db -> isJust <$> getStashBadgePurchase db s) stash_
+  unless replaying $ refuseWhileBadgeHeld user
+  maybe (withStore' createStash) pure stash_
+
+requireBadgeService :: CM (ConnectTarget 'CMContact)
+requireBadgeService = asks (badgeServiceAddress . config) >>= maybe (throwRedeemError BREServiceNotConfigured) pure
+
+refuseWhileBadgeHeld :: User -> CM ()
+refuseWhileBadgeHeld user = whenM (withStore' (`userHasBadge` user)) $ throwRedeemError BREBadgeActive
+
+-- | One attempt to turn a stash into a badge. A refusal is answered rather than thrown, with the
+-- service's retryAfter.
+requestBadgeStash :: NetworkRequestMode -> User -> ConnectTarget 'CMContact -> BadgeStash -> BadgeServiceCommand -> CM (Either (BadgeServiceErrorCode, Maybe Word32) (Maybe User, ChatResponse))
+requestBadgeStash nm user sendTarget stash@BadgeStash {purchaseKey, purchasePrivKey} request = do
+  let req = BadgeServiceRequest {version = currentBadgeServiceVersion, purchaseKey = Just purchaseKey, request}
+  respBytes <- sendServiceRequestBytes nm user sendTarget Nothing (Just purchasePrivKey) req
+  respData <- either (const $ throwRedeemError $ BREInvalidResponse "not JSON") pure $ J.eitherDecodeStrict' respBytes
+  case J.fromJSON (J.Object respData) of
+    J.Error _ -> throwRedeemError $ BREInvalidResponse "not a badge service response"
+    J.Success BSPError {code, retryAfter} -> pure $ Left (code, retryAfter)
+    J.Success BSPBadgeCredential {credential = Just cred, statement} -> Right <$> storeRedeemedBadge user stash cred statement
+    J.Success _ -> throwRedeemError $ BREInvalidResponse "unexpected response type"
+
+throwRedeemError :: BadgeRedeemError -> CM a
+throwRedeemError = throwChatError . CEBadgeRedeemError
+
+badgeServiceErrorText :: BadgeServiceErrorCode -> Text
+badgeServiceErrorText = textEncode . boundedServiceErrorCode
+
+-- | An unknown code is reported and recorded, since the service is deployed ahead of clients, but
+-- its text is the service's - so it is bounded and stripped before it reaches a terminal that acts
+-- on controls, or a sentence the app shows the user as its own.
+boundedServiceErrorCode :: BadgeServiceErrorCode -> BadgeServiceErrorCode
+boundedServiceErrorCode = \case
+  BSEUnknown t -> BSEUnknown $ case T.filter errorCodeChar (T.take 32 t) of
+    "" -> "unknown"
+    t' -> t'
+  code -> code
+  where
+    errorCodeChar c = isAsciiLower c || isDigit c || c == '_'
+
+-- | The only clock badge code reads, so a test can move the client and the service together.
+badgeNow :: CM UTCTime
+badgeNow = asks (badgeCurrentTime . config) >>= liftIO
+
+-- | A signal carries nothing: each pass derives its work from stored state, so a signal lost or
+-- duplicated changes no outcome.
+startBadgeWork :: User -> CM' ()
+startBadgeWork user = whenM (isJust <$> asks (badgeServiceAddress . config)) $ void $ getBadgeWorker user
+
+-- | Exactly one caller starts the thread and the rest wait for it: the lookup and the create cannot
+-- be one transaction, because starting a thread is not STM.
+getBadgeWorker :: User -> CM' BadgeWorker
+getBadgeWorker User {userId} = do
+  ws <- asks badgeWorkers
+  seq' <- asks badgeSeq
+  now <- liftIO getCurrentTime
+  withGetSessVar' seq' userId ws now startWorker signalWorker
+  where
+    startWorker v = do
+      badgeWork <- newEmptyTMVarIO
+      badgeWorkerAsync <- async $ void $ runExceptT $ runBadgeWorker userId badgeWork
+      let w = BadgeWorker {badgeWorkerAsync, badgeWork}
+      w <$ atomically (putTMVar (sessionVar v) w)
+    signalWorker v = do
+      w <- atomically $ readTMVar $ sessionVar v
+      w <$ atomically (void $ tryPutTMVar (badgeWork w) ())
+
+-- | The alert last raised, so it is not repeated on every pass. The snooze is in the key because
+-- kind and episode do not change when it lapses: the alert would match and stay silent until a restart.
+type BadgeOccurrence = (BadgeAlertKind, Text, Maybe UTCTime)
+
+-- | Nothing ends a pass, so a persistent fault is one attempt per stall interval rather than a hot
+-- loop: every error returns a wake, and the wait is outside the retries.
+runBadgeWorker :: UserId -> TMVar () -> CM ()
+runBadgeWorker userId badgeWork = do
+  emitted <- newTVarIO Nothing
+  ri <- asks $ badgeRetryInterval . config
+  forever $ do
+    at_ <- withRetryInterval ri $ \delay loop -> do
+      lift waitChatStartedAndActivated
+      now <- badgeNow
+      updateUserBadge userId emitted now `catchAllErrors` retryBadgeError userId delay loop
+    now <- badgeNow
+    liftIO $ waitBadgeWake badgeWork now at_
+
+-- | Records the wake before waiting it out, so the state the apps hold carries the next attempt
+-- however the pass ended.
+retryBadgeError :: UserId -> Int64 -> CM (Maybe UTCTime) -> ChatError -> CM (Maybe UTCTime)
+retryBadgeError userId delay loop e = do
+  eToView e
+  now <- badgeNow
+  let retrying = badgeErrorRetry e
+      at = (if retrying then fromIntegral delay / 1000000 else badgeStalledInterval) `addUTCTime` now
+  badgeNextWakeChanged userId at
+  if retrying then loop else pure (Just at)
+
+-- | Runs in the worker's error handler, so its own errors are reported and dropped: a throw here
+-- would end the worker.
+badgeNextWakeChanged :: UserId -> UTCTime -> CM ()
+badgeNextWakeChanged userId at = (`catchAllErrors` eToView) $ do
+  user <- withStore $ \db -> getUser db userId
+  written <- withStore' $ \db -> do
+    p_ <- getUserBadgePurchase db user
+    forM p_ $ \UserBadgePurchase {badgePurchaseId} -> setBadgeNextWake db badgePurchaseId (Just at)
+  when (isJust written) $ toView . CEvtBadgeChanged user =<< getUserBadgeState user
+
+-- | The signal is taken only by the wait that reports it - the take and the timer read are one
+-- transaction. now is the badge clock, so the remaining time counts down rather than re-reading it.
+waitBadgeWake :: TMVar () -> UTCTime -> Maybe UTCTime -> IO ()
+waitBadgeWake badgeWork now = \case
+  Nothing -> atomically $ takeTMVar badgeWork
+  Just at -> waitFor $ diffToMicroseconds $ min badgeMaxWake $ diffUTCTime at now
+  where
+    waitFor time
+      | time <= 0 = pure ()
+      | otherwise = do
+          let maxWait = min time $ fromIntegral (maxBound :: Int)
+          timer <- registerDelay $ fromIntegral maxWait
+          signalled <- atomically $ do
+            w <- tryTakeTMVar badgeWork
+            fired <- readTVar timer
+            unless (isJust w || fired) retry
+            pure $ isJust w
+          unless signalled $ waitFor $ time - maxWait
+
+-- | Bounds the wait: a paidThrough far enough out would overflow the microsecond conversion,
+-- wrap negative and spin the worker. Longer than any entitlement, so no real wake is early.
+badgeMaxWake :: NominalDiffTime
+badgeMaxWake = 100 * 365 * nominalDay
+
+startStoreReceiptWork :: User -> CM ()
+startStoreReceiptWork User {userId} = do
+  held <- withStore' $ \db -> getNextHeldStoreReceipt db userId
+  when (either (const False) isJust held) $ lift $ resumeStoreReceiptWork userId
+
+resumeStoreReceiptWork :: UserId -> CM' ()
+resumeStoreReceiptWork userId = do
+  ws <- asks storeReceiptWorkers
+  a <- asks smpAgent
+  void $ getAgentWorker "store_receipt" True a userId ws $ runStoreReceiptWorker a userId
+
+runStoreReceiptWorker :: AgentClient -> UserId -> Worker -> CM ()
+runStoreReceiptWorker a userId Worker {doWork} = do
+  scheduled <- newTVarIO S.empty
+  forever $ do
+    lift $ waitForWork doWork
+    withWork_ a doWork (getDueReceipt scheduled) $ \case
+      BadgeReceiptRecord {receiptId, status = RSHeld {stash, invoiceId, payment, retryDelay}} -> creditStoreReceipt a userId receiptId stash invoiceId payment retryDelay
+      BadgeReceiptRecord {receiptId} -> notHeld receiptId
+  where
+    getDueReceipt scheduled =
+      withStore' (`getNextHeldStoreReceipt` userId) >>= \case
+        Right (Just r@BadgeReceiptRecord {receiptId, status = RSHeld {nextAttemptAt}}) -> do
+          now <- badgeNow
+          if nextAttemptAt <= now
+            then pure $ Right (Just r)
+            else Right Nothing <$ scheduleReceipt scheduled receiptId (diffUTCTime nextAttemptAt now)
+        Right (Just BadgeReceiptRecord {receiptId}) -> Right Nothing <$ notHeld receiptId
+        r -> pure r
+    -- getNextHeldStoreReceipt reads held rows only, so this says its query and its result type disagree
+    notHeld receiptId = eToView $ ChatError $ CEInternalError $ "store receipt " <> show receiptId <> " is not held"
+    scheduleReceipt scheduled receiptId delay = do
+      new <- atomically $ stateTVar scheduled $ \ids -> (S.notMember receiptId ids, S.insert receiptId ids)
+      when new . void . liftIO . forkIO $ do
+        threadDelay' $ diffToMicroseconds delay
+        atomically $ modifyTVar' scheduled $ S.delete receiptId
+        void $ atomically $ tryPutTMVar doWork ()
+
+data StoreReceiptOutcome = SROCredited (Maybe User) | SRORefused BadgeIssueFailure | SRORetry | SRODeferred
+
+-- | Under the owner's badge lock, which keeps a profile's requests to the service serial.
+creditStoreReceipt :: AgentClient -> UserId -> Int64 -> BadgeStash -> Maybe Text -> Text -> Maybe Int64 -> CM ()
+creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ payment retryDelay = do
+  ChatConfig {badgeRetryInterval = ri, badgeConsecutiveRetries} <- asks config
+  withRetryIntervalCount (maybe ri (\d -> ri {initialInterval = d, increaseAfter = 0}) retryDelay) $ \n delay loop -> do
+    liftIO $ waitWhileSuspended a
+    liftIO $ waitForUserNetwork a
+    -- decided under the lock and acted on outside it: the retry sleeps, and announcing takes the chat lock
+    outcome <- withEntityLock "badgePurchase" (CLBadgeUser userId) $
+      tryAllErrors attempt >>= \case
+        Right (Right (present_, _)) -> pure $ SROCredited present_
+        Right (Left (code, retryAfter))
+          | storeReceiptRefused code -> do
+              let failure = serviceFailure code retryAfter
+              SRORefused failure <$ withStore' (\db -> refuseStoreReceipt db receiptId failure)
+          | otherwise -> failed ri delay (serviceFailure code retryAfter) retryAfter
+        Left e -> failed ri delay (badgeIssueFailure e) Nothing
+    -- the invoice id is the app's only key to the store transaction, so without one nothing is emitted and its sweep finishes it
+    case outcome of
+      SROCredited present_ -> do
+        user <- withStore $ \db -> getUser db userId
+        toView . CEvtBadgeChanged user =<< getUserBadgeState user
+        forM_ invoiceId_ $ toView . CEvtStorePurchaseCredited user
+        -- last, so a failed broadcast cannot lose the settlement
+        mapM_ presentUserBadgeToContacts present_
+      SRORefused failure -> forM_ invoiceId_ $ \invoiceId -> do
+        user <- withStore (`getUser` userId)
+        toView $ CEvtStorePurchaseRefused user invoiceId failure
+      SRORetry | n + 1 < badgeConsecutiveRetries -> loop
+      _ -> pure ()
+  where
+    attempt = do
+      user <- withStore $ \db -> getUser db userId
+      refuseWhileBadgeHeld user
+      sendTarget <- requireBadgeService
+      payment' <- maybe (throwChatError $ CEInternalError "held store payment does not decode") pure $ decodeJSON payment
+      requestBadgeStash NRMBackground user sendTarget stash BSCPurchaseBadge {masterKey, payment = payment', upgrade = Nothing}
+    serviceFailure code retryAfter = BIFServiceError {code = boundedServiceErrorCode code, retryable = isJust retryAfter}
+    failed ri delay failure retryAfter = do
+      now <- badgeNow
+      let (retryIn, outcome)
+            | isJust retryAfter = (badgeRetryAfter ri retryAfter, SRODeferred)
+            -- a buyer is waiting, so unlike a renewal a failure that can clear on its own never waits the day
+            | badgeFailureTransient failure = (fromIntegral delay / 1000000, SRORetry)
+            | otherwise = (badgeStalledInterval, SRODeferred)
+      withStore' $ \db -> recordStoreReceiptFailure db receiptId (nextRetryDelay 0 delay ri) (retryIn `addUTCTime` now) failure
+      pure outcome
+
+-- | Retire what has ended, renew what is due, then report the next wake. Waking early, late or not
+-- at all changes only timing: each run reads stored state and works out what to do.
+updateUserBadge :: UserId -> TVar (Maybe BadgeOccurrence) -> UTCTime -> CM (Maybe UTCTime)
+updateUserBadge userId emitted now = do
+  user <- withStore $ \db -> getUser db userId
+  withStore' (`getUserBadgePurchase` user) >>= \case
+    Nothing -> pure Nothing
+    Just p@UserBadgePurchase {badgePurchaseId} ->
+      withStore' (`getBadgeLedgerLastEntry` badgePurchaseId) >>= \case
+        Nothing -> pure Nothing
+        Just balance -> do
+          -- retirement needs no service and an unbounded retry would not return before it
+          retired <- retireExpiredBadge user p now balance
+          latest <- withStore' (`getLatestIssuedCredential` badgePurchaseId)
+          let requestDue = not retired && badgeRequestDue now (shownBadgeCredential user p) latest balance
+          (balance', serviceAt) <-
+            if requestDue
+              then either ((balance,) . Just) (,Nothing) <$> requestBadgeIssue userId p now
+              else pure (balance, Nothing)
+          -- presenting broadcasts the record it is handed, and the request above can block for the
+          -- whole service timeout, so this read belongs after it and not at the top of the pass
+          user' <- withStore $ \db -> getUser db userId
+          -- and the purchase, or an alert acked while the request was in flight is raised again
+          p' <- fromMaybe p <$> withStore' (`getBadgePurchase` badgePurchaseId)
+          let issued = balanceStartTs balance' /= balanceStartTs balance
+          -- outside the badge lock: the chat lock must not be taken under it
+          unless retired $ presentIssuedBadge user' p' now
+          -- retiring and presenting both replace the badge on the record read above, so it is read again
+          user'' <- withStore $ \db -> getUser db userId
+          emitBadgeAlert user'' emitted p' (shownBadgeCredential user'' p') now balance'
+          -- a snooze is the one wake that is not in the ledger: nothing else brings the alert back,
+          -- since support having ended leaves both ledger boundaries in the past
+          let UserBadgePurchase {issueError = failureBefore} = p
+              UserBadgePurchase {alertSnoozeUntil, issueError = failureAfter} = p'
+              snoozeAt = find (> now) alertSnoozeUntil
+              stalledAt = if requestDue && not issued then Just $ badgeStalledInterval `addUTCTime` now else Nothing
+              wakeAt = earliestTime [serviceAt, snoozeAt, stalledAt, badgeBoundary now (shownBadgeCredential user'' p') balance']
+              failed = failureAfter /= failureBefore
+          -- written before the event, so the state it reports carries the attempt it leads to
+          withStore' $ \db -> setBadgeNextWake db badgePurchaseId wakeAt
+          when (retired || issued || failed) $ toView . CEvtBadgeChanged user'' =<< getUserBadgeState user''
+          pure wakeAt
+
+-- | The other kinds need subscriptions, and warning before a prepaid badge ends is not actionable
+-- while topping up cannot credit months without issuing.
+-- TODO [badges] BAPrepaidEnding belongs here, three days before paidThrough, once that exists.
+derivedBadgeAlert :: UTCTime -> UserBadgePurchase -> Maybe BadgeCredential -> StatementEntry -> Maybe BadgeAlert
+derivedBadgeAlert now p shownCred b
+  | endsAt <= now = Just $ alertOf BASupportEnded endsAt
+  | otherwise = (\BadgeIssueError {failedSince} -> alertOf BAIssueFailed failedSince) <$> shownIssueError now p shownCred
+  where
+    endsAt = L.paidThrough b
+    alertOf kind date = BadgeAlert {kind, episode = safeDecodeUtf8 $ strEncode date, date, price = Nothing}
+
+-- | A failure that can clear on its own is only shown once the credential lapses and contacts see it.
+shownIssueError :: UTCTime -> UserBadgePurchase -> Maybe BadgeCredential -> Maybe BadgeIssueError
+shownIssueError now UserBadgePurchase {issueError} shownCred = case issueError of
+  Just e@BadgeIssueError {reason}
+    | not (badgeFailureTransient reason) || maybe False ((<= now) . credentialExpiry) shownCred -> Just e
+  _ -> Nothing
+
+-- | Derived from state rather than kept pending: raised unless this occurrence is the one already
+-- answered, and raised again once a snooze that answered it lapses.
+unansweredBadgeAlert :: UTCTime -> UserBadgePurchase -> Maybe BadgeCredential -> StatementEntry -> Maybe BadgeAlert
+unansweredBadgeAlert now p@UserBadgePurchase {alertAcked, alertSnoozeUntil} shownCred balance =
+  case derivedBadgeAlert now p shownCred balance of
+    Just alert@BadgeAlert {kind, episode}
+      | alertAcked /= Just (kind, episode) || maybe False (now >=) alertSnoozeUntil -> Just alert
+    _ -> Nothing
+
+emitBadgeAlert :: User -> TVar (Maybe BadgeOccurrence) -> UserBadgePurchase -> Maybe BadgeCredential -> UTCTime -> StatementEntry -> CM ()
+emitBadgeAlert user emitted p@UserBadgePurchase {alertSnoozeUntil} shownCred now balance =
+  forM_ (unansweredBadgeAlert now p shownCred balance) $ \alert@BadgeAlert {kind, episode} -> do
+    let occurrence = Just (kind, episode, alertSnoozeUntil)
+    raised <- atomically $ stateTVar emitted (,occurrence)
+    when (raised /= occurrence) $ toView $ CEvtBadgeAlert user alert
+
+-- | Scoped to one profile, so another profile's store purchase, which may be hidden, never shows under it.
+badgeStateResponse :: User -> CM ChatResponse
+badgeStateResponse user = do
+  badgeState <- getUserBadgeState user
+  CRBadgeState user badgeState . map finalError <$> withStore' (`getOpenStorePurchases` user)
+  where
+    -- like a renewal's, only a failure that cannot clear on its own is the user's to know about
+    finalError p@OpenStorePurchase {creditError} = p {creditError = find (not . badgeFailureTransient) creditError}
+
+-- | Read from stored rows alone; the worker's results follow as CEvtBadgeChanged.
+getUserBadgeState :: User -> CM (Maybe BadgeState)
+getUserBadgeState user = do
+  now <- badgeNow
+  withStore' (`getUserBadgePurchase` user) >>= \case
+    Nothing -> pure Nothing
+    Just p@UserBadgePurchase {badgePurchaseId} ->
+      fmap (badgeStateOf now p) <$> withStore' (`getBadgeLedgerLastEntry` badgePurchaseId)
+  where
+    badgeStateOf now p@UserBadgePurchase {badgePurchaseId, purchaseKey, badgeType, shown, nextWakeAt} balance =
+      let shownCred = shownBadgeCredential user p
+       in BadgeState
+            { badgePurchaseId,
+              purchaseKey,
+              badgeType,
+              shown = BoolDef shown,
+              monthsLeft = balanceMonths balance,
+              paidThrough = L.paidThrough balance,
+              renewsAt = Nothing,
+              willRenew = False,
+              alert = unansweredBadgeAlert now p shownCred balance,
+              issueError = shownIssueError now p shownCred,
+              nextWakeAt
+            }
+
+-- | How long a month that did not issue waits before it is tried again, whatever stopped it. Not
+-- derived from the failure, so a misclassified one cannot leave a funded badge to expire.
+badgeStalledInterval :: NominalDiffTime
+badgeStalledInterval = nominalDay
+
+-- | The wait after a service refusal, floored at initialInterval so answering 0 cannot spin the
+-- worker, and uncapped above it.
+badgeRetryAfter :: RetryInterval -> Maybe Word32 -> NominalDiffTime
+badgeRetryAfter ri = maybe badgeStalledInterval (max (retryFloor ri) . fromIntegral)
+
+retryFloor :: RetryInterval -> NominalDiffTime
+retryFloor RetryInterval {initialInterval} = fromIntegral initialInterval / 1000000
+
+-- | How far ahead of the shown credential's expiry the renewal is requested - a day, so a failure
+-- has that long to retry. The wake and the due check both derive from it and have to agree.
+badgeRequestLead :: NominalDiffTime
+badgeRequestLead = nominalDay
+
+-- | The credential the profile is showing for this purchase. Nothing when the purchase is not the
+-- one being shown, or when a crash left the issuance written and the profile not.
+shownBadgeCredential :: User -> UserBadgePurchase -> Maybe BadgeCredential
+shownBadgeCredential User {profile = LocalProfile {localBadge}} UserBadgePurchase {shown}
+  | not shown = Nothing
+  | otherwise = case localBadge of
+      Just (OwnBadge cred _) -> Just cred
+      _ -> Nothing
+
+credentialExpiry :: BadgeCredential -> UTCTime
+credentialExpiry (BadgeCredential _ _ _ BadgeInfo {badgeExpiry}) = badgeExpiry
+
+-- | Timed off the shown credential, not the period end: renewing around its shared expiry is what
+-- joins the anonymity set. Latest still equal to shown means this month has not been asked for.
+badgeRequestDue :: UTCTime -> Maybe BadgeCredential -> Maybe BadgeCredential -> StatementEntry -> Bool
+badgeRequestDue now shownCred latestCred balance =
+  balanceMonths balance > 0 && latestCred == shownCred && maybe False lapsingSoon shownCred
+  where
+    lapsingSoon cred = credentialExpiry cred <= badgeRequestLead `addUTCTime` now
+
+-- | The request and the presentation, a day apart, both read off the credential the profile shows,
+-- and the end of what is paid for. The credential's expiry window is what covers renewal, so it
+-- says nothing about entitlement: paidThrough is when that ends and the badge has to come off.
+-- TODO [badges] every client whose credential shares an expiry requests at the same instant. Only
+-- the expiry has to be shared, so the request could fall anywhere in its lead without splitting
+-- the anonymity set - spreading the load, and any outage, off a single moment.
+badgeBoundary :: UTCTime -> Maybe BadgeCredential -> StatementEntry -> Maybe UTCTime
+badgeBoundary now shownCred balance = case filter (> now) moments of
+  [] -> Nothing
+  ts -> Just $ minimum ts
+  where
+    moments = L.paidThrough balance : maybe [] renewalMoments shownCred
+    renewalMoments cred =
+      let expiry = credentialExpiry cred
+       in [negate badgeRequestLead `addUTCTime` expiry, expiry]
+
+earliestTime :: [Maybe UTCTime] -> Maybe UTCTime
+earliestTime ts = case catMaybes ts of
+  [] -> Nothing
+  ts' -> Just $ minimum ts'
+
+-- | temporaryOrHostError covers failing to reach the server; the service timeout is a request sent and not answered.
+badgeIssueFailure :: ChatError -> BadgeIssueFailure
+badgeIssueFailure e = case e of
+  ChatErrorAgent {agentError = AGENT (A_SERVICE ASETimeout)} -> BIFServiceTimeout
+  ChatErrorAgent {agentError}
+    | temporaryOrHostError agentError -> BIFNetwork {agentError = tshow agentError}
+    | otherwise -> BIFUnexpected {message = tshow agentError}
+  ChatError (CECommandError m) -> BIFUnexpected {message = T.pack m}
+  ChatError (CEInternalError m) -> BIFUnexpected {message = T.pack m}
+  ChatError (CEBadgeRedeemError BREUnknownKeyIndex) -> BIFInvalidCredential
+  ChatError (CEBadgeRedeemError BRECredentialNotVerified) -> BIFInvalidCredential
+  _ -> BIFUnexpected {message = tshow e}
+
+-- | Whether a failure can clear on its own, which decides whether the alert waits for the shown
+-- credential to lapse - and, for a thrown error, whether the pass retries it.
+badgeFailureTransient :: BadgeIssueFailure -> Bool
+badgeFailureTransient = \case
+  -- the service withholds retryAfter from internal to avoid being pressed while failing, not because it is final
+  BIFServiceError {code = BSEInternal} -> True
+  BIFServiceError {retryable} -> retryable
+  BIFServiceTimeout -> True
+  BIFNetwork {} -> True
+  BIFInvalidCredential -> False
+  BIFUnexpected {} -> False
+
+-- | Only a failure that can clear on its own is repeated; every other throw is terminal, and
+-- repeating it would spin. Service errors are classified by retryAfter in requestBadgeIssue.
+badgeErrorRetry :: ChatError -> Bool
+badgeErrorRetry = badgeFailureTransient . badgeIssueFailure
+
+-- | Ask the service for the month that is due and apply the response. A timeout stores no ledger row,
+-- so the same request is sent again on the next pass. 'Left' is a service error, already reported, and
+-- carries when to try again, since a service error is answered rather than thrown. Any request that
+-- ends without a credential the ledger still owes is recorded on the purchase as a failed renewal;
+-- nothing else records one.
+requestBadgeIssue :: UserId -> UserBadgePurchase -> UTCTime -> CM (Either UTCTime StatementEntry)
+requestBadgeIssue userId UserBadgePurchase {badgePurchaseId, badgeType, purchaseKey, purchasePrivKey, masterKey} now = do
+  sendTarget <- asks (badgeServiceAddress . config) >>= maybe (throwCmdError "badge service not configured") pure
+  withEntityLock "badgeIssue" (CLBadgeUser userId) $ do
+    user <- withStore $ \db -> getUser db userId
+    lastEntry <- withStore' (`getBadgeLedgerLastEntry` badgePurchaseId) >>= maybe (throwCmdError "badge ledger has no entry to assert") pure
+    let req =
+          BadgeServiceRequest
+            { version = currentBadgeServiceVersion,
+              purchaseKey = Just purchaseKey,
+              request = BSCIssueBadge {balance = BadgeBalance {lastEntry}}
+            }
+    respData <-
+      sendServiceRequestTo NRMBackground user sendTarget Nothing (Just purchasePrivKey) req
+        `catchAllErrors` \e -> recordFailure (badgeIssueFailure e) >> throwError e
+    case J.fromJSON (J.Object respData) of
+      J.Success BSPBadgeCredential {credential = sentCred_, statement} -> do
+        verifiedCred_ <- verifyIssuedCredential masterKey sentCred_
+        g <- asks random
+        -- read again: now was taken before a lock wait and an untimed request, and the check reads
+        -- it as the client's clock against the timestamps the service put on the rows
+        storedAt <- badgeNow
+        (applied, balance_) <- withStore' $ \db -> do
+          applied <- applyBadgeStatement db g badgePurchaseId badgeType statement verifiedCred_ storedAt
+          (applied,) <$> getBadgeLedgerLastEntry db badgePurchaseId
+        -- the statement is applied either way, so a month can be spent with nothing to show for it
+        case (sentCred_, verifiedCred_, applied) of
+          (Just _, Nothing, _) -> recordFailure BIFInvalidCredential
+          (_, _, False) -> recordUnexpected "issued badge credential has no ledger row to store it against"
+          -- no credential is the service saying the months ran out, which its statement then shows
+          (Nothing, _, _) | maybe False ((> 0) . balanceMonths) balance_ -> recordUnexpected "badge service issued no credential"
+          _ -> pure ()
+        maybe (throwCmdError "badge ledger has no balance") (pure . Right) balance_
+      J.Success BSPError {code, retryAfter} -> do
+        eToView $ ChatError $ CECommandError $ "badge service error: " <> T.unpack (badgeServiceErrorText code)
+        recordFailure BIFServiceError {code = boundedServiceErrorCode code, retryable = isJust retryAfter}
+        ri <- asks $ badgeRetryInterval . config
+        pure $ Left $ badgeRetryAfter ri retryAfter `addUTCTime` now
+      _ -> do
+        recordFailure BIFUnexpected {message = unexpectedResponse}
+        throwCmdError $ T.unpack unexpectedResponse
+  where
+    unexpectedResponse = "unexpected badge service response"
+    recordUnexpected message = do
+      eToView $ ChatError $ CEInternalError $ T.unpack message
+      recordFailure BIFUnexpected {message}
+    recordFailure failure = do
+      failedAt <- badgeNow
+      withStore' $ \db -> setBadgeIssueError db badgePurchaseId failedAt failure
+
+-- | The signature covers the master key inside the credential, so it verifies no matter which key
+-- that is - the credential is stored only when that key is also this purchase's.
+verifyIssuedCredential :: BadgeMasterKey -> Maybe BadgeCredential -> CM (Maybe BadgeCredential)
+verifyIssuedCredential _ Nothing = pure Nothing
+verifyIssuedCredential masterKey (Just cred@(BadgeCredential _ credMasterKey _ _)) =
+  verifyOwnBadge cred >>= \case
+    Just True | credMasterKey == masterKey -> pure $ Just cred
+    Just True -> Nothing <$ eToView (ChatError $ CEInternalError "issued badge credential is for a different master key")
+    _ -> Nothing <$ eToView (ChatError $ CEInternalError "issued badge credential does not verify")
+
+-- | Present the newest issued credential once the one on the profile has run out. It is written in
+-- a separate transaction from the issuance, so a crash between the two is repaired at the next run.
+presentIssuedBadge :: User -> UserBadgePurchase -> UTCTime -> CM ()
+presentIssuedBadge user p@UserBadgePurchase {badgePurchaseId, shown} now
+  | not shown = pure ()
+  | otherwise = do
+      cred_ <- withStore' (`getLatestIssuedCredential` badgePurchaseId)
+      forM_ cred_ $ \cred@(BadgeCredential _ _ _ info) ->
+        when (presentDue cred) $ withUserProfileLock "presentIssuedBadge" $ do
+          user' <- withStore $ \db -> setUserBadge db user (Just $ OwnBadge cred (mkBadgeStatus now (Just True) info))
+          presentUserBadgeToContacts user'
+  where
+    shownCred = shownBadgeCredential user p
+    -- Held back until the shown credential lapses, so the broadcast does not correlate with the
+    -- request that produced it. Nothing shown at all is the state a lost profile write leaves.
+    presentDue cred = Just cred /= shownCred && maybe True ((<= now) . credentialExpiry) shownCred
+
+-- | The visible half of "the badge expired".
+retireExpiredBadge :: User -> UserBadgePurchase -> UTCTime -> StatementEntry -> CM Bool
+retireExpiredBadge user UserBadgePurchase {badgePurchaseId, shown} now balance
+  | not (shown && L.paidThrough balance <= now) = pure False
+  | otherwise = withUserProfileLock "retireExpiredBadge" $ do
+      user' <- withStore $ \db -> do
+        liftIO $ clearShownBadge db user badgePurchaseId
+        setUserBadge db user Nothing
+      True <$ presentUserBadgeToContacts user'
+
+-- | Waiting on the var rather than skipping an empty one is what catches a worker whose creator
+-- had not filled it when the map was swapped out.
+stopBadgeWorkers :: TM.TMap UserId (SessionVar BadgeWorker) -> IO ()
+stopBadgeWorkers workers =
+  atomically (swapTVar workers M.empty) >>= mapM_ cancelBadgeWorker
+  where
+    cancelBadgeWorker v =
+      void $ forkIO $ atomically (badgeWorkerAsync <$> readTMVar (sessionVar v)) >>= uninterruptibleCancel
+
+-- | Verify the credential before writing anything; the purchase, the statement's rows, the
+-- issuance and the profile's badge go in one transaction. Answers the user to tell contacts about,
+-- which the caller does once the badge lock is released.
+storeRedeemedBadge :: User -> BadgeStash -> BadgeCredential -> BadgeStatement -> CM (Maybe User, ChatResponse)
+storeRedeemedBadge user@User {userId} stash@BadgeStash {masterKey} cred@(BadgeCredential _ credMasterKey _ info@BadgeInfo {badgeType}) statement =
+  verifyOwnBadge cred >>= \case
+    Nothing -> throwRedeemError BREUnknownKeyIndex
+    Just False -> throwRedeemError BRECredentialNotVerified
+    -- verifyCredential checks the signature against the key inside the credential, not the one we
+    -- sent - so a credential over any other master key also verifies
+    Just True | credMasterKey /= masterKey -> throwRedeemError $ BREInvalidResponse "credential is for a different master key"
+    Just True -> do
+      g <- asks random
+      now <- badgeNow
+      let badge = OwnBadge cred (mkBadgeStatus now (Just True) info)
+      -- TODO [badges] retire a previously held badge
+      (user', newBadge, applied) <- withStore $ \db -> do
+        (purchaseId, newBadge) <- liftIO $ createStashBadgePurchase db user stash cred now
+        applied <- liftIO $ applyBadgeStatement db g purchaseId badgeType statement (Just cred) now
+        -- a replay must not put a superseded badge back, or tell every contact again
+        user' <- if newBadge then setUserBadge db user (Just badge) else getUser db userId
+        pure (user', newBadge, applied)
+      unless applied $ eToView $ ChatError $ CEInternalError "redeemed badge credential has no ledger row to store it against"
+      -- nothing is due yet, but a pass is what arms the next wake, and this is the first purchase
+      lift $ startBadgeWork user'
+      badgeState <- getUserBadgeState user'
+      pure (if newBadge then Just user' else Nothing, CRBadgeRedeemed user' badge newBadge badgeState)
+
+-- | Store the statement's rows, then the credential against the badge debit row among them.
+-- 'False' when that row cannot be found, which the caller reports rather than drop in silence.
+applyBadgeStatement :: DB.Connection -> TVar ChaChaDRG -> Int64 -> BadgeType -> BadgeStatement -> Maybe BadgeCredential -> UTCTime -> IO Bool
+applyBadgeStatement db g purchaseId badgeType BadgeStatement {entries} cred_ now = do
+  -- TODO [badges] a service that no longer holds the asserted row re-sends its whole history, which
+  -- joins onto the tip without following it, and every row of it verifies. The service is to heal
+  -- and restate as one opening credit instead (badges-rpc.md), which is checked without a tip.
+  tip <- getBadgeLedgerLastEntry db purchaseId
+  storeBadgeStatement db purchaseId badgeType tip entries now
+  case (,) <$> cred_ <*> issuedEntryId of
+    Nothing -> pure True
+    Just (cred, entryUuid) ->
+      getBadgeLedgerEntryId db purchaseId entryUuid >>= \case
+        Nothing -> pure False
+        Just entryId -> storeBadgeIssuance db g purchaseId entryId cred now
+  where
+    -- the credential belongs to the last month the statement issued
+    issuedEntryId = case [entryId | StatementEntry {entryId, entryType = SEDebit SDBadge} <- entries] of
+      [] -> Nothing
+      ids -> Just (last ids)
+
+sendServiceRequestTo :: J.ToJSON a => NetworkRequestMode -> User -> ConnectTarget 'CMContact -> Maybe NominalDiffTime -> Maybe C.PrivateKeyEd25519 -> a -> CM J.Object
+sendServiceRequestTo nm user sendTarget requestTimeout signKey request =
+  sendServiceRequestBytes nm user sendTarget requestTimeout signKey request
+    >>= either (const $ throwCmdError "invalid service response") pure . J.eitherDecodeStrict'
+
+sendServiceRequestBytes :: J.ToJSON a => NetworkRequestMode -> User -> ConnectTarget 'CMContact -> Maybe NominalDiffTime -> Maybe C.PrivateKeyEd25519 -> a -> CM ByteString
+sendServiceRequestBytes nm user sendTarget requestTimeout signKey request = do
+  cReq <- resolveServiceTarget sendTarget
+  withAgent $ \a -> sendServiceRequestAsync a (aUserId user) cReq requestTimeout signKey (LB.toStrict $ J.encode request)
+  where
+    resolveServiceTarget = \case
+      CTFullContact cReq -> pure cReq
+      CTShortContact (CTLink sLnk) -> resolveShortLink sLnk
+      CTShortContact (CTName SimplexNameInfo {nameType, nameDomain}) -> case nameType of
+        NTContact -> resolveDomain nameDomain
+        _ -> throwCmdError "service request target must be a contact"
+      CTDomain d -> resolveDomain d
+    resolveDomain d = do
+      nr <- resolveNameRecord user nm d
+      case firstNameLink CCTContact (nrSimplexContact nr) of
+        Just sLnk -> resolveShortLink sLnk
+        Nothing -> throwChatError $ CESimplexDomainNotReady d SDENoValidLink
+    resolveShortLink sLnk = (\(_, _, cReq) -> cReq) <$> getShortLinkConnReq nm user sLnk
 
 assertDirectAllowed :: User -> MsgDirection -> Contact -> CMEventTag e -> CM ()
 assertDirectAllowed user dir ct event =
@@ -4161,8 +6050,8 @@ agentSubscriber :: CM' ()
 agentSubscriber = do
   q <- asks $ subQ . smpAgent
   forever (atomically (readTBQueue q) >>= process)
-    `E.catchAny` \e -> do
-      eToView' $ ChatErrorAgent (CRITICAL True $ "Message reception stopped: " <> show e) (AgentConnId "") Nothing
+    `catchOwn` \e -> do
+      eToView' $ chatErrorAgent $ CRITICAL True $ "Message reception stopped: " <> show e
       E.throwIO e
   where
     process :: (ACorrId, AEntityId, AEvt) -> CM' ()
@@ -4172,24 +6061,9 @@ agentSubscriber = do
       SAERcvFile -> processAgentMsgRcvFile corrId entId msg
       SAESndFile -> processAgentMsgSndFile corrId entId msg
       where
-        run action = action `catchAllErrors'` (eToView')
+        run action = action `catchAllOwnErrors'` eToView'
 
-type AgentSubResult = Map ConnId (Either AgentErrorType (Maybe ClientServiceId))
-
-runRelationsVectorMigration :: CM ()
-runRelationsVectorMigration = do
-  liftIO $ threadDelay' 5000000 -- 5 seconds (initial delay)
-  migrateMembers
-  where
-    stepDelay = 1000000 -- 1 second
-    migrateMembers = flip catchAllErrors eToView $ do
-      lift waitChatStartedAndActivated
-      gmIds <- withStore' getGMsWithoutVectorIds
-      forM_ gmIds $ \gmId -> do
-        lift waitChatStartedAndActivated
-        withStore' (`migrateMemberRelationsVector'` gmId) `catchAllErrors` eToView
-        liftIO $ threadDelay' stepDelay
-      unless (null gmIds) migrateMembers
+type AgentSubResult = Map ConnId (Either AgentErrorType ())
 
 cleanupManager :: CM ()
 cleanupManager = do
@@ -4210,6 +6084,7 @@ cleanupManager = do
       cleanupDeliveryJobs `catchAllErrors` eToView
       -- TODO possibly, also cleanup async commands
       cleanupProbes `catchAllErrors` eToView
+      cleanupStoreReceipts `catchAllErrors` eToView
     liftIO $ threadDelay' $ diffToMicroseconds interval
   where
     runWithoutInitialDelay cleanupInterval = flip catchAllErrors eToView $ do
@@ -4224,17 +6099,45 @@ cleanupManager = do
       -- TODO remove in future versions: legacy step - contacts are no longer marked as deleted
       cleanupDeletedContacts user `catchAllErrors` eToView
       liftIO $ threadDelay' stepDelay
+      cleanupInProgressGroups user `catchAllErrors` eToView
+      liftIO $ threadDelay' stepDelay
+      cleanupStaleRelayTestConns user `catchAllErrors` eToView
+      liftIO $ threadDelay' stepDelay
+      cleanupRemovedMembers user `catchAllErrors` eToView
+      liftIO $ threadDelay' stepDelay
     cleanupTimedItems cleanupInterval user = do
       ts <- liftIO getCurrentTime
       let startTimedThreadCutoff = addUTCTime cleanupInterval ts
       timedItems <- withStore' $ \db -> getTimedItems db user startTimedThreadCutoff
       forM_ timedItems $ \(itemRef, deleteAt) -> startTimedItemThread user itemRef deleteAt `catchAllErrors` const (pure ())
     cleanupDeletedContacts user = do
-      vr <- chatVersionRange
-      contacts <- withStore' $ \db -> getDeletedContacts db vr user
+      cxt <- chatStoreCxt
+      contacts <- withStore' $ \db -> getDeletedContacts db cxt user
       forM_ contacts $ \ct ->
         withStore (\db -> deleteContactWithoutGroups db user ct)
           `catchAllErrors` eToView
+    cleanupInProgressGroups user = do
+      cxt <- chatStoreCxt
+      ts <- liftIO getCurrentTime
+      -- older than 30 minutes to avoid deleting a newly created group
+      let cutoffTs = addUTCTime (- 1800) ts
+      inProgressGroups <- withStore' $ \db -> getInProgressGroups db cxt user cutoffTs
+      forM_ inProgressGroups $ \gInfo ->
+        deleteInProgressGroup user gInfo `catchAllErrors` eToView
+    cleanupStaleRelayTestConns user = do
+      ts <- liftIO getCurrentTime
+      let cutoffTs = addUTCTime (-300) ts
+      staleConns <- withStore' $ \db -> getStaleRelayTestConns db user cutoffTs
+      forM_ staleConns $ \acId -> do
+        deleteAgentConnectionAsync acId
+        withStore' $ \db -> deleteConnectionByAgentConnId db user acId
+    cleanupRemovedMembers user = do
+      cxt <- chatStoreCxt
+      ts <- liftIO getCurrentTime
+      let cutoffTs = addUTCTime (-nominalDay) ts
+      removedMembers <- withStore' $ \db -> getRemovedMembersToCleanup db cxt user cutoffTs
+      forM_ removedMembers $ \m ->
+        withStore' (\db -> deleteGroupMember db user m) `catchAllErrors` eToView
     cleanupMessages = do
       ts <- liftIO getCurrentTime
       let cutoffTs = addUTCTime (-(30 * nominalDay)) ts
@@ -4251,19 +6154,68 @@ cleanupManager = do
       ts <- liftIO getCurrentTime
       let cutoffTs = addUTCTime (-(14 * nominalDay)) ts
       withStore' (`deleteOldProbes` cutoffTs)
+    -- the badge clock, which the records are written with
+    cleanupStoreReceipts = do
+      ts <- badgeNow
+      let cutoffTs = addUTCTime (-(30 * nominalDay)) ts
+      withStore' (`deleteUnfundedStoreReceipts` cutoffTs)
+
+deleteInProgressGroup :: User -> GroupInfo -> CM ()
+deleteInProgressGroup user gInfo = do
+  deleteGroupLinkIfExists user gInfo
+  deleteGroupConnections user gInfo False
+  withFastStore' $ \db -> deleteGroup db user gInfo
+
+runRelayGroupLinkChecks :: User -> CM ()
+runRelayGroupLinkChecks user = do
+  interval <- asks (relayChecksInterval . config)
+  liftIO $ threadDelay' $ diffToMicroseconds interval
+  forever $ do
+    flip catchAllErrors eToView $ do
+      lift waitChatStartedAndActivated
+      checkRelayServedGroups
+      checkRelayInactiveGroups
+    liftIO $ threadDelay' $ diffToMicroseconds interval
+  where
+    checkRelayServedGroups = do
+      cxt <- chatStoreCxt
+      relayGroups <- withStore $ \db -> getRelayServedGroups db cxt user
+      forM_ relayGroups $ \g@(GIK gInfo@GroupInfo {groupProfile = gp} _) -> flip catchAllErrors eToView $ do
+        case publicGroup gp of
+          Just PublicGroupProfile {groupLink = sLnk} -> do
+            (_, ContactLinkData _ UserContactData {relays = relayLinks}, _) <-
+              getShortLinkConnReq' NRMBackground user sLnk
+            gLink_ <- withStore' $ \db -> runExceptT $ getGroupLink db user gInfo
+            case gLink_ of
+              Right GroupLink {connLinkContact = CCLink _ (Just ourLink)} ->
+                if ourLink `elem` relayLinks
+                  then do
+                    -- TODO [relays] emit event to UI when relay own status promoted to RSActive
+                    -- CEvtGroupRelayUpdated requires GroupRelay (owner-side), not available on relay side
+                    void $ withStore' $ \db -> updateRelayOwnStatus_ db gInfo RSActive
+                  else void $ withStore' $ \db -> updateRelayOwnStatusFromTo db gInfo RSActive RSInactive
+              _ -> pure ()
+          _ -> pure ()
+        sendRelayCapIfNeeded user g
+    checkRelayInactiveGroups = do
+      cxt <- chatStoreCxt
+      ttl <- asks (relayInactiveTTL . config)
+      inactiveGroups <- withStore' $ \db -> getRelayInactiveGroups db cxt user ttl
+      forM_ inactiveGroups $ \gInfo -> flip catchAllErrors eToView $
+        deleteGroupConnections user gInfo False
 
 expireChatItems :: User -> Int64 -> Bool -> CM ()
 expireChatItems user@User {userId} globalTTL sync = do
   currentTs <- liftIO getCurrentTime
-  vr <- chatVersionRange
+  cxt <- chatStoreCxt
   -- this is to keep group messages created during last 12 hours even if they're expired according to item_ts
   let createdAtCutoff = addUTCTime (-43200 :: NominalDiffTime) currentTs
   lift waitChatStartedAndActivated
   contactIds <- withStore' $ \db -> getUserContactsToExpire db user globalTTL
-  loop contactIds $ expireContactChatItems user vr globalTTL
+  loop contactIds $ expireContactChatItems user cxt globalTTL
   lift waitChatStartedAndActivated
   groupIds <- withStore' $ \db -> getUserGroupsToExpire db user globalTTL
-  loop groupIds $ expireGroupChatItems user vr globalTTL createdAtCutoff
+  loop groupIds $ expireGroupChatItems user cxt globalTTL createdAtCutoff
   where
     loop :: [Int64] -> (Int64 -> CM ()) -> CM ()
     loop [] _ = pure ()
@@ -4279,11 +6231,11 @@ expireChatItems user@User {userId} globalTTL sync = do
           expire <- atomically $ TM.lookup userId expireFlags
           when (expire == Just True) $ threadDelay 100000 >> a
 
-expireContactChatItems :: User -> VersionRangeChat -> Int64 -> ContactId -> CM ()
-expireContactChatItems user vr globalTTL ctId =
+expireContactChatItems :: User -> StoreCxt -> Int64 -> ContactId -> CM ()
+expireContactChatItems user cxt globalTTL ctId =
   -- reading contacts and groups inside the loop,
   -- to allow ttl changing while processing and to reduce memory usage
-  tryAllErrors (withStore $ \db -> getContact db vr user ctId) >>= mapM_ process
+  tryAllErrors (withStore $ \db -> getContact db cxt user ctId) >>= mapM_ process
   where
     process ct@Contact {chatItemTTL} =
       withExpirationDate globalTTL chatItemTTL $ \expirationDate -> do
@@ -4292,9 +6244,9 @@ expireContactChatItems user vr globalTTL ctId =
         deleteCIFiles user filesInfo
         withStore' $ \db -> deleteContactExpiredCIs db user ct expirationDate
 
-expireGroupChatItems :: User -> VersionRangeChat -> Int64 -> UTCTime -> GroupId -> CM ()
-expireGroupChatItems user vr globalTTL createdAtCutoff groupId =
-  tryAllErrors (withStore $ \db -> getGroupInfo db vr user groupId) >>= mapM_ process
+expireGroupChatItems :: User -> StoreCxt -> Int64 -> UTCTime -> GroupId -> CM ()
+expireGroupChatItems user cxt globalTTL createdAtCutoff groupId =
+  tryAllErrors (withStore $ \db -> getGroupInfo db cxt user groupId) >>= mapM_ process
   where
     process gInfo@GroupInfo {chatItemTTL} =
       withExpirationDate globalTTL chatItemTTL $ \expirationDate -> do
@@ -4302,7 +6254,7 @@ expireGroupChatItems user vr globalTTL createdAtCutoff groupId =
         filesInfo <- withStore' $ \db -> getGroupExpiredFileInfo db user gInfo expirationDate createdAtCutoff
         deleteCIFiles user filesInfo
         withStore' $ \db -> deleteGroupExpiredCIs db user gInfo expirationDate createdAtCutoff
-        membersToDelete <- withStore' $ \db -> getGroupMembersForExpiration db vr user gInfo
+        membersToDelete <- withStore' $ \db -> getGroupMembersForExpiration db cxt user gInfo
         forM_ membersToDelete $ \m -> withStore' $ \db -> deleteGroupMember db user m
 
 withExpirationDate :: Int64 -> Maybe Int64 -> (UTCTime -> CM ()) -> CM ()
@@ -4321,7 +6273,8 @@ chatCommandP =
       "/block #" *> (SetShowMemberMessages <$> displayNameP <* A.space <*> (char_ '@' *> displayNameP) <*> pure False),
       "/unblock #" *> (SetShowMemberMessages <$> displayNameP <* A.space <*> (char_ '@' *> displayNameP) <*> pure True),
       "/_create user " *> (CreateActiveUser <$> jsonP),
-      "/create user " *> (CreateActiveUser <$> newUserP),
+      "/create user " *> (CreateActiveUser <$> newUserP False),
+      "/create chat relay user " *> (CreateActiveUser <$> newUserP True),
       "/create bot " *> (CreateActiveUser <$> newBotUserP),
       "/users" $> ListUsers,
       "/_user " *> (APISetActiveUser <$> A.decimal <*> optional (A.space *> jsonP)),
@@ -4333,6 +6286,8 @@ chatCommandP =
       "/set receipts groups " *> (SetUserGroupReceipts <$> receiptSettings),
       "/_set accept member contacts " *> (APISetUserAutoAcceptMemberContacts <$> A.decimal <* A.space <*> onOffP),
       "/set accept member contacts " *> (SetUserAutoAcceptMemberContacts <$> onOffP),
+      "/_set accept group invitations " *> (APISetUserAutoAcceptGroupInvitations <$> A.decimal <* A.space <*> onOffP),
+      "/set accept group invitations " *> (SetUserAutoAcceptGroupInvitations <$> onOffP),
       "/_hide user " *> (APIHideUser <$> A.decimal <* A.space <*> jsonP),
       "/_unhide user " *> (APIUnhideUser <$> A.decimal <* A.space <*> jsonP),
       "/_mute user " *> (APIMuteUser <$> A.decimal),
@@ -4341,14 +6296,16 @@ chatCommandP =
       "/unhide user " *> (UnhideUser <$> pwdP),
       "/mute user" $> MuteUser,
       "/unmute user" $> UnmuteUser,
+      "/set client service " *> (SetClientService <$> A.decimal <* A.char ':' <*> displayNameP <* A.space <*> onOffP),
       "/_delete user " *> (APIDeleteUser <$> A.decimal <* " del_smp=" <*> onOffP <*> optional (A.space *> jsonP)),
       "/delete user " *> (DeleteUser <$> displayNameP <*> pure True <*> optional (A.space *> pwdP)),
       ("/user" <|> "/u") $> ShowActiveUser,
       "/_start " *> do
         mainApp <- "main=" *> onOffP
         enableSndFiles <- " snd_files=" *> onOffP <|> pure mainApp
-        pure StartChat {mainApp, enableSndFiles},
-      "/_start" $> StartChat {mainApp = True, enableSndFiles = True},
+        serviceRequests <- " service_requests=" *> onOffP <|> pure False
+        pure StartChat {mainApp, enableSndFiles, serviceRequests},
+      "/_start" $> StartChat {mainApp = True, enableSndFiles = True, serviceRequests = False},
       "/_check running" $> CheckChatRunning,
       "/_stop" $> APIStopChat,
       "/_app activate restore=" *> (APIActivateChat <$> onOffP),
@@ -4386,13 +6343,14 @@ chatCommandP =
         *> ( APIGetChats
               <$> A.decimal
               <*> (" pcc=on" $> True <|> " pcc=off" $> False <|> pure False)
-              <*> (A.space *> paginationByTimeP <|> pure (PTLast 5000))
+              <*> optional (A.space *> paginationByTimeP)
               <*> (A.space *> jsonP <|> pure clqNoFilters)
            ),
       "/_get chat " *> (APIGetChat <$> chatRefP <*> optional (" content=" *> strP) <* A.space <*> chatPaginationP <*> optional (" search=" *> textP)),
+      "/_get content types " *> (APIGetChatContentTypes <$> chatRefP),
       "/_get items " *> (APIGetChatItems <$> chatPaginationP <*> optional (" search=" *> textP)),
       "/_get item info " *> (APIGetChatItemInfo <$> chatRefP <* A.space <*> A.decimal),
-      "/_send " *> (APISendMessages <$> sendRefP <*> liveMessageP <*> sendMessageTTLP <*> (" json " *> jsonP <|> " text " *> composedMessagesTextP)),
+      "/_send " *> (APISendMessages <$> sendRefP <*> liveMessageP <*> sendMessageTTLP <*> signMessagesP <*> (" json " *> jsonP <|> " text " *> composedMessagesTextP)),
       "/_create tag " *> (APICreateChatTag <$> jsonP),
       "/_tags " *> (APISetChatTags <$> chatRefP <*> optional _strP),
       "/_delete tag " *> (APIDeleteChatTag <$> A.decimal),
@@ -4409,7 +6367,9 @@ chatCommandP =
       "/_reaction " *> (APIChatItemReaction <$> chatRefP <* A.space <*> A.decimal <* A.space <*> onOffP <* A.space <*> (knownReaction <$?> jsonP)),
       "/_reaction members " *> (APIGetReactionMembers <$> A.decimal <* " #" <*> A.decimal <* A.space <*> A.decimal <* A.space <*> (knownReaction <$?> jsonP)),
       "/_forward plan " *> (APIPlanForwardChatItems <$> chatRefP <*> _strP),
-      "/_forward " *> (APIForwardChatItems <$> chatRefP <* A.space <*> chatRefP <*> _strP <*> sendMessageTTLP),
+      "/_forward " *> (APIForwardChatItems <$> chatRefP <*> (" as_group=" *> onOffP <|> pure False) <* A.space <*> chatRefP <*> _strP <*> sendMessageTTLP),
+      "/_share chat content " *> (APIShareChatMsgContent <$> chatRefP <* A.space <*> sendRefP),
+      "/_share address " *> (APIShareMyAddress <$> sendRefP),
       "/_read user " *> (APIUserRead <$> A.decimal),
       "/read user" $> UserRead,
       "/_read chat " *> (APIChatRead <$> chatRefP),
@@ -4418,7 +6378,15 @@ chatCommandP =
       "/_delete " *> (APIDeleteChat <$> chatRefP <*> chatDeleteMode),
       "/_clear chat " *> (APIClearChat <$> chatRefP),
       "/_accept" *> (APIAcceptContact <$> incognitoOnOffP <* A.space <*> A.decimal),
-      "/_reject " *> (APIRejectContact <$> A.decimal),
+      "/_reject " *> (APIRejectContact <$> A.decimal <*> (" notify=" *> onOffP <|> pure False)),
+      "/_service_request " *> (APISendServiceRequest <$> A.decimal <* A.space <*> strP <*> optional (" timeout=" *> (realToFrac <$> A.double)) <*> optional (" sign_key=" *> strP) <* A.space <*> jsonP),
+      "/_redeem_badge_code " *> (APIRedeemBadgeCode <$> A.decimal <* A.space <*> textP),
+      "/_badge purchase " *> (APIPurchaseBadge <$> A.decimal <*> optional (" invoice=" *> (safeDecodeUtf8 <$> A.takeTill (== ' '))) <* A.space <*> jsonP),
+      "/_badge invoice " *> (APICreateBadgeInvoice <$> A.decimal),
+      "/_badge state " *> (APIGetBadgeState <$> A.decimal),
+      "/_badge ledger " *> (APIGetBadgeLedger <$> A.decimal <* A.space <*> A.decimal),
+      "/_badge ack " *> (APIAckBadgeAlert <$> A.decimal <* A.space <*> A.decimal <* A.space <*> badgeAlertKindP <* A.space <*> onOffP <* A.space <*> textP),
+      "/_service_response " *> (APISendServiceResponse <$> A.decimal <* A.space <*> strP <* A.space <*> jsonP),
       "/_call invite @" *> (APISendCallInvitation <$> A.decimal <* A.space <*> jsonP),
       "/call " *> char_ '@' *> (SendCallInvitation <$> displayNameP <*> pure defaultCallType),
       "/_call reject @" *> (APIRejectCall <$> A.decimal),
@@ -4429,12 +6397,15 @@ chatCommandP =
       "/_call status @" *> (APICallStatus <$> A.decimal <* A.space <*> strP),
       "/_call get" $> APIGetCallInvitations,
       "/_profile " *> (APIUpdateProfile <$> A.decimal <* A.space <*> jsonP),
+      "/_set domain " *> (APISetUserDomain <$> A.decimal <*> optional (A.space *> (StrJSON <$> strP))),
       "/_set alias @" *> (APISetContactAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set alias #" *> (APISetGroupAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set alias :" *> (APISetConnectionAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set prefs @" *> (APISetContactPrefs <$> A.decimal <* A.space <*> jsonP),
       "/_set theme user " *> (APISetUserUIThemes <$> A.decimal <*> optional (A.space *> jsonP)),
       "/_set theme " *> (APISetChatUIThemes <$> chatRefP <*> optional (A.space *> jsonP)),
+      "/_set custom #" *> (APISetGroupCustomData <$> A.decimal <*> optional (A.space *> jsonP)),
+      "/_set custom @" *> (APISetContactCustomData <$> A.decimal <*> optional (A.space *> jsonP)),
       "/_ntf get" $> APIGetNtfToken,
       "/_ntf register " *> (APIRegisterToken <$> strP_ <*> strP),
       "/_ntf verify " *> (APIVerifyToken <$> strP <* A.space <*> strP <* A.space <*> strP),
@@ -4443,6 +6414,7 @@ chatCommandP =
       "/_ntf conns " *> (APIGetNtfConns <$> strP <* A.space <*> strP),
       "/_ntf conn messages " *> (APIGetConnNtfMessages <$> connMsgsP),
       "/_add #" *> (APIAddMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
+      "/_add #" *> (APIAddMemberViaGroup <$> A.decimal <* " #" <*> A.decimal <* A.space <*> A.decimal <*> memberRole),
       "/_join #" *> (APIJoinGroup <$> A.decimal <*> pure MFAll), -- needs to be changed to support in UI
       "/_accept member #" *> (APIAcceptMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
       "/_delete member chat #" *> (APIDeleteMemberSupportChat <$> A.decimal <* A.space <*> A.decimal),
@@ -4461,6 +6433,12 @@ chatCommandP =
       "/xftp " *> (SetUserProtoServers (AProtocolType SPXFTP) . map (AProtoServerWithAuth SPXFTP) <$> protocolServersP),
       "/smp" $> GetUserProtoServers (AProtocolType SPSMP),
       "/xftp" $> GetUserProtoServers (AProtocolType SPXFTP),
+      "/_relay test " *> (APITestChatRelay <$> A.decimal <* A.space <*> strP),
+      "/relay test " *> (TestChatRelay <$> strP),
+      "/_relay allow #" *> (APIAllowRelayGroup <$> A.decimal),
+      "/group allow #" *> (AllowRelayGroup <$> displayNameP),
+      "/relays " *> (SetUserChatRelays <$> chatRelaysP),
+      "/relays" $> GetUserChatRelays,
       "/_operators" $> APIGetServerOperators,
       "/_operators " *> (APISetServerOperators <$> jsonP),
       "/operators " *> (SetServerOperators . L.fromList <$> operatorRolesP `A.sepBy1` A.char ','),
@@ -4487,6 +6465,7 @@ chatCommandP =
       "/_member settings #" *> (APISetMemberSettings <$> A.decimal <* A.space <*> A.decimal <* A.space <*> jsonP),
       "/_info #" *> (APIGroupMemberInfo <$> A.decimal <* A.space <*> A.decimal),
       "/_info #" *> (APIGroupInfo <$> A.decimal),
+      "/_get group link data #" *> (APIGetUpdatedGroupLinkData <$> A.decimal),
       "/_info @" *> (APIContactInfo <$> A.decimal),
       ("/info #" <|> "/i #") *> (GroupMemberInfo <$> displayNameP <* A.space <* char_ '@' <*> displayNameP),
       ("/info #" <|> "/i #") *> (ShowGroupInfo <$> displayNameP),
@@ -4531,6 +6510,10 @@ chatCommandP =
       ("/help" <|> "/h") $> ChatHelp HSMain,
       ("/group" <|> "/g") *> (NewGroup <$> incognitoP <* A.space <* char_ '#' <*> groupProfile),
       "/_group " *> (APINewGroup <$> A.decimal <*> incognitoOnOffP <* A.space <*> jsonP),
+      ("/public group" <|> "/pg") *> (NewPublicGroup <$> incognitoP <* " relays=" <*> strP <* A.space <* char_ '#' <*> channelProfile),
+      "/_public group " *> (APINewPublicGroup <$> A.decimal <*> incognitoOnOffP <*> _strP <* A.space <*> jsonP),
+      "/_get relays #" *> (APIGetGroupRelays <$> A.decimal),
+      "/_add relays #" *> (APIAddGroupRelays <$> A.decimal <*> _strP),
       ("/add " <|> "/a ") *> char_ '#' *> (AddMember <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <*> (memberRole <|> pure GRMember)),
       ("/join " <|> "/j ") *> char_ '#' *> (JoinGroup <$> displayNameP <*> (" mute" $> MFNone <|> pure MFAll)),
       "/accept member " *> char_ '#' *> (AcceptMember <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <*> (memberRole <|> pure GRMember)),
@@ -4546,15 +6529,17 @@ chatCommandP =
       "/clear " *> char_ '@' *> (ClearContact <$> displayNameP),
       ("/members " <|> "/ms ") *> char_ '#' *> (ListMembers <$> displayNameP),
       "/member support chats #" *> (ListMemberSupportChats <$> displayNameP),
-      "/_groups" *> (APIListGroups <$> A.decimal <*> optional (" @" *> A.decimal) <*> optional (A.space *> textP)),
+      "/_groups " *> (APIListGroups <$> A.decimal <*> optional (" @" *> A.decimal) <*> optional (A.space *> textP)),
       ("/groups" <|> "/gs") *> (ListGroups <$> optional (" @" *> displayNameP) <*> optional (A.space *> textP)),
       "/_group_profile #" *> (APIUpdateGroupProfile <$> A.decimal <* A.space <*> jsonP),
       ("/group_profile " <|> "/gp ") *> char_ '#' *> (UpdateGroupNames <$> displayNameP <* A.space <*> groupProfile),
       ("/group_profile " <|> "/gp ") *> char_ '#' *> (ShowGroupProfile <$> displayNameP),
+      "/public group access " *> char_ '#' *> (SetPublicGroupAccess <$> displayNameP <*> publicGroupAccessP),
       "/group_descr " *> char_ '#' *> (UpdateGroupDescription <$> displayNameP <*> optional (A.space *> msgTextP)),
       "/set welcome " *> char_ '#' *> (UpdateGroupDescription <$> displayNameP <* A.space <*> (Just <$> msgTextP)),
       "/delete welcome " *> char_ '#' *> (UpdateGroupDescription <$> displayNameP <*> pure Nothing),
       "/show welcome " *> char_ '#' *> (ShowGroupDescription <$> displayNameP),
+      "/_public group access #" *> (APISetPublicGroupAccess <$> A.decimal <* A.space <*> jsonP),
       "/_create link #" *> (APICreateGroupLink <$> A.decimal <*> (memberRole <|> pure GRMember)),
       "/_set link role #" *> (APIGroupLinkMemberRole <$> A.decimal <*> memberRole),
       "/_delete link #" *> (APIDeleteGroupLink <$> A.decimal),
@@ -4571,23 +6556,27 @@ chatCommandP =
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayNameP <* A.space <* char_ '@' <*> (Just <$> displayNameP) <* A.space <*> quotedMsg <*> msgTextP),
       "/_contacts " *> (APIListContacts <$> A.decimal),
       "/contacts" $> ListContacts,
-      "/_connect plan " *> (APIConnectPlan <$> A.decimal <* A.space <*> ((Just <$> strP) <|> A.takeTill (== ' ') $> Nothing)),
-      "/_prepare contact " *> (APIPrepareContact <$> A.decimal <* A.space <*> connLinkP <* A.space <*> jsonP),
-      "/_prepare group " *> (APIPrepareGroup <$> A.decimal <* A.space <*> connLinkP' <* A.space <*> jsonP),
+      "/_connect plan " *> (APIConnectPlan <$> A.decimal <* A.space <*> ((Just <$> strP) <|> A.takeTill (== ' ') $> Nothing) <*> ((" resolve=" *> planResolveModeP) <|> pure PRMUnknown) <*> optional (" sig=" *> jsonP)),
+      "/_prepare contact " *> (APIPrepareContact <$> A.decimal <* A.space <*> connLinkP <*> optional (" domain=" *> strP) <* A.space <*> jsonP),
+      "/_prepare group " *> (APIPrepareGroup <$> A.decimal <* A.space <*> connLinkP' <*> (" direct=" *> onOffP <|> pure True) <*> optional (" domain=" *> strP) <* A.space <*> jsonP),
       "/_set contact user @" *> (APIChangePreparedContactUser <$> A.decimal <* A.space <*> A.decimal),
       "/_set group user #" *> (APIChangePreparedGroupUser <$> A.decimal <* A.space <*> A.decimal),
       "/_connect contact @" *> (APIConnectPreparedContact <$> A.decimal <*> incognitoOnOffP <*> optional (A.space *> msgContentP)),
-      "/_connect group #" *> (APIConnectPreparedGroup <$> A.decimal <*> incognitoOnOffP <*> optional (A.space *> msgContentP)),
+      "/_connect group #" *> (APIConnectPreparedGroup <$> A.decimal <*> incognitoOnOffP <*> optional (A.space *> ownerContactP) <*> optional (A.space *> msgContentP)),
       "/_connect " *> (APIAddContact <$> A.decimal <*> incognitoOnOffP),
       "/_connect " *> (APIConnect <$> A.decimal <*> incognitoOnOffP <* A.space <*> connLinkP_),
       "/_set incognito :" *> (APISetConnectionIncognito <$> A.decimal <* A.space <*> onOffP),
       "/_set conn user :" *> (APIChangeConnectionUser <$> A.decimal <* A.space <*> A.decimal),
       ("/connect" <|> "/c") *> (AddContact <$> incognitoP),
       ("/connect" <|> "/c") *> (Connect <$> incognitoP <* A.space <*> ((Just <$> strP) <|> A.takeTill isSpace $> Nothing)),
+      "/_verify domain @" *> (APIVerifyContactDomain <$> A.decimal),
+      "/_verify domain #" *> (APIVerifyGroupDomain <$> A.decimal),
       ForwardMessage <$> chatNameP <* " <- @" <*> displayNameP <* A.space <*> msgTextP,
       ForwardGroupMessage <$> chatNameP <* " <- #" <*> displayNameP <* A.space <* A.char '@' <*> (Just <$> displayNameP) <* A.space <*> msgTextP,
       ForwardGroupMessage <$> chatNameP <* " <- #" <*> displayNameP <*> pure Nothing <* A.space <*> msgTextP,
       ForwardLocalMessage <$> chatNameP <* " <- * " <*> msgTextP,
+      "/share chat #" *> (SharePublicGroup <$> displayNameP <* A.space <*> chatNameP),
+      "/share address " *> (ShareMyAddress <$> chatNameP),
       SendMessage <$> sendNameP <* A.space <*> msgTextP,
       "@#" *> (SendMemberContactMessage <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <* A.space <*> msgTextP),
       "/accept_member_contact @" *> (AcceptMemberContact <$> displayNameP),
@@ -4617,26 +6606,29 @@ chatCommandP =
       ("/fstatus " <|> "/fs ") *> (FileStatus <$> A.decimal),
       "/_connect contact " *> (APIConnectContactViaAddress <$> A.decimal <*> incognitoOnOffP <* A.space <*> A.decimal),
       "/simplex" *> (ConnectSimplex <$> incognitoP),
-      "/_address " *> (APICreateMyAddress <$> A.decimal),
-      ("/address" <|> "/ad") $> CreateMyAddress,
+      "/_address " *> (APICreateMyAddress <$> A.decimal <*> optional (A.space *> strP) <*> optional (" pq_ratchet=" *> onOffP)),
+      ("/address" <|> "/ad") *> (CreateMyAddress <$> optional (" pq_ratchet=" *> onOffP)),
       "/_delete_address " *> (APIDeleteMyAddress <$> A.decimal),
       ("/delete_address" <|> "/da") $> DeleteMyAddress,
       "/_show_address " *> (APIShowMyAddress <$> A.decimal),
       ("/show_address" <|> "/sa") $> ShowMyAddress,
-      "/_short_link_address " *> (APIAddMyAddressShortLink <$> A.decimal),
+      "/_short_link_address " *> (APIAddMyAddressShortLink <$> A.decimal <*> optional (" pq_ratchet=" *> onOffP)),
+      "/_rotate_address_keys " *> (APIRotateAddressRatchetKeys <$> A.decimal),
       "/_profile_address " *> (APISetProfileAddress <$> A.decimal <* A.space <*> onOffP),
       ("/profile_address " <|> "/pa ") *> (SetProfileAddress <$> onOffP),
-      "/_address_settings " *> (APISetAddressSettings <$> A.decimal <* A.space <*> jsonP),
-      "/auto_accept " *> (SetAddressSettings <$> autoAcceptP),
+      "/_address_settings " *> (APISetAddressSettings <$> A.decimal <*> optional (" pq_ratchet=" *> onOffP) <* A.space <*> jsonP),
+      "/auto_accept" *> (SetAddressSettings <$> optional (" pq_ratchet=" *> onOffP) <* A.space <*> autoAcceptP),
       ("/accept" <|> "/ac") *> (AcceptContact <$> incognitoP <* A.space <* char_ '@' <*> displayNameP),
-      ("/reject " <|> "/rc ") *> char_ '@' *> (RejectContact <$> displayNameP),
+      ("/reject " <|> "/rc ") *> char_ '@' *> (RejectContact <$> displayNameP <*> (" notify" $> True <|> pure False)),
       ("/markdown" <|> "/m") $> ChatHelp HSMarkdown,
       ("/welcome" <|> "/w") $> Welcome,
+      "/set profile image file " *> (UpdateProfileImageFromFile <$> filePath),
       "/set profile image " *> (UpdateProfileImage . Just . ImageData <$> imageP),
       "/delete profile image" $> UpdateProfileImage Nothing,
       "/show profile image" $> ShowProfileImage,
       ("/profile " <|> "/p ") *> (uncurry UpdateProfile <$> profileNameDescr),
       ("/profile" <|> "/p") $> ShowProfile,
+      "/badge add " *> (AddBadge <$> jsonP),
       "/set bot commands " *> (SetBotCommands <$> botCommandsP),
       "/delete bot commands" $> SetBotCommands [],
       "/set voice #" *> (SetGroupFeatureRole (AGFR SGFVoice) <$> displayNameP <*> _strP <*> optional memberRole),
@@ -4657,6 +6649,8 @@ chatCommandP =
       "/set disappear @" *> (SetContactTimedMessages <$> displayNameP <*> optional (A.space *> timedMessagesEnabledP)),
       "/set disappear " *> (SetUserTimedMessages <$> (("yes" $> True) <|> ("no" $> False))),
       "/set reports #" *> (SetGroupFeature (AGFNR SGFReports) <$> displayNameP <*> _strP),
+      "/set signatures #" *> (SetGroupFeature (AGFNR SGFSignMessages) <$> displayNameP <*> _strP),
+      "/set support #" *> (SetGroupFeature (AGFNR SGFSupport) <$> displayNameP <*> (A.space *> strP)),
       "/set links #" *> (SetGroupFeatureRole (AGFR SGFSimplexLinks) <$> displayNameP <*> _strP <*> optional memberRole),
       "/set admission review #" *> (SetGroupMemberAdmissionReview <$> displayNameP <*> (A.space *> memberCriteriaP)),
       ("/incognito" <* optional (A.space *> onOffP)) $> ChatHelp HSIncognito,
@@ -4706,6 +6700,7 @@ chatCommandP =
       ((Just <$> connLinkP) <|> A.takeTill (== ' ') $> Nothing)
     incognitoP = (A.space *> ("incognito" <|> "i")) $> True <|> pure False
     incognitoOnOffP = (A.space *> "incognito=" *> onOffP) <|> pure False
+    ownerContactP = "contact=" *> (GroupOwnerContact <$> A.decimal <* " owner=" <*> strP)
     imagePrefix = (<>) <$> "data:" <*> ("image/png;base64," <|> "image/jpg;base64,")
     imageP = safeDecodeUtf8 <$> ((<>) <$> imagePrefix <*> (B64.encode <$> base64P))
     chatTypeP = A.char '@' $> CTDirect <|> A.char '#' $> CTGroup <|> A.char '*' $> CTLocal <|> A.char ':' $> CTContactConnection
@@ -4747,12 +6742,19 @@ chatCommandP =
       pure [composedMessage Nothing text]
     updatedMessagesTextP = (`UpdatedMessage` []) <$> mcTextP
     liveMessageP = " live=" *> onOffP <|> pure False
+    signMessagesP = " sign=" *> onOffP <|> pure False
     sendMessageTTLP = " ttl=" *> ((Just <$> A.decimal) <|> ("default" $> Nothing)) <|> pure Nothing
     receiptSettings = do
       enable <- onOffP
       clearOverrides <- (" clear_overrides=" *> onOffP) <|> pure False
       pure UserMsgReceiptSettings {enable, clearOverrides}
     onOffP = ("on" $> True) <|> ("off" $> False)
+    publicGroupAccessP = do
+      groupWebPage <- optional (" web=" *> (safeDecodeUtf8 <$> A.takeTill A.isSpace))
+      groupDomain <- optional (" domain=" *> strP)
+      domainWebPage <- (" domain_page=" *> onOffP) <|> pure False
+      allowEmbedding <- (" embed=" *> onOffP) <|> pure False
+      pure PublicGroupAccess {groupWebPage, groupDomainClaim = mkDomainClaim <$> groupDomain, domainWebPage, allowEmbedding}
     profileNameDescr = (,) <$> displayNameP <*> shortDescrP
     -- 'Help with bot':'link <ID>','Menu of commands':[...]
     botCommandsP :: Parser [ChatBotCommand]
@@ -4770,18 +6772,20 @@ chatCommandP =
                 k : ws -> pure (k, if null ws then Nothing else Just $ T.unwords ws)
               pure CBCCommand {label, keyword, params}
         quoted = A.char '\'' *> A.takeTill (== '\'') <* A.char '\''
-    newUserP = do
+    newUserP relay = do
       (cName, shortDescr) <- profileNameDescr
-      let profile = Just Profile {displayName = cName, fullName = "", shortDescr, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = Nothing}
-      pure NewUser {profile, pastTimestamp = False}
+      service <- (" service=" *> onOffP) <|> pure False
+      let profile = Just Profile {displayName = cName, fullName = "", shortDescr, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = Nothing, badge = Nothing, contactDomain = Nothing}
+      pure NewUser {profile, pastTimestamp = False, userChatRelay = BoolDef relay, clientService = BoolDef service}
     newBotUserP = do
       files_ <- optional $ "files=" *> onOffP <* A.space
+      service <- ("service=" *> onOffP <* A.space) <|> pure False
       (cName, shortDescr) <- profileNameDescr
       let preferences = case files_ of
             Just True -> Nothing
             _ -> Just (emptyChatPrefs :: Preferences) {files = Just FilesPreference {allow = FANo}}
-          profile = Just Profile {displayName = cName, fullName = "", shortDescr, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences}
-      pure NewUser {profile, pastTimestamp = False}
+          profile = Just Profile {displayName = cName, fullName = "", shortDescr, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences, badge = Nothing, contactDomain = Nothing}
+      pure NewUser {profile, pastTimestamp = False, userChatRelay = BoolDef False, clientService = BoolDef service}
     jsonP :: J.FromJSON a => Parser a
     jsonP = J.eitherDecodeStrict' <$?> A.takeByteString
     groupProfile = do
@@ -4792,12 +6796,19 @@ chatCommandP =
                 { directMessages = Just DirectMessagesGroupPreference {enable = FEOn, role = Nothing},
                   history = Just HistoryGroupPreference {enable = FEOn}
                 }
-      pure GroupProfile {displayName = gName, fullName = "", shortDescr, description = Nothing, image = Nothing, groupPreferences, memberAdmission = Nothing}
+      pure GroupProfile {displayName = gName, fullName = "", shortDescr, description = Nothing, image = Nothing, publicGroup = Nothing, groupPreferences, memberAdmission = Nothing}
+    channelProfile = do
+      p@GroupProfile {groupPreferences = prefs_} <- groupProfile
+      let prefs = (fromMaybe emptyGroupPrefs prefs_) {support  = Just SupportGroupPreference {enable = FEOff}} :: GroupPreferences
+      pure p {groupPreferences = Just prefs}
     memberCriteriaP = ("all" $> Just MCAll) <|> ("off" $> Nothing)
     shortDescrP = do
       descr <- A.takeWhile1 isSpace *> (T.dropWhileEnd isSpace <$> textP) <|> pure ""
       pure $ if T.null descr then Nothing else Just $ T.take 160 descr
     textP = safeDecodeUtf8 <$> A.takeByteString
+    badgeAlertKindP = do
+      t <- A.takeTill (== ' ')
+      maybe (fail "bad badge alert kind") pure $ textDecode $ safeDecodeUtf8 t
     pwdP = jsonP <|> (UserPwd . safeDecodeUtf8 <$> A.takeTill (== ' '))
     verifyCodeP = safeDecodeUtf8 <$> A.takeWhile (\c -> isDigit c || c == ' ')
     msgTextP = jsonP <|> textP
@@ -4832,7 +6843,8 @@ chatCommandP =
         cType -> (\chatId -> ChatRef cType chatId Nothing) <$> A.decimal
     sendRefP =
       (A.char '@' $> SRDirect <*> A.decimal)
-        <|> (A.char '#' $> SRGroup <*> A.decimal <*> optional gcScopeP)
+        <|> (A.char '#' $> SRGroup <*> A.decimal <*> optional gcScopeP <*> asGroupP)
+    asGroupP = ("(as_group=" *> onOffP <* A.char ')') <|> pure False
     gcScopeP = "(_support" *> (GCSMemberSupport <$> optional (A.char ':' *> A.decimal)) <* A.char ')'
     sendNameP =
       (A.char '@' $> SNDirect <*> displayNameP)
@@ -4873,6 +6885,11 @@ chatCommandP =
       optional ("yes" *> A.space) *> (TMEEnableSetTTL <$> timedTTLP)
         <|> ("yes" $> TMEEnableKeepTTL)
         <|> ("no" $> TMEDisableKeepTTL)
+    chatRelaysP = chatRelayP `A.sepBy1` A.char ' '
+    chatRelayP = do
+      name <- "name=" *> text1P
+      address <- _strP
+      pure CLINewRelay {name, address}
     operatorRolesP = do
       operatorId' <- A.decimal
       enabled' <- A.char ':' *> onOffP
@@ -4882,9 +6899,9 @@ chatCommandP =
     srvRolesP = srvRoles <$?> A.takeTill (\c -> c == ':' || c == ',')
       where
         srvRoles = \case
-          "off" -> Right $ ServerRoles False False
-          "proxy" -> Right ServerRoles {storage = False, proxy = True}
-          "storage" -> Right ServerRoles {storage = True, proxy = False}
+          "off" -> Right $ ServerRoles False False False
+          "proxy" -> Right ServerRoles {storage = False, proxy = True, names = False}
+          "storage" -> Right ServerRoles {storage = True, proxy = False, names = False}
           "on" -> Right allRoles
           _ -> Left "bad ServerRoles"
     netCfgP = do
@@ -4910,7 +6927,8 @@ chatCommandP =
         addressAA = AddressSettings False <$> (Just . AutoAccept <$> (" incognito=" *> onOffP <|> pure False)) <*> autoReply
         businessAA = " business" *> (AddressSettings True (Just $ AutoAccept False) <$> autoReply)
         autoReply = optional (A.space *> msgContentP)
-    rcCtrlAddressP = RCCtrlAddress <$> ("addr=" *> strP) <*> (" iface=" *> (jsonP <|> text1P))
+    rcCtrlAddressP = RCCtrlAddress <$> ("addr=" *> strP) <*> (" iface=" *> (quotedP <|> text1P))
+    quotedP = safeDecodeUtf8 <$> (A.char '"' *> A.takeTill (== '"') <* A.char '"')
     text1P = safeDecodeUtf8 <$> A.takeTill (== ' ')
     char_ = optional . A.char
 
@@ -4928,20 +6946,31 @@ displayNameP_ = quoted '\'' <|> takeNameTill (\c -> isSpace c || c == ',')
     refChar c = c > ' ' && c /= '#' && c /= '@' && c /= '\''
 
 mkValidName :: String -> String
-mkValidName = dropWhileEnd isSpace . take 50 . reverse . fst3 . foldl' addChar ("", '\NUL', 0 :: Int)
+mkValidName = noLdnSuffix . dropWhileEnd isSpace . take 50 . reverse . fst3 . foldl' addChar ("", '\NUL', 0 :: Int)
   where
+    noLdnSuffix s = case break (== '_') (reverse s) of
+      (ds@(_ : _), '_' : rest@(_ : _)) | all isDigit ds -> reverse rest <> ('-' : reverse ds)
+      _ -> s
     fst3 (x, _, _) = x
-    addChar (r, prev, punct) c = if validChar then (c' : r, c', punct') else (r, prev, punct)
+    addChar (r, prev, punct) c' = if validChar then (c : r, c, punct') else (r, prev, punct)
       where
-        c' = if isSpace c then ' ' else c
+        c = if isSpace c' then ' ' else c'
+        cat = generalCategory c
+        isPunct = case cat of
+          ConnectorPunctuation -> True
+          DashPunctuation -> True
+          OtherPunctuation -> True
+          _ -> False
         punct'
-          | isPunctuation c = punct + 1
-          | isSpace c = punct
+          | isPunct = punct + 1
+          | c == ' ' = punct
           | otherwise = 0
         validChar
-          | c == '\'' = False
-          | prev == '\NUL' = c > ' ' && c /= '#' && c /= '@' && validFirstChar
-          | isSpace prev = validFirstChar || (punct == 0 && isPunctuation c)
-          | isPunctuation prev = validFirstChar || isSpace c || (punct < 3 && isPunctuation c)
-          | otherwise = validFirstChar || isSpace c || isMark c || isPunctuation c
-        validFirstChar = isLetter c || isNumber c || isSymbol c
+          | c `elem` prohibited = False
+          | prev == '\NUL' = c > ' ' && validFirstNameChar
+          | prev == ' ' = validFirstChar || (punct == 0 && isPunct)
+          | punct > 0 = validFirstChar || c == ' '
+          | otherwise = validFirstChar || c == ' ' || isMark c || isPunct
+        validFirstNameChar = isLetter c || cat == DecimalNumber || cat == OtherSymbol
+        validFirstChar = validFirstNameChar || cat == CurrencySymbol || cat == MathSymbol
+        prohibited = ".,;/\\#@'\"`~" :: String

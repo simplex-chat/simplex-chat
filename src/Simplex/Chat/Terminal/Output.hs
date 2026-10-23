@@ -167,7 +167,7 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} Cha
         _ -> pure ()
     logResponse path s = withFile path AppendMode $ \h -> mapM_ (hPutStrLn h . unStyle) s
     getRemoteUser rhId =
-      runReaderT (execChatCommand (Just rhId) "/user" 0) cc >>= \case
+      runReaderT (execChatCommand (CSRemoteHost rhId) "/user" 0) cc >>= \case
         Right CRActiveUser {user} -> updateRemoteUser ct user rhId
         cr -> logError $ "Unexpected reply while getting remote user: " <> tshow cr
     removeRemoteUser rhId = atomically $ TM.delete rhId (currentRemoteUsers ct)
@@ -180,7 +180,8 @@ chatEventNotification t@ChatTerminal {sendNotification} cc = \case
       whenCurrUser cc u $ setActiveChat t cInfo
       case (cInfo, chatDir) of
         (DirectChat ct, _) -> sendNtf (viewContactName ct <> "> ", text)
-        (GroupChat g scopeInfo, CIGroupRcv m) -> sendNtf (fromGroup_ g scopeInfo m, text)
+        (GroupChat g scopeInfo, CIGroupRcv m) -> sendNtf (fromGroup_ g scopeInfo (Just m), text)
+        (GroupChat g scopeInfo, CIChannelRcv) -> sendNtf (fromGroup_ g scopeInfo Nothing, text)
         _ -> pure ()
     where
       text = msgText mc formattedText
@@ -197,6 +198,9 @@ chatEventNotification t@ChatTerminal {sendNotification} cc = \case
   CEvtReceivedGroupInvitation u g ct _ _ ->
     when (contactNtf u ct False) $
       sendNtf ("#" <> viewGroupName g <> " " <> viewContactName ct <> "> ", "invited you to join the group")
+  CEvtReceivedGroupInvitationViaGroup u g viaG m _ _ ->
+    when (groupNtf u viaG False) $
+      sendNtf ("#" <> viewGroupName g <> " " <> viewMemberName m <> "> ", "invited you to join the group")
   CEvtUserJoinedGroup u g _ -> when (groupNtf u g False) $ do
     whenCurrUser cc u $ setActiveGroup t g
     sendNtf ("#" <> viewGroupName g, "you are connected to group")
@@ -208,7 +212,19 @@ chatEventNotification t@ChatTerminal {sendNotification} cc = \case
     when (groupNtf u g False) $ sendNtf ("#" <> viewGroupName g, "member " <> viewMemberName m <> " is connected")
   CEvtReceivedContactRequest u UserContactRequest {localDisplayName = n} _ ->
     when (userNtf u) $ sendNtf (viewName n <> ">", "wants to connect to you")
+  CEvtDeletedMemberUser _u g m _withMessages _signed ->
+    sendNtf ("#" <> viewGroupName g, viewMemberName m <> " removed you from the group")
   _ -> pure ()
+  where
+    sendNtf = maybe (\_ -> pure ()) (. uncurry Notification) sendNotification
+
+chatResponseNotification :: ChatTerminal -> Either ChatError ChatResponse -> IO ()
+chatResponseNotification ChatTerminal {sendNotification} = \case
+  Right r -> case r of
+    CRUserContactLinkCreated {} -> sendNtf ("SimpleX", "contact link created")
+    CRUserProfileUpdated {} -> sendNtf ("SimpleX", "profile updated")
+    _ -> pure ()
+  Left _ -> pure ()
   where
     sendNtf = maybe (\_ -> pure ()) (. uncurry Notification) sendNotification
 

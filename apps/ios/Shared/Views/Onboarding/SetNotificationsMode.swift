@@ -5,50 +5,45 @@
 //  Created by Evgeny on 03/07/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/navigation.md
 
 import SwiftUI
 import SimpleXChat
 
 struct SetNotificationsMode: View {
-    @EnvironmentObject var m: ChatModel
-    @State private var notificationMode = NotificationsMode.instant
-    @State private var showAlert: NotificationAlert?
-    @State private var showInfo: Bool = false
+    @Environment(\.dismiss) var dismiss
+    @Binding var notificationMode: NotificationsMode
+    @State private var showInfo = false
 
     var body: some View {
         GeometryReader { g in
-            let v = ScrollView {
+            ScrollView {
                 VStack(alignment: .center, spacing: 20) {
                     Text("Push notifications")
                         .font(.largeTitle)
                         .bold()
                         .padding(.top, 25)
-                    
-                    infoText()
-                    
+
+                    Button {
+                        showInfo = true
+                    } label: {
+                        Label("How it affects privacy", systemImage: "info.circle")
+                            .font(.headline)
+                    }
+
                     Spacer()
 
                     ForEach(NotificationsMode.values) { mode in
                         NtfModeSelector(mode: mode, selection: $notificationMode)
                     }
-                    
+
                     Spacer()
-                    
+
                     VStack(spacing: 10) {
                         Button {
-                            if let token = m.deviceToken {
-                                setNotificationsMode(token, notificationMode)
-                            } else {
-                                AlertManager.shared.showAlertMsg(title: "No device token!")
-                            }
-                            onboardingStageDefault.set(.onboardingComplete)
-                            m.onboardingStage = .onboardingComplete
+                            dismiss()
                         } label: {
-                            if case .off = notificationMode {
-                                Text("Use chat")
-                            } else {
-                                Text("Enable notifications")
-                            }
+                            Text("OK")
                         }
                         .buttonStyle(OnboardingButtonStyle())
                         onboardingButtonPlaceholder()
@@ -57,49 +52,10 @@ struct SetNotificationsMode: View {
                 .padding(25)
                 .frame(minHeight: g.size.height)
             }
-            if #available(iOS 16.4, *) {
-                v.scrollBounceBehavior(.basedOnSize)
-            } else {
-                v
-            }
         }
         .frame(maxHeight: .infinity)
         .sheet(isPresented: $showInfo) {
             NotificationsInfoView()
-        }
-        .navigationBarHidden(true) // necessary on iOS 15
-    }
-
-    private func setNotificationsMode(_ token: DeviceToken, _ mode: NotificationsMode) {
-        switch mode {
-        case .off:
-            m.tokenStatus = .new
-            m.notificationMode = .off
-        default:
-            Task {
-                do {
-                    let status = try await apiRegisterToken(token: token, notificationMode: mode)
-                    await MainActor.run {
-                        m.tokenStatus = status
-                        m.notificationMode = mode
-                    }
-                } catch let error {
-                    let a = getErrorAlert(error, "Error enabling notifications")
-                    AlertManager.shared.showAlertMsg(
-                        title: a.title,
-                        message: a.message
-                    )
-                }
-            }
-        }
-    }
-    
-    private func infoText() -> some View {
-        Button {
-            showInfo = true
-        } label: {
-            Label("How it affects privacy", systemImage: "info.circle")
-                .font(.headline)
         }
     }
 }
@@ -179,6 +135,6 @@ struct NotificationsInfoView: View {
 
 struct NotificationsModeView_Previews: PreviewProvider {
     static var previews: some View {
-        SetNotificationsMode()
+        SetNotificationsMode(notificationMode: .constant(.instant))
     }
 }

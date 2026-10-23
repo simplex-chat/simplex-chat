@@ -45,7 +45,7 @@ struct MemberSupportView: View {
         : membersWithChats.filter { $0.wrapped.localAliasAndFullName.localizedLowercase.contains(s) }
 
         if membersWithChats.isEmpty {
-            Text("No chats with members")
+            Text(groupInfo.fullGroupPreferences.support.on ? "No chats with members" : "Chats with members are disabled")
                 .foregroundColor(.secondary)
         } else {
             List {
@@ -172,7 +172,7 @@ struct MemberSupportView: View {
                     .padding(.trailing, 2)
                 VStack(alignment: .leading) {
                     let t = Text(member.chatViewName).foregroundColor(theme.colors.onBackground)
-                    (member.verified ? memberVerifiedShield + t : t)
+                    NameWithBadge((member.verified ? memberVerifiedShield + t : t), member.nameBadge)
                         .lineLimit(1)
                     Text(memberStatus(member))
                         .lineLimit(1)
@@ -196,14 +196,16 @@ struct MemberSupportView: View {
         }
 
         private func memberStatus(_ member: GroupMember) -> LocalizedStringKey {
-            if member.activeConn?.connDisabled ?? false {
+            if case .failed = member.activeConn?.connStatus {
+                return "failed"
+            } else if member.activeConn?.connDisabled ?? false {
                 return "disabled"
             } else if member.activeConn?.connInactive ?? false {
                 return "inactive"
             } else if member.memberPending {
                 return member.memberStatus.text
             } else {
-                return LocalizedStringKey(member.memberRole.text)
+                return LocalizedStringKey(member.memberRole.text(isChannel: groupInfo.isChannel))
             }
         }
 

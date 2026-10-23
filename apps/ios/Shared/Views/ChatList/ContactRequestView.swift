@@ -22,12 +22,16 @@ struct ContactRequestView: View {
                 .padding(.leading, 4)
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .top) {
-                    Text(contactRequest.chatViewName)
-                        .font(.title3)
-                        .fontWeight(.bold)
-                        .foregroundColor(theme.colors.primary)
-                        .padding(.leading, 8)
-                        .frame(alignment: .topLeading)
+                    NameWithBadge(
+                        Text(contactRequest.chatViewName)
+                            .font(.title3)
+                            .fontWeight(.bold)
+                            .foregroundColor(theme.colors.primary),
+                        chat.chatInfo.nameBadge,
+                        .title3
+                    )
+                    .padding(.leading, 8)
+                    .frame(alignment: .topLeading)
                     Spacer()
                     formatTimestampText(contactRequest.updatedAt)
                         .font(.subheadline)
