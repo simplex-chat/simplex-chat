@@ -69,4 +69,4 @@ None of these is a race between honest parties:
 
 ## Not verified, size
 
-Postgres tests run only on the host; the apps are built and tested on GitHub's runners. The 50-owner headroom is computed from the encoders (the first slice tests it); catch-up for 100,000 members (about 2,000 messages) is an estimate. Five new chat events and one changed; five optional link-data fields; eight columns, no new table; one SMP command and one error.
+The apps are built and tested on GitHub's runners; Postgres only by the Haskell tests. The 50-owner headroom is computed from the encoders (the first slice tests it); catch-up for 100,000 members (about 2,000 messages) is an estimate. Five new chat events and one changed; five optional link-data fields; eight columns, no new table; one SMP command and one error.

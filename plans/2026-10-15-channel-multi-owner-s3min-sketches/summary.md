@@ -63,7 +63,7 @@ Residual risks [Ov: Residual risks, §5]:
 
 ## Slices
 
-~2,260 production Haskell lines (simplexmq ~490 plus chat ~1,770) plus tests, ~380 per app platform and ~850 of CI scripts, scripted checks and test plans; sixteen slices, each one unattended session, two a day; each compiles and passes its tests alone, and the app slices are built and tested on GitHub's runners [§6, §7.1].
+~2,260 production Haskell lines (simplexmq ~490 plus chat ~1,770) plus tests, ~380 per app platform and ~850 of CI scripts, scripted checks and test plans; sixteen slices, about 110 hours; each compiles and passes its tests alone, and the app slices are built and tested on GitHub's runners [§6, §7.1].
 
 | Slices | What |
 |---|---|
@@ -76,9 +76,9 @@ Residual risks [Ov: Residual risks, §5]:
 | S13–S14 | leave, removal, destroy |
 | S15–S16 | apps: owner management, iOS then Kotlin |
 
-**Risks** [§8, Ov: Not verified, size]: the riskiest assumption, which tests in S9, S10 and S13 check, is that today's roster protocol converges when versions are claimed through the link from complete rosters and departed owners' roster messages are still applied. The next is that background callbacks, re-derived from the latest read and the database, are idempotent; one that isn't would send twice or never (test T17, in S8). S1 first proves the swap's atomicity and the computed 50-owner size; the 100,000-member catch-up is an estimate. Postgres tests run only on the host.
+**Risks** [§8, Ov: Not verified, size]: the riskiest assumption, which tests in S9, S10 and S13 check, is that today's roster protocol converges when versions are claimed through the link from complete rosters and departed owners' roster messages are still applied. The next is that background callbacks, re-derived from the latest read and the database, are idempotent; one that isn't would send twice or never (test T17, in S8). S1 first proves the swap's atomicity and the computed 50-owner size; the 100,000-member catch-up is an estimate. Postgres is covered by the Haskell tests, not by the app runs.
 
-**Open in plan §9**, the two design questions, taken as recommended unless a review shows otherwise, and built in S1: `LSWP` sending only the user data, which leaves room for about 50 owner keys (computed from the encoders, not yet tested) instead of 6, and refusing `LSET` on multi-key queues, a server behaviour change that stops stale or downgraded single-owner writes from erasing other owners.
+**Open in plan §9**, the two design questions, taken as recommended unless a review shows otherwise, and built in S1: `LSWP` sending only the user data, which leaves room for about 50 owner keys (computed from the encoders, not yet tested) instead of 6, and refusing `LSET` on multi-key queues, a server behaviour change that stops stale or downgraded single-owner writes from erasing other owners. A third is for S1: the server design was written against an older simplexmq, which has since dropped its journal store and Postgres queue cache, so S1 builds the swap for the two stores left and updates the design's code references.
 
 The rest of the page is reference for the programmers who build it.
 
