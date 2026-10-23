@@ -27,5 +27,5 @@ EXPORTS
     chat_read_file
     chat_encrypt_file
     chat_decrypt_file
-    chat_resize_image_to_str_size
-    chat_resize_image_to_data_size
+    chat_resize_image_uri
+    chat_resize_image

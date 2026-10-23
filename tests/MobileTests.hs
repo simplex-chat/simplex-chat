@@ -91,8 +91,8 @@ mobileTests = do
     describe "Badges" $ do
       it "should generate key and issue badge via C API, verify credential" testBadgeKeygenIssueCApi
     describe "Images" $ do
-      it "should resize image to data URI via C API" testResizeImageToStrSizeCApi
-      it "should resize image to data size via C API" testResizeImageToDataSizeCApi
+      it "should resize image to data URI via C API" testResizeImageUriCApi
+      it "should resize image to data size via C API" testResizeImageCApi
 
 noActiveUser :: LB.ByteString
 noActiveUser =
@@ -350,20 +350,20 @@ testBadgeKeygenIssueCApi _ = do
   cred <- ffiResult =<< (peekCString =<< cChatBadgeIssue =<< newCString (LB.unpack (J.encode req)))
   verifyCredential publicKey cred `shouldReturn` True
 
-testResizeImageToStrSizeCApi :: TestParams -> IO ()
-testResizeImageToStrSizeCApi _ = do
+testResizeImageUriCApi :: TestParams -> IO ()
+testResizeImageUriCApi _ = do
   (ptr, len) <- cBuffer =<< B.readFile "./tests/fixtures/test.jpg"
-  uri <- peekCAString =<< cChatResizeImageToStrSize ptr len 14000
+  uri <- peekCAString =<< cChatResizeImageUri ptr len 14000
   uri `shouldStartWith` "data:image/jpg;base64,"
   length uri `shouldSatisfy` (<= 14000)
   (ptr', len') <- cBuffer "not an image"
-  (peekCAString =<< cChatResizeImageToStrSize ptr' len' 14000) `shouldReturn` ""
+  (peekCAString =<< cChatResizeImageUri ptr' len' 14000) `shouldReturn` ""
 
-testResizeImageToDataSizeCApi :: TestParams -> IO ()
-testResizeImageToDataSizeCApi _ = do
+testResizeImageCApi :: TestParams -> IO ()
+testResizeImageCApi _ = do
   (ptr, len) <- cBuffer =<< B.readFile "./tests/fixtures/test.jpg"
   let resizeToDataSize png = do
-        Right bytes <- B64.decode . BS.pack <$> (peekCAString =<< cChatResizeImageToDataSize ptr len 100000 png)
+        Right bytes <- B64.decode . BS.pack <$> (peekCAString =<< cChatResizeImage ptr len 100000 png)
         B.length bytes `shouldSatisfy` (<= 100000)
         pure bytes
   B.take 2 <$> resizeToDataSize 0 `shouldReturn` "\xFF\xD8"

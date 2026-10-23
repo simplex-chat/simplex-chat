@@ -98,9 +98,9 @@ char *chat_read_file(char *path, char *key, char *nonce);
 char *chat_encrypt_file(chat_ctrl ctl, char *fromPath, char *toPath);
 char *chat_decrypt_file(char *fromPath, char *key, char *nonce, char *toPath);
 
-// Image resizing: data URI, or base64 of PNG (png != 0) or JPEG data, empty on failure
-char *chat_resize_image_to_str_size(char *data, int len, int maxSize);
-char *chat_resize_image_to_data_size(char *data, int len, int maxSize, int png);
+// Image resizing
+char *chat_resize_image(char *data, int len, int maxSize, int png);
+char *chat_resize_image_uri(char *data, int len, int maxSize);
 ```
 
 ### [Swift Bridge Functions (SimpleXAPI.swift)](../Shared/Model/SimpleXAPI.swift#L93-L221)

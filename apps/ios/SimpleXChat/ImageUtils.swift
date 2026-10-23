@@ -87,7 +87,7 @@ public func cropToSquare(_ image: UIImage) -> UIImage {
 
 public func resizeImageToDataSize(_ image: UIImage, maxDataSize: Int64, hasAlpha: Bool) -> Data? {
     let data = resizeImageWithCore(image, hasAlpha: hasAlpha) {
-        chat_resize_image_to_data_size($0, $1, Int32(maxDataSize), hasAlpha ? 1 : 0)
+        chat_resize_image($0, $1, Int32(maxDataSize), hasAlpha ? 1 : 0)
     }.flatMap { Data(base64Encoded: $0) }
     logger.debug("resizeImageToDataSize final \(data?.count ?? 0)")
     return data
@@ -95,7 +95,7 @@ public func resizeImageToDataSize(_ image: UIImage, maxDataSize: Int64, hasAlpha
 
 public func resizeImageToStrSizeSync(_ image: UIImage, maxDataSize: Int64) -> String? {
     let str = resizeImageWithCore(image, hasAlpha: imageHasAlpha(image)) {
-        chat_resize_image_to_str_size($0, $1, Int32(maxDataSize))
+        chat_resize_image_uri($0, $1, Int32(maxDataSize))
     }
     logger.debug("resizeImageToStrSize final \(str?.count ?? 0)")
     return str

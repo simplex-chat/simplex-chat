@@ -32,8 +32,12 @@ extern char *chat_parse_badge_code(char *code);
 extern int chat_json_length(char *str);
 extern char *chat_encrypt_media(chat_ctrl ctl, char *key, char *frame, int len);
 extern char *chat_decrypt_media(char *key, char *frame, int len);
-extern char *chat_resize_image_to_str_size(char *data, int len, int maxSize);
-extern char *chat_resize_image_to_data_size(char *data, int len, int maxSize, int png);
+
+// chat_resize_image returns base64 of PNG (png != 0) or JPEG bytes of at most maxSize, or an empty string
+extern char *chat_resize_image(char *data, int len, int maxSize, int png);
+
+// chat_resize_image_uri returns a data URI of at most maxSize characters, or an empty string
+extern char *chat_resize_image_uri(char *data, int len, int maxSize);
 
 // chat_write_file returns null-terminated string with JSON of WriteFileResult
 extern char *chat_write_file(chat_ctrl ctl, char *path, char *data, int len);

@@ -91,5 +91,6 @@ toDataUri :: ImageFormat -> LB.ByteString -> LB.ByteString
 toDataUri format body = "data:image/" <> mime <> ";base64," <> LB64.encode body
   where
     mime = case format of
+      -- iOS and Android apps decode only the "jpg" mime type
       IFJpeg -> "jpg"
       IFPng -> "png"

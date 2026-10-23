@@ -10,8 +10,8 @@ module Simplex.Chat.Mobile.File
     cChatReadFile,
     cChatEncryptFile,
     cChatDecryptFile,
-    cChatResizeImageToStrSize,
-    cChatResizeImageToDataSize,
+    cChatResizeImageUri,
+    cChatResizeImage,
     WriteFileResult (..),
     ReadFileResult (..),
     chatWriteFile,
@@ -144,11 +144,11 @@ chatDecryptFile fromPath keyStr nonceStr toPath = fromLeft "" <$> runCatchExcept
       liftIO $ B.hPut w ch
       when (size' > 0) $ decryptChunks r w size'
 
-cChatResizeImageToStrSize :: Ptr Word8 -> CInt -> CInt -> IO CString
-cChatResizeImageToStrSize ptr len maxSize = cResizeImage id (resizeImageDataUri $ fromIntegral maxSize) ptr len
+cChatResizeImageUri :: Ptr Word8 -> CInt -> CInt -> IO CString
+cChatResizeImageUri ptr len maxSize = cResizeImage id (resizeImageDataUri $ fromIntegral maxSize) ptr len
 
-cChatResizeImageToDataSize :: Ptr Word8 -> CInt -> CInt -> CInt -> IO CString
-cChatResizeImageToDataSize ptr len maxSize png = cResizeImage LB64.encode (resizeImage format $ fromIntegral maxSize) ptr len
+cChatResizeImage :: Ptr Word8 -> CInt -> CInt -> CInt -> IO CString
+cChatResizeImage ptr len maxSize png = cResizeImage LB64.encode (resizeImage format $ fromIntegral maxSize) ptr len
   where
     format = if png /= 0 then IFPng else IFJpeg
 
