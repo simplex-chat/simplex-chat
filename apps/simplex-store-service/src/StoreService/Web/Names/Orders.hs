@@ -97,13 +97,14 @@ nameInvoiceHandler env@OrdersEnv {oeStore, oeTurns, oeNow} cfg providers waiters
   where
     what = "POST /api/invoice (name)"
     refuse = refused what
-    newOrder InvoiceOrder {ioRequest = req@OrderRequest {orFields = OrderFields {ofLabelHash, ofLength, ofDuration}, orTimestamp}, ioMethod, ioPrice} = do
+    newOrder InvoiceOrder {ioRequest = req@OrderRequest {orFields = fields@OrderFields {ofLabelHash, ofLength, ofDuration}, orTimestamp}, ioMethod, ioPrice} = do
       now <- oeNow
       let years = nYears $ oeConfig env
           price = fromIntegral ioPrice
           checks =
             [ pure $ checkTimestamp now orTimestamp,
               pure $ checkDuration (oeConfig env) now years ofDuration,
+              pure $ checkTerms (oeConfig env) fields,
               checkNameFree (oeContracts env) oeStore ofLabelHash,
               checkPrice (oeContracts env) ofLength years price
             ]
@@ -207,10 +208,11 @@ codeOrderHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} 
         EOResent NameRegistration {nrId} -> pure $ answerNow $ registrationAnswer nrId
         EOMeets -> refuse OROrderExists
         EONew _ -> newOrder now order code
-    newOrder now order@OrderRequest {orFields = OrderFields {ofLabelHash, ofDuration}, orTimestamp} code@PrepaidCode {pcYears} = do
+    newOrder now order@OrderRequest {orFields = fields@OrderFields {ofLabelHash, ofDuration}, orTimestamp} code@PrepaidCode {pcYears} = do
       let checks =
             [ pure $ checkTimestamp now orTimestamp,
               pure $ checkDuration oeConfig now pcYears ofDuration,
+              pure $ checkTerms oeConfig fields,
               checkNameFree oeContracts oeStore ofLabelHash
             ]
       firstRefusal checks >>= \case
@@ -253,10 +255,11 @@ spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} cfg 
         EOResent r -> resentOrder env cfg what now r
         EOMeets -> refuse OROrderExists
         EONew _ -> runExceptT (checked now order spend) >>= either refuse (place order spend)
-    checked now OrderRequest {orFields = OrderFields {ofLabelHash, ofLength, ofDuration}, orTimestamp} spend@Spend {spPrice} = do
+    checked now OrderRequest {orFields = fields@OrderFields {ofLabelHash, ofLength, ofDuration}, orTimestamp} spend@Spend {spPrice} = do
       let years = nYears oeConfig
       liftEither $ checkTimestamp now orTimestamp
       liftEither $ checkDuration oeConfig now years ofDuration
+      liftEither $ checkTerms oeConfig fields
       holder <- ExceptT $ checkSpendBalance oeStore spend now
       ExceptT $ checkNameFree oeContracts oeStore ofLabelHash
       ExceptT $ checkPrice oeContracts ofLength years spPrice
@@ -343,3 +346,4 @@ orderRefusalResponse = \case
   ORCode refusal -> codeRefusalResponse refusal
   ORPriceTooHigh price -> jsonResponse status409 $ J.object ["error" .= ("price_too_high" :: Text), "price" .= price]
   ORBalanceChanged balance -> jsonResponse status409 $ J.object ["error" .= ("balance_changed" :: Text), "balance" .= (balanceJSON <$> balance)]
+  ORTermsChanged terms community -> jsonResponse status409 $ J.object ["error" .= ("terms_changed" :: Text), "terms" .= terms, "community" .= community]

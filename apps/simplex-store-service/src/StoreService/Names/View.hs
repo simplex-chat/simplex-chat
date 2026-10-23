@@ -98,11 +98,12 @@ viewJSON cfg@NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResolver, cSpon
       "unread" .= vrUnread,
       "expiresAt" .= nrExpiresAt,
       "error" .= nrError,
-      "community" .= communityJSON cfg (nrLabelHash r)
+      "community" .= communityJSON cfg (nrLabelHash r),
+      "terms" .= (if T.null nrAgreedTerms then Nothing else Just nrAgreedTerms)
     ]
   where
     NameRegistration {nrId = RegistrationId rid, nrVersion, nrMoves, nrLinksRefusedAt, nrPhase, nrLabelHash = LabelHash lh, nrReveal, nrOwner, nrCommitment, nrSealed} = r
-    NameRegistration {nrYears, nrDuration, nrPrice, nrBalanceUsed, nrCommitTx, nrRegisterTx, nrRevealAfter, nrRevealBefore, nrExpiresAt, nrError} = r
+    NameRegistration {nrYears, nrDuration, nrPrice, nrBalanceUsed, nrCommitTx, nrRegisterTx, nrRevealAfter, nrRevealBefore, nrExpiresAt, nrError, nrAgreedTerms} = r
     txText (TxHash h) = hex h
     waitingText :: LateWait -> Text
     waitingText = \case

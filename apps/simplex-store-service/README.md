@@ -527,6 +527,15 @@ how many community names it loaded.
 Both the terms and the list are read only at startup, so an edit applies after a restart. After a
 restart, search each listed name on the names site and check that it shows as a community name.
 
+Every order signs the terms the buyer agreed to: `terms_version`, followed by `/community` for a
+listed name. The service stores them with the order, so an open order keeps the terms it signed
+after an edit, and every move signs the current terms for the name it moves to, and stores them. An
+order or a move signed with any other value answers `409 terms_changed` with the current terms and
+the name's community entry, and the page asks again. An exact resend is still answered after the version changed.
+
+**Upgrading:** a page that sends no `terms` gets `bad_request` on every order, spend and move, so the
+page and the service are deployed together.
+
 ### The gas key
 
 `[chain] service_key` is the registrar key: an Ethereum account (EOA) that sends every names

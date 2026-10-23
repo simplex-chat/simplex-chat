@@ -5,6 +5,7 @@
 
 module Bots.StoreService.NamesStoreTests (namesStoreTests, at, btc, insertInvoiceRow, invoiceStatus, issue, newReg, order, ownerA, ownerB, paidOrder, placeCode, placePaid, price, reg, reveal, signature, t0, usable, write) where
 
+import Bots.StoreService.ConfigTests (termsVersion)
 import Bots.StoreService.WebTests (columnsOf, digestFixture, runMigrations, withServiceStore)
 import Control.Arrow ((&&&))
 import Control.Monad (forM_, void)
@@ -47,6 +48,7 @@ namesStoreTests = describe "StoreService names: store" $ do
     it "rolls back and re-applies only the names migrations, with rows in them, leaving the badge tables and paid invoices as they were" testNamesDownUp
     it "turns a code_issued order taken at price 0 and not live at its next version, dropping issued_code_id with its index and foreign key, which the down migration restores" testDropTakenCodes
     it "makes taken orders not live and gives a taken paid order a balance of its price, none to a code order or a price of 0, and rolls back the balance tables and columns" testNameBalancesMigration
+    it "gives the orders stored before it empty agreed terms, and rolls the column back keeping them" testNameTermsMigration
   describe "order hash" $ do
     it "is equal for the same order fields, and differs when any one field differs" testOrderHashFields
     it "keeps field boundaries, so moving a byte between two fields changes it" testOrderHashBoundaries
@@ -117,7 +119,8 @@ order label n =
       ofLength = T.length label,
       ofDuration = 69292800,
       ofCommitment = digestFixture n,
-      ofSealed = "sealed-" <> label <> "-" <> T.pack (show n)
+      ofSealed = "sealed-" <> label <> "-" <> T.pack (show n),
+      ofAgreedTerms = termsVersion
     }
 
 newReg :: Text -> Address -> OrderFields -> NewRegistration
@@ -181,7 +184,7 @@ testNamesColumns = withServiceStore $ \st -> do
     [ "registration_id", "label_hash", "length", "label", "secret", "contact_link", "channel_link", "intent_nonce", "intent_deadline", "intent_signature",
       "sealed", "owner", "commitment", "phase", "commit_tx", "commit_block", "register_tx", "register_block", "reveal_after", "reveal_before",
       "years", "duration", "expires_at", "price", "name_prepaid_code_id", "registered_at", "failed_at", "error", "created_at",
-      "updated_at", "version", "live", "order_hash", "method", "moves", "links_refused_at", "balance_source", "balance_used"
+      "updated_at", "version", "live", "order_hash", "method", "moves", "links_refused_at", "balance_source", "balance_used", "agreed_terms"
     ]
   has "sx_badge_service_name_invoices" ["invoice_id", "registration_id", "provider_ref", "late_alerted_at", "late_alerted_units", "late_support"]
   has "sx_badge_service_name_balances" ["registration_id", "amount", "credited", "refunded", "reserved_by", "refunded_at", "created_at", "updated_at"]
@@ -194,7 +197,7 @@ testNamesDownUp :: IO ()
 testNamesDownUp = withServiceStore $ \st -> do
   let names = dropWhile ((/= "20261010_names") . name) storeServiceSchemaMigrations
       badgeColumns = mapM (fmap sort . columnsOf st) badgeTables
-  map name names `shouldBe` ["20261010_names", "20261022_drop_taken_codes", "20261022_name_balances", "20261022_name_late_wait"]
+  map name names `shouldBe` ["20261010_names", "20261022_drop_taken_codes", "20261022_name_balances", "20261022_name_late_wait", "20261023_name_terms"]
   badgeBefore <- badgeColumns
   code <- issue st 1 usable
   placeCode st "r1" ownerA (order "alicebakery" 1) code `shouldReturn` Right ()
@@ -267,6 +270,31 @@ testNameBalancesMigration = withServiceStore $ \st -> do
   runMigrations st $ MTRUp balances
   balanceOf "paid" `shouldReturn` Just (price, price, 0, Nothing)
 
+testNameTermsMigration :: IO ()
+testNameTermsMigration = withServiceStore $ \st -> do
+  let terms = [m | m@Migration {name = "20261023_name_terms"} <- storeServiceSchemaMigrations]
+      applied :: IO Bool
+      applied = elem "agreed_terms" <$> columnsOf st "sx_badge_service_name_registrations"
+      agreedTerms :: IO [(Text, Text)]
+      agreedTerms = withTransaction st $ \db -> DB.query_ db "SELECT registration_id, agreed_terms FROM sx_badge_service_name_registrations"
+      kept :: IO [(Text, Text, Int)]
+      kept = withTransaction st $ \db -> DB.query_ db "SELECT registration_id, phase, price FROM sx_badge_service_name_registrations"
+  length terms `shouldBe` 1
+  runMigrations st $ MTRDown (mapMaybe toDownMigration terms)
+  applied `shouldReturn` False
+  withTransaction st $ \db -> do
+    insertInvoiceRow db "inv-paid" (at 60) "open"
+    insertOldRegistration db "paid" 1 "unpaid" price Nothing (Just "inv-paid")
+  kept `shouldReturn` [("paid", "unpaid", price)]
+  runMigrations st $ MTRUp terms
+  applied `shouldReturn` True
+  agreedTerms `shouldReturn` [("paid", "")]
+  runMigrations st $ MTRDown (mapMaybe toDownMigration terms)
+  applied `shouldReturn` False
+  kept `shouldReturn` [("paid", "unpaid", price)]
+  runMigrations st $ MTRUp terms
+  agreedTerms `shouldReturn` [("paid", "")]
+
 -- | A registration row as the code before the balances wrote it, paid by the invoice or the code given.
 insertOldRegistration :: DB.Connection -> Text -> Word8 -> Text -> Int -> Maybe Int64 -> Maybe Text -> IO ()
 insertOldRegistration db rid n phase cents codeId invId = do
@@ -293,6 +321,7 @@ testOrderHashFields = do
           ("owner", orderHash ownerB o paid),
           ("commitment", orderHash ownerA o {ofCommitment = digestFixture 2} paid),
           ("sealed", orderHash ownerA o {ofSealed = ofSealed o <> "x"} paid),
+          ("terms", orderHash ownerA o {ofAgreedTerms = ofAgreedTerms o <> "/community"} paid),
           ("method", orderHash ownerA o (OTInvoice (SPMCard CPStripe) price)),
           ("price", orderHash ownerA o (OTInvoice btc (price + 1))),
           ("code instead of invoice", orderHash ownerA o (OTCode $ digestFixture 3)),
@@ -306,6 +335,7 @@ testOrderHashBoundaries :: IO ()
 testOrderHashBoundaries = do
   let o = order "alicebakery" 1
   orderHash ownerA o {ofSealed = "ab"} (OTCode "c") `shouldNotBe` orderHash ownerA o {ofSealed = "a"} (OTCode "bc")
+  orderHash ownerA o {ofSealed = "ab", ofAgreedTerms = "c"} (OTCode "d") `shouldNotBe` orderHash ownerA o {ofSealed = "a", ofAgreedTerms = "bc"} (OTCode "d")
 
 testCreatePaid :: IO ()
 testCreatePaid = withServiceStore $ \st -> do
@@ -322,6 +352,7 @@ testCreatePaid = withServiceStore $ \st -> do
         nrOwner = ownerA,
         nrCommitment = ofCommitment o,
         nrSealed = ofSealed o,
+        nrAgreedTerms = termsVersion,
         nrPhase = PUnpaid,
         nrYears = twoYears,
         nrPrice = price,
@@ -486,7 +517,8 @@ testRoundTrip = withServiceStore $ \st -> do
             nrFailedAt = Just (at 2),
             nrError = Just "The name was not signed in time",
             nrLinksRefusedAt = Just (at 4),
-            nrMoves = 2
+            nrMoves = 2,
+            nrAgreedTerms = termsVersion <> "/community"
           }
   write st changed `shouldReturn` Written 2
   reg st "r1" `shouldReturn` changed {nrVersion = 2, nrLive = False, nrUpdatedAt = at 1}
@@ -572,7 +604,7 @@ testWriteMeetsLiveOrder = withServiceStore $ \st -> do
 testRetarget :: IO ()
 testRetarget = withServiceStore $ \st -> do
   let o = order "alicebakery" 1
-      o' = order "alicebakers" 2
+      o' = (order "alicebakers" 2) {ofAgreedTerms = termsVersion <> "/community"}
   placePaid st "r1" ownerA o (at 60) `shouldReturn` Right ()
   r <- reg st "r1"
   let failed =
@@ -598,6 +630,7 @@ testRetarget = withServiceStore $ \st -> do
         nrLabelHash = ofLabelHash o',
         nrCommitment = ofCommitment o',
         nrSealed = ofSealed o',
+        nrAgreedTerms = ofAgreedTerms o',
         nrPrice = 10000,
         nrPhase = PQueued,
         nrMoves = 1,
