@@ -1609,9 +1609,10 @@ Each entry gives the symptom, the cause (how it was confirmed), and the fix or m
   2. Even scrolled the right way, the target only has to be 48 dp above the window bottom, which is still under the chat's composer. The test now scrolls toward newer messages until the chat stops moving, so the reply rests above the composer.
 - Verified with a throwaway probe from three starting positions (0, 1 and 2 pages toward older): the quote was at y 697–747 every time, above the composer top 788, and the click scrolled to the original.
 
-### 15.4.1g Open flake: the item info menu entry did nothing (Android CI, 1 of 3 runs)
+### 15.4.1g Open flake: a tap did nothing (Android CI, twice in trials 7–10, about 1,800 test runs)
 
 - `ItemInfoTest.info_moderated_showsModeratedAt` (trial 9, 2026-10-23): after the `info` menu entry of bob's `spam` was clicked, no item info opened within 10 s. The screenshot shows the group chat with the menu closed, no alert, and no API call in flight. Passed in trials 7 and 8. Not resolved: it is not known whether the tap was lost or the app dropped the request.
+- `DatabaseEncryptionTest.dbEncrypt_removeFromSettings` (trial 10, 2026-10-23): after a wrong passphrase was typed on the Encrypted database prompt (the masked field showed it) and `Open chat` was clicked, no `Wrong passphrase!` alert appeared within 120 s, with no API call in flight. Passed in trials 7–9. Same open question. Next step: log the tap point and the target's bounds before and after each Android tap, so the next occurrence shows whether the tap reached the node.
 
 ### 15.4.2 Test strength limits (second review, 2026-10-14)
 
