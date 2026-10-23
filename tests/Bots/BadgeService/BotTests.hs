@@ -5246,6 +5246,11 @@ testStoreChecksDuringCoverage ps =
     (credentialOf ended, subscriptionOf ended) `shouldBe` (Nothing, Just SSEnded)
     map entryTag (entries ended) `shouldBe` ["refund"]
     (\(c, m, _) -> (c, m)) (entryOf $ last $ entries ended) `shouldBe` (-1, 0)
+    -- with nothing left to refund, a later request that month writes no row
+    setClockAt bsClock $ addUTCTime 60 endedAt
+    again <- serviceCmd env {bsVerifier = restarted} purchaseKey BSCIssueBadge {balance = BadgeBalance {lastEntry = last $ entries ended}}
+    (credentialOf again, subscriptionOf again) `shouldBe` (Nothing, Just SSEnded)
+    map entryTag (entries again) `shouldBe` []
   where
     checkingAtEveryRequest v = v {storeChecks = ChecksAtEveryRequest}
 
@@ -5861,8 +5866,8 @@ testStoreRouting ps =
     _ <- assertBalance env subscriberKey (last purchased)
     subscriptionChecks store `shouldReturn` checks + 1
     [Just lastCheck] <- subscriptionCheckedAt cc
-    routedAt (addUTCTime 3530 lastCheck) `shouldReturn` MainLane
-    routedAt (addUTCTime 3550 lastCheck) `shouldReturn` RenewalLane
+    -- within the hour a due month still queues on the renewal lane, where it is answered from the record
+    routedAt (addUTCTime 3530 lastCheck) `shouldReturn` RenewalLane
     answeredWithoutStore
     routedAt (addUTCTime 3700 lastCheck) `shouldReturn` RenewalLane
     routedAs purchaseKey subscriberKey issue `shouldReturn` MainLane

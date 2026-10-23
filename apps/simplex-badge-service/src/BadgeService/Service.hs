@@ -353,8 +353,9 @@ requestLane checks cc sigKey reqData = case J.fromJSON (J.Object reqData) of
     | sigKey == Just k -> do
         now <- badgeNow cc
         withDB' "requestLane" cc (\db -> getIssuePurchase db k) <&> \case
-          Right (Just (_, Just tip, Just subscription))
-            | subscriptionCheckDue checks (addUTCTime routeLookahead now) tip subscription -> RenewalLane
+          -- a due month goes to the serial renewal lane even within the hour, so it queues behind a check still in flight
+          Right (Just (_, Just tip, Just _))
+            | checks == ChecksAtEveryRequest || balanceStartTs tip <= addUTCTime routeLookahead now -> RenewalLane
           Right _ -> MainLane
           -- a read that failed may hide a due check, and the main lane is what must not wait on a store
           Left _ -> RenewalLane
@@ -1003,7 +1004,7 @@ issueBadgeCmd key cc verifier purchaseKey upgrade_ BadgeBalance {lastEntry} = do
             Left _ -> pure $ errorResponse BSEInternal
             Right () ->
               checkStoreSubscription verifier subscriptionRef Nothing >>= \case
-                Left _ -> issueDue purchase (Just tip) (Just storedState) now
+                Left refusal -> storeRefusalResponse refusal >> issueDue purchase (Just tip) (Just storedState) now
                 Right checked@SubscriptionCheck {subscriptionState, latestCharge} -> do
                   chargeId <- randomId cc
                   r <- withDB' "recordSubscriptionCheck" cc $ \db -> do
@@ -1028,11 +1029,12 @@ issueBadgeCmd key cc verifier purchaseKey upgrade_ BadgeBalance {lastEntry} = do
         if fmap entryId tip' /= Just (entryId tip)
           then pure Nothing
           else do
-            appendLedgerPlan db badgePurchaseId Nothing (maybeToList lapsed <> [refund]) Nothing
+            -- with no months left there is nothing to refund, as when an earlier request already refunded them
+            unless (refunded == 0) $ appendLedgerPlan db badgePurchaseId Nothing (maybeToList lapsed <> [refund]) Nothing
             setSubscriptionState db paymentId SSEnded now
             Just . withoutCredential <$> issueResponse db badgePurchaseId now (Just SSEnded)
       case r of
-        Right (Just resp) -> logInfo ("store subscription ended during coverage: " <> tshow (negate refunded) <> " months refunded") $> resp
+        Right (Just resp) -> resp <$ unless (refunded == 0) (logInfo $ "store subscription ended during coverage: " <> tshow (negate refunded) <> " months refunded")
         Right Nothing -> logError "badge service: a subscription's ledger moved while its refund was written" $> errorResponse BSEInternal
         Left _ -> pure $ errorResponse BSEInternal
     answered what action = fromRight (errorResponse BSEInternal) <$> withDB' what cc action
