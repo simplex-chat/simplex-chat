@@ -128,7 +128,7 @@ func sendSimpleXCmd<R: ChatAPIResult>(_ cmd: ChatCmdProtocol, _ ctrl: chat_ctrl?
 
 All FFI calls are wrapped in [`beginBGTask()`](../Shared/Model/SimpleXAPI.swift#L54) / `endBackgroundTask()` to prevent iOS from killing the app mid-operation. The `maxTaskDuration` is 15 seconds.
 
-XFTP uploads started in foreground continue during suspension, within the suspend timeout.
+While the chat is suspending, XFTP uploads started in foreground by this app process continue, and the core sends `chatSuspended` after they end or at the suspend timeout; uploads resumed from an earlier process are not awaited.
 
 ---
 
