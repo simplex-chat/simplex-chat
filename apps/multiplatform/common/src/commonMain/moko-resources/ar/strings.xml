@@ -2817,4 +2817,10 @@
     <string name="large_file_incognito">لا يمكن إرسال الملفات التي يزيد حجمها عن %1$s في الدردشات الخفية.</string>
     <string name="info_row_file_expired">الملف كان متاح حتى</string>
     <string name="file_error_expired">كان الملف متاحًا حتى %1$s.</string>
+    <string name="countdown_hrs_min_sec">%1$02d ساعة %2$02d دقيقة %3$02d ثانية</string>
+    <string name="badges_price_monthly">%1$s/شهر</string>
+    <string name="call_not_encrypted_desc">قَبَل %s المكالمة دون تعمية بين الطرفين.</string>
+    <string name="keystore_key_storage_strongbox">عنصر الأمن</string>
+    <string name="server_has_too_many_hosts">يحتوي الخادم %1$s على أكثر من اسم مضيفين.</string>
+    <string name="badges_shown_on_your_profile">كما هو موضح في ملف تعريفك</string>
 </resources>
