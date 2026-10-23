@@ -1075,7 +1075,7 @@ eventWord = 1* ALPHA
 <p><code>x.call.answer</code>: to continue with call connection the initiating clients must reply with <code>x.call.answer</code> message. This message contains WebRTC answer and collected ICE candidates. Additional ICE candidates can be sent in <code>x.call.extra</code> message.</p>
 </li>
 <li>
-<p><code>x.call.extra</code> with <code>rtcSession</code> property: when an established connection is lost, the client that sent <code>x.call.offer</code> restarts ICE and sends the new offer in <code>rtcSession</code> of <code>x.call.extra</code>. The other client replies with the answer in <code>rtcSession</code> of <code>x.call.extra</code>. Clients that do not support it ignore this property, and the call ends when reconnection times out.</p>
+<p><code>x.call.extra</code> with <code>rtcSession</code> property: when an established connection is lost, the client that sent <code>x.call.offer</code> restarts ICE and sends the new offer in <code>rtcSession</code> of <code>x.call.extra</code>. The other client replies with the answer in <code>rtcSession</code> of <code>x.call.extra</code>. Clients restart ICE only when the peer supports chat protocol version 22 or later, otherwise the call ends when the connection is lost.</p>
 </li>
 <li>
 <p><code>x.call.end</code> message is sent to notify the other party that the call is terminated.</p>
