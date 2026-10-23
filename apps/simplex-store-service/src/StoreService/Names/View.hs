@@ -34,6 +34,7 @@ import Simplex.Messaging.Util (safeDecodeUtf8)
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Abi (hex)
 import StoreService.Names.Chain (TxHash (..))
+import StoreService.Names.Community (communityJSON)
 import StoreService.Names.Contracts (Contracts, sponsorNonce)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Store (Balance (..), BalanceHold (..), LateWait (..), NamePhase (..), NameRegistration (..), NameReveal (..), RegistrationPayment (..), getBalance, getRegistration, heldBy, lateWait)
@@ -67,7 +68,7 @@ readViewChain ct NameRegistration {nrPhase, nrOwner} = case nrPhase of
     none = ViewReads {vrIntentNonce = Nothing, vrUnread = []}
 
 viewJSON :: NamesConfig -> NameRegistration -> Maybe Balance -> Maybe LateWait -> ViewReads -> J.Value
-viewJSON NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResolver, cSponsor}} r balance late ViewReads {vrIntentNonce, vrUnread} =
+viewJSON cfg@NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResolver, cSponsor}} r balance late ViewReads {vrIntentNonce, vrUnread} =
   J.object
     [ "id" .= rid,
       "version" .= nrVersion,
@@ -96,7 +97,8 @@ viewJSON NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResolver, cSponsor}
       "intentNonce" .= vrIntentNonce,
       "unread" .= vrUnread,
       "expiresAt" .= nrExpiresAt,
-      "error" .= nrError
+      "error" .= nrError,
+      "community" .= communityJSON cfg (nrLabelHash r)
     ]
   where
     NameRegistration {nrId = RegistrationId rid, nrVersion, nrMoves, nrLinksRefusedAt, nrPhase, nrLabelHash = LabelHash lh, nrReveal, nrOwner, nrCommitment, nrSealed} = r
