@@ -331,6 +331,7 @@ export enum BadgeServiceErrorCode {
   Code_expired = "code_expired",
   Receipt_invalid = "receipt_invalid",
   Receipt_used = "receipt_used",
+  Transfer_limited = "transfer_limited",
   Test_purchase = "test_purchase",
   Internal = "internal",
 }

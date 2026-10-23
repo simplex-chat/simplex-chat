@@ -1,8 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="980" height="982" viewBox="0 0 980 982" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="Buying a subscription on Android: the app creates the record in core, buys with Play Billing, hands the token to core without acknowledging it, core's worker sends purchaseBadge, the service reads the subscription from Play by token before any one-time verification, acknowledges it just before crediting, and writes the payment, charge and ledger in one transaction.">
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="1016" viewBox="0 0 980 1016" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="Buying a subscription on Android: the app creates the record in core, buys with Play Billing, hands the token to core without acknowledging it, core's worker sends purchaseBadge, the service reads the subscription from Play by token before any one-time verification, acknowledges it just before crediting, and writes the payment, charge and ledger in one transaction.">
   <defs>
     <marker id="a-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#5b6577"/></marker>
   </defs>
-  <rect width="980" height="982" fill="#f7f8fb"/>
+  <rect width="980" height="1016" fill="#f7f8fb"/>
 
   <text x="24" y="36" font-size="18" font-weight="600" fill="#1a2030">Buying a subscription on Android</text>
   <text x="24" y="57" font-size="12.5" fill="#5b6577">The app sends the product id and token; the service reads the subscription from Play and acknowledges it itself, just before crediting.</text>
@@ -111,9 +111,11 @@
   <text x="40" y="851" font-size="11.5" fill="#1a2030">finish: nothing to do</text>
 
   <!-- footer -->
-  <rect x="24" y="882" width="932" height="80" rx="8" fill="#eef1f5"/>
+  <rect x="24" y="882" width="932" height="114" rx="8" fill="#eef1f5"/>
   <text x="40" y="902" font-size="12" fill="#1a2030">Play lists the subscription until it ends; the sweep hands it over as listed and it resolves to the credited record by its token.</text>
   <text x="40" y="919" font-size="12" fill="#1a2030">If it is never acknowledged (any refusal before step 8), Play refunds it after three days. If anything fails after step 8,</text>
   <text x="40" y="936" font-size="12" fill="#b3261e">it stays paid and acknowledged, and only a later retry credits it. Renewals keep the token; the service asks Play itself.</text>
   <text x="40" y="953" font-size="12" fill="#1a2030">Step 8's read is not counted against the 300 subscription checks a minute.</text>
+  <text x="40" y="970" font-size="12" fill="#1a2030">Subscribing again gets a new token: a new purchase. The sweep also hands over tokens core has no record of; core leaves them</text>
+  <text x="40" y="987" font-size="12" fill="#1a2030">for Restore. A retired purchase's token that Play charges again resumes it: up to 24 tries each time the sweep hands it over.</text>
 </svg>

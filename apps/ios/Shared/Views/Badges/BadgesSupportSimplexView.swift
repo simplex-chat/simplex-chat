@@ -45,25 +45,36 @@ struct BadgesSupportSimplexView: View {
 
                 Spacer(minLength: 0)
 
+                // Store purchases are not released on iOS: TestFlight buys in the sandbox, which the
+                // service refuses for good. The badge is chosen on the site, and the code redeemed here.
+                // Revert this commit to restore the block below.
+                // VStack(spacing: 10) {
+                //     chooseLevelButton()
+                //         .padding(.vertical, 10)
+                //     Group {
+                //         if badgeBrowserAllowed {
+                //             buyInBrowserButton()
+                //         } else {
+                //             RedeemCodeButton()
+                //         }
+                //     }
+                //     .frame(height: 22)
+                //     RestorePurchasesButton()
+                //         .frame(height: 22)
+                //         .padding(.top, 10)
+                //     Text("If you were charged but have no badge, this adds it.")
+                //         .font(.footnote)
+                //         .foregroundColor(theme.colors.secondary)
+                //         .multilineTextAlignment(.center)
+                //         .fixedSize(horizontal: false, vertical: true)
+                // }
                 VStack(spacing: 10) {
-                    chooseLevelButton()
+                    chooseBadgeOnSiteButton()
                         .padding(.vertical, 10)
                     Group {
-                        if badgeBrowserAllowed {
-                            buyInBrowserButton()
-                        } else {
-                            RedeemCodeButton()
-                        }
+                        RedeemCodeButton()
                     }
                     .frame(height: 22)
-                    RestorePurchasesButton()
-                        .frame(height: 22)
-                        .padding(.top, 10)
-                    Text("If you were charged but have no badge, this adds it.")
-                        .font(.footnote)
-                        .foregroundColor(theme.colors.secondary)
-                        .multilineTextAlignment(.center)
-                        .fixedSize(horizontal: false, vertical: true)
                 }
                 .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
             }
@@ -137,6 +148,16 @@ struct BadgesSupportSimplexView: View {
             .frame(width: 1, height: 1)
             .hidden()
         }
+    }
+
+    // delete with the commented block above to restore store purchases
+    private func chooseBadgeOnSiteButton() -> some View {
+        Button {
+            UIApplication.shared.open(URL(string: badgePageUrl)!)
+        } label: {
+            Text("Choose your badge")
+        }
+        .buttonStyle(OnboardingButtonStyle(isDisabled: false))
     }
 
     private func buyInBrowserButton() -> some View {

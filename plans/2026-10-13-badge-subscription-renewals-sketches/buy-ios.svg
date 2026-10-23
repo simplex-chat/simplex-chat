@@ -1,8 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="980" height="884" viewBox="0 0 980 884" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="Buying a subscription on iOS: the app creates the record in core, buys with StoreKit, hands the signed transaction to core, core's worker sends purchaseBadge, the service verifies the JWS offline and asks the App Store Server API by original transaction id, then credits the charge; the app finishes the transaction when core reports it credited.">
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="918" viewBox="0 0 980 918" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="Buying a subscription on iOS: the app creates the record in core, buys with StoreKit, hands the signed transaction to core, core's worker sends purchaseBadge, the service verifies the JWS offline and asks the App Store Server API by original transaction id, then credits the charge; the app finishes the transaction when core reports it credited.">
   <defs>
     <marker id="i-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#5b6577"/></marker>
   </defs>
-  <rect width="980" height="884" fill="#f7f8fb"/>
+  <rect width="980" height="918" fill="#f7f8fb"/>
 
   <text x="24" y="36" font-size="18" font-weight="600" fill="#1a2030">Buying a subscription on iOS</text>
   <text x="24" y="57" font-size="12.5" fill="#5b6577">The app sends Apple's signed transaction; the service checks it offline, then asks the App Store Server API. Nothing is acknowledged.</text>
@@ -39,7 +39,7 @@
   <!-- 1 -->
   <rect x="30" y="122" width="200" height="38" rx="6" fill="#f3f5f8" stroke="#cfd5df"/>
   <text x="40" y="137" font-size="11.5" fill="#1a2030">Transaction.all: subscribed</text>
-  <text x="40" y="152" font-size="11.5" fill="#1a2030">before? Then not for sale.</text>
+  <text x="40" y="152" font-size="11.5" fill="#1a2030">before? Sold only to resume.</text>
 
   <!-- 2 -->
   <line x1="130" y1="184" x2="388" y2="184" stroke="#5b6577" stroke-width="1.4" marker-end="url(#i-arr)"/>
@@ -100,8 +100,10 @@
   <text x="40" y="761" font-size="11" fill="#334155" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">transaction.finish()</text>
 
   <!-- footer -->
-  <rect x="24" y="802" width="932" height="62" rx="8" fill="#eef1f5"/>
+  <rect x="24" y="802" width="932" height="96" rx="8" fill="#eef1f5"/>
   <text x="40" y="822" font-size="12" fill="#1a2030">Renewals: StoreKit lists each renewal's transaction, which the app hands over as listed. It names the same original id,</text>
   <text x="40" y="839" font-size="12" fill="#1a2030">so it joins the credited record and is finished. The service learns of a new charge only from its own renewal check.</text>
-  <text x="40" y="856" font-size="12" fill="#1a2030">A revoked subscription transaction is finished without being handed over. Apple has no acknowledgement step.</text>
+  <text x="40" y="856" font-size="12" fill="#1a2030">A higher tier newer than the last charge credited is held and sent as upgradeBadgeSubscription (see Changing tier), and a new</text>
+  <text x="40" y="873" font-size="12" fill="#1a2030">charge of the profile's retired purchase resumes it. A revoked subscription transaction is finished without being handed</text>
+  <text x="40" y="890" font-size="12" fill="#1a2030">over. Apple has no acknowledgement step.</text>
 </svg>

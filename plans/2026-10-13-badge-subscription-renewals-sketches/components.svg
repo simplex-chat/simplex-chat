@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="980" height="604" viewBox="0 0 980 604" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="Components: the apps buy in the store and hand receipts to core; core holds receipts and the client ledger and talks only to the badge service; the service verifies with the App Store Server API and the Play Developer API, credits and renews.">
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="604" viewBox="0 0 980 604" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="Components: the apps buy in the store and hand receipts to core, also from Restore; core holds receipts, each held for a purchase, a move or a tier change, and the client ledger, and talks only to the badge service; the service verifies with the App Store Server API and the Play Developer API, credits, renews, changes tier and moves a subscription to another key.">
   <defs>
     <marker id="c-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#5b6577"/></marker>
     <marker id="c-arr-start" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M10,0 L0,5 L10,10 z" fill="#5b6577"/></marker>
@@ -6,7 +6,7 @@
   <rect width="980" height="604" fill="#f7f8fb"/>
 
   <text x="24" y="36" font-size="18" font-weight="600" fill="#1a2030">Who holds what</text>
-  <text x="24" y="57" font-size="12.5" fill="#5b6577">The apps buy and report; core holds receipts and the client ledger and never calls a store; the service verifies, credits and renews.</text>
+  <text x="24" y="57" font-size="12.5" fill="#5b6577">The apps buy, restore and report; core holds receipts and the ledger and never calls a store; the service verifies, credits, renews.</text>
 
   <!-- Apps -->
   <rect x="24" y="78" width="250" height="280" rx="10" fill="#ffffff" stroke="#c9cfdb"/>
@@ -14,7 +14,7 @@
   <text x="38" y="100" font-size="14" font-weight="600" fill="#334155">Apps</text>
   <text x="260" y="100" font-size="11.5" fill="#5b6577" text-anchor="end">iOS · Android · desktop</text>
   <text x="38" y="138" font-size="12" fill="#1a2030">Buy, then hand the receipt to core</text>
-  <text x="38" y="157" font-size="11" fill="#334155" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">/_badge purchase … [listed]</text>
+  <text x="38" y="157" font-size="11" fill="#334155" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">/_badge purchase [listed|restored]</text>
   <text x="38" y="184" font-size="12" fill="#1a2030">Report what the store says</text>
   <text x="38" y="203" font-size="11" fill="#334155" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">/_badge subscription &lt;state&gt;</text>
   <text x="38" y="230" font-size="12" fill="#1a2030">Your badge: Renews, Payment</text>
@@ -30,13 +30,13 @@
   <text x="358" y="100" font-size="14" font-weight="600" fill="#0f5f69">Chat core</text>
   <text x="602" y="100" font-size="11.5" fill="#5b6577" text-anchor="end">client database</text>
   <text x="358" y="138" font-size="11.5" fill="#0f5f69" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">badge_store_receipts</text>
-  <text x="358" y="155" font-size="11.5" fill="#5b6577">a held receipt and its fresh keys</text>
+  <text x="358" y="155" font-size="11.5" fill="#5b6577">held with fresh keys; + hold_kind</text>
   <text x="358" y="180" font-size="11.5" fill="#0f5f69" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">badge_purchases</text>
   <text x="358" y="197" font-size="11.5" fill="#5b6577">+ subscription_status,</text>
   <text x="358" y="213" font-size="11.5" fill="#5b6577">unrenewed_since, last_unrenewed_at</text>
   <text x="358" y="238" font-size="11.5" fill="#0f5f69" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">badge_ledger</text>
   <text x="358" y="255" font-size="11.5" fill="#5b6577">replica; a charge credit = subscription</text>
-  <text x="358" y="282" font-size="12" fill="#1a2030">receipt worker → purchaseBadge</text>
+  <text x="358" y="282" font-size="12" fill="#1a2030">receipt worker: buy, move, tier raise</text>
   <text x="358" y="302" font-size="12" fill="#1a2030">badge worker → issueBadge, also at</text>
   <text x="358" y="320" font-size="12" fill="#1a2030">zero months; derives the alerts;</text>
   <text x="358" y="338" font-size="12" fill="#1a2030">retires on ended or after 67 days</text>
@@ -51,11 +51,11 @@
   <text x="720" y="198" font-size="11.5" fill="#1a2030">a claim hourly; Play ≤ 300 a minute</text>
   <text x="720" y="224" font-size="11.5" fill="#3a3fa6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">payments</text>
   <text x="720" y="241" font-size="11.5" fill="#5b6577">+ subscription_state, checked_at,</text>
-  <text x="720" y="257" font-size="11.5" fill="#5b6577">provider_token (Play token)</text>
+  <text x="720" y="257" font-size="11.5" fill="#5b6577">provider_token, rebound_at (moved)</text>
   <text x="720" y="282" font-size="11.5" fill="#3a3fa6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">subscription_charges</text>
   <text x="720" y="299" font-size="11.5" fill="#5b6577">one row per store charge</text>
-  <text x="720" y="324" font-size="11.5" fill="#3a3fa6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">badge_ledger.charge_id</text>
-  <text x="720" y="341" font-size="11.5" fill="#5b6577">unique: a charge is granted once</text>
+  <text x="720" y="324" font-size="11.5" fill="#3a3fa6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">badge_ledger</text>
+  <text x="720" y="341" font-size="11.5" fill="#5b6577">+ charge_id, from/to_purchase_id</text>
 
   <!-- Apps <-> Core -->
   <line x1="276" y1="170" x2="342" y2="170" stroke="#5b6577" stroke-width="1.5" marker-start="url(#c-arr-start)" marker-end="url(#c-arr)"/>
@@ -64,6 +64,8 @@
 
   <!-- Core <-> Service -->
   <line x1="618" y1="170" x2="704" y2="170" stroke="#5b6577" stroke-width="1.5" marker-start="url(#c-arr-start)" marker-end="url(#c-arr)"/>
+  <text x="661" y="122" font-size="10.5" fill="#5b6577" text-anchor="middle">upgradeBadge…</text>
+  <text x="661" y="135" font-size="10.5" fill="#5b6577" text-anchor="middle">transferBadge</text>
   <text x="661" y="148" font-size="10.5" fill="#5b6577" text-anchor="middle">purchaseBadge</text>
   <text x="661" y="161" font-size="10.5" fill="#5b6577" text-anchor="middle">issueBadge</text>
   <text x="661" y="186" font-size="10.5" fill="#5b6577" text-anchor="middle">credential,</text>

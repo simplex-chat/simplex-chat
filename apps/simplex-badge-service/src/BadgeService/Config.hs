@@ -170,6 +170,9 @@ defaultPlayApiHost = "https://androidpublisher.googleapis.com"
 defaultAppleApiHost :: Text
 defaultAppleApiHost = "https://api.storekit.itunes.apple.com"
 
+appleSandboxHost :: Text
+appleSandboxHost = "https://api.storekit-sandbox.itunes.apple.com"
+
 defaultPlayTokenUrl :: Text
 defaultPlayTokenUrl = "https://oauth2.googleapis.com/token"
 
@@ -187,6 +190,16 @@ requireHttps u
 -- | Well below 100, where BTCPay settles an invoice for one satoshi.
 maxTolerance :: Double
 maxTolerance = 10
+
+-- | A Sandbox receipt verifies like a real one, offline too, so test purchases are credited only beside the Sandbox's
+-- server API; and the Sandbox charges no one, so without them only the production host can credit a subscription.
+checkAppleHost :: Bool -> AppleStoreConfig -> Either String ()
+checkAppleHost creditTestPurchases AppleStoreConfig {aServerApi} = case (creditTestPurchases, aApiHost <$> aServerApi) of
+  (False, Nothing) -> Right ()
+  (False, Just h) | h == defaultAppleApiHost -> Right ()
+  (True, Just h) | h == appleSandboxHost -> Right ()
+  (False, _) -> Left $ "apple.api_host must be " <> T.unpack defaultAppleApiHost <> " unless [dev] credit_test_purchases = on, as no other host credits a real subscription"
+  (True, _) -> Left $ "[dev] credit_test_purchases = on needs [apple]'s server API key with api_host = " <> T.unpack appleSandboxHost <> ", as a Sandbox receipt would otherwise be credited as a real purchase"
 
 readServiceConfig :: FilePath -> IO (Either String ServiceConfig)
 readServiceConfig path =
@@ -253,11 +266,7 @@ parseConfig ini = do
     Left "[dev] accept_unverified_store_receipts must be off where [apple] or [google] verifies store receipts"
   devCheckStoreDuringCoverage <- bool "dev" "check_store_during_coverage" False
   devCreditTestPurchases <- bool "dev" "credit_test_purchases" False
-  -- A sandbox receipt verifies like any other and says so only in a field, so crediting test purchases
-  -- against production Apple would mint badges for anyone holding a sandbox account. A deployment that
-  -- means it points api_host at the sandbox; nothing else here distinguishes production.
-  when (devCreditTestPurchases && maybe False ((== defaultAppleApiHost) . aApiHost) (apple >>= aServerApi)) $
-    Left "[dev] credit_test_purchases must be off where apple.api_host is the production App Store, as a sandbox receipt would be credited as a real purchase"
+  mapM_ (checkAppleHost devCreditTestPurchases) apple
   when (devCheckStoreDuringCoverage && not (devUnverifiedReceipts || devCreditTestPurchases)) $
     Left "[dev] check_store_during_coverage needs accept_unverified_store_receipts or credit_test_purchases = on, as only a dev deployment may ask a store while coverage runs"
   pure
@@ -379,7 +388,7 @@ parseConfig ini = do
     appleServerApi = case (present "apple" "api_key_id", present "apple" "api_issuer_id", present "apple" "api_private_key_file") of
       (Nothing, Nothing, Nothing) -> Right Nothing
       (Just aKeyId, Just aIssuerId, Just keyFile) -> do
-        aApiHost <- optional "apple" "api_host" defaultAppleApiHost
+        aApiHost <- T.toLower . T.dropWhileEnd (== '/') <$> optional "apple" "api_host" defaultAppleApiHost
         unless ("https://" `T.isPrefixOf` aApiHost) $ Left "apple.api_host must be an absolute https URL"
         pure (Just AppleServerApi {aKeyId, aIssuerId, aPrivateKeyFile = T.unpack keyFile, aApiHost})
       _ -> Left "apple.api_key_id, apple.api_issuer_id and apple.api_private_key_file are required together"

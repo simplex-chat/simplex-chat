@@ -5384,12 +5384,17 @@ handOverStoreReceipt presentingUser echoedInvoiceId origin payment = do
         RSHeld {} -> lift (resumeStoreReceiptWork ownerId) >> badgeStateResponse owner
         RSCredited {badgePurchaseId, refusalRecorded} -> do
           let rehold kind = withStore' $ \db -> reholdStoreReceipt db owner receiptId badgePurchaseId kind payment now
-          answeredHeld <- case resumableCharge now payment of
+          movedOut <- withStore' (`purchaseMovedOut` badgePurchaseId)
+          answeredHeld <- case resumeHold now payment of
+            _ | movedOut -> pure False
             -- a charge refused after its hold is answered from the record, or the app's sweep would hold it again at every launch
-            Just purchasedAt | not (refusalRecorded && resumeHoldEnded now purchasedAt) -> rehold SHKPurchase
+            Just (RHPurchasedAt purchasedAt) | not (refusalRecorded && resumeHoldEnded now purchasedAt) -> rehold SHKPurchase
+            -- a refused Play resume is held again: the service's hourly check bounds what the sweep can ask of Play
+            Just RHAttempts -> rehold SHKPurchase
             _ -> pure False
+          lastChargeAt_ <- withStore' (`getLastChargeCreditAt` badgePurchaseId)
           -- a refused tier change is answered from the record, or every sweep would hold it and send it again
-          tierChangeHeld <- case tierChangeCharge now payment of
+          tierChangeHeld <- case tierChangeCharge now lastChargeAt_ payment of
             Just tier
               | not (answeredHeld || refusalRecorded) ->
                   withStore' (`getBadgePurchase` badgePurchaseId) >>= \case
@@ -5464,21 +5469,36 @@ resumableCharge now = \case
 resumeHoldEnded :: UTCTime -> UTCTime -> Bool
 resumeHoldEnded now purchasedAt = resumeHoldLimit `addUTCTime` purchasedAt <= now
 
--- | How far a tier change's purchase date may be from this device's clock, either way, for it to be asked of the service
--- at once; past it, the service grants the change at its next renewal check.
-tierChangeWindow :: NominalDiffTime
-tierChangeWindow = nominalDay
+-- | How long a resume the service answers without crediting keeps holding the profile: an Apple charge until
+-- resumeHoldLimit after its purchase date, a Play token, which carries no date, for heldChargeAttempts attempts per hand-over.
+data ResumeHold = RHPurchasedAt UTCTime | RHAttempts
 
--- | The tier of an Apple subscription charge that may change the tier of a shown purchase: not revoked, and bought
--- within the window. Read from the unverified payload, which decides only what to ask the service and wait for.
-tierChangeCharge :: UTCTime -> ServicePayment -> Maybe BadgeType
-tierChangeCharge now = \case
+-- | Any Play token may resume, as reholdStoreReceipt and the worker's resume take only a subscription purchase.
+resumeHold :: UTCTime -> ServicePayment -> Maybe ResumeHold
+resumeHold now = \case
+  SPGoogle {} -> Just RHAttempts
+  payment -> RHPurchasedAt <$> resumableCharge now payment
+
+-- | The attempts, thrown and failed ones included, that one hand-over of a Play resume or an App Store tier change is held
+-- for; then the record is set aside, and the next hand-over holds it again. The service still asks its store at most hourly.
+heldChargeAttempts :: Int64
+heldChargeAttempts = 24
+
+-- | The tier of an Apple subscription charge that may change the tier of a shown purchase: not revoked, not expired, and
+-- bought after the purchase's last charge credit, which the service dates no earlier than its charge, so a credited change
+-- is never newer. Read from the unverified payload, which decides only what to ask the service and wait for.
+tierChangeCharge :: UTCTime -> Maybe UTCTime -> ServicePayment -> Maybe BadgeType
+tierChangeCharge now lastChargeAt_ = \case
   SPApple {jws}
-    | Just AppleTransactionFacts {productId = Just planId, purchaseDate = Just purchased, revoked = False, autoRenewable = True} <- appleTransactionFacts jws,
+    | Just AppleTransactionFacts {productId = Just planId, purchaseDate = Just purchased, expiresDate, revoked = False, autoRenewable = True} <- appleTransactionFacts jws,
       Just (tier, _) <- storePlan PPApple planId,
-      abs (diffUTCTime (posixSecondsToUTCTime $ fromIntegral purchased / 1000) now) < tierChangeWindow ->
+      Just lastChargeAt <- lastChargeAt_,
+      lastChargeAt < millisTime purchased,
+      maybe True ((now <) . millisTime) expiresDate ->
         Just tier
   _ -> Nothing
+  where
+    millisTime ms = posixSecondsToUTCTime $ fromIntegral ms / 1000
 
 -- | Whether a charge of the second tier raises a purchase of the first: any other change waits for the renewal check.
 raisesTier :: BadgeType -> BadgeType -> Bool
@@ -5507,11 +5527,12 @@ requireBadgeService = asks (badgeServiceAddress . config) >>= maybe (throwRedeem
 refuseWhileBadgeHeld :: User -> CM ()
 refuseWhileBadgeHeld user = whenM (withStore' (`userHasBadge` user)) $ throwRedeemError BREBadgeActive
 
--- | A new badge would leave a held receipt waiting behind it. An Apple subscription always blocks, as Apple keeps
--- charging it; any other only while its last failure, if any, can clear, since one that failed for good waits anyway.
+-- | A new badge would leave a held receipt waiting behind it. An Apple subscription blocks until its charge lapses, as Apple
+-- keeps charging it; any other only while its last failure, if any, can clear, since one that failed for good waits anyway.
 refuseWhileStoreReceiptPending :: User -> CM ()
 refuseWhileStoreReceiptPending user = do
-  pending <- withStore' (`getPendingStoreReceipts` user)
+  now <- badgeNow
+  pending <- withStore' $ \db -> getPendingStoreReceipts db user now
   when (any blocks pending) $ throwRedeemError BREStorePurchaseOpen
   where
     blocks (payment, failure_) = appleSubscription payment || maybe True badgeFailureTransient failure_
@@ -5666,7 +5687,8 @@ badgeMaxWake = 100 * 365 * nominalDay
 
 startStoreReceiptWork :: User -> CM ()
 startStoreReceiptWork User {userId} = do
-  held <- withStore' $ \db -> getNextHeldStoreReceipt db userId
+  now <- badgeNow
+  held <- withStore' $ \db -> getNextHeldStoreReceipt db userId now
   when (either (const False) isJust held) $ lift $ resumeStoreReceiptWork userId
 
 resumeStoreReceiptWork :: UserId -> CM' ()
@@ -5684,10 +5706,10 @@ runStoreReceiptWorker a userId Worker {doWork} = do
       BadgeReceiptRecord {receiptId, status = RSHeld {stash, invoiceId, payment, retryDelay, holdKind}} -> creditStoreReceipt a userId receiptId stash invoiceId payment retryDelay holdKind
       BadgeReceiptRecord {receiptId} -> notHeld receiptId
   where
-    getDueReceipt scheduled =
-      withStore' (`getNextHeldStoreReceipt` userId) >>= \case
-        Right (Just r@BadgeReceiptRecord {receiptId, status = RSHeld {nextAttemptAt}}) -> do
-          now <- badgeNow
+    getDueReceipt scheduled = do
+      now <- badgeNow
+      withStore' (\db -> getNextHeldStoreReceipt db userId now) >>= \case
+        Right (Just r@BadgeReceiptRecord {receiptId, status = RSHeld {nextAttemptAt}}) ->
           if nextAttemptAt <= now
             then pure $ Right (Just r)
             else Right Nothing <$ scheduleReceipt scheduled receiptId (diffUTCTime nextAttemptAt now)
@@ -5713,15 +5735,17 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
     liftIO $ waitForUserNetwork a
     -- decided under the lock and acted on outside it: the retry sleeps, and announcing takes the chat lock
     outcome <- withEntityLock "badgePurchase" (CLBadgeUser userId) $
-      if holdKind == SHKTransfer
-        -- before the stash lookup: the record still links the purchase its payment moves from
-        then credit ri delay transferCmd
-        else
-          withStore' (`getStashBadgePurchase` stash) >>= \case
-            -- before the resume, which settles any record whose purchase is shown
-            Just purchaseId | holdKind == SHKTierChange -> changeTier ri delay purchaseId
-            Just purchaseId -> resume ri delay purchaseId
-            Nothing -> credit ri delay purchaseCmd
+      -- a Restore takes a held record without this lock, so one it took since it was read is left to its new owner's worker
+      ifM (not <$> withStore' (\db -> storeReceiptHeldFor db receiptId userId holdKind)) (pure SRODeferred) $
+        if holdKind == SHKTransfer
+          -- before the stash lookup: the record still links the purchase its payment moves from
+          then credit ri delay transferCmd
+          else
+            withStore' (`getStashBadgePurchase` stash) >>= \case
+              -- before the resume, which settles any record whose purchase is shown
+              Just purchaseId | holdKind == SHKTierChange -> changeTier ri delay purchaseId
+              Just purchaseId -> resume ri delay purchaseId
+              Nothing -> credit ri delay purchaseCmd
     -- the invoice id is the app's only key to the store transaction, so without one nothing is emitted and its sweep finishes it
     case outcome of
       SROCredited present_ -> do
@@ -5737,12 +5761,15 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
       _ -> pure ()
   where
     credit ri delay cmd =
-      tryAllErrors (attempt cmd) >>= \case
-        Right (Right (present_, _)) -> pure $ SROCredited present_
-        Right (Left (code, retryAfter))
-          | storeReceiptRefused code -> refuse $ serviceFailure code retryAfter
-          | otherwise -> failed ri delay (serviceFailure code retryAfter) retryAfter
-        Left e -> failed ri delay (badgeIssueFailure e) Nothing
+      tryAllErrors (attempt cmd) >>= \answer -> serviceAnswered ri delay refuse (failed ri delay) answer $ \(present_, _) -> pure $ SROCredited present_
+    -- retried takes only a service error that is not a refusal: a thrown error is recorded as a failure as it is
+    serviceAnswered :: RetryInterval -> Int64 -> (BadgeIssueFailure -> CM StoreReceiptOutcome) -> (BadgeIssueFailure -> Maybe Word32 -> CM StoreReceiptOutcome) -> Either ChatError (Either (BadgeServiceErrorCode, Maybe Word32) r) -> (r -> CM StoreReceiptOutcome) -> CM StoreReceiptOutcome
+    serviceAnswered ri delay refused retried answer answered = case answer of
+      Left e -> failed ri delay (badgeIssueFailure e) Nothing
+      Right (Left (code, retryAfter))
+        | storeReceiptRefused code -> refused $ serviceFailure code retryAfter
+        | otherwise -> retried (serviceFailure code retryAfter) retryAfter
+      Right (Right r) -> answered r
     purchaseCmd payment' = BSCPurchaseBadge {masterKey, payment = payment', upgrade = Nothing}
     transferCmd payment' = BSCTransferBadge {masterKey, payment = payment'}
     attempt cmd = do
@@ -5756,46 +5783,48 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
       user <- withStore $ \db -> getUser db userId
       p_ <- withStore' (`getBadgePurchase` purchaseId)
       newest_ <- withStore' (`getUserBadgePurchase` user)
+      movedOut <- withStore' (`purchaseMovedOut` purchaseId)
       now <- badgeNow
       let isNewest = maybe False (\UserBadgePurchase {badgePurchaseId} -> badgePurchaseId == purchaseId) newest_
       case p_ of
         Just UserBadgePurchase {shown = True} -> SROCredited Nothing <$ withStore' (`settleStoreReceipt` receiptId)
+        -- the service answers a payment moved to another key ended, so a resume of it never succeeds
+        _ | movedOut -> setAside
         Just p@UserBadgePurchase {purchaseKind = PKSubscription _}
-          | isNewest, Just purchasedAt <- resumableCharge now =<< decodeJSON payment -> resumeIssue ri delay user p purchasedAt now
+          | isNewest, Just hold <- resumeHold now =<< decodeJSON payment -> resumeIssue ri delay user p hold now
         _ -> refuse receiptInvalid
-    resumeIssue ri delay user p@UserBadgePurchase {badgePurchaseId} purchasedAt now = do
+    resumeIssue ri delay user p@UserBadgePurchase {badgePurchaseId} hold now = do
       answer <- tryAllErrors $ requireBadgeService >>= \sendTarget -> sendBadgeIssue sendTarget userId p BSCIssueBadge (recordBadgeIssueFailure p) now
       answeredAt <- badgeNow
       -- a charge the service does not grant, as a revoked one, stops holding the profile once its hold ends
-      let notCredited holding
-            | resumeHoldEnded answeredAt purchasedAt = refuse receiptInvalid
-            | otherwise = holding
-      case answer of
-        Left e -> failed ri delay (badgeIssueFailure e) Nothing
-        Right (Left (code, retryAfter))
-          | storeReceiptRefused code -> refuse $ serviceFailure code retryAfter
-          | otherwise -> notCredited $ failed ri delay (serviceFailure code retryAfter) retryAfter
-        Right (Right (balance, stored)) ->
-          withStore' (`getLatestIssuedCredential` badgePurchaseId) >>= \case
-            Just cred@(BadgeCredential _ _ _ info)
-              | L.paidThrough balance > answeredAt && credentialExpiry cred > answeredAt && stored /= Just SSEnded -> do
-                  user' <- withStore $ \db -> do
-                    liftIO $ showResumedPurchase db user receiptId badgePurchaseId stored
-                    setUserBadge db user (Just $ OwnBadge cred (mkBadgeStatus answeredAt (Just True) info))
-                  lift $ startBadgeWork user'
-                  pure $ SROCredited (Just user')
-            -- the service's own check interval
-            _ -> notCredited $ failed ri delay BIFServiceError {code = BSEPaymentPending, retryable = True} (Just 3600)
-    -- Settles with nothing to announce: past the window, or to a tier that is not higher, the renewal check grants the
-    -- change, and a badge no longer shown is resumed by the charge's next hand-over.
+      let notCredited failure retryAfter = case hold of
+            RHPurchasedAt purchasedAt | resumeHoldEnded answeredAt purchasedAt -> refuse receiptInvalid
+            RHAttempts -> failedHeld ri delay failure retryAfter
+            _ -> failed ri delay failure retryAfter
+      serviceAnswered ri delay refuse notCredited answer $ \(balance, stored) ->
+        withStore' (`getLatestIssuedCredential` badgePurchaseId) >>= \case
+          -- the answer told this device of a move elsewhere, which no later attempt undoes
+          _ | paymentMovedOut balance -> setAside
+          Just cred@(BadgeCredential _ _ _ info)
+            | L.paidThrough balance > answeredAt && credentialExpiry cred > answeredAt && stored /= Just SSEnded -> do
+                user' <- withStore $ \db -> do
+                  liftIO $ showChargedPurchase db user receiptId badgePurchaseId stored
+                  setUserBadge db user (Just $ OwnBadge cred (mkBadgeStatus answeredAt (Just True) info))
+                lift $ startBadgeWork user'
+                pure $ SROCredited (Just user')
+          -- the service's own check interval
+          _ -> notCredited BIFServiceError {code = BSEPaymentPending, retryable = True} (Just 3600)
+    -- Settles with nothing to announce: a charge expired or no newer than the last one credited, or to a tier that is not
+    -- higher, the renewal check grants the change, and a badge no longer shown is resumed by the charge's next hand-over.
     changeTier ri delay purchaseId = do
       user <- withStore $ \db -> getUser db userId
       p_ <- withStore' (`getBadgePurchase` purchaseId)
+      lastChargeAt_ <- withStore' (`getLastChargeCreditAt` purchaseId)
       now <- badgeNow
       case (p_, decodeJSON payment) of
         (Just p@UserBadgePurchase {badgeType, shown = True}, Just payment')
-          | Just tier <- tierChangeCharge now payment', raisesTier badgeType tier -> upgradeIssue ri delay user p payment' tier now
-        _ -> SRODeferred <$ withStore' (`settleStoreReceipt` receiptId)
+          | Just tier <- tierChangeCharge now lastChargeAt_ payment', raisesTier badgeType tier -> upgradeIssue ri delay user p payment' tier now
+        _ -> setAside
     -- the receipt's failures are recorded on the record, not as the purchase's failed renewal, as the badge shown still covers
     upgradeIssue ri delay user p@UserBadgePurchase {badgePurchaseId} payment' tier now = do
       failure_ <- newTVarIO Nothing
@@ -5803,22 +5832,27 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
       answer <- tryAllErrors $ requireBadgeService >>= \sendTarget -> sendBadgeIssue sendTarget userId p upgradeCmd (atomically . writeTVar failure_ . Just) now
       answeredAt <- badgeNow
       recorded_ <- readTVarIO failure_
-      case answer of
-        Left e -> failed ri delay (badgeIssueFailure e) Nothing
-        Right (Left (code, retryAfter))
-          | storeReceiptRefused code -> SRODeferred <$ withStore' (\db -> refuseStoreReceipt db receiptId $ serviceFailure code retryAfter)
-          | otherwise -> failed ri delay (serviceFailure code retryAfter) retryAfter
-        Right (Right _) | Just failure <- recorded_ -> failed ri delay failure Nothing
-        Right (Right (_, stored)) ->
+      let refusedInSilence failure = SRODeferred <$ withStore' (\db -> refuseStoreReceipt db receiptId failure)
+      serviceAnswered ri delay refusedInSilence (failedHeld ri delay) answer $ \case
+        _ | Just failure <- recorded_ -> failedHeld ri delay failure Nothing
+        (_, stored) ->
           withStore' (`getLatestIssuedCredential` badgePurchaseId) >>= \case
             Just cred@(BadgeCredential _ _ _ info@BadgeInfo {badgeType = issuedType})
               | issuedType == tier && credentialExpiry cred > answeredAt && stored /= Just SSEnded -> do
                   user' <- withStore $ \db -> do
-                    liftIO $ showTierChangedPurchase db user receiptId badgePurchaseId
+                    liftIO $ showChargedPurchase db user receiptId badgePurchaseId stored
                     setUserBadge db user (Just $ OwnBadge cred (mkBadgeStatus answeredAt (Just True) info))
                   lift $ startBadgeWork user'
                   pure $ SROCredited (Just user')
-            _ -> failed ri delay BIFServiceError {code = BSEPaymentPending, retryable = True} (Just 3600)
+            _ -> failedHeld ri delay BIFServiceError {code = BSEPaymentPending, retryable = True} (Just 3600)
+    -- out of attempts, the record is set aside without a refusal, so the next hand-over holds it again;
+    -- this attempt's failure is not recorded yet, so it is counted here
+    failedHeld ri delay failure retryAfter = do
+      attempts <- withStore' (`getStoreReceiptFailures` receiptId)
+      if attempts + 1 >= heldChargeAttempts
+        then setAside
+        else failed ri delay failure retryAfter
+    setAside = SRODeferred <$ withStore' (`settleStoreReceipt` receiptId)
     receiptInvalid = BIFServiceError {code = BSEReceiptInvalid, retryable = False}
     refuse failure = SRORefused failure <$ withStore' (\db -> refuseStoreReceipt db receiptId failure)
     serviceFailure code retryAfter = BIFServiceError {code = boundedServiceErrorCode code, retryable = isJust retryAfter}
@@ -5853,7 +5887,7 @@ updateUserBadge userId emitted now = do
             _ -> pure False
           latest <- withStore' (`getLatestIssuedCredential` badgePurchaseId)
           devRequestInterval <- asks $ badgeDevRequestInterval . config
-          let due = not retiredBefore && (isJust devRequestInterval || badgeRequestDue now purchaseKind (shownBadgeCredential user p) latest balance)
+          let due = not retiredBefore && (isJust devRequestInterval && isJust (shownBadgeCredential user p) || badgeRequestDue now purchaseKind (shownBadgeCredential user p) latest balance)
               -- a due month waits for the wake the last pass set, so a request that issued nothing is not repeated at every activation;
               -- a wake further than this was not set by such a request, but by a device clock set back since.
               -- A dev interval reuses the same guard, as it needs the same thing: no second request within it.
@@ -5917,6 +5951,8 @@ updateUserBadge userId emitted now = do
 -- | Warning before a prepaid badge ends is not actionable while topping up cannot credit months without issuing.
 -- TODO [badges] BAPrepaidEnding belongs here, three days before paidThrough, once that exists.
 derivedBadgeAlert :: UTCTime -> UserBadgePurchase -> Maybe BadgeCredential -> StatementEntry -> Maybe BadgeAlert
+-- Restore moved its payment to another key, so nothing of this purchase ended, lapsed or failed
+derivedBadgeAlert _ _ _ b | paymentMovedOut b = Nothing
 derivedBadgeAlert now p@UserBadgePurchase {purchaseKind, shown} shownCred b = case purchaseKind of
   PKPrepaid
     | endsAt <= now -> Just $ alertOf BASupportEnded endsAt
@@ -5970,7 +6006,8 @@ emitBadgeAlert user emitted p@UserBadgePurchase {alertSnoozeUntil} shownCred now
 badgeStateResponse :: User -> CM ChatResponse
 badgeStateResponse user = do
   badgeState <- getUserBadgeState user
-  CRBadgeState user badgeState . map finalError <$> withStore' (`getOpenStorePurchases` user)
+  now <- badgeNow
+  CRBadgeState user badgeState . map finalError <$> withStore' (\db -> getOpenStorePurchases db user now)
   where
     -- like a renewal's, only a failure that cannot clear on its own is the user's to know about
     finalError p@OpenStorePurchase {creditError} = p {creditError = find (not . badgeFailureTransient) creditError}
@@ -6169,8 +6206,8 @@ sendBadgeIssue sendTarget userId UserBadgePurchase {badgePurchaseId, badgeType, 
         (Just _, Nothing, _) -> recordFailure BIFInvalidCredential
         (_, _, False) -> recordUnexpected "issued badge credential has no ledger row to store it against"
         -- no credential is the service saying nothing is owed - the months ran out, or a subscription
-        -- waits for its store to charge - which its statement then shows
-        (Nothing, _, _) | maybe False ((> storedAt) . L.paidThrough) balance_ -> recordUnexpected "badge service issued no credential"
+        -- waits for its store to charge - which its statement then shows; ended after a move leaves the issued month running
+        (Nothing, _, _) | subscription /= Just SSEnded && maybe False ((> storedAt) . L.paidThrough) balance_ -> recordUnexpected "badge service issued no credential"
         _ -> pure ()
       maybe (throwCmdError "badge ledger has no balance") (pure . Right . (,storedSubscription)) balance_
     J.Success BSPError {code, retryAfter} -> do

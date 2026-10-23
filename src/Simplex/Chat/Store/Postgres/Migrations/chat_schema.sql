@@ -313,7 +313,8 @@ CREATE TABLE test_chat_schema.badge_store_receipts (
     next_attempt_at timestamp with time zone,
     retry_delay bigint,
     retry_count bigint DEFAULT 0 NOT NULL,
-    credit_error text
+    credit_error text,
+    hold_kind text DEFAULT 'purchase'::text NOT NULL
 );
 
 

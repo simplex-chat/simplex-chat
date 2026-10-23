@@ -26,6 +26,7 @@ module BadgeService.Store
     purchaseKeyExists,
     getPurchaseByKey,
     setPurchaseBadgeType,
+    lockedLedgerTip,
     getLedgerTip,
     getLedgerEntryId,
     getLedgerEntries,
@@ -206,7 +207,7 @@ getCodePurchaseForKey db badgeCodeId key =
         FROM sx_badge_service_badge_purchases p
         LEFT JOIN sx_badge_service_badge_issuances i ON i.badge_purchase_id = p.badge_purchase_id
         WHERE p.badge_code_id = ? AND p.purchase_key = ?
-        ORDER BY i.entry_id DESC
+        ORDER BY i.entry_id DESC, i.period_end DESC
         LIMIT 1
       |]
       (badgeCodeId, key)
@@ -226,7 +227,7 @@ getStorePaymentCredit db provider providerRef =
         JOIN sx_badge_service_badge_purchases p ON p.payment_id = pay.payment_id
         LEFT JOIN sx_badge_service_badge_issuances i ON i.badge_purchase_id = p.badge_purchase_id
         WHERE pay.provider = ? AND pay.provider_ref = ?
-        ORDER BY i.entry_id DESC
+        ORDER BY i.entry_id DESC, i.period_end DESC
         LIMIT 1
       |]
       (textEncode provider, providerRef)
@@ -262,6 +263,13 @@ getPurchaseByKey db key =
 setPurchaseBadgeType :: DB.Connection -> Int64 -> BadgeType -> UTCTime -> IO ()
 setPurchaseBadgeType db purchaseId badgeType now =
   DB.execute db "UPDATE sx_badge_service_badge_purchases SET current_badge_type = ?, updated_at = ? WHERE badge_purchase_id = ?" (badgeType, now, purchaseId)
+
+-- | First in a transaction that appends after the tip it returns: the row lock makes concurrent appends to one
+-- ledger wait for each other, as Postgres reads at READ COMMITTED.
+lockedLedgerTip :: DB.Connection -> Int64 -> UTCTime -> IO (Maybe StatementEntry)
+lockedLedgerTip db purchaseId now = do
+  DB.execute db "UPDATE sx_badge_service_badge_purchases SET updated_at = ? WHERE badge_purchase_id = ?" (now, purchaseId)
+  getLedgerTip db purchaseId
 
 getLedgerTip :: DB.Connection -> Int64 -> IO (Maybe StatementEntry)
 getLedgerTip db purchaseId =
@@ -331,7 +339,7 @@ getCurrentIssuance db purchaseId now = do
       [sql|
         SELECT credential, period_end FROM sx_badge_service_badge_issuances
         WHERE badge_purchase_id = ?
-        ORDER BY entry_id DESC
+        ORDER BY entry_id DESC, period_end DESC
         LIMIT 1
       |]
       (Only purchaseId)
@@ -453,7 +461,7 @@ data PaymentRebind = PaymentRebind
 -- moved the payment or the old purchase's ledger since fromTipId was read.
 rebindStorePayment :: DB.Connection -> PaymentRebind -> UTCTime -> IO (Maybe Int64)
 rebindStorePayment db PaymentRebind {paymentId, fromPurchaseId, fromTipId, fromRows, purchaseKey, masterKey = BadgeMasterKey mk, badgeType} now = do
-  tip <- getLedgerTip db fromPurchaseId
+  tip <- lockedLedgerTip db fromPurchaseId now
   if fmap entryId tip /= Just fromTipId
     then pure Nothing
     else do
