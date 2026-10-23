@@ -2257,7 +2257,7 @@ func redeemErrorText(_ error: Error, purchase: Bool) -> String {
         }
     }
     if case .subscribedBefore? = error as? BadgeStoreError {
-        return NSLocalizedString("This Apple ID already has a badge subscription. Subscribe to the badge you had before; you can change it later in App Store settings.", comment: "alert message")
+        return NSLocalizedString("This Apple ID already has a badge subscription. Only the profile that bought it can continue it.", comment: "alert message")
     }
     return String.localizedStringWithFormat(NSLocalizedString("Error: %@", comment: "alert message"), responseError(error))
 }
