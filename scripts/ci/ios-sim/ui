@@ -6,6 +6,7 @@
 #   ui tap <label> [secs]           tap the element with this exact accessibility label, waiting up to secs (10) for it
 #   ui tap-value <text> [secs]      tap the element with this exact value: text fields have no label, only their placeholder or text
 #   ui tap-xy <x> <y>               tap this point (points, as in the tree)
+#   ui long-press <x> <y>           touch this point for 1.5 s, e.g. to open a context menu
 #   ui swipe <x1> <y1> <x2> <y2>    swipe from one point to the other, e.g. to scroll a list
 #   ui type <text>                  type into the focused field (US keyboard characters only)
 #   ui clipboard <text>             put the text on the clipboard, to paste it with the text field's Paste menu
@@ -212,6 +213,12 @@ case "${1:-}" in
     number "$3"
     axe tap -x "$2" -y "$3" --post-delay 2 --udid "$SIM_UDID"
     ;;
+  long-press)
+    number "$2"
+    number "$3"
+    axe touch -x "$2" -y "$3" --down --up --delay 1.5 --udid "$SIM_UDID"
+    sleep 2
+    ;;
   swipe)
     for n in "$2" "$3" "$4" "$5"; do number "$n"; done
     axe swipe --start-x "$2" --start-y "$3" --end-x "$4" --end-y "$5" --duration 0.5 --post-delay 1 --udid "$SIM_UDID"
@@ -231,7 +238,7 @@ case "${1:-}" in
   listings) backend listings ;;
   requests) requests ;;
   *)
-    sed -n '3,26s/^# \{0,1\}//p' "$0"
+    sed -n '3,27s/^# \{0,1\}//p' "$0"
     exit 1
     ;;
 esac
