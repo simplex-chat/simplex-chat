@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 620" width="300" height="620" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+<title>Proposed: an operator's servers with a Services section</title>
+<style>.ph{fill:#f2f2f7;stroke:#c7c7cc}.g{fill:#fff}.t{font-size:14px;fill:#111}.s{font-size:11px;fill:#6e6e73}.h{font-size:22px;font-weight:700;fill:#111}.b{font-size:14px;fill:#0071e3}.sep{stroke:#e3e3e8}.ok{font-size:14px;fill:#248a3d;font-weight:700}.on{fill:#34c759}.kn{fill:#fff}.ch{font-size:14px;fill:#c4c4c7}.new{fill:none;stroke:#1e8a55;stroke-width:2.5}</style>
+<rect class="ph" x="1" y="1" width="298" height="618" rx="34"/>
+<text class="b" x="14" y="52">‹ Network &amp; servers</text>
+<text class="h" x="16" y="86">SimpleX Chat servers</text>
+<text class="s" x="28" y="118">OPERATOR</text>
+<rect class="g" x="12" y="124" width="276" height="88" rx="10"/>
+<text class="s" x="26" y="152">[SimpleX Chat logo]</text>
+<text class="ch" x="272" y="152">›</text>
+<line class="sep" x1="26" y1="168" x2="288" y2="168"/>
+<text class="t" x="26" y="195">Use servers</text>
+<rect class="on" x="232" y="178" width="40" height="24" rx="12"/><circle class="kn" cx="260" cy="190" r="10"/>
+<text class="s" x="28" y="240">CHAT RELAYS</text>
+<rect class="g" x="12" y="246" width="276" height="44" rx="10"/>
+<text class="ok" x="26" y="273">✓</text>
+<text class="t" x="46" y="273">[preset relay]</text>
+<text class="ch" x="272" y="273">›</text>
+<text class="s" x="28" y="306">Chat relays forward messages in channels</text>
+<text class="s" x="28" y="320">you create.</text>
+<text class="s" x="28" y="350">SERVICES</text>
+<rect class="g" x="12" y="356" width="276" height="54" rx="10"/>
+<text class="ok" x="26" y="388">✓</text>
+<text class="t" x="46" y="380">SimpleX Directory</text>
+<text class="s" x="46" y="396">Search</text>
+<text class="ch" x="272" y="388">›</text>
+<text class="s" x="28" y="426">Services answer your app's requests, like</text>
+<text class="s" x="28" y="440">searches.</text>
+<rect class="new" x="8" y="338" width="284" height="110" rx="12"/>
+<text class="s" x="28" y="470">USE FOR MESSAGES</text>
+<rect class="g" x="12" y="476" width="276" height="132" rx="10"/>
+<text class="t" x="26" y="503">To receive</text>
+<rect class="on" x="232" y="486" width="40" height="24" rx="12"/><circle class="kn" cx="260" cy="498" r="10"/>
+<line class="sep" x1="26" y1="520" x2="288" y2="520"/>
+<text class="t" x="26" y="547">For private routing</text>
+<rect class="on" x="232" y="530" width="40" height="24" rx="12"/><circle class="kn" cx="260" cy="542" r="10"/>
+<line class="sep" x1="26" y1="564" x2="288" y2="564"/>
+<text class="t" x="26" y="591">To resolve names</text>
+<rect class="on" x="232" y="574" width="40" height="24" rx="12"/><circle class="kn" cx="260" cy="586" r="10"/>
+</svg>

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 560" width="300" height="560" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+<title>Proposed: New service, after Test service</title>
+<style>.ph{fill:#f2f2f7;stroke:#c7c7cc}.g{fill:#fff}.t{font-size:14px;fill:#111}.s{font-size:11px;fill:#6e6e73}.h{font-size:22px;font-weight:700;fill:#111}.b{font-size:14px;fill:#0071e3}.sep{stroke:#e3e3e8}.ok{font-size:14px;fill:#248a3d;font-weight:700}.on{fill:#34c759}.kn{fill:#fff}.r{font-size:14px;fill:#e0302a}.new{fill:none;stroke:#1e8a55;stroke-width:2.5}.chg{fill:none;stroke:#b26a00;stroke-width:2.5}</style>
+<rect class="ph" x="1" y="1" width="298" height="558" rx="34"/>
+<text class="b" x="14" y="52">‹ Your servers</text>
+<text class="h" x="16" y="86">New service</text>
+<text class="s" x="28" y="118">YOUR SERVICE ADDRESS</text>
+<rect class="g" x="12" y="124" width="276" height="72" rx="10"/>
+<text class="t" x="26" y="150">https://[server]/a#[service address]</text>
+<text class="s" x="28" y="220">YOUR SERVICE NAME</text>
+<rect class="g" x="12" y="226" width="276" height="44" rx="10"/>
+<text class="t" x="26" y="253">[Your directory]</text>
+<text class="s" x="28" y="294">USE SERVICE</text>
+<rect class="g" x="12" y="300" width="276" height="100" rx="10"/>
+<text class="b" x="26" y="324">Test service</text>
+<text class="ok" x="268" y="324">✓</text>
+<text class="s" x="26" y="342">Can be used for: Search</text>
+<rect class="new" x="20" y="330" width="150" height="18" rx="4"/>
+<line class="sep" x1="26" y1="356" x2="288" y2="356"/>
+<text class="t" x="26" y="383">Use for search</text>
+<rect class="on" x="232" y="366" width="40" height="24" rx="12"/><circle class="kn" cx="260" cy="378" r="10"/>
+<text class="s" x="28" y="420">Other tools: 2 (the app doesn't use them)</text>
+<rect class="new" x="20" y="408" width="250" height="18" rx="4"/>
+<rect class="g" x="12" y="472" width="276" height="44" rx="10"/>
+<text class="r" x="26" y="499">Delete service</text>
+</svg>
