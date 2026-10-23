@@ -283,6 +283,7 @@ badgeServiceTests = do
     it "should resume an Apple subscription retired within its coverage by a refund, once its store charges it again" testAppleResubscribeResumesWithinCoverage
     it "should resume a Play subscription retired past the recovery window when its token is handed over while Play charges it" testPlaySubscriptionResumes
     it "should set aside without a refusal a Play resume after its held attempts, and hold it again at its next hand-over" testPlayResumeAttemptsEnd
+    it "should set aside after one answer a Play resume whose subscription Restore moved to another device" testMovedOutPlayResumeSetAside
     it "should not hold a Play subscription moved to another device as a resume of the purchase it left" testMovedOutPlayNotResumed
     it "should derive no alert for an Apple purchase Restore moved to another device, and not hold a later charge as a resume of it" testMovedOutAppleNoAlertNoResume
     it "should hold an Apple charge of another tier while its badge is shown, grant it through the worker and show it at once, and send nothing for one of the same tier" testAppleTierChangeHandOver
@@ -4442,6 +4443,24 @@ testPlayResumeAttemptsEnd ps =
       waitShownBadge a (Just 1)
       heldStoreReceipts a `shouldEventuallyReturn` 0
       dropOutput alice
+
+testMovedOutPlayResumeSetAside :: HasCallStack => TestParams -> IO ()
+testMovedOutPlayResumeSetAside ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice ->
+      withNewTestChatCfg ps bsClientCfg "bob" bobProfile $ \bob -> do
+        playSubscriptionRetired env alice
+        -- Play charges again, and bob's Restore moves the subscription before the retired device hands its token over
+        resumedAt <- addUTCTime 7200 <$> serviceNow env
+        setClockAt bsClock resumedAt
+        storeReports store $ subscriptionCheck SSRenewing $ Just (storeCharge "subscr-badge-supporter-month-02" (addUTCTime (-3600) resumedAt) 1) {chargeRef = "GPA.resumed"}
+        bob `send` restoredCmd 1 subscriptionPlay
+        waitShownBadge (chatController bob) (Just 1)
+        alice `send` ("/_badge purchase 1 " <> paymentArg subscriptionPlay)
+        last <$> ledgerTags (chatController alice) `shouldEventuallyReturn` Just "transferOut"
+        heldStoreReceipts (chatController alice) `shouldEventuallyReturn` 0
+        storeReceiptRetries (chatController alice) `shouldReturn` [0]
+        mapM_ dropOutput [alice, bob]
 
 testMovedOutPlayNotResumed :: HasCallStack => TestParams -> IO ()
 testMovedOutPlayNotResumed ps =

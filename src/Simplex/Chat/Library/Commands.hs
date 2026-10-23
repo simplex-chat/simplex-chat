@@ -5791,10 +5791,13 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
       user <- withStore $ \db -> getUser db userId
       p_ <- withStore' (`getBadgePurchase` purchaseId)
       newest_ <- withStore' (`getUserBadgePurchase` user)
+      movedOut <- withStore' (`purchaseMovedOut` purchaseId)
       now <- badgeNow
       let isNewest = maybe False (\UserBadgePurchase {badgePurchaseId} -> badgePurchaseId == purchaseId) newest_
       case p_ of
         Just UserBadgePurchase {shown = True} -> SROCredited Nothing <$ withStore' (`settleStoreReceipt` receiptId)
+        -- the service answers a payment moved to another key ended, so a resume of it never succeeds
+        _ | movedOut -> setAside
         Just p@UserBadgePurchase {purchaseKind = PKSubscription _}
           | isNewest, Just hold <- resumeHold now =<< decodeJSON payment -> resumeIssue ri delay user p hold now
         _ -> refuse receiptInvalid
@@ -5808,6 +5811,8 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
             _ -> failed ri delay failure retryAfter
       serviceAnswered ri delay refuse notCredited answer $ \(balance, stored) ->
         withStore' (`getLatestIssuedCredential` badgePurchaseId) >>= \case
+          -- the answer told this device of a move elsewhere, which no later attempt undoes
+          _ | paymentMovedOut balance -> setAside
           Just cred@(BadgeCredential _ _ _ info)
             | L.paidThrough balance > answeredAt && credentialExpiry cred > answeredAt && stored /= Just SSEnded -> do
                 user' <- withStore $ \db -> do
@@ -5827,7 +5832,7 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
       case (p_, decodeJSON payment) of
         (Just p@UserBadgePurchase {badgeType, shown = True}, Just payment')
           | Just tier <- tierChangeCharge now lastChargeAt_ payment', raisesTier badgeType tier -> upgradeIssue ri delay user p payment' tier now
-        _ -> SRODeferred <$ withStore' (`settleStoreReceipt` receiptId)
+        _ -> setAside
     -- the receipt's failures are recorded on the record, not as the purchase's failed renewal, as the badge shown still covers
     upgradeIssue ri delay user p@UserBadgePurchase {badgePurchaseId} payment' tier now = do
       failure_ <- newTVarIO Nothing
@@ -5853,8 +5858,9 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
     failedHeld ri delay failure retryAfter = do
       attempts <- withStore' (`getStoreReceiptFailures` receiptId)
       if attempts + 1 >= heldChargeAttempts
-        then SRODeferred <$ withStore' (`settleStoreReceipt` receiptId)
+        then setAside
         else failed ri delay failure retryAfter
+    setAside = SRODeferred <$ withStore' (`settleStoreReceipt` receiptId)
     receiptInvalid = BIFServiceError {code = BSEReceiptInvalid, retryable = False}
     refuse failure = SRORefused failure <$ withStore' (\db -> refuseStoreReceipt db receiptId failure)
     serviceFailure code retryAfter = BIFServiceError {code = boundedServiceErrorCode code, retryable = isJust retryAfter}
