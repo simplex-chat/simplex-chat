@@ -20,7 +20,7 @@ import StoreService.Names.Store (NamePhase (..), NameRegistration (..), PrepaidC
 import StoreService.Names.Turns (newTurns, withCodeTurn)
 import StoreService.Options (StoreServiceOpts (..))
 import StoreService.Orders (cancelOpenInvoice, expireOverdue)
-import StoreService.Service (ServiceState (..), checkDevChain, newServiceState, storeService, trustDevKeys)
+import StoreService.Service (ServiceState (..), checkDevChain, newServiceState, requireDevKeys, storeService, trustDevKeys)
 import StoreService.Store (ManagedGroup (..), getManagedGroup)
 import StoreService.Waiters (newWaiters)
 import Bots.StoreService.BotTests (badgeBotName, badgeCmdUsage, badgeProfile, badgeTypeOf, credentialOf, devKeysIni, entryOf, issueCode, issueRaw, mkStoreServiceOpts, newPurchaseKeys, operatorCmd, redeemWithQueue, requestObject, revokeRaw, serviceDbPrefix, shouldAnswerError, statementOf, stopStoreService, testIssuerKeyIdx, withStoreService)
@@ -166,8 +166,10 @@ testDevKeysNodeChain _ = withFakeEthNode $ \node@FakeEthNode {fnUrl} -> do
   Right withDev <- devKeysIni onNode 9 devSk [(9, devSk)]
   Right noDev <- devKeysIni onNode testIssuerKeyIdx devSk []
   checkDevChain (Just withDev) `shouldReturn` Right ()
+  M.member 9 . badgePublicKeys <$> requireDevKeys (Just withDev) testCfg `shouldReturn` True
   setFault node "eth_chainId" (Answers (J.String "0x1"))
   checkDevChain (Just withDev) `shouldReturn` Left "issuer.dev_keys is refused: the node's chain id is 1, not 31337"
+  requireDevKeys (Just withDev) testCfg `shouldThrow` (== ExitFailure 1)
   setFault node "eth_chainId" HttpFailure
   checkDevChain (Just withDev) `shouldReturn` Left "issuer.dev_keys is refused: the node's chain id could not be read"
   checkDevChain (Just noDev) `shouldReturn` Right ()

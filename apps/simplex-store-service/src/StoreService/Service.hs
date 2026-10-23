@@ -10,6 +10,7 @@ module StoreService.Service
     welcomeGetOpts,
     trustDevKeys,
     checkDevChain,
+    requireDevKeys,
     checkIssuerKey,
     storeService,
     storeServiceCLI,
