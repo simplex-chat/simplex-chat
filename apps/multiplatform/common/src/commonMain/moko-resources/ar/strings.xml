@@ -2823,4 +2823,10 @@
     <string name="keystore_key_storage_strongbox">عنصر الأمن</string>
     <string name="server_has_too_many_hosts">يحتوي الخادم %1$s على أكثر من اسم مضيفين.</string>
     <string name="badges_shown_on_your_profile">كما هو موضح في ملف تعريفك</string>
+    <string name="emoji_category_smileys">الرموز التعبيرية والعواطف</string>
+    <string name="keystore_key_storage_software">البرمجية</string>
+    <string name="badges_credential_status">الحالة</string>
+    <string name="storage">التخزين</string>
+    <string name="badges_level_legend_file_storage">يُخزن لمدة 21 يومًا</string>
+    <string name="badges_level_supporter_file_storage">يُخزن لمدة 7 أيام</string>
 </resources>
