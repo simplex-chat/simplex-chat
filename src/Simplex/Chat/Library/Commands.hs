@@ -5756,12 +5756,15 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
       _ -> pure ()
   where
     credit ri delay cmd =
-      tryAllErrors (attempt cmd) >>= \case
-        Right (Right (present_, _)) -> pure $ SROCredited present_
-        Right (Left (code, retryAfter))
-          | storeReceiptRefused code -> refuse $ serviceFailure code retryAfter
-          | otherwise -> failed ri delay (serviceFailure code retryAfter) retryAfter
-        Left e -> failed ri delay (badgeIssueFailure e) Nothing
+      tryAllErrors (attempt cmd) >>= \answer -> serviceAnswered ri delay refuse id answer $ \(present_, _) -> pure $ SROCredited present_
+    -- retried wraps only a service error that is not a refusal: a thrown error is recorded as a failure as it is
+    serviceAnswered :: RetryInterval -> Int64 -> (BadgeIssueFailure -> CM StoreReceiptOutcome) -> (CM StoreReceiptOutcome -> CM StoreReceiptOutcome) -> Either ChatError (Either (BadgeServiceErrorCode, Maybe Word32) r) -> (r -> CM StoreReceiptOutcome) -> CM StoreReceiptOutcome
+    serviceAnswered ri delay refused retried answer answered = case answer of
+      Left e -> failed ri delay (badgeIssueFailure e) Nothing
+      Right (Left (code, retryAfter))
+        | storeReceiptRefused code -> refused $ serviceFailure code retryAfter
+        | otherwise -> retried $ failed ri delay (serviceFailure code retryAfter) retryAfter
+      Right (Right r) -> answered r
     purchaseCmd payment' = BSCPurchaseBadge {masterKey, payment = payment', upgrade = Nothing}
     transferCmd payment' = BSCTransferBadge {masterKey, payment = payment'}
     attempt cmd = do
@@ -5791,22 +5794,17 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
             RHPurchasedAt purchasedAt -> pure $ resumeHoldEnded answeredAt purchasedAt
             RHAttempts -> (>= playResumeAttempts) . (+ 1) <$> withStore' (`getStoreReceiptFailures` receiptId)
           notCredited holding = holdEnded >>= \ended -> if ended then refuse receiptInvalid else holding
-      case answer of
-        Left e -> failed ri delay (badgeIssueFailure e) Nothing
-        Right (Left (code, retryAfter))
-          | storeReceiptRefused code -> refuse $ serviceFailure code retryAfter
-          | otherwise -> notCredited $ failed ri delay (serviceFailure code retryAfter) retryAfter
-        Right (Right (balance, stored)) ->
-          withStore' (`getLatestIssuedCredential` badgePurchaseId) >>= \case
-            Just cred@(BadgeCredential _ _ _ info)
-              | L.paidThrough balance > answeredAt && credentialExpiry cred > answeredAt && stored /= Just SSEnded -> do
-                  user' <- withStore $ \db -> do
-                    liftIO $ showResumedPurchase db user receiptId badgePurchaseId stored
-                    setUserBadge db user (Just $ OwnBadge cred (mkBadgeStatus answeredAt (Just True) info))
-                  lift $ startBadgeWork user'
-                  pure $ SROCredited (Just user')
-            -- the service's own check interval
-            _ -> notCredited $ failed ri delay BIFServiceError {code = BSEPaymentPending, retryable = True} (Just 3600)
+      serviceAnswered ri delay refuse notCredited answer $ \(balance, stored) ->
+        withStore' (`getLatestIssuedCredential` badgePurchaseId) >>= \case
+          Just cred@(BadgeCredential _ _ _ info)
+            | L.paidThrough balance > answeredAt && credentialExpiry cred > answeredAt && stored /= Just SSEnded -> do
+                user' <- withStore $ \db -> do
+                  liftIO $ showChargedPurchase db user receiptId badgePurchaseId stored
+                  setUserBadge db user (Just $ OwnBadge cred (mkBadgeStatus answeredAt (Just True) info))
+                lift $ startBadgeWork user'
+                pure $ SROCredited (Just user')
+          -- the service's own check interval
+          _ -> notCredited $ failed ri delay BIFServiceError {code = BSEPaymentPending, retryable = True} (Just 3600)
     -- Settles with nothing to announce: past the window, or to a tier that is not higher, the renewal check grants the
     -- change, and a badge no longer shown is resumed by the charge's next hand-over.
     changeTier ri delay purchaseId = do
@@ -5824,18 +5822,14 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
       answer <- tryAllErrors $ requireBadgeService >>= \sendTarget -> sendBadgeIssue sendTarget userId p upgradeCmd (atomically . writeTVar failure_ . Just) now
       answeredAt <- badgeNow
       recorded_ <- readTVarIO failure_
-      case answer of
-        Left e -> failed ri delay (badgeIssueFailure e) Nothing
-        Right (Left (code, retryAfter))
-          | storeReceiptRefused code -> SRODeferred <$ withStore' (\db -> refuseStoreReceipt db receiptId $ serviceFailure code retryAfter)
-          | otherwise -> failed ri delay (serviceFailure code retryAfter) retryAfter
-        Right (Right _) | Just failure <- recorded_ -> failed ri delay failure Nothing
-        Right (Right (_, stored)) ->
+      serviceAnswered ri delay (\failure -> SRODeferred <$ withStore' (\db -> refuseStoreReceipt db receiptId failure)) id answer $ \case
+        _ | Just failure <- recorded_ -> failed ri delay failure Nothing
+        (_, stored) ->
           withStore' (`getLatestIssuedCredential` badgePurchaseId) >>= \case
             Just cred@(BadgeCredential _ _ _ info@BadgeInfo {badgeType = issuedType})
               | issuedType == tier && credentialExpiry cred > answeredAt && stored /= Just SSEnded -> do
                   user' <- withStore $ \db -> do
-                    liftIO $ showTierChangedPurchase db user receiptId badgePurchaseId stored
+                    liftIO $ showChargedPurchase db user receiptId badgePurchaseId stored
                     setUserBadge db user (Just $ OwnBadge cred (mkBadgeStatus answeredAt (Just True) info))
                   lift $ startBadgeWork user'
                   pure $ SROCredited (Just user')

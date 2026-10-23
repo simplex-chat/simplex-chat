@@ -40,8 +40,7 @@ module Simplex.Chat.Store.Badges
     refuseStoreReceipt,
     settleStoreReceipt,
     reholdStoreReceipt,
-    showResumedPurchase,
-    showTierChangedPurchase,
+    showChargedPurchase,
     deleteUnfundedStoreReceipts,
     deleteBadgeCodeRedemption,
     createStashBadgePurchase,
@@ -431,18 +430,10 @@ reholdStoreReceipt db owner receiptId badgePurchaseId holdKind payment now = do
         "UPDATE badge_store_receipts SET payment = ?, next_attempt_at = ?, retry_delay = NULL, retry_count = 0, credit_error = NULL, hold_kind = ? WHERE badge_store_receipt_id = ? AND payment IS NULL"
         (safeDecodeUtf8 . LB.toStrict $ J.encode payment, now, holdKind, receiptId)
 
--- | A resume's credit. The purchase keeps only the state the answer stored, so an ended state from before does not
--- retire it again.
-showResumedPurchase :: DB.Connection -> User -> Int64 -> Int64 -> Maybe SubscriptionState -> IO ()
-showResumedPurchase db User {userId} receiptId badgePurchaseId state = do
-  settleStoreReceipt db receiptId
-  DB.execute db "UPDATE badge_purchases SET subscription_status = ? WHERE badge_purchase_id = ?" (state, badgePurchaseId)
-  DB.execute db "UPDATE users SET shown_badge_id = ? WHERE user_id = ?" (badgePurchaseId, userId)
-
--- | A tier change's credit: shows the purchase again if a retire cleared it meanwhile, and keeps only the state the
--- answer stored, as a resume does, since its charge disproves an ended or a billing retry stored before.
-showTierChangedPurchase :: DB.Connection -> User -> Int64 -> Int64 -> Maybe SubscriptionState -> IO ()
-showTierChangedPurchase db User {userId} receiptId badgePurchaseId state = do
+-- | A resume's or a tier change's credit: shows the purchase, again if a retire cleared it meanwhile, and keeps only the
+-- state the answer stored, since the charge disproves an ended or a billing retry stored before.
+showChargedPurchase :: DB.Connection -> User -> Int64 -> Int64 -> Maybe SubscriptionState -> IO ()
+showChargedPurchase db User {userId} receiptId badgePurchaseId state = do
   settleStoreReceipt db receiptId
   DB.execute db "UPDATE badge_purchases SET subscription_status = ? WHERE badge_purchase_id = ?" (state, badgePurchaseId)
   DB.execute db "UPDATE users SET shown_badge_id = ? WHERE user_id = ?" (badgePurchaseId, userId)
