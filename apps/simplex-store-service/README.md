@@ -950,7 +950,8 @@ payment against this service in Chromium, as they run against the webapp's mock.
 
 The code server answers the cases' `POST /control/code` with the issued codes, the reset of
 `/control/search` that `search.spec.ts` sends after each case as done, and any other `/control/` with
-`501`, which fails the case that sends it. It passes `/api/` to the service.
+`501`, which fails the case that sends it. It passes `/api/` to the service with the case's
+`X-Forwarded-For`.
 
 It needs bash 5.1 or later (for `wait -n -p`), `cabal` (for the default `STORE_SERVICE_BIN`),
 Foundry's anvil, Node.js 22.18 or later (which runs the webapp's `dev/deploy.ts` as TypeScript, as its
@@ -972,12 +973,13 @@ WEBAPP_DIR=../simplex.domains/webapp ENS_CONTRACTS_DIR=<ens-contracts> ANVIL=<an
 - `SERVICE_PORT`, `CODES_PORT`: the service's and the code server's ports (8180 and 8199).
 - Arguments, if given, are passed to `playwright test` in place of the default cases' title filter.
 
-The default cases cover search answers for an available name, Check your code, code orders to
-`registered`, and Edit links, whose case answers its own name and record requests in the page.
-"search answers every kind of name" is not among them: it expects the profiles the mock makes up for
-the deployment's links, which name no real chat, and it takes the chain down with `/control/search`.
+The default cases cover search answers for an available name, Check your code and its rate-limit
+countdown, code orders to `registered` with and without links, a code order's name code restored and
+revealed in another browser, Edit links on a name registered with a code (the other Edit links case
+answers its own name and record requests in the page), and a link whose data cannot be read now. "search answers every kind of name" is not among them: it takes the chain down
+with `/control/search`.
 
-The cases all run from one client, so a longer list meets the service's per-client limits, which the
-mock does not enforce; the 10 code checks a minute (`codeLimit` in `StoreService/Web/Http.hs`) come
-first. The script stops everything it started, deletes its folder when the cases pass, and keeps it
-with the logs, the ini and Playwright's results when they fail.
+Each case sends its own `X-Forwarded-For`, and the ini sets `trust_forwarded_for = on`, so each case
+is its own client for the service's per-client limits, as for the mock's code limit. The script stops
+everything it started, deletes its folder when the cases pass, and keeps it with the logs, the ini and
+Playwright's results when they fail.
