@@ -2356,6 +2356,17 @@ fun BoxScope.ChatItemsList(
           )
         }
 
+        val subscriberCount = if (chatInfo is ChatInfo.Group && chatInfo.groupInfo.nextConnectPrepared && chatInfo.groupInfo.useRelays) chatInfo.groupInfo.groupSummary.publicMemberCount else null
+        if (subscriberCount != null) {
+          Text(
+            subscriberCountStr(subscriberCount),
+            style = MaterialTheme.typography.body2,
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colors.secondary,
+            modifier = Modifier.padding(top = DEFAULT_PADDING_HALF)
+          )
+        }
+
         ProfileDescriptionText(
           shortDescr = chatInfo.shortDescr,
           description = chatInfo.profileDescription,

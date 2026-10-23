@@ -4325,6 +4325,14 @@ Plan:
 SEARCH user_contact_links USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
+        SELECT via_contact_uri
+        FROM connections
+        WHERE user_id = ? AND via_short_link_contact = ? AND via_contact_uri IS NOT NULL LIMIT 1
+      
+Plan:
+SEARCH connections USING INDEX idx_connections_to_subscribe (user_id=?)
+
+Query: 
         UPDATE chat_items
         SET item_deleted = 1, item_deleted_ts = ?, item_deleted_by_group_member_id = ?, item_content = ?, item_text = ?, updated_at = ?
         WHERE user_id = ? AND group_id = ? AND chat_item_id = ?

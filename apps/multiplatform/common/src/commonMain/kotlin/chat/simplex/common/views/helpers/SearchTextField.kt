@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import dev.icerock.moko.resources.compose.painterResource
@@ -37,6 +38,7 @@ fun SearchTextField(
   enabled: Boolean = true,
   trailingContent: @Composable (() -> Unit)? = null,
   reducedCloseButtonPadding: Dp = 8.dp,
+  onSearch: (() -> Unit)? = null,
   onValueChange: (String) -> Unit
 ) {
   val focusRequester = remember { FocusRequester() }
@@ -90,6 +92,14 @@ fun SearchTextField(
       .background(colors.backgroundColor(enabled).value, shape)
       .indicatorLine(enabled, false, interactionSource, colors)
       .focusRequester(focusRequester)
+      .onPreviewKeyEvent {
+        if (onSearch != null && appPlatform.isDesktop && (it.key == Key.Enter || it.key == Key.NumPadEnter) && it.type == KeyEventType.KeyUp) {
+          onSearch()
+          true
+        } else {
+          false
+        }
+      }
       .padding(padding)
       .defaultMinSize(
         minWidth = TextFieldDefaults.MinWidth,
@@ -102,7 +112,13 @@ fun SearchTextField(
     enabled = rememberUpdatedState(enabled).value,
     cursorBrush = SolidColor(colors.cursorColor(false).value),
     visualTransformation = VisualTransformation.None,
-    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None, autoCorrect = false, imeAction = ImeAction.Search),
+    keyboardActions = KeyboardActions(onSearch = if (onSearch != null && appPlatform.isAndroid) {
+      {
+        keyboard?.hide()
+        onSearch()
+      }
+    } else null),
     singleLine = true,
     textStyle = textStyle,
     interactionSource = interactionSource,

@@ -234,6 +234,15 @@ jobs:
         timeout-minutes: 30
         run: scripts/ci/desktop-linux/backend.sh start ~/backend/${{ env.BACKEND_PKG }} "$RUNNER_TEMP/backend"
 
+      - name: Point the app at the test directory
+        id: link
+        if: steps.backend.outcome == 'success'
+        run: |
+          link=$(cat "$RUNNER_TEMP/backend/directory-link")
+          file=apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/model/DirectorySearch.kt
+          sed -i "s|^const val DIRECTORY_SERVICE_LINK = \".*\"$|const val DIRECTORY_SERVICE_LINK = \"$link\"|" "$file"
+          grep -F "const val DIRECTORY_SERVICE_LINK = \"$link\"" "$file"
+
       # the app and its tests are still built when the backend fails
       - name: Setup Java
         if: ${{ !cancelled() && steps.core.outcome == 'success' }}
@@ -242,12 +251,13 @@ jobs:
           distribution: corretto
           java-version: ${{ env.JAVA_VER }}
 
+      # the Kotlin compiler daemon otherwise gets gradle.properties' 2 GB, which compiling :common runs out of
       - name: Build app
         id: build
         if: ${{ !cancelled() && steps.core.outcome == 'success' }}
         working-directory: apps/multiplatform
         run: |
-          ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets :desktop:createDistributable
+          ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets -Pkotlin.daemon.jvmargs=-Xmx4g :desktop:createDistributable
           app=release/main/app/simplex
           ls -la "$app/bin" "$app/lib/app/resources"
           du -sh "$app"
@@ -271,26 +281,42 @@ jobs:
       - name: Run desktop tests
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         working-directory: apps/multiplatform
-        run: ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets :common:desktopTest
+        run: ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets -Pkotlin.daemon.jvmargs=-Xmx4g :common:desktopTest
 
       - name: Report desktop tests
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: scripts/ci/desktop-linux/test-summary.py apps/multiplatform/common/build/test-results/desktopTest
 
       - name: Run smoke test
-        if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.backend.outcome != 'failure' }}
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.backend.outcome != 'failure' && steps.link.outcome != 'failure' }}
         env:
           BACKEND: ${{ steps.backend.outcome }}
         run: |
           if [ "$BACKEND" = success ]; then
             export NAMES_SERVER=$(cat "$RUNNER_TEMP/backend/names-server")
-            cases=backend
+            cases=search
           fi
           scripts/ci/desktop-linux/smoke-test.sh apps/multiplatform/release/main/app/simplex "$RUNNER_TEMP/smoke-test" ${cases:-}
 
       - name: Stop test backend
+        id: stop-backend
         if: ${{ !cancelled() && steps.backend.outcome != 'skipped' }}
         run: scripts/ci/desktop-linux/backend.sh stop "$RUNNER_TEMP/backend"
+
+      # the app points at this backend's directory, so the Claude job starts this backend again rather than a new one
+      - name: Pack backend state
+        if: ${{ !cancelled() && steps.backend.outcome == 'success' && steps.stop-backend.outcome == 'success' && needs.plan.outputs.claude-backend == 'yes' }}
+        run: tar -czf "$RUNNER_TEMP/backend-state.tar.gz" --exclude=./bin -C "$RUNNER_TEMP/backend" .
+
+      - name: Upload backend state
+        if: ${{ !cancelled() && steps.backend.outcome == 'success' && steps.stop-backend.outcome == 'success' && needs.plan.outputs.claude-backend == 'yes' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: desktop-backend-state
+          path: ${{ runner.temp }}/backend-state.tar.gz
+          compression-level: 0
+          retention-days: 1
+          if-no-files-found: error
 
       - name: Upload smoke test results
         if: ${{ !cancelled() }}
@@ -372,11 +398,21 @@ jobs:
           run-id: ${{ needs.plan.outputs.backend-run || github.run_id }}
           github-token: ${{ github.token }}
 
-      - name: Start test backend
+      - name: Download backend state
+        if: needs.plan.outputs.claude-backend == 'yes'
+        uses: actions/download-artifact@v8
+        with:
+          name: desktop-backend-state
+          path: ${{ runner.temp }}
+
+      - name: Start the app job's test backend again
         id: backend
         if: needs.plan.outputs.claude-backend == 'yes'
-        timeout-minutes: 30
-        run: scripts/ci/desktop-linux/backend.sh start ~/backend/${{ env.BACKEND_PKG }} "$RUNNER_TEMP/backend"
+        timeout-minutes: 10
+        run: |
+          mkdir -p "$RUNNER_TEMP/backend"
+          tar -xzf "$RUNNER_TEMP/backend-state.tar.gz" -C "$RUNNER_TEMP/backend"
+          scripts/ci/desktop-linux/backend.sh resume ~/backend/${{ env.BACKEND_PKG }} "$RUNNER_TEMP/backend"
 
       # ui goes on every shell's PATH, where Claude's Bash tool finds it whatever environment it builds
       - name: Install Claude Code and the ui command
@@ -387,7 +423,14 @@ jobs:
           sudo chmod +x /usr/local/bin/ui
 
       - name: Start the app
-        run: scripts/ci/desktop-linux/smoke-test.sh "$RUNNER_TEMP/app/simplex" "$RUNNER_TEMP/claude-test/screens" start
+        env:
+          BACKEND: ${{ steps.backend.outcome }}
+        run: |
+          if [ "$BACKEND" = success ]; then
+            export NAMES_SERVER=$(cat "$RUNNER_TEMP/backend/names-server")
+            cases=setup
+          fi
+          scripts/ci/desktop-linux/smoke-test.sh "$RUNNER_TEMP/app/simplex" "$RUNNER_TEMP/claude-test/screens" ${cases:-start}
 
       # Claude's Bash is limited to single ui commands by the guard hook in claude-test.sh. Claude Code's credential
       # scrub stays off: on Linux it forces its whole Bash sandbox (bubblewrap, socat), which ui isn't set up for.
@@ -396,7 +439,8 @@ jobs:
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: 1
-        run: scripts/ci/desktop-linux/claude-test.sh "$RUNNER_TEMP/claude-test" "$RUNNER_TEMP/claude-transcript.jsonl"
+          TEST_PROMPT: scripts/ci/desktop-linux/${{ needs.plan.outputs.claude-backend == 'yes' && 'claude-search.md' || 'claude-test.md' }}
+        run: scripts/ci/desktop-linux/claude-test.sh "$RUNNER_TEMP/claude-test" "$RUNNER_TEMP/claude-transcript.jsonl" "$TEST_PROMPT"
 
       - name: Report Claude usage
         if: ${{ !cancelled() && steps.claude.outcome != 'skipped' }}

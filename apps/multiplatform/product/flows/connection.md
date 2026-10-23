@@ -197,9 +197,11 @@ suspend fun apiRejectContactRequest(rh: Long?, contactReqId: Long): Contact?
 ### 6.1 ConnectProgressManager
 
 ```kotlin
+enum class ConnectProgressOwner { Connect, DirectorySearch }
+
 object ConnectProgressManager {
-  fun startConnectProgress(text: String, onCancel: (() -> Unit)? = null)
-  fun stopConnectProgress()
+  fun startConnectProgress(text: String, owner: ConnectProgressOwner = ConnectProgressOwner.Connect, onCancel: (() -> Unit)? = null)
+  fun stopConnectProgress(owner: ConnectProgressOwner = ConnectProgressOwner.Connect)
   fun cancelConnectProgress()
 }
 ```
@@ -208,6 +210,7 @@ object ConnectProgressManager {
 2. After a 1-second delay, a progress indicator appears if the operation is still in progress.
 3. On completion (success or failure), `stopConnectProgress` is called.
 4. The user can cancel via `cancelConnectProgress`.
+5. The online search shares the spinner with owner `DirectorySearch`: its `startConnectProgress` does nothing while a connection owns the spinner, and a `stopConnectProgress` from an owner that does not hold the spinner is ignored. `planAndConnect` calls `cancelConnectProgress()` first, so tapping a search result cancels the search before the connection takes the spinner.
 
 ### 6.2 Pending Connection States
 
@@ -228,6 +231,6 @@ While connecting, the chat list shows a `PendingContactConnection` with status:
 | `InvitationLinkPlan` | `model/SimpleXAPI.kt` | Ok, OwnLink, Connecting, Known |
 | `ContactAddressPlan` | `model/SimpleXAPI.kt` | Ok, OwnLink, ConnectingConfirmReconnect, ConnectingProhibit, Known |
 | `GroupLinkPlan` | `model/SimpleXAPI.kt` | Ok, OwnLink, ConnectingConfirmReconnect, ConnectingProhibit, Known |
-| `ConnectProgressManager` | `model/ChatModel.kt` | Manages connect progress indicator with timeout |
+| `ConnectProgressManager` | `model/ChatModel.kt` | Manages connect progress indicator with timeout, owned by a connection or the online search (`ConnectProgressOwner`) |
 | `Contact` | `model/ChatModel.kt` | Established contact with profile, connection status |
 | `ContactRequest` | `model/ChatModel.kt` | Pending inbound contact request |

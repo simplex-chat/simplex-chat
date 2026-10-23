@@ -1040,7 +1040,28 @@ func apiChangeConnectionUser(connId: Int64, userId: Int64) async throws -> Pendi
     if let r { throw r.unexpected } else { return nil }
 }
 
-func apiConnectPlan(connLink: String, resolveMode: PlanResolveMode = .unknown, linkOwnerSig: LinkOwnerSig? = nil, inProgress: BoxedValue<Bool>) async -> ConnectionPlanResult? {
+// Blocks for up to the timeout, unlike most API calls here.
+func apiSearchDirectory(_ text: String, cursor: JSONValue?) async -> DirectorySearchResults? {
+    guard let userId = ChatModel.shared.currentUser?.userId else {
+        logger.error("apiSearchDirectory: no current user")
+        return nil
+    }
+    let req = directorySearchRequestJSON(text, cursor)
+    let r: APIResult<ChatResponse1> = await chatApiSendCmd(
+        .apiSendServiceRequest(userId: userId, target: DIRECTORY_SERVICE_LINK, timeoutSec: DIRECTORY_SEARCH_TIMEOUT_SEC, requestJSON: req)
+    )
+    if case let .result(.serviceResponse(_, responseData)) = r {
+        return parseDirectorySearchResponse(responseData)
+    }
+    logger.error("apiSearchDirectory error: \(String(describing: r))")
+    return nil
+}
+
+enum ConnectPlanFailure {
+    case alert, log
+}
+
+func apiConnectPlan(connLink: String, resolveMode: PlanResolveMode = .unknown, linkOwnerSig: LinkOwnerSig? = nil, inProgress: BoxedValue<Bool>, onFailure: ConnectPlanFailure = .alert) async -> ConnectionPlanResult? {
     guard let userId = ChatModel.shared.currentUser?.userId else {
         logger.error("apiConnectPlan: no current user")
         return nil
@@ -1051,7 +1072,12 @@ func apiConnectPlan(connLink: String, resolveMode: PlanResolveMode = .unknown, l
     }
     // a .never (typing) search that matches nothing locally is not an error to surface
     if case .error(.error(.notResolvedLocally)) = r { return nil }
-    if let r { await apiConnectResponseAlert(r) }
+    if let r {
+        switch onFailure {
+        case .alert: await apiConnectResponseAlert(r)
+        case .log: logger.debug("apiConnectPlan: \(String(describing: r))")
+        }
+    }
     return nil
 }
 

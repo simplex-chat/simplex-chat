@@ -15,6 +15,7 @@ Source: `common/src/commonMain/kotlin/chat/simplex/common/App.kt` (470 lines)
 7. [Authentication Gate](#7-authentication-gate)
 8. [Onboarding Flow](#8-onboarding-flow)
 9. [Source Files](#9-source-files)
+10. [New Chat Online Search](#10-new-chat-online-search)
 
 ---
 
@@ -27,10 +28,10 @@ SimpleX Chat navigation is a platform-adaptive system implemented in `App.kt`. T
 ## 1. Overview
 
 ```
-AppScreen (line 46)
+AppScreen (line 48)
 +-- SimpleXTheme
     +-- Surface
-        +-- MainScreen (line 82)
+        +-- MainScreen (line 85)
             |-- [Migration in progress]     -> DefaultProgressView
             |-- [Database opening]          -> DefaultProgressView
             |-- [Database error]            -> DatabaseErrorView
@@ -39,11 +40,11 @@ AppScreen (line 46)
             |-- [Onboarding complete]
             |   |-- [Android]
             |   |   +-- AndroidWrapInCallLayout
-            |   |       +-- AndroidScreen (line 293)
+            |   |       +-- AndroidScreen (line 313)
             |   |           |-- StartPartOfScreen (ChatListView)
             |   |           +-- ChatView (slide-in panel)
             |   +-- [Desktop]
-            |       +-- DesktopScreen (line 406)
+            |       +-- DesktopScreen (line 429)
             |           |-- StartPartOfScreen + UserPicker (left column)
             |           |-- ModalManager.start (overlay on left)
             |           |-- CenterPartOfScreen / ChatView (center column)
@@ -59,7 +60,7 @@ AppScreen (line 46)
 
 ## 2. AppScreen Composable
 
-**Location:** [`App.kt#L47`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L47)
+**Location:** [`App.kt#L48`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L48)
 
 ```kotlin
 @Composable
@@ -79,7 +80,7 @@ fun AppScreen()
 
 ## 3. MainScreen
 
-**Location:** [`App.kt#L84`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L84)
+**Location:** [`App.kt#L85`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L85)
 
 ```kotlin
 @Composable
@@ -100,7 +101,7 @@ fun MainScreen()
 | 6 | `onboarding == OnboardingComplete` | Platform-specific main screen |
 | 7 | Other onboarding stages | `AnimatedContent` with stage-specific views |
 
-### Onboarding Complete Branch (line ~156)
+### Onboarding Complete Branch (line ~157)
 
 When onboarding is complete:
 
@@ -109,11 +110,11 @@ When onboarding is complete:
 
 ### URL Deep Link
 
-On Android, [`processIntent()`](../../android/src/main/java/chat/simplex/app/MainActivity.kt#L144) puts the URI of a VIEW intent into `chatModel.appOpenUrl`. Once onboarding is complete, a `LaunchedEffect` in `MainScreen` ([`App.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L241)) hands it to [`connectIfOpenedViaUri()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L775), which re-queues it while no profile is active.
+On Android, [`processIntent()`](../../android/src/main/java/chat/simplex/app/MainActivity.kt#L144) puts the URI of a VIEW intent into `chatModel.appOpenUrl`. Once onboarding is complete, a `LaunchedEffect` in `MainScreen` ([`App.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L241)) hands it to [`connectIfOpenedViaUri()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L878), which re-queues it while no profile is active.
 
-On desktop the same state is set from three places, for `simplexchat:` app links and `simplex:` connection links alike. [`isAcceptedLink()`](../../common/src/desktopMain/kotlin/chat/simplex/common/AppLinks.kt#L12) accepts either scheme within 8192 bytes in UTF-8, which leaves room for a one-time link with its post-quantum key (about 2 KB) and for a second such key. A link that starts the app arrives as the only argument of [`main()`](../../desktop/src/jvmMain/kotlin/chat/simplex/desktop/Main.kt#L26) on Windows and Linux ([`linkFromArgs()`](../../common/src/desktopMain/kotlin/chat/simplex/common/AppLinks.kt#L15)). A link for an app that is already running starts a second process, which writes it into the single-instance signal file ([`signalRunningInstance()`](../../common/src/desktopMain/kotlin/chat/simplex/common/SingleInstance.kt#L138)); the running instance renames the file before reading and deleting it ([`takeSignal()`](../../common/src/desktopMain/kotlin/chat/simplex/common/SingleInstance.kt#L159)), retrying once if another program holds the file open, handles a signal already present when its watcher ([`watchShowSignals()`](../../common/src/desktopMain/kotlin/chat/simplex/common/SingleInstance.kt#L247)) starts unless it predates the lock attempt by more than 2 s ([`deleteStaleSignalFiles()`](../../common/src/desktopMain/kotlin/chat/simplex/common/SingleInstance.kt#L116)), and passes the link to [`openDesktopLink()`](../../common/src/desktopMain/kotlin/chat/simplex/common/AppLinks.kt#L19), which queues it for the active host and shows the window. If the running instance does not take the signal within 1 s, the second process asks whether to start anyway ([`startDespiteRunningInstance()`](../../common/src/desktopMain/kotlin/chat/simplex/common/SingleInstance.kt#L93)); on *Yes* it withdraws the signal first and exits instead if the running instance has recovered and taken it, so the link opens once. On macOS the link is an Apple Event handled by [`installOpenUriHandler()`](../../common/src/desktopMain/kotlin/chat/simplex/common/AppLinks.kt#L25). From there `connectIfOpenedViaUri()` handles the link as on Android: a connection link goes to `planAndConnect()`, which asks before connecting. Both schemes are declared by the macOS Info.plist, the deb, AppImage and Flatpak desktop entries, and at runtime by [`registerLinkSchemes()`](../../common/src/desktopMain/kotlin/chat/simplex/common/platform/AppLinkScheme.desktop.kt#L67) (HKCU on Windows, a hidden desktop entry for an AppImage). Only `simplexchat:` is checked: [`appLinkSchemeRegistered()`](../../common/src/desktopMain/kotlin/chat/simplex/common/platform/AppLinkScheme.desktop.kt#L65) decides the badge page's ending through [`badgePageUrl()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/badges/BadgeStore.kt#L53): `app=true` when a link is expected to reach this installation, otherwise `app=desktop` with the Redeem code screen opened beside the browser. [`desktopInstallation()`](../../common/src/desktopMain/kotlin/chat/simplex/common/platform/AppLinkScheme.desktop.kt#L74) tells the installation kind apart. A packaged macOS app and a Flatpak count as registered without a check, since a Flatpak cannot query the host's default handler ([GAP](../../product/gaps.md#gap-08-desktop-app-link-registration)); Windows, where each scheme key is paired with a `SimpleX.<scheme>` ProgId named in `Capabilities` and listed in `RegisteredApplications`, so the app appears in Windows default-app settings for each scheme that no other program holds, when the shell (`AssocQueryStringW`) reports this exe as the program that opens `simplexchat:` links, which accounts for any app picked in settings ([`registerWindowsSchemes()`](../../common/src/desktopMain/kotlin/chat/simplex/common/platform/AppLinkScheme.desktop.kt#L168)); an AppImage ([`registerAppImageScheme()`](../../common/src/desktopMain/kotlin/chat/simplex/common/platform/AppLinkScheme.desktop.kt#L299)) or deb when its own desktop entry is the default `simplexchat:` handler. Registration takes a scheme only when no handler is set or the current one is no longer installed: another installed program, such as a deb beside an AppImage or on Windows a per-user or machine-wide handler, keeps it, while this app still repairs its own ProgId unless another installed copy holds it, and the page then ends with `app=desktop`. An AppImage is not registered ([`onlyOwnerCanReplace()`](../../common/src/desktopMain/kotlin/chat/simplex/common/platform/AppLinkScheme.desktop.kt#L284)) when its file or any directory above it belongs to a user other than this user or root, or has permission bits that let others write it (POSIX ACLs are not inspected), or when its path contains a line break or `%`. An unpackaged run registers nothing.
+On desktop the same state is set from three places, for `simplexchat:` app links and `simplex:` connection links alike. [`isAcceptedLink()`](../../common/src/desktopMain/kotlin/chat/simplex/common/AppLinks.kt#L12) accepts either scheme within 8192 bytes in UTF-8, which leaves room for a one-time link with its post-quantum key (about 2 KB) and for a second such key. A link that starts the app arrives as the only argument of [`main()`](../../desktop/src/jvmMain/kotlin/chat/simplex/desktop/Main.kt#L26) on Windows and Linux ([`linkFromArgs()`](../../common/src/desktopMain/kotlin/chat/simplex/common/AppLinks.kt#L15)). A link for an app that is already running starts a second process, which writes it into the single-instance signal file ([`signalRunningInstance()`](../../common/src/desktopMain/kotlin/chat/simplex/common/SingleInstance.kt#L138)); the running instance renames the file before reading and deleting it ([`takeSignal()`](../../common/src/desktopMain/kotlin/chat/simplex/common/SingleInstance.kt#L159)), retrying once if another program holds the file open, handles a signal already present when its watcher ([`watchShowSignals()`](../../common/src/desktopMain/kotlin/chat/simplex/common/SingleInstance.kt#L247)) starts unless it predates the lock attempt by more than 2 s ([`deleteStaleSignalFiles()`](../../common/src/desktopMain/kotlin/chat/simplex/common/SingleInstance.kt#L116)), and passes the link to [`openDesktopLink()`](../../common/src/desktopMain/kotlin/chat/simplex/common/AppLinks.kt#L19), which queues it for the active host and shows the window. If the running instance does not take the signal within 1 s, the second process asks whether to start anyway ([`startDespiteRunningInstance()`](../../common/src/desktopMain/kotlin/chat/simplex/common/SingleInstance.kt#L93)); on *Yes* it withdraws the signal first and exits instead if the running instance has recovered and taken it, so the link opens once. On macOS the link is an Apple Event handled by [`installOpenUriHandler()`](../../common/src/desktopMain/kotlin/chat/simplex/common/AppLinks.kt#L25). From there `connectIfOpenedViaUri()` handles the link as on Android: a connection link goes to `planAndConnect()`, which asks before connecting. Both schemes are declared by the macOS Info.plist, the deb, AppImage and Flatpak desktop entries, and at runtime by [`registerLinkSchemes()`](../../common/src/desktopMain/kotlin/chat/simplex/common/platform/AppLinkScheme.desktop.kt#L67) (HKCU on Windows, a hidden desktop entry for an AppImage). Only `simplexchat:` is checked: [`appLinkSchemeRegistered()`](../../common/src/desktopMain/kotlin/chat/simplex/common/platform/AppLinkScheme.desktop.kt#L65) decides the badge page's ending through [`badgePageUrl()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/badges/BadgeStore.kt#L55): `app=true` when a link is expected to reach this installation, otherwise `app=desktop` with the Redeem code screen opened beside the browser. [`desktopInstallation()`](../../common/src/desktopMain/kotlin/chat/simplex/common/platform/AppLinkScheme.desktop.kt#L74) tells the installation kind apart. A packaged macOS app and a Flatpak count as registered without a check, since a Flatpak cannot query the host's default handler ([GAP](../../product/gaps.md#gap-08-desktop-app-link-registration)); Windows, where each scheme key is paired with a `SimpleX.<scheme>` ProgId named in `Capabilities` and listed in `RegisteredApplications`, so the app appears in Windows default-app settings for each scheme that no other program holds, when the shell (`AssocQueryStringW`) reports this exe as the program that opens `simplexchat:` links, which accounts for any app picked in settings ([`registerWindowsSchemes()`](../../common/src/desktopMain/kotlin/chat/simplex/common/platform/AppLinkScheme.desktop.kt#L168)); an AppImage ([`registerAppImageScheme()`](../../common/src/desktopMain/kotlin/chat/simplex/common/platform/AppLinkScheme.desktop.kt#L299)) or deb when its own desktop entry is the default `simplexchat:` handler. Registration takes a scheme only when no handler is set or the current one is no longer installed: another installed program, such as a deb beside an AppImage or on Windows a per-user or machine-wide handler, keeps it, while this app still repairs its own ProgId unless another installed copy holds it, and the page then ends with `app=desktop`. An AppImage is not registered ([`onlyOwnerCanReplace()`](../../common/src/desktopMain/kotlin/chat/simplex/common/platform/AppLinkScheme.desktop.kt#L284)) when its file or any directory above it belongs to a user other than this user or root, or has permission bits that let others write it (POSIX ACLs are not inspected), or when its path contains a line break or `%`. An unpackaged run registers nothing.
 
-App links use the app's own scheme, `simplexchat:`, for everything that is not a connection link. `connectIfOpenedViaUri()` branches on that scheme before the connection dispatch, so an app link never reaches `planAndConnect()`. [`isAppLink()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L797) tests the raw prefix, since text that does not parse as a URI is still an app link, and [`openAppLink()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L804) dispatches on its path. A badge link (`simplexchat:/badge/code/<code>`) goes to [`openBadgeLink()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/badges/BadgesRedeemCodeView.kt#L282), which shows `BadgesRedeemLinkView` as a `ModalManager.start` modal with `ModalViewId.BADGE_LINK`. Once the code parses, every modal is closed first, so the screen opens over the chat list, as iOS dismisses every sheet before a link; a code that does not parse gets an alert and closes nothing. The screen names the active profile and asks before redeeming, since any web page can send the link and a profile holds one badge at a time. On *Add badge* it redeems the code into that profile and then shows `BadgesView`; *Cancel* sends nothing. If that profile already shows a badge (read from `BadgeModel` when the screen composes), which core would refuse, the screen does not offer to add it: it says nothing was added, says where a code for another badge is (on the page it was bought on, under *Show code*), and offers *View your badge*; it cannot tell a repeated link for the badge it shows from another badge's code, so it asserts neither. While the code is being redeemed, *Dismiss* or back closes the screen without cancelling anything; if the redemption then succeeds with the screen closed or covered, an alert says the badge was added and names the profile, unless the profile is hidden and no longer active, when nothing is shown ([`showBadgeAddedAlert()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/badges/BadgesRedeemCodeView.kt#L97), which the store lane shares). Its step is held by the modal rather than remembered by the composition, so rotation and being covered do not reset it. While the screen shows a redemption in flight ([`isBadgeLinkIssuing()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/badges/BadgesRedeemCodeView.kt#L279)), a further app link is ignored. Any other path is a link type from a later version, and gets an alert asking to check for app updates; text that does not parse is dropped. An app link can carry a secret, and nothing on this path logs the URI: `processIntent()` logs nothing, and `connectIfOpenedViaUri()` logs a fixed string.
+App links use the app's own scheme, `simplexchat:`, for everything that is not a connection link. `connectIfOpenedViaUri()` branches on that scheme before the connection dispatch, so an app link never reaches `planAndConnect()`. [`isAppLink()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L900) tests the raw prefix, since text that does not parse as a URI is still an app link, and [`openAppLink()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L907) dispatches on its path. A badge link (`simplexchat:/badge/code/<code>`) goes to [`openBadgeLink()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/badges/BadgesRedeemCodeView.kt#L282), which shows `BadgesRedeemLinkView` as a `ModalManager.start` modal with `ModalViewId.BADGE_LINK`. Once the code parses, every modal is closed first, so the screen opens over the chat list, as iOS dismisses every sheet before a link; a code that does not parse gets an alert and closes nothing. The screen names the active profile and asks before redeeming, since any web page can send the link and a profile holds one badge at a time. On *Add badge* it redeems the code into that profile and then shows `BadgesView`; *Cancel* sends nothing. If that profile already shows a badge (read from `BadgeModel` when the screen composes), which core would refuse, the screen does not offer to add it: it says nothing was added, says where a code for another badge is (on the page it was bought on, under *Show code*), and offers *View your badge*; it cannot tell a repeated link for the badge it shows from another badge's code, so it asserts neither. While the code is being redeemed, *Dismiss* or back closes the screen without cancelling anything; if the redemption then succeeds with the screen closed or covered, an alert says the badge was added and names the profile, unless the profile is hidden and no longer active, when nothing is shown ([`showBadgeAddedAlert()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/badges/BadgesRedeemCodeView.kt#L97), which the store lane shares). Its step is held by the modal rather than remembered by the composition, so rotation and being covered do not reset it. While the screen shows a redemption in flight ([`isBadgeLinkIssuing()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/badges/BadgesRedeemCodeView.kt#L279)), a further app link is ignored. Any other path is a link type from a later version, and gets an alert asking to check for app updates; text that does not parse is dropped. An app link can carry a secret, and nothing on this path logs the URI: `processIntent()` logs nothing, and `connectIfOpenedViaUri()` logs a fixed string.
 
 ### Overlay Layers (bottom of MainScreen)
 
@@ -134,7 +135,7 @@ App links use the app's own scheme, `simplexchat:`, for everything that is not a
 
 ## 4. Android Layout
 
-**Location:** [`App.kt#L296`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L296)
+**Location:** [`App.kt#L313`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L313)
 
 ```kotlin
 @Composable
@@ -165,7 +166,7 @@ If the device has a display cutout on horizontal sides (detected via `WindowInse
 
 ### Call Layout Wrapper
 
-`AndroidWrapInCallLayout` (line ~279) adds a 40dp top padding when an active call is in progress (not in `WaitCapabilities` or `InvitationAccepted` state), with an `ActiveCallInteractiveArea` banner above.
+`AndroidWrapInCallLayout` (line ~298) adds a 40dp top padding when an active call is in progress (not in `WaitCapabilities` or `InvitationAccepted` state), with an `ActiveCallInteractiveArea` banner above.
 
 ---
 
@@ -173,7 +174,7 @@ If the device has a display cutout on horizontal sides (detected via `WindowInse
 
 ## 5. Desktop Layout
 
-**Location:** [`App.kt#L410`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L410)
+**Location:** [`App.kt#L432`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L432)
 
 ```kotlin
 @Composable
@@ -196,11 +197,11 @@ fun DesktopScreen(userPickerState: MutableStateFlow<AnimatedViewState>)
 
 ### Click-to-Dismiss Overlay
 
-When the UserPicker is visible or a start modal is open (but no center modal), a full-size clickable overlay covers the center+right area (line ~428). Clicking it closes start modals and hides the UserPicker.
+When the UserPicker is visible or a start modal is open (but no center modal), a full-size clickable overlay covers the center+right area (line ~451). Clicking it closes start modals and hides the UserPicker.
 
 ### CenterPartOfScreen
 
-**Location:** [`App.kt#L373`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L373)
+**Location:** [`App.kt#L390`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L390)
 
 - When `chatId` is null and no center modals: shows "No selected chat" placeholder.
 - When `chatId` is null and center modals open: shows `ModalManager.center`.
@@ -209,7 +210,7 @@ When the UserPicker is visible or a start modal is open (but no center modal), a
 
 ### StartPartOfScreen
 
-**Location:** [`App.kt#L352`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L352)
+**Location:** [`App.kt#L369`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L369)
 
 Routes between:
 - `SetDeliveryReceiptsView` (if `chatModel.setDeliveryReceipts` is true)
@@ -220,7 +221,7 @@ Routes between:
 
 ## 6. ModalManager
 
-**Location:** `common/src/commonMain/kotlin/chat/simplex/common/views/helpers/ModalView.kt` (line 92)
+**Location:** `common/src/commonMain/kotlin/chat/simplex/common/views/helpers/ModalView.kt` (line 97)
 
 ```kotlin
 class ModalManager(private val placement: ModalPlacement?)
@@ -302,7 +303,7 @@ object AppLock {
 
 ### Authentication Flow
 
-1. **MainScreen** checks `unauthorized` (derived: `userAuthorized.value != true`) at line ~135.
+1. **MainScreen** checks `unauthorized` (derived: `userAuthorized.value != true`) at line ~138.
 2. If unauthorized, including during an active call:
    - Launches `AppLock.runAuthenticate()` which triggers platform-specific biometric/passcode prompt.
    - On Android with system auth finishing during activity destruction, authentication is skipped.
@@ -311,7 +312,7 @@ object AppLock {
 
 ### Lock Delay
 
-The `laLockDelay` preference controls how long after backgrounding the app requires re-authentication. When `laLockDelay == 0`, screen rotation triggers a 3-second grace period (line ~270) to prevent unnecessary re-auth. A call counts as activity: `recheckAuthState()` is a no-op while `showCallView` is true, and `CallManager.endCall()` resets `enteredBackground`, so the delay is counted from the end of the call. When a call is accepted from a notification or from the Android lock screen, `recheckAuthState()` is called before `acceptIncomingCall()`, so an expired delay still locks the app.
+The `laLockDelay` preference controls how long after backgrounding the app requires re-authentication. When `laLockDelay == 0`, screen rotation triggers a 3-second grace period (line ~265) to prevent unnecessary re-auth. A call counts as activity: `recheckAuthState()` is a no-op while `showCallView` is true, and `CallManager.endCall()` resets `enteredBackground`, so the delay is counted from the end of the call. When a call is accepted from a notification or from the Android lock screen, `recheckAuthState()` is called before `acceptIncomingCall()`, so an expired delay still locks the app.
 
 ### Lock Modes
 
@@ -320,7 +321,7 @@ The `laLockDelay` preference controls how long after backgrounding the app requi
 
 ### First-Time Lock Notice
 
-`showLANotice` (line ~33 in `AppLock.kt`) prompts users to enable SimpleX Lock when they have more than 3 chats, have not yet been shown the notice, and have not enabled lock. On Android, it offers a choice between system auth and passcode.
+`showLANotice` (line ~34 in `AppLock.kt`) prompts users to enable SimpleX Lock when they have more than 3 chats, have not yet been shown the notice, and have not enabled lock. On Android, it offers a choice between system auth and passcode.
 
 ---
 
@@ -385,5 +386,31 @@ The stage value is stored in `appPrefs.onboardingStage` and persisted across app
 | `views/SplashView.kt` | Splash / loading screen |
 | `views/call/CallView.kt` | In-call fullscreen view (ActiveCallView) |
 | `views/localauth/PasswordEntry.kt` | Column divider utility (contains VerticalDivider) |
+| `views/newchat/NewChatSheet.kt` | New chat sheet: action buttons, contacts list, online search sections; Archived contacts (`DeletedContactsView`) |
 | `AppLinks.kt` (desktopMain) | Desktop app links from launch arguments and macOS Apple Events |
 | `platform/AppLinkScheme.desktop.kt` (desktopMain) | Runtime `simplexchat:` registration and its result for the badge page |
+
+---
+
+<a id="NewChatOnlineSearch"></a>
+
+## 10. New Chat Online Search
+
+**Location:** [`NewChatSheetLayout`](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L110-L505)
+
+`NewChatSheetLayout` offers the chat list's online search (see [Chat List, Online Search](chat-list.md#11-online-search)) with its own [`OnlineSearchModel`](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L141) (`remember`), reset from a `KeyChangeEffect` on `searchText.value.text` and another on `chatModel.currentUser.value?.userId` ([source](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L182-L187)). A profile switch also closes all modals on Kotlin, so the sheet is disposed anyway. The sheet's `DisposableEffect` `onDispose` ([`NewChatSheet`](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L42-L48)) calls `cancelConnectProgress()`, which cancels a search still in flight. The model is also dropped while a modal opened from the sheet covers it (`ModalManager` composes only the top modal) and on an Android rotation.
+
+| Element | Where | Behavior |
+|---------|-------|----------|
+| Search key | [`ContactsSearchBar`](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L525-L627) with `onSearch` ([source](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L533)), passed to `SearchTextField` | the keyboard's Search action (Android) or Enter (desktop) runs [`runDirectorySearch()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L208-L212): `searchDirectory(text)`, the directory only |
+| "Connect to …" row | the sticky header, below the field, in both `OneHandLazyColumn` ([source](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L357-L361)) and `NonOneHandLazyColumn` ([source](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L455-L459)) | shown whenever there is a name candidate, results or not |
+| "Search in Directory" row | after the "Connect to …" row, behind a `Divider` ([source](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L362-L365), [source](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L460-L463)) | shown for non-empty, non-link text while no results show or load (`!onlineSearch.showResults`); runs `runDirectorySearch()` |
+| Results card | after `itemsIndexed(filteredContactChats)` in both columns, [`onlineSearchSection(rows)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L190-L204) | When `!rows.isEmpty`: without a header or a divider, so the results continue the contacts as one group (iOS draws the contacts in its results card), your chats (`rows.yourChats`, the loaded ones, keyed `remoteHostId to id`), the results (keyed by `id`) and then the retry or load row. Your chats are drawn as `ContactListNavLinkView(chat, remember { mutableStateOf(false) }, showDeletedChatIcon = true)`, whose [`ChatInfo.Group` branch](../../common/src/commonMain/kotlin/chat/simplex/common/views/contacts/ContactListNavView.kt#L138-L156) opens the group and closes the sheet (`openChat` then `ModalManager.start.closeModals()`; `ContactPreviewView` draws the avatar, the name as a contact request's, favourite star and incognito mask; no menu items). Results are `DirectoryResultNavLink(result, imageSize = 42.dp, previewModifier = Modifier.padding(horizontal = DEFAULT_PADDING_HALF), close = close, cleanup = null)`, the contact rows' avatar size and padding, with Open or "Already joining" and the same long-press / right-click menu as in the chat list; a tap or the menu's Open runs `openDirectoryResult`, which closes the sheet once the chat opens |
+
+Both triggers do nothing for empty text or a pasted link ([`searchTrimmed()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L206), `searchShowingSimplexLink`) and go through `confirmDirectorySearch`, which asks "Enable Directory search?" while the switch is off, launching the model with `withApi`. `onlineSearchSection`, `searchTrimmed` and `runDirectorySearch` are local functions of `NewChatSheetLayout`. `onlineSearchSection` emits its items in the order above, so the load row is the row farthest from the field in both layouts: last in the top-bar column, and drawn at the top of the reversed one-hand column, whose field is at the bottom (iOS's New chat is not flipped, so there it is always the last row). The contacts header shows only while the search text is empty, so it is never next to online results.
+
+**De-duplication against the contacts list.** `filteredContactChats` (the contacts the list shows, computed in the layout's scope) gives the shown ids: `rows = onlineSearch.rows(shownChatIds = filteredContactChats.map { it.id }.toSet())` ([source](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L180)), so no extra helper is needed.
+
+**Empty state.** `showsEmptyState = !onlineSearch.searching && rows.isEmpty` ([source](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L181)); [`NoFilteredContactsItem`](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L294-L308) shows "No filtered contacts" only when it holds. Kotlin has no "No contacts" state.
+
+**Archived contacts.** [`DeletedContactsView`](../../common/src/commonMain/kotlin/chat/simplex/common/views/newchat/NewChatSheet.kt#L720-L834) passes no `onSearch` to `ContactsSearchBar`: its field keeps the Search IME label (every `SearchTextField` uses `ImeAction.Search`), the key does nothing, and it shows no online rows; its empty state is unchanged.
