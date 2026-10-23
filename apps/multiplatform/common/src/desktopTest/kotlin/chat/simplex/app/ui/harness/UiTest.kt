@@ -241,12 +241,14 @@ class UiScope(val ui: SkikoComposeUiTest, private val dir: File) {
       if (placed && b.top >= 0f && b.bottom <= rootBottom - margin) return
       val scroller = generateSequence(node.parent) { it.parent }
         .firstOrNull { it.config.contains(androidx.compose.ui.semantics.SemanticsActions.ScrollBy) } ?: return
-      val dy = when {
+      val offset = when {
         !placed && node.positionInRoot.y < 0f -> node.positionInRoot.y - margin
         !placed -> rootBottom * SCROLL_PAGE
         b.bottom > rootBottom - margin -> b.bottom - rootBottom + margin
         else -> b.top - margin
       }
+      val reversed = scroller.config.getOrElseNullable(androidx.compose.ui.semantics.SemanticsProperties.VerticalScrollAxisRange) { null }?.reverseScrolling == true
+      val dy = if (reversed) -offset else offset
       ui.runOnUiThread { scroller.config[androidx.compose.ui.semantics.SemanticsActions.ScrollBy].action?.invoke(0f, dy) }
       repeat(SCROLL_ANIMATION_FRAMES) { ui.mainClock.advanceTimeBy(16, ignoreFrameDuration = true); ui.waitForIdle() }
       if (placed && ui.onAllNodes(matcher(key)).fetchSemanticsNodes().firstOrNull()?.boundsInRoot == b) return

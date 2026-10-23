@@ -49,7 +49,7 @@ class ReceivedMessagesTest : UiTest() {
       reply != 0L
     }
     hideKeyboard()
-    poll(what = "bob's reply scrolled into view") { exists(Ui.Chat.Item(reply)) || run { scrollChatTowardNewer(); false } }
+    poll(what = "the chat scrolled to its newest message, bob's reply") { !scrollChatTowardNewer() && exists(Ui.Chat.Item(reply)) }
     poll(what = "bob's reply bubble quoting `you` / `hello! how are you?` above `all good - you?`") {
       textsOf(Ui.Chat.Item(reply)).let { t -> "you" in t && t.any { "hello! how are you?" in it } && t.any { "all good - you?" in it } }
     }
