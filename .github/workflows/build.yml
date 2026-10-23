@@ -603,13 +603,11 @@ jobs:
         timeout-minutes: 120
         shell: bash
         run: |
-          scripts/ci/test-watchdog.sh 45 &
-          watchdog=$!
           i=1
           attempts=1
           ${{ (github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) }} && attempts=3
           while [ "$i" -le "$attempts" ]; do
-            if ./simplex-chat-test +RTS -s -RTS; then
+            if ./simplex-chat-test; then
               break
             else
               echo "Attempt $i failed, retrying..."
@@ -617,7 +615,6 @@ jobs:
               sleep 1
             fi
           done
-          kill "$watchdog" || true
           if [ "$i" -gt "$attempts" ]; then
             echo "All "$attempts" attempts failed."
             exit 1
@@ -1127,13 +1124,11 @@ jobs:
         timeout-minutes: 120
         shell: bash
         run: |
-          scripts/ci/test-watchdog.sh 45 &
-          watchdog=$!
           i=1
           attempts=1
           ${{ (github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) }} && attempts=3
           while [ "$i" -le "$attempts" ]; do
-            if cabal test --test-show-details=direct --test-options="+RTS -s -RTS" ${{ env.ghc_options }}; then
+            if cabal test --test-show-details=direct ${{ env.ghc_options }}; then
               break
             else
               echo "Attempt $i failed, retrying..."
@@ -1141,7 +1136,6 @@ jobs:
               sleep 1
             fi
           done
-          kill "$watchdog" || true
           if [ "$i" -gt "$attempts" ]; then
             echo "All "$attempts" attempts failed."
             exit 1
