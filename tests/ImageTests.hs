@@ -3,12 +3,22 @@
 module ImageTests where
 
 import Codec.Picture (DynamicImage (..), Image (..), PixelRGB16 (..), PixelRGBA16 (..), PixelRGBA8 (..), decodeImage, dynamicMap, generateImage)
+import Control.Monad.Except (runExceptT)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Base64.Lazy as LB64
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Either (isLeft)
+import qualified Data.Text as T
 import Simplex.Chat.Image
+import Simplex.Chat.Library.Commands (fixedImagePreview, imagePreview)
+import Simplex.Chat.Types (ImageData (..))
+import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.File (CryptoFile (..))
+import qualified Simplex.Messaging.Crypto.File as CF
+import System.FilePath ((</>))
 import Test.Hspec
+import UnliftIO.STM (atomically)
+import UnliftIO.Temporary (withTempDirectory)
 
 imageTests :: Spec
 imageTests = do
@@ -21,6 +31,11 @@ imageTests = do
     it "should reduce JPEG size" testResizeJpeg
     it "should reduce PNG size" testResizePng
     it "should fail when image does not fit" testImageTooLarge
+  describe "image preview" $ do
+    it "should generate preview of an image file" $ testFilePreview $ CryptoFile "tests/fixtures/test.jpg" Nothing
+    it "should generate preview of an encrypted image file" testEncryptedFilePreview
+    it "should keep the fixed preview when the file is not an image" $
+      imagePreview (CryptoFile "tests/fixtures/test.pdf" Nothing) `shouldReturn` fixedImagePreview
 
 testDataUri :: FilePath -> LB.ByteString -> IO ()
 testDataUri path prefix = do
@@ -67,6 +82,19 @@ testImageTooLarge = do
   let img = ImageRGBA8 $ generateImage (\_ _ -> PixelRGBA8 0 0 0 0) 1 1
   resizeImage IFPng 10 img >>= (`shouldSatisfy` isLeft)
   resizeImage IFJpeg 10 img >>= (`shouldSatisfy` isLeft)
+
+testFilePreview :: CryptoFile -> IO ()
+testFilePreview f = do
+  ImageData preview <- imagePreview f
+  T.length preview `shouldSatisfy` (<= 14000)
+  preview `shouldSatisfy` ("data:image/jpg;base64," `T.isPrefixOf`)
+
+testEncryptedFilePreview :: IO ()
+testEncryptedFilePreview = withTempDirectory "tests/tmp" "image-preview" $ \dir -> do
+  args <- atomically . CF.randomArgs =<< C.newRandom
+  let f = CryptoFile (dir </> "test.jpg") (Just args)
+  Right () <- runExceptT . CF.writeFile f . LB.fromStrict =<< B.readFile "tests/fixtures/test.jpg"
+  testFilePreview f
 
 imageSize :: DynamicImage -> (Int, Int)
 imageSize = dynamicMap (\img -> (imageWidth img, imageHeight img))

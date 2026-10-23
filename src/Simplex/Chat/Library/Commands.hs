@@ -18,6 +18,7 @@
 
 module Simplex.Chat.Library.Commands where
 
+import Codec.Picture (decodeImage)
 import Control.Applicative (optional, (<|>))
 import Control.Concurrent.STM (retry)
 import Control.Logger.Simple
@@ -69,6 +70,7 @@ import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
 import Simplex.Chat.Files
+import Simplex.Chat.Image (resizeImageDataUri)
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.Batch (BatchMode, encodeBatchElement)
@@ -171,6 +173,9 @@ maxImageSize = 261120 * 2 -- auto-receive on mobiles
 maxProfileImageSize :: Int
 maxProfileImageSize = 12500
 
+maxImagePreviewSize :: Int64
+maxImagePreviewSize = 14000
+
 checkProfileImageSize :: Maybe ImageData -> CM ()
 checkProfileImageSize = mapM_ $ \(ImageData t) ->
   let size = T.length t
@@ -220,6 +225,14 @@ readProfileImageFile path = liftIO (loadImageData path) >>= either throwCmdError
 
 fixedImagePreview :: ImageData
 fixedImagePreview = ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAKVJREFUeF7t1kENACEUQ0FQhnVQ9lfGO+xggITQdvbMzArPey+8fa3tAfwAEdABZQspQStgBssEcgAIkSAJkiAJljtEgiRIgmUCSZAESZAESZAEyx0iQRIkwTKBJEiCv5fgvTd1wDmn7QAP4AeIgA4oW0gJWgEzWCZwbQ7gAA7ggLKFOIADOKBMIAeAEAmSIAmSYLlDJEiCJFgmkARJkARJ8N8S/ADTZUewBvnTOQAAAABJRU5ErkJggg=="
+
+imagePreview :: CryptoFile -> IO ImageData
+imagePreview f = either (const fixedImagePreview) (ImageData . safeDecodeUtf8 . LB.toStrict) <$> (runExceptT preview `catchAll` (pure . Left . show))
+  where
+    preview = do
+      s <- withExceptT show $ CF.readFile f
+      img <- liftEither $ decodeImage $ LB.toStrict s
+      ExceptT $ resizeImageDataUri maxImagePreviewSize img
 
 imageFilePrefix :: String
 imageFilePrefix = "IMG_"
@@ -3542,8 +3555,8 @@ processChatCommand cxt nm = \case
       unless (any (`isSuffixOf` map toLower fPath) imageExtensions) $ throwChatError CEFileImageType {filePath}
       fileSize <- getFileSize filePath
       unless (fileSize <= maxImageSize) $ throwChatError CEFileImageSize {filePath}
-      -- TODO include file description for preview
-      processChatCommand cxt nm $ APISendMessages sendRef False Nothing False [composedMessage (Just f) (MCImage "" fixedImagePreview)]
+      preview <- liftIO $ imagePreview (f {filePath} :: CryptoFile)
+      processChatCommand cxt nm $ APISendMessages sendRef False Nothing False [composedMessage (Just f) (MCImage "" preview)]
   ForwardFile chatName fileId -> forwardFile chatName fileId SendFile
   ForwardImage chatName fileId -> forwardFile chatName fileId SendImage
   SendFileDescription _chatName _f -> throwCmdError "TODO"
