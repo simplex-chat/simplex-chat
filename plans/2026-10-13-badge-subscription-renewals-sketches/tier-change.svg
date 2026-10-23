@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="980" height="781" viewBox="0 0 980 781" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="Changing tier in the App Store: the user raises the tier in Apple's sheet and Apple charges at once; the app hands the new transaction to core, which holds it as a tier change when it raises the tier and was bought within a day; core sends upgradeBadgeSubscription on the same key; the service asks Apple, ends the old tier's remaining months, grants the new tier from the charge and issues its month; core shows it at once. A lower tier or a late raise waits for the renewal check; a Play plan change gets a new token that only Restore claims.">
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="781" viewBox="0 0 980 781" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="Changing tier in the App Store: the user raises the tier in Apple's sheet and Apple charges at once; the app hands the new transaction to core, which holds it as a tier change when it raises the tier, is newer than the last charge credited and has not expired; core sends upgradeBadgeSubscription on the same key, up to 24 times per hand-over; the service asks Apple, ends the old tier's remaining months, grants the new tier from the charge and issues its month; core shows it at once. A lower tier, or a raise whose transaction expired unseen, waits for the renewal check; on Play another badge is a new purchase.">
   <defs>
     <marker id="t-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#5b6577"/></marker>
   </defs>
@@ -48,8 +48,8 @@
 
   <!-- 3 -->
   <rect x="275" y="230" width="230" height="82" rx="6" fill="#eef7f8" stroke="#b5dadd"/>
-  <text x="285" y="245" font-size="11.5" fill="#1a2030">credited record; a higher tier,</text>
-  <text x="285" y="260" font-size="11.5" fill="#1a2030">bought within a day of now?</text>
+  <text x="285" y="245" font-size="11.5" fill="#1a2030">a higher tier, newer than the last</text>
+  <text x="285" y="260" font-size="11.5" fill="#1a2030">charge credited, not expired?</text>
   <text x="285" y="275" font-size="11.5" fill="#1a2030">yes → held as a tier change</text>
   <text x="285" y="290" font-size="11.5" fill="#1a2030">no → answered from the record;</text>
   <text x="285" y="305" font-size="11.5" fill="#1a2030">the renewal check grants it later</text>
@@ -91,7 +91,7 @@
   <!-- footer -->
   <rect x="24" y="676" width="932" height="85" rx="8" fill="#eef1f5"/>
   <text x="40" y="696" font-size="12" fill="#1a2030">Any other change (a lower tier, which Apple charges from the next renewal, or a change of plan length): the app sends nothing, and</text>
-  <text x="40" y="713" font-size="12" fill="#1a2030">the renewal check after the old coverage ends grants what Apple charged. A raise the device sees more than a day late waits the same way.</text>
-  <text x="40" y="730" font-size="12" fill="#1a2030">Play: the app starts no plan change. One made in Play gets a new token that core doesn't record; only Restore claims it,</text>
-  <text x="40" y="747" font-size="12" fill="#1a2030">and not under a profile that shows a badge.</text>
+  <text x="40" y="713" font-size="12" fill="#1a2030">the renewal check after the old coverage ends grants what Apple charged. A raise whose transaction expired unseen waits the same way.</text>
+  <text x="40" y="730" font-size="12" fill="#1a2030">A held raise is sent up to 24 times each time the device hands it over, then set aside until the next hand-over.</text>
+  <text x="40" y="747" font-size="12" fill="#1a2030">Play: each badge is its own product, with no plan change from the app or, in testing, Play's pages; another badge is a new purchase.</text>
 </svg>
