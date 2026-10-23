@@ -139,15 +139,16 @@ All JNI declarations reside in [`Core.kt`](../common/src/commonMain/kotlin/chat/
 | 11 | [`chatParseUri()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L33) | `external fun chatParseUri(str: String, safe: Int): String` | 33 | Parse SimpleX connection URI |
 | 12 | [`chatPasswordHash()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L34) | `external fun chatPasswordHash(pwd: String, salt: String): String` | 34 | Hash password with salt |
 | 13 | [`chatValidName()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L35) | `external fun chatValidName(name: String): String` | 35 | Validate/sanitize display name |
-| 14 | [`chatJsonLength()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L36) | `external fun chatJsonLength(str: String): Int` | 36 | Get JSON-encoded string length |
-| 15 | [`chatWriteFile()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L37) | `external fun chatWriteFile(ctrl: ChatCtrl, path: String, buffer: ByteBuffer): String` | 37 | Write encrypted file via core |
-| 16 | [`chatReadFile()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L38) | `external fun chatReadFile(path: String, key: String, nonce: String): Array<Any>` | 38 | Read and decrypt file |
-| 17 | [`chatEncryptFile()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L39) | `external fun chatEncryptFile(ctrl: ChatCtrl, fromPath: String, toPath: String): String` | 39 | Encrypt file on disk |
-| 18 | [`chatDecryptFile()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L40) | `external fun chatDecryptFile(fromPath: String, key: String, nonce: String, toPath: String): String` | 40 | Decrypt file on disk |
-| 19 | [`chatResizeImageUri()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L42) | `external fun chatResizeImageUri(buffer: ByteBuffer, maxSize: Int): String` | 42 | Resize encoded image to a data URI of at most `maxSize` characters |
-| 20 | [`chatResizeImage()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L43) | `external fun chatResizeImage(buffer: ByteBuffer, maxSize: Int, png: Boolean): String` | 43 | Resize encoded image to base64 of PNG or JPEG data of at most `maxSize` bytes |
+| 14 | [`chatParseBadgeCode()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L36) | `external fun chatParseBadgeCode(code: String): String` | 36 | Canonical form of a badge code, or an empty string |
+| 15 | [`chatJsonLength()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L37) | `external fun chatJsonLength(str: String): Int` | 37 | Get JSON-encoded string length |
+| 16 | [`chatWriteFile()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L38) | `external fun chatWriteFile(ctrl: ChatCtrl, path: String, buffer: ByteBuffer): String` | 38 | Write encrypted file via core |
+| 17 | [`chatReadFile()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L39) | `external fun chatReadFile(path: String, key: String, nonce: String): Array<Any>` | 39 | Read and decrypt file |
+| 18 | [`chatEncryptFile()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L40) | `external fun chatEncryptFile(ctrl: ChatCtrl, fromPath: String, toPath: String): String` | 40 | Encrypt file on disk |
+| 19 | [`chatDecryptFile()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L41) | `external fun chatDecryptFile(fromPath: String, key: String, nonce: String, toPath: String): String` | 41 | Decrypt file on disk |
+| 20 | [`chatResizeImageUri()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L42) | `external fun chatResizeImageUri(buffer: ByteBuffer, maxSize: Int): String` | 42 | Resize encoded image to a data URI of at most `maxSize` characters |
+| 21 | [`chatResizeImage()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L43) | `external fun chatResizeImage(buffer: ByteBuffer, maxSize: Int, png: Boolean): String` | 43 | Resize encoded image to base64 of PNG or JPEG data of at most `maxSize` bytes |
 
-**Total: 20 external native functions** (the `ChatCtrl` type alias at [line 23](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L23) is `Long`, representing the Haskell-side controller pointer).
+**Total: 21 external native functions** (the `ChatCtrl` type alias at [line 23](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L23) is `Long`, representing the Haskell-side controller pointer).
 
 <a id="initChatControllerOnStart"></a>
 <a id="chatInitTemporaryDatabase"></a>
@@ -340,7 +341,7 @@ Examples from platform files:
 | `expect class VideoPlayer` | [`VideoPlayer.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/VideoPlayer.kt#L25) | 25 |
 | `expect class RecorderNative` | [`RecAndPlay.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/RecAndPlay.kt#L17) | 17 |
 | `expect val cryptor: CryptorInterface` | [`Cryptor.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Cryptor.kt#L9) | 9 |
-| `expect fun base64ToBitmap(base64ImageString: String): ImageBitmap` | [`Images.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Images.kt#L17) | 17 |
+| `expect fun base64ToBitmap(base64ImageString: String): ImageBitmap` | [`Images.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Images.kt#L18) | 18 |
 | `expect fun getWakeLock(timeout: Long): (() -> Unit)` | [`SimplexService.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/SimplexService.kt#L3) | 3 |
 | `expect class GlobalExceptionsHandler` | [`UI.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/UI.kt#L24) | 24 |
 | `expect fun UriHandler.sendEmail(subject: String, body: CharSequence)` | [`Share.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Share.kt#L7) | 7 |
