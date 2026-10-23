@@ -221,6 +221,8 @@ processAgentMessageNoConn = \case
     errsEvent = toView . CEvtChatErrors . map (\(cId, e) -> ChatErrorAgent e (AgentConnId cId) Nothing)
 
 processAgentMsgSndFile :: ACorrId -> SndFileId -> AEvent 'AESndFile -> CM ()
+processAgentMsgSndFile _ "" (SFERR e) =
+  eToView $ chatErrorAgent e
 processAgentMsgSndFile _corrId aFileId msg = (`allFinally` when sndFileEnded deleteAgentFile) $ do
   (cRef_, fileId) <- withStore (`getXFTPSndFileDBIds` AgentSndFileId aFileId)
   withEntityLock_ cRef_ . withFileLock "processAgentMsgSndFile" fileId $
