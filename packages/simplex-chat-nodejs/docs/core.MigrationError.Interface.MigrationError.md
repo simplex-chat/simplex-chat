@@ -6,7 +6,7 @@
 
 # Interface: MigrationError
 
-Defined in: [src/core.ts:209](../core.ts#L209)
+Defined in: [src/core.ts:229](../core.ts#L229)
 
 ## Extends
 
@@ -18,7 +18,7 @@ Defined in: [src/core.ts:209](../core.ts#L209)
 
 > **mtrError**: [`MTRError`](core.TypeAlias.MTRError.md)
 
-Defined in: [src/core.ts:211](../core.ts#L211)
+Defined in: [src/core.ts:231](../core.ts#L231)
 
 ***
 
@@ -26,7 +26,7 @@ Defined in: [src/core.ts:211](../core.ts#L211)
 
 > **type**: `"migrationError"`
 
-Defined in: [src/core.ts:210](../core.ts#L210)
+Defined in: [src/core.ts:230](../core.ts#L230)
 
 #### Overrides
 

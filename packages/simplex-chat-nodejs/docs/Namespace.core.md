@@ -45,6 +45,8 @@ You are unlikely to ever need to use this module directly.
 - [chatMigrateInit](core.Function.chatMigrateInit.md)
 - [chatReadFile](core.Function.chatReadFile.md)
 - [chatRecvMsgWait](core.Function.chatRecvMsgWait.md)
+- [chatResizeImage](core.Function.chatResizeImage.md)
+- [chatResizeImageUri](core.Function.chatResizeImageUri.md)
 - [chatSendCmd](core.Function.chatSendCmd.md)
 - [chatWriteFile](core.Function.chatWriteFile.md)
 - [loadLibrary](core.Function.loadLibrary.md)

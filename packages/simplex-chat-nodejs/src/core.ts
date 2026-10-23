@@ -109,6 +109,26 @@ function cryptoArgsResult(res: string): CryptoArgs {
   }  
 }
 
+/**
+ * Resize image to a data URI of at most maxSize characters
+ */
+export async function chatResizeImageUri(image: ArrayBuffer | Uint8Array, maxSize: number): Promise<string> {
+  return resizedImage(await simplex.chat_resize_image_uri(image, maxSize))
+}
+
+/**
+ * Resize image to JPEG or PNG of at most maxSize bytes
+ */
+export async function chatResizeImage(image: ArrayBuffer | Uint8Array, maxSize: number, format: "jpeg" | "png"): Promise<Buffer> {
+  const res = await simplex.chat_resize_image(image, maxSize, format === "png" ? 1 : 0)
+  return Buffer.from(resizedImage(res), "base64")
+}
+
+function resizedImage(res: string): string {
+  if (res === "") throw new Error("image cannot be decoded or does not fit maxSize")
+  return res
+}
+
 export interface APIResult<R> {
   result?: R
   error?: T.ChatError

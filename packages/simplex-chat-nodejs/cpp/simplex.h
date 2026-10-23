@@ -35,4 +35,10 @@ typedef char *(*chat_encrypt_file_fn)(chat_ctrl ctrl, const char *fromPath, cons
 // chat_decrypt_file returns null-terminated string with the error message
 typedef char *(*chat_decrypt_file_fn)(const char *fromPath, const char *key, const char *nonce, const char *toPath);
 
+// chat_resize_image returns base64 of PNG (png != 0) or JPEG bytes of at most maxSize, or an empty string
+typedef char *(*chat_resize_image_fn)(const char *data, int len, int maxSize, int png);
+
+// chat_resize_image_uri returns a data URI of at most maxSize characters, or an empty string
+typedef char *(*chat_resize_image_uri_fn)(const char *data, int len, int maxSize);
+
 #endif /* simplex_h */
