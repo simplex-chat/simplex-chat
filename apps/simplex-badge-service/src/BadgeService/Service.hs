@@ -888,8 +888,7 @@ issueBadgeCmd key cc verifier purchaseKey upgrade_ BadgeBalance {lastEntry} = do
     -- Write only if the tip has not moved, since another request may have advanced it.
     writeIssued purchaseId tip rows t issuance_ state_ = do
       r <- withDB "issueBadge" cc $ \db -> liftIO $ do
-        lockPurchaseLedger db purchaseId t
-        tip' <- getLedgerTip db purchaseId
+        tip' <- lockedLedgerTip db purchaseId t
         when (fmap entryId tip' == fmap entryId tip) $ appendLedgerPlan db purchaseId Nothing rows issuance_
         issueResponse db purchaseId t state_
       pure $ fromRight (errorResponse BSEInternal) r
@@ -931,8 +930,7 @@ issueBadgeCmd key cc verifier purchaseKey upgrade_ BadgeBalance {lastEntry} = do
                           Left resp -> pure resp
                           Right (rows, issuance) -> do
                             r <- withDB "renewSubscription" cc $ \db -> liftIO $ do
-                              lockPurchaseLedger db badgePurchaseId now
-                              tip' <- getLedgerTip db badgePurchaseId
+                              tip' <- lockedLedgerTip db badgePurchaseId now
                               if fmap entryId tip' /= Just (entryId tip)
                                 then pure Nothing
                                 else do
@@ -967,9 +965,8 @@ issueBadgeCmd key cc verifier purchaseKey upgrade_ BadgeBalance {lastEntry} = do
               newChargeId <- randomId cc
               entryIds <- (,,,) <$> randomId cc <*> randomId cc <*> randomId cc <*> randomId cc
               r <- withDB' "checkStoreDuringCoverage" cc $ \db -> do
-                lockPurchaseLedger db badgePurchaseId now
+                tip' <- lockedLedgerTip db badgePurchaseId now
                 ended <- coverageEnded db paymentId checked
-                tip' <- getLedgerTip db badgePurchaseId
                 banked <-
                   if not ended && fmap entryId tip' == Just (entryId tip)
                     then do
@@ -1024,8 +1021,7 @@ issueBadgeCmd key cc verifier purchaseKey upgrade_ BadgeBalance {lastEntry} = do
       let lapsed = lapseEntry now lapseId tip
           refund@StatementEntry {changeMonths = refunded} = debitEntry now refundId SDRefund (fromMaybe tip lapsed)
       r <- withDB' "refundSubscription" cc $ \db -> do
-        lockPurchaseLedger db badgePurchaseId now
-        tip' <- getLedgerTip db badgePurchaseId
+        tip' <- lockedLedgerTip db badgePurchaseId now
         if fmap entryId tip' /= Just (entryId tip)
           then pure Nothing
           else do

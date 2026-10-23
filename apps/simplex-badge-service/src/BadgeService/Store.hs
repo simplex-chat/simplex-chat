@@ -26,7 +26,7 @@ module BadgeService.Store
     purchaseKeyExists,
     getPurchaseByKey,
     setPurchaseBadgeType,
-    lockPurchaseLedger,
+    lockedLedgerTip,
     getLedgerTip,
     getLedgerEntryId,
     getLedgerEntries,
@@ -264,11 +264,12 @@ setPurchaseBadgeType :: DB.Connection -> Int64 -> BadgeType -> UTCTime -> IO ()
 setPurchaseBadgeType db purchaseId badgeType now =
   DB.execute db "UPDATE sx_badge_service_badge_purchases SET current_badge_type = ?, updated_at = ? WHERE badge_purchase_id = ?" (badgeType, now, purchaseId)
 
--- | First in a transaction that re-reads a purchase's ledger tip before appending: the row lock makes concurrent
--- appends to one ledger wait for each other, as Postgres reads at READ COMMITTED.
-lockPurchaseLedger :: DB.Connection -> Int64 -> UTCTime -> IO ()
-lockPurchaseLedger db purchaseId now =
+-- | First in a transaction that appends after the tip it returns: the row lock makes concurrent appends to one
+-- ledger wait for each other, as Postgres reads at READ COMMITTED.
+lockedLedgerTip :: DB.Connection -> Int64 -> UTCTime -> IO (Maybe StatementEntry)
+lockedLedgerTip db purchaseId now = do
   DB.execute db "UPDATE sx_badge_service_badge_purchases SET updated_at = ? WHERE badge_purchase_id = ?" (now, purchaseId)
+  getLedgerTip db purchaseId
 
 getLedgerTip :: DB.Connection -> Int64 -> IO (Maybe StatementEntry)
 getLedgerTip db purchaseId =
@@ -460,8 +461,7 @@ data PaymentRebind = PaymentRebind
 -- moved the payment or the old purchase's ledger since fromTipId was read.
 rebindStorePayment :: DB.Connection -> PaymentRebind -> UTCTime -> IO (Maybe Int64)
 rebindStorePayment db PaymentRebind {paymentId, fromPurchaseId, fromTipId, fromRows, purchaseKey, masterKey = BadgeMasterKey mk, badgeType} now = do
-  lockPurchaseLedger db fromPurchaseId now
-  tip <- getLedgerTip db fromPurchaseId
+  tip <- lockedLedgerTip db fromPurchaseId now
   if fmap entryId tip /= Just fromTipId
     then pure Nothing
     else do
