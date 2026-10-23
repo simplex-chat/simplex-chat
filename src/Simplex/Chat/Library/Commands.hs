@@ -5531,23 +5531,14 @@ refuseWhileBadgeHeld user = whenM (withStore' (`userHasBadge` user)) $ throwRede
 -- keeps charging it; any other only while its last failure, if any, can clear, since one that failed for good waits anyway.
 refuseWhileStoreReceiptPending :: User -> CM ()
 refuseWhileStoreReceiptPending user = do
-  pending <- withStore' (`getPendingStoreReceipts` user)
   now <- badgeNow
-  when (any blocks $ filter (not . appleChargeLapsed now . fst) pending) $ throwRedeemError BREStorePurchaseOpen
+  pending <- withStore' $ \db -> getPendingStoreReceipts db user now
+  when (any blocks pending) $ throwRedeemError BREStorePurchaseOpen
   where
     blocks (payment, failure_) = appleSubscription payment || maybe True badgeFailureTransient failure_
     appleSubscription payment = case decodeJSON payment of
       Just SPApple {jws} | Just AppleTransactionFacts {autoRenewable} <- appleTransactionFacts jws -> autoRenewable
       _ -> False
-
--- | A held Apple subscription charge whose paid period ended more than a day ago, as one refunded before it was credited:
--- it neither blocks a new badge nor shows as open, and its record stays held, as a later charge under its original id continues it.
-appleChargeLapsed :: UTCTime -> Text -> Bool
-appleChargeLapsed now payment = case decodeJSON payment of
-  Just SPApple {jws}
-    | Just AppleTransactionFacts {expiresDate = Just expires, autoRenewable = True} <- appleTransactionFacts jws ->
-        nominalDay `addUTCTime` posixSecondsToUTCTime (fromIntegral expires / 1000) <= now
-  _ -> False
 
 -- | One attempt to turn a stash into a badge. A refusal is answered rather than thrown, with the
 -- service's retryAfter.
@@ -5696,7 +5687,8 @@ badgeMaxWake = 100 * 365 * nominalDay
 
 startStoreReceiptWork :: User -> CM ()
 startStoreReceiptWork User {userId} = do
-  held <- withStore' $ \db -> getNextHeldStoreReceipt db userId
+  now <- badgeNow
+  held <- withStore' $ \db -> getNextHeldStoreReceipt db userId now
   when (either (const False) isJust held) $ lift $ resumeStoreReceiptWork userId
 
 resumeStoreReceiptWork :: UserId -> CM' ()
@@ -5714,10 +5706,10 @@ runStoreReceiptWorker a userId Worker {doWork} = do
       BadgeReceiptRecord {receiptId, status = RSHeld {stash, invoiceId, payment, retryDelay, holdKind}} -> creditStoreReceipt a userId receiptId stash invoiceId payment retryDelay holdKind
       BadgeReceiptRecord {receiptId} -> notHeld receiptId
   where
-    getDueReceipt scheduled =
-      withStore' (`getNextHeldStoreReceipt` userId) >>= \case
-        Right (Just r@BadgeReceiptRecord {receiptId, status = RSHeld {nextAttemptAt}}) -> do
-          now <- badgeNow
+    getDueReceipt scheduled = do
+      now <- badgeNow
+      withStore' (\db -> getNextHeldStoreReceipt db userId now) >>= \case
+        Right (Just r@BadgeReceiptRecord {receiptId, status = RSHeld {nextAttemptAt}}) ->
           if nextAttemptAt <= now
             then pure $ Right (Just r)
             else Right Nothing <$ scheduleReceipt scheduled receiptId (diffUTCTime nextAttemptAt now)
@@ -6015,8 +6007,7 @@ badgeStateResponse :: User -> CM ChatResponse
 badgeStateResponse user = do
   badgeState <- getUserBadgeState user
   now <- badgeNow
-  open <- withStore' (`getOpenStorePurchases` user)
-  pure $ CRBadgeState user badgeState [finalError p | (payment_, p) <- open, not $ maybe False (appleChargeLapsed now) payment_]
+  CRBadgeState user badgeState . map finalError <$> withStore' (\db -> getOpenStorePurchases db user now)
   where
     -- like a renewal's, only a failure that cannot clear on its own is the user's to know about
     finalError p@OpenStorePurchase {creditError} = p {creditError = find (not . badgeFailureTransient) creditError}

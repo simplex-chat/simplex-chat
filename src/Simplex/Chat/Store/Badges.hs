@@ -64,9 +64,11 @@ import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Int (Int64)
+import Data.List (find)
 import Data.Maybe (isJust, mapMaybe)
 import Data.Text (Text)
-import Data.Time.Clock (UTCTime)
+import Data.Time.Clock (UTCTime, addUTCTime, nominalDay)
+import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Ledger
 import Simplex.Chat.Badges.Service (StatementCreditType (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..))
@@ -328,10 +330,10 @@ createBadgeStoreReceipt db g User {userId} invoiceId now = do
     |]
     (userId, invoiceId, purchaseKey, purchasePrivKey, Binary mk, now)
 
--- | No receipt yet, or one held, with its payment: a credited or refused record is resolved and not listed.
-getOpenStorePurchases :: DB.Connection -> User -> IO [(Maybe Text, OpenStorePurchase)]
-getOpenStorePurchases db User {userId} =
-  map toOpenStorePurchase
+-- | No receipt yet, or one held and not lapsed: a credited or refused record is resolved and not listed.
+getOpenStorePurchases :: DB.Connection -> User -> UTCTime -> IO [OpenStorePurchase]
+getOpenStorePurchases db User {userId} now =
+  mapMaybe toOpenStorePurchase
     <$> DB.query
       db
       [sql|
@@ -342,17 +344,21 @@ getOpenStorePurchases db User {userId} =
       |]
       (Only userId)
   where
-    toOpenStorePurchase (payment_, invoiceId, transactionRef, creditError) = (payment_, OpenStorePurchase {invoiceId, transactionRef, creditError})
+    toOpenStorePurchase (payment_, invoiceId, transactionRef, creditError)
+      | maybe False (appleChargeLapsed now) payment_ = Nothing
+      | otherwise = Just OpenStorePurchase {invoiceId, transactionRef, creditError}
 
--- | Each held receipt's payment and its last attempt's failure, if any.
-getPendingStoreReceipts :: DB.Connection -> User -> IO [(Text, Maybe BadgeIssueFailure)]
-getPendingStoreReceipts db User {userId} =
-  DB.query db "SELECT payment, credit_error FROM badge_store_receipts WHERE user_id = ? AND payment IS NOT NULL" (Only userId)
+-- | Each held receipt's payment and its last attempt's failure, if any; a lapsed one is not pending.
+getPendingStoreReceipts :: DB.Connection -> User -> UTCTime -> IO [(Text, Maybe BadgeIssueFailure)]
+getPendingStoreReceipts db User {userId} now =
+  filter (not . appleChargeLapsed now . fst)
+    <$> DB.query db "SELECT payment, credit_error FROM badge_store_receipts WHERE user_id = ? AND payment IS NOT NULL" (Only userId)
 
 -- | A profile showing a badge waits with its held records, but for a change of the tier of the badge it shows.
-getNextHeldStoreReceipt :: DB.Connection -> UserId -> IO (Either StoreError (Maybe BadgeReceiptRecord))
-getNextHeldStoreReceipt db userId =
-  fmap Right . maybeFirstRow toHeld $
+-- A lapsed one is not attempted; a later charge handed over re-arms it.
+getNextHeldStoreReceipt :: DB.Connection -> UserId -> UTCTime -> IO (Either StoreError (Maybe BadgeReceiptRecord))
+getNextHeldStoreReceipt db userId now =
+  fmap (Right . fmap toHeld . find (not . lapsed)) $
     DB.query
       db
       [sql|
@@ -363,12 +369,21 @@ getNextHeldStoreReceipt db userId =
         WHERE r.user_id = ? AND r.payment IS NOT NULL
           AND (u.shown_badge_id IS NULL OR (r.hold_kind = ? AND u.shown_badge_id = p.badge_purchase_id))
         ORDER BY r.next_attempt_at, r.retry_count, r.badge_store_receipt_id
-        LIMIT 1
       |]
       (userId, SHKTierChange)
   where
     toHeld (stashRow@(receiptId, _, _, _) :. (invoiceId, payment, nextAttemptAt, retryDelay, holdKind)) =
       BadgeReceiptRecord {receiptId, ownerId = userId, status = RSHeld {stash = toBadgeStash BSRStoreReceipt stashRow, invoiceId, payment, nextAttemptAt, retryDelay, holdKind}}
+    lapsed (_ :. (_, payment, _, _, _)) = appleChargeLapsed now payment
+
+-- | A held Apple subscription charge whose paid period ended more than a day ago, as one refunded before it was credited:
+-- it neither blocks a new badge nor shows as open nor is attempted, and its record stays, as a later charge under its original id continues it.
+appleChargeLapsed :: UTCTime -> Text -> Bool
+appleChargeLapsed now payment = case decodeJSON payment of
+  Just SPApple {jws}
+    | Just AppleTransactionFacts {expiresDate = Just expires, autoRenewable = True} <- appleTransactionFacts jws ->
+        nominalDay `addUTCTime` posixSecondsToUTCTime (fromIntegral expires / 1000) <= now
+  _ -> False
 
 storeReceiptHeldFor :: DB.Connection -> Int64 -> UserId -> StoreHoldKind -> IO Bool
 storeReceiptHeldFor db receiptId userId holdKind =
@@ -426,7 +441,7 @@ reholdStoreReceipt db owner receiptId badgePurchaseId holdKind payment now = do
       | newestId == badgePurchaseId -> case holdKind of
           SHKTierChange | shown -> True <$ hold
           SHKPurchase | not shown -> do
-            pending <- getPendingStoreReceipts db owner
+            pending <- getPendingStoreReceipts db owner now
             True <$ when (null pending) hold
           _ -> pure False
     _ -> pure False

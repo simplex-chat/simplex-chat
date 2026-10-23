@@ -6051,7 +6051,7 @@ storeReceiptRows ChatController {chatStore} =
 storeReceiptDue :: ChatController -> Int64 -> IO Bool
 storeReceiptDue ChatController {chatStore} userId =
   withTransaction chatStore $ \db ->
-    getNextHeldStoreReceipt db userId >>= either (error . show) (pure . isJust)
+    getCurrentTime >>= getNextHeldStoreReceipt db userId >>= either (error . show) (pure . isJust)
 
 heldStoreReceipts :: ChatController -> IO Int
 heldStoreReceipts ChatController {chatStore} =
