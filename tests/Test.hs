@@ -37,11 +37,6 @@ import Test.Hspec.Core.Spec (sequential)
 import UnliftIO.Temporary (withTempDirectory)
 import ValidNames
 import ViewTests
-#if MIN_VERSION_base(4,18,0)
-import Control.Concurrent (forkIO, threadDelay)
-import Control.Monad (forM_, void)
-import GHC.Conc.Sync (listThreads, threadLabel, threadStatus)
-#endif
 #if defined(dbPostgres)
 import Control.Exception (bracket_, finally)
 import PostgresSchemaDump
@@ -58,7 +53,6 @@ import WebRTCTests
 
 main :: IO ()
 main = do
-  dumpThreadsAfter 40
   setLogLevel LogError
 #if !defined(dbPostgres)
   chatQueryStats <- TM.emptyIO
@@ -147,17 +141,3 @@ main = do
 
 logCfg :: LogConfig
 logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
-
-dumpThreadsAfter :: Int -> IO ()
-#if MIN_VERSION_base(4,18,0)
-dumpThreadsAfter minutes = void . forkIO $ do
-  threadDelay $ minutes * 60000000
-  ts <- listThreads
-  putStrLn $ "=== " <> show (length ts) <> " threads after " <> show minutes <> " minutes"
-  forM_ ts $ \t -> do
-    s <- threadStatus t
-    l <- threadLabel t
-    putStrLn $ show t <> " " <> show s <> " " <> maybe "" id l
-#else
-dumpThreadsAfter _ = pure ()
-#endif
