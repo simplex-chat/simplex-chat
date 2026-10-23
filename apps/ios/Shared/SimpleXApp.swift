@@ -43,7 +43,8 @@ struct SimpleXApp: App {
                 .environmentObject(chatModel)
                 .environmentObject(AppTheme.shared)
                 .onOpenURL { url in
-                    logger.debug("ContentView.onOpenURL: \(url)")
+                    // an app link can carry a secret, such as a badge code that anyone who reads it can redeem
+                    logger.debug("ContentView.onOpenURL: \(isAppLink(url) ? "app link" : url.absoluteString)")
                     if AppChatState.shared.value == .active {
                         chatModel.appOpenUrl = url
                     } else {
@@ -100,6 +101,7 @@ struct SimpleXApp: App {
                                             if !chatModel.showCallView && !CallController.shared.hasActiveCalls() {
                                                 await updateCallInvitations()
                                             }
+                                            Task { await BadgeStore.shared.presentUnfinished() }
                                             if let url = chatModel.appOpenUrlLater {
                                                 await MainActor.run {
                                                     chatModel.appOpenUrlLater = nil

@@ -146,7 +146,8 @@ skipComparisonForDownMigrations =
     -- appends; CREATE INDEX appends).
     "20260529_delivery_job_senders",
     -- group_domain is removed
-    "20260603_simplex_name"
+    "20260603_simplex_name",
+    "20261018_autoincrement_ids"
   ]
 
 getSchema :: FilePath -> FilePath -> IO String

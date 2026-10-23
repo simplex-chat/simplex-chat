@@ -70,7 +70,7 @@ sShow = plain . show
 
 sgr :: Format -> [SGR]
 sgr = \case
-  Bold -> [SetConsoleIntensity BoldIntensity]
+  Bold {} -> [SetConsoleIntensity BoldIntensity]
   Italic -> [SetUnderlining SingleUnderline, SetItalicized True]
   StrikeThrough -> [SetSwapForegroundBackground True]
   Colored (FormatColor c) -> [SetColor Foreground Vivid c]

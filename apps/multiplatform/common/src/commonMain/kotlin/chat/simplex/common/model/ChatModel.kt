@@ -132,6 +132,8 @@ object BadgeModel {
 
 enum class ChatListBanner { BadgeExpired, BadgeIssueFailed, BadgePitch, GetStake }
 
+data class FileToOpen(val fileId: Long, val inChatList: Boolean)
+
 /*
  * Without this annotation an animation from ChatList to ChatView has 1 frame per the whole animation. Don't delete it
  * */
@@ -205,7 +207,20 @@ object ChatModel {
   // another in its place; only the badge alert shows regardless. Set while rendering, so not a state.
   var chatListBanner: ChatListBanner? = null
 
+  var fileToOpen: FileToOpen? = null
+
   fun bannerSlotFree(banner: ChatListBanner): Boolean = chatListBanner == null || chatListBanner == banner
+
+  fun openWhenReceived(file: CIFile, inChatList: Boolean) {
+    fileToOpen = FileToOpen(file.fileId, inChatList)
+  }
+
+  fun receivedFileToOpen(file: CIFile, inChatList: Boolean): Boolean {
+    val f = fileToOpen
+    if (f == null || f.fileId != file.fileId || f.inChatList != inChatList || !file.loaded) return false
+    fileToOpen = null
+    return !inChatList || appPlatform.isDesktop || chatId.value == null
+  }
 
   // preferences
   val notificationPreviewMode by lazy {
@@ -399,6 +414,13 @@ object ChatModel {
     }
   }
 
+  suspend fun addSentChatItem(activeCtx: ChatsContext, rhId: Long?, cInfo: ChatInfo, cItem: ChatItem) {
+    activeCtx.addChatItem(rhId, cInfo, cItem)
+    if (activeCtx.secondaryContextFilter != null && cInfo.inMainChatList) {
+      chatsContext.addChatItem(rhId, cInfo, cItem)
+    }
+  }
+
   // Spec: spec/state.md#ChatsContext
   class ChatsContext(val secondaryContextFilter: SecondaryContextFilter?) {
     val chats = mutableStateOf(SnapshotStateList<Chat>())
@@ -569,9 +591,9 @@ object ChatModel {
       val i = getChatIndex(rhId, cInfo.id)
       val chat: Chat
       if (i >= 0) {
-        chat = chatsContext.chats[i]
+        chat = chats[i]
         // update preview (for chat from main scope to show new items for invitee in pending status)
-        if (cInfo.groupChatScope() == null || cInfo.groupInfo_?.membership?.memberPending == true) {
+        if (cInfo.inMainChatList) {
           val newPreviewItem = when (cInfo) {
             is ChatInfo.Group -> {
               val currentPreviewItem = chat.chatItems.firstOrNull()
@@ -589,20 +611,20 @@ object ChatModel {
             else -> cItem
           }
           val wasUnread = chat.unreadTag
-          chatsContext.chats[i] = chat.copy(
+          chats[i] = chat.copy(
             chatItems = arrayListOf(newPreviewItem),
             chatStats =
-            if (cItem.meta.itemStatus is CIStatus.RcvNew) {
+            if (cItem.meta.itemStatus is CIStatus.RcvNew && secondaryContextFilter == null) {
               increaseUnreadCounter(rhId, currentUser.value!!)
               chat.chatStats.copy(unreadCount = chat.chatStats.unreadCount + 1, unreadMentions = if (cItem.meta.userMention) chat.chatStats.unreadMentions + 1 else chat.chatStats.unreadMentions)
             } else
               chat.chatStats
           )
-          updateChatTagReadInPrimaryContext(chatsContext.chats[i], wasUnread)
+          updateChatTagReadInPrimaryContext(chats[i], wasUnread)
         }
         // pop chat
         if (appPlatform.isDesktop && cItem.chatDir.sent) {
-          reorderChat(chatsContext.chats[i], 0)
+          reorderChat(chats[i], 0)
         } else {
           popChatCollector.throttlePopChat(chat.remoteHostId, chat.id, currentPosition = i)
         }
@@ -1857,6 +1879,9 @@ sealed class ChatInfo: SomeChat, NamedChat {
 
   val isChannel: Boolean
     get() = groupInfo_?.useRelays == true
+
+  val inMainChatList: Boolean
+    get() = groupChatScope() == null || groupInfo_?.membership?.memberPending == true
 }
 
 @Serializable
@@ -1939,7 +1964,7 @@ data class Contact(
     activeConn?.customUserProfileId != null
 
   val chatIconName: ImageResource get() =
-    if (isBot) MR.images.ic_cube else MR.images.ic_account_circle_filled
+    peerTypeIcon(profile.peerType)
 
   fun allowsFeature(feature: ChatFeature): Boolean = when (feature) {
     ChatFeature.TimedMessages -> mergedPreferences.timedMessages.contactPreference.allow != FeatureAllowed.NO
@@ -2150,6 +2175,7 @@ sealed class ChatPeerType {
   @Serializable @SerialName("human") object Human: ChatPeerType()
   @Serializable @SerialName("bot") object Bot: ChatPeerType()
   @Serializable @SerialName("business") object Business: ChatPeerType()
+  @Serializable @SerialName("agent") object Agent: ChatPeerType()
   @Serializable @SerialName("unknown") data class Unknown(val type: String): ChatPeerType()
 
   val text: String
@@ -2157,6 +2183,7 @@ sealed class ChatPeerType {
       is Human -> "human"
       is Bot -> "bot"
       is Business -> "business"
+      is Agent -> "agent"
       is Unknown -> type
     }
 }
@@ -2168,10 +2195,18 @@ object ChatPeerTypeSerializer : KSerializer<ChatPeerType> {
       "human" -> ChatPeerType.Human
       "bot" -> ChatPeerType.Bot
       "business" -> ChatPeerType.Business
+      "agent" -> ChatPeerType.Agent
       else -> ChatPeerType.Unknown(v)
     }
   override fun serialize(encoder: Encoder, value: ChatPeerType) = encoder.encodeString(value.text)
 }
+
+fun peerTypeIcon(peerType: ChatPeerType?): ImageResource =
+  when (peerType) {
+    ChatPeerType.Bot -> MR.images.ic_cube
+    ChatPeerType.Agent -> MR.images.ic_agent
+    else -> MR.images.ic_account_circle_filled
+  }
 
 // Supporter badge. The credential/proof bytes stay core-side; the UI only sees the disclosed type + status.
 // Unknown types keep their string so a verified badge's real name can be shown, while the icon falls back to supporter.
@@ -2269,6 +2304,12 @@ sealed class BadgeIssueFailure {
     is Network -> generalGetString(MR.strings.badges_error_unreachable)
     is InvalidCredential -> generalGetString(MR.strings.badges_error_credential_invalid)
     is Unexpected -> String.format(generalGetString(MR.strings.badges_error_unexpected), message)
+  }
+
+  val purchaseText: String get() = when (this) {
+    is ServiceError -> badgeServiceErrorText(code) ?: String.format(generalGetString(MR.strings.badges_error_purchase_refused), code.text)
+    is InvalidCredential -> generalGetString(MR.strings.badges_error_credential_not_verified)
+    is ServiceTimeout, is Network, is Unexpected -> text
   }
 
   // the stored form, for support
@@ -3376,6 +3417,7 @@ data class ChatItem (
   val meta: CIMeta,
   val content: CIContent,
   val formattedText: List<FormattedText>? = null,
+  val markdownBlocks: List<MarkdownBlock>? = null,
   val mentions: Map<String, CIMention>? = null,
   val quotedItem: CIQuote? = null,
   val reactions: List<CIReactionCount>,
@@ -4381,7 +4423,8 @@ class CIQuote (
   val sharedMsgId: String? = null,
   val sentAt: Instant,
   val content: MsgContent,
-  val formattedText: List<FormattedText>? = null
+  val formattedText: List<FormattedText>? = null,
+  val markdownBlocks: List<MarkdownBlock>? = null
 ): ItemContent {
   override val text: String by lazy {
     if (content.text == "" && content is MsgContent.MCVoice)
@@ -5133,7 +5176,7 @@ class FormattedText(val text: String, val format: Format? = null) {
   val linkUri: String? get() =
     when (format) {
       is Format.Uri -> text
-      is Format.HyperLink -> format.linkUri
+      is Format.HyperLink -> if (format.isEmail) null else format.linkUri
       else -> null
     }
 
@@ -5144,7 +5187,7 @@ class FormattedText(val text: String, val format: Format? = null) {
 
 @Serializable
 sealed class Format {
-  @Serializable @SerialName("bold") class Bold: Format()
+  @Serializable @SerialName("bold") class Bold(val singleStar: Boolean = false): Format()
   @Serializable @SerialName("italic") class Italic: Format()
   @Serializable @SerialName("strikeThrough") class StrikeThrough: Format()
   @Serializable @SerialName("snippet") class Snippet: Format()
@@ -5152,7 +5195,9 @@ sealed class Format {
   @Serializable @SerialName("small") class Small: Format()
   @Serializable @SerialName("colored") class Colored(val color: FormatColor): Format()
   @Serializable @SerialName("uri") class Uri: Format()
-  @Serializable @SerialName("hyperLink") class HyperLink(val showText: String?, val linkUri: String): Format()
+  @Serializable @SerialName("hyperLink") class HyperLink(val showText: String?, val linkUri: String): Format() {
+    val isEmail: Boolean get() = linkUri.startsWith("mailto:")
+  }
   @Serializable @SerialName("simplexLink") class SimplexLink(val showText: String?, val linkType: SimplexLinkType, val simplexUri: String, val smpHosts: List<String>): Format() {
     val simplexLinkText: String get() =
       "${linkType.description} $viaHosts"
@@ -5169,6 +5214,8 @@ sealed class Format {
   }
   @Serializable @SerialName("email") class Email: Format()
   @Serializable @SerialName("phone") class Phone: Format()
+  @Serializable @SerialName("escape") class Escape: Format()
+  @Serializable @SerialName("markup") class Markup(val token: BlockToken): Format()
   @Serializable @SerialName("unknown") class Unknown: Format()
 
   val style: SpanStyle @Composable get() = when (this) {
@@ -5188,6 +5235,8 @@ sealed class Format {
     is Email -> linkStyle
     is Phone -> linkStyle
     is Modal -> linkStyle
+    is Escape -> SpanStyle()
+    is Markup -> SpanStyle()
     is Unknown -> SpanStyle()
   }
 
@@ -5196,6 +5245,87 @@ sealed class Format {
   companion object {
     val linkStyle @Composable get() = SpanStyle(color = MaterialTheme.colors.primary, textDecoration = TextDecoration.Underline)
   }
+}
+
+@Serializable
+sealed class BlockToken {
+  @Serializable @SerialName("lineBreak") class LineBreak: BlockToken()
+  @Serializable @SerialName("softBreak") class SoftBreak: BlockToken()
+  @Serializable @SerialName("hardBreak") class HardBreak: BlockToken()
+  @Serializable @SerialName("paragraphBreak") class ParagraphBreak(val lineBreaks: Int): BlockToken()
+  @Serializable @SerialName("indent") class Indent: BlockToken()
+  @Serializable @SerialName("headingMark") class HeadingMark(val level: Int): BlockToken()
+  @Serializable @SerialName("headingClose") class HeadingClose: BlockToken()
+  @Serializable @SerialName("headingUnderline") class HeadingUnderline(val level: Int): BlockToken()
+  @Serializable @SerialName("listMark") class ListMark(val number: String? = null): BlockToken()
+  @Serializable @SerialName("quoteMark") class QuoteMark: BlockToken()
+  @Serializable @SerialName("fenceMark") class FenceMark(val language: String? = null): BlockToken()
+  @Serializable @SerialName("rowMark") class RowMark: BlockToken()
+  @Serializable @SerialName("cellMark") class CellMark: BlockToken()
+  @Serializable @SerialName("delimiterRow") class DelimiterRow(val columns: List<TableAlign>): BlockToken()
+  @Serializable @SerialName("ruleMark") class RuleMark: BlockToken()
+
+  val drawnText: String get() = when (this) {
+    is SoftBreak -> " "
+    is LineBreak, is HardBreak -> "\n"
+    is ParagraphBreak -> "\n".repeat(lineBreaks)
+    else -> ""
+  }
+
+  val previewText: String get() = when (this) {
+    is SoftBreak, is HardBreak, is CellMark -> " "
+    is LineBreak, is ParagraphBreak -> "\n"
+    is ListMark -> (number ?: "•") + " "
+    else -> ""
+  }
+}
+
+@Serializable
+sealed class MarkdownBlock {
+  @Serializable @SerialName("paragraph") class Paragraph(val content: SegmentRange): MarkdownBlock()
+  @Serializable @SerialName("heading") class Heading(val level: Int, val content: SegmentRange): MarkdownBlock()
+  @Serializable @SerialName("codeBlock") class CodeBlock(val language: String? = null, val content: SegmentRange): MarkdownBlock()
+  @Serializable @SerialName("quote") class Quote(val content: SegmentRange): MarkdownBlock()
+  @Serializable @SerialName("list") class ItemList(val items: List<ListEntry>): MarkdownBlock()
+  @Serializable @SerialName("table") class Table(val columns: List<TableAlign>, val header: List<SegmentRange>, val rows: List<List<SegmentRange>>): MarkdownBlock()
+  @Serializable @SerialName("rule") class Rule(val mark: SegmentRange): MarkdownBlock()
+}
+
+@Serializable
+class ListEntry(val number: String? = null, val content: SegmentRange, val items: List<ListEntry>)
+
+@Serializable
+class SegmentRange(val from: Int, val to: Int)
+
+@Serializable
+enum class TableAlign {
+  @SerialName("none") None,
+  @SerialName("left") Left,
+  @SerialName("center") Center,
+  @SerialName("right") Right
+}
+
+class BlockTextRange(val range: SegmentRange, val inRow: Boolean)
+
+val MarkdownBlock.textRanges: List<BlockTextRange> get() = when (this) {
+  is MarkdownBlock.Paragraph -> listOf(BlockTextRange(content, false))
+  is MarkdownBlock.Heading -> listOf(BlockTextRange(content, false))
+  is MarkdownBlock.CodeBlock -> listOf(BlockTextRange(content, false))
+  is MarkdownBlock.Quote -> listOf(BlockTextRange(content, false))
+  is MarkdownBlock.ItemList -> listEntries(items, 0).map { (entry, _) -> BlockTextRange(entry.content, false) }
+  is MarkdownBlock.Table -> (listOf(header) + rows).flatMap { row -> row.mapIndexed { c, cell -> BlockTextRange(cell, c > 0) } }
+  is MarkdownBlock.Rule -> emptyList()
+}
+
+fun listEntries(items: List<ListEntry>, level: Int): List<Pair<ListEntry, Int>> =
+  items.flatMap { listOf(it to level) + listEntries(it.items, level + 1) }
+
+fun blockTextRanges(blocks: List<MarkdownBlock>): List<BlockTextRange> = blocks.flatMap { it.textRanges }
+
+fun headingSegments(size: Int, blocks: List<MarkdownBlock>): BooleanArray {
+  val bold = BooleanArray(size)
+  blocks.forEach { if (it is MarkdownBlock.Heading) for (i in it.content.from.coerceIn(0, size) until it.content.to.coerceIn(0, size)) bold[i] = true }
+  return bold
 }
 
 @Serializable
@@ -5683,6 +5813,7 @@ data class ChatItemVersion(
   val chatItemVersionId: Long,
   val msgContent: MsgContent,
   val formattedText: List<FormattedText>?,
+  val markdownBlocks: List<MarkdownBlock>? = null,
   val itemVersionTs: Instant,
   val createdAt: Instant,
 )

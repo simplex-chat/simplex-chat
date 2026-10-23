@@ -9,9 +9,9 @@ Environment:
   STRIPE_PUBLISHABLE_KEY    substituted into the
                             served index.html. Public by design, but still not
                             committed: unset, the page has NO card form and
-                            renders the development stand-in instead, whose
-                            button does what a successful confirm does and whose
-                            settling is POST /control/settle/<invoiceId> below.
+                            choosing Card reaches "The card form did not load",
+                            so drive a purchase with btc or xmr and settle it
+                            with POST /control/settle/<invoiceId> below.
                             Set it to a `pk_test_...` key to drive the real
                             Stripe path; a secret key here is refused at start.
 """
@@ -111,8 +111,8 @@ def public_view(inv):
 def with_publishable_key(html):
     """The publishable key is compiled into the page. Here it comes
     from the environment, so nothing that could be a real key is ever written
-    back into public/index.html. Unset leaves the committed empty value, which
-    is what selects the development stand-in."""
+    back into public/index.html. Unset leaves the committed empty value, with
+    which the page offers no card form at all."""
     if not STRIPE_PUBLISHABLE_KEY:
         return html
     text, found = KEY_META.subn(lambda m: m.group(1) + STRIPE_PUBLISHABLE_KEY + m.group(2), html.decode())
@@ -314,7 +314,7 @@ def main():
     print(f"mock badge service on http://localhost:{port}", flush=True)
     print("stripe: " + (f"publishable key {STRIPE_PUBLISHABLE_KEY[:11]}… — the real card form"
                         if STRIPE_PUBLISHABLE_KEY
-                        else "no STRIPE_PUBLISHABLE_KEY — the card path renders the development stand-in"),
+                        else "no STRIPE_PUBLISHABLE_KEY — no card form; pay with btc or xmr"),
           flush=True)
     server.serve_forever()
 
