@@ -72,8 +72,8 @@ import Simplex.Chat.Library.Commands (heldChargeAttempts, resumeHoldLimit, subsc
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Options.DB
 import Simplex.Chat.PaymentService (ServicePayment (..), googlePurchaseRef)
-import Simplex.Chat.PaymentService.Types (InvoiceId (..))
-import Simplex.Chat.Store.Badges (StoreHoldKind (..), clearShownBadge, getLatestIssuedCredential, getNextHeldStoreReceipt, reholdStoreReceipt)
+import Simplex.Chat.PaymentService.Types (InvoiceId (..), PaymentProvider (PPGoogle), StoreTransactionRef (StoreTransactionRef))
+import Simplex.Chat.Store.Badges (StoreHoldKind (..), clearShownBadge, getLatestIssuedCredential, getNextHeldStoreReceipt, holdStoreReceipt, holdStoreTransfer, reholdStoreReceipt, storeReceiptHeldFor)
 import Simplex.Chat.Store.Profiles (getUser, setUserBadge)
 import Simplex.Messaging.Agent (disposeAgentClient)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..))
@@ -224,6 +224,7 @@ badgeServiceTests = do
       it "should move a subscription back to the device it left once the first key's credential expired" testRestoreMovesBack
       it "should refuse Restore while a badge is shown, recording nothing, and answer a limited move's next Restore with the limit, holding it again" testRestoreLimitedOnNewDevice
       it "should leave a tier change held for one profile unchanged when a Restore on another profile finds it" testRestoreLeavesTierChangeHold
+      it "should no longer find a held record held for its owner once a Restore on another profile takes it" testStoreReceiptHeldForAfterRestore
       it "should hold a tier change at once after a move of its subscription was refused transfer_limited" testRefusedMoveKeepsTierChange
       it "should give a move held for a deleted profile back to the profile whose purchase it funds" testRestoreHeldProfileDeleted
       it "should take a purchase hand-over held for one profile to the profile that restores it, and credit it there" testRestoreTakesHeldPurchase
@@ -3198,6 +3199,28 @@ testRestoreLeavesTierChangeHold ps =
       storeReceiptHolds a `shouldReturn` [(1, "tier_change")]
       heldStoreReceipts a `shouldReturn` 1
       dropOutput alice
+
+-- | A Restore takes a held record without its owner's lock, so the owner's worker checks it again under the lock.
+testStoreReceiptHeldForAfterRestore :: HasCallStack => TestParams -> IO ()
+testStoreReceiptHeldForAfterRestore ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClientCfg} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      alice ##> "/create user alisa"
+      showActiveUser alice "alisa"
+      g <- C.newRandom
+      now <- serviceNow env
+      let token = restoreToken "held-for"
+          payment = googlePayment "subscr_badge_supporter_01" token
+          txRef = StoreTransactionRef PPGoogle (googlePurchaseRef token)
+      withTransaction (chatStore $ chatController alice) $ \db -> do
+        Right owner <- runExceptT $ getUser db 1
+        Right restorer <- runExceptT $ getUser db 2
+        void $ holdStoreReceipt db g owner BT.SROPurchased Nothing txRef payment now
+        [Only receiptId] <- DB.query_ db "SELECT badge_store_receipt_id FROM badge_store_receipts"
+        storeReceiptHeldFor db receiptId 1 SHKPurchase `shouldReturn` True
+        holdStoreTransfer db g restorer txRef payment now `shouldReturn` False
+        storeReceiptHeldFor db receiptId 1 SHKPurchase `shouldReturn` False
+        storeReceiptHeldFor db receiptId 2 SHKTransfer `shouldReturn` True
 
 testRefusedMoveKeepsTierChange :: HasCallStack => TestParams -> IO ()
 testRefusedMoveKeepsTierChange ps =
