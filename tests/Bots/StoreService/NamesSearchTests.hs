@@ -6,6 +6,7 @@
 
 module Bots.StoreService.NamesSearchTests (namesSearchTests, aliceHex) where
 
+import Bots.StoreService.ConfigTests (termsUrl, termsVersion)
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests
   ( answerRegistered,
@@ -36,6 +37,7 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.Types as JT
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as LB
+import qualified Data.Map.Strict as M
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -51,7 +53,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.SimplexName (SimplexTLD (..))
 import Simplex.Messaging.Transport.Client (TransportHost (..))
-import StoreService.Config (ListenerConfig (..), NamesConfig (..))
+import StoreService.Config (ListenerConfig (..), NamesConfig (..), TermsConfig (..))
 import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, uint256)
 import StoreService.Names.Contracts (Contracts (..))
 import StoreService.Names.Phases (RegistrationId (..))
@@ -115,6 +117,8 @@ namesConfig node =
       nTermSlackSeconds = 3600,
       nRevealMarginSeconds = 900,
       nMaxOrderMoves = 3,
+      nTerms = TermsConfig {tVersion = termsVersion, tUrl = termsUrl},
+      nCommunity = M.empty,
       nChain = fakeChainConfig node
     }
 

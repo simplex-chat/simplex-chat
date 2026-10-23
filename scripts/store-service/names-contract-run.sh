@@ -30,6 +30,11 @@ CLI_TIMEOUT_SECONDS=120
 # through [issuer] dev_keys, which the service accepts only on chain 31337. Never use it elsewhere.
 DEV_ISSUER_INDEX=999
 DEV_ISSUER_SECRET=Ea5wG-J2mQjPBu9YfSJRKPnGnzoIdEE-8VaMh_wY2Bg=
+TERMS_VERSION=2026-10-23
+TERMS_URL=https://simplex.chat/
+# the community name the webapp's community case searches for
+COMMUNITY_LABEL=bakers
+COMMUNITY_TEXT="bakers and bakeries in Portugal"
 
 # The cases at webapp 915a550. Each case is its own client by X-Forwarded-For, which the service trusts
 # here, as the mock does. Each takes its prepaid code from POST /control/code, which the code server
@@ -136,6 +141,11 @@ dev_keys = $DEV_ISSUER_INDEX:$DEV_ISSUER_SECRET
 
 [names]
 tld = $(jq -r .tld "$chain")
+terms_version = $TERMS_VERSION
+terms_url = $TERMS_URL
+
+[community]
+$COMMUNITY_LABEL = $COMMUNITY_TEXT
 
 [chain]
 rpc_url = $RPC_URL

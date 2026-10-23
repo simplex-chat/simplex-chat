@@ -37,6 +37,7 @@ module Bots.StoreService.NamesOrdersTests
   )
 where
 
+import Bots.StoreService.ConfigTests (termsUrl, termsVersion)
 import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), setInvoiceState, withFakeBTCPay)
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (alice, answerRegistered, answerRegistrar, nameExpiresCall, noncesCall, registrarOf, rentPriceAnswer, rentPriceCall, reservedNamesCall, unhex)
@@ -60,6 +61,7 @@ import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.IORef (IORef, atomicModifyIORef', modifyIORef', newIORef, readIORef, writeIORef)
 import Data.List (sort)
+import qualified Data.Map.Strict as M
 import Data.Maybe (fromJust, fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -82,7 +84,7 @@ import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Eth.EIP712 (serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
-import StoreService.Config (ChainConfig (..), NamesConfig (..), ServiceConfig (..))
+import StoreService.Config (ChainConfig (..), NamesConfig (..), ServiceConfig (..), TermsConfig (..))
 import StoreService.Names.Abi (hex, uint256)
 import StoreService.Names.Chain (newChainClient)
 import StoreService.Names.Contracts (newContracts)
@@ -292,7 +294,17 @@ data Ctx = Ctx
 
 testNamesConfig :: FakeEthNode -> NamesConfig
 testNamesConfig node =
-  NamesConfig {nTLD = TLDSimplex, nYears = 2, nTermStart = termStart, nTermSlackSeconds = slackSeconds, nRevealMarginSeconds = 900, nMaxOrderMoves = 3, nChain = fakeChainConfig node}
+  NamesConfig
+    { nTLD = TLDSimplex,
+      nYears = 2,
+      nTermStart = termStart,
+      nTermSlackSeconds = slackSeconds,
+      nRevealMarginSeconds = 900,
+      nMaxOrderMoves = 3,
+      nTerms = TermsConfig {tVersion = termsVersion, tUrl = termsUrl},
+      nCommunity = M.empty,
+      nChain = fakeChainConfig node
+    }
 
 -- | Each invoice the stub creates gets its own provider ref, and a card invoice its client secret.
 freshRefs :: IORef Int -> Provider -> Provider
