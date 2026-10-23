@@ -242,12 +242,13 @@ jobs:
           distribution: corretto
           java-version: ${{ env.JAVA_VER }}
 
+      # the Kotlin compiler daemon otherwise gets gradle.properties' 2 GB, which compiling :common runs out of
       - name: Build app
         id: build
         if: ${{ !cancelled() && steps.core.outcome == 'success' }}
         working-directory: apps/multiplatform
         run: |
-          ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets :desktop:createDistributable
+          ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets -Pkotlin.daemon.jvmargs=-Xmx4g :desktop:createDistributable
           app=release/main/app/simplex
           ls -la "$app/bin" "$app/lib/app/resources"
           du -sh "$app"
@@ -271,7 +272,7 @@ jobs:
       - name: Run desktop tests
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         working-directory: apps/multiplatform
-        run: ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets :common:desktopTest
+        run: ./gradlew --no-daemon --console=plain -Psimplex.assets.dir=../../assets -Pkotlin.daemon.jvmargs=-Xmx4g :common:desktopTest
 
       - name: Report desktop tests
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}

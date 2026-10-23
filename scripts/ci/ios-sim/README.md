@@ -36,7 +36,7 @@ Haiku 5.5 drives the app well: the smoke plan takes a few dozen turns and cents;
 
 ## Driving the app: `ui`
 
-`ui` wraps AXe (`install-axe.sh`) for scripts and for Claude: tap by label, value or point, swipe, type, paste, keys, wait for text, find, screenshots with trees, switch the layout (one-hand UI or top bar), relaunch, text size, and the backend's directory (`ui` with no arguments lists them). It needs `SIM_UDID` and `UI_OUT`, which the smoke test exports to the job. Lessons kept in its comments and in the smoke test: text fields have no label (tap them by value), the keyboard capitalizes and autocorrects (compare typed text case-insensitively), the closed user picker is always in the tree, "Cancel" clears the search field and its "Close" image doesn't, the keyboard's keys are below the screen.
+`ui` wraps AXe (`install-axe.sh`) for scripts and for Claude: tap by label, value or point, long press, swipe, type, paste, keys, wait for text, find, screenshots with trees, switch the layout (one-hand UI or top bar), relaunch, text size, and the backend's directory (`ui` with no arguments lists them). It needs `SIM_UDID` and `UI_OUT`, which the smoke test exports to the job. Lessons kept in its comments and in the smoke test: text fields have no label (tap them by value), the keyboard capitalizes and autocorrects (compare typed text case-insensitively), the closed user picker is always in the tree, "Cancel" clears the search field and its "Close" image doesn't, the keyboard's keys are below the screen.
 
 ## The test backend
 

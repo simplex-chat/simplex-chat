@@ -226,6 +226,25 @@ create_local_chat() {
 
 # Clicks a server role's value until its dropdown shows. The menu is open when an item reads exactly "yes", which no
 # role's value does ("default (yes)", "default (no)", "no"); it can take longer to show than OCR takes to read the screen.
+# The first item of the dropdown opened from the line at y $2, which repeats that line's value below it.
+menu_first_item() {
+  local target line x y deadline=$((SECONDS + 10))
+  target=$(normalise "$1")
+  while [ "$SECONDS" -lt "$deadline" ]; do
+    while IFS= read -r line; do
+      x=${line%%,*}
+      y=${line#*,}
+      y=${y%% *}
+      if [ "$x" -lt 390 ] && [ "$y" -gt $(($2 + 20)) ] && [ "$(normalise "${line#* }")" = "$target" ]; then
+        echo "$x $y"
+        return 0
+      fi
+    done < <("$ui" text)
+    sleep 1
+  done
+  return 1
+}
+
 open_role_menu() {
   for _ in 1 2 3; do
     "$ui" click-text "$1" 10 || return 1
@@ -267,9 +286,11 @@ use_names_server() {
   # OCR misreads the short "no", the item after "yes"
   read -r x y < <(left_pane_position yes exact) || fail "the \"To receive\" menu closed"
   "$ui" click "$x" $((y + 48))
-  open_role_menu "default (no)" || fail "no menu for the test server's \"To resolve names\""
-  read -r x y < <(left_pane_position yes exact) || fail "the \"To resolve names\" menu closed"
-  "$ui" click "$x" "$y"
+  # this menu opens over the address's QR code, where OCR can miss "yes", so it is the row under the menu's first item
+  y=$(y_of "To resolve names")
+  "$ui" click-text "default (no)" 10
+  read -r x y < <(menu_first_item "default (no)" "$y") || fail "no menu for the test server's \"To resolve names\""
+  "$ui" click "$x" $((y + 48))
   "$ui" shot names-server-roles
   # the first "default (yes)" and the first "yes" are on the lines after "To receive", so it is no
   in_line_with "default (yes)" "For private routing" || fail "the test server's \"To receive\" is still its default"
