@@ -57,7 +57,7 @@ struct BadgesCheckOrderView: View {
                     }
 
                     if !store.forSale(level, period) && store.subscribedBefore {
-                        footnote("This Apple ID subscribed before. In the app, it can subscribe again only to continue this profile's last purchase, when that was a subscription to this badge.")
+                        footnote("This Apple ID already has a badge subscription. Subscribe to the badge you had before; you can change it later in App Store settings.")
                     }
 
                     Spacer(minLength: 20)

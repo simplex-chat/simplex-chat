@@ -112,7 +112,7 @@ struct BadgesHowLongView: View {
                     .fixedSize(horizontal: false, vertical: true)
 
                     if !store.forSale(level, .monthly) && store.subscribedBefore {
-                        Text("This Apple ID subscribed before. In the app, it can subscribe again only to continue this profile's last purchase, when that was a subscription to this badge.")
+                        Text("This Apple ID already has a badge subscription. Subscribe to the badge you had before; you can change it later in App Store settings.")
                             .font(.footnote)
                             .foregroundColor(theme.colors.secondary)
                             .multilineTextAlignment(.center)
