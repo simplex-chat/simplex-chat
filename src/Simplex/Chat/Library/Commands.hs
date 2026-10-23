@@ -6192,8 +6192,8 @@ sendBadgeIssue sendTarget userId UserBadgePurchase {badgePurchaseId, badgeType, 
         (Just _, Nothing, _) -> recordFailure BIFInvalidCredential
         (_, _, False) -> recordUnexpected "issued badge credential has no ledger row to store it against"
         -- no credential is the service saying nothing is owed - the months ran out, or a subscription
-        -- waits for its store to charge - which its statement then shows
-        (Nothing, _, _) | maybe False ((> storedAt) . L.paidThrough) balance_ -> recordUnexpected "badge service issued no credential"
+        -- waits for its store to charge - which its statement then shows; ended after a move leaves the issued month running
+        (Nothing, _, _) | subscription /= Just SSEnded && maybe False ((> storedAt) . L.paidThrough) balance_ -> recordUnexpected "badge service issued no credential"
         _ -> pure ()
       maybe (throwCmdError "badge ledger has no balance") (pure . Right . (,storedSubscription)) balance_
     J.Success BSPError {code, retryAfter} -> do

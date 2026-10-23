@@ -215,6 +215,7 @@ badgeServiceTests = do
       it "should answer a transfer of a one-time purchase credited to another key receipt_used, moving nothing" testTransferOneTimeRefused
     describe "restore" $ do
       it "should move a subscription to another device on Restore right after its purchase, retire it on the old one, and credit one credited nowhere" testRestoreOnNewDevice
+      it "should retire a subscription Restore moved away when the old device asks within its issued month, recording no issue failure" testRestoreMovedOutAskedInMonth
       it "should hold a second Restore within the hour of the first without asking the store, and still ask once for a purchase presented in it" testRestoreHeldPerPurpose
       it "should move a subscription to another profile on Restore, and refuse a move on before the first key's credential expires, once" testRestoreOnOtherProfile
       it "should turn a held or receipt_used hand-over into a transfer on Restore" testRestoreAfterUnfinishedPass
@@ -3037,6 +3038,23 @@ testRestoreOnNewDevice ps =
           ledgerTags (chatController cath) `shouldReturn` [Just "charge", Just "badge"]
           reboundPayments cc `shouldReturn` 1
           mapM_ dropOutput [alice, bob, cath]
+
+testRestoreMovedOutAskedInMonth :: HasCallStack => TestParams -> IO ()
+testRestoreMovedOutAskedInMonth ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClientCfg, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg {badgeDevRequests = True} "alice" aliceProfile $ \alice ->
+      withNewTestChatCfg ps bsClientCfg "bob" bobProfile $ \bob -> do
+        firstStart <- addUTCTime (-3600) <$> serviceNow env
+        storeReports store $ subscriptionCheck SSRenewing $ Just $ storeCharge "subscr-badge-supporter-month-02" firstStart 1
+        alice `send` ("/_badge purchase 1 " <> paymentArg subscriptionPlay)
+        waitShownBadge (chatController alice) (Just 1)
+        bob `send` restoredCmd 1 subscriptionPlay
+        waitShownBadge (chatController bob) (Just 1)
+        -- the answer is ended with no credential while the issued month still runs past now
+        alice `send` "/_badge request 1"
+        waitShownBadge (chatController alice) Nothing
+        issueErrorRow (chatController alice) `shouldReturn` (Nothing, Nothing)
+        mapM_ dropOutput [alice, bob]
 
 testRestoreHeldPerPurpose :: HasCallStack => TestParams -> IO ()
 testRestoreHeldPerPurpose ps =
