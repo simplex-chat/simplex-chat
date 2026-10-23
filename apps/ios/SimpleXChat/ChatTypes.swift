@@ -1781,6 +1781,7 @@ public func toGroupPreferences(_ fullPreferences: FullGroupPreferences) -> Group
         simplexLinks: fullPreferences.simplexLinks,
         reports: fullPreferences.reports,
         history: fullPreferences.history,
+        support: fullPreferences.support,
         signMessages: fullPreferences.signMessages,
         commands: fullPreferences.commands
     )
