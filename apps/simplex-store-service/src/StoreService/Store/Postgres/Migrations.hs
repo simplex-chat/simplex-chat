@@ -22,7 +22,8 @@ schemaMigrations =
     ("20261010_names", m20261010_names, Just down_m20261010_names),
     ("20261022_drop_taken_codes", m20261022_drop_taken_codes, Just down_m20261022_drop_taken_codes),
     ("20261022_name_balances", m20261022_name_balances, Just down_m20261022_name_balances),
-    ("20261022_name_late_wait", m20261022_name_late_wait, Just down_m20261022_name_late_wait)
+    ("20261022_name_late_wait", m20261022_name_late_wait, Just down_m20261022_name_late_wait),
+    ("20261023_name_terms", m20261023_name_terms, Just down_m20261023_name_terms)
   ]
 
 -- | The client tables share this database, so the service tables are the same names behind a prefix.
@@ -457,6 +458,23 @@ down_m20261022_name_late_wait =
     servicePrefix
     [r|
 ALTER TABLE @name_invoices DROP COLUMN late_support;
+|]
+
+-- The terms an order signed; '' for an order stored before orders signed them.
+m20261023_name_terms :: Text
+m20261023_name_terms =
+  withPrefix
+    servicePrefix
+    [r|
+ALTER TABLE @name_registrations ADD COLUMN agreed_terms TEXT NOT NULL DEFAULT '';
+|]
+
+down_m20261023_name_terms :: Text
+down_m20261023_name_terms =
+  withPrefix
+    servicePrefix
+    [r|
+ALTER TABLE @name_registrations DROP COLUMN agreed_terms;
 |]
 
 {- TODO [badges] deferred with the draft in M20260915_user_badges, service only.
