@@ -92,7 +92,8 @@ writeFileSync(OUT, JSON.stringify(deployment, null, 2) + '\n')
 console.log(`wrote ${OUT}\n
 [names]
 tld = ${TLD}
-; no resolver runs here: set resolver_url to simplexmq's scripts/resolver started against this chain
+terms_version = 2026-10-23
+terms_url = https://simplex.chat/
 
 [chain]
 rpc_url = ${deployment.rpcUrl}
