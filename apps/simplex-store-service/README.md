@@ -984,7 +984,7 @@ payment against this service in Chromium, as they run against the webapp's mock.
 2. builds the names site (`vite build`) into the run's folder;
 3. writes an ini for that deployment with `[names]` and `[chain]` and no `[btcpay]` or `[stripe]`,
    with the terms version `2026-10-23` and the one community name `bakers`, which the webapp's
-   community case searches for,
+   community cases search for,
    serving the names site all in one on the host `127.0.0.1`, and signing with the test suite's
    public issuer secret (`issuerSecret` in `tests/Bots/StoreService/ConfigTests.hs`), trusted through
    `[issuer] dev_keys`. That secret is public: never use it outside this script;
@@ -1021,7 +1021,8 @@ WEBAPP_DIR=../simplex.domains/webapp ENS_CONTRACTS_DIR=<ens-contracts> ANVIL=<an
 The default cases cover search answers for an available name, Check your code and its rate-limit
 countdown, code orders to `registered` with and without links, a code order's name code restored and
 revealed in another browser, Edit links on a name registered with a code (the other Edit links case
-answers its own name and record requests in the page), and a link whose data cannot be read now. "search answers every kind of name" is not among them: it takes the chain down
+answers its own name and record requests in the page), a link whose data cannot be read now, and a
+community name's marker and its Check your order wording. "search answers every kind of name" is not among them: it takes the chain down
 with `/control/search`.
 
 Each case sends its own `X-Forwarded-For`, and the ini sets `trust_forwarded_for = on`, so each case
