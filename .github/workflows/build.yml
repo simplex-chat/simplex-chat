@@ -40,7 +40,7 @@ env:
   ZSTD_CLEVEL: 9
 
 # This workflow uses custom actions (prepare-build and prepare-release) defined in:
-#
+# 
 # .github/actions/
 # ├── prepare-build
 # │   └── action.yml
@@ -1357,7 +1357,7 @@ jobs:
           minimum-size: 16GB
           maximum-size: 16GB
           disk-root: "C:"
-
+  
       - name: 'Setup MSYS2'
         uses: simplex-chat/setup-msys2@v2
         with:
