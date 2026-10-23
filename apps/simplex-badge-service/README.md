@@ -72,7 +72,8 @@ private_key = <secret from `simplex-chat badge keygen`>
 
 `index` is the index clients verify against (`badgePublicKeys` in `ChatConfig`), and `private_key`
 is the secret that signs. Both are required, and the key is checked at startup like the flags.
-Rotating is a change to both and a restart, once clients trust the new index.
+Rotating is a change to both and a restart, once clients trust the new index. The service logs the
+index it signs with at startup.
 
 The command line wins over the file when both `--issuer-key-idx` and `--issuer-secret` are given.
 Note that a secret passed as a flag is visible to every user on the machine through `ps`, where one
@@ -247,7 +248,10 @@ service_account_file = /etc/simplex-badge-service/play-service-account.json
   them, one-time purchases verify as before and every subscription is answered
   `provider_not_configured`. The three are set together or not at all. `api_host` defaults to the
   production host, `https://api.storekit.itunes.apple.com`, which answers nothing about a Sandbox
-  transaction; a test deployment sets `https://api.storekit-sandbox.itunes.apple.com`. A 401 or 403
+  transaction; a test deployment with `[dev] credit_test_purchases = on` (below) sets
+  `https://api.storekit-sandbox.itunes.apple.com`. The service refuses to start with any other host,
+  or with the Sandbox host while `credit_test_purchases` is off, as the Sandbox never charges anyone;
+  the host's case and a trailing slash do not matter. A 401 or 403
   from Apple, the key refused, is answered `internal` and logged. Keep the key file readable by this
   service alone.
 - `[google]` asks the Google Play Developer API about each purchase and subscription, and
@@ -268,8 +272,25 @@ service_account_file = /etc/simplex-badge-service/play-service-account.json
   it credits is read once more to acknowledge it), so made-up tokens can spend at most a tenth of
   the quota renewal checks share.
 
+While a subscription's paid coverage runs, as an annual plan's does for a year, the service asks
+its store before it issues each new month, at most once an hour. When the store reports the
+subscription ended, or the charge the service granted revoked, the months not yet issued are debited
+as a refund and the badge ends with the month already issued; a store that fails or does not answer
+ends nothing. A Play refund that leaves the subscription active is not seen: the service does not
+read Play's voided purchases.
+
 Which answers are terminal for a purchase and which leave it to be presented again is listed per
 store in [`docs/protocol/badges-rpc.md`](../../docs/protocol/badges-rpc.md#commands).
+
+The root certificates, the App Store Server API key and the Play service account key are read only
+at startup, so rotating any of them takes a restart. Until then the old key keeps being used, and
+each request the store refuses it for is answered `internal` and logged as an error.
+
+Do not roll back the `20261012_badge_subscriptions` migration on a database that holds store
+subscriptions. Its down migration drops their columns without refusing: every subscription becomes
+a prepaid purchase that is never renewed, every Play purchase token is lost, and every ledger with a
+charge, transfer or tier-change row can no longer be read, so its purchase answers `internal`.
+Upgrading again restores none of it. Take a backup first if a rollback is unavoidable.
 
 ### Accepting store receipts unverified, for local testing
 
@@ -293,14 +314,16 @@ length of its plan:
   test products sign their tokens so), or else the product's monthly base plan, so a licence
   tester's purchase is credited too;
 - a renewal: a new charge for the plan it first charged. It keeps that plan in memory only, so after
-  a restart it answers a renewal of a subscription it credited before as ended.
+  a restart it answers a renewal of a subscription it credited before as ended, and the unissued
+  months of a plan still covered are refunded at its next month.
 
 It acknowledges nothing, so Play refunds a licence tester's subscription it credited once Play's
 acknowledgement window lapses.
 
 With it on, anyone who can reach the service address can mint badges by sending a made-up receipt.
-That is harmless only while this deployment signs with an issuer key released apps do not carry, so
-they refuse what it signs — never turn it on where the key is one those apps trust.
+The service starts only with an issuer key released apps trust, so they accept every badge it
+mints this way, and a subscription credited so renews at every check for as long as the process
+runs. Never turn it on where anyone but you can reach the service.
 
 ```ini
 [dev]
@@ -309,16 +332,17 @@ check_store_during_coverage = on
 ```
 
 With `check_store_during_coverage` on as well, the service asks its store, the mock or a real one
-with `credit_test_purchases` on (below), at every `issueBadge` for a subscription, while its paid
-coverage runs too, rather than once coverage has ended and at most once an hour. A charge it
-reports during coverage is banked: a charge row, the plan's months added to what is left and a
-later paid-through date, and those months are issued once coverage reaches them. So a renewal
-shows at once, though its credential waits for the paid month to end on the service's clock, and
-after a restart the mock answers the subscription ended at once. The mock charges anew at every
+with `credit_test_purchases` on (below), at every `issueBadge` for a subscription, rather than at
+most once an hour and only when a month is due. A charge it reports during coverage is banked: a
+charge row, the plan's months added to what is left and a later paid-through date, and those
+months are issued once coverage reaches them; a deployment without the setting only records it.
+So a renewal shows at once, though its credential waits for the paid month to end on the service's
+clock, and after a restart the mock answers the subscription ended at once, so the months banked
+are refunded. The mock charges anew at every
 check, so every such request banks the plan's months again; space requests over a minute apart, as
 the mock dates a charge a minute back and the app fails a ledger row dated before the one it
 follows. The service logs each banked charge as
-`store subscription charge banked: <n> months for <purchase key part>`, which tells a banked month
+`store subscription charge banked: <n> months`, which tells a banked month
 from a repeated `badge issued`. Off by default, and the service refuses to start with it on unless
 `accept_unverified_store_receipts` or `credit_test_purchases` is on: a real store has not started
 its next charge while coverage runs, and asking it then would spend the quota every subscriber
@@ -336,9 +360,14 @@ buy in) or a Play licence tester's, is refused `test_purchase` by default, which
 can never be credited. With this on, the service credits it as a real one, one-time purchases and
 subscriptions alike. It applies beside a real `[apple]` or `[google]` section, which still verifies
 every receipt, and changes nothing beside `accept_unverified_store_receipts`, whose mock reports
-no test purchase. The service logs a warning at every start while it is on. Off by default, and only
-`on`/`off` parse. A Sandbox subscription is read only through the sandbox host, so `[apple]` also
-sets `api_host = https://api.storekit-sandbox.itunes.apple.com`.
+no test purchase. The service logs a warning at every start while it is on, and at every test
+purchase and test subscription it takes as paid. Off by default, and only `on`/`off` parse.
+
+Beside `[apple]` the service starts with it on only when `[apple]` sets the server API key with
+`api_host = https://api.storekit-sandbox.itunes.apple.com`: a Sandbox receipt verifies offline like
+any other, so beside the production host, or without the key, Sandbox purchases would be credited as
+real ones. Beside `[google]` it is allowed, as Play calls a purchase a test only for the licence
+testers the Play Console lists.
 
 ```ini
 [dev]
@@ -349,9 +378,10 @@ check_store_during_coverage = on
 With both on, the real store is asked at every `issueBadge` for a subscription, as above, to watch
 its renewals by hand: a Sandbox subscription renews every few minutes.
 
-No setting marks a production deployment, so the service cannot refuse this flag there: never turn
-it on where released apps trust the issuer key, or anyone with a TestFlight build or a licence
-tester's account gets a badge without paying.
+The service starts only with an issuer key released apps trust, so they accept every badge it
+credits this way. Nothing tells a production `[google]` from a test one, so never turn this on
+beside the production Play app's `[google]`, or every licence tester the Play Console lists gets a
+badge without paying.
 
 ## Issuing codes
 

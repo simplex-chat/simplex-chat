@@ -117,7 +117,7 @@ badgeTests = do
     it "statement entries round-trip, unknown entry types verbatim" testStatementJSON
   describe "badge state" $ do
     it "carries a subscription's plan and last seen state, renewing only when it was seen renewing, and bounds a state it does not know" testBadgeSubscriptionJSON
-    it "derives one alert for a subscription in order of urgency, dated paidThrough, and leaves prepaid alerts as they were" testSubscriptionAlertDerivation
+    it "derives one alert for a subscription in order of urgency, dated paidThrough, leaves prepaid alerts as they were, and derives none for a purchase Restore moved away" testSubscriptionAlertDerivation
   describe "store purchases" $ do
     it "keys a purchase by the store's transaction id, not by the evidence signed over it" testStoreTransactionRef
     it "claims an Apple subscription by its original transaction id, and any other transaction by its own" testAppleTransactionRef
@@ -1316,9 +1316,10 @@ testSubscriptionAlertDerivation = do
       soon = addUTCTime (-nominalDay) ends
       past = addUTCTime nominalDay ends
       subscription months st = SB.PKSubscription BadgeSubscription {planMonths = months, status = st, transactionRef = Nothing}
-      alertOf t kind' isShown err =
+      alertOf = alertAfter balance
+      alertAfter tip t kind' isShown err =
         let p = SB.UserBadgePurchase {badgePurchaseId = 1, purchaseKey = k, purchasePrivKey = pk, masterKey = mk, badgeType = BTSupporter, shown = isShown, alertAcked = Nothing, alertSnoozeUntil = Nothing, issueError = err, nextWakeAt = Nothing, unrenewedRun = Nothing, purchaseKind = kind'}
-         in (\BT.BadgeAlert {kind, date} -> (kind, date)) <$> derivedBadgeAlert t p Nothing balance
+         in (\BT.BadgeAlert {kind, date} -> (kind, date)) <$> derivedBadgeAlert t p Nothing tip
       renewing = Just SSRenewing
       cancelled = Just SSCancelled
       billingRetry = Just SSBillingRetry
@@ -1356,6 +1357,11 @@ testSubscriptionAlertDerivation = do
   -- the reminder starts exactly three days before paidThrough
   alertOf (addUTCTime (-3 * nominalDay) ends) (subscription 12 renewing) True Nothing `shouldBe` Just (BARenewalApproaching, ends)
   alertOf (addUTCTime (-3 * nominalDay - 1) ends) (subscription 12 renewing) True Nothing `shouldBe` Nothing
+  -- a purchase whose payment Restore moved to another key derives none of them
+  let movedOut = debitEntry past "" (SDTransferOut k) balance
+  mapM_
+    (\kind' -> alertAfter movedOut past kind' False (Just failure) `shouldBe` Nothing)
+    [subscription 1 renewing, subscription 12 billingRetry, subscription 1 cancelled, SB.PKPrepaid]
 
 testErrorResponseJSON :: IO ()
 testErrorResponseJSON = do

@@ -57,7 +57,7 @@ struct BadgesCheckOrderView: View {
                     }
 
                     if !store.forSale(level, period) && store.subscribedBefore {
-                        footnote("This Apple ID subscribed before. In the app, it can subscribe again only to continue this profile's last purchase, when that was a subscription to this badge.")
+                        footnote("This Apple ID already has a badge subscription. Only the profile that bought it can continue it.")
                     }
 
                     Spacer(minLength: 20)
@@ -72,9 +72,9 @@ struct BadgesCheckOrderView: View {
                                 Button("Privacy policy") { privacyPolicyActive = true }
                                 NavigationLink(isActive: $privacyPolicyActive) {
                                     ConditionsTextView()
-                                        .padding(.horizontal, 25)
+                                        .padding()
                                         .navigationTitle("Privacy policy")
-                                        .modifier(ThemedBackground())
+                                        .modifier(ThemedBackground(grouped: true))
                                 } label: {
                                     EmptyView()
                                 }
