@@ -544,6 +544,12 @@ Still open and not backend: the dApp host, and the app's menu path in "Use in th
 
 Manager rulings (2026-10-22): the refund popup writes to chat@simplex.chat (`CONTACT_EMAIL`); a move to a cheaper name credits the difference to the order's balance.
 
+## Owner decisions (2026-10-23, binding)
+
+1. **Community names** are a list in the service's configuration, edited by the operator, returned with the search answer (T28).
+2. **The signed order records the terms version** the buyer agreed to (T29).
+3. **Card on a phone:** the fixed Pay button stays, Stripe's note moves under it, the name note is one line (W1k).
+
 ## Decided here
 
 - **Label rule:** simplexmq's `SimplexDomain` parser on `label.tld`, not #7390's `validLabel`, which is unmerged and refuses `--` only at positions 3–4. One rule with the relays.
