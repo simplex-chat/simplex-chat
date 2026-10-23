@@ -787,10 +787,13 @@
   <string name="do_not_require_message_signatures">Do not require signing messages.</string>
   <string name="message_signatures_are_required">Message signing is required.</string>
   <string name="message_signatures_are_not_required">Message signing is not required.</string>
+  <string name="sign_messages_question">Sign messages?</string>
+  <string name="sign_messages_alert_desc">Messages sent before will show "signature missing" to subscribers who join later.</string>
+  <string name="sign_messages_enable">Enable</string>
   <string name="show_signature">Show signature</string>
   <string name="show_encryption">Show encryption</string>
   <string name="signature_missing_alert_title">Signature missing</string>
-  <string name="signature_missing_alert_desc">The channel required this message to be signed, but the signature is missing.</string>
+  <string name="signature_missing_alert_desc">This channel requires signed messages, but this message has no signature. It may have been sent before signing was required, or a relay may have forwarded it without one.</string>
   <string name="live_message">Live message!</string>
   <string name="send_live_message_desc">Send a live message - it will update for the recipient(s) as you type it</string>
   <string name="send_verb">Send</string>
