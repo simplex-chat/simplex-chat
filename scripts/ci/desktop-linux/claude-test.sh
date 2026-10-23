@@ -23,6 +23,13 @@ settings=$(mktemp)
 export CLAUDE_GUARD_LOG=$transcript.guard.log
 : > "$CLAUDE_GUARD_LOG"
 
+scope() {
+  sed -n "s/^$1: *//p" "$here/claude-scope"
+}
+
+max_turns=$(scope max-turns)
+max_budget=$(scope max-budget-usd)
+
 {
   cat "$prompt"
   echo
@@ -47,8 +54,8 @@ CLAUDE_CODE_OAUTH_TOKEN=$token claude -p \
   --permission-mode dontAsk \
   --permission-prompts none \
   --strict-mcp-config \
-  --max-turns 60 \
-  --max-budget-usd 3 \
+  --max-turns "${max_turns:-60}" \
+  --max-budget-usd "${max_budget:-3}" \
   --autocompact 200k \
   --no-session-persistence \
   --settings "$settings" \

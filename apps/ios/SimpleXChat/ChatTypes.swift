@@ -1783,6 +1783,7 @@ public func toGroupPreferences(_ fullPreferences: FullGroupPreferences) -> Group
         simplexLinks: fullPreferences.simplexLinks,
         reports: fullPreferences.reports,
         history: fullPreferences.history,
+        support: fullPreferences.support,
         signMessages: fullPreferences.signMessages,
         commands: fullPreferences.commands
     )
@@ -3160,7 +3161,7 @@ public enum MsgVerified: Decodable, Equatable, Hashable {
         switch self {
         case .sigMissing: return (
                 NSLocalizedString("Signature missing", comment: "alert title"),
-                NSLocalizedString("The channel required this message to be signed, but the signature is missing.", comment: "alert message")
+                NSLocalizedString("This channel requires signed messages, but this message has no signature. It may have been sent before signing was required, or a relay may have forwarded it without one.", comment: "alert message")
             )
         default: return nil
         }
@@ -3416,10 +3417,7 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
         if groupInfo.useRelays && !groupInfo.isOwner { return nil }
         let userRole = groupInfo.membership.memberRole
         if groupInfo.useRelays {
-            // TODO [relays]: for now owners can only set observer/member in channels.
-            //   Restore the full Owner-excluded picker when moderator/admin promotion is supported:
-            // return GroupMemberRole.supportedRoles.filter { $0 <= userRole && $0 != .owner }
-            return [.observer, .member]
+            return [.observer, .member, .moderator]
         } else {
             return GroupMemberRole.supportedRoles.filter { $0 <= userRole }
         }

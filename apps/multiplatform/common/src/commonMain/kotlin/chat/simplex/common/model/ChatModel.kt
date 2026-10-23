@@ -2988,10 +2988,7 @@ data class GroupMember (
     else if (groupInfo.useRelays && !groupInfo.isOwner) null
     else groupInfo.membership.memberRole.let { userRole ->
       if (groupInfo.useRelays)
-        // TODO [relays]: for now owners can only set observer/member in channels.
-        //   Restore the full Owner-excluded picker when moderator/admin promotion is supported:
-        // GroupMemberRole.selectableRoles.filter { it <= userRole && it != GroupMemberRole.Owner }
-        listOf(GroupMemberRole.Observer, GroupMemberRole.Member)
+        listOf(GroupMemberRole.Observer, GroupMemberRole.Member, GroupMemberRole.Moderator)
       else
         GroupMemberRole.selectableRoles.filter { it <= userRole }
     }
