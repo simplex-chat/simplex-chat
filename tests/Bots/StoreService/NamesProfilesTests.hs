@@ -57,6 +57,7 @@ namesProfilesTests = describe "StoreService names: profiles" $ do
     H.it "encodes a channel entity with subscribers and a simplex:/ deep link" testEntityChannelJSON
     H.it "encodes previews without a profile as empty, kind from the link" testPreviewEmptyJSON
     H.it "gives a deep link that parses back in the core with the link's server" testDeepLinkParses
+    H.it "gives a null deep link and keeps the link for a link the core cannot parse" testDeepLinkUnparsed
   describe "bounds and cache" $ do
     H.it "answers a link again from the cache, and fetches it again once the cache expires" testCacheExpiry
     H.it "does not cache a failed fetch" testFailureNotCached
@@ -191,24 +192,33 @@ testEntityChannelJSON = do
                      \ \"link\": \"https://smp9.simplex.im/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4LmAAAAAAAAA\", \"deepLink\": \"simplex:/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4LmAAAAAAAAA?h=smp9.simplex.im\"}"
   let simplexLink = "simplex:/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4LmAAAAAAAAA?h=smp9.simplex.im"
   Entity {link, deepLink} <- linkEntity ps LKChannel simplexLink
-  (link, deepLink) `shouldBe` (simplexLink, simplexLink)
+  (link, deepLink) `shouldBe` (simplexLink, Just simplexLink)
   where
     news = LinkProfile {kind = CKChannel, displayName = "Bakery news", fullName = "Daily bakes and opening hours", image = Nothing, subscribers = Just 1204}
+
+testDeepLinkUnparsed :: IO ()
+testDeepLinkUnparsed = do
+  ps <- quietProfiles answerAll publicResolver
+  e <- linkEntity ps LKContact unparsed
+  e
+    `shouldEncodeAs` "{\"type\": \"address\", \"kind\": \"contact\", \"displayName\": \"\", \"fullName\": \"\", \"image\": null, \"subscribers\": null,\
+                     \ \"profile\": \"unavailable\", \"link\": \"https://smp8.simplex.im/a#Y8m3qT0vLw2Ab7cD9eF1gH3jK5mN7pQ9rS\", \"deepLink\": null}"
+  where
+    -- the webapp's seeded contact link, whose key is too short for the core
+    unparsed = "https://smp8.simplex.im/a#Y8m3qT0vLw2Ab7cD9eF1gH3jK5mN7pQ9rS"
 
 testDeepLinkParses :: IO ()
 testDeepLinkParses = do
   ps <- quietProfiles answerAll publicResolver
   mapM_ (deepLinkKeepsServer ps) [bakeryLink, keyedLink, twoHostLink]
-  Entity {deepLink} <- linkEntity ps LKContact "https://smp8.simplex.im/a#x"
-  deepLink `shouldBe` "https://smp8.simplex.im/a#x"
   where
     keyedLink = "https://smp.example.com/a#Y8m3qT0vLw2Ab7cD9eF1gH3jK5mN7pQ9rSAAAAAAAAA?p=5224&c=LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI"
     twoHostLink = "simplex:/c#Rk27xN4pDe9Tz1Wb3Yc5Vd7Xf9Hg2Jk4LmAAAAAAAAA?h=a.example.com%2Cb.example.com"
     deepLinkKeepsServer ps l = do
       Entity {deepLink} <- linkEntity ps LKContact l
       let original = parseLink l
-          reparsed = parseLink deepLink
-      ("simplex:/" `T.isPrefixOf` deepLink, serverOf <$> reparsed) `shouldBe` (True, serverOf <$> original)
+          reparsed = maybe (Left "no deep link") parseLink deepLink
+      (fmap ("simplex:/" `T.isPrefixOf`) deepLink, serverOf <$> reparsed) `shouldBe` (Just True, serverOf <$> original)
       reparsed `shouldBe` (simplexShortLink <$> original)
     parseLink :: Text -> Either String (ConnShortLink 'CMContact)
     parseLink = strDecode . encodeUtf8

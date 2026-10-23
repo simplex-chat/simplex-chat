@@ -8,6 +8,9 @@ module StoreService.Service
   ( ServiceState (..),
     newServiceState,
     welcomeGetOpts,
+    trustDevKeys,
+    checkDevChain,
+    requireDevKeys,
     checkIssuerKey,
     storeService,
     storeServiceCLI,
@@ -20,10 +23,11 @@ where
 
 import StoreService.Catalog (defaultCatalog)
 import StoreService.Codes (issueFailedText, issueOneCode, singleUse)
-import StoreService.Config (BadgeIssuerKey (..), ChainConfig (..), NamesConfig (..), ServiceConfig (..), minNameYears, readServiceConfig)
+import StoreService.Config (BadgeIssuerKey (..), ChainConfig (..), NamesConfig (..), ServiceConfig (..), localChainId, minNameYears, readServiceConfig)
 import StoreService.Group (GroupEvent, ensureManagedGroup, fmtTime, groupEvent, hasTracker, refreshTracker, revokeWithTracker, runGroupLane)
 import StoreService.Group.Command (badgeTypeP, codeP, maxMonths, maxNameYears, nameCodeP, textTokenP)
 import StoreService.Names.Balances (RefundRecord (..), RefundRefusal (..), recordRefund)
+import StoreService.Names.Chain (newChainClient, nodeChainId)
 import StoreService.Names.Codes (issueNameCode, revokeNameCode)
 import StoreService.Names.Env (NamesEnv (..), newNamesEnv)
 import StoreService.Names.Orders (ordersEnv)
@@ -45,15 +49,16 @@ import StoreService.Waiters (Waiters, newWaiters)
 import StoreService.Web.Server (exportWebapp, newWebEnv, runWebListener)
 import Control.Applicative (optional)
 import Control.Concurrent.STM
-import StoreService.Log (logError, logInfo)
+import StoreService.Log (logError, logInfo, logWarn)
 import Control.Monad
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Attoparsec.ByteString.Char8 as A
+import Data.Bifunctor (first)
 import Data.ByteString.Char8 (ByteString)
 import Data.Char (isSpace)
-import Data.Either (fromRight)
+import Data.Either (fromRight, isRight)
 import Data.Functor (($>), (<&>))
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust, maybeToList)
@@ -106,6 +111,34 @@ welcomeGetOpts = do
     putStrLn $ "Service name: " ++ T.unpack serviceName
   pure opts
 
+-- | The ini's dev_keys, trusted beside the clients' keys; the config accepts them only on the local chain.
+trustDevKeys :: Maybe ServiceConfig -> ChatConfig -> IO (Either String ChatConfig)
+trustDevKeys serviceCfg cfg@ChatConfig {badgePublicKeys} = do
+  r <- fmap trusted . sequence <$> mapM publicKey devKeys
+  when (isRight r && not (null devKeys)) $
+    logWarn $ "trusting issuer dev_keys at indexes " <> T.intercalate ", " (map (\BadgeIssuerKey {keyIdx} -> tshow keyIdx) devKeys) <> "; no client trusts them, never set them in production"
+  pure r
+  where
+    devKeys = maybe [] devIssuerKeys serviceCfg
+    trusted ks = cfg {badgePublicKeys = M.union badgePublicKeys (M.fromList ks)}
+    publicKey BadgeIssuerKey {keyIdx, secretKey}
+      | M.member keyIdx badgePublicKeys = pure $ Left $ "issuer.dev_keys index " <> show keyIdx <> " is the index of a key clients trust"
+      | otherwise = fmap (keyIdx,) . first (("issuer.dev_keys secret at index " <> show keyIdx <> " is not a valid key: ") <>) <$> bbsPublicKey secretKey
+
+-- | With dev keys, the node itself must be the local chain, not only the ini's chain_id.
+checkDevChain :: Maybe ServiceConfig -> IO (Either String ())
+checkDevChain = \case
+  Just ServiceConfig {devIssuerKeys = _ : _, names = Just NamesConfig {nChain}} -> do
+    chain <- C.newRandom >>= (`newChainClient` nChain)
+    nodeChainId chain <&> \case
+      Right chainId
+        | chainId == localChainId -> Right ()
+        | otherwise -> Left $ refused <> "is " <> show chainId <> ", not " <> show localChainId
+      Left _ -> Left $ refused <> "could not be read"
+  _ -> pure $ Right ()
+  where
+    refused = "issuer.dev_keys is refused: the node's chain id "
+
 checkIssuerKey :: StoreServiceOpts -> Maybe ServiceConfig -> ChatConfig -> IO (Either String BadgeIssuerKey)
 checkIssuerKey StoreServiceOpts {issuerKey} serviceCfg cfg = case issuerKey of
   Left e -> pure (Left e)
@@ -125,7 +158,15 @@ checkOne ChatConfig {badgePublicKeys} k@BadgeIssuerKey {keyIdx, secretKey} =
 
 requireIssuerKey :: StoreServiceOpts -> Maybe ServiceConfig -> ChatConfig -> IO BadgeIssuerKey
 requireIssuerKey opts serviceCfg cfg =
-  checkIssuerKey opts serviceCfg cfg >>= either (\e -> putStrLn ("Error: " <> e) >> exitFailure) pure
+  checkIssuerKey opts serviceCfg cfg >>= orExit
+
+requireDevKeys :: Maybe ServiceConfig -> ChatConfig -> IO ChatConfig
+requireDevKeys serviceCfg cfg = do
+  checkDevChain serviceCfg >>= orExit
+  trustDevKeys serviceCfg cfg >>= orExit
+
+orExit :: Either String a -> IO a
+orExit = either (\e -> putStrLn ("Error: " <> e) >> exitFailure) pure
 
 readConfigOrExit :: FilePath -> IO ServiceConfig
 readConfigOrExit path =
@@ -134,8 +175,9 @@ readConfigOrExit path =
     Right sc -> pure sc
 
 storeService :: StoreServiceOpts -> ChatConfig -> ServiceState -> IO ()
-storeService opts@StoreServiceOpts {serviceConfigFile} cfg env = do
+storeService opts@StoreServiceOpts {serviceConfigFile} baseCfg env = do
   serviceCfg <- traverse readConfigOrExit serviceConfigFile
+  cfg <- requireDevKeys serviceCfg baseCfg
   key <- requireIssuerKey opts serviceCfg cfg
   waiters <- newWaiters
   -- The hooks' //revoke takes a prepaid code's turn, so the turns exist before the chat starts.
@@ -205,7 +247,8 @@ seedServiceCatalog st = do
 storeServiceCLI :: StoreServiceOpts -> IO ()
 storeServiceCLI opts@StoreServiceOpts {serviceConfigFile} = do
   serviceCfg <- traverse readConfigOrExit serviceConfigFile
-  key <- requireIssuerKey opts serviceCfg terminalChatConfig
+  cfg <- requireDevKeys serviceCfg terminalChatConfig
+  key <- requireIssuerKey opts serviceCfg cfg
   env <- newServiceState
   -- This mode runs no names lanes, so only its own //revoke takes these turns.
   turns <- newTurns
@@ -223,7 +266,7 @@ storeServiceCLI opts@StoreServiceOpts {serviceConfigFile} = do
             eventHook = Just eventHook
           }
   raceAny_
-    [ simplexChatCLI' terminalChatConfig {chatHooks} (mkChatOpts opts) Nothing,
+    [ simplexChatCLI' cfg {chatHooks} (mkChatOpts opts) Nothing,
       processQueuedRequests key Nothing env
     ]
 

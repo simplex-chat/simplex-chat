@@ -79,6 +79,28 @@ Note that a secret passed as a flag is visible to every user on the machine thro
 in the ini is only as readable as the file: `store_service.ini` is gitignored and already holds the
 provider API keys and webhook secrets.
 
+For a local run, where no client key's secret is at hand, `[issuer] dev_keys` lists keys the service
+trusts beside the clients' keys, as `<index>:<secret>` entries separated by commas, each secret from
+`simplex-chat badge keygen`:
+
+```ini
+[issuer]
+index = 999
+private_key = <secret>
+dev_keys = 999:<secret>
+```
+
+With `dev_keys`, the service refuses to start:
+
+- unless `[names]` is on and `[chain] chain_id` is 31337, anvil's local chain;
+- unless the node at `rpc_url` answers `eth_chainId` with 31337 as the service starts;
+- when `[btcpay]` or `[stripe]` is configured, since a run with dev keys takes no payments;
+- when a dev key has the index of a key clients trust.
+
+It logs a warning naming the dev keys' indexes at every start. Clients never trust a dev key, but the
+service's own chat core does, for the badges it receives, so a contact's badge signed by a dev key is
+accepted in that run. Leave `dev_keys` out everywhere else.
+
 Other options:
 
 - `--service-config INI_FILE`: path to `store_service.ini`. Omit it to run the chat/RPC side
@@ -908,3 +930,56 @@ expiry unless money reached the invoice:
 The command also answers when the reference matches no order, when the order has no balance, and
 when the cents are not the balance. A refunded balance shows `amount` 0 and its `refunded` total in
 Your names; a later late payment credits it again, and a second refund adds to `refunded`.
+
+## Running the webapp's cases against the service
+
+`scripts/store-service/names-contract-run.sh` runs the names webapp's end-to-end cases that need no
+payment against this service in Chromium, as they run against the webapp's mock. It:
+
+1. starts anvil on 8545 and deploys the contracts with the webapp's `dev/deploy.ts`, with a commitment
+   age of 5 seconds;
+2. builds the names site (`vite build`) into the run's folder;
+3. writes an ini for that deployment with `[names]` and `[chain]` and no `[btcpay]` or `[stripe]`,
+   serving the names site all in one on the host `127.0.0.1`, and signing with the test suite's
+   public issuer secret (`issuerSecret` in `tests/Bots/StoreService/ConfigTests.hs`), trusted through
+   `[issuer] dev_keys`. That secret is public: never use it outside this script;
+4. starts the service once to make its database, stops it, and issues the prepaid codes the cases
+   need with `//issue name` in `--run-cli`;
+5. starts the service on 8180 and a code server on 8199, and runs the cases with `BASE_URL` at the
+   service and `MOCK_URL` at the code server.
+
+The code server answers the cases' `POST /control/code` with the issued codes, the reset of
+`/control/search` that `search.spec.ts` sends after each case as done, and any other `/control/` with
+`501`, which fails the case that sends it. It passes `/api/` to the service with the case's
+`X-Forwarded-For`.
+
+It needs bash 5.1 or later (for `wait -n -p`), `cabal` (for the default `STORE_SERVICE_BIN`),
+Foundry's anvil, Node.js 22.18 or later (which runs the webapp's `dev/deploy.ts` as TypeScript, as its
+`dev/start.sh` does), `jq`, `curl` and `python3`; the webapp with its packages and
+Playwright's Chromium (`npm install`, `npx playwright install chromium`); and an `ens-contracts` checkout
+compiled as the webapp's `dev/start.sh` needs. The cases read the chain's addresses from the webapp's
+`dev/local-chain-0.json`, so the script stops when its deployment differs from it; run the webapp's
+`SLOTS=1 MIN_COMMITMENT_AGE=5 dev/start.sh` once to write it. Ports 8545, 8180 and 8199 must be free:
+the script stops before starting anything when one of them answers, and stops at once when anvil,
+the service or the code server exits before it answers.
+
+```
+cabal build exe:simplex-store-service
+WEBAPP_DIR=../simplex.domains/webapp ENS_CONTRACTS_DIR=<ens-contracts> ANVIL=<anvil> \
+  scripts/store-service/names-contract-run.sh
+```
+
+- `STORE_SERVICE_BIN`: the service binary (default: `cabal list-bin exe:simplex-store-service`).
+- `SERVICE_PORT`, `CODES_PORT`: the service's and the code server's ports (8180 and 8199).
+- Arguments, if given, are passed to `playwright test` in place of the default cases' title filter.
+
+The default cases cover search answers for an available name, Check your code and its rate-limit
+countdown, code orders to `registered` with and without links, a code order's name code restored and
+revealed in another browser, Edit links on a name registered with a code (the other Edit links case
+answers its own name and record requests in the page), and a link whose data cannot be read now. "search answers every kind of name" is not among them: it takes the chain down
+with `/control/search`.
+
+Each case sends its own `X-Forwarded-For`, and the ini sets `trust_forwarded_for = on`, so each case
+is its own client for the service's per-client limits, as for the mock's code limit. The script stops
+everything it started, deletes its folder when the cases pass, and keeps it with the logs, the ini and
+Playwright's results when they fail.

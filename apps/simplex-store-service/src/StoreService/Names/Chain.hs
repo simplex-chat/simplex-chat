@@ -18,6 +18,7 @@ module StoreService.Names.Chain
     ethCall,
     ethCallAt,
     latestBlock,
+    nodeChainId,
     blockAt,
     confirmedNumber,
     transactionReceipt,
@@ -139,6 +140,9 @@ ethCall c = ethCallAt c Latest
 
 ethCallAt :: ChainClient -> BlockTag -> Address -> ByteString -> IO (Either ChainError ByteString)
 ethCallAt c tag to calldata = rpc c "eth_call" [J.object ["to" .= to, "data" .= hex calldata], blockTagParam tag] bytes
+
+nodeChainId :: ChainClient -> IO (Either ChainError Word64)
+nodeChainId c = rpc c "eth_chainId" [] quantity
 
 latestBlock :: ChainClient -> IO (Either ChainError Block)
 latestBlock c = blockByNumber c "latest"
