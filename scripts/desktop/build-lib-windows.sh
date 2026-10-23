@@ -36,7 +36,6 @@ mkdir dist-newstyle 2>/dev/null || true
 
 scripts/desktop/prepare-openssl-windows.sh
 jpeg_turbo_dir=$(scripts/desktop/prepare-libjpeg-turbo.sh)
-export PKG_CONFIG_PATH=$jpeg_turbo_dir/lib/pkgconfig
 
 openssl_windows_style_path=$(echo `pwd`/dist-newstyle/openssl-3.0.15 | sed 's#/\([a-zA-Z]\)#\1:#' | sed 's#/#\\#g')
 rm -rf $BUILD_DIR 2>/dev/null || true
@@ -49,6 +48,10 @@ echo "package direct-sqlcipher" >> cabal.project.local
 echo "    flags: +openssl" >> cabal.project.local
 echo "    extra-include-dirs: $openssl_windows_style_path\include" >> cabal.project.local
 echo "    extra-lib-dirs: $openssl_windows_style_path" >> cabal.project.local
+echo "package jpeg-turbo" >> cabal.project.local
+echo "    flags: -pkgconfig +static" >> cabal.project.local
+echo "    extra-include-dirs: $jpeg_turbo_dir/include" >> cabal.project.local
+echo "    extra-lib-dirs: $jpeg_turbo_dir/lib" >> cabal.project.local
 echo "package simplex-chat" >> cabal.project.local
 echo "    ghc-options: -shared -threaded -optl-L$openssl_windows_style_path -optl-lcrypto-3-x64 -o libsimplex.dll libsimplex.dll.def" >> cabal.project.local
 # Very important! Without it the build fails on linking step since the linker can't find exported symbols.
