@@ -1,6 +1,6 @@
 # StoreService names backend: tasks for stages 2–4
 
-This is the implementation plan for the names backend in StoreService: stages 2, 3 and 4 of [`2026-10-09-names-web-store-plan.md`](2026-10-09-names-web-store-plan.md), and the service side of stages 6 and 7. Every endpoint must answer as [`2026-10-21-store-api.md`](2026-10-21-store-api.md) says; the plan says how. Tasks are numbered T1–T27 (T7 split into T7a and T7b), each with its goal, files, acceptance, tests and dependencies; T22–T26 follow the owner's decisions of 2026-10-22 (balances), T27 documents the gas key, and the webapp's tasks for them, W1f-1 to W1f-3, come after the waves. The owner's answers and the decisions taken here close the document.
+This is the implementation plan for the names backend in StoreService: stages 2, 3 and 4 of [`2026-10-09-names-web-store-plan.md`](2026-10-09-names-web-store-plan.md), and the service side of stages 6 and 7. Every endpoint must answer as [`2026-10-21-store-api.md`](2026-10-21-store-api.md) says; the plan says how. Tasks are numbered T1–T29 (T7 split into T7a and T7b), each with its goal, files, acceptance, tests and dependencies; T22–T26 follow the owner's decisions of 2026-10-22 (balances), T27 documents the gas key, T28 and T29 follow the owner's decisions of 2026-10-23 (community names, the terms version), and the webapp's tasks for them, W1f-1 to W1f-3, come after the waves. The owner's answers and the decisions taken here close the document.
 
 ## Where and how
 
@@ -382,6 +382,33 @@ The owner's decisions of 2026-10-22 remove the code for a taken order and keep a
 - **Acceptance:** each command run once against the local anvil chain from the webapp's deploy, its output shape quoted; no code change.
 - **Depends on:** T16, T17 (merged). It runs in wave 9, where nobody else edits the README.
 
+### Terms and community names (owner, 2026-10-23)
+
+The owner's decisions of 2026-10-23: community names come from a list the operator keeps in the service's configuration and reach the page with every search answer; every order signs the version of the terms the buyer agreed to (contract section 1, Terms and community names; Appendix A, items 39 and 40). T28 builds the configuration and the answers; T29 the signed `terms`. T29 needs T28's `termsFor`, so they run in waves 12 and 13.
+
+#### T28. The community list and the terms setting
+
+- **Goal:** the operator's list of community names and the terms version and URL, read at startup, in the search answers and the registration view.
+- **Files:** `StoreService/Config.hs` (`[community]`, and `[names] terms_version`, `terms_url`); `apps/simplex-store-service/store_service.ini.example`; new `StoreService/Names/Community.hs`; `StoreService/Names/Env.hs` (the list in `NamesEnv`); `StoreService/Web/Names/Search.hs`; `StoreService/Names/View.hs`; `apps/simplex-store-service/README.md` (editing the list and bumping the terms version, each taking effect on restart); `simplex-chat.cabal`; `tests/Test.hs`; `tests/Bots/StoreService/ConfigTests.hs`, `NamesSearchTests.hs`, `NamesOrdersTests.hs` (the view); new `tests/Bots/StoreService/NamesCommunityTests.hs`.
+- **Do:**
+  - `[names] terms_version` (required with `[names]`; 1–32 characters of `A-Za-z0-9._-`) and `terms_url` (required; an `https://` URL).
+  - `[community]`: each key a label, each value its text. Its keys are names, so `unknownKeys` skips the section instead of warning. Startup refuses, naming the line: a label that fails `validLabel` (T2) for the configured TLD, a label listed twice (the task confirms how the `ini` parser treats a repeated key and reads the section's raw lines if it keeps only one), a text empty, over 200 characters, or with control characters.
+  - `Names/Community.hs`: the list as a map from label hash (keccak256 of the label, as the page sends it) to text, built once at startup; `communityFor :: NamesEnv -> LabelHash -> Maybe Text`; `termsFor :: NamesEnv -> LabelHash -> Text` (the version, with `/community` for a listed name), which T29 uses.
+  - Search: `community` in every answer, `terms: {version, url}` in the available one. View: `community` from the registration's label hash.
+  - The README says the list is read only at startup, that editing it changes which wording new orders must sign, and that a terms version bump makes every unsigned page re-ask (`terms_changed`).
+- **Acceptance:** the answers' JSON as the contract's examples, field for field; badge specs green.
+- **Tests:** the config parsed with and without `[community]`; each refusal (a bad label, an upper-case one, a repeated one, an empty, an over-long and a multi-line or control-character text, a missing or malformed `terms_version` or `terms_url`), naming its line; no warning for community keys; `community` in available, registered, being-registered and reserved answers, and null for an unlisted name; `terms` in the available answer; the view's `community`; `termsFor` for a listed and an unlisted name.
+- **Depends on:** T10, T11 (merged). Wave 12.
+
+#### T29. The terms version in the signed order
+
+- **Goal:** every order and move carries and signs `terms`, and the service refuses terms that are not the current ones for the name.
+- **Files:** `StoreService/Names/Signatures.hs` (`orderMessage`, `retargetMessage`, `spendMessage` gain `<terms>` before `<timestamp>`; `OrderFields` gains `ofTerms`); `StoreService/Names/Orders.hs` (`parseOrderFields`, `checkTerms`, `ORTermsChanged`); `StoreService/Web/Names/Orders.hs` (`/api/invoice`, `/api/name/register`, `/spend`, and `terms_changed`'s response); `StoreService/Web/Names/Owner.hs` (`/name`); `StoreService/Names/Balances.hs` (the spend's checks); `StoreService/Names/Store.hs` (the `terms` column, `orderHash` over `terms`, `retargetRegistration` storing the new `terms`); the two migration modules (migration `20261023_name_terms`: `name_registrations.terms`, text, not null, default ''); `tests/Bots/StoreService/NamesSignatureTests.hs`, `NamesOrdersTests.hs`, `NamesSpendTests.hs`, `NamesOwnerTests.hs`, `NamesStoreTests.hs`.
+- **Do:** the contract's checks in their order: `terms` format with the other formats (`bad_request`); existing orders before it, so an exact resend, `terms` included in its hash, is answered whatever the version is now; then, after the duration, `terms` equal to `termsFor` for the (new) label hash, else `409 {"error": "terms_changed", "terms": {"version", "url"}, "community": …}`. The registration stores the signed `terms`; a move replaces it; the original `order_hash` stays. Existing rows keep '' (no database holds names rows yet).
+- **The shared vector:** one order, one spend and one move signed with `terms` `2026-10-23/community` by the webapp's fixture owner code, their messages, EIP-191 digests and signatures computed once by the webapp (viem) and pasted, with the same inputs, into `NamesSignatureTests.hs` and the webapp's test (W1j); both must reproduce them byte for byte.
+- **Tests:** the vectors; each endpoint refusing an old version and the wrong variant for a listed and an unlisted name with `terms_changed` and the current terms and `community`; an exact resend after the version changed answered with its order; two orders differing only in `terms` with different `order_hash`; a malformed `terms` `bad_request`; a move to a community name with the plain version refused, with the community variant accepted, its `terms` stored; the order of checks (a stale timestamp with old terms is `bad_request`; old terms on a taken name is `terms_changed`, before the chain).
+- **Depends on:** T28. Wave 13. T21 is run again after it against the webapp with W1j.
+
 ### Stages 6 and 7: the service side
 
 #### T20. Both sites from one service
@@ -417,6 +444,8 @@ Each wave starts from `sh/store-service` as merged at the end of the last one. "
 | 9 | T23, T27 | `Names/Store.hs`, the migrations, `Orders.hs`, `Names/Turns.hs`, `Names/Balances.hs`, `Names/View.hs`, `Names/Orders.hs`, and, for `RPBalance`'s case, `balance_changed`'s response and `createPaidRegistration`'s call only, `Names/Worker.hs`, `Web/Names/Orders.hs`, `Web/Names/Owner.hs`. T27: `README.md` |
 | 10 | T24, T25, T26 | T24: `Names/Worker.hs`, `Orders.hs`, `Names/View.hs`, the migrations, `Poller.hs`, `Providers.hs`, `Providers/BTCPay.hs`, `Providers/Stripe.hs`, `Store/Invoices.hs`, `Names/Store.hs`, `Names/Orders.hs`, `Web/Names/Owner.hs`. T25: `Web/Names/Orders.hs`, `Names/Balances.hs`, `Names/Signatures.hs`. T26: `Service.hs`, `README.md` |
 | 11 | T21 | `README.md` |
+| 12 | T28 | `Config.hs`, `Names/Env.hs`, `Web/Names/Search.hs`, `Names/View.hs`, `README.md` |
+| 13 | T29 | `Names/Signatures.hs`, `Names/Orders.hs`, `Web/Names/Orders.hs`, `Web/Names/Owner.hs`, `Names/Balances.hs`, `Names/Store.hs`, the migrations |
 
 The wave-10 integrator, after merging T24, T25 and T26, adds one end-to-end spec to `NamesSpendTests.hs`: a difference spend paid at `FakeBTCPay` and settled (the order `queued`, the hold spent); the same cancelled (the hold released); a covered spend's order ending `taken` (a balance of its own, its whole `price`); a `//refund` of the rest; and a difference invoice paid after it closed, credited to its order's balance. Wave 10 has no other dependency between its tasks.
 
@@ -460,6 +489,33 @@ In simplex.domains, branch `sh/names-webapp`, in the webapp's workstream beside 
 - **Acceptance:** the flows against the mock in Chromium, Firefox (158 included) and WebKit, with motion and no flashes; Lighthouse as before.
 - **Tests:** unit tests of each state above; e2e: a paid order taken, then its balance spent on a cheaper name (covered, the rest kept) and on a dearer one (the difference paid by card in the mock, the name registered, the balance 0); a difference invoice cancelled, the balance free again; a refund by `/control/refund`, shown as refunded; the name code restored in another browser showing the balance.
 - **Depends on:** W1f-2.
+
+## Webapp tasks for the terms, community names and the approved mockup
+
+In simplex.domains, `sh/names-webapp`, beside waves 12 and 13, following the contract (Appendix A, items 39 and 40) and ep's approved mockup (2026-10-23; the queue in `.superpowers/program/webapp-queue.md`, entries of 2026-10-22 and 2026-10-23).
+
+#### W1j. Terms and community names
+
+- **Goal:** the page signs the terms the buyer ticked, and shows community names with their wording.
+- **Files:** `dev/mock/service.ts`, `dev/mock.ts` (a community list and `POST /control/community`, the terms version and URL, `terms` in bodies, messages, the order hash and the check, `terms_changed`); `src/api.ts` (`community` and `terms` in the answers and the view, `terms_changed`); `src/flow.ts` (`<terms>` in the order, spend and move messages; the record's `terms`); `src/store.ts`; `src/views/checkout.ts` and `src/screens/checkout.ts` (the checkbox); `src/views/search.ts`, `src/views/names.ts`, `src/views/order.ts` (the marker); the stylesheet; their tests; `test/crypto.test.ts` or `test/flow.test.ts` (the shared vector); `e2e/` (a community spec).
+- **Do:**
+  - The checkbox above the main button on Check your order (and before "Register with your code"), required: "I agree to <SimpleX name terms> and do not knowingly violate any trademarks.", or for a community name "I agree to <SimpleX name terms> and will use this name for its community. ⓘ"; the link is the answer's `terms.url`; ⓘ opens "This name is for <for>. Its owner agrees to use it for this community, not as the name of one person or business."
+  - The signed `terms`: the answer's `terms.version`, with `/community` for a community name; kept on the order record, so a resend sends the same; on `terms_changed`, the page takes the answer's terms and `community`, unticks the box, says the terms changed, and signs anew on the next press.
+  - "Community ⓘ" inline after the name in search rows, Check your order and Your names: one button opening the popup, on the name's baseline with the icon centred on the word, 16 px after the name on desktop, right-aligned on the name's last line on a phone, no hover underline, pointer cursor; community names at the size of other names (22 px, 20 px on a phone); a taken community name's popup caption as the mockup.
+- **Acceptance:** the mockup's community states at 1280 and 390 px in Chromium, Firefox (158 too) and WebKit, motion and no flashes; the shared vector reproduced byte for byte.
+- **Tests:** the vector (T29's); each order kind and the move sending `terms`; `terms_changed` re-asking; the checkbox's two wordings and the popup; the marker's placement measured in e2e.
+- **Depends on:** the contract (items 39 and 40). The service side lands with T28 and T29.
+
+#### W1k. The phone card page and the remaining mockup items
+
+- **Goal:** the approved mockup's remaining layout items.
+- **Files:** `src/views/order.ts` (the card page), `src/views/search.ts` (rows), the stylesheet, their e2e.
+- **Do:**
+  - Pay by card on a phone keeps its fixed button; Stripe's note moves under it; the name note is one line: "Available at HH:MM. If someone registers it first, you keep the payment as balance."
+  - Search answer rows keep equal top and bottom padding for long names (16 px `padding-block`, 72 px minimum height).
+  - Any other 2026-10-22/23 queue entry the mockup shows and the page does not, listed in the task's report with what it measured.
+- **Acceptance:** positions measured in e2e at 390 and 1280 px against the mockup; no layout shift when the card form loads.
+- **Depends on:** nothing new in the service.
 
 ## Owner answers (2026-10-21, binding)
 
