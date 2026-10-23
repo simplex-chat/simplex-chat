@@ -4480,7 +4480,7 @@ testMovedOutPlayResumeSetAside ps =
         bob `send` restoredCmd 1 subscriptionPlay
         waitShownBadge (chatController bob) (Just 1)
         alice `send` ("/_badge purchase 1 " <> paymentArg subscriptionPlay)
-        last <$> ledgerTags (chatController alice) `shouldEventuallyReturn` Just "transferOut"
+        (last <$> ledgerTags (chatController alice)) `shouldEventuallyReturn` Just "transferOut"
         heldStoreReceipts (chatController alice) `shouldEventuallyReturn` 0
         storeReceiptRetries (chatController alice) `shouldReturn` [0]
         mapM_ dropOutput [alice, bob]
