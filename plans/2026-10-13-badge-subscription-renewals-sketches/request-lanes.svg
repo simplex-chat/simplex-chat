@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="980" height="584" viewBox="0 0 980 584" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="Request lanes: requestLane sends codes, invoices, App Store one-time purchases and issue requests not due a check to the main lane, which asks no store; Play purchases, App Store subscription purchases and Restores of either to the purchase lane, where subscriptions are limited per claim to once an hour and Play subscriptions to 300 checks a minute, and Play one-time purchases are not limited; issue requests and App Store tier raises due a store check to the renewal lane, limited to once an hour per subscription.">
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="584" viewBox="0 0 980 584" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="Request lanes: requestLane sends codes, invoices, App Store one-time purchases and issue requests with no subscription month due to the main lane, which asks no store; Play purchases, App Store subscription purchases and Restores of either to the purchase lane, where subscriptions are limited per claim to once an hour and Play subscriptions to 300 checks a minute, and Play one-time purchases are not limited; issue requests with a subscription month due and App Store tier raises due a check to the renewal lane, limited to once an hour per subscription. Every ledger write locks its purchase first.">
   <defs>
     <marker id="l-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#5b6577"/></marker>
   </defs>
@@ -26,8 +26,8 @@
     <text x="38" y="240">Apple, one-time</text>
     <text x="38" y="270">Apple, auto-renewable</text>
     <text x="38" y="300">Google, any product</text>
-    <text x="38" y="350">not due a store check</text>
-    <text x="38" y="394">due a store check</text>
+    <text x="38" y="350">no subscription month due</text>
+    <text x="38" y="394">a subscription month due</text>
     <text x="38" y="438">Restore, a subscription</text>
     <text x="38" y="480">due a store check</text>
   </g>
@@ -46,7 +46,7 @@
   <rect x="372" y="86" width="420" height="92" rx="10" fill="#f1f3f7" stroke="#cfd5df"/>
   <text x="388" y="109" font-size="13" font-weight="600" fill="#334155">Main lane</text>
   <text x="388" y="129" font-size="11.5" fill="#1a2030">codes, invoices, App Store one-time purchases (verified offline),</text>
-  <text x="388" y="145" font-size="11.5" fill="#1a2030">issue requests whose subscription is not due a store check</text>
+  <text x="388" y="145" font-size="11.5" fill="#1a2030">other issue requests: prepaid, or no subscription month due</text>
   <rect x="388" y="154" width="112" height="18" rx="9" fill="#ffffff" stroke="#cfd5df"/>
   <text x="444" y="167" font-size="10.5" fill="#334155" text-anchor="middle">asks no store</text>
 
@@ -64,8 +64,8 @@
   <!-- renewal lane -->
   <rect x="372" y="360" width="420" height="136" rx="10" fill="#e3f1f3" stroke="#b5dadd"/>
   <text x="388" y="383" font-size="13" font-weight="600" fill="#0f5f69">Renewal lane</text>
-  <text x="388" y="403" font-size="11.5" fill="#1a2030">issueBadge signed by the key it names, its subscription due a</text>
-  <text x="388" y="419" font-size="11.5" fill="#1a2030">store check judged 60 s ahead, or whose routing read failed;</text>
+  <text x="388" y="403" font-size="11.5" fill="#1a2030">issueBadge signed by the key it names, for a subscription with</text>
+  <text x="388" y="419" font-size="11.5" fill="#1a2030">a month due judged 60 s ahead, or whose routing read failed;</text>
   <text x="388" y="435" font-size="11.5" fill="#1a2030">upgradeBadgeSubscription of an App Store one due a check</text>
   <rect x="388" y="446" width="390" height="34" rx="6" fill="#ffffff" stroke="#b5dadd"/>
   <text x="398" y="460" font-size="10.5" fill="#1a2030">Per subscription: once an hour, stamped before asking, failures</text>
@@ -88,6 +88,6 @@
 
   <!-- note -->
   <rect x="24" y="512" width="932" height="52" rx="8" fill="#eef1f5"/>
-  <text x="40" y="532" font-size="12" fill="#1a2030">A ledger is appended from every lane (a Restore ends the old purchase's on the purchase lane). Each write re-reads the tip, which is</text>
-  <text x="40" y="549" font-size="12" fill="#1a2030">enough while transactions run one at a time: SQLite, or Postgres at --pool-size 1. A larger pool needs a row lock, not built.</text>
+  <text x="40" y="532" font-size="12" fill="#1a2030">A ledger is appended from every lane (a Restore ends the old purchase's on the purchase lane). Each write first locks its purchase's</text>
+  <text x="40" y="549" font-size="12" fill="#1a2030">row, then re-reads the tip, so the lanes may write concurrently at any Postgres --pool-size.</text>
 </svg>

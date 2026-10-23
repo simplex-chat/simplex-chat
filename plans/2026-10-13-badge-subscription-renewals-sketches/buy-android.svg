@@ -116,6 +116,6 @@
   <text x="40" y="919" font-size="12" fill="#1a2030">If it is never acknowledged (any refusal before step 8), Play refunds it after three days. If anything fails after step 8,</text>
   <text x="40" y="936" font-size="12" fill="#b3261e">it stays paid and acknowledged, and only a later retry credits it. Renewals keep the token; the service asks Play itself.</text>
   <text x="40" y="953" font-size="12" fill="#1a2030">Step 8's read is not counted against the 300 subscription checks a minute.</text>
-  <text x="40" y="970" font-size="12" fill="#1a2030">Subscribing again, or changing plan in Play, gets a new token: a new purchase. The sweep hands over a token core has no</text>
-  <text x="40" y="987" font-size="12" fill="#1a2030">record of too, and core leaves it for Restore, which is refused while the profile shows a badge.</text>
+  <text x="40" y="970" font-size="12" fill="#1a2030">Subscribing again gets a new token: a new purchase. The sweep also hands over tokens core has no record of; core leaves them</text>
+  <text x="40" y="987" font-size="12" fill="#1a2030">for Restore. A retired purchase's token that Play charges again resumes it: up to 24 tries each time the sweep hands it over.</text>
 </svg>

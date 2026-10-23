@@ -1,11 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="980" height="786" viewBox="0 0 980 786" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="The renewal check: while paid coverage runs, issueBadge asks no store; once it has ended, the service asks the store at most once an hour, stamping the check first; a grantable charge is written with the issued month in one transaction that re-reads the tip; otherwise the charge and state are recorded and the answer carries no credential.">
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="786" viewBox="0 0 980 786" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="The renewal check: a request with no month due asks no store; otherwise the service asks the store at most once an hour, stamping the check first. During paid coverage a store that reports the subscription ended or the granted charge revoked ends it, the unissued months debited as a refund, and any other answer issues the month. After coverage a grantable charge is written with the issued month in one transaction that locks the purchase and re-reads the tip; otherwise the charge and state are recorded and the answer carries no credential.">
   <defs>
     <marker id="r-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#5b6577"/></marker>
   </defs>
   <rect width="980" height="786" fill="#f7f8fb"/>
 
   <text x="24" y="36" font-size="18" font-weight="600" fill="#1a2030">The service's renewal check</text>
-  <text x="24" y="57" font-size="12.5" fill="#5b6577">issueBadge for a purchase a subscription funds. The store is asked only after paid coverage ends, or at once for a raised App Store tier.</text>
+  <text x="24" y="57" font-size="12.5" fill="#5b6577">issueBadge for a purchase a subscription funds. The store is asked whenever a month is due, or at once for a raised App Store tier.</text>
 
   <!-- left column: the decision path -->
   <rect x="40" y="84" width="220" height="36" rx="18" fill="#ffffff" stroke="#8a93a6"/>
@@ -56,8 +56,26 @@
 
   <!-- outcomes -->
   <rect x="316" y="146" width="320" height="54" rx="8" fill="#f1f3f7" stroke="#cfd5df"/>
-  <text x="330" y="166" font-size="11.5" fill="#1a2030">Unchanged path: lapse, then issue a due month</text>
-  <text x="330" y="182" font-size="11.5" fill="#1a2030">or answer the current credential. No store call.</text>
+  <text x="330" y="166" font-size="11.5" fill="#1a2030">No month due: answer the current credential,</text>
+  <text x="330" y="182" font-size="11.5" fill="#1a2030">no store call. A month due: checked first (right).</text>
+  <line x1="636" y1="173" x2="674" y2="173" stroke="#c9cfdb" stroke-width="1.2" stroke-dasharray="3 3"/>
+
+  <!-- during coverage -->
+  <rect x="676" y="146" width="280" height="250" rx="8" fill="#ffffff" stroke="#c9cfdb"/>
+  <text x="690" y="168" font-size="12" font-weight="600" fill="#334155">While coverage runs (annual plans)</text>
+  <g font-size="11.5" fill="#1a2030">
+    <text x="690" y="190">A month due is asked of the store too, at</text>
+    <text x="690" y="207">most once an hour, stamped first.</text>
+    <text x="690" y="231">Ended, or the charge it granted revoked:</text>
+    <text x="690" y="248">one transaction locks, lapses, and debits</text>
+    <text x="690" y="265">the months not yet issued as a refund.</text>
+    <text x="690" y="282" font-weight="600" fill="#a3361c">→ no credential, subscription ended</text>
+    <text x="690" y="299">A stored ended within the hour: the same.</text>
+    <text x="690" y="323">Any other answer, or a store that fails:</text>
+    <text x="690" y="340">the month is issued; a new charge is only</text>
+    <text x="690" y="357">recorded, granted once coverage ends.</text>
+    <text x="690" y="374" font-weight="600" fill="#11713f">→ credential + subscription</text>
+  </g>
 
   <rect x="316" y="226" width="320" height="54" rx="8" fill="#f1f3f7" stroke="#cfd5df"/>
   <text x="330" y="246" font-size="11.5" fill="#1a2030">Answer from what it last read: no new</text>
@@ -69,8 +87,8 @@
 
   <rect x="316" y="446" width="320" height="108" rx="8" fill="#e7f4ec" stroke="#8cc6a3"/>
   <text x="330" y="466" font-size="11.5" fill="#1a2030">One transaction, after signing the month:</text>
-  <text x="330" y="482" font-size="11.5" fill="#1a2030">re-read the tip (moved → internal); insert the</text>
-  <text x="330" y="498" font-size="11.5" fill="#1a2030">charge; lapse to the store's period start;</text>
+  <text x="330" y="482" font-size="11.5" fill="#1a2030">lock and re-read the tip (moved → internal);</text>
+  <text x="330" y="498" font-size="11.5" fill="#1a2030">insert the charge; lapse to its period start;</text>
   <text x="330" y="514" font-size="11.5" fill="#1a2030">another tier: debit the old run (upgrade);</text>
   <text x="330" y="530" font-size="11.5" fill="#1a2030">grant, lapse to now, issue; set tier, state.</text>
   <text x="330" y="547" font-size="11.5" font-weight="600" fill="#11713f">→ credential + subscription</text>

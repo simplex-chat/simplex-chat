@@ -103,7 +103,7 @@
   <rect x="24" y="802" width="932" height="96" rx="8" fill="#eef1f5"/>
   <text x="40" y="822" font-size="12" fill="#1a2030">Renewals: StoreKit lists each renewal's transaction, which the app hands over as listed. It names the same original id,</text>
   <text x="40" y="839" font-size="12" fill="#1a2030">so it joins the credited record and is finished. The service learns of a new charge only from its own renewal check.</text>
-  <text x="40" y="856" font-size="12" fill="#1a2030">A higher tier bought within a day is held and sent as upgradeBadgeSubscription instead (see Changing tier), and a new</text>
+  <text x="40" y="856" font-size="12" fill="#1a2030">A higher tier newer than the last charge credited is held and sent as upgradeBadgeSubscription (see Changing tier), and a new</text>
   <text x="40" y="873" font-size="12" fill="#1a2030">charge of the profile's retired purchase resumes it. A revoked subscription transaction is finished without being handed</text>
   <text x="40" y="890" font-size="12" fill="#1a2030">over. Apple has no acknowledgement step.</text>
 </svg>
