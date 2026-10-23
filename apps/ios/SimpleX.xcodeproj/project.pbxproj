@@ -196,6 +196,7 @@
 		64C8299F2D54AEEE006B9E89 /* libHSsimplex-chat-7.1.0.14-FQI9ONxXS3x5DhsgnqtwJs-ghc9.6.3.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 64C8299A2D54AEEE006B9E89 /* libHSsimplex-chat-7.1.0.14-FQI9ONxXS3x5DhsgnqtwJs-ghc9.6.3.a */; };
 		64C829A02D54AEEE006B9E89 /* libHSsimplex-chat-7.1.0.14-FQI9ONxXS3x5DhsgnqtwJs.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 64C8299B2D54AEEE006B9E89 /* libHSsimplex-chat-7.1.0.14-FQI9ONxXS3x5DhsgnqtwJs.a */; };
 		64C829A12D54AEEE006B9E89 /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 64C8299C2D54AEEE006B9E89 /* libgmpxx.a */; };
+		64C829A22D54AEEE006B9E89 /* libturbojpeg.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 64C829A32D54AEEE006B9E89 /* libturbojpeg.a */; };
 		64D0C2C029F9688300B38D5F /* UserAddressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64D0C2BF29F9688300B38D5F /* UserAddressView.swift */; };
 		64D0C2C229FA57AB00B38D5F /* UserAddressLearnMore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64D0C2C129FA57AB00B38D5F /* UserAddressLearnMore.swift */; };
 		64D0C2C629FAC1EC00B38D5F /* AddContactLearnMore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64D0C2C529FAC1EC00B38D5F /* AddContactLearnMore.swift */; };
@@ -594,6 +595,7 @@
 		64C8299A2D54AEEE006B9E89 /* libHSsimplex-chat-7.1.0.14-FQI9ONxXS3x5DhsgnqtwJs-ghc9.6.3.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-7.1.0.14-FQI9ONxXS3x5DhsgnqtwJs-ghc9.6.3.a"; sourceTree = "<group>"; };
 		64C8299B2D54AEEE006B9E89 /* libHSsimplex-chat-7.1.0.14-FQI9ONxXS3x5DhsgnqtwJs.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-7.1.0.14-FQI9ONxXS3x5DhsgnqtwJs.a"; sourceTree = "<group>"; };
 		64C8299C2D54AEEE006B9E89 /* libgmpxx.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmpxx.a; sourceTree = "<group>"; };
+		64C829A32D54AEEE006B9E89 /* libturbojpeg.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libturbojpeg.a; sourceTree = "<group>"; };
 		64D0C2BF29F9688300B38D5F /* UserAddressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserAddressView.swift; sourceTree = "<group>"; };
 		64D0C2C129FA57AB00B38D5F /* UserAddressLearnMore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserAddressLearnMore.swift; sourceTree = "<group>"; };
 		64D0C2C529FAC1EC00B38D5F /* AddContactLearnMore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddContactLearnMore.swift; sourceTree = "<group>"; };
@@ -769,6 +771,7 @@
 				64C8299D2D54AEEE006B9E89 /* libgmp.a in Frameworks */,
 				64C8299E2D54AEEE006B9E89 /* libffi.a in Frameworks */,
 				64C829A12D54AEEE006B9E89 /* libgmpxx.a in Frameworks */,
+				64C829A22D54AEEE006B9E89 /* libturbojpeg.a in Frameworks */,
 				64C8299F2D54AEEE006B9E89 /* libHSsimplex-chat-7.1.0.14-FQI9ONxXS3x5DhsgnqtwJs-ghc9.6.3.a in Frameworks */,
 				64C829A02D54AEEE006B9E89 /* libHSsimplex-chat-7.1.0.14-FQI9ONxXS3x5DhsgnqtwJs.a in Frameworks */,
 				CE38A29C2C3FCD72005ED185 /* SwiftyGif in Frameworks */,
@@ -859,6 +862,7 @@
 				64C8299C2D54AEEE006B9E89 /* libgmpxx.a */,
 				64C8299A2D54AEEE006B9E89 /* libHSsimplex-chat-7.1.0.14-FQI9ONxXS3x5DhsgnqtwJs-ghc9.6.3.a */,
 				64C8299B2D54AEEE006B9E89 /* libHSsimplex-chat-7.1.0.14-FQI9ONxXS3x5DhsgnqtwJs.a */,
+				64C829A32D54AEEE006B9E89 /* libturbojpeg.a */,
 			);
 			path = Libraries;
 			sourceTree = "<group>";

@@ -13,6 +13,8 @@ version=$(sed -n 's/^version: *//p' simplex-chat.cabal)
 openssl_dir=$(brew --prefix openssl@3)
 ffi_dir=$(brew --prefix libffi)
 gmp_dir=$(brew --prefix gmp)
+jpeg_turbo_dir=$(scripts/desktop/prepare-libjpeg-turbo.sh)
+export PKG_CONFIG_PATH=$jpeg_turbo_dir/lib/pkgconfig
 
 ghc --version
 cabal --version
@@ -53,7 +55,7 @@ echo "Selected symbols defined in $ghc_lib:"
   | sort -u
 
 pkg=$(mktemp -d)
-cp "$build_dir"/libHSsimplex-chat-*.a "$ffi_dir"/lib/libffi.a "$gmp_dir"/lib/libgmp.a "$gmp_dir"/lib/libgmpxx.a "$pkg"
+cp "$build_dir"/libHSsimplex-chat-*.a "$ffi_dir"/lib/libffi.a "$gmp_dir"/lib/libgmp.a "$gmp_dir"/lib/libgmpxx.a "$jpeg_turbo_dir"/lib/libturbojpeg.a "$pkg"
 chmod u+w "$pkg"/*.a
 for f in "$pkg"/libHSsimplex-chat-*.a; do
   strip -x "$f"

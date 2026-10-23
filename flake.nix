@@ -39,6 +39,7 @@
       # `appendOverlays` with a singleton is identical to `extend`.
       let pkgs = haskellNix.legacyPackages.${system}.appendOverlays [android26]; in
       let pkgs8107 = haskellNix-ghc8107.legacyPackages.${system}.appendOverlays [android26]; in
+      let mkLibjpegTurbo = p: p.libjpeg_turbo.override { enableStatic = true; enableShared = false; }; in
       let drv' = { extra-modules, pkgs', compiler-nix-name ? "ghc963", ... }: pkgs'.haskell-nix.project {
         inherit compiler-nix-name;
         index-state = "2023-12-12T00:00:00Z";
@@ -68,6 +69,12 @@
 
           ({ pkgs,lib, ... }: lib.mkIf (pkgs.stdenv.hostPlatform.isAndroid) {
             packages.simplex-chat.components.library.ghcOptions = [ "-pie" ];
+          })
+
+          ({ pkgs, lib, ... }: {
+            packages.jpeg-turbo.flags.pkgconfig = false;
+            packages.jpeg-turbo.flags.static = true;
+            packages.jpeg-turbo.components.library.libs = lib.mkForce [ (mkLibjpegTurbo pkgs) ];
           })] ++ extra-modules;
       }; in
       # by defualt we don't need to pass extra-modules.
@@ -98,6 +105,7 @@
         find ./dist -name "libHS*.a" -exec cp {} $out/_pkg \;
         find ${pkgs.libffi.overrideAttrs (old: { dontDisableStatic = true; })}/lib -name "*.a" -exec cp {} $out/_pkg \;
         find ${pkgs.gmp6.override { withStatic = true; }}/lib -name "*.a" -exec cp {} $out/_pkg \;
+        find ${pkgs.lib.getLib (mkLibjpegTurbo pkgs)}/lib -name "libturbojpeg.a" -exec cp {} $out/_pkg \;
         # There is no static libc
         ${pkgs.tree}/bin/tree $out/_pkg
         for pkg in $out/_pkg/*.a; do
@@ -223,7 +231,6 @@
                   packages.direct-sqlcipher.components.library.libs = pkgs.lib.mkForce [
                     pkgs.pkgsCross.mingwW64.openssl
                   ];
-                  packages.jpeg-turbo.flags.static = true;
                   packages.simplex-chat.flags.client_library = true;
                   packages.simplexmq.flags.client_library = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
@@ -349,10 +356,6 @@
                   packages.direct-sqlcipher.patches = [
                     ./scripts/nix/direct-sqlcipher-android-log.patch
                   ];
-                  packages.jpeg-turbo.flags.static-gcc = true;
-                  packages.jpeg-turbo.components.library.libs = pkgs.lib.mkForce [
-                    (android32Pkgs.libjpeg_turbo.override { enableStatic = true; })
-                  ];
                   packages.simplex-chat.flags.client_library = true;
                   packages.simplexmq.flags.client_library = true;
                   packages.simplexmq.components.library.libs = pkgs8107.lib.mkForce [
@@ -430,10 +433,6 @@
                   ];
                   packages.direct-sqlcipher.patches = [
                     ./scripts/nix/direct-sqlcipher-android-log.patch
-                  ];
-                  packages.jpeg-turbo.flags.static-gcc = true;
-                  packages.jpeg-turbo.components.library.libs = pkgs.lib.mkForce [
-                    (androidPkgs.libjpeg_turbo.override { enableStatic = true; })
                   ];
                   packages.simplex-chat.flags.client_library = true;
                   packages.simplexmq.flags.client_library = true;
@@ -562,10 +561,6 @@
                   packages.direct-sqlcipher.flags.commoncrypto = true;
                   packages.simplexmq.flags.commoncrypto = true;
                   packages.entropy.flags.DoNotGetEntropy = true;
-                  packages.jpeg-turbo.flags.static = true;
-                  packages.jpeg-turbo.components.library.libs = pkgs.lib.mkForce [
-                    (pkgs.libjpeg_turbo.override { enableStatic = true; })
-                  ];
                   packages.simplex-chat.flags.client_library = true;
                   packages.simplexmq.flags.client_library = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
@@ -583,10 +578,6 @@
                   packages.direct-sqlcipher.flags.commoncrypto = true;
                   packages.simplexmq.flags.commoncrypto = true;
                   packages.entropy.flags.DoNotGetEntropy = true;
-                  packages.jpeg-turbo.flags.static = true;
-                  packages.jpeg-turbo.components.library.libs = pkgs.lib.mkForce [
-                    (pkgs.libjpeg_turbo.override { enableStatic = true; })
-                  ];
                   packages.simplex-chat.flags.client_library = true;
                   packages.simplexmq.flags.client_library = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
@@ -607,10 +598,6 @@
                   packages.direct-sqlcipher.flags.commoncrypto = true;
                   packages.simplexmq.flags.commoncrypto = true;
                   packages.entropy.flags.DoNotGetEntropy = true;
-                  packages.jpeg-turbo.flags.static = true;
-                  packages.jpeg-turbo.components.library.libs = pkgs.lib.mkForce [
-                    (pkgs.libjpeg_turbo.override { enableStatic = true; })
-                  ];
                   packages.simplex-chat.flags.client_library = true;
                   packages.simplexmq.flags.client_library = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
@@ -627,10 +614,6 @@
                   packages.direct-sqlcipher.flags.commoncrypto = true;
                   packages.simplexmq.flags.commoncrypto = true;
                   packages.entropy.flags.DoNotGetEntropy = true;
-                  packages.jpeg-turbo.flags.static = true;
-                  packages.jpeg-turbo.components.library.libs = pkgs.lib.mkForce [
-                    (pkgs.libjpeg_turbo.override { enableStatic = true; })
-                  ];
                   packages.simplex-chat.flags.client_library = true;
                   packages.simplexmq.flags.client_library = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [

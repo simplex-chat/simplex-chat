@@ -11,6 +11,9 @@
 !scripts
 scripts/*
 !scripts/cabal.project.local.linux
+!scripts/desktop
+scripts/desktop/*
+!scripts/desktop/prepare-libjpeg-turbo.sh
 
 !apps
 apps/*

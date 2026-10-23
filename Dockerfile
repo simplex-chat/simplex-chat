@@ -5,7 +5,7 @@ FROM ubuntu:${TAG} AS build
 ### Build stage
 
 # Install curl and git and simplex-chat dependencies
-RUN apt-get update && apt-get install -y curl git build-essential libgmp3-dev zlib1g-dev llvm-12 llvm-12-dev libnuma-dev libssl-dev libturbojpeg-dev pkgconf
+RUN apt-get update && apt-get install -y curl git build-essential libgmp3-dev zlib1g-dev llvm-12 llvm-12-dev libnuma-dev libssl-dev cmake nasm pkgconf
 
 # Specify bootstrap Haskell versions
 ENV BOOTSTRAP_HASKELL_GHC_VERSION=9.6.3
@@ -26,6 +26,7 @@ WORKDIR /project
 
 # Adjust build
 RUN cp ./scripts/cabal.project.local.linux ./cabal.project.local
+RUN LIBJPEG_TURBO_PREFIX=/usr/local scripts/desktop/prepare-libjpeg-turbo.sh
 
 # Compile simplex-chat
 RUN cabal update
