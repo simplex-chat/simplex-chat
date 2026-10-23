@@ -623,12 +623,14 @@ final class ChatModel: ObservableObject {
     // Spec: spec/state.md#updateChatInfo
     func updateChatInfo(_ cInfo: ChatInfo) {
         if let i = getChatIndex(cInfo.id) {
+            let wasUnread = chats[i].hasUnread
             if case let .group(groupInfo, groupChatScope) = cInfo, groupChatScope != nil {
                 chats[i].chatInfo = .group(groupInfo: groupInfo, groupChatScope: nil)
             } else {
                 chats[i].chatInfo = cInfo
             }
             chats[i].created = Date.now
+            if chats[i].hasUnread != wasUnread { objectWillChange.send() }
         }
     }
 
@@ -1469,6 +1471,8 @@ final class Chat: ObservableObject, Identifiable, ChatLike {
         default: return 0
         }
     }
+
+    var hasUnread: Bool { unreadTag || (chatInfo.chatSettings?.enableNtfs != MsgFilter.none && supportUnreadCount > 0) }
 
     public static var sampleData: Chat = Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: [])
 }
