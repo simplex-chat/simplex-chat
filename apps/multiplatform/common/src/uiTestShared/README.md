@@ -164,6 +164,8 @@ When you change the harness (`harness/*.kt`, both `UiTest.kt`), keep these prope
 - **A known app bug is a visible result, not a pass.** Mark the test `@KnownAppIssue("<plan §15.5 item>", "<exact
   error text>")`: when the test fails with that error it is reported as skipped with the finding; when it fails any
   other way it fails; when it passes, it fails with "known issue no longer reproduces; remove the annotation".
+  `intermittent = true` lets the test pass when the bug does not show. A test can carry several annotations; a failure
+  matching any of them is skipped, and a pass still fails while any of them is not intermittent.
 - **No retries of user input**, no repeated `replaceText` until the text sticks, no second Enter.
 - **App work still running when the test ends fails the test** (it is a hang or a leaked job), with the names of the
   stuck calls.

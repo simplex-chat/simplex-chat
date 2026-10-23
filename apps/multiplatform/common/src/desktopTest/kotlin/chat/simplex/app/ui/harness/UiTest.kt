@@ -34,7 +34,7 @@ abstract class UiTest {
     try {
       AppCrashes.install()
       AppCrashes.clear()
-      withKnownIssue(knownIssue.issue) {
+      withKnownIssue(knownIssue.issues) {
         try {
           runInternalSkikoComposeUiTest(width = 1600, height = 900, coroutineDispatcher = StandardTestDispatcher()) {
             mainClock.autoAdvance = false
