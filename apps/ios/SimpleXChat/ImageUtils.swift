@@ -230,9 +230,9 @@ public func saveWallpaperFile(url: URL) -> String? {
 public func saveWallpaperFile(image: UIImage) -> String? {
     let hasAlpha = imageHasAlpha(image)
     let destFile = URL(fileURLWithPath: generateNewFileName(getWallpaperDirectory().path + "/" + "wallpaper", hasAlpha ? "png" : "jpg", fullPath: true))
-    let dataResized = resizeImageToDataSize(image, maxDataSize: 5_000_000, hasAlpha: hasAlpha)
+    guard let dataResized = resizeImageToDataSize(image, maxDataSize: 5_000_000, hasAlpha: hasAlpha) else { return nil }
     do {
-        try dataResized!.write(to: destFile)
+        try dataResized.write(to: destFile)
         return destFile.lastPathComponent
     } catch {
         logger.error("FileUtils.saveWallpaperFile error: \(error.localizedDescription)")
