@@ -701,7 +701,7 @@ testXFTPFileTransferEncrypted =
     createDirectoryIfMissing True $ tmpFile alice "alice/"
     createDirectoryIfMissing True bobDir
     WFResult cfArgs <- chatWriteFile (chatController alice) srcPath src
-    let fileJSON = LB.unpack $ J.encode $ CryptoFile srcPath cfArgs
+    let fileJSON = LB.unpack $ J.encode $ CryptoFile srcPath $ Just cfArgs
     withXFTPServer alice $ do
       connectUsers alice bob
       alice ##> ("/_send @2 json [{\"msgContent\":{\"type\":\"file\", \"text\":\"\"}, \"fileSource\": " <> fileJSON <> "}]")

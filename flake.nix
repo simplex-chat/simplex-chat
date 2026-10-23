@@ -493,8 +493,8 @@
                   "chat_badge_keygen"
                   "chat_badge_issue"
                   "chat_write_file"
-                  "chat_write_image"
                   "chat_resize_image_to_str_size"
+                  "chat_resize_image_to_data_size"
                 ];
                 postInstall = ''
                   set -x

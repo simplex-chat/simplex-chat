@@ -19,6 +19,7 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
+import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Char8 as BS
 import Data.ByteString.Internal (create)
 import qualified Data.ByteString.Lazy.Char8 as LB
@@ -89,6 +90,9 @@ mobileTests = do
       it "should parse and sanitize URI" testChatParseUri
     describe "Badges" $ do
       it "should generate key and issue badge via C API, verify credential" testBadgeKeygenIssueCApi
+    describe "Images" $ do
+      it "should resize image to data URI via C API" testResizeImageToStrSizeCApi
+      it "should resize image to data size via C API" testResizeImageToDataSizeCApi
 
 noActiveUser :: LB.ByteString
 noActiveUser =
@@ -241,8 +245,8 @@ testFileCApi fileName ps = do
   ptr <- mallocBytes $ B.length src
   putByteString ptr src
   r <- peekCAString =<< cChatWriteFile cc cPath ptr cLen
-  Just (WFResult cfArgs@(Just (CFArgs key nonce))) <- jDecode r
-  let encryptedFile = CryptoFile path cfArgs
+  Just (WFResult cfArgs@(CFArgs key nonce)) <- jDecode r
+  let encryptedFile = CryptoFile path $ Just cfArgs
   CF.getFileContentsSize encryptedFile `shouldReturn` fromIntegral (B.length src)
   cKey <- encodedCString key
   cNonce <- encodedCString nonce
@@ -279,8 +283,8 @@ testFileEncryptionCApi fileName ps = do
   let toPath = tmp </> (fileName <> ".encrypted.pdf")
   cToPath <- newCString toPath
   r <- peekCAString =<< cChatEncryptFile cc cFromPath cToPath
-  Just (WFResult cfArgs@(Just (CFArgs key nonce))) <- jDecode r
-  CF.getFileContentsSize (CryptoFile toPath cfArgs) `shouldReturn` fromIntegral (B.length src)
+  Just (WFResult cfArgs@(CFArgs key nonce)) <- jDecode r
+  CF.getFileContentsSize (CryptoFile toPath $ Just cfArgs) `shouldReturn` fromIntegral (B.length src)
   cKey <- encodedCString key
   cNonce <- encodedCString nonce
   let toPath' = tmp </> (fileName <> ".decrypted.pdf")
@@ -345,6 +349,31 @@ testBadgeKeygenIssueCApi _ = do
   let req = BadgeIssueReq {badgeKeyIdx = 1, secretKey, request = BadgeRequest {masterKey = mk, badgeInfo = BadgeInfo {badgeType = BTSupporter, badgeExpiry, badgeExtra = ""}}}
   cred <- ffiResult =<< (peekCString =<< cChatBadgeIssue =<< newCString (LB.unpack (J.encode req)))
   verifyCredential publicKey cred `shouldReturn` True
+
+testResizeImageToStrSizeCApi :: TestParams -> IO ()
+testResizeImageToStrSizeCApi _ = do
+  (ptr, len) <- cBuffer =<< B.readFile "./tests/fixtures/test.jpg"
+  uri <- peekCAString =<< cChatResizeImageToStrSize ptr len 14000
+  uri `shouldStartWith` "data:image/jpg;base64,"
+  length uri `shouldSatisfy` (<= 14000)
+  (ptr', len') <- cBuffer "not an image"
+  (peekCAString =<< cChatResizeImageToStrSize ptr' len' 14000) `shouldReturn` ""
+
+testResizeImageToDataSizeCApi :: TestParams -> IO ()
+testResizeImageToDataSizeCApi _ = do
+  (ptr, len) <- cBuffer =<< B.readFile "./tests/fixtures/test.jpg"
+  let resizeToDataSize png = do
+        Right bytes <- B64.decode . BS.pack <$> (peekCAString =<< cChatResizeImageToDataSize ptr len 100000 png)
+        B.length bytes `shouldSatisfy` (<= 100000)
+        pure bytes
+  B.take 2 <$> resizeToDataSize 0 `shouldReturn` "\xFF\xD8"
+  B.take 8 <$> resizeToDataSize 1 `shouldReturn` "\x89PNG\r\n\x1a\n"
+
+cBuffer :: ByteString -> IO (Ptr Word8, CInt)
+cBuffer s = do
+  ptr <- mallocBytes $ B.length s
+  putByteString ptr s
+  pure (ptr, fromIntegral $ B.length s)
 
 -- Decode an FFI `BadgeResult` envelope, returning the result or failing on error.
 ffiResult :: FromJSON r => String -> IO r

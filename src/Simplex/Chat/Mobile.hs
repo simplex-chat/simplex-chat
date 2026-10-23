@@ -23,7 +23,6 @@ import qualified Data.ByteString.Base64.URL as U
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.Either (fromRight)
 import Data.Functor (($>))
 import Data.List (find)
 import qualified Data.List.NonEmpty as L
@@ -32,7 +31,7 @@ import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word8)
 import Foreign.C.String
-import Foreign.C.Types (CBool (..), CInt (..), CLong (..))
+import Foreign.C.Types (CInt (..))
 import Foreign.Ptr
 import Foreign.StablePtr
 import Foreign.Storable (poke)
@@ -41,7 +40,6 @@ import Numeric.Natural (Natural)
 import Simplex.Chat
 import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
 import Simplex.Chat.Controller
-import Simplex.Chat.Image (readResizeable, resizeImageToSize)
 import Simplex.Chat.Library.Commands
 import Simplex.Chat.Markdown (parseUri, parsedMarkdown, sanitizeUri)
 import Simplex.Chat.Mobile.Badges
@@ -54,7 +52,6 @@ import Simplex.Chat.Remote.Types
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types
-import Simplex.Chat.Util (liftIOEither)
 import Simplex.Messaging.Agent.Client (agentClientStore)
 import Simplex.Messaging.Agent.Env.SQLite (createAgentStore)
 import Simplex.Messaging.Agent.Protocol (AgentErrorType)
@@ -161,15 +158,15 @@ foreign export ccall "chat_decrypt_media" cChatDecryptMedia :: CString -> Ptr Wo
 
 foreign export ccall "chat_write_file" cChatWriteFile :: StablePtr ChatController -> CString -> Ptr Word8 -> CInt -> IO CJSONString
 
-foreign export ccall "chat_write_image" cChatWriteImage :: StablePtr ChatController -> CLong -> CString -> Ptr Word8 -> CInt -> CBool -> IO CJSONString
-
 foreign export ccall "chat_read_file" cChatReadFile :: CString -> CString -> CString -> IO (Ptr Word8)
 
 foreign export ccall "chat_encrypt_file" cChatEncryptFile :: StablePtr ChatController -> CString -> CString -> IO CJSONString
 
 foreign export ccall "chat_decrypt_file" cChatDecryptFile :: CString -> CString -> CString -> CString -> IO CString
 
-foreign export ccall "chat_resize_image_to_str_size" cChatResizeImageToStrSize :: CString -> CLong -> IO CString
+foreign export ccall "chat_resize_image_to_str_size" cChatResizeImageToStrSize :: Ptr Word8 -> CInt -> CInt -> IO CString
+
+foreign export ccall "chat_resize_image_to_data_size" cChatResizeImageToDataSize :: Ptr Word8 -> CInt -> CInt -> CInt -> IO CString
 
 -- | check / migrate database and initialize chat controller on success
 -- For postgres first param is schema prefix, second param is database connection string.
@@ -272,21 +269,6 @@ cChatParseBadgeCode cCode = do
 -- | returns length of JSON encoded string
 cChatJsonLength :: CString -> IO CInt
 cChatJsonLength s = fromIntegral . subtract 2 . LB.length . J.encode . safeDecodeUtf8 <$> B.packCString s
-
--- | Downscale image at path until its data-uri encoding fits into specified size.
--- Returns data-uri/base64 encoded image as 0-terminated string.
--- Empty result string means operation failure.
--- The caller must free the result ptr.
-cChatResizeImageToStrSize :: CString -> CLong -> IO CString
-cChatResizeImageToStrSize fp' maxSize = do
-  fp <- peekCString fp'
-  res <- runExceptT $ do
-    (ri, _) <- liftIOEither $ readResizeable fp
-    let resized = resizeImageToSize True previewMinQuality (fromIntegral maxSize) ri
-    if LB.length resized > fromIntegral maxSize then throwError "unable to fit" else pure resized
-  newCStringFromLazyBS $ fromRight "" res
-  where
-    previewMinQuality = 20
 
 mobileQueueSize :: Int
 mobileQueueSize = 4096

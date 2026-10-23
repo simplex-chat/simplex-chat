@@ -7,10 +7,11 @@
 
 module Simplex.Chat.Mobile.File
   ( cChatWriteFile,
-    cChatWriteImage,
     cChatReadFile,
     cChatEncryptFile,
     cChatDecryptFile,
+    cChatResizeImageToStrSize,
+    cChatResizeImageToDataSize,
     WriteFileResult (..),
     ReadFileResult (..),
     chatWriteFile,
@@ -18,6 +19,7 @@ module Simplex.Chat.Mobile.File
   )
 where
 
+import Codec.Picture (DynamicImage, decodeImage)
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
@@ -25,6 +27,7 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
+import qualified Data.ByteString.Base64.Lazy as LB64
 import qualified Data.ByteString.Lazy as LB
 import qualified Data.ByteString.Lazy.Char8 as LB'
 import Data.Char (chr)
@@ -36,8 +39,7 @@ import Foreign.Ptr
 import Foreign.StablePtr
 import Foreign.Storable (poke, pokeByteOff)
 import Simplex.Chat.Controller (ChatController (..))
-import Simplex.Chat.Image (resizeImageToSize)
-import qualified Simplex.Chat.Image as Picture
+import Simplex.Chat.Image (ImageFormat (..), resizeImage, resizeImageDataUri)
 import Simplex.Chat.Mobile.Shared
 import Simplex.Chat.Util (chunkSize, encryptFile)
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..), CryptoFileHandle, FTCryptoError (..))
@@ -48,7 +50,7 @@ import Simplex.Messaging.Util (catchAll)
 import UnliftIO (Handle, IOMode (..), atomically, withFile)
 
 data WriteFileResult
-  = WFResult {cryptoArgs :: Maybe CryptoFileArgs}
+  = WFResult {cryptoArgs :: CryptoFileArgs}
   | WFError {writeError :: String}
 
 $(JQ.deriveToJSON (sumTypeJSON $ dropPrefix "WF") ''WriteFileResult)
@@ -64,31 +66,9 @@ cChatWriteFile cc cPath ptr len = do
 chatWriteFile :: ChatController -> FilePath -> ByteString -> IO WriteFileResult
 chatWriteFile ChatController {random} path s = do
   cfArgs <- atomically $ CF.randomArgs random
-  chatWriteFile_ (Just cfArgs) path s
-
-chatWriteFile_ :: Maybe CryptoFileArgs -> FilePath -> ByteString -> IO WriteFileResult
-chatWriteFile_ cfArgs_ path s = do
-  let file = CryptoFile path cfArgs_
-  either WFError (\_ -> WFResult cfArgs_)
+  let file = CryptoFile path $ Just cfArgs
+  either WFError (\_ -> WFResult cfArgs)
     <$> runCatchExceptT (withExceptT show $ CF.writeFile file $ LB.fromStrict s)
-
-cChatWriteImage :: StablePtr ChatController -> CLong -> CString -> Ptr Word8 -> CInt -> CBool -> IO CJSONString
-cChatWriteImage cc maxSize cPath ptr len encrypt = do
-  c <- deRefStablePtr cc
-  path <- peekCString cPath
-  src <- getByteString ptr len
-  cfArgs_ <- if encrypt /= 0 then Just <$> atomically (CF.randomArgs $ random c) else pure Nothing
-  r <-
-    case Picture.decodeResizeable src of
-      Left e -> pure $ WFError e
-      Right (ri, _metadata) -> do
-        let resized = resizeImageToSize False storeMinQuality (fromIntegral maxSize) ri
-        if LB.length resized > fromIntegral maxSize
-          then pure $ WFError "unable to fit"
-          else chatWriteFile_ cfArgs_ path (LB.toStrict resized)
-  newCStringFromLazyBS $ J.encode r
-  where
-    storeMinQuality = 20
 
 data ReadFileResult
   = RFResult {fileSize :: Int}
@@ -131,7 +111,7 @@ chatEncryptFile ChatController {random} fromPath toPath =
     encrypt = do
       cfArgs <- atomically $ CF.randomArgs random
       encryptFile fromPath toPath cfArgs
-      pure $ Just cfArgs
+      pure cfArgs
 
 cChatDecryptFile :: CString -> CString -> CString -> CString -> IO CString
 cChatDecryptFile cFromPath cKey cNonce cToPath = do
@@ -163,6 +143,20 @@ chatDecryptFile fromPath keyStr nonceStr toPath = fromLeft "" <$> runCatchExcept
       when (B.length ch /= chSize') $ throwError $ FTCEFileIOError "encrypting file: unexpected EOF"
       liftIO $ B.hPut w ch
       when (size' > 0) $ decryptChunks r w size'
+
+cChatResizeImageToStrSize :: Ptr Word8 -> CInt -> CInt -> IO CString
+cChatResizeImageToStrSize ptr len maxSize = cResizeImage id (resizeImageDataUri $ fromIntegral maxSize) ptr len
+
+cChatResizeImageToDataSize :: Ptr Word8 -> CInt -> CInt -> CInt -> IO CString
+cChatResizeImageToDataSize ptr len maxSize png = cResizeImage LB64.encode (resizeImage format $ fromIntegral maxSize) ptr len
+  where
+    format = if png /= 0 then IFPng else IFJpeg
+
+cResizeImage :: (LB.ByteString -> LB.ByteString) -> (DynamicImage -> IO (Either String LB.ByteString)) -> Ptr Word8 -> CInt -> IO CString
+cResizeImage encode resize ptr len = do
+  s <- getByteString ptr len
+  r <- runCatchExceptT $ ExceptT . resize =<< liftEither (decodeImage s)
+  newCStringFromLazyBS $ either (const "") encode r
 
 runCatchExceptT :: ExceptT String IO a -> IO (Either String a)
 runCatchExceptT action = runExceptT action `catchAll` (pure . Left . show)

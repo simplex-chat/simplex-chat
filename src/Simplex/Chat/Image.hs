@@ -1,127 +1,95 @@
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE TupleSections #-}
-{-# LANGUAGE TypeSynonymInstances #-}
 
-module Simplex.Chat.Image where
+module Simplex.Chat.Image
+  ( ImageFormat (..),
+    imageFormat,
+    resizeImage,
+    resizeImageDataUri,
+  )
+where
 
-import qualified Codec.Picture as Picture
-import qualified Codec.Picture.JPEGTurbo as JT
-import Codec.Picture.Metadata (Metadatas)
+import Codec.Picture (DynamicImage (..), Image (..), Pixel (..), convertRGB8, convertRGBA8)
+import Codec.Picture.JPEGTurbo (encodeRGB)
 import Codec.Picture.Png (encodePng)
 import qualified Codec.Picture.STBIR as STBIR
-import Codec.Picture.Types (dropAlphaLayer, pixelFoldMap)
-import Control.Monad.Except (ExceptT (..), runExceptT, throwError)
-import Data.ByteString (ByteString)
+import Codec.Picture.Types (pixelFoldMap)
 import qualified Data.ByteString.Base64.Lazy as LB64
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Int (Int64)
 import Data.Monoid (All (..))
-import System.IO.Unsafe (unsafePerformIO)
 
-resizeImageToSize :: Bool -> Int -> Int64 -> ResizeableImage -> LB.ByteString
-resizeImageToSize toURI minJpegQuality maxSize (ResizeableImage fmt img encoder) = either resizePNG resizeJPG encoder
+data ImageFormat = IFJpeg | IFPng
+
+imageFormat :: DynamicImage -> ImageFormat
+imageFormat = \case
+  ImageYA8 img -> alphaFormat img
+  ImageYA16 img -> alphaFormat img
+  ImageRGBA8 img -> alphaFormat img
+  ImageRGBA16 img -> alphaFormat img
+  _ -> IFJpeg
   where
-    halveAndRetry = resizeImageToSize toURI minJpegQuality maxSize (ResizeableImage fmt imgHalved encoder)
-    imgHalved = downscale img 2.0
-    resizePNG enc
-      | LB.length encoded <= maxSize = encoded
-      | LB.length (encode imgHalved) > maxSize = halveAndRetry
-      | otherwise = fitScale 1.0 2.0
-      where
-        encode
-          | toURI = toDataUri "png" . enc
-          | otherwise = enc
-        encoded = encode img
-        fitScale l u
-          | u - l < 1 / 64 = encode $ downscale img u -- prefer lower resolution
-          | otherwise =
-              case compare maxSize (LB.length result) of
-                LT -> fitScale m u -- over budget, scale harder
-                EQ -> result
-                GT -> fitScale l m -- keep more pixels
-          where
-            m = (l + u) / 2
-            result = encode $ downscale img m
-    resizeJPG enc
-      | minSize > maxSize = halveAndRetry
-      | otherwise = fitQuality minJpegQuality 95
-      where
-        encode q
-          | toURI = toDataUri "jpg" $ enc q img -- the correct mime type is "jpeg", but only "jpg" is supported by older clients
-          | otherwise = enc q img
-        minSize = LB.length $ encode minJpegQuality
-        fitQuality l u
-          | u - l <= 1 = encode l -- prefer higher compression
-          | otherwise =
-              case compare (LB.length result) maxSize of
-                LT -> fitQuality m u -- keep more data
-                EQ -> result
-                GT -> fitQuality l m -- over budget, reduce quality
-          where
-            m = (l + u) `div` 2
-            result = encode m
+    alphaFormat :: (Pixel a, Eq (PixelBaseComponent a), Bounded (PixelBaseComponent a)) => Image a -> ImageFormat
+    alphaFormat img
+      | getAll $ pixelFoldMap (All . (maxBound ==) . pixelOpacity) img = IFJpeg
+      | otherwise = IFPng
 
-downscale :: STBIR.STBIRPixel pixel => Picture.Image pixel -> Float -> Picture.Image pixel
-downscale img scale = STBIR.resize STBIR.defaultOptions (scaled Picture.imageWidth) (scaled Picture.imageHeight) img
+resizeImage :: ImageFormat -> Int64 -> DynamicImage -> IO (Either String LB.ByteString)
+resizeImage = fitImage $ const id
+
+resizeImageDataUri :: Int64 -> DynamicImage -> IO (Either String LB.ByteString)
+resizeImageDataUri maxSize img = fitImage toDataUri (imageFormat img) maxSize img
+
+fitImage :: (ImageFormat -> LB.ByteString -> LB.ByteString) -> ImageFormat -> Int64 -> DynamicImage -> IO (Either String LB.ByteString)
+fitImage output format maxSize img = case format of
+  IFJpeg -> fitHalving (jpeg minJpegQuality) fitQuality Nothing $ convertRGB8 img
+  IFPng -> fitHalving png fitScale Nothing $ convertRGBA8 img
   where
-    scaled f = round $ fromIntegral (f img) / min 2.0 (max 0.5 scale)
+    out = output format
+    fits = (<= maxSize) . LB.length
+    jpeg q = fmap (out . LB.fromStrict) . encodeRGB q
+    png = pure . out . encodePng
+    fitHalving :: STBIR.STBIRPixel a => (Image a -> IO LB.ByteString) -> (Maybe (Image a) -> Image a -> LB.ByteString -> IO LB.ByteString) -> Maybe (Image a) -> Image a -> IO (Either String LB.ByteString)
+    fitHalving cheapest final larger i = do
+      r <- cheapest i
+      if fits r
+        then Right <$> final larger i r
+        else maybe tooLarge (fitHalving cheapest final (Just i)) $ halve i
+    fitQuality _ rgb r = bisect maxSize qualityStep (`jpeg` rgb) (minJpegQuality, r) 95
+    fitScale larger _ r = maybe (pure r) (\rgba -> bisect maxSize scaleStep (png . downscale rgba) (2, r) 1) larger
+    tooLarge = pure $ Left "image does not fit"
+    qualityStep good bad = if bad - good <= 1 then Nothing else Just $ (good + bad) `div` 2
+    scaleStep good bad = if good - bad < 1 / 64 then Nothing else Just $ (good + bad) / 2
 
-toDataUri :: LB.ByteString -> LB.ByteString -> LB.ByteString
-toDataUri fmt body = "data:image/" <> fmt <> ";base64," <> LB64.encode body
-
-decodeResizeable :: ByteString -> Either String (ResizeableImage, Metadatas)
-decodeResizeable source = do
-  (input, metadata) <- Picture.decodeImageWithMetadata source
-  maybe (Left "unsupported image format") (pure . (,metadata)) $ resizeableImage (tryDropOpacity input)
-
-readResizeable :: FilePath -> IO (Either String (ResizeableImage, Metadatas))
-readResizeable inputPath = runExceptT $ do
-  (input, metadata) <- ExceptT $ Picture.readImageWithMetadata inputPath -- will use mmap instead of reading the whole file
-  maybe (throwError "unsupported image format") (pure . (,metadata)) $ resizeableImage (tryDropOpacity input)
-
-tryDropOpacity :: Picture.DynamicImage -> Picture.DynamicImage
-tryDropOpacity dyn = case dyn of
-  Picture.ImageRGBA16 img | opaque img -> Picture.ImageRGB16 $ dropAlphaLayer img
-  Picture.ImageRGBA8 img | opaque img -> Picture.ImageRGB8 $ dropAlphaLayer img
-  Picture.ImageYA16 img | opaque img -> Picture.ImageY16 $ dropAlphaLayer img
-  Picture.ImageYA8 img | opaque img -> Picture.ImageY8 $ dropAlphaLayer img
-  _ -> dyn
+bisect :: Int64 -> (p -> p -> Maybe p) -> (p -> IO LB.ByteString) -> (p, LB.ByteString) -> p -> IO LB.ByteString
+bisect maxSize step encode = go
   where
-    opaque :: (Picture.Pixel a, Eq (Picture.PixelBaseComponent a), Bounded (Picture.PixelBaseComponent a)) => Picture.Image a -> Bool
-    opaque = getAll . pixelFoldMap (All . \pix -> Picture.pixelOpacity pix == maxBound)
+    go (good, r) bad = case step good bad of
+      Nothing -> pure r
+      Just m -> do
+        r' <- encode m
+        case compare (LB.length r') maxSize of
+          LT -> go (m, r') bad
+          EQ -> pure r'
+          GT -> go (good, r) m
 
-data ResizeableImage where
-  ResizeableImage ::
-    STBIR.STBIRPixel a =>
-    -- | format label
-    String ->
-    -- | current image data
-    Picture.Image a ->
-    ImageEncoder a ->
-    ResizeableImage
+minJpegQuality :: Int
+minJpegQuality = 20
 
-type ImageEncoder a = Either (PNGEncoder a) (JPGEncoder a)
-type PNGEncoder a = Picture.Image a -> LB.ByteString
-type JPGEncoder a = Int -> Picture.Image a -> LB.ByteString
+halve :: STBIR.STBIRPixel a => Image a -> Maybe (Image a)
+halve img
+  | imageWidth img < 2 || imageHeight img < 2 = Nothing
+  | otherwise = Just $ downscale img 2
 
-resizeableImage :: Picture.DynamicImage -> Maybe ResizeableImage
-resizeableImage dyn = case dyn of
-  Picture.ImageY8 img -> Just $ ResizeableImage "Y8" img $ Right $ \q -> LB.fromStrict . unsafePerformIO . JT.encodeRGB q . Picture.convertRGB8 . Picture.ImageY8 -- TODO: directly
-  Picture.ImageY16 img -> Just $ ResizeableImage "Y16" img $ Left encodePng
-  Picture.ImageY32 _ -> Nothing
-  Picture.ImageYF _ -> Nothing
-  Picture.ImageYA8 img -> Just $ ResizeableImage "YA8" img $ Left encodePng
-  Picture.ImageYA16 img -> Just $ ResizeableImage "YA16" img $ Left encodePng
-  Picture.ImageRGB8 img -> Just $ ResizeableImage "RGB8" img $ Right $ \q -> LB.fromStrict . unsafePerformIO . JT.encodeRGB q
-  Picture.ImageRGB16 img -> Just $ ResizeableImage "RGB16" img $ Left encodePng
-  Picture.ImageRGBF _ -> Nothing
-  Picture.ImageRGBA8 img -> Just $ ResizeableImage "RGBA8" img $ Left encodePng
-  Picture.ImageRGBA16 img -> Just $ ResizeableImage "RGBA16" img $ Left encodePng
-  Picture.ImageYCbCr8 img -> Just $ ResizeableImage "YCbCr8" img $ Right $ \q -> LB.fromStrict . unsafePerformIO . JT.encodeRGB q . Picture.convertRGB8 . Picture.ImageYCbCr8 -- TODO: JT.encodeYUV
-  Picture.ImageCMYK8 img -> Just $ ResizeableImage "CMYK8" img $ Right $ \q -> LB.fromStrict . unsafePerformIO . JT.encodeRGB q . Picture.convertRGB8 . Picture.ImageCMYK8
-  Picture.ImageCMYK16 _ -> Nothing
+downscale :: STBIR.STBIRPixel a => Image a -> Float -> Image a
+downscale img scale = STBIR.resize STBIR.defaultOptions (scaled imageWidth) (scaled imageHeight) img
+  where
+    scaled f = round $ fromIntegral (f img) / scale
+
+toDataUri :: ImageFormat -> LB.ByteString -> LB.ByteString
+toDataUri format body = "data:image/" <> mime <> ";base64," <> LB64.encode body
+  where
+    mime = case format of
+      IFJpeg -> "jpg"
+      IFPng -> "png"
