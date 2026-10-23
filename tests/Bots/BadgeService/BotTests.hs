@@ -249,7 +249,7 @@ badgeServiceTests = do
     it "should wait a day, not the hour the service answered, after a renewal whose store check failed" testStoreUnreachableWaitsStall
     it "should keep a request's wait past a snooze that ends sooner, and raise the alert again without a request" testSnoozeKeepsRequestWait
     it "should wait from a late request until the next daily moment of the shown credential's expiry, not a day after it" testStallRejoinsSharedMoment
-    it "should send no dev-interval request within the interval and one after it" testDevIntervalRequests
+    it "should send no dev-interval request within the interval and one after it, and none for a retired purchase" testDevIntervalRequests
     it "should send no request during coverage without a dev interval" testNoDevIntervalRequests
     it "should retry a failed dev-interval request within the interval" testDevIntervalRetries
     it "should retire a subscription badge after asking, once the window has passed since the first answer that renewed nothing, whatever the service answers" testSubscriptionRetiredAfterRecoveryWindow
@@ -3577,6 +3577,18 @@ testDevIntervalRequests ps =
       nextWakes (chatController alice) `shouldReturn` [Just wake]
       activateAt alice bsClock $ addUTCTime 620 t1
       subscriptionChecks store `shouldEventuallyReturn` (checks + 2)
+      -- a purchase the store ended is retired by the request's answer, and not asked about again
+      storeReports store $ subscriptionCheck SSEnded Nothing
+      setClockAt bsClock $ addUTCTime 1240 t1
+      alice `send` "/_app activate"
+      waitShownBadge (chatController alice) Nothing
+      subscriptionChecks store `shouldReturn` checks + 3
+      dropOutput alice
+      setClockAt bsClock $ addUTCTime 1860 t1
+      alice `send` "/_app activate"
+      threadDelay 2000000
+      subscriptionChecks store `shouldReturn` checks + 3
+      dropOutput alice
 
 testNoDevIntervalRequests :: HasCallStack => TestParams -> IO ()
 testNoDevIntervalRequests ps =

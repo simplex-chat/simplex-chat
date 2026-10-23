@@ -5874,7 +5874,7 @@ updateUserBadge userId emitted now = do
             _ -> pure False
           latest <- withStore' (`getLatestIssuedCredential` badgePurchaseId)
           devRequestInterval <- asks $ badgeDevRequestInterval . config
-          let due = not retiredBefore && (isJust devRequestInterval || badgeRequestDue now purchaseKind (shownBadgeCredential user p) latest balance)
+          let due = not retiredBefore && (isJust devRequestInterval && isJust (shownBadgeCredential user p) || badgeRequestDue now purchaseKind (shownBadgeCredential user p) latest balance)
               -- a due month waits for the wake the last pass set, so a request that issued nothing is not repeated at every activation;
               -- a wake further than this was not set by such a request, but by a device clock set back since.
               -- A dev interval reuses the same guard, as it needs the same thing: no second request within it.
