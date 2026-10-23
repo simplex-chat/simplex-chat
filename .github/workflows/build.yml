@@ -24,6 +24,7 @@ on:
       - "bots/src/**"
       - "simplex-chat.cabal"
       - "cabal.project"
+      - "external/libjpeg-turbo"
       - "Dockerfile*"
       - "scripts/ci/**"
       - "scripts/ci/ios-stub-libs.sh"
@@ -336,7 +337,7 @@ jobs:
         if: matrix.should_run == true && env.release != 'true'
         run: |
           toolchain=$(docker exec builder dpkg-query -W -f '${db:Status-Status} ${binary:Package} ${Version}\n' 'binutils*' 'cpp*' 'gcc*' '*-dev' | grep '^installed ' | sha256sum | cut -c1-16)
-          target=ubuntu-${{ matrix.os }}-${{ matrix.arch }}-ghc${{ matrix.ghc }}-$toolchain
+          target=ubuntu-${{ matrix.os }}-${{ matrix.arch }}-ghc${{ matrix.ghc }}-$toolchain-${{ hashFiles('external/libjpeg-turbo/**') }}
           echo "deps=deps-$target" >> "$GITHUB_OUTPUT"
           echo "dist=dist-$target" >> "$GITHUB_OUTPUT"
           echo "dist_lib=dist-lib-$target" >> "$GITHUB_OUTPUT"
@@ -820,6 +821,8 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
+        with:
+          submodules: recursive
 
       - name: Get UID and GID
         id: ids
@@ -864,7 +867,7 @@ jobs:
         id: keys
         run: |
           toolchain=$(docker exec builder dpkg-query -W -f '${db:Status-Status} ${binary:Package} ${Version}\n' 'binutils*' 'cpp*' 'gcc*' '*-dev' | grep '^installed ' | sha256sum | cut -c1-16)
-          echo "deps=deps-ubuntu-22.04-x86_64-postgres-ghc${{ needs.variables.outputs.GHC_VER }}-$toolchain" >> "$GITHUB_OUTPUT"
+          echo "deps=deps-ubuntu-22.04-x86_64-postgres-ghc${{ needs.variables.outputs.GHC_VER }}-$toolchain-${{ hashFiles('external/libjpeg-turbo/**') }}" >> "$GITHUB_OUTPUT"
 
       - name: Restore dependencies from cache
         id: restore-deps
@@ -1037,7 +1040,7 @@ jobs:
         shell: bash
         run: |
           toolchain=$({ sw_vers -productVersion; clang --version; } | shasum -a 256 | cut -c1-16)
-          target=${{ matrix.os }}-${{ matrix.arch }}-ghc${{ matrix.ghc }}-$toolchain
+          target=${{ matrix.os }}-${{ matrix.arch }}-ghc${{ matrix.ghc }}-$toolchain-${{ hashFiles('external/libjpeg-turbo/**') }}
           echo "deps=deps-$target" >> "$GITHUB_OUTPUT"
           echo "dist=dist-$target" >> "$GITHUB_OUTPUT"
 
@@ -1386,7 +1389,7 @@ jobs:
         shell: msys2 {0}
         run: |
           toolchain=$(gcc --version | sha256sum | cut -c1-16)
-          target=windows-x86_64-ghc${{ matrix.ghc }}-$toolchain
+          target=windows-x86_64-ghc${{ matrix.ghc }}-$toolchain-${{ hashFiles('external/libjpeg-turbo/**') }}
           echo "deps=deps-$target" >> "$GITHUB_OUTPUT"
           echo "dist=dist-$target" >> "$GITHUB_OUTPUT"
 

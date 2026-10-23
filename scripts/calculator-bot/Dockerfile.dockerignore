@@ -9,6 +9,7 @@
 !src
 !scripts/cabal.project.local.linux
 !scripts/desktop
+!external/libjpeg-turbo
 !packages/simplex-chat-client
 !packages/simplex-chat-nodejs
 !apps/simplex-calculator-bot

@@ -100,6 +100,7 @@ checkout_git() {
   git -C "$git_dir" reset --hard
   git -C "$git_dir" clean -dfx
   git -C "$git_dir" checkout "$tag"
+  git -C "$git_dir" submodule update --init --recursive
 }
 
 check_apk() {
@@ -158,7 +159,7 @@ setup_container() {
     -t "${IMAGE_NAME}" \
     --build-arg=USER_UID="$(id -u)" \
     --build-arg=USER_GID="$(id -g)" \
-    .
+    "${dir_git}"
 
   # Run container in background
   docker run -t -d \

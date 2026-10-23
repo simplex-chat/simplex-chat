@@ -15,6 +15,10 @@ scripts/*
 scripts/desktop/*
 !scripts/desktop/prepare-libjpeg-turbo.sh
 
+!external
+external/*
+!external/libjpeg-turbo
+
 !packages
 packages/*
 !packages/simplex-chat-python

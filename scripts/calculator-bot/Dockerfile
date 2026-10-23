@@ -35,6 +35,7 @@ COPY scripts/cabal.project.local.linux ./cabal.project.local
 # The build script checks the export lists in these.
 COPY libsimplex.dll.def flake.nix ./
 COPY scripts/desktop ./scripts/desktop
+COPY external/libjpeg-turbo ./external/libjpeg-turbo
 COPY src ./src
 
 # VLC is only for the desktop app.

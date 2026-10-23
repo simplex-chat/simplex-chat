@@ -31,9 +31,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libsqlite3-dev libssl-dev llvm nasm pkg-config zlib1g-dev && \
     rm -rf /var/lib/apt/lists/*
 
-COPY scripts/desktop/prepare-libjpeg-turbo.sh /tmp/prepare-libjpeg-turbo.sh
-RUN LIBJPEG_TURBO_PREFIX=/usr/local /tmp/prepare-libjpeg-turbo.sh && \
-    rm /tmp/prepare-libjpeg-turbo.sh
+COPY scripts/desktop/prepare-libjpeg-turbo.sh /tmp/simplex-chat/scripts/desktop/prepare-libjpeg-turbo.sh
+COPY external/libjpeg-turbo /tmp/simplex-chat/external/libjpeg-turbo
+RUN LIBJPEG_TURBO_PREFIX=/usr/local /tmp/simplex-chat/scripts/desktop/prepare-libjpeg-turbo.sh && \
+    rm -rf /tmp/simplex-chat
 
 ENV BOOTSTRAP_HASKELL_NONINTERACTIVE=1 \
     BOOTSTRAP_HASKELL_GHC_VERSION=${GHC} \
