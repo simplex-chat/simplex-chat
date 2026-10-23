@@ -5,6 +5,7 @@
 
 module Bots.StoreService.NamesStoreTests (namesStoreTests, at, btc, insertInvoiceRow, invoiceStatus, issue, newReg, order, ownerA, ownerB, paidOrder, placeCode, placePaid, price, reg, reveal, signature, t0, usable, write) where
 
+import Bots.StoreService.ConfigTests (termsVersion)
 import Bots.StoreService.WebTests (columnsOf, digestFixture, runMigrations, withServiceStore)
 import Control.Arrow ((&&&))
 import Control.Monad (forM_, void)
@@ -118,7 +119,8 @@ order label n =
       ofLength = T.length label,
       ofDuration = 69292800,
       ofCommitment = digestFixture n,
-      ofSealed = "sealed-" <> label <> "-" <> T.pack (show n)
+      ofSealed = "sealed-" <> label <> "-" <> T.pack (show n),
+      ofAgreedTerms = termsVersion
     }
 
 newReg :: Text -> Address -> OrderFields -> NewRegistration
@@ -319,6 +321,7 @@ testOrderHashFields = do
           ("owner", orderHash ownerB o paid),
           ("commitment", orderHash ownerA o {ofCommitment = digestFixture 2} paid),
           ("sealed", orderHash ownerA o {ofSealed = ofSealed o <> "x"} paid),
+          ("terms", orderHash ownerA o {ofAgreedTerms = ofAgreedTerms o <> "/community"} paid),
           ("method", orderHash ownerA o (OTInvoice (SPMCard CPStripe) price)),
           ("price", orderHash ownerA o (OTInvoice btc (price + 1))),
           ("code instead of invoice", orderHash ownerA o (OTCode $ digestFixture 3)),
@@ -332,6 +335,7 @@ testOrderHashBoundaries :: IO ()
 testOrderHashBoundaries = do
   let o = order "alicebakery" 1
   orderHash ownerA o {ofSealed = "ab"} (OTCode "c") `shouldNotBe` orderHash ownerA o {ofSealed = "a"} (OTCode "bc")
+  orderHash ownerA o {ofSealed = "ab", ofAgreedTerms = "c"} (OTCode "d") `shouldNotBe` orderHash ownerA o {ofSealed = "a", ofAgreedTerms = "bc"} (OTCode "d")
 
 testCreatePaid :: IO ()
 testCreatePaid = withServiceStore $ \st -> do
@@ -348,6 +352,7 @@ testCreatePaid = withServiceStore $ \st -> do
         nrOwner = ownerA,
         nrCommitment = ofCommitment o,
         nrSealed = ofSealed o,
+        nrAgreedTerms = termsVersion,
         nrPhase = PUnpaid,
         nrYears = twoYears,
         nrPrice = price,
@@ -512,7 +517,8 @@ testRoundTrip = withServiceStore $ \st -> do
             nrFailedAt = Just (at 2),
             nrError = Just "The name was not signed in time",
             nrLinksRefusedAt = Just (at 4),
-            nrMoves = 2
+            nrMoves = 2,
+            nrAgreedTerms = termsVersion <> "/community"
           }
   write st changed `shouldReturn` Written 2
   reg st "r1" `shouldReturn` changed {nrVersion = 2, nrLive = False, nrUpdatedAt = at 1}
@@ -598,7 +604,7 @@ testWriteMeetsLiveOrder = withServiceStore $ \st -> do
 testRetarget :: IO ()
 testRetarget = withServiceStore $ \st -> do
   let o = order "alicebakery" 1
-      o' = order "alicebakers" 2
+      o' = (order "alicebakers" 2) {ofAgreedTerms = termsVersion <> "/community"}
   placePaid st "r1" ownerA o (at 60) `shouldReturn` Right ()
   r <- reg st "r1"
   let failed =
@@ -624,6 +630,7 @@ testRetarget = withServiceStore $ \st -> do
         nrLabelHash = ofLabelHash o',
         nrCommitment = ofCommitment o',
         nrSealed = ofSealed o',
+        nrAgreedTerms = ofAgreedTerms o',
         nrPrice = 10000,
         nrPhase = PQueued,
         nrMoves = 1,

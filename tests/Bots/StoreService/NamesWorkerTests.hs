@@ -5,6 +5,7 @@
 
 module Bots.StoreService.NamesWorkerTests (namesWorkerTests) where
 
+import Bots.StoreService.ConfigTests (termsVersion)
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (availableCall, maxCommitmentAgeCall, minCommitmentAgeCall, noncesCall, registrarOf, unhex)
 import Bots.StoreService.NamesOrdersTests
@@ -505,7 +506,7 @@ testTwoWallets = withWorker $ \w@W {wCtx = ctx} -> do
 
 -- | The order of alicebakery, by owner A, with this commitment.
 aliceFields :: Int -> OrderFields
-aliceFields n = OrderFields {ofLabelHash = labelHash "alicebakery", ofLength = 11, ofDuration = yearsDuration 2 orderTime, ofCommitment = commitmentOf n, ofSealed = "sealed-alicebakery-" <> tshow n}
+aliceFields n = OrderFields {ofLabelHash = labelHash "alicebakery", ofLength = 11, ofDuration = yearsDuration 2 orderTime, ofCommitment = commitmentOf n, ofSealed = "sealed-alicebakery-" <> tshow n, ofAgreedTerms = termsVersion}
 
 aliceRegistration :: Text -> Int -> NewRegistration
 aliceRegistration rid n = NewRegistration {nrgId = RegistrationId rid, nrgOwner = ownerA, nrgOrder = aliceFields n, nrgYears = 2}

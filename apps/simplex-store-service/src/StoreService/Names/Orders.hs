@@ -47,6 +47,7 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
+import Data.Char (isAsciiLower, isAsciiUpper, isDigit)
 import Data.Int (Int64)
 import Data.Maybe (catMaybes, isJust)
 import Data.Scientific (toBoundedInteger)
@@ -129,6 +130,10 @@ data Landing = LNotLanded | LRegistered Int64 | LChanged | LUnread
 maxSealedChars :: Int
 maxSealedChars = 11095
 
+-- | The terms version, of up to 32 characters, and a suffix such as /community.
+maxAgreedTermsChars :: Int
+maxAgreedTermsChars = 48
+
 -- | How far a signed request's timestamp may be from the service's clock.
 signedRequestSeconds :: Integer
 signedRequestSeconds = 600
@@ -149,9 +154,16 @@ parseOrderFields o = do
   ofCommitment <- bytes32FromHex =<< textField o "commitment"
   ofSealed <- textField o "sealed"
   unless (T.length ofSealed <= maxSealedChars) Nothing
+  ofAgreedTerms <- textField o "terms"
+  unless (agreedTermsFormat ofAgreedTerms) Nothing
   timestamp <- integerField =<< KM.lookup "timestamp" o
   signature <- either (const Nothing) Just . parseSignature =<< textField o "signature"
-  pure (OrderFields {ofLabelHash, ofLength, ofDuration, ofCommitment, ofSealed}, timestamp, signature)
+  pure (OrderFields {ofLabelHash, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms}, timestamp, signature)
+
+agreedTermsFormat :: Text -> Bool
+agreedTermsFormat t = not (T.null t) && T.length t <= maxAgreedTermsChars && T.all termsChar t
+  where
+    termsChar c = isAsciiUpper c || isAsciiLower c || isDigit c || c `elem` ("._/-" :: String)
 
 textField :: J.Object -> J.Key -> Maybe Text
 textField o k = case KM.lookup k o of
@@ -284,8 +296,8 @@ movable NameRegistration {nrPhase, nrLinksRefusedAt} = case nrPhase of
   _ -> False
 
 orderFieldsOf :: NameRegistration -> OrderFields
-orderFieldsOf NameRegistration {nrLabelHash, nrLength, nrDuration, nrCommitment, nrSealed} =
-  OrderFields {ofLabelHash = nrLabelHash, ofLength = nrLength, ofDuration = nrDuration, ofCommitment = nrCommitment, ofSealed = nrSealed}
+orderFieldsOf NameRegistration {nrLabelHash, nrLength, nrDuration, nrCommitment, nrSealed, nrAgreedTerms} =
+  OrderFields {ofLabelHash = nrLabelHash, ofLength = nrLength, ofDuration = nrDuration, ofCommitment = nrCommitment, ofSealed = nrSealed, ofAgreedTerms = nrAgreedTerms}
 
 -- | Any other live order of the new commitment, or of the owner and the new label hash, refuses the move.
 checkMoveMeets :: DBStore -> NameRegistration -> OrderFields -> UTCTime -> IO (Either OrderRefusal ())

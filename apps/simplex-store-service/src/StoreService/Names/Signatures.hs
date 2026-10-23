@@ -49,13 +49,14 @@ data AddressError
   | ADChecksum
   deriving (Eq, Show)
 
--- | The fields an owner signs in an order and in another name for it.
+-- | The fields an owner signs in an order and in another name for it, with the terms the owner agreed to for that name.
 data OrderFields = OrderFields
   { ofLabelHash :: LabelHash,
     ofLength :: Int,
     ofDuration :: Word64,
     ofCommitment :: ByteString,
-    ofSealed :: Text
+    ofSealed :: Text,
+    ofAgreedTerms :: Text
   }
   deriving (Eq)
 
@@ -108,8 +109,8 @@ message :: [Text] -> ByteString
 message = encodeUtf8 . T.unwords . ("simplex.domains" :)
 
 orderWords :: OrderFields -> [Text]
-orderWords OrderFields {ofLabelHash = LabelHash labelHash, ofLength, ofDuration, ofCommitment, ofSealed} =
-  [hex labelHash, tshow ofLength, tshow ofDuration, hex ofCommitment, hex $ sha256Hash $ encodeUtf8 ofSealed]
+orderWords OrderFields {ofLabelHash = LabelHash labelHash, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms} =
+  [hex labelHash, tshow ofLength, tshow ofDuration, hex ofCommitment, hex $ sha256Hash $ encodeUtf8 ofSealed, ofAgreedTerms]
 
 -- the address parser checks EIP-55 only on mixed-case hex, so one-case text is refused here by comparing the encoding
 parseChecksumAddress :: Text -> Either AddressError Address

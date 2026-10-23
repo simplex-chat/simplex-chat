@@ -195,6 +195,8 @@ data NameRegistration = NameRegistration
     nrOwner :: Address,
     nrCommitment :: ByteString,
     nrSealed :: Text,
+    -- | '' for an order stored before orders signed the terms
+    nrAgreedTerms :: Text,
     nrPhase :: NamePhase,
     nrYears :: Int,
     nrPrice :: Int,
@@ -476,8 +478,8 @@ orderHashFieldBytes = 4
 
 -- | Each field is length-prefixed, so no two different orders encode the same.
 orderHash :: Address -> OrderFields -> OrderTerms -> ByteString
-orderHash owner OrderFields {ofLabelHash = LabelHash lh, ofLength, ofDuration, ofCommitment, ofSealed} terms =
-  sha256Hash . B.concat . map field $ [tag, lh, num ofLength, num ofDuration, unAddress owner, ofCommitment, encodeUtf8 ofSealed] <> payment
+orderHash owner OrderFields {ofLabelHash = LabelHash lh, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms} terms =
+  sha256Hash . B.concat . map field $ [tag, lh, num ofLength, num ofDuration, unAddress owner, ofCommitment, encodeUtf8 ofSealed, encodeUtf8 ofAgreedTerms] <> payment
   where
     (tag, payment) = case terms of
       OTInvoice method price -> ("name-invoice", [encodeUtf8 $ methodText method, num price])
@@ -557,15 +559,16 @@ insertRegistration db NewRegistration {nrgId = RegistrationId rid, nrgOwner, nrg
       [sql|
         INSERT INTO sx_badge_service_name_registrations
           (registration_id, version, label_hash, length, duration, owner, commitment, sealed, phase, years,
-           price, method, name_prepaid_code_id, live, order_hash, moves, created_at, updated_at, balance_source, balance_used)
-        VALUES (?,?,?,?,?,?,?,?,?,?, ?,?,?,?,?,?,?,?,?,?)
+           price, method, name_prepaid_code_id, live, order_hash, moves, created_at, updated_at, balance_source, balance_used, agreed_terms)
+        VALUES (?,?,?,?,?,?,?,?,?,?, ?,?,?,?,?,?,?,?,?,?, ?)
         ON CONFLICT DO NOTHING
       |]
       ( (rid, initialVersion, Binary lh, ofLength, int64 ofDuration, Binary $ unAddress nrgOwner, Binary ofCommitment, ofSealed, phase, nrgYears)
           :. (price, methodText <$> method, codeId, BI True, Binary hash, 0 :: Int, now, now, (\(RegistrationId s, _) -> s) <$> fromBalance, maybe 0 snd fromBalance)
+          :. Only ofAgreedTerms
       )
   where
-    OrderFields {ofLabelHash = LabelHash lh, ofLength, ofDuration, ofCommitment, ofSealed} = nrgOrder
+    OrderFields {ofLabelHash = LabelHash lh, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms} = nrgOrder
 
 registrationColumns :: Query
 registrationColumns =
@@ -573,7 +576,8 @@ registrationColumns =
     SELECT r.registration_id, r.version, r.label_hash, r.length, r.duration, r.owner, r.commitment, r.sealed, r.phase, r.years,
       r.price, r.method, ni.invoice_id, r.name_prepaid_code_id, r.label, r.secret, r.contact_link, r.channel_link, r.intent_nonce, r.intent_deadline,
       r.intent_signature, r.commit_tx, r.commit_block, r.register_tx, r.register_block, r.reveal_after, r.reveal_before, r.expires_at, r.registered_at,
-      r.failed_at, r.error, r.live, r.order_hash, r.moves, r.links_refused_at, r.created_at, r.updated_at, r.balance_source, r.balance_used
+      r.failed_at, r.error, r.live, r.order_hash, r.moves, r.links_refused_at, r.created_at, r.updated_at, r.balance_source, r.balance_used,
+      r.agreed_terms
   |]
 
 registrationFrom :: Query
@@ -592,6 +596,7 @@ type RegistrationRow =
     :. (Int, Maybe Text, Maybe Text, Maybe Int64, Maybe Text, Maybe (Binary ByteString), Maybe Text, Maybe Text, Maybe Int64, Maybe Int64)
     :. (Maybe (Binary ByteString), Maybe (Binary ByteString), Maybe Int64, Maybe (Binary ByteString), Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime)
     :. (Maybe UTCTime, Maybe Text, BoolInt, Binary ByteString, Int, Maybe UTCTime, UTCTime, UTCTime, Maybe Text, Int)
+    :. Only Text
 
 toRegistration :: RegistrationRow -> Either Text NameRegistration
 toRegistration
@@ -599,6 +604,7 @@ toRegistration
       :. (nrPrice, method_, invoiceId_, codeId_, label_, secret_, nrContactLink, nrChannelLink, nonce_, deadline_)
       :. (signature_, commitTx, commitBlock, registerTx, registerBlock, revealAfter, revealBefore, expiresAt, nrRegisteredAt)
       :. (nrFailedAt, nrError, BI nrLive, Binary nrOrderHash, nrMoves, nrLinksRefusedAt, nrCreatedAt, nrUpdatedAt, source_, nrBalanceUsed)
+      :. Only nrAgreedTerms
     ) = do
     nrOwner <- decodeAddress owner
     nrPayment <- case (method_, invoiceId_, codeId_) of
@@ -622,6 +628,7 @@ toRegistration
           nrOwner,
           nrCommitment,
           nrSealed,
+          nrAgreedTerms,
           nrPhase,
           nrYears,
           nrPrice,
@@ -734,7 +741,7 @@ updateRegistration db r now = do
       db
       [sql|
         UPDATE sx_badge_service_name_registrations
-        SET version = version + 1, label_hash = ?, length = ?, duration = ?, commitment = ?, sealed = ?, phase = ?, price = ?,
+        SET version = version + 1, label_hash = ?, length = ?, duration = ?, commitment = ?, sealed = ?, agreed_terms = ?, phase = ?, price = ?,
           label = ?, secret = ?, contact_link = ?, channel_link = ?, intent_nonce = ?, intent_deadline = ?, intent_signature = ?,
           commit_tx = ?, commit_block = ?, register_tx = ?, register_block = ?, reveal_after = ?, reveal_before = ?, expires_at = ?,
           registered_at = ?, failed_at = ?, error = ?, live = ?, moves = ?, links_refused_at = ?, updated_at = ?
@@ -744,7 +751,7 @@ updateRegistration db r now = do
             WHERE o.live = 1 AND o.registration_id <> ? AND (o.commitment = ? OR (o.owner = ? AND o.label_hash = ?))
           )))
       |]
-      ( (Binary lh, nrLength, int64 nrDuration, Binary nrCommitment, nrSealed, nrPhase, nrPrice)
+      ( (Binary lh, nrLength, int64 nrDuration, Binary nrCommitment, nrSealed, nrAgreedTerms, nrPhase, nrPrice)
           :. (rvLabel <$> nrReveal, Binary . rvSecret <$> nrReveal, rvContactLink =<< nrReveal, rvChannelLink =<< nrReveal, int64 . rvNonce <$> nrReveal, int64 . rvDeadline <$> nrReveal, Binary . serializeSignature . rvSignature <$> nrReveal)
           :. (txHashField <$> nrCommitTx, int64 <$> nrCommitBlock, txHashField <$> nrRegisterTx, int64 <$> nrRegisterBlock, int64 <$> nrRevealAfter, int64 <$> nrRevealBefore, int64 <$> nrExpiresAt)
           :. (truncateToSecond <$> nrRegisteredAt, truncateToSecond <$> nrFailedAt, nrError, BI live, nrMoves, truncateToSecond <$> nrLinksRefusedAt, truncateToSecond now)
@@ -752,7 +759,7 @@ updateRegistration db r now = do
       )
   if changed > 0 then pure $ Written (nrVersion + 1) else refusal
   where
-    NameRegistration {nrId = RegistrationId rid, nrVersion, nrLabelHash = LabelHash lh, nrLength, nrDuration, nrOwner, nrCommitment, nrSealed, nrPhase, nrPrice, nrReveal} = r
+    NameRegistration {nrId = RegistrationId rid, nrVersion, nrLabelHash = LabelHash lh, nrLength, nrDuration, nrOwner, nrCommitment, nrSealed, nrAgreedTerms, nrPhase, nrPrice, nrReveal} = r
     NameRegistration {nrCommitTx, nrCommitBlock, nrRegisterTx, nrRegisterBlock, nrRevealAfter, nrRevealBefore, nrExpiresAt} = r
     NameRegistration {nrRegisteredAt, nrFailedAt, nrError, nrMoves, nrLinksRefusedAt} = r
     live = orderLive r
@@ -761,10 +768,10 @@ updateRegistration db r now = do
         [(version, BI storedLive)] | version == nrVersion -> pure $ if storedLive then LiveOrderExists else NotLive
         _ -> pure VersionChanged
 
--- | Another name, or other links: queued again with the reveal, transactions, reveal times and link refusal cleared.
+-- | Another name, or other links, with the terms agreed for it: queued again with the reveal, transactions, reveal times and link refusal cleared.
 -- The order hash stays the original order's, so a resend of that order still finds it.
 retargetRegistration :: DB.Connection -> NameRegistration -> OrderFields -> Int -> UTCTime -> IO VersionWrite
-retargetRegistration db r OrderFields {ofLabelHash, ofLength, ofDuration, ofCommitment, ofSealed} price =
+retargetRegistration db r OrderFields {ofLabelHash, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms} price =
   updateRegistration
     db
     r
@@ -773,6 +780,7 @@ retargetRegistration db r OrderFields {ofLabelHash, ofLength, ofDuration, ofComm
         nrDuration = ofDuration,
         nrCommitment = ofCommitment,
         nrSealed = ofSealed,
+        nrAgreedTerms = ofAgreedTerms,
         nrPrice = price,
         nrPhase = PQueued,
         nrMoves = nrMoves r + 1,

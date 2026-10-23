@@ -10,6 +10,8 @@ module Bots.StoreService.NamesOrdersTests
     withOrdersVia,
     withOrdersOn,
     withOrdersCancelling,
+    withSettings,
+    configured,
     aliceOrder,
     commitmentOf,
     fieldsOf,
@@ -34,6 +36,7 @@ module Bots.StoreService.NamesOrdersTests
     field,
     advance,
     refusedWith,
+    malformedTerms,
   )
 where
 
@@ -226,6 +229,7 @@ data Order = Order
     oDuration :: Word64,
     oMethod :: Text,
     oPrice :: Int,
+    oTerms :: Text,
     oTimestamp :: Word64
   }
 
@@ -240,6 +244,7 @@ aliceOrder =
       oDuration = durationAt orderTime,
       oMethod = "btc",
       oPrice = alicePrice,
+      oTerms = termsVersion,
       oTimestamp = seconds orderTime
     }
 
@@ -251,8 +256,8 @@ commitmentOf :: Int -> ByteString
 commitmentOf n = C.sha256Hash $ BC.pack $ "commitment " <> show n
 
 fieldsOf :: Order -> OrderFields
-fieldsOf Order {oLabel, oCommitment, oSealed, oDuration} =
-  OrderFields {ofLabelHash = labelHash oLabel, ofLength = T.length oLabel, ofDuration = oDuration, ofCommitment = oCommitment, ofSealed = oSealed}
+fieldsOf Order {oLabel, oCommitment, oSealed, oDuration, oTerms} =
+  OrderFields {ofLabelHash = labelHash oLabel, ofLength = T.length oLabel, ofDuration = oDuration, ofCommitment = oCommitment, ofSealed = oSealed, ofAgreedTerms = oTerms}
 
 signedBody :: TVar ChaChaDRG -> Order -> IO J.Object
 signedBody g o@Order {oKey, oTimestamp} = do
@@ -271,10 +276,11 @@ unsignedBody o@Order {oOwner, oMethod, oPrice, oTimestamp} =
       ("sealed", J.String ofSealed),
       ("method", J.String oMethod),
       ("price", J.toJSON oPrice),
+      ("terms", J.String ofAgreedTerms),
       ("timestamp", J.toJSON oTimestamp)
     ]
   where
-    OrderFields {ofLabelHash = LabelHash lh, ofLength, ofDuration, ofCommitment, ofSealed} = fieldsOf o
+    OrderFields {ofLabelHash = LabelHash lh, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms} = fieldsOf o
 
 withSignature :: Text -> J.Object -> J.Object
 withSignature sig = KM.insert "signature" (J.String sig)
@@ -351,6 +357,20 @@ withOrdersOn cOpenStore via action = cOpenStore >>= \cStore -> withFakeEthNode $
     mgr <- newManager defaultManagerSettings
     Warp.testWithApplicationSettings (webSettings (listener cfg)) (pure $ ordersApp cWeb cOrders) $ \port ->
       action Ctx {cStore, cOpenStore, cNode, cOrders, cWeb, cClient = (mgr, "http://127.0.0.1:" <> show port), cStub, cClock, cRandom, cIps}
+
+-- | The context's store, chain, providers and clock with its names settings changed, as after a restart.
+configured :: (NamesConfig -> NamesConfig) -> Ctx -> Ctx
+configured change ctx@Ctx {cOrders, cWeb} = ctx {cOrders = orders, cWeb = cWeb {weOrders = Just orders}}
+  where
+    orders = cOrders {oeConfig = change (oeConfig cOrders)}
+
+-- | Another server of the orders routes over the context with its names settings changed.
+withSettings :: (NamesConfig -> NamesConfig) -> Ctx -> (Ctx -> IO a) -> IO a
+withSettings change ctx action = do
+  let ctx'@Ctx {cOrders, cWeb} = configured change ctx
+  mgr <- newManager defaultManagerSettings
+  Warp.testWithApplicationSettings (webSettings (listener $ weConfig cWeb)) (pure $ ordersApp cWeb cOrders) $ \port ->
+    action ctx' {cClient = (mgr, "http://127.0.0.1:" <> show port)}
 
 ordersApp :: WebEnv -> OrdersEnv -> Application
 ordersApp web orders req respond = fromMaybe (webApp web req respond) (namesApp (weHttp web) (codeRoutes orders (weProviders web) (weWaiters web)) req respond)
@@ -463,23 +483,34 @@ testPaidOrder = withOrders $ \ctx -> do
   reg <- invoiceRegistration ctx invId
   (nrPhase reg, nrLive reg, nrVersion reg, nrYears reg, nrPrice reg, nrPayment reg) `shouldBe` (PUnpaid, True, 1, 2, 10000, RPInvoice (SPMCrypto CCBtc) invId)
   nrOrderHash reg `shouldBe` orderHash ownerA (fieldsOf aliceOrder) (OTInvoice (SPMCrypto CCBtc) 10000)
+  nrAgreedTerms reg `shouldBe` termsVersion
 
--- | The body of the webapp's order vector, with viem's signature over it (NamesSignatureTests).
+-- | The body of the contract's Appendix C order vector, with viem's signature over it (NamesSignatureTests).
 testViemOrder :: IO ()
-testViemOrder = withOrders $ \ctx -> do
-  let dynamis =
-        aliceOrder
-          { oLabel = "dynamis",
-            oCommitment = unhex "9cf04ddef2eedfb02e6e7ba58f879c0636c584b6acc67ffe9f97a06bfb016ac1",
-            oSealed = "q3Zk0Yx7c2VhbGVkLW9yZGVyLWZpeHR1cmU",
-            oDuration = 69259500,
-            oPrice = 20000
-          }
-      viemSignature = "0x73e32be461e99e64b093a4ad09b04b4d810e5623a1b0e9c9fdb4701ec2a6a2a84df9ffdccc39c5cb827cde4d846c7662f591665f1b868ab1c15778646d3f414e1b"
-  signedBody (cRandom ctx) dynamis >>= (`shouldBe` withSignature viemSignature (unsignedBody dynamis))
-  (status, v) <- postOrder ctx $ withSignature viemSignature (unsignedBody dynamis)
+testViemOrder = withOrders $ \ctx0 -> withSettings vectorTermStart ctx0 $ \ctx -> do
+  writeIORef (cClock ctx) (posixSecondsToUTCTime $ fromIntegral $ oTimestamp vectorOrder)
+  signedBody (cRandom ctx) vectorOrder >>= (`shouldBe` withSignature vectorSignature (unsignedBody vectorOrder))
+  (status, v) <- postOrder ctx $ withSignature vectorSignature (unsignedBody vectorOrder)
   status `shouldBe` 200
   (field "phase" . registrationOf =<< v) `shouldBe` Just "unpaid"
+
+-- | Appendix C's order: alicebakery with no links, signed with the terms version.
+vectorOrder :: Order
+vectorOrder =
+  aliceOrder
+    { oCommitment = unhex "5e62a4cb7da596cb38169a6a552b5f69db2acee279b53be6693a78e03c3dfaa5",
+      oSealed = "AAAAAAAAAAAAAAAACWgxqMk-UKfpra_Zh6vc4KNBR6SX1WYpGb4COoWCCbM0bisYCH14WLzghp8hqi_-KyXSi4qf_DAdP_M4bFetD0s",
+      oDuration = 69292800,
+      oTimestamp = 1792828800
+    }
+
+vectorSignature :: Text
+vectorSignature = "0x17107b11494e25098efc348aca64a2469ffb832bcc79dc57377a1b26a4004b6701ad73648f50af8b39d4079820a3de7e681ddf15f8cf15b5cff02b4a48cf1fe61c"
+
+-- | Appendix C's duration is the page's at 21 October 2026 00:00 UTC, before its timestamp,
+-- so the term starts later by as much for the vector to pass the duration check at its timestamp.
+vectorTermStart :: NamesConfig -> NamesConfig
+vectorTermStart cfg = cfg {nTermStart = posixSecondsToUTCTime $ fromIntegral $ oTimestamp vectorOrder + oDuration vectorOrder - 2 * yearSeconds}
 
 testExactResend :: IO ()
 testExactResend = withOrders $ \ctx -> do
@@ -545,7 +576,8 @@ testOneFieldDiffers = withOrders $ \ctx -> do
           aliceOrder {oDuration = oDuration aliceOrder + 1},
           aliceOrder {oMethod = "xmr"},
           aliceOrder {oMethod = "card"},
-          aliceOrder {oPrice = alicePrice + 1}
+          aliceOrder {oPrice = alicePrice + 1},
+          aliceOrder {oTerms = termsVersion <> "/community"}
         ]
   forM_ variants $ \o -> placeOrder ctx o `shouldReturn` refusedWith 409 "order_exists"
   length <$> stubCalls (cStub ctx) `shouldReturn` 1
@@ -695,12 +727,19 @@ testFormats = withOrders $ \ctx -> do
       with "duration" (J.Number (-1)),
       with "timestamp" "1792574100",
       with "length" (J.Number 1e30),
+      KM.delete "terms" good,
+      with "terms" (J.Number 20261023),
       KM.delete "kind" good,
       with "kind" "badge"
     ]
     $ \body -> postOrder ctx body `shouldReturn` refusedWith 400 "bad_request"
+  forM_ malformedTerms $ \t -> placeOrder ctx aliceOrder {oTerms = t} `shouldReturn` refusedWith 400 "bad_request"
   forM_ [5, 64] $ \len -> postOrder ctx (with "length" (J.Number len)) `shouldReturn` refusedWith 400 "invalid_name"
   stubCalls (cStub ctx) `shouldReturn` []
+
+-- | Signed as sent, so only their format refuses them.
+malformedTerms :: [Text]
+malformedTerms = ["", T.replicate 49 "a", "2026-10-23 community", "2026-10-23+community", "2026-10-23/communit\233"]
 
 testTwoWallets :: IO ()
 testTwoWallets = withOrders $ \ctx -> do
@@ -757,7 +796,7 @@ testCodeOrder = withOrders $ \ctx -> do
   rid <- registered ctx code aliceOrder
   r <- registrationById ctx rid
   (nrPhase r, nrLive r, nrVersion r, nrYears r, nrPrice r, nrPayment r) `shouldBe` (PQueued, True, 1, 2, 0, RPCode pcId)
-  (nrOwner r, nrDuration r, nrCommitment r, nrSealed r) `shouldBe` (ownerA, durationAt orderTime, oCommitment aliceOrder, oSealed aliceOrder)
+  (nrOwner r, nrDuration r, nrCommitment r, nrSealed r, nrAgreedTerms r) `shouldBe` (ownerA, durationAt orderTime, oCommitment aliceOrder, oSealed aliceOrder, termsVersion)
   nrOrderHash r `shouldBe` orderHash ownerA (fieldsOf aliceOrder) (OTCode pcCodeHash)
   held <- readCode ctx issued
   (pcReservedBy held, pcReservedAt held, pcSpentAt held) `shouldBe` (Just rid, Just orderTime, Nothing)
@@ -791,6 +830,7 @@ testCodeOneFieldDiffers = withOrders $ \ctx -> do
           (code, aliceOrder {oCommitment = commitmentOf 2}),
           (code, aliceOrder {oSealed = "sealed-alicebakery-2"}),
           (code, aliceOrder {oDuration = oDuration aliceOrder + 1}),
+          (code, aliceOrder {oTerms = termsVersion <> "/community"}),
           (other, aliceOrder)
         ]
   forM_ variants $ \(c, o) -> register ctx c o `shouldReturn` refusedWith 409 "order_exists"
@@ -922,9 +962,11 @@ testCodeSizes = withOrders $ \ctx -> do
       with "code" (J.Number 8),
       with "labelHash" (J.String $ T.toUpper $ hex $ (\(LabelHash h) -> h) alice),
       with "owner" (J.String $ T.toLower ownerAText),
-      with "timestamp" "1792574100"
+      with "timestamp" "1792574100",
+      KM.delete "terms" good
     ]
     $ \body -> postRegister ctx body `shouldReturn` refusedWith 400 "bad_request"
+  forM_ malformedTerms $ \t -> register ctx code aliceOrder {oTerms = t} `shouldReturn` refusedWith 400 "bad_request"
   forM_ ["[]", "{"] $ \body -> post ctx "/api/name/register" body `shouldReturn` (400, errorOnly "bad_request")
   -- the formats and the length come before the code
   forM_ [5, 64] $ \len -> postRegister ctx (KM.insert "code" "not a code" $ with "length" (J.Number len)) `shouldReturn` refusedWith 400 "invalid_name"

@@ -9,7 +9,7 @@ import Bots.StoreService.BotTests (operatorCmd, withStoreService)
 import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), setInvoiceState, setRates, webhookEvent, webhookSigHeader, withFakeBTCPay)
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (reservedNamesCall)
-import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), advance, aliceOrder, commitmentOf, field, fieldsOf, invoiceRegistration, keyA, keyB, orderTime, ownerAText, placeOrder, placed, post, refusedWith, registrationById, registrationOf, registrationsOf, settleNow, withOrdersOn, yearsDuration)
+import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), advance, aliceOrder, commitmentOf, field, fieldsOf, invoiceRegistration, keyA, keyB, malformedTerms, orderTime, ownerAText, placeOrder, placed, post, refusedWith, registrationById, registrationOf, registrationsOf, settleNow, withOrdersOn, yearsDuration)
 import Bots.StoreService.NamesOwnerTests (findBody, postFind)
 import Bots.StoreService.NamesStoreTests (at, order, ownerA, placePaid, reg, t0, write)
 import Bots.StoreService.WebTests (StubCall (..), capturingStderr, StubState (..), jsonObject, rcv, sampleProviderInvoice, statusOf, stubCalls, webGet, webRequestBody, withServiceStores)
@@ -17,7 +17,7 @@ import ChatTests.DBUtils (TestParams)
 import Control.Concurrent.Async (Async, async, cancel, concurrently, wait)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (atomically, check)
-import Control.Monad (join, replicateM_, void)
+import Control.Monad (forM_, join, replicateM_, void)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Aeson.Types as JT
@@ -182,12 +182,13 @@ spendBody Ctx {cRandom} source SpendBody {sbOrder = o@Order {oKey, oPrice, oTime
         ("sealed", J.String ofSealed),
         ("price", J.toJSON oPrice),
         ("balance", J.toJSON sbBalance),
+        ("terms", J.String ofAgreedTerms),
         ("timestamp", J.toJSON oTimestamp),
         ("signature", J.String $ hex $ serializeSignature sig)
       ]
         <> maybe [] (\m -> [("method", J.String m)]) sbMethod
   where
-    fields@OrderFields {ofLabelHash = LabelHash lh, ofLength, ofDuration, ofCommitment, ofSealed} = fieldsOf o
+    fields@OrderFields {ofLabelHash = LabelHash lh, ofLength, ofDuration, ofCommitment, ofSealed, ofAgreedTerms} = fieldsOf o
 
 postSpend :: Ctx -> RegistrationId -> J.Object -> IO (Int, Maybe J.Object)
 postSpend ctx (RegistrationId rid) = post ctx ("/api/registration/" <> T.unpack rid <> "/spend") . J.encode
@@ -259,6 +260,7 @@ testCoveredSpend = withSpend $ \ctx -> do
   r <- registrationById ctx rid
   (nrPhase r, nrLive r, nrPrice r, nrPayment r, nrBalanceSource r, nrBalanceUsed r) `shouldBe` (PQueued, True, 10000, RPBalance, Just src, 10000)
   nrOrderHash r `shouldBe` orderHash ownerA (fieldsOf aliceOrder) (OTBalance src 10000 15000 Nothing)
+  nrAgreedTerms r `shouldBe` oTerms aliceOrder
   view <- viewOf ctx rid
   (field "phase" view, field "price" view, field "fromBalance" view, field "balance" view) `shouldBe` (Just "queued", Just (J.Number 10000), Just (J.Number 10000), Just J.Null)
   amountOf ctx src `shouldReturn` Just 5000
@@ -282,6 +284,7 @@ testDifferenceSpend = withSpend $ \ctx -> do
   holder <- invoiceRegistration ctx invId
   (nrPhase holder, nrLive holder, nrPrice holder, nrPayment holder, nrBalanceSource holder, nrBalanceUsed holder) `shouldBe` (PUnpaid, True, 10000, RPInvoice btc invId, Just src, 6000)
   nrOrderHash holder `shouldBe` orderHash ownerA (fieldsOf aliceOrder) (OTBalance src 10000 6000 (Just btc))
+  nrAgreedTerms holder `shouldBe` oTerms aliceOrder
   fmap irAmount <$> getInvoice (cStore ctx) invId `shouldReturn` Just (CurrencyAmount 4000)
   field "balance" <$> viewOf ctx src `shouldReturn` Just (J.object ["amount" J..= (6000 :: Int), "held" J..= True, "heldUntil" J..= expiry, "refunded" J..= (0 :: Int)])
 
@@ -432,6 +435,9 @@ testSpendSizes = withSpend $ \ctx -> do
   src <- sourceOf ctx "src" 15000
   missing <- KM.delete "sealed" <$> spendBody ctx src (covered 15000)
   postSpend ctx src missing `shouldReturn` refusedWith 400 "bad_request"
+  noTerms <- KM.delete "terms" <$> spendBody ctx src (covered 15000)
+  postSpend ctx src noTerms `shouldReturn` refusedWith 400 "bad_request"
+  forM_ malformedTerms $ \t -> spend ctx src (covered 15000) {sbOrder = aliceOrder {oTerms = t}} `shouldReturn` refusedWith 400 "bad_request"
   spend ctx src (covered 15000) {sbOrder = aliceOrder {oSealed = T.replicate 11096 "a"}} `shouldReturn` refusedWith 400 "bad_request"
   padded <- KM.insert "padding" (J.String $ T.replicate 16384 "a") <$> spendBody ctx src (covered 15000)
   postSpend ctx src padded `shouldReturn` refusedWith 400 "bad_request"
