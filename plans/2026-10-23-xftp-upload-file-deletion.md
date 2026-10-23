@@ -1,7 +1,7 @@
 # Agent file deletion after XFTP uploads
 
-On iOS, with simplexmq PR #2, the agent completes suspension only after the agent file of each upload started in foreground is deleted by the chat or by TTL cleanup, or at the suspend timeout; on master, the chat skipped this deletion on several paths of `SFDONE` and `SFERR`, handling errors among them.
-The deletions in the branches of `processAgentMsgSndFile` are replaced by one deletion after the handling of each `SFDONE` or `SFERR` with a file ID, also after a handling error; for an undeleted sent item with a shared message ID, the file descriptions are queued before it.
+On iOS, with simplexmq PR #2, the agent completes suspension only after the agent file of each upload started in foreground is deleted by the chat or TTL cleanup, or at the suspend timeout; on master, the chat skipped this deletion on several paths of `SFDONE` and `SFERR`, handling errors among them.
+The deletions in the branches of `processAgentMsgSndFile` are replaced by one deletion after the handling of each `SFDONE` or `SFERR` with a file ID, also when an error is thrown; on `SFDONE` of an undeleted sent item with a shared message ID, the file descriptions are queued before it in the direct and group branches.
 
 Agent side: https://github.com/evgeny-simplex/simplexmq/pull/2
 
@@ -10,9 +10,9 @@ Agent side: https://github.com/evgeny-simplex/simplexmq/pull/2
 - Terminal events:
   - `SFDONE`;
   - `SFERR`.
-- Deletion: `xftpDeleteSndFileInternal`, once per terminal event with a file ID, when its handling ends with a result or an error.
+- Deletion: `xftpDeleteSndFileInternal`, once per terminal event with a file ID, after its handling, also when an error is thrown.
 - The deletion is executed after the contact or group lock and the file lock are released.
-- For an undeleted sent item with a shared message ID, file descriptions are queued before the deletion.
+- On `SFDONE` of an undeleted sent item with a shared message ID, file descriptions are queued before the deletion in the direct and group branches.
 - `SFPROG` and `SFWARN`: the agent file is deleted only when the user is missing, as on master.
 - `SFERR` with an empty entity ID: the agent error is sent to the view; the file lookup and the deletion are skipped.
 - Last file event of each branch, sent before the deletion:
@@ -46,7 +46,7 @@ Agent side: https://github.com/evgeny-simplex/simplexmq/pull/2
     - `SFERR`: the status update (:360-362);
   - other chat type or direction, or a direct sent item without transfers (:322; `sft : _` is required by the direct branch at :274);
   - item deleted or without a shared message ID (:323).
-- iOS spec, one sentence in each of two files: "While the chat is suspending, XFTP uploads started in foreground by this app process continue, and the core sends `chatSuspended` after they end or at the suspend timeout; uploads resumed from an earlier process are not awaited."
+- iOS spec, one sentence in each of two files: "While the chat is suspending, the agent continues the XFTP uploads started in foreground by this app process, and the core sends `chatSuspended` after the agent ends these uploads, or at the suspend timeout; uploads resumed from an earlier process are not awaited."
 - `cabal.project`: simplexmq pinned to commit `7fcc2176` of simplexmq PR #2 during review.
 - After the simplexmq pull request in simplex-chat/simplexmq is merged and before the final pull request is opened in simplex-chat/simplex-chat:
   - the pin is replaced by the merged simplex-chat/simplexmq commit;
@@ -86,8 +86,8 @@ Agent side: https://github.com/evgeny-simplex/simplexmq/pull/2
   - bob deletes the contact with notification (`/_delete @2 full notify=on`);
   - server started: alice "bob: not ready";
   - `checkNoAgentSndFiles alice` (:1071).
-  - The test fails on master: the deletion at master :291 is skipped after the error at :275, and the agent row is kept.
-- "delete agent file when item is marked deleted during upload" (:1073), a regression check of cancellation by marking, which also passes on master:
+  - On master, a test failure is expected: the deletion at master :291 is skipped after the error at :275, and the agent row is kept.
+- "delete agent file when item is marked deleted during upload" (:1073), a regression check of cancellation by marking; a pass is expected on master as well:
   - XFTP server down at the send;
   - alice marks the item deleted for everyone;
   - the agent row is marked `deleted = 1` by the cancellation (`src/Simplex/Chat/Library/Internal.hs:648, 510, 3211`) before the server is started;
@@ -99,9 +99,10 @@ Agent side: https://github.com/evgeny-simplex/simplexmq/pull/2
    - the share extension starts or activates its chat with send workers at setup (`apps/ios/SimpleX SE/ShareModel.swift:181-182, 194`, `apps/ios/SimpleX SE/ShareAPI.swift:25, 87-89`, `src/Simplex/Chat/Library/Commands.hs:273, 608-610`);
    - later, in `send()`, it waits for the other processes (`ShareModel.swift:147-148`);
    - two concurrent `FPUT` of one replica (simplexmq `src/Simplex/FileTransfer/Server.hs`):
-     - a second `FPUT` that passed the commit check (:579) before the first commit, with the file opened after the first one's digest read, is answered with `AUTH`, and the stored chunk is removed by the server (:601-612; `Server/Store.hs:117-126`; `Server/Store/Postgres.hs:98-101`);
+     - a second `FPUT` admitted by the commit check (:579) before the first commit, with the file opened after the first one's digest read, is answered with `AUTH`, and the stored chunk is removed by the server (:601-612; `Server/Store.hs:117-126`; `Server/Store/Postgres.hs:98-101`);
      - a second `FPUT` with the file opened during that read is answered with `FILE_IO`, the file is removed by the server (`src/Simplex/FileTransfer/Transport.hs:195-200, 238-239`; `Server.hs:613-617`), and the path of the removed chunk is committed for the first `FPUT`;
-     - the agent that receives the error records the file error and sends `SFERR` (simplexmq `src/Simplex/FileTransfer/Agent.hs:515-520, 541, 550-552`);
+     - a second `FPUT` with the file opened during the first one's body write is answered with `FILE_IO`, and the file is removed by the server (`Transport.hs:195-200, 238`; `Server.hs:613-617`); the same error is then returned to the first `FPUT` at its digest read of the removed path (`Transport.hs:200, 239`; `Server.hs:613-617`);
+     - each agent that receives an error records the file error and sends `SFERR` (simplexmq `src/Simplex/FileTransfer/Agent.hs:515-520, 541, 550-552`);
    - on master, the overlap is limited to the chunk in flight.
 
    Recommended: the app yields to the share extension.
