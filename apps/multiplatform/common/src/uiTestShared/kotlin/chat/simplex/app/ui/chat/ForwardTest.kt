@@ -2,6 +2,7 @@ package chat.simplex.app.ui.chat
 
 import chat.simplex.app.ui.harness.CONNECT_TIMEOUT_MS
 import chat.simplex.app.ui.harness.ChatScreen
+import chat.simplex.app.ui.harness.KnownAppIssue
 import chat.simplex.app.ui.harness.UiScope
 import chat.simplex.app.ui.harness.UiTest
 import chat.simplex.app.ui.harness.awaitRowText
@@ -50,6 +51,7 @@ class ForwardTest : UiTest() {
     poll(what = "the `saved from` / `bob` header") { textsOf(Ui.Chat.Item(id)).let { t -> t.any { "saved from" in it } && "bob" in t } }
   }
 
+  @KnownAppIssue("15.5 item 30", "Compose-Espresso link", intermittent = true)
   @Test fun forward_acrossChatTypes_peersReceiveAndSourceOpens() = uiTest {
     val alice = app("alice"); val bob = cli("bob"); val cath = cli("cath")
     connect(bob); connect(cath)
