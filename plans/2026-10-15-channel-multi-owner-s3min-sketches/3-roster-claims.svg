@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="840" height="600" viewBox="0 0 840 600" role="img" aria-label="Two owners change roles. The link names roster version 7 by O1, and both owners hold 7. O2 reads the link, holds the roster it names, claims version 8 with LSWP, and sends roster 8 with its role change to the relays, which forward them to members. O1 then tries a role change: its read names version 8, which it doesn't hold, so it is refused with catching up, try again, and asks the relays for the roster. Once it holds 8, a retry reads the link, claims version 9 and sends roster 9 with its role change.">
+  <defs>
+    <marker id="d3-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#24292f"/>
+    </marker>
+  </defs>
+  <rect width="840" height="600" fill="#fbfaf7"/>
+  <rect x="0.5" y="0.5" width="839" height="599" fill="none" stroke="#d9d5cc"/>
+  <g font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#1f2328">
+    <text x="20" y="30" font-size="16" font-weight="700">Two owners change roles: each claims the next roster version on the link</text>
+    <text x="20" y="50" fill="#5b636e">An owner claims version v + 1 only while it holds the complete roster at v, the version the link names.</text>
+
+    <line x1="130" y1="96" x2="130" y2="572" stroke="#c9ced6" stroke-dasharray="4 4"/>
+    <line x1="350" y1="96" x2="350" y2="572" stroke="#c9ced6" stroke-dasharray="4 4"/>
+    <line x1="560" y1="96" x2="560" y2="572" stroke="#c9ced6" stroke-dasharray="4 4"/>
+    <line x1="750" y1="136" x2="750" y2="572" stroke="#c9ced6" stroke-dasharray="4 4"/>
+    <rect x="65" y="66" width="130" height="30" rx="6" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+    <text x="130" y="86" text-anchor="middle" font-size="13" font-weight="700">Owner O1</text>
+    <rect x="280" y="66" width="140" height="30" rx="6" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+    <text x="350" y="86" text-anchor="middle" font-size="13" font-weight="700">Link server</text>
+    <rect x="495" y="66" width="130" height="30" rx="6" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+    <text x="560" y="86" text-anchor="middle" font-size="13" font-weight="700">Owner O2</text>
+    <rect x="690" y="66" width="120" height="30" rx="6" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+    <text x="750" y="86" text-anchor="middle" font-size="13" font-weight="700">Relays</text>
+    <text x="750" y="112" text-anchor="middle" font-size="11" fill="#5b636e">forward to members,</text>
+    <text x="750" y="126" text-anchor="middle" font-size="11" fill="#5b636e">applied in version order</text>
+
+    <text x="118" y="118" text-anchor="end" fill="#5b636e">holds 7</text>
+    <rect x="285" y="104" width="130" height="22" rx="5" fill="#ffffff" stroke="#8c959f"/>
+    <text x="350" y="119" text-anchor="middle">roster 7 by O1</text>
+    <text x="572" y="118" fill="#5b636e">holds 7</text>
+
+    <line x1="560" y1="150" x2="352" y2="150" stroke="#24292f" stroke-width="1.5" marker-end="url(#d3-arrow)"/>
+    <text x="455" y="143" text-anchor="middle">read</text>
+    <line x1="350" y1="172" x2="558" y2="172" stroke="#24292f" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#d3-arrow)"/>
+    <text x="455" y="165" text-anchor="middle">roster 7 by O1</text>
+    <text x="572" y="192" fill="#5b636e">holds 7: may claim 8</text>
+    <line x1="560" y1="216" x2="352" y2="216" stroke="#24292f" stroke-width="1.5" marker-end="url(#d3-arrow)"/>
+    <text x="455" y="209" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5">LSWP: roster 8 by O2</text>
+    <rect x="285" y="226" width="130" height="22" rx="5" fill="#ffffff" stroke="#8c959f"/>
+    <text x="350" y="241" text-anchor="middle">roster 8 by O2</text>
+    <line x1="350" y1="268" x2="558" y2="268" stroke="#24292f" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#d3-arrow)"/>
+    <text x="455" y="261" text-anchor="middle" font-weight="700">OK</text>
+    <line x1="560" y1="294" x2="748" y2="294" stroke="#24292f" stroke-width="1.5" marker-end="url(#d3-arrow)"/>
+    <text x="655" y="287" text-anchor="middle" font-size="11">roster 8, role change at 8</text>
+
+    <line x1="130" y1="324" x2="348" y2="324" stroke="#24292f" stroke-width="1.5" marker-end="url(#d3-arrow)"/>
+    <text x="240" y="317" text-anchor="middle">read (user changes a role)</text>
+    <line x1="350" y1="346" x2="132" y2="346" stroke="#24292f" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#d3-arrow)"/>
+    <text x="240" y="339" text-anchor="middle">roster 8 by O2</text>
+    <rect x="20" y="356" width="220" height="40" rx="5" fill="#fbe9e7" stroke="#b42318"/>
+    <text x="130" y="372" text-anchor="middle" fill="#b42318">holds 7, link names 8: refused,</text>
+    <text x="130" y="388" text-anchor="middle" fill="#b42318" font-weight="700">“catching up, try again”</text>
+    <line x1="130" y1="420" x2="748" y2="420" stroke="#24292f" stroke-width="1.5" marker-end="url(#d3-arrow)"/>
+    <text x="240" y="413" text-anchor="middle">roster request (holds 7)</text>
+    <line x1="750" y1="444" x2="132" y2="444" stroke="#24292f" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#d3-arrow)"/>
+    <text x="240" y="437" text-anchor="middle">roster 8</text>
+    <text x="118" y="466" text-anchor="end" fill="#5b636e">holds 8</text>
+
+    <line x1="130" y1="480" x2="348" y2="480" stroke="#24292f" stroke-width="1.5" marker-end="url(#d3-arrow)"/>
+    <text x="240" y="473" text-anchor="middle">read (user retries)</text>
+    <line x1="350" y1="500" x2="132" y2="500" stroke="#24292f" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#d3-arrow)"/>
+    <text x="240" y="493" text-anchor="middle">roster 8 by O2</text>
+    <line x1="130" y1="522" x2="348" y2="522" stroke="#24292f" stroke-width="1.5" marker-end="url(#d3-arrow)"/>
+    <text x="240" y="515" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5">LSWP: roster 9 by O1</text>
+    <line x1="350" y1="542" x2="132" y2="542" stroke="#24292f" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#d3-arrow)"/>
+    <text x="240" y="535" text-anchor="middle" font-weight="700">OK</text>
+    <line x1="130" y1="564" x2="748" y2="564" stroke="#24292f" stroke-width="1.5" marker-end="url(#d3-arrow)"/>
+    <text x="455" y="557" text-anchor="middle" font-size="11">roster 9, role change at 9</text>
+
+    <text x="20" y="590" fill="#5b636e">Solid arrow: request or message · dashed arrow: reply · red: refused</text>
+  </g>
+</svg>

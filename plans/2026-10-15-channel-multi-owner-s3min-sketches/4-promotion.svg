@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="840" height="576" viewBox="0 0 840 576" role="img" aria-label="Adding an owner. Owner O1 checks that member M's security code is verified and that the relays and the link server are upgraded, then sends x.grp.owner.inv, which relays deliver to M's support chat. M is asked whether to become an owner, told that everyone will see its profile and the link server its IP address, and accepts with x.grp.owner.acpt. In a background link sync O1 reads the link, adds M's chain entry and key with one LSWP, and after a read shows M's entry sends x.grp.owner.add, which relays apply and forward to everyone, M included. M then pulls the member list from a relay page by page.">
+  <defs>
+    <marker id="d4-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#24292f"/>
+    </marker>
+  </defs>
+  <rect width="840" height="576" fill="#fbfaf7"/>
+  <rect x="0.5" y="0.5" width="839" height="575" fill="none" stroke="#d9d5cc"/>
+  <g font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#1f2328">
+    <text x="20" y="30" font-size="16" font-weight="700">Adding an owner: consent, one link write, then the commit</text>
+    <text x="20" y="50" fill="#5b636e">Owner O1 promotes member M. Every message between owners and M goes through the relays.</text>
+
+    <line x1="200" y1="96" x2="200" y2="542" stroke="#c9ced6" stroke-dasharray="4 4"/>
+    <line x1="380" y1="96" x2="380" y2="542" stroke="#c9ced6" stroke-dasharray="4 4"/>
+    <line x1="560" y1="96" x2="560" y2="542" stroke="#c9ced6" stroke-dasharray="4 4"/>
+    <line x1="720" y1="96" x2="720" y2="542" stroke="#c9ced6" stroke-dasharray="4 4"/>
+    <rect x="135" y="66" width="130" height="30" rx="6" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+    <text x="200" y="86" text-anchor="middle" font-size="13" font-weight="700">Link server</text>
+    <rect x="315" y="66" width="130" height="30" rx="6" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+    <text x="380" y="86" text-anchor="middle" font-size="13" font-weight="700">Owner O1</text>
+    <rect x="500" y="66" width="120" height="30" rx="6" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+    <text x="560" y="86" text-anchor="middle" font-size="13" font-weight="700">Relays</text>
+    <rect x="655" y="66" width="130" height="30" rx="6" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+    <text x="720" y="86" text-anchor="middle" font-size="13" font-weight="700">Member M</text>
+
+    <text x="20" y="124" font-weight="700" fill="#5b636e">Invite</text>
+    <rect x="265" y="106" width="230" height="36" rx="5" fill="#ffffff" stroke="#8c959f"/>
+    <text x="380" y="120" text-anchor="middle" font-size="11.5">checks: M's code verified,</text>
+    <text x="380" y="135" text-anchor="middle" font-size="11.5">relays and link server upgraded</text>
+    <line x1="380" y1="164" x2="558" y2="164" stroke="#24292f" stroke-width="1.5" marker-end="url(#d4-arrow)"/>
+    <text x="470" y="157" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">x.grp.owner.inv</text>
+    <line x1="560" y1="164" x2="718" y2="164" stroke="#24292f" stroke-width="1.5" marker-end="url(#d4-arrow)"/>
+    <text x="640" y="157" text-anchor="middle" font-size="11">to M's support chat</text>
+    <rect x="606" y="174" width="226" height="50" rx="5" fill="#ffffff" stroke="#8c959f"/>
+    <text x="719" y="189" text-anchor="middle" font-size="11.5" font-weight="700">“Become an owner?”</text>
+    <text x="719" y="203" text-anchor="middle" font-size="11.5">everyone will see its profile;</text>
+    <text x="719" y="217" text-anchor="middle" font-size="11.5">the link server will see its IP</text>
+
+    <text x="20" y="250" font-weight="700" fill="#5b636e">Accept</text>
+    <line x1="720" y1="246" x2="562" y2="246" stroke="#24292f" stroke-width="1.5" marker-end="url(#d4-arrow)"/>
+    <text x="640" y="239" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">x.grp.owner.acpt</text>
+    <line x1="560" y1="246" x2="382" y2="246" stroke="#24292f" stroke-width="1.5" marker-end="url(#d4-arrow)"/>
+    <text x="470" y="239" text-anchor="middle" font-size="11">from M's support chat</text>
+
+    <text x="20" y="278" font-weight="700" fill="#5b636e">Link sync</text>
+    <text x="20" y="292" font-size="11" fill="#5b636e">in the background</text>
+    <line x1="380" y1="274" x2="202" y2="274" stroke="#24292f" stroke-width="1.5" marker-end="url(#d4-arrow)"/>
+    <text x="290" y="267" text-anchor="middle">read</text>
+    <line x1="200" y1="294" x2="378" y2="294" stroke="#24292f" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#d4-arrow)"/>
+    <text x="290" y="287" text-anchor="middle">data, hash</text>
+    <line x1="380" y1="318" x2="202" y2="318" stroke="#24292f" stroke-width="1.5" marker-end="url(#d4-arrow)"/>
+    <text x="290" y="311" text-anchor="middle"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5">LSWP</tspan>: add M and its key</text>
+    <rect x="88" y="328" width="224" height="36" rx="5" fill="#ffffff" stroke="#8c959f"/>
+    <text x="200" y="342" text-anchor="middle" font-size="11.5">chain + M's entry, signed by O1;</text>
+    <text x="200" y="357" text-anchor="middle" font-size="11.5">key set + M's key</text>
+    <line x1="200" y1="384" x2="378" y2="384" stroke="#24292f" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#d4-arrow)"/>
+    <text x="290" y="377" text-anchor="middle" font-weight="700">OK</text>
+    <line x1="380" y1="406" x2="202" y2="406" stroke="#24292f" stroke-width="1.5" marker-end="url(#d4-arrow)"/>
+    <text x="290" y="399" text-anchor="middle">read</text>
+    <line x1="200" y1="426" x2="378" y2="426" stroke="#24292f" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#d4-arrow)"/>
+    <text x="290" y="419" text-anchor="middle">shows M's entry</text>
+
+    <text x="20" y="456" font-weight="700" fill="#5b636e">Commit</text>
+    <line x1="380" y1="452" x2="558" y2="452" stroke="#24292f" stroke-width="1.5" marker-end="url(#d4-arrow)"/>
+    <text x="470" y="445" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">x.grp.owner.add</text>
+    <line x1="560" y1="452" x2="718" y2="452" stroke="#24292f" stroke-width="1.5" marker-end="url(#d4-arrow)"/>
+    <text x="640" y="445" text-anchor="middle" font-size="11">to everyone, M included</text>
+    <rect x="480" y="462" width="160" height="22" rx="5" fill="#ffffff" stroke="#8c959f"/>
+    <text x="560" y="477" text-anchor="middle" font-size="11.5">apply it: M is an owner</text>
+    <rect x="655" y="462" width="130" height="22" rx="5" fill="#ffffff" stroke="#8c959f"/>
+    <text x="720" y="477" text-anchor="middle" font-size="11.5">is now an owner</text>
+
+    <text x="20" y="512" font-weight="700" fill="#5b636e">Catch-up</text>
+    <line x1="720" y1="508" x2="562" y2="508" stroke="#24292f" stroke-width="1.5" marker-end="url(#d4-arrow)"/>
+    <text x="640" y="501" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">x.grp.members.req</text>
+    <line x1="560" y1="530" x2="718" y2="530" stroke="#24292f" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#d4-arrow)"/>
+    <text x="640" y="523" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">x.grp.members.page</text>
+    <text x="732" y="534" font-size="11" fill="#5b636e">until the last</text>
+
+    <text x="20" y="564" fill="#5b636e">Solid arrow: request or message · dashed arrow: reply</text>
+  </g>
+</svg>
