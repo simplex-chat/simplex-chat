@@ -1943,7 +1943,6 @@
     <string name="update_database_passphrase">Actualizează parola bazei de date</string>
     <string name="stop_snd_file__title">Opriți trimiterea fișierului?</string>
     <string name="strikethrough_text">tăiere</string>
-    <string name="call_desktop_permission_denied_title">Pentru a efectua apeluri, permiteți utilizarea microfonului. Încheiați apelul și încercați să sunați din nou.</string>
     <string name="onboarding_network_operators_cant_see_who_talks_to_whom">Când sunt activați mai mulți operatori, niciunul dintre ei nu are metadate pentru a afla cine comunică cu cine.</string>
     <string name="icon_descr_video_on">Video pornit</string>
     <string name="these_settings_are_for_your_current_profile">Aceste setări sunt pentru profilul tău actual</string>

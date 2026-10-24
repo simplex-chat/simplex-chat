@@ -2014,7 +2014,6 @@
     <string name="app_check_for_updates_canceled">Изтеглянето на актуализацията е отменено</string>
     <string name="migrate_from_device_remove_archive_question">Премахни архив?</string>
     <string name="migrate_from_device_uploaded_archive_will_be_removed">Каченият архив на базата данни ще бъде окончателно премахнат от сървърите.</string>
-    <string name="call_desktop_permission_denied_title">За да извършвате обаждания, разрешете да използва микрофона. Прекратете разговора и опитайте да се обадите отново.</string>
     <string name="v6_0_new_chat_experience">Нов интерфейс 🎉</string>
     <string name="v6_0_new_media_options">Нови медийни опции</string>
     <string name="v6_1_better_user_experience">Подобрен интерфейс</string>

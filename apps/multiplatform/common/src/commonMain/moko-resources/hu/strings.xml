@@ -1997,7 +1997,6 @@
     <string name="network_session_mode_session_description">Minden alkalommal, amikor elindítja az alkalmazást, új SOCKS-hitelesítési adatok lesznek használva.</string>
     <string name="network_session_mode_session">Alkalmazás munkamenete</string>
     <string name="network_session_mode_server_description">Az összes kiszolgálóhoz új, SOCKS-hitelesítési adatok lesznek használva.</string>
-    <string name="call_desktop_permission_denied_title">Hívások kezdeményezéséhez engedélyezze a mikrofon használatát. Fejezze be a hívást, és próbálja meg a hívást újra.</string>
     <string name="v6_1_better_calls">Továbbfejlesztett hívásélmény</string>
     <string name="v6_1_message_dates_descr">Továbbfejlesztett üzenetdátumok.</string>
     <string name="v6_1_better_user_experience">Továbbfejlesztett felhasználói élmény</string>

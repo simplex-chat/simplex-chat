@@ -1348,7 +1348,6 @@
     <string name="your_ICE_servers">Vaši ICE serveri</string>
     <string name="callstate_starting">pokretanje…</string>
     <string name="permissions_open_settings">Otvoriti podešavanje</string>
-    <string name="call_desktop_permission_denied_title">Za odvijanje poziva, dozvoliti upotrebu mikrofona. Završite razgovor i pokušajte ponovo.</string>
     <string name="database_encrypted">Baza podataka je šifrovana!</string>
     <string name="share_text_updated_at">Zapis ažuriran u: %s</string>
     <string name="member_will_be_removed_from_group_cannot_be_undone">Član će biti uklonjen iz grupe – ovo se ne može poništiti!</string>

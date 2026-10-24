@@ -1406,7 +1406,6 @@
   <string name="call_already_ended">Call already ended!</string>
   <string name="icon_descr_video_call">video call</string>
   <string name="icon_descr_audio_call">audio call</string>
-  <string name="call_desktop_permission_denied_title">To make calls, allow to use your microphone. End the call and try to call again.</string>
   <string name="call_desktop_engine_error">Calls are not available</string>
   <string name="call_screen_share_screen">Screen %d</string>
   <string name="call_audio_device_system_default">System default</string>

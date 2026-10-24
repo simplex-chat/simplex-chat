@@ -2023,7 +2023,6 @@
     <string name="settings_message_shape_tail">Cola</string>
     <string name="network_session_mode_session_description">Se usarán credenciales SOCKS nuevas cada vez que inicies la aplicación.</string>
     <string name="network_session_mode_session">por sesión</string>
-    <string name="call_desktop_permission_denied_title">Para hacer llamadas, permite el uso del micrófono. Cuelga e intenta llamar de nuevo.</string>
     <string name="network_session_mode_server_description">Se usarán credenciales SOCKS nuevas para cada servidor.</string>
     <string name="network_session_mode_server">por servidor</string>
     <string name="v6_1_better_calls">Llamadas mejoradas</string>

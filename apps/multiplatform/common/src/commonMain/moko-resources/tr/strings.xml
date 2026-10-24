@@ -2019,7 +2019,6 @@
     <string name="app_check_for_updates_stable">Stabil</string>
     <string name="app_check_for_updates_update_available">Güncelleme mevcut: %s</string>
     <string name="remote_ctrl_connection_stopped_identity_desc">Bu bağlantı başka bir mobil cihazda kullanıldı, lütfen masaüstünde yeni bir bağlantı oluşturun.</string>
-    <string name="call_desktop_permission_denied_title">Arama yapmak için mikrofonunuzu kullanmanıza izin verin. Aramayı sonlandırın ve tekrar aramayı deneyin.</string>
     <string name="settings_message_shape_tail">Konuşma balonu</string>
     <string name="privacy_media_blur_radius_strong">Güçlü</string>
     <string name="v6_0_reachable_chat_toolbar_descr">Uygulamayı tek elle kullan.</string>

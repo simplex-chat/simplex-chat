@@ -2020,7 +2020,6 @@
     <string name="network_session_mode_session">应用会话</string>
     <string name="network_session_mode_session_description">每次启动应用都会使用新的 SOCKS 凭据。</string>
     <string name="network_session_mode_server">服务器</string>
-    <string name="call_desktop_permission_denied_title">要进行通话，请允许使用设备麦克风。结束通话并尝试再次呼叫。</string>
     <string name="network_session_mode_server_description">每个服务器都会使用新的 SOCKS 凭据。</string>
     <string name="v6_1_message_dates_descr">更好的消息日期。</string>
     <string name="v6_1_better_security">更佳的安全性✅</string>

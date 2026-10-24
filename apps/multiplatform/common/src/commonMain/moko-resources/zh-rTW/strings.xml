@@ -2352,7 +2352,6 @@
     <string name="onboarding_configure_routers">設定路由器</string>
     <string name="onboarding_configure_notifications">設定通知</string>
     <string name="onboarding_network_commitments">網路承諾</string>
-    <string name="call_desktop_permission_denied_title">若要通話，請允許使用麥克風。結束通話後再嘗試撥打。</string>
     <string name="open_external_link_title">要開啟外部連結嗎？</string>
     <string name="rcv_msg_error_dropped">已丟棄（%1$d 次嘗試）</string>
     <string name="rcv_msg_error_parse">錯誤：%s</string>

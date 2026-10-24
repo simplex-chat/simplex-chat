@@ -166,13 +166,10 @@ class NativeCallEngine(audioSettings: CallAudioSettings, private val onAudioDevi
     }
 
   private suspend fun handle(command: WCallCommand): WCallResponse = when (command) {
-    is WCallCommand.Capabilities ->
-      if (MediaDevices.getAudioCaptureDevices().isEmpty()) {
-        WCallResponse.Error("capabilities: no permissions were granted for mic and/or camera")
-      } else {
-        if (command.media == CallMediaType.Video) startCamera()
-        WCallResponse.Capabilities(CallCapabilities(encryption = true))
-      }
+    is WCallCommand.Capabilities -> {
+      if (command.media == CallMediaType.Video) startCamera()
+      WCallResponse.Capabilities(CallCapabilities(encryption = true))
+    }
     is WCallCommand.Start -> {
       if (pc != null) endCall()
       if (command.media == CallMediaType.Video && cameraSource == null) startCamera()
