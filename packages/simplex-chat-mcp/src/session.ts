@@ -7,11 +7,20 @@ import {dataRoot, isSessionId} from "./files"
 import {ExitError, errorText, logError} from "./log"
 import {ToolCall} from "./messages"
 import {CallLine, SessionRequest} from "./protocol"
-import {SocketError} from "./socket"
+import {SocketError, isNotRunning} from "./socket"
 import {ToolName, instructions, registerTools} from "./tools"
 import {version} from "./version"
 
 const daemonStopped = "The SimpleX daemon stopped; repeat the call."
+const unknownSessionStatus = 409
+const stoppingStatus = 503
+const callAttempts = 2
+
+class DaemonStoppedError extends Error {
+  constructor() {
+    super(daemonStopped)
+  }
+}
 
 export interface SessionIo {
   stdin: Readable
@@ -40,7 +49,7 @@ export async function startSession(env: NodeJS.ProcessEnv = process.env, io: Ses
   const transport = new StdioServerTransport(io.stdin, io.stdout)
   transport.onclose = () => link.close()
   await server.connect(transport)
-  if (configError === undefined) link.connect().catch(error => logError("SimpleX daemon", error))
+  if (configError === undefined) link.start()
 }
 
 class DaemonLink {
@@ -58,18 +67,33 @@ class DaemonLink {
     return this.connecting
   }
 
+  start(): void {
+    this.connect().catch(error => {
+      if (!this.closed) logError("SimpleX daemon", error)
+    })
+  }
+
   close(): void {
     this.closed = true
     this.attach?.abort()
   }
 
   async call(name: ToolName, input: unknown, call: ToolCall): Promise<CallToolResult | undefined> {
-    const connection = this.connect()
-    try {
-      await connection
-    } catch (error) {
-      return toolError(errorText(error))
+    for (let attempt = 1; ; attempt++) {
+      try {
+        return await this.forward(name, input, call)
+      } catch (error) {
+        if (call.signal.aborted) return undefined
+        // the daemon refuses an unknown session before it runs the call, so repeating it is safe
+        if (attempt < callAttempts && error instanceof SocketError && error.status === unknownSessionStatus) continue
+        return toolError(failureText(error))
+      }
     }
+  }
+
+  private async forward(name: ToolName, input: unknown, call: ToolCall): Promise<CallToolResult | undefined> {
+    const connection = this.connect()
+    await connection
     let result: CallToolResult | null | undefined
     try {
       await this.client.stream("/call", {id: this.request.id, tool: name, input}, line => {
@@ -78,13 +102,12 @@ class DaemonLink {
         else result = parsed.result
       }, call.signal)
     } catch (error) {
-      if (call.signal.aborted) return undefined
-      this.disconnect(connection)
-      return toolError(error instanceof SocketError ? error.message : daemonStopped)
+      if (!call.signal.aborted) this.disconnect(connection)
+      throw error instanceof SocketError ? error : new DaemonStoppedError()
     }
     if (result === undefined) {
       this.disconnect(connection)
-      return toolError(daemonStopped)
+      throw new DaemonStoppedError()
     }
     return result ?? undefined
   }
@@ -107,7 +130,7 @@ class DaemonLink {
     await new Promise<void>((resolve, reject) => {
       this.client
         .stream("/attach", {id: this.request.id}, () => resolve(), controller.signal)
-        .then(() => reject(new Error(daemonStopped)), reject)
+        .then(() => reject(new DaemonStoppedError()), reject)
         .finally(() => {
           if (this.attach !== controller) return
           this.attach = undefined
@@ -115,6 +138,11 @@ class DaemonLink {
         })
     })
   }
+}
+
+function failureText(error: unknown): string {
+  if (isNotRunning(error) || (error instanceof SocketError && error.status === stoppingStatus)) return daemonStopped
+  return errorText(error)
 }
 
 function toolError(text: string): CallToolResult {
