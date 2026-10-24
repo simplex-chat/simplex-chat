@@ -61,6 +61,7 @@ export async function deliveries(chat: api.ChatApi, groupId: number): Promise<vo
   if (connIds.length === 0) return
   const pending = `/sql agent SELECT count(*) FROM snd_message_deliveries WHERE failed = 0 AND hex(conn_id) IN (${connIds.map(id => `'${id}'`).join(",")})`
   const deadline = Date.now() + deliveryTimeout
+  // The core emits no status event when an edit of an already delivered card is delivered, so this polls.
   while (Date.now() < deadline && Number((await sqlRows(chat, pending)).at(-1) ?? 0) > 0) {
     await new Promise(resolve => setTimeout(resolve, deliveryPoll))
   }

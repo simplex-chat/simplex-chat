@@ -184,7 +184,7 @@ Plugin files, run by Claude Code without `node_modules`:
 | Daemon routes | [`src/daemon.ts`](../src/daemon.ts#L103) | `Daemon.routes` | [103](../src/daemon.ts#L103) |
 | Hub and Main group | [`src/hub.ts`](../src/hub.ts#L26) | `Hub.open` | [26](../src/hub.ts#L26) |
 | Session profile | [`src/agent.ts`](../src/agent.ts#L39) | `openSessionAgent` | [39](../src/agent.ts#L39) |
-| SimpleX core | [`src/core.ts`](../src/core.ts#L21) | `openCore` | [21](../src/core.ts#L21) |
+| SimpleX core | [`src/core.ts`](../src/core.ts#L24) | `openCore` | [24](../src/core.ts#L24) |
 | SessionStart hook | [`src/hook.ts`](../src/hook.ts#L28) | `sessionStart` | [28](../src/hook.ts#L28) |
 | `link`, `reset-owners` | [`src/owner.ts`](../src/owner.ts#L17) | `showLink`, `resetOwners` | [17](../src/owner.ts#L17), [21](../src/owner.ts#L21) |
 | Options | [`src/config.ts`](../src/config.ts#L25) | `readConfig` | [25](../src/config.ts#L25) |

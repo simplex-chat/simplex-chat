@@ -174,11 +174,12 @@ Data flow of a tool call:
 
 | Symbol | Line | Contents |
 |---|---|---|
-| `networkCommand` | [11](../src/core.ts#L11) | `/network socks=off smp-proxy=always smp-proxy-fallback=protected` |
-| `openCore` | [21](../src/core.ts#L21) | `ChatApi.init` with prefix `FOLDER/simplex`, active user or a new one, network config, event buffer, `startChat`, profile update |
-| `updatedUser` | [37](../src/core.ts#L37) | display name and peer type `agent` applied with one `apiUpdateProfile` when they differ |
-| `deliveries` | [44](../src/core.ts#L44) | wait for pending deliveries to the members of one group |
-| `bufferEvents` | [64](../src/core.ts#L64) | events received before the handler is installed are queued and replayed in order |
+| `networkCommand` | [14](../src/core.ts#L14) | `/network socks=off smp-proxy=always smp-proxy-fallback=protected` |
+| `openCore` | [24](../src/core.ts#L24) | `ChatApi.init` with prefix `FOLDER/simplex`, active user or a new one, network config, event buffer, `startChat`, profile update |
+| `deletePresetContacts` | [42](../src/core.ts#L42) | the contact the core adds to a new user, deleted when it has no connection |
+| `updatedUser` | [52](../src/core.ts#L52) | display name and peer type `agent` applied with one `apiUpdateProfile` when they differ |
+| `deliveries` | [59](../src/core.ts#L59) | wait for pending deliveries to the members of one group, polled |
+| `bufferEvents` | [80](../src/core.ts#L80) | events received before the handler is installed are queued and replayed in order |
 
 ### [2.10 `tools.ts`](../src/tools.ts)
 
@@ -467,7 +468,7 @@ An open `/attach` clears the session's timer ([daemon.ts:222](../src/daemon.ts#L
 
 1. Timers are cleared; new entries are refused with status 503 `The SimpleX daemon is stopping.`
 2. The listener is closed; open `/attach` and `/call` streams are destroyed, which drops the session processes' connections.
-3. `Hub.stop` ([hub.ts:77-84](../src/hub.ts#L77-L84)): events are ignored; `Actions.stop` refuses new actions with `The SimpleX daemon is stopping.`, clears the expiry timers, awaits cards being posted, marks pending and performing actions interrupted, aborts the perform signal and edits their cards ([actions.ts:222-233](../src/actions.ts#L222-L233)); queued Main group events are awaited; pending deliveries to Main group members are polled every 100 ms for at most 10 s ([core.ts:59-67](../src/core.ts#L59-L67)); the hub core is closed.
+3. `Hub.stop` ([hub.ts:77-84](../src/hub.ts#L77-L84)): events are ignored; `Actions.stop` refuses new actions with `The SimpleX daemon is stopping.`, clears the expiry timers, awaits cards being posted, marks pending and performing actions interrupted, aborts the perform signal and edits their cards ([actions.ts:222-233](../src/actions.ts#L222-L233)); queued Main group events are awaited; pending deliveries to Main group members are polled every 100 ms for at most 10 s ([core.ts:59-68](../src/core.ts#L59-L68)); the hub core is closed. This is the daemon's one deliberate poll, run only during the stop, because the core emits no status event when an edit of an already delivered card is delivered, so no event marks the end of the deliveries.
 4. `Cancelled K action(s).` when K > 0.
 5. The session cores are closed, and closes in progress awaited.
 6. The lock is removed and `Stopped.` is logged.
@@ -707,7 +708,7 @@ The Main group belongs to the hub core, so no session's tools can reach it.
 | error details | 500 characters | [log.ts:5](../src/log.ts#L5) |
 | progress interval | 60 s | [messages.ts:4](../src/messages.ts#L4) |
 | longest timer delay | 2147483647 ms, the Node limit | [messages.ts:5](../src/messages.ts#L5) |
-| delivery wait at stop | 10 s, polled every 100 ms | [core.ts:8-9](../src/core.ts#L8-L9) |
+| delivery wait at stop | 10 s, polled every 100 ms; the one deliberate poll, because no event marks a delivered card edit | [core.ts:8-9](../src/core.ts#L8-L9), [:64](../src/core.ts#L64) |
 | display name | 50 characters, `mkValidName` rules | [messages.ts:8-9](../src/messages.ts#L8-L9), [:238-260](../src/messages.ts#L238-L260) |
 | session idle close | 10 min | [daemon.ts:18](../src/daemon.ts#L18) |
 | daemon idle stop | 10 min | [daemon.ts:19](../src/daemon.ts#L19) |

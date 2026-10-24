@@ -490,9 +490,10 @@ Notes:
 - The interrupted card line is `DECIDER; interrupted: the SimpleX daemon stopped.` ([control.ts:390](../src/control.ts#L390)).
 - A host-mode action whose counter is being written at the stop is set to `pending` and cancelled without a perform ([actions.ts:271](../src/actions.ts#L271)).
 - The perform signal is aborted after the actions are marked interrupted: a `connect` waiting for its connection ends, and an interrupted perform logs no line ([actions.ts:229](../src/actions.ts#L229), [:283](../src/actions.ts#L283), [tools.ts:509-511](../src/tools.ts#L509-L511)).
-- An error of a `/sql` query of the delivery wait is logged as `delivery wait: ERROR` and ends the wait ([core.ts:69-77](../src/core.ts#L69-L77)).
+- The delivery wait is the daemon's one deliberate poll, run only during the stop and capped at 10 s, because the core emits no status event when an edit of an already delivered card is delivered ([core.ts:64](../src/core.ts#L64)).
+- An error of a `/sql` query of the delivery wait is logged as `delivery wait: ERROR` and ends the wait ([core.ts:70-78](../src/core.ts#L70-L78)).
 
-Source: [daemon.ts:98-149](../src/daemon.ts#L98-L149), [:355-362](../src/daemon.ts#L355-L362), [hub.ts:77-84](../src/hub.ts#L77-L84), [actions.ts:222-233](../src/actions.ts#L222-L233), [core.ts:59-67](../src/core.ts#L59-L67).
+Source: [daemon.ts:98-149](../src/daemon.ts#L98-L149), [:355-362](../src/daemon.ts#L355-L362), [hub.ts:77-84](../src/hub.ts#L77-L84), [actions.ts:222-233](../src/actions.ts#L222-L233), [core.ts:59-68](../src/core.ts#L59-L68).
 
 ---
 
