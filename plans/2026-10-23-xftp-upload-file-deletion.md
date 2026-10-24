@@ -2,7 +2,7 @@
 
 On iOS, with simplexmq PR #2, the agent completes suspension only after the agent file of each upload started in foreground is deleted by the chat or TTL cleanup, or when the chat is stopped, or at the suspend timeout. Files with rows absent or flagged deleted or failed at the start of the suspension are not awaited. On master, the chat skipped this deletion on several paths of `SFDONE` and `SFERR`, handling errors among them.
 The deletions in the branches of `processAgentMsgSndFile` are replaced by one deletion after the handling of each `SFDONE` or `SFERR` with a file ID, also when an error is thrown. On `SFDONE` of an undeleted sent item with a shared message ID, the file descriptions are queued before it in the direct and group branches.
-A suspending app yields to the share extension. The share extension signals the other processes at setup and, while the app is suspending, waits for them before it starts or activates its chat. The app subscribes to this signal at launch and suspends at once on it while suspending.
+A suspending app yields to the share extension. The share extension signals the other processes at setup and, when the app is suspending at setup, waits for them before it starts or activates its chat. The app subscribes to this signal at launch and suspends at once on it while suspending.
 
 Agent side: https://github.com/evgeny-simplex/simplexmq/pull/2
 
@@ -74,7 +74,10 @@ Agent side: https://github.com/evgeny-simplex/simplexmq/pull/2
 
 - The app chat is activated by the scene phase handling when the app is opened, as on master.
 - A chunk upload of the app in flight at the instant suspension is not stopped; the share extension can upload the same replica at the same time, as on master.
-- The NSE's share extension subscriber: unchanged.
+- An agent event queued or in handling at the instant suspension can be handled after the stores are closed:
+  - `SFDONE`: the file descriptions are not sent, since the agent sends no further `SFDONE` for a complete file; the agent file is deleted at the next activation;
+  - `SFERR`: the error status of the item is not recorded.
+- The NSE's share extension subscriber: unchanged. The NSE does not act on `.sendingMessage` (its subscriber is never created). The wait therefore ends only when the NSE suspends on its own, or after 2 s. The app's instant suspension can start the chat of an NSE instance waiting for the app, and that chat then runs concurrently with the share extension.
 - `cabal.project`: simplexmq pinned to commit `5cbc42c2` of simplexmq PR #2 during review.
 - After the simplexmq pull request in simplex-chat/simplexmq is merged and before the final pull request is opened in simplex-chat/simplex-chat:
   - the pin is replaced by the merged simplex-chat/simplexmq commit;
@@ -95,7 +98,8 @@ Agent side: https://github.com/evgeny-simplex/simplexmq/pull/2
     - :363, `sendFileError`.
 - `apps/ios/spec/architecture.md` (:131), "Background Task Protection": the text.
 - `apps/ios/spec/services/files.md` (:274), "Sending": the text.
-- `apps/ios/spec/architecture.md` (:257), "Share Extension (SE)": the setup signal and wait, and the instant suspension of the app in `.suspending`.
+- `apps/ios/spec/architecture.md` (:257), "Share Extension (SE)": the signal at setup and before sending; the wait at setup when the app state read at setup is `.suspending`, and before sending in any app state; the NSE, which does not act on the signal; the instant suspension of the app in `.suspending`.
+- `apps/ios/spec/database.md` (:79) and `apps/ios/spec/architecture.md` (:8): the `AppDelegate.swift` line ranges.
 - `apps/ios/SimpleX SE/ShareModel.swift`, `setup(with:)` (:97-100): `SEChatState.shared.set(.sendingMessage)`, then `await waitForOtherProcessesToSuspend()` when `appStateGroupDefault.get() == .suspending`, before `initChat`.
 - `apps/ios/Shared/AppDelegate.swift`, `application(_:didFinishLaunchingWithOptions:)` (:22): `_ = seSubscriber`.
 - `apps/ios/Shared/Model/SuspendChat.swift`:

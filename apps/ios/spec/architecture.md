@@ -5,7 +5,7 @@
 > Related specs: [README](README.md) | [API Reference](api.md) | [State Management](state.md) | [Database](database.md)
 > Related product: [Product Overview](../product/README.md)
 
-**Source:** [`SimpleXApp.swift`](../Shared/SimpleXApp.swift#L1-L183) | [`AppDelegate.swift`](../Shared/AppDelegate.swift#L1-L209) | [`ContentView.swift`](../Shared/ContentView.swift#L1-L513) | [`ChatModel.swift`](../Shared/Model/ChatModel.swift#L1-L1373) | [`SimpleXAPI.swift`](../Shared/Model/SimpleXAPI.swift#L1-L2915) | [`AppAPITypes.swift`](../Shared/Model/AppAPITypes.swift#L1-L2357) | [`APITypes.swift`](../SimpleXChat/APITypes.swift#L1-L1071) | [`API.swift`](../SimpleXChat/API.swift#L1-L388)
+**Source:** [`SimpleXApp.swift`](../Shared/SimpleXApp.swift#L1-L183) | [`AppDelegate.swift`](../Shared/AppDelegate.swift#L1-L212) | [`ContentView.swift`](../Shared/ContentView.swift#L1-L513) | [`ChatModel.swift`](../Shared/Model/ChatModel.swift#L1-L1373) | [`SimpleXAPI.swift`](../Shared/Model/SimpleXAPI.swift#L1-L2915) | [`AppAPITypes.swift`](../Shared/Model/AppAPITypes.swift#L1-L2357) | [`APITypes.swift`](../SimpleXChat/APITypes.swift#L1-L1071) | [`API.swift`](../SimpleXChat/API.swift#L1-L388)
 
 ---
 
@@ -254,7 +254,7 @@ The NSE ([`SimpleX NSE/NotificationService.swift`](../SimpleX%20NSE/Notification
 
 The Share Extension (`SimpleX SE/`) allows sharing content (text, images, files) from other apps into SimpleX conversations.
 
-At setup, the share extension sends `.sendingMessage` to the other processes ([`setup(with:)`](../SimpleX%20SE/ShareModel.swift#L94-L100)). While the app state is `.suspending`, the share extension then waits for the app and the NSE to suspend, for at most 2 s ([`waitForOtherProcessesToSuspend`](../SimpleX%20SE/SEChatState.swift#L30-L39)), before it starts or activates its chat. On `.sendingMessage` in `.suspending`, the app suspends at once ([`seSubscriber`](../Shared/Model/SuspendChat.swift#L39-L53)): the core is suspended with timeout 0, the app state is set to `.suspended`, the event receiver is stopped, and the stores are closed. In other app states, the signal is ignored.
+At setup and before sending, the share extension sends `.sendingMessage` to the other processes ([`setup(with:)`](../SimpleX%20SE/ShareModel.swift#L94-L100), [`send()`](../SimpleX%20SE/ShareModel.swift#L146-L152)). When the app state read at setup is `.suspending`, the share extension waits until the app and NSE states are `.suspended`, at most 2 s ([`waitForOtherProcessesToSuspend`](../SimpleX%20SE/SEChatState.swift#L30-L39)), before it starts or activates its chat; before sending, it waits in the same way in any app state. The NSE does not act on `.sendingMessage` (its subscriber is never created). The wait therefore ends only when the NSE suspends on its own, or after 2 s. The app's instant suspension can start the chat of an NSE instance waiting for the app, and that chat then runs concurrently with the share extension. On `.sendingMessage` in `.suspending`, the app suspends at once ([`seSubscriber`](../Shared/Model/SuspendChat.swift#L39-L53)): the core is suspended with timeout 0, the app state is set to `.suspended`, the event receiver is stopped, and the stores are closed. In other app states, the signal is ignored.
 
 ---
 
