@@ -16,6 +16,7 @@ beforeEach(() => {
 })
 
 afterEach(async () => {
+  jest.restoreAllMocks()
   if (server) await closeServer(server)
   server = undefined
   rmSync(dir, {recursive: true, force: true})
@@ -68,7 +69,9 @@ describe("socket", () => {
     expect(await requestJson(path, token, "GET", "/ok")).toEqual({})
   })
 
-  it("checks the token, the route and the body", async () => {
+  it("checks the token, the route and the body, and logs an unexpected handler error", async () => {
+    const errors: string[] = []
+    jest.spyOn(process.stderr, "write").mockImplementation(text => (errors.push(String(text)), true))
     server = await listen(path, token, {
       "POST /echo": async (body, res) => sendJson(res, 200, body),
       "POST /fail": async () => {
@@ -79,6 +82,7 @@ describe("socket", () => {
     await expect(requestJson(path, "wrong", "POST", "/echo", {})).rejects.toEqual(new SocketError("Unauthorized", 401))
     await expect(requestJson(path, token, "GET", "/echo")).rejects.toEqual(new SocketError("Not found", 404))
     await expect(requestJson(path, token, "POST", "/fail", {})).rejects.toEqual(new SocketError("broken", 500))
+    expect(errors).toEqual(["POST /fail: broken\n"])
     await expect(requestJson(path, token, "POST", "/echo", "x".repeat(1_048_577))).rejects.toEqual(new SocketError("Body too large", 413))
   })
 
