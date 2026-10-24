@@ -431,7 +431,7 @@ export class AgentTools {
   }
 
   private async actionResult(action: Action, call: ToolCall, done: () => Promise<object | undefined>): Promise<object | undefined> {
-    action.open++
+    this.agent.actions.openCall(action)
     try {
       if (!(await this.agent.actions.decided(action, call))) return undefined
       const fields = action.state === "done" ? await done() : defined({error: action.error})
@@ -439,7 +439,7 @@ export class AgentTools {
       this.agent.actions.remove(action)
       return {action: action.n, status: action.state, ...fields}
     } finally {
-      action.open--
+      this.agent.actions.closeCall(action)
     }
   }
 

@@ -2,7 +2,7 @@ import {ChatResponse, T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
 
 const progressInterval = 60_000
-const maxTimer = 2_147_483_647
+export const maxTimer = 2_147_483_647
 const pageSize = 100
 const maxCollected = 100
 const prohibitedNameChars = ".,;/\\#@'\"`~"

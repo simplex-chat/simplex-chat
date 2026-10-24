@@ -71,7 +71,7 @@ Data flow of a tool call:
 2. The session process connects to the daemon when it has no connection: status and version check, spawn when not running, `POST /session`, then `POST /attach` held open ([`session.ts:123-140`](../src/session.ts#L123-L140), [`client.ts:32-44`](../src/client.ts#L32-L44)).
 3. The session process sends `POST /call` with the session ID, the tool name and the input, relays each `{progress}` line as an MCP progress notification, and returns the `{result}` line ([`session.ts:94-113`](../src/session.ts#L94-L113)).
 4. The daemon checks the token, finds or opens the session's agent, and runs `AgentTools.call` with an abort signal tied to the request ([`socket.ts:18-48`](../src/socket.ts#L18-L48), [`daemon.ts:223-240`](../src/daemon.ts#L223-L240)).
-5. `AgentTools` sends chat commands to the session core; actions are created in the hub's `Actions` and shown to the owner by `Control` in the Main group ([`tools.ts:414-427`](../src/tools.ts#L414-L427), [`actions.ts:124-157`](../src/actions.ts#L124-L157)).
+5. `AgentTools` sends chat commands to the session core; actions are created in the hub's `Actions` and shown to the owner by `Control` in the Main group ([`tools.ts:414-427`](../src/tools.ts#L414-L427), [`actions.ts:123-157`](../src/actions.ts#L123-L157)).
 6. After an approval, `Actions` calls the daemon's `perform`, which runs the perform step in the action's session ([`daemon.ts:156-160`](../src/daemon.ts#L156-L160), [`tools.ts:378-387`](../src/tools.ts#L378-L387)).
 7. Each core emits its events: the hub core to `Control`, a session core to its item watch and connect actions ([`hub.ts:92-104`](../src/hub.ts#L92-L104), [`agent.ts:44-57`](../src/agent.ts#L44-L57)).
 
@@ -207,17 +207,19 @@ Data flow of a tool call:
 | Symbol | Line | Contents |
 |---|---|---|
 | `Mode`, `State` | [5-6](../src/actions.ts#L5-L6) | `requests`, `host`; `pending`, `performing`, `done`, `failed`, `rejected`, `expired` |
-| `lostMessage`, `stoppingMessage` | [13-14](../src/actions.ts#L13-L14) | refusal texts |
-| `ToolError` | [18](../src/actions.ts#L18) | errors the model can correct; text returned as is |
-| `ActionRecord` | [33](../src/actions.ts#L33) | number, session, key, times, change signal, standing flag, state, card, decider, open calls, interrupted flag, error |
-| `ConnectAction`, `SendAction`, `LeaveAction` | [50-83](../src/actions.ts#L50-L83) | per-tool fields |
-| `ActionHooks` | [89](../src/actions.ts#L89) | `refusal`, `saveCounter`, `postCard`, `perform`, `outcome` |
-| `Actions` | [97](../src/actions.ts#L97) | mode, expiry hours and counter, all public and live; action map, expiry timer, posting and outcome promises |
-| `create` | [124](../src/actions.ts#L124) | refusal checks, number, log line, counter write, card |
+| `lostMessage`, `stoppingMessage` | [12-13](../src/actions.ts#L12-L13) | refusal texts |
+| `ToolError` | [17](../src/actions.ts#L17) | errors the model can correct; text returned as is |
+| `ActionRecord` | [32](../src/actions.ts#L32) | number, session, key, times, change signal, standing flag, state, card, decider, open calls, interrupted flag, error |
+| `ConnectAction`, `SendAction`, `LeaveAction` | [49-82](../src/actions.ts#L49-L82) | per-tool fields |
+| `ActionHooks` | [88](../src/actions.ts#L88) | `refusal`, `saveCounter`, `postCard`, `perform`, `outcome` |
+| `Actions` | [96](../src/actions.ts#L96) | mode, expiry hours and counter, all public and live; action map, expiry timers by action number, posting and outcome promises |
+| `create` | [123](../src/actions.ts#L123) | refusal checks, number, log line, counter write, card |
 | `ofSession` | [159](../src/actions.ts#L159) | the actions of one session |
-| `decided` | [185](../src/actions.ts#L185) | wait with progress until a decided state or the abort signal |
-| `stop` | [219](../src/actions.ts#L219) | cancellation of pending and performing actions |
-| `summary`, `performedText`, `progressText` | [290-326](../src/actions.ts#L290-L326) | log and progress texts |
+| `openCall`, `closeCall` | [174-181](../src/actions.ts#L174-L181) | open call count; the last call's end removes an expired decided action |
+| `expireDue` | [183](../src/actions.ts#L183) | expiry of all due actions by the wall clock |
+| `decided` | [188](../src/actions.ts#L188) | wait with progress until a decided state or the abort signal |
+| `stop` | [222](../src/actions.ts#L222) | cancellation of pending and performing actions |
+| `summary`, `performedText`, `progressText` | [313-349](../src/actions.ts#L313-L349) | log and progress texts |
 
 ### [2.12 `control.ts`](../src/control.ts)
 
@@ -302,10 +304,11 @@ Data flow of a tool call:
 | Open sessions | `Daemon.entries` by session ID ([daemon.ts:65](../src/daemon.ts#L65)) | `entry`, idle close | routes, `perform`, `Sessions` of `Control` |
 | Remembered titles | `Daemon.titles` by lowercased session ID, at most 100 ([daemon.ts:68](../src/daemon.ts#L68)) | `/title` for an ID without `session.json` | `openAgent` of a new session, which removes the entry |
 | Next session number | `Daemon.nextNumber` ([daemon.ts:76](../src/daemon.ts#L76)) | constructor: largest number in `_sessions` plus 1; `openAgent` | `openAgent` |
-| Actions of all sessions | `Actions.actions` map ([actions.ts:101](../src/actions.ts#L101)) | `create`, `remove`, `expireDue` | tools, `Control`, idle check |
-| Mode and expiry hours | `Actions.mode`, `Actions.expireHours` ([actions.ts:106](../src/actions.ts#L106)) | `Hub.open`, `Hub.configure` at each `/session` and `/title` | `create`, cards, `standingApprover` |
-| Open calls of an action | `ActionRecord.open` ([actions.ts:44](../src/actions.ts#L44)) | `actionResult` ([tools.ts:434](../src/tools.ts#L434), [:442](../src/tools.ts#L442)) | `list`, `expireDue` |
-| Collected replies | `ConnectAction.messages`, `SendAction.responses` ([actions.ts:55](../src/actions.ts#L55), [:73](../src/actions.ts#L73)) | `ChatItemsWatch.collect` | `connect`, `send` results |
+| Actions of all sessions | `Actions.actions` map ([actions.ts:100](../src/actions.ts#L100)) | `create`, `remove`, expiry | tools, `Control`, idle check |
+| Expiry timers | `Actions.expiries` ([actions.ts:101](../src/actions.ts#L101)) | `create`, a timer that fires before its time; cleared by `remove` and `stop` | |
+| Mode and expiry hours | `Actions.mode`, `Actions.expireHours` ([actions.ts:105](../src/actions.ts#L105)) | `Hub.open`, `Hub.configure` at each `/session` and `/title` | `create`, cards, `standingApprover` |
+| Open calls of an action | `ActionRecord.open` ([actions.ts:43](../src/actions.ts#L43)) | `openCall` and `closeCall` from `actionResult` ([tools.ts:434](../src/tools.ts#L434), [:442](../src/tools.ts#L442)) | `list`, expiry |
+| Collected replies | `ConnectAction.messages`, `SendAction.responses` ([actions.ts:54](../src/actions.ts#L54), [:72](../src/actions.ts#L72)) | `ChatItemsWatch.collect` | `connect`, `send` results |
 | Item listeners | one `ChatItemsWatch` per session ([agent.ts:42](../src/agent.ts#L42)) | `collect` | the session's event dispatch |
 | Main group members | `Control.members` ([control.ts:66](../src/control.ts#L66)) | `refreshMembers` ([:302](../src/control.ts#L302)) | owner checks |
 | One-time link | `Control.linkText` ([control.ts:70](../src/control.ts#L70)) | `openLink`, `deleteLink` | `/session`, `/title`, `/status`, refusals |
@@ -464,7 +467,7 @@ An open `/attach` clears the session's timer ([daemon.ts:215](../src/daemon.ts#L
 
 1. Timers are cleared; new entries are refused with status 503 `The SimpleX daemon is stopping.`
 2. The listener is closed; open `/attach` and `/call` streams are destroyed, which drops the session processes' connections.
-3. `Hub.stop` ([hub.ts:77-84](../src/hub.ts#L77-L84)): events are ignored; `Actions.stop` refuses new actions with `The SimpleX daemon is stopping.`, awaits cards being posted, marks pending and performing actions interrupted, aborts the perform signal and edits their cards ([actions.ts:219-229](../src/actions.ts#L219-L229)); queued Main group events are awaited; pending deliveries to Main group members are polled every 100 ms for at most 10 s ([core.ts:59-67](../src/core.ts#L59-L67)); the hub core is closed.
+3. `Hub.stop` ([hub.ts:77-84](../src/hub.ts#L77-L84)): events are ignored; `Actions.stop` refuses new actions with `The SimpleX daemon is stopping.`, clears the expiry timers, awaits cards being posted, marks pending and performing actions interrupted, aborts the perform signal and edits their cards ([actions.ts:222-233](../src/actions.ts#L222-L233)); queued Main group events are awaited; pending deliveries to Main group members are polled every 100 ms for at most 10 s ([core.ts:59-67](../src/core.ts#L59-L67)); the hub core is closed.
 4. `Cancelled K action(s).` when K > 0.
 5. The session cores are closed, and closes in progress awaited.
 6. The lock is removed and `Stopped.` is logged.
@@ -497,7 +500,7 @@ releaseLock(ROOT): remove ROOT/lock, ENOENT ignored  :90-96
 | `requests` | `pending`<br>`performing` for a send under a standing approval | card with commands<br>outcome card after a standing send | none |
 | `host` | `performing` | outcome card after the perform | `{"anthropic/requiresUserInteraction": true}` |
 
-The daemon takes the mode and the expiry of the latest `/session` or `/title` for all sessions ([hub.ts:63-66](../src/hub.ts#L63-L66)); each session process sets `_meta` from its own options at its start ([session.ts:48](../src/session.ts#L48), [tools.ts:360](../src/tools.ts#L360)). Sources: [actions.ts:136](../src/actions.ts#L136). In both modes a new action is refused unless the Main group has an owner ([control.ts:113-114](../src/control.ts#L113-L114)).
+The daemon takes the mode and the expiry of the latest `/session` or `/title` for all sessions ([hub.ts:63-66](../src/hub.ts#L63-L66)); each session process sets `_meta` from its own options at its start ([session.ts:48](../src/session.ts#L48), [tools.ts:360](../src/tools.ts#L360)). Sources: [actions.ts:135](../src/actions.ts#L135). In both modes a new action is refused unless the Main group has an owner ([control.ts:113-114](../src/control.ts#L113-L114)).
 
 ### 5.2 Owners
 
@@ -512,7 +515,7 @@ Session profiles are not members of the Main group. The command sender's member 
 |---|---|---|
 | a human joins while no owner exists | link deleted, role `owner`, greeting posted, `NAME joined (member ID) and is now an owner. The link is deleted.` logged | [control.ts:161](../src/control.ts#L161), [:267-273](../src/control.ts#L267-L273) |
 | owners drop to zero | `No owners in the Main group.`, new link with role `member` | [control.ts:162-165](../src/control.ts#L162-L165) |
-| `deletedMemberUser`, `groupDeleted`, or the hub profile's role below `owner` | `Actions.loseControl`: pending actions set to `failed`; later cards left unedited; `The agent lost its Main group. Run /simplex:reset-owners in Claude Code.` logged | [control.ts:158](../src/control.ts#L158), [:275-278](../src/control.ts#L275-L278), [actions.ts:211-217](../src/actions.ts#L211-L217) |
+| `deletedMemberUser`, `groupDeleted`, or the hub profile's role below `owner` | `Actions.loseControl`: pending actions set to `failed`; later cards left unedited; `The agent lost its Main group. Run /simplex:reset-owners in Claude Code.` logged | [control.ts:158](../src/control.ts#L158), [:275-278](../src/control.ts#L275-L278), [actions.ts:214-220](../src/actions.ts#L214-L220) |
 | `POST /reset-owners` | the group deleted for all members (left first when current and not owner), a new one with the same counter, control regained, new link | [hub.ts:73-75](../src/hub.ts#L73-L75), [control.ts:205-212](../src/control.ts#L205-L212), [:351-356](../src/control.ts#L351-L356) |
 | option `main_group` changed | group profile and hub profile renamed | [hub.ts:67-70](../src/hub.ts#L67-L70), [control.ts:200-203](../src/control.ts#L200-L203) |
 
@@ -522,19 +525,19 @@ Transitions, one per row:
 
 | Event | From | To | Code |
 |---|---|---|---|
-| call creates the action, mode `requests` | | `pending` | [actions.ts:136](../src/actions.ts#L136) |
-| call creates the action, mode `host` | | `performing` | [actions.ts:136](../src/actions.ts#L136) |
-| `send` call creates the action under a standing approval | | `performing` | [actions.ts:136](../src/actions.ts#L136) |
-| counter write or card post fails | `pending`<br>`performing` | `failed` | [actions.ts:231-242](../src/actions.ts#L231-L242) |
-| stop arrives while the counter of a `performing` action is written | `performing` | `pending`, interrupted | [actions.ts:247](../src/actions.ts#L247) |
-| Main group lost | `pending` | `failed` | [actions.ts:211-217](../src/actions.ts#L211-L217) |
-| `/reject` | `pending` | `rejected` | [actions.ts:204-209](../src/actions.ts#L204-L209) |
-| expiry time passes | `pending` | `expired` | [actions.ts:175-178](../src/actions.ts#L175-L178) |
-| `/approve N`, `/approve S:CHAT N`, `/approve S:CHAT all` | `pending` | `performing` | [actions.ts:198-202](../src/actions.ts#L198-L202) |
-| perform throws | `performing` | `failed` | [actions.ts:255-257](../src/actions.ts#L255-L257) |
-| perform ends | `performing` | `done` | [actions.ts:253-254](../src/actions.ts#L253-L254) |
+| call creates the action, mode `requests` | | `pending` | [actions.ts:135](../src/actions.ts#L135) |
+| call creates the action, mode `host` | | `performing` | [actions.ts:135](../src/actions.ts#L135) |
+| `send` call creates the action under a standing approval | | `performing` | [actions.ts:135](../src/actions.ts#L135) |
+| counter write or card post fails | `pending`<br>`performing` | `failed` | [actions.ts:253-264](../src/actions.ts#L253-L264) |
+| stop arrives while the counter of a `performing` action is written | `performing` | `pending`, interrupted | [actions.ts:269](../src/actions.ts#L269) |
+| Main group lost | `pending` | `failed` | [actions.ts:214-220](../src/actions.ts#L214-L220) |
+| `/reject` | `pending` | `rejected` | [actions.ts:207-212](../src/actions.ts#L207-L212) |
+| expiry time passes | `pending` | `expired` | [actions.ts:244-246](../src/actions.ts#L244-L246) |
+| `/approve N`, `/approve S:CHAT N`, `/approve S:CHAT all` | `pending` | `performing` | [actions.ts:201-205](../src/actions.ts#L201-L205) |
+| perform throws | `performing` | `failed` | [actions.ts:277-279](../src/actions.ts#L277-L279) |
+| perform ends | `performing` | `done` | [actions.ts:275-276](../src/actions.ts#L275-L276) |
 
-`create` ([actions.ts:124-157](../src/actions.ts#L124-L157)):
+`create` ([actions.ts:123-157](../src/actions.ts#L123-L157)):
 
 ```
 create(session, key, fields, standingApprover?):
@@ -560,13 +563,13 @@ create(session, key, fields, standingApprover?):
       otherwise: perform in session S
 ```
 
-An action is removed from memory when its result is returned to a call ([tools.ts:439](../src/tools.ts#L439)), or at an expiry tick when it is decided, its open call count is 0 and its expiry time has passed ([actions.ts:179-181](../src/actions.ts#L179-L181)). The action key includes the session number, so equal calls of two sessions are two actions ([tools.ts:987-989](../src/tools.ts#L987-L989)).
+An action is removed from memory when its result is returned to a call ([tools.ts:439](../src/tools.ts#L439)), or when it is decided, its open call count is 0 and its expiry time has passed; this is checked when its expiry timer fires, when it is decided and when its last open call ends ([actions.ts:249-251](../src/actions.ts#L249-L251), [:180](../src/actions.ts#L180), [:289](../src/actions.ts#L289)). The action key includes the session number, so equal calls of two sessions are two actions ([tools.ts:987-989](../src/tools.ts#L987-L989)).
 
 ### 5.4 Cards
 
 The daemon posts a card when a `pending` action is created, and edits it with `apiUpdateChatItem` at the outcome ([control.ts:128-136](../src/control.ts#L128-L136)). For an action without a card (mode `host`, standing sends) the outcome is posted as a new message. Each card starts with `Session S · PROFILE NAME`, or `Session S` when the session is not open ([control.ts:214-221](../src/control.ts#L214-L221)); the text per state is built by [`cardText`](../src/control.ts#L381-L400); forms are listed in [API: cards](api.md#22-cards).
 
-Outcomes are posted after `done` and `failed` ([actions.ts:260-261](../src/actions.ts#L260-L261)), after `rejected` and `expired` ([:208](../src/actions.ts#L208), [:178](../src/actions.ts#L178)), and at stop ([:226](../src/actions.ts#L226)). They are skipped after the Main group is lost ([:226](../src/actions.ts#L226), [:261](../src/actions.ts#L261), [:270](../src/actions.ts#L270)).
+Outcomes are posted after `done` and `failed` ([actions.ts:282-283](../src/actions.ts#L282-L283)), after `rejected` and `expired` ([:211](../src/actions.ts#L211), [:246](../src/actions.ts#L246)), and at stop ([:230](../src/actions.ts#L230)). They are skipped after the Main group is lost ([:230](../src/actions.ts#L230), [:283](../src/actions.ts#L283), [:293](../src/actions.ts#L293)).
 
 ### 5.5 Standing approvals
 
@@ -583,24 +586,24 @@ Outcomes are posted after `done` and `failed` ([actions.ts:260-261](../src/actio
 
 | Rule | Code |
 |---|---|
-| `expires = created + expireHours × 3600000`, with the expiry hours at creation; option 1 to 23, default 23 | [actions.ts:133](../src/actions.ts#L133), [config.ts:46-51](../src/config.ts#L46-L51) |
-| check every 60 s on an unreferenced timer, and before each owner command | [actions.ts:102](../src/actions.ts#L102), [control.ts:169](../src/control.ts#L169) |
-| pending and due: `expired`, log `Action N expired.`, card edited to `Expired.` | [actions.ts:175-178](../src/actions.ts#L175-L178) |
-| decided, no open call, due: removed from memory | [actions.ts:179-181](../src/actions.ts#L179-L181) |
+| `expires = created + expireHours × 3600000`, with the expiry hours at creation; option 1 to 23, default 23 | [actions.ts:132](../src/actions.ts#L132), [config.ts:46-51](../src/config.ts#L46-L51) |
+| one unreferenced timer per action, set when it is created for its expiry time and set again when it fires before that time; `expireDue` checks all actions before each owner command | [actions.ts:150](../src/actions.ts#L150), [:235-242](../src/actions.ts#L235-L242), [:183-186](../src/actions.ts#L183-L186), [control.ts:169](../src/control.ts#L169) |
+| pending and due: `expired`, log `Action N expired.`, card edited to `Expired.` | [actions.ts:244-246](../src/actions.ts#L244-L246) |
+| decided, no open call, due: removed from memory, and its timer cleared | [actions.ts:249-251](../src/actions.ts#L249-L251), [:167-172](../src/actions.ts#L167-L172) |
 | connect wait for the other side: at most until `created + 24 h - 10 min` | [tools.ts:112](../src/tools.ts#L112), [:485](../src/tools.ts#L485) |
 
-`Date.now()` is compared with `expires`, so due actions are expired at the first tick after a sleep of the computer.
+Timers follow the monotonic clock, which stops while the computer sleeps, so a timer can fire after the expiry time, or before it when the clock is set back; `Date.now()` is compared with `expires`, so after a sleep due actions are expired by the next owner command or their late timers.
 
 ### 5.7 Action counter
 
 | Rule | Code |
 |---|---|
 | initial value: `nextAction` of the Main group marker, or 1 | [hub.ts:31](../src/hub.ts#L31) |
-| one counter for all sessions; a new action takes `next`, then `next` grows by 1 | [actions.ts:125](../src/actions.ts#L125), [:149](../src/actions.ts#L149) |
-| the new `next` is written before the card is posted | [actions.ts:233-234](../src/actions.ts#L233-L234) |
+| one counter for all sessions; a new action takes `next`, then `next` grows by 1 | [actions.ts:124](../src/actions.ts#L124), [:148](../src/actions.ts#L148) |
+| the new `next` is written before the card is posted | [actions.ts:255-256](../src/actions.ts#L255-L256) |
 | one write at a time, also after a failed write | [control.ts:122-126](../src/control.ts#L122-L126) |
 | `/reset-owners` copies the value into the new Main group | [control.ts:207](../src/control.ts#L207) |
-| a refused call leaves the counter unchanged | [actions.ts:148](../src/actions.ts#L148) |
+| a refused call leaves the counter unchanged | [actions.ts:147](../src/actions.ts#L147) |
 
 ---
 
@@ -644,7 +647,7 @@ Node limits: `requestTimeout` 0, `headersTimeout` 60 s, `keepAliveTimeout` 5 s (
 | link texts on a connect card | code span lines in the bytes that the largest card form leaves; the line that does not fit is cut and ends in `…` inside its code span; later lines left out | [control.ts:463-477](../src/control.ts#L463-L477) |
 | mention names | valid name: `@name` or `@'name'`; others a code span | [`mentionText`](../src/control.ts#L496-L499) |
 | errors on cards | folded to one line, one code span | [control.ts:394](../src/control.ts#L394) |
-| log names and errors of actions | folded to one line | [actions.ts:151-152](../src/actions.ts#L151-L152), [:306-313](../src/actions.ts#L306-L313), [control.ts:272](../src/control.ts#L272) |
+| log names and errors of actions | folded to one line | [actions.ts:151-152](../src/actions.ts#L151-L152), [:329-336](../src/actions.ts#L329-L336), [control.ts:272](../src/control.ts#L272) |
 | tool results | returned as data; schema descriptions and instructions mark `text`, `from`, `name`, `description`, `welcome` and `commands` with their labels and params as data, not instructions; the instructions take a chat's messages as prompts only when the user said so in the session, and limit what the agent shares about its user | [tools.ts:125-129](../src/tools.ts#L125-L129), [:146-147](../src/tools.ts#L146-L147), [:157-161](../src/tools.ts#L157-L161), [:330](../src/tools.ts#L330) |
 
 The daemon writes the tappable form `/'...'` only in the card's command line, `/'approve ...'` and `/'reject ...'` ([control.ts:425-435](../src/control.ts#L425-L435)), and in `/'revoke S:CHAT'` of standing cards and replies ([:392](../src/control.ts#L392), [:235](../src/control.ts#L235)).
@@ -683,8 +686,8 @@ The Main group belongs to the hub core, so no session's tools can reach it.
 
 | Limit | Value | Code |
 |---|---|---|
-| pending actions | 20 per session | [actions.ts:10](../src/actions.ts#L10) |
-| actions being performed | 20 per session | [actions.ts:11](../src/actions.ts#L11) |
+| pending actions | 20 per session | [actions.ts:9](../src/actions.ts#L9) |
+| actions being performed | 20 per session | [actions.ts:10](../src/actions.ts#L10) |
 | expiry | 1 to 23 h, default 23 | [config.ts:46-51](../src/config.ts#L46-L51) |
 | connect wait for the other side | `created + 23 h 50 min` | [tools.ts:112](../src/tools.ts#L112) |
 | send and connect card | 15000 bytes JSON-escaped, in its largest form with the session line | [control.ts:15](../src/control.ts#L15), [:441-449](../src/control.ts#L441-L449) |
@@ -702,7 +705,7 @@ The Main group belongs to the hub core, so no session's tools can reach it.
 | chat list read | one command, `count=1000000` | [tools.ts:111](../src/tools.ts#L111) |
 | error details | 500 characters | [log.ts:5](../src/log.ts#L5) |
 | progress interval | 60 s | [messages.ts:4](../src/messages.ts#L4) |
-| expiry tick | 60 s | [actions.ts:9](../src/actions.ts#L9) |
+| longest timer delay | 2147483647 ms, the Node limit | [messages.ts:5](../src/messages.ts#L5) |
 | delivery wait at stop | 10 s, polled every 100 ms | [core.ts:8-9](../src/core.ts#L8-L9) |
 | display name | 50 characters, `mkValidName` rules | [messages.ts:8-9](../src/messages.ts#L8-L9), [:238-260](../src/messages.ts#L238-L260) |
 | session idle close | 10 min | [daemon.ts:18](../src/daemon.ts#L18) |

@@ -1,12 +1,11 @@
 import {errorText, log, logError, oneLine} from "./log"
-import {Changes, Collected, ToolCall, nextChange, reportProgress, utcMinutes} from "./messages"
+import {Changes, Collected, ToolCall, maxTimer, nextChange, reportProgress, utcMinutes} from "./messages"
 import type {ConnectInput, LeaveInput, PlanSummary, SendInput} from "./tools"
 
 export type Mode = "requests" | "host"
 export type State = "pending" | "performing" | "done" | "failed" | "rejected" | "expired"
 
 const progressTick = 60_000
-const expiryTick = 60_000
 const maxPending = 20
 const maxPerforming = 20
 
@@ -99,7 +98,7 @@ export class Actions {
   private stopping = false
   private readonly abortPerforms = new AbortController()
   private readonly actions = new Map<number, Action>()
-  private readonly expiry = setInterval(() => this.expireDue(), expiryTick).unref()
+  private readonly expiries = new Map<number, NodeJS.Timeout>()
   private readonly posting = new Map<number, Promise<boolean>>()
   private readonly outcomes = new Set<Promise<void>>()
 
@@ -148,6 +147,7 @@ export class Actions {
     if (refusal !== undefined) throw new ToolError(refusal)
     this.next++
     this.actions.set(n, action)
+    this.scheduleExpiry(action)
     const {what, detail} = summary(action, oneLine)
     log(`Action ${n} of session ${session}: ${what}${detail}`)
     const posting = this.post(action)
@@ -165,21 +165,24 @@ export class Actions {
   }
 
   remove(action: Action): void {
-    this.actions.delete(action.n)
+    if (!this.actions.delete(action.n)) return
+    clearTimeout(this.expiries.get(action.n))
+    this.expiries.delete(action.n)
     action.stopCollecting?.()
+  }
+
+  openCall(action: Action): void {
+    action.open++
+  }
+
+  closeCall(action: Action): void {
+    action.open--
+    this.forgetExpired(action)
   }
 
   expireDue(): void {
     const now = Date.now()
-    for (const action of this.all().filter(({expires}) => expires <= now)) {
-      if (action.state === "pending") {
-        this.decide(action, "expired")
-        log(`Action ${action.n} expired.`)
-        this.updateCard(action)
-      } else if (isDecided(action.state) && action.open === 0) {
-        this.remove(action)
-      }
-    }
+    for (const action of this.all().filter(({expires}) => expires <= now)) this.expire(action)
   }
 
   async decided(action: Action, call: ToolCall): Promise<boolean> {
@@ -218,7 +221,8 @@ export class Actions {
 
   async stop(): Promise<number> {
     this.stopping = true
-    clearInterval(this.expiry)
+    for (const timer of this.expiries.values()) clearTimeout(timer)
+    this.expiries.clear()
     await Promise.all(this.posting.values())
     const stopped = this.all().filter(({state}) => state === "pending" || state === "performing")
     for (const action of stopped) action.interrupted = true
@@ -226,6 +230,24 @@ export class Actions {
     if (!this.lost) await Promise.all(stopped.map(action => this.hooks.outcome(action).catch(error => logError(`action ${action.n} card`, error))))
     await Promise.allSettled(this.outcomes)
     return stopped.length
+  }
+
+  private scheduleExpiry(action: Action): void {
+    const timer = setTimeout(() => this.expire(action), Math.min(action.expires - Date.now(), maxTimer))
+    this.expiries.set(action.n, timer.unref())
+  }
+
+  private expire(action: Action): void {
+    // Timers follow the monotonic clock and expires is wall-clock time, so a timer can fire before it.
+    if (action.expires > Date.now()) return this.scheduleExpiry(action)
+    if (action.state !== "pending") return this.forgetExpired(action)
+    this.decide(action, "expired")
+    log(`Action ${action.n} expired.`)
+    this.updateCard(action)
+  }
+
+  private forgetExpired(action: Action): void {
+    if (isDecided(action.state) && action.open === 0 && action.expires <= Date.now()) this.remove(action)
   }
 
   private async post(action: Action): Promise<boolean> {
@@ -264,6 +286,7 @@ export class Actions {
   private decide(action: Action, state: State): void {
     action.state = state
     action.changes.notify()
+    this.forgetExpired(action)
   }
 
   private updateCard(action: Action): void {
