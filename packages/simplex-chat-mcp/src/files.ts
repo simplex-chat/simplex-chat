@@ -1,5 +1,5 @@
 import {createHash, randomBytes} from "crypto"
-import {chmodSync, existsSync, mkdirSync, openSync, readFileSync, readdirSync, statSync, truncateSync, unlinkSync, writeFileSync} from "fs"
+import {chmodSync, existsSync, fchmodSync, mkdirSync, linkSync, openSync, readFileSync, readdirSync, statSync, truncateSync, unlinkSync, writeFileSync} from "fs"
 import {homedir, tmpdir} from "os"
 import {join, resolve} from "path"
 import {ExitError} from "./log"
@@ -68,7 +68,9 @@ export function logFile(root: string): string {
 export function openLog(root: string): number {
   const file = logFile(root)
   if (existsSync(file) && statSync(file).size > maxLogBytes) truncateSync(file)
-  return openSync(file, "a", 0o600)
+  const fd = openSync(file, "a", 0o600)
+  if (process.platform !== "win32") fchmodSync(fd, 0o600)
+  return fd
 }
 
 export function createDataFolder(dir: string): void {
@@ -96,13 +98,17 @@ export function releaseLock(dir: string): void {
 export function serverToken(dir: string): string {
   const file = join(dir, "token")
   const token = randomBytes(32).toString("base64url")
+  const temp = join(dir, `token.${process.pid}.${randomBytes(6).toString("hex")}.tmp`)
+  writePrivateFile(temp, `${token}\n`)
   try {
-    writeFileSync(file, `${token}\n`, {flag: "wx", mode: 0o600})
+    linkSync(temp, file)
     return token
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error
     if (process.platform !== "win32") chmodSync(file, 0o600)
     return readFileSync(file, "utf8").trim()
+  } finally {
+    unlinkSync(temp)
   }
 }
 

@@ -1,5 +1,6 @@
 import {spawnSync} from "child_process"
-import {chmodSync, closeSync, existsSync, fstatSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync} from "fs"
+import * as fs from "fs"
+import {chmodSync, closeSync, existsSync, fstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync} from "fs"
 import {tmpdir} from "os"
 import {join} from "path"
 import {LockedError, acquireLock, createDataFolder, dataRoot, hubFolder, logFile, openLog, readSessionFile, releaseLock, serverToken, sessionFolder, sessionNumbers, socketPath, writeSessionFile} from "../../src/files"
@@ -131,6 +132,39 @@ describe("token creation", () => {
     expect(readFileSync(join(root, "token"), "utf8")).toBe(`${token}\n`)
     rmSync(root, {recursive: true, force: true})
   })
+
+  it("is complete when it appears and loses no race", () => {
+    const root = mkdtempSync(join(tmpdir(), "simplex-mcp-token-"))
+    const linkSync = fs.linkSync
+    const seen: string[] = []
+    const spy = jest.spyOn(fs, "linkSync").mockImplementation((existing, created) => {
+      seen.push(readFileSync(existing, "utf8"))
+      if (seen.length === 1) {
+        writeFileSync(join(root, "winner"), "winner\n")
+        linkSync(join(root, "winner"), created)
+      }
+      linkSync(existing, created)
+    })
+    try {
+      expect(serverToken(root)).toBe("winner")
+      expect(seen).toHaveLength(1)
+      expect(seen[0]).toMatch(/^[A-Za-z0-9_-]{43}\n$/)
+      fs.rmSync(join(root, "winner"))
+      expect(readdirSync(root)).toEqual(["token"])
+      expect(readFileSync(join(root, "token"), "utf8")).toBe("winner\n")
+    } finally {
+      spy.mockRestore()
+      rmSync(root, {recursive: true, force: true})
+    }
+  })
+
+  it("leaves only the token after creating it", () => {
+    const root = mkdtempSync(join(tmpdir(), "simplex-mcp-token-"))
+    const token = serverToken(root)
+    expect(readdirSync(root)).toEqual(["token"])
+    expect(readFileSync(join(root, "token"), "utf8")).toBe(`${token}\n`)
+    rmSync(root, {recursive: true, force: true})
+  })
 })
 
 describe("daemon log", () => {
@@ -146,8 +180,11 @@ describe("daemon log", () => {
     rmSync(root, {recursive: true, force: true})
   })
 
-  it("is created private", () => {
+  it("is created private and made private again when it exists", () => {
     const root = mkdtempSync(join(tmpdir(), "simplex-mcp-log-"))
+    closeSync(openLog(root))
+    expect(statSync(logFile(root)).mode & 0o777).toBe(0o600)
+    chmodSync(logFile(root), 0o644)
     closeSync(openLog(root))
     expect(statSync(logFile(root)).mode & 0o777).toBe(0o600)
     rmSync(root, {recursive: true, force: true})
