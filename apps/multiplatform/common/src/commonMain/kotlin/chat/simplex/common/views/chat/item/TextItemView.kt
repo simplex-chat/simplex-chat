@@ -68,21 +68,24 @@ private fun openMarkdownModal(modal: Format.Modal) {
 }
 
 private fun showFullProfileDescription(description: String) {
-  ModalManager.end.showModalCloseable { _ ->
-    ColumnWithScrollBar {
-      AppBarTitle(generalGetString(MR.strings.profile_description__field))
-      val parsed = parseToMarkdownText(description)
-      MarkdownText(
-        description,
-        parsed?.formattedText,
-        parsed?.markdownBlocks,
-        toggleSecrets = true,
-        style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground, lineHeight = 22.sp),
-        uriHandler = LocalUriHandler.current,
-        linkMode = chatModel.simplexLinkMode.value,
-        modifier = Modifier.padding(horizontal = DEFAULT_PADDING).padding(bottom = DEFAULT_PADDING),
-        blockLayout = true,
-      )
+  if (ModalManager.end.isTopModalOpen(ModalViewId.PROFILE_DESCRIPTION)) ModalManager.end.closeModal()
+  ModalManager.end.showModalCloseable(id = ModalViewId.PROFILE_DESCRIPTION) { _ ->
+    key(this) {
+      ColumnWithScrollBar {
+        AppBarTitle(generalGetString(MR.strings.profile_description__field))
+        val parsed = parseToMarkdownText(description)
+        MarkdownText(
+          description,
+          parsed?.formattedText,
+          parsed?.markdownBlocks,
+          toggleSecrets = true,
+          style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground, lineHeight = 22.sp),
+          uriHandler = LocalUriHandler.current,
+          linkMode = chatModel.simplexLinkMode.value,
+          modifier = Modifier.padding(horizontal = DEFAULT_PADDING).padding(bottom = DEFAULT_PADDING),
+          blockLayout = true,
+        )
+      }
     }
   }
 }
