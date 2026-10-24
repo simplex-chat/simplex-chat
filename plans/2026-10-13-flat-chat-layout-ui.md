@@ -76,7 +76,7 @@ meta placement    never above the content; the row at least as tall as the time
 meta copy         FontWeight.Normal; icon spaces at the body1 size in dp; time and timer text at 12sp
                   conditions of CIMetaView, file encryption and signature included; tall status icon condition shared with CIMetaView
                   one more space after the 17dp icons: sent and received status, via proxy
-event text        direction of the layout; separator and copy passed together as ts by ChatEventWithMeta; no line limit (D23)
+event text        layout direction in both layouts (unspecified text direction); separator and copy passed together as ts by ChatEventWithMeta; no line limit (D23)
 meta copy mark    U+200E (left-to-right layout) or U+200F (right-to-left) before the copy, so the copy stays at the line end after text in the other direction
 event time        joined to the last word by no-break spaces
 go-to button      in the gutter, centred on the message, below the avatar when the message is shorter
@@ -126,7 +126,7 @@ views/chat/item/ChatItemView.kt          alignEnd = sent && !terminal; item clic
 views/chat/item/FramedItemView.kt        transparent background; headers and quote without background; quoteBar; mediaModifier; cardModifier; thumbnailClip
                                          CIMarkdownText: parameter terminalTop plus terminalHeadingGap, no bottom padding, terminal text style, file encryption and signature for the copy
                                          reservesMeta: metaReserved, caption of images, videos, voice and chat links, bottom gap without text; clipChatItem skipped
-                                         emoji: TERMINAL_EMOJI_* paddings, not stretched; quote row: TERMINAL_BLOCK_* paddings, icons without top padding
+                                         emoji: TERMINAL_EMOJI_* paddings, not stretched, in a box of the item width; quote row: TERMINAL_BLOCK_* paddings, icons without top padding
                                          CHAT_ITEM_TEXT_PADDING (text edge); classic vertical text padding named CHAT_ITEM_TEXT_VERTICAL_PADDING
 views/chat/item/MarkdownBlocks.kt        Modifier.quoteBar, shared with Markdown quotes; Markdown quote text with terminalTextStyle and the colour rule
                                          heading scale TERMINAL_HEADING_RATIO, Modifier.headingBox
@@ -142,7 +142,7 @@ views/chat/item/CIMetaView.kt            reserveSpaceForMeta with span parameter
                                          terminalReserveSpaceForMeta: direction mark, icon spaces in dp; tallStatusIcon shared with CIMetaText
                                          time style with lineHeightColor
 views/chat/item/CIChatFeatureView.kt     merged feature icons: one event line high, centred in terminal rows
-views/chat/item/CIEventView.kt           chatEventPadding(), chatEventTextStyle() with the layout direction, ChatEventWithMeta (separator and time or copy as ts)
+views/chat/item/CIEventView.kt           chatEventPadding(), chatEventTextStyle(), ChatEventWithMeta (separator and time or copy as ts)
                                          CIEventView without a line limit in terminal rows (D23)
 item views with ItemWithMeta             EmojiItemView, CIVoiceView, CICallItemView, DeletedItemView, MarkedDeletedItemView
                                          IntegrityErrorItemView, CIRcvDecryptionError, CIGroupInvitationView
@@ -181,7 +181,7 @@ theme writes    chatLayout kept (agent profile plan, section 6)
 `terminalRowGap` and `terminalHeadingGap`:
 
 - oldest item; close messages: 0
-- large gap; sender row; next to an event: level 3 gap
+- large gap; sender row; next to an event: `TERMINAL_LEVEL_STEP`
 - heading at the item top: row gap, no heading gap
 - heading below a quote or a forwarded header: heading gap, no row gap
 - heading not first; text without heading: neither
@@ -196,6 +196,16 @@ theme writes    chatLayout kept (agent profile plan, section 6)
 - copy text: direction mark, the classic spaces, one more space after the tall status and via-proxy icons
 - icon spaces: one width at font scales 0.7, 0.75, 1 and 1.3; the time scaled with the font
 - copy after words in the other direction on a wrapped last line: at the line end, in both directions
+
+`apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/TerminalMetaLayoutTest.kt`, `ItemWithMeta` in terminal rows:
+
+- time baseline on the last baseline of the content
+- last line with room: time beside it; without room: `TERMINAL_META_GAP` under the content, the row taller
+- last block at the bottom with the time beside it: `TERMINAL_BLOCK_BOTTOM_GAP` added
+- content without a baseline: time `TERMINAL_META_GAP` above the content bottom
+- content shorter than the time: time at the top, the row as tall as the time
+- overlay meta when content and time exceed the row: at the bottom end of the content
+- last line with room, right-to-left
 
 Checked on desktop on 2026-10-21:
 

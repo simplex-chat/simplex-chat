@@ -370,7 +370,7 @@ fun FramedItemView(
               }
             }
             if (ci.file == null && ci.formattedText == null && !ci.meta.isLive && isShortEmoji(ci.content.text)) {
-              Box(if (terminal) Modifier.padding(start = CHAT_ITEM_TEXT_PADDING, top = TERMINAL_EMOJI_TOP_GAP.toDp(), end = CHAT_ITEM_TEXT_PADDING, bottom = TERMINAL_EMOJI_BOTTOM_GAP.toDp()) else Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
+              Box(if (terminal) Modifier.fillMaxWidth().padding(start = CHAT_ITEM_TEXT_PADDING, top = TERMINAL_EMOJI_TOP_GAP.toDp(), end = CHAT_ITEM_TEXT_PADDING, bottom = TERMINAL_EMOJI_BOTTOM_GAP.toDp()) else Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
                 Column(
                   if (terminal) Modifier.messageLastLine() else Modifier.padding(bottom = 2.dp).fillMaxWidth(),
                   horizontalAlignment = Alignment.CenterHorizontally

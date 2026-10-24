@@ -6,11 +6,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.*
-import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.ChatItem
@@ -26,7 +23,6 @@ fun CIEventView(text: AnnotatedString) {
 fun chatEventTextStyle(base: TextStyle = LocalTextStyle.current): TextStyle =
   if (LocalTerminalLayout.current) {
     base.merge(terminalTextStyle(12.sp, MaterialTheme.colors.secondary))
-      .copy(textDirection = if (LocalLayoutDirection.current == LayoutDirection.Ltr) TextDirection.Ltr else TextDirection.Rtl)
   } else {
     base
   }

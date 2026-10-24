@@ -122,7 +122,7 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 | `views/chat/ContactPreferences.kt` | PC2, PC8 | Medium | Per-contact feature preferences |
 | `views/chat/ChatItemInfoView.kt` | PC2, PC3 | Low | Message delivery detail |
 | `views/chat/ChatItemsLoader.kt` | PC2, PC3 | Medium | Pagination and message loading logic |
-| `views/chat/ChatItemsMerger.kt` | PC2, PC3 | Medium | Merges incremental message updates |
+| `views/chat/ChatItemsMerger.kt` | PC2, PC3, PC32 | Medium | Merges incremental message updates |
 | `views/chat/VerifyCodeView.kt` | PC13 | Medium | Contact security code verification |
 | `views/chat/ScanCodeView.kt` | PC13 | Low | QR code scanning for verification |
 | `views/chat/CommandsMenuView.kt` | PC4 | Low | Slash-command menu |
@@ -137,14 +137,15 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 |-------------|--------------------------|------------|-------|
 | `views/chat/item/ChatItemView.kt` | PC2, PC3, PC5, PC6, PC7, PC8, PC32 | High | Root chat item renderer with context menus |
 | `views/chat/item/TextItemView.kt` | PC2, PC3, PC4, PC32 | Medium | Text message bubble rendering |
+| `views/chat/item/MarkdownBlocks.kt` | PC4, PC32 | Medium | Block Markdown rendering; terminal block gaps and headings |
 | `views/chat/item/FramedItemView.kt` | PC4, PC6, PC10, PC11, PC32 | Medium | Framed (quoted/forwarded) message container |
 | `views/chat/item/TerminalItemView.kt` | PC2, PC3, PC32 | Medium | Terminal layout rows, sender rows, time placement |
 | `views/chat/item/CIImageView.kt` | PC10 | Medium | Image message rendering |
 | `views/chat/item/CIVideoView.kt` | PC10 | Medium | Video message rendering |
-| `views/chat/item/CIFileView.kt` | PC10 | Medium | File message rendering |
+| `views/chat/item/CIFileView.kt` | PC10, PC32 | Medium | File message rendering |
 | `views/chat/item/CIVoiceView.kt` | PC9, PC32 | Medium | Voice message rendering and playback |
 | `views/chat/item/EmojiItemView.kt` | PC5, PC32 | Low | Emoji reaction display |
-| `views/chat/item/CIMetaView.kt` | PC2, PC3, PC8 | Low | Timestamp, delivery status, timed message indicator |
+| `views/chat/item/CIMetaView.kt` | PC2, PC3, PC8, PC32 | Low | Timestamp, delivery status, timed message indicator |
 | `views/chat/item/CICallItemView.kt` | PC17, PC32 | Low | Call event item rendering |
 | `views/chat/item/CIEventView.kt` | PC3, PC14, PC16, PC32 | Low | Group event item rendering |
 | `views/chat/item/CIGroupInvitationView.kt` | PC3, PC14, PC32 | Low | Group invitation item rendering |
