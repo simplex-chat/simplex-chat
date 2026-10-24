@@ -104,15 +104,11 @@ PRODUCTS = [
 APPLE_DOWN_LIMIT = 0.02
 POINT_KEY_SCALE = 10**10
 APPLE_MANUAL_PRICES = {
-    ("ROU", "SUBSCR_BADGE_SUPPORTER_YEAR_01"): 200,
-    ("TUR", "SUBSCR_BADGE_SUPPORTER_YEAR_01"): 1500,
+    ("RON", 1, "Supporter annual"): 200,
+    ("TRY", 2, "Supporter annual"): 1500,
 }
 PLAY_MANUAL_PRICES = {
     ("SA", "subscr-badge-legend-year-01"): 1599,
-}
-APPLE_MONTHLY_OF_ANNUAL = {
-    "SUBSCR_BADGE_SUPPORTER_YEAR_01": "SUBSCR_BADGE_SUPPORTER_MONTH_01",
-    "SUBSCR_BADGE_LEGEND_YEAR_01": "SUBSCR_BADGE_LEGEND_MONTH_01",
 }
 APPLE_COLUMNS = ["type", "product_id", "territory", "currency", "current_price", "scheduled_price", "scheduled_date", "price"]
 PLAY_COLUMNS = ["type", "product_id", "base_plan_id", "region", "currency", "current_price", "price"]
@@ -262,7 +258,7 @@ def build_settings(ws, rate_date):
 
     product_title = digit_last + 3
     put(ws, product_title, 1, "Store products", bold=True)
-    put_header(ws, product_title + 1, ["Store", "Product ID", "Base plan ID", "Priced as", "Key", "Monthly product"])
+    put_header(ws, product_title + 1, ["Store", "Product ID", "Base plan ID", "Priced as", "Key"])
     product_row = product_title + 2
     for offset, (store, product_id, base_plan_id, priced_as) in enumerate(PRODUCTS):
         row = product_row + offset
@@ -271,18 +267,16 @@ def build_settings(ws, rate_date):
         put(ws, row, 3, base_plan_id or None)
         put(ws, row, 4, priced_as, color=INPUT_COLOR)
         put(ws, row, 5, f'=A{row}&"|"&B{row}&"|"&C{row}')
-        put(ws, row, 6, APPLE_MONTHLY_OF_ANNUAL.get(product_id) if store == "apple" else None)
     product_last = product_row + len(PRODUCTS) - 1
-    put_note(ws, product_last + 1, "Monthly product: the Apple subscription whose price point sets the annual target.")
 
-    points_title = product_last + 3
+    points_title = product_last + 2
     put(ws, points_title, 1, "Apple price points", bold=True)
     apple_limit_row = points_title + 1
     put(ws, apple_limit_row, 1, "Round-down limit")
     put(ws, apple_limit_row, 2, APPLE_DOWN_LIMIT, "0.0%", color=INPUT_COLOR)
-    put_note(ws, apple_limit_row + 1, "An Apple price is the target when Apple offers it. Otherwise it is the highest round price point at or below the target when that is within the limit, else the lowest round price point above it.")
-    put_note(ws, apple_limit_row + 2, "Round: a whole number, or a multiple of 0.5 below 10; the Apple points tab lists all points and the round ones. Target: the workbook price; for annual products, annual months × the point price of the monthly product.")
-    put_note(ws, apple_limit_row + 3, "A value in the Apple manual column of the Apple tab replaces the Apple price, and one in the Play manual column of the Play tab replaces the Play price. Points: apple-price-points.csv.")
+    put_note(ws, apple_limit_row + 1, "Apple prices are calculated on the Apple prices tab, one row per currency and tier. A price is the target when Apple offers it; otherwise the highest round price point at or below the target when that is within the limit, else the lowest round price point above it.")
+    put_note(ws, apple_limit_row + 2, "Round: a whole number, or a multiple of 0.5 below 10; the Apple points tab lists the round points and the others. Target: the workbook price; for annual prices, annual months × the Apple monthly price of the same row.")
+    put_note(ws, apple_limit_row + 3, "A value in the Manual columns of the Apple prices tab replaces the Apple price, and one in the Play manual column of the Play tab replaces the Play price. Points: apple-price-points.csv.")
 
     export_title = apple_limit_row + 5
     put(ws, export_title, 1, "Import", bold=True)
@@ -291,7 +285,7 @@ def build_settings(ws, rate_date):
     put_note(ws, export_title + 3, "Both import scripts read a decimal point (3.5), so save from a region that writes 3.5, not 3,5.")
     put_note(ws, export_title + 4, f"Rates: rates.csv, Frankfurter, {rate_date}. Price levels: price-levels.csv.")
 
-    set_widths(ws, [22, 38, 34, 20, 44, 36])
+    set_widths(ws, [22, 38, 34, 20, 44])
     return {
         "tier1_level": f"Settings!$B${tier_row}",
         "tier2_level": f"Settings!$B${tier_row + 1}",
@@ -308,7 +302,6 @@ def build_settings(ws, rate_date):
         "product_cells": f"D{product_row}:D{product_last}",
         "product_priced_as": f"Settings!$D${product_row}:$D${product_last}",
         "product_key": f"Settings!$E${product_row}:$E${product_last}",
-        "product_monthly": f"Settings!$F${product_row}:$F${product_last}",
         "apple_down_limit": f"Settings!$B${apple_limit_row}",
     }
 
@@ -476,72 +469,109 @@ def build_points(ws, by_currency):
     currencies = sorted(by_currency)
     points = [(currency, point, (index + 1) * POINT_KEY_SCALE + point) for index, currency in enumerate(currencies) for point in sorted(by_currency[currency])]
     round_points = [point for point in points if is_round(point[1])]
-    put_header(ws, 1, ["Currency", "Price", "Key"])
-    put_header(ws, 1, ["Round currency", "Round price", "Round key"], first_column=5)
+    other_points = [point for point in points if not is_round(point[1])]
+    put_header(ws, 1, ["Round currency", "Round price", "Round key"])
+    put_header(ws, 1, ["Other currency", "Other price", "Other key"], first_column=5)
     put_header(ws, 1, ["Currencies"], first_column=9)
-    put_rows(ws, 1, points, [None, None, "0.00"])
-    put_rows(ws, 5, round_points, [None, None, "0.00"])
+    put_rows(ws, 1, round_points, [None, None, "0.00"])
+    put_rows(ws, 5, other_points, [None, None, "0.00"])
     put_rows(ws, 9, [(currency,) for currency in currencies], [None])
-    finish_table(ws, 3, len(points) + 1)
-    set_widths(ws, [10, 14, 18, 3, 15, 14, 18, 3, 12])
-    put_note(ws, len(points) + 3, "Key: the currency's position in Currencies × 10^10 + price; both lists are sorted by key.")
+    finish_table(ws, 3, len(round_points) + 1)
+    set_widths(ws, [15, 14, 18, 3, 15, 14, 18, 3, 12])
+    put_note(ws, len(round_points) + 3, "Key: the currency's position in Currencies × 10^10 + price; both lists are sorted by key.")
     return {
         "currencies": f"'Apple points'!$I$2:$I${len(currencies) + 1}",
-        "keys": f"'Apple points'!$C$2:$C${len(points) + 1}",
-        "round_currency": f"'Apple points'!$E$2:$E${len(round_points) + 1}",
-        "round_price": f"'Apple points'!$F$2:$F${len(round_points) + 1}",
-        "round_keys": f"'Apple points'!$G$2:$G${len(round_points) + 1}",
+        "round_currency": f"'Apple points'!$A$2:$A${len(round_points) + 1}",
+        "round_price": f"'Apple points'!$B$2:$B${len(round_points) + 1}",
+        "round_keys": f"'Apple points'!$C$2:$C${len(round_points) + 1}",
+        "other_keys": f"'Apple points'!$G$2:$G${len(other_points) + 1}",
     }
 
 
-def apple_columns(settings, prices, points, apple_rows):
-    last_row = len(apple_rows) + 1
-    rows_by_number = dict(enumerate(apple_rows, start=2))
+def offered_formula(keys, currency_key, price):
+    return f"IFERROR(INDEX({keys},MATCH({currency_key}+{price},{keys},1))={currency_key}+{price},FALSE)"
 
-    def column(letter, name):
-        return f"${letter[name]}"
 
-    def offered(price, row, letter):
-        key = f"({column(letter, 'Currency key')}{row}+{price})"
-        return f"IFERROR(INDEX({points['keys']},MATCH({key},{points['keys']},1))={key},FALSE)"
+def apple_price_formula(settings, points, currency, currency_key, target, found_row, manual):
+    below = f"IF({found_row}=0,0,IF(INDEX({points['round_currency']},{found_row})={currency},INDEX({points['round_price']},{found_row}),0))"
+    above = f"IFERROR(IF(INDEX({points['round_currency']},{found_row}+1)={currency},INDEX({points['round_price']},{found_row}+1),0),0)"
+    round_target = f"OR({target}=INT({target}),AND({target}<10,{target}*2=INT({target}*2)))"
+    offered = f"IF({round_target},{below}={target},{offered_formula(points['other_keys'], currency_key, target)})"
+    nearby = f"IF(OR({below}>={target}*(1-{settings['apple_down_limit']}),{above}=0),{below},{above})"
+    return f'=IF({manual}<>"",{manual},IF({offered},{target},{nearby}))'
 
-    def price_point(target, row, letter):
-        manual = f"{column(letter, 'Apple manual')}{row}"
-        below_row = f"IFERROR(MATCH({column(letter, 'Currency key')}{row}+{target},{points['round_keys']},1),0)"
-        below = f"IF({below_row}=0,0,IF(INDEX({points['round_currency']},{below_row})=$D{row},INDEX({points['round_price']},{below_row}),0))"
-        above = f"IFERROR(IF(INDEX({points['round_currency']},{below_row}+1)=$D{row},INDEX({points['round_price']},{below_row}+1),0),0)"
-        nearby = f'IF(OR({below}>={target}*(1-{settings["apple_down_limit"]}),{above}=0),{below},{above})'
-        return f'=IF({manual}<>"",{manual},IF({offered(target, row, letter)},{target},{nearby}))'
+
+def apple_warning_formula(settings, points, currency, currency_key, price, manual):
+    offered = f"OR({offered_formula(points['round_keys'], currency_key, price)},{offered_formula(points['other_keys'], currency_key, price)})"
+    avoided = avoided_formula(settings, price, currency)
+    return f'=IF({price}=0,"no round price point",IF(IF({manual}<>"",NOT({offered}),FALSE),"not an Apple price point",IF({avoided},"avoided number","")))'
+
+
+def build_apple_prices(ws, currencies, settings, prices, points, countries):
+    price_count = 2 * len(FAMILIES)
+    price_names = [f"{name} {period}" for name, _, _ in FAMILIES for period in ("monthly", "annual")]
+    headers = ["Key", "Currency", "Tier", "Apple territories"]
+    blocks = ["Apple", "Warning", "Manual", "Workbook", "Target", "Row"]
+    block_start = {block: len(headers) + 1 + offset * price_count for offset, block in enumerate(blocks)}
+    key_column = len(headers) + len(blocks) * price_count + 1
+    put_header(ws, 1, headers)
+    for block, start in block_start.items():
+        for index in range(price_count):
+            name = f"INDEX({prices['names']},{index + 1})"
+            put(ws, 1, start + index, f"={name}" if block == "Apple" else f'="{block} "&{name}', bold=True).fill = HEADER_FILL
+    put(ws, 1, key_column, "Currency key", bold=True).fill = HEADER_FILL
+    pairs = [(currency, tier) for currency in currencies for tier, _, _ in TIERS]
+    last_row = len(pairs) + 1
+
+    def cell(block, index, row):
+        return f"${get_column_letter(block_start[block] + index)}{row}"
+
+    for row, (currency, tier) in enumerate(pairs, start=2):
+        currency_key = f"${get_column_letter(key_column)}{row}"
+        put(ws, row, 1, f'=B{row}&"|"&C{row}', color=NOTE_COLOR)
+        put(ws, row, 2, currency)
+        put(ws, row, 3, tier)
+        put(ws, row, 4, f"=COUNTIFS({countries['apple_currency']},$B{row},{countries['tier']},$C{row})")
+        for index, name in enumerate(price_names):
+            target, found_row, manual, apple = (cell(block, index, row) for block in ("Target", "Row", "Manual", "Apple"))
+            target_formula = f"={cell('Workbook', index, row)}" if index % 2 == 0 else f"={settings['annual_months']}*{cell('Apple', index - 1, row)}"
+            put(ws, row, block_start["Workbook"] + index, f"=INDEX({prices['prices']},MATCH($A{row},{prices['key']},0),{index + 1})")
+            put(ws, row, block_start["Target"] + index, target_formula)
+            put(ws, row, block_start["Row"] + index, f"=IFERROR(MATCH({currency_key}+{target},{points['round_keys']},1),0)")
+            put(ws, row, block_start["Manual"] + index, APPLE_MANUAL_PRICES.get((currency, tier, name)), color=INPUT_COLOR)
+            put(ws, row, block_start["Apple"] + index, apple_price_formula(settings, points, f"$B{row}", currency_key, target, found_row, manual))
+            put(ws, row, block_start["Warning"] + index, apple_warning_formula(settings, points, f"$B{row}", currency_key, apple, manual))
+        put(ws, row, key_column, f"=MATCH($B{row},{points['currencies']},0)*{POINT_KEY_SCALE}", "0")
+    first_apple, last_apple = get_column_letter(block_start["Apple"]), get_column_letter(block_start["Apple"] + price_count - 1)
+    first_warning, last_warning = get_column_letter(block_start["Warning"]), get_column_letter(block_start["Warning"] + price_count - 1)
+    first_manual, last_manual = get_column_letter(block_start["Manual"]), get_column_letter(block_start["Manual"] + price_count - 1)
+    add_validation(ws, f"{first_manual}2:{last_manual}{last_row}", "Enter a positive Apple price point or leave empty.", type="decimal", operator="greaterThan", formula1="0", allow_blank=True)
+    ws.conditional_formatting.add(f"A2:{get_column_letter(key_column)}{last_row}", FormulaRule(formula=["$D2=0"], font=Font(color=UNUSED_COLOR)))
+    ws.conditional_formatting.add(f"{first_apple}2:{last_apple}{last_row}", FormulaRule(formula=[f'{first_warning}2<>""'], fill=HIGHLIGHT_FILL))
+    finish_table(ws, key_column, last_row)
+    set_widths(ws, [9, 9, 5, 10, *[16] * (len(blocks) * price_count), 16])
+    put_note(ws, last_row + 2, "One row per Apple currency and tier. Apple: the price sent to Apple. Manual: replaces the Apple price. Workbook: the price from the Prices tab.")
+    put_note(ws, last_row + 3, "Target: the workbook price; for annual prices, annual months × the Apple monthly price. Row: the position of the highest round price point at or below the target on the Apple points tab.")
+    put_note(ws, last_row + 4, "Grey rows: no Apple territory uses this currency in this tier.")
+    return {
+        "key": f"'Apple prices'!$A$2:$A${last_row}",
+        "names": f"'Apple prices'!${first_apple}$1:${last_apple}$1",
+        "prices": f"'Apple prices'!${first_apple}$2:${last_apple}${last_row}",
+        "warnings": f"'Apple prices'!${first_warning}$2:${last_warning}${last_row}",
+    }
+
+
+def apple_columns(prices, apple_prices):
+    def position(row, letter):
+        return f'MATCH(${letter["currency"]}{row}&"|"&${letter["Tier"]}{row},{apple_prices["key"]},0),MATCH(${letter["Priced as"]}{row},{apple_prices["names"]},0)'
 
     def apple_price(row, letter):
-        return price_point(f"{column(letter, 'Point target')}{row}", row, letter)
-
-    def point_price(row, letter):
-        return price_point(f"{column(letter, 'Workbook price')}{row}", row, letter)
-
-    def point_target(row, letter):
-        point, key, monthly, workbook = (column(letter, name) for name in ("Point price", "Key", "Monthly product", "Workbook price"))
-        monthly_price = f'INDEX({point}$2:{point}${last_row},MATCH($C{row}&"|"&{monthly}{row},{key}$2:{key}${last_row},0))'
-        return f'=IF({monthly}{row}="",{workbook}{row},{settings["annual_months"]}*{monthly_price})'
-
-    def warning(row, letter):
-        price = f"{column(letter, 'price')}{row}"
-        avoided = avoided_formula(settings, price, f"$D{row}")
-        return f'=IF({price}=0,"no round price point",IF(NOT({offered(price, row, letter)}),"not an Apple price point",IF({avoided},"avoided number","")))'
-
-    def apple_manual(row, letter):
-        return APPLE_MANUAL_PRICES.get((rows_by_number[row]["territory"], rows_by_number[row]["product_id"]))
+        return f"=INDEX({apple_prices['prices']},{position(row, letter)})"
 
     extra = [
         ("Workbook price", lambda row, letter: workbook_price(prices, row, letter), None, None),
-        ("Currency key", lambda row, letter: f"=MATCH($D{row},{points['currencies']},0)*{POINT_KEY_SCALE}", "0", None),
-        ("Point price", point_price, None, None),
-        ("Monthly product", lambda row, letter: f'=INDEX({settings["product_monthly"]},MATCH("apple|"&$B{row}&"|",{settings["product_key"]},0))&""', None, None),
-        ("Point target", point_target, None, None),
-        ("Apple manual", apple_manual, None, INPUT_COLOR),
-        ("Apple vs workbook", lambda row, letter: f"={column(letter, 'price')}{row}/{column(letter, 'Workbook price')}{row}-1", "0.0%", None),
-        ("Warning", warning, None, None),
-        ("Key", lambda row, letter: f'=$C{row}&"|"&$B{row}', None, None),
+        ("Apple vs workbook", lambda row, letter: f"=${letter['price']}{row}/${letter['Workbook price']}{row}-1", "0.0%", None),
+        ("Warning", lambda row, letter: f'=INDEX({apple_prices["warnings"]},{position(row, letter)})&""', None, None),
     ]
     return apple_price, extra
 
@@ -601,6 +631,7 @@ def main():
     settings_ws = wb.active
     settings_ws.title = "Settings"
     prices_ws = wb.create_sheet("Prices")
+    apple_prices_ws = wb.create_sheet("Apple prices")
     countries_ws = wb.create_sheet("Countries")
     apple_ws = wb.create_sheet("Apple")
     play_ws = wb.create_sheet("Play")
@@ -615,7 +646,8 @@ def main():
     prices = build_prices(prices_ws, currencies, settings, countries, rate_ranges)
     add_validation(settings_ws, settings["product_cells"], "Choose a price column of the Prices sheet.", type="list", formula1=prices["names"], allow_blank=False)
     point_ranges = build_points(points_ws, points)
-    apple_price, apple_extra = apple_columns(settings, prices, point_ranges, apple_rows)
+    apple_prices = build_apple_prices(apple_prices_ws, sorted(set(apple_currency.values())), settings, prices, point_ranges, countries)
+    apple_price, apple_extra = apple_columns(prices, apple_prices)
     apple_last, apple_letter = build_store(apple_ws, APPLE_COLUMNS, apple_rows, "territory", countries["apple_code"], lambda row: f'"apple|"&$B{row}&"|"', settings, countries, rate_ranges, apple_price, apple_extra)
     play_price, play_extra = play_columns(settings, prices, play_rows)
     play_last, play_letter = build_store(play_ws, PLAY_COLUMNS, play_rows, "region", countries["play_code"], lambda row: f'"play|"&$B{row}&"|"&$C{row}', settings, countries, rate_ranges, play_price, play_extra)
@@ -623,9 +655,7 @@ def main():
     add_validation(play_ws, f"{play_manual_column}2:{play_manual_column}{play_last}", "Enter a positive price or leave empty.", type="decimal", operator="greaterThan", formula1="0", allow_blank=True)
     for ws, letter, last_row in ((apple_ws, apple_letter, apple_last), (play_ws, play_letter, play_last)):
         ws.conditional_formatting.add(f"{letter['price']}2:{letter['price']}{last_row}", FormulaRule(formula=[f'${letter["Warning"]}2<>""'], fill=HIGHLIGHT_FILL))
-    manual_column = apple_letter["Apple manual"]
-    add_validation(apple_ws, f"{manual_column}2:{manual_column}{apple_last}", "Enter a positive Apple price point or leave empty.", type="decimal", operator="greaterThan", formula1="0", allow_blank=True)
-    set_widths(apple_ws, [12, 36, 9, 9, 12, 14, 14, 10, 30, 6, 18, 12, 10, 9, 14, 14, 12, 36, 12, 12, 12, 24, 40])
+    set_widths(apple_ws, [12, 36, 9, 9, 12, 14, 14, 10, 30, 6, 18, 12, 10, 9, 14, 12, 24])
     set_widths(play_ws, [12, 26, 32, 7, 9, 12, 10, 30, 6, 18, 12, 10, 9, 14, 12, 18])
     apple_decimals = 'IF(ROUND(Apple!H{row}*10,6)=ROUND(Apple!H{row}*10,0),1,2)'
     build_export(apple_export_ws, "Apple", APPLE_COLUMNS, apple_last, lambda row: f'=FIXED(Apple!H{row},IF(ISNUMBER(SEARCH(".",Apple!E{row})),{apple_decimals.format(row=row)},0),TRUE)')
