@@ -50,8 +50,8 @@ private val msgTailMaxHeightDp = msgTailWidthDp * 1.732f // 60deg
 
 val chatEventStyle = SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.Light, color = CurrentColors.value.colors.secondary)
 
-fun chatEventText(ci: ChatItem, isChannel: Boolean = false): AnnotatedString =
-  chatEventText(ci.content.text(isChannel), ci.timestampText)
+fun chatEventText(ci: ChatItem, isChannel: Boolean = false, ts: String): AnnotatedString =
+  chatEventText(ci.content.text(isChannel), ts)
 
 fun chatEventText(eventText: String, ts: String): AnnotatedString =
   buildAnnotatedString {
@@ -63,6 +63,9 @@ data class ChatItemReactionMenuItem (
   val image: String?,
   val onClick: (() -> Unit)?
 )
+
+private val REACTION_SPACING = 5.dp
+private val REACTION_PADDING = 2.dp
 
 // Spec: spec/client/chat-view.md#ChatItemView
 @Composable
@@ -113,11 +116,14 @@ fun ChatItemView(
   itemSeparation: ItemSeparation,
   preview: Boolean = false,
   swipeOffset: Float = 0f,
+  bubbleInteractionSource: MutableInteractionSource = remember { MutableInteractionSource() },
 ) {
   val cInfo = chat.chatInfo
   val uriHandler = LocalUriHandler.current
   val sent = cItem.chatDir.sent
-  val alignment = if (sent) Alignment.CenterEnd else Alignment.CenterStart
+  val terminal = LocalTerminalLayout.current
+  val alignEnd = sent && !terminal
+  val alignment = if (alignEnd) Alignment.CenterEnd else Alignment.CenterStart
   val showMenu = remember { mutableStateOf(false) }
   val fullDeleteAllowed = remember(cInfo) { cInfo.featureEnabled(ChatFeature.FullDelete) }
   val onLinkLongClick = { _: String -> showMenu.value = true }
@@ -139,7 +145,7 @@ fun ChatItemView(
 
     @Composable
     fun ChatItemReactions() {
-      Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.chatItemOffset(cItem, itemSeparation.largeGap, inverted = true, revealed = true)) {
+      Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.chatItemOffset(cItem, itemSeparation.largeGap, inverted = true, revealed = true).padding(start = if (terminal) CHAT_ITEM_TEXT_PADDING - REACTION_SPACING - REACTION_PADDING else 0.dp)) {
         cItem.reactions.forEach { r ->
           val showReactionMenu = remember { mutableStateOf(false) }
           val reactionMenuItems = remember { mutableStateOf(emptyList<ChatItemReactionMenuItem>()) }
@@ -153,7 +159,7 @@ fun ChatItemView(
             }
           }
 
-          var modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp).clip(RoundedCornerShape(8.dp))
+          var modifier = Modifier.padding(horizontal = REACTION_SPACING, vertical = 2.dp).clip(RoundedCornerShape(8.dp))
           if (cInfo.featureEnabled(ChatFeature.Reactions)) {
             fun showReactionsMenu() {
               when (cInfo) {
@@ -206,7 +212,7 @@ fun ChatItemView(
               )
               .onRightClick { showReactionsMenu() }
           }
-          Row(modifier.padding(2.dp), verticalAlignment = Alignment.CenterVertically) {
+          Row(modifier.padding(REACTION_PADDING), verticalAlignment = Alignment.CenterVertically) {
             ReactionIcon(r.reaction.text, fontSize = 12.sp)
             DefaultDropdownMenu(showMenu = showReactionMenu) {
               reactionMenuItems.value.forEach { m ->
@@ -239,82 +245,19 @@ fun ChatItemView(
       }
     }
 
-    @Composable
-    fun GoToItemInnerButton(alignStart: Boolean, icon: ImageResource, iconSize: Dp = 22.dp, parentActivated: State<Boolean>, onClick: () -> Unit) {
-      val buttonInteractionSource = remember { MutableInteractionSource() }
-      val buttonHovered = buttonInteractionSource.collectIsHoveredAsState()
-      val buttonPressed = buttonInteractionSource.collectIsPressedAsState()
-      val buttonActivated = remember { derivedStateOf { buttonHovered.value || buttonPressed.value } }
-
-      val fullyVisible = parentActivated.value || buttonActivated.value || hoveredItemId.value == cItem.id
-      val mixAlpha = 0.6f
-      val mixedBackgroundColor = if (fullyVisible) {
-        if (MaterialTheme.colors.isLight) {
-          MaterialTheme.colors.secondary.mixWith(Color.White, mixAlpha)
-        } else {
-          MaterialTheme.colors.secondary.mixWith(Color.Black, mixAlpha)
-        }
-      } else {
-        Color.Unspecified
-      }
-      val iconTint = if (fullyVisible) {
-        Color.White
-      } else {
-        if (MaterialTheme.colors.isLight) {
-          MaterialTheme.colors.secondary.mixWith(Color.White, mixAlpha)
-        } else {
-          MaterialTheme.colors.secondary.mixWith(Color.Black, mixAlpha)
-        }
-      }
-
-      IconButton(
-        onClick,
-        Modifier
-          .padding(start = if (alignStart) 0.dp else DEFAULT_PADDING_HALF + 3.dp, end = if (alignStart) DEFAULT_PADDING_HALF + 3.dp else 0.dp)
-          .then(if (fullyVisible) Modifier.background(mixedBackgroundColor, CircleShape) else Modifier)
-          .size(22.dp),
-        interactionSource = buttonInteractionSource
-      ) {
-        Icon(painterResource(icon), null, Modifier.size(iconSize), tint = iconTint)
-      }
-    }
-
-    // improvement could be to track "forwarded from" scope and open it
-    @Composable
-    fun GoToItemButton(alignStart: Boolean, parentActivated: State<Boolean>) {
-      val chatTypeApiIdMsgId = cItem.meta.itemForwarded?.chatTypeApiIdMsgId
-      if (searchIsNotBlank.value) {
-        GoToItemInnerButton(alignStart, MR.images.ic_search, 17.dp, parentActivated) {
-          withBGApi {
-            openChat(secondaryChatsCtx = null, rhId, cInfo.chatType, cInfo.apiId, cItem.id)
-            closeReportsIfNeeded()
-          }
-        }
-      } else if (chatTypeApiIdMsgId != null) {
-        GoToItemInnerButton(alignStart, MR.images.ic_arrow_forward, 22.dp, parentActivated) {
-          val (chatType, apiId, msgId) = chatTypeApiIdMsgId
-          withBGApi {
-            openChat(secondaryChatsCtx = null, rhId, chatType, apiId, msgId)
-            closeReportsIfNeeded()
-          }
-        }
-      }
-    }
-
-    Column(horizontalAlignment = if (cItem.chatDir.sent) Alignment.End else Alignment.Start) {
+    Column(horizontalAlignment = if (alignEnd) Alignment.End else Alignment.Start) {
       val canReply = (cItem.content is CIContent.SndMsgContent || cItem.content is CIContent.RcvMsgContent) &&
           cInfo !is ChatInfo.Local && !cItem.isReport && !cItem.meta.isLive && cItem.meta.itemDeleted == null
       Box {
         Row(verticalAlignment = Alignment.CenterVertically) {
-          val bubbleInteractionSource = remember { MutableInteractionSource() }
         val bubbleHovered = bubbleInteractionSource.collectIsHoveredAsState()
-        if (cItem.chatDir.sent) {
-          GoToItemButton(true, bubbleHovered)
+        if (cItem.chatDir.sent && !terminal) {
+          GoToItemButton(rhId, cInfo, cItem, searchIsNotBlank, hoveredItemId, bubbleHovered, Modifier.padding(end = DEFAULT_PADDING_HALF + 3.dp))
         }
         Column(Modifier.weight(1f, fill = false)) {
           val enterInteraction = remember { HoverInteraction.Enter() }
           LaunchedEffect(highlighted.value, hoveredItemId.value) {
-            if (highlighted.value || hoveredItemId.value == cItem.id) {
+            if ((highlighted.value && !terminal) || hoveredItemId.value == cItem.id) {
               bubbleInteractionSource.emit(enterInteraction)
             } else {
               bubbleInteractionSource.emit(HoverInteraction.Exit(enterInteraction))
@@ -331,7 +274,7 @@ fun ChatItemView(
                     hoveredItemId.value = if (hoveredItemId.value == cItem.id) null else cItem.id
                   }
                   onClick()
-                }, interactionSource = bubbleInteractionSource, indication = LocalIndication.current)
+                }, interactionSource = bubbleInteractionSource, indication = if (terminal) null else LocalIndication.current)
               .onRightClick { showMenu.value = true },
           ) {
             @Composable
@@ -622,24 +565,26 @@ fun ChatItemView(
               }
             }
 
-            fun eventItemViewText(reversedChatItems: List<ChatItem>): AnnotatedString {
+            fun eventItemViewText(reversedChatItems: List<ChatItem>, ts: String): AnnotatedString {
               val memberDisplayName = cItem.memberDisplayName
               val t = mergedGroupEventText(cItem, reversedChatItems)
               return if (!revealed.value && t != null) {
-                chatEventText(t, cItem.timestampText)
+                chatEventText(t, ts)
               } else if (memberDisplayName != null) {
                 buildAnnotatedString {
                   withStyle(chatEventStyle) { append(memberDisplayName) }
                   append(" ")
-                }.plus(chatEventText(cItem, cInfo.isChannel))
+                }.plus(chatEventText(cItem, cInfo.isChannel, ts))
               } else {
-                chatEventText(cItem, cInfo.isChannel)
+                chatEventText(cItem, cInfo.isChannel, ts)
               }
             }
 
             @Composable fun EventItemView() {
               val reversedChatItems = chatsCtx.chatItems.value.asReversed()
-              CIEventView(eventItemViewText(reversedChatItems))
+              ChatEventWithMeta(cItem) { ts ->
+                CIEventView(eventItemViewText(reversedChatItems, ts))
+              }
             }
 
             @Composable fun PendingReviewEventItemView() {
@@ -647,7 +592,7 @@ fun ChatItemView(
                 buildAnnotatedString {
                   withStyle(chatEventStyle.copy(fontWeight = FontWeight.Bold)) { append(cItem.content.text(cInfo.isChannel)) }
                 },
-                Modifier.padding(horizontal = 6.dp, vertical = 6.dp)
+                Modifier.padding(horizontal = chatEventHorizontalPadding(), vertical = 6.dp)
               )
             }
 
@@ -677,7 +622,7 @@ fun ChatItemView(
                 buildAnnotatedString {
                   withStyle(chatEventStyle) { append(annotatedStringResource(sId)) }
                 },
-                Modifier.padding(horizontal = 6.dp, vertical = 6.dp)
+                Modifier.padding(horizontal = chatEventHorizontalPadding(), vertical = 6.dp)
               )
             }
 
@@ -803,8 +748,8 @@ fun ChatItemView(
             }
           }
         }
-        if (!cItem.chatDir.sent) {
-          GoToItemButton(false, bubbleHovered)
+        if (!cItem.chatDir.sent && !terminal) {
+          GoToItemButton(rhId, cInfo, cItem, searchIsNotBlank, hoveredItemId, bubbleHovered, Modifier.padding(start = DEFAULT_PADDING_HALF + 3.dp))
         }
         }
         if (canReply && swipeOffset < 0) {
@@ -1204,9 +1149,11 @@ fun ItemAction(text: String, color: Color = Color.Unspecified, onClick: () -> Un
 }
 
 @Composable
+fun chatItemTailEnabled(): Boolean = remember { appPreferences.chatItemTail.state }.value && !LocalTerminalLayout.current
+
+@Composable
 fun Modifier.chatItemOffset(cItem: ChatItem, tailVisible: Boolean, inverted: Boolean = false, revealed: Boolean): Modifier {
-  val chatItemTail = remember { appPreferences.chatItemTail.state }
-  val style = shapeStyle(cItem, chatItemTail.value, tailVisible, revealed)
+  val style = shapeStyle(cItem, chatItemTailEnabled(), tailVisible, revealed)
 
   val offset = if (style is ShapeStyle.Bubble) {
     if (style.tailVisible) {
@@ -1222,8 +1169,7 @@ fun Modifier.chatItemOffset(cItem: ChatItem, tailVisible: Boolean, inverted: Boo
 @Composable
 fun Modifier.clipChatItem(chatItem: ChatItem? = null, tailVisible: Boolean = false, revealed: Boolean = false): Modifier {
   val chatItemRoundness = remember { appPreferences.chatItemRoundness.state }
-  val chatItemTail = remember { appPreferences.chatItemTail.state }
-  val style = shapeStyle(chatItem, chatItemTail.value, tailVisible, revealed)
+  val style = shapeStyle(chatItem, chatItemTailEnabled(), tailVisible, revealed)
   val cornerRoundness = chatItemRoundness.value.coerceIn(0f, 1f)
 
   return when (style) {
@@ -1366,6 +1312,85 @@ fun shapeStyleWithTail(chatItem: ChatItem? = null, tailEnabled: Boolean, tailVis
     is CIContent.RcvGroupInvitation,
     is CIContent.SndGroupInvitation -> return ShapeStyle.RoundRect(msgRectMaxRadius)
     else -> return ShapeStyle.RoundRect(8.dp)
+  }
+}
+
+val GO_TO_ITEM_BUTTON_SIZE = 22.dp
+
+// improvement could be to track "forwarded from" scope and open it
+@Composable
+fun GoToItemButton(
+  rhId: Long?,
+  cInfo: ChatInfo,
+  cItem: ChatItem,
+  searchIsNotBlank: State<Boolean>,
+  hoveredItemId: State<Long?>,
+  parentActivated: State<Boolean>,
+  modifier: Modifier
+) {
+  val chatTypeApiIdMsgId = cItem.meta.itemForwarded?.chatTypeApiIdMsgId
+  if (searchIsNotBlank.value) {
+    GoToItemInnerButton(cItem, hoveredItemId, parentActivated, modifier, MR.images.ic_search, 17.dp) {
+      withBGApi {
+        openChat(secondaryChatsCtx = null, rhId, cInfo.chatType, cInfo.apiId, cItem.id)
+        closeReportsIfNeeded()
+      }
+    }
+  } else if (chatTypeApiIdMsgId != null) {
+    GoToItemInnerButton(cItem, hoveredItemId, parentActivated, modifier, MR.images.ic_arrow_forward, 22.dp) {
+      val (chatType, apiId, msgId) = chatTypeApiIdMsgId
+      withBGApi {
+        openChat(secondaryChatsCtx = null, rhId, chatType, apiId, msgId)
+        closeReportsIfNeeded()
+      }
+    }
+  }
+}
+
+@Composable
+private fun GoToItemInnerButton(
+  cItem: ChatItem,
+  hoveredItemId: State<Long?>,
+  parentActivated: State<Boolean>,
+  modifier: Modifier,
+  icon: ImageResource,
+  iconSize: Dp,
+  onClick: () -> Unit
+) {
+  val buttonInteractionSource = remember { MutableInteractionSource() }
+  val buttonHovered = buttonInteractionSource.collectIsHoveredAsState()
+  val buttonPressed = buttonInteractionSource.collectIsPressedAsState()
+  val buttonActivated = remember { derivedStateOf { buttonHovered.value || buttonPressed.value } }
+
+  val fullyVisible = parentActivated.value || buttonActivated.value || hoveredItemId.value == cItem.id
+  val mixAlpha = 0.6f
+  val mixedBackgroundColor = if (fullyVisible) {
+    if (MaterialTheme.colors.isLight) {
+      MaterialTheme.colors.secondary.mixWith(Color.White, mixAlpha)
+    } else {
+      MaterialTheme.colors.secondary.mixWith(Color.Black, mixAlpha)
+    }
+  } else {
+    Color.Unspecified
+  }
+  val iconTint = if (fullyVisible) {
+    Color.White
+  } else {
+    if (MaterialTheme.colors.isLight) {
+      MaterialTheme.colors.secondary.mixWith(Color.White, mixAlpha)
+    } else {
+      MaterialTheme.colors.secondary.mixWith(Color.Black, mixAlpha)
+    }
+  }
+
+  IconButton(
+    onClick,
+    modifier
+      .then(if (fullyVisible) Modifier.background(mixedBackgroundColor, CircleShape) else Modifier)
+      .size(GO_TO_ITEM_BUTTON_SIZE),
+    interactionSource = buttonInteractionSource
+  ) {
+    Icon(painterResource(icon), null, Modifier.size(iconSize), tint = iconTint)
   }
 }
 

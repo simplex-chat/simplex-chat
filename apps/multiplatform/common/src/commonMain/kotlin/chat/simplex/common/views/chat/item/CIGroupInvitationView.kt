@@ -85,71 +85,77 @@ fun CIGroupInvitationView(
 
   val sentColor = MaterialTheme.appColors.sentMessage
   val receivedColor = MaterialTheme.appColors.receivedMessage
-  Surface(
-    modifier = if (action && !inProgress.value) Modifier.clickable(onClick = {
-      inProgress.value = true
-      joinGroup(groupInvitation.groupId) { inProgress.value = false }
-    }) else Modifier,
-    shape = RoundedCornerShape(18.dp),
-    color = if (sent) sentColor else receivedColor,
-    contentColor = LocalContentColor.current
-  ) {
-    Box(
-      Modifier
-        .width(IntrinsicSize.Min)
-        .padding(start = 8.dp, end = 12.dp, top = 8.dp, bottom = 4.dp),
-      contentAlignment = Alignment.BottomEnd
+  ItemWithMeta(meta = { CIMetaView(ci, timedMessagesTTL, showStatus = false, showEdited = false, showViaProxy = false, showTimestamp = showTimestamp) }) { inlineMeta ->
+    Surface(
+      modifier = if (action && !inProgress.value) Modifier.clickable(onClick = {
+        inProgress.value = true
+        joinGroup(groupInvitation.groupId) { inProgress.value = false }
+      }) else Modifier,
+      shape = RoundedCornerShape(18.dp),
+      color = if (sent) sentColor else receivedColor,
+      contentColor = LocalContentColor.current
     ) {
       Box(
-        contentAlignment = Alignment.Center
+        Modifier
+          .width(IntrinsicSize.Min)
+          .padding(start = 8.dp, end = 12.dp, top = 8.dp, bottom = 4.dp),
+        contentAlignment = Alignment.BottomEnd
       ) {
-        Column(
-          Modifier
-            .defaultMinSize(minWidth = 220.dp)
-            .padding(bottom = 4.dp),
+        Box(
+          contentAlignment = Alignment.Center
         ) {
-          groupInfoView()
-          val secondaryColor = MaterialTheme.colors.secondary
-          Divider(Modifier.fillMaxWidth().padding(top = 8.dp))
-          Column(Modifier.padding(top = 8.dp, bottom = 4.dp, start = 4.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            if (groupChat) {
-              Text(if (sent) String.format(stringResource(MR.strings.group_invitation_for_member_only), groupInvitation.localDisplayName) else stringResource(MR.strings.group_invitation_for_you_only), fontSize = 12.sp, color = secondaryColor)
+          Column(
+            Modifier
+              .defaultMinSize(minWidth = 220.dp)
+              .padding(bottom = 4.dp),
+          ) {
+            groupInfoView()
+            val secondaryColor = MaterialTheme.colors.secondary
+            Divider(Modifier.fillMaxWidth().padding(top = 8.dp))
+            Column(Modifier.padding(top = 8.dp, bottom = 4.dp, start = 4.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+              if (groupChat) {
+                Text(if (sent) String.format(stringResource(MR.strings.group_invitation_for_member_only), groupInvitation.localDisplayName) else stringResource(MR.strings.group_invitation_for_you_only), fontSize = 12.sp, color = secondaryColor)
+              }
+              if (action) {
+                Text(groupInvitationStr(), fontSize = 13.sp, lineHeight = 18.sp)
+                Text(
+                  buildAnnotatedString {
+                    append(generalGetString(if (chatIncognito) MR.strings.group_invitation_tap_to_join_incognito else MR.strings.group_invitation_tap_to_join))
+                    if (inlineMeta != null) {
+                      withStyle(reserveTimestampStyle) { append(reserveSpaceForMeta(ci.meta, timedMessagesTTL, encrypted = null, showStatus = false, showEdited = false, secondaryColor = secondaryColor, showTimestamp = showTimestamp)) }
+                    }
+                  },
+                  color = if (inProgress.value)
+                    MaterialTheme.colors.secondary
+                  else
+                    if (chatIncognito) Indigo else MaterialTheme.colors.primary
+                )
+              } else {
+                Text(
+                  buildAnnotatedString {
+                    append(groupInvitationStr())
+                    if (inlineMeta != null) {
+                      withStyle(reserveTimestampStyle) { append(reserveSpaceForMeta(ci.meta, timedMessagesTTL, encrypted = null, showStatus = false, showEdited = false, secondaryColor = secondaryColor, showTimestamp = showTimestamp)) }
+                    }
+                  },
+                  fontSize = 13.sp,
+                  lineHeight = 18.sp,
+                )
+              }
             }
-            if (action) {
-              Text(groupInvitationStr(), fontSize = 13.sp, lineHeight = 18.sp)
-              Text(
-                buildAnnotatedString {
-                  append(generalGetString(if (chatIncognito) MR.strings.group_invitation_tap_to_join_incognito else MR.strings.group_invitation_tap_to_join))
-                  withStyle(reserveTimestampStyle) { append(reserveSpaceForMeta(ci.meta, timedMessagesTTL, encrypted = null, showStatus = false, showEdited = false, secondaryColor = secondaryColor, showTimestamp = showTimestamp)) }
-                },
-                color = if (inProgress.value)
-                  MaterialTheme.colors.secondary
-                else
-                  if (chatIncognito) Indigo else MaterialTheme.colors.primary
-              )
-            } else {
-              Text(
-                buildAnnotatedString {
-                  append(groupInvitationStr())
-                  withStyle(reserveTimestampStyle) { append(reserveSpaceForMeta(ci.meta, timedMessagesTTL, encrypted = null, showStatus = false, showEdited = false, secondaryColor = secondaryColor, showTimestamp = showTimestamp)) }
-                },
-                fontSize = 13.sp,
-                lineHeight = 18.sp,
-              )
-            }
+          }
+
+          if (progressByTimeout) {
+            CircularProgressIndicator(
+              Modifier.size(32.dp),
+              color = if (isInDarkTheme()) FileDark else FileLight,
+              strokeWidth = 3.dp
+            )
           }
         }
 
-        if (progressByTimeout) {
-          CircularProgressIndicator(
-            Modifier.size(32.dp),
-            color = if (isInDarkTheme()) FileDark else FileLight,
-            strokeWidth = 3.dp
-          )
-        }
+        inlineMeta?.invoke()
       }
-
-      CIMetaView(ci, timedMessagesTTL, showStatus = false, showEdited = false, showViaProxy = false, showTimestamp = showTimestamp)
     }
   }
 }

@@ -47,7 +47,7 @@ fun CIVoiceView(
   val padding = when {
     smallView -> PaddingValues()
     hasText -> PaddingValues(top = 14.sp.toDp() * sizeMultiplier, bottom = 14.sp.toDp() * sizeMultiplier, start = 6.sp.toDp() * sizeMultiplier, end = 6.sp.toDp() * sizeMultiplier)
-    else -> PaddingValues(top = 4.sp.toDp() * sizeMultiplier, bottom = 6.sp.toDp() * sizeMultiplier, start = 0.dp, end = 0.dp)
+    else -> PaddingValues(top = 4.sp.toDp() * sizeMultiplier, bottom = 6.sp.toDp() * sizeMultiplier, start = if (LocalTerminalLayout.current) CHAT_ITEM_TEXT_PADDING else 0.dp, end = 0.dp)
   }
   Row(
     Modifier.padding(padding),
@@ -192,7 +192,7 @@ private fun VoiceLayout(
         Slider(if (ci.chatDir.sent) sentColor else receivedColor)
       }
     }
-    sent -> {
+    sent && !LocalTerminalLayout.current -> {
       Column(horizontalAlignment = Alignment.End) {
         Row {
           Row(Modifier.weight(1f, false), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.End) {
@@ -207,7 +207,7 @@ private fun VoiceLayout(
         }
       }
     }
-    else -> {
+    else -> ItemWithMeta(meta = { CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp) }) { inlineMeta ->
       Column(horizontalAlignment = Alignment.Start) {
         Row {
           VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, 1f, play, pause, longClick, receiveFile)
@@ -217,8 +217,10 @@ private fun VoiceLayout(
             Spacer(Modifier.height(56.sp.toDp() * sizeMultiplier))
           }
         }
-        Box(Modifier.padding(top = 6.sp.toDp() * sizeMultiplier)) {
-          CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
+        if (inlineMeta != null) {
+          Box(Modifier.padding(top = 6.sp.toDp() * sizeMultiplier)) {
+            inlineMeta()
+          }
         }
       }
     }

@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -35,6 +36,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.takeOrElse
@@ -87,9 +89,7 @@ fun MarkdownBlocks(
           }
           BlockText(start, block.content, style.copy(fontSize = fontSize * scale, lineHeight = lineHeight * scale, fontWeight = FontWeight.Bold))
         }
-        is MarkdownBlock.Quote -> Row(Modifier.height(IntrinsicSize.Min)) {
-          Box(Modifier.width(4.dp).fillMaxHeight().clip(RoundedCornerShape(2.dp)).background(textColor.copy(alpha = if (MaterialTheme.colors.isLight) 0.16f else 0.22f)))
-          Spacer(Modifier.width(10.dp))
+        is MarkdownBlock.Quote -> Box(Modifier.quoteBar(textColor)) {
           BlockText(start, block.content, style.copy(color = textColor.copy(alpha = 0.7f)))
         }
         is MarkdownBlock.ItemList -> listEntries(block.items, 0).forEachIndexed { j, (entry, level) ->
@@ -124,8 +124,18 @@ fun MarkdownBlocks(
         is MarkdownBlock.Rule -> Box(Modifier.padding(vertical = 6.dp).fillMaxWidth().height(1.dp).background(lineColor))
       }
     }
-    if (!lastIsText) metaLine()
+    if (!lastIsText && !LocalTerminalLayout.current) metaLine()
   }
+}
+
+@Composable
+fun Modifier.quoteBar(textColor: Color): Modifier {
+  val color = textColor.copy(alpha = if (MaterialTheme.colors.isLight) 0.16f else 0.22f)
+  val barWidth = 4.dp
+  return drawBehind {
+    val width = barWidth.roundToPx().toFloat()
+    drawRoundRect(color, Offset(if (layoutDirection == LayoutDirection.Ltr) 0f else size.width - width, 0f), Size(width, size.height), CornerRadius(2.dp.toPx()))
+  }.padding(start = barWidth + 10.dp)
 }
 
 private val MarkdownBlock.start: Int get() = when (this) {

@@ -25,18 +25,20 @@ fun EmojiItemView(chatItem: ChatItem, timedMessagesTTL: Int?, showViaProxy: Bool
   val emojiText = chatItem.content.text.trim()
   val isSelected = setupEmojiSelection(LocalSelectionManager.current, LocalItemContext.current.selectionIndex, emojiText.length)
 
-  Column(
-    Modifier.padding(vertical = 8.dp, horizontal = 12.dp),
-    horizontalAlignment = Alignment.CenterHorizontally
-  ) {
-    if (isSelected) {
-      Box(Modifier.background(SelectionHighlightColor)) {
+  ItemWithMeta(meta = { CIMetaView(chatItem, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp) }) { inlineMeta ->
+    Column(
+      Modifier.padding(vertical = 8.dp, horizontal = 12.dp),
+      horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+      if (isSelected) {
+        Box(Modifier.background(SelectionHighlightColor)) {
+          EmojiText(chatItem.content.text)
+        }
+      } else {
         EmojiText(chatItem.content.text)
       }
-    } else {
-      EmojiText(chatItem.content.text)
+      inlineMeta?.invoke()
     }
-    CIMetaView(chatItem, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
   }
 }
 

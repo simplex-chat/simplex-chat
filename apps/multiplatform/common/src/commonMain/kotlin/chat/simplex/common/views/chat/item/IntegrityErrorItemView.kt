@@ -52,24 +52,26 @@ fun IntegrityErrorItemView(msgError: MsgErrorType, ci: ChatItem, showTimestamp: 
 @Composable
 fun CIMsgError(ci: ChatItem, showTimestamp: Boolean, timedMessagesTTL: Int?, onClick: () -> Unit) {
   val receivedColor = MaterialTheme.appColors.receivedMessage
-  Surface(
-    Modifier.clickable(onClick = onClick),
-    shape = RoundedCornerShape(18.dp),
-    color = receivedColor,
-    contentColor = LocalContentColor.current
-  ) {
-    Row(
-      Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-      verticalAlignment = Alignment.Bottom
+  ItemWithMeta(meta = { CIMetaView(ci, timedMessagesTTL, showViaProxy = false, showTimestamp = showTimestamp) }) { inlineMeta ->
+    Surface(
+      Modifier.clickable(onClick = onClick),
+      shape = RoundedCornerShape(18.dp),
+      color = receivedColor,
+      contentColor = LocalContentColor.current
     ) {
-      Text(
-        buildAnnotatedString {
-          withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Color.Red)) { append(ci.content.text) }
-        },
-        style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp),
-        modifier = Modifier.padding(end = 8.dp)
-      )
-      CIMetaView(ci, timedMessagesTTL, showViaProxy = false, showTimestamp = showTimestamp)
+      Row(
+        Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.Bottom
+      ) {
+        Text(
+          buildAnnotatedString {
+            withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Color.Red)) { append(ci.content.text) }
+          },
+          style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp),
+          modifier = Modifier.padding(end = if (inlineMeta != null) 8.dp else 0.dp)
+        )
+        inlineMeta?.invoke()
+      }
     }
   }
 }

@@ -40,6 +40,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.group.ChatTTLOption
+import chat.simplex.common.views.chat.item.LocalTerminalLayout
 import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.chatlist.updateChatSettings
 import chat.simplex.common.views.newchat.*
@@ -1296,13 +1297,40 @@ fun ModalData.ChatWallpaperEditorModal(chat: Chat) {
     globalThemeUsed.value = preferred == null
     preferred ?: ThemeManager.defaultActiveTheme(chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
   }
-  ChatWallpaperEditor(
-    initialTheme,
-    applyToMode = if (themes.light == themes.dark) null else initialTheme.mode,
-    globalThemeUsed = globalThemeUsed,
-    save = { applyToMode, newTheme ->
-      save(applyToMode, newTheme, chatModel.getChat(chat.id) ?: chat)
-    })
+  CompositionLocalProvider(LocalTerminalLayout provides (chat.chatInfo.activeChatLayout(chatModel.currentUser.value) == ChatLayoutMode.Terminal)) {
+    ChatWallpaperEditor(
+      initialTheme,
+      applyToMode = if (themes.light == themes.dark) null else initialTheme.mode,
+      globalThemeUsed = globalThemeUsed,
+      layoutSection = { ChatLayoutSection(chat.remoteHostId, chat.chatInfo) },
+      save = { applyToMode, newTheme ->
+        save(applyToMode, newTheme, chatModel.getChat(chat.id) ?: chat)
+      })
+  }
+}
+
+@Composable
+private fun ChatLayoutSection(rhId: Long?, chatInfo: ChatInfo) {
+  val defaultChatLayout = chatInfo.defaultChatLayout(chatModel.currentUser.value)
+  val otherLayout = otherChatLayout(defaultChatLayout)
+  val defaultSuffix = generalGetString(if (chatInfo.chatLayout == defaultChatLayout) MR.strings.chat_layout_chat_suffix else MR.strings.chat_layout_default_suffix)
+  val values = listOf(
+    null to "${chatLayoutName(defaultChatLayout)} $defaultSuffix",
+    otherLayout to chatLayoutName(otherLayout)
+  )
+  val userChatLayout = chatInfo.uiThemes?.chatLayout
+  val selection = remember(userChatLayout, otherLayout) { mutableStateOf(if (userChatLayout == otherLayout) otherLayout else null) }
+  SectionView {
+    ExposedDropDownSettingRow(
+      generalGetString(MR.strings.chat_layout),
+      values,
+      selection,
+      onSelected = { layout ->
+        selection.value = layout
+        withBGApi { setChatLayout(rhId, chatInfo, layout) }
+      }
+    )
+  }
 }
 
 suspend fun save(applyToMode: DefaultThemeMode?, newTheme: ThemeModeOverride?, chat: Chat) {
@@ -1335,7 +1363,7 @@ suspend fun save(applyToMode: DefaultThemeMode?, newTheme: ThemeModeOverride?, c
     }
     changedThemes
   } else {
-    null
+    changedThemes?.layoutOnly()
   }
   val wallpaperFilesToDelete = wallpaperFiles - changedThemes?.light?.wallpaper?.imageFile - changedThemes?.dark?.wallpaper?.imageFile
   wallpaperFilesToDelete.forEach(::removeWallpaperFile)
@@ -1346,6 +1374,19 @@ suspend fun save(applyToMode: DefaultThemeMode?, newTheme: ThemeModeOverride?, c
         chatModel.chatsContext.updateChatInfo(chat.remoteHostId, chat.chatInfo.copy(contact = chat.chatInfo.contact.copy(uiThemes = changedThemes)))
       } else if (chat.chatInfo is ChatInfo.Group) {
         chatModel.chatsContext.updateChatInfo(chat.remoteHostId, chat.chatInfo.copy(groupInfo = chat.chatInfo.groupInfo.copy(uiThemes = changedThemes)))
+      }
+    }
+  }
+}
+
+private suspend fun setChatLayout(rhId: Long?, chatInfo: ChatInfo, layout: ChatLayoutMode?) {
+  val themes = chatInfo.uiThemes.withChatLayout(layout)
+  if (controller.apiSetChatUIThemes(rhId, chatInfo.id, themes)) {
+    withContext(Dispatchers.Main) {
+      if (chatInfo is ChatInfo.Direct) {
+        chatModel.chatsContext.updateChatInfo(rhId, chatInfo.copy(contact = chatInfo.contact.copy(uiThemes = themes)))
+      } else if (chatInfo is ChatInfo.Group) {
+        chatModel.chatsContext.updateChatInfo(rhId, chatInfo.copy(groupInfo = chatInfo.groupInfo.copy(uiThemes = themes)))
       }
     }
   }
