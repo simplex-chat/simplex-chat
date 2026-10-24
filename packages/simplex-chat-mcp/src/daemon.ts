@@ -102,16 +102,23 @@ export class Daemon {
 
   private routes(): {[route: string]: Handler} {
     return {
-      "POST /session": async (body, res) => sendJson(res, 200, await this.onSession(body as SessionRequest)),
-      "POST /title": async (body, res) => sendJson(res, 200, await this.onTitle(body as TitleRequest)),
-      "POST /attach": (body, res) => this.onAttach(body as AttachRequest, res),
-      "POST /call": (body, res) => this.onCall(body as CallRequest, res),
-      "GET /status": async (_body, res) => sendJson(res, 200, this.status()),
+      "POST /session": this.expiring(async (body, res) => sendJson(res, 200, await this.onSession(body as SessionRequest))),
+      "POST /title": this.expiring(async (body, res) => sendJson(res, 200, await this.onTitle(body as TitleRequest))),
+      "POST /attach": this.expiring((body, res) => this.onAttach(body as AttachRequest, res)),
+      "POST /call": this.expiring((body, res) => this.onCall(body as CallRequest, res)),
+      "GET /status": this.expiring(async (_body, res) => sendJson(res, 200, this.status())),
       "POST /reset-owners": async (_body, res) => sendJson(res, 200, {link: await this.hub.resetOwners()}),
       "POST /stop": async (_body, res) => {
         await this.stop(res)
         sendJson(res, 200, {})
       },
+    }
+  }
+
+  private expiring(handler: Handler): Handler {
+    return (body, res, req) => {
+      this.hub.actions.expireDue()
+      return handler(body, res, req)
     }
   }
 

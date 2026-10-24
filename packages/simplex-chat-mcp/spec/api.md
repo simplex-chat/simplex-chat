@@ -48,8 +48,8 @@
 | `additionalProperties: false` is set in every input schema | [tools.ts:177](../src/tools.ts#L177), [:192](../src/tools.ts#L192), [:203](../src/tools.ts#L203), [:206](../src/tools.ts#L206), [:214](../src/tools.ts#L214) |
 | A result is sent as `structuredContent` and as its JSON in one text item | [tools.ts:372](../src/tools.ts#L372) |
 | A tool error is sent as `isError: true` with one text item: the `ToolError` text, or the `errorText` of other errors | [tools.ts:374](../src/tools.ts#L374), [log.ts:30-34](../src/log.ts#L30-L34) |
-| With a `progressToken` in `_meta`, `notifications/progress` is sent at the start of each wait and every 60 s, with `progress` 0, 1, 2, ... and a `message`; the daemon sends each message as a `{progress}` line and the session process forwards it | [tools.ts:995-1004](../src/tools.ts#L995-L1004), [messages.ts:202-206](../src/messages.ts#L202-L206), [daemon.ts:234](../src/daemon.ts#L234), [session.ts:99-103](../src/session.ts#L99-L103) |
-| The call is aborted when Claude Code cancels the request: the session process closes its `/call` request and the daemon aborts the call's signal; the action is kept | [session.ts:99-103](../src/session.ts#L99-L103), [daemon.ts:228-230](../src/daemon.ts#L228-L230) |
+| With a `progressToken` in `_meta`, `notifications/progress` is sent at the start of each wait and every 60 s, with `progress` 0, 1, 2, ... and a `message`; the daemon sends each message as a `{progress}` line and the session process forwards it | [tools.ts:995-1004](../src/tools.ts#L995-L1004), [messages.ts:202-206](../src/messages.ts#L202-L206), [daemon.ts:241](../src/daemon.ts#L241), [session.ts:99-103](../src/session.ts#L99-L103) |
+| The call is aborted when Claude Code cancels the request: the session process closes its `/call` request and the daemon aborts the call's signal; the action is kept | [session.ts:99-103](../src/session.ts#L99-L103), [daemon.ts:235-237](../src/daemon.ts#L235-L237) |
 | A call of the same session with the same tool and action fields as an action in memory is attached to it | [tools.ts:987-989](../src/tools.ts#L987-L989) |
 | Messages are marked read after the last wait of a call that is not aborted | [tools.ts:462-463](../src/tools.ts#L462-L463), [:600-602](../src/tools.ts#L600-L602), [:682-683](../src/tools.ts#L682-L683) |
 
@@ -334,7 +334,7 @@ The daemon ignores text that does not start with `/` or has several lines. It an
 | `list` | no open session | `No open sessions.` | [control.ts:250](../src/control.ts#L250) |
 | `list` | otherwise | per open session: `Session S · NAME`, then one line per chat, at most 100: `S:CHAT  KIND NAME`, with `, approved for this chat by APPROVER` and `, not connected` when applicable, cut to 100 bytes with `…`; then `K older chats are not shown.` when more exist | [control.ts:248-265](../src/control.ts#L248-L265) |
 
-KIND is `contact`, `bot`, `agent`, `business`, `group` or `channel` ([tools.ts:927-934](../src/tools.ts#L927-L934)). WHAT is `connect to SUBJECT`, `send to SUBJECT`, `delete SUBJECT` or `leave SUBJECT` ([actions.ts:312-322](../src/actions.ts#L312-L322)). Names are shown by `safeName` ([control.ts:491-494](../src/control.ts#L491-L494)).
+KIND is `contact`, `bot`, `agent`, `business`, `group` or `channel` ([tools.ts:927-934](../src/tools.ts#L927-L934)). WHAT is `connect to SUBJECT`, `send to SUBJECT`, `delete SUBJECT` or `leave SUBJECT` ([actions.ts:315-325](../src/actions.ts#L315-L325)). Names are shown by `safeName` ([control.ts:491-494](../src/control.ts#L491-L494)).
 
 ### 2.2 Cards
 
@@ -350,7 +350,7 @@ Request lines:
 | `send` | `I want to send a message to SUBJECT:`, with `, where I am incognito` before the colon in incognito chats<br>done: `I sent a message to ...` | text, one code span per line<br>`replying to NAME: QUOTE` with `reply_to`<br>`mentioning @A, @'B C'` with `mention` |
 | `leave` | `I want to delete KIND NAME (@N).` or `I want to leave KIND NAME (#N).`<br>done: `I deleted ...` or `I left ...` | |
 
-SUBJECT is `KIND NAME`, or `an unnamed KIND`, followed by ` (SIMPLEX_NAME)` when known ([actions.ts:307-310](../src/actions.ts#L307-L310)). For `connect`, SIMPLEX_NAME is the target when it is a name; for `send`, the chat's verified SimpleX name.
+SUBJECT is `KIND NAME`, or `an unnamed KIND`, followed by ` (SIMPLEX_NAME)` when known ([actions.ts:310-313](../src/actions.ts#L310-L313)). For `connect`, SIMPLEX_NAME is the target when it is a name; for `send`, the chat's verified SimpleX name.
 
 Last line:
 
@@ -399,15 +399,15 @@ The hub profile that posts in the group has the same display name and peer type 
 
 ## 3. Socket protocol
 
-HTTP/1.1 over `ROOT/daemon.sock` (or the fallback path, or the Windows pipe), protocol version `1`. Every request carries `Authorization: Bearer TOKEN`; bodies are JSON; streamed replies are NDJSON with content type `application/x-ndjson`. Errors are `{"error": TEXT}` with a status other than 200. Types: [`protocol.ts`](../src/protocol.ts); routes: [`Daemon.routes`](../src/daemon.ts#L103-L116).
+HTTP/1.1 over `ROOT/daemon.sock` (or the fallback path, or the Windows pipe), protocol version `1`. Every request carries `Authorization: Bearer TOKEN`; bodies are JSON; streamed replies are NDJSON with content type `application/x-ndjson`. Errors are `{"error": TEXT}` with a status other than 200. Types: [`protocol.ts`](../src/protocol.ts); routes: [`Daemon.routes`](../src/daemon.ts#L103-L123).
 
 | Route | Request | Reply | Code |
 |---|---|---|---|
-| `POST /session` | `{id, name?, project, config: {mainGroup, approve, expireHours}}` | `{number, displayName, version, protocol, owner: {owners, link?}}` | [daemon.ts:162-170](../src/daemon.ts#L162-L170) |
-| `POST /title` | `{id, name?, config}` | `{mainGroup, owner: {owners, link?}, version, protocol}` | [daemon.ts:172-208](../src/daemon.ts#L172-L208) |
-| `POST /attach` | `{id}` | stream held open; first line `{version, protocol}` | [daemon.ts:210-221](../src/daemon.ts#L210-L221) |
-| `POST /call` | `{id, tool, input}` | lines `{progress: TEXT}`, then one line `{result: CallToolResult or null}`; closing the request aborts the call | [daemon.ts:223-240](../src/daemon.ts#L223-L240) |
-| `GET /status` | none | `{version, protocol, mainGroup, owner: {owners, link?}, sessions: [{number, name, attached}]}` | [daemon.ts:328-331](../src/daemon.ts#L328-L331) |
+| `POST /session` | `{id, name?, project, config: {mainGroup, approve, expireHours}}` | `{number, displayName, version, protocol, owner: {owners, link?}}` | [daemon.ts:169-177](../src/daemon.ts#L169-L177) |
+| `POST /title` | `{id, name?, config}` | `{mainGroup, owner: {owners, link?}, version, protocol}` | [daemon.ts:179-215](../src/daemon.ts#L179-L215) |
+| `POST /attach` | `{id}` | stream held open; first line `{version, protocol}` | [daemon.ts:217-228](../src/daemon.ts#L217-L228) |
+| `POST /call` | `{id, tool, input}` | lines `{progress: TEXT}`, then one line `{result: CallToolResult or null}`; closing the request aborts the call | [daemon.ts:230-247](../src/daemon.ts#L230-L247) |
+| `GET /status` | none | `{version, protocol, mainGroup, owner: {owners, link?}, sessions: [{number, name, attached}]}` | [daemon.ts:335-338](../src/daemon.ts#L335-L338) |
 | `POST /reset-owners` | none | `{link}` | [daemon.ts:110](../src/daemon.ts#L110) |
 | `POST /stop` | none | `{}` after the stop sequence; the process exits after the reply | [daemon.ts:111-114](../src/daemon.ts#L111-L114) |
 
@@ -449,14 +449,14 @@ Environment: `SIMPLEX_MCP_HOME` (data root), `CLAUDE_CODE_SESSION_ID` and `CLAUD
 
 | Code | Message | Code location |
 |---|---|---|
-| 0 | the help text on stdout; the hook, also after errors; `link` and `reset-owners`; the daemon after a stop or with `running` | [cli.ts:42-57](../src/cli.ts#L42-L57), [daemon.ts:342](../src/daemon.ts#L342), [:371](../src/daemon.ts#L371) |
+| 0 | the help text on stdout; the hook, also after errors; `link` and `reset-owners`; the daemon after a stop or with `running` | [cli.ts:42-57](../src/cli.ts#L42-L57), [daemon.ts:349](../src/daemon.ts#L349), [:378](../src/daemon.ts#L378) |
 | 2 | `Unknown command. Run simplex-mcp --help.` | [cli.ts:36](../src/cli.ts#L36) |
 | 2 | `simplex-mcp session runs from the Claude Code plugin.` | [session.ts:36](../src/session.ts#L36) |
 | 2 | `Not a Claude Code session ID: ID` | [session.ts:37](../src/session.ts#L37) |
 | 1 | `Restart Claude Code to update the SimpleX plugin.` (`link`, `reset-owners`) | [client.ts:42](../src/client.ts#L42) |
 | 1 | `The SimpleX daemon exited; see ROOT/daemon.log`, `The SimpleX daemon did not start in 5 minutes.`, or the daemon's error text (`link`, `reset-owners`) | [client.ts:81](../src/client.ts#L81), [:108](../src/client.ts#L108) |
-| 1 | daemon start failed: ready line `error: TEXT` | [daemon.ts:343-344](../src/daemon.ts#L343-L344) |
-| 1 | `stop: ERROR` for a failed stop after a signal | [daemon.ts:348-353](../src/daemon.ts#L348-L353) |
+| 1 | daemon start failed: ready line `error: TEXT` | [daemon.ts:350-351](../src/daemon.ts#L350-L351) |
+| 1 | `stop: ERROR` for a failed stop after a signal | [daemon.ts:355-360](../src/daemon.ts#L355-L360) |
 | 1 | `simplex-mcp: ERROR` for other errors | [cli.ts:73-74](../src/cli.ts#L73-L74) |
 
 ### 4.3 Daemon log
@@ -465,19 +465,19 @@ Environment: `SIMPLEX_MCP_HOME` (data root), `CLAUDE_CODE_SESSION_ID` and `CLAUD
 
 | Moment | Line | Code |
 |---|---|---|
-| start | `SimpleX MCP daemon VERSION, data folder ROOT` | [daemon.ts:346](../src/daemon.ts#L346) |
+| start | `SimpleX MCP daemon VERSION, data folder ROOT` | [daemon.ts:353](../src/daemon.ts#L353) |
 | Main group created | `Main group "NAME" created.` | [control.ts:347](../src/control.ts#L347) |
 | no owners, members present | `No owners in the Main group.` | [control.ts:103](../src/control.ts#L103), [:163](../src/control.ts#L163) |
 | link opened | `Main group link (works once): LINK`<br>`Whoever joins by this link becomes an owner of "NAME" and approves the agents' actions.` | [control.ts:283-284](../src/control.ts#L283-L284) |
 | owner joined | `NAME joined (member ID) and is now an owner. The link is deleted.` | [control.ts:272](../src/control.ts#L272) |
 | Main group lost | `The agent lost its Main group. Run /simplex:reset-owners in Claude Code.` | [control.ts:277](../src/control.ts#L277) |
-| action created | `Action N of session S: WHAT` with `, as itself` or `, incognito` for `connect` and ` (CHAT)` for `send` and `leave` | [actions.ts:150-151](../src/actions.ts#L150-L151), [:312-322](../src/actions.ts#L312-L322) |
-| counter write or card post failed | `Action N: failed: ERROR.` | [actions.ts:260](../src/actions.ts#L260) |
-| perform ended, not interrupted, mode `requests` | `Action N approved by NAME: RESULT.` with RESULT `sent`, `deleted`, `left`, `connected`, `connection requested` or `failed: ERROR` | [actions.ts:281](../src/actions.ts#L281), [:328-335](../src/actions.ts#L328-L335) |
-| perform ended, not interrupted, mode `host` | `Action N: performed without approval (mode host).`, or `...; failed: ERROR.` | [actions.ts:330](../src/actions.ts#L330) |
-| rejected | `Action N rejected by NAME.` | [actions.ts:209](../src/actions.ts#L209) |
-| expired | `Action N expired.` | [actions.ts:244](../src/actions.ts#L244) |
-| stop | `Cancelled K action.` or `Cancelled K actions.` when K > 0<br>`Stopped.` | [daemon.ts:128](../src/daemon.ts#L128), [:134](../src/daemon.ts#L134) |
+| action created | `Action N of session S: WHAT` with `, as itself` or `, incognito` for `connect` and ` (CHAT)` for `send` and `leave` | [actions.ts:150-151](../src/actions.ts#L150-L151), [:315-325](../src/actions.ts#L315-L325) |
+| counter write or card post failed | `Action N: failed: ERROR.` | [actions.ts:263](../src/actions.ts#L263) |
+| perform ended, not interrupted, mode `requests` | `Action N approved by NAME: RESULT.` with RESULT `sent`, `deleted`, `left`, `connected`, `connection requested` or `failed: ERROR` | [actions.ts:284](../src/actions.ts#L284), [:331-338](../src/actions.ts#L331-L338) |
+| perform ended, not interrupted, mode `host` | `Action N: performed without approval (mode host).`, or `...; failed: ERROR.` | [actions.ts:333](../src/actions.ts#L333) |
+| rejected | `Action N rejected by NAME.` | [actions.ts:210](../src/actions.ts#L210) |
+| expired | `Action N expired.` | [actions.ts:247](../src/actions.ts#L247) |
+| stop | `Cancelled K action.` or `Cancelled K actions.` when K > 0<br>`Stopped.` | [daemon.ts:135](../src/daemon.ts#L135), [:141](../src/daemon.ts#L141) |
 
 stderr: `CONTEXT: ERROR` from `logError` ([log.ts:26-28](../src/log.ts#L26-L28)), with CONTEXT one of `action N`, `action N card`, `Main group command`, `EVENT in the Main group`, `Main group rename`, `owner reset`, `EVENT event`, `METHOD PATH`, `delivery wait`, `close session`, `stop`. The library's download lines are written to stderr. The session process writes `SimpleX daemon: ERROR` to its own stderr when its background connection fails ([session.ts:72](../src/session.ts#L72)).
 

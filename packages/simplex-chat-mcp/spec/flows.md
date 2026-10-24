@@ -83,13 +83,13 @@ sequenceDiagram
 Notes:
 
 - At first use, libsimplex and the Node.js add-on are downloaded, with one `Downloading ...` line each in `daemon.log`; the first `npx` run also fills the npx cache. The hook's timeout is 600 s, and the spawner waits for the ready line at most 5 minutes ([hooks.json](../hooks/hooks.json), [client.ts:108](../src/client.ts#L108)).
-- The hook records the title and creates no profile, folder or number; the session process creates the profile ([2](#2-session-process-start-and-attach)). When the session process reaches the daemon first, `/title` renames its profile instead ([daemon.ts:172-194](../src/daemon.ts#L172-L194)).
+- The hook records the title and creates no profile, folder or number; the session process creates the profile ([2](#2-session-process-start-and-attach)). When the session process reaches the daemon first, `/title` renames its profile instead ([daemon.ts:179-201](../src/daemon.ts#L179-L201)).
 - The profile name is `SimpleX MCP - ` and the session title, else the project folder name, else `Claude Code`, through `validName` ([agent.ts:29-37](../src/agent.ts#L29-L37)).
 - The QR code in the hook message is `plain`: block characters without colors ([qr.ts:27-31](../src/qr.ts#L27-L31)).
 - With an owner present, the hook output is `{}`.
 - The daemon runs `ownerJoined` for a `joinedGroupMember` event of a human while no owner exists ([control.ts:161](../src/control.ts#L161), [:267-273](../src/control.ts#L267-L273)).
 
-Source: [hook.ts:28-46](../src/hook.ts#L28-L46), [client.ts:32-89](../src/client.ts#L32-L89), [daemon.ts:79-96](../src/daemon.ts#L79-L96), [:334-356](../src/daemon.ts#L334-L356), [hub.ts:26-48](../src/hub.ts#L26-L48), [core.ts:24-40](../src/core.ts#L24-L40), [control.ts:92-105](../src/control.ts#L92-L105), [:280-285](../src/control.ts#L280-L285), [:338-349](../src/control.ts#L338-L349), [daemon.ts:172-208](../src/daemon.ts#L172-L208).
+Source: [hook.ts:28-46](../src/hook.ts#L28-L46), [client.ts:32-89](../src/client.ts#L32-L89), [daemon.ts:79-96](../src/daemon.ts#L79-L96), [:341-363](../src/daemon.ts#L341-L363), [hub.ts:26-48](../src/hub.ts#L26-L48), [core.ts:24-40](../src/core.ts#L24-L40), [control.ts:92-105](../src/control.ts#L92-L105), [:280-285](../src/control.ts#L280-L285), [:338-349](../src/control.ts#L338-L349), [daemon.ts:179-215](../src/daemon.ts#L179-L215).
 
 ---
 
@@ -122,11 +122,11 @@ Notes:
 
 - Tools are registered before the daemon is reached, so the MCP startup does not wait for the daemon; a tool call before the connection is ready awaits the same connect promise ([session.ts:47-52](../src/session.ts#L47-L52), [:62-68](../src/session.ts#L62-L68)).
 - A session started with an invalid option does not connect; every tool call returns the option error ([session.ts:38-48](../src/session.ts#L38-L48)).
-- The session process sends `/session` without a name. A new session takes the title the hook recorded for its ID, else the project folder name; a stored session keeps its name ([session.ts:46](../src/session.ts#L46), [daemon.ts:287-298](../src/daemon.ts#L287-L298)).
+- The session process sends `/session` without a name. A new session takes the title the hook recorded for its ID, else the project folder name; a stored session keeps its name ([session.ts:46](../src/session.ts#L46), [daemon.ts:294-305](../src/daemon.ts#L294-L305)).
 - After `/clear`, and after `--continue` or `--resume` without an ID, the hook gets a new session ID while the session process keeps its own; the daemon remembers the new ID's title in memory only, at most 100 IDs, so no profile is created for it.
 - `claude --resume` starts a session process with the same session ID: the daemon reopens `_sessions/ID/` with the same number and chats.
 
-Source: [session.ts:34-53](../src/session.ts#L34-L53), [:123-140](../src/session.ts#L123-L140), [daemon.ts:162-170](../src/daemon.ts#L162-L170), [:210-221](../src/daemon.ts#L210-L221), [:287-298](../src/daemon.ts#L287-L298).
+Source: [session.ts:34-53](../src/session.ts#L34-L53), [:123-140](../src/session.ts#L123-L140), [daemon.ts:169-177](../src/daemon.ts#L169-L177), [:217-228](../src/daemon.ts#L217-L228), [:294-305](../src/daemon.ts#L294-L305).
 
 ---
 
@@ -184,9 +184,9 @@ Notes:
 - In the perform step the daemon waits for the other side until `startedAt + wait`, at most until `created + 23 h 50 min`, and then reports `connected: false` ([tools.ts:485](../src/tools.ts#L485), [:509-512](../src/tools.ts#L509-L512)).
 - Without `message`, the idle time is counted from the connection; with `message`, from the first reply ([tools.ts:569](../src/tools.ts#L569), [messages.ts:227](../src/messages.ts#L227)).
 - For a target the session is connected to, the result is `status: known` with its chat fields, and no action is created ([tools.ts:419](../src/tools.ts#L419)).
-- Exact progress texts: `Action N waits for an approver until TIME.`, then `Action N waits for the connection until TIME.`, then `K messages in CHAT; waiting until TIME.` ([actions.ts:337-348](../src/actions.ts#L337-L348), [tools.ts:454](../src/tools.ts#L454)).
+- Exact progress texts: `Action N waits for an approver until TIME.`, then `Action N waits for the connection until TIME.`, then `K messages in CHAT; waiting until TIME.` ([actions.ts:340-351](../src/actions.ts#L340-L351), [tools.ts:454](../src/tools.ts#L454)).
 
-Source: [session.ts:94-113](../src/session.ts#L94-L113), [daemon.ts:223-240](../src/daemon.ts#L223-L240), [tools.ts:414-466](../src/tools.ts#L414-L466), [:482-572](../src/tools.ts#L482-L572), [:810-873](../src/tools.ts#L810-L873), [actions.ts:122-204](../src/actions.ts#L122-L204), [control.ts:138-198](../src/control.ts#L138-L198).
+Source: [session.ts:94-113](../src/session.ts#L94-L113), [daemon.ts:230-247](../src/daemon.ts#L230-L247), [tools.ts:414-466](../src/tools.ts#L414-L466), [:482-572](../src/tools.ts#L482-L572), [:810-873](../src/tools.ts#L810-L873), [actions.ts:122-205](../src/actions.ts#L122-L205), [control.ts:138-198](../src/control.ts#L138-L198).
 
 ---
 
@@ -292,7 +292,7 @@ Notes:
 - For sends that were pending at `/approve S:CHAT all`, the card ends with the plain `Approved by Alice.` ([control.ts:232-234](../src/control.ts#L232-L234), [:383](../src/control.ts#L383)).
 - `connect` and `leave` actions are created without the standing approver, so they stay pending ([tools.ts:425](../src/tools.ts#L425), [:640](../src/tools.ts#L640)).
 
-Source: [control.ts:223-246](../src/control.ts#L223-L246), [tools.ts:588](../src/tools.ts#L588), [actions.ts:122-156](../src/actions.ts#L122-L156), [:265-283](../src/actions.ts#L265-L283).
+Source: [control.ts:223-246](../src/control.ts#L223-L246), [tools.ts:588](../src/tools.ts#L588), [actions.ts:122-156](../src/actions.ts#L122-L156), [:268-286](../src/actions.ts#L268-L286).
 
 ---
 
@@ -320,7 +320,7 @@ sequenceDiagram
 
 Notes:
 
-- For a contact, the card text is `I want to delete KIND NAME (@N).`, and the perform step sends `/_delete @N full` ([actions.ts:324-326](../src/actions.ts#L324-L326), [tools.ts:649](../src/tools.ts#L649)).
+- For a contact, the card text is `I want to delete KIND NAME (@N).`, and the perform step sends `/_delete @N full` ([actions.ts:327-329](../src/actions.ts#L327-L329), [tools.ts:649](../src/tools.ts#L649)).
 - The delete mode is `full` without `notify=off`, so the core notifies the contact or the members.
 - The daemon looks for an attached action before it reads the chat, so a repeated call after the deletion is attached to the done action ([tools.ts:635-637](../src/tools.ts#L635-L637)).
 
@@ -358,7 +358,7 @@ Notes:
 - In mode `host`, `undefined` is returned by `standingApprover`, so standing approvals are ignored by `send`, `list` and `/list` ([control.ts:119](../src/control.ts#L119)).
 - `_meta` is set on `connect`, `send` and `leave` only ([tools.ts:360](../src/tools.ts#L360)).
 
-Source: [tools.ts:354-364](../src/tools.ts#L354-L364), [actions.ts:134](../src/actions.ts#L134), [:281](../src/actions.ts#L281), [control.ts:383](../src/control.ts#L383).
+Source: [tools.ts:354-364](../src/tools.ts#L354-L364), [actions.ts:134](../src/actions.ts#L134), [:284](../src/actions.ts#L284), [control.ts:383](../src/control.ts#L383).
 
 ---
 
@@ -372,7 +372,7 @@ sequenceDiagram
   C->>H: send call creates pending action N at T
   H->>O: card N
   Note over H: expires = T + expireHours at T
-  Note over H: timer for expires, and expireDue before each owner command
+  Note over H: timer for expires; expireDue at each hub event, daemon request and owner command
   H->>H: pending and due: expired
   H->>O: card edited: ... Expired.
   H-->>C: {action: N, status: expired}
@@ -383,12 +383,13 @@ sequenceDiagram
 
 Notes:
 
-- A decided action with an open count of 0 is removed at its expiry time; one decided later, or whose last open call ends later, is removed then ([actions.ts:248-250](../src/actions.ts#L248-L250), [:179](../src/actions.ts#L179), [:288](../src/actions.ts#L288)).
+- A pending action that expires with no open call is removed at once, so a repeated call creates a new action.
+- A decided action with an open count of 0 is removed at its expiry time; one decided later, or whose last open call ends later, is removed then ([actions.ts:251-253](../src/actions.ts#L251-L253), [:179](../src/actions.ts#L179), [:291](../src/actions.ts#L291)).
 - Expiry times are listed in the `/pending` reply ([control.ts:437-439](../src/control.ts#L437-L439)).
 - A changed `expire_hours` applies to actions created after the next `/session` or `/title` ([hub.ts:65](../src/hub.ts#L65), [actions.ts:131](../src/actions.ts#L131)).
 - The connect wait ends at `created + 23 h 50 min`, within the 24 hours in which a message can be edited ([tools.ts:112](../src/tools.ts#L112), [:485](../src/tools.ts#L485)).
 
-Source: [actions.ts:149](../src/actions.ts#L149), [:182-185](../src/actions.ts#L182-L185), [:234-250](../src/actions.ts#L234-L250), [control.ts:169](../src/control.ts#L169), [:397-398](../src/control.ts#L397-L398).
+Source: [actions.ts:149](../src/actions.ts#L149), [:182-186](../src/actions.ts#L182-L186), [:235-253](../src/actions.ts#L235-L253), [hub.ts:94](../src/hub.ts#L94), [daemon.ts:118-123](../src/daemon.ts#L118-L123), [control.ts:169](../src/control.ts#L169), [:397-398](../src/control.ts#L397-L398).
 
 ---
 
@@ -423,9 +424,9 @@ Notes:
 - The key is the session number, the tool name and the action fields: `target`, `incognito`, `message` for `connect`; `chat`, `text`, `reply_to`, `mention` for `send`; `chat` for `leave` ([tools.ts:415](../src/tools.ts#L415), [:584](../src/tools.ts#L584), [:635](../src/tools.ts#L635), [:987-989](../src/tools.ts#L987-L989)).
 - The `wait`, `idle` and `limit` of the attaching call are used ([tools.ts:595](../src/tools.ts#L595)).
 - For a call aborted before `create`, no action is created ([tools.ts:424](../src/tools.ts#L424), [:587](../src/tools.ts#L587), [:639](../src/tools.ts#L639)).
-- Abort path: the SDK aborts the handler's signal; the session process passes it to its `/call` request; the daemon aborts the call's controller when the request closes before the reply ends, and writes no result ([session.ts:99-103](../src/session.ts#L99-L103), [daemon.ts:227-235](../src/daemon.ts#L227-L235)).
+- Abort path: the SDK aborts the handler's signal; the session process passes it to its `/call` request; the daemon aborts the call's controller when the request closes before the reply ends, and writes no result ([session.ts:99-103](../src/session.ts#L99-L103), [daemon.ts:234-242](../src/daemon.ts#L234-L242)).
 
-Source: [tools.ts:433-444](../src/tools.ts#L433-L444), [:592-610](../src/tools.ts#L592-L610), [:697](../src/tools.ts#L697), [actions.ts:187-198](../src/actions.ts#L187-L198), [messages.ts:208-222](../src/messages.ts#L208-L222).
+Source: [tools.ts:433-444](../src/tools.ts#L433-L444), [:592-610](../src/tools.ts#L592-L610), [:697](../src/tools.ts#L697), [actions.ts:188-199](../src/actions.ts#L188-L199), [messages.ts:208-222](../src/messages.ts#L208-L222).
 
 ---
 
@@ -450,10 +451,10 @@ sequenceDiagram
 
 Notes:
 
-- A new `/session`, `/attach` or `/call` for any ID clears the daemon idle timer; a new request for a closing ID waits for the close and reopens the profile ([daemon.ts:253-298](../src/daemon.ts#L253-L298)). `/title` leaves both idle timers alone.
+- A new `/session`, `/attach` or `/call` for any ID clears the daemon idle timer; a new request for a closing ID waits for the close and reopens the profile ([daemon.ts:260-305](../src/daemon.ts#L260-L305)). `/title` leaves both idle timers alone.
 - The daemon idle timer also runs from the daemon start until the first entry ([daemon.ts:90](../src/daemon.ts#L90)).
 
-Source: [daemon.ts:210-221](../src/daemon.ts#L210-L221), [:300-326](../src/daemon.ts#L300-L326).
+Source: [daemon.ts:217-228](../src/daemon.ts#L217-L228), [:307-333](../src/daemon.ts#L307-L333).
 
 ---
 
@@ -487,11 +488,11 @@ sequenceDiagram
 Notes:
 
 - The interrupted card line is `DECIDER; interrupted: the SimpleX daemon stopped.` ([control.ts:390](../src/control.ts#L390)).
-- A host-mode action whose counter is being written at the stop is set to `pending` and cancelled without a perform ([actions.ts:268](../src/actions.ts#L268)).
-- The perform signal is aborted after the actions are marked interrupted: a `connect` waiting for its connection ends, and an interrupted perform logs no line ([actions.ts:228](../src/actions.ts#L228), [:280](../src/actions.ts#L280), [tools.ts:509-511](../src/tools.ts#L509-L511)).
+- A host-mode action whose counter is being written at the stop is set to `pending` and cancelled without a perform ([actions.ts:271](../src/actions.ts#L271)).
+- The perform signal is aborted after the actions are marked interrupted: a `connect` waiting for its connection ends, and an interrupted perform logs no line ([actions.ts:229](../src/actions.ts#L229), [:283](../src/actions.ts#L283), [tools.ts:509-511](../src/tools.ts#L509-L511)).
 - An error of a `/sql` query of the delivery wait is logged as `delivery wait: ERROR` and ends the wait ([core.ts:69-77](../src/core.ts#L69-L77)).
 
-Source: [daemon.ts:98-142](../src/daemon.ts#L98-L142), [:348-355](../src/daemon.ts#L348-L355), [hub.ts:77-84](../src/hub.ts#L77-L84), [actions.ts:221-232](../src/actions.ts#L221-L232), [core.ts:59-67](../src/core.ts#L59-L67).
+Source: [daemon.ts:98-149](../src/daemon.ts#L98-L149), [:355-362](../src/daemon.ts#L355-L362), [hub.ts:77-84](../src/hub.ts#L77-L84), [actions.ts:222-233](../src/actions.ts#L222-L233), [core.ts:59-67](../src/core.ts#L59-L67).
 
 ---
 

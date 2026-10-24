@@ -35,6 +35,7 @@ function deps(root: string) {
   const agents: FakeAgent[] = []
   const configs: unknown[] = []
   const actions: {session: number}[] = []
+  let expiryChecks = 0
   const hubStops: number[] = []
   const events: string[] = []
   const gates: {open?: Promise<void>; close?: Promise<void>; call?: Promise<void>; hubStop?: Promise<void>} = {}
@@ -46,7 +47,7 @@ function deps(root: string) {
   const onStopped = jest.fn(stopped.resolve)
   const hub: HubLike = {
     mainGroup: "SimpleX MCP",
-    actions: {ofSession: (n: number) => actions.filter(({session}) => session === n)} as unknown as Actions,
+    actions: {ofSession: (n: number) => actions.filter(({session}) => session === n), expireDue: () => expiryChecks++} as unknown as Actions,
     owner: () => ({owners: [], link: "https://simplex.chat/g#link"}),
     configure: async config => {
       configs.push(config)
@@ -106,7 +107,7 @@ function deps(root: string) {
     gates[name] = promise
     return resolve
   }
-  return {d, agents, configs, actions, hubStops, events, onStopped, stoppedCode: stopped.promise, opening: opening.promise, calling: calling.promise, aborted: aborted.promise, hubStopping: hubStopping.promise, gate}
+  return {d, agents, configs, actions, expiryChecks: () => expiryChecks, hubStops, events, onStopped, stoppedCode: stopped.promise, opening: opening.promise, calling: calling.promise, aborted: aborted.promise, hubStopping: hubStopping.promise, gate}
 }
 
 let root: string
@@ -160,6 +161,27 @@ describe("daemon", () => {
     expect(await register(id1, "auth")).toMatchObject({number: 1, displayName: "SimpleX MCP - auth"})
     expect(readSessionFile(sessionFolder(root, id1))).toMatchObject({number: 1, name: "auth", project: "/p/app"})
     expect(agents).toHaveLength(2)
+  })
+
+  it("expires due actions at each request that touches sessions", async () => {
+    const {d, expiryChecks} = deps(root)
+    daemon = await Daemon.start(d, readDefaultConfig)
+    await register(id1)
+    expect(expiryChecks()).toBe(1)
+    await title(id1)
+    expect(expiryChecks()).toBe(2)
+    await requestJson(socketPath(root), token, "GET", "/status")
+    expect(expiryChecks()).toBe(3)
+    await streamLines(socketPath(root), token, "/call", {id: id1, tool: "list", input: {}}, () => undefined)
+    expect(expiryChecks()).toBe(4)
+    const controller = new AbortController()
+    const {attached, firstLine} = attach(id1, controller.signal)
+    await firstLine
+    expect(expiryChecks()).toBe(5)
+    controller.abort()
+    await attached
+    await post("/reset-owners")
+    expect(expiryChecks()).toBe(5)
   })
 
   it("opens one agent for concurrent registrations", async () => {

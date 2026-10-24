@@ -194,7 +194,7 @@ In mode `host`, approval is left to Claude Code. The session's MCP server marks 
 
 A pending action expires after `expire_hours`, 23 by default and at most: SimpleX allows edits of a message for 24 hours, and the outcome of a pending action is an edit of its card. Cards don't show the time; `/pending` does. The last line of its card is edited to `Expired.`, and the agent's call returns `{"action": N, "status": "expired"}`. For the same reason, a `connect` waits for the other side at most until 23 hours 50 minutes after the action was created.
 
-A result that no call has returned is dropped after the action's expiry time; a repeated call after that creates a new action. At most 20 actions of one session are pending at once, and at most 20 are being performed; a further `connect`, `send` or `leave` of that session fails until the owner decides.
+A result that no call has returned is dropped after the action's expiry time, and an action that expires while no call waits on it is dropped at once; a repeated call after that creates a new action. After the computer sleeps past an expiry time, the action expires at the first event of the SimpleX core or request of a session after it wakes. At most 20 actions of one session are pending at once, and at most 20 are being performed; a further `connect`, `send` or `leave` of that session fails until the owner decides.
 
 Actions last only while the daemon runs. The daemon keeps a session's profile open while it has actions. When the daemon stops, the last line of each pending card is edited to `Cancelled: the SimpleX daemon stopped.`; after a restart, `/approve` of an earlier number replies `Action N is not pending.`, and the agent's repeated call posts a new card. Action numbers continue across restarts.
 

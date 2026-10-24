@@ -180,7 +180,7 @@ Plugin files, run by Claude Code without `node_modules`:
 | Daemon start by a client | [`src/client.ts`](../src/client.ts#L32) | `DaemonClient.ensureDaemon` | [32](../src/client.ts#L32) |
 | Daemon spawn | [`src/client.ts`](../src/client.ts#L68) | `spawnDaemon` | [68](../src/client.ts#L68) |
 | Socket listener | [`src/socket.ts`](../src/socket.ts#L18) | `listen` | [18](../src/socket.ts#L18) |
-| Daemon process | [`src/daemon.ts`](../src/daemon.ts#L334) | `runDaemon` | [334](../src/daemon.ts#L334) |
+| Daemon process | [`src/daemon.ts`](../src/daemon.ts#L341) | `runDaemon` | [341](../src/daemon.ts#L341) |
 | Daemon routes | [`src/daemon.ts`](../src/daemon.ts#L103) | `Daemon.routes` | [103](../src/daemon.ts#L103) |
 | Hub and Main group | [`src/hub.ts`](../src/hub.ts#L26) | `Hub.open` | [26](../src/hub.ts#L26) |
 | Session profile | [`src/agent.ts`](../src/agent.ts#L39) | `openSessionAgent` | [39](../src/agent.ts#L39) |

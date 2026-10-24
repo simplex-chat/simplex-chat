@@ -180,6 +180,7 @@ export class Actions {
   }
 
   expireDue(): void {
+    if (this.stopping) return
     const now = Date.now()
     for (const action of this.all().filter(({expires}) => expires <= now)) this.expire(action)
   }
@@ -237,6 +238,8 @@ export class Actions {
   }
 
   private expire(action: Action): void {
+    clearTimeout(this.expiries.get(action.n))
+    this.expiries.delete(action.n)
     // Timers follow the monotonic clock and expires is wall-clock time, so a timer can fire before it.
     if (action.expires > Date.now()) return this.scheduleExpiry(action)
     if (action.state !== "pending") return this.forgetExpired(action)

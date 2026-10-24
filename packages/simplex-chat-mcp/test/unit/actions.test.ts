@@ -153,6 +153,32 @@ describe("actions in mode requests", () => {
     expect(logLines.filter(line => line === "Action 1 expired.")).toHaveLength(1)
   })
 
+  it("clears the timer of an action expired by the wall clock", async () => {
+    jest.useFakeTimers()
+    const fake = fakeHooks()
+    const actions = actionsWith("requests", fake, 1, 1)
+    const action = await pendingAction(actions)
+    actions.approve(action, "Alice")
+    jest.setSystemTime(Date.now() + 3_600_000)
+    actions.expireDue()
+    expect(jest.getTimerCount()).toBe(0)
+    fake.performs[0].resolve()
+    await settled()
+    expect(actions.all()).toEqual([])
+  })
+
+  it("expires nothing once stopping", async () => {
+    jest.useFakeTimers()
+    const fake = fakeHooks()
+    const actions = actionsWith("requests", fake, 1, 1)
+    const action = await pendingAction(actions)
+    await actions.stop()
+    jest.setSystemTime(Date.now() + 3_600_000)
+    actions.expireDue()
+    expect(action.state).toBe("pending")
+    expect(fake.calls.filter(call => call.startsWith("outcome"))).toEqual(["outcome 1 pending interrupted"])
+  })
+
   it("waits for the expiry time when its timer fires early after the clock is set back", async () => {
     jest.useFakeTimers()
     const actions = actionsWith("requests", fakeHooks(), 1, 1)

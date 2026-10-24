@@ -91,6 +91,7 @@ export class Hub {
 
   private async onEvent(event: ChatEvent): Promise<void> {
     if (this.stopped) return
+    this.actions.expireDue()
     const {control} = this
     if (event.type === "newChatItems") {
       for (const ci of event.chatItems) {
