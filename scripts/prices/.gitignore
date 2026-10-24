@@ -1,0 +1,9 @@
+node_modules/
+*.p8
+*.json
+!package.json
+!package-lock.json
+*.csv*
+*.xlsx
+*.xlsx*
+INFO.md
