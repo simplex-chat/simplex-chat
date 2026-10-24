@@ -4,7 +4,7 @@ The CLI sends a fixed placeholder as the preview of every image sent with `/img`
 Images are resized by the core: halved until the encoding fits the size limit; then the JPEG quality is bisected, and a halved PNG is rescaled by bisection between the last two sizes.
 The core functions are called by the apps in place of platform code, wrapped in both bot libraries and used for `/img` and `/imgf` previews; libjpeg-turbo is added as a submodule and linked statically on every target.
 
-References are to branch `ab/resize-image` at `62778b300`, based on master `66e381bf5`. Haskell paths without a directory are in `src/Simplex/Chat/`.
+References are to branch `ab/resize-image` at `4f70df91f`, based on master `66e381bf5`. Haskell paths without a directory are in `src/Simplex/Chat/`.
 
 ## Decisions
 
@@ -45,12 +45,12 @@ chat_resize_image(data, len, maxSize, png)    base64 of at most maxSize PNG (png
 - The result is allocated with `malloc` and freed by the caller.
 - A chat controller is not required.
 
-Apps, with function signatures and call sites unchanged:
+Apps, with function signatures kept and call sites unchanged except iOS `saveWallpaperFile(image:)` (`ImageUtils.swift:233`):
 - iOS `resizeImageToDataSize` and `resizeImageToStrSizeSync`:
   - an image with orientation other than `.up` is redrawn upright;
   - input: UIKit PNG for an image with alpha, otherwise JPEG at quality 0.85;
   - alpha:
-    - `resizeImageToDataSize`: the `hasAlpha` parameter, which also selects PNG or JPEG output
+    - `resizeImageToDataSize`: the `hasAlpha` parameter, by which PNG or JPEG output is also selected
     - `resizeImageToStrSizeSync`: `imageHasAlpha(image)`, for the input only
   - `""` is returned as `nil`; for it `nil` is also returned by `saveImage` (`ImageUtils.swift:68`) and `saveWallpaperFile(image:)` (`:233`).
 - Android and desktop, common code:
@@ -103,15 +103,18 @@ Native code:
 - libturbojpeg is linked statically on every target.
 - hs-jpeg-turbo: gitlab.com/dpwiz/hs-jpeg-turbo at `f1bc073`, packages `jpeg-turbo` and `JuicyPixels-jpeg-turbo`.
 - JuicyPixels 3.3.8 and JuicyPixels-stbir 0.1.0.0 are taken from Hackage.
-- Planned, in later commits of this branch:
-  - JuicyPixels-stbir pinned to a fork with nothings/stb as a submodule;
-  - hs-jpeg-turbo pinned to github.com/simplex-chat/hs-jpeg-turbo at a commit with the git LFS fixtures replaced.
+- Package sources planned in later commits of this branch:
+  - JuicyPixels-stbir: a fork with nothings/stb as a submodule
+  - hs-jpeg-turbo: github.com/simplex-chat/hs-jpeg-turbo at a commit with the git LFS fixtures replaced
 
 `scripts/desktop/prepare-libjpeg-turbo.sh`:
 - prefix: `LIBJPEG_TURBO_PREFIX`, default `~/.cache/libjpeg-turbo-3.1.4.1`
-- skipped when `<prefix>/lib/libturbojpeg.a` exists
-- stdout: the prefix; with `cygpath` (Windows), in `cygpath -m` form
-- with `cygpath` (Windows): `CC` is `cygpath -m` of GHC's clang, `$(ghc --print-libdir)/../mingw/bin/clang.exe`; `LDFLAGS` is `-fuse-ld=lld --rtlib=compiler-rt`
+- build: skipped when `<prefix>/lib/libturbojpeg.a` exists
+- stdout: the prefix
+- with `cygpath` (Windows):
+  - the prefix printed in `cygpath -m` form
+  - `CC`: `cygpath -m` of GHC's clang, `$(ghc --print-libdir)/../mingw/bin/clang.exe`
+  - `LDFLAGS`: `-fuse-ld=lld --rtlib=compiler-rt`
 
 libjpeg-turbo per build:
 
@@ -123,7 +126,7 @@ libjpeg-turbo per build:
 | `build-lib-linux.sh` (also the `desktop-linux.yml` core), `build-lib-mac.sh` | the script | `+pkgconfig`, `PKG_CONFIG_PATH` |
 | `desktop-linux.yml`, `ios-sim.yml` and `android-emu.yml` backends | the script, default prefix | `+pkgconfig`, `PKG_CONFIG_PATH` |
 | `ios-sim.yml` core (`scripts/ci/ios-sim/build-core.sh`) | the script, default prefix; `libturbojpeg.a` copied into the package | `+pkgconfig`, `PKG_CONFIG_PATH` |
-| `Dockerfile` | the submodule initialized, the script, prefix `/usr/local` | `+pkgconfig`, default pkg-config path |
+| `Dockerfile` | the submodule initialized when absent, the script, prefix `/usr/local` | `+pkgconfig`, default pkg-config path |
 | support-bot-light and badge-service Dockerfiles | the script, prefix `/usr/local` | `+pkgconfig`, default pkg-config path |
 | calculator-bot Dockerfile | `build-lib-linux.sh` | as in `build-lib-linux.sh` |
 | nix, every target | `mkLibjpegTurbo`: nixpkgs `libjpeg_turbo`, static, source at the submodule commit | `-pkgconfig +static`, `libs` set to `mkLibjpegTurbo` |
@@ -150,11 +153,18 @@ Core:
   - `fitImage` (`:44-63`): the search, parameterized by the output (bytes or data URI)
   - `bisect` (`:65-75`)
   - `minJpegQuality = 20` (`:77-78`)
-  - `halve` (`:80-83`), `downscale` (`:85-88`): `STBIR.resize` with `defaultOptions`
+  - `halve` (`:80-83`)
+  - `downscale` (`:85-88`): `STBIR.resize` with `defaultOptions`
   - `toDataUri` (`:90-96`), with the approved comment at `:94`
 - `Mobile/File.hs`:
-  - `cChatResizeImageUri` (`:147-148`), `cChatResizeImage` (`:150-153`), exported at `:13-14`
-  - `cResizeImage` (`:155-159`): `getByteString`, `decodeImage`, `runCatchExceptT`, `newCStringFromLazyBS`
+  - exported at `:13-14`:
+    - `cChatResizeImageUri` (`:147-148`)
+    - `cChatResizeImage` (`:150-153`)
+  - `cResizeImage` (`:155-159`):
+    - `getByteString`
+    - `decodeImage`
+    - `runCatchExceptT`
+    - `newCStringFromLazyBS`
 - `Mobile.hs:167, 169`: `foreign export ccall` of both functions.
 - `Library/Commands.hs`:
   - `maxImagePreviewSize = 14000` (`:176-177`)
@@ -173,7 +183,8 @@ Core:
 
 iOS:
 - `apps/ios/SimpleXChat/ImageUtils.swift`:
-  - `resizeImageToDataSize` (`:88-94`), `resizeImageToStrSizeSync` (`:96-102`)
+  - `resizeImageToDataSize` (`:88-94`)
+  - `resizeImageToStrSizeSync` (`:96-102`)
   - `resizeImageWithCore` (`:108-114`), private
   - `saveWallpaperFile(image:)` (`:233`): `guard let` in place of a force-unwrap
   - `compressImageStr` and `reduceSize` removed
@@ -184,9 +195,15 @@ iOS:
   - `:61, 67, 69, 334`: header range `SimpleX.h#L1-L55`
 
 Android and desktop, `apps/multiplatform/common/src/`:
-- `commonMain/.../platform/Images.kt`: `resizeImageToStrSize` (`:34-38`) and `resizeImageToDataSize` (`:40-46`); the `expect` declarations of both and of `compressImageStr` removed.
+- `commonMain/.../platform/Images.kt`:
+  - `resizeImageToStrSize` (`:34-38`)
+  - `resizeImageToDataSize` (`:40-46`)
+  - the `expect` declarations of both and of `compressImageStr` removed
 - `androidMain/.../platform/Images.android.kt`, `desktopMain/.../platform/Images.desktop.kt`: the three `actual` functions removed.
-- `commonMain/.../platform/Core.kt`: `chatResizeImageUri` (`:42`), `chatResizeImage` (`:43`), `ByteArray.toDirectBuffer` (`:52-57`).
+- `commonMain/.../platform/Core.kt`:
+  - `chatResizeImageUri` (`:42`)
+  - `chatResizeImage` (`:43`)
+  - `ByteArray.toDirectBuffer` (`:52-57`)
 - `commonMain/.../model/CryptoFile.kt:25`: `toDirectBuffer` is used by `writeCryptoFile`.
 - `commonMain/cpp/android/simplex-api.c`: declarations (`:86-87`), JNI functions (`:280`, `:287`) with `decode_and_free`.
 - `commonMain/cpp/desktop/simplex-api.c`: declarations (`:49-50`), JNI functions (`:281`, `:288`) with `decode_to_utf8_string`.
@@ -203,19 +220,27 @@ Node, `packages/simplex-chat-nodejs/`:
     - `RequireExport` (`:141-146`): `ChatMigrateInitQueue` (`:573`)
     - `GetInt32Arg` (`:148-154`): `ChatMigrateInitQueue` (`:583`)
     - `BufferArg` (`:156-159`) and `GetBufferArg` (`:161-178`): `ChatWriteFile` (`:696-697`)
-  - `ChatResizeImage` (`:811-840`), `ChatResizeImageUri` (`:842-869`): `ResultAsyncWorker` with `KeepAlive` of the input
+  - with `ResultAsyncWorker` and `KeepAlive` of the input:
+    - `ChatResizeImage` (`:811-840`)
+    - `ChatResizeImageUri` (`:842-869`)
   - exports (`:890-891`)
 - `src/simplex.d.ts:13-14`, `src/simplex.js:3-4`: bindings.
-- `src/core.ts:112-130`: `chatResizeImageUri`, `chatResizeImage`, `resizedImage`.
+- `src/core.ts:112-130`:
+  - `chatResizeImageUri`
+  - `chatResizeImage`
+  - `resizedImage`
 - `docs/`: `core.Function.chatResizeImage.md` and `core.Function.chatResizeImageUri.md` new, `Namespace.core.md` list; other pages regenerated with updated source line references.
 
 Python, `packages/simplex-chat-python/src/simplex_chat/`:
 - `_native.py`:
   - `_optional_export` (`:280-289`), also used by `migrate_init_queue` (`:292-298`)
-  - `resize_image` (`:301-302`), `resize_image_uri` (`:305-306`)
+  - `resize_image` (`:301-302`)
+  - `resize_image_uri` (`:305-306`)
 - `core.py`:
   - `_check_c_int` (`:92-95`), also used by `chat_migrate_init` (`:149`)
-  - `chat_resize_image_uri` (`:257-266`), `chat_resize_image` (`:269-281`), `_resized_image` (`:284-287`)
+  - `chat_resize_image_uri` (`:257-266`)
+  - `chat_resize_image` (`:269-281`)
+  - `_resized_image` (`:284-287`)
 
 Build:
 - `.gitmodules:4-6`, `external/libjpeg-turbo`: the submodule.
@@ -228,7 +253,7 @@ Build:
 - `scripts/ci/desktop-linux/build-backend.sh:25-26`, `scripts/ci/ios-sim/build-backend.sh:29-30`, `scripts/ci/ios-sim/build-core.sh:16-17`: the script is run; `PKG_CONFIG_PATH` is set to `<prefix>/lib/pkgconfig`.
 - `scripts/ci/ios-sim/build-core.sh:58`: `libturbojpeg.a` is copied into the package.
 - `Dockerfile.build:65-66, 69-73`: NASM and pkgconf are installed; the script and the submodule are copied into the image; the script is run with prefix `/usr/local`.
-- `Dockerfile:8, 29-30`: cmake, NASM and pkgconf are installed; the submodule is initialized with `git submodule update --init`; the script is run with prefix `/usr/local`.
+- `Dockerfile:8, 29-30`: cmake, NASM and pkgconf are installed; the submodule is initialized with `git submodule update --init` when it is absent; the script is run with prefix `/usr/local`.
 - `apps/simplex-support-bot-light/Dockerfile:30-31, 34-37`, `scripts/badge-service/Dockerfile:27-28, 31-34`: cmake and NASM are installed; the script and the submodule are copied into the image; the script is run with prefix `/usr/local`; their `Dockerfile.dockerignore:14-20`: the script and the submodule are included in the build context.
 - `scripts/calculator-bot/Dockerfile:19-20, 38`: cmake and NASM are installed; the submodule is copied into the image; `Dockerfile.dockerignore:12`: the submodule is included in the build context.
 - `scripts/simplex-chat-reproduce-builds-android.sh`: submodules updated after checkout (`:103`); `Dockerfile.build` context is the checkout (`:162`).
@@ -264,7 +289,7 @@ CI:
 
 `tests/MobileTests.hs`, "Images" (`:93-95`), with buffers from `mallocBytes`:
 - `cChatResizeImageUri` on `test.jpg`, limit 14000: `data:image/jpg;base64,`, at most 14000 characters; on `"not an image"`: `""`.
-- `cChatResizeImage` on `test.jpg`, limit 100000: base64 of at most 100000 bytes, starting `FF D8` for `png = 0` and with the PNG signature for `png = 1`.
+- `cChatResizeImage` on `test.jpg`, limit 100000: base64 decoded to at most 100000 bytes, starting `FF D8` for `png = 0` and with the PNG signature for `png = 1`.
 
 `tests/ChatTests/Files.hs`, "send image with generated preview" (`:47`, `:179-192`):
 - `/img @bob ./tests/fixtures/test.jpg`: the received item has a JPEG data URI preview of at most 14000 characters, read with `APIGetChat` (`lastImagePreview`, `:194-200`).
@@ -305,23 +330,33 @@ CI:
      - yes: a third `png` mode in the C API (question 2); the sizes duplicated in both libraries, two of them also in `Library/Commands.hs:174, 177`.
      - no: the size limit and the image format are passed by each bot.
 2. The text of the comment at `apps/ios/SimpleXChat/SimpleX.h:36` and `packages/simplex-chat-nodejs/cpp/simplex.h:38`, if question 1 is accepted? Recommended:
-   `// chat_resize_image returns base64 of PNG (png > 0), JPEG (png == 0), or PNG for images with transparency and JPEG for others (png < 0), of at most maxSize bytes, or an empty string`
+   `// chat_resize_image returns base64 of at most maxSize bytes of PNG (png > 0), JPEG (png == 0), or PNG for an image with transparency, otherwise JPEG (png < 0), or an empty string`
 3. The Python docstrings (`core.py:258, 272`) are written with `max_size` and a final period, as the other docstrings of `core.py`, in place of the approved `maxSize` without a period: keep them? Recommended: keep.
 4. In the manual builds, a plain `cabal install` or `cabal build` is run, and libjpeg-turbo must be installed first: which of these options?
    - Documents with these builds:
      - `docs/CLI.md:116, 143-148`
-     - `docs/CONTRIBUTING.md:37-49`
      - `docs/contributing/CODE.md:77-89`
      - `apps/simplex-directory-service/README.md:17-21`
      - `apps/simplex-badge-service/README.md:40`
-     - `docs/lang/cs/CLI.md:113, 124`, `docs/lang/fr/CLI.md:115, 126`, `docs/lang/pl/CLI.md:115, 146`
-   - (a) the build script kept; a step is added to these documents: the submodule checked out (the clones at `docs/CLI.md:95, 116` are made without it), cmake, NASM and pkg-config installed, `scripts/desktop/prepare-libjpeg-turbo.sh` run, `PKG_CONFIG_PATH` set; costs: this step in every manual build.
-   - (b) libjpeg-turbo as a submodule of the hs-jpeg-turbo fork, compiled by cabal with `c-sources`, as simplexmq compiles blst; the submodule is checked out by cabal with the package (cabal-install 3.10.2.0 `VCS.hs:406-407`), so the documents are kept; one build path everywhere, without CMake, NASM, pkg-config and the script; costs: 3 configuration headers per target and a list of 113 C files kept per libjpeg-turbo release, with SIMD lost on every CPU, or 4 headers and 128 files with Arm Neon.
-   - (c) a cabal flag, off by default: in manual builds JPEG is encoded with JuicyPixels `encodeJpegAtQuality`; libjpeg-turbo is turned on by the scripts, CI and nix; costs: a second encoder path behind the flag, JPEGs 7–33% larger at the same quality and encoded 3–7 times slower (`test.jpg` and `preview-issue1.png`, qualities 20 to 94).
-   - With every option, the Docker build of `docs/CLI.md:94-98` is kept: the submodule is initialized in `Dockerfile:29`.
+     - `apps/simplex-badge-service/web/README.md:101`
+     - `scripts/db/README.md:66`
+     - `website/src/_includes/llms/agents.md:115-121`
+     - `docs/lang/cs/CLI.md:113, 124`
+     - `docs/lang/fr/CLI.md:115, 126`
+     - `docs/lang/pl/CLI.md:115, 146`
+   - Build setup referred to by both service READMEs: `docs/CONTRIBUTING.md:37-49`
+   - (a) the build script kept; a step is added to these documents: the submodule checked out (the clones of these builds are made without it), cmake, NASM and pkg-config installed, `scripts/desktop/prepare-libjpeg-turbo.sh` run, `PKG_CONFIG_PATH` set; costs: this step in every manual build.
+   - (b) libjpeg-turbo as a submodule inside the `jpeg-turbo` package directory of the hs-jpeg-turbo fork, compiled by cabal with `c-sources` and its headers listed in `extra-source-files`, as blst is compiled in simplexmq `8bc4d360` from `cbits/blst` (`simplexmq.cabal:22-33, 339-350`); the submodule is checked out by cabal with the package (cabal-install 3.10.2.0 `VCS.hs:449-450`, in `vcsSyncRepo`, reached from `ProjectConfig.hs:1183`), so the documents are kept; one build path everywhere, without CMake, NASM, pkg-config and the script; costs: 3 configuration headers per target and a list of 113 C files kept per libjpeg-turbo release, with SIMD lost on every CPU, or 4 headers and 128 files with Arm Neon; the hs-jpeg-turbo clone deleted before each Windows build, as the simplexmq clone is (`build.yml:1456, 1459`, `build-lib-windows.sh:44`).
+   - (c) a cabal flag, off by default: in manual builds JPEG is encoded with JuicyPixels `encodeJpegAtQuality`; libjpeg-turbo is turned on by the scripts, CI, nix and the Dockerfiles in which cabal is run directly (`Dockerfile:34`, `apps/simplex-support-bot-light/Dockerfile:61`, `scripts/badge-service/Dockerfile:60`); costs: a second encoder path behind the flag, JPEGs 7–33% larger at the same quality and encoded 3–7 times slower (`test.jpg` and `preview-issue1.png`, qualities 20 to 94).
+   - Docker builds, kept with every option (the submodule is initialized in `Dockerfile:29` when it is absent):
+     - `docs/CLI.md:94-98`
+     - `docs/lang/cs/CLI.md:93-97`
+     - `docs/lang/fr/CLI.md:93-97`
+     - `docs/lang/pl/CLI.md:93-97`
+     - `website/src/_includes/llms/agents.md:105-110`
 
    Recommended: (c), the cheapest option with the documents unchanged.
-5. The core modules are described as rarely needed in Node ("unlikely to ever need", `README.md:137`, `src/index.ts:15`) and as internal in Python ("Internal", "for tests and the api.ChatApi class only", `core.py:1-4`), while image resizing is exported from them; the Python text also counts "8 C ABI functions", 9 at master and 11 with this change: change the texts? Recommended: yes, to the texts below.
+5. The core modules are described as rarely needed in Node ("unlikely to ever need", `README.md:137`, `src/index.ts:15`) and as internal in Python ("Internal", "for tests and the api.ChatApi class only", `core.py:1-4`), while image resizing is exported from them; "8 C ABI functions" are counted in the Python text, and 9 are wrapped at master, 11 with this change: change the texts? Recommended: yes, to the texts below.
    - `packages/simplex-chat-nodejs/README.md:137`:
      `- [core](./docs/Namespace.core.md): a low level API to the core library - the same that is used in desktop clients. You are unlikely to ever need to use this module directly, except for image resizing.`
    - `packages/simplex-chat-nodejs/src/index.ts:15`, generated into `docs/Namespace.core.md:10`:
@@ -352,12 +387,26 @@ CI:
      ```
      | `jpeg-turbo` | [`0.1.0.0`](https://gitlab.com/dpwiz/hs-jpeg-turbo/-/tree/f1bc073427e60341a3359e2345c1683d17ea2a35/jpeg-turbo) | [`BSD-3-Clause`](./licences/haskell/jpeg-turbo-0.1.0.0/LICENSE) | FFI bindings to libjpeg-turbo | `JuicyPixels-jpeg-turbo` |
      ```
-   - The "Depended upon by" cells of the existing rows of their dependencies gain the new packages, or the report is regenerated:
-     - `JuicyPixels`: `bytestring`, `mtl`, `binary`, `zlib`, `transformers`, `vector`, `primitive`, `deepseq`, `containers`
-     - `JuicyPixels-stbir`: `vector`, `data-default-class`
-     - `JuicyPixels-jpeg-turbo`: `bytestring`, `vector`
-     - `jpeg-turbo`: `bytestring`
-7. The comments at `scripts/ci/ios-sim/avatar.swift:1` and `scripts/ci/desktop-linux/backend.sh:70` attribute the old resizing method to the apps; the scripts still implement that method (`avatar.swift:81-85`, `backend.sh:79-84`). Change them to the method only? Recommended: yes.
+   - The new packages are added to the "Also depended upon by" cells of these rows, or the report is regenerated:
+     - `JuicyPixels`:
+       - `bytestring`
+       - `mtl`
+       - `binary`
+       - `zlib`
+       - `transformers`
+       - `vector`
+       - `primitive`
+       - `deepseq`
+       - `containers`
+     - `JuicyPixels-stbir`:
+       - `vector`
+       - `data-default-class`
+     - `JuicyPixels-jpeg-turbo`:
+       - `bytestring`
+       - `vector`
+     - `jpeg-turbo`:
+       - `bytestring`
+7. The old resizing method is attributed to the apps by the comments at `scripts/ci/ios-sim/avatar.swift:1` and `scripts/ci/desktop-linux/backend.sh:70`; that method is still implemented by the scripts (`avatar.swift:81-85`, `backend.sh:79-84`). Change the comments to the method only? Recommended: yes.
    - `scripts/ci/ios-sim/avatar.swift:1`:
      `// Makes a group avatar:`
    - `scripts/ci/desktop-linux/backend.sh:70`:
