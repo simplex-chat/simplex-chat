@@ -47,7 +47,7 @@ Agent side: https://github.com/evgeny-simplex/simplexmq/pull/2
   - other chat type or direction, or a direct sent item without transfers (:322; `sft : _` is required by the direct branch at :274);
   - item deleted or without a shared message ID (:323).
 - iOS spec, one sentence in each of two files: "While the chat is suspending, the agent continues the XFTP uploads started in foreground by this app process, and the core sends `chatSuspended` after the agent ends these uploads, or at the suspend timeout; uploads resumed from an earlier process are not awaited."
-- `cabal.project`: simplexmq pinned to commit `7fcc2176` of simplexmq PR #2 during review.
+- `cabal.project`: simplexmq pinned to commit `f879485b` of simplexmq PR #2 during review.
 - After the simplexmq pull request in simplex-chat/simplexmq is merged and before the final pull request is opened in simplex-chat/simplex-chat:
   - the pin is replaced by the merged simplex-chat/simplexmq commit;
   - `scripts/nix/sha256map.nix` is updated.
@@ -69,7 +69,7 @@ Agent side: https://github.com/evgeny-simplex/simplexmq/pull/2
 - `apps/ios/spec/services/files.md` (:274), "Sending": the sentence.
 - `cabal.project` (:23-24):
   - `location: https://github.com/evgeny-simplex/simplexmq.git`;
-  - `tag: 7fcc2176475f04b7563aaa912f69bb70acee524e`.
+  - `tag: f879485b25c6e747a3fa4722f22f19d9b3158830`.
 
 ## Tests
 
