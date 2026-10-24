@@ -1,4 +1,4 @@
-import {Action, Actions, NewAction, ToolError, lostMessage, stoppingMessage} from "../../src/actions"
+import {Action, Actions, NewAction, ToolError, lostMessage} from "../../src/actions"
 import {Collected} from "../../src/messages"
 import {actionsWith, fakeHooks, settled, signal} from "./fixtures"
 
@@ -177,7 +177,7 @@ describe("actions in mode requests", () => {
   it("refuses new actions once stopping", async () => {
     const actions = actionsWith("requests", fakeHooks())
     await actions.stop()
-    expect(() => actions.create(1, "k", sendFields())).toThrow(new ToolError(stoppingMessage))
+    expect(() => actions.create(1, "k", sendFields())).toThrow(new ToolError("The SimpleX daemon is stopping."))
     expect(actions.next).toBe(1)
   })
 

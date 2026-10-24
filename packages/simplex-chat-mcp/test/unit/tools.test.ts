@@ -42,4 +42,9 @@ describe("tool registration", () => {
     expect(instructions()).toContain("You act in SimpleX chats through these tools, as your agent profile.")
     expect(instructions()).not.toMatch(/as the agent \S/)
   })
+
+  it("says that a SimpleX daemon restart cancels actions", () => {
+    expect(instructions()).toContain("A SimpleX daemon restart cancels actions; a repeated call after it creates a new one.")
+    expect(instructions()).not.toMatch(/server/i)
+  })
 })

@@ -178,7 +178,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
       case "list":
         return this.chatsText()
       case "approveChat":
-        if (this.actions.mode === "host") return "Approvals apply in mode requests; this server runs in mode host."
+        if (this.actions.mode === "host") return "Approvals apply in mode requests; the SimpleX daemon runs in mode host."
         return this.approveChat(sender, request.target)
       case "revoke":
         return this.revoke(request.target)
@@ -384,10 +384,10 @@ export function cardText(action: Action, mode: Actions["mode"]): string {
   switch (action.state) {
     case "pending":
       return action.interrupted
-        ? [...request, "Cancelled: the server stopped."].join("\n")
+        ? [...request, "Cancelled: the SimpleX daemon stopped."].join("\n")
         : [...request, commandsLine(action)].join("\n")
     case "performing":
-      return [...request, `${approval}; interrupted: the server stopped.`].join("\n")
+      return [...request, `${approval}; interrupted: the SimpleX daemon stopped.`].join("\n")
     case "done":
       return [...request, action.standing ? `${approval}. /'revoke ${action.session}:${action.chat}'` : `${approval}.`].join("\n")
     case "failed":

@@ -377,7 +377,7 @@ describe("sends to a chat approved for all messages", () => {
     const {chats} = (await tools.call("list", {}, signal().call))!.structuredContent as {chats: {chat: string}[]}
     expect(chats.find(({chat: ref}) => ref === "@4")).not.toHaveProperty("approved")
     expect((await control.ownerCommand(alice, {keyword: "list", params: ""}))!.split("\n")[1]).toBe("1:@4  bot SimpleX Directory")
-    expect(await control.ownerCommand(alice, {keyword: "approve", params: "1:#2 all"})).toBe("Approvals apply in mode requests; this server runs in mode host.")
+    expect(await control.ownerCommand(alice, {keyword: "approve", params: "1:#2 all"})).toBe("Approvals apply in mode requests; the SimpleX daemon runs in mode host.")
     expect(chat.customData).toEqual([])
     expect((await tools.call("send", {chat: "@4", text: "trail shoes", wait: 0}, signal().call))!.structuredContent).toMatchObject({action: 1, status: "done"})
     await settled()

@@ -104,7 +104,7 @@ Incognito, in a second session, because the first one already knows the director
 
 Stop and restart:
 
-- Stop the daemon while a card waits: the card ends with `Cancelled: the server stopped.` After a restart, `/approve` of that number replies `Action N is not pending.`, and the next card has the next number.
+- Stop the daemon while a card waits: the card ends with `Cancelled: the SimpleX daemon stopped.` After a restart, `/approve` of that number replies `Action N is not pending.`, and the next card has the next number.
 - `npx -y @simplex-chat/mcp daemon` while a daemon runs prints `running` and exits.
 
 ## Claude Code checks

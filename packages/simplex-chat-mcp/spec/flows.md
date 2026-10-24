@@ -474,8 +474,8 @@ sequenceDiagram
   D-->>S: streams end: calls return "The SimpleX daemon stopped; repeat the call."
   D->>H: Hub.stop
   H->>H: events ignored; Actions.stop: pending and performing interrupted
-  H->>O: pending: ... Cancelled: the server stopped.
-  H->>O: performing: ... Approved by Alice, interrupted: the server stopped.
+  H->>O: pending: ... Cancelled: the SimpleX daemon stopped.
+  H->>O: performing: ... Approved by Alice, interrupted: the SimpleX daemon stopped.
   H->>H: /sql chat, /sql agent: pending deliveries to #G members, every 100 ms, at most 10 s
   H->>H: close the hub core
   D->>D: log: Cancelled 2 actions.
@@ -487,7 +487,7 @@ sequenceDiagram
 
 Notes:
 
-- The interrupted card line is `DECIDER; interrupted: the server stopped.` ([control.ts:390](../src/control.ts#L390)).
+- The interrupted card line is `DECIDER; interrupted: the SimpleX daemon stopped.` ([control.ts:390](../src/control.ts#L390)).
 - A host-mode action whose counter is being written at the stop is set to `pending` and cancelled without a perform ([actions.ts:247](../src/actions.ts#L247)).
 - The perform signal is aborted after the actions are marked interrupted: a `connect` waiting for its connection ends, and an interrupted perform logs no line ([actions.ts:225](../src/actions.ts#L225), [:259](../src/actions.ts#L259), [tools.ts:509-511](../src/tools.ts#L509-L511)).
 - An error of a `/sql` query of the delivery wait is logged as `delivery wait: ERROR` and ends the wait ([core.ts:54-62](../src/core.ts#L54-L62)).

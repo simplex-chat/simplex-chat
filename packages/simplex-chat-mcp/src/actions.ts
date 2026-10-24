@@ -11,7 +11,7 @@ const maxPending = 20
 const maxPerforming = 20
 
 export const lostMessage = "The Main group is lost. Run /simplex:reset-owners in Claude Code."
-export const stoppingMessage = "The server is stopping."
+export const stoppingMessage = "The SimpleX daemon is stopping."
 const pendingMessage = `${maxPending} actions are pending; wait for the owner's decisions.`
 const performingMessage = `${maxPerforming} actions are being performed; wait for their results.`
 

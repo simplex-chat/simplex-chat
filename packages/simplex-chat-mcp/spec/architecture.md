@@ -464,7 +464,7 @@ An open `/attach` clears the session's timer ([daemon.ts:215](../src/daemon.ts#L
 
 1. Timers are cleared; new entries are refused with status 503 `The SimpleX daemon is stopping.`
 2. The listener is closed; open `/attach` and `/call` streams are destroyed, which drops the session processes' connections.
-3. `Hub.stop` ([hub.ts:77-84](../src/hub.ts#L77-L84)): events are ignored; `Actions.stop` refuses new actions with `The server is stopping.`, awaits cards being posted, marks pending and performing actions interrupted, aborts the perform signal and edits their cards ([actions.ts:219-229](../src/actions.ts#L219-L229)); queued Main group events are awaited; pending deliveries to Main group members are polled every 100 ms for at most 10 s ([core.ts:44-52](../src/core.ts#L44-L52)); the hub core is closed.
+3. `Hub.stop` ([hub.ts:77-84](../src/hub.ts#L77-L84)): events are ignored; `Actions.stop` refuses new actions with `The SimpleX daemon is stopping.`, awaits cards being posted, marks pending and performing actions interrupted, aborts the perform signal and edits their cards ([actions.ts:219-229](../src/actions.ts#L219-L229)); queued Main group events are awaited; pending deliveries to Main group members are polled every 100 ms for at most 10 s ([core.ts:44-52](../src/core.ts#L44-L52)); the hub core is closed.
 4. `Cancelled K action(s).` when K > 0.
 5. The session cores are closed, and closes in progress awaited.
 6. The lock is removed and `Stopped.` is logged.
@@ -541,7 +541,7 @@ create(session, key, fields, standingApprover?):
   state = mode host or standing ? performing : pending
   expires = now + expireHours
   refusal, first match:
-    stopping                                  "The server is stopping."
+    stopping                                  "The SimpleX daemon is stopping."
     Main group lost                           lostMessage
     20 actions of this session pending        pendingMessage
     20 actions of this session performing     performingMessage
@@ -572,7 +572,7 @@ Outcomes are posted after `done` and `failed` ([actions.ts:260-261](../src/actio
 
 | Aspect | Rule | Code |
 |---|---|---|
-| grant | `/approve S:CHAT all` from an owner in mode `requests` (mode `host` stores nothing and replies `Approvals apply in mode requests; this server runs in mode host.`), session S open: custom data of CHAT in session S's database gets `simplexMcp: {approvedBy, approvedById, approvedAt}`, other keys kept; pending sends of session S to CHAT with a card are approved | [control.ts:181-182](../src/control.ts#L181-L182), [:223-236](../src/control.ts#L223-L236) |
+| grant | `/approve S:CHAT all` from an owner in mode `requests` (mode `host` stores nothing and replies `Approvals apply in mode requests; the SimpleX daemon runs in mode host.`), session S open: custom data of CHAT in session S's database gets `simplexMcp: {approvedBy, approvedById, approvedAt}`, other keys kept; pending sends of session S to CHAT with a card are approved | [control.ts:181-182](../src/control.ts#L181-L182), [:223-236](../src/control.ts#L223-L236) |
 | removal | `/revoke S:CHAT`, session S open: the `simplexMcp` key is removed, other keys kept | [control.ts:238-246](../src/control.ts#L238-L246) |
 | use | mode `requests`, and `approvedById` equal to the `groupMemberId` of a current owner of the Main group | [control.ts:117-120](../src/control.ts#L117-L120) |
 | scope | `send` only | [tools.ts:588](../src/tools.ts#L588) |

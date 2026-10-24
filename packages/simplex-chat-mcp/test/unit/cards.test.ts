@@ -67,11 +67,11 @@ describe("connect cards", () => {
     expect(lines(action(fields, "failed", {decidedBy: "Alice", error: "SimpleX error: contactNotReady"}))).toEqual([...request, "Approved by Alice; failed: `SimpleX error: contactNotReady`."])
     expect(lines(action(fields, "rejected", {decidedBy: "Alice"}))).toEqual([...request, "Rejected by Alice."])
     expect(lines(action(fields, "expired"))).toEqual([...request, "Expired."])
-    expect(lines(action(fields, "pending", {interrupted: true}))).toEqual([...request, "Cancelled: the server stopped."])
-    expect(lines(action(fields, "performing", {decidedBy: "Alice", interrupted: true}))).toEqual([...request, "Approved by Alice; interrupted: the server stopped."])
+    expect(lines(action(fields, "pending", {interrupted: true}))).toEqual([...request, "Cancelled: the SimpleX daemon stopped."])
+    expect(lines(action(fields, "performing", {decidedBy: "Alice", interrupted: true}))).toEqual([...request, "Approved by Alice; interrupted: the SimpleX daemon stopped."])
     expect(lines(action(fields, "done", {connected: true} as Partial<Action>), "host")).toEqual(["I connected to bot SimpleX Directory (@directory.simplex), as myself.", "`Search.`", "Performed without approval (mode host)."])
     expect(lines(action(fields, "failed", {error: "boom"}), "host")).toEqual([...request, "Performed without approval (mode host); failed: `boom`."])
-    expect(lines(action(fields, "performing", {interrupted: true}), "host")).toEqual([...request, "Performed without approval (mode host); interrupted: the server stopped."])
+    expect(lines(action(fields, "performing", {interrupted: true}), "host")).toEqual([...request, "Performed without approval (mode host); interrupted: the SimpleX daemon stopped."])
   })
 
   it("names an unnamed contact", () => {
@@ -169,7 +169,7 @@ describe("send cards", () => {
     const standing = {standing: true, decidedBy: "Alice"}
     expect(cardText(action(fields, "done", standing), mode).split("\n")).toEqual(["I sent a message to business ep:", "`hello`", "Approved for this chat by Alice. /'revoke 1:#2'"])
     expect(cardText(action(fields, "failed", {...standing, error: "boom"}), mode).split("\n")).toEqual(["I want to send a message to business ep:", "`hello`", "Approved for this chat by Alice; failed: `boom`."])
-    expect(cardText(action(fields, "performing", {...standing, interrupted: true}), mode).split("\n").at(-1)).toBe("Approved for this chat by Alice; interrupted: the server stopped.")
+    expect(cardText(action(fields, "performing", {...standing, interrupted: true}), mode).split("\n").at(-1)).toBe("Approved for this chat by Alice; interrupted: the SimpleX daemon stopped.")
   })
 })
 
@@ -207,6 +207,6 @@ describe("leave cards", () => {
     expect(lines(action(group, "failed", {decidedBy: "Alice", error: "SimpleX error: groupNotFound"}))).toEqual(["I want to leave business ep (#2).", "Approved by Alice; failed: `SimpleX error: groupNotFound`."])
     expect(lines(action(group, "rejected", {decidedBy: "Alice"}))).toEqual(["I want to leave business ep (#2).", "Rejected by Alice."])
     expect(lines(action(group, "expired"))).toEqual(["I want to leave business ep (#2).", "Expired."])
-    expect(lines(action(group, "pending", {interrupted: true}))).toEqual(["I want to leave business ep (#2).", "Cancelled: the server stopped."])
+    expect(lines(action(group, "pending", {interrupted: true}))).toEqual(["I want to leave business ep (#2).", "Cancelled: the SimpleX daemon stopped."])
   })
 })

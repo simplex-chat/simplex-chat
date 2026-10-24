@@ -262,7 +262,7 @@ Refusals of a new `connect`, `send` or `leave` action, first match ([actions.ts:
 
 | Text | Condition |
 |---|---|
-| `The server is stopping.` | `Actions.stop` has started |
+| `The SimpleX daemon is stopping.` | `Actions.stop` has started |
 | `The Main group is lost. Run /simplex:reset-owners in Claude Code.` | Main group lost |
 | `20 actions are pending; wait for the owner's decisions.` | 20 actions of this session in state `pending` |
 | `20 actions are being performed; wait for their results.` | 20 actions of this session in state `performing` |
@@ -323,7 +323,7 @@ The daemon ignores text that does not start with `/` or has several lines. It an
 | `approve`, `reject` | action N absent, not `pending`, or without a card | `Action N is not pending.` | [control.ts:188](../src/control.ts#L188) |
 | `approve TARGET N`, `reject TARGET N` | action N is a `connect`, or for another session or chat | `Action N is not for S:CHAT.` | [control.ts:189-191](../src/control.ts#L189-L191) |
 | `approve`, `reject` | accepted | none; the card is edited at the outcome | [control.ts:192-195](../src/control.ts#L192-L195) |
-| `approve TARGET all` | mode `host`; nothing is stored | `Approvals apply in mode requests; this server runs in mode host.` | [control.ts:181](../src/control.ts#L181) |
+| `approve TARGET all` | mode `host`; nothing is stored | `Approvals apply in mode requests; the SimpleX daemon runs in mode host.` | [control.ts:181](../src/control.ts#L181) |
 | `approve TARGET all`, `revoke TARGET` | session S not open | `No open session S. /list shows the open sessions.` | [control.ts:225](../src/control.ts#L225), [:240](../src/control.ts#L240), [:536-538](../src/control.ts#L536-L538) |
 | `approve TARGET all` | CHAT unknown in session S | `No chat S:CHAT. /list shows the agents' chats.` | [control.ts:227](../src/control.ts#L227) |
 | `approve TARGET all` | accepted | `Approved for KIND NAME (S:CHAT) by APPROVER. /'revoke S:CHAT'` | [control.ts:235](../src/control.ts#L235) |
@@ -357,8 +357,8 @@ Last line:
 | State | Condition | Last line |
 |---|---|---|
 | `pending` | | command line |
-| `pending` | interrupted | `Cancelled: the server stopped.` |
-| `performing` | interrupted | `DECIDER; interrupted: the server stopped.` |
+| `pending` | interrupted | `Cancelled: the SimpleX daemon stopped.` |
+| `performing` | interrupted | `DECIDER; interrupted: the SimpleX daemon stopped.` |
 | `done` | standing | `Approved for this chat by NAME. /'revoke S:CHAT'` |
 | `done` | | `DECIDER.` |
 | `failed` | | ``DECIDER; failed: `ERROR`.`` |

@@ -196,7 +196,7 @@ A pending action expires after `expire_hours`, 23 by default and at most: Simple
 
 A result that no call has returned is dropped after the action's expiry time; a repeated call after that creates a new action. At most 20 actions of one session are pending at once, and at most 20 are being performed; a further `connect`, `send` or `leave` of that session fails until the owner decides.
 
-Actions last only while the daemon runs. The daemon keeps a session's profile open while it has actions. When the daemon stops, the last line of each pending card is edited to `Cancelled: the server stopped.`; after a restart, `/approve` of an earlier number replies `Action N is not pending.`, and the agent's repeated call posts a new card. Action numbers continue across restarts.
+Actions last only while the daemon runs. The daemon keeps a session's profile open while it has actions. When the daemon stops, the last line of each pending card is edited to `Cancelled: the SimpleX daemon stopped.`; after a restart, `/approve` of an earlier number replies `Action N is not pending.`, and the agent's repeated call posts a new card. Action numbers continue across restarts.
 
 ## What the agent sees
 

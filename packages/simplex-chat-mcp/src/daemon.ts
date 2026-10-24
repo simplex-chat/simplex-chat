@@ -2,7 +2,7 @@ import {writeSync} from "fs"
 import {Server, ServerResponse} from "http"
 import {CallToolResult} from "@modelcontextprotocol/server"
 import {T} from "@simplex-chat/types"
-import {Action, Actions} from "./actions"
+import {Action, Actions, stoppingMessage} from "./actions"
 import {openSessionAgent, sessionName} from "./agent"
 import {Config, readConfig} from "./config"
 import {SessionView, Sessions} from "./control"
@@ -273,7 +273,7 @@ export class Daemon {
   }
 
   private refuseWhenStopping(): void {
-    if (this.stopping !== undefined) throw new SocketError("The SimpleX daemon is stopping.", 503)
+    if (this.stopping !== undefined) throw new SocketError(stoppingMessage, 503)
   }
 
   private folder(id: string): string {
