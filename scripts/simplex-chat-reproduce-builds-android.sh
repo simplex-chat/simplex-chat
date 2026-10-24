@@ -159,7 +159,7 @@ setup_container() {
     -t "${IMAGE_NAME}" \
     --build-arg=USER_UID="$(id -u)" \
     --build-arg=USER_GID="$(id -g)" \
-    "${dir_git}"
+    .
 
   # Run container in background
   docker run -t -d \

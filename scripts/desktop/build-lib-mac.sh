@@ -24,9 +24,6 @@ exports=( $(sed 's/foreign export ccall "chat_migrate_init_key"//' src/Simplex/C
 for elem in "${exports[@]}"; do count=$(grep -R "$elem$" libsimplex.dll.def | wc -l); if [ $count -ne 1 ]; then echo Wrong exports in libsimplex.dll.def. Add \"$elem\" to that file; exit 1; fi ; done
 for elem in "${exports[@]}"; do count=$(grep -R "\"$elem\"" flake.nix | wc -l); if [ $count -ne 1 ]; then echo Wrong exports in flake.nix. Add \"$elem\" to aarch64-android:lib:simplex-chat; exit 1; fi ; done
 
-jpeg_turbo_dir=$(scripts/desktop/prepare-libjpeg-turbo.sh)
-export PKG_CONFIG_PATH=$jpeg_turbo_dir/lib/pkgconfig
-
 rm -rf $BUILD_DIR
 
 if [[ "$DATABASE_BACKEND" == "postgres" ]]; then

@@ -39,18 +39,6 @@
       # `appendOverlays` with a singleton is identical to `extend`.
       let pkgs = haskellNix.legacyPackages.${system}.appendOverlays [android26]; in
       let pkgs8107 = haskellNix-ghc8107.legacyPackages.${system}.appendOverlays [android26]; in
-      let mkLibjpegTurbo = p: (p.libjpeg_turbo.override { enableStatic = true; enableShared = false; }).overrideAttrs (_: {
-        version = "3.1.4.1";
-        src = p.fetchFromGitHub {
-          owner = "libjpeg-turbo";
-          repo = "libjpeg-turbo";
-          rev = "9217719d3a58633923b096af4c1d50d304768a64";
-          hash = "sha256-jBajigX4/j4jG11prTPeGkTVRrRzheFL/LxgnPufzb4=";
-        };
-        patches = [ ];
-        outputs = [ "bin" "dev" "out" "man" "doc" ];
-        postFixup = "";
-      }); in
       let drv' = { extra-modules, pkgs', compiler-nix-name ? "ghc963", ... }: pkgs'.haskell-nix.project {
         inherit compiler-nix-name;
         index-state = "2023-12-12T00:00:00Z";
@@ -80,12 +68,6 @@
 
           ({ pkgs,lib, ... }: lib.mkIf (pkgs.stdenv.hostPlatform.isAndroid) {
             packages.simplex-chat.components.library.ghcOptions = [ "-pie" ];
-          })
-
-          ({ pkgs, lib, ... }: {
-            packages.jpeg-turbo.flags.pkgconfig = false;
-            packages.jpeg-turbo.flags.static = true;
-            packages.jpeg-turbo.components.library.libs = lib.mkForce [ (mkLibjpegTurbo pkgs) ];
           })] ++ extra-modules;
       }; in
       # by defualt we don't need to pass extra-modules.
@@ -116,7 +98,6 @@
         find ./dist -name "libHS*.a" -exec cp {} $out/_pkg \;
         find ${pkgs.libffi.overrideAttrs (old: { dontDisableStatic = true; })}/lib -name "*.a" -exec cp {} $out/_pkg \;
         find ${pkgs.gmp6.override { withStatic = true; }}/lib -name "*.a" -exec cp {} $out/_pkg \;
-        find ${pkgs.lib.getLib (mkLibjpegTurbo pkgs)}/lib -name "libturbojpeg.a" -exec cp {} $out/_pkg \;
         # There is no static libc
         ${pkgs.tree}/bin/tree $out/_pkg
         for pkg in $out/_pkg/*.a; do

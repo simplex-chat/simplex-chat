@@ -26,9 +26,6 @@ package direct-sqlcipher
     extra-lib-dirs: $openssl_dir/lib
 EOF
 
-jpeg_turbo_dir=$(scripts/desktop/prepare-libjpeg-turbo.sh)
-export PKG_CONFIG_PATH=$jpeg_turbo_dir/lib/pkgconfig
-
 targets="exe:simplex-chat exe:simplex-directory-service"
 cabal build -j $targets
 

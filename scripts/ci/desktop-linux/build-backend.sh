@@ -22,9 +22,6 @@ package direct-sqlcipher
     flags: +openssl
 EOF
 
-jpeg_turbo_dir=$(scripts/desktop/prepare-libjpeg-turbo.sh)
-export PKG_CONFIG_PATH=$jpeg_turbo_dir/lib/pkgconfig
-
 cabal build exe:simplex-chat exe:simplex-directory-service
 
 simplexmq_tag=$(sed -n '/simplex-chat\/simplexmq.git/{n;s/^ *tag: *//p}' cabal.project)

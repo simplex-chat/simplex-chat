@@ -24,14 +24,9 @@ ARG CABAL
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        build-essential ca-certificates cmake curl git libgmp3-dev libnuma-dev \
-        libpq-dev libssl-dev llvm nasm pkg-config zlib1g-dev && \
+        build-essential ca-certificates curl git libgmp3-dev libnuma-dev \
+        libpq-dev libssl-dev llvm pkg-config zlib1g-dev && \
     rm -rf /var/lib/apt/lists/*
-
-COPY scripts/desktop/prepare-libjpeg-turbo.sh /tmp/simplex-chat/scripts/desktop/prepare-libjpeg-turbo.sh
-COPY external/libjpeg-turbo /tmp/simplex-chat/external/libjpeg-turbo
-RUN LIBJPEG_TURBO_PREFIX=/usr/local /tmp/simplex-chat/scripts/desktop/prepare-libjpeg-turbo.sh && \
-    rm -rf /tmp/simplex-chat
 
 ENV BOOTSTRAP_HASKELL_NONINTERACTIVE=1 \
     BOOTSTRAP_HASKELL_GHC_VERSION=${GHC} \

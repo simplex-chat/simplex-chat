@@ -46,7 +46,7 @@ PYTHON_DIR = "packages/simplex-chat-python"
 RELEASE_FILE = f"{NODEJS_DIR}/src/release.ts"
 PYTHON_VERSION_FILE = f"{PYTHON_DIR}/src/simplex_chat/_version.py"
 ADDON_SOURCES = [f"{NODEJS_DIR}/binding.gyp", f"{NODEJS_DIR}/cpp"]
-CORE_SOURCES = ["src", "simplex-chat.cabal", "cabal.project", "external/libjpeg-turbo"]
+CORE_SOURCES = ["src", "simplex-chat.cabal", "cabal.project"]
 # The pull_request paths of build.yml are the union of these globs; ":!" excludes a path from its build.
 BUILD_CHANGES = {
     "haskell": [
@@ -61,7 +61,6 @@ BUILD_CHANGES = {
         "bots/src/**",
         "simplex-chat.cabal",
         "cabal.project",
-        "external/libjpeg-turbo",
         "Dockerfile*",
         "scripts/ci/**",
         ":!scripts/ci/ios-stub-libs.sh",

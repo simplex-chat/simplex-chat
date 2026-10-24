@@ -24,7 +24,6 @@ on:
       - "bots/src/**"
       - "simplex-chat.cabal"
       - "cabal.project"
-      - "external/libjpeg-turbo"
       - "Dockerfile*"
       - "scripts/ci/**"
       - "scripts/ci/ios-stub-libs.sh"
@@ -337,7 +336,7 @@ jobs:
         if: matrix.should_run == true && env.release != 'true'
         run: |
           toolchain=$(docker exec builder dpkg-query -W -f '${db:Status-Status} ${binary:Package} ${Version}\n' 'binutils*' 'cpp*' 'gcc*' '*-dev' | grep '^installed ' | sha256sum | cut -c1-16)
-          target=ubuntu-${{ matrix.os }}-${{ matrix.arch }}-ghc${{ matrix.ghc }}-$toolchain-${{ hashFiles('external/libjpeg-turbo/**') }}
+          target=ubuntu-${{ matrix.os }}-${{ matrix.arch }}-ghc${{ matrix.ghc }}-$toolchain
           echo "deps=deps-$target" >> "$GITHUB_OUTPUT"
           echo "dist=dist-$target" >> "$GITHUB_OUTPUT"
           echo "dist_lib=dist-lib-$target" >> "$GITHUB_OUTPUT"
@@ -821,8 +820,6 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
-        with:
-          submodules: recursive
 
       - name: Get UID and GID
         id: ids
@@ -867,7 +864,7 @@ jobs:
         id: keys
         run: |
           toolchain=$(docker exec builder dpkg-query -W -f '${db:Status-Status} ${binary:Package} ${Version}\n' 'binutils*' 'cpp*' 'gcc*' '*-dev' | grep '^installed ' | sha256sum | cut -c1-16)
-          echo "deps=deps-ubuntu-22.04-x86_64-postgres-ghc${{ needs.variables.outputs.GHC_VER }}-$toolchain-${{ hashFiles('external/libjpeg-turbo/**') }}" >> "$GITHUB_OUTPUT"
+          echo "deps=deps-ubuntu-22.04-x86_64-postgres-ghc${{ needs.variables.outputs.GHC_VER }}-$toolchain" >> "$GITHUB_OUTPUT"
 
       - name: Restore dependencies from cache
         id: restore-deps
@@ -1012,14 +1009,6 @@ jobs:
         if: matrix.should_run == true
         run: brew install openssl@3.0
 
-      - name: Prepare libjpeg-turbo
-        if: matrix.should_run == true
-        shell: bash
-        run: |
-          brew install nasm
-          jpeg_turbo_dir=$(scripts/desktop/prepare-libjpeg-turbo.sh)
-          echo "PKG_CONFIG_PATH=$jpeg_turbo_dir/lib/pkgconfig" >> "$GITHUB_ENV"
-
       - name: Prepare cabal.project.local
         if: matrix.should_run == true
         shell: bash
@@ -1040,7 +1029,7 @@ jobs:
         shell: bash
         run: |
           toolchain=$({ sw_vers -productVersion; clang --version; } | shasum -a 256 | cut -c1-16)
-          target=${{ matrix.os }}-${{ matrix.arch }}-ghc${{ matrix.ghc }}-$toolchain-${{ hashFiles('external/libjpeg-turbo/**') }}
+          target=${{ matrix.os }}-${{ matrix.arch }}-ghc${{ matrix.ghc }}-$toolchain
           echo "deps=deps-$target" >> "$GITHUB_OUTPUT"
           echo "dist=dist-$target" >> "$GITHUB_OUTPUT"
 
@@ -1374,7 +1363,6 @@ jobs:
           pacboy: >-
             toolchain:p
             cmake:p
-            nasm:p
 
       - name: Compute cache key prefixes
         id: keys
@@ -1382,7 +1370,7 @@ jobs:
         shell: msys2 {0}
         run: |
           toolchain=$(gcc --version | sha256sum | cut -c1-16)
-          target=windows-x86_64-ghc${{ matrix.ghc }}-$toolchain-${{ hashFiles('external/libjpeg-turbo/**') }}
+          target=windows-x86_64-ghc${{ matrix.ghc }}-$toolchain
           echo "deps=deps-$target" >> "$GITHUB_OUTPUT"
           echo "dist=dist-$target" >> "$GITHUB_OUTPUT"
 
@@ -1439,7 +1427,6 @@ jobs:
         run: |
           export PATH=$PATH:/c/ghcup/bin:$(echo /c/tools/ghc-*/bin || echo)
           scripts/desktop/prepare-openssl-windows.sh
-          jpeg_turbo_dir=$(scripts/desktop/prepare-libjpeg-turbo.sh)
           openssl_windows_style_path=$(echo `pwd`/dist-newstyle/openssl-3.0.15 | sed 's#/\([a-zA-Z]\)#\1:#' | sed 's#/#\\#g')
           rm cabal.project.local 2>/dev/null || true
           echo "ignore-project: False" >> cabal.project.local
@@ -1447,10 +1434,6 @@ jobs:
           echo "    flags: +openssl" >> cabal.project.local
           echo "    extra-include-dirs: $openssl_windows_style_path\include" >> cabal.project.local
           echo "    extra-lib-dirs: $openssl_windows_style_path" >> cabal.project.local
-          echo "package jpeg-turbo" >> cabal.project.local
-          echo "    flags: -pkgconfig +static" >> cabal.project.local
-          echo "    extra-include-dirs: $jpeg_turbo_dir/include" >> cabal.project.local
-          echo "    extra-lib-dirs: $jpeg_turbo_dir/lib" >> cabal.project.local
 
           scripts/ci/prune-old-builds.sh dist-newstyle
           rm -rf dist-newstyle/src/direct-sq* dist-newstyle/src/simplexmq*

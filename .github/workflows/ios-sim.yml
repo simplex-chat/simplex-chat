@@ -55,8 +55,6 @@ jobs:
 
       - name: Checkout code
         uses: actions/checkout@v6
-        with:
-          submodules: recursive
 
       - name: Claude scope
         id: scope
@@ -81,8 +79,8 @@ jobs:
       - name: Artifact names
         id: names
         run: |
-          echo "core=ios-sim-core-${{ hashFiles('src/**', 'cabal.project', 'simplex-chat.cabal', 'external/libjpeg-turbo/**', 'scripts/desktop/prepare-libjpeg-turbo.sh', 'scripts/ci/ios-sim/build-core.sh') }}" >> "$GITHUB_OUTPUT"
-          echo "backend=ios-sim-backend-${{ hashFiles('src/**', 'apps/simplex-chat/**', 'apps/simplex-directory-service/Main.hs', 'apps/simplex-directory-service/src/**', 'cabal.project', 'simplex-chat.cabal', 'external/libjpeg-turbo/**', 'scripts/desktop/prepare-libjpeg-turbo.sh', 'scripts/ci/ios-sim/build-backend.sh') }}" >> "$GITHUB_OUTPUT"
+          echo "core=ios-sim-core-${{ hashFiles('src/**', 'cabal.project', 'simplex-chat.cabal', 'scripts/ci/ios-sim/build-core.sh') }}" >> "$GITHUB_OUTPUT"
+          echo "backend=ios-sim-backend-${{ hashFiles('src/**', 'apps/simplex-chat/**', 'apps/simplex-directory-service/Main.hs', 'apps/simplex-directory-service/src/**', 'cabal.project', 'simplex-chat.cabal', 'scripts/ci/ios-sim/build-backend.sh') }}" >> "$GITHUB_OUTPUT"
 
       - name: Find core library
         id: core
@@ -106,8 +104,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
-        with:
-          submodules: recursive
 
       - name: Show runner
         run: |
@@ -155,8 +151,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
-        with:
-          submodules: recursive
 
       - name: Show runner
         run: |

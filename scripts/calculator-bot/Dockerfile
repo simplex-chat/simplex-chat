@@ -16,8 +16,8 @@ ARG CABAL
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        build-essential ca-certificates cmake curl git libgmp3-dev libnuma-dev \
-        libsqlite3-dev libssl-dev llvm nasm patchelf pkg-config zlib1g-dev && \
+        build-essential ca-certificates curl git libgmp3-dev libnuma-dev \
+        libsqlite3-dev libssl-dev llvm patchelf pkg-config zlib1g-dev && \
     rm -rf /var/lib/apt/lists/*
 
 ENV BOOTSTRAP_HASKELL_NONINTERACTIVE=1 \
@@ -35,7 +35,6 @@ COPY scripts/cabal.project.local.linux ./cabal.project.local
 # The build script checks the export lists in these.
 COPY libsimplex.dll.def flake.nix ./
 COPY scripts/desktop ./scripts/desktop
-COPY external/libjpeg-turbo ./external/libjpeg-turbo
 COPY src ./src
 
 # VLC is only for the desktop app.
