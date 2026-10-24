@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "simplex": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/plugin/launch.js", "session"],
+      "env": {
+        "CLAUDE_PLUGIN_OPTION_MAIN_GROUP": "${user_config.main_group}",
+        "CLAUDE_PLUGIN_OPTION_APPROVE": "${user_config.approve}",
+        "CLAUDE_PLUGIN_OPTION_EXPIRE_HOURS": "${user_config.expire_hours}"
+      }
+    }
+  }
+}

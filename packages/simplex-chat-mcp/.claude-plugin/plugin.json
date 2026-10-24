@@ -1,0 +1,15 @@
+{
+  "name": "simplex",
+  "version": "0.2.0",
+  "description": "Each Claude Code session chats on SimpleX with its own profile; you approve its connections and messages in the SimpleX app.",
+  "author": {"name": "SimpleX Chat", "url": "https://simplex.chat"},
+  "homepage": "https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-mcp#readme",
+  "repository": "https://github.com/simplex-chat/simplex-chat",
+  "license": "AGPL-3.0",
+  "keywords": ["simplex", "messaging", "privacy", "agents"],
+  "userConfig": {
+    "main_group": {"type": "string", "title": "Main group", "description": "Name of the SimpleX group where you approve your agents' actions.", "default": "SimpleX MCP"},
+    "approve": {"type": "string", "title": "Approval", "description": "requests: you approve connections and messages in the SimpleX app. host: Claude Code asks you instead.", "default": "requests", "options": ["requests", "host"]},
+    "expire_hours": {"type": "number", "title": "Expiry in hours", "description": "Actions you have not approved expire after this many hours.", "default": 23, "min": 1, "max": 23}
+  }
+}
