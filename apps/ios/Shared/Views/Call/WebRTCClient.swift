@@ -876,7 +876,7 @@ extension WebRTCClient: RTCPeerConnectionDelegate {
 
         guard let connectionStateString = newState.toString() else { return }
         Task {
-            if activeCall?.wasConnected == true {
+            if activeCall?.wasConnected == true && ChatModel.shared.activeCall?.contact.callReconnectSupported == true {
                 switch newState {
                 case .disconnected, .failed:
                     if activeCall?.reconnection == nil {
