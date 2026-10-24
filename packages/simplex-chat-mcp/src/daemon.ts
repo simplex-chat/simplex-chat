@@ -2,9 +2,9 @@ import {writeSync} from "fs"
 import {Server, ServerResponse} from "http"
 import {CallToolResult} from "@modelcontextprotocol/server"
 import {T} from "@simplex-chat/types"
-import {Action, Actions, stoppingMessage} from "./actions"
+import {Action, Actions, Mode, stoppingMessage} from "./actions"
 import {openSessionAgent, sessionName} from "./agent"
-import {Config, readConfig} from "./config"
+import {Config, defaultConfig, readConfig} from "./config"
 import {SessionView, Sessions} from "./control"
 import {LockedError, acquireLock, createDataFolder, dataRoot, readSessionFile, releaseLock, serverToken, sessionFolder, sessionNumbers, socketPath, writeSessionFile} from "./files"
 import {Hub, Perform} from "./hub"
@@ -26,7 +26,7 @@ export interface HubLike {
   owner(): OwnerState
   configure(config: Config): Promise<void>
   resetOwners(): Promise<string>
-  standingApprover(chatInfo: T.ChatInfo): string | undefined
+  standingApprover(chatInfo: T.ChatInfo, mode: Mode): string | undefined
   stop(): Promise<number>
 }
 
@@ -41,6 +41,7 @@ export interface OpenSessionOptions {
   folder: string
   number: number
   name: string
+  mode: () => Mode
   hub: HubLike
 }
 
@@ -56,6 +57,7 @@ export interface DaemonDeps {
 interface Entry {
   opening: Promise<AgentLike>
   agent?: AgentLike
+  mode: Mode
   attached: number
   calls: number
   idle?: NodeJS.Timeout
@@ -189,6 +191,7 @@ export class Daemon {
 
   private async onSession(request: SessionRequest): Promise<SessionReply> {
     const entry = this.entry(request.id, request)
+    entry.mode = request.config.approve
     const agent = await entry.opening
     if (entry.attached === 0) this.scheduleIdle(request.id, entry)
     await this.hub.configure(request.config)
@@ -282,7 +285,7 @@ export class Daemon {
     const existing = this.entries.get(id)
     if (existing !== undefined) return existing
     clearTimeout(this.stopTimer)
-    const entry: Entry = {attached: 0, calls: 0, opening: this.openAgent(id, folder, request)}
+    const entry: Entry = {attached: 0, calls: 0, mode: defaultConfig.approve, opening: this.openAgent(id, folder, request, () => entry.mode)}
     this.entries.set(id, entry)
     this.scheduleIdle(id, entry)
     entry.opening.then(
@@ -310,7 +313,7 @@ export class Daemon {
     }
   }
 
-  private async openAgent(id: string, folder: string, request: SessionRequest | undefined): Promise<AgentLike> {
+  private async openAgent(id: string, folder: string, request: SessionRequest | undefined, mode: () => Mode): Promise<AgentLike> {
     await this.closing.get(id)
     let stored = readSessionFile(folder)
     if (stored === undefined) {
@@ -320,7 +323,7 @@ export class Daemon {
       stored = {number: this.nextNumber++, name: sessionName(title, request.project), project: request.project, created: new Date().toISOString()}
       writeSessionFile(folder, stored)
     }
-    return this.deps.openSession({folder, number: stored.number, name: stored.name, hub: this.hub})
+    return this.deps.openSession({folder, number: stored.number, name: stored.name, mode, hub: this.hub})
   }
 
   private scheduleIdle(id: string, entry: Entry): void {
@@ -387,8 +390,8 @@ export function productionDeps(root: string): DaemonDeps {
     token: serverToken(root),
     version,
     openHub: (config, sessions, perform) => Hub.open(root, config, sessions, perform),
-    openSession: async ({folder, number, name, hub}) => {
-      const agent = await openSessionAgent({folder, number, name, actions: hub.actions, standingApprover: chatInfo => hub.standingApprover(chatInfo)})
+    openSession: async ({folder, number, name, mode, hub}) => {
+      const agent = await openSessionAgent({folder, number, name, mode, actions: hub.actions, standingApprover: (chatInfo, approve) => hub.standingApprover(chatInfo, approve)})
       return Object.assign(agent, {
         call: (tool: ToolName, input: unknown, call: ToolCall) => agent.tools.call(tool, input, call),
         perform: (action: Action, signal: AbortSignal) => agent.tools.perform(action, signal),

@@ -1,6 +1,6 @@
 import {ChatEvent, T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
-import {Action, Actions} from "./actions"
+import {Action, Actions, Mode} from "./actions"
 import {Config} from "./config"
 import {Control, Sessions, controlDataOf, createControlChat, findControlGroup, isControlEvent} from "./control"
 import {deliveries, openCore, updatedUser} from "./core"
@@ -28,7 +28,7 @@ export class Hub {
     try {
       const {chat, user} = core
       const group = (await findControlGroup(chat, user.userId)) ?? (await createControlChat(chat, user.userId, config.mainGroup, firstAction))
-      const actions: Actions = new Actions(config.approve, config.expireHours, controlDataOf(group.customData)?.nextAction ?? firstAction, {
+      const actions: Actions = new Actions(config.expireHours, controlDataOf(group.customData)?.nextAction ?? firstAction, {
         refusal: action => control.refusal(action),
         saveCounter: next => control.saveCounter(next),
         postCard: action => control.postCard(action),
@@ -56,12 +56,11 @@ export class Hub {
     return {owners: this.control.owners(), ...(link === undefined ? {} : {link})}
   }
 
-  standingApprover(chatInfo: T.ChatInfo): string | undefined {
-    return this.control.standingApprover(chatInfo)
+  standingApprover(chatInfo: T.ChatInfo, mode: Mode): string | undefined {
+    return this.control.standingApprover(chatInfo, mode)
   }
 
   async configure(config: Config): Promise<void> {
-    this.actions.mode = config.approve
     this.actions.expireHours = config.expireHours
     if (config.mainGroup === this.mainGroup) return
     await this.serialize("Main group rename", async () => {

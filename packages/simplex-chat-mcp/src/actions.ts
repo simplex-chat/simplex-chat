@@ -31,6 +31,7 @@ export interface ConnRef {
 interface ActionRecord {
   readonly n: number
   readonly session: number
+  readonly mode: Mode
   readonly key: string
   readonly created: number
   readonly expires: number
@@ -101,7 +102,7 @@ export class Actions {
   private readonly posting = new Map<number, Promise<boolean>>()
   private readonly outcomes = new Set<Promise<void>>()
 
-  constructor(public mode: Mode, public expireHours: number, public next: number, private readonly hooks: ActionHooks) {}
+  constructor(public expireHours: number, public next: number, private readonly hooks: ActionHooks) {}
 
   get(n: number): Action | undefined {
     return this.actions.get(n)
@@ -119,19 +120,20 @@ export class Actions {
     return this.all().find(action => action.key === key)
   }
 
-  create(session: number, key: string, fields: NewAction, approvedBy?: string): Action {
+  create(session: number, mode: Mode, key: string, fields: NewAction, approvedBy?: string): Action {
     const n = this.next
     const created = Date.now()
     const standing = approvedBy !== undefined
     const record: ActionRecord = {
       n,
       session,
+      mode,
       key,
       created,
       expires: created + this.expireHours * 3_600_000,
       changes: new Changes(),
       standing,
-      state: this.mode === "host" || standing ? "performing" : "pending",
+      state: mode === "host" || standing ? "performing" : "pending",
       decidedBy: approvedBy,
       open: 0,
       interrupted: false,
@@ -281,7 +283,7 @@ export class Actions {
       this.decide(action, "failed")
     }
     if (action.interrupted) return
-    log(`Action ${action.n}${this.mode === "host" ? ":" : ` approved by ${action.decidedBy}:`} ${performedText(action, this.mode)}`)
+    log(`Action ${action.n}${action.mode === "host" ? ":" : ` approved by ${action.decidedBy}:`} ${performedText(action)}`)
     if (!this.lost) await this.postOutcome(action)
   }
 
@@ -328,9 +330,9 @@ export function leaveVerbs({chat}: LeaveAction): {present: string; past: string}
   return chat.startsWith("@") ? {present: "delete", past: "deleted"} : {present: "leave", past: "left"}
 }
 
-function performedText(action: Action, mode: Mode): string {
+function performedText(action: Action): string {
   const failure = action.state === "failed" ? `; failed: ${oneLine(action.error ?? "")}` : ""
-  if (mode === "host") return `performed without approval (mode host)${failure}.`
+  if (action.mode === "host") return `performed without approval (mode host)${failure}.`
   if (failure !== "") return `failed: ${oneLine(action.error ?? "")}.`
   if (action.tool === "send") return "sent."
   if (action.tool === "leave") return `${leaveVerbs(action).past}.`

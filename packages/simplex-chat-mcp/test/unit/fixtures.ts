@@ -97,8 +97,8 @@ export function fakeHooks(): FakeHooks {
   return fake
 }
 
-export function actionsWith(mode: "requests" | "host", fake: FakeHooks, next = 1, expireHours = 23): Actions {
-  return new Actions(mode, expireHours, next, fake.hooks)
+export function actionsWith(fake: FakeHooks, next = 1, expireHours = 23): Actions {
+  return new Actions(expireHours, next, fake.hooks)
 }
 
 export function closeServer(server: Server): Promise<void> {

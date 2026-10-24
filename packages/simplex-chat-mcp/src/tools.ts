@@ -88,6 +88,7 @@ export interface ChatFields {
 
 export interface Agent {
   session: number
+  mode: () => Mode
   chat: api.ChatApi
   user: T.User
   actions: Actions
@@ -422,7 +423,7 @@ export class AgentTools {
     const subject: Subject = {kind: summary.cardKind, name: summary.name, simplexName: summary.simplexName, incognito: input.incognito ?? false}
     const messages = new Collected()
     if (call.signal.aborted) return undefined
-    const action = this.agent.actions.find(key) ?? this.agent.actions.create(this.agent.session, key, {tool: "connect", input, subject, plan: summary, messages})
+    const action = this.agent.actions.find(key) ?? this.agent.actions.create(this.agent.session, this.agent.mode(), key, {tool: "connect", input, subject, plan: summary, messages})
     return this.connectResult(action as ConnectAction, input, call)
   }
 
@@ -585,7 +586,7 @@ export class AgentTools {
     const subject = chatSubject(chatInfo)
     const responses = new Collected()
     if (call.signal.aborted) return undefined
-    const action = this.agent.actions.find(key) ?? this.agent.actions.create(this.agent.session, key, {tool: "send", input, subject, chat, replyTo, mentions, responses}, this.agent.standingApprover(chatInfo))
+    const action = this.agent.actions.find(key) ?? this.agent.actions.create(this.agent.session, this.agent.mode(), key, {tool: "send", input, subject, chat, replyTo, mentions, responses}, this.agent.standingApprover(chatInfo))
     return this.sendResult(action as SendAction, input, call)
   }
 
@@ -637,7 +638,7 @@ export class AgentTools {
     if (attached !== undefined) return this.leaveResult(attached as LeaveAction, call)
     const {chatInfo} = await this.knownChat(chat)
     if (call.signal.aborted) return undefined
-    const action = this.agent.actions.find(key) ?? this.agent.actions.create(this.agent.session, key, {tool: "leave", input, subject: chatSubject(chatInfo), chat})
+    const action = this.agent.actions.find(key) ?? this.agent.actions.create(this.agent.session, this.agent.mode(), key, {tool: "leave", input, subject: chatSubject(chatInfo), chat})
     return this.leaveResult(action as LeaveAction, call)
   }
 

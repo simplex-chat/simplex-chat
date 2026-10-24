@@ -42,19 +42,19 @@ function sessionsOf(...views: SessionView[]): Sessions {
   return {get: n => views.find(({number}) => number === n), open: () => views}
 }
 
-async function controlWith(chat: FakeChat, actions: Actions, session = 1): Promise<{control: Control; tools: AgentTools}> {
-  const tools = new AgentTools({chat: chat.api(), user, actions, watch: new ChatItemsWatch(), session, standingApprover: chatInfo => control.standingApprover(chatInfo)})
-  const control: Control = new Control(chat.api(), group(10, "SimpleX MCP"), {displayName: "SimpleX MCP"}, actions, sessionsOf({number: session, displayName: "SimpleX MCP - simplex-chat-6", chat: chat.api(), tools}))
+async function controlWith(chat: FakeChat, actions: Actions, session = 1, mode: Mode = "requests"): Promise<{control: Control; tools: AgentTools}> {
+  const tools = new AgentTools({chat: chat.api(), user, actions, watch: new ChatItemsWatch(), session, mode: () => mode, standingApprover: chatInfo => control.standingApprover(chatInfo, mode)})
+  const control: Control = new Control(chat.api(), group(10, "SimpleX MCP"), {displayName: "SimpleX MCP"}, actions, sessionsOf({number: session, displayName: "SimpleX MCP - simplex-chat-6", mode, chat: chat.api(), tools}))
   await control.load()
   return {control, tools}
 }
 
 async function setup() {
   const fake = fakeHooks()
-  const actions = actionsWith("requests", fake, 5)
+  const actions = actionsWith(fake, 5)
   const chat = agentChats()
   const {control} = await controlWith(chat, actions)
-  const action = actions.create(1, "k", fields())
+  const action = actions.create(1, "requests", "k", fields())
   await settled()
   return {fake, actions, chat, control, action}
 }
@@ -97,7 +97,7 @@ describe("owner commands", () => {
 
   it("approves and rejects an action named with its chat", async () => {
     const {control, actions, action} = await setup()
-    const connect = actions.create(1, "c", {tool: "connect", input: {target: "@directory.simplex"}, subject: {kind: "bot", name: "SimpleX Directory", incognito: false}, plan: {cardKind: "bot", type: "contact", takesMessage: true}, messages: new Collected()})
+    const connect = actions.create(1, "requests", "c", {tool: "connect", input: {target: "@directory.simplex"}, subject: {kind: "bot", name: "SimpleX Directory", incognito: false}, plan: {cardKind: "bot", type: "contact", takesMessage: true}, messages: new Collected()})
     await settled()
     expect(await control.ownerCommand(alice, {keyword: "reject", params: "1:#2 5"})).toBe("Action 5 is not for 1:#2.")
     expect(await control.ownerCommand(alice, parseCommand("/approve 2:@4 5")!)).toBe("Action 5 is not for 2:@4.")
@@ -125,9 +125,9 @@ describe("owner commands", () => {
 
   it("lists pending actions", async () => {
     const {control, action, actions} = await setup()
-    const connect = actions.create(1, "c", {tool: "connect", input: {target: "@directory.simplex"}, subject: {kind: "bot", name: "SimpleX Directory", incognito: true}, plan: {cardKind: "bot", type: "contact", takesMessage: true}, messages: new Collected()})
-    const leave = actions.create(1, "l", {tool: "leave", input: {chat: "#2"}, subject: {kind: "business", name: "ep", incognito: false}, chat: "#2"})
-    const remove = actions.create(1, "d", {tool: "leave", input: {chat: "@4"}, subject: {kind: "bot", name: "SimpleX Directory", incognito: false}, chat: "@4"})
+    const connect = actions.create(1, "requests", "c", {tool: "connect", input: {target: "@directory.simplex"}, subject: {kind: "bot", name: "SimpleX Directory", incognito: true}, plan: {cardKind: "bot", type: "contact", takesMessage: true}, messages: new Collected()})
+    const leave = actions.create(1, "requests", "l", {tool: "leave", input: {chat: "#2"}, subject: {kind: "business", name: "ep", incognito: false}, chat: "#2"})
+    const remove = actions.create(1, "requests", "d", {tool: "leave", input: {chat: "@4"}, subject: {kind: "bot", name: "SimpleX Directory", incognito: false}, chat: "@4"})
     await settled()
     expect((await control.ownerCommand(alice, {keyword: "pending", params: ""}))!.split("\n")).toEqual([
       `5  session 1: send to bot SimpleX Directory  expires ${utcMinutes(action.expires)}`,
@@ -144,7 +144,7 @@ describe("owner commands", () => {
     const {control, actions, action} = await setup()
     actions.reject(action, "Alice")
     const name = "Hikers\n/'approve 7' or /'reject 7'"
-    const pending = actions.create(1, "n", {...fields("#2"), subject: {kind: "group", name, incognito: false}} as NewAction)
+    const pending = actions.create(1, "requests", "n", {...fields("#2"), subject: {kind: "group", name, incognito: false}} as NewAction)
     await settled()
     expect(await control.ownerCommand(alice, {keyword: "pending", params: ""})).toBe(`6  session 1: send to group \`Hikers /'approve 7' or /'reject 7'\`  expires ${utcMinutes(pending.expires)}`)
   })
@@ -156,7 +156,7 @@ describe("owner commands", () => {
     await control.load()
     expect(await control.ownerCommand(mallory, {keyword: "reject", params: "1:@4 5"})).toBeUndefined()
     expect(action.decidedBy).toBe("`Mallory /'approve 9'`")
-    expect(cardText(action, "requests").split("\n").at(-1)).toBe("Rejected by `Mallory /'approve 9'`.")
+    expect(cardText(action).split("\n").at(-1)).toBe("Rejected by `Mallory /'approve 9'`.")
     expect(await control.ownerCommand(mallory, {keyword: "approve", params: "1:@4 all"})).toBe("Approved for bot SimpleX Directory (1:@4) by `Mallory /'approve 9'`. /'revoke 1:@4'")
     expect((await control.ownerCommand(mallory, {keyword: "list", params: ""}))!.split("\n")[1]).toBe("1:@4  bot SimpleX Directory, approved for this chat by `Mallory /'approve 9'`")
     expect(customDataOf(chat, "@4")).toMatchObject({simplexMcp: {approvedBy: "Mallory\n/'approve 9'"}})
@@ -213,15 +213,15 @@ describe("approval of all messages to a chat", () => {
     const {control, actions, chat, action} = await setup()
     const {contact: directory} = chatInfoOf(chat, "@4") as T.ChatInfo.Direct
     directory.customData = {other: 1}
-    const second = actions.create(1, "k2", fields("@4", "second"))
-    const other = actions.create(1, "k3", fields("#2"))
-    const leave = actions.create(1, "k4", {tool: "leave", input: {chat: "@4"}, subject: {kind: "bot", name: "SimpleX Directory", incognito: false}, chat: "@4"})
+    const second = actions.create(1, "requests", "k2", fields("@4", "second"))
+    const other = actions.create(1, "requests", "k3", fields("#2"))
+    const leave = actions.create(1, "requests", "k4", {tool: "leave", input: {chat: "@4"}, subject: {kind: "bot", name: "SimpleX Directory", incognito: false}, chat: "@4"})
     await settled()
     expect(await control.ownerCommand(alice, {keyword: "approve", params: "1:@4 all"})).toBe("Approved for bot SimpleX Directory (1:@4) by Alice. /'revoke 1:@4'")
     expect(customDataOf(chat, "@4")).toEqual({other: 1, simplexMcp: {approvedBy: "Alice", approvedById: 3, approvedAt: expect.stringMatching(/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/)}})
     expect([action, second, other, leave].map(({state, decidedBy}) => [state, decidedBy])).toEqual([["performing", "Alice"], ["performing", "Alice"], ["pending", undefined], ["pending", undefined]])
-    expect(control.standingApprover(chatInfoOf(chat, "@4"))).toBe("Alice")
-    expect(control.standingApprover(chatInfoOf(chat, "#2"))).toBeUndefined()
+    expect(control.standingApprover(chatInfoOf(chat, "@4"), "requests")).toBe("Alice")
+    expect(control.standingApprover(chatInfoOf(chat, "#2"), "requests")).toBeUndefined()
   })
 
   it("approves a group chat and refuses unknown chats", async () => {
@@ -240,7 +240,7 @@ describe("approval of all messages to a chat", () => {
     expect(await control.ownerCommand(alice, {keyword: "revoke", params: "2:@4"})).toBe("No open session 2. /list shows the open sessions.")
     expect(await control.ownerCommand(alice, {keyword: "revoke", params: "1:@4"})).toBe("Messages to bot SimpleX Directory (1:@4) need approval again.")
     expect(customDataOf(chat, "@4")).toEqual({other: 1})
-    expect(control.standingApprover(chatInfoOf(chat, "@4"))).toBeUndefined()
+    expect(control.standingApprover(chatInfoOf(chat, "@4"), "requests")).toBeUndefined()
     expect(await control.ownerCommand(alice, {keyword: "revoke", params: "1:@4"})).toBe("Messages to 1:@4 have no standing approval.")
     expect(await control.ownerCommand(alice, {keyword: "revoke", params: "1:#99"})).toBe("Messages to 1:#99 have no standing approval.")
     expect(chat.customData.map(({chat: ref}) => ref)).toEqual(["@4", "@4"])
@@ -248,20 +248,20 @@ describe("approval of all messages to a chat", () => {
 
   it("applies only while the approving member is an approver", async () => {
     const chat = agentChats()
-    const actions = actionsWith("requests", fakeHooks())
+    const actions = actionsWith(fakeHooks())
     const {contact: directory} = chatInfoOf(chat, "@4") as T.ChatInfo.Direct
     directory.customData = {simplexMcp: {approvedBy: "Alice", approvedById: 3, approvedAt: "2026-10-18T10:00:00.000Z"}}
     const {control} = await controlWith(chat, actions)
-    expect(control.standingApprover(chatInfoOf(chat, "@4"))).toBe("Alice")
+    expect(control.standingApprover(chatInfoOf(chat, "@4"), "requests")).toBe("Alice")
     chat.members.set(10, [self, {...alice, memberRole: T.GroupMemberRole.Admin}, bob])
     await control.load()
-    expect(control.standingApprover(chatInfoOf(chat, "@4"))).toBeUndefined()
+    expect(control.standingApprover(chatInfoOf(chat, "@4"), "requests")).toBeUndefined()
     chat.members.set(10, [self, bob])
     await control.load()
-    expect(control.standingApprover(chatInfoOf(chat, "@4"))).toBeUndefined()
+    expect(control.standingApprover(chatInfoOf(chat, "@4"), "requests")).toBeUndefined()
     chat.members.set(10, [self, alice, {...bob, memberRole: T.GroupMemberRole.Owner}])
     await control.load()
-    expect(control.standingApprover(chatInfoOf(chat, "@4"))).toBe("Alice")
+    expect(control.standingApprover(chatInfoOf(chat, "@4"), "requests")).toBe("Alice")
   })
 })
 
@@ -282,7 +282,7 @@ describe("chat list in the Main group", () => {
   })
 
   it("shows only the session line of a session without chats", async () => {
-    const {control} = await controlWith(new FakeChat(), actionsWith("requests", fakeHooks()))
+    const {control} = await controlWith(new FakeChat(), actionsWith(fakeHooks()))
     expect(await control.ownerCommand(alice, {keyword: "list", params: ""})).toBe(sessionLine)
   })
 
@@ -308,10 +308,10 @@ describe("command menu", () => {
 
   it("is updated at load when it differs", async () => {
     const chat = agentChats()
-    const actions = actionsWith("requests", fakeHooks())
+    const actions = actionsWith(fakeHooks())
     const old = group(10, "agent", self, {groupProfile: {displayName: "agent", fullName: "", groupPreferences: {history: {enable: "on"}, commands: [{type: "command", keyword: "approve", label: "Approve", params: "N"}]}}})
-    const tools = new AgentTools({chat: chat.api(), session: 1, user, actions, watch: new ChatItemsWatch(), standingApprover: () => undefined})
-    const sessions = sessionsOf({number: 1, displayName: "agent", chat: chat.api(), tools})
+    const tools = new AgentTools({chat: chat.api(), session: 1, user, actions, watch: new ChatItemsWatch(), mode: () => "requests", standingApprover: () => undefined})
+    const sessions = sessionsOf({number: 1, displayName: "agent", mode: "requests", chat: chat.api(), tools})
     await new Control(chat.api(), old, {displayName: "agent"}, actions, sessions).load()
     expect(chat.profiles).toEqual([{groupId: 10, groupProfile: {displayName: "agent", fullName: "", groupPreferences: {history: {enable: "on"}, commands: menu}}}])
     const current = group(10, "agent", self, {groupProfile: {displayName: "agent", fullName: "", groupPreferences: {history: {enable: "on"}, commands: menu}}})
@@ -326,14 +326,14 @@ describe("sends to a chat approved for all messages", () => {
     chat.members.set(10, [self, ...approvers])
     const {contact: directory} = chatInfoOf(chat, "@4") as T.ChatInfo.Direct
     directory.customData = {simplexMcp: {approvedBy: "Alice", approvedById: 3, approvedAt: "2026-10-18T10:00:00.000Z"}}
-    const actions: Actions = new Actions(mode, 23, 1, {
+    const actions: Actions = new Actions(23, 1, {
       refusal: action => control.refusal(action),
       saveCounter: async () => undefined,
       postCard: action => control.postCard(action),
       outcome: action => control.outcome(action),
       perform: (action, signal) => tools.perform(action, signal),
     })
-    const {control, tools} = await controlWith(chat, actions)
+    const {control, tools} = await controlWith(chat, actions, 1, mode)
     return {chat, actions, control, tools}
   }
 
@@ -373,11 +373,11 @@ describe("sends to a chat approved for all messages", () => {
 
   it("applies in no chat in mode host", async () => {
     const {chat, control, tools} = await standing([alice], "host")
-    expect(control.standingApprover(chatInfoOf(chat, "@4"))).toBeUndefined()
+    expect(control.standingApprover(chatInfoOf(chat, "@4"), "host")).toBeUndefined()
     const {chats} = (await tools.call("list", {}, signal().call))!.structuredContent as {chats: {chat: string}[]}
     expect(chats.find(({chat: ref}) => ref === "@4")).not.toHaveProperty("approved")
     expect((await control.ownerCommand(alice, {keyword: "list", params: ""}))!.split("\n")[1]).toBe("1:@4  bot SimpleX Directory")
-    expect(await control.ownerCommand(alice, {keyword: "approve", params: "1:#2 all"})).toBe("Approvals apply in mode requests; the SimpleX daemon runs in mode host.")
+    expect(await control.ownerCommand(alice, {keyword: "approve", params: "1:#2 all"})).toBe("Approvals apply in mode requests; session 1 runs in mode host.")
     expect(chat.customData).toEqual([])
     expect((await tools.call("send", {chat: "@4", text: "trail shoes", wait: 0}, signal().call))!.structuredContent).toMatchObject({action: 1, status: "done"})
     await settled()
@@ -393,7 +393,7 @@ describe("approval card size", () => {
     chat.members.set(10, [self, ...approvers, bob])
     const {contact: directory} = chatInfoOf(chat, "@4") as T.ChatInfo.Direct
     directory.customData = {simplexMcp: {approvedBy: "Alice", approvedById: 3, approvedAt: "2026-10-18T10:00:00.000Z"}}
-    const actions: Actions = new Actions("requests", 23, 1, {
+    const actions: Actions = new Actions(23, 1, {
       refusal: action => control.refusal(action),
       saveCounter: async () => undefined,
       postCard: action => control.postCard(action),
@@ -468,9 +468,9 @@ describe("approval card size", () => {
   it("refuses a connect whose message makes its largest card longer than 15000 bytes", async () => {
     const {chat, actions} = await sendTools()
     const name = "😀".repeat(1000)
-    expect(() => actions.create(1, "c", connectFields(name, {message: "\b".repeat(2000), welcome: "Welcome!"}))).toThrow(new ToolError("message: too long for its approval card; shorten it."))
+    expect(() => actions.create(1, "requests", "c", connectFields(name, {message: "\b".repeat(2000), welcome: "Welcome!"}))).toThrow(new ToolError("message: too long for its approval card; shorten it."))
     expect(actions.next).toBe(1)
-    actions.create(1, "c", connectFields(name, {message: "\b".repeat(1400), welcome: "Welcome!"}))
+    actions.create(1, "requests", "c", connectFields(name, {message: "\b".repeat(1400), welcome: "Welcome!"}))
     await flushed()
     expect(chat.sent.map(({chat: [, id]}) => id)).toEqual([10])
   })
@@ -478,13 +478,13 @@ describe("approval card size", () => {
   it("cuts the link texts on a connect card to fit 15000 bytes in its largest form, and keeps them whole in the action", async () => {
     const {chat, actions} = await sendTools()
     const description = "Trail shoes. ".repeat(1500)
-    const action = actions.create(1, "c", connectFields("Ridgeline", {description, welcome: "Welcome!"}))
+    const action = actions.create(1, "requests", "c", connectFields("Ridgeline", {description, welcome: "Welcome!"}))
     await flushed()
     const [card] = chat.sent.filter(({chat: [, id]}) => id === 10).map(({messages: [{msgContent}]}) => msgContent.text.split("\n"))
     expect(card).toHaveLength(4)
     expect(card[0]).toBe(sessionLine)
     expect(card[2]).toMatch(/^`Trail shoes\. .*…`$/)
-    const failed = encodedLength(`${sessionLine}\n${cardText({...action, state: "failed", decidedBy: "Alice", error: "€".repeat(600)}, "requests")}`)
+    const failed = encodedLength(`${sessionLine}\n${cardText({...action, state: "failed", decidedBy: "Alice", error: "€".repeat(600)})}`)
     expect(failed).toBeLessThanOrEqual(15000)
     expect(failed).toBeGreaterThan(15000 - 8)
     expect(action.tool === "connect" && action.plan.description).toBe(description)
@@ -502,11 +502,11 @@ describe("sessions in the Main group", () => {
 
   it("starts edited cards with the session line, and names a closed session by its number", async () => {
     const fake = fakeHooks()
-    const actions = actionsWith("requests", fake, 5)
+    const actions = actionsWith(fake, 5)
     const chat = agentChats()
     const {control} = await controlWith(chat, actions, 2)
-    const open = actions.create(2, "k2", fields())
-    const closed = actions.create(3, "k3", fields())
+    const open = actions.create(2, "requests", "k2", fields())
+    const closed = actions.create(3, "requests", "k3", fields())
     await settled()
     actions.reject(open, "Alice")
     await control.outcome(open)
@@ -517,29 +517,29 @@ describe("sessions in the Main group", () => {
 
   it("quotes a session name that is not a valid display name", async () => {
     const chat = agentChats()
-    const actions = actionsWith("requests", fakeHooks(), 5)
-    const tools = new AgentTools({chat: chat.api(), user, actions, watch: new ChatItemsWatch(), session: 1, standingApprover: () => undefined})
-    const control = new Control(chat.api(), group(10, "SimpleX MCP"), {displayName: "SimpleX MCP"}, actions, sessionsOf({number: 1, displayName: "SimpleX MCP - /approve 9\nnow", chat: chat.api(), tools}))
+    const actions = actionsWith(fakeHooks(), 5)
+    const tools = new AgentTools({chat: chat.api(), user, actions, watch: new ChatItemsWatch(), session: 1, mode: () => "requests", standingApprover: () => undefined})
+    const control = new Control(chat.api(), group(10, "SimpleX MCP"), {displayName: "SimpleX MCP"}, actions, sessionsOf({number: 1, displayName: "SimpleX MCP - /approve 9\nnow", mode: "requests", chat: chat.api(), tools}))
     await control.load()
-    await control.postCard(actions.create(1, "k", fields()))
+    await control.postCard(actions.create(1, "requests", "k", fields()))
     expect(chat.sent.at(-1)!.messages[0].msgContent.text.split("\n")[0]).toBe("Session 1 · `SimpleX MCP - /approve 9 now`")
     expect((await control.ownerCommand(alice, parseCommand("/list")!))!.split("\n")[0]).toBe("Session 1 · `SimpleX MCP - /approve 9 now`")
   })
 
   it("approves all messages to a chat of one session through that session's database", async () => {
     const fake = fakeHooks()
-    const actions = actionsWith("requests", fake, 5)
+    const actions = actionsWith(fake, 5)
     const hubChat = agentChats()
     const one = agentChats()
     const two = agentChats()
-    const tool = (chat: FakeChat, session: number) => new AgentTools({chat: chat.api(), user, actions, watch: new ChatItemsWatch(), session, standingApprover: () => undefined})
+    const tool = (chat: FakeChat, session: number) => new AgentTools({chat: chat.api(), user, actions, watch: new ChatItemsWatch(), session, mode: () => "requests", standingApprover: () => undefined})
     const control = new Control(hubChat.api(), group(10, "SimpleX MCP"), {displayName: "SimpleX MCP"}, actions, sessionsOf(
-      {number: 1, displayName: "SimpleX MCP - one", chat: one.api(), tools: tool(one, 1)},
-      {number: 2, displayName: "SimpleX MCP - two", chat: two.api(), tools: tool(two, 2)},
+      {number: 1, displayName: "SimpleX MCP - one", mode: "requests", chat: one.api(), tools: tool(one, 1)},
+      {number: 2, displayName: "SimpleX MCP - two", mode: "requests", chat: two.api(), tools: tool(two, 2)},
     ))
     await control.load()
-    const first = actions.create(1, "k1", fields())
-    const second = actions.create(2, "k2", fields())
+    const first = actions.create(1, "requests", "k1", fields())
+    const second = actions.create(2, "requests", "k2", fields())
     await settled()
     expect(await control.ownerCommand(alice, parseCommand("/approve 2:@4 all")!)).toBe("Approved for bot SimpleX Directory (2:@4) by Alice. /'revoke 2:@4'")
     expect(two.customData.at(-1)).toMatchObject({chat: "@4", customData: {simplexMcp: {approvedBy: "Alice", approvedById: 3}}})
@@ -554,6 +554,46 @@ describe("sessions in the Main group", () => {
     expect(one.customData).toEqual([])
   })
 
+  it("applies the approval mode of each session to its own actions and cards", async () => {
+    const hubChat = agentChats()
+    const one = agentChats()
+    const two = agentChats()
+    const views: SessionView[] = [
+      {number: 1, displayName: "SimpleX MCP - one", mode: "host", chat: one.api(), tools: undefined as never},
+      {number: 2, displayName: "SimpleX MCP - two", mode: "requests", chat: two.api(), tools: undefined as never},
+    ]
+    const actions: Actions = new Actions(23, 1, {
+      refusal: action => control.refusal(action),
+      saveCounter: async () => undefined,
+      postCard: action => control.postCard(action),
+      outcome: action => control.outcome(action),
+      perform: (action, signal) => tools[action.session - 1].perform(action, signal),
+    })
+    const tools = views.map(view => new AgentTools({chat: view.chat, user, actions, watch: new ChatItemsWatch(), session: view.number, mode: () => view.mode, standingApprover: chatInfo => control.standingApprover(chatInfo, view.mode)}))
+    views.forEach((view, i) => (view.tools = tools[i]))
+    const control: Control = new Control(hubChat.api(), group(10, "SimpleX MCP"), {displayName: "SimpleX MCP"}, actions, sessionsOf(...views))
+    await control.load()
+    const cards = (): string[] => hubChat.sent.map(({messages: [{msgContent}]}) => msgContent.text)
+    const sent = (chat: FakeChat): string[] => chat.sent.map(({messages: [{msgContent}]}) => msgContent.text)
+
+    expect((await tools[0].call("send", {chat: "@4", text: "from one", wait: 0}, signal().call))!.structuredContent).toMatchObject({action: 1, status: "done"})
+    const sending = tools[1].call("send", {chat: "@4", text: "from two", wait: 0}, signal().call)
+    await settled()
+    expect(sent(one)).toEqual(["from one"])
+    expect(sent(two)).toEqual([])
+    expect(cards()).toEqual([
+      "Session 1 · SimpleX MCP - one\nI sent a message to bot SimpleX Directory:\n`from one`\nPerformed without approval (mode host).",
+      "Session 2 · SimpleX MCP - two\nI want to send a message to bot SimpleX Directory:\n`from two`\n/'approve 2:@4 2', /'approve 2:@4 all' or /'reject 2:@4 2'",
+    ])
+    expect(await control.ownerCommand(alice, parseCommand("/approve 1:@4 all")!)).toBe("Approvals apply in mode requests; session 1 runs in mode host.")
+    expect(one.customData).toEqual([])
+    await control.ownerCommand(alice, parseCommand("/approve 2:@4 2")!)
+    expect((await sending)!.structuredContent).toMatchObject({action: 2, status: "done"})
+    await settled()
+    expect(sent(two)).toEqual(["from two"])
+    expect(hubChat.updates.map(({text}) => text.split("\n").at(-1))).toEqual(["Approved by Alice."])
+  })
+
   it("lists chats and pending actions grouped by session", async () => {
     const {control} = await setup()
     expect(await control.ownerCommand(alice, parseCommand("/list")!)).toBe(
@@ -563,14 +603,14 @@ describe("sessions in the Main group", () => {
   })
 
   it("lists the chats of every open session under its session line", async () => {
-    const actions = actionsWith("requests", fakeHooks())
+    const actions = actionsWith(fakeHooks())
     const one = agentChats()
     const two = new FakeChat()
     two.chats.set("@8", {chatInfo: direct(contact(8, "Ana Lu")), items: []})
-    const tool = (chat: FakeChat, session: number) => new AgentTools({chat: chat.api(), user, actions, watch: new ChatItemsWatch(), session, standingApprover: () => undefined})
+    const tool = (chat: FakeChat, session: number) => new AgentTools({chat: chat.api(), user, actions, watch: new ChatItemsWatch(), session, mode: () => "requests", standingApprover: () => undefined})
     const control = new Control(one.api(), group(10, "SimpleX MCP"), {displayName: "SimpleX MCP"}, actions, sessionsOf(
-      {number: 1, displayName: "SimpleX MCP - one", chat: one.api(), tools: tool(one, 1)},
-      {number: 4, displayName: "SimpleX MCP - two", chat: two.api(), tools: tool(two, 4)},
+      {number: 1, displayName: "SimpleX MCP - one", mode: "requests", chat: one.api(), tools: tool(one, 1)},
+      {number: 4, displayName: "SimpleX MCP - two", mode: "requests", chat: two.api(), tools: tool(two, 4)},
     ))
     await control.load()
     expect((await control.ownerCommand(alice, parseCommand("/list")!))!.split("\n")).toEqual([
@@ -584,7 +624,7 @@ describe("sessions in the Main group", () => {
   })
 
   it("says no session is open", async () => {
-    const actions = actionsWith("requests", fakeHooks())
+    const actions = actionsWith(fakeHooks())
     const control = new Control(agentChats().api(), group(10, "SimpleX MCP"), {displayName: "SimpleX MCP"}, actions, sessionsOf())
     await control.load()
     expect(await control.ownerCommand(alice, parseCommand("/list")!)).toBe("No open sessions.")
@@ -593,7 +633,7 @@ describe("sessions in the Main group", () => {
   it("puts the link into the refusal while the Main group has no owner", async () => {
     const chat = agentChats()
     chat.members.set(10, [self])
-    const {control} = await controlWith(chat, actionsWith("requests", fakeHooks()))
+    const {control} = await controlWith(chat, actionsWith(fakeHooks()))
     const action = {...fields(), n: 1, session: 1, state: "pending", standing: false} as unknown as Action
     expect(control.link).toBeUndefined()
     expect(control.refusal(action)).toBe("The agent has no owner. Run /simplex:link in Claude Code.")
@@ -612,7 +652,7 @@ describe("sessions in the Main group", () => {
   it("makes the first person who joins the owner and deletes the link", async () => {
     const chat = agentChats()
     chat.members.set(10, [self])
-    const {control} = await controlWith(chat, actionsWith("requests", fakeHooks()))
+    const {control} = await controlWith(chat, actionsWith(fakeHooks()))
     await control.start()
     const carol = member(9, "Carol", T.GroupMemberRole.Member)
     chat.members.set(10, [self, carol])
@@ -625,7 +665,7 @@ describe("sessions in the Main group", () => {
   it("makes only the first of two people who join in a row the owner", async () => {
     const chat = agentChats()
     chat.members.set(10, [self])
-    const {control} = await controlWith(chat, actionsWith("requests", fakeHooks()))
+    const {control} = await controlWith(chat, actionsWith(fakeHooks()))
     await control.start()
     const carol = member(9, "Carol", T.GroupMemberRole.Member)
     const dave = member(11, "Dave", T.GroupMemberRole.Member)

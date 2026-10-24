@@ -180,18 +180,18 @@ Plugin files, run by Claude Code without `node_modules`:
 | Daemon start by a client | [`src/client.ts`](../src/client.ts#L32) | `DaemonClient.ensureDaemon` | [32](../src/client.ts#L32) |
 | Daemon spawn | [`src/client.ts`](../src/client.ts#L68) | `spawnDaemon` | [68](../src/client.ts#L68) |
 | Socket listener | [`src/socket.ts`](../src/socket.ts#L18) | `listen` | [18](../src/socket.ts#L18) |
-| Daemon process | [`src/daemon.ts`](../src/daemon.ts#L360) | `runDaemon` | [360](../src/daemon.ts#L360) |
-| Daemon routes | [`src/daemon.ts`](../src/daemon.ts#L117) | `Daemon.routes` | [117](../src/daemon.ts#L117) |
+| Daemon process | [`src/daemon.ts`](../src/daemon.ts#L363) | `runDaemon` | [363](../src/daemon.ts#L363) |
+| Daemon routes | [`src/daemon.ts`](../src/daemon.ts#L119) | `Daemon.routes` | [119](../src/daemon.ts#L119) |
 | Hub and Main group | [`src/hub.ts`](../src/hub.ts#L26) | `Hub.open` | [26](../src/hub.ts#L26) |
-| Session profile | [`src/agent.ts`](../src/agent.ts#L39) | `openSessionAgent` | [39](../src/agent.ts#L39) |
+| Session profile | [`src/agent.ts`](../src/agent.ts#L41) | `openSessionAgent` | [41](../src/agent.ts#L41) |
 | SimpleX core | [`src/core.ts`](../src/core.ts#L24) | `openCore` | [24](../src/core.ts#L24) |
 | SessionStart hook | [`src/hook.ts`](../src/hook.ts#L28) | `sessionStart` | [28](../src/hook.ts#L28) |
 | `link`, `reset-owners` | [`src/owner.ts`](../src/owner.ts#L17) | `showLink`, `resetOwners` | [17](../src/owner.ts#L17), [21](../src/owner.ts#L21) |
 | Options | [`src/config.ts`](../src/config.ts#L25) | `readConfig` | [25](../src/config.ts#L25) |
-| Tool registration | [`src/tools.ts`](../src/tools.ts#L354) | `registerTools` | [354](../src/tools.ts#L354) |
-| Tool handlers | [`src/tools.ts`](../src/tools.ts#L366) | `AgentTools` | [366](../src/tools.ts#L366) |
-| Action store | [`src/actions.ts`](../src/actions.ts#L95) | `Actions` | [95](../src/actions.ts#L95) |
-| Main group | [`src/control.ts`](../src/control.ts#L65) | `Control` | [65](../src/control.ts#L65) |
+| Tool registration | [`src/tools.ts`](../src/tools.ts#L355) | `registerTools` | [355](../src/tools.ts#L355) |
+| Tool handlers | [`src/tools.ts`](../src/tools.ts#L367) | `AgentTools` | [367](../src/tools.ts#L367) |
+| Action store | [`src/actions.ts`](../src/actions.ts#L96) | `Actions` | [96](../src/actions.ts#L96) |
+| Main group | [`src/control.ts`](../src/control.ts#L66) | `Control` | [66](../src/control.ts#L66) |
 | Card text | [`src/control.ts`](../src/control.ts#L381) | `cardText` | [381](../src/control.ts#L381) |
 | Item watch | [`src/messages.ts`](../src/messages.ts#L58) | `ChatItemsWatch` | [58](../src/messages.ts#L58) |
 | Data folder | [`src/files.ts`](../src/files.ts#L21) | `dataRoot`, `socketPath` | [21](../src/files.ts#L21), [57](../src/files.ts#L57) |

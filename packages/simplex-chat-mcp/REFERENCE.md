@@ -88,7 +88,7 @@ Set in `/plugin` > Installed > simplex > Configure options, or in `/config`:
 | `approve` | `requests` | `requests`, `host` | what the owner approves, see [Approval modes](#approval-modes) |
 | `expire_hours` | `23` | whole hours from 1 to 23 | how long an action waits for a decision, see [Expiry](#expiry) |
 
-Claude Code passes the options to the plugin's hook and server as `CLAUDE_PLUGIN_OPTION_MAIN_GROUP`, `CLAUDE_PLUGIN_OPTION_APPROVE` and `CLAUDE_PLUGIN_OPTION_EXPIRE_HOURS`. A changed option applies from the next session start, and the daemon then uses it for all sessions: a new `main_group` renames the Main group and its profile.
+Claude Code passes the options to the plugin's hook and server as `CLAUDE_PLUGIN_OPTION_MAIN_GROUP`, `CLAUDE_PLUGIN_OPTION_APPROVE` and `CLAUDE_PLUGIN_OPTION_EXPIRE_HOURS`. A changed option applies from the next session start. `approve` applies to that session only: each session keeps the mode it started with, so sessions in both modes can share one Main group. `main_group` and `expire_hours` apply to all sessions: a new `main_group` renames the Main group and its profile.
 
 An invalid value is reported at session start, and every tool call of that session returns the same text:
 
@@ -175,11 +175,11 @@ SimpleX MCP: Session 2 · SimpleX MCP - docs
 - It covers messages only: connecting and leaving are approved one by one.
 - It lasts until `/revoke`, until the chat is deleted, or until the approving owner is no longer an owner. It survives restarts: it is kept in the session's database, as custom data of that chat.
 - With it, the agent can send anything it can read, without asking, to everyone in that chat.
-- It applies in mode `requests` only: in mode `host`, `list` and `/list` show no approvals.
+- It applies in mode `requests` only: for a session in mode `host`, `list` and `/list` show no approvals, and `/approve S:@N all` is refused.
 
 ## Approval modes
 
-The option `approve` sets what the owner approves.
+The option `approve` sets what the owner approves, for each session separately: a session takes the value of its own start, and a card shows the mode its action was created under.
 
 | Mode | The agent's actions: connect, send, leave | Messages to the agent |
 |---|---|---|

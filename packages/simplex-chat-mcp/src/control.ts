@@ -1,6 +1,6 @@
 import {ChatEvent, T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
-import {Action, ActionHooks, Actions, ConnectAction, Subject, ToolError, leaveVerbs, subjectText, summary} from "./actions"
+import {Action, ActionHooks, Actions, ConnectAction, Mode, Subject, ToolError, leaveVerbs, subjectText, summary} from "./actions"
 import {chatErrorOf, log, logError, oneLine} from "./log"
 import {chatNumber, chatRef, isChatRef, utcMinutes, validName, viewName} from "./messages"
 import {AgentTools, chatSubject, isActive, isConnected, memberCurrent} from "./tools"
@@ -28,6 +28,7 @@ export interface ControlData {
 export interface SessionView {
   readonly number: number
   readonly displayName: string
+  readonly mode: Mode
   chat: api.ChatApi
   tools: Pick<AgentTools, "knownChat" | "agentChats">
 }
@@ -105,18 +106,17 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
   }
 
   refusal(action: Action): string | undefined {
-    const {mode} = this.actions
     const approver = this.longestApproverName()
     const header = this.header(action)
-    if (action.tool === "connect") action.linkTextBytes = maxCardLength - largestCard({...action, linkTextBytes: 0}, mode, approver, header)
-    if (action.tool !== "leave" && largestCard(action, mode, approver, header) > maxCardLength) return cardTooLong[action.tool]
+    if (action.tool === "connect") action.linkTextBytes = maxCardLength - largestCard({...action, linkTextBytes: 0}, approver, header)
+    if (action.tool !== "leave" && largestCard(action, approver, header) > maxCardLength) return cardTooLong[action.tool]
     if (this.approvers().length > 0) return undefined
     return this.linkText === undefined ? "The agent has no owner. Run /simplex:link in Claude Code." : `The agent has no owner. Open this link in the SimpleX app and join: ${this.linkText}`
   }
 
-  standingApprover(chatInfo: T.ChatInfo): string | undefined {
+  standingApprover(chatInfo: T.ChatInfo, mode: Mode): string | undefined {
     const approval = approvalOf(customDataOf(chatInfo))
-    return this.actions.mode === "requests" && approval !== undefined && this.approvers().some(({groupMemberId}) => groupMemberId === approval.approvedById) ? safeName(approval.approvedBy) : undefined
+    return mode === "requests" && approval !== undefined && this.approvers().some(({groupMemberId}) => groupMemberId === approval.approvedById) ? safeName(approval.approvedBy) : undefined
   }
 
   saveCounter(nextAction: number): Promise<void> {
@@ -178,7 +178,6 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
       case "list":
         return this.chatsText()
       case "approveChat":
-        if (this.actions.mode === "host") return "Approvals apply in mode requests; the SimpleX daemon runs in mode host."
         return this.approveChat(sender, request.target)
       case "revoke":
         return this.revoke(request.target)
@@ -212,7 +211,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
   }
 
   private card(action: Action): string {
-    return `${this.header(action)}\n${cardText(action, this.actions.mode)}`
+    return `${this.header(action)}\n${cardText(action)}`
   }
 
   private header({session}: Action): string {
@@ -223,6 +222,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
   private async approveChat(sender: T.GroupMember, target: ChatTarget): Promise<string> {
     const view = this.sessions.get(target.session)
     if (view === undefined) return noSession(target.session)
+    if (view.mode === "host") return `Approvals apply in mode requests; session ${target.session} runs in mode host.`
     const chatInfo = await agentChat(view, target.chat)
     if (chatInfo === undefined) return `No chat ${targetText(target)}. /list shows the agents' chats.`
     const approvedBy = sender.memberProfile.displayName
@@ -253,7 +253,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
       lines.push(`Session ${view.number} · ${safeName(view.displayName)}`)
       const chats = await view.tools.agentChats()
       for (const {chatInfo} of chats.slice(0, listedChats)) {
-        const approvedBy = this.standingApprover(chatInfo)
+        const approvedBy = this.standingApprover(chatInfo, view.mode)
         const approval = approvedBy === undefined ? "" : `, approved for this chat by ${approvedBy}`
         const connection = isConnected(chatInfo) ? "" : ", not connected"
         lines.push(truncatedLine(`${view.number}:${chatRef(chatInfo)}  ${chatName(chatSubject(chatInfo))}${approval}${connection}`, maxLineLength))
@@ -378,9 +378,9 @@ export function parseCommand(text: string): Command | undefined {
   return match ? {keyword: match[1], params: match[2].trim()} : undefined
 }
 
-export function cardText(action: Action, mode: Actions["mode"]): string {
+export function cardText(action: Action): string {
   const request = requestLines(action)
-  const approval = mode === "host" ? "Performed without approval (mode host)" : action.standing ? `Approved for this chat by ${action.decidedBy}` : `Approved by ${action.decidedBy}`
+  const approval = action.mode === "host" ? "Performed without approval (mode host)" : action.standing ? `Approved for this chat by ${action.decidedBy}` : `Approved by ${action.decidedBy}`
   switch (action.state) {
     case "pending":
       return action.interrupted
@@ -438,10 +438,10 @@ function pendingLine(action: Action): string {
   return `${action.n}  session ${action.session}: ${summary(action, safeName).what}  expires ${utcMinutes(action.expires)}`
 }
 
-function largestCard(action: Action, mode: Actions["mode"], approver: string, header: string): number {
+function largestCard(action: Action, approver: string, header: string): number {
   const decidedBy = action.decidedBy ?? approver
   const cards: Action[] = [action, {...action, state: "done", decidedBy}, {...action, state: "failed", decidedBy, error: longestError}]
-  return Math.max(...cards.map(card => encodedLength(`${header}\n${cardText(card, mode)}`)))
+  return Math.max(...cards.map(card => encodedLength(`${header}\n${cardText(card)}`)))
 }
 
 function encodedLength(text: string): number {

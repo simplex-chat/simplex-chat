@@ -4,7 +4,7 @@ import {Server, request} from "http"
 import {Socket} from "net"
 import {tmpdir} from "os"
 import {join} from "path"
-import {Actions} from "../../src/actions"
+import {Actions, Mode} from "../../src/actions"
 import {defaultConfig} from "../../src/config"
 import {Daemon, DaemonDeps, HubLike, runDaemon} from "../../src/daemon"
 import {LockedError, createDataFolder, readSessionFile, sessionFolder, socketPath, writeSessionFile} from "../../src/files"
@@ -22,6 +22,7 @@ const fakeTimers: Parameters<typeof jest.useFakeTimers>[0] = {doNotFake: ["nextT
 interface FakeAgent {
   number: number
   displayName: string
+  mode: () => Mode
   closed: boolean
   calls: string[]
 }
@@ -67,10 +68,10 @@ function deps(root: string) {
     token,
     version: "0.2.0",
     openHub: async () => hub,
-    openSession: async ({number, name}) => {
+    openSession: async ({number, name, mode}) => {
       opening.resolve()
       await gates.open
-      const agent: FakeAgent = {number, displayName: `SimpleX MCP - ${name}`, closed: false, calls: []}
+      const agent: FakeAgent = {number, displayName: `SimpleX MCP - ${name}`, mode, closed: false, calls: []}
       agents.push(agent)
       events.push(`open ${number}`)
       return {
@@ -80,6 +81,9 @@ function deps(root: string) {
         perform: async () => undefined,
         get displayName() {
           return agent.displayName
+        },
+        get mode() {
+          return mode()
         },
         rename: async (newName: string) => {
           agent.displayName = `SimpleX MCP - ${newName}`
@@ -182,6 +186,24 @@ describe("daemon", () => {
     expect(await post("/session", {id: id1, project: "/p/other", config: defaultConfig})).toMatchObject({number: 1, displayName: "SimpleX MCP - app"})
     expect(readSessionFile(sessionFolder(root, id1))).toMatchObject({number: 1, name: "app", project: "/p/app"})
     expect(agents).toHaveLength(2)
+  })
+
+  it("keeps the approval mode of each session from its own registration", async () => {
+    storeSession(id1, 1, "app")
+    const {d, agents, configs} = deps(root)
+    daemon = await Daemon.start(d, readDefaultConfig)
+    const host = {...defaultConfig, approve: "host" as const}
+    await streamLines(socketPath(root), token, "/call", {id: id1, tool: "list", input: {}}, () => undefined)
+    expect(agents[0].mode()).toBe("requests")
+    await post("/session", {id: id1, project: "/p/app", config: host})
+    await register(id2)
+    expect(agents.map(({mode}) => mode())).toEqual(["host", "requests"])
+    await post("/session", {id: id1, project: "/p/app", config: host})
+    await title(id2, "docs", host)
+    expect(configs.at(-1)).toEqual(host)
+    expect(agents.map(({mode}) => mode())).toEqual(["host", "requests"])
+    await register(id1)
+    expect(agents.map(({mode}) => mode())).toEqual(["requests", "requests"])
   })
 
   it("expires due actions at each request that touches sessions", async () => {

@@ -1,7 +1,7 @@
 import {basename} from "path"
 import {T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
-import {Actions} from "./actions"
+import {Actions, Mode} from "./actions"
 import {Core, openCore, updatedUser} from "./core"
 import {ChatItemsWatch, validName} from "./messages"
 import {AgentTools} from "./tools"
@@ -14,6 +14,7 @@ export interface SessionAgent {
   readonly chat: api.ChatApi
   readonly tools: AgentTools
   readonly displayName: string
+  readonly mode: Mode
   rename(name: string): Promise<void>
   close(): Promise<void>
 }
@@ -22,8 +23,9 @@ export interface SessionAgentOptions {
   folder: string
   number: number
   name: string
+  mode: () => Mode
   actions: Actions
-  standingApprover: (chatInfo: T.ChatInfo) => string | undefined
+  standingApprover: (chatInfo: T.ChatInfo, mode: Mode) => string | undefined
 }
 
 export function sessionName(title: string | undefined, project: string): string {
@@ -36,11 +38,11 @@ export function profileName(name: string): string {
   return validName(`${profilePrefix}${name}`)
 }
 
-export async function openSessionAgent({folder, number, name, actions, standingApprover}: SessionAgentOptions): Promise<SessionAgent> {
+export async function openSessionAgent({folder, number, name, mode, actions, standingApprover}: SessionAgentOptions): Promise<SessionAgent> {
   const core: Core = await openCore(folder, profileName(name))
   const {chat, user} = core
   const watch = new ChatItemsWatch()
-  const tools = new AgentTools({chat, user, actions, watch, session: number, standingApprover})
+  const tools = new AgentTools({chat, user, actions, watch, session: number, mode, standingApprover: chatInfo => standingApprover(chatInfo, mode())})
   await core.events(async event => {
     switch (event.type) {
       case "newChatItems":
@@ -61,6 +63,9 @@ export async function openSessionAgent({folder, number, name, actions, standingA
     tools,
     get displayName() {
       return user.profile.displayName
+    },
+    get mode() {
+      return mode()
     },
     async rename(newName) {
       const renamed = await updatedUser(chat, user, profileName(newName))
