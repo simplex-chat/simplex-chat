@@ -1,33 +1,50 @@
 package chat.simplex.common.views.chat.item
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.*
+import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.ChatItem
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.helpers.toDp
 
 @Composable
 fun CIEventView(text: AnnotatedString) {
-  Text(text, Modifier.padding(horizontal = chatEventHorizontalPadding(), vertical = 6.dp), style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp), maxLines = 4)
+  Text(text, Modifier.padding(chatEventPadding()), style = chatEventTextStyle(MaterialTheme.typography.body1.copy(lineHeight = 22.sp)), maxLines = if (LocalTerminalLayout.current) Int.MAX_VALUE else 4)
 }
 
 @Composable
-fun chatEventHorizontalPadding(): Dp = if (LocalTerminalLayout.current) CHAT_ITEM_TEXT_PADDING else 6.dp
+fun chatEventTextStyle(base: TextStyle = LocalTextStyle.current): TextStyle =
+  if (LocalTerminalLayout.current) {
+    base.merge(terminalTextStyle(12.sp, MaterialTheme.colors.secondary))
+      .copy(textDirection = if (LocalLayoutDirection.current == LayoutDirection.Ltr) TextDirection.Ltr else TextDirection.Rtl)
+  } else {
+    base
+  }
+
+@Composable
+fun chatEventPadding(vertical: Dp = 6.dp): PaddingValues =
+  if (LocalTerminalLayout.current) PaddingValues(start = CHAT_ITEM_TEXT_PADDING, top = TERMINAL_EVENT_TOP_GAP.toDp(), end = CHAT_ITEM_TEXT_PADDING, bottom = TERMINAL_EVENT_BOTTOM_GAP.toDp())
+  else PaddingValues(horizontal = 6.dp, vertical = vertical)
 
 @Composable
 fun ChatEventWithMeta(ci: ChatItem, content: @Composable (ts: AnnotatedString) -> Unit) {
-  ItemWithMeta(meta = { CIMetaView(ci, timedMessagesTTL = null, showStatus = false, showEdited = false, showViaProxy = false, showTimestamp = true) }) { inlineMeta ->
+  ItemWithMeta(meta = { CIMetaView(ci, timedMessagesTTL = null, showStatus = false, showEdited = false, showViaProxy = false, showTimestamp = true) }, metaReserved = true) { inlineMeta ->
     content(
       if (inlineMeta != null) {
-        AnnotatedString(ci.timestampText)
+        AnnotatedString("  " + ci.timestampText)
       } else {
-        AnnotatedString("\u00A0" + reserveSpaceForMeta(ci.meta, null, null, MaterialTheme.colors.secondary, showStatus = false, showEdited = false, showTimestamp = true), reserveTimestampStyle)
+        val copy = terminalReserveSpaceForMeta(ci.meta, null, null, null, MaterialTheme.colors.secondary, showStatus = false, showEdited = false, showViaProxy = false, showTimestamp = true)
+        buildAnnotatedString { withStyle(reserveTimestampStyle) { append("\u00A0\u00A0\u00A0"); append(copy) } }
       }
     )
   }

@@ -23,11 +23,11 @@ fun CIFeaturePreferenceView(
 ) {
   ChatEventWithMeta(chatItem) { ts ->
     Row(
-      Modifier.padding(horizontal = chatEventHorizontalPadding(), vertical = 6.dp),
+      Modifier.padding(chatEventPadding()),
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-      Icon(feature.icon, feature.text, Modifier.size(18.dp), tint = MaterialTheme.colors.secondary)
+      Icon(feature.icon, feature.text, Modifier.inlineIcon().size(18.dp), tint = MaterialTheme.colors.secondary)
       if (contact != null && allowed != FeatureAllowed.NO && contact.allowsFeature(feature) && !contact.userAllowsFeature(feature)) {
         val acceptStyle = SpanStyle(color = MaterialTheme.colors.primary, fontSize = 12.sp)
         val setParam = feature == ChatFeature.TimedMessages && contact.mergedPreferences.timedMessages.userPreference.pref.ttl == null
@@ -36,19 +36,20 @@ fun CIFeaturePreferenceView(
         val annotatedText = buildAnnotatedString {
           withStyle(chatEventStyle) { append(chatItem.content.text + "  ") }
           withAnnotation(tag = "Accept", annotation = "Accept") {
-            withStyle(acceptStyle) { append(generalGetString(acceptTextId) + "  ") }
+            withStyle(acceptStyle) { append(generalGetString(acceptTextId)) }
           }
           withStyle(chatEventStyle) { append(ts) }
         }
         fun accept(offset: Int): Boolean = annotatedText.getStringAnnotations(tag = "Accept", start = offset, end = offset).isNotEmpty()
         ClickableText(
           annotatedText,
+          style = chatEventTextStyle(TextStyle.Default),
           onClick = { if (accept(it)) { acceptFeature(contact, feature, param) } },
           shouldConsumeEvent = ::accept
         )
       } else {
-        Text(AnnotatedString(chatItem.content.text + "  ") + ts,
-          fontSize = 12.sp, fontWeight = FontWeight.Light, color = MaterialTheme.colors.secondary)
+        Text(AnnotatedString(chatItem.content.text) + ts,
+          fontSize = 12.sp, fontWeight = FontWeight.Light, color = MaterialTheme.colors.secondary, style = chatEventTextStyle())
       }
     }
   }

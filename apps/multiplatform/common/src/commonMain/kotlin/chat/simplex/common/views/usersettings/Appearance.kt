@@ -42,7 +42,9 @@ import chat.simplex.common.ui.theme.ThemeManager.toReadableHex
 import chat.simplex.common.views.chat.ChatItemSender
 import chat.simplex.common.views.chat.item.LocalTerminalLayout
 import chat.simplex.common.views.chat.item.PreviewChatItemView
+import chat.simplex.common.views.chat.item.TERMINAL_SENDER_TOP_GAP
 import chat.simplex.common.views.chat.item.TerminalChatItemRow
+import chat.simplex.common.views.chat.item.terminalRowGap
 import chat.simplex.common.views.chat.item.msgTailWidthDp
 import chat.simplex.res.*
 import com.godaddy.android.colorpicker.ClassicColorPicker
@@ -304,8 +306,9 @@ object AppearanceScope {
         )
 
         @Composable
-        fun TerminalPreviewRow(item: ChatItem, sender: ChatItemSender, senderTopGap: Dp) {
-          TerminalChatItemRow(sender, gutter = 0.dp, topGap = 0.dp, senderTopGap = senderTopGap) {
+        fun TerminalPreviewRow(item: ChatItem, older: ChatItem?, sender: ChatItemSender) {
+          val topGap = terminalRowGap(item, older, separated = false, largeGap = true, hasSenderRow = true).toDp()
+          TerminalChatItemRow(sender, gutter = 0.dp, topGap = topGap, senderTopGap = if (older == null) 0.dp else TERMINAL_SENDER_TOP_GAP.toDp()) {
             PreviewChatItemView(item)
           }
         }
@@ -320,8 +323,8 @@ object AppearanceScope {
           },
           terminalRows = {
             Column {
-              TerminalPreviewRow(alice, ChatItemSender("alice", null, null, own = false, image = null), senderTopGap = 0.dp)
-              TerminalPreviewRow(reply, ChatItemSender("bob", null, null, own = true, image = null), senderTopGap = 14.dp)
+              TerminalPreviewRow(alice, null, ChatItemSender("alice", null, null, own = false, image = null))
+              TerminalPreviewRow(reply, alice, ChatItemSender("bob", null, null, own = true, image = null))
             }
           }
         )

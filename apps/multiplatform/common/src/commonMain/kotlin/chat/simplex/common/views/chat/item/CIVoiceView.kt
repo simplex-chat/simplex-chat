@@ -46,6 +46,7 @@ fun CIVoiceView(
   val sizeMultiplier = if (smallView) voiceMessageSizeBasedOnSquareSize(36f) / 56f else 1f
   val padding = when {
     smallView -> PaddingValues()
+    hasText && LocalTerminalLayout.current -> PaddingValues(top = TERMINAL_BLOCK_TOP_GAP.toDp(), start = 6.sp.toDp(), end = 6.sp.toDp())
     hasText -> PaddingValues(top = 14.sp.toDp() * sizeMultiplier, bottom = 14.sp.toDp() * sizeMultiplier, start = 6.sp.toDp() * sizeMultiplier, end = 6.sp.toDp() * sizeMultiplier)
     else -> PaddingValues(top = 4.sp.toDp() * sizeMultiplier, bottom = 6.sp.toDp() * sizeMultiplier, start = if (LocalTerminalLayout.current) CHAT_ITEM_TEXT_PADDING else 0.dp, end = 0.dp)
   }

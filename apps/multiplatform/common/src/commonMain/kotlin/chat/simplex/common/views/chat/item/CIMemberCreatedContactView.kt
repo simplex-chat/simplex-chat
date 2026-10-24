@@ -34,7 +34,7 @@ fun CIMemberCreatedContactView(
 
   ChatEventWithMeta(chatItem) { ts ->
     Row(
-      Modifier.padding(horizontal = chatEventHorizontalPadding(), vertical = 6.dp),
+      Modifier.padding(chatEventPadding()),
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
@@ -44,7 +44,7 @@ fun CIMemberCreatedContactView(
           append(eventText())
           append("  ")
           withAnnotation(tag = "Open", annotation = "Open") {
-            withStyle(openChatStyle) { append(generalGetString(MR.strings.rcv_group_event_open_chat) + "  ") }
+            withStyle(openChatStyle) { append(generalGetString(MR.strings.rcv_group_event_open_chat)) }
           }
           withStyle(chatEventStyle) { append(ts) }
         }
@@ -52,6 +52,7 @@ fun CIMemberCreatedContactView(
         fun open(offset: Int): Boolean = annotatedText.getStringAnnotations(tag = "Open", start = offset, end = offset).isNotEmpty()
         ClickableText(
           annotatedText,
+          style = chatEventTextStyle(TextStyle.Default),
           onClick = {
             if (open(it)) {
               openDirectChat(chatItem.chatDir.groupMember.memberContactId)
@@ -62,10 +63,9 @@ fun CIMemberCreatedContactView(
       } else {
         val annotatedText = buildAnnotatedString {
           append(eventText())
-          append("  ")
           withStyle(chatEventStyle) { append(ts) }
         }
-        Text(annotatedText)
+        Text(annotatedText, style = chatEventTextStyle())
       }
     }
   }

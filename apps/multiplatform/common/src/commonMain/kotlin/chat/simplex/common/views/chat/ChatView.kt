@@ -1934,6 +1934,7 @@ fun BoxScope.ChatItemsList(
     cItem: ChatItem,
     itemSeparation: ItemSeparation,
     previousItemSeparationLargeGap: Boolean,
+    terminalGap: TextUnit,
     revealed: State<Boolean>,
     reveal: (Boolean) -> Unit
   ) {
@@ -2000,16 +2001,16 @@ fun BoxScope.ChatItemsList(
         val itemTopGap = if (previousItemSeparationLargeGap) 4.dp else 1.dp
 
         @Composable
-        fun ChatItemBox(modifier: Modifier = Modifier, top: Dp = itemTopGap, content: @Composable () -> Unit = { }) {
+        fun ChatItemBox(modifier: Modifier = Modifier, top: Dp = itemTopGap, bottom: Dp? = null, content: @Composable () -> Unit = { }) {
           Box(
             modifier = modifier.padding(
               bottom = if (itemSeparation.largeGap) {
                 if (itemAtZeroIndexInWholeList) {
                   8.dp
                 } else {
-                  4.dp
+                  bottom ?: 4.dp
                 }
-              } else 1.dp, top = top
+              } else bottom ?: 1.dp, top = top
             ),
             contentAlignment = Alignment.CenterStart
           ) {
@@ -2057,14 +2058,15 @@ fun BoxScope.ChatItemsList(
                 else -> Color.Transparent
               }
             )
-            ChatItemBox(Modifier.drawBehind { drawRect(rowColor.value) }.terminalRowIndication(rowInteractionSource), top = 0.dp) {
+            val dateGap = if (itemSeparation.date != null) TERMINAL_LEVEL_STEP.toDp() else 0.dp
+            ChatItemBox(Modifier.drawBehind { drawRect(rowColor.value) }.terminalRowIndication(rowInteractionSource), top = 0.dp, bottom = dateGap) {
               AnimatedVisibility(selectionVisible, enter = fadeIn(), exit = fadeOut()) {
                 SelectedListItem(Modifier.padding(start = 8.dp), cItem.id, selectedChatItems)
               }
               TerminalChatItemRow(
                 if (showAvatar) chatItemSender(chatInfo, cItem, range, reversedChatItems, showMemberInfo, showChatInfo) else null,
                 terminalGutter(chatInfo),
-                itemTopGap,
+                terminalGap.toDp(),
                 Modifier.terminalStartOffset { selectionOffset }.then(if (selectionVisible) Modifier else swipeableModifier),
                 goToButton = { GoToItemButton(remoteHostId, chatInfo, cItem, searchValueIsNotBlank, hoveredItemId, rowHovered, Modifier) }
               ) {
@@ -2405,8 +2407,16 @@ fun BoxScope.ChatItemsList(
         } else {
           null
         }
+        val oldestItem = merged.oldest().item
         val older = merged.oldest().nextItem
-        val showAvatar = if (LocalTerminalLayout.current) terminalItemShowsSender(item, older) else shouldShowAvatar(item, older)
+        val terminal = LocalTerminalLayout.current
+        val showAvatar = if (terminal) terminalItemShowsSender(item, older) else shouldShowAvatar(item, older)
+        val terminalGap = if (!terminal) 0.sp else terminalRowGap(
+          item, older,
+          separated = terminalRowsSeparated(mergedItemsValue.items.getOrNull(index + 1)),
+          largeGap = older != null && getItemSeparationLargeGap(older, oldestItem),
+          hasSenderRow = showAvatar
+        )
         val isRevealed = remember { derivedStateOf { revealedItems.value.contains(item.id) } }
         val itemSeparation: ItemSeparation
         val prevItemSeparationLargeGap: Boolean
@@ -2420,7 +2430,7 @@ fun BoxScope.ChatItemsList(
           prevItemSeparationLargeGap = false
         }
         CompositionLocalProvider(LocalItemContext provides ItemContext(selectionIndex = index)) {
-          ChatViewListItem(index == 0, rememberUpdatedState(range), showAvatar, item, itemSeparation, prevItemSeparationLargeGap, isRevealed) {
+          ChatViewListItem(index == 0, rememberUpdatedState(range), showAvatar, item, itemSeparation, prevItemSeparationLargeGap, terminalGap, isRevealed) {
             if (merged is MergedItem.Grouped) merged.reveal(it, revealedItems)
           }
         }
@@ -3832,6 +3842,12 @@ private fun getItemSeparation(chatItem: ChatItem, prevItem: ChatItem?): ItemSepa
     largeGap = largeGap,
     date = if (getTimestampDateText(chatItem.meta.itemTs) == getTimestampDateText(prevItem.meta.itemTs)) null else prevItem.meta.itemTs
   )
+}
+
+fun terminalRowsSeparated(olderRow: MergedItem?): Boolean {
+  if (olderRow == null) return false
+  val older = olderRow.newest()
+  return older.item.content is CIContent.ChatBanner || olderRow.revealed && getItemSeparation(older.item, older.prevItem).date != null
 }
 
 private fun getItemSeparationLargeGap(chatItem: ChatItem, nextItem: ChatItem?): Boolean {

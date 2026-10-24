@@ -1,6 +1,6 @@
 # Terminal chat layout: UI
 
-Date: 2026-10-13. Revised: 2026-10-14, 2026-10-19, 2026-10-21.
+Date: 2026-10-13. Revised: 2026-10-14, 2026-10-19, 2026-10-21, 2026-10-24.
 
 Chats with the layout `terminal` are drawn by the Android and desktop apps as full-width start-aligned rows without bubbles. iOS draws the classic layout; its layout pickers were removed until it draws terminal rows.
 
@@ -35,14 +35,49 @@ sender row        classic group geometry and style: name 13.5sp, role label; own
 avatars           groups and channels only; gutter: member image width
 gutter            other chats: GO_TO_ITEM_BUTTON_SIZE (22dp)
 sender groups     new sender row after an event or a sender change, as classic: time gaps and date changes do not repeat it
-time, status      at the end of the row, level with the last text line, for every item with a time
+time, status      at the end of the row, for every item with a time; baseline of the time on the last baseline of the content
+                  message text ends with a transparent copy of the time, joined to the last word by no-break spaces
+                  last line without room: the last word moves to the next line with the time
+                  code block, table, rule or emoji without room: the time under them
                   images and videos without caption: over the media in white, as classic, when the row has no space beside them
-quote             Markdown quote design: bar, text at 70%
-headers           all item headers without background
-media             message corner clip, start at the text edge
+quote             Markdown quote design: bar, text at 70%, 15sp; 5.75sp above, 5sp below, over the whole quote row
+headers           all item headers without background; 2.5sp above, 1.5sp below; name → header level 3, header → text level 2
+media             message corner clip, start at the text edge, 5.75sp above; quote thumbnails: message corner clip; roundness preference
+item clip         none, so headings and emoji are drawn whole
 cards             link preview and chat link in the quote colour, message corner radius
 message text      onSurface at 87% in dark themes, both layouts
-spacing           item gap 1dp, 4dp after a large gap; sender row 8dp; text top padding 0 for the first part of an item, bottom 1dp
+line height       font size × 22/16 × f(w): message text, captions, quotes, code, headings, sender row, headers, event text, time
+                  cards, files, voice and calls: classic until their redesign
+                  f(w) = 1 − 0.1515 × (1 − w); w: L* contrast of the text colour divided by that of the message text, 0…1; names and the white time: f = 1
+                  full line height for every line, one-line texts included; extra space split by ascent and descent (Proportional, Trim.None)
+spacing level 1   lines of a quote
+spacing level 2   lines of a message; messages of one sender within 60 s; blocks of a message against the text next to them
+spacing level 3   messages of one sender 60 s or more apart; sender name → message or header; paragraph break; above a heading, also at the start of a message
+spacing level 4   last line of a message → next sender name; above and below an event, whatever the time between them
+                  all gaps: sp constants at the top of TerminalItemView.kt
+                  one gap above a row, terminalRowGap: 4.75sp after a large gap, above a sender row, next to an event, above text at the item top starting with a heading; otherwise 0
+                  0 below a date separator and the chat banner; 4.75sp above a date separator
+                  sender row 6.5sp above, 5.5sp below; events 8.25sp above, 1.5sp below
+                  text top padding: 0 below the sender row, a header or the quote, 5sp below media, voice and cards, 1sp below a file; bottom 0
+                  text starting with a heading below a quote, header or block: 4.75sp more above, terminalHeadingGap
+                  item ending with a block (image or video without caption, voice or chat link without text): 5sp below
+                  code cards, table cards and rules: 5.75sp above, 5sp below all but the last block of a message without a meta line
+                  that last block with the time beside it: 5sp below, by messageLastBlock() and TerminalMetaLayout; the time under it: 6sp below its edge
+                  paragraph break and a heading inside a message: 4.75sp
+                  below a heading: 2.375sp (half of 4.75sp), so a heading is nearer to its own text
+                  headings: body × 1.3125, 1.72, 2.26 for levels 3, 2, 1; capitals placed as body capitals
+                  files: 2sp above; voice drawn by FramedItemView (caption, quote or header): 5.75sp above
+                  emoji-only items, also under a quote or header: 4.25sp above, 1.5sp below; not stretched to the item width
+                  feature and preference icons: centred on the event text, no height; merged feature icons: one event line high, centred
+                  classic: call item bottom, voice drawn without FramedItemView, the two rows of the forwarded-from header
+meta width        content measured without the meta width, except text with the transparent copy, files, emoji, events and captionless media with overlayMeta
+meta placement    never above the content; the row at least as tall as the time; after a rule the time stays on the last text line (D24)
+meta copy         FontWeight.Normal; icon spaces at the body1 size in dp; time and timer text at 12sp
+                  conditions of CIMetaView, file encryption and signature included; tall status icon condition shared with CIMetaView
+                  one more space after the 17dp icons: sent and received status, via proxy
+event text        direction of the layout; separator and copy passed together as ts by ChatEventWithMeta; no line limit (D23)
+meta copy mark    U+200E (left-to-right layout) or U+200F (right-to-left) before the copy, so the copy stays at the line end after text in the other direction
+event time        joined to the last word by no-break spaces
 go-to button      in the gutter, centred on the message, below the avatar when the message is shorter
 row tint          hover and press: indication over the whole row; selected: primary 10%; highlighted: primary 14%
 colours           app, user and chat themes, as classic
@@ -69,30 +104,50 @@ Paths are relative to `apps/multiplatform/common/src/commonMain/kotlin/chat/simp
 views/chat/ChatView.kt
   ChatView (:269-:274)                   terminal = activeChatLayout == Terminal; LocalTerminalLayout provided
   ChatLayout composable (:1007)          chatViewBackgroundModifier(drawWallpaperImage = !LocalTerminalLayout.current)
-  ChatItemsList (:2405)                  showAvatar = terminalItemShowsSender(item, older) when terminal
-  local ChatItemView (:2045)             terminal branch:
-                                           ChatItemBox with the row tint and terminalRowIndication
+  ChatItemsList (:2409-:2415)            showAvatar = terminalItemShowsSender(item, older) when terminal
+                                         terminalGap = terminalRowGap(item, older, separated, largeGap, showAvatar)
+                                         separated = terminalRowsSeparated(older row) (:3843): the banner, or a revealed older row with getItemSeparation(older, oldest item).date set
+  local ChatItemView (:2046)             terminal branch:
+                                           ChatItemBox(top, bottom) with the row tint and terminalRowIndication; top 0
+                                           bottom TERMINAL_LEVEL_STEP above a date separator; 8dp below the newest row; otherwise 0
                                            SelectedListItem when selecting
-                                           TerminalChatItemRow(chatItemSender or null, terminalGutter, itemTopGap, terminalStartOffset and swipeableModifier, GoToItemButton)
+                                           TerminalChatItemRow(chatItemSender or null, terminalGutter, terminalGap, terminalStartOffset and swipeableModifier, GoToItemButton)
                                            ChatItemViewShortHand with the row interaction source
-  shared with classic                    showsSender, sameSender (:3846-:3863); ChatItemSender, chatItemSender, SenderNameAndRole (:3496-:3574)
-                                         classic BubbleSenderNameAndRole (:2033)
-views/chat/item/TerminalItemView.kt      LocalTerminalLayout, terminal sender condition, row interaction, ItemWithMeta, TerminalChatItemRow
+  shared with classic                    showsSender, sameSender (:3862-:3876); ChatItemSender, chatItemSender, SenderNameAndRole (:3506-:3584)
+                                         classic BubbleSenderNameAndRole (:2034)
+views/chat/ChatItemsMerger.kt            MergedItem.revealed: true for Single, the flag of Grouped
+views/chat/item/TerminalItemView.kt      LocalTerminalLayout, gap constants, terminalTextStyle, terminal sender condition, terminalRowGap, terminalHeadingGap, hasQuoteOrHeader
+                                         row interaction, messageLastLine, messageLastBlock, inlineIcon, ItemWithMeta, TerminalChatItemRow
 views/chat/item/ChatItemView.kt          alignEnd = sent && !terminal; item click without indication; reactions at the text edge
                                          GoToItemButton and GO_TO_ITEM_BUTTON_SIZE at top level
-                                         chatItemTailEnabled false
-views/chat/item/FramedItemView.kt        transparent background; headers and quote without background; quoteBar; mediaModifier; cardModifier
-                                         CIMarkdownText: parameter first, bottom padding, messageTextBottom
-                                         ItemWithMeta; CHAT_ITEM_TEXT_PADDING, CHAT_ITEM_TEXT_VERTICAL_PADDING
-views/chat/item/MarkdownBlocks.kt        Modifier.quoteBar, shared with Markdown quotes
-views/chat/item/TextItemView.kt          messageTextColor()
-views/chat/item/CIEventView.kt           chatEventHorizontalPadding(), ChatEventWithMeta
+                                         chatItemTailEnabled false; clipChatItem skipped
+views/chat/item/FramedItemView.kt        transparent background; headers and quote without background; quoteBar; mediaModifier; cardModifier; thumbnailClip
+                                         CIMarkdownText: parameter terminalTop plus terminalHeadingGap, no bottom padding, terminal text style, file encryption and signature for the copy
+                                         reservesMeta: metaReserved, caption of images, videos, voice and chat links, bottom gap without text; clipChatItem skipped
+                                         emoji: TERMINAL_EMOJI_* paddings, not stretched; quote row: TERMINAL_BLOCK_* paddings, icons without top padding
+                                         CHAT_ITEM_TEXT_PADDING (text edge); classic vertical text padding named CHAT_ITEM_TEXT_VERTICAL_PADDING
+views/chat/item/MarkdownBlocks.kt        Modifier.quoteBar, shared with Markdown quotes; Markdown quote text with terminalTextStyle and the colour rule
+                                         heading scale TERMINAL_HEADING_RATIO, Modifier.headingBox
+                                         spacers: TERMINAL_HEADING_BOTTOM_GAP after a heading, TERMINAL_LEVEL_STEP at a paragraph break or above a heading
+                                         card margins of code, tables and rules; messageLastBlock() on the last block without a meta line (marksLastBlock)
+                                         code line height × 0.9 with terminalTextStyle; metaLine null in terminal rows unless live
+views/chat/item/CIFileView.kt            row padding TERMINAL_FILE_TOP_GAP, icon without top padding; the reserve in the size line kept
+views/chat/item/CIVoiceView.kt           voice drawn by FramedItemView: TERMINAL_BLOCK_TOP_GAP above, 0 below; otherwise classic, start at the text edge
+views/chat/item/EmojiItemView.kt         TERMINAL_EMOJI_* paddings at the text edge, messageLastLine()
+views/chat/item/TextItemView.kt          messageTextColor(); terminalReserveSpaceForMeta at the end of message text
+                                         meta line of a live message: encryption, signature and the outer direction, as the blocks
+views/chat/item/CIMetaView.kt            reserveSpaceForMeta with span parameters: the classic string and terminalReserveSpaceForMeta
+                                         terminalReserveSpaceForMeta: direction mark, icon spaces in dp; tallStatusIcon shared with CIMetaText
+                                         time style with lineHeightColor
+views/chat/item/CIChatFeatureView.kt     merged feature icons: one event line high, centred in terminal rows
+views/chat/item/CIEventView.kt           chatEventPadding(), chatEventTextStyle() with the layout direction, ChatEventWithMeta (separator and time or copy as ts)
+                                         CIEventView without a line limit in terminal rows (D23)
 item views with ItemWithMeta             EmojiItemView, CIVoiceView, CICallItemView, DeletedItemView, MarkedDeletedItemView
                                          IntegrityErrorItemView, CIRcvDecryptionError, CIGroupInvitationView
 item views with ChatEventWithMeta        CIChatFeatureView, CIFeaturePreferenceView, CIMemberCreatedContactView, event items of ChatItemView
 views/chat/ChatInfoView.kt               ChatLayoutSection, setChatLayout; LocalTerminalLayout of the chat theme screen
 views/helpers/ThemeModeEditor.kt         layoutSection slot of ChatWallpaperEditor; terminal passed to editColor
-views/usersettings/Appearance.kt         ChatLayoutRow; PreviewInEitherLayout; terminal preview rows
+views/usersettings/Appearance.kt         ChatLayoutRow; PreviewInEitherLayout; terminal preview rows with terminalRowGap
                                          presets as colours; custom image tile, image scale, scale slider and accent hidden
                                          LocalTerminalLayout by profileLayoutIsTerminal
 ```
@@ -120,6 +175,25 @@ theme writes    chatLayout kept (agent profile plan, section 6)
 - after a deleted message of the same sender: hidden
 - note folder items: grouped
 - event item: no sender row
+
+`terminalRowGap` and `terminalHeadingGap`:
+
+- oldest item; close messages: 0
+- large gap; sender row; next to an event: level 3 gap
+- heading at the item top: row gap, no heading gap
+- heading below a quote or a forwarded header: heading gap, no row gap
+- heading not first; text without heading: neither
+- separated rows: 0
+- heading below a deletion, the live state, a file or media: heading gap; in unknown content without a file: row gap
+
+`terminalRowsSeparated`: a date change of a single or revealed row, the chat banner: separated; a collapsed group, the same date, no older row: not separated
+
+`apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/TerminalMetaCopyTest.kt`:
+
+- classic reserve strings: unchanged, via proxy included
+- copy text: direction mark, the classic spaces, one more space after the tall status and via-proxy icons
+- icon spaces: one width at font scales 0.7, 0.75, 1 and 1.3; the time scaled with the font
+- copy after words in the other direction on a wrapped last line: at the line end, in both directions
 
 Checked on desktop on 2026-10-21:
 

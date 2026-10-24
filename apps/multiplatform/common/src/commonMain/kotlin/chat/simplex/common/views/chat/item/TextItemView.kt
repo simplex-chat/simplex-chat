@@ -177,6 +177,8 @@ fun MarkdownText (
   sender: String? = null,
   meta: CIMeta? = null,
   chatTTL: Int? = null,
+  encrypted: Boolean? = null,
+  signedFileVerified: Boolean? = null,
   mentions: Map<String, CIMention>? = null,
   userMemberId: String? = null,
   toggleSecrets: Boolean,
@@ -209,23 +211,25 @@ fun MarkdownText (
   }
   if (blockLayout && formattedText != null && markdownBlocks != null && range == null) {
     val direction = LocalLayoutDirection.current
+    val terminal = LocalTerminalLayout.current
     CompositionLocalProvider(LocalLayoutDirection provides textLayoutDirection) {
       MarkdownBlocks(
         formattedText, markdownBlocks, style, modifier, cardColor ?: MaterialTheme.appColors.receivedQuote,
         blockText = { index, r, blockStyle, blockModifier, blockSoftWrap, last ->
           MarkdownText(
             text, formattedText, markdownBlocks, sender = if (index == 0) sender else null, meta = if (last) meta else null, chatTTL = chatTTL,
+            encrypted = encrypted, signedFileVerified = signedFileVerified,
             mentions = mentions, userMemberId = userMemberId, toggleSecrets = toggleSecrets, sendCommandMsg = sendCommandMsg, style = blockStyle,
             uriHandler = uriHandler, senderBold = senderBold, modifier = blockModifier, linkMode = linkMode, onLinkLongClick = onLinkLongClick,
             showViaProxy = showViaProxy, showTimestamp = showTimestamp, prefix = if (index == 0) prefix else null,
             selection = selection, textIndex = index, range = r.from until r.to, softWrap = blockSoftWrap, parentDirection = direction
           )
         },
-        metaLine = if (LocalTerminalLayout.current && meta?.isLive != true) null else {
+        metaLine = if (terminal && meta?.isLive != true) null else {
           {
             MarkdownText(
-              text, formattedText, markdownBlocks, meta = meta, chatTTL = chatTTL, toggleSecrets = toggleSecrets, style = style,
-              linkMode = linkMode, showViaProxy = showViaProxy, showTimestamp = showTimestamp, range = IntRange.EMPTY
+              text, formattedText, markdownBlocks, meta = meta, chatTTL = chatTTL, encrypted = encrypted, signedFileVerified = signedFileVerified, toggleSecrets = toggleSecrets, style = style,
+              linkMode = linkMode, showViaProxy = showViaProxy, showTimestamp = showTimestamp, range = IntRange.EMPTY, parentDirection = if (terminal) direction else null
             )
           }
         }
@@ -233,15 +237,14 @@ fun MarkdownText (
     }
     return
   }
-  val lastLine = if (LocalTerminalLayout.current && meta != null) remember { TextLastLine() } else null
-  val reserveMeta = if (lastLine == null) meta else null
-  val modifier = if (lastLine == null) modifier else modifier.then(lastLine.modifier)
-  val reserve = if (textLayoutDirection != (parentDirection ?: LocalLayoutDirection.current) && meta != null) {
-    "\n"
-  } else if (meta != null) {
-    reserveSpaceForMeta(meta, chatTTL, null, secondaryColor = MaterialTheme.colors.secondary, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
-  } else {
-    "    "
+  val reserve = meta?.let {
+    if (textLayoutDirection != (parentDirection ?: LocalLayoutDirection.current)) {
+      AnnotatedString("\n")
+    } else if (LocalTerminalLayout.current) {
+      terminalReserveSpaceForMeta(it, chatTTL, encrypted, signedFileVerified, MaterialTheme.colors.secondary, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
+    } else {
+      AnnotatedString(reserveSpaceForMeta(it, chatTTL, null, secondaryColor = MaterialTheme.colors.secondary, showViaProxy = showViaProxy, showTimestamp = showTimestamp))
+    }
   }
   val scope = rememberCoroutineScope()
   CompositionLocalProvider(
@@ -292,13 +295,13 @@ fun MarkdownText (
         if (meta?.isLive == true) {
           append(typingIndicator(meta.recent, typingIdx))
         }
-        if (reserveMeta != null) withStyle(reserveTimestampStyle) { append(reserve) }
+        if (reserve != null) withStyle(reserveTimestampStyle) { append(reserve) }
       }
       val clampedRange = textSelection?.highlightRange?.let { it.first .. minOf(it.last, selectableEnd - 1) }?.takeUnless { it.isEmpty() }
       if (textSelection != null) {
-        SelectableText(annotatedText, style = style, modifier = modifier.then(textSelection.positionModifier), maxLines = maxLines, overflow = overflow, selectionRange = clampedRange, onTextLayoutResult = { lastLine?.onTextLayout(it); textSelection.onTextLayoutResult(it) })
+        SelectableText(annotatedText, style = style, modifier = modifier.then(textSelection.positionModifier), maxLines = maxLines, overflow = overflow, selectionRange = clampedRange, onTextLayoutResult = textSelection.onTextLayoutResult)
       } else {
-        Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, inlineContent = inlineContent?.second ?: mapOf(), onTextLayout = { lastLine?.onTextLayout(it) })
+        Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, inlineContent = inlineContent?.second ?: mapOf())
       }
     } else {
       var selectableEnd = 0
@@ -448,13 +451,12 @@ fun MarkdownText (
         // With RTL language set globally links looks bad sometimes, better to add a new line to bo sure everything looks good
         /*if (metaText != null && hasLinks && LocalLayoutDirection.current == LayoutDirection.Rtl)
           withStyle(reserveTimestampStyle) { append("\n" + metaText) }
-        else */if (reserveMeta != null) withStyle(reserveTimestampStyle) { append(reserve) }
+        else */if (reserve != null) withStyle(reserveTimestampStyle) { append(reserve) }
       }
       val clampedRange = textSelection?.highlightRange?.let { it.first .. minOf(it.last, selectableEnd - 1) }?.takeUnless { it.isEmpty() }
       val layoutResult = remember { mutableStateOf<TextLayoutResult?>(null) }
       val onTextLayout: (TextLayoutResult) -> Unit = { r ->
         layoutResult.value = r
-        lastLine?.onTextLayout(r)
         textSelection?.onTextLayoutResult?.invoke(r)
       }
       val textModifier = modifier

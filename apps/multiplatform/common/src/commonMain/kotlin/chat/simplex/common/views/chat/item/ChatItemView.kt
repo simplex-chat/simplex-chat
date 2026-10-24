@@ -55,7 +55,7 @@ fun chatEventText(ci: ChatItem, isChannel: Boolean = false, ts: AnnotatedString)
 
 fun chatEventText(eventText: String, ts: AnnotatedString): AnnotatedString =
   buildAnnotatedString {
-    withStyle(chatEventStyle) { append(AnnotatedString("$eventText  ") + ts) }
+    withStyle(chatEventStyle) { append(eventText); append(ts) }
   }
 
 data class ChatItemReactionMenuItem (
@@ -265,7 +265,7 @@ fun ChatItemView(
           }
           Column(
             Modifier
-              .clipChatItem(cItem, itemSeparation.largeGap, revealed.value)
+              .then(if (terminal) Modifier else Modifier.clipChatItem(cItem, itemSeparation.largeGap, revealed.value))
               .hoverable(bubbleInteractionSource)
               .combinedClickable(
                 onLongClick = { showMenu.value = true },
@@ -514,7 +514,7 @@ fun ChatItemView(
             @Composable
             fun ContentItem() {
               val mc = cItem.content.msgContent
-              if (cItem.quotedItem == null && cItem.meta.itemForwarded == null && cItem.meta.itemDeleted == null && !cItem.meta.isLive) {
+              if (!cItem.hasQuoteOrHeader) {
                 if (mc is MsgContent.MCText && isShortEmoji(cItem.content.text)) {
                   EmojiItemView(cItem, cInfo.timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
                 } else if (mc is MsgContent.MCVoice && cItem.content.text.isEmpty()) {
@@ -592,7 +592,8 @@ fun ChatItemView(
                 buildAnnotatedString {
                   withStyle(chatEventStyle.copy(fontWeight = FontWeight.Bold)) { append(cItem.content.text(cInfo.isChannel)) }
                 },
-                Modifier.padding(horizontal = chatEventHorizontalPadding(), vertical = 6.dp)
+                Modifier.padding(chatEventPadding()),
+                style = chatEventTextStyle()
               )
             }
 
@@ -622,7 +623,8 @@ fun ChatItemView(
                 buildAnnotatedString {
                   withStyle(chatEventStyle) { append(annotatedStringResource(sId)) }
                 },
-                Modifier.padding(horizontal = chatEventHorizontalPadding(), vertical = 6.dp)
+                Modifier.padding(chatEventPadding()),
+                style = chatEventTextStyle()
               )
             }
 

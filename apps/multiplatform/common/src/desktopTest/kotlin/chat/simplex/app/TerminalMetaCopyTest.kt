@@ -1,0 +1,117 @@
+package chat.simplex.app
+
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.Paragraph
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.createFontFamilyResolver
+import androidx.compose.ui.text.style.TextDirection
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import chat.simplex.common.model.*
+import chat.simplex.common.ui.theme.Inter
+import chat.simplex.common.views.chat.item.reserveSpaceForMeta
+import chat.simplex.common.views.chat.item.terminalReserveSpaceForMeta
+import kotlinx.datetime.Clock
+import kotlin.math.abs
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+
+class TerminalMetaCopyTest {
+  private val resolver = createFontFamilyResolver()
+  private val iconSpace = "    "
+  private val sentEdited = CIMeta.getSample(1, Clock.System.now(), "", status = CIStatus.SndSent(SndCIStatusProgress.Complete), itemEdited = true)
+  private val receivedTimed = CIMeta.getSample(2, Clock.System.now(), "", status = CIStatus.RcvRead(), itemTimed = CITimed(30, null))
+  private val sentViaProxy = CIMeta.getSample(3, Clock.System.now(), "", status = CIStatus.SndSent(SndCIStatusProgress.Complete), sentViaProxy = true)
+
+  private fun copy(meta: CIMeta, density: Density, direction: LayoutDirection, showViaProxy: Boolean = false) =
+    terminalReserveSpaceForMeta(
+      meta, null, null, null, Color.Gray, showStatus = true, showEdited = true, showViaProxy = showViaProxy, showTimestamp = true,
+      iconSpaceSize = with(density) { 16.dp.toSp() }, direction = direction
+    )
+
+  private fun paragraph(text: AnnotatedString, density: Density, textDirection: TextDirection, width: Int) =
+    Paragraph(
+      text = text.text,
+      style = TextStyle(fontFamily = Inter, fontSize = 16.sp, textDirection = textDirection),
+      constraints = Constraints(maxWidth = width),
+      density = density,
+      fontFamilyResolver = resolver,
+      spanStyles = text.spanStyles
+    )
+
+  private fun Paragraph.bounds(range: IntRange): Rect =
+    range.map { getBoundingBox(it) }.reduce { a, b -> Rect(minOf(a.left, b.left), minOf(a.top, b.top), maxOf(a.right, b.right), maxOf(a.bottom, b.bottom)) }
+
+  @Test
+  fun classicReserveUnchanged() {
+    assertEquals(iconSpace + iconSpace + " " + sentEdited.timestampText, reserveSpaceForMeta(sentEdited, null, null, Color.Gray, showTimestamp = true))
+    assertEquals(iconSpace + shortTimeText(30) + " " + iconSpace + " " + receivedTimed.timestampText, reserveSpaceForMeta(receivedTimed, null, null, Color.Gray, showTimestamp = true))
+    assertEquals(iconSpace + iconSpace + iconSpace, reserveSpaceForMeta(sentEdited, null, null, Color.Gray, showTimestamp = false))
+    assertEquals(iconSpace + iconSpace + " " + sentViaProxy.timestampText, reserveSpaceForMeta(sentViaProxy, null, null, Color.Gray, showViaProxy = true, showTimestamp = true))
+  }
+
+  @Test
+  fun copyHasClassicSpacesAndDirectionMark() {
+    val ltr = copy(sentEdited, Density(1f), LayoutDirection.Ltr)
+    assertEquals("‎" + (iconSpace + iconSpace + " " + " " + sentEdited.timestampText).replace(' ', ' '), ltr.text)
+    val rtl = copy(receivedTimed, Density(1f), LayoutDirection.Rtl)
+    assertEquals("‏" + (iconSpace + shortTimeText(30) + " " + iconSpace + " " + receivedTimed.timestampText).replace(' ', ' '), rtl.text)
+    val proxy = copy(sentViaProxy, Density(1f), LayoutDirection.Ltr, showViaProxy = true)
+    assertEquals("‎" + (iconSpace + " " + iconSpace + " " + " " + sentViaProxy.timestampText).replace(' ', ' '), proxy.text)
+  }
+
+  @Test
+  fun iconSpacesKeepWidthAcrossFontScales() {
+    val ts = sentEdited.timestampText
+    val widths = listOf(0.7f, 0.75f, 1f, 1.3f).associateWith { s ->
+      val density = Density(1f, s)
+      val text = copy(sentEdited, density, LayoutDirection.Ltr)
+      val p = paragraph(text, density, TextDirection.Ltr, 1000)
+      val timeStart = text.length - ts.length
+      val icons = p.getHorizontalPosition(timeStart, true) - p.getHorizontalPosition(1, true)
+      val time = p.getHorizontalPosition(text.length, true) - p.getHorizontalPosition(timeStart, true)
+      println("COPY scale $s icons $icons time $time")
+      icons to time
+    }
+    val (icons1, time1) = widths.getValue(1f)
+    for ((s, w) in widths) {
+      assertTrue(abs(w.first - icons1) < 0.5f, "icon spaces at scale $s: ${w.first} px, at scale 1: $icons1 px")
+      assertTrue(abs(w.second / time1 - s) < 0.05f, "time at scale $s: ${w.second} px, at scale 1: $time1 px")
+    }
+  }
+
+  @Test
+  fun copyStaysAtLineEndAfterWordInOtherDirection() {
+    val cases = listOf(
+      "שלום לכולם, זו הפסקה האחרונה של ההודעה" to LayoutDirection.Ltr,
+      "This is the last paragraph of the message" to LayoutDirection.Rtl,
+    )
+    for ((head, direction) in cases) {
+      val density = Density(1f)
+      val text = buildAnnotatedString {
+        append(head)
+        append(copy(sentEdited, density, direction))
+      }
+      val p = paragraph(text, density, if (direction == LayoutDirection.Ltr) TextDirection.Ltr else TextDirection.Rtl, 230)
+      val lastLine = p.lineCount - 1
+      val lineStart = p.getLineStart(lastLine)
+      assertTrue(lineStart in 1 until head.length, "$direction: last line start $lineStart")
+      assertEquals(lastLine, p.getLineForOffset(text.length - 1), "$direction: time line")
+      val words = p.bounds(lineStart until head.length)
+      val time = p.bounds(head.length + 1 until text.length)
+      println("COPY $direction words ${words.left}..${words.right} copy ${time.left}..${time.right}")
+      if (direction == LayoutDirection.Ltr) {
+        assertTrue(time.left >= words.right - 0.5f, "$direction: copy ${time.left}..${time.right}, words ${words.left}..${words.right}")
+      } else {
+        assertTrue(time.right <= words.left + 0.5f, "$direction: copy ${time.left}..${time.right}, words ${words.left}..${words.right}")
+      }
+    }
+  }
+}
