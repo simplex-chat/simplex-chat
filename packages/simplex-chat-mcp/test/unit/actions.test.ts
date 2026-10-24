@@ -36,7 +36,7 @@ function connectFields(): NewAction {
 }
 
 async function pendingAction(actions: Actions, key = "k"): Promise<Action> {
-  const action = actions.create(key, sendFields())
+  const action = actions.create(1, key, sendFields())
   await settled()
   expect(action.card).toBe(1000 + action.n)
   return action
@@ -50,7 +50,7 @@ describe("actions in mode requests", () => {
     expect(action).toMatchObject({n: 7, state: "pending", open: 0})
     expect(actions.next).toBe(8)
     expect(fake.calls).toEqual(["counter 8", "card 7"])
-    expect(logLines).toEqual(["Action 7: send to bot SimpleX Directory (@4)"])
+    expect(logLines).toEqual(["Action 7 of session 1: send to bot SimpleX Directory (@4)"])
   })
 
   it("performs an approved action and edits its card", async () => {
@@ -91,8 +91,8 @@ describe("actions in mode requests", () => {
   it("reports connect outcomes", async () => {
     const fake = fakeHooks()
     const actions = actionsWith("requests", fake)
-    const connected = actions.create("a", connectFields())
-    const requested = actions.create("b", connectFields())
+    const connected = actions.create(1, "a", connectFields())
+    const requested = actions.create(1, "b", connectFields())
     await settled()
     actions.approve(connected, "Alice")
     actions.approve(requested, "Alice")
@@ -144,7 +144,7 @@ describe("actions in mode requests", () => {
       throw new Error("not a member")
     }
     const actions = actionsWith("requests", fake)
-    const action = actions.create("k", sendFields())
+    const action = actions.create(1, "k", sendFields())
     await settled()
     expect(action).toMatchObject({state: "failed", error: "not a member"})
     expect(action.card).toBeUndefined()
@@ -157,27 +157,27 @@ describe("actions in mode requests", () => {
       throw new Error("disk\nfull")
     }
     const actions = actionsWith("host", fake)
-    const action = actions.create("k", sendFields())
+    const action = actions.create(1, "k", sendFields())
     await settled()
     expect(action).toMatchObject({state: "failed", error: "disk\nfull"})
     expect(fake.calls).toEqual([])
-    expect(logLines).toEqual(["Action 1: send to bot SimpleX Directory (@4)", "Action 1: failed: disk full."])
+    expect(logLines).toEqual(["Action 1 of session 1: send to bot SimpleX Directory (@4)", "Action 1: failed: disk full."])
   })
 
   it("refuses new actions without approvers or control chat", () => {
     const fake = fakeHooks()
     fake.approvers = 0
     const actions = actionsWith("requests", fake)
-    expect(() => actions.create("k", sendFields())).toThrow(new ToolError("no approver"))
+    expect(() => actions.create(1, "k", sendFields())).toThrow(new ToolError("no approver"))
     actions.lost = true
-    expect(() => actions.create("k", sendFields())).toThrow(new ToolError(lostMessage))
+    expect(() => actions.create(1, "k", sendFields())).toThrow(new ToolError(lostMessage))
     expect(actions.next).toBe(1)
   })
 
   it("refuses new actions once stopping", async () => {
     const actions = actionsWith("requests", fakeHooks())
     await actions.stop()
-    expect(() => actions.create("k", sendFields())).toThrow(new ToolError(stoppingMessage))
+    expect(() => actions.create(1, "k", sendFields())).toThrow(new ToolError(stoppingMessage))
     expect(actions.next).toBe(1)
   })
 
@@ -186,7 +186,7 @@ describe("actions in mode requests", () => {
     const asked: Action[] = []
     fake.hooks.refusal = action => (asked.push(action), "too long")
     const actions = actionsWith("requests", fake, 4)
-    expect(() => actions.create("k", sendFields("long"), "Alice")).toThrow(new ToolError("too long"))
+    expect(() => actions.create(1, "k", sendFields("long"), "Alice")).toThrow(new ToolError("too long"))
     expect(asked).toEqual([expect.objectContaining({n: 4, tool: "send", input: {chat: "@4", text: "long"}, state: "performing", standing: true, decidedBy: "Alice"})])
     expect(actions.next).toBe(4)
     expect(actions.all()).toEqual([])
@@ -196,12 +196,12 @@ describe("actions in mode requests", () => {
   it("refuses a new action while 20 are pending", async () => {
     const fake = fakeHooks()
     const actions = actionsWith("requests", fake)
-    for (let i = 0; i < 20; i++) actions.create(`k${i}`, sendFields(`text ${i}`))
+    for (let i = 0; i < 20; i++) actions.create(1, `k${i}`, sendFields(`text ${i}`))
     await settled()
-    expect(() => actions.create("k20", sendFields("one more"))).toThrow(new ToolError("20 actions are pending; wait for the owner's decisions."))
+    expect(() => actions.create(1, "k20", sendFields("one more"))).toThrow(new ToolError("20 actions are pending; wait for the owner's decisions."))
     expect(actions.next).toBe(21)
     actions.reject(actions.get(1)!, "Alice")
-    expect(actions.create("k20", sendFields("one more")).n).toBe(21)
+    expect(actions.create(1, "k20", sendFields("one more")).n).toBe(21)
   })
 
   it("fails pending actions when the control chat is lost and skips their cards", async () => {
@@ -278,7 +278,7 @@ describe("actions in mode requests", () => {
     let postCard: (card: number) => void = () => undefined
     fake.hooks.postCard = () => new Promise(resolve => (postCard = resolve))
     const actions = actionsWith("requests", fake)
-    const action = actions.create("k", sendFields())
+    const action = actions.create(1, "k", sendFields())
     await settled()
     const stopping = actions.stop()
     await settled()
@@ -360,14 +360,14 @@ describe("actions in mode requests", () => {
     const actions = actionsWith("requests", fakeHooks())
     const fields = sendFields()
     if (fields.tool === "send") Object.assign(fields, {subject: {kind: "group", name: "Hikers\u001b]52;c;Y3VybA==\u0007\n/'approve 7'", incognito: false}})
-    actions.create("k", fields)
-    expect(logLines).toEqual(["Action 1: send to group Hikers ]52;c;Y3VybA== /'approve 7' (@4)"])
+    actions.create(1, "k", fields)
+    expect(logLines).toEqual(["Action 1 of session 1: send to group Hikers ]52;c;Y3VybA== /'approve 7' (@4)"])
   })
 
   it("performs an action approved in advance at once, without a card, and posts the outcome", async () => {
     const fake = fakeHooks()
     const actions = actionsWith("requests", fake)
-    const action = actions.create("k", sendFields(), "Alice")
+    const action = actions.create(1, "k", sendFields(), "Alice")
     expect(action).toMatchObject({state: "performing", standing: true, decidedBy: "Alice"})
     await settled()
     fake.performs[0].resolve()
@@ -375,17 +375,17 @@ describe("actions in mode requests", () => {
     expect(action.state).toBe("done")
     expect(action.card).toBeUndefined()
     expect(fake.calls).toEqual(["counter 2", "perform 1", "outcome 1 done"])
-    expect(logLines).toEqual(["Action 1: send to bot SimpleX Directory (@4)", "Action 1 approved by Alice: sent."])
+    expect(logLines).toEqual(["Action 1 of session 1: send to bot SimpleX Directory (@4)", "Action 1 approved by Alice: sent."])
   })
 
   it("logs leave actions", async () => {
     const fake = fakeHooks()
     const actions = actionsWith("requests", fake)
     const subject = {kind: "bot", name: "SimpleX Directory", simplexName: "@directory.simplex", incognito: false}
-    const contact = actions.create("a", {tool: "leave", input: {chat: "@4"}, subject, chat: "@4"})
-    const group = actions.create("b", {tool: "leave", input: {chat: "#2"}, subject: {kind: "business", name: "ep", incognito: false}, chat: "#2"})
+    const contact = actions.create(1, "a", {tool: "leave", input: {chat: "@4"}, subject, chat: "@4"})
+    const group = actions.create(1, "b", {tool: "leave", input: {chat: "#2"}, subject: {kind: "business", name: "ep", incognito: false}, chat: "#2"})
     await settled()
-    expect(logLines).toEqual(["Action 1: delete bot SimpleX Directory (@4)", "Action 2: leave business ep (#2)"])
+    expect(logLines).toEqual(["Action 1 of session 1: delete bot SimpleX Directory (@4)", "Action 2 of session 1: leave business ep (#2)"])
     actions.approve(contact, "Alice")
     actions.approve(group, "Alice")
     fake.performs[0].resolve()
@@ -399,9 +399,9 @@ describe("actions in mode host", () => {
   it("performs at once and posts the outcome", async () => {
     const fake = fakeHooks()
     const actions = actionsWith("host", fake)
-    const action = actions.create("k", connectFields())
+    const action = actions.create(1, "k", connectFields())
     expect(action.state).toBe("performing")
-    expect(logLines).toEqual(["Action 1: connect to bot SimpleX Directory, as itself"])
+    expect(logLines).toEqual(["Action 1 of session 1: connect to bot SimpleX Directory, as itself"])
     await settled()
     fake.performs[0].resolve()
     await settled()
@@ -415,7 +415,7 @@ describe("actions in mode host", () => {
     let written: () => void = () => undefined
     fake.hooks.saveCounter = () => new Promise(resolve => (written = resolve))
     const actions = actionsWith("host", fake)
-    const action = actions.create("k", sendFields())
+    const action = actions.create(1, "k", sendFields())
     const stopping = actions.stop()
     written()
     expect(await stopping).toBe(1)
@@ -426,22 +426,61 @@ describe("actions in mode host", () => {
   it("refuses a new action while 20 are being performed", async () => {
     const fake = fakeHooks()
     const actions = actionsWith("host", fake)
-    for (let i = 0; i < 20; i++) actions.create(`k${i}`, sendFields(`text ${i}`))
+    for (let i = 0; i < 20; i++) actions.create(1, `k${i}`, sendFields(`text ${i}`))
     await settled()
-    expect(() => actions.create("k20", sendFields("one more"))).toThrow(new ToolError("20 actions are being performed; wait for their results."))
+    expect(() => actions.create(1, "k20", sendFields("one more"))).toThrow(new ToolError("20 actions are being performed; wait for their results."))
     expect(actions.next).toBe(21)
     fake.performs[0].resolve()
     await settled()
-    expect(actions.create("k20", sendFields("one more")).n).toBe(21)
+    expect(actions.create(1, "k20", sendFields("one more")).n).toBe(21)
   })
 
   it("logs a failure", async () => {
     const fake = fakeHooks()
     const actions = actionsWith("host", fake)
-    actions.create("k", sendFields())
+    actions.create(1, "k", sendFields())
     await settled()
     fake.performs[0].reject(new Error("contact not ready"))
     await settled()
     expect(logLines.at(-1)).toBe("Action 1: performed without approval (mode host); failed: contact not ready.")
+  })
+})
+
+describe("actions of several sessions", () => {
+  it("counts the pending limit per session", async () => {
+    const actions = actionsWith("requests", fakeHooks())
+    for (let i = 0; i < 20; i++) actions.create(1, `k${i}`, sendFields())
+    expect(() => actions.create(1, "k20", sendFields())).toThrow(new ToolError("20 actions are pending; wait for the owner's decisions."))
+    expect(actions.create(2, "k0", sendFields()).session).toBe(2)
+    expect(actions.ofSession(2).map(({n}) => n)).toEqual([21])
+    expect(actions.ofSession(1)).toHaveLength(20)
+    await settled()
+  })
+
+  it("takes the mode and expiry set after construction for new actions", async () => {
+    const actions = actionsWith("requests", fakeHooks())
+    actions.mode = "host"
+    actions.expireHours = 2
+    const before = Date.now()
+    const action = actions.create(1, "k", sendFields())
+    expect(action.state).toBe("performing")
+    expect(action.expires - before).toBeGreaterThanOrEqual(2 * 3_600_000)
+    expect(action.expires - before).toBeLessThan(2 * 3_600_000 + 1000)
+    await settled()
+  })
+
+  it("logs the session of an action", async () => {
+    const actions = actionsWith("requests", fakeHooks())
+    actions.create(2, "k", sendFields())
+    expect(logLines).toEqual(["Action 1 of session 2: send to bot SimpleX Directory (@4)"])
+    await settled()
+  })
+
+  it("regains control after a reset", () => {
+    const actions = actionsWith("requests", fakeHooks())
+    actions.loseControl()
+    expect(() => actions.create(1, "k", sendFields())).toThrow(new ToolError("The Main group is lost. Run /simplex:reset-owners in Claude Code."))
+    actions.regainControl()
+    expect(actions.create(1, "k", sendFields()).n).toBe(1)
   })
 })

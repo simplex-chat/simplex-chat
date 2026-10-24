@@ -146,7 +146,7 @@ function textOf(result: CallToolResult | undefined): string {
 
 function agentTools(chat: FakeChat, actions: Actions = actionsWith("requests", fakeHooks()), standingApprover: (chatInfo: T.ChatInfo) => string | undefined = () => undefined): {tools: AgentTools; watch: ChatItemsWatch} {
   const watch = new ChatItemsWatch()
-  return {tools: new AgentTools({chat: chat.api(), user, actions, watch, controlChat: () => "#10", standingApprover}, "requests"), watch}
+  return {tools: new AgentTools({chat: chat.api(), session: 1, user, actions, watch, controlChat: () => "#10", standingApprover}, "requests"), watch}
 }
 
 describe("receive", () => {
@@ -626,7 +626,7 @@ describe("connect", () => {
     await jest.advanceTimersByTimeAsync(0)
     expect(action).toMatchObject({state: "done", connected: false, interrupted: true})
     expect(jest.getTimerCount()).toBe(0)
-    expect(lines).toEqual(["Action 1: connect to an unnamed contact, as itself"])
+    expect(lines).toEqual(["Action 1 of session 1: connect to an unnamed contact, as itself"])
   })
 
   it("keeps the chat of a connect that completed when a later event names its connection", async () => {

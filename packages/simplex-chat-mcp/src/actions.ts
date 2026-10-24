@@ -10,7 +10,7 @@ const expiryTick = 60_000
 const maxPending = 20
 const maxPerforming = 20
 
-export const lostMessage = "The agent lost its control chat. The person who runs it has to restart it with --reset-owners."
+export const lostMessage = "The Main group is lost. Run /simplex:reset-owners in Claude Code."
 export const stoppingMessage = "The server is stopping."
 const pendingMessage = `${maxPending} actions are pending; wait for the owner's decisions.`
 const performingMessage = `${maxPerforming} actions are being performed; wait for their results.`
@@ -32,6 +32,7 @@ export interface ConnRef {
 
 interface ActionRecord {
   readonly n: number
+  readonly session: number
   readonly key: string
   readonly created: number
   readonly expires: number
@@ -102,7 +103,7 @@ export class Actions {
   private readonly posting = new Map<number, Promise<boolean>>()
   private readonly outcomes = new Set<Promise<void>>()
 
-  constructor(readonly mode: Mode, readonly expireHours: number, public next: number, private readonly hooks: ActionHooks) {}
+  constructor(public mode: Mode, public expireHours: number, public next: number, private readonly hooks: ActionHooks) {}
 
   get(n: number): Action | undefined {
     return this.actions.get(n)
@@ -116,20 +117,17 @@ export class Actions {
     return this.all().filter(({state}) => state === "pending")
   }
 
-  private performing(): Action[] {
-    return this.all().filter(({state}) => state === "performing")
-  }
-
   find(key: string): Action | undefined {
     return this.all().find(action => action.key === key)
   }
 
-  create(key: string, fields: NewAction, approvedBy?: string): Action {
+  create(session: number, key: string, fields: NewAction, approvedBy?: string): Action {
     const n = this.next
     const created = Date.now()
     const standing = approvedBy !== undefined
     const record: ActionRecord = {
       n,
+      session,
       key,
       created,
       expires: created + this.expireHours * 3_600_000,
@@ -141,20 +139,29 @@ export class Actions {
       interrupted: false,
     }
     const action = {...fields, ...record} as Action
+    const ofSession = this.ofSession(session)
     const refusal = this.stopping ? stoppingMessage
       : this.lost ? lostMessage
-      : this.pending().length >= maxPending ? pendingMessage
-      : this.performing().length >= maxPerforming ? performingMessage
+      : ofSession.filter(({state}) => state === "pending").length >= maxPending ? pendingMessage
+      : ofSession.filter(({state}) => state === "performing").length >= maxPerforming ? performingMessage
       : this.hooks.refusal(action)
     if (refusal !== undefined) throw new ToolError(refusal)
     this.next++
     this.actions.set(n, action)
     const {what, detail} = summary(action, oneLine)
-    log(`Action ${n}: ${what}${detail}`)
+    log(`Action ${n} of session ${session}: ${what}${detail}`)
     const posting = this.post(action)
     this.posting.set(n, posting)
     posting.then(posted => this.afterPosting(action, posted)).catch(error => logError(`action ${n}`, error))
     return action
+  }
+
+  ofSession(session: number): Action[] {
+    return this.all().filter(action => action.session === session)
+  }
+
+  regainControl(): void {
+    this.lost = false
   }
 
   remove(action: Action): void {

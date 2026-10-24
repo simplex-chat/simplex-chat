@@ -6,7 +6,7 @@ import {Changes, Collected} from "../../src/messages"
 const expires = Date.UTC(2026, 9, 18, 9, 2)
 
 function action(fields: NewAction, state: State, extra: Partial<Action> = {}): Action {
-  return {...fields, n: 1, key: "k", created: expires - 3_600_000, expires, changes: new Changes(), standing: false, state, open: 0, interrupted: false, ...extra} as Action
+  return {...fields, n: 1, session: 1, key: "k", created: expires - 3_600_000, expires, changes: new Changes(), standing: false, state, open: 0, interrupted: false, ...extra} as Action
 }
 
 const directory = {kind: "bot", name: "SimpleX Directory", simplexName: "@directory.simplex", incognito: false}

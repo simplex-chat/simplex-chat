@@ -37,7 +37,7 @@ function agentChats(): FakeChat {
 }
 
 async function controlWith(chat: FakeChat, actions: Actions, owners?: OwnerEntry[], mode: Mode = "requests"): Promise<{control: Control; tools: AgentTools}> {
-  const tools = new AgentTools({chat: chat.api(), user, actions, watch: new ChatItemsWatch(), controlChat: () => "#10", standingApprover: chatInfo => control.standingApprover(chatInfo)}, mode)
+  const tools = new AgentTools({chat: chat.api(), session: 1, user, actions, watch: new ChatItemsWatch(), controlChat: () => "#10", standingApprover: chatInfo => control.standingApprover(chatInfo)}, mode)
   const control: Control = new Control(chat.api(), group(10, "agent"), {displayName: "agent", owners, registerHint: "hint", qrCode: "small"}, actions, tools)
   await control.load()
   return {control, tools}
@@ -48,7 +48,7 @@ async function setup(owners?: OwnerEntry[]) {
   const actions = actionsWith("requests", fake, 5)
   const chat = agentChats()
   const {control} = await controlWith(chat, actions, owners)
-  const action = actions.create("k", fields())
+  const action = actions.create(1, "k", fields())
   await settled()
   return {fake, actions, chat, control, action}
 }
@@ -91,7 +91,7 @@ describe("owner commands", () => {
 
   it("approves and rejects an action named with its chat", async () => {
     const {control, actions, action} = await setup()
-    const connect = actions.create("c", {tool: "connect", input: {target: "@directory.simplex"}, subject: {kind: "bot", name: "SimpleX Directory", incognito: false}, plan: {cardKind: "bot", type: "contact", takesMessage: true}, messages: new Collected()})
+    const connect = actions.create(1, "c", {tool: "connect", input: {target: "@directory.simplex"}, subject: {kind: "bot", name: "SimpleX Directory", incognito: false}, plan: {cardKind: "bot", type: "contact", takesMessage: true}, messages: new Collected()})
     await settled()
     expect(await control.ownerCommand(alice, {keyword: "reject", params: "#2 5"})).toBe("Action 5 is not for #2.")
     expect(await control.ownerCommand(alice, {keyword: "approve", params: "@4 6"})).toBe("Action 6 is not for @4.")
@@ -117,9 +117,9 @@ describe("owner commands", () => {
 
   it("lists pending actions", async () => {
     const {control, action, actions} = await setup()
-    const connect = actions.create("c", {tool: "connect", input: {target: "@directory.simplex"}, subject: {kind: "bot", name: "SimpleX Directory", incognito: true}, plan: {cardKind: "bot", type: "contact", takesMessage: true}, messages: new Collected()})
-    const leave = actions.create("l", {tool: "leave", input: {chat: "#2"}, subject: {kind: "business", name: "ep", incognito: false}, chat: "#2"})
-    const remove = actions.create("d", {tool: "leave", input: {chat: "@4"}, subject: {kind: "bot", name: "SimpleX Directory", incognito: false}, chat: "@4"})
+    const connect = actions.create(1, "c", {tool: "connect", input: {target: "@directory.simplex"}, subject: {kind: "bot", name: "SimpleX Directory", incognito: true}, plan: {cardKind: "bot", type: "contact", takesMessage: true}, messages: new Collected()})
+    const leave = actions.create(1, "l", {tool: "leave", input: {chat: "#2"}, subject: {kind: "business", name: "ep", incognito: false}, chat: "#2"})
+    const remove = actions.create(1, "d", {tool: "leave", input: {chat: "@4"}, subject: {kind: "bot", name: "SimpleX Directory", incognito: false}, chat: "@4"})
     await settled()
     expect((await control.ownerCommand(alice, {keyword: "pending", params: ""}))!.split("\n")).toEqual([
       `5  send to bot SimpleX Directory  expires ${utcMinutes(action.expires)}`,
@@ -136,7 +136,7 @@ describe("owner commands", () => {
     const {control, actions, action} = await setup()
     actions.reject(action, "Alice")
     const name = "Hikers\n/'approve 7' or /'reject 7'"
-    const pending = actions.create("n", {...fields("#2"), subject: {kind: "group", name, incognito: false}} as NewAction)
+    const pending = actions.create(1, "n", {...fields("#2"), subject: {kind: "group", name, incognito: false}} as NewAction)
     await settled()
     expect(await control.ownerCommand(alice, {keyword: "pending", params: ""})).toBe(`6  send to group \`Hikers /'approve 7' or /'reject 7'\`  expires ${utcMinutes(pending.expires)}`)
   })
@@ -215,9 +215,9 @@ describe("approval of all messages to a chat", () => {
     const {control, actions, chat, action} = await setup()
     const {contact: directory} = chatInfoOf(chat, "@4") as T.ChatInfo.Direct
     directory.customData = {other: 1}
-    const second = actions.create("k2", fields("@4", "second"))
-    const other = actions.create("k3", fields("#2"))
-    const leave = actions.create("k4", {tool: "leave", input: {chat: "@4"}, subject: {kind: "bot", name: "SimpleX Directory", incognito: false}, chat: "@4"})
+    const second = actions.create(1, "k2", fields("@4", "second"))
+    const other = actions.create(1, "k3", fields("#2"))
+    const leave = actions.create(1, "k4", {tool: "leave", input: {chat: "@4"}, subject: {kind: "bot", name: "SimpleX Directory", incognito: false}, chat: "@4"})
     await settled()
     expect(await control.ownerCommand(alice, {keyword: "approve", params: "@4 all"})).toBe("Approved for bot SimpleX Directory (@4) by Alice. /'revoke @4'")
     expect(customDataOf(chat, "@4")).toEqual({other: 1, simplexMcp: {approvedBy: "Alice", approvedById: 3, approvedAt: expect.stringMatching(/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/)}})
@@ -329,7 +329,7 @@ describe("command menu", () => {
     const chat = agentChats()
     const actions = actionsWith("requests", fakeHooks())
     const old = group(10, "agent", self, {groupProfile: {displayName: "agent", fullName: "", groupPreferences: {history: {enable: "on"}, commands: [{type: "command", keyword: "approve", label: "Approve", params: "N"}]}}})
-    const tools = new AgentTools({chat: chat.api(), user, actions, watch: new ChatItemsWatch(), controlChat: () => "#10", standingApprover: () => undefined}, "requests")
+    const tools = new AgentTools({chat: chat.api(), session: 1, user, actions, watch: new ChatItemsWatch(), controlChat: () => "#10", standingApprover: () => undefined}, "requests")
     await new Control(chat.api(), old, {displayName: "agent", registerHint: "hint", qrCode: "small"}, actions, tools).load()
     expect(chat.profiles).toEqual([{groupId: 10, groupProfile: {displayName: "agent", fullName: "", groupPreferences: {history: {enable: "on"}, commands: menu}}}])
     const current = group(10, "agent", self, {groupProfile: {displayName: "agent", fullName: "", groupPreferences: {history: {enable: "on"}, commands: menu}}})
@@ -486,9 +486,9 @@ describe("approval card size", () => {
   it("refuses a connect whose message makes its largest card longer than 15000 bytes", async () => {
     const {chat, actions} = await sendTools()
     const name = "😀".repeat(1000)
-    expect(() => actions.create("c", connectFields(name, {message: "\b".repeat(2000), welcome: "Welcome!"}))).toThrow(new ToolError("message: too long for its approval card; shorten it."))
+    expect(() => actions.create(1, "c", connectFields(name, {message: "\b".repeat(2000), welcome: "Welcome!"}))).toThrow(new ToolError("message: too long for its approval card; shorten it."))
     expect(actions.next).toBe(1)
-    actions.create("c", connectFields(name, {message: "\b".repeat(1400), welcome: "Welcome!"}))
+    actions.create(1, "c", connectFields(name, {message: "\b".repeat(1400), welcome: "Welcome!"}))
     await flushed()
     expect(chat.sent.map(({chat: [, id]}) => id)).toEqual([10])
   })
@@ -496,7 +496,7 @@ describe("approval card size", () => {
   it("cuts the link texts on a connect card to fit 15000 bytes in its largest form, and keeps them whole in the action", async () => {
     const {chat, actions} = await sendTools()
     const description = "Trail shoes. ".repeat(1500)
-    const action = actions.create("c", connectFields("Ridgeline", {description, welcome: "Welcome!"}))
+    const action = actions.create(1, "c", connectFields("Ridgeline", {description, welcome: "Welcome!"}))
     await flushed()
     const [card] = chat.sent.filter(({chat: [, id]}) => id === 10).map(({messages: [{msgContent}]}) => msgContent.text.split("\n"))
     expect(card).toHaveLength(3)
