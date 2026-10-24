@@ -1764,6 +1764,14 @@ object ChatController {
         )
       }
       r is API.Error && r.err is ChatError.ChatErrorAgent
+          && r.err.agentError is AgentErrorType.CONN
+          && r.err.agentError.connErr is ConnectionErrorType.DUPLICATE -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.connection_error_duplicate),
+          generalGetString(MR.strings.connection_error_duplicate_desc).format("CONN DUPLICATE")
+        )
+      }
+      r is API.Error && r.err is ChatError.ChatErrorAgent
           && r.err.agentError is AgentErrorType.SMP
           && r.err.agentError.smpErr is SMPErrorType.BLOCKED -> {
         showContentBlockedAlert(
