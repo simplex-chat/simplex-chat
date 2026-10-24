@@ -144,9 +144,9 @@ function textOf(result: CallToolResult | undefined): string {
   return (result!.content[0] as {text: string}).text
 }
 
-function agentTools(chat: FakeChat, actions: Actions = actionsWith("requests", fakeHooks()), standingApprover: (chatInfo: T.ChatInfo) => string | undefined = () => undefined): {tools: AgentTools; watch: ChatItemsWatch} {
+function agentTools(chat: FakeChat, actions: Actions = actionsWith("requests", fakeHooks()), standingApprover: (chatInfo: T.ChatInfo) => string | undefined = () => undefined, session = 1): {tools: AgentTools; watch: ChatItemsWatch} {
   const watch = new ChatItemsWatch()
-  return {tools: new AgentTools({chat: chat.api(), session: 1, user, actions, watch, controlChat: () => "#10", standingApprover}, "requests"), watch}
+  return {tools: new AgentTools({chat: chat.api(), session, user, actions, watch, standingApprover}), watch}
 }
 
 describe("receive", () => {
@@ -228,7 +228,7 @@ describe("receive", () => {
     expect(chat.commands.at(-1)).toBe("/_read chat items @4 30")
   })
 
-  it("refuses the agent control chat and unknown chats", async () => {
+  it("refuses unknown chats", async () => {
     const {tools} = agentTools(new FakeChat())
     expect(textOf(await tools.call("receive", {chat: "#10"}, signal().call))).toBe("No chat #10. list shows the agent's chats.")
     expect(textOf(await tools.call("receive", {chat: "@99"}, signal().call))).toBe("No chat @99. list shows the agent's chats.")
@@ -404,6 +404,26 @@ describe("send", () => {
     expect(finished).toBe(false)
     await jest.advanceTimersByTimeAsync(1)
     expect((await sending)!.structuredContent).toMatchObject({status: "done", responses: [], more: 0})
+  })
+
+  it("keeps actions of two sessions apart", async () => {
+    const chat = new FakeChat()
+    chat.chats.set("@4", {chatInfo: direct(contact(4, "Bob")), items: []})
+    const actions = actionsWith("requests", fakeHooks())
+    const first = agentTools(chat, actions, undefined, 1).tools
+    const second = agentTools(chat, actions, undefined, 2).tools
+    const calls = [signal(), signal()]
+    const sending = [first, second].map((tools, i) => tools.call("send", {chat: "@4", text: "hello"}, calls[i].call))
+    await settled()
+    expect(actions.all().map(({session}) => session)).toEqual([1, 2])
+    for (const tools of [first, second]) {
+      const {actions: listed} = (await tools.call("list", {}, signal().call))!.structuredContent as {actions: {action: number}[]}
+      expect(listed.length).toBe(1)
+    }
+    const {actions: listedFirst} = (await first.call("list", {}, signal().call))!.structuredContent as {actions: {action: number}[]}
+    expect(listedFirst.map(({action}) => action)).toEqual([actions.all()[0].n])
+    calls.forEach(({controller}) => controller.abort())
+    await Promise.all(sending)
   })
 
   it("creates no action for a call aborted before it", async () => {
@@ -827,7 +847,7 @@ describe("leave", () => {
     expect(textOf(await tools.call("leave", {chat: "@4"}, signal().call))).toBe("No chat @4. list shows the agent's chats.")
   })
 
-  it("refuses the agent control chat and unknown chats, and returns a rejection", async () => {
+  it("refuses unknown chats, and returns a rejection", async () => {
     const chat = new FakeChat()
     chat.chats.set("@4", {chatInfo: direct(contact(4, "Bob")), items: []})
     const {tools, actions} = leaveTools(chat)
@@ -847,7 +867,6 @@ describe("list", () => {
     const chat = new FakeChat()
     chat.chats.set("@4", {chatInfo: direct(contact(4, "SimpleX Directory", {peerType: "bot"})), items: [item(20, "hi")]})
     chat.chats.set("#2", {chatInfo: groupChat(group(2, "ep", member(1, "agent"))), items: []})
-    chat.chats.set("#10", {chatInfo: groupChat(group(10, "agent")), items: []})
     const {tools} = agentTools(chat, actionsWith("requests", fakeHooks()), chatInfo => (chatInfo.type === "direct" ? "Alice" : undefined))
     const {chats} = (await tools.call("list", {}, signal().call))!.structuredContent as {chats: object[]}
     expect(chats).toEqual([

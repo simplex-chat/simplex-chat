@@ -1,5 +1,6 @@
 import {ChatResponse, T} from "@simplex-chat/types"
 import {api, core} from "simplex-chat"
+import {Readable, Writable} from "stream"
 import {Actions, ActionHooks} from "../../src/actions"
 import {ToolCall} from "../../src/messages"
 
@@ -242,4 +243,40 @@ function chatStats(items: T.ChatItem[]): T.ChatStats {
 
 function storeError(ref: string): Error {
   return new core.ChatAPIError("Chat command error", {type: "errorStore", storeError: {type: "contactNotFound", contactId: Number(ref.slice(1))}})
+}
+
+export class LineClient {
+  private nextId = 1
+  private buffer = ""
+  private readonly waiting = new Map<number, (message: any) => void>()
+  readonly notifications: any[] = []
+
+  constructor(private readonly input: Writable, output: Readable) {
+    output.on("data", chunk => {
+      this.buffer += chunk
+      for (let i = this.buffer.indexOf("\n"); i >= 0; i = this.buffer.indexOf("\n")) {
+        const message = JSON.parse(this.buffer.slice(0, i))
+        this.buffer = this.buffer.slice(i + 1)
+        if (message.id !== undefined && this.waiting.has(message.id)) this.waiting.get(message.id)!(message)
+        else this.notifications.push(message)
+      }
+    })
+  }
+
+  request(method: string, params: object = {}): Promise<any> {
+    const id = this.nextId++
+    const reply = new Promise<any>(resolve => this.waiting.set(id, resolve))
+    this.input.write(`${JSON.stringify({jsonrpc: "2.0", id, method, params})}\n`)
+    return reply
+  }
+
+  notify(method: string, params: object = {}): void {
+    this.input.write(`${JSON.stringify({jsonrpc: "2.0", method, params})}\n`)
+  }
+
+  async initialize(): Promise<any> {
+    const reply = await this.request("initialize", {protocolVersion: "2025-11-25", capabilities: {}, clientInfo: {name: "test", version: "1"}})
+    this.notify("notifications/initialized")
+    return reply.result
+  }
 }

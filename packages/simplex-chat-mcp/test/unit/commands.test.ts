@@ -2,7 +2,7 @@ import {CallToolResult} from "@modelcontextprotocol/server"
 import {ChatEvent, T} from "@simplex-chat/types"
 import {Actions, Mode, NewAction, ToolError} from "../../src/actions"
 import {Control, OwnerEntry, cardText, parseCommand} from "../../src/control"
-import {ChatItemsWatch, Collected, utcMinutes} from "../../src/messages"
+import {ChatItemsWatch, Collected, chatRef, utcMinutes} from "../../src/messages"
 import {AgentTools} from "../../src/tools"
 import {FakeChat, actionsWith, contact, direct, event, fakeHooks, group, groupChat, item, member, settled, signal, user} from "./fixtures"
 
@@ -36,9 +36,16 @@ function agentChats(): FakeChat {
   return chat
 }
 
-async function controlWith(chat: FakeChat, actions: Actions, owners?: OwnerEntry[], mode: Mode = "requests"): Promise<{control: Control; tools: AgentTools}> {
-  const tools = new AgentTools({chat: chat.api(), session: 1, user, actions, watch: new ChatItemsWatch(), controlChat: () => "#10", standingApprover: chatInfo => control.standingApprover(chatInfo)}, mode)
-  const control: Control = new Control(chat.api(), group(10, "agent"), {displayName: "agent", owners, registerHint: "hint", qrCode: "small"}, actions, tools)
+async function controlWith(chat: FakeChat, actions: Actions, owners?: OwnerEntry[]): Promise<{control: Control; tools: AgentTools}> {
+  const tools = new AgentTools({chat: chat.api(), session: 1, user, actions, watch: new ChatItemsWatch(), standingApprover: chatInfo => control.standingApprover(chatInfo)})
+  const withoutControlChat: Pick<AgentTools, "knownChat" | "agentChats"> = {
+    agentChats: async () => (await tools.agentChats()).filter(({chatInfo}) => chatRef(chatInfo) !== "#10"),
+    knownChat: async ref => {
+      if (ref === "#10") throw new ToolError(`No chat ${ref}. list shows the agent's chats.`)
+      return tools.knownChat(ref)
+    },
+  }
+  const control: Control = new Control(chat.api(), group(10, "agent"), {displayName: "agent", owners, registerHint: "hint", qrCode: "small"}, actions, withoutControlChat)
   await control.load()
   return {control, tools}
 }
@@ -329,7 +336,7 @@ describe("command menu", () => {
     const chat = agentChats()
     const actions = actionsWith("requests", fakeHooks())
     const old = group(10, "agent", self, {groupProfile: {displayName: "agent", fullName: "", groupPreferences: {history: {enable: "on"}, commands: [{type: "command", keyword: "approve", label: "Approve", params: "N"}]}}})
-    const tools = new AgentTools({chat: chat.api(), session: 1, user, actions, watch: new ChatItemsWatch(), controlChat: () => "#10", standingApprover: () => undefined}, "requests")
+    const tools = new AgentTools({chat: chat.api(), session: 1, user, actions, watch: new ChatItemsWatch(), standingApprover: () => undefined})
     await new Control(chat.api(), old, {displayName: "agent", registerHint: "hint", qrCode: "small"}, actions, tools).load()
     expect(chat.profiles).toEqual([{groupId: 10, groupProfile: {displayName: "agent", fullName: "", groupPreferences: {history: {enable: "on"}, commands: menu}}}])
     const current = group(10, "agent", self, {groupProfile: {displayName: "agent", fullName: "", groupPreferences: {history: {enable: "on"}, commands: menu}}})
@@ -351,7 +358,7 @@ describe("sends to a chat approved for all messages", () => {
       outcome: action => control.outcome(action),
       perform: (action, signal) => tools.perform(action, signal),
     })
-    const {control, tools} = await controlWith(chat, actions, undefined, mode)
+    const {control, tools} = await controlWith(chat, actions)
     return {chat, actions, control, tools}
   }
 
