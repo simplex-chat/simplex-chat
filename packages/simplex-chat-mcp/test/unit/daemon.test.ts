@@ -127,6 +127,9 @@ afterEach(async () => {
 
 const post = <T>(route: string, body?: unknown) => requestJson<T>(socketPath(root), token, "POST", route, body)
 const register = (id: string, name?: string) => post("/session", {id, name, project: "/p/app", config: defaultConfig})
+const title = (id: string, name?: string, config = defaultConfig) => post("/title", {id, name, project: "/p/app", config})
+const titleReply = {mainGroup: "SimpleX MCP", owner: {owners: [], link: "https://simplex.chat/g#link"}, version: "0.2.0", protocol: protocolVersion}
+const sessionsFolder = () => join(root, "_sessions")
 const lockFile = () => join(root, "lock")
 
 function attach(id: string, signal: AbortSignal) {
@@ -385,12 +388,12 @@ describe("daemon", () => {
     expect(agents[0].closed).toBe(true)
   })
 
-  it("refuses a registration that arrives while the daemon stops", async () => {
+  it.each(["/session", "/title"])("refuses %s when it arrives while the daemon stops", async route => {
     const {d, agents, gate, hubStopping, stoppedCode} = deps(root)
     const finishHubStop = gate("hubStop")
     daemon = await Daemon.start(d, readDefaultConfig)
     const requested = once(daemon["server"], "request")
-    const req = request({socketPath: socketPath(root), method: "POST", path: "/session", headers: {authorization: `Bearer ${token}`}})
+    const req = request({socketPath: socketPath(root), method: "POST", path: route, headers: {authorization: `Bearer ${token}`}})
     const response = new Promise<{status: number | undefined; text: string}>((resolve, reject) => {
       req.on("response", res => {
         let text = ""
@@ -409,7 +412,99 @@ describe("daemon", () => {
     finishHubStop()
     await stopping
     expect(agents).toHaveLength(0)
+    expect(existsSync(sessionsFolder())).toBe(false)
     expect(await stoppedCode).toBe(0)
+  })
+
+  it("renames an open session on a new title and stores the name", async () => {
+    const {d, agents, configs} = deps(root)
+    daemon = await Daemon.start(d, readDefaultConfig)
+    await register(id1)
+    expect(await title(id1, " auth ", {...defaultConfig, mainGroup: "Agents"})).toEqual(titleReply)
+    expect(configs.at(-1)).toEqual({...defaultConfig, mainGroup: "Agents"})
+    expect(agents).toMatchObject([{number: 1, displayName: "SimpleX MCP - auth"}])
+    expect(readSessionFile(sessionFolder(root, id1))).toMatchObject({number: 1, name: "auth"})
+    await title(id1)
+    expect(agents).toMatchObject([{displayName: "SimpleX MCP - auth"}])
+    expect(readSessionFile(sessionFolder(root, id1))).toMatchObject({name: "auth"})
+  })
+
+  it("renames a session that is still opening once it opens", async () => {
+    storeSession(id1, 1, "app")
+    const {d, agents, opening, gate} = deps(root)
+    const finishOpen = gate("open")
+    daemon = await Daemon.start(d, readDefaultConfig)
+    const called = streamLines(socketPath(root), token, "/call", {id: id1, tool: "list", input: {}}, () => undefined)
+    await opening
+    const titled = title(id1, "auth")
+    finishOpen()
+    expect(await titled).toEqual(titleReply)
+    await called
+    expect(agents).toMatchObject([{number: 1, displayName: "SimpleX MCP - auth"}])
+    expect(readSessionFile(sessionFolder(root, id1))).toMatchObject({number: 1, name: "auth"})
+  })
+
+  it("renames a stored session in its file without opening it", async () => {
+    storeSession(id1, 1, "app")
+    const {d, agents, configs} = deps(root)
+    daemon = await Daemon.start(d, readDefaultConfig)
+    expect(await title(id1, "auth", {...defaultConfig, approve: "host"})).toEqual(titleReply)
+    expect(configs.at(-1)).toEqual({...defaultConfig, approve: "host"})
+    expect(agents).toHaveLength(0)
+    expect(readSessionFile(sessionFolder(root, id1))).toEqual({number: 1, name: "auth", project: "/p/app", created: "2026-10-24T00:00:00.000Z"})
+    expect(await requestJson(socketPath(root), token, "GET", "/status")).toMatchObject({sessions: []})
+    expect(await register(id1)).toMatchObject({number: 1, displayName: "SimpleX MCP - auth"})
+  })
+
+  it("remembers the title of an unknown session without a folder or a number, and uses it once", async () => {
+    const {d, agents} = deps(root)
+    daemon = await Daemon.start(d, readDefaultConfig)
+    expect(await title(id1, "auth")).toEqual(titleReply)
+    expect(agents).toHaveLength(0)
+    expect(existsSync(sessionsFolder())).toBe(false)
+    expect(await requestJson(socketPath(root), token, "GET", "/status")).toMatchObject({sessions: []})
+    expect(await register(id2)).toMatchObject({number: 1, displayName: "SimpleX MCP - app"})
+    expect(await register(id1)).toMatchObject({number: 2, displayName: "SimpleX MCP - auth"})
+    expect(readSessionFile(sessionFolder(root, id1))).toMatchObject({number: 2, name: "auth", project: "/p/app"})
+    expect(daemon["titles"].size).toBe(0)
+  })
+
+  it("prefers the registration's own name to a remembered title", async () => {
+    const {d} = deps(root)
+    daemon = await Daemon.start(d, readDefaultConfig)
+    await title(id1, "auth")
+    expect(await register(id1, "docs")).toMatchObject({number: 1, displayName: "SimpleX MCP - docs"})
+    expect(daemon["titles"].size).toBe(0)
+  })
+
+  it("remembers at most 100 titles, dropping the oldest", async () => {
+    const {d} = deps(root)
+    daemon = await Daemon.start(d, readDefaultConfig)
+    const ids = Array.from({length: 101}, (_, n) => `${n.toString(16).padStart(8, "0")}-0000-4000-8000-000000000000`)
+    for (const [n, id] of ids.entries()) await title(id, `title ${n}`)
+    expect(daemon["titles"].size).toBe(100)
+    expect(await register(ids[0])).toMatchObject({displayName: "SimpleX MCP - app"})
+    expect(await register(ids[1])).toMatchObject({displayName: "SimpleX MCP - title 1"})
+    expect(await register(ids[100])).toMatchObject({displayName: "SimpleX MCP - title 100"})
+  })
+
+  it("does not delay the idle stop with a title", async () => {
+    jest.useFakeTimers(fakeTimers)
+    const {d, stoppedCode} = deps(root)
+    daemon = await Daemon.start(d, readDefaultConfig)
+    await jest.advanceTimersByTimeAsync(5 * minutes)
+    await title(id1, "auth")
+    await jest.advanceTimersByTimeAsync(5 * minutes)
+    expect(await stoppedCode).toBe(0)
+    daemon = undefined
+  })
+
+  it.each(["/session", "/title"])("answers 400 to %s with an ID that is not a session ID", async route => {
+    const {d, agents} = deps(root)
+    daemon = await Daemon.start(d, readDefaultConfig)
+    await expect(post(route, {id: "../x", project: "/p/app", config: defaultConfig})).rejects.toMatchObject({message: "Not a Claude Code session ID: ../x", status: 400})
+    expect(agents).toHaveLength(0)
+    expect(existsSync(sessionsFolder())).toBe(false)
   })
 
   it("stops when the /stop client leaves before the reply", async () => {

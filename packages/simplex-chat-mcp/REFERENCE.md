@@ -57,7 +57,7 @@ The marketplace `simplex-chat` lists one plugin, `simplex`, from the npm package
 | Part | What it does |
 |---|---|
 | MCP server `simplex` | runs `npx -y @simplex-chat/mcp@0.2.0 session` for each session; its tools are `mcp__plugin_simplex_simplex__connect` and the rest |
-| SessionStart hook | runs `simplex-mcp hook session-start`: checks the Node.js version, starts the daemon, opens the session's profile, and shows the Main group link while the group has no owner |
+| SessionStart hook | runs `simplex-mcp hook session-start`: checks the Node.js version, starts the daemon, records the session title, and shows the Main group link while the group has no owner |
 | PreToolUse hook | allows the plugin's tool calls without a Claude Code prompt, because you approve in the SimpleX app |
 | `/simplex:link` | shows the Main group link, or its owners |
 | `/simplex:reset-owners` | replaces the Main group and its owners |
@@ -99,6 +99,7 @@ Plugin option expire_hours: hours from 1 to 23 expected, got 48. Change it in /p
 Each Claude Code session ID has its own SimpleX profile, with its own chats, contacts and incognito profiles. The profile name is `SimpleX MCP - <name>`: the session name from `claude -n NAME` or `/rename`, else the name of the project folder, else `Claude Code`. The name follows the display name rules: characters a display name can't hold are left out, and it keeps at most 50 characters. A session renamed with `/rename` gets the new profile name at its next start, for example with `claude --resume`.
 
 - Each session has a number, 1 for the first, kept across daemon restarts. Cards and owner commands use it: `Session 2`, `2:@3`.
+- The session's MCP server creates its profile when it first reaches the daemon; the SessionStart hook only records the title. After `/clear`, Claude Code keeps the MCP server and its session ID, so the session keeps its profile, and no profile is created for the new ID the hook sees.
 - `claude --resume` reopens the session's profile with its chats.
 - A session profile is not a member of the Main group. Peers of a chat see only the profile of that session, or the incognito profile of that chat.
 - One daemon runs all profiles. It opens a session's profile at the session's first request, closes it 10 minutes after the session ends when it has no action, and stops 10 minutes after the last profile closes. The next session start or tool call starts it again.

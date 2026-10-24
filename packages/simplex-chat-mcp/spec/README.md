@@ -23,7 +23,7 @@ The daemon runs one SimpleX core (libsimplex, loaded by the `simplex-chat` libra
 
 A tool call is held open until the owner decides and, for `connect` and `send`, until the replies arrive. A repeated call with the same arguments is attached to the same action, so a call that the host ends early is resumed.
 
-The daemon keeps actions in memory, and they are lost when it exits. The action counter is stored as custom data of the Main group, and the standing approvals as custom data of the approved chats. The token, the lock, the log and each session's number and name are files in the data folder. Options come from the plugin's `userConfig` through environment variables; the plugin's hooks start the daemon and show the Main group link.
+The daemon keeps actions in memory, and they are lost when it exits. The action counter is stored as custom data of the Main group, and the standing approvals as custom data of the approved chats. The token, the lock, the log and each session's number and name are files in the data folder. Options come from the plugin's `userConfig` through environment variables; the SessionStart hook starts the daemon, records the session title and shows the Main group link, and the session process creates the session's profile.
 
 ---
 
@@ -137,7 +137,7 @@ graph TD
 | [`actions.ts`](../src/actions.ts) | action records, state machine, per-session limits, expiry, stop |
 | [`control.ts`](../src/control.ts) | Main group: link, owners, owner commands with session references, cards, counter |
 | [`messages.ts`](../src/messages.ts) | message items, item watch, waits, unread paging, display names |
-| [`hook.ts`](../src/hook.ts) | `hook session-start`: Node.js check, daemon start, session registration, link output |
+| [`hook.ts`](../src/hook.ts) | `hook session-start`: Node.js check, daemon start, session title, link output |
 | [`owner.ts`](../src/owner.ts) | `link` and `reset-owners` |
 | [`config.ts`](../src/config.ts) | plugin option variables to `Config`, validation |
 | [`files.ts`](../src/files.ts) | data root layout, lock, token, session folders and `session.json`, socket path, log file |
@@ -180,8 +180,8 @@ Plugin files, run by Claude Code without `node_modules`:
 | Daemon start by a client | [`src/client.ts`](../src/client.ts#L32) | `DaemonClient.ensureDaemon` | [32](../src/client.ts#L32) |
 | Daemon spawn | [`src/client.ts`](../src/client.ts#L68) | `spawnDaemon` | [68](../src/client.ts#L68) |
 | Socket listener | [`src/socket.ts`](../src/socket.ts#L18) | `listen` | [18](../src/socket.ts#L18) |
-| Daemon process | [`src/daemon.ts`](../src/daemon.ts#L285) | `runDaemon` | [285](../src/daemon.ts#L285) |
-| Daemon routes | [`src/daemon.ts`](../src/daemon.ts#L101) | `Daemon.routes` | [101](../src/daemon.ts#L101) |
+| Daemon process | [`src/daemon.ts`](../src/daemon.ts#L334) | `runDaemon` | [334](../src/daemon.ts#L334) |
+| Daemon routes | [`src/daemon.ts`](../src/daemon.ts#L103) | `Daemon.routes` | [103](../src/daemon.ts#L103) |
 | Hub and Main group | [`src/hub.ts`](../src/hub.ts#L26) | `Hub.open` | [26](../src/hub.ts#L26) |
 | Session profile | [`src/agent.ts`](../src/agent.ts#L39) | `openSessionAgent` | [39](../src/agent.ts#L39) |
 | SimpleX core | [`src/core.ts`](../src/core.ts#L21) | `openCore` | [21](../src/core.ts#L21) |

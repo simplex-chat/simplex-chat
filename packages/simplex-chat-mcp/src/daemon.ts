@@ -8,15 +8,16 @@ import {Config, readConfig} from "./config"
 import {SessionView, Sessions} from "./control"
 import {LockedError, acquireLock, createDataFolder, dataRoot, readSessionFile, releaseLock, serverToken, sessionFolder, sessionNumbers, socketPath, writeSessionFile} from "./files"
 import {Hub, Perform} from "./hub"
-import {errorText, log, logError} from "./log"
+import {ExitError, errorText, log, logError} from "./log"
 import {ToolCall} from "./messages"
-import {AttachRequest, CallRequest, OwnerState, SessionReply, SessionRequest, StatusReply, protocolVersion} from "./protocol"
+import {AttachRequest, CallRequest, OwnerState, SessionReply, SessionRequest, StatusReply, TitleReply, TitleRequest, protocolVersion} from "./protocol"
 import {Handler, SocketError, listen, sendJson, startLines} from "./socket"
 import {ToolName} from "./tools"
 import {version} from "./version"
 
 const idleClose = 10 * 60_000
 const idleStop = 10 * 60_000
+const maxTitles = 100
 const firstFreeFd = 3
 
 export interface HubLike {
@@ -64,6 +65,7 @@ export class Daemon {
   private readonly entries = new Map<string, Entry>()
   private readonly closing = new Map<string, Promise<void>>()
   private readonly streams = new Set<ServerResponse>()
+  private readonly titles = new Map<string, string>()
   private nextNumber: number
   private stopTimer?: NodeJS.Timeout
   private stopping?: Promise<void>
@@ -101,6 +103,7 @@ export class Daemon {
   private routes(): {[route: string]: Handler} {
     return {
       "POST /session": async (body, res) => sendJson(res, 200, await this.onSession(body as SessionRequest)),
+      "POST /title": async (body, res) => sendJson(res, 200, await this.onTitle(body as TitleRequest)),
       "POST /attach": (body, res) => this.onAttach(body as AttachRequest, res),
       "POST /call": (body, res) => this.onCall(body as CallRequest, res),
       "GET /status": async (_body, res) => sendJson(res, 200, this.status()),
@@ -161,14 +164,47 @@ export class Daemon {
     const agent = await entry.opening
     if (entry.attached === 0) this.scheduleIdle(request.id, entry)
     await this.hub.configure(request.config)
-    const folder = sessionFolder(this.deps.root, request.id)
-    const stored = readSessionFile(folder)!
     const name = request.name?.trim()
-    if (name && name !== stored.name) {
-      await agent.rename(name)
-      writeSessionFile(folder, {...stored, name})
-    }
+    if (name) await this.rename(this.folder(request.id), agent, name)
     return {number: agent.number, displayName: agent.displayName, version: this.deps.version, protocol: protocolVersion, owner: this.hub.owner()}
+  }
+
+  private async onTitle({id, name, config}: TitleRequest): Promise<TitleReply> {
+    this.refuseWhenStopping()
+    const folder = this.folder(id)
+    await this.hub.configure(config)
+    const title = name?.trim()
+    if (title) await this.applyTitle(id, folder, title)
+    return {mainGroup: this.hub.mainGroup, owner: this.hub.owner(), version: this.deps.version, protocol: protocolVersion}
+  }
+
+  private async applyTitle(id: string, folder: string, title: string): Promise<void> {
+    const entry = this.entries.get(id)
+    if (entry !== undefined) return this.rename(folder, await entry.opening, title)
+    const stored = readSessionFile(folder)
+    if (stored === undefined) this.rememberTitle(id, title)
+    else if (title !== stored.name) writeSessionFile(folder, {...stored, name: title})
+  }
+
+  private async rename(folder: string, agent: AgentLike, name: string): Promise<void> {
+    const stored = readSessionFile(folder)!
+    if (name === stored.name) return
+    await agent.rename(name)
+    writeSessionFile(folder, {...stored, name})
+  }
+
+  private rememberTitle(id: string, name: string): void {
+    const key = id.toLowerCase()
+    this.titles.delete(key)
+    this.titles.set(key, name)
+    if (this.titles.size > maxTitles) this.titles.delete(this.titles.keys().next().value!)
+  }
+
+  private takeTitle(id: string): string | undefined {
+    const key = id.toLowerCase()
+    const title = this.titles.get(key)
+    this.titles.delete(key)
+    return title
   }
 
   private async onAttach({id}: AttachRequest, res: ServerResponse): Promise<void> {
@@ -215,11 +251,12 @@ export class Daemon {
 
   // the stop timer runs only while no entries exist, so a new entry cancels it
   private entry(id: string, request?: SessionRequest): Entry {
-    if (this.stopping !== undefined) throw new SocketError("The SimpleX daemon is stopping.", 503)
+    this.refuseWhenStopping()
+    const folder = this.folder(id)
     const existing = this.entries.get(id)
     if (existing !== undefined) return existing
     clearTimeout(this.stopTimer)
-    const entry: Entry = {attached: 0, calls: 0, opening: this.openAgent(id, request)}
+    const entry: Entry = {attached: 0, calls: 0, opening: this.openAgent(id, folder, request)}
     this.entries.set(id, entry)
     this.scheduleIdle(id, entry)
     entry.opening.then(
@@ -235,14 +272,26 @@ export class Daemon {
     return entry
   }
 
-  private async openAgent(id: string, request: SessionRequest | undefined): Promise<AgentLike> {
+  private refuseWhenStopping(): void {
+    if (this.stopping !== undefined) throw new SocketError("The SimpleX daemon is stopping.", 503)
+  }
+
+  private folder(id: string): string {
+    try {
+      return sessionFolder(this.deps.root, id)
+    } catch (error) {
+      throw error instanceof ExitError ? new SocketError(error.message, 400) : error
+    }
+  }
+
+  private async openAgent(id: string, folder: string, request: SessionRequest | undefined): Promise<AgentLike> {
     await this.closing.get(id)
-    const folder = sessionFolder(this.deps.root, id)
     let stored = readSessionFile(folder)
     if (stored === undefined) {
       if (request === undefined) throw new SocketError("Unknown session; restart the Claude Code session.", 409)
+      const title = this.takeTitle(id)
       createDataFolder(folder)
-      stored = {number: this.nextNumber++, name: sessionName(request.name, request.project), project: request.project, created: new Date().toISOString()}
+      stored = {number: this.nextNumber++, name: sessionName(request.name?.trim() || title, request.project), project: request.project, created: new Date().toISOString()}
       writeSessionFile(folder, stored)
     }
     return this.deps.openSession({folder, number: stored.number, name: stored.name, hub: this.hub})

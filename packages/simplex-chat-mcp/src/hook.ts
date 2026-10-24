@@ -2,7 +2,7 @@ import {DaemonClient} from "./client"
 import {readConfig} from "./config"
 import {dataRoot} from "./files"
 import {errorText} from "./log"
-import {SessionReply} from "./protocol"
+import {TitleReply} from "./protocol"
 import {qrCodeText} from "./qr"
 import {isNotRunning} from "./socket"
 import {version} from "./version"
@@ -34,10 +34,9 @@ export async function sessionStart(stdin: string, env: NodeJS.ProcessEnv = proce
     const config = readConfig(env)
     const client = deps?.client ?? DaemonClient.forRoot(dataRoot(env))
     await client.ensureDaemon(version)
-    const reply = await client.request<SessionReply>("POST", "/session", {id: input.session_id, name: input.session_title, project: env.CLAUDE_PROJECT_DIR ?? input.cwd ?? process.cwd(), config})
-    const {link, owners} = reply.owner
+    const {mainGroup, owner} = await client.request<TitleReply>("POST", "/title", {id: input.session_id, name: input.session_title, project: env.CLAUDE_PROJECT_DIR ?? input.cwd ?? process.cwd(), config})
+    const {link, owners} = owner
     if (owners.length > 0 || link === undefined) return {}
-    const {mainGroup} = config
     return {
       systemMessage: `SimpleX MCP: scan this QR code with the SimpleX app and tap Join to supervise your agents in "${mainGroup}":\n${qrCodeText(link, "plain")}\n${link}`,
       hookSpecificOutput: {hookEventName: "SessionStart", additionalContext: `The SimpleX Main group "${mainGroup}" has no owner yet. Tell your user to open this link in the SimpleX app and join: ${link}`},

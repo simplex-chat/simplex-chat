@@ -61,7 +61,8 @@ After a change in `src/`, repeat step 1 and stop the running daemon, which a dae
 6. Change `main_group` in `/config`, then start a new session: the Main group and its profile get the new name.
 7. Mode `requests`: tool calls run without a Claude Code prompt (PreToolUse hook). Mode `host` (`approve` in `/config`, then a new session): `connect`, `send` and `leave` make Claude Code prompt; after you allow a send, the Main group gets the outcome card ending with `Performed without approval (mode host).`
 8. `/simplex:reset-owners`: the old Main group is deleted, and the output is `"SimpleX MCP" was replaced. Join the new one in the SimpleX app. The link works once:` with the link. Until you join, a `connect` is refused with `The agent has no owner. Open this link in the SimpleX app and join: <link>`.
-9. Stop the daemon while a `receive` with `wait` runs: `kill $(cat ~/.simplex-mcp/lock)`. The call returns `The SimpleX daemon stopped; repeat the call.`, and the repeated call starts a new daemon.
+9. `/clear` in a session: `~/.simplex-mcp/_sessions` gets no new folder, and the next tool call uses the same profile; its cards keep the session number.
+10. Stop the daemon while a `receive` with `wait` runs: `kill $(cat ~/.simplex-mcp/lock)`. The call returns `The SimpleX daemon stopped; repeat the call.`, and the repeated call starts a new daemon.
 
 ## Try the tools
 

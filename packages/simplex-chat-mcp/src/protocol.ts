@@ -21,6 +21,13 @@ export interface SessionRequest {
   config: Config
 }
 
+export type TitleRequest = SessionRequest
+
+export interface TitleReply extends DaemonInfo {
+  mainGroup: string
+  owner: OwnerState
+}
+
 export interface SessionReply extends DaemonInfo {
   number: number
   displayName: string

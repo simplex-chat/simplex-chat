@@ -5,35 +5,37 @@ import {qrCodeText} from "../../src/qr"
 const status = {version: "0.2.0", protocol: 1, mainGroup: "SimpleX MCP", sessions: []}
 const input = JSON.stringify({session_id: "11111111-1111-4111-8111-111111111111", session_title: "auth", cwd: "/p/app", source: "startup"})
 
-function fakeClient(owner: {owners: string[]; link?: string}, ensureError?: Error) {
+function fakeClient(owner: {owners: string[]; link?: string}, ensureError?: Error, mainGroup = "SimpleX MCP") {
   const requests: unknown[] = []
   const fake = {
     ensureDaemon: async () => {
       if (ensureError) throw ensureError
       return {...status, owner}
     },
-    request: async (_method: string, _route: string, body: unknown) => {
-      requests.push(body)
-      return {number: 1, displayName: "SimpleX MCP - auth", version: "0.2.0", protocol: 1, owner}
+    request: async (method: string, route: string, body: unknown) => {
+      requests.push({method, route, body})
+      return {mainGroup, owner, version: "0.2.0", protocol: 1}
     },
   }
   return {requests, client: fake as unknown as HookDeps["client"]}
 }
 
 describe("SessionStart hook", () => {
-  it("registers the session and stays quiet when the Main group has an owner", async () => {
+  it("records the session title and stays quiet when the Main group has an owner", async () => {
     const {client, requests} = fakeClient({owners: ["Alice"]})
     expect(await sessionStart(input, {CLAUDE_PROJECT_DIR: "/p/app"}, {client, nodeVersion: "22.1.0"})).toEqual({})
-    expect(requests).toEqual([{id: "11111111-1111-4111-8111-111111111111", name: "auth", project: "/p/app", config: {mainGroup: "SimpleX MCP", approve: "requests", expireHours: 23}}])
+    expect(requests).toEqual([
+      {method: "POST", route: "/title", body: {id: "11111111-1111-4111-8111-111111111111", name: "auth", project: "/p/app", config: {mainGroup: "SimpleX MCP", approve: "requests", expireHours: 23}}},
+    ])
   })
 
-  it("shows the link with a QR code while the Main group has no owner", async () => {
+  it("shows the link of the daemon's Main group with a QR code while it has no owner", async () => {
     const link = "https://simplex.chat/g#link"
-    const {client} = fakeClient({owners: [], link})
+    const {client} = fakeClient({owners: [], link}, undefined, "Agents")
     const output = await sessionStart(input, {}, {client, nodeVersion: "22.1.0"})
     expect(output).toEqual({
-      systemMessage: `SimpleX MCP: scan this QR code with the SimpleX app and tap Join to supervise your agents in "SimpleX MCP":\n${qrCodeText(link, "plain")}\n${link}`,
-      hookSpecificOutput: {hookEventName: "SessionStart", additionalContext: `The SimpleX Main group "SimpleX MCP" has no owner yet. Tell your user to open this link in the SimpleX app and join: ${link}`},
+      systemMessage: `SimpleX MCP: scan this QR code with the SimpleX app and tap Join to supervise your agents in "Agents":\n${qrCodeText(link, "plain")}\n${link}`,
+      hookSpecificOutput: {hookEventName: "SessionStart", additionalContext: `The SimpleX Main group "Agents" has no owner yet. Tell your user to open this link in the SimpleX app and join: ${link}`},
     })
   })
 
