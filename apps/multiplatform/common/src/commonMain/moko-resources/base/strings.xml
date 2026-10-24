@@ -1408,6 +1408,7 @@
   <string name="icon_descr_audio_call">audio call</string>
   <string name="call_desktop_engine_error">Calls are not available</string>
   <string name="call_screen_share_screen">Screen %d</string>
+  <string name="call_devices">Devices</string>
   <string name="call_audio_device_system_default">System default</string>
   <string name="call_mic_connected">Microphone %s connected</string>
   <string name="call_mic_fallback">Microphone %s disconnected, using System default</string>
