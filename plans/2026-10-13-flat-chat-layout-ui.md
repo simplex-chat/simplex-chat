@@ -71,7 +71,8 @@ spacing level 4   last line of a message → next sender name; above and below a
                   feature and preference icons: centred on the event text, no height; merged feature icons: one event line high, centred
                   classic: call item bottom, voice drawn without FramedItemView, the two rows of the forwarded-from header
 meta width        content measured without the meta width, except text with the transparent copy, files, emoji, events and captionless media with overlayMeta
-meta placement    never above the content; the row at least as tall as the time; after a rule the time stays on the last text line (D24)
+meta placement    never above the content; the row at least as tall as the time
+                  after a rule with room beside it: the time on the baseline of the last text line above it (D24); otherwise under the rule
 meta copy         FontWeight.Normal; icon spaces at the body1 size in dp; time and timer text at 12sp
                   conditions of CIMetaView, file encryption and signature included; tall status icon condition shared with CIMetaView
                   one more space after the 17dp icons: sent and received status, via proxy
@@ -116,11 +117,12 @@ views/chat/ChatView.kt
   shared with classic                    showsSender, sameSender (:3862-:3876); ChatItemSender, chatItemSender, SenderNameAndRole (:3506-:3584)
                                          classic BubbleSenderNameAndRole (:2034)
 views/chat/ChatItemsMerger.kt            MergedItem.revealed: true for Single, the flag of Grouped
-views/chat/item/TerminalItemView.kt      LocalTerminalLayout, gap constants, terminalTextStyle, terminal sender condition, terminalRowGap, terminalHeadingGap, hasQuoteOrHeader
+views/chat/item/TerminalItemView.kt      LocalTerminalLayout, gap constants, terminalTextStyle, terminal sender condition, terminalRowGap, terminalHeadingGap
                                          row interaction, messageLastLine, messageLastBlock, inlineIcon, ItemWithMeta, TerminalChatItemRow
 views/chat/item/ChatItemView.kt          alignEnd = sent && !terminal; item click without indication; reactions at the text edge
                                          GoToItemButton and GO_TO_ITEM_BUTTON_SIZE at top level
                                          chatItemTailEnabled false; clipChatItem skipped
+                                         hasQuoteOrHeader: the choice of EmojiItemView or CIVoiceView, and the heading gaps
 views/chat/item/FramedItemView.kt        transparent background; headers and quote without background; quoteBar; mediaModifier; cardModifier; thumbnailClip
                                          CIMarkdownText: parameter terminalTop plus terminalHeadingGap, no bottom padding, terminal text style, file encryption and signature for the copy
                                          reservesMeta: metaReserved, caption of images, videos, voice and chat links, bottom gap without text; clipChatItem skipped
@@ -130,7 +132,7 @@ views/chat/item/MarkdownBlocks.kt        Modifier.quoteBar, shared with Markdown
                                          heading scale TERMINAL_HEADING_RATIO, Modifier.headingBox
                                          spacers: TERMINAL_HEADING_BOTTOM_GAP after a heading, TERMINAL_LEVEL_STEP at a paragraph break or above a heading
                                          card margins of code, tables and rules; messageLastBlock() on the last block without a meta line (marksLastBlock)
-                                         code line height × 0.9 with terminalTextStyle; metaLine null in terminal rows unless live
+                                         code: terminalTextStyle at the code size (classic: line height × 0.9); metaLine null in terminal rows unless live
 views/chat/item/CIFileView.kt            row padding TERMINAL_FILE_TOP_GAP, icon without top padding; the reserve in the size line kept
 views/chat/item/CIVoiceView.kt           voice drawn by FramedItemView: TERMINAL_BLOCK_TOP_GAP above, 0 below; otherwise classic, start at the text edge
 views/chat/item/EmojiItemView.kt         TERMINAL_EMOJI_* paddings at the text edge, messageLastLine()

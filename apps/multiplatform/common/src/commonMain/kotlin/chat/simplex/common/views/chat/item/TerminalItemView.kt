@@ -101,9 +101,6 @@ fun terminalRowGap(item: ChatItem, older: ChatItem?, separated: Boolean, largeGa
 fun terminalHeadingGap(item: ChatItem): TextUnit =
   if (!item.textAtItemTop && item.startsWithHeading) TERMINAL_LEVEL_STEP else 0.sp
 
-val ChatItem.hasQuoteOrHeader: Boolean get() =
-  quotedItem != null || meta.itemForwarded != null || meta.itemDeleted != null || meta.isLive || isReport
-
 private val ChatItem.textAtItemTop: Boolean get() =
   (content.msgContent is MsgContent.MCText || content.msgContent is MsgContent.MCUnknown && file == null) && !hasQuoteOrHeader
 
@@ -212,16 +209,16 @@ private fun TerminalMetaLayout(metaReserved: Boolean, contentWithMeta: @Composab
     } else {
       content[LastLineLeft].takeIf { it != AlignmentLine.Unspecified }?.let { content.width - it }
     }
-    val metaShift = if (lineEnd != null && lineEnd + meta.width > width) gap + meta.height else 0
+    val metaBelow = lineEnd != null && lineEnd + meta.width > width
     val textBaseline = content[LastBaseline]
     val metaBaseline = meta[FirstBaseline].takeIf { it != AlignmentLine.Unspecified } ?: ((meta.height + 12.sp.toPx() * INTER_CAP_HEIGHT) / 2).roundToInt()
     val metaTop = when {
-      metaShift > 0 -> content.height + gap
+      metaBelow -> content.height + gap
       overlay == null && textBaseline != AlignmentLine.Unspecified -> textBaseline - metaBaseline
       else -> content.height - gap - meta.height
     }.coerceAtLeast(0)
-    val blockGap = if (metaShift == 0 && content[LastBlockBottom] == content.height) TERMINAL_BLOCK_BOTTOM_GAP.toPx().roundToInt() else 0
-    layout(width, max(content.height + metaShift + blockGap, metaTop + meta.height)) {
+    val blockGap = if (!metaBelow && content[LastBlockBottom] == content.height) TERMINAL_BLOCK_BOTTOM_GAP.toPx().roundToInt() else 0
+    layout(width, max(content.height + blockGap, metaTop + meta.height)) {
       content.placeRelative(0, 0)
       if (overlay != null && content.width + meta.width > width) {
         overlay.placeRelative(content.width - overlay.width, content.height - gap - overlay.height)

@@ -11,7 +11,6 @@ import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.Inter
@@ -25,7 +24,7 @@ import kotlin.test.assertTrue
 
 class TerminalMetaCopyTest {
   private val resolver = createFontFamilyResolver()
-  private val iconSpace = "    "
+  private val iconSpace = " \u00A0\u00A0\u00A0"
   private val sentEdited = CIMeta.getSample(1, Clock.System.now(), "", status = CIStatus.SndSent(SndCIStatusProgress.Complete), itemEdited = true)
   private val receivedTimed = CIMeta.getSample(2, Clock.System.now(), "", status = CIStatus.RcvRead(), itemTimed = CITimed(30, null))
   private val sentViaProxy = CIMeta.getSample(3, Clock.System.now(), "", status = CIStatus.SndSent(SndCIStatusProgress.Complete), sentViaProxy = true)
@@ -33,7 +32,7 @@ class TerminalMetaCopyTest {
   private fun copy(meta: CIMeta, density: Density, direction: LayoutDirection, showViaProxy: Boolean = false) =
     terminalReserveSpaceForMeta(
       meta, null, null, null, Color.Gray, showStatus = true, showEdited = true, showViaProxy = showViaProxy, showTimestamp = true,
-      iconSpaceSize = with(density) { 16.dp.toSp() }, direction = direction
+      density = density, bodyFontSize = 16.sp, direction = direction
     )
 
   private fun paragraph(text: AnnotatedString, density: Density, textDirection: TextDirection, width: Int) =
@@ -51,20 +50,20 @@ class TerminalMetaCopyTest {
 
   @Test
   fun classicReserveUnchanged() {
-    assertEquals(iconSpace + iconSpace + " " + sentEdited.timestampText, reserveSpaceForMeta(sentEdited, null, null, Color.Gray, showTimestamp = true))
-    assertEquals(iconSpace + shortTimeText(30) + " " + iconSpace + " " + receivedTimed.timestampText, reserveSpaceForMeta(receivedTimed, null, null, Color.Gray, showTimestamp = true))
+    assertEquals(iconSpace + iconSpace + "\u00A0" + sentEdited.timestampText, reserveSpaceForMeta(sentEdited, null, null, Color.Gray, showTimestamp = true))
+    assertEquals(iconSpace + shortTimeText(30) + "\u00A0" + iconSpace + "\u00A0" + receivedTimed.timestampText, reserveSpaceForMeta(receivedTimed, null, null, Color.Gray, showTimestamp = true))
     assertEquals(iconSpace + iconSpace + iconSpace, reserveSpaceForMeta(sentEdited, null, null, Color.Gray, showTimestamp = false))
-    assertEquals(iconSpace + iconSpace + " " + sentViaProxy.timestampText, reserveSpaceForMeta(sentViaProxy, null, null, Color.Gray, showViaProxy = true, showTimestamp = true))
+    assertEquals(iconSpace + iconSpace + "\u00A0" + sentViaProxy.timestampText, reserveSpaceForMeta(sentViaProxy, null, null, Color.Gray, showViaProxy = true, showTimestamp = true))
   }
 
   @Test
   fun copyHasClassicSpacesAndDirectionMark() {
     val ltr = copy(sentEdited, Density(1f), LayoutDirection.Ltr)
-    assertEquals("‎" + (iconSpace + iconSpace + " " + " " + sentEdited.timestampText).replace(' ', ' '), ltr.text)
+    assertEquals("\u200E" + (iconSpace + iconSpace + "\u00A0" + "\u00A0" + sentEdited.timestampText).replace(' ', '\u00A0'), ltr.text)
     val rtl = copy(receivedTimed, Density(1f), LayoutDirection.Rtl)
-    assertEquals("‏" + (iconSpace + shortTimeText(30) + " " + iconSpace + " " + receivedTimed.timestampText).replace(' ', ' '), rtl.text)
+    assertEquals("\u200F" + (iconSpace + shortTimeText(30) + "\u00A0" + iconSpace + "\u00A0" + receivedTimed.timestampText).replace(' ', '\u00A0'), rtl.text)
     val proxy = copy(sentViaProxy, Density(1f), LayoutDirection.Ltr, showViaProxy = true)
-    assertEquals("‎" + (iconSpace + " " + iconSpace + " " + " " + sentViaProxy.timestampText).replace(' ', ' '), proxy.text)
+    assertEquals("\u200E" + (iconSpace + "\u00A0" + iconSpace + "\u00A0" + "\u00A0" + sentViaProxy.timestampText).replace(' ', '\u00A0'), proxy.text)
   }
 
   @Test
@@ -77,7 +76,6 @@ class TerminalMetaCopyTest {
       val timeStart = text.length - ts.length
       val icons = p.getHorizontalPosition(timeStart, true) - p.getHorizontalPosition(1, true)
       val time = p.getHorizontalPosition(text.length, true) - p.getHorizontalPosition(timeStart, true)
-      println("COPY scale $s icons $icons time $time")
       icons to time
     }
     val (icons1, time1) = widths.getValue(1f)
@@ -106,7 +104,6 @@ class TerminalMetaCopyTest {
       assertEquals(lastLine, p.getLineForOffset(text.length - 1), "$direction: time line")
       val words = p.bounds(lineStart until head.length)
       val time = p.bounds(head.length + 1 until text.length)
-      println("COPY $direction words ${words.left}..${words.right} copy ${time.left}..${time.right}")
       if (direction == LayoutDirection.Ltr) {
         assertTrue(time.left >= words.right - 0.5f, "$direction: copy ${time.left}..${time.right}, words ${words.left}..${words.right}")
       } else {

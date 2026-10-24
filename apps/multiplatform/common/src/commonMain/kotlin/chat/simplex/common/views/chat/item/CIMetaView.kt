@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -237,7 +238,8 @@ fun terminalReserveSpaceForMeta(
 ): AnnotatedString =
   terminalReserveSpaceForMeta(
     meta, chatTTL, encrypted, signedFileVerified, secondaryColor, showStatus, showEdited, showViaProxy, showTimestamp,
-    iconSpaceSize = with(LocalDensity.current) { MaterialTheme.typography.body1.fontSize.value.dp.toSp() },
+    density = LocalDensity.current,
+    bodyFontSize = MaterialTheme.typography.body1.fontSize,
     direction = LocalLayoutDirection.current
   )
 
@@ -251,10 +253,11 @@ fun terminalReserveSpaceForMeta(
   showEdited: Boolean,
   showViaProxy: Boolean,
   showTimestamp: Boolean,
-  iconSpaceSize: TextUnit,
+  density: Density,
+  bodyFontSize: TextUnit,
   direction: LayoutDirection
 ): AnnotatedString {
-  val spaceStyle = SpanStyle(fontSize = iconSpaceSize, fontWeight = FontWeight.Normal)
+  val spaceStyle = SpanStyle(fontSize = with(density) { bodyFontSize.value.dp.toSp() }, fontWeight = FontWeight.Normal)
   val textStyle = SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.Normal)
   return buildAnnotatedString {
     append(if (direction == LayoutDirection.Ltr) '\u200E' else '\u200F')

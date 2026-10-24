@@ -770,6 +770,9 @@ fun ChatItemView(
   }
 }
 
+val ChatItem.hasQuoteOrHeader: Boolean get() =
+  quotedItem != null || meta.itemForwarded != null || meta.itemDeleted != null || meta.isLive || isReport
+
 @Composable
 expect fun ReactionIcon(text: String, fontSize: TextUnit = TextUnit.Unspecified)
 
