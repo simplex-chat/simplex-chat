@@ -49,6 +49,8 @@ The plugin's hooks, server and skills run `npx -y @simplex-chat/mcp@0.2.0`, with
 
 4. Start `claude` in `/tmp/simplex-test`.
 
+Instead of steps 2 and 3, `claude --plugin-dir <checkout>/packages/simplex-chat-mcp` started in `/tmp/simplex-test` loads the plugin for that session only, as `simplex@inline`, without changing the Claude Code settings. Its options then come from `--settings`, for example `--settings '{"pluginConfigs":{"simplex@inline":{"options":{"main_group":"Test Agents"}}}}'`.
+
 After a change in `src/`, repeat step 1 and stop the running daemon, which a daemon of the same version doesn't replace: `kill $(cat ~/.simplex-mcp/lock)`. Remove `packages/.claude-plugin/` when done: it is not part of the repository.
 
 ## Manual checks
@@ -111,3 +113,18 @@ Stop and restart:
 
 1. Subagent: `Use a subagent to send "trail shoes" to the directory.` While the card waits, the subagent's call stays in the foreground, with no background task; it returns after `/approve`.
 2. Esc: ask for a send, and press Esc while its card waits; `List your pending actions.` shows the action with `open: false`; the same request again attaches to it, and `/approve` returns the result to that call.
+
+## Verified on 2026-10-24 (Claude Code 2.1.302, local tarball)
+
+The `npm pack` tarball was installed into a test project, and each check ran there as `claude -p --plugin-dir <package> --setting-sources project,local --tools "" --model haiku --output-format stream-json --verbose --include-hook-events`, with a new `SIMPLEX_MCP_HOME` per data folder and the public SMP servers.
+
+1. Hook and daemon start: PASS. The stream has the `SessionStart:startup` hook output with `systemMessage` (QR code and link) and `additionalContext`; the transcript records them as `hook_system_message` and `hook_additional_context`. `daemon.log` has `SimpleX MCP daemon 0.2.0, data folder ...`.
+2. First-run time: PASS, about 10 s against the 600 s limit. `npx -y --package <tarball>` with an empty npm cache took 4.3 s; the SessionStart hook with an empty `XDG_CACHE_HOME`, which downloads libsimplex and the add-on and creates the Main group, took 5.7 s.
+3. Tools without prompts: PASS. Claude called `mcp__plugin_simplex_simplex__list`, the PreToolUse hook returned `permissionDecision: allow`, and the tool returned `{"chats":[...],"actions":[]}` without `--allowedTools` or a permission mode.
+4. Plugin options with `--plugin-dir`: PASS. Without values, the server gets the defaults of `plugin.json` (`CLAUDE_PLUGIN_OPTION_MAIN_GROUP=SimpleX MCP`, `CLAUDE_PLUGIN_OPTION_APPROVE=requests`, `CLAUDE_PLUGIN_OPTION_EXPIRE_HOURS=23`), and the hook gets no `CLAUDE_PLUGIN_OPTION_*` variables, so `config.ts` applies the same defaults. With `main_group` set to `Test Agents` through `--settings` (see above), the server and the hook get `Test Agents`: a new data folder logs `Main group "Test Agents" created.`, and an owned Main group is renamed, with `/status` `mainGroup: "Test Agents"` and the owner kept.
+5. Session naming: PASS. `claude -n docs -p ...` gets session 2 `SimpleX MCP - docs`, with the title from the SessionStart hook; a run without `-n` gets `SimpleX MCP - simplex-test`.
+6. Two concurrent sessions: PASS. Two runs started together both returned `list` results, and `/status` lists sessions 2 and 3.
+7. Owner flow: PASS. A scripted person `Tester` joined by `owner.link`, got the greeting, and `/status` showed owners `["Tester"]` and no link. For `Connect to <Tester's address> as yourself`, the Main group got `Session 4 · SimpleX MCP - simplex-test` / `I want to connect to contact Tester, as myself.`; after `/approve 1` the card became `I connected to contact Tester, as myself.` / `Approved by Tester.`, and the tool returned `status: done` with `connected: true` after the 30 s idle wait.
+8. Resume: PASS. `claude -p --resume <session ID of check 3>` keeps the session ID in the stream and in `CLAUDE_CODE_SESSION_ID`: the hook ran as `SessionStart:resume`, no new folder appeared in `_sessions`, and `/status` lists session 1 again.
+
+Needs the user: how an interactive terminal shows the QR code of the SessionStart `systemMessage`, and scanning it with the SimpleX app; approving in the SimpleX app; the prompts of mode `host`; `/clear` in an interactive session.
