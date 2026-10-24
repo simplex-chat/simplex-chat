@@ -1,6 +1,6 @@
 import {once} from "events"
 import {existsSync, mkdtempSync, writeFileSync} from "fs"
-import {Server} from "http"
+import {Server, request} from "http"
 import {tmpdir} from "os"
 import {join} from "path"
 import {SocketError, closeServer, isNotRunning, listen, requestJson, sendJson, startLines, streamLines} from "../../src/socket"
@@ -20,7 +20,53 @@ afterEach(async () => {
   server = undefined
 })
 
+function rawPost(route: string, body: string): Promise<{status: number | undefined; text: string}> {
+  return new Promise((resolve, reject) => {
+    const req = request({socketPath: path, method: "POST", path: route, headers: {authorization: `Bearer ${token}`}}, res => {
+      let text = ""
+      res.setEncoding("utf8")
+      res.on("data", chunk => (text += chunk))
+      res.on("end", () => resolve({status: res.statusCode, text}))
+    })
+    req.on("error", reject)
+    req.end(body)
+  })
+}
+
 describe("socket", () => {
+  it("answers 400 to a body that is not JSON", async () => {
+    server = await listen(path, token, {"POST /echo": async (body, res) => sendJson(res, 200, body)})
+    expect(await rawPost("/echo", "not json")).toEqual({status: 400, text: JSON.stringify({error: "Invalid JSON"})})
+  })
+
+  it("keeps multi-byte characters across chunks in bodies and lines", async () => {
+    const text = "€😀漢".repeat(40_000)
+    server = await listen(path, token, {
+      "POST /echo": async (body, res) => sendJson(res, 200, body),
+      "POST /lines": async (body, res) => {
+        startLines(res)({progress: (body as {text: string}).text})
+        res.end()
+      },
+    })
+    expect(await requestJson(path, token, "POST", "/echo", {text})).toEqual({text})
+    const lines: unknown[] = []
+    await streamLines(path, token, "/lines", {text}, line => lines.push(line))
+    expect(lines).toEqual([{progress: text}])
+  })
+
+  it("survives a handler that throws after the stream started", async () => {
+    server = await listen(path, token, {
+      "POST /broken": async (_body, res) => {
+        startLines(res)({progress: "one"})
+        throw new SocketError("late", 409)
+      },
+      "GET /ok": async (_body, res) => sendJson(res, 200, {}),
+    })
+    const lines: unknown[] = []
+    await expect(streamLines(path, token, "/broken", {}, line => lines.push(line))).rejects.toThrow()
+    expect(await requestJson(path, token, "GET", "/ok")).toEqual({})
+  })
+
   it("checks the token, the route and the body", async () => {
     server = await listen(path, token, {
       "POST /echo": async (body, res) => sendJson(res, 200, body),

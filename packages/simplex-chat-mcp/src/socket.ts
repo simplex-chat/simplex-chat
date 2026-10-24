@@ -4,6 +4,8 @@ import {IncomingMessage, Server, ServerResponse, createServer, request} from "ht
 import {logError} from "./log"
 
 const maxBody = 1_048_576
+const headersTimeoutMs = 60_000
+const keepAliveTimeoutMs = 5_000
 
 export type Handler = (body: unknown, res: ServerResponse, req: IncomingMessage) => Promise<void>
 
@@ -26,16 +28,15 @@ export function listen(path: string, token: string, routes: {[route: string]: Ha
     readBody(req)
       .then(body => handler(body, res, req))
       .catch(error => {
-        if (error instanceof SocketError) return sendJson(res, error.status, {error: error.message})
-        logError(`${req.method} ${req.url}`, error)
-        if (!res.headersSent) sendJson(res, 500, {error: error instanceof Error ? error.message : String(error)})
-        else res.destroy()
+        const status = error instanceof SocketError ? error.status : 500
+        if (!(error instanceof SocketError)) logError(`${req.method} ${req.url}`, error)
+        if (res.headersSent) res.destroy()
+        else sendJson(res, status, {error: error instanceof Error ? error.message : String(error)})
       })
   })
   server.requestTimeout = 0
-  server.headersTimeout = 60_000
-  server.keepAliveTimeout = 5_000
-  server.timeout = 0
+  server.headersTimeout = headersTimeoutMs
+  server.keepAliveTimeout = keepAliveTimeoutMs
   if (process.platform !== "win32" && existsSync(path)) unlinkSync(path)
   return new Promise((resolve, reject) => {
     server.once("error", reject)
@@ -80,6 +81,7 @@ export async function streamLines(path: string, token: string, route: string, bo
   const res = await send(path, token, "POST", route, body, signal)
   if (res.statusCode !== 200) throw new SocketError(errorOf(await readText(res)), res.statusCode ?? 0)
   let buffer = ""
+  res.setEncoding("utf8")
   for await (const chunk of res) {
     buffer += chunk
     for (let i = buffer.indexOf("\n"); i >= 0; i = buffer.indexOf("\n")) {
@@ -99,12 +101,13 @@ function send(path: string, token: string, method: string, route: string, body: 
 
 async function readBody(req: IncomingMessage): Promise<unknown> {
   let text = ""
-  let tooLarge = false
+  let size = 0
+  req.setEncoding("utf8")
   for await (const chunk of req) {
-    if (tooLarge) continue
-    text += chunk
-    tooLarge = text.length > maxBody
+    size += Buffer.byteLength(chunk)
+    if (size <= maxBody) text += chunk
   }
+  const tooLarge = size > maxBody
   if (tooLarge) throw new SocketError("Body too large", 413)
   if (text === "") return undefined
   try {
@@ -116,6 +119,7 @@ async function readBody(req: IncomingMessage): Promise<unknown> {
 
 async function readText(res: IncomingMessage): Promise<string> {
   let text = ""
+  res.setEncoding("utf8")
   for await (const chunk of res) text += chunk
   return text
 }
