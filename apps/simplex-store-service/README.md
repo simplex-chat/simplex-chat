@@ -1022,10 +1022,10 @@ the service or the code server exits before it answers.
 
 ```
 cabal build exe:simplex-store-service
-WEBAPP_DIR=../simplex.domains/webapp ENS_CONTRACTS_DIR=<ens-contracts> ANVIL=<anvil> \
-  scripts/store-service/names-contract-run.sh
+ENS_CONTRACTS_DIR=<ens-contracts> ANVIL=<anvil> scripts/store-service/names-contract-run.sh
 ```
 
+- `WEBAPP_DIR`: the names webapp (default: the `apps/simplex-domains` submodule's `webapp/`).
 - `STORE_SERVICE_BIN`: the service binary (default: `cabal list-bin exe:simplex-store-service`).
 - `SERVICE_PORT`, `CODES_PORT`: the service's and the code server's ports (8180 and 8199).
 - Arguments, if given, are passed to `playwright test` in place of the default cases' title filter.

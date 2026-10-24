@@ -6,7 +6,7 @@
 set -euo pipefail
 shopt -s inherit_errexit
 
-: "${WEBAPP_DIR:?set WEBAPP_DIR to the names webapp (simplex.domains/webapp)}"
+WEBAPP_DIR="${WEBAPP_DIR:-$(cd "$(dirname "$0")/../.." && pwd)/apps/simplex-domains/webapp}"
 : "${ENS_CONTRACTS_DIR:?set ENS_CONTRACTS_DIR to a compiled ens-contracts checkout, as for the webapp dev/start.sh}"
 ANVIL="${ANVIL:-anvil}"
 SERVICE_PORT="${SERVICE_PORT:-8180}"
