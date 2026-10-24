@@ -16,7 +16,6 @@ export interface OwnerState {
 
 export interface SessionRequest {
   id: string
-  name?: string
   project: string
   config: Config
 }

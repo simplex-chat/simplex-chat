@@ -127,7 +127,7 @@ afterEach(async () => {
 })
 
 const post = <T>(route: string, body?: unknown) => requestJson<T>(socketPath(root), token, "POST", route, body)
-const register = (id: string, name?: string) => post("/session", {id, name, project: "/p/app", config: defaultConfig})
+const register = (id: string) => post("/session", {id, project: "/p/app", config: defaultConfig})
 const title = (id: string, name?: string, config = defaultConfig) => post("/title", {id, name, config})
 const titleReply = {mainGroup: "SimpleX MCP", owner: {owners: [], link: "https://simplex.chat/g#link"}, version: "0.2.0", protocol: protocolVersion}
 const sessionsFolder = () => join(root, "_sessions")
@@ -151,15 +151,16 @@ function storeSession(id: string, number: number, name: string) {
 }
 
 describe("daemon", () => {
-  it("registers sessions with stable numbers and renames on a new title", async () => {
+  it("registers sessions with stable numbers and stored names", async () => {
     const {d, agents, configs} = deps(root)
     daemon = await Daemon.start(d, readDefaultConfig)
     const first = await register(id1)
     expect(first).toEqual({number: 1, displayName: "SimpleX MCP - app", version: "0.2.0", protocol: protocolVersion, owner: {owners: [], link: "https://simplex.chat/g#link"}})
-    expect(await post("/session", {id: id2, name: "docs", project: "/p/app", config: {...defaultConfig, mainGroup: "Agents"}})).toMatchObject({number: 2, displayName: "SimpleX MCP - docs"})
+    await title(id2, "docs")
+    expect(await post("/session", {id: id2, project: "/p/app", config: {...defaultConfig, mainGroup: "Agents"}})).toMatchObject({number: 2, displayName: "SimpleX MCP - docs"})
     expect(configs.at(-1)).toEqual({...defaultConfig, mainGroup: "Agents"})
-    expect(await register(id1, "auth")).toMatchObject({number: 1, displayName: "SimpleX MCP - auth"})
-    expect(readSessionFile(sessionFolder(root, id1))).toMatchObject({number: 1, name: "auth", project: "/p/app"})
+    expect(await post("/session", {id: id1, project: "/p/other", config: defaultConfig})).toMatchObject({number: 1, displayName: "SimpleX MCP - app"})
+    expect(readSessionFile(sessionFolder(root, id1))).toMatchObject({number: 1, name: "app", project: "/p/app"})
     expect(agents).toHaveLength(2)
   })
 
@@ -488,14 +489,6 @@ describe("daemon", () => {
     expect(await register(id2)).toMatchObject({number: 1, displayName: "SimpleX MCP - app"})
     expect(await register(id1)).toMatchObject({number: 2, displayName: "SimpleX MCP - auth"})
     expect(readSessionFile(sessionFolder(root, id1))).toMatchObject({number: 2, name: "auth", project: "/p/app"})
-    expect(daemon["titles"].size).toBe(0)
-  })
-
-  it("prefers the registration's own name to a remembered title", async () => {
-    const {d} = deps(root)
-    daemon = await Daemon.start(d, readDefaultConfig)
-    await title(id1, "auth")
-    expect(await register(id1, "docs")).toMatchObject({number: 1, displayName: "SimpleX MCP - docs"})
     expect(daemon["titles"].size).toBe(0)
   })
 

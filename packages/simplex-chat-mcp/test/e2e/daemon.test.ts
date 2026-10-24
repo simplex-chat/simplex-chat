@@ -6,7 +6,7 @@ import {api} from "simplex-chat"
 import {DaemonClient} from "../../src/client"
 import {defaultConfig} from "../../src/config"
 import {Daemon, productionDeps} from "../../src/daemon"
-import {SessionReply, StatusReply} from "../../src/protocol"
+import {SessionReply, StatusReply, TitleReply} from "../../src/protocol"
 import {Bot, ItemCheck, callTool, captureLog, cardNumber, joinByLink, lines, person, prepareRoot, received, startBot, textStarts, until, updated} from "./helpers"
 import {SmpServer, startSmpServer} from "./smpServer"
 import {daemonPid, killDaemon, spawnSession} from "./stdio"
@@ -62,8 +62,9 @@ async function startDaemon(root: string): Promise<Daemon> {
   return daemon
 }
 
-function openSession(client: DaemonClient, id: string, name: string): Promise<SessionReply> {
-  return client.request<SessionReply>("POST", "/session", {id, name, project: "/p", config: defaultConfig})
+async function openSession(client: DaemonClient, id: string, name: string): Promise<SessionReply> {
+  await client.request<TitleReply>("POST", "/title", {id, name, config: defaultConfig})
+  return client.request<SessionReply>("POST", "/session", {id, project: "/p", config: defaultConfig})
 }
 
 const cardFrom = (session: number, name: string, request: string): ItemCheck => textStarts(`Session ${session} · SimpleX MCP - ${name}\n${request}`)

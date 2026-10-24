@@ -171,8 +171,6 @@ export class Daemon {
     const agent = await entry.opening
     if (entry.attached === 0) this.scheduleIdle(request.id, entry)
     await this.hub.configure(request.config)
-    const name = request.name?.trim()
-    if (name) await this.rename(this.folder(request.id), agent, name)
     return {number: agent.number, displayName: agent.displayName, version: this.deps.version, protocol: protocolVersion, owner: this.hub.owner()}
   }
 
@@ -298,7 +296,7 @@ export class Daemon {
       if (request === undefined) throw new SocketError("Unknown session; restart the Claude Code session.", 409)
       const title = this.takeTitle(id)
       createDataFolder(folder)
-      stored = {number: this.nextNumber++, name: sessionName(request.name?.trim() || title, request.project), project: request.project, created: new Date().toISOString()}
+      stored = {number: this.nextNumber++, name: sessionName(title, request.project), project: request.project, created: new Date().toISOString()}
       writeSessionFile(folder, stored)
     }
     return this.deps.openSession({folder, number: stored.number, name: stored.name, hub: this.hub})
