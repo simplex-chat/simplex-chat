@@ -2,7 +2,7 @@
 
 On iOS, with simplexmq PR #2, the agent completes suspension only after the agent file of each upload started in foreground is deleted by the chat or TTL cleanup, or when the chat is stopped, or at the suspend timeout. Files with rows absent or flagged deleted or failed at the start of the suspension are not awaited. On master, the chat skipped this deletion on several paths of `SFDONE` and `SFERR`, handling errors among them.
 The deletions in the branches of `processAgentMsgSndFile` are replaced by one deletion after the handling of each `SFDONE` or `SFERR` with a file ID, also when an error is thrown. On `SFDONE` of an undeleted sent item with a shared message ID, the file descriptions are queued before it in the direct and group branches.
-The app yields to the share extension: the share extension signals the other processes and waits for them before it starts or activates its chat; the app subscribes to this signal at launch, suspends at once on it, and activates its chat in foreground after the share extension ends.
+A suspending app yields to the share extension. The share extension signals the other processes at setup and, while the app is suspending, waits for them before it starts or activates its chat. The app subscribes to this signal at launch and suspends at once on it while suspending.
 
 Agent side: https://github.com/evgeny-simplex/simplexmq/pull/2
 
@@ -51,8 +51,8 @@ Agent side: https://github.com/evgeny-simplex/simplexmq/pull/2
 - Share extension states:
 
   ```
-  setup         SEState .sendingMessage; wait for the app and the NSE to suspend, at most 2 s; chat started or activated
-  send()        SEState .sendingMessage; wait as at setup; message sent
+  setup         SEState .sendingMessage; app state .suspending -> wait for the app and the NSE to suspend, at most 2 s; chat started or activated
+  send()        SEState .sendingMessage; wait for the app and the NSE to suspend, at most 2 s; message sent
   completion    chat suspended; SEState .inactive
   ```
 
@@ -61,24 +61,19 @@ Agent side: https://github.com/evgeny-simplex/simplexmq/pull/2
 
   | Share extension state | App state | Action |
   |---|---|---|
-  | `.sendingMessage` | `.active` | instant suspension |
-  | `.sendingMessage` | `.activating` | instant suspension |
-  | `.sendingMessage` | `.bgRefresh` | instant suspension |
   | `.sendingMessage` | `.suspending` | instant suspension |
-  | `.sendingMessage` | `.suspended` | none |
-  | `.sendingMessage` | `.stopped` | none |
-  | `.inactive` | `.suspending` | `startChatAndActivate {}`, unless the app is in background |
-  | `.inactive` | `.suspended` | `startChatAndActivate {}`, unless the app is in background |
-  | `.inactive` | other states | none |
+  | `.sendingMessage` | other states | none |
+  | `.inactive` | any | none |
 
 - Instant suspension, under `suspendLockQueue`, also by `terminateChat` in `.suspending`:
 
   ```
-  _chatSuspended()               app state .suspended; ChatReceiver stopped while the chat is running; store closed
   apiSuspendChat(timeout 0)      when ChatModel.ok; the core sends no suspension events
-  chatCloseStore()
+  _chatSuspended()               app state .suspended; ChatReceiver stopped while the chat is running; stores closed
   ```
 
+- The app chat is activated by the scene phase handling when the app is opened, as on master.
+- A chunk upload of the app in flight at the instant suspension is not stopped; the share extension can upload the same replica at the same time, as on master.
 - The NSE's share extension subscriber: unchanged.
 - `cabal.project`: simplexmq pinned to commit `5cbc42c2` of simplexmq PR #2 during review.
 - After the simplexmq pull request in simplex-chat/simplexmq is merged and before the final pull request is opened in simplex-chat/simplex-chat:
@@ -100,14 +95,15 @@ Agent side: https://github.com/evgeny-simplex/simplexmq/pull/2
     - :363, `sendFileError`.
 - `apps/ios/spec/architecture.md` (:131), "Background Task Protection": the text.
 - `apps/ios/spec/services/files.md` (:274), "Sending": the text.
-- `apps/ios/SimpleX SE/ShareModel.swift`, `setup(with:)` (:97-98): `SEChatState.shared.set(.sendingMessage)`, then `await waitForOtherProcessesToSuspend()`, before `initChat`.
+- `apps/ios/spec/architecture.md` (:257), "Share Extension (SE)": the setup signal and wait, and the instant suspension of the app in `.suspending`.
+- `apps/ios/SimpleX SE/ShareModel.swift`, `setup(with:)` (:97-100): `SEChatState.shared.set(.sendingMessage)`, then `await waitForOtherProcessesToSuspend()` when `appStateGroupDefault.get() == .suspending`, before `initChat`.
 - `apps/ios/Shared/AppDelegate.swift`, `application(_:didFinishLaunchingWithOptions:)` (:22): `_ = seSubscriber`.
 - `apps/ios/Shared/Model/SuspendChat.swift`:
-  - `seSubscriber` (:39-54):
-    - `.inactive` (:43-46): `startChatAndActivate {}` when the app state is `inactive` and `UIApplication.shared.applicationState != .background`;
-    - `.sendingMessage` (:47-51): under `suspendLockQueue`, `_suspendChatInstantly()` when the app state is `canSuspend` or `.suspending`.
-  - `terminateChat`, `.suspending` (:74-76): `_suspendChatInstantly()`.
-  - new: `_suspendChatInstantly` (:88-93), the three steps of `terminateChat` in `.suspending`, with the comment of `apiSuspendChat`.
+  - `seSubscriber` (:39-53):
+    - `.inactive` (:43-44): no action;
+    - `.sendingMessage` (:45-50): under `suspendLockQueue`, `_suspendChatInstantly()` when the app state is `.suspending`.
+  - `terminateChat`, `.suspending` (:73-75): `_suspendChatInstantly()`.
+  - new: `_suspendChatInstantly` (:87-91): `apiSuspendChat(timeoutMicroseconds: 0)` when `ChatModel.ok`, with its comment from `terminateChat`, then `_chatSuspended()`.
 - `cabal.project` (:23-24):
   - `location: https://github.com/evgeny-simplex/simplexmq.git`;
   - `tag: 5cbc42c286ffd4461d496d7a7efc956078da06d4`.
@@ -137,7 +133,7 @@ Agent side: https://github.com/evgeny-simplex/simplexmq/pull/2
   - On master, a test failure is expected when the check starts within 10 s of the agent start: the deletions are skipped for cancelled files, the marked row is deleted only by the agent cleanup 30 s after the agent starts, and the check polls for 20 s.
 
 Device tests, run by the user:
-- During a 20 MB upload, the app leaves the foreground; within 15 s, a link is shared through the share sheet:
-  - both sends complete;
+- During a 20 MB upload, the app leaves the foreground; within 15 s, a link is shared through the share sheet; then the app is opened:
+  - both sends complete, unless a chunk upload of the app was in flight when the share sheet opened; then the app's file can fail with an upload error, as on master;
   - the app log shows `_chatSuspended` right after the share sheet opens.
-- The share sheet is opened over the app in foreground, and a file is sent: the app's chat is active after the share sheet closes.
+- The share sheet is opened over the app in foreground, and a file is sent: the app's chat stays active.
