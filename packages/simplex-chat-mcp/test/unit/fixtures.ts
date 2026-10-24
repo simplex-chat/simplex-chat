@@ -202,6 +202,7 @@ export class FakeChat {
 
   async apiSetMembersRole(groupId: number, members: number[], role: T.GroupMemberRole): Promise<void> {
     this.roles.push({groupId, members, role})
+    this.members.set(groupId, (this.members.get(groupId) ?? []).map(m => (members.includes(m.groupMemberId) ? {...m, memberRole: role} : m)))
   }
 
   async apiNewGroup(userId: number, groupProfile: T.GroupProfile): Promise<T.GroupInfo> {

@@ -66,6 +66,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
   private members: T.GroupMember[] = []
   private writes: Promise<unknown> = Promise.resolve()
   private ownerCommands: Promise<unknown> = Promise.resolve()
+  private events: Promise<unknown> = Promise.resolve()
   private linkText?: string
 
   constructor(
@@ -146,12 +147,18 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
       .catch(error => logError("Main group command", error))
   }
 
-  async onEvent(event: ChatEvent): Promise<void> {
+  onEvent(event: ChatEvent): Promise<void> {
+    const handled = this.events.then(() => this.handleEvent(event))
+    this.events = handled.catch(() => undefined)
+    return handled
+  }
+
+  private async handleEvent(event: ChatEvent): Promise<void> {
     if (this.actions.lost) return
     if (losesControl(event)) return this.lose()
     const before = this.approvers()
     await this.refreshMembers()
-    if (event.type === "joinedGroupMember" && this.isHuman(event.member)) return this.ownerJoined(event.member)
+    if (event.type === "joinedGroupMember" && this.isHuman(event.member) && this.approvers().length === 0) return this.ownerJoined(event.member)
     if (before.length > 0 && this.approvers().length === 0) {
       log(noOwners)
       await this.openLink()
@@ -230,8 +237,9 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
 
   private async revoke(target: ChatTarget): Promise<string> {
     const view = this.sessions.get(target.session)
-    const chatInfo = view === undefined ? undefined : await agentChat(view, target.chat)
-    if (view === undefined || chatInfo === undefined || approvalOf(customDataOf(chatInfo)) === undefined) return `Messages to ${targetText(target)} have no standing approval.`
+    if (view === undefined) return noSession(target.session)
+    const chatInfo = await agentChat(view, target.chat)
+    if (chatInfo === undefined || approvalOf(customDataOf(chatInfo)) === undefined) return `Messages to ${targetText(target)} have no standing approval.`
     const {simplexMcp, ...customData} = customDataOf(chatInfo) as {simplexMcp: unknown}
     await setCustomData(view.chat, target.chat, customData)
     return `Messages to ${chatName(chatSubject(chatInfo))} (${targetText(target)}) need approval again.`

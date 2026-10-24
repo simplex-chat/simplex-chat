@@ -237,7 +237,7 @@ describe("approval of all messages to a chat", () => {
     const {contact: directory} = chatInfoOf(chat, "@4") as T.ChatInfo.Direct
     directory.customData = {other: 1}
     await control.ownerCommand(alice, {keyword: "approve", params: "1:@4 all"})
-    expect(await control.ownerCommand(alice, {keyword: "revoke", params: "2:@4"})).toBe("Messages to 2:@4 have no standing approval.")
+    expect(await control.ownerCommand(alice, {keyword: "revoke", params: "2:@4"})).toBe("No open session 2. /list shows the open sessions.")
     expect(await control.ownerCommand(alice, {keyword: "revoke", params: "1:@4"})).toBe("Messages to bot SimpleX Directory (1:@4) need approval again.")
     expect(customDataOf(chat, "@4")).toEqual({other: 1})
     expect(control.standingApprover(chatInfoOf(chat, "@4"))).toBeUndefined()
@@ -620,6 +620,20 @@ describe("sessions in the Main group", () => {
     await control.onEvent({type: "joinedGroupMember", user, groupInfo: group(10, "SimpleX MCP"), member: carol} as unknown as ChatEvent)
     expect(chat.roles).toEqual([{groupId: 10, members: [9], role: T.GroupMemberRole.Owner}])
     expect(control.link).toBeUndefined()
+  })
+
+  it("makes only the first of two people who join in a row the owner", async () => {
+    const chat = agentChats()
+    chat.members.set(10, [self])
+    const {control} = await controlWith(chat, actionsWith("requests", fakeHooks()))
+    await control.start()
+    const carol = member(9, "Carol", T.GroupMemberRole.Member)
+    const dave = member(11, "Dave", T.GroupMemberRole.Member)
+    chat.members.set(10, [self, carol, dave])
+    const joined = (joiner: T.GroupMember) => control.onEvent({type: "joinedGroupMember", user, groupInfo: group(10, "SimpleX MCP"), member: joiner} as unknown as ChatEvent)
+    await Promise.all([joined(carol), joined(dave)])
+    expect(chat.roles).toEqual([{groupId: 10, members: [9], role: T.GroupMemberRole.Owner}])
+    expect(control.owners()).toEqual(["Carol"])
   })
 
   it("opens a new link when the last owner leaves", async () => {
