@@ -1,7 +1,7 @@
 import {CallToolResult} from "@modelcontextprotocol/server"
 import {CR, T} from "@simplex-chat/types"
 import {core} from "simplex-chat"
-import {Actions} from "../../src/actions"
+import {Actions, ConnectAction} from "../../src/actions"
 import {cardText} from "../../src/control"
 import {Changes, ChatItemsWatch, Collected, awaitResponses, nextChange, toMessage} from "../../src/messages"
 import {AgentTools, classifyPlan} from "../../src/tools"
@@ -697,6 +697,50 @@ describe("connect", () => {
     expect(action).toMatchObject({state: "done", chat: "@12", connected: true})
     tools.onContactConnected({type: "contactConnected", user, contact: {...contact(13, "Other"), activeConn: {connId: 300, connStatus: {type: "ready"}}} as unknown as T.Contact})
     expect(action.chat).toBe("@12")
+  })
+
+  it("completes on a connection event only the connect of the session whose core sent it, when contact IDs are equal", async () => {
+    jest.useFakeTimers()
+    const linkData = {profile: {displayName: "Ridgeline", fullName: ""}, business: false}
+    const started = {...contact(8, "Ridgeline"), activeConn: {connId: 208, connStatus: {type: "joined"}}} as unknown as T.Contact
+    const connected = {...contact(8, "Ridgeline"), activeConn: {connId: 208, connStatus: {type: "ready"}}} as unknown as T.Contact
+    const sessionChat = (): FakeChat => {
+      const chat = new FakeChat()
+      chat.chats.set("@8", {chatInfo: direct(started), items: []})
+      chat.responses.set(`/_connect plan 1 ${link}`, plan({type: "contactAddress", contactAddressPlan: {type: "ok", contactSLinkData_: linkData}}))
+      chat.responses.set(`/_prepare contact 1 ${link} ${JSON.stringify(linkData)}`, {type: "newPreparedChat", chat: {chatInfo: direct(started), chatItems: []}})
+      chat.responses.set(`/_connect contact @8 incognito=off json {"type":"text","text":"hello"}`, {type: "startedConnectionToContact", contact: started})
+      return chat
+    }
+    const fake = fakeHooks()
+    const actions = actionsWith("requests", fake)
+    const first = agentTools(sessionChat(), actions, undefined, 1)
+    const chat2 = sessionChat()
+    const second = agentTools(chat2, actions, undefined, 2)
+    fake.hooks.perform = (action, signal) => (action.session === 1 ? first : second).tools.perform(action, signal)
+    const calls = [signal(), signal()]
+    const input = {target: link, message: "hello"}
+    const connecting = [first.tools.call("connect", input, calls[0].call), second.tools.call("connect", input, calls[1].call)]
+    await jest.advanceTimersByTimeAsync(0)
+    const [action1, action2] = [actions.get(1) as ConnectAction, actions.get(2) as ConnectAction]
+    expect([action1.session, action2.session]).toEqual([1, 2])
+    actions.approve(action1, "Alice")
+    actions.approve(action2, "Alice")
+    await jest.advanceTimersByTimeAsync(0)
+    expect([action1, action2]).toMatchObject([{state: "performing", conn: {contact: 8}}, {state: "performing", conn: {contact: 8}}])
+    chat2.chats.set("@8", {chatInfo: direct(connected), items: []})
+    second.tools.onContactConnected({type: "contactConnected", user, contact: connected})
+    second.watch.deliver([chat2.addItem("@8", item(41, "Session 2 only."))])
+    await jest.advanceTimersByTimeAsync(0)
+    expect(action2).toMatchObject({connected: true, chat: "@8"})
+    expect(action2.messages.items.map(({chatItem}) => chatItem.meta.itemId)).toEqual([41])
+    expect(action1).toMatchObject({state: "performing", chat: "@8"})
+    expect(action1.connected).toBeUndefined()
+    expect(action1.stopCollecting).toBeUndefined()
+    expect(action1.messages.items).toEqual([])
+    for (const {controller} of calls) controller.abort()
+    expect(await Promise.all(connecting)).toEqual([undefined, undefined])
+    await actions.stop()
   })
 
   it("returns at the end of wait, counted from the approval, when no reply to message arrives", async () => {

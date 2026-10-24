@@ -556,7 +556,7 @@ export class AgentTools {
   }
 
   private completeConnect(matches: (conn: ConnRef) => boolean, chat: string): void {
-    for (const action of this.agent.actions.all()) {
+    for (const action of this.agent.actions.ofSession(this.agent.session)) {
       if (action.tool !== "connect" || action.connected || action.conn === undefined || !matches(action.conn)) continue
       if (action.state === "performing" || action.state === "done") this.markConnected(action, chat)
     }
