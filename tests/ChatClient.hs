@@ -25,13 +25,15 @@ import Control.Monad.Reader
 import Data.Functor (($>))
 import Data.List (dropWhileEnd, find)
 import qualified Data.List.NonEmpty as L
+import qualified Data.Map.Strict as Map
 import Data.Maybe (isNothing)
+import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (getCurrentTime)
 import Network.Socket
 import Simplex.Chat
-import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), ChatController (..), ChatDatabase (..), ChatLogLevel (..), ChatResponse (..), WebPreviewConfig (..), defaultSimpleNetCfg)
+import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), ChatController (..), ChatDatabase (..), ChatError, ChatEvent (..), ChatHooks (..), ChatLogLevel (..), ChatResponse (..), WebPreviewConfig (..), defaultChatHooks, defaultSimpleNetCfg)
 import Simplex.Chat.Core
 import Simplex.Chat.Library.Commands
 import Simplex.Chat.Operators
@@ -50,8 +52,9 @@ import Simplex.FileTransfer.Server.Store
 import Simplex.FileTransfer.Transport (alpnSupportedXFTPhandshakes, supportedFileServerVRange)
 import Simplex.Messaging.Agent (disposeAgentClient)
 import Simplex.Messaging.Agent.Env.SQLite
-import Simplex.Messaging.Agent.Protocol (supportedSMPAgentVRange)
+import Simplex.Messaging.Agent.Protocol (UserId, supportedSMPAgentVRange)
 import Simplex.Messaging.Agent.RetryInterval
+import Simplex.Messaging.Agent.Store.Common (DBStore (..))
 import Simplex.Messaging.Agent.Store.Entity (SDBStored (..))
 import Simplex.Messaging.Agent.Store.Interface (closeDBStore)
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfig (..), MigrationConfirmation (..), MigrationError)
@@ -69,6 +72,8 @@ import Simplex.Messaging.Version
 import Simplex.Messaging.Version.Internal
 import System.Directory (createDirectoryIfMissing, listDirectory, removePathForcibly)
 import System.FilePath ((</>))
+import System.IO (hPutStrLn, stderr)
+import System.IO.Unsafe (unsafePerformIO)
 import qualified System.Terminal as C
 import System.Terminal.Internal (Command (..), Terminal (..), VirtualTerminal (..), VirtualTerminalSettings (..), withVirtualTerminal)
 import System.Timeout (timeout)
@@ -308,8 +313,42 @@ testCfg =
       testView = True,
       tbqSize = 16,
       channelSubscriberRole = GRObserver,
-      confirmMigrations = MCYesUp
+      confirmMigrations = MCYesUp,
+      chatHooks = defaultChatHooks {eventHook = Just logConnectedTwice}
     }
+
+logConnectedTwice :: ChatController -> Either ChatError ChatEvent -> IO (Either ChatError ChatEvent)
+logConnectedTwice cc ev = do
+  case ev of
+    Right (CEvtContactConnected User {userId} Contact {contactId, localDisplayName, activeConn = Just Connection {connId, agentConnId}} _) -> do
+      let client = chatDBKey cc
+          key = (client, userId, contactId)
+          entry = client <> " user=" <> show userId <> " contact=" <> show contactId <> " " <> T.unpack localDisplayName <> " conn=" <> show connId <> " agentConn=" <> show agentConnId
+      (sameConn, earlier) <- atomically $ do
+        conns <- readTVar connectedConns
+        contacts <- readTVar connectedContacts
+        writeTVar connectedConns $ S.insert agentConnId conns
+        writeTVar connectedContacts $ Map.insertWith (<>) key [entry] contacts
+        pure (S.member agentConnId conns, Map.lookup key contacts)
+      when sameConn $ hPutStrLn stderr $ "CONNECTED-TWICE same connection: " <> entry
+      forM_ earlier $ \es -> hPutStrLn stderr $ "CONNECTED-TWICE same contact: " <> entry <> " earlier: " <> show es
+    _ -> pure ()
+  pure ev
+
+chatDBKey :: ChatController -> String
+#if defined(dbPostgres)
+chatDBKey ChatController {chatStore = DBStore {dbSchema}} = B.unpack dbSchema
+#else
+chatDBKey ChatController {chatStore = DBStore {dbFilePath}} = dbFilePath
+#endif
+
+connectedConns :: TVar (S.Set AgentConnId)
+connectedConns = unsafePerformIO $ newTVarIO S.empty
+{-# NOINLINE connectedConns #-}
+
+connectedContacts :: TVar (Map.Map (String, UserId, ContactId) [String])
+connectedContacts = unsafePerformIO $ newTVarIO Map.empty
+{-# NOINLINE connectedContacts #-}
 
 testAgentCfgVPrev :: AgentConfig
 testAgentCfgVPrev =
