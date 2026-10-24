@@ -1,7 +1,7 @@
 # Agent file deletion after XFTP uploads
 
-On iOS, with simplexmq PR #2, the agent completes suspension only after the agent file of each upload started in foreground is deleted by the chat or TTL cleanup, or at the suspend timeout; files with rows absent or flagged deleted or failed at the start of the suspension are not awaited; on master, the chat skipped this deletion on several paths of `SFDONE` and `SFERR`, handling errors among them.
-The deletions in the branches of `processAgentMsgSndFile` are replaced by one deletion after the handling of each `SFDONE` or `SFERR` with a file ID, also when an error is thrown; on `SFDONE` of an undeleted sent item with a shared message ID, the file descriptions are queued before it in the direct and group branches.
+On iOS, with simplexmq PR #2, the agent completes suspension only after the agent file of each upload started in foreground is deleted by the chat or TTL cleanup, or when the chat is stopped, or at the suspend timeout. Files with rows absent or flagged deleted or failed at the start of the suspension are not awaited. On master, the chat skipped this deletion on several paths of `SFDONE` and `SFERR`, handling errors among them.
+The deletions in the branches of `processAgentMsgSndFile` are replaced by one deletion after the handling of each `SFDONE` or `SFERR` with a file ID, also when an error is thrown. On `SFDONE` of an undeleted sent item with a shared message ID, the file descriptions are queued before it in the direct and group branches.
 The app yields to the share extension: the share extension signals the other processes and waits for them before it starts or activates its chat; the app subscribes to this signal at launch, suspends at once on it, and activates its chat in foreground after the share extension ends.
 
 Agent side: https://github.com/evgeny-simplex/simplexmq/pull/2
@@ -47,7 +47,7 @@ Agent side: https://github.com/evgeny-simplex/simplexmq/pull/2
     - `SFERR`: the status update (:360-362);
   - other chat type or direction, or a direct sent item without transfers (:322; `sft : _` is required by the direct branch at :274);
   - item deleted or without a shared message ID (:323).
-- iOS spec, one sentence in each of two files: "While the chat is suspending, the agent continues the XFTP uploads started in foreground by this app process, and the core sends `chatSuspended` after the agent ends these uploads, or at the suspend timeout; uploads resumed from an earlier process are not awaited."
+- iOS spec, the same text in each of two files: "While the chat is suspending, the agent continues the XFTP uploads started in foreground by this app process. The chat deletes the agent file of each upload after handling its completion or error, queueing the file descriptions of a completed upload first. The core sends `chatSuspended` after these deletions and the delivery of the queued messages, or at the suspend timeout. Uploads started while suspending or resumed from an earlier process are not awaited."
 - Share extension states:
 
   ```
@@ -80,7 +80,7 @@ Agent side: https://github.com/evgeny-simplex/simplexmq/pull/2
   ```
 
 - The NSE's share extension subscriber: unchanged.
-- `cabal.project`: simplexmq pinned to commit `1d74618a` of simplexmq PR #2 during review.
+- `cabal.project`: simplexmq pinned to commit `5cbc42c2` of simplexmq PR #2 during review.
 - After the simplexmq pull request in simplex-chat/simplexmq is merged and before the final pull request is opened in simplex-chat/simplex-chat:
   - the pin is replaced by the merged simplex-chat/simplexmq commit;
   - `scripts/nix/sha256map.nix` is updated.
@@ -98,8 +98,8 @@ Agent side: https://github.com/evgeny-simplex/simplexmq/pull/2
     - :291, direct;
     - :311, group;
     - :363, `sendFileError`.
-- `apps/ios/spec/architecture.md` (:131), "Background Task Protection": the sentence.
-- `apps/ios/spec/services/files.md` (:274), "Sending": the sentence.
+- `apps/ios/spec/architecture.md` (:131), "Background Task Protection": the text.
+- `apps/ios/spec/services/files.md` (:274), "Sending": the text.
 - `apps/ios/SimpleX SE/ShareModel.swift`, `setup(with:)` (:97-98): `SEChatState.shared.set(.sendingMessage)`, then `await waitForOtherProcessesToSuspend()`, before `initChat`.
 - `apps/ios/Shared/AppDelegate.swift`, `application(_:didFinishLaunchingWithOptions:)` (:22): `_ = seSubscriber`.
 - `apps/ios/Shared/Model/SuspendChat.swift`:
@@ -110,7 +110,7 @@ Agent side: https://github.com/evgeny-simplex/simplexmq/pull/2
   - new: `_suspendChatInstantly` (:88-93), the three steps of `terminateChat` in `.suspending`, with the comment of `apiSuspendChat`.
 - `cabal.project` (:23-24):
   - `location: https://github.com/evgeny-simplex/simplexmq.git`;
-  - `tag: 1d74618ab8c60ea949e23942e4c577cb099d8c51`.
+  - `tag: 5cbc42c286ffd4461d496d7a7efc956078da06d4`.
 
 ## Tests
 
@@ -128,11 +128,13 @@ Agent side: https://github.com/evgeny-simplex/simplexmq/pull/2
   - server started: alice "bob: not ready";
   - `checkNoAgentSndFiles alice` (:1071).
   - On master, a test failure is expected: the deletion at master :291 is skipped after the error at :275, and the agent row is kept.
-- "delete agent file when item is marked deleted during upload" (:1073), a regression check of cancellation by marking; a pass is expected on master as well:
-  - XFTP server down at the send;
+- "delete agent file when item is marked deleted during upload" (:1073):
+  - XFTP server down;
   - alice marks the item deleted for everyone;
-  - the agent row is marked `deleted = 1` by the cancellation (`src/Simplex/Chat/Library/Internal.hs:648, 510, 3211`) before the server is started;
-  - server started: `checkNoAgentSndFiles alice`.
+  - the agent row is marked `deleted = 1` by the cancellation (`src/Simplex/Chat/Library/Internal.hs:648, 510, 3211`);
+  - the agent's prepare worker finds the row marked deleted and sends `SFERR` (simplexmq `src/Simplex/FileTransfer/Agent.hs:509-510, 515-520`); the agent file is deleted after its handling;
+  - the count of all agent `snd_files` rows eventually equals 0 (:1086).
+  - On master, a test failure is expected when the check starts within 10 s of the agent start: the deletions are skipped for cancelled files, the marked row is deleted only by the agent cleanup 30 s after the agent starts, and the check polls for 20 s.
 
 Device tests, run by the user:
 - During a 20 MB upload, the app leaves the foreground; within 15 s, a link is shared through the share sheet:
