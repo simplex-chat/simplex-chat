@@ -1,5 +1,9 @@
+import {join} from "path"
 import {T} from "@simplex-chat/types"
 import {api, bot} from "simplex-chat"
+import {DaemonClient} from "../../src/client"
+import {createDataFolder, hubFolder, sessionFolder} from "../../src/files"
+import {CallLine} from "../../src/protocol"
 
 export const timeout = 60_000
 
@@ -19,6 +23,23 @@ export async function profileWithServer(smpAddress: string, filePrefix: string, 
   await chat.startChat()
   expect(await chat.sendChatCmd(`/smp ${smpAddress}`)).toMatchObject({type: "cmdOk"})
   await chat.close()
+}
+
+export async function prepareRoot(smpAddress: string, root: string, sessions: {id: string; name: string}[]): Promise<void> {
+  const folders = [{folder: hubFolder(root), displayName: "SimpleX MCP"}, ...sessions.map(({id, name}) => ({folder: sessionFolder(root, id), displayName: `SimpleX MCP - ${name}`}))]
+  for (const {folder, displayName} of folders) {
+    createDataFolder(folder)
+    await profileWithServer(smpAddress, join(folder, "simplex"), {displayName, fullName: "", peerType: T.ChatPeerType.Agent})
+  }
+}
+
+export async function callTool(client: DaemonClient, id: string, tool: string, input: object): Promise<{isError?: boolean; text: string; result: any}> {
+  let result: any
+  await client.stream("/call", {id, tool, input}, line => {
+    const parsed = line as CallLine
+    if ("result" in parsed) result = parsed.result
+  })
+  return {isError: result?.isError, text: result?.content[0].text, result: result?.structuredContent}
 }
 
 export async function person(smpAddress: string, filePrefix: string, displayName: string): Promise<{chat: api.ChatApi; user: T.User}> {
@@ -52,10 +73,6 @@ export async function startBot(smpAddress: string, filePrefix: string, displayNa
     },
   })
   return {chat, user, link: address!.connLinkContact.connShortLink ?? address!.connLinkContact.connFullLink}
-}
-
-export function lastLink(lines: string[]): string {
-  return lines.filter(line => /^(https:\/\/|simplex:)/.test(line)).at(-1)!
 }
 
 export async function joinByLink({chat, user}: {chat: api.ChatApi; user: T.User}, link: string): Promise<number> {
@@ -94,17 +111,9 @@ export function updated(chat: api.ChatApi, check: ItemCheck): Promise<T.AChatIte
 export const textStarts = (prefix: string): ItemCheck => ci => ci.chatItem.meta.itemText.startsWith(prefix)
 
 export function cardNumber(ci: T.AChatItem): number {
-  return Number(/\/'approve (?:[#@]\d+ )?(\d+)'/.exec(ci.chatItem.meta.itemText)![1])
+  return Number(/\/'approve (?:\d+:[#@]\d+ )?(\d+)'/.exec(ci.chatItem.meta.itemText)![1])
 }
 
 export function lines(ci: T.AChatItem): string[] {
   return ci.chatItem.meta.itemText.split("\n")
-}
-
-export function isActive({memberStatus}: T.GroupMember): boolean {
-  return memberStatus === T.GroupMemberStatus.Connected || memberStatus === T.GroupMemberStatus.Complete
-}
-
-export async function controlGroupOf(chat: api.ChatApi, userId: number): Promise<T.GroupInfo> {
-  return (await chat.apiListGroups(userId)).find(({customData}) => (customData as {simplexMcp?: {control?: boolean}} | undefined)?.simplexMcp?.control === true)!
 }
