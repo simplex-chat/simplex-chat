@@ -274,7 +274,7 @@ Python, `packages/simplex-chat-python/src/simplex_chat/`:
 
 Build:
 - `cabal.project`, `source-repository-package`:
-  - hs-jpeg-turbo (`:76-80`): evgeny-simplex/hs-jpeg-turbo at `9e29d97a`, subdirectories `JuicyPixels-jpeg-turbo` and `jpeg-turbo`
+  - hs-jpeg-turbo (`:76-80`): evgeny-simplex/hs-jpeg-turbo at `6719b5e4`, subdirectories `JuicyPixels-jpeg-turbo` and `jpeg-turbo`
   - JuicyPixels-stbir (`:82-85`): evgeny-simplex/JuicyPixels-stbir at `6cf27aad`
 - `scripts/nix/sha256map.nix:12-13`: the hashes of both forks, computed with submodules.
 - `dist-newstyle/src/hs-jpeg-t*` and `dist-newstyle/src/JuicyPixe*` in the Windows removals:
@@ -296,9 +296,9 @@ License notices, `docs/dependencies/`:
 - `HASKELL.md`:
   - direct dependencies (`:25-27`):
     - `JuicyPixels` 3.3.8, Hackage
-    - `JuicyPixels-jpeg-turbo` 0.1.0.0, hs-jpeg-turbo fork at `9e29d97a`
+    - `JuicyPixels-jpeg-turbo` 0.1.0.0, hs-jpeg-turbo fork at `6719b5e4`
     - `JuicyPixels-stbir` 0.1.0.0, JuicyPixels-stbir fork at `6cf27aad`
-  - indirect dependency (`:143`): `jpeg-turbo` 0.1.0.0, hs-jpeg-turbo fork at `9e29d97a`
+  - indirect dependency (`:143`): `jpeg-turbo` 0.1.0.0, hs-jpeg-turbo fork at `6719b5e4`, `BSD-3-Clause AND IJG AND Zlib`
   - the four added to the dependents of:
     - `bytestring` (`:11`)
     - `containers` (`:14`)
