@@ -214,7 +214,7 @@ const leaveSchema: Schema = {
   additionalProperties: false,
 }
 
-const actionField = {type: "integer", description: "Action number; the owner sees it on the card in the agent control chat, list shows it until a call returns its result."}
+const actionField = {type: "integer", description: "Action number; the owner sees it on the card in the Main group, list shows it until a call returns its result."}
 const errorField = {type: "string", description: "What failed, when status is failed."}
 
 const connectOutput: Schema = {
