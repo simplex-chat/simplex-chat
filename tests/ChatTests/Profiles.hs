@@ -117,6 +117,7 @@ chatProfileTests = do
     describe "business address" $ do
       it "create and connect via business address" testBusinessAddress
       it "update profiles with business address" testBusinessUpdateProfiles
+      it "customer removed or chat deleted with notice can't re-connect" testBusinessAddressNotice
   describe "contact address connection plan" $ do
     it "contact address ok to connect; known contact" testPlanAddressOkKnown
     it "own contact address" testPlanAddressOwn
@@ -124,6 +125,9 @@ chatProfileTests = do
     it "re-connect with deleted contact" testPlanAddressContactDeletedReconnected
     it "contact via address" testPlanAddressContactViaAddress
     it "contact via short address" testPlanAddressContactViaShortAddress
+    it "contact deleted silently with notice can't re-connect" testPlanAddressContactDeletedNoticeSilent
+    it "silent notice is not sent to previous version" $
+      runTestCfg2 testCfg testCfgVPrev testPlanAddressContactDeletedNoticePrevVersion
   describe "incognito" $ do
     it "connect incognito via invitation link" testConnectIncognitoInvitationLink
     it "connect incognito via contact address" testConnectIncognitoContactAddress
@@ -2146,6 +2150,64 @@ testBusinessUpdateProfiles = testChat4 businessProfile aliceProfile bobProfile c
     bob #$> ("/_get chat #1 count=1", chat, [(0, "Full deletion: on")])
     cath #$> ("/_get chat #1 count=1", chat, [(0, "Full deletion: on")])
 
+testBusinessAddressNotice :: HasCallStack => TestParams -> IO ()
+testBusinessAddressNotice = testChat3 businessProfile bobProfile cathProfile $
+  \biz bob cath -> do
+    biz ##> "/ad"
+    cLink <- getContactLink biz True
+    biz ##> "/auto_accept on business"
+    biz <## "auto_accept on, business"
+
+    connectBusinessCustomer biz bob cLink "bob" "Bob"
+    biz ##> "/rm #bob bob_1 notice={\"ttl\":86400}"
+    biz <## "#bob: you removed bob_1 from the group (signed)"
+    waitLinkNoticesCount bob 1
+    bob <// 50000
+    bob ##> ("/_connect plan 1 " <> cLink)
+    bob <## "business address: known business #biz"
+    bob <## "use #biz <message> to send messages"
+    leaveDeleteBiz bob
+    bob ##> ("/_connect plan 1 " <> cLink)
+    bannedLine bob "contact address: "
+    bob ##> ("/_connect 1 " <> cLink)
+    bannedLine bob "connection link: "
+
+    connectBusinessCustomer biz cath cLink "cath" "Catherine"
+    biz ##> "/_delete #2 full notice={}"
+    biz <## "#cath: you deleted the group (signed)"
+    waitLinkNoticesCount cath 1
+    cath <// 50000
+    cath ##> ("/_connect plan 1 " <> cLink)
+    cath <## "business address: known business #biz"
+    cath <## "use #biz <message> to send messages"
+    leaveDeleteBiz cath
+    cath ##> ("/_connect plan 1 " <> cLink)
+    cath <## "contact address: banned permanently"
+    cath ##> ("/c " <> cLink)
+    cath <## "contact address: banned permanently"
+    cath ##> ("/_connect 1 " <> cLink)
+    cath <## "connection link: banned permanently"
+  where
+    leaveDeleteBiz cc = do
+      cc ##> "/l #biz"
+      cc <## "#biz: you left the group"
+      cc <## "use /d #biz to delete the group"
+      cc ##> "/d #biz"
+      cc <## "#biz: you deleted your local copy of the group"
+
+connectBusinessCustomer :: HasCallStack => TestCC -> TestCC -> String -> String -> String -> IO ()
+connectBusinessCustomer biz customer cLink name fullName = do
+  customer ##> ("/c " <> cLink)
+  customer <## "connection request sent!"
+  biz <## ("#" <> name <> " (" <> fullName <> "): accepting business address request...")
+  concurrentlyN_
+    [ biz <## ("#" <> name <> ": " <> name <> "_1 joined the group"),
+      customer
+        <### [ "#biz: joining the group...",
+               "#biz: you joined the group"
+             ]
+    ]
+
 testPlanAddressOkKnown :: HasCallStack => TestParams -> IO ()
 testPlanAddressOkKnown =
   testChat2 aliceProfile bobProfile $
@@ -2339,6 +2401,59 @@ testPlanAddressContactDeletedReconnected =
       bob ##> ("/c " <> cLink)
       bob <## "contact address: known contact alice_1"
       bob <## "use @alice_1 <message> to send messages"
+
+testPlanAddressContactDeletedNoticeSilent :: HasCallStack => TestParams -> IO ()
+testPlanAddressContactDeletedNoticeSilent =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      cLink <- connectViaAddress alice bob
+
+      alice ##> "/_delete @2 full notice={\"ttl\":86400}"
+      alice <## "bob: contact is deleted"
+      waitLinkNoticesCount bob 1
+      bob <// 50000
+
+      bob ##> ("/_connect plan 1 " <> cLink)
+      bob <## "contact address: known contact alice"
+      bob <## "use @alice <message> to send messages"
+      bob @@@ [("@alice", "hey")]
+
+      bob ##> "/d alice"
+      bob <## "alice: contact is deleted"
+      bob ##> ("/_connect plan 1 " <> cLink)
+      bannedLine bob "contact address: "
+      bob ##> ("/_connect plan 1 " <> linkAnotherSchema cLink)
+      bannedLine bob "contact address: "
+      bob ##> ("/c " <> cLink)
+      bannedLine bob "contact address: "
+      bob ##> ("/_connect 1 " <> cLink)
+      bannedLine bob "connection link: "
+
+testPlanAddressContactDeletedNoticePrevVersion :: HasCallStack => TestCC -> TestCC -> IO ()
+testPlanAddressContactDeletedNoticePrevVersion alice bob = do
+  cLink <- connectViaAddress alice bob
+
+  alice ##> "/_delete @2 full notify=off notice={\"ttl\":86400}"
+  alice <## "bad chat command: contact does not support notice"
+
+  bob ##> ("/_connect plan 1 " <> cLink)
+  bob <## "contact address: known contact alice"
+  bob <## "use @alice <message> to send messages"
+  linkNoticesCount bob `shouldReturn` 0
+
+connectViaAddress :: HasCallStack => TestCC -> TestCC -> IO String
+connectViaAddress alice bob = do
+  alice ##> "/ad"
+  cLink <- getContactLink alice True
+  bob ##> ("/c " <> cLink)
+  alice <#? bob
+  alice ##> "/ac bob"
+  alice <## "bob (Bob): accepting contact request, you can send messages to contact"
+  concurrently_
+    (bob <## "alice (Alice): contact is connected")
+    (alice <## "bob (Bob): contact is connected")
+  alice <##> bob
+  pure cLink
 
 testPlanAddressContactViaAddress :: HasCallStack => TestParams -> IO ()
 testPlanAddressContactViaAddress =

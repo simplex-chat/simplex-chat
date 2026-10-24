@@ -265,7 +265,7 @@ enum ChatCommand: ChatCmdProtocol {
                 let msgs = encodeJSON(composedMessages)
                 return "/_create *\(noteFolderId) json \(msgs)"
             case let .apiReportMessage(groupId, chatItemId, reportReason, reportText):
-                return "/_report #\(groupId) \(chatItemId) reason=\(reportReason) \(reportText)"
+                return "/_report #\(groupId) \(chatItemId) reason=\(reportReason.rawValue) \(reportText)"
             case let .apiUpdateChatItem(type, id, scope, itemId, um, live): return "/_update item \(ref(type, id, scope: scope)) \(itemId) live=\(onOff(live)) \(um.cmdString)"
             case let .apiDeleteChatItem(type, id, scope, itemIds, mode): return "/_delete item \(ref(type, id, scope: scope)) \(itemIds.map({ "\($0)" }).joined(separator: ",")) \(mode.rawValue)"
             case let .apiDeleteMemberChatItem(groupId, itemIds): return "/_delete member item #\(groupId) \(itemIds.map({ "\($0)" }).joined(separator: ","))"

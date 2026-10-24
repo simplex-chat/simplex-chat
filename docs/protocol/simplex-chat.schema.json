@@ -311,6 +311,24 @@
     "memberRestrictions": {
       "properties": {
         "restriction": {"ref": "memberRestrictionStatus"}
+      },
+      "optionalProperties": {
+        "expiresAt": {
+          "type": "string",
+          "metadata": {
+            "format": "ISO8601 UTC time when the block ends"
+          }
+        }
+      }
+    },
+    "linkNotice": {
+      "optionalProperties": {
+        "ttl": {
+          "type": "integer",
+          "metadata": {
+            "format": "seconds from the server timestamp of the message"
+          }
+        }
       }
     },
     "memberRestrictionStatus": {
@@ -551,7 +569,11 @@
       "properties": {
         "msgId": {"ref": "base64url"},
         "params": {
-          "properties": {}
+          "properties": {},
+          "optionalProperties": {
+            "silent": {"type": "boolean"},
+            "notice": {"ref": "linkNotice"}
+          }
         }
       }
     },
@@ -692,6 +714,10 @@
         "params": {
           "properties": {
             "memberId": {"ref": "base64url"}
+          },
+          "optionalProperties": {
+            "silent": {"type": "boolean"},
+            "notice": {"ref": "linkNotice"}
           }
         }
       }

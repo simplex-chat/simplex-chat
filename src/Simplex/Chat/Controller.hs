@@ -436,7 +436,7 @@ data ChatCommand
   | APIChatRead {chatRef :: ChatRef}
   | APIChatItemsRead {chatRef :: ChatRef, chatItemIds :: NonEmpty ChatItemId}
   | APIChatUnread {chatRef :: ChatRef, unreadChat :: Bool}
-  | APIDeleteChat {chatRef :: ChatRef, chatDeleteMode :: ChatDeleteMode} -- currently delete mode settings are only applied to direct chats
+  | APIDeleteChat {chatRef :: ChatRef, chatDeleteMode :: ChatDeleteMode, notice :: Maybe LinkNotice}
   | APIClearChat {chatRef :: ChatRef}
   | APIAcceptContact {incognito :: IncognitoEnabled, contactReqId :: Int64}
   | APIRejectContact {contactReqId :: Int64, notify :: Bool}
@@ -474,8 +474,8 @@ data ChatCommand
   | APIAcceptMember {groupId :: GroupId, groupMemberId :: GroupMemberId, memberRole :: GroupMemberRole}
   | APIDeleteMemberSupportChat GroupId GroupMemberId
   | APIMembersRole {groupId :: GroupId, groupMemberIds :: NonEmpty GroupMemberId, memberRole :: GroupMemberRole}
-  | APIBlockMembersForAll {groupId :: GroupId, groupMemberIds :: NonEmpty GroupMemberId, blocked :: Bool}
-  | APIRemoveMembers {groupId :: GroupId, groupMemberIds :: NonEmpty GroupMemberId, withMessages :: Bool}
+  | APIBlockMembersForAll {groupId :: GroupId, groupMemberIds :: NonEmpty GroupMemberId, blocked :: Bool, ttl :: Maybe Int}
+  | APIRemoveMembers {groupId :: GroupId, groupMemberIds :: NonEmpty GroupMemberId, withMessages :: Bool, notice :: Maybe LinkNotice}
   | APILeaveGroup {groupId :: GroupId}
   | APIListMembers {groupId :: GroupId}
   | APIUpdateGroupProfile {groupId :: GroupId, groupProfile :: GroupProfile}
@@ -623,8 +623,8 @@ data ChatCommand
   | JoinGroup {groupName :: GroupName, enableNtfs :: MsgFilter}
   | AcceptMember GroupName ContactName GroupMemberRole
   | MemberRole GroupName ContactName GroupMemberRole
-  | BlockForAll GroupName ContactName Bool
-  | RemoveMembers {groupName :: GroupName, members :: NonEmpty ContactName, withMessages :: Bool}
+  | BlockForAll GroupName ContactName Bool (Maybe Int)
+  | RemoveMembers {groupName :: GroupName, members :: NonEmpty ContactName, withMessages :: Bool, notice :: Maybe LinkNotice}
   | LeaveGroup GroupName
   | AllowRelayGroup GroupName
   | DeleteGroup GroupName
@@ -1162,6 +1162,7 @@ data ChatDeleteMode
   = CDMFull {notify :: Bool} -- delete both contact and conversation
   | CDMEntity {notify :: Bool} -- delete contact (connection), keep conversation
   | CDMMessages -- delete conversation, keep contact - can be re-opened from Contacts view
+  | CDMArchive
   deriving (Show)
 
 data ConnectionPlan
@@ -1185,6 +1186,7 @@ data ContactAddressPlan
   | CAPConnectingProhibit {contact :: Contact}
   | CAPKnown {contact :: Contact}
   | CAPContactViaAddress {contact :: Contact}
+  | CAPLinkNotice {expiresAt :: Maybe UTCTime, contactSLinkData_ :: Maybe ContactShortLinkData}
   deriving (Show)
 
 data GroupLinkPlan
@@ -1195,6 +1197,7 @@ data GroupLinkPlan
   | GLPKnown {groupInfo :: GroupInfo, groupUpdated :: Bool, ownerVerification :: Maybe OwnerVerification, linkOwners :: ListDef GroupLinkOwner}
   | GLPNoRelays {groupSLinkData_ :: Maybe GroupShortLinkData}
   | GLPUpdateRequired {groupSLinkData_ :: Maybe GroupShortLinkData}
+  | GLPLinkNotice {expiresAt :: Maybe UTCTime}
   deriving (Show)
 
 data GroupLinkOwner = GroupLinkOwner
@@ -1532,6 +1535,7 @@ data ChatErrorType
   | CEUnsupportedConnReq
   | CEInvalidChatMessage {connection :: Connection, msgMeta :: Maybe MsgMetaJSON, messageData :: Text, message :: String}
   | CEConnReqMessageProhibited
+  | CELinkNotice {expiresAt :: Maybe UTCTime}
   | CEContactNotFound {contactName :: ContactName, suspectedMember :: Maybe (GroupInfo, GroupMember)}
   | CEContactNotReady {contact :: Contact}
   | CEContactNotActive {contact :: Contact}

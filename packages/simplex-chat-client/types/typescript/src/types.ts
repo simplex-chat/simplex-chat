@@ -1218,10 +1218,14 @@ export namespace ChatBotCommand {
   }
 }
 
-export type ChatDeleteMode = ChatDeleteMode.Full | ChatDeleteMode.Entity | ChatDeleteMode.Messages
+export type ChatDeleteMode = 
+  | ChatDeleteMode.Full
+  | ChatDeleteMode.Entity
+  | ChatDeleteMode.Messages
+  | ChatDeleteMode.Archive
 
 export namespace ChatDeleteMode {
-  export type Tag = "full" | "entity" | "messages"
+  export type Tag = "full" | "entity" | "messages" | "archive"
 
   interface Interface {
     type: Tag
@@ -1241,8 +1245,12 @@ export namespace ChatDeleteMode {
     type: "messages"
   }
 
+  export interface Archive extends Interface {
+    type: "archive"
+  }
+
   export function cmdString(self: ChatDeleteMode): string {
-    return self.type + (self.type == 'messages' ? '' : (!self.notify ? ' notify=off' : ''))
+    return self.type + (self.type == 'messages' ? '' : self.type == 'archive' ? '' : (!self.notify ? ' notify=off' : ''))
   }
 }
 
@@ -1298,6 +1306,7 @@ export type ChatErrorType =
   | ChatErrorType.NotResolvedLocally
   | ChatErrorType.UnsupportedConnReq
   | ChatErrorType.ConnReqMessageProhibited
+  | ChatErrorType.LinkNotice
   | ChatErrorType.ContactNotReady
   | ChatErrorType.ContactNotActive
   | ChatErrorType.ContactDisabled
@@ -1378,6 +1387,7 @@ export namespace ChatErrorType {
     | "notResolvedLocally"
     | "unsupportedConnReq"
     | "connReqMessageProhibited"
+    | "linkNotice"
     | "contactNotReady"
     | "contactNotActive"
     | "contactDisabled"
@@ -1547,6 +1557,11 @@ export namespace ChatErrorType {
 
   export interface ConnReqMessageProhibited extends Interface {
     type: "connReqMessageProhibited"
+  }
+
+  export interface LinkNotice extends Interface {
+    type: "linkNotice"
+    expiresAt?: string // ISO-8601 timestamp
   }
 
   export interface ContactNotReady extends Interface {
@@ -2300,6 +2315,7 @@ export type ContactAddressPlan =
   | ContactAddressPlan.ConnectingProhibit
   | ContactAddressPlan.Known
   | ContactAddressPlan.ContactViaAddress
+  | ContactAddressPlan.LinkNotice
 
 export namespace ContactAddressPlan {
   export type Tag = 
@@ -2309,6 +2325,7 @@ export namespace ContactAddressPlan {
     | "connectingProhibit"
     | "known"
     | "contactViaAddress"
+    | "linkNotice"
 
   interface Interface {
     type: Tag
@@ -2341,6 +2358,12 @@ export namespace ContactAddressPlan {
   export interface ContactViaAddress extends Interface {
     type: "contactViaAddress"
     contact: Contact
+  }
+
+  export interface LinkNotice extends Interface {
+    type: "linkNotice"
+    expiresAt?: string // ISO-8601 timestamp
+    contactSLinkData_?: ContactShortLinkData
   }
 }
 
@@ -2953,6 +2976,7 @@ export type GroupLinkPlan =
   | GroupLinkPlan.Known
   | GroupLinkPlan.NoRelays
   | GroupLinkPlan.UpdateRequired
+  | GroupLinkPlan.LinkNotice
 
 export namespace GroupLinkPlan {
   export type Tag = 
@@ -2963,6 +2987,7 @@ export namespace GroupLinkPlan {
     | "known"
     | "noRelays"
     | "updateRequired"
+    | "linkNotice"
 
   interface Interface {
     type: Tag
@@ -3006,6 +3031,11 @@ export namespace GroupLinkPlan {
     type: "updateRequired"
     groupSLinkData_?: GroupShortLinkData
   }
+
+  export interface LinkNotice extends Interface {
+    type: "linkNotice"
+    expiresAt?: string // ISO-8601 timestamp
+  }
 }
 
 export interface GroupMember {
@@ -3018,6 +3048,7 @@ export interface GroupMember {
   memberStatus: GroupMemberStatus
   memberSettings: GroupMemberSettings
   blockedByAdmin: boolean
+  blockedUntil?: string // ISO-8601 timestamp
   invitedBy: InvitedBy
   invitedByGroupMemberId?: number // int64
   localDisplayName: string
@@ -3249,6 +3280,10 @@ export namespace LinkContent {
     tag: string
     json: object
   }
+}
+
+export interface LinkNotice {
+  ttl?: number // int64
 }
 
 export interface LinkOwnerSig {

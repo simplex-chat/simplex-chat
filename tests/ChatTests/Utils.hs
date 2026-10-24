@@ -682,6 +682,32 @@ createCCNoteFolder cc =
     withCCUser cc $ \user ->
       runExceptT (createNoteFolder db user) >>= either (fail . show) pure
 
+linkNoticesCount :: TestCC -> IO Int
+linkNoticesCount cc =
+  withCCTransaction cc $ \db ->
+    fromMaybe 0 <$> maybeFirstRow fromOnly (DB.query_ db "SELECT count(1) FROM link_notices")
+
+waitLinkNoticesCount :: HasCallStack => TestCC -> Int -> Expectation
+waitLinkNoticesCount cc n = go (50 :: Int)
+  where
+    go attempts = do
+      count <- linkNoticesCount cc
+      if count == n || attempts <= 0
+        then count `shouldBe` n
+        else threadDelay 100000 >> go (attempts - 1)
+
+permanentLinkNoticesCount :: TestCC -> IO Int
+permanentLinkNoticesCount cc =
+  withCCTransaction cc $ \db ->
+    fromMaybe 0 <$> maybeFirstRow fromOnly (DB.query_ db "SELECT count(1) FROM link_notices WHERE expires_at IS NULL")
+
+bannedLine :: HasCallStack => TestCC -> String -> Expectation
+bannedLine cc prefix = do
+  l <- getTermLine' (Just $ "banned: " <> prefix) cc
+  let banned = (prefix <> "banned until ") `isPrefixOf` l
+  unless banned $ print ("expected banned line: " <> prefix <> "..., got: " <> l)
+  banned `shouldBe` True
+
 shouldEventuallyReturn :: (HasCallStack, Eq a, Show a) => IO a -> a -> Expectation
 shouldEventuallyReturn action expected = go (200 :: Int)
   where

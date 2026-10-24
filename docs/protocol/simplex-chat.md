@@ -252,11 +252,11 @@ Currently members can have one of four roles - `owner`, `admin`, `member` and `o
 
 `x.grp.mem.role` message is sent to update group member role - it is sent to all members by the member who updated the role of the member referenced in this message. This message MUST only be sent by members with `admin` or `owner` role. Receiving clients MUST ignore this message if it is received from member with role less than `admin`.
 
-`x.grp.mem.restrict` message is sent to group members to communicate group member restrictions, such as member being blocked for sending messages.
+`x.grp.mem.restrict` message is sent to group members to communicate group member restrictions, such as member being blocked for sending messages. The restrictions MAY include `expiresAt` time set by the sender, when the block ends. A block also ends when the member is unblocked, and it does not apply to a member who leaves and joins again. When a block with `expiresAt` ends, the client of the member who set it sends `x.grp.mem.restrict` with `unrestricted` restriction and `expiresAt` of the ended block. Clients with chat protocol version 23 or later ignore this message, as they end the block at `expiresAt`.
 
 `x.grp.mem.con` message is sent by members connecting inside group to inviting member, to notify the inviting member they have completed the connection and no longer require forwarding messages between them.
 
-`x.grp.mem.del` message is sent to delete a member - it is sent to all members by the member who deletes the member referenced in this message. This message MUST only be sent by members with `admin` or `owner` role. Receiving clients MUST ignore this message if it is received from member with `member` role.
+`x.grp.mem.del` message is sent to delete a member - it is sent to all members by the member who deletes the member referenced in this message. This message MUST only be sent by members with `admin` or `owner` role. Receiving clients MUST ignore this message if it is received from member with `member` role. The client of the deleted member applies optional `notice` property to the group link (see [Link notices](#link-notices)).
 
 `x.grp.leave` message is sent to all members by the member leaving the group. If the only group `owner` leaves the group, it will not be possible to delete it with `x.grp.del` message - but all members can still leave the group with `x.grp.leave` message and then delete a local copy of the group.
 
@@ -267,6 +267,17 @@ Currently members can have one of four roles - `owner`, `admin`, `member` and `o
 `x.grp.direct.inv` message is sent to a group member to propose establishing a direct connection between members, thus creating a contact with another member.
 
 `x.grp.msg.forward` message is sent by inviting member to forward messages between introduced members, while they are connecting. This message MUST NOT contain another `x.grp.msg.forward` message.
+
+### Link notices
+
+`x.grp.mem.del` and `x.direct.del` messages MAY include `notice` property with optional `ttl` (seconds). The receiving client stores the notice for the link it joined or connected through, as recorded in its own group or contact record, and does not connect via this link until the notice expires. The notice expires `ttl` seconds after the server timestamp of the message; a notice without `ttl` does not expire. A new notice for the same link replaces the previous one. Clients MUST ignore a malformed notice and process the message.
+
+`x.grp.mem.del` and `x.direct.del` messages MAY include `"silent": true` property:
+- the client of the deleted contact does not delete the contact and shows nothing.
+- the client of the removed member shows nothing, keeps the group and stops sending messages to its members. A client that forwards group messages (an admin or owner in a group without relays, a relay in a channel) processes its own removal as without this property.
+- clients of other members do not show the removal.
+
+Clients use `silent` and `notice` of a forwarded `x.grp.mem.del` message only when it is forwarded by a relay with a verified signature. Clients send `notice` only with `silent`, and only to members and contacts with chat protocol version 23 or later.
 
 ### Channels: relay-mediated groups
 
