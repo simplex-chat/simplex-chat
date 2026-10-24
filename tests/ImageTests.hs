@@ -3,11 +3,12 @@
 module ImageTests where
 
 import Codec.Picture (DynamicImage (..), Image (..), PixelRGB16 (..), PixelRGBA16 (..), PixelRGBA8 (..), decodeImage, dynamicMap, generateImage)
+import Control.Monad (forM_)
 import Control.Monad.Except (runExceptT)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Base64.Lazy as LB64
 import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.Either (isLeft)
+import Data.Either (isLeft, isRight)
 import qualified Data.Text as T
 import Simplex.Chat.Image
 import Simplex.Chat.Library.Commands (fixedImagePreview, imagePreview)
@@ -31,6 +32,7 @@ imageTests = do
     it "should reduce JPEG size" testResizeJpeg
     it "should reduce PNG size" testResizePng
     it "should fail when image does not fit" testImageTooLarge
+    it "should refuse image with a side above 2^20 pixels" testImageSideLimit
   describe "image preview" $ do
     it "should generate preview of an image file" $ testFilePreview $ CryptoFile "tests/fixtures/test.jpg" Nothing
     it "should generate preview of an encrypted image file" testEncryptedFilePreview
@@ -82,6 +84,16 @@ testImageTooLarge = do
   let img = ImageRGBA8 $ generateImage (\_ _ -> PixelRGBA8 0 0 0 0) 1 1
   resizeImage IFPng 10 img >>= (`shouldSatisfy` isLeft)
   resizeImage IFJpeg 10 img >>= (`shouldSatisfy` isLeft)
+
+testImageSideLimit :: IO ()
+testImageSideLimit = do
+  let side = 2 ^ (20 :: Int)
+      blank w h = ImageRGBA8 $ generateImage (\_ _ -> PixelRGBA8 0 0 0 0) w h
+  resizeImage IFPng 100000 (blank side 1) >>= (`shouldSatisfy` isRight)
+  forM_ [blank (side + 1) 1, blank 1 (side + 1)] $ \img -> do
+    resizeImage IFPng 100000 img >>= (`shouldSatisfy` isLeft)
+    resizeImage IFJpeg 100000 img >>= (`shouldSatisfy` isLeft)
+    resizeImageDataUri 100000 img >>= (`shouldSatisfy` isLeft)
 
 testFilePreview :: CryptoFile -> IO ()
 testFilePreview f = do

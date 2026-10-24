@@ -10,7 +10,7 @@ module Simplex.Chat.Image
   )
 where
 
-import Codec.Picture (DynamicImage (..), Image (..), Pixel (..), convertRGB8, convertRGBA8)
+import Codec.Picture (DynamicImage (..), Image (..), Pixel (..), convertRGB8, convertRGBA8, dynamicMap)
 import Codec.Picture.JPEGTurbo (encodeRGB)
 import Codec.Picture.Png (encodePng)
 import qualified Codec.Picture.STBIR as STBIR
@@ -42,9 +42,11 @@ resizeImageDataUri :: Int64 -> DynamicImage -> IO (Either String LB.ByteString)
 resizeImageDataUri maxSize img = fitImage toDataUri (imageFormat img) maxSize img
 
 fitImage :: (ImageFormat -> LB.ByteString -> LB.ByteString) -> ImageFormat -> Int64 -> DynamicImage -> IO (Either String LB.ByteString)
-fitImage output format maxSize img = case format of
-  IFJpeg -> fitHalving (jpeg minJpegQuality) fitQuality Nothing $ convertRGB8 img
-  IFPng -> fitHalving png fitScale Nothing $ convertRGBA8 img
+fitImage output format maxSize img
+  | dynamicMap (hasSideAbove maxImageSide) img = tooLarge
+  | otherwise = case format of
+      IFJpeg -> fitHalving (jpeg minJpegQuality) fitQuality Nothing $ convertRGB8 img
+      IFPng -> fitHalving png fitScale Nothing $ convertRGBA8 img
   where
     out = output format
     fits = (<= maxSize) . LB.length
@@ -76,6 +78,12 @@ bisect maxSize step encode = go
 
 minJpegQuality :: Int
 minJpegQuality = 20
+
+maxImageSide :: Int
+maxImageSide = 2 ^ (20 :: Int)
+
+hasSideAbove :: Int -> Image a -> Bool
+hasSideAbove side img = imageWidth img > side || imageHeight img > side
 
 halve :: STBIR.STBIRPixel a => Image a -> Maybe (Image a)
 halve img
