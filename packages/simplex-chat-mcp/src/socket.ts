@@ -93,7 +93,8 @@ export async function streamLines(path: string, token: string, route: string, bo
 
 function send(path: string, token: string, method: string, route: string, body: unknown, signal?: AbortSignal): Promise<IncomingMessage> {
   return new Promise((resolve, reject) => {
-    const req = request({socketPath: path, method, path: route, headers: {authorization: `Bearer ${token}`, "content-type": "application/json"}, signal}, resolve)
+    // a pooled connection to a restarted daemon fails with EPIPE
+    const req = request({socketPath: path, agent: false, method, path: route, headers: {authorization: `Bearer ${token}`, "content-type": "application/json"}, signal}, resolve)
     req.on("error", reject)
     req.end(body === undefined ? undefined : JSON.stringify(body))
   })
