@@ -26,17 +26,24 @@ data class ScreenShareSource(val title: String, val id: Long, val isWindow: Bool
 // Native counterpart of call.ts processCommand: consumes WCallCommand and reports WCallResponse with the same
 // semantics, so it interoperates with call.ts (Android, older desktop) and iOS peers.
 // All state is confined to one thread; webrtc callbacks are posted onto it.
-class NativeCallEngine(private val onResponse: (WVAPIMessage) -> Unit) {
+class NativeCallEngine(audioSettings: CallAudioSettings, private val onAudioDeviceNotice: (AudioDeviceNotice) -> Unit, private val onResponse: (WVAPIMessage) -> Unit) {
   private val executor = Executors.newSingleThreadExecutor { Thread(it, "call-engine").apply { isDaemon = true } }
   private val scope = CoroutineScope(executor.asCoroutineDispatcher() + SupervisorJob())
 
   // Without any audio backend the call can still receive video, so audio falls back to the dummy layer
   private val audioModule = try {
-    AudioDeviceModule()
+    CubebAudioDeviceModule()
   } catch (e: Error) {
     Log.e(TAG, "NativeCallEngine audio devices unavailable: ${e.message}")
     AudioDeviceModule(AudioLayer.kDummyAudio)
   }
+  private val cubebModule = audioModule as? CubebAudioDeviceModule
+  private val audioDeviceChoices = cubebModule?.let { m ->
+    listOf(
+      AudioDeviceChoice(AudioDeviceKind.Mic, audioSettings.mic, m::getRecordingDevices, m::getRecordingDeviceInUse, m::setRecordingDevice, m::setDefaultRecordingDevice),
+      AudioDeviceChoice(AudioDeviceKind.Speaker, audioSettings.speaker, m::getPlayoutDevices, m::getPlayoutDeviceInUse, m::setPlayoutDevice, m::setDefaultPlayoutDevice),
+    )
+  }.orEmpty()
   private val factory = PeerConnectionFactory(audioModule)
   private val micSource = factory.createAudioSource(AudioOptions().apply {
     echoCancellation = true
@@ -79,6 +86,15 @@ class NativeCallEngine(private val onResponse: (WVAPIMessage) -> Unit) {
   var screenShareSource: ScreenShareSource? = null
   private var remoteAudioEnabled = true
 
+  init {
+    cubebModule?.run {
+      setRecordingFallbackEnabled(audioSettings.fallback)
+      setPlayoutFallbackEnabled(audioSettings.fallback)
+      setDevicesChangedListener { scope.launch { updateAudioDevices() } }
+    }
+    scope.launch { updateAudioDevices() }
+  }
+
   fun process(command: WCallCommand) {
     scope.launch {
       val resp = try {
@@ -120,6 +136,18 @@ class NativeCallEngine(private val onResponse: (WVAPIMessage) -> Unit) {
         stopCamera()
         startCamera()
         slot(CallMediaSource.Camera)?.sender?.replaceTrack(cameraTrack)
+      }
+    }
+  }
+
+  fun audioDevices(kind: AudioDeviceKind): List<AudioDevice> = audioDeviceChoices.firstOrNull { it.kind == kind }?.devices().orEmpty()
+
+  fun selectAudioDevice(kind: AudioDeviceKind, device: AudioDevice?) {
+    scope.launch {
+      try {
+        audioDeviceChoices.firstOrNull { it.kind == kind }?.choose(device)
+      } catch (e: Error) {
+        Log.e(TAG, "NativeCallEngine select $kind: ${e.message}")
       }
     }
   }
@@ -332,6 +360,16 @@ class NativeCallEngine(private val onResponse: (WVAPIMessage) -> Unit) {
     if (oldVersion) {
       onMediaMuteUnmute(CallMediaSource.Mic, mute = false)
       if (_remoteCamera.value != null) onMediaMuteUnmute(CallMediaSource.Camera, mute = false)
+    }
+  }
+
+  private fun updateAudioDevices() {
+    for (choice in audioDeviceChoices) {
+      try {
+        choice.update()?.let(onAudioDeviceNotice)
+      } catch (e: Error) {
+        Log.e(TAG, "NativeCallEngine update ${choice.kind}: ${e.message}")
+      }
     }
   }
 

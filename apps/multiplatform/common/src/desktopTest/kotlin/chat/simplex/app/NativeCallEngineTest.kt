@@ -29,6 +29,7 @@ class NativeCallEngineTest {
   private val directConnections = setOf("peer-to-peer", "host / prflx", "prflx / host")
 
   companion object {
+    private val systemDefaultAudio = CallAudioSettings(mic = null, speaker = null, fallback = true)
     private const val DISCONNECT_DETECTION_MS = 15_000L
     private const val SIGNALING_MS = 10_000L
     private const val RECONNECT_MS = 20_000L
@@ -60,8 +61,8 @@ class NativeCallEngineTest {
   fun testTwoEnginesNegotiateEncryptedCall() = runBlocking<Unit> {
     val callerInbox = Inbox()
     val calleeInbox = Inbox()
-    val caller = NativeCallEngine(callerInbox::post)
-    val callee = NativeCallEngine(calleeInbox::post)
+    val caller = NativeCallEngine(systemDefaultAudio, {}, callerInbox::post)
+    val callee = NativeCallEngine(systemDefaultAudio, {}, calleeInbox::post)
     try {
       withTimeout(30_000) {
         // The callee of the invitation creates the offer, as CallManager.justAcceptIncomingCall does
@@ -89,7 +90,7 @@ class NativeCallEngineTest {
   @Test
   fun testRejectsOutOfOrderCommands() = runBlocking<Unit> {
     val inbox = Inbox()
-    val engine = NativeCallEngine(inbox::post)
+    val engine = NativeCallEngine(systemDefaultAudio, {}, inbox::post)
     try {
       withTimeout(30_000) {
         engine.process(WCallCommand.Answer("x", "y"))
@@ -141,8 +142,8 @@ class NativeCallEngineTest {
   fun testRejectsUnexpectedIceRestartSessions() = runBlocking<Unit> {
     val callerInbox = Inbox()
     val calleeInbox = Inbox()
-    val caller = NativeCallEngine(callerInbox::post)
-    val callee = NativeCallEngine(calleeInbox::post)
+    val caller = NativeCallEngine(systemDefaultAudio, {}, callerInbox::post)
+    val callee = NativeCallEngine(systemDefaultAudio, {}, calleeInbox::post)
     try {
       withTimeout(30_000) {
         callee.process(WCallCommand.Start(CallMediaType.Audio, aesKey, iceServers = emptyList(), relay = false))
@@ -165,7 +166,7 @@ class NativeCallEngineTest {
 
   private class Side(val name: String) {
     val inbox = Inbox()
-    val engine = NativeCallEngine(inbox::post)
+    val engine = NativeCallEngine(systemDefaultAudio, {}, inbox::post)
     val states = Channel<String>(Channel.UNLIMITED)
     val sessions = Channel<RTCSdpType>(Channel.UNLIMITED)
 

@@ -90,6 +90,12 @@ Organized in sections:
 | Blur media radius | `privacyMediaBlurRadius` | Blur radius for media previews |
 | Protect IP address | `privacyAskToApproveRelays` | Prompt before connecting to unknown file relays to protect IP address |
 
+**Calls Section** (More privacy, Desktop only):
+
+| Setting | Preference Key | Description |
+|---|---|---|
+| Use system default audio device | `privacyCallAudioFallback` | While the chosen microphone or speaker is disconnected, use the system default device; when off, use none |
+
 #### Appearance (`AppearanceView`)
 
 Platform-specific composable (`expect fun AppearanceView`):

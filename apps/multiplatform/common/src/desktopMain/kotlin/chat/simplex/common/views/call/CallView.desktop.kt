@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.ItemAction
@@ -33,6 +34,7 @@ import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import dev.onvoid.webrtc.media.FourCC
+import dev.onvoid.webrtc.media.audio.AudioDevice
 import dev.onvoid.webrtc.media.video.VideoBufferConverter
 import dev.onvoid.webrtc.media.video.VideoDevice
 import dev.onvoid.webrtc.media.video.VideoFrame
@@ -41,6 +43,7 @@ import dev.onvoid.webrtc.media.video.VideoTrackSink
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.*
 import kotlinx.datetime.Clock
+import kotlinx.serialization.SerializationException
 import org.jetbrains.skia.ColorAlphaType
 import org.jetbrains.skia.ColorType
 import org.jetbrains.skia.Image
@@ -169,7 +172,7 @@ actual fun ActiveCallView() {
 private fun NativeCallController(callCommand: SnapshotStateList<WCallCommand>, onResponse: (WVAPIMessage) -> Unit): NativeCallEngine? {
   val engine = remember {
     try {
-      NativeCallEngine(onResponse)
+      NativeCallEngine(callAudioSettings(), ::showAudioDeviceNotice, onResponse)
     } catch (e: Throwable) {
       Log.e(TAG, "Unable to start call engine: ${e.stackTraceToString()}")
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.call_desktop_engine_error), e.message)
@@ -242,7 +245,7 @@ private fun ActiveCallLayout(engine: NativeCallEngine, call: Call) {
         Box(Modifier.padding(horizontal = DEFAULT_PADDING)) { CallInfoView(call, showName = false) }
       }
     }
-    CallControls(engine, call, Modifier.align(Alignment.BottomCenter).padding(bottom = DEFAULT_PADDING * 2))
+    CallControls(engine, call, Modifier.align(Alignment.BottomCenter).padding(bottom = DEFAULT_PADDING * 3))
   }
 }
 
@@ -281,6 +284,8 @@ private fun CallControls(engine: NativeCallEngine, call: Call, modifier: Modifie
     ) { chatModel.callCommand.add(WCallCommand.Media(CallMediaSource.Camera, enable = !cameraOn)) }
     ScreenShareButton(engine, sources.screenVideo)
     CameraPickerButton(engine)
+    AudioDevicePickerButton(engine, AudioDeviceKind.Mic, appPrefs.desktopCallMic, painterResource(MR.images.ic_keyboard_voice), MR.strings.permissions_record_audio)
+    AudioDevicePickerButton(engine, AudioDeviceKind.Speaker, appPrefs.desktopCallSpeaker, painterResource(MR.images.ic_headphones), MR.strings.audio_device_speaker)
     ControlButton(painterResource(MR.images.ic_call_end_filled), MR.strings.icon_descr_hang_up, background = Color.Red) {
       withBGApi { chatModel.callManager.endCall(call) }
     }
@@ -343,6 +348,62 @@ private fun CameraPickerButton(engine: NativeCallEngine) {
       }
     }
   }
+}
+
+@Composable
+private fun AudioDevicePickerButton(engine: NativeCallEngine, kind: AudioDeviceKind, pref: SharedPreference<String?>, icon: Painter, description: StringResource) {
+  val showMenu = remember { mutableStateOf(false) }
+  val devices = remember { mutableStateOf(emptyList<AudioDevice>()) }
+  Box {
+    ControlButton(icon, description) {
+      devices.value = engine.audioDevices(kind)
+      showMenu.value = true
+    }
+    DefaultDropdownMenu(showMenu) {
+      val chosenId = storedAudioDevice(pref.state.value)?.id
+      (listOf(null) + devices.value).forEach { device ->
+        ItemAction(
+          device?.name ?: stringResource(MR.strings.call_audio_device_system_default),
+          { if (device?.descriptor == chosenId) Icon(painterResource(MR.images.ic_check), null, tint = MenuTextColor) },
+          onClick = {
+            showMenu.value = false
+            pref.set(device?.let { json.encodeToString(SavedAudioDevice.serializer(), savedAudioDevice(it)) })
+            engine.selectAudioDevice(kind, device)
+          }
+        )
+      }
+    }
+  }
+}
+
+private fun callAudioSettings() = CallAudioSettings(
+  mic = storedAudioDevice(appPrefs.desktopCallMic.get()),
+  speaker = storedAudioDevice(appPrefs.desktopCallSpeaker.get()),
+  fallback = appPrefs.privacyCallAudioFallback.get()
+)
+
+private fun storedAudioDevice(stored: String?): SavedAudioDevice? =
+  try {
+    stored?.let { json.decodeFromString<SavedAudioDevice>(it) }
+  } catch (e: SerializationException) {
+    Log.e(TAG, "stored audio device: ${e.message}")
+    null
+  }
+
+private fun showAudioDeviceNotice(notice: AudioDeviceNotice) {
+  val text = when (notice.kind) {
+    AudioDeviceKind.Mic -> when (notice.state) {
+      AudioDeviceState.Connected -> MR.strings.call_mic_connected
+      AudioDeviceState.Fallback -> MR.strings.call_mic_fallback
+      AudioDeviceState.Unavailable -> MR.strings.call_mic_unavailable
+    }
+    AudioDeviceKind.Speaker -> when (notice.state) {
+      AudioDeviceState.Connected -> MR.strings.call_speaker_connected
+      AudioDeviceState.Fallback -> MR.strings.call_speaker_fallback
+      AudioDeviceState.Unavailable -> MR.strings.call_speaker_unavailable
+    }
+  }
+  showToast(String.format(generalGetString(text), notice.deviceName))
 }
 
 @Composable
