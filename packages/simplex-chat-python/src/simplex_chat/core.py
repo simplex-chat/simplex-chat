@@ -12,7 +12,7 @@ import ctypes
 import json
 from concurrent.futures import Executor
 from enum import StrEnum
-from typing import Any, Literal, TypedDict
+from typing import Any, Literal, TypedDict, overload
 
 from . import _native
 from .types import CR, CEvt, T
@@ -69,6 +69,12 @@ class MigrationConfirmation(StrEnum):
     YES_UP_DOWN = "yesUpDown"
     CONSOLE = "console"
     ERROR = "error"
+
+
+class ImageSize(StrEnum):
+    IMAGE = "image"
+    PROFILE_PREVIEW = "profilePreview"
+    MESSAGE_PREVIEW = "messagePreview"
 
 
 class CryptoArgs(TypedDict):  # wire-format JSON; camelCase fields
@@ -270,10 +276,37 @@ async def chat_resize_image(
     data: bytes, max_size: int, image_format: Literal["jpeg", "png"]
 ) -> bytes:
     """Resize image to JPEG or PNG of at most max_size bytes."""
+    return await _resize_image_data(data, max_size, 1 if image_format == "png" else 0)
+
+
+@overload
+async def resize_image(data: bytes, size: Literal[ImageSize.IMAGE]) -> bytes: ...
+
+
+@overload
+async def resize_image(
+    data: bytes, size: Literal[ImageSize.PROFILE_PREVIEW, ImageSize.MESSAGE_PREVIEW]
+) -> str: ...
+
+
+@overload
+async def resize_image(data: bytes, size: ImageSize) -> bytes | str: ...
+
+
+async def resize_image(data: bytes, size: ImageSize) -> bytes | str:
+    match size:
+        case ImageSize.IMAGE:
+            return await _resize_image_data(data, 261120, -1)
+        case ImageSize.PROFILE_PREVIEW:
+            return await chat_resize_image_uri(data, 12500)
+        case ImageSize.MESSAGE_PREVIEW:
+            return await chat_resize_image_uri(data, 14000)
+
+
+async def _resize_image_data(data: bytes, max_size: int, png: int) -> bytes:
     _check_c_int("len(data)", len(data))
     _check_c_int("max_size", max_size)
     resize = _native.resize_image()
-    png = 1 if image_format == "png" else 0
 
     def _call() -> str:
         return _read_and_free(resize(data, len(data), max_size, png))

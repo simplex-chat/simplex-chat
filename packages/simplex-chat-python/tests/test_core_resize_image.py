@@ -62,11 +62,28 @@ def test_resize_image_passes_the_format_and_decodes_base64(fake_lib, image_forma
     assert lib.calls == [("chat_resize_image", (b"image", 5, 261120, png))]
 
 
+def test_resize_image_leaves_the_format_to_the_core(fake_lib):
+    lib = fake_lib(base64.b64encode(JPEG).decode())
+    assert asyncio.run(core.resize_image(b"image", core.ImageSize.IMAGE)) == JPEG
+    assert lib.calls == [("chat_resize_image", (b"image", 5, 261120, -1))]
+
+
+@pytest.mark.parametrize(
+    ("size", "max_size"),
+    [(core.ImageSize.PROFILE_PREVIEW, 12500), (core.ImageSize.MESSAGE_PREVIEW, 14000)],
+)
+def test_resize_image_previews_return_the_data_uri(fake_lib, size, max_size):
+    lib = fake_lib("data:image/png;base64,AAAA")
+    assert asyncio.run(core.resize_image(b"image", size)) == "data:image/png;base64,AAAA"
+    assert lib.calls == [("chat_resize_image_uri", (b"image", 5, max_size))]
+
+
 @pytest.mark.parametrize(
     "resize",
     [
         lambda: core.chat_resize_image_uri(b"image", 14000),
         lambda: core.chat_resize_image(b"image", 261120, "jpeg"),
+        lambda: core.resize_image(b"image", core.ImageSize.IMAGE),
     ],
 )
 def test_empty_result_raises(fake_lib, resize):
@@ -80,6 +97,11 @@ def test_empty_result_raises(fake_lib, resize):
     [
         ("chat_resize_image_uri", lambda: core.chat_resize_image_uri(b"image", 14000)),
         ("chat_resize_image", lambda: core.chat_resize_image(b"image", 261120, "png")),
+        ("chat_resize_image", lambda: core.resize_image(b"image", core.ImageSize.IMAGE)),
+        (
+            "chat_resize_image_uri",
+            lambda: core.resize_image(b"image", core.ImageSize.PROFILE_PREVIEW),
+        ),
     ],
 )
 def test_old_lib_raises_clear_error(monkeypatch, name, resize):
