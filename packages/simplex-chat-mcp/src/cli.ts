@@ -22,17 +22,17 @@ Environment:
 
 export type Command = "session" | "daemon" | "hook session-start" | "link" | "reset-owners" | "help"
 
-const commands: {[args: string]: Command} = {
-  "session": "session",
-  "daemon": "daemon",
-  "hook session-start": "hook session-start",
-  "link": "link",
-  "reset-owners": "reset-owners",
-  "--help": "help",
-}
+const commands = new Map<string, Command>([
+  ["session", "session"],
+  ["daemon", "daemon"],
+  ["hook session-start", "hook session-start"],
+  ["link", "link"],
+  ["reset-owners", "reset-owners"],
+  ["--help", "help"],
+])
 
 export function parseCommand(args: string[]): Command {
-  const command = commands[args.join(" ")]
+  const command = commands.get(args.join(" "))
   if (command === undefined) throw new ExitError("Unknown command. Run simplex-mcp --help.", 2)
   return command
 }

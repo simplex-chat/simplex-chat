@@ -13,7 +13,7 @@ describe("commands", () => {
 
   it("refuses other commands and extra arguments", () => {
     const unknown = new ExitError("Unknown command. Run simplex-mcp --help.", 2)
-    for (const args of [[], ["serve", "agent"], ["register", "agent"], ["hook"], ["link", "x"], ["session", "--port", "1"]]) expect(() => parseCommand(args)).toThrow(unknown)
+    for (const args of [[], ["serve", "agent"], ["register", "agent"], ["hook"], ["link", "x"], ["session", "--port", "1"], ["constructor"], ["__proto__"], ["toString"]]) expect(() => parseCommand(args)).toThrow(unknown)
   })
 
   it("documents the commands, the install and the data folder", () => {
