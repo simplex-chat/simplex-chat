@@ -47,12 +47,6 @@ export function listen(path: string, token: string, routes: {[route: string]: Ha
   })
 }
 
-export function closeServer(server: Server): Promise<void> {
-  const closed = new Promise<void>(resolve => server.close(() => resolve()))
-  server.closeAllConnections()
-  return closed
-}
-
 export function sendJson(res: ServerResponse, status: number, value: unknown): void {
   res.writeHead(status, {"content-type": "application/json"})
   res.end(JSON.stringify(value))

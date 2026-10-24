@@ -5,7 +5,8 @@ import {DaemonClient, compareVersions, spawnDaemon} from "../../src/client"
 import {logFile, serverToken, socketPath} from "../../src/files"
 import {ExitError} from "../../src/log"
 import {protocolVersion} from "../../src/protocol"
-import {closeServer, listen, sendJson} from "../../src/socket"
+import {listen, sendJson} from "../../src/socket"
+import {closeServer} from "./fixtures"
 
 let root: string
 const script = (body: string): [string, string[]] => {

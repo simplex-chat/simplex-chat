@@ -1,4 +1,5 @@
 import {ChatResponse, T} from "@simplex-chat/types"
+import {Server} from "http"
 import {api, core} from "simplex-chat"
 import {Readable, Writable} from "stream"
 import {Actions, ActionHooks} from "../../src/actions"
@@ -98,6 +99,12 @@ export function fakeHooks(): FakeHooks {
 
 export function actionsWith(mode: "requests" | "host", fake: FakeHooks, next = 1, expireHours = 23): Actions {
   return new Actions(mode, expireHours, next, fake.hooks)
+}
+
+export function closeServer(server: Server): Promise<void> {
+  const closed = new Promise<void>(resolve => server.close(() => resolve()))
+  server.closeAllConnections()
+  return closed
 }
 
 export async function settled(): Promise<void> {

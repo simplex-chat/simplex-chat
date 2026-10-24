@@ -3,7 +3,8 @@ import {existsSync, mkdtempSync, rmSync, writeFileSync} from "fs"
 import {Server, request} from "http"
 import {tmpdir} from "os"
 import {join} from "path"
-import {SocketError, closeServer, isNotRunning, listen, requestJson, sendJson, startLines, streamLines} from "../../src/socket"
+import {SocketError, isNotRunning, listen, requestJson, sendJson, startLines, streamLines} from "../../src/socket"
+import {closeServer} from "./fixtures"
 
 let dir: string
 let path: string

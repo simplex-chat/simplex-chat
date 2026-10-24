@@ -117,10 +117,10 @@ Data flow of a tool call:
 |---|---|---|
 | `SocketError` | [12](../src/socket.ts#L12) | message and HTTP status |
 | `listen` | [18](../src/socket.ts#L18) | `http.Server` on the socket path: token check, route table, body read, error replies, timeouts |
-| `sendJson`, `startLines` | [56-66](../src/socket.ts#L56-L66) | JSON reply; NDJSON stream |
-| `isNotRunning` | [68](../src/socket.ts#L68) | `ENOENT` or `ECONNREFUSED` |
-| `requestJson`, `streamLines` | [73-92](../src/socket.ts#L73-L92) | client request with a JSON reply; client request with NDJSON lines; status other than 200 to `SocketError` |
-| `send` | [94](../src/socket.ts#L94) | `http.request` on the socket path, no connection pool, bearer header |
+| `sendJson`, `startLines` | [50-60](../src/socket.ts#L50-L60) | JSON reply; NDJSON stream |
+| `isNotRunning` | [62](../src/socket.ts#L62) | `ENOENT` or `ECONNREFUSED` |
+| `requestJson`, `streamLines` | [67-86](../src/socket.ts#L67-L86) | client request with a JSON reply; client request with NDJSON lines; status other than 200 to `SocketError` |
+| `send` | [88](../src/socket.ts#L88) | `http.request` on the socket path, no connection pool, bearer header |
 
 ### [2.5 `protocol.ts`](../src/protocol.ts)
 
@@ -620,12 +620,12 @@ Checks in order of the request listener ([socket.ts:24-36](../src/socket.ts#L24-
 | reach | Unix socket in ROOT, mode 0700 (or under the system temporary folder for a long path); Windows named pipe | | [files.ts:57-62](../src/files.ts#L57-L62) |
 | token | `Authorization` equal to `Bearer <token>`, same length, `timingSafeEqual` | 401 `{"error":"Unauthorized"}` | [socket.ts:19-25](../src/socket.ts#L19-L25) |
 | route | `METHOD PATH` in the route table | 404 `{"error":"Not found"}` | [socket.ts:26-27](../src/socket.ts#L26-L27) |
-| body size | 1 MiB | 413 `Body too large` | [socket.ts:103-112](../src/socket.ts#L103-L112) |
-| body | empty, or JSON | 400 `Invalid JSON` | [socket.ts:113-118](../src/socket.ts#L113-L118) |
+| body size | 1 MiB | 413 `Body too large` | [socket.ts:97-106](../src/socket.ts#L97-L106) |
+| body | empty, or JSON | 400 `Invalid JSON` | [socket.ts:107-112](../src/socket.ts#L107-L112) |
 | session ID | UUID format, before it becomes a path | 500 `Not a Claude Code session ID: ID` | [files.ts:34-37](../src/files.ts#L34-L37) |
 | handler error | `SocketError` status, else 500 and a log line; after headers were sent, the connection is destroyed | | [socket.ts:30-35](../src/socket.ts#L30-L35) |
 
-Node limits: `requestTimeout` 0, `headersTimeout` 60 s, `keepAliveTimeout` 5 s ([socket.ts:37-39](../src/socket.ts#L37-L39)). A stale socket file is removed before listening, except on Windows ([:40](../src/socket.ts#L40)). Clients use no connection pool ([socket.ts:96-97](../src/socket.ts#L96-L97)). When the client closes a `/call` stream before its end, the call's signal is aborted ([daemon.ts:235-237](../src/daemon.ts#L235-L237)); the session process closes it when the MCP request is aborted ([session.ts:99-103](../src/session.ts#L99-L103)).
+Node limits: `requestTimeout` 0, `headersTimeout` 60 s, `keepAliveTimeout` 5 s ([socket.ts:37-39](../src/socket.ts#L37-L39)). A stale socket file is removed before listening, except on Windows ([:40](../src/socket.ts#L40)). Clients use no connection pool ([socket.ts:90-91](../src/socket.ts#L90-L91)). When the client closes a `/call` stream before its end, the call's signal is aborted ([daemon.ts:235-237](../src/daemon.ts#L235-L237)); the session process closes it when the MCP request is aborted ([session.ts:99-103](../src/session.ts#L99-L103)).
 
 ### 6.2 Token
 
