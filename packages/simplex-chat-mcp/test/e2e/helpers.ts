@@ -1,6 +1,5 @@
 import {T} from "@simplex-chat/types"
 import {api, bot} from "simplex-chat"
-import {ServeOptions} from "../../src/serve"
 
 export const timeout = 60_000
 
@@ -53,10 +52,6 @@ export async function startBot(smpAddress: string, filePrefix: string, displayNa
     },
   })
   return {chat, user, link: address!.connLinkContact.connShortLink ?? address!.connLinkContact.connFullLink}
-}
-
-export function serveOptions(data: string, port: number, extra: Partial<ServeOptions> = {}): ServeOptions {
-  return {name: "agent", data, dataGiven: true, approve: "requests", expireHours: 23, resetOwners: false, newToken: false, port, qrCode: "small", ...extra}
 }
 
 export function lastLink(lines: string[]): string {

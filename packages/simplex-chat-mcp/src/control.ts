@@ -4,8 +4,14 @@ import {api} from "simplex-chat"
 import {Action, ActionHooks, Actions, ConnectAction, Subject, ToolError, leaveVerbs, subjectText, summary} from "./actions"
 import {ExitError, chatErrorOf, log, logError, oneLine, shellWord} from "./log"
 import {chatNumber, chatRef, isChatRef, utcMinutes, validName, viewName} from "./messages"
-import type {OwnerEntry, QrCodeSize} from "./serve"
 import {AgentTools, chatSubject, isActive, isConnected, memberCurrent} from "./tools"
+
+export type QrCodeSize = "small" | "large"
+
+export interface OwnerEntry {
+  memberId: number
+  name: string
+}
 
 const controlCommands: T.ChatBotCommand[] = [
   {type: "command", keyword: "pending", label: "Pending actions"},

@@ -1,10 +1,8 @@
 import {CallToolResult} from "@modelcontextprotocol/server"
 import {ChatEvent, T} from "@simplex-chat/types"
-import {core} from "simplex-chat"
 import {Actions, Mode, NewAction, ToolError} from "../../src/actions"
-import {Control, cardText, parseCommand} from "../../src/control"
+import {Control, OwnerEntry, cardText, parseCommand} from "../../src/control"
 import {ChatItemsWatch, Collected, utcMinutes} from "../../src/messages"
-import {OwnerEntry, deliveries} from "../../src/serve"
 import {AgentTools} from "../../src/tools"
 import {FakeChat, actionsWith, contact, direct, event, fakeHooks, group, groupChat, item, member, settled, signal, user} from "./fixtures"
 
@@ -507,18 +505,5 @@ describe("approval card size", () => {
     expect(failed).toBeLessThanOrEqual(15000)
     expect(failed).toBeGreaterThan(15000 - 8)
     expect(action.tool === "connect" && action.plan.description).toBe(description)
-  })
-})
-
-describe("delivery wait at the stop", () => {
-  it("logs an error of the SQL query and ends", async () => {
-    const errors: string[] = []
-    jest.spyOn(process.stderr, "write").mockImplementation(text => (errors.push(String(text).trimEnd()), true))
-    const chat = new FakeChat()
-    chat.sendChatCmd = async () => {
-      throw new core.ChatAPIError("Chat command error", {type: "errorStore", storeError: {type: "dBException", message: "no such table: connections"}} as unknown as T.ChatError)
-    }
-    await deliveries(chat.api(), 10)
-    expect(errors).toEqual(['delivery wait: SimpleX error: errorStore: dBException: {"message":"no such table: connections"}'])
   })
 })

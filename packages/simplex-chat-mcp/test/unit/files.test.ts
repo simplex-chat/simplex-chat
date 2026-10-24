@@ -2,7 +2,7 @@ import {spawnSync} from "child_process"
 import {chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync} from "fs"
 import {tmpdir} from "os"
 import {join} from "path"
-import {acquireLock, createDataFolder, readServerFile, releaseLock, serverToken, writeHeadersFile, writeServerFile} from "../../src/files"
+import {acquireLock, createDataFolder, releaseLock, serverToken} from "../../src/files"
 import {ExitError} from "../../src/log"
 
 let dir: string
@@ -50,14 +50,6 @@ describe("data folder", () => {
     expect(statSync(dir).mode & 0o777).toBe(0o700)
   })
 
-  it("writes the headers for the MCP host, readable only by the user, and rewrites them", () => {
-    writeHeadersFile(dir, "first")
-    expect(readFileSync(join(dir, "headers.json"), "utf8")).toBe('{"Authorization":"Bearer first"}\n')
-    expect(statSync(join(dir, "headers.json")).mode & 0o777).toBe(0o600)
-    writeHeadersFile(dir, "second")
-    expect(JSON.parse(readFileSync(join(dir, "headers.json"), "utf8"))).toEqual({Authorization: "Bearer second"})
-  })
-
   it("keeps the token until renewed", () => {
     const token = serverToken(dir, false)
     expect(token).toMatch(/^[A-Za-z0-9_-]{43}$/)
@@ -66,21 +58,11 @@ describe("data folder", () => {
     expect(serverToken(dir, true)).not.toBe(token)
   })
 
-  it("makes the token, the headers and the server record private again when they exist", () => {
-    const files = ["token", "headers.json", "server.json"].map(name => join(dir, name))
-    for (const file of files) {
-      writeFileSync(file, "{}\n")
-      chmodSync(file, 0o644)
-    }
+  it("makes the token private again when it exists", () => {
+    const file = join(dir, "token")
+    writeFileSync(file, "{}\n")
+    chmodSync(file, 0o644)
     serverToken(dir, true)
-    writeHeadersFile(dir, "token")
-    writeServerFile(dir, {name: "agent", port: 5226, expireHours: 23})
-    expect(files.map(file => statSync(file).mode & 0o777)).toEqual([0o600, 0o600, 0o600])
-  })
-
-  it("records the server", () => {
-    expect(readServerFile(dir)).toBeUndefined()
-    writeServerFile(dir, {name: "agent", port: 5226, expireHours: 23})
-    expect(readServerFile(dir)).toEqual({name: "agent", port: 5226, expireHours: 23})
+    expect(statSync(file).mode & 0o777).toBe(0o600)
   })
 })
