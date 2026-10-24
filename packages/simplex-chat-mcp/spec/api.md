@@ -502,7 +502,7 @@ A missing or blank variable takes the default. The error text is `Plugin option 
 | File | Content |
 |---|---|
 | [`.claude-plugin/plugin.json`](../.claude-plugin/plugin.json) | name `simplex`, version `0.2.0` (equal to `package.json`), description, author, homepage, repository, license, keywords, `userConfig` |
-| [`.mcp.json`](../.mcp.json) | server `simplex`: `node ${CLAUDE_PLUGIN_ROOT}/plugin/launch.js session` with the three option variables |
+| [`.mcp.json`](../.mcp.json) | server `simplex`: `node ${CLAUDE_PLUGIN_ROOT}/plugin/launch.js session` with the three option variables; `timeout` 169800000 ms, the longest call: 23 h maximum expiry, 24 h response wait and a 10-minute margin |
 | [`hooks/hooks.json`](../hooks/hooks.json) | SessionStart: `node "${CLAUDE_PLUGIN_ROOT}/plugin/launch.js" hook session-start`, timeout 600 s; PreToolUse, matcher `mcp__plugin_simplex_simplex__.*`: `node "${CLAUDE_PLUGIN_ROOT}/plugin/allow.js"` |
 | [`plugin/launch.js`](../plugin/launch.js) | `npx -y @simplex-chat/mcp@VERSION ARGS` (`npx.cmd` through the shell on Windows), stdio inherited, SIGINT and SIGTERM forwarded, the child's exit code passed on (1 after a signal); a spawn error prints `simplex-mcp: ERROR` and exits 1 |
 | [`plugin/allow.js`](../plugin/allow.js) | prints `{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}` |

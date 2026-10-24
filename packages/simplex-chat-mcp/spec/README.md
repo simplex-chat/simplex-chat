@@ -150,7 +150,7 @@ Plugin files, run by Claude Code without `node_modules`:
 | File | Role |
 |---|---|
 | [`.claude-plugin/plugin.json`](../.claude-plugin/plugin.json) | plugin `simplex`, version, `userConfig` |
-| [`.mcp.json`](../.mcp.json) | MCP server `simplex`: `node plugin/launch.js session`, options as environment variables |
+| [`.mcp.json`](../.mcp.json) | MCP server `simplex`: `node plugin/launch.js session`, tool call timeout, options as environment variables |
 | [`hooks/hooks.json`](../hooks/hooks.json) | SessionStart: `launch.js hook session-start`; PreToolUse: `allow.js` |
 | [`plugin/launch.js`](../plugin/launch.js) | `npx -y @simplex-chat/mcp@<version> ARGS`, signals forwarded, exit code passed on |
 | [`plugin/allow.js`](../plugin/allow.js) | PreToolUse allow decision |

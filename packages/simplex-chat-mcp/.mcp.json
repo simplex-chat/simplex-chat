@@ -3,6 +3,7 @@
     "simplex": {
       "command": "node",
       "args": ["${CLAUDE_PLUGIN_ROOT}/plugin/launch.js", "session"],
+      "timeout": 169800000,
       "env": {
         "CLAUDE_PLUGIN_OPTION_MAIN_GROUP": "${user_config.main_group}",
         "CLAUDE_PLUGIN_OPTION_APPROVE": "${user_config.approve}",

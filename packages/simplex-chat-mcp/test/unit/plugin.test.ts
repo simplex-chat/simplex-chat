@@ -28,6 +28,14 @@ describe("plugin", () => {
     })
   })
 
+  it("lets a tool call wait for the longest expiry, the responses and a margin", () => {
+    const responseWaitHours = 24
+    const marginMs = 10 * 60_000
+    const maxExpireHours = read(".claude-plugin/plugin.json").userConfig.expire_hours.max
+    expect(maxExpireHours).toBe(23)
+    expect(read(".mcp.json").mcpServers.simplex.timeout).toBe((maxExpireHours + responseWaitHours) * 3_600_000 + marginMs)
+  })
+
   it("runs the hook and allows the plugin's tools", () => {
     const {hooks} = read("hooks/hooks.json")
     expect(hooks.SessionStart[0].hooks[0]).toEqual({type: "command", command: 'node "${CLAUDE_PLUGIN_ROOT}/plugin/launch.js" hook session-start', timeout: 600})

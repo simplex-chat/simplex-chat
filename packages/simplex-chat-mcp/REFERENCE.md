@@ -64,6 +64,8 @@ The marketplace `simplex-chat` lists one plugin, `simplex`, from the npm package
 
 The plugin's commands run the published package version through `npx`, so the first session start also fills the npx cache. Claude Code waits at most 600 seconds for the SessionStart hook.
 
+The server entry in the plugin's `.mcp.json` sets `timeout` to 169800000 ms, 47 hours 10 minutes: the longest expiry of 23 hours, 24 hours of waiting for responses, and a 10-minute margin. Claude Code ends a tool call of this server only after that time ([Claude Code MCP docs](https://code.claude.com/docs/en/mcp.md), "Time limits on MCP tool calls").
+
 At the first session start, Claude Code shows:
 
 ```
