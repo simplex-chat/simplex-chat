@@ -40,7 +40,7 @@ import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Ledger
-import Simplex.Chat.Badges.Service (StatementCreditType (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..))
+import Simplex.Chat.StoreService (StatementCreditType (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..))
 import Simplex.Chat.Badges.Types (BadgeAlertKind, BadgeIssueError (..), BadgeIssueFailure, BadgePurchaseStatus (..))
 import Simplex.Chat.Store.Shared (insertedRowId)
 import Simplex.Chat.Types

@@ -41,11 +41,11 @@ import Numeric (showFFloat)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Help
-import Simplex.Chat.Library.Commands (badgeServiceErrorText, maxImageSize)
+import Simplex.Chat.Library.Commands (maxImageSize, storeServiceErrorText)
 import Simplex.Chat.Markdown
 import Simplex.Chat.Badges (BadgeInfo (..), BadgeStatus (..), BadgeType (..), LocalBadge, localBadgeInfo, localBadgeStatus)
 import Simplex.Chat.Badges.Ledger (creditTypeTag, debitTypeTag)
-import Simplex.Chat.Badges.Service (StatementEntry (..), StatementEntryType (..))
+import Simplex.Chat.StoreService (StatementEntry (..), StatementEntryType (..))
 import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeIssueError (..), BadgeState (..))
 import Simplex.Chat.Messages hiding (NewChatItem (..))
 import Simplex.Chat.Messages.CIContent
@@ -2921,9 +2921,9 @@ viewChatError isCmd logLevel testView = \case
     CEBadgeRedeemError e ->
       let reason = case e of
             BREInvalidCode -> "invalid code"
-            BREServiceNotConfigured -> "badge service not configured"
+            BREServiceNotConfigured -> "store service not configured"
             BREBadgeActive -> "badge already active"
-            BREServiceError code -> "badge service error: " <> T.unpack (badgeServiceErrorText code)
+            BREServiceError code -> "store service error: " <> T.unpack (storeServiceErrorText code)
             BREInvalidResponse m -> "invalid service response: " <> m
             BREUnknownKeyIndex -> "credential names an unknown badge key index"
             BRECredentialNotVerified -> "credential does not verify against configured key"

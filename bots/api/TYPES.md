@@ -15,7 +15,6 @@ This file is generated automatically.
 - [BadgeInfo](#badgeinfo)
 - [BadgeProof](#badgeproof)
 - [BadgeRedeemError](#badgeredeemerror)
-- [BadgeServiceErrorCode](#badgeserviceerrorcode)
 - [BadgeStatus](#badgestatus)
 - [BadgeType](#badgetype)
 - [BlockingInfo](#blockinginfo)
@@ -202,6 +201,7 @@ This file is generated automatically.
 - [SndGroupEvent](#sndgroupevent)
 - [SrvError](#srverror)
 - [StoreError](#storeerror)
+- [StoreServiceErrorCode](#storeserviceerrorcode)
 - [SubscriptionStatus](#subscriptionstatus)
 - [SupportGroupPreference](#supportgrouppreference)
 - [SwitchPhase](#switchphase)
@@ -453,7 +453,7 @@ BadgeActive:
 
 ServiceError:
 - type: "serviceError"
-- serviceError: [BadgeServiceErrorCode](#badgeserviceerrorcode)
+- serviceError: [StoreServiceErrorCode](#storeserviceerrorcode)
 
 InvalidResponse:
 - type: "invalidResponse"
@@ -464,30 +464,6 @@ UnknownKeyIndex:
 
 CredentialNotVerified:
 - type: "credentialNotVerified"
-
-
----
-
-## BadgeServiceErrorCode
-
-**Enum type**:
-- "bad_request"
-- "unsupported_version"
-- "unknown_purchase_key"
-- "unknown_offer_id"
-- "offer_disabled"
-- "offer_mismatch"
-- "product_unavailable"
-- "payment_not_entitled"
-- "payment_pending"
-- "provider_unavailable"
-- "rate_limited"
-- "code_invalid"
-- "code_used"
-- "code_expired"
-- "receipt_invalid"
-- "receipt_used"
-- "internal"
 
 
 ---
@@ -4433,6 +4409,30 @@ DuplicateWallet:
 WorkItemError:
 - type: "workItemError"
 - errContext: string
+
+
+---
+
+## StoreServiceErrorCode
+
+**Enum type**:
+- "bad_request"
+- "unsupported_version"
+- "unknown_purchase_key"
+- "unknown_offer_id"
+- "offer_disabled"
+- "offer_mismatch"
+- "product_unavailable"
+- "payment_not_entitled"
+- "payment_pending"
+- "provider_unavailable"
+- "rate_limited"
+- "code_invalid"
+- "code_used"
+- "code_expired"
+- "receipt_invalid"
+- "receipt_used"
+- "internal"
 
 
 ---

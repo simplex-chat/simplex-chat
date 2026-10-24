@@ -379,7 +379,7 @@
           "properties": {
             "code": {
               "type": "string",
-              "metadata": {"comment": "BadgeServiceErrorCode"}
+              "metadata": {"comment": "StoreServiceErrorCode"}
             }
           },
           "optionalProperties": {
