@@ -2847,12 +2847,12 @@ viewChatError isCmd logLevel testView = \case
     CEChatNotStopped -> ["error: chat not stopped"]
     CEChatStoreChanged -> ["error: chat store changed, please restart chat"]
     CEInvalidConnReq -> viewInvalidConnReq
-    CESimplexDomainNotReady domain (SDENameWarning w) -> [viewNameNotConnectable domain w]
     CESimplexDomainNotReady domain domainErr ->
-      let reason = case domainErr of
-            SDENoValidLink -> "has no valid connection link"
-            SDEUnknownDomain -> "is not included in the connection link's profile"
-       in [plain $ "SimpleX name " <> strEncode domain <> " " <> reason]
+      let notReady reason = [plain $ "SimpleX name " <> strEncode domain <> " " <> reason]
+       in case domainErr of
+            SDENameWarning w -> [viewNameNotConnectable domain w]
+            SDENoValidLink -> notReady "has no valid connection link"
+            SDEUnknownDomain -> notReady "is not included in the connection link's profile"
     CENotResolvedLocally -> ["no matching chat found, name resolution is disabled"]
     CEUnsupportedConnReq -> [ "", "Connection link is not supported by the your app version, please ugrade it.", plain updateStr]
     CEInvalidChatMessage Connection {connId} msgMeta_ msg e ->
