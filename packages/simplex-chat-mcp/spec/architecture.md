@@ -400,7 +400,7 @@ The daemon inherits the spawner's environment, so its options are those of the s
 2. The lock is taken; when another daemon holds it, the ready line is `running` and the process ends.
 3. The next session number is computed from `_sessions/*/session.json`.
 4. `Hub.open` with the options read from the environment ([hub.ts:26-48](../src/hub.ts#L26-L48)):
-   1. `openCore(ROOT/_hub, main_group)`: active user, or a new one with that display name, empty full name and peer type `agent`, whose preset contact `Ask SimpleX Team` is deleted at once (a failure is logged, not thrown; an existing user is left as it is); the network config; events buffered; `startChat`; a different display name or peer type is applied ([core.ts:24-40](../src/core.ts#L24-L40)).
+   1. `openCore(ROOT/_hub, main_group)`: active user, or a new one with that display name, empty full name and peer type `agent`; the network config; events buffered; `startChat`; for a new user, the preset contact `Ask SimpleX Team` is deleted (a failure is logged, not thrown; an existing user is left as it is); a different display name or peer type is applied ([core.ts:24-40](../src/core.ts#L24-L40)).
    2. The Main group is found by its marker (the latest one when several exist), or created with counter 1 ([control.ts:328-349](../src/control.ts#L328-L349)).
    3. `Actions` with mode, expiry and the counter from the marker; `Control` with the group name.
    4. `Control.load`: a lost group sets `Actions.lost`; otherwise the group name and command menu are updated when they differ, and members are read ([control.ts:92-99](../src/control.ts#L92-L99)).
@@ -419,7 +419,7 @@ An error after the lock releases it; the ready line is `error: TEXT` and the exi
 - The first `/session`, `/attach` or `/call` for an ID creates its entry; a close of the same ID still in progress is awaited first.
 - An ID that is not a session ID: status 400 `Not a Claude Code session ID: ID`, and no entry.
 - A folder without `session.json`: with a `/session` request, the folder is created and `{number, name, project, created}` written, with the next number and `sessionName(name, project)`, where the name is the request's, else the title remembered for the ID, which is then forgotten; without it, status 409 `Unknown session; restart the Claude Code session.`
-- `openSessionAgent` opens the core with `profileName(name)`; a new profile starts with no chats and dispatches its events ([agent.ts:39-72](../src/agent.ts#L39-L72)).
+- `openSessionAgent` opens the core with `profileName(name)`; a new profile starts with no chats. It dispatches the core's events ([agent.ts:39-72](../src/agent.ts#L39-L72)).
 - A failed open removes the entry.
 - `/session` with a name other than the stored one renames the profile and updates `session.json` ([daemon.ts:167-168](../src/daemon.ts#L167-L168), [:189-194](../src/daemon.ts#L189-L194)); every `/session` applies its options to the hub ([:166](../src/daemon.ts#L166)).
 - `/title` applies its options to the hub, and with a non-blank name: an open or opening profile is renamed as by `/session`; a stored session gets the name in `session.json`, and its profile takes it at the next open; for an ID without `session.json` the name is remembered in memory, at most 100 IDs, the oldest dropped. `/title` creates no entry, folder or number, opens no profile, and leaves the idle timers alone ([daemon.ts:172-208](../src/daemon.ts#L172-L208)).

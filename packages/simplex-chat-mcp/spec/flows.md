@@ -58,9 +58,9 @@ sequenceDiagram
   D->>D: lock, session numbers
   D->>H: Hub.open(options)
   H->>H: /_create user {"displayName":"SimpleX MCP","peerType":"agent"}
-  H->>H: /_delete @C full notify=off (preset contact of a new user)
   H->>H: /network socks=off smp-proxy=always smp-proxy-fallback=protected
   H->>H: startChat, events buffered
+  H->>H: /_delete @C full notify=off (preset contact of a new user)
   H->>H: /_groups USER (no marker)
   H->>H: /_group USER {SimpleX MCP, history on, menu pending and list}
   H->>H: /_set custom #G {"simplexMcp":{"control":true,"nextAction":1}}

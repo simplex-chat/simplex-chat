@@ -162,7 +162,7 @@ describe("token creation", () => {
       expect(readFileSync(join(root, "token"), "utf8")).toBe("winner\n")
     } finally {
       spy.mockRestore()
-      }
+    }
   })
 
   it("leaves only the token after creating it", () => {

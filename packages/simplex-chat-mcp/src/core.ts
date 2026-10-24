@@ -7,8 +7,8 @@ import {chatCommand} from "./messages"
 
 const deliveryTimeout = 10_000
 const deliveryPoll = 100
-// Display name of the contact the core adds to every new user (createPresetContactCards in Commands.hs).
 const newProfileChats = 100
+// Display name of the contact the core adds to every new user (createPresetContactCards in Commands.hs).
 const presetContactName = "Ask SimpleX Team"
 
 export const networkCommand = "/network socks=off smp-proxy=always smp-proxy-fallback=protected"
