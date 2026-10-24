@@ -50,11 +50,17 @@ describe("plugin", () => {
   it.each([
     ["link", "link"],
     ["reset-owners", "reset-owners"],
-  ])("offers the %s skill to the user only", (folder, command) => {
+  ])("offers the %s skill to the user only, and pre-approves its command", (folder, command) => {
     const skill = readFileSync(join(__dirname, "../../skills", folder, "SKILL.md"), "utf8")
-    expect(skill).toContain(`name: ${folder}\n`)
-    expect(skill).toContain("disable-model-invocation: true\n")
-    expect(skill).toContain('!`node "${CLAUDE_PLUGIN_ROOT}/plugin/launch.js" ' + command + "`")
+    const [, frontmatter] = /^---\n([\s\S]*?)\n---\n/.exec(skill)!
+    const shellCommand = `node "\${CLAUDE_PLUGIN_ROOT}/plugin/launch.js" ${command}`
+    expect(frontmatter.split("\n")).toEqual([
+      `name: ${folder}`,
+      expect.stringMatching(/^description: \S/),
+      "disable-model-invocation: true",
+      `allowed-tools: Bash(${shellCommand})`,
+    ])
+    expect(skill).toContain(`!\`${shellCommand}\``)
   })
 
   it("allows a tool call", async () => {

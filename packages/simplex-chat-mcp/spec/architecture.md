@@ -638,7 +638,7 @@ Node limits: `requestTimeout` 0, `headersTimeout` 60 s, `keepAliveTimeout` 5 s (
 ### 6.3 Plugin
 
 - The PreToolUse hook allows the tools matching `mcp__plugin_simplex_simplex__.*` ([hooks/hooks.json](../hooks/hooks.json), [plugin/allow.js](../plugin/allow.js)).
-- `/simplex:link` and `/simplex:reset-owners` have `disable-model-invocation: true` ([skills/link/SKILL.md](../skills/link/SKILL.md), [skills/reset-owners/SKILL.md](../skills/reset-owners/SKILL.md)); no tool changes the options or the owners.
+- `/simplex:link` and `/simplex:reset-owners` have `disable-model-invocation: true`, and `allowed-tools` pre-approves only their own `launch.js` command for the turn that invokes them ([skills/link/SKILL.md](../skills/link/SKILL.md), [skills/reset-owners/SKILL.md](../skills/reset-owners/SKILL.md)); no tool changes the options or the owners.
 - `launch.js` runs `npx` with the version from the plugin's `package.json`; on Windows through the shell, because `npx.cmd` needs one ([plugin/launch.js](../plugin/launch.js)).
 
 ### 6.4 Peer-written text
