@@ -4,7 +4,7 @@ The CLI sends a fixed placeholder as the preview of every image sent with `/img`
 Images are resized by the core: halved until the encoding fits the size limit; then the JPEG quality is bisected, and a halved PNG is rescaled by bisection between the last two sizes.
 The core functions are called by the apps in place of platform code, wrapped in both bot libraries and used for `/img` and `/imgf` previews; libjpeg-turbo is added as a submodule and linked statically on every target.
 
-References are to branch `ab/resize-image` at `4f70df91f`, based on master `66e381bf5`. Haskell paths without a directory are in `src/Simplex/Chat/`.
+References are to branch `ab/resize-image` at `adc778a1c`, based on master `66e381bf5`. Haskell paths without a directory are in `src/Simplex/Chat/`.
 
 ## Decisions
 
