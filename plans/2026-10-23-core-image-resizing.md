@@ -4,7 +4,7 @@ The CLI sends a fixed placeholder as the preview of every image sent with `/img`
 Images are resized by the core: halved until the encoding fits the size limit; then the JPEG quality is bisected, and a halved PNG is rescaled by bisection between the last two sizes.
 The core functions are called by the apps in place of platform code, wrapped in both bot libraries and used for `/img` and `/imgf` previews; libjpeg-turbo is compiled by cabal in every build.
 
-References are to branch `ab/resize-image` at `8ec325ed4`, based on master `66e381bf5`. Haskell paths without a directory are in `src/Simplex/Chat/`.
+References are to branch `ab/resize-image` at `f69cb0650`, based on master `66e381bf5`. Haskell paths without a directory are in `src/Simplex/Chat/`.
 
 ## Decisions
 
@@ -25,11 +25,13 @@ Resizing, `Image.hs`:
 
   | step | JPEG | PNG |
   |---|---|---|
-  | size bound | a side above 2^20 pixels: `Left`, before any encode or resize | the same |
-  | halving | while a side exceeds 65500 pixels, then while the image at quality 20 exceeds the limit | while the image exceeds the limit |
-  | final | quality bisected in 20..94 at the last size | the image itself when it fits at full size; otherwise the sides of the size before it are divided by a divisor bisected between 2 and 1 while the interval is at least 1/64: at most 7 encodings |
+  | size bound | a side above 16384 pixels: `Left`, before any encode or resize | the same |
+  | display halving | while a side exceeds 4320 pixels | the same |
+  | halving | while the image at quality 20 exceeds the limit | while the image exceeds the limit |
+  | final | quality bisected in 20..94 at the last size | the image itself when it fits after the display halving; otherwise the sides of the size before it are divided by a divisor bisected between 2 and 1 while the interval is at least 1/64: at most 7 encodings |
   | failure | a side below 2 pixels before the image fits: `Left` | the same |
 
+- The display halving applies to the image data and to the data URIs: the Android and desktop apps display images and previews only up to 4320 pixels per side (`CIImageView.kt:128`, `base64ToBitmap` in `Images.android.kt:34` and `Images.desktop.kt:42`).
 - The bisection is ended by an encoding of exactly `maxSize`.
 - EXIF orientation of the input is ignored, and EXIF metadata is dropped.
 
@@ -148,16 +150,16 @@ Core:
     - `imageFormat`
     - `resizeImage`
     - `resizeImageDataUri`
-  - `fitImage` (`:44-65`): the size bound, then the search, parameterized by the output (bytes or data URI); JPEG with `encodeRGB`
-  - `bisect` (`:67-77`)
-  - `minJpegQuality = 20` (`:79-80`)
-  - `maxImageSide = 2 ^ 20` (`:82-83`)
-  - `maxJpegSide = 65500` (`:85-86`)
-  - `hasSideAbove` (`:88-89`)
-  - `halveToSide` (`:91-94`)
-  - `halve` (`:96-99`)
-  - `downscale` (`:101-104`): `STBIR.resize` with `defaultOptions`
-  - `toDataUri` (`:106-112`), with the approved comment at `:110`
+  - `fitImage` (`:44-66`): the size bound, the display halving (`fitDisplay`, `:55`), then the search, parameterized by the output (bytes or data URI); JPEG with `encodeRGB`
+  - `bisect` (`:68-78`)
+  - `minJpegQuality = 20` (`:80-81`)
+  - `maxImageSide = 16384` (`:83-84`)
+  - `maxDisplaySide = 4320` (`:86-87`)
+  - `hasSideAbove` (`:89-90`)
+  - `halveToSide` (`:92-95`)
+  - `halve` (`:97-100`)
+  - `downscale` (`:102-105`): `STBIR.resize` with `defaultOptions`
+  - `toDataUri` (`:107-113`), with the approved comment at `:111`
 - `Mobile/File.hs`:
   - exported at `:13-14`:
     - `cChatResizeImageUri` (`:147-148`)
@@ -313,20 +315,27 @@ License notices, `docs/dependencies/`:
 ## Tests
 
 `tests/ImageTests.hs`, group "Image resize" (`tests/Test.hs:98`):
-- Same aspect ratio, in every comparison below: `|w·h' − h·w'| ≤ w' + h'` (`:123-124`).
+- Same aspect ratio, in every comparison below: `|w·h' − h·w'| ≤ w' + h'` (`:128-129`).
 - data URI (`:26-29`), limit 14000; each result is decoded and compared by aspect ratio with the input:
   - `test.jpg` (1280×720): `data:image/jpg;base64,`
   - `logo-large-rgba.png` (1630×466, transparent pixels): `data:image/png;base64,`
   - `preview-issue1.png` (1200×600, opaque): `data:image/jpg;base64,`
 - 16-bit images (`:30`), 128×128: a JPEG URI for RGB16; for RGBA16 with half opacity, a PNG URI decoded as RGBA8.
-- 65501×2 opaque image (`:31`), limit 100000: a JPEG URI, decoded to a width of at most 65500.
-- image data (`:32-35`), limit 10000:
+- image data (`:31-34`), limit 10000:
   - JPEG from `test.jpg`: starts `FF D8`, width below 1280, same aspect ratio
   - PNG from `logo-large-rgba.png`: RGBA8, width below 1630, same aspect ratio
   - 1×1 image with limit 10: `Left` for JPEG and PNG
-- size bound (`:36`), transparent images, limit 100000:
-  - 2^20×1: PNG
-  - (2^20+1)×1 and 1×(2^20+1): `Left` for PNG, JPEG and the data URI
+- size bound (`:35`), transparent images, limit 100000, for PNG, JPEG and the data URI:
+  - 16384×4 and 4×16384: `Right`
+  - 16385×4 and 4×16385: `Left`
+- display halving (`:36`), opaque and transparent images, `imageFormat`; the image data with limit 261120 and the data URIs with limits 12500 and 14000, each decoded:
+
+  | input | output |
+  |---|---|
+  | 8640×8 | 4320×4 |
+  | 8×8640 | 4×4320 |
+  | 4320×4 | 4320×4 |
+
 - image preview (`:37-41`):
   - `test.jpg`: JPEG data URI of at most 14000 characters
   - an encrypted copy of `test.jpg`: the same
