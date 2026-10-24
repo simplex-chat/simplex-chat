@@ -7,7 +7,7 @@
 # core
 
 A low level API to the core library - the same that is used in desktop clients.
-You are unlikely to ever need to use this module directly.
+You are unlikely to ever need to use this module directly, except for image resizing.
 
 ## Namespaces
 

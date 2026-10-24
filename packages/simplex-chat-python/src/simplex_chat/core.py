@@ -1,7 +1,8 @@
-"""Internal typed async wrapper around libsimplex's 8 C ABI functions.
+"""Typed async wrapper around libsimplex's C ABI functions.
 
 Users interact with `Bot` / `ChatApi`. This module is exposed as
-`simplex_chat.core` for tests and the api.ChatApi class only.
+`simplex_chat.core` for tests, the api.ChatApi class and image resizing
+(`chat_resize_image`, `chat_resize_image_uri`).
 """
 
 from __future__ import annotations
