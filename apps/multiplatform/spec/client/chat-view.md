@@ -21,7 +21,7 @@ Source: `common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt
 
 ## Executive Summary
 
-The Chat View is the primary message display and interaction surface in SimpleX Chat. It is built around the `ChatView` composable (line ~96 in `ChatView.kt`), which orchestrates a `ChatLayout` containing a reverse-scrolling `LazyColumn` of `ChatItemView` items and a `ComposeView` for message input. The view supports direct chats, group chats, local notes, and contact connections, with per-chat theming, search/filter, multi-select, and side-panel info modals. Message rendering is delegated to type-specific composables in the `views/chat/item/` package.
+The Chat View is the primary message display and interaction surface in SimpleX Chat. It is built around the [`ChatView`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L100) composable, which orchestrates a `ChatLayout` containing a reverse-scrolling `LazyColumn` of `ChatItemView` items and a `ComposeView` for message input. The view supports direct chats, group chats, local notes, and contact connections, with per-chat theming, search/filter, multi-select, and side-panel info modals. Message rendering is delegated to type-specific composables in the `views/chat/item/` package.
 
 ---
 
@@ -88,7 +88,7 @@ fun ChatView(
 
 ### Chat Loading
 
-On chat ID change (via `snapshotFlow` on `chatModel.chatId.value`, line ~162):
+On chat ID change (via [`snapshotFlow` on `chatModel.chatId.value`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L181)):
 
 1. Marks unread chat as read (`markUnreadChatAsRead`)
 2. Clears group members state
@@ -99,7 +99,7 @@ On chat ID change (via `snapshotFlow` on `chatModel.chatId.value`, line ~162):
 
 ### Chat Type Routing
 
-The outer `when (chatInfo)` (line ~229) branches:
+The outer [`when (chatInfo)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L275) branches:
 
 | ChatInfo Type | Behavior |
 |---|---|
@@ -111,13 +111,13 @@ The outer `when (chatInfo)` (line ~229) branches:
 
 ## 3. Message List
 
-**Location:** [`ChatView.kt#L1754`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L1754) (`ChatItemsList` composable)
+**Location:** [`ChatView.kt#L1758`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L1758) (`ChatItemsList` composable)
 
 The message list is a `LazyColumnWithScrollBar` with `reverseLayout = true`, meaning index 0 is the newest message at the bottom of the screen.
 
 ### Key Behaviors
 
-- **Merged Items:** Messages are grouped via [`MergedItems.create()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L1818), which collapses consecutive similar system events into expandable groups. Revealed state is tracked in `revealedItems`; `MergedItem.revealed` is true for a single item and for a revealed group row.
+- **Merged Items:** Messages are grouped via [`MergedItems.create()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L1822), which collapses consecutive similar system events into expandable groups. Revealed state is tracked in `revealedItems`; `MergedItem.revealed` is true for a single item and for a revealed group row.
 - **Pagination:** `PreloadItems` triggers `loadMessages` with `ChatPagination.Before` (older) or `ChatPagination.Last` (newer) when the user scrolls near list boundaries.
 - **Scroll To Item:** `scrollToItem` lambda supports animated scrolling to a specific item ID, used by search result taps and quoted message navigation.
 - **Unread Marking:** `MarkItemsReadAfterDelay` composable marks newly visible received items as read after a brief delay.
@@ -397,7 +397,7 @@ Rendering of a chat whose [`ChatInfo.activeChatLayout`](../state.md) is `ChatLay
 |---|---|
 | `terminal = chatInfo.activeChatLayout(user) == ChatLayoutMode.Terminal` | [`ChatView`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L269) |
 | `LocalTerminalLayout provides terminal`, next to `LocalAppBarHandler` and `LocalSelectionManager` | [`ChatView`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L270-L274) |
-| `drawWallpaperImage = false` of `chatViewBackgroundModifier` | [`ChatLayout` composable](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L1007) |
+| `drawWallpaperImage = false` of `chatViewBackgroundModifier` | [`ChatLayout` composable](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L1011) |
 
 [`LocalTerminalLayout`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TerminalItemView.kt#L48) is `false` outside `ChatView` and the theme screens (below); chat item info keeps the classic look. The value applies to every `ChatView` of the chat: main view, member support chats and reports.
 
@@ -426,13 +426,13 @@ Shared with the classic layout, in `ChatView.kt`:
 
 | Function | Purpose |
 |---|---|
-| [`showsSender(item, older, hasSender)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L3869-L3870) | The sender rule of both layouts; `hasSender` is the layout's own condition. Classic: [`shouldShowAvatar`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L3866-L3867), items received in groups and channels |
-| [`sameSender(item, older)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L3872-L3880) | Private; same sender for grouping |
-| [`terminalRowsSeparated(olderRow)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L3848-L3851) | A date separator or the chat banner between a row and the older row: the newest item of the older row is the banner, or [`rowItemSeparation(row)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L3843-L3846) of the older row has a date. False without an older row |
+| [`showsSender(item, older, hasSender)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L3871-L3872) | The sender rule of both layouts; `hasSender` is the layout's own condition. Classic: [`shouldShowAvatar`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L3868-L3869), items received in groups and channels |
+| [`sameSender(item, older)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L3874-L3882) | Private; same sender for grouping |
+| [`terminalRowsSeparated(olderRow)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L3850-L3853) | A date separator or the chat banner between a row and the older row: the newest item of the older row is the banner, or [`rowItemSeparation(row)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L3845-L3848) of the older row has a date. False without an older row |
 | `rowItemSeparation(row)` | Private; the separation of a row, also used by `ChatItemsList` for the date separator it draws: `getItemSeparation` of the newest item of the row and the next newer item (the oldest item of the newer row) when the row is revealed (`MergedItem.revealed`: a single item or a revealed group row), without the newer item otherwise (user, D32) |
-| [`ChatItemSender`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L3506) | Name, badge, role label, `own`, avatar |
-| [`chatItemSender(chatInfo, cItem, range, reversedChatItems, showMemberInfo, showChatInfo)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L3508-L3555) | Private; sender of a row (table below) |
-| [`SenderNameAndRole(sender, modifier, horizontalArrangement, roleEndPadding)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L3560-L3584) | Name and badge (13.5sp; primary for own items, secondary otherwise) and role label. Terminal: start arrangement, start padding `CHAT_ITEM_TEXT_PADDING`. Classic (`BubbleSenderNameAndRole`): `SpaceBetween`; start padding: member image size plus `DEFAULT_PADDING_HALF`; role end padding: `DEFAULT_PADDING_HALF`, plus the tail width when the tail is drawn |
+| [`ChatItemSender`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L3508) | Name, badge, role label, `own`, avatar |
+| [`chatItemSender(chatInfo, cItem, range, reversedChatItems, showMemberInfo, showChatInfo)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L3510-L3557) | Private; sender of a row (table below) |
+| [`SenderNameAndRole(sender, modifier, horizontalArrangement, roleEndPadding)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L3562-L3586) | Name and badge (13.5sp; primary for own items, secondary otherwise) and role label. Terminal: start arrangement, start padding `CHAT_ITEM_TEXT_PADDING`. Classic (`BubbleSenderNameAndRole`): `SpaceBetween`; start padding: member image size plus `DEFAULT_PADDING_HALF`; role end padding: `DEFAULT_PADDING_HALF`, plus the tail width when the tail is drawn |
 
 ### Row Layout
 
@@ -446,7 +446,7 @@ message column     starts at gutter + 4dp
   item             ChatItemView; TERMINAL_NAME_BOTTOM_GAP (5.5sp) below the sender row
 ```
 
-`ChatItemsList` passes [`showAvatar`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L2409) = `terminalItemShowsSender(item, merged.oldest().nextItem)`, and the row gets `chatItemSender(...)` when it is true, `null` otherwise; the [gap above the row](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L2410-L2415), with `terminalRowsSeparated` of the older row (the next merged item of the reversed list), is passed to `ChatViewListItem` as `terminalGap`.
+`ChatItemsList` passes [`showAvatar`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L2413) = `terminalItemShowsSender(item, merged.oldest().nextItem)`, and the row gets `chatItemSender(...)` when it is true, `null` otherwise; the [gap above the row](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L2414-L2419), with `terminalRowsSeparated` of the older row (the next merged item of the reversed list), is passed to `ChatViewListItem` as `terminalGap`.
 
 ### Sender Rule
 

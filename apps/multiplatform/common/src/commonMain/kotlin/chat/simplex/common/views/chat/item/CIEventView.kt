@@ -38,7 +38,7 @@ fun ChatEventWithMeta(ci: ChatItem, content: @Composable (separator: AnnotatedSt
     if (inlineMeta != null) {
       content(AnnotatedString("  "), AnnotatedString(ci.timestampText))
     } else {
-      val copy = terminalReserveSpaceForMeta(ci.meta, null, null, null, MaterialTheme.colors.secondary, showStatus = false, showEdited = false, showViaProxy = false, showTimestamp = true)
+      val copy = terminalReserveSpaceForMeta(ci.meta, chatTTL = null, encrypted = null, signedFileVerified = null, secondaryColor = MaterialTheme.colors.secondary, showStatus = false, showEdited = false, showViaProxy = false, showTimestamp = true)
       content(
         buildAnnotatedString { withStyle(chatEventStyle) { withStyle(reserveTimestampStyle) { append("\u00A0\u00A0\u00A0") } } },
         buildAnnotatedString { withStyle(reserveTimestampStyle) { append(copy) } }

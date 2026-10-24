@@ -2418,15 +2418,13 @@ fun BoxScope.ChatItemsList(
           hasSenderRow = showAvatar
         )
         val isRevealed = remember { derivedStateOf { revealedItems.value.contains(item.id) } }
-        val itemSeparation: ItemSeparation
+        val itemSeparation = rowItemSeparation(merged)
         val prevItemSeparationLargeGap: Boolean
         if (merged is MergedItem.Single || isRevealed.value) {
           val prev = listItem.prevItem
-          itemSeparation = rowItemSeparation(merged)
           val nextForGap = if ((item.mergeCategory != null && item.mergeCategory == prev?.mergeCategory) || isLastItem) null else listItem.nextItem
           prevItemSeparationLargeGap = if (nextForGap == null) false else getItemSeparationLargeGap(nextForGap, item)
         } else {
-          itemSeparation = rowItemSeparation(merged)
           prevItemSeparationLargeGap = false
         }
         CompositionLocalProvider(LocalItemContext provides ItemContext(selectionIndex = index)) {
