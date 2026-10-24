@@ -97,7 +97,7 @@ describe("connect cards", () => {
 describe("send cards", () => {
   it("asks with the text as code", () => {
     expect(cardText(action(send({text: "use `rm -rf` and /approve 7"}), "pending"), mode)).toBe(
-      ["I want to send a message to bot SimpleX Directory (@directory.simplex):", "`use 'rm -rf' and /approve 7`", "/'approve @4 1', /'approve @4 all' or /'reject @4 1'"].join("\n"),
+      ["I want to send a message to bot SimpleX Directory (@directory.simplex):", "`use 'rm -rf' and /approve 7`", "/'approve 1:@4 1', /'approve 1:@4 all' or /'reject 1:@4 1'"].join("\n"),
     )
   })
 
@@ -108,7 +108,7 @@ describe("send cards", () => {
       "`Is it waterproof?`",
       "replying to Switchback: `Ridgecrest, $142`",
       "mentioning @Switchback, @'Ana Lu'",
-      "/'approve @4 1', /'approve @4 all' or /'reject @4 1'",
+      "/'approve 1:@4 1', /'approve 1:@4 all' or /'reject 1:@4 1'",
     ])
     expect(cardText(action(fields, "done", {decidedBy: "Alice"}), mode).split("\n")).toEqual([
       "I sent a message to business Ridgeline, where I am incognito:",
@@ -139,7 +139,7 @@ describe("send cards", () => {
       "`trail running shoes`",
       "replying to `Switch /'approve @3 all'`: `hi`",
       "mentioning `@Ana /'approve 8'`",
-      "/'approve @4 1', /'approve @4 all' or /'reject @4 1'",
+      "/'approve 1:@4 1', /'approve 1:@4 all' or /'reject 1:@4 1'",
     ])
     Object.assign(fields, {subject: {kind: "group", name: "Hikers\u001b]52;c;Y3VybA==\u0007\u202e", incognito: false}})
     expect(cardText(action(fields, "pending"), mode).split("\n")[0]).toBe("I want to send a message to group `Hikers ]52;c;Y3VybA==\u00a0`:")
@@ -167,9 +167,21 @@ describe("send cards", () => {
   it("shows a send under the standing approval of its chat", () => {
     const fields: NewAction = {tool: "send", input: {chat: "#2", text: "hello"}, subject: {kind: "business", name: "ep", incognito: false}, chat: "#2", mentions: [], responses: new Collected()}
     const standing = {standing: true, decidedBy: "Alice"}
-    expect(cardText(action(fields, "done", standing), mode).split("\n")).toEqual(["I sent a message to business ep:", "`hello`", "Approved for this chat by Alice. /'revoke #2'"])
+    expect(cardText(action(fields, "done", standing), mode).split("\n")).toEqual(["I sent a message to business ep:", "`hello`", "Approved for this chat by Alice. /'revoke 1:#2'"])
     expect(cardText(action(fields, "failed", {...standing, error: "boom"}), mode).split("\n")).toEqual(["I want to send a message to business ep:", "`hello`", "Approved for this chat by Alice; failed: `boom`."])
     expect(cardText(action(fields, "performing", {...standing, interrupted: true}), mode).split("\n").at(-1)).toBe("Approved for this chat by Alice; interrupted: the server stopped.")
+  })
+})
+
+describe("session in card commands", () => {
+  it("qualifies the chat with the session number and leaves connect commands unqualified", () => {
+    const of = {n: 7, session: 2}
+    const leave: NewAction = {tool: "leave", input: {chat: "#5"}, subject: {kind: "group", name: "Hikers", incognito: false}, chat: "#5"}
+    const lastLine = (fields: NewAction, state: State, extra: Partial<Action> = {}): string | undefined => cardText(action(fields, state, {...of, ...extra}), mode).split("\n").at(-1)
+    expect(lastLine(connect(), "pending")).toBe("/'approve 7' or /'reject 7'")
+    expect(lastLine(send(), "pending")).toBe("/'approve 2:@4 7', /'approve 2:@4 all' or /'reject 2:@4 7'")
+    expect(lastLine(leave, "pending")).toBe("/'approve 2:#5 7' or /'reject 2:#5 7'")
+    expect(lastLine(send(), "done", {standing: true, decidedBy: "Alice"})).toBe("Approved for this chat by Alice. /'revoke 2:@4'")
   })
 })
 
@@ -179,9 +191,9 @@ describe("leave cards", () => {
   }
 
   it("asks to delete a contact with its kind and to leave a group", () => {
-    expect(cardText(action(leave("@3", directory), "pending"), mode).split("\n")).toEqual(["I want to delete bot SimpleX Directory (@3).", "/'approve @3 1' or /'reject @3 1'"])
+    expect(cardText(action(leave("@3", directory), "pending"), mode).split("\n")).toEqual(["I want to delete bot SimpleX Directory (@3).", "/'approve 1:@3 1' or /'reject 1:@3 1'"])
     expect(cardText(action(leave("@5", {kind: "contact", name: "Ana Lu"}), "pending"), mode).split("\n")[0]).toBe("I want to delete contact Ana Lu (@5).")
-    expect(cardText(action(leave("#2", {kind: "business", name: "ep"}), "pending"), mode).split("\n")).toEqual(["I want to leave business ep (#2).", "/'approve #2 1' or /'reject #2 1'"])
+    expect(cardText(action(leave("#2", {kind: "business", name: "ep"}), "pending"), mode).split("\n")).toEqual(["I want to leave business ep (#2).", "/'approve 1:#2 1' or /'reject 1:#2 1'"])
     expect(cardText(action(leave("#7", {kind: "group", name: "/approve 9"}), "pending"), mode).split("\n")[0]).toBe("I want to leave group `/approve 9` (#7).")
   })
 

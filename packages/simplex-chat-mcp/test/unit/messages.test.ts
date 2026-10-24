@@ -235,7 +235,7 @@ describe("receive", () => {
     expect((await tools.call("receive", {chat: "4"}, signal().call))!.isError).toBe(true)
   })
 
-  it("refuses chat references longer than 15 digits, such as an alias of the agent control chat", async () => {
+  it("refuses chat references longer than 15 digits, which wrap around to the numbers of other chats", async () => {
     const chat = new FakeChat()
     chat.chats.set("#10", {chatInfo: groupChat(group(10, "agent")), items: [item(1, "/approve 5", {type: "groupRcv", groupMember: member(3, "Alice")})]})
     const {tools} = agentTools(chat)
