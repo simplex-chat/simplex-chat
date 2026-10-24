@@ -659,7 +659,8 @@ def main():
     set_widths(play_ws, [12, 26, 32, 7, 9, 12, 10, 30, 6, 18, 12, 10, 9, 14, 12, 18])
     apple_decimals = 'IF(ROUND(Apple!H{row}*10,6)=ROUND(Apple!H{row}*10,0),1,2)'
     build_export(apple_export_ws, "Apple", APPLE_COLUMNS, apple_last, lambda row: f'=FIXED(Apple!H{row},IF(ISNUMBER(SEARCH(".",Apple!E{row})),{apple_decimals.format(row=row)},0),TRUE)')
-    build_export(play_export_ws, "Play", PLAY_COLUMNS, play_last, lambda row: f"=Play!G{row}")
+    play_decimals = 'IF(ROUND(Play!G{row},6)=ROUND(Play!G{row},0),0,IF(ROUND(Play!G{row}*10,6)=ROUND(Play!G{row}*10,0),1,2))'
+    build_export(play_export_ws, "Play", PLAY_COLUMNS, play_last, lambda row: f"=FIXED(Play!G{row},{play_decimals.format(row=row)},TRUE)")
 
     wb.calculation = CalcProperties(fullCalcOnLoad=True)
     wb.save(output)
