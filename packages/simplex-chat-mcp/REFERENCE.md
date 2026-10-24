@@ -188,7 +188,7 @@ The option `approve` sets what the owner approves.
 
 In mode `requests`, the plugin's PreToolUse hook allows its tool calls, so Claude Code does not prompt for them.
 
-In mode `host`, approval is left to Claude Code. The session's MCP server marks `connect`, `send` and `leave` with `_meta["anthropic/requiresUserInteraction"]: true` when it starts, so Claude Code shows its permission prompt on every call of these tools; the PreToolUse hook does not skip it. In `dontAsk` mode and in `claude -p` runs Claude Code denies these calls. In both modes a new action is refused while the Main group has no owner.
+In mode `host`, approval is left to Claude Code. The session's MCP server marks `connect`, `send` and `leave` with `_meta["anthropic/requiresUserInteraction"]: true` when it starts, so Claude Code shows its permission prompt on every call of these tools; the PreToolUse hook's `allow` does not skip it ([Claude Code hooks docs](https://code.claude.com/docs/en/hooks#tools-that-require-user-interaction): a hook can't skip the approval prompt of such a tool with "allow"). In `dontAsk` mode and in `claude -p` runs Claude Code denies these calls. In both modes a new action is refused while the Main group has no owner.
 
 ## Expiry
 
@@ -214,7 +214,7 @@ A `send` to a chat that `list` shows with `connected: false` is refused before a
 
 Incognito: the core creates a random profile for that one chat, so peers of different chats can't link them. The tool inputs, results and errors are in [`spec/api.md`](spec/api.md).
 
-When a tool call is refused because the Main group has no owner, the text is `The agent has no owner. Open this link in the SimpleX app and join: <link>`.
+When a tool call is refused because the Main group has no owner, the text is `The agent has no owner. Open this link in the SimpleX app and join: <link>`, or `The agent has no owner. Run /simplex:link in Claude Code.` when the group has no link.
 
 ## Waiting for approval in Claude Code
 

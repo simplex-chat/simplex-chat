@@ -32,7 +32,7 @@ You need Node.js 22 or later, Claude Code and the [SimpleX Chat app](https://sim
 
    Approve its card in "SimpleX MCP" with one tap.
 
-Each Claude Code session has its own SimpleX profile, "SimpleX MCP - <session name>"; name a session with `claude -n NAME` or `/rename`. Change the group name, the approval mode and the expiry in `/plugin` > Installed > simplex > Configure options, or in `/config`.
+Each Claude Code session has its own SimpleX profile, `SimpleX MCP - <session name>`; name a session with `claude -n NAME` or `/rename`. Change the group name, the approval mode and the expiry in `/plugin` > Installed > simplex > Configure options, or in `/config`.
 
 ## Prompt your agent from the app
 
