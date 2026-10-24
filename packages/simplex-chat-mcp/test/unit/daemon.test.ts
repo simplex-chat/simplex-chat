@@ -1,4 +1,7 @@
+import {once} from "events"
 import {closeSync, existsSync, mkdirSync, mkdtempSync, openSync, readFileSync, rmSync, writeFileSync} from "fs"
+import {request} from "http"
+import {Socket} from "net"
 import {tmpdir} from "os"
 import {join} from "path"
 import {Actions} from "../../src/actions"
@@ -12,6 +15,7 @@ const id1 = "11111111-1111-4111-8111-111111111111"
 const id2 = "22222222-2222-4222-8222-222222222222"
 const token = "t"
 const minutes = 60_000
+const readDefaultConfig = () => defaultConfig
 const fakeTimers: Parameters<typeof jest.useFakeTimers>[0] = {doNotFake: ["nextTick", "setImmediate", "queueMicrotask"]}
 
 interface FakeAgent {
@@ -33,8 +37,10 @@ function deps(root: string) {
   const actions: {session: number}[] = []
   const hubStops: number[] = []
   const events: string[] = []
-  const gates: {open?: Promise<void>; close?: Promise<void>} = {}
+  const gates: {open?: Promise<void>; close?: Promise<void>; call?: Promise<void>; hubStop?: Promise<void>} = {}
   const opening = deferred()
+  const calling = deferred()
+  const aborted = deferred()
   const hubStopping = deferred()
   const stopped = deferred<number>()
   const onStopped = jest.fn(stopped.resolve)
@@ -50,6 +56,7 @@ function deps(root: string) {
     stop: async () => {
       hubStops.push(agents.filter(({closed}) => closed).length)
       hubStopping.resolve()
+      await gates.hubStop
       return 0
     },
   }
@@ -82,8 +89,12 @@ function deps(root: string) {
         },
         call: async (tool: string, _input: unknown, call: {signal: AbortSignal; progress: (m: string) => void}) => {
           agent.calls.push(tool)
+          calling.resolve()
           call.progress("waiting")
-          if (tool === "receive") await new Promise(resolve => call.signal.addEventListener("abort", resolve))
+          if (tool === "receive") {
+            await new Promise(resolve => call.signal.addEventListener("abort", resolve))
+            aborted.resolve()
+          } else await gates.call
           return call.signal.aborted ? undefined : {content: [{type: "text", text: "{}"}], structuredContent: {}}
         },
       }
@@ -95,7 +106,7 @@ function deps(root: string) {
     gates[name] = promise
     return resolve
   }
-  return {d, agents, configs, actions, hubStops, events, onStopped, stoppedCode: stopped.promise, opening: opening.promise, hubStopping: hubStopping.promise, gate}
+  return {d, agents, configs, actions, hubStops, events, onStopped, stoppedCode: stopped.promise, opening: opening.promise, calling: calling.promise, aborted: aborted.promise, hubStopping: hubStopping.promise, gate}
 }
 
 let root: string
@@ -125,6 +136,10 @@ function attach(id: string, signal: AbortSignal) {
   return {attached, firstLine: first.promise, lines}
 }
 
+function serverConnection(daemon: Daemon): Promise<Socket> {
+  return once(daemon["server"], "connection").then(([socket]) => socket as Socket)
+}
+
 function storeSession(id: string, number: number, name: string) {
   const folder = sessionFolder(root, id)
   createDataFolder(folder)
@@ -134,7 +149,7 @@ function storeSession(id: string, number: number, name: string) {
 describe("daemon", () => {
   it("registers sessions with stable numbers and renames on a new title", async () => {
     const {d, agents, configs} = deps(root)
-    daemon = await Daemon.start(d, defaultConfig)
+    daemon = await Daemon.start(d, readDefaultConfig)
     const first = await register(id1)
     expect(first).toEqual({number: 1, displayName: "SimpleX MCP - app", version: "0.2.0", protocol: protocolVersion, owner: {owners: [], link: "https://simplex.chat/g#link"}})
     expect(await post("/session", {id: id2, name: "docs", project: "/p/app", config: {...defaultConfig, mainGroup: "Agents"}})).toMatchObject({number: 2, displayName: "SimpleX MCP - docs"})
@@ -146,18 +161,18 @@ describe("daemon", () => {
 
   it("opens one agent for concurrent registrations", async () => {
     const {d, agents} = deps(root)
-    daemon = await Daemon.start(d, defaultConfig)
+    daemon = await Daemon.start(d, readDefaultConfig)
     await Promise.all([1, 2, 3].map(() => register(id1)))
     expect(agents).toHaveLength(1)
   })
 
   it("holds the lock while running and refuses a second daemon in the same folder", async () => {
     const {d} = deps(root)
-    daemon = await Daemon.start(d, defaultConfig)
+    daemon = await Daemon.start(d, readDefaultConfig)
     expect(readFileSync(lockFile(), "utf8")).toBe(`${process.pid}\n`)
     writeFileSync(lockFile(), `${process.ppid}\n`)
     const openHub = jest.fn(d.openHub)
-    await expect(Daemon.start({...d, openHub}, defaultConfig)).rejects.toThrow(LockedError)
+    await expect(Daemon.start({...d, openHub}, readDefaultConfig)).rejects.toThrow(LockedError)
     expect(openHub).not.toHaveBeenCalled()
     writeFileSync(lockFile(), `${process.pid}\n`)
   })
@@ -165,14 +180,14 @@ describe("daemon", () => {
   it("stops the hub and releases the lock when it cannot listen", async () => {
     const {d, hubStops} = deps(root)
     mkdirSync(socketPath(root))
-    await expect(Daemon.start(d, defaultConfig)).rejects.toThrow()
+    await expect(Daemon.start(d, readDefaultConfig)).rejects.toThrow()
     expect(hubStops).toHaveLength(1)
     expect(existsSync(lockFile())).toBe(false)
   })
 
   it("streams progress and the result, and cancels the call when the client closes", async () => {
-    const {d, agents} = deps(root)
-    daemon = await Daemon.start(d, defaultConfig)
+    const {d, agents, aborted} = deps(root)
+    daemon = await Daemon.start(d, readDefaultConfig)
     await register(id1)
     const lines: unknown[] = []
     await streamLines(socketPath(root), token, "/call", {id: id1, tool: "list", input: {}}, line => lines.push(line))
@@ -180,12 +195,13 @@ describe("daemon", () => {
     const controller = new AbortController()
     const receiving = streamLines(socketPath(root), token, "/call", {id: id1, tool: "receive", input: {chat: "@1"}}, () => controller.abort(), controller.signal)
     await expect(receiving).rejects.toThrow()
+    await aborted
     expect(agents[0].calls).toEqual(["list", "receive"])
   })
 
   it("refuses a call or an attachment of an unknown session", async () => {
     const {d, agents} = deps(root)
-    daemon = await Daemon.start(d, defaultConfig)
+    daemon = await Daemon.start(d, readDefaultConfig)
     const unknown = "Unknown session; restart the Claude Code session."
     await expect(streamLines(socketPath(root), token, "/call", {id: id1, tool: "list", input: {}}, () => undefined)).rejects.toThrow(unknown)
     await expect(streamLines(socketPath(root), token, "/attach", {id: id1}, () => undefined)).rejects.toMatchObject({message: unknown, status: 409})
@@ -194,7 +210,7 @@ describe("daemon", () => {
 
   it("writes the versions first on attach and counts attachments", async () => {
     const {d} = deps(root)
-    daemon = await Daemon.start(d, defaultConfig)
+    daemon = await Daemon.start(d, readDefaultConfig)
     await register(id1)
     const controller = new AbortController()
     const {attached, firstLine, lines} = attach(id1, controller.signal)
@@ -208,7 +224,7 @@ describe("daemon", () => {
   it("closes an idle agent without actions, and then stops", async () => {
     jest.useFakeTimers(fakeTimers)
     const {d, agents, actions, onStopped, stoppedCode} = deps(root)
-    daemon = await Daemon.start(d, defaultConfig)
+    daemon = await Daemon.start(d, readDefaultConfig)
     await register(id1)
     const controller = new AbortController()
     const {attached, firstLine} = attach(id1, controller.signal)
@@ -233,7 +249,7 @@ describe("daemon", () => {
   it("closes a registered agent that never attaches", async () => {
     jest.useFakeTimers(fakeTimers)
     const {d, agents} = deps(root)
-    daemon = await Daemon.start(d, defaultConfig)
+    daemon = await Daemon.start(d, readDefaultConfig)
     await register(id1)
     await jest.advanceTimersByTimeAsync(10 * minutes - 1)
     expect(agents[0].closed).toBe(false)
@@ -244,7 +260,7 @@ describe("daemon", () => {
   it("stops 10 minutes after start when no session registers", async () => {
     jest.useFakeTimers(fakeTimers)
     const {d, stoppedCode} = deps(root)
-    daemon = await Daemon.start(d, defaultConfig)
+    daemon = await Daemon.start(d, readDefaultConfig)
     await jest.advanceTimersByTimeAsync(10 * minutes)
     expect(await stoppedCode).toBe(0)
     daemon = undefined
@@ -253,7 +269,7 @@ describe("daemon", () => {
   it("keeps running when a session registers during the idle stop wait", async () => {
     jest.useFakeTimers(fakeTimers)
     const {d, agents, onStopped} = deps(root)
-    daemon = await Daemon.start(d, defaultConfig)
+    daemon = await Daemon.start(d, readDefaultConfig)
     await jest.advanceTimersByTimeAsync(5 * minutes)
     await register(id1)
     await jest.advanceTimersByTimeAsync(9 * minutes)
@@ -264,7 +280,7 @@ describe("daemon", () => {
   it("keeps running after a refused call of an unknown session, and stops when idle", async () => {
     jest.useFakeTimers(fakeTimers)
     const {d, stoppedCode} = deps(root)
-    daemon = await Daemon.start(d, defaultConfig)
+    daemon = await Daemon.start(d, readDefaultConfig)
     await expect(streamLines(socketPath(root), token, "/call", {id: id1, tool: "list", input: {}}, () => undefined)).rejects.toThrow()
     await jest.advanceTimersByTimeAsync(10 * minutes)
     expect(await stoppedCode).toBe(0)
@@ -275,7 +291,7 @@ describe("daemon", () => {
     storeSession(id1, 1, "app")
     jest.useFakeTimers(fakeTimers)
     const {d, agents} = deps(root)
-    daemon = await Daemon.start(d, defaultConfig)
+    daemon = await Daemon.start(d, readDefaultConfig)
     await streamLines(socketPath(root), token, "/call", {id: id1, tool: "list", input: {}}, () => undefined)
     expect(agents).toMatchObject([{number: 1, displayName: "SimpleX MCP - app", calls: ["list"]}])
     expect(await register(id2)).toMatchObject({number: 2})
@@ -286,7 +302,7 @@ describe("daemon", () => {
   it("opens a session again only after its idle close completes", async () => {
     jest.useFakeTimers(fakeTimers)
     const {d, events, gate} = deps(root)
-    daemon = await Daemon.start(d, defaultConfig)
+    daemon = await Daemon.start(d, readDefaultConfig)
     await register(id1)
     const openClose = gate("close")
     await jest.advanceTimersByTimeAsync(10 * minutes)
@@ -301,7 +317,7 @@ describe("daemon", () => {
     storeSession(id1, 1, "app")
     const {d, agents, opening, hubStopping, gate, stoppedCode} = deps(root)
     const finishOpen = gate("open")
-    daemon = await Daemon.start(d, defaultConfig)
+    daemon = await Daemon.start(d, readDefaultConfig)
     const attached = streamLines(socketPath(root), token, "/attach", {id: id1}, () => undefined)
     await opening
     const stopping = daemon.stop()
@@ -313,9 +329,117 @@ describe("daemon", () => {
     expect(await stoppedCode).toBe(0)
   })
 
+  it("does not count an attachment whose client left while the session opened", async () => {
+    jest.useFakeTimers(fakeTimers)
+    storeSession(id1, 1, "app")
+    const {d, agents, opening, gate} = deps(root)
+    const finishOpen = gate("open")
+    daemon = await Daemon.start(d, readDefaultConfig)
+    const connection = serverConnection(daemon)
+    const controller = new AbortController()
+    const attached = streamLines(socketPath(root), token, "/attach", {id: id1}, () => undefined, controller.signal).catch(() => undefined)
+    await opening
+    controller.abort()
+    await once(await connection, "close")
+    finishOpen()
+    await attached
+    expect(await requestJson(socketPath(root), token, "GET", "/status")).toMatchObject({sessions: [{number: 1, attached: 0}]})
+    await jest.advanceTimersByTimeAsync(10 * minutes)
+    expect(agents[0].closed).toBe(true)
+  })
+
+  it("does not run a call whose client left while the session opened", async () => {
+    storeSession(id1, 1, "app")
+    const {d, agents, opening, gate, stoppedCode} = deps(root)
+    const finishOpen = gate("open")
+    daemon = await Daemon.start(d, readDefaultConfig)
+    const connection = serverConnection(daemon)
+    const controller = new AbortController()
+    const called = streamLines(socketPath(root), token, "/call", {id: id1, tool: "list", input: {}}, () => undefined, controller.signal).catch(() => undefined)
+    await opening
+    controller.abort()
+    await once(await connection, "close")
+    finishOpen()
+    await called
+    await daemon.stop()
+    expect(agents[0].calls).toEqual([])
+    expect(await stoppedCode).toBe(0)
+  })
+
+  it("keeps an unattached session open during a call and closes it 10 minutes after", async () => {
+    jest.useFakeTimers(fakeTimers)
+    const {d, agents, calling, gate} = deps(root)
+    daemon = await Daemon.start(d, readDefaultConfig)
+    await register(id1)
+    const finishCall = gate("call")
+    const called = streamLines(socketPath(root), token, "/call", {id: id1, tool: "list", input: {}}, () => undefined)
+    await calling
+    await jest.advanceTimersByTimeAsync(25 * minutes)
+    expect(agents[0].closed).toBe(false)
+    expect(await requestJson(socketPath(root), token, "GET", "/status")).toMatchObject({sessions: [{number: 1, attached: 0}]})
+    finishCall()
+    await called
+    await jest.advanceTimersByTimeAsync(10 * minutes - 1)
+    expect(agents[0].closed).toBe(false)
+    await jest.advanceTimersByTimeAsync(1)
+    expect(agents[0].closed).toBe(true)
+  })
+
+  it("refuses a registration that arrives while the daemon stops", async () => {
+    const {d, agents, gate, hubStopping, stoppedCode} = deps(root)
+    const finishHubStop = gate("hubStop")
+    daemon = await Daemon.start(d, readDefaultConfig)
+    const requested = once(daemon["server"], "request")
+    const req = request({socketPath: socketPath(root), method: "POST", path: "/session", headers: {authorization: `Bearer ${token}`}})
+    const response = new Promise<{status: number | undefined; text: string}>((resolve, reject) => {
+      req.on("response", res => {
+        let text = ""
+        res.setEncoding("utf8")
+        res.on("data", chunk => (text += chunk))
+        res.on("end", () => resolve({status: res.statusCode, text}))
+      })
+      req.on("error", reject)
+    })
+    req.flushHeaders()
+    await requested
+    const stopping = daemon.stop()
+    await hubStopping
+    req.end(JSON.stringify({id: id1, project: "/p/app", config: defaultConfig}))
+    expect(await response).toEqual({status: 503, text: JSON.stringify({error: "The SimpleX daemon is stopping."})})
+    finishHubStop()
+    await stopping
+    expect(agents).toHaveLength(0)
+    expect(await stoppedCode).toBe(0)
+  })
+
+  it("stops when the /stop client leaves before the reply", async () => {
+    const {d, hubStopping, gate, stoppedCode} = deps(root)
+    const finishHubStop = gate("hubStop")
+    daemon = await Daemon.start(d, readDefaultConfig)
+    const connection = serverConnection(daemon)
+    const controller = new AbortController()
+    const stopRequest = streamLines(socketPath(root), token, "/stop", undefined, () => undefined, controller.signal).catch(() => undefined)
+    await hubStopping
+    controller.abort()
+    await once(await connection, "close")
+    finishHubStop()
+    await stopRequest
+    expect(await stoppedCode).toBe(0)
+    daemon = undefined
+  })
+
+  it("stops when its lock file is already gone", async () => {
+    const {d, stoppedCode} = deps(root)
+    daemon = await Daemon.start(d, readDefaultConfig)
+    rmSync(lockFile())
+    await daemon.stop()
+    expect(await stoppedCode).toBe(0)
+    daemon = undefined
+  })
+
   it("reports status, resets owners and stops on request", async () => {
     const {d, agents, hubStops, stoppedCode} = deps(root)
-    daemon = await Daemon.start(d, defaultConfig)
+    daemon = await Daemon.start(d, readDefaultConfig)
     await register(id1)
     expect(await requestJson(socketPath(root), token, "GET", "/status")).toEqual({
       version: "0.2.0",
@@ -341,6 +465,13 @@ describe("runDaemon", () => {
     await runDaemon({SIMPLEX_MCP_HOME: root})
     expect(write.mock.calls).toEqual([["running\n"]])
     expect(readFileSync(lockFile(), "utf8")).toBe(`${process.ppid}\n`)
+  })
+
+  it("reports running before it reads the config", async () => {
+    writeFileSync(lockFile(), `${process.ppid}\n`)
+    const write = jest.spyOn(process.stdout, "write").mockImplementation(() => true)
+    await runDaemon({SIMPLEX_MCP_HOME: root, CLAUDE_PLUGIN_OPTION_APPROVE: "always"})
+    expect(write.mock.calls).toEqual([["running\n"]])
   })
 
   it("reports to the ready descriptor when given", async () => {

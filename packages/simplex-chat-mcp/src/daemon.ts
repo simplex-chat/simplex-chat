@@ -56,6 +56,7 @@ interface Entry {
   opening: Promise<AgentLike>
   agent?: AgentLike
   attached: number
+  calls: number
   idle?: NodeJS.Timeout
 }
 
@@ -73,11 +74,11 @@ export class Daemon {
     this.nextNumber = Math.max(0, ...sessionNumbers(deps.root)) + 1
   }
 
-  static async start(deps: DaemonDeps, config: Config): Promise<Daemon> {
+  static async start(deps: DaemonDeps, config: () => Config): Promise<Daemon> {
     acquireLock(deps.root)
     try {
       const daemon = new Daemon(deps)
-      daemon.hub = await deps.openHub(config, daemon.sessions(), (action, signal) => daemon.perform(action, signal))
+      daemon.hub = await deps.openHub(config(), daemon.sessions(), (action, signal) => daemon.perform(action, signal))
       try {
         daemon.server = await listen(socketPath(deps.root), deps.token, daemon.routes())
       } catch (error) {
@@ -129,15 +130,12 @@ export class Daemon {
     releaseLock(this.deps.root)
     log("Stopped.")
     const stopped = (): void => {
+      this.server.closeAllConnections()
       closed.then(() => this.deps.onStopped(0))
     }
-    // the /stop reply is sent after this promise resolves; its connection closes only once the reply is written
-    if (reply === undefined) stopped()
-    else
-      reply.once("finish", () => {
-        this.server.closeIdleConnections()
-        stopped()
-      })
+    // the /stop reply is sent after this promise resolves; "close" also fires when the client leaves before it is written
+    if (reply === undefined || reply.destroyed) stopped()
+    else reply.once("close", stopped)
   }
 
   private agents(): AgentLike[] {
@@ -187,19 +185,26 @@ export class Daemon {
   }
 
   private async onCall({id, tool, input}: CallRequest, res: ServerResponse): Promise<void> {
-    const agent = await this.entry(id).opening
+    const entry = this.entry(id)
+    const agent = await entry.opening
     if (!this.hold(res)) return
     const controller = new AbortController()
     res.once("close", () => {
       if (!res.writableFinished) controller.abort()
     })
     const write = startLines(res)
-    const result = await agent.call(tool, input, {signal: controller.signal, progress: progress => write({progress})})
-    if (!controller.signal.aborted) res.end(`${JSON.stringify({result: result ?? null})}\n`)
+    entry.calls++
+    try {
+      const result = await agent.call(tool, input, {signal: controller.signal, progress: progress => write({progress})})
+      if (!controller.signal.aborted) res.end(`${JSON.stringify({result: result ?? null})}\n`)
+    } finally {
+      entry.calls--
+      if (entry.attached === 0 && entry.calls === 0) this.scheduleIdle(id, entry)
+    }
   }
 
   private hold(res: ServerResponse): boolean {
-    if (this.stopping !== undefined) {
+    if (this.stopping !== undefined || res.destroyed) {
       res.destroy()
       return false
     }
@@ -210,10 +215,11 @@ export class Daemon {
 
   // the stop timer runs only while no entries exist, so a new entry cancels it
   private entry(id: string, request?: SessionRequest): Entry {
+    if (this.stopping !== undefined) throw new SocketError("The SimpleX daemon is stopping.", 503)
     const existing = this.entries.get(id)
     if (existing !== undefined) return existing
     clearTimeout(this.stopTimer)
-    const entry: Entry = {attached: 0, opening: this.openAgent(id, request)}
+    const entry: Entry = {attached: 0, calls: 0, opening: this.openAgent(id, request)}
     this.entries.set(id, entry)
     this.scheduleIdle(id, entry)
     entry.opening.then(
@@ -247,7 +253,7 @@ export class Daemon {
     if (this.stopping !== undefined) return
     entry.idle = setTimeout(() => {
       const {agent} = entry
-      if (agent === undefined || this.hub.actions.ofSession(agent.number).length > 0) return this.scheduleIdle(id, entry)
+      if (agent === undefined || entry.calls > 0 || this.hub.actions.ofSession(agent.number).length > 0) return this.scheduleIdle(id, entry)
       this.entries.delete(id)
       this.closeAgent(id, agent)
       if (this.entries.size === 0) this.scheduleStop()
@@ -282,7 +288,7 @@ export async function runDaemon(env: NodeJS.ProcessEnv = process.env): Promise<v
   let daemon: Daemon
   try {
     createDataFolder(root)
-    daemon = await Daemon.start(productionDeps(root), readConfig(env))
+    daemon = await Daemon.start(productionDeps(root), () => readConfig(env))
   } catch (error) {
     if (error instanceof LockedError) return ready("running")
     ready(`error: ${errorText(error)}`)

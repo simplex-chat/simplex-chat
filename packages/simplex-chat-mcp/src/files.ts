@@ -86,7 +86,11 @@ export function acquireLock(dir: string): void {
 }
 
 export function releaseLock(dir: string): void {
-  unlinkSync(join(dir, "lock"))
+  try {
+    unlinkSync(join(dir, "lock"))
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error
+  }
 }
 
 export function serverToken(dir: string): string {

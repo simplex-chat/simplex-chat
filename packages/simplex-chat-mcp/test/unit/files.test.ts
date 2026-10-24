@@ -25,6 +25,12 @@ describe("lock", () => {
     expect(existsSync(join(dir, "lock"))).toBe(false)
   })
 
+  it("tolerates a lock that is already removed, and reports other release errors", () => {
+    releaseLock(dir)
+    mkdirSync(join(dir, "lock"))
+    expect(() => releaseLock(dir)).toThrow(expect.objectContaining({code: expect.stringMatching(/^(EISDIR|EPERM)$/)}))
+  })
+
   it("refuses a lock of a running process", () => {
     const runningPid = process.ppid
     writeFileSync(join(dir, "lock"), `${runningPid}\n`)
