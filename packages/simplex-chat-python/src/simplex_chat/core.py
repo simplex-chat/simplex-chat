@@ -2,7 +2,7 @@
 
 Users interact with `Bot` / `ChatApi`. This module is exposed as
 `simplex_chat.core` for tests, the api.ChatApi class and image resizing
-(`chat_resize_image`, `chat_resize_image_uri`).
+(`resize_image`, `chat_resize_image`, `chat_resize_image_uri`).
 """
 
 from __future__ import annotations
