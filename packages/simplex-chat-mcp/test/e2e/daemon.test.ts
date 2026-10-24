@@ -14,6 +14,7 @@ import {daemonPid, killDaemon, spawnSession} from "./stdio"
 const one = "11111111-1111-4111-8111-111111111111"
 const two = "22222222-2222-4222-8222-222222222222"
 const three = "33333333-3333-4333-8333-333333333333"
+const four = "44444444-4444-4444-8444-444444444444"
 const daemonStopped = "The SimpleX daemon stopped; repeat the call."
 
 let smpServer: SmpServer
@@ -157,6 +158,17 @@ test("two sessions in one Main group, then resume after a restart", async () => 
   const listed = await callTool(client, two, "list", {})
   expect(listed.result.chats).toContainEqual(expect.objectContaining({chat: second.chat, type: "contact", name: "Directory", connected: true}))
   expect(listed.result.actions).toEqual([])
+}, 600_000)
+
+test("a profile the daemon creates has no chats", async () => {
+  const root = join(dir, "fresh", "root")
+  await prepareRoot(smpServer.address, root, [])
+  await startDaemon(root)
+  const client = DaemonClient.forRoot(root)
+
+  expect(await openSession(client, four, "four")).toMatchObject({number: 1, displayName: "SimpleX MCP - four"})
+  const listed = await callTool(client, four, "list", {})
+  expect(listed.result.chats).toEqual([])
 }, 600_000)
 
 test("stdio session spawns the daemon and recovers after the daemon is killed", async () => {

@@ -98,7 +98,7 @@ Plugin option expire_hours: hours from 1 to 23 expected, got 48. Change it in /p
 
 ## Sessions and profiles
 
-Each Claude Code session ID has its own SimpleX profile, with its own chats, contacts and incognito profiles. The profile name is `SimpleX MCP - <name>`: the session name from `claude -n NAME` or `/rename`, else the name of the project folder, else `Claude Code`. The name follows the display name rules: characters a display name can't hold are left out, and it keeps at most 50 characters. A session renamed with `/rename` gets the new profile name at its next start, for example with `claude --resume`.
+Each Claude Code session ID has its own SimpleX profile, with its own chats, contacts and incognito profiles. A new profile starts with no chats: the daemon deletes the contact `Ask SimpleX Team` that the SimpleX core adds to every new profile. The profile name is `SimpleX MCP - <name>`: the session name from `claude -n NAME` or `/rename`, else the name of the project folder, else `Claude Code`. The name follows the display name rules: characters a display name can't hold are left out, and it keeps at most 50 characters. A session renamed with `/rename` gets the new profile name at its next start, for example with `claude --resume`.
 
 - Each session has a number, 1 for the first, kept across daemon restarts. Cards and owner commands use it: `Session 2`, `2:@3`.
 - The session's MCP server creates its profile when it first reaches the daemon; the SessionStart hook only records the title. After `/clear`, Claude Code keeps the MCP server and its session ID, so the session keeps its profile, and no profile is created for the new ID the hook sees.

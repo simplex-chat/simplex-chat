@@ -58,6 +58,7 @@ sequenceDiagram
   D->>D: lock, session numbers
   D->>H: Hub.open(options)
   H->>H: /_create user {"displayName":"SimpleX MCP","peerType":"agent"}
+  H->>H: /_delete @C full notify=off (preset contact of a new user)
   H->>H: /network socks=off smp-proxy=always smp-proxy-fallback=protected
   H->>H: startChat, events buffered
   H->>H: /_groups USER (no marker)
@@ -88,7 +89,7 @@ Notes:
 - With an owner present, the hook output is `{}`.
 - The daemon runs `ownerJoined` for a `joinedGroupMember` event of a human while no owner exists ([control.ts:161](../src/control.ts#L161), [:267-273](../src/control.ts#L267-L273)).
 
-Source: [hook.ts:28-46](../src/hook.ts#L28-L46), [client.ts:32-89](../src/client.ts#L32-L89), [daemon.ts:79-96](../src/daemon.ts#L79-L96), [:334-356](../src/daemon.ts#L334-L356), [hub.ts:26-48](../src/hub.ts#L26-L48), [core.ts:21-35](../src/core.ts#L21-L35), [control.ts:92-105](../src/control.ts#L92-L105), [:280-285](../src/control.ts#L280-L285), [:338-349](../src/control.ts#L338-L349), [daemon.ts:172-208](../src/daemon.ts#L172-L208).
+Source: [hook.ts:28-46](../src/hook.ts#L28-L46), [client.ts:32-89](../src/client.ts#L32-L89), [daemon.ts:79-96](../src/daemon.ts#L79-L96), [:334-356](../src/daemon.ts#L334-L356), [hub.ts:26-48](../src/hub.ts#L26-L48), [core.ts:24-40](../src/core.ts#L24-L40), [control.ts:92-105](../src/control.ts#L92-L105), [:280-285](../src/control.ts#L280-L285), [:338-349](../src/control.ts#L338-L349), [daemon.ts:172-208](../src/daemon.ts#L172-L208).
 
 ---
 
@@ -490,9 +491,9 @@ Notes:
 - The interrupted card line is `DECIDER; interrupted: the SimpleX daemon stopped.` ([control.ts:390](../src/control.ts#L390)).
 - A host-mode action whose counter is being written at the stop is set to `pending` and cancelled without a perform ([actions.ts:247](../src/actions.ts#L247)).
 - The perform signal is aborted after the actions are marked interrupted: a `connect` waiting for its connection ends, and an interrupted perform logs no line ([actions.ts:225](../src/actions.ts#L225), [:259](../src/actions.ts#L259), [tools.ts:509-511](../src/tools.ts#L509-L511)).
-- An error of a `/sql` query of the delivery wait is logged as `delivery wait: ERROR` and ends the wait ([core.ts:54-62](../src/core.ts#L54-L62)).
+- An error of a `/sql` query of the delivery wait is logged as `delivery wait: ERROR` and ends the wait ([core.ts:69-77](../src/core.ts#L69-L77)).
 
-Source: [daemon.ts:98-142](../src/daemon.ts#L98-L142), [:348-355](../src/daemon.ts#L348-L355), [hub.ts:77-84](../src/hub.ts#L77-L84), [actions.ts:219-229](../src/actions.ts#L219-L229), [core.ts:44-52](../src/core.ts#L44-L52).
+Source: [daemon.ts:98-142](../src/daemon.ts#L98-L142), [:348-355](../src/daemon.ts#L348-L355), [hub.ts:77-84](../src/hub.ts#L77-L84), [actions.ts:219-229](../src/actions.ts#L219-L229), [core.ts:59-67](../src/core.ts#L59-L67).
 
 ---
 

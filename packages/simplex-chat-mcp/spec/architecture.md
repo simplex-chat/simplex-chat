@@ -319,7 +319,7 @@ The session process keeps only its connection state: the connect promise and the
 | Main group marker and counter | hub | Main group | `{simplexMcp: {control: true, nextAction: N}}` | [`createControlChat`](../src/control.ts#L338-L349), [`saveCounter`](../src/control.ts#L122) | [`findControlGroup`](../src/control.ts#L328), [`controlDataOf`](../src/control.ts#L333) |
 | Standing approval | session | contact or group of the session | `{...other keys, simplexMcp: {approvedBy, approvedById, approvedAt}}`, `approvedById` a Main group member ID | [`approveChat`](../src/control.ts#L223), [`revoke`](../src/control.ts#L238) | [`standingApprover`](../src/control.ts#L117) |
 
-Each core stores its profile, chats, items and members in `FOLDER/simplex_chat.db`, and connections and queues in `FOLDER/simplex_agent.db` (file prefix `FOLDER/simplex`, [core.ts:23](../src/core.ts#L23)).
+Each core stores its profile, chats, items and members in `FOLDER/simplex_chat.db`, and connections and queues in `FOLDER/simplex_agent.db` (file prefix `FOLDER/simplex`, [core.ts:26](../src/core.ts#L26)).
 
 ### 3.3 Files
 
@@ -332,7 +332,7 @@ ROOT is `SIMPLEX_MCP_HOME`, resolved to an absolute path, or `~/.simplex-mcp` ([
 | `ROOT/lock` | PID and a newline | 0600 | daemon start ([files.ts:128-136](../src/files.ts#L128-L136)) | next daemon start |
 | `ROOT/daemon.sock` | Unix socket | | `listen` ([socket.ts:40-47](../src/socket.ts#L40-L47)) | clients |
 | `ROOT/daemon.log` | stdout and stderr of the daemon | 0600 | spawner, truncated when over 10 MB ([files.ts:68-74](../src/files.ts#L68-L74)) | people |
-| `ROOT/_hub/` | hub databases | 0700 | `openCore` ([core.ts:22](../src/core.ts#L22)) | hub core |
+| `ROOT/_hub/` | hub databases | 0700 | `openCore` ([core.ts:25](../src/core.ts#L25)) | hub core |
 | `ROOT/_sessions/ID/` | session databases | 0700 | `openAgent`, `openCore` | session core |
 | `ROOT/_sessions/ID/session.json` | `{number, name, project, created}` | 0600 | new session, rename, title of a stored session ([daemon.ts:186-194](../src/daemon.ts#L186-L194), [:293-295](../src/daemon.ts#L293-L295)) | `openAgent`, `sessionNumbers` |
 
@@ -400,7 +400,7 @@ The daemon inherits the spawner's environment, so its options are those of the s
 2. The lock is taken; when another daemon holds it, the ready line is `running` and the process ends.
 3. The next session number is computed from `_sessions/*/session.json`.
 4. `Hub.open` with the options read from the environment ([hub.ts:26-48](../src/hub.ts#L26-L48)):
-   1. `openCore(ROOT/_hub, main_group)`: active user, or a new one with that display name, empty full name and peer type `agent`; the network config; events buffered; `startChat`; a different display name or peer type is applied ([core.ts:21-35](../src/core.ts#L21-L35)).
+   1. `openCore(ROOT/_hub, main_group)`: active user, or a new one with that display name, empty full name and peer type `agent`, whose preset contact `Ask SimpleX Team` is deleted at once (a failure is logged, not thrown; an existing user is left as it is); the network config; events buffered; `startChat`; a different display name or peer type is applied ([core.ts:24-40](../src/core.ts#L24-L40)).
    2. The Main group is found by its marker (the latest one when several exist), or created with counter 1 ([control.ts:328-349](../src/control.ts#L328-L349)).
    3. `Actions` with mode, expiry and the counter from the marker; `Control` with the group name.
    4. `Control.load`: a lost group sets `Actions.lost`; otherwise the group name and command menu are updated when they differ, and members are read ([control.ts:92-99](../src/control.ts#L92-L99)).
@@ -419,7 +419,7 @@ An error after the lock releases it; the ready line is `error: TEXT` and the exi
 - The first `/session`, `/attach` or `/call` for an ID creates its entry; a close of the same ID still in progress is awaited first.
 - An ID that is not a session ID: status 400 `Not a Claude Code session ID: ID`, and no entry.
 - A folder without `session.json`: with a `/session` request, the folder is created and `{number, name, project, created}` written, with the next number and `sessionName(name, project)`, where the name is the request's, else the title remembered for the ID, which is then forgotten; without it, status 409 `Unknown session; restart the Claude Code session.`
-- `openSessionAgent` opens the core with `profileName(name)` and dispatches its events ([agent.ts:39-72](../src/agent.ts#L39-L72)).
+- `openSessionAgent` opens the core with `profileName(name)`; a new profile starts with no chats and dispatches its events ([agent.ts:39-72](../src/agent.ts#L39-L72)).
 - A failed open removes the entry.
 - `/session` with a name other than the stored one renames the profile and updates `session.json` ([daemon.ts:167-168](../src/daemon.ts#L167-L168), [:189-194](../src/daemon.ts#L189-L194)); every `/session` applies its options to the hub ([:166](../src/daemon.ts#L166)).
 - `/title` applies its options to the hub, and with a non-blank name: an open or opening profile is renamed as by `/session`; a stored session gets the name in `session.json`, and its profile takes it at the next open; for an ID without `session.json` the name is remembered in memory, at most 100 IDs, the oldest dropped. `/title` creates no entry, folder or number, opens no profile, and leaves the idle timers alone ([daemon.ts:172-208](../src/daemon.ts#L172-L208)).
@@ -464,7 +464,7 @@ An open `/attach` clears the session's timer ([daemon.ts:215](../src/daemon.ts#L
 
 1. Timers are cleared; new entries are refused with status 503 `The SimpleX daemon is stopping.`
 2. The listener is closed; open `/attach` and `/call` streams are destroyed, which drops the session processes' connections.
-3. `Hub.stop` ([hub.ts:77-84](../src/hub.ts#L77-L84)): events are ignored; `Actions.stop` refuses new actions with `The SimpleX daemon is stopping.`, awaits cards being posted, marks pending and performing actions interrupted, aborts the perform signal and edits their cards ([actions.ts:219-229](../src/actions.ts#L219-L229)); queued Main group events are awaited; pending deliveries to Main group members are polled every 100 ms for at most 10 s ([core.ts:44-52](../src/core.ts#L44-L52)); the hub core is closed.
+3. `Hub.stop` ([hub.ts:77-84](../src/hub.ts#L77-L84)): events are ignored; `Actions.stop` refuses new actions with `The SimpleX daemon is stopping.`, awaits cards being posted, marks pending and performing actions interrupted, aborts the perform signal and edits their cards ([actions.ts:219-229](../src/actions.ts#L219-L229)); queued Main group events are awaited; pending deliveries to Main group members are polled every 100 ms for at most 10 s ([core.ts:59-67](../src/core.ts#L59-L67)); the hub core is closed.
 4. `Cancelled K action(s).` when K > 0.
 5. The session cores are closed, and closes in progress awaited.
 6. The lock is removed and `Stopped.` is logged.
@@ -674,7 +674,7 @@ The Main group belongs to the hub core, so no session's tools can reach it.
 ### 6.7 Link and network
 
 - The join link is a group link of the Main group with role `member`; it is logged to `daemon.log`, returned by `/session`, `/title` and `/status`, and deleted at the first join of a human while no owner exists ([control.ts:280-295](../src/control.ts#L280-L295), [:267-273](../src/control.ts#L267-L273)).
-- Every core sets private message routing: `smp-proxy=always`, `smp-proxy-fallback=protected`, `socks=off` ([core.ts:11](../src/core.ts#L11), [:26](../src/core.ts#L26)).
+- Every core sets private message routing: `smp-proxy=always`, `smp-proxy-fallback=protected`, `socks=off` ([core.ts:14](../src/core.ts#L14), [:30](../src/core.ts#L30)).
 - With `incognito: true` the daemon sends `incognito=on` with the connect command ([tools.ts:517](../src/tools.ts#L517)); the core then uses a random profile for that chat.
 
 ---

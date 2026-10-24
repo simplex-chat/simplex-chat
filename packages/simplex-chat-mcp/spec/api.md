@@ -393,7 +393,7 @@ Group profile:
 | history | on | [control.ts:343](../src/control.ts#L343) |
 | command menu | `/pending` "Pending actions"<br>`/list` "Chats and approvals"<br>updated at start when it differs | [control.ts:8-11](../src/control.ts#L8-L11), [:95-96](../src/control.ts#L95-L96) |
 
-The hub profile that posts in the group has the same display name and peer type `agent` ([hub.ts:27](../src/hub.ts#L27), [core.ts:25](../src/core.ts#L25)).
+The hub profile that posts in the group has the same display name and peer type `agent` ([hub.ts:27](../src/hub.ts#L27), [core.ts:29](../src/core.ts#L29)).
 
 ---
 

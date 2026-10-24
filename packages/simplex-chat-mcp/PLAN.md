@@ -1316,3 +1316,4 @@ Version 0.2 replaces the hand-run server with a Claude Code plugin. The sections
 - `serve`, `register` and the HTTP endpoint are removed; 0.1 data folders are not migrated.
 - The `--owners` listed-owner and observer modes are dropped: the first person who joins by the one-time link becomes an owner, and `/simplex:reset-owners` replaces the group and its owners.
 - Known chats are dropped.
+- New profiles start without the preset contact "Ask SimpleX Team".

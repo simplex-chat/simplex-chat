@@ -173,6 +173,10 @@ export class FakeChat {
     return this.members.get(groupId) ?? []
   }
 
+  async apiGetChats(): Promise<T.AChat[]> {
+    return [...this.chats.values()].map(({chatInfo, items}) => ({chatInfo, chatItems: [], chatStats: chatStats(items)}))
+  }
+
   async apiDeleteChat(chatType: T.ChatType, chatId: number, mode?: T.ChatDeleteMode): Promise<void> {
     this.deleted.push({chatType, chatId, mode})
     this.chats.delete(`${chatType === T.ChatType.Direct ? "@" : "#"}${chatId}`)

@@ -7,6 +7,9 @@ import {chatCommand} from "./messages"
 
 const deliveryTimeout = 10_000
 const deliveryPoll = 100
+// Display name of the contact the core adds to every new user (createPresetContactCards in Commands.hs).
+const newProfileChats = 100
+const presetContactName = "Ask SimpleX Team"
 
 export const networkCommand = "/network socks=off smp-proxy=always smp-proxy-fallback=protected"
 
@@ -22,15 +25,27 @@ export async function openCore(folder: string, displayName: string): Promise<Cor
   createDataFolder(folder)
   const chat = await api.ChatApi.init({type: "sqlite", filePrefix: join(folder, "simplex")})
   try {
-    const created = (await chat.apiGetActiveUser()) ?? (await chat.apiCreateActiveUser({displayName, fullName: "", peerType: T.ChatPeerType.Agent}))
+    const existing = await chat.apiGetActiveUser()
+    const created = existing ?? (await chat.apiCreateActiveUser({displayName, fullName: "", peerType: T.ChatPeerType.Agent}))
     await chatCommand(chat, networkCommand, "networkConfig")
     const events = bufferEvents(chat)
     await chat.startChat()
+    if (existing === undefined) await deletePresetContacts(chat, created.userId)
     const user = await updatedUser(chat, created, displayName)
     return {chat, user, events}
   } catch (error) {
     await chat.close().catch(() => undefined)
     throw error
+  }
+}
+
+export async function deletePresetContacts(chat: api.ChatApi, userId: number): Promise<void> {
+  const chats = await chat.apiGetChats(userId, {type: "last", count: newProfileChats}).catch(error => (logError("preset contacts", error), []))
+  for (const {chatInfo} of chats) {
+    if (chatInfo.type !== "direct") continue
+    const {contactId, profile, activeConn} = chatInfo.contact
+    if (profile.displayName !== presetContactName || activeConn !== undefined) continue
+    await chat.apiDeleteChat(T.ChatType.Direct, contactId, {type: "full", notify: false}).catch(error => logError(`preset contact ${contactId}`, error))
   }
 }
 
