@@ -174,6 +174,7 @@ toTypeInfo tr =
       "BoolDef" -> ST TBool []
       "PQEncryption" -> ST TBool []
       "PQSupport" -> ST TBool []
+      "AChatInfo" -> ST "ChatInfo" []
       "ACreatedConnLink" -> ST "CreatedConnLink" []
       "UserChatRelay'" -> ST "UserChatRelay" []
       "CChatItem" -> ST "ChatItem" []
@@ -224,6 +225,7 @@ toTypeInfo tr =
         "SbKey",
         "SharedMsgId",
         "Signature",
+        "SocksProxyWithAuth",
         "StrJSON",
         "TransportHost",
         "UIColor",

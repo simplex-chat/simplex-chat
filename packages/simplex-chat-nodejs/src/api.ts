@@ -1,4 +1,4 @@
-import {CC, CEvt, ChatEvent, ChatResponse, T} from "@simplex-chat/types"
+import {CC, CEvt, CR, ChatEvent, ChatResponse, T} from "@simplex-chat/types"
 import * as core from "./core"
 import * as util from "./util"
 
@@ -149,7 +149,7 @@ export class ChatApi {
    * Usually doesn't need to be called in chat bots.
    */
   async stopChat(): Promise<void> {
-    const r = await this.sendChatCmd("/_stop")
+    const r = await this.sendChatCmd(CC.APIStopChat.cmdString({}))
     if (r.type !== "chatStopped") throw new ChatCommandError("error stopping chat", r)
     await this.stopEventsLoop()
   }
@@ -539,8 +539,8 @@ export class ChatApi {
    * Receive file.
    * Network usage: no.
    */
-  async apiReceiveFile(fileId: number): Promise<T.AChatItem> {
-    const r = await this.sendChatCmd(CC.ReceiveFile.cmdString({fileId, userApprovedRelays: true}))
+  async apiReceiveFile(fileId: number, filePath?: string): Promise<T.AChatItem> {
+    const r = await this.sendChatCmd(CC.ReceiveFile.cmdString({fileId, userApprovedRelays: true, filePath}))
     if (r.type === "rcvFileAccepted") return r.chatItem
     if (r.type === "rcvFileAcceptedSndCancelled") throw new ChatCommandError("file cancelled by sender", r)
     throw new ChatCommandError("error receiving file", r)
@@ -729,9 +729,9 @@ export class ChatApi {
    * Determine SimpleX link type and if the bot is already connected via this link.
    * Network usage: interactive.
    */
-  async apiConnectPlan(userId: number, connectionLink: string): Promise<[T.ConnectionPlan, T.CreatedConnLink]> {
+  async apiConnectPlan(userId: number, connectionLink: string): Promise<[plan: T.ConnectionPlan, link: T.CreatedConnLink, planSimplexName?: T.SimplexNameInfo, otherSimplexName?: T.SimplexNameInfo]> {
     const r = await this.sendChatCmd(CC.APIConnectPlan.cmdString({userId, connectTarget: connectionLink, resolveMode: T.PlanResolveMode.Unknown}))
-    if (r.type === "connectionPlan") return [r.connectionPlan, r.connLink]
+    if (r.type === "connectionPlan") return [r.connectionPlan, r.connLink, r.planSimplexName, r.otherSimplexName]
     throw new ChatCommandError("error getting connect plan", r)
   }
 
@@ -742,6 +742,78 @@ export class ChatApi {
   async apiConnect(userId: number, incognito: boolean, preparedLink: T.CreatedConnLink): Promise<ConnReqType> {
     const r = await this.sendChatCmd(CC.APIConnect.cmdString({userId, incognito, preparedLink_: preparedLink}))
     return this.handleConnectResult(r)
+  }
+
+  /**
+   * Connect via prepared SimpleX link. The link can be 1-time invitation link, contact address or group link.
+   * Returns the response with the pending connection, or with the contact when it already exists.
+   * Network usage: interactive.
+   */
+  async apiConnectPreparedLink(userId: number, incognito: boolean, preparedLink: T.CreatedConnLink): Promise<CR.SentConfirmation | CR.SentInvitation | CR.ContactAlreadyExists> {
+    const r = await this.sendChatCmd(CC.APIConnect.cmdString({userId, incognito, preparedLink_: preparedLink}))
+    switch (r.type) {
+      case "sentConfirmation":
+      case "sentInvitation":
+      case "contactAlreadyExists":
+        return r
+      default:
+        throw new ChatCommandError("connection error", r)
+    }
+  }
+
+  /**
+   * Prepare contact chat from link data before connecting.
+   * Network usage: no.
+   */
+  async apiPrepareContact(userId: number, connLink: T.CreatedConnLink, contactSLinkData: T.ContactShortLinkData, verifiedDomain?: string): Promise<T.AChat> {
+    const r = await this.sendChatCmd(CC.APIPrepareContact.cmdString({userId, connLink, verifiedDomain, contactSLinkData}))
+    if (r.type === "newPreparedChat") return r.chat
+    throw new ChatCommandError("error preparing contact", r)
+  }
+
+  /**
+   * Prepare group chat from link data before connecting.
+   * Network usage: no.
+   */
+  async apiPrepareGroup(userId: number, connLinkContact: T.CreatedConnLink, direct: boolean, groupSLinkData: T.GroupShortLinkData, verifiedDomain?: string): Promise<T.AChat> {
+    const r = await this.sendChatCmd(CC.APIPrepareGroup.cmdString({userId, connLinkContact, direct, verifiedDomain, groupSLinkData}))
+    if (r.type === "newPreparedChat") return r.chat
+    throw new ChatCommandError("error preparing group", r)
+  }
+
+  /**
+   * Connect to prepared contact.
+   * Network usage: interactive.
+   */
+  async apiConnectPreparedContact(contactId: number, incognito: boolean, msgContent?: T.MsgContent): Promise<CR.StartedConnectionToContact | CR.ContactAlreadyExists> {
+    const r = await this.sendChatCmd(CC.APIConnectPreparedContact.cmdString({contactId, incognito, msgContent_: msgContent}))
+    switch (r.type) {
+      case "startedConnectionToContact":
+      case "contactAlreadyExists":
+        return r
+      default:
+        throw new ChatCommandError("error connecting to prepared contact", r)
+    }
+  }
+
+  /**
+   * Connect to prepared group.
+   * Network usage: interactive.
+   */
+  async apiConnectPreparedGroup(groupId: number, incognito: boolean, msgContent?: T.MsgContent, ownerContact?: T.GroupOwnerContact): Promise<CR.StartedConnectionToGroup> {
+    const r = await this.sendChatCmd(CC.APIConnectPreparedGroup.cmdString({groupId, incognito, ownerContact, msgContent_: msgContent}))
+    if (r.type === "startedConnectionToGroup") return r
+    throw new ChatCommandError("error connecting to prepared group", r)
+  }
+
+  /**
+   * Connect to existing contact via address in its profile.
+   * Network usage: interactive.
+   */
+  async apiConnectContactViaAddress(userId: number, incognito: boolean, contactId: number): Promise<CR.SentInvitationToContact> {
+    const r = await this.sendChatCmd(CC.APIConnectContactViaAddress.cmdString({userId, incognito, contactId}))
+    if (r.type === "sentInvitationToContact") return r
+    throw new ChatCommandError("error connecting via contact address", r)
   }
 
   /**
@@ -876,11 +948,51 @@ export class ChatApi {
    * Get chat items.
    * Network usage: no.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async apiGetChat(chatType: T.ChatType, chatId: number, count: number): Promise<any> {
-    const r: any = await this.sendChatCmd(`/_get chat ${T.ChatType.cmdString(chatType)}${chatId} count=${count}`)
+  async apiGetChat(chatType: T.ChatType, chatId: number, pagination: T.ChatPagination | number): Promise<T.AChat> {
+    const chatPagination: T.ChatPagination = typeof pagination === "number" ? {type: "last", count: pagination} : pagination
+    const r = await this.sendChatCmd(CC.APIGetChat.cmdString({chatRef: {chatType, chatId}, chatPagination}))
     if (r.type === "apiChat") return r.chat
     throw new ChatCommandError("error getting chat", r)
+  }
+
+  /**
+   * Mark messages as read.
+   * Network usage: no.
+   */
+  async apiChatItemsRead(chatType: T.ChatType, chatId: number, chatItemIds: number[]): Promise<T.ChatInfo> {
+    const r = await this.sendChatCmd(CC.APIChatItemsRead.cmdString({chatRef: {chatType, chatId}, chatItemIds}))
+    if (r.type === "itemsReadForChat") return r.chatInfo
+    throw new ChatCommandError("error marking chat items read", r)
+  }
+
+  /**
+   * Get contact information.
+   * Network usage: no.
+   */
+  async apiContactInfo(contactId: number): Promise<CR.ContactInfo> {
+    const r = await this.sendChatCmd(CC.APIContactInfo.cmdString({contactId}))
+    if (r.type === "contactInfo") return r
+    throw new ChatCommandError("error getting contact info", r)
+  }
+
+  /**
+   * Get network configuration.
+   * Network usage: no.
+   */
+  async apiGetNetworkConfig(): Promise<T.NetworkConfig> {
+    const r = await this.sendChatCmd(CC.APIGetNetworkConfig.cmdString({}))
+    if (r.type === "networkConfig") return r.networkConfig
+    throw new ChatCommandError("error getting network config", r)
+  }
+
+  /**
+   * Set network configuration.
+   * Network usage: background.
+   */
+  async apiSetNetworkConfig(networkConfig: T.NetworkConfig): Promise<void> {
+    const r = await this.sendChatCmd(CC.APISetNetworkConfig.cmdString({networkConfig}))
+    if (r.type === "cmdOk") return
+    throw new ChatCommandError("error setting network config", r)
   }
 
   /**
@@ -974,7 +1086,7 @@ export class ChatApi {
    * Network usage: interactive.
    */
   async apiCreateMemberContact(groupId: number, groupMemberId: number): Promise<T.Contact> {
-    const r: any = await this.sendChatCmd(`/_create member contact #${groupId} ${groupMemberId}`)
+    const r = await this.sendChatCmd(CC.APICreateMemberContact.cmdString({groupId, groupMemberId}))
     if (r.type === "newMemberContact") return r.contact
     throw new ChatCommandError("error creating member contact", r)
   }
@@ -982,18 +1094,10 @@ export class ChatApi {
   /**
    * Send a direct message invitation to a group member contact.
    * The contact must have been created with {@link apiCreateMemberContact}.
-   * Network usage: interactive.
+   * Network usage: background.
    */
   async apiSendMemberContactInvitation(contactId: number, message?: T.MsgContent | string): Promise<T.Contact> {
-    let cmd = `/_invite member contact @${contactId}`
-    if (message !== undefined) {
-      if (typeof message === "string") {
-        cmd += ` text ${message}`
-      } else {
-        cmd += ` json ${JSON.stringify(message)}`
-      }
-    }
-    const r: any = await this.sendChatCmd(cmd)
+    const r = await this.sendChatCmd(CC.APISendMemberContactInvitation.cmdString({contactId, msgContent_: typeof message === "string" ? {type: "text", text: message} : message}))
     if (r.type === "newMemberContactSentInv") return r.contact
     throw new ChatCommandError("error sending member contact invitation", r)
   }
