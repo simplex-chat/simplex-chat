@@ -404,7 +404,7 @@ HTTP/1.1 over `ROOT/daemon.sock` (or the fallback path, or the Windows pipe), pr
 | Route | Request | Reply | Code |
 |---|---|---|---|
 | `POST /session` | `{id, name?, project, config: {mainGroup, approve, expireHours}}` | `{number, displayName, version, protocol, owner: {owners, link?}}` | [daemon.ts:162-170](../src/daemon.ts#L162-L170) |
-| `POST /title` | `{id, name?, project, config}` | `{mainGroup, owner: {owners, link?}, version, protocol}` | [daemon.ts:172-208](../src/daemon.ts#L172-L208) |
+| `POST /title` | `{id, name?, config}` | `{mainGroup, owner: {owners, link?}, version, protocol}` | [daemon.ts:172-208](../src/daemon.ts#L172-L208) |
 | `POST /attach` | `{id}` | stream held open; first line `{version, protocol}` | [daemon.ts:210-221](../src/daemon.ts#L210-L221) |
 | `POST /call` | `{id, tool, input}` | lines `{progress: TEXT}`, then one line `{result: CallToolResult or null}`; closing the request aborts the call | [daemon.ts:223-240](../src/daemon.ts#L223-L240) |
 | `GET /status` | none | `{version, protocol, mainGroup, owner: {owners, link?}, sessions: [{number, name, attached}]}` | [daemon.ts:328-331](../src/daemon.ts#L328-L331) |
@@ -514,7 +514,7 @@ A missing or blank variable takes the default. The error text is `Plugin option 
 
 ### 5.3 SessionStart output
 
-Hook input fields used: `session_id`, `session_title`, `cwd` ([hook.ts:13-17](../src/hook.ts#L13-L17)). The hook posts `/title`, and MAIN is the reply's `mainGroup`. Output ([hook.ts:29-47](../src/hook.ts#L29-L47)):
+Hook input fields used: `session_id`, `session_title` ([hook.ts:13-16](../src/hook.ts#L13-L16)). The hook posts `/title`, and MAIN is the reply's `mainGroup`. Output ([hook.ts:28-46](../src/hook.ts#L28-L46)):
 
 | Case | Output |
 |---|---|

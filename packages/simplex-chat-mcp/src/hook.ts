@@ -13,7 +13,6 @@ const daemonStopped = "The SimpleX daemon stopped; it starts again with the next
 interface SessionStartInput {
   session_id: string
   session_title?: string
-  cwd?: string
 }
 
 export interface HookOutput {
@@ -34,7 +33,7 @@ export async function sessionStart(stdin: string, env: NodeJS.ProcessEnv = proce
     const config = readConfig(env)
     const client = deps?.client ?? DaemonClient.forRoot(dataRoot(env))
     await client.ensureDaemon(version)
-    const {mainGroup, owner} = await client.request<TitleReply>("POST", "/title", {id: input.session_id, name: input.session_title, project: env.CLAUDE_PROJECT_DIR ?? input.cwd ?? process.cwd(), config})
+    const {mainGroup, owner} = await client.request<TitleReply>("POST", "/title", {id: input.session_id, name: input.session_title, config})
     const {link, owners} = owner
     if (owners.length > 0 || link === undefined) return {}
     return {

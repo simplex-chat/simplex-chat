@@ -127,7 +127,7 @@ afterEach(async () => {
 
 const post = <T>(route: string, body?: unknown) => requestJson<T>(socketPath(root), token, "POST", route, body)
 const register = (id: string, name?: string) => post("/session", {id, name, project: "/p/app", config: defaultConfig})
-const title = (id: string, name?: string, config = defaultConfig) => post("/title", {id, name, project: "/p/app", config})
+const title = (id: string, name?: string, config = defaultConfig) => post("/title", {id, name, config})
 const titleReply = {mainGroup: "SimpleX MCP", owner: {owners: [], link: "https://simplex.chat/g#link"}, version: "0.2.0", protocol: protocolVersion}
 const sessionsFolder = () => join(root, "_sessions")
 const lockFile = () => join(root, "lock")
@@ -486,6 +486,31 @@ describe("daemon", () => {
     expect(await register(ids[0])).toMatchObject({displayName: "SimpleX MCP - app"})
     expect(await register(ids[1])).toMatchObject({displayName: "SimpleX MCP - title 1"})
     expect(await register(ids[100])).toMatchObject({displayName: "SimpleX MCP - title 100"})
+  })
+
+  it("keeps a re-titled ID as the newest and drops the next oldest", async () => {
+    const {d} = deps(root)
+    daemon = await Daemon.start(d, readDefaultConfig)
+    const ids = Array.from({length: 101}, (_, n) => `${n.toString(16).padStart(8, "0")}-0000-4000-8000-000000000000`)
+    for (const [n, id] of ids.slice(0, 100).entries()) await title(id, `title ${n}`)
+    await title(ids[0], "renamed 0")
+    await title(ids[100], "title 100")
+    expect(daemon["titles"].size).toBe(100)
+    expect(await register(ids[1])).toMatchObject({displayName: "SimpleX MCP - app"})
+    expect(await register(ids[0])).toMatchObject({displayName: "SimpleX MCP - renamed 0"})
+    expect(await register(ids[2])).toMatchObject({displayName: "SimpleX MCP - title 2"})
+  })
+
+  it("does not delay the idle close of an open session with a title", async () => {
+    jest.useFakeTimers(fakeTimers)
+    const {d, agents} = deps(root)
+    daemon = await Daemon.start(d, readDefaultConfig)
+    await register(id1)
+    await jest.advanceTimersByTimeAsync(9 * minutes)
+    await title(id1, "auth")
+    expect(agents).toMatchObject([{displayName: "SimpleX MCP - auth", closed: false}])
+    await jest.advanceTimersByTimeAsync(1 * minutes)
+    expect(agents[0].closed).toBe(true)
   })
 
   it("does not delay the idle stop with a title", async () => {

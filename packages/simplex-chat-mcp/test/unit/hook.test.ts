@@ -23,9 +23,9 @@ function fakeClient(owner: {owners: string[]; link?: string}, ensureError?: Erro
 describe("SessionStart hook", () => {
   it("records the session title and stays quiet when the Main group has an owner", async () => {
     const {client, requests} = fakeClient({owners: ["Alice"]})
-    expect(await sessionStart(input, {CLAUDE_PROJECT_DIR: "/p/app"}, {client, nodeVersion: "22.1.0"})).toEqual({})
+    expect(await sessionStart(input, {}, {client, nodeVersion: "22.1.0"})).toEqual({})
     expect(requests).toEqual([
-      {method: "POST", route: "/title", body: {id: "11111111-1111-4111-8111-111111111111", name: "auth", project: "/p/app", config: {mainGroup: "SimpleX MCP", approve: "requests", expireHours: 23}}},
+      {method: "POST", route: "/title", body: {id: "11111111-1111-4111-8111-111111111111", name: "auth", config: {mainGroup: "SimpleX MCP", approve: "requests", expireHours: 23}}},
     ])
   })
 

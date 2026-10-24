@@ -127,9 +127,9 @@ Data flow of a tool call:
 | Symbol | Line | Contents |
 |---|---|---|
 | `protocolVersion` | [5](../src/protocol.ts#L5) | `1` |
-| `SessionRequest`, `TitleRequest`, `TitleReply`, `SessionReply` | [17-35](../src/protocol.ts#L17-L35) | `/session`, `/title` |
-| `AttachRequest`, `CallRequest`, `CallLine` | [37-47](../src/protocol.ts#L37-L47) | `/attach`, `/call` |
-| `StatusReply`, `ResetReply` | [49-57](../src/protocol.ts#L49-L57) | `/status`, `/reset-owners` |
+| `SessionRequest`, `TitleRequest`, `TitleReply`, `SessionReply` | [17-39](../src/protocol.ts#L17-L39) | `/session`, `/title` |
+| `AttachRequest`, `CallRequest`, `CallLine` | [41-51](../src/protocol.ts#L41-L51) | `/attach`, `/call` |
+| `StatusReply`, `ResetReply` | [53-61](../src/protocol.ts#L53-L61) | `/status`, `/reset-owners` |
 
 ### [2.6 `daemon.ts`](../src/daemon.ts)
 
@@ -270,7 +270,7 @@ Data flow of a tool call:
 
 | Symbol | Line | Contents |
 |---|---|---|
-| `sessionStart` | [hook.ts:29](../src/hook.ts#L29) | Node.js check, options, `ensureDaemon`, `/title`, link output; every failure as `systemMessage` |
+| `sessionStart` | [hook.ts:28](../src/hook.ts#L28) | Node.js check, options, `ensureDaemon`, `/title`, link output; every failure as `systemMessage` |
 | `linkText`, `resetOwnersText` | [owner.ts:7-15](../src/owner.ts#L7-L15) | owners, or the link with a QR code on a terminal |
 | `showLink`, `resetOwners` | [owner.ts:17-26](../src/owner.ts#L17-L26) | `ensureDaemon`, then `/status` data or `/reset-owners` |
 | `qrCodeText` | [qr.ts:12](../src/qr.ts#L12) | error correction level L, margin 2, two modules per text line; `ansi` colors or `plain` block characters |
@@ -346,12 +346,12 @@ The core library is downloaded once into `CACHE/core-<release>/sqlite`, and the 
 
 ### 4.1 SessionStart hook
 
-`node plugin/launch.js hook session-start` runs `npx -y @simplex-chat/mcp@VERSION hook session-start`; `sessionStart` reads the hook input from stdin ([cli.ts:49-51](../src/cli.ts#L49-L51), [hook.ts:29-47](../src/hook.ts#L29-L47)):
+`node plugin/launch.js hook session-start` runs `npx -y @simplex-chat/mcp@VERSION hook session-start`; `sessionStart` reads the hook input from stdin ([cli.ts:49-51](../src/cli.ts#L49-L51), [hook.ts:28-46](../src/hook.ts#L28-L46)):
 
 1. Node.js major version below 22: `systemMessage` `SimpleX MCP needs Node.js 22 or later; found V.`
-2. Parse `{session_id, session_title, cwd}`, read the options; a `ConfigError` becomes the `systemMessage`.
+2. Parse `{session_id, session_title}`, read the options; a `ConfigError` becomes the `systemMessage`.
 3. `ensureDaemon` ([4.3](#43-daemon-spawn-and-version-check)).
-4. `POST /title` with `{id: session_id, name: session_title, project: CLAUDE_PROJECT_DIR or cwd, config}`. The hook records the title and opens no profile; the session process creates the profile ([4.5](#45-session-profiles)).
+4. `POST /title` with `{id: session_id, name: session_title, config}`. The hook records the title and opens no profile; the session process creates the profile ([4.5](#45-session-profiles)).
 5. Owners present, or no link: empty output. Otherwise a `systemMessage` with the link of the reply's Main group and a `plain` QR code, and `additionalContext` with the link.
 6. Any error: `systemMessage` `SimpleX MCP: TEXT`; a not-running error reads `The SimpleX daemon stopped; it starts again with the next tool call.` The exit code is 0.
 

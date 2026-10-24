@@ -21,7 +21,11 @@ export interface SessionRequest {
   config: Config
 }
 
-export type TitleRequest = SessionRequest
+export interface TitleRequest {
+  id: string
+  name?: string
+  config: Config
+}
 
 export interface TitleReply extends DaemonInfo {
   mainGroup: string

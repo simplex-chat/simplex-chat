@@ -50,7 +50,7 @@ sequenceDiagram
   participant D as Daemon
   participant H as Hub
   participant O as Owner
-  C->>K: SessionStart {session_id, session_title, cwd}
+  C->>K: SessionStart {session_id, session_title}
   K->>K: Node.js 22 check, options
   K->>K: ROOT mode 0700, token
   K->>D: GET /status (ENOENT: no daemon)
@@ -68,7 +68,7 @@ sequenceDiagram
   D->>D: listen on daemon.sock, idle stop timer
   D->>K: fd 3: ready
   K->>D: GET /status
-  K->>D: POST /title {id, name, project, config}
+  K->>D: POST /title {id, name, config}
   D->>H: configure(config)
   D->>D: no entry, no session.json: remember NAME for ID
   D-->>K: {mainGroup, owner: {owners: [], link}, version, protocol}
@@ -88,7 +88,7 @@ Notes:
 - With an owner present, the hook output is `{}`.
 - The daemon runs `ownerJoined` for a `joinedGroupMember` event of a human while no owner exists ([control.ts:161](../src/control.ts#L161), [:267-273](../src/control.ts#L267-L273)).
 
-Source: [hook.ts:29-47](../src/hook.ts#L29-L47), [client.ts:32-89](../src/client.ts#L32-L89), [daemon.ts:79-96](../src/daemon.ts#L79-L96), [:334-356](../src/daemon.ts#L334-L356), [hub.ts:26-48](../src/hub.ts#L26-L48), [core.ts:21-35](../src/core.ts#L21-L35), [control.ts:92-105](../src/control.ts#L92-L105), [:280-285](../src/control.ts#L280-L285), [:338-349](../src/control.ts#L338-L349), [daemon.ts:172-208](../src/daemon.ts#L172-L208).
+Source: [hook.ts:28-46](../src/hook.ts#L28-L46), [client.ts:32-89](../src/client.ts#L32-L89), [daemon.ts:79-96](../src/daemon.ts#L79-L96), [:334-356](../src/daemon.ts#L334-L356), [hub.ts:26-48](../src/hub.ts#L26-L48), [core.ts:21-35](../src/core.ts#L21-L35), [control.ts:92-105](../src/control.ts#L92-L105), [:280-285](../src/control.ts#L280-L285), [:338-349](../src/control.ts#L338-L349), [daemon.ts:172-208](../src/daemon.ts#L172-L208).
 
 ---
 
