@@ -93,6 +93,7 @@ mobileTests = do
     describe "Images" $ do
       it "should resize image to data URI via C API" testResizeImageUriCApi
       it "should resize image to data size via C API" testResizeImageCApi
+      it "should choose image format by transparency via C API" testResizeImageAutoFormatCApi
 
 noActiveUser :: LB.ByteString
 noActiveUser =
@@ -368,6 +369,16 @@ testResizeImageCApi _ = do
         pure bytes
   B.take 2 <$> resizeToDataSize 0 `shouldReturn` "\xFF\xD8"
   B.take 8 <$> resizeToDataSize 1 `shouldReturn` "\x89PNG\r\n\x1a\n"
+
+testResizeImageAutoFormatCApi :: TestParams -> IO ()
+testResizeImageAutoFormatCApi _ = do
+  B.take 2 <$> resizeWithAutoFormat "./tests/fixtures/test.jpg" `shouldReturn` "\xFF\xD8"
+  B.take 8 <$> resizeWithAutoFormat "./tests/fixtures/logo-large-rgba.png" `shouldReturn` "\x89PNG\r\n\x1a\n"
+  where
+    resizeWithAutoFormat path = do
+      (ptr, len) <- cBuffer =<< B.readFile path
+      Right bytes <- B64.decode . BS.pack <$> (peekCAString =<< cChatResizeImage ptr len 100000 (-1))
+      pure bytes
 
 cBuffer :: ByteString -> IO (Ptr Word8, CInt)
 cBuffer s = do

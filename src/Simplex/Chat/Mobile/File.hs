@@ -39,7 +39,7 @@ import Foreign.Ptr
 import Foreign.StablePtr
 import Foreign.Storable (poke, pokeByteOff)
 import Simplex.Chat.Controller (ChatController (..))
-import Simplex.Chat.Image (ImageFormat (..), resizeImage, resizeImageDataUri)
+import Simplex.Chat.Image (ImageFormat (..), imageFormat, resizeImage, resizeImageDataUri)
 import Simplex.Chat.Mobile.Shared
 import Simplex.Chat.Util (chunkSize, encryptFile)
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..), CryptoFileHandle, FTCryptoError (..))
@@ -148,9 +148,13 @@ cChatResizeImageUri :: Ptr Word8 -> CInt -> CInt -> IO CString
 cChatResizeImageUri ptr len maxSize = cResizeImage id (resizeImageDataUri $ fromIntegral maxSize) ptr len
 
 cChatResizeImage :: Ptr Word8 -> CInt -> CInt -> CInt -> IO CString
-cChatResizeImage ptr len maxSize png = cResizeImage LB64.encode (resizeImage format $ fromIntegral maxSize) ptr len
+cChatResizeImage ptr len maxSize png = cResizeImage LB64.encode resize ptr len
   where
-    format = if png /= 0 then IFPng else IFJpeg
+    resize img = resizeImage (format img) (fromIntegral maxSize) img
+    format img = case compare png 0 of
+      LT -> imageFormat img
+      EQ -> IFJpeg
+      GT -> IFPng
 
 cResizeImage :: (LB.ByteString -> LB.ByteString) -> (DynamicImage -> IO (Either String LB.ByteString)) -> Ptr Word8 -> CInt -> IO CString
 cResizeImage encode resize ptr len = do
