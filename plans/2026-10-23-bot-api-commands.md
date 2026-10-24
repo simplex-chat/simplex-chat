@@ -4,7 +4,7 @@ Twelve commands were undocumented, and their strings were built by hand: in bots
 The commands are documented; in the core, six command constructors and `ChatPagination` are changed to record syntax, and `verifiedDomain` is typed as `StrJSON`.
 TypeScript and Python types are generated, with `cmdString` and `<Name>_cmd_string` functions; each command of the Node library is sent through its `cmdString`, and the methods of the Python library (`api.py`) are unchanged (question 5).
 
-References are to branch `ep/bot-api` at `a4be6d1c0`. Haskell paths without a directory are in `src/Simplex/Chat/`. `Library/` is `src/Simplex/Chat/Library/`. `API/` is `bots/src/API/`. `TS/` is `packages/simplex-chat-client/types/typescript/src/`. `node/` is `packages/simplex-chat-nodejs/`. `SMQ/` is simplexmq `src/Simplex/Messaging/` at `8bc4d3601` (`cabal.project:24`).
+References are to branch `ep/bot-api` at `d53829b0b`. Haskell paths without a directory are in `src/Simplex/Chat/`. `Library/` is `src/Simplex/Chat/Library/`. `API/` is `bots/src/API/`. `TS/` is `packages/simplex-chat-client/types/typescript/src/`. `node/` is `packages/simplex-chat-nodejs/`. `SMQ/` is simplexmq `src/Simplex/Messaging/` at `8bc4d3601` (`cabal.project:24`).
 
 ## Decisions
 
