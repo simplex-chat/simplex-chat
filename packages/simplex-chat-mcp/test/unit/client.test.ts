@@ -32,6 +32,11 @@ describe("spawning the daemon", () => {
     expect(readFileSync(logFile(root), "utf8")).toContain("boom")
   })
 
+  it("reports a command that cannot start", async () => {
+    const missing = join(root, "no-such-command")
+    await expect(spawnDaemon(root, [missing, []])).rejects.toEqual(new ExitError(`spawn ${missing} ENOENT`, 1))
+  })
+
   it("gives the daemon the data root", async () => {
     await spawnDaemon(root, script(`require("fs").writeFileSync(process.env.SIMPLEX_MCP_HOME + "/seen", process.env.SIMPLEX_MCP_HOME); require("fs").writeSync(3, "ready\\n")`))
     expect(readFileSync(join(root, "seen"), "utf8")).toBe(root)
@@ -72,6 +77,22 @@ describe("ensureDaemon", () => {
     await closeServer(server)
     server = await listen(socketPath(root), serverToken(root), {"GET /status": async (_b, res) => sendJson(res, 200, status("0.3.0", protocolVersion + 1))})
     await expect(client.ensureDaemon("0.2.0", spawned)).rejects.toEqual(new ExitError("Restart Claude Code to update the SimpleX plugin.", 1))
+    await closeServer(server)
+  })
+
+  it("tolerates an older daemon that another client already stopped", async () => {
+    const client = DaemonClient.forRoot(root)
+    let server = await listen(socketPath(root), serverToken(root), {
+      "GET /status": async (_b, res) => {
+        sendJson(res, 200, status("0.1.9"))
+        setImmediate(() => closeServer(server))
+      },
+    })
+    const spawned = jest.fn(async () => {
+      server = await listen(socketPath(root), serverToken(root), {"GET /status": async (_b, res) => sendJson(res, 200, status("0.2.0"))})
+    })
+    expect(await client.ensureDaemon("0.2.0", spawned)).toMatchObject({version: "0.2.0"})
+    expect(spawned).toHaveBeenCalledTimes(1)
     await closeServer(server)
   })
 

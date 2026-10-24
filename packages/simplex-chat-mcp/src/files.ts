@@ -1,5 +1,5 @@
 import {createHash, randomBytes} from "crypto"
-import {chmodSync, existsSync, fchmodSync, mkdirSync, linkSync, openSync, readFileSync, readdirSync, statSync, truncateSync, unlinkSync, writeFileSync} from "fs"
+import {chmodSync, existsSync, fchmodSync, mkdirSync, linkSync, openSync, readFileSync, readdirSync, rmSync, statSync, truncateSync, unlinkSync, writeFileSync} from "fs"
 import {homedir, tmpdir} from "os"
 import {join, resolve} from "path"
 import {ExitError} from "./log"
@@ -99,8 +99,8 @@ export function serverToken(dir: string): string {
   const file = join(dir, "token")
   const token = randomBytes(32).toString("base64url")
   const temp = join(dir, `token.${process.pid}.${randomBytes(6).toString("hex")}.tmp`)
-  writePrivateFile(temp, `${token}\n`)
   try {
+    writePrivateFile(temp, `${token}\n`)
     linkSync(temp, file)
     return token
   } catch (error) {
@@ -108,7 +108,7 @@ export function serverToken(dir: string): string {
     if (process.platform !== "win32") chmodSync(file, 0o600)
     return readFileSync(file, "utf8").trim()
   } finally {
-    unlinkSync(temp)
+    rmSync(temp, {force: true})
   }
 }
 

@@ -1,4 +1,4 @@
-import {spawn} from "child_process"
+import {ChildProcess, spawn} from "child_process"
 import {closeSync} from "fs"
 import {join} from "path"
 import {Readable} from "stream"
@@ -32,7 +32,7 @@ export class DaemonClient {
   async ensureDaemon(version: string, spawnIt: SpawnDaemon = root => spawnDaemon(root)): Promise<StatusReply> {
     let status = await this.status()
     if (status !== undefined && compareVersions(status.version, version) < 0) {
-      await this.request("POST", "/stop")
+      await this.stopDaemon()
       status = undefined
     }
     if (status === undefined) {
@@ -41,6 +41,14 @@ export class DaemonClient {
     }
     if (status.protocol !== protocolVersion) throw new ExitError("Restart Claude Code to update the SimpleX plugin.", 1)
     return status
+  }
+
+  private async stopDaemon(): Promise<void> {
+    try {
+      await this.request("POST", "/stop")
+    } catch (error) {
+      if (!isNotRunning(error)) throw error
+    }
   }
 
   private async status(): Promise<StatusReply | undefined> {
@@ -68,7 +76,7 @@ export async function spawnDaemon(root: string, [command, args]: [string, string
     })
     const channel = child.stdio[readyFd] as Readable
     try {
-      const line = await firstLine(channel)
+      const line = await firstLine(channel, child)
       if (line === "ready" || line === "running") return
       throw new ExitError(line.startsWith(errorPrefix) ? line.slice(errorPrefix.length) : `The SimpleX daemon exited; see ${logFile(root)}`, 1)
     } finally {
@@ -80,13 +88,14 @@ export async function spawnDaemon(root: string, [command, args]: [string, string
   }
 }
 
-function firstLine(stream: Readable): Promise<string> {
+function firstLine(stream: Readable, child: ChildProcess): Promise<string> {
   return new Promise((resolve, reject) => {
     let text = ""
     const finish = (settle: () => void): void => {
       clearTimeout(timer)
       stream.off("data", onData)
       stream.off("end", onEnd)
+      child.off("error", onSpawnError)
       settle()
     }
     const onData = (chunk: string): void => {
@@ -95,11 +104,13 @@ function firstLine(stream: Readable): Promise<string> {
       if (i >= 0) finish(() => resolve(text.slice(0, i)))
     }
     const onEnd = (): void => finish(() => resolve(text.trim()))
+    const onSpawnError = (error: Error): void => finish(() => reject(new ExitError(error.message, 1)))
     const timer = setTimeout(() => finish(() => reject(new ExitError("The SimpleX daemon did not start in 5 minutes.", 1))), daemonStartTimeout)
     stream.setEncoding("utf8")
     stream.on("data", onData)
     stream.on("end", onEnd)
     stream.on("error", onEnd)
+    child.once("error", onSpawnError)
   })
 }
 
