@@ -2422,11 +2422,11 @@ fun BoxScope.ChatItemsList(
         val prevItemSeparationLargeGap: Boolean
         if (merged is MergedItem.Single || isRevealed.value) {
           val prev = listItem.prevItem
-          itemSeparation = rowItemSeparation(merged, revealed = true)
+          itemSeparation = rowItemSeparation(merged)
           val nextForGap = if ((item.mergeCategory != null && item.mergeCategory == prev?.mergeCategory) || isLastItem) null else listItem.nextItem
           prevItemSeparationLargeGap = if (nextForGap == null) false else getItemSeparationLargeGap(nextForGap, item)
         } else {
-          itemSeparation = rowItemSeparation(merged, revealed = false)
+          itemSeparation = rowItemSeparation(merged)
           prevItemSeparationLargeGap = false
         }
         CompositionLocalProvider(LocalItemContext provides ItemContext(selectionIndex = index)) {
@@ -3844,14 +3844,14 @@ private fun getItemSeparation(chatItem: ChatItem, prevItem: ChatItem?): ItemSepa
   )
 }
 
-private fun rowItemSeparation(row: MergedItem, revealed: Boolean): ItemSeparation {
+private fun rowItemSeparation(row: MergedItem): ItemSeparation {
   val newest = row.newest()
-  return getItemSeparation(newest.item, if (revealed) newest.prevItem else null)
+  return getItemSeparation(newest.item, if (row.revealed) newest.prevItem else null)
 }
 
 fun terminalRowsSeparated(olderRow: MergedItem?): Boolean {
   if (olderRow == null) return false
-  return olderRow.newest().item.content is CIContent.ChatBanner || rowItemSeparation(olderRow, olderRow.revealed).date != null
+  return olderRow.newest().item.content is CIContent.ChatBanner || rowItemSeparation(olderRow).date != null
 }
 
 private fun getItemSeparationLargeGap(chatItem: ChatItem, nextItem: ChatItem?): Boolean {

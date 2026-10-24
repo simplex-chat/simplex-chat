@@ -239,16 +239,16 @@ fun FramedItemView(
 
   val sentColor = MaterialTheme.appColors.sentMessage
   val receivedColor = MaterialTheme.appColors.receivedMessage
-  val reservesMeta = when (val mc = ci.content.msgContent) {
-    is MsgContent.MCVoice -> mc.text != ""
-    is MsgContent.MCChat -> mc.text != mc.chatLink.connLinkStr
-    else -> !captionlessMedia
+  val (reservesMeta, gapBelowBlock) = when (val mc = ci.content.msgContent) {
+    is MsgContent.MCVoice -> (mc.text != "") to false
+    is MsgContent.MCChat -> (mc.text != mc.chatLink.connLinkStr).let { it to !it }
+    else -> !captionlessMedia to captionlessMedia
   }
   Box(Modifier
     .then(
       when {
         !terminal -> Modifier.clipChatItem(ci, tailVisible, revealed = true)
-        !reservesMeta && ci.content.msgContent !is MsgContent.MCVoice -> Modifier.padding(bottom = TERMINAL_BLOCK_BOTTOM_GAP.toDp())
+        gapBelowBlock -> Modifier.padding(bottom = TERMINAL_BLOCK_BOTTOM_GAP.toDp())
         else -> Modifier
       }
     )
@@ -273,7 +273,7 @@ fun FramedItemView(
             .width(IntrinsicSize.Max)
             .padding(start = if (!sent && tailRendered) msgTailWidthDp else 0.dp, end = if (sent && tailRendered) msgTailWidthDp else 0.dp)
         ) {
-          PriorityLayout(Modifier, CHAT_IMAGE_LAYOUT_ID, limitToPriorityWidth = !terminal) {
+          PriorityLayout(Modifier, CHAT_IMAGE_LAYOUT_ID, limitToPriorityWidth = !terminal || captionlessMedia) {
             @Composable
             fun Header() {
               if (ci.isReport) {
@@ -370,7 +370,7 @@ fun FramedItemView(
               }
             }
             if (ci.file == null && ci.formattedText == null && !ci.meta.isLive && isShortEmoji(ci.content.text)) {
-              Box(if (terminal) Modifier.fillMaxWidth().padding(start = CHAT_ITEM_TEXT_PADDING, top = TERMINAL_EMOJI_TOP_GAP.toDp(), end = CHAT_ITEM_TEXT_PADDING, bottom = TERMINAL_EMOJI_BOTTOM_GAP.toDp()) else Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
+              Box(if (terminal) Modifier.padding(start = CHAT_ITEM_TEXT_PADDING, top = TERMINAL_EMOJI_TOP_GAP.toDp(), end = CHAT_ITEM_TEXT_PADDING, bottom = TERMINAL_EMOJI_BOTTOM_GAP.toDp()) else Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
                 Column(
                   if (terminal) Modifier.messageLastLine() else Modifier.padding(bottom = 2.dp).fillMaxWidth(),
                   horizontalAlignment = Alignment.CenterHorizontally
@@ -597,7 +597,7 @@ fun PriorityLayout(
     ) {
       var y = 0
       placeables.forEach {
-        it.place(0, y)
+        if (limitToPriorityWidth) it.place(0, y) else it.placeRelative(0, y)
         y += it.measuredHeight
       }
     }

@@ -44,9 +44,10 @@ fun CIVoiceView(
   receiveFile: (Long) -> Unit,
 ) {
   val sizeMultiplier = if (smallView) voiceMessageSizeBasedOnSquareSize(36f) / 56f else 1f
+  val textLayout = hasText && !LocalTerminalLayout.current
   val padding = when {
     smallView -> PaddingValues()
-    hasText && !LocalTerminalLayout.current -> PaddingValues(top = 14.sp.toDp() * sizeMultiplier, bottom = 14.sp.toDp() * sizeMultiplier, start = 6.sp.toDp() * sizeMultiplier, end = 6.sp.toDp() * sizeMultiplier)
+    textLayout -> PaddingValues(top = 14.sp.toDp() * sizeMultiplier, bottom = 14.sp.toDp() * sizeMultiplier, start = 6.sp.toDp() * sizeMultiplier, end = 6.sp.toDp() * sizeMultiplier)
     else -> PaddingValues(top = 4.sp.toDp() * sizeMultiplier, bottom = 6.sp.toDp() * sizeMultiplier, start = if (LocalTerminalLayout.current) CHAT_ITEM_TEXT_PADDING else 0.dp, end = 0.dp)
   }
   Row(
@@ -87,7 +88,7 @@ fun CIVoiceView(
           durationText(time / 1000)
         }
       }
-      VoiceLayout(file, ci, text, audioPlaying, progress, duration, brokenAudio, sent, hasText, timedMessagesTTL, showViaProxy, showTimestamp, sizeMultiplier, play, pause, longClick, { chatModel.openWhenReceived(file, smallView); receiveFile(it) }) {
+      VoiceLayout(file, ci, text, audioPlaying, progress, duration, brokenAudio, sent, hasText, textLayout, timedMessagesTTL, showViaProxy, showTimestamp, sizeMultiplier, play, pause, longClick, { chatModel.openWhenReceived(file, smallView); receiveFile(it) }) {
         AudioPlayer.seekTo(it, progress, fileSource.value?.filePath)
       }
       if (smallView) {
@@ -120,6 +121,7 @@ private fun VoiceLayout(
   brokenAudio: Boolean,
   sent: Boolean,
   hasText: Boolean,
+  textLayout: Boolean,
   timedMessagesTTL: Int?,
   showViaProxy: Boolean,
   showTimestamp: Boolean,
@@ -182,7 +184,7 @@ private fun VoiceLayout(
         }
       }
     }
-    hasText && !LocalTerminalLayout.current -> {
+    textLayout -> {
       val sentColor = MaterialTheme.appColors.sentMessage
       val receivedColor = MaterialTheme.appColors.receivedMessage
       Spacer(Modifier.width(6.sp.toDp() * sizeMultiplier))

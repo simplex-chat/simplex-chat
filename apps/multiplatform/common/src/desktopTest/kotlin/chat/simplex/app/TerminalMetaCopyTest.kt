@@ -1,7 +1,13 @@
 package chat.simplex.app
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.Paragraph
 import androidx.compose.ui.text.TextStyle
@@ -14,6 +20,9 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.Inter
+import chat.simplex.common.ui.theme.SimpleXTheme
+import chat.simplex.common.views.chat.item.LocalTerminalLayout
+import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.chat.item.reserveSpaceForMeta
 import chat.simplex.common.views.chat.item.terminalReserveSpaceForMeta
 import kotlinx.datetime.Clock
@@ -83,6 +92,25 @@ class TerminalMetaCopyTest {
       assertTrue(abs(w.first - icons1) < 0.5f, "icon spaces at scale $s: ${w.first} px, at scale 1: $icons1 px")
       assertTrue(abs(w.second / time1 - s) < 0.05f, "time at scale $s: ${w.second} px, at scale 1: $time1 px")
     }
+  }
+
+  @Test
+  fun ruleOnlyMessageAsWideAsCopy() {
+    val placed = mutableMapOf<String, Placed>()
+    renderScene {
+      SimpleXTheme {
+        CompositionLocalProvider(LocalTerminalLayout provides true, LocalDensity provides Density(1f)) {
+          Box(Modifier.width(IntrinsicSize.Max)) {
+            MarkdownText(
+              "---", listOf(FormattedText("---")), listOf(MarkdownBlock.Rule(SegmentRange(0, 1))), meta = sentEdited,
+              toggleSecrets = false, linkMode = SimplexLinkMode.DESCRIPTION, blockLayout = true, modifier = Modifier.record(placed, "rule")
+            )
+          }
+        }
+      }
+    }
+    val copyWidth = paragraph(copy(sentEdited, Density(1f), LayoutDirection.Ltr), Density(1f), TextDirection.Ltr, 1000).maxIntrinsicWidth
+    assertTrue(abs(placed.getValue("rule").width - copyWidth) <= 1f, "rule ${placed.getValue("rule").width} px, copy $copyWidth px")
   }
 
   @Test

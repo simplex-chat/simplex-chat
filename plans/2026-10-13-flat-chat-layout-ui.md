@@ -4,6 +4,8 @@ Date: 2026-10-13. Revised: 2026-10-14, 2026-10-19, 2026-10-21, 2026-10-24.
 
 Chats with the layout `terminal` are drawn by the Android and desktop apps as full-width start-aligned rows without bubbles. iOS draws the classic layout; its layout pickers were removed until it draws terminal rows.
 
+D1–D33: the numbered decisions of the layout review of 2026-10-23 and 2026-10-24.
+
 ```
 specification    apps/multiplatform/spec/client/chat-view.md, sections 4 and 10
 product          apps/multiplatform/product/views/chat.md, "Terminal Layout"
@@ -35,29 +37,35 @@ sender row        classic group geometry and style: name 13.5sp, role label; own
 avatars           groups and channels only; gutter: member image width
 gutter            other chats: GO_TO_ITEM_BUTTON_SIZE (22dp)
 sender groups     new sender row after an event or a sender change, as classic: time gaps and date changes do not repeat it
-time, status      at the end of the row, for every item with a time; baseline of the time on the last baseline of the content
+time, status      at the end of the row, for every item with a time; baseline of the time on the last baseline of the content (D3)
                   message text ends with a transparent copy of the time, joined to the last word by no-break spaces
                   last line without room: the last word moves to the next line with the time
                   code block, table, rule or emoji without room: the time under them
                   images and videos without caption: over the media in white, as classic, when the row has no space beside them
 quote             Markdown quote design: bar, text at 70%, 15sp; 5.75sp above, 5sp below, over the whole quote row
-headers           all item headers without background; 2.5sp above, 1.5sp below; name → header level 3, header → text level 2
-media             message corner clip, start at the text edge, 5.75sp above; quote thumbnails: message corner clip; roundness preference
+headers           all item headers without background; 2.5sp above, 1.5sp below; name → header level 3, header → text level 2 (D8)
+                  icon 18dp, as classic, centred on the header text without height
+media             message corner clip, start at the text edge, 5.75sp above; quote thumbnails: message corner clip; roundness preference (D22)
 captions          laid out as the text of a close follow-up message: full row width, the same gap below the media, the time on the caption only (D30)
                   media, chat link cards and voice at their own width and layout, as without text
-rule-only message rules as wide as the copy of the time; the time beside them (D31)
+rule-only message rules as wide as the copy of the time; the time beside them unless a wider quote or header widens the rule (D31)
 item clip         none, so headings and emoji are drawn whole
 cards             link preview and chat link in the quote colour, message corner radius
 message text      onSurface at 87% in dark themes, both layouts
-line height       font size × 22/16 × f(w): message text, captions, quotes, code, headings, sender row, headers, event text, time
+line height       font size × 22/16 × f(w): message text, captions, quotes, code, headings, sender row, headers, event text, time (D1)
                   cards, files, voice and calls: classic until their redesign
                   f(w) = 1 − 0.1515 × (1 − w); w: L* contrast of the text colour divided by that of the message text, 0…1; names and the white time: f = 1
-                  full line height for every line, one-line texts included; extra space split by ascent and descent (Proportional, Trim.None)
+                  full line height for every line, one-line texts included (D7); extra space split by ascent and descent (Proportional, Trim.None)
+                  slope of f(w) set by the quote (D2); light theme: message 22sp, quote 19.6sp, event text and time 15.1sp; dark theme: quote 20.1sp
 spacing level 1   lines of a quote
 spacing level 2   lines of a message; messages of one sender within 60 s; blocks of a message against the text next to them
-spacing level 3   messages of one sender 60 s or more apart; sender name → message or header; paragraph break; above a heading, also at the start of a message
-spacing level 4   last line of a message → next sender name; above and below an event, whatever the time between them
-                  all gaps: sp constants at the top of TerminalItemView.kt
+spacing level 3   messages of one sender 60 s or more apart; sender name → message or header; paragraph break; above a heading, also at the start of a message (D9b)
+spacing level 4   last line of a message → next sender name; above and below an event, whatever the time between them (D9a)
+level targets     measured from a baseline or a block edge to the top of the tallest letter or a block edge
+                  level 2: the line gap; level 3: 15.1sp; level 4: 20.8sp (D5)
+                  levels and heading sizes built by multiplying base values upward
+                  accepted: desktop message → event 19px (D9c)
+                  all gaps: sp constants at the top of TerminalItemView.kt (D10)
                   one gap above a row, terminalRowGap: 4.75sp after a large gap, above a sender row, next to an event, above text at the item top starting with a heading; otherwise 0
                   0 below a date separator and the chat banner; 4.75sp above a date separator
                   sender row 6.5sp above, 5.5sp below; events 8.25sp above, 1.5sp below
@@ -67,8 +75,8 @@ spacing level 4   last line of a message → next sender name; above and below a
                   code cards, table cards and rules: 5.75sp above, 5sp below all but the last block of a message without a meta line
                   that last block with the time beside it: 5sp below, by messageLastBlock() and TerminalMetaLayout; the time under it: 6sp below its edge
                   paragraph break and a heading inside a message: 4.75sp
-                  below a heading: 2.375sp (half of 4.75sp), so a heading is nearer to its own text
-                  headings: body × 1.3125, 1.72, 2.26 for levels 3, 2, 1; capitals placed as body capitals
+                  below a heading: 2.375sp (half of 4.75sp), so a heading is nearer to its own text (D21)
+                  headings: body × 1.3125, 1.72, 2.26 for levels 3, 2, 1 (D15); capitals placed as body capitals
                   files: 2sp above; voice drawn by FramedItemView (caption, quote or header): as voice alone, 4sp above, 6sp below
                   emoji-only items, also under a quote or header: 4.25sp above, 1.5sp below; not stretched to the item width
                   feature and preference icons: centred on the event text, no height; merged feature icons: one event line high, centred
@@ -78,7 +86,7 @@ meta placement    never above the content; the row at least as tall as the time
                   after a rule with room beside it: the time on the baseline of the last text line above it (D24); otherwise under the rule
 meta copy         FontWeight.Normal; icon spaces at the body1 size in dp; time and timer text at 12sp
                   conditions of CIMetaView, file encryption and signature included; tall status icon condition shared with CIMetaView
-                  one more space after the 17dp icons: sent and received status, via proxy
+                  one more space after the 17dp icons: sent and received status, via proxy (D29)
 event text        layout direction in both layouts (unspecified text direction); separator and copy passed apart by ChatEventWithMeta, each view puts the separator where classic has two spaces (D28); no line limit (D23)
 meta copy mark    U+200E (left-to-right layout) or U+200F (right-to-left) before the copy, so the copy stays at the line end after text in the other direction
 event time        joined to the last word by no-break spaces
@@ -90,6 +98,8 @@ theme screens     preview as terminal rows ("alice", then "bob" in the own colou
                   wallpaper presets as colours
                   custom image tile, image scale, scale slider and wallpaper accent hidden
 theme export      colours and wallpaper; the layout is not exported
+classic           unchanged apart from the message text colour: no copy of the time in bubbles (decided 2026-10-23), no spacing or line-height changes
+build             kotlin.daemon.jvmargs=-Xmx4096m in apps/multiplatform/gradle.properties (D33)
 rejected          hover action bar
                   reaction pills
                   reply line
@@ -111,7 +121,7 @@ views/chat/ChatView.kt
   ChatItemsList (:2409-:2415)            showAvatar = terminalItemShowsSender(item, older) when terminal
                                          terminalGap = terminalRowGap(item, older, separated, largeGap, showAvatar)
                                          separated = terminalRowsSeparated(older row) (:3848): the banner, or rowItemSeparation of the older row with a date
-                                         rowItemSeparation(row, revealed) (:3843): one rule for the date separator, drawn and in the gap (D32)
+                                         rowItemSeparation(row) (:3843): one rule for the date separator, drawn and in the gap (D32)
   local ChatItemView (:2046)             terminal branch:
                                            ChatItemBox(top, bottom) with the row tint and terminalRowIndication; top 0
                                            bottom TERMINAL_LEVEL_STEP above a date separator; 8dp below the newest row; otherwise 0
@@ -130,9 +140,9 @@ views/chat/item/ChatItemView.kt          alignEnd = sent && !terminal; item clic
 views/chat/item/FramedItemView.kt        transparent background; headers and quote without background; quoteBar; mediaModifier; cardModifier; thumbnailClip
                                          CIMarkdownText: parameter terminalTop plus terminalHeadingGap, no bottom padding, terminal text style, file encryption and signature for the copy
                                          reservesMeta: metaReserved, caption of images, videos, voice and chat links, bottom gap without text; clipChatItem skipped
-                                         emoji: TERMINAL_EMOJI_* paddings, not stretched, in a box of the item width; quote row: TERMINAL_BLOCK_* paddings, icons without top padding
+                                         emoji: TERMINAL_EMOJI_* paddings, not stretched; quote row: TERMINAL_BLOCK_* paddings, icons without top padding
                                          CHAT_ITEM_TEXT_PADDING (text edge); classic vertical text padding named CHAT_ITEM_TEXT_VERTICAL_PADDING
-                                         PriorityLayout(limitToPriorityWidth = !terminal); link preview caption without width limit; chat link card at its own width
+                                         PriorityLayout(limitToPriorityWidth = !terminal || captionlessMedia), placeRelative when not limited; link preview caption without width limit; chat link card at its own width
 views/chat/item/MarkdownBlocks.kt        Modifier.quoteBar, shared with Markdown quotes; Markdown quote text with terminalTextStyle and the colour rule
                                          heading scale TERMINAL_HEADING_RATIO, Modifier.headingBox
                                          spacers: TERMINAL_HEADING_BOTTOM_GAP after a heading, TERMINAL_LEVEL_STEP at a paragraph break or above a heading
@@ -167,6 +177,7 @@ views/usersettings/Appearance.kt         ChatLayoutRow; PreviewInEitherLayout; t
 drawing         classic
 controls        none; the pickers return with terminal rows
 theme writes    chatLayout kept (agent profile plan, section 6)
+terminal rows   in this pull request, after the Kotlin part is approved and reviewed (D11)
 ```
 
 ## 5. Tests
@@ -203,16 +214,22 @@ theme writes    chatLayout kept (agent profile plan, section 6)
 - copy text: direction mark, the classic spaces, one more space after the tall status and via-proxy icons
 - icon spaces: one width at font scales 0.7, 0.75, 1 and 1.3; the time scaled with the font
 - copy after words in the other direction on a wrapped last line: at the line end, in both directions
+- a message of a rule only: the rule as wide as the copy (D31)
 
 `apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/TerminalMetaLayoutTest.kt`, `ItemWithMeta` in terminal rows:
 
 - time baseline on the last baseline of the content
+- content narrowed by the time box without `metaReserved`
 - last line with room: time beside it; without room: `TERMINAL_META_GAP` under the content, the row taller
 - last block at the bottom with the time beside it: `TERMINAL_BLOCK_BOTTOM_GAP` added
 - content without a baseline: time `TERMINAL_META_GAP` above the content bottom
 - content shorter than the time: time at the top, the row as tall as the time
-- overlay meta when content and time exceed the row: at the bottom end of the content
+- overlay meta when content and time exceed the row: at the bottom end of the content; under a wider quote, on the media corner
 - last line with room, right-to-left
+
+`apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/PriorityLayoutTest.kt`: terminal elements at their own width, classic elements at the media width; terminal placement at the start edge right-to-left, classic unmirrored.
+
+`apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/ChatEventTextTest.kt`: classic separator and event text as before (D28); terminal separator of transparent no-break spaces before the copy.
 
 Checked on desktop on 2026-10-21:
 
@@ -221,6 +238,14 @@ Checked on desktop on 2026-10-21:
 3. Search and forwarded items: go-to button in the gutter.
 4. Theme screens of a terminal chat and profile: preview, presets, hidden controls.
 5. Layout choices: chat, profile and app; the open chat is redrawn at once; "Reset to app theme" keeps the chat layout; the choices are kept after a restart.
+
+## Later
+
+```
+line heights    app-wide, in the redesign (D6)
+items           link preview, chat link, files, voice and calls on the levels and line heights, in the redesign (D8)
+style guide     one document for both apps with platform differences, after merge (D13)
+```
 
 ## Depends on
 

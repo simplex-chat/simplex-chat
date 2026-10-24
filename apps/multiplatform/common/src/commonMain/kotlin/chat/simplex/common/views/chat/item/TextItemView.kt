@@ -209,12 +209,14 @@ fun MarkdownText (
   val textLayoutDirection = remember (text) {
     if (isRtl(text.subSequence(0, kotlin.math.min(50, text.length)))) LayoutDirection.Rtl else LayoutDirection.Ltr
   }
+  val metaCopy = if (meta != null && LocalTerminalLayout.current) {
+    terminalReserveSpaceForMeta(meta, chatTTL, encrypted, signedFileVerified, MaterialTheme.colors.secondary, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
+  } else null
   if (blockLayout && formattedText != null && markdownBlocks != null && range == null) {
     val direction = LocalLayoutDirection.current
     val terminal = LocalTerminalLayout.current
-    val ruleMinWidth = if (terminal && meta != null && markdownBlocks.all { it is MarkdownBlock.Rule }) {
-      val copy = terminalReserveSpaceForMeta(meta, chatTTL, encrypted, signedFileVerified, MaterialTheme.colors.secondary, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
-      with(LocalDensity.current) { rememberTextMeasurer().measure(copy, style).size.width.toDp() }
+    val ruleMinWidth = if (metaCopy != null && markdownBlocks.isNotEmpty() && markdownBlocks.all { it is MarkdownBlock.Rule }) {
+      with(LocalDensity.current) { rememberTextMeasurer().measure(metaCopy, style).size.width.toDp() }
     } else 0.dp
     CompositionLocalProvider(LocalLayoutDirection provides textLayoutDirection) {
       MarkdownBlocks(
@@ -245,8 +247,8 @@ fun MarkdownText (
   val reserve = meta?.let {
     if (textLayoutDirection != (parentDirection ?: LocalLayoutDirection.current)) {
       AnnotatedString("\n")
-    } else if (LocalTerminalLayout.current) {
-      terminalReserveSpaceForMeta(it, chatTTL, encrypted, signedFileVerified, MaterialTheme.colors.secondary, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
+    } else if (metaCopy != null) {
+      metaCopy
     } else {
       AnnotatedString(reserveSpaceForMeta(it, chatTTL, null, secondaryColor = MaterialTheme.colors.secondary, showViaProxy = showViaProxy, showTimestamp = showTimestamp))
     }

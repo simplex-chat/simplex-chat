@@ -1,23 +1,21 @@
 package chat.simplex.app
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.layout.FirstBaseline
-import androidx.compose.ui.layout.LastBaseline
-import androidx.compose.ui.layout.layout
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInRoot
-import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.views.chat.item.*
-import kotlin.math.roundToInt
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -30,19 +28,9 @@ class TerminalMetaLayoutTest {
   private val metaBoxWidth = metaWidth + 12
   private val gap = with(density) { TERMINAL_META_GAP.roundToPx() }
   private val blockGap = with(density) { TERMINAL_BLOCK_BOTTOM_GAP.roundToPx() }
+  private val placed = mutableMapOf<String, Placed>()
 
-  private data class Placed(val x: Int, val y: Int, val width: Int, val height: Int)
   private class Result(val row: Placed, val content: Placed, val meta: Placed?, val overlay: Placed?, val drawn: Set<String>)
-
-  private fun Modifier.fixed(width: Int, height: Int, baseline: Int?): Modifier = layout { measurable, _ ->
-    val placeable = measurable.measure(Constraints.fixed(width, height))
-    layout(width, height, if (baseline == null) emptyMap() else mapOf(FirstBaseline to baseline, LastBaseline to baseline)) { placeable.place(0, 0) }
-  }
-
-  private fun Modifier.record(into: MutableMap<String, Placed>, name: String): Modifier = onGloballyPositioned {
-    val p = it.positionInRoot()
-    into[name] = Placed(p.x.roundToInt(), p.y.roundToInt(), it.size.width, it.size.height)
-  }
 
   private fun layOut(
     direction: LayoutDirection = LayoutDirection.Ltr,
@@ -50,9 +38,8 @@ class TerminalMetaLayoutTest {
     overlay: Boolean = false,
     content: @Composable (Modifier) -> Unit
   ): Result {
-    val placed = mutableMapOf<String, Placed>()
     val drawn = mutableSetOf<String>()
-    val scene = ImageComposeScene(width = 400, height = 400, density = density, layoutDirection = direction) {
+    renderScene(direction) {
       CompositionLocalProvider(LocalTerminalLayout provides true) {
         Box(Modifier.width(rowWidth.dp).record(placed, "row")) {
           ItemWithMeta(
@@ -63,11 +50,8 @@ class TerminalMetaLayoutTest {
         }
       }
     }
-    scene.render()
-    scene.close()
     val row = placed.getValue("row")
-    fun relative(p: Placed?) = p?.let { Placed(it.x - row.x, it.y - row.y, it.width, it.height) }
-    return Result(Placed(0, 0, row.width, row.height), relative(placed["content"])!!, relative(placed["meta"]), relative(placed["overlay"]), drawn)
+    return Result(Placed(0, 0, row.width, row.height), placed.getValue("content").relativeTo(row), placed["meta"]?.relativeTo(row), placed["overlay"]?.relativeTo(row), drawn)
   }
 
   @Test
@@ -76,6 +60,12 @@ class TerminalMetaLayoutTest {
     assertEquals(Placed(0, 0, 100, 40), r.content)
     assertEquals(Placed(rowWidth - metaBoxWidth, 30 - metaBaseline, metaWidth, metaHeight), r.meta)
     assertEquals(40, r.row.height)
+  }
+
+  @Test
+  fun contentNarrowedByMetaWithoutReserve() {
+    val r = layOut(metaReserved = false) { Box(it.fillMaxWidth().height(40.dp)) }
+    assertEquals(Placed(0, 0, rowWidth - metaBoxWidth, 40), r.content)
   }
 
   @Test
@@ -119,6 +109,21 @@ class TerminalMetaLayoutTest {
     assertEquals(Placed(260 - metaBoxWidth, 100 - gap - metaHeight, metaWidth, metaHeight), r.overlay)
     assertEquals(setOf("overlay"), r.drawn)
     assertEquals(100, r.row.height)
+  }
+
+  @Test
+  fun overlayMetaOnMediaUnderWiderQuote() {
+    val r = layOut(metaReserved = false, overlay = true) {
+      Column(it.width(IntrinsicSize.Max)) {
+        PriorityLayout(Modifier, CHAT_IMAGE_LAYOUT_ID, limitToPriorityWidth = true) {
+          Box(Modifier.width(290.dp).height(30.dp))
+          Box(Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID).record(placed, "media").size(260.dp, 100.dp))
+        }
+      }
+    }
+    val media = placed.getValue("media").relativeTo(placed.getValue("row"))
+    assertEquals(Placed(media.x + media.width - metaBoxWidth, media.y + media.height - gap - metaHeight, metaWidth, metaHeight), r.overlay)
+    assertEquals(setOf("overlay"), r.drawn)
   }
 
   @Test
