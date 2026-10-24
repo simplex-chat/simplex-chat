@@ -41,9 +41,14 @@ let seSubscriber = seMessageSubscriber {
     case let .state(state):
         switch state {
         case .inactive:
-            if AppChatState.shared.value.inactive { activateChat() }
+            if AppChatState.shared.value.inactive && UIApplication.shared.applicationState != .background {
+                startChatAndActivate {}
+            }
         case .sendingMessage:
-            if AppChatState.shared.value.canSuspend { suspendChat() }
+            suspendLockQueue.sync {
+                let appState = AppChatState.shared.value
+                if appState.canSuspend || appState == .suspending { _suspendChatInstantly() }
+            }
         }
     }
 }
@@ -68,10 +73,7 @@ func terminateChat() {
         switch AppChatState.shared.value {
         case .suspending:
             // suspend instantly if already suspending
-            _chatSuspended()
-            // when apiSuspendChat is called with timeout 0, it won't send any events on suspension
-            if ChatModel.ok { apiSuspendChat(timeoutMicroseconds: 0) }
-            chatCloseStore()
+            _suspendChatInstantly()
         case .suspended:
             chatCloseStore()
         case .stopped:
@@ -81,6 +83,13 @@ func terminateChat() {
             _suspendChat(timeout: terminationTimeout)
         }
     }
+}
+
+private func _suspendChatInstantly() {
+    _chatSuspended()
+    // when apiSuspendChat is called with timeout 0, it won't send any events on suspension
+    if ChatModel.ok { apiSuspendChat(timeoutMicroseconds: 0) }
+    chatCloseStore()
 }
 
 func chatSuspended() {
