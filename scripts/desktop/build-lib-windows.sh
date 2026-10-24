@@ -39,8 +39,8 @@ scripts/desktop/prepare-openssl-windows.sh
 openssl_windows_style_path=$(echo `pwd`/dist-newstyle/openssl-3.0.15 | sed 's#/\([a-zA-Z]\)#\1:#' | sed 's#/#\\#g')
 rm -rf $BUILD_DIR 2>/dev/null || true
 # Existence of these directories produces build error: cabal's bug
-# (simplexmq is removed because cabal cannot delete its read-only git submodule pack files - blst, libbbs - on Windows)
-rm -rf dist-newstyle/src/direct-sq* dist-newstyle/src/simplexmq* 2>/dev/null || true
+# (simplexmq, hs-jpeg-turbo and JuicyPixels-stbir are removed because cabal cannot delete their read-only git submodule pack files - blst, libbbs, libjpeg-turbo, stb - on Windows)
+rm -rf dist-newstyle/src/direct-sq* dist-newstyle/src/simplexmq* dist-newstyle/src/hs-jpeg-t* dist-newstyle/src/JuicyPixe* 2>/dev/null || true
 rm cabal.project.local 2>/dev/null || true
 echo "ignore-project: False" >> cabal.project.local
 echo "package direct-sqlcipher" >> cabal.project.local
