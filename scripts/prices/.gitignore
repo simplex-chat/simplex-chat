@@ -4,6 +4,5 @@ node_modules/
 !package.json
 !package-lock.json
 *.csv*
-*.xlsx
 *.xlsx*
 INFO.md
