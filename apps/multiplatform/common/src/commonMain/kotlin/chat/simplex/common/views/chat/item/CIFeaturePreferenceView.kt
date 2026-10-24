@@ -21,7 +21,7 @@ fun CIFeaturePreferenceView(
   allowed: FeatureAllowed,
   acceptFeature: (Contact, ChatFeature, Int?) -> Unit
 ) {
-  ChatEventWithMeta(chatItem) { ts ->
+  ChatEventWithMeta(chatItem) { separator, ts ->
     Row(
       Modifier.padding(chatEventPadding()),
       verticalAlignment = Alignment.CenterVertically,
@@ -36,7 +36,7 @@ fun CIFeaturePreferenceView(
         val annotatedText = buildAnnotatedString {
           withStyle(chatEventStyle) { append(chatItem.content.text + "  ") }
           withAnnotation(tag = "Accept", annotation = "Accept") {
-            withStyle(acceptStyle) { append(generalGetString(acceptTextId)) }
+            withStyle(acceptStyle) { append(generalGetString(acceptTextId)); append(separator) }
           }
           withStyle(chatEventStyle) { append(ts) }
         }
@@ -48,7 +48,7 @@ fun CIFeaturePreferenceView(
           shouldConsumeEvent = ::accept
         )
       } else {
-        Text(AnnotatedString(chatItem.content.text) + ts,
+        Text(AnnotatedString(chatItem.content.text) + separator + ts,
           fontSize = 12.sp, fontWeight = FontWeight.Light, color = MaterialTheme.colors.secondary, style = chatEventTextStyle())
       }
     }

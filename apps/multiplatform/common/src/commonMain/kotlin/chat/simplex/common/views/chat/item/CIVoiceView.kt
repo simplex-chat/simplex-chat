@@ -46,8 +46,7 @@ fun CIVoiceView(
   val sizeMultiplier = if (smallView) voiceMessageSizeBasedOnSquareSize(36f) / 56f else 1f
   val padding = when {
     smallView -> PaddingValues()
-    hasText && LocalTerminalLayout.current -> PaddingValues(top = TERMINAL_BLOCK_TOP_GAP.toDp(), start = 6.sp.toDp(), end = 6.sp.toDp())
-    hasText -> PaddingValues(top = 14.sp.toDp() * sizeMultiplier, bottom = 14.sp.toDp() * sizeMultiplier, start = 6.sp.toDp() * sizeMultiplier, end = 6.sp.toDp() * sizeMultiplier)
+    hasText && !LocalTerminalLayout.current -> PaddingValues(top = 14.sp.toDp() * sizeMultiplier, bottom = 14.sp.toDp() * sizeMultiplier, start = 6.sp.toDp() * sizeMultiplier, end = 6.sp.toDp() * sizeMultiplier)
     else -> PaddingValues(top = 4.sp.toDp() * sizeMultiplier, bottom = 6.sp.toDp() * sizeMultiplier, start = if (LocalTerminalLayout.current) CHAT_ITEM_TEXT_PADDING else 0.dp, end = 0.dp)
   }
   Row(
@@ -183,7 +182,7 @@ private fun VoiceLayout(
         }
       }
     }
-    hasText -> {
+    hasText && !LocalTerminalLayout.current -> {
       val sentColor = MaterialTheme.appColors.sentMessage
       val receivedColor = MaterialTheme.appColors.receivedMessage
       Spacer(Modifier.width(6.sp.toDp() * sizeMultiplier))
@@ -208,22 +207,26 @@ private fun VoiceLayout(
         }
       }
     }
-    else -> ItemWithMeta(meta = { CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp) }) { inlineMeta ->
-      Column(horizontalAlignment = Alignment.Start) {
-        Row {
-          VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, 1f, play, pause, longClick, receiveFile)
-          Row(Modifier.weight(1f, false), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Start) {
-            DurationText(text, PaddingValues(start = 12.sp.toDp() * sizeMultiplier))
-            Slider(MaterialTheme.colors.background, PaddingValues(start = DEFAULT_PADDING_HALF + 3.dp))
-            Spacer(Modifier.height(56.sp.toDp() * sizeMultiplier))
+    else -> {
+      @Composable
+      fun VoiceRow(inlineMeta: (@Composable () -> Unit)?) {
+        Column(horizontalAlignment = Alignment.Start) {
+          Row {
+            VoiceMsgIndicator(file, audioPlaying.value, sent, false, progress, duration, brokenAudio, 1f, play, pause, longClick, receiveFile)
+            Row(Modifier.weight(1f, false), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Start) {
+              DurationText(text, PaddingValues(start = 12.sp.toDp() * sizeMultiplier))
+              Slider(MaterialTheme.colors.background, PaddingValues(start = DEFAULT_PADDING_HALF + 3.dp))
+              Spacer(Modifier.height(56.sp.toDp() * sizeMultiplier))
+            }
           }
-        }
-        if (inlineMeta != null) {
-          Box(Modifier.padding(top = 6.sp.toDp() * sizeMultiplier)) {
-            inlineMeta()
+          if (inlineMeta != null) {
+            Box(Modifier.padding(top = 6.sp.toDp() * sizeMultiplier)) {
+              inlineMeta()
+            }
           }
         }
       }
+      if (hasText) VoiceRow(null) else ItemWithMeta(meta = { CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp) }) { VoiceRow(it) }
     }
   }
 }

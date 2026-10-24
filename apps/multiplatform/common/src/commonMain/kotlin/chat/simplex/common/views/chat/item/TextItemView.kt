@@ -212,6 +212,10 @@ fun MarkdownText (
   if (blockLayout && formattedText != null && markdownBlocks != null && range == null) {
     val direction = LocalLayoutDirection.current
     val terminal = LocalTerminalLayout.current
+    val ruleMinWidth = if (terminal && meta != null && markdownBlocks.all { it is MarkdownBlock.Rule }) {
+      val copy = terminalReserveSpaceForMeta(meta, chatTTL, encrypted, signedFileVerified, MaterialTheme.colors.secondary, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
+      with(LocalDensity.current) { rememberTextMeasurer().measure(copy, style).size.width.toDp() }
+    } else 0.dp
     CompositionLocalProvider(LocalLayoutDirection provides textLayoutDirection) {
       MarkdownBlocks(
         formattedText, markdownBlocks, style, modifier, cardColor ?: MaterialTheme.appColors.receivedQuote,
@@ -232,7 +236,8 @@ fun MarkdownText (
               linkMode = linkMode, showViaProxy = showViaProxy, showTimestamp = showTimestamp, range = IntRange.EMPTY, parentDirection = if (terminal) direction else null
             )
           }
-        }
+        },
+        ruleMinWidth = ruleMinWidth
       )
     }
     return

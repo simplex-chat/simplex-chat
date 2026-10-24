@@ -40,6 +40,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -62,7 +63,8 @@ fun MarkdownBlocks(
   modifier: Modifier,
   cardColor: Color,
   blockText: @Composable (index: Int, range: SegmentRange, style: TextStyle, modifier: Modifier, softWrap: Boolean, last: Boolean) -> Unit,
-  metaLine: (@Composable () -> Unit)?
+  metaLine: (@Composable () -> Unit)?,
+  ruleMinWidth: Dp
 ) {
   val roundness = remember { appPreferences.chatItemRoundness.state }.value.coerceIn(0f, 1f)
   val cardShape = RoundedCornerShape(12.dp * roundness)
@@ -138,7 +140,7 @@ fun MarkdownBlocks(
             }
           }
         }
-        is MarkdownBlock.Rule -> Box((if (terminal) cardMargins else Modifier.padding(vertical = 6.dp)).fillMaxWidth().height(1.dp).background(lineColor))
+        is MarkdownBlock.Rule -> Box((if (terminal) cardMargins.widthIn(min = ruleMinWidth) else Modifier.padding(vertical = 6.dp)).fillMaxWidth().height(1.dp).background(lineColor))
       }
     }
     if (!lastIsText) metaLine?.invoke()

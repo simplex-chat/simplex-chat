@@ -43,6 +43,9 @@ time, status      at the end of the row, for every item with a time; baseline of
 quote             Markdown quote design: bar, text at 70%, 15sp; 5.75sp above, 5sp below, over the whole quote row
 headers           all item headers without background; 2.5sp above, 1.5sp below; name → header level 3, header → text level 2
 media             message corner clip, start at the text edge, 5.75sp above; quote thumbnails: message corner clip; roundness preference
+captions          laid out as the text of a close follow-up message: full row width, the same gap below the media, the time on the caption only (D30)
+                  media, chat link cards and voice at their own width and layout, as without text
+rule-only message rules as wide as the copy of the time; the time beside them (D31)
 item clip         none, so headings and emoji are drawn whole
 cards             link preview and chat link in the quote colour, message corner radius
 message text      onSurface at 87% in dark themes, both layouts
@@ -58,15 +61,15 @@ spacing level 4   last line of a message → next sender name; above and below a
                   one gap above a row, terminalRowGap: 4.75sp after a large gap, above a sender row, next to an event, above text at the item top starting with a heading; otherwise 0
                   0 below a date separator and the chat banner; 4.75sp above a date separator
                   sender row 6.5sp above, 5.5sp below; events 8.25sp above, 1.5sp below
-                  text top padding: 0 below the sender row, a header or the quote, 5sp below media, voice and cards, 1sp below a file; bottom 0
+                  text top padding: 0 below the sender row, a header, the quote, voice or a file, 5sp below media and cards; bottom 0
                   text starting with a heading below a quote, header or block: 4.75sp more above, terminalHeadingGap
-                  item ending with a block (image or video without caption, voice or chat link without text): 5sp below
+                  item ending with a block (image or video without caption, chat link without text): 5sp below
                   code cards, table cards and rules: 5.75sp above, 5sp below all but the last block of a message without a meta line
                   that last block with the time beside it: 5sp below, by messageLastBlock() and TerminalMetaLayout; the time under it: 6sp below its edge
                   paragraph break and a heading inside a message: 4.75sp
                   below a heading: 2.375sp (half of 4.75sp), so a heading is nearer to its own text
                   headings: body × 1.3125, 1.72, 2.26 for levels 3, 2, 1; capitals placed as body capitals
-                  files: 2sp above; voice drawn by FramedItemView (caption, quote or header): 5.75sp above
+                  files: 2sp above; voice drawn by FramedItemView (caption, quote or header): as voice alone, 4sp above, 6sp below
                   emoji-only items, also under a quote or header: 4.25sp above, 1.5sp below; not stretched to the item width
                   feature and preference icons: centred on the event text, no height; merged feature icons: one event line high, centred
                   classic: call item bottom, voice drawn without FramedItemView, the two rows of the forwarded-from header
@@ -76,7 +79,7 @@ meta placement    never above the content; the row at least as tall as the time
 meta copy         FontWeight.Normal; icon spaces at the body1 size in dp; time and timer text at 12sp
                   conditions of CIMetaView, file encryption and signature included; tall status icon condition shared with CIMetaView
                   one more space after the 17dp icons: sent and received status, via proxy
-event text        layout direction in both layouts (unspecified text direction); separator and copy passed together as ts by ChatEventWithMeta; no line limit (D23)
+event text        layout direction in both layouts (unspecified text direction); separator and copy passed apart by ChatEventWithMeta, each view puts the separator where classic has two spaces (D28); no line limit (D23)
 meta copy mark    U+200E (left-to-right layout) or U+200F (right-to-left) before the copy, so the copy stays at the line end after text in the other direction
 event time        joined to the last word by no-break spaces
 go-to button      in the gutter, centred on the message, below the avatar when the message is shorter
@@ -107,14 +110,15 @@ views/chat/ChatView.kt
   ChatLayout composable (:1007)          chatViewBackgroundModifier(drawWallpaperImage = !LocalTerminalLayout.current)
   ChatItemsList (:2409-:2415)            showAvatar = terminalItemShowsSender(item, older) when terminal
                                          terminalGap = terminalRowGap(item, older, separated, largeGap, showAvatar)
-                                         separated = terminalRowsSeparated(older row) (:3843): the banner, or a revealed older row with getItemSeparation(older, oldest item).date set
+                                         separated = terminalRowsSeparated(older row) (:3848): the banner, or rowItemSeparation of the older row with a date
+                                         rowItemSeparation(row, revealed) (:3843): one rule for the date separator, drawn and in the gap (D32)
   local ChatItemView (:2046)             terminal branch:
                                            ChatItemBox(top, bottom) with the row tint and terminalRowIndication; top 0
                                            bottom TERMINAL_LEVEL_STEP above a date separator; 8dp below the newest row; otherwise 0
                                            SelectedListItem when selecting
                                            TerminalChatItemRow(chatItemSender or null, terminalGutter, terminalGap, terminalStartOffset and swipeableModifier, GoToItemButton)
                                            ChatItemViewShortHand with the row interaction source
-  shared with classic                    showsSender, sameSender (:3862-:3876); ChatItemSender, chatItemSender, SenderNameAndRole (:3506-:3584)
+  shared with classic                    showsSender, sameSender (:3866-:3880); ChatItemSender, chatItemSender, SenderNameAndRole (:3506-:3584)
                                          classic BubbleSenderNameAndRole (:2034)
 views/chat/ChatItemsMerger.kt            MergedItem.revealed: true for Single, the flag of Grouped
 views/chat/item/TerminalItemView.kt      LocalTerminalLayout, gap constants, terminalTextStyle, terminal sender condition, terminalRowGap, terminalHeadingGap
@@ -128,21 +132,24 @@ views/chat/item/FramedItemView.kt        transparent background; headers and quo
                                          reservesMeta: metaReserved, caption of images, videos, voice and chat links, bottom gap without text; clipChatItem skipped
                                          emoji: TERMINAL_EMOJI_* paddings, not stretched, in a box of the item width; quote row: TERMINAL_BLOCK_* paddings, icons without top padding
                                          CHAT_ITEM_TEXT_PADDING (text edge); classic vertical text padding named CHAT_ITEM_TEXT_VERTICAL_PADDING
+                                         PriorityLayout(limitToPriorityWidth = !terminal); link preview caption without width limit; chat link card at its own width
 views/chat/item/MarkdownBlocks.kt        Modifier.quoteBar, shared with Markdown quotes; Markdown quote text with terminalTextStyle and the colour rule
                                          heading scale TERMINAL_HEADING_RATIO, Modifier.headingBox
                                          spacers: TERMINAL_HEADING_BOTTOM_GAP after a heading, TERMINAL_LEVEL_STEP at a paragraph break or above a heading
                                          card margins of code, tables and rules; messageLastBlock() on the last block without a meta line (marksLastBlock)
+                                         ruleMinWidth: rules of a rule-only message as wide as the copy of the time (D31)
                                          code: terminalTextStyle at the code size (classic: line height × 0.9); metaLine null in terminal rows unless live
 views/chat/item/CIFileView.kt            row padding TERMINAL_FILE_TOP_GAP, icon without top padding; the reserve in the size line kept
-views/chat/item/CIVoiceView.kt           voice drawn by FramedItemView: TERMINAL_BLOCK_TOP_GAP above, 0 below; otherwise classic, start at the text edge
+views/chat/item/CIVoiceView.kt           voice drawn by FramedItemView: the layout of voice alone without its time; otherwise classic, start at the text edge
 views/chat/item/EmojiItemView.kt         TERMINAL_EMOJI_* paddings at the text edge, messageLastLine()
 views/chat/item/TextItemView.kt          messageTextColor(); terminalReserveSpaceForMeta at the end of message text
                                          meta line of a live message: encryption, signature and the outer direction, as the blocks
+                                         ruleMinWidth measured from the copy of a rule-only message
 views/chat/item/CIMetaView.kt            reserveSpaceForMeta with span parameters: the classic string and terminalReserveSpaceForMeta
                                          terminalReserveSpaceForMeta: direction mark, icon spaces in dp; tallStatusIcon shared with CIMetaText
                                          time style with lineHeightColor
 views/chat/item/CIChatFeatureView.kt     merged feature icons: one event line high, centred in terminal rows
-views/chat/item/CIEventView.kt           chatEventPadding(), chatEventTextStyle(), ChatEventWithMeta (separator and time or copy as ts)
+views/chat/item/CIEventView.kt           chatEventPadding(), chatEventTextStyle(), ChatEventWithMeta (separator, and time or copy, apart; classic as before, D28)
                                          CIEventView without a line limit in terminal rows (D23)
 item views with ItemWithMeta             EmojiItemView, CIVoiceView, CICallItemView, DeletedItemView, MarkedDeletedItemView
                                          IntegrityErrorItemView, CIRcvDecryptionError, CIGroupInvitationView

@@ -229,7 +229,7 @@ fun FramedItemView(
   fun ciFileView(ci: ChatItem, text: String) {
     CIFileView(ci.file, ci.meta, chatTTL, showViaProxy, showTimestamp, showMenu, false, receiveFile)
     if (text != "" || ci.meta.isLive) {
-      CIMarkdownText(chatsCtx, ci, chat, chatTTL, linkMode = linkMode, uriHandler, showViaProxy = showViaProxy,  showTimestamp = showTimestamp, terminalTop = TERMINAL_FILE_CAPTION_GAP.toDp())
+      CIMarkdownText(chatsCtx, ci, chat, chatTTL, linkMode = linkMode, uriHandler, showViaProxy = showViaProxy,  showTimestamp = showTimestamp, terminalTop = 0.dp)
     }
   }
 
@@ -248,7 +248,7 @@ fun FramedItemView(
     .then(
       when {
         !terminal -> Modifier.clipChatItem(ci, tailVisible, revealed = true)
-        !reservesMeta -> Modifier.padding(bottom = TERMINAL_BLOCK_BOTTOM_GAP.toDp())
+        !reservesMeta && ci.content.msgContent !is MsgContent.MCVoice -> Modifier.padding(bottom = TERMINAL_BLOCK_BOTTOM_GAP.toDp())
         else -> Modifier
       }
     )
@@ -273,7 +273,7 @@ fun FramedItemView(
             .width(IntrinsicSize.Max)
             .padding(start = if (!sent && tailRendered) msgTailWidthDp else 0.dp, end = if (sent && tailRendered) msgTailWidthDp else 0.dp)
         ) {
-          PriorityLayout(Modifier, CHAT_IMAGE_LAYOUT_ID) {
+          PriorityLayout(Modifier, CHAT_IMAGE_LAYOUT_ID, limitToPriorityWidth = !terminal) {
             @Composable
             fun Header() {
               if (ci.isReport) {
@@ -412,7 +412,7 @@ fun FramedItemView(
                 is MsgContent.MCVoice -> {
                   CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, hasText = true, ci, timedMessagesTTL = chatTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp, longClick = { onLinkLongClick("") }, receiveFile = receiveFile)
                   if (reservesMeta) {
-                    CIMarkdownText(chatsCtx, ci, chat, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy, showTimestamp = showTimestamp, terminalTop = TERMINAL_BLOCK_BOTTOM_GAP.toDp())
+                    CIMarkdownText(chatsCtx, ci, chat, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy, showTimestamp = showTimestamp, terminalTop = 0.dp)
                   }
                 }
                 is MsgContent.MCFile -> ciFileView(ci, mc.text)
@@ -426,13 +426,13 @@ fun FramedItemView(
                   Box(Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID).then(if (terminal) cardModifier.padding(bottom = 8.dp) else Modifier)) {
                     ChatItemLinkView(mc.preview, showMenu, onLongClick = { showMenu.value = true })
                   }
-                  Box(Modifier.widthIn(max = DEFAULT_MAX_IMAGE_WIDTH)) {
+                  Box(if (terminal) Modifier else Modifier.widthIn(max = DEFAULT_MAX_IMAGE_WIDTH)) {
                     CIMarkdownText(chatsCtx, ci, chat, chatTTL, linkMode, uriHandler, onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp, terminalTop = TERMINAL_BLOCK_BOTTOM_GAP.toDp())
                   }
                 }
                 is MsgContent.MCChat -> {
                   Box(
-                    Modifier.then(if (terminal) cardModifier else Modifier).combinedClickable(
+                    Modifier.then(if (terminal) cardModifier.width(IntrinsicSize.Max) else Modifier).combinedClickable(
                       onClick = {
                         withBGApi { planAndConnect(chat.remoteHostId, mc.chatLink.connLinkStr, linkOwnerSig = mc.ownerSig, close = null) }
                       },
@@ -569,6 +569,7 @@ private fun horizontalPaddingAroundCustomLayouts(density: Float): Int =
 fun PriorityLayout(
   modifier: Modifier = Modifier,
   priorityLayoutId: String,
+  limitToPriorityWidth: Boolean = true,
   content: @Composable () -> Unit
 ) {
   Layout(
@@ -585,9 +586,9 @@ fun PriorityLayout(
       if (it.layoutId == priorityLayoutId)
         imagePlaceable!!
       else
-        it.measure(constraints.copy(maxWidth = imagePlaceable?.width ?: constraints.maxWidth)) }
+        it.measure(constraints.copy(maxWidth = if (limitToPriorityWidth) imagePlaceable?.width ?: constraints.maxWidth else constraints.maxWidth)) }
     // Limit width for every other element to width of important element and height for a sum of all elements.
-    val width = imagePlaceable?.measuredWidth ?: placeables.maxOf { it.width }
+    val width = if (limitToPriorityWidth) imagePlaceable?.measuredWidth ?: placeables.maxOf { it.width } else placeables.maxOf { it.width }
     val height = placeables.sumOf { it.height }
     val adjustedConstraints = Constraints.fitPrioritizingHeight(constraints.minWidth, width, constraints.minHeight, height)
     layout(

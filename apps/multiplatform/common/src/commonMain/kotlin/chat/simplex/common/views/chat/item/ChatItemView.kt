@@ -582,8 +582,8 @@ fun ChatItemView(
 
             @Composable fun EventItemView() {
               val reversedChatItems = chatsCtx.chatItems.value.asReversed()
-              ChatEventWithMeta(cItem) { ts ->
-                CIEventView(eventItemViewText(reversedChatItems, ts))
+              ChatEventWithMeta(cItem) { separator, ts ->
+                CIEventView(eventItemViewText(reversedChatItems, separator + ts))
               }
             }
 

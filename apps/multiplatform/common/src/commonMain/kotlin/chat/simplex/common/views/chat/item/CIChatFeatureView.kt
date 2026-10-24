@@ -124,7 +124,7 @@ private fun FullFeatureView(
   iconColor: Color,
   icon: Painter? = null
 ) {
-  ChatEventWithMeta(chatItem) { ts ->
+  ChatEventWithMeta(chatItem) { separator, ts ->
     Row(
       Modifier.padding(chatEventPadding()),
       verticalAlignment = Alignment.CenterVertically,
@@ -132,7 +132,7 @@ private fun FullFeatureView(
     ) {
       Icon(icon ?: feature.iconFilled(), feature.text, Modifier.inlineIcon().size(20.dp), tint = iconColor)
       Text(
-        chatEventText(chatItem, ts = ts),
+        chatEventText(chatItem, ts = separator + ts),
         Modifier,
         // this is important. Otherwise, aligning will be bad because annotated string has a Span with size 12.sp
         fontSize = 12.sp,

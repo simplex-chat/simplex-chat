@@ -33,16 +33,17 @@ fun chatEventPadding(vertical: Dp = 6.dp): PaddingValues =
   else PaddingValues(horizontal = 6.dp, vertical = vertical)
 
 @Composable
-fun ChatEventWithMeta(ci: ChatItem, content: @Composable (ts: AnnotatedString) -> Unit) {
+fun ChatEventWithMeta(ci: ChatItem, content: @Composable (separator: AnnotatedString, ts: AnnotatedString) -> Unit) {
   ItemWithMeta(meta = { CIMetaView(ci, timedMessagesTTL = null, showStatus = false, showEdited = false, showViaProxy = false, showTimestamp = true) }, metaReserved = true) { inlineMeta ->
-    content(
-      if (inlineMeta != null) {
-        AnnotatedString("  " + ci.timestampText)
-      } else {
-        val copy = terminalReserveSpaceForMeta(ci.meta, null, null, null, MaterialTheme.colors.secondary, showStatus = false, showEdited = false, showViaProxy = false, showTimestamp = true)
-        buildAnnotatedString { withStyle(reserveTimestampStyle) { append("\u00A0\u00A0\u00A0"); append(copy) } }
-      }
-    )
+    if (inlineMeta != null) {
+      content(AnnotatedString("  "), AnnotatedString(ci.timestampText))
+    } else {
+      val copy = terminalReserveSpaceForMeta(ci.meta, null, null, null, MaterialTheme.colors.secondary, showStatus = false, showEdited = false, showViaProxy = false, showTimestamp = true)
+      content(
+        buildAnnotatedString { withStyle(chatEventStyle) { withStyle(reserveTimestampStyle) { append("\u00A0\u00A0\u00A0") } } },
+        buildAnnotatedString { withStyle(reserveTimestampStyle) { append(copy) } }
+      )
+    }
   }
 }
 @Preview/*(
