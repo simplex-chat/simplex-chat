@@ -2,7 +2,7 @@
 
 Twelve commands were undocumented, and their strings were built by hand: in bots, and in the Node and Python libraries for `APIGetChat`, `APICreateMemberContact` and `APISendMemberContactInvitation`.
 The commands are documented; in the core, six command constructors and `ChatPagination` are changed to record syntax, and `verifiedDomain` is typed as `StrJSON`.
-TypeScript and Python types are generated, with `cmdString` and `<Name>_cmd_string` functions; each command of the Node library is sent through its `cmdString`, and the methods of the Python library (`api.py`) are unchanged (question 5).
+TypeScript and Python types are generated, with `cmdString` and `<Name>_cmd_string` functions; each command of the Node library is sent through its `cmdString`, and the methods of the Python library (`api.py`) are changed in a following pull request.
 
 References are to branch `ep/bot-api` at `d53829b0b`. Haskell paths without a directory are in `src/Simplex/Chat/`. `Library/` is `src/Simplex/Chat/Library/`. `API/` is `bots/src/API/`. `TS/` is `packages/simplex-chat-client/types/typescript/src/`. `node/` is `packages/simplex-chat-nodejs/`. `SMQ/` is simplexmq `src/Simplex/Messaging/` at `8bc4d3601` (`cabal.project:24`).
 
@@ -126,6 +126,25 @@ apiSendMemberContactInvitation   APISendMemberContactInvitation; a string messag
 ```
 - `apiConnect` is unchanged: `ConnReqType` is returned; for `contactAlreadyExists`, a `ChatCommandError` "contact already exists" is thrown.
 - Package versions: as on master. Before `simplex-chat` is released, `@simplex-chat/types` is published above 7.1.0-beta.6.2 with these commands, and the dependency at `node/package.json:27` is raised to that version.
+
+Delivery, decided by the user on 2026-10-24:
+- The pull request in simplex-chat/simplex-chat is opened after the fork pull request is approved by the user.
+- MCP server, in a following pull request, after the release of `@simplex-chat/types` and `simplex-chat`: the strings of the commands whose Node library methods are added or changed here are replaced by these methods.
+```
+APIGetChat                       packages/simplex-chat-mcp/src/messages.ts:179
+APIChatItemsRead                 packages/simplex-chat-mcp/src/messages.ts:183
+APIConnectPlan                   packages/simplex-chat-mcp/src/tools.ts:471
+prepare and connect commands     packages/simplex-chat-mcp/src/tools.ts:520-535
+APIConnect                       packages/simplex-chat-mcp/src/tools.ts:539
+APIContactInfo                   packages/simplex-chat-mcp/src/tools.ts:771
+```
+- Python library, in a following pull request: the strings built by hand are replaced by the generated `<Name>_cmd_string` functions; a string message is then sent as JSON, and `import json` (`api.py:6`) is removed.
+```
+APIStopChat                      packages/simplex-chat-python/src/simplex_chat/api.py:116
+APIGetChat                       packages/simplex-chat-python/src/simplex_chat/api.py:686
+APICreateMemberContact           packages/simplex-chat-python/src/simplex_chat/api.py:764
+APISendMemberContactInvitation   packages/simplex-chat-python/src/simplex_chat/api.py:774-779
+```
 
 ## Mechanics
 
@@ -336,34 +355,3 @@ testConnectByName :34                     /c @alice.simplex: connectContactViaNa
 testConnectByChannelName :297             /c #team.simplex: joinChannelViaRelays, APIPrepareGroup with the name
 testConnectByNameBusinessAndChannel :412  /_prepare contact ... domain=biz.simplex (:431): business chat with the domain
 ```
-
-## Open questions
-
-1. `verifiedDomain` type (review comment 4364729789): `StrJSON` or another option of the reply? Recommended: `StrJSON`, as now.
-2. Descriptions of the new commands, errors and responses: as written? Recommended: as written.
-```
-APICreateMemberContact           Create a direct message contact with a group member.            JSDoc of apiCreateMemberContact on master (node/src/api.ts:972 at d63906ad5)
-APISendMemberContactInvitation   Send a direct message invitation to a group member contact.     JSDoc of apiSendMemberContactInvitation on master (node/src/api.ts:983 at d63906ad5)
-APIPrepareContact                Prepare contact chat from link data before connecting.
-APIPrepareGroup                  Prepare group chat from link data before connecting.
-APIConnectPreparedContact        Connect to prepared contact.
-APIConnectPreparedGroup          Connect to prepared group.
-APIConnectContactViaAddress      Connect to existing contact via address in its profile.
-APIGetChat                       Get chat messages.
-APIChatItemsRead                 Mark messages as read.
-APIContactInfo                   Get contact information.
-APIGetNetworkConfig              Get network configuration.
-APISetNetworkConfig              Set network configuration.
-CEGroupMemberNotActive           Member is not connected yet                                     as for APIAcceptMember (API/Docs/Commands.hs:124)
-CEPeerChatVRangeIncompatible     Member's client version is older than required                  as for APIAddMemberViaGroup (API/Docs/Commands.hs:122)
-CRApiChat                        Chat and messages                                               from the placeholder comment
-CRContactInfo                    Contact information
-CRItemsReadForChat               Messages marked as read                                         from the placeholder comment
-CRNetworkConfig                  Network configuration
-CRNewMemberContact               Member contact created
-CRNewMemberContactSentInv        Member contact invitation sent
-CRNewPreparedChat                Prepared chat
-```
-3. Network commands in "Chat management", described as "These commands should not be used with CLI-based bots" (`API/Docs/Commands.hs:218`): placed there? Recommended: as now.
-4. The strings of commands whose Node library methods are added or changed in this pull request are built by hand in the MCP server: the documented commands of this pull request (`packages/simplex-chat-mcp/src/messages.ts:179`, `:183`; `tools.ts:520-535`, `:771`), `APIConnectPlan` (`tools.ts:471`) and `APIConnect` (`tools.ts:539`): library methods? Recommended: in a following pull request, after the release of `@simplex-chat/types` and `simplex-chat`.
-5. The strings of `APIGetChat`, `APICreateMemberContact`, `APISendMemberContactInvitation` and `APIStopChat` are built by hand in the Python library (`packages/simplex-chat-python/src/simplex_chat/api.py:686`, `:764`, `:774-779`, `:116`); the Node method of `APIStopChat` is changed to `cmdString` in this pull request: the generated `<Name>_cmd_string` functions in this pull request? Cost: about 12 changed lines in `api.py`, with `import json` (`:6`) removed; a string message is sent as JSON instead of ` text <message>` (`:777`); 4 tests of about 5 lines in `tests/test_api.py`. Recommended: in this pull request.
