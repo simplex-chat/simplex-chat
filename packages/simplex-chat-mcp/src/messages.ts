@@ -205,7 +205,7 @@ export function reportProgress(call: ToolCall, message: () => string): () => voi
   return () => clearInterval(timer)
 }
 
-export function nextChange(changes: Changes, signal: AbortSignal, ms: number): Promise<boolean> {
+export function nextChange(changes: Changes, signal: AbortSignal, ms?: number): Promise<boolean> {
   return new Promise(resolve => {
     if (signal.aborted) return resolve(false)
     const finish = (changed: boolean): void => {
@@ -215,7 +215,7 @@ export function nextChange(changes: Changes, signal: AbortSignal, ms: number): P
       resolve(changed)
     }
     const aborted = (): void => finish(false)
-    const timer = setTimeout(() => finish(true), Math.max(0, Math.min(ms, maxTimer)))
+    const timer = ms === undefined ? undefined : setTimeout(() => finish(true), Math.max(0, Math.min(ms, maxTimer)))
     const unsubscribe = changes.subscribe(() => finish(true))
     signal.addEventListener("abort", aborted, {once: true})
   })

@@ -190,7 +190,7 @@ Plugin files, run by Claude Code without `node_modules`:
 | Options | [`src/config.ts`](../src/config.ts#L25) | `readConfig` | [25](../src/config.ts#L25) |
 | Tool registration | [`src/tools.ts`](../src/tools.ts#L354) | `registerTools` | [354](../src/tools.ts#L354) |
 | Tool handlers | [`src/tools.ts`](../src/tools.ts#L366) | `AgentTools` | [366](../src/tools.ts#L366) |
-| Action store | [`src/actions.ts`](../src/actions.ts#L96) | `Actions` | [96](../src/actions.ts#L96) |
+| Action store | [`src/actions.ts`](../src/actions.ts#L95) | `Actions` | [95](../src/actions.ts#L95) |
 | Main group | [`src/control.ts`](../src/control.ts#L65) | `Control` | [65](../src/control.ts#L65) |
 | Card text | [`src/control.ts`](../src/control.ts#L381) | `cardText` | [381](../src/control.ts#L381) |
 | Item watch | [`src/messages.ts`](../src/messages.ts#L58) | `ChatItemsWatch` | [58](../src/messages.ts#L58) |

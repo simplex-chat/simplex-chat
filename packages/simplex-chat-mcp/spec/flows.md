@@ -184,9 +184,9 @@ Notes:
 - In the perform step the daemon waits for the other side until `startedAt + wait`, at most until `created + 23 h 50 min`, and then reports `connected: false` ([tools.ts:485](../src/tools.ts#L485), [:509-512](../src/tools.ts#L509-L512)).
 - Without `message`, the idle time is counted from the connection; with `message`, from the first reply ([tools.ts:569](../src/tools.ts#L569), [messages.ts:227](../src/messages.ts#L227)).
 - For a target the session is connected to, the result is `status: known` with its chat fields, and no action is created ([tools.ts:419](../src/tools.ts#L419)).
-- Exact progress texts: `Action N waits for an approver until TIME.`, then `Action N waits for the connection until TIME.`, then `K messages in CHAT; waiting until TIME.` ([actions.ts:338-349](../src/actions.ts#L338-L349), [tools.ts:454](../src/tools.ts#L454)).
+- Exact progress texts: `Action N waits for an approver until TIME.`, then `Action N waits for the connection until TIME.`, then `K messages in CHAT; waiting until TIME.` ([actions.ts:337-348](../src/actions.ts#L337-L348), [tools.ts:454](../src/tools.ts#L454)).
 
-Source: [session.ts:94-113](../src/session.ts#L94-L113), [daemon.ts:223-240](../src/daemon.ts#L223-L240), [tools.ts:414-466](../src/tools.ts#L414-L466), [:482-572](../src/tools.ts#L482-L572), [:810-873](../src/tools.ts#L810-L873), [actions.ts:123-205](../src/actions.ts#L123-L205), [control.ts:138-198](../src/control.ts#L138-L198).
+Source: [session.ts:94-113](../src/session.ts#L94-L113), [daemon.ts:223-240](../src/daemon.ts#L223-L240), [tools.ts:414-466](../src/tools.ts#L414-L466), [:482-572](../src/tools.ts#L482-L572), [:810-873](../src/tools.ts#L810-L873), [actions.ts:122-204](../src/actions.ts#L122-L204), [control.ts:138-198](../src/control.ts#L138-L198).
 
 ---
 
@@ -292,7 +292,7 @@ Notes:
 - For sends that were pending at `/approve S:CHAT all`, the card ends with the plain `Approved by Alice.` ([control.ts:232-234](../src/control.ts#L232-L234), [:383](../src/control.ts#L383)).
 - `connect` and `leave` actions are created without the standing approver, so they stay pending ([tools.ts:425](../src/tools.ts#L425), [:640](../src/tools.ts#L640)).
 
-Source: [control.ts:223-246](../src/control.ts#L223-L246), [tools.ts:588](../src/tools.ts#L588), [actions.ts:123-157](../src/actions.ts#L123-L157), [:266-284](../src/actions.ts#L266-L284).
+Source: [control.ts:223-246](../src/control.ts#L223-L246), [tools.ts:588](../src/tools.ts#L588), [actions.ts:122-156](../src/actions.ts#L122-L156), [:265-283](../src/actions.ts#L265-L283).
 
 ---
 
@@ -320,7 +320,7 @@ sequenceDiagram
 
 Notes:
 
-- For a contact, the card text is `I want to delete KIND NAME (@N).`, and the perform step sends `/_delete @N full` ([actions.ts:325-327](../src/actions.ts#L325-L327), [tools.ts:649](../src/tools.ts#L649)).
+- For a contact, the card text is `I want to delete KIND NAME (@N).`, and the perform step sends `/_delete @N full` ([actions.ts:324-326](../src/actions.ts#L324-L326), [tools.ts:649](../src/tools.ts#L649)).
 - The delete mode is `full` without `notify=off`, so the core notifies the contact or the members.
 - The daemon looks for an attached action before it reads the chat, so a repeated call after the deletion is attached to the done action ([tools.ts:635-637](../src/tools.ts#L635-L637)).
 
@@ -358,7 +358,7 @@ Notes:
 - In mode `host`, `undefined` is returned by `standingApprover`, so standing approvals are ignored by `send`, `list` and `/list` ([control.ts:119](../src/control.ts#L119)).
 - `_meta` is set on `connect`, `send` and `leave` only ([tools.ts:360](../src/tools.ts#L360)).
 
-Source: [tools.ts:354-364](../src/tools.ts#L354-L364), [actions.ts:135](../src/actions.ts#L135), [:282](../src/actions.ts#L282), [control.ts:383](../src/control.ts#L383).
+Source: [tools.ts:354-364](../src/tools.ts#L354-L364), [actions.ts:134](../src/actions.ts#L134), [:281](../src/actions.ts#L281), [control.ts:383](../src/control.ts#L383).
 
 ---
 
@@ -383,12 +383,12 @@ sequenceDiagram
 
 Notes:
 
-- A decided action with an open count of 0 is removed at its expiry time; one decided later, or whose last open call ends later, is removed then ([actions.ts:249-251](../src/actions.ts#L249-L251), [:180](../src/actions.ts#L180), [:289](../src/actions.ts#L289)).
+- A decided action with an open count of 0 is removed at its expiry time; one decided later, or whose last open call ends later, is removed then ([actions.ts:248-250](../src/actions.ts#L248-L250), [:179](../src/actions.ts#L179), [:288](../src/actions.ts#L288)).
 - Expiry times are listed in the `/pending` reply ([control.ts:437-439](../src/control.ts#L437-L439)).
-- A changed `expire_hours` applies to actions created after the next `/session` or `/title` ([hub.ts:65](../src/hub.ts#L65), [actions.ts:132](../src/actions.ts#L132)).
+- A changed `expire_hours` applies to actions created after the next `/session` or `/title` ([hub.ts:65](../src/hub.ts#L65), [actions.ts:131](../src/actions.ts#L131)).
 - The connect wait ends at `created + 23 h 50 min`, within the 24 hours in which a message can be edited ([tools.ts:112](../src/tools.ts#L112), [:485](../src/tools.ts#L485)).
 
-Source: [actions.ts:150](../src/actions.ts#L150), [:183-186](../src/actions.ts#L183-L186), [:235-251](../src/actions.ts#L235-L251), [control.ts:169](../src/control.ts#L169), [:397-398](../src/control.ts#L397-L398).
+Source: [actions.ts:149](../src/actions.ts#L149), [:182-185](../src/actions.ts#L182-L185), [:234-250](../src/actions.ts#L234-L250), [control.ts:169](../src/control.ts#L169), [:397-398](../src/control.ts#L397-L398).
 
 ---
 
@@ -425,7 +425,7 @@ Notes:
 - For a call aborted before `create`, no action is created ([tools.ts:424](../src/tools.ts#L424), [:587](../src/tools.ts#L587), [:639](../src/tools.ts#L639)).
 - Abort path: the SDK aborts the handler's signal; the session process passes it to its `/call` request; the daemon aborts the call's controller when the request closes before the reply ends, and writes no result ([session.ts:99-103](../src/session.ts#L99-L103), [daemon.ts:227-235](../src/daemon.ts#L227-L235)).
 
-Source: [tools.ts:433-444](../src/tools.ts#L433-L444), [:592-610](../src/tools.ts#L592-L610), [:697](../src/tools.ts#L697), [actions.ts:188-199](../src/actions.ts#L188-L199), [messages.ts:208-222](../src/messages.ts#L208-L222).
+Source: [tools.ts:433-444](../src/tools.ts#L433-L444), [:592-610](../src/tools.ts#L592-L610), [:697](../src/tools.ts#L697), [actions.ts:187-198](../src/actions.ts#L187-L198), [messages.ts:208-222](../src/messages.ts#L208-L222).
 
 ---
 
@@ -487,11 +487,11 @@ sequenceDiagram
 Notes:
 
 - The interrupted card line is `DECIDER; interrupted: the SimpleX daemon stopped.` ([control.ts:390](../src/control.ts#L390)).
-- A host-mode action whose counter is being written at the stop is set to `pending` and cancelled without a perform ([actions.ts:269](../src/actions.ts#L269)).
-- The perform signal is aborted after the actions are marked interrupted: a `connect` waiting for its connection ends, and an interrupted perform logs no line ([actions.ts:229](../src/actions.ts#L229), [:281](../src/actions.ts#L281), [tools.ts:509-511](../src/tools.ts#L509-L511)).
+- A host-mode action whose counter is being written at the stop is set to `pending` and cancelled without a perform ([actions.ts:268](../src/actions.ts#L268)).
+- The perform signal is aborted after the actions are marked interrupted: a `connect` waiting for its connection ends, and an interrupted perform logs no line ([actions.ts:228](../src/actions.ts#L228), [:280](../src/actions.ts#L280), [tools.ts:509-511](../src/tools.ts#L509-L511)).
 - An error of a `/sql` query of the delivery wait is logged as `delivery wait: ERROR` and ends the wait ([core.ts:69-77](../src/core.ts#L69-L77)).
 
-Source: [daemon.ts:98-142](../src/daemon.ts#L98-L142), [:348-355](../src/daemon.ts#L348-L355), [hub.ts:77-84](../src/hub.ts#L77-L84), [actions.ts:222-233](../src/actions.ts#L222-L233), [core.ts:59-67](../src/core.ts#L59-L67).
+Source: [daemon.ts:98-142](../src/daemon.ts#L98-L142), [:348-355](../src/daemon.ts#L348-L355), [hub.ts:77-84](../src/hub.ts#L77-L84), [actions.ts:221-232](../src/actions.ts#L221-L232), [core.ts:59-67](../src/core.ts#L59-L67).
 
 ---
 

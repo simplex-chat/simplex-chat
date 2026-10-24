@@ -258,7 +258,7 @@ Command ([`commandsOf`](../src/tools.ts#L969-L976), [schema](../src/tools.ts#L14
 
 ### 1.8 Action refusals
 
-Refusals of a new `connect`, `send` or `leave` action, first match ([actions.ts:142-147](../src/actions.ts#L142-L147), [control.ts:107-115](../src/control.ts#L107-L115)):
+Refusals of a new `connect`, `send` or `leave` action, first match ([actions.ts:141-146](../src/actions.ts#L141-L146), [control.ts:107-115](../src/control.ts#L107-L115)):
 
 | Text | Condition |
 |---|---|
@@ -334,7 +334,7 @@ The daemon ignores text that does not start with `/` or has several lines. It an
 | `list` | no open session | `No open sessions.` | [control.ts:250](../src/control.ts#L250) |
 | `list` | otherwise | per open session: `Session S · NAME`, then one line per chat, at most 100: `S:CHAT  KIND NAME`, with `, approved for this chat by APPROVER` and `, not connected` when applicable, cut to 100 bytes with `…`; then `K older chats are not shown.` when more exist | [control.ts:248-265](../src/control.ts#L248-L265) |
 
-KIND is `contact`, `bot`, `agent`, `business`, `group` or `channel` ([tools.ts:927-934](../src/tools.ts#L927-L934)). WHAT is `connect to SUBJECT`, `send to SUBJECT`, `delete SUBJECT` or `leave SUBJECT` ([actions.ts:313-323](../src/actions.ts#L313-L323)). Names are shown by `safeName` ([control.ts:491-494](../src/control.ts#L491-L494)).
+KIND is `contact`, `bot`, `agent`, `business`, `group` or `channel` ([tools.ts:927-934](../src/tools.ts#L927-L934)). WHAT is `connect to SUBJECT`, `send to SUBJECT`, `delete SUBJECT` or `leave SUBJECT` ([actions.ts:312-322](../src/actions.ts#L312-L322)). Names are shown by `safeName` ([control.ts:491-494](../src/control.ts#L491-L494)).
 
 ### 2.2 Cards
 
@@ -350,7 +350,7 @@ Request lines:
 | `send` | `I want to send a message to SUBJECT:`, with `, where I am incognito` before the colon in incognito chats<br>done: `I sent a message to ...` | text, one code span per line<br>`replying to NAME: QUOTE` with `reply_to`<br>`mentioning @A, @'B C'` with `mention` |
 | `leave` | `I want to delete KIND NAME (@N).` or `I want to leave KIND NAME (#N).`<br>done: `I deleted ...` or `I left ...` | |
 
-SUBJECT is `KIND NAME`, or `an unnamed KIND`, followed by ` (SIMPLEX_NAME)` when known ([actions.ts:308-311](../src/actions.ts#L308-L311)). For `connect`, SIMPLEX_NAME is the target when it is a name; for `send`, the chat's verified SimpleX name.
+SUBJECT is `KIND NAME`, or `an unnamed KIND`, followed by ` (SIMPLEX_NAME)` when known ([actions.ts:307-310](../src/actions.ts#L307-L310)). For `connect`, SIMPLEX_NAME is the target when it is a name; for `send`, the chat's verified SimpleX name.
 
 Last line:
 
@@ -471,12 +471,12 @@ Environment: `SIMPLEX_MCP_HOME` (data root), `CLAUDE_CODE_SESSION_ID` and `CLAUD
 | link opened | `Main group link (works once): LINK`<br>`Whoever joins by this link becomes an owner of "NAME" and approves the agents' actions.` | [control.ts:283-284](../src/control.ts#L283-L284) |
 | owner joined | `NAME joined (member ID) and is now an owner. The link is deleted.` | [control.ts:272](../src/control.ts#L272) |
 | Main group lost | `The agent lost its Main group. Run /simplex:reset-owners in Claude Code.` | [control.ts:277](../src/control.ts#L277) |
-| action created | `Action N of session S: WHAT` with `, as itself` or `, incognito` for `connect` and ` (CHAT)` for `send` and `leave` | [actions.ts:151-152](../src/actions.ts#L151-L152), [:313-323](../src/actions.ts#L313-L323) |
-| counter write or card post failed | `Action N: failed: ERROR.` | [actions.ts:261](../src/actions.ts#L261) |
-| perform ended, not interrupted, mode `requests` | `Action N approved by NAME: RESULT.` with RESULT `sent`, `deleted`, `left`, `connected`, `connection requested` or `failed: ERROR` | [actions.ts:282](../src/actions.ts#L282), [:329-336](../src/actions.ts#L329-L336) |
-| perform ended, not interrupted, mode `host` | `Action N: performed without approval (mode host).`, or `...; failed: ERROR.` | [actions.ts:331](../src/actions.ts#L331) |
-| rejected | `Action N rejected by NAME.` | [actions.ts:210](../src/actions.ts#L210) |
-| expired | `Action N expired.` | [actions.ts:245](../src/actions.ts#L245) |
+| action created | `Action N of session S: WHAT` with `, as itself` or `, incognito` for `connect` and ` (CHAT)` for `send` and `leave` | [actions.ts:150-151](../src/actions.ts#L150-L151), [:312-322](../src/actions.ts#L312-L322) |
+| counter write or card post failed | `Action N: failed: ERROR.` | [actions.ts:260](../src/actions.ts#L260) |
+| perform ended, not interrupted, mode `requests` | `Action N approved by NAME: RESULT.` with RESULT `sent`, `deleted`, `left`, `connected`, `connection requested` or `failed: ERROR` | [actions.ts:281](../src/actions.ts#L281), [:328-335](../src/actions.ts#L328-L335) |
+| perform ended, not interrupted, mode `host` | `Action N: performed without approval (mode host).`, or `...; failed: ERROR.` | [actions.ts:330](../src/actions.ts#L330) |
+| rejected | `Action N rejected by NAME.` | [actions.ts:209](../src/actions.ts#L209) |
+| expired | `Action N expired.` | [actions.ts:244](../src/actions.ts#L244) |
 | stop | `Cancelled K action.` or `Cancelled K actions.` when K > 0<br>`Stopped.` | [daemon.ts:128](../src/daemon.ts#L128), [:134](../src/daemon.ts#L134) |
 
 stderr: `CONTEXT: ERROR` from `logError` ([log.ts:26-28](../src/log.ts#L26-L28)), with CONTEXT one of `action N`, `action N card`, `Main group command`, `EVENT in the Main group`, `Main group rename`, `owner reset`, `EVENT event`, `METHOD PATH`, `delivery wait`, `close session`, `stop`. The library's download lines are written to stderr. The session process writes `SimpleX daemon: ERROR` to its own stderr when its background connection fails ([session.ts:72](../src/session.ts#L72)).

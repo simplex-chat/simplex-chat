@@ -3,7 +3,7 @@ import {CR, T} from "@simplex-chat/types"
 import {core} from "simplex-chat"
 import {Actions} from "../../src/actions"
 import {cardText} from "../../src/control"
-import {ChatItemsWatch, Collected, awaitResponses, toMessage} from "../../src/messages"
+import {Changes, ChatItemsWatch, Collected, awaitResponses, nextChange, toMessage} from "../../src/messages"
 import {AgentTools, classifyPlan} from "../../src/tools"
 import {FakeChat, actionsWith, contact, direct, event, fakeHooks, group, groupChat, item, member, settled, signal, user} from "./fixtures"
 
@@ -53,6 +53,33 @@ describe("message fields", () => {
     const channel = toMessage(groupChat(group(12, "Ridgeline News")), item(40, "post", {type: "channelRcv"}), self)
     expect(channel).toMatchObject({chat: "#12", from: "Ridgeline News"})
     expect(channel).not.toHaveProperty("from_member")
+  })
+})
+
+describe("next change", () => {
+  it("waits with no timer for a change or the signal when no time limit is given", async () => {
+    jest.useFakeTimers()
+    const changes = new Changes()
+    const changed = nextChange(changes, signal().call.signal)
+    expect(jest.getTimerCount()).toBe(0)
+    changes.notify()
+    expect(await changed).toBe(true)
+    const {controller, call} = signal()
+    const aborted = nextChange(changes, call.signal)
+    expect(jest.getTimerCount()).toBe(0)
+    controller.abort()
+    expect(await aborted).toBe(false)
+  })
+
+  it("ends at the time limit when one is given", async () => {
+    jest.useFakeTimers()
+    let finished = false
+    const waiting = nextChange(new Changes(), signal().call.signal, 1_000).then(result => (finished = result))
+    await jest.advanceTimersByTimeAsync(999)
+    expect(finished).toBe(false)
+    await jest.advanceTimersByTimeAsync(1)
+    expect(await waiting).toBe(true)
+    expect(jest.getTimerCount()).toBe(0)
   })
 })
 

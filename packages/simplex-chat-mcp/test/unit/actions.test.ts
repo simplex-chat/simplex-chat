@@ -448,6 +448,21 @@ describe("actions in mode requests", () => {
     expect(await actions.decided(action, signal().call)).toBe(true)
   })
 
+  it("waits for the decision with no timer but the progress heartbeat and the expiry", async () => {
+    jest.useFakeTimers()
+    const actions = actionsWith("requests", fakeHooks())
+    const action = await pendingAction(actions)
+    expect(jest.getTimerCount()).toBe(1)
+    const {call, progress} = signal()
+    const waiting = actions.decided(action, call)
+    expect(jest.getTimerCount()).toBe(2)
+    jest.advanceTimersByTime(120_000)
+    expect(progress).toHaveLength(3)
+    actions.reject(action, "Alice")
+    expect(await waiting).toBe(true)
+    expect(jest.getTimerCount()).toBe(1)
+  })
+
   it("logs names on one line", () => {
     const actions = actionsWith("requests", fakeHooks())
     const fields = sendFields()
@@ -513,6 +528,21 @@ describe("actions in mode host", () => {
     expect(await stopping).toBe(1)
     expect(action).toMatchObject({state: "pending", interrupted: true})
     expect(fake.calls).toEqual(["outcome 1 pending interrupted"])
+  })
+
+  it("signals the change when the stop sets an action back to pending", async () => {
+    const fake = fakeHooks()
+    let written: () => void = () => undefined
+    fake.hooks.saveCounter = () => new Promise(resolve => (written = resolve))
+    const actions = actionsWith("host", fake)
+    const action = actions.create(1, "k", sendFields())
+    const changed = jest.fn()
+    action.changes.subscribe(changed)
+    const stopping = actions.stop()
+    written()
+    await stopping
+    expect(action.state).toBe("pending")
+    expect(changed).toHaveBeenCalledTimes(1)
   })
 
   it("refuses a new action while 20 are being performed", async () => {

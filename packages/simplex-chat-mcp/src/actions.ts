@@ -5,7 +5,6 @@ import type {ConnectInput, LeaveInput, PlanSummary, SendInput} from "./tools"
 export type Mode = "requests" | "host"
 export type State = "pending" | "performing" | "done" | "failed" | "rejected" | "expired"
 
-const progressTick = 60_000
 const maxPending = 20
 const maxPerforming = 20
 
@@ -190,7 +189,7 @@ export class Actions {
     const stopProgress = reportProgress(call, () => progressText(action))
     try {
       while (!isDecided(action.state)) {
-        if (!(await nextChange(action.changes, call.signal, progressTick))) return false
+        if (!(await nextChange(action.changes, call.signal))) return false
       }
       return true
     } finally {
@@ -266,7 +265,7 @@ export class Actions {
   private async afterPosting(action: Action, posted: boolean): Promise<void> {
     this.posting.delete(action.n)
     if (!posted || action.state !== "performing") return
-    if (this.stopping) action.state = "pending"
+    if (this.stopping) this.decide(action, "pending")
     else await this.runPerform(action)
   }
 
