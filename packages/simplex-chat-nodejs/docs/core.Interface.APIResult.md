@@ -6,7 +6,7 @@
 
 # Interface: APIResult\<R\>
 
-Defined in: [src/core.ts:146](../core.ts#L146)
+Defined in: [src/core.ts:149](../core.ts#L149)
 
 ## Type Parameters
 
@@ -20,7 +20,7 @@ Defined in: [src/core.ts:146](../core.ts#L146)
 
 > `optional` **error?**: `ChatError`
 
-Defined in: [src/core.ts:148](../core.ts#L148)
+Defined in: [src/core.ts:151](../core.ts#L151)
 
 ***
 
@@ -28,4 +28,4 @@ Defined in: [src/core.ts:148](../core.ts#L148)
 
 > `optional` **result?**: `R`
 
-Defined in: [src/core.ts:147](../core.ts#L147)
+Defined in: [src/core.ts:150](../core.ts#L150)

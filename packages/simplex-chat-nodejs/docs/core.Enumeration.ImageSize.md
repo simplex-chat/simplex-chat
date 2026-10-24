@@ -6,7 +6,9 @@
 
 # Enumeration: ImageSize
 
-Defined in: [src/core.ts:167](../core.ts#L167)
+Defined in: [src/core.ts:173](../core.ts#L173)
+
+App image size limit
 
 ## Enumeration Members
 
@@ -14,7 +16,7 @@ Defined in: [src/core.ts:167](../core.ts#L167)
 
 > **Image**: `"image"`
 
-Defined in: [src/core.ts:168](../core.ts#L168)
+Defined in: [src/core.ts:174](../core.ts#L174)
 
 ***
 
@@ -22,7 +24,7 @@ Defined in: [src/core.ts:168](../core.ts#L168)
 
 > **MessagePreview**: `"messagePreview"`
 
-Defined in: [src/core.ts:170](../core.ts#L170)
+Defined in: [src/core.ts:176](../core.ts#L176)
 
 ***
 
@@ -30,4 +32,4 @@ Defined in: [src/core.ts:170](../core.ts#L170)
 
 > **ProfilePreview**: `"profilePreview"`
 
-Defined in: [src/core.ts:169](../core.ts#L169)
+Defined in: [src/core.ts:175](../core.ts#L175)

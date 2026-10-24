@@ -6,7 +6,7 @@
 
 # Interface: MTRENoDown
 
-Defined in: [src/core.ts:271](../core.ts#L271)
+Defined in: [src/core.ts:277](../core.ts#L277)
 
 ## Extends
 
@@ -18,7 +18,7 @@ Defined in: [src/core.ts:271](../core.ts#L271)
 
 > **dbMigrations**: `string`[]
 
-Defined in: [src/core.ts:273](../core.ts#L273)
+Defined in: [src/core.ts:279](../core.ts#L279)
 
 ***
 
@@ -26,7 +26,7 @@ Defined in: [src/core.ts:273](../core.ts#L273)
 
 > **type**: `"noDown"`
 
-Defined in: [src/core.ts:272](../core.ts#L272)
+Defined in: [src/core.ts:278](../core.ts#L278)
 
 #### Overrides
 

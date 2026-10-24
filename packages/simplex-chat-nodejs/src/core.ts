@@ -123,6 +123,9 @@ export async function chatResizeImage(image: ArrayBuffer | Uint8Array, maxSize: 
   return resizeImageData(image, maxSize, format === "png" ? 1 : 0)
 }
 
+/**
+ * Resize image to the app size limit: JPEG or PNG for an image, a data URI for a preview
+ */
 export function resizeImage(image: ArrayBuffer | Uint8Array, size: ImageSize.Image): Promise<Buffer>
 export function resizeImage(image: ArrayBuffer | Uint8Array, size: ImageSize.ProfilePreview | ImageSize.MessagePreview): Promise<string>
 export function resizeImage(image: ArrayBuffer | Uint8Array, size: ImageSize): Promise<Buffer | string>
@@ -164,6 +167,9 @@ export enum MigrationConfirmation {
   Error = "error"
 }
 
+/**
+ * App image size limit
+ */
 export enum ImageSize {
   Image = "image",
   ProfilePreview = "profilePreview",

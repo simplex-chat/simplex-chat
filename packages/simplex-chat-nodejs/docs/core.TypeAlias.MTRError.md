@@ -8,4 +8,4 @@
 
 > **MTRError** = [`MTRENoDown`](core.MTRError.Interface.MTRENoDown.md) \| [`MTREDifferent`](core.MTRError.Interface.MTREDifferent.md)
 
-Defined in: [src/core.ts:260](../core.ts#L260)
+Defined in: [src/core.ts:266](../core.ts#L266)

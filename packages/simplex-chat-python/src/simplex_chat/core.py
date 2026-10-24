@@ -295,6 +295,7 @@ async def resize_image(data: bytes, size: ImageSize) -> bytes | str: ...
 
 
 async def resize_image(data: bytes, size: ImageSize) -> bytes | str:
+    """Resize image to the app size limit: JPEG or PNG for an image, a data URI for a preview."""
     match size:
         case ImageSize.IMAGE:
             return await _resize_image_data(data, 261120, -1)

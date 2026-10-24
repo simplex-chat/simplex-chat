@@ -6,7 +6,7 @@
 
 # Enumeration: MigrationConfirmation
 
-Defined in: [src/core.ts:160](../core.ts#L160)
+Defined in: [src/core.ts:163](../core.ts#L163)
 
 Migration confirmation mode
 
@@ -16,7 +16,7 @@ Migration confirmation mode
 
 > **Console**: `"console"`
 
-Defined in: [src/core.ts:163](../core.ts#L163)
+Defined in: [src/core.ts:166](../core.ts#L166)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: [src/core.ts:163](../core.ts#L163)
 
 > **Error**: `"error"`
 
-Defined in: [src/core.ts:164](../core.ts#L164)
+Defined in: [src/core.ts:167](../core.ts#L167)
 
 ***
 
@@ -32,7 +32,7 @@ Defined in: [src/core.ts:164](../core.ts#L164)
 
 > **YesUp**: `"yesUp"`
 
-Defined in: [src/core.ts:161](../core.ts#L161)
+Defined in: [src/core.ts:164](../core.ts#L164)
 
 ***
 
@@ -40,4 +40,4 @@ Defined in: [src/core.ts:161](../core.ts#L161)
 
 > **YesUpDown**: `"yesUpDown"`
 
-Defined in: [src/core.ts:162](../core.ts#L162)
+Defined in: [src/core.ts:165](../core.ts#L165)

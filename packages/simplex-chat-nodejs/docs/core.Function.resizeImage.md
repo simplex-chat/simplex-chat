@@ -10,7 +10,9 @@
 
 > **resizeImage**(`image`, `size`): `Promise`\<`Buffer`\<`ArrayBufferLike`\>\>
 
-Defined in: [src/core.ts:126](../core.ts#L126)
+Defined in: [src/core.ts:129](../core.ts#L129)
+
+Resize image to the app size limit: JPEG or PNG for an image, a data URI for a preview
 
 ### Parameters
 
@@ -30,7 +32,9 @@ Defined in: [src/core.ts:126](../core.ts#L126)
 
 > **resizeImage**(`image`, `size`): `Promise`\<`string`\>
 
-Defined in: [src/core.ts:127](../core.ts#L127)
+Defined in: [src/core.ts:130](../core.ts#L130)
+
+Resize image to the app size limit: JPEG or PNG for an image, a data URI for a preview
 
 ### Parameters
 
@@ -50,7 +54,9 @@ Defined in: [src/core.ts:127](../core.ts#L127)
 
 > **resizeImage**(`image`, `size`): `Promise`\<`string` \| `Buffer`\<`ArrayBufferLike`\>\>
 
-Defined in: [src/core.ts:128](../core.ts#L128)
+Defined in: [src/core.ts:131](../core.ts#L131)
+
+Resize image to the app size limit: JPEG or PNG for an image, a data URI for a preview
 
 ### Parameters
 

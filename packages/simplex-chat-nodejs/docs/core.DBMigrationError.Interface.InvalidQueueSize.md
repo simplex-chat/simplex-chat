@@ -6,7 +6,7 @@
 
 # Interface: InvalidQueueSize
 
-Defined in: [src/core.ts:205](../core.ts#L205)
+Defined in: [src/core.ts:211](../core.ts#L211)
 
 ## Extends
 
@@ -18,7 +18,7 @@ Defined in: [src/core.ts:205](../core.ts#L205)
 
 > **type**: `"invalidQueueSize"`
 
-Defined in: [src/core.ts:206](../core.ts#L206)
+Defined in: [src/core.ts:212](../core.ts#L212)
 
 #### Overrides
 
