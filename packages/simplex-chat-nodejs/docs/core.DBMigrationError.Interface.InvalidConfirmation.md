@@ -6,7 +6,7 @@
 
 # Interface: InvalidConfirmation
 
-Defined in: [src/core.ts:181](../core.ts#L181)
+Defined in: [src/core.ts:201](../core.ts#L201)
 
 ## Extends
 
@@ -18,7 +18,7 @@ Defined in: [src/core.ts:181](../core.ts#L181)
 
 > **type**: `"invalidConfirmation"`
 
-Defined in: [src/core.ts:182](../core.ts#L182)
+Defined in: [src/core.ts:202](../core.ts#L202)
 
 #### Overrides
 

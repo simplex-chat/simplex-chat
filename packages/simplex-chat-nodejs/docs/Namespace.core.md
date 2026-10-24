@@ -17,6 +17,7 @@ You are unlikely to ever need to use this module directly.
 
 ## Enumerations
 
+- [ImageSize](core.Enumeration.ImageSize.md)
 - [MigrationConfirmation](core.Enumeration.MigrationConfirmation.md)
 
 ## Classes
@@ -50,3 +51,4 @@ You are unlikely to ever need to use this module directly.
 - [chatSendCmd](core.Function.chatSendCmd.md)
 - [chatWriteFile](core.Function.chatWriteFile.md)
 - [loadLibrary](core.Function.loadLibrary.md)
+- [resizeImage](core.Function.resizeImage.md)

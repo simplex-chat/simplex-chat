@@ -8,4 +8,4 @@
 
 > **DBMigrationError** = [`InvalidConfirmation`](core.DBMigrationError.Interface.InvalidConfirmation.md) \| [`InvalidQueueSize`](core.DBMigrationError.Interface.InvalidQueueSize.md) \| [`ErrorNotADatabase`](core.DBMigrationError.Interface.ErrorNotADatabase.md) \| [`ErrorMigration`](core.DBMigrationError.Interface.ErrorMigration.md) \| [`ErrorSQL`](core.DBMigrationError.Interface.ErrorSQL.md)
 
-Defined in: [src/core.ts:167](../core.ts#L167)
+Defined in: [src/core.ts:187](../core.ts#L187)

@@ -120,8 +120,22 @@ export async function chatResizeImageUri(image: ArrayBuffer | Uint8Array, maxSiz
  * Resize image to JPEG or PNG of at most maxSize bytes
  */
 export async function chatResizeImage(image: ArrayBuffer | Uint8Array, maxSize: number, format: "jpeg" | "png"): Promise<Buffer> {
-  const res = await simplex.chat_resize_image(image, maxSize, format === "png" ? 1 : 0)
-  return Buffer.from(resizedImage(res), "base64")
+  return resizeImageData(image, maxSize, format === "png" ? 1 : 0)
+}
+
+export function resizeImage(image: ArrayBuffer | Uint8Array, size: ImageSize.Image): Promise<Buffer>
+export function resizeImage(image: ArrayBuffer | Uint8Array, size: ImageSize.ProfilePreview | ImageSize.MessagePreview): Promise<string>
+export function resizeImage(image: ArrayBuffer | Uint8Array, size: ImageSize): Promise<Buffer | string>
+export async function resizeImage(image: ArrayBuffer | Uint8Array, size: ImageSize): Promise<Buffer | string> {
+  switch (size) {
+    case ImageSize.Image: return resizeImageData(image, 261120, -1)
+    case ImageSize.ProfilePreview: return chatResizeImageUri(image, 12500)
+    case ImageSize.MessagePreview: return chatResizeImageUri(image, 14000)
+  }
+}
+
+async function resizeImageData(image: ArrayBuffer | Uint8Array, maxSize: number, png: number): Promise<Buffer> {
+  return Buffer.from(resizedImage(await simplex.chat_resize_image(image, maxSize, png)), "base64")
 }
 
 function resizedImage(res: string): string {
@@ -148,6 +162,12 @@ export enum MigrationConfirmation {
   YesUpDown = "yesUpDown",
   Console = "console",
   Error = "error"
+}
+
+export enum ImageSize {
+  Image = "image",
+  ProfilePreview = "profilePreview",
+  MessagePreview = "messagePreview"
 }
 
 /**

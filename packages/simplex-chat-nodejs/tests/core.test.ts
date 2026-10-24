@@ -157,14 +157,14 @@ describe("Core tests", () => {
       imageResizing = error !== oldLibraryError("chat_resize_image_uri");
     });
 
-    function noisePng(width: number, height: number): Buffer {
-      const rowLength = width * 3 + 1;
+    function noisePng(width: number, height: number, alpha = false): Buffer {
+      const rowLength = width * (alpha ? 4 : 3) + 1;
       const rows = crypto.randomBytes(rowLength * height);
       for (let y = 0; y < height; y++) rows[y * rowLength] = 0;
       const header = Buffer.alloc(13);
       header.writeUInt32BE(width, 0);
       header.writeUInt32BE(height, 4);
-      header.set([8, 2, 0, 0, 0], 8);
+      header.set([8, alpha ? 6 : 2, 0, 0, 0], 8);
       const chunk = (type: string, data: Buffer) => {
         const body = Buffer.concat([Buffer.from(type), data]);
         const length = Buffer.alloc(4);
@@ -196,6 +196,36 @@ describe("Core tests", () => {
       const png = await core.chatResizeImage(new Uint8Array(image).buffer, 20000, "png");
       expect(png.subarray(0, 8)).toEqual(image.subarray(0, 8));
       expect(png.length).toBeLessThanOrEqual(20000);
+    });
+
+    it("should resize image to each ImageSize", async () => {
+      const image = noisePng(512, 512);
+      const resize = core.resizeImage(image, core.ImageSize.Image);
+      if (!imageResizing) return expect(resize).rejects.toThrow(oldLibraryError("chat_resize_image"));
+      const jpeg = await resize;
+      expect(jpeg.subarray(0, 3)).toEqual(Buffer.from([0xff, 0xd8, 0xff]));
+      expect(jpeg.length).toBeLessThanOrEqual(261120);
+      const profile = await core.resizeImage(image, core.ImageSize.ProfilePreview);
+      expect(profile.startsWith("data:image/jpg;base64,")).toBe(true);
+      expect(profile.length).toBeLessThanOrEqual(12500);
+      const preview = await core.resizeImage(image, core.ImageSize.MessagePreview);
+      expect(preview.startsWith("data:image/jpg;base64,")).toBe(true);
+      expect(preview.length).toBeLessThanOrEqual(14000);
+    });
+
+    it("should resize image with transparency to PNG for each ImageSize", async () => {
+      const image = noisePng(256, 256, true);
+      const resize = core.resizeImage(image, core.ImageSize.Image);
+      if (!imageResizing) return expect(resize).rejects.toThrow(oldLibraryError("chat_resize_image"));
+      const png = await resize;
+      expect(png.subarray(0, 8)).toEqual(image.subarray(0, 8));
+      expect(png.length).toBeLessThanOrEqual(261120);
+      const profile = await core.resizeImage(image, core.ImageSize.ProfilePreview);
+      expect(profile.startsWith("data:image/png;base64,")).toBe(true);
+      expect(profile.length).toBeLessThanOrEqual(12500);
+      const preview = await core.resizeImage(image, core.ImageSize.MessagePreview);
+      expect(preview.startsWith("data:image/png;base64,")).toBe(true);
+      expect(preview.length).toBeLessThanOrEqual(14000);
     });
 
     it("should reject data that is not an image", async () => {

@@ -6,7 +6,7 @@
 
 # Class: ChatInitError
 
-Defined in: [src/core.ts:161](../core.ts#L161)
+Defined in: [src/core.ts:181](../core.ts#L181)
 
 ## Extends
 
@@ -18,7 +18,7 @@ Defined in: [src/core.ts:161](../core.ts#L161)
 
 > **new ChatInitError**(`message`, `dbMigrationError`): `ChatInitError`
 
-Defined in: [src/core.ts:162](../core.ts#L162)
+Defined in: [src/core.ts:182](../core.ts#L182)
 
 #### Parameters
 
@@ -44,7 +44,7 @@ Defined in: [src/core.ts:162](../core.ts#L162)
 
 > **dbMigrationError**: [`DBMigrationError`](core.TypeAlias.DBMigrationError.md)
 
-Defined in: [src/core.ts:162](../core.ts#L162)
+Defined in: [src/core.ts:182](../core.ts#L182)
 
 ***
 
@@ -52,7 +52,7 @@ Defined in: [src/core.ts:162](../core.ts#L162)
 
 > **message**: `string`
 
-Defined in: [src/core.ts:162](../core.ts#L162)
+Defined in: [src/core.ts:182](../core.ts#L182)
 
 #### Inherited from
 

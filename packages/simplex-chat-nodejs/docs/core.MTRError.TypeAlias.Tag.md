@@ -8,4 +8,4 @@
 
 > **Tag** = `"noDown"` \| `"different"`
 
-Defined in: [src/core.ts:245](../core.ts#L245)
+Defined in: [src/core.ts:265](../core.ts#L265)
