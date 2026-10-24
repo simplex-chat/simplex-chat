@@ -16,8 +16,12 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.AlignmentLine
 import androidx.compose.ui.layout.HorizontalAlignmentLine
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.Placeable
+import androidx.compose.ui.layout.VerticalAlignmentLine
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.offset
 import chat.simplex.common.model.*
@@ -25,6 +29,8 @@ import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
 import kotlinx.coroutines.flow.Flow
 import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.roundToInt
 
 val LocalTerminalLayout = staticCompositionLocalOf { false }
 
@@ -86,6 +92,33 @@ fun Modifier.messageTextBottom(): Modifier =
     layout(placeable.width, placeable.height, mapOf(MessageTextBottom to placeable.height)) { placeable.placeRelative(0, 0) }
   }
 
+private val LastLineLeft = VerticalAlignmentLine(::min)
+private val LastLineRight = VerticalAlignmentLine(::max)
+
+private fun Modifier.lastLine(bounds: (Placeable) -> Pair<Int, Int>?): Modifier =
+  layout { measurable, constraints ->
+    val placeable = measurable.measure(constraints)
+    val lines = bounds(placeable)?.let { (left, right) -> mapOf<AlignmentLine, Int>(LastLineLeft to left, LastLineRight to right) } ?: emptyMap()
+    layout(placeable.width, placeable.height, lines) { placeable.placeRelative(0, 0) }
+  }
+
+fun Modifier.messageLastLine(): Modifier = lastLine { 0 to it.width }
+
+class TextLastLine {
+  private var textLayout: TextLayoutResult? = null
+
+  fun onTextLayout(r: TextLayoutResult) {
+    textLayout = r
+  }
+
+  val modifier: Modifier = Modifier.lastLine {
+    textLayout?.let { r ->
+      val last = r.lineCount - 1
+      if (r.getLineEnd(last) > r.getLineStart(last)) r.getLineLeft(last).roundToInt() to r.getLineRight(last).roundToInt() else null
+    }
+  }
+}
+
 @Composable
 fun ItemWithMeta(meta: @Composable () -> Unit, overlayMeta: (@Composable () -> Unit)? = null, content: @Composable (inlineMeta: (@Composable () -> Unit)?) -> Unit) {
   if (LocalTerminalLayout.current) {
@@ -105,20 +138,25 @@ fun ItemWithMeta(meta: @Composable () -> Unit, overlayMeta: (@Composable () -> U
 @Composable
 private fun TerminalMetaLayout(contentWithMeta: @Composable () -> Unit) {
   Layout(contentWithMeta) { measurables, constraints ->
+    val content = measurables[0].measure(constraints.copy(minWidth = 0))
     val metaConstraints = constraints.copy(minWidth = 0, minHeight = 0)
     val meta = measurables[1].measure(metaConstraints)
     val overlay = measurables.getOrNull(2)?.measure(metaConstraints)
-    val contentMaxWidth = if (overlay == null && constraints.hasBoundedWidth) (constraints.maxWidth - meta.width).coerceAtLeast(0) else constraints.maxWidth
-    val content = measurables[0].measure(constraints.copy(minWidth = 0, maxWidth = contentMaxWidth))
-    val width = if (constraints.hasBoundedWidth) constraints.maxWidth else content.width + meta.width
+    val width = if (constraints.hasBoundedWidth) constraints.maxWidth else max(content.width, meta.width)
     val textBottom = content[MessageTextBottom]
     val metaBottom = if (textBottom == AlignmentLine.Unspecified) content.height else textBottom + CHAT_ITEM_TEXT_VERTICAL_PADDING.roundToPx()
-    layout(width, content.height) {
+    val lineEnd = if (layoutDirection == LayoutDirection.Ltr) {
+      content[LastLineRight].takeIf { it != AlignmentLine.Unspecified }
+    } else {
+      content[LastLineLeft].takeIf { it != AlignmentLine.Unspecified }?.let { content.width - it }
+    }
+    val metaShift = if (lineEnd != null && lineEnd + meta.width > width) meta.height else 0
+    layout(width, content.height + metaShift) {
       content.placeRelative(0, 0)
       if (overlay != null && content.width + meta.width > width) {
         overlay.placeRelative(content.width - overlay.width, content.height - overlay.height)
       } else {
-        meta.placeRelative(width - meta.width, metaBottom - meta.height)
+        meta.placeRelative(width - meta.width, metaBottom + metaShift - meta.height)
       }
     }
   }
@@ -134,7 +172,7 @@ fun TerminalChatItemRow(
   gutter: Dp,
   topGap: Dp,
   modifier: Modifier = Modifier,
-  senderTopGap: Dp = 8.dp,
+  senderTopGap: Dp = 14.dp,
   goToButton: @Composable () -> Unit = {},
   content: @Composable () -> Unit
 ) {
@@ -148,10 +186,10 @@ fun TerminalChatItemRow(
       }
       Box {
         if (sender != null) {
-          SenderNameAndRole(sender, Modifier.padding(start = CHAT_ITEM_TEXT_PADDING, bottom = 2.dp + topGap))
+          SenderNameAndRole(sender, Modifier.padding(start = CHAT_ITEM_TEXT_PADDING))
         }
       }
-      Box(Modifier.padding(top = if (sender != null) 2.dp else 0.dp)) {
+      Box {
         content()
       }
     },

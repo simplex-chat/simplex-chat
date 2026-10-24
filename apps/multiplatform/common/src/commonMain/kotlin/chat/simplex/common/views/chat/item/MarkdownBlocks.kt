@@ -55,7 +55,7 @@ fun MarkdownBlocks(
   modifier: Modifier,
   cardColor: Color,
   blockText: @Composable (index: Int, range: SegmentRange, style: TextStyle, modifier: Modifier, softWrap: Boolean, last: Boolean) -> Unit,
-  metaLine: @Composable () -> Unit
+  metaLine: (@Composable () -> Unit)?
 ) {
   val roundness = remember { appPreferences.chatItemRoundness.state }.value.coerceIn(0f, 1f)
   val cardShape = RoundedCornerShape(12.dp * roundness)
@@ -78,6 +78,7 @@ fun MarkdownBlocks(
         Spacer(Modifier.height(with(LocalDensity.current) { (lineHeight.toPx() / 2).toDp() }))
       }
       val start = starts[k]
+      val lastLine = if (k == blocks.lastIndex && metaLine == null) Modifier.messageLastLine() else Modifier
       when (block) {
         is MarkdownBlock.Paragraph -> BlockText(start, block.content, style)
         is MarkdownBlock.Heading -> {
@@ -99,13 +100,13 @@ fun MarkdownBlocks(
             BlockText(start + j, entry.content, style, Modifier.weight(1f, fill = false))
           }
         }
-        is MarkdownBlock.CodeBlock -> CodeBlockCard(cardShape, cardColor, roundness, codeText(formattedText, block.content)) { m ->
+        is MarkdownBlock.CodeBlock -> CodeBlockCard(cardShape, cardColor, roundness, codeText(formattedText, block.content), lastLine) { m ->
           BlockText(start, block.content, style.copy(fontFamily = FontFamily.Monospace, fontSize = fontSize * 0.875f, lineHeight = lineHeight * 0.9f), m, softWrap = false)
         }
         is MarkdownBlock.Table -> {
           val tableRows = listOf(block.header) + block.rows
           val rowStarts = tableRows.runningFold(start) { n, row -> n + row.size }
-          Box(Modifier.horizontalScroll(rememberScrollState())) {
+          Box(lastLine.horizontalScroll(rememberScrollState())) {
             TableGrid(
               block.columns, tableRows.map { it.size }, cardColor, MaterialTheme.colors.secondary.copy(alpha = 0.1f), lineColor,
               Modifier.clip(cardShape).border(1.dp, lineColor, cardShape)
@@ -121,10 +122,10 @@ fun MarkdownBlocks(
             }
           }
         }
-        is MarkdownBlock.Rule -> Box(Modifier.padding(vertical = 6.dp).fillMaxWidth().height(1.dp).background(lineColor))
+        is MarkdownBlock.Rule -> Box(lastLine.padding(vertical = 6.dp).fillMaxWidth().height(1.dp).background(lineColor))
       }
     }
-    if (!lastIsText && !LocalTerminalLayout.current) metaLine()
+    if (!lastIsText) metaLine?.invoke()
   }
 }
 
@@ -161,13 +162,13 @@ private fun codeText(fts: List<FormattedText>, r: SegmentRange): String =
   }
 
 @Composable
-private fun CodeBlockCard(shape: Shape, color: Color, roundness: Float, copyText: String, content: @Composable (Modifier) -> Unit) {
+private fun CodeBlockCard(shape: Shape, color: Color, roundness: Float, copyText: String, modifier: Modifier, content: @Composable (Modifier) -> Unit) {
   var tapped by remember { mutableStateOf(false) }
   val interactionSource = remember { MutableInteractionSource() }
   val hovered by interactionSource.collectIsHoveredAsState()
   val clipboard = LocalClipboardManager.current
   Box(
-    Modifier
+    modifier
       .fillMaxWidth()
       .clip(shape)
       .background(color)

@@ -47,7 +47,7 @@ fun CIFeaturePreferenceView(
           shouldConsumeEvent = ::accept
         )
       } else {
-        Text(chatItem.content.text + "  " + ts,
+        Text(AnnotatedString(chatItem.content.text + "  ") + ts,
           fontSize = 12.sp, fontWeight = FontWeight.Light, color = MaterialTheme.colors.secondary)
       }
     }

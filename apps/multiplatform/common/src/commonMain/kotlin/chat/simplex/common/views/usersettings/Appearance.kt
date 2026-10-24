@@ -321,7 +321,7 @@ object AppearanceScope {
           terminalRows = {
             Column {
               TerminalPreviewRow(alice, ChatItemSender("alice", null, null, own = false, image = null), senderTopGap = 0.dp)
-              TerminalPreviewRow(reply, ChatItemSender("bob", null, null, own = true, image = null), senderTopGap = 8.dp)
+              TerminalPreviewRow(reply, ChatItemSender("bob", null, null, own = true, image = null), senderTopGap = 14.dp)
             }
           }
         )

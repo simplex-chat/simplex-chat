@@ -27,7 +27,7 @@ fun EmojiItemView(chatItem: ChatItem, timedMessagesTTL: Int?, showViaProxy: Bool
 
   ItemWithMeta(meta = { CIMetaView(chatItem, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp) }) { inlineMeta ->
     Column(
-      Modifier.padding(vertical = 8.dp, horizontal = 12.dp),
+      Modifier.padding(vertical = 8.dp, horizontal = 12.dp).then(if (LocalTerminalLayout.current) Modifier.messageLastLine() else Modifier),
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
       if (isSelected) {

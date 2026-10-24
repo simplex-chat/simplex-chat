@@ -52,7 +52,7 @@ fun FramedItemView(
   val sent = ci.chatDir.sent
   val chatTTL = chatInfo.timedMessagesTTL
   val terminal = LocalTerminalLayout.current
-  val mediaModifier = if (terminal) Modifier.padding(start = CHAT_ITEM_TEXT_PADDING).clipChatItem(ci, revealed = true) else Modifier
+  val mediaModifier = if (terminal) Modifier.padding(start = CHAT_ITEM_TEXT_PADDING, top = 4.dp).clipChatItem(ci, revealed = true) else Modifier
   val quoteColor = if (sent) MaterialTheme.appColors.sentQuote else MaterialTheme.appColors.receivedQuote
   val cardModifier = mediaModifier.background(quoteColor)
 
@@ -358,7 +358,8 @@ fun FramedItemView(
                 Column(
                   Modifier
                     .padding(bottom = 2.dp)
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    .then(if (terminal) Modifier.messageLastLine() else Modifier),
                   horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                   EmojiText(ci.content.text)

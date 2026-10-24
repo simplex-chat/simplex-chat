@@ -213,9 +213,8 @@ fun CIFileView(
     if (!smallView) {
       val secondaryColor = MaterialTheme.colors.secondary
       val encrypted = if (file?.fileSource == null) null else file.fileSource.cryptoArgs != null
-      val terminal = LocalTerminalLayout.current
       val metaReserve = buildAnnotatedString {
-        if (!terminal) withStyle(reserveTimestampStyle) {
+        withStyle(reserveTimestampStyle) {
           append(reserveSpaceForMeta(meta, chatTTL, encrypted, secondaryColor = secondaryColor, showViaProxy = showViaProxy, showTimestamp = showTimestamp, signedFileVerified = file?.loaded))
         }
       }

@@ -218,17 +218,21 @@ fun MarkdownText (
             selection = selection, textIndex = index, range = r.from until r.to, softWrap = blockSoftWrap, parentDirection = direction
           )
         },
-        metaLine = {
-          MarkdownText(
-            text, formattedText, markdownBlocks, meta = meta, chatTTL = chatTTL, toggleSecrets = toggleSecrets, style = style,
-            linkMode = linkMode, showViaProxy = showViaProxy, showTimestamp = showTimestamp, range = IntRange.EMPTY
-          )
+        metaLine = if (LocalTerminalLayout.current && meta?.isLive != true) null else {
+          {
+            MarkdownText(
+              text, formattedText, markdownBlocks, meta = meta, chatTTL = chatTTL, toggleSecrets = toggleSecrets, style = style,
+              linkMode = linkMode, showViaProxy = showViaProxy, showTimestamp = showTimestamp, range = IntRange.EMPTY
+            )
+          }
         }
       )
     }
     return
   }
-  val reserveMeta = if (LocalTerminalLayout.current) null else meta
+  val lastLine = if (LocalTerminalLayout.current && meta != null) remember { TextLastLine() } else null
+  val reserveMeta = if (lastLine == null) meta else null
+  val modifier = if (lastLine == null) modifier else modifier.then(lastLine.modifier)
   val reserve = if (textLayoutDirection != (parentDirection ?: LocalLayoutDirection.current) && meta != null) {
     "\n"
   } else if (meta != null) {
@@ -289,9 +293,9 @@ fun MarkdownText (
       }
       val clampedRange = textSelection?.highlightRange?.let { it.first .. minOf(it.last, selectableEnd - 1) }?.takeUnless { it.isEmpty() }
       if (textSelection != null) {
-        SelectableText(annotatedText, style = style, modifier = modifier.then(textSelection.positionModifier), maxLines = maxLines, overflow = overflow, selectionRange = clampedRange, onTextLayoutResult = textSelection.onTextLayoutResult)
+        SelectableText(annotatedText, style = style, modifier = modifier.then(textSelection.positionModifier), maxLines = maxLines, overflow = overflow, selectionRange = clampedRange, onTextLayoutResult = { lastLine?.onTextLayout(it); textSelection.onTextLayoutResult(it) })
       } else {
-        Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, inlineContent = inlineContent?.second ?: mapOf())
+        Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, inlineContent = inlineContent?.second ?: mapOf(), onTextLayout = { lastLine?.onTextLayout(it) })
       }
     } else {
       var selectableEnd = 0
@@ -447,6 +451,7 @@ fun MarkdownText (
       val layoutResult = remember { mutableStateOf<TextLayoutResult?>(null) }
       val onTextLayout: (TextLayoutResult) -> Unit = { r ->
         layoutResult.value = r
+        lastLine?.onTextLayout(r)
         textSelection?.onTextLayoutResult?.invoke(r)
       }
       val textModifier = modifier
