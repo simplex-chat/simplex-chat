@@ -28,12 +28,12 @@ imageTests = do
     it "should resize PNG with transparency to PNG" $ testDataUri "tests/fixtures/logo-large-rgba.png" "data:image/png;base64,"
     it "should resize opaque PNG to JPEG" $ testDataUri "tests/fixtures/preview-issue1.png" "data:image/jpg;base64,"
     it "should convert 16-bit images to 8 bits" testDataUri16Bit
-    it "should halve JPEG with a side above 65500 pixels before encoding" testJpegSideLimit
   describe "image data" $ do
     it "should reduce JPEG size" testResizeJpeg
     it "should reduce PNG size" testResizePng
     it "should fail when image does not fit" testImageTooLarge
-    it "should refuse image with a side above 2^20 pixels" testImageSideLimit
+    it "should refuse image with a side above 16384 pixels" testImageSideLimit
+    it "should halve image to at most 4320 pixels per side" testDisplaySide
   describe "image preview" $ do
     it "should generate preview of an image file" $ testFilePreview $ CryptoFile "tests/fixtures/test.jpg" Nothing
     it "should generate preview of an encrypted image file" testEncryptedFilePreview
@@ -60,14 +60,6 @@ testDataUri16Bit = do
   Just body <- pure $ LB.stripPrefix "data:image/png;base64," pngUri
   Right (ImageRGBA8 _) <- pure $ decodeImage . LB.toStrict =<< LB64.decode body
   pure ()
-
-testJpegSideLimit :: IO ()
-testJpegSideLimit = do
-  let img = ImageRGB8 $ generateImage (\x _ -> PixelRGB8 (fromIntegral x) 0 0) 65501 2
-  Right uri <- resizeImageDataUri 100000 img
-  Just body <- pure $ LB.stripPrefix "data:image/jpg;base64," uri
-  Right resized <- pure $ decodeImage . LB.toStrict =<< LB64.decode body
-  fst (imageSize resized) `shouldSatisfy` (<= 65500)
 
 testResizeJpeg :: IO ()
 testResizeJpeg = do
@@ -96,13 +88,26 @@ testImageTooLarge = do
 
 testImageSideLimit :: IO ()
 testImageSideLimit = do
-  let side = 2 ^ (20 :: Int)
-      blank w h = ImageRGBA8 $ generateImage (\_ _ -> PixelRGBA8 0 0 0 0) w h
-  resizeImage IFPng 100000 (blank side 1) >>= (`shouldSatisfy` isRight)
-  forM_ [blank (side + 1) 1, blank 1 (side + 1)] $ \img -> do
-    resizeImage IFPng 100000 img >>= (`shouldSatisfy` isLeft)
-    resizeImage IFJpeg 100000 img >>= (`shouldSatisfy` isLeft)
-    resizeImageDataUri 100000 img >>= (`shouldSatisfy` isLeft)
+  let blank w h = ImageRGBA8 $ generateImage (\_ _ -> PixelRGBA8 0 0 0 0) w h
+      resizeAll img = sequence [resizeImage IFPng 100000 img, resizeImage IFJpeg 100000 img, resizeImageDataUri 100000 img]
+  forM_ [blank 16384 4, blank 4 16384] $ \img ->
+    resizeAll img >>= (`shouldSatisfy` all isRight)
+  forM_ [blank 16385 4, blank 4 16385] $ \img ->
+    resizeAll img >>= (`shouldSatisfy` all isLeft)
+
+testDisplaySide :: IO ()
+testDisplaySide =
+  forM_ [((8640, 8), (4320, 4)), ((8, 8640), (4, 4320)), ((4320, 4), (4320, 4))] $ \((w, h), size) -> do
+    let opaque = ImageRGB8 $ generateImage (\_ _ -> PixelRGB8 0 0 0) w h
+        transparent = ImageRGBA8 $ generateImage (\_ _ -> PixelRGBA8 0 0 0 0) w h
+    forM_ [opaque, transparent] $ \img -> do
+      Right image <- resizeImage (imageFormat img) 261120 img
+      decodedSize image `shouldBe` Right size
+      forM_ [12500, 14000] $ \limit -> do
+        Right uri <- resizeImageDataUri limit img
+        (decodedSize =<< LB64.decode (LB.drop 1 $ LB.dropWhile (/= ',') uri)) `shouldBe` Right size
+  where
+    decodedSize = fmap imageSize . decodeImage . LB.toStrict
 
 testFilePreview :: CryptoFile -> IO ()
 testFilePreview f = do

@@ -45,13 +45,14 @@ fitImage :: (ImageFormat -> LB.ByteString -> LB.ByteString) -> ImageFormat -> In
 fitImage output format maxSize img
   | dynamicMap (hasSideAbove maxImageSide) img = tooLarge
   | otherwise = case format of
-      IFJpeg -> maybe tooLarge (fitHalving (jpeg minJpegQuality) fitQuality Nothing) . halveToSide maxJpegSide $ convertRGB8 img
-      IFPng -> fitHalving png fitScale Nothing $ convertRGBA8 img
+      IFJpeg -> fitDisplay (jpeg minJpegQuality) fitQuality $ convertRGB8 img
+      IFPng -> fitDisplay png fitScale $ convertRGBA8 img
   where
     out = output format
     fits = (<= maxSize) . LB.length
     jpeg q = fmap (out . LB.fromStrict) . encodeRGB q
     png = pure . out . encodePng
+    fitDisplay cheapest final = maybe tooLarge (fitHalving cheapest final Nothing) . halveToSide maxDisplaySide
     fitHalving :: STBIR.STBIRPixel a => (Image a -> IO LB.ByteString) -> (Maybe (Image a) -> Image a -> LB.ByteString -> IO LB.ByteString) -> Maybe (Image a) -> Image a -> IO (Either String LB.ByteString)
     fitHalving cheapest final larger i = do
       r <- cheapest i
@@ -80,10 +81,10 @@ minJpegQuality :: Int
 minJpegQuality = 20
 
 maxImageSide :: Int
-maxImageSide = 2 ^ (20 :: Int)
+maxImageSide = 16384
 
-maxJpegSide :: Int
-maxJpegSide = 65500
+maxDisplaySide :: Int
+maxDisplaySide = 4320
 
 hasSideAbove :: Int -> Image a -> Bool
 hasSideAbove side img = imageWidth img > side || imageHeight img > side
