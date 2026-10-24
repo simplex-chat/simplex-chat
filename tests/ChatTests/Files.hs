@@ -1083,7 +1083,7 @@ testXFTPMarkDeletedDuringUpload =
     bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
     alice #$> ("/_delete item @2 " <> itemId 1 <> " broadcast", id, "message marked deleted")
     bob <# "alice> [marked deleted] hi, sending a file"
-    withXFTPServer alice $ checkNoAgentSndFiles alice
+    (withCCAgentTransaction alice $ \db -> DB.query_ db "SELECT count(1) FROM snd_files" :: IO [[Int]]) `shouldEventuallyReturn` [[0]]
 
 checkNoAgentSndFiles :: HasCallStack => TestCC -> Expectation
 checkNoAgentSndFiles cc =
