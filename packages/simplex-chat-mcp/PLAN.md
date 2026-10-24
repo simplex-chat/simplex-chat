@@ -1303,3 +1303,16 @@ C6      Claude Code closes the request stream when a call times out or its task 
 - Cards show no expiry. The commands of sends and leaves name the chat: `/approve CHAT N`.
 - The command menu has `/pending` and `/list`.
 - `leave`: one action deletes a contact, or leaves a group, business chat or channel and deletes it; always with notification.
+
+## Decisions of 2026-10-24
+
+Version 0.2 replaces the hand-run server with a Claude Code plugin. The sections above describe 0.1; the current behavior is in [`REFERENCE.md`](REFERENCE.md) and [`spec/`](spec/README.md).
+
+- One daemon process with one SimpleX core per profile: the hub core owns the Main group, and each Claude Code session has a core of its own.
+- The Main group is the shared control chat: cards from all sessions are posted there, each labelled with its session.
+- One profile per `CLAUDE_CODE_SESSION_ID`, named `SimpleX MCP - <session name>`; a resumed session keeps it.
+- Delivery as a Claude Code plugin shipped in the npm package, listed by a marketplace file at the root of the simplex-chat repository, with an npm plugin source.
+- Options only through the plugin's `userConfig`: `main_group`, `approve`, `expire_hours`; no config file.
+- `serve`, `register` and the HTTP endpoint are removed; 0.1 data folders are not migrated.
+- The `--owners` listed-owner and observer modes are dropped: the first person who joins by the one-time link becomes an owner, and `/simplex:reset-owners` replaces the group and its owners.
+- Known chats are dropped.
