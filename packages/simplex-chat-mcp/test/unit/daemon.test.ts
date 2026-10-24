@@ -1,6 +1,6 @@
 import {once} from "events"
 import {closeSync, existsSync, mkdirSync, mkdtempSync, openSync, readFileSync, rmSync, writeFileSync} from "fs"
-import {request} from "http"
+import {Server, request} from "http"
 import {Socket} from "net"
 import {tmpdir} from "os"
 import {join} from "path"
@@ -9,6 +9,7 @@ import {defaultConfig} from "../../src/config"
 import {Daemon, DaemonDeps, HubLike, runDaemon} from "../../src/daemon"
 import {LockedError, createDataFolder, readSessionFile, sessionFolder, socketPath, writeSessionFile} from "../../src/files"
 import {protocolVersion} from "../../src/protocol"
+import * as socket from "../../src/socket"
 import {requestJson, streamLines} from "../../src/socket"
 
 const id1 = "11111111-1111-4111-8111-111111111111"
@@ -112,10 +113,17 @@ function deps(root: string) {
 
 let root: string
 let daemon: Daemon | undefined
+let listened: Promise<Server>
 
 beforeEach(() => {
   root = mkdtempSync(join(tmpdir(), "simplex-mcp-daemon-"))
   jest.spyOn(process.stdout, "write").mockImplementation(() => true)
+  const listen = socket.listen
+  listened = new Promise(resolve => jest.spyOn(socket, "listen").mockImplementation(async (...args) => {
+    const server = await listen(...args)
+    resolve(server)
+    return server
+  }))
 })
 
 afterEach(async () => {
@@ -142,6 +150,18 @@ function attach(id: string, signal: AbortSignal) {
 
 function serverConnection(daemon: Daemon): Promise<Socket> {
   return once(daemon["server"], "connection").then(([socket]) => socket as Socket)
+}
+
+function serverRequests(server: Server, count: number): Promise<void> {
+  return new Promise(resolve => {
+    let received = 0
+    const onRequest = (): void => {
+      if (++received < count) return
+      server.off("request", onRequest)
+      resolve()
+    }
+    server.on("request", onRequest)
+  })
 }
 
 function storeSession(id: string, number: number, name: string) {
@@ -203,12 +223,69 @@ describe("daemon", () => {
     writeFileSync(lockFile(), `${process.pid}\n`)
   })
 
-  it("stops the hub and releases the lock when it cannot listen", async () => {
-    const {d, hubStops} = deps(root)
+  it("releases the lock and opens no hub when it cannot listen", async () => {
+    const {d} = deps(root)
+    const openHub = jest.fn(d.openHub)
     mkdirSync(socketPath(root))
-    await expect(Daemon.start(d, readDefaultConfig)).rejects.toThrow()
-    expect(hubStops).toHaveLength(1)
+    await expect(Daemon.start({...d, openHub}, readDefaultConfig)).rejects.toThrow()
+    expect(openHub).not.toHaveBeenCalled()
     expect(existsSync(lockFile())).toBe(false)
+  })
+
+  it("listens while the hub opens, and answers the requests that arrived meanwhile once it is open", async () => {
+    const {d} = deps(root)
+    const hubOpening = deferred()
+    const openHubGate = deferred()
+    const events: string[] = []
+    const openHub: DaemonDeps["openHub"] = async (...args) => {
+      hubOpening.resolve()
+      await openHubGate.promise
+      events.push("hub open")
+      return d.openHub(...args)
+    }
+    const starting = Daemon.start({...d, openHub}, readDefaultConfig)
+    await hubOpening.promise
+    const received = serverRequests(await listened, 2)
+    const status = requestJson(socketPath(root), token, "GET", "/status").then(reply => (events.push("status"), reply))
+    const registered = register(id1).then(reply => (events.push("session"), reply))
+    await received
+    openHubGate.resolve()
+    daemon = await starting
+    expect(await status).toMatchObject({version: "0.2.0", mainGroup: "SimpleX MCP", sessions: []})
+    expect(await registered).toMatchObject({number: 1})
+    expect(events[0]).toBe("hub open")
+    expect(events.slice(1).sort()).toEqual(["session", "status"])
+  })
+
+  it("fails the waiting requests, stops listening and releases the lock when the hub fails to open", async () => {
+    const {d, agents} = deps(root)
+    const errors: string[] = []
+    jest.spyOn(process.stderr, "write").mockImplementation(text => (errors.push(String(text)), true))
+    const hubOpening = deferred()
+    const openHubGate = deferred()
+    const openHub: DaemonDeps["openHub"] = async () => {
+      hubOpening.resolve()
+      await openHubGate.promise
+      throw new Error("no network")
+    }
+    const starting = Daemon.start({...d, openHub}, readDefaultConfig)
+    starting.catch(() => undefined)
+    await hubOpening.promise
+    const server = await listened
+    const received = serverRequests(server, 2)
+    const status = requestJson(socketPath(root), token, "GET", "/status")
+    const registered = register(id1)
+    await received
+    openHubGate.resolve()
+    await expect(starting).rejects.toThrow("no network")
+    await expect(status).rejects.toMatchObject({message: "no network", status: 500})
+    await expect(registered).rejects.toMatchObject({message: "no network", status: 500})
+    expect(server.listening).toBe(false)
+    expect(await register(id1).catch(error => socket.isNotRunning(error))).toBe(true)
+    expect(existsSync(lockFile())).toBe(false)
+    expect(agents).toHaveLength(0)
+    expect(existsSync(sessionsFolder())).toBe(false)
+    expect(errors.sort()).toEqual(["GET /status: no network\n", "POST /session: no network\n"])
   })
 
   it("streams progress and the result, and cancels the call when the client closes", async () => {

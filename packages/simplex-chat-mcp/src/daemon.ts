@@ -70,6 +70,7 @@ export class Daemon {
   private stopTimer?: NodeJS.Timeout
   private stopping?: Promise<void>
   private hub!: HubLike
+  private hubReady!: Promise<HubLike>
   private server!: Server
 
   private constructor(private readonly deps: DaemonDeps) {
@@ -80,11 +81,13 @@ export class Daemon {
     acquireLock(deps.root)
     try {
       const daemon = new Daemon(deps)
-      daemon.hub = await deps.openHub(config(), daemon.sessions(), (action, signal) => daemon.perform(action, signal))
+      // listen before the hub opens: a starter that lost the lock race sends /status right after "running"
+      daemon.server = await listen(socketPath(deps.root), deps.token, daemon.routes())
+      daemon.hubReady = daemon.openHub(config)
       try {
-        daemon.server = await listen(socketPath(deps.root), deps.token, daemon.routes())
+        await daemon.hubReady
       } catch (error) {
-        await daemon.hub.stop().catch(stopError => logError("stop", stopError))
+        await daemon.closeListener()
         throw error
       }
       daemon.scheduleStop()
@@ -100,6 +103,17 @@ export class Daemon {
     return this.stopping
   }
 
+  private async openHub(config: () => Config): Promise<HubLike> {
+    this.hub = await this.deps.openHub(config(), this.sessions(), (action, signal) => this.perform(action, signal))
+    return this.hub
+  }
+
+  private closeListener(): Promise<void> {
+    const closed = new Promise<void>(resolve => this.server.close(() => resolve()))
+    this.server.closeIdleConnections()
+    return closed
+  }
+
   private routes(): {[route: string]: Handler} {
     return {
       "POST /session": this.expiring(async (body, res) => sendJson(res, 200, await this.onSession(body as SessionRequest))),
@@ -107,19 +121,26 @@ export class Daemon {
       "POST /attach": this.expiring((body, res) => this.onAttach(body as AttachRequest, res)),
       "POST /call": this.expiring((body, res) => this.onCall(body as CallRequest, res)),
       "GET /status": this.expiring(async (_body, res) => sendJson(res, 200, this.status())),
-      "POST /reset-owners": async (_body, res) => sendJson(res, 200, {link: await this.hub.resetOwners()}),
-      "POST /stop": async (_body, res) => {
+      "POST /reset-owners": this.withHub(async (_body, res) => sendJson(res, 200, {link: await this.hub.resetOwners()})),
+      "POST /stop": this.withHub(async (_body, res) => {
         await this.stop(res)
         sendJson(res, 200, {})
-      },
+      }),
+    }
+  }
+
+  private withHub(handler: Handler): Handler {
+    return async (body, res, req) => {
+      await this.hubReady
+      return handler(body, res, req)
     }
   }
 
   private expiring(handler: Handler): Handler {
-    return (body, res, req) => {
+    return this.withHub((body, res, req) => {
       this.hub.actions.expireDue()
       return handler(body, res, req)
-    }
+    })
   }
 
   private async shutdown(reply: ServerResponse | undefined): Promise<void> {

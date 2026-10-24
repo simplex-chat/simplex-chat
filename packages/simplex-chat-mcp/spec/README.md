@@ -180,8 +180,8 @@ Plugin files, run by Claude Code without `node_modules`:
 | Daemon start by a client | [`src/client.ts`](../src/client.ts#L32) | `DaemonClient.ensureDaemon` | [32](../src/client.ts#L32) |
 | Daemon spawn | [`src/client.ts`](../src/client.ts#L68) | `spawnDaemon` | [68](../src/client.ts#L68) |
 | Socket listener | [`src/socket.ts`](../src/socket.ts#L18) | `listen` | [18](../src/socket.ts#L18) |
-| Daemon process | [`src/daemon.ts`](../src/daemon.ts#L339) | `runDaemon` | [339](../src/daemon.ts#L339) |
-| Daemon routes | [`src/daemon.ts`](../src/daemon.ts#L103) | `Daemon.routes` | [103](../src/daemon.ts#L103) |
+| Daemon process | [`src/daemon.ts`](../src/daemon.ts#L360) | `runDaemon` | [360](../src/daemon.ts#L360) |
+| Daemon routes | [`src/daemon.ts`](../src/daemon.ts#L117) | `Daemon.routes` | [117](../src/daemon.ts#L117) |
 | Hub and Main group | [`src/hub.ts`](../src/hub.ts#L26) | `Hub.open` | [26](../src/hub.ts#L26) |
 | Session profile | [`src/agent.ts`](../src/agent.ts#L39) | `openSessionAgent` | [39](../src/agent.ts#L39) |
 | SimpleX core | [`src/core.ts`](../src/core.ts#L24) | `openCore` | [24](../src/core.ts#L24) |
