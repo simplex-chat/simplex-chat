@@ -1,5 +1,5 @@
 import {spawn} from "child_process"
-import {chmodSync, mkdtempSync, readFileSync, writeFileSync} from "fs"
+import {chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from "fs"
 import {tmpdir} from "os"
 import {delimiter, join} from "path"
 import {configVariables, defaultConfig} from "../../src/config"
@@ -91,8 +91,15 @@ describe("plugin", () => {
   })
 })
 
+const bins: string[] = []
+
+afterAll(() => {
+  for (const bin of bins) rmSync(bin, {recursive: true, force: true})
+})
+
 function fakeNpx(body: string): string {
   const bin = mkdtempSync(join(tmpdir(), "fake-npx-"))
+  bins.push(bin)
   const npx = join(bin, "npx")
   writeFileSync(npx, `#!/bin/sh\n${body}\n`)
   chmodSync(npx, 0o755)

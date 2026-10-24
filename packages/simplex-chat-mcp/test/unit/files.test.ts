@@ -9,13 +9,23 @@ import {ExitError} from "../../src/log"
 const id = "34B7AEBF-E707-4D6F-ADD0-ECDFB4FFE281"
 
 let dir: string
+let roots: string[]
+
+function tempRoot(prefix: string): string {
+  const root = mkdtempSync(join(tmpdir(), prefix))
+  roots.push(root)
+  return root
+}
 
 beforeEach(() => {
-  dir = join(mkdtempSync(join(tmpdir(), "simplex-mcp-files-")), "agent")
+  roots = []
+  dir = join(tempRoot("simplex-mcp-files-"), "agent")
   createDataFolder(dir)
 })
 
-afterEach(() => rmSync(join(dir, ".."), {recursive: true, force: true}))
+afterEach(() => {
+  for (const root of roots) rmSync(root, {recursive: true, force: true})
+})
 
 describe("lock", () => {
   it("is created exclusively with the PID and removed", () => {
@@ -99,7 +109,7 @@ describe("data root", () => {
 
 describe("session files", () => {
   it("round-trip privately and list their numbers", () => {
-    const root = mkdtempSync(join(tmpdir(), "simplex-mcp-files-"))
+    const root = tempRoot("simplex-mcp-files-")
     const folder = sessionFolder(root, id)
     mkdirSync(folder, {recursive: true})
     expect(readSessionFile(folder)).toBeUndefined()
@@ -110,7 +120,6 @@ describe("session files", () => {
     mkdirSync(join(root, "_sessions", "00000000-0000-0000-0000-000000000000"))
     expect(sessionNumbers(root)).toEqual([3])
     expect(sessionNumbers(join(root, "missing"))).toEqual([])
-    rmSync(root, {recursive: true, force: true})
   })
 })
 
@@ -126,15 +135,14 @@ describe("socket path", () => {
 
 describe("token creation", () => {
   it("is exclusive", () => {
-    const root = mkdtempSync(join(tmpdir(), "simplex-mcp-token-"))
+    const root = tempRoot("simplex-mcp-token-")
     const token = serverToken(root)
     expect(serverToken(root)).toBe(token)
     expect(readFileSync(join(root, "token"), "utf8")).toBe(`${token}\n`)
-    rmSync(root, {recursive: true, force: true})
   })
 
   it("is complete when it appears and loses no race", () => {
-    const root = mkdtempSync(join(tmpdir(), "simplex-mcp-token-"))
+    const root = tempRoot("simplex-mcp-token-")
     const linkSync = fs.linkSync
     const seen: string[] = []
     const spy = jest.spyOn(fs, "linkSync").mockImplementation((existing, created) => {
@@ -154,22 +162,20 @@ describe("token creation", () => {
       expect(readFileSync(join(root, "token"), "utf8")).toBe("winner\n")
     } finally {
       spy.mockRestore()
-      rmSync(root, {recursive: true, force: true})
-    }
+      }
   })
 
   it("leaves only the token after creating it", () => {
-    const root = mkdtempSync(join(tmpdir(), "simplex-mcp-token-"))
+    const root = tempRoot("simplex-mcp-token-")
     const token = serverToken(root)
     expect(readdirSync(root)).toEqual(["token"])
     expect(readFileSync(join(root, "token"), "utf8")).toBe(`${token}\n`)
-    rmSync(root, {recursive: true, force: true})
   })
 })
 
 describe("daemon log", () => {
   it("is opened for append and truncated when over 10 MB", () => {
-    const root = mkdtempSync(join(tmpdir(), "simplex-mcp-log-"))
+    const root = tempRoot("simplex-mcp-log-")
     writeFileSync(logFile(root), "x".repeat(10 * 1_048_576 + 1))
     const fd = openLog(root)
     expect(fstatSync(fd).size).toBe(0)
@@ -177,16 +183,14 @@ describe("daemon log", () => {
     writeFileSync(logFile(root), "kept\n")
     closeSync(openLog(root))
     expect(readFileSync(logFile(root), "utf8")).toBe("kept\n")
-    rmSync(root, {recursive: true, force: true})
   })
 
   it("is created private and made private again when it exists", () => {
-    const root = mkdtempSync(join(tmpdir(), "simplex-mcp-log-"))
+    const root = tempRoot("simplex-mcp-log-")
     closeSync(openLog(root))
     expect(statSync(logFile(root)).mode & 0o777).toBe(0o600)
     chmodSync(logFile(root), 0o644)
     closeSync(openLog(root))
     expect(statSync(logFile(root)).mode & 0o777).toBe(0o600)
-    rmSync(root, {recursive: true, force: true})
   })
 })

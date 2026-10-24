@@ -1,5 +1,5 @@
 import {once} from "events"
-import {existsSync, mkdtempSync, writeFileSync} from "fs"
+import {existsSync, mkdtempSync, rmSync, writeFileSync} from "fs"
 import {Server, request} from "http"
 import {tmpdir} from "os"
 import {join} from "path"
@@ -18,6 +18,7 @@ beforeEach(() => {
 afterEach(async () => {
   if (server) await closeServer(server)
   server = undefined
+  rmSync(dir, {recursive: true, force: true})
 })
 
 function rawPost(route: string, body: string): Promise<{status: number | undefined; text: string}> {
