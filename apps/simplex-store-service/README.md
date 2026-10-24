@@ -288,12 +288,24 @@ running beside the new one, on the same port and database. The database `badge_s
 
 ### Two sites
 
-The image carries the badges build at `/srv/web` (`static_dir`). The names site (simplex.domains)
-is configured beside it in `[listener]`. The image does not build the names site yet, so mount a
-names build into the container for `names_static_dir` until it does.
+The image carries the badges build at `/srv/web` (`static_dir`) and the names build at
+`/srv/names`. The names site (simplex.domains) comes from the `apps/simplex-domains` submodule, the
+simplex.domains repository, and is configured beside the badges site in `[listener]`. Fetch the
+submodule before building the image:
 
-- `names_static_dir`: the names build, the directory `npm run build` writes in the names webapp
-  (`dist/`);
+```
+git submodule update --init apps/simplex-domains
+```
+
+A new names site ships by moving the submodule to its commit and committing that here:
+
+```
+git -C apps/simplex-domains fetch origin
+git -C apps/simplex-domains checkout <commit>
+git add apps/simplex-domains
+```
+
+- `names_static_dir`: the names build, `/srv/names` in the image;
 - `names_export_dir`: where the service writes the names site at boot, with the Stripe
   publishable key in its shell, as `webapp_export_dir` is for the badges site. `compose.yml`
   bind-mounts `./names` there (`/srv/names-export`), and `./web` at `/srv/webapp`;

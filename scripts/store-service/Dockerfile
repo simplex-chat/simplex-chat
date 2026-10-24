@@ -17,6 +17,16 @@ RUN npm ci
 COPY apps/simplex-store-service/web ./
 RUN npm run build
 
+# The names site from the apps/simplex-domains submodule. Its public/ links to the repository's
+# fonts and images, so the whole submodule is copied, not only webapp/.
+FROM node:${NODE}-bookworm-slim AS names
+
+WORKDIR /names/webapp
+COPY apps/simplex-domains/webapp/package.json apps/simplex-domains/webapp/package-lock.json ./
+RUN npm ci
+COPY apps/simplex-domains /names
+RUN npm run build
+
 FROM ubuntu:${UBUNTU} AS build
 
 ARG GHC
@@ -82,6 +92,7 @@ RUN if existing_user=$(getent passwd ${USER_UID} | cut -d: -f1) && [ -n "${exist
 
 COPY --from=build /out/simplex-store-service /usr/local/bin/simplex-store-service
 COPY --from=web /web/dist /srv/web
+COPY --from=names /names/webapp/dist /srv/names
 
 USER badge
 WORKDIR /home/badge
