@@ -8,6 +8,8 @@ import {hubFolder} from "./files"
 import {logError} from "./log"
 import {OwnerState} from "./protocol"
 
+const firstAction = 1
+
 export type Perform = (action: Action, signal: AbortSignal) => Promise<void>
 
 export class Hub {
@@ -25,8 +27,8 @@ export class Hub {
     const core = await openCore(hubFolder(root), config.mainGroup)
     try {
       const {chat, user} = core
-      const group = (await findControlGroup(chat, user.userId)) ?? (await createControlChat(chat, user.userId, config.mainGroup, 1))
-      const actions: Actions = new Actions(config.approve, config.expireHours, controlDataOf(group.customData)?.nextAction ?? 1, {
+      const group = (await findControlGroup(chat, user.userId)) ?? (await createControlChat(chat, user.userId, config.mainGroup, firstAction))
+      const actions: Actions = new Actions(config.approve, config.expireHours, controlDataOf(group.customData)?.nextAction ?? firstAction, {
         refusal: action => control.refusal(action),
         saveCounter: next => control.saveCounter(next),
         postCard: action => control.postCard(action),
@@ -36,8 +38,8 @@ export class Hub {
       const control: Control = new Control(chat, group, {displayName: config.mainGroup}, actions, sessions)
       await control.load()
       const hub = new Hub(chat, user, actions, control)
-      await core.events(event => hub.onEvent(event))
       await control.start()
+      await core.events(event => hub.onEvent(event))
       return hub
     } catch (error) {
       await core.chat.close().catch(() => undefined)
@@ -62,22 +64,29 @@ export class Hub {
     this.actions.mode = config.approve
     this.actions.expireHours = config.expireHours
     if (config.mainGroup === this.mainGroup) return
-    this.user = await updatedUser(this.chat, this.user, config.mainGroup)
-    await this.control.rename(config.mainGroup)
+    await this.serialize("Main group rename", async () => {
+      await this.control.rename(config.mainGroup)
+      this.user = await updatedUser(this.chat, this.user, config.mainGroup)
+    })
   }
 
   resetOwners(): Promise<string> {
-    const reset = this.controlEvents.then(() => this.control.reset(this.user.userId))
-    this.controlEvents = reset.then(() => undefined, error => logError("owner reset", error))
-    return reset
+    return this.serialize("owner reset", () => this.control.reset(this.user.userId))
   }
 
   async stop(): Promise<number> {
     this.stopped = true
     const cancelled = await this.actions.stop()
+    await this.controlEvents
     await deliveries(this.chat, this.control.groupId)
     await this.chat.close()
     return cancelled
+  }
+
+  private serialize<R>(context: string, work: () => Promise<R>): Promise<R> {
+    const result = this.controlEvents.then(work)
+    this.controlEvents = result.then(() => undefined, error => logError(context, error))
+    return result
   }
 
   private async onEvent(event: ChatEvent): Promise<void> {
