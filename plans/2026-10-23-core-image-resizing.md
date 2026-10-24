@@ -4,7 +4,7 @@ The CLI sends a fixed placeholder as the preview of every image sent with `/img`
 Images are resized by the core: halved until the encoding fits the size limit; then the JPEG quality is bisected, and a halved PNG is rescaled by bisection between the last two sizes.
 The core functions are called by the apps in place of platform code, wrapped in both bot libraries and used for `/img` and `/imgf` previews; libjpeg-turbo is compiled by cabal in every build.
 
-References are to branch `ab/resize-image` at `13d686ff9`, based on master `66e381bf5`. Haskell paths without a directory are in `src/Simplex/Chat/`.
+References are to branch `ab/resize-image` at `8ec325ed4`, based on master `66e381bf5`. Haskell paths without a directory are in `src/Simplex/Chat/`.
 
 ## Decisions
 
@@ -271,13 +271,14 @@ Python, `packages/simplex-chat-python/src/simplex_chat/`:
   - `_resized_image` (`:319-322`)
 
 Build:
-- `cabal.project`: the hs-jpeg-turbo `source-repository-package` (`:79-83`).
-- `scripts/nix/sha256map.nix:12`: the hs-jpeg-turbo hash.
+- `cabal.project`, `source-repository-package`:
+  - hs-jpeg-turbo (`:76-80`): evgeny-simplex/hs-jpeg-turbo at `9e29d97a`, subdirectories `JuicyPixels-jpeg-turbo` and `jpeg-turbo`
+  - JuicyPixels-stbir (`:82-85`): evgeny-simplex/JuicyPixels-stbir at `6cf27aad`
+- `scripts/nix/sha256map.nix:12-13`: the hashes of both forks, computed with submodules.
+- `dist-newstyle/src/hs-jpeg-t*` and `dist-newstyle/src/JuicyPixe*` in the Windows removals:
+  - `.github/workflows/build.yml:1439, 1442, 1565, 1607, 1609`, with the comment `:1422-1423`
+  - `scripts/desktop/build-lib-windows.sh:43`, with the comment `:41-42`
 - `scripts/simplex-chat-reproduce-builds-android.sh:103`: submodules are updated after checkout.
-- Pins, in a later commit:
-  - `cabal.project`: hs-jpeg-turbo and JuicyPixels-stbir pinned to the fork heads; the `package jpeg-turbo` stanza (`:19-20`) removed
-  - `scripts/nix/sha256map.nix`: the hashes of both forks
-  - `dist-newstyle/src/hs-jpeg-t*` and `dist-newstyle/src/JuicyPixe*` added to the removals in `.github/workflows/build.yml:1439, 1442, 1565, 1607, 1609` and `scripts/desktop/build-lib-windows.sh:43`, and to their comments (`build.yml:1422-1423`, `build-lib-windows.sh:41-42`)
 
 CI, comments of the avatar scripts:
 - `scripts/ci/ios-sim/avatar.swift:1`: `// Makes a group avatar:`
@@ -288,14 +289,14 @@ License notices, `docs/dependencies/`:
   `[libjpeg-turbo](https://github.com/libjpeg-turbo/libjpeg-turbo): JPEG encoding of resized images ([IJG and BSD-3-clause](./licences/apps/libjpeg-turbo/LICENSE.md)). This software is based in part on the work of the Independent JPEG Group.`
 - `README.md:7`:
   `[stb_image_resize](https://github.com/nothings/stb): image scaling ([MIT or public domain](./licences/apps/stb_image_resize/LICENSE))`
-- `licences/apps/libjpeg-turbo/LICENSE.md` and `README.ijg`: copies from libjpeg-turbo `9217719d`.
-- `licences/apps/stb_image_resize/LICENSE`: `cbits/stb_image_resize.h:2589-2625` of JuicyPixels-stbir 0.1.0.0.
+- `licences/apps/libjpeg-turbo/LICENSE.md` and `README.ijg`: copies from libjpeg-turbo `9217719d`, the submodule of the hs-jpeg-turbo fork.
+- `licences/apps/stb_image_resize/LICENSE`: `cbits/stb/stb_image_resize.h:2596-2632` of the JuicyPixels-stbir fork at `6cf27aad`.
 - `HASKELL.md`:
   - direct dependencies (`:25-27`):
     - `JuicyPixels` 3.3.8, Hackage
-    - `JuicyPixels-jpeg-turbo` 0.1.0.0, hs-jpeg-turbo `f1bc073`
-    - `JuicyPixels-stbir` 0.1.0.0, Hackage
-  - indirect dependency (`:143`): `jpeg-turbo` 0.1.0.0, hs-jpeg-turbo `f1bc073`
+    - `JuicyPixels-jpeg-turbo` 0.1.0.0, hs-jpeg-turbo fork at `9e29d97a`
+    - `JuicyPixels-stbir` 0.1.0.0, JuicyPixels-stbir fork at `6cf27aad`
+  - indirect dependency (`:143`): `jpeg-turbo` 0.1.0.0, hs-jpeg-turbo fork at `9e29d97a`
   - the four added to the dependents of:
     - `bytestring` (`:11`)
     - `containers` (`:14`)
@@ -307,7 +308,7 @@ License notices, `docs/dependencies/`:
     - `transformers` (`:165`)
     - `vector` (`:174`)
     - `zlib` (`:179`)
-- `licences/haskell/<package>-<version>/LICENSE`: the `LICENSE` of each of the four packages.
+- `licences/haskell/<package>-<version>/LICENSE`: the `LICENSE` of each of the four packages, from Hackage and the forks.
 
 ## Tests
 
