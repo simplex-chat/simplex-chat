@@ -2,7 +2,7 @@
 
 module ImageTests where
 
-import Codec.Picture (DynamicImage (..), Image (..), PixelRGB16 (..), PixelRGBA16 (..), PixelRGBA8 (..), decodeImage, dynamicMap, generateImage)
+import Codec.Picture (DynamicImage (..), Image (..), PixelRGB16 (..), PixelRGB8 (..), PixelRGBA16 (..), PixelRGBA8 (..), decodeImage, dynamicMap, generateImage)
 import Control.Monad (forM_)
 import Control.Monad.Except (runExceptT)
 import qualified Data.ByteString as B
@@ -28,6 +28,7 @@ imageTests = do
     it "should resize PNG with transparency to PNG" $ testDataUri "tests/fixtures/logo-large-rgba.png" "data:image/png;base64,"
     it "should resize opaque PNG to JPEG" $ testDataUri "tests/fixtures/preview-issue1.png" "data:image/jpg;base64,"
     it "should convert 16-bit images to 8 bits" testDataUri16Bit
+    it "should halve JPEG with a side above 65500 pixels before encoding" testJpegSideLimit
   describe "image data" $ do
     it "should reduce JPEG size" testResizeJpeg
     it "should reduce PNG size" testResizePng
@@ -59,6 +60,14 @@ testDataUri16Bit = do
   Just body <- pure $ LB.stripPrefix "data:image/png;base64," pngUri
   Right (ImageRGBA8 _) <- pure $ decodeImage . LB.toStrict =<< LB64.decode body
   pure ()
+
+testJpegSideLimit :: IO ()
+testJpegSideLimit = do
+  let img = ImageRGB8 $ generateImage (\x _ -> PixelRGB8 (fromIntegral x) 0 0) 65501 2
+  Right uri <- resizeImageDataUri 100000 img
+  Just body <- pure $ LB.stripPrefix "data:image/jpg;base64," uri
+  Right resized <- pure $ decodeImage . LB.toStrict =<< LB64.decode body
+  fst (imageSize resized) `shouldSatisfy` (<= 65500)
 
 testResizeJpeg :: IO ()
 testResizeJpeg = do
