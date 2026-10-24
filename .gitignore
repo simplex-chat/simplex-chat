@@ -96,7 +96,7 @@ badge_service.ini
 # live config (a secret) and its data volume are not.
 scripts/store-service/store_service.ini
 scripts/store-service/data/
-scripts/store-service/web/
+scripts/store-service/badges/
 scripts/store-service/names/
 # compose's environment: the service's ids and BADGE_DB_CONN, which can carry a database password
 scripts/store-service/.env

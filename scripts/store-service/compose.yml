@@ -20,6 +20,6 @@ services:
       - "/etc/simplex-store-service/store_service.ini"
     volumes:
       - ./store_service.ini:/etc/simplex-store-service/store_service.ini:ro
-      - ./web:/srv/webapp
+      - ./badges:/srv/badges-export
       - ./names:/srv/names-export
     stop_grace_period: 10s

@@ -2,16 +2,15 @@
 host = 0.0.0.0
 port = 8080
 ; the built webapp in the image, read as the export source
-static_dir = /srv/web
+static_dir = /srv/badges
 ; split deployment: Caddy serves the exported folder; this service is the API and webhooks only.
 ; Set to on for an all-in-one deployment where this service serves the webapp itself.
 serve_webapp = off
 ; the webapp is written here at boot with the publishable key injected; compose bind-mounts it to a
 ; host path Caddy serves. Unset it when serve_webapp = on.
-webapp_export_dir = /srv/webapp
-; the names site (simplex.domains): its build and the folder it is exported to, which compose
-; bind-mounts to ./names for Caddy. The image does not build the names site yet, so set both once a
-; names build is mounted into the container at /srv/names.
+webapp_export_dir = /srv/badges-export
+; the names site (simplex.domains): its build in the image and the folder it is exported to, which
+; compose bind-mounts to ./names for Caddy
 ;names_static_dir = /srv/names
 ;names_export_dir = /srv/names-export
 ; on because Caddy proxies /api and /webhooks to this service; without it the rate limiter keys on

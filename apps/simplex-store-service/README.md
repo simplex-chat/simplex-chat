@@ -272,9 +272,11 @@ The rename to StoreService changed what the operator runs:
 | compose service `badge-service`, image `simplex-badge-service` | compose service `store-service`, image `simplex-store-service` |
 | `badge_service.ini`, mounted at `/etc/simplex-badge-service/badge_service.ini` | `store_service.ini`, mounted at `/etc/simplex-store-service/store_service.ini` |
 | the binary `simplex-badge-service` | `simplex-store-service` |
+| `static_dir = /srv/web` | `static_dir = /srv/badges` |
+| `webapp_export_dir = /srv/webapp`, host folder `web` | `webapp_export_dir = /srv/badges-export`, host folder `badges` |
 
-Move `badge_service.ini` to `scripts/store-service/store_service.ini`, and point Caddy's badges
-root at `scripts/store-service/web`, which the service fills at boot. Then start the new service
+Move `badge_service.ini` to `scripts/store-service/store_service.ini` and change its two paths,
+and point Caddy's badges root at `scripts/store-service/badges`, which the service fills at boot. Then start the new service
 with
 
 ```
@@ -288,7 +290,7 @@ running beside the new one, on the same port and database. The database `badge_s
 
 ### Two sites
 
-The image carries the badges build at `/srv/web` (`static_dir`) and the names build at
+The image carries the badges build at `/srv/badges` (`static_dir`) and the names build at
 `/srv/names`. The names site (simplex.domains) comes from the `apps/simplex-domains` submodule, the
 simplex.domains repository, and is configured beside the badges site in `[listener]`. Fetch the
 submodule before building the image:
@@ -308,7 +310,7 @@ git add apps/simplex-domains
 - `names_static_dir`: the names build, `/srv/names` in the image;
 - `names_export_dir`: where the service writes the names site at boot, with the Stripe
   publishable key in its shell, as `webapp_export_dir` is for the badges site. `compose.yml`
-  bind-mounts `./names` there (`/srv/names-export`), and `./web` at `/srv/webapp`;
+  bind-mounts `./names` there (`/srv/names-export`), and `./badges` at `/srv/badges-export`;
 - `names_hosts`: the comma-separated hosts the names site is served on when `serve_webapp = on`.
 
 The service refuses to start with `names_hosts` or `names_export_dir` but no `names_static_dir`.
@@ -323,7 +325,7 @@ API answers on every host.
 ### Caddy
 
 The Caddyfile is not in this repository. Its two host blocks, with the exported folders at
-`/srv/store-service/web` and `/srv/store-service/names` and the listener at `127.0.0.1:8080`:
+`/srv/store-service/badges` and `/srv/store-service/names` and the listener at `127.0.0.1:8080`:
 
 ```
 badges.simplex.chat {
@@ -335,7 +337,7 @@ badges.simplex.chat {
 		reverse_proxy 127.0.0.1:8080
 	}
 	handle {
-		root * /srv/store-service/web
+		root * /srv/store-service/badges
 		file_server
 	}
 	@shell path / /index.html /sw.js
@@ -421,8 +423,8 @@ arguments too, so rebuild the image:
 ```
 sudo useradd --system --no-create-home --shell /usr/sbin/nologin simplex-store
 id simplex-store
-mkdir -p web names
-sudo chown -R simplex-store:simplex-store web names
+mkdir -p badges names
+sudo chown -R simplex-store:simplex-store badges names
 sudo chown simplex-store store_service.ini && sudo chmod 600 store_service.ini
 docker compose up -d --build --remove-orphans
 ```
