@@ -254,6 +254,8 @@ The NSE ([`SimpleX NSE/NotificationService.swift`](../SimpleX%20NSE/Notification
 
 The Share Extension (`SimpleX SE/`) allows sharing content (text, images, files) from other apps into SimpleX conversations.
 
+At setup, the share extension sends `.sendingMessage` to the other processes ([`setup(with:)`](../SimpleX%20SE/ShareModel.swift#L94-L100)). While the app state is `.suspending`, the share extension then waits for the app and the NSE to suspend, for at most 2 s ([`waitForOtherProcessesToSuspend`](../SimpleX%20SE/SEChatState.swift#L30-L39)), before it starts or activates its chat. On `.sendingMessage` in `.suspending`, the app suspends at once ([`seSubscriber`](../Shared/Model/SuspendChat.swift#L39-L53)): the core is suspended with timeout 0, the app state is set to `.suspended`, the event receiver is stopped, and the stores are closed. In other app states, the signal is ignored.
+
 ---
 
 ## [7. Remote Desktop Control](../Shared/Views/RemoteAccess/ConnectDesktopView.swift#L1-L545)
