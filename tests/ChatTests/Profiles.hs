@@ -106,6 +106,7 @@ chatProfileTests = do
     it "create address on specified server" testCreateAddressOnServer
     it "retry connecting via contact link" testRetryConnectingViaContactLink
     it "retry connecting via address in contact profile after address keys rotation" testRetryConnectingContactViaAddress
+    it "connection prepared for failed join is shown in chat list" testFailedConnectViaContactLinkInChatList
     it "add contact link to profile" testProfileLink
     it "auto accept contact requests" testUserContactLinkAutoAccept
     it "deduplicate contact requests" testDeduplicateContactRequests
@@ -1541,6 +1542,34 @@ testRetryConnectingContactViaAddress ps =
       alice <## "auto_accept off"
     serverCfg' = (smpServerCfg ps) {transports = [(smpTestPort2 ps, transport @TLS, False)]}
     cfg' = testCfg {agentConfig = testAgentCfg {persistErrorInterval = 0}}
+    opts' =
+      testOpts
+        { coreOptions =
+            testCoreOpts
+              { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]
+              }
+        }
+
+testFailedConnectViaContactLinkInChatList :: HasCallStack => TestParams -> IO ()
+testFailedConnectViaContactLinkInChatList ps = testChatOpts2 opts' aliceProfile bobProfile test ps
+  where
+    tmp = tmpPath ps
+    test alice bob = do
+      cLink <- withSmpServer' serverCfg' $ do
+        alice ##> "/ad"
+        getContactLink alice True
+      alice <## "disconnected 1 connections on server localhost"
+      bob ##> ("/_connect 1 " <> cLink)
+      bob <##. "smp agent error: BROKER"
+      bob @@@ [(":1","")]
+      bob ##> "/_delete :1"
+      bob <## "connection :1 deleted"
+      bob @@@ []
+    serverCfg' =
+      (smpServerCfg ps)
+        { transports = [(smpTestPort2 ps, transport @TLS, False)],
+          serverStoreCfg = persistentServerStoreCfg tmp
+        }
     opts' =
       testOpts
         { coreOptions =
