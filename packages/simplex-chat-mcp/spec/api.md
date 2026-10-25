@@ -156,8 +156,10 @@ Tool errors:
 | `No chat CHAT. list shows the agent's chats.` | invalid reference, the control chat, or a store error when the chat is read | [tools.ts:714-721](../src/tools.ts#L714-L721) |
 | `The agent has role ROLE in CHAT and can't post.` | membership role `observer` or `relay` | [tools.ts:576-579](../src/tools.ts#L576-L579) |
 | `reply_to: CHAT has no item N.` | the read of `around=N` fails, or the item is absent from it | [tools.ts:723-728](../src/tools.ts#L723-L728) |
+| `reply_to: item N in CHAT is not a message.` | the item's content is not `rcvMsgContent` or `sndMsgContent` | [tools.ts:722](../src/tools.ts#L722) |
 | `mention: CHAT is a contact chat; mentions apply to groups and channels.` | `mention` with `@N` | [tools.ts:731](../src/tools.ts#L731) |
 | `mention: CHAT has no member N.` | ID absent from `/_members` | [tools.ts:735](../src/tools.ts#L735) |
+| `mention: members N and M have the same name.` | two mentioned members with the same display name | [tools.ts:735](../src/tools.ts#L735) |
 | refusals | see [1.8](#18-action-refusals) | |
 
 ### 1.4 `receive`
@@ -180,7 +182,7 @@ Output (all fields always present):
 | `messages` | unread received messages in chat order, then received messages that arrived during the call; live items left out; at most `limit` |
 | `more` | new messages not returned, overflow, and unread items left unread by the page reads |
 
-Tool errors: `No chat CHAT. list shows the agent's chats.` for an invalid reference, the control chat, or a store error while the unread items are read ([tools.ts:655](../src/tools.ts#L655), [:659-661](../src/tools.ts#L659-L661)); other chat errors as their error text ([log.ts:39-47](../src/log.ts#L39-L47)).
+Tool errors: `No chat CHAT. list shows the agent's chats.` for an invalid reference, the control chat, or a store error of the first read, `initial=1` ([tools.ts:655](../src/tools.ts#L655), [:659-661](../src/tools.ts#L659-L661)); other chat errors, a store error of a later page read included, as their error text ([log.ts:39-47](../src/log.ts#L39-L47)).
 
 Messages are read by `receive` without an action or an approval.
 
@@ -197,7 +199,7 @@ Output:
 | `chats` | `chat`<br>`type`<br>`name`<br>`simplex_name`, when verified<br>`peer_type`, when present<br>`incognito`<br>`known_as`, when incognito<br>`connected`<br>`unread`: `chatStats.unreadCount`<br>`approved: true`, only under a standing approval in mode `requests` |
 | `actions` | `action`<br>`tool`<br>`input`: the input of the creating call<br>`state`<br>`open`: `true` while a call waits on it |
 
-`chats`: the contacts and groups from `/_get chats USER pcc=off`, paged by 100 with `before=CHAT_TS`, except the control chat ([tools.ts:698-712](../src/tools.ts#L698-L712)). `actions`: every action in memory ([tools.ts:694](../src/tools.ts#L694)).
+`chats`: the contacts and groups from one read, `/_get chats USER pcc=off count=1000000`, except the control chat ([tools.ts:698-712](../src/tools.ts#L698-L712)). `actions`: every action in memory ([tools.ts:694](../src/tools.ts#L694)).
 
 ### 1.6 `leave`
 
@@ -258,11 +260,15 @@ Refusals of a new `connect`, `send` or `leave` action, first match ([actions.ts:
 | `The server is stopping.` | `Actions.stop` has started |
 | `The agent lost its control chat. The person who runs it has to restart it with --reset-owners.` | control chat lost |
 | `20 actions are pending; wait for the owner's decisions.` | 20 actions in state `pending` |
+| `20 actions are being performed; wait for their results.` | 20 actions in state `performing` |
 | `text: too long for its approval card; shorten it.` | `send` whose largest card form exceeds 15000 bytes |
+| `message: too long for its approval card; shorten it.` | `connect` whose largest card form exceeds 15000 bytes without the link texts |
 | `The agent has no owner. The person who runs it has to join its control chat with the link the server printed.` | no approver, `--owners` absent |
 | `The agent has no approving owner. The person who runs it has to restart it with the --owners options it printed.` | no approver, `--owners` given |
 
 Largest card form ([control.ts:476-484](../src/control.ts#L476-L484)): the maximum of the creation form, the `done` form and a `failed` form with an error of 600 × `€`, with the action's own decider or the longest current approver name; each form is measured as JSON-escaped UTF-8: `"`, `\`, `\n`, `\r`, `\t` 2 bytes, other characters below U+0020 6 bytes.
+
+Link texts of a `connect` card ([control.ts:111](../src/control.ts#L111), [:508-522](../src/control.ts#L508-L522)): the description and welcome lines take the bytes that the largest form leaves without them. Lines are kept while they fit; the next line is cut to the bytes left and ends in `…`; later lines are left out. The tool result keeps both texts whole.
 
 ---
 
@@ -299,6 +305,7 @@ The server ignores other text. It answers a command with a reply that quotes it 
 | `approve`, `reject` | action N absent, not `pending`, or without a card | `Action N is not pending.` | [control.ts:182](../src/control.ts#L182) |
 | `approve CHAT N`, `reject CHAT N` | action N is a `connect`, or for another chat | `Action N is not for CHAT.` | [control.ts:183](../src/control.ts#L183) |
 | `approve`, `reject` | accepted | none; the card is edited at the outcome | [control.ts:184-187](../src/control.ts#L184-L187) |
+| `approve CHAT all` | mode `host`; nothing is stored | `Approvals apply in mode requests; this server runs in mode host.` | [control.ts:182](../src/control.ts#L182) |
 | `approve CHAT all` | CHAT unknown or the control chat | `No chat CHAT. /list shows the agent's chats.` | [control.ts:194](../src/control.ts#L194) |
 | `approve CHAT all` | accepted | `Approved for KIND NAME (CHAT) by APPROVER. /'revoke CHAT'` | [control.ts:202](../src/control.ts#L202) |
 | `revoke CHAT` | CHAT unknown, or without a standing approval | `Messages to CHAT have no standing approval.` | [control.ts:207](../src/control.ts#L207) |
@@ -318,7 +325,7 @@ Request lines:
 
 | Tool | First line | Further lines |
 |---|---|---|
-| `connect` | `I want to connect to SUBJECT, as myself.` or `, incognito.`<br>done and connected: `I connected to ...`<br>done and not connected: `I asked to connect to ...` | link description, one code span per line<br>welcome, one code span per line<br>with `message`: `With the message:` and its lines |
+| `connect` | `I want to connect to SUBJECT, as myself.` or `, incognito.`<br>done and connected: `I connected to ...`<br>done and not connected: `I asked to connect to ...` | link description, one code span per line<br>welcome, one code span per line<br>both cut to fit the card ([1.8](#18-action-refusals))<br>with `message`: `With the message:` and its lines |
 | `send` | `I want to send a message to SUBJECT:`, with `, where I am incognito` before the colon in incognito chats<br>done: `I sent a message to ...` | text, one code span per line<br>`replying to NAME: QUOTE` with `reply_to`<br>`mentioning @A, @'B C'` with `mention` |
 | `leave` | `I want to delete KIND NAME (@N).` or `I want to leave KIND NAME (#N).`<br>done: `I deleted ...` or `I left ...` | |
 
@@ -394,7 +401,7 @@ NAME: 1 to 32 characters of `[a-z0-9]` and single hyphens, starting with a lette
 | `--data` | folder | `~/.simplex-mcp/NAME` | resolved to an absolute path; `dataGiven` is set | [cli.ts:65-68](../src/cli.ts#L65-L68) |
 | `--display-name` | text | NAME when the user is created | must equal `validName(text)` | [cli.ts:69-71](../src/cli.ts#L69-L71), [:146-150](../src/cli.ts#L146-L150) |
 | `--approve` | `requests` or `host` | `requests` | | [cli.ts:72-74](../src/cli.ts#L72-L74) |
-| `--owners` | absent value, or `ID:NAME,...` | absent | the value is absent when the next argument is missing or starts with `--`; entries match `^([1-9]\d*):(.+)$` | [cli.ts:75-77](../src/cli.ts#L75-L77), [:167-171](../src/cli.ts#L167-L171) |
+| `--owners` | absent value, or `ID:NAME,...` | absent | the value is absent when the next argument is missing or starts with `--`; it is split at each comma followed by `ID:`, so a name may hold commas; entries match `^([1-9]\d*):(.+)$` | [cli.ts:75-77](../src/cli.ts#L75-L77), [:167-171](../src/cli.ts#L167-L171) |
 | `--expire` | hours | 23 | integer 1 to 23 | [cli.ts:78-80](../src/cli.ts#L78-L80) |
 | `--reset-owners` | flag | off | refused with an `--owners` list | [cli.ts:81-83](../src/cli.ts#L81-L83), [:97-99](../src/cli.ts#L97-L99) |
 | `--new-token` | flag | off | | [cli.ts:84-86](../src/cli.ts#L84-L86) |
@@ -437,7 +444,7 @@ Server name: `simplex-NAME` ([register.ts:33](../src/register.ts#L33)).
 | 2 | `--port: a port from 1 to 65535 expected, got VALUE` | [cli.ts:88](../src/cli.ts#L88), [:175](../src/cli.ts#L175) |
 | 2 | `--reset-owners takes --owners without a list: member IDs change in a new agent control chat.` | [cli.ts:98](../src/cli.ts#L98) |
 | 2 | `--owners: member ENTRY is not in the agent control chat. Start with --reset-owners --owners, or use the IDs of current members.` | [control.ts:251](../src/control.ts#L251) |
-| 1 | `Another server uses DATA (PID N).` | [files.ts:21](../src/files.ts#L21), [:23](../src/files.ts#L23) |
+| 1 | `Another server uses DATA (PID N). If no server runs, remove DATA/lock.` | [files.ts:21](../src/files.ts#L21), [:23](../src/files.ts#L23) |
 | 1 | `Port PORT is in use. Start with --port N.` | [serve.ts:205](../src/serve.ts#L205) |
 | 1 | `Agent "NAME" was never started. Start it with: npx -y @simplex-chat/mcp serve NAME` | [register.ts:32](../src/register.ts#L32) |
 | 1 | `Add this entry under LOCATION in ~/.claude.json: {"simplex-NAME": ENTRY}` | [register.ts:52-55](../src/register.ts#L52-L55) |
@@ -462,11 +469,12 @@ stdout ([log.ts:31-33](../src/log.ts#L31-L33)):
 | approvers gone, `--owners` absent | `No owners in the agent control chat.` | [control.ts:20](../src/control.ts#L20), [:157](../src/control.ts#L157), [:238](../src/control.ts#L238) |
 | control chat lost | `The agent lost its control chat. Restart the server with --reset-owners.` | [control.ts:298](../src/control.ts#L298) |
 | action created | `Action N: WHAT` with `, as itself` or `, incognito` for `connect` and ` (CHAT)` for `send` and `leave` | [actions.ts:140-141](../src/actions.ts#L140-L141), [:268-278](../src/actions.ts#L268-L278) |
-| perform ended, mode `requests` | `Action N approved by NAME: RESULT.` with RESULT `sent`, `deleted`, `left`, `connected`, `connection requested` or `failed: ERROR` | [actions.ts:238](../src/actions.ts#L238), [:284-291](../src/actions.ts#L284-L291) |
-| perform ended, mode `host` | `Action N: performed without approval (mode host).`, or `...; failed: ERROR.` | [actions.ts:286](../src/actions.ts#L286) |
+| counter write or card post failed | `Action N: failed: ERROR.` | [actions.ts:232](../src/actions.ts#L232) |
+| perform ended, not interrupted by the stop, mode `requests` | `Action N approved by NAME: RESULT.` with RESULT `sent`, `deleted`, `left`, `connected`, `connection requested` or `failed: ERROR` | [actions.ts:238](../src/actions.ts#L238), [:284-291](../src/actions.ts#L284-L291) |
+| perform ended, not interrupted by the stop, mode `host` | `Action N: performed without approval (mode host).`, or `...; failed: ERROR.` | [actions.ts:286](../src/actions.ts#L286) |
 | rejected | `Action N rejected by NAME.` | [actions.ts:188](../src/actions.ts#L188) |
 | expired | `Action N expired.` | [actions.ts:158](../src/actions.ts#L158) |
 | stop | `Cancelled K action.` or `Cancelled K actions.` when K > 0<br>`Stopped.` | [serve.ts:155](../src/serve.ts#L155), [:159](../src/serve.ts#L159) |
 | membership messages | see [2.3](#23-membership-messages) | |
 
-stderr: `CONTEXT: ERROR` from `logError` ([log.ts:35-37](../src/log.ts#L35-L37)), with CONTEXT one of `action N`, `action N card`, `control chat command`, `EVENT in the agent control chat`, `EVENT event`, `MCP`, `HTTP request`, `stop`, `simplex-mcp`. The library's download lines are written to stderr, and its event processing errors to stdout ([libs.ts:114](../../simplex-chat-nodejs/src/libs.ts#L114), [api.ts:187](../../simplex-chat-nodejs/src/api.ts#L187)).
+stderr: `CONTEXT: ERROR` from `logError` ([log.ts:35-37](../src/log.ts#L35-L37)), with CONTEXT one of `action N`, `action N card`, `control chat command`, `EVENT in the agent control chat`, `EVENT event`, `MCP`, `HTTP request`, `delivery wait`, `stop`, `simplex-mcp`. The library's download lines are written to stderr, and its event processing errors to stdout ([libs.ts:114](../../simplex-chat-nodejs/src/libs.ts#L114), [api.ts:187](../../simplex-chat-nodejs/src/api.ts#L187)).
