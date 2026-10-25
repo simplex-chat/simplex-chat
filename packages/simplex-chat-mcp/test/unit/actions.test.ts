@@ -148,6 +148,20 @@ describe("actions in mode requests", () => {
     await settled()
     expect(action).toMatchObject({state: "failed", error: "not a member"})
     expect(action.card).toBeUndefined()
+    expect(logLines.at(-1)).toBe("Action 1: failed: not a member.")
+  })
+
+  it("fails without a card or a perform when the counter can't be written, and logs it on one line", async () => {
+    const fake = fakeHooks()
+    fake.hooks.saveCounter = async () => {
+      throw new Error("disk\nfull")
+    }
+    const actions = actionsWith("host", fake)
+    const action = actions.create("k", sendFields())
+    await settled()
+    expect(action).toMatchObject({state: "failed", error: "disk\nfull"})
+    expect(fake.calls).toEqual([])
+    expect(logLines).toEqual(["Action 1: send to bot SimpleX Directory (@4)", "Action 1: failed: disk full."])
   })
 
   it("refuses new actions without approvers or control chat", () => {
@@ -219,6 +233,25 @@ describe("actions in mode requests", () => {
     fake.performs[0].resolve()
     await settled()
     expect(fake.calls.filter(call => call.startsWith("outcome"))).toHaveLength(3)
+  })
+
+  it("aborts the signal of the performs at the stop, and logs no line when an interrupted perform ends", async () => {
+    const fake = fakeHooks()
+    const signals: AbortSignal[] = []
+    const perform = fake.hooks.perform
+    fake.hooks.perform = (action, signal) => (signals.push(signal), perform(action, signal))
+    const actions = actionsWith("requests", fake)
+    const action = await pendingAction(actions)
+    actions.approve(action, "Alice")
+    expect(signals.map(({aborted}) => aborted)).toEqual([false])
+    await actions.stop()
+    expect(signals.map(({aborted}) => aborted)).toEqual([true])
+    const lines = [...logLines]
+    fake.performs[0].resolve()
+    await settled()
+    expect(action.state).toBe("done")
+    expect(logLines).toEqual(lines)
+    expect(fake.calls.filter(call => call.startsWith("outcome"))).toEqual(["outcome 1 performing interrupted"])
   })
 
   it("stops after the outcome edit of a perform that ended before the stop", async () => {
@@ -388,6 +421,18 @@ describe("actions in mode host", () => {
     expect(await stopping).toBe(1)
     expect(action).toMatchObject({state: "pending", interrupted: true})
     expect(fake.calls).toEqual(["outcome 1 pending interrupted"])
+  })
+
+  it("refuses a new action while 20 are being performed", async () => {
+    const fake = fakeHooks()
+    const actions = actionsWith("host", fake)
+    for (let i = 0; i < 20; i++) actions.create(`k${i}`, sendFields(`text ${i}`))
+    await settled()
+    expect(() => actions.create("k20", sendFields("one more"))).toThrow(new ToolError("20 actions are being performed; wait for their results."))
+    expect(actions.next).toBe(21)
+    fake.performs[0].resolve()
+    await settled()
+    expect(actions.create("k20", sendFields("one more")).n).toBe(21)
   })
 
   it("logs a failure", async () => {
