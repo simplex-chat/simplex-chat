@@ -205,7 +205,7 @@ Shared/Views/Chat/ChatItemView.swift     endButton to FramedItemView; event item
 Shared/Views/Chat/ChatItem/
   FramedItemView.swift                   backgrounds omitted; headers and quote at the text edge; terminalQuote with quoteBar; terminalBlock for media and cards
                                          ciMsgContentView(terminalTop:) plus terminalHeadingGap; metaPlacement; mediaLimit
-                                         quote: sender at terminalNameSize; quoteMinWidth, so the thumbnail is at the end of the item, as Kotlin
+                                         quote: sender at terminalNameSize; thumbnail 12pt after the quote text, or 12pt after the bar without text and sender
                                          overlayMeta for captionless media; terminal emoji paddings
   MsgContentView.swift                   messageText(textColor:); line boxes and lineSpacing, also for taps; meta line for live messages only
                                          reserveSpaceForMeta: metaCopyJoiner, three no-break spaces, ciMetaText(unbreakable: true) with file encryption and signature
@@ -230,6 +230,7 @@ theme writes                             chatLayout kept (agent profile plan, se
 classic                                  message text in messageTextColor (MsgContentView); quote text in onSurface; otherwise unchanged
 differences                              row tint: selected only; hover and press indication omitted
                                          swipe to reply moves the item
+                                         quote thumbnail after the quote text; Kotlin: at the item end
                                          gaps × 17/16 at the default 17pt body (user, 2026-10-25); line heights from the SF font
 ```
 

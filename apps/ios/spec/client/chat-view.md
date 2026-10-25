@@ -393,8 +393,7 @@ FramedItemView        background, quote background and header backgrounds omitte
                       headers: terminalHeaderTopGap above, terminalHeaderBottomGap below
                       quote: quoteBar(), text onSurface 70%, terminalBlockTopGap above, terminalBlockBottomGap below
                       quote sender: terminalNameSize (13.5 × 17/16 pt, Dynamic Type), no spacing above the text
-                      quote width: at least msgWidth (quoteMinWidth: less the text edge, bar and its spacing);
-                      the thumbnail at the end of the item, 12pt after the quote text at least
+                      quote thumbnail: 12pt after the quote text; a quote without text and sender: 12pt after the bar (quotedMsgOrGap)
                       quote thumbnails and media: message corner clip (msgRectMaxRadius × roundness)
                       link preview and chat link cards: quote colour, message corner clip (terminalBlock)
                       media width limit for captionless media only (mediaLimit)

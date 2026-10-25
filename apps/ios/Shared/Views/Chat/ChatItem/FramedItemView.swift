@@ -289,7 +289,7 @@ struct FramedItemView: View {
             switch (qi.content) {
             case let .image(_, image):
                 if let uiImage = imageFromBase64(image) {
-                    ciQuotedMsgView(qi)
+                    quotedMsgOrGap(qi)
                         .padding(.trailing, terminal ? 68 : 70).frame(minWidth: quoteMinWidth, alignment: .leading)
                     Image(uiImage: uiImage)
                         .resizable()
@@ -302,7 +302,7 @@ struct FramedItemView: View {
                 }
             case let .video(_, image, _):
                 if let uiImage = imageFromBase64(image) {
-                    ciQuotedMsgView(qi)
+                    quotedMsgOrGap(qi)
                     .padding(.trailing, terminal ? 68 : 70).frame(minWidth: quoteMinWidth, alignment: .leading)
                     Image(uiImage: uiImage)
                     .resizable()
@@ -340,6 +340,14 @@ struct FramedItemView: View {
             v.frame(maxWidth: mediaWidth, alignment: .leading)
         } else {
             v
+        }
+    }
+
+    @ViewBuilder private func quotedMsgOrGap(_ qi: CIQuote) -> some View {
+        if terminal && qi.text.isEmpty && qi.getSender(membership()) == nil {
+            Color.clear.frame(width: chatItemTextPadding - quoteBarSpacing, height: 0)
+        } else {
+            ciQuotedMsgView(qi)
         }
     }
 
@@ -470,7 +478,7 @@ struct FramedItemView: View {
     }
 
     private var quoteMinWidth: CGFloat {
-        terminal ? max(0, msgWidth - chatItemTextPadding - quoteBarWidth - quoteBarSpacing) : msgWidth
+        terminal ? 0 : msgWidth
     }
 
     private var captionlessMedia: Bool {
