@@ -2033,20 +2033,6 @@ fun BoxScope.ChatItemsList(
           val terminal = LocalTerminalLayout.current
           val selectionOffset by animateDpAsState(if (selectionVisible && (!sent || terminal)) 4.dp + 22.dp * fontSizeMultiplier else 0.dp)
           val swipeableOrSelectionModifier = (if (selectionVisible) Modifier else swipeableModifier).graphicsLayer { translationX = selectionOffset.toPx() }
-
-          @Composable
-          fun BubbleSenderNameAndRole() {
-            val chatItemTail = remember { appPreferences.chatItemTail.state }
-            val style = shapeStyle(cItem, chatItemTail.value, itemSeparation.largeGap, true)
-            val tailRendered = style is ShapeStyle.Bubble && style.tailVisible
-            SenderNameAndRole(
-              chatItemSender(chatInfo, cItem, range, reversedChatItems, showMemberInfo, showChatInfo),
-              Modifier.padding(bottom = 2.dp).graphicsLayer { translationX = selectionOffset.toPx() }.padding(start = (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + DEFAULT_PADDING_HALF),
-              Arrangement.SpaceBetween,
-              DEFAULT_PADDING_HALF + if (tailRendered) msgTailWidthDp else 0.dp
-            )
-          }
-
           if (terminal) {
             val rowInteractionSource = remember { TerminalRowInteractionSource() }
             val rowHovered = rowInteractionSource.collectIsHoveredAsState()
@@ -2085,6 +2071,46 @@ fun BoxScope.ChatItemsList(
                   horizontalAlignment = Alignment.Start
                 ) {
                   @Composable
+                  fun MemberNameAndRole(range: State<IntRange?>) {
+                    Row(Modifier.padding(bottom = 2.dp).graphicsLayer { translationX = selectionOffset.toPx() }, horizontalArrangement = Arrangement.SpaceBetween) {
+                      val member = cItem.chatDir.groupMember
+                      val rangeValue = range.value
+                      val (prevMember, memCount) =
+                        if (rangeValue != null) {
+                          chatModel.getPrevHiddenMember(member, rangeValue, reversedChatItems.value)
+                        } else {
+                          null to 1
+                        }
+                      // the name and the badge are one element, so SpaceBetween separates them from the role, not from each other
+                      NameWithBadge(
+                        memberNames(member, prevMember, memCount),
+                        if (prevMember == null && memCount == 1) member.nameBadge else null,
+                        Modifier
+                          .padding(start = (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + DEFAULT_PADDING_HALF)
+                          .weight(1f, false),
+                        fontSize = 13.5.sp,
+                        color = MaterialTheme.colors.secondary,
+                        overflow = TextOverflow.Ellipsis,
+                        maxLines = 1
+                      )
+                      if (memCount == 1 && member.memberRole > GroupMemberRole.Member) {
+                        val chatItemTail = remember { appPreferences.chatItemTail.state }
+                        val style = shapeStyle(cItem, chatItemTail.value, itemSeparation.largeGap, true)
+                        val tailRendered = style is ShapeStyle.Bubble && style.tailVisible
+
+                        Text(
+                          member.memberRole.text(isChannel = chatInfo.isChannel),
+                          Modifier.padding(start = DEFAULT_PADDING_HALF * 1.5f, end = DEFAULT_PADDING_HALF + if (tailRendered) msgTailWidthDp else 0.dp),
+                          fontSize = 13.5.sp,
+                          fontWeight = FontWeight.Medium,
+                          color = MaterialTheme.colors.secondary,
+                          maxLines = 1
+                        )
+                      }
+                    }
+                  }
+
+                  @Composable
                   fun Item() {
                     ChatItemBox(Modifier.layoutId(CHAT_BUBBLE_LAYOUT_ID)) {
                       androidx.compose.animation.AnimatedVisibility(selectionVisible, enter = fadeIn(), exit = fadeOut()) {
@@ -2103,7 +2129,7 @@ fun BoxScope.ChatItemsList(
                   }
                   if (cItem.content.showMemberName) {
                     DependentLayout(Modifier, CHAT_BUBBLE_LAYOUT_ID) {
-                      BubbleSenderNameAndRole()
+                      MemberNameAndRole(range)
                       Item()
                     }
                   } else {
@@ -2137,6 +2163,33 @@ fun BoxScope.ChatItemsList(
                   horizontalAlignment = Alignment.Start
                 ) {
                   @Composable
+                  fun ChannelNameAndRole() {
+                    Row(Modifier.padding(bottom = 2.dp).graphicsLayer { translationX = selectionOffset.toPx() }, horizontalArrangement = Arrangement.SpaceBetween) {
+                      Text(
+                        chatInfo.groupInfo.chatViewName,
+                        Modifier
+                          .padding(start = (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + DEFAULT_PADDING_HALF)
+                          .weight(1f, false),
+                        fontSize = 13.5.sp,
+                        color = MaterialTheme.colors.secondary,
+                        overflow = TextOverflow.Ellipsis,
+                        maxLines = 1
+                      )
+                      val chatItemTail = remember { appPreferences.chatItemTail.state }
+                      val style = shapeStyle(cItem, chatItemTail.value, itemSeparation.largeGap, true)
+                      val tailRendered = style is ShapeStyle.Bubble && style.tailVisible
+                      Text(
+                        generalGetString(MR.strings.channel_role_label),
+                        Modifier.padding(start = DEFAULT_PADDING_HALF * 1.5f, end = DEFAULT_PADDING_HALF + if (tailRendered) msgTailWidthDp else 0.dp),
+                        fontSize = 13.5.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colors.secondary,
+                        maxLines = 1
+                      )
+                    }
+                  }
+
+                  @Composable
                   fun Item() {
                     ChatItemBox(Modifier.layoutId(CHAT_BUBBLE_LAYOUT_ID)) {
                       androidx.compose.animation.AnimatedVisibility(selectionVisible, enter = fadeIn(), exit = fadeOut()) {
@@ -2159,7 +2212,7 @@ fun BoxScope.ChatItemsList(
                   }
                   if (cItem.content.showMemberName) {
                     DependentLayout(Modifier, CHAT_BUBBLE_LAYOUT_ID) {
-                      BubbleSenderNameAndRole()
+                      ChannelNameAndRole()
                       Item()
                     }
                   } else {
@@ -3488,7 +3541,7 @@ private fun markUnreadChatAsRead(chatId: String) {
 }
 
 @Composable
-private fun memberNames(member: GroupMember, prevMember: GroupMember?, memCount: Int): String {
+fun memberNames(member: GroupMember, prevMember: GroupMember?, memCount: Int): String {
   val name = member.displayName
   val prevName = prevMember?.displayName
   return if (prevName != null) {
@@ -3499,86 +3552,6 @@ private fun memberNames(member: GroupMember, prevMember: GroupMember?, memCount:
     }
   } else {
     name
-  }
-}
-
-class ChatItemSender(val name: String, val badge: LocalBadge?, val role: String?, val own: Boolean, val image: (@Composable () -> Unit)?)
-
-@Composable
-private fun chatItemSender(
-  chatInfo: ChatInfo,
-  cItem: ChatItem,
-  range: State<IntRange?>,
-  reversedChatItems: State<List<ChatItem>>,
-  showMemberInfo: (GroupInfo, GroupMember) -> Unit,
-  showChatInfo: () -> Unit
-): ChatItemSender {
-  val dir = cItem.chatDir
-  return when {
-    cItem.channelIsSender && chatInfo is ChatInfo.Group ->
-      ChatItemSender(chatInfo.chatViewName, null, stringResource(MR.strings.channel_role_label), dir.sent) {
-        Box(Modifier.clickable { showChatInfo() }) {
-          ProfileImage(MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier, chatInfo.groupInfo.image, chatInfo.groupInfo.chatIconName, backgroundColor = MaterialTheme.colors.background)
-        }
-      }
-    dir is CIDirection.DirectRcv ->
-      ChatItemSender(chatInfo.displayName, chatInfo.nameBadge, null, false, null)
-    dir is CIDirection.GroupRcv && chatInfo is ChatInfo.Group -> {
-      val member = dir.groupMember
-      val rangeValue = range.value
-      val (prevMember, memCount) = if (rangeValue != null) chatModel.getPrevHiddenMember(member, rangeValue, reversedChatItems.value) else null to 1
-      ChatItemSender(
-        memberNames(member, prevMember, memCount),
-        if (prevMember == null && memCount == 1) member.nameBadge else null,
-        if (memCount == 1) memberRole(member, chatInfo.isChannel) else null,
-        false
-      ) {
-        Box(Modifier.clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
-          MemberImage(member)
-        }
-      }
-    }
-    dir is CIDirection.GroupSnd && chatInfo is ChatInfo.Group -> {
-      val membership = chatInfo.groupInfo.membership
-      ChatItemSender(membership.displayName, membership.nameBadge, memberRole(membership, chatInfo.isChannel), true) {
-        MemberImage(membership)
-      }
-    }
-    chatInfo.incognito ->
-      ChatItemSender(stringResource(MR.strings.incognito), null, null, true, null)
-    else -> {
-      val user = chatModel.currentUser.value
-      ChatItemSender(user?.displayName ?: "", user?.profile?.localBadge, null, true, null)
-    }
-  }
-}
-
-private fun memberRole(member: GroupMember, isChannel: Boolean): String? =
-  if (member.memberRole > GroupMemberRole.Member) member.memberRole.text(isChannel) else null
-
-@Composable
-fun SenderNameAndRole(sender: ChatItemSender, modifier: Modifier, horizontalArrangement: Arrangement.Horizontal = Arrangement.Start, roleEndPadding: Dp = 0.dp) {
-  Row(modifier, horizontalArrangement = horizontalArrangement) {
-    // the name and the badge are one element, so SpaceBetween separates them from the role, not from each other
-    NameWithBadge(
-      sender.name,
-      sender.badge,
-      Modifier.weight(1f, false),
-      fontSize = 13.5.sp,
-      color = if (sender.own) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
-      overflow = TextOverflow.Ellipsis,
-      maxLines = 1
-    )
-    if (sender.role != null) {
-      Text(
-        sender.role,
-        Modifier.padding(start = DEFAULT_PADDING_HALF * 1.5f, end = roleEndPadding),
-        fontSize = 13.5.sp,
-        fontWeight = FontWeight.Medium,
-        color = MaterialTheme.colors.secondary,
-        maxLines = 1
-      )
-    }
   }
 }
 
@@ -3862,24 +3835,20 @@ private fun getItemSeparationLargeGap(chatItem: ChatItem, nextItem: ChatItem?): 
   return !sameMemberAndDirection || (abs(nextItem.meta.createdAt.epochSeconds - chatItem.meta.createdAt.epochSeconds) >= 60)
 }
 
-private fun shouldShowAvatar(current: ChatItem, older: ChatItem?): Boolean =
-  showsSender(current, older) { it.chatDir is CIDirection.GroupRcv || it.chatDir is CIDirection.ChannelRcv }
-
-fun showsSender(item: ChatItem, older: ChatItem?, hasSender: (ChatItem) -> Boolean): Boolean =
-  hasSender(item) && (older == null || !hasSender(older) || !sameSender(item, older))
-
-private fun sameSender(item: ChatItem, older: ChatItem): Boolean {
-  val d = item.chatDir
-  val o = older.chatDir
+private fun shouldShowAvatar(current: ChatItem, older: ChatItem?): Boolean {
+  val oldIsGroupRcv = older?.chatDir is CIDirection.GroupRcv || older?.chatDir is CIDirection.ChannelRcv
+  val sameMember = when {
+    older?.chatDir is CIDirection.GroupRcv && current.chatDir is CIDirection.GroupRcv ->
+      older.chatDir.groupMember.memberId == current.chatDir.groupMember.memberId
+    older?.chatDir is CIDirection.ChannelRcv && current.chatDir is CIDirection.ChannelRcv -> true
+    else -> false
+  }
   return when {
-    item.channelIsSender || older.channelIsSender -> item.channelIsSender && older.channelIsSender
-    d is CIDirection.GroupRcv -> o is CIDirection.GroupRcv && o.groupMember.memberId == d.groupMember.memberId
-    else -> d::class == o::class
+    current.chatDir is CIDirection.GroupRcv -> older == null || !oldIsGroupRcv || !sameMember
+    current.chatDir is CIDirection.ChannelRcv -> older == null || !oldIsGroupRcv || !sameMember
+    else -> false
   }
 }
-
-private val ChatItem.channelIsSender: Boolean get() =
-  chatDir is CIDirection.ChannelRcv || (chatDir is CIDirection.GroupSnd && meta.showGroupAsSender)
 
 
 @Preview/*(

@@ -119,21 +119,22 @@ Paths are relative to `apps/multiplatform/common/src/commonMain/kotlin/chat/simp
 views/chat/ChatView.kt
   ChatView (:269-:274)                   terminal = activeChatLayout == Terminal; LocalTerminalLayout provided
   ChatLayout composable (:1011)          chatViewBackgroundModifier(drawWallpaperImage = !LocalTerminalLayout.current)
-  ChatItemsList (:2410-:2416)            showAvatar = terminalItemShowsSender(item, older) when terminal
+  ChatItemsList (:2463-:2469)            showAvatar = terminalItemShowsSender(item, older) when terminal
                                          terminalGap = terminalRowGap(item, older, separated, largeGap, showAvatar)
-                                         separated = terminalRowsSeparated(older row) (:3847): the banner, or rowItemSeparation of the older row with a date
-                                         rowItemSeparation(row) (:3842): one rule for the date separator, drawn and in the gap (D32)
-  local ChatItemView (:2050)             terminal branch:
+                                         separated = terminalRowsSeparated(older row) (:3820): the banner, or rowItemSeparation of the older row with a date
+                                         rowItemSeparation(row) (:3815): one rule for the date separator, drawn and in the gap (D32)
+  local ChatItemView (:2036)             terminal branch:
                                            ChatItemBox(top, bottom) with the row tint and terminalRowIndication; top 0
                                            bottom TERMINAL_LEVEL_STEP above a date separator; 8dp below the newest row; otherwise 0
                                            SelectedListItem when selecting
                                            TerminalChatItemRow(chatItemSender or null, terminalGutter, terminalGap, terminalStartOffset and swipeableModifier, GoToItemButton)
                                            ChatItemViewShortHand with the row interaction source
-  shared with classic                    showsSender, sameSender (:3865-:3879); ChatItemSender, chatItemSender, SenderNameAndRole (:3505-:3583)
-                                         classic BubbleSenderNameAndRole (:2038)
+  memberNames                            public, used by chatItemSender
+  classic                                sender rows and shouldShowAvatar as on master
 views/chat/ChatItemsMerger.kt            MergedItem.revealed: true for Single, the flag of Grouped
-views/chat/item/TerminalItemView.kt      LocalTerminalLayout, gap constants, terminalTextStyle, terminal sender condition, terminalRowGap, terminalHeadingGap
-                                         row interaction, messageLastLine, messageLastBlock, inlineIcon, ItemWithMeta, TerminalChatItemRow
+views/chat/item/TerminalItemView.kt      LocalTerminalLayout, gap constants, terminalTextStyle, terminalItemShowsSender, sameSender, terminalRowGap, terminalHeadingGap
+                                         row interaction, messageLastLine, messageLastBlock, inlineIcon, ItemWithMeta
+                                         ChatItemSender, chatItemSender, SenderNameAndRole, TerminalChatItemRow
 views/chat/item/ChatItemView.kt          alignEnd = sent && !terminal; item click without indication; reactions at the text edge
                                          GoToItemButton and GO_TO_ITEM_BUTTON_SIZE at top level
                                          chatItemTailEnabled false; clipChatItem skipped

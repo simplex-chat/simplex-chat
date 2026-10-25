@@ -1,6 +1,7 @@
 package chat.simplex.common.views.chat.item
 
 import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.Interaction
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.LocalTextStyle
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProvideTextStyle
+import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -28,7 +30,9 @@ import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.VerticalAlignmentLine
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.TextUnit
@@ -36,8 +40,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.offset
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.platform.chatModel
+import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
+import chat.simplex.res.*
+import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.flow.Flow
 import kotlin.math.abs
 import kotlin.math.max
@@ -92,7 +100,20 @@ private fun lightness(color: Color): Float {
 }
 
 fun terminalItemShowsSender(item: ChatItem, older: ChatItem?): Boolean =
-  showsSender(item, older) { it.content.hasTerminalSender }
+  item.content.hasTerminalSender && (older == null || !older.content.hasTerminalSender || !sameSender(item, older))
+
+private fun sameSender(item: ChatItem, older: ChatItem): Boolean {
+  val d = item.chatDir
+  val o = older.chatDir
+  return when {
+    item.channelIsSender || older.channelIsSender -> item.channelIsSender && older.channelIsSender
+    d is CIDirection.GroupRcv -> o is CIDirection.GroupRcv && o.groupMember.memberId == d.groupMember.memberId
+    else -> d::class == o::class
+  }
+}
+
+private val ChatItem.channelIsSender: Boolean get() =
+  chatDir is CIDirection.ChannelRcv || (chatDir is CIDirection.GroupSnd && meta.showGroupAsSender)
 
 fun terminalRowGap(item: ChatItem, older: ChatItem?, separated: Boolean, largeGap: Boolean, hasSenderRow: Boolean): TextUnit =
   if (older != null && !separated && (largeGap || hasSenderRow || !item.content.hasTerminalSender || !older.content.hasTerminalSender || item.textAtItemTop && item.startsWithHeading)) TERMINAL_LEVEL_STEP else 0.sp
@@ -225,6 +246,85 @@ private fun TerminalMetaLayout(metaReserved: Boolean, contentWithMeta: @Composab
       } else {
         meta.placeRelative(width - meta.width, metaTop)
       }
+    }
+  }
+}
+
+class ChatItemSender(val name: String, val badge: LocalBadge?, val role: String?, val own: Boolean, val image: (@Composable () -> Unit)?)
+
+@Composable
+fun chatItemSender(
+  chatInfo: ChatInfo,
+  cItem: ChatItem,
+  range: State<IntRange?>,
+  reversedChatItems: State<List<ChatItem>>,
+  showMemberInfo: (GroupInfo, GroupMember) -> Unit,
+  showChatInfo: () -> Unit
+): ChatItemSender {
+  val dir = cItem.chatDir
+  return when {
+    cItem.channelIsSender && chatInfo is ChatInfo.Group ->
+      ChatItemSender(chatInfo.chatViewName, null, stringResource(MR.strings.channel_role_label), dir.sent) {
+        Box(Modifier.clickable { showChatInfo() }) {
+          ProfileImage(MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier, chatInfo.groupInfo.image, chatInfo.groupInfo.chatIconName, backgroundColor = MaterialTheme.colors.background)
+        }
+      }
+    dir is CIDirection.DirectRcv ->
+      ChatItemSender(chatInfo.displayName, chatInfo.nameBadge, null, false, null)
+    dir is CIDirection.GroupRcv && chatInfo is ChatInfo.Group -> {
+      val member = dir.groupMember
+      val rangeValue = range.value
+      val (prevMember, memCount) = if (rangeValue != null) chatModel.getPrevHiddenMember(member, rangeValue, reversedChatItems.value) else null to 1
+      ChatItemSender(
+        memberNames(member, prevMember, memCount),
+        if (prevMember == null && memCount == 1) member.nameBadge else null,
+        if (memCount == 1) memberRole(member, chatInfo.isChannel) else null,
+        false
+      ) {
+        Box(Modifier.clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
+          MemberImage(member)
+        }
+      }
+    }
+    dir is CIDirection.GroupSnd && chatInfo is ChatInfo.Group -> {
+      val membership = chatInfo.groupInfo.membership
+      ChatItemSender(membership.displayName, membership.nameBadge, memberRole(membership, chatInfo.isChannel), true) {
+        MemberImage(membership)
+      }
+    }
+    chatInfo.incognito ->
+      ChatItemSender(stringResource(MR.strings.incognito), null, null, true, null)
+    else -> {
+      val user = chatModel.currentUser.value
+      ChatItemSender(user?.displayName ?: "", user?.profile?.localBadge, null, true, null)
+    }
+  }
+}
+
+private fun memberRole(member: GroupMember, isChannel: Boolean): String? =
+  if (member.memberRole > GroupMemberRole.Member) member.memberRole.text(isChannel) else null
+
+@Composable
+private fun SenderNameAndRole(sender: ChatItemSender, modifier: Modifier) {
+  Row(modifier) {
+    NameWithBadge(
+      sender.name,
+      sender.badge,
+      Modifier.weight(1f, false),
+      fontSize = 13.5.sp,
+      color = if (sender.own) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
+      overflow = TextOverflow.Ellipsis,
+      maxLines = 1
+    )
+    if (sender.role != null) {
+      Text(
+        sender.role,
+        Modifier.padding(start = DEFAULT_PADDING_HALF * 1.5f),
+        fontSize = 13.5.sp,
+        fontWeight = FontWeight.Medium,
+        color = MaterialTheme.colors.secondary,
+        maxLines = 1
+      )
     }
   }
 }

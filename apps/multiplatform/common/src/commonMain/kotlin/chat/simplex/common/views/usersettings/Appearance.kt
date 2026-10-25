@@ -39,7 +39,7 @@ import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.ThemeManager.colorFromReadableHex
 import chat.simplex.common.ui.theme.ThemeManager.toReadableHex
-import chat.simplex.common.views.chat.ChatItemSender
+import chat.simplex.common.views.chat.item.ChatItemSender
 import chat.simplex.common.views.chat.item.LocalTerminalLayout
 import chat.simplex.common.views.chat.item.PreviewChatItemView
 import chat.simplex.common.views.chat.item.TERMINAL_SENDER_TOP_GAP
