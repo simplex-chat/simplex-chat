@@ -30,6 +30,7 @@ logError = logAt "ERROR" callStack
 logAt :: MonadIO m => Text -> CallStack -> Text -> m ()
 logAt tag cs msg = liftIO $ do
   ts <- formatTime defaultTimeLocale "%Y-%m-%d %H:%M:%S %z" <$> getZonedTime
+  -- one write per line, putStrLn family is not atomic
   B.hPut stderr $ encodeUtf8 $ "[" <> tag <> " " <> T.pack ts <> " " <> loc <> "] " <> msg <> "\n"
   where
     loc = case getCallStack cs of
