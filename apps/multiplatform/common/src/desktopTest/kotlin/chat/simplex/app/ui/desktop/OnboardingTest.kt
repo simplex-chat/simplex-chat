@@ -127,7 +127,7 @@ class OnboardingTest : UiTest() {
     check(!seesText("Encrypted database")) { "the passphrase prompt is shown after a restart" }
   }
 
-  @KnownAppIssue("15.5 item 3", "database closed", intermittent = true)
+  @KnownAppIssue("15.5 item 3", "failed to list users", intermittent = true)
   @Test fun onboardingPassphrasePersistsAcrossRestart() = uiTest {
     app(null)
     val o = onboarding()
@@ -251,7 +251,9 @@ class OnboardingTest : UiTest() {
     val o = onboarding()
     o.toConditions("alice")
     click(Ui.Onboarding.ConditionsLink)
-    poll(what = "Conditions of use") { seesText("Conditions of use") && exists(Ui.Onboarding.ConditionsAccept) }
+    poll(what = "Conditions of use with the conditions text") {
+      seesText("Conditions of use") && seesText("Privacy Policy and Conditions of Use", substring = true) && exists(Ui.Onboarding.ConditionsAccept)
+    }
     click(Ui.Onboarding.ConditionsAccept)
     o.waitForChatList()
     poll(what = "the connect onboarding view") { seesText("Talk to someone") }

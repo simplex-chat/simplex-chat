@@ -74,16 +74,17 @@ class ChatListFiltersListsTest : UiTest() {
   }
 
   @Test fun presetFilterContacts() = uiTest {
-    val alice = app("alice"); val bob = cli("bob")
+    val alice = app("alice"); val bob = cli("bob"); val biz = cli("biz")
     connect(bob)
     hostGroup(bob, "team", "alice")
+    businessChat(biz)
     keepOneTimeLink(alice)
     val pending = Ui.ChatList.Row(chatModel.chats.value.first { it.chatInfo is ChatInfo.ContactConnection }.id)
-    alice.chatList.row("bob").row("team").row("Private notes")
+    alice.chatList.row("bob").row("team").row("biz").row("Private notes")
     waitFor(pending)
     presetFilter(PresetTagKind.CONTACTS, "Contacts")
     poll(what = "only bob and the pending connection listed") {
-      alice.chatList.shown("bob") && exists(pending) && !alice.chatList.shown("team") && !alice.chatList.shown("Private notes")
+      alice.chatList.shown("bob") && exists(pending) && !alice.chatList.shown("team") && !alice.chatList.shown("biz") && !alice.chatList.shown("Private notes")
     }
   }
 
@@ -125,6 +126,7 @@ class ChatListFiltersListsTest : UiTest() {
     ownGroup(alice, "team", bob, cath)
     bob.eventually("#team: new member cath is connected", CONNECT_TIMEOUT_MS)
     cath.eventually("#team: member bob is connected", CONNECT_TIMEOUT_MS)
+    hostGroup(bob, "club", "alice")
     cath sends "#team bad joke"
     bob.eventuallyMessage("#team cath> bad joke", CONNECT_TIMEOUT_MS)
     bob sends "/report #team content bad joke"
@@ -133,10 +135,10 @@ class ChatListFiltersListsTest : UiTest() {
       chatModel.chats.value.any { it.chatInfo.chatViewName == "team" && it.chatStats.reportsCount > 0 }
     }
     backToChatList()
-    alice.chatList.row("bob").row("cath").row("team").row("Private notes")
+    alice.chatList.row("bob").row("cath").row("team").row("club").row("Private notes")
     presetFilter(PresetTagKind.GROUP_REPORTS, "Reports")
     poll(what = "only team listed") {
-      alice.chatList.shown("team") && !alice.chatList.shown("bob") && !alice.chatList.shown("cath") && !alice.chatList.shown("Private notes")
+      alice.chatList.shown("team") && !alice.chatList.shown("club") && !alice.chatList.shown("bob") && !alice.chatList.shown("cath") && !alice.chatList.shown("Private notes")
     }
   }
 

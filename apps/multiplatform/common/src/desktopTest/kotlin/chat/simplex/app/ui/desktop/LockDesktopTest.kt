@@ -152,9 +152,16 @@ class LockDesktopTest : UiTest() {
     val lock = yourPrivacy(alice).lock()
     lock.enable(CODE)
     lock.close()
-    hideAndReturn()
+    hideAndReturn(hiddenMs = 29_000)
     settle()
-    check(AppLock.userAuthorized.value == true && !exists(Ui.Passcode.Submit)) { "the app locked on return before 30 seconds passed" }
+    check(AppLock.userAuthorized.value == true && !exists(Ui.Passcode.Submit)) { "the app locked on return after 29 seconds hidden, before the 30 second delay" }
+    val passcode = PasscodeScreen(this)
+    hideAndReturn(hiddenMs = 31_000)
+    passcode.await(ENTER_PASSCODE)
+    check(AppLock.userAuthorized.value == false) { "the app did not lock after 31 seconds hidden" }
+    passcode.enter(CODE)
+    passcode.submit()
+    awaitUnlocked(passcode)
     val again = yourPrivacy(alice).lock()
     click(Ui.Lock.Delay)
     for ((delay, name) in DELAYS) {
@@ -164,7 +171,6 @@ class LockDesktopTest : UiTest() {
     poll(what = "Immediately shown and stored") { textOf(Ui.Lock.Delay) == "Immediately" && storedSetting(LOCK_DELAY) == "0" }
     again.close()
     hideAndReturn()
-    val passcode = PasscodeScreen(this)
     passcode.await(ENTER_PASSCODE)
     check(AppLock.userAuthorized.value == false) { "the passcode screen shows but the app is authorized" }
     passcode.enter(CODE)
@@ -443,9 +449,10 @@ class LockDesktopTest : UiTest() {
   private fun UiScope.awaitUnlocked(passcode: PasscodeScreen) =
     poll(what = "the passcode screen to close and the app to unlock") { passcode.gone() && !exists(Ui.Lock.Unlock) && AppLock.userAuthorized.value == true }
 
-  private fun UiScope.hideAndReturn() {
+  private fun UiScope.hideAndReturn(hiddenMs: Long = 0) {
     ui.runOnUiThread {
       AppLock.appWasHidden()
+      AppLock.enteredBackground.value = AppLock.enteredBackground.value?.minus(hiddenMs)
       AppLock.recheckAuthState()
     }
     ui.waitForIdle()

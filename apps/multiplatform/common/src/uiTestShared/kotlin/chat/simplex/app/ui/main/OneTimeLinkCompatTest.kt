@@ -3,6 +3,7 @@ package chat.simplex.app.ui.main
 import chat.simplex.app.ui.harness.CONNECT_TIMEOUT_MS
 import chat.simplex.app.ui.harness.UiTest
 import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.Ui
 import org.junit.Test
 
@@ -12,7 +13,10 @@ class OneTimeLinkCompatTest : UiTest() {
     val link = alice.newChat().createOneTimeLink()
     bob sends "/c $link"; bob expects "confirmation sent!"
     bob.eventually("alice: contact is connected", CONNECT_TIMEOUT_MS)
-    alice.chatList.row("bob")
+    poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "the 1-time link screen replaced by bob's open chat") {
+      val bobId = chatModel.chats.value.firstOrNull { it.chatInfo.chatViewName == "bob" }?.id
+      bobId != null && chatModel.chatId.value == bobId && !exists(Ui.Link.Text) && exists(Ui.Chat.Message)
+    }
   }
 
   @Test fun oneTimeLinkCliConnectsViaFullLink() = uiTest {

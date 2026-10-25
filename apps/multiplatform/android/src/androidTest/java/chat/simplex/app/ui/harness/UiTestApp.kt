@@ -13,6 +13,7 @@ import chat.simplex.common.views.database.deleteChatDatabaseFilesAndState
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.views.onboarding.setLastVersionDefault
 import chat.simplex.common.platform.agentDatabaseFileName
+import chat.simplex.common.platform.androidAppContext
 import chat.simplex.common.platform.chatDatabaseFileName
 import chat.simplex.common.platform.dataDir
 import chat.simplex.common.views.helpers.DatabaseUtils
@@ -82,6 +83,9 @@ object UiTestApp {
       waitUntil(10_000, "the notification service to stop") { !chat.simplex.app.SimplexService.isServiceStarted }
     }
     Timing.phase("reset.ui") { CommonUiState.clear(::onMain) }
+    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) Timing.phase("reset.clipboard") {
+      onMain { (androidAppContext.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager).clearPrimaryClip() }
+    }
     if (user != null) TestPrefs.preset()
     DbTemplate.install()
     Timing.phase("reset.init") { runBlocking { initChatController() } }

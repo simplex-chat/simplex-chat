@@ -12,6 +12,7 @@ import chat.simplex.app.ui.harness.joinGroupFromList
 import chat.simplex.app.ui.harness.keepOneTimeLink
 import chat.simplex.app.ui.harness.openRowMenu
 import chat.simplex.app.ui.harness.planConfirm
+import chat.simplex.app.ui.harness.planProfileName
 import chat.simplex.app.ui.harness.quiesce
 import chat.simplex.common.model.ChatInfo
 import chat.simplex.common.model.MsgFilter
@@ -137,7 +138,7 @@ class ChatListMenusPendingTest : UiTest() {
     alice.chatList.row("Private notes")
     enterLinkInSearch(link)
     poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "the `Open new chat` alert for bob") {
-      exists(planConfirm) && "Open new chat" in textsOf(planConfirm) && seesText("bob")
+      exists(planConfirm) && "Open new chat" in textsOf(planConfirm) && textOf(planProfileName) == "bob"
     }
     click(planConfirm)
     poll(what = "the prepared contact bob without a connection") {

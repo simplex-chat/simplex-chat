@@ -33,7 +33,7 @@ class GroupProfileTest : UiTest() {
     bob.expectsMessage("alice updated group #team: (signed)", CONNECT_TIMEOUT_MS)
     bob expects "changed to #my_team"
     poll(what = "team renamed to `my_team` in group info") {
-      chatModel.chats.value.any { it.chatInfo.chatViewName == "my_team" } && seesText("my_team")
+      chatModel.chats.value.any { it.chatInfo.chatViewName == "my_team" } && textsOf(Ui.GroupInfo.Content).let { t -> "my_team" in t && "team" !in t }
     }
     p = editGroupProfile()
     poll(what = "the profile editor showing `my_team`") { p.name() == "my_team" && p.shortDescr().isNullOrEmpty() }
@@ -41,7 +41,7 @@ class GroupProfileTest : UiTest() {
     p.save()
     bob.expectsMessage("alice updated group #my_team: (signed)", CONNECT_TIMEOUT_MS)
     bob expects "description changed to: Our team"
-    poll(what = "`Our team` shown in group info and saved") { seesText("Our team", substring = true) && groupInfoOf("my_team").groupProfile.shortDescr == "Our team" }
+    poll(what = "`Our team` shown in group info and saved") { textsOf(Ui.GroupInfo.Content).any { "Our team" in it } && groupInfoOf("my_team").groupProfile.shortDescr == "Our team" }
   }
 
   @Test fun welcomeMessage_addNotifiesMembers() = uiTest {

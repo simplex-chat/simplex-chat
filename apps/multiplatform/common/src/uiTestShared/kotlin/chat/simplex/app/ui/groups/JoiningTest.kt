@@ -21,6 +21,7 @@ import chat.simplex.app.ui.harness.openChatById
 import chat.simplex.app.ui.harness.openPreparedGroupFromSearch
 import chat.simplex.app.ui.harness.pendingConnectionIds
 import chat.simplex.app.ui.harness.planConfirm
+import chat.simplex.app.ui.harness.planProfileName
 import chat.simplex.app.ui.harness.planOption
 import chat.simplex.app.ui.harness.switchAwayFromChat
 import chat.simplex.common.model.CIDirection
@@ -58,7 +59,7 @@ class JoiningTest : UiTest() {
     check(chatModel.chatId.value != teamId) { "team is still the open chat before the link is pasted again" }
     enterLinkInNewChatSearch(alice, link)
     poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "the known-group alert for team saying `You are a member` with `Open group`") {
-      exists(planConfirm) && "Open group" in textsOf(planConfirm) && seesText("team") && seesText("You are a member")
+      exists(planConfirm) && "Open group" in textsOf(planConfirm) && textOf(planProfileName) == "team" && seesText("You are a member")
     }
     click(planConfirm)
     poll(what = "the New chat sheet closed with team's chat open and still one group named team") {

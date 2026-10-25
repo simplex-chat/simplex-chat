@@ -5,6 +5,7 @@ import androidx.test.espresso.intent.Intents
 import chat.simplex.app.ui.harness.UiTest
 import chat.simplex.app.ui.harness.chatRunningInCore
 import chat.simplex.app.ui.harness.described
+import chat.simplex.app.ui.harness.hideUserViaApi
 import chat.simplex.app.ui.harness.onboarding
 import chat.simplex.app.ui.harness.openProfileMenu
 import chat.simplex.app.ui.harness.userIdOf
@@ -60,9 +61,14 @@ class SettingsAndroidTest : UiTest() {
   @Test fun profilesAndroid_deleteLastVisibleReturnsToOnboarding() = uiTest {
     val alice = app("alice")
     val aliceId = userIdOf("alice")
+    alice.userPicker().profiles().apply { add("secret"); close() }
+    hideUserViaApi(userIdOf("secret"), SECRET_PASSWORD)
+    alice.userPicker().switchTo("alice")
     alice.userPicker().profiles()
     waitFor(Ui.Profiles.User(aliceId))
-    check(chatModel.users.size == 1 && chatRunningInCore()) { "users before the deletion: ${chatModel.users.map { it.user.displayName }}" }
+    check(chatModel.users.size == 2 && chatModel.users.single { it.user.hidden }.user.displayName == "secret" && chatRunningInCore()) {
+      "users before the deletion: ${chatModel.users.map { it.user.displayName to it.user.hidden }}"
+    }
     openProfileMenu(aliceId, "delete")
     click(Ui.Profiles.UserMenu(aliceId, "delete"))
     val withConnections = Ui.Alert.Option(Ui.AlertSource.Shared, "deleteWithConnections")
@@ -71,8 +77,8 @@ class SettingsAndroidTest : UiTest() {
     poll(what = "the welcome screen with Get started in place of the profiles list") {
       exists(Ui.Onboarding.GetStarted) && onboarding().stage == OnboardingStage.Step1_SimpleXInfo && !ModalManager.start.hasModalsOpen() && !exists(Ui.Profiles.Add)
     }
-    check(chatModel.currentUser.value == null && chatModel.users.isEmpty() && !chatRunningInCore()) {
-      "after deleting the last profile: current ${chatModel.currentUser.value?.displayName}, users ${chatModel.users.size}, chat running ${chatRunningInCore()}"
+    check(chatModel.currentUser.value == null && chatModel.users.map { it.user.displayName } == listOf("secret") && !chatRunningInCore()) {
+      "after deleting the last visible profile: current ${chatModel.currentUser.value?.displayName}, users ${chatModel.users.map { it.user.displayName }}, chat running ${chatRunningInCore()}"
     }
   }
 
@@ -90,3 +96,5 @@ class SettingsAndroidTest : UiTest() {
     val ADVANCED_ORDER = listOf("Network & servers", "Notifications", "Audio & video calls", "Shutdown")
   }
 }
+
+private const val SECRET_PASSWORD = "secret-pass"

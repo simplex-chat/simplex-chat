@@ -13,6 +13,7 @@ import chat.simplex.app.ui.harness.enterLinkInSearch
 import chat.simplex.app.ui.harness.openArchivedContact
 import chat.simplex.app.ui.harness.openNewChatFromSearch
 import chat.simplex.app.ui.harness.planConfirm
+import chat.simplex.app.ui.harness.planProfileName
 import chat.simplex.app.ui.harness.planDismiss
 import chat.simplex.app.ui.harness.presetFilter
 import chat.simplex.common.model.ChatController.appPrefs
@@ -193,7 +194,7 @@ class DeleteContactTest : UiTest() {
     backToChatList()
     enterLinkInSearch(address)
     poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "the plan for bob's address offering `Open new chat` again, as the contact is gone from the core") {
-      exists(planConfirm) && "Open new chat" in textsOf(planConfirm) && seesText("bob")
+      exists(planConfirm) && "Open new chat" in textsOf(planConfirm) && textOf(planProfileName) == "bob"
     }
     click(planDismiss)
   }

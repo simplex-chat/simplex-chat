@@ -25,6 +25,12 @@ class AppearanceAndroidTest : UiTest() {
     }
     click(Ui.Appearance.ChatBottomBar)
     poll(what = "Reachable chat toolbar off") { storedSetting(CHAT_BOTTOM) == "false" && toggleState(Ui.Appearance.ChatBottomBar) == ToggleableState.Off }
+    closeAppearance()
+    poll(what = "the chat list search field and toolbar still at the bottom with Reachable chat toolbar off") { lowerHalf(Ui.ChatList.Search) == true && lowerHalf(CHAT_LIST_BAR) == true }
+    alice.chatList.open(NOTES)
+    poll(what = "the notes toolbar at the top of the screen with Reachable chat toolbar off") { lowerHalf(CHAT_TITLE) == false }
+    backToChatList()
+    alice.appearance()
     click(Ui.Appearance.OneHandUI)
     poll(what = "Reachable app toolbars off, hiding Reachable chat toolbar") {
       storedSetting(ONE_HAND) == "false" && toggleState(Ui.Appearance.OneHandUI) == ToggleableState.Off && !exists(Ui.Appearance.ChatBottomBar)
@@ -37,6 +43,11 @@ class AppearanceAndroidTest : UiTest() {
     poll(what = "Reachable app toolbars on, showing Reachable chat toolbar turned on again") {
       storedSetting(ONE_HAND) == "true" && exists(Ui.Appearance.ChatBottomBar) && toggleState(Ui.Appearance.ChatBottomBar) == ToggleableState.On && storedSetting(CHAT_BOTTOM) == "true"
     }
+    click(Ui.Appearance.OneHandUI)
+    poll(what = "Reachable app toolbars off with Reachable chat toolbar still stored on") { storedSetting(ONE_HAND) == "false" && storedSetting(CHAT_BOTTOM) == "true" }
+    closeAppearance()
+    alice.chatList.open(NOTES)
+    poll(what = "the notes toolbar at the top of the screen with Reachable app toolbars off") { lowerHalf(CHAT_TITLE) == false }
   }
 
   private fun UiScope.lowerHalf(key: UiKey): Boolean? =

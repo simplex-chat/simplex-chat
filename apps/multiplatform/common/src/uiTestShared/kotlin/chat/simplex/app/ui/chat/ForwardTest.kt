@@ -25,6 +25,8 @@ import chat.simplex.common.ui.Ui
 import org.junit.Assert.assertFalse
 import org.junit.Test
 
+private const val FILLERS = 40
+
 class ForwardTest : UiTest() {
   @Test fun forward_contactToContact_peerSeesForwarded() = uiTest {
     val alice = app("alice"); val bob = cli("bob"); val cath = cli("cath")
@@ -74,8 +76,18 @@ class ForwardTest : UiTest() {
     poll(what = "the `forwarded` header without the source name") {
       chatModel.chatId.value == bobId && textsOf(Ui.Chat.Item(fwd)).let { t -> "forwarded" in t && t.none { "forwarded from" in it || it == "team" } }
     }
+    for (i in 1..FILLERS) cath sends "#team f$i"
+    backToChatList()
+    awaitRowText(alice, "team", "cath: f$FILLERS")
+    val newest = alice.chatList.chat("team").chatItems.last().id
+    alice.chatList.rowMenu("team", "markRead")
+    poll(what = "team marked read") { alice.chatList.chat("team").chatStats.unreadCount == 0 }
+    alice.chatList.open("bob")
+    poll(what = "the forwarded `hello` in bob's chat") { chatModel.chatId.value == bobId && exists(Ui.Chat.Item(fwd)) }
     click(Ui.Chat.Item(fwd).part("goTo"))
-    poll(what = "team's chat opened at cath's `hello`") { chatModel.chatId.value == teamId && exists(Ui.Chat.Item(original)) }
+    poll(what = "team's chat opened at cath's `hello`, above `f$FILLERS` with the scroll-down button") {
+      chatModel.chatId.value == teamId && exists(Ui.Chat.Item(original)) && !exists(Ui.Chat.Item(newest)) && exists(Ui.Chat.ScrollToBottom)
+    }
     backToChatList()
     val notesId = alice.chatList.chatId("Private notes")
     val notes = alice.chatList.open("Private notes")

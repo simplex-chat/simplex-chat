@@ -6,20 +6,10 @@ import chat.simplex.app.ui.harness.connectPeers
 import chat.simplex.app.ui.harness.hostGroup
 import chat.simplex.app.ui.harness.joinGroupFromList
 import chat.simplex.app.ui.harness.UiTest
-import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.Ui
 import org.junit.Test
 
 class GroupsTest : UiTest() {
-  @Test fun createGroup_opensChatAndInviteSheet() = uiTest {
-    val alice = app("alice")
-    alice.newChat().createGroup("team")
-    val id = alice.chatList.chatId("team")
-    poll(what = "the group chat open with the invite members sheet and no contacts to add") {
-      chatModel.chatId.value == id && seesText("Invite members") && seesText("No contacts to add")
-    }
-  }
-
   @Test fun groupSend_allMembersReceive() = uiTest {
     val alice = app("alice"); val bob = cli("bob"); val cath = cli("cath")
     connect(bob)

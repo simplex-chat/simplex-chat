@@ -146,7 +146,13 @@ class MemberAdmissionTest : UiTest() {
     poll(what = "`Chat with admins` opened with the request to wait for review") {
       seesText("Chat with admins") && sc.items().any { it.content.text == "Please wait for group moderators to review your request to join the group." }
     }
-    if (appPlatform.isDesktop) poll(what = "`reviewed by admins` in the group's compose field") { seesText("reviewed by admins") }
+    if (appPlatform.isDesktop) {
+      poll(what = "`reviewed by admins` shown for team") { seesText("reviewed by admins") }
+      click(Ui.Chat.Message)
+      poll(what = "the `You can't send messages!` alert asking to contact the group admin") { seesText("You can't send messages!") && seesText("Please contact group admin.") }
+      click(Ui.Alert.Confirm(Ui.AlertSource.Shared))
+      poll(what = "the alert to close") { !seesText("You can't send messages!") }
+    }
     sc.send("hello admins")
     bob.expectsMessage("#team (support: alice) alice> hello admins", CONNECT_TIMEOUT_MS)
     bob sends "#team while pending"

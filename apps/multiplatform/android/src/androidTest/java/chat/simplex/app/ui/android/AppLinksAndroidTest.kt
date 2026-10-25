@@ -9,6 +9,7 @@ import chat.simplex.app.ui.harness.UiScope
 import chat.simplex.app.ui.harness.UiTest
 import chat.simplex.app.ui.harness.createOneTimeLink
 import chat.simplex.app.ui.harness.planConfirm
+import chat.simplex.app.ui.harness.planProfileName
 import chat.simplex.common.platform.androidAppContext
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.Ui
@@ -69,7 +70,7 @@ class AppLinksAndroidTest : UiTest() {
     bob.createOneTimeLink().also { bob.eventually("and ask them to connect: /c <invitation_link_above>") }
 
   private fun UiScope.awaitPlanForBob() =
-    poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "the plan alert for bob with `Open new chat`") { exists(planConfirm) && "Open new chat" in textsOf(planConfirm) && seesText("bob") }
+    poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "the plan alert for bob with `Open new chat`") { exists(planConfirm) && "Open new chat" in textsOf(planConfirm) && textOf(planProfileName) == "bob" }
 
   private fun preparedBobOpen(): Boolean =
     chatModel.chats.value.firstOrNull { it.chatInfo.chatViewName == "bob" && it.chatInfo.nextConnectPrepared }?.id?.let { it == chatModel.chatId.value } == true

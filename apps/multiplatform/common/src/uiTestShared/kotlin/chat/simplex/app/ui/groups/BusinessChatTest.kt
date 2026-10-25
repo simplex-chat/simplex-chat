@@ -2,6 +2,7 @@ package chat.simplex.app.ui.groups
 
 import chat.simplex.app.ui.harness.CONNECT_TIMEOUT_MS
 import chat.simplex.app.ui.harness.UiTest
+import chat.simplex.app.ui.harness.closeMemberInfo
 import chat.simplex.app.ui.harness.businessChat
 import chat.simplex.app.ui.harness.businessTypeOf
 import chat.simplex.app.ui.harness.connect
@@ -15,6 +16,7 @@ import chat.simplex.app.ui.harness.inviteMembers
 import chat.simplex.app.ui.harness.leaveBusinessChatFromInfo
 import chat.simplex.app.ui.harness.openNewChatFromSearch
 import chat.simplex.app.ui.harness.planConfirm
+import chat.simplex.app.ui.harness.planProfileName
 import chat.simplex.app.ui.harness.quiesce
 import chat.simplex.app.ui.harness.switchAwayFromChat
 import chat.simplex.common.model.BusinessChatType
@@ -95,7 +97,7 @@ class BusinessChatTest : UiTest() {
     check(chatModel.chatId.value != bizId) { "the business chat is still open before the address is pasted again" }
     enterLinkInNewChatSearch(alice, address)
     poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "the known business alert for bob with `Open chat` and no member role") {
-      exists(planConfirm) && "Open chat" in textsOf(planConfirm) && seesText("bob") && !seesText("You are a member")
+      exists(planConfirm) && "Open chat" in textsOf(planConfirm) && textOf(planProfileName) == "bob" && !seesText("You are a member")
     }
     click(planConfirm)
     poll(what = "the New chat sheet closed with the business chat open and still one chat named bob") {
@@ -152,7 +154,10 @@ class BusinessChatTest : UiTest() {
     }
     click(Ui.Alert.Confirm(Ui.AlertSource.Shared))
     bob.eventuallyMatching(Regex("#alice: \\S+ changed your role from member to admin \\(signed\\)"), CONNECT_TIMEOUT_MS)
-    poll(what = "bob's role picker at `admin`") { !seesText("Change role?") && "admin" in textsOf(Ui.MemberInfo.Role) }
+    poll(what = "the `Change role?` alert closed") { !seesText("Change role?") }
+    closeMemberInfo("bob")
+    poll(what = "bob listed as `admin` in the business chat's members") { "admin" in info.memberTexts("bob") }
+    info.member("bob")
     click(Ui.MemberInfo.Remove)
     poll(what = "the `Remove member?` alert saying bob will be removed from the chat") {
       seesText("Remove member?") && seesText("Member will be removed from chat - this cannot be undone!") &&

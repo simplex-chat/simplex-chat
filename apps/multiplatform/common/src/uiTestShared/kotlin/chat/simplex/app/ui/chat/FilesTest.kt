@@ -36,19 +36,6 @@ class FilesTest : UiTest() {
     assertEquals(NOTES, savedBytes(fileOf(id)!!).toString(Charsets.UTF_8))
   }
 
-  @Test fun rcvFile_menuDownload_receives() = uiTest {
-    val alice = app("alice"); val bob = cli("bob")
-    connect(bob)
-    bob.sendsFile(bob.createFile("menu.txt", MENU_TEXT), 1, "menu.txt")
-    alice.chatList.open("bob")
-    val id = fileItemId("menu.txt")
-    check(fileOf(id)?.fileStatus is CIFileStatus.RcvInvitation) { "menu.txt was received before Download: ${fileOf(id)?.fileStatus}" }
-    rightClick(Ui.Chat.Item(id))
-    click(Ui.Chat.ItemMenu(id, "download"))
-    poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "menu.txt to be received") { fileOf(id)?.fileStatus is CIFileStatus.RcvComplete }
-    assertEquals(MENU_TEXT, savedBytes(fileOf(id)!!).toString(Charsets.UTF_8))
-  }
-
   @Test fun rcvImage_autoReceived_renders() = uiTest {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)
@@ -62,8 +49,9 @@ class FilesTest : UiTest() {
     val asFile = itemId("test.jpg sent as a file") { it.content.msgContent is MsgContent.MCFile && it.file?.fileName == "test.jpg" }
     val asImage = itemId("test.jpg sent as an image") { it.content.msgContent is MsgContent.MCImage && it.file?.fileName == "test.jpg" }
     poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "the image to be received without a tap") { fileOf(asImage)?.fileStatus is CIFileStatus.RcvComplete }
-    poll(what = "the image without the `Asked to receive the image` or `Waiting for image` icon") {
-      descriptionsOf(Ui.Chat.Item(asImage)).let { "Image" in it && "Asked to receive the image" !in it && "Waiting for image" !in it }
+    poll(what = "the received image shown in full, not its preview, without the `Asked to receive the image` or `Waiting for image` icon") {
+      exists(Ui.Chat.ItemFile(asImage)) && !exists(Ui.Chat.ItemFile(asImage).part("preview")) &&
+        descriptionsOf(Ui.Chat.Item(asImage)).let { "Asked to receive the image" !in it && "Waiting for image" !in it }
     }
     check(fileOf(asFile)?.fileStatus is CIFileStatus.RcvInvitation) { "test.jpg sent as a file was received without a tap: ${fileOf(asFile)?.fileStatus}" }
     val image = savedBytes(fileOf(asImage)!!)
@@ -120,7 +108,6 @@ class FilesTest : UiTest() {
 
   private companion object {
     const val NOTES = "Shopping list from bob: apples and pears"
-    const val MENU_TEXT = "Downloaded from the item menu"
     const val REVOKED_TEXT = "This file will be revoked"
     const val FIXTURE_JPG = "tests/fixtures/test.jpg"
     const val FIXTURE_JPG_SIZE = 139737

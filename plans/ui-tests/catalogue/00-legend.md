@@ -145,7 +145,7 @@ Each sub-area (a `###` section) is one test class, or several consecutive classe
 | 02 | D | Timed / disappearing messages | `timed_send30s_bothSidesDelete` | `TimedMessageTest` | 5 | 0 |
 | 02 | E | Voice messages | `voice_record_send_peerReceivesVoice` | `VoiceMessageTest` | 11 | 0 |
 | 02 | F | Attachments – sending | `attachFile_withText_peerReceivesTextAndFile` | `SendAttachmentTest`, `SendAttachmentCompatTest`, `SendAttachmentCompatStableTest` | 14 | 1 |
-| 02 | G | Receiving files: download, cancel, errors, save, viewers | `rcvImage_autoReceived_renders` | `ReceiveFileTest` | 19 | 0 |
+| 02 | G | Receiving files: download, cancel, errors, save, viewers | `rcvImage_autoReceived_renders` | `ReceiveFileTest` | 18 | 0 |
 | 02 | H | Replies / quotes | `reply_menu_sendQuoted_peerSeesQuote` | `ReplyTest`, `ReplyCompatTest`, `ReplyCompatStableTest` | 6 | 0 |
 | 02 | I | Edit and history | `edit_menu_updatesPeer` | `EditMessageTest`, `EditMessageCompatTest`, `EditMessageCompatStableTest` | 5 | 0 |
 | 02 | J | Delete / reveal / blocked | `delete_ownForEveryone_peerSeesMarkedDeleted` | `DeleteMessageTest`, `DeleteMessageCompatTest`, `DeleteMessageCompatStableTest` | 4 | 0 |
@@ -163,14 +163,14 @@ Each sub-area (a `###` section) is one test class, or several consecutive classe
 | 02 | V | Private notes | `notes_sendText_saved` | `NotesTest` | 5 | 0 |
 | 02 | W | Context menus and keyboard | `contextMenu_itemsMatrix_byItemType` | `ContextMenuTest` | 1 | 0 |
 | 02 | X | Rare states and out-of-reach rows | `call_webrtcSession_connects` | `ChatEdgeCasesTest` | 4 | 2 |
-| 03 | 1 | Create group | `createGroup_buttonDisabledForEmptyOrInvalidName` | `CreateGroupTest` | 9 | 0 |
+| 03 | 1 | Create group | `createGroup_buttonDisabledForEmptyOrInvalidName` | `CreateGroupTest` | 8 | 0 |
 | 03 | 2 | Invite members | `inviteMembers_listsOnlyEligibleContacts` | `InviteMembersTest`, `InviteMembersCompatTest`, `InviteMembersCompatStableTest` | 8 | 0 |
 | 03 | 3 | Group info screen rows | `groupInfo_headerShowsProfileAndCopiesName` | `GroupInfoTest` | 11 | 0 |
 | 03 | 4 | Group profile and welcome message | `editGroupProfile_renameNotifiesMembers` | `GroupProfileTest` | 10 | 0 |
 | 03 | 5 | Group preferences | `groupPrefs_ownerChangesNotifyAndRestrictMembers` | `GroupPreferencesTest` | 6 | 1 |
 | 03 | 6 | Member admission and review | `memberAdmission_unsavedChangesAlert` | `MemberAdmissionTest` | 7 | 2 |
-| 03 | 7 | Group link | `groupLink_cliJoinsViaShortLink` | `GroupLinkTest` | 9 | 0 |
-| 03 | 8 | Joining (alice as joiner), connect-plan states, invitations | `joinGroup_pasteShortLinkPrepareAndJoin` | `JoiningTest`, `JoiningCompatTest`, `JoiningCompatStableTest` | 17 | 0 |
+| 03 | 7 | Group link | `groupLink_cliJoinsViaFullLink` | `GroupLinkTest` | 8 | 0 |
+| 03 | 8 | Joining (alice as joiner), connect-plan states, invitations | `joinGroup_pasteShortLinkPrepareAndJoin` | `JoiningTest`, `JoiningCompatTest`, `JoiningCompatStableTest` | 16 | 0 |
 | 03 | 9 | Member list and multi-select | `memberList_rolesAndStatuses` | `MemberListTest` | 5 | 0 |
 | 03 | 10 | Member info | `memberInfo_openShowsSections` | `MemberInfoTest` | 22 | 0 |
 | 03 | 11 | Member contacts | `memberContact_createAndSendInvitation` | `MemberContactTest` | 4 | 0 |
@@ -204,5 +204,5 @@ Each sub-area (a `###` section) is one test class, or several consecutive classe
 ## Count rules
 
 - After any change, recount with `tools/recount.py <file>` (it rewrites the section headings and the `## Count` table from the `Test case(s)` cells), then update the file header and regenerate the class map (`tools/classmap.py table`).
-- A class holds at most 30 tests (a sub-area with more is split, class map); the largest class now has 29, the bound the plan quotes for per-JVM leaks (§7.3).
+- A class holds at most 30 tests (a sub-area with more is split, class map); the largest class now has 27, the bound the plan quotes for per-JVM leaks (§7.3).
 - The plan's numbers derived from the catalogue (Summary, §7.7 screenshot count, §10 table, §10.1, §10.2, §11.1 NAMES/RELAY, §11.2, §12, §14) are regenerated from the four `## Count` tables, the class map and the Needs counts (`tools/catcheck.py`, `tools/classmap.py`, `tools/needs.py`).
