@@ -121,7 +121,7 @@ Reconnection: Connected -> Reconnecting -> Connected | Ended
 2. The WebRTC engine reports `"reconnecting"` connection state; the app shows "reconnecting…" and plays the connecting sound. This state is not reported to the core, and `connectedAt` is kept, so call duration continues.
 3. The callee's WebRTC engine (the party that sent the initial offer) restarts ICE every 10 seconds, sending the new offer in `WCallResponse.Ice` with `session` via `apiSendCallExtraInfo`. The caller answers the same way.
 4. When the connection is restored, the call returns to `Connected` and the sound stops.
-5. If the connection is not restored in 30 seconds, the call ends as disconnected. Clients without ICE restart support ignore the restart offer, so the call ends in this case.
+5. If the connection is not restored in 30 seconds, the call ends as disconnected. If the contact's chat version is below 22 (`CALL_RECONNECT_VERSION`), the call ends as soon as the connection is lost, without reconnection.
 
 ---
 
