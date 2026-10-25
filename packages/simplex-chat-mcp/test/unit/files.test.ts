@@ -26,7 +26,7 @@ describe("lock", () => {
   it("refuses a lock of a running process", () => {
     const runningPid = process.ppid
     writeFileSync(join(dir, "lock"), `${runningPid}\n`)
-    expect(() => acquireLock(dir)).toThrow(new ExitError(`Another server uses ${dir} (PID ${runningPid}).`, 1))
+    expect(() => acquireLock(dir)).toThrow(new ExitError(`Another server uses ${dir} (PID ${runningPid}). If no server runs, remove ${join(dir, "lock")}.`, 1))
   })
 
   it("replaces a lock of a stopped process or of this process", () => {
@@ -64,6 +64,18 @@ describe("data folder", () => {
     expect(statSync(join(dir, "token")).mode & 0o777).toBe(0o600)
     expect(serverToken(dir, false)).toBe(token)
     expect(serverToken(dir, true)).not.toBe(token)
+  })
+
+  it("makes the token, the headers and the server record private again when they exist", () => {
+    const files = ["token", "headers.json", "server.json"].map(name => join(dir, name))
+    for (const file of files) {
+      writeFileSync(file, "{}\n")
+      chmodSync(file, 0o644)
+    }
+    serverToken(dir, true)
+    writeHeadersFile(dir, "token")
+    writeServerFile(dir, {name: "agent", port: 5226, expireHours: 23})
+    expect(files.map(file => statSync(file).mode & 0o777)).toEqual([0o600, 0o600, 0o600])
   })
 
   it("records the server", () => {

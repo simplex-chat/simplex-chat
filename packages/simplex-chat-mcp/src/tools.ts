@@ -108,7 +108,7 @@ type Schema = {[key: string]: unknown}
 
 type ToolName = "connect" | "send" | "receive" | "list" | "leave"
 
-const chatsPage = 100
+const maxChats = 1_000_000
 const editWindow = 24 * 3_600_000 - 10 * 60_000
 const connectWait = 60
 const sendWait = 60
@@ -373,10 +373,10 @@ export class AgentTools {
     }
   }
 
-  async perform(action: Action): Promise<void> {
+  async perform(action: Action, signal: AbortSignal): Promise<void> {
     switch (action.tool) {
       case "connect":
-        return this.performConnect(action)
+        return this.performConnect(action, signal)
       case "send":
         return this.performSend(action)
       case "leave":
@@ -449,7 +449,7 @@ export class AgentTools {
     if (action.connected && startedAt !== undefined) {
       const {wait = connectWait, idle = defaultIdle} = input
       const deadline = startedAt + wait * 1000
-      const stopProgress = reportProgress(call, () => `${action.messages.items.length + action.messages.overflow} messages in ${chat}; waiting until ${utcMinutes(deadline)}.`)
+      const stopProgress = reportProgress(call, () => `${action.messages.items.length + action.messages.overflow.size} messages in ${chat}; waiting until ${utcMinutes(deadline)}.`)
       const finished = await awaitResponses(action.messages, deadline, idle, call).finally(stopProgress)
       if (!finished) return undefined
     }
@@ -477,7 +477,7 @@ export class AgentTools {
     return classifyPlan(r, input)
   }
 
-  private async performConnect(action: ConnectAction): Promise<void> {
+  private async performConnect(action: ConnectAction, signal: AbortSignal): Promise<void> {
     const {input} = action
     action.startedAt = Date.now()
     action.connectUntil = Math.min(action.startedAt + (input.wait ?? connectWait) * 1000, action.created + editWindow)
@@ -504,9 +504,8 @@ export class AgentTools {
       this.markConnected(action, action.chat)
       return
     }
-    const never = new AbortController().signal
     for (let remaining = action.connectUntil - Date.now(); !action.connected && remaining > 0; remaining = action.connectUntil - Date.now()) {
-      await nextChange(action.changes, never, remaining)
+      if (!(await nextChange(action.changes, signal, remaining))) break
     }
     action.connected ??= false
   }
@@ -594,7 +593,7 @@ export class AgentTools {
       const {wait = sendWait, idle = defaultIdle, limit = defaultLimit} = input
       const start = doneAtCall ? Date.now() : action.sentAt!
       const deadline = start + wait * 1000
-      const stopProgress = reportProgress(call, () => `${action.responses.items.length + action.responses.overflow} responses in ${action.chat}; waiting until ${utcMinutes(deadline)}.`)
+      const stopProgress = reportProgress(call, () => `${action.responses.items.length + action.responses.overflow.size} responses in ${action.chat}; waiting until ${utcMinutes(deadline)}.`)
       const finished = await awaitResponses(action.responses, deadline, idle, call).finally(stopProgress)
       if (!finished || call.signal.aborted) return undefined
       const returned = action.responses.items.filter(({chatItem}) => !isLive(chatItem)).slice(0, limit)
@@ -603,7 +602,7 @@ export class AgentTools {
         chat: action.chat,
         item: action.item,
         responses: returned.map(({chatInfo, chatItem}) => toMessage(chatInfo, chatItem, {name: ""})),
-        more: action.responses.items.length - returned.length + action.responses.overflow,
+        more: action.responses.items.length - returned.length + action.responses.overflow.size,
       }
     })
   }
@@ -657,9 +656,10 @@ export class AgentTools {
     const arrived = new Collected()
     const stop = this.agent.watch.collect(chat, arrived)
     try {
-      const {chatInfo, items, unreadRest} = await unreadItems(this.agent.chat, chat, limit + 1).catch(error => {
+      const initial = await getChat(this.agent.chat, chat, "initial=1").catch(error => {
         throw chatErrorOf(error)?.type === "errorStore" ? unknownChat(chat) : error
       })
+      const {chatInfo, items, unreadRest} = await unreadItems(this.agent.chat, chat, initial, limit + 1)
       const unread = items.filter(({content}) => content.type === "rcvMsgContent").map(chatItem => arrived.items.find(copy => copy.chatItem.meta.itemId === chatItem.meta.itemId) ?? {chatInfo, chatItem})
       const skipped = items.filter(({content}) => content.type !== "rcvMsgContent").map(({meta}) => meta.itemId)
       const later = arrived.items.filter(a => !unread.some(u => u.chatItem.meta.itemId === a.chatItem.meta.itemId))
@@ -680,7 +680,7 @@ export class AgentTools {
       if (call.signal.aborted) return undefined
       await markRead(this.agent.chat, chat, [...returned.map(({chatItem}) => chatItem.meta.itemId), ...skipped])
       if (call.signal.aborted) return undefined
-      return {chat, messages: returned.map(({chatInfo, chatItem}): Message => toMessage(chatInfo, chatItem, {name: ""})), more: arrived.items.length - returned.length + arrived.overflow + unreadRest}
+      return {chat, messages: returned.map(({chatInfo, chatItem}): Message => toMessage(chatInfo, chatItem, {name: ""})), more: arrived.items.length - returned.length + arrived.overflow.size + unreadRest}
     } finally {
       stop()
     }
@@ -699,13 +699,7 @@ export class AgentTools {
   async agentChats(): Promise<T.AChat[]> {
     const {userId} = this.agent.user
     const control = this.agent.controlChat()
-    const chats: T.AChat[] = []
-    for (let page = "count=" + chatsPage; page !== "";) {
-      const {chats: previews} = await chatCommand<{chats: T.AChat[]}>(this.agent.chat, `/_get chats ${userId} pcc=off ${page}`, "apiChats")
-      chats.push(...previews)
-      const last = previews.at(-1)
-      page = previews.length === chatsPage && last !== undefined ? `before=${chatTs(last.chatInfo)} count=${chatsPage}` : ""
-    }
+    const {chats} = await chatCommand<{chats: T.AChat[]}>(this.agent.chat, `/_get chats ${userId} pcc=off count=${maxChats}`, "apiChats")
     return chats.filter(({chatInfo}) => {
       const ref = chatRef(chatInfo)
       return ref !== undefined && ref !== control
@@ -725,16 +719,22 @@ export class AgentTools {
     const quoted = await getChat(this.agent.chat, chat, `around=${item} count=0`).catch(() => undefined)
     const chatItem = quoted?.chatItems.find(({meta}) => meta.itemId === item)
     if (quoted === undefined || chatItem === undefined) throw new ToolError(`reply_to: ${chat} has no item ${item}.`)
+    if (!isMessageItem(chatItem)) throw new ToolError(`reply_to: item ${item} in ${chat} is not a message.`)
     return {from: toMessage(quoted.chatInfo, chatItem, {name: this.selfName(quoted.chatInfo)}).from, text: chatItem.meta.itemText}
   }
 
   private async mentionedMembers(chatInfo: T.ChatInfo, chat: string, ids: number[]): Promise<{name: string; member: number}[]> {
     if (chatInfo.type !== "group") throw new ToolError(`mention: ${chat} is a contact chat; mentions apply to groups and channels.`)
     const members = await this.agent.chat.apiListMembers(chatInfo.groupInfo.groupId)
+    const named = new Map<string, number>()
     return ids.map(id => {
       const member = members.find(({groupMemberId}) => groupMemberId === id)
       if (member === undefined) throw new ToolError(`mention: ${chat} has no member ${id}.`)
-      return {name: member.memberProfile.displayName, member: id}
+      const name = member.memberProfile.displayName
+      const same = named.get(name)
+      if (same !== undefined) throw new ToolError(`mention: members ${same} and ${id} have the same name.`)
+      named.set(name, id)
+      return {name, member: id}
     })
   }
 
@@ -966,21 +966,6 @@ export function memberCurrent({memberStatus}: T.GroupMember): boolean {
 
 function memberCurrentOrPending(member: T.GroupMember): boolean {
   return memberCurrent(member) || member.memberStatus === T.GroupMemberStatus.Pending_approval || member.memberStatus === T.GroupMemberStatus.Pending_review
-}
-
-function chatTs(chatInfo: T.ChatInfo): string {
-  switch (chatInfo.type) {
-    case "direct":
-      return chatInfo.contact.chatTs ?? chatInfo.contact.updatedAt
-    case "group":
-      return chatInfo.groupInfo.chatTs ?? chatInfo.groupInfo.updatedAt
-    case "local":
-      return chatInfo.noteFolder.chatTs
-    case "contactRequest":
-      return chatInfo.contactRequest.updatedAt
-    case "contactConnection":
-      return chatInfo.contactConnection.updatedAt
-  }
 }
 
 function commandsOf(commands: T.ChatBotCommand[] | undefined): Command[] | undefined {
