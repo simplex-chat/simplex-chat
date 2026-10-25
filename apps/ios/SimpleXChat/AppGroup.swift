@@ -65,7 +65,6 @@ public let GROUP_DEFAULT_CALL_KIT_ENABLED = "callKitEnabled"
 public let GROUP_DEFAULT_PQ_EXPERIMENTAL_ENABLED = "pqExperimentalEnabled" // no longer used
 public let GROUP_DEFAULT_ONE_HAND_UI = "oneHandUI"
 public let GROUP_DEFAULT_CHAT_BOTTOM_BAR = "chatBottomBar"
-public let GROUP_DEFAULT_CHAT_LAYOUT = "chatLayout"
 
 public let APP_GROUP_NAME = "group.chat.simplex.app"
 
@@ -281,12 +280,6 @@ public let initialRandomDBPassphraseGroupDefault = BoolDefault(defaults: groupDe
 public let confirmDBUpgradesGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_CONFIRM_DB_UPGRADES)
 
 public let callKitEnabledGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_CALL_KIT_ENABLED)
-
-public let chatLayoutGroupDefault = EnumDefault<ChatLayout>(
-    defaults: groupDefaults,
-    forKey: GROUP_DEFAULT_CHAT_LAYOUT,
-    withDefault: .classic
-)
 
 public class DateDefault {
     var defaults: UserDefaults

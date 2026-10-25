@@ -108,7 +108,7 @@ contactShortLinkData (:4843)                        ContactShortLinkData p msg b
 ```
 chat       uiThemes.chatLayout of the contact or group    /_set theme @<contactId>|#<groupId> <json>    APISetChatUIThemes (Library/Commands.hs:1657)
 profile    uiThemes.chatLayout of the user                /_set theme user <userId> <json>               APISetUserUIThemes (:1650)
-app        Kotlin appPrefs.chatLayout, iOS chatLayoutGroupDefault, AppSettings.uiChatLayout
+app        Kotlin appPrefs.chatLayout, iOS chatLayoutDefault, AppSettings.uiChatLayout
 ```
 
 - Each theme command writes the whole record; the apps keep `chatLayout` in every theme write (section 6).
@@ -163,7 +163,7 @@ ThemeModeOverrides        chatLayout, layoutOnly(), withChatLayout (Theme.kt:476
 AddressSettings           SimpleXAPI.kt:7785; AddressSettingsState                  AppAPITypes.swift:1625; AddressSettingsState
                           (UserAddressView.kt:699)                                  (UserAddressView.swift:585)
 AppSettings.uiChatLayout  SimpleXAPI.kt:8742                                        AppAPITypes.swift:2304, AppSettings.swift
-app setting               appPrefs.chatLayout (SimpleXAPI.kt:280)                   chatLayoutGroupDefault (AppGroup.swift:285)
+app setting               appPrefs.chatLayout (SimpleXAPI.kt:280)                   chatLayoutDefault (SettingsView.swift:219)
 ```
 
 Kotlin computation, `model/ChatModel.kt`:
