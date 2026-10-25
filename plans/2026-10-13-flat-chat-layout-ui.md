@@ -178,11 +178,58 @@ views/usersettings/Appearance.kt         ChatLayoutRow; PreviewInEitherLayout; t
 
 ## 4. iOS
 
+Paths are relative to `apps/ios/`.
+
 ```
-drawing         classic
-controls        none; the pickers return with terminal rows
-theme writes    chatLayout kept (agent profile plan, section 6)
-terminal rows   in this pull request, after the Kotlin part is approved and reviewed (D11)
+SimpleXChat/ChatTypes.swift              Contact.chatLayout; ChatInfo.chatLayout, ChatInfo.uiThemes
+SimpleXChat/Theme/ThemeTypes.swift       ThemeModeOverrides.withChatLayout: nil for overrides left empty
+Shared/Model/ChatModel.swift             ChatInfo.defaultChatLayout, ChatInfo.activeChatLayout, profileChatLayout; unknown values skipped
+Shared/Views/Chat/ChatView.swift         terminal = activeChatLayout == .terminal; \.terminalLayout on the cells; visible cells rebuilt on a change
+                                         wallpaper background colour without the image
+                                         showAvatar = terminalItemShowsSender(item, older) when terminal
+                                         terminalItemRow: SelectedChatItem, TerminalChatItemRow(chatItemSender or nil, gutter, terminalRowGap)
+                                         gutter: memberImageSize + 4pt in groups, 0 in other chats
+                                         terminalRowsSeparated(olderRow); olderRow: the next merged item
+                                         bottom: 8pt below the newest row, terminalLevelStep above a date separator, otherwise 0
+                                         chatItemWithMenu: alignEnd = sent && !terminal; ChatItemClipped skipped; reactions at the text edge
+                                         go-to button after the item in search results and for marked deleted items, otherwise endButton
+Shared/Views/Chat/ChatItemsMerger.swift  MergedItem.revealed
+Shared/Views/Chat/ChatItem/TerminalItemView.swift
+                                         \.terminalLayout; gap constants in pt, scaled by UIFontMetrics(.body) (bodyScaled)
+                                         messageTextColor, terminalLineBox, lineBox; terminalItemShowsSender, sameSender, terminalRowGap, terminalHeadingGap
+                                         messageLastLine, messageLastBlock: custom alignment guides; metaCopyJoiner
+                                         ItemWithMeta: TerminalMetaLayout on iOS 16, HStack on the last text baseline on iOS 15
+                                         ChatEventWithMeta: ts only; the separator of the classic text kept, the copy after WJ, a direction mark and two no-break spaces
+                                         ChatItemSender, TerminalChatItemRow
+Shared/Views/Chat/ChatItemView.swift     endButton to FramedItemView; event items with ChatEventWithMeta; chatEventText(ts:)
+Shared/Views/Chat/ChatItem/
+  FramedItemView.swift                   backgrounds omitted; headers and quote at the text edge; terminalQuote with quoteBar; terminalBlock for media and cards
+                                         ciMsgContentView(terminalTop:) plus terminalHeadingGap; metaPlacement; mediaLimit; msgWidth not tracked in terminal rows
+                                         overlayMeta for captionless media; terminal emoji paddings
+  MsgContentView.swift                   messageText(textColor:); line boxes and lineSpacing, also for taps; meta line for live messages only
+                                         reserveSpaceForMeta: metaCopyJoiner, three no-break spaces, ciMetaText(unbreakable: true) with file encryption and signature
+                                         MarkdownBlocksView: heading gaps, terminalHeadingFont, cardMargins, marksLastBlock, ruleWidthText, quoteBar()
+  CIMetaView.swift                       ciMetaText(unbreakable:): no-break separators, word joiners after the edit, timer and via-proxy icons
+  CIFileView.swift, CIVoiceView.swift, FramedCIVoiceView.swift, CIEventView.swift, CIChatLinkHeader.swift
+                                         terminal paddings; voice: received layout for both directions; chat link header without the meta reserve
+  ItemWithMeta                           FramedItemView, EmojiItemView, CIVoiceView, CICallItemView, DeletedItemView, MarkedDeletedItemView,
+                                         CIMsgError, CIRcvDecryptionError, CIGroupInvitationView
+  ChatEventWithMeta                      CIChatFeatureView, CIFeaturePreferenceView, CIMemberCreatedContactView, event items of ChatItemView
+Shared/Views/Helpers/ChatItemClipShape.swift
+                                         tail off in terminal rows
+Shared/Views/Helpers/ThemeModeEditor.swift
+                                         ChatWallpaperEditor(layoutSection:); ChatLayoutSection; ChatLayout.displayName; otherChatLayout
+Shared/Views/Chat/ChatInfoView.swift     ChatWallpaperEditorSheet: ChatLayoutSection, setChatLayout, \.terminalLayout of the chat
+Shared/Views/UserSettings/AppearanceSettings.swift
+                                         ChatLayoutPicker after ThemeDestinationPicker; app destination: currentUser.uiThemes = layoutOnly()
+                                         ChatThemePreview: terminal rows and classic rows in one ZStack; background colour only
+                                         presets as colours; custom image tile, scale type, scale and wallpaper tint hidden
+                                         \.terminalLayout by profileChatLayout
+theme writes                             chatLayout kept (agent profile plan, section 6)
+classic                                  unchanged, message text colour included
+differences                              row tint: selected only; hover and press indication omitted
+                                         swipe to reply moves the item
+                                         gaps in pt at the 17pt body size, scaled by Dynamic Type; line heights from the SF font
 ```
 
 ## 5. Tests
