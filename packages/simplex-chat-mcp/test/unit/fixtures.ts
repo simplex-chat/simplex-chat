@@ -129,7 +129,11 @@ export class FakeChat {
     const getChat = /^\/_get chat ([@#]\d+) (.+)$/.exec(cmd)
     if (getChat) return this.getChat(getChat[1], getChat[2])
     if (cmd.startsWith("/_get chats ")) {
-      const chats = [...this.chats.values()].map(({chatInfo, items}) => ({chatInfo, chatItems: [], chatStats: chatStats(items)}))
+      const [, before, count] = /(?: before=(\S+))? count=(\d+)$/.exec(cmd)!
+      const chats = [...this.chats.values()]
+        .filter(({chatInfo}) => before === undefined || chatTs(chatInfo) < before)
+        .slice(0, Number(count))
+        .map(({chatInfo, items}) => ({chatInfo, chatItems: [], chatStats: chatStats(items)}))
       return structuredClone({type: "apiChats", user, chats}) as unknown as ChatResponse
     }
     if (cmd.startsWith("/_read chat items ")) {
@@ -185,6 +189,8 @@ export class FakeChat {
     this.setCustomData(`#${groupId}`, customData)
   }
 
+  async apiDeleteGroupLink(): Promise<void> {}
+
   async apiUpdateGroupProfile(groupId: number, groupProfile: T.GroupProfile): Promise<T.GroupInfo> {
     this.profiles.push({groupId, groupProfile})
     return {...group(groupId, groupProfile.displayName), groupProfile}
@@ -223,6 +229,10 @@ export class FakeChat {
     if (around && chatItems.length === 0) throw storeError(ref)
     return structuredClone({type: "apiChat", chat: {chatInfo: data.chatInfo, chatItems, chatStats: chatStats(data.items)}}) as unknown as ChatResponse
   }
+}
+
+function chatTs(chatInfo: T.ChatInfo): string {
+  return chatInfo.type === "direct" ? chatInfo.contact.updatedAt : (chatInfo as T.ChatInfo.Group).groupInfo.updatedAt
 }
 
 function chatStats(items: T.ChatItem[]): T.ChatStats {

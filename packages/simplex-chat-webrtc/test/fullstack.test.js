@@ -14,6 +14,7 @@ const DISCONNECT_DETECTION = 10000
 const RECONNECT = 20000
 const SIGNALING = 15000
 const CORE_CALL_STATUSES = ["connecting", "connected", "disconnected", "failed"]
+const CALL_RECONNECT_VERSION = 22
 
 async function withChatCall({useWorker = false}, run) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "simplex-call-test-"))
@@ -78,7 +79,13 @@ async function startCall({a, b, network, alice, bob, aliceContact, bobContact}) 
   await alice.cmd(`/_call invite @${aliceContact} ${JSON.stringify(callType)}`)
 
   const {callInvitation} = await bob.waitEvent((e) => e.type === "callInvitation", SIGNALING, "callInvitation")
-  const offer = await b.command({type: "start", media: MEDIA, aesKey: callInvitation.sharedKey, iceServers: []})
+  const offer = await b.command({
+    type: "start",
+    media: MEDIA,
+    aesKey: callInvitation.sharedKey,
+    iceServers: [],
+    canReconnect: canReconnect(callInvitation.contact),
+  })
   assert.equal(offer.resp.type, "offer", JSON.stringify(offer.resp))
   const offerSignal = await network.routeSignal("B", offer.resp.offer, offer.resp.iceCandidates)
   const callOffer = {
@@ -95,6 +102,7 @@ async function startCall({a, b, network, alice, bob, aliceContact, bobContact}) 
     media: MEDIA,
     aesKey: offered.sharedKey,
     iceServers: [],
+    canReconnect: canReconnect(offered.contact),
   })
   assert.equal(answer.resp.type, "answer", JSON.stringify(answer.resp))
   const answerSignal = await network.routeSignal("A", answer.resp.answer, answer.resp.iceCandidates)
@@ -105,6 +113,10 @@ async function startCall({a, b, network, alice, bob, aliceContact, bobContact}) 
   const ok = await b.command({type: "answer", answer: answered.answer.rtcSession, iceCandidates: answered.answer.rtcIceCandidates})
   assert.equal(ok.resp.type, "ok", JSON.stringify(ok.resp))
   await Promise.all([a.waitForState("connected", RECONNECT), b.waitForState("connected", RECONNECT)])
+}
+
+function canReconnect(contact) {
+  return contact.activeConn.peerChatVRange.maxVersion >= CALL_RECONNECT_VERSION
 }
 
 async function assertAudioDecoded(a, b) {
