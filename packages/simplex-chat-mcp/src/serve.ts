@@ -87,7 +87,6 @@ export async function startServer(options: ServeOptions): Promise<RunningServer>
 async function startAgent(chat: api.ChatApi, options: ServeOptions, token: string): Promise<RunningServer> {
   const {name, data, port, approve, expireHours} = options
   const created = (await chat.apiGetActiveUser()) ?? (await chat.apiCreateActiveUser({displayName: options.displayName ?? name, fullName: "", peerType: T.ChatPeerType.Agent}))
-  writeServerFile(data, {name, port, expireHours})
   await chatCommand(chat, "/network socks=off smp-proxy=always smp-proxy-fallback=protected", "networkConfig")
   const events = bufferEvents(chat)
   await chat.startChat()
@@ -99,7 +98,7 @@ async function startAgent(chat: api.ChatApi, options: ServeOptions, token: strin
     saveCounter: next => control.saveCounter(next),
     postCard: action => control.postCard(action),
     outcome: action => control.outcome(action),
-    perform: action => tools.perform(action),
+    perform: (action, signal) => tools.perform(action, signal),
   })
   const watch = new ChatItemsWatch()
   const tools = new AgentTools({chat, user, actions, watch, controlChat: () => control.chatRef, standingApprover: chatInfo => control.standingApprover(chatInfo)}, approve)
@@ -110,13 +109,16 @@ async function startAgent(chat: api.ChatApi, options: ServeOptions, token: strin
     tools.register(mcp)
     return mcp
   }
-  const server = await listen(port, token, factory)
+  let started = false
+  const server = await listen(port, token, factory, () => started)
+  writeServerFile(data, {name, port, expireHours})
   try {
     await control.start()
   } catch (error) {
     await stopHttp(server)
     throw error
   }
+  started = true
   log(`Listening on http://127.0.0.1:${port}/mcp`)
   let controlEvents = Promise.resolve()
   let stopped = false
@@ -165,7 +167,7 @@ export function registerHint({name, data, dataGiven}: ServeOptions): string {
   return `Add the agent to Claude Code:\n  npx -y @simplex-chat/mcp register ${name}${dataGiven ? ` --data ${shellPath(data)}` : ""}`
 }
 
-async function deliveries(chat: api.ChatApi, groupId: number): Promise<void> {
+export async function deliveries(chat: api.ChatApi, groupId: number): Promise<void> {
   const connIds = (await sqlRows(chat, `/sql chat SELECT hex(agent_conn_id) FROM connections WHERE group_member_id IN (SELECT group_member_id FROM group_members WHERE group_id = ${groupId})`)).slice(1)
   if (connIds.length === 0) return
   const pending = `/sql agent SELECT count(*) FROM snd_message_deliveries WHERE failed = 0 AND hex(conn_id) IN (${connIds.map(id => `'${id}'`).join(",")})`
@@ -179,7 +181,8 @@ async function sqlRows(chat: api.ChatApi, query: string): Promise<string[]> {
   try {
     const {rows} = (await chat.sendChatCmd(query)) as unknown as {rows?: string[]}
     return rows ?? []
-  } catch {
+  } catch (error) {
+    logError("delivery wait", error)
     return []
   }
 }
@@ -198,9 +201,9 @@ async function controlGroup(chat: api.ChatApi, userId: number, displayName: stri
   return resetOwners ? resetControlChat(chat, userId, group, displayName, nextAction) : group
 }
 
-async function listen(port: number, token: string, factory: McpServerFactory): Promise<Server> {
+async function listen(port: number, token: string, factory: McpServerFactory, ready: () => boolean): Promise<Server> {
   try {
-    return await startHttp({port, token, factory})
+    return await startHttp({port, token, factory, ready})
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "EADDRINUSE") throw new ExitError(`Port ${port} is in use. Start with --port N.`, 1)
     throw error

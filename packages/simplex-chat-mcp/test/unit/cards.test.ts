@@ -80,6 +80,19 @@ describe("connect cards", () => {
     if (fields.tool === "connect") Object.assign(fields, {subject: {kind: "contact", incognito: false}})
     expect(cardText(action(fields, "pending"), mode).split("\n")[0]).toBe("I want to connect to an unnamed contact, as myself.")
   })
+
+  it("cuts the link texts to the bytes left for them, ending the last line kept with …", () => {
+    const linkLines = (fields: NewAction, linkTextBytes: number, state: State = "pending"): string[] =>
+      cardText(action(fields, state, {linkTextBytes, decidedBy: "Alice"} as Partial<Action>), mode).split("\n").slice(1, -1)
+    const fields = connect({description: "one\n\ntwo", welcome: "Welcome!"})
+    expect(linkLines(fields, 28)).toEqual(["`one`", "", "`two`", "`Welcome!`"])
+    expect(linkLines(fields, 27)).toEqual(["`one`", "", "`two`", "`Welc…`"])
+    expect(linkLines(fields, 27, "done")).toEqual(["`one`", "", "`two`", "`Welc…`"])
+    expect(linkLines(fields, 19)).toEqual(["`one`", "", "`two`"])
+    expect(linkLines(fields, 0)).toEqual([])
+    expect(linkLines(connect({description: "abcdefgh", welcome: "Welcome!"}), 10)).toEqual(["`abc…`"])
+    expect(linkLines(connect({description: " abcdefgh"}), 10)).toEqual(["` a…`"])
+  })
 })
 
 describe("send cards", () => {
@@ -105,6 +118,11 @@ describe("send cards", () => {
       "mentioning @Switchback, @'Ana Lu'",
       "Approved by Alice.",
     ])
+  })
+
+  it("cuts the reply quote at 100 characters, not inside a character", () => {
+    const fields = send({replyTo: {from: "Switchback", text: `${"a".repeat(99)}😀b`}})
+    expect(cardText(action(fields, "pending"), mode).split("\n")[2]).toBe(`replying to Switchback: \`${"a".repeat(99)}😀\``)
   })
 
   it("quotes names that are not valid display names", () => {
