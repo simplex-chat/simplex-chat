@@ -34,7 +34,7 @@ export interface ToolCall {
 export class Collected {
   readonly items: T.AChatItem[] = []
   readonly changes = new Changes()
-  overflow = 0
+  readonly overflow = new Set<number>()
   lastAt?: number
 }
 
@@ -71,12 +71,15 @@ export class ChatItemsWatch {
   collect(chat: string, collected: Collected, accepts: (item: T.ChatItem) => boolean = () => true): () => void {
     return this.listen(chat, (item, change) => {
       if (item.chatItem.content.type !== "rcvMsgContent" || !accepts(item.chatItem)) return
-      const i = collected.items.findIndex(({chatItem}) => chatItem.meta.itemId === item.chatItem.meta.itemId)
-      if (change !== "new" && i < 0) return
-      if (change === "deleted") collected.items.splice(i, 1)
+      const {itemId} = item.chatItem.meta
+      const i = collected.items.findIndex(({chatItem}) => chatItem.meta.itemId === itemId)
+      const overflowDeleted = change === "deleted" && collected.overflow.has(itemId)
+      if (change !== "new" && i < 0 && !overflowDeleted) return
+      if (overflowDeleted) collected.overflow.delete(itemId)
+      else if (change === "deleted") collected.items.splice(i, 1)
       else if (i >= 0) collected.items[i] = item
       else if (collected.items.length < maxCollected) collected.items.push(item)
-      else collected.overflow++
+      else collected.overflow.add(itemId)
       collected.lastAt = Date.now()
       collected.changes.notify()
     })
@@ -180,8 +183,7 @@ export async function markRead(chat: api.ChatApi, ref: string, itemIds: number[]
   if (itemIds.length > 0) await chatCommand(chat, `/_read chat items ${ref} ${itemIds.join(",")}`, "itemsReadForChat")
 }
 
-export async function unreadItems(chat: api.ChatApi, ref: string, messages: number): Promise<{chatInfo: T.ChatInfo; items: T.ChatItem[]; unreadRest: number}> {
-  const {chatInfo, chatStats} = await getChat(chat, ref, "initial=1")
+export async function unreadItems(chat: api.ChatApi, ref: string, {chatInfo, chatStats}: T.AChat, messages: number): Promise<{chatInfo: T.ChatInfo; items: T.ChatItem[]; unreadRest: number}> {
   if (chatStats.unreadCount === 0) return {chatInfo, items: [], unreadRest: 0}
   const items = (await getChat(chat, ref, `around=${chatStats.minUnreadItemId} count=0`)).chatItems
   for (let last = items.at(-1); last !== undefined && items.filter(isNewMessage).length < messages;) {
