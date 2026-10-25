@@ -357,7 +357,7 @@ unknown values                     skipped
 ```
 row padding        top: topGap, plus terminalSenderTopGap with a sender row; start 8pt; end 12pt
 gutter             groups and channels: memberImageSize + 4pt, with the sender avatar; other chats: none
-sender row         name and badge 13.5pt (primary for own items, secondary otherwise); role label 15pt after the name
+sender row         name and badge at terminalNameSize, 13.5 × 17/16 pt (primary for own items, secondary otherwise); role label 15pt after the name
                    start padding chatItemTextPadding; terminalSenderBottomGap below
 selection          SelectedChatItem 8pt from the start; row moved by 28pt; selected row tint primary 10%
 bottom padding     newest row: 8pt; above a date separator: terminalLevelStep; otherwise 0
@@ -392,7 +392,7 @@ Item views start at the text edge `chatItemTextPadding` (12pt):
 FramedItemView        background, quote background and header backgrounds omitted
                       headers: terminalHeaderTopGap above, terminalHeaderBottomGap below
                       quote: quoteBar(), text onSurface 70%, terminalBlockTopGap above, terminalBlockBottomGap below
-                      quote sender: terminalNameSize (13.5pt, Dynamic Type), no spacing above the text
+                      quote sender: terminalNameSize (13.5 × 17/16 pt, Dynamic Type), no spacing above the text
                       quote width: at least msgWidth (quoteMinWidth: less the text edge, bar and its spacing);
                       the thumbnail at the end of the item, 12pt after the quote text at least
                       quote thumbnails and media: message corner clip (msgRectMaxRadius × roundness)

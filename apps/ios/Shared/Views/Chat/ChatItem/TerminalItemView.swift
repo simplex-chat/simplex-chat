@@ -27,7 +27,7 @@ var terminalFileTopGap: CGFloat { terminalGap(2) }
 var terminalEmojiTopGap: CGFloat { terminalGap(4.25) }
 var terminalEmojiBottomGap: CGFloat { terminalGap(1.5) }
 var terminalMetaGap: CGFloat { terminalGap(6) }
-var terminalNameSize: CGFloat { bodyScaled(13.5) }
+var terminalNameSize: CGFloat { bodyScaled(13.5 * 17 / 16) }
 let terminalHeadingRatio: CGFloat = 1.3125
 private let terminalLineHeightRatio: CGFloat = 22 / 16
 private let terminalLineHeightContrastSlope: CGFloat = 0.1515
