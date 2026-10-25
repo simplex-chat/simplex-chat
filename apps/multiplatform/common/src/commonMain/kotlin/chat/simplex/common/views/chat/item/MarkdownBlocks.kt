@@ -95,7 +95,7 @@ fun MarkdownBlocks(
       when (block) {
         is MarkdownBlock.Paragraph -> BlockText(start, block.content, style)
         is MarkdownBlock.Heading -> {
-          val scale = if (terminal) TERMINAL_HEADING_RATIO.pow((4 - block.level).coerceAtLeast(0)) else when (block.level) {
+          val scale = if (terminal) TERMINAL_HEADING_RATIO.pow((3 - block.level).coerceAtLeast(0)) else when (block.level) {
             1 -> 1.5f
             2 -> 1.3f
             3 -> 1.15f
