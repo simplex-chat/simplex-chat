@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Runs Claude Code to repeat the smoke test with the ui helper, as claude-test.md describes, and passes when
-# its final message ends with "CLAUDE-TEST: PASS".
-# Usage: scripts/ci/desktop-linux/claude-test.sh <output dir> <transcript .jsonl>
+# Runs Claude Code to repeat the smoke test with the ui helper, as the prompt (claude-test.md unless given) describes,
+# and passes when its final message ends with "CLAUDE-TEST: PASS".
+# Usage: scripts/ci/desktop-linux/claude-test.sh <output dir> <transcript .jsonl> [prompt .md]
 # Expects the app started (smoke-test.sh ... start) with UI_OUT under <output dir>, claude and ui on PATH,
 # CLAUDE_MODEL and CLAUDE_CODE_OAUTH_TOKEN. Claude works in <output dir>: the screenshots, its report.md and the
 # prompt it was given end up there. The transcript, Claude Code's stderr (<transcript>.stderr) and the guard hook's
@@ -17,16 +17,17 @@ unset CLAUDE_CODE_OAUTH_TOKEN
 here=$(cd "$(dirname "$0")" && pwd)
 out=$(cd "$1" && pwd)
 transcript=$2
+prompt=${3:-$here/claude-test.md}
 stderr=$transcript.stderr
 settings=$(mktemp)
 export CLAUDE_GUARD_LOG=$transcript.guard.log
 : > "$CLAUDE_GUARD_LOG"
 
 {
-  cat "$here/claude-test.md"
+  cat "$prompt"
   echo
   echo '```'
-  "$here/ui" || true
+  ui || true
   echo '```'
 } > "$out/prompt.md"
 
