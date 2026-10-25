@@ -921,13 +921,7 @@ struct ChatLayoutPicker: View {
             }
             .frame(height: 36)
         } else {
-            Picker("Chat layout", selection: Binding(
-                get: { appLayout },
-                set: { layout in
-                    appLayout = layout
-                    saveThemeToDatabase(nil)
-                }
-            )) {
+            Picker("Chat layout", selection: $appLayout) {
                 ForEach([ChatLayout.classic, ChatLayout.terminal], id: \.self) { layout in
                     Text(layout.displayName).tag(layout)
                 }

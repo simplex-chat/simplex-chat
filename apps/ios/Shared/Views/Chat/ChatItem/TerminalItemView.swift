@@ -352,7 +352,7 @@ struct ChatEventWithMeta<Content: View>: View {
         } content: { inlineMeta in
             content(
                 inlineMeta == nil
-                ? (metaCopyJoiner(layoutDirection == .rightToLeft) + eventMetaText(colorMode: .transparent, unbreakable: true)).fontWeight(.regular)
+                ? (metaCopyJoiner(layoutDirection == .rightToLeft) + Text(verbatim: "\u{00A0}\u{00A0}") + eventMetaText(colorMode: .transparent, unbreakable: true)).fontWeight(.regular)
                 : chatItem.timestampText
             )
         }
