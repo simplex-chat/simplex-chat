@@ -242,7 +242,6 @@ packages/simplex-chat-client/typescript/src/client.ts   apiGetAddressSettings (:
                                                         enableAddressAutoAccept (:106), disableAddressAutoAccept (:111): the stored settings, then their parameters
 packages/simplex-chat-python/src/simplex_chat/bot.py    Bot(chat_layout: T.ChatLayout | None = None): None removes the stored layout
 bots/src/API/Docs/Commands.hs                           cliCommands: "SetGroupChatLayout"
-bots/README.md                                          section "Chat layout"
 docs/protocol/simplex-chat.schema.json                  groupProfile.optionalProperties: chatLayout {"enum": ["classic", "terminal"]}
 docs/protocol/simplex-chat.md                           x.grp.info: chatLayout of the group profile
 apps/multiplatform/spec                                 state.md (precedence), services/theme.md (ThemeModeOverrides), client/chat-view.md (section 10)

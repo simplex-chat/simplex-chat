@@ -84,18 +84,6 @@ A useful scenario would be when bot is used to accept requests to bot's business
 
 Business chat is a special group chat under the hood, but the connected customer sees business avatar, and all users that bot would add to the group later see customer' avatar. This chat will inherits preferences from the bot profile, so if you want to allow customers to send files, you need to allow them in the bot. And if bot has any commands configured, they will also be available to customers in the menu.
 
-### Chat layout
-
-Bot can choose the layout of the chats that users create by connecting to its address: `classic` or `terminal`. To do that, read the address settings with [APIShowMyAddress](./api/COMMANDS.md#apishowmyaddress), set `chatLayout` property and write the whole settings object back with [APISetAddressSettings](./api/COMMANDS.md#apisetaddresssettings). The settings object replaces the stored settings, so the other properties must be written back as they were read. For a business address this layout is used for business chats. In Node.js bot library the layout is set by `chatLayout` property of `addressSettings` option, in Python bot library – by `chat_layout` parameter of `Bot`; when it is absent, the layout is removed from the address.
-
-The layout is stored with the contact when the chat is prepared from the address link data before connecting. The chat is prepared by the user's app, and by `/connect` CLI command with the SimpleX name of the address. A contact created by connecting to the address link without this step, for example with `/connect <link>` CLI command or [APIConnect](./api/COMMANDS.md#apiconnect), is created without the address layout.
-
-`/auto_accept on [business|incognito=on|off] [layout=classic|terminal|default] [text <welcome message>]` and `/auto_accept off [layout=classic|terminal|default]` CLI commands are deprecated, use [APISetAddressSettings](./api/COMMANDS.md#apisetaddresssettings) instead. These commands keep the stored layout unless `layout=` is given, and `layout=default` removes it.
-
-For groups, set `chatLayout` property in the group profile with [APIUpdateGroupProfile](./api/COMMANDS.md#apiupdategroupprofile) or with `/set layout #<group> classic|terminal|default` CLI command. Android and desktop apps of all members use this layout, including the members who joined the group before it was set. A business chat gets the layout of the business address when it is created; later changes of its group profile layout do not change the layout of the other members' chats.
-
-Users can choose another layout for a chat in Android and desktop apps, and this choice is used instead of the layout of the address or the group. The layout chosen for the user profile is used in the chats that have neither a choice for the chat nor the layout of the address or the group. These choices are stored in `chatLayout` property of `uiThemes` of the contact, group or user. iOS app shows the classic layout in all chats.
-
 ## How to create a bot
 
 [SimpleX Chat CLI](../docs/CLI.md) can be run as a local WebSockets server on any port:
