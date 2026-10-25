@@ -25,15 +25,13 @@ import Control.Monad.Reader
 import Data.Functor (($>))
 import Data.List (dropWhileEnd, find)
 import qualified Data.List.NonEmpty as L
-import qualified Data.Map.Strict as Map
 import Data.Maybe (isNothing)
-import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (getCurrentTime)
 import Network.Socket
 import Simplex.Chat
-import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), ChatController (..), ChatDatabase (..), ChatError, ChatEvent (..), ChatHooks (..), ChatLogLevel (..), ChatResponse (..), WebPreviewConfig (..), defaultChatHooks, defaultSimpleNetCfg)
+import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), ChatController (..), ChatDatabase (..), ChatLogLevel (..), ChatResponse (..), WebPreviewConfig (..), defaultSimpleNetCfg)
 import Simplex.Chat.Core
 import Simplex.Chat.Library.Commands
 import Simplex.Chat.Operators
@@ -54,7 +52,6 @@ import Simplex.Messaging.Agent (disposeAgentClient)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.Protocol (supportedSMPAgentVRange)
 import Simplex.Messaging.Agent.RetryInterval
-import Simplex.Messaging.Agent.Store.Common (DBStore (..))
 import Simplex.Messaging.Agent.Store.Entity (SDBStored (..))
 import Simplex.Messaging.Agent.Store.Interface (closeDBStore)
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfig (..), MigrationConfirmation (..), MigrationError)
@@ -72,8 +69,6 @@ import Simplex.Messaging.Version
 import Simplex.Messaging.Version.Internal
 import System.Directory (createDirectoryIfMissing, listDirectory, removePathForcibly)
 import System.FilePath ((</>))
-import System.IO (hPutStrLn, stderr)
-import System.IO.Unsafe (unsafePerformIO)
 import qualified System.Terminal as C
 import System.Terminal.Internal (Command (..), Terminal (..), VirtualTerminal (..), VirtualTerminalSettings (..), withVirtualTerminal)
 import System.Timeout (timeout)
@@ -313,50 +308,8 @@ testCfg =
       testView = True,
       tbqSize = 16,
       channelSubscriberRole = GRObserver,
-      confirmMigrations = MCYesUp,
-      chatHooks = defaultChatHooks {eventHook = Just logConnectedTwice}
+      confirmMigrations = MCYesUp
     }
-
-logConnectedTwice :: ChatController -> Either ChatError ChatEvent -> IO (Either ChatError ChatEvent)
-logConnectedTwice cc ev = do
-  forM_ (connectedEntity ev) $ \(entity, Connection {connId, agentConnId}) -> do
-    let key = (chatDBKey cc, entity)
-        entry = fst key <> " " <> entity <> " conn=" <> show connId <> " agentConn=" <> show agentConnId
-    (sameConn, earlier) <- atomically $ do
-      conns <- readTVar connectedConns
-      entities <- readTVar connectedEntities
-      writeTVar connectedConns $ S.insert agentConnId conns
-      writeTVar connectedEntities $ Map.insertWith (<>) key [entry] entities
-      pure (S.member agentConnId conns, Map.lookup key entities)
-    when sameConn $ hPutStrLn stderr $ "CONNECTED-TWICE same connection: " <> entry
-    forM_ earlier $ \es -> hPutStrLn stderr $ "CONNECTED-TWICE same entity: " <> entry <> " earlier: " <> show es
-  pure ev
-
-connectedEntity :: Either ChatError ChatEvent -> Maybe (String, Connection)
-connectedEntity = \case
-  Right (CEvtContactConnected User {userId} Contact {contactId, localDisplayName, activeConn = Just conn} _) ->
-    Just ("user=" <> show userId <> " contact=" <> show contactId <> " " <> T.unpack localDisplayName, conn)
-  Right (CEvtConnectedToGroupMember User {userId} g m _) -> memberEntity "member" userId g m
-  Right (CEvtJoinedGroupMember User {userId} g m) -> memberEntity "joined" userId g m
-  _ -> Nothing
-  where
-    memberEntity kind userId GroupInfo {groupId} GroupMember {groupMemberId, localDisplayName, activeConn} =
-      (\conn -> ("user=" <> show userId <> " group=" <> show groupId <> " " <> kind <> "=" <> show groupMemberId <> " " <> T.unpack localDisplayName, conn)) <$> activeConn
-
-chatDBKey :: ChatController -> String
-#if defined(dbPostgres)
-chatDBKey ChatController {chatStore = DBStore {dbSchema}} = B.unpack dbSchema
-#else
-chatDBKey ChatController {chatStore = DBStore {dbFilePath}} = dbFilePath
-#endif
-
-connectedConns :: TVar (S.Set AgentConnId)
-connectedConns = unsafePerformIO $ newTVarIO S.empty
-{-# NOINLINE connectedConns #-}
-
-connectedEntities :: TVar (Map.Map (String, String) [String])
-connectedEntities = unsafePerformIO $ newTVarIO Map.empty
-{-# NOINLINE connectedEntities #-}
 
 testAgentCfgVPrev :: AgentConfig
 testAgentCfgVPrev =
