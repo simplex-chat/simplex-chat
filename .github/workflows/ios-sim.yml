@@ -270,19 +270,6 @@ jobs:
       - name: Run smoke test
         run: scripts/ci/ios-sim/smoke-test.sh "$RUNNER_TEMP/DerivedData/Build/Products/Debug-iphonesimulator/SimpleX.app" "$RUNNER_TEMP/smoke-test"
 
-      - name: Render snapshots
-        if: ${{ !cancelled() && env.SIM_UDID != '' }}
-        run: scripts/ci/ios-sim/snapshots.sh "$RUNNER_TEMP/DerivedData" "$RUNNER_TEMP/snapshots"
-
-      - name: Upload snapshots
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: ios-sim-snapshots
-          path: ${{ runner.temp }}/snapshots
-          retention-days: 7
-          if-no-files-found: warn
-
       - name: Stop test backend
         if: ${{ !cancelled() && env.START_BACKEND == 'true' }}
         run: scripts/ci/ios-sim/backend.sh stop "$RUNNER_TEMP/backend"
