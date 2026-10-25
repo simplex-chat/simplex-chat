@@ -115,26 +115,44 @@ Agent side: https://github.com/evgeny-simplex/simplexmq/pull/2
 ## Tests
 
 `tests/ChatTests/Files.hs`, "file transfer over XFTP":
-- `checkNoAgentSndFiles` (:1088-1090): the count of agent `snd_files` rows with `deleted = 0` eventually equals 0.
-- "send and receive file" (:668): `checkNoAgentSndFiles alice` after the direct transfer (:697).
-- "send and receive file in group" (:754): `checkNoAgentSndFiles alice` after the group transfer (:791).
-- "delete agent file after upload error" (:1043):
+- `checkNoAgentSndFiles` (:1140-1142): the count of agent `snd_files` rows with `deleted = 0` eventually equals 0.
+- "send and receive file" (:672): `checkNoAgentSndFiles alice` after the direct transfer (:701).
+- "send and receive file in group" (:758): `checkNoAgentSndFiles alice` after the group transfer (:795).
+- "delete agent file after upload error" (:1047):
   - XFTP server with `newFileBasicAuth = Just "abcd"`; the client's server password `server_password` differs;
   - alice: "error uploading file 1 (test.pdf) for bob";
   - `checkNoAgentSndFiles alice`.
-- "delete agent file when contact is deleted during upload" (:1058):
+- "delete agent file when contact is deleted during upload" (:1062):
   - XFTP server down at the send;
   - bob deletes the contact with notification (`/_delete @2 full notify=on`);
   - server started: alice "bob: not ready";
-  - `checkNoAgentSndFiles alice` (:1071).
+  - `checkNoAgentSndFiles alice` (:1075).
   - On master, a test failure is expected: the deletion at master :291 is skipped after the error at :275, and the agent row is kept.
-- "delete agent file when item is marked deleted during upload" (:1073):
+- "delete agent file when item is marked deleted during upload" (:1077):
   - XFTP server down;
   - alice marks the item deleted for everyone;
   - the agent row is marked `deleted = 1` by the cancellation (`src/Simplex/Chat/Library/Internal.hs:648, 510, 3211`);
   - the agent's prepare worker finds the row marked deleted and sends `SFERR` (simplexmq `src/Simplex/FileTransfer/Agent.hs:509-510, 515-520`); the agent file is deleted after its handling;
-  - the count of all agent `snd_files` rows eventually equals 0 (:1086).
+  - the count of all agent `snd_files` rows eventually equals 0 (:1090).
   - On master, a test failure is expected when the check starts within 10 s of the agent start: the deletions are skipped for cancelled files, the marked row is deleted only by the agent cleanup 30 s after the agent starts, and the check polls for 20 s.
+- "delete agent file when file user is missing during upload" (:1092):
+  - XFTP server down at the send of a 17 MB file;
+  - the user's contact profile is unset, so the file user is not found;
+  - server started: the agent row is eventually marked `deleted = 1`, by the deletion on the first `SFPROG`.
+- "complete upload before chat is suspended" (:1106):
+  - XFTP server down at the send;
+  - alice: `/_app suspend 60000000`;
+  - server started: alice "completed uploading file 1 (test.pdf) for bob", then "chat suspended";
+  - `checkNoAgentSndFiles alice`;
+  - bob receives the file.
+- "show agent file error without file ID" (:1130):
+  - agent cleanup 2 s after the agent starts;
+  - the agent column `snd_files.prefix_path` renamed, so the three cleanup steps of sent files fail;
+  - alice: three lines "internal error: …", from `SFERR` without a file ID.
+
+`tests/ChatTests/Files.hs`, "file transfer over XFTP without chat items":
+- "send and receive small standalone file" (:1373): `checkNoAgentSndFiles src` after the upload (:1387).
+- "send and receive large standalone file" (:1429): `checkNoAgentSndFiles src` after the upload and its redirect upload (:1446).
 
 Device tests, run by the user:
 - During a 20 MB upload, the app leaves the foreground; within 15 s, a link is shared through the share sheet; then the app is opened:
