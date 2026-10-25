@@ -1,4 +1,4 @@
-# A chat profile created with no active local profile stores its avatar as its description, and loses its bio
+# Profile created with no active local profile: avatar stored as description, bio dropped
 
 `createProfileInNoProfileSetup` in `views/WelcomeView.kt` (shared code; the path is reached on desktop only).
 
@@ -24,7 +24,7 @@ The bio (`shortDescr`) has never been passed on this path: #6055 passed it only 
 `CreateProfile` calls `createProfileInNoProfileSetup` when `chatModel.localUserCreated` is not `true`; otherwise it calls `createProfileInProfiles`, which passes both correctly. The flag is `false` when the app found no active local profile at start, or when the core last reported none (`apiGetActiveUser`); while it is `null` the app shows the splash screen, so this screen cannot be opened. This happens on desktop only:
 
 - from the user picker's "Create chat profile" row;
-- from "Your chat profiles" → "+ Add profile" right after deleting the last visible profile on that screen: on desktop the screen stays open after the delete (`UserProfilesView.kt:345-363`, and `App.kt:161-163` does not show the user picker while it is open), and its "+ Add profile" row opens `CreateProfile` (`UserProfilesView.kt:182-187`, `WelcomeView.kt:164-167`);
+- from "Your chat profiles" → "+ Add profile" right after deleting the last visible profile on that screen: on desktop the screen stays open after the delete (`UserProfilesView.kt:346-363`, and `App.kt:161-163` does not show the user picker while it is open), and its "+ Add profile" row opens `CreateProfile` (the `addUser` lambda at `UserProfilesView.kt:49-55`, `WelcomeView.kt:164-167`);
 - from "Your chat profiles" → "+ Add profile" while a linked mobile is in use.
 
 Onboarding uses `createProfileOnboarding`.
@@ -43,7 +43,7 @@ Pass the image by name and the bio as `shortDescr`, as `createProfileInProfiles`
 ## Alternatives considered
 
 - Reorder `Profile`'s fields: it follows the core's field order (plus `localAlias`), and positional callers would silently shift.
-- Call `createProfileInProfiles` from this branch: it creates the profile on the linked mobile when one is in use, does not set `localUserCreated`, does not switch the UI to the local profile, and when there are no users yet it sets a different onboarding stage and never closes the screen.
+- Call `createProfileInProfiles` from this branch: it creates the profile on the linked mobile when one is in use, never sets `localUserCreated` itself (its `startChat` can set it indirectly when chat is not running, e.g. a desktop started with no profile and a known linked mobile; not traced end to end), does not switch the UI to the local profile, and when there are no users yet it sets a different onboarding stage and never closes the screen.
 - Share one `Profile` builder between the two create functions, which now build the same profile: a refactor, a separate PR if wanted.
 - Require named arguments everywhere / repair existing profiles: too broad for one screen.
 - Fix only the avatar and leave the bio for a separate PR: the same function, two lines; fixed together.
