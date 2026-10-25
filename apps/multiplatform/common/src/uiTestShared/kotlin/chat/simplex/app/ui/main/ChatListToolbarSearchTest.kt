@@ -13,6 +13,7 @@ import chat.simplex.app.ui.harness.joinLink
 import chat.simplex.app.ui.harness.keepOneTimeLink
 import chat.simplex.app.ui.harness.namePendingConnection
 import chat.simplex.app.ui.harness.planConfirm
+import chat.simplex.app.ui.harness.planProfileName
 import chat.simplex.app.ui.harness.presetFilter
 import chat.simplex.app.ui.harness.quiesce
 import chat.simplex.app.ui.harness.searchShowsLink
@@ -66,6 +67,7 @@ class ChatListToolbarSearchTest : UiTest() {
     bob sends "@work hello"
     poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "the badge on the profile button") { bar.profileBadge() }
     alice.userPicker().switchTo("work")
+    poll(what = "no badge while the unread chat is in the active profile") { alice.chatList.chat("bob").chatStats.unreadCount == 1 && !bar.profileBadge() }
     alice.chatList.open("bob")
     poll(what = "bob's chat to be read") { alice.chatList.chat("bob").chatStats.unreadCount == 0 }
     backToChatList()
@@ -147,6 +149,8 @@ class ChatListToolbarSearchTest : UiTest() {
     alice.chatList.row("dentist").row("Private notes")
     alice.chatList.search("dent")
     poll(what = "only the pending connection listed") { alice.chatList.shown("dentist") && !alice.chatList.shown("Private notes") }
+    replaceText(Ui.ChatList.Search, "denx")
+    poll(what = "the pending connection hidden for text its alias does not contain") { editableText(Ui.ChatList.Search) == "denx" && !alice.chatList.shown("dentist") }
   }
 
   @Test fun searchNoChatsFound() = uiTest {
@@ -190,7 +194,7 @@ class ChatListToolbarSearchTest : UiTest() {
     enterLinkInSearch(address)
     poll(what = "the address description in the read-only search field") { searchShowsLink("SimpleX contact address") }
     poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "the plan alert for bob with `Open new chat`") {
-      exists(planConfirm) && "Open new chat" in textsOf(planConfirm) && seesText("bob")
+      exists(planConfirm) && "Open new chat" in textsOf(planConfirm) && textOf(planProfileName) == "bob"
     }
     click(Ui.Alert.Dismiss(Ui.AlertSource.PrivacySensitive))
     poll(what = "the search field cleared and editable") { editableText(Ui.ChatList.Search).isNullOrEmpty() && isEnabled(Ui.ChatList.Search) }

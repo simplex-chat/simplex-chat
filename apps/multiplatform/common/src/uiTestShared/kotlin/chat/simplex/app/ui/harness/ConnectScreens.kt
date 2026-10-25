@@ -7,6 +7,7 @@ import chat.simplex.common.ui.Ui
 val planConfirm = Ui.Alert.Confirm(Ui.AlertSource.PrivacySensitive)
 
 val planDismiss = Ui.Alert.Dismiss(Ui.AlertSource.PrivacySensitive)
+val planProfileName = Ui.Alert.ProfileName(Ui.AlertSource.PrivacySensitive)
 
 fun planOption(name: String) = Ui.Alert.Option(Ui.AlertSource.PrivacySensitive, name)
 

@@ -4,6 +4,7 @@ import chat.simplex.app.ui.harness.CONNECT_TIMEOUT_MS
 import chat.simplex.app.ui.harness.SOCKS_HOST
 import chat.simplex.app.ui.harness.SocksProxy
 import chat.simplex.app.ui.harness.UiScope
+import chat.simplex.app.ui.harness.KnownAppIssue
 import chat.simplex.app.ui.harness.UiTest
 import chat.simplex.app.ui.harness.backToChatList
 import chat.simplex.app.ui.harness.closeDeveloperTools
@@ -117,18 +118,21 @@ class NetworkProxyTest : UiTest() {
     poll(what = "the default proxy stored and applied") { appPrefs.networkProxy.get() == NetworkProxy() && coreNetworkConfig().socksProxy == socksBefore }
   }
 
+  @KnownAppIssue("15.5 item 31", "`SOCKS proxy settings` closed by `Save`")
   @Test fun socks_unsavedAlert() = uiTest {
     val alice = app("alice")
     val storedBefore = storedSetting(PROXY)
     val network = networkAndServers(alice)
     var socks = network.socks()
     check(editableText(Ui.Socks.Host) == "localhost" && editableText(Ui.Socks.Port) == "9050") { "SOCKS fields: `${editableText(Ui.Socks.Host)}`:`${editableText(Ui.Socks.Port)}`" }
-    for ((field, invalid) in listOf(Ui.Socks.Port to "70000", Ui.Socks.Host to "bad@host")) {
+    for ((field, invalid, valid) in listOf(Triple(Ui.Socks.Port, "70000", "9050"), Triple(Ui.Socks.Host, "bad@host", "localhost"))) {
       replaceText(field, invalid)
       click(Ui.Socks.Save)
       settle()
       check(!AlertManager.shared.hasAlertsShown() && storedSetting(PROXY) == storedBefore) { "Save acted on the invalid `$invalid`" }
+      replaceText(field, valid)
     }
+    replaceText(Ui.Socks.Port, "70000")
     socks.back()
     check(!AlertManager.shared.hasAlertsShown() && storedSetting(PROXY) == storedBefore) { "leaving with invalid fields asked to save or saved" }
     socks = network.socks()
@@ -147,12 +151,9 @@ class NetworkProxyTest : UiTest() {
     goBack()
     awaitUnsavedAlert()
     click(ALERT_CONFIRM)
-    poll(what = "the port stored, `SOCKS proxy settings` still open") {
-      !AlertManager.shared.hasAlertsShown() && appPrefs.networkProxy.get().port.toString() == PROXY_PORT && exists(Ui.Socks.Save) && editableText(Ui.Socks.Port) == PROXY_PORT
-    }
+    poll(what = "the port stored") { !AlertManager.shared.hasAlertsShown() && appPrefs.networkProxy.get().port.toString() == PROXY_PORT }
     check(coreNetworkConfig().socksProxy == null && storedSetting(USE_SOCKS) != "true") { "saving the proxy settings turned the SOCKS proxy on: ${coreNetworkConfig().socksProxy}" }
-    socks.back()
-    check(!AlertManager.shared.hasAlertsShown()) { "leaving after the save asked to save again" }
+    poll(what = "`SOCKS proxy settings` closed by `Save`") { !exists(Ui.Socks.Save) && exists(Ui.Network.SaveServers) }
   }
 
   @Test fun advNet_transportIsolation() = uiTest {
@@ -343,6 +344,11 @@ class NetworkProxyTest : UiTest() {
     poll(what = "keep-alive stored as on with the new values and applied to the core") {
       storedSetting(KEEP_ALIVE) == "true" && storedSetting("NetworkTCPKeepIdle") == "60" && storedSetting("NetworkTCPKeepCnt") == "8" &&
         coreNetworkConfig().tcpKeepAlive == KeepAliveOpts(keepIdle = 60, keepIntvl = KeepAliveOpts.defaults.keepIntvl, keepCnt = 8)
+    }
+    click(Ui.AdvancedNetwork.KeepAlive)
+    adv.saveAndReconnect()
+    poll(what = "keep-alive off in the core, the 60 sec / 8 values dropped") {
+      storedSetting(KEEP_ALIVE) == "false" && coreNetworkConfig().tcpKeepAlive == KeepAliveOpts.defaults
     }
   }
 

@@ -41,9 +41,11 @@ abstract class UiTest {
       try {
         scope.body()
         scope.checkEnd()
-      } finally {
-        scope.finish()
+      } catch (e: Throwable) {
+        runCatching { scope.finish() }.exceptionOrNull()?.let(e::addSuppressed)
+        throw e
       }
+      scope.finish()
       AppCrashes.failIfAny()
     } finally {
       watchdog.cancel()
@@ -395,8 +397,13 @@ class UiScope(val rule: ComposeTestRule) {
   }
 
   fun texts(): List<String> =
-    rule.onAllNodes(hasText("", substring = true), useUnmergedTree = true).fetchSemanticsNodes()
-      .flatMap { it.config.getOrElseNullable(SemanticsProperties.Text) { null }.orEmpty() }.map { it.text }
+    try {
+      rule.onAllNodes(hasText("", substring = true), useUnmergedTree = true).fetchSemanticsNodes()
+        .flatMap { it.config.getOrElseNullable(SemanticsProperties.Text) { null }.orEmpty() }.map { it.text }
+    } catch (e: IllegalStateException) {
+      if (e.message?.startsWith("No compose hierarchies found") != true) throw e
+      emptyList()
+    }
 
   fun seesDescription(text: String, substring: Boolean = false) =
     rule.onAllNodes(hasContentDescription(text, substring = substring), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
@@ -425,7 +432,8 @@ class UiScope(val rule: ComposeTestRule) {
     Intents.getIntents().asReversed().firstNotNullOfOrNull { i ->
       val inner = if (i.action == Intent.ACTION_CHOOSER) i.getParcelableExtra(Intent.EXTRA_INTENT) as? Intent else i
       inner?.getStringExtra(Intent.EXTRA_TEXT)
-    } ?: (androidAppContext.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager).primaryClip?.getItemAt(0)?.text?.toString()
+    } ?: (androidAppContext.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager)
+      .takeIf { it.primaryClipDescription != null }?.primaryClip?.getItemAt(0)?.text?.toString()
 
   fun setClipboardText(text: String?) = UiTestApp.onMain {
     val cm = androidAppContext.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager

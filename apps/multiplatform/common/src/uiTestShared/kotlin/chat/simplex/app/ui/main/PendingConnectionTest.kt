@@ -74,14 +74,25 @@ class PendingConnectionTest : UiTest() {
     alice.chatList.row("Private notes")
     joinOneTimeLinkInSearch(full)
     val pending = chatModel.chats.value.first { it.chatInfo is ChatInfo.ContactConnection }.id
-    poll(what = "the pending row named `$ACCEPTED` with `via one-time link`") {
-      textsOf(Ui.ChatList.Row(pending)).let { ACCEPTED in it && "via one-time link" in it }
-    }
-    alice.chatList.open(ACCEPTED)
+    openChatById(pending)
     poll(what = "`You accepted connection` with the name field and `Learn more`, without the one-time link or `Share 1-time link`") {
       seesText("You accepted connection") && seesText(CONTACT_ONLINE) && exists(Ui.Info.Alias) && exists(described("Learn more")) &&
         !seesText("You invited a contact") && !seesText("One-time invitation link") && !exists(SHARE)
     }
+    closePendingConnectionInfo()
+    poll(what = "the pending row named `$ACCEPTED` with `via one-time link`") {
+      textsOf(Ui.ChatList.Row(pending)).let { ACCEPTED in it && "via one-time link" in it }
+    }
+  }
+
+  @Test fun pendingAcceptedAliasCarriesToContact() = uiTest {
+    val alice = app("alice"); val bob = cli("bob", PeerFlags(fullLinks = true))
+    val full = bob.createFullOneTimeLink()
+    bob.stop()
+    alice.chatList.row("Private notes")
+    joinOneTimeLinkInSearch(full)
+    val pending = chatModel.chats.value.first { it.chatInfo is ChatInfo.ContactConnection }.id
+    openChatById(pending)
     typeInto(Ui.Info.Alias, "dentist")
     poll(what = "the alias `dentist` saved for the pending connection") {
       chatModel.chats.value.any { (it.chatInfo as? ChatInfo.ContactConnection)?.contactConnection?.localAlias == "dentist" }

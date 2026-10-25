@@ -66,7 +66,8 @@ class RemoteDesktopTest : UiTest() {
     ChatScreen(this).send("hi from desktop")
     bob.eventuallyMessage("mobile> hi from desktop", CONNECT_TIMEOUT_MS)
     bob sends "@mobile hello desktop"
-    poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "bob's reply on the desktop") { seesText("hello desktop", substring = true) }
+    poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "bob's reply in the open chat on the desktop") { chatModel.chatsContext.chatItems.value.any { it.content.text == "hello desktop" } }
+    ChatScreen(this).itemId("hello desktop")
     endMobileSessionViaApi(mobile)
   }
 

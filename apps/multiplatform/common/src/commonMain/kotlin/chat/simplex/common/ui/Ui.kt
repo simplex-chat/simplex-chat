@@ -454,6 +454,7 @@ object Ui {
     fun Confirm(src: AlertSource) = UiKey("alert.confirm", src)
     fun Dismiss(src: AlertSource) = UiKey("alert.dismiss", src)
     fun Option(src: AlertSource, name: String) = UiKey("alert.option.$name", src)
+    fun ProfileName(src: AlertSource) = UiKey("alert.profileName", src)
   }
   object GroupPrefs {
     val MemberAdmission = UiKey("groupPrefs.memberAdmission")

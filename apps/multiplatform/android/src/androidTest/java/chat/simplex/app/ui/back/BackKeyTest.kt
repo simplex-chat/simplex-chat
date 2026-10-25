@@ -79,7 +79,6 @@ class BackKeyTest : UiTest() {
     check(chatModel.chatId.value == bobId) { "Back in selection mode left the chat" }
   }
 
-  @KnownAppIssue("15.5 item 6", "the invite members sheet to close to team's chat", intermittent = true)
   @Test fun back_closesContactAndGroupInfo() = uiTest {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)
@@ -95,14 +94,28 @@ class BackKeyTest : UiTest() {
     val teamId = alice.chatList.chatId("team")
     poll(what = "the invite members sheet listing bob over team") { chatModel.chatId.value == teamId && exists(bobInvitee) }
     hideKeyboard()
-    escape()
-    poll(what = "the invite members sheet to close to team's chat") {
+    click(Ui.InviteMembers.Skip)
+    poll(what = "the invite members sheet skipped to team's chat") {
       !exists(bobInvitee) && !ModalManager.end.hasModalsOpen() && chatModel.chatId.value == teamId && exists(Ui.Chat.Bar.part("title"))
     }
     ChatScreen(this).info()
     waitFor(Ui.Info.Alias)
     escape()
     poll(what = "group info to close to team's chat") { !ModalManager.end.hasModalsOpen() && !exists(Ui.Info.Alias) && chatModel.chatId.value == teamId }
+  }
+
+  @KnownAppIssue("15.5 item 6", "Back on the invite members sheet also closed team's chat", intermittent = true)
+  @Test fun back_closesInviteMembersSheet() = uiTest {
+    val alice = app("alice"); val bob = cli("bob")
+    connect(bob)
+    val bobInvitee = Ui.InviteMembers.Contact((alice.chatList.chat("bob").chatInfo as ChatInfo.Direct).contact.contactId)
+    alice.newChat().createGroup("team")
+    val teamId = alice.chatList.chatId("team")
+    poll(what = "the invite members sheet listing bob over team") { chatModel.chatId.value == teamId && exists(bobInvitee) }
+    hideKeyboard()
+    escape()
+    poll(what = "the invite members sheet to close") { !exists(bobInvitee) && !ModalManager.end.hasModalsOpen() }
+    poll(what = "Back on the invite members sheet also closed team's chat") { chatModel.chatId.value == teamId && exists(Ui.Chat.Bar.part("title")) }
   }
 
   @Test fun back_clearsChatListSearch() = uiTest {

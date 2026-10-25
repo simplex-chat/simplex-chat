@@ -116,9 +116,10 @@ class AppearanceTest : UiTest() {
     click(Ui.Appearance.ApplyTo)
     click(Ui.Appearance.ApplyTo.option(userId))
     poll(what = "Apply to showing alice") { textOf(Ui.Appearance.ApplyTo) == "alice" }
+    check(currentWallpaperPreset() != FLOWERS) { "the flowers wallpaper is shown before it is picked" }
     click(Ui.Appearance.Wallpaper(FLOWERS))
-    poll(what = "the flowers wallpaper set as alice's theme and the save finished") {
-      chatModel.currentUser.value?.uiThemes?.preferredMode(dark)?.wallpaper?.preset == FLOWERS && UiIdle.inFlight().isEmpty()
+    poll(what = "the flowers wallpaper set as alice's theme, shown, and the save finished") {
+      chatModel.currentUser.value?.uiThemes?.preferredMode(dark)?.wallpaper?.preset == FLOWERS && currentWallpaperPreset() == FLOWERS && UiIdle.inFlight().isEmpty()
     }
     assertEquals("alice's wallpaper in the core", FLOWERS, coreUiThemesPreset(userId, dark))
     check(StoredThemes.yamlBytes().contentEquals(yamlBefore) && readThemeOverrides().none { it.wallpaper?.preset == FLOWERS }) {

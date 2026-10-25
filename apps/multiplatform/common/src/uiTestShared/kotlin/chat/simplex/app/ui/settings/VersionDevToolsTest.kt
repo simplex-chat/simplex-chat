@@ -1,7 +1,6 @@
 package chat.simplex.app.ui.settings
 
 import chat.simplex.app.ui.harness.UiTest
-import chat.simplex.app.ui.harness.chatConsole
 import chat.simplex.app.ui.harness.closeDeveloperTools
 import chat.simplex.app.ui.harness.consoleShows
 import chat.simplex.app.ui.harness.developerTools
@@ -56,7 +55,11 @@ class VersionDevToolsTest : UiTest() {
 
   @Test fun console_sendCommand() = uiTest {
     val alice = app("alice")
-    chatConsole(alice)
+    developerTools(alice)
+    click(Ui.DevTools.ShowOptions)
+    poll(what = "developer options turned on") { appPrefs.developerTools.get() }
+    click(Ui.DevTools.Console)
+    waitFor(Ui.Chat.Message)
     check(!consoleShows("> $CONTACTS_CMD") && !consoleShows("> $SQL_CMD")) { "the commands are in the console before they were sent" }
     typeInto(Ui.Chat.Message, CONTACTS_CMD)
     click(Ui.Chat.Send)
@@ -68,7 +71,7 @@ class VersionDevToolsTest : UiTest() {
     poll(what = "the /sql command and the error response in the console") { consoleShows("> $SQL_CMD") && consoleShows("< error chat") }
     val items = chatModel.terminalItems.value
     val cmd = items.indexOfLast { it.label == "> $SQL_CMD" }
-    assertEquals("the response to $SQL_CMD without SimpleX Lock and developer tools", SQL_BLOCKED, items.getOrNull(cmd + 1)?.details)
+    assertEquals("the response to $SQL_CMD with developer options on and without SimpleX Lock", SQL_BLOCKED, items.getOrNull(cmd + 1)?.details)
   }
 
   @Test fun dev_resetAllHints() = uiTest {

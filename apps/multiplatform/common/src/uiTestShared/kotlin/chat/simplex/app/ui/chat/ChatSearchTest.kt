@@ -18,6 +18,7 @@ import chat.simplex.common.ui.Ui
 import org.junit.Test
 
 private const val FIXTURE_JPG = "tests/fixtures/test.jpg"
+private const val FILLERS = 40
 
 class ChatSearchTest : UiTest() {
   @Test fun search_direct_filtersResults() = uiTest {
@@ -65,21 +66,26 @@ class ChatSearchTest : UiTest() {
     connect(bob)
     bob sends "@alice alpha"
     bob sends "@alice the needle"
-    bob sends "@alice omega"
-    awaitRowText(alice, "bob", "omega")
+    for (i in 1..FILLERS) bob sends "@alice f$i"
+    awaitRowText(alice, "bob", "f$FILLERS")
+    alice.chatList.rowMenu("bob", "markRead")
+    poll(what = "bob's chat marked read") { alice.chatList.chat("bob").chatStats.unreadCount == 0 }
     val chat = alice.chatList.open("bob")
-    val alpha = chat.itemId("alpha"); val needle = chat.itemId("the needle"); val omega = chat.itemId("omega")
+    val newest = chat.itemId("f$FILLERS")
+    val alpha = loadedItemId("`alpha` loaded") { it.content.text == "alpha" }
+    val needle = loadedItemId("`the needle` loaded") { it.content.text == "the needle" }
     val goTo = Ui.Chat.Item(needle).part("goTo")
-    check(!exists(goTo)) { "`the needle` has a go-to button outside search" }
+    check(!exists(Ui.Chat.Item(newest).part("goTo"))) { "`f$FILLERS` has a go-to button outside search" }
+    check(!exists(Ui.Chat.Item(needle))) { "`the needle` is in view with the newest messages" }
     chat.search("needle")
     poll(what = "only `the needle`, with its go-to button") {
-      chat.itemTexts() == listOf("the needle") && exists(goTo) && !exists(Ui.Chat.Item(alpha)) && !exists(Ui.Chat.Item(omega))
+      chat.itemTexts() == listOf("the needle") && exists(goTo) && !exists(Ui.Chat.Item(alpha)) && !exists(Ui.Chat.Item(newest))
     }
     hideKeyboard()
     click(goTo)
-    poll(what = "the search closed and `the needle` shown with `alpha` and `omega` around it") {
+    poll(what = "the search closed and `the needle` in view, above `f$FILLERS` with the scroll-down button") {
       !exists(Ui.Chat.Bar.part("search")) && !exists(goTo) &&
-        exists(Ui.Chat.Item(alpha)) && exists(Ui.Chat.Item(needle)) && exists(Ui.Chat.Item(omega))
+        exists(Ui.Chat.Item(needle)) && !exists(Ui.Chat.Item(newest)) && exists(Ui.Chat.ScrollToBottom)
     }
   }
 

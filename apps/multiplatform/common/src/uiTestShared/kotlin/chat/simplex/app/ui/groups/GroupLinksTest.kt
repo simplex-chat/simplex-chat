@@ -28,18 +28,6 @@ import org.junit.Assert.assertNotEquals
 import org.junit.Test
 
 class GroupLinksTest : UiTest() {
-  @Test fun groupLink_cliJoinsViaShortLink() = uiTest {
-    val alice = app("alice"); val bob = cli("bob")
-    val info = emptyGroup(alice, "team").groupInfo()
-    poll(what = "alice alone in team's members") { "you: creator" in info.ownMemberTexts() && info.memberTexts("bob").isEmpty() }
-    val link = info.createLink()
-    bob sends "/c $link"
-    bob expects "connection request sent!"
-    bob.eventually("#team: joining the group...", CONNECT_TIMEOUT_MS)
-    bob.eventually("#team: you joined the group", CONNECT_TIMEOUT_MS)
-    poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "bob listed as connected in team's members") { "connected" in info.memberTexts("bob") }
-  }
-
   @Test fun groupInvitation_incognitoContactJoinsIncognito() = uiTest {
     val alice = app("alice"); val bob = cli("bob")
     val incognito = connectIncognito(bob)
@@ -166,6 +154,7 @@ class GroupLinksTest : UiTest() {
     val alice = app("alice"); val bob = cli("bob"); val cath = cli("cath")
     val chat = emptyGroup(alice, "team")
     val info = chat.groupInfo()
+    poll(what = "alice alone in team's members") { "you: creator" in info.ownMemberTexts() && info.memberTexts("bob").isEmpty() }
     openNewGroupLink()
     val link = sharedGroupLink()
     bob sends "/c $link"

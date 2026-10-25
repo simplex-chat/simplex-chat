@@ -340,7 +340,7 @@ class AlertManager {
                   lineHeight = 20.sp,
                   fontWeight = FontWeight.SemiBold,
                   maxLines = 2,
-                  modifier = Modifier.fillMaxWidth()
+                  modifier = Modifier.fillMaxWidth().ui(Ui.Alert.ProfileName(uiSource))
                 )
 
                 if (nameCaption != null) {

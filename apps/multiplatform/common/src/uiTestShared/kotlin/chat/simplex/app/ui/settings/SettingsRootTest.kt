@@ -69,6 +69,9 @@ class SettingsRootTest : UiTest() {
       settle()
       check(exists(Ui.Settings.Appearance) && !row.shown(this)) { "${row.name} opened while the chat is stopped" }
     }
+    click(Ui.Settings.Migrate)
+    settle()
+    check(exists(Ui.Settings.Appearance) && !seesText("Migrate device")) { "Migrate to another device opened while the chat is stopped" }
     click(Ui.Settings.Help)
     poll(what = "Help & support opening while the chat is stopped") { exists(Ui.Help.HowToUse) && !exists(Ui.Settings.Appearance) }
     click(Ui.Help.HowToUse)

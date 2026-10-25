@@ -11,6 +11,7 @@ import chat.simplex.app.ui.harness.backToChatList
 import chat.simplex.app.ui.harness.clearChatFromInfo
 import chat.simplex.app.ui.harness.connect
 import chat.simplex.app.ui.harness.deleteGroupFromInfo
+import chat.simplex.app.ui.harness.groupInfoOf
 import chat.simplex.app.ui.harness.hostGroup
 import chat.simplex.app.ui.harness.joinGroupFromList
 import chat.simplex.app.ui.harness.leaveGroupFromInfo
@@ -18,13 +19,14 @@ import chat.simplex.app.ui.harness.offersOnlyDelete
 import chat.simplex.app.ui.harness.offersOnlyLeave
 import chat.simplex.app.ui.harness.ownGroup
 import chat.simplex.common.model.ChatInfo
+import chat.simplex.common.model.GroupMemberStatus
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.Ui
 import chat.simplex.common.views.helpers.ModalManager
 import org.junit.Test
 
 class LeaveDeleteClearTest : UiTest() {
-  @KnownAppIssue("15.5 item 14", "a list to scroll to groupInfo.delete", intermittent = true)
+  @KnownAppIssue("15.5 item 14", "team's membership reverted after leaving", intermittent = true)
   @Test fun leaveGroup_thenDeleteLocalCopy() = uiTest {
     val alice = app("alice"); val bob = cli("bob")
     val chat = memberOfBobsTeam(alice, bob)
@@ -34,6 +36,7 @@ class LeaveDeleteClearTest : UiTest() {
     bob.eventually("#team: alice left the group (signed)", CONNECT_TIMEOUT_MS)
     poll(what = "`you left` in team's compose field") { seesText("you left") }
     chat.groupInfo()
+    check(groupInfoOf("team").membership.memberStatus == GroupMemberStatus.MemLeft) { "team's membership reverted after leaving: ${groupInfoOf("team").membership.memberStatus}" }
     check(offersOnlyDelete()) { "group info after leaving does not offer only `Delete group`" }
     deleteGroupFromInfo("team", "Group will be deleted for you - this cannot be undone!")
     alice.chatList.gone("team")

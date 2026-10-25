@@ -36,7 +36,7 @@ class CreateGroupTest : UiTest() {
     check(chatModel.chats.value.none { it.chatInfo is ChatInfo.Group }) { "`Create group` created a group from an empty or invalid name" }
     click(Ui.NewGroup.Create)
     val id = alice.chatList.chatId("a-1")
-    poll(what = "group `a-1` open with the invite members sheet") { chatModel.chatId.value == id && seesText("Invite members") }
+    poll(what = "group `a-1` open with the invite members sheet and no contacts to add") { chatModel.chatId.value == id && seesText("Invite members") && seesText("No contacts to add") }
     val groups = chatModel.chats.value.filter { it.chatInfo is ChatInfo.Group }.map { it.chatInfo.chatViewName }
     check(groups == listOf("a-1")) { "groups after creating `a-1` are $groups" }
   }

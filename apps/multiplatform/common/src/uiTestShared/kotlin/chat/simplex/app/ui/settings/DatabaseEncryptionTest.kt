@@ -23,7 +23,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Test
 
 class DatabaseEncryptionTest : UiTest() {
-  @KnownAppIssue("15.5 item 27", "waiting for the Database encrypted! alert", intermittent = true)
+  @KnownAppIssue("15.5 item 27", "waiting for the Database encrypted! alert for the second passphrase", intermittent = true)
   @Test fun dbEncrypt_changePassphrase() = uiTest {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)
@@ -40,7 +40,7 @@ class DatabaseEncryptionTest : UiTest() {
     check(storedSetting("EncryptedDBPassphrase") == storedFirst) { "a wrong current passphrase changed the stored passphrase" }
     pass.reopen()
     pass.change(current = FIRST, new = SECOND)
-    poll(timeoutMs = DB_WORK_TIMEOUT_MS, what = "the Database encrypted! alert") { seesText("Database encrypted!") }
+    poll(timeoutMs = DB_WORK_TIMEOUT_MS, what = "the Database encrypted! alert for the second passphrase") { seesText("Database encrypted!") }
     click(Ui.Alert.Confirm(Ui.AlertSource.Shared))
     poll(timeoutMs = DB_WORK_TIMEOUT_MS, what = "the chat running again with the new passphrase stored") {
       chatModel.chatRunning.value == true && storedSetting("EncryptedDBPassphrase").let { it != null && it != storedFirst }

@@ -46,7 +46,7 @@ class LiveMessageTest : UiTest() {
     bob expectsMessage "alice> bye"
   }
 
-  @KnownAppIssue("15.5 item 13", "[LIVE started] use /show", intermittent = true)
+  @KnownAppIssue("15.5 item 13", "a second live message started after the cancelled one", intermittent = true)
   @Test fun liveMessage_boltButton_emptyStart() = uiTest {
     assumeTrue(LIVE_ON_ANDROID, !appPlatform.isAndroid)
     val alice = app("alice"); val bob = cli("bob")
@@ -67,7 +67,9 @@ class LiveMessageTest : UiTest() {
     typeInto(Ui.Chat.Message, "hi!")
     bob.expectsLiveStarted("hi!")
     click(Ui.Chat.Send)
-    bob.expectsMessage("alice> [LIVE ended] hi!", CONNECT_TIMEOUT_MS)
+    val next = bob.nextLine(CONNECT_TIMEOUT_MS)
+    check("[LIVE started]" !in next) { "a second live message started after the cancelled one: `$next`" }
+    check(next.endsWith("alice> [LIVE ended] hi!")) { "bob: expected alice's live message to end with `hi!`, got `$next`; next: ${bob.pending()}" }
   }
 
   @Test fun liveMessage_received_showsLiveBadge() = uiTest {

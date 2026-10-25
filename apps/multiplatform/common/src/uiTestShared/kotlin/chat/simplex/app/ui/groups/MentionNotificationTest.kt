@@ -37,6 +37,7 @@ class MentionNotificationTest : UiTest() {
     poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "both mentions counted for the inactive profile alice and the badge on the profile button") {
       aliceUser().unreadCount >= before + 2 && chatListToolbar().profileBadge()
     }
+    quiesce()
     check(aliceUser().unreadCount == before + 2) { "alice's unread count is ${aliceUser().unreadCount}, expected ${before + 2}: the plain message in the mentions-only group was counted" }
     val picker = alice.userPicker()
     poll(what = "alice's row in the user picker showing ${before + 2}") { "${before + 2}" in textsOf(Ui.UserPicker.User(aliceUser().user.userId)) }

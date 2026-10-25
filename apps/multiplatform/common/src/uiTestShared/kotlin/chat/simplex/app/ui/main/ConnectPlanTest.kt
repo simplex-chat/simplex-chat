@@ -15,6 +15,7 @@ import chat.simplex.app.ui.harness.keepOneTimeLink
 import chat.simplex.app.ui.harness.openPasteLink
 import chat.simplex.app.ui.harness.planConfirm
 import chat.simplex.app.ui.harness.planDismiss
+import chat.simplex.app.ui.harness.planProfileName
 import chat.simplex.app.ui.harness.planOption
 import chat.simplex.app.ui.harness.quiesce
 import chat.simplex.app.ui.harness.searchShowsLink
@@ -187,7 +188,7 @@ class ConnectPlanTest : UiTest() {
 
     enterLinkInSearch(cathAddress)
     poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "the plan alert for cath's pasted address with `Open new chat`") {
-      exists(planConfirm) && "Open new chat" in textsOf(planConfirm) && seesText("cath")
+      exists(planConfirm) && "Open new chat" in textsOf(planConfirm) && textOf(planProfileName) == "cath"
     }
     check(!seesText("Link signature verified.")) { "a pasted address with no signature shows `Link signature verified.`" }
     click(planDismiss)
@@ -196,7 +197,7 @@ class ConnectPlanTest : UiTest() {
     backToChatList()
     click(Ui.ChatList.Row(cathId).part("link"))
     poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "the plan alert for cath's chat-list card with `Link signature verified.`") {
-      seesText("cath") && seesText("Link signature verified.") && exists(planConfirm) && "Open new chat" in textsOf(planConfirm)
+      textOf(planProfileName) == "cath" && seesText("Link signature verified.") && exists(planConfirm) && "Open new chat" in textsOf(planConfirm)
     }
     click(planDismiss)
     poll(what = "the alert to close") { !exists(planConfirm) }
@@ -209,7 +210,7 @@ class ConnectPlanTest : UiTest() {
     }
     click(Ui.Chat.Item(bobCard).part("chatLink"))
     poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "the known-contact alert for bob with `Open chat`") {
-      exists(planConfirm) && "Open chat" in textsOf(planConfirm) && seesText("bob") && !seesText("Link signature verified.")
+      exists(planConfirm) && "Open chat" in textsOf(planConfirm) && textOf(planProfileName) == "bob" && !seesText("Link signature verified.")
     }
     click(planConfirm)
     poll(what = "bob's chat still open and no second chat named bob") {

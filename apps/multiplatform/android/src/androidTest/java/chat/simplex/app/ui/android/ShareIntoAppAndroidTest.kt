@@ -9,6 +9,7 @@ import chat.simplex.app.ui.back.relaunch
 import chat.simplex.app.ui.harness.CONNECT_TIMEOUT_MS
 import chat.simplex.app.ui.harness.ChatScreen
 import chat.simplex.app.ui.harness.UiScope
+import chat.simplex.app.ui.harness.KnownAppIssue
 import chat.simplex.app.ui.harness.UiTest
 import chat.simplex.app.ui.harness.connect
 import chat.simplex.app.ui.harness.described
@@ -24,6 +25,7 @@ import chat.simplex.common.platform.chatController
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.Ui
 import chat.simplex.common.views.helpers.AlertManager
+import chat.simplex.common.views.helpers.SharedContent
 import chat.simplex.common.views.helpers.ModalManager
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
@@ -108,19 +110,17 @@ class ShareIntoAppAndroidTest : UiTest() {
     }
   }
 
-  @Test fun shareIn_sendMultipleNonMedia_onlyClosesChat() = uiTest {
+  @KnownAppIssue("15.5 item 32", "a shared PDF and JPEG gave no feedback")
+  @Test fun shareIn_sendMultipleNonMedia_giveFeedback() = uiTest {
     val alice = app("alice")
     val notesId = alice.chatList.chatId(NOTES)
     alice.chatList.open(NOTES)
     waitFor(Ui.Chat.Message)
     check(chatModel.chatId.value == notesId) { "Private notes did not open" }
     val pdf = contentUri(File(exchangeDir(), PDF_NAME).apply { writeText(PDF_CONTENT) })
-    deliverToApp(shareStreamsIntent("application/pdf", listOf(pdf, pdf)))
-    poll(what = "Private notes closed") { chatModel.chatId.value == null }
-    settle()
-    check(shareListTitle() == null && exists(Ui.ChatList.Search) && chatModel.sharedContent.value == null && !AlertManager.shared.hasAlertsShown()) {
-      "two shared PDFs: share list ${shareListTitle()}, shared content ${chatModel.sharedContent.value}, alert ${AlertManager.shared.hasAlertsShown()}"
-    }
+    deliverToApp(shareStreamsIntent("*/*", listOf(pdf, contentUri(jpegFile("share-mixed.jpg")))))
+    poll(what = "a shared PDF and JPEG gave no feedback: an alert or a share list") { AlertManager.shared.hasAlertsShown() || shareListTitle() != null }
+    check(chatModel.sharedContent.value !is SharedContent.Media) { "a shared PDF and JPEG were taken as media: ${chatModel.sharedContent.value}" }
   }
 
   @Test fun shareIn_fileToGroupWithFilesOff_alert() = uiTest {

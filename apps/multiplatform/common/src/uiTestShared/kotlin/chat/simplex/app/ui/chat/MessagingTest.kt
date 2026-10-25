@@ -32,6 +32,10 @@ class MessagingTest : UiTest() {
     chat.send("all good - you?")
     bob expectsMessage "alice> > hello! how are you?"
     bob expects "      all good - you?"
+    val reply = chat.itemId("all good - you?")
+    poll(what = "alice's reply quoting `hello! how are you?`") {
+      textsOf(Ui.Chat.Item(reply)).let { t -> t.any { "hello! how are you?" in it } && t.any { "all good - you?" in it } }
+    }
   }
 
   @Test fun delete_ownForEveryone_peerSeesMarkedDeleted() = uiTest {
@@ -64,7 +68,7 @@ class MessagingTest : UiTest() {
     chat.react("hi", "👍")
     bob expectsMessage "alice> > hi"
     bob expects "    + 👍"
-    poll(what = "reaction chip without a count") { chat.reactionCount("hi", "👍") == null }
+    poll(what = "alice's 👍 chip on `hi` without a count") { exists(Ui.Chat.ReactionChip(chat.itemId("hi"), "👍")) && chat.reactionCount("hi", "👍") == null }
     bob types "+1 alice hi"
     poll(what = "reaction chip count 2") { chat.reactionCount("hi", "👍") == "2" }
   }

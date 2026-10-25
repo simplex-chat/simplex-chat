@@ -50,12 +50,12 @@ class ChannelOwnerCreateTest : UiTest() {
     val chat = createChannel(alice, "team").continueToChannel()
     val link = channelLinkViaApi("team")
     chat.groupInfo().apply {
-      poll(what = "Group info of the new channel with `Subscribers` and `1 subscriber`") { seesText("Subscribers") && seesText("1 subscriber") }
+      poll(what = "Group info of the new channel with `Subscribers` and `1 subscriber`") { seesText("Subscribers") && "1 subscriber" in textsOf(Ui.GroupInfo.Content) }
       close()
     }
     bob.joinChannel("team", link, relay)
     cath.joinChannel("team", link, relay)
     chat.groupInfo()
-    poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "`3 subscribers` in Group info after bob and cath joined") { seesText("Subscribers") && seesText("3 subscribers") }
+    poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "`3 subscribers` in Group info after bob and cath joined") { seesText("Subscribers") && "3 subscribers" in textsOf(Ui.GroupInfo.Content) }
   }
 }

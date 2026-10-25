@@ -33,6 +33,7 @@ wd_pid=
 cleanup() {
   [ -z "${bridge_pid:-}" ] || kill -TERM "$bridge_pid" 2>/dev/null || true
   [ -z "$wd_pid" ] || wait "$wd_pid" 2>/dev/null || true
+  [ -z "${display_set:-}" ] || { adb -s "$serial" shell wm size reset; adb -s "$serial" shell wm density reset; } >/dev/null 2>&1 || true
   [ -n "${UITEST_SERIAL:-}" ] || "$wd" release >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
@@ -67,6 +68,14 @@ if [ -n "$wd_pid" ]; then
 fi
 serial="${UITEST_SERIAL:-$("$wd" serial)}"
 step "device $serial ready"
+if [ -z "${UITEST_SERIAL:-}" ]; then
+  ci_width=1080 ci_height=2400 ci_density=420
+  height=$(adb -s "$serial" shell wm size | tr -d '\r' | sed -n 's/^Physical size: [0-9]*x//p')
+  display_set=1
+  adb -s "$serial" shell wm size "$((height * ci_width / ci_height))x$height"
+  adb -s "$serial" shell wm density "$((height * ci_density / ci_height))"
+  step "display set to the CI emulator's size in dp"
+fi
 echo "uitest-android: note: pm clear removes the app's data on $serial"
 app_sum=$(sha256sum "$app_apk" | cut -c1-16)
 stamp="$mp/build/uitest-android/installed-app-$(printf %s "$serial" | tr -c "A-Za-z0-9" _)"
