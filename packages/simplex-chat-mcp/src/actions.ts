@@ -8,10 +8,12 @@ export type State = "pending" | "performing" | "done" | "failed" | "rejected" | 
 const progressTick = 60_000
 const expiryTick = 60_000
 const maxPending = 20
+const maxPerforming = 20
 
 export const lostMessage = "The agent lost its control chat. The person who runs it has to restart it with --reset-owners."
 export const stoppingMessage = "The server is stopping."
 const pendingMessage = `${maxPending} actions are pending; wait for the owner's decisions.`
+const performingMessage = `${maxPerforming} actions are being performed; wait for their results.`
 
 export class ToolError extends Error {}
 
@@ -57,6 +59,7 @@ export interface ConnectAction extends ActionRecord {
   connectedAt?: number
   startedAt?: number
   connectUntil?: number
+  linkTextBytes?: number
 }
 
 export interface SendAction extends ActionRecord {
@@ -86,13 +89,14 @@ export interface ActionHooks {
   refusal(action: Action): string | undefined
   saveCounter(next: number): Promise<void>
   postCard(action: Action): Promise<number>
-  perform(action: Action): Promise<void>
+  perform(action: Action, signal: AbortSignal): Promise<void>
   outcome(action: Action): Promise<void>
 }
 
 export class Actions {
   lost = false
   private stopping = false
+  private readonly abortPerforms = new AbortController()
   private readonly actions = new Map<number, Action>()
   private readonly expiry = setInterval(() => this.expireDue(), expiryTick).unref()
   private readonly posting = new Map<number, Promise<boolean>>()
@@ -110,6 +114,10 @@ export class Actions {
 
   pending(): Action[] {
     return this.all().filter(({state}) => state === "pending")
+  }
+
+  private performing(): Action[] {
+    return this.all().filter(({state}) => state === "performing")
   }
 
   find(key: string): Action | undefined {
@@ -133,7 +141,11 @@ export class Actions {
       interrupted: false,
     }
     const action = {...fields, ...record} as Action
-    const refusal = this.stopping ? stoppingMessage : this.lost ? lostMessage : this.pending().length >= maxPending ? pendingMessage : this.hooks.refusal(action)
+    const refusal = this.stopping ? stoppingMessage
+      : this.lost ? lostMessage
+      : this.pending().length >= maxPending ? pendingMessage
+      : this.performing().length >= maxPerforming ? performingMessage
+      : this.hooks.refusal(action)
     if (refusal !== undefined) throw new ToolError(refusal)
     this.next++
     this.actions.set(n, action)
@@ -203,6 +215,7 @@ export class Actions {
     await Promise.all(this.posting.values())
     const stopped = this.all().filter(({state}) => state === "pending" || state === "performing")
     for (const action of stopped) action.interrupted = true
+    this.abortPerforms.abort()
     if (!this.lost) await Promise.all(stopped.map(action => this.hooks.outcome(action).catch(error => logError(`action ${action.n} card`, error))))
     await Promise.allSettled(this.outcomes)
     return stopped.length
@@ -216,6 +229,7 @@ export class Actions {
     } catch (error) {
       action.error = errorText(error)
       this.decide(action, "failed")
+      log(`Action ${action.n}: failed: ${oneLine(action.error)}.`)
       return false
     }
   }
@@ -229,14 +243,15 @@ export class Actions {
 
   private async runPerform(action: Action): Promise<void> {
     try {
-      await this.hooks.perform(action)
+      await this.hooks.perform(action, this.abortPerforms.signal)
       this.decide(action, "done")
     } catch (error) {
       action.error = errorText(error)
       this.decide(action, "failed")
     }
+    if (action.interrupted) return
     log(`Action ${action.n}${this.mode === "host" ? ":" : ` approved by ${action.decidedBy}:`} ${performedText(action, this.mode)}`)
-    if (!action.interrupted && !this.lost) await this.postOutcome(action)
+    if (!this.lost) await this.postOutcome(action)
   }
 
   private decide(action: Action, state: State): void {
