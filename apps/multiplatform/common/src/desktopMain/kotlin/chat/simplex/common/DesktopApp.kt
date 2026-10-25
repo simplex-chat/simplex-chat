@@ -298,7 +298,10 @@ class DialogState<T>(private val cancelled: T) {
 
   suspend fun awaitResult(params: DialogParams = DialogParams()): T {
     synchronized(this) {
-      if (isAwaiting) return cancelled
+      if (isAwaiting) {
+        Log.w(TAG, "File dialog request cancelled: another request is already awaiting")
+        return cancelled
+      }
       this.params = params
       onResult = CompletableDeferred()
     }
