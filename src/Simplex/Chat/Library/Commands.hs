@@ -477,8 +477,8 @@ processChatCommand cxt nm = \case
     user <- withFastStore $ \db -> do
       user <- createUserRecordAt db (AgentUserId auId) (isTrue userChatRelay) service p True ts
       mapM_ (setUserServers db user ts) uss
-      createPresetContactCards db user `catchAllErrors` \_ -> pure ()
       createNoteFolder db user
+      createPresetContactCards db user `catchAllErrors` \_ -> pure ()
       pure user
     atomically . writeTVar u $ Just user
     pure $ CRActiveUser user

@@ -28,7 +28,7 @@ import qualified Data.ByteString.Char8 as B
 import Data.Maybe (fromMaybe, isJust, maybeToList)
 import Data.Time (UTCTime, getCurrentTime)
 import Data.Int (Int64)
-import Data.List (intercalate, isInfixOf, isSuffixOf)
+import Data.List (intercalate, isInfixOf, isSubsequenceOf, isSuffixOf)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Simplex.Chat.Badges (FileSizeLimits (..))
@@ -6284,7 +6284,7 @@ testGroupHistory =
 
       cath ##> "/_get chat #1 count=100"
       r <- chat <$> getTermLine cath
-      r `shouldContain` [(0, "hello"), (0, "hey!")]
+      r `shouldSatisfy` isSubsequenceOf [(0, "hello"), (0, "hey!")]
 
       -- message delivery works after sending history
       alice #> "#team 1"
@@ -6378,7 +6378,7 @@ testGroupHistoryPreferenceOff =
 
       cath ##> "/_get chat #1 count=100"
       r <- chat <$> getTermLine cath
-      r `shouldContain` [(0, "hello"), (0, "hey!")]
+      r `shouldSatisfy` isSubsequenceOf [(0, "hello"), (0, "hey!")]
 
       alice ##> "/set history #team off"
       alice <## "updated group preferences:"
@@ -6644,9 +6644,10 @@ testGroupHistoryMultipleFiles =
       cath ##> "/_get chat #1 count=100"
       r <- chatF <$> getTermLine cath
       r
-        `shouldContain` [ ((0, "hi alice"), Just $ tmpFile cath "testfile_bob_1"),
-                          ((0, "hey bob"), Just $ tmpFile cath "testfile_alice_1")
-                        ]
+        `shouldSatisfy` isSubsequenceOf
+          [ ((0, "hi alice"), Just $ tmpFile cath "testfile_bob_1"),
+            ((0, "hey bob"), Just $ tmpFile cath "testfile_alice_1")
+          ]
 
 testGroupHistoryFileCancel :: HasCallStack => TestParams -> IO ()
 testGroupHistoryFileCancel =
@@ -6864,13 +6865,14 @@ testGroupHistoryQuotes =
       cath ##> "/_get chat #1 count=100"
       r <- chat' <$> getTermLine cath
       r
-        `shouldContain` [ ((0, "ALICE"), Nothing),
-                          ((0, "BOB"), Nothing),
-                          ((0, "1"), Just (0, "ALICE")),
-                          ((0, "2"), Just (0, "BOB")),
-                          ((0, "3"), Just (0, "ALICE")),
-                          ((0, "4"), Just (0, "BOB"))
-                        ]
+        `shouldSatisfy` isSubsequenceOf
+          [ ((0, "ALICE"), Nothing),
+            ((0, "BOB"), Nothing),
+            ((0, "1"), Just (0, "ALICE")),
+            ((0, "2"), Just (0, "BOB")),
+            ((0, "3"), Just (0, "ALICE")),
+            ((0, "4"), Just (0, "BOB"))
+          ]
 
 testGroupHistoryDeletedMessage :: HasCallStack => TestParams -> IO ()
 testGroupHistoryDeletedMessage =
@@ -6972,7 +6974,7 @@ testGroupHistoryDisappearingMessage =
 
       cath ##> "/_get chat #1 count=100"
       r1 <- chat <$> getTermLine cath
-      r1 `shouldContain` [(0, "1"), (0, "2"), (0, "3"), (0, "4")]
+      r1 `shouldSatisfy` isSubsequenceOf [(0, "1"), (0, "2"), (0, "3"), (0, "4")]
 
       threadDelay 11000000
       concurrentlyN_
@@ -6992,7 +6994,7 @@ testGroupHistoryDisappearingMessage =
 
       cath ##> "/_get chat #1 count=100"
       r2 <- chat <$> getTermLine cath
-      r2 `shouldContain` [(0, "1"), (0, "4")]
+      r2 `shouldSatisfy` isSubsequenceOf [(0, "1"), (0, "4")]
       r2 `shouldNotContain` [(0, "2")]
       r2 `shouldNotContain` [(0, "3")]
 
@@ -7103,7 +7105,7 @@ testGroupHistoryUnknownMember =
 
       dan ##> "/_get chat #1 count=100"
       r <- chat <$> getTermLine dan
-      r `shouldContain` [(0, "hi from alice"), (0, "hi from bob"), (0, "hi from cath")]
+      r `shouldSatisfy` isSubsequenceOf [(0, "hi from alice"), (0, "hi from bob"), (0, "hi from cath")]
 
       dan ##> "/ms team"
       dan

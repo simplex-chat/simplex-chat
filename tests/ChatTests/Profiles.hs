@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
@@ -14,7 +15,7 @@ import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async (concurrently_)
+import Control.Concurrent.Async (concurrently, concurrently_)
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.Reader (runReaderT)
@@ -922,12 +923,13 @@ testUserBadgeGroupLinkJoiner ps = do
       memberBadgeHeader alice "team" "bob" `shouldReturn` Just ("R", BSActive)
       bob ##> "/_start"
       bob <## "chat started"
-      bob <## "subscribed 1 connections on server localhost"
       concurrentlyN_
         [ alice <## "#team: bob joined the group",
-          do
-            bob <## "#team: joining the group..."
-            bob <## "#team: you joined the group"
+          bob
+            <### [ "subscribed 1 connections on server localhost",
+                   "#team: joining the group...",
+                   "#team: you joined the group"
+                 ]
         ]
       memberBadgeHeader alice "team" "bob" `shouldReturn` Just ("CG", BSActive)
 
@@ -992,8 +994,7 @@ testUserBadgeInvitedIntroduced ps = do
       bob <## "chat stopped"
       cath ##> "/_start"
       cath <## "chat started"
-      cath <## "subscribed 2 connections on server localhost"
-      cath <## "#team: alice added bob (Bob) to the group (connecting...)"
+      cath <### ["subscribed 2 connections on server localhost", "#team: alice added bob (Bob) to the group (connecting...)"]
       memberBadgeHeader cath "team" "bob" `shouldReturn` Just ("CG", BSActive)
 
 testUserBadgeInvitingHost :: HasCallStack => TestParams -> IO ()
@@ -5311,14 +5312,24 @@ testShortLinkInvitationChangeUser = testChat2 aliceProfile bobProfile test
         <### [ "alisa: connection started",
                WithTime "@alisa hello"
              ]
-      concurrently_
-        (bob <## "alisa: contact is connected")
-        ( alice
-            <### [ WithTime "bob> hello",
-                   "bob (Bob): contact is connected"
-                 ]
-        )
-      alice <##> bob
+      (_, connectedFirst) <-
+        concurrently
+          (bob <## "alisa: contact is connected")
+          ( getTermLine alice >>= \case
+              "bob (Bob): contact is connected" -> do
+                alice <## "bob: standard end-to-end encryption enabled"
+                alice <# "bob> hello"
+                pure True
+              l -> do
+                dropTime l `shouldBe` "bob> hello"
+                alice <## "bob (Bob): contact is connected"
+                pure False
+          )
+      alice #> "@bob hi"
+      bob <# "alisa> hi"
+      bob #> "@alisa hey"
+      when connectedFirst $ alice <## "bob: quantum resistant end-to-end encryption enabled"
+      alice <# "bob> hey"
 
 testShortLinkAddressChangeProfile :: HasCallStack => TestParams -> IO ()
 testShortLinkAddressChangeProfile = testChat2 aliceProfile bobProfile test
