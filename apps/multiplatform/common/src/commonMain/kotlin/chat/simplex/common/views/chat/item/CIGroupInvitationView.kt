@@ -111,7 +111,7 @@ fun CIGroupInvitationView(
           ) {
             groupInfoView()
             val secondaryColor = MaterialTheme.colors.secondary
-            val reserve = if (inlineMeta != null) metaReserveCopy(ci.meta, timedMessagesTTL, encrypted = null, signedFileVerified = null, secondaryColor = secondaryColor, showStatus = false, showEdited = false, showViaProxy = false, showTimestamp = showTimestamp) else null
+            val reserve = if (inlineMeta != null) metaReserveCopy(ci.meta, timedMessagesTTL, encrypted = null, signedFileVerified = null, secondaryColor = secondaryColor, showStatus = false, showEdited = false, showViaProxy = false, showTimestamp = showTimestamp, breakBefore = true) else null
             Divider(Modifier.fillMaxWidth().padding(top = 8.dp))
             Column(Modifier.padding(top = 8.dp, bottom = 4.dp, start = 4.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
               if (groupChat) {

@@ -176,8 +176,8 @@ bands            header and quote text: bubbleTextPadding, the inset from the ba
 time             the baseline of the time BUBBLE_TEXT_INSET above the bubble bottom, on the last baseline of the text
                  ticks without a time: where they stand next to a time (as terminal rows)
                  principle: inline elements on the text baseline (D3)
-reserve          metaReserveCopy in bubbles: word joiner and direction mark, icon spaces in dp, time at 12sp
-                 the last word moves to the next line with the time
+reserve          metaReserveCopy in bubbles: a breaking space after text, direction mark, icon spaces in dp, time at 12sp
+                 the time alone moves to the next line when it does not fit (user)
                  principle: a precise reserve for the time (as terminal rows)
 row gaps         BUBBLE_CLOSE_GAP 2sp between close messages, BUBBLE_FAR_GAP 8sp at a large gap
                  principle: constants in sp; the measured gaps are kept (D7)
@@ -193,16 +193,17 @@ icons            header, feature and preference icons centred on their text, wit
 ```
 B1   message text and captions: full line height; 4.375sp above, 6sp below
 B2   time: baseline on the last text baseline, by its distance from the bubble bottom
-B3   reserve: the copy of the time in message text, under an emoji, in decryption errors and group invitations;
+B3   reserve: the copy of the time in message text, under an emoji, in decryption errors and group invitations,
+     after text with a breaking space before it and without the word joiner (user);
      files keep the string reserve of their size line (shared with terminal rows)
-B4   header: 12dp start; text inset by bubbleTextPadding; icon without height
+B4   header: 12dp start, as message text (user); text inset by bubbleTextPadding; icon without height
 B5   quote: text inset by bubbleTextPadding; Inter for the sender and the text (earlier owner decision: quotes in Inter)
 B6   emoji in a bubble: the text paddings; the reserve line with the full line height
 B7   deleted, moderated and error items: text inset by bubbleTextPadding; time on the text baseline
 B8   file in a bubble: the last baseline of the size line BUBBLE_TEXT_INSET above the edge
-B9   events: line height of 12sp secondary text; feature icons and merged icons without height, one event line high
-B10  row gaps in sp, values kept
-B11  markdown blocks in bubbles: spacing and line heights of terminal rows; classic heading sizes kept
+B9   events: line height of 12sp secondary text; feature icons and merged icons without height, one event line high (user)
+B10  row gaps in sp, values kept; a sender change in direct chats 8sp (user)
+B11  markdown blocks in bubbles: spacing and line heights of terminal rows (user); classic heading sizes kept
 B12  unchanged: fills, tails, roundness, colours, themes, wallpapers, interaction; link preview, chat link card,
      group invitation, voice and call layout (D8: cards in the redesign); sender names and avatars; date separators
      (shared with terminal rows); reactions; emoji without bubble; chat item info
@@ -215,8 +216,9 @@ chat/item/TerminalItemView.kt     LocalBubbleLayout; usesChatTypography(); chatT
                                   inlineIcon in both layouts; metaBaseline shared by TerminalMetaLayout and the bubbles
 chat/item/FramedItemView.kt       BUBBLE_* constants; Modifier.bubbleTextPadding, Modifier.bubbleMeta(), RowScope.bubbleMetaOnBaseline();
                                   header, quote, emoji, meta and text insets
-chat/item/CIMetaView.kt           metaReserveCopy (was terminalReserveSpaceForMeta)
-chat/item/TextItemView.kt         the copy for every message text with a time
+chat/item/CIMetaView.kt           metaReserveCopy (was terminalReserveSpaceForMeta); breakBefore: a breaking space instead of the word joiner
+chat/item/TextItemView.kt         the copy for every message text with a time, breakBefore in bubbles after text;
+                                  ruleMinWidth in terminal rows only
 chat/item/MarkdownBlocks.kt       spacing of terminal rows when usesChatTypography()
 chat/item/CIEventView.kt          chatEventTextStyle in both layouts; chatEventPadding without the vertical parameter
 chat/item/CIChatFeatureView.kt    merged icons one event line high in both layouts
@@ -240,6 +242,10 @@ usersettings/Appearance.kt        LocalBubbleLayout for the classic theme previe
 - no bottom inset before another part of the band
 - time on the text baseline in a card row
 
+`apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/TerminalMetaCopyTest.kt`:
+
+- the bubble copy starts with a breaking space; the time alone moves to the next line
+
 ## 6. Results
 
 Desktop renders of 52 items and 2 chat lists, light and dark, font scale 1 and 1.5, right-to-left; the same renders of terminal rows.
@@ -250,7 +256,7 @@ one-line bubble  32px (33px); capitals 10px below the top edge (11px), last base
 time             baseline on the last text baseline for sent and received messages (received: 1px lower before)
 reserve          "✓✓ 10:15 AM": 79px (92px) for a meta of 80px; at font scale 1.5: 105px (137px) for 106px
                  short messages narrower; at font scale 1.5 the time stays on the line of short texts
-                 the last word moves to the next line with the time: a hyphenated word or a link may break (Q2)
+                 after text one space before it; the time alone moves to the next line when it does not fit
 header           text and icon 12dp from the edge (8dp); band 29px (30px)
 quote            Inter; full line heights; band 31px with one line (29px), taller with a sender and two lines
 deleted, errors  one-line card 32px (31px), as a one-line message; marked deleted 29px (27px); time on the text baseline
@@ -267,14 +273,6 @@ Q1   header band: keep the quote-coloured band of report, deleted, live and forw
      on the bubble fill, 13.4sp from its baseline to the text capitals (as terminal rows, level 2–3)?
      recommended: header on the bubble fill; the quote keeps its band
      shown: forwarded, forwarded-snd, report
-Q2   a link at the end of a message: with the copy of the time joined to it, a link that fits a line breaks
-     after "//" to keep its last part with the time; keep links whole and let the time take its own line after a link?
-     recommended: keep links whole
-     shown: link-text, text-inline-md
-Q3   direct chats: a change of sender has the gap of a message of the same sender 60 s later (8sp);
-     the hierarchy of terminal rows puts a sender change one level higher. Give it 12sp?
-     recommended: keep 8sp, as the side and the tail of the bubble mark the sender
-     shown: list-direct
 Q4   events: the gap above and below an event depends on the time and direction of its neighbours (2sp or 8sp);
      terminal rows put events at the highest level whatever the time (D9a). Always 8sp around events?
      recommended: always 8sp

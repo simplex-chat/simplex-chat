@@ -38,10 +38,10 @@ class TerminalMetaCopyTest {
   private val receivedTimed = CIMeta.getSample(2, Clock.System.now(), "", status = CIStatus.RcvRead(), itemTimed = CITimed(30, null))
   private val sentViaProxy = CIMeta.getSample(3, Clock.System.now(), "", status = CIStatus.SndSent(SndCIStatusProgress.Complete), sentViaProxy = true)
 
-  private fun copy(meta: CIMeta, density: Density, direction: LayoutDirection, showViaProxy: Boolean = false) =
+  private fun copy(meta: CIMeta, density: Density, direction: LayoutDirection, showViaProxy: Boolean = false, breakBefore: Boolean = false) =
     metaReserveCopy(
       meta, null, null, null, Color.Gray, showStatus = true, showEdited = true, showViaProxy = showViaProxy, showTimestamp = true,
-      density = density, bodyFontSize = 16.sp, direction = direction
+      density = density, bodyFontSize = 16.sp, direction = direction, breakBefore = breakBefore
     )
 
   private fun paragraph(text: AnnotatedString, density: Density, textDirection: TextDirection, width: Int) =
@@ -127,6 +127,24 @@ class TerminalMetaCopyTest {
     val p = paragraph(text, density, TextDirection.Ltr, width.toInt())
     assertEquals(2, p.lineCount)
     assertEquals(p.getLineForOffset(head.lastIndexOf(' ') + 1), p.getLineForOffset(text.length - 1))
+  }
+
+  @Test
+  fun bubbleCopyMovesAloneAfterBreakingSpace() {
+    val density = Density(1f)
+    val head = "The bot replied at once"
+    val bubbleCopy = copy(sentEdited, density, LayoutDirection.Ltr, breakBefore = true)
+    assertEquals(" " + copy(sentEdited, density, LayoutDirection.Ltr).text.removePrefix("⁠"), bubbleCopy.text)
+    val text = buildAnnotatedString {
+      append(head)
+      append(bubbleCopy)
+    }
+    val oneLine = paragraph(text, density, TextDirection.Ltr, 10000)
+    val width = (oneLine.getHorizontalPosition(head.length, true) + oneLine.maxIntrinsicWidth) / 2
+    val p = paragraph(text, density, TextDirection.Ltr, width.toInt())
+    assertEquals(2, p.lineCount)
+    assertEquals(0, p.getLineForOffset(head.length - 1))
+    assertEquals(head.length + 1, p.getLineStart(1))
   }
 
   @Test

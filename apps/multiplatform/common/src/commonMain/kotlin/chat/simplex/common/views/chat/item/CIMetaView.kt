@@ -234,13 +234,15 @@ fun metaReserveCopy(
   showStatus: Boolean = true,
   showEdited: Boolean = true,
   showViaProxy: Boolean,
-  showTimestamp: Boolean
+  showTimestamp: Boolean,
+  breakBefore: Boolean = false
 ): AnnotatedString =
   metaReserveCopy(
     meta, chatTTL, encrypted, signedFileVerified, secondaryColor, showStatus, showEdited, showViaProxy, showTimestamp,
     density = LocalDensity.current,
     bodyFontSize = MaterialTheme.typography.body1.fontSize,
-    direction = LocalLayoutDirection.current
+    direction = LocalLayoutDirection.current,
+    breakBefore = breakBefore
   )
 
 fun metaReserveCopy(
@@ -255,12 +257,13 @@ fun metaReserveCopy(
   showTimestamp: Boolean,
   density: Density,
   bodyFontSize: TextUnit,
-  direction: LayoutDirection
+  direction: LayoutDirection,
+  breakBefore: Boolean = false
 ): AnnotatedString {
   val spaceStyle = SpanStyle(fontSize = with(density) { bodyFontSize.value.dp.toSp() }, fontWeight = FontWeight.Normal)
   val textStyle = SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.Normal)
   return buildAnnotatedString {
-    append(if (direction == LayoutDirection.Ltr) "\u2060\u200E" else "\u2060\u200F")
+    append((if (breakBefore) " " else "\u2060") + if (direction == LayoutDirection.Ltr) "\u200E" else "\u200F")
     reserveSpaceForMeta(
       meta, chatTTL, encrypted, secondaryColor, showStatus, showEdited, showViaProxy, showTimestamp, signedFileVerified, tallIconSpace = "\u00A0",
       spaces = { withStyle(spaceStyle) { append(it.replace(' ', '\u00A0')) } },
