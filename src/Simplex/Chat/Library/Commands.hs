@@ -2529,10 +2529,22 @@ processChatCommand cxt nm = \case
     updateProfile_ user p' True $ withFastStore' $ \db -> setUserProfileContactLink db user $ Just ucl
   SetProfileAddress onOff -> withUser $ \User {userId} ->
     processChatCommand cxt nm $ APISetProfileAddress userId onOff
-  APISetAddressSettings userId pqRatchet_ settings -> withUserId userId $ \user ->
-    setAddressSettings user pqRatchet_ $ const settings
-  SetAddressSettings pqRatchet_ settings chatLayout_ -> withUser $ \user ->
-    setAddressSettings user pqRatchet_ $ \AddressSettings {chatLayout} -> (settings :: AddressSettings) {chatLayout = fromMaybe chatLayout chatLayout_}
+  APISetAddressSettings userId pqRatchet_ settings@AddressSettings {businessAddress, autoAccept} -> withUserId userId $ \user -> do
+    ucl@UserContactLink {userContactLinkId, shortLinkDataSet, addressSettings} <- withFastStore (`getUserAddress` user)
+    forM_ autoAccept $ \AutoAccept {acceptIncognito} -> do
+      when (shortLinkDataSet && acceptIncognito) $ throwCmdError "incognito not allowed for address with short link data"
+      when (businessAddress && acceptIncognito) $ throwCmdError "requests to business address cannot be accepted incognito"
+    if addressSettings == settings
+      then pure $ CRUserContactLinkUpdated user ucl
+      else do
+        let ucl' = ucl {addressSettings = settings}
+            pqInitKeys = (\case True -> IKUsePQ; False -> IKPQOn) <$> pqRatchet_
+        ucl'' <- if shortLinkDataSet then setMyAddressData False pqInitKeys user ucl' else pure ucl'
+        withFastStore' $ \db -> updateUserAddressSettings db userContactLinkId settings
+        pure $ CRUserContactLinkUpdated user ucl''
+  SetAddressSettings pqRatchet_ settings chatLayout_ -> withUser $ \user@User {userId} -> do
+    UserContactLink {addressSettings = AddressSettings {chatLayout}} <- withFastStore (`getUserAddress` user)
+    processChatCommand cxt nm $ APISetAddressSettings userId pqRatchet_ (settings :: AddressSettings) {chatLayout = fromMaybe chatLayout chatLayout_}
   AcceptContact incognito cName -> withUser $ \User {userId} -> do
     connReqId <- withFastStore $ \db -> getContactRequestIdByName db userId cName
     processChatCommand cxt nm $ APIAcceptContact incognito connReqId
@@ -4157,21 +4169,6 @@ processChatCommand cxt nm = \case
       let autoAccept' = (\aa -> aa {acceptIncognito = False}) <$> autoAccept addressSettings
           ucl' = (ucl :: UserContactLink) {connLinkContact = CCLink connFullLink (Just sLnk), shortLinkDataSet = True, shortLinkLargeDataSet = BoolDef True, addressSettings = addressSettings {autoAccept = autoAccept'}}
       pure ucl'
-    setAddressSettings :: User -> Maybe Bool -> (AddressSettings -> AddressSettings) -> CM ChatResponse
-    setAddressSettings user pqRatchet_ updateSettings = do
-      ucl@UserContactLink {userContactLinkId, shortLinkDataSet, addressSettings} <- withFastStore (`getUserAddress` user)
-      let settings@AddressSettings {businessAddress, autoAccept} = updateSettings addressSettings
-      forM_ autoAccept $ \AutoAccept {acceptIncognito} -> do
-        when (shortLinkDataSet && acceptIncognito) $ throwCmdError "incognito not allowed for address with short link data"
-        when (businessAddress && acceptIncognito) $ throwCmdError "requests to business address cannot be accepted incognito"
-      if addressSettings == settings
-        then pure $ CRUserContactLinkUpdated user ucl
-        else do
-          let ucl' = ucl {addressSettings = settings}
-              pqInitKeys = (\case True -> IKUsePQ; False -> IKPQOn) <$> pqRatchet_
-          ucl'' <- if shortLinkDataSet then setMyAddressData False pqInitKeys user ucl' else pure ucl'
-          withFastStore' $ \db -> updateUserAddressSettings db userContactLinkId settings
-          pure $ CRUserContactLinkUpdated user ucl''
     updateContactPrefs :: User -> Contact -> Preferences -> CM ChatResponse
     updateContactPrefs _ ct@Contact {activeConn = Nothing} _ = throwChatError $ CEContactNotActive ct
     updateContactPrefs user@User {userId} ct@Contact {activeConn = Just conn@Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
