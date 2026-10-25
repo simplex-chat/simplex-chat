@@ -2,6 +2,7 @@ package chat.simplex.app.ui.groups
 
 import chat.simplex.app.ui.harness.CONNECT_TIMEOUT_MS
 import chat.simplex.app.ui.harness.CliPeer
+import chat.simplex.app.ui.harness.KnownAppIssue
 import chat.simplex.app.ui.harness.MemberSupportScreen
 import chat.simplex.app.ui.harness.SupportChatScreen
 import chat.simplex.app.ui.harness.UiTest
@@ -65,6 +66,16 @@ class SupportChatTest : UiTest() {
     chat.send("for everyone")
     cath.expectsMessage("#team alice> for everyone", CONNECT_TIMEOUT_MS)
     bob.expectsMessage("#team alice> for everyone", CONNECT_TIMEOUT_MS)
+  }
+
+  @KnownAppIssue("15.5 item 40", "waiting for the singular `1 message` banner in team's chat")
+  @Test fun supportChat_singleUnreadBannerIsSingular() = uiTest {
+    val alice = app("alice"); val bob = cli("bob"); val cath = cli("cath")
+    memberOfBobsTeamWithCath(alice, bob, cath)
+    poll(what = "team's chat open with no support banner") { exists(Ui.Chat.Message) && supportBanner().isEmpty() }
+    bob sends "#team (support: alice) only"
+    poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "a support banner for bob's message in team's chat") { supportBanner().any { it == "1 message" || it == "1 messages" } }
+    poll(what = "the singular `1 message` banner in team's chat") { "1 message" in supportBanner() }
   }
 
   @Test fun chatsWithMembers_markRead() = uiTest {

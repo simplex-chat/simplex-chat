@@ -188,9 +188,10 @@ class ChatListFilteredChatsUnitTest {
     val read = direct(contact(23, "read"))
     val mentioned = direct(contact(24, "mentioned", enableNtfs = MsgFilter.Mentions), Chat.ChatStats(unreadCount = 1, unreadMentions = 1))
     val unmentioned = direct(contact(25, "unmentioned", enableNtfs = MsgFilter.Mentions), Chat.ChatStats(unreadCount = 3, unreadMentions = 0))
+    val markedMentions = direct(contact(26, "markedMentions", enableNtfs = MsgFilter.Mentions), Chat.ChatStats(unreadChat = true))
     assertEquals(
-      listOf(unread.id, markedUnread.id, mentioned.id),
-      search("", listOf(unread, markedUnread, mutedUnread, read, mentioned, unmentioned), ActiveFilter.Unread)
+      listOf(unread.id, markedUnread.id, mentioned.id, markedMentions.id),
+      search("", listOf(unread, markedUnread, mutedUnread, read, mentioned, unmentioned, markedMentions), ActiveFilter.Unread)
     )
   }
 }

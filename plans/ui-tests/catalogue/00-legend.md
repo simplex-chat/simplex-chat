@@ -134,7 +134,7 @@ Each sub-area (a `###` section) is one test class, or several consecutive classe
 | 01 | 8 | Paste link and connection plans (contact, invitation, address, bot, name, signature, URI and link-card links) | `pasteLinkInvalidTextAlert` | `ConnectPlanTest` | 15 | 0 |
 | 01 | 9 | Connecting a prepared chat (compose area) | `preparedContactInvitationConnectButton` | `PreparedChatTest` | 6 | 0 |
 | 01 | 10 | Pending connection info screen | `pendingInfoInvitedSharesWorkingLink` | `PendingConnectionTest` | 5 | 0 |
-| 01 | 11 | Address screens | `addressScreenNoAddressShowsCreate` | `AddressTest` | 12 | 0 |
+| 01 | 11 | Address screens | `addressScreenNoAddressShowsCreate` | `AddressTest` | 13 | 0 |
 | 01 | 12 | SimpleX name | `simplexNameEntryShownWithAddress` | `SimplexNameTest` | 8 | 0 |
 | 01 | 13 | Contact info screen | `contactInfoSetLocalAlias` | `ContactInfoTest` | 24 | 0 |
 | 01 | 14 | Preferences | `contactPrefsSaveNotifiesContactAndEnforces` | `ContactPreferencesTest` | 4 | 0 |
@@ -174,7 +174,7 @@ Each sub-area (a `###` section) is one test class, or several consecutive classe
 | 03 | 9 | Member list and multi-select | `memberList_rolesAndStatuses` | `MemberListTest` | 6 | 0 |
 | 03 | 10 | Member info | `memberInfo_openShowsSections` | `MemberInfoTest` | 22 | 0 |
 | 03 | 11 | Member contacts | `memberContact_createAndSendInvitation` | `MemberContactTest` | 4 | 0 |
-| 03 | 12 | Support chats, «Chats with members» / «Chat with admins» | `supportChat_memberSendsToAdmins` | `SupportChatTest` | 6 | 0 |
+| 03 | 12 | Support chats, «Chats with members» / «Chat with admins» | `supportChat_memberSendsToAdmins` | `SupportChatTest` | 7 | 0 |
 | 03 | 13 | Reports, moderator side | `reports_moderatorBannerAndCounts` | `ModeratorReportTest` | 5 | 0 |
 | 03 | 14 | Moderation | `moderate_fullDeleteWhenEnabled` | `ModerationTest` | 3 | 0 |
 | 03 | 15 | Mentions, notification side | `mentions_mentionsOnlyMuteCountsOnlyMentionsForOtherProfile` | `MentionNotificationTest` | 2 | 0 |

@@ -263,6 +263,7 @@ class ChatListTagCountersUnitTest {
     val reportsContext = ChatModel.ChatsContext(SecondaryContextFilter.MsgContentTagContext(MsgContentTag.Report))
     chatModel.unreadTags[10] = 1
     reportsContext.updateChatTagReadInPrimaryContext(direct(1, Chat.ChatStats(unreadCount = 1), chatTags = listOf(10)), wasUnread = false)
+    assertEquals(mapOf(10L to 1), chatModel.unreadTags.toMap())
     reportsContext.markChatTagRead(direct(2, Chat.ChatStats(unreadCount = 1), chatTags = listOf(10)))
     assertEquals(mapOf(10L to 1), chatModel.unreadTags.toMap())
   }

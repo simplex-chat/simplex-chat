@@ -125,12 +125,21 @@ class PendingConnectionUnitTest {
 
   @Test
   fun completedStatusesShowConnectionEstablishedWithoutDescription() {
-    for (status in listOf(ConnStatus.Ready, ConnStatus.Deleted, ConnStatus.Failed("error"))) {
+    for (status in listOf(ConnStatus.Ready, ConnStatus.Deleted)) {
       val c = pending(status)
       assertEquals(generalGetString(MR.strings.display_name_connection_established), c.displayName, "$status")
       assertEquals("", c.description, "$status")
       assertFalse(c.initiated, "$status")
     }
+  }
+
+  @Test
+  fun failed_showsConnectionEstablished_currentBehaviour_item42() {
+    assertNull(ConnStatus.Failed("error").initiated)
+    val c = pending(ConnStatus.Failed("error"))
+    assertEquals(generalGetString(MR.strings.display_name_connection_established), c.displayName)
+    assertEquals("", c.description)
+    assertFalse(c.initiated)
   }
 
   @Test

@@ -42,8 +42,9 @@ class DesktopItemInfoShareTextUnitTest {
     text: String = "hello",
     quotedItem: CIQuote? = null,
     itemDeleted: CIDeleted? = null,
-    itemTimed: CITimed? = null
-  ) = ChatItem.getSampleData(5, dir = dir, ts = sentTs, text = text, quotedItem = quotedItem, itemDeleted = itemDeleted, itemTimed = itemTimed)
+    itemTimed: CITimed? = null,
+    file: CIFile? = null
+  ) = ChatItem.getSampleData(5, dir = dir, ts = sentTs, text = text, quotedItem = quotedItem, file = file, itemDeleted = itemDeleted, itemTimed = itemTimed)
 
   private fun share(ci: ChatItem, chatItemInfo: ChatItemInfo = info(), devTools: Boolean = false) =
     itemInfoShareText(chatModel, ci, chatItemInfo, devTools)
@@ -200,6 +201,27 @@ class DesktopItemInfoShareTextUnitTest {
         "Database ID: 5", "Record updated at: $sentTs", "Message status: {\"type\":\"sndNew\"}"
       ),
       share(item(), devTools = true)
+    )
+  }
+
+  @Test
+  fun devToolsAddFileStatusAndNoFileServersWhenNoneKnown() {
+    assertEquals(
+      lines(
+        "# Sent message", "", "Sent at: ${localTimestamp(sentTs)}",
+        "Database ID: 5", "Record updated at: $sentTs", "Message status: {\"type\":\"sndNew\"}",
+        "File status: {\"type\":\"rcvComplete\"}"
+      ),
+      share(item(file = CIFile.getSample(fileName = "a.pdf")), devTools = true)
+    )
+  }
+
+  @Test
+  fun itemWithoutFileHasNoFileServersLine() {
+    val chatItemInfo = ChatItemInfo(emptyList(), null, null, fileXftpServers = listOf("xftp://abc@xftp1.example.com"))
+    assertEquals(
+      lines("# Sent message", "", "Sent at: ${localTimestamp(sentTs)}"),
+      share(item(), chatItemInfo)
     )
   }
 }

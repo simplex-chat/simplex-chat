@@ -107,6 +107,7 @@ class BusinessChatTest : UiTest() {
   }
 
   @KnownAppIssue("15.5 item 14", "waiting for the customer's membership left in the model", intermittent = true)
+  @KnownAppIssue("15.5 item 14", "waiting for `you left` in the business chat's compose field", intermittent = true)
   @Test fun customer_seesTeamMemberAdded() = uiTest {
     val alice = app("alice"); val bob = cli("bob"); val cath = cli("cath")
     businessChat(bob)

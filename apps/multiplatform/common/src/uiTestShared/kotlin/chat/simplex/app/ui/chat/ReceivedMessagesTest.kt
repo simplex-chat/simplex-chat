@@ -169,7 +169,7 @@ class ReceivedMessagesTest : UiTest() {
     texts.forEach { bob types "@alice $it" }
     click(Ui.ChatList.Row(id))
     poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "all five of bob's messages in the open chat") {
-      chatModel.chatId.value == id && chatModel.chatsContext.chatItems.value.map { it.content.text }.containsAll(texts)
+      chatModel.chatId.value == id && texts.all { t -> chatModel.chatsContext.chatItems.value.lastOrNull { it.content.text == t }?.let { exists(Ui.Chat.Item(it.id)) } == true }
     }
   }
 

@@ -218,7 +218,7 @@ class NetworkProxyTest : UiTest() {
     check("No" in socks.onionHosts() && "When available" !in socks.onionHosts()) { "`Use .onion hosts` with the SOCKS proxy off: ${socks.onionHosts()}" }
     click(Ui.Socks.OnionHosts)
     settle()
-    check(exists(Ui.Socks.Save) && !exists(Ui.Socks.OnionHosts.option(OnionHosts.REQUIRED))) { "`Use .onion hosts` opened its options with the SOCKS proxy off" }
+    check(exists(Ui.Socks.Save) && !exists(Ui.Socks.OnionHosts.option(OnionHosts.NEVER))) { "`Use .onion hosts` opened its options with the SOCKS proxy off" }
     socks.back()
     click(Ui.Network.UseSocks)
     poll(what = "the `Use SOCKS proxy?` alert with `Confirm`") { seesText("Use SOCKS proxy?") && exists(ALERT_CONFIRM) && "Confirm" in textsOf(ALERT_CONFIRM) }

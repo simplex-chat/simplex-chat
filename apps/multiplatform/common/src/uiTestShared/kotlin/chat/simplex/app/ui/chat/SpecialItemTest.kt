@@ -16,7 +16,7 @@ import chat.simplex.common.ui.Ui
 import org.junit.Test
 
 class SpecialItemTest : UiTest() {
-  @Test fun featureItems_merged_iconRowExpandHide() = uiTest {
+  @Test fun featureItems_merged_collapseExpandHide() = uiTest {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)
     alice.chatList.open("bob")

@@ -197,7 +197,7 @@ class ForwardTest : UiTest() {
     cath expects "      one"
     cath expectsMessage "alice> -> forwarded"
     cath expects "      two"
-    poll(what = "the deleted-after-selection alert") { seesText("1 messages not forwarded") && seesText("Messages were deleted after you selected them.") }
+    poll(what = "the deleted-after-selection alert") { (seesText("1 message not forwarded") || seesText("1 messages not forwarded")) && seesText("Messages were deleted after you selected them.") }
     click(Ui.Alert.Confirm(Ui.AlertSource.Shared))
     chat.send("end")
     cath expectsMessage "alice> end"

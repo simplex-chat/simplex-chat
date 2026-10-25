@@ -32,6 +32,8 @@ class ChatSegmentDisplayTextUnitTest {
     assertEquals("", display(FormattedText("- ", Format.Markup(BlockToken.ListMark()))))
     assertEquals("", display(FormattedText("> ", Format.Markup(BlockToken.QuoteMark()))))
     assertEquals(" ", display(FormattedText("\n", Format.Markup(BlockToken.SoftBreak()))))
+    assertEquals("\n\n", display(FormattedText("\n\n", Format.Markup(BlockToken.ParagraphBreak(2)))))
+    assertEquals("\n", display(FormattedText("\n", Format.Markup(BlockToken.HardBreak()))))
   }
 
   @Test

@@ -158,5 +158,8 @@ class GroupEventMergeUnitTest {
     val merged = MergedItems.create(reversed, mutableStateOf(0), setOf(2L, 1L), ActiveChatState())
     assertEquals(listOf(listOf(2L), listOf(1L)), itemIds(merged))
     assertEquals(listOf(true, true), merged.items.map { (it as MergedItem.Grouped).revealed })
+    val state = mutableStateOf(setOf(2L, 1L))
+    (merged.items[1] as MergedItem.Grouped).reveal(false, state)
+    assertEquals(emptySet<Long>(), state.value)
   }
 }

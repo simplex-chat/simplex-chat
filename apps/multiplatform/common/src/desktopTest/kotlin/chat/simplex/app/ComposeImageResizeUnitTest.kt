@@ -27,6 +27,7 @@ class ComposeImageResizeUnitTest {
     val stream = resizeImageToDataSize(noise(3000, 2000).toComposeImageBitmap(), usePng = false, maxDataSize = MAX_IMAGE_SIZE)
     assertTrue(stream.size() <= MAX_IMAGE_SIZE, "size ${stream.size()}")
     assertTrue(stream.size() > MAX_IMAGE_SIZE / 8, "size ${stream.size()}")
+    assertEquals(listOf(0xFF, 0xD8), stream.toByteArray().take(2).map { it.toInt() and 0xFF })
     val result = decode(stream.toByteArray())
     assertTrue(result.width < 3000, "width ${result.width}")
     assertTrue(abs(result.height - result.width * 2 / 3) <= 2, "${result.width}x${result.height}")

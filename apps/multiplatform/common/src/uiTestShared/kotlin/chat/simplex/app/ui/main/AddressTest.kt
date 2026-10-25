@@ -2,6 +2,7 @@ package chat.simplex.app.ui.main
 
 import chat.simplex.app.ui.harness.AddressScreen
 import chat.simplex.app.ui.harness.CONNECT_TIMEOUT_MS
+import chat.simplex.app.ui.harness.KnownAppIssue
 import chat.simplex.app.ui.harness.UiScope
 import chat.simplex.app.ui.harness.UiTest
 import chat.simplex.app.ui.harness.addressPlanOk
@@ -80,6 +81,26 @@ class AddressTest : UiTest() {
     poll(what = "cath connected as a contact without a request") {
       (alice.chatList.chat("cath").chatInfo as? ChatInfo.Direct)?.contact?.let { it.sndReady && !it.nextAcceptContactRequest } == true
     }
+  }
+
+  @KnownAppIssue("15.5 item 44", "waiting for the welcome message field cleared with auto-accept")
+  @Test fun addressAutoAcceptOff_clearsWelcomeField() = uiTest {
+    val alice = app("alice")
+    alice.userPicker().address().create()
+    val settings = addressSettings()
+    settings.toggleAutoAccept()
+    poll(what = "auto-accept saved") { savedAddressSettings()?.autoAccept != null }
+    settings.welcome("hello!")
+    settings.save()
+    poll(what = "the welcome message saved and shown") { savedAddressSettings()?.autoReply?.text == "hello!" && editableText(Ui.Address.WelcomeMessage) == "hello!" }
+    settings.toggleAutoAccept()
+    poll(what = "auto-accept off saved with no welcome message") { savedAddressSettings()?.let { it.autoAccept == null && it.autoReply == null } == true }
+    poll(what = "the welcome message field cleared with auto-accept off") { editableText(Ui.Address.WelcomeMessage).isNullOrEmpty() }
+    settings.welcome("typed while off")
+    poll(what = "the typed welcome message shown") { editableText(Ui.Address.WelcomeMessage) == "typed while off" }
+    settings.toggleAutoAccept()
+    poll(what = "auto-accept on saved with no welcome message") { savedAddressSettings()?.let { it.autoAccept != null && it.autoReply == null } == true }
+    poll(what = "the welcome message field cleared with auto-accept on") { editableText(Ui.Address.WelcomeMessage).isNullOrEmpty() }
   }
 
   @Test fun addressBusinessToggleAutoEnablesAutoAccept() = uiTest {

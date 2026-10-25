@@ -58,5 +58,8 @@ class ChatItemMergeCategoryUnitTest {
     val merged = MergedItems.create(items, mutableStateOf(0), setOf(3L, 2L, 1L), ActiveChatState())
     assertEquals(listOf(listOf(3L), listOf(2L), listOf(1L)), merged.items.map { (it as MergedItem.Grouped).items.map { li -> li.item.id } })
     assertEquals(listOf(true, true, true), merged.items.map { (it as MergedItem.Grouped).revealed })
+    val state = mutableStateOf(setOf(3L, 2L, 1L))
+    (merged.items[1] as MergedItem.Grouped).reveal(false, state)
+    assertEquals(emptySet<Long>(), state.value)
   }
 }
