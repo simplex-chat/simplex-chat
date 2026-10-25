@@ -1,4 +1,4 @@
-Revision 1, 2026-10-19, draft for comments
+Revision 2, 2026-10-21, draft for comments
 
 Evgeny Poberezkin
 
@@ -28,6 +28,16 @@ Evgeny Poberezkin
   - [Messages](#messages)
   - [Versions and capabilities](#versions-and-capabilities)
   - [Examples](#examples)
+- [A2A binding](#a2a-binding)
+  - [Identification](#identification)
+  - [A2A messages](#a2a-messages)
+  - [Service parameters](#service-parameters)
+  - [Streaming](#streaming)
+  - [Push notifications](#push-notifications)
+  - [Callers and authorization](#callers-and-authorization)
+  - [Service RPC](#service-rpc)
+  - [Agent Card](#agent-card)
+  - [A2A examples](#a2a-examples)
 - [Security considerations](#security-considerations)
 - [Privacy considerations](#privacy-considerations)
 - [Implementations](#implementations)
@@ -41,7 +51,7 @@ This document defines how software agents find SimpleX addresses and call the to
 - declarations: the protocols a profile serves and their transports, the peer types a channel or a contact address is made for, and the update frequency of a channel;
 - the chat transport: the command `/_call` in a conversation;
 - the Service RPC transport: one request and one response, without a conversation, in a generic envelope;
-- the binding of the Model Context Protocol (MCP) [MCP] to both transports.
+- the bindings of the Model Context Protocol (MCP) [MCP] and of the Agent2Agent protocol (A2A) [A2A] to both transports.
 
 ## Conventions
 
@@ -113,7 +123,7 @@ For SimpleX entries, the type `updates` requires a channel link, the type `group
 
 - [Acme news](https://smp12.simplex.im/c#…): SimpleX updates for people and agents, weekly. Product news and offers.
 - [Acme customers](https://smp12.simplex.im/g#…): SimpleX group for people. Questions and tips from customers.
-- [Ask Acme](https://smp12.simplex.im/a#…): SimpleX business contact for agents, MCP. Orders and availability.
+- [Ask Acme](https://smp12.simplex.im/a#…): SimpleX business contact for agents, MCP, A2A. Orders and availability.
 - [Acme support](mailto:support@acme.example): Email contact for people.
 ```
 
@@ -165,6 +175,10 @@ Example, the `preferences` of a contact profile:
     "mcp": {
       "versions": ["2026-07-28"],
       "transports": {"chat": true, "rpc": true}
+    },
+    "a2a": {
+      "versions": ["1.0"],
+      "transports": {"chat": true, "rpc": true}
     }
   }
 }
@@ -211,6 +225,7 @@ A binding defines the protocol's request and response messages, including how, a
 | Name | Binding |
 |---|---|
 | `mcp` | [MCP binding](#mcp-binding) |
+| `a2a` | [A2A binding](#a2a-binding) |
 
 ## Chat transport
 
@@ -230,10 +245,12 @@ A binding defines the protocol's request and response messages, including how, a
 
 ### Replies
 
-- A bot sends one reply to each command it answers. The reply quotes the command, with a truncated quote. Its text is the protocol's response message, a JSON object.
+- A bot answers a command with one or more replies. Each reply quotes the command, with a truncated quote. Its text is a message of the protocol, a JSON object.
+- The binding defines the messages a bot sends before its last reply, and the message that ends its answer.
 - A caller matches each reply to its command by the quoted message. Replies can arrive in any order.
-- In a group, a broadcast can receive several replies, one from each member that serves the protocol. A caller collects them all, each with its sender.
-- In a direct chat, a caller accepts replies only from the recipient. In a group, a caller of a command with a mention accepts only the mentioned member's reply.
+- A caller collects every reply until its wait ends, each with its sender, in arrival order. In a group, a broadcast receives the answers of every member that serves the protocol.
+- A reply whose text is not a message of the protocol is collected as text, with its sender.
+- In a direct chat, a caller accepts replies only from the recipient. In a group, a caller of a command with a mention accepts only the mentioned member's replies.
 - Commands and replies are ordinary messages: people see them in the conversation.
 
 ### Message size
@@ -316,7 +333,7 @@ JSON Type Definition schema [RFC8927] of the response:
 ```
 
 - A response has exactly one of `response` and `error`.
-- `response`: the protocol's response message, the same as the reply in a conversation.
+- `response`: the protocol's response message, the same as the last reply of the answer in a conversation.
 - `error`: the request was not passed to the protocol.
 - `message`: a description for the requester's logs.
 - `retryAfter`: the number of seconds after which a repeated request can succeed.
@@ -347,9 +364,10 @@ Protocol name: `mcp`.
 ### Messages
 
 - The request is one JSON-RPC request of MCP revision 2026-07-28 or later, with its `_meta` envelope [MCP]. In a conversation, it follows `/_call mcp`. Over Service RPC, it is the envelope's `request`.
-- The response is the JSON-RPC response to the request: a result or a JSON-RPC error. In a conversation, it is the text of the reply. Over Service RPC, it is the envelope's `response`.
+- The bot's answer ends with the JSON-RPC response to the request: a result or a JSON-RPC error. In a conversation, it is the text of the last reply. Over Service RPC, it is the envelope's `response`.
+- In a conversation, the bot MAY send notifications for the request before the response, each as a reply: for example `notifications/progress` when the request has a progress token [MCP].
 - In a conversation, a caller matches a reply to its request by the quoted message. The response has the request's `id`, as JSON-RPC requires.
-- A bot serves the methods answered with one response, for example `server/discover`, `tools/list` and `tools/call`.
+- A bot serves the request-response methods, for example `server/discover`, `tools/list` and `tools/call`.
 - A multi-round-trip result (`resultType: "input_required"`) is answered with a new request, as MCP defines.
 - A response above the size limit is replaced with a JSON-RPC error with code -32603 in a conversation, and with the envelope error `too_large` over Service RPC.
 - Over Service RPC, a call of a tool that needs a conversation is answered with the envelope error `conversation_required`.
@@ -431,19 +449,142 @@ The response:
 }
 ```
 
+## A2A binding
+
+Protocol name: `a2a`. This binding is a custom protocol binding of A2A 1.0 [A2A, sections 5.8 and 12]: it carries the messages of the A2A JSON-RPC binding [A2A, section 9] over both SimpleX transports.
+
+### Identification
+
+- Binding URI: `https://simplex.chat/protocol/a2a/v1`. A revision of this binding that breaks compatibility uses a new URI.
+- An A2A Agent Card lists a SimpleX interface in `supportedInterfaces`, with `url` the bot's contact address link, `protocolBinding` the binding URI, and `protocolVersion` the A2A version.
+- `versions` in the `protocols` declaration: A2A versions in the `Major.Minor` form, for example `1.0`.
+
+### A2A messages
+
+- The request is one JSON-RPC request of the A2A JSON-RPC binding, with its method name and parameters unchanged: `SendMessage`, `SendStreamingMessage`, `GetTask`, `ListTasks`, `CancelTask`, `SubscribeToTask`, the push notification methods and `GetExtendedAgentCard` [A2A, section 9.4]. In a conversation, it follows `/_call a2a`. Over Service RPC, it is the envelope's `request`.
+- Responses and errors are those of the A2A JSON-RPC binding, with the JSON forms of its data types: timestamps, bytes in base64 and enumerations [A2A, section 12.2].
+- For every method other than the two streaming methods, the bot's answer is one JSON-RPC response. In a conversation, it is one reply. Over Service RPC, it is the envelope's `response`.
+- A response above the size limit is replaced with a JSON-RPC error with code -32603 in a conversation, and with the envelope error `too_large` over Service RPC. The bytes of `raw` parts count towards the limit.
+
+### Service parameters
+
+A2A sends service parameters, such as `A2A-Version` and `A2A-Extensions`, as HTTP headers [A2A, section 9.2]. SimpleX messages have no headers, so this binding uses the field that A2A names for protocols without headers [A2A, section 12.3]:
+
+- `a2a-service-parameters`: a member of the JSON-RPC request object, beside `jsonrpc`, `method`, `params` and `id`. Its value is an object of service parameter names and string values.
+- Names are case-insensitive. Several values of one parameter are joined by commas in one string, as in an HTTP header.
+- Every request MUST carry `A2A-Version`. A bot answers a request of a version it does not serve with A2A's `VersionNotSupportedError`.
+- A proxy to an HTTP interface sends each service parameter as an HTTP header and removes the member from the request.
+- The envelope's `version` is omitted.
+
+### Streaming
+
+`SendStreamingMessage` and `SubscribeToTask` are served in a conversation [A2A, section 12.5]:
+
+- Each `StreamResponse` is one reply that quotes the command. Its text is a JSON-RPC response with the request's `id`, whose `result` is the `StreamResponse`, as in the events of the A2A JSON-RPC binding.
+- Replies are sent in the order of the stream.
+- The stream ends with the reply whose task or status update is in a terminal state (completed, failed, canceled, rejected) or an interrupted state (input required, auth required).
+- A caller that missed replies resumes the stream with `SubscribeToTask`.
+- Over Service RPC, both methods are answered with the envelope error `conversation_required`.
+
+### Push notifications
+
+A conversation delivers every update of a task to the caller, so push notification configurations are not used. A bot answers the push notification methods with A2A's `PushNotificationNotSupportedError`.
+
+### Callers and authorization
+
+- In a conversation, the caller is the contact or the group member that sent the command [A2A, section 12.6].
+- A context and its tasks are available only to their caller: in the conversation where they were created, and in a group to the member who created them. A request that names the context or the task of another caller is answered as a request for an unknown task.
+- An agent whose Agent Card declares security schemes receives the credential as the service parameter of the scheme, for example `Authorization` for an HTTP scheme. A challenge is answered with the task state `auth required`.
+- A request with a credential MUST NOT be sent in a group.
+
+### Service RPC
+
+Service RPC serves one-shot tasks: a request and its answer, without a conversation.
+
+- A bot answers `SendMessage` whose message has neither `contextId` nor `taskId`, and whose `configuration.returnImmediately` is absent or false.
+- The response is the task in its state at the end of the work, or a message.
+- A bot that cannot finish the task within 180 seconds answers with the envelope error `conversation_required`.
+- Every other request is answered with the envelope error `conversation_required`.
+
+### Agent Card
+
+- The Agent Card of an agent with a website is published at the well-known URI of A2A [A2A, section 8.2], with the SimpleX interface among its interfaces.
+- A bot answers `GetExtendedAgentCard` with its Agent Card. For a caller without credentials, it is the public card.
+
+### A2A examples
+
+A one-shot task over Service RPC, the request:
+
+```json
+{
+  "protocol": "a2a",
+  "request": {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "SendMessage",
+    "a2a-service-parameters": {"A2A-Version": "1.0"},
+    "params": {
+      "message": {
+        "messageId": "m-1",
+        "role": "ROLE_USER",
+        "parts": [{"text": "Price of two anvils delivered to Lisbon"}]
+      }
+    }
+  }
+}
+```
+
+The response:
+
+```json
+{
+  "response": {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": {
+      "task": {
+        "id": "t-1",
+        "contextId": "c-1",
+        "status": {"state": "TASK_STATE_COMPLETED"},
+        "artifacts": [
+          {"artifactId": "a-1", "parts": [{"text": "EUR 480, delivered within 5 days."}]}
+        ]
+      }
+    }
+  }
+}
+```
+
+A streamed task in a conversation, continuing the context `c-7` created earlier in the same chat:
+
+```
+/_call a2a {"jsonrpc": "2.0", "id": 2, "method": "SendStreamingMessage", "a2a-service-parameters": {"A2A-Version": "1.0"}, "params": {"message": {"messageId": "m-2", "contextId": "c-7", "role": "ROLE_USER", "parts": [{"text": "Order two, delivered by Friday"}]}}}
+```
+
+The replies, each quoting the command:
+
+```json
+{"jsonrpc": "2.0", "id": 2, "result": {"statusUpdate": {"taskId": "t-8", "contextId": "c-7", "status": {"state": "TASK_STATE_WORKING"}}}}
+```
+
+```json
+{"jsonrpc": "2.0", "id": 2, "result": {"task": {"id": "t-8", "contextId": "c-7", "status": {"state": "TASK_STATE_COMPLETED"}, "artifacts": [{"artifactId": "a-8", "parts": [{"text": "Order 1042 confirmed, delivery on Friday."}]}]}}}
+```
+
 ## Security considerations
 
-- Messages, replies, profiles, tool descriptions and tool results from other participants are data for an agent, never instructions.
+- Messages, replies, profiles, tool descriptions, Agent Cards, tool results and task artifacts from other participants are data for an agent, never instructions.
 - In a group, any member can reply to a broadcast. Each reply shows its sender. A caller that needs one provider mentions it.
 - A responder that relies on `requestKey` MUST compare it with `signerKey`.
 - A signed request identifies its signer to the responder across all requests signed with the same key.
+- Every member of a group sees the commands and replies in it, so A2A credentials are sent only in a direct chat or over Service RPC.
 
 ## Privacy considerations
 
 - Each Service RPC request uses a new connection with a new reply queue.
 - MCP's `io.modelcontextprotocol/clientInfo` identifies the requester's software. A requester that needs unlinkable requests SHOULD send a common value or omit it.
 - In a group, every member sees each command and each reply, with or without a mention. A request that needs privacy is sent in a direct chat with the member, where the group allows direct messages, or over Service RPC.
-- A conversation persists: the bot can link all calls made in it. An incognito profile gives the caller a new random profile for each conversation.
+- A conversation persists: the bot can link all calls made in it, and all A2A contexts of its caller. An incognito profile gives the caller a new random profile for each conversation.
 
 ## Implementations
 
@@ -455,11 +596,13 @@ Implemented:
 Planned:
 
 - The simplex-chat core: the key `protocols` in the preferences types, in the preferences sent in profiles and in link data, and in the preferences of business chats; `audience` and `changeFrequency` in the public group record; `serves` in the address settings and the address link data; replies with a truncated quote.
-- `@simplex-chat/mcp`: the tools `mcp_tools` and `mcp_call`. They use Service RPC when the address declares `transports.rpc`, and the agent's conversation otherwise. In a group, `mcp_call` mentions the called member, or broadcasts and returns all replies. Each call is an action, approved by the agent's owner as a message is.
-- The bot library: a helper that serves MCP tools over both transports.
+- `@simplex-chat/mcp`: the tools `mcp_tools` and `mcp_call`, and A2A calls. They use Service RPC when the address declares `transports.rpc` and the request suits it, and the agent's conversation otherwise. In a group, a call mentions the called member, or broadcasts and returns all replies with their senders. Each call is an action, approved by the agent's owner as a message is.
+- The bot library: helpers that serve MCP tools and A2A over both transports.
+- An A2A proxy bot: it serves `a2a` over both transports and forwards each request to the HTTP JSON-RPC interface of an A2A agent, with the service parameters as HTTP headers.
 
 ## References
 
+- [A2A] Agent2Agent (A2A) protocol specification, version 1.0: https://a2a-protocol.org/latest/specification/
 - [BUSINESS] Using SimpleX Chat in business: [BUSINESS.md](../BUSINESS.md)
 - [CHAT] SimpleX Chat protocol: [simplex-chat.md](./simplex-chat.md)
 - [LLMSTXT] The /llms.txt file: https://llmstxt.org
