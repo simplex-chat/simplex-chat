@@ -69,6 +69,12 @@ describe("serve options", () => {
     })
   })
 
+  it("splits --owners only at commas before an entry ID, so a name may have commas", () => {
+    expect(parseCommand(["serve", "agent", "--owners", "3:Smith, Alice,7:Bob,,Jr,12:Lu,8"], home)).toMatchObject({
+      options: {owners: [{memberId: 3, name: "Smith, Alice"}, {memberId: 7, name: "Bob,,Jr"}, {memberId: 12, name: "Lu,8"}]},
+    })
+  })
+
   it("checks ranges", () => {
     expect(usage(["serve", "agent", "--expire", "24"])).toBe("--expire: hours from 1 to 23 expected, got 24")
     expect(usage(["serve", "agent", "--expire", "0"])).toBe("--expire: hours from 1 to 23 expected, got 0")
