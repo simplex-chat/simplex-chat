@@ -274,8 +274,12 @@ fun UserPicker(
           painterResource(MR.images.ic_manage_accounts),
           generalGetString(MR.strings.create_chat_profile),
           {
+            if (ModalManager.center.isTopModalOpen(ModalViewId.CREATE_PROFILE)) {
+              userPickerState.value = AnimatedViewState.HIDING
+              return@UserPickerOptionRow
+            }
             doWithAuth(generalGetString(MR.strings.auth_open_chat_profiles), generalGetString(MR.strings.auth_log_in_using_credential)) {
-              ModalManager.center.showModalCloseable { close ->
+              ModalManager.center.showModalCloseable(id = ModalViewId.CREATE_PROFILE) { close ->
                 LaunchedEffect(Unit) {
                   userPickerState.value = AnimatedViewState.HIDING
                 }
