@@ -64,7 +64,7 @@ fun FramedItemView(
 
   @Composable
   fun ciQuotedMsgTextView(qi: CIQuote, lines: Int, showTimestamp: Boolean, stripLink: String? = null, prefix: AnnotatedString? = null) {
-    val color = if (terminal) MaterialTheme.colors.onSurface.copy(alpha = 0.7f) else messageTextColor()
+    val color = if (terminal) MaterialTheme.colors.onSurface.copy(alpha = 0.7f) else MaterialTheme.colors.onSurface
     MarkdownText(
       qi.text,
       qi.formattedText,
