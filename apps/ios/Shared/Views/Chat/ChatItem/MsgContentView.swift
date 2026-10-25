@@ -47,6 +47,7 @@ struct MsgContentView: View {
     var encrypted: Bool? = nil
     var signedFileVerified: Bool? = nil
     var textColor: Color? = nil
+    var ruleMinWidth: CGFloat = 0
     @State private var showSecrets: Set<Int> = []
     @State private var typingIdx = 0
     @State private var timer: Timer?
@@ -116,7 +117,8 @@ struct MsgContentView: View {
                 blockText: { index, range, font, secretStart, last, textAlpha in blockTextView(fts, blocks, index, range, font, secretStart, last, textAlpha) },
                 metaLine: { metaLineView() },
                 marksLastBlock: terminal && meta?.isLive != true,
-                ruleWidthText: terminal ? meta.map { reserveSpaceForMeta($0) } : nil
+                ruleWidthText: terminal ? meta.map { reserveSpaceForMeta($0) } : nil,
+                ruleMinWidth: ruleMinWidth
             )
         } else {
             msgContentView()
@@ -801,6 +803,7 @@ struct MarkdownBlocksView<BlockText: View, MetaLine: View>: View {
     @ViewBuilder var metaLine: () -> MetaLine
     var marksLastBlock = false
     var ruleWidthText: Text? = nil
+    var ruleMinWidth: CGFloat = 0
 
     var body: some View {
         let l = BlocksLayout(formattedText, blocks, textStyle)
@@ -872,7 +875,7 @@ struct MarkdownBlocksView<BlockText: View, MetaLine: View>: View {
     @ViewBuilder private func terminalRule() -> some View {
         let rule = Rectangle().fill(Color(uiColor: .secondaryLabel).opacity(0.35)).frame(height: 1)
         if let ruleWidthText, blocks.allSatisfy({ if case .rule = $0 { true } else { false } }) {
-            ruleWidthText.fixedSize().hidden().frame(height: 1).overlay(rule)
+            ruleWidthText.fixedSize().hidden().frame(minWidth: ruleMinWidth, alignment: .leading).frame(height: 1).overlay(rule)
         } else {
             rule
         }

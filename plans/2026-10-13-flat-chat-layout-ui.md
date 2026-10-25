@@ -209,7 +209,8 @@ Shared/Views/Chat/ChatItem/
                                          overlayMeta for captionless media; terminal emoji paddings
   MsgContentView.swift                   messageText(textColor:); line boxes and lineSpacing, also for taps; meta line for live messages only
                                          reserveSpaceForMeta: metaCopyJoiner, three no-break spaces, ciMetaText(unbreakable: true) with file encryption and signature
-                                         MarkdownBlocksView: heading gaps, terminalHeadingFont, cardMargins, marksLastBlock, ruleWidthText, quoteBar()
+                                         MarkdownBlocksView: heading gaps, terminalHeadingFont, cardMargins, marksLastBlock, ruleWidthText, ruleMinWidth, quoteBar()
+                                         rule-only message: the rule widened by a wider quote or header (D31); ruleMinWidth from msgWidth
   CIMetaView.swift                       ciMetaText(unbreakable:): no-break separators, word joiners after the edit, timer and via-proxy icons
   CIFileView.swift, CIVoiceView.swift, FramedCIVoiceView.swift, CIEventView.swift, CIChatLinkHeader.swift
                                          terminal paddings; voice: received layout for both directions; chat link header without the meta reserve

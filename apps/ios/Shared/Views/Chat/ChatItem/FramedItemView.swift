@@ -395,6 +395,7 @@ struct FramedItemView: View {
         }
         .fixedSize(horizontal: false, vertical: true)
         .padding(.leading, chatItemTextPadding)
+        .overlay { if case .voice = chatItem.content.msgContent {} else { DetermineWidth() } }
         .padding(.top, terminalBlockTopGap)
         .padding(.bottom, terminalBlockBottomGap)
     }
@@ -433,7 +434,8 @@ struct FramedItemView: View {
             blockLayout: true,
             cardColor: ci.chatDir.sent ? theme.appColors.sentQuote : theme.appColors.receivedQuote,
             encrypted: ci.encryptedFile,
-            signedFileVerified: ci.file?.loaded
+            signedFileVerified: ci.file?.loaded,
+            ruleMinWidth: terminal ? max(0, msgWidth - 2 * chatItemTextPadding) : 0
         )
         .environment(\.containerBackground, UIColor(terminal ? terminalBackgroundColor(theme) : chatItemFrameColor(ci, theme)))
         .multilineTextAlignment(rtl ? .trailing : .leading)

@@ -405,7 +405,8 @@ MarkdownBlocksView    paragraph break, heading after another block: terminalLeve
                       heading size: body × 1.3125^max(0, 3 − level) (terminalHeadingFont)
                       code, tables and rules: terminalBlockTopGap above, terminalBlockBottomGap below (cardMargins)
                       last block of a message that is not live: no bottom margin, messageLastBlock()
-                      rules of a rule-only message: as wide as the copy of the meta
+                      rules of a rule-only message: as wide as the copy of the meta, or the item less its text edges
+                      when a quote or header is wider (ruleMinWidth: msgWidth less 24pt; terminalQuote reports its full width)
 emoji                 EmojiItemView and FramedItemView: terminalEmojiTopGap, terminalEmojiBottomGap, messageLastLine()
 voice                 CIVoiceView: received layout for both directions, terminalGap(4) above, terminalGap(6) below
                       FramedCIVoiceView: terminalGap(4) above, terminalGap(6) below, player background
