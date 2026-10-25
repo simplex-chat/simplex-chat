@@ -209,8 +209,8 @@ fun MarkdownText (
   val textLayoutDirection = remember (text) {
     if (isRtl(text.subSequence(0, kotlin.math.min(50, text.length)))) LayoutDirection.Rtl else LayoutDirection.Ltr
   }
-  val metaCopy = if (meta != null && LocalTerminalLayout.current) {
-    terminalReserveSpaceForMeta(meta, chatTTL, encrypted, signedFileVerified, MaterialTheme.colors.secondary, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
+  val metaCopy = if (meta != null) {
+    metaReserveCopy(meta, chatTTL, encrypted, signedFileVerified, MaterialTheme.colors.secondary, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
   } else null
   if (blockLayout && formattedText != null && markdownBlocks != null && range == null) {
     val direction = LocalLayoutDirection.current
@@ -247,10 +247,8 @@ fun MarkdownText (
   val reserve = meta?.let {
     if (textLayoutDirection != (parentDirection ?: LocalLayoutDirection.current)) {
       AnnotatedString("\n")
-    } else if (metaCopy != null) {
-      metaCopy
     } else {
-      AnnotatedString(reserveSpaceForMeta(it, chatTTL, null, secondaryColor = MaterialTheme.colors.secondary, showViaProxy = showViaProxy, showTimestamp = showTimestamp))
+      metaCopy
     }
   }
   val scope = rememberCoroutineScope()

@@ -27,17 +27,21 @@ fun DeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, showViaProxy: Boolean,
       contentColor = LocalContentColor.current
     ) {
       Row(
-        Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+        if (inlineMeta != null) Modifier.bubbleTextPadding(16.sp) else Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.Bottom
       ) {
         Text(
           buildAnnotatedString {
             withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = MaterialTheme.colors.secondary)) { append(ci.content.text) }
           },
-          style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp),
-          modifier = Modifier.padding(end = if (inlineMeta != null) 8.dp else 0.dp)
+          style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp).merge(if (inlineMeta != null) chatTextStyle(16.sp, MaterialTheme.colors.secondary) else TextStyle.Default),
+          modifier = Modifier.padding(end = if (inlineMeta != null) 8.dp else 0.dp).alignByBaseline()
         )
-        inlineMeta?.invoke()
+        if (inlineMeta != null) {
+          Box(bubbleMetaOnBaseline()) {
+            inlineMeta()
+          }
+        }
       }
     }
   }

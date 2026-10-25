@@ -270,6 +270,7 @@ fun ChatView(
       LocalAppBarHandler provides rememberAppBarHandler(chatInfo.id, keyboardCoversBar = false),
       LocalSelectionManager provides selectionManager,
       LocalTerminalLayout provides terminal,
+      LocalBubbleLayout provides !terminal,
     ) {
     when (chatInfo) {
       is ChatInfo.Direct, is ChatInfo.Group, is ChatInfo.Local -> {
@@ -1997,7 +1998,7 @@ fun BoxScope.ChatItemsList(
           swipeDistance = with(LocalDensity.current) { 30.dp.toPx() },
         )
         val sent = cItem.chatDir.sent
-        val itemTopGap = if (previousItemSeparationLargeGap) 4.dp else 1.dp
+        val itemTopGap = (if (previousItemSeparationLargeGap) BUBBLE_FAR_GAP else BUBBLE_CLOSE_GAP).toDp() / 2
 
         @Composable
         fun ChatItemBox(modifier: Modifier = Modifier, top: Dp = itemTopGap, bottom: Dp? = null, content: @Composable () -> Unit = { }) {
@@ -2007,9 +2008,9 @@ fun BoxScope.ChatItemsList(
                 if (itemAtZeroIndexInWholeList) {
                   8.dp
                 } else {
-                  bottom ?: 4.dp
+                  bottom ?: BUBBLE_FAR_GAP.toDp() / 2
                 }
-              } else bottom ?: 1.dp, top = top
+              } else bottom ?: BUBBLE_CLOSE_GAP.toDp() / 2, top = top
             ),
             contentAlignment = Alignment.CenterStart
           ) {

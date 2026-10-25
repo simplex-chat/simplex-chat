@@ -206,11 +206,11 @@ fun CIFileView(
         onClick = onClick,
         onLongClick = { showMenu.value = true }
       )
-      .padding(
+      .then(
         when {
-          smallView -> PaddingValues()
-          terminal -> PaddingValues(top = TERMINAL_FILE_TOP_GAP.toDp(), start = 6.sp.toDp(), end = 12.sp.toDp())
-          else -> PaddingValues(top = 4.sp.toDp(), bottom = 6.sp.toDp(), start = 6.sp.toDp(), end = 12.sp.toDp())
+          smallView -> Modifier
+          terminal -> Modifier.padding(top = TERMINAL_FILE_TOP_GAP.toDp(), start = 6.sp.toDp(), end = 12.sp.toDp())
+          else -> Modifier.padding(top = 4.sp.toDp(), start = 6.sp.toDp(), end = 12.sp.toDp()).paddingFromBaseline(bottom = BUBBLE_TEXT_INSET)
         }
       ),
     verticalAlignment = Alignment.Bottom,

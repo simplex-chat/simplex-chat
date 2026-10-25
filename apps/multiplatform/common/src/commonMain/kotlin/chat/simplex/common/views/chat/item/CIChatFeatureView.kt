@@ -37,11 +37,11 @@ fun CIChatFeatureView(
       .onRightClick { showMenu.value = true }
   ) {
     if (!revealed.value && merged != null) {
-      val terminal = LocalTerminalLayout.current
+      val inlineIcons = usesChatTypography()
       Row(
-        Modifier.padding(chatEventPadding(vertical = 8.dp)).then(if (terminal) Modifier.height(chatEventTextStyle().lineHeight.toDp()) else Modifier),
+        Modifier.padding(chatEventPadding()).then(if (inlineIcons) Modifier.height(chatEventTextStyle().lineHeight.toDp()) else Modifier),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalAlignment = if (terminal) Alignment.CenterVertically else Alignment.Top
+        verticalAlignment = if (inlineIcons) Alignment.CenterVertically else Alignment.Top
       ) {
         merged.forEach {
           FeatureIconView(it)

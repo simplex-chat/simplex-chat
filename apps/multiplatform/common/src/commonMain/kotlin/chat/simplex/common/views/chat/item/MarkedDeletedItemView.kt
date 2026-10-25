@@ -30,13 +30,17 @@ fun MarkedDeletedItemView(chatsCtx: ChatModel.ChatsContext, ci: ChatItem, chatIn
       contentColor = LocalContentColor.current
     ) {
       Row(
-        Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+        if (inlineMeta != null) Modifier.bubbleTextPadding(12.sp) else Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
       ) {
-        Box(Modifier.weight(1f, false)) {
+        Box(Modifier.weight(1f, false).alignByBaseline()) {
           MergedMarkedDeletedText(chatsCtx, ci, chatInfo, revealed)
         }
-        inlineMeta?.invoke()
+        if (inlineMeta != null) {
+          Box(bubbleMetaOnBaseline()) {
+            inlineMeta()
+          }
+        }
       }
     }
   }

@@ -1,6 +1,7 @@
 package chat.simplex.common.views.chat.item
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -60,17 +61,21 @@ fun CIMsgError(ci: ChatItem, showTimestamp: Boolean, timedMessagesTTL: Int?, onC
       contentColor = LocalContentColor.current
     ) {
       Row(
-        Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+        if (inlineMeta != null) Modifier.bubbleTextPadding(16.sp) else Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.Bottom
       ) {
         Text(
           buildAnnotatedString {
             withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Color.Red)) { append(ci.content.text) }
           },
-          style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp),
-          modifier = Modifier.padding(end = if (inlineMeta != null) 8.dp else 0.dp)
+          style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp).merge(if (inlineMeta != null) chatTextStyle(16.sp, Color.Red) else TextStyle.Default),
+          modifier = Modifier.padding(end = if (inlineMeta != null) 8.dp else 0.dp).alignByBaseline()
         )
-        inlineMeta?.invoke()
+        if (inlineMeta != null) {
+          Box(bubbleMetaOnBaseline()) {
+            inlineMeta()
+          }
+        }
       }
     }
   }

@@ -57,7 +57,7 @@ fun FramedItemView(
   val quoteColor = if (sent) MaterialTheme.appColors.sentQuote else MaterialTheme.appColors.receivedQuote
   val cardModifier = mediaModifier.background(quoteColor)
   val thumbnailClip = if (terminal) Modifier.clipChatItem(ci, revealed = true) else Modifier
-  val quoteBaseStyle = if (terminal) MaterialTheme.typography.body1 else TextStyle()
+  val quoteBaseStyle = MaterialTheme.typography.body1
 
   fun membership(): GroupMember? {
     return if (chatInfo is ChatInfo.Group) chatInfo.groupInfo.membership else null
@@ -73,7 +73,7 @@ fun FramedItemView(
       toggleSecrets = true,
       maxLines = lines,
       overflow = TextOverflow.Ellipsis,
-      style = quoteBaseStyle.copy(fontSize = 15.sp, color = color).merge(terminalTextStyle(15.sp, color)),
+      style = quoteBaseStyle.copy(fontSize = 15.sp, color = color).merge(chatTextStyle(15.sp, color)),
       linkMode = linkMode,
       uriHandler = if (appPlatform.isDesktop) uriHandler else null,
       showTimestamp = showTimestamp,
@@ -84,22 +84,22 @@ fun FramedItemView(
 
   @Composable
   fun ciQuotedMsgView(qi: CIQuote, stripLink: String? = null, prefix: AnnotatedString? = null) {
+    val sender = qi.sender(membership())
     Box(
       Modifier
         // this width limitation prevents crash on calculating constraints that may happen if you post veeeery long message and then quote it.
         // Top level layout wants `IntrinsicWidth.Max` and very long layout makes the crash in this case
         .widthIn(max = 50000.dp)
-        .then(if (terminal) Modifier.padding(end = 12.dp) else Modifier.padding(vertical = 6.dp, horizontal = 12.dp)),
+        .then(if (terminal) Modifier.padding(end = 12.dp) else Modifier.bubbleTextPadding(if (sender != null) 13.5.sp else 15.sp)),
       contentAlignment = Alignment.TopStart
     ) {
-      val sender = qi.sender(membership())
       if (sender != null) {
         Column(
           horizontalAlignment = Alignment.Start
         ) {
           Text(
             sender,
-            style = quoteBaseStyle.copy(fontSize = 13.5.sp, color = if (qi.chatDir is CIDirection.GroupSnd) CurrentColors.value.colors.primary else CurrentColors.value.colors.secondary).merge(terminalTextStyle(13.5.sp)),
+            style = quoteBaseStyle.copy(fontSize = 13.5.sp, color = if (qi.chatDir is CIDirection.GroupSnd) CurrentColors.value.colors.primary else CurrentColors.value.colors.secondary).merge(chatTextStyle(13.5.sp)),
             maxLines = 1
           )
           ciQuotedMsgTextView(qi, lines = 2, showTimestamp = showTimestamp, stripLink = stripLink, prefix = prefix)
@@ -119,7 +119,7 @@ fun FramedItemView(
           append(caption)
         }
       },
-      style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp).merge(terminalTextStyle(fontSize, MaterialTheme.colors.secondary)),
+      style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp).merge(chatTextStyle(fontSize, MaterialTheme.colors.secondary)),
       maxLines = 1,
       overflow = TextOverflow.Ellipsis
     )
@@ -133,7 +133,7 @@ fun FramedItemView(
       .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
       .then(
         if (terminal) Modifier.padding(start = CHAT_ITEM_TEXT_PADDING, top = TERMINAL_HEADER_TOP_GAP.toDp(), end = 12.dp, bottom = TERMINAL_HEADER_BOTTOM_GAP.toDp())
-        else Modifier.padding(start = 8.dp, top = 6.dp, end = 12.dp, bottom = if (pad || (ci.quotedItem == null && ci.meta.itemForwarded == null)) 6.dp else 0.dp)
+        else Modifier.bubbleTextPadding(12.sp, bottom = if (pad || (ci.quotedItem == null && ci.meta.itemForwarded == null)) BUBBLE_TEXT_INSET else 0.sp)
       )
   }
 
@@ -372,17 +372,17 @@ fun FramedItemView(
               }
             }
             if (ci.file == null && ci.formattedText == null && !ci.meta.isLive && isShortEmoji(ci.content.text)) {
-              Box(if (terminal) Modifier.padding(start = CHAT_ITEM_TEXT_PADDING, top = TERMINAL_EMOJI_TOP_GAP.toDp(), end = CHAT_ITEM_TEXT_PADDING, bottom = TERMINAL_EMOJI_BOTTOM_GAP.toDp()) else Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
+              Box(if (terminal) Modifier.padding(start = CHAT_ITEM_TEXT_PADDING, top = TERMINAL_EMOJI_TOP_GAP.toDp(), end = CHAT_ITEM_TEXT_PADDING, bottom = TERMINAL_EMOJI_BOTTOM_GAP.toDp()) else Modifier.padding(start = CHAT_ITEM_TEXT_PADDING, top = BUBBLE_TEXT_TOP_GAP.toDp(), end = CHAT_ITEM_TEXT_PADDING, bottom = BUBBLE_TEXT_BOTTOM_GAP.toDp())) {
                 Column(
-                  if (terminal) Modifier.messageLastLine() else Modifier.padding(bottom = 2.dp).fillMaxWidth(),
+                  if (terminal) Modifier.messageLastLine() else Modifier.fillMaxWidth(),
                   horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                   EmojiText(ci.content.text)
                   if (!terminal) {
                     Text(
-                      reserveSpaceForMeta(ci.meta, chatTTL, null, secondaryColor = MaterialTheme.colors.secondary, showViaProxy = showViaProxy, showTimestamp = showTimestamp),
+                      metaReserveCopy(ci.meta, chatTTL, encrypted = null, signedFileVerified = null, MaterialTheme.colors.secondary, showViaProxy = showViaProxy, showTimestamp = showTimestamp),
                       color = Color.Transparent,
-                      style = MaterialTheme.typography.body1
+                      style = MaterialTheme.typography.body1.merge(chatTextStyle(MaterialTheme.typography.body1.fontSize))
                     )
                   }
                 }
@@ -465,9 +465,9 @@ fun FramedItemView(
           Box(
             Modifier
               .padding(
-                bottom = 6.dp,
                 end = 12.dp + if (tailRendered && sent) msgTailWidthDp else 0.dp,
               )
+              .bubbleMeta()
           ) {
             inlineMeta()
           }
@@ -502,16 +502,16 @@ fun CIMarkdownText(
     Modifier
       .padding(
         start = CHAT_ITEM_TEXT_PADDING,
-        top = if (terminal) terminalTop + terminalHeadingGap(ci).toDp() else CHAT_ITEM_TEXT_VERTICAL_PADDING,
+        top = if (terminal) terminalTop + terminalHeadingGap(ci).toDp() else BUBBLE_TEXT_TOP_GAP.toDp(),
         end = CHAT_ITEM_TEXT_PADDING,
-        bottom = if (terminal) 0.dp else CHAT_ITEM_TEXT_VERTICAL_PADDING
+        bottom = if (terminal) 0.dp else BUBBLE_TEXT_BOTTOM_GAP.toDp()
       )
   ) {
     MarkdownText(
       text, if (text.isEmpty()) emptyList() else ci.formattedText, if (text.isEmpty()) null else ci.markdownBlocks, toggleSecrets = true,
       sendCommandMsg = if (chatInfo.useCommands && chat.chatInfo.sndReady) { { msg -> sendCommandMsg(chatsCtx, chat, msg) } } else null,
       meta = ci.meta, chatTTL = chatTTL, encrypted = ci.encryptedFile, signedFileVerified = ci.file?.loaded, linkMode = linkMode,
-      style = MaterialTheme.typography.body1.copy(color = messageTextColor(), lineHeight = 22.sp).merge(terminalTextStyle(MaterialTheme.typography.body1.fontSize)),
+      style = MaterialTheme.typography.body1.copy(color = messageTextColor(), lineHeight = 22.sp).merge(chatTextStyle(MaterialTheme.typography.body1.fontSize)),
       mentions = ci.mentions, userMemberId = when {
         chatInfo is ChatInfo.Group -> chatInfo.groupInfo.membership.memberId
         else -> null
@@ -556,7 +556,26 @@ const val CHAT_BUBBLE_LAYOUT_ID = "chatBubble"
 const val CHAT_COMPOSE_LAYOUT_ID = "chatCompose"
 const val CONSOLE_COMPOSE_LAYOUT_ID = "consoleCompose"
 val CHAT_ITEM_TEXT_PADDING = 12.dp
-val CHAT_ITEM_TEXT_VERTICAL_PADDING = 7.dp
+val BUBBLE_TEXT_INSET = 10.375.sp
+val BUBBLE_TEXT_TOP_GAP = 4.375.sp
+val BUBBLE_TEXT_BOTTOM_GAP = 6.sp
+val BUBBLE_CLOSE_GAP = 2.sp
+val BUBBLE_FAR_GAP = 8.sp
+
+fun Modifier.bubbleTextPadding(firstLineFontSize: TextUnit, bottom: TextUnit = BUBBLE_TEXT_INSET): Modifier =
+  padding(horizontal = CHAT_ITEM_TEXT_PADDING).paddingFromBaseline(top = (BUBBLE_TEXT_INSET.value + firstLineFontSize.value * INTER_CAP_HEIGHT).sp, bottom = bottom)
+
+fun Modifier.bubbleMeta(): Modifier =
+  layout { measurable, constraints ->
+    val placeable = measurable.measure(constraints)
+    layout(placeable.width, metaBaseline(placeable) + BUBBLE_TEXT_INSET.roundToPx()) { placeable.placeRelative(0, 0) }
+  }
+
+@Composable
+fun RowScope.bubbleMetaOnBaseline(): Modifier {
+  val density = LocalDensity.current
+  return Modifier.alignBy { with(density) { metaBaseline(it) } }
+}
 
 /**
  * Compose shows "Can't represent a width of ... and height ... in Constraints" even when using built-in method for measuring max

@@ -23,8 +23,8 @@ import chat.simplex.common.ui.theme.Inter
 import chat.simplex.common.ui.theme.SimpleXTheme
 import chat.simplex.common.views.chat.item.LocalTerminalLayout
 import chat.simplex.common.views.chat.item.MarkdownText
+import chat.simplex.common.views.chat.item.metaReserveCopy
 import chat.simplex.common.views.chat.item.reserveSpaceForMeta
-import chat.simplex.common.views.chat.item.terminalReserveSpaceForMeta
 import kotlinx.datetime.Clock
 import kotlin.math.abs
 import kotlin.test.Test
@@ -39,7 +39,7 @@ class TerminalMetaCopyTest {
   private val sentViaProxy = CIMeta.getSample(3, Clock.System.now(), "", status = CIStatus.SndSent(SndCIStatusProgress.Complete), sentViaProxy = true)
 
   private fun copy(meta: CIMeta, density: Density, direction: LayoutDirection, showViaProxy: Boolean = false) =
-    terminalReserveSpaceForMeta(
+    metaReserveCopy(
       meta, null, null, null, Color.Gray, showStatus = true, showEdited = true, showViaProxy = showViaProxy, showTimestamp = true,
       density = density, bodyFontSize = 16.sp, direction = direction
     )

@@ -51,7 +51,7 @@ fun CIMetaView(
   showViaProxy: Boolean,
   lineHeightColor: Color = metaColor,
 ) {
-  val timeStyle = LocalTextStyle.current.merge(terminalTextStyle(12.sp, lineHeightColor))
+  val timeStyle = LocalTextStyle.current.merge(chatTextStyle(12.sp, lineHeightColor))
   Row(Modifier.padding(start = 3.dp), verticalAlignment = Alignment.CenterVertically) {
     if (chatItem.isDeletedContent) {
       Text(
@@ -225,7 +225,7 @@ private fun reserveSpaceForMeta(
 }
 
 @Composable
-fun terminalReserveSpaceForMeta(
+fun metaReserveCopy(
   meta: CIMeta,
   chatTTL: Int?,
   encrypted: Boolean?,
@@ -236,14 +236,14 @@ fun terminalReserveSpaceForMeta(
   showViaProxy: Boolean,
   showTimestamp: Boolean
 ): AnnotatedString =
-  terminalReserveSpaceForMeta(
+  metaReserveCopy(
     meta, chatTTL, encrypted, signedFileVerified, secondaryColor, showStatus, showEdited, showViaProxy, showTimestamp,
     density = LocalDensity.current,
     bodyFontSize = MaterialTheme.typography.body1.fontSize,
     direction = LocalLayoutDirection.current
   )
 
-fun terminalReserveSpaceForMeta(
+fun metaReserveCopy(
   meta: CIMeta,
   chatTTL: Int?,
   encrypted: Boolean?,

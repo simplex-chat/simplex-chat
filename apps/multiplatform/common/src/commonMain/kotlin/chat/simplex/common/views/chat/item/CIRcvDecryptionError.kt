@@ -147,17 +147,18 @@ fun DecryptionErrorItemFixButton(
       contentColor = LocalContentColor.current
     ) {
       Box(
-        Modifier.padding(vertical = 6.dp, horizontal = 12.dp),
+        if (inlineMeta != null) Modifier else Modifier.padding(vertical = 6.dp, horizontal = 12.dp),
         contentAlignment = Alignment.BottomEnd,
       ) {
         Column(
+          if (inlineMeta != null) Modifier.bubbleTextPadding(16.sp) else Modifier,
           verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
           Text(
             buildAnnotatedString {
               withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Color.Red)) { append(ci.content.text) }
             },
-            style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp)
+            style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp).merge(if (inlineMeta != null) chatTextStyle(16.sp, Color.Red) else TextStyle.Default)
           )
           Row {
             Icon(
@@ -167,11 +168,12 @@ fun DecryptionErrorItemFixButton(
             )
             Spacer(Modifier.padding(2.dp))
             val secondaryColor = MaterialTheme.colors.secondary
+            val reserve = if (inlineMeta != null) metaReserveCopy(ci.meta, null, encrypted = null, signedFileVerified = null, secondaryColor = secondaryColor, showViaProxy = false, showTimestamp = true) else null
             Text(
               buildAnnotatedString {
                 append(generalGetString(MR.strings.fix_connection))
-                if (inlineMeta != null) {
-                  withStyle(reserveTimestampStyle) { append(reserveSpaceForMeta(ci.meta, null, encrypted = null, secondaryColor = secondaryColor, showTimestamp = true)) }
+                if (reserve != null) {
+                  withStyle(reserveTimestampStyle) { append(reserve) }
                   withStyle(reserveTimestampStyle) { append("    ") } // for icon
                 }
               },
@@ -179,7 +181,11 @@ fun DecryptionErrorItemFixButton(
             )
           }
         }
-        inlineMeta?.invoke()
+        if (inlineMeta != null) {
+          Box(Modifier.padding(end = CHAT_ITEM_TEXT_PADDING).bubbleMeta()) {
+            inlineMeta()
+          }
+        }
       }
     }
   }
@@ -199,20 +205,26 @@ fun DecryptionErrorItem(
       contentColor = LocalContentColor.current
     ) {
       Box(
-        Modifier.padding(vertical = 6.dp, horizontal = 12.dp),
+        if (inlineMeta != null) Modifier else Modifier.padding(vertical = 6.dp, horizontal = 12.dp),
         contentAlignment = Alignment.BottomEnd,
       ) {
         val secondaryColor = MaterialTheme.colors.secondary
+        val reserve = if (inlineMeta != null) metaReserveCopy(ci.meta, null, encrypted = null, signedFileVerified = null, secondaryColor = secondaryColor, showViaProxy = false, showTimestamp = true) else null
         Text(
           buildAnnotatedString {
             withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Color.Red)) { append(ci.content.text) }
-            if (inlineMeta != null) {
-              withStyle(reserveTimestampStyle) { append(reserveSpaceForMeta(ci.meta, null, encrypted = null, secondaryColor = secondaryColor, showTimestamp = true)) }
+            if (reserve != null) {
+              withStyle(reserveTimestampStyle) { append(reserve) }
             }
           },
-          style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp)
+          if (inlineMeta != null) Modifier.bubbleTextPadding(16.sp) else Modifier,
+          style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp).merge(if (inlineMeta != null) chatTextStyle(16.sp, Color.Red) else TextStyle.Default)
         )
-        inlineMeta?.invoke()
+        if (inlineMeta != null) {
+          Box(Modifier.padding(end = CHAT_ITEM_TEXT_PADDING).bubbleMeta()) {
+            inlineMeta()
+          }
+        }
       }
     }
   }

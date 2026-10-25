@@ -101,7 +101,7 @@ theme screens     preview as terminal rows ("alice", then "bob" in the own colou
                   wallpaper presets as colours
                   custom image tile, image scale, scale slider and wallpaper accent hidden
 theme export      colours and wallpaper; the layout is not exported
-classic           unchanged apart from the message text colour: no copy of the time in bubbles (decided 2026-10-23), no spacing or line-height changes
+classic           bubbles: plans/2026-10-25-classic-bubbles.md
 build             kotlin.daemon.jvmargs=-Xmx4096m in apps/multiplatform/gradle.properties (D33)
 rejected          hover action bar
                   reaction pills
@@ -134,7 +134,7 @@ views/chat/ChatView.kt
   memberNames                            public, used by chatItemSender
   classic                                sender rows and shouldShowAvatar as on master
 views/chat/ChatItemsMerger.kt            MergedItem.revealed: true for Single, the flag of Grouped
-views/chat/item/TerminalItemView.kt      LocalTerminalLayout, gap constants, terminalTextStyle, terminalItemShowsSender, sameSender, terminalRowGap, terminalHeadingGap
+views/chat/item/TerminalItemView.kt      LocalTerminalLayout, gap constants, chatTextStyle, terminalItemShowsSender, sameSender, terminalRowGap, terminalHeadingGap
                                          row interaction, messageLastLine, messageLastBlock, inlineIcon, ItemWithMeta (endButton centred above the time line)
                                          ChatItemSender, chatItemSender, SenderNameAndRole, TerminalChatItemRow
 views/chat/item/ChatItemView.kt          alignEnd = sent && !terminal; item click without indication; reactions at the text edge
@@ -146,22 +146,22 @@ views/chat/item/FramedItemView.kt        transparent background; headers and quo
                                          CIMarkdownText: parameter terminalTop plus terminalHeadingGap, no bottom padding, terminal text style, file encryption and signature for the copy
                                          metaReserved: passed to ItemWithMeta, bottom gap without text; captions by the classic conditions; clipChatItem skipped
                                          emoji: TERMINAL_EMOJI_* paddings, not stretched; quote row: TERMINAL_BLOCK_* paddings, icons without top padding
-                                         CHAT_ITEM_TEXT_PADDING (text edge); classic vertical text padding named CHAT_ITEM_TEXT_VERTICAL_PADDING
+                                         CHAT_ITEM_TEXT_PADDING (text edge)
                                          PriorityLayout(limitToPriorityWidth = !terminal || captionlessMedia), placeRelative when not limited; link preview caption without width limit; chat link card at its own width
-views/chat/item/MarkdownBlocks.kt        Modifier.quoteBar, shared with Markdown quotes; Markdown quote text with terminalTextStyle and the colour rule
+views/chat/item/MarkdownBlocks.kt        Modifier.quoteBar, shared with Markdown quotes; Markdown quote text with chatTextStyle and the colour rule
                                          heading scale TERMINAL_HEADING_RATIO, Modifier.headingBox with the px ratio of the font sizes
                                          spacers: TERMINAL_HEADING_BOTTOM_GAP after a heading, TERMINAL_LEVEL_STEP at a paragraph break or above a heading
                                          card margins of code, tables and rules; messageLastBlock() on the last block without a meta line (marksLastBlock)
                                          ruleMinWidth: rules of a rule-only message as wide as the copy of the time (D31)
-                                         code: terminalTextStyle at the code size (classic: line height × 0.9); metaLine null in terminal rows unless live
+                                         code: chatTextStyle at the code size (classic: line height × 0.9); metaLine null in terminal rows unless live
 views/chat/item/CIFileView.kt            row padding TERMINAL_FILE_TOP_GAP, icon without top padding; the reserve in the size line kept
 views/chat/item/CIVoiceView.kt           voice drawn by FramedItemView: the layout of voice alone without its time; otherwise classic, start at the text edge
 views/chat/item/EmojiItemView.kt         TERMINAL_EMOJI_* paddings at the text edge, messageLastLine()
-views/chat/item/TextItemView.kt          messageTextColor(); terminalReserveSpaceForMeta at the end of message text
+views/chat/item/TextItemView.kt          messageTextColor(); metaReserveCopy at the end of message text
                                          meta line of a live message: encryption, signature and the outer direction, as the blocks
                                          ruleMinWidth measured from the copy of a rule-only message
-views/chat/item/CIMetaView.kt            reserveSpaceForMeta with span parameters: the classic string and terminalReserveSpaceForMeta
-                                         terminalReserveSpaceForMeta: word joiner and direction mark, icon spaces in dp; tallStatusIcon shared with CIMetaText
+views/chat/item/CIMetaView.kt            reserveSpaceForMeta with span parameters: the classic string and metaReserveCopy
+                                         metaReserveCopy: word joiner and direction mark, icon spaces in dp; tallStatusIcon shared with CIMetaText
                                          time style with lineHeightColor
 views/chat/item/CIChatFeatureView.kt     merged feature icons: one event line high, centred in terminal rows
 views/chat/item/CIEventView.kt           chatEventPadding(), chatEventTextStyle(), ChatEventWithMeta (separator, and time or copy, apart; classic as before, D28)
