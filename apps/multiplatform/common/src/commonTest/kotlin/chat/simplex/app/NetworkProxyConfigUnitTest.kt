@@ -25,13 +25,13 @@ class NetworkProxyConfigUnitTest {
   }
 
   @Test
-  fun portZeroIsAccepted() {
+  fun portZeroIsAccepted_currentBehaviour_item38() {
     assertTrue(validPort("0"))
     assertTrue(validPort("00000"))
   }
 
   @Test
-  fun fiveDigitPortsWithLeadingZeroAreAcceptedOnlyWithDigitsUpToFive() {
+  fun fiveDigitPortsWithLeadingZeroAreAcceptedOnlyWithDigitsUpToFive_currentBehaviour_item38() {
     assertTrue(validPort("05555"))
     assertFalse(validPort("06000"))
     assertFalse(validPort("09050"))

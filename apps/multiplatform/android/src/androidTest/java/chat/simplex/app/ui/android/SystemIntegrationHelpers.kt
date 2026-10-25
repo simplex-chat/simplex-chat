@@ -3,6 +3,7 @@ package chat.simplex.app.ui.android
 import android.app.Notification
 import android.app.NotificationManager
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.core.content.FileProvider
 import androidx.test.platform.app.InstrumentationRegistry
@@ -23,6 +24,11 @@ import chat.simplex.common.ui.Ui
 import java.io.File
 
 internal fun UiScope.deliverToApp(intent: Intent) {
+  if (intent.action == Intent.ACTION_SEND || intent.action == Intent.ACTION_SEND_MULTIPLE) {
+    check(androidAppContext.packageManager.queryIntentActivities(Intent(intent).setPackage(androidAppContext.packageName), PackageManager.MATCH_DEFAULT_ONLY).any { it.activityInfo.name == MainActivity::class.java.name }) {
+      "MainActivity does not accept ${intent.action} ${intent.type}"
+    }
+  }
   InstrumentationRegistry.getInstrumentation().targetContext.startActivity(
     Intent(intent).setClass(androidAppContext, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
   )

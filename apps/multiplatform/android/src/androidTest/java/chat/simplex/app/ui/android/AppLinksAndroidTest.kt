@@ -1,6 +1,7 @@
 package chat.simplex.app.ui.android
 
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import chat.simplex.app.MainActivity
 import chat.simplex.app.ui.harness.CONNECT_TIMEOUT_MS
@@ -31,12 +32,12 @@ class AppLinksAndroidTest : UiTest() {
     assertEquals("alice: contact is connected", bob.nextLine(CONNECT_TIMEOUT_MS))
   }
 
-  @Test fun appLink_noData_showsInvalidLinkAlert() = uiTest {
+  @Test fun appLink_malformedLink_showsInvalidLinkAlert() = uiTest {
     app("alice").chatList.row(NOTES)
     check(!AlertManager.shared.hasAlertsShown() && !seesText(INVALID_LINK)) { "an alert is shown before the link is opened" }
-    deliverToApp(viewIntent(null))
-    poll(what = "the `$INVALID_LINK` alert") { seesText(INVALID_LINK) && seesText("Please check that SimpleX link is correct.") }
-    check(!exists(planConfirm) && !AlertManager.privacySensitive.hasAlertsShown()) { "a link without data opened a connection plan" }
+    deliverToApp(viewIntent("simplex:/contact#/?v=2-7&smp=broken"))
+    poll(what = "the `$INVALID_LINK` alert") { seesText(INVALID_LINK) && seesText("Please check that you used the correct link or ask your contact to send you another one.") }
+    check(!exists(planConfirm) && !AlertManager.privacySensitive.hasAlertsShown()) { "a malformed link opened a connection plan" }
     click(Ui.Alert.Confirm(Ui.AlertSource.Shared))
     poll(what = "the alert closed over the chat list") { !AlertManager.shared.hasAlertsShown() && exists(Ui.ChatList.Search) }
   }
@@ -76,12 +77,12 @@ class AppLinksAndroidTest : UiTest() {
     chatModel.chats.value.firstOrNull { it.chatInfo.chatViewName == "bob" && it.chatInfo.nextConnectPrepared }?.id?.let { it == chatModel.chatId.value } == true
 
   private fun opensMainActivity(link: String): Boolean =
-    androidAppContext.packageManager.queryIntentActivities(Intent(Intent.ACTION_VIEW, Uri.parse(link)).setPackage(androidAppContext.packageName), 0)
+    androidAppContext.packageManager.queryIntentActivities(Intent(Intent.ACTION_VIEW, Uri.parse(link)).addCategory(Intent.CATEGORY_BROWSABLE).setPackage(androidAppContext.packageName), PackageManager.MATCH_DEFAULT_ONLY)
       .any { it.activityInfo.name == MainActivity::class.java.name }
 
   private companion object {
     const val NOTES = "Private notes"
-    const val INVALID_LINK = "Invalid link"
+    const val INVALID_LINK = "Invalid connection link"
     val OPENS = listOf(
       "simplex:/contact#/?v=2-7&smp=x",
       "simplexchat:/open",

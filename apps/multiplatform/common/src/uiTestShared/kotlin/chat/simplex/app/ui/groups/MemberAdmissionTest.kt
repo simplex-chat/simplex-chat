@@ -53,7 +53,7 @@ class MemberAdmissionTest : UiTest() {
     poll(what = "`Review members` all when reopened") { "all" in a.review() }
   }
 
-  @KnownAppIssue("15.5 item 30", "Compose-Espresso link", intermittent = true)
+  @KnownAppIssue("15.5 item 30", "did not become idle while waiting for bob's join request with `Accept` and `Reject`", intermittent = true, androidOnly = true)
   @Test fun review_acceptAsMember() = uiTest {
     val alice = app("alice"); val bob = cli("bob")
     val chat = pendingLinkJoin(alice, bob, "team")

@@ -123,6 +123,19 @@ class GroupCantSendReasonUnitTest {
   }
 
   @Test
+  fun preparedGroupWithStartedConnectionCannotSend() {
+    val started = PreparedGroup(
+      connLinkToConnect = CreatedConnLink(connFullLink = "https://simplex.chat/contact#/?v=2-7", connShortLink = null),
+      connLinkPreparedConnection = true,
+      connLinkStartedConnection = true,
+    )
+    assertEquals(
+      reason(MR.strings.cant_send_message_generic),
+      mainChat(groupInfo(status = GroupMemberStatus.MemUnknown, preparedGroup = started)).userCantSendReason()
+    )
+  }
+
+  @Test
   fun connectedMemberCanSend() {
     val chat = mainChat(groupInfo())
     assertNull(chat.userCantSendReason())

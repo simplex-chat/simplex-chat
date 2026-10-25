@@ -30,9 +30,13 @@ class ChatProfilesTest : UiTest() {
     val alice = app("alice")
     val profiles = alice.userPicker().profiles()
     waitFor(Ui.Profiles.Add)
-    poll(what = "the profiles list with `alice` and without `work`") { seesText("alice") && !seesText("work") }
+    poll(what = "the profiles list with alice's row and no user `work`") {
+      exists(Ui.Profiles.User(userIdOf("alice"))) && chatModel.users.none { it.user.displayName == "work" }
+    }
     profiles.add("work")
-    poll(what = "the profiles list with `alice` and `work`") { exists(Ui.Profiles.Add) && seesText("alice") && seesText("work") }
+    poll(what = "the profiles list with alice and work rows") {
+      exists(Ui.Profiles.Add) && exists(Ui.Profiles.User(userIdOf("alice"))) && exists(Ui.Profiles.User(userIdOf("work")))
+    }
   }
 
   @Test fun profilesMuteUnmute() = uiTest {

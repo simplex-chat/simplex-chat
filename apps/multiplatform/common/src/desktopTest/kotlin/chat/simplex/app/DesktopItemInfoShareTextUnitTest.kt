@@ -158,6 +158,32 @@ class DesktopItemInfoShareTextUnitTest {
     )
   }
 
+  private fun verified(ci: ChatItem, msgVerified: MsgVerified) = ci.copy(meta = ci.meta.copy(msgVerified = msgVerified))
+
+  @Test
+  fun sentVerifiedItemIsSigned() {
+    assertEquals(
+      lines("# Sent message", "", "Sent at: ${localTimestamp(sentTs)}", "Signed"),
+      share(verified(item(), MsgVerified.Signed(MsgSigStatus.Verified)))
+    )
+  }
+
+  @Test
+  fun receivedVerifiedItemIsSignedAndVerified() {
+    assertEquals(
+      lines("# Received message", "", "Sent at: ${localTimestamp(sentTs)}", "Received at: ${localTimestamp(sentTs)}", "Signed & verified"),
+      share(verified(item(dir = CIDirection.DirectRcv()), MsgVerified.Signed(MsgSigStatus.Verified)))
+    )
+  }
+
+  @Test
+  fun itemWithMissingSignatureSaysSignatureMissing() {
+    assertEquals(
+      lines("# Received message", "", "Sent at: ${localTimestamp(sentTs)}", "Received at: ${localTimestamp(sentTs)}", "Signature missing"),
+      share(verified(item(dir = CIDirection.DirectRcv()), MsgVerified.SigMissing))
+    )
+  }
+
   @Test
   fun devToolsAddDatabaseIdUpdatedAtAndStatus() {
     assertEquals(

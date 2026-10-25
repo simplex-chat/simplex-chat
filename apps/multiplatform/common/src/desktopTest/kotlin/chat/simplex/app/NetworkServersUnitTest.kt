@@ -84,6 +84,18 @@ class NetworkServersUnitTest {
   }
 
   @Test
+  fun missingXftpRoleErrors() {
+    assertEquals(
+      generalGetString(MR.strings.no_media_servers_configured_for_sending),
+      globalXFTPServersError(listOf(UserServersError.StorageMissing(ServerProtocol.XFTP, null)))
+    )
+    assertEquals(
+      forUser(generalGetString(MR.strings.no_media_servers_configured_for_private_routing)),
+      globalXFTPServersError(listOf(UserServersError.ProxyMissing(ServerProtocol.XFTP, user)))
+    )
+  }
+
+  @Test
   fun xftpErrorIsNotSmpError() {
     val errors = listOf(UserServersError.NoServers(ServerProtocol.XFTP, null))
     assertNull(globalSMPServersError(errors))

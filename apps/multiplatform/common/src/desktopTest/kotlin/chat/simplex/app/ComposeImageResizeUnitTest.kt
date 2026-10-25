@@ -26,6 +26,7 @@ class ComposeImageResizeUnitTest {
   fun largeNoiseJpegIsShrunkUnderMaxImageSizeKeepingAspectRatio() {
     val stream = resizeImageToDataSize(noise(3000, 2000).toComposeImageBitmap(), usePng = false, maxDataSize = MAX_IMAGE_SIZE)
     assertTrue(stream.size() <= MAX_IMAGE_SIZE, "size ${stream.size()}")
+    assertTrue(stream.size() > MAX_IMAGE_SIZE / 8, "size ${stream.size()}")
     val result = decode(stream.toByteArray())
     assertTrue(result.width < 3000, "width ${result.width}")
     assertTrue(abs(result.height - result.width * 2 / 3) <= 2, "${result.width}x${result.height}")

@@ -203,7 +203,7 @@ class UiScope(val rule: ComposeTestRule) {
       val idle = now > deadline && UiIdle.inFlight().none { it.id in busy }
       if (now > deadline && ((idle && workEnded) || now > deadline + EXTENSION_MS)) {
         val shot = if (screenshot) FailureShots.take(what) else null
-        throw AssertionError("timed out after $timeoutMs ms waiting for $what; ${lastError?.let { "last condition error: $it; " } ?: ""}in flight: ${UiIdle.inFlight().joinToString { it.what }}; screenshot: $shot; visible texts: ${texts().take(60)}")
+        throw AssertionError("timed out after $timeoutMs ms waiting for $what; ${lastError?.let { "last condition error: $it; " } ?: ""}in flight: ${UiIdle.inFlight().joinToString { it.what }}; screenshot: $shot; visible texts: ${runCatching { texts().take(60) }.getOrElse { listOf("<texts unavailable: ${it.javaClass.simpleName}>") }}")
       }
       workEnded = idle
       Thread.sleep(50)

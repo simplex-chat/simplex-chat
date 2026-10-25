@@ -103,8 +103,6 @@ class MemberListTest : UiTest() {
         exists(remove) && "Remove" in textsOf(remove) && seesText("Remove and delete messages")
     }
     click(remove)
-    bob.eventually("#team: alice removed you from the group (signed)", CONNECT_TIMEOUT_MS)
-    cath.eventually("#team: alice removed you from the group (signed)", CONNECT_TIMEOUT_MS)
     dan.eventuallyAll(lines = listOf("#team: alice removed bob from the group (signed)", "#team: alice removed cath from the group (signed)"), timeoutMs = CONNECT_TIMEOUT_MS)
     selectionEnded()
     info.close()
@@ -113,6 +111,8 @@ class MemberListTest : UiTest() {
       info.ownMemberTexts().isNotEmpty() && membersTitleShown(2) && "dan" in info.memberTexts("dan") &&
         !exists(Ui.GroupInfo.Member(bobId)) && !exists(Ui.GroupInfo.Member(cathId))
     }
+    bob.eventually("#team: alice removed you from the group (signed)", CONNECT_TIMEOUT_MS)
+    cath.eventually("#team: alice removed you from the group (signed)", CONNECT_TIMEOUT_MS)
   }
 
   @Test fun memberSelection_selectAllExcludesModerators() = uiTest {

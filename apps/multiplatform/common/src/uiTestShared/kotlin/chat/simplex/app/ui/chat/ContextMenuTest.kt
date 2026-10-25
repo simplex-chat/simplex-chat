@@ -9,7 +9,7 @@ import chat.simplex.common.ui.Ui
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-private val ACTIONS = listOf("reply", "copy", "download", "edit", "forward", "info", "delete", "reveal", "hide", "moderate", "report", "select")
+private val ACTIONS = listOf("reply", "share", "copy", "save", "download", "cancelFile", "edit", "forward", "info", "delete", "reveal", "hide", "expand", "collapse", "moderate", "report", "archive", "select")
 
 class ContextMenuTest : UiTest() {
   @Test fun contextMenu_itemsMatrix_byItemType() = uiTest {
@@ -39,7 +39,7 @@ class ContextMenuTest : UiTest() {
   private fun UiScope.menuOf(id: Long): Set<String> {
     rightClick(Ui.Chat.Item(id))
     waitFor(Ui.Chat.ItemMenu(id, "select"))
-    return ACTIONS.filter { exists(Ui.Chat.ItemMenu(id, it)) }.toSet() + listOfNotNull("share".takeIf { seesText("Share") })
+    return ACTIONS.filter { exists(Ui.Chat.ItemMenu(id, it)) }.toSet()
   }
 
   private fun UiScope.closeBySelecting(id: Long) {

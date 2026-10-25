@@ -71,20 +71,30 @@ class GroupPreferenceGatingUnitTest {
 
   @Test
   fun featuresWithoutRoleIgnoreTheUserRole() {
-    val on = prefs.copy(
-      timedMessages = TimedMessagesGroupPreference(GroupFeatureEnabled.ON, ttl = 86400),
-      fullDelete = GroupPreference(GroupFeatureEnabled.ON),
-      reactions = GroupPreference(GroupFeatureEnabled.ON),
-      reports = GroupPreference(GroupFeatureEnabled.ON),
-      history = GroupPreference(GroupFeatureEnabled.ON),
-      support = GroupPreference(GroupFeatureEnabled.ON),
-      signMessages = GroupPreference(GroupFeatureEnabled.ON),
+    val off = GroupPreference(GroupFeatureEnabled.OFF)
+    val on = GroupPreference(GroupFeatureEnabled.ON)
+    val allOff = prefs.copy(
+      timedMessages = TimedMessagesGroupPreference(GroupFeatureEnabled.OFF, ttl = 86400),
+      fullDelete = off,
+      reactions = off,
+      reports = off,
+      history = off,
+      support = off,
+      signMessages = off,
     )
-    val observer = group(GroupMemberRole.Observer, on)
-    listOf(
-      GroupFeature.TimedMessages, GroupFeature.FullDelete, GroupFeature.Reactions,
-      GroupFeature.Reports, GroupFeature.History, GroupFeature.Support, GroupFeature.SignMessages
-    ).forEach { assertTrue(observer.groupFeatureEnabled(it), it.name) }
+    val onlyOneOn = mapOf(
+      GroupFeature.TimedMessages to allOff.copy(timedMessages = TimedMessagesGroupPreference(GroupFeatureEnabled.ON, ttl = 86400)),
+      GroupFeature.FullDelete to allOff.copy(fullDelete = on),
+      GroupFeature.Reactions to allOff.copy(reactions = on),
+      GroupFeature.Reports to allOff.copy(reports = on),
+      GroupFeature.History to allOff.copy(history = on),
+      GroupFeature.Support to allOff.copy(support = on),
+      GroupFeature.SignMessages to allOff.copy(signMessages = on),
+    )
+    onlyOneOn.forEach { (onFeature, p) ->
+      val observer = group(GroupMemberRole.Observer, p)
+      onlyOneOn.keys.forEach { assertEquals(it == onFeature, observer.groupFeatureEnabled(it), "${onFeature.name} on, ${it.name}") }
+    }
   }
 
   @Test
@@ -109,6 +119,7 @@ class GroupPreferenceGatingUnitTest {
 
   @Test
   fun toGroupPreferencesKeepsEveryPreferenceWithRoleAndTtl() {
+    val commands = listOf(ChatBotCommand.Command("help", "Help", null), ChatBotCommand.Command("join", "Join", "name"))
     val full = prefs.copy(
       timedMessages = TimedMessagesGroupPreference(GroupFeatureEnabled.ON, ttl = 604800),
       directMessages = RoleGroupPreference(GroupFeatureEnabled.ON, role = GroupMemberRole.Owner),
@@ -117,10 +128,11 @@ class GroupPreferenceGatingUnitTest {
       simplexLinks = RoleGroupPreference(GroupFeatureEnabled.ON, role = GroupMemberRole.Moderator),
       fullDelete = GroupPreference(GroupFeatureEnabled.ON),
       reactions = GroupPreference(GroupFeatureEnabled.OFF),
-      reports = GroupPreference(GroupFeatureEnabled.OFF),
-      history = GroupPreference(GroupFeatureEnabled.OFF),
-      support = GroupPreference(GroupFeatureEnabled.OFF),
-      signMessages = GroupPreference(GroupFeatureEnabled.ON),
+      reports = GroupPreference(GroupFeatureEnabled.OFF, role = GroupMemberRole.Observer),
+      history = GroupPreference(GroupFeatureEnabled.OFF, role = GroupMemberRole.Member),
+      support = GroupPreference(GroupFeatureEnabled.ON, role = GroupMemberRole.Admin),
+      signMessages = GroupPreference(GroupFeatureEnabled.ON, role = GroupMemberRole.Owner),
+      commands = commands,
     )
     assertEquals(
       GroupPreferences(
@@ -131,11 +143,11 @@ class GroupPreferenceGatingUnitTest {
         voice = RoleGroupPreference(GroupFeatureEnabled.ON, role = GroupMemberRole.Admin),
         files = RoleGroupPreference(GroupFeatureEnabled.OFF, role = null),
         simplexLinks = RoleGroupPreference(GroupFeatureEnabled.ON, role = GroupMemberRole.Moderator),
-        reports = GroupPreference(GroupFeatureEnabled.OFF),
-        history = GroupPreference(GroupFeatureEnabled.OFF),
-        support = GroupPreference(GroupFeatureEnabled.OFF),
-        signMessages = GroupPreference(GroupFeatureEnabled.ON),
-        commands = emptyList(),
+        reports = GroupPreference(GroupFeatureEnabled.OFF, role = GroupMemberRole.Observer),
+        history = GroupPreference(GroupFeatureEnabled.OFF, role = GroupMemberRole.Member),
+        support = GroupPreference(GroupFeatureEnabled.ON, role = GroupMemberRole.Admin),
+        signMessages = GroupPreference(GroupFeatureEnabled.ON, role = GroupMemberRole.Owner),
+        commands = commands,
       ),
       full.toGroupPreferences()
     )

@@ -116,6 +116,12 @@ class ChatListFilteredChatsUnitTest {
   }
 
   @Test
+  fun searchMatchesNotesName() {
+    val notes = chat(ChatInfo.Local(NoteFolder.sampleData))
+    assertEquals(listOf(notes.id), search(notes.chatInfo.displayName.uppercase(), allChats + notes))
+  }
+
+  @Test
   fun searchExcludesDeletedContactsAndContactCardsEvenWhenNameMatches() {
     assertEquals(listOf(bob.id), search("bob"))
   }
@@ -169,6 +175,11 @@ class ChatListFilteredChatsUnitTest {
     val markedUnread = direct(contact(21, "marked"), Chat.ChatStats(unreadChat = true))
     val mutedUnread = direct(contact(22, "muted", enableNtfs = MsgFilter.None), Chat.ChatStats(unreadCount = 5))
     val read = direct(contact(23, "read"))
-    assertEquals(listOf(unread.id, markedUnread.id), search("", listOf(unread, markedUnread, mutedUnread, read), ActiveFilter.Unread))
+    val mentioned = direct(contact(24, "mentioned", enableNtfs = MsgFilter.Mentions), Chat.ChatStats(unreadCount = 1, unreadMentions = 1))
+    val unmentioned = direct(contact(25, "unmentioned", enableNtfs = MsgFilter.Mentions), Chat.ChatStats(unreadCount = 3, unreadMentions = 0))
+    assertEquals(
+      listOf(unread.id, markedUnread.id, mentioned.id),
+      search("", listOf(unread, markedUnread, mutedUnread, read, mentioned, unmentioned), ActiveFilter.Unread)
+    )
   }
 }

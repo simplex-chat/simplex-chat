@@ -66,6 +66,11 @@ class ContactTypeUnitTest {
   }
 
   @Test
+  fun deletedContactWithStaleRequestIsUnlisted() {
+    assertEquals(ContactType.UNLISTED, type(contact(activeConn = null, contactRequestId = 1, contactStatus = ContactStatus.Deleted)))
+  }
+
+  @Test
   fun acceptedRequestWithReadyConnectionIsRecent() {
     assertEquals(ContactType.RECENT, type(contact(activeConn = readyConn, contactRequestId = 1)))
   }

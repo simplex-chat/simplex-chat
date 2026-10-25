@@ -37,6 +37,7 @@ class EditMessageDesktopTest : UiTest() {
     bob expectsMessage "alice> [edited] second!"
     typeInto(Ui.Chat.Message, "x")
     pressUp(Ui.Chat.Message)
+    settle()
     assertTrue("Up with text in the field started editing", editableText(Ui.Chat.Message) == "x" && !exists(described("Cancel")))
   }
 

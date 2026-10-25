@@ -195,7 +195,7 @@ Each sub-area (a `###` section) is one test class, or several consecutive classe
 | 04 | G | Chat data, database, encryption, startup DB errors | `chatData_ttlDecrease_alertConfirm` | `ChatDataTest` | 12 | 1 |
 | 04 | G | Chat data, database, encryption, startup DB errors | `dbEncrypt_changePassphrase` | `DatabaseEncryptionTest` | 7 | 1 |
 | 04 | H | Migrate to/from device | `migrateFrom_stopsChatAndAuth` | `MigrationTest` | 15 | 6 |
-| 04 | I | App version, update checker, developer tools | `version_screenShowsVersions` | `VersionDevToolsTest` | 13 | 0 |
+| 04 | I | App version, update checker, developer tools | `version_screenShowsVersions` | `VersionDevToolsTest` | 14 | 0 |
 | 04 | J | Help & support | `help_layoutHowToUseAndAbout` | `HelpTest` | 4 | 2 |
 | 04 | K | Remote desktop: "Link a mobile" (the desktop GUI is the controller, the CLI is the mobile host) | `linkMobile_layout` | `RemoteDesktopTest` | 17 | 0 |
 | 04 | L | Supporter perks (badge-display screens excluded) | `badges_supportScreenLayout` | `SupporterPerksTest` | 8 | 1 |

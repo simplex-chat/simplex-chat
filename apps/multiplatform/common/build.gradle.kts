@@ -359,7 +359,20 @@ afterEvaluate {
   }
 }
 
-tasks.named<Test>("desktopTest") { exclude("chat/simplex/app/ui/**") }
+tasks.named<Test>("desktopTest") {
+  exclude("chat/simplex/app/ui/**")
+  val unitHome = rootProject.file("build/unit-home")
+  environment.keys.filter { it.equals("AppData", ignoreCase = true) }.forEach { environment.remove(it) }
+  systemProperty("user.home", unitHome.absolutePath)
+  environment("HOME", unitHome.absolutePath)
+  environment("XDG_CONFIG_HOME", File(unitHome, ".config").absolutePath)
+  environment("XDG_DATA_HOME", File(unitHome, ".local/share").absolutePath)
+  environment("AppData", File(unitHome, "AppData").absolutePath)
+  doFirst {
+    project.delete(rootProject.file("build/unit-home"))
+    unitHome.mkdirs()
+  }
+}
 
 tasks.register<org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest>("desktopUiTest") {
   targetName = "desktop"

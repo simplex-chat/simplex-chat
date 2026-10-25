@@ -21,6 +21,7 @@ class ContactCantSendReasonUnitTest {
     contactRequestId: Long? = null,
     contactGroupMemberId: Long? = null,
     contactGrpInvSent: Boolean = false,
+    groupDirectInv: GroupDirectInvitation? = null,
   ): Contact =
     Contact.sampleData.copy(
       activeConn = activeConn,
@@ -29,6 +30,7 @@ class ContactCantSendReasonUnitTest {
       contactRequestId = contactRequestId,
       contactGroupMemberId = contactGroupMemberId,
       contactGrpInvSent = contactGrpInvSent,
+      groupDirectInv = groupDirectInv,
     )
 
   private fun prepared(mode: ConnectionMode) = PreparedContact(connLinkToConnect = link, uiConnLinkType = mode)
@@ -82,6 +84,18 @@ class ContactCantSendReasonUnitTest {
   fun contactWithPendingRequestCannotSend() {
     assertEquals(expected(MR.strings.cant_send_message_generic), reason(contact(activeConn = null, contactRequestId = 3)))
     assertEquals(expected(MR.strings.cant_send_message_generic), reason(contact(activeConn = readyConn.copy(connStatus = ConnStatus.New), contactRequestId = 3)))
+  }
+
+  @Test
+  fun contactWithPendingGroupDirectInvitationCannotSend() {
+    val invitation = GroupDirectInvitation(
+      groupDirectInvLink = link.connFullLink,
+      fromGroupId_ = 1,
+      fromGroupMemberId_ = 2,
+      fromGroupMemberConnId_ = 3,
+      groupDirectInvStartedConnection = false
+    )
+    assertEquals(expected(MR.strings.cant_send_message_generic), reason(contact(activeConn = null, groupDirectInv = invitation)))
   }
 
   @Test

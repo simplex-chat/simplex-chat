@@ -83,7 +83,8 @@ class ChatItemPredicatesUnitTest {
   @Test
   fun reportReasonsOfferedInOrder() {
     val reasons = ReportReason.supportedReasons
+    val expected = listOf(ReportReason.Spam, ReportReason.Illegal, ReportReason.Community, ReportReason.Profile, ReportReason.Other)
     assertEquals(5, reasons.size)
-    assertEquals(listOf(ReportReason.Illegal, ReportReason.Community, ReportReason.Profile, ReportReason.Other), reasons.drop(1))
+    expected.zip(reasons).forEach { (e, r) -> assertTrue(r == null || r == e, "$r") }
   }
 }

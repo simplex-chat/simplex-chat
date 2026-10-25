@@ -28,6 +28,13 @@ class ChatSegmentDisplayTextUnitTest {
   }
 
   @Test
+  fun markupSegmentsShowTheirDrawnTextInsteadOfMarkdown() {
+    assertEquals("", display(FormattedText("- ", Format.Markup(BlockToken.ListMark()))))
+    assertEquals("", display(FormattedText("> ", Format.Markup(BlockToken.QuoteMark()))))
+    assertEquals(" ", display(FormattedText("\n", Format.Markup(BlockToken.SoftBreak()))))
+  }
+
+  @Test
   fun escapeSegmentIsHidden() {
     assertEquals("", display(FormattedText("\\", Format.Escape())))
   }

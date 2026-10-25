@@ -55,6 +55,21 @@ class ChatListTagCountersUnitTest {
       chatStats = stats
     )
 
+  private fun channel(id: Long): Chat =
+    Chat(
+      remoteHostId = null,
+      chatInfo = ChatInfo.Group(
+        GroupInfo.sampleData.copy(
+          groupId = id,
+          groupProfile = GroupProfile.sampleData.copy(
+            publicGroup = PublicGroupProfile(groupType = GroupType.Channel, groupLink = addressLink, publicGroupId = "channel")
+          )
+        ),
+        groupChatScope = null
+      ),
+      chatItems = emptyList()
+    )
+
   private fun notes(): Chat = Chat(remoteHostId = null, chatInfo = ChatInfo.Local(NoteFolder.sampleData), chatItems = emptyList())
 
   private fun contactCard(id: Long): Chat =
@@ -94,6 +109,7 @@ class ChatListTagCountersUnitTest {
       notes(),
       contactCard(6),
       direct(7, remoteHostId = 1),
+      channel(8),
     )
     chatModel.updateChatTags(rhId = null)
     assertEquals(
@@ -101,6 +117,7 @@ class ChatListTagCountersUnitTest {
         PresetTagKind.CONTACTS to 3,
         PresetTagKind.FAVORITES to 1,
         PresetTagKind.GROUPS to 1,
+        PresetTagKind.CHANNELS to 1,
         PresetTagKind.GROUP_REPORTS to 1,
         PresetTagKind.BUSINESS to 1,
         PresetTagKind.NOTES to 1,

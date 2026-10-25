@@ -20,6 +20,17 @@ import org.junit.Test
 private const val FIXTURE_JPG = "tests/fixtures/test.jpg"
 private const val FILLERS = 40
 
+private val NOT_IDLE = setOf("ComposeNotIdleException", "IdlingResourceTimeoutException")
+
+private fun idleAfter(step: String, block: () -> Unit) {
+  try {
+    block()
+  } catch (e: Throwable) {
+    if (generateSequence(e) { it.cause }.none { it.javaClass.simpleName in NOT_IDLE }) throw e
+    throw AssertionError("the app's UI did not become idle after $step", e)
+  }
+}
+
 class ChatSearchTest : UiTest() {
   @Test fun search_direct_filtersResults() = uiTest {
     val alice = app("alice"); val bob = cli("bob")
@@ -60,7 +71,7 @@ class ChatSearchTest : UiTest() {
     }
   }
 
-  @KnownAppIssue("15.5 item 30", "Compose-Espresso link", intermittent = true)
+  @KnownAppIssue("15.5 item 30", "did not become idle after going to `the needle` from search", intermittent = true, androidOnly = true)
   @Test fun search_goToResult_opensAroundItem() = uiTest {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)
@@ -82,10 +93,12 @@ class ChatSearchTest : UiTest() {
       chat.itemTexts() == listOf("the needle") && exists(goTo) && !exists(Ui.Chat.Item(alpha)) && !exists(Ui.Chat.Item(newest))
     }
     hideKeyboard()
-    click(goTo)
-    poll(what = "the search closed and `the needle` in view, above `f$FILLERS` with the scroll-down button") {
-      !exists(Ui.Chat.Bar.part("search")) && !exists(goTo) &&
-        exists(Ui.Chat.Item(needle)) && !exists(Ui.Chat.Item(newest)) && exists(Ui.Chat.ScrollToBottom)
+    idleAfter("going to `the needle` from search") {
+      click(goTo)
+      poll(what = "the search closed and `the needle` in view, above `f$FILLERS` with the scroll-down button") {
+        !exists(Ui.Chat.Bar.part("search")) && !exists(goTo) &&
+          exists(Ui.Chat.Item(needle)) && !exists(Ui.Chat.Item(newest)) && exists(Ui.Chat.ScrollToBottom)
+      }
     }
   }
 

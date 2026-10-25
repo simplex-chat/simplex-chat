@@ -31,6 +31,7 @@ class ComposeDesktopTest : UiTest() {
     val chat = alice.chatList.open("bob")
     typeInto(Ui.Chat.Message, "   ")
     pressEnter(Ui.Chat.Message)
+    settle()
     check(editableText(Ui.Chat.Message) == "   " && !isEnabled(Ui.Chat.Send)) { "Enter on a blank message changed the field to `${editableText(Ui.Chat.Message)}`" }
     replaceText(Ui.Chat.Message, "hello")
     pressShiftEnter(Ui.Chat.Message)

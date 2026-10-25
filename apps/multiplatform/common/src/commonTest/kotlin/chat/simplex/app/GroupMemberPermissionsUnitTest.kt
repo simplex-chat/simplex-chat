@@ -59,12 +59,39 @@ class GroupMemberPermissionsUnitTest {
   }
 
   @Test
+  fun adminCanRemoveAndChangeRoleOfAnotherAdmin() {
+    val g = group(GroupMemberRole.Admin)
+    val m = member(GroupMemberRole.Admin)
+    assertTrue(m.canBeRemoved(g))
+    assertEquals(
+      listOf(GroupMemberRole.Observer, GroupMemberRole.Member, GroupMemberRole.Moderator, GroupMemberRole.Admin),
+      m.canChangeRoleTo(g)
+    )
+  }
+
+  @Test
+  fun ownerCanRemoveAndChangeRoleOfAnotherOwner() {
+    val g = group(GroupMemberRole.Owner)
+    val m = member(GroupMemberRole.Owner)
+    assertTrue(m.canBeRemoved(g))
+    assertEquals(
+      listOf(GroupMemberRole.Observer, GroupMemberRole.Member, GroupMemberRole.Moderator, GroupMemberRole.Admin, GroupMemberRole.Owner),
+      m.canChangeRoleTo(g)
+    )
+  }
+
+  @Test
   fun moderatorCanBlockForAllButCannotRemoveOrChangeRole() {
     val g = group(GroupMemberRole.Moderator)
     val m = member(GroupMemberRole.Member)
     assertFalse(m.canBeRemoved(g))
     assertNull(m.canChangeRoleTo(g))
     assertTrue(m.canBlockForAll(g))
+  }
+
+  @Test
+  fun memberCannotBlockForAll() {
+    assertFalse(member(GroupMemberRole.Member).canBlockForAll(group(GroupMemberRole.Member)))
   }
 
   @Test

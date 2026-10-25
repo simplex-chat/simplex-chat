@@ -28,6 +28,17 @@ import org.junit.Test
 
 private const val FILLERS = 40
 
+private val NOT_IDLE = setOf("ComposeNotIdleException", "IdlingResourceTimeoutException")
+
+private fun idleAfter(step: String, block: () -> Unit) {
+  try {
+    block()
+  } catch (e: Throwable) {
+    if (generateSequence(e) { it.cause }.none { it.javaClass.simpleName in NOT_IDLE }) throw e
+    throw AssertionError("the app's UI did not become idle after $step", e)
+  }
+}
+
 class ForwardTest : UiTest() {
   @Test fun forward_contactToContact_peerSeesForwarded() = uiTest {
     val alice = app("alice"); val bob = cli("bob"); val cath = cli("cath")
@@ -54,7 +65,7 @@ class ForwardTest : UiTest() {
     poll(what = "the `saved from` / `bob` header") { textsOf(Ui.Chat.Item(id)).let { t -> t.any { "saved from" in it } && "bob" in t } }
   }
 
-  @KnownAppIssue("15.5 item 30", "Compose-Espresso link", intermittent = true)
+  @KnownAppIssue("15.5 item 30", "did not become idle after going to cath's `hello` from the forwarded item", intermittent = true, androidOnly = true)
   @Test fun forward_acrossChatTypes_peersReceiveAndSourceOpens() = uiTest {
     val alice = app("alice"); val bob = cli("bob"); val cath = cli("cath")
     connect(bob); connect(cath)
@@ -85,11 +96,13 @@ class ForwardTest : UiTest() {
     poll(what = "team marked read") { alice.chatList.chat("team").chatStats.unreadCount == 0 }
     alice.chatList.open("bob")
     poll(what = "the forwarded `hello` in bob's chat") { chatModel.chatId.value == bobId && exists(Ui.Chat.Item(fwd)) }
-    click(Ui.Chat.Item(fwd).part("goTo"))
-    poll(what = "team's chat opened at cath's `hello`, above `f$FILLERS` with the scroll-down button") {
-      chatModel.chatId.value == teamId && exists(Ui.Chat.Item(original)) && !exists(Ui.Chat.Item(newest)) && exists(Ui.Chat.ScrollToBottom)
+    idleAfter("going to cath's `hello` from the forwarded item") {
+      click(Ui.Chat.Item(fwd).part("goTo"))
+      poll(what = "team's chat opened at cath's `hello`, above `f$FILLERS` with the scroll-down button") {
+        chatModel.chatId.value == teamId && exists(Ui.Chat.Item(original)) && !exists(Ui.Chat.Item(newest)) && exists(Ui.Chat.ScrollToBottom)
+      }
+      backToChatList()
     }
-    backToChatList()
     val notesId = alice.chatList.chatId("Private notes")
     val notes = alice.chatList.open("Private notes")
     poll(what = "the notes folder open") { chatModel.chatId.value == notesId }

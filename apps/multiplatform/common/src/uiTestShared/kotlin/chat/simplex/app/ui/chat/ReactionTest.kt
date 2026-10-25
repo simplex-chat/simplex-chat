@@ -34,16 +34,20 @@ class ReactionTest : UiTest() {
     bob expects "    + 👍"
     poll(what = "the 👍 chip counting 2") { chat.reactionCount("hi", "👍") == "2" }
     offeredReactions(hi).let { assertTrue("the menu still offers 👍 or no longer offers 👎 after alice reacted: $it", "👍" !in it && "👎" in it) }
-    rightClick(chip)
-    poll(what = "the chip menu listing `bob` and `you`") { exists(Ui.Chat.ReactionMember(hi, "bob")) && exists(Ui.Chat.ReactionMember(hi, "you")) }
-    click(Ui.Chat.ReactionMember(hi, "bob"))
-    poll(what = "bob's contact info opened from the chip menu") { exists(Ui.Info.Alias) && !exists(Ui.Chat.ReactionMember(hi, "bob")) }
-    closeContactInfo()
     click(chip)
     bob.expectsMessage("alice> > hi", CONNECT_TIMEOUT_MS)
     bob expects "    - 👍"
     poll(what = "bob's 👍 chip left without a count") { exists(chip) && chat.reactionCount("hi", "👍") == null }
     assertTrue("the menu does not offer 👍 again after alice removed hers", "👍" in offeredReactions(hi))
+    click(chip)
+    bob.expectsMessage("alice> > hi", CONNECT_TIMEOUT_MS)
+    bob expects "    + 👍"
+    poll(what = "the 👍 chip counting 2 again") { chat.reactionCount("hi", "👍") == "2" }
+    rightClick(chip)
+    poll(what = "the chip menu listing `bob` and `you`") { exists(Ui.Chat.ReactionMember(hi, "bob")) && exists(Ui.Chat.ReactionMember(hi, "you")) }
+    click(Ui.Chat.ReactionMember(hi, "bob"))
+    poll(what = "bob's contact info opened from the chip menu") { exists(Ui.Info.Alias) && !exists(Ui.Chat.ReactionMember(hi, "bob")) }
+    closeContactInfo()
   }
 
   @Test fun reaction_chipMenu_group_membersAndOpenInfo() = uiTest {

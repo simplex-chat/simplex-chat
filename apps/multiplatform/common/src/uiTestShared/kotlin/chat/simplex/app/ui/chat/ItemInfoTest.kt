@@ -141,7 +141,7 @@ class ItemInfoTest : UiTest() {
     }
   }
 
-  @KnownAppIssue("15.5 item 30", "Compose-Espresso link", intermittent = true)
+  @KnownAppIssue("15.5 item 30", "did not become idle while waiting for node chat.item.menu.info[22]", intermittent = true, androidOnly = true)
   @Test fun info_forwardedTab_showsSource() = uiTest {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)

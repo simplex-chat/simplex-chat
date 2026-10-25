@@ -1573,6 +1573,8 @@ Each entry gives the symptom, the cause (how it was confirmed), and the fix or m
 
 38. **`validPort` accepts port 0 and zero-padded values and is inconsistent about leading zeros** (found by a unit test, 2026-10-25): it accepts `0`, `00000` and `05555` and rejects `06000`. Fix idea, not done: parse to Int and require 1..65535.
 
+39. **Editing a voice message loses its duration** (found by a unit test, 2026-10-25): `MCVoice.duration` is in seconds, `chatItemPreview` (ComposeView.kt:275) divides it by 1000 again, so a 30 s voice item shows a 0 ms preview (reachable on desktop with Up in an empty compose field). Fix idea, not done: multiply by 1000.
+
 ### 15.4.1 Open flake: a CLI member's group join not completed (desktop, 2 of 5 runs)
 
 - `MemberInfoTest.memberInfo_changeRoleToAdmin` (run b18) and `memberInfo_removeMember` (run b15): bob sends `/j team` and never prints "#team: you joined the group" within 60 s (30 s in b15). No API call is in flight in the app.

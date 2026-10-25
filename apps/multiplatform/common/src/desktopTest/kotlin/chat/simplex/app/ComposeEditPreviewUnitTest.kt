@@ -53,7 +53,15 @@ class ComposeEditPreviewUnitTest {
   }
 
   @Test
-  fun voiceItemDividesDurationByThousand() {
+  fun videoItemShowsMediaPreviewOfStoredFile() {
+    val preview = chatItemPreview(sent(MsgContent.MCVideo("caption", "data:image/jpg;base64,AA==", 10), CIFile.getSample(fileName = "clip.mp4")))
+    assertIs<ComposePreview.MediaPreview>(preview)
+    assertEquals(listOf("data:image/jpg;base64,AA=="), preview.images)
+    assertEquals(listOf<UploadContent>(UploadContent.SimpleImage(getAppFileUri("clip.mp4"))), preview.content)
+  }
+
+  @Test
+  fun voiceItemPreviewDurationIsSecondsDividedByThousand_currentBehaviour_item39() {
     val preview = chatItemPreview(sent(MsgContent.MCVoice("", 30), CIFile.getSample(fileName = "voice.m4a")))
     assertEquals(ComposePreview.VoicePreview(voice = "voice.m4a", durationMs = 0, finished = true), preview)
     val long = chatItemPreview(sent(MsgContent.MCVoice("", 4500), CIFile.getSample(fileName = "voice.m4a")))

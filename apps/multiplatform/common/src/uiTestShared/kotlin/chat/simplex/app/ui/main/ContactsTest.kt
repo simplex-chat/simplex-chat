@@ -4,6 +4,7 @@ import chat.simplex.app.ui.harness.CONNECT_TIMEOUT_MS
 import chat.simplex.app.ui.harness.connect
 import chat.simplex.app.ui.harness.UiTest
 import chat.simplex.app.ui.harness.backToChatList
+import chat.simplex.common.model.ChatInfo
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.views.helpers.AlertManager
 import chat.simplex.common.views.helpers.ModalManager
@@ -18,6 +19,13 @@ class ContactsTest : UiTest() {
     alice.chatList.request("bob")
     alice.chatList.rowMenu("bob", "accept")
     bob.eventually("alice: contact is connected", CONNECT_TIMEOUT_MS)
+    poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "bob's request row replaced by the ready contact bob") {
+      chatModel.chats.value.count { it.chatInfo.chatViewName == "bob" } == 1 &&
+        (alice.chatList.chat("bob").chatInfo as? ChatInfo.Direct)?.contact?.ready == true &&
+        alice.chatList.shown("bob") && alice.chatList.rowTexts("bob").none { "Open to accept" in it }
+    }
+    alice.chatList.open("bob").send("hi")
+    bob.expectsMessage("alice> hi", CONNECT_TIMEOUT_MS)
   }
 
   @Test fun contactRequestMenuReject() = uiTest {
