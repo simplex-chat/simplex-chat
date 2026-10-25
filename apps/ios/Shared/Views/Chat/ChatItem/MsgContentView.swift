@@ -962,8 +962,10 @@ private extension MarkdownBlock {
     }
 }
 
+let quoteBarWidth: CGFloat = 4
+
 func quoteBar() -> some View {
-    RoundedRectangle(cornerRadius: 2).fill(Color(uiColor: .label).opacity(0.16)).frame(width: 4)
+    RoundedRectangle(cornerRadius: 2).fill(Color(uiColor: .label).opacity(0.16)).frame(width: quoteBarWidth)
 }
 
 private func headingFont(_ font: UIFont, _ level: Int) -> UIFont {

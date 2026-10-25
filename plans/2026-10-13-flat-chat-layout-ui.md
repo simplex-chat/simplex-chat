@@ -204,7 +204,8 @@ Shared/Views/Chat/ChatItem/TerminalItemView.swift
 Shared/Views/Chat/ChatItemView.swift     endButton to FramedItemView; event items with ChatEventWithMeta; chatEventText(ts:)
 Shared/Views/Chat/ChatItem/
   FramedItemView.swift                   backgrounds omitted; headers and quote at the text edge; terminalQuote with quoteBar; terminalBlock for media and cards
-                                         ciMsgContentView(terminalTop:) plus terminalHeadingGap; metaPlacement; mediaLimit; msgWidth not tracked in terminal rows
+                                         ciMsgContentView(terminalTop:) plus terminalHeadingGap; metaPlacement; mediaLimit
+                                         quote: sender at terminalNameSize; quoteMinWidth, so the thumbnail is at the end of the item, as Kotlin
                                          overlayMeta for captionless media; terminal emoji paddings
   MsgContentView.swift                   messageText(textColor:); line boxes and lineSpacing, also for taps; meta line for live messages only
                                          reserveSpaceForMeta: metaCopyJoiner, three no-break spaces, ciMetaText(unbreakable: true) with file encryption and signature

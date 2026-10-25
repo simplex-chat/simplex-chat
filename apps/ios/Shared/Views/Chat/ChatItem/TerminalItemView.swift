@@ -27,6 +27,7 @@ var terminalFileTopGap: CGFloat { terminalGap(2) }
 var terminalEmojiTopGap: CGFloat { terminalGap(4.25) }
 var terminalEmojiBottomGap: CGFloat { terminalGap(1.5) }
 var terminalMetaGap: CGFloat { terminalGap(6) }
+var terminalNameSize: CGFloat { bodyScaled(13.5) }
 let terminalHeadingRatio: CGFloat = 1.3125
 private let terminalLineHeightRatio: CGFloat = 22 / 16
 private let terminalLineHeightContrastSlope: CGFloat = 0.1515
@@ -411,7 +412,7 @@ struct TerminalChatItemRow<Content: View>: View {
     }
 
     private func senderNameAndRole(_ sender: ChatItemSender) -> some View {
-        let size = bodyScaled(13.5)
+        let size = terminalNameSize
         return HStack(alignment: .firstTextBaseline, spacing: 0) {
             NameWithBadge(sender.name.font(.system(size: size)).foregroundColor(sender.own ? theme.colors.primary : theme.colors.secondary), sender.badge, .footnote)
                 .lineLimit(1)

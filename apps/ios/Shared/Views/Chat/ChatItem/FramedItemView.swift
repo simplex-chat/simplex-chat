@@ -10,6 +10,8 @@
 import SwiftUI
 import SimpleXChat
 
+private let quoteBarSpacing: CGFloat = 10
+
 // Spec: spec/client/chat-view.md#FramedItemView
 struct FramedItemView: View {
     @EnvironmentObject var m: ChatModel
@@ -138,7 +140,7 @@ struct FramedItemView: View {
             }
         }
             .background { if !terminal { chatItemFrameColorMaybeImageOrVideo(chatItem, theme).modifier(ChatTailPadding()) } }
-            .onPreferenceChange(DetermineWidth.Key.self) { if !terminal { msgWidth = $0 } }
+            .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
             .padding(.bottom, terminal && metaPlacement.gapBelowBlock ? terminalBlockBottomGap : 0)
 
         if let (title, text) = chatItem.meta.itemStatus.statusInfo ?? chatItem.meta.msgVerified?.sigMissingInfo {
@@ -288,7 +290,7 @@ struct FramedItemView: View {
             case let .image(_, image):
                 if let uiImage = imageFromBase64(image) {
                     ciQuotedMsgView(qi)
-                        .padding(.trailing, 70).frame(minWidth: msgWidth, alignment: .leading)
+                        .padding(.trailing, terminal ? 68 : 70).frame(minWidth: quoteMinWidth, alignment: .leading)
                     Image(uiImage: uiImage)
                         .resizable()
                         .aspectRatio(contentMode: .fill)
@@ -301,7 +303,7 @@ struct FramedItemView: View {
             case let .video(_, image, _):
                 if let uiImage = imageFromBase64(image) {
                     ciQuotedMsgView(qi)
-                    .padding(.trailing, 70).frame(minWidth: msgWidth, alignment: .leading)
+                    .padding(.trailing, terminal ? 68 : 70).frame(minWidth: quoteMinWidth, alignment: .leading)
                     Image(uiImage: uiImage)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
@@ -313,16 +315,16 @@ struct FramedItemView: View {
                 }
             case .file:
                 ciQuotedMsgView(qi)
-                    .padding(.trailing, 20).frame(minWidth: msgWidth, alignment: .leading)
+                    .padding(.trailing, 20).frame(minWidth: quoteMinWidth, alignment: .leading)
                 ciQuoteIconView("doc.fill")
             case .voice:
                 ciQuotedMsgView(qi)
-                    .padding(.trailing, 20).frame(minWidth: msgWidth, alignment: .leading)
+                    .padding(.trailing, 20).frame(minWidth: quoteMinWidth, alignment: .leading)
                 ciQuoteIconView("mic.fill")
             case let .chat(text, chatLink, _):
                 let prefix = NSAttributedString(string: chatLink.displayName + (text != chatLink.connLinkStr ? " - " : ""))
                 ciQuotedMsgView(qi, stripLink: chatLink.connLinkStr, prefix: prefix)
-                    .padding(.trailing, 20).frame(minWidth: msgWidth, alignment: .leading)
+                    .padding(.trailing, 20).frame(minWidth: quoteMinWidth, alignment: .leading)
                 ciQuoteIconView(chatLink.smallIconName)
             default:
                 ciQuotedMsgView(qi)
@@ -330,7 +332,7 @@ struct FramedItemView: View {
         }
             // if enable this always, size of the framed voice message item will be incorrect after end of playback
             .overlay { if case .voice = chatItem.content.msgContent {} else { DetermineWidth() } }
-            .frame(minWidth: msgWidth, alignment: .leading)
+            .frame(minWidth: quoteMinWidth, alignment: .leading)
             .background(terminal ? Color.clear : backgroundColor)
             .environment(\.containerBackground, UIColor(terminal ? terminalBackgroundColor(theme) : backgroundColor))
             .if(terminal) { terminalQuote($0) }
@@ -344,12 +346,12 @@ struct FramedItemView: View {
     private func ciQuotedMsgView(_ qi: CIQuote, stripLink: String? = nil, prefix: NSAttributedString? = nil) -> some View {
         Group {
             if let sender = qi.getSender(membership()) {
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: terminal ? 0 : 2) {
                     Text(sender)
-                        .font(.caption)
+                        .font(terminal ? .system(size: terminalNameSize) : .caption)
                         .foregroundColor(qi.chatDir == .groupSnd ? .accentColor : theme.colors.secondary)
                         .lineLimit(1)
-                        .lineBox(terminal ? terminalLineBox(UIFont.preferredFont(forTextStyle: .caption1), nil, theme) : nil)
+                        .lineBox(terminal ? terminalLineBox(UIFont.systemFont(ofSize: terminalNameSize), nil, theme) : nil)
                     ciQuotedMsgTextView(qi, lines: 2, stripLink: stripLink, prefix: prefix)
                 }
             } else {
@@ -379,7 +381,7 @@ struct FramedItemView: View {
     }
 
     private func terminalQuote(_ quote: some View) -> some View {
-        HStack(alignment: .top, spacing: 10) {
+        HStack(alignment: .top, spacing: quoteBarSpacing) {
             quoteBar()
             quote
         }
@@ -465,6 +467,10 @@ struct FramedItemView: View {
         } else {
             mediaWidth < maxWidth ? mediaWidth : nil
         }
+    }
+
+    private var quoteMinWidth: CGFloat {
+        terminal ? max(0, msgWidth - chatItemTextPadding - quoteBarWidth - quoteBarSpacing) : msgWidth
     }
 
     private var captionlessMedia: Bool {

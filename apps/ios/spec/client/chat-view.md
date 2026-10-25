@@ -389,9 +389,12 @@ reactions          chatItemTextPadding − 6pt from the start
 Item views start at the text edge `chatItemTextPadding` (12pt):
 
 ```
-FramedItemView        background, quote background and header backgrounds omitted; msgWidth not tracked
+FramedItemView        background, quote background and header backgrounds omitted
                       headers: terminalHeaderTopGap above, terminalHeaderBottomGap below
                       quote: quoteBar(), text onSurface 70%, terminalBlockTopGap above, terminalBlockBottomGap below
+                      quote sender: terminalNameSize (13.5pt, Dynamic Type), no spacing above the text
+                      quote width: at least msgWidth (quoteMinWidth: less the text edge, bar and its spacing);
+                      the thumbnail at the end of the item, 12pt after the quote text at least
                       quote thumbnails and media: message corner clip (msgRectMaxRadius × roundness)
                       link preview and chat link cards: quote colour, message corner clip (terminalBlock)
                       media width limit for captionless media only (mediaLimit)
