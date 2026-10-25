@@ -1614,6 +1614,11 @@ Each entry gives the symptom, the cause (how it was confirmed), and the fix or m
 - `ItemInfoTest.info_moderated_showsModeratedAt` (trial 9, 2026-10-23): after the `info` menu entry of bob's `spam` was clicked, no item info opened within 10 s. The screenshot shows the group chat with the menu closed, no alert, and no API call in flight. Passed in trials 7 and 8. Not resolved: it is not known whether the tap was lost or the app dropped the request.
 - `DatabaseEncryptionTest.dbEncrypt_removeFromSettings` (trial 10, 2026-10-23): after a wrong passphrase was typed on the Encrypted database prompt (the masked field showed it) and `Open chat` was clicked, no `Wrong passphrase!` alert appeared within 120 s, with no API call in flight. Passed in trials 7–9. Same open question. Next step: log the tap point and the target's bounds before and after each Android tap, so the next occurrence shows whether the tap reached the node.
 
+### 15.4.1h Open flakes: waits that time out once per Android CI run (trial 11, 2026-10-23..25)
+
+- Trial 11 (Android emulator, 454 tests) had 4 failures, each a wait that timed out (60-120 s) in a different test, and each passed in earlier trials: `KeystoreAndroidTest.keystore_freshDb_randomPassphraseFooter` (the `Database encrypted!` alert), `AddressTest.addressSettingsShareWithContactsOnOff` (the `Share address with SimpleX contacts?` alert), `joinGroup_fullLinkIncognito` (`Connection request sent!`), and `UnreadScrollTest.pagination_quoteOutsidePage_jumpLoadsOriginal` (bob's messages stopped at 38 of 60, the same stall as 15.4.1e).
+- Cause not known: the screenshots show the expected screen state not reached with no work in flight, which is also the signature of 15.4.1g (a tap with no effect) or of CLI-peer delivery stalls on the shared runner. Next step: log tap points and bob's sent count (15.4.1e, 15.4.1g).
+
 ### 15.4.2 Test strength limits (second review, 2026-10-14)
 
 Under the minimal-app-code rule (item 31) some states are asserted through the model, not the UI. These tests pass if the model is right even when the UI fails to render the state:
