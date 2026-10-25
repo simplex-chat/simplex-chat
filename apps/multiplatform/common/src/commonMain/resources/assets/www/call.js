@@ -145,7 +145,7 @@ const processCommand = (function () {
             }
         });
     }
-    async function initializeCall(config, mediaType, aesKey) {
+    async function initializeCall(config, mediaType, aesKey, canReconnect) {
         var _a, _b, _c;
         let pc;
         try {
@@ -233,7 +233,7 @@ const processCommand = (function () {
                 : pc.iceConnectionState == "completed"
                     ? "connected"
                     : "connecting"); /* webView 69-70 doesn't have connectionState yet */
-            if (wasConnected) {
+            if (wasConnected && canReconnect) {
                 if (reconnectTimedOut) {
                     reconnectingTimeout = undefined;
                     if (activeCall !== call || state == "connected")
@@ -415,10 +415,10 @@ const processCommand = (function () {
                     inactiveCallMediaSources.camera = command.media == CallMediaType.Video;
                     inactiveCallMediaSourcesChanged(inactiveCallMediaSources);
                     setupLocalVideoRatio(getVideoElements().local);
-                    const { media, iceServers, relay } = command;
+                    const { media, iceServers, relay, canReconnect } = command;
                     const encryption = supportsInsertableStreams(useWorker);
                     const aesKey = encryption ? command.aesKey : undefined;
-                    activeCall = await initializeCall(getCallConfig(encryption && !!aesKey, iceServers, relay), media, aesKey);
+                    activeCall = await initializeCall(getCallConfig(encryption && !!aesKey, iceServers, relay), media, aesKey, canReconnect);
                     await setupLocalStream(true, activeCall);
                     setupCodecPreferences(activeCall);
                     const pc = activeCall.connection;
@@ -458,8 +458,8 @@ const processCommand = (function () {
                     else {
                         const offer = parse(command.offer);
                         const remoteIceCandidates = parse(command.iceCandidates);
-                        const { media, aesKey, iceServers, relay } = command;
-                        activeCall = await initializeCall(getCallConfig(!!aesKey, iceServers, relay), media, aesKey);
+                        const { media, aesKey, iceServers, relay, canReconnect } = command;
+                        activeCall = await initializeCall(getCallConfig(!!aesKey, iceServers, relay), media, aesKey, canReconnect);
                         const pc = activeCall.connection;
                         // console.log("offer remoteIceCandidates", JSON.stringify(remoteIceCandidates))
                         await pc.setRemoteDescription(new RTCSessionDescription(!webView69Or70() ? offer : adaptSdpToOldWebView(offer)));
