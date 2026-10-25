@@ -52,7 +52,7 @@ val TERMINAL_BLOCK_BOTTOM_GAP = 5.sp
 val TERMINAL_LEVEL_STEP = 4.75.sp
 val TERMINAL_HEADING_BOTTOM_GAP = TERMINAL_LEVEL_STEP / 2
 val TERMINAL_SENDER_TOP_GAP = 6.5.sp
-private val TERMINAL_NAME_BOTTOM_GAP = 5.5.sp
+private val TERMINAL_SENDER_BOTTOM_GAP = 5.5.sp
 val TERMINAL_HEADER_TOP_GAP = 2.5.sp
 val TERMINAL_HEADER_BOTTOM_GAP = 1.5.sp
 val TERMINAL_EVENT_TOP_GAP = 8.25.sp
@@ -253,7 +253,7 @@ fun TerminalChatItemRow(
       Box {
         if (sender != null) {
           ProvideTextStyle(LocalTextStyle.current.merge(terminalTextStyle(13.5.sp))) {
-            SenderNameAndRole(sender, Modifier.padding(start = CHAT_ITEM_TEXT_PADDING, bottom = TERMINAL_NAME_BOTTOM_GAP.toDp()))
+            SenderNameAndRole(sender, Modifier.padding(start = CHAT_ITEM_TEXT_PADDING, bottom = TERMINAL_SENDER_BOTTOM_GAP.toDp()))
           }
         }
       }

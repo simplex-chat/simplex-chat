@@ -119,17 +119,17 @@ Paths are relative to `apps/multiplatform/common/src/commonMain/kotlin/chat/simp
 views/chat/ChatView.kt
   ChatView (:269-:274)                   terminal = activeChatLayout == Terminal; LocalTerminalLayout provided
   ChatLayout composable (:1011)          chatViewBackgroundModifier(drawWallpaperImage = !LocalTerminalLayout.current)
-  ChatItemsList (:2413-:2419)            showAvatar = terminalItemShowsSender(item, older) when terminal
+  ChatItemsList (:2410-:2416)            showAvatar = terminalItemShowsSender(item, older) when terminal
                                          terminalGap = terminalRowGap(item, older, separated, largeGap, showAvatar)
-                                         separated = terminalRowsSeparated(older row) (:3850): the banner, or rowItemSeparation of the older row with a date
-                                         rowItemSeparation(row) (:3845): one rule for the date separator, drawn and in the gap (D32)
+                                         separated = terminalRowsSeparated(older row) (:3847): the banner, or rowItemSeparation of the older row with a date
+                                         rowItemSeparation(row) (:3842): one rule for the date separator, drawn and in the gap (D32)
   local ChatItemView (:2050)             terminal branch:
                                            ChatItemBox(top, bottom) with the row tint and terminalRowIndication; top 0
                                            bottom TERMINAL_LEVEL_STEP above a date separator; 8dp below the newest row; otherwise 0
                                            SelectedListItem when selecting
                                            TerminalChatItemRow(chatItemSender or null, terminalGutter, terminalGap, terminalStartOffset and swipeableModifier, GoToItemButton)
                                            ChatItemViewShortHand with the row interaction source
-  shared with classic                    showsSender, sameSender (:3868-:3882); ChatItemSender, chatItemSender, SenderNameAndRole (:3508-:3586)
+  shared with classic                    showsSender, sameSender (:3865-:3879); ChatItemSender, chatItemSender, SenderNameAndRole (:3505-:3583)
                                          classic BubbleSenderNameAndRole (:2038)
 views/chat/ChatItemsMerger.kt            MergedItem.revealed: true for Single, the flag of Grouped
 views/chat/item/TerminalItemView.kt      LocalTerminalLayout, gap constants, terminalTextStyle, terminal sender condition, terminalRowGap, terminalHeadingGap
@@ -140,7 +140,7 @@ views/chat/item/ChatItemView.kt          alignEnd = sent && !terminal; item clic
                                          hasQuoteOrHeader: the choice of EmojiItemView or CIVoiceView, and the heading gaps
 views/chat/item/FramedItemView.kt        transparent background; headers and quote without background; quoteBar; mediaModifier; cardModifier; thumbnailClip
                                          CIMarkdownText: parameter terminalTop plus terminalHeadingGap, no bottom padding, terminal text style, file encryption and signature for the copy
-                                         reservesMeta: metaReserved, bottom gap without text; captions by the classic conditions; clipChatItem skipped
+                                         metaReserved: passed to ItemWithMeta, bottom gap without text; captions by the classic conditions; clipChatItem skipped
                                          emoji: TERMINAL_EMOJI_* paddings, not stretched; quote row: TERMINAL_BLOCK_* paddings, icons without top padding
                                          CHAT_ITEM_TEXT_PADDING (text edge); classic vertical text padding named CHAT_ITEM_TEXT_VERTICAL_PADDING
                                          PriorityLayout(limitToPriorityWidth = !terminal || captionlessMedia), placeRelative when not limited; link preview caption without width limit; chat link card at its own width
@@ -162,7 +162,7 @@ views/chat/item/CIMetaView.kt            reserveSpaceForMeta with span parameter
 views/chat/item/CIChatFeatureView.kt     merged feature icons: one event line high, centred in terminal rows
 views/chat/item/CIEventView.kt           chatEventPadding(), chatEventTextStyle(), ChatEventWithMeta (separator, and time or copy, apart; classic as before, D28)
                                          CIEventView without a line limit in terminal rows (D23)
-item views with ItemWithMeta             EmojiItemView, CIVoiceView, CICallItemView, DeletedItemView, MarkedDeletedItemView
+item views with ItemWithMeta             FramedItemView, EmojiItemView, CIVoiceView, CICallItemView, DeletedItemView, MarkedDeletedItemView
                                          IntegrityErrorItemView, CIRcvDecryptionError, CIGroupInvitationView
 item views with ChatEventWithMeta        CIChatFeatureView, CIFeaturePreferenceView, CIMemberCreatedContactView, event items of ChatItemView
 views/chat/ChatInfoView.kt               ChatLayoutSection, setChatLayout; LocalTerminalLayout of the chat theme screen

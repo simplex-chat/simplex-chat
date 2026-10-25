@@ -239,7 +239,7 @@ fun FramedItemView(
 
   val sentColor = MaterialTheme.appColors.sentMessage
   val receivedColor = MaterialTheme.appColors.receivedMessage
-  val (reservesMeta, gapBelowBlock) = when (val mc = ci.content.msgContent) {
+  val (metaReserved, gapBelowBlock) = when (val mc = ci.content.msgContent) {
     is MsgContent.MCVoice -> (mc.text != "") to false
     is MsgContent.MCChat -> (mc.text != mc.chatLink.connLinkStr).let { it to !it }
     else -> !captionlessMedia to captionlessMedia
@@ -263,7 +263,7 @@ fun FramedItemView(
     ItemWithMeta(
       meta = { CIMetaView(ci, chatTTL, metaColor, showViaProxy = showViaProxy, showTimestamp = showTimestamp) },
       overlayMeta = if (captionlessMedia) { { CIMetaView(ci, chatTTL, Color.White, showViaProxy = showViaProxy, showTimestamp = showTimestamp, lineHeightColor = messageTextColor()) } } else null,
-      metaReserved = reservesMeta
+      metaReserved = metaReserved
     ) { inlineMeta ->
       Box(contentAlignment = Alignment.BottomEnd) {
         val style = shapeStyle(ci, chatItemTailEnabled(), tailVisible, true)

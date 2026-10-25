@@ -307,8 +307,7 @@ object AppearanceScope {
 
         @Composable
         fun TerminalPreviewRow(item: ChatItem, older: ChatItem?, sender: ChatItemSender) {
-          val topGap = terminalRowGap(item, older, separated = false, largeGap = true, hasSenderRow = true).toDp()
-          TerminalChatItemRow(sender, gutter = 0.dp, topGap = topGap, senderTopGap = if (older == null) 0.dp else TERMINAL_SENDER_TOP_GAP.toDp()) {
+          TerminalChatItemRow(sender, gutter = 0.dp, topGap = terminalRowGap(item, older, separated = false, largeGap = true, hasSenderRow = true).toDp(), senderTopGap = if (older == null) 0.dp else TERMINAL_SENDER_TOP_GAP.toDp()) {
             PreviewChatItemView(item)
           }
         }
