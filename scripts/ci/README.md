@@ -6,6 +6,8 @@ Three workflows build the apps from a branch's own code and test them, only when
 
 GitHub runs the reduced build of `build.yml` on a dispatch (workflow_dispatch) and on each push to a draft pull request. Once the pull request is marked ready for review, GitHub runs the full matrix.
 
+On a draft pull request, the tests are selected by a fenced block with the info string `ci-tests` in the description, one hspec match pattern per line; the block is read at each push. `/` runs the whole suite; without a block, the reduced build runs no tests.
+
 ### Dispatch
 
 ```sh
@@ -20,7 +22,7 @@ Endpoint: https://docs.github.com/en/rest/actions/workflows#create-a-workflow-di
 
 | Input | Default | Value |
 |---|---|---|
-| `tests` | empty | hspec match patterns, one per line (`\n` in JSON); with an empty value, the whole suite runs |
+| `tests` | empty | hspec match patterns, one per line (`\n` in JSON); `/` runs the whole suite, and an empty value builds without tests |
 | `base` | `master` | the branch that the changes are compared with:<br>`stable` for a branch cut from stable<br>the parent branch for a stacked branch |
 
 When a newer dispatch on the same branch starts build-linux or build-ios, GitHub cancels the unfinished job of the older one (`cancel-in-progress`).
