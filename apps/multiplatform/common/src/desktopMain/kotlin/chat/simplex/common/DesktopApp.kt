@@ -299,8 +299,8 @@ class DialogState<T>(private val cancelled: T) {
   suspend fun awaitResult(params: DialogParams = DialogParams()): T {
     synchronized(this) {
       if (isAwaiting) return cancelled
-      onResult = CompletableDeferred()
       this.params = params
+      onResult = CompletableDeferred()
     }
     val result = onResult!!.await()
     onResult = null
