@@ -27,8 +27,6 @@ import org.junit.Test
 
 class LeaveDeleteClearTest : UiTest() {
   @KnownAppIssue("15.5 item 14", "waiting for team's membership left after leaving", intermittent = true)
-  @KnownAppIssue("15.5 item 14", "waiting for `you left` in team's compose field", intermittent = true)
-  @KnownAppIssue("15.5 item 14", "group info after leaving does not offer only `Delete group`", intermittent = true)
   @Test fun leaveGroup_thenDeleteLocalCopy() = uiTest {
     val alice = app("alice"); val bob = cli("bob")
     val chat = memberOfBobsTeam(alice, bob)
@@ -42,6 +40,7 @@ class LeaveDeleteClearTest : UiTest() {
     poll(what = "the `You can't send messages!` alert for the left member") { seesText("You can't send messages!") }
     click(Ui.Alert.Confirm(Ui.AlertSource.Shared))
     chat.groupInfo()
+    poll(what = "team's membership left after leaving") { groupInfoOf("team").membership.memberStatus == GroupMemberStatus.MemLeft }
     check(offersOnlyDelete()) { "group info after leaving does not offer only `Delete group`" }
     deleteGroupFromInfo("team", "Group will be deleted for you - this cannot be undone!")
     alice.chatList.gone("team")

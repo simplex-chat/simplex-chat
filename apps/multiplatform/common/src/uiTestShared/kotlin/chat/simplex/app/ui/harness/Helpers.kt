@@ -1,5 +1,6 @@
 package chat.simplex.app.ui.harness
 
+import androidx.compose.ui.text.SpanStyle
 import chat.simplex.common.model.ChatInfo
 import chat.simplex.common.model.GroupMemberStatus
 import chat.simplex.common.platform.chatModel
@@ -12,6 +13,12 @@ const val QUIET_MS = 1_000L
 const val DESCRIBED = "@described"
 
 fun described(contentDescription: String) = chat.simplex.common.ui.UiKey(DESCRIBED, contentDescription)
+
+fun UiScope.styled(key: UiKey, segment: String, matches: (SpanStyle) -> Boolean): Boolean =
+  annotatedTextsOf(key).any { a ->
+    val start = a.text.indexOf(segment)
+    start >= 0 && a.spanStyles.any { matches(it.item) && it.start <= start && it.end >= start + segment.length }
+  }
 
 fun UiScope.goBack() {
   if (chat.simplex.common.platform.appPlatform.isDesktop) click(described("Back")) else escape()

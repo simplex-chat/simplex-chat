@@ -1,5 +1,9 @@
 package chat.simplex.app.ui.chat
 
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import chat.simplex.app.ui.harness.CONNECT_TIMEOUT_MS
 import chat.simplex.app.ui.harness.PREVIEW_IMAGE_DATA
 import chat.simplex.app.ui.harness.UiTest
@@ -11,6 +15,7 @@ import chat.simplex.app.ui.harness.described
 import chat.simplex.app.ui.harness.groupMemberId
 import chat.simplex.app.ui.harness.ownGroup
 import chat.simplex.app.ui.harness.ownGroupOfThree
+import chat.simplex.app.ui.harness.styled
 import chat.simplex.common.ui.Ui
 import org.junit.Assert.assertFalse
 import org.junit.Test
@@ -57,9 +62,14 @@ class ComposeTest : UiTest() {
     chat.send(MARKDOWN)
     bob expectsMessage "alice> $CLI_MARKDOWN"
     val id = chat.itemId(MARKDOWN)
+    val item = Ui.Chat.Item(id)
     poll(what = "alice's bubble showing `bold italic strike code` without the markdown markers") {
-      textsOf(Ui.Chat.Item(id)).let { t -> t.any { "bold italic strike code" in it } && t.none { m -> MARKERS.any { it in m } } }
+      textsOf(item).let { t -> t.any { "bold italic strike code" in it } && t.none { m -> MARKERS.any { it in m } } }
     }
+    check(styled(item, "bold") { it.fontWeight == FontWeight.Bold }) { "`bold` is not bold in alice's bubble" }
+    check(styled(item, "italic") { it.fontStyle == FontStyle.Italic }) { "`italic` is not italic in alice's bubble" }
+    check(styled(item, "strike") { it.textDecoration == TextDecoration.LineThrough }) { "`strike` is not struck through in alice's bubble" }
+    check(styled(item, "code") { it.fontFamily == FontFamily.Monospace }) { "`code` is not monospace in alice's bubble" }
     bob sends "/? @alice *bold*"
     bob expectsMessage "alice> $CLI_MARKDOWN"
   }

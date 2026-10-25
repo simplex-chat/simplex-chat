@@ -4,6 +4,7 @@ import android.widget.EditText
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.*
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.test.core.app.ActivityScenario
@@ -380,11 +381,13 @@ class UiScope(val rule: ComposeTestRule) {
     return hint
   }
 
-  fun textsOf(key: UiKey): List<String> {
+  fun textsOf(key: UiKey): List<String> = annotatedTextsOf(key).map { it.text }
+
+  fun annotatedTextsOf(key: UiKey): List<AnnotatedString> {
     waitFor(key)
-    val own = rule.onNode(matcher(key)).fetchSemanticsNode().config.getOrElseNullable(SemanticsProperties.Text) { null }.orEmpty().map { it.text }
+    val own = rule.onNode(matcher(key)).fetchSemanticsNode().config.getOrElseNullable(SemanticsProperties.Text) { null }.orEmpty()
     val inner = rule.onAllNodes(hasAnyAncestor(matcher(key)) and SemanticsMatcher.keyIsDefined(SemanticsProperties.Text), useUnmergedTree = true)
-      .fetchSemanticsNodes().flatMap { it.config[SemanticsProperties.Text].map { t -> t.text } }
+      .fetchSemanticsNodes().flatMap { it.config[SemanticsProperties.Text] }
     return own + inner
   }
 

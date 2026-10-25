@@ -3,6 +3,7 @@ package chat.simplex.app.ui.harness
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.graphics.toAwtImage
 import androidx.compose.ui.test.*
+import androidx.compose.ui.text.AnnotatedString
 import chat.simplex.common.AppScreen
 import chat.simplex.common.ui.UiIdle
 import chat.simplex.common.ui.UiKey
@@ -348,12 +349,14 @@ class UiScope(val ui: SkikoComposeUiTest, private val dir: File) {
     repeat(FOCUS_SETTLE_FRAMES) { ui.mainClock.advanceTimeBy(16, ignoreFrameDuration = true); ui.waitForIdle() }
   }
 
-  fun textsOf(key: UiKey): List<String> {
+  fun textsOf(key: UiKey): List<String> = annotatedTextsOf(key).map { it.text }
+
+  fun annotatedTextsOf(key: UiKey): List<AnnotatedString> {
     waitFor(key)
     val textKey = androidx.compose.ui.semantics.SemanticsProperties.Text
-    val own = ui.onNode(matcher(key)).fetchSemanticsNode().config.getOrElseNullable(textKey) { null }.orEmpty().map { it.text }
+    val own = ui.onNode(matcher(key)).fetchSemanticsNode().config.getOrElseNullable(textKey) { null }.orEmpty()
     val inner = ui.onAllNodes(hasAnyAncestor(matcher(key)) and SemanticsMatcher.keyIsDefined(textKey), useUnmergedTree = true)
-      .fetchSemanticsNodes().flatMap { it.config[textKey].map { t -> t.text } }
+      .fetchSemanticsNodes().flatMap { it.config[textKey] }
     return own + inner
   }
 

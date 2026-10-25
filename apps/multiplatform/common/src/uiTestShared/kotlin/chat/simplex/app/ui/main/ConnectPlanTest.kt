@@ -208,12 +208,17 @@ class ConnectPlanTest : UiTest() {
     poll(what = "bob's card with his name, `Contact address (from owner)` and `Tap to open`") {
       textsOf(Ui.Chat.Item(bobCard)).containsAll(listOf("bob", "Contact address (from owner)", "Tap to open"))
     }
-    click(Ui.Chat.Item(bobCard).part("chatLink"))
+    bobChat.forwardItemTo(bobCard, "Private notes")
+    val notesId = alice.chatList.chatId("Private notes")
+    poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "the notes folder open with bob's forwarded card") {
+      chatModel.chatId.value == notesId && chatModel.chatsContext.chatItems.value.any { it.content.msgContent is MsgContent.MCChat }
+    }
+    click(Ui.Chat.Item(chatLinkItemId()).part("chatLink"))
     poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "the known-contact alert for bob with `Open chat`") {
       exists(planConfirm) && "Open chat" in textsOf(planConfirm) && textOf(planProfileName) == "bob" && !seesText("Link signature verified.")
     }
     click(planConfirm)
-    poll(what = "bob's chat still open and no second chat named bob") {
+    poll(what = "bob's chat opened from the notes folder and no second chat named bob") {
       !exists(planConfirm) && chatModel.chatId.value == bobId && chatModel.chats.value.count { it.chatInfo.chatViewName == "bob" } == 1
     }
     bobChat.send("still here")

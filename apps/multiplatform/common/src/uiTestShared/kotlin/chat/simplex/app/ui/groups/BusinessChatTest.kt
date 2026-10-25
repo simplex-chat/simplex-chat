@@ -107,7 +107,6 @@ class BusinessChatTest : UiTest() {
   }
 
   @KnownAppIssue("15.5 item 14", "waiting for the customer's membership left in the model", intermittent = true)
-  @KnownAppIssue("15.5 item 14", "waiting for `you left` in the business chat's compose field", intermittent = true)
   @Test fun customer_seesTeamMemberAdded() = uiTest {
     val alice = app("alice"); val bob = cli("bob"); val cath = cli("cath")
     businessChat(bob)
@@ -135,8 +134,8 @@ class BusinessChatTest : UiTest() {
     leaveBusinessChatFromInfo("bob")
     bob.eventuallyMatching(Regex("#alice: alice_1 left the group( \\(signed\\))?"), CONNECT_TIMEOUT_MS)
     cath.eventuallyMatching(Regex("#alice: alice_1 left the group( \\(signed\\))?"), CONNECT_TIMEOUT_MS)
-    poll(what = "`you left` in the business chat's compose field") { seesText("you left") }
     poll(what = "the customer's membership left in the model") { groupInfoOf("bob").membership.memberStatus == GroupMemberStatus.MemLeft }
+    poll(what = "`you left` in the business chat's compose field") { seesText("you left") }
     click(Ui.Chat.Message)
     poll(what = "the `You can't send messages!` alert for the left customer") { seesText("You can't send messages!") }
     click(Ui.Alert.Confirm(Ui.AlertSource.Shared))

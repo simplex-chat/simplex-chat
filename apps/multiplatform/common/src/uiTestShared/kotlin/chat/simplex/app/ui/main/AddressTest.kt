@@ -170,6 +170,11 @@ class AddressTest : UiTest() {
     poll(what = "the user picker row `Your SimpleX address`") { labelled(Ui.UserPicker.Address, "Your SimpleX address") && !labelled(Ui.UserPicker.Address, "Create SimpleX address") }
     click(Ui.UserPicker.Address)
     poll(what = "the address screen for the existing address") { exists(Ui.Address.Share) && exists(Ui.Address.Delete) && !exists(Ui.Address.Create) }
+    addressSettings()
+    click(Ui.Address.ShareWithContacts)
+    awaitStopSharingAlert()
+    click(DISMISS)
+    poll(what = "the stop-sharing alert closed") { !AlertManager.shared.hasAlertsShown() }
     connect(bob)
     bob sends "/i @alice"
     bob.eventuallyMatching(Regex("contact address: \\S+"))
@@ -187,7 +192,7 @@ class AddressTest : UiTest() {
       chatModel.userAddress.value != null && exists(Ui.Address.Settings) && !AlertManager.shared.hasAlertsShown() && UiIdle.inFlight().isEmpty()
     }
     check(!addressShared()) { "`Cancel` on `Share address with SimpleX contacts?` shared the address" }
-    addressSettings()
+    val settings = addressSettings()
 
     click(Ui.Address.ShareWithContacts)
     awaitShareAlert()
@@ -212,6 +217,13 @@ class AddressTest : UiTest() {
     click(CONFIRM)
     bob.eventually("alice removed contact address", CONNECT_TIMEOUT_MS)
     poll(what = "the address no longer shared") { !addressShared() }
+    settings.close()
+    click(Ui.Address.Delete)
+    poll(what = "the `Delete address?` alert without a profile update") {
+      seesText("Delete address?") && seesText("All your contacts will remain connected.") &&
+        !seesText("All your contacts will remain connected. Profile update will be sent to your contacts.")
+    }
+    click(DISMISS)
   }
 
   @Test fun addressShareViaChat() = uiTest {
