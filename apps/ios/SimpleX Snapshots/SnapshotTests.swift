@@ -1,0 +1,442 @@
+import XCTest
+import SwiftUI
+import UIKit
+@testable import SimpleX
+@testable import SimpleXChat
+
+final class SnapshotTests: XCTestCase {
+    @MainActor
+    func testChatScenes() throws {
+        let env = ProcessInfo.processInfo.environment
+        let dir = URL(fileURLWithPath: env["SNAPSHOT_DIR"] ?? NSTemporaryDirectory() + "snapshots", isDirectory: true)
+        let size = env["SNAPSHOT_SIZE"] ?? "large"
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let windowScene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
+        let fixtures = SnapshotFixtures(width: windowScene.screen.bounds.width)
+        ChatModel.shared.currentUser = fixtures.user
+        var index: [[String: Any]] = []
+        for dark in [false, true] {
+            let theme = snapshotTheme(dark)
+            CurrentColors = theme
+            for scene in fixtures.scenes(defaultSize: size == "large") {
+                let themeName = dark ? "dark" : "light"
+                let file = "\(scene.name)-\(themeName)-\(size).png"
+                let image = try renderScene(scene, theme.toAppTheme(), dark: dark, in: windowScene)
+                try XCTUnwrap(image.pngData()).write(to: dir.appendingPathComponent(file))
+                index.append([
+                    "scene": scene.name,
+                    "theme": themeName,
+                    "size": size,
+                    "file": file,
+                    "width": Int((image.size.width * image.scale).rounded()),
+                    "height": Int((image.size.height * image.scale).rounded()),
+                    "scale": image.scale,
+                    "contentSizeCategory": UIApplication.shared.preferredContentSizeCategory.rawValue
+                ])
+            }
+        }
+        let data = try JSONSerialization.data(withJSONObject: index, options: [.prettyPrinted, .sortedKeys])
+        try data.write(to: dir.appendingPathComponent("index-\(size).json"))
+    }
+}
+
+private struct SnapshotScene {
+    var name: String
+    var height: CGFloat? = nil
+    var view: AnyView
+}
+
+private func snapshotTheme(_ dark: Bool) -> ThemeManager.ActiveTheme {
+    let base: DefaultTheme = dark ? .DARK : .LIGHT
+    return ThemeManager.ActiveTheme(
+        name: base.themeName,
+        base: base,
+        colors: (dark ? DarkColorPalette : LightColorPalette).clone(),
+        appColors: (dark ? DarkColorPaletteApp : LightColorPaletteApp).clone(),
+        wallpaper: AppWallpaper(background: nil, tint: nil, type: PresetWallpaper.school.toType(base))
+    )
+}
+
+@MainActor
+private func renderScene(_ scene: SnapshotScene, _ theme: AppTheme, dark: Bool, in windowScene: UIWindowScene) throws -> UIImage {
+    let screen = windowScene.screen
+    let width = screen.bounds.width
+    let root = scene.view
+        .environmentObject(ChatModel.shared)
+        .environmentObject(theme)
+        .frame(width: width, height: scene.height)
+    let host = UIHostingController(rootView: AnyView(root))
+    if #available(iOS 16.4, *) {
+        host.safeAreaRegions = []
+    }
+    let window = UIWindow(windowScene: windowScene)
+    window.overrideUserInterfaceStyle = dark ? .dark : .light
+    window.rootViewController = host
+    window.frame = CGRect(x: 0, y: 0, width: width, height: scene.height ?? screen.bounds.height)
+    window.isHidden = false
+    settle()
+    if scene.height == nil {
+        for _ in 0..<2 {
+            let fit = host.sizeThatFits(in: CGSize(width: width, height: .greatestFiniteMagnitude))
+            window.frame = CGRect(x: 0, y: 0, width: width, height: ceil(fit.height))
+            settle()
+        }
+    }
+    let format = UIGraphicsImageRendererFormat.default()
+    format.scale = screen.scale
+    let image = UIGraphicsImageRenderer(bounds: window.bounds, format: format).image { _ in
+        _ = window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
+    }
+    window.isHidden = true
+    window.rootViewController = nil
+    return image
+}
+
+private func settle() {
+    RunLoop.main.run(until: Date().addingTimeInterval(0.6))
+}
+
+private struct ChatRows: View {
+    @EnvironmentObject var theme: AppTheme
+    let chat: Chat
+    let im: ItemsModel
+    let mergedItems: MergedItems
+    let terminal: Bool
+    let width: CGFloat
+
+    var body: some View {
+        let wallpaperImage = theme.wallpaper.type.image
+        let wallpaperType = theme.wallpaper.type
+        let backgroundColor = theme.wallpaper.background ?? wallpaperType.defaultBackgroundColor(theme.base, theme.colors.background)
+        let tintColor = theme.wallpaper.tint ?? wallpaperType.defaultTintColor(theme.base)
+        let items = mergedItems.items
+        VStack(spacing: 0) {
+            ForEach(Array(items.indices.reversed()), id: \.self) { index in
+                row(index, items[index])
+            }
+        }
+        .padding(.vertical, 8)
+        .frame(width: width)
+        .background {
+            if terminal {
+                backgroundColor
+            } else if let wallpaperImage {
+                Color.clear.modifier(ChatViewBackground(image: wallpaperImage, imageType: wallpaperType, background: backgroundColor, tint: tintColor))
+            } else {
+                theme.colors.background
+            }
+        }
+    }
+
+    private func row(_ index: Int, _ mergedItem: MergedItem) -> some View {
+        let ci = switch mergedItem {
+        case let .single(item, _, _): item.item
+        case let .grouped(items, _, _, _, _, _, _, _): items.boxedValue.last!.item
+        }
+        return ChatView.ChatItemWithMenu(
+            im: im,
+            chat: .constant(ObservedObject(wrappedValue: chat)),
+            index: index,
+            isLastItem: index == mergedItems.items.count - 1,
+            chatItem: ci,
+            scrollToItem: { _ in },
+            scrollToItemId: .constant(nil),
+            merged: mergedItem,
+            olderRow: mergedItems.items.indices.contains(index + 1) ? mergedItems.items[index + 1] : nil,
+            maxWidth: rowMaxWidth(ci, mergedItem, chat.chatInfo, width),
+            composeState: .constant(ComposeState()),
+            selectedMember: .constant(nil),
+            showChatInfoSheet: .constant(false),
+            revealedItems: .constant([]),
+            selectedChatItems: .constant(nil),
+            forwardedChatItems: .constant([]),
+            searchText: .constant(""),
+            contentFilter: .constant(nil),
+            closeKeyboardAndRun: { $0() }
+        )
+        .environment(\.terminalLayout, terminal)
+    }
+}
+
+private func rowMaxWidth(_ ci: ChatItem, _ merged: MergedItem, _ cInfo: ChatInfo, _ width: CGFloat) -> CGFloat {
+    let voiceNoFrame = ci.content.msgContent?.isVoice == true && ci.content.text.count == 0 && ci.quotedItem == nil && ci.meta.itemForwarded == nil
+    let channelReceived = !ci.chatDir.sent && cInfo.isChannel
+    let channelReceivedNoAvatar = channelReceived && !showsAvatar(merged.newest().item, merged.oldest().nextItem)
+    return cInfo.chatType == .group
+    ? channelReceivedNoAvatar
+    ? width - 26
+    : voiceNoFrame || channelReceived
+    ? (width - 28) - 42
+    : (width - 28) * 0.84 - 42
+    : voiceNoFrame
+    ? (width - 32)
+    : (width - 32) * 0.84
+}
+
+private func showsAvatar(_ current: ChatItem, _ older: ChatItem?) -> Bool {
+    let oldIsGroupRcv = switch older?.chatDir {
+    case .groupRcv: true
+    case .channelRcv: true
+    default: false
+    }
+    let sameMember = switch (older?.chatDir, current.chatDir) {
+    case let (.groupRcv(oldMember), .groupRcv(member)): oldMember.memberId == member.memberId
+    case (.channelRcv, .channelRcv): true
+    default: false
+    }
+    return switch current.chatDir {
+    case .groupRcv, .channelRcv: older == nil || !oldIsGroupRcv || !sameMember
+    default: false
+    }
+}
+
+private func imageBase64(_ color: UIColor, _ size: CGSize) -> String {
+    let format = UIGraphicsImageRendererFormat.default()
+    format.scale = 1
+    let image = UIGraphicsImageRenderer(size: size, format: format).image { ctx in
+        color.setFill()
+        ctx.fill(CGRect(origin: .zero, size: size))
+        UIColor.white.withAlphaComponent(0.4).setFill()
+        ctx.cgContext.fillEllipse(in: CGRect(x: size.width * 0.55, y: size.height * 0.15, width: size.height * 0.4, height: size.height * 0.4))
+    }
+    return "data:image/jpg;base64," + (image.jpegData(compressionQuality: 0.8)?.base64EncodedString() ?? "")
+}
+
+private let markdownText = """
+**Welcome to the team!**
+
+# Rules
+1. Be kind
+2. Stay on topic
+
+> Quotes are shown with a bar
+
+`inline code`, *italic* text and a [link](https://simplex.chat).
+"""
+
+@MainActor
+private final class SnapshotFixtures {
+    private var nextId: Int64 = 1
+    private let baseDate = Calendar.current.date(bySettingHour: 10, minute: 15, second: 0, of: Date()) ?? Date()
+    let photo = imageBase64(UIColor(red: 0.2, green: 0.4, blue: 0.8, alpha: 1), CGSize(width: 120, height: 80))
+    let landscape = imageBase64(UIColor(red: 0.25, green: 0.55, blue: 0.35, alpha: 1), CGSize(width: 320, height: 200))
+    let user: User
+    let alice: GroupMember
+    let bob: GroupMember
+    let carol: GroupMember
+    let team: GroupInfo
+    let news: GroupInfo
+    let contact: Contact
+    let width: CGFloat
+
+    init(width: CGFloat) {
+        self.width = width
+        var u = User.sampleData
+        u.profile = LocalProfile(profileId: 100, displayName: "me", fullName: "", localAlias: "")
+        u.localDisplayName = "me"
+        user = u
+        alice = Self.member(2, "alice", .admin, image: imageBase64(UIColor(red: 0.85, green: 0.45, blue: 0.3, alpha: 1), CGSize(width: 64, height: 64)))
+        bob = Self.member(3, "bob", .member)
+        carol = Self.member(4, "carol", .member, image: imageBase64(UIColor(red: 0.55, green: 0.35, blue: 0.75, alpha: 1), CGSize(width: 64, height: 64)))
+        team = Self.group(1, "team", channel: false)
+        news = Self.group(2, "SimpleX news", channel: true)
+        var c = Contact.sampleData
+        c.profile = LocalProfile(profileId: 2, displayName: "alice", fullName: "", localAlias: "")
+        c.localDisplayName = "alice"
+        contact = c
+    }
+
+    private static func member(_ id: Int64, _ name: String, _ role: GroupMemberRole, image: String? = nil) -> GroupMember {
+        var m = GroupMember.sampleData
+        m.groupMemberId = id
+        m.memberId = "member-\(id)"
+        m.memberRole = role
+        m.localDisplayName = name
+        m.memberProfile = LocalProfile(profileId: id, displayName: name, fullName: "", image: image, localAlias: "")
+        return m
+    }
+
+    private static func group(_ id: Int64, _ name: String, channel: Bool) -> GroupInfo {
+        var g = GroupInfo.sampleData
+        g.groupId = id
+        g.localDisplayName = name
+        g.groupProfile = GroupProfile(displayName: name, fullName: "")
+        if channel {
+            g.useRelays = true
+            g.groupProfile.publicGroup = PublicGroupProfile(groupType: .channel, groupLink: "", publicGroupId: "channel-\(id)")
+        }
+        g.membership = member(99, "me", .member)
+        return g
+    }
+
+    private func id() -> Int64 {
+        nextId += 1
+        return nextId
+    }
+
+    private func ts(_ minutes: Double) -> Date {
+        baseDate.addingTimeInterval(minutes * 60)
+    }
+
+    private func msg(_ dir: CIDirection, _ text: String, _ minutes: Double, quote: CIQuote? = nil, reactions: [CIReactionCount] = [], content: MsgContent? = nil, file: CIFile? = nil) -> ChatItem {
+        let parsed = text.isEmpty ? nil : parseSimpleXMarkdownText(text)
+        let mc = content ?? .text(text)
+        return ChatItem(
+            chatDir: dir,
+            meta: CIMeta.getSample(id(), ts(minutes), text, dir.sent ? .sndSent(sndProgress: .complete) : .rcvRead),
+            content: dir.sent ? .sndMsgContent(msgContent: mc) : .rcvMsgContent(msgContent: mc),
+            formattedText: parsed?.formattedText,
+            markdownBlocks: parsed?.markdownBlocks,
+            quotedItem: quote,
+            reactions: reactions,
+            file: file
+        )
+    }
+
+    private func event(_ dir: CIDirection, _ content: CIContent, _ minutes: Double) -> ChatItem {
+        ChatItem(chatDir: dir, meta: CIMeta.getSample(id(), ts(minutes), content.text, .rcvRead), content: content)
+    }
+
+    private func quote(_ dir: CIDirection?, _ text: String, image: String? = nil) -> CIQuote {
+        let parsed = text.isEmpty ? nil : parseSimpleXMarkdownText(text)
+        return CIQuote(
+            chatDir: dir,
+            itemId: 1,
+            sentAt: ts(-300),
+            content: image.map { .image(text: text, image: $0) } ?? .text(text),
+            formattedText: parsed?.formattedText,
+            markdownBlocks: parsed?.markdownBlocks
+        )
+    }
+
+    private func reaction(_ emoji: MREmojiChar, _ count: Int, mine: Bool = false) -> CIReactionCount {
+        CIReactionCount(reaction: .emoji(emoji: emoji), userReacted: mine, totalReacted: count)
+    }
+
+    private func imageFile(_ name: String) -> CIFile {
+        CIFile.getSample(fileId: id(), fileName: name, fileSize: 184_320, filePath: nil, fileStatus: .rcvInvitation)
+    }
+
+    private func chatRows(_ chatInfo: ChatInfo, _ items: [ChatItem], terminal: Bool) -> AnyView {
+        let im = ItemsModel(secondaryIMFilter: nil)
+        im.reversedChatItems = items.reversed()
+        let merged = MergedItems.create(im, [])
+        return AnyView(ChatRows(chat: Chat(chatInfo: chatInfo), im: im, mergedItems: merged, terminal: terminal, width: width))
+    }
+
+    private var direct: ChatInfo { .direct(contact: contact) }
+    private var teamChat: ChatInfo { .group(groupInfo: team, groupChatScope: nil) }
+    private var newsChat: ChatInfo { .group(groupInfo: news, groupChatScope: nil) }
+
+    func scenes(defaultSize: Bool) -> [SnapshotScene] {
+        var scenes = [
+            SnapshotScene(name: "names", view: chatRows(teamChat, namesItems(), terminal: true)),
+            markdownInfoScene(),
+            welcomeScene(),
+            SnapshotScene(name: "quote-thumbnail", view: chatRows(direct, quoteThumbnailItems(), terminal: true)),
+            SnapshotScene(name: "rule-only", view: chatRows(direct, ruleOnlyItems(), terminal: true)),
+            SnapshotScene(name: "avatars-classic", view: chatRows(teamChat, avatarItems(), terminal: false)),
+            SnapshotScene(name: "avatars-terminal", view: chatRows(teamChat, avatarItems(), terminal: true))
+        ]
+        if defaultSize {
+            for terminal in [false, true] {
+                let layout = terminal ? "terminal" : "classic"
+                scenes.append(SnapshotScene(name: "overview-direct-\(layout)", view: chatRows(direct, overviewDirectItems(), terminal: terminal)))
+                scenes.append(SnapshotScene(name: "overview-group-\(layout)", view: chatRows(teamChat, overviewGroupItems(), terminal: terminal)))
+                scenes.append(SnapshotScene(name: "overview-channel-\(layout)", view: chatRows(newsChat, overviewChannelItems(), terminal: terminal)))
+            }
+        }
+        return scenes
+    }
+
+    private func namesItems() -> [ChatItem] {
+        [
+            msg(.groupRcv(groupMember: alice), "Hi everyone, the build is green.", -30),
+            msg(.groupRcv(groupMember: alice), "Release notes are in the channel.", -29),
+            msg(.groupRcv(groupMember: bob), "Great, thanks!", -20, quote: quote(.groupRcv(groupMember: alice), "Hi everyone, the build is green.")),
+            msg(.groupSnd, "I will check the release notes today.", -10)
+        ]
+    }
+
+    private func markdownInfoScene() -> SnapshotScene {
+        let ci = msg(.directRcv, markdownText, -5)
+        let version = ChatItemVersion(
+            chatItemVersionId: 1,
+            msgContent: .text(markdownText),
+            formattedText: ci.formattedText,
+            markdownBlocks: ci.markdownBlocks,
+            itemVersionTs: ci.meta.itemTs,
+            createdAt: ci.meta.itemTs
+        )
+        let info = ChatItemInfo(itemVersions: [version])
+        return SnapshotScene(name: "markdown-info", height: 760, view: AnyView(ChatItemInfoView(ci: ci, chatItemInfo: .constant(info))))
+    }
+
+    private func welcomeScene() -> SnapshotScene {
+        var g = team
+        g.groupProfile.description = markdownText
+        return SnapshotScene(name: "welcome", height: 560, view: AnyView(GroupWelcomeView(groupInfo: .constant(g), groupProfile: g.groupProfile, welcomeText: markdownText)))
+    }
+
+    private func quoteThumbnailItems() -> [ChatItem] {
+        [
+            msg(.directRcv, "nice", -10, quote: quote(.directSnd, "photo", image: photo)),
+            msg(.directRcv, "a longer reply that wraps over two lines in the terminal row below the quote with the image", -9, quote: quote(.directSnd, "a long caption of the quoted image that wraps over more than one line of the quote", image: photo)),
+            msg(.directRcv, "ok", -8, quote: quote(.directRcv, "", image: photo)),
+            msg(.directRcv, "a reply wider than the quote above it, so that the quote is narrower than the item", -7, quote: quote(.directSnd, "photo", image: photo)),
+            msg(.directRcv, "a reply a bit wider than its quote", -6, quote: quote(.directSnd, "photo", image: photo))
+        ]
+    }
+
+    private func ruleOnlyItems() -> [ChatItem] {
+        [
+            msg(.directRcv, "---", -10),
+            msg(.directRcv, "---", -9, quote: quote(.directSnd, "a quoted message that is much wider than the rule"))
+        ]
+    }
+
+    private func avatarItems() -> [ChatItem] {
+        [
+            msg(.groupRcv(groupMember: alice), "Morning! Who is joining the call?", -40),
+            msg(.groupRcv(groupMember: bob), "I am", -38),
+            msg(.groupRcv(groupMember: bob), "Starting in 5 minutes", -37),
+            msg(.groupRcv(groupMember: carol), "Count me in, a bit late", -35),
+            msg(.groupSnd, "Great", -30)
+        ]
+    }
+
+    private func overviewDirectItems() -> [ChatItem] {
+        [
+            event(.directRcv, .rcvChatFeature(feature: .voice, enabled: FeatureEnabled(forUser: true, forContact: true), param: nil), -120),
+            msg(.directRcv, "Hi! Did you see the **new release**?", -60),
+            msg(.directSnd, "Yes, *great* changes 🎉", -58, reactions: [reaction(.thumbsup, 1)]),
+            msg(.directRcv, "# Release notes\n- terminal layout\n- `code` blocks\n\n> quoted line", -50),
+            msg(.directSnd, "Thanks for the summary", -45, quote: quote(.directRcv, "Release notes")),
+            msg(.directRcv, "", -40, content: .image(text: "", image: landscape), file: imageFile("photo.jpg")),
+            msg(.directRcv, "", -35, content: .file(""), file: CIFile.getSample(fileId: id(), fileName: "report.pdf", fileSize: 245_760, filePath: nil, fileStatus: .rcvInvitation)),
+            msg(.directSnd, "", -30, content: .voice(text: "", duration: 12), file: CIFile.getSample(fileId: id(), fileName: "voice.m4a", fileSize: 20_480, filePath: nil, fileStatus: .sndComplete))
+        ]
+    }
+
+    private func overviewGroupItems() -> [ChatItem] {
+        [
+            event(.groupRcv(groupMember: carol), .rcvGroupEvent(rcvGroupEvent: .memberConnected), -130),
+            msg(.groupRcv(groupMember: alice), "Welcome, carol!", -120, reactions: [reaction(.heart, 2, mine: true)]),
+            msg(.groupRcv(groupMember: carol), "Thanks! Glad to be here", -118),
+            msg(.groupRcv(groupMember: bob), "", -100, content: .image(text: "", image: landscape), file: imageFile("view.jpg")),
+            msg(.groupSnd, "nice view", -95, quote: quote(.groupRcv(groupMember: bob), "", image: landscape)),
+            msg(.groupRcv(groupMember: alice), "Plan for today:\n1. review\n2. **release**", -90),
+            msg(.groupRcv(groupMember: bob), "", -80, content: .voice(text: "", duration: 21), file: CIFile.getSample(fileId: id(), fileName: "voice.m4a", fileSize: 30_720, filePath: nil, fileStatus: .rcvInvitation)),
+            msg(.groupRcv(groupMember: carol), "", -70, content: .file(""), file: CIFile.getSample(fileId: id(), fileName: "notes.txt", fileSize: 2_048, filePath: nil, fileStatus: .rcvInvitation))
+        ]
+    }
+
+    private func overviewChannelItems() -> [ChatItem] {
+        [
+            event(.channelRcv, .rcvGroupEvent(rcvGroupEvent: .groupUpdated(groupProfile: news.groupProfile)), -210),
+            msg(.channelRcv, "**Version 7.1** is out", -200, reactions: [reaction(.thumbsup, 12), reaction(.heart, 5, mine: true)]),
+            msg(.channelRcv, "## What's new\n- terminal layout\n- faster sync", -190),
+            msg(.channelRcv, "Screenshot of the new layout", -180, content: .image(text: "Screenshot of the new layout", image: landscape), file: imageFile("screenshot.jpg"))
+        ]
+    }
+}

@@ -1702,7 +1702,7 @@ struct ChatView: View {
     }
 
     // Spec: spec/client/chat-view.md#ChatItemWithMenu
-    private struct ChatItemWithMenu: View {
+    struct ChatItemWithMenu: View {
         @ObservedObject var im: ItemsModel
         @EnvironmentObject var m: ChatModel
         @EnvironmentObject var theme: AppTheme
