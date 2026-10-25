@@ -2007,8 +2007,9 @@ alert subtitle</note>
         <target state="translated">Canali</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Charge ID" xml:space="preserve">
+      <trans-unit id="Charge ID" xml:space="preserve" approved="no">
         <source>Charge ID</source>
+        <target state="translated">ID addebito</target>
         <note>ledger entry field</note>
       </trans-unit>
       <trans-unit id="Chat" xml:space="preserve" approved="no">
@@ -6880,8 +6881,9 @@ La crittografia più sicura.</target>
         <target state="translated">Note</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Nothing has been charged." xml:space="preserve">
+      <trans-unit id="Nothing has been charged." xml:space="preserve" approved="no">
         <source>Nothing has been charged.</source>
+        <target state="translated">Nessun addebito.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Nothing selected" xml:space="preserve" approved="no">
