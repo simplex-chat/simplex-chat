@@ -129,10 +129,9 @@ class Network {
 }
 
 class Peer {
-  constructor(name, page, {ignoresIceRestart = false} = {}) {
+  constructor(name, page) {
     this.name = name
     this.page = page
-    this.ignoresIceRestart = ignoresIceRestart
     this.messages = []
     this.waiters = []
     this.onResponse = async () => {}
@@ -245,7 +244,7 @@ class Signaling {
 }
 
 // useWorker encrypts media in a worker with RTCRtpScriptTransform, as the desktop app does
-async function openPeers({answerer = {}, useWorker = false} = {}) {
+async function openPeers({useWorker = false} = {}) {
   const server = await servePage()
   const url = `http://localhost:${server.address().port}/android/call.html`
   const browser = await chromium.launch({
@@ -257,15 +256,15 @@ async function openPeers({answerer = {}, useWorker = false} = {}) {
       "--autoplay-policy=no-user-gesture-required",
     ],
   })
-  const newPeer = async (name, opts) => {
+  const newPeer = async (name) => {
     const context = await browser.newContext({permissions: ["camera", "microphone"]})
-    const peer = new Peer(name, await context.newPage(), opts)
+    const peer = new Peer(name, await context.newPage())
     await peer.open(url)
     if (useWorker) await peer.page.evaluate(() => (useWorker = true))
     return peer
   }
   // A sends the call invitation and B accepts it, so B sends the WebRTC offer, as "start" command in the apps
-  const a = await newPeer("A", answerer)
+  const a = await newPeer("A")
   const b = await newPeer("B")
   const network = new Network()
   const signaling = new Signaling(network)
@@ -279,20 +278,20 @@ async function openPeers({answerer = {}, useWorker = false} = {}) {
 }
 
 // The test relays signaling between the peers directly, as the apps and the chat core would do.
-async function startCall({media = "audio", answerer = {}} = {}) {
-  const peers = await openPeers({answerer})
+async function startCall({media = "audio", canReconnect = true} = {}) {
+  const peers = await openPeers()
   const {a, b, network, signaling, close} = peers
   const relayIce = (from, to) => async (resp) => {
     if (resp.type !== "ice") return
     const {session, iceCandidates} = await network.routeSignal(from.name, resp.session, resp.iceCandidates)
-    signaling.send(() => to.command({type: "ice", iceCandidates, session: to.ignoresIceRestart ? undefined : session}))
+    signaling.send(() => to.command({type: "ice", iceCandidates, session}))
   }
   a.onResponse = relayIce(a, b)
   b.onResponse = relayIce(b, a)
 
   try {
     await a.command({type: "capabilities", media})
-    const offer = await b.command({type: "start", media, iceServers: []})
+    const offer = await b.command({type: "start", media, iceServers: [], canReconnect})
     if (offer.resp.type !== "offer") throw new Error(`B start: ${JSON.stringify(offer.resp)}`)
     const offerSignal = await network.routeSignal("B", offer.resp.offer, offer.resp.iceCandidates)
     const answer = await a.command({
@@ -301,6 +300,7 @@ async function startCall({media = "audio", answerer = {}} = {}) {
       iceCandidates: offerSignal.iceCandidates,
       media,
       iceServers: [],
+      canReconnect,
     })
     if (answer.resp.type !== "answer") throw new Error(`A offer: ${JSON.stringify(answer.resp)}`)
     const answerSignal = await network.routeSignal("A", answer.resp.answer, answer.resp.iceCandidates)
