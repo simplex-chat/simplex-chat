@@ -882,7 +882,7 @@
     <string name="smp_server_test_secure_queue">Biztonságos várólista</string>
     <string name="rate_the_app">Alkalmazás értékelése</string>
     <string name="share_invitation_link">Egyszer használható meghívó megosztása</string>
-    <string name="database_restore_error">Hiba történt az adatbázis visszaállításakor</string>
+    <string name="database_restore_error">Hiba történt az adatbázis helyreállításakor</string>
     <string name="group_members_2">%s és %s</string>
     <string name="chat_preferences_you_allow">Ön engedélyezi</string>
     <string name="v4_5_reduced_battery_usage">Csökkentett akkumulátor-használat</string>
@@ -927,7 +927,7 @@
     <string name="v4_2_security_assessment">Biztonsági felmérés</string>
     <string name="color_title">Cím</string>
     <string name="icon_descr_send_message">Üzenet elküldése</string>
-    <string name="restore_database">Adatbázismentés visszaállítása</string>
+    <string name="restore_database">Adatbázis biztonsági mentésének helyreállítása</string>
     <string name="revoke_file__confirm">Visszavonás</string>
     <string name="ask_your_contact_to_enable_voice">Kérje meg a partnerét, hogy engedélyezze a hangüzenetek küldését.</string>
     <string name="description_you_shared_one_time_link">Ön egy egyszer használható meghívót osztott meg</string>
@@ -1027,7 +1027,7 @@
     <string name="prohibit_calls">A hívások kezdeményezése le van tiltva.</string>
     <string name="network_use_onion_hosts_required">Szükséges</string>
     <string name="ntf_channel_messages">SimpleX Chat üzenetek</string>
-    <string name="restore_database_alert_confirm">Visszaállítás</string>
+    <string name="restore_database_alert_confirm">Helyreállítás</string>
     <string name="setup_database_passphrase">Adatbázis-jelmondat beállítása</string>
     <string name="color_sent_message">Üzenetbuborék színe</string>
     <string name="notifications_mode_periodic">Időszakosan indul</string>
@@ -1044,7 +1044,7 @@
     <string name="your_calls">Hívások</string>
     <string name="icon_descr_sent_msg_status_send_failed">nem sikerült elküldeni</string>
     <string name="theme_colors_section_title">Kezelőfelület színei</string>
-    <string name="restore_database_alert_desc">Adja meg a korábbi jelszót az adatbázis biztonsági mentésének visszaállítása után. Ez a művelet nem vonható vissza.</string>
+    <string name="restore_database_alert_desc">Adja meg a korábbi jelszót az adatbázis biztonsági mentésének helyreállítása után. Ez a művelet nem vonható vissza.</string>
     <string name="color_secondary">Másodlagos szín</string>
     <string name="save_servers_button">Mentés</string>
     <string name="settings_restart_app">Újraindítás</string>
@@ -1090,7 +1090,7 @@
     <string name="simplex_address">SimpleX-cím</string>
     <string name="show_dev_options">Megjelenítve:</string>
     <string name="callstate_received_answer">válasz érkezett…</string>
-    <string name="restore_database_alert_title">Visszaállítja az adatbázismentést?</string>
+    <string name="restore_database_alert_title">Helyreállítja az adatbázis biztonsági mentését?</string>
     <string name="simplex_service_notification_text">Üzenetek fogadása…</string>
     <string name="rcv_group_event_2_members_connected">%s és %s kapcsolódott</string>
     <string name="you_are_observer">Ön megfigyelő</string>
@@ -1252,7 +1252,7 @@
     <string name="description_via_contact_address_link">a kapcsolattartási címhivatkozáson keresztül</string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Az adatvédelem növelése érdekében <b> a SimpleX a háttérben fut</b> a leküldéses értesítések használata helyett.]]></string>
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">A partnereinek online kell lennie ahhoz, hogy a kapcsolat létrejöjjön.\nVisszavonhatja ezt a kapcsolatot és eltávolíthatja a partnert (ezt később ismét megpróbálhatja egy új hivatkozással).</string>
-    <string name="restore_passphrase_not_found_desc">A jelmondat nem található a Keystore-ban, ezért kézzel szükséges megadni. Ez akkor történhetett meg, ha visszaállította az alkalmazás adatait egy biztonsági mentési eszközzel. Ha nem így történt, akkor lépjen kapcsolatba a fejlesztőkkel.</string>
+    <string name="restore_passphrase_not_found_desc">A jelmondat nem található a Keystore-ban, ezért kézzel szükséges megadni. Ez akkor történhetett meg, ha helyreállította az alkalmazás adatait egy biztonsági mentési eszközzel. Ha nem így történt, akkor lépjen kapcsolatba a fejlesztőkkel.</string>
     <string name="your_contacts_will_remain_connected">A partnereivel továbbra is kapcsolatban marad.</string>
     <string name="error_xftp_test_server_auth">A kiszolgálónak hitelesítésre van szüksége a feltöltéshez, ellenőrizze a jelszavát.</string>
     <string name="database_initialization_error_desc">Az adatbázis nem működik megfelelően. Koppintson ide a további tudnivalókért</string>
@@ -2993,4 +2993,9 @@
     <string name="badges_error_last_attempt">Utolsó kísérlet</string>
     <string name="badges_contact_team">Lépjen kapcsolatba a SimpleX csapatával</string>
     <string name="badges_credential_next_check">Következő ellenőrzés</string>
+    <string name="chat_layout">Csevegés elrendezése</string>
+    <string name="chat_layout_classic">Klasszikus</string>
+    <string name="chat_layout_default_suffix">(alapértelmezett)</string>
+    <string name="chat_layout_terminal">Terminál</string>
+    <string name="chat_layout_chat_suffix">(csevegő)</string>
 </resources>
