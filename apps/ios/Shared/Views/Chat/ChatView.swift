@@ -12,7 +12,7 @@ import SimpleXChat
 import SwiftyGif
 import Combine
 
-private let memberImageSize: CGFloat = 34
+private let memberImageBaseSize: CGFloat = 34
 
 private func shouldShowAvatar(_ current: ChatItem, _ older: ChatItem?) -> Bool {
     let oldIsGroupRcv = switch older?.chatDir {
@@ -1707,6 +1707,7 @@ struct ChatView: View {
         @EnvironmentObject var m: ChatModel
         @EnvironmentObject var theme: AppTheme
         @Environment(\.terminalLayout) private var terminal
+        @Environment(\.dynamicTypeSize) private var userFont
         @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var profileRadius = defaultProfileImageCorner
         @Binding @ObservedObject var chat: Chat
         @ObservedObject var dummyModel: ChatItemDummyModel = .shared
@@ -1750,6 +1751,10 @@ struct ChatView: View {
         @State private var swipeExclusionFrames: [CGRect] = []
 
         var revealed: Bool { revealedItems.contains(chatItem.id) }
+
+        private var memberImageSize: CGFloat {
+            memberImageBaseSize * dynamicSize(userFont).profileImageSize / dynamicSize(.large).profileImageSize
+        }
 
         typealias ItemSeparation = (timestamp: Bool, largeGap: Bool, date: Date?)
 
