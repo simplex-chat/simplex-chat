@@ -12,8 +12,10 @@ const token = "secret-token"
 let server: Server
 let url: string
 let actions: Actions
+let ready: boolean
 
 async function start(mode: Mode = "requests"): Promise<void> {
+  ready = true
   const chat = new FakeChat()
   chat.chats.set("@4", {chatInfo: direct(contact(4, "SimpleX Directory")), items: []})
   actions = actionsWith(mode, fakeHooks())
@@ -23,7 +25,7 @@ async function start(mode: Mode = "requests"): Promise<void> {
     tools.register(mcp)
     return mcp
   }
-  server = await startHttp({port: 0, token, factory})
+  server = await startHttp({port: 0, token, factory, ready: () => ready})
   url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
 }
 
@@ -104,6 +106,17 @@ describe("HTTP", () => {
   it("answers a request target that is not a URL with 404, and keeps serving", async () => {
     await start()
     expect(await rawStatusLine("http://[")).toBe("HTTP/1.1 404 Not Found")
+    expect((await post(modern("tools/list"), modernHeaders("tools/list"))).status).toBe(200)
+  })
+
+  it("answers /mcp with 503 and Retry-After until the server is ready, after the token check", async () => {
+    await start()
+    ready = false
+    const starting = await post(modern("tools/list"), modernHeaders("tools/list"))
+    expect(starting.status).toBe(503)
+    expect(starting.headers.get("retry-after")).toBe("1")
+    expect((await post(modern("tools/list"), {...modernHeaders("tools/list"), authorization: ""})).status).toBe(401)
+    ready = true
     expect((await post(modern("tools/list"), modernHeaders("tools/list"))).status).toBe(200)
   })
 })
