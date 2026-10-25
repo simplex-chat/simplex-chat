@@ -6,7 +6,6 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -2035,7 +2034,6 @@ fun BoxScope.ChatItemsList(
           val swipeableOrSelectionModifier = (if (selectionVisible) Modifier else swipeableModifier).graphicsLayer { translationX = selectionOffset.toPx() }
           if (terminal) {
             val rowInteractionSource = remember { TerminalRowInteractionSource() }
-            val rowHovered = rowInteractionSource.collectIsHoveredAsState()
             val highlighted = remember { derivedStateOf { highlightedItems.value.contains(cItem.id) } }
             val rowColor = animateColorAsState(
               when {
@@ -2052,8 +2050,7 @@ fun BoxScope.ChatItemsList(
                 if (showAvatar) chatItemSender(chatInfo, cItem, range, reversedChatItems, showMemberInfo, showChatInfo) else null,
                 terminalGutter(chatInfo),
                 terminalGap.toDp(),
-                Modifier.terminalStartOffset { selectionOffset }.then(if (selectionVisible) Modifier else swipeableModifier),
-                goToButton = { GoToItemButton(remoteHostId, chatInfo, cItem, searchValueIsNotBlank, hoveredItemId, rowHovered, Modifier) }
+                Modifier.terminalStartOffset { selectionOffset }.then(if (selectionVisible) Modifier else swipeableModifier)
               ) {
                 ChatItemViewShortHand(cItem, itemSeparation, range, swipeOffset = dismissState.offset.value, highlighted = highlighted, bubbleInteractionSource = rowInteractionSource)
               }

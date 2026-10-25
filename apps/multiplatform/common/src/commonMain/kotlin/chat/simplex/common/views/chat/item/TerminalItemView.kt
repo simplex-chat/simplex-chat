@@ -331,7 +331,7 @@ private fun SenderNameAndRole(sender: ChatItemSender, modifier: Modifier) {
 
 @Composable
 fun terminalGutter(chatInfo: ChatInfo): Dp =
-  if (chatInfo is ChatInfo.Group) MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier else GO_TO_ITEM_BUTTON_SIZE
+  if (chatInfo is ChatInfo.Group) MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier + 4.dp else 0.dp
 
 @Composable
 fun TerminalChatItemRow(
@@ -340,16 +340,12 @@ fun TerminalChatItemRow(
   topGap: Dp,
   modifier: Modifier = Modifier,
   senderTopGap: Dp = TERMINAL_SENDER_TOP_GAP.toDp(),
-  goToButton: @Composable () -> Unit = {},
   content: @Composable () -> Unit
 ) {
   Layout(
     content = {
       Box {
         sender?.image?.invoke()
-      }
-      Box {
-        goToButton()
       }
       Box {
         if (sender != null) {
@@ -366,20 +362,15 @@ fun TerminalChatItemRow(
       .padding(top = topGap + if (sender != null) senderTopGap else 0.dp, start = 8.dp, end = 12.dp)
       .fillMaxWidth()
   ) { measurables, constraints ->
-    val gutterWidth = gutter.roundToPx()
-    val messageStart = gutterWidth + 4.dp.roundToPx()
+    val messageStart = gutter.roundToPx()
     val looseConstraints = constraints.copy(minWidth = 0, minHeight = 0)
     val messageConstraints = looseConstraints.copy(maxWidth = (constraints.maxWidth - messageStart).coerceAtLeast(0))
     val avatar = measurables[0].measure(looseConstraints)
-    val button = measurables[1].measure(looseConstraints)
-    val name = measurables[2].measure(messageConstraints)
-    val message = measurables[3].measure(messageConstraints)
+    val name = measurables[1].measure(messageConstraints)
+    val message = measurables[2].measure(messageConstraints)
     val messageTop = name.height
-    val buttonTop = max(avatar.height, messageTop + (message.height - button.height) / 2)
-    val height = maxOf(messageTop + message.height, avatar.height, buttonTop + button.height)
-    layout(constraints.maxWidth, height) {
+    layout(constraints.maxWidth, max(messageTop + message.height, avatar.height)) {
       avatar.placeRelative(0, 0)
-      button.placeRelative((gutterWidth - button.width) / 2, buttonTop)
       name.placeRelative(messageStart, 0)
       message.placeRelative(messageStart, messageTop)
     }

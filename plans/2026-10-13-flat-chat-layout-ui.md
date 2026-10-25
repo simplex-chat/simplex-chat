@@ -34,8 +34,8 @@ unchanged    chat list preview
 row               the classic item without bubble fill and tail; start-aligned for both directions
 text edge         CHAT_ITEM_TEXT_PADDING (12dp) inside the item: text, quotes, headers, media, cards, events, voice, calls, reactions
 sender row        classic group geometry and style: name 13.5sp, role label; own name in the primary colour
-avatars           groups and channels only; gutter: member image width
-gutter            other chats: GO_TO_ITEM_BUTTON_SIZE (22dp)
+avatars           groups and channels only; gutter: member image width and 4dp
+gutter            other chats: none (user, 2026-10-25)
 sender groups     new sender row after an event or a sender change, as classic: time gaps and date changes do not repeat it
 time, status      at the end of the row, for every item with a time; baseline of the time on the last baseline of the content (D3)
                   message text ends with a transparent copy of the time, joined to the last word by no-break spaces
@@ -91,7 +91,7 @@ event text        layout direction in both layouts (unspecified text direction);
 meta copy mark    U+200E (left-to-right layout) or U+200F (right-to-left) before the copy, so the copy stays at the line end after text in the other direction
                   U+2060 (word joiner) before the mark, so the copy stays with the last word after the spaces of an idle live message
 event time        joined to the last word by no-break spaces
-go-to button      in the gutter, centred on the message, below the avatar when the message is shorter
+go-to button      after the item at the row end, centred on it, as classic received items (user, 2026-10-25)
 row tint          hover and press: indication over the whole row; selected: primary 10%; highlighted: primary 14%
 colours           app, user and chat themes, as classic
 wallpaper         background colour of the wallpaper, preset or custom; image omitted
@@ -117,17 +117,17 @@ Paths are relative to `apps/multiplatform/common/src/commonMain/kotlin/chat/simp
 
 ```
 views/chat/ChatView.kt
-  ChatView (:269-:274)                   terminal = activeChatLayout == Terminal; LocalTerminalLayout provided
-  ChatLayout composable (:1011)          chatViewBackgroundModifier(drawWallpaperImage = !LocalTerminalLayout.current)
-  ChatItemsList (:2463-:2469)            showAvatar = terminalItemShowsSender(item, older) when terminal
+  ChatView (:268-:273)                   terminal = activeChatLayout == Terminal; LocalTerminalLayout provided
+  ChatLayout composable (:1010)          chatViewBackgroundModifier(drawWallpaperImage = !LocalTerminalLayout.current)
+  ChatItemsList (:2460-:2466)            showAvatar = terminalItemShowsSender(item, older) when terminal
                                          terminalGap = terminalRowGap(item, older, separated, largeGap, showAvatar)
-                                         separated = terminalRowsSeparated(older row) (:3820): the banner, or rowItemSeparation of the older row with a date
-                                         rowItemSeparation(row) (:3815): one rule for the date separator, drawn and in the gap (D32)
-  local ChatItemView (:2036)             terminal branch:
+                                         separated = terminalRowsSeparated(older row) (:3817): the banner, or rowItemSeparation of the older row with a date
+                                         rowItemSeparation(row) (:3812): one rule for the date separator, drawn and in the gap (D32)
+  local ChatItemView (:2035)             terminal branch:
                                            ChatItemBox(top, bottom) with the row tint and terminalRowIndication; top 0
                                            bottom TERMINAL_LEVEL_STEP above a date separator; 8dp below the newest row; otherwise 0
                                            SelectedListItem when selecting
-                                           TerminalChatItemRow(chatItemSender or null, terminalGutter, terminalGap, terminalStartOffset and swipeableModifier, GoToItemButton)
+                                           TerminalChatItemRow(chatItemSender or null, terminalGutter, terminalGap, terminalStartOffset and swipeableModifier)
                                            ChatItemViewShortHand with the row interaction source
   memberNames                            public, used by chatItemSender
   classic                                sender rows and shouldShowAvatar as on master
@@ -136,7 +136,7 @@ views/chat/item/TerminalItemView.kt      LocalTerminalLayout, gap constants, ter
                                          row interaction, messageLastLine, messageLastBlock, inlineIcon, ItemWithMeta
                                          ChatItemSender, chatItemSender, SenderNameAndRole, TerminalChatItemRow
 views/chat/item/ChatItemView.kt          alignEnd = sent && !terminal; item click without indication; reactions at the text edge
-                                         GoToItemButton and GO_TO_ITEM_BUTTON_SIZE at top level
+                                         GoToItemButton on the side given by alignEnd
                                          chatItemTailEnabled false; clipChatItem skipped
                                          hasQuoteOrHeader: the choice of EmojiItemView or CIVoiceView, and the heading gaps
 views/chat/item/FramedItemView.kt        transparent background; headers and quote without background; quoteBar; mediaModifier; cardModifier; thumbnailClip
@@ -257,7 +257,3 @@ style guide     one document for both apps with platform differences, after merg
 agent profile plan             ChatLayout; ChatInfo.activeChatLayout; storage of the choices
 block Markdown rendering       MarkdownBlocks; Modifier.quoteBar shared with Markdown quotes
 ```
-
-## Open questions
-
-1. Search: a one-line first message of a sender group is about 13dp taller (12px on desktop), as the avatar and the search icon are stacked in the gutter (59dp).
