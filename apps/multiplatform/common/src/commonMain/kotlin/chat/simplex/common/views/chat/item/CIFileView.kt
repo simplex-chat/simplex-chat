@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.layout.LastBaseline
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.buildAnnotatedString
@@ -131,9 +132,9 @@ fun CIFileView(
   }
 
   @Composable
-  fun fileIndicator() {
+  fun fileIndicator(modifier: Modifier = Modifier) {
     Box(
-      Modifier
+      modifier
         .padding(top = if (terminal) 0.dp else 2.sp.toDp())
         .size(40.sp.toDp() * sizeMultiplier)
         .clip(RoundedCornerShape(4.sp.toDp() * sizeMultiplier)),
@@ -216,7 +217,7 @@ fun CIFileView(
     verticalAlignment = Alignment.Bottom,
     horizontalArrangement = Arrangement.spacedBy(2.sp.toDp())
   ) {
-    fileIndicator()
+    fileIndicator(if (!terminal && !smallView && file != null) fileIconOnBaseline(40.sp * sizeMultiplier) else Modifier)
     if (!smallView) {
       val secondaryColor = MaterialTheme.colors.secondary
       val encrypted = if (file?.fileSource == null) null else file.fileSource.cryptoArgs != null
@@ -226,7 +227,7 @@ fun CIFileView(
         }
       }
       if (file != null) {
-        Column {
+        Column(if (terminal) Modifier else Modifier.alignBy(LastBaseline)) {
           Text(
             file.fileName,
             maxLines = 1
@@ -246,6 +247,14 @@ fun CIFileView(
       }
     }
   }
+}
+
+const val FILE_ICON_INK_INSET = 85f / 960f
+
+@Composable
+fun RowScope.fileIconOnBaseline(iconSize: TextUnit): Modifier {
+  val density = LocalDensity.current
+  return Modifier.alignBy { it.measuredHeight - with(density) { (iconSize * FILE_ICON_INK_INSET).toPx().toInt() } }
 }
 
 // the core decides whether a received file is above the size the sender's badge allows

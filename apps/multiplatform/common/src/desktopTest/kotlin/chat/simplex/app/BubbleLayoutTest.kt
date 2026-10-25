@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.LastBaseline
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -85,5 +86,18 @@ class BubbleLayoutTest {
     }
     val row = placed.getValue("row")
     assertEquals(placed.getValue("text").relativeTo(row).y + 17, placed.getValue("meta").relativeTo(row).y + 12)
+  }
+
+  @Test
+  fun fileIconInkBottomOnSizeLineBaseline() {
+    renderScene {
+      Row(Modifier.record(placed, "row")) {
+        Box(fileIconOnBaseline(40.sp).record(placed, "icon").fixed(40, 42, null))
+        Box(Modifier.alignBy(LastBaseline).record(placed, "text").fixed(100, 36, 32))
+      }
+    }
+    val row = placed.getValue("row")
+    val inkInset = with(density) { (40.sp * FILE_ICON_INK_INSET).toPx().toInt() }
+    assertEquals(placed.getValue("text").relativeTo(row).y + 32, placed.getValue("icon").relativeTo(row).y + 42 - inkInset)
   }
 }

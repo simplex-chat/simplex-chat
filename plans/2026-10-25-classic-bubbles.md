@@ -196,11 +196,13 @@ B2   time: baseline on the last text baseline, by its distance from the bubble b
 B3   reserve: the copy of the time in message text, under an emoji, in decryption errors and group invitations,
      after text with a breaking space before it and without the word joiner (user);
      files keep the string reserve of their size line (shared with terminal rows)
-B4   header: 12dp start, as message text (user); text inset by bubbleTextPadding; icon without height
+B4   header: 12dp start, as message text (user); text inset by bubbleTextPadding; icon without height;
+     header and quote bands kept (user)
 B5   quote: text inset by bubbleTextPadding; Inter for the sender and the text (earlier owner decision: quotes in Inter)
 B6   emoji in a bubble: the text paddings; the reserve line with the full line height
 B7   deleted, moderated and error items: text inset by bubbleTextPadding; time on the text baseline
-B8   file in a bubble: the last baseline of the size line BUBBLE_TEXT_INSET above the edge
+B8   file in a bubble: the last baseline of the size line BUBBLE_TEXT_INSET above the edge; the time and the ink bottom
+     of the file icon on that baseline (user)
 B9   events: line height of 12sp secondary text; feature icons and merged icons without height, one event line high (user)
 B10  row gaps in sp, values kept; a sender change in direct chats 8sp (user)
 B11  markdown blocks in bubbles: spacing and line heights of terminal rows (user); classic heading sizes kept
@@ -222,7 +224,7 @@ chat/item/TextItemView.kt         the copy for every message text with a time, b
 chat/item/MarkdownBlocks.kt       spacing of terminal rows when usesChatTypography()
 chat/item/CIEventView.kt          chatEventTextStyle in both layouts; chatEventPadding without the vertical parameter
 chat/item/CIChatFeatureView.kt    merged icons one event line high in both layouts
-chat/item/CIFileView.kt           bubble: size line baseline inset from the bottom edge
+chat/item/CIFileView.kt           bubble: size line baseline inset from the bottom edge; fileIconOnBaseline
 chat/item/DeletedItemView.kt      bubble: bubbleTextPadding, time on the text baseline
 chat/item/MarkedDeletedItemView.kt
 chat/item/IntegrityErrorItemView.kt
@@ -241,6 +243,7 @@ usersettings/Appearance.kt        LocalBubbleLayout for the classic theme previe
 - text capitals and last baseline inset from the edges, 12dp at the sides
 - no bottom inset before another part of the band
 - time on the text baseline in a card row
+- file icon ink bottom on the size-line baseline
 
 `apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/TerminalMetaCopyTest.kt`:
 
@@ -260,7 +263,7 @@ reserve          "✓✓ 10:15 AM": 79px (92px) for a meta of 80px; at font scal
 header           text and icon 12dp from the edge (8dp); band 29px (30px)
 quote            Inter; full line heights; band 31px with one line (29px), taller with a sender and two lines
 deleted, errors  one-line card 32px (31px), as a one-line message; marked deleted 29px (27px); time on the text baseline
-file             size line baseline 10px above the edge (9px); time on it
+file             size line baseline 10px above the edge (9px); the time and the ink bottom of the file icon on it
 events           feature events 5px shorter (icon without height); events with a member name 4px higher in their row
 markdown         list items 22px apart (19px); paragraph break, headings, cards and rules at the gaps of terminal rows
 row gaps         unchanged at font scale 1; × 1.5 at font scale 1.5
@@ -269,10 +272,6 @@ row gaps         unchanged at font scale 1; × 1.5 at font scale 1.5
 ## 7. Open questions
 
 ```
-Q1   header band: keep the quote-coloured band of report, deleted, live and forwarded headers, or draw the header
-     on the bubble fill, 13.4sp from its baseline to the text capitals (as terminal rows, level 2–3)?
-     recommended: header on the bubble fill; the quote keeps its band
-     shown: forwarded, forwarded-snd, report
 Q4   events: the gap above and below an event depends on the time and direction of its neighbours (2sp or 8sp);
      terminal rows put events at the highest level whatever the time (D9a). Always 8sp around events?
      recommended: always 8sp
