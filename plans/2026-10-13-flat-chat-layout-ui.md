@@ -85,7 +85,7 @@ meta width        content measured without the meta width, except text with the 
 meta placement    never above the content; the row at least as tall as the time
                   after a rule with room beside it: the time on the baseline of the last text line above it (D24); otherwise under the rule
 meta copy         FontWeight.Normal; icon spaces at the body1 size in dp; time and timer text at 12sp
-                  conditions of CIMetaView, file encryption and signature included; tall status icon condition shared with CIMetaView
+                  conditions of CIMetaText, except that the timer is reserved for every timed message; file encryption and signature included; tall status icon condition shared with CIMetaView
                   one more space after the 17dp icons: sent and received status, via proxy (D29)
 event text        layout direction in both layouts (unspecified text direction); separator and copy passed apart by ChatEventWithMeta, each view puts the separator where classic has two spaces (D28); no line limit (D23)
 meta copy mark    U+200E (left-to-right layout) or U+200F (right-to-left) before the copy, so the copy stays at the line end after text in the other direction

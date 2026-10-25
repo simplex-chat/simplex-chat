@@ -48,6 +48,6 @@ class ChatEventTextTest {
     val (separator, ts) = separatorAndTime(terminal = true)
     assertEquals("\u00A0\u00A0\u00A0", separator.text)
     assertEquals(listOf(chatEventStyle, reserveTimestampStyle), separator.spanStyles.map { it.item })
-    assertTrue(ts.text.startsWith("\u2060\u200E") &&ts.text.endsWith(event.timestampText.replace(' ', '\u00A0')), ts.text)
+    assertTrue(ts.text.startsWith("\u2060\u200E") && ts.text.endsWith(event.timestampText.replace(' ', '\u00A0')), ts.text)
   }
 }
