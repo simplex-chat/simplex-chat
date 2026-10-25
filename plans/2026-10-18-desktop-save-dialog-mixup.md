@@ -8,9 +8,9 @@ Reproduced on the master prebuild: download a 115-byte text file and cancel its 
 
 ## Fix
 
-`DialogState` takes the value its dialog returns on Cancel: `null` for the open and save slots, an empty list for the open-multiple slot. When a request is already awaiting in the slot, `awaitResult` returns that value at once instead of replacing the pending request. The check and the replacement are done under one lock, so of two requests at the same instant only one reaches the dialog.
+`DialogState` takes the value its dialog returns on Cancel: `null` for the open and save slots, an empty list for the open-multiple slot. When a request is already awaiting in the slot, `awaitResult` returns that value at once instead of replacing the pending request. The check and the claim are done under one lock, so of two requests at the same instant the dialog is opened for one, and the other is cancelled.
 
-The guard is in the slot, so every caller is covered: `FileChooserLauncher.launch` (open and save), `FileChooserMultipleLauncher.launch` and `saveTempImageUncompressed` (QR code save). Every callback already handles a cancel (the database export deletes its temporary archive). The request that arrives second is the one cancelled, whether it is delayed or comes from a click. A click can make a second request: the chooser blocks clicks only once it is shown, a frame or two after the request; and a QR code click computes the QR image before it calls `awaitResult`.
+The guard is in the slot, so every caller is covered: `FileChooserLauncher.launch` (open and save), `FileChooserMultipleLauncher.launch` and `saveTempImageUncompressed` (QR code save). Every callback already handles a cancel (the database export deletes its temporary archive). The request that arrives second is the one cancelled, whether it is delayed or comes from a click. A click can make a second request before the chooser is shown, because only a shown chooser blocks clicks; and a QR code click computes the QR image before it calls `awaitResult`.
 
 ## Alternatives
 
@@ -22,7 +22,8 @@ The guard is in the slot, so every caller is covered: `FileChooserLauncher.launc
 ## Not fixed
 
 - If a slot is left awaiting with no dialog shown, every later request to that slot is cancelled at once, where master leaves it waiting forever. Two pre-existing causes, to be fixed separately: `awaitResult` does not clear the slot when the awaiting coroutine is cancelled (for example when the QR code view is closed while its chooser is open), and a request made right after another, with no frame between them, may get no dialog.
+- `DialogState.awaitResult` sets `onResult` before `params` (the order is unchanged from master), and the dialog reads `params` without the lock. If the dialog is composed between the two writes, it could briefly show the previous request's file name while Save completes the new request. Swapping the two lines inside the lock would close this; it is left out of this PR as scope.
 
 ## Effect
 
-Desktop only: while a request is awaiting in a file dialog slot, a further request to the same slot is cancelled instead of taking over the open dialog. A received or fetched file stays in the chat to be saved again; a database export has to be run again. The open dialogs have no delayed caller, so there a second request needs two clicks within a frame or two, and the second one is cancelled. Requests made while no request is awaiting behave as before. Android has no such dialog state; unchanged.
+Desktop only: while a request is awaiting in a file dialog slot, a further request to the same slot is cancelled instead of replacing the request that the open dialog completes. A received or fetched file stays in the chat to be saved again; a database export has to be run again. The open dialogs have no delayed caller, so there a second request needs a second click before the chooser is shown, and that request is cancelled. Requests made while no request is awaiting behave as before. Android has no such dialog state; unchanged.
