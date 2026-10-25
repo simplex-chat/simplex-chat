@@ -392,7 +392,7 @@ fun FramedItemView(
                   Box(Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID).then(mediaModifier)) {
                     CIImageView(image = mc.image, file = ci.file, provider, showMenu, false, receiveFile)
                   }
-                  if (!reservesMeta) {
+                  if (mc.text == "" && !ci.meta.isLive) {
                     if (!terminal) metaColor = Color.White
                   } else {
                     CIMarkdownText(chatsCtx, ci, chat, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy, showTimestamp = showTimestamp, terminalTop = TERMINAL_BLOCK_BOTTOM_GAP.toDp())
@@ -403,7 +403,7 @@ fun FramedItemView(
                   Box(Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID).then(mediaModifier)) {
                     CIVideoView(image = mc.image, mc.duration, file = ci.file, provider, showMenu, smallView = false, receiveFile = receiveFile)
                   }
-                  if (!reservesMeta) {
+                  if (mc.text == "" && !ci.meta.isLive) {
                     if (!terminal) metaColor = Color.White
                   } else {
                     CIMarkdownText(chatsCtx, ci, chat, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy, showTimestamp = showTimestamp, terminalTop = TERMINAL_BLOCK_BOTTOM_GAP.toDp())
@@ -411,7 +411,7 @@ fun FramedItemView(
                 }
                 is MsgContent.MCVoice -> {
                   CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, hasText = true, ci, timedMessagesTTL = chatTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp, longClick = { onLinkLongClick("") }, receiveFile = receiveFile)
-                  if (reservesMeta) {
+                  if (mc.text != "") {
                     CIMarkdownText(chatsCtx, ci, chat, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy, showTimestamp = showTimestamp, terminalTop = 0.dp)
                   }
                 }
@@ -431,6 +431,7 @@ fun FramedItemView(
                   }
                 }
                 is MsgContent.MCChat -> {
+                  val hasText = mc.text != mc.chatLink.connLinkStr
                   Box(
                     Modifier.then(if (terminal) cardModifier.width(IntrinsicSize.Max) else Modifier).combinedClickable(
                       onClick = {
@@ -439,9 +440,9 @@ fun FramedItemView(
                       onLongClick = { showMenu.value = true }
                     )
                   ) {
-                    CIChatLinkHeader(chatLink = mc.chatLink, ownerSig = mc.ownerSig, hasText = reservesMeta)
+                    CIChatLinkHeader(chatLink = mc.chatLink, ownerSig = mc.ownerSig, hasText = hasText)
                   }
-                  if (reservesMeta) {
+                  if (hasText) {
                     CIMarkdownText(chatsCtx, ci, chat, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy, showTimestamp = showTimestamp, stripLink = mc.chatLink.connLinkStr, terminalTop = TERMINAL_BLOCK_BOTTOM_GAP.toDp())
                   }
                 }

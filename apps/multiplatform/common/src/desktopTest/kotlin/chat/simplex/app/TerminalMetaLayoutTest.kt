@@ -112,6 +112,14 @@ class TerminalMetaLayoutTest {
   }
 
   @Test
+  fun overlayMetaAtTopOfShortContent() {
+    val r = layOut(metaReserved = false, overlay = true) { Box(it.fixed(260, 10, null)) }
+    assertEquals(Placed(260 - metaBoxWidth, 0, metaWidth, metaHeight), r.overlay)
+    assertEquals(setOf("overlay"), r.drawn)
+    assertEquals(metaHeight, r.row.height)
+  }
+
+  @Test
   fun overlayMetaOnMediaUnderWiderQuote() {
     val r = layOut(metaReserved = false, overlay = true) {
       Column(it.width(IntrinsicSize.Max)) {

@@ -220,7 +220,7 @@ private fun TerminalMetaLayout(metaReserved: Boolean, contentWithMeta: @Composab
     layout(width, max(content.height + blockGap, metaTop + meta.height)) {
       content.placeRelative(0, 0)
       if (overlay != null && content.width + meta.width > width) {
-        overlay.placeRelative(content.width - overlay.width, content.height - gap - overlay.height)
+        overlay.placeRelative(content.width - overlay.width, (content.height - gap - overlay.height).coerceAtLeast(0))
       } else {
         meta.placeRelative(width - meta.width, metaTop)
       }

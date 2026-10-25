@@ -91,14 +91,14 @@ fun MarkdownBlocks(
       }
       val start = starts[k]
       val marksLastBlock = k == blocks.lastIndex && metaLine == null
-      val cardMargins = if (terminal) Modifier.padding(top = TERMINAL_BLOCK_TOP_GAP.toDp(), bottom = if (marksLastBlock) 0.dp else TERMINAL_BLOCK_BOTTOM_GAP.toDp()).then(if (marksLastBlock) Modifier.messageLastBlock() else Modifier) else Modifier
+      val cardMargins = if (!terminal) Modifier else if (marksLastBlock) Modifier.padding(top = TERMINAL_BLOCK_TOP_GAP.toDp()).messageLastBlock() else Modifier.padding(top = TERMINAL_BLOCK_TOP_GAP.toDp(), bottom = TERMINAL_BLOCK_BOTTOM_GAP.toDp())
       when (block) {
         is MarkdownBlock.Paragraph -> BlockText(start, block.content, style)
         is MarkdownBlock.Heading -> {
-          val scale = when (block.level) {
-            1 -> if (terminal) TERMINAL_HEADING_RATIO.pow(3) else 1.5f
-            2 -> if (terminal) TERMINAL_HEADING_RATIO.pow(2) else 1.3f
-            3 -> if (terminal) TERMINAL_HEADING_RATIO else 1.15f
+          val scale = if (terminal) TERMINAL_HEADING_RATIO.pow((4 - block.level).coerceAtLeast(0)) else when (block.level) {
+            1 -> 1.5f
+            2 -> 1.3f
+            3 -> 1.15f
             else -> 1f
           }
           BlockText(

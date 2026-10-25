@@ -139,7 +139,7 @@ views/chat/item/ChatItemView.kt          alignEnd = sent && !terminal; item clic
                                          hasQuoteOrHeader: the choice of EmojiItemView or CIVoiceView, and the heading gaps
 views/chat/item/FramedItemView.kt        transparent background; headers and quote without background; quoteBar; mediaModifier; cardModifier; thumbnailClip
                                          CIMarkdownText: parameter terminalTop plus terminalHeadingGap, no bottom padding, terminal text style, file encryption and signature for the copy
-                                         reservesMeta: metaReserved, caption of images, videos, voice and chat links, bottom gap without text; clipChatItem skipped
+                                         reservesMeta: metaReserved, bottom gap without text; captions by the classic conditions; clipChatItem skipped
                                          emoji: TERMINAL_EMOJI_* paddings, not stretched; quote row: TERMINAL_BLOCK_* paddings, icons without top padding
                                          CHAT_ITEM_TEXT_PADDING (text edge); classic vertical text padding named CHAT_ITEM_TEXT_VERTICAL_PADDING
                                          PriorityLayout(limitToPriorityWidth = !terminal || captionlessMedia), placeRelative when not limited; link preview caption without width limit; chat link card at its own width
@@ -225,6 +225,7 @@ terminal rows   in this pull request, after the Kotlin part is approved and revi
 - content without a baseline: time `TERMINAL_META_GAP` above the content bottom
 - content shorter than the time: time at the top, the row as tall as the time
 - overlay meta when content and time exceed the row: at the bottom end of the content; under a wider quote, on the media corner
+- overlay meta on content shorter than the time: at the top of the content, the row as tall as the time
 - last line with room, right-to-left
 
 `apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/PriorityLayoutTest.kt`: terminal elements at their own width, classic elements at the media width; terminal placement at the start edge right-to-left, classic unmirrored.
