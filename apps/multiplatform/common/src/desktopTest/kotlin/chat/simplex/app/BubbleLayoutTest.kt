@@ -1,6 +1,7 @@
 package chat.simplex.app
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.Alignment
@@ -46,14 +47,17 @@ class BubbleLayoutTest {
   fun textCapsAndLastBaselineInsetFromEdges() {
     renderScene {
       Box(Modifier.record(placed, "part").bubbleTextPadding(16.sp)) {
-        Box(Modifier.record(placed, "text").fixed(100, 44, 18))
+        Column(Modifier.record(placed, "text")) {
+          Box(Modifier.fixed(100, 22, 18))
+          Box(Modifier.fixed(100, 22, 18))
+        }
       }
     }
     val part = placed.getValue("part")
     val text = placed.getValue("text").relativeTo(part)
     val firstBaseline = with(density) { (BUBBLE_TEXT_INSET.value + 16 * INTER_CAP_HEIGHT).sp.roundToPx() }
     assertEquals(Placed(12, firstBaseline - 18, 100, 44), text)
-    assertEquals(inset, part.height - (text.y + 18))
+    assertEquals(inset, part.height - (text.y + 22 + 18))
     assertEquals(124, part.width)
   }
 
