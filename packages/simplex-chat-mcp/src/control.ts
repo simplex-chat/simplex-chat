@@ -1,7 +1,7 @@
 import {ChatEvent, T} from "@simplex-chat/types"
 import * as qrcode from "qrcode"
 import {api} from "simplex-chat"
-import {Action, ActionHooks, Actions, Subject, ToolError, leaveVerbs, subjectText, summary} from "./actions"
+import {Action, ActionHooks, Actions, ConnectAction, Subject, ToolError, leaveVerbs, subjectText, summary} from "./actions"
 import {ExitError, chatErrorOf, log, logError, oneLine, shellWord} from "./log"
 import {chatNumber, chatRef, isChatRef, utcMinutes, validName, viewName} from "./messages"
 import type {OwnerEntry, QrCodeSize} from "./serve"
@@ -13,7 +13,7 @@ const controlCommands: T.ChatBotCommand[] = [
 ]
 
 const commandsReply = "Commands: /approve, /reject, /revoke, /pending, /list. Each card shows its commands."
-const cardTooLong = "text: too long for its approval card; shorten it."
+const cardTooLong = {send: "text: too long for its approval card; shorten it.", connect: "message: too long for its approval card; shorten it."}
 const maxCardLength = 15_000
 const listedChats = 100
 const maxLineLength = 100
@@ -106,7 +106,10 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
   }
 
   refusal(action: Action): string | undefined {
-    if (action.tool === "send" && largestCard(action, this.actions.mode, this.longestApproverName()) > maxCardLength) return cardTooLong
+    const {mode} = this.actions
+    const approver = this.longestApproverName()
+    if (action.tool === "connect") action.linkTextBytes = maxCardLength - largestCard({...action, linkTextBytes: 0}, mode, approver)
+    if (action.tool !== "leave" && largestCard(action, mode, approver) > maxCardLength) return cardTooLong[action.tool]
     if (this.approvers().length > 0) return undefined
     return this.options.owners === undefined
       ? "The agent has no owner. The person who runs it has to join its control chat with the link the server printed."
@@ -176,6 +179,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
       case "list":
         return this.chatsText()
       case "approveChat":
+        if (this.actions.mode === "host") return "Approvals apply in mode requests; this server runs in mode host."
         return this.approveChat(sender, request.chat)
       case "revoke":
         return this.revoke(request.chat)
@@ -219,7 +223,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
       const approvedBy = this.standingApprover(chatInfo)
       const approval = approvedBy === undefined ? "" : `, approved for this chat by ${approvedBy}`
       const connection = isConnected(chatInfo) ? "" : ", not connected"
-      return truncatedLine(`${chatRef(chatInfo)}  ${chatName(chatSubject(chatInfo))}${approval}${connection}`)
+      return truncatedLine(`${chatRef(chatInfo)}  ${chatName(chatSubject(chatInfo))}${approval}${connection}`, maxLineLength)
     })
     const rest = chats.length - lines.length
     if (rest > 0) lines.push(`${rest} older chat${rest === 1 ? " is" : "s are"} not shown.`)
@@ -253,7 +257,7 @@ export class Control implements Pick<ActionHooks, "refusal" | "saveCounter" | "p
   private async startListed(owners: OwnerEntry[]): Promise<void> {
     const humans = this.humans()
     const listed = owners.map(owner => {
-      const member = humans.find(({groupMemberId, memberProfile}) => groupMemberId === owner.memberId && memberProfile.displayName === owner.name)
+      const member = humans.find(human => listsMember(owner, human))
       if (!member) throw new ExitError(`--owners: member ${entryText(owner)} is not in the agent control chat. Start with --reset-owners --owners, or use the IDs of current members.`, 2)
       return member
     })
@@ -446,14 +450,14 @@ function requestLines(action: Action): string[] {
   const subject = subjectText(action.subject, safeName)
   switch (action.tool) {
     case "connect": {
-      const {plan, input} = action
+      const {input} = action
       const verb = !done ? "I want to connect" : action.connected ? "I connected" : "I asked to connect"
       const message = input.message === undefined ? [] : ["With the message:", ...codeLines(input.message)]
-      return [`${verb} to ${subject}, ${action.subject.incognito ? "incognito" : "as myself"}.`, ...codeLines(plan.description), ...codeLines(plan.welcome), ...message]
+      return [`${verb} to ${subject}, ${action.subject.incognito ? "incognito" : "as myself"}.`, ...linkLines(action), ...message]
     }
     case "send": {
       const {replyTo, mentions} = action
-      const reply = replyTo === undefined ? [] : [`replying to ${safeName(replyTo.from)}: ${codeSpan(replyTo.text.replace(/\s+/g, " ").slice(0, 100))}`]
+      const reply = replyTo === undefined ? [] : [`replying to ${safeName(replyTo.from)}: ${codeSpan([...replyTo.text.replace(/\s+/g, " ")].slice(0, 100).join(""))}`]
       const mentioning = mentions.length === 0 ? [] : [`mentioning ${mentions.map(({name}) => mentionText(name)).join(", ")}`]
       return [`${done ? "I sent" : "I want to send"} a message to ${subject}${action.subject.incognito ? ", where I am incognito" : ""}:`, ...codeLines(action.input.text), ...reply, ...mentioning]
     }
@@ -489,16 +493,32 @@ function encodedLength(text: string): number {
   return [...text].reduce((length, c) => length + (/["\\\n\r\t]/.test(c) ? 2 : c < " " ? 6 : Buffer.byteLength(c)), 0)
 }
 
-function truncatedLine(line: string): string {
-  if (encodedLength(line) <= maxLineLength) return line
+function truncatedLine(line: string, maxLength: number): string {
+  if (encodedLength(line) <= maxLength) return line
   let length = encodedLength(truncationMark)
   let kept = ""
   for (const c of line) {
     length += encodedLength(c)
-    if (length > maxLineLength) break
+    if (length > maxLength) break
     kept += c
   }
   return `${kept}${truncationMark}`
+}
+
+function linkLines({plan, linkTextBytes = Infinity}: ConnectAction): string[] {
+  const lines: string[] = []
+  let left = linkTextBytes
+  for (const line of [...codeLines(plan.description), ...codeLines(plan.welcome)]) {
+    const length = encodedLength(`\n${line}`)
+    if (length > left) {
+      const room = left - encodedLength("\n``")
+      if (room >= encodedLength(truncationMark)) lines.push(`\`${truncatedLine(line.slice(1, -1), room)}\``)
+      break
+    }
+    lines.push(line)
+    left -= length
+  }
+  return lines
 }
 
 function chatName(subject: Subject): string {
@@ -581,7 +601,7 @@ function isLost({membership}: T.GroupInfo): boolean {
 }
 
 function listsMember({memberId, name}: OwnerEntry, member: T.GroupMember): boolean {
-  return member.groupMemberId === memberId && member.memberProfile.displayName === name
+  return member.groupMemberId === memberId && oneLine(member.memberProfile.displayName) === name
 }
 
 function sameMember(member: T.GroupMember): (other: T.GroupMember) => boolean {
