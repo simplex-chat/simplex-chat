@@ -8,9 +8,10 @@ export interface HttpOptions {
   port: number
   token: string
   factory: McpServerFactory
+  ready: () => boolean
 }
 
-export function startHttp({port, token, factory}: HttpOptions): Promise<Server> {
+export function startHttp({port, token, factory, ready}: HttpOptions): Promise<Server> {
   const expectedAuthorization = Buffer.from(`Bearer ${token}`)
   const validHost = localhostHostValidation()
   const validOrigin = localhostOriginValidation()
@@ -19,6 +20,7 @@ export function startHttp({port, token, factory}: HttpOptions): Promise<Server> 
     if (!validHost(req, res) || !validOrigin(req, res)) return
     if (!authorized(req.headers.authorization)) return plain(res, 401)
     if (requestPath(req.url) !== "/mcp") return plain(res, 404)
+    if (!ready()) return plain(res, 503, {"Retry-After": "1"})
     mcp(req, res).catch(error => {
       logError("HTTP request", error)
       res.destroy()
@@ -57,7 +59,7 @@ function requestPath(target: string | undefined): string | undefined {
   }
 }
 
-function plain(res: ServerResponse, status: number): void {
-  res.writeHead(status)
+function plain(res: ServerResponse, status: number, headers: {[name: string]: string} = {}): void {
+  res.writeHead(status, headers)
   res.end()
 }
