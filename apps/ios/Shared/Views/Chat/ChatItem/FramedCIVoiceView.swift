@@ -55,10 +55,10 @@ struct FramedCIVoiceView: View {
                 playbackSlider()
             }
         }
-        .padding(.top, terminal ? bodyScaled(4) : 6)
+        .padding(.top, terminal ? terminalGap(4) : 6)
         .padding(.leading, terminal ? chatItemTextPadding : 6)
         .padding(.trailing, terminal ? 0 : 12)
-        .padding(.bottom, terminal ? bodyScaled(6) : chatItem.content.text.isEmpty ? 10 : 0)
+        .padding(.bottom, terminal ? terminalGap(6) : chatItem.content.text.isEmpty ? 10 : 0)
     }
     
     private func playbackSlider() -> some View {

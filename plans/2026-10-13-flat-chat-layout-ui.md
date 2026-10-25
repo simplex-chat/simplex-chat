@@ -195,7 +195,7 @@ Shared/Views/Chat/ChatView.swift         terminal = activeChatLayout == .termina
                                          go-to button after the item in search results and for marked deleted items, otherwise endButton
 Shared/Views/Chat/ChatItemsMerger.swift  MergedItem.revealed
 Shared/Views/Chat/ChatItem/TerminalItemView.swift
-                                         \.terminalLayout; gap constants in pt, scaled by UIFontMetrics(.body) (bodyScaled)
+                                         \.terminalLayout; gaps: Kotlin sp × body point size ÷ 16 (terminalGap)
                                          messageTextColor, terminalLineBox, lineBox; terminalItemShowsSender, sameSender, terminalRowGap, terminalHeadingGap
                                          messageLastLine, messageLastBlock: custom alignment guides; metaCopyJoiner
                                          ItemWithMeta: TerminalMetaLayout on iOS 16, HStack on the last text baseline on iOS 15
@@ -229,7 +229,7 @@ theme writes                             chatLayout kept (agent profile plan, se
 classic                                  message text in messageTextColor (MsgContentView); quote text in onSurface; otherwise unchanged
 differences                              row tint: selected only; hover and press indication omitted
                                          swipe to reply moves the item
-                                         gaps in pt at the 17pt body size, scaled by Dynamic Type; line heights from the SF font
+                                         gaps × 17/16 at the default 17pt body (user, 2026-10-25); line heights from the SF font
 ```
 
 ## 5. Tests

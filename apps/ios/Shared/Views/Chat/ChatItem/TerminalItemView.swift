@@ -13,23 +13,28 @@ extension EnvironmentValues {
 }
 
 let chatItemTextPadding: CGFloat = 12
-var terminalBlockTopGap: CGFloat { bodyScaled(5.75) }
-var terminalBlockBottomGap: CGFloat { bodyScaled(5) }
-var terminalLevelStep: CGFloat { bodyScaled(4.75) }
+var terminalBlockTopGap: CGFloat { terminalGap(5.75) }
+var terminalBlockBottomGap: CGFloat { terminalGap(5) }
+var terminalLevelStep: CGFloat { terminalGap(4.75) }
 var terminalHeadingBottomGap: CGFloat { terminalLevelStep / 2 }
-var terminalSenderTopGap: CGFloat { bodyScaled(6.5) }
-private var terminalSenderBottomGap: CGFloat { bodyScaled(5.5) }
-var terminalHeaderTopGap: CGFloat { bodyScaled(2.5) }
-var terminalHeaderBottomGap: CGFloat { bodyScaled(1.5) }
-var terminalEventTopGap: CGFloat { bodyScaled(8.25) }
-var terminalEventBottomGap: CGFloat { bodyScaled(1.5) }
-var terminalFileTopGap: CGFloat { bodyScaled(2) }
-var terminalEmojiTopGap: CGFloat { bodyScaled(4.25) }
-var terminalEmojiBottomGap: CGFloat { bodyScaled(1.5) }
-var terminalMetaGap: CGFloat { bodyScaled(6) }
+var terminalSenderTopGap: CGFloat { terminalGap(6.5) }
+private var terminalSenderBottomGap: CGFloat { terminalGap(5.5) }
+var terminalHeaderTopGap: CGFloat { terminalGap(2.5) }
+var terminalHeaderBottomGap: CGFloat { terminalGap(1.5) }
+var terminalEventTopGap: CGFloat { terminalGap(8.25) }
+var terminalEventBottomGap: CGFloat { terminalGap(1.5) }
+var terminalFileTopGap: CGFloat { terminalGap(2) }
+var terminalEmojiTopGap: CGFloat { terminalGap(4.25) }
+var terminalEmojiBottomGap: CGFloat { terminalGap(1.5) }
+var terminalMetaGap: CGFloat { terminalGap(6) }
 let terminalHeadingRatio: CGFloat = 1.3125
 private let terminalLineHeightRatio: CGFloat = 22 / 16
 private let terminalLineHeightContrastSlope: CGFloat = 0.1515
+private let terminalGapBodySize: CGFloat = 16
+
+func terminalGap(_ size: CGFloat) -> CGFloat {
+    size * UIFont.preferredFont(forTextStyle: .body).pointSize / terminalGapBodySize
+}
 
 func bodyScaled(_ points: CGFloat) -> CGFloat {
     UIFontMetrics(forTextStyle: .body).scaledValue(for: points)

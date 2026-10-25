@@ -405,8 +405,8 @@ MarkdownBlocksView    paragraph break, heading after another block: terminalLeve
                       last block of a message that is not live: no bottom margin, messageLastBlock()
                       rules of a rule-only message: as wide as the copy of the meta
 emoji                 EmojiItemView and FramedItemView: terminalEmojiTopGap, terminalEmojiBottomGap, messageLastLine()
-voice                 CIVoiceView: received layout for both directions, bodyScaled(4) above, bodyScaled(6) below
-                      FramedCIVoiceView: bodyScaled(4) above, bodyScaled(6) below, player background
+voice                 CIVoiceView: received layout for both directions, terminalGap(4) above, terminalGap(6) below
+                      FramedCIVoiceView: terminalGap(4) above, terminalGap(6) below, player background
 files                 CIFileView: terminalFileTopGap above, icon without top padding
 events                terminalEventPadding, line box, line limit removed
                       feature and preference icons without height; merged feature icons one event line high
@@ -455,7 +455,7 @@ content            file encryption and signature included (MsgContentView encryp
 
 ### Spacing and Line Heights
 
-Constants at the top of `TerminalItemView.swift`, points at the default body size, scaled by `UIFontMetrics(forTextStyle: .body)` (`bodyScaled`):
+Constants at the top of `TerminalItemView.swift`: the Kotlin values in sp at its 16sp body, converted by `terminalGap`, value × body point size ÷ 16 (17pt body by default; Dynamic Type included):
 
 ```
 terminalBlockTopGap         5.75

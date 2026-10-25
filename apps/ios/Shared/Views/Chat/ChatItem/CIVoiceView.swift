@@ -69,8 +69,8 @@ struct CIVoiceView: View {
                 }
             }
         }
-        .padding(.top, terminal ? bodyScaled(4) : 4)
-        .padding(.bottom, terminal ? bodyScaled(6) : 8)
+        .padding(.top, terminal ? terminalGap(4) : 4)
+        .padding(.bottom, terminal ? terminalGap(6) : 8)
         .padding(.leading, terminal ? chatItemTextPadding : 0)
     }
 
