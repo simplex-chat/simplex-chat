@@ -54,7 +54,6 @@ sequenceDiagram
   S->>P: version line, data folder, approval mode
   S->>C: /user (no active user)
   S->>C: /_create user {"profile":{"displayName":"My Agent","fullName":"","peerType":"bot"},...}
-  S->>S: server.json
   S->>C: /network socks=off smp-proxy=always smp-proxy-fallback=protected
   S->>C: startChat, events buffered
   S->>C: /_groups USER (no control marker)
@@ -63,7 +62,8 @@ sequenceDiagram
   S->>P: Agent control chat "My Agent" created.
   S->>K: load
   K->>C: /_members #G
-  S->>S: HTTP listens on 127.0.0.1:5226
+  S->>S: HTTP listens on 127.0.0.1:5226, /mcp answers 503 until the owner setup ends
+  S->>S: server.json
   K->>C: /_delete link #G (groupLinkNotFound ignored)
   K->>C: /_create link #G member
   K->>P: join line, QR code, link, QR hint, owner line
@@ -497,6 +497,8 @@ Notes:
 - The interrupted card line is `DECIDER; interrupted: the server stopped.` ([control.ts:426](../src/control.ts#L426)).
 - A host-mode action whose counter is being written at the stop is set to `pending` and cancelled without a perform ([actions.ts:226](../src/actions.ts#L226), [actions.test.ts:380-391](../test/unit/actions.test.ts#L380-L391)).
 - After a crash, the cards of that run are left with their commands; `/approve` of their numbers gets the reply `Action N is not pending.` ([control.ts:182](../src/control.ts#L182)).
+- The stop signal of the performs is aborted after the actions are marked interrupted: a `connect` waiting for its connection ends, and an interrupted perform logs no line ([actions.ts:218](../src/actions.ts#L218), [:252](../src/actions.ts#L252), [tools.ts:507-509](../src/tools.ts#L507-L509)).
+- An error of a `/sql` query of the delivery wait is logged as `delivery wait: ERROR` on stderr and ends the wait ([serve.ts:185](../src/serve.ts#L185)).
 
 Source: [serve.ts:48-62](../src/serve.ts#L48-L62), [:150-176](../src/serve.ts#L150-L176), [actions.ts:200-209](../src/actions.ts#L200-L209), [http.ts:46-50](../src/http.ts#L46-L50), [control.ts:421-426](../src/control.ts#L421-L426).
 
@@ -536,7 +538,7 @@ sequenceDiagram
 Notes:
 
 - Until the restart with a list, new actions are refused: `The agent has no approving owner. ...` ([control.ts:108-110](../src/control.ts#L108-L110)).
-- An entry must match a human by member ID and display name, or the server exits with code 2 ([control.ts:249-253](../src/control.ts#L249-L253)).
+- An entry must match a human by member ID and display name, folded to one line as the restart line prints it, or the server exits with code 2 ([control.ts:249-253](../src/control.ts#L249-L253)).
 - With `--reset-owners`, the server deletes the control chat for all members and creates a new one with the same counter; the CLI refuses the option with an `--owners` list ([control.ts:387-392](../src/control.ts#L387-L392), [cli.ts:97-99](../src/cli.ts#L97-L99)).
 - When a listed owner leaves and none remains: `... is no longer an owner. No owners remain: restart the server with --reset-owners --owners` ([control.ts:288-293](../src/control.ts#L288-L293)).
 

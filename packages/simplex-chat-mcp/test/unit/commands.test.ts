@@ -1,9 +1,10 @@
 import {CallToolResult} from "@modelcontextprotocol/server"
 import {ChatEvent, T} from "@simplex-chat/types"
-import {Actions, Mode, NewAction} from "../../src/actions"
+import {core} from "simplex-chat"
+import {Actions, Mode, NewAction, ToolError} from "../../src/actions"
 import {Control, cardText, parseCommand} from "../../src/control"
 import {ChatItemsWatch, Collected, utcMinutes} from "../../src/messages"
-import {OwnerEntry} from "../../src/serve"
+import {OwnerEntry, deliveries} from "../../src/serve"
 import {AgentTools} from "../../src/tools"
 import {FakeChat, actionsWith, contact, direct, event, fakeHooks, group, groupChat, item, member, settled, signal, user} from "./fixtures"
 
@@ -189,6 +190,15 @@ describe("owner commands", () => {
     expect(await none.control.ownerCommand(alice, {keyword: "approve", params: "5"})).toBe("Only the owners listed in --owners approve actions.")
   })
 
+  it("accepts a listed owner by the name on one line, as the restart line prints it", async () => {
+    const chat = agentChats()
+    const ana = member(3, "Ana\nLu, Jr", T.GroupMemberRole.Owner)
+    chat.members.set(10, [self, ana])
+    const {control} = await controlWith(chat, actionsWith("requests", fakeHooks()), [{memberId: 3, name: "Ana Lu, Jr"}])
+    await control.start()
+    expect(await control.ownerCommand(ana, {keyword: "pending", params: ""})).toBe("No pending actions.")
+  })
+
   it("replies in the agent control chat to commands only", async () => {
     const {control, chat} = await setup()
     const chatInfo = groupChat(group(10, "agent"))
@@ -341,7 +351,7 @@ describe("sends to a chat approved for all messages", () => {
       saveCounter: async () => undefined,
       postCard: action => control.postCard(action),
       outcome: action => control.outcome(action),
-      perform: action => tools.perform(action),
+      perform: (action, signal) => tools.perform(action, signal),
     })
     const {control, tools} = await controlWith(chat, actions, undefined, mode)
     return {chat, actions, control, tools}
@@ -387,6 +397,8 @@ describe("sends to a chat approved for all messages", () => {
     const {chats} = (await tools.call("list", {}, signal().call))!.structuredContent as {chats: {chat: string}[]}
     expect(chats.find(({chat: ref}) => ref === "@4")).not.toHaveProperty("approved")
     expect((await control.ownerCommand(alice, {keyword: "list", params: ""}))!.split("\n")[0]).toBe("@4  bot SimpleX Directory")
+    expect(await control.ownerCommand(alice, {keyword: "approve", params: "#2 all"})).toBe("Approvals apply in mode requests; this server runs in mode host.")
+    expect(chat.customData).toEqual([])
     expect((await tools.call("send", {chat: "@4", text: "trail shoes", wait: 0}, signal().call))!.structuredContent).toMatchObject({action: 1, status: "done"})
     await settled()
     expect(cards(chat)).toEqual(["I sent a message to bot SimpleX Directory:\n`trail shoes`\nPerformed without approval (mode host)."])
@@ -406,12 +418,24 @@ describe("approval card size", () => {
       saveCounter: async () => undefined,
       postCard: action => control.postCard(action),
       outcome: action => control.outcome(action),
-      perform: action => tools.perform(action),
+      perform: (action, signal) => tools.perform(action, signal),
     })
     const {control, tools} = await controlWith(chat, actions)
     const textOf = (result: CallToolResult | undefined): string => (result!.content[0] as {text: string}).text
     return {chat, actions, tools, textOf}
   }
+
+  function connectFields(name: string, extra: {message?: string; description?: string; welcome?: string}): NewAction {
+    return {
+      tool: "connect",
+      input: {target: "https://simplex.chat/a#ridgeline", ...(extra.message === undefined ? {} : {message: extra.message})},
+      subject: {kind: "contact", name, incognito: false},
+      plan: {cardKind: "contact", type: "contact", takesMessage: true, description: extra.description, welcome: extra.welcome},
+      messages: new Collected(),
+    }
+  }
+
+  const encodedLength = (text: string): number => Buffer.byteLength(JSON.stringify(text)) - 2
 
   const flushed = (): Promise<void> => new Promise(resolve => setImmediate(resolve))
 
@@ -459,5 +483,42 @@ describe("approval card size", () => {
     expect(actions.get(1)).toMatchObject({state: "pending"})
     controller.abort()
     expect(await sending).toBeUndefined()
+  })
+
+  it("refuses a connect whose message makes its largest card longer than 15000 bytes", async () => {
+    const {chat, actions} = await sendTools()
+    const name = "😀".repeat(1000)
+    expect(() => actions.create("c", connectFields(name, {message: "\b".repeat(2000), welcome: "Welcome!"}))).toThrow(new ToolError("message: too long for its approval card; shorten it."))
+    expect(actions.next).toBe(1)
+    actions.create("c", connectFields(name, {message: "\b".repeat(1400), welcome: "Welcome!"}))
+    await flushed()
+    expect(chat.sent.map(({chat: [, id]}) => id)).toEqual([10])
+  })
+
+  it("cuts the link texts on a connect card to fit 15000 bytes in its largest form, and keeps them whole in the action", async () => {
+    const {chat, actions} = await sendTools()
+    const description = "Trail shoes. ".repeat(1500)
+    const action = actions.create("c", connectFields("Ridgeline", {description, welcome: "Welcome!"}))
+    await flushed()
+    const [card] = chat.sent.filter(({chat: [, id]}) => id === 10).map(({messages: [{msgContent}]}) => msgContent.text.split("\n"))
+    expect(card).toHaveLength(3)
+    expect(card[1]).toMatch(/^`Trail shoes\. .*…`$/)
+    const failed = encodedLength(cardText({...action, state: "failed", decidedBy: "Alice", error: "€".repeat(600)}, "requests"))
+    expect(failed).toBeLessThanOrEqual(15000)
+    expect(failed).toBeGreaterThan(15000 - 8)
+    expect(action.tool === "connect" && action.plan.description).toBe(description)
+  })
+})
+
+describe("delivery wait at the stop", () => {
+  it("logs an error of the SQL query and ends", async () => {
+    const errors: string[] = []
+    jest.spyOn(process.stderr, "write").mockImplementation(text => (errors.push(String(text).trimEnd()), true))
+    const chat = new FakeChat()
+    chat.sendChatCmd = async () => {
+      throw new core.ChatAPIError("Chat command error", {type: "errorStore", storeError: {type: "dBException", message: "no such table: connections"}} as unknown as T.ChatError)
+    }
+    await deliveries(chat.api(), 10)
+    expect(errors).toEqual(['delivery wait: SimpleX error: errorStore: dBException: {"message":"no such table: connections"}'])
   })
 })
