@@ -4,6 +4,9 @@ import {basename, dirname, join, resolve} from "path"
 import {headersFile, readServerFile} from "./files"
 import {ExitError, shellPath} from "./log"
 
+const cmdNotFound = 9009
+const cmdMetaChars = /([()\][%!^"`<>&|;, *?])/g
+
 export type Scope = "user" | "local"
 
 export interface RegisterOptions {
@@ -83,5 +86,16 @@ function repositoryRoot(root: string): string {
 function runCommand(command: string, args: string[]): RunResult {
   const result = spawnSync(command, args, {encoding: "utf8"})
   const missing = (result.error as NodeJS.ErrnoException | undefined)?.code === "ENOENT"
+  if (missing && process.platform === "win32") return runInCmd(command, args)
   return {missing, status: result.status, stderr: result.stderr ?? ""}
+}
+
+function runInCmd(command: string, args: string[]): RunResult {
+  const result = spawnSync([command, ...args.map(cmdArgument)].join(" "), {encoding: "utf8", shell: true})
+  return {missing: result.status === cmdNotFound, status: result.status, stderr: result.stderr ?? ""}
+}
+
+export function cmdArgument(arg: string): string {
+  const quoted = `"${arg.replace(/(\\*)"/g, '$1$1\\"').replace(/(\\*)$/, "$1$1")}"`
+  return quoted.replace(cmdMetaChars, "^$1").replace(cmdMetaChars, "^$1")
 }
