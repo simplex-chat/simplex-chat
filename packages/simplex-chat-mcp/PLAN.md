@@ -104,6 +104,7 @@ layer                         who                                      what
 listener                      http.ts                                  127.0.0.1:PORT; Node limits lifted for hours-long calls: requestTimeout 0, timeout 0, headersTimeout 60 s, keepAliveTimeout 5 s
 bearer token                  http.ts, before the SDK                  Authorization: Bearer <DIR/token>, compared in constant time; otherwise 401
 path                          http.ts                                  /mcp only; otherwise 404, a request target that is not a URL included
+start                         http.ts                                  until the owner setup at start ends: 503 with Retry-After: 1
 Origin, Host                  SDK middleware                           localhostOriginValidation (no Origin, or a localhost origin on any port), localhostHostValidation; otherwise 403
 protocol                      SDK                                      both eras, header and version errors, 405, body limit, cache hints (ttlMs, cacheScope), JSON or SSE per call, SSE keep-alive
 cancellation                  SDK                                      the client closing the response stream aborts ctx.mcpReq.signal (toNodeHandler ties the Request signal to res "close")
@@ -214,7 +215,7 @@ NAME not ^[a-z0-9](-?[a-z0-9])*-?$,   NAME: 1 to 32 lowercase letters, digits an
 $ npx -y @simplex-chat/mcp serve my-agent --display-name "My Agent"
 Downloading libsimplex from https://github.com/simplex-chat/simplex-chat-libs/releases/download/core-7.1.0.12/simplex-chat-libs-linux-x86_64.zip ...
 Downloading the Node.js add-on from https://github.com/simplex-chat/simplex-chat-libs/releases/download/... ...
-SimpleX MCP server 0.1.0, agent "my-agent"
+SimpleX MCP server 0.1.1, agent "my-agent"
 Data folder: /home/alice/.simplex-mcp/my-agent
 Approval mode: requests
 Agent control chat "My Agent" created.
@@ -231,7 +232,7 @@ Listening on http://127.0.0.1:5226/mcp
   - large: two spaces with the module's background per module, one line per module: 74 columns × 37 lines.
 - The download lines are written to stderr by the `simplex-chat` package on first use (`libs.ts`, `installLibs`, `installAddon`).
 - `npx -y` answers npm's install prompt only; the server asks no questions.
-- A second `serve` on the same data folder exits with code 1: `Another server uses /home/alice/.simplex-mcp/my-agent (PID 1234).` A port in use: exit code 1, `Port 5226 is in use. Start with --port N.`
+- A second `serve` on the same data folder exits with code 1: `Another server uses /home/alice/.simplex-mcp/my-agent (PID 1234). If no server runs, remove /home/alice/.simplex-mcp/my-agent/lock.` A port in use: exit code 1, `Port 5226 is in use. Start with --port N.`
 
 ### Owner joins (no --owners)
 
@@ -285,12 +286,13 @@ action created                  Action 1: connect to bot SimpleX Directory, as i
 action decided                  Action 2 approved by Alice: sent. | Action 1 approved by Alice: connected. | Action 5 approved by Alice: connection requested. | Action 2 approved by Alice: failed: <error>.
 action decided                  Action 2 rejected by Alice. | Action 2 expired.
 mode host                       Action 2: performed without approval (mode host). | ...; failed: <error>.
+counter or card not written     Action 2: failed: <error>.
 owner added, --owners LIST      Bob (member 7) is now an owner and can't approve actions yet. Restart the server with --owners 3:Alice,7:Bob
 owner gone, --owners LIST       Alice (member 3) is no longer an owner. Restart the server with --owners 7:Bob   (the human owners remaining)
 no human owner remains          Alice (member 3) is no longer an owner. No owners remain: restart the server with --reset-owners --owners
 no approver, no --owners        No owners in the agent control chat. (followed by a new link)
 control chat lost               The agent lost its control chat. Restart the server with --reset-owners.
-shutdown                        Cancelled 2 actions. Stopped.   (the count only when actions were pending or performing)
+shutdown                        Cancelled 2 actions. Stopped.   (the count only when actions were pending or performing; a perform interrupted by the stop logs no line)
 ```
 
 ## What the owner sees: the agent control chat
@@ -319,7 +321,7 @@ contact | bot | agent | business | group | channel   plan type; channel when gro
 SimpleX Directory                                the contact's or group's display name from the link
 (@directory.simplex)                             the target, when it is a SimpleX name
 as myself | incognito                            input.incognito
-quoted lines                                     short description and welcome message from the link
+quoted lines                                     short description and welcome message from the link, cut to fit the card (section Card size)
 "With the message:" and the message lines        with message; after the quoted lines
 ```
 
@@ -417,6 +419,7 @@ N unknown, decided or from an earlier run   Action 9 is not pending.
 CHAT not the action's chat                  Action 10 is not for #3.
 /approve CHAT all                           Approved for business Ridgeline (#9) by Alice. /'revoke #9'
 /approve CHAT all, CHAT not the agent's     No chat #13. /list shows the agent's chats.
+/approve CHAT all, mode host                Approvals apply in mode requests; this server runs in mode host.
 /revoke CHAT                                Messages to business Ridgeline (#9) need approval again.
 /revoke CHAT, no standing approval          Messages to #9 have no standing approval.
 /list, no chats                             No chats.
@@ -424,7 +427,7 @@ other one-line text starting with "/"       Commands: /approve, /reject, /revoke
 ```
 
 - CHAT is optional in `/approve N` and `/reject N` as typed; the cards include it for sends and leaves.
-- A standing approval covers sends only. It ends at `/revoke`, when the chat is deleted, or when member `approvedById` is no longer an approver. It applies in mode `requests` only: in mode `host`, `list` and `/list` show no approvals.
+- A standing approval covers sends only. It ends at `/revoke`, when the chat is deleted, or when member `approvedById` is no longer an approver. It applies in mode `requests` only: in mode `host`, `list` and `/list` show no approvals, and `/approve CHAT all` stores none.
 
 ### Membership messages
 
@@ -608,7 +611,9 @@ no approver, no --owners           The agent has no owner. The person who runs i
 no approver, --owners              The agent has no approving owner. The person who runs it has to restart it with the --owners options it printed.
 control chat lost                  The agent lost its control chat. The person who runs it has to restart it with --reset-owners.
 20 actions pending                 20 actions are pending; wait for the owner's decisions.
+20 actions performing              20 actions are being performed; wait for their results.
 card over 15000 bytes (send)       text: too long for its approval card; shorten it.
+card over 15000 bytes (connect)    message: too long for its approval card; shorten it.
 unknown chat                       No chat #13. list shows the agent's chats.
 not a link or name                 Not a SimpleX link or name: <target>
 link not joinable                  <target> can't be joined now: <plan type>.
@@ -616,7 +621,9 @@ message not for an address         message: <target> is not a contact or busines
 chat not connected (send)          The agent is not connected to @2 and can't post; list shows connected: false.
 role below author                  The agent has role observer in #12 and can't post.
 reply_to not in chat               reply_to: #15 has no item 999.
+reply_to not a message             reply_to: item 31 in #15 is not a message.
 mention not a member               mention: #15 has no member 45. (in a contact chat: mention: @4 is a contact chat; mentions apply to groups and channels.)
+mention of equal names             mention: members 44 and 45 have the same name.
 SimpleX error worded by the apps   the apps' text (table below), for example: Name not found: This SimpleX name is not registered. Please check the name.
 other SimpleX error                SimpleX error: <the chain of error types>: <the scalar fields of the chain as JSON, at most 500 characters>
                                      for example: SimpleX error: error: groupUserRole: {"requiredRole":"author"}
@@ -691,7 +698,6 @@ serve(NAME, options):
   create DIR, mode 0700 (set again when DIR exists, except on Windows); DIR/lock created exclusively, or exit 1 when its PID runs; token = DIR/token, created when missing or with --new-token; DIR/headers.json written with the token
   chat = ChatApi.init({type: "sqlite", filePrefix: DIR/simplex})
   profile = the user, or created: /_create user {profile: {displayName: <--display-name or NAME>, fullName: "", peerType: agent}, pastTimestamp: false}
-  write DIR/server.json {name: NAME, port, expireHours}
   /network socks=off smp-proxy=always smp-proxy-fallback=protected           # the apps' defaults, SimpleXAPI.kt:5427-5447
   buffer events; chat.startChat()
   --display-name differs from profile.displayName, or peerType is not agent: /_profile <user> {the profile with displayName and peerType agent}       # APIUpdateProfile, parser Commands.hs:6399; before startChat the core returns chatNotStarted
@@ -703,6 +709,8 @@ serve(NAME, options):
   lost unset, group.groupProfile.displayName differs from the profile's, or its commands from the menu of createControlChat: /_group_profile #group {the group profile with that displayName and menu}   # APIUpdateGroupProfile, parser Commands.hs:6534
   members = /_members #group, so approvers are known before the first call
   HTTP listen 127.0.0.1:PORT; port in use: chat.close(); remove DIR/lock; exit 1 "Port PORT is in use. Start with --port N."   # before any link or QR code is printed
+    requests to /mcp with the token get 503 with Retry-After: 1 until ownerStart ends
+  write DIR/server.json {name: NAME, port, expireHours}
   lost unset: ownerStart(group)
   log "Listening on http://127.0.0.1:PORT/mcp"
   every 60 s, and at each owner command: expire the pending actions whose expires has passed (wall clock, so a sleep of the computer delays no expiry);
@@ -714,12 +722,14 @@ SIGINT, SIGTERM (process.on; the second signal joins the stop in progress):
   close HTTP (open calls end); stop handling events, so no /approve starts a perform
   wait for the cards being posted
   each pending action: edit its card to the cancelled form
-  each performing action: mark it interrupted, so its perform's end edits no card; card set: edit it to the interrupted form; card unset (mode host): post the "host, interrupted" card
+  each performing action: mark it interrupted, so its perform's end edits no card and logs no line; card set: edit it to the interrupted form; card unset (mode host): post the "host, interrupted" card
+  abort the stop signal of the performs: a connect's wait for the connection ends
   wait for the outcome edits of performs that ended before the stop
   K = pending and performing actions; log "Cancelled K actions." ("1 action." for one) when K > 0
   wait until the control chat's pending deliveries are 0, polled every 100 ms, at most 10 s:   # an edit of a received card emits no status event (Subscriber.hs:4139-4146, 9711dcfc9)
     /sql chat SELECT hex(agent_conn_id) FROM connections WHERE group_member_id IN (SELECT group_member_id FROM group_members WHERE group_id = <control group>)
     /sql agent SELECT count(*) FROM snd_message_deliveries WHERE failed = 0 AND hex(conn_id) IN (<those IDs>)
+    an error of either query: log "delivery wait: <error>" to stderr; the wait ends
   chat.close(); remove DIR/lock; log "Stopped."; exit 0
 ```
 
@@ -755,7 +765,7 @@ ownerStart(group):
     no humans: openLink(observer); print the observer line
     else: log and post "<member name> joined (member <groupMemberId>). Restart the server with --owners <ID:name of each human>"
   --owners LIST:
-    each entry: a human with groupMemberId ID and displayName NAME; missing: exit 2 "--owners: member ID:NAME is not in the agent control chat. Start with --reset-owners --owners, or use the IDs of current members."
+    each entry: a human with groupMemberId ID and displayName NAME, folded to one line as the restart line prints it; missing: exit 2 "--owners: member ID:NAME is not in the agent control chat. Start with --reset-owners --owners, or use the IDs of current members."
     each entry without role owner: apiSetMembersRole(group, [ID], owner)     # one member per call: Commands.hs:2990-2991 (9711dcfc9)
     each human not in LIST: apiRemoveMembers(group, [ID])                    # one member per call: Commands.hs:3130 (9711dcfc9)
     deleteLink(); log "Owners: LIST."; print the register hint
@@ -795,7 +805,7 @@ approve [CHAT] N | reject [CHAT] N, action N not pending in memory, or its card 
 approve CHAT N | reject CHAT N, action N a connect or for another chat: reply "Action N is not for CHAT."
 approve [CHAT] N: decidedBy = sender; state performing; start perform(N) without awaiting it in the event handler; its end edits the card
 reject [CHAT] N:  decidedBy = sender; state rejected; edit the card
-approve CHAT all: CHAT not a chat of the agent: reply "No chat CHAT. ..."; otherwise set the chat's custom data simplexMcp = {approvedBy: sender name, approvedById: sender groupMemberId, approvedAt}, keeping its other keys
+approve CHAT all: mode host: reply "Approvals apply in mode requests; this server runs in mode host."; CHAT not a chat of the agent: reply "No chat CHAT. ..."; otherwise set the chat's custom data simplexMcp = {approvedBy: sender name, approvedById: sender groupMemberId, approvedAt}, keeping its other keys
                   (/_set custom @C or #G); each pending send of CHAT: approve as above; reply "Approved for ... /'revoke CHAT'"
 revoke CHAT:      no approval in the chat's custom data: reply "Messages to CHAT have no standing approval."; otherwise remove simplexMcp from it; reply "Messages to ... need approval again."
 pending:          reply with the pending actions
@@ -867,7 +877,9 @@ action(tool, input, ctx):
     stopping: tool error "The server is stopping."
     lost: tool error "control chat lost"
     20 actions pending: tool error "20 actions pending"
-    a send whose largest card exceeds 15000 bytes (section Card size): tool error "card over 15000 bytes"
+    20 actions performing: tool error "20 actions performing"
+    a connect: the link texts on its card cut to fit 15000 bytes (section Card size)
+    a send or connect whose largest card exceeds 15000 bytes (section Card size): tool error "card over 15000 bytes"
     no approvers: tool error, the no-approver message
     N = nextAction; nextAction = N + 1; create action N; log "Action N: ..."
     /_set custom #group {simplexMcp: {control: true, nextAction}}, queued after earlier writes, awaited
@@ -950,9 +962,9 @@ send(input, ctx):
   r = /_get chat <chat> count=0; a store error: tool error "unknown chat"
   r.chat.chatInfo not connected (as connected in list()): tool error "chat not connected"
   group or channel, r.chat.chatInfo.groupInfo.membership role below author: tool error "role below author"
-  reply_to i: /_get chat <chat> around=<i> count=0 fails or has no item i: tool error "reply_to not in chat"
+  reply_to i: /_get chat <chat> around=<i> count=0 fails or has no item i: tool error "reply_to not in chat"; item i not a message: tool error "reply_to not a message"
   mention, chat a contact chat: tool error "mention not a member"
-  mention m: /_members <chat> has no member m: tool error "mention not a member"
+  mention m: /_members <chat> has no member m: tool error "mention not a member"; two members with the same display name: tool error "mention of equal names"
   action(send, input, ctx)
   return responses(action, wait, idle, limit, ctx) with {action, status: "done"}
 
@@ -966,7 +978,7 @@ perform send:
 `responses(action, wait, idle, limit, ctx)`:
 
 ```
-collected: action.responses, in arrival order: at most 100 items kept, later ones counted as overflow; an item updated by chatItemUpdated (a live message) is replaced, and idle does not end the wait while a collected item is live
+collected: action.responses, in arrival order: at most 100 items kept, the IDs of later ones kept as overflow until they are deleted; an item updated by chatItemUpdated (a live message) is replaced, and idle does not end the wait while a collected item is live
 until: wait seconds | idle seconds after the last collected item | the call's signal; re-evaluated at each newChatItems of chat
   signal: return
 progress at once and every 60 s: "<k> responses in <chat>; waiting until <time>."
@@ -993,7 +1005,8 @@ card text, JSON-escaped      15000   the server's limit: 420 below the strictest
 - Group member connections are created with PQ off (`Store/Groups.hs:1837`, `:2201`, `:2726`), so `deliverMessagesB` compresses to the same 15602 bytes (`Internal.hs:2578`).
 - The library posts a card with `/_send #G json ...` without `sign=on`, and edits it with `/_update item #G <item> json ...` (`api.js`, `apiSendMessages`, `apiUpdateChatItem`): the body has no signature prefix.
 - History sends the edited card to a later owner as `x.msg.new` in a forward element, within 15763 bytes (`maxForwardBatchLength`, `batchElements`, `Internal.hs:1425`).
-- At `send`, before the action is created, the server builds the card forms of the action, with its text, reply and mentions: pending, done (the standing form under a standing approval) and failed. The approver is the action's own (a standing send) or the longest name of the current approvers, the error 600 three-byte characters (`chatErrorText` keeps 500 characters of details). Each form is measured as aeson encodes it: `"`, `\`, `\n`, `\r` and `\t` 2 bytes, other characters below U+0020 6 bytes, the rest their UTF-8 length.
+- At `send` and `connect`, before the action is created, the server builds the card forms of the action, with its text, reply and mentions, or with its message: pending, done (the standing form under a standing approval) and failed. The approver is the action's own (a standing send) or the longest name of the current approvers, the error 600 three-byte characters (`chatErrorText` keeps 500 characters of details). Each form is measured as aeson encodes it: `"`, `\`, `\n`, `\r` and `\t` 2 bytes, other characters below U+0020 6 bytes, the rest their UTF-8 length.
+- A connect card quotes the link's description and welcome in the bytes that its largest form leaves without them: lines are kept while they fit, the next one is cut to the bytes left and ends in "…", and the later ones are left out. The tool result keeps both texts whole. A connect whose largest form exceeds 15000 bytes without them is refused with the `message` error.
 
 ### leave
 
@@ -1027,7 +1040,7 @@ receive(input, ctx):
   result {chat, messages, more}
 
 list():
-  /_get chats <user> pcc=off count=100, earlier pages with before=<chatTs of the last chat> count=100 while a page holds 100   # parser Commands.hs:6342
+  /_get chats <user> pcc=off count=1000000   # parser Commands.hs:6342; count= is ORDER BY chat_ts DESC LIMIT without a time boundary, Store/Messages.hs:884, :995
   chats: contact and group chats except the agent control chat (the notes folder is left out, Store/Messages.hs:751)
   connected: contacts: contact.activeConn.connStatus ready (Contact.ready, ChatTypes.swift:2504); groups: membership.memberStatus connected or complete (set at the host's CON, Subscriber.hs:894-899)
   unread: chatStats.unreadCount (types.d.ts:1175)
@@ -1224,14 +1237,14 @@ Unit:
 
 ```
 test        covers
-options     defaults, ranges, NAME, --display-name at the first and a later start, --owners with and without a list, rejected arguments, --help text
-commands    /approve [CHAT] N, /reject [CHAT] N, another chat, /approve CHAT all, /revoke, /pending, /list, unknown, multi-line, non-command text, a number from an earlier run; /list of 100 chats with cut lines and the older count; chat references over 15 digits; names with line breaks and escape sequences; the restart command as code; card size at 15000 bytes, with the current approvers' longest name; mode host without approvals
-actions     every transition; attach rule; open counts; counter written before the card; stop edits pending and performing cards; standing approval: performed at once, outcome card posted; 20 pending; decided actions deleted after expires
-cards       every card form and outcome; quoting; names and errors on one line; "as myself" and "incognito"; "where I am incognito"; leave forms; standing form
-messages    message fields; responses with idle and wait; receive with new messages under a concurrent call, stopping at limit + 1; leave of @N and #N, pending membership included; approved in list; an approval whose approver is no longer one; a group-role failure; a send to an unconnected contact or group refused; the connect wait cap
-http        401 without token; 403 with another Origin; 404 for other paths and for a request target that is not a URL, the server serving on; SDK validation errors
-register    entry JSON with headersHelper and no token; timeout from server.json; remove before add; errors
-files       lock: exclusive create, a running PID, a stale PID; folder mode at every start; headers.json
+options     defaults, ranges, NAME, --display-name at the first and a later start, --owners with and without a list, names with commas, rejected arguments, --help text
+commands    /approve [CHAT] N, /reject [CHAT] N, another chat, /approve CHAT all, /revoke, /pending, /list, unknown, multi-line, non-command text, a number from an earlier run; /list of 100 chats with cut lines and the older count; chat references over 15 digits; names with line breaks and escape sequences; a listed owner by the name on one line; the restart command as code; card size at 15000 bytes, with the current approvers' longest name; a connect refused for its message, its link texts cut to fit; mode host without approvals, /approve CHAT all refused; an SQL error of the delivery wait logged
+actions     every transition; attach rule; open counts; counter written before the card; a failed counter write or card post logged; stop edits pending and performing cards, aborts the performs' signal, and an interrupted perform logs no line; standing approval: performed at once, outcome card posted; 20 pending; 20 performing; decided actions deleted after expires
+cards       every card form and outcome; quoting; names and errors on one line; "as myself" and "incognito"; "where I am incognito"; leave forms; standing form; link texts cut to the bytes left; the reply quote cut by characters
+messages    message fields; responses with idle and wait; overflow IDs removed at deletion; receive with new messages under a concurrent call, stopping at limit + 1, a store error of a page read as its error; leave of @N and #N, pending membership included; approved in list; all chats in one read; an approval whose approver is no longer one; a group-role failure; a send to an unconnected contact or group refused; reply_to of an item other than a message refused; mentions of equal names refused; the connect wait cap; the connect wait ended by the stop
+http        401 without token; 403 with another Origin; 404 for other paths and for a request target that is not a URL, the server serving on; 503 with Retry-After until ready; SDK validation errors
+register    entry JSON with headersHelper and no token; timeout from server.json; remove before add; errors; on Windows, claude through cmd.exe after ENOENT, with cmd.exe quoting
+files       lock: exclusive create, a running PID, a stale PID; folder mode at every start; headers.json; file modes set again on existing files
 log         every SimpleX error shape worded by the apps, in its JSON shape from @simplex-chat/types; the chain for other errors
 ```
 
@@ -1250,6 +1263,7 @@ restart           stop with a pending action: card cancelled; start: counter con
 host mode         actions done at once; outcome cards
 peer text         groups named "\n/approve 1" and "x\n/approve 1" by SQL, their welcome with edge-space commands and links: the card's formattedText has only its own commands, no SimpleX link, every peer line a snippet
 alias             a 20-digit reference that the core reads as the agent control chat: receive, send and leave refuse it
+port in use       serve on a bound port: exit before server.json is written and before a link is printed
 ```
 
 Claude Code checks, by hand (TESTING.md):
