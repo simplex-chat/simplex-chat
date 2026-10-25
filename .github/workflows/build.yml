@@ -18,12 +18,15 @@ on:
       - "apps/simplex-badge-service/**"
       - "apps/simplex-broadcast-bot/**"
       - "apps/simplex-directory-service/**"
+      - "apps/multiplatform/**"
+      - "apps/ios/**"
       - "tests/**"
       - "bots/src/**"
       - "simplex-chat.cabal"
       - "cabal.project"
       - "Dockerfile*"
       - "scripts/ci/**"
+      - "scripts/ci/ios-stub-libs.sh"
       - "scripts/desktop/**"
       - ".github/**"
 
@@ -90,7 +93,10 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       libs_tag: ${{ steps.libs.outputs.tag }}
-      core_changed: ${{ steps.core.outputs.core }}
+      core_changed: ${{ steps.changes.outputs.core }}
+      haskell: ${{ steps.changes.outputs.haskell }}
+      kotlin: ${{ steps.changes.outputs.kotlin }}
+      ios: ${{ steps.changes.outputs.ios }}
       addon_tag: ${{ steps.addon.outputs.tag }}
       addon_draft: ${{ steps.addon.outputs.draft }}
       libs_latest: ${{ steps.latest_libs.outputs.tag }}
@@ -105,14 +111,23 @@ jobs:
         with:
           fetch-depth: 2
 
-      - name: Check chat core change
-        id: core
-        if: github.event_name == 'pull_request'
+      - name: Check changes
+        id: changes
+        if: github.event_name == 'push' || github.event_name == 'pull_request'
+        shell: bash
         env:
           BASE: ${{ github.event.pull_request.base.sha }}
         run: |
-          git fetch -q --depth=1 origin "$BASE"
-          python3 scripts/ci/packages_release.py changes "$BASE" | grep '^core=' >> "$GITHUB_OUTPUT"
+          if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
+            git fetch -q --depth=1 origin "$BASE"
+            python3 scripts/ci/packages_release.py changes "$BASE"
+          else
+            echo "haskell=true"
+            if [ "$GITHUB_REF_TYPE" = branch ]; then
+              echo "kotlin=true"
+              echo "ios=true"
+            fi
+          fi >> "$GITHUB_OUTPUT"
 
       - name: Build changelog
         id: build_changelog
@@ -226,7 +241,7 @@ jobs:
             os_underscore: 22_04
             arch: x86_64
             runner: "ubuntu-22.04"
-            should_run: true
+            should_run: ${{ needs.maybe-release.outputs.haskell == 'true' }}
             ghc: ${{ needs.variables.outputs.GHC_VER }}
             hash: 'sha256:5c8b2c0a6c745bc177669abfaa716b4bc57d58e2ea3882fb5da67f4d59e3dda5'
             libs: true
@@ -234,12 +249,13 @@ jobs:
             os_underscore: 24_04
             arch: x86_64
             runner: "ubuntu-24.04"
-            should_run: true
+            should_run: ${{ needs.maybe-release.outputs.haskell == 'true' }}
             ghc: ${{ needs.variables.outputs.GHC_VER }}
             hash: 'sha256:98ff7968124952e719a8a69bb3cccdd217f5fe758108ac4f21ad22e1df44d237'
+            kotlin: ${{ needs.maybe-release.outputs.kotlin == 'true' }}
     steps: &linux-steps
       - name: Checkout Code
-        if: matrix.should_run == true
+        if: matrix.should_run == true || matrix.kotlin == true
         uses: actions/checkout@v3
         with:
           submodules: recursive
@@ -258,16 +274,16 @@ jobs:
 
       # Otherwise we run out of disk space with Docker build
       - name: Free disk space
-        if: matrix.should_run == true
+        if: matrix.should_run == true || matrix.kotlin == true
         shell: bash
         run: ./scripts/ci/linux_util_free_space.sh
 
       - name: Set up Docker Buildx
-        if: matrix.should_run == true
+        if: matrix.should_run == true || matrix.kotlin == true
         uses: simplex-chat/docker-setup-buildx-action@v3
 
       - name: Log in to GitHub Container Registry
-        if: matrix.should_run == true && env.release != 'true'
+        if: (matrix.should_run == true || matrix.kotlin == true) && env.release != 'true'
         shell: bash
         env:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -275,11 +291,11 @@ jobs:
 
       - name: Compute image cache week
         id: week
-        if: matrix.should_run == true && env.release != 'true'
+        if: (matrix.should_run == true || matrix.kotlin == true) && env.release != 'true'
         run: echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
 
       - name: Build and cache Docker image
-        if: matrix.should_run == true
+        if: matrix.should_run == true || matrix.kotlin == true
         uses: simplex-chat/docker-build-push-action@v6
         with:
           context: .
@@ -300,7 +316,7 @@ jobs:
       # --cap-add SYS_ADMIN
       # --security-opt apparmor:unconfined
       - name: Start container
-        if: matrix.should_run == true
+        if: matrix.should_run == true || matrix.kotlin == true
         shell: bash
         run: |
           mkdir -p ~/.cabal
@@ -620,9 +636,23 @@ jobs:
             exit 1
           fi
 
+      # Compiling the desktop and Android targets of :common in parallel exceeds the 2 GB Kotlin daemon heap.
+      # cmakeBuildAndCopy links the JNI library against libsimplex, which this job does not build.
+      - name: Build and test Kotlin apps
+        if: ${{ !cancelled() && matrix.kotlin == true }}
+        timeout-minutes: 90
+        shell: docker exec -t builder sh -eu {0}
+        run: |
+          cd apps/multiplatform
+          ./gradlew --no-daemon --max-workers=1 \
+            :common:desktopTest \
+            :desktop:compileKotlinJvm -x :desktop:cmakeBuildAndCopy \
+            :android:compileGoogleDebugKotlin \
+            :android:testFossDebugUnitTest
+
       - name: Setup Node.js
         id: setup-node
-        if: ${{ !cancelled() && matrix.libs && (github.event_name == 'pull_request' || needs.maybe-release.outputs.addon_draft || needs.maybe-release.outputs.publish) }}
+        if: ${{ !cancelled() && matrix.should_run == true && matrix.libs && (github.event_name == 'pull_request' || needs.maybe-release.outputs.addon_draft || needs.maybe-release.outputs.publish) }}
         uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -741,6 +771,7 @@ jobs:
             ghc: ${{ needs.variables.outputs.GHC_VER }}
             hash: 'sha256:6a62a4157b8775eaf4959cb629e757d32d39d1f4c8ac1b0ddc2510b555cf72f3'
             libs: true
+            kotlin: false
           - os: 24.04
             os_underscore: 24_04
             arch: aarch64
@@ -748,12 +779,13 @@ jobs:
             should_run: true
             ghc: ${{ needs.variables.outputs.GHC_VER }}
             hash: 'sha256:68434214381cb38287104e629fe8ee720167dd98cbb36ab1cbbab342515fa6ab'
+            kotlin: false
     steps: *linux-steps
 
   build-linux-ghc8:
     name: "ubuntu-${{ matrix.os }}-${{ matrix.arch }} (CLI,Desktop), GHC: ${{ matrix.ghc }}"
     needs: [maybe-release, variables]
-    if: ${{ !(github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) }}
+    if: ${{ needs.maybe-release.outputs.haskell == 'true' && !(github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) }}
     runs-on: ${{ matrix.runner }}
     permissions:
       contents: write
@@ -773,6 +805,7 @@ jobs:
             ghc: "8.10.7"
             hash: 'sha256:5c8b2c0a6c745bc177669abfaa716b4bc57d58e2ea3882fb5da67f4d59e3dda5'
             should_run: true
+            kotlin: false
     steps: *linux-steps
 
 # =================================
@@ -911,31 +944,36 @@ jobs:
             cli_asset_name: simplex-chat-macos-aarch64
             desktop_asset_name: simplex-desktop-macos-aarch64.dmg
             openssl_dir: "/opt/homebrew/opt"
+            should_run: ${{ needs.maybe-release.outputs.haskell == 'true' }}
+            ios: ${{ needs.maybe-release.outputs.ios == 'true' }}
           - os: macos-15-intel
             arch: x86_64
             ghc: ${{ needs.variables.outputs.GHC_VER }}
             cli_asset_name: simplex-chat-macos-x86-64
             desktop_asset_name: simplex-desktop-macos-x86_64.dmg
             openssl_dir: "/usr/local/opt"
+            should_run: ${{ needs.maybe-release.outputs.haskell == 'true' }}
     steps:
       - name: Checkout Code
+        if: matrix.should_run == true || matrix.ios == true
         uses: actions/checkout@v3
         with:
           submodules: recursive
 
       - name: Point Command Line Tools SDK to Xcode SDK
+        if: matrix.should_run == true || matrix.ios == true
         shell: bash
         run: sudo ln -sfn "$(xcrun --sdk macosx --show-sdk-path)" /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
 
       - name: Compute toolchain cache key
         id: toolchain-key
-        if: env.release != 'true'
+        if: matrix.should_run == true && env.release != 'true'
         shell: bash
         run: echo "key=ghcup-${{ matrix.os }}-${{ matrix.arch }}-ghc${{ matrix.ghc }}-cabal3.10.2.0-$({ sw_vers -productVersion; clang --version; } | shasum -a 256 | cut -c1-16)" >> "$GITHUB_OUTPUT"
 
       - name: Restore toolchain from cache
         id: restore-toolchain
-        if: env.release != 'true'
+        if: matrix.should_run == true && env.release != 'true'
         uses: actions/cache/restore@v4
         with:
           path: |
@@ -945,11 +983,12 @@ jobs:
           key: ${{ steps.toolchain-key.outputs.key }}
 
       - name: Warn if toolchain not in cache
-        if: env.release != 'true' && steps.restore-toolchain.outputs.cache-hit != 'true'
+        if: matrix.should_run == true && env.release != 'true' && steps.restore-toolchain.outputs.cache-hit != 'true'
         run: echo "::warning title=Cache miss::${{ steps.toolchain-key.outputs.key }}"
 
       - name: Prepare build
         id: prepare
+        if: matrix.should_run == true
         uses: ./.github/actions/prepare-build
         with:
           java_ver: ${{ needs.variables.outputs.JAVA_VER }}
@@ -957,7 +996,7 @@ jobs:
           github_ref: ${{ github.ref }}
 
       - name: Save toolchain to cache
-        if: env.release != 'true' && steps.restore-toolchain.outputs.cache-hit != 'true'
+        if: matrix.should_run == true && env.release != 'true' && steps.restore-toolchain.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: |
@@ -967,9 +1006,11 @@ jobs:
           key: ${{ steps.toolchain-key.outputs.key }}
 
       - name: Install OpenSSL
+        if: matrix.should_run == true
         run: brew install openssl@3.0
 
       - name: Prepare cabal.project.local
+        if: matrix.should_run == true
         shell: bash
         run: |
           echo "ignore-project: False"                                                    >> cabal.project.local
@@ -984,7 +1025,7 @@ jobs:
 
       - name: Compute cache key prefixes
         id: keys
-        if: env.release != 'true'
+        if: matrix.should_run == true && env.release != 'true'
         shell: bash
         run: |
           toolchain=$({ sw_vers -productVersion; clang --version; } | shasum -a 256 | cut -c1-16)
@@ -994,7 +1035,7 @@ jobs:
 
       - name: Restore dependencies from cache
         id: restore-deps
-        if: env.release != 'true'
+        if: matrix.should_run == true && env.release != 'true'
         uses: actions/cache/restore@v4
         with:
           path: ${{ steps.prepare.outputs.cabal-store }}
@@ -1004,12 +1045,12 @@ jobs:
             ${{ steps.keys.outputs.deps }}-
 
       - name: Warn if dependencies not in cache
-        if: env.release != 'true' && steps.restore-deps.outputs.cache-matched-key == ''
+        if: matrix.should_run == true && env.release != 'true' && steps.restore-deps.outputs.cache-matched-key == ''
         run: echo "::warning title=Cache miss::${{ steps.keys.outputs.deps }}-${{ env.branch }}"
 
       - name: Restore source repositories from cache
         id: restore-src
-        if: env.release != 'true'
+        if: matrix.should_run == true && env.release != 'true'
         uses: actions/cache/restore@v4
         with:
           path: dist-newstyle/src
@@ -1017,12 +1058,12 @@ jobs:
           restore-keys: src-${{ runner.os }}-
 
       - name: Warn if source repositories not in cache
-        if: env.release != 'true' && steps.restore-src.outputs.cache-matched-key == ''
+        if: matrix.should_run == true && env.release != 'true' && steps.restore-src.outputs.cache-matched-key == ''
         run: echo "::warning title=Cache miss::src-${{ runner.os }}"
 
       - name: Restore build directory from cache
         id: restore-build
-        if: env.release != 'true' && !needs.maybe-release.outputs.libs_tag
+        if: matrix.should_run == true && env.release != 'true' && !needs.maybe-release.outputs.libs_tag
         uses: actions/cache/restore@v4
         with:
           path: |
@@ -1034,11 +1075,12 @@ jobs:
             ${{ steps.keys.outputs.dist }}-${{ env.opt }}-
 
       - name: Warn if build directory not in cache
-        if: steps.restore-build.outcome == 'success' && steps.restore-build.outputs.cache-matched-key == ''
+        if: matrix.should_run == true && steps.restore-build.outcome == 'success' && steps.restore-build.outputs.cache-matched-key == ''
         run: echo "::warning title=Cache miss::${{ steps.keys.outputs.dist }}-${{ env.opt }}-${{ env.branch }}"
 
       - name: Build CLI
         id: mac_cli_build
+        if: matrix.should_run == true
         shell: bash
         run: |
           scripts/ci/prune-old-builds.sh dist-newstyle
@@ -1049,26 +1091,26 @@ jobs:
 
       - name: Compute dependency cache key
         id: hash-deps
-        if: env.release != 'true'
+        if: matrix.should_run == true && env.release != 'true'
         shell: bash
         run: echo "hash=$(ls '${{ steps.prepare.outputs.cabal-store }}'/ghc-*/ | shasum -a 256 | cut -c1-16)" >> "$GITHUB_OUTPUT"
 
       - name: Save dependencies to cache
-        if: env.release != 'true' && steps.restore-deps.outputs.cache-matched-key != format('{0}-{1}-{2}', steps.keys.outputs.deps, env.branch, steps.hash-deps.outputs.hash)
+        if: matrix.should_run == true && env.release != 'true' && steps.restore-deps.outputs.cache-matched-key != format('{0}-{1}-{2}', steps.keys.outputs.deps, env.branch, steps.hash-deps.outputs.hash)
         uses: actions/cache/save@v4
         with:
           path: ${{ steps.prepare.outputs.cabal-store }}
           key: ${{ steps.keys.outputs.deps }}-${{ env.branch }}-${{ steps.hash-deps.outputs.hash }}
 
       - name: Save source repositories to cache
-        if: env.release != 'true' && matrix.arch == 'x86_64' && steps.restore-src.outputs.cache-hit != 'true'
+        if: matrix.should_run == true && env.release != 'true' && matrix.arch == 'x86_64' && steps.restore-src.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: dist-newstyle/src
           key: src-${{ runner.os }}-${{ hashFiles('cabal.project') }}
 
       - name: Save build directory to cache
-        if: env.release != 'true' && steps.restore-build.outputs.cache-hit != 'true'
+        if: matrix.should_run == true && env.release != 'true' && steps.restore-build.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: |
@@ -1077,7 +1119,7 @@ jobs:
           key: ${{ steps.keys.outputs.dist }}-${{ env.opt }}-${{ env.branch }}-${{ github.sha }}
 
       - name: Upload CLI
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: matrix.should_run == true && startsWith(github.ref, 'refs/tags/v')
         uses: ./.github/actions/prepare-release
         with:
           bin_path: ${{ steps.mac_cli_build.outputs.bin_path }}
@@ -1088,7 +1130,7 @@ jobs:
 
       - name: Build Desktop
         id: mac_desktop_build
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: matrix.should_run == true && startsWith(github.ref, 'refs/tags/v')
         shell: bash
         env:
           APPLE_SIMPLEX_SIGNING_KEYCHAIN: ${{ secrets.APPLE_SIMPLEX_SIGNING_KEYCHAIN }}
@@ -1102,7 +1144,7 @@ jobs:
           echo "package_hash=$(echo SHA2-256\(${{ matrix.desktop_asset_name }}\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
       - name: Upload Desktop
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: matrix.should_run == true && startsWith(github.ref, 'refs/tags/v')
         uses: ./.github/actions/prepare-release
         with:
           bin_path: ${{ steps.mac_desktop_build.outputs.package_path }}
@@ -1112,7 +1154,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Mount RAM disk for tests
-        if: matrix.arch == 'aarch64'
+        if: matrix.should_run == true && matrix.arch == 'aarch64'
         shell: bash
         run: |
           disk=$(hdiutil attach -nomount ram://1048576 | tr -d '[:space:]')
@@ -1120,7 +1162,7 @@ jobs:
           ln -s /Volumes/tests tests/tmp
 
       - name: Run tests
-        if: matrix.arch == 'aarch64'
+        if: matrix.should_run == true && matrix.arch == 'aarch64'
         timeout-minutes: 120
         shell: bash
         run: |
@@ -1141,9 +1183,26 @@ jobs:
             exit 1
           fi
 
+      - name: Build iOS app
+        if: ${{ !cancelled() && matrix.ios == true }}
+        timeout-minutes: 60
+        shell: bash
+        run: |
+          scripts/ci/ios-stub-libs.sh
+          xcodebuild build -quiet \
+            -project apps/ios/SimpleX.xcodeproj \
+            -scheme "SimpleX (iOS)" \
+            -configuration Debug \
+            -destination "generic/platform=iOS Simulator" \
+            -onlyUsePackageVersionsFromResolvedFile \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
+            ARCHS=arm64 \
+            CODE_SIGNING_ALLOWED=NO
+
       - name: Build library
         id: mac_lib_build
-        if: ${{ !cancelled() && needs.maybe-release.outputs.libs_tag && steps.mac_cli_build.outcome == 'success' }}
+        if: ${{ !cancelled() && matrix.should_run == true && needs.maybe-release.outputs.libs_tag && steps.mac_cli_build.outcome == 'success' }}
         shell: bash
         env:
           APPLE_SIMPLEX_SIGNING_KEYCHAIN: ${{ secrets.APPLE_SIMPLEX_SIGNING_KEYCHAIN }}
@@ -1158,7 +1217,7 @@ jobs:
           (cd release-libs/$name && zip -r ../$name.zip libs)
 
       - name: Upload library
-        if: ${{ !cancelled() && steps.mac_lib_build.outcome == 'success' }}
+        if: ${{ !cancelled() && matrix.should_run == true && steps.mac_lib_build.outcome == 'success' }}
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.NODEJS_REPO_TOKEN }}
@@ -1167,20 +1226,20 @@ jobs:
 
       - name: Setup Node.js
         id: setup-node
-        if: ${{ !cancelled() && (github.event_name == 'pull_request' || needs.maybe-release.outputs.addon_draft || needs.maybe-release.outputs.publish) }}
+        if: ${{ !cancelled() && matrix.should_run == true && (github.event_name == 'pull_request' || needs.maybe-release.outputs.addon_draft || needs.maybe-release.outputs.publish) }}
         uses: actions/setup-node@v7
         with:
           node-version: 22
 
       - name: Setup Python
         id: setup-python
-        if: ${{ !cancelled() && steps.setup-node.outcome == 'success' }}
+        if: ${{ !cancelled() && matrix.should_run == true && steps.setup-node.outcome == 'success' }}
         uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
       - name: Package tests (pull request)
-        if: ${{ !cancelled() && steps.setup-python.outcome == 'success' && github.event_name == 'pull_request' }}
+        if: ${{ !cancelled() && matrix.should_run == true && steps.setup-python.outcome == 'success' && github.event_name == 'pull_request' }}
         timeout-minutes: 30
         shell: bash
         run: |
@@ -1188,7 +1247,7 @@ jobs:
           scripts/ci/package-tests.sh test
 
       - name: Add-on
-        if: ${{ !cancelled() && steps.setup-python.outcome == 'success' && needs.maybe-release.outputs.addon_draft }}
+        if: ${{ !cancelled() && matrix.should_run == true && steps.setup-python.outcome == 'success' && needs.maybe-release.outputs.addon_draft }}
         timeout-minutes: 30
         shell: bash
         env:
@@ -1200,7 +1259,7 @@ jobs:
 
       - name: Package tests
         id: package-tests
-        if: ${{ !cancelled() && steps.setup-python.outcome == 'success' && needs.maybe-release.outputs.publish }}
+        if: ${{ !cancelled() && matrix.should_run == true && steps.setup-python.outcome == 'success' && needs.maybe-release.outputs.publish }}
         timeout-minutes: 30
         shell: bash
         run: |
@@ -1208,7 +1267,7 @@ jobs:
           echo "macos-${{ matrix.arch }}" > "$RUNNER_TEMP/package-tests"
 
       - name: Package tests result
-        if: ${{ !cancelled() && steps.package-tests.outcome == 'success' }}
+        if: ${{ !cancelled() && matrix.should_run == true && steps.package-tests.outcome == 'success' }}
         uses: actions/upload-artifact@v7
         with:
           name: package-tests-macos-${{ matrix.arch }}
@@ -1216,13 +1275,13 @@ jobs:
 
       - name: Remove -O2 build directory
         id: remove-o2
-        if: env.cache_o0 == 'true' && !cancelled() && steps.mac_cli_build.outcome == 'success'
+        if: matrix.should_run == true && env.cache_o0 == 'true' && !cancelled() && steps.mac_cli_build.outcome == 'success'
         shell: bash
         run: find dist-newstyle -mindepth 1 -maxdepth 1 ! -name src -exec rm -rf {} +
 
       - name: Restore -O0 build directory from cache
         id: restore-build-o0
-        if: ${{ !cancelled() && steps.remove-o2.outcome == 'success' }}
+        if: ${{ !cancelled() && matrix.should_run == true && steps.remove-o2.outcome == 'success' }}
         uses: actions/cache/restore@v4
         with:
           path: |
@@ -1235,14 +1294,14 @@ jobs:
 
       - name: Build at -O0 for pull request caches
         id: build-o0
-        if: ${{ !cancelled() && steps.remove-o2.outcome == 'success' }}
+        if: ${{ !cancelled() && matrix.should_run == true && steps.remove-o2.outcome == 'success' }}
         shell: bash
         run: |
           scripts/ci/prune-old-builds.sh dist-newstyle
           cabal build -j --enable-tests --ghc-options=-O0
 
       - name: Save -O0 build directory to cache
-        if: ${{ !cancelled() && steps.build-o0.outcome == 'success' && steps.restore-build-o0.outputs.cache-hit != 'true' }}
+        if: ${{ !cancelled() && matrix.should_run == true && steps.build-o0.outcome == 'success' && steps.restore-build-o0.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@v4
         with:
           path: |
@@ -1257,6 +1316,7 @@ jobs:
   build-windows:
     name: "${{ matrix.os }} (CLI,Desktop), GHC: ${{ matrix.ghc }}"
     needs: [maybe-release, variables]
+    if: needs.maybe-release.outputs.haskell == 'true'
     runs-on: ${{ matrix.os }}
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}-windows-${{ matrix.os }}-${{ needs.maybe-release.outputs.libs_tag }}
