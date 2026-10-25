@@ -2304,6 +2304,11 @@
   <string name="chat_theme_apply_to_all_modes">All color modes</string>
   <string name="chat_theme_apply_to_light_mode">Light mode</string>
   <string name="chat_theme_apply_to_dark_mode">Dark mode</string>
+  <string name="chat_layout">Chat layout</string>
+  <string name="chat_layout_classic">Classic</string>
+  <string name="chat_layout_terminal">Terminal</string>
+  <string name="chat_layout_chat_suffix">(chat)</string>
+  <string name="chat_layout_default_suffix">(default)</string>
 
 
   <!-- Preferences.kt -->

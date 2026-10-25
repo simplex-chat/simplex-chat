@@ -67,8 +67,8 @@ initializeBotAddress' logAddress pqRatchet_ doAutoAccept cc = do
         putStrLn $ "Bot's contact address is: " <> B.unpack (maybe (strEncode uri) strEncode shortUri)
         when (isJust shortUri) $ putStrLn $ "Full contact address for old clients: " <> B.unpack (strEncode uri)
       let aa = if doAutoAccept then Just AutoAccept {acceptIncognito = False} else Nothing
-          settings = AddressSettings {businessAddress = False, autoAccept = aa, autoReply = Nothing}
-      void $ sendChatCmd cc $ SetAddressSettings Nothing settings
+          settings = AddressSettings {businessAddress = False, autoAccept = aa, chatLayout = Nothing, autoReply = Nothing}
+      void $ sendChatCmd cc $ SetAddressSettings Nothing settings Nothing
 
 sendMessage :: ChatController -> Contact -> Text -> IO ()
 sendMessage cc ct = sendComposedMessage cc ct Nothing . MCText

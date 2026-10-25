@@ -775,14 +775,14 @@ struct UserWallpaperEditorSheet: View {
                 let filePath = saveWallpaperFile(url: getWallpaperFilePath(imageFile))
                 if currentMode == DefaultThemeMode.light {
                     dark.wallpaper?.imageFile = filePath
-                    changedThemes = ThemeModeOverrides(light: changedThemes?.light, dark: dark)
+                    changedThemes?.dark = dark
                 } else {
                     light.wallpaper?.imageFile = filePath
-                    changedThemes = ThemeModeOverrides(light: light, dark: changedThemes?.dark)
+                    changedThemes?.light = light
                 }
             }
         } else {
-            changedThemes = nil
+            changedThemes = changedThemes?.layoutOnly()
         }
         wallpaperFiles.remove(changedThemes?.light?.wallpaper?.imageFile)
         wallpaperFiles.remove(changedThemes?.dark?.wallpaper?.imageFile)
@@ -1135,7 +1135,7 @@ private func saveThemeToDatabase(_ themeUserDestination: (Int64, ThemeModeOverri
 private func removeUserThemeModeOverrides(_ themeUserDestination: Binding<(Int64, ThemeModeOverrides?)?>, _ perUserTheme: Binding<ThemeModeOverride>) {
     guard let dest = themeUserDestination.wrappedValue else { return }
     perUserTheme.wrappedValue = ThemeModeOverride(mode: CurrentColors.base.mode)
-    themeUserDestination.wrappedValue = (dest.0, nil)
+    themeUserDestination.wrappedValue = (dest.0, dest.1?.layoutOnly())
     var wallpaperFilesToDelete: [String] = []
     if let type = ChatModel.shared.currentUser?.uiThemes?.light?.type, case let WallpaperType.image(filename, _, _) = type {
         wallpaperFilesToDelete.append(filename)

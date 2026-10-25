@@ -236,6 +236,7 @@ chatTypesDocsData =
     (sti @BadgeType, STEnum, "BT", ["BTUnknown"], "", ""),
     (sti @ChatFeature, STEnum, "CF", [], "", ""),
     (sti @ChatItemDeletion, STRecord, "", [], "", "Message deletion result."),
+    (sti @ChatLayout, STEnum, "CL", ["CLUnknown"], "", ""),
     (sti @ChatPeerType, STEnum, "CPT", ["CPTUnknown"], "", ""),
     (sti @ChatRef, STRecord, "", [], Param "chatType" <> Param "chatId" <> Optional "" (Param "$0") "chatScope", "Used in API commands. Chat scope can only be passed with groups."),
     (sti @ChatSettings, STRecord, "", [], "", ""),
@@ -474,6 +475,7 @@ deriving instance Generic ChatError
 deriving instance Generic ChatErrorType
 deriving instance Generic ChatFeature
 deriving instance Generic ChatItemDeletion
+deriving instance Generic ChatLayout
 deriving instance Generic ChatPeerType
 deriving instance Generic ChatRef
 deriving instance Generic ChatSettings

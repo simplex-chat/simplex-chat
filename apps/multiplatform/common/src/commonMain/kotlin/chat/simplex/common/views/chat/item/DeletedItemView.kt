@@ -20,23 +20,25 @@ fun DeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, showViaProxy: Boolean,
   val sent = ci.chatDir.sent
   val sentColor = MaterialTheme.appColors.sentMessage
   val receivedColor = MaterialTheme.appColors.receivedMessage
-  Surface(
-    shape = RoundedCornerShape(18.dp),
-    color = if (sent) sentColor else receivedColor,
-    contentColor = LocalContentColor.current
-  ) {
-    Row(
-      Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-      verticalAlignment = Alignment.Bottom
+  ItemWithMeta(meta = { CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp) }) { inlineMeta ->
+    Surface(
+      shape = RoundedCornerShape(18.dp),
+      color = if (sent) sentColor else receivedColor,
+      contentColor = LocalContentColor.current
     ) {
-      Text(
-        buildAnnotatedString {
-          withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = MaterialTheme.colors.secondary)) { append(ci.content.text) }
-        },
-        style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp),
-        modifier = Modifier.padding(end = 8.dp)
-      )
-      CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
+      Row(
+        Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.Bottom
+      ) {
+        Text(
+          buildAnnotatedString {
+            withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = MaterialTheme.colors.secondary)) { append(ci.content.text) }
+          },
+          style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp),
+          modifier = Modifier.padding(end = if (inlineMeta != null) 8.dp else 0.dp)
+        )
+        inlineMeta?.invoke()
+      }
     }
   }
 }

@@ -1023,14 +1023,14 @@ struct ChatWallpaperEditorSheet: View {
                 let filePath = saveWallpaperFile(url: getWallpaperFilePath(imageFile))
                 if currentMode == DefaultThemeMode.light {
                     dark.wallpaper?.imageFile = filePath
-                    changedThemes = ThemeModeOverrides(light: changedThemes?.light, dark: dark)
+                    changedThemes?.dark = dark
                 } else {
                     light.wallpaper?.imageFile = filePath
-                    changedThemes = ThemeModeOverrides(light: light, dark: changedThemes?.dark)
+                    changedThemes?.light = light
                 }
             }
         } else {
-            changedThemes = nil
+            changedThemes = changedThemes?.layoutOnly()
         }
         wallpaperFiles.remove(changedThemes?.light?.wallpaper?.imageFile)
         wallpaperFiles.remove(changedThemes?.dark?.wallpaper?.imageFile)
