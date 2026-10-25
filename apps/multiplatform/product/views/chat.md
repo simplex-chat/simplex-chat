@@ -128,32 +128,9 @@ When `timedMessageAllowed` is true, compose bar includes a timer icon for settin
 
 ### Terminal Layout
 
-Used for a direct or group chat whose layout is Terminal, on Android and desktop: the main chat view, member support chats and reports. The first set of these is used:
+On Android and desktop, a chat with the terminal layout shows messages as full-width rows without bubbles, starting at one edge for sent and received messages, with the sender's name above each group of messages and the time at the end of the last line. The wallpaper is drawn as its colour without the image.
 
-1. the user's choice for the chat, on the chat theme screen;
-2. the layout of the chat: of the group profile, set by an owner, or of the address the contact was created from;
-3. the user's choice for the profile, in Appearance with the profile as destination;
-4. the app setting, in Appearance with the app theme as destination;
-5. Classic.
-
-Note folders use the profile choice and the app setting. The choices for the chat and the profile are stored in their themes; "Reset to app theme" and "Remove image" keep them. App, user and chat theme colours apply; the wallpaper colour is drawn without its image.
-
-| Element | Description |
-|---|---|
-| Message rows | Full-width rows, start-aligned for sent and received messages; text, quotes, media, cards, events, voice, calls and reactions start at one edge. Messages are drawn without bubbles; group invitations, deleted messages and error items keep their rounded card |
-| Sender row | Name and role label above the first message of a group of messages; the own name in the primary colour. Role label: the member role above Member, or "channel" for channel posts, including an owner posting as the channel. A new sender row follows an event or a sender change (including an owner switching between posting as the channel and as themselves); as in the classic layout, time gaps and date changes do not repeat it |
-| Avatars | Groups and channels only, at the start of the sender row. Click: member info for a received group message, chat info for a channel post |
-| Time | At the end of the row, on the baseline of the last line of text, for every item with a time: messages, media, voice, calls, deleted and error items, group invitations, events. Sent messages show the delivery status with it. When the last line leaves no room for the time, its last word moves to the next line with the time; after a code block, table, rule or emoji without room, the time moves under it. Images and videos without caption show it over the media in white, as in the classic layout, when the row has no space beside them |
-| Quotes | A bar and lighter text, as Markdown quotes |
-| Spacing | One line height ratio (22/16 of the font size, smaller for lighter text) for message text and captions, quotes, code, headings, the sender row, message headers, event texts and the time; every line takes the full line height, one-line texts included. Cards, files, voice messages and calls have the classic line heights until their redesign. Gaps are scaled with the font size. Four gaps, smallest first: lines of a quote; lines of a message, messages of one sender within a minute, and blocks of a message (quote, code, table, image, video, file, voice, card) against the text or block next to them, also in the next message; messages of one sender a minute or more apart, sender name → message or message header, a paragraph break, and the gap above a heading, also when it starts a message or follows a quote, header or block; last line of a message → next sender name, and the gaps above and below an event, whatever the time between them. Message headers (forwarded, moderated, live, report) sit one line gap above the text. Headings: 1.3125, 1.72 and 2.26 times the text size; the text under a heading is half a step further than the lines of a message, so a heading is nearer to its own text than to the text above it. Quote thumbnails are rounded as media, by the message roundness setting |
-| Link previews, chat links | Cards in the quote colour |
-| Captions | The text under an image, video, link preview, chat link, voice message or file is laid out as a close follow-up message with the same text: the full row width and the same gap under the media; only the time is on the caption, not on the media. The media keep their own size and layout |
-| Rules | A message of only a rule draws the rule as wide as the time, with the time beside it; a wider quote or header above the rule widens it, and the time then moves under it when the rule leaves no room |
-| Go to message | Search results and forwarded messages: a button in the start gutter, centred on the message, below the avatar when the message is shorter |
-| Row background | Hover and press over the whole row; selected and highlighted messages tinted in the primary colour |
-| Swipe to reply | Android: on the whole row |
-
-Theme screens of a terminal chat or profile show the preview as terminal rows and the wallpaper presets as colours; the custom image, image scale and wallpaper accent are hidden. The context menu and multi-select work as in the classic layout. Item info keeps the classic look.
+A chat uses the user's choice for that chat, otherwise the layout set by the group owner or by the address the contact came from, otherwise the user's choice for the profile and then the app setting, otherwise classic.
 
 ## Source Files
 
