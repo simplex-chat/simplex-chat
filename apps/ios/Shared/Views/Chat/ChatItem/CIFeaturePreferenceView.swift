@@ -14,33 +14,37 @@ import SimpleXChat
 struct CIFeaturePreferenceView: View {
     @ObservedObject var chat: Chat
     @EnvironmentObject var theme: AppTheme
+    @Environment(\.terminalLayout) private var terminal
     var chatItem: ChatItem
     var feature: ChatFeature
     var allowed: FeatureAllowed
     var param: Int?
 
     var body: some View {
-        HStack(alignment: .center, spacing: 4) {
-            Image(systemName: feature.icon)
-                .foregroundColor(theme.colors.secondary)
-                .scaleEffect(feature.iconScale)
-            if let ct = chat.chatInfo.contact,
-               allowed != .no && ct.allowsFeature(feature) && !ct.userAllowsFeature(feature) {
-                let setParam = feature == .timedMessages && ct.mergedPreferences.timedMessages.userPreference.preference.ttl == nil
-                featurePreferenceView(acceptText: setParam ? "Set 1 day" : "Accept")
-                    .simultaneousGesture(TapGesture().onEnded {
-                        allowFeatureToContact(ct, feature, param: setParam ? 86400 : nil)
-                    })
-            } else {
-                featurePreferenceView()
+        ChatEventWithMeta(chatItem: chatItem) { ts in
+            HStack(alignment: .center, spacing: 4) {
+                Image(systemName: feature.icon)
+                    .foregroundColor(theme.colors.secondary)
+                    .scaleEffect(feature.iconScale)
+                    .if(terminal) { $0.frame(height: 0) }
+                if let ct = chat.chatInfo.contact,
+                   allowed != .no && ct.allowsFeature(feature) && !ct.userAllowsFeature(feature) {
+                    let setParam = feature == .timedMessages && ct.mergedPreferences.timedMessages.userPreference.preference.ttl == nil
+                    featurePreferenceView(acceptText: setParam ? "Set 1 day" : "Accept", ts: ts)
+                        .simultaneousGesture(TapGesture().onEnded {
+                            allowFeatureToContact(ct, feature, param: setParam ? 86400 : nil)
+                        })
+                } else {
+                    featurePreferenceView(ts: ts)
+                }
             }
+            .if(terminal) { $0.lineBox(terminalLineBox(UIFont.preferredFont(forTextStyle: .caption1), theme.colors.secondary, theme)) }
+            .padding(terminal ? terminalEventPadding : EdgeInsets(top: 0, leading: 6, bottom: 6, trailing: 0))
+            .textSelection(.disabled)
         }
-        .padding(.leading, 6)
-        .padding(.bottom, 6)
-        .textSelection(.disabled)
     }
 
-    private func featurePreferenceView(acceptText: LocalizedStringKey? = nil) -> some View {
+    private func featurePreferenceView(acceptText: LocalizedStringKey? = nil, ts: Text) -> some View {
         var r = Text(CIContent.preferenceText(feature, allowed, param) + "  ")
             .fontWeight(.light)
             .foregroundColor(theme.colors.secondary)
@@ -51,7 +55,7 @@ struct CIFeaturePreferenceView: View {
                 .foregroundColor(theme.colors.primary)
             + Text(verbatim: "  ")
         }
-        r = r + chatItem.timestampText
+        r = r + ts
             .fontWeight(.light)
             .foregroundColor(theme.colors.secondary)
         return r.font(.caption)

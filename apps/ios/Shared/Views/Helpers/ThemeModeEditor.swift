@@ -222,22 +222,26 @@ struct ChatWallpaperEditor: View {
     @State var showMore: Bool = false
     @State var showFileImporter: Bool = false
     @Binding var globalThemeUsed: Bool
+    var layoutSection: AnyView
     var save: (DefaultThemeMode?, ThemeModeOverride?) async -> Void
 
     @State private var showImageImporter: Bool = false
 
-    init(initialTheme: ThemeModeOverride, themeModeOverride: ThemeModeOverride, applyToMode: DefaultThemeMode? = nil, globalThemeUsed: Binding<Bool>, save: @escaping (DefaultThemeMode?, ThemeModeOverride?) async -> Void) {
+    init(initialTheme: ThemeModeOverride, themeModeOverride: ThemeModeOverride, applyToMode: DefaultThemeMode? = nil, globalThemeUsed: Binding<Bool>, layoutSection: AnyView, save: @escaping (DefaultThemeMode?, ThemeModeOverride?) async -> Void) {
         let cur = ThemeManager.currentColors(nil, globalThemeUsed.wrappedValue ? nil : themeModeOverride, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
         self.currentTheme = cur
         self.initialTheme = initialTheme
         self.themeModeOverride = themeModeOverride
         self.applyToMode = applyToMode
         self._globalThemeUsed = globalThemeUsed
+        self.layoutSection = layoutSection
         self.save = save
     }
 
     var body: some View {
         List {
+            layoutSection
+
             WallpaperPresetSelector(
                 selectedWallpaper: currentTheme.wallpaper.type,
                 activeBackgroundColor: currentTheme.wallpaper.background,
@@ -450,4 +454,39 @@ private func AdvancedSettingsButton(_ primaryColor: Color, _ onClick: @escaping 
             Text("Advanced settings")
         }.foregroundColor(primaryColor)
     }
+}
+
+struct ChatLayoutSection: View {
+    var chatInfo: ChatInfo
+    var setChatLayout: (ChatLayout?) -> Void
+
+    var body: some View {
+        let defaultChatLayout = chatInfo.defaultChatLayout(ChatModel.shared.currentUser)
+        let otherLayout = otherChatLayout(defaultChatLayout)
+        let suffix = chatInfo.chatLayout == defaultChatLayout ? NSLocalizedString("(chat)", comment: "chat layout") : NSLocalizedString("(default)", comment: "chat layout")
+        Section {
+            Picker("Chat layout", selection: Binding(
+                get: { chatInfo.uiThemes?.chatLayout == otherLayout ? otherLayout : nil },
+                set: setChatLayout
+            )) {
+                Text(defaultChatLayout.displayName + " " + suffix).tag(nil as ChatLayout?)
+                Text(otherLayout.displayName).tag(otherLayout as ChatLayout?)
+            }
+            .frame(height: 36)
+        }
+    }
+}
+
+extension ChatLayout {
+    var displayName: String {
+        switch self {
+        case .classic: NSLocalizedString("Classic", comment: "chat layout")
+        case .terminal: NSLocalizedString("Terminal", comment: "chat layout")
+        case let .unknown(text): text
+        }
+    }
+}
+
+func otherChatLayout(_ layout: ChatLayout) -> ChatLayout {
+    layout == .terminal ? .classic : .terminal
 }

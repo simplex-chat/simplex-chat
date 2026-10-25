@@ -950,10 +950,12 @@ struct ChatWallpaperEditorSheet: View {
             themeModeOverride: initialTheme,
             applyToMode: themes.light == themes.dark ? nil : initialTheme.mode,
             globalThemeUsed: $globalThemeUsed,
+            layoutSection: AnyView(ChatLayoutSection(chatInfo: chat.chatInfo, setChatLayout: setChatLayout)),
             save: { applyToMode, newTheme in
                 await save(applyToMode, newTheme, $chat)
             }
         )
+        .environment(\.terminalLayout, chat.chatInfo.activeChatLayout(ChatModel.shared.currentUser) == .terminal)
         .navigationTitle("Chat theme")
         .modifier(ThemedBackground(grouped: true))
         .navigationBarTitleDisplayMode(.inline)
@@ -976,6 +978,29 @@ struct ChatWallpaperEditorSheet: View {
         } else {
             ThemeModeOverrides()
         }
+    }
+
+    private func setChatLayout(_ layout: ChatLayout?) {
+        let changedThemes = themesFromChat(chat).withChatLayout(layout)
+        Task {
+            if await apiSetChatUIThemes(chatId: chat.id, themes: changedThemes) {
+                await MainActor.run {
+                    if case var ChatInfo.direct(contact) = chat.chatInfo {
+                        contact.uiThemes = changedThemes
+                        updateChatInfo(ChatInfo.direct(contact: contact))
+                    } else if case var ChatInfo.group(groupInfo, _) = chat.chatInfo {
+                        groupInfo.uiThemes = changedThemes
+                        updateChatInfo(ChatInfo.group(groupInfo: groupInfo, groupChatScope: nil))
+                    }
+                }
+            }
+        }
+    }
+
+    private func updateChatInfo(_ chatInfo: ChatInfo) {
+        ChatModel.shared.updateChatInfo(chatInfo)
+        chat = Chat(chatInfo: chatInfo)
+        themes = themesFromChat(chat)
     }
 
     private static var updateBackendTask: Task = Task {}

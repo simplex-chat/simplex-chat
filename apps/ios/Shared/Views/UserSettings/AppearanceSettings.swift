@@ -39,6 +39,7 @@ struct AppearanceSettings: View {
     @AppStorage(DEFAULT_CHAT_ITEM_TAIL) private var chatItemTail = true
     @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
     @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
+    @AppStorage(DEFAULT_CHAT_LAYOUT) private var appChatLayout = ChatLayout.classic
 
     @State var themeUserDestination: (Int64, ThemeModeOverrides?)? = {
         if let currentUser = ChatModel.shared.currentUser, let uiThemes = currentUser.uiThemes, uiThemes.preferredMode(!CurrentColors.colors.isLight) != nil {
@@ -81,11 +82,14 @@ struct AppearanceSettings: View {
                 Section {
                     ThemeDestinationPicker(themeUserDestination: $themeUserDestination, themeUserDest: themeUserDestination?.0, customizeThemeIsOpen: $customizeThemeIsOpen)
 
+                    ChatLayoutPicker(themeUserDestination: $themeUserDestination, appLayout: $appChatLayout)
+
                     WallpaperPresetSelector(
                         selectedWallpaper: theme.wallpaper.type,
                         currentColors: currentColors,
                         onChooseType: onChooseType
                     )
+                    .environment(\.terminalLayout, profileChatLayout(themeUserDestination == nil ? nil : m.currentUser) == .terminal)
                     .padding(.bottom, 10)
                     .listRowInsets(.init())
                     .listRowBackground(Color.clear)
@@ -146,6 +150,7 @@ struct AppearanceSettings: View {
                                 }
                         } else {
                             CustomizeThemeView(onChooseType: onChooseType)
+                                .environment(\.terminalLayout, profileChatLayout(nil) == .terminal)
                                 .navigationTitle("Customize theme")
                                 .modifier(ThemedBackground(grouped: true))
                                 .onAppear {
@@ -355,6 +360,7 @@ enum ToolbarMaterial: String, CaseIterable {
 
 struct ChatThemePreview: View {
     @EnvironmentObject var theme: AppTheme
+    @Environment(\.terminalLayout) private var terminal
     var base: DefaultTheme
     var wallpaperType: WallpaperType?
     var backgroundColor: Color?
@@ -369,16 +375,34 @@ struct ChatThemePreview: View {
             if withMessages {
                 let alice = ChatItem.getSample(1, CIDirection.directRcv, Date.now, NSLocalizedString("Good afternoon!", comment: "message preview"))
                 let bob = ChatItem.getSample(2, CIDirection.directSnd, Date.now, NSLocalizedString("Good morning!", comment: "message preview"), quotedItem: CIQuote.getSample(alice.id, alice.meta.itemTs, alice.content.text, chatDir: alice.chatDir))
-                HStack {
-                    ChatItemView(chat: Chat.sampleData, im: ItemsModel.shared, chatItem: alice, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
-                        .modifier(ChatItemClipped(alice, tailVisible: true))
-                    Spacer()
-                }
-                HStack {
-                    Spacer()
-                    ChatItemView(chat: Chat.sampleData, im: ItemsModel.shared, chatItem: bob, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
-                        .modifier(ChatItemClipped(bob, tailVisible: true))
-                        .frame(alignment: .trailing)
+                ZStack {
+                    VStack {
+                        HStack {
+                            ChatItemView(chat: Chat.sampleData, im: ItemsModel.shared, chatItem: alice, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+                                .modifier(ChatItemClipped(alice, tailVisible: true))
+                            Spacer()
+                        }
+                        HStack {
+                            Spacer()
+                            ChatItemView(chat: Chat.sampleData, im: ItemsModel.shared, chatItem: bob, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+                                .modifier(ChatItemClipped(bob, tailVisible: true))
+                                .frame(alignment: .trailing)
+                        }
+                    }
+                    .environment(\.terminalLayout, false)
+                    .opacity(terminal ? 0 : 1)
+                    .accessibilityHidden(terminal)
+                    VStack(spacing: 0) {
+                        TerminalChatItemRow(sender: ChatItemSender(name: Text(verbatim: "alice"), own: false), gutter: 0, topGap: terminalRowGap(alice, nil, separated: false, largeGap: true, hasSenderRow: true), senderTopGap: 0) {
+                            ChatItemView(chat: Chat.sampleData, im: ItemsModel.shared, chatItem: alice, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+                        }
+                        TerminalChatItemRow(sender: ChatItemSender(name: Text(verbatim: "bob"), own: true), gutter: 0, topGap: terminalRowGap(bob, alice, separated: false, largeGap: true, hasSenderRow: true)) {
+                            ChatItemView(chat: Chat.sampleData, im: ItemsModel.shared, chatItem: bob, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+                        }
+                    }
+                    .environment(\.terminalLayout, true)
+                    .opacity(terminal ? 1 : 0)
+                    .accessibilityHidden(!terminal)
                 }
             } else {
                 Rectangle().fill(.clear)
@@ -388,16 +412,17 @@ struct ChatThemePreview: View {
             .padding(.horizontal, 16)
         .frame(maxWidth: .infinity)
 
-        if let wallpaperType, let wallpaperImage = wallpaperType.image, let backgroundColor, let tintColor {
+        if !terminal, let wallpaperType, let wallpaperImage = wallpaperType.image, let backgroundColor, let tintColor {
             view.modifier(ChatViewBackground(image: wallpaperImage, imageType: wallpaperType, background: backgroundColor, tint: tintColor))
         } else {
-            view.background(themeBackgroundColor)
+            view.background(terminal ? backgroundColor ?? themeBackgroundColor : themeBackgroundColor)
         }
     }
 }
 
 struct WallpaperPresetSelector: View {
     @EnvironmentObject var theme: AppTheme
+    @Environment(\.terminalLayout) private var terminal
     var selectedWallpaper: WallpaperType?
     var activeBackgroundColor: Color? = nil
     var activeTintColor: Color? = nil
@@ -426,7 +451,9 @@ struct WallpaperPresetSelector: View {
                     ForEach(backgrounds, id: \.self) { background in
                         BackgroundItem(background)
                     }
-                    OwnBackgroundItem(selectedWallpaper)
+                    if !terminal {
+                        OwnBackgroundItem(selectedWallpaper)
+                    }
                 }
             }
         }
@@ -716,6 +743,7 @@ struct UserWallpaperEditorSheet: View {
                 }
             }
         )
+        .environment(\.terminalLayout, profileChatLayout(ChatModel.shared.currentUser) == .terminal)
         .navigationTitle("Profile theme")
         .modifier(ThemedBackground(grouped: true))
         .onAppear {
@@ -847,7 +875,7 @@ struct ThemeDestinationPicker: View {
                 if isNil {
                     // Easiest way to hide per-user customization.
                     // Otherwise, it would be needed to make global variable and to use it everywhere for making a decision to include these overrides into active theme constructing or not
-                    m.currentUser?.uiThemes = nil
+                    m.currentUser?.uiThemes = m.currentUser?.uiThemes?.layoutOnly()
                 } else {
                     m.updateCurrentUserUiThemes(uiThemes: m.users.first(where: { $0.user.userId == m.currentUser?.userId })?.user.uiThemes)
                 }
@@ -869,6 +897,42 @@ struct ThemeDestinationPicker: View {
                     themeUserDestination = nil
                     themeUserDest = nil
                 }
+        }
+    }
+}
+
+struct ChatLayoutPicker: View {
+    @Binding var themeUserDestination: (Int64, ThemeModeOverrides?)?
+    @Binding var appLayout: ChatLayout
+
+    var body: some View {
+        if let dest = themeUserDestination {
+            let defaultLayout = profileChatLayout(nil)
+            let otherLayout = otherChatLayout(defaultLayout)
+            Picker("Chat layout", selection: Binding(
+                get: { dest.1?.chatLayout == otherLayout ? otherLayout : nil },
+                set: { layout in
+                    themeUserDestination = (dest.0, (dest.1 ?? ThemeModeOverrides()).withChatLayout(layout))
+                    saveThemeToDatabase(themeUserDestination)
+                }
+            )) {
+                Text(defaultLayout.displayName + " " + NSLocalizedString("(default)", comment: "chat layout")).tag(nil as ChatLayout?)
+                Text(otherLayout.displayName).tag(otherLayout as ChatLayout?)
+            }
+            .frame(height: 36)
+        } else {
+            Picker("Chat layout", selection: Binding(
+                get: { appLayout },
+                set: { layout in
+                    appLayout = layout
+                    saveThemeToDatabase(nil)
+                }
+            )) {
+                ForEach([ChatLayout.classic, ChatLayout.terminal], id: \.self) { layout in
+                    Text(layout.displayName).tag(layout)
+                }
+            }
+            .frame(height: 36)
         }
     }
 }
@@ -919,6 +983,7 @@ func editColorBinding(name: ThemeColor, wallpaperType: WallpaperType?, wallpaper
 }
 
 struct WallpaperSetupView: View {
+    @Environment(\.terminalLayout) private var terminal
     var wallpaperType: WallpaperType?
     var base: DefaultTheme
     var initialWallpaper: AppWallpaper?
@@ -926,7 +991,7 @@ struct WallpaperSetupView: View {
     var onTypeChange: (WallpaperType?) -> Void
 
     var body: some View {
-        if let wallpaperType, case let WallpaperType.image(_, _, scaleType) = wallpaperType {
+        if !terminal, let wallpaperType, case let WallpaperType.image(_, _, scaleType) = wallpaperType {
             let wallpaperScaleType = if let scaleType {
                 scaleType
             } else if let initialWallpaper, case let WallpaperType.image(_, _, scaleType) = initialWallpaper.type, let scaleType {
@@ -938,15 +1003,17 @@ struct WallpaperSetupView: View {
         }
 
 
-        if let wallpaperType, wallpaperType.isPreset {
+        if !terminal, let wallpaperType, wallpaperType.isPreset {
             WallpaperScaleChooser(wallpaperScale: Binding.constant(initialWallpaper?.type.scale ?? 1), wallpaperType: wallpaperType, onTypeChange: onTypeChange)
-        } else if let wallpaperType, case let WallpaperType.image(_, _, scaleType) = wallpaperType, scaleType == WallpaperScaleType.repeat {
+        } else if !terminal, let wallpaperType, case let WallpaperType.image(_, _, scaleType) = wallpaperType, scaleType == WallpaperScaleType.repeat {
             WallpaperScaleChooser(wallpaperScale: Binding.constant(initialWallpaper?.type.scale ?? 1), wallpaperType: wallpaperType, onTypeChange: onTypeChange)
         }
 
         if wallpaperType?.isPreset == true || wallpaperType?.isImage == true {
             picker(.wallpaperBackground, editColor)
-            picker(.wallpaperTint, editColor)
+            if !terminal {
+                picker(.wallpaperTint, editColor)
+            }
         }
 
         picker(.sentMessage, editColor)

@@ -2376,6 +2376,22 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
 
+    public var chatLayout: ChatLayout? {
+        switch self {
+        case let .direct(contact): contact.chatLayout
+        case let .group(groupInfo, _): groupInfo.groupProfile.chatLayout
+        default: nil
+        }
+    }
+
+    public var uiThemes: ThemeModeOverrides? {
+        switch self {
+        case let .direct(contact): contact.uiThemes
+        case let .group(groupInfo, _): groupInfo.uiThemes
+        default: nil
+        }
+    }
+
     public var chatTs: Date {
         switch self {
         case let .direct(contact): return contact.chatTs ?? contact.updatedAt
@@ -2534,6 +2550,7 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     public var chatTags: [Int64]
     public var chatItemTTL: Int64?
     public var uiThemes: ThemeModeOverrides?
+    public var chatLayout: ChatLayout?
     public var chatDeleted: Bool
 
     public var id: ChatId { get { "@\(contactId)" } }

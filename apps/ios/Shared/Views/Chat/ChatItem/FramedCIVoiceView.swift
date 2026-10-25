@@ -15,6 +15,7 @@ import SimpleXChat
 // Spec: spec/client/chat-view.md#FramedCIVoiceView
 struct FramedCIVoiceView: View {
     @EnvironmentObject var theme: AppTheme
+    @Environment(\.terminalLayout) private var terminal
     @ObservedObject var chat: Chat
     var chatItem: ChatItem
     let recordingFile: CIFile?
@@ -35,7 +36,7 @@ struct FramedCIVoiceView: View {
                 chatItem: chatItem,
                 recordingFile: recordingFile,
                 recordingTime: TimeInterval(duration),
-                showBackground: false,
+                showBackground: terminal,
                 seek: $seek,
                 audioPlayer: $audioPlayer,
                 playbackState: $playbackState,
@@ -54,10 +55,10 @@ struct FramedCIVoiceView: View {
                 playbackSlider()
             }
         }
-        .padding(.top, 6)
-        .padding(.leading, 6)
-        .padding(.trailing, 12)
-        .padding(.bottom, chatItem.content.text.isEmpty ? 10 : 0)
+        .padding(.top, terminal ? bodyScaled(4) : 6)
+        .padding(.leading, terminal ? chatItemTextPadding : 6)
+        .padding(.trailing, terminal ? 0 : 12)
+        .padding(.bottom, terminal ? bodyScaled(6) : chatItem.content.text.isEmpty ? 10 : 0)
     }
     
     private func playbackSlider() -> some View {

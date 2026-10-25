@@ -17,13 +17,23 @@ struct EmojiItemView: View {
     var chatItem: ChatItem
 
     var body: some View {
-        VStack(spacing: 1) {
-            emojiText(chatItem.content.text)
-                .padding(.top, 8)
-                .padding(.horizontal, 6)
+        ItemWithMeta(metaReserved: true) {
             CIMetaView(chat: chat, chatItem: chatItem, metaColor: theme.colors.secondary)
-                .padding(.bottom, 8)
-                .padding(.horizontal, 12)
+        } content: { inlineMeta in
+            if let inlineMeta {
+                VStack(spacing: 1) {
+                    emojiText(chatItem.content.text)
+                        .padding(.top, 8)
+                        .padding(.horizontal, 6)
+                    inlineMeta
+                        .padding(.bottom, 8)
+                        .padding(.horizontal, 12)
+                }
+            } else {
+                emojiText(chatItem.content.text)
+                    .messageLastLine()
+                    .padding(EdgeInsets(top: terminalEmojiTopGap, leading: chatItemTextPadding, bottom: terminalEmojiBottomGap, trailing: chatItemTextPadding))
+            }
         }
     }
 }

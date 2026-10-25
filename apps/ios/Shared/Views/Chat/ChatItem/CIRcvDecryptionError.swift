@@ -44,7 +44,11 @@ struct CIRcvDecryptionError: View {
     }
 
     var body: some View {
-        viewBody()
+        ItemWithMeta {
+            CIMetaView(chat: chat, chatItem: chatItem, metaColor: theme.colors.secondary)
+        } content: { inlineMeta in
+            viewBody(inlineMeta)
+        }
             .onAppear {
                 // for direct chat ConnectionStats are populated on opening chat, see ChatView onAppear
                 if case let .group(groupInfo, _) = chat.chatInfo,
@@ -70,48 +74,49 @@ struct CIRcvDecryptionError: View {
             }
     }
 
-    private func viewBody() -> some View {
+    private func viewBody(_ inlineMeta: CIMetaView?) -> some View {
         Group {
             if case let .direct(contact) = chat.chatInfo,
                let contactStats = contact.activeConn?.connectionStats {
                 if contactStats.ratchetSyncAllowed {
-                    decryptionErrorItemFixButton(syncSupported: true) {
+                    decryptionErrorItemFixButton(syncSupported: true, inlineMeta) {
                         alert = .syncAllowedAlert { syncContactConnection(contact) }
                     }
                 } else if !contactStats.ratchetSyncSupported {
-                    decryptionErrorItemFixButton(syncSupported: false) {
+                    decryptionErrorItemFixButton(syncSupported: false, inlineMeta) {
                         alert = .syncNotSupportedContactAlert
                     }
                 } else {
-                    basicDecryptionErrorItem()
+                    basicDecryptionErrorItem(inlineMeta)
                 }
             } else if case let .group(groupInfo, _) = chat.chatInfo,
                       case let .groupRcv(groupMember) = chatItem.chatDir,
                       let mem = m.getGroupMember(groupMember.groupMemberId),
                       let memberStats = mem.wrapped.activeConn?.connectionStats {
                 if memberStats.ratchetSyncAllowed {
-                    decryptionErrorItemFixButton(syncSupported: true) {
+                    decryptionErrorItemFixButton(syncSupported: true, inlineMeta) {
                         alert = .syncAllowedAlert { syncMemberConnection(groupInfo, groupMember) }
                     }
                 } else if !memberStats.ratchetSyncSupported {
-                    decryptionErrorItemFixButton(syncSupported: false) {
+                    decryptionErrorItemFixButton(syncSupported: false, inlineMeta) {
                         alert = .syncNotSupportedMemberAlert
                     }
                 } else {
-                    basicDecryptionErrorItem()
+                    basicDecryptionErrorItem(inlineMeta)
                 }
             } else {
-                basicDecryptionErrorItem()
+                basicDecryptionErrorItem(inlineMeta)
             }
         }
         .background { chatItemFrameColor(chatItem, theme).modifier(ChatTailPadding()) }
+        .if(inlineMeta == nil) { $0.modifier(ChatItemClipped(chatItem, tailVisible: false)) }
     }
 
-    private func basicDecryptionErrorItem() -> some View {
-        decryptionErrorItem { alert = .decryptionErrorAlert }
+    private func basicDecryptionErrorItem(_ inlineMeta: CIMetaView?) -> some View {
+        decryptionErrorItem(inlineMeta) { alert = .decryptionErrorAlert }
     }
 
-    private func decryptionErrorItemFixButton(syncSupported: Bool, _ onClick: @escaping (() -> Void)) -> some View {
+    private func decryptionErrorItemFixButton(syncSupported: Bool, _ inlineMeta: CIMetaView?, _ onClick: @escaping (() -> Void)) -> some View {
         ZStack(alignment: .bottomTrailing) {
             VStack(alignment: .leading, spacing: 2) {
                 HStack {
@@ -127,35 +132,43 @@ struct CIRcvDecryptionError: View {
                     + Text("Fix connection")
                         .foregroundColor(syncSupported ? theme.colors.primary : theme.colors.secondary)
                         .font(.callout)
-                    + Text(verbatim: "   ")
-                    + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, colorMode: .transparent, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
+                    + metaReserve(inlineMeta)
                 )
             }
             .padding(.horizontal, 12)
-            CIMetaView(chat: chat, chatItem: chatItem, metaColor: theme.colors.secondary)
-                .padding(.horizontal, 12)
+            if let inlineMeta {
+                inlineMeta
+                    .padding(.horizontal, 12)
+            }
         }
         .simultaneousGesture(TapGesture().onEnded(onClick))
         .padding(.vertical, 6)
         .textSelection(.disabled)
     }
 
-    private func decryptionErrorItem(_ onClick: @escaping (() -> Void)) -> some View {
+    private func decryptionErrorItem(_ inlineMeta: CIMetaView?, _ onClick: @escaping (() -> Void)) -> some View {
         return ZStack(alignment: .bottomTrailing) {
             HStack {
                 Text(chatItem.content.text)
                     .foregroundColor(.red)
                     .italic()
-                + Text(verbatim: "   ")
-                + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, colorMode: .transparent, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
+                + metaReserve(inlineMeta)
             }
             .padding(.horizontal, 12)
-            CIMetaView(chat: chat, chatItem: chatItem, metaColor: theme.colors.secondary)
-                .padding(.horizontal, 12)
+            if let inlineMeta {
+                inlineMeta
+                    .padding(.horizontal, 12)
+            }
         }
         .simultaneousGesture(TapGesture().onEnded(onClick))
         .padding(.vertical, 6)
         .textSelection(.disabled)
+    }
+
+    private func metaReserve(_ inlineMeta: CIMetaView?) -> Text {
+        inlineMeta == nil
+        ? Text(verbatim: "")
+        : Text(verbatim: "   ") + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, colorMode: .transparent, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
     }
 
     private func message() -> Text {

@@ -14,6 +14,7 @@ import SimpleXChat
 struct CIVoiceView: View {
     @ObservedObject var chat: Chat
     @EnvironmentObject var theme: AppTheme
+    @Environment(\.terminalLayout) private var terminal
     var chatItem: ChatItem
     let recordingFile: CIFile?
     let duration: Int
@@ -36,7 +37,7 @@ struct CIVoiceView: View {
                         playbackSlider()
                     }
                 }
-            } else if chatItem.chatDir.sent {
+            } else if chatItem.chatDir.sent && !terminal {
                 VStack (alignment: .trailing, spacing: 6) {
                     HStack {
                         if .playing == playbackState || (playbackTime ?? 0) > 0 || !allowMenu {
@@ -49,21 +50,28 @@ struct CIVoiceView: View {
                     metaView().padding(.trailing, 10)
                 }
             } else {
-                VStack (alignment: .leading, spacing: 6) {
-                    HStack {
-                        player()
-                        playerTime()
-                        if .playing == playbackState || (playbackTime ?? 0) > 0 || !allowMenu {
-                            playbackSlider()
+                ItemWithMeta {
+                    metaView()
+                } content: { inlineMeta in
+                    VStack (alignment: .leading, spacing: 6) {
+                        HStack {
+                            player()
+                            playerTime()
+                            if .playing == playbackState || (playbackTime ?? 0) > 0 || !allowMenu {
+                                playbackSlider()
+                            }
+                        }
+                        .frame(alignment: .leading)
+                        if let inlineMeta {
+                            inlineMeta.padding(.leading, -6)
                         }
                     }
-                    .frame(alignment: .leading)
-                    metaView().padding(.leading, -6)
                 }
             }
         }
-        .padding(.top, 4)
-        .padding(.bottom, 8)
+        .padding(.top, terminal ? bodyScaled(4) : 4)
+        .padding(.bottom, terminal ? bodyScaled(6) : 8)
+        .padding(.leading, terminal ? chatItemTextPadding : 0)
     }
 
     private func player() -> some View {

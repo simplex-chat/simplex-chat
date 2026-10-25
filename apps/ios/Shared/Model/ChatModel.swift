@@ -1468,6 +1468,26 @@ final class Chat: ObservableObject, Identifiable, ChatLike {
     public static var sampleData: Chat = Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: [])
 }
 
+extension ChatInfo {
+    func defaultChatLayout(_ user: User?) -> ChatLayout {
+        chatLayout?.known ?? profileChatLayout(user)
+    }
+
+    func activeChatLayout(_ user: User?) -> ChatLayout {
+        uiThemes?.chatLayout?.known ?? defaultChatLayout(user)
+    }
+}
+
+func profileChatLayout(_ user: User?) -> ChatLayout {
+    user?.uiThemes?.chatLayout?.known ?? chatLayoutDefault.get().known ?? .classic
+}
+
+private extension ChatLayout {
+    var known: ChatLayout? {
+        if case .unknown = self { nil } else { self }
+    }
+}
+
 final class GMember: ObservableObject, Identifiable {
     @Published var wrapped: GroupMember
     var created = Date.now
