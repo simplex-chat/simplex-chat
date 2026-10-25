@@ -8306,22 +8306,22 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Restore" xml:space="preserve" approved="no">
         <source>Restore</source>
-        <target state="translated">Visszaállítás</target>
+        <target state="translated">Helyreállítás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Restore database backup" xml:space="preserve" approved="no">
         <source>Restore database backup</source>
-        <target state="translated">Adatbázismentés visszaállítása</target>
+        <target state="translated">Adatbázis biztonsági mentésének helyreállítása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Restore database backup?" xml:space="preserve" approved="no">
         <source>Restore database backup?</source>
-        <target state="translated">Visszaállítja az adatbázismentést?</target>
+        <target state="translated">Helyreállítja az adatbázis biztonsági mentését?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Restore database error" xml:space="preserve" approved="no">
         <source>Restore database error</source>
-        <target state="translated">Hiba történt az adatbázis visszaállításakor</target>
+        <target state="translated">Hiba történt az adatbázis helyreállításakor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Retry" xml:space="preserve" approved="no">
