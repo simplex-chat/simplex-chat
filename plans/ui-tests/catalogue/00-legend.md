@@ -151,14 +151,14 @@ Each sub-area (a `###` section) is one test class, or several consecutive classe
 | 02 | J | Delete / reveal / blocked | `delete_ownForEveryone_peerSeesMarkedDeleted` | `DeleteMessageTest`, `DeleteMessageCompatTest`, `DeleteMessageCompatStableTest` | 4 | 0 |
 | 02 | K | Multi-select and selection toolbar | `select_toggle_updatesCounter` | `MultiSelectTest` | 3 | 0 |
 | 02 | L | Forwarding | `forward_contactToContact_peerSeesForwarded` | `ForwardTest` | 9 | 0 |
-| 02 | M | Reactions | `reaction_add_peerSeesAdded` | `ReactionTest`, `ReactionCompatTest`, `ReactionCompatStableTest` | 5 | 0 |
+| 02 | M | Reactions | `reaction_chipClickOthers_adds` | `ReactionTest`, `ReactionCompatTest`, `ReactionCompatStableTest` | 4 | 0 |
 | 02 | N | Copy / Share / Save / text selection | `copy_text_toClipboardAndToast` | `CopyShareTest` | 5 | 0 |
 | 02 | O | Reports, member side | `report_member_spam_moderatorsReceive` | `MemberReportTest` | 2 | 0 |
 | 02 | P | Chat item info | `info_sent_showsSentAt` | `ItemInfoTest` | 10 | 0 |
 | 02 | Q | Unread handling, scrolling, pagination | `unread_openChat_scrollsToFirstUnread` | `UnreadScrollTest` | 12 | 0 |
 | 02 | R | Search and content filters | `search_direct_filtersResults` | `ChatSearchTest` | 6 | 0 |
 | 02 | S | Draft persistence | `draft_onlyLastChatKept` | `DraftTest` | 5 | 0 |
-| 02 | T | Status icons and delivery | `status_direct_sentThenDelivered` | `ItemStatusTest`, `ItemStatusCompatTest`, `ItemStatusCompatStableTest` | 9 | 0 |
+| 02 | T | Status icons and delivery | `status_direct_sentThenDelivered` | `ItemStatusTest`, `ItemStatusCompatTest`, `ItemStatusCompatStableTest` | 8 | 0 |
 | 02 | U | Special items | `featureOffer_accept_updatesPrefs` | `SpecialItemTest`, `SpecialItemCompatTest`, `SpecialItemCompatStableTest` | 16 | 1 |
 | 02 | V | Private notes | `notes_sendText_saved` | `NotesTest` | 5 | 0 |
 | 02 | W | Context menus and keyboard | `contextMenu_itemsMatrix_byItemType` | `ContextMenuTest` | 1 | 0 |
@@ -176,7 +176,7 @@ Each sub-area (a `###` section) is one test class, or several consecutive classe
 | 03 | 11 | Member contacts | `memberContact_createAndSendInvitation` | `MemberContactTest` | 4 | 0 |
 | 03 | 12 | Support chats, «Chats with members» / «Chat with admins» | `supportChat_memberSendsToAdmins` | `SupportChatTest` | 6 | 0 |
 | 03 | 13 | Reports, moderator side | `reports_moderatorBannerAndCounts` | `ModeratorReportTest` | 5 | 0 |
-| 03 | 14 | Moderation | `moderate_markDeletedForAll` | `ModerationTest` | 4 | 0 |
+| 03 | 14 | Moderation | `moderate_fullDeleteWhenEnabled` | `ModerationTest` | 3 | 0 |
 | 03 | 15 | Mentions, notification side | `mentions_mentionsOnlyMuteCountsOnlyMentionsForOtherProfile` | `MentionNotificationTest` | 2 | 0 |
 | 03 | 16 | Group events and history | `groupEvents_memberConnectedMerged` | `GroupEventsTest` | 6 | 0 |
 | 03 | 17 | Leave, delete, clear | `leaveGroup_thenDeleteLocalCopy` | `LeaveDeleteClearTest` | 7 | 0 |
@@ -187,7 +187,7 @@ Each sub-area (a `###` section) is one test class, or several consecutive classe
 | 03 | 20 | Business chats | `business_autoReplyWelcome` | `BusinessChatTest` | 9 | 0 |
 | 04 | A | Settings root and global keys | `settingsRoot_rowsOpenTheirScreens` | `SettingsRootTest` | 5 | 0 |
 | 04 | B | Privacy (Your privacy, More privacy, receipts) | `privacy_sectionsAndFooter` | `PrivacyTest` | 22 | 0 |
-| 04 | C | SimpleX Lock (desktop passcode) and self-destruct | `lock_enable_setsPasscode` | `LockTest` | 12 | 0 |
+| 04 | C | SimpleX Lock (desktop passcode) and self-destruct | `lock_enable_setsPasscode` | `LockTest` | 13 | 0 |
 | 04 | D | Appearance | `appearance_language_switch` | `AppearanceTest` | 18 | 0 |
 | 04 | E | Network & servers | `operators_enableDisableOperator` | `NetworkServersTest` | 18 | 0 |
 | 04 | E | Network & servers | `socks_enable_confirm` | `NetworkProxyTest` | 15 | 0 |

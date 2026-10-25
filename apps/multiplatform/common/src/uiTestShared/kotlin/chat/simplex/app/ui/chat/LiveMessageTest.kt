@@ -54,12 +54,15 @@ class LiveMessageTest : UiTest() {
     alice.chatList.open("bob")
     click(Ui.Chat.Live)
     confirmLiveMessageAlert()
-    poll(what = "an empty live message: `Cancel live message` in place of the live button and a placeholder item") {
-      exists(CANCEL) && !exists(Ui.Chat.Live) && chatModel.chatsContext.chatItems.value.any { it.isLiveDummy }
+    var dummy: Long? = null
+    poll(what = "an empty live message: `Cancel live message` in place of the live button and a placeholder item shown") {
+      dummy = chatModel.chatsContext.chatItems.value.firstOrNull { it.isLiveDummy }?.id
+      exists(CANCEL) && !exists(Ui.Chat.Live) && dummy?.let { exists(Ui.Chat.Item(it)) } == true
     }
+    val placeholder = dummy!!
     click(CANCEL)
     poll(what = "the live button back and the placeholder item gone") {
-      exists(Ui.Chat.Live) && !exists(CANCEL) && chatModel.chatsContext.chatItems.value.none { it.isLiveDummy }
+      exists(Ui.Chat.Live) && !exists(CANCEL) && chatModel.chatsContext.chatItems.value.none { it.isLiveDummy } && !exists(Ui.Chat.Item(placeholder))
     }
     click(Ui.Chat.Live)
     poll(what = "a second empty live message") { exists(CANCEL) }

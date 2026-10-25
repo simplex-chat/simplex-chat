@@ -11,6 +11,7 @@ import chat.simplex.app.ui.harness.connect
 import chat.simplex.app.ui.harness.connectPeers
 import chat.simplex.app.ui.harness.described
 import chat.simplex.app.ui.harness.hostGroup
+import chat.simplex.app.ui.harness.itemMenu
 import chat.simplex.app.ui.harness.joinGroupFromList
 import chat.simplex.app.ui.harness.newGroupsViaApi
 import chat.simplex.app.ui.harness.ownGroup
@@ -203,7 +204,9 @@ class ForwardTest : UiTest() {
     val kept = chat.itemId("kept"); val gone = chat.itemId("gone")
     val file = chat.itemId("the item of notes.md") { it.file?.fileName == "notes.md" }
     menuCheck(chat, kept, "the menu of a message has no Forward") { exists(Ui.Chat.ItemMenu(kept, "forward")) }
-    menuCheck(chat, gone, "the menu of a deleted message offers Forward") { !exists(Ui.Chat.ItemMenu(gone, "forward")) }
+    itemMenu(gone, "reveal")
+    poll(what = "the revealed deleted message showing `gone`") { textsOf(Ui.Chat.Item(gone)).any { "gone" in it } }
+    menuCheck(chat, gone, "the menu of a revealed deleted message offers Forward") { !exists(Ui.Chat.ItemMenu(gone, "forward")) }
     rightClick(Ui.Chat.Item(file))
     waitFor(Ui.Chat.ItemMenu(file, "select"))
     check(exists(Ui.Chat.ItemMenu(file, "download")) && !exists(Ui.Chat.ItemMenu(file, "forward"))) { "the menu of a file not downloaded has no Download or offers Forward" }

@@ -17,6 +17,7 @@ import chat.simplex.common.model.CIDeleted
 import chat.simplex.common.model.CIForwardedFrom
 import chat.simplex.common.model.CIStatus
 import chat.simplex.common.model.ChatItem
+import chat.simplex.common.model.MsgReceiptStatus
 import chat.simplex.common.model.SndCIStatusProgress
 import chat.simplex.common.model.localTimestamp
 import chat.simplex.common.platform.chatModel
@@ -104,6 +105,9 @@ class ItemInfoTest : UiTest() {
       cath.eventuallyMessage("#team alice> hi", CONNECT_TIMEOUT_MS)
       poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "cath `$RECEIVED` in the open Delivery tab") {
         descriptionsOf(cathRow).let { RECEIVED in it && SENT !in it } && RECEIVED in descriptionsOf(bobRow)
+      }
+      poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "`hi` delivered to bob and cath: delivered, complete") {
+        (chat.item(hi)?.meta?.itemStatus as? CIStatus.SndRcvd)?.let { it.msgRcptStatus == MsgReceiptStatus.Ok && it.sndProgress == SndCIStatusProgress.Complete } == true
       }
       close()
     }

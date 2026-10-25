@@ -46,27 +46,6 @@ class GroupLinksTest : UiTest() {
     }
   }
 
-  @Test fun moderate_markDeletedForAll() = uiTest {
-    val alice = app("alice"); val bob = cli("bob"); val cath = cli("cath")
-    connect(bob); connect(cath)
-    val chat = ownGroup(alice, "team", bob, cath)
-    bob.eventuallyMatching(Regex("#team: (new )?member cath is connected"), CONNECT_TIMEOUT_MS)
-    cath.eventuallyMatching(Regex("#team: (new )?member bob is connected"), CONNECT_TIMEOUT_MS)
-    bob sends "#team spam"
-    cath.eventuallyMessage("#team bob> spam", CONNECT_TIMEOUT_MS)
-    val id = chat.itemId("spam")
-    poll(what = "bob's `spam` shown, not moderated") { textsOf(Ui.Chat.Item(id)).let { t -> t.any { "spam" in it } && t.none { "moderated by" in it } } }
-    chat.menu("spam", "moderate")
-    poll(what = "the `Delete member message?` alert saying the message will be marked as moderated, with `Delete`") {
-      seesText("Delete member message?") && seesText("The message will be marked as moderated for all members.") &&
-        "Delete" in textsOf(Ui.Alert.Confirm(Ui.AlertSource.Shared))
-    }
-    click(Ui.Alert.Confirm(Ui.AlertSource.Shared))
-    cath.eventuallyMessage("#team bob> [marked deleted by alice] spam", CONNECT_TIMEOUT_MS)
-    bob.eventuallyMessage("#team bob> [marked deleted by alice] spam", CONNECT_TIMEOUT_MS)
-    poll(what = "`moderated by alice` in place of `spam`") { textsOf(Ui.Chat.Item(id)).let { t -> "moderated by alice" in t && t.none { "spam" in it } } }
-  }
-
   @Test fun memberInfo_blockForAllNotifiesMembers() = uiTest {
     val alice = app("alice"); val bob = cli("bob"); val cath = cli("cath")
     connect(bob); connect(cath)

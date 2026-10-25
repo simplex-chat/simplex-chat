@@ -120,6 +120,7 @@ class ChatDataTest : UiTest() {
     bob.expectsMessage("alice> $BACK_ONLINE", CONNECT_TIMEOUT_MS)
   }
 
+  @KnownAppIssue("15.5 item 27", "waiting for the Database encrypted! alert", intermittent = true, androidOnly = true)
   @Test fun dbMgmt_importArchive_restoresData() = uiTest {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)

@@ -35,6 +35,9 @@ class LeaveDeleteClearTest : UiTest() {
     leaveGroupFromInfo("team")
     bob.eventually("#team: alice left the group (signed)", CONNECT_TIMEOUT_MS)
     poll(what = "`you left` in team's compose field") { seesText("you left") }
+    click(Ui.Chat.Message)
+    poll(what = "the `You can't send messages!` alert for the left member") { seesText("You can't send messages!") }
+    click(Ui.Alert.Confirm(Ui.AlertSource.Shared))
     chat.groupInfo()
     check(groupInfoOf("team").membership.memberStatus == GroupMemberStatus.MemLeft) { "team's membership reverted after leaving: ${groupInfoOf("team").membership.memberStatus}" }
     check(offersOnlyDelete()) { "group info after leaving does not offer only `Delete group`" }

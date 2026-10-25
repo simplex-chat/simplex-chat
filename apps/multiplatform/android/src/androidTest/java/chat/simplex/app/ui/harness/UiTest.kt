@@ -146,11 +146,11 @@ class UiScope(val rule: ComposeTestRule) {
   }
 
   fun checkEnd() {
-    failOnPeerErrors(peers)
     waitForAppWork()
     val stuck = UiTestApp.drain()
     if (stuck.isNotEmpty()) throw AssertionError("app work still running when the test ended: ${stuck.joinToString()}")
     AppCrashes.failIfAny()
+    failOnPeerErrors(peers)
   }
 
   fun finish() {

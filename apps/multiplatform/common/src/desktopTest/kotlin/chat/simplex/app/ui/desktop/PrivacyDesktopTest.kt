@@ -7,7 +7,6 @@ import chat.simplex.app.ui.harness.UiTest
 import chat.simplex.app.ui.harness.connect
 import chat.simplex.app.ui.harness.msgContent
 import chat.simplex.app.ui.harness.yourPrivacy
-import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.Ui
 import chat.simplex.common.ui.UiIdle
@@ -57,33 +56,37 @@ class PrivacyDesktopTest : UiTest() {
   }
 
   @Test fun privacy_removeLinkTracking() = uiTest {
-    val alice = app("alice"); val bob = cli("bob")
-    connect(bob)
-    disableLinkPreviewsViaApi()
-    check(storedSetting(SANITIZE_LINKS) != "true") { "Remove link tracking is stored as on before it is turned on" }
-    val chat = alice.chatList.open("bob")
-    enterText(Ui.Chat.Message, TRACKED_LINK)
-    poll(what = "the typed link kept with Remove link tracking off") { editableText(Ui.Chat.Message) == TRACKED_LINK }
-    chat.sendComposed()
-    bob.expectsMessage("alice> $TRACKED_LINK", CONNECT_TIMEOUT_MS)
-    val privacy = yourPrivacy(alice)
-    click(Ui.Privacy.SanitizeLinks)
-    poll(what = "Remove link tracking stored as on") { storedSetting(SANITIZE_LINKS) == "true" }
-    privacy.close()
-    enterText(Ui.Chat.Message, TRACKED_LINK)
-    poll(what = "the tracking parameter removed from the typed link") { editableText(Ui.Chat.Message) == CLEAN_LINK }
-    chat.sendComposed()
-    bob.expectsMessage("alice> $CLEAN_LINK", CONNECT_TIMEOUT_MS)
+    PreviewSite().use { site ->
+      val alice = app("alice"); val bob = cli("bob")
+      connect(bob)
+      val tracked = site.url(TRACKED_PAGE)
+      val clean = site.url(CLEAN_PAGE)
+      check(storedSetting(SANITIZE_LINKS) != "true") { "Remove link tracking is stored as on before it is turned on" }
+      val chat = alice.chatList.open("bob")
+      enterText(Ui.Chat.Message, tracked)
+      poll(what = "the typed link kept with its preview, with Remove link tracking off") { editableText(Ui.Chat.Message) == tracked && seesDescription(PREVIEW_IMAGE) }
+      chat.sendComposed()
+      bob.expectsMessage("alice> $tracked", CONNECT_TIMEOUT_MS)
+      assertEquals(listOf("/$TRACKED_PAGE"), site.requests.toList())
+      val privacy = yourPrivacy(alice)
+      click(Ui.Privacy.SanitizeLinks)
+      poll(what = "Remove link tracking stored as on") { storedSetting(SANITIZE_LINKS) == "true" }
+      privacy.close()
+      enterText(Ui.Chat.Message, tracked)
+      poll(what = "the tracking parameter removed from the typed link") { editableText(Ui.Chat.Message) == clean }
+      poll(what = "the preview of the cleaned link fetched from the site") { site.requests.size >= 2 }
+      chat.sendComposed()
+      bob.expectsMessage("alice> $clean", CONNECT_TIMEOUT_MS)
+      assertEquals(listOf("/$TRACKED_PAGE", "/$CLEAN_PAGE"), site.requests.toList())
+    }
   }
-
-  private fun disableLinkPreviewsViaApi() = appPrefs.privacyLinkPreviews.set(false)
 
   private class PreviewSite : AutoCloseable {
     val requests = CopyOnWriteArrayList<String>()
     private val image = File(UiEnv.repoRoot, "tests/fixtures/test.jpg").readBytes()
     private val server = HttpServer.create(InetSocketAddress(InetAddress.getByName(HOST), 0), 0).apply {
       createContext("/") { exchange ->
-        requests.add(exchange.requestURI.path)
+        requests.add(exchange.requestURI.toString())
         exchange.responseHeaders.add("Content-Type", "image/jpeg")
         exchange.sendResponseHeaders(200, image.size.toLong())
         exchange.responseBody.use { it.write(image) }
@@ -102,7 +105,7 @@ class PrivacyDesktopTest : UiTest() {
     const val NOTES = "Private notes"
     const val HOST = "127.0.0.1"
     const val SANITIZE_LINKS = "PrivacySanitizeLinks"
-    const val TRACKED_LINK = "https://example.com/page?q=chat&utm_source=app"
-    const val CLEAN_LINK = "https://example.com/page?q=chat"
+    const val TRACKED_PAGE = "page.jpg?q=chat&utm_source=app"
+    const val CLEAN_PAGE = "page.jpg?q=chat"
   }
 }

@@ -85,6 +85,7 @@ object Ui {
     val Version = UiKey("settings.version")
     val DeveloperTools = UiKey("settings.developerTools")
     val Migrate = UiKey("settings.migrate")
+    val Notifications = UiKey("settings.notifications")
   }
   object Notifications {
     val Mode = UiKey("notifications.mode")
@@ -168,6 +169,8 @@ object Ui {
     val WhatsNew = UiKey("help.whatsNew")
     val HowToUse = UiKey("help.howToUse")
     val About = UiKey("help.about")
+    val News = UiKey("help.news")
+    val Founder = UiKey("help.founder")
     val Email = UiKey("help.email")
     val Contribute = UiKey("help.contribute")
     val Star = UiKey("help.star")

@@ -1,5 +1,6 @@
 package chat.simplex.app.ui.harness
 
+import chat.simplex.common.platform.appPlatform
 import org.junit.AssumptionViolatedException
 import org.junit.rules.TestRule
 import org.junit.runner.Description
@@ -9,14 +10,16 @@ import java.util.concurrent.ConcurrentLinkedQueue
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
 @Repeatable
-annotation class KnownAppIssue(val finding: String, val error: String, val intermittent: Boolean = false)
+annotation class KnownAppIssue(val finding: String, val error: String, val intermittent: Boolean = false, val androidOnly: Boolean = false)
 
 class KnownIssueRule : TestRule {
   override fun apply(base: Statement, description: Description): Statement = object : Statement() {
     override fun evaluate() = withKnownIssue(knownIssues(description)) { base.evaluate() }
   }
 
-  private fun knownIssues(description: Description): List<KnownAppIssue> = description.annotations.flatMap { a ->
+  private fun knownIssues(description: Description): List<KnownAppIssue> = knownIssuesOf(description).filter { !it.androidOnly || appPlatform.isAndroid }
+
+  private fun knownIssuesOf(description: Description): List<KnownAppIssue> = description.annotations.flatMap { a ->
     when {
       a is KnownAppIssue -> listOf(a)
       a.annotationClass.java.enclosingClass == KnownAppIssue::class.java -> (a.annotationClass.java.getMethod("value").invoke(a) as Array<*>).filterIsInstance<KnownAppIssue>()

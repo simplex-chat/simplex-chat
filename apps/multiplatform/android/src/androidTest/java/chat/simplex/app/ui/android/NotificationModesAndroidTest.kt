@@ -23,6 +23,7 @@ class NotificationModesAndroidTest : UiTest() {
     requireNotificationPermission()
     UiTestApp.onMain { changeNotificationsMode(NotificationsMode.OFF, chatModel) }
     withBackgroundServiceAllowed {
+      val fetcher = "${androidAppContext.packageName}.UNIQUE_MESSAGES_FETCHER"
       openNotificationSettings(alice)
       check(OFF_TITLE in textsOf(Ui.Notifications.Mode)) { "Notification service row: ${textsOf(Ui.Notifications.Mode)}" }
       openModePicker()
@@ -52,43 +53,29 @@ class NotificationModesAndroidTest : UiTest() {
       poll(what = "Notifications showing Always on") { exists(Ui.Notifications.Mode) && SERVICE_TITLE in textsOf(Ui.Notifications.Mode) }
 
       openModePicker()
-      click(option(NotificationsMode.OFF))
-      poll(what = "Runs when app is open checked and stored") { storedSetting(MODE_KEY) == NotificationsMode.OFF.name && checkedTitles() == listOf(OFF_TITLE) }
-      poll(what = "the service stopped, its notification gone, the receivers disabled and the restart worker cancelled") {
-        serviceNotification() == null && !SimplexService.isServiceStarted &&
-          receiverState(START_RECEIVER) == PackageManager.COMPONENT_ENABLED_STATE_DISABLED &&
-          receiverState(UPDATE_RECEIVER) == PackageManager.COMPONENT_ENABLED_STATE_DISABLED && !uniqueWorkActive(RESTART_WORK)
-      }
-      check(!AlertManager.shared.hasAlertsShown()) { "switching to Runs when app is open showed an alert: ${texts().take(20)}" }
-    }
-  }
-
-  @Test fun ntfMode_switchToPeriodic_schedulesFetcher() = uiTest {
-    val alice = app("alice")
-    requireNotificationPermission()
-    withBackgroundServiceAllowed {
-      val fetcher = "${androidAppContext.packageName}.UNIQUE_MESSAGES_FETCHER"
-      openNotificationSettings(alice)
-      openModePicker()
-      check(checkedTitles() == listOf(OFF_TITLE) && !uniqueWorkActive(fetcher)) { "before Starts periodically: checked ${checkedTitles()}, fetcher ${workStates(fetcher)}" }
-
+      check(!uniqueWorkActive(fetcher)) { "before Starts periodically: fetcher ${workStates(fetcher)}" }
       click(option(NotificationsMode.PERIODIC))
       poll(what = "Starts periodically checked and stored, with its description") {
         storedSetting(MODE_KEY) == NotificationsMode.PERIODIC.name && checkedTitles() == listOf(PERIODIC_TITLE) && seesText(PERIODIC_DESC)
       }
-      poll(what = "the periodic message fetcher scheduled") { uniqueWorkActive(fetcher) }
-      check(serviceNotification() == null && !SimplexService.isServiceStarted && receiverState(START_RECEIVER) == PackageManager.COMPONENT_ENABLED_STATE_DISABLED) {
-        "Starts periodically: service notification ${serviceNotification() != null}, service started ${SimplexService.isServiceStarted}, StartReceiver ${receiverState(START_RECEIVER)}"
+      poll(what = "the fetcher scheduled, the service stopped, its notification gone, the receivers disabled and the restart worker cancelled") {
+        uniqueWorkActive(fetcher) && serviceNotification() == null && !SimplexService.isServiceStarted &&
+          receiverState(START_RECEIVER) == PackageManager.COMPONENT_ENABLED_STATE_DISABLED &&
+          receiverState(UPDATE_RECEIVER) == PackageManager.COMPONENT_ENABLED_STATE_DISABLED && !uniqueWorkActive(RESTART_WORK)
       }
-      check(!uniqueWorkActive(RESTART_WORK) && !AlertManager.shared.hasAlertsShown()) { "Starts periodically: restart work ${workStates(RESTART_WORK)}, alert ${AlertManager.shared.hasAlertsShown()}" }
+      check(!AlertManager.shared.hasAlertsShown()) { "switching to Starts periodically showed an alert: ${texts().take(20)}" }
       escape()
       poll(what = "Notifications showing Starts periodically") { exists(Ui.Notifications.Mode) && PERIODIC_TITLE in textsOf(Ui.Notifications.Mode) }
 
       openModePicker()
       click(option(NotificationsMode.OFF))
-      poll(what = "the periodic message fetcher cancelled with Runs when app is open stored") {
-        storedSetting(MODE_KEY) == NotificationsMode.OFF.name && !uniqueWorkActive(fetcher)
+      poll(what = "Runs when app is open checked and stored") { storedSetting(MODE_KEY) == NotificationsMode.OFF.name && checkedTitles() == listOf(OFF_TITLE) }
+      poll(what = "the fetcher cancelled, the service stopped, the receivers disabled and the restart worker cancelled") {
+        !uniqueWorkActive(fetcher) && serviceNotification() == null && !SimplexService.isServiceStarted &&
+          receiverState(START_RECEIVER) == PackageManager.COMPONENT_ENABLED_STATE_DISABLED &&
+          receiverState(UPDATE_RECEIVER) == PackageManager.COMPONENT_ENABLED_STATE_DISABLED && !uniqueWorkActive(RESTART_WORK)
       }
+      check(!AlertManager.shared.hasAlertsShown()) { "switching to Runs when app is open showed an alert: ${texts().take(20)}" }
     }
   }
 

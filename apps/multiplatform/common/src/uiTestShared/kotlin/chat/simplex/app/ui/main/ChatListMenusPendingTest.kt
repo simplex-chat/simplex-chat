@@ -1,6 +1,7 @@
 package chat.simplex.app.ui.main
 
 import chat.simplex.app.ui.harness.CONNECT_TIMEOUT_MS
+import chat.simplex.app.ui.harness.KnownAppIssue
 import chat.simplex.app.ui.harness.UiTest
 import chat.simplex.app.ui.harness.backToChatList
 import chat.simplex.app.ui.harness.closePendingConnectionInfo
@@ -33,6 +34,10 @@ class ChatListMenusPendingTest : UiTest() {
     poll(what = "unread badge 1") { "1" in alice.chatList.rowTexts("bob") }
     alice.chatList.rowMenu("bob", "markRead")
     poll(what = "the unread badge gone") { "1" !in alice.chatList.rowTexts("bob") && alice.chatList.chat("bob").chatStats.unreadCount == 0 }
+    restart().chatList.row("bob")
+    poll(what = "bob's chat still read after restart, with his message in the preview") {
+      "one" in alice.chatList.rowTexts("bob") && "1" !in alice.chatList.rowTexts("bob") && alice.chatList.chat("bob").chatStats.unreadCount == 0
+    }
   }
 
   @Test fun contactMenuMarkUnread() = uiTest {
@@ -83,6 +88,7 @@ class ChatListMenusPendingTest : UiTest() {
     poll(what = "all notifications and the mute icon gone") { mode(MsgFilter.All) && !muteIcon() }
   }
 
+  @KnownAppIssue("15.5 item 35", "waiting for the notes still read and empty after restart")
   @Test fun notesMenuMarkUnreadAndClear() = uiTest {
     val alice = app("alice")
     alice.chatList.open("Private notes").send("keep in mind")
@@ -98,6 +104,12 @@ class ChatListMenusPendingTest : UiTest() {
     poll(what = "the notes cleared and the unread mark reset") {
       alice.chatList.chat("Private notes").let { it.chatItems.isEmpty() && !it.chatStats.unreadChat } &&
         "keep in mind" !in alice.chatList.rowTexts("Private notes")
+    }
+    val read = alice.chatList.rowTexts("Private notes").count { it.isEmpty() }
+    restart().chatList.row("Private notes")
+    poll(what = "the notes still read and empty after restart") {
+      alice.chatList.chat("Private notes").let { it.chatItems.isEmpty() && !it.chatStats.unreadChat } &&
+        alice.chatList.rowTexts("Private notes").let { texts -> "keep in mind" !in texts && texts.count { it.isEmpty() } == read }
     }
   }
 

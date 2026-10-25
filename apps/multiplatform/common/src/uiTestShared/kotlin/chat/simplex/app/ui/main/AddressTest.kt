@@ -228,6 +228,7 @@ class AddressTest : UiTest() {
     leaveAddressSettingsExpectingSaveAlert()
     click(DISMISS)
     awaitAddressScreenAfterSettings()
+    awaitAppIdle("`Exit without saving`")
     check(chatModel.userAddress.value === saved && savedAddressSettings()?.autoReply == null) { "`Exit without saving` saved the welcome message" }
 
     val settings = addressSettings()

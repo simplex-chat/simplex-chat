@@ -39,10 +39,10 @@ abstract class UiTest {
           mainClock.autoAdvance = false
           UiScope(this, dir).apply {
             body()
-            failOnPeerErrors(Peers.all())
             waitForAppWork()
             failOnStuckWork(UiTestApp.drain())
             AppCrashes.failIfAny()
+            failOnPeerErrors(Peers.all())
           }
         }
       } catch (e: Throwable) {

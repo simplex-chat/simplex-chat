@@ -1,6 +1,7 @@
 package chat.simplex.app.ui.chat
 
 import chat.simplex.app.ui.harness.CONNECT_TIMEOUT_MS
+import chat.simplex.app.ui.harness.KnownAppIssue
 import chat.simplex.app.ui.harness.TestServers
 import chat.simplex.app.ui.harness.PREVIEW_IMAGE_DATA
 import chat.simplex.app.ui.harness.UiTest
@@ -10,6 +11,7 @@ import chat.simplex.app.ui.harness.closeItemMenu
 import chat.simplex.app.ui.harness.connect
 import chat.simplex.app.ui.harness.described
 import chat.simplex.app.ui.harness.itemFileOf
+import chat.simplex.app.ui.harness.itemMenu
 import chat.simplex.app.ui.harness.plainBytesOf
 import chat.simplex.common.model.CIFileStatus
 import chat.simplex.common.model.MsgContent
@@ -140,6 +142,7 @@ class ReceiveFileTest : UiTest() {
     check(received.take(PNG_MAGIC.size) == PNG_MAGIC) { "the received $LARGE_PNG_NAME is not the PNG bob sent: ${received.take(PNG_MAGIC.size)}" }
   }
 
+  @KnownAppIssue("15.5 item 34", "the revealed deleted item offers Download")
   @Test fun rcvFile_senderDeletedItem_cannotReceive() = uiTest {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)
@@ -159,9 +162,11 @@ class ReceiveFileTest : UiTest() {
     poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "the item showing `marked deleted` in place of `$CAPTION`") {
       chat.item(id)?.meta?.itemDeleted != null && textsOf(Ui.Chat.Item(id)).let { t -> t.any { "marked deleted" in it } && t.none { CAPTION in it } }
     }
+    itemMenu(id, "reveal")
+    poll(what = "the revealed deleted item showing `$CAPTION`") { textsOf(Ui.Chat.Item(id)).any { CAPTION in it } }
     rightClick(Ui.Chat.Item(id))
-    waitFor(Ui.Chat.ItemMenu(id, "reveal"))
-    assertFalse("the menu of the deleted item offers Download", exists(Ui.Chat.ItemMenu(id, "download")))
+    waitFor(Ui.Chat.ItemMenu(id, "hide"))
+    assertFalse("the revealed deleted item offers Download", exists(Ui.Chat.ItemMenu(id, "download")))
     closeItemMenu(id)
   }
 

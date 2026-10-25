@@ -13,15 +13,17 @@ import chat.simplex.app.ui.harness.receivesFile
 import chat.simplex.common.simplexWindowState
 import chat.simplex.common.ui.Ui
 import org.junit.Test
+import java.awt.image.BufferedImage
 import java.io.File
+import javax.imageio.ImageIO
+import kotlin.random.Random
 
 class SendAttachmentDesktopTest : UiTest() {
   @Test fun attachImage_textOnLastImageOnly() = uiTest {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)
-    val fixture = File(UiEnv.repoRoot, "tests/fixtures/test.jpg")
-    val first = fixture.copyTo(File(exchangeDir(), "first.jpg"), overwrite = true)
-    val second = fixture.copyTo(File(exchangeDir(), "second.jpg"), overwrite = true)
+    val first = writeLargePhoto(File(exchangeDir(), "first.jpg"))
+    val second = File(UiEnv.repoRoot, "tests/fixtures/test.jpg").copyTo(File(exchangeDir(), "second.jpg"), overwrite = true)
     alice.chatList.open("bob")
     waitFor(Ui.Chat.Message)
     check(!seesDescription("Cancel image preview")) { "an image preview is shown before an image is picked" }
@@ -41,6 +43,15 @@ class SendAttachmentDesktopTest : UiTest() {
     val secondName = bob.receivesImageOffer(2)
     bob.receivesFile(1, firstName, "alice")
     bob.receivesFile(2, secondName, "alice")
+  }
+
+  private fun writeLargePhoto(file: File): File {
+    val image = BufferedImage(3000, 2000, BufferedImage.TYPE_INT_RGB)
+    val random = Random(1)
+    image.setRGB(0, 0, image.width, image.height, IntArray(image.width * image.height) { random.nextInt() }, 0, image.width)
+    ImageIO.write(image, "jpg", file)
+    check(file.length() > MAX_COMPRESSED_BYTES) { "${file.name} is ${file.length()} bytes, not above the $MAX_COMPRESSED_BYTES bytes image limit" }
+    return file
   }
 
   private fun UiScope.openFiles(files: List<File>, action: () -> Unit) {

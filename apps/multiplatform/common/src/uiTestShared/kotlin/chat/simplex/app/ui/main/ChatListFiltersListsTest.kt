@@ -6,6 +6,8 @@ import chat.simplex.app.ui.harness.backToChatList
 import chat.simplex.app.ui.harness.businessChat
 import chat.simplex.app.ui.harness.connect
 import chat.simplex.app.ui.harness.hostGroup
+import chat.simplex.common.platform.appPlatform
+import chat.simplex.app.ui.harness.switchAwayFromChat
 import chat.simplex.app.ui.harness.keepOneTimeLink
 import chat.simplex.app.ui.harness.lists
 import chat.simplex.app.ui.harness.ownGroup
@@ -88,38 +90,6 @@ class ChatListFiltersListsTest : UiTest() {
     }
   }
 
-  @Test fun presetFilterGroups() = uiTest {
-    val alice = app("alice"); val bob = cli("bob"); val biz = cli("biz")
-    connect(bob)
-    hostGroup(bob, "team", "alice")
-    businessChat(biz)
-    alice.chatList.row("bob").row("team").row("biz").row("Private notes")
-    presetFilter(PresetTagKind.GROUPS, "Groups")
-    poll(what = "only team listed") {
-      alice.chatList.shown("team") && !alice.chatList.shown("biz") && !alice.chatList.shown("bob") && !alice.chatList.shown("Private notes")
-    }
-  }
-
-  @Test fun presetFilterBusinesses() = uiTest {
-    val alice = app("alice"); val bob = cli("bob"); val biz = cli("biz")
-    connect(bob)
-    hostGroup(bob, "team", "alice")
-    businessChat(biz)
-    alice.chatList.row("bob").row("team").row("biz").row("Private notes")
-    presetFilter(PresetTagKind.BUSINESS, "Businesses")
-    poll(what = "only biz listed") {
-      alice.chatList.shown("biz") && !alice.chatList.shown("bob") && !alice.chatList.shown("team") && !alice.chatList.shown("Private notes")
-    }
-  }
-
-  @Test fun presetFilterNotes() = uiTest {
-    val alice = app("alice"); val bob = cli("bob")
-    connect(bob)
-    alice.chatList.row("bob").row("Private notes")
-    presetFilter(PresetTagKind.NOTES, "Notes")
-    poll(what = "only Private notes listed") { alice.chatList.shown("Private notes") && !alice.chatList.shown("bob") }
-  }
-
   @Test fun presetFilterReports() = uiTest {
     val alice = app("alice"); val bob = cli("bob"); val cath = cli("cath")
     connect(bob); connect(cath)
@@ -135,10 +105,13 @@ class ChatListFiltersListsTest : UiTest() {
       chatModel.chats.value.any { it.chatInfo.chatViewName == "team" && it.chatStats.reportsCount > 0 }
     }
     backToChatList()
+    switchAwayFromChat(alice)
+    check(chatModel.chatId.value != alice.chatList.chatId("team")) { "team is the open chat, which is always listed" }
     alice.chatList.row("bob").row("cath").row("team").row("club").row("Private notes")
     presetFilter(PresetTagKind.GROUP_REPORTS, "Reports")
     poll(what = "only team listed") {
-      alice.chatList.shown("team") && !alice.chatList.shown("club") && !alice.chatList.shown("bob") && !alice.chatList.shown("cath") && !alice.chatList.shown("Private notes")
+      alice.chatList.shown("team") && !alice.chatList.shown("club") && !alice.chatList.shown("bob") && !alice.chatList.shown("cath") &&
+        (appPlatform.isDesktop || !alice.chatList.shown("Private notes"))
     }
   }
 

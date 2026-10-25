@@ -167,6 +167,7 @@ class LockDesktopTest : UiTest() {
     for ((delay, name) in DELAYS) {
       check(name in textsOf(Ui.Lock.Delay.option(delay))) { "Lock after option $delay is not `$name`: ${textsOf(Ui.Lock.Delay.option(delay))}" }
     }
+    check(exists(Ui.Lock.Delay.option(60))) { "no Lock after option for 60 seconds" }
     click(Ui.Lock.Delay.option(0))
     poll(what = "Immediately shown and stored") { textOf(Ui.Lock.Delay) == "Immediately" && storedSetting(LOCK_DELAY) == "0" }
     again.close()
@@ -176,6 +177,14 @@ class LockDesktopTest : UiTest() {
     passcode.enter(CODE)
     passcode.submit()
     awaitUnlocked(passcode)
+  }
+
+  @KnownAppIssue("15.5 item 33", "waiting for the Lock after option for 60 seconds to read `1 minute`")
+  @Test fun lock_delayOption60_singularMinute() = uiTest {
+    val alice = app("alice")
+    yourPrivacy(alice).lock().enable(CODE)
+    click(Ui.Lock.Delay)
+    poll(what = "the Lock after option for 60 seconds to read `1 minute`") { "1 minute" in textsOf(Ui.Lock.Delay.option(60)) }
   }
 
   @Test fun selfDestruct_triggeredOnLockScreen() = uiTest {
@@ -527,6 +536,6 @@ class LockDesktopTest : UiTest() {
       "App passcode is replaced with self-destruct passcode.",
       "An empty chat profile with the provided name is created, and the app opens as usual.",
     )
-    val DELAYS = listOf(10 to "10 seconds", 30 to "30 seconds", 60 to "1 minutes", 180 to "3 minutes", 600 to "10 minutes", 0 to "Immediately")
+    val DELAYS = listOf(10 to "10 seconds", 30 to "30 seconds", 180 to "3 minutes", 600 to "10 minutes", 0 to "Immediately")
   }
 }

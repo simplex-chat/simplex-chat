@@ -6,12 +6,15 @@ import chat.simplex.app.ui.harness.UiTest
 import chat.simplex.app.ui.harness.WhatsNewScreen
 import chat.simplex.app.ui.harness.chatRunningInCore
 import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.Ui
+import chat.simplex.common.ui.UiIdle
 import chat.simplex.common.ui.UiKey
 import chat.simplex.common.ui.theme.CurrentColors
 import chat.simplex.common.ui.theme.DefaultTheme
 import chat.simplex.common.ui.theme.DefaultThemeMode
+import chat.simplex.common.views.helpers.AlertManager
 import org.junit.Test
 
 private const val CURRENT_THEME = "CurrentTheme"
@@ -45,6 +48,10 @@ class SettingsRootTest : UiTest() {
       escape()
       poll(what = "Your settings again after closing ${row.name}") { exists(Ui.Settings.Appearance) && !seesText(row.content) }
     }
+    click(Ui.Settings.Migrate)
+    poll(what = "Migrate device open while the chat runs") { seesText("Migrate device") }
+    escape()
+    poll(what = "Your settings again after closing Migrate device") { exists(Ui.Settings.Appearance) && !seesText("Migrate device") }
     escape()
     poll(what = "Your settings to close") { !exists(Ui.Settings.Appearance) && exists(Ui.ChatList.Search) }
   }
@@ -69,9 +76,20 @@ class SettingsRootTest : UiTest() {
       settle()
       check(exists(Ui.Settings.Appearance) && !row.shown(this)) { "${row.name} opened while the chat is stopped" }
     }
+    if (appPlatform.isAndroid) {
+      click(Ui.Settings.Notifications)
+      settle()
+      check(exists(Ui.Settings.Appearance) && !exists(Ui.Notifications.Mode)) { "Notifications opened while the chat is stopped" }
+    }
     click(Ui.Settings.Migrate)
     settle()
     check(exists(Ui.Settings.Appearance) && !seesText("Migrate device")) { "Migrate to another device opened while the chat is stopped" }
+    for (row in listOf(CHAT_DATA, APPEARANCE)) {
+      click(row.key)
+      poll(what = "${row.name} opening while the chat is stopped") { row.shown(this) && !exists(Ui.Settings.Appearance) }
+      escape()
+      poll(what = "Your settings again after closing ${row.name}") { exists(Ui.Settings.Privacy) && !seesText(row.content) }
+    }
     click(Ui.Settings.Help)
     poll(what = "Help & support opening while the chat is stopped") { exists(Ui.Help.HowToUse) && !exists(Ui.Settings.Appearance) }
     click(Ui.Help.HowToUse)
@@ -80,6 +98,11 @@ class SettingsRootTest : UiTest() {
     click(Ui.Help.WhatsNew)
     settle()
     check(exists(Ui.Help.WhatsNew) && !WhatsNewScreen(this).shown()) { "What's new opened while the chat is stopped" }
+    for (key in listOf(Ui.Help.News, Ui.Help.Founder)) {
+      click(key)
+      settle()
+      check(exists(Ui.Help.HowToUse) && !AlertManager.shared.hasAlertsShown() && UiIdle.inFlight().isEmpty()) { "${key.tag} acted while the chat is stopped" }
+    }
     click(Ui.Help.About)
     poll(what = "About SimpleX Chat opening while the chat is stopped") { seesText(ABOUT_TEXT) && !exists(Ui.Help.HowToUse) }
   }

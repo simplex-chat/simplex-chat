@@ -1,6 +1,7 @@
 package chat.simplex.app.ui.groups
 
 import chat.simplex.app.ui.harness.CONNECT_TIMEOUT_MS
+import chat.simplex.app.ui.harness.KnownAppIssue
 import chat.simplex.app.ui.harness.UiTest
 import chat.simplex.app.ui.harness.closeMemberInfo
 import chat.simplex.app.ui.harness.businessChat
@@ -105,6 +106,7 @@ class BusinessChatTest : UiTest() {
     }
   }
 
+  @KnownAppIssue("15.5 item 14", "waiting for the customer's membership left in the model", intermittent = true)
   @Test fun customer_seesTeamMemberAdded() = uiTest {
     val alice = app("alice"); val bob = cli("bob"); val cath = cli("cath")
     businessChat(bob)
@@ -133,6 +135,10 @@ class BusinessChatTest : UiTest() {
     bob.eventuallyMatching(Regex("#alice: alice_1 left the group( \\(signed\\))?"), CONNECT_TIMEOUT_MS)
     cath.eventuallyMatching(Regex("#alice: alice_1 left the group( \\(signed\\))?"), CONNECT_TIMEOUT_MS)
     poll(what = "`you left` in the business chat's compose field") { seesText("you left") }
+    poll(what = "the customer's membership left in the model") { groupInfoOf("bob").membership.memberStatus == GroupMemberStatus.MemLeft }
+    click(Ui.Chat.Message)
+    poll(what = "the `You can't send messages!` alert for the left customer") { seesText("You can't send messages!") }
+    click(Ui.Alert.Confirm(Ui.AlertSource.Shared))
   }
 
   @Test fun business_promoteCustomerToAdmin() = uiTest {

@@ -112,6 +112,14 @@ class ChatSearchTest : UiTest() {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)
     ownGroup(alice, "team", bob)
+    click(Ui.Chat.ContentFilter)
+    poll(what = "only `Images` and `Links` in the content filter menu of the empty group") {
+      exists(contentFilter("Images")) && exists(contentFilter("Links")) && !exists(contentFilter("Files"))
+    }
+    click(contentFilter("Images"))
+    poll(what = "the `Images` filter on in the empty group") { exists(Ui.Chat.Bar.part("search")) }
+    pickContentFilter("all")
+    poll(what = "the filter off in the empty group") { !exists(Ui.Chat.Bar.part("search")) }
     switchAwayFromChat(alice)
     bob sends "#team no links here"
     bob sends "#team check out https://example.com"

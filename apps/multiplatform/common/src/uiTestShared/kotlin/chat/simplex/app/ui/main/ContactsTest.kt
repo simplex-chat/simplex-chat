@@ -5,6 +5,7 @@ import chat.simplex.app.ui.harness.connect
 import chat.simplex.app.ui.harness.UiTest
 import chat.simplex.app.ui.harness.backToChatList
 import chat.simplex.common.platform.chatModel
+import chat.simplex.common.views.helpers.AlertManager
 import chat.simplex.common.views.helpers.ModalManager
 import chat.simplex.common.ui.Ui
 import org.junit.Test
@@ -26,20 +27,12 @@ class ContactsTest : UiTest() {
     alice.chatList.request("bob")
     alice.chatList.rowMenu("bob", "reject")
     alice.chatList.gone("bob")
+    check(!AlertManager.shared.hasAlertsShown()) { "an alert is shown after `Reject`" }
+    restart()
+    alice.chatList.row("Private notes")
+    alice.chatList.gone("bob")
     bob sends "/u"
     bob expects "user profile: bob"
-  }
-
-  @Test fun deleteContactAndNotify() = uiTest {
-    val alice = app("alice"); val bob = cli("bob")
-    connect(bob)
-    alice.chatList.open("bob").info()
-    click(Ui.Info.DeleteContact)
-    click(Ui.Alert.Option(Ui.AlertSource.Shared, "deleteContact"))
-    click(Ui.Alert.Option(Ui.AlertSource.Shared, "deleteAndNotify"))
-    bob.eventually("alice deleted contact with you", CONNECT_TIMEOUT_MS)
-    poll(what = "contact info and bob's chat closed") { chatModel.chatId.value == null && !ModalManager.end.hasModalsOpen() && !exists(Ui.Info.DeleteContact) }
-    alice.chatList.gone("bob")
   }
 
   @Test fun editProfileDisplayName() = uiTest {

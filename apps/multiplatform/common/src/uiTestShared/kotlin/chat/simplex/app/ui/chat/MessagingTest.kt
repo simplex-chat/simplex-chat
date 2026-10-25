@@ -49,24 +49,14 @@ class MessagingTest : UiTest() {
     bob expectsMessage "alice> [marked deleted] hello"
   }
 
-  @Test fun reaction_add_peerSeesAdded() = uiTest {
+  @Test fun reaction_received_chipCount() = uiTest {
     val alice = app("alice"); val bob = cli("bob", PeerFlags(reactions = true))
     connect(bob)
     bob sends "@alice hi"
     awaitRowText(alice, "bob", "hi")
-    alice.chatList.open("bob").react("hi", "👍")
-    bob expectsMessage "alice> >> hi"
-    bob expects "    + 👍"
-  }
-
-  @Test fun reaction_received_chipCount() = uiTest {
-    val alice = app("alice"); val bob = cli("bob", PeerFlags(reactions = true))
-    connect(bob)
     val chat = alice.chatList.open("bob")
-    chat.send("hi")
-    bob expectsMessage "alice> hi"
     chat.react("hi", "👍")
-    bob expectsMessage "alice> > hi"
+    bob expectsMessage "alice> >> hi"
     bob expects "    + 👍"
     poll(what = "alice's 👍 chip on `hi` without a count") { exists(Ui.Chat.ReactionChip(chat.itemId("hi"), "👍")) && chat.reactionCount("hi", "👍") == null }
     bob types "+1 alice hi"

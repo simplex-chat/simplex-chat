@@ -18,6 +18,7 @@ import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.Ui
 import org.junit.Test
 
+private const val READ = 40
 private const val UNREAD = 60
 private const val FAR = 120
 private const val NOTES = "Private notes"
@@ -31,10 +32,16 @@ class UnreadScrollTest : UiTest() {
   @Test fun unread_openChat_scrollsToFirstUnread() = uiTest {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)
+    for (i in 1..READ) bob sends "@alice r$i"
+    awaitRowText(alice, "bob", "r$READ")
+    alice.chatList.rowMenu("bob", "markRead")
+    poll(what = "bob's chat marked read") { alice.chatList.chat("bob").chatStats.unreadCount == 0 }
     for (i in 1..UNREAD) bob sends "@alice m$i"
     awaitRowText(alice, "bob", "$UNREAD")
     val chat = alice.chatList.open("bob")
     val first = chat.itemId("m1")
+    val oldest = loadedItemId("`r1` loaded above the unread messages") { it.content.text == "r1" }
+    check(!exists(Ui.Chat.Item(oldest))) { "the chat opened at the top, with the read `r1` in view" }
     var below = 0
     poll(what = "`m1` read, and the row and the scroll-down button both counting the unread messages below the view") {
       below = alice.chatList.chat("bob").chatStats.unreadCount

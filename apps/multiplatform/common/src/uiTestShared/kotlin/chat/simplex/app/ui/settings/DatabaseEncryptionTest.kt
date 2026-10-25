@@ -23,7 +23,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Test
 
 class DatabaseEncryptionTest : UiTest() {
-  @KnownAppIssue("15.5 item 27", "waiting for the Database encrypted! alert for the second passphrase", intermittent = true)
+  @KnownAppIssue("15.5 item 27", "waiting for the Database encrypted! alert for the second passphrase", intermittent = true, androidOnly = true)
   @Test fun dbEncrypt_changePassphrase() = uiTest {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)

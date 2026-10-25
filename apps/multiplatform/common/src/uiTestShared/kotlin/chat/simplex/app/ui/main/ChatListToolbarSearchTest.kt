@@ -142,17 +142,6 @@ class ChatListToolbarSearchTest : UiTest() {
     poll(what = "`friend` hidden for text its alias does not contain") { editableText(Ui.ChatList.Search) == "frix" && !alice.chatList.shown("friend") }
   }
 
-  @Test fun searchMatchesPendingConnectionAlias() = uiTest {
-    val alice = app("alice")
-    keepOneTimeLink(alice)
-    namePendingConnection("dentist")
-    alice.chatList.row("dentist").row("Private notes")
-    alice.chatList.search("dent")
-    poll(what = "only the pending connection listed") { alice.chatList.shown("dentist") && !alice.chatList.shown("Private notes") }
-    replaceText(Ui.ChatList.Search, "denx")
-    poll(what = "the pending connection hidden for text its alias does not contain") { editableText(Ui.ChatList.Search) == "denx" && !alice.chatList.shown("dentist") }
-  }
-
   @Test fun searchNoChatsFound() = uiTest {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)

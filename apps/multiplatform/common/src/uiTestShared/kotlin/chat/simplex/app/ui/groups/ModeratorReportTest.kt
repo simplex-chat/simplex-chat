@@ -105,9 +105,11 @@ class ModeratorReportTest : UiTest() {
     val joke = chat.itemId("cath's `bad joke`") { it.content.text == "bad joke" }
     bob.sendsReport("team", "spam", "cath", "bad joke")
     reportsBanner("1 report")
+    poll(what = "cath's `bad joke` shown, not moderated") { textsOf(Ui.Chat.Item(joke)).let { t -> t.any { "bad joke" in it } && t.none { "moderated by" in it } } }
     chat.menu("bad joke", "moderate")
-    poll(what = "the `Delete member message?` alert with `Delete`") {
-      seesText("Delete member message?") && "Delete" in textsOf(Ui.Alert.Confirm(Ui.AlertSource.Shared))
+    poll(what = "the `Delete member message?` alert saying the message will be marked as moderated, with `Delete`") {
+      seesText("Delete member message?") && seesText("The message will be marked as moderated for all members.") &&
+        "Delete" in textsOf(Ui.Alert.Confirm(Ui.AlertSource.Shared))
     }
     click(Ui.Alert.Confirm(Ui.AlertSource.Shared))
     cath.expectsMessage("#team cath> [marked deleted by alice] bad joke", CONNECT_TIMEOUT_MS)
