@@ -275,9 +275,9 @@ fun showWindow() {
 class SimplexWindowState {
   lateinit var windowState: WindowState
   val backstack = mutableStateListOf<() -> Unit>()
-  val openDialog = DialogState<File?>()
-  val openMultipleDialog = DialogState<List<File>>()
-  val saveDialog = DialogState<File?>()
+  val openDialog = DialogState<File?>(cancelled = null)
+  val openMultipleDialog = DialogState<List<File>>(cancelled = emptyList())
+  val saveDialog = DialogState<File?>(cancelled = null)
   val toasts = mutableStateListOf<Pair<String, Long>>()
   var windowFocused = mutableStateOf(true)
   val windowVisible = mutableStateOf(true)
@@ -291,14 +291,17 @@ data class DialogParams(
   val fileFilterDescription: String = "",
 )
 
-class DialogState<T> {
+class DialogState<T>(private val cancelled: T) {
   private var onResult: CompletableDeferred<T>? by mutableStateOf(null)
   var params = DialogParams()
   val isAwaiting get() = onResult != null
 
   suspend fun awaitResult(params: DialogParams = DialogParams()): T {
-    onResult = CompletableDeferred()
-    this.params = params
+    synchronized(this) {
+      if (isAwaiting) return cancelled
+      onResult = CompletableDeferred()
+      this.params = params
+    }
     val result = onResult!!.await()
     onResult = null
     return result
