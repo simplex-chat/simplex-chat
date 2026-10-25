@@ -46,7 +46,7 @@ struct MsgContentView: View {
     var cardColor: Color? = nil
     var encrypted: Bool? = nil
     var signedFileVerified: Bool? = nil
-    var terminalTextColor: Color? = nil
+    var textColor: Color? = nil
     @State private var showSecrets: Set<Int> = []
     @State private var typingIdx = 0
     @State private var timer: Timer?
@@ -139,7 +139,7 @@ struct MsgContentView: View {
             range: range,
             baseFont: font,
             secretStart: secretStart,
-            textColor: terminal ? UIColor(textColor) : .label
+            textColor: UIColor(messageColor)
         )
         let s = r.string
         let t: Text
@@ -152,7 +152,7 @@ struct MsgContentView: View {
             t = Text(AttributedString(s))
         }
         let bodyFont = UIFont.preferredFont(forTextStyle: textStyle)
-        let box = terminal ? terminalLineBox(font, textColor.opacity(textAlpha), theme, capsOf: font.pointSize > bodyFont.pointSize ? bodyFont : nil) : nil
+        let box = terminal ? terminalLineBox(font, messageColor.opacity(textAlpha), theme, capsOf: font.pointSize > bodyFont.pointSize ? bodyFont : nil) : nil
         return msgTextResultView(r, t, showSecrets: $showSecrets, sendCommand: { cmd in sendCommandMsg(chat, cmd) }, lineSpacing: box?.spacing ?? 0)
             .lineBox(box)
     }
@@ -179,7 +179,7 @@ struct MsgContentView: View {
             backgroundColor: containerBackground,
             prefix: prefix,
             stripLink: stripLink,
-            textColor: terminal ? UIColor(textColor) : .label
+            textColor: UIColor(messageColor)
         )
         let s = r.string
         let t: Text
@@ -191,13 +191,13 @@ struct MsgContentView: View {
         } else {
             t = Text(AttributedString(s))
         }
-        let box = terminal ? terminalLineBox(UIFont.preferredFont(forTextStyle: textStyle), textColor, theme) : nil
+        let box = terminal ? terminalLineBox(UIFont.preferredFont(forTextStyle: textStyle), messageColor, theme) : nil
         return msgTextResultView(r, t, showSecrets: $showSecrets, sendCommand: { cmd in sendCommandMsg(chat, cmd) }, lineSpacing: box?.spacing ?? 0)
             .lineBox(box)
     }
 
-    private var textColor: Color {
-        terminalTextColor ?? messageTextColor(theme)
+    private var messageColor: Color {
+        textColor ?? messageTextColor(theme)
     }
 
     @inline(__always)

@@ -192,6 +192,8 @@ Renders emoji-only messages (messages containing only emoji characters) in a lar
 
 Renders message text with SimpleX markdown formatting (bold, italic, code, links, mentions). Blocks of `markdownBlocks` (headings, lists, quotes, code blocks, tables, rules) are drawn as a column of views by `MarkdownBlocksView`; code blocks and tables scroll sideways.
 
+Text colour: `textColor`, else `messageTextColor(theme)`: `onSurface`, at 87% in dark themes. `FramedItemView` passes `onSurface` for quote text (terminal rows: 70%).
+
 ### DeletedItemView / MarkedDeletedItemView
 
 **Files**: [`Shared/Views/Chat/ChatItem/DeletedItemView.swift`](../../Shared/Views/Chat/ChatItem/DeletedItemView.swift) | [`Shared/Views/Chat/ChatItem/MarkedDeletedItemView.swift`](../../Shared/Views/Chat/ChatItem/MarkedDeletedItemView.swift)
@@ -394,8 +396,7 @@ FramedItemView        background, quote background and header backgrounds omitte
                       link preview and chat link cards: quote colour, message corner clip (terminalBlock)
                       media width limit for captionless media only (mediaLimit)
                       captionless media, chat link without text: terminalBlockBottomGap below (metaPlacement)
-MsgContentView        text colour messageTextColor (onSurface; 87% in dark themes) or terminalTextColor
-                      line box terminalLineBox; meta line for live messages only
+MsgContentView        line box terminalLineBox; meta line for live messages only
                       text ends with the transparent copy of the meta (reserveSpaceForMeta)
 MarkdownBlocksView    paragraph break, heading after another block: terminalLevelStep
                       block other than a heading after a heading: terminalHeadingBottomGap

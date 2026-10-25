@@ -226,7 +226,7 @@ Shared/Views/UserSettings/AppearanceSettings.swift
                                          presets as colours; custom image tile, scale type, scale and wallpaper tint hidden
                                          \.terminalLayout by profileChatLayout
 theme writes                             chatLayout kept (agent profile plan, section 6)
-classic                                  unchanged, message text colour included
+classic                                  message text in messageTextColor (MsgContentView); quote text in onSurface; otherwise unchanged
 differences                              row tint: selected only; hover and press indication omitted
                                          swipe to reply moves the item
                                          gaps in pt at the 17pt body size, scaled by Dynamic Type; line heights from the SF font
