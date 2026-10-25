@@ -342,7 +342,7 @@ fun ChatItemView(
           ) {
             @Composable
             fun framedItemView() {
-              FramedItemView(chatsCtx, chat, cItem, uriHandler, imageProvider, linkMode = linkMode, showViaProxy = showViaProxy, showMenu, showTimestamp = showTimestamp, tailVisible = itemSeparation.largeGap, receiveFile, onLinkLongClick, scrollToItem, scrollToItemId, scrollToQuotedItemFromItem, headerEnd = if (terminal && !searchIsNotBlank.value) { { GoToItemButton(false, bubbleHovered) } } else null)
+              FramedItemView(chatsCtx, chat, cItem, uriHandler, imageProvider, linkMode = linkMode, showViaProxy = showViaProxy, showMenu, showTimestamp = showTimestamp, tailVisible = itemSeparation.largeGap, receiveFile, onLinkLongClick, scrollToItem, scrollToItemId, scrollToQuotedItemFromItem, endButton = if (terminal && !searchIsNotBlank.value && cItem.meta.itemForwarded?.chatTypeApiIdMsgId != null) { { GoToItemButton(false, bubbleHovered) } } else null)
             }
 
             fun deleteMessageQuestionText(): String {

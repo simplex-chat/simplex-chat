@@ -198,11 +198,11 @@ fun Modifier.inlineIcon(): Modifier =
   }
 
 @Composable
-fun ItemWithMeta(meta: @Composable () -> Unit, overlayMeta: (@Composable () -> Unit)? = null, metaReserved: Boolean = false, headerEnd: (@Composable () -> Unit)? = null, content: @Composable (inlineMeta: (@Composable () -> Unit)?) -> Unit) {
+fun ItemWithMeta(meta: @Composable () -> Unit, overlayMeta: (@Composable () -> Unit)? = null, metaReserved: Boolean = false, endButton: (@Composable () -> Unit)? = null, content: @Composable (inlineMeta: (@Composable () -> Unit)?) -> Unit) {
   if (LocalTerminalLayout.current) {
     TerminalMetaLayout(metaReserved, hasOverlay = overlayMeta != null) {
       content(null)
-      listOfNotNull(meta, overlayMeta, headerEnd).forEach { m ->
+      listOfNotNull(meta, overlayMeta, endButton).forEach { m ->
         Box(Modifier.padding(end = 12.dp)) {
           m()
         }
@@ -219,11 +219,12 @@ private fun TerminalMetaLayout(metaReserved: Boolean, hasOverlay: Boolean, conte
     val metaConstraints = constraints.copy(minWidth = 0, minHeight = 0)
     val meta = measurables[1].measure(metaConstraints)
     val overlay = if (hasOverlay) measurables[2].measure(metaConstraints) else null
-    val headerEnd = measurables.getOrNull(if (hasOverlay) 3 else 2)?.measure(metaConstraints)
+    val endButton = measurables.getOrNull(if (hasOverlay) 3 else 2)?.measure(metaConstraints)
     val besideMeta = !metaReserved && overlay == null
-    val contentMaxWidth = if (besideMeta && constraints.hasBoundedWidth) (constraints.maxWidth - meta.width).coerceAtLeast(0) else constraints.maxWidth
+    val reservedWidth = max(if (besideMeta) meta.width else 0, endButton?.width ?: 0)
+    val contentMaxWidth = if (constraints.hasBoundedWidth) (constraints.maxWidth - reservedWidth).coerceAtLeast(0) else constraints.maxWidth
     val content = measurables[0].measure(constraints.copy(minWidth = 0, maxWidth = contentMaxWidth))
-    val width = if (constraints.hasBoundedWidth) constraints.maxWidth else if (besideMeta) content.width + meta.width else max(content.width, meta.width)
+    val width = if (constraints.hasBoundedWidth) constraints.maxWidth else max(content.width + reservedWidth, meta.width)
     val gap = TERMINAL_META_GAP.toPx().roundToInt()
     val lineEnd = if (layoutDirection == LayoutDirection.Ltr) {
       content[LastLineRight].takeIf { it != AlignmentLine.Unspecified }
@@ -240,17 +241,16 @@ private fun TerminalMetaLayout(metaReserved: Boolean, hasOverlay: Boolean, conte
     }.coerceAtLeast(0)
     val blockGap = if (content[LastBlockBottom] == content.height) TERMINAL_BLOCK_BOTTOM_GAP.toPx().roundToInt() else 0
     val placedOverlay = overlay?.takeIf { content.width + meta.width > width }
-    val firstBaseline = content[FirstBaseline].takeIf { it != AlignmentLine.Unspecified } ?: 0
-    val headerEndHeight = headerEnd?.height ?: 0
-    val headerEndTop = (firstBaseline - (12.sp.toPx() * INTER_CAP_HEIGHT + headerEndHeight) / 2).roundToInt().coerceAtLeast(0)
-    layout(width, maxOf(content.height + blockGap, metaTop + meta.height, placedOverlay?.height ?: 0, headerEndTop + headerEndHeight)) {
+    val endButtonHeight = endButton?.height ?: 0
+    val endButtonTop = (((if (placedOverlay != null) content.height else metaTop) - endButtonHeight) / 2).coerceAtLeast(0)
+    layout(width, maxOf(content.height + blockGap, metaTop + meta.height, placedOverlay?.height ?: 0, endButtonTop + endButtonHeight)) {
       content.placeRelative(0, 0)
       if (placedOverlay != null) {
         placedOverlay.placeRelative(content.width - placedOverlay.width, (content.height - gap - placedOverlay.height).coerceAtLeast(0))
       } else {
         meta.placeRelative(width - meta.width, metaTop)
       }
-      headerEnd?.placeRelative(width - headerEnd.width, headerEndTop)
+      endButton?.placeRelative(width - endButton.width, endButtonTop)
     }
   }
 }

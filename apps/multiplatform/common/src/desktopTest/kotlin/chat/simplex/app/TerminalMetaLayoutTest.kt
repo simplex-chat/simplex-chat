@@ -30,13 +30,13 @@ class TerminalMetaLayoutTest {
   private val blockGap = with(density) { TERMINAL_BLOCK_BOTTOM_GAP.roundToPx() }
   private val placed = mutableMapOf<String, Placed>()
 
-  private class Result(val row: Placed, val content: Placed, val meta: Placed?, val overlay: Placed?, val headerEnd: Placed?, val drawn: Set<String>)
+  private class Result(val row: Placed, val content: Placed, val meta: Placed?, val overlay: Placed?, val endButton: Placed?, val drawn: Set<String>)
 
   private fun layOut(
     direction: LayoutDirection = LayoutDirection.Ltr,
     metaReserved: Boolean = true,
     overlay: Boolean = false,
-    headerEnd: Boolean = false,
+    endButton: Boolean = false,
     content: @Composable (Modifier) -> Unit
   ): Result {
     val drawn = mutableSetOf<String>()
@@ -47,13 +47,13 @@ class TerminalMetaLayoutTest {
             meta = { Box(Modifier.record(placed, "meta").drawBehind { drawn += "meta" }.fixed(metaWidth, metaHeight, metaBaseline)) },
             overlayMeta = if (overlay) { { Box(Modifier.record(placed, "overlay").drawBehind { drawn += "overlay" }.fixed(metaWidth, metaHeight, metaBaseline)) } } else null,
             metaReserved = metaReserved,
-            headerEnd = if (headerEnd) { { Box(Modifier.record(placed, "headerEnd").fixed(22, 22, null)) } } else null
+            endButton = if (endButton) { { Box(Modifier.record(placed, "endButton").fixed(22, 22, null)) } } else null
           ) { content(Modifier.record(placed, "content")) }
         }
       }
     }
     val row = placed.getValue("row")
-    return Result(Placed(0, 0, row.width, row.height), placed.getValue("content").relativeTo(row), placed["meta"]?.relativeTo(row), placed["overlay"]?.relativeTo(row), placed["headerEnd"]?.relativeTo(row), drawn)
+    return Result(Placed(0, 0, row.width, row.height), placed.getValue("content").relativeTo(row), placed["meta"]?.relativeTo(row), placed["overlay"]?.relativeTo(row), placed["endButton"]?.relativeTo(row), drawn)
   }
 
   @Test
@@ -137,15 +137,16 @@ class TerminalMetaLayoutTest {
   }
 
   @Test
-  fun headerEndOnFirstLineAboveMeta() {
-    val r = layOut(headerEnd = true) {
-      Column(it) {
+  fun endButtonCentredAboveTimeLine() {
+    val r = layOut(endButton = true) {
+      Column(it.fillMaxWidth()) {
         Box(Modifier.fixed(80, 24, 18))
         Box(Modifier.fixed(100, 40, 30))
       }
     }
-    assertEquals(Placed(rowWidth - 12 - 22, 3, 22, 22), r.headerEnd)
+    assertEquals(Placed(0, 0, rowWidth - 12 - 22, 64), r.content)
     assertEquals(Placed(rowWidth - metaBoxWidth, 54 - metaBaseline, metaWidth, metaHeight), r.meta)
+    assertEquals(Placed(rowWidth - 12 - 22, (54 - metaBaseline - 22) / 2, 22, 22), r.endButton)
     assertEquals(64, r.row.height)
   }
 

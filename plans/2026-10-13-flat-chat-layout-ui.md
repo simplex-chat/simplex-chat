@@ -92,7 +92,8 @@ meta copy mark    U+200E (left-to-right layout) or U+200F (right-to-left) before
                   U+2060 (word joiner) before the mark, so the copy stays with the last word after the spaces of an idle live message
 event time        joined to the last word by no-break spaces
 go-to button      search results: after the item at the row end, centred on it, as classic received items; all times of the results move left together
-                  forwarded items: at the row end on the forwarded header line, above the time, which keeps its place (user, 2026-10-25)
+                  forwarded items: at the row end, centred on the item above the time line (one-line message: the forwarded line);
+                  text narrowed by the arrow, the time keeps its place (user, 2026-10-25)
 row tint          hover and press: indication over the whole row; selected: primary 10%; highlighted: primary 14%
 colours           app, user and chat themes, as classic
 wallpaper         background colour of the wallpaper, preset or custom; image omitted
@@ -134,14 +135,14 @@ views/chat/ChatView.kt
   classic                                sender rows and shouldShowAvatar as on master
 views/chat/ChatItemsMerger.kt            MergedItem.revealed: true for Single, the flag of Grouped
 views/chat/item/TerminalItemView.kt      LocalTerminalLayout, gap constants, terminalTextStyle, terminalItemShowsSender, sameSender, terminalRowGap, terminalHeadingGap
-                                         row interaction, messageLastLine, messageLastBlock, inlineIcon, ItemWithMeta (headerEnd on the first baseline)
+                                         row interaction, messageLastLine, messageLastBlock, inlineIcon, ItemWithMeta (endButton centred above the time line)
                                          ChatItemSender, chatItemSender, SenderNameAndRole, TerminalChatItemRow
 views/chat/item/ChatItemView.kt          alignEnd = sent && !terminal; item click without indication; reactions at the text edge
                                          GoToItemButton on the side given by alignEnd; terminal: after the item in search results
-                                         and for marked deleted items, otherwise headerEnd of FramedItemView
+                                         and for marked deleted items, otherwise endButton of FramedItemView
                                          chatItemTailEnabled false; clipChatItem skipped
                                          hasQuoteOrHeader: the choice of EmojiItemView or CIVoiceView, and the heading gaps
-views/chat/item/FramedItemView.kt        transparent background; headers and quote without background; quoteBar; mediaModifier; cardModifier; thumbnailClip; headerEnd to ItemWithMeta
+views/chat/item/FramedItemView.kt        transparent background; headers and quote without background; quoteBar; mediaModifier; cardModifier; thumbnailClip; endButton to ItemWithMeta
                                          CIMarkdownText: parameter terminalTop plus terminalHeadingGap, no bottom padding, terminal text style, file encryption and signature for the copy
                                          metaReserved: passed to ItemWithMeta, bottom gap without text; captions by the classic conditions; clipChatItem skipped
                                          emoji: TERMINAL_EMOJI_* paddings, not stretched; quote row: TERMINAL_BLOCK_* paddings, icons without top padding
@@ -231,7 +232,7 @@ terminal rows   in this pull request, after the Kotlin part is approved and revi
 - content shorter than the time: time at the top, the row as tall as the time
 - overlay meta when content and time exceed the row: at the bottom end of the content; under a wider quote, on the media corner
 - overlay meta on content shorter than the time: at the top of the content, the row as tall as the time
-- header end: at the row end on the first line, the time on the last baseline unchanged
+- end button: at the row end, centred above the time box; content narrowed by it; the time at the row end
 - last line with room, right-to-left
 
 `apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/PriorityLayoutTest.kt`: terminal elements at their own width, classic elements at the media width; terminal placement at the start edge right-to-left, classic unmirrored.

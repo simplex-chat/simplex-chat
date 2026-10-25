@@ -47,7 +47,7 @@ fun FramedItemView(
   scrollToItem: (Long) -> Unit = {},
   scrollToItemId: MutableState<Long?>,
   scrollToQuotedItemFromItem: (Long) -> Unit = {},
-  headerEnd: (@Composable () -> Unit)? = null,
+  endButton: (@Composable () -> Unit)? = null,
 ) {
   val chatInfo = chat.chatInfo
   val sent = ci.chatDir.sent
@@ -265,7 +265,7 @@ fun FramedItemView(
       meta = { CIMetaView(ci, chatTTL, metaColor, showViaProxy = showViaProxy, showTimestamp = showTimestamp) },
       overlayMeta = if (captionlessMedia) { { CIMetaView(ci, chatTTL, Color.White, showViaProxy = showViaProxy, showTimestamp = showTimestamp, lineHeightColor = messageTextColor()) } } else null,
       metaReserved = metaReserved,
-      headerEnd = headerEnd
+      endButton = endButton
     ) { inlineMeta ->
       Box(contentAlignment = Alignment.BottomEnd) {
         val style = shapeStyle(ci, chatItemTailEnabled(), tailVisible, true)
