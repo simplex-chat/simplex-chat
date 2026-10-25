@@ -10117,8 +10117,9 @@ Cela peut se produire en raison d'un bug ou lorsque la connexion est compromise.
         <target state="translated">Le code scanné n'est pas un code QR de lien SimpleX.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The code you scanned is not a badge code." xml:space="preserve">
+      <trans-unit id="The code you scanned is not a badge code." xml:space="preserve" approved="no">
         <source>The code you scanned is not a badge code.</source>
+        <target state="translated">Le code que vous avez scanné n’est pas un code de badge.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The connection reached the limit of undelivered messages" xml:space="preserve" approved="no">
@@ -10198,8 +10199,9 @@ vos contacts et vos groupes.</target>
         <target state="translated">La plus ancienne des libertés humaines : parler à une autre personne sans être surveillé, sur une infrastructure qui ne peut pas la trahir.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The payment has not been confirmed yet." xml:space="preserve">
+      <trans-unit id="The payment has not been confirmed yet." xml:space="preserve" approved="no">
         <source>The payment has not been confirmed yet.</source>
+        <target state="translated">Le paiement n’a pas encore été confirmé.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The same conditions will apply to operator **%@**." xml:space="preserve" approved="no">
@@ -10237,8 +10239,9 @@ vos contacts et vos groupes.</target>
         <target state="translated">Les serveurs pour les nouveaux fichiers de votre profil de messagerie actuel **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The service did not respond. Please try again." xml:space="preserve">
+      <trans-unit id="The service did not respond. Please try again." xml:space="preserve" approved="no">
         <source>The service did not respond. Please try again.</source>
+        <target state="translated">Le service n’a pas répondu. Veuillez réessayer.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The store could not be reached." xml:space="preserve">
