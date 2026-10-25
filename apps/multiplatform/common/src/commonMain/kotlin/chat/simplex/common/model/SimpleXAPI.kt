@@ -74,6 +74,8 @@ val CREATE_MEMBER_CONTACT_VERSION = 2
 // support group knocking (MsgScope)
 val GROUP_KNOCKING_VERSION = 15
 
+val CALL_RECONNECT_VERSION = 22
+
 enum class CallOnLockScreen {
   DISABLE,
   SHOW,
@@ -3694,7 +3696,8 @@ object ChatController {
       media = r.callType.media,
       aesKey = r.sharedKey,
       iceServers = iceServers,
-      relay = useRelay
+      relay = useRelay,
+      canReconnect = r.contact.callReconnectSupported
     ))
   }
 
