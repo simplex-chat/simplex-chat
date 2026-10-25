@@ -186,6 +186,7 @@ fun DecryptionErrorItemFixButton(
             inlineMeta()
           }
         }
+        inlineMeta?.invoke()
       }
     }
   }
