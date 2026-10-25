@@ -30,12 +30,13 @@ class TerminalMetaLayoutTest {
   private val blockGap = with(density) { TERMINAL_BLOCK_BOTTOM_GAP.roundToPx() }
   private val placed = mutableMapOf<String, Placed>()
 
-  private class Result(val row: Placed, val content: Placed, val meta: Placed?, val overlay: Placed?, val drawn: Set<String>)
+  private class Result(val row: Placed, val content: Placed, val meta: Placed?, val overlay: Placed?, val headerEnd: Placed?, val drawn: Set<String>)
 
   private fun layOut(
     direction: LayoutDirection = LayoutDirection.Ltr,
     metaReserved: Boolean = true,
     overlay: Boolean = false,
+    headerEnd: Boolean = false,
     content: @Composable (Modifier) -> Unit
   ): Result {
     val drawn = mutableSetOf<String>()
@@ -45,13 +46,14 @@ class TerminalMetaLayoutTest {
           ItemWithMeta(
             meta = { Box(Modifier.record(placed, "meta").drawBehind { drawn += "meta" }.fixed(metaWidth, metaHeight, metaBaseline)) },
             overlayMeta = if (overlay) { { Box(Modifier.record(placed, "overlay").drawBehind { drawn += "overlay" }.fixed(metaWidth, metaHeight, metaBaseline)) } } else null,
-            metaReserved = metaReserved
+            metaReserved = metaReserved,
+            headerEnd = if (headerEnd) { { Box(Modifier.record(placed, "headerEnd").fixed(22, 22, null)) } } else null
           ) { content(Modifier.record(placed, "content")) }
         }
       }
     }
     val row = placed.getValue("row")
-    return Result(Placed(0, 0, row.width, row.height), placed.getValue("content").relativeTo(row), placed["meta"]?.relativeTo(row), placed["overlay"]?.relativeTo(row), drawn)
+    return Result(Placed(0, 0, row.width, row.height), placed.getValue("content").relativeTo(row), placed["meta"]?.relativeTo(row), placed["overlay"]?.relativeTo(row), placed["headerEnd"]?.relativeTo(row), drawn)
   }
 
   @Test
@@ -132,6 +134,19 @@ class TerminalMetaLayoutTest {
     val media = placed.getValue("media").relativeTo(placed.getValue("row"))
     assertEquals(Placed(media.x + media.width - metaBoxWidth, media.y + media.height - gap - metaHeight, metaWidth, metaHeight), r.overlay)
     assertEquals(setOf("overlay"), r.drawn)
+  }
+
+  @Test
+  fun headerEndOnFirstLineAboveMeta() {
+    val r = layOut(headerEnd = true) {
+      Column(it) {
+        Box(Modifier.fixed(80, 24, 18))
+        Box(Modifier.fixed(100, 40, 30))
+      }
+    }
+    assertEquals(Placed(rowWidth - 12 - 22, 3, 22, 22), r.headerEnd)
+    assertEquals(Placed(rowWidth - metaBoxWidth, 54 - metaBaseline, metaWidth, metaHeight), r.meta)
+    assertEquals(64, r.row.height)
   }
 
   @Test

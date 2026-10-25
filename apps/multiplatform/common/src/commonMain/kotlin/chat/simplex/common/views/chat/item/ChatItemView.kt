@@ -313,6 +313,7 @@ fun ChatItemView(
       Box {
         Row(verticalAlignment = Alignment.CenterVertically) {
         val bubbleHovered = bubbleInteractionSource.collectIsHoveredAsState()
+        val markedDeleted = cItem.meta.itemDeleted != null && (!revealed.value || cItem.isDeletedContent)
         if (alignEnd) {
           GoToItemButton(true, bubbleHovered)
         }
@@ -341,7 +342,7 @@ fun ChatItemView(
           ) {
             @Composable
             fun framedItemView() {
-              FramedItemView(chatsCtx, chat, cItem, uriHandler, imageProvider, linkMode = linkMode, showViaProxy = showViaProxy, showMenu, showTimestamp = showTimestamp, tailVisible = itemSeparation.largeGap, receiveFile, onLinkLongClick, scrollToItem, scrollToItemId, scrollToQuotedItemFromItem)
+              FramedItemView(chatsCtx, chat, cItem, uriHandler, imageProvider, linkMode = linkMode, showViaProxy = showViaProxy, showMenu, showTimestamp = showTimestamp, tailVisible = itemSeparation.largeGap, receiveFile, onLinkLongClick, scrollToItem, scrollToItemId, scrollToQuotedItemFromItem, headerEnd = if (terminal && !searchIsNotBlank.value) { { GoToItemButton(false, bubbleHovered) } } else null)
             }
 
             fun deleteMessageQuestionText(): String {
@@ -704,7 +705,7 @@ fun ChatItemView(
               e2eeInfoText(if (e2EEInfo.public == true) MR.strings.e2ee_info_no_e2ee else MR.strings.e2ee_info_no_pq)
             }
 
-            if (cItem.meta.itemDeleted != null && (!revealed.value || cItem.isDeletedContent)) {
+            if (markedDeleted) {
               MarkedDeletedItemView(chatsCtx, cItem, cInfo, cInfo.timedMessagesTTL, revealed, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
               MarkedDeletedItemDropdownMenu()
             } else {
@@ -812,7 +813,7 @@ fun ChatItemView(
             }
           }
         }
-        if (!alignEnd) {
+        if (!alignEnd && (!terminal || searchIsNotBlank.value || markedDeleted)) {
           GoToItemButton(false, bubbleHovered)
         }
         }
