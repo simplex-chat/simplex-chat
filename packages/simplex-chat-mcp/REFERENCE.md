@@ -55,7 +55,7 @@ At its first start the server downloads the SimpleX core library, 29 to 50 MB de
    The first start prints, after two lines about downloading the SimpleX core library and the Node.js add-on:
 
    ```
-   SimpleX MCP server 0.1.0, agent "my-agent"
+   SimpleX MCP server 0.1.1, agent "my-agent"
    Data folder: /home/alice/.simplex-mcp/my-agent
    Approval mode: requests
    Agent control chat "My Agent" created.
@@ -297,7 +297,7 @@ Add an entry with the URL `http://127.0.0.1:5226/mcp` and the header `Authorizat
 |---|---|
 | The server was not running when Claude Code started | Start the server, then run `/mcp reconnect all` in Claude Code (2.1.284 or later). |
 | The server restarted while Claude Code was running | Claude Code reconnects up to five times within about 30 seconds. After that, in an interactive session, run `/mcp reconnect all`; `claude -p` runs and Agent SDK sessions keep retrying for about half an hour. Open calls fail, and pending actions are cancelled; the agent's repeated call creates a new request. |
-| A second server was started on the same data folder | It exits with `Another server uses <folder> (PID N).` |
+| A second server was started on the same data folder | It exits with `Another server uses <folder> (PID N). If no server runs, remove <folder>/lock.` |
 | Every owner left the agent control chat or was removed | `connect`, `send` and `leave` fail. Without `--owners`, the server logs `No owners in the agent control chat.` and prints a new link; join with it. With an `--owners` list, the agent posts and the server logs `No owners remain: restart the server with --reset-owners --owners`. |
 | The agent was removed from the agent control chat, the chat was deleted, or the agent lost its owner role | `connect`, `send` and `leave` fail, and the server logs `The agent lost its control chat. Restart the server with --reset-owners.` |
 | The QR code does not scan | Start with `--qr-code large`, or paste the link into the app. |
