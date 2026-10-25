@@ -389,7 +389,7 @@ The `RelayStatusIndicator` composable in `AddChannelView.kt` renders `RsRejected
 
 **Location:** [`item/TerminalItemView.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TerminalItemView.kt)
 
-Rendering of a chat whose [`ChatInfo.activeChatLayout`](../state.md) is `ChatLayoutMode.Terminal`: full-width start-aligned rows, the sender name once per group of messages, avatars in groups only, messages without bubbles (item-level changes: section 4). Android and desktop; iOS draws the classic layout.
+Rendering of a chat whose [`ChatInfo.activeChatLayout`](../state.md) is `ChatLayoutMode.Terminal`: full-width start-aligned rows, the sender name once per group of messages, avatars in groups only, messages without bubbles (item-level changes: section 4). Android and desktop; iOS: apps/ios/spec/client/chat-view.md, section 9.
 
 ### Activation
 

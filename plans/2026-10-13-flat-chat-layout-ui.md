@@ -2,7 +2,7 @@
 
 Date: 2026-10-13. Revised: 2026-10-14, 2026-10-19, 2026-10-21, 2026-10-24.
 
-Chats with the layout `terminal` are drawn by the Android and desktop apps as full-width start-aligned rows without bubbles. iOS draws the classic layout; its layout pickers were removed until it draws terminal rows.
+Chats with the layout `terminal` are drawn by the Android and desktop apps as full-width start-aligned rows without bubbles. iOS draws terminal rows too (section 4).
 
 D1–D33: the numbered decisions of the layout review of 2026-10-23 and 2026-10-24.
 
