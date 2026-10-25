@@ -10,16 +10,25 @@ import chat.simplex.common.model.UserOperatorServers
 import chat.simplex.common.model.UserServer
 import chat.simplex.common.model.json
 import chat.simplex.common.platform.chatController
+import chat.simplex.common.platform.chatSendCmdRetry
 import chat.simplex.common.ui.Ui
 import chat.simplex.common.ui.UiKey
 import chat.simplex.common.views.helpers.AlertManager
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.jsonObject
 
 const val UNREACHABLE_HOST = "127.0.0.2"
 
 fun coreNetworkConfig(): NetCfg {
   val r = runBlocking { chatController.sendCmd(null, CC.APIGetNetworkConfig()) }
   return (r.result as? CR.NetworkConfig)?.networkConfig ?: error("/network failed: ${r.responseType} ${r.details}")
+}
+
+fun coreKeepAliveOn(): Boolean {
+  val raw = chatSendCmdRetry(chatController.getChatCtrl() ?: error("chat controller is not initialized"), CC.APIGetNetworkConfig().cmdString, 0)
+  val cfg = json.parseToJsonElement(raw).jsonObject["result"]?.jsonObject?.get("networkConfig")?.jsonObject ?: error("/network failed: $raw")
+  return cfg["tcpKeepAlive"].let { it != null && it !is JsonNull }
 }
 
 fun saveNetworkConfigViaApi(cfg: NetCfg) {

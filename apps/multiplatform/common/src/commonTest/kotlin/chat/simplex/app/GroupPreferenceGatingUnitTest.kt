@@ -57,6 +57,15 @@ class GroupPreferenceGatingUnitTest {
   }
 
   @Test
+  fun filesForAdminsAreOffForMembersInComposer() {
+    val p = prefs.copy(files = RoleGroupPreference(GroupFeatureEnabled.ON, role = GroupMemberRole.Admin))
+    assertFalse(group(GroupMemberRole.Member, p).groupFeatureEnabled(GroupFeature.Files))
+    assertFalse(group(GroupMemberRole.Member, p).featureEnabled(ChatFeature.Files))
+    assertTrue(group(GroupMemberRole.Admin, p).groupFeatureEnabled(GroupFeature.Files))
+    assertTrue(group(GroupMemberRole.Admin, p).featureEnabled(ChatFeature.Files))
+  }
+
+  @Test
   fun simplexLinksOffAreOffEvenForOwners() {
     val p = prefs.copy(simplexLinks = RoleGroupPreference(GroupFeatureEnabled.OFF, role = null))
     assertFalse(group(GroupMemberRole.Owner, p).groupFeatureEnabled(GroupFeature.SimplexLinks))

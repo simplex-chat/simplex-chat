@@ -27,6 +27,10 @@ class SystemNotificationsAndroidTest : UiTest() {
     val chat = alice.chatList.open("bob")
     bob sends "@alice $TO_OPEN_CHAT"
     chat.itemId(TO_OPEN_CHAT)
+    repeat(OPEN_CHAT_NTF_SAMPLES) {
+      check(messageNotifications().none { it.title == "bob" }) { "bob's message to his open chat was notified before it was marked read: ${messageNotifications()}" }
+      Thread.sleep(50)
+    }
     cath sends "@alice $FROM_CATH"
     poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "cath's message notification while bob's chat is open") { messageNotifications().any { it.title == "cath" } }
     val fromCath = messageNotifications().single { it.title == "cath" }
@@ -100,5 +104,6 @@ class SystemNotificationsAndroidTest : UiTest() {
     const val AFTER_CLOSE = "sent after the chat closed"
     const val HELLO = "hello"
     const val REQUEST = "New contact request"
+    const val OPEN_CHAT_NTF_SAMPLES = 10
   }
 }

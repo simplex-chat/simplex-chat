@@ -58,7 +58,7 @@ class ComposeTimedTextUnitTest {
   }
 
   @Test
-  fun zeroSecondsFallsThroughToMonths() {
+  fun zeroSeconds_shows0Months_currentBehaviour_item37() {
     assertEquals("0mth", shortTimeText(0))
     assertEquals("0 months", timeText(0))
   }

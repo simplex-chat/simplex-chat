@@ -16,7 +16,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ReactionTest : UiTest() {
-  @KnownAppIssue("15.5 item 17", "waiting for the chip menu listing `bob` and `you`", intermittent = true)
+  @KnownAppIssue("15.5 item 17", "waiting for the chip menu listing `bob` and `you`", desktopOnly = true)
   @Test fun reaction_chipClickOthers_adds() = uiTest {
     val alice = app("alice"); val bob = cli("bob", PeerFlags(reactions = true))
     connect(bob)

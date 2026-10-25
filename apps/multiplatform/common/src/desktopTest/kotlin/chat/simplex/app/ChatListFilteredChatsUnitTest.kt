@@ -104,6 +104,17 @@ class ChatListFilteredChatsUnitTest {
   }
 
   @Test
+  fun searchMatchesRealNameOfAliasedContact() {
+    assertEquals(listOf(dentist.id), search("carol"))
+  }
+
+  @Test
+  fun searchMatchesFullNameOfAliasedContact() {
+    val plumber2 = direct(contact(8, "dan", fullName = "Daniel Jones", localAlias = "plumber2"))
+    assertEquals(listOf(plumber2.id), search("jones", allChats + plumber2))
+  }
+
+  @Test
   fun searchMatchesPendingConnectionAlias() {
     assertEquals(listOf(plumberConnection.id), search("PLUM"))
     assertEquals(emptyList<String>(), search("plux"))

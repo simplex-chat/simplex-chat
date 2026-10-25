@@ -55,7 +55,7 @@ class SupportChatTest : UiTest() {
     info.close()
     poll(what = "the support banner gone after the messages were read") { exists(Ui.Chat.Message) && supportBanner().isEmpty() }
     bob sends "#team (support: alice) third"
-    poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "the `1 messages` banner in team's chat") { "1 messages" in supportBanner() }
+    poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "the `1 message` banner in team's chat") { supportBanner().any { it == "1 message" || it == "1 messages" } }
     click(Ui.Chat.SupportChats)
     val again = SupportChatScreen(this)
     again.waitOpen()

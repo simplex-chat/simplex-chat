@@ -38,7 +38,6 @@ class PendingConnectionUnitTest {
     assertEquals(false, ConnStatus.Joined.initiated)
     assertEquals(true, ConnStatus.Requested.initiated)
     assertEquals(true, ConnStatus.Accepted.initiated)
-    assertNull(ConnStatus.SndReady.initiated)
     assertNull(ConnStatus.Ready.initiated)
     assertNull(ConnStatus.Deleted.initiated)
     assertNull(ConnStatus.Failed("error").initiated)
@@ -116,7 +115,8 @@ class PendingConnectionUnitTest {
   }
 
   @Test
-  fun sndReadyPendingConnectionShowsConnectionEstablishedWithoutDescription() {
+  fun sndReady_showsConnectionEstablished_currentBehaviour_item18() {
+    assertNull(ConnStatus.SndReady.initiated)
     val c = pending(ConnStatus.SndReady)
     assertEquals(generalGetString(MR.strings.display_name_connection_established), c.displayName)
     assertEquals("", c.description)

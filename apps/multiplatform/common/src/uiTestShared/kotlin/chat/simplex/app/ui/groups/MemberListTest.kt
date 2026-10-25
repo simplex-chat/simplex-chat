@@ -28,8 +28,8 @@ class MemberListTest : UiTest() {
     connect(bob)
     connect(cath)
     val info = emptyGroup(alice, "team").groupInfo()
-    poll(what = "`1 members` with alice's own row `you: creator`, `owner`") {
-      info.ownMemberTexts().let { "you: creator" in it && "owner" in it } && membersTitleShown(1)
+    poll(what = "alice's own row `you: creator`, `owner`, and no other members") {
+      info.ownMemberTexts().let { "you: creator" in it && "owner" in it } && !membersTitleShown(3) && info.memberTexts("bob").isEmpty() && info.memberTexts("cath").isEmpty()
     }
     val first = inviteMembers()
     poll(what = "cath offered") { first.listed("cath") }
@@ -57,6 +57,13 @@ class MemberListTest : UiTest() {
     poll(what = "the admin bob listed above cath, who was invited first") {
       textsOf(Ui.GroupInfo.Content).let { t -> t.indexOf("bob") >= 0 && t.indexOf("bob") < t.indexOf("cath") }
     }
+  }
+
+  @KnownAppIssue("15.5 item 41", "waiting for `1 member` as the members title of a group of one")
+  @Test fun groupInfo_singleMemberTitleIsSingular() = uiTest {
+    val alice = app("alice")
+    val info = emptyGroup(alice, "team").groupInfo()
+    poll(what = "`1 member` as the members title of a group of one") { info.ownMemberTexts().isNotEmpty() && seesText("1 member") }
   }
 
   @KnownAppIssue("15.5 item 15", "FOREIGN KEY constraint failed")

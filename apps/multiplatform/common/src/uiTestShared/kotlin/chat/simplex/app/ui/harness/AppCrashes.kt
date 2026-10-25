@@ -10,14 +10,14 @@ import java.util.concurrent.ConcurrentLinkedQueue
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
 @Repeatable
-annotation class KnownAppIssue(val finding: String, val error: String, val intermittent: Boolean = false, val androidOnly: Boolean = false)
+annotation class KnownAppIssue(val finding: String, val error: String, val intermittent: Boolean = false, val androidOnly: Boolean = false, val desktopOnly: Boolean = false)
 
 class KnownIssueRule : TestRule {
   override fun apply(base: Statement, description: Description): Statement = object : Statement() {
     override fun evaluate() = withKnownIssue(knownIssues(description)) { base.evaluate() }
   }
 
-  private fun knownIssues(description: Description): List<KnownAppIssue> = knownIssuesOf(description).filter { !it.androidOnly || appPlatform.isAndroid }
+  private fun knownIssues(description: Description): List<KnownAppIssue> = knownIssuesOf(description).filter { (!it.androidOnly || appPlatform.isAndroid) && (!it.desktopOnly || appPlatform.isDesktop) }
 
   private fun knownIssuesOf(description: Description): List<KnownAppIssue> = description.annotations.flatMap { a ->
     when {

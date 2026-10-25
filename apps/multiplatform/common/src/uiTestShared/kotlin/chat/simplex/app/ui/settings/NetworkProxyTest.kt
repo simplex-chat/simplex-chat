@@ -9,6 +9,7 @@ import chat.simplex.app.ui.harness.UiTest
 import chat.simplex.app.ui.harness.backToChatList
 import chat.simplex.app.ui.harness.closeDeveloperTools
 import chat.simplex.app.ui.harness.connect
+import chat.simplex.app.ui.harness.coreKeepAliveOn
 import chat.simplex.app.ui.harness.coreNetworkConfig
 import chat.simplex.app.ui.harness.goBack
 import chat.simplex.app.ui.harness.localSmpServer
@@ -323,7 +324,7 @@ class NetworkProxyTest : UiTest() {
 
   @Test fun advNet_keepAlive() = uiTest {
     val alice = app("alice")
-    check(storedSetting(KEEP_ALIVE) != "false" && coreNetworkConfig().tcpKeepAlive == KeepAliveOpts.defaults) { "keep-alive before the test: ${coreNetworkConfig().tcpKeepAlive}" }
+    check(storedSetting(KEEP_ALIVE) != "false" && coreKeepAliveOn() && coreNetworkConfig().tcpKeepAlive == KeepAliveOpts.defaults) { "keep-alive before the test: ${coreNetworkConfig().tcpKeepAlive}" }
     var adv = networkAndServers(alice).advanced()
     check(adv.value("tcpKeepIdle") == "30 sec" && adv.value("tcpKeepCnt") == "4") { "TCP_KEEPIDLE `${adv.value("tcpKeepIdle")}`, TCP_KEEPCNT `${adv.value("tcpKeepCnt")}`" }
     click(Ui.AdvancedNetwork.KeepAlive)
@@ -335,7 +336,7 @@ class NetworkProxyTest : UiTest() {
     val after = restart()
     poll(what = "chat running after the restart") { chatModel.chatRunning.value == true }
     adv = networkAndServers(after).advanced()
-    check(exists(Ui.AdvancedNetwork.KeepAlive) && seesText("TCP_KEEPIDLE") && !exists(Ui.AdvancedNetwork.Setting("tcpKeepIdle"))) { "keep-alive is on again after the restart" }
+    check(exists(Ui.AdvancedNetwork.KeepAlive) && seesText("TCP_KEEPIDLE") && !exists(Ui.AdvancedNetwork.Setting("tcpKeepIdle")) && !coreKeepAliveOn()) { "keep-alive is on again after the restart" }
     click(Ui.AdvancedNetwork.KeepAlive)
     adv.select("tcpKeepIdle", 60)
     adv.select("tcpKeepCnt", 8)
@@ -343,12 +344,12 @@ class NetworkProxyTest : UiTest() {
     adv.saveAndReconnect()
     poll(what = "keep-alive stored as on with the new values and applied to the core") {
       storedSetting(KEEP_ALIVE) == "true" && storedSetting("NetworkTCPKeepIdle") == "60" && storedSetting("NetworkTCPKeepCnt") == "8" &&
-        coreNetworkConfig().tcpKeepAlive == KeepAliveOpts(keepIdle = 60, keepIntvl = KeepAliveOpts.defaults.keepIntvl, keepCnt = 8)
+        coreKeepAliveOn() && coreNetworkConfig().tcpKeepAlive == KeepAliveOpts(keepIdle = 60, keepIntvl = KeepAliveOpts.defaults.keepIntvl, keepCnt = 8)
     }
     click(Ui.AdvancedNetwork.KeepAlive)
     adv.saveAndReconnect()
     poll(what = "keep-alive off in the core, the 60 sec / 8 values dropped") {
-      storedSetting(KEEP_ALIVE) == "false" && coreNetworkConfig().tcpKeepAlive == KeepAliveOpts.defaults
+      storedSetting(KEEP_ALIVE) == "false" && !coreKeepAliveOn()
     }
   }
 

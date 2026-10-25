@@ -6,6 +6,8 @@ import chat.simplex.app.ui.harness.UiScope
 import chat.simplex.app.ui.harness.UiTest
 import chat.simplex.app.ui.harness.awaitRowText
 import chat.simplex.app.ui.harness.backToChatList
+import chat.simplex.app.ui.harness.chatData
+import chat.simplex.app.ui.harness.chatRunningInCore
 import chat.simplex.app.ui.harness.confirmAlert
 import chat.simplex.app.ui.harness.connect
 import chat.simplex.app.ui.harness.described
@@ -25,14 +27,37 @@ import chat.simplex.common.ui.Ui
 import org.junit.Assert.assertFalse
 import org.junit.Test
 
+private val NOT_IDLE = setOf("ComposeNotIdleException", "IdlingResourceTimeoutException")
+
+private fun idleAfter(step: String, block: () -> Unit) {
+  try {
+    block()
+  } catch (e: Throwable) {
+    if (generateSequence(e) { it.cause }.none { it.javaClass.simpleName in NOT_IDLE }) throw e
+    throw AssertionError("the app's UI did not become idle after $step", e)
+  }
+}
+
 class ItemInfoTest : UiTest() {
   @Test fun info_sent_showsSentAt() = uiTest {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)
-    val chat = alice.chatList.open("bob")
-    chat.send("mine")
+    alice.chatList.open("bob").send("mine")
     bob expectsMessage "alice> mine"
+    backToChatList()
+    val db = chatData(alice).management()
+    click(Ui.Database.RunChat)
+    poll(what = "the Stop chat? alert with Stop") { seesText("Stop chat?") && "Stop" in textsOf(Ui.Alert.Confirm(Ui.AlertSource.Shared)) }
+    click(Ui.Alert.Confirm(Ui.AlertSource.Shared))
+    poll(what = "alice's chat stopped") { seesText("Chat is stopped") && !chatRunningInCore() }
     bob sends "@alice theirs"
+    val sentSecond = System.currentTimeMillis() / 1000
+    poll(what = "the clock two whole seconds past bob's send") { System.currentTimeMillis() / 1000 >= sentSecond + 2 }
+    click(Ui.Database.RunChat)
+    poll(what = "alice's chat running again") { seesText("Chat is running") && chatRunningInCore() }
+    db.close()
+    poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "bob's message received after the chat restarted") { "theirs" in alice.chatList.rowTexts("bob") }
+    val chat = alice.chatList.open("bob")
     val mine = chat.itemId("mine"); val theirs = chat.itemId("theirs")
     chat.itemInfo("mine").run {
       val sentAt = localTimestamp(chat.item(mine)!!.meta.itemTs)
@@ -42,8 +67,8 @@ class ItemInfoTest : UiTest() {
     }
     chat.receivedItemInfo("theirs").run {
       val meta = chat.item(theirs)!!.meta
-      check(row("Sent at") == localTimestamp(meta.itemTs) && row("Received at") == localTimestamp(meta.createdAt)) {
-        "`Sent at` / `Received at` of bob's message: `${row("Sent at")}` / `${row("Received at")}`"
+      check(row("Sent at") == localTimestamp(meta.itemTs) && row("Received at") == localTimestamp(meta.createdAt) && row("Sent at") != row("Received at")) {
+        "`Sent at` / `Received at` of bob's message: `${row("Sent at")}` / `${row("Received at")}`, expected `${localTimestamp(meta.itemTs)}` / `${localTimestamp(meta.createdAt)}`"
       }
       check(!seesText("Sent message") && !seesText("Deleted at")) { "sent or deleted rows in the info of bob's message" }
       close()
@@ -141,7 +166,7 @@ class ItemInfoTest : UiTest() {
     }
   }
 
-  @KnownAppIssue("15.5 item 30", "did not become idle while waiting for node chat.item.menu.info[22]", intermittent = true, androidOnly = true)
+  @KnownAppIssue("15.5 item 30", "did not become idle after opening bob's chat around the source of `hi`", intermittent = true, androidOnly = true)
   @Test fun info_forwardedTab_showsSource() = uiTest {
     val alice = app("alice"); val bob = cli("bob")
     connect(bob)
@@ -163,23 +188,25 @@ class ItemInfoTest : UiTest() {
         exists(Ui.ItemInfo.ForwardedFrom) && "bob" in textsOf(Ui.ItemInfo.ForwardedFrom) && seesText("Forwarded from") && seesText(SOURCE_HIDDEN)
       }
     }
-    click(Ui.ItemInfo.ForwardedFrom)
-    val bobId = alice.chatList.chatId("bob")
-    poll(what = "bob's chat opened from the source row and the item info closed") { chatModel.chatId.value == bobId && !exists(Ui.ItemInfo.ForwardedFrom) }
-    hideKeyboard()
-    chat.forwardTo("hi", "Private notes")
-    val notesId = alice.chatList.chatId("Private notes")
-    val savedFromBob = { ci: ChatItem -> ci.content.text == "hi" && (ci.meta.itemForwarded as? CIForwardedFrom.Contact)?.chatName == "bob" }
-    poll(what = "the notes open with the saved `hi`") { chatModel.chatId.value == notesId && chatModel.chatsContext.chatItems.value.any(savedFromBob) }
-    hideKeyboard()
-    openItemInfo(chat.itemId("the `hi` saved from bob in the notes", savedFromBob), "Saved message").run {
-      poll(what = "the `Saved` tab, with the history shown first") { exists(SAVED_TAB) && !exists(Ui.ItemInfo.ForwardedFrom) }
-      click(SAVED_TAB)
-      poll(what = "`Saved from` bob, without the recipients line") {
-        exists(Ui.ItemInfo.ForwardedFrom) && "bob" in textsOf(Ui.ItemInfo.ForwardedFrom) && seesText("Saved from") &&
-          !seesText("Forwarded from") && !seesText(SOURCE_HIDDEN)
+    idleAfter("opening bob's chat around the source of `hi`") {
+      click(Ui.ItemInfo.ForwardedFrom)
+      val bobId = alice.chatList.chatId("bob")
+      poll(what = "bob's chat opened from the source row and the item info closed") { chatModel.chatId.value == bobId && !exists(Ui.ItemInfo.ForwardedFrom) }
+      hideKeyboard()
+      chat.forwardTo("hi", "Private notes")
+      val notesId = alice.chatList.chatId("Private notes")
+      val savedFromBob = { ci: ChatItem -> ci.content.text == "hi" && (ci.meta.itemForwarded as? CIForwardedFrom.Contact)?.chatName == "bob" }
+      poll(what = "the notes open with the saved `hi`") { chatModel.chatId.value == notesId && chatModel.chatsContext.chatItems.value.any(savedFromBob) }
+      hideKeyboard()
+      openItemInfo(chat.itemId("the `hi` saved from bob in the notes", savedFromBob), "Saved message").run {
+        poll(what = "the `Saved` tab, with the history shown first") { exists(SAVED_TAB) && !exists(Ui.ItemInfo.ForwardedFrom) }
+        click(SAVED_TAB)
+        poll(what = "`Saved from` bob, without the recipients line") {
+          exists(Ui.ItemInfo.ForwardedFrom) && "bob" in textsOf(Ui.ItemInfo.ForwardedFrom) && seesText("Saved from") &&
+            !seesText("Forwarded from") && !seesText(SOURCE_HIDDEN)
+        }
+        close()
       }
-      close()
     }
   }
 

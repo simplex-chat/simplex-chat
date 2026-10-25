@@ -88,7 +88,7 @@ class ChatListMenusPendingTest : UiTest() {
     poll(what = "all notifications and the mute icon gone") { mode(MsgFilter.All) && !muteIcon() }
   }
 
-  @KnownAppIssue("15.5 item 35", "waiting for the notes still read and empty after restart")
+  @KnownAppIssue("15.5 item 35", "waiting for the notes still read after restart")
   @Test fun notesMenuMarkUnreadAndClear() = uiTest {
     val alice = app("alice")
     alice.chatList.open("Private notes").send("keep in mind")
@@ -107,9 +107,11 @@ class ChatListMenusPendingTest : UiTest() {
     }
     val read = alice.chatList.rowTexts("Private notes").count { it.isEmpty() }
     restart().chatList.row("Private notes")
-    poll(what = "the notes still read and empty after restart") {
-      alice.chatList.chat("Private notes").let { it.chatItems.isEmpty() && !it.chatStats.unreadChat } &&
-        alice.chatList.rowTexts("Private notes").let { texts -> "keep in mind" !in texts && texts.count { it.isEmpty() } == read }
+    poll(what = "the cleared note still gone after restart") {
+      alice.chatList.chat("Private notes").chatItems.isEmpty() && "keep in mind" !in alice.chatList.rowTexts("Private notes")
+    }
+    poll(what = "the notes still read after restart") {
+      !alice.chatList.chat("Private notes").chatStats.unreadChat && alice.chatList.rowTexts("Private notes").count { it.isEmpty() } == read
     }
   }
 

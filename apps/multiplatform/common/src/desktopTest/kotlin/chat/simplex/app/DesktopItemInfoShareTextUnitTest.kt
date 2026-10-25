@@ -177,6 +177,14 @@ class DesktopItemInfoShareTextUnitTest {
   }
 
   @Test
+  fun receivedItemSignedWithUnknownKeyHasNoSignatureLine() {
+    assertEquals(
+      lines("# Received message", "", "Sent at: ${localTimestamp(sentTs)}", "Received at: ${localTimestamp(sentTs)}"),
+      share(verified(item(dir = CIDirection.DirectRcv()), MsgVerified.Signed(MsgSigStatus.SignedNoKey)))
+    )
+  }
+
+  @Test
   fun itemWithMissingSignatureSaysSignatureMissing() {
     assertEquals(
       lines("# Received message", "", "Sent at: ${localTimestamp(sentTs)}", "Received at: ${localTimestamp(sentTs)}", "Signature missing"),

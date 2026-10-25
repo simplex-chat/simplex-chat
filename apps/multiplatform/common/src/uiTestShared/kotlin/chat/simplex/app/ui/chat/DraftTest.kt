@@ -69,14 +69,18 @@ class DraftTest : UiTest() {
     val bobId = alice.chatList.chatId("bob"); val cathId = alice.chatList.chatId("cath")
     alice.chatList.open("bob")
     typeInto(Ui.Chat.Message, "for bob")
+    switchAwayFromChat(alice)
+    poll(what = "a draft on bob's row") { alice.chatList.rowTexts("bob").any { it.endsWith(" for bob") } }
     bob sends "/d alice"
     bob expects "alice: contact is deleted"
-    poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "the field cleared once sending is impossible") {
-      !alice.chatList.chat("bob").chatInfo.sendMsgEnabled && exists(Ui.Chat.Message) && editableText(Ui.Chat.Message).isNullOrEmpty()
+    poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "bob's contact unable to receive messages") { !alice.chatList.chat("bob").chatInfo.sendMsgEnabled }
+    alice.chatList.open("bob")
+    poll(what = "bob's field empty once sending is impossible") {
+      chatModel.chatId.value == bobId && exists(Ui.Chat.Message) && editableText(Ui.Chat.Message).isNullOrEmpty()
     }
     backToChatList()
+    poll(what = "no draft on bob's row") { alice.chatList.rowTexts("bob").let { it.isNotEmpty() && it.none { t -> t.endsWith(" for bob") } } }
     alice.chatList.open("cath")
-    poll(what = "no draft on bob's row") { chatModel.chatId.value == cathId && alice.chatList.rowTexts("bob").none { it.endsWith(" for bob") } }
     typeInto(Ui.Chat.Message, "for cath")
     backToChatList()
     alice.chatList.open("bob")
@@ -84,5 +88,10 @@ class DraftTest : UiTest() {
     backToChatList()
     alice.chatList.open("cath")
     poll(what = "cath's draft kept through the visit to bob's chat") { chatModel.chatId.value == cathId && editableText(Ui.Chat.Message) == "for cath" }
+    cath sends "/d alice"
+    cath expects "alice: contact is deleted"
+    poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "cath's field cleared once sending is impossible") {
+      !alice.chatList.chat("cath").chatInfo.sendMsgEnabled && exists(Ui.Chat.Message) && editableText(Ui.Chat.Message).isNullOrEmpty()
+    }
   }
 }

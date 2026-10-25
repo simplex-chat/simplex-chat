@@ -81,7 +81,7 @@ class ChatItemPredicatesUnitTest {
   }
 
   @Test
-  fun reportReasonsOfferedInOrder() {
+  fun reportReasonsOfferedInOrder_toleratesNullEntry_item36() {
     val reasons = ReportReason.supportedReasons
     val expected = listOf(ReportReason.Spam, ReportReason.Illegal, ReportReason.Community, ReportReason.Profile, ReportReason.Other)
     assertEquals(5, reasons.size)

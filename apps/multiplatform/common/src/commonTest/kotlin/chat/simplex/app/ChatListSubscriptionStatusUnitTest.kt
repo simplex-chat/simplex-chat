@@ -24,6 +24,11 @@ class ChatListSubscriptionStatusUnitTest {
   }
 
   @Test
+  fun offlineWithoutSubscriptionsOrSessionIsDisconnected() {
+    assertEquals(AppSubscriptionStatus(SubscriptionColorType.DISCONNECTED, 1f, 0f), status(online = false, active = 0, pending = 0, hasSess = false))
+  }
+
+  @Test
   fun noSubscriptionsAndNoSessionIsActiveWithEmptyIcon() {
     assertEquals(AppSubscriptionStatus(SubscriptionColorType.ACTIVE, 0f, 0f), status(active = 0, pending = 0, hasSess = false))
   }

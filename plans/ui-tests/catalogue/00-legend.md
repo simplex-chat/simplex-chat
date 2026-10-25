@@ -171,7 +171,7 @@ Each sub-area (a `###` section) is one test class, or several consecutive classe
 | 03 | 6 | Member admission and review | `memberAdmission_unsavedChangesAlert` | `MemberAdmissionTest` | 7 | 2 |
 | 03 | 7 | Group link | `groupLink_cliJoinsViaFullLink` | `GroupLinkTest` | 8 | 0 |
 | 03 | 8 | Joining (alice as joiner), connect-plan states, invitations | `joinGroup_pasteShortLinkPrepareAndJoin` | `JoiningTest`, `JoiningCompatTest`, `JoiningCompatStableTest` | 16 | 0 |
-| 03 | 9 | Member list and multi-select | `memberList_rolesAndStatuses` | `MemberListTest` | 5 | 0 |
+| 03 | 9 | Member list and multi-select | `memberList_rolesAndStatuses` | `MemberListTest` | 6 | 0 |
 | 03 | 10 | Member info | `memberInfo_openShowsSections` | `MemberInfoTest` | 22 | 0 |
 | 03 | 11 | Member contacts | `memberContact_createAndSendInvitation` | `MemberContactTest` | 4 | 0 |
 | 03 | 12 | Support chats, «Chats with members» / «Chat with admins» | `supportChat_memberSendsToAdmins` | `SupportChatTest` | 6 | 0 |

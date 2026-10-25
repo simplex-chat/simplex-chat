@@ -105,6 +105,12 @@ class ContactCantSendReasonUnitTest {
   }
 
   @Test
+  fun deletedWinsOverNotReady() {
+    assertEquals(expected(MR.strings.cant_send_message_contact_deleted), reason(contact(activeConn = readyConn.copy(connStatus = ConnStatus.Deleted), contactStatus = ContactStatus.Deleted)))
+    assertEquals(expected(MR.strings.cant_send_message_contact_deleted), reason(contact(activeConn = null, contactStatus = ContactStatus.Deleted)))
+  }
+
+  @Test
   fun deletedWinsOverNotSynchronized() {
     assertEquals(
       expected(MR.strings.cant_send_message_contact_deleted),

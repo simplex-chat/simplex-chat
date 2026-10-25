@@ -4,7 +4,9 @@ import chat.simplex.app.ui.harness.CONNECT_TIMEOUT_MS
 import chat.simplex.app.ui.harness.UiTest
 import chat.simplex.app.ui.harness.backToChatList
 import chat.simplex.app.ui.harness.businessChat
+import chat.simplex.app.ui.harness.businessTypeOf
 import chat.simplex.app.ui.harness.connect
+import chat.simplex.app.ui.harness.createBusinessAddress
 import chat.simplex.app.ui.harness.hostGroup
 import chat.simplex.common.platform.appPlatform
 import chat.simplex.app.ui.harness.switchAwayFromChat
@@ -13,6 +15,7 @@ import chat.simplex.app.ui.harness.lists
 import chat.simplex.app.ui.harness.ownGroup
 import chat.simplex.app.ui.harness.presetFilter
 import chat.simplex.app.ui.harness.quiesce
+import chat.simplex.common.model.BusinessChatType
 import chat.simplex.common.model.ChatInfo
 import chat.simplex.common.model.MsgFilter
 import chat.simplex.common.platform.chatModel
@@ -76,17 +79,24 @@ class ChatListFiltersListsTest : UiTest() {
   }
 
   @Test fun presetFilterContacts() = uiTest {
-    val alice = app("alice"); val bob = cli("bob"); val biz = cli("biz")
+    val alice = app("alice"); val bob = cli("bob"); val biz = cli("biz"); val cust = cli("cust")
+    val address = createBusinessAddress(alice)
     connect(bob)
     hostGroup(bob, "team", "alice")
+    cust sends "/c $address"
+    cust expects "connection request sent!"
+    cust.eventually("#alice: joining the group...", CONNECT_TIMEOUT_MS)
+    cust.eventually("#alice: you joined the group", CONNECT_TIMEOUT_MS)
+    poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "a customer business chat named cust") { businessTypeOf("cust") == BusinessChatType.Customer }
     businessChat(biz)
     keepOneTimeLink(alice)
     val pending = Ui.ChatList.Row(chatModel.chats.value.first { it.chatInfo is ChatInfo.ContactConnection }.id)
-    alice.chatList.row("bob").row("team").row("biz").row("Private notes")
+    alice.chatList.row("bob").row("team").row("biz").row("cust").row("Private notes")
     waitFor(pending)
     presetFilter(PresetTagKind.CONTACTS, "Contacts")
-    poll(what = "only bob and the pending connection listed") {
-      alice.chatList.shown("bob") && exists(pending) && !alice.chatList.shown("team") && !alice.chatList.shown("biz") && !alice.chatList.shown("Private notes")
+    poll(what = "only bob, the customer chat cust and the pending connection listed") {
+      alice.chatList.shown("bob") && alice.chatList.shown("cust") && exists(pending) &&
+        !alice.chatList.shown("team") && !alice.chatList.shown("biz") && !alice.chatList.shown("Private notes")
     }
   }
 
