@@ -7,6 +7,7 @@ on:
       - "packages/simplex-chat-client/types/typescript/**"
       - "packages/simplex-chat-python/**"
       - ".github/workflows/packages.yml"
+    types: [opened, synchronize, reopened, ready_for_review]
 
 concurrency:
   # build.yml and this workflow both run for a pull request that changes the core and the packages
@@ -23,6 +24,7 @@ env:
 
 jobs:
   addon:
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     outputs:
       platforms: ${{ steps.plan.outputs.platforms }}
