@@ -2990,4 +2990,9 @@
     <string name="badges_issuing_body">Il pagamento è completo. Il distintivo verrà aggiunto a questo profilo.</string>
     <string name="badges_ledger_charge_id">ID addebito</string>
     <string name="badges_waiting_for_approval_body">Nessun addebito.</string>
+    <string name="chat_layout_chat_suffix">(chat)</string>
+    <string name="chat_layout">Disposizione chat</string>
+    <string name="chat_layout_classic">Classica</string>
+    <string name="chat_layout_default_suffix">(predefinita)</string>
+    <string name="chat_layout_terminal">Terminale</string>
 </resources>
