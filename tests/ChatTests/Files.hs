@@ -25,6 +25,7 @@ import Simplex.Chat.Library.Internal (badgeProofStatus, roundedFDCount)
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Options (ChatOpts (..))
 import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..), XFTPStoreConfig (..))
+import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey, bbsKeyGen)
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
@@ -59,6 +60,9 @@ chatFileTests = do
     it "delete agent file after upload error" testXFTPUploadErrorDeletesAgentFile
     it "delete agent file when contact is deleted during upload" testXFTPContactDeletedDuringUpload
     it "delete agent file when item is marked deleted during upload" testXFTPMarkDeletedDuringUpload
+    it "delete agent file when file user is missing during upload" testXFTPMissingUserDuringUpload
+    it "complete upload before chat is suspended" testXFTPSuspendDuringUpload
+    it "show agent file error without file ID" testXFTPAgentErrorWithoutFileId
     it "with relative paths: send and receive file" testXFTPWithRelativePaths
     xit' "continue receiving file after restart" testXFTPContinueRcv
     it "receive file marked to receive on chat start" testXFTPMarkToReceive
@@ -1085,6 +1089,54 @@ testXFTPMarkDeletedDuringUpload =
     bob <# "alice> [marked deleted] hi, sending a file"
     (withCCAgentTransaction alice $ \db -> DB.query_ db "SELECT count(1) FROM snd_files" :: IO [[Int]]) `shouldEventuallyReturn` [[0]]
 
+testXFTPMissingUserDuringUpload :: HasCallStack => TestParams -> IO ()
+testXFTPMissingUserDuringUpload =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    let srcFile = tmpFile alice "testfile.in"
+    xftpCLI ["rand", srcFile, "17mb"] `shouldReturn` ["File created: " <> srcFile]
+    alice #> ("/f @bob " <> srcFile)
+    alice <## "use /fc 1 to cancel sending"
+    bob <# "alice> sends file testfile.in (17.0 MiB / 17825792 bytes)"
+    bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+    withCCTransaction alice $ \db -> DB.execute_ db "UPDATE contacts SET contact_profile_id = NULL WHERE contact_id = (SELECT contact_id FROM users WHERE user_id = 1)"
+    withXFTPServer alice $
+      (withCCAgentTransaction alice $ \db -> DB.query_ db "SELECT deleted FROM snd_files" :: IO [[Int]]) `shouldEventuallyReturn` [[1]]
+
+testXFTPSuspendDuringUpload :: HasCallStack => TestParams -> IO ()
+testXFTPSuspendDuringUpload =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    alice #> "/f @bob ./tests/fixtures/test.pdf"
+    alice <## "use /fc 1 to cancel sending"
+    bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+    bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+    alice ##> "/_app suspend 60000000"
+    alice <## "ok"
+    withXFTPServer alice $ do
+      alice <## "completed uploading file 1 (test.pdf) for bob"
+      alice <## "chat suspended"
+      checkNoAgentSndFiles alice
+      let testPdf = tmpFile bob "test.pdf"
+      bob ##> ("/fr 1 " <> tmpDir bob)
+      bob
+        <### [ ConsoleString $ "saving file 1 from alice to " <> testPdf,
+               "started receiving file 1 (test.pdf) from alice"
+             ]
+      bob <## "completed receiving file 1 (test.pdf) from alice"
+      src <- B.readFile "./tests/fixtures/test.pdf"
+      B.readFile testPdf `shouldReturn` src
+
+testXFTPAgentErrorWithoutFileId :: HasCallStack => TestParams -> IO ()
+testXFTPAgentErrorWithoutFileId =
+  testChatCfgOpts cfg testOpts aliceProfile $ \alice -> do
+    withCCAgentTransaction alice $ \db -> DB.execute_ db "ALTER TABLE snd_files RENAME COLUMN prefix_path TO prefix_path_renamed"
+    alice <##. "internal error: "
+    alice <##. "internal error: "
+    alice <##. "internal error: "
+  where
+    cfg = testCfg {agentConfig = testAgentCfg {initialCleanupDelay = 2000000, cleanupInterval = 3600000000}}
+
 checkNoAgentSndFiles :: HasCallStack => TestCC -> Expectation
 checkNoAgentSndFiles cc =
   (withCCAgentTransaction cc $ \db -> DB.query_ db "SELECT count(1) FROM snd_files WHERE deleted = 0" :: IO [[Int]]) `shouldEventuallyReturn` [[0]]
@@ -1332,6 +1384,7 @@ testXFTPStandaloneSmall = testChat2 aliceProfile aliceDesktopProfile $ \src dst 
     _uri2 <- getTermLine src
     uri3 <- getTermLine src
     _uri4 <- getTermLine src
+    checkNoAgentSndFiles src
 
     logNote "receiving"
     let dstFile = tmpFile dst "logo.jpg"
@@ -1390,6 +1443,7 @@ testXFTPStandaloneLarge = testChat2 aliceProfile aliceDesktopProfile $ \src dst 
     _uri2 <- getTermLine src
     _uri3 <- getTermLine src
     _uri4 <- getTermLine src
+    checkNoAgentSndFiles src
 
     logNote "receiving"
     let dstFile = tmpFile dst "testfile.out"
