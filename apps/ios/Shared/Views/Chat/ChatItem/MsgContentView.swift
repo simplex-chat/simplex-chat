@@ -736,6 +736,7 @@ struct SwipeExclusionFrames: PreferenceKey {
 }
 
 struct MarkdownView: View {
+    @EnvironmentObject var theme: AppTheme
     var text: String
     var formattedText: [FormattedText]?
     var markdownBlocks: [MarkdownBlock]?
@@ -757,14 +758,15 @@ struct MarkdownView: View {
                 blockText: { index, range, font, secretStart, _, _ in
                     let r = messageText(
                         text, fts, markdownBlocks: blocks, sender: index == 0 ? sender : nil, mentions: mentions, userMemberId: userMemberId,
-                        showSecrets: showSecrets, backgroundColor: UIColor(backgroundColor), range: range, baseFont: font, secretStart: secretStart
+                        showSecrets: showSecrets, backgroundColor: UIColor(backgroundColor), range: range, baseFont: font, secretStart: secretStart,
+                        textColor: UIColor(messageTextColor(theme))
                     )
                     msgTextResultView(r, Text(AttributedString(r.string)), showSecrets: $showSecrets)
                 },
                 metaLine: { EmptyView() }
             )
         } else {
-            let r = messageText(text, formattedText, sender: sender, mentions: mentions, userMemberId: userMemberId, showSecrets: showSecrets, backgroundColor: UIColor(backgroundColor))
+            let r = messageText(text, formattedText, sender: sender, mentions: mentions, userMemberId: userMemberId, showSecrets: showSecrets, backgroundColor: UIColor(backgroundColor), textColor: UIColor(messageTextColor(theme)))
             msgTextResultView(r, Text(AttributedString(r.string)), showSecrets: $showSecrets)
         }
     }
