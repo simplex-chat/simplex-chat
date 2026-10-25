@@ -1,8 +1,10 @@
 import {mkdirSync, mkdtempSync, rmSync} from "fs"
+import {createServer} from "net"
 import {tmpdir} from "os"
 import {join} from "path"
 import {T} from "@simplex-chat/types"
 import {api} from "simplex-chat"
+import {readServerFile} from "../../src/files"
 import {RunningServer, ServeOptions, startServer} from "../../src/serve"
 import {McpClient} from "./client"
 import {
@@ -329,6 +331,19 @@ test("a chat reference over 15 digits, which the core reads as the agent control
   expect(await agent.client.tool("receive", {chat: alias})).toMatchObject(refusal)
   expect(await agent.client.tool("send", {chat: alias, text: "x"})).toMatchObject(refusal)
   expect(await agent.client.tool("leave", {chat: alias})).toMatchObject(refusal)
+}, 600_000)
+
+test("a port in use stops the start before server.json is written and before any link is printed", async () => {
+  const data = await agentData("port")
+  const agent = new Agent(data, await freePort())
+  closing.push(() => agent.stop())
+  const busy = createServer()
+  await new Promise<void>(resolve => busy.listen(agent.port, "127.0.0.1", resolve))
+  closing.push(() => new Promise<void>(resolve => busy.close(() => resolve())))
+  const before = logLines.length
+  await expect(agent.start()).rejects.toThrow(`Port ${agent.port} is in use. Start with --port N.`)
+  expect(readServerFile(data)).toBeUndefined()
+  expect(logLines.slice(before).filter(line => line.startsWith("Join the agent control chat") || /^(https:\/\/|simplex:)/.test(line))).toEqual([])
 }, 600_000)
 
 test("--display-name names the profile and the agent control chat", async () => {
