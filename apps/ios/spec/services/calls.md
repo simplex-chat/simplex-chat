@@ -184,7 +184,7 @@ All call signaling travels through the same encrypted SMP message channels used 
 
 ### Reconnection
 
-When a connected call loses ICE connection (`.disconnected` or `.failed`), `WebRTCClient` reports `"reconnecting"` connection state instead of ending the call. `ActiveCallView` sets `.reconnecting` call state and plays the connecting sound; this state is not sent to the core via `apiCallStatus`, and `connectedAt` is kept. The party that sent the initial offer (callee) restarts ICE every 10 seconds: the restart offer and answer are sent via `apiSendCallExtraInfo` with `rtcSession` (`x.call.extra`). When ICE connects again, the call returns to `.connected`. If it does not reconnect in 30 seconds, `WebRTCClient` reports `"disconnected"` and ends the call.
+When a connected call loses ICE connection (`.disconnected` or `.failed`), `WebRTCClient` reports `"reconnecting"` connection state instead of ending the call. `ActiveCallView` sets `.reconnecting` call state and plays the connecting sound; this state is not sent to the core via `apiCallStatus`, and `connectedAt` is kept. The party that sent the initial offer (callee) restarts ICE every 10 seconds: the restart offer and answer are sent via `apiSendCallExtraInfo` with `rtcSession` (`x.call.extra`). When ICE connects again, the call returns to `.connected`. If it does not reconnect in 30 seconds, `WebRTCClient` reports `"disconnected"` and ends the call. Reconnection happens only when the contact's peer chat version is at least `CALL_RECONNECT_VERSION` (22); otherwise the call ends as soon as the connection is lost.
 
 ### API Commands
 
