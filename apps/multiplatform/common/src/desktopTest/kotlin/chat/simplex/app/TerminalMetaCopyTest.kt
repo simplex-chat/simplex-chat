@@ -68,11 +68,11 @@ class TerminalMetaCopyTest {
   @Test
   fun copyHasClassicSpacesAndDirectionMark() {
     val ltr = copy(sentEdited, Density(1f), LayoutDirection.Ltr)
-    assertEquals("\u200E" + (iconSpace + iconSpace + "\u00A0" + "\u00A0" + sentEdited.timestampText).replace(' ', '\u00A0'), ltr.text)
+    assertEquals("\u2060\u200E" + (iconSpace + iconSpace + "\u00A0" + "\u00A0" + sentEdited.timestampText).replace(' ', '\u00A0'), ltr.text)
     val rtl = copy(receivedTimed, Density(1f), LayoutDirection.Rtl)
-    assertEquals("\u200F" + (iconSpace + shortTimeText(30) + "\u00A0" + iconSpace + "\u00A0" + receivedTimed.timestampText).replace(' ', '\u00A0'), rtl.text)
+    assertEquals("\u2060\u200F" + (iconSpace + shortTimeText(30) + "\u00A0" + iconSpace + "\u00A0" + receivedTimed.timestampText).replace(' ', '\u00A0'), rtl.text)
     val proxy = copy(sentViaProxy, Density(1f), LayoutDirection.Ltr, showViaProxy = true)
-    assertEquals("\u200E" + (iconSpace + "\u00A0" + iconSpace + "\u00A0" + "\u00A0" + sentViaProxy.timestampText).replace(' ', '\u00A0'), proxy.text)
+    assertEquals("\u2060\u200E" + (iconSpace + "\u00A0" + iconSpace + "\u00A0" + "\u00A0" + sentViaProxy.timestampText).replace(' ', '\u00A0'), proxy.text)
   }
 
   @Test
@@ -83,7 +83,8 @@ class TerminalMetaCopyTest {
       val text = copy(sentEdited, density, LayoutDirection.Ltr)
       val p = paragraph(text, density, TextDirection.Ltr, 1000)
       val timeStart = text.length - ts.length
-      val icons = p.getHorizontalPosition(timeStart, true) - p.getHorizontalPosition(1, true)
+      assertTrue(p.getHorizontalPosition(2, true) < 0.5f, "marks at scale $s: ${p.getHorizontalPosition(2, true)} px")
+      val icons = p.getHorizontalPosition(timeStart, true) - p.getHorizontalPosition(2, true)
       val time = p.getHorizontalPosition(text.length, true) - p.getHorizontalPosition(timeStart, true)
       icons to time
     }
@@ -114,6 +115,21 @@ class TerminalMetaCopyTest {
   }
 
   @Test
+  fun copyAfterSpacesStaysWithLastWord() {
+    val density = Density(1f)
+    val head = "The bot replied at once"
+    val text = buildAnnotatedString {
+      append("$head   ")
+      append(copy(sentEdited, density, LayoutDirection.Ltr))
+    }
+    val oneLine = paragraph(text, density, TextDirection.Ltr, 10000)
+    val width = (oneLine.getHorizontalPosition(head.length + 3, true) + oneLine.maxIntrinsicWidth) / 2
+    val p = paragraph(text, density, TextDirection.Ltr, width.toInt())
+    assertEquals(2, p.lineCount)
+    assertEquals(p.getLineForOffset(head.lastIndexOf(' ') + 1), p.getLineForOffset(text.length - 1))
+  }
+
+  @Test
   fun copyStaysAtLineEndAfterWordInOtherDirection() {
     val cases = listOf(
       "שלום לכולם, זו הפסקה האחרונה של ההודעה" to LayoutDirection.Ltr,
@@ -131,7 +147,7 @@ class TerminalMetaCopyTest {
       assertTrue(lineStart in 1 until head.length, "$direction: last line start $lineStart")
       assertEquals(lastLine, p.getLineForOffset(text.length - 1), "$direction: time line")
       val words = p.bounds(lineStart until head.length)
-      val time = p.bounds(head.length + 1 until text.length)
+      val time = p.bounds(head.length + 2 until text.length)
       if (direction == LayoutDirection.Ltr) {
         assertTrue(time.left >= words.right - 0.5f, "$direction: copy ${time.left}..${time.right}, words ${words.left}..${words.right}")
       } else {

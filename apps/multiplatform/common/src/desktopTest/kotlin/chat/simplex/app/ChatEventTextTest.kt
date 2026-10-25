@@ -5,9 +5,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.SimpleXTheme
 import chat.simplex.common.views.chat.item.*
@@ -48,6 +48,6 @@ class ChatEventTextTest {
     val (separator, ts) = separatorAndTime(terminal = true)
     assertEquals("\u00A0\u00A0\u00A0", separator.text)
     assertEquals(listOf(chatEventStyle, reserveTimestampStyle), separator.spanStyles.map { it.item })
-    assertTrue(ts.text.startsWith("\u200E") && ts.text.endsWith(event.timestampText.replace(' ', '\u00A0')), ts.text)
+    assertTrue(ts.text.startsWith("\u2060\u200E") &&ts.text.endsWith(event.timestampText.replace(' ', '\u00A0')), ts.text)
   }
 }

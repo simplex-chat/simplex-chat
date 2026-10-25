@@ -260,7 +260,7 @@ fun terminalReserveSpaceForMeta(
   val spaceStyle = SpanStyle(fontSize = with(density) { bodyFontSize.value.dp.toSp() }, fontWeight = FontWeight.Normal)
   val textStyle = SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.Normal)
   return buildAnnotatedString {
-    append(if (direction == LayoutDirection.Ltr) '\u200E' else '\u200F')
+    append(if (direction == LayoutDirection.Ltr) "\u2060\u200E" else "\u2060\u200F")
     reserveSpaceForMeta(
       meta, chatTTL, encrypted, secondaryColor, showStatus, showEdited, showViaProxy, showTimestamp, signedFileVerified, tallIconSpace = "\u00A0",
       spaces = { withStyle(spaceStyle) { append(it.replace(' ', '\u00A0')) } },

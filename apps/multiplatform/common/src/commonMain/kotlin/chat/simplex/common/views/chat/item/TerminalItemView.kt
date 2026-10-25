@@ -216,7 +216,7 @@ private fun TerminalMetaLayout(metaReserved: Boolean, contentWithMeta: @Composab
       overlay == null && textBaseline != AlignmentLine.Unspecified -> textBaseline - metaBaseline
       else -> content.height - gap - meta.height
     }.coerceAtLeast(0)
-    val blockGap = if (!metaBelow && content[LastBlockBottom] == content.height) TERMINAL_BLOCK_BOTTOM_GAP.toPx().roundToInt() else 0
+    val blockGap = if (content[LastBlockBottom] == content.height) TERMINAL_BLOCK_BOTTOM_GAP.toPx().roundToInt() else 0
     layout(width, max(content.height + blockGap, metaTop + meta.height)) {
       content.placeRelative(0, 0)
       if (overlay != null && content.width + meta.width > width) {

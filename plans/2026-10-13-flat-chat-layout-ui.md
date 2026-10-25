@@ -89,6 +89,7 @@ meta copy         FontWeight.Normal; icon spaces at the body1 size in dp; time a
                   one more space after the 17dp icons: sent and received status, via proxy (D29)
 event text        layout direction in both layouts (unspecified text direction); separator and copy passed apart by ChatEventWithMeta, each view puts the separator where classic has two spaces (D28); no line limit (D23)
 meta copy mark    U+200E (left-to-right layout) or U+200F (right-to-left) before the copy, so the copy stays at the line end after text in the other direction
+                  U+2060 (word joiner) before the mark, so the copy stays with the last word after the spaces of an idle live message
 event time        joined to the last word by no-break spaces
 go-to button      in the gutter, centred on the message, below the avatar when the message is shorter
 row tint          hover and press: indication over the whole row; selected: primary 10%; highlighted: primary 14%
@@ -144,7 +145,7 @@ views/chat/item/FramedItemView.kt        transparent background; headers and quo
                                          CHAT_ITEM_TEXT_PADDING (text edge); classic vertical text padding named CHAT_ITEM_TEXT_VERTICAL_PADDING
                                          PriorityLayout(limitToPriorityWidth = !terminal || captionlessMedia), placeRelative when not limited; link preview caption without width limit; chat link card at its own width
 views/chat/item/MarkdownBlocks.kt        Modifier.quoteBar, shared with Markdown quotes; Markdown quote text with terminalTextStyle and the colour rule
-                                         heading scale TERMINAL_HEADING_RATIO, Modifier.headingBox
+                                         heading scale TERMINAL_HEADING_RATIO, Modifier.headingBox with the px ratio of the font sizes
                                          spacers: TERMINAL_HEADING_BOTTOM_GAP after a heading, TERMINAL_LEVEL_STEP at a paragraph break or above a heading
                                          card margins of code, tables and rules; messageLastBlock() on the last block without a meta line (marksLastBlock)
                                          ruleMinWidth: rules of a rule-only message as wide as the copy of the time (D31)
@@ -156,7 +157,7 @@ views/chat/item/TextItemView.kt          messageTextColor(); terminalReserveSpac
                                          meta line of a live message: encryption, signature and the outer direction, as the blocks
                                          ruleMinWidth measured from the copy of a rule-only message
 views/chat/item/CIMetaView.kt            reserveSpaceForMeta with span parameters: the classic string and terminalReserveSpaceForMeta
-                                         terminalReserveSpaceForMeta: direction mark, icon spaces in dp; tallStatusIcon shared with CIMetaText
+                                         terminalReserveSpaceForMeta: word joiner and direction mark, icon spaces in dp; tallStatusIcon shared with CIMetaText
                                          time style with lineHeightColor
 views/chat/item/CIChatFeatureView.kt     merged feature icons: one event line high, centred in terminal rows
 views/chat/item/CIEventView.kt           chatEventPadding(), chatEventTextStyle(), ChatEventWithMeta (separator, and time or copy, apart; classic as before, D28)
@@ -211,8 +212,9 @@ terminal rows   in this pull request, after the Kotlin part is approved and revi
 `apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/TerminalMetaCopyTest.kt`:
 
 - classic reserve strings: unchanged, via proxy included
-- copy text: direction mark, the classic spaces, one more space after the tall status and via-proxy icons
-- icon spaces: one width at font scales 0.7, 0.75, 1 and 1.3; the time scaled with the font
+- copy text: word joiner and direction mark, the classic spaces, one more space after the tall status and via-proxy icons
+- icon spaces: one width at font scales 0.7, 0.75, 1 and 1.3; the time scaled with the font; the marks without width
+- copy after spaces, as in an idle live message: on the line of the last word
 - copy after words in the other direction on a wrapped last line: at the line end, in both directions
 - a message of a rule only: the rule as wide as the copy (D31)
 
@@ -257,4 +259,4 @@ block Markdown rendering       MarkdownBlocks; Modifier.quoteBar shared with Mar
 
 ## Open questions
 
-1. Search: a one-line first message of a sender group is 17dp taller, as the avatar and the search icon are stacked in the gutter (59dp).
+1. Search: a one-line first message of a sender group is about 13dp taller (12px on desktop), as the avatar and the search icon are stacked in the gutter (59dp).

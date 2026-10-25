@@ -165,8 +165,9 @@ private fun Modifier.headingBox(scale: Float, bodyFontSize: TextUnit): Modifier 
     if (firstBaseline == AlignmentLine.Unspecified || lastBaseline == AlignmentLine.Unspecified) {
       layout(placeable.width, placeable.height) { placeable.placeRelative(0, 0) }
     } else {
-      val top = ((firstBaseline / scale - INTER_CAP_HEIGHT * bodyFontSize.toPx()) * (scale - 1)).roundToInt()
-      val bottom = ((placeable.height - lastBaseline) * (1 - 1 / scale)).roundToInt()
+      val bodyRatio = bodyFontSize.toPx() / (bodyFontSize * scale).toPx()
+      val top = (firstBaseline * (1 - bodyRatio) - INTER_CAP_HEIGHT * ((bodyFontSize * scale).toPx() - bodyFontSize.toPx())).roundToInt()
+      val bottom = ((placeable.height - lastBaseline) * (1 - bodyRatio)).roundToInt()
       layout(placeable.width, placeable.height - top - bottom) { placeable.placeRelative(0, -top) }
     }
   }

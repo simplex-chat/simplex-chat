@@ -135,7 +135,7 @@ class TerminalItemViewTest {
 
   private fun single(item: ChatItem, prev: ChatItem?) = MergedItem.Single(ListItem(item, prev, null, 0), 0)
 
-  private fun collapsed(item: ChatItem, prev: ChatItem?, revealed: Boolean) =
+  private fun grouped(item: ChatItem, prev: ChatItem?, revealed: Boolean) =
     MergedItem.Grouped(arrayListOf(ListItem(item, prev, null, 0)), revealed, mutableListOf(), MutableStateFlow(0..0), item.mergeCategory, mutableSetOf(), 0)
 
   @Test
@@ -177,8 +177,8 @@ class TerminalItemViewTest {
     val banner = ChatItem(CIDirection.DirectRcv(), CIMeta.getSample(1, Instant.fromEpochSeconds(midnight.epochSeconds + 5), ""), CIContent.ChatBanner, reactions = emptyList())
     assertTrue(terminalRowsSeparated(single(banner, nextDay)))
     val event = featureEvent(1, 0).copy(meta = featureEvent(1, 0).meta.copy(itemTs = older.meta.itemTs))
-    assertFalse(terminalRowsSeparated(collapsed(event, nextDay, revealed = false)))
-    assertTrue(terminalRowsSeparated(collapsed(event, nextDay, revealed = true)))
+    assertFalse(terminalRowsSeparated(grouped(event, nextDay, revealed = false)))
+    assertTrue(terminalRowsSeparated(grouped(event, nextDay, revealed = true)))
   }
 
   @Test
