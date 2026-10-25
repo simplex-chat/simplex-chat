@@ -83,13 +83,15 @@ test("call reconnection", {concurrency: true}, async (t) => {
     })
   )
 
-  await t.test("ends the call when the peer does not support ICE restart", () =>
-    withCall({answerer: {ignoresIceRestart: true}}, async ({a, b, network}) => {
-      await Promise.all([a.setTimeouts({reconnectTimeout: 10000}), b.setTimeouts({reconnectTimeout: 10000})])
-      network.changePath()
-      await Promise.all([a.waitForEnded(DISCONNECT_DETECTION + 15000), b.waitForEnded(DISCONNECT_DETECTION + 15000)])
-      assert.ok(b.sessionsSent() > 0, "offerer did not restart ICE")
-      assert.equal(a.sessionsSent(), 0)
+  await t.test("ends the call without reconnecting when the peer does not support ICE restart", () =>
+    withCall({canReconnect: false}, async ({a, b, network}) => {
+      network.down = true
+      await Promise.all([a.waitForEnded(DISCONNECT_DETECTION), b.waitForEnded(DISCONNECT_DETECTION)])
+      assert.ok(!a.connectionStates().includes("reconnecting"), `A states: ${a.connectionStates()}`)
+      assert.ok(!b.connectionStates().includes("reconnecting"), `B states: ${b.connectionStates()}`)
+      assert.equal(a.connectionStates().at(-1), "disconnected")
+      assert.equal(b.connectionStates().at(-1), "disconnected")
+      assert.equal(a.sessionsSent() + b.sessionsSent(), 0, "ICE was restarted")
     })
   )
 })
