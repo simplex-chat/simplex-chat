@@ -5,7 +5,7 @@ Date: 2026-10-25.
 Chats with the layout `classic` are drawn by the Android and desktop apps as bubbles. This plan measures the bubbles of the base commit and sets one rule set for them, from the principles of the terminal layout (plans/2026-10-13-flat-chat-layout-ui.md, section 2). iOS is not changed.
 
 ```
-base             8ce2e9e77 (ep/llm-ux)
+base             7810fc475 (master with #7811; apps/multiplatform as 8ce2e9e77 of ep/llm-ux)
 terminal rules   plans/2026-10-13-flat-chat-layout-ui.md, D1–D33
 specification    apps/multiplatform/spec/client/chat-view.md, sections 4 and 10
 ```
@@ -123,6 +123,7 @@ group invitation chat/item/CIGroupInvitationView.kt:101-142 card: 8dp start, 12d
 ```
 text             chat/item/CIEventView.kt:19         12sp secondary light in a 16sp paragraph with line height 22sp: 15px for one line,
                                                       22px between wrapped lines; 4 lines at most
+                 chat/item/ChatItemView.kt:639       a member name is joined by a 16sp space: that line 19px, its baseline 4px lower
 padding          chat/item/CIEventView.kt:33         6dp at the sides, 6dp above and below
 feature icons    chat/item/CIChatFeatureView.kt:133  20dp, sets the row height (32px against 27px for text events)
 merged icons     chat/item/CIChatFeatureView.kt:42   8dp above and below, icons top-aligned
@@ -150,7 +151,7 @@ group name       chat/ChatView.kt:2063               8dp above the name column
                  chat/ChatView.kt:2088               13.5sp secondary, default line height
                  chat/ChatView.kt:2121               bubble 2dp under the avatar top, 4dp after the avatar
 avatar           chat/ChatView.kt:2869               37dp × fontSizeSqrtMultiplier; with a one-line bubble it sets the row height
-measured         previous bubble → name capitals 15px; name baseline → bubble edge 11px
+measured         previous bubble → name capitals 14px; name baseline → bubble edge 11px
                  a close message after a one-line message with avatar: 4px (2px elsewhere)
 date separator   chat/ChatView.kt:3098-3106          14sp medium secondary, 12dp above and below, centred; shared with terminal rows
 side insets      chat/ChatView.kt:2064,2143,2241,2257-2258 12dp at the screen edge; 66dp, 76dp or 104dp on the opposite side
@@ -162,6 +163,7 @@ The bubble rules follow the principles of the terminal layout. Bubble values are
 
 ```
 line height      every text of a chat item: font size × 22/16 × f(w), Proportional, Trim.None
+                 except cards, files, voice and calls (D8) and the one-line text of marked deleted items (its insets are set by baselines)
                  principle: one line-height ratio with the contrast factor; full line height for every line (D1, D2, D7)
                  the same function as terminal rows (chatTextStyle): the relation is the same
 inset            BUBBLE_TEXT_INSET 10.375sp: from a bubble or band edge to the capitals of the text under it,
@@ -191,7 +193,8 @@ icons            header, feature and preference icons centred on their text, wit
 ```
 B1   message text and captions: full line height; 4.375sp above, 6sp below
 B2   time: baseline on the last text baseline, by its distance from the bubble bottom
-B3   reserve: the copy of the time in message text, under an emoji and in decryption errors
+B3   reserve: the copy of the time in message text, under an emoji, in decryption errors and group invitations;
+     files keep the string reserve of their size line (shared with terminal rows)
 B4   header: 12dp start; text inset by bubbleTextPadding; icon without height
 B5   quote: text inset by bubbleTextPadding; Inter for the sender and the text (earlier owner decision: quotes in Inter)
 B6   emoji in a bubble: the text paddings; the reserve line with the full line height
@@ -209,9 +212,9 @@ B12  unchanged: fills, tails, roundness, colours, themes, wallpapers, interactio
 
 ```
 chat/item/TerminalItemView.kt     LocalBubbleLayout; usesChatTypography(); chatTextStyle (was terminalTextStyle) in both layouts;
-                                  inlineIcon in both layouts; metaBaseline shared by TerminalMetaLayout and bubbleMeta;
-                                  Modifier.bubbleMeta(); RowScope.bubbleMetaOnBaseline()
-chat/item/FramedItemView.kt       BUBBLE_* constants; Modifier.bubbleTextPadding; header, quote, emoji, meta and text insets
+                                  inlineIcon in both layouts; metaBaseline shared by TerminalMetaLayout and the bubbles
+chat/item/FramedItemView.kt       BUBBLE_* constants; Modifier.bubbleTextPadding, Modifier.bubbleMeta(), RowScope.bubbleMetaOnBaseline();
+                                  header, quote, emoji, meta and text insets
 chat/item/CIMetaView.kt           metaReserveCopy (was terminalReserveSpaceForMeta)
 chat/item/TextItemView.kt         the copy for every message text with a time
 chat/item/MarkdownBlocks.kt       spacing of terminal rows when usesChatTypography()
@@ -222,6 +225,7 @@ chat/item/DeletedItemView.kt      bubble: bubbleTextPadding, time on the text ba
 chat/item/MarkedDeletedItemView.kt
 chat/item/IntegrityErrorItemView.kt
 chat/item/CIRcvDecryptionError.kt bubble: bubbleTextPadding, bubbleMeta, the copy of the time
+chat/item/CIGroupInvitationView.kt bubble: the copy of the time
 chat/ChatView.kt                  LocalBubbleLayout provided for classic chats; row gaps in sp
 usersettings/Appearance.kt        LocalBubbleLayout for the classic theme preview
 ```
@@ -236,8 +240,47 @@ usersettings/Appearance.kt        LocalBubbleLayout for the classic theme previe
 - no bottom inset before another part of the band
 - time on the text baseline in a card row
 
-## 6. Open questions
+## 6. Results
+
+Desktop renders of 52 items and 2 chat lists, light and dark, font scale 1 and 1.5, right-to-left; the same renders of terminal rows.
 
 ```
-Q1   …
+terminal rows    324 of 324 renders pixel-identical to the base
+one-line bubble  32px (33px); capitals 10px below the top edge (11px), last baseline 10px above the bottom edge (10px)
+time             baseline on the last text baseline for sent and received messages (received: 1px lower before)
+reserve          "✓✓ 10:15 AM": 79px (92px) for a meta of 80px; at font scale 1.5: 105px (137px) for 106px
+                 short messages narrower; at font scale 1.5 the time stays on the line of short texts
+                 the last word moves to the next line with the time: a hyphenated word or a link may break (Q2)
+header           text and icon 12dp from the edge (8dp); band 29px (30px)
+quote            Inter; full line heights; band 31px with one line (29px), taller with a sender and two lines
+deleted, errors  one-line card 32px (31px), as a one-line message; marked deleted 29px (27px); time on the text baseline
+file             size line baseline 10px above the edge (9px); time on it
+events           feature events 5px shorter (icon without height); events with a member name 4px higher in their row
+markdown         list items 22px apart (19px); paragraph break, headings, cards and rules at the gaps of terminal rows
+row gaps         unchanged at font scale 1; × 1.5 at font scale 1.5
+```
+
+## 7. Open questions
+
+```
+Q1   header band: keep the quote-coloured band of report, deleted, live and forwarded headers, or draw the header
+     on the bubble fill, 13.4sp from its baseline to the text capitals (as terminal rows, level 2–3)?
+     recommended: header on the bubble fill; the quote keeps its band
+     shown: forwarded, forwarded-snd, report
+Q2   a link at the end of a message: with the copy of the time joined to it, a link that fits a line breaks
+     after "//" to keep its last part with the time; keep links whole and let the time take its own line after a link?
+     recommended: keep links whole
+     shown: link-text, text-inline-md
+Q3   direct chats: a change of sender has the gap of a message of the same sender 60 s later (8sp);
+     the hierarchy of terminal rows puts a sender change one level higher. Give it 12sp?
+     recommended: keep 8sp, as the side and the tail of the bubble mark the sender
+     shown: list-direct
+Q4   events: the gap above and below an event depends on the time and direction of its neighbours (2sp or 8sp);
+     terminal rows put events at the highest level whatever the time (D9a). Always 8sp around events?
+     recommended: always 8sp
+     shown: list-direct, list-group
+Q5   headings in bubbles: classic sizes 1.5, 1.3, 1.15; terminal rows use ×1.3125 per level with the capitals placed
+     as body capitals (D15). Use the terminal sizes in bubbles?
+     recommended: yes, one style guide
+     shown: text-blocks
 ```
