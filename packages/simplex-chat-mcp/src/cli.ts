@@ -73,7 +73,7 @@ function serveOptions(name: string, options: OptionReader, home: string): ServeO
         serve.approve = approveMode(options.value(option))
         break
       case "--owners":
-        serve.owners = options.optionalValue() === undefined ? [] : options.value(option).split(",").map(ownerEntry)
+        serve.owners = options.optionalValue() === undefined ? [] : options.value(option).split(/,(?=[1-9]\d*:)/).map(ownerEntry)
         break
       case "--expire":
         serve.expireHours = integer(option, options.value(option), 1, 23, "hours from 1 to 23")

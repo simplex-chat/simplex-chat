@@ -1,6 +1,6 @@
 {
   "name": "@simplex-chat/mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MCP server that gives an AI agent its own SimpleX profile",
   "bin": {
     "simplex-mcp": "dist/cli.js"
