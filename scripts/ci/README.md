@@ -116,6 +116,12 @@ The reduced build runs one Linux job, build-linux (ubuntu-22.04 x86_64), for eve
 - CI, in build-linux: `scope-tests.sh ci-scripts` (step "Test changed scopes").
 - Local: `python3 scripts/ci/test_packages_release.py`; Python 3.11 or newer is required for tomllib (packages_release.py).
 
+#### flakes
+
+- Globs: scripts/flakes/**.
+- CI, in build-linux: `scope-tests.sh flakes` (step "Test changed scopes"); a change only to these paths starts no core build.
+- Local: `python3 scripts/flakes/test_flakes.py`.
+
 #### Scopes lacking CI tests
 
 | Scope | Paths | CI |
@@ -145,6 +151,48 @@ For a scope lacking CI tests, in the pull request that changes it:
 6. Checks: `python3 scripts/ci/test_packages_release.py`, the new case of scope-tests.sh locally, then a dispatch of the reduced build.
 
 The scope commands run in build-linux after the core tests, with Node 22 and Python 3.12 (steps "Setup Node.js" and "Setup Python"). For a scope that needs other versions, a setup step is added before "Test changed scopes", conditioned on the scope name in `needs.maybe-release.outputs.scopes`. A scope that needs macOS is a BUILD_CHANGES entry with a separate maybe-release output, as ios is, and a step in build-ios; the `if` of build-ios includes that output.
+
+## Failed tests
+
+scripts/flakes/flakes.py (Python 3, standard library only) reads the build.yml runs of simplex-chat and simplexmq through the GitHub API. It compares the failures of a run with the window: the 30 newest completed push runs of the base branch in simplex-chat/<repository>, created before the run.
+
+```sh
+python3 scripts/flakes/flakes.py pr https://github.com/simplex-chat/simplex-chat/pull/<number>
+python3 scripts/flakes/flakes.py pr https://github.com/simplex-chat/simplexmq/pull/<number>
+python3 scripts/flakes/flakes.py run https://github.com/<owner>/simplex-chat/actions/runs/<run id>
+python3 scripts/flakes/flakes.py branch https://github.com/simplex-chat/simplex-chat
+python3 scripts/flakes/flakes.py branch https://github.com/simplex-chat/simplexmq stable
+python3 scripts/flakes/flakes.py test https://github.com/simplex-chat/simplex-chat '/SimpleX chat client/group tests/group history/quoted messages/'
+```
+
+| Command | Report |
+|---|---|
+| `pr` | the newest run of the pull request, every attempt, against the window of its base branch |
+| `run` | one run, every attempt; the window of its own branch for a push run, of the base branch of its pull request in the same repository, of `--base` otherwise |
+| `branch` | the window of the branch, master by default: outcomes per job, tests by failures, timeouts, build failures, simplexmq retries |
+| `test` | every failure of one test in the window of `--base`, with job links |
+
+| Option | Value |
+|---|---|
+| `--token-file <path>` | a token with read access to the repository; the environment variable GH_TOKEN by default |
+| `--window <n>` | window runs, 30 by default |
+| `--base <branch>` | base branch, master by default |
+| `--json` | job records and labels as JSON |
+| `--cache <dir>` | ~/.cache/simplex-ci-flakes by default |
+
+The cache keeps the jobs of completed runs, a record per job and the test order of each job; logs are discarded after parsing. A first query of a repository downloads the logs of its failed jobs in the window.
+
+Outcome of a test job:
+- passed, failed, timeout (the test step timed out), crashed (the test step failed without a timeout or failed tests);
+- build failed, runner lost, cancelled, log missing, not tested.
+
+Labels of a failure:
+- `on <base>`: the same test failed in the same job in the window;
+- `on <base>, other jobs`: in other jobs only;
+- `new`: absent from the window;
+- `passed on re-run`: the job passed in a later attempt of the run, or the test passed in a later attempt inside the test step.
+
+A build failure is identified by its step and error line, a timeout by the last test that hspec reported and the next test of the job, which did not finish.
 
 ## Starting a run
 

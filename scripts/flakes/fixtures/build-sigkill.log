@@ -1,0 +1,61 @@
+﻿2026-10-26T12:42:54.2018663Z Current runner version: '2.338.0'
+2026-10-26T12:42:54.2054687Z ##[group]Runner Image Provisioner
+2026-10-26T12:42:54.2056047Z Hosted Compute Agent
+2026-10-26T12:42:55.9929806Z Complete job name: ubuntu-22.04-x86_64 (CLI,Desktop), GHC: 8.10.7
+2026-10-26T12:46:11.9449381Z ##[group]Run scripts/ci/prune-old-builds.sh dist-newstyle
+2026-10-26T12:46:11.9449870Z [36;1mscripts/ci/prune-old-builds.sh dist-newstyle[0m
+2026-10-26T12:46:11.9450211Z [36;1mcabal update[0m
+2026-10-26T12:46:11.9450474Z [36;1mcabal build -j --enable-tests [0m
+2026-10-26T12:46:11.9450772Z [36;1mmkdir -p /out[0m
+2026-10-26T12:46:11.9451070Z [36;1mfor i in simplex-chat simplex-chat-test; do[0m
+2026-10-26T12:46:11.9451743Z [36;1m  bin=$(find /project/dist-newstyle -name "$i" -type f -executable)[0m
+2026-10-26T12:46:11.9452154Z [36;1m  chmod +x "$bin"[0m
+2026-10-26T12:46:11.9452409Z [36;1m  cp "$bin" /out/[0m
+2026-10-26T12:46:11.9452643Z [36;1mdone[0m
+2026-10-26T12:46:11.9452873Z [36;1mstrip /out/simplex-chat[0m
+2026-10-26T12:46:11.9520190Z shell: /usr/bin/docker exec -t builder sh -eu {0}
+2026-10-26T12:46:11.9520528Z env:
+2026-10-26T12:46:11.9520732Z   opt: O2
+2026-10-26T12:46:11.9520923Z   ghc_options: 
+2026-10-26T12:46:11.9521141Z   release: false
+2026-10-26T12:46:11.9521398Z   branch: master
+2026-10-26T12:46:11.9521605Z   cache_o0: true
+2026-10-26T12:46:11.9521818Z   release_branch: master
+2026-10-26T12:46:11.9522050Z   ZSTD_CLEVEL: 9
+2026-10-26T12:46:11.9522433Z   image_cache: ghcr.io/simplex-chat/simplex-chat-build-cache:22.04-x86_64-ghc8.10.7
+2026-10-26T12:46:11.9522904Z   source_hashes: dist-newstyle/sources.sha256
+2026-10-26T12:46:11.9523217Z ##[endgroup]
+2026-10-26T12:46:12.0164608Z Config file path source is default config file.
+2026-10-26T12:46:12.0165469Z Config file not found: /home/builder/.cabal/config
+2026-10-26T12:46:12.0166572Z Writing default configuration to /home/builder/.cabal/config
+2026-10-26T12:46:12.1046991Z Downloading the latest package list from hackage.haskell.org
+2026-10-26T12:46:29.1006397Z Package list of hackage.haskell.org has been updated.
+2026-10-26T12:46:29.1007625Z The index-state is set to 2026-10-26T12:17:16Z.
+2026-10-26T12:46:30.4235930Z Warning: Requested index-state 2023-12-12T00:00:00Z is newer than
+2026-10-26T12:46:30.4237035Z 'hackage.haskell.org'! Falling back to older state (2023-12-11T23:46:17Z).
+2026-10-26T12:46:30.4242529Z Resolving dependencies...
+2026-10-26T12:46:32.7748826Z Build profile: -w ghc-8.10.7 -O1
+2026-10-26T12:46:32.7750185Z In order, the following will be built (use -v for more details):
+2026-10-26T12:46:32.7751093Z  - simplex-chat-7.1.0.14 (lib) (configuration changed)
+2026-10-26T12:46:32.7751874Z  - simplex-chat-7.1.0.14 (exe:simplex-directory-service) (configuration changed)
+2026-10-26T12:51:48.5640574Z [222 of 259] Compiling Simplex.Chat.Store.Badges ( src/Simplex/Chat/Store/Badges.hs, /project/dist-newstyle/build/x86_64-linux/ghc-8.10.7/simplex-chat-7.1.0.14/build/Simplex/Chat/Store/Badges.o, /project/dist-newstyle/build/x86_64-linux/ghc-8.10.7/simplex-chat-7.1.0.14/build/Simplex/Chat/Store/Badges.dyn_o ) [Simplex.Chat.Store.Shared changed]
+2026-10-26T12:51:50.3439750Z [223 of 259] Compiling Simplex.Chat.Store.Direct ( src/Simplex/Chat/Store/Direct.hs, /project/dist-newstyle/build/x86_64-linux/ghc-8.10.7/simplex-chat-7.1.0.14/build/Simplex/Chat/Store/Direct.o, /project/dist-newstyle/build/x86_64-linux/ghc-8.10.7/simplex-chat-7.1.0.14/build/Simplex/Chat/Store/Direct.dyn_o )
+2026-10-26T12:51:55.9127016Z [224 of 259] Compiling Simplex.Chat.Store.Profiles ( src/Simplex/Chat/Store/Profiles.hs, /project/dist-newstyle/build/x86_64-linux/ghc-8.10.7/simplex-chat-7.1.0.14/build/Simplex/Chat/Store/Profiles.o, /project/dist-newstyle/build/x86_64-linux/ghc-8.10.7/simplex-chat-7.1.0.14/build/Simplex/Chat/Store/Profiles.dyn_o )
+2026-10-26T12:52:04.2328735Z [225 of 259] Compiling Simplex.Chat.Store ( src/Simplex/Chat/Store.hs, /project/dist-newstyle/build/x86_64-linux/ghc-8.10.7/simplex-chat-7.1.0.14/build/Simplex/Chat/Store.o, /project/dist-newstyle/build/x86_64-linux/ghc-8.10.7/simplex-chat-7.1.0.14/build/Simplex/Chat/Store.dyn_o ) [Simplex.Chat.Store.SQLite.Migrations changed]
+2026-10-26T12:52:04.2569528Z [226 of 259] Compiling Simplex.Chat.Store.Groups ( src/Simplex/Chat/Store/Groups.hs, /project/dist-newstyle/build/x86_64-linux/ghc-8.10.7/simplex-chat-7.1.0.14/build/Simplex/Chat/Store/Groups.o, /project/dist-newstyle/build/x86_64-linux/ghc-8.10.7/simplex-chat-7.1.0.14/build/Simplex/Chat/Store/Groups.dyn_o )
+2026-10-26T12:52:27.9855081Z [227 of 259] Compiling Simplex.Chat.Store.ContactRequest ( src/Simplex/Chat/Store/ContactRequest.hs, /project/dist-newstyle/build/x86_64-linux/ghc-8.10.7/simplex-chat-7.1.0.14/build/Simplex/Chat/Store/ContactRequest.o, /project/dist-newstyle/build/x86_64-linux/ghc-8.10.7/simplex-chat-7.1.0.14/build/Simplex/Chat/Store/ContactRequest.dyn_o )
+2026-10-26T12:52:29.6530622Z [228 of 259] Compiling Simplex.Chat.Store.Connections ( src/Simplex/Chat/Store/Connections.hs, /project/dist-newstyle/build/x86_64-linux/ghc-8.10.7/simplex-chat-7.1.0.14/build/Simplex/Chat/Store/Connections.o, /project/dist-newstyle/build/x86_64-linux/ghc-8.10.7/simplex-chat-7.1.0.14/build/Simplex/Chat/Store/Connections.dyn_o )
+2026-10-26T12:52:32.1100048Z [229 of 259] Compiling Simplex.Chat.Delivery ( src/Simplex/Chat/Delivery.hs, /project/dist-newstyle/build/x86_64-linux/ghc-8.10.7/simplex-chat-7.1.0.14/build/Simplex/Chat/Delivery.o, /project/dist-newstyle/build/x86_64-linux/ghc-8.10.7/simplex-chat-7.1.0.14/build/Simplex/Chat/Delivery.dyn_o ) [Simplex.Chat.Messages changed]
+2026-10-26T12:52:32.7492986Z [230 of 259] Compiling Simplex.Chat.Store.Delivery ( src/Simplex/Chat/Store/Delivery.hs, /project/dist-newstyle/build/x86_64-linux/ghc-8.10.7/simplex-chat-7.1.0.14/build/Simplex/Chat/Store/Delivery.o, /project/dist-newstyle/build/x86_64-linux/ghc-8.10.7/simplex-chat-7.1.0.14/build/Simplex/Chat/Store/Delivery.dyn_o ) [Simplex.Chat.Delivery changed]
+2026-10-26T12:52:34.3100628Z [231 of 259] Compiling Simplex.Chat.AppSettings ( src/Simplex/Chat/AppSettings.hs, /project/dist-newstyle/build/x86_64-linux/ghc-8.10.7/simplex-chat-7.1.0.14/build/Simplex/Chat/AppSettings.o, /project/dist-newstyle/build/x86_64-linux/ghc-8.10.7/simplex-chat-7.1.0.14/build/Simplex/Chat/AppSettings.dyn_o )
+2026-10-26T13:21:02.8290606Z Error: cabal: Failed to build simplex-chat-7.1.0.14 (which is required by
+2026-10-26T13:21:02.8310655Z exe:simplex-directory-service from simplex-chat-7.1.0.14,
+2026-10-26T13:21:02.8322197Z test:simplex-chat-test from simplex-chat-7.1.0.14 and others). The build
+2026-10-26T13:21:02.8337217Z process was killed (i.e. SIGKILL). The typical reason for this is that there
+2026-10-26T13:21:02.8351489Z is not enough memory available (e.g. the OS killed a process using lots of
+2026-10-26T13:21:02.8360333Z memory).
+2026-10-26T13:21:02.8366505Z 
+2026-10-26T13:21:02.9989774Z ##[error]Process completed with exit code 1.
+2026-10-26T13:21:03.6206251Z Post job cleanup.
+2026-10-26T13:21:04.0412995Z ##[group]Generating build summary
+2026-10-26T13:21:04.0433500Z (node:6530) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.

@@ -1,0 +1,42 @@
+﻿2026-10-26T14:44:16.1918650Z Current runner version: '2.338.0'
+2026-10-26T14:44:16.1934570Z ##[group]Runner Image Provisioner
+2026-10-26T14:44:16.1935140Z Hosted Compute Agent
+2026-10-26T14:44:16.1955570Z RepositoryProjects: write
+2026-10-26T14:46:13.0094130Z ##[group]Run scripts/ci/prune-old-builds.sh dist-newstyle
+2026-10-26T14:46:13.0094520Z [36;1mscripts/ci/prune-old-builds.sh dist-newstyle[0m
+2026-10-26T14:46:13.0094870Z [36;1mcabal build -j --enable-tests --ghc-options=-O0[0m
+2026-10-26T14:46:13.0095230Z [36;1mpath=$(cabal list-bin simplex-chat | tail -n 1)[0m
+2026-10-26T14:46:13.0095560Z [36;1mecho "bin_path=$path" >> $GITHUB_OUTPUT[0m
+2026-10-26T14:46:13.0096120Z [36;1mecho "bin_hash=$(echo SHA2-256\(simplex-chat-macos-aarch64\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT[0m
+2026-10-26T14:46:13.0142160Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-26T14:46:13.0142460Z env:
+2026-10-26T14:46:13.0142620Z   opt: O0
+2026-10-26T14:46:13.0142790Z   ghc_options: --ghc-options=-O0
+2026-10-26T14:46:13.0143000Z   release: false
+2026-10-26T14:46:13.0143190Z   branch: master
+2026-10-26T14:46:13.0143370Z   cache_o0: false
+2026-10-26T14:46:13.0143600Z   release_branch: 
+2026-10-26T14:46:13.0143810Z   ZSTD_CLEVEL: 9
+2026-10-26T14:46:13.0144090Z ##[endgroup]
+2026-10-26T14:46:13.9673000Z From https://github.com/simplex-chat/simplexmq
+2026-10-26T14:46:13.9676430Z    381828400..195df0d09  master     -> origin/master
+2026-10-26T14:46:13.9678470Z    4e6f55861..dcdb8c0f2  names      -> origin/names
+2026-10-26T14:46:13.9679130Z  * [new branch]          sh/server-stats-persistence -> origin/sh/server-stats-persistence
+2026-10-26T14:46:14.1723070Z Cleared directory 'cbits/blst'
+2026-10-26T14:46:14.1963510Z Submodule 'cbits/blst' (https://github.com/supranational/blst.git) unregistered for path 'cbits/blst'
+2026-10-26T14:46:14.1965790Z Cleared directory 'cbits/libbbs'
+2026-10-26T14:46:14.2089140Z Submodule 'cbits/libbbs' (https://github.com/simplex-chat/libbbs.git) unregistered for path 'cbits/libbbs'
+2026-10-26T14:46:14.4586370Z HEAD is now at dcdb8c0f2 Merge branch 'master' into names
+2026-10-26T14:46:14.7150430Z Submodule 'cbits/blst' (https://github.com/supranational/blst.git) registered for path 'cbits/blst'
+2026-10-26T14:46:14.7157740Z Submodule 'cbits/libbbs' (https://github.com/simplex-chat/libbbs.git) registered for path 'cbits/libbbs'
+2026-10-26T14:46:14.7167800Z Submodule 'cbits/libsecp256k1' (https://github.com/bitcoin-core/secp256k1.git) registered for path 'cbits/libsecp256k1'
+2026-10-26T14:46:14.7335380Z Cloning into '/Users/runner/work/simplex-chat/simplex-chat/dist-newstyle/src/simplexmq-f058c38b0eecb6c0/cbits/blst'...
+2026-10-26T14:46:15.9382180Z Cloning into '/Users/runner/work/simplex-chat/simplex-chat/dist-newstyle/src/simplexmq-f058c38b0eecb6c0/cbits/libbbs'...
+2026-10-26T14:46:16.8384900Z Submodule path 'cbits/blst': checked out 'db3defd0d501cc2bb1cdd59cb955d1a421821441'
+2026-10-26T14:46:16.8786160Z Submodule path 'cbits/libbbs': checked out '59a0f4bf32e195cb6883de8374825c0f4764c717'
+2026-10-26T14:46:16.8852700Z fatal: could not get a repository handle for submodule 'cbits/libsecp256k1'
+2026-10-26T14:46:16.9012500Z ##[error]Process completed with exit code 128.
+2026-10-26T14:46:16.9141610Z ##[group]Run actions/setup-node@v7
+2026-10-26T14:46:16.9141850Z with:
+2026-10-26T14:46:16.9142010Z   node-version: 22
+2026-10-26T14:46:16.9142190Z   check-latest: false

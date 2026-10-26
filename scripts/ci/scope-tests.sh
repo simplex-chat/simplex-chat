@@ -11,8 +11,11 @@ case "${1:-}" in
   ci-scripts)
     python3 scripts/ci/test_packages_release.py
     ;;
+  flakes)
+    python3 scripts/flakes/test_flakes.py
+    ;;
   *)
-    echo "usage: $0 badge-web | ci-scripts" >&2
+    echo "usage: $0 badge-web | ci-scripts | flakes" >&2
     exit 1
     ;;
 esac

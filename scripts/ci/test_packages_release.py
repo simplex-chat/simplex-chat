@@ -505,6 +505,10 @@ class ChangesTest(GitRepoTest):
         self.assertEqual(self.builds("scripts/ci/packages_release.py"), {"haskell"})
         self.assertEqual(self.values["scopes"], "ci-scripts")
 
+    def test_flake_tracker_change_tests_only_its_scope(self):
+        self.assertEqual(self.builds("scripts/flakes/flakes.py"), set())
+        self.assertEqual(self.values["scopes"], "flakes")
+
 
 class PackageStateTest(GitRepoTest):
     def setUp(self):

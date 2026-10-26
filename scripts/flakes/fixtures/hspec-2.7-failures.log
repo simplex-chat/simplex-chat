@@ -1,0 +1,229 @@
+﻿2026-10-20T12:44:46.6429776Z Current runner version: '2.337.0'
+2026-10-20T12:44:46.6466961Z ##[group]Runner Image Provisioner
+2026-10-20T12:44:46.6468327Z Hosted Compute Agent
+2026-10-20T12:44:49.3213186Z Complete job name: ubuntu-22.04-x86_64 (CLI,Desktop), GHC: 8.10.7
+2026-10-20T12:49:09.3183408Z ##[group]Run i=1
+2026-10-20T12:49:09.3183700Z [36;1mi=1[0m
+2026-10-20T12:49:09.3183920Z [36;1mattempts=1[0m
+2026-10-20T12:49:09.3184170Z [36;1mfalse && attempts=3[0m
+2026-10-20T12:49:09.3184476Z [36;1mwhile [ "$i" -le "$attempts" ]; do[0m
+2026-10-20T12:49:09.3184807Z [36;1m  if ./simplex-chat-test; then[0m
+2026-10-20T12:49:09.3185124Z [36;1m    break[0m
+2026-10-20T12:49:09.3185349Z [36;1m  else[0m
+2026-10-20T12:49:09.3185607Z [36;1m    echo "Attempt $i failed, retrying..."[0m
+2026-10-20T12:49:09.3185934Z [36;1m    i=$((i + 1))[0m
+2026-10-20T12:49:09.3186187Z [36;1m    sleep 1[0m
+2026-10-20T12:49:09.3186422Z [36;1m  fi[0m
+2026-10-20T12:49:09.3186628Z [36;1mdone[0m
+2026-10-20T12:49:09.3187090Z [36;1mif [ "$i" -gt "$attempts" ]; then[0m
+2026-10-20T12:49:09.3187439Z [36;1m  echo "All "$attempts" attempts failed."[0m
+2026-10-20T12:49:09.3187756Z [36;1m  exit 1[0m
+2026-10-20T12:49:09.3187970Z [36;1mfi[0m
+2026-10-20T12:49:09.3220665Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-20T12:49:09.3221037Z env:
+2026-10-20T12:49:09.3221240Z   opt: O2
+2026-10-20T12:49:09.3221446Z   ghc_options: 
+2026-10-20T12:49:09.3221678Z   release: false
+2026-10-20T12:49:09.3221901Z   branch: master
+2026-10-20T12:49:09.3222113Z   cache_o0: true
+2026-10-20T12:49:09.3222536Z   release_branch: master
+2026-10-20T12:49:09.3222781Z   ZSTD_CLEVEL: 9
+2026-10-20T12:49:09.3223165Z   image_cache: ghcr.io/simplex-chat/simplex-chat-build-cache:22.04-x86_64-ghc8.10.7
+2026-10-20T12:49:09.3223646Z   source_hashes: dist-newstyle/sources.sha256
+2026-10-20T12:49:09.3223962Z ##[endgroup]
+2026-10-20T12:49:10.2129331Z [ERROR 2026-10-20 12:49:10 +0000 apps/simplex-badge-service/src/BadgeService/Service.hs:312] badge service: a request failed; the next one will be handled
+2026-10-20T12:49:10.2238689Z [WARN 2026-10-20 12:49:10 +0000 apps/simplex-badge-service/src/BadgeService/Config.hs:180] tests/tmp/badge-ini6288/badge_service.ini: nothing reads [legacy], so it was ignored
+2026-10-20T12:49:10.2303334Z [WARN 2026-10-20 12:49:10 +0000 apps/simplex-badge-service/src/BadgeService/Config.hs:180] tests/tmp/badge-ini6287/badge_service.ini: nothing reads issuer.default, so it was ignored
+2026-10-20T12:49:10.2345450Z [WARN 2026-10-20 12:49:10 +0000 apps/simplex-badge-service/src/BadgeService/Config.hs:180] tests/tmp/badge-ini6287/badge_service.ini: nothing reads issuer.key_1, so it was ignored
+2026-10-20T12:49:10.3798565Z [INFO 2026-10-20 12:49:10 +0000 apps/simplex-badge-service/src/BadgeService/Web/Server.hs:539] POST /api/invoice refused: no provider configured for SPMCard {provider = CPStripe}
+2026-10-20T12:49:10.3919536Z [INFO 2026-10-20 12:49:10 +0000 apps/simplex-badge-service/src/BadgeService/Web/Server.hs:339] badge service: exported the webapp to tests/tmp/badge-export6287/out
+2026-10-20T12:49:10.4212627Z [INFO 2026-10-20 12:49:10 +0000 apps/simplex-badge-service/src/BadgeService/Web/Server.hs:539] POST /api/invoice refused: malformed body
+2026-10-20T12:49:10.4915650Z [WARN 2026-10-20 12:49:10 +0000 apps/simplex-badge-service/src/BadgeService/Web/Server.hs:677] POST /webhooks/btcpay: no PPCrypto adapter is configured, so every delivery is refused
+2026-10-20T12:49:10.8199653Z SQLite3 returned ErrorError while attempting to perform prepare "SELECT i.invoice_id, i.provider, ci.provider_ref, bc.badge_type, bc.months, i.price, i.amount, i.currency, i.payment_url, i.payment_address, i.payment_crypto_currency, i.payment_crypto_amount, i.expires_at, i.status, i.created_at, p.amount, p.crypto_paid, p.crypto_due, p.paid_in_full, p.status, p.updated_at FROM sx_badge_service_invoices i JOIN sx_badge_service_badge_code_invoices ci ON ci.invoice_id = i.invoice_id JOIN sx_badge_service_badge_codes bc ON bc.badge_code_id = ci.badge_code_id LEFT JOIN sx_badge_service_payments p ON p.invoice_id = i.invoice_id WHERE i.invoice_id = ?": no such table: sx_badge_service_badge_code_invoices
+2026-10-20T12:49:11.0344269Z [INFO 2026-10-20 12:49:11 +0000 apps/simplex-badge-service/src/BadgeService/Providers/BTCPay.hs:242] btcpay: store BqZKtkeSN9JgLLdCJRJfXQjLwCLDNCVLdxLTTdMzTHnT has enabled BTC-CHAIN, XMR-CHAIN
+2026-10-20T12:49:11.0510124Z [INFO 2026-10-20 12:49:11 +0000 apps/simplex-badge-service/src/BadgeService/Poller.hs:210] badge poller: order p-1 ISOpen -> ISPaid
+2026-10-20T12:49:11.0585723Z [[IINNFFOO  22002266--1100--2200  1122::4499::1111  ++00000000  aappppss//ssiimmpplleexx--bbaaddggee--sseerrvviiccee//ssrrcc//BBaaddggeeSSeerrvviiccee//PPoolllleerr..hhss::221100]]  bbaaddggee  ppoolllleerr::  oorrddeerr  pp--21  IISSOOppeenn  -->>  IISSPPaaiidd
+2026-10-20T12:49:11.0588172Z 
+2026-10-20T12:49:11.0654552Z [I[NIFNOF O2 022062-61-01-02-02 01 21:24:94:91:11 1+ 0+000000 0a pappsp/ss/ismipmlpelxe-xb-abdagdeg-es-esrevrivciec/es/rscr/cB/aBdagdegSeeSrevrivciec/eP/oPlollelre.rh.sh:s2:1201]0 ]b abdagdeg ep oplollelre:r :o rodredre rF apk-e3I nIvSoOipceenR e-f>0 0I0S1P aIiSdO
+2026-10-20T12:49:11.0682459Z pen -> ISPaid
+2026-10-20T12:49:11.0868902Z [ERROR 2026-10-20 12:49:11 +0000 apps/simplex-badge-service/src/BadgeService/Poller.hs:153] badge poller: invoice p-none-1 names provider crypto, which this build has none of
+2026-10-20T12:49:11.1039037Z [ERROR 2026-10-20 12:49:11 +0000 apps/simplex-badge-service/src/BadgeService/Poller.hs:153] badge poller: invoice p-stripe-mixed names provider stripe, which this build has none of
+2026-10-20T12:49:11.1256212Z [INFO 2026-10-20 12:49:11 +0000 apps/simplex-badge-service/src/BadgeService/Poller.hs:210] badge poller: order p-settled ISOpen -> ISPaid
+2026-10-20T12:49:11.1358562Z [INFO 2026-[1E0R-R2O0R  1220:2469-:1101- 2+00 01020: 4a9p:p1s1/ s+i0m0p0l0e xa-pbpasd/gsei-mspelrevxi-cbea/dsgrec-/sBeardvgiecSee/rsvricc/eB/aPdoglelSeerr.vhisc:e2/1P0o]l lbeard.ghes :p2o0l8l]e rb:a dogred epro [lpIl-Ne1Fr O:I  S2oO0rp2de6en-r 1 -0p>-- 2cI0lS oP1sa2ei:dd4 
+2026-10-20T12:49:13.5132283Z [INFO 2026-10-20 12:49:13 +0000 apps/simplex-badge-service/src/BadgeService/Providers/BTCPay.hs:242] btcpay: store BqZKtkeSN9JgLLdCJRJfXQjLwCLDNCVLdxLTTdMzTHnT has enabled BTC-CHAIN, XMR-CHAIN
+2026-10-20T12:49:14.0353086Z [INFO 2026-10-20 12:49:14 +0000 apps/simplex-badge-service/src/BadgeService/Service.hs:148] verifying Play purchases for chat.simplex.app
+2026-10-20T12:49:15.1706099Z [1;31m[ERROR 2026-10-20 12:49:15 +0000 src/Simplex/Chat/Library/Internal.hs:1721] Error decompressing link data: "compressed size not specified or exceeds 65536"
+2026-10-20T12:49:25.2338613Z 
+2026-10-20T12:49:25.2339652Z Schema dump
+2026-10-20T12:49:25.2340574Z   verify and overwrite schema dump
+2026-10-20T12:49:25.2367550Z   verify .lint fkey-indexes
+2026-10-20T12:49:25.2397446Z down migration 20230317_hidden_profiles
+2026-10-20T12:49:25.2427508Z down migration 20230318_file_description
+2026-10-20T12:49:25.2428168Z down migration 20230321_agent_file_deleted
+2026-10-20T12:49:25.2428750Z down migration 20230328_files_protocol
+2026-10-20T12:49:25.2429294Z down migration 20230402_protocol_servers
+2026-10-20T12:49:25.2448132Z down migration 20230411_extra_xftp_file_descriptions
+2026-10-20T12:49:25.2448799Z down migration 20230420_rcv_files_to_receive
+2026-10-20T12:49:25.2449434Z down migration 20230422_profile_contact_links
+2026-10-20T12:49:25.2450692Z down migration 20230504_recreate_msg_delivery_events_cleanup_messages
+2026-10-20T12:49:25.2451461Z down migration 20230505_chat_item_versions
+2026-10-20T12:49:25.2452000Z down migration 20230511_reactions
+2026-10-20T12:49:25.2452491Z down migration 20230519_item_deleted_ts
+2026-10-20T12:49:25.2453005Z down migration 20230526_indexes
+2026-10-20T12:49:25.2453487Z down migration 20230529_indexes
+2026-10-20T13:14:04.8966022Z         connects with stored server bindings
+2026-10-20T13:14:04.8966313Z       sends messages
+2026-10-20T13:14:04.8966543Z       remote files
+2026-10-20T13:14:04.8967090Z         store/get/send/receive files
+2026-10-20T13:14:04.8967436Z         should send files from CLI without /store FAILED [12]
+2026-10-20T13:14:04.8967783Z       switches remote hosts
+2026-10-20T13:14:04.8968040Z       indicates remote hosts
+2026-10-20T13:14:04.8968301Z       works with multiple profiles
+2026-10-20T13:14:04.8968726Z Save query plans
+2026-10-20T13:14:04.8968961Z   verify and overwrite query plans
+2026-10-20T13:14:04.8969241Z     # PENDING: No reason given
+2026-10-20T13:14:04.8969409Z 
+2026-10-20T13:14:04.8969493Z Failures:
+2026-10-20T13:14:04.8969608Z 
+2026-10-20T13:14:04.8969719Z   tests/ChatTests/Names.hs:18:33: 
+2026-10-20T13:14:04.8970010Z   1) names tests connect by resolved name
+2026-10-20T13:14:04.8970354Z        expected: "Your new chat address is created!"
+2026-10-20T13:14:04.8971191Z         but got: "smp agent error: BROKER {brokerAddress = \"smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:7001\", brokerErr = NETWORK {networkError = NETimeoutError}}"
+2026-10-20T13:14:04.8971866Z 
+2026-10-20T13:14:04.8972053Z   To rerun use: --match "/names tests/connect by resolved name/"
+2026-10-20T13:14:04.8972323Z 
+2026-10-20T13:14:04.8972434Z   tests/ChatTests/Direct.hs:114:40: 
+2026-10-20T13:14:04.8972868Z   2) SimpleX chat client, direct tests, maintenance mode, export/import chat with files
+2026-10-20T13:14:04.8973323Z        uncaught exception: ErrorCall
+2026-10-20T13:14:04.8973781Z        alice: no output for 20 seconds, expected: "completed receiving file 1 (test.jpg) from bob"
+2026-10-20T13:14:04.8974262Z        CallStack (from HasCallStack):
+2026-10-20T13:14:04.8974631Z          error, called at tests/ChatClient.hs:558:7 in main:ChatClient
+2026-10-20T13:14:04.8975123Z          getTermLine', called at tests/ChatTests/Utils.hs:379:8 in main:ChatTests.Utils
+2026-10-20T13:14:04.8975653Z          <##, called at tests/ChatTests/Direct.hs:1562:7 in main:ChatTests.Direct
+2026-10-20T13:14:04.8976140Z          runTest, called at tests/ChatClient.hs:464:13 in main:ChatClient
+2026-10-20T13:14:04.8976901Z          withNewTestChatCfgOpts_, called at tests/ChatClient.hs:457:47 in main:ChatClient
+2026-10-20T13:14:04.8977536Z          withNewTestChatCfgOpts, called at tests/ChatClient.hs:454:26 in main:ChatClient
+2026-10-20T13:14:04.8978151Z          withNewTestChatOpts, called at tests/ChatTests/Direct.hs:1544:5 in main:ChatTests.Direct
+2026-10-20T13:14:04.8978711Z          runTest, called at tests/ChatClient.hs:464:13 in main:ChatClient
+2026-10-20T13:14:04.8979223Z          withNewTestChatCfgOpts_, called at tests/ChatClient.hs:457:47 in main:ChatClient
+2026-10-20T13:14:04.8979790Z          withNewTestChatCfgOpts, called at tests/ChatClient.hs:442:22 in main:ChatClient
+2026-10-20T13:14:04.8980376Z          withNewTestChat, called at tests/ChatTests/Direct.hs:1543:3 in main:ChatTests.Direct
+2026-10-20T13:14:04.8981032Z          testMaintenanceModeWithFiles, called at tests/ChatTests/Direct.hs:114:40 in main:ChatTests.Direct
+2026-10-20T13:14:04.8981441Z 
+2026-10-20T13:14:04.8981907Z   To rerun use: --match "/SimpleX chat client/direct tests/maintenance mode/export/import chat with files/"
+2026-10-20T13:14:04.8982332Z 
+2026-10-20T13:14:04.8982443Z   tests/ChatTests/Groups.hs:147:50: 
+2026-10-20T13:14:04.8982946Z   3) SimpleX chat client, group tests, group link connection plan, group link without contact - connecting
+2026-10-20T13:14:04.8983477Z        expected: "Group link is created!"
+2026-10-20T13:14:04.8984256Z         but got: "smp agent error: BROKER {brokerAddress = \"smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:7001\", brokerErr = NETWORK {networkError = NETimeoutError}}"
+2026-10-20T13:14:04.8984929Z 
+2026-10-20T13:14:04.8985316Z   To rerun use: --match "/SimpleX chat client/group tests/group link connection plan/group link without contact - connecting/"
+2026-10-20T13:14:04.8985792Z 
+2026-10-20T13:14:04.8985894Z   tests/ChatTests/Groups.hs:9845:3: 
+2026-10-20T13:14:04.8986524Z   4) SimpleX chat client, group tests, channels, channel operations, promoted members roster, moderator action verifies via owner-signed roster
+2026-10-20T13:14:04.8987496Z        expected: "group link: ok to connect via relays"
+2026-10-20T13:14:04.8988294Z         but got: "smp agent error: BROKER {brokerAddress = \"smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:7001\", brokerErr = NETWORK {networkError = NETimeoutError}}"
+2026-10-20T13:14:04.8989121Z 
+2026-10-20T13:14:04.8989633Z   To rerun use: --match "/SimpleX chat client/group tests/channels/channel operations/promoted members roster/moderator action verifies via owner-signed roster/"
+2026-10-20T13:14:04.8990235Z 
+2026-10-20T13:14:04.8990359Z   tests/Bots/BadgeService/BotTests.hs:112:74: 
+2026-10-20T13:14:04.8990853Z   5) SimpleX badge service e2e should renew a badge whose credential is lapsing, with no command
+2026-10-20T13:14:04.8991329Z        uncaught exception: ErrorCall
+2026-10-20T13:14:04.8991684Z        alice: no output for 20 seconds, expected: "badge redeemed"
+2026-10-20T13:14:04.8992053Z        CallStack (from HasCallStack):
+2026-10-20T13:14:04.8992415Z          error, called at tests/ChatClient.hs:558:7 in main:ChatClient
+2026-10-20T13:14:04.8992913Z          getTermLine', called at tests/ChatTests/Utils.hs:379:8 in main:ChatTests.Utils
+2026-10-20T13:14:04.8993517Z          <##, called at tests/Bots/BadgeService/BotTests.hs:865:3 in main:Bots.BadgeService.BotTests
+2026-10-20T13:14:04.8994432Z          redeemFirstBadge, called at tests/Bots/BadgeService/BotTests.hs:888:7 in main:Bots.BadgeService.BotTests
+2026-10-20T13:14:04.8995053Z          runTest, called at tests/ChatClient.hs:464:13 in main:ChatClient
+2026-10-20T13:14:04.8995581Z          withNewTestChatCfgOpts_, called at tests/ChatClient.hs:457:47 in main:ChatClient
+2026-10-20T13:14:04.8996163Z          withNewTestChatCfgOpts, called at tests/ChatClient.hs:451:29 in main:ChatClient
+2026-10-20T13:14:04.8997120Z          withNewTestChatCfg, called at tests/Bots/BadgeService/BotTests.hs:886:5 in main:Bots.BadgeService.BotTests
+2026-10-20T13:14:04.8997913Z          testWorkerRenews, called at tests/Bots/BadgeService/BotTests.hs:112:74 in main:Bots.BadgeService.BotTests
+2026-10-20T13:14:04.8998348Z 
+2026-10-20T13:14:04.8998698Z   To rerun use: --match "/SimpleX badge service e2e/should renew a badge whose credential is lapsing, with no command/"
+2026-10-20T13:14:04.8999149Z 
+2026-10-20T13:14:04.8999278Z   tests/Bots/BadgeService/BotTests.hs:310:40: 
+2026-10-20T13:14:04.8999811Z   6) SimpleX badge service e2e should silence an acknowledged run of failures, and alert again on the next run
+2026-10-20T13:14:04.9000328Z        uncaught exception: ErrorCall
+2026-10-20T13:14:04.9000616Z        badge service did not start
+2026-10-20T13:14:04.9000901Z        CallStack (from HasCallStack):
+2026-10-20T13:14:04.9001384Z          error, called at tests/Bots/BadgeService/BotTests.hs:310:40 in main:Bots.BadgeService.BotTests
+2026-10-20T13:14:04.9001769Z 
+2026-10-20T13:14:04.9002313Z   To rerun use: --match "/SimpleX badge service e2e/should silence an acknowledged run of failures, and alert again on the next run/"
+2026-10-20T13:14:04.9002816Z 
+2026-10-20T13:14:04.9002944Z   tests/Bots/BadgeService/BotTests.hs:310:40: 
+2026-10-20T13:14:04.9003604Z   7) SimpleX badge service e2e, store purchases, the service's own checks, should refuse a store purchase whose purchaseKey is not the verified signer
+2026-10-20T13:14:04.9004269Z        uncaught exception: ErrorCall
+2026-10-20T13:14:04.9004546Z        badge service did not start
+2026-10-20T13:14:04.9004829Z        CallStack (from HasCallStack):
+2026-10-20T13:14:04.9005309Z          error, called at tests/Bots/BadgeService/BotTests.hs:310:40 in main:Bots.BadgeService.BotTests
+2026-10-20T13:14:04.9005702Z 
+2026-10-20T13:14:04.9006229Z   To rerun use: --match "/SimpleX badge service e2e/store purchases/the service's own checks/should refuse a store purchase whose purchaseKey is not the verified signer/"
+2026-10-20T13:14:04.9007131Z 
+2026-10-20T13:14:04.9007265Z   tests/Bots/BadgeService/BotTests.hs:162:88: 
+2026-10-20T13:14:04.9007904Z   8) SimpleX badge service e2e, store purchases, invoice first, should credit a receipt naming an unknown invoice to the presenting profile
+2026-10-20T13:14:04.9008524Z        uncaught exception: ErrorCall
+2026-10-20T13:14:04.9008859Z        alisa: no output for 20 seconds
+2026-10-20T13:14:04.9009147Z        CallStack (from HasCallStack):
+2026-10-20T13:14:04.9009645Z          error, called at tests/ChatClient.hs:558:7 in main:ChatClient
+2026-10-20T13:14:04.9010121Z          getTermLine', called at tests/ChatClient.hs:541:15 in main:ChatClient
+2026-10-20T13:14:04.9010736Z          getTermLine, called at tests/Bots/BadgeService/BotTests.hs:2400:11 in main:Bots.BadgeService.BotTests
+2026-10-20T13:14:04.9011465Z          inAnyOrder, called at tests/Bots/BadgeService/BotTests.hs:2404:7 in main:Bots.BadgeService.BotTests
+2026-10-20T13:14:04.9012170Z          inAnyOrder, called at tests/Bots/BadgeService/BotTests.hs:2071:7 in main:Bots.BadgeService.BotTests
+2026-10-20T13:14:04.9012768Z          runTest, called at tests/ChatClient.hs:464:13 in main:ChatClient
+2026-10-20T13:14:04.9013302Z          withNewTestChatCfgOpts_, called at tests/ChatClient.hs:457:47 in main:ChatClient
+2026-10-20T13:14:04.9013902Z          withNewTestChatCfgOpts, called at tests/ChatClient.hs:451:29 in main:ChatClient
+2026-10-20T13:14:04.9014586Z          withNewTestChatCfg, called at tests/Bots/BadgeService/BotTests.hs:2065:5 in main:Bots.BadgeService.BotTests
+2026-10-20T13:14:04.9015373Z          testInvoiceUnknown, called at tests/Bots/BadgeService/BotTests.hs:162:88 in main:Bots.BadgeService.BotTests
+2026-10-20T13:14:04.9015812Z 
+2026-10-20T13:14:04.9016316Z   To rerun use: --match "/SimpleX badge service e2e/store purchases/invoice first/should credit a receipt naming an unknown invoice to the presenting profile/"
+2026-10-20T13:14:04.9017197Z 
+2026-10-20T13:14:04.9024291Z   tests/Bots/BadgeService/BotTests.hs:177:64: 
+2026-10-20T13:14:04.9025325Z   9) SimpleX badge service e2e, store purchases, the receipt worker, should credit a held receipt after the app restarts
+2026-10-20T13:14:04.9026097Z        expected: ["service_error final internal"]
+2026-10-20T13:14:04.9026626Z         but got: []
+2026-10-20T13:14:04.9027084Z 
+2026-10-20T13:14:04.9027639Z   To rerun use: --match "/SimpleX badge service e2e/store purchases/the receipt worker/should credit a held receipt after the app restarts/"
+2026-10-20T13:14:04.9028202Z 
+2026-10-20T13:14:04.9028383Z   tests/Bots/BadgeService/GroupIntegrationTests.hs:89:49: 
+2026-10-20T13:14:04.9028884Z   10) SimpleX badge service e2e, managed group, ignores a command sent as a live message
+2026-10-20T13:14:04.9029349Z        uncaught exception: ErrorCall
+2026-10-20T13:14:04.9029649Z        badge service did not start
+2026-10-20T13:14:04.9029939Z        CallStack (from HasCallStack):
+2026-10-20T13:14:04.9030542Z          error, called at tests/Bots/BadgeService/GroupIntegrationTests.hs:190:30 in main:Bots.BadgeService.GroupIntegrationTests
+2026-10-20T13:14:04.9031695Z          startGroupService, called at tests/Bots/BadgeService/GroupIntegrationTests.hs:170:25 in main:Bots.BadgeService.GroupIntegrationTests
+2026-10-20T13:14:04.9032702Z          runGroupServiceAs, called at tests/Bots/BadgeService/GroupIntegrationTests.hs:166:23 in main:Bots.BadgeService.GroupIntegrationTests
+2026-10-20T13:14:04.9033699Z          runGroupService, called at tests/Bots/BadgeService/GroupIntegrationTests.hs:231:43 in main:Bots.BadgeService.GroupIntegrationTests
+2026-10-20T13:14:04.9034670Z          runWithOwner, called at tests/Bots/BadgeService/GroupIntegrationTests.hs:228:3 in main:Bots.BadgeService.GroupIntegrationTests
+2026-10-20T13:14:04.9035632Z          withGroupOwner, called at tests/Bots/BadgeService/GroupIntegrationTests.hs:542:3 in main:Bots.BadgeService.GroupIntegrationTests
+2026-10-20T13:14:04.9036623Z          testLiveMessageIgnored, called at tests/Bots/BadgeService/GroupIntegrationTests.hs:89:49 in main:Bots.BadgeService.GroupIntegrationTests
+2026-10-20T13:14:04.9037497Z 
+2026-10-20T13:14:04.9037835Z   To rerun use: --match "/SimpleX badge service e2e/managed group/ignores a command sent as a live message/"
+2026-10-20T13:14:04.9038252Z 
+2026-10-20T13:14:04.9038431Z   tests/Bots/BadgeService/GroupIntegrationTests.hs:118:3: 
+2026-10-20T13:14:04.9038990Z   11) SimpleX badge service e2e, managed group, retires on restart a tracker whose revoke never reached it
+2026-10-20T13:14:04.9039697Z        uncaught exception: ErrorCall
+2026-10-20T13:14:04.9039986Z        test timed out
+2026-10-20T13:14:04.9040238Z        CallStack (from HasCallStack):
+2026-10-20T13:14:04.9040628Z          error, called at tests/ChatTests/Utils.hs:98:59 in main:ChatTests.Utils
+2026-10-20T13:14:04.9041326Z          it, called at tests/Bots/BadgeService/GroupIntegrationTests.hs:118:3 in main:Bots.BadgeService.GroupIntegrationTests
+2026-10-20T13:14:04.9041807Z 
+2026-10-20T13:14:04.9042185Z   To rerun use: --match "/SimpleX badge service e2e/managed group/retires on restart a tracker whose revoke never reached it/"
+2026-10-20T13:14:04.9042651Z 
+2026-10-20T13:14:04.9042765Z   tests/RemoteTests.hs:693:3: 
+2026-10-20T13:14:04.9043233Z   12) Remote session, Remote, With compression, remote files, should send files from CLI without /store
+2026-10-20T13:14:04.9043738Z        expected: "confirmation sent!"
+2026-10-20T13:14:04.9044506Z         but got: "smp agent error: BROKER {brokerAddress = \"smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:7021\", brokerErr = NETWORK {networkError = NETimeoutError}}"
+2026-10-20T13:14:04.9045184Z 
+2026-10-20T13:14:04.9045555Z   To rerun use: --match "/Remote session/Remote/With compression/remote files/should send files from CLI without /store/"
+2026-10-20T13:14:04.9046018Z 
+2026-10-20T13:14:04.9046123Z Randomized with seed 1058009187
+2026-10-20T13:14:04.9046296Z 
+2026-10-20T13:14:04.9046393Z Finished in 1495.4722 seconds
+2026-10-20T13:14:04.9046891Z 1715 examples, 12 failures, 46 pending
+2026-10-20T13:14:05.5018522Z Attempt 1 failed, retrying...
+2026-10-20T13:14:06.5056076Z All 1 attempts failed.
+2026-10-20T13:14:06.5070900Z ##[error]Process completed with exit code 1.
+2026-10-20T13:14:06.5166244Z ##[group]Run find dist-newstyle -mindepth 1 -maxdepth 1 ! -name src -exec rm -rf {} +
+2026-10-20T13:14:06.5167223Z [36;1mfind dist-newstyle -mindepth 1 -maxdepth 1 ! -name src -exec rm -rf {} +[0m
