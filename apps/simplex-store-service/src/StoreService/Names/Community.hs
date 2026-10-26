@@ -59,7 +59,7 @@ agreedTermsHash terms = T.stripPrefix communityTermsSuffix (snd $ T.breakOn comm
 communityTermsSuffix :: Text
 communityTermsSuffix = "/community/"
 
--- | Null without community_terms_url, which the page links.
+-- | Null for plain terms, and without community_terms_url, which the page links.
 communityJSON :: NamesConfig -> LabelHash -> Maybe ByteString -> J.Value
 communityJSON cfg@NamesConfig {nCommunityTermsUrl} lh h = case (h, nCommunityTermsUrl) of
   (Just h', Just url) -> J.object ["for" .= communityFor cfg lh, "terms" .= J.object ["url" .= url, "hash" .= hex h']]

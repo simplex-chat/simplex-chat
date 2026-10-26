@@ -192,7 +192,7 @@ testStartupCheck g = withContracts g $ \node ct -> do
   warned `shouldSatisfy` T.isInfixOf "names: [community] lists a name the name policy does not list, so it is sold as a plain name: Alice's bakery"
   setCommunityTerms node fakeNewCommunityTerms
   checkNamePolicy cfg ct `shouldReturn` Left ("names: the text at names.community_terms_url does not hash to the name policy's terms " <> T.unpack (hex fakeNewCommunityTerms))
-  answerListing node (LabelHash $ fromJust $ bytes32FromHex aliceHex) $ Reverts ""
+  answerListing node aliceHash $ Reverts ""
   unread <- capturingStderr $ void $ checkNamePolicy cfg ct
   unread `shouldSatisfy` T.isInfixOf "names: a [community] name's listing could not be read: Alice's bakery"
 

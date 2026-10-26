@@ -601,7 +601,7 @@ the guardian can add to. A listed name can be registered only after its owner ac
 community terms on chain, identified by `termsHash`, the keccak256 of their text. The controller
 owner's `setNamePolicy` takes effect for the service after a restart, so restart it at once: until
 then the service reads the reservations, the list, the terms and the nonces from the old policy, so an order of a name the
-new policy reserves or lists does not register; the page signs again until the order lapses, and only the first relay spends gas. One
+new policy reserves ends taken, and one of a name it lists does not register: the page signs again until the order lapses, and only the first relay spends gas. One
 more setting gives the community terms' text:
 
 - `community_terms_url`: the page of the community terms, which the order's checkbox links to beside

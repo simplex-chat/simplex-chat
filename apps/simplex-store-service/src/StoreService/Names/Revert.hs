@@ -12,7 +12,7 @@ import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1)
 import StoreService.Names.Abi (selector)
 
--- | The custom errors of SimplexController, SimplexSponsor, BaseRegistrarImplementation and SimplexResolver, and the terms errors of SimplexNamePolicy.
+-- | The custom errors of SimplexController, SimplexSponsor, BaseRegistrarImplementation and SimplexResolver, and the reservation and terms errors of SimplexNamePolicy, that the service tells apart.
 -- The sponsor passes the controller's and the base registrar's reverts through, so any call can revert with any of them.
 data RevertName
   = RNAlreadyFrozen

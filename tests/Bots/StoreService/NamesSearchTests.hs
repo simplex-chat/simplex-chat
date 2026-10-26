@@ -9,7 +9,8 @@ module Bots.StoreService.NamesSearchTests (namesSearchTests, aliceHex) where
 import Bots.StoreService.ConfigTests (termsUrl, termsVersion)
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests
-  ( answerRegistered,
+  ( alice,
+    answerRegistered,
     answerRegistrar,
     channelTextCall,
     contactTextCall,
@@ -53,7 +54,7 @@ import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (strEncode)
-import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..))
+import Simplex.Messaging.SimplexName (SimplexTLD (..))
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import StoreService.Config (ListenerConfig (..), NamesConfig (..), TermsConfig (..))
 import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, bytes32FromHex, uint256)
@@ -372,7 +373,7 @@ testCommunity g = withSearch g listAlice id $ \s@Search {node, store} -> do
   answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000
   -- an ini line for a name the policy does not list: a plain name
   searchAlice s 12 `shouldReturn` availableAnswer 10000
-  listCommunityName node $ LabelHash $ fromJust $ bytes32FromHex aliceHex
+  listCommunityName node alice
   searchAlice s 12 `shouldReturn` listed node (availableAnswer 10000)
   reserved node
   searchAlice s 12 `shouldReturn` listed node reservedAnswer
@@ -390,12 +391,12 @@ testCommunity g = withSearch g listAlice id $ \s@Search {node, store} -> do
   available node
   searchAlice s 12 `shouldReturn` unavailable
   setCommunityTerms node fakeCommunityTerms
-  answerListing node (LabelHash $ fromJust $ bytes32FromHex aliceHex) $ Reverts ""
+  answerListing node alice $ Reverts ""
   searchAlice s 12 `shouldReturn` unavailable
 
 testCommunityWithoutText :: TVar ChaChaDRG -> IO ()
 testCommunityWithoutText g = withSearch g id id $ \s@Search {node} -> do
-  listCommunityName node $ LabelHash $ fromJust $ bytes32FromHex aliceHex
+  listCommunityName node alice
   available node
   answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000
   answer <- searchAlice s 12
