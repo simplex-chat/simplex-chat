@@ -51,6 +51,8 @@ The sample items are dated 15 January 2025, before 10:15 UTC, and the test runs 
 
 The images go to `snapshots/` of the artifact `ios-sim-smoke-test` as 8-bit sRGB PNG files without alpha (`preferredRange = .standard`, `opaque`), named `<scene>-<light|dark>-<size>.png`, with `index-<size>.json` listing each file's scene, theme, size, pixel width and height, scale and the content size category the app saw. Rendering adds 5–11 minutes to the app job.
 
+When `apps/ios/SimpleX Snapshots/References` exists, `snapshots.sh` then runs `snapshots-compare.py <references> <renders> <diff dir>`. It compares each render listed in `index-*.json` with the reference of the same name: a render passes when its file is identical to the reference, or when no channel of any pixel differs from it by more than 8 of 255 (two runs of the same code drew 54 of 54 renders byte for byte alike). A missing or extra render, a changed size or a pixel beyond the tolerance fails: the script writes `compare.json` (each file's result and the failed files) next to the renders and, per failed file, `snapshots-diff/<file>` with the reference, the render and the changed pixels in red side by side, lists the failed files in the job summary and exits with 1, which fails the smoke test step.
+
 ## The test backend
 
 `backend.sh start <backend zip> <work dir>` (with the `backend` input) starts, on the runner, against the preset SMP and XFTP servers:
