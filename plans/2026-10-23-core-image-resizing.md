@@ -27,6 +27,16 @@ The research winner is implemented: mozjpeg, Catmull-Rom and sharpening, at the 
 | D12 | **Out of scope.** Guetzli (a later PR for channels and groups, badge holders only) and other image formats. | Confirmed. |
 | D13 | **Approved texts.** README line "JPEG decoding and encoding of resized images"; binding description "JPEG encoding and decoding of JuicyPixels images with mozjpeg"; a TurboJPEG3 module header like TurboJPEG2's. | Option (a), with the comment "to many words - we need what we've seen as the best result, I don't think it's even offered. To spell out the only possible choice: mozjpeg + Catmull-Rom + sharpening (recommended)  why it's not here?" The research winner became the first line of this section. |
 
+Decisions of the lead, 26 Oct, after the review:
+
+| ID | Decision |
+|---|---|
+| D14 | **No interim search.** The D3 functions and their pinned test are added now; `fitImage` changes once, with D4. |
+| D15 | **Transparency in premultiplied alpha.** Images with transparency are resized and sharpened with premultiplied colour, so colours under transparent pixels do not reach visible pixels. |
+| D16 | **Exact pinned test on every platform.** stb_image_resize in JuicyPixels-stbir is compiled without floating-point contraction. |
+| D17 | **HEIC is converted by iOS before the core.** iOS requests the `public.jpeg` representation of picked items other than PNG and GIF; for `""` the bytes functions are used. |
+| D18 | **Sharpening only of downscaled images.** An image kept at its size is not sharpened: on the github input kept at full resolution, sharpening lowered the large-screen SSIMULACRA2 from 92.53 to 89.94. |
+
 ## Decisions
 
 Decoding, `Image.hs`:
@@ -120,6 +130,43 @@ chat_resize_image(data, len, maxSize, png)    base64 of at most maxSize bytes of
 - The result is allocated with `malloc` and freed by the caller.
 - A chat controller is not required.
 - `png`: 0 or 1 from the apps and the explicit library functions; −1 from the library functions with `ImageSize`.
+
+C API, file reference (D7):
+```
+chat_resize_image_file_uri(path, maxSize)     as chat_resize_image_uri, from the file at path
+chat_resize_image_file(path, maxSize, png)    as chat_resize_image, from the file at path
+chat_resize_image_fd_uri(fd, maxSize)         as chat_resize_image_uri, from the file descriptor fd
+chat_resize_image_fd(fd, maxSize, png)        as chat_resize_image, from the file descriptor fd
+```
+- C declarations:
+  ```c
+  extern char *chat_resize_image_file_uri(char *path, int maxSize);
+  extern char *chat_resize_image_file(char *path, int maxSize, int png);
+  extern char *chat_resize_image_fd_uri(int fd, int maxSize);
+  extern char *chat_resize_image_fd(int fd, int maxSize, int png);
+  ```
+- `path`: a null-terminated path, decoded as `chat_write_file` decodes its path.
+- `fd`: a readable file descriptor; the core reads it to its end and closes it, on success and on failure.
+- `""` is also returned when the file cannot be read.
+- Callers:
+
+  | app | input | functions |
+  |---|---|---|
+  | iOS | the photo picker file, `public.jpeg` for items other than PNG and GIF, copied to the app's temporary directory | `chat_resize_image_file_uri`, `chat_resize_image_file` |
+  | desktop | the chosen path | `chat_resize_image_file_uri`, `chat_resize_image_file` |
+  | Android | `ParcelFileDescriptor.detachFd()` of the content URI | `chat_resize_image_fd_uri`, `chat_resize_image_fd` |
+
+- For `""`, the apps use the platform decoding and the functions with bytes, as now.
+- Haskell, `Mobile/File.hs`:
+  ```haskell
+  cChatResizeImageFileUri :: CString -> CInt -> IO CString
+  cChatResizeImageFile :: CString -> CInt -> CInt -> IO CString
+  cChatResizeImageFdUri :: CInt -> CInt -> IO CString
+  cChatResizeImageFd :: CInt -> CInt -> CInt -> IO CString
+  ```
+  - path: `peekCString`, then `B.readFile`
+  - descriptor: `fdToHandle`, then `B.hGetContents`, by which the handle is closed, also on an exception
+  - `cResizeImage` takes the read action in place of the buffer; the file is read inside `runCatchExceptT`.
 
 Apps, with function signatures kept and call sites unchanged except iOS `saveWallpaperFile(image:)` (`ImageUtils.swift:233`):
 - iOS `resizeImageToDataSize` and `resizeImageToStrSizeSync`:
