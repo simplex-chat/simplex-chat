@@ -783,6 +783,7 @@ The gas below was measured on a local anvil deployment of the contracts (the nam
 | Transaction | Gas limit | Gas used | Limit × 100 gwei |
 |---|---|---|---|
 | `commit` | 58,983 | 53,521 | 0.0059 ETH |
+| `commitUnderBonaFideCommunityTermsWithSig`, a community name's acceptance | 95,795 | 94,791 | 0.0096 ETH |
 | `registerWithCredit`, no links | 568,116 | 504,408 | 0.0568 ETH |
 | `registerWithCredit`, one link | 3,673,412 | 3,489,551 | 0.3673 ETH |
 | `registerWithCredit`, two links | 6,791,417 | 6,467,815 | 0.6791 ETH |
@@ -795,8 +796,8 @@ The gas below was measured on a local anvil deployment of the contracts (the nam
   `max_fee_per_gas` (default 100 gwei). The node accepts a transaction only while the balance covers
   its limit × max fee, so the last column is what each one needs held. What it is charged is gas
   used × the block's base fee plus tip, usually far less.
-- An order is one commit and one register: 0.6850 ETH at the cap with two links, 0.0627 ETH with
-  none. The expected orders × 0.6850 ETH, plus 0.3026 ETH per expected link edit, pays for all of
+- An order is one commit and one register, and for a community name one acceptance relay before the register: 0.6850 ETH at the cap with two links, 0.0627 ETH with
+  none, and 0.0096 ETH more for a community name. The expected orders × 0.6946 ETH, plus 0.3026 ETH per expected link edit, pays for all of
   them even at the cap. The figures scale with `max_fee_per_gas`.
 - `gas_limit_cap` (default 8,000,000) must stay above 6,791,417: a transaction whose estimate is
   above it is not sent.
