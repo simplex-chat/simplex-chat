@@ -50,11 +50,13 @@ for name in "$@"; do
   else
     status=0
     if "$ui" layout reachable; then
-      bash "$file" || status=$?
+      bash "$file" 2>&1 | tee "$UI_OUT/test.log" || status=$?
     else
       check "the app restarted at the chat list in the reachable layout" false
     fi
     if [ "$status" -ne 0 ]; then
+      reason=$(sed -n 's/^error: //p' "$UI_OUT/test.log" | tail -n 1)
+      [ -z "$reason" ] || note "stopped: $reason"
       note "the test exited with status $status"
     fi
     if [ "$status" -ne 0 ] || grep -q '^FAIL' "$checks"; then

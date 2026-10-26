@@ -49,19 +49,19 @@ The smoke test always runs. After it, the step "Run feature tests" runs, compare
 
 - the tests the branch adds or changes;
 - the tests whose `covers` patterns match a file the branch changes;
-- every test of a platform when what the tests run on changes: `scripts/ci/checks.sh`, `feature-tests.sh` or `select-tests.sh`, or a file in the platform's folder other than `tests/`, `*.md` and `claude-*`.
+- every test of a platform when what the tests run on changes: `scripts/ci/checks.sh`, `feature-tests.sh`, `select-tests.sh` or `choose-feature-tests.sh`, or a file in the platform's folder other than `tests/`, `*.md` and `claude-*`.
 
 The run's `tests` input overrides this: feature names separated by spaces, `all` or `none` (Actions tab, or `gh workflow run <workflow>.yml --ref <branch> -f tests="private-notes"`). The plan job's log says why each test was selected, and its summary lists them.
 
-Each test gets a section in the job summary, and its screens and `checks.txt` go to `tests/<feature>/` in the smoke-test artifact. One failed test doesn't stop the others; the step fails if any failed.
+Each test gets a section in the job summary, and its screens and `checks.txt` go to `tests/<feature>/` in the smoke-test artifact. One failed test doesn't stop the others; the step fails if any failed. A failed feature test fails the app job, so a run that also asks for Claude skips the Claude job: start it with `tests: none` to run Claude anyway.
 
 ## After the feature merges
 
-The tests stay on master. A PR that touches code a test covers runs it. When it fails, that PR updates the test or the app, as with a core test. Before a release, run each workflow with `tests: all`.
+The tests stay on master. A run of a branch that touches code a test covers runs it. When it fails, that branch's PR updates the test or the app, as with a core test. Before a release, run each workflow with `tests: all`.
 
 ## Writing a test
 
-1. Read what the screens show. The smoke-test artifact of an earlier run (`gh run download <id> -n <platform>-smoke-test`) has, per step, a screenshot and what was read from it: desktop `NN-<step>.txt` (`x,y phrase` from OCR), Android `NN-<step>.xml` and `.txt` (the accessibility tree), iOS `NN-<step>.json` (AXe's tree).
+1. Read what the screens show. The smoke-test artifact of an earlier run (`gh run download <id> -n <artifact>`, with `ios-sim-smoke-test`, `android-smoke-test` or `desktop-smoke-test`) has, per step, a screenshot and what was read from it: desktop `NN-<step>.txt` (`x,y phrase` from OCR), Android `NN-<step>.xml` and `.txt` (the accessibility tree), iOS `NN-<step>.json` (AXe's tree).
 2. Write the steps by text or label: `click-text`, `tap`, `wait`, `find`. Coordinates are needed only for icons without text, mostly on desktop (the toolbar's buttons); the Android and iOS trees give every icon's description and position.
 3. Check what the feature promises with `check`, and take a `ui shot <name>` at each result.
 4. Push and start a run (`ci-run <workflow>`, or the Actions tab). Where the test stops, its last screens and `steps.log` show what the app showed.

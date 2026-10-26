@@ -5,9 +5,9 @@
 # Usage: scripts/ci/select-tests.sh <platform dir> <base commit> [<tests input>], from the repo root
 # The input is empty, none, all, or test names separated by spaces. Empty selects the tests the branch adds or changes
 # since <base commit> (its merge base with master), the tests whose "# covers:" patterns match a file it changes, and
-# all of them when it changes a file they run on: checks.sh, feature-tests.sh, this script, or a file in the platform
-# dir other than tests/, *.md and claude-*. A name without a test on this platform is noted, not refused, since one
-# input can name the tests of several platforms.
+# all of them when it changes a file they run on: checks.sh, feature-tests.sh, choose-feature-tests.sh, this script, or
+# a file in the platform dir other than tests/, *.md and claude-*. A name without a test on this platform is noted, not
+# refused, since one input can name the tests of several platforms.
 
 set -euo pipefail
 
@@ -63,7 +63,7 @@ select_test() {
 
 runs_every_test() {
   case "$1" in
-    scripts/ci/checks.sh | scripts/ci/feature-tests.sh | scripts/ci/select-tests.sh) return 0 ;;
+    scripts/ci/checks.sh | scripts/ci/feature-tests.sh | scripts/ci/select-tests.sh | scripts/ci/choose-feature-tests.sh) return 0 ;;
     "$platform_dir"/tests/*) return 1 ;;
     "$platform_dir"/*) ;;
     *) return 1 ;;

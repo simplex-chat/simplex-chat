@@ -117,10 +117,10 @@ window_geometry() {
   grep -E '^ *(Position|Geometry):' "$@"
 }
 
-# settings.properties, read at start, also holds the database passphrase: only OneHandUI changes, and the saved
-# DesktopWindowState goes, so the window opens where the first start put it.
+# settings.properties, read at start, also holds the database passphrase: every line stays as it was except OneHandUI,
+# which is set, and DesktopWindowState, which is dropped so the window opens where the first start put it.
 layout() {
-  local one_hand settings=$state/config/simplex/settings.properties geometry pos y
+  local one_hand settings=$state/config/simplex/settings.properties geometry deadline lines y seen=""
   case "$1" in
     reachable) one_hand=true ;;
     top) one_hand=false ;;
@@ -145,16 +145,35 @@ layout() {
     echo "$geometry"
     return 1
   fi
-  if ! pos=$(wait_for "Chats" 90); then
-    echo "error: no chat list 90 s after the restart"
-    return 1
+  deadline=$((SECONDS + 90))
+  while [ "$SECONDS" -lt "$deadline" ]; do
+    if lines=$(screen_ocr lines); then
+      y=$(toolbar_title_y <<< "$lines")
+      if { [ "$one_hand" = true ] && [ "${y:-0}" -gt 600 ]; } || { [ "$one_hand" = false ] && [ "${y:-900}" -lt 200 ]; }; then
+        log "layout $1: the toolbar is at y=$y"
+        return 0
+      fi
+      seen=${y:-$seen}
+    fi
+    sleep 1
+  done
+  if [ -n "$seen" ]; then
+    echo "error: the toolbar is at y=$seen 90 s after the restart, not where the $1 layout puts it"
+  else
+    echo "error: no toolbar title 90 s after the restart"
   fi
-  read -r _ y _ <<< "$pos"
-  if { [ "$one_hand" = true ] && [ "$y" -le 600 ]; } || { [ "$one_hand" = false ] && [ "$y" -ge 200 ]; }; then
-    echo "error: the toolbar is at y=$y, not where the $1 layout puts it"
-    return 1
-  fi
-  log "layout $1: the toolbar is at y=$y"
+  return 1
+}
+
+# The y of the toolbar's title, "Chats", in the chat list pane, from OCR's lines. While the app starts, OCR can read
+# the same word elsewhere, such as in the right pane's "No selected chat".
+toolbar_title_y() {
+  awk '{
+    split($1, at, ",")
+    text = tolower(substr($0, length($1) + 2))
+    gsub(/[^a-z0-9]/, "", text)
+    if (at[1] < 390 && index(text, "chats") == 1) { print at[2]; exit }
+  }'
 }
 
 # ocr <png> lines | ocr <png> find <text>

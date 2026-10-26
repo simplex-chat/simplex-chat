@@ -19,9 +19,10 @@ tap_profile_image() {
 
 # The sheet takes a moment to slide away.
 settings_closed() {
-  local i
+  local i tree
   for i in 1 2 3 4 5; do
-    in_tree -F 'Heading "Your settings"' || return 0
+    tree=$("$ui" tree) || { sleep 1; continue; }
+    grep -qF '"Your settings"' <<< "$tree" || return 0
     sleep 1
   done
   return 1
