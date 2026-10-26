@@ -97,6 +97,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "clears the reveal on TermsNotAccepted, staying committed" testTermsNotAccepted
   describe "terms acceptance" $ do
     it "relays the reveal's acceptance to the name policy as soon as it is stored, and registers once the policy holds it" testAcceptanceRelayed
+    it "relays the acceptance before the wait for revealAfter, then waits for it" testAcceptanceBeforeWait
     it "clears the reveal when the relay's dry run refuses the acceptance, staying committed" testAcceptanceRefused
   describe "lapse" $ do
     it "ends a committed order not revealed by revealBefore failed, keeping its code" testLapseFailed
@@ -670,6 +671,18 @@ testAcceptanceRelayed = withWorker $ \w@W {wCtx = ctx} -> do
   [_, registerRaw] <- sent w
   (trTo <$> decodeSignedTx registerRaw) `shouldBe` Right fakeSponsor
   nrPhase <$> stored ctx r `shouldReturn` PRegistering
+
+testAcceptanceBeforeWait :: IO ()
+testAcceptanceBeforeWait = withWorker $ \w@W {wCtx = ctx} -> do
+  r <- paidIn ctx aliceOrder (\o -> (openPhase o) {nrRevealAfter = Just (orderSeconds + 60)}) >>= acceptedReveal ctx
+  answerAccepted w r $ B.replicate 32 0
+  void $ steps w r >>= awaiting
+  [acceptRaw] <- sent w
+  (trTo <$> decodeSignedTx acceptRaw) `shouldBe` Right fakeNamePolicy
+  void $ mineNewest w True
+  answerAccepted w r fakeCommunityTerms
+  steps w r >>= waitingUntil >>= (`shouldBe` at (orderSeconds + 60))
+  length <$> sent w `shouldReturn` 1
 
 testAcceptanceRefused :: IO ()
 testAcceptanceRefused = withWorker $ \w@W {wCtx = ctx} -> do

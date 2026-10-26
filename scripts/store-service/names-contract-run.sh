@@ -39,7 +39,7 @@ TERMS_URL=https://simplex.chat/
 COMMUNITY_LABEL=bakers
 COMMUNITY_TEXT="bakers and bakeries in Portugal"
 
-# The cases at webapp 71725c8. Each case is its own client by X-Forwarded-For, which the service trusts
+# The cases at webapp 7a8e587. Each case is its own client by X-Forwarded-For, which the service trusts
 # here, as the mock does. Each takes its prepaid code from POST /control/code, which the code server
 # below answers from the codes issued here, so CODES holds one per case that asks for one. "search
 # answers every kind of name" is not among them: it sets /control/search.
@@ -61,8 +61,9 @@ CASES=(
   "a name's link whose data cannot be read now shows as its kind's default picture, and opens by the chat core's form"
   "a community name shows its marker after the name, a button whose popup says what the name is for"
   "Check your order of a community name asks for the community wording, its terms linked and its ⓘ saying what the name is for, and Pay waits for the tick"
+  "a prepaid code registers a name the contracts' owner listed on chain, its register recording the owner's acceptance of the community terms"
 )
-CODES=("name 8" "name 6" "name 6 years 5" "name 6" "name 6" "name 6" "name 6" "name 6" "name 6" "name 6")
+CODES=("name 8" "name 6" "name 6 years 5" "name 6" "name 6" "name 6" "name 6" "name 6" "name 6" "name 6" "name 6")
 
 RUN_DIR="$(mktemp -d "${TMPDIR:-/tmp}/names-contract-run.XXXXXX")"
 INI="$RUN_DIR/store_service.ini"
@@ -127,6 +128,7 @@ start_terms_server() {
   python3 -m http.server --bind 127.0.0.1 --directory "$RUN_DIR/terms" "$TERMS_PORT" > "$RUN_DIR/terms.log" 2>&1 &
   answering $! "$COMMUNITY_TERMS_URL"
 }
+
 build_site() {
   (cd "$WEBAPP_DIR" && npx vite build --outDir "$RUN_DIR/names" --emptyOutDir --logLevel warn) > "$RUN_DIR/build.log" 2>&1
 }

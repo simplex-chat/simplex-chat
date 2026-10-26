@@ -535,6 +535,7 @@ down_m20261026_name_terms_acceptance =
   withPrefix
     servicePrefix
     [sql|
+DELETE FROM @name_transactions WHERE kind = 'accept';
 ALTER TABLE @name_registrations DROP COLUMN accept_signature;
 ALTER TABLE @name_registrations DROP COLUMN accept_nonce;
 ALTER TABLE @name_registrations DROP COLUMN accept_terms;

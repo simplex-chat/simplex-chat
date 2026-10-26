@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 -- | The reveal's checks, in the contract's order: the signed label, the order's own label and links,
--- the commitment, the owner's intent, and the links' kinds last.
+-- the commitment, the owner's intent, the community terms acceptance, and the links' kinds last.
 module StoreService.Names.Reveal
   ( RevealRefusal (..),
     SignedLabel (..),
@@ -144,7 +144,11 @@ checkAcceptance cfg@NamesConfig {nChain = ChainConfig {cChainId}} ct NameRegistr
       unless (taTermsHash == current && taNonce == nonce) $ throwError RVBadRequest
     _ -> throwError RVBadRequest
   where
-    chainRead what err = ExceptT . (>>= either (\e -> Left RVChainUnavailable <$ logWarn ("names: a reveal's " <> what <> " read failed: " <> err e)) (pure . Right))
+    chainRead what err a =
+      ExceptT $
+        a >>= \case
+          Left e -> Left RVChainUnavailable <$ logWarn ("names: a reveal's " <> what <> " read failed: " <> err e)
+          Right v -> pure $ Right v
 
 linksValid :: Registration -> Bool
 linksValid Registration {rContactLink, rChannelLink} = all (ofKind LKContact) rContactLink && all (ofKind LKChannel) rChannelLink

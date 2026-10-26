@@ -91,8 +91,8 @@ nameCommunityTerms cfg ct lh = runExceptT $
     False -> pure Nothing
     True -> Just <$> ExceptT (currentCommunityTerms cfg ct)
 
--- | The policy's community terms hash, once the text at community_terms_url hashes to it. Each call reads the hash,
--- so terms set later are fetched and checked once, when a call first reads them.
+-- | The policy's community terms hash, once the text at community_terms_url hashes to it. Each call reads the hash and
+-- fetches the page until its text hashes to it, so terms set later are checked when a call first reads them.
 currentCommunityTerms :: NamesConfig -> Contracts -> IO (Either TermsError ByteString)
 currentCommunityTerms NamesConfig {nCommunityTermsUrl} ct = runExceptT $ do
   h <- withExceptT (TEUnread . tshow) $ ExceptT $ communityTermsHash ct

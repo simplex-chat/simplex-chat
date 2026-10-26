@@ -55,7 +55,7 @@ import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..))
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import StoreService.Config (ListenerConfig (..), NamesConfig (..), TermsConfig (..))
-import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, bytes32FromHex, hex, uint256)
+import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, bytes32FromHex, hex, selector, uint256)
 import StoreService.Names.Contracts (Contracts (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Profiles (ChatKind (..), HostResolver, LinkProfile (..), ProfileFetcher, ProfileLimits (..), defaultProfileLimits, monotonicSeconds, newProfiles)
@@ -379,6 +379,15 @@ testCommunity g = withSearch g listAlice id $ \s@Search {node, store} -> do
   searchAlice s 12 `shouldReturn` listed node registeringAnswer
   registeredWith node fullLink ""
   searchAlice s 12 `shouldReturn` listed node (registeredAnswer [] (recordsOf fullLink "") resolverText (J.toJSON (0 :: Int)))
+  -- terms on chain that the page's text does not hash to, or a listing that cannot be read: no answer, registered or not
+  let unavailable = refused 503 "provider_unavailable"
+  setCommunityTerms node $ C.keccak256 "bona fide community terms v2"
+  searchAlice s 12 `shouldReturn` unavailable
+  available node
+  searchAlice s 12 `shouldReturn` unavailable
+  setCommunityTerms node fakeCommunityTerms
+  answerCall node fakeNamePolicy (selector "bonaFideNames(bytes32)" <> fromJust (bytes32FromHex aliceHex)) $ Reverts ""
+  searchAlice s 12 `shouldReturn` unavailable
 
 testRecordLinks :: TVar ChaChaDRG -> IO ()
 testRecordLinks g = withSearch g id id $ \s@Search {node} -> do

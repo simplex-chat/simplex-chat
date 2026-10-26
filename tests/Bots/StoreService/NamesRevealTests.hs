@@ -102,7 +102,7 @@ withReveals action = withOrders $ \ctx@Ctx {cNode, cOrders, cWeb} -> do
       app req respond = fromMaybe (webApp web req respond) (namesApp (weHttp web) routes req respond)
   mgr <- newManager defaultManagerSettings
   Warp.testWithApplication (pure app) $ \port ->
-    action Fx {fCtx = ctx {cOrders, cWeb = web, cClient = (mgr, "http://127.0.0.1:" <> show port)}, fApp = app}
+    action Fx {fCtx = ctx {cWeb = web, cClient = (mgr, "http://127.0.0.1:" <> show port)}, fApp = app}
 
 -- | The request, held at its first chain read: a reveal's nonce read, or /name's name check, in its turns.
 pausedAtChainRead :: Ctx -> IO a -> IO (Async a, Gate)

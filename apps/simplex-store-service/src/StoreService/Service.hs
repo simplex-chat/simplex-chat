@@ -11,6 +11,7 @@ module StoreService.Service
     welcomeGetOpts,
     trustDevKeys,
     checkDevChain,
+    checkNamePolicy,
     requireDevKeys,
     checkIssuerKey,
     storeService,
@@ -270,28 +271,28 @@ startNames cc@ChatController {chatStore} turns waiters providers nc@NamesConfig 
     Just User {userId} -> do
       logInfo $ "names: on, TLD " <> safeDecodeUtf8 (strEncode nTLD) <> ", chain " <> tshow cChainId
       ne@NamesEnv {neContracts} <- newNamesEnv cc userId nc chatStore turns waiters providers
-      checkNamePolicy nc neContracts
+      checkNamePolicy nc neContracts >>= orExit
       pure ne
 
--- | The name policy is read once, here, or on first use when the chain does not answer, and its terms and list are checked
--- once it is read. The service refuses to start only when community_terms_url's text is not the policy's terms; they are
--- checked again whenever the policy sets new ones.
-checkNamePolicy :: NamesConfig -> Contracts -> IO ()
+-- | The name policy is read once, here, or on first use when the chain does not answer; its terms and the [community]
+-- lines are checked only when it is read here. Left, to stop the service, only when community_terms_url's text is not the
+-- policy's terms.
+checkNamePolicy :: NamesConfig -> Contracts -> IO (Either String ())
 checkNamePolicy cfg@NamesConfig {nCommunity, nCommunityTermsUrl} ct =
   namePolicy ct >>= \case
-    Left e -> logWarn $ "names: the controller's name policy could not be read, it is read on first use: " <> tshow e
+    Left e -> Right () <$ logWarn ("names: the controller's name policy could not be read, it is read on first use: " <> tshow e)
     Right policy -> do
       logInfo $ "names: name policy " <> addressText policy
-      currentCommunityTerms cfg ct >>= \case
-        Right h -> logInfo $ "names: community terms " <> hex h <> " match community_terms_url"
-        Left e@TEMismatch {} -> orExit $ Left $ "names: " <> T.unpack (termsErrorText e)
-        Left TENoTerms -> when (isJust nCommunityTermsUrl) $ logWarn "names: the name policy has no community terms yet, so community names cannot be ordered until the owner sets them"
-        Left e -> logWarn $ "names: " <> termsErrorText e <> ", so community names cannot be ordered until it is"
       forM_ (M.toList nCommunity) $ \(h, text) ->
         bonaFideName ct (LabelHash h) >>= \case
           Right False -> logWarn $ "names: [community] lists a name the name policy does not list, so it is sold as a plain name: " <> text
           Right True -> pure ()
           Left e -> logWarn $ "names: a [community] name's listing could not be read: " <> tshow e
+      currentCommunityTerms cfg ct >>= \case
+        Right h -> Right () <$ logInfo ("names: community terms " <> hex h <> " match community_terms_url")
+        Left e@TEMismatch {} -> pure $ Left $ "names: " <> T.unpack (termsErrorText e)
+        Left TENoTerms -> Right () <$ when (isJust nCommunityTermsUrl) (logWarn "names: the name policy has no community terms yet, so community names cannot be ordered until the owner sets them")
+        Left e -> Right () <$ logWarn ("names: " <> termsErrorText e <> ", so community names cannot be ordered until it is")
 
 -- | The workers resume every registration in their phases, and the code sweep runs at the start and then daily.
 namesLanes :: NamesEnv -> IO [IO ()]

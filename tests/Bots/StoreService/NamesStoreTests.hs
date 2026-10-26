@@ -50,6 +50,7 @@ namesStoreTests = describe "StoreService names: store" $ do
     it "turns a code_issued order taken at price 0 and not live at its next version, dropping issued_code_id with its index and foreign key, which the down migration restores" testDropTakenCodes
     it "makes taken orders not live and gives a taken paid order a balance of its price, none to a code order or a price of 0, and rolls back the balance tables and columns" testNameBalancesMigration
     it "gives the orders stored before it empty agreed terms, and rolls the column back keeping them" testNameTermsMigration
+    it "rolls the acceptance columns back with the acceptance relays, which the code before them cannot read" testNameTermsAcceptanceMigration
   describe "order hash" $ do
     it "is equal for the same order fields, and differs when any one field differs" testOrderHashFields
     it "keeps field boundaries, so moving a byte between two fields changes it" testOrderHashBoundaries
@@ -185,7 +186,8 @@ testNamesColumns = withServiceStore $ \st -> do
     [ "registration_id", "label_hash", "length", "label", "secret", "contact_link", "channel_link", "intent_nonce", "intent_deadline", "intent_signature",
       "sealed", "owner", "commitment", "phase", "commit_tx", "commit_block", "register_tx", "register_block", "reveal_after", "reveal_before",
       "years", "duration", "expires_at", "price", "name_prepaid_code_id", "registered_at", "failed_at", "error", "created_at",
-      "updated_at", "version", "live", "order_hash", "method", "moves", "links_refused_at", "balance_source", "balance_used", "agreed_terms"
+      "updated_at", "version", "live", "order_hash", "method", "moves", "links_refused_at", "balance_source", "balance_used", "agreed_terms",
+      "accept_terms", "accept_nonce", "accept_signature"
     ]
   has "sx_badge_service_name_invoices" ["invoice_id", "registration_id", "provider_ref", "late_alerted_at", "late_alerted_units", "late_support"]
   has "sx_badge_service_name_balances" ["registration_id", "amount", "credited", "refunded", "reserved_by", "refunded_at", "created_at", "updated_at"]
@@ -295,6 +297,26 @@ testNameTermsMigration = withServiceStore $ \st -> do
   kept `shouldReturn` [("paid", "unpaid", price)]
   runMigrations st $ MTRUp terms
   agreedTerms `shouldReturn` [("paid", "")]
+
+testNameTermsAcceptanceMigration :: IO ()
+testNameTermsAcceptanceMigration = withServiceStore $ \st -> do
+  let acceptance = [m | m@Migration {name = "20261026_name_terms_acceptance"} <- storeServiceSchemaMigrations]
+      applied :: IO Bool
+      applied = elem "accept_terms" <$> columnsOf st "sx_badge_service_name_registrations"
+      kinds :: IO [Text]
+      kinds = withTransaction st $ \db -> map fromOnly <$> DB.query_ db "SELECT kind FROM sx_badge_service_name_transactions ORDER BY kind"
+      r1 = RegistrationId "r1"
+      tx :: Word8 -> NewTransaction
+      tx n = NewTransaction {ntxRaw = digestFixture (n + 100), ntxHash = TxHash $ digestFixture n, ntxNonce = fromIntegral n}
+  length acceptance `shouldBe` 1
+  placePaid st "r1" ownerA (order "alicebakery" 1) (at 60) `shouldReturn` Right ()
+  void $ withTransaction st $ \db -> sequence [insertTransaction db (TxCommit r1) (tx 1) (at 1), insertTransaction db (TxAccept r1) (tx 2) (at 2)]
+  kinds `shouldReturn` ["accept", "commit"]
+  runMigrations st $ MTRDown (mapMaybe toDownMigration acceptance)
+  applied `shouldReturn` False
+  kinds `shouldReturn` ["commit"]
+  runMigrations st $ MTRUp acceptance
+  applied `shouldReturn` True
 
 -- | A registration row as the code before the balances wrote it, paid by the invoice or the code given.
 insertOldRegistration :: DB.Connection -> Text -> Word8 -> Text -> Int -> Maybe Int64 -> Maybe Text -> IO ()

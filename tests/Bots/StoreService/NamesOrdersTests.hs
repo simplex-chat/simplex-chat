@@ -165,7 +165,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "counts code orders and code checks against one code limit" testCodeLimitShared
   describe "terms" $ do
     it "answers terms_changed with the current terms and community for an old version or the wrong variant, listed or not, creating nothing" testTermsChanged
-    it "accepts the community terms for a listed name as Appendix C signs them, storing them" testCommunityTerms
+    it "accepts the community terms for a listed name as viem signs them, storing them" testCommunityTerms
     it "answers an exact resend after the version changed, and takes the same fields under the new terms as another order" testResendAfterBump
     it "checks the terms after the existing orders, the timestamp and the duration, with the community listing's read, before the name check and the price" testTermsCheckOrder
     it "answers terms_changed for a code order under old terms, listed or not, leaving the code unreserved, and accepts the community terms" testCodeTermsChanged
@@ -1612,7 +1612,7 @@ testViewCommunity = withServiceStore $ \st -> withFakeEthNode $ \node -> do
       listing entries r' = field "community" $ objectOf $ viewJSON (testNamesConfig node) {nCommunity = M.fromList entries, nCommunityTermsUrl = Just url} r' Nothing Nothing ViewReads {vrIntentNonce = Nothing, vrUnread = [], vrAcceptance = Nothing}
       entry for = Just $ J.object ["for" .= for, "terms" .= J.object ["url" .= url, "hash" .= hex terms]]
   listing [(aliceHash, "bakers and bakeries in Lisbon")] r `shouldBe` entry (Just ("bakers and bakeries in Lisbon" :: Text))
-  -- a name the policy lists without a text in the ini
+  -- the community terms the order signed, without a text in the ini
   listing [] r `shouldBe` entry (Nothing :: Maybe Text)
   listing [(aliceHash, "bakers and bakeries in Lisbon")] r {nrAgreedTerms = termsVersion} `shouldBe` Just J.Null
 

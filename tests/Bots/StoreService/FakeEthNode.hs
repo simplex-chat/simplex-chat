@@ -33,6 +33,7 @@ module Bots.StoreService.FakeEthNode
     listCommunityName,
     setCommunityTerms,
     fakeCommunityTerms,
+    fakeCommunityTermsText,
     fakeTermsUrl,
     fakeSponsor,
     fakeBaseRegistrar,

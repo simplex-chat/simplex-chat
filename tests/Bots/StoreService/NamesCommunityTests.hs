@@ -5,7 +5,7 @@
 module Bots.StoreService.NamesCommunityTests (namesCommunityTests) where
 
 import Bots.StoreService.ConfigTests (chainSection, namesIni, namesRefusal, namesSection, parseIni, parsedNames, termsUrl, termsVersion, withIni)
-import Bots.StoreService.FakeEthNode (setCommunityTerms)
+import Bots.StoreService.FakeEthNode (CallAnswer (..), answerCall, fakeCommunityTerms, fakeCommunityTermsText, fakeController, fakeTermsUrl, setCommunityTerms)
 import Bots.StoreService.NamesContractsTests (withContracts)
 import Bots.StoreService.NamesSearchTests (aliceHex)
 import Bots.StoreService.WebTests (capturingStderr)
@@ -24,8 +24,9 @@ import qualified Network.Wai.Handler.Warp as Warp
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.SimplexName (LabelHash (..), labelHash)
 import StoreService.Config (NamesConfig (..), TermsConfig (..), unknownKeys)
-import StoreService.Names.Abi (bytes32FromHex)
+import StoreService.Names.Abi (bytes32FromHex, hex, selector)
 import StoreService.Names.Community (TermsError (..), agreedTermsHash, communityFor, currentCommunityTerms, termsFor)
+import StoreService.Service (checkNamePolicy)
 import Test.Hspec
 
 namesCommunityTests :: Spec
@@ -43,13 +44,13 @@ namesCommunityTests = describe "StoreService names: community" $ do
   it "reads community_terms_url: https, or http on loopback only on the local chain" testCommunityTermsUrl
   g <- runIO C.newRandom
   it "takes the policy's terms once the page's text hashes to them, and fetches again for new terms" $ withContracts g $ \node ct ->
-    newTVarIO (ok200, communityTermsText) >>= \page -> withTermsPage page $ \url -> do
+    newTVarIO (ok200, fakeCommunityTermsText) >>= \page -> withTermsPage page $ \url -> do
       cfg <- withTermsUrl url
-      setCommunityTerms node communityTerms
-      currentCommunityTerms cfg ct `shouldReturn` Right communityTerms
+      setCommunityTerms node fakeCommunityTerms
+      currentCommunityTerms cfg ct `shouldReturn` Right fakeCommunityTerms
       -- checked once: a page edited without new terms on chain is not fetched again
       atomically $ writeTVar page (ok200, "other text")
-      currentCommunityTerms cfg ct `shouldReturn` Right communityTerms
+      currentCommunityTerms cfg ct `shouldReturn` Right fakeCommunityTerms
       setCommunityTerms node newTerms
       currentCommunityTerms cfg ct `shouldReturn` Left (TEMismatch newTerms)
       atomically $ writeTVar page (ok200, "bona fide community terms v2")
@@ -58,18 +59,30 @@ namesCommunityTests = describe "StoreService names: community" $ do
       currentCommunityTerms cfg ct `shouldReturn` Left TENoTerms
       setCommunityTerms node $ C.keccak256 "bona fide community terms v3"
       currentCommunityTerms cfg {nCommunityTermsUrl = Nothing} ct `shouldReturn` Left TENoUrl
+  it "checks the policy's terms and the [community] lines at startup, stopping only on terms the page does not hash to" $ withContracts g $ \node ct -> do
+    cfg <- withTermsUrl (fakeTermsUrl node) >>= \c -> pure c {nCommunity = M.singleton (fromJust $ bytes32FromHex aliceHex) "Alice's bakery"}
+    warned <- capturingStderr $ checkNamePolicy cfg ct `shouldReturn` Right ()
+    warned `shouldSatisfy` T.isInfixOf "names: [community] lists a name the name policy does not list, so it is sold as a plain name: Alice's bakery"
+    setCommunityTerms node newTerms
+    checkNamePolicy cfg ct `shouldReturn` Left ("names: the text at names.community_terms_url does not hash to the name policy's terms " <> T.unpack (hex newTerms))
+  it "checks neither the terms nor the [community] lines when the policy cannot be read at startup" $ withContracts g $ \node ct -> do
+    cfg <- withTermsUrl (fakeTermsUrl node)
+    setCommunityTerms node newTerms
+    answerCall node fakeController (selector "namePolicy()") $ Reverts ""
+    warned <- capturingStderr $ checkNamePolicy cfg ct `shouldReturn` Right ()
+    warned `shouldSatisfy` T.isInfixOf "names: the controller's name policy could not be read, it is read on first use"
   it "takes no terms from a page that answers another status or more than 1 MiB, or that cannot be reached" $ withContracts g $ \node ct ->
-    newTVarIO (notFound404, communityTermsText) >>= \page -> withTermsPage page $ \url -> do
+    newTVarIO (notFound404, fakeCommunityTermsText) >>= \page -> withTermsPage page $ \url -> do
       cfg <- withTermsUrl url
-      setCommunityTerms node communityTerms
+      setCommunityTerms node fakeCommunityTerms
       currentCommunityTerms cfg ct `shouldReturn` Left (TEUnread "names.community_terms_url answered HTTP 404")
       atomically $ writeTVar page (ok200, B.replicate (1024 * 1024 + 1) 0x61)
       currentCommunityTerms cfg ct `shouldReturn` Left (TEUnread "names.community_terms_url answered more than 1 MiB")
       unreachable <- withTermsUrl "http://127.0.0.1:1/terms"
       Left (TEUnread e) <- currentCommunityTerms unreachable ct
       e `shouldSatisfy` T.isPrefixOf "names.community_terms_url could not be read: "
-      atomically $ writeTVar page (ok200, communityTermsText)
-      currentCommunityTerms cfg ct `shouldReturn` Right communityTerms
+      atomically $ writeTVar page (ok200, fakeCommunityTermsText)
+      currentCommunityTerms cfg ct `shouldReturn` Right fakeCommunityTerms
 
 bakersText :: Text
 bakersText = "bakers and bakeries in Portugal"
@@ -166,13 +179,8 @@ testLoadedCount = do
   none <- capturingStderr $ void $ parseIni (namesIni namesSection chainSection)
   none `shouldSatisfy` T.isInfixOf "names: 0 community names loaded"
 
--- viem: keccak256(toHex("bona fide community terms v1")), as the contracts' tests set their terms
-communityTerms, newTerms :: B.ByteString
-communityTerms = fromJust $ bytes32FromHex "0xe2937ea655d8e743e2a8cecbab83acdf055846c80e13001ec1f8dc404e4ef2d9"
+newTerms :: B.ByteString
 newTerms = C.keccak256 "bona fide community terms v2"
-
-communityTermsText :: B.ByteString
-communityTermsText = "bona fide community terms v1"
 
 withTermsUrl :: Text -> IO NamesConfig
 withTermsUrl url = parsedNames (namesSection <> ["community_terms_url = " <> url]) chainSection
@@ -186,14 +194,15 @@ withTermsPage page action =
 testTermsFor :: IO ()
 testTermsFor = do
   cfg <- parsedNames namesSection chainSection
-  C.keccak256 communityTermsText `shouldBe` communityTerms
   termsFor cfg Nothing `shouldBe` termsVersion
-  let listed = termsVersion <> "/community/e2937ea655d8e743e2a8cecbab83acdf055846c80e13001ec1f8dc404e4ef2d9"
-  termsFor cfg (Just communityTerms) `shouldBe` listed
-  agreedTermsHash listed `shouldBe` Just communityTerms
+  -- viem: keccak256(toHex("bona fide community terms v1")), as the contracts' tests set their terms
+  let hexDigits = "e2937ea655d8e743e2a8cecbab83acdf055846c80e13001ec1f8dc404e4ef2d9"
+      listed = termsVersion <> "/community/" <> hexDigits
+  termsFor cfg (Just fakeCommunityTerms) `shouldBe` listed
+  agreedTermsHash listed `shouldBe` Just fakeCommunityTerms
   agreedTermsHash termsVersion `shouldBe` Nothing
   agreedTermsHash (termsVersion <> "/community") `shouldBe` Nothing
-  agreedTermsHash (T.toUpper listed) `shouldBe` Nothing
+  agreedTermsHash (termsVersion <> "/community/" <> T.toUpper hexDigits) `shouldBe` Nothing
 
 testCommunityTermsUrl :: IO ()
 testCommunityTermsUrl = do

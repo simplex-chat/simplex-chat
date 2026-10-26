@@ -266,36 +266,34 @@ committed w@Worker {wkSender} now r@NameRegistration {nrId, nrReveal, nrRevealAf
       Nothing -> case lapseMoment r of
         Just lapse | now <= lapse -> pure $ waitUntil r $ addUTCTime chainSecond lapse
         _ -> save w now r {nrPhase = PFailed, nrFailedAt = Just now, nrError = Just notSignedInTime}
-      Just rv ->
-        relayAcceptance w now r rv >>= \case
+      Just rv@NameReveal {rvAcceptance, rvDeadline} ->
+        maybe (pure Nothing) (relayAcceptance w now r rvDeadline) rvAcceptance >>= \case
           Just relaying -> pure relaying
           Nothing -> case secondsTime . toInteger <$> nrRevealAfter of
             Just revealAfter | now < revealAfter -> pure $ waitUntil r revealAfter
             _ -> sendRegister w now r rv
 
 -- | The step that relays the reveal's acceptance to the name policy, as soon as the reveal is stored, so the register need
--- not wait for it; Nothing once the policy holds it, or for a reveal without one. A relay whose dry run refuses the
--- acceptance clears the reveal, for the page to sign both again.
-relayAcceptance :: Worker -> UTCTime -> NameRegistration -> NameReveal -> IO (Maybe Next)
-relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts}, wkSender} now r@NameRegistration {nrId = regId@(RegistrationId rid), nrOwner, nrCommitment} NameReveal {rvAcceptance, rvDeadline} = case rvAcceptance of
-  Nothing -> pure Nothing
-  Just a@TermsAcceptance {taTermsHash} ->
-    inFlightTransaction wkSender (TxAccept regId) >>= \case
-      Just p -> pure $ Just $ Await p
-      Nothing ->
-        runExceptT ((,) <$> ExceptT (namePolicy oeContracts) <*> ExceptT (acceptedTerms oeContracts nrCommitment nrOwner)) >>= \case
-          Left e -> pure $ Just $ failure r e
-          Right (policy, held)
-            | held == taTermsHash -> pure Nothing
-            | otherwise ->
-                Just <$> (submitTransaction wkSender (TxAccept regId) policy (acceptCalldata nrCommitment nrOwner rvDeadline a) >>= \case
-                  Right p -> pure $ Await p
-                  Left SEInFlight -> pure Again
-                  Left (SEChain (ChainReverted reason))
-                    | reason `elem` map Just [RNTermsMismatch, RNInvalidNonce, RNSignatureExpired, RNInvalidSignature] -> do
-                        logWarn $ "names worker: registration " <> rid <> ": its terms acceptance is refused, " <> tshow reason <> "; the page signs again"
-                        save w now r {nrReveal = Nothing}
-                  Left e -> pure $ failure r e)
+-- not wait for it; Nothing once the policy holds it. A relay whose dry run refuses the acceptance clears the reveal, for
+-- the page to sign both again.
+relayAcceptance :: Worker -> UTCTime -> NameRegistration -> Word64 -> TermsAcceptance -> IO (Maybe Next)
+relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts}, wkSender} now r@NameRegistration {nrId = regId@(RegistrationId rid), nrOwner, nrCommitment} deadline a@TermsAcceptance {taTermsHash} =
+  inFlightTransaction wkSender (TxAccept regId) >>= \case
+    Just p -> pure $ Just $ Await p
+    Nothing ->
+      runExceptT ((,) <$> ExceptT (namePolicy oeContracts) <*> ExceptT (acceptedTerms oeContracts nrCommitment nrOwner)) >>= \case
+        Left e -> pure $ Just $ failure r e
+        Right (policy, held)
+          | held == taTermsHash -> pure Nothing
+          | otherwise ->
+              Just <$> (submitTransaction wkSender (TxAccept regId) policy (acceptCalldata nrCommitment nrOwner deadline a) >>= \case
+                Right p -> pure $ Await p
+                Left SEInFlight -> pure Again
+                Left (SEChain (ChainReverted reason))
+                  | reason `elem` map Just [RNTermsMismatch, RNInvalidNonce, RNSignatureExpired, RNInvalidSignature] -> do
+                      logWarn $ "names worker: registration " <> rid <> ": its terms acceptance is refused, " <> tshow reason <> "; the page signs again"
+                      save w now r {nrReveal = Nothing}
+                Left e -> pure $ failure r e)
 
 -- | The stored intent is checked before its dry run, whose revert decides at once; no label turn is held across the send.
 sendRegister :: Worker -> UTCTime -> NameRegistration -> NameReveal -> IO Next

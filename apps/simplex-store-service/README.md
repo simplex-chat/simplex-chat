@@ -596,18 +596,22 @@ changes nothing, and `--check` then reports the chain absent.
 are added under `[names]`.
 
 The controller's name policy (`SimplexNamePolicy`, read once from `namePolicy()` at startup and
-logged, so the controller owner's `setNamePolicy` takes effect after a restart) decides which names
-are community names: its bona fide list, which the owner or the guardian edits on chain. A listed name can be registered only after its owner accepts the policy's current
-community terms on chain, identified by `termsHash`, the keccak256 of their text. One more setting
-gives that text:
+logged) decides which names are community names: its bona fide list, which the owner or the guardian
+edits on chain. A listed name can be registered only after its owner accepts the policy's current
+community terms on chain, identified by `termsHash`, the keccak256 of their text. The controller
+owner's `setNamePolicy` takes effect for the service after a restart, so restart it at once: until
+then the service relays each open community order's acceptance to the old policy, whose register the
+new policy refuses, and the page signs again until the order lapses, each time spending gas. One
+more setting gives the community terms' text:
 
 - `community_terms_url`: the page of the community terms, which the order's checkbox links to beside
   the name terms. It must be `https://`, or `http://` on 127.0.0.1 or localhost when `[chain] chain_id`
-  is 31337. At startup the service fetches it and refuses to start when the text does not hash to the
-  policy's `termsHash`. When the policy sets new terms, the service fetches it again the first time it
-  reads them. Until the text matches, and without this setting or before the policy has terms, a
-  search of any listed name answers 503, registered names included, and community names cannot be
-  ordered or revealed.
+  is 31337. When the policy is read at startup, the service fetches it and refuses to start when the
+  text does not hash to the policy's `termsHash`. When the policy sets new terms, the service fetches
+  it again on each search, order, reveal and view of a listed name until its text hashes to them.
+  Until the text matches, and without this setting or before the policy has terms, a search of any
+  listed name answers 503, registered names included, and community names cannot be ordered or
+  revealed.
 
 `[community]` gives what each community name is for, one line per name: the label, as it is searched,
 then `=` and the text:
@@ -619,15 +623,16 @@ bakers = bakers and bakeries in Portugal
 
 Search answers and the registration view carry a listed name's text, which the page shows with the
 name as a community name. A name the policy lists without a line here shows as a community name
-without a text, and the service warns at startup for each line naming a name the policy does not
-list, which is sold as a plain name. Each label must be a valid name in lower case and listed once; each text is
+without a text, and the service warns at startup, when it reads the policy, for each line naming a
+name the policy does not list, which is sold as a plain name. Each label must be a valid name in lower case and listed once; each text is
 1 to 200 characters with no control, format or line separator characters, and should not end with a
 full stop, since the page adds one. The service refuses to start, naming the setting, on any other
 entry, on `[community]` without `[names]`, on a key written twice in a section (only the first would
 be read) and on a section header written twice in the file (only the last would be read). It logs
 how many community names it loaded.
 
-Both the terms and the list are read only at startup, so an edit applies after a restart. After a
+The terms settings and the `[community]` texts are read only at startup, so an edit applies after a
+restart; the policy's list and its community terms apply as soon as they change on chain. After a
 restart, search each listed name on the names site and check that it shows as a community name.
 
 Every order signs the terms the buyer agreed to: `terms_version`, followed by `/community/` and the
@@ -1092,7 +1097,8 @@ Your names; a later late payment credits it again, and a second refund adds to `
 payment against this service in Chromium, as they run against the webapp's mock. It:
 
 1. starts anvil on 8545 and deploys the contracts with the webapp's `dev/deploy.ts`, with a commitment
-   age of 5 seconds;
+   age of 5 seconds, and serves the webapp's `dev/community-terms.txt`, whose keccak256 `dev/deploy.ts`
+   sets as the name policy's terms, on 8198 as the ini's `community_terms_url`;
 2. builds the names site (`vite build`) into the run's folder;
 3. writes an ini for that deployment with `[names]` and `[chain]` and no `[btcpay]` or `[stripe]`,
    with the terms version `2026-10-23` and the one community name `bakers`, which the webapp's
@@ -1116,9 +1122,9 @@ Foundry's anvil, Node.js 22.18 or later (which runs the webapp's `dev/deploy.ts`
 Playwright's Chromium (`npm install`, `npx playwright install chromium`); and an `ens-contracts` checkout
 compiled as the webapp's `dev/start.sh` needs. The cases read the chain's addresses from the webapp's
 `dev/local-chain-0.json`, so the script stops when its deployment differs from it; run the webapp's
-`SLOTS=1 MIN_COMMITMENT_AGE=5 dev/start.sh` once to write it. Ports 8545, 8180 and 8199 must be free:
-the script stops before starting anything when one of them answers, and stops at once when anvil,
-the service or the code server exits before it answers.
+`SLOTS=1 MIN_COMMITMENT_AGE=5 dev/start.sh` once to write it. Ports 8545, 8180, 8199 and 8198 must be
+free: the script stops before starting anything when one of them answers, and stops at once when
+anvil, the terms server, the service or the code server exits before it answers.
 
 ```
 cabal build exe:simplex-store-service
@@ -1127,14 +1133,16 @@ ENS_CONTRACTS_DIR=<ens-contracts> ANVIL=<anvil> scripts/store-service/names-cont
 
 - `WEBAPP_DIR`: the names webapp (default: the `apps/simplex-domains` submodule's `webapp/`).
 - `STORE_SERVICE_BIN`: the service binary (default: `cabal list-bin exe:simplex-store-service`).
-- `SERVICE_PORT`, `CODES_PORT`: the service's and the code server's ports (8180 and 8199).
+- `SERVICE_PORT`, `CODES_PORT`, `TERMS_PORT`: the service's, the code server's and the terms server's
+  ports (8180, 8199 and 8198).
 - Arguments, if given, are passed to `playwright test` in place of the default cases' title filter.
 
 The default cases cover search answers for an available name, Check your code and its rate-limit
 countdown, code orders to `registered` with and without links, a code order's name code restored and
 revealed in another browser, Edit links on a name registered with a code (the other Edit links case
-answers its own name and record requests in the page), a link whose data cannot be read now, and a
-community name's marker and its Check your order wording. "search answers every kind of name" is not among them: it takes the chain down
+answers its own name and record requests in the page), a link whose data cannot be read now, a
+community name's marker and its Check your order wording, and a code order of a name the contracts'
+owner lists on chain, whose register records the owner's acceptance of the community terms. "search answers every kind of name" is not among them: it takes the chain down
 with `/control/search`.
 
 Each case sends its own `X-Forwarded-For`, and the ini sets `trust_forwarded_for = on`, so each case
