@@ -166,12 +166,12 @@ line height      every text of a chat item: font size × 22/16 × f(w), Proporti
                  except cards, files, voice and calls (D8) and the one-line text of marked deleted items (its insets are set by baselines)
                  principle: one line-height ratio with the contrast factor; full line height for every line (D1, D2, D7)
                  the same function as terminal rows (chatTextStyle): the relation is the same
-inset            BUBBLE_TEXT_INSET 10.375sp: from a bubble or band edge to the capitals of the text under it,
+inset            BUBBLE_TEXT_INSET 11sp (user): from a bubble or band edge to the capitals of the text under it,
                  and from the last baseline to the edge under it
-                 principle: one inset for all parts; gaps measured from a baseline or an edge to the capitals or an edge;
-                 the value is the line gap of message text (22 − 11.64sp), as an edge stands where the next line would be
-side inset       CHAT_ITEM_TEXT_PADDING 12dp for every part, the header included
-text paddings    BUBBLE_TEXT_TOP_GAP 4.375sp and BUBBLE_TEXT_BOTTOM_GAP 6sp: the inset for 16sp text with the full line height
+                 principle: one inset for all parts; gaps measured from a baseline or an edge to the capitals or an edge
+side inset       BUBBLE_SIDE_INSET 14dp (user) for message text, captions, the header, the quote, deleted and error items,
+                 an emoji under a quote or header, and the end of the time
+text paddings    BUBBLE_TEXT_TOP_GAP 5sp and BUBBLE_TEXT_BOTTOM_GAP 6.625sp: the inset for 16sp text with the full line height
 bands            header and quote text: bubbleTextPadding, the inset from the band edges by the first and last baselines
 time             the baseline of the time BUBBLE_TEXT_INSET above the bubble bottom, on the last baseline of the text
                  ticks without a time: where they stand next to a time (as terminal rows)
@@ -191,12 +191,12 @@ icons            header, feature and preference icons centred on their text, wit
 ## 3. Decisions
 
 ```
-B1   message text and captions: full line height; 4.375sp above, 6sp below
+B1   message text and captions: full line height; 5sp above, 6.625sp below; 14dp at the sides (user)
 B2   time: baseline on the last text baseline, by its distance from the bubble bottom
 B3   reserve: the copy of the time in message text, under an emoji, in decryption errors and group invitations,
      after text with a breaking space before it and without the word joiner (user);
      files keep the string reserve of their size line (shared with terminal rows)
-B4   header: 12dp start, as message text (user); text inset by bubbleTextPadding; icon without height;
+B4   header: 14dp start, as message text (user); text inset by bubbleTextPadding; icon without height;
      header and quote bands kept (user)
 B5   quote: text inset by bubbleTextPadding; Inter for the sender and the text (earlier owner decision: quotes in Inter)
 B6   emoji in a bubble: the text paddings; the reserve line with the full line height
@@ -218,8 +218,8 @@ B13  calls: as on master, without the bubble typography (user)
 ```
 chat/item/TerminalItemView.kt     LocalBubbleLayout; usesChatTypography(); chatTextStyle (was terminalTextStyle) in both layouts;
                                   inlineIcon in both layouts; metaBaseline shared by TerminalMetaLayout and the bubbles
-chat/item/FramedItemView.kt       BUBBLE_* constants; Modifier.bubbleTextPadding, Modifier.bubbleMeta(), RowScope.bubbleMetaOnBaseline();
-                                  header, quote, emoji, meta and text insets
+chat/item/FramedItemView.kt       BUBBLE_* constants, BUBBLE_SIDE_INSET among them; Modifier.bubbleTextPadding, Modifier.bubbleMeta(),
+                                  RowScope.bubbleMetaOnBaseline(); header, quote, emoji, meta and text insets
 chat/item/CIMetaView.kt           metaReserveCopy (was terminalReserveSpaceForMeta); breakBefore: a breaking space instead of the word joiner
 chat/item/TextItemView.kt         the copy for every message text with a time, breakBefore in bubbles after text;
                                   ruleMinWidth in terminal rows only
@@ -244,7 +244,7 @@ usersettings/Appearance.kt        LocalBubbleLayout for the classic theme previe
 
 - time baseline BUBBLE_TEXT_INSET above the bubble bottom
 - ticks without a time where they stand next to a time
-- text capitals and last baseline inset from the edges, 12dp at the sides
+- text capitals and last baseline inset from the edges, BUBBLE_SIDE_INSET at the sides
 - no bottom inset before another part of the band
 - time on the text baseline in a card row
 - file icon ink bottom on the size-line baseline

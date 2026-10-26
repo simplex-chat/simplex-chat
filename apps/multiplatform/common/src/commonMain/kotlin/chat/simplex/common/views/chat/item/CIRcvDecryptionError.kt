@@ -182,7 +182,7 @@ fun DecryptionErrorItemFixButton(
           }
         }
         if (inlineMeta != null) {
-          Box(Modifier.padding(end = CHAT_ITEM_TEXT_PADDING).bubbleMeta()) {
+          Box(Modifier.padding(end = BUBBLE_SIDE_INSET).bubbleMeta()) {
             inlineMeta()
           }
         }
@@ -221,7 +221,7 @@ fun DecryptionErrorItem(
           style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp).merge(if (inlineMeta != null) chatTextStyle(16.sp, Color.Red) else TextStyle.Default)
         )
         if (inlineMeta != null) {
-          Box(Modifier.padding(end = CHAT_ITEM_TEXT_PADDING).bubbleMeta()) {
+          Box(Modifier.padding(end = BUBBLE_SIDE_INSET).bubbleMeta()) {
             inlineMeta()
           }
         }

@@ -57,9 +57,10 @@ class BubbleLayoutTest {
     val part = placed.getValue("part")
     val text = placed.getValue("text").relativeTo(part)
     val firstBaseline = with(density) { (BUBBLE_TEXT_INSET.value + 16 * INTER_CAP_HEIGHT).sp.roundToPx() }
-    assertEquals(Placed(12, firstBaseline - 18, 100, 44), text)
+    val side = with(density) { BUBBLE_SIDE_INSET.roundToPx() }
+    assertEquals(Placed(side, firstBaseline - 18, 100, 44), text)
     assertEquals(inset, part.height - (text.y + 22 + 18))
-    assertEquals(124, part.width)
+    assertEquals(100 + 2 * side, part.width)
   }
 
   @Test
