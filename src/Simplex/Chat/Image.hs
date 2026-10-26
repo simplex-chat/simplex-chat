@@ -192,7 +192,7 @@ fitSize maxSize firstPixels (lw, lh) encode = search [] $ maybe lw (widthFor . (
           r <- encode $ sizeOf w'
           if fits r then pure $ Right (sizeOf w', r) else shrink w'
     widthFor p = max 1 $ min lw $ round $ sqrt (p * fromIntegral lw / fromIntegral lh)
-    sizeOf w = (w, max 1 $ round (fromIntegral (w * lh) / fromIntegral lw :: Double))
+    sizeOf w = (w, max 1 $ floor (fromIntegral (w * lh) / fromIntegral lw + 0.5 :: Double))
     pixels w = let (w', h') = sizeOf w in fromIntegral (w' * h')
     fits r = LB.length r <= maxSize
     size = fromIntegral . LB.length

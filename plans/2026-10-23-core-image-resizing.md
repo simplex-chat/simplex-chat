@@ -111,7 +111,7 @@ Resizing, `Image.hs`:
   | largest size | the image sides halved while a side exceeds 4320 pixels, rounded as `scaledSide` rounds | the same |
   | quality | 20 for data URIs, 65 for image data | |
   | trial | `scaleRGB8` from the decoded image to the trial size, encoded at the quality | `scaleRGBA8`, `encodePng` |
-  | trial height | `max 1 (round (w·h_largest/w_largest))` | the same |
+  | trial height | `max 1 (floor (w·h_largest/w_largest + 0.5))`, rounded half up as `height_for` of the research | the same |
   | first width | from pixels `8·B/bpp0`, with B the target T = √0.97·L in JPEG bytes (for a data URI, 3/4 of the characters after the prefix) and bpp0 0.35 at quality 20, 0.9 at quality 65 | the largest width |
   | width from pixels p | `round (√(p·w_largest/h_largest))`, within 1..w_largest | the same |
   | accepted | fits L and is at least 0.97·L, or fits at the largest width | the same |
