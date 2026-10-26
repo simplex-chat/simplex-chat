@@ -140,6 +140,7 @@ views/chat/ChatItemsMerger.kt            MergedItem.revealed: true for Single, t
 views/chat/item/TerminalItemView.kt      LocalTerminalLayout, gap constants, terminalTextStyle, terminalItemShowsSender, sameSender, terminalRowGap, terminalHeadingGap
                                          row interaction, messageLastLine, messageLastBlock, inlineIcon, ItemWithMeta (endButton centred above the time line)
                                          ChatItemSender, chatItemSender, SenderNameAndRole, TerminalChatItemRow
+                                         TerminalChatItemRow: no padding at the sides, the avatar at CHAT_ITEM_TEXT_PADDING; terminalGutter: member image + CHAT_ITEM_TEXT_PADDING
 views/chat/item/ChatItemView.kt          alignEnd = sent && !terminal; item click without indication; reactions at the text edge
                                          GoToItemButton on the side given by alignEnd; terminal: after the item in search results
                                          and for marked deleted items, otherwise endButton of FramedItemView

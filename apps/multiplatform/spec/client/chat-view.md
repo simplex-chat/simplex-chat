@@ -423,7 +423,7 @@ Colours: the app, user and chat themes apply as in the classic layout. Wallpaper
 | [`ChatItemSender`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TerminalItemView.kt#L258) | Name, badge, role label, `own`, avatar |
 | [`chatItemSender(chatInfo, cItem, range, reversedChatItems, showMemberInfo, showChatInfo)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TerminalItemView.kt#L260-L307) | Sender of a row (table below) |
 | [`SenderNameAndRole(sender, modifier)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TerminalItemView.kt#L312-L335) | Private; name and badge (13.5sp; primary for own items, secondary otherwise) and role label |
-| [`terminalGutter(chatInfo)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TerminalItemView.kt#L337-L339) | Gutter width: the member image size (scaled by `fontSizeSqrtMultiplier`) plus 4dp in groups, 0 in other chats |
+| [`terminalGutter(chatInfo)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TerminalItemView.kt#L337-L339) | Gutter width: the member image size (scaled by `fontSizeSqrtMultiplier`) plus `CHAT_ITEM_TEXT_PADDING` in groups, 0 in other chats |
 | [`TerminalChatItemRow(sender, gutter, topGap, modifier, senderTopGap, content)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/TerminalItemView.kt#L341-L383) | Row layout below |
 
 In `ChatView.kt`, shared with the classic date separator:
@@ -436,9 +436,10 @@ In `ChatView.kt`, shared with the classic date separator:
 ### Row Layout
 
 ```
-row padding        top: topGap (terminalRowGap), plus senderTopGap (TERMINAL_SENDER_TOP_GAP, 6.5sp) with a sender row; start 8dp; end 12dp
+row padding        top: topGap (terminalRowGap), plus senderTopGap (TERMINAL_SENDER_TOP_GAP, 6.5sp) with a sender row
 gutter             terminalGutter(chatInfo)
-  avatar           top of the gutter, sender rows of groups only
+  avatar           top of the gutter, CHAT_ITEM_TEXT_PADDING from the start, sender rows of groups only
+one padding        12dp (user, I26): screen edge to the text or the avatar, avatar to the text, time to the screen edge
 message column     starts at the gutter
   sender row       name and badge (13.5sp; primary for own messages, secondary otherwise), role label; start padding CHAT_ITEM_TEXT_PADDING; text style terminalTextStyle(13.5sp)
   item             ChatItemView; TERMINAL_SENDER_BOTTOM_GAP (5.5sp) below the sender row
