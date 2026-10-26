@@ -16,7 +16,7 @@ data SearchRequest = SearchRequest
   }
 
 -- Where the last page ended: the value the search mode sorts by, and the group ID that breaks ties.
--- The service RPC sends it to anyone, so it carries nothing else: text search must not reveal registration times.
+-- The service RPC sends it to anyone: the group ID shows only the order the directory joined groups, and a text search cursor has no timestamp.
 data SearchCursor
   = SCMembers {lastMembers :: Int64, lastGroupId :: GroupId}
   | SCRecent {lastCreatedAt :: UTCTime, lastGroupId :: GroupId}
