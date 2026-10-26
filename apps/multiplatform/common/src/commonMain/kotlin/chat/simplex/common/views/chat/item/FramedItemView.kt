@@ -380,7 +380,7 @@ fun FramedItemView(
                   EmojiText(ci.content.text)
                   if (!terminal) {
                     Text(
-                      metaReserveCopy(ci.meta, chatTTL, encrypted = null, signedFileVerified = null, MaterialTheme.colors.secondary, showViaProxy = showViaProxy, showTimestamp = showTimestamp),
+                      metaReserveCopy(ci.meta, chatTTL, encrypted = null, signedFileVerified = null, secondaryColor = MaterialTheme.colors.secondary, showViaProxy = showViaProxy, showTimestamp = showTimestamp),
                       color = Color.Transparent,
                       style = MaterialTheme.typography.body1.merge(chatTextStyle(MaterialTheme.typography.body1.fontSize))
                     )

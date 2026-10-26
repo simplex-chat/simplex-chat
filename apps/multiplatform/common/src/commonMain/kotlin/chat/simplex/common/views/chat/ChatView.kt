@@ -3841,26 +3841,7 @@ private fun getItemSeparationLargeGap(chatItem: ChatItem, nextItem: ChatItem?): 
 private fun eventRunLargeGap(item: ChatItem, neighbour: ChatItem?): Boolean? =
   if (neighbour != null && (item.content.isEvent || neighbour.content.isEvent)) item.content.isEvent != neighbour.content.isEvent else null
 
-private val CIContent.isEvent: Boolean get() = when (this) {
-  is CIContent.RcvDirectEventContent,
-  is CIContent.RcvGroupEventContent,
-  is CIContent.SndGroupEventContent,
-  is CIContent.RcvConnEventContent,
-  is CIContent.SndConnEventContent,
-  is CIContent.RcvChatFeature,
-  is CIContent.SndChatFeature,
-  is CIContent.RcvChatPreference,
-  is CIContent.SndChatPreference,
-  is CIContent.RcvGroupFeature,
-  is CIContent.SndGroupFeature,
-  is CIContent.RcvChatFeatureRejected,
-  is CIContent.RcvGroupFeatureRejected,
-  is CIContent.SndDirectE2EEInfo,
-  is CIContent.RcvDirectE2EEInfo,
-  is CIContent.SndGroupE2EEInfo,
-  is CIContent.RcvGroupE2EEInfo -> true
-  else -> false
-}
+private val CIContent.isEvent: Boolean get() = !hasTerminalSender && this !is CIContent.ChatBanner
 
 private fun shouldShowAvatar(current: ChatItem, older: ChatItem?): Boolean {
   val oldIsGroupRcv = older?.chatDir is CIDirection.GroupRcv || older?.chatDir is CIDirection.ChannelRcv

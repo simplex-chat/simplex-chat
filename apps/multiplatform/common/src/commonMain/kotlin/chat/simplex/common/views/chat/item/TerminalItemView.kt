@@ -133,7 +133,7 @@ private val ChatItem.textAtItemTop: Boolean get() =
 private val ChatItem.startsWithHeading: Boolean get() =
   markdownBlocks?.firstOrNull() is MarkdownBlock.Heading
 
-private val CIContent.hasTerminalSender: Boolean get() = when (this) {
+val CIContent.hasTerminalSender: Boolean get() = when (this) {
   is CIContent.SndMsgContent,
   is CIContent.SndDeleted,
   is CIContent.SndCall,

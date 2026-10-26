@@ -43,6 +43,7 @@ fun CIFileView(
 ) {
   val saveFileLauncher = rememberSaveFileLauncher(ciFile = file)
   val sizeMultiplier = 1f
+  val fileIconSize = 40.sp * sizeMultiplier
   val progressSizeMultiplier = if (smallView) 0.7f else 1f
   val terminal = LocalTerminalLayout.current
   @Composable
@@ -136,7 +137,7 @@ fun CIFileView(
     Box(
       modifier
         .padding(top = if (terminal) 0.dp else 2.sp.toDp())
-        .size(40.sp.toDp() * sizeMultiplier)
+        .size(fileIconSize.toDp())
         .clip(RoundedCornerShape(4.sp.toDp() * sizeMultiplier)),
       contentAlignment = Alignment.Center
     ) {
@@ -217,7 +218,7 @@ fun CIFileView(
     verticalAlignment = Alignment.Bottom,
     horizontalArrangement = Arrangement.spacedBy(2.sp.toDp())
   ) {
-    fileIndicator(if (!terminal && !smallView && file != null) fileIconOnBaseline(40.sp * sizeMultiplier) else Modifier)
+    fileIndicator(if (!terminal && !smallView && file != null) fileIconOnBaseline(fileIconSize) else Modifier)
     if (!smallView) {
       val secondaryColor = MaterialTheme.colors.secondary
       val encrypted = if (file?.fileSource == null) null else file.fileSource.cryptoArgs != null
