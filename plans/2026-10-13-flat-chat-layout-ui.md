@@ -46,6 +46,7 @@ quote             Markdown quote design: bar, text at 70%, 15sp; 5.75sp above, 5
 headers           all item headers without background; 2.5sp above, 1.5sp below; name → header level 3, header → text level 2 (D8)
                   icon 18dp, as classic, centred on the header text without height
 media             message corner clip, start at the text edge, 5.75sp above; quote thumbnails: message corner clip; roundness preference (D22)
+quote thumbnail   12dp after the quote text; 12dp after the bar when the quote has no text and no sender (user, 2026-10-26)
 captions          laid out as the text of a close follow-up message: full row width, the same gap below the media, the time on the caption only (D30)
                   media, chat link cards and voice at their own width and layout, as without text
 rule-only message rules as wide as the copy of the time; the time beside them unless a wider quote or header widens the rule (D31)
@@ -143,6 +144,7 @@ views/chat/item/ChatItemView.kt          alignEnd = sent && !terminal; item clic
                                          chatItemTailEnabled false; clipChatItem skipped
                                          hasQuoteOrHeader: the choice of EmojiItemView or CIVoiceView, and the heading gaps
 views/chat/item/FramedItemView.kt        transparent background; headers and quote without background; quoteBar; mediaModifier; cardModifier; thumbnailClip; endButton to ItemWithMeta
+                                         QuotedMsgOrGap: quote text box without weight fill, or a gap of CHAT_ITEM_TEXT_PADDING - QUOTE_BAR_GAP
                                          CIMarkdownText: parameter terminalTop plus terminalHeadingGap, no bottom padding, terminal text style, file encryption and signature for the copy
                                          metaReserved: passed to ItemWithMeta, bottom gap without text; captions by the classic conditions; clipChatItem skipped
                                          emoji: TERMINAL_EMOJI_* paddings, not stretched; quote row: TERMINAL_BLOCK_* paddings, icons without top padding
@@ -232,7 +234,6 @@ theme writes                             chatLayout kept (agent profile plan, se
 classic                                  message text in messageTextColor (MsgContentView); quote text in onSurface; otherwise unchanged
 differences                              row tint: selected only; hover and press indication omitted
                                          swipe to reply moves the item
-                                         quote thumbnail after the quote text; Kotlin: at the item end
                                          gaps × 17/16 at the default 17pt body (user, 2026-10-25); line heights from the SF font
 ```
 
