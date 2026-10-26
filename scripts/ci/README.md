@@ -154,7 +154,7 @@ The scope commands run in build-linux after the core tests, with Node 22 and Pyt
 
 ## Failed tests
 
-scripts/flakes/flakes.py (Python 3, standard library only) reads the build.yml runs of simplex-chat and simplexmq through the GitHub API. It compares the failures of a run with the window: the 30 newest completed push runs of the base branch in simplex-chat/<repository>, created before the run.
+scripts/flakes/flakes.py (Python 3, standard library only) reads the build.yml runs of simplex-chat and simplexmq through the GitHub API. It compares the failures of a run with the window: the 30 newest completed push runs of the base branch in simplex-chat/<repository>, created before the run. `branch` and `test` read the newest runs of the repository in their URL.
 
 ```sh
 python3 scripts/flakes/flakes.py pr https://github.com/simplex-chat/simplex-chat/pull/<number>
@@ -180,7 +180,7 @@ python3 scripts/flakes/flakes.py test https://github.com/simplex-chat/simplex-ch
 | `--json` | job records and labels as JSON |
 | `--cache <dir>` | ~/.cache/simplex-ci-flakes by default |
 
-The cache keeps the jobs of completed runs, a record per job and the test order of each job; logs are discarded after parsing. A first query of a repository downloads the logs of its failed jobs in the window.
+The cache keeps the jobs of completed runs, a record per job and the test order of each job; logs are discarded after parsing. A first query of a repository downloads the logs of the failed jobs in the window, and in simplexmq also of the passed test jobs: with `CI=true`, its tests/Util.hs runs a failed test once more, and `branch` counts these retries by message.
 
 Outcome of a test job:
 - passed, failed, timeout (the test step timed out), crashed (the test step failed without a timeout or failed tests);
