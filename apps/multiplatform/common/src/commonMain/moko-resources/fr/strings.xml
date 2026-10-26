@@ -2889,4 +2889,5 @@
     <string name="supporter_perks">Avantages du supporter</string>
     <string name="v7_1_supporter_badge_title">Badge de soutien ❤️</string>
     <string name="v7_1_supporter_badge_body">Aidez à maintenir le réseau en fonctionnement — envoyez des fichiers jusqu’à 2 Go.</string>
+    <string name="app_link_not_supported">Ce lien n’est pas pris en charge par cette version de l’application. Veuillez vérifier si des mises à jour sont disponibles.</string>
 </resources>
