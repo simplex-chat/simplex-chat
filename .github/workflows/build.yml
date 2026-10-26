@@ -654,36 +654,8 @@ jobs:
           REDUCED: ${{ needs.maybe-release.outputs.reduced }}
           TESTS: ${{ github.event_name == 'workflow_dispatch' && inputs.tests || '' }}
           PR_BODY: ${{ github.event.pull_request.draft == true && github.event.pull_request.body || '' }}
-        run: |
-          if [ -n "$PR_BODY" ]; then
-            TESTS=$(printf '%s\n' "$PR_BODY" | tr -d '\r' | awk '/^```ci-tests[ \t]*$/ {f = 1; next} /^```[ \t]*$/ {f = 0} f')
-          fi
-          args=()
-          while read -r p; do
-            if [ -n "$p" ]; then args+=(-m "$p"); fi
-          done <<< "$TESTS"
-          if [ "${#args[@]}" -gt 0 ]; then
-            args+=(--fail-on=empty)
-          elif [ "$REDUCED" = true ]; then
-            echo "No tests selected"
-            exit 0
-          fi
-          i=1
-          attempts=1
-          ${{ (github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) }} && attempts=3
-          while [ "$i" -le "$attempts" ]; do
-            if ./simplex-chat-test "${args[@]}"; then
-              break
-            else
-              echo "Attempt $i failed, retrying..."
-              i=$((i + 1))
-              sleep 1
-            fi
-          done
-          if [ "$i" -gt "$attempts" ]; then
-            echo "All "$attempts" attempts failed."
-            exit 1
-          fi
+          ATTEMPTS: ${{ (github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) && 3 || 1 }}
+        run: scripts/ci/run-tests.sh ./simplex-chat-test
 
       # Compiling the desktop and Android targets of :common in parallel exceeds the 2 GB Kotlin daemon heap.
       # cmakeBuildAndCopy links the JNI library against libsimplex, which this job does not build.
