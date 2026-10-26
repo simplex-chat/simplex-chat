@@ -571,7 +571,7 @@ CREATE TABLE settings(
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 ) STRICT;
-CREATE TABLE IF NOT EXISTS "protocol_servers"(
+CREATE TABLE "protocol_servers"(
   smp_server_id INTEGER PRIMARY KEY,
   host TEXT NOT NULL,
   port TEXT NOT NULL,
@@ -650,7 +650,7 @@ CREATE TABLE group_snd_item_statuses(
   ,
   via_proxy INTEGER
 ) STRICT;
-CREATE TABLE IF NOT EXISTS "sent_probes"(
+CREATE TABLE "sent_probes"(
   sent_probe_id INTEGER PRIMARY KEY,
   contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
   group_member_id INTEGER REFERENCES group_members ON DELETE CASCADE,
@@ -660,7 +660,7 @@ CREATE TABLE IF NOT EXISTS "sent_probes"(
   updated_at TEXT CHECK(updated_at NOT NULL),
   UNIQUE(user_id, probe)
 ) STRICT;
-CREATE TABLE IF NOT EXISTS "sent_probe_hashes"(
+CREATE TABLE "sent_probe_hashes"(
   sent_probe_hash_id INTEGER PRIMARY KEY,
   sent_probe_id INTEGER NOT NULL REFERENCES "sent_probes" ON DELETE CASCADE,
   contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
@@ -669,7 +669,7 @@ CREATE TABLE IF NOT EXISTS "sent_probe_hashes"(
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL)
 ) STRICT;
-CREATE TABLE IF NOT EXISTS "received_probes"(
+CREATE TABLE "received_probes"(
   received_probe_id INTEGER PRIMARY KEY,
   contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
   group_member_id INTEGER REFERENCES group_members ON DELETE CASCADE,
@@ -703,9 +703,8 @@ CREATE TABLE remote_controllers(
   ctrl_fingerprint BLOB NOT NULL, -- remote controller CA cert fingerprint, set when connected
   id_pub BLOB NOT NULL, -- remote controller long-term/identity key to verify signatures
   dh_priv_key BLOB NOT NULL, -- last session DH key
-  prev_dh_priv_key BLOB -- previous session DH key
-) STRICT;
-CREATE TABLE IF NOT EXISTS "msg_deliveries"(
+  prev_dh_priv_key BLOB -- previous session DH key) STRICT;
+CREATE TABLE "msg_deliveries"(
   msg_delivery_id INTEGER PRIMARY KEY,
   message_id INTEGER NOT NULL REFERENCES messages ON DELETE CASCADE, -- non UNIQUE for group messages and for batched messages
   connection_id INTEGER NOT NULL REFERENCES connections ON DELETE CASCADE,
@@ -714,8 +713,7 @@ CREATE TABLE IF NOT EXISTS "msg_deliveries"(
   chat_ts TEXT NOT NULL DEFAULT(datetime('now')),
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL),
-  delivery_status TEXT -- MsgDeliveryStatus
-) STRICT;
+  delivery_status TEXT -- MsgDeliveryStatus) STRICT;
 CREATE TABLE note_folders(
   note_folder_id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
