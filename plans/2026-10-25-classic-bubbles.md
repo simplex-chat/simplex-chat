@@ -260,27 +260,33 @@ usersettings/Appearance.kt        LocalBubbleLayout for the classic theme previe
 
 ## 6. Results
 
-Desktop renders of 52 items and 2 chat lists, light and dark, font scale 1 and 1.5, right-to-left; the same renders of terminal rows.
+Desktop renders of 54 items and 4 chat lists, light and dark, font scale 1 and 1.5, right-to-left; the same renders of terminal rows. Values at font scale 1, light theme; master in parentheses.
 
 ```
-terminal rows    324 of 324 renders pixel-identical to the base
-one-line bubble  32px (33px); capitals 10px below the top edge (11px), last baseline 10px above the bottom edge (10px)
+terminal rows    330 of 348 renders pixel-identical to the base; the other 18 are the heading fixtures (B11)
+one-line bubble  34px (33px); capitals 11px below the top edge (11px), last baseline 11px above the bottom edge (10px)
+                 the first ink 15px from the edge (13px), the end of the time 15px (13px), each with 1px of glyph bearing
 time             baseline on the last text baseline for sent and received messages (received: 1px lower before)
 reserve          "✓✓ 10:15 AM": 79px (92px) for a meta of 80px; at font scale 1.5: 105px (137px) for 106px
-                 short messages narrower; at font scale 1.5 the time stays on the line of short texts
-                 after text one space before it; the time alone moves to the next line when it does not fit
-header           text and icon 12dp from the edge (8dp); band 29px (30px)
-quote            Inter; full line heights; band 31px with one line (29px), taller with a sender and two lines
-deleted, errors  one-line card 32px (31px), as a one-line message; marked deleted 29px (27px); time on the text baseline
-file             size line baseline 10px above the edge (9px); the time and the ink bottom of the file icon on it
-events           feature events 5px shorter (icon without height); events with a member name 4px higher in their row
+                 after text one space before it (4–5px); the time alone moves to the next line when it does not fit
+header           text and icon 14dp from the edge (8dp); band 31px (30px)
+quote            Inter; full line heights; band 33px with one line (29px), taller with a sender and two lines
+deleted, errors  one-line card 34px (31px), as a one-line message; marked deleted 31px (27px); time on the text baseline
+                 decryption errors and legacy deleted items: the tail drawn, the text 14px from the visible edge (3px)
+file             size line baseline 11px above the edge (9px); the time and the ink bottom of the file icon on it
+events           runs: between event rows 8px of background in groups (avatars), 12–14px in direct chats;
+                 a message next to a run shows its tail and time
 markdown         list items 22px apart (19px); paragraph break, headings, cards and rules at the gaps of terminal rows
+headings         25, 20 and 16sp, bold, in bubbles and terminal rows (bubbles: 24, 20.8, 18.4sp; terminal rows: 27.6, 21, 16sp)
+calls            pixel-identical to master (12 of 12 renders)
+sender names     the first ink 0–1px from the bubble edge (6–7px)
 row gaps         unchanged at font scale 1; × 1.5 at font scale 1.5
 ```
 
 ## 7. Open questions
 
 ```
-C8   group invitation with long translations: the time and the text on one baseline; the code unchanged until
-     an option is chosen
+C8   group invitation with long translations: the time and the text on one baseline (user); options rendered:
+     A the time on the last baseline, joined to the last word; B on the baseline of the status line;
+     C on the baseline of the group name; the code unchanged until an option is chosen
 ```
