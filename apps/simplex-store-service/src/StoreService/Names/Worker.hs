@@ -274,10 +274,9 @@ committed w@Worker {wkSender} now r@NameRegistration {nrId, nrReveal, nrRevealAf
             _ -> sendRegister w now r rv
 
 -- | The step that relays the reveal's acceptance to the name policy, before the wait for revealAfter for a reveal stored
--- before it; Nothing once the policy holds it. A relay whose dry run refuses the acceptance clears the reveal, for
--- the page to sign both again; one past its deadline, the reveal's, is judged as a register past it is.
+-- before it; Nothing once the policy holds it. Its dry run's revert is judged as a register's is.
 relayAcceptance :: Worker -> UTCTime -> NameRegistration -> Word64 -> TermsAcceptance -> IO (Maybe Next)
-relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts}, wkSender} now r@NameRegistration {nrId = regId@(RegistrationId rid), nrOwner, nrCommitment} deadline a@TermsAcceptance {taTermsHash} =
+relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts}, wkSender} now r@NameRegistration {nrId = regId, nrOwner, nrCommitment} deadline a@TermsAcceptance {taTermsHash} =
   inFlightTransaction wkSender (TxAccept regId) >>= \case
     Just p -> pure $ Just $ Await p
     Nothing ->
@@ -291,11 +290,7 @@ relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts}, wkSender} now r@Na
       submitTransaction wkSender (TxAccept regId) policy (acceptCalldata nrCommitment nrOwner deadline a) >>= \case
         Right p -> pure $ Await p
         Left SEInFlight -> pure Again
-        Left (SEChain (ChainReverted reason@(Just RNSignatureExpired))) -> judge w now r reason
-        Left (SEChain (ChainReverted (Just reason)))
-          | reason `elem` [RNTermsMismatch, RNInvalidNonce, RNInvalidSignature] -> do
-              logWarn $ "names worker: registration " <> rid <> ": its terms acceptance is refused, " <> tshow reason <> "; the page signs again"
-              save w now r {nrReveal = Nothing}
+        Left (SEChain (ChainReverted reason)) -> judge w now r reason
         Left e -> pure $ failure r e
 
 -- | The stored intent is checked before its dry run, whose revert decides at once; no label turn is held across the send.
@@ -328,7 +323,7 @@ registering w@Worker {wkSender} now r@NameRegistration {nrId} =
     Nothing -> judge w now r Nothing
 
 -- | A register that did not go through, by its dry run's revert or once every transaction settled: registered when one mined
--- with status 1 or the owner holds the name; committed again on InvalidNonce or TermsNotAccepted, for the page to sign again; taken on any revert
+-- with status 1 or the owner holds the name; committed again on InvalidNonce or a refused terms acceptance, for the page to sign again; taken on any revert
 -- while the name is not available at the latest block; failed otherwise, unless the dry run named the name as gone.
 judge :: Worker -> UTCTime -> NameRegistration -> Maybe RevertName -> IO Next
 judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {nrReveal} reason =
@@ -338,8 +333,7 @@ judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {n
       LChanged -> pure (Nothing, Again)
       LUnread -> pure (Nothing, Retry (nrVersion r) "the register check's chain read failed")
       LNotLanded -> case reason of
-        Just RNInvalidNonce -> store w now r {nrReveal = Nothing}
-        Just RNTermsNotAccepted -> store w now r {nrReveal = Nothing}
+        Just e | e `elem` [RNInvalidNonce, RNTermsNotAccepted, RNTermsMismatch, RNInvalidSignature] -> store w now r {nrReveal = Nothing}
         Just RNCommitmentTooNew -> pure (Nothing, waitUntil r $ addUTCTime chainSecond now)
         _ -> case nrReveal of
           Just NameReveal {rvLabel} ->

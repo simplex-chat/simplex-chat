@@ -45,6 +45,7 @@ module Bots.StoreService.NamesOrdersTests
     communityTerms,
     termsChanged,
     communityEntry,
+    otherCommunityTerms,
     listOnChain,
   )
 where
@@ -792,6 +793,10 @@ termsChanged version community =
   )
 
 -- | A listed name's community entry: the ini's text, and the policy's terms the fake node serves.
+-- | The current version with community terms other than the policy's.
+otherCommunityTerms :: Text
+otherCommunityTerms = termsVersion <> "/community/" <> T.drop 2 (hex fakeNewCommunityTerms)
+
 communityEntry :: J.ToJSON a => FakeEthNode -> a -> J.Value
 communityEntry node for = J.object ["for" .= for, "terms" .= J.object ["url" .= fakeTermsUrl node, "hash" .= hex fakeCommunityTerms]]
 
@@ -817,7 +822,7 @@ testTermsChanged = withOrders $ \ctx0 -> withSettings (listName "dynamis") ctx0 
   -- 112 characters pass the format and meet the terms check
   forM_ [olderTerms, communityTerms termsVersion, communityTerms olderTerms, T.replicate 112 "a"] $ \t ->
     placeOrder ctx aliceOrder {oTerms = t} `shouldReturn` termsChanged termsVersion Nothing
-  forM_ [termsVersion, olderTerms, communityTerms olderTerms] $ \t ->
+  forM_ [termsVersion, olderTerms, communityTerms olderTerms, otherCommunityTerms] $ \t ->
     placeOrder ctx dynamis {oTerms = t} `shouldReturn` termsChanged termsVersion (Just $ communityEntry (cNode ctx) bakers)
   stubCalls (cStub ctx) `shouldReturn` []
   registrationsOf ctx ownerA `shouldReturn` []
@@ -949,7 +954,7 @@ testCodeTermsChanged = withOrders $ \ctx0 -> withSettings (listName "dynamis") c
   let dynamis = aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 2}
   forM_ [olderTerms, communityTerms termsVersion] $ \t ->
     register ctx code aliceOrder {oTerms = t} `shouldReturn` termsChanged termsVersion Nothing
-  forM_ [termsVersion, communityTerms olderTerms] $ \t ->
+  forM_ [termsVersion, communityTerms olderTerms, otherCommunityTerms] $ \t ->
     register ctx code dynamis {oTerms = t} `shouldReturn` termsChanged termsVersion (Just $ communityEntry (cNode ctx) bakers)
   pcReservedBy <$> readCode ctx issued `shouldReturn` Nothing
   rid <- registered ctx code dynamis {oTerms = communityTerms termsVersion}
@@ -1584,6 +1589,9 @@ testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   field "latePayment" v `shouldBe` Just J.Null
   let waiting w = field "latePayment" $ objectOf $ viewJSON (testNamesConfig node) r Nothing (Just w) ViewReads {vrIntentNonce = Nothing, vrUnread = [], vrAcceptance = Nothing}
   map waiting [LWConfirming, LWCrediting, LWSupport] `shouldBe` map (\t -> Just $ J.object ["waiting" .= (t :: Text)]) ["confirming", "crediting", "support"]
+  let acceptance = Acceptance {acPolicy = fakeNamePolicy, acTermsHash = fakeCommunityTerms, acNonce = 2}
+  field "acceptance" (objectOf $ viewJSON (testNamesConfig node) r Nothing Nothing ViewReads {vrIntentNonce = Nothing, vrUnread = [], vrAcceptance = Just acceptance})
+    `shouldBe` Just (J.object ["policy" .= safeDecodeUtf8 (strEncode fakeNamePolicy), "termsHash" .= hex fakeCommunityTerms, "nonce" .= (2 :: Int)])
   map (`field` v) ["id", "phase", "owner", "tld", "chainId", "linksRefused", "label", "unread", "sponsor", "fromBalance", "balance", "community", "terms"]
     `shouldBe` map
       Just

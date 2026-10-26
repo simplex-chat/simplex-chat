@@ -134,9 +134,7 @@ acceptanceDigest domain commitment termsHash nonce deadline =
   hashTypedData
     domain
     "AcceptBonaFideTerms(bytes32 commitment,bytes32 termsHash,uint256 nonce,uint256 deadline)"
-    [word commitment, word termsHash, VUint $ fromIntegral nonce, VUint $ fromIntegral deadline]
-  where
-    word = VUint . fromInteger . os2ip
+    [bytes32 commitment, bytes32 termsHash, VUint $ fromIntegral nonce, VUint $ fromIntegral deadline]
 
 verifyAcceptance :: Eip712Domain -> Address -> ByteString -> Word64 -> TermsAcceptance -> IO (Either String ())
 verifyAcceptance domain owner commitment deadline TermsAcceptance {taTermsHash, taNonce, taSignature} = runExceptT $ do
@@ -160,14 +158,14 @@ setTextDigest domain node key value nonce deadline =
   hashTypedData
     domain
     "SetText(bytes32 node,string key,string value,uint256 nonce,uint256 deadline)"
-    [bytes32 node, VBytes $ encodeUtf8 key, VBytes $ encodeUtf8 value, VUint $ fromIntegral nonce, VUint $ fromIntegral deadline]
+    [bytes32 $ nodeBytes node, VBytes $ encodeUtf8 key, VBytes $ encodeUtf8 value, VUint $ fromIntegral nonce, VUint $ fromIntegral deadline]
 
 clearRecordsDigest :: Eip712Domain -> Node -> Word64 -> Word64 -> ByteString
 clearRecordsDigest domain node nonce deadline =
   hashTypedData
     domain
     "ClearRecords(bytes32 node,uint256 nonce,uint256 deadline)"
-    [bytes32 node, VUint $ fromIntegral nonce, VUint $ fromIntegral deadline]
+    [bytes32 $ nodeBytes node, VUint $ fromIntegral nonce, VUint $ fromIntegral deadline]
 
 setTextWithSigCalldata :: Node -> Text -> Text -> Word64 -> Word64 -> RecoverableSignature -> ByteString
 setTextWithSigCalldata (Node node) key value nonce deadline sig =
@@ -186,8 +184,8 @@ clearRecordsWithSigCalldata (Node node) nonce deadline sig =
   selector "clearRecordsWithSig(bytes32,uint256,uint256,bytes)"
     <> abiTuple [Static node, Static $ uint256 nonce, Static $ uint256 deadline, Dynamic $ abiBytes $ serializeSignature sig]
 
-bytes32 :: Node -> Eip712Value
-bytes32 (Node node) = VUint $ fromInteger $ os2ip node
+bytes32 :: ByteString -> Eip712Value
+bytes32 = VUint . fromInteger . os2ip
 
 registrationTuple :: Registration -> ByteString
 registrationTuple r@Registration {rLabel, rOwner, rDuration, rSecret, rResolver} =

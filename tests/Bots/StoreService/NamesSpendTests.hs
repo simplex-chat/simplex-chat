@@ -10,7 +10,7 @@ import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), setInvoiceState, setRates,
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (reservedNamesCall)
 import Bots.StoreService.ConfigTests (termsVersion)
-import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), advance, aliceOrder, bakers, bumpedTerms, commitmentOf, communityEntry, communityTerms, configured, field, fieldsOf, invoiceRegistration, keyA, keyB, listName, listOnChain, malformedTerms, olderTerms, orderTime, ownerAText, placeOrder, placed, post, refusedWith, registrationById, registrationOf, registrationsOf, settleNow, termsChanged, withOrdersOn, yearsDuration)
+import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), advance, aliceOrder, bakers, bumpedTerms, commitmentOf, communityEntry, communityTerms, configured, field, fieldsOf, invoiceRegistration, keyA, keyB, listName, listOnChain, malformedTerms, olderTerms, orderTime, otherCommunityTerms, ownerAText, placeOrder, placed, post, refusedWith, registrationById, registrationOf, registrationsOf, settleNow, termsChanged, withOrdersOn, yearsDuration)
 import Bots.StoreService.NamesOwnerTests (findBody, postFind)
 import Bots.StoreService.NamesStoreTests (at, order, ownerA, placePaid, reg, t0, write)
 import Bots.StoreService.WebTests (StubCall (..), capturingStderr, StubState (..), jsonObject, rcv, sampleProviderInvoice, statusOf, stubCalls, webGet, webRequestBody, withServiceStores)
@@ -430,7 +430,7 @@ testSpendTermsChanged = withSpend $ \ctx0 -> serveSpend (configured (listName "d
   src <- sourceOf ctx "src" 30000
   forM_ [olderTerms, communityTerms termsVersion] $ \t ->
     spend ctx src (covered 30000) {sbOrder = aliceOrder {oTerms = t}} `shouldReturn` termsChanged termsVersion Nothing
-  forM_ [termsVersion, communityTerms olderTerms] $ \t ->
+  forM_ [termsVersion, communityTerms olderTerms, otherCommunityTerms] $ \t ->
     spend ctx src (dynamis 30000 Nothing) {sbOrder = dynamisOrder {oTerms = t}} `shouldReturn` termsChanged termsVersion (Just $ communityEntry (cNode ctx) bakers)
   amountOf ctx src `shouldReturn` Just 30000
   rid <- registrationAnswer . snd <$> spend ctx src (dynamis 30000 Nothing) {sbOrder = dynamisOrder {oTerms = communityTerms termsVersion}}
