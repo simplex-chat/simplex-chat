@@ -1816,19 +1816,6 @@ SEARCH m USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 SEARCH g USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 
 Query: 
-          SELECT r.probe, r.contact_id, g.group_id, r.group_member_id
-          FROM received_probes r
-          LEFT JOIN contacts c ON r.contact_id = c.contact_id AND c.deleted = 0
-          LEFT JOIN group_members m ON r.group_member_id = m.group_member_id
-          LEFT JOIN groups g ON g.group_id = m.group_id
-          WHERE r.user_id = ? AND r.probe_hash = ? AND r.probe IS NOT NULL
-        
-Plan:
-SEARCH r USING INDEX idx_received_probes_user_id (user_id=?)
-SEARCH m USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
-SEARCH g USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
-
-Query: 
           UPDATE chat_items SET item_status = ?, item_viewed = 1, updated_at = ?
           WHERE user_id = ? AND group_id = ?
             AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ?
@@ -4177,19 +4164,6 @@ Query:
 Plan:
 SEARCH r USING INDEX sqlite_autoindex_badge_store_receipts_2 (provider=? AND transaction_ref=?)
 SEARCH p USING COVERING INDEX idx_badge_purchases_store_receipt (badge_store_receipt_id=?) LEFT-JOIN
-
-Query: 
-        SELECT r.contact_id, g.group_id, r.group_member_id
-        FROM received_probes r
-        LEFT JOIN contacts c ON r.contact_id = c.contact_id AND c.deleted = 0
-        LEFT JOIN group_members m ON r.group_member_id = m.group_member_id
-        LEFT JOIN groups g ON g.group_id = m.group_id
-        WHERE r.user_id = ? AND r.probe_hash = ? AND r.probe IS NULL
-      
-Plan:
-SEARCH r USING INDEX idx_received_probes_user_id (user_id=?)
-SEARCH m USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
-SEARCH g USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 
 Query: 
         SELECT r.display_name, r.member_id, m.group_member_id, m.member_role, p.display_name, p.local_alias
@@ -7540,6 +7514,12 @@ SCAN CONSTANT ROW
 SCALAR SUBQUERY 1
 SEARCH group_relays USING COVERING INDEX idx_group_relays_chat_relay_id (chat_relay_id=?)
 
+Query: SELECT EXISTS (SELECT 1 FROM received_probes WHERE user_id = ? AND probe_hash = ? AND probe IS NULL AND (contact_id = ? OR group_member_id = ?))
+Plan:
+SCAN CONSTANT ROW
+SCALAR SUBQUERY 1
+SEARCH received_probes USING INDEX idx_received_probes_user_id (user_id=?)
+
 Query: SELECT accepted_at FROM operator_usage_conditions WHERE server_operator_id = ? AND conditions_commit = ?
 Plan:
 SEARCH operator_usage_conditions USING INDEX idx_operator_usage_conditions_conditions_commit (conditions_commit=? AND server_operator_id=?)
@@ -7935,6 +7915,18 @@ Query: SELECT p.contact_link, p.chat_peer_type FROM group_members m JOIN contact
 Plan:
 SCAN m
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: SELECT probe FROM received_probes WHERE group_member_id = ? AND probe IS NOT NULL
+Plan:
+SEARCH received_probes USING INDEX idx_received_probes_group_member_id (group_member_id=?)
+
+Query: SELECT probe, probe_hash FROM received_probes WHERE user_id = ? AND probe IS NOT NULL AND (contact_id = ? OR group_member_id = ?)
+Plan:
+SEARCH received_probes USING INDEX idx_received_probes_user_id (user_id=?)
+
+Query: SELECT probe_hash FROM received_probes WHERE probe IS NULL
+Plan:
+SEARCH received_probes USING INDEX idx_received_probes_probe (probe=?)
 
 Query: SELECT purchase_key FROM badge_code_redemptions
 Plan:
