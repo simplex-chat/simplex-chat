@@ -439,7 +439,7 @@ CI, comments of the avatar scripts:
 
 License notices, `docs/dependencies/`:
 - `README.md:3`:
-  `[libjpeg-turbo](https://github.com/libjpeg-turbo/libjpeg-turbo): JPEG encoding of resized images ([IJG and BSD-3-clause](./licences/apps/libjpeg-turbo/LICENSE.md)). This software is based in part on the work of the Independent JPEG Group.`
+  `[libjpeg-turbo](https://github.com/libjpeg-turbo/libjpeg-turbo): JPEG decoding and encoding of resized images ([IJG and BSD-3-clause](./licences/apps/libjpeg-turbo/LICENSE.md)). This software is based in part on the work of the Independent JPEG Group.`
 - `README.md:7`:
   `[stb_image_resize](https://github.com/nothings/stb): image scaling ([MIT or public domain](./licences/apps/stb_image_resize/LICENSE))`
 - `licences/apps/libjpeg-turbo/LICENSE.md` and `README.ijg`: copies from libjpeg-turbo `9217719d`, the submodule of the hs-jpeg-turbo fork.
