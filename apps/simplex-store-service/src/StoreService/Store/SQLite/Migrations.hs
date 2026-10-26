@@ -25,7 +25,8 @@ schemaMigrations =
     ("20261022_drop_taken_codes", m20261022_drop_taken_codes, Just down_m20261022_drop_taken_codes),
     ("20261022_name_balances", m20261022_name_balances, Just down_m20261022_name_balances),
     ("20261022_name_late_wait", m20261022_name_late_wait, Just down_m20261022_name_late_wait),
-    ("20261023_name_terms", m20261023_name_terms, Just down_m20261023_name_terms)
+    ("20261023_name_terms", m20261023_name_terms, Just down_m20261023_name_terms),
+    ("20261026_name_terms_acceptance", m20261026_name_terms_acceptance, Just down_m20261026_name_terms_acceptance)
   ]
 
 -- | The client tables share this database, so the service tables are the same names behind a prefix.
@@ -516,6 +517,27 @@ down_m20261023_name_terms =
     servicePrefix
     [sql|
 ALTER TABLE @name_registrations DROP COLUMN agreed_terms;
+|]
+
+-- The owner's acceptance of the community terms that a reveal of a community name carries.
+m20261026_name_terms_acceptance :: Query
+m20261026_name_terms_acceptance =
+  withPrefix
+    servicePrefix
+    [sql|
+ALTER TABLE @name_registrations ADD COLUMN accept_terms BLOB;
+ALTER TABLE @name_registrations ADD COLUMN accept_nonce INTEGER;
+ALTER TABLE @name_registrations ADD COLUMN accept_signature BLOB;
+|]
+
+down_m20261026_name_terms_acceptance :: Query
+down_m20261026_name_terms_acceptance =
+  withPrefix
+    servicePrefix
+    [sql|
+ALTER TABLE @name_registrations DROP COLUMN accept_signature;
+ALTER TABLE @name_registrations DROP COLUMN accept_nonce;
+ALTER TABLE @name_registrations DROP COLUMN accept_terms;
 |]
 
 {- TODO [badges] deferred with the draft in M20260915_user_badges, service only.

@@ -14,13 +14,16 @@ import Data.ByteArray.Encoding (Base (Base16), convertFromBase, convertToBase)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Word (Word64)
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.Secp256k1 (signRecoverable)
 import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.Eth.EIP712 (Eip712Domain)
 import Simplex.Messaging.Eth.Transaction (Eip1559Tx (..), signEip1559Tx)
 import Simplex.Messaging.SimplexName (SimplexTLD (..))
+import StoreService.Names.Signatures (parseSignature)
 import Test.Hspec
 
 badgeNameRegistrationTests :: Spec
@@ -35,6 +38,11 @@ badgeNameRegistrationTests = describe "StoreService names: registration" $ do
     it "rejects an intent signed by another wallet" $ testVerifyOtherSigner g
     it "rejects an intent past its deadline" $ testVerifyExpired g
     it "rejects a secret that is not 32 bytes" $ testVerifyShortSecret g
+  -- viem's hashTypedData and encodeFunctionData against the SimplexNamePolicy ABI of ens-contracts a9c61ff
+  describe "terms acceptance" $ do
+    it "hashes AcceptBonaFideTerms as the policy does" testAcceptanceDigest
+    it "encodes commitUnderBonaFideCommunityTermsWithSig" testAcceptCalldata
+    it "verifies the owner's acceptance, and rejects another signer and another deadline" $ testVerifyAcceptance g
   it "reads the register's dry run reverting as the sponsor's error" $ testRevertedDryRun g
   it "registers a name the client committed to without revealing it" $ testCommitThenRegister g
 
@@ -153,6 +161,43 @@ expectedTransaction g nonce to calldata =
           txValue = 0,
           txData = calldata
         }
+
+acceptanceDomain :: Eip712Domain
+acceptanceDomain = policyDomain fakeChainId fakeNamePolicy
+
+-- viem: keccak256(toHex("bona fide community terms v1")) and keccak256(toHex("alicebakery commitment"))
+acceptedHash, acceptedCommitment :: ByteString
+acceptedHash = fromHex "e2937ea655d8e743e2a8cecbab83acdf055846c80e13001ec1f8dc404e4ef2d9"
+acceptedCommitment = fromHex "26d4dc807322bcdc1f68a2459b580919c4e6c5629d07cb20c38a31f7b72b7e5d"
+
+acceptanceDeadline :: Word64
+acceptanceDeadline = 1767315600
+
+testAcceptanceDigest :: IO ()
+testAcceptanceDigest =
+  toHex (acceptanceDigest acceptanceDomain acceptedCommitment acceptedHash 3 acceptanceDeadline) `shouldBe` "4d29a4fcd34a2d3cbd348d07cc80efe14137c14c512df2f74706e14f3ad56267"
+
+testAcceptCalldata :: IO ()
+testAcceptCalldata = do
+  sig <- either (fail . show) pure $ parseSignature $ "0x" <> T.replicate 32 "11" <> T.replicate 32 "22" <> "1b"
+  let acceptance = TermsAcceptance {taTermsHash = acceptedHash, taNonce = 3, taSignature = sig}
+  toHex (acceptCalldata acceptedCommitment (address "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955") acceptanceDeadline acceptance)
+    `shouldBe` "be22031326d4dc807322bcdc1f68a2459b580919c4e6c5629d07cb20c38a31f7b72b7e5de2937ea655d8e743e2a8cecbab83acdf055846c80e13001ec1f8dc404e4ef2d9\
+               \00000000000000000000000014dc79964da2c08b23698b3d3cc7ca32193d99550000000000000000000000000000000000000000000000000000000000000003\
+               \000000000000000000000000000000000000000000000000000000006957189000000000000000000000000000000000000000000000000000000000000000c0\
+               \00000000000000000000000000000000000000000000000000000000000000411111111111111111111111111111111111111111111111111111111111111111\
+               \22222222222222222222222222222222222222222222222222222222222222221b00000000000000000000000000000000000000000000000000000000000000"
+
+testVerifyAcceptance :: TVar ChaChaDRG -> IO ()
+testVerifyAcceptance g = do
+  owner <- newEphemeralWallet g
+  other <- newEphemeralWallet g
+  sig <- signRecoverable g (ewKey owner) (acceptanceDigest acceptanceDomain acceptedCommitment acceptedHash 3 acceptanceDeadline) >>= either fail pure
+  let acceptance = TermsAcceptance {taTermsHash = acceptedHash, taNonce = 3, taSignature = sig}
+      verify w = verifyAcceptance acceptanceDomain (ewAddress w) acceptedCommitment
+  verify owner acceptanceDeadline acceptance `shouldReturn` Right ()
+  verify other acceptanceDeadline acceptance `shouldReturn` Left "acceptance is not signed by the owner"
+  verify owner (acceptanceDeadline + 1) acceptance `shouldReturn` Left "acceptance is not signed by the owner"
 
 address :: ByteString -> Address
 address = right . strDecode

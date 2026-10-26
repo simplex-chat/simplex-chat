@@ -67,8 +67,8 @@ import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig (..))
 import StoreService.Log (logError, logWarn)
 import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, reserveCode, reserveRefusal, spendLandedCode)
-import StoreService.Names.Community (communityJSON, termsFor, termsJSON)
-import StoreService.Names.Contracts (Contracts, NameStatus (..), chainPriceCents, confirmedTag, nameExpires, nameStatus, ownerOfToken, secondsPerYear)
+import StoreService.Names.Community (communityJSON, currentCommunityTerms, termsErrorText, termsFor, termsJSON)
+import StoreService.Names.Contracts (Contracts, NameStatus (..), bonaFideName, chainPriceCents, confirmedTag, nameExpires, nameStatus, ownerOfToken, secondsPerYear)
 import StoreService.Names.Env (NamesEnv (..))
 import StoreService.Names.Phases (Phases, RegistrationId (..))
 import StoreService.Names.Abi (bytes32FromHex, hex)
@@ -136,7 +136,7 @@ maxSealedChars = 11095
 
 -- | The terms version, of up to 32 characters, and a suffix such as /community.
 maxAgreedTermsChars :: Int
-maxAgreedTermsChars = 48
+maxAgreedTermsChars = 112
 
 -- | How far a signed request's timestamp may be from the service's clock.
 signedRequestSeconds :: Integer
@@ -270,10 +270,18 @@ checkDuration NamesConfig {nTermStart, nTermSlackSeconds} now years duration = d
       expected = max 0 (unixSeconds nTermStart - unixSeconds now)
   when (free < 0 || abs (free - expected) > toInteger nTermSlackSeconds) $ Left ORBadRequest
 
--- | The terms the order signed must be the current ones for its name, the community variant for a listed name.
-checkTerms :: NamesConfig -> OrderFields -> Either OrderRefusal ()
-checkTerms cfg OrderFields {ofLabelHash, ofAgreedTerms} =
-  unless (ofAgreedTerms == termsFor cfg ofLabelHash) $ Left $ ORTermsChanged (termsJSON cfg) (communityJSON cfg ofLabelHash)
+-- | The terms the order signed must be the current ones for its name, with the community terms' hash for a name the policy lists.
+checkTerms :: NamesConfig -> Contracts -> OrderFields -> IO (Either OrderRefusal ())
+checkTerms cfg ct OrderFields {ofLabelHash, ofAgreedTerms} =
+  bonaFideName ct ofLabelHash >>= \case
+    Left e -> Left ORNameCheckUnavailable <$ logWarn ("names: an order's community check failed: " <> tshow e)
+    Right False -> pure $ agreed Nothing
+    Right True ->
+      currentCommunityTerms cfg ct >>= \case
+        Left e -> Left ORNameCheckUnavailable <$ logError ("names: a community name's order waits, its terms are unavailable: " <> termsErrorText e)
+        Right h -> pure $ agreed $ Just h
+  where
+    agreed h = unless (ofAgreedTerms == termsFor cfg h) $ Left $ ORTermsChanged (termsJSON cfg) (communityJSON cfg ofLabelHash h)
 
 -- | A name being registered here searches as available, so it is checked here too.
 checkNameFree :: Contracts -> DBStore -> LabelHash -> IO (Either OrderRefusal ())

@@ -82,6 +82,9 @@ private_key = replace-me
 ; hyphens), and the page the order's checkbox links to; both required, read only at startup
 ;terms_version = 2026-10-23
 ;terms_url = https://simplex.chat/
+; the page of the community terms, whose keccak256 the name policy holds; checked at startup, and
+; needed to order a name the policy lists as a community name
+;community_terms_url = https://simplex.chat/community-terms
 ; the paid years of a name; at least 2, the controller's minimum
 ;years = 2
 ; a name's term starts here; the days until then are free
@@ -93,7 +96,8 @@ private_key = replace-me
 ; how many times one order may move to another name
 ;max_order_moves = 3
 ;
-; community names, with [names] only: one line per name, `<label> = <what it is for>`, the label in
+; what each community name is for, with [names] only; the name policy on chain decides which names
+; are community names: one line per name, `<label> = <what it is for>`, the label in
 ; lower case and listed once, the text 1 to 200 characters without a full stop at the end, which
 ; the page adds; read only at startup, see apps/simplex-store-service/README.md
 ;[community]

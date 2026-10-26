@@ -1,21 +1,27 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Bots.StoreService.NamesCommunityTests (namesCommunityTests) where
 
 import Bots.StoreService.ConfigTests (chainSection, namesIni, namesRefusal, namesSection, parseIni, parsedNames, termsUrl, termsVersion, withIni)
+import Bots.StoreService.FakeEthNode (setCommunityTerms, withTermsPage)
+import Bots.StoreService.NamesContractsTests (withContracts)
 import Bots.StoreService.NamesSearchTests (aliceHex)
 import Bots.StoreService.WebTests (capturingStderr)
+import Control.Concurrent.STM (atomically, newTVarIO, writeTVar)
 import Control.Monad (forM_, void)
+import qualified Data.ByteString as B
 import Data.Ini (readIniFile)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromJust)
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.SimplexName (LabelHash (..), labelHash)
 import StoreService.Config (NamesConfig (..), TermsConfig (..), unknownKeys)
 import StoreService.Names.Abi (bytes32FromHex)
-import StoreService.Names.Community (communityFor, termsFor)
+import StoreService.Names.Community (TermsError (..), agreedTermsHash, communityFor, currentCommunityTerms, termsFor)
 import Test.Hspec
 
 namesCommunityTests :: Spec
@@ -29,7 +35,25 @@ namesCommunityTests = describe "StoreService names: community" $ do
   it "refuses a missing or malformed terms_version or terms_url" testBadTerms
   it "names no community label as a setting nothing reads" testNoUnknownKeys
   it "logs how many community names it loaded" testLoadedCount
-  it "gives the version for an unlisted name and its community variant for a listed one" testTermsFor
+  it "gives the version for an unlisted name and its community variant with the terms' hash for a listed one" testTermsFor
+  it "reads community_terms_url: https, or http on loopback only on the local chain" testCommunityTermsUrl
+  g <- runIO C.newRandom
+  it "takes the policy's terms once the page's text hashes to them, and fetches again for new terms" $ withContracts g $ \node ct ->
+    newTVarIO communityTermsText >>= \text -> withTermsPage text $ \url -> do
+      cfg <- withTermsUrl url
+      setCommunityTerms node communityTerms
+      currentCommunityTerms cfg ct `shouldReturn` Right communityTerms
+      -- checked once: a page edited without new terms on chain is not fetched again
+      atomically $ writeTVar text "other text"
+      currentCommunityTerms cfg ct `shouldReturn` Right communityTerms
+      setCommunityTerms node newTerms
+      currentCommunityTerms cfg ct `shouldReturn` Left (TEMismatch newTerms)
+      atomically $ writeTVar text "bona fide community terms v2"
+      currentCommunityTerms cfg ct `shouldReturn` Right newTerms
+      setCommunityTerms node $ B.replicate 32 0
+      currentCommunityTerms cfg ct `shouldReturn` Left TENoTerms
+      setCommunityTerms node $ C.keccak256 "bona fide community terms v3"
+      currentCommunityTerms cfg {nCommunityTermsUrl = Nothing} ct `shouldReturn` Left TENoUrl
 
 bakersText :: Text
 bakersText = "bakers and bakeries in Portugal"
@@ -126,8 +150,36 @@ testLoadedCount = do
   none <- capturingStderr $ void $ parseIni (namesIni namesSection chainSection)
   none `shouldSatisfy` T.isInfixOf "names: 0 community names loaded"
 
+-- viem: keccak256(toHex("bona fide community terms v1")), as the contracts' tests set their terms
+communityTerms, newTerms :: B.ByteString
+communityTerms = fromJust $ bytes32FromHex "0xe2937ea655d8e743e2a8cecbab83acdf055846c80e13001ec1f8dc404e4ef2d9"
+newTerms = C.keccak256 "bona fide community terms v2"
+
+communityTermsText :: B.ByteString
+communityTermsText = "bona fide community terms v1"
+
+withTermsUrl :: Text -> IO NamesConfig
+withTermsUrl url = parsedNames (namesSection <> ["community_terms_url = " <> url]) chainSection
+
 testTermsFor :: IO ()
 testTermsFor = do
   cfg <- withCommunity ["bakers = " <> bakersText]
-  termsFor cfg (labelHash "bakers") `shouldBe` termsVersion <> "/community"
-  termsFor cfg aliceHash `shouldBe` termsVersion
+  C.keccak256 communityTermsText `shouldBe` communityTerms
+  termsFor cfg Nothing `shouldBe` termsVersion
+  let listed = termsVersion <> "/community/e2937ea655d8e743e2a8cecbab83acdf055846c80e13001ec1f8dc404e4ef2d9"
+  termsFor cfg (Just communityTerms) `shouldBe` listed
+  agreedTermsHash listed `shouldBe` Just communityTerms
+  agreedTermsHash termsVersion `shouldBe` Nothing
+  agreedTermsHash (termsVersion <> "/community") `shouldBe` Nothing
+  agreedTermsHash (T.toUpper listed) `shouldBe` Nothing
+
+testCommunityTermsUrl :: IO ()
+testCommunityTermsUrl = do
+  (nCommunityTermsUrl <$> parsedNames namesSection chainSection) `shouldReturn` Nothing
+  forM_ ["https://simplex.chat/community-terms", "http://127.0.0.1:8180/terms", "http://localhost/terms"] $ \u ->
+    (nCommunityTermsUrl <$> withTermsUrl u) `shouldReturn` Just u
+  let refused = "names.community_terms_url must be an https URL, or an http URL on 127.0.0.1 or localhost with the local chain"
+      onMainnet = map (\l -> if l == "chain_id = 31337" then "chain_id = 1" else l) chainSection
+  forM_ ["http://simplex.chat/terms", "http://127.0.0.1.example/terms", "ftp://127.0.0.1/terms", "https://", "simplex.chat/terms"] $ \u ->
+    namesRefusal (namesSection <> ["community_terms_url = " <> u]) chainSection `shouldReturn` refused
+  namesRefusal (namesSection <> ["community_terms_url = http://127.0.0.1:8180/terms"]) onMainnet `shouldReturn` refused

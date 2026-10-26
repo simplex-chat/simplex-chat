@@ -95,6 +95,8 @@ viemSelectors =
     ("d3f605c4", RNResolverRequiredWhenDataSupplied),
     ("27af646c", RNReverseRecordNotSupported),
     ("0819bdcd", RNSignatureExpired),
+    ("c4f189e2", RNTermsMismatch),
+    ("bcdf753d", RNTermsNotAccepted),
     ("90b8ec18", RNTransferFailed),
     ("bf2f44f5", RNTransferToSelf),
     ("0a059d71", RNUnexpiredCommitmentExists),

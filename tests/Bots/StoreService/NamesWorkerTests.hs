@@ -23,6 +23,7 @@ import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (atomically, check)
 import Control.Monad (forM_, replicateM, replicateM_, void)
 import Data.ByteString (ByteString)
+import qualified Data.ByteString as B
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import Data.IORef (readIORef)
@@ -45,7 +46,7 @@ import StoreService.Names.Abi (abiBytes, abiTuple, addressWord, AbiValue (..), h
 import StoreService.Names.Chain (Block (..), ChainClient, Receipt (..), TxHash (..), TxRequest (..), blockAt, decodeSignedTx, newChainClient)
 import StoreService.Names.Orders (Landing (..), OrdersEnv (..), confirmLanded)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange)
-import StoreService.Names.Registration (RegisterIntent (..), commitCalldata, registerIntentDigest, registerWithCreditCalldata, sponsorDomain)
+import StoreService.Names.Registration (RegisterIntent (..), TermsAcceptance (..), acceptCalldata, commitCalldata, registerIntentDigest, registerWithCreditCalldata, sponsorDomain)
 import StoreService.Names.Reveal (intentOf)
 import StoreService.Names.Sender
 import StoreService.Names.Signatures (OrderFields (..))
@@ -93,6 +94,10 @@ workerTests = describe "StoreService names: worker" $ do
     it "waits a second when the dry run reverts CommitmentTooNew" testCommitmentTooNew
     it "ends a register mined with status 0 taken while the name is not available, releasing a code" testMinedRevertTaken
     it "writes failed only once no register can still be mined, and registered when the owner holds the name" testFailedOnlySettled
+    it "clears the reveal on TermsNotAccepted, staying committed" testTermsNotAccepted
+  describe "terms acceptance" $ do
+    it "relays the reveal's acceptance to the name policy as soon as it is stored, and registers once the policy holds it" testAcceptanceRelayed
+    it "clears the reveal when the relay's dry run refuses the acceptance, staying committed" testAcceptanceRefused
   describe "lapse" $ do
     it "ends a committed order not revealed by revealBefore failed, keeping its code" testLapseFailed
     it "wakes a held poll with failed at the lapse, and answers an old version at once after it" testLapsePoll
@@ -627,6 +632,53 @@ testInvalidNonce = withWorker $ \w@W {wCtx = ctx} -> do
   published w r (steps w r >>= waitingUntil) `shouldReturn` at (orderSeconds - minAge + maxAge + 1)
   x <- stored ctx r
   (nrPhase x, nrReveal x, nrVersion x, nrRevealBefore x) `shouldBe` (PCommitted, Nothing, nrVersion r + 1, nrRevealBefore r)
+  sent w `shouldReturn` []
+
+testTermsNotAccepted :: IO ()
+testTermsNotAccepted = withWorker $ \w@W {wCtx = ctx} -> do
+  r <- paidIn ctx aliceOrder openPhase >>= revealed ctx keyA "alicebakery"
+  dryRunsRevert w "TermsNotAccepted(string)" ""
+  published w r (steps w r >>= waitingUntil) `shouldReturn` at (orderSeconds - minAge + maxAge + 1)
+  x <- stored ctx r
+  (nrPhase x, nrReveal x) `shouldBe` (PCommitted, Nothing)
+  sent w `shouldReturn` []
+
+-- | The page's reveal with its acceptance of the policy's terms.
+acceptedReveal :: Ctx -> NameRegistration -> IO NameRegistration
+acceptedReveal ctx r = do
+  rv <- signedReveal ctx keyA reveal {rvLabel = "alicebakery"} r
+  rewrite ctx r (\o -> o {nrReveal = Just rv {rvAcceptance = Just TermsAcceptance {taTermsHash = fakeCommunityTerms, taNonce = 0, taSignature = rvSignature rv}}})
+
+-- | The terms hash the policy holds as accepted for the registration's commitment by its owner.
+answerAccepted :: W -> NameRegistration -> ByteString -> IO ()
+answerAccepted W {wCtx = Ctx {cNode}} NameRegistration {nrCommitment, nrOwner} h =
+  answerCall cNode fakeNamePolicy (selector "acceptedTerms(bytes32,address)" <> nrCommitment <> addressWord nrOwner) $ Returns h
+
+testAcceptanceRelayed :: IO ()
+testAcceptanceRelayed = withWorker $ \w@W {wCtx = ctx} -> do
+  r@NameRegistration {nrReveal = Just NameReveal {rvDeadline, rvAcceptance = Just acceptance}} <- paidIn ctx aliceOrder openPhase >>= acceptedReveal ctx
+  answerAccepted w r $ B.replicate 32 0
+  relay <- steps w r >>= awaiting
+  [acceptRaw] <- sent w
+  ((trTo &&& trData) <$> decodeSignedTx acceptRaw) `shouldBe` Right (fakeNamePolicy, acceptCalldata (nrCommitment r) (nrOwner r) rvDeadline acceptance)
+  -- in flight, it is waited for, and nothing else is sent
+  steps w r >>= awaiting >>= (`shouldBe` ptHash relay) . ptHash
+  stored ctx r `shouldReturn` r
+  void $ mineNewest w True
+  answerAccepted w r fakeCommunityTerms
+  void $ published w r $ steps w r >>= awaiting
+  [_, registerRaw] <- sent w
+  (trTo <$> decodeSignedTx registerRaw) `shouldBe` Right fakeSponsor
+  nrPhase <$> stored ctx r `shouldReturn` PRegistering
+
+testAcceptanceRefused :: IO ()
+testAcceptanceRefused = withWorker $ \w@W {wCtx = ctx} -> do
+  r <- paidIn ctx aliceOrder openPhase >>= acceptedReveal ctx
+  answerAccepted w r $ B.replicate 32 0
+  dryRunsRevert w "TermsMismatch(bytes32,bytes32)" ""
+  published w r (steps w r >>= waitingUntil) `shouldReturn` at (orderSeconds - minAge + maxAge + 1)
+  x <- stored ctx r
+  (nrPhase x, nrReveal x) `shouldBe` (PCommitted, Nothing)
   sent w `shouldReturn` []
 
 testCheckUnread :: IO ()

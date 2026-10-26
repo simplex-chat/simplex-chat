@@ -104,7 +104,7 @@ nameInvoiceHandler env@OrdersEnv {oeStore, oeTurns, oeNow} cfg providers waiters
           checks =
             [ pure $ checkTimestamp now orTimestamp,
               pure $ checkDuration (oeConfig env) now years ofDuration,
-              pure $ checkTerms (oeConfig env) fields,
+              checkTerms (oeConfig env) (oeContracts env) fields,
               checkNameFree (oeContracts env) oeStore ofLabelHash,
               checkPrice (oeContracts env) ofLength years price
             ]
@@ -212,7 +212,7 @@ codeOrderHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} 
       let checks =
             [ pure $ checkTimestamp now orTimestamp,
               pure $ checkDuration oeConfig now pcYears ofDuration,
-              pure $ checkTerms oeConfig fields,
+              checkTerms oeConfig oeContracts fields,
               checkNameFree oeContracts oeStore ofLabelHash
             ]
       firstRefusal checks >>= \case
@@ -259,7 +259,7 @@ spendHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oeNow} cfg 
       let years = nYears oeConfig
       liftEither $ checkTimestamp now orTimestamp
       liftEither $ checkDuration oeConfig now years ofDuration
-      liftEither $ checkTerms oeConfig fields
+      ExceptT $ checkTerms oeConfig oeContracts fields
       holder <- ExceptT $ checkSpendBalance oeStore spend now
       ExceptT $ checkNameFree oeContracts oeStore ofLabelHash
       ExceptT $ checkPrice oeContracts ofLength years spPrice

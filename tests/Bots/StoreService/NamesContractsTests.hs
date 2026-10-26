@@ -40,7 +40,7 @@ import Data.Word (Word64)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Eth.Address (Address)
-import Simplex.Messaging.SimplexName (LabelHash, SimplexTLD (..), labelHash)
+import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
 import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Abi
 import StoreService.Names.Chain
@@ -73,6 +73,8 @@ namesContractsTests = describe "StoreService names: contracts" $ do
     it "reads a commitment's time, none as Nothing" $ testCommitmentTime g
     it "reads the controller's availability and the name's expiry" $ testAvailability g
     it "reads the commitment ages once" $ testCommitmentAges g
+  describe "name policy" $ do
+    it "reads the policy from the controller once, and the reservations, listing, terms, nonces and acceptances from it" $ testNamePolicy g
   describe "failures" $ do
     it "fails a status on a failed read, never reading it as available" $ testFailedRead g
     it "fails a read whose answer does not decode or does not fit" $ testMalformed g
@@ -90,7 +92,7 @@ testAvailable g = withContracts g $ \node ct -> do
   answerRegistrar node
   setBlock node 100 now
   answerCall node (registrarOf node) nameExpiresCall $ Returns $ uint256 (0 :: Int)
-  answerCall node fakeController reservedNamesCall $ Returns $ uint256 (0 :: Int)
+  answerCall node fakeNamePolicy reservedNamesCall $ Returns $ uint256 (0 :: Int)
   nameStatus ct alice `shouldReturn` Right NSAvailable
 
 testReserved :: TVar ChaChaDRG -> IO ()
@@ -99,8 +101,28 @@ testReserved g = withContracts g $ \node ct -> do
   setBlock node 100 now
   answerCall node (registrarOf node) nameExpiresCall $ Returns $ uint256 (0 :: Int)
   -- viem: reservedNames answering Reason 1
-  answerCall node fakeController reservedNamesCall $ Returns $ unhex "0000000000000000000000000000000000000000000000000000000000000001"
+  answerCall node fakeNamePolicy reservedNamesCall $ Returns $ unhex "0000000000000000000000000000000000000000000000000000000000000001"
   nameStatus ct alice `shouldReturn` Right NSReserved
+
+testNamePolicy :: TVar ChaChaDRG -> IO ()
+testNamePolicy g = withContracts g $ \node ct -> do
+  answerRegistrar node
+  setBlock node 100 now
+  answerCall node (registrarOf node) nameExpiresCall $ Returns $ uint256 (0 :: Int)
+  answerCall node fakeNamePolicy reservedNamesCall $ Returns $ uint256 (2 :: Int)
+  namePolicy ct `shouldReturn` Right fakeNamePolicy
+  -- read once: a controller answering no more keeps the policy read
+  answerCall node fakeController (selector "namePolicy()") $ Reverts ""
+  nameStatus ct alice `shouldReturn` Right NSReserved
+  let LabelHash aliceHash = alice
+  bonaFideName ct alice `shouldReturn` Right False
+  listCommunityName node aliceHash
+  bonaFideName ct alice `shouldReturn` Right True
+  communityTermsHash ct `shouldReturn` Right fakeCommunityTerms
+  answerCall node fakeNamePolicy noncesCall $ Returns $ uint256 (5 :: Int)
+  policyNonce ct owner `shouldReturn` Right 5
+  answerCall node fakeNamePolicy (selector "acceptedTerms(bytes32,address)" <> commitment <> addressWord owner) $ Returns fakeCommunityTerms
+  acceptedTerms ct commitment owner `shouldReturn` Right fakeCommunityTerms
 
 testRegistered :: TVar ChaChaDRG -> IO ()
 testRegistered g = withContracts g $ \node ct -> do
@@ -114,7 +136,7 @@ testGracePeriod :: TVar ChaChaDRG -> IO ()
 testGracePeriod g = withContracts g $ \node ct -> do
   answerRegistrar node
   answerRegistered node (resolverOf node)
-  answerCall node fakeController reservedNamesCall $ Returns $ uint256 (0 :: Int)
+  answerCall node fakeNamePolicy reservedNamesCall $ Returns $ uint256 (0 :: Int)
   let expired = now - year
   answerCall node (registrarOf node) nameExpiresCall $ Returns $ uint256 expired
   setBlock node 100 $ expired + gracePeriod
@@ -126,7 +148,7 @@ testRegistrarOnce :: TVar ChaChaDRG -> IO ()
 testRegistrarOnce g = withContracts g $ \node ct -> do
   setBlock node 100 now
   answerCall node (registrarOf node) nameExpiresCall $ Returns $ uint256 (0 :: Int)
-  answerCall node fakeController reservedNamesCall $ Returns $ uint256 (0 :: Int)
+  answerCall node fakeNamePolicy reservedNamesCall $ Returns $ uint256 (0 :: Int)
   nameStatus ct alice `shouldReturn` Left (ChainUnavailable "eth_call: error -32000: no fake answer for this call")
   answerRegistrar node
   nameStatus ct alice `shouldReturn` Right NSAvailable
@@ -216,14 +238,14 @@ testFailedRead :: TVar ChaChaDRG -> IO ()
 testFailedRead g = withContracts g $ \node ct -> do
   answerRegistrar node
   setBlock node 100 now
-  answerCall node fakeController reservedNamesCall $ Returns $ uint256 (0 :: Int)
+  answerCall node fakeNamePolicy reservedNamesCall $ Returns $ uint256 (0 :: Int)
   answerCall node (registrarOf node) nameExpiresCall $ Reverts ""
   nameStatus ct alice `shouldReturn` Left (ChainReverted $ Just RNWithoutData)
   answerCall node (registrarOf node) nameExpiresCall $ Returns $ uint256 (0 :: Int)
   setFault node "eth_getBlockByNumber" HttpFailure
   nameStatus ct alice `shouldReturn` Left (ChainUnavailable "eth_getBlockByNumber: HTTP 502")
   clearFault node "eth_getBlockByNumber"
-  answerCall node fakeController reservedNamesCall $ Reverts ""
+  answerCall node fakeNamePolicy reservedNamesCall $ Reverts ""
   nameStatus ct alice `shouldReturn` Left (ChainReverted $ Just RNWithoutData)
 
 testMalformed :: TVar ChaChaDRG -> IO ()
@@ -237,7 +259,7 @@ testStatusDeadline :: TVar ChaChaDRG -> IO ()
 testStatusDeadline g = withContracts g $ \node ct -> do
   answerRegistrar node
   answerCall node (registrarOf node) nameExpiresCall $ Returns $ uint256 (0 :: Int)
-  answerCall node fakeController reservedNamesCall $ Returns $ uint256 (0 :: Int)
+  answerCall node fakeNamePolicy reservedNamesCall $ Returns $ uint256 (0 :: Int)
   setFault node "eth_getBlockByNumber" Hang
   elapsed <- timed $ nameStatus ct {ctDeadline = testDeadline} alice `shouldReturn` Left (ChainUnavailable "name status: timed out")
   elapsed `shouldSatisfy` (< 2)

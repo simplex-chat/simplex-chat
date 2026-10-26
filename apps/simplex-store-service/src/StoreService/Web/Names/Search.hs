@@ -5,13 +5,14 @@
 
 module StoreService.Web.Names.Search (searchHandler, previewHandler) where
 
-import Control.Concurrent.Async (mapConcurrently)
+import Control.Concurrent.Async (concurrently, mapConcurrently)
 import Control.Monad (join)
-import Control.Monad.Except (ExceptT (..), runExceptT)
+import Control.Monad.Except (ExceptT (..), runExceptT, withExceptT)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Aeson.Types as JT
+import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isDigit)
 import Data.Text (Text)
@@ -26,7 +27,7 @@ import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Log (logWarn)
 import StoreService.Names.Abi (bytes32FromHex)
-import StoreService.Names.Community (communityJSON, termsJSON)
+import StoreService.Names.Community (communityJSON, currentCommunityTerms, termsErrorText, termsJSON)
 import StoreService.Names.Contracts
 import StoreService.Names.Links (LinkKind (..), linkKindOf)
 import StoreService.Names.Profiles (Entity, Profiles, linkEntity, linkPreview)
@@ -51,11 +52,17 @@ searchHandler cfg@NamesConfig {nYears} st ct ps hashText req respond = case Labe
     Nothing -> respond invalidName
     Just len -> do
       registering <- withTransaction st (`isLabelRegistering` lh)
-      timeout (ctDeadline ct) (runExceptT $ found lh len registering) >>= \case
-        Just (Right f) -> respond =<< searchAnswer cfg ps lh f
-        Just (Left e) -> unavailable $ tshow e
+      timeout (ctDeadline ct) (concurrently (runExceptT $ found lh len registering) (runExceptT $ community lh)) >>= \case
+        Just (Right f, Right terms) -> respond =<< searchAnswer cfg ps lh terms f
+        Just (Left e, _) -> unavailable $ tshow e
+        Just (_, Left e) -> unavailable e
         Nothing -> unavailable "timed out"
   where
+    -- a name the policy lists is sold only under community terms whose text is checked
+    community lh =
+      withExceptT tshow (ExceptT $ bonaFideName ct lh) >>= \case
+        False -> pure Nothing
+        True -> Just <$> withExceptT termsErrorText (ExceptT $ currentCommunityTerms cfg ct)
     found lh len registering =
       ExceptT (nameStatus ct lh) >>= \case
         NSAvailable
@@ -77,8 +84,8 @@ queryLength req = case join $ lookup "length" $ queryString req of
       | n >= toInteger minNameLength && n <= toInteger maxNameLength = Just $ fromInteger n
       | otherwise = Nothing
 
-searchAnswer :: NamesConfig -> Profiles -> LabelHash -> Found -> IO Response
-searchAnswer cfg@NamesConfig {nTLD, nYears, nTermStart, nChain = ChainConfig {cChainId, cResolver, cSponsor}} ps lh = \case
+searchAnswer :: NamesConfig -> Profiles -> LabelHash -> Maybe ByteString -> Found -> IO Response
+searchAnswer cfg@NamesConfig {nTLD, nYears, nTermStart, nChain = ChainConfig {cChainId, cResolver, cSponsor}} ps lh terms = \case
   FAvailable price ->
     ok $
       ["status" .= ("available" :: Text), "price" .= price, "currency" .= ("usd" :: Text), "years" .= nYears, "termStart" .= termStart]
@@ -96,7 +103,7 @@ searchAnswer cfg@NamesConfig {nTLD, nYears, nTermStart, nChain = ChainConfig {cC
         <> chain
   where
     ok :: [JT.Pair] -> IO Response
-    ok fields = pure $ jsonResponse status200 $ J.object $ fields <> ["community" .= communityJSON cfg lh]
+    ok fields = pure $ jsonResponse status200 $ J.object $ fields <> ["community" .= communityJSON cfg lh terms]
     chain = ["chainId" .= cChainId, "tld" .= tldText nTLD]
     termStart = floor (utcTimeToPOSIXSeconds nTermStart) :: Integer
     recordsJSON NameRecords {rdContact, rdChannel} = J.object ["contact" .= rdContact, "channel" .= rdChannel]

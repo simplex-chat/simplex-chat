@@ -10,7 +10,7 @@ import Bots.StoreService.FakeBTCPay (FakeBTCPay (..), setInvoiceState, setRates,
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (reservedNamesCall)
 import Bots.StoreService.ConfigTests (termsVersion)
-import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), advance, aliceOrder, bakers, bumpedTerms, commitmentOf, communityTerms, configured, field, fieldsOf, invoiceRegistration, keyA, keyB, listName, malformedTerms, olderTerms, orderTime, ownerAText, placeOrder, placed, post, refusedWith, registrationById, registrationOf, registrationsOf, settleNow, termsChanged, withOrdersOn, yearsDuration)
+import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), advance, aliceOrder, bakers, bumpedTerms, commitmentOf, communityEntry, communityTerms, configured, field, fieldsOf, invoiceRegistration, keyA, keyB, listName, listOnChain, malformedTerms, olderTerms, orderTime, ownerAText, placeOrder, placed, post, refusedWith, registrationById, registrationOf, registrationsOf, settleNow, termsChanged, withOrdersOn, yearsDuration)
 import Bots.StoreService.NamesOwnerTests (findBody, postFind)
 import Bots.StoreService.NamesStoreTests (at, order, ownerA, placePaid, reg, t0, write)
 import Bots.StoreService.WebTests (StubCall (..), capturingStderr, StubState (..), jsonObject, rcv, sampleProviderInvoice, statusOf, stubCalls, webGet, webRequestBody, withServiceStores)
@@ -87,7 +87,7 @@ namesSpendTests = describe "StoreService names: spend" $ do
   describe "terms" $ do
     it "answers terms_changed for an old version or the wrong variant, listed or not, and stores the community terms, covered and by difference" testSpendTermsChanged
     it "answers an exact resend after the version changed, covered and by difference" testSpendResendAfterBump
-    it "checks the terms after the timestamp and the duration, before the balance and the chain" testSpendTermsCheckOrder
+    it "checks the terms after the timestamp and the duration, with the community listing's read, before the balance and the name check" testSpendTermsCheckOrder
   describe "holders" $ do
     it "closes the balance's overdue unfunded holder in the spend's transaction, publishing it and cancelling its invoice" testOverdueHolderSpent
     it "closes an overdue unfunded holder of another name for a difference spend, the new invoice holding the balance" testDifferenceClosesHolder
@@ -385,9 +385,9 @@ testSignerAndId = withSpend $ \ctx -> do
 testOrderChecks :: IO ()
 testOrderChecks = withSpend $ \ctx@Ctx {cNode = node, cStub} -> do
   src <- sourceOf ctx "src" 30000
-  answerCall node fakeController reservedNamesCall $ Returns $ uint256 (1 :: Int)
+  answerCall node fakeNamePolicy reservedNamesCall $ Returns $ uint256 (1 :: Int)
   spend ctx src (covered 30000) `shouldReturn` refusedWith 409 "name_taken"
-  answerCall node fakeController reservedNamesCall $ Returns $ uint256 (0 :: Int)
+  answerCall node fakeNamePolicy reservedNamesCall $ Returns $ uint256 (0 :: Int)
   spend ctx src (covered 30000) {sbOrder = aliceOrder {oPrice = 9000}} `shouldReturn` (409, Just $ KM.fromList [("error", "catalog_changed"), ("price", J.Number 10000)])
   setFault node "eth_getBlockByNumber" HttpFailure
   spend ctx src (covered 30000) `shouldReturn` refusedWith 503 "name_check_unavailable"
@@ -410,12 +410,12 @@ testCheckOrder = withSpend $ \ctx@Ctx {cNode = node, cStub} -> do
   unsealed <- KM.delete "sealed" <$> spendBody ctx unknown (covered 30000)
   postSpend ctx unknown unsealed `shouldReturn` refusedWith 400 "bad_request"
   spend ctx unknown (covered 30000) {sbOrder = aliceOrder {oKey = keyB}} `shouldReturn` refusedWith 404 "not_found"
-  answerCall node fakeController reservedNamesCall $ Returns $ uint256 (1 :: Int)
+  answerCall node fakeNamePolicy reservedNamesCall $ Returns $ uint256 (1 :: Int)
   spend ctx src (covered 31000) {sbOrder = aliceOrder {oTimestamp = seconds orderTime + 601}} `shouldReturn` refusedWith 400 "bad_request"
   stale <- balanceOf ctx src
   spend ctx src (covered 31000) `shouldReturn` balanceChanged stale
   spend ctx src (covered 30000) {sbOrder = aliceOrder {oPrice = 9000}} `shouldReturn` refusedWith 409 "name_taken"
-  answerCall node fakeController reservedNamesCall $ Returns $ uint256 (0 :: Int)
+  answerCall node fakeNamePolicy reservedNamesCall $ Returns $ uint256 (0 :: Int)
   modifyIORef' cStub $ \s -> s {ssCreateResult = Left (ProviderError "down")}
   spend ctx low (difference 6000) {sbOrder = aliceOrder {oPrice = 9000}} `shouldReturn` (409, Just $ KM.fromList [("error", "catalog_changed"), ("price", J.Number 10000)])
   modifyIORef' cStub $ \s -> s {ssCreateResult = Right sampleProviderInvoice}
@@ -426,15 +426,17 @@ testCheckOrder = withSpend $ \ctx@Ctx {cNode = node, cStub} -> do
 
 testSpendTermsChanged :: IO ()
 testSpendTermsChanged = withSpend $ \ctx0 -> serveSpend (configured (listName "dynamis") ctx0) $ \ctx -> do
+  listOnChain ctx "dynamis"
   src <- sourceOf ctx "src" 30000
   forM_ [olderTerms, communityTerms termsVersion] $ \t ->
     spend ctx src (covered 30000) {sbOrder = aliceOrder {oTerms = t}} `shouldReturn` termsChanged termsVersion Nothing
   forM_ [termsVersion, communityTerms olderTerms] $ \t ->
-    spend ctx src (dynamis 30000 Nothing) {sbOrder = dynamisOrder {oTerms = t}} `shouldReturn` termsChanged termsVersion (Just bakers)
+    spend ctx src (dynamis 30000 Nothing) {sbOrder = dynamisOrder {oTerms = t}} `shouldReturn` termsChanged termsVersion (Just $ communityEntry ctx bakers)
   amountOf ctx src `shouldReturn` Just 30000
   rid <- registrationAnswer . snd <$> spend ctx src (dynamis 30000 Nothing) {sbOrder = dynamisOrder {oTerms = communityTerms termsVersion}}
   nrAgreedTerms <$> registrationById ctx rid `shouldReturn` communityTerms termsVersion
   serveSpend (configured (listName "alicebakery") ctx) $ \listing -> do
+    listOnChain listing "alicebakery"
     low <- sourceOf listing "low" 4000
     (status, v) <- spend listing low (difference 4000) {sbOrder = aliceOrder {oTerms = communityTerms termsVersion}}
     status `shouldBe` 200
@@ -461,10 +463,10 @@ testSpendTermsCheckOrder = withSpend $ \ctx@Ctx {cNode = node} -> do
   spend ctx src (covered 15000) {sbOrder = old {oTimestamp = seconds orderTime + 601}} `shouldReturn` refusedWith 400 "bad_request"
   spend ctx src (covered 15000) {sbOrder = old {oDuration = oDuration old + 3601}} `shouldReturn` refusedWith 400 "bad_request"
   spend ctx src (covered 14000) {sbOrder = old} `shouldReturn` termsChanged termsVersion Nothing
-  answerCall node fakeController reservedNamesCall $ Returns $ uint256 (1 :: Int)
+  answerCall node fakeNamePolicy reservedNamesCall $ Returns $ uint256 (1 :: Int)
   spend ctx src (covered 15000) {sbOrder = old {oPrice = 9000}} `shouldReturn` termsChanged termsVersion Nothing
   setFault node "eth_call" HttpFailure
-  spend ctx src (covered 15000) {sbOrder = old} `shouldReturn` termsChanged termsVersion Nothing
+  spend ctx src (covered 15000) {sbOrder = old} `shouldReturn` refusedWith 503 "name_check_unavailable"
   amountOf ctx src `shouldReturn` Just 15000
   paidFrom ctx src `shouldReturn` []
 

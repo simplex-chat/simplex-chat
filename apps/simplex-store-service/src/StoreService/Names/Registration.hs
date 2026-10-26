@@ -4,6 +4,7 @@
 module StoreService.Names.Registration
   ( Registration (..),
     RegisterIntent (..),
+    TermsAcceptance (..),
     Node,
     nodeBytes,
     namehash,
@@ -12,11 +13,15 @@ module StoreService.Names.Registration
     channelRecordKey,
     sponsorDomain,
     resolverDomain,
+    policyDomain,
     makeCommitment,
     commitCalldata,
     registerWithCreditCalldata,
     registerIntentDigest,
     verifyRegisterIntent,
+    acceptanceDigest,
+    verifyAcceptance,
+    acceptCalldata,
     setTextDigest,
     clearRecordsDigest,
     setTextWithSigCalldata,
@@ -75,6 +80,18 @@ sponsorDomain edChainId edVerifyingContract = Eip712Domain {edName = "SimplexSpo
 resolverDomain :: Word64 -> Address -> Eip712Domain
 resolverDomain edChainId edVerifyingContract = Eip712Domain {edName = "SimplexResolver", edVersion = "1", edChainId, edVerifyingContract}
 
+policyDomain :: Word64 -> Address -> Eip712Domain
+policyDomain edChainId edVerifyingContract = Eip712Domain {edName = "SimplexNamePolicy", edVersion = "1", edChainId, edVerifyingContract}
+
+-- | The owner's acceptance of the community terms for a commitment, relayed to the name policy before the register.
+-- Its deadline is the reveal's.
+data TermsAcceptance = TermsAcceptance
+  { taTermsHash :: ByteString,
+    taNonce :: Word64,
+    taSignature :: RecoverableSignature
+  }
+  deriving (Eq, Show)
+
 makeCommitment :: Registration -> ByteString
 makeCommitment r = keccak256 $ abiTuple [Dynamic $ registrationTuple r]
 
@@ -111,6 +128,32 @@ verifyRegisterIntent domain now RegisterIntent {riRegistration = r@Registration 
   when (now > riDeadline) $ throwError "intent expired"
   signer <- ExceptT $ recoverAddress riSignature $ registerIntentDigest domain r riNonce riDeadline
   unless (signer == rOwner) $ throwError "intent is not signed by the owner"
+
+acceptanceDigest :: Eip712Domain -> ByteString -> ByteString -> Word64 -> Word64 -> ByteString
+acceptanceDigest domain commitment termsHash nonce deadline =
+  hashTypedData
+    domain
+    "AcceptBonaFideTerms(bytes32 commitment,bytes32 termsHash,uint256 nonce,uint256 deadline)"
+    [word commitment, word termsHash, VUint $ fromIntegral nonce, VUint $ fromIntegral deadline]
+  where
+    word = VUint . fromInteger . os2ip
+
+verifyAcceptance :: Eip712Domain -> Address -> ByteString -> Word64 -> TermsAcceptance -> IO (Either String ())
+verifyAcceptance domain owner commitment deadline TermsAcceptance {taTermsHash, taNonce, taSignature} = runExceptT $ do
+  signer <- ExceptT $ recoverAddress taSignature $ acceptanceDigest domain commitment taTermsHash taNonce deadline
+  unless (signer == owner) $ throwError "acceptance is not signed by the owner"
+
+acceptCalldata :: ByteString -> Address -> Word64 -> TermsAcceptance -> ByteString
+acceptCalldata commitment owner deadline TermsAcceptance {taTermsHash, taNonce, taSignature} =
+  selector "commitUnderBonaFideCommunityTermsWithSig(bytes32,bytes32,address,uint256,uint256,bytes)"
+    <> abiTuple
+      [ Static commitment,
+        Static taTermsHash,
+        Static $ addressWord owner,
+        Static $ uint256 taNonce,
+        Static $ uint256 deadline,
+        Dynamic $ abiBytes $ serializeSignature taSignature
+      ]
 
 setTextDigest :: Eip712Domain -> Node -> Text -> Text -> Word64 -> Word64 -> ByteString
 setTextDigest domain node key value nonce deadline =

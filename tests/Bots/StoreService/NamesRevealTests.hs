@@ -8,7 +8,7 @@ module Bots.StoreService.NamesRevealTests (namesRevealTests) where
 
 import Bots.StoreService.FakeEthNode
 import Bots.StoreService.NamesContractsTests (noncesCall)
-import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), aliceOrder, invoiceRegistration, orderTime, placed, post, registrationOf, settleNow, settled, withOrders)
+import Bots.StoreService.NamesOrdersTests (Ctx (..), Order (..), aliceOrder, communityTerms, invoiceRegistration, orderTime, placed, post, registrationOf, settleNow, settled, withOrders)
 import Bots.StoreService.NamesOwnerTests (answerFree, moveBody, moveTo, postMove)
 import Bots.StoreService.NamesPhasesTests (change, held, prompt, registrationPath, seenVersion, woken)
 import Bots.StoreService.NamesStoreTests (ownerA)
@@ -37,6 +37,8 @@ import Network.HTTP.Types (hContentType)
 import Network.Wai (Application)
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Chat.PaymentService.Types (InvoiceStatus (..))
+import qualified Simplex.Messaging.Crypto as C
+import StoreService.Config (NamesConfig (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..), Secp256k1PrivateKey, signRecoverable)
 import Simplex.Messaging.Eth.EIP712 (serializeSignature)
@@ -45,7 +47,7 @@ import StoreService.Names.Abi (hex, uint256)
 import StoreService.Names.Links (linkMaxBytes)
 import StoreService.Names.Orders (OrdersEnv (..))
 import StoreService.Names.Phases (RegistrationId (..))
-import StoreService.Names.Registration (Registration (..), makeCommitment, registerIntentDigest, sponsorDomain)
+import StoreService.Names.Registration (Registration (..), TermsAcceptance (..), acceptanceDigest, makeCommitment, policyDomain, registerIntentDigest, sponsorDomain)
 import StoreService.Names.Store (NamePhase (..), NameRegistration (..), NameReveal (..), getRegistration)
 import StoreService.Names.Turns (labelTurnCount)
 import StoreService.Web.Http (createLimit, holdMicros, maxBodyBytes, nameBodyBytes, readLimit)
@@ -75,6 +77,9 @@ namesRevealTests = describe "StoreService names: reveal" $ do
   describe "links refusal" $ do
     it "records invalid_link for a committed link one byte over the bound, waking a held poll, once" testLinksRefused
     it "records no refusal for links that do not rebuild the commitment, or for another signer" testNoRefusalRecorded
+  describe "community terms" $ do
+    it "stores the owner's acceptance of the policy's current terms with a listed name's reveal" testAcceptanceStored
+    it "refuses a listed name's reveal without an acceptance, or by another signer, for other terms or at another nonce, and an unlisted name's with one" testAcceptanceRefusals
   describe "races" $ do
     it "answers registration_changed with the current view when the registration changed during the checks" testLostRace
     it "runs one at a time with /name for the name, exactly one of them taking effect" testRacesName
@@ -86,9 +91,13 @@ data Fx = Fx {fCtx :: Ctx, fApp :: Application}
 
 -- | The registration routes as namesRoutes registers them, the reveal's and another name's included.
 withReveals :: (Fx -> IO a) -> IO a
-withReveals action = withOrders $ \ctx@Ctx {cNode, cOrders, cWeb} -> do
+withReveals = withRevealsConfig id
+
+withRevealsConfig :: (NamesConfig -> NamesConfig) -> (Fx -> IO a) -> IO a
+withRevealsConfig config action = withOrders $ \ctx@Ctx {cNode, cOrders = orders, cWeb} -> do
   answerCall cNode fakeSponsor noncesCall $ Returns $ uint256 (0 :: Int)
-  let web = cWeb {weOrders = Just cOrders}
+  let cOrders = orders {oeConfig = config $ oeConfig orders}
+      web = cWeb {weOrders = Just cOrders}
       routes = \case
         ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler cOrders holdMicros rid}
         ["api", "registration", rid, "reveal"] -> Just Route {rMethod = "POST", rLimit = readLimit, rHandler = revealHandler cOrders rid}
@@ -97,7 +106,7 @@ withReveals action = withOrders $ \ctx@Ctx {cNode, cOrders, cWeb} -> do
       app req respond = fromMaybe (webApp web req respond) (namesApp (weHttp web) routes req respond)
   mgr <- newManager defaultManagerSettings
   Warp.testWithApplication (pure app) $ \port ->
-    action Fx {fCtx = ctx {cWeb = web, cClient = (mgr, "http://127.0.0.1:" <> show port)}, fApp = app}
+    action Fx {fCtx = ctx {cOrders, cWeb = web, cClient = (mgr, "http://127.0.0.1:" <> show port)}, fApp = app}
 
 -- | The request, held at its first chain read: a reveal's nonce read, its last check before it writes, or /name's name check, in its turns.
 pausedAtChainRead :: Ctx -> IO a -> IO (Async a, Gate)
@@ -201,6 +210,60 @@ badRequest = refused 400 "bad_request"
 stored :: Ctx -> RegistrationId -> IO NameRegistration
 stored Ctx {cStore} rid = withTransaction cStore $ \db -> fromJust <$> getRegistration db rid
 
+termsHash :: B.ByteString
+termsHash = C.keccak256 "bona fide community terms v1"
+
+-- | Alice's name listed by the policy, its terms page served, and her policy nonce at 2.
+withListedReveals :: (Fx -> IO a) -> IO a
+withListedReveals action = do
+  text <- newTVarIO "bona fide community terms v1"
+  withTermsPage text $ \url -> withRevealsConfig (\cfg -> cfg {nCommunityTermsUrl = Just url}) $ \fx@Fx {fCtx = Ctx {cNode}} -> do
+    let LabelHash aliceHash = labelHash "alicebakery"
+    listCommunityName cNode aliceHash
+    setCommunityTerms cNode termsHash
+    answerCall cNode fakeNamePolicy noncesCall $ Returns $ uint256 (2 :: Int)
+    action fx
+
+-- | Alice's order under the community terms, as the page orders a listed name.
+listedOrder :: Order
+listedOrder = (orderOf alice) {oTerms = communityTerms (oTerms aliceOrder)}
+
+signAcceptance :: Ctx -> Secp256k1PrivateKey -> B.ByteString -> Word64 -> IO TermsAcceptance
+signAcceptance Ctx {cRandom} key terms nonce = do
+  sig <- either error id <$> signRecoverable cRandom key (acceptanceDigest (policyDomain fakeChainId fakeNamePolicy) (makeCommitment alice) terms nonce revealBefore)
+  pure TermsAcceptance {taTermsHash = terms, taNonce = nonce, taSignature = sig}
+
+withAcceptance :: TermsAcceptance -> J.Object -> J.Object
+withAcceptance TermsAcceptance {taTermsHash, taNonce, taSignature} =
+  KM.insert "acceptance" $ J.object ["termsHash" .= hex taTermsHash, "nonce" .= taNonce, "signature" .= hex (serializeSignature taSignature)]
+
+testAcceptanceStored :: IO ()
+testAcceptanceStored = withListedReveals $ \Fx {fCtx = ctx} -> do
+  rid <- committed ctx listedOrder
+  sig <- signIntent ctx keyA alice 0 revealBefore
+  acceptance <- signAcceptance ctx keyA termsHash 2
+  reveal ctx rid (withAcceptance acceptance $ bodyOf sig alice 0 revealBefore) `shouldReturn` accepted
+  (rvAcceptance =<<) . nrReveal <$> stored ctx rid `shouldReturn` Just acceptance
+
+testAcceptanceRefusals :: IO ()
+testAcceptanceRefusals = do
+  withListedReveals $ \Fx {fCtx = ctx} -> do
+    rid <- committed ctx listedOrder
+    sig <- signIntent ctx keyA alice 0 revealBefore
+    let body = bodyOf sig alice 0 revealBefore
+        refusedWith acceptance = reveal ctx rid (maybe id withAcceptance acceptance body) `shouldReturn` badRequest
+    refusedWith Nothing
+    refusedWith . Just =<< signAcceptance ctx fakeRegistrarKey termsHash 2
+    refusedWith . Just =<< signAcceptance ctx keyA (C.keccak256 "bona fide community terms v0") 2
+    refusedWith . Just =<< signAcceptance ctx keyA termsHash 1
+    nrReveal <$> stored ctx rid `shouldReturn` Nothing
+  withReveals $ \Fx {fCtx = ctx} -> do
+    rid <- committed ctx (orderOf alice)
+    sig <- signIntent ctx keyA alice 0 revealBefore
+    acceptance <- signAcceptance ctx keyA termsHash 0
+    reveal ctx rid (withAcceptance acceptance $ bodyOf sig alice 0 revealBefore) `shouldReturn` badRequest
+    nrReveal <$> stored ctx rid `shouldReturn` Nothing
+
 -- | The fields a refused reveal must leave as they were.
 unwritten :: NameRegistration -> (Int64, Maybe NameReveal, Bool)
 unwritten NameRegistration {nrVersion, nrReveal, nrLinksRefusedAt} = (nrVersion, nrReveal, isJust nrLinksRefusedAt)
@@ -231,7 +294,7 @@ testWithLinks = bounded "with links" $ withReveals $ \Fx {fCtx = ctx} -> do
   NameRegistration {nrVersion, nrPhase, nrReveal, nrLinksRefusedAt} <- stored ctx rid
   (nrVersion, nrPhase, nrLinksRefusedAt) `shouldBe` (v + 1, PCommitted, Nothing)
   nrReveal
-    `shouldBe` Just NameReveal {rvLabel = "alicebakery", rvSecret = rSecret alice, rvContactLink = Just contactLink, rvChannelLink = Just channelLink, rvNonce = 0, rvDeadline = revealBefore, rvSignature = sig}
+    `shouldBe` Just NameReveal {rvLabel = "alicebakery", rvSecret = rSecret alice, rvContactLink = Just contactLink, rvChannelLink = Just channelLink, rvNonce = 0, rvDeadline = revealBefore, rvSignature = sig, rvAcceptance = Nothing}
   (status, view) <- woken "registration poll" poll
   (status, field "version" view, field "label" view) `shouldBe` (200, Just (J.toJSON $ v + 1), Just "alicebakery")
 

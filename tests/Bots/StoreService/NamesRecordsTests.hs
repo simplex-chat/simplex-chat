@@ -297,7 +297,7 @@ testRefusedNameState g = withSetup g $ \s@Setup {node, records} -> do
   answerCall node registry (selector "resolver(bytes32)" <> nodeBytes aliceNode) $ Returns $ addressWord fakeResolver
   -- the registry still names the owner, but the name lapsed: expiry and grace are before the latest block
   answerCall node fakeBaseRegistrar (selector "nameExpires(uint256)" <> unLabel alice) $ Returns $ uint256 (genesis - gracePeriod - 1)
-  answerCall node fakeController (selector "reservedNames(bytes32)" <> unLabel alice) $ Returns $ uint256 (0 :: Int)
+  answerCall node fakeNamePolicy (selector "reservedNames(bytes32)" <> unLabel alice) $ Returns $ uint256 (0 :: Int)
   relayEdit records req `shouldReturn` EARefused
   editRows s `shouldReturn` 0
   sentTransactions node `shouldReturn` []

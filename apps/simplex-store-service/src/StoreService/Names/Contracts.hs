@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module StoreService.Names.Contracts
-  ( Contracts (ctDeadline),
+  ( Contracts (ctDeadline, ctVerifiedTerms),
     NameStatus (..),
     RegisteredName (..),
     NameRecords (..),
@@ -16,6 +16,11 @@ module StoreService.Names.Contracts
     chainPriceCents,
     sponsorNonce,
     resolverNonce,
+    namePolicy,
+    bonaFideName,
+    communityTermsHash,
+    policyNonce,
+    acceptedTerms,
     confirmedTag,
     ownerOfToken,
     nameExpires,
@@ -51,6 +56,9 @@ data Contracts = Contracts
     ctTLD :: SimplexTLD,
     ctRegistrar :: IORef (Maybe RegistrarConstants),
     ctCommitmentAges :: IORef (Maybe CommitmentAges),
+    ctNamePolicy :: IORef (Maybe Address),
+    -- | the community terms hash whose text at community_terms_url was found to hash to it
+    ctVerifiedTerms :: IORef (Maybe ByteString),
     -- | microseconds for all the reads of one name status or of one name's records
     ctDeadline :: Int
   }
@@ -85,12 +93,14 @@ attoUsdPerCent = 10 ^ (16 :: Int)
 nameReadsDeadline :: Int
 nameReadsDeadline = 10000000
 
--- | Reads nothing: the registrar's constants and the commitment ages are read on first use and kept once read.
+-- | Reads nothing: the registrar's constants, the commitment ages and the name policy are read on first use and kept once read.
 newContracts :: SimplexTLD -> ChainClient -> IO Contracts
 newContracts ctTLD ctChain = do
   ctRegistrar <- newIORef Nothing
   ctCommitmentAges <- newIORef Nothing
-  pure Contracts {ctChain, ctTLD, ctRegistrar, ctCommitmentAges, ctDeadline = nameReadsDeadline}
+  ctNamePolicy <- newIORef Nothing
+  ctVerifiedTerms <- newIORef Nothing
+  pure Contracts {ctChain, ctTLD, ctRegistrar, ctCommitmentAges, ctNamePolicy, ctVerifiedTerms, ctDeadline = nameReadsDeadline}
 
 -- | Registered while @nameExpires + GRACE_PERIOD@ is not before the latest block's time.
 nameStatus :: Contracts -> LabelHash -> IO (Either ChainError NameStatus)
@@ -104,7 +114,7 @@ nameStatus ct@Contracts {ctChain} lh = withinDeadline ct "name status" $ runExce
       (rnOwner, rnResolver) <- ExceptT $ together $ (,) <$> registryRead "owner(bytes32)" <*> registryRead "resolver(bytes32)"
       pure $ NSRegistered RegisteredName {rnOwner, rnResolver, rnExpiresAt = expires, rnGracePeriod = rcGracePeriod}
     else do
-      reason <- ExceptT $ call ct (controller ct) ("reservedNames(bytes32)", labelHashArg lh) decodeUint256
+      reason <- ExceptT $ policyCall ct ("reservedNames(bytes32)", labelHashArg lh) decodeUint256
       pure $ if reason /= 0 then NSReserved else NSAvailable
 
 -- | Nothing for a name on another resolver contract, or none: the service reads no records from a contract it does not know.
@@ -137,6 +147,29 @@ sponsorNonce ct owner = call ct (cSponsor $ chainConfig ct) ("nonces(address)", 
 
 resolverNonce :: Contracts -> Address -> IO (Either ChainError Word64)
 resolverNonce ct owner = call ct (resolver ct) ("nonces(address)", addressWord owner) decodeWord64
+
+-- | The policy holding the reserved and the community names, read once: as the service starts, or on first use after that read failed.
+namePolicy :: Contracts -> IO (Either ChainError Address)
+namePolicy ct@Contracts {ctNamePolicy} = readOnce ctNamePolicy $ call ct (controller ct) ("namePolicy()", "") decodeAddress
+
+bonaFideName :: Contracts -> LabelHash -> IO (Either ChainError Bool)
+bonaFideName ct lh = policyCall ct ("bonaFideNames(bytes32)", labelHashArg lh) decodeBool
+
+-- | The keccak256 of the community terms text, all zeros before the terms are set.
+communityTermsHash :: Contracts -> IO (Either ChainError ByteString)
+communityTermsHash ct = policyCall ct ("termsHash()", "") decodeBytes32
+
+policyNonce :: Contracts -> Address -> IO (Either ChainError Word64)
+policyNonce ct owner = policyCall ct ("nonces(address)", addressWord owner) decodeWord64
+
+-- | The terms hash the owner accepted for the commitment, all zeros when none.
+acceptedTerms :: Contracts -> ByteString -> Address -> IO (Either ChainError ByteString)
+acceptedTerms ct commitment owner = policyCall ct ("acceptedTerms(bytes32,address)", commitment <> addressWord owner) decodeBytes32
+
+policyCall :: Contracts -> (ByteString, ByteString) -> (ByteString -> Either AbiError a) -> IO (Either ChainError a)
+policyCall ct args decode = runExceptT $ do
+  policy <- ExceptT $ namePolicy ct
+  ExceptT $ call ct policy args decode
 
 -- | The newest block at the configured confirmation depth, so a read there sees only what a reorg cannot undo.
 confirmedTag :: Contracts -> IO (Either ChainError BlockTag)

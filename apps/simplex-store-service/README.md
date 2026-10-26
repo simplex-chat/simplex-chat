@@ -595,8 +595,21 @@ changes nothing, and `--check` then reports the chain absent.
 **Upgrading:** an ini written before these settings existed stops the service at startup until both
 are added under `[names]`.
 
-`[community]` lists the community names, one line per name: the label, as it is searched, then `=`
-and what the name is for:
+The controller's name policy (`SimplexNamePolicy`, read once from `namePolicy()` at startup and
+logged) decides which names are community names: its bona fide list, which the owner or the guardian
+edits on chain. A listed name can be registered only after its owner accepts the policy's current
+community terms on chain, identified by `termsHash`, the keccak256 of their text. One more setting
+gives that text:
+
+- `community_terms_url`: the page of the community terms, which the order's checkbox links to beside
+  the name terms. It must be `https://`, or `http://` on 127.0.0.1 or localhost when `[chain] chain_id`
+  is 31337. At startup the service fetches it and refuses to start when the text does not hash to the
+  policy's `termsHash`. When the policy sets new terms, the service fetches it again the first time it
+  reads them, and until the text matches, community names cannot be ordered or revealed. Without it,
+  community names cannot be ordered.
+
+`[community]` gives what each community name is for, one line per name: the label, as it is searched,
+then `=` and the text:
 
 ```
 [community]
@@ -604,7 +617,9 @@ bakers = bakers and bakeries in Portugal
 ```
 
 Search answers and the registration view carry a listed name's text, which the page shows with the
-name as a community name. Each label must be a valid name in lower case and listed once; each text is
+name as a community name. A name the policy lists without a line here shows as a community name
+without a text, and the service warns at startup for each line naming a name the policy does not
+list, which is sold as a plain name. Each label must be a valid name in lower case and listed once; each text is
 1 to 200 characters with no control, format or line separator characters, and should not end with a
 full stop, since the page adds one. The service refuses to start, naming the setting, on any other
 entry, on `[community]` without `[names]`, on a key written twice in a section (only the first would
@@ -614,8 +629,8 @@ how many community names it loaded.
 Both the terms and the list are read only at startup, so an edit applies after a restart. After a
 restart, search each listed name on the names site and check that it shows as a community name.
 
-Every order signs the terms the buyer agreed to: `terms_version`, followed by `/community` for a
-listed name. The service stores them with the order, so an open order keeps the terms it signed
+Every order signs the terms the buyer agreed to: `terms_version`, followed by `/community/` and the
+community terms' hash in hex for a listed name. The service stores them with the order, so an open order keeps the terms it signed
 after an edit, and every move signs the current terms for the name it moves to, and stores them. An
 order or a move signed with any other value answers `409 terms_changed` with the current terms and
 the name's community entry, and the page asks again. An exact resend is still answered after the version changed.
@@ -623,11 +638,20 @@ the name's community entry, and the page asks again. An exact resend is still an
 **Upgrading:** a page that sends no `terms` gets `bad_request` on every order, spend and move, so the
 page and the service are deployed together.
 
+On chain the order is the same for every name: the service commits, the page signs the reveal, the
+service registers. For a listed name the page also signs `AcceptBonaFideTerms` for the commitment
+with the reveal, at the policy's nonce and the reveal's deadline, and the service relays it with
+`commitUnderBonaFideCommunityTermsWithSig` as soon as the reveal is stored, then registers. When the
+policy's terms changed after the order, the page asks the buyer to agree again before it signs. A
+relay or a register refused for the acceptance (new terms, a used nonce, an expired or wrong
+signature) clears the reveal, and the page signs again.
+
 ### The gas key
 
 `[chain] service_key` is the registrar key: an Ethereum account (EOA) that sends every names
-transaction, `commit` to the controller, `registerWithCredit` to the sponsor, and the owners' record
-edits (`setTextWithSig`, `clearRecordsWithSig`) to the resolver. It pays only their gas, in ETH. The
+transaction, `commit` to the controller, a community name's terms acceptance
+(`commitUnderBonaFideCommunityTermsWithSig`) to the name policy, `registerWithCredit` to the sponsor,
+and the owners' record edits (`setTextWithSig`, `clearRecordsWithSig`) to the resolver. It pays only their gas, in ETH. The
 names' rent is spent from its allowance on the sponsor, in USD, which the guardian sets. It holds no
 names.
 

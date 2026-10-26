@@ -26,12 +26,16 @@ where
 
 import StoreService.Catalog (StoreProduct (..), defaultCatalog, storeProduct)
 import StoreService.Codes (issueFailedText, issueOneCode, singleUse)
+import Simplex.Messaging.SimplexName (LabelHash (..))
 import StoreService.Config (AppleStoreConfig (..), BadgeIssuerKey (..), ChainConfig (..), NamesConfig (..), PlayStoreConfig (..), ServiceConfig (..), localChainId, minNameYears, readServiceConfig)
 import StoreService.Group (GroupEvent, ensureManagedGroup, fmtTime, groupEvent, hasTracker, refreshTracker, revokeWithTracker, runGroupLane)
 import StoreService.Group.Command (badgeTypeP, codeP, maxMonths, maxNameYears, nameCodeP, textTokenP)
 import StoreService.Names.Balances (RefundRecord (..), RefundRefusal (..), recordRefund)
 import StoreService.Names.Chain (newChainClient, nodeChainId)
 import StoreService.Names.Codes (issueNameCode, revokeNameCode)
+import StoreService.Names.Abi (hex)
+import StoreService.Names.Community (TermsError (..), currentCommunityTerms, termsErrorText)
+import StoreService.Names.Contracts (Contracts, bonaFideName, namePolicy)
 import StoreService.Names.Env (NamesEnv (..), newNamesEnv)
 import StoreService.Names.Orders (ordersEnv)
 import StoreService.Names.Phases (RegistrationId (..))
@@ -39,6 +43,7 @@ import StoreService.Names.Records (runRecordEdits)
 import StoreService.Names.Sender (runSender)
 import StoreService.Names.Store (Balance (..), BalanceHold (..), BalanceLink (..), LateCredit (..), RegistrationPayment (..), balanceByReference, balanceChain, methodText)
 import StoreService.Names.Turns (Turns, newTurns)
+import StoreService.Names.View (addressText)
 import StoreService.Names.Worker (newWorker, runCodeSweep, runWorkers)
 import StoreService.Options
 import StoreService.Poller (expiryGrace, newPollerEnv, newReadHints, runPoller)
@@ -264,7 +269,27 @@ startNames cc@ChatController {chatStore} turns waiters providers nc@NamesConfig 
     Nothing -> putStrLn "No current user" >> exitFailure
     Just User {userId} -> do
       logInfo $ "names: on, TLD " <> safeDecodeUtf8 (strEncode nTLD) <> ", chain " <> tshow cChainId
-      newNamesEnv cc userId nc chatStore turns waiters providers
+      ne@NamesEnv {neContracts} <- newNamesEnv cc userId nc chatStore turns waiters providers
+      checkNamePolicy nc neContracts
+      pure ne
+
+-- | The name policy is read once, here, or on first use when the chain does not answer. The service refuses to start only
+-- when community_terms_url's text is not the policy's terms; they are checked again whenever the policy sets new ones.
+checkNamePolicy :: NamesConfig -> Contracts -> IO ()
+checkNamePolicy cfg@NamesConfig {nCommunity, nCommunityTermsUrl} ct = do
+  namePolicy ct >>= \case
+    Left e -> logWarn $ "names: the controller's name policy could not be read, it is read on first use: " <> tshow e
+    Right policy -> logInfo $ "names: name policy " <> addressText policy
+  currentCommunityTerms cfg ct >>= \case
+    Right h -> logInfo $ "names: community terms " <> hex h <> " match community_terms_url"
+    Left e@TEMismatch {} -> orExit $ Left $ "names: " <> T.unpack (termsErrorText e)
+    Left TENoTerms -> forM_ nCommunityTermsUrl $ \_ -> logWarn "names: the name policy has no community terms yet, so community names cannot be ordered until the owner sets them"
+    Left e -> logWarn $ "names: " <> termsErrorText e <> ", so community names cannot be ordered until it is"
+  forM_ (M.toList nCommunity) $ \(h, text) ->
+    bonaFideName ct (LabelHash h) >>= \case
+      Right False -> logWarn $ "names: [community] lists a name the name policy does not list, so it is sold as a plain name: " <> text
+      Right True -> pure ()
+      Left e -> logWarn $ "names: a [community] name's listing could not be read: " <> tshow e
 
 -- | The workers resume every registration in their phases, and the code sweep runs at the start and then daily.
 namesLanes :: NamesEnv -> IO [IO ()]

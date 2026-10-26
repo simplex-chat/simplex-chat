@@ -16,6 +16,7 @@ where
 
 import Control.Concurrent.STM (atomically)
 import Control.Monad (join)
+import Control.Monad.Except (ExceptT (..), runExceptT)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
@@ -32,7 +33,7 @@ import StoreService.Log (logInfo)
 import StoreService.Names.Orders (OrdersEnv (..))
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, publish)
 import StoreService.Names.Registration (RegisterIntent (..))
-import StoreService.Names.Reveal (RevealFields (..), RevealRefusal (..), SignedLabel (..), checkIntent, committedRegistration, isRepeat, linksValid, parseRevealFields, parseSignedLabel, revealOf)
+import StoreService.Names.Reveal (RevealFields (..), RevealRefusal (..), SignedLabel (..), checkAcceptance, checkIntent, committedRegistration, isRepeat, linksValid, parseRevealFields, parseSignedLabel, revealOf)
 import StoreService.Names.Store (NamePhase (..), NameRegistration (..), VersionWrite (..), getRegistration, updateRegistration)
 import StoreService.Names.Turns (withLabelTurn)
 import StoreService.Names.View (lapseMoment, registrationAt, registrationVersion, registrationView)
@@ -86,12 +87,12 @@ revealHandler env@OrdersEnv {oeStore, oeConfig, oeContracts, oeTurns, oePhases, 
           | otherwise -> case parseRevealFields o of
               Nothing -> pure $ RDRefused RVBadRequest Nothing
               Just fields -> either (\refusal -> pure $ RDRefused refusal Nothing) (signedReveal now r signed fields) $ committedRegistration oeConfig r signed fields
-    signedReveal now r SignedLabel {slSignature} RevealFields {rfNonce, rfDeadline} registration = do
+    signedReveal now r SignedLabel {slSignature} RevealFields {rfNonce, rfDeadline, rfAcceptance} registration = do
       let intent = RegisterIntent {riRegistration = registration, riNonce = rfNonce, riDeadline = rfDeadline, riSignature = slSignature}
-      checkIntent oeConfig oeContracts now (nrRevealBefore r) intent >>= \case
+      runExceptT (ExceptT (checkIntent oeConfig oeContracts now (nrRevealBefore r) intent) >> ExceptT (checkAcceptance oeConfig oeContracts r rfDeadline rfAcceptance)) >>= \case
         Left refusal -> pure $ RDRefused refusal Nothing
         Right ()
-          | linksValid registration -> write now (RDAccepted . Just) r {nrReveal = Just $ revealOf intent}
+          | linksValid registration -> write now (RDAccepted . Just) r {nrReveal = Just $ revealOf intent rfAcceptance}
           | isJust (nrLinksRefusedAt r) -> pure $ RDRefused RVInvalidLink Nothing
           | otherwise -> write now (RDRefused RVInvalidLink . Just) r {nrLinksRefusedAt = Just now}
     write now decided r =

@@ -55,7 +55,7 @@ import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.SimplexName (SimplexTLD (..))
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import StoreService.Config (ListenerConfig (..), NamesConfig (..), TermsConfig (..))
-import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, bytes32FromHex, uint256)
+import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, bytes32FromHex, hex, uint256)
 import StoreService.Names.Contracts (Contracts (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Profiles (ChatKind (..), HostResolver, LinkProfile (..), ProfileFetcher, ProfileLimits (..), defaultProfileLimits, monotonicSeconds, newProfiles)
@@ -121,6 +121,7 @@ namesConfig node =
       nMaxOrderMoves = 3,
       nTerms = TermsConfig {tVersion = termsVersion, tUrl = termsUrl},
       nCommunity = M.empty,
+      nCommunityTermsUrl = Just $ fakeTermsUrl node,
       nChain = fakeChainConfig node
     }
 
@@ -130,13 +131,13 @@ aliceCommunity = "bakers and bakeries in Lisbon"
 listAlice :: NamesConfig -> NamesConfig
 listAlice cfg = cfg {nCommunity = M.singleton (fromJust $ bytes32FromHex aliceHex) aliceCommunity}
 
--- | The answer as it reads for a name on the community list.
-listed :: Answer -> Answer
-listed (status, answer) = (status, withEntry <$> answer)
+-- | The answer as it reads for a name the policy lists, with its text from the ini and the policy's terms.
+listed :: FakeEthNode -> Answer -> Answer
+listed node (status, answer) = (status, withEntry <$> answer)
   where
     withEntry :: J.Value -> J.Value
     withEntry = \case
-      J.Object o -> J.Object $ KM.insert "community" (J.object ["for" .= aliceCommunity]) o
+      J.Object o -> J.Object $ KM.insert "community" (J.object ["for" .= aliceCommunity, "terms" .= J.object ["url" .= fakeTermsUrl node, "hash" .= hex fakeCommunityTerms]]) o
       v -> v
 
 fetchMicros :: Int
@@ -223,7 +224,7 @@ nameState node expires reason = do
   answerRegistrar node
   setBlock node 100 now
   answerCall node (registrarOf node) nameExpiresCall $ Returns $ uint256 expires
-  answerCall node fakeController reservedNamesCall $ Returns $ uint256 reason
+  answerCall node fakeNamePolicy reservedNamesCall $ Returns $ uint256 reason
 
 available, reserved :: FakeEthNode -> IO ()
 available node = nameState node 0 0
@@ -365,18 +366,19 @@ testRegistered g = withSearch g id id $ \s@Search {node} -> do
 
 testCommunity :: TVar ChaChaDRG -> IO ()
 testCommunity g = withSearch g listAlice id $ \s@Search {node, store} -> do
+  listCommunityName node $ fromJust $ bytes32FromHex aliceHex
   available node
   answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000
-  searchAlice s 12 `shouldReturn` listed (availableAnswer 10000)
+  searchAlice s 12 `shouldReturn` listed node (availableAnswer 10000)
   reserved node
-  searchAlice s 12 `shouldReturn` listed reservedAnswer
+  searchAlice s 12 `shouldReturn` listed node reservedAnswer
   available node
   code <- issue store 1 usable
   placeCode store "r1" ownerA (order "alicebakery" 1) code `shouldReturn` Right ()
   setPhase store PRegistering
-  searchAlice s 12 `shouldReturn` listed registeringAnswer
+  searchAlice s 12 `shouldReturn` listed node registeringAnswer
   registeredWith node fullLink ""
-  searchAlice s 12 `shouldReturn` listed (registeredAnswer [] (recordsOf fullLink "") resolverText (J.toJSON (0 :: Int)))
+  searchAlice s 12 `shouldReturn` listed node (registeredAnswer [] (recordsOf fullLink "") resolverText (J.toJSON (0 :: Int)))
 
 testRecordLinks :: TVar ChaChaDRG -> IO ()
 testRecordLinks g = withSearch g id id $ \s@Search {node} -> do
@@ -436,7 +438,7 @@ testFailedReads g = withSearch g id id $ \s@Search {node} -> do
   setFault node "eth_getBlockByNumber" HttpFailure
   searchAlice s 12 `shouldReturn` unavailable
   clearFault node "eth_getBlockByNumber"
-  answerCall node fakeController reservedNamesCall $ Reverts ""
+  answerCall node fakeNamePolicy reservedNamesCall $ Reverts ""
   searchAlice s 12 `shouldReturn` unavailable
   registeredWith node bakeryLink newsLink
   answerCall node (resolverOf node) channelTextCall $ Reverts ""

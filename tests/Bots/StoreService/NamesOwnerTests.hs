@@ -193,7 +193,7 @@ answerFree ctx label = answerReserved ctx label 0 >> answerUnowned ctx label
 answerReserved :: Ctx -> Text -> Int -> IO ()
 answerReserved Ctx {cNode} label reason = do
   answerCall cNode (registrarOf cNode) (nameExpiresSelector <> lh) $ Returns $ uint256 (0 :: Int)
-  answerCall cNode fakeController (reservedNamesSelector <> lh) $ Returns $ uint256 reason
+  answerCall cNode fakeNamePolicy (reservedNamesSelector <> lh) $ Returns $ uint256 reason
   where
     LabelHash lh = labelHash label
 
@@ -492,6 +492,7 @@ testMoveTermsOnly = withOwner $ \ctx -> do
 
 testMoveTermsChanged :: IO ()
 testMoveTermsChanged = withOwnerAs (listName "alicebakers") $ \ctx -> do
+  listOnChain ctx "alicebakers"
   answerFree ctx "alicebakers"
   r <- paidIn ctx aliceOrder failedPhase
   forM_ [olderTerms, communityTerms termsVersion] $ \t ->
@@ -499,10 +500,10 @@ testMoveTermsChanged = withOwnerAs (listName "alicebakers") $ \ctx -> do
   move ctx keyA r (currentFields r) {ofAgreedTerms = olderTerms} `shouldReturn` termsChanged termsVersion Nothing
   to <- moveTo ctx "alicebakers" 10
   forM_ [termsVersion, communityTerms olderTerms] $ \t ->
-    move ctx keyA r to {ofAgreedTerms = t} `shouldReturn` termsChanged termsVersion (Just bakers)
+    move ctx keyA r to {ofAgreedTerms = t} `shouldReturn` termsChanged termsVersion (Just $ communityEntry ctx bakers)
   stored ctx r `shouldReturn` r
   v <- moved ctx keyA r to {ofAgreedTerms = communityTerms termsVersion}
-  fieldsIn v [("terms", J.String $ communityTerms termsVersion), ("community", J.object [("for", J.String bakers)])]
+  fieldsIn v [("terms", J.String $ communityTerms termsVersion), ("community", communityEntry ctx bakers)]
   nrAgreedTerms <$> stored ctx r `shouldReturn` communityTerms termsVersion
 
 testMoveTermsCheckOrder :: IO ()

@@ -28,6 +28,7 @@ import Simplex.Messaging.SimplexName (LabelHash (..), labelHash)
 import StoreService.Names.Chain (TxHash (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Signatures (OrderFields (..), parseAnyCaseAddress, parseSignature)
+import StoreService.Names.Registration (TermsAcceptance (..))
 import StoreService.Names.Store
 import StoreService.Store (RevokeResult (..))
 import Test.Hspec
@@ -197,7 +198,7 @@ testNamesDownUp :: IO ()
 testNamesDownUp = withServiceStore $ \st -> do
   let names = dropWhile ((/= "20261010_names") . name) storeServiceSchemaMigrations
       badgeColumns = mapM (fmap sort . columnsOf st) badgeTables
-  map name names `shouldBe` ["20261010_names", "20261022_drop_taken_codes", "20261022_name_balances", "20261022_name_late_wait", "20261023_name_terms"]
+  map name names `shouldBe` ["20261010_names", "20261022_drop_taken_codes", "20261022_name_balances", "20261022_name_late_wait", "20261023_name_terms", "20261026_name_terms_acceptance"]
   badgeBefore <- badgeColumns
   code <- issue st 1 usable
   placeCode st "r1" ownerA (order "alicebakery" 1) code `shouldReturn` Right ()
@@ -479,7 +480,8 @@ reveal =
       rvChannelLink = Nothing,
       rvNonce = 3,
       rvDeadline = 1792915140,
-      rvSignature = signature
+      rvSignature = signature,
+      rvAcceptance = Nothing
     }
 
 testVersionBumps :: IO ()
@@ -505,7 +507,7 @@ testRoundTrip = withServiceStore $ \st -> do
   let changed =
         r
           { nrPhase = PRegistered,
-            nrReveal = Just reveal {rvChannelLink = Just "simplex:/c#xyz"},
+            nrReveal = Just reveal {rvChannelLink = Just "simplex:/c#xyz", rvAcceptance = Just TermsAcceptance {taTermsHash = digestFixture 10, taNonce = 4, taSignature = signature}},
             nrCommitTx = Just (TxHash $ digestFixture 8),
             nrCommitBlock = Just 100,
             nrRegisterTx = Just (TxHash $ digestFixture 9),
@@ -862,6 +864,8 @@ testTransactions = withServiceStore $ \st -> do
   map (\NameTransaction {ntId, ntFor, ntMinedBlock, ntStatus, ntSentAt} -> (ntId, ntFor, ntMinedBlock, ntStatus, ntSentAt)) ofRegistration
     `shouldBe` [(commitId, TxCommit r1, Just 77, TSMined, at 1), (registerId, TxRegister r1, Nothing, TSPending, at 3)]
   map ntStatus <$> withTransaction st (\db -> editTransactions db editId) `shouldReturn` [TSReverted]
+  _ <- withTransaction st $ \db -> insertTransaction db (TxAccept r1) (tx 4) (at 4)
+  map ntFor <$> withTransaction st pendingTransactions `shouldReturn` [TxRegister r1, TxAccept r1]
 
 testTransactionFromStatus :: IO ()
 testTransactionFromStatus = withServiceStore $ \st -> do

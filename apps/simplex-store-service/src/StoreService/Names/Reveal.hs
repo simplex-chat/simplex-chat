@@ -13,6 +13,7 @@ module StoreService.Names.Reveal
     isRepeat,
     committedRegistration,
     checkIntent,
+    checkAcceptance,
     linksValid,
     revealOf,
     intentOf,
@@ -20,6 +21,7 @@ module StoreService.Names.Reveal
 where
 
 import Control.Monad (unless)
+import Control.Monad.Except (ExceptT (..), runExceptT, throwError, withExceptT)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import Data.Bifunctor (first)
@@ -34,13 +36,14 @@ import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.SimplexName (labelHash)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
-import StoreService.Log (logWarn)
+import StoreService.Log (logError, logWarn)
 import StoreService.Names.Abi (bytes32FromHex)
-import StoreService.Names.Contracts (Contracts, sponsorNonce)
+import StoreService.Names.Community (currentCommunityTerms, termsErrorText)
+import StoreService.Names.Contracts (Contracts, bonaFideName, namePolicy, policyNonce, sponsorNonce)
 import StoreService.Names.Label (validLabel)
 import StoreService.Names.Links (LinkKind (..), linkKindOf)
 import StoreService.Names.Orders (integerField, textField)
-import StoreService.Names.Registration (RegisterIntent (..), Registration (..), makeCommitment, sponsorDomain, verifyRegisterIntent)
+import StoreService.Names.Registration (RegisterIntent (..), Registration (..), TermsAcceptance (..), makeCommitment, policyDomain, sponsorDomain, verifyAcceptance, verifyRegisterIntent)
 import StoreService.Names.Signatures (parseSignature)
 import StoreService.Names.Store (NameRegistration (..), NameReveal (..))
 
@@ -55,7 +58,8 @@ data RevealFields = RevealFields
     rfContactLinks :: [Text],
     rfChannelLinks :: [Text],
     rfNonce :: Word64,
-    rfDeadline :: Word64
+    rfDeadline :: Word64,
+    rfAcceptance :: Maybe TermsAcceptance
   }
 
 -- | The signature's format and low s, and the label as text.
@@ -76,8 +80,17 @@ parseRevealFields o = do
     _ -> Nothing
   rfContactLinks <- links "contact" records
   rfChannelLinks <- links "channel" records
-  pure RevealFields {rfSecret, rfContactLinks, rfChannelLinks, rfNonce, rfDeadline}
+  rfAcceptance <- case KM.lookup "acceptance" o of
+    Nothing -> Just Nothing
+    Just (J.Object a) -> Just <$> acceptance a
+    _ -> Nothing
+  pure RevealFields {rfSecret, rfContactLinks, rfChannelLinks, rfNonce, rfDeadline, rfAcceptance}
   where
+    acceptance a = do
+      taTermsHash <- bytes32FromHex =<< textField a "termsHash"
+      taNonce <- integerField =<< KM.lookup "nonce" a
+      taSignature <- either (const Nothing) Just . parseSignature =<< textField a "signature"
+      pure TermsAcceptance {taTermsHash, taNonce, taSignature}
     links key records = case KM.lookup key records of
       Just (J.Array items) -> mapM text $ toList items
       _ -> Nothing
@@ -117,14 +130,31 @@ checkIntent NamesConfig {nChain = ChainConfig {cChainId, cSponsor}} ct now revea
             Left e -> Left RVChainUnavailable <$ logWarn ("names: a reveal's nonce read failed: " <> tshow e)
             Right nonce -> pure $ if nonce == riNonce then Right () else Left RVBadRequest
 
+-- | After the intent, so only a signed request reads the policy. A name the policy lists needs its owner's acceptance of the
+-- current community terms by the policy's nonce, with the intent's deadline; another name takes none.
+checkAcceptance :: NamesConfig -> Contracts -> NameRegistration -> Word64 -> Maybe TermsAcceptance -> IO (Either RevealRefusal ())
+checkAcceptance cfg@NamesConfig {nChain = ChainConfig {cChainId}} ct NameRegistration {nrLabelHash, nrOwner, nrCommitment} deadline acceptance = runExceptT $ do
+  listed <- chainRead "community check" $ bonaFideName ct nrLabelHash
+  case (listed, acceptance) of
+    (False, Nothing) -> pure ()
+    (True, Just a@TermsAcceptance {taTermsHash, taNonce}) -> do
+      policy <- chainRead "name policy" $ namePolicy ct
+      withExceptT (const RVBadRequest) $ ExceptT $ verifyAcceptance (policyDomain cChainId policy) nrOwner nrCommitment deadline a
+      current <- ExceptT $ currentCommunityTerms cfg ct >>= either (\e -> Left RVChainUnavailable <$ logError ("names: a community name's reveal waits, its terms are unavailable: " <> termsErrorText e)) (pure . Right)
+      nonce <- chainRead "policy nonce" $ policyNonce ct nrOwner
+      unless (taTermsHash == current && taNonce == nonce) $ throwError RVBadRequest
+    _ -> throwError RVBadRequest
+  where
+    chainRead what = ExceptT . (>>= either (\e -> Left RVChainUnavailable <$ logWarn ("names: a reveal's " <> what <> " read failed: " <> tshow e)) (pure . Right))
+
 linksValid :: Registration -> Bool
 linksValid Registration {rContactLink, rChannelLink} = all (ofKind LKContact) rContactLink && all (ofKind LKChannel) rChannelLink
   where
     ofKind kind link = linkKindOf link == Just kind
 
-revealOf :: RegisterIntent -> NameReveal
-revealOf RegisterIntent {riRegistration = Registration {rLabel, rSecret, rContactLink, rChannelLink}, riNonce, riDeadline, riSignature} =
-  NameReveal {rvLabel = rLabel, rvSecret = rSecret, rvContactLink = rContactLink, rvChannelLink = rChannelLink, rvNonce = riNonce, rvDeadline = riDeadline, rvSignature = riSignature}
+revealOf :: RegisterIntent -> Maybe TermsAcceptance -> NameReveal
+revealOf RegisterIntent {riRegistration = Registration {rLabel, rSecret, rContactLink, rChannelLink}, riNonce, riDeadline, riSignature} rvAcceptance =
+  NameReveal {rvLabel = rLabel, rvSecret = rSecret, rvContactLink = rContactLink, rvChannelLink = rChannelLink, rvNonce = riNonce, rvDeadline = riDeadline, rvSignature = riSignature, rvAcceptance}
 
 -- | The intent an accepted reveal stored, as the register sends it.
 intentOf :: NamesConfig -> NameRegistration -> NameReveal -> RegisterIntent
