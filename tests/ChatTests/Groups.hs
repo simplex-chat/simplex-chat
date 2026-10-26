@@ -315,6 +315,8 @@ chatGroupTests = do
       it "should preserve working link after welcome message update" testChannelLinkAfterWelcomeUpdate
       it "should set chat layout of channel joined via relays from link data" testChannelChatLayout
       it "should preserve owner key in link data after profile update" testChannelOwnerKeyAfterLinkUpdate
+      it "malicious relay cannot change channel profile of joining subscriber" testChannelRelayCannotChangeProfile
+      it "subscriber should not apply link data of another channel" testChannelLinkDataOtherChannel
       it "should update channel preferences (signed)" testChannelUpdatePrefsSigned
       it "should change member role (signed)" testChannelChangeRoleSigned
       it "should block member for all (signed)" testChannelBlockMemberSigned
@@ -10663,6 +10665,35 @@ testChannelOwnerKeyAfterLinkUpdate ps =
                 dan <## "alice updated group #my_team: (signed)"
                 dan <## "changed to #team"
             ]
+
+testChannelRelayCannotChangeProfile :: HasCallStack => TestParams -> IO ()
+testChannelRelayCannotChangeProfile ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+        withCCTransaction bob $ \db ->
+          DB.execute_ db "UPDATE group_profiles SET short_descr = 'forged by relay'"
+        memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+        withCCTransaction cath (\db -> DB.query_ db "SELECT short_descr FROM group_profiles" :: IO [Only (Maybe T.Text)])
+          `shouldReturn` [Only Nothing]
+
+testChannelLinkDataOtherChannel :: HasCallStack => TestParams -> IO ()
+testChannelLinkDataOtherChannel ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+        memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+        (shortLink2, fullLink2) <- prepareChannel' 2 "news" alice bob
+        memberJoinChannel' "news" 2 1 1 1 [bob] [alice] shortLink2 fullLink2 cath
+        withCCTransaction cath $ \db ->
+          DB.execute_ db "UPDATE group_profiles SET group_link = (SELECT group_link FROM group_profiles WHERE display_name = 'news') WHERE display_name = 'team'"
+        cath ##> "/_get group link data #1"
+        cath <## ""
+        cath <## "Connection link is invalid, possibly it was created in a previous version."
+        cath <## "Please ask your contact to check /version and update if needed."
+        cath <## "To update run: curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/master/install.sh | bash"
 
 testChannelUpdatePrefsSigned :: HasCallStack => TestParams -> IO ()
 testChannelUpdatePrefsSigned ps =
