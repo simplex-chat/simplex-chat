@@ -32,11 +32,6 @@ let terminalHeadingRatio: CGFloat = 1.3125
 private let terminalLineHeightRatio: CGFloat = 22 / 16
 private let terminalLineHeightContrastSlope: CGFloat = 0.1515
 private let terminalGapBodySize: CGFloat = 16
-var snapshotRowStart: CGFloat = 8
-var snapshotRowEnd: CGFloat = 12
-var snapshotAvatarInset: CGFloat = 0
-var snapshotGutterExtra: CGFloat = 4
-var snapshotNameOffset: CGFloat = 14
 
 func terminalGap(_ size: CGFloat) -> CGFloat {
     size * UIFont.preferredFont(forTextStyle: .body).pointSize / terminalGapBodySize
@@ -399,7 +394,7 @@ struct TerminalChatItemRow<Content: View>: View {
             if gutter > 0 {
                 ZStack(alignment: .topLeading) {
                     Color.clear.frame(width: gutter, height: 0)
-                    sender?.image?.padding(.leading, snapshotAvatarInset)
+                    sender?.image
                 }
             }
             VStack(alignment: .leading, spacing: 0) {
@@ -412,8 +407,8 @@ struct TerminalChatItemRow<Content: View>: View {
             }
         }
         .padding(.top, topGap + (sender == nil ? 0 : senderTopGap))
-        .padding(.leading, snapshotRowStart)
-        .padding(.trailing, snapshotRowEnd)
+        .padding(.leading, 8)
+        .padding(.trailing, 12)
     }
 
     private func senderNameAndRole(_ sender: ChatItemSender) -> some View {
