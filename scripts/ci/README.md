@@ -166,6 +166,8 @@ gh workflow run android-emu.yml --ref <branch> -f claude=true
 
 A newer run of a workflow on the same branch cancels the older one.
 
+An agent that runs these workflows in a fork follows [app-tests-agent.md](app-tests-agent.md).
+
 ## How long a run takes
 
 | Run | iOS | Desktop | Android |
