@@ -2804,7 +2804,7 @@
     <string name="channel_owner_count_singular">%1$d Eigentümer</string>
     <string name="channel_owner_count_plural">%1$d Eigentümer</string>
     <string name="channel_owners_contributors_count">%1$d Eigentümer und Mitwirkende</string>
-    <string name="badge_supported_simplex">%1$s hat SimpleX Chat unterstützt. Das Abzeichen ist am %2$s abgelaufen.</string>
+    <string name="badge_supported_simplex">%1$s hat SimpleX Chat unterstützt. Der Badge ist am %2$s abgelaufen.</string>
     <string name="relay_status_acknowledged_roster">Bestätigter Relaisbestand</string>
     <string name="webpage_code_footer">Fügen Sie diesen Code in Ihre Webseite ein. Er zeigt die Vorschau Ihres Kanals / Ihrer Gruppe an.</string>
     <string name="advanced_options">Erweiterte Optionen</string>
@@ -2812,7 +2812,7 @@
     <string name="allow_anyone_to_embed">Einbetten für alle erlauben</string>
     <string name="embed_any_webpage_can_show">Eine Vorschau ist auf jeder Webseite möglich.</string>
     <string name="app_update_required">Aktualisierung der App erforderlich</string>
-    <string name="badge_unknown_key_title">Abzeichen ist nicht verifizierbar</string>
+    <string name="badge_unknown_key_title">Badge ist nicht verifizierbar</string>
     <string name="channel_webpage">Kanal-Webseite</string>
     <string name="chat_data">Chat-Daten</string>
     <string name="settings_section_title_contact">Kontakt</string>
@@ -2830,11 +2830,11 @@
     <string name="badge_supports_simplex">%s unterstützt SimpleX Chat.</string>
     <string name="group_member_role_observer_channel">Abonnent</string>
     <string name="settings_section_title_support_project">Unterstützen Sie das Projekt</string>
-    <string name="badge_unknown_key_desc">Das Abzeichen ist mit einem Schlüssel signiert, den diese App‑Version nicht erkennt. Aktualisieren Sie die App, um dieses Abzeichen zu verifizieren.</string>
+    <string name="badge_unknown_key_desc">Der Badge ist mit einem Schlüssel signiert, den diese App‑Version nicht erkennt. Aktualisieren Sie die App, um diesen Badge zu verifizieren.</string>
     <string name="member_role_will_be_changed_with_notification_channel">Die Rolle wird auf %s geändert. Alle Abonnenten werden benachrichtigt.</string>
-    <string name="badge_unverified_desc">Dieses Abzeichen konnte nicht verifiziert werden und ist möglicherweise nicht echt.</string>
+    <string name="badge_unverified_desc">Dieser Badge konnte nicht verifiziert werden und ist möglicherweise nicht echt.</string>
     <string name="group_link_requires_newer_version">Diese Gruppe erfordert eine neuere App‑Version. Bitte aktualisieren Sie die App, um beizutreten.</string>
-    <string name="badge_unverified_title">Abzeichen nicht verifiziert</string>
+    <string name="badge_unverified_title">Badge nicht verifiziert</string>
     <string name="relays_no_web_support">Die verwendeten Chat‑Relais unterstützen keine Webseiten.</string>
     <string name="webpage_code">Webseiten-Code</string>
     <string name="error_saving_simplex_name">Fehler beim Speichern des Namens</string>
@@ -2905,7 +2905,7 @@
     <string name="file_expired">Datei nicht mehr verfügbar</string>
     <string name="info_row_file_expired">Datei war verfügbar bis zum</string>
     <string name="file_error_expired">Datei war bis zum %1$s verfügbar.</string>
-    <string name="supporter_badge">Supporter-Badge</string>
+    <string name="supporter_badge">Unterstützer-Badge</string>
     <string name="legend_badge">Legenden-Badge</string>
     <string name="large_file_requires_badge">Zum Senden von Dateien über %2$s ist ein %1$s erforderlich.</string>
     <string name="max_file_size_with_badge">Mit einem %2$s liegt die maximal unterstützte Dateigröße bei %1$s.</string>
@@ -2949,14 +2949,14 @@
     <string name="badges_shown_on_your_profile">Sichtbar auf Ihrem Profil</string>
     <string name="badges_support_simplex_body">Holen Sie sich einen Badge, um größere Dateien (2-5 GB) zu senden, die länger verfügbar bleiben (7-21 Tage), und um ihn in Ihrem Profil anzuzeigen.</string>
     <string name="badges_support_ended">Ihr Badge ist abgelaufen</string>
-    <string name="badges_level_supporter">Supporter</string>
-    <string name="v7_1_supporter_badge_title">Supporter-Badge ❤️</string>
-    <string name="supporter_perks">Vorteile für Supporter</string>
+    <string name="badges_level_supporter">Unterstützer</string>
+    <string name="v7_1_supporter_badge_title">Unterstützer-Badge ❤️</string>
+    <string name="supporter_perks">Vorteile für Unterstützer</string>
     <string name="badges_support_simplex_title">SimpleX unterstützen</string>
     <string name="badges_banner_title">SimpleX unterstützen</string>
     <string name="badges_error_bad_service_response">Der Badge-Dienst hat eine unerwartete Antwort zurückgegeben: %1$s</string>
     <string name="badges_error_unknown">Der Code konnte nicht eingelöst werden.</string>
-    <string name="badges_error_badge_ended">Der Code wurde akzeptiert, der zugehörige Badge ist jedoch bereits abgelaufen.</string>
+    <string name="badges_error_badge_ended">Der Code wurde akzeptiert, aber der zugehörige Badge ist bereits abgelaufen.</string>
     <string name="badges_code_you_scanned_is_not_badge_code">Der eingescannte Code ist kein Badge-Code.</string>
     <string name="badges_error_service_not_configured">Diese App-Version kann keine Badge-Codes einlösen.</string>
     <string name="badges_error_credential_not_verified">Diese App-Version kann diesen Badge nicht überprüfen. Bitte aktualisieren Sie die App.</string>
@@ -2970,9 +2970,9 @@
     <string name="badges_why_simplex_is_built">Warum SimpleX entwickelt wurde.</string>
     <string name="badges_banner_dismiss_message">Sie können SimpleX später in den Einstellungen unterstützen.</string>
     <string name="badges_your_badge">Ihr Badge</string>
-    <string name="badges_how_it_works_p2">Um einem Kontakt oder einem Server nachzuweisen, dass Sie einen Badge besitzen, erzeugt die App einen neuen Nachweis, der nur den Badge-Typ und das auf eine Woche gerundete Ablaufdatum offenlegt.</string>
+    <string name="badges_how_it_works_p2">Um einem Kontakt oder Server nachzuweisen, dass Sie einen Badge besitzen, erzeugt die App einen neuen Nachweis, der nur den Badge-Typ und das auf eine Woche gerundete Ablaufdatum offenlegt.</string>
     <string name="badges_support_ended_on">Ihr Badge ist am %1$s abgelaufen.</string>
-    <string name="badges_link_held_other_profile">Ein Badge kann zu einem anderen Profil hinzugefügt werden oder hier, sobald dieses Abzeichen endet.</string>
+    <string name="badges_link_held_other_profile">Ein Badge kann zu einem anderen Profil hinzugefügt werden oder hier, sobald dieser Badge endet.</string>
     <string name="emoji_category_activities">Aktivitäten</string>
     <string name="badges_link_add_badge">Badge hinzufügen</string>
     <string name="badges_link_confirm_title">Badge zu Ihrem Profil hinzufügen?</string>
@@ -2987,12 +2987,12 @@
     <string name="badges_ledger_balance_start">Anfangs-Guthaben</string>
     <string name="badges_buy_in_browser">Im Browser kaufen</string>
     <string name="call_not_encrypted_title">Der Anruf ist nicht verschlüsselt</string>
-    <string name="badges_ledger_charge_id">Belastungs-ID</string>
+    <string name="badges_ledger_charge_id">Transaktions-ID</string>
     <string name="badges_checking_purchases_title">Ihre Einkäufe werden überprüft</string>
     <string name="badges_check_your_order_title">Überprüfen Sie Ihre Bestellung</string>
     <string name="badges_choose_your_badge_title">Wählen Sie Ihren Badge aus</string>
     <string name="badges_contact_team">Kontakt mit dem SimpleX-Team aufnehmen</string>
-    <string name="badges_copy_purchase_key">Schlüssel des Einkaufs kopieren</string>
+    <string name="badges_copy_purchase_key">Einkaufs-Schlüssel kopieren</string>
     <string name="badges_credential">Anmeldeinformation</string>
     <string name="badges_ledger_date">Datum</string>
     <string name="badges_dismiss">Schließen</string>
@@ -3080,4 +3080,5 @@
     <string name="badges_link_view_badge">Ihren Badge anzeigen</string>
     <string name="badges_waiting_for_approval_title">Warten auf Bestätigung</string>
     <string name="badges_issuing_body">Ihre Zahlung wurde abgeschlossen. Der Badge wird diesem Profil hinzugefügt.</string>
+    <string name="file_already_exists_replace_question">Die Datei existiert bereits. Möchten Sie sie ersetzen?</string>
 </resources>
