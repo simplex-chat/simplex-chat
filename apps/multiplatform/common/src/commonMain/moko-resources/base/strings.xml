@@ -793,7 +793,7 @@
   <string name="show_signature">Show signature</string>
   <string name="show_encryption">Show encryption</string>
   <string name="signature_missing_alert_title">Signature missing</string>
-  <string name="signature_missing_alert_desc">The message may have been sent before the channel required signing, or a relay forwarded it unsigned.</string>
+  <string name="signature_missing_alert_desc">The message may have been sent before the channel started signing messages, or it may be fake.</string>
   <string name="live_message">Live message!</string>
   <string name="send_live_message_desc">Send a live message - it will update for the recipient(s) as you type it</string>
   <string name="send_verb">Send</string>
