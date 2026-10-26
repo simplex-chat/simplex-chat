@@ -264,7 +264,7 @@ testAcceptanceUnavailable = withListedReveals $ \Fx {fCtx = ctx@Ctx {cNode}} -> 
         reveal ctx rid body `shouldReturn` refused 503 "provider_unavailable"
         nrReveal <$> stored ctx rid `shouldReturn` Nothing
   -- terms on chain that the page's text does not hash to
-  setCommunityTerms cNode $ C.keccak256 "bona fide community terms v2"
+  setCommunityTerms cNode fakeNewCommunityTerms
   unavailable
   setCommunityTerms cNode fakeCommunityTerms
   answerCall cNode fakeNamePolicy noncesCall $ Reverts ""

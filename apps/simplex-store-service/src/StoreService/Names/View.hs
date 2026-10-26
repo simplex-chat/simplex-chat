@@ -4,7 +4,6 @@
 
 module StoreService.Names.View
   ( ViewReads (..),
-    Acceptance (..),
     registrationView,
     readViewChain,
     viewJSON,

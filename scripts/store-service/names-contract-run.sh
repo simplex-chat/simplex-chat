@@ -11,7 +11,7 @@ WEBAPP_DIR="${WEBAPP_DIR:-$(cd "$(dirname "$0")/../.." && pwd)/apps/simplex-doma
 ANVIL="${ANVIL:-anvil}"
 SERVICE_PORT="${SERVICE_PORT:-8180}"
 CODES_PORT="${CODES_PORT:-8199}"
-TERMS_PORT="${TERMS_PORT:-8198}"
+COMMUNITY_TERMS_PORT="${COMMUNITY_TERMS_PORT:-8198}"
 REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 STORE_SERVICE_BIN="${STORE_SERVICE_BIN:-$(cd "$REPO" && cabal list-bin exe:simplex-store-service)}"
 
@@ -26,7 +26,7 @@ MEMORY_STATES=8
 SERVICE_URL="http://127.0.0.1:$SERVICE_PORT"
 CODES_URL="http://127.0.0.1:$CODES_PORT"
 # dev/deploy.ts sets the name policy's community terms to this file's keccak256, which the service checks as it starts
-COMMUNITY_TERMS_URL="http://127.0.0.1:$TERMS_PORT/community-terms.txt"
+COMMUNITY_TERMS_URL="http://127.0.0.1:$COMMUNITY_TERMS_PORT/community-terms.txt"
 STARTUP_SECONDS=120
 CLI_TIMEOUT_SECONDS=120
 # The test suite's public issuer secret (issuerSecret in tests/Bots/StoreService/ConfigTests.hs), trusted
@@ -39,7 +39,7 @@ TERMS_URL=https://simplex.chat/
 COMMUNITY_LABEL=bakers
 COMMUNITY_TEXT="bakers and bakeries in Portugal"
 
-# The cases at webapp 2bfc9f7. Each case is its own client by X-Forwarded-For, which the service trusts
+# The cases at webapp 733a152. Each case is its own client by X-Forwarded-For, which the service trusts
 # here, as the mock does. Each takes its prepaid code from POST /control/code, which the code server
 # below answers from the codes issued here, so CODES holds one per case that asks for one. "search
 # answers every kind of name" is not among them: it sets /control/search.
@@ -125,7 +125,7 @@ start_chain() {
 start_terms_server() {
   mkdir -p "$RUN_DIR/terms"
   cp "$WEBAPP_DIR/dev/community-terms.txt" "$RUN_DIR/terms/"
-  python3 -m http.server --bind 127.0.0.1 --directory "$RUN_DIR/terms" "$TERMS_PORT" > "$RUN_DIR/terms.log" 2>&1 &
+  python3 -m http.server --bind 127.0.0.1 --directory "$RUN_DIR/terms" "$COMMUNITY_TERMS_PORT" > "$RUN_DIR/terms.log" 2>&1 &
   answering $! "$COMMUNITY_TERMS_URL"
 }
 

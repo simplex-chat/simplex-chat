@@ -382,7 +382,7 @@ testCommunity g = withSearch g listAlice id $ \s@Search {node, store} -> do
   searchAlice s 12 `shouldReturn` listed node (registeredAnswer [] (recordsOf fullLink "") resolverText (J.toJSON (0 :: Int)))
   -- terms on chain that the page's text does not hash to, or a listing that cannot be read: no answer, registered or not
   let unavailable = refused 503 "provider_unavailable"
-  setCommunityTerms node $ C.keccak256 "bona fide community terms v2"
+  setCommunityTerms node fakeNewCommunityTerms
   searchAlice s 12 `shouldReturn` unavailable
   available node
   searchAlice s 12 `shouldReturn` unavailable

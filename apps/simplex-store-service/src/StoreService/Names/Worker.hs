@@ -36,7 +36,7 @@ import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Word (Word64)
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
-import Simplex.Messaging.Util (tshow)
+import Simplex.Messaging.Util (tshow, ($>>=))
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Log (logError, logInfo, logWarn, safely, safelyWith)
 import StoreService.Names.Chain (Block (..), ChainClient, ChainError (..), TxHash, blockAt)
@@ -267,7 +267,7 @@ committed w@Worker {wkSender} now r@NameRegistration {nrId, nrReveal, nrRevealAf
         Just lapse | now <= lapse -> pure $ waitUntil r $ addUTCTime chainSecond lapse
         _ -> save w now r {nrPhase = PFailed, nrFailedAt = Just now, nrError = Just notSignedInTime}
       Just rv@NameReveal {rvAcceptance, rvDeadline} ->
-        maybe (pure Nothing) (relayAcceptance w now r rvDeadline) rvAcceptance >>= \case
+        (pure rvAcceptance $>>= relayAcceptance w now r rvDeadline) >>= \case
           Just relaying -> pure relaying
           Nothing -> case secondsTime . toInteger <$> nrRevealAfter of
             Just revealAfter | now < revealAfter -> pure $ waitUntil r revealAfter

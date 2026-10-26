@@ -98,7 +98,8 @@ workerTests = describe "StoreService names: worker" $ do
   describe "terms acceptance" $ do
     it "relays the reveal's acceptance to the name policy as soon as it is stored, and registers once the policy holds it" testAcceptanceRelayed
     it "relays the acceptance before the wait for revealAfter, then waits for it" testAcceptanceBeforeWait
-    it "clears the reveal when the relay's dry run refuses the acceptance, staying committed" testAcceptanceRefused
+    it "clears the reveal when the relay's dry run refuses the acceptance for new terms, a used nonce or a wrong signature, staying committed" testAcceptanceRefused
+    it "retries the relay while the policy's acceptance for the commitment cannot be read, sending nothing" testAcceptanceUnread
     it "judges a relay past the acceptance's deadline as a register past it, failing the order" testAcceptanceExpired
   describe "lapse" $ do
     it "ends a committed order not revealed by revealBefore failed, keeping its code" testLapseFailed
@@ -686,13 +687,20 @@ testAcceptanceBeforeWait = withWorker $ \w@W {wCtx = ctx} -> do
   length <$> sent w `shouldReturn` 1
 
 testAcceptanceRefused :: IO ()
-testAcceptanceRefused = withWorker $ \w@W {wCtx = ctx} -> do
+testAcceptanceRefused = forM_ ["TermsMismatch(bytes32,bytes32)", "InvalidNonce()", "InvalidSignature()"] $ \revert -> withWorker $ \w@W {wCtx = ctx} -> do
   r <- paidIn ctx aliceOrder openPhase >>= acceptedReveal ctx
   answerAccepted w r $ B.replicate 32 0
-  dryRunsRevert w "TermsMismatch(bytes32,bytes32)" ""
+  dryRunsRevert w revert ""
   published w r (steps w r >>= waitingUntil) `shouldReturn` at (orderSeconds - minAge + maxAge + 1)
   x <- stored ctx r
   (nrPhase x, nrReveal x) `shouldBe` (PCommitted, Nothing)
+  sent w `shouldReturn` []
+
+testAcceptanceUnread :: IO ()
+testAcceptanceUnread = withWorker $ \w@W {wCtx = ctx} -> do
+  r <- paidIn ctx aliceOrder openPhase >>= acceptedReveal ctx
+  steps w r >>= retrying
+  stored ctx r `shouldReturn` r
   sent w `shouldReturn` []
 
 testAcceptanceExpired :: IO ()

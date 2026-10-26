@@ -1132,7 +1132,7 @@ ENS_CONTRACTS_DIR=<ens-contracts> ANVIL=<anvil> scripts/store-service/names-cont
 
 - `WEBAPP_DIR`: the names webapp (default: the `apps/simplex-domains` submodule's `webapp/`).
 - `STORE_SERVICE_BIN`: the service binary (default: `cabal list-bin exe:simplex-store-service`).
-- `SERVICE_PORT`, `CODES_PORT`, `TERMS_PORT`: the service's, the code server's and the terms server's
+- `SERVICE_PORT`, `CODES_PORT`, `COMMUNITY_TERMS_PORT`: the service's, the code server's and the terms server's
   ports (8180, 8199 and 8198).
 - Arguments, if given, are passed to `playwright test` in place of the default cases' title filter.
 

@@ -292,7 +292,8 @@ checkNamePolicy cfg@NamesConfig {nCommunity, nCommunityTermsUrl} ct =
         Right h -> Right () <$ logInfo ("names: community terms " <> hex h <> " match community_terms_url")
         Left e@TEMismatch {} -> pure $ Left $ "names: " <> T.unpack (termsErrorText e)
         Left TENoTerms -> Right () <$ when (isJust nCommunityTermsUrl) (logWarn "names: the name policy has no community terms yet, so community names cannot be ordered until the owner sets them")
-        Left e -> Right () <$ logWarn ("names: " <> termsErrorText e <> ", so community names cannot be ordered until the text at community_terms_url is read and matches")
+        Left TENoUrl -> Right () <$ logWarn "names: names.community_terms_url is not set, so community names cannot be ordered until it is set and the service restarts"
+        Left e -> Right () <$ logWarn ("names: the community terms could not be checked now: " <> termsErrorText e <> "; community names cannot be ordered until they are")
 
 -- | The workers resume every registration in their phases, and the code sweep runs at the start and then daily.
 namesLanes :: NamesEnv -> IO [IO ()]

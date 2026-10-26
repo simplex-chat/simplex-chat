@@ -53,7 +53,7 @@ searchHandler cfg@NamesConfig {nYears} st ct ps hashText req respond = case Labe
     Just len -> do
       registering <- withTransaction st (`isLabelRegistering` lh)
       timeout (ctDeadline ct) (concurrently (runExceptT $ found lh len registering) (nameCommunityTerms cfg ct lh)) >>= \case
-        Just (Right f, Right terms) -> respond =<< searchAnswer cfg ps lh terms f
+        Just (Right f, Right h) -> respond =<< searchAnswer cfg ps lh h f
         Just (Left e, _) -> unavailable $ tshow e
         Just (_, Left e) -> logWarn ("GET /api/name: the community terms check failed: " <> termsErrorText e) >> respond providerUnavailable
         Nothing -> unavailable "timed out"
@@ -80,7 +80,7 @@ queryLength req = case join $ lookup "length" $ queryString req of
       | otherwise = Nothing
 
 searchAnswer :: NamesConfig -> Profiles -> LabelHash -> Maybe ByteString -> Found -> IO Response
-searchAnswer cfg@NamesConfig {nTLD, nYears, nTermStart, nChain = ChainConfig {cChainId, cResolver, cSponsor}} ps lh terms = \case
+searchAnswer cfg@NamesConfig {nTLD, nYears, nTermStart, nChain = ChainConfig {cChainId, cResolver, cSponsor}} ps lh h = \case
   FAvailable price ->
     ok $
       ["status" .= ("available" :: Text), "price" .= price, "currency" .= ("usd" :: Text), "years" .= nYears, "termStart" .= termStart]
@@ -98,7 +98,7 @@ searchAnswer cfg@NamesConfig {nTLD, nYears, nTermStart, nChain = ChainConfig {cC
         <> chain
   where
     ok :: [JT.Pair] -> IO Response
-    ok fields = pure $ jsonResponse status200 $ J.object $ fields <> ["community" .= communityJSON cfg lh terms]
+    ok fields = pure $ jsonResponse status200 $ J.object $ fields <> ["community" .= communityJSON cfg lh h]
     chain = ["chainId" .= cChainId, "tld" .= tldText nTLD]
     termStart = floor (utcTimeToPOSIXSeconds nTermStart) :: Integer
     recordsJSON NameRecords {rdContact, rdChannel} = J.object ["contact" .= rdContact, "channel" .= rdChannel]

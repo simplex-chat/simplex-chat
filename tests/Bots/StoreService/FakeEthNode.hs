@@ -34,6 +34,7 @@ module Bots.StoreService.FakeEthNode
     setCommunityTerms,
     fakeCommunityTerms,
     fakeCommunityTermsText,
+    fakeNewCommunityTerms,
     fakeTermsUrl,
     fakeSponsor,
     fakeBaseRegistrar,
@@ -151,6 +152,10 @@ fakeCommunityTermsText = "bona fide community terms v1"
 
 fakeCommunityTerms :: ByteString
 fakeCommunityTerms = keccak256 fakeCommunityTermsText
+
+-- | Community terms the node's page does not serve, as new terms set on chain before the page is updated.
+fakeNewCommunityTerms :: ByteString
+fakeNewCommunityTerms = keccak256 "bona fide community terms v2"
 
 fakeTermsUrl :: FakeEthNode -> Text
 fakeTermsUrl FakeEthNode {fnUrl} = T.pack fnUrl <> "/terms"
