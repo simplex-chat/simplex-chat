@@ -12,6 +12,10 @@ module Simplex.Chat.Mobile.File
     cChatDecryptFile,
     cChatResizeImageUri,
     cChatResizeImage,
+    cChatResizeImageFileUri,
+    cChatResizeImageFile,
+    cChatResizeImageFdUri,
+    cChatResizeImageFd,
     WriteFileResult (..),
     ReadFileResult (..),
     chatWriteFile,
@@ -38,6 +42,7 @@ import Foreign.Marshal.Alloc (mallocBytes)
 import Foreign.Ptr
 import Foreign.StablePtr
 import Foreign.Storable (poke, pokeByteOff)
+import GHC.IO.Handle.FD (fdToHandle)
 import Simplex.Chat.Controller (ChatController (..))
 import Simplex.Chat.Image (ImageFormat (..), decodeResizable, imageFormat, resizeImage, resizeImageDataUri)
 import Simplex.Chat.Mobile.Shared
@@ -145,10 +150,34 @@ chatDecryptFile fromPath keyStr nonceStr toPath = fromLeft "" <$> runCatchExcept
       when (size' > 0) $ decryptChunks r w size'
 
 cChatResizeImageUri :: Ptr Word8 -> CInt -> CInt -> IO CString
-cChatResizeImageUri ptr len maxSize = cResizeImage id (resizeImageDataUri $ fromIntegral maxSize) ptr len
+cChatResizeImageUri ptr len = cResizeImageUri $ getByteString ptr len
 
 cChatResizeImage :: Ptr Word8 -> CInt -> CInt -> CInt -> IO CString
-cChatResizeImage ptr len maxSize png = cResizeImage LB64.encode resize ptr len
+cChatResizeImage ptr len = cResizeImageData $ getByteString ptr len
+
+cChatResizeImageFileUri :: CString -> CInt -> IO CString
+cChatResizeImageFileUri = cResizeImageUri . readFilePath
+
+cChatResizeImageFile :: CString -> CInt -> CInt -> IO CString
+cChatResizeImageFile = cResizeImageData . readFilePath
+
+cChatResizeImageFdUri :: CInt -> CInt -> IO CString
+cChatResizeImageFdUri = cResizeImageUri . readFd
+
+cChatResizeImageFd :: CInt -> CInt -> CInt -> IO CString
+cChatResizeImageFd = cResizeImageData . readFd
+
+readFilePath :: CString -> IO ByteString
+readFilePath = B.readFile <=< peekCString
+
+readFd :: CInt -> IO ByteString
+readFd = B.hGetContents <=< fdToHandle
+
+cResizeImageUri :: IO ByteString -> CInt -> IO CString
+cResizeImageUri input maxSize = cResizeImage id (resizeImageDataUri $ fromIntegral maxSize) input
+
+cResizeImageData :: IO ByteString -> CInt -> CInt -> IO CString
+cResizeImageData input maxSize png = cResizeImage LB64.encode resize input
   where
     resize img = resizeImage (format img) (fromIntegral maxSize) img
     format img = case compare png 0 of
@@ -156,10 +185,9 @@ cChatResizeImage ptr len maxSize png = cResizeImage LB64.encode resize ptr len
       EQ -> IFJpeg
       GT -> IFPng
 
-cResizeImage :: (LB.ByteString -> LB.ByteString) -> (DynamicImage -> IO (Either String LB.ByteString)) -> Ptr Word8 -> CInt -> IO CString
-cResizeImage encode resize ptr len = do
-  s <- getByteString ptr len
-  r <- runCatchExceptT $ ExceptT . resize =<< ExceptT (decodeResizable s)
+cResizeImage :: (LB.ByteString -> LB.ByteString) -> (DynamicImage -> IO (Either String LB.ByteString)) -> IO ByteString -> IO CString
+cResizeImage encode resize input = do
+  r <- runCatchExceptT $ ExceptT . resize =<< ExceptT (decodeResizable =<< input)
   newCStringFromLazyBS $ either (const "") encode r
 
 runCatchExceptT :: ExceptT String IO a -> IO (Either String a)

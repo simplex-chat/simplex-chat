@@ -187,9 +187,14 @@ chat_resize_image_fd(fd, maxSize, png)        as chat_resize_image, from the fil
   cChatResizeImageFdUri :: CInt -> CInt -> IO CString
   cChatResizeImageFd :: CInt -> CInt -> CInt -> IO CString
   ```
-  - path: `peekCString`, then `B.readFile`
-  - descriptor: `fdToHandle`, then `B.hGetContents`, by which the handle is closed, also on an exception
-  - `cResizeImage` takes the read action in place of the buffer; the file is read inside `runCatchExceptT`.
+  - path: `readFilePath`, `peekCString`, then `B.readFile`
+  - descriptor: `readFd`, `fdToHandle`, then `B.hGetContents`, by which the handle is closed, also on an exception
+  - `cResizeImageUri` and `cResizeImageData`: the data URI and the image data from a read action, for the buffer, path and descriptor functions
+  - `cResizeImage` takes the read action in place of the buffer; the input is read inside `runCatchExceptT`.
+- Exports:
+  - `Mobile.hs`: `foreign export ccall` of the four functions
+  - `libsimplex.dll.def`: the path functions
+  - `flake.nix`, the Android `-u` list: the descriptor functions
 
 Apps, with function signatures kept and call sites unchanged except iOS `saveWallpaperFile(image:)` (`ImageUtils.swift:233`):
 - iOS `resizeImageToDataSize` and `resizeImageToStrSizeSync`:
@@ -608,6 +613,14 @@ License notices, `docs/dependencies/`:
 - `cChatResizeImage` on `test.jpg`, limit 100000: base64 decoded to at most 100000 bytes, starting `FF D8` for `png = 0` and with the PNG signature for `png = 1`.
 - `cChatResizeImage` with `png = -1`, limit 100000 (`:376-384`): `FF D8` for `test.jpg`; the PNG signature for `logo-large-rgba.png`.
 - `cChatResizeImage` with `png = -1`, limit 261120, on a blank 20000×16 JPEG from `encodeRGB` (`:386-390`): `FF D8`.
+- file path:
+  - `cChatResizeImageFileUri` on `test.jpg`, limit 14000: `data:image/jpg;base64,`, at most 14000 characters
+  - `cChatResizeImageFile` with `png = -1`, limit 100000, on `logo-large-rgba.png`: the PNG signature
+  - a missing file: `""`
+- file descriptor, opened with `GHC.IO.FD.openFile`:
+  - `cChatResizeImageFdUri` on `test.jpg`, limit 14000: `data:image/jpg;base64,`, at most 14000 characters; the descriptor is closed afterwards
+  - `cChatResizeImageFd` on `test.pdf`: `""`; the descriptor is closed afterwards
+  - a closed descriptor and −1: `""`
 
 `tests/ChatTests/Files.hs`, "send image with generated preview" (`:47`, `:179-192`):
 - `/img @bob ./tests/fixtures/test.jpg`: the received item has a JPEG data URI preview of at most 14000 characters, read with `APIGetChat` (`lastImagePreview`, `:194-200`).

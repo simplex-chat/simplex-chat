@@ -486,6 +486,8 @@
                   "chat_write_file"
                   "chat_resize_image_uri"
                   "chat_resize_image"
+                  "chat_resize_image_fd_uri"
+                  "chat_resize_image_fd"
                 ];
                 postInstall = ''
                   set -x

@@ -34,6 +34,7 @@ import Foreign.Ptr
 import Foreign.StablePtr
 import Foreign.Storable (peek)
 import GHC.IO.Encoding (setLocaleEncoding, setFileSystemEncoding, setForeignEncoding)
+import qualified GHC.IO.FD as FD
 import JSONFixtures
 import Simplex.Chat
 import Simplex.Chat.Badges (BadgeInfo (..), BadgeRequest (..), BadgeType (..), generateMasterKey, verifyCredential)
@@ -58,7 +59,8 @@ import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import System.Directory (copyFile)
 import System.FilePath ((</>))
-import System.IO (utf8)
+import System.IO (IOMode (..), utf8)
+import System.Posix.Internals (c_close)
 import Test.Hspec hiding (it)
 
 mobileTests :: HasCallStack => SpecWith TestParams
@@ -97,6 +99,8 @@ mobileTests = do
       it "should resize image to data size via C API" testResizeImageCApi
       it "should choose image format by transparency via C API" testResizeImageAutoFormatCApi
       it "should resize JPEG with a side above 16384 via C API" testResizeLargeJpegCApi
+      it "should resize image from a file path via C API" testResizeImageFileCApi
+      it "should resize image from a file descriptor via C API" testResizeImageFdCApi
 
 noActiveUser :: LB.ByteString
 noActiveUser =
@@ -388,6 +392,32 @@ testResizeLargeJpegCApi _ = do
   (ptr, len) <- cBuffer =<< encodeRGB 90 (generateImage (\_ _ -> PixelRGB8 128 128 128) 20000 16)
   Right bytes <- B64.decode . BS.pack <$> (peekCAString =<< cChatResizeImage ptr len 261120 (-1))
   B.take 2 bytes `shouldBe` "\xFF\xD8"
+
+testResizeImageFileCApi :: TestParams -> IO ()
+testResizeImageFileCApi _ = do
+  uri <- peekCAString =<< withCString "./tests/fixtures/test.jpg" (`cChatResizeImageFileUri` 14000)
+  uri `shouldStartWith` "data:image/jpg;base64,"
+  length uri `shouldSatisfy` (<= 14000)
+  Right bytes <- B64.decode . BS.pack <$> (peekCAString =<< withCString "./tests/fixtures/logo-large-rgba.png" (\path -> cChatResizeImageFile path 100000 (-1)))
+  B.take 8 bytes `shouldBe` "\x89PNG\r\n\x1a\n"
+  (peekCAString =<< withCString "./tests/fixtures/missing.jpg" (`cChatResizeImageFileUri` 14000)) `shouldReturn` ""
+
+testResizeImageFdCApi :: TestParams -> IO ()
+testResizeImageFdCApi _ = do
+  jpeg <- openFd "./tests/fixtures/test.jpg"
+  uri <- peekCAString =<< cChatResizeImageFdUri jpeg 14000
+  uri `shouldStartWith` "data:image/jpg;base64,"
+  length uri `shouldSatisfy` (<= 14000)
+  c_close jpeg `shouldReturn` (-1)
+  pdf <- openFd "./tests/fixtures/test.pdf"
+  (peekCAString =<< cChatResizeImageFd pdf 100000 (-1)) `shouldReturn` ""
+  c_close pdf `shouldReturn` (-1)
+  closed <- openFd "./tests/fixtures/test.jpg"
+  c_close closed `shouldReturn` 0
+  (peekCAString =<< cChatResizeImageFdUri closed 14000) `shouldReturn` ""
+  (peekCAString =<< cChatResizeImageFdUri (-1) 14000) `shouldReturn` ""
+  where
+    openFd path = FD.fdFD . fst <$> FD.openFile path ReadMode False
 
 cBuffer :: ByteString -> IO (Ptr Word8, CInt)
 cBuffer s = do
