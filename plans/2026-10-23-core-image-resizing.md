@@ -470,7 +470,7 @@ iOS:
   - `resizeImageWithCore` (`:121-127`), private
   - `saveWallpaperFile(image:)` (`:246`): `guard let` in place of a force-unwrap
   - `compressImageStr` and `reduceSize` removed
-- `apps/ios/SimpleXChat/SimpleX.h:36-44`: the four declarations; the two bytes functions with the approved comments.
+- `apps/ios/SimpleXChat/SimpleX.h:36-46`: the four declarations, each with its approved comment.
 - `apps/ios/Shared/Views/Chat/ComposeMessage/ComposeView.swift`:
   - `UploadContent.imageFile` (`:302`)
   - `imagePreview()` (`:315-320`)
@@ -482,7 +482,7 @@ iOS:
   - `imageFileType` (`:92-95`)
 - `apps/ios/spec/architecture.md`:
   - `:101-105`: FFI list
-  - `:61, 67, 69, 336`: header range `SimpleX.h#L1-L61`
+  - `:61, 67, 69, 336`: header range `SimpleX.h#L1-L63`
 
 Android and desktop, `apps/multiplatform/common/src/`:
 - `commonMain/.../platform/Images.kt`:

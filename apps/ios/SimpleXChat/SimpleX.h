@@ -39,8 +39,10 @@ extern char *chat_resize_image(char *data, int len, int maxSize, int png);
 // chat_resize_image_uri returns a data URI of at most maxSize characters, or an empty string
 extern char *chat_resize_image_uri(char *data, int len, int maxSize);
 
+// chat_resize_image_file is chat_resize_image with the image read from the file at path
 extern char *chat_resize_image_file(char *path, int maxSize, int png);
 
+// chat_resize_image_file_uri is chat_resize_image_uri with the image read from the file at path
 extern char *chat_resize_image_file_uri(char *path, int maxSize);
 
 // chat_write_file returns null-terminated string with JSON of WriteFileResult
