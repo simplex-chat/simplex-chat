@@ -7,7 +7,9 @@
 # With "images" it then turns off the encryption of local files, creates a group and sends tests/fixtures/test.jpg and
 # logo-large-rgba.png picked in the photo library, and checks the pixel sizes of the sent files.
 # Usage: scripts/ci/ios-sim/smoke-test.sh <path to SimpleX.app> <output dir> [images]
-# Each step saves a screenshot and an accessibility tree to the output dir and prints the tree to the log.
+# Each step saves a screenshot and an accessibility tree to the output dir and prints the tree to the log. What the
+# screens show is checked without stopping: every check is listed in checks.txt and the job summary, and the test fails
+# at the end if any failed.
 # Later steps of the job get SIM_UDID and UI_OUT, with the simulator still running.
 
 set -euo pipefail
@@ -23,6 +25,7 @@ photo_y=412
 picker_done_x=363
 picker_done_y=144
 mkdir -p "$UI_OUT"
+: > "$checks"
 
 axe --version
 runtime=com.apple.CoreSimulator.SimRuntime.iOS-$(xcrun --sdk iphonesimulator --show-sdk-version | tr . -)
@@ -55,18 +58,10 @@ finish() {
     head -n 200 "$report"
     echo "::endgroup::"
   done || true
+  report_checks "Smoke test checks"
   exit "$status"
 }
 trap finish EXIT
-
-expect_in_tree() {
-  local tree
-  tree=$("$ui" tree)
-  if ! grep -q "$@" <<< "$tree"; then
-    echo "error: ${*: -1} is not in the accessibility tree"
-    exit 1
-  fi
-}
 
 # iOS asks once whether the app may send notifications. The tree sometimes shows the app under this alert rather than
 # the alert (run 38895987656), so its Allow button is also looked for at its place.
@@ -88,11 +83,10 @@ allow_notifications() {
 
 # a profile without conversations sees the onboarding pages in place of the list
 expect_chat_list() {
-  expect_in_tree -F '"Talk to someone"'
-  expect_in_tree -F 'Button "Let someone connect to you"'
-  expect_in_tree -F 'Button "Connect via link or QR code"'
-  expect_in_tree -F 'Button "Compose"'
-  echo "in the $1 layout the chat list shows the onboarding pages and the toolbar"
+  check "$1: \"Talk to someone\" shown" in_tree -F '"Talk to someone"'
+  check "$1: Button \"Let someone connect to you\" shown" in_tree -F 'Button "Let someone connect to you"'
+  check "$1: Button \"Connect via link or QR code\" shown" in_tree -F 'Button "Connect via link or QR code"'
+  check "$1: Button \"Compose\" shown" in_tree -F 'Button "Compose"'
 }
 
 tap_element() {
@@ -209,6 +203,7 @@ expect_chat_list reachable
 "$ui" shot chat-list-top
 expect_chat_list top
 "$ui" layout reachable
+fail_on_failed_checks "the smoke test"
 echo "smoke test passed: onboarding reaches the chat list, which shows its onboarding pages and toolbar with the one-hand UI and with the top bar"
 
 products=$(dirname "$app")

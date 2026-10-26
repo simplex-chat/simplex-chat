@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # The checks of a scripted UI test, shared by the platforms: check adds a PASS or FAIL line to checks.txt in UI_OUT and
-# goes on, fail ends the test, report_checks prints the lines and adds them to the job summary.
+# goes on, note adds a NOTE line, fail ends the test, report_checks prints the lines and adds them to the job summary
+# under a heading, and fail_on_failed_checks ends the test if any check failed.
 # Sourced by each platform's lib.sh, with UI_OUT set. Runs under macOS's bash 3.2 on the iOS runner.
 
 checks=$UI_OUT/checks.txt
@@ -13,7 +14,7 @@ report_checks() {
   echo "::endgroup::"
   if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
     {
-      echo "### Smoke test checks"
+      echo "### $1"
       echo
       sed 's/^/- /' "$checks"
     } >> "$GITHUB_STEP_SUMMARY"
@@ -33,5 +34,15 @@ check() {
   else
     echo "FAIL $what" | tee -a "$checks"
     echo "::error::$what"
+  fi
+}
+
+note() {
+  echo "NOTE $*" | tee -a "$checks"
+}
+
+fail_on_failed_checks() {
+  if grep -q '^FAIL' "$checks"; then
+    fail "$1 failed checks: $(grep -c '^FAIL' "$checks") of $(grep -cE '^(PASS|FAIL)' "$checks")"
   fi
 }

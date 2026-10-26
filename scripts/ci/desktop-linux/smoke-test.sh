@@ -51,7 +51,7 @@ finish() {
   echo "::group::app log, last 300 lines"
   tail -n 300 "$UI_OUT/app.log" || true
   echo "::endgroup::"
-  report_checks
+  report_checks "Smoke test checks"
   exit "$status"
 }
 trap finish EXIT
@@ -344,7 +344,5 @@ use_top_toolbar
 check_layout top
 send_images
 
-if grep -q '^FAIL' "$checks"; then
-  fail "the smoke test failed checks: $(grep -c '^FAIL' "$checks") of $(grep -cE '^(PASS|FAIL)' "$checks")"
-fi
+fail_on_failed_checks "the smoke test"
 echo "smoke test passed: onboarding reached the chat list, which shows \"$local_chat\" with the toolbar at the bottom and at the top"

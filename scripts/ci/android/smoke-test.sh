@@ -42,7 +42,7 @@ finish() {
   echo "::group::the core and crashes in logcat"
   grep -E 'ndk_translation|SIMPLEX *: (start|App crashed)|AndroidRuntime: (FATAL EXCEPTION|Process: )|Fatal signal' "$UI_OUT/app.log" | head -n 100 || true
   echo "::endgroup::"
-  report_checks
+  report_checks "Smoke test checks"
   exit "$status"
 }
 trap finish EXIT
@@ -64,7 +64,7 @@ first_screen() {
   until "$ui" find "Get started" > /dev/null 2>&1; do
     app_running || return 1
     if "$ui" find "New in" > /dev/null 2>&1; then
-      echo "NOTE the What's new sheet covered the first onboarding screen" | tee -a "$checks"
+      note "the What's new sheet covered the first onboarding screen"
       "$ui" shot whats-new-over-onboarding
       "$ui" click-text OK
     fi
@@ -275,7 +275,5 @@ if [ "$cases" != onboarding ]; then
 fi
 check "the app is running and logged no crash" app_running
 
-if grep -q '^FAIL' "$checks"; then
-  fail "the smoke test failed checks: $(grep -c '^FAIL' "$checks") of $(grep -cE '^(PASS|FAIL)' "$checks")"
-fi
+fail_on_failed_checks "the smoke test"
 echo "smoke test passed: $cases"
