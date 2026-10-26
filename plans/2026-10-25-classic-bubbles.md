@@ -209,6 +209,7 @@ B11  markdown blocks in bubbles: spacing and line heights of terminal rows (user
 B12  unchanged: fills, tails, roundness, colours, themes, wallpapers, interaction; link preview, chat link card,
      group invitation, voice and call layout (D8: cards in the redesign); sender names and avatars; date separators
      (shared with terminal rows); reactions; emoji without bubble; chat item info
+B13  calls: as on master, without the bubble typography (user)
 ```
 
 ## 4. Kotlin
@@ -230,6 +231,7 @@ chat/item/MarkedDeletedItemView.kt
 chat/item/IntegrityErrorItemView.kt
 chat/item/CIRcvDecryptionError.kt bubble: bubbleTextPadding, bubbleMeta, the copy of the time
 chat/item/CIGroupInvitationView.kt bubble: the copy of the time
+chat/item/ChatItemView.kt         calls without LocalBubbleLayout
 chat/ChatView.kt                  LocalBubbleLayout provided for classic chats; row gaps in sp
 usersettings/Appearance.kt        LocalBubbleLayout for the classic theme preview
 ```

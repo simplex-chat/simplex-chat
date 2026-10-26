@@ -604,7 +604,9 @@ fun ChatItemView(
             }
 
             @Composable fun CallItem(status: CICallStatus, duration: Int) {
-              CICallItemView(cInfo, cItem, status, duration, showTimestamp = showTimestamp, acceptCall, cInfo.timedMessagesTTL)
+              CompositionLocalProvider(LocalBubbleLayout provides false) {
+                CICallItemView(cInfo, cItem, status, duration, showTimestamp = showTimestamp, acceptCall, cInfo.timedMessagesTTL)
+              }
               DeleteItemMenu()
             }
 
