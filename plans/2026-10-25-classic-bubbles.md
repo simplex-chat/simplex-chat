@@ -205,7 +205,8 @@ B8   file in a bubble: the last baseline of the size line BUBBLE_TEXT_INSET abov
      of the file icon on that baseline (user)
 B9   events: line height of 12sp secondary text; feature icons and merged icons without height, one event line high (user)
 B10  row gaps in sp, values kept; a sender change in direct chats 8sp (user)
-B11  markdown blocks in bubbles: spacing and line heights of terminal rows (user); classic heading sizes kept
+B11  markdown blocks in bubbles: spacing and line heights of terminal rows (user); headings × 1.5625, 1.25, 1, bold,
+     capitals placed by headingBox, in both layouts (user)
 B12  unchanged: fills, tails, roundness, colours, themes, wallpapers, interaction; link preview, chat link card,
      group invitation, voice and call layout (D8: cards in the redesign); sender names and avatars; date separators
      (shared with terminal rows); reactions; emoji without bubble; chat item info
@@ -222,7 +223,8 @@ chat/item/FramedItemView.kt       BUBBLE_* constants; Modifier.bubbleTextPadding
 chat/item/CIMetaView.kt           metaReserveCopy (was terminalReserveSpaceForMeta); breakBefore: a breaking space instead of the word joiner
 chat/item/TextItemView.kt         the copy for every message text with a time, breakBefore in bubbles after text;
                                   ruleMinWidth in terminal rows only
-chat/item/MarkdownBlocks.kt       spacing of terminal rows when usesChatTypography()
+chat/item/MarkdownBlocks.kt       spacing, heading sizes and headingBox of terminal rows when usesChatTypography();
+                                  TERMINAL_HEADING_RATIO 1.25
 chat/item/CIEventView.kt          chatEventTextStyle in both layouts; chatEventPadding without the vertical parameter
 chat/item/CIChatFeatureView.kt    merged icons one event line high in both layouts
 chat/item/CIFileView.kt           bubble: size line baseline inset from the bottom edge; fileIconOnBaseline
@@ -278,8 +280,4 @@ Q4   events: the gap above and below an event depends on the time and direction 
      terminal rows put events at the highest level whatever the time (D9a). Always 8sp around events?
      recommended: always 8sp
      shown: list-direct, list-group
-Q5   headings in bubbles: classic sizes 1.5, 1.3, 1.15; terminal rows use ×1.3125 per level with the capitals placed
-     as body capitals (D15). Use the terminal sizes in bubbles?
-     recommended: yes, one style guide
-     shown: text-blocks
 ```

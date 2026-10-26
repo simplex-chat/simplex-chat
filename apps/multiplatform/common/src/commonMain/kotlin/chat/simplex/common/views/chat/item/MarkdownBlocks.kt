@@ -72,7 +72,6 @@ fun MarkdownBlocks(
   val textColor = style.color.takeOrElse { MaterialTheme.colors.onSurface }
   val fontSize = style.fontSize.takeOrElse { 16.sp }
   val lineHeight = style.lineHeight.takeOrElse { 22.sp }
-  val terminal = LocalTerminalLayout.current
   val chat = usesChatTypography()
   val starts = remember(blocks) { blocks.runningFold(0) { n, b -> n + b.textRanges.size } }
   val lastIsText = when (blocks.lastOrNull()) {
@@ -96,7 +95,7 @@ fun MarkdownBlocks(
       when (block) {
         is MarkdownBlock.Paragraph -> BlockText(start, block.content, style)
         is MarkdownBlock.Heading -> {
-          val scale = if (terminal) TERMINAL_HEADING_RATIO.pow((3 - block.level).coerceAtLeast(0)) else when (block.level) {
+          val scale = if (chat) TERMINAL_HEADING_RATIO.pow((3 - block.level).coerceAtLeast(0)) else when (block.level) {
             1 -> 1.5f
             2 -> 1.3f
             3 -> 1.15f
@@ -104,7 +103,7 @@ fun MarkdownBlocks(
           }
           BlockText(
             start, block.content, style.copy(fontSize = fontSize * scale, lineHeight = lineHeight * scale, fontWeight = FontWeight.Bold),
-            if (terminal) Modifier.headingBox(scale, fontSize) else Modifier
+            if (chat) Modifier.headingBox(scale, fontSize) else Modifier
           )
         }
         is MarkdownBlock.Quote -> Box(Modifier.quoteBar(textColor)) {

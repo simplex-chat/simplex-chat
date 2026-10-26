@@ -76,7 +76,7 @@ level targets     measured from a baseline or a block edge to the top of the tal
                   that last block with the time beside it: 5sp below, by messageLastBlock() and TerminalMetaLayout; the time under it: 6sp below its edge
                   paragraph break and a heading inside a message: 4.75sp
                   below a heading: 2.375sp (half of 4.75sp), so a heading is nearer to its own text (D21)
-                  headings: body × 1.72, 1.3125, 1 for levels 1, 2, 3 (D15, revised 2026-10-25); capitals placed as body capitals
+                  headings: body × 1.5625, 1.25, 1 for levels 1, 2, 3 (D15, revised 2026-10-26); capitals placed as body capitals
                   files: 2sp above; voice drawn by FramedItemView (caption, quote or header): as voice alone, 4sp above, 6sp below
                   emoji-only items, also under a quote or header: 4.25sp above, 1.5sp below; not stretched to the item width
                   feature and preference icons: centred on the event text, no height; merged feature icons: one event line high, centred
