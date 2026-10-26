@@ -48,11 +48,9 @@ fun URI.toFile(): File =
 
 fun copyFileToFile(from: File, to: URI, finally: () -> Unit) {
   try {
-    if (to.scheme != "file" || to.toFile().canonicalFile != from.canonicalFile) {
-      to.outputStream().use { stream ->
-        BufferedOutputStream(stream).use { outputStream ->
-          from.inputStream().use { it.copyTo(outputStream) }
-        }
+    to.outputStream().use { stream ->
+      BufferedOutputStream(stream).use { outputStream ->
+        from.inputStream().use { it.copyTo(outputStream) }
       }
     }
     showToast(generalGetString(MR.strings.file_saved))
