@@ -25,7 +25,7 @@ At this stage the service:
 - does not accept contact requests: the address is for RPC only,
 - in service mode with `[group]` in the ini, manages one SimpleX group and serves `/issue`, `/bulk`
   and `/revoke` in it (see [Issuing codes](#issuing-codes)),
-- in service mode with `--service-config`, also serves the built web app (`npm run build` in `web/`) and, on the hosts in `names_hosts`, the names site (see [Deployment](#deployment)), `POST /api/invoice` and `GET /api/invoice/:id`, the BTCPay and Stripe webhook routes, and a payment poller, seeding its price/offer catalog on every start,
+- in service mode with `--service-config`, also serves the built web app (`npm run build` in `web/`) on `badges_port` and, with `[names]`, the names site on `names_port` (see [Two sites](#two-sites)), `POST /api/invoice` and `GET /api/invoice/:id`, the BTCPay and Stripe webhook routes, and a payment poller, seeding its price/offer catalog on every start,
 - owns the `sx_badge_service_`-prefixed tables and its own migrations table (`sx_badge_service_migrations`).
 
 Every other command answers `unsupported_version`, or `unknown_purchase_key` when the key that
@@ -105,7 +105,7 @@ Other options:
 
 - `--service-config INI_FILE`: path to `store_service.ini`. Omit it to run the chat/RPC side
   only; the process never starts a web listener without it, and never starts one under
-  `--run-cli`, which parses and validates the whole file (`[listener] static_dir` included) but
+  `--run-cli`, which parses and validates the whole file (`[listener]` included) but
   uses only its `[issuer]`, `[apple]` and `[google]` sections and `[dev] accept_unverified_store_receipts`. An issuer key is
   still required either way.
 - `--service-name NAME`: the bot's display name, without `*`s or spaces (default `SimpleX Badges`).
@@ -116,7 +116,7 @@ Other options:
 
 ### Running the web checkout
 
-`store_service.ini` holds the listener bind address and `static_dir`, an optional
+`store_service.ini` holds the listener bind address, its ports and `badges_static_dir`, an optional
 `[btcpay]` section (omitting it disables Bitcoin and Monero), an optional `[stripe]`
 section (omitting it disables card payments), an optional `[group]` section (omitting it
 turns off the group's commands, though a group created earlier still has its code messages updated),
@@ -343,13 +343,16 @@ The rename to StoreService changed what the operator runs:
 | the folder `config`, mounted read-only at `/etc/simplex-badge-service` (before it, `badge_service.ini` alone, mounted at `/etc/simplex-badge-service/badge_service.ini`) | the folder `config`, mounted read-only at `/etc/simplex-store-service` |
 | `[apple] root_certificates` and `[google] service_account_file` under `/etc/simplex-badge-service/` | the same files under `/etc/simplex-store-service/` |
 | the binary `simplex-badge-service` | `simplex-store-service` |
-| `static_dir = /srv/web` | `static_dir = /srv/badges` |
-| `webapp_export_dir = /srv/webapp`, host folder `web` | `webapp_export_dir = /srv/badges-export`, host folder `badges` |
+| `port = 8080` | `badges_port = 8080`, the default, which can be omitted |
+| `static_dir = /srv/web` | `badges_static_dir = /srv/badges`, the image's build and the default, which can be omitted in Docker |
+| `webapp_export_dir = /srv/webapp`, host folder `web` | `badges_export_dir = /srv/badges-export`, host folder `badges` |
+| `names_hosts`, the hosts that got the names site by `Host` | `names_port = 8081`, the default: the names site on its own port (see [Two sites](#two-sites)) |
 
+The service refuses to start with a key from the left column, naming the key that replaced it.
 Move `scripts/badge-service/config/` to `scripts/store-service/config/` (a deployment from before
 the config folder creates it and moves `badge_service.ini` into it), rename `badge_service.ini` in it
-to `store_service.ini`, and change its paths: `static_dir`, `webapp_export_dir`, and the
-`/etc/simplex-badge-service/` files under `[apple]` and `[google]`. Point Caddy's badges root at
+to `store_service.ini`, and change its keys and paths as the table says, the
+`/etc/simplex-badge-service/` files under `[apple]` and `[google]` among them. Point Caddy's badges root at
 `scripts/store-service/badges`, which the service fills at boot. Then start the new service with
 
 ```
@@ -363,10 +366,11 @@ running beside the new one, on the same port and database. The database `badge_s
 
 ### Two sites
 
-The image carries the badges build at `/srv/badges` (`static_dir`) and the names build at
-`/srv/names`. The names site (simplex.domains) comes from the `apps/simplex-domains` submodule, the
-simplex.domains repository, and is configured beside the badges site in `[listener]`. Fetch the
-submodule before building the image:
+The image carries the badges build at `/srv/badges` and the names build at `/srv/names`, the
+defaults of `badges_static_dir` and `names_static_dir`; a run outside the image sets both. The names
+site (simplex.domains) comes from the `apps/simplex-domains` submodule, the simplex.domains
+repository, and is configured beside the badges site in `[listener]`. Fetch the submodule before
+building the image:
 
 ```
 git submodule update --init apps/simplex-domains
@@ -380,20 +384,23 @@ git -C apps/simplex-domains checkout <commit>
 git add apps/simplex-domains
 ```
 
-- `names_static_dir`: the names build, `/srv/names` in the image;
+The names site is on when, and only when, the ini has `[names]`. Its `[listener]` keys:
+
+- `names_static_dir`: the names build, by default `/srv/names`, the image's;
 - `names_export_dir`: where the service writes the names site at boot, with the Stripe
-  publishable key in its shell, as `webapp_export_dir` is for the badges site. `compose.yml`
+  publishable key in its shell, as `badges_export_dir` is for the badges site. `compose.yml`
   bind-mounts `./names` there (`/srv/names-export`), and `./badges` at `/srv/badges-export`;
-- `names_hosts`: the comma-separated hosts the names site is served on when `serve_webapp = on`.
+- `names_port`: the port the names site is served on when `serve_webapp = on`, by default 8081,
+  beside `badges_port` (by default 8080), which serves the badges site. The two must differ.
 
-The service refuses to start with `names_hosts` or `names_export_dir` but no `names_static_dir`.
+The service refuses to start with any of these keys but no `[names]`, and with `names_port` and
+`serve_webapp = off`.
 
-With `serve_webapp = on` (all in one), the listener picks the site by the request's `Host`, in
-lower case and without its port or a trailing dot (an IPv6 literal whole, in brackets), as
-`names_hosts` entries are read: a host in
-`names_hosts` gets the names site, any other host or none the badges site. Every path
-outside `/api/` and `/webhooks/` is a file of the chosen site, `/` and `/index.html` its shell. The
-API answers on every host.
+With `serve_webapp = on` (all in one), the service listens on both ports, and each serves only its
+own site: every path outside `/api/` and `/webhooks/` is a file of that site, `/` and `/index.html`
+its shell. Both ports answer `/api/` and `/webhooks/`, whatever the `Host`. A reverse proxy sends
+each domain to its own port, as the all-in-one example in [Caddy](#caddy) does. With
+`serve_webapp = off`, the service listens on `badges_port` alone, for the API and the webhooks.
 
 ### Development with a local chain
 
@@ -409,9 +416,10 @@ docker compose logs chain
 ```
 
 The service starts once the chain is up. The chain's log prints its `[chain]` section; put it in
-`config/store_service.ini` with a `[names]` section and the names site's folders under `[listener]`
-(`names_static_dir = /srv/names`, `names_export_dir = /srv/names-export`), then
-`docker compose restart store-service`.
+`config/store_service.ini` with a `[names]` section and, under `[listener]`,
+`names_export_dir = /srv/names-export` (the names build is the image's `/srv/names`, the default),
+then `docker compose restart store-service`. With `serve_webapp = on`, the names site is on
+`names_port`, by default 8081.
 
 The service key's account starts with 10,000 ETH and a sponsor allowance. To top it up, or set any
 account's balance:
@@ -426,8 +434,9 @@ prepaid codes need no payment provider. To start over, run `docker compose down`
 
 ### Caddy
 
-The Caddyfile is not in this repository. Its two host blocks, with the exported folders at
-`/srv/store-service/badges` and `/srv/store-service/names` and the listener at `127.0.0.1:8080`:
+The Caddyfile is not in this repository. Its two host blocks for the split deployment
+(`serve_webapp = off`), with the exported folders at `/srv/store-service/badges` and
+`/srv/store-service/names` and the listener at `127.0.0.1:8080`:
 
 ```
 badges.simplex.chat {
@@ -497,6 +506,26 @@ simplex.domains {
   codes in `localStorage`. The owner accepted this on 2026-10-20, rather than a Checkout redirect
   or a separate card origin. Scripts and frames are allowed only from this origin and Stripe's
   hosts.
+
+With `serve_webapp = on`, the service serves both sites itself, so each host block proxies
+everything to its site's port, `badges_port` and `names_port`:
+
+```
+badges.simplex.chat {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:8080
+	# the Content-Security-Policy header of the badges.simplex.chat block above
+}
+
+simplex.domains {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:8081
+	# the last header { } block, the policy with it, of the simplex.domains block above
+}
+```
+
+The service sets each file's type and `Cache-Control` itself: `no-cache`, and a year for
+`/assets/*`, so the names site's fonts and images are revalidated rather than kept for a day.
 
 ### Egress rule
 
@@ -1101,13 +1130,14 @@ payment against this service in Chromium, as they run against the webapp's mock.
 3. writes an ini for that deployment with `[names]` and `[chain]` and no `[btcpay]` or `[stripe]`,
    with the terms version `2026-10-23` and the one community name `bakers`, which the webapp's
    community cases search for,
-   serving the names site all in one on the host `127.0.0.1`, and signing with the test suite's
+   serving the names site all in one on `SERVICE_PORT` and the badges site, from an empty folder, on
+   `BADGES_PORT`, and signing with the test suite's
    public issuer secret (`issuerSecret` in `tests/Bots/StoreService/ConfigTests.hs`), trusted through
    `[issuer] dev_keys`. That secret is public: never use it outside this script;
 4. starts the service once to make its database, stops it, and issues the prepaid codes the cases
    need with `//issue name` in `--run-cli`;
-5. starts the service on 8180 and a code server on 8199, and runs the cases with `BASE_URL` at the
-   service and `MOCK_URL` at the code server.
+5. starts the service on 8180 (the names site) and 8181 (the badges site) and a code server on 8199,
+   and runs the cases with `BASE_URL` at the names site and `MOCK_URL` at the code server.
 
 The code server answers the cases' `POST /control/code` with the issued codes, the reset of
 `/control/search` that `search.spec.ts` sends after each case as done, and any other `/control/` with
@@ -1120,7 +1150,7 @@ Foundry's anvil, Node.js 22.18 or later (which runs the webapp's `dev/deploy.ts`
 Playwright's Chromium (`npm install`, `npx playwright install chromium`); and an `ens-contracts` checkout
 compiled as the webapp's `dev/start.sh` needs. The cases read the chain's addresses from the webapp's
 `dev/local-chain-0.json`, so the script stops when its deployment differs from it; run the webapp's
-`SLOTS=1 MIN_COMMITMENT_AGE=5 dev/start.sh` once to write it. Ports 8545, 8180 and 8199 must be free:
+`SLOTS=1 MIN_COMMITMENT_AGE=5 dev/start.sh` once to write it. Ports 8545, 8180, 8181 and 8199 must be free:
 the script stops before starting anything when one of them answers, and stops at once when anvil,
 the service or the code server exits before it answers.
 
@@ -1131,7 +1161,8 @@ ENS_CONTRACTS_DIR=<ens-contracts> ANVIL=<anvil> scripts/store-service/names-cont
 
 - `WEBAPP_DIR`: the names webapp (default: the `apps/simplex-domains` submodule's `webapp/`).
 - `STORE_SERVICE_BIN`: the service binary (default: `cabal list-bin exe:simplex-store-service`).
-- `SERVICE_PORT`, `CODES_PORT`: the service's and the code server's ports (8180 and 8199).
+- `SERVICE_PORT`, `BADGES_PORT`, `CODES_PORT`: the service's names and badges ports and the code
+  server's (8180, 8181 and 8199).
 - Arguments, if given, are passed to `playwright test` in place of the default cases' title filter.
 
 The default cases cover search answers for an available name, Check your code and its rate-limit

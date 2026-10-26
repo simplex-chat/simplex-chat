@@ -10,6 +10,7 @@ WEBAPP_DIR="${WEBAPP_DIR:-$(cd "$(dirname "$0")/../.." && pwd)/apps/simplex-doma
 : "${ENS_CONTRACTS_DIR:?set ENS_CONTRACTS_DIR to a compiled ens-contracts checkout, as for the webapp dev/start.sh}"
 ANVIL="${ANVIL:-anvil}"
 SERVICE_PORT="${SERVICE_PORT:-8180}"
+BADGES_PORT="${BADGES_PORT:-8181}"
 CODES_PORT="${CODES_PORT:-8199}"
 REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 STORE_SERVICE_BIN="${STORE_SERVICE_BIN:-$(cd "$REPO" && cabal list-bin exe:simplex-store-service)}"
@@ -23,6 +24,7 @@ MIN_COMMITMENT_AGE=5
 # as dev/start.sh: a block a second, and a few states kept in memory rather than gigabytes under ~/.foundry
 MEMORY_STATES=8
 SERVICE_URL="http://127.0.0.1:$SERVICE_PORT"
+BADGES_URL="http://127.0.0.1:$BADGES_PORT"
 CODES_URL="http://127.0.0.1:$CODES_PORT"
 STARTUP_SECONDS=120
 CLI_TIMEOUT_SECONDS=120
@@ -98,7 +100,7 @@ answering() {
 # Another chain on the port would take the deployment, and the cases would read that chain.
 refuse_taken_ports() {
   local url
-  for url in "$RPC_URL" "$SERVICE_URL" "$CODES_URL"; do
+  for url in "$RPC_URL" "$SERVICE_URL" "$BADGES_URL" "$CODES_URL"; do
     if curl -s -o /dev/null "$url"; then
       echo "something already answers on $url; stop it first" >&2
       exit 1
@@ -122,18 +124,19 @@ build_site() {
   (cd "$WEBAPP_DIR" && npx vite build --outDir "$RUN_DIR/names" --emptyOutDir --logLevel warn) > "$RUN_DIR/build.log" 2>&1
 }
 
-# No [btcpay] and no [stripe]: these cases pay for nothing. The names site is served on the host the
-# tests open; the badges site, on any other host, is not used.
+# No [btcpay] and no [stripe]: these cases pay for nothing. The names site is served on the port the
+# tests open; the badges site, on its own port, is not used, so its build is an empty folder.
 write_ini() {
   local chain="$RUN_DIR/chain.json"
+  mkdir -p "$RUN_DIR/badges"
   cat > "$INI" <<INI
 [listener]
 host = 127.0.0.1
-port = $SERVICE_PORT
-static_dir = $REPO/apps/simplex-store-service/web/dist
+badges_port = $BADGES_PORT
+badges_static_dir = $RUN_DIR/badges
 serve_webapp = on
 names_static_dir = $RUN_DIR/names
-names_hosts = 127.0.0.1
+names_port = $SERVICE_PORT
 trust_forwarded_for = on
 
 [issuer]

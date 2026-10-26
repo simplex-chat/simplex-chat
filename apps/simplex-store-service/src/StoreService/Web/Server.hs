@@ -9,13 +9,14 @@ module StoreService.Web.Server
     exportWebapp,
     maxWebhookBytes,
     webApp,
+    webListeners,
     webSettings,
-    runWebListener,
+    runWebListeners,
   )
 where
 
 import StoreService.Catalog (PricedOffer (..), priceOffer)
-import StoreService.Config (ListenerConfig (..), ServiceConfig (..), StripeConfig (..), hostName)
+import StoreService.Config (ListenerConfig (..), ServiceConfig (..), StripeConfig (..))
 import StoreService.Names.Env (NamesEnv)
 import StoreService.Names.Orders (OrdersEnv (..), ordersEnv)
 import StoreService.Names.Phases (RegistrationId, awaitChange)
@@ -57,7 +58,7 @@ import Simplex.Chat.Badges.Types (BadgeOfferId (..), BadgePriceId (..))
 import Simplex.Chat.PaymentService.Types (InvoiceId (..), InvoiceStatus (..), PaymentProvider (..), ServicePaymentDestination (..), ServicePaymentMethod (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Encoding.String (textEncode)
-import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
+import Simplex.Messaging.Util (raceAny_, tshow)
 import System.Directory (canonicalizePath, copyFile, createDirectoryIfMissing, doesDirectoryExist, doesFileExist, listDirectory, removePathForcibly)
 import System.FilePath (pathSeparator, takeExtension, (</>))
 
@@ -69,8 +70,9 @@ data WebEnv = WebEnv
     weHoldMicros :: Int,
     weHints :: ReadHints,
     weHttp :: HttpEnv,
-    weBadgesSite :: Site,
-    -- | @Nothing@ when @names_static_dir@ is unset.
+    -- | @Nothing@ when @serve_webapp@ is off.
+    weBadgesSite :: Maybe Site,
+    -- | @Nothing@ unless the names site is served on @names_port@.
     weNamesSite :: Maybe Site,
     -- | @Nothing@ when the ini has no @[names]@ section.
     weNames :: Maybe NamesEnv,
@@ -88,11 +90,11 @@ data Site = Site
 newWebEnv :: DBStore -> ServiceConfig -> Waiters -> ReadHints -> [Provider] -> Maybe NamesEnv -> IO WebEnv
 newWebEnv weStore weConfig weWaiters weHints weProviders weNames = do
   weHttp <- newHttpEnv lc
-  weBadgesSite <- loadSite (lStaticDir lc)
-  weNamesSite <- mapM loadSite (lNamesStaticDir lc)
+  weBadgesSite <- if lServeWebapp then Just <$> loadSite lBadgesStaticDir else pure Nothing
+  weNamesSite <- mapM loadSite (lNamesPort *> lNamesStaticDir)
   pure WebEnv {weStore, weConfig, weWaiters, weProviders, weHoldMicros = holdMicros, weHints, weHttp, weBadgesSite, weNamesSite, weNames, weOrders = ordersEnv <$> weNames}
   where
-    lc = listener weConfig
+    lc@ListenerConfig {lServeWebapp, lBadgesStaticDir, lNamesStaticDir, lNamesPort} = listener weConfig
     loadSite dir = Site dir <$> prepareShell dir (stripe weConfig)
 
 listenerConfig :: WebEnv -> ListenerConfig
@@ -112,9 +114,14 @@ webhookTooLarge = webhookResponse status413
 webhookResponse :: Status -> Response
 webhookResponse st = responseLBS st [(hCacheControl, "no-store")] ""
 
+-- | The badges port's app.
 webApp :: WebEnv -> Application
-webApp env@WebEnv {weHttp} req respond = case pathInfo req of
-  path | Just site <- servedSite env req, sitePath path -> only "GET" req respond $ serveSite site path respond
+webApp env = siteApp env (weBadgesSite env)
+
+-- | Every port answers the API and the webhooks, and serves its own site's files.
+siteApp :: WebEnv -> Maybe Site -> Application
+siteApp env@WebEnv {weHttp} served req respond = case pathInfo req of
+  path | Just site <- served, sitePath path -> only "GET" req respond $ serveSite site path respond
   ["api", "invoice"] -> only "POST" req respond $ limited weHttp createLimit req respond $ createInvoiceHandler env req respond
   ["api", "invoice", iid] -> only "GET" req respond $ limited weHttp readLimit req respond $ readInvoiceHandler env (InvoiceId iid) req respond
   ["api", "invoice", iid, "cancel"] -> only "POST" req respond $ limited weHttp createLimit req respond $ cancelInvoiceHandler env (InvoiceId iid) respond
@@ -123,18 +130,6 @@ webApp env@WebEnv {weHttp} req respond = case pathInfo req of
   _ -> fromMaybe (respond notFound) names
   where
     names = weNames env >>= \n -> namesApp weHttp (namesRoutes (weConfig env) n) req respond
-
--- | The names site on a names host, the badges site on any other.
-servedSite :: WebEnv -> Request -> Maybe Site
-servedSite env@WebEnv {weBadgesSite, weNamesSite} req
-  | not lServeWebapp = Nothing
-  | Just site <- weNamesSite, maybe False (`elem` lNamesHosts) (requestHost req) = Just site
-  | otherwise = Just weBadgesSite
-  where
-    ListenerConfig {lServeWebapp, lNamesHosts} = listenerConfig env
-
-requestHost :: Request -> Maybe Text
-requestHost req = hostName . safeDecodeUtf8 <$> requestHeaderHost req
 
 -- | The names build keeps files at its root, so every path outside the API and the webhooks is the site's.
 sitePath :: [Text] -> Bool
@@ -185,8 +180,8 @@ prepareShell dir (Just StripeConfig {sPublishableKey}) =
             Right html -> pure (Just (LB.fromStrict (encodeUtf8 (injectPublishableKey sPublishableKey html))))
 
 exportWebapp :: ListenerConfig -> Maybe StripeConfig -> IO ()
-exportWebapp ListenerConfig {lStaticDir, lWebappExportDir, lNamesStaticDir, lNamesExportDir} stripeCfg = do
-  forM_ lWebappExportDir $ exportSite lStaticDir
+exportWebapp ListenerConfig {lBadgesStaticDir, lBadgesExportDir, lNamesStaticDir, lNamesExportDir} stripeCfg = do
+  forM_ lBadgesExportDir $ exportSite lBadgesStaticDir
   forM_ ((,) <$> lNamesStaticDir <*> lNamesExportDir) $ uncurry exportSite
   where
     exportSite dir out = do
@@ -541,17 +536,25 @@ eventTypeOf body = case J.decode body of
   Just (J.Object o) | Just (J.String t) <- KM.lookup "type" o -> Just t
   _ -> Nothing
 
+-- | Without the port, which each listener sets.
 webSettings :: ListenerConfig -> Warp.Settings
-webSettings ListenerConfig {lHost, lPort} =
+webSettings ListenerConfig {lHost} =
   Warp.setHost (fromString (T.unpack lHost))
-    . Warp.setPort lPort
     . Warp.setOnExceptionResponse (const internalError)
     $ Warp.defaultSettings
 
-runWebListener :: WebEnv -> IO ()
-runWebListener env = do
-  warnIfHeaderTrustIsExposed (listenerConfig env)
-  Warp.runSettings (webSettings (listenerConfig env)) (webApp env)
+-- | Each port with its app: the badges site's, and the names site's when it is served.
+webListeners :: WebEnv -> [(Int, Application)]
+webListeners env@WebEnv {weNamesSite} = (lBadgesPort, webApp env) : [(port, siteApp env weNamesSite) | Just port <- [lNamesPort]]
+  where
+    ListenerConfig {lBadgesPort, lNamesPort} = listenerConfig env
+
+runWebListeners :: WebEnv -> IO ()
+runWebListeners env = do
+  warnIfHeaderTrustIsExposed lc
+  raceAny_ [Warp.runSettings (Warp.setPort port (webSettings lc)) app | (port, app) <- webListeners env]
+  where
+    lc = listenerConfig env
 
 warnIfHeaderTrustIsExposed :: ListenerConfig -> IO ()
 warnIfHeaderTrustIsExposed ListenerConfig {lHost, lTrustForwardedFor} =

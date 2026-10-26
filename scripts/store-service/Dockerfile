@@ -97,7 +97,7 @@ COPY --from=names /names/webapp/dist /srv/names
 USER badge
 WORKDIR /home/badge
 
-EXPOSE 8080
+EXPOSE 8080 8081
 
 # There is no HEALTHCHECK because the listener answers before the chat side has an address, so it
 # would report healthy too early.
