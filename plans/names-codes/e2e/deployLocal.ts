@@ -90,6 +90,7 @@ const deployment = {
 writeFileSync(OUT, JSON.stringify(deployment, null, 2) + '\n')
 
 console.log(`wrote ${OUT}\n
+; with [names], a run outside the Docker image sets [listener] names_static_dir to the names build
 [names]
 tld = ${TLD}
 terms_version = 2026-10-23
