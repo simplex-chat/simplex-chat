@@ -816,10 +816,10 @@ testTwoWallets = withOrders $ \ctx -> do
   mapM (fmap nrLive . invoiceRegistration ctx) [a, b] `shouldReturn` [True, True]
 
 testTermsChanged :: IO ()
-testTermsChanged = withOrders $ \ctx0 -> withSettings (listName "dynamis") ctx0 $ \ctx -> do
+testTermsChanged = withOrders $ \ctx0 -> withSettings (listName "dynamis" . listName "alicebakery") ctx0 $ \ctx -> do
   listOnChain ctx "dynamis"
   let dynamis = aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 2, oPrice = 20000}
-  -- 112 characters pass the format and meet the terms check
+  -- 112 characters pass the format and meet the terms check; alicebakery's ini line without the policy's listing is a plain name
   forM_ [olderTerms, communityTerms termsVersion, communityTerms olderTerms, T.replicate 112 "a"] $ \t ->
     placeOrder ctx aliceOrder {oTerms = t} `shouldReturn` termsChanged termsVersion Nothing
   forM_ [termsVersion, olderTerms, communityTerms olderTerms, otherCommunityTerms] $ \t ->
@@ -829,6 +829,7 @@ testTermsChanged = withOrders $ \ctx0 -> withSettings (listName "dynamis") ctx0 
   (invId, v) <- placed ctx dynamis {oTerms = communityTerms termsVersion}
   field "terms" (registrationOf v) `shouldBe` Just (J.String $ communityTerms termsVersion)
   nrAgreedTerms <$> invoiceRegistration ctx invId `shouldReturn` communityTerms termsVersion
+  void $ placed ctx aliceOrder
 
 testCommunityTerms :: IO ()
 testCommunityTerms = withOrders $ \ctx0 -> withSettings (listName "alicebakery" . vectorTermStart) ctx0 $ \ctx -> do

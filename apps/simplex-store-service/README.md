@@ -596,8 +596,8 @@ changes nothing, and `--check` then reports the chain absent.
 are added under `[names]`.
 
 The controller's name policy (`SimplexNamePolicy`, read once from `namePolicy()` at startup and
-logged) decides which names are community names: its bona fide list, which the owner or the guardian
-edits on chain. A listed name can be registered only after its owner accepts the policy's current
+logged) decides which names are community names: its bona fide list, which the owner edits on chain and
+the guardian can add to. A listed name can be registered only after its owner accepts the policy's current
 community terms on chain, identified by `termsHash`, the keccak256 of their text. The controller
 owner's `setNamePolicy` takes effect for the service after a restart, so restart it at once: until
 then the service relays each open community order's acceptance to the old policy, whose register the

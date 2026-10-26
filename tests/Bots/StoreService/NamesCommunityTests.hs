@@ -24,9 +24,10 @@ import Network.Wai (responseLBS)
 import qualified Network.Wai.Handler.Warp as Warp
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.SimplexName (LabelHash (..), labelHash)
+import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig (..), TermsConfig (..), unknownKeys)
 import StoreService.Names.Abi (bytes32FromHex, hex, selector)
-import StoreService.Names.Community (TermsError (..), agreedTermsHash, communityFor, currentCommunityTerms, termsFor)
+import StoreService.Names.Community (TermsError (..), agreedTermsHash, communityFor, currentCommunityTerms, maxTermsBytes, termsFor)
 import StoreService.Service (checkNamePolicy)
 import Test.Hspec
 
@@ -205,7 +206,7 @@ testStartupWarnings :: TVar ChaChaDRG -> IO ()
 testStartupWarnings g = withContracts g $ \node ct -> do
   cfg <- withTermsUrl (fakeTermsUrl node)
   let warns c text = capturingStderr (checkNamePolicy c ct `shouldReturn` Right ()) >>= (`shouldSatisfy` T.isInfixOf text)
-  warns cfg {nCommunityTermsUrl = Nothing} "names: names.community_terms_url is not set, so community names cannot be ordered until it is set and the service restarts"
+  warns cfg {nCommunityTermsUrl = Nothing} "names: names.community_terms_url is not set, so community names cannot be searched, ordered or revealed until it is set and the service restarts"
   unreachable <- withTermsUrl "http://127.0.0.1:1/terms"
   warns unreachable "names: the community terms could not be checked now: names.community_terms_url could not be read: "
   setCommunityTerms node $ B.replicate 32 0
@@ -219,8 +220,8 @@ testTermsPageRefused g = withContracts g $ \node ct ->
     cfg <- withTermsUrl url
     setCommunityTerms node fakeCommunityTerms
     currentCommunityTerms cfg ct `shouldReturn` Left (TEUnread "names.community_terms_url answered HTTP 404")
-    atomically $ writeTVar page (ok200, B.replicate (1024 * 1024 + 1) 0x61)
-    currentCommunityTerms cfg ct `shouldReturn` Left (TEUnread "names.community_terms_url answered more than 1 MiB")
+    atomically $ writeTVar page (ok200, B.replicate (maxTermsBytes + 1) 0x61)
+    currentCommunityTerms cfg ct `shouldReturn` Left (TEUnread $ "names.community_terms_url answered more than " <> tshow maxTermsBytes <> " bytes")
     unreachable <- withTermsUrl "http://127.0.0.1:1/terms"
     Left (TEUnread e) <- currentCommunityTerms unreachable ct
     e `shouldSatisfy` T.isPrefixOf "names.community_terms_url could not be read: "

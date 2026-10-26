@@ -13,6 +13,7 @@ module StoreService.Names.Community
     termsErrorText,
     currentCommunityTerms,
     nameCommunityTerms,
+    maxTermsBytes,
     Acceptance (..),
     currentAcceptance,
   )
@@ -136,5 +137,5 @@ fetchTerms manager url =
         body <- LB.toStrict <$> brReadSome (responseBody resp) (maxTermsBytes + 1)
         pure $ case statusCode (responseStatus resp) of
           200 | B.length body <= maxTermsBytes -> Right body
-          200 -> Left "names.community_terms_url answered more than 1 MiB"
+          200 -> Left $ "names.community_terms_url answered more than " <> tshow maxTermsBytes <> " bytes"
           code -> Left $ "names.community_terms_url answered HTTP " <> tshow code
