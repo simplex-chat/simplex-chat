@@ -185,7 +185,7 @@ clearRecordsWithSigCalldata (Node node) nonce deadline sig =
     <> abiTuple [Static node, Static $ uint256 nonce, Static $ uint256 deadline, Dynamic $ abiBytes $ serializeSignature sig]
 
 bytes32 :: ByteString -> Eip712Value
-bytes32 = VUint . fromInteger . os2ip
+bytes32 node = VUint $ fromInteger $ os2ip node
 
 registrationTuple :: Registration -> ByteString
 registrationTuple r@Registration {rLabel, rOwner, rDuration, rSecret, rResolver} =

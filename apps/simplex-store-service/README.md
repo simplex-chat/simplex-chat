@@ -621,7 +621,7 @@ then `=` and the text:
 bakers = bakers and bakeries in Portugal
 ```
 
-Search answers and the registration view carry a listed name's text, which the page shows with the
+Search answers carry a listed name's text, and the registration view the text of an order that signed the community terms, which the page shows with the
 name as a community name. A name the policy lists without a line here shows as a community name
 without a text, and the service warns at startup, when it reads the policy, for each line naming a
 name the policy does not list, which is sold as a plain name. Each label must be a valid name in lower case and listed once; each text is
