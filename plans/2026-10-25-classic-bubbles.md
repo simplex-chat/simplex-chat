@@ -221,7 +221,8 @@ B14  group sender name: starts at the bubble edge, 4dp after the avatar, as the 
 
 ```
 chat/item/TerminalItemView.kt     LocalBubbleLayout; usesChatTypography(); chatTextStyle (was terminalTextStyle) in both layouts;
-                                  inlineIcon in both layouts; metaBaseline shared by TerminalMetaLayout and the bubbles
+                                  inlineIcon in both layouts; metaBaseline shared by TerminalMetaLayout and the bubbles;
+                                  hasTerminalSender shared with the event runs of bubbles
 chat/item/FramedItemView.kt       BUBBLE_* constants, BUBBLE_SIDE_INSET among them; Modifier.bubbleTextPadding, Modifier.bubbleMeta(),
                                   RowScope.bubbleMetaOnBaseline(); header, quote, emoji, meta and text insets
 chat/item/CIMetaView.kt           metaReserveCopy (was terminalReserveSpaceForMeta); breakBefore: a breaking space instead of the word joiner
