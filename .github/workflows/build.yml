@@ -141,14 +141,12 @@ jobs:
         id: changes
         shell: bash
         env:
-          BASE: ${{ github.event.pull_request.base.sha }}
           BASE_BRANCH: ${{ inputs.base }}
           GH_TOKEN: ${{ github.token }}
         run: |
           case "$GITHUB_EVENT_NAME" in
             pull_request)
-              git fetch -q --depth=1 origin "$BASE"
-              python3 scripts/ci/packages_release.py changes "$BASE"
+              python3 scripts/ci/packages_release.py changes HEAD^1
               ;;
             workflow_dispatch)
               base=$(gh api "repos/$GITHUB_REPOSITORY/compare/$BASE_BRANCH...$GITHUB_REF_NAME" --jq .merge_base_commit.sha)
