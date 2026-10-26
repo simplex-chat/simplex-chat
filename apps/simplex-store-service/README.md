@@ -123,7 +123,7 @@ turns off the group's commands, though a group created earlier still has its cod
 the poll cadence, optional `[apple]` and `[google]` sections that verify store purchases (see
 [Store purchases](#store-purchases-app-store-and-google-play)), and optional `[names]` and `[chain]` sections for the names store (omitting both
 turns it off), whose `[chain] service_key` is [the gas key](#the-gas-key). `[names]` requires
-`terms_version` and `terms_url`, and an optional `[community]` section lists the community names
+`terms_version` and `terms_url`, and an optional `[community]` section gives what each community name is for
 (see [Terms and community names](#terms-and-community-names)). Write every setting as
 `key = value`: the parser also reads `key: value`, but drops the first character of its value. A
 key written twice in one section, or a section header written twice, stops the service at startup.
@@ -601,7 +601,7 @@ edits on chain. A listed name can be registered only after its owner accepts the
 community terms on chain, identified by `termsHash`, the keccak256 of their text. The controller
 owner's `setNamePolicy` takes effect for the service after a restart, so restart it at once: until
 then the service relays each open community order's acceptance to the old policy, whose register the
-new policy refuses, and the page signs again until the order lapses, each time spending gas. One
+new policy refuses, and the page signs again until the order lapses; only the first relay spends gas. One
 more setting gives the community terms' text:
 
 - `community_terms_url`: the page of the community terms, which the order's checkbox links to beside

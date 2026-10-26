@@ -20,7 +20,7 @@ module StoreService.Names.Reveal
   )
 where
 
-import Control.Monad (unless)
+import Control.Monad (forM, unless)
 import Control.Monad.Except (ExceptT (..), runExceptT, throwError, withExceptT)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
@@ -80,9 +80,8 @@ parseRevealFields o = do
     _ -> Nothing
   rfContactLinks <- links "contact" records
   rfChannelLinks <- links "channel" records
-  rfAcceptance <- case KM.lookup "acceptance" o of
-    Nothing -> Just Nothing
-    Just (J.Object a) -> Just <$> acceptance a
+  rfAcceptance <- forM (KM.lookup "acceptance" o) $ \case
+    J.Object a -> acceptance a
     _ -> Nothing
   pure RevealFields {rfSecret, rfContactLinks, rfChannelLinks, rfNonce, rfDeadline, rfAcceptance}
   where

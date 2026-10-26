@@ -70,9 +70,9 @@ registrationView st cfg ct now r = do
 readViewChain :: NamesConfig -> Contracts -> NameRegistration -> IO ViewReads
 readViewChain cfg ct NameRegistration {nrPhase, nrOwner, nrLabelHash, nrReveal} = case nrPhase of
   PCommitted -> do
-    vr <- sponsorNonce ct nrOwner <&> \case
-      Right nonce -> none {vrIntentNonce = Just nonce}
-      Left _ -> none {vrUnread = ["intentNonce"]}
+    vr <- sponsorNonce ct nrOwner >>= \case
+      Right nonce -> pure none {vrIntentNonce = Just nonce}
+      Left _ -> pure none {vrUnread = ["intentNonce"]}
     if isJust nrReveal
       then pure vr
       else runExceptT acceptanceRead <&> \case

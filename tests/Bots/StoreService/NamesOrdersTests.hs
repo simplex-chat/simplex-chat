@@ -1603,14 +1603,12 @@ testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
 
 testViewCommunity :: IO ()
 testViewCommunity = withServiceStore $ \st -> withFakeEthNode $ \node -> do
-  let terms = fakeCommunityTerms
-  Right () <- placePaid st "r1" ownerA (order "alicebakery" 1) {ofAgreedTerms = termsVersion <> "/community/" <> T.drop 2 (hex terms)} (addUTCTime 3600 t0)
+  Right () <- placePaid st "r1" ownerA (order "alicebakery" 1) {ofAgreedTerms = communityTerms termsVersion} (addUTCTime 3600 t0)
   r <- withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "r1")
   let LabelHash aliceHash = labelHash "alicebakery"
-      url = "https://simplex.chat/community-terms" :: Text
       listing :: [(ByteString, Text)] -> NameRegistration -> Maybe J.Value
-      listing entries r' = field "community" $ objectOf $ viewJSON (testNamesConfig node) {nCommunity = M.fromList entries, nCommunityTermsUrl = Just url} r' Nothing Nothing ViewReads {vrIntentNonce = Nothing, vrUnread = [], vrAcceptance = Nothing}
-      entry for = Just $ J.object ["for" .= for, "terms" .= J.object ["url" .= url, "hash" .= hex terms]]
+      listing entries r' = field "community" $ objectOf $ viewJSON (testNamesConfig node) {nCommunity = M.fromList entries} r' Nothing Nothing ViewReads {vrIntentNonce = Nothing, vrUnread = [], vrAcceptance = Nothing}
+      entry for = Just $ J.object ["for" .= for, "terms" .= J.object ["url" .= fakeTermsUrl node, "hash" .= hex fakeCommunityTerms]]
   listing [(aliceHash, "bakers and bakeries in Lisbon")] r `shouldBe` entry (Just ("bakers and bakeries in Lisbon" :: Text))
   -- the community terms the order signed, without a text in the ini
   listing [] r `shouldBe` entry (Nothing :: Maybe Text)

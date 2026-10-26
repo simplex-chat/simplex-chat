@@ -287,12 +287,12 @@ checkNamePolicy cfg@NamesConfig {nCommunity, nCommunityTermsUrl} ct =
         bonaFideName ct (LabelHash h) >>= \case
           Right False -> logWarn $ "names: [community] lists a name the name policy does not list, so it is sold as a plain name: " <> text
           Right True -> pure ()
-          Left e -> logWarn $ "names: a [community] name's listing could not be read: " <> tshow e
+          Left e -> logWarn $ "names: a [community] name's listing could not be read: " <> text <> ": " <> tshow e
       currentCommunityTerms cfg ct >>= \case
         Right h -> Right () <$ logInfo ("names: community terms " <> hex h <> " match community_terms_url")
         Left e@TEMismatch {} -> pure $ Left $ "names: " <> T.unpack (termsErrorText e)
         Left TENoTerms -> Right () <$ when (isJust nCommunityTermsUrl) (logWarn "names: the name policy has no community terms yet, so community names cannot be ordered until the owner sets them")
-        Left e -> Right () <$ logWarn ("names: " <> termsErrorText e <> ", so community names cannot be ordered until it is")
+        Left e -> Right () <$ logWarn ("names: " <> termsErrorText e <> ", so community names cannot be ordered until the text at community_terms_url is read and matches")
 
 -- | The workers resume every registration in their phases, and the code sweep runs at the start and then daily.
 namesLanes :: NamesEnv -> IO [IO ()]

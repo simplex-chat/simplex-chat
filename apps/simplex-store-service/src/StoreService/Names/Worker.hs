@@ -273,8 +273,8 @@ committed w@Worker {wkSender} now r@NameRegistration {nrId, nrReveal, nrRevealAf
             Just revealAfter | now < revealAfter -> pure $ waitUntil r revealAfter
             _ -> sendRegister w now r rv
 
--- | The step that relays the reveal's acceptance to the name policy, as soon as the reveal is stored, so the register need
--- not wait for it; Nothing once the policy holds it. A relay whose dry run refuses the acceptance clears the reveal, for
+-- | The step that relays the reveal's acceptance to the name policy, before the wait for revealAfter for a reveal stored
+-- before it; Nothing once the policy holds it. A relay whose dry run refuses the acceptance clears the reveal, for
 -- the page to sign both again.
 relayAcceptance :: Worker -> UTCTime -> NameRegistration -> Word64 -> TermsAcceptance -> IO (Maybe Next)
 relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts}, wkSender} now r@NameRegistration {nrId = regId@(RegistrationId rid), nrOwner, nrCommitment} deadline a@TermsAcceptance {taTermsHash} =
@@ -289,8 +289,8 @@ relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts}, wkSender} now r@Na
               Just <$> (submitTransaction wkSender (TxAccept regId) policy (acceptCalldata nrCommitment nrOwner deadline a) >>= \case
                 Right p -> pure $ Await p
                 Left SEInFlight -> pure Again
-                Left (SEChain (ChainReverted reason))
-                  | reason `elem` map Just [RNTermsMismatch, RNInvalidNonce, RNSignatureExpired, RNInvalidSignature] -> do
+                Left (SEChain (ChainReverted (Just reason)))
+                  | reason `elem` [RNTermsMismatch, RNInvalidNonce, RNSignatureExpired, RNInvalidSignature] -> do
                       logWarn $ "names worker: registration " <> rid <> ": its terms acceptance is refused, " <> tshow reason <> "; the page signs again"
                       save w now r {nrReveal = Nothing}
                 Left e -> pure $ failure r e)
