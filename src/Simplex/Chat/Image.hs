@@ -17,7 +17,6 @@ where
 
 import Codec.Picture (DynamicImage (..), Image (..), Pixel (..), PixelRGB8, PixelRGBA8 (..), convertRGB8, convertRGBA8, dynamicMap, dynamicPixelMap, generateImage, pixelMap)
 import Codec.Picture.JPEGTurbo (DecodeOptions (DecodeOptions), JpegHeader (..), Scale (..), decodeJpeg, encodeRGB, readJpegHeader)
-import Codec.Picture.Png (encodePng)
 import qualified Codec.Picture.STBIR as STBIR
 import qualified Codec.Picture.Spng as Spng
 import Codec.Picture.Types (pixelFoldMap)
@@ -28,7 +27,7 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Base64.Lazy as LB64
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Int (Int64)
-import Data.List (maximumBy)
+import Data.List (maximumBy, minimumBy)
 import Data.Maybe (fromMaybe, listToMaybe)
 import Data.Monoid (All (..))
 import Data.Ord (comparing)
@@ -151,14 +150,14 @@ fitImage output format maxSize img
     fitLargest largest = case format of
       IFJpeg -> do
         let rgb = convertRGB8 img
-            largestRGB = scaleRGB8 largest rgb
+            largestRGB = scaleRGB8 rgb largest
             jpeg q = fmap (out . LB.fromStrict) . encodeRGB q
-        fitSize maxSize (Just $ \target -> 8 * jpegBytes target / bitsPerPixel) largest (jpeg quality . (`scaleRGB8` rgb)) >>= \case
+        fitSize maxSize (Just $ \target -> 8 * jpegBytes target / bitsPerPixel) largest (jpeg quality . scaleRGB8 rgb) >>= \case
           Right (size, r) | size == largest && fromIntegral (LB.length r) < minFill * fromIntegral maxSize -> Right <$> bisect maxSize qualityStep (`jpeg` largestRGB) (quality, r) 96
           r -> pure $ snd <$> r
       IFPng -> do
-        let rgba = convertRGBA8 img
-        fmap snd <$> fitSize maxSize Nothing largest (pure . out . encodePng . (`scaleRGBA8` rgba))
+        let png = fmap (out . LB.fromStrict) . encodeSmallerPng
+        fmap snd <$> fitSize maxSize Nothing largest (png . scaleRGBA8 (convertRGBA8 img))
     qualityStep good bad = if bad - good <= 1 then Nothing else Just $ (good + bad) `div` 2
 
 fitSize :: Int64 -> Maybe (Double -> Double) -> (Int, Int) -> ((Int, Int) -> IO LB.ByteString) -> IO (Either String ((Int, Int), LB.ByteString))
@@ -219,6 +218,11 @@ bisect maxSize step encode = go
           EQ -> pure r'
           GT -> go (good, r) m
 
+encodeSmallerPng :: Image PixelRGBA8 -> IO ByteString
+encodeSmallerPng img = minimumBy (comparing B.length) <$> mapM encode [False, True]
+  where
+    encode filtering = either fail pure =<< Spng.encodePng (Spng.EncodeOptions 9 filtering) img
+
 maxImageSide :: Int
 maxImageSide = 16384
 
@@ -241,19 +245,22 @@ hasSideAbove side img = imageWidth img > side || imageHeight img > side
 hasSize :: (Int, Int) -> Image a -> Bool
 hasSize (w, h) img = imageWidth img == w && imageHeight img == h
 
-scaleRGB8 :: (Int, Int) -> Image PixelRGB8 -> Image PixelRGB8
-scaleRGB8 size img
+scaleRGB8 :: Image PixelRGB8 -> (Int, Int) -> Image PixelRGB8
+scaleRGB8 img size
   | hasSize size img = img
   | otherwise = scaled {imageData = sharpen 3 size $ imageData scaled}
   where
     scaled = catmullRom [] size img
 
-scaleRGBA8 :: (Int, Int) -> Image PixelRGBA8 -> Image PixelRGBA8
-scaleRGBA8 size img
-  | hasSize size img = img
-  | otherwise = pixelMap unpremultiply $ scaled {imageData = sharpen 4 size $ imageData scaled}
+scaleRGBA8 :: Image PixelRGBA8 -> (Int, Int) -> Image PixelRGBA8
+scaleRGBA8 img = scale
   where
-    scaled = catmullRom [STBIR.flag_ALPHA_PREMULTIPLIED] size $ pixelMap premultiply img
+    premultiplied = pixelMap premultiply img
+    scale size
+      | hasSize size img = img
+      | otherwise = pixelMap unpremultiply $ scaled {imageData = sharpen 4 size $ imageData scaled}
+      where
+        scaled = catmullRom [STBIR.flag_ALPHA_PREMULTIPLIED] size premultiplied
 
 catmullRom :: STBIR.STBIRPixel a => [STBIR.Flag] -> (Int, Int) -> Image a -> Image a
 catmullRom flags (w, h) = STBIR.resize options w h

@@ -301,7 +301,7 @@ testScaleResearch :: IO ()
 testScaleResearch = do
   Right src <- decodeImage <$> B.readFile "tests/fixtures/preview-issue1.png"
   Right (ImageRGB8 expected) <- decodeImage <$> B.readFile "tests/fixtures/preview-issue1-400x200-sharpened.png"
-  let scaled = scaleRGB8 (400, 200) $ convertRGB8 src
+  let scaled = scaleRGB8 (convertRGB8 src) (400, 200)
   imageSize (ImageRGB8 scaled) `shouldBe` (400, 200)
   pixelFold (\n x y p -> if p == pixelAt expected x y then n else n + 1) (0 :: Int) scaled `shouldBe` 0
 
@@ -309,12 +309,12 @@ testScaleSameSize :: IO ()
 testScaleSameSize = do
   let rgb = generateImage (\x y -> PixelRGB8 (fromIntegral $ x * 4) (fromIntegral $ y * 5) 128) 64 48
       rgba = generateImage (\x y -> PixelRGBA8 (fromIntegral $ x * 4) (fromIntegral $ y * 5) 128 (fromIntegral $ x + y)) 64 48
-  imageData (scaleRGB8 (64, 48) rgb) `shouldBe` imageData rgb
-  imageData (scaleRGBA8 (64, 48) rgba) `shouldBe` imageData rgba
+  imageData (scaleRGB8 rgb (64, 48)) `shouldBe` imageData rgb
+  imageData (scaleRGBA8 rgba (64, 48)) `shouldBe` imageData rgba
 
 testScaleTransparency :: IO ()
 testScaleTransparency = do
-  let scaled = scaleRGBA8 (40, 40) $ generateImage pixel 64 64
+  let scaled = scaleRGBA8 (generateImage pixel 64 64) (40, 40)
       visible = [p | y <- [0 .. 39], x <- [0 .. 39], let p@(PixelRGBA8 _ _ _ a) = pixelAt scaled x y, a > 0]
   filter (\(PixelRGBA8 r g b _) -> (r, g, b) /= (255, 0, 0)) visible `shouldBe` []
   any (\(PixelRGBA8 _ _ _ a) -> a < 255) visible `shouldBe` True
