@@ -37,13 +37,12 @@ import Network.HTTP.Types (hContentType)
 import Network.Wai (Application)
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Chat.PaymentService.Types (InvoiceStatus (..))
-import qualified Simplex.Messaging.Crypto as C
-import StoreService.Config (NamesConfig (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
+import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..), Secp256k1PrivateKey, signRecoverable)
 import Simplex.Messaging.Eth.EIP712 (serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
-import StoreService.Names.Abi (hex, uint256)
+import StoreService.Names.Abi (hex, selector, uint256)
 import StoreService.Names.Links (linkMaxBytes)
 import StoreService.Names.Orders (OrdersEnv (..))
 import StoreService.Names.Phases (RegistrationId (..))
@@ -80,6 +79,7 @@ namesRevealTests = describe "StoreService names: reveal" $ do
   describe "community terms" $ do
     it "stores the owner's acceptance of the policy's current terms with a listed name's reveal" testAcceptanceStored
     it "refuses a listed name's reveal without an acceptance, or by another signer, for other terms or at another nonce, and an unlisted name's with one" testAcceptanceRefusals
+    it "answers 503 for a listed name's reveal while its listing, its terms or the owner's policy nonce cannot be read, storing nothing" testAcceptanceUnavailable
   describe "races" $ do
     it "answers registration_changed with the current view when the registration changed during the checks" testLostRace
     it "runs one at a time with /name for the name, exactly one of them taking effect" testRacesName
@@ -91,13 +91,9 @@ data Fx = Fx {fCtx :: Ctx, fApp :: Application}
 
 -- | The registration routes as namesRoutes registers them, the reveal's and another name's included.
 withReveals :: (Fx -> IO a) -> IO a
-withReveals = withRevealsConfig id
-
-withRevealsConfig :: (NamesConfig -> NamesConfig) -> (Fx -> IO a) -> IO a
-withRevealsConfig config action = withOrders $ \ctx@Ctx {cNode, cOrders = orders, cWeb} -> do
+withReveals action = withOrders $ \ctx@Ctx {cNode, cOrders, cWeb} -> do
   answerCall cNode fakeSponsor noncesCall $ Returns $ uint256 (0 :: Int)
-  let cOrders = orders {oeConfig = config $ oeConfig orders}
-      web = cWeb {weOrders = Just cOrders}
+  let web = cWeb {weOrders = Just cOrders}
       routes = \case
         ["api", "registration", rid] -> Just Route {rMethod = "GET", rLimit = readLimit, rHandler = registrationHandler cOrders holdMicros rid}
         ["api", "registration", rid, "reveal"] -> Just Route {rMethod = "POST", rLimit = readLimit, rHandler = revealHandler cOrders rid}
@@ -108,7 +104,7 @@ withRevealsConfig config action = withOrders $ \ctx@Ctx {cNode, cOrders = orders
   Warp.testWithApplication (pure app) $ \port ->
     action Fx {fCtx = ctx {cOrders, cWeb = web, cClient = (mgr, "http://127.0.0.1:" <> show port)}, fApp = app}
 
--- | The request, held at its first chain read: a reveal's nonce read, its last check before it writes, or /name's name check, in its turns.
+-- | The request, held at its first chain read: a reveal's nonce read, or /name's name check, in its turns.
 pausedAtChainRead :: Ctx -> IO a -> IO (Async a, Gate)
 pausedAtChainRead Ctx {cNode} = pausedAt cNode "eth_call"
 
@@ -210,19 +206,12 @@ badRequest = refused 400 "bad_request"
 stored :: Ctx -> RegistrationId -> IO NameRegistration
 stored Ctx {cStore} rid = withTransaction cStore $ \db -> fromJust <$> getRegistration db rid
 
-termsHash :: B.ByteString
-termsHash = C.keccak256 "bona fide community terms v1"
-
--- | Alice's name listed by the policy, its terms page served, and her policy nonce at 2.
+-- | Alice's name listed by the policy, and her policy nonce at 2.
 withListedReveals :: (Fx -> IO a) -> IO a
-withListedReveals action = do
-  text <- newTVarIO "bona fide community terms v1"
-  withTermsPage text $ \url -> withRevealsConfig (\cfg -> cfg {nCommunityTermsUrl = Just url}) $ \fx@Fx {fCtx = Ctx {cNode}} -> do
-    let LabelHash aliceHash = labelHash "alicebakery"
-    listCommunityName cNode aliceHash
-    setCommunityTerms cNode termsHash
-    answerCall cNode fakeNamePolicy noncesCall $ Returns $ uint256 (2 :: Int)
-    action fx
+withListedReveals action = withReveals $ \fx@Fx {fCtx = Ctx {cNode}} -> do
+  listCommunityName cNode $ labelHash "alicebakery"
+  answerCall cNode fakeNamePolicy noncesCall $ Returns $ uint256 (2 :: Int)
+  action fx
 
 -- | Alice's order under the community terms, as the page orders a listed name.
 listedOrder :: Order
@@ -241,7 +230,7 @@ testAcceptanceStored :: IO ()
 testAcceptanceStored = withListedReveals $ \Fx {fCtx = ctx} -> do
   rid <- committed ctx listedOrder
   sig <- signIntent ctx keyA alice 0 revealBefore
-  acceptance <- signAcceptance ctx keyA termsHash 2
+  acceptance <- signAcceptance ctx keyA fakeCommunityTerms 2
   reveal ctx rid (withAcceptance acceptance $ bodyOf sig alice 0 revealBefore) `shouldReturn` accepted
   (rvAcceptance =<<) . nrReveal <$> stored ctx rid `shouldReturn` Just acceptance
 
@@ -253,16 +242,38 @@ testAcceptanceRefusals = do
     let body = bodyOf sig alice 0 revealBefore
         refusedWith acceptance = reveal ctx rid (maybe id withAcceptance acceptance body) `shouldReturn` badRequest
     refusedWith Nothing
-    refusedWith . Just =<< signAcceptance ctx fakeRegistrarKey termsHash 2
+    refusedWith . Just =<< signAcceptance ctx fakeRegistrarKey fakeCommunityTerms 2
     refusedWith . Just =<< signAcceptance ctx keyA (C.keccak256 "bona fide community terms v0") 2
-    refusedWith . Just =<< signAcceptance ctx keyA termsHash 1
+    refusedWith . Just =<< signAcceptance ctx keyA fakeCommunityTerms 1
     nrReveal <$> stored ctx rid `shouldReturn` Nothing
   withReveals $ \Fx {fCtx = ctx} -> do
     rid <- committed ctx (orderOf alice)
     sig <- signIntent ctx keyA alice 0 revealBefore
-    acceptance <- signAcceptance ctx keyA termsHash 0
+    acceptance <- signAcceptance ctx keyA fakeCommunityTerms 0
     reveal ctx rid (withAcceptance acceptance $ bodyOf sig alice 0 revealBefore) `shouldReturn` badRequest
     nrReveal <$> stored ctx rid `shouldReturn` Nothing
+
+testAcceptanceUnavailable :: IO ()
+testAcceptanceUnavailable = withListedReveals $ \Fx {fCtx = ctx@Ctx {cNode}} -> do
+  rid <- committed ctx listedOrder
+  sig <- signIntent ctx keyA alice 0 revealBefore
+  acceptance <- signAcceptance ctx keyA fakeCommunityTerms 2
+  let body = withAcceptance acceptance $ bodyOf sig alice 0 revealBefore
+      LabelHash aliceHash = labelHash "alicebakery"
+      unavailable = do
+        reveal ctx rid body `shouldReturn` refused 503 "provider_unavailable"
+        nrReveal <$> stored ctx rid `shouldReturn` Nothing
+  -- terms on chain that the page's text does not hash to
+  setCommunityTerms cNode $ C.keccak256 "bona fide community terms v2"
+  unavailable
+  setCommunityTerms cNode fakeCommunityTerms
+  answerCall cNode fakeNamePolicy noncesCall $ Reverts ""
+  unavailable
+  answerCall cNode fakeNamePolicy noncesCall $ Returns $ uint256 (2 :: Int)
+  answerCall cNode fakeNamePolicy (selector "bonaFideNames(bytes32)" <> aliceHash) $ Reverts ""
+  unavailable
+  listCommunityName cNode $ labelHash "alicebakery"
+  reveal ctx rid body `shouldReturn` accepted
 
 -- | The fields a refused reveal must leave as they were.
 unwritten :: NameRegistration -> (Int64, Maybe NameReveal, Bool)

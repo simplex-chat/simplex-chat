@@ -34,7 +34,6 @@ module Bots.StoreService.FakeEthNode
     setCommunityTerms,
     fakeCommunityTerms,
     fakeTermsUrl,
-    withTermsPage,
     fakeSponsor,
     fakeBaseRegistrar,
     fakeResolver,
@@ -46,6 +45,7 @@ module Bots.StoreService.FakeEthNode
   )
 where
 
+import Control.Applicative ((<|>))
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (Async, async, cancel)
 import Control.Concurrent.STM
@@ -55,7 +55,6 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.Types as JT
 import qualified Data.ByteArray as BA
 import Data.ByteArray.Encoding (Base (Base16), convertFromBase)
-import Control.Applicative ((<|>))
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as LB
@@ -73,6 +72,7 @@ import Simplex.Messaging.Crypto (keccak256)
 import qualified Simplex.Messaging.Crypto.Secp256k1 as S
 import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Eth.Address (Address, unAddress)
+import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (eitherToMaybe)
 import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Abi (addressWord, hex, selector)
@@ -155,18 +155,12 @@ fakeTermsUrl :: FakeEthNode -> Text
 fakeTermsUrl FakeEthNode {fnUrl} = T.pack fnUrl <> "/terms"
 
 -- | The policy lists the name as a community name.
-listCommunityName :: FakeEthNode -> ByteString -> IO ()
-listCommunityName node labelHash = answerCall node fakeNamePolicy (selector "bonaFideNames(bytes32)" <> labelHash) $ Returns $ B.replicate 31 0 <> "\x01"
+listCommunityName :: FakeEthNode -> LabelHash -> IO ()
+listCommunityName node (LabelHash lh) = answerCall node fakeNamePolicy (selector "bonaFideNames(bytes32)" <> lh) $ Returns $ B.replicate 31 0 <> "\x01"
 
 -- | The policy's community terms are the text with this keccak256.
 setCommunityTerms :: FakeEthNode -> ByteString -> IO ()
 setCommunityTerms node termsHash = answerCall node fakeNamePolicy (selector "termsHash()") $ Returns termsHash
-
--- | A page serving the terms text the action may change, at the URL it is given.
-withTermsPage :: TVar ByteString -> (Text -> IO a) -> IO a
-withTermsPage text action =
-  Warp.testWithApplication (pure $ \_ respond -> readTVarIO text >>= respond . responseLBS ok200 [] . LB.fromStrict) $ \port ->
-    action $ "http://127.0.0.1:" <> T.pack (show port) <> "/terms"
 
 defaultCall :: (ByteString, ByteString) -> Maybe CallAnswer
 defaultCall (to, calldata)
@@ -316,27 +310,27 @@ awaitSent FakeEthNode {fnState} n = atomically $ do
   pure $ reverse sent
 
 fakeApp :: TVar FakeState -> Application
-fakeApp st req respond
-  | pathInfo req == ["terms"] = respond $ responseLBS ok200 [] $ LB.fromStrict fakeCommunityTermsText
-  | otherwise = do
-      body <- strictRequestBody req
-      case JT.parseMaybe request =<< J.decode body of
-        Just (method, params) ->
-          fault method >>= \case
-            Just HttpFailure -> respond $ responseLBS badGateway502 [] "bad gateway"
-            Just Hang -> do
-              atomically $ readTVar st >>= check . fsClosed
-              reply $ rpcError (-32000) "node closed" Nothing
-            Just (RpcError code message revertData) -> reply $ rpcError code message revertData
-            Just NotJson -> respond $ responseLBS ok200 [] "<html>Sign in to provider-api-key</html>"
-            Just (Answers v) -> reply ["result" .= v]
-            Just (Slow delay) -> threadDelay delay >> answered method params
-            Just (Gated Gate {gArrived, gRelease}) -> do
-              atomically $ putTMVar gArrived ()
-              atomically $ takeTMVar gRelease `orElse` (readTVar st >>= check . fsClosed)
-              answered method params
-            Nothing -> answered method params
-        Nothing -> respond $ responseLBS badRequest400 [] "not a JSON-RPC request"
+fakeApp st req respond = do
+  body <- strictRequestBody req
+  case JT.parseMaybe request =<< J.decode body of
+    Just (method, params) ->
+      fault method >>= \case
+        Just HttpFailure -> respond $ responseLBS badGateway502 [] "bad gateway"
+        Just Hang -> do
+          atomically $ readTVar st >>= check . fsClosed
+          reply $ rpcError (-32000) "node closed" Nothing
+        Just (RpcError code message revertData) -> reply $ rpcError code message revertData
+        Just NotJson -> respond $ responseLBS ok200 [] "<html>Sign in to provider-api-key</html>"
+        Just (Answers v) -> reply ["result" .= v]
+        Just (Slow delay) -> threadDelay delay >> answered method params
+        Just (Gated Gate {gArrived, gRelease}) -> do
+          atomically $ putTMVar gArrived ()
+          atomically $ takeTMVar gRelease `orElse` (readTVar st >>= check . fsClosed)
+          answered method params
+        Nothing -> answered method params
+    Nothing
+      | pathInfo req == ["terms"] -> respond $ responseLBS ok200 [] $ LB.fromStrict fakeCommunityTermsText
+      | otherwise -> respond $ responseLBS badRequest400 [] "not a JSON-RPC request"
   where
     request = J.withObject "request" $ \o -> (,) <$> o .: "method" <*> o .: "params"
     -- a gate holds one request only

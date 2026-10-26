@@ -162,7 +162,7 @@ data NamesConfig = NamesConfig
     nRevealMarginSeconds :: Int,
     nMaxOrderMoves :: Int,
     nTerms :: TermsConfig,
-    -- | The operator's community names, keyed by the label hash's bytes, as search receives a name.
+    -- | What each community name is for, keyed by the label hash's bytes, as search receives a name.
     nCommunity :: Map ByteString Text,
     -- | The page of the community terms text, whose keccak256 the name policy holds.
     nCommunityTermsUrl :: Maybe Text,

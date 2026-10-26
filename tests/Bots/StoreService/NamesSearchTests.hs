@@ -52,7 +52,7 @@ import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (strEncode)
-import Simplex.Messaging.SimplexName (SimplexTLD (..))
+import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..))
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import StoreService.Config (ListenerConfig (..), NamesConfig (..), TermsConfig (..))
 import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, bytes32FromHex, hex, uint256)
@@ -366,7 +366,7 @@ testRegistered g = withSearch g id id $ \s@Search {node} -> do
 
 testCommunity :: TVar ChaChaDRG -> IO ()
 testCommunity g = withSearch g listAlice id $ \s@Search {node, store} -> do
-  listCommunityName node $ fromJust $ bytes32FromHex aliceHex
+  listCommunityName node $ LabelHash $ fromJust $ bytes32FromHex aliceHex
   available node
   answerCall node fakeController (rentPriceCall 12) $ Returns $ rentPriceAnswer 10000
   searchAlice s 12 `shouldReturn` listed node (availableAnswer 10000)

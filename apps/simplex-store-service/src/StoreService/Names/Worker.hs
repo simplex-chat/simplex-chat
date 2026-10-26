@@ -266,35 +266,36 @@ committed w@Worker {wkSender} now r@NameRegistration {nrId, nrReveal, nrRevealAf
       Nothing -> case lapseMoment r of
         Just lapse | now <= lapse -> pure $ waitUntil r $ addUTCTime chainSecond lapse
         _ -> save w now r {nrPhase = PFailed, nrFailedAt = Just now, nrError = Just notSignedInTime}
-      Just rv -> accepted w now r rv $ case secondsTime . toInteger <$> nrRevealAfter of
-        Just revealAfter | now < revealAfter -> pure $ waitUntil r revealAfter
-        _ -> sendRegister w now r rv
+      Just rv ->
+        relayAcceptance w now r rv >>= \case
+          Just relaying -> pure relaying
+          Nothing -> case secondsTime . toInteger <$> nrRevealAfter of
+            Just revealAfter | now < revealAfter -> pure $ waitUntil r revealAfter
+            _ -> sendRegister w now r rv
 
--- | The reveal's acceptance is relayed as soon as it is stored, so the register need not wait for it; then the next step.
--- A relay whose dry run refuses the acceptance clears the reveal, for the page to sign both again.
-accepted :: Worker -> UTCTime -> NameRegistration -> NameReveal -> IO Next -> IO Next
-accepted w@Worker {wkOrders = OrdersEnv {oeContracts}, wkSender} now r@NameRegistration {nrId = regId@(RegistrationId rid), nrOwner, nrCommitment} NameReveal {rvAcceptance, rvDeadline} next = case rvAcceptance of
-  Nothing -> next
+-- | The step that relays the reveal's acceptance to the name policy, as soon as the reveal is stored, so the register need
+-- not wait for it; Nothing once the policy holds it, or for a reveal without one. A relay whose dry run refuses the
+-- acceptance clears the reveal, for the page to sign both again.
+relayAcceptance :: Worker -> UTCTime -> NameRegistration -> NameReveal -> IO (Maybe Next)
+relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts}, wkSender} now r@NameRegistration {nrId = regId@(RegistrationId rid), nrOwner, nrCommitment} NameReveal {rvAcceptance, rvDeadline} = case rvAcceptance of
+  Nothing -> pure Nothing
   Just a@TermsAcceptance {taTermsHash} ->
     inFlightTransaction wkSender (TxAccept regId) >>= \case
-      Just p -> pure $ Await p
+      Just p -> pure $ Just $ Await p
       Nothing ->
-        acceptedTerms oeContracts nrCommitment nrOwner >>= \case
-          Left e -> pure $ failure r e
-          Right held
-            | held == taTermsHash -> next
+        runExceptT ((,) <$> ExceptT (namePolicy oeContracts) <*> ExceptT (acceptedTerms oeContracts nrCommitment nrOwner)) >>= \case
+          Left e -> pure $ Just $ failure r e
+          Right (policy, held)
+            | held == taTermsHash -> pure Nothing
             | otherwise ->
-                namePolicy oeContracts >>= \case
-                  Left e -> pure $ failure r e
-                  Right policy ->
-                    submitTransaction wkSender (TxAccept regId) policy (acceptCalldata nrCommitment nrOwner rvDeadline a) >>= \case
-                      Right p -> pure $ Await p
-                      Left SEInFlight -> pure Again
-                      Left (SEChain (ChainReverted reason))
-                        | reason `elem` map Just [RNTermsMismatch, RNInvalidNonce, RNSignatureExpired, RNInvalidSignature] -> do
-                            logWarn $ "names worker: registration " <> rid <> ": its terms acceptance is refused, " <> tshow reason <> "; the page signs again"
-                            save w now r {nrReveal = Nothing}
-                      Left e -> pure $ failure r e
+                Just <$> (submitTransaction wkSender (TxAccept regId) policy (acceptCalldata nrCommitment nrOwner rvDeadline a) >>= \case
+                  Right p -> pure $ Await p
+                  Left SEInFlight -> pure Again
+                  Left (SEChain (ChainReverted reason))
+                    | reason `elem` map Just [RNTermsMismatch, RNInvalidNonce, RNSignatureExpired, RNInvalidSignature] -> do
+                        logWarn $ "names worker: registration " <> rid <> ": its terms acceptance is refused, " <> tshow reason <> "; the page signs again"
+                        save w now r {nrReveal = Nothing}
+                  Left e -> pure $ failure r e)
 
 -- | The stored intent is checked before its dry run, whose revert decides at once; no label turn is held across the send.
 sendRegister :: Worker -> UTCTime -> NameRegistration -> NameReveal -> IO Next
@@ -326,7 +327,7 @@ registering w@Worker {wkSender} now r@NameRegistration {nrId} =
     Nothing -> judge w now r Nothing
 
 -- | A register that did not go through, by its dry run's revert or once every transaction settled: registered when one mined
--- with status 1 or the owner holds the name; committed again on InvalidNonce, for the page to sign again; taken on any revert
+-- with status 1 or the owner holds the name; committed again on InvalidNonce or TermsNotAccepted, for the page to sign again; taken on any revert
 -- while the name is not available at the latest block; failed otherwise, unless the dry run named the name as gone.
 judge :: Worker -> UTCTime -> NameRegistration -> Maybe RevertName -> IO Next
 judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {nrReveal} reason =
@@ -337,7 +338,6 @@ judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {n
       LUnread -> pure (Nothing, Retry (nrVersion r) "the register check's chain read failed")
       LNotLanded -> case reason of
         Just RNInvalidNonce -> store w now r {nrReveal = Nothing}
-        -- the community terms changed since the acceptance
         Just RNTermsNotAccepted -> store w now r {nrReveal = Nothing}
         Just RNCommitmentTooNew -> pure (Nothing, waitUntil r $ addUTCTime chainSecond now)
         _ -> case nrReveal of

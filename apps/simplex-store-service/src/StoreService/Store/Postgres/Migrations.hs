@@ -517,7 +517,7 @@ down_m20261023_name_terms =
 ALTER TABLE @name_registrations DROP COLUMN agreed_terms;
 |]
 
--- The owner's acceptance of the community terms that a reveal of a community name carries.
+-- The owner's acceptance of the community terms, stored with a community name's reveal.
 m20261026_name_terms_acceptance :: Text
 m20261026_name_terms_acceptance =
   withPrefix

@@ -596,8 +596,8 @@ changes nothing, and `--check` then reports the chain absent.
 are added under `[names]`.
 
 The controller's name policy (`SimplexNamePolicy`, read once from `namePolicy()` at startup and
-logged) decides which names are community names: its bona fide list, which the owner or the guardian
-edits on chain. A listed name can be registered only after its owner accepts the policy's current
+logged, so the controller owner's `setNamePolicy` takes effect after a restart) decides which names
+are community names: its bona fide list, which the owner or the guardian edits on chain. A listed name can be registered only after its owner accepts the policy's current
 community terms on chain, identified by `termsHash`, the keccak256 of their text. One more setting
 gives that text:
 
@@ -605,8 +605,9 @@ gives that text:
   the name terms. It must be `https://`, or `http://` on 127.0.0.1 or localhost when `[chain] chain_id`
   is 31337. At startup the service fetches it and refuses to start when the text does not hash to the
   policy's `termsHash`. When the policy sets new terms, the service fetches it again the first time it
-  reads them, and until the text matches, community names cannot be ordered or revealed. Without it,
-  community names cannot be ordered.
+  reads them. Until the text matches, and without this setting or before the policy has terms, a
+  search of any listed name answers 503, registered names included, and community names cannot be
+  ordered or revealed.
 
 `[community]` gives what each community name is for, one line per name: the label, as it is searched,
 then `=` and the text:

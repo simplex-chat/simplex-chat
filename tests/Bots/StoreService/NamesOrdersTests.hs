@@ -796,9 +796,7 @@ communityEntry Ctx {cNode} for = J.object ["for" .= for, "terms" .= J.object ["u
 
 -- | The policy lists the name as a community name.
 listOnChain :: Ctx -> Text -> IO ()
-listOnChain Ctx {cNode} label = listCommunityName cNode lh
-  where
-    LabelHash lh = labelHash label
+listOnChain Ctx {cNode} label = listCommunityName cNode $ labelHash label
 
 -- | Signed as sent, so only their format refuses them.
 malformedTerms :: [Text]
@@ -1605,7 +1603,7 @@ testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
 
 testViewCommunity :: IO ()
 testViewCommunity = withServiceStore $ \st -> withFakeEthNode $ \node -> do
-  let terms = C.keccak256 "bona fide community terms v1"
+  let terms = fakeCommunityTerms
   Right () <- placePaid st "r1" ownerA (order "alicebakery" 1) {ofAgreedTerms = termsVersion <> "/community/" <> T.drop 2 (hex terms)} (addUTCTime 3600 t0)
   r <- withTransaction st $ \db -> fromJust <$> getRegistration db (RegistrationId "r1")
   let LabelHash aliceHash = labelHash "alicebakery"
@@ -1641,15 +1639,10 @@ testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   committed <- inPhase PCommitted
   readViewChain cfg ct committed `shouldReturn` ViewReads (Just 4) [] Nothing
   -- the policy lists the name: the page signs the acceptance with the policy's nonce, until a reveal is stored
-  let LabelHash aliceHash = labelHash "alicebakery"
-  listCommunityName node aliceHash
-  setCommunityTerms node $ C.keccak256 "bona fide community terms v1"
+  listCommunityName node $ labelHash "alicebakery"
   answerCall node fakeNamePolicy noncesCall $ Returns $ uint256 (2 :: Int)
-  text <- newTVarIO "bona fide community terms v1"
-  withTermsPage text $ \url -> do
-    let listed = cfg {nCommunityTermsUrl = Just url}
-    readViewChain listed ct committed `shouldReturn` ViewReads (Just 4) [] (Just Acceptance {acPolicy = fakeNamePolicy, acTermsHash = C.keccak256 "bona fide community terms v1", acNonce = 2})
-    readViewChain listed ct committed {nrReveal = Just reveal} `shouldReturn` ViewReads (Just 4) [] Nothing
+  readViewChain cfg ct committed `shouldReturn` ViewReads (Just 4) [] (Just Acceptance {acPolicy = fakeNamePolicy, acTermsHash = fakeCommunityTerms, acNonce = 2})
+  readViewChain cfg ct committed {nrReveal = Just reveal} `shouldReturn` ViewReads (Just 4) [] Nothing
   taken <- inPhase PTaken
   readViewChain cfg ct taken `shouldReturn` ViewReads Nothing [] Nothing
 

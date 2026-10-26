@@ -7,7 +7,7 @@ module StoreService.Web.Names.Search (searchHandler, previewHandler) where
 
 import Control.Concurrent.Async (concurrently, mapConcurrently)
 import Control.Monad (join)
-import Control.Monad.Except (ExceptT (..), runExceptT, withExceptT)
+import Control.Monad.Except (ExceptT (..), runExceptT)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
@@ -27,7 +27,7 @@ import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Log (logWarn)
 import StoreService.Names.Abi (bytes32FromHex)
-import StoreService.Names.Community (communityJSON, currentCommunityTerms, termsErrorText, termsJSON)
+import StoreService.Names.Community (communityJSON, nameCommunityTerms, termsErrorText, termsJSON)
 import StoreService.Names.Contracts
 import StoreService.Names.Links (LinkKind (..), linkKindOf)
 import StoreService.Names.Profiles (Entity, Profiles, linkEntity, linkPreview)
@@ -52,17 +52,12 @@ searchHandler cfg@NamesConfig {nYears} st ct ps hashText req respond = case Labe
     Nothing -> respond invalidName
     Just len -> do
       registering <- withTransaction st (`isLabelRegistering` lh)
-      timeout (ctDeadline ct) (concurrently (runExceptT $ found lh len registering) (runExceptT $ community lh)) >>= \case
+      timeout (ctDeadline ct) (concurrently (runExceptT $ found lh len registering) (nameCommunityTerms cfg ct lh)) >>= \case
         Just (Right f, Right terms) -> respond =<< searchAnswer cfg ps lh terms f
         Just (Left e, _) -> unavailable $ tshow e
-        Just (_, Left e) -> unavailable e
+        Just (_, Left e) -> unavailable $ termsErrorText e
         Nothing -> unavailable "timed out"
   where
-    -- a name the policy lists is sold only under community terms whose text is checked
-    community lh =
-      withExceptT tshow (ExceptT $ bonaFideName ct lh) >>= \case
-        False -> pure Nothing
-        True -> Just <$> withExceptT termsErrorText (ExceptT $ currentCommunityTerms cfg ct)
     found lh len registering =
       ExceptT (nameStatus ct lh) >>= \case
         NSAvailable

@@ -12,6 +12,7 @@ module StoreService.Names.Community
     TermsError (..),
     termsErrorText,
     currentCommunityTerms,
+    nameCommunityTerms,
   )
 where
 
@@ -28,15 +29,16 @@ import Data.IORef (atomicWriteIORef, readIORef)
 import qualified Data.Map.Strict as M
 import Data.Text (Text)
 import qualified Data.Text as T
-import Network.HTTP.Client (HttpException, Request (..), Response (..), brReadSome, parseRequest, responseTimeoutMicro, withResponse)
-import Network.HTTP.Client.TLS (newTlsManager)
+import Network.HTTP.Client (HttpException, Manager, Response (..), brReadSome, parseRequest, withResponse)
 import Network.HTTP.Types (statusCode)
 import Simplex.Messaging.Crypto (keccak256)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig (..), TermsConfig (..))
 import StoreService.Names.Abi (bytes32FromHex, hex)
-import StoreService.Names.Contracts (Contracts (..), communityTermsHash)
+import StoreService.Names.Chain (ChainClient (..))
+import StoreService.Names.Contracts (Contracts (..), bonaFideName, communityTermsHash)
+import System.Timeout (timeout)
 
 communityFor :: NamesConfig -> LabelHash -> Maybe Text
 communityFor NamesConfig {nCommunity} (LabelHash h) = M.lookup h nCommunity
@@ -54,11 +56,12 @@ agreedTermsHash terms = case T.breakOn communityTermsSuffix terms of
 communityTermsSuffix :: Text
 communityTermsSuffix = "/community/"
 
--- | Null for a name the policy does not list; else its text from the ini, if any, and the terms it is sold under.
+-- | Null for a name the policy does not list, or without community_terms_url to link; else its text from the ini, if any,
+-- and the terms it is sold under.
 communityJSON :: NamesConfig -> LabelHash -> Maybe ByteString -> J.Value
-communityJSON cfg@NamesConfig {nCommunityTermsUrl} lh = \case
-  Nothing -> J.Null
-  Just h -> J.object ["for" .= communityFor cfg lh, "terms" .= J.object ["url" .= nCommunityTermsUrl, "hash" .= hex h]]
+communityJSON cfg@NamesConfig {nCommunityTermsUrl} lh h = case (h, nCommunityTermsUrl) of
+  (Just h', Just url) -> J.object ["for" .= communityFor cfg lh, "terms" .= J.object ["url" .= url, "hash" .= hex h']]
+  _ -> J.Null
 
 termsJSON :: NamesConfig -> J.Value
 termsJSON NamesConfig {nTerms = TermsConfig {tVersion, tUrl}} = J.object ["version" .= tVersion, "url" .= tUrl]
@@ -81,8 +84,15 @@ termsErrorText = \case
   TEUnread e -> e
   TEMismatch h -> "the text at names.community_terms_url does not hash to the name policy's terms " <> hex h
 
+-- | Nothing for a name the policy does not list; else the community terms it is sold under, whose text is checked.
+nameCommunityTerms :: NamesConfig -> Contracts -> LabelHash -> IO (Either TermsError (Maybe ByteString))
+nameCommunityTerms cfg ct lh = runExceptT $
+  withExceptT (TEUnread . tshow) (ExceptT $ bonaFideName ct lh) >>= \case
+    False -> pure Nothing
+    True -> Just <$> ExceptT (currentCommunityTerms cfg ct)
+
 -- | The policy's community terms hash, once the text at community_terms_url hashes to it. Each call reads the hash,
--- so terms set later are fetched and checked once, when a call first meets them.
+-- so terms set later are fetched and checked once, when a call first reads them.
 currentCommunityTerms :: NamesConfig -> Contracts -> IO (Either TermsError ByteString)
 currentCommunityTerms NamesConfig {nCommunityTermsUrl} ct = runExceptT $ do
   h <- withExceptT (TEUnread . tshow) $ ExceptT $ communityTermsHash ct
@@ -90,21 +100,21 @@ currentCommunityTerms NamesConfig {nCommunityTermsUrl} ct = runExceptT $ do
   verified <- liftIO $ readIORef $ ctVerifiedTerms ct
   unless (verified == Just h) $ do
     url <- maybe (throwError TENoUrl) pure nCommunityTermsUrl
-    text <- withExceptT TEUnread $ ExceptT $ fetchTerms url
+    text <- withExceptT TEUnread $ ExceptT $ fetchTerms (ccManager $ ctChain ct) url
     unless (keccak256 text == h) $ throwError $ TEMismatch h
     liftIO $ atomicWriteIORef (ctVerifiedTerms ct) $ Just h
   pure h
 
-fetchTerms :: Text -> IO (Either Text ByteString)
-fetchTerms url =
-  E.try get >>= \case
-    Left (e :: HttpException) -> pure $ Left $ "names.community_terms_url could not be read: " <> tshow e
-    Right r -> pure r
+fetchTerms :: Manager -> Text -> IO (Either Text ByteString)
+fetchTerms manager url =
+  timeout termsTimeout (E.try get) >>= \case
+    Nothing -> pure $ Left "names.community_terms_url did not answer in time"
+    Just (Left (e :: HttpException)) -> pure $ Left $ "names.community_terms_url could not be read: " <> tshow e
+    Just (Right r) -> pure r
   where
     get = do
-      manager <- newTlsManager
       req <- parseRequest $ T.unpack url
-      withResponse req {responseTimeout = responseTimeoutMicro termsTimeout} manager $ \resp -> do
+      withResponse req manager $ \resp -> do
         body <- LB.toStrict <$> brReadSome (responseBody resp) (maxTermsBytes + 1)
         pure $ case statusCode (responseStatus resp) of
           200 | B.length body <= maxTermsBytes -> Right body

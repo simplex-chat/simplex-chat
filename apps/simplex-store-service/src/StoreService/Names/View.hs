@@ -22,7 +22,7 @@ import Control.Monad.Except (ExceptT (..), runExceptT, withExceptT)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import Data.ByteString (ByteString)
-import Data.Either (isLeft)
+import Data.Functor ((<&>))
 import Data.Int (Int64)
 import Data.Maybe (isJust)
 import Data.Text (Text)
@@ -38,8 +38,8 @@ import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Abi (hex)
 import StoreService.Names.Chain (TxHash (..))
-import StoreService.Names.Community (agreedTermsHash, communityJSON, currentCommunityTerms, termsErrorText)
-import StoreService.Names.Contracts (Contracts, bonaFideName, namePolicy, policyNonce, sponsorNonce)
+import StoreService.Names.Community (agreedTermsHash, communityJSON, nameCommunityTerms, termsErrorText)
+import StoreService.Names.Contracts (Contracts, namePolicy, policyNonce, sponsorNonce)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Store (Balance (..), BalanceHold (..), LateWait (..), NamePhase (..), NameRegistration (..), NameReveal (..), RegistrationPayment (..), getBalance, getRegistration, heldBy, lateWait)
 
@@ -70,28 +70,25 @@ registrationView st cfg ct now r = do
 readViewChain :: NamesConfig -> Contracts -> NameRegistration -> IO ViewReads
 readViewChain cfg ct NameRegistration {nrPhase, nrOwner, nrLabelHash, nrReveal} = case nrPhase of
   PCommitted -> do
-    nonce <- sponsorNonce ct nrOwner
-    acceptance <- if isJust nrReveal then pure $ Right Nothing else runExceptT acceptanceRead
-    pure
-      ViewReads
-        { vrIntentNonce = either (const Nothing) Just nonce,
-          vrUnread = ["intentNonce" | isLeft nonce] <> ["acceptance" | isLeft acceptance],
-          vrAcceptance = either (const Nothing) id acceptance
-        }
+    vr <- sponsorNonce ct nrOwner <&> \case
+      Right nonce -> none {vrIntentNonce = Just nonce}
+      Left _ -> none {vrUnread = ["intentNonce"]}
+    if isJust nrReveal
+      then pure vr
+      else runExceptT acceptanceRead <&> \case
+        Right vrAcceptance -> vr {vrAcceptance}
+        Left _ -> vr {vrUnread = vrUnread vr <> ["acceptance"]}
   _ -> pure none
   where
     none = ViewReads {vrIntentNonce = Nothing, vrUnread = [], vrAcceptance = Nothing}
-    acceptanceRead =
-      withExceptT tshow (ExceptT $ bonaFideName ct nrLabelHash) >>= \case
-        False -> pure Nothing
-        True -> do
-          acPolicy <- withExceptT tshow $ ExceptT $ namePolicy ct
-          acTermsHash <- withExceptT termsErrorText $ ExceptT $ currentCommunityTerms cfg ct
-          acNonce <- withExceptT tshow $ ExceptT $ policyNonce ct nrOwner
-          pure $ Just Acceptance {acPolicy, acTermsHash, acNonce}
+    acceptanceRead = withExceptT termsErrorText (ExceptT $ nameCommunityTerms cfg ct nrLabelHash) >>= traverse acceptance
+    acceptance acTermsHash = do
+      acPolicy <- withExceptT tshow $ ExceptT $ namePolicy ct
+      acNonce <- withExceptT tshow $ ExceptT $ policyNonce ct nrOwner
+      pure Acceptance {acPolicy, acTermsHash, acNonce}
 
 viewJSON :: NamesConfig -> NameRegistration -> Maybe Balance -> Maybe LateWait -> ViewReads -> J.Value
-viewJSON cfg@NamesConfig {nTLD, nCommunityTermsUrl, nChain = ChainConfig {cChainId, cResolver, cSponsor}} r balance late ViewReads {vrIntentNonce, vrUnread, vrAcceptance} =
+viewJSON cfg@NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResolver, cSponsor}} r balance late ViewReads {vrIntentNonce, vrUnread, vrAcceptance} =
   J.object
     [ "id" .= rid,
       "version" .= nrVersion,
@@ -130,7 +127,7 @@ viewJSON cfg@NamesConfig {nTLD, nCommunityTermsUrl, nChain = ChainConfig {cChain
     NameRegistration {nrYears, nrDuration, nrPrice, nrBalanceUsed, nrCommitTx, nrRegisterTx, nrRevealAfter, nrRevealBefore, nrExpiresAt, nrError, nrAgreedTerms} = r
     txText (TxHash h) = hex h
     acceptanceJSON Acceptance {acPolicy, acTermsHash, acNonce} =
-      J.object ["policy" .= addressText acPolicy, "termsHash" .= hex acTermsHash, "nonce" .= acNonce, "url" .= nCommunityTermsUrl]
+      J.object ["policy" .= addressText acPolicy, "termsHash" .= hex acTermsHash, "nonce" .= acNonce]
     waitingText :: LateWait -> Text
     waitingText = \case
       LWConfirming -> "confirming"

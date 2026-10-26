@@ -5,18 +5,22 @@
 module Bots.StoreService.NamesCommunityTests (namesCommunityTests) where
 
 import Bots.StoreService.ConfigTests (chainSection, namesIni, namesRefusal, namesSection, parseIni, parsedNames, termsUrl, termsVersion, withIni)
-import Bots.StoreService.FakeEthNode (setCommunityTerms, withTermsPage)
+import Bots.StoreService.FakeEthNode (setCommunityTerms)
 import Bots.StoreService.NamesContractsTests (withContracts)
 import Bots.StoreService.NamesSearchTests (aliceHex)
 import Bots.StoreService.WebTests (capturingStderr)
-import Control.Concurrent.STM (atomically, newTVarIO, writeTVar)
+import Control.Concurrent.STM (TVar, atomically, newTVarIO, readTVarIO, writeTVar)
 import Control.Monad (forM_, void)
 import qualified Data.ByteString as B
+import qualified Data.ByteString.Lazy as LB
 import Data.Ini (readIniFile)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromJust)
 import Data.Text (Text)
 import qualified Data.Text as T
+import Network.HTTP.Types (Status, notFound404, ok200)
+import Network.Wai (responseLBS)
+import qualified Network.Wai.Handler.Warp as Warp
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.SimplexName (LabelHash (..), labelHash)
 import StoreService.Config (NamesConfig (..), TermsConfig (..), unknownKeys)
@@ -39,21 +43,33 @@ namesCommunityTests = describe "StoreService names: community" $ do
   it "reads community_terms_url: https, or http on loopback only on the local chain" testCommunityTermsUrl
   g <- runIO C.newRandom
   it "takes the policy's terms once the page's text hashes to them, and fetches again for new terms" $ withContracts g $ \node ct ->
-    newTVarIO communityTermsText >>= \text -> withTermsPage text $ \url -> do
+    newTVarIO (ok200, communityTermsText) >>= \page -> withTermsPage page $ \url -> do
       cfg <- withTermsUrl url
       setCommunityTerms node communityTerms
       currentCommunityTerms cfg ct `shouldReturn` Right communityTerms
       -- checked once: a page edited without new terms on chain is not fetched again
-      atomically $ writeTVar text "other text"
+      atomically $ writeTVar page (ok200, "other text")
       currentCommunityTerms cfg ct `shouldReturn` Right communityTerms
       setCommunityTerms node newTerms
       currentCommunityTerms cfg ct `shouldReturn` Left (TEMismatch newTerms)
-      atomically $ writeTVar text "bona fide community terms v2"
+      atomically $ writeTVar page (ok200, "bona fide community terms v2")
       currentCommunityTerms cfg ct `shouldReturn` Right newTerms
       setCommunityTerms node $ B.replicate 32 0
       currentCommunityTerms cfg ct `shouldReturn` Left TENoTerms
       setCommunityTerms node $ C.keccak256 "bona fide community terms v3"
       currentCommunityTerms cfg {nCommunityTermsUrl = Nothing} ct `shouldReturn` Left TENoUrl
+  it "takes no terms from a page that answers another status or more than 1 MiB, or that cannot be reached" $ withContracts g $ \node ct ->
+    newTVarIO (notFound404, communityTermsText) >>= \page -> withTermsPage page $ \url -> do
+      cfg <- withTermsUrl url
+      setCommunityTerms node communityTerms
+      currentCommunityTerms cfg ct `shouldReturn` Left (TEUnread "names.community_terms_url answered HTTP 404")
+      atomically $ writeTVar page (ok200, B.replicate (1024 * 1024 + 1) 0x61)
+      currentCommunityTerms cfg ct `shouldReturn` Left (TEUnread "names.community_terms_url answered more than 1 MiB")
+      unreachable <- withTermsUrl "http://127.0.0.1:1/terms"
+      Left (TEUnread e) <- currentCommunityTerms unreachable ct
+      e `shouldSatisfy` T.isPrefixOf "names.community_terms_url could not be read: "
+      atomically $ writeTVar page (ok200, communityTermsText)
+      currentCommunityTerms cfg ct `shouldReturn` Right communityTerms
 
 bakersText :: Text
 bakersText = "bakers and bakeries in Portugal"
@@ -161,9 +177,15 @@ communityTermsText = "bona fide community terms v1"
 withTermsUrl :: Text -> IO NamesConfig
 withTermsUrl url = parsedNames (namesSection <> ["community_terms_url = " <> url]) chainSection
 
+-- | A page answering the status and text the test may change, at the URL it is given.
+withTermsPage :: TVar (Status, B.ByteString) -> (Text -> IO a) -> IO a
+withTermsPage page action =
+  Warp.testWithApplication (pure $ \_ respond -> readTVarIO page >>= \(status, text) -> respond $ responseLBS status [] $ LB.fromStrict text) $ \port ->
+    action $ "http://127.0.0.1:" <> T.pack (show port) <> "/terms"
+
 testTermsFor :: IO ()
 testTermsFor = do
-  cfg <- withCommunity ["bakers = " <> bakersText]
+  cfg <- parsedNames namesSection chainSection
   C.keccak256 communityTermsText `shouldBe` communityTerms
   termsFor cfg Nothing `shouldBe` termsVersion
   let listed = termsVersion <> "/community/e2937ea655d8e743e2a8cecbab83acdf055846c80e13001ec1f8dc404e4ef2d9"

@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module StoreService.Names.Contracts
-  ( Contracts (ctDeadline, ctVerifiedTerms),
+  ( Contracts (ctChain, ctDeadline, ctVerifiedTerms),
     NameStatus (..),
     RegisteredName (..),
     NameRecords (..),
@@ -207,7 +207,7 @@ registrarConstants ct@Contracts {ctRegistrar} = readOnce ctRegistrar $ runExcept
   rcGracePeriod <- ExceptT $ call ct (baseRegistrar ct) ("GRACE_PERIOD()", "") decodeUint256
   pure RegistrarConstants {rcRegistry, rcGracePeriod}
 
--- | Concurrent first uses may each read; they read the same immutable values.
+-- | Concurrent first uses may each read; they read the same values, which the service keeps until it restarts.
 readOnce :: IORef (Maybe a) -> IO (Either ChainError a) -> IO (Either ChainError a)
 readOnce ref readChain =
   readIORef ref >>= \case

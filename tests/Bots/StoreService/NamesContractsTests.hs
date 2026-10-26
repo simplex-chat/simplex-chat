@@ -40,7 +40,7 @@ import Data.Word (Word64)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Eth.Address (Address)
-import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
+import Simplex.Messaging.SimplexName (LabelHash, SimplexTLD (..), labelHash)
 import StoreService.Config (ChainConfig (..))
 import StoreService.Names.Abi
 import StoreService.Names.Chain
@@ -114,9 +114,8 @@ testNamePolicy g = withContracts g $ \node ct -> do
   -- read once: a controller answering no more keeps the policy read
   answerCall node fakeController (selector "namePolicy()") $ Reverts ""
   nameStatus ct alice `shouldReturn` Right NSReserved
-  let LabelHash aliceHash = alice
   bonaFideName ct alice `shouldReturn` Right False
-  listCommunityName node aliceHash
+  listCommunityName node alice
   bonaFideName ct alice `shouldReturn` Right True
   communityTermsHash ct `shouldReturn` Right fakeCommunityTerms
   answerCall node fakeNamePolicy noncesCall $ Returns $ uint256 (5 :: Int)

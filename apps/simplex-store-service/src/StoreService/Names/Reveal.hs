@@ -36,10 +36,10 @@ import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature)
 import Simplex.Messaging.SimplexName (labelHash)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
-import StoreService.Log (logError, logWarn)
+import StoreService.Log (logWarn)
 import StoreService.Names.Abi (bytes32FromHex)
-import StoreService.Names.Community (currentCommunityTerms, termsErrorText)
-import StoreService.Names.Contracts (Contracts, bonaFideName, namePolicy, policyNonce, sponsorNonce)
+import StoreService.Names.Community (nameCommunityTerms, termsErrorText)
+import StoreService.Names.Contracts (Contracts, namePolicy, policyNonce, sponsorNonce)
 import StoreService.Names.Label (validLabel)
 import StoreService.Names.Links (LinkKind (..), linkKindOf)
 import StoreService.Names.Orders (integerField, textField)
@@ -134,18 +134,17 @@ checkIntent NamesConfig {nChain = ChainConfig {cChainId, cSponsor}} ct now revea
 -- current community terms by the policy's nonce, with the intent's deadline; another name takes none.
 checkAcceptance :: NamesConfig -> Contracts -> NameRegistration -> Word64 -> Maybe TermsAcceptance -> IO (Either RevealRefusal ())
 checkAcceptance cfg@NamesConfig {nChain = ChainConfig {cChainId}} ct NameRegistration {nrLabelHash, nrOwner, nrCommitment} deadline acceptance = runExceptT $ do
-  listed <- chainRead "community check" $ bonaFideName ct nrLabelHash
-  case (listed, acceptance) of
-    (False, Nothing) -> pure ()
-    (True, Just a@TermsAcceptance {taTermsHash, taNonce}) -> do
-      policy <- chainRead "name policy" $ namePolicy ct
+  terms <- chainRead "community terms" termsErrorText $ nameCommunityTerms cfg ct nrLabelHash
+  case (terms, acceptance) of
+    (Nothing, Nothing) -> pure ()
+    (Just current, Just a@TermsAcceptance {taTermsHash, taNonce}) -> do
+      policy <- chainRead "name policy" tshow $ namePolicy ct
       withExceptT (const RVBadRequest) $ ExceptT $ verifyAcceptance (policyDomain cChainId policy) nrOwner nrCommitment deadline a
-      current <- ExceptT $ currentCommunityTerms cfg ct >>= either (\e -> Left RVChainUnavailable <$ logError ("names: a community name's reveal waits, its terms are unavailable: " <> termsErrorText e)) (pure . Right)
-      nonce <- chainRead "policy nonce" $ policyNonce ct nrOwner
+      nonce <- chainRead "policy nonce" tshow $ policyNonce ct nrOwner
       unless (taTermsHash == current && taNonce == nonce) $ throwError RVBadRequest
     _ -> throwError RVBadRequest
   where
-    chainRead what = ExceptT . (>>= either (\e -> Left RVChainUnavailable <$ logWarn ("names: a reveal's " <> what <> " read failed: " <> tshow e)) (pure . Right))
+    chainRead what err = ExceptT . (>>= either (\e -> Left RVChainUnavailable <$ logWarn ("names: a reveal's " <> what <> " read failed: " <> err e)) (pure . Right))
 
 linksValid :: Registration -> Bool
 linksValid Registration {rContactLink, rChannelLink} = all (ofKind LKContact) rContactLink && all (ofKind LKChannel) rChannelLink
