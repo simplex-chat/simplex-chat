@@ -394,7 +394,8 @@ The names site is on when, and only when, the ini has `[names]`. Its `[listener]
   beside `badges_port` (by default 8080), which serves the badges site. The two must differ.
 
 The service refuses to start with any of these keys but no `[names]`, and with `names_port` and
-`serve_webapp = off`.
+`serve_webapp = off`. It also refuses to start when a build it serves or exports is not a
+directory, naming the setting, so a local run that keeps a default path stops there.
 
 With `serve_webapp = on` (all in one), the service listens on both ports, and each serves only its
 own site: every path outside `/api/` and `/webhooks/` is a file of that site, `/` and `/index.html`

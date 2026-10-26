@@ -12,6 +12,7 @@ module StoreService.Web.Server
     webListeners,
     webSettings,
     runWebListeners,
+    checkSiteDirs,
   )
 where
 
@@ -34,7 +35,7 @@ import StoreService.Web.Names.Registration (heldFor, registrationChangedResponse
 import Control.Concurrent.Async (race)
 import qualified Control.Exception as E
 import StoreService.Log (logError, logInfo, logWarn)
-import Control.Monad (forM_, void, when)
+import Control.Monad (filterM, forM_, void, when)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
@@ -42,8 +43,9 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as LB
 import Data.Char (toLower)
+import Data.Functor ((<&>))
 import Data.List (isPrefixOf)
-import Data.Maybe (catMaybes, fromMaybe)
+import Data.Maybe (catMaybes, fromMaybe, isJust)
 import Data.String (fromString)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -555,6 +557,17 @@ runWebListeners env = do
   raceAny_ [Warp.runSettings (Warp.setPort port (webSettings lc)) app | (port, app) <- webListeners env]
   where
     lc = listenerConfig env
+
+-- | Each build that is served or exported must be a directory, or the service would serve nothing or fail its export.
+checkSiteDirs :: ListenerConfig -> IO (Either String ())
+checkSiteDirs ListenerConfig {lServeWebapp, lBadgesStaticDir, lBadgesExportDir, lNamesStaticDir, lNamesExportDir, lNamesPort} =
+  filterM (fmap not . doesDirectoryExist . snd) used <&> \case
+    (site, dir) : _ -> Left ("listener." <> site <> "_static_dir = " <> dir <> " is not a directory; set it to the " <> site <> " build, since the default is the Docker image's path")
+    [] -> Right ()
+  where
+    used =
+      [("badges", lBadgesStaticDir) | lServeWebapp || isJust lBadgesExportDir]
+        <> [("names", dir) | Just dir <- [lNamesStaticDir], isJust lNamesPort || isJust lNamesExportDir]
 
 warnIfHeaderTrustIsExposed :: ListenerConfig -> IO ()
 warnIfHeaderTrustIsExposed ListenerConfig {lHost, lTrustForwardedFor} =

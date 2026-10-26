@@ -53,7 +53,7 @@ import StoreService.StoreReceipts.Apple (readAppleRoot, verifyAppleTransaction)
 import StoreService.StoreReceipts.Google (playStoreVerifier)
 import StoreService.StoreReceipts.Mock (mockStoreVerifier)
 import StoreService.Waiters (Waiters, newWaiters)
-import StoreService.Web.Server (exportWebapp, newWebEnv, runWebListeners)
+import StoreService.Web.Server (checkSiteDirs, exportWebapp, newWebEnv, runWebListeners)
 import Control.Applicative (optional)
 import Control.Concurrent.STM
 import StoreService.Log (logError, logInfo, logWarn)
@@ -213,6 +213,7 @@ configureStoreVerifier serviceCfg env@ServiceState {storeVerifier = v} = case se
 storeService :: StoreServiceOpts -> ChatConfig -> ServiceState -> IO ()
 storeService opts@StoreServiceOpts {serviceConfigFile} baseCfg env = do
   serviceCfg <- traverse readConfigOrExit serviceConfigFile
+  forM_ serviceCfg $ \sc -> checkSiteDirs (listener sc) >>= orExit
   cfg <- requireDevKeys serviceCfg baseCfg
   key <- requireIssuerKey opts serviceCfg cfg
   waiters <- newWaiters

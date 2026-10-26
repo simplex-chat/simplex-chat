@@ -248,6 +248,7 @@ badgeWebTests = do
     it "listens on the badges port alone without the names site" testOneListenerWithoutTheNamesSite
     it "serves a names asset with its type" testServesANamesAsset
     it "keeps every traversal spelling on the names port inside the names build" testNamesTraversalRefused
+    it "refuses a build folder that is not there, only where it is served or exported" testSiteDirsMustExist
   describe "store service settlement" $ do
     it "settles an open invoice: paid, a settled payment row, and the code" testSettlesAnOpenInvoice
     it "settles an expired invoice, because late settlement is routine" testLateSettlementIsLegal
@@ -1198,6 +1199,25 @@ testNamesTraversalRefused = bounded "names traversal" $ withBothSites $ \_ names
   forM_ namesTraversalSpellings $ \target -> do
     r <- webGet names target
     (target, statusOf r, responseBody r) `shouldBe` (target, 404, notFoundBody)
+
+testSiteDirsMustExist :: IO ()
+testSiteDirsMustExist = do
+  createDirectoryIfMissing True "tests/tmp"
+  withTempDirectory "tests/tmp" "site-dirs" $ \root -> do
+    staticDir <- prepareStaticDir root
+    namesDir <- prepareNamesDir root
+    let absent = root </> "absent"
+        lc = listener (testServiceConfig staticDir False)
+        missing site dir = Left ("listener." <> site <> "_static_dir = " <> dir <> " is not a directory; set it to the " <> site <> " build, since the default is the Docker image's path")
+    checkSiteDirs lc `shouldReturn` Right ()
+    checkSiteDirs lc {lNamesStaticDir = Just namesDir, lNamesPort = Just 8081} `shouldReturn` Right ()
+    checkSiteDirs lc {lBadgesStaticDir = absent} `shouldReturn` missing "badges" absent
+    checkSiteDirs lc {lBadgesStaticDir = absent, lServeWebapp = False} `shouldReturn` Right ()
+    checkSiteDirs lc {lBadgesStaticDir = absent, lServeWebapp = False, lBadgesExportDir = Just (root </> "out")} `shouldReturn` missing "badges" absent
+    checkSiteDirs lc {lNamesStaticDir = Just absent, lNamesPort = Just 8081} `shouldReturn` missing "names" absent
+    checkSiteDirs lc {lServeWebapp = False, lNamesStaticDir = Just absent} `shouldReturn` Right ()
+    checkSiteDirs lc {lServeWebapp = False, lNamesStaticDir = Just absent, lNamesExportDir = Just (root </> "names-out")} `shouldReturn` missing "names" absent
+    checkSiteDirs lc {lBadgesStaticDir = root </> "secret.txt"} `shouldReturn` missing "badges" (root </> "secret.txt")
 
 type WebClient = (Manager, String)
 
