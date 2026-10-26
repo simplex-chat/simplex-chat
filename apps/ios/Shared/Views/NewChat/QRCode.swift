@@ -45,6 +45,7 @@ struct SimpleXLinkQRCode: View {
 }
 
 private let smallQRRatio: CGFloat = 0.63
+private let quietZone: CGFloat = 4
 
 struct QRCode: View {
     let uri: String
@@ -61,7 +62,8 @@ struct QRCode: View {
             if let image = image {
                 qrCodeImage(image).frame(width: width, height: width)
                 GeometryReader { g in
-                    let w = g.size.width * (small ? smallQRRatio : 1)
+                    let zoneScale = image.size.width / (image.size.width - 2 * quietZone)
+                    let w = min(g.size.width / zoneScale, g.size.width * (small ? smallQRRatio : 1))
                     let l = w * (small ? 0.195 : 0.16)
                     let m = w * 0.005
                     ZStack {
@@ -76,7 +78,7 @@ struct QRCode: View {
                         }
                     }
                     .onAppear {
-                        width = w
+                        width = w * zoneScale
                         makeScreenshotFunc = {
                             let size = CGSizeMake(1024 / UIScreen.main.scale, 1024 / UIScreen.main.scale)
                             showShareSheet(items: [makeScreenshot(g.frame(in: .local).origin, size)])
@@ -109,7 +111,7 @@ private func generateImage(_ uri: String, tintColor: UIColor, errorLevel: String
     filter.message = Data(uri.utf8)
     filter.correctionLevel = errorLevel
     if let outputImage = filter.outputImage,
-       let cgImage = context.createCGImage(outputImage, from: outputImage.extent) {
+       let cgImage = context.createCGImage(outputImage.composited(over: CIImage(color: .white)), from: outputImage.extent.insetBy(dx: 1 - quietZone, dy: 1 - quietZone)) {
         return UIImage(cgImage: cgImage).replaceColor(UIColor.black, tintColor)
     }
     return nil
