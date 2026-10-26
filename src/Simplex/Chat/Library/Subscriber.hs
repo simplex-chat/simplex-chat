@@ -1688,22 +1688,26 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               User {userChatRelay} = user
         -- TODO [relays] owner, relays: TBC how to communicate member rejection rules from owner to relays
         memberJoinRequestViaRelay :: InvitationId -> VersionRangeChat -> Maybe SignedMsg -> Profile -> MemberId -> MemberKey -> Maybe MemberId -> CM ()
-        memberJoinRequestViaRelay invId chatVRange signedMsg_ p joiningMemberId joiningMemberKey@(MemberKey joiningKey) viaRelay = do
+        memberJoinRequestViaRelay invId chatVRange signedMsg_ p@Profile {displayName} joiningMemberId joiningMemberKey@(MemberKey joiningKey) viaRelay = do
           (_ucl, gLinkInfo_) <- withStore $ \db -> getUserContactLinkById db userId uclId
           case gLinkInfo_ of
             Just GroupLinkInfo {groupId, memberRole = gLinkMemRole} -> do
               g@(GIK gInfo _) <- withStore $ \db -> getGroupInfoKeys db cxt user groupId
-              existing_ <- withStore' $ \db -> eitherToMaybe <$> runExceptT (getGroupMemberByMemberId db cxt user gInfo joiningMemberId)
-              let signed = memberSigned gInfo joiningMemberId joiningKey signedMsg_
-              case existing_ of
-                Just rosterMem
-                  -- a privileged memberId's key is owner-authoritative (the roster); the joiner must prove
-                  -- possession of that exact key, otherwise this is an attempt to impersonate it
-                  | isRosterRole (memberRole' rosterMem) ->
-                      if verifyKey gInfo rosterMem signed
-                        then acceptJoin g signed (Just rosterMem) (memberRole' rosterMem)
-                        else messageError "memberJoinRequestViaRelay: rejected join claiming privileged memberId (key mismatch or invalid signature)"
-                _ -> acceptJoin g signed Nothing gLinkMemRole
+              if
+                | not (useRelays' gInfo) ->
+                    messageWarning $ "memberJoinRequestViaRelay (group " <> groupName' gInfo <> "): ignored relay join request from " <> displayName <> " (group does not use relays)"
+                | otherwise -> do
+                    existing_ <- withStore' $ \db -> eitherToMaybe <$> runExceptT (getGroupMemberByMemberId db cxt user gInfo joiningMemberId)
+                    let signed = memberSigned gInfo joiningMemberId joiningKey signedMsg_
+                    case existing_ of
+                      Just rosterMem
+                        -- a privileged memberId's key is owner-authoritative (the roster); the joiner must prove
+                        -- possession of that exact key, otherwise this is an attempt to impersonate it
+                        | isRosterRole (memberRole' rosterMem) ->
+                            if verifyKey gInfo rosterMem signed
+                              then acceptJoin g signed (Just rosterMem) (memberRole' rosterMem)
+                              else messageError "memberJoinRequestViaRelay: rejected join claiming privileged memberId (key mismatch or invalid signature)"
+                      _ -> acceptJoin g signed Nothing gLinkMemRole
             Nothing ->
               messageError "memberJoinRequestViaRelay: no group link info for relay link"
           where
