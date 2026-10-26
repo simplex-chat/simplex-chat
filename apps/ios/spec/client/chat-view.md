@@ -412,6 +412,7 @@ MarkdownBlocksView    paragraph break, heading after another block: terminalLeve
 emoji                 EmojiItemView and FramedItemView: terminalEmojiTopGap, terminalEmojiBottomGap, messageLastLine()
 voice                 CIVoiceView: received layout for both directions, terminalGap(4) above, terminalGap(6) below
                       FramedCIVoiceView: terminalGap(4) above, terminalGap(6) below, player background
+                      VoiceMessagePlayer circle in the quote colour (chatItemFrameContextColor); classic: the bubble colour
 files                 CIFileView: terminalFileTopGap above, icon without top padding
 events                terminalEventPadding, line box, line limit removed
                       feature and preference icons without height; merged feature icons one event line high

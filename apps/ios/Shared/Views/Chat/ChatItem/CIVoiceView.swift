@@ -150,6 +150,7 @@ struct VoiceMessagePlayer: View {
     @ObservedObject var chat: Chat
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
+    @Environment(\.terminalLayout) private var terminal
     var chatItem: ChatItem
     var recordingFile: CIFile?
     var recordingTime: TimeInterval
@@ -299,7 +300,7 @@ struct VoiceMessagePlayer: View {
                 .foregroundColor(color)
                 .padding(.leading, image == "play.fill" ? 4 : 0)
                 .frame(width: 56 * sizeMultiplier, height: 56 * sizeMultiplier)
-                .background(showBackground ? chatItemFrameColor(chatItem, theme) : .clear)
+                .background(showBackground ? backgroundColor : .clear)
                 .clipShape(Circle())
             if recordingTime > 0 {
                 ProgressCircle(length: recordingTime, progress: $playbackTime)
@@ -349,6 +350,10 @@ struct VoiceMessagePlayer: View {
         }
     }
 
+    private var backgroundColor: Color {
+        terminal ? chatItemFrameContextColor(chatItem, theme) : chatItemFrameColor(chatItem, theme)
+    }
+
     private func fileStatusIcon(_ image: String, _ size: CGFloat) -> some View {
         Image(systemName: image)
             .resizable()
@@ -356,7 +361,7 @@ struct VoiceMessagePlayer: View {
             .frame(width: size * sizeMultiplier, height: size * sizeMultiplier)
             .foregroundColor(Color(uiColor: .tertiaryLabel))
             .frame(width: 56 * sizeMultiplier, height: 56 * sizeMultiplier)
-            .background(showBackground ? chatItemFrameColor(chatItem, theme) : .clear)
+            .background(showBackground ? backgroundColor : .clear)
             .clipShape(Circle())
     }
 
@@ -364,7 +369,7 @@ struct VoiceMessagePlayer: View {
         ProgressView()
             .frame(width: 30 * sizeMultiplier, height: 30 * sizeMultiplier)
             .frame(width: 56 * sizeMultiplier, height: 56 * sizeMultiplier)
-            .background(showBackground ? chatItemFrameColor(chatItem, theme) : .clear)
+            .background(showBackground ? backgroundColor : .clear)
             .clipShape(Circle())
     }
 

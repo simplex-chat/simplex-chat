@@ -158,6 +158,7 @@ views/chat/item/MarkdownBlocks.kt        Modifier.quoteBar, shared with Markdown
                                          code: terminalTextStyle at the code size (classic: line height × 0.9); metaLine null in terminal rows unless live
 views/chat/item/CIFileView.kt            row padding TERMINAL_FILE_TOP_GAP, icon without top padding; the reserve in the size line kept
 views/chat/item/CIVoiceView.kt           voice drawn by FramedItemView: the layout of voice alone without its time; otherwise classic, start at the text edge
+                                         play button and file status circle in the quote colour (user, 2026-10-26)
 views/chat/item/EmojiItemView.kt         TERMINAL_EMOJI_* paddings at the text edge, messageLastLine()
 views/chat/item/TextItemView.kt          messageTextColor(); terminalReserveSpaceForMeta at the end of message text
                                          meta line of a live message: encryption, signature and the outer direction, as the blocks
