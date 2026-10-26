@@ -79,6 +79,7 @@ namesRevealTests = describe "StoreService names: reveal" $ do
   describe "community terms" $ do
     it "stores the owner's acceptance of the policy's current terms with a listed name's reveal" testAcceptanceStored
     it "refuses a listed name's reveal without an acceptance, or by another signer, for other terms or at another nonce, and an unlisted name's with one" testAcceptanceRefusals
+    it "refuses a listed name's reveal whose acceptance is not an object or has a malformed field, storing nothing" testAcceptanceMalformed
     it "answers 503 for a listed name's reveal while its listing, its terms or the owner's policy nonce cannot be read, storing nothing" testAcceptanceUnavailable
   describe "races" $ do
     it "answers registration_changed with the current view when the registration changed during the checks" testLostRace
@@ -252,6 +253,23 @@ testAcceptanceRefusals = do
     acceptance <- signAcceptance ctx keyA fakeCommunityTerms 0
     reveal ctx rid (withAcceptance acceptance $ bodyOf sig alice 0 revealBefore) `shouldReturn` badRequest
     nrReveal <$> stored ctx rid `shouldReturn` Nothing
+
+testAcceptanceMalformed :: IO ()
+testAcceptanceMalformed = withListedReveals $ \Fx {fCtx = ctx} -> do
+  rid <- committed ctx listedOrder
+  sig <- signIntent ctx keyA alice 0 revealBefore
+  TermsAcceptance {taSignature} <- signAcceptance ctx keyA fakeCommunityTerms 2
+  let fields = KM.fromList ["termsHash" .= hex fakeCommunityTerms, "nonce" .= (2 :: Int), "signature" .= hex (serializeSignature taSignature)]
+      replaced k v = J.Object $ KM.insert k v fields
+  forM_
+    [ J.String "acceptance",
+      replaced "termsHash" $ J.String $ "0x" <> T.toUpper (T.drop 2 $ hex fakeCommunityTerms),
+      replaced "termsHash" "0x1234",
+      replaced "nonce" "2",
+      replaced "signature" "0x00"
+    ]
+    $ \a -> reveal ctx rid (KM.insert "acceptance" a $ bodyOf sig alice 0 revealBefore) `shouldReturn` badRequest
+  nrReveal <$> stored ctx rid `shouldReturn` Nothing
 
 testAcceptanceUnavailable :: IO ()
 testAcceptanceUnavailable = withListedReveals $ \Fx {fCtx = ctx@Ctx {cNode}} -> do

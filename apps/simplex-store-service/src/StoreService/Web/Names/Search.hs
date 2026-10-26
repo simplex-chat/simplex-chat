@@ -27,7 +27,7 @@ import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Log (logWarn)
 import StoreService.Names.Abi (bytes32FromHex)
-import StoreService.Names.Community (communityJSON, nameCommunityTerms, termsErrorText, termsJSON)
+import StoreService.Names.Community (communityJSON, nameCommunityTerms, termsJSON)
 import StoreService.Names.Contracts
 import StoreService.Names.Links (LinkKind (..), linkKindOf)
 import StoreService.Names.Profiles (Entity, Profiles, linkEntity, linkPreview)
@@ -55,7 +55,7 @@ searchHandler cfg@NamesConfig {nYears} st ct ps hashText req respond = case Labe
       timeout (ctDeadline ct) (concurrently (runExceptT $ found lh len registering) (nameCommunityTerms cfg ct lh)) >>= \case
         Just (Right f, Right h) -> respond =<< searchAnswer cfg ps lh h f
         Just (Left e, _) -> unavailable $ tshow e
-        Just (_, Left e) -> logWarn ("GET /api/name: the community terms check failed: " <> termsErrorText e) >> respond providerUnavailable
+        Just (_, Left e) -> logWarn ("GET /api/name: the community terms check failed: " <> e) >> respond providerUnavailable
         Nothing -> unavailable "timed out"
   where
     found lh len registering =

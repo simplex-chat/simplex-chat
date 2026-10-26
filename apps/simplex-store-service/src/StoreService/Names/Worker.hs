@@ -273,8 +273,8 @@ committed w@Worker {wkSender} now r@NameRegistration {nrId, nrReveal, nrRevealAf
             Just revealAfter | now < revealAfter -> pure $ waitUntil r revealAfter
             _ -> sendRegister w now r rv
 
--- | The step that relays the reveal's acceptance to the name policy, before the wait for revealAfter for a reveal stored
--- before it; Nothing once the policy holds it. Its dry run's revert is judged as a register's is.
+-- | The relay of the reveal's acceptance to the name policy, sent before revealAfter; Nothing once the policy stores that
+-- acceptance. Its dry run's revert is judged as a register's is.
 relayAcceptance :: Worker -> UTCTime -> NameRegistration -> Word64 -> TermsAcceptance -> IO (Maybe Next)
 relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts}, wkSender} now r@NameRegistration {nrId = regId, nrOwner, nrCommitment} deadline a@TermsAcceptance {taTermsHash} =
   inFlightTransaction wkSender (TxAccept regId) >>= \case

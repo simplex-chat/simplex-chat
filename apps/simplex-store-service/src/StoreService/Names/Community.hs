@@ -54,9 +54,7 @@ termsFor NamesConfig {nTerms = TermsConfig {tVersion}} = maybe tVersion (\h -> t
 
 -- | The community terms hash an order signed, Nothing for the terms of a name not listed.
 agreedTermsHash :: Text -> Maybe ByteString
-agreedTermsHash terms = case T.breakOn communityTermsSuffix terms of
-  (_, rest) | not (T.null rest) -> bytes32FromHex $ "0x" <> T.drop (T.length communityTermsSuffix) rest
-  _ -> Nothing
+agreedTermsHash terms = T.stripPrefix communityTermsSuffix (snd $ T.breakOn communityTermsSuffix terms) >>= bytes32FromHex . ("0x" <>)
 
 communityTermsSuffix :: Text
 communityTermsSuffix = "/community/"
@@ -90,20 +88,20 @@ termsErrorText = \case
   TEMismatch h -> "the text at names.community_terms_url does not hash to the name policy's terms " <> hex h
 
 -- | Nothing for a name the policy does not list; else the community terms it is sold under, whose text is checked.
-nameCommunityTerms :: NamesConfig -> Contracts -> LabelHash -> IO (Either TermsError (Maybe ByteString))
+nameCommunityTerms :: NamesConfig -> Contracts -> LabelHash -> IO (Either Text (Maybe ByteString))
 nameCommunityTerms cfg ct lh = runExceptT $
-  withExceptT (TEUnread . tshow) (ExceptT $ bonaFideName ct lh) >>= \case
+  withExceptT tshow (ExceptT $ bonaFideName ct lh) >>= \case
     False -> pure Nothing
-    True -> Just <$> ExceptT (currentCommunityTerms cfg ct)
+    True -> Just <$> withExceptT termsErrorText (ExceptT $ currentCommunityTerms cfg ct)
 
 -- | What the page signs to accept the community terms of a name the policy lists.
 data Acceptance = Acceptance {acPolicy :: Address, acTermsHash :: ByteString, acNonce :: Word64}
   deriving (Eq, Show)
 
--- | The acceptance the owner signs for a name the policy lists, Nothing for another name; the view asks for it and the
--- reveal is checked against it.
+-- | The acceptance the owner signs for a name the policy lists, Nothing for another name; the view returns it for the
+-- page to sign, and the reveal is checked against it.
 currentAcceptance :: NamesConfig -> Contracts -> LabelHash -> Address -> IO (Either Text (Maybe Acceptance))
-currentAcceptance cfg ct lh owner = runExceptT $ withExceptT termsErrorText (ExceptT $ nameCommunityTerms cfg ct lh) >>= traverse acceptance
+currentAcceptance cfg ct lh owner = runExceptT $ ExceptT (nameCommunityTerms cfg ct lh) >>= traverse acceptance
   where
     acceptance acTermsHash = do
       acPolicy <- withExceptT tshow $ ExceptT $ namePolicy ct

@@ -67,7 +67,7 @@ import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig (..))
 import StoreService.Log (logError, logWarn)
 import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, reserveCode, reserveRefusal, spendLandedCode)
-import StoreService.Names.Community (communityJSON, nameCommunityTerms, termsErrorText, termsFor, termsJSON)
+import StoreService.Names.Community (communityJSON, nameCommunityTerms, termsFor, termsJSON)
 import StoreService.Names.Contracts (Contracts, NameStatus (..), chainPriceCents, confirmedTag, nameExpires, nameStatus, ownerOfToken, secondsPerYear)
 import StoreService.Names.Env (NamesEnv (..))
 import StoreService.Names.Phases (Phases, RegistrationId (..))
@@ -134,7 +134,8 @@ data Landing = LNotLanded | LRegistered Int64 | LChanged | LUnread
 maxSealedChars :: Int
 maxSealedChars = 11095
 
--- | The terms version, of up to 32 characters, and for a community name /community/ and the 64 hex digits of its terms' hash.
+-- | The terms version, of up to 32 characters, and for a community name /community/ and the 64 hex digits of its terms' hash,
+-- with a margin.
 maxAgreedTermsChars :: Int
 maxAgreedTermsChars = 112
 
@@ -274,7 +275,7 @@ checkDuration NamesConfig {nTermStart, nTermSlackSeconds} now years duration = d
 checkTerms :: NamesConfig -> Contracts -> OrderFields -> IO (Either OrderRefusal ())
 checkTerms cfg ct OrderFields {ofLabelHash, ofAgreedTerms} =
   nameCommunityTerms cfg ct ofLabelHash >>= \case
-    Left e -> Left ORNameCheckUnavailable <$ logWarn ("names: an order's community check failed: " <> termsErrorText e)
+    Left e -> Left ORNameCheckUnavailable <$ logWarn ("names: an order's community check failed: " <> e)
     Right h -> pure $ unless (ofAgreedTerms == termsFor cfg h) $ Left $ ORTermsChanged (termsJSON cfg) (communityJSON cfg ofLabelHash h)
 
 -- | A name being registered here searches as available, so it is checked here too.

@@ -39,7 +39,7 @@ TERMS_URL=https://simplex.chat/
 COMMUNITY_LABEL=bakers
 COMMUNITY_TEXT="bakers and bakeries in Portugal"
 
-# The cases at webapp 1aeaa95. Each case is its own client by X-Forwarded-For, which the service trusts
+# The cases at webapp 54c9d29. Each case is its own client by X-Forwarded-For, which the service trusts
 # here, as the mock does. Each takes its prepaid code from POST /control/code, which the code server
 # below answers from the codes issued here, so CODES holds one per case that asks for one. "search
 # answers every kind of name" is not among them: it sets /control/search.

@@ -129,7 +129,7 @@ checkIntent NamesConfig {nChain = ChainConfig {cChainId, cSponsor}} ct now revea
             Right nonce -> pure $ if nonce == riNonce then Right () else Left RVBadRequest
 
 -- | After the intent, so only a signed request reads the policy. A name the policy lists needs its owner's signature of
--- the acceptance its view asks for, with the intent's deadline; another name takes none.
+-- the acceptance its view returns, with the intent's deadline; another name takes none.
 checkAcceptance :: NamesConfig -> Contracts -> NameRegistration -> Word64 -> Maybe TermsAcceptance -> IO (Either RevealRefusal ())
 checkAcceptance cfg@NamesConfig {nChain = ChainConfig {cChainId}} ct NameRegistration {nrLabelHash, nrOwner, nrCommitment} deadline acceptance =
   currentAcceptance cfg ct nrLabelHash nrOwner >>= \case
