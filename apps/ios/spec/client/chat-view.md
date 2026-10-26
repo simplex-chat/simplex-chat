@@ -406,7 +406,8 @@ MsgContentView        line box terminalLineBox; meta line for live messages only
                       text ends with the transparent copy of the meta (reserveSpaceForMeta)
 MarkdownBlocksView    paragraph break, heading after another block: terminalLevelStep
                       block other than a heading after a heading: terminalHeadingBottomGap
-                      heading size: body × 1.3125^max(0, 3 − level) (terminalHeadingFont)
+                      heading size: body × 1.25^max(0, 3 − level), bold (terminalHeadingFont); classic chat items too (chatHeadings, user)
+                      item info, welcome message and profile description: body × 1.5, 1.3, 1.15 for levels 1–3 (headingFont)
                       code, tables and rules: terminalBlockTopGap above, terminalBlockBottomGap below (cardMargins)
                       last block of a message that is not live: no bottom margin, messageLastBlock()
                       rules of a rule-only message: as wide as the copy of the meta, or the item less its text edges

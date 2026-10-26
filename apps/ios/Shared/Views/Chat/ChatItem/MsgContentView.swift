@@ -118,7 +118,8 @@ struct MsgContentView: View {
                 metaLine: { metaLineView() },
                 marksLastBlock: terminal && meta?.isLive != true,
                 ruleWidthText: terminal ? meta.map { reserveSpaceForMeta($0) } : nil,
-                ruleMinWidth: ruleMinWidth
+                ruleMinWidth: ruleMinWidth,
+                chatHeadings: true
             )
         } else {
             msgContentView()
@@ -804,6 +805,7 @@ struct MarkdownBlocksView<BlockText: View, MetaLine: View>: View {
     var marksLastBlock = false
     var ruleWidthText: Text? = nil
     var ruleMinWidth: CGFloat = 0
+    var chatHeadings = false
 
     var body: some View {
         let l = BlocksLayout(formattedText, blocks, textStyle)
@@ -833,7 +835,7 @@ struct MarkdownBlocksView<BlockText: View, MetaLine: View>: View {
         case let .paragraph(content):
             text(start, content, l.font, l)
         case let .heading(level, content):
-            text(start, content, terminal ? terminalHeadingFont(l.font, level) : headingFont(l.font, level), l)
+            text(start, content, terminal || chatHeadings ? terminalHeadingFont(l.font, level) : headingFont(l.font, level), l)
         case let .quote(content):
             HStack(alignment: .top, spacing: 10) {
                 quoteBar()
