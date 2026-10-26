@@ -152,7 +152,7 @@ fitImage output format maxSize img
             largestRGB = scaleRGB8 largest rgb
             jpeg q = fmap (out . LB.fromStrict) . encodeRGB q
         fitSize maxSize (Just $ \target -> 8 * jpegBytes target / bitsPerPixel) largest (jpeg quality . (`scaleRGB8` rgb)) >>= \case
-          Right (size, r) | size == largest -> Right <$> bisect maxSize qualityStep (`jpeg` largestRGB) (quality, r) 96
+          Right (size, r) | size == largest && fromIntegral (LB.length r) < minFill * fromIntegral maxSize -> Right <$> bisect maxSize qualityStep (`jpeg` largestRGB) (quality, r) 96
           r -> pure $ snd <$> r
       IFPng -> do
         let rgba = convertRGBA8 img
@@ -165,7 +165,7 @@ fitSize maxSize firstPixels (lw, lh) encode = search [] $ maybe lw (widthFor . (
     search tried w = do
       r <- encode $ sizeOf w
       let tried' = (w, r) : tried
-      if fits r && (size r >= 0.97 * limit || w == lw)
+      if fits r && (size r >= minFill * limit || w == lw)
         then pure $ Right (sizeOf w, r)
         else maybe (largestFit tried') (search tried') $ nextWidth tried' w r
     nextWidth tried w r
@@ -197,7 +197,10 @@ fitSize maxSize firstPixels (lw, lh) encode = search [] $ maybe lw (widthFor . (
     fits r = LB.length r <= maxSize
     size = fromIntegral . LB.length
     limit = fromIntegral maxSize
-    target = sqrt 0.97 * limit
+    target = sqrt minFill * limit
+
+minFill :: Double
+minFill = 0.97
 
 imageDoesNotFit :: Either String a
 imageDoesNotFit = Left "image does not fit"

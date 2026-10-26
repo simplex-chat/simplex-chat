@@ -119,7 +119,7 @@ Resizing, `Image.hs`:
   | repeated width | the midpoint of the largest fitting width and the smallest larger width that does not fit; the search ends when they differ by 1 | the same |
   | end | after 8 encodes or the end of the bisection: the largest fitting width | the same |
   | no width fits | the smallest tried width halved until the encoding fits: `Left` when a width below 2 is to be halved | the same |
-  | at the largest width | quality bisected in the quality..95 | the encoding itself |
+  | at the largest width | below 0.97·L: quality bisected in the quality..95; otherwise the encoding itself | the encoding itself |
 
 - The largest size applies to the image data and to the data URIs: the Android and desktop apps display images and previews only up to 4320 pixels per side (`CIImageView.kt:128`, `base64ToBitmap` in `Images.android.kt:34` and `Images.desktop.kt:42`).
 - The quality bisection is ended by an encoding of exactly `maxSize`.
