@@ -280,7 +280,7 @@ Bot libraries:
 
 Native code:
 - mozjpeg master `08265790` (libjpeg-turbo 3.0.5 base) is the submodule `jpeg-turbo/cbits/mozjpeg` of the hs-jpeg-turbo fork; cabal compiles it in the `jpeg-turbo` package of every build:
-  - 112 C sources on every target
+  - 114 C sources on every target
   - aarch64: 15 Neon sources
   - armv7: `simd/arm/aarch32/jsimd.c`, and 14 Neon sources in the internal library `neon`, compiled with `-mfpu=neon`
   - configuration headers `jconfig.h`, `jconfigint.h`, `jversion.h` and `neon-compat.h` in `cbits`, with the target-dependent values taken from compiler macros
