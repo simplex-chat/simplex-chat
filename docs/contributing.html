@@ -1037,13 +1037,7 @@ window.addEventListener('click',(e)=>{
 <h2 id="follow-project-structure-coding-style-and-approaches" tabindex="-1">Follow project structure, coding style and approaches</h2>
 <p>./contributing/PROJECT.md has information about the structure of this <code>simplex-chat</code> repository.</p>
 <p>./contributing/CODE.md has details about general requirements common for <code>simplexmq</code> and <code>simplex-chat</code> repositories.</p>
-<p>These files can be used with LLM prompts, e.g. if you use Claude Code you can create <a href="http://CLAUDE.md">CLAUDE.md</a> file in project root importing content from these files:</p>
-<pre><code class="language-markdown">@README.md
-@docs/CONTRIBUTING.md
-@docs/contributing/PROJECT.md
-@docs/contributing/CODE.md
-</code></pre>
-<p>For Android/Desktop and iOS apps you can additionally import <code>apps/multiplatform/README.md</code> and <code>apps/ios/README.md</code>.</p>
+<p><a href="http://CLAUDE.md">CLAUDE.md</a> in the repository root imports these files, this guide and ../scripts/ci/README.md for Claude Code; apps/ios/CLAUDE.md and apps/multiplatform/CLAUDE.md import the README of each app.</p>
 <h2 id="compiling-with-sqlcipher-encryption-enabled" tabindex="-1">Compiling with SQLCipher encryption enabled</h2>
 <p>Add <code>cabal.project.local</code> to project root with the location of OpenSSL headers and libraries and flag setting encryption mode:</p>
 <pre><code>cp scripts/cabal.project.local.mac cabal.project.local
@@ -1103,6 +1097,15 @@ window.addEventListener('click',(e)=>{
 </ul>
 <p>We squash PRs, do not rewrite branch history after the review.</p>
 <p>For some complex features we create feature branches that will be merged once ready - do not make commits directly to them, make PRs to feature branches.</p>
+<h2 id="pull-requests-and-ci" tabindex="-1">Pull requests and CI</h2>
+<ol>
+<li>Open a pull request to <code>master</code> as a draft. On a draft, CI runs the reduced build: one Linux job that builds and tests the changed scopes, and one macOS job only when iOS code changed (CI guide: scripts/ci/README.md).</li>
+<li>Select the core tests in a <code>ci-tests</code> block in the description, one hspec match pattern per line. <code>/</code> runs all tests; without a block, the reduced build runs no core tests.</li>
+<li>Push the changes for review comments to the same branch; each push runs the reduced build.</li>
+<li>Reviewers approve the draft. A draft cannot be merged.</li>
+<li>After the approval, mark the pull request ready for review. CI then runs the full matrix, and the pull request is merged by squash once it passes.</li>
+<li>A change to a scope without CI tests adds its build and tests to CI in the same pull request.</li>
+</ol>
 <h2 id="differences-between-ghc-8107-and-ghc-963" tabindex="-1">Differences between GHC 8.10.7 and GHC 9.6.3</h2>
 <ol>
 <li>The main difference is related to <code>DuplicateRecordFields</code> extension.</li>
