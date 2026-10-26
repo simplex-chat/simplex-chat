@@ -1,4 +1,5 @@
 import argparse
+import datetime
 import tempfile
 import unittest
 from pathlib import Path
@@ -13,6 +14,7 @@ LINUX_GHC8 = "ubuntu-22.04-x86_64 (CLI,Desktop), GHC: 8.10.7"
 LINUX_SMP = "ubuntu-22.04-x86-64, GHC: 8.10.7"
 MASTER = {"id": 1, "event": "push", "head_branch": "master", "head_sha": "a" * 40, "created_at": "2026-10-20T12:44:00Z"}
 DISPATCH = {**MASTER, "event": "workflow_dispatch", "head_branch": "ep/ci-flakes"}
+TIME = datetime.datetime(2026, 10, 26, tzinfo=datetime.timezone.utc)
 
 
 def fixture(name: str) -> str:
@@ -99,14 +101,23 @@ class OutcomeTest(unittest.TestCase):
             untested = record(CHAT, job(LINUX, "success", "success"), "no-tests-selected.log", run)
             self.assertEqual(untested["outcome"], "not tested")
 
-    def test_pull_request_body_line_is_not_an_empty_selection(self):
-        log = "\n".join([
-            "2026-10-26T20:24:31.6419409Z   PR_BODY: ## Tests",
+    def test_pull_request_body_lines_are_not_test_output(self):
+        body = [
             "No tests selected",
-            "2026-10-26T20:24:31.6420829Z   ATTEMPTS: 1",
-        ])
-        passed = flakes.job_record(CHAT, PULL_RUN, job(LINUX, "success", "success"), lambda: log)[0]
-        self.assertEqual(passed["outcome"], "passed")
+            "Failures:",
+            "  1) Agent, should expire one message",
+            '  To rerun use: --match "/Agent/should expire one message/"',
+            'Test exception: "should expire one message", inAnyOrder timeout',
+            "1443 examples, 1 failure",
+        ]
+        log = fixture("simplexmq-retry-labels.log")
+        lines = log.split("\n")
+        after = next(i for i, line in enumerate(lines, 1) if line.endswith("  PR_BODY: "))
+        with_body = "\n".join(lines[:after] + body + lines[after:])
+        for test in ("success", "failure"):
+            tested = job(LINUX_SMP, test, test, step="Test")
+            plain = flakes.job_record(SMP, PULL_RUN, tested, lambda: log)[0]
+            self.assertEqual(flakes.job_record(SMP, PULL_RUN, tested, lambda: with_body)[0], plain)
 
     def test_passed_job_on_stable_keeps_failures_of_earlier_attempts(self):
         stable = {**MASTER, "head_branch": "stable"}
@@ -181,7 +192,7 @@ class FailureTest(unittest.TestCase):
             'srcLocEndLine = 407, srcLocEndCol = 20})) (ExpectedButGot Nothing "False" "True")'
         )
         signature = 'HUnitFailure tests/CoreTests/CryptoTests.hs (ExpectedButGot Nothing "False" "True")'
-        self.assertEqual(flakes.retries([flakes.Line(None, retry)]), [{"label": None, "signature": signature}])
+        self.assertEqual(flakes.retries([flakes.Line(TIME, retry)]), [{"label": None, "signature": signature}])
 
     def test_failed_retry_lines_with_and_without_label(self):
         lines = [
@@ -189,7 +200,7 @@ class FailureTest(unittest.TestCase):
             'Test failed: "sends \\"hello\\"", location Nothing, reason: ExpectedButGot Nothing "1" "2"',
         ]
         self.assertEqual(
-            flakes.retries([flakes.Line(None, line) for line in lines]),
+            flakes.retries([flakes.Line(TIME, line) for line in lines]),
             [
                 {"label": None, "signature": 'location Nothing, reason: Reason "no notification"'},
                 {"label": 'sends "hello"', "signature": 'location Nothing, reason: ExpectedButGot Nothing "N" "N"'},

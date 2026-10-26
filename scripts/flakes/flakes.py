@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import concurrent.futures
 import datetime
+import hashlib
 import json
 import os
 import re
@@ -50,7 +51,7 @@ OUTCOMES = [
 ]
 STEP_RAN = ("success", "failure")
 
-STAMP = re.compile(r"^(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d)(?:\.\d+)?Z ")
+STAMP = re.compile(r"^\ufeff?(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d)(?:\.\d+)?Z ")
 COLOUR = re.compile(r"\x1b\[[0-9;]*m")
 JOB_NAME = re.compile(r"^(.+?)(?: \(CLI,Desktop\))?, GHC: (\S+)$")
 ITEM = re.compile(r"^( *)(.*) \[[✔✘‐]\]$")
@@ -73,17 +74,17 @@ GITHUB_URL = re.compile(r"^https://github\.com/([^/]+)/([^/]+?)(?:\.git)?(?:/(pu
 
 @dataclass(frozen=True)
 class Line:
-    time: datetime.datetime | None
+    time: datetime.datetime
     text: str
 
 
 def log_lines(text: str) -> list[Line]:
     lines = []
-    for raw in text.removeprefix("\ufeff").split("\n"):
+    for raw in text.split("\n"):
         raw = raw.removesuffix("\r")
-        stamp = STAMP.match(raw)
-        time = datetime.datetime.fromisoformat(stamp[1]).replace(tzinfo=datetime.timezone.utc) if stamp else None
-        lines.append(Line(time, COLOUR.sub("", raw[stamp.end() :] if stamp else raw)))
+        if stamp := STAMP.match(raw):
+            time = datetime.datetime.fromisoformat(stamp[1]).replace(tzinfo=datetime.timezone.utc)
+            lines.append(Line(time, COLOUR.sub("", raw[stamp.end() :])))
     return lines
 
 
@@ -222,8 +223,8 @@ def step_timeout(lines: list[Line], step: str) -> int | None:
     return next((i for i, line in enumerate(lines) if line.text.startswith(marker)), None)
 
 
-def iso(time: datetime.datetime | None) -> str | None:
-    return time.strftime("%Y-%m-%dT%H:%M:%SZ") if time else None
+def iso(time: datetime.datetime) -> str:
+    return time.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def hang(lines: list[Line], timeout: int) -> dict:
@@ -231,8 +232,7 @@ def hang(lines: list[Line], timeout: int) -> dict:
     if not items:
         return {"item": None, "description": None, "time": None, "silence": None, "next": None}
     line, item, description = items[-1]
-    end = lines[timeout].time
-    silence = int((end - line.time).total_seconds()) if end and line.time else None
+    silence = int((lines[timeout].time - line.time).total_seconds())
     return {"item": item, "description": description, "time": iso(line.time), "silence": silence, "next": None}
 
 
@@ -370,7 +370,7 @@ def job_record(
     if record["outcome"] == "build failed":
         record["build"] = build_failure(lines, earlier_failure["name"])
         return record, None
-    if record["outcome"] == "passed" and any(line.time and line.text == NO_TESTS for line in lines):
+    if record["outcome"] == "passed" and any(line.text == NO_TESTS for line in lines):
         record["outcome"] = "not tested"
         return record, None
     output = test_output(lines)
@@ -1002,7 +1002,8 @@ COMMANDS = {"pr": pr_command, "run": run_command, "branch": branch_command, "tes
 
 def main(argv: list[str]) -> None:
     args = parser().parse_args(argv)
-    collector = Collector(GitHub(token(args)), Cache(Path(args.cache).expanduser()))
+    digest = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()[:12]
+    collector = Collector(GitHub(token(args)), Cache(Path(args.cache).expanduser() / digest))
     report = COMMANDS[args.command](collector, args)
     print(json.dumps(report.data, indent=1) if args.json else report.text)
 
