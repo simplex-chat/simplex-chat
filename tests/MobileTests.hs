@@ -61,7 +61,7 @@ import System.Directory (copyFile)
 import System.FilePath ((</>))
 import System.IO (IOMode (..), utf8)
 import System.IO.Error (tryIOError)
-import System.Posix.Internals (fdStat)
+import System.Posix.Internals (c_open, fdStat, o_RDONLY, withFilePath)
 import Test.Hspec hiding (it)
 
 mobileTests :: HasCallStack => SpecWith TestParams
@@ -415,6 +415,10 @@ testResizeImageFdCApi _ = do
   pdfFile <- fdStat pdf
   (peekCAString =<< cChatResizeImageFd pdf 100000 (-1)) `shouldReturn` ""
   isOpen pdf pdfFile `shouldReturn` False
+  dir <- withFilePath "./tests/fixtures" $ \path -> c_open path o_RDONLY 0
+  dirFile <- fdStat dir
+  (peekCAString =<< cChatResizeImageFdUri dir 14000) `shouldReturn` ""
+  isOpen dir dirFile `shouldReturn` False
   (peekCAString =<< cChatResizeImageFdUri 1000000 14000) `shouldReturn` ""
   (peekCAString =<< cChatResizeImageFdUri (-1) 14000) `shouldReturn` ""
   where

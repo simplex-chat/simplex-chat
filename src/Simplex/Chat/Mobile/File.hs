@@ -52,7 +52,8 @@ import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Util (catchAll)
-import UnliftIO (Handle, IOMode (..), atomically, withFile)
+import System.Posix.Internals (c_close)
+import UnliftIO (Handle, IOMode (..), atomically, onException, withFile)
 
 data WriteFileResult
   = WFResult {cryptoArgs :: CryptoFileArgs}
@@ -171,7 +172,7 @@ readFilePath :: CString -> IO ByteString
 readFilePath = B.readFile <=< peekCString
 
 readFd :: CInt -> IO ByteString
-readFd = B.hGetContents <=< fdToHandle
+readFd fd = B.hGetContents =<< fdToHandle fd `onException` c_close fd
 
 cResizeImageUri :: IO ByteString -> CInt -> IO CString
 cResizeImageUri input maxSize = cResizeImage id (resizeImageDataUri $ fromIntegral maxSize) input

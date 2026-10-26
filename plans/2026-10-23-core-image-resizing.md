@@ -188,7 +188,7 @@ chat_resize_image_fd(fd, maxSize, png)        as chat_resize_image, from the fil
   cChatResizeImageFd :: CInt -> CInt -> CInt -> IO CString
   ```
   - path: `readFilePath`, `peekCString`, then `B.readFile`
-  - descriptor: `readFd`, `fdToHandle`, then `B.hGetContents`, by which the handle is closed, also on an exception
+  - descriptor: `readFd`, `fdToHandle`, then `B.hGetContents`, by which the handle is closed, also on an exception; the descriptor is closed with `c_close` when `fdToHandle` raises
   - `cResizeImageUri` and `cResizeImageData`: the data URI and the image data from a read action, for the buffer, path and descriptor functions
   - `cResizeImage` takes the read action in place of the buffer; the input is read inside `runCatchExceptT`.
 - Exports:
@@ -427,17 +427,17 @@ Core:
   - `toDataUri` (`:321-327`), with the approved comment at `:325`
 - `Mobile/File.hs`:
   - exported at `:13-18`:
-    - `cChatResizeImageUri` (`:152-153`)
-    - `cChatResizeImage` (`:155-156`)
-    - `cChatResizeImageFileUri` (`:158-159`)
-    - `cChatResizeImageFile` (`:161-162`)
-    - `cChatResizeImageFdUri` (`:164-165`)
-    - `cChatResizeImageFd` (`:167-168`)
-  - `readFilePath` (`:170-171`)
-  - `readFd` (`:173-174`)
-  - `cResizeImageUri` (`:176-177`)
-  - `cResizeImageData` (`:179-186`): the format by `compare png 0`, `imageFormat` for `LT`
-  - `cResizeImage` (`:188-191`):
+    - `cChatResizeImageUri` (`:153-154`)
+    - `cChatResizeImage` (`:156-157`)
+    - `cChatResizeImageFileUri` (`:159-160`)
+    - `cChatResizeImageFile` (`:162-163`)
+    - `cChatResizeImageFdUri` (`:165-166`)
+    - `cChatResizeImageFd` (`:168-169`)
+  - `readFilePath` (`:171-172`)
+  - `readFd` (`:174-175`): `c_close` (`:55`) of the descriptor when `fdToHandle` raises
+  - `cResizeImageUri` (`:177-178`)
+  - `cResizeImageData` (`:180-187`): the format by `compare png 0`, `imageFormat` for `LT`
+  - `cResizeImage` (`:189-192`):
     - the read action
     - `decodeResizable`, in place of `decodeImage`
     - `runCatchExceptT`
@@ -696,9 +696,10 @@ License notices, `docs/dependencies/`:
   - `cChatResizeImageFileUri` on `test.jpg`, limit 14000: `data:image/jpg;base64,`, at most 14000 characters
   - `cChatResizeImageFile` with `png = -1`, limit 100000, on `logo-large-rgba.png`: the PNG signature
   - a missing file: `""`
-- file descriptor (`:406-422`), opened with `GHC.IO.FD.openFile`; closed afterwards: `fdStat` fails or names another file
+- file descriptor (`:406-426`), opened with `GHC.IO.FD.openFile`; closed afterwards: `fdStat` fails or names another file
   - `cChatResizeImageFdUri` on `test.jpg`, limit 14000: `data:image/jpg;base64,`, at most 14000 characters; closed afterwards
   - `cChatResizeImageFd` on `test.pdf`: `""`; closed afterwards
+  - `cChatResizeImageFdUri` on the `tests/fixtures` directory, opened with `c_open`: `""`; closed afterwards
   - descriptors 1000000 and −1, not open: `""`
 
 `tests/ChatTests/Files.hs`, "send image with generated preview" (`:47`, `:179-192`):
