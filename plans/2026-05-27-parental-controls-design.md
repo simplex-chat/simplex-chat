@@ -28,13 +28,13 @@ The child holds the phone, so a determined, technically able child gets around t
 
 - **Reinstalling the app or clearing its data removes the controls.** On iPhone, Screen Time can stop the app being deleted (Settings → Screen Time → Content & Privacy Restrictions → iTunes & App Store Purchases → Deleting Apps, https://support.apple.com/en-gb/126807); the setup screen says how *(provisional, P9)*. On Android, Family Link approves new downloads but not an app it approved before (https://support.google.com/googleplay/answer/7103028: previously approved apps "will not require additional approval to download"), so reinstalling stays open there.
 - **A factory reset, "Erase All Content and Settings", watching the parent type the PIN, or another device.**
-- **Connections the child started on a hidden profile** before the controls can still complete: the app can't open a hidden profile without its password (section 7.3).
+- **One-off connections the child started on a hidden profile** before the controls (an unused one-time link, a request sent, a group being joined) can still complete: the app can't open a hidden profile without its password (section 7.3). Addresses and group links on hidden profiles are covered by the core switch.
 - **Groups and channels the child is already in stay, and can gain new members** through other members' links *(provisional, P15)*.
 
 ## 4. Who could misuse it
 
 - **The child getting around it.** Covered: every connecting path the child can start (section 7.2); what the core would do on its own, on every profile, hidden ones included, and in an imported database (section 7.1); connections started before the controls, on profiles the app can open (section 7.3); the chat console, database import and migration, including the "Migrate" offered by onboarding after the database is deleted, and "Use from desktop" (all off, section 8). Not covered: section 3.
-- **The parent sliding into watching.** The PIN opens only the parental screen and allow-once (principle 2). App lock, self-destruct and profiles, including hidden ones, stay the child's *(provisional, P5)*. Allow-once shows the parent only the name of the one connection being approved, which the child is asking for. The clean-up of section 7.3 lists nothing by name. Turning the controls off to export the chats removes the indicator, so it can't be done unseen.
+- **The parent sliding into watching.** The PIN opens only the parental screen and allow-once (principle 2), so it gives no access to the chats beyond holding the unlocked app, which shows them anyway. App lock, self-destruct and profiles, including hidden ones, stay the child's *(provisional, P5)*, so the child decides who can open the app. Allow-once shows the parent only the name of the one connection being approved, which the child is asking for. The clean-up of section 7.3 lists nothing by name.
 - **One adult imposing it on another.** Someone who keeps the PIN can stop an adult reaching anyone new. Safeguards: the indicator is always visible; deleting the app or its data always removes the controls, because the app does not make them survive a reinstall *(provisional, P9)*; nothing is controlled remotely; the PIN opens nothing of the chats.
 - **Strangers contacting the child.** They must not learn the phone is restricted, since that would mark a child. Section 9 lists what a contact can see; none of it is specific to these controls.
 
@@ -44,7 +44,7 @@ The child holds the phone, so a determined, technically able child gets around t
 - **Parent PIN:** stored like the app passcode. iOS: a new keychain item `kcParentPassword` in `apps/ios/SimpleXChat/KeyChain.swift` (same access policy, `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`, line 12). Kotlin: a new `KeyStoreItem` in `views/helpers/DatabaseUtils.kt` (lines 17-19 hold the existing three).
 - **Kept out of the settings archive.** Importing a database or migrating to a device also imports the app settings packed with it (iOS `apps/ios/Shared/Model/SimpleXAPI.swift:2309-2317`, `apps/ios/Shared/Views/UserSettings/AppSettings.swift:14`; Kotlin `AppSettings`, `model/SimpleXAPI.kt:8711`). The switches and the PIN are not part of `AppSettings`.
 - **Outside the chat database.** Deleting the database and the self-destruct passcode leave them in place (iOS `apps/ios/Shared/Views/LocalAuth/LocalAuthView.swift:65-79`; Kotlin `views/localauth/LocalAuthView.kt:57-75` and `views/database/DatabaseView.kt:556-578` remove only database files and their own preferences). Deleting the app or its data removes them.
-- **Reinstall on iOS:** iOS can keep keychain items after the app is deleted; the app removes its passcodes on the first launch without a database (`apps/ios/Shared/AppDelegate.swift:111-122`). That clean-up runs only when the app or self-destruct passcode exists (line 116); its condition gains `kcParentPassword`, and it removes it, so a reinstalled app never asks for a PIN nobody remembers.
+- **Reinstall on iOS:** iOS can keep keychain items after the app is deleted, while the app-group container that holds the switches goes with the app. So on launch, if `kcParentPassword` exists and no switches are stored, the app removes it; a reinstalled app never asks for a PIN nobody remembers. The existing clean-up (`apps/ios/Shared/AppDelegate.swift:111-122`) stays as it is: its test, "no app-lock flag and no database", also passes after an in-app "Delete database", so adding the PIN to it would delete the PIN while the switches stay, leaving the controls stuck on. (That the app-group container goes on uninstall is iOS behaviour to confirm once on a device.)
 - **The core switch** (section 7.1) is held in memory and sent by the app at every chat start; nothing is stored in the chat database.
 
 ## 6. The parent gate and the parental screen
@@ -58,7 +58,7 @@ The child holds the phone, so a determined, technically able child gets around t
 2. Set or change the parent PIN.
 3. The switches, with the defaults of section 1.
 4. When connecting or groups is switched off: one confirmation for the clean-up of section 7.3, and a note that groups and channels the child is already in stay *(provisional, P15)*.
-5. "Turn off parental controls": PIN, then the switches clear and the core switch is cleared. Links and pending connections removed by the clean-up are not restored; the child makes new ones as needed.
+5. "Turn off parental controls": PIN, then the switches clear and the core switch is cleared, so addresses and group links work as before. Pending connections removed by the clean-up are not restored; the child starts new ones as needed.
 
 **The indicator:** while any switch is off, a line "Parental controls on" at the top of the chat list (iOS `apps/ios/Shared/Views/ChatList/ChatListView.swift`; Kotlin `views/chatlist/ChatListView.kt`) and on the Settings screen, opening the parental screen *(provisional, P7)*.
 
@@ -70,17 +70,23 @@ Each control lists where its check runs, on both platforms, and the screens wher
 
 Some connections, calls and files happen in the chat core with no app call: auto-accepting on an address, a business address, member contacts and group invitations; ringing for an incoming call; receiving small inline files. The app can't reach them on profiles other than the active one: address settings and the profile act only on the active user (`withUserId` → `checkSameUser`, `src/Simplex/Chat/Library/Internal.hs:3451-3457`), and the auto-accept setters need a hidden profile's password (`src/Simplex/Chat/Library/Commands.hs:541-551`). And the calls preference doesn't reach incognito contacts (`src/Simplex/Chat/Types.hs:695-698`) or contacts with their own calls setting (`src/Simplex/Chat/Types/Preferences.hs:1078-1080`).
 
-So the core gets a switch *(provisional, P1)*: a new local API command that sets which of `connect`, `groups`, `calls`, `receiveMedia` are off, held in memory like `APISetEncryptLocalFiles` (`Commands.hs:659`, `chatWriteVar encryptLocalFiles`). The app sends it at every chat start and whenever the switches change: in the main app, in the notification extension and in the share extension (as the share extension sends `apiSetEncryptLocalFiles`, `apps/ios/SimpleX SE/ShareAPI.swift:44-47`). While it is set:
+So the core gets a switch *(provisional, P1)*: a new local API command that sets which of `connect`, `groups`, `calls`, `receiveMedia` are off, held in memory like `APISetEncryptLocalFiles` (`Commands.hs:659`, `chatWriteVar encryptLocalFiles`). Each auto-accept setting is read through one effective value, "the setting is on and its switch is not off", computed once and used at every read listed below. While the switch is set:
 
 | Off | The core | Where |
 |---|---|---|
-| `connect` | does not auto-accept requests to an address, including a business address; they wait as with auto-accept off | `src/Simplex/Chat/Library/Subscriber.hs:1535-1543` |
-| `connect` | does not auto-accept a group member's direct-contact request | `Subscriber.hs:3944-3950` (`autoAcceptMemberContacts`) |
-| `groups` | does not auto-accept group invitations | `Subscriber.hs:2723-2727`, `3907-3910` (`autoAcceptGroupInvitations`) |
+| `connect` | does not auto-accept requests to an ordinary address; they wait as with auto-accept off, and the child can accept one with allow-once | `src/Simplex/Chat/Library/Subscriber.hs:1529-1541` |
+| `connect` | ignores requests to a business address before storing them: nothing stored, nothing sent, the requester stays pending. (A business address has no waiting state: the store creates the business chat inside `createOrUpdateContactRequest`, `Subscriber.hs:1503`, `src/Simplex/Chat/Store/ContactRequest.hs:196-199`, and the subscriber then accepts it, `Subscriber.hs:1542-1543`.) No allow-once, since there is no request to show | `Subscriber.hs:1503` |
+| `connect` | does not auto-accept a group member's direct-contact request; the stored invitation records no started connection | `autoAcceptMemberContacts` at `Subscriber.hs:3946,3949,3968` |
+| `groups` | does not auto-accept group invitations; they stay as pending invitations | `autoAcceptGroupInvitations` at `Subscriber.hs:2723,3907` |
+| `groups` | ignores join requests to the child's own group links, on every profile, sending nothing (not the existing rejection, which sends `XGrpLinkReject`) | `Subscriber.hs:1633-1648` (`acceptGroupJoinRequestAsync`, 1646) |
+| `groups` | treats a group invitation that arrives on a group-link connection the child made earlier as a pending invitation instead of joining | `Subscriber.hs:2721-2722` → the pending branch at 2728-2730 |
 | `calls` | turns every incoming call into the existing local "feature rejected" item, whatever the preferences; it never rings | `Subscriber.hs:3051-3057,3078-3081` |
-| `receiveMedia` | does not receive inline files on arrival | `receiveInlineMode`, `Subscriber.hs:2545-2551` |
+| `receiveMedia` | does not receive inline files on arrival; a file sent inline that arrives while receiving is off can't be received later (`src/Simplex/Chat/Library/Internal.hs:826`) | `receiveInlineMode`, `Subscriber.hs:2545-2551` |
+| `receiveMedia` | does not receive, at start or activation, files the notification extension marked to receive earlier; the marks stay, so they arrive once the controls are off | `startFilesToReceive`, `src/Simplex/Chat/Library/Commands.hs:265,347-361,617` |
 
-It covers every profile, hidden ones included, the notification extension's core, and a database imported later. Nothing is sent to anyone and nothing is stored; the address and preference settings themselves are untouched, so turning the controls off brings them back as they were. Cost: one command, one variable, the five checks above, and core tests for each. A join to the child's own group link (`Subscriber.hs:2721-2722`) is a join the child started and is left to section 7.3.
+**How each process gets it.** The main app, the notification extension and the share extension each run their own core. Each sends the command before `/_start`, as the main app sends file encryption before starting (`apps/ios/Shared/Model/SimpleXAPI.swift:2305`, start at 2376), and doesn't start the chat if sending fails (principle 5). The main app also sends it whenever the switches change. The notification extension keeps one core across pushes and returns early or only reactivates it on later pushes (`apps/ios/SimpleX NSE/NotificationService.swift:849,855-860,917-925`), so it re-reads the switches from group defaults and re-sends the command on every push, before processing it, on every path. The share extension sends it at its start (`apps/ios/SimpleX SE/ShareAPI.swift:44-47` sends file encryption the same way). On Android the app and its background service share one core.
+
+It covers every profile, hidden ones included, the notification extension's core, and a database imported later. Nothing is sent to anyone and nothing is stored for the switch; the waiting records are the ones the setting-off paths already store. The address, group-link and preference settings are untouched, so turning the controls off brings them back as they were. Cost: one command, one variable, the checks above at about ten read sites, the per-push resend in the notification extension, and core tests for each.
 
 ### 7.2 Connecting to new people (`connect`)
 
@@ -117,14 +123,13 @@ Only connecting has this exception; any other switch is changed on the parental 
 
 ### 7.3 Connections started before the controls
 
-Connections the child started before the controls complete in the core when the other side answers: an unused one-time link, a request sent to an address and accepted later, a prepared chat, a group being joined (`Subscriber.hs:484-518,619-631`; own group link `2721-2722`). Blocking these in the core would also block allowed-once connections, which complete the same way.
+Connections the child started before the controls complete in the core when the other side answers: an unused one-time link, a request sent to an address and accepted later, a prepared chat, a direct-contact invitation sent to a group member, a group being joined (`Subscriber.hs:484-518,619-636`). Blocking these in the core would also block allowed-once connections, which complete the same way. The child's own address and group links need nothing here: the core switch ignores what arrives on them (section 7.1), and they work again when the controls are off.
 
 So when connecting or groups is switched off, after one confirmation, the app deletes *(provisional, P2)*:
-1. with connecting off: unused one-time links, requests the child sent that are still pending, and prepared chats not yet connected;
-2. with groups off: groups the child is still joining;
-3. with either off: every group link the child created, at any role (`apiCreateGroupLink` needs an admin, `Commands.hs:3362-3364`).
+1. with connecting off: unused one-time links, requests the child sent that are still pending, direct-contact invitations the child sent to group members, and prepared chats not yet connected;
+2. with groups off: groups the child is still joining.
 
-It does this on every profile it can open, switching the active profile and back for the visible ones (address and chat commands act on the active user, section 7.1). A hidden profile can't be opened without its password, so its pending connections stay (section 3). Nothing is listed by name, so the parent learns nothing about the child's profiles or groups.
+It does this on every profile it can open, switching the active profile and back for the visible ones (chat commands act on the active user, section 7.1). A hidden profile can't be opened without its password, so its one-off pending connections stay (section 3). Nothing is listed by name, so the parent learns nothing about the child's profiles or groups.
 
 ### 7.4 Groups and channels (`groups`)
 
@@ -140,7 +145,7 @@ Off: the child can't create or join groups or channels, create group links, or a
 | Create a group link | `apiCreateGroupLink` 2090 | `apiCreateGroupLink` 2585 |
 | Admit a member waiting for review | `apiAcceptMember` 2017 | `apiAcceptMember` 2491 |
 
-Group invitations are not auto-accepted while groups are off (section 7.1).
+While groups are off, the core switch keeps group invitations pending and ignores join requests to the child's own group links (section 7.1).
 
 Buttons hidden:
 - iOS (`apps/ios/Shared/Views/`): "Create group" and "Create public channel" (`NewChat/NewChatMenuButton.swift:130-145`); "Join" on group invitations in the chat list and the chat (`ChatList/ChatListNavLink.swift:217-236,320-330`, `Chat/ChatItem/CIGroupInvitationView.swift:95-101`); "Join group" / "Join channel" in a prepared group (`Chat/ComposeMessage/ComposeView.swift:486-496`); creating a group link (`Chat/Group/GroupLinkView.swift:122-125,164-195`).
