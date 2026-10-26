@@ -37,7 +37,7 @@ import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Log (logWarn)
 import StoreService.Names.Abi (bytes32FromHex)
-import StoreService.Names.Community (Acceptance (..), currentAcceptance)
+import StoreService.Names.Community (AcceptanceAsked (..), currentAcceptance)
 import StoreService.Names.Contracts (Contracts, sponsorNonce)
 import StoreService.Names.Label (validLabel)
 import StoreService.Names.Links (LinkKind (..), linkKindOf)
@@ -136,7 +136,7 @@ checkAcceptance cfg@NamesConfig {nChain = ChainConfig {cChainId}} ct NameRegistr
     Left e -> Left RVChainUnavailable <$ logWarn ("names: a reveal's community terms acceptance could not be read: " <> e)
     Right asked -> case (asked, acceptance) of
       (Nothing, Nothing) -> pure $ Right ()
-      (Just Acceptance {acPolicy, acTermsHash, acNonce}, Just a@TermsAcceptance {taTermsHash, taNonce})
+      (Just AcceptanceAsked {acPolicy, acTermsHash, acNonce}, Just a@TermsAcceptance {taTermsHash, taNonce})
         | taTermsHash == acTermsHash && taNonce == acNonce -> first (const RVBadRequest) <$> verifyAcceptance (policyDomain cChainId acPolicy) nrOwner nrCommitment deadline a
       _ -> pure $ Left RVBadRequest
 

@@ -35,7 +35,7 @@ import Simplex.Messaging.Util (safeDecodeUtf8)
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Abi (hex)
 import StoreService.Names.Chain (TxHash (..))
-import StoreService.Names.Community (Acceptance (..), agreedTermsHash, communityJSON, currentAcceptance)
+import StoreService.Names.Community (AcceptanceAsked (..), agreedTermsHash, communityJSON, currentAcceptance)
 import StoreService.Names.Contracts (Contracts, sponsorNonce)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Store (Balance (..), BalanceHold (..), LateWait (..), NamePhase (..), NameRegistration (..), NameReveal (..), RegistrationPayment (..), getBalance, getRegistration, heldBy, lateWait)
@@ -44,7 +44,7 @@ import StoreService.Names.Store (Balance (..), BalanceHold (..), LateWait (..), 
 data ViewReads = ViewReads
   { vrIntentNonce :: Maybe Word64,
     vrUnread :: [Text],
-    vrAcceptance :: Maybe Acceptance
+    vrAcceptance :: Maybe AcceptanceAsked
   }
   deriving (Eq, Show)
 
@@ -114,7 +114,7 @@ viewJSON cfg@NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResolver, cSpon
     NameRegistration {nrId = RegistrationId rid, nrVersion, nrMoves, nrLinksRefusedAt, nrPhase, nrLabelHash = LabelHash lh, nrReveal, nrOwner, nrCommitment, nrSealed} = r
     NameRegistration {nrYears, nrDuration, nrPrice, nrBalanceUsed, nrCommitTx, nrRegisterTx, nrRevealAfter, nrRevealBefore, nrExpiresAt, nrError, nrAgreedTerms} = r
     txText (TxHash h) = hex h
-    acceptanceJSON Acceptance {acPolicy, acTermsHash, acNonce} =
+    acceptanceJSON AcceptanceAsked {acPolicy, acTermsHash, acNonce} =
       J.object ["policy" .= addressText acPolicy, "termsHash" .= hex acTermsHash, "nonce" .= acNonce]
     waitingText :: LateWait -> Text
     waitingText = \case

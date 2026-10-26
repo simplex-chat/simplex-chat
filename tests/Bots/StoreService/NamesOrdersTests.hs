@@ -102,7 +102,7 @@ import StoreService.Names.Abi (hex, uint256)
 import StoreService.Names.Chain (newChainClient)
 import StoreService.Names.Contracts (newContracts)
 import StoreService.Names.Codes (CodeRefusal (..))
-import StoreService.Names.Community (Acceptance (..))
+import StoreService.Names.Community (AcceptanceAsked (..))
 import StoreService.Names.Orders (OrdersEnv (..))
 import qualified StoreService.Names.Orders as Orders
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, newPhases)
@@ -1590,7 +1590,7 @@ testViewFields = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   field "latePayment" v `shouldBe` Just J.Null
   let waiting w = field "latePayment" $ objectOf $ viewJSON (testNamesConfig node) r Nothing (Just w) ViewReads {vrIntentNonce = Nothing, vrUnread = [], vrAcceptance = Nothing}
   map waiting [LWConfirming, LWCrediting, LWSupport] `shouldBe` map (\t -> Just $ J.object ["waiting" .= (t :: Text)]) ["confirming", "crediting", "support"]
-  let acceptance = Acceptance {acPolicy = fakeNamePolicy, acTermsHash = fakeCommunityTerms, acNonce = 2}
+  let acceptance = AcceptanceAsked {acPolicy = fakeNamePolicy, acTermsHash = fakeCommunityTerms, acNonce = 2}
   field "acceptance" (objectOf $ viewJSON (testNamesConfig node) r Nothing Nothing ViewReads {vrIntentNonce = Nothing, vrUnread = [], vrAcceptance = Just acceptance})
     `shouldBe` Just (J.object ["policy" .= safeDecodeUtf8 (strEncode fakeNamePolicy), "termsHash" .= hex fakeCommunityTerms, "nonce" .= (2 :: Int)])
   map (`field` v) ["id", "phase", "owner", "tld", "chainId", "linksRefused", "label", "unread", "sponsor", "fromBalance", "balance", "community", "terms"]
@@ -1649,7 +1649,7 @@ testViewReads = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   -- the policy lists the name: the page signs the acceptance with the policy's nonce, until a reveal is stored
   listCommunityName node $ labelHash "alicebakery"
   answerCall node fakeNamePolicy noncesCall $ Returns $ uint256 (2 :: Int)
-  readViewChain cfg ct committed `shouldReturn` ViewReads (Just 4) [] (Just Acceptance {acPolicy = fakeNamePolicy, acTermsHash = fakeCommunityTerms, acNonce = 2})
+  readViewChain cfg ct committed `shouldReturn` ViewReads (Just 4) [] (Just AcceptanceAsked {acPolicy = fakeNamePolicy, acTermsHash = fakeCommunityTerms, acNonce = 2})
   readViewChain cfg ct committed {nrReveal = Just reveal} `shouldReturn` ViewReads (Just 4) [] Nothing
   taken <- inPhase PTaken
   readViewChain cfg ct taken `shouldReturn` ViewReads Nothing [] Nothing

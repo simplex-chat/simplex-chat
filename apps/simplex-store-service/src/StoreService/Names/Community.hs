@@ -14,7 +14,7 @@ module StoreService.Names.Community
     currentCommunityTerms,
     nameCommunityTerms,
     maxTermsBytes,
-    Acceptance (..),
+    AcceptanceAsked (..),
     currentAcceptance,
   )
 where
@@ -95,18 +95,18 @@ nameCommunityTerms cfg ct lh = runExceptT $
     True -> Just <$> withExceptT termsErrorText (ExceptT $ currentCommunityTerms cfg ct)
 
 -- | What the page signs to accept the community terms of a name the policy lists.
-data Acceptance = Acceptance {acPolicy :: Address, acTermsHash :: ByteString, acNonce :: Word64}
+data AcceptanceAsked = AcceptanceAsked {acPolicy :: Address, acTermsHash :: ByteString, acNonce :: Word64}
   deriving (Eq, Show)
 
 -- | The acceptance the owner signs for a name the policy lists, Nothing for another name; the view returns it for the
 -- page to sign, and the reveal is checked against it.
-currentAcceptance :: NamesConfig -> Contracts -> LabelHash -> Address -> IO (Either Text (Maybe Acceptance))
+currentAcceptance :: NamesConfig -> Contracts -> LabelHash -> Address -> IO (Either Text (Maybe AcceptanceAsked))
 currentAcceptance cfg ct lh owner = runExceptT $ ExceptT (nameCommunityTerms cfg ct lh) >>= traverse acceptance
   where
     acceptance acTermsHash = do
       acPolicy <- withExceptT tshow $ ExceptT $ namePolicy ct
       acNonce <- withExceptT tshow $ ExceptT $ policyNonce ct owner
-      pure Acceptance {acPolicy, acTermsHash, acNonce}
+      pure AcceptanceAsked {acPolicy, acTermsHash, acNonce}
 
 -- | The policy's community terms hash, once the text at community_terms_url hashes to it. Each call reads the hash and
 -- fetches the page until its text hashes to it, so terms set later are checked when a call first reads them.
