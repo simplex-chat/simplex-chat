@@ -3022,4 +3022,18 @@
     <string name="badges_error_last_attempt">Letzter Versuch</string>
     <string name="badges_level_legend_summary">Hinweis: Dateien bis 5 GB sind 21 Tage lang verfügbar.</string>
     <string name="rcv_group_event_msg_bad_signature">Nachricht abgelehnt: Ungültige Signatur</string>
+    <string name="badges_credential_months_left">Verbleibende Monate</string>
+    <string name="badges_credential_next_check">Nächste Überprüfung</string>
+    <string name="no_emoji_found">Kein Emoji gefunden</string>
+    <string name="badges_ledger_no_entries">Keine Einträge</string>
+    <string name="badges_waiting_for_approval_body">Es wurde nichts berechnet.</string>
+    <string name="emoji_category_objects">Objekte</string>
+    <string name="badges_ledger_paused_since">Pausiert seit</string>
+    <string name="emoji_category_people">Personen und Körper</string>
+    <string name="badges_link_held_title">Dieses Profil hat bereits einen Badge</string>
+    <string name="badges_credential_purchase_id">Kauf-ID</string>
+    <string name="badges_how_it_works_read_more_with_link"><![CDATA[Lesen Sie mehr dazu in <font color="#0088ff">unserem Blog</font>.]]></string>
+    <string name="callstate_reconnecting">Erneut verbinden…</string>
+    <string name="call_not_encrypted_desc">%s hat den Anruf ohne Ende-zu-Ende-Verschlüsselung angenommen.</string>
+    <string name="keystore_key_storage_strongbox">Sicherheitsmodul</string>
 </resources>
