@@ -32,6 +32,12 @@ let terminalHeadingRatio: CGFloat = 1.3125
 private let terminalLineHeightRatio: CGFloat = 22 / 16
 private let terminalLineHeightContrastSlope: CGFloat = 0.1515
 private let terminalGapBodySize: CGFloat = 16
+var snapshotRowStart: CGFloat = 8
+var snapshotRowEnd: CGFloat = 12
+var snapshotMetaEnd: CGFloat = 12
+var snapshotGutterExtra: CGFloat = 4
+var snapshotAvatarSpacing: CGFloat = 10
+var snapshotNameOffset: CGFloat = 14
 
 func terminalGap(_ size: CGFloat) -> CGFloat {
     size * UIFont.preferredFont(forTextStyle: .body).pointSize / terminalGapBodySize
@@ -259,7 +265,7 @@ struct ItemWithMeta<Meta: View, Content: View>: View {
     @ViewBuilder private func metaBox(_ meta: some View, _ lineHeightColor: Color?) -> some View {
         let v = meta
             .lineBox(terminalLineBox(UIFont.preferredFont(forTextStyle: .caption1), lineHeightColor, theme))
-            .padding(.trailing, chatItemTextPadding)
+            .padding(.trailing, snapshotMetaEnd)
         if overlayMeta != nil {
             v.frame(maxWidth: .infinity, maxHeight: .infinity).clipped()
         } else {
@@ -407,8 +413,8 @@ struct TerminalChatItemRow<Content: View>: View {
             }
         }
         .padding(.top, topGap + (sender == nil ? 0 : senderTopGap))
-        .padding(.leading, 8)
-        .padding(.trailing, 12)
+        .padding(.leading, snapshotRowStart)
+        .padding(.trailing, snapshotRowEnd)
     }
 
     private func senderNameAndRole(_ sender: ChatItemSender) -> some View {

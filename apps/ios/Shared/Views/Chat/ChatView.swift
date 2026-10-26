@@ -1985,7 +1985,7 @@ struct ChatView: View {
                             }
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                            .padding(.leading, memberImageSize + 14 + (selectedChatItems != nil && ci.canBeDeletedForSelf ? 12 + 24 : 0))
+                            .padding(.leading, memberImageSize + snapshotNameOffset + (selectedChatItems != nil && ci.canBeDeletedForSelf ? 12 + 24 : 0))
                             .padding(.top, 3)
                         }
                         HStack(alignment: .center, spacing: 0) {
@@ -1993,7 +1993,7 @@ struct ChatView: View {
                                 SelectedChatItem(ciId: ci.id, selectedChatItems: $selectedChatItems)
                                     .padding(.trailing, 12)
                             }
-                            HStack(alignment: .top, spacing: 10) {
+                            HStack(alignment: .top, spacing: snapshotAvatarSpacing) {
                                 ProfileImage(imageStr: groupInfo.image, icon: Image(systemName: groupInfo.chatIconName), size: memberImageSize, backgroundColor: theme.colors.background)
                                     .simultaneousGesture(TapGesture().onEnded {
                                         showChatInfoSheet = true
@@ -2014,7 +2014,7 @@ struct ChatView: View {
                         }
                         chatItemWithMenu(ci, range, maxWidth, itemSeparation)
                             .padding(.trailing)
-                            .padding(.leading, chat.chatInfo.isChannel ? nil : 10 + memberImageSize + 12)
+                            .padding(.leading, chat.chatInfo.isChannel ? nil : snapshotAvatarSpacing + memberImageSize + 12)
                     }
                     .padding(.bottom, bottomPadding)
                 }
@@ -2068,7 +2068,7 @@ struct ChatView: View {
                             }
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
-                                .padding(.leading, memberImageSize + 14 + (selectedChatItems != nil && ci.canBeDeletedForSelf ? 12 + 24 : 0))
+                                .padding(.leading, memberImageSize + snapshotNameOffset + (selectedChatItems != nil && ci.canBeDeletedForSelf ? 12 + 24 : 0))
                                 .padding(.top, 3) // this is in addition to message sequence gap
                         }
                         HStack(alignment: .center, spacing: 0) {
@@ -2076,7 +2076,7 @@ struct ChatView: View {
                                 SelectedChatItem(ciId: ci.id, selectedChatItems: $selectedChatItems)
                                     .padding(.trailing, 12)
                             }
-                            HStack(alignment: .top, spacing: 10) {
+                            HStack(alignment: .top, spacing: snapshotAvatarSpacing) {
                                 if ci.meta.showGroupAsSender {
                                     ProfileImage(imageStr: groupInfo.image, icon: Image(systemName: groupInfo.chatIconName), size: memberImageSize, backgroundColor: theme.colors.background)
                                         .simultaneousGesture(TapGesture().onEnded {
@@ -2111,7 +2111,7 @@ struct ChatView: View {
                         }
                         chatItemWithMenu(ci, range, maxWidth, itemSeparation)
                             .padding(.trailing)
-                            .padding(.leading, chat.chatInfo.isChannel ? nil : 10 + memberImageSize + 12)
+                            .padding(.leading, chat.chatInfo.isChannel ? nil : snapshotAvatarSpacing + memberImageSize + 12)
                     }
                     .padding(.bottom, bottomPadding)
                 }
@@ -2161,7 +2161,7 @@ struct ChatView: View {
                 }
                 TerminalChatItemRow(
                     sender: showSender ? chatItemSender(ci, range) : nil,
-                    gutter: chat.chatInfo.chatType == .group ? memberImageSize + 4 : 0,
+                    gutter: chat.chatInfo.chatType == .group ? memberImageSize + snapshotGutterExtra : 0,
                     topGap: topGap
                 ) {
                     chatItemWithMenu(ci, range, maxWidth, itemSeparation)

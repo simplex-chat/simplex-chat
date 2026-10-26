@@ -35,8 +35,73 @@ final class SnapshotTests: XCTestCase {
                 ])
             }
         }
-        let data = try JSONSerialization.data(withJSONObject: index, options: [.prettyPrinted, .sortedKeys])
-        try data.write(to: dir.appendingPathComponent("index-\(size).json"))
+        let k = scaledMemberImageSize(DynamicTypeSize(UIApplication.shared.preferredContentSizeCategory) ?? .large) / 34
+        let gapSets = [
+            PaddingSet(name: "now"),
+            PaddingSet(name: "right-20", rowEnd: 8),
+            PaddingSet(name: "right-16", rowEnd: 4),
+            PaddingSet(name: "time-12", metaEnd: 0)
+        ]
+        let paddingSets = [
+            PaddingSet(name: "now"),
+            PaddingSet(name: "p1-even-12", rowStart: 12, gutterExtra: 0, avatarSpacing: 12, nameOffset: 24),
+            PaddingSet(name: "p2-name-on-edge", gutterExtra: 0, nameOffset: 10),
+            PaddingSet(name: "p3-scaled", rowStart: 8 * k, gutterExtra: 4 * k, avatarSpacing: 10 * k, nameOffset: 14 * k)
+        ]
+        var variants: [[String: Any]] = []
+        for dark in [false, true] {
+            let theme = snapshotTheme(dark)
+            CurrentColors = theme
+            let themeName = dark ? "dark" : "light"
+            let all = fixtures.scenes(defaultSize: true)
+            let runs: [(String, [PaddingSet], [String])] = [
+                ("I7", size == "large" ? gapSets : [], ["names", "overview-direct-terminal"]),
+                ("I8", paddingSets, ["avatars-classic", "avatars-terminal"])
+            ]
+            for (question, sets, names) in runs {
+                for set in sets {
+                    set.apply()
+                    for scene in all where names.contains(scene.name) {
+                        let file = "\(question)-\(scene.name)-\(set.name)-\(themeName)-\(size).png"
+                        let image = try renderScene(scene, theme.toAppTheme(), dark: dark, in: windowScene)
+                        try XCTUnwrap(image.pngData()).write(to: dir.appendingPathComponent(file))
+                        variants.append([
+                            "question": question,
+                            "scene": scene.name,
+                            "variant": set.name,
+                            "theme": themeName,
+                            "size": size,
+                            "file": file,
+                            "width": Int((image.size.width * image.scale).rounded()),
+                            "height": Int((image.size.height * image.scale).rounded()),
+                            "scale": image.scale
+                        ])
+                    }
+                }
+            }
+        }
+        PaddingSet(name: "now").apply()
+        let variantData = try JSONSerialization.data(withJSONObject: variants, options: [.prettyPrinted, .sortedKeys])
+        try variantData.write(to: dir.appendingPathComponent("variants-\(size).json"))
+    }
+}
+
+private struct PaddingSet {
+    var name: String
+    var rowStart: CGFloat = 8
+    var rowEnd: CGFloat = 12
+    var metaEnd: CGFloat = 12
+    var gutterExtra: CGFloat = 4
+    var avatarSpacing: CGFloat = 10
+    var nameOffset: CGFloat = 14
+
+    func apply() {
+        snapshotRowStart = rowStart
+        snapshotRowEnd = rowEnd
+        snapshotMetaEnd = metaEnd
+        snapshotGutterExtra = gutterExtra
+        snapshotAvatarSpacing = avatarSpacing
+        snapshotNameOffset = nameOffset
     }
 }
 
