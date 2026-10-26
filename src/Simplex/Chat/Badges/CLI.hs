@@ -13,8 +13,8 @@ import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import qualified Data.Text as T
-import Data.Time.Clock (UTCTime)
 import Data.Time.Format (defaultTimeLocale, parseTimeM)
+import Data.Time.Clock (UTCTime)
 import Options.Applicative
 import Simplex.Chat.Badges
 import qualified Simplex.Messaging.Crypto as C
