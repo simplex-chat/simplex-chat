@@ -12,6 +12,7 @@ LINUX = "ubuntu-22.04-x86_64 (CLI,Desktop), GHC: 9.6.3"
 LINUX_GHC8 = "ubuntu-22.04-x86_64 (CLI,Desktop), GHC: 8.10.7"
 LINUX_SMP = "ubuntu-22.04-x86-64, GHC: 8.10.7"
 MASTER = {"id": 1, "event": "push", "head_branch": "master", "head_sha": "a" * 40, "created_at": "2026-10-20T12:44:00Z"}
+DISPATCH = {**MASTER, "event": "workflow_dispatch", "head_branch": "ep/ci-flakes"}
 
 
 def fixture(name: str) -> str:
@@ -78,14 +79,34 @@ class OutcomeTest(unittest.TestCase):
         self.assertEqual((crashed["outcome"], crashed["build"]["step"]), ("crashed", "Run tests"))
 
     def test_simplexmq_retries_are_read_from_passed_and_failed_jobs(self):
+        pattern = "user error (Pattern match failure in do expression at tests/AgentTests/NotificationTests.hs:N:N-N)"
         expected = [
-            "user error (Pattern match failure in do expression at tests/AgentTests/NotificationTests.hs:N:N-N)",
-            "no notification",
-            "user error (Pattern match failure in do expression at tests/AgentTests/NotificationTests.hs:N:N-N)",
+            {"label": None, "signature": pattern},
+            {"label": None, "signature": "no notification"},
+            {"label": None, "signature": pattern},
         ]
         for test, outcome in (("failure", "failed"), ("success", "passed")):
             tested = record(SMP, job(LINUX_SMP, test, test, step="Test"), "simplexmq-retries.log")
             self.assertEqual((tested["outcome"], tested["retries"]), (outcome, expected))
+
+    def test_simplexmq_retries_are_keyed_by_test_label(self):
+        tested = record(SMP, job(LINUX_SMP, "success", "success", step="Test"), "simplexmq-retry-labels.log")
+        expected = [{"label": "should expire one message", "signature": "inAnyOrder timeout"}]
+        self.assertEqual((tested["outcome"], tested["retries"]), ("passed", expected))
+
+    def test_job_without_selected_tests_is_not_tested_in_manual_and_pull_request_runs(self):
+        for run in (DISPATCH, PULL_RUN):
+            untested = record(CHAT, job(LINUX, "success", "success"), "no-tests-selected.log", run)
+            self.assertEqual(untested["outcome"], "not tested")
+
+    def test_pull_request_body_line_is_not_an_empty_selection(self):
+        log = "\n".join([
+            "2026-10-26T20:24:31.6419409Z   PR_BODY: ## Tests",
+            "No tests selected",
+            "2026-10-26T20:24:31.6420829Z   ATTEMPTS: 1",
+        ])
+        passed = flakes.job_record(CHAT, PULL_RUN, job(LINUX, "success", "success"), lambda: log)[0]
+        self.assertEqual(passed["outcome"], "passed")
 
     def test_passed_job_on_stable_keeps_failures_of_earlier_attempts(self):
         stable = {**MASTER, "head_branch": "stable"}
@@ -159,9 +180,20 @@ class FailureTest(unittest.TestCase):
             'srcLocFile = "tests/CoreTests/CryptoTests.hs", srcLocStartLine = 407, srcLocStartCol = 10, '
             'srcLocEndLine = 407, srcLocEndCol = 20})) (ExpectedButGot Nothing "False" "True")'
         )
+        signature = 'HUnitFailure tests/CoreTests/CryptoTests.hs (ExpectedButGot Nothing "False" "True")'
+        self.assertEqual(flakes.retries([flakes.Line(None, retry)]), [{"label": None, "signature": signature}])
+
+    def test_failed_retry_lines_with_and_without_label(self):
+        lines = [
+            'Test failed: location Nothing, reason: Reason "no notification"',
+            'Test failed: "sends \\"hello\\"", location Nothing, reason: ExpectedButGot Nothing "1" "2"',
+        ]
         self.assertEqual(
-            flakes.retries([flakes.Line(None, retry)]),
-            ['HUnitFailure tests/CoreTests/CryptoTests.hs (ExpectedButGot Nothing "False" "True")'],
+            flakes.retries([flakes.Line(None, line) for line in lines]),
+            [
+                {"label": None, "signature": 'location Nothing, reason: Reason "no notification"'},
+                {"label": 'sends "hello"', "signature": 'location Nothing, reason: ExpectedButGot Nothing "N" "N"'},
+            ],
         )
 
     def test_build_signature_includes_the_error_message(self):
@@ -300,6 +332,24 @@ class ReportTest(unittest.TestCase):
         self.assertIn("simplex-chat/simplex-chat master: 2 runs, 2026-10-20 to 2026-10-21", report)
         self.assertIn("| 1 | ubuntu-22.04-x86_64 GHC 8.10.7 | 2 | 1 | 1 |", report)
         self.assertIn("| 1 | /a/ | 2 | 1 | 1 | 2026-10-21 |", report)
+
+    def test_branch_summary_counts_retries_by_test(self):
+        runs = [entry(run_id, "2026-10-21T00:00:00Z", [(LINUX, 1, [])]) for run_id in (10, 11)]
+        runs[0].entries[0][1]["retries"] = [{"label": "a", "signature": "s1"}, {"label": None, "signature": "s2"}]
+        runs[1].entries[0][1]["retries"] = [{"label": "a", "signature": "s3"}, {"label": None, "signature": "s4"}]
+        report = flakes.branch_report(flakes.Window(CHAT, "master", runs)).text
+        self.assertIn("Retries: 4", report)
+        self.assertIn("| 1 | a | 2 | s1; s3 |", report)
+        self.assertIn("| 2 | unknown | 1 | s2 |", report)
+        self.assertIn("| 3 | unknown | 1 | s4 |", report)
+
+    def test_pr_runs_exclude_runs_without_selected_tests(self):
+        window = flakes.Window(CHAT, "master", [entry(10, "2026-10-21T00:00:00Z", [(LINUX, 1, [])])])
+        analysed = entry(20, "2026-10-22T00:00:00Z", [(LINUX, 1, ["/a/"])])
+        untested = entry(19, "2026-10-21T12:00:00Z", [(LINUX, 1, [])])
+        untested.entries[0][1]["outcome"] = "not tested"
+        report = flakes.run_report("CI failures", analysed, window, [analysed, untested]).text
+        self.assertIn("| /a/ | s | 1 of 1 | 0 of 1 | 0 | new |", report)
 
     def test_test_report_includes_the_parser_check(self):
         window = flakes.Window(CHAT, "master", [entry(10, "2026-10-21T00:00:00Z", [(LINUX, 1, ["/a/"])])])

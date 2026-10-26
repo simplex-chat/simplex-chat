@@ -180,11 +180,11 @@ python3 scripts/flakes/flakes.py test https://github.com/simplex-chat/simplex-ch
 | `--json` | job records and labels as JSON |
 | `--cache <dir>` | ~/.cache/simplex-ci-flakes by default |
 
-The cache keeps the jobs of completed runs, a record per job and the test order of each job; logs are discarded after parsing. A first query of a repository downloads the logs of the failed jobs in the window, and in simplexmq also of the passed test jobs: with `CI=true`, its tests/Util.hs runs a failed test once more, and `branch` counts these retries by message.
+The cache keeps the jobs of completed runs, a record per job and the test order of each job; logs are discarded after parsing. A first query of a repository downloads the logs of the failed jobs in the window, and in simplexmq also of the passed test jobs: with `CI=true`, its tests/Util.hs runs a failed test once more, and `branch` counts these retries by the `it` description in the retry line, or by message in lines without a description. In pull request and manual runs, the logs of passed test jobs are read too.
 
 Outcome of a test job:
 - passed, failed, timeout (the test step timed out), crashed (the test step failed without a timeout or failed tests);
-- build failed, runner lost, cancelled, log missing, not tested.
+- build failed, runner lost, cancelled, log missing, not tested (the test step was skipped, or printed "No tests selected").
 
 Labels of a failure:
 - `on <base>`: the same test failed in the same job in the window;

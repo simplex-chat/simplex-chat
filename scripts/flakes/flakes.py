@@ -25,6 +25,8 @@ WORKFLOW = "build.yml"
 MAIN_OWNER = "simplex-chat"
 TEST_STEPS = {"simplex-chat": "Run tests", "simplexmq": "Test"}
 RETRIED_REPOSITORIES = {"simplexmq"}
+TEST_SELECTION_EVENTS = {"pull_request", "workflow_dispatch"}
+NO_TESTS = "No tests selected"
 WINDOW = 30
 PR_RUNS = 10
 WORKERS = 4
@@ -59,7 +61,7 @@ NUMBERED = re.compile(r"^  \d+\) ")
 RERUN = re.compile(r'^  To rerun use: --match (".*")(?: --seed -?\d+)?$')
 SUMMARY = re.compile(r"^\d+ examples?, (\d+) failures?(?:, \d+ pending)?$")
 GHC_ERROR = re.compile(r"^\S+:\d+:\d+: error:")
-RETRY = re.compile(r"^Test (?:exception: |failed: location )(.*)$")
+RETRY = re.compile(r'^Test (?:exception|failed): (?:("(?:[^"\\]|\\.)*"), )?(.*)$')
 SRC_LOC = re.compile(r'\(?Just \(SrcLoc \{[^}]*srcLocFile = "([^"]*)"[^}]*\}\)\)?')
 IDENTIFIER = re.compile(r"[A-Za-z0-9_+/=-]{16,}")
 DIGITS = re.compile(r"\d+")
@@ -255,8 +257,13 @@ def build_failure(lines: list[Line], step: str) -> dict:
     return {"step": step, "raw": raw, "signature": key}
 
 
-def retries(lines: list[Line]) -> list[str]:
-    return [signature(SRC_LOC.sub(r"\1", match[1])) for line in lines if (match := RETRY.match(line.text))]
+def retry(match: re.Match) -> dict:
+    label = haskell_string(match[1]) if match[1] else None
+    return {"label": label, "signature": signature(SRC_LOC.sub(r"\1", match[2]))}
+
+
+def retries(lines: list[Line]) -> list[dict]:
+    return [retry(match) for line in lines if (match := RETRY.match(line.text))]
 
 
 def job_key(name: str) -> str | None:
@@ -285,9 +292,9 @@ def step_of(job: dict, name: str) -> dict | None:
     return next((step for step in job["steps"] if step["name"] == name), None)
 
 
-def step_ran(job: dict, name: str) -> bool:
-    step = step_of(job, name)
-    return step is not None and step["conclusion"] in STEP_RAN
+def ran_steps(job: dict, record: dict) -> set[str]:
+    ran = {step["name"] for step in job["steps"] if step["conclusion"] in STEP_RAN}
+    return ran - {test_step(record["repository"])} if record["outcome"] == "not tested" else ran
 
 
 def is_counted(job: dict, test: str, tested: set[str]) -> bool:
@@ -300,6 +307,10 @@ def is_counted(job: dict, test: str, tested: set[str]) -> bool:
 def retried_attempts(run: dict) -> bool:
     branch = run["head_branch"] or ""
     return run["event"] == "push" and (branch == "stable" or branch.startswith("v"))
+
+
+def selected_tests(run: dict) -> bool:
+    return run["event"] in TEST_SELECTION_EVENTS
 
 
 def job_record(
@@ -346,7 +357,7 @@ def job_record(
     else:
         record["outcome"] = "not tested"
     log_needed = record["outcome"] in ("failed", "build failed") or (
-        record["outcome"] == "passed" and (retried or retried_attempts(run))
+        record["outcome"] == "passed" and (retried or retried_attempts(run) or selected_tests(run))
     )
     if not log_needed:
         return record, None
@@ -358,6 +369,9 @@ def job_record(
     lines = log_lines(text)
     if record["outcome"] == "build failed":
         record["build"] = build_failure(lines, earlier_failure["name"])
+        return record, None
+    if record["outcome"] == "passed" and any(line.time and line.text == NO_TESTS for line in lines):
+        record["outcome"] = "not tested"
         return record, None
     output = test_output(lines)
     record["failures"] = output.failures
@@ -616,9 +630,8 @@ def index(runs: list[RunRecords]) -> Index:
         for key, (job, record) in entry.latest().items():
             for failure_key in record_keys(record):
                 occurrences[failure_key].append(Occurrence(key, entry, record))
-            for step in job["steps"]:
-                if step["conclusion"] in STEP_RAN:
-                    step_runs[(key, step["name"])] += 1
+            for step in ran_steps(job, record):
+                step_runs[(key, step)] += 1
     return Index(occurrences, step_runs)
 
 
@@ -671,7 +684,11 @@ def passed_on_rerun(row: Row, entry: RunRecords) -> bool:
 
 def pr_runs_mark(row: Row, pr_runs: list[RunRecords]) -> str:
     job = row.record["job_key"]
-    ran = [entry for entry in pr_runs if any(r["job_key"] == job and step_ran(j, row.key[1]) for j, r in entry.entries)]
+    ran = [
+        entry
+        for entry in pr_runs
+        if any(r["job_key"] == job and row.key[1] in ran_steps(j, r) for j, r in entry.entries)
+    ]
     failed = [
         entry for entry in ran if any(r["job_key"] == job and row.key in record_keys(r) for _, r in entry.entries)
     ]
@@ -821,7 +838,7 @@ def branch_report(window: Window) -> Report:
     timeouts = []
     builds = defaultdict(list)
     others = []
-    retried = Counter()
+    retried = defaultdict(list)
     for entry in window.runs:
         for key, (_, record) in entry.latest().items():
             counts[key][record["outcome"]] += 1
@@ -833,7 +850,9 @@ def branch_report(window: Window) -> Report:
                 builds[(key, record["build"]["step"], record["build"]["signature"])].append((entry, record))
             elif record["outcome"] in ("crashed", "runner lost", "log missing"):
                 others.append((key, entry, record))
-            retried.update(record["retries"])
+            for retry in record["retries"]:
+                retry_key = (retry["label"], None) if retry["label"] else (None, retry["signature"])
+                retried[retry_key].append(retry["signature"])
     shown = sorted(
         (key for key, c in counts.items() if set(c) - {"not tested"}),
         key=lambda key: (-sum(n for o, n in counts[key].items() if o not in ("passed", "not tested")), key),
@@ -869,9 +888,10 @@ def branch_report(window: Window) -> Report:
             for n, (key, entry, record) in enumerate(others, 1)
         ]))
     if retried:
-        lines += ["", f"Retries: {sum(retried.values())}"]
-        lines.append(table(["#", "Retry signature", "Retries"], [
-            [n, text, count] for n, (text, count) in enumerate(retried.most_common(), 1)
+        lines += ["", f"Retries: {sum(len(signatures) for signatures in retried.values())}"]
+        lines.append(table(["#", "Test", "Retries", "Signatures"], [
+            [n, label or "unknown", len(signatures), "; ".join(dict.fromkeys(signatures))]
+            for n, ((label, _), signatures) in enumerate(sorted(retried.items(), key=lambda r: -len(r[1])), 1)
         ]))
     lines += ["", parser_check(all_records(window.runs))]
     return Report("\n".join(lines), {"window": all_records(window.runs)})
