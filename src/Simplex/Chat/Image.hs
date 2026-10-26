@@ -179,7 +179,7 @@ maxJpegMemoryMB :: Int
 #if defined(mobileBuild)
 maxJpegMemoryMB = 512
 #else
-maxJpegMemoryMB = 2047
+maxJpegMemoryMB = 1024
 #endif
 
 hasSideAbove :: Int -> Image a -> Bool

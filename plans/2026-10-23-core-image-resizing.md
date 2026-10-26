@@ -40,7 +40,7 @@ Decoding, `Image.hs`:
   3. scale: the smallest of `Full`, `Half`, `Quarter` and `Eighth` whose rounded-up sides are at least the target
   4. `decodeJpeg` with:
      - `maxPixels`: 2^28; `Left` above it, before the output is allocated
-     - `maxMemoryMB`: 512 on iOS and Android, 2047 in other builds
+     - `maxMemoryMB`: 512 on iOS and Android, 1024 in other builds
   5. a decode larger than the target: `convertRGB8`, then `STBIR.resize` to the target
   6. the EXIF orientation applied
 - Other formats: JuicyPixels `decodeImage`.
@@ -56,7 +56,7 @@ Decoding, `Image.hs`:
   - any warning, including truncated data and extraneous bytes
   - more than 500 scans
   - whole-image coefficient buffers above `maxMemoryMB`
-- `maxMemoryMB`, a compile-time constant, 512 when `mobileBuild` is defined and 2047 otherwise:
+- `maxMemoryMB`, a compile-time constant, 512 when `mobileBuild` is defined and 1024 otherwise:
 
   | build | `simplex-chat.cabal` condition | set in |
   |---|---|---|
@@ -298,7 +298,7 @@ Core:
   - `exifOrientation` (`:76-98`): the orientation value of IFD0, 1 when absent or malformed
   - `exifTiff` (`:100-108`): the TIFF data of the first APP1 `Exif` segment before the first SOS
   - `orientImage` (`:110-122`): the 8 transforms with `generateImage`, applied with `dynamicPixelMap`
-  - `maxJpegPixels = 2 ^ 28` (`:175-176`); `maxJpegMemoryMB` (`:178-183`), 512 or 2047 by `mobileBuild`
+  - `maxJpegPixels = 2 ^ 28` (`:175-176`); `maxJpegMemoryMB` (`:178-183`), 512 or 1024 by `mobileBuild`
   - `fitImage` (`:130-152`): the size bound, the display halving (`fitDisplay`, `:141`), then the search, parameterized by the output (bytes or data URI); JPEG with `encodeRGB`
   - `bisect` (`:154-164`)
   - `minJpegQuality = 20` (`:166-167`)
