@@ -26,29 +26,13 @@ case "$cases" in
 esac
 package=chat.simplex.app
 local_chat="seeded notes"
-search_field="Search or paste SimpleX link"
-ui=$(dirname "$0")/ui
+. "$(dirname "$0")/lib.sh"
 fixtures=$(dirname "$0")/../../../tests/fixtures
-checks=$UI_OUT/checks.txt
 mkdir -p "$UI_OUT"
 : > "$checks"
 if [ -n "${GITHUB_ENV:-}" ]; then
   echo "UI_OUT=$UI_OUT" >> "$GITHUB_ENV"
 fi
-
-report_checks() {
-  [ -s "$checks" ] || return 0
-  echo "::group::checks"
-  cat "$checks"
-  echo "::endgroup::"
-  if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
-    {
-      echo "### Smoke test checks"
-      echo
-      sed 's/^/- /' "$checks"
-    } >> "$GITHUB_STEP_SUMMARY"
-  fi
-}
 
 finish() {
   local status=$?
@@ -63,22 +47,6 @@ finish() {
 }
 trap finish EXIT
 
-fail() {
-  echo "error: $*"
-  exit 1
-}
-
-check() {
-  local what=$1
-  shift
-  if "$@"; then
-    echo "PASS $what" | tee -a "$checks"
-  else
-    echo "FAIL $what" | tee -a "$checks"
-    echo "::error::$what"
-  fi
-}
-
 # A crash: the app logs its own under SIMPLEX ("App crashed"), Android's FATAL EXCEPTION covers one before the app's
 # handler is set, and a native fatal signal names the process by the last 15 characters of its name. Not any line
 # with "error" or from AndroidRuntime, which logs every uiautomator dump.
@@ -87,33 +55,6 @@ app_running() {
     ! grep -A 1 'FATAL EXCEPTION' "$UI_OUT/app.log" | grep -q "Process: $package," &&
     ! grep -q "Fatal signal .*(${package: -15})" "$UI_OUT/app.log" &&
     adb shell pidof "$package" > /dev/null
-}
-
-y_of() {
-  local pos
-  pos=$("$ui" find "$1") || return 1
-  cut -d ' ' -f 2 <<< "$pos"
-}
-
-above() {
-  local a b
-  a=$(y_of "$1") || return 1
-  b=$(y_of "$2") || return 1
-  [ "$a" -lt "$b" ]
-}
-
-screen_height() {
-  adb shell wm size | sed -n 's/^Physical size: [0-9]*x//p'
-}
-
-# Back closes one screen at a time, here between the screens of Settings, which cover the chat list without removing it
-# from the tree: a restart is what returns to the chat list.
-back_to() {
-  for _ in 1 2 3 4 5; do
-    "$ui" find "$1" > /dev/null 2>&1 && return 0
-    "$ui" key BACK
-  done
-  "$ui" find "$1" > /dev/null
 }
 
 # On a first start the chat list can show for a moment before onboarding, long enough to open its What's new sheet over
@@ -147,28 +88,6 @@ allow_notifications_and_accept() {
     [ "$SECONDS" -lt "$deadline" ] || return 1
     sleep 1
   done
-}
-
-# The centre "x y" of the first text field below the text, which may have neither a text nor a placeholder.
-field_below() {
-  local y
-  y=$(y_of "$1") || return 1
-  "$ui" tree | sed -n -E 's/^EditText .* at ([0-9]+),([0-9]+) size ([0-9]+)x([0-9]+).*/\1 \2 \3 \4/p' |
-    awk -v y="$y" '$2 > y { print $1 + int($3 / 2), $2 + int($4 / 2); exit }'
-}
-
-# The centre "x y" of the switch in the row of the text.
-switch_of() {
-  local y
-  y=$(y_of "$1") || return 1
-  "$ui" tree | sed -n -E 's/.* at ([0-9]+),([0-9]+) size ([0-9]+)x([0-9]+) .*checkable.*/\1 \2 \3 \4/p' |
-    awk -v y="$y" '$2 <= y && y <= $2 + $4 { print $1 + int($3 / 2), $2 + int($4 / 2); exit }'
-}
-
-# The user picker's button in the toolbar, before the list has chats: chats show the same profile image placeholder.
-open_settings() {
-  "$ui" click-text "profile image placeholder" 10
-  "$ui" click-text "Settings" 10
 }
 
 # Green pixels of the test status left of a server's host name: SimplexGreen, the tick of a server that passed its test.

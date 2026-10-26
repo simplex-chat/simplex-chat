@@ -15,8 +15,7 @@ set -euo pipefail
 app=$1
 export UI_OUT=$2
 cases=${3:-}
-bundle_id=chat.simplex.app
-ui=$(dirname "$0")/ui
+. "$(dirname "$0")/lib.sh"
 fixtures=$(cd "$(dirname "$0")/../../../tests/fixtures" && pwd)
 test_card_x=66
 logo_x=200
