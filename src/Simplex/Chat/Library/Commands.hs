@@ -172,6 +172,9 @@ maxImageSize = 261120 * 2 -- auto-receive on mobiles
 maxProfileImageSize :: Int
 maxProfileImageSize = 12500
 
+maxShortDescrLength :: Int
+maxShortDescrLength = 160
+
 checkProfileImageSize :: Maybe ImageData -> CM ()
 checkProfileImageSize = mapM_ $ \(ImageData t) ->
   let size = T.length t
@@ -6833,7 +6836,7 @@ chatCommandP =
     chatLayoutP_ = ("default" $> Nothing) <|> (Just <$> chatLayoutP)
     shortDescrP = do
       descr <- A.takeWhile1 isSpace *> (T.dropWhileEnd isSpace <$> textP) <|> pure ""
-      pure $ if T.null descr then Nothing else Just $ T.take 160 descr
+      pure $ if T.null descr then Nothing else Just $ T.take maxShortDescrLength descr
     textP = safeDecodeUtf8 <$> A.takeByteString
     badgeAlertKindP = do
       t <- A.takeTill (== ' ')

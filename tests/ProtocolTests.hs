@@ -97,6 +97,8 @@ serviceBodyTests = describe "service payload compression" $ do
     let bomb = compressedBatchMsgBody_ $ B.replicate (maxDecompressedMsgLength + 1) 'a'
     B.length bomb `shouldSatisfy` (< maxServiceBodyLength)
     decompressServiceBody bomb `shouldBe` Left "decompressed size exceeds limit"
+  it "rejects a payload over the decompressed bound, however well it compresses" $
+    compressServiceBody (B.replicate 70000 'a') `shouldBe` Left "service payload is too large"
   it "compresses to the bound it is given" $ do
     g <- C.newRandom
     -- random bytes do not compress, so this is over the service bound and under the message bound

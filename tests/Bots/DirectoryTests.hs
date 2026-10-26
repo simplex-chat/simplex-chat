@@ -39,7 +39,7 @@ import System.Directory (emptyPermissions, setOwnerExecutable, setOwnerReadable,
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatResponse (..), storeCxt)
 import Simplex.Chat.Core (sendChatCmdStr)
-import Simplex.Chat.Library.Commands (maxProfileImageSize)
+import Simplex.Chat.Library.Commands (maxProfileImageSize, maxShortDescrLength)
 import qualified Simplex.Chat.Markdown as MD
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Options.DB
@@ -81,6 +81,7 @@ directoryServiceTests = do
   it "should send every entry field the apps render" testDirectorySearchEntryFields
   it "should send a channel entry with its published link" testDirectorySearchChannelEntry
   it "should drop an oversize image and keep the entry" testSearchEntryImageBound
+  it "should cut a long short description to the clients' limit" testSearchEntryShortDescrBound
   it "should page image-bearing entries over the envelope" testDirectorySearchImagePaging
   it "should join a group found over the service RPC" testDirectorySearchJoinGroup
   it "should fit the search page to the envelope" testSearchResultsPage
@@ -883,6 +884,21 @@ testSearchEntryImageBound ps =
         isJust connShortLink `shouldBe` True
       Nothing -> expectationFailure "entry over the image bound was dropped"
 
+testSearchEntryShortDescrBound :: HasCallStack => TestParams -> IO ()
+testSearchEntryShortDescrBound ps =
+  withNewTestChat ps "bob" bobProfile $ \bob -> do
+    bob ##> "/g privacy Private chats"
+    bob <## "group #privacy (Private chats) is created"
+    bob <## "to add members use /a privacy <name> or /create link #privacy"
+    bob ##> "/create link #privacy"
+    void $ getGroupLinks bob "privacy" GRMember True
+    (g@GroupInfo {groupProfile = p}, gLink_) <- ownerGroup bob "privacy"
+    now <- getCurrentTime
+    let long = T.replicate 70000 "a"
+    case searchEntry now (g {groupProfile = (p :: GroupProfile) {shortDescr = Just long}}) gLink_ of
+      Just DirectorySearchEntry {shortDescr} -> shortDescr `shouldBe` Just (T.take maxShortDescrLength long)
+      Nothing -> expectationFailure "entry with a long short description was dropped"
+
 -- one entry with a large image nearly fills a response, so both groups match but only one is sent
 testDirectorySearchImagePaging :: HasCallStack => TestParams -> IO ()
 testDirectorySearchImagePaging ps =
@@ -1025,6 +1041,10 @@ testSearchResultsPage _ps = do
   big <- randomText 12000
   page 1 [(1, Just $ entry "d" "" (Just big))] `shouldBe` (["d"], Nothing, 0)
   page 2 [(1, Just $ entry "e" big Nothing), (2, Just a)] `shouldBe` ([], Just 1, 1)
+  -- compresses to almost nothing, but no client decompresses a body past 64 KB
+  let unreadable = entry "f" (T.replicate 70000 "a") Nothing
+  page 2 [(1, Just a), (2, Just unreadable)] `shouldBe` (["a"], Just 1, 1)
+  page 2 [(2, Just unreadable), (3, Just b)] `shouldBe` ([], Just 2, 1)
 
 testInviteToOwnersGroup :: HasCallStack => TestParams -> IO ()
 testInviteToOwnersGroup ps =

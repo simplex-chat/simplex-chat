@@ -18,7 +18,7 @@ import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
 import Directory.Listing
 import Directory.Search
-import Simplex.Chat.Library.Commands (maxProfileImageSize)
+import Simplex.Chat.Library.Commands (maxProfileImageSize, maxShortDescrLength)
 import Simplex.Chat.Protocol (compressServiceBody)
 import Simplex.Chat.Types
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, taggedObjectJSON)
@@ -107,7 +107,8 @@ searchEntry now g@GroupInfo {groupProfile} gLink_ =
           simplexName = groupSimplexName g,
           -- the apps connect through the short link, and a full link is hundreds of bytes of the envelope
           groupLink = if isJust connShortLink then link {connFullLink = Nothing} else link,
-          shortDescr,
+          -- only the sender's command parser cuts it, so a profile we receive can carry any length
+          shortDescr = T.take maxShortDescrLength <$> shortDescr,
           -- an owner can put any size of image in the profile we store, so bound what we relay
           image = image >>= \img@(ImageData t) -> if T.length t > maxProfileImageSize then Nothing else Just img,
           activeAt = groupActiveAt now g,

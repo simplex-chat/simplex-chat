@@ -1074,7 +1074,9 @@ compressBodyTo maxLen body
 
 -- JSON never starts with 'X', so that marker unambiguously means the body is compressed.
 compressServiceBody :: ByteString -> Either String ByteString
-compressServiceBody = maybe (Left "service payload is too large") Right . compressBodyTo maxServiceBodyLength
+compressServiceBody body
+  | B.length body <= maxDecompressedMsgLength, Just body' <- compressBodyTo maxServiceBodyLength body = Right body'
+  | otherwise = Left "service payload is too large"
 
 -- A service payload is padded as PQ connection info, and a request also carries its reply queue
 -- and an optional signature (111 bytes encoded), so both directions get the request's bound.
