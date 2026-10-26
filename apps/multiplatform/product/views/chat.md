@@ -45,7 +45,7 @@ Rendered by `LazyColumnWithScrollBar` with pagination:
 | Merged items | Adjacent messages grouped with `ItemSeparation` (timestamp, large gap, date separators) |
 | Floating buttons | Scroll-to-bottom button with unread count |
 | Date separators | Date headers between messages from different days |
-| Wallpaper | Per-chat themed background via `perChatTheme` from contact/group `uiThemes` |
+| Wallpaper | Per-chat themed background via `perChatTheme` from contact/group `uiThemes`; terminal layout: background colour without the image |
 | Content filter | Filter messages by type via `ContentFilter` (images, files, links, etc.) |
 
 ### Message Types
@@ -95,6 +95,7 @@ Bottom input area for composing messages:
 |---|---|
 | Text field | `PlatformTextField` with markdown support, `@mention` autocomplete, file paste support |
 | Attachment button | Opens `ModalBottomSheetLayout` with options: camera, gallery (image/video), file |
+| Emoji button | Desktop only (Android keyboards have their own emoji panel). Opens a popup with search and categories; a picked emoji is inserted at the cursor and the picker stays open. With text selected the emoji goes after it, as the text field drops its selection when the picker takes focus. Picked emoji are not remembered, for privacy. Esc, a click outside or the button closes it |
 | Send button | Sends message; changes to checkmark for reports; animated size/alpha |
 | Voice record button | Shown when text is empty and voice allowed; hold to record, release to preview |
 | Live message button | Start/update live typing message (if `liveMessageAlertShown`) |
@@ -125,6 +126,12 @@ Shown when `selectedChatItems != null`:
 
 When `timedMessageAllowed` is true, compose bar includes a timer icon for setting message disappear time via `customDisappearingMessageTimePref`.
 
+### Terminal Layout
+
+On Android and desktop, a chat with the terminal layout shows messages as full-width rows without bubbles, starting at one edge for sent and received messages, with the sender's name above each group of messages and the time at the end of the last line. The wallpaper is drawn as its colour without the image.
+
+A chat uses the user's choice for that chat, otherwise the layout set by the group owner or by the address the contact came from, otherwise the user's choice for the profile and then the app setting, otherwise classic.
+
 ## Source Files
 
 | File | Path |
@@ -132,4 +139,5 @@ When `timedMessageAllowed` is true, compose bar includes a timer icon for settin
 | `ChatView.kt` | `views/chat/ChatView.kt` |
 | `ComposeView.kt` | `views/chat/ComposeView.kt` |
 | `SendMsgView.kt` | `views/chat/SendMsgView.kt` |
+| `ComposeEmojiPicker.kt` | `views/chat/ComposeEmojiPicker.kt` (+ `.android.kt`, `.desktop.kt`) |
 | Chat item views | `views/chat/item/*.kt` |

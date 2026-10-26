@@ -39,12 +39,15 @@ export interface BotAddressSettings {
    * @default false
    */
   businessAddress?: boolean
+
+  chatLayout?: T.ChatLayout
 }
 
 export const defaultBotAddressSettings: BotAddressSettings = {
   autoAccept: true,
   welcomeMessage: undefined,
-  businessAddress: false
+  businessAddress: false,
+  chatLayout: undefined
 }
 
 export type EventSubscriberFunc<K extends CEvt.Tag> = (event: ChatEvent & {type: K}, chat: ChatApi) => void | Promise<void>
@@ -273,9 +276,11 @@ export class ChatApi {
     }
     return new Promise((resolve, reject) => {
       let done = false
+      let timer: NodeJS.Timeout | undefined = undefined
       const cleanup = () => {
         done = true
-        this.off(event, subscriber)    
+        clearTimeout(timer)
+        this.off(event, subscriber)
       }
       const subscriber: EventSubscriberFunc<K> = async (evt: ChatEvent & {type: K}) => {
         if (done) return
@@ -288,7 +293,7 @@ export class ChatApi {
       }
       this.on(event, subscriber)
       if (timeout > 0) {
-        setTimeout(() => { if (!done) { cleanup(); resolve(undefined) } }, timeout)        
+        timer = setTimeout(() => { if (!done) { cleanup(); resolve(undefined) } }, timeout)
       }
     })
   }
@@ -411,12 +416,13 @@ export class ChatApi {
    * Set bot address settings.
    * Network usage: interactive.
    */
-  async apiSetAddressSettings(userId: number, {autoAccept, welcomeMessage, businessAddress}: BotAddressSettings): Promise<void> {
+  async apiSetAddressSettings(userId: number, {autoAccept, welcomeMessage, businessAddress, chatLayout}: BotAddressSettings): Promise<void> {
     const autoReply = welcomeMessage || defaultBotAddressSettings.welcomeMessage
     const settings: T.AddressSettings = {
       autoAccept: (autoAccept === undefined ? defaultBotAddressSettings.autoAccept : autoAccept) ? {acceptIncognito: false} : undefined,
       autoReply: typeof autoReply === "string" ? {type: "text", text: autoReply} : autoReply,
-      businessAddress: businessAddress || defaultBotAddressSettings.businessAddress || false
+      businessAddress: businessAddress || defaultBotAddressSettings.businessAddress || false,
+      chatLayout
     }
     const r = await this.sendChatCmd(CC.APISetAddressSettings.cmdString({userId, settings}))
     if (r.type !== "userContactLinkUpdated") {
@@ -476,9 +482,10 @@ export class ChatApi {
 
   /**
    * Update message.
+   * A live message stays live with `liveMessage = true` and is finalized with `liveMessage = false`.
    * Network usage: background.
    */
-  async apiUpdateChatItem(chatType: T.ChatType, chatId: number, chatItemId: number, msgContent: T.MsgContent, liveMessage: false): Promise<T.ChatItem> {
+  async apiUpdateChatItem(chatType: T.ChatType, chatId: number, chatItemId: number, msgContent: T.MsgContent, liveMessage = false): Promise<T.ChatItem> {
     const r = await this.sendChatCmd(
       CC.APIUpdateChatItem.cmdString({
         chatRef: {chatType, chatId},
@@ -993,5 +1000,90 @@ export class ChatApi {
     const r: any = await this.sendChatCmd(cmd)
     if (r.type === "newMemberContactSentInv") return r.contact
     throw new ChatCommandError("error sending member contact invitation", r)
+  }
+}
+
+/**
+ * Text shown as a live message while it is written, e.g. a streamed reply.
+ */
+export class LiveMessage {
+  private tasks: Promise<void> = Promise.resolve()
+  private text = ""
+  private writing = false
+  private timer: NodeJS.Timeout | undefined = undefined
+  private item: {itemId: number, text: string} | undefined = undefined
+
+  /**
+   * @param chat - Chat API, or an object with its methods to send, update and delete messages.
+   * @param {T.ChatType} chatType - Chat type.
+   * @param {number} chatId - Contact or group ID.
+   * @param {number} [interval=3000] - Minimum interval between updates of the live message, in milliseconds.
+   * @param onError - Error handler for sending, updating and deleting messages. Errors are logged when it is omitted.
+   */
+  constructor(
+    private readonly chat: Pick<ChatApi, "apiSendMessages" | "apiUpdateChatItem" | "apiDeleteChatItems">,
+    private readonly chatType: T.ChatType,
+    private readonly chatId: number,
+    private readonly interval = 3000,
+    private readonly onError: (error: unknown) => void = e => console.log("live message error", e)
+  ) {}
+
+  /**
+   * Set the text of the live message.
+   * The first text is sent at once; later texts update the message at most once per interval.
+   */
+  update(text: string): void {
+    this.text = text
+    if (!this.writing) {
+      this.writing = true
+      this.queueText(text, true)
+    } else if (this.timer === undefined) {
+      this.timer = setTimeout(() => {
+        this.timer = undefined
+        this.queueText(this.text, true)
+      }, this.interval)
+    }
+  }
+
+  /**
+   * Finalize the live message with the text, or with the last text when omitted.
+   * A message without text is deleted. The next update starts a new live message.
+   * The returned promise resolves after all queued commands complete.
+   */
+  end(text = this.text): Promise<void> {
+    clearTimeout(this.timer)
+    this.timer = undefined
+    this.text = ""
+    this.writing = false
+    this.queueText(text, false)
+    return this.tasks
+  }
+
+  private queueText(text: string, live: boolean): void {
+    this.tasks = this.tasks.then(() => this.showText(text, live)).catch(this.onError)
+  }
+
+  private async showText(text: string, live: boolean): Promise<void> {
+    try {
+      await this.showMessage(text, live)
+    } finally {
+      if (!live) this.item = undefined
+    }
+  }
+
+  private async showMessage(text: string, live: boolean): Promise<void> {
+    const item = this.item
+    if (item === undefined) {
+      if (live || text !== "") {
+        const [{chatItem}] = await this.chat.apiSendMessages([this.chatType, this.chatId], [{msgContent: {type: "text", text}, mentions: {}}], live)
+        this.item = live ? {itemId: chatItem.meta.itemId, text} : undefined
+      }
+    } else if (!live && text === "") {
+      await this.chat.apiDeleteChatItems(this.chatType, this.chatId, [item.itemId], T.CIDeleteMode.Broadcast)
+      this.item = undefined
+    } else if (!live || text !== item.text) {
+      await this.chat.apiUpdateChatItem(this.chatType, this.chatId, item.itemId, {type: "text", text}, live)
+      this.item = live ? {itemId: item.itemId, text} : undefined
+    }
   }
 }

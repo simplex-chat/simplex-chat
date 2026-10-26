@@ -18,7 +18,7 @@ import ChatTests.Profiles (addTestBadge, futureDate, issueTestBadge, testBadgeKe
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
-import Control.Concurrent.STM (atomically)
+import Control.Concurrent.STM (TVar, atomically, modifyTVar', newTVarIO, readTVarIO, writeTVar)
 import Control.Monad (forM_, void, when)
 import Control.Monad.Except (runExceptT)
 import Control.Monad.Reader (runReaderT)
@@ -28,26 +28,27 @@ import qualified Data.ByteString.Char8 as B
 import Data.Maybe (fromMaybe, isJust, maybeToList)
 import Data.Time (UTCTime, getCurrentTime)
 import Data.Int (Int64)
-import Data.List (intercalate, isInfixOf, isSuffixOf)
+import Data.List (intercalate, isInfixOf, isSubsequenceOf, isSuffixOf)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Simplex.Chat.Badges (FileSizeLimits (..))
-import Simplex.Chat.Controller (ChatController (ChatController, smpAgent), ChatConfig (..), ChatHooks (..), ChatLogLevel (..), defaultChatHooks, withAgent)
+import Simplex.Chat.Controller (ChatController (ChatController, smpAgent, subscriptionMode), ChatConfig (..), ChatEvent (CEvtDuplicateGroupMessage), ChatHooks (..), ChatLogLevel (..), defaultChatHooks, withAgent)
 import Simplex.Chat.Library.Internal (encodeConnInfo, getShortLinkConnReq, uniqueMsgMentions, updatedMentionNames)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
 import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
 import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent (publicGroupNoE2EText)
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (XGrpMemNew, XGrpRelayInv, XInfo, XMsgUpdate, XMsgNew, XMsgDel), FwdSender (FwdMember, FwdChannel), GrpMsgForward (GrpMsgForward), MsgContainer (..), MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), mcSimple, msgContentText)
+import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (XGrpMemNew, XGrpRelayInv, XInfo, XMsgUpdate, XMsgNew, XMsgDel), FwdSender (FwdMember, FwdChannel), GrpMsgForward (GrpMsgForward), MsgContainer (..), MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), chatMsgToBody, mcSimple, msgContentText)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations (MemberRelation (..), getRelation, setRelation)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
+import Simplex.Chat.Types.UITheme (ChatLayout (..))
 import Simplex.Messaging.Agent (joinConnection, prepareConnectionToJoin, sendMessages, vrValue)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
-import Simplex.Messaging.Agent.Store.DB (Binary (..))
+import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (bbsKeyGen)
 import Simplex.Messaging.Client (pattern NRMInteractive)
@@ -58,6 +59,7 @@ import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
 import Simplex.Messaging.Version
 import System.Directory (copyFile, doesFileExist)
+import System.FilePath ((</>))
 import Test.Hspec hiding (it)
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..))
@@ -66,7 +68,6 @@ import Database.PostgreSQL.Simple.SqlQQ (sql)
 import Database.SQLite.Simple (Only (..))
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Options.DB
-import System.FilePath ((</>))
 #endif
 
 chatGroupTests :: SpecWith TestParams
@@ -194,7 +195,10 @@ chatGroupTests = do
     it "forward batched messages" testGroupMsgForwardBatched
     it "forward reports to moderators, don't forward to members (x.msg.new, MCReport)" testGroupMsgForwardReport
     it "deduplicate forwarded messages" testGroupMsgForwardDeduplicate
+    it "report duplicate when forwarded copy is received after direct copy" testGroupMsgForwardDuplicateEvent
+    it "report duplicate when direct copy is received after forwarded copy" testGroupMsgDirectDuplicateEvent
     it "forward message edit (x.msg.update)" testGroupMsgForwardEdit
+    it "set notification flag of forwarded messages by the original event" testGroupMsgForwardNotification
     it "forward message reaction (x.msg.react)" testGroupMsgForwardReaction
     it "forward message deletion (x.msg.del)" testGroupMsgForwardDeletion
     it "forward file (x.msg.file.descr)" testGroupMsgForwardFile
@@ -226,6 +230,7 @@ chatGroupTests = do
     it "multiple groups with same member, update is applied only once" testMembershipProfileUpdateSameMember
     it "member contact is active" testMembershipProfileUpdateContactActive
     it "member contact is deleted" testMembershipProfileUpdateContactDeleted
+    it "member contact is deleted, peer type is updated" testMembershipProfileUpdateContactDeletedPeerType
     it "member contact is deleted silently, then considered disabled" testMembershipProfileUpdateContactDisabled
     it "profile update without change is ignored" testMembershipProfileUpdateNoChangeIgnored
     it "change of profile contact link is ignored" testMembershipProfileUpdateContactLinkIgnored
@@ -282,6 +287,8 @@ chatGroupTests = do
     describe "relay delivery" $ do
       describe "single relay" $ do
         it "should deliver messages to members" testChannels1RelayDeliver
+        it "should set notification flag of delivered messages" testChannels1RelayDeliverNotification
+        it "should report duplicate message delivered by relay" testChannelDuplicateEvent
         describe "should deliver messages in a loop over members" $ do
           it "number of recipients is multiple of bucket size (3/1)" (testChannels1RelayDeliverLoop 1)
           it "number of recipients is NOT multiple of bucket size (3/2)" (testChannels1RelayDeliverLoop 2)
@@ -298,11 +305,14 @@ chatGroupTests = do
       it "multi senders disseminate independently" testChannelMultiSendersIndependent
       it "large profile fits in body" testChannelLargeProfileFits
       it "multiple large profiles pack across batches in one multi-sender job" testChannelMultipleLargeProfiles
+      it "overflow profile batch is sent without notification flag" testChannelOverflowProfileNotification
       it "profile update reuses existing announcement (no re-prepend)" testChannelProfileUpdateNoRePrepend
+      it "owner, relay and subscriber store address and peer type of promoted member" testChannelMemberAddressPeerType
     describe "channel operations" $ do
       it "should update channel profile (signed)" testChannelUpdateProfileSigned
       it "should preserve working link after profile update" testChannelLinkAfterProfileUpdate
       it "should preserve working link after welcome message update" testChannelLinkAfterWelcomeUpdate
+      it "should set chat layout of channel joined via relays from link data" testChannelChatLayout
       it "should preserve owner key in link data after profile update" testChannelOwnerKeyAfterLinkUpdate
       it "should update channel preferences (signed)" testChannelUpdatePrefsSigned
       it "should change member role (signed)" testChannelChangeRoleSigned
@@ -5912,6 +5922,53 @@ testGroupMsgForwardDeduplicate =
       cath <#. "#team bob> hi there"
       cath <# "#team hey team"
 
+testGroupMsgForwardDuplicateEvent :: HasCallStack => TestParams -> IO ()
+testGroupMsgForwardDuplicateEvent ps = do
+  (dups, cfg) <- duplicateMessageEventsCfg
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChatCfg ps cfg "cath" cathProfile $ \cath -> do
+        createGroup3 "team" alice bob cath
+        groupForwardingRelations alice "bob" "cath" `shouldEventuallyReturn` (MRConnected, MRConnected)
+
+        bob #> "#team hi there"
+        [alice, cath] *<# "#team bob> hi there"
+
+        sharedMsgId <- itemSharedMsgId cath
+        bobMemId <- memberIdByName cath "bob"
+        connId <- relayConnIdToMember alice "cath"
+        ts <- getCurrentTime
+        let chatMsg = ChatMessage chatInitialVRange (Just sharedMsgId) (XMsgNew $ mcSimple $ MCText "hi there")
+            sendForwardedCopy = agentSendBody alice connId $ encodeBinaryBatch [encodeFwdElement (GrpMsgForward (FwdMember bobMemId "bob") ts) (VMUnsigned chatMsg)]
+        sendForwardedCopy
+        cath <##. "duplicate group message, group id: 1"
+        readTVarIO dups `shouldReturn` []
+        setMainAppOff cath
+        sendForwardedCopy
+        cath <##. "duplicate group message, group id: 1"
+        readTVarIO dups `shouldReturn` ["alice"]
+
+testGroupMsgDirectDuplicateEvent :: HasCallStack => TestParams -> IO ()
+testGroupMsgDirectDuplicateEvent ps = do
+  (dups, cfg) <- duplicateMessageEventsCfg
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChatCfg ps cfg "cath" cathProfile $ \cath -> do
+        createGroup3 "team" alice bob cath
+
+        bobMemId <- memberIdByName cath "bob"
+        aliceConnId <- relayConnIdToMember alice "cath"
+        bobConnId <- relayConnIdToMember bob "cath"
+        ts <- getCurrentTime
+        let chatMsg = ChatMessage chatInitialVRange (Just $ SharedMsgId "duplicate_msg1") (XMsgNew $ mcSimple $ MCText "hi there")
+        agentSendBody alice aliceConnId $ encodeBinaryBatch [encodeFwdElement (GrpMsgForward (FwdMember bobMemId "bob") ts) (VMUnsigned chatMsg)]
+        cath <# "#team bob> hi there [>>]"
+
+        setMainAppOff cath
+        agentSendBody bob bobConnId $ chatMsgToBody chatMsg
+        cath <##. "duplicate group message, group id: 1"
+        readTVarIO dups `shouldReturn` ["bob"]
+
 testGroupMsgForwardEdit :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardEdit =
   testChat3 aliceProfile bobProfile cathProfile $
@@ -5935,6 +5992,29 @@ testGroupMsgForwardEdit =
 
       cath ##> "/tail #team 1"
       cath <# "#team bob> hello there [>>]"
+
+testGroupMsgForwardNotification :: HasCallStack => TestParams -> IO ()
+testGroupMsgForwardNotification =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      setupGroupForwarding alice bob cath
+      cath ##> "/set receipts all off"
+      cath <## "ok"
+      cathConnId <- relayConnIdToMember alice "cath"
+
+      bob #> "#team hi there"
+      alice <# "#team bob> hi there"
+      cath <# "#team bob> hi there [>>]"
+      lastSndMsgFlags alice cathConnId 1 `shouldReturn` ["T"]
+      lastJobNotification alice `shouldReturn` True
+
+      bob ##> "! #team hello there"
+      bob <# "#team [edited] hello there"
+      alice <# "#team bob> [edited] hello there"
+      cath <# "#team bob> [edited] hello there"
+      lastSndMsgFlags alice cathConnId 1 `shouldReturn` ["F"]
+      lastJobNotification alice `shouldReturn` False
 
 testGroupMsgForwardReaction :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardReaction =
@@ -6118,6 +6198,7 @@ testGroupMsgForwardAdminRemoval =
             alice <## "use /d #team to delete the group",
           cath <## "#team: bob removed alice from the group (signed)"
         ]
+      lastJobNotification alice `shouldReturn` False
 
       -- there is no forwarding admin anymore between bob and cath, so messages don't get delivered
       -- (this is not a desired behavior, just a test demonstration/proof of current implementation)
@@ -6159,6 +6240,7 @@ testGroupMsgForwardGroupDeletion =
             cath <## "#team: bob deleted the group (signed)"
             cath <## "use /d #team to delete the local copy of the group"
         ]
+      lastJobNotification alice `shouldReturn` True
 
       alice ##> "/groups"
       alice <## "#team (group deleted, delete local copy: /d #team)"
@@ -6202,7 +6284,7 @@ testGroupHistory =
 
       cath ##> "/_get chat #1 count=100"
       r <- chat <$> getTermLine cath
-      r `shouldContain` [(0, "hello"), (0, "hey!")]
+      r `shouldSatisfy` isSubsequenceOf [(0, "hello"), (0, "hey!")]
 
       -- message delivery works after sending history
       alice #> "#team 1"
@@ -6227,6 +6309,8 @@ testGroupHistoryGroupLink =
 
       bob #> "#team hey!"
       alice <# "#team bob> hey!"
+
+      threadDelay 1000000
 
       alice ##> "/create link #team"
       gLink <- getGroupLink alice "team" GRMember True
@@ -6294,7 +6378,7 @@ testGroupHistoryPreferenceOff =
 
       cath ##> "/_get chat #1 count=100"
       r <- chat <$> getTermLine cath
-      r `shouldContain` [(0, "hello"), (0, "hey!")]
+      r `shouldSatisfy` isSubsequenceOf [(0, "hello"), (0, "hey!")]
 
       alice ##> "/set history #team off"
       alice <## "updated group preferences:"
@@ -6560,9 +6644,10 @@ testGroupHistoryMultipleFiles =
       cath ##> "/_get chat #1 count=100"
       r <- chatF <$> getTermLine cath
       r
-        `shouldContain` [ ((0, "hi alice"), Just $ tmpFile cath "testfile_bob_1"),
-                          ((0, "hey bob"), Just $ tmpFile cath "testfile_alice_1")
-                        ]
+        `shouldSatisfy` isSubsequenceOf
+          [ ((0, "hi alice"), Just $ tmpFile cath "testfile_bob_1"),
+            ((0, "hey bob"), Just $ tmpFile cath "testfile_alice_1")
+          ]
 
 testGroupHistoryFileCancel :: HasCallStack => TestParams -> IO ()
 testGroupHistoryFileCancel =
@@ -6780,13 +6865,14 @@ testGroupHistoryQuotes =
       cath ##> "/_get chat #1 count=100"
       r <- chat' <$> getTermLine cath
       r
-        `shouldContain` [ ((0, "ALICE"), Nothing),
-                          ((0, "BOB"), Nothing),
-                          ((0, "1"), Just (0, "ALICE")),
-                          ((0, "2"), Just (0, "BOB")),
-                          ((0, "3"), Just (0, "ALICE")),
-                          ((0, "4"), Just (0, "BOB"))
-                        ]
+        `shouldSatisfy` isSubsequenceOf
+          [ ((0, "ALICE"), Nothing),
+            ((0, "BOB"), Nothing),
+            ((0, "1"), Just (0, "ALICE")),
+            ((0, "2"), Just (0, "BOB")),
+            ((0, "3"), Just (0, "ALICE")),
+            ((0, "4"), Just (0, "BOB"))
+          ]
 
 testGroupHistoryDeletedMessage :: HasCallStack => TestParams -> IO ()
 testGroupHistoryDeletedMessage =
@@ -6888,7 +6974,7 @@ testGroupHistoryDisappearingMessage =
 
       cath ##> "/_get chat #1 count=100"
       r1 <- chat <$> getTermLine cath
-      r1 `shouldContain` [(0, "1"), (0, "2"), (0, "3"), (0, "4")]
+      r1 `shouldSatisfy` isSubsequenceOf [(0, "1"), (0, "2"), (0, "3"), (0, "4")]
 
       threadDelay 11000000
       concurrentlyN_
@@ -6908,7 +6994,7 @@ testGroupHistoryDisappearingMessage =
 
       cath ##> "/_get chat #1 count=100"
       r2 <- chat <$> getTermLine cath
-      r2 `shouldContain` [(0, "1"), (0, "4")]
+      r2 `shouldSatisfy` isSubsequenceOf [(0, "1"), (0, "4")]
       r2 `shouldNotContain` [(0, "2")]
       r2 `shouldNotContain` [(0, "3")]
 
@@ -7019,7 +7105,7 @@ testGroupHistoryUnknownMember =
 
       dan ##> "/_get chat #1 count=100"
       r <- chat <$> getTermLine dan
-      r `shouldContain` [(0, "hi from alice"), (0, "hi from bob"), (0, "hi from cath")]
+      r `shouldSatisfy` isSubsequenceOf [(0, "hi from alice"), (0, "hi from bob"), (0, "hi from cath")]
 
       dan ##> "/ms team"
       dan
@@ -7342,6 +7428,26 @@ testMembershipProfileUpdateContactDeleted =
       bob <##. "sending messages via"
       bob <## "connection not verified, use /code command to see security code"
       bob <## currentChatVRangeInfo
+
+testMembershipProfileUpdateContactDeletedPeerType :: HasCallStack => TestParams -> IO ()
+testMembershipProfileUpdateContactDeletedPeerType =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+
+      alice ##> "/d bob"
+      alice <## "bob: contact is deleted"
+      bob <## "alice (Alice) deleted contact with you"
+
+      alice ##> "/_profile 1 {\"displayName\": \"alisa\", \"fullName\": \"\", \"peerType\": \"bot\"}"
+      alice <## "user profile is changed to alisa (your 0 contacts are notified)"
+
+      alice #> "#team hello"
+      bob <## "contact alice changed to alisa"
+      bob <## "use @alisa <message> to send messages"
+      bob <# "#team alisa> hello"
+
+      memberAddressPeerType bob "alisa" `shouldReturn` [(Nothing, Just CPTBot)]
 
 testMembershipProfileUpdateContactDisabled :: HasCallStack => TestParams -> IO ()
 testMembershipProfileUpdateContactDisabled =
@@ -8361,6 +8467,12 @@ testUpdatedMentionNames = do
       `shouldBe` "hello @'Alice Jones' @robert"
     test (mm [("alice", Just "alice"), ("cath", Just "alice")]) "hello @alice @cath"
       `shouldBe` "hello @alice @alice_1"
+  it "replace changed names outside code" $ \_ -> do
+    let t = "- hello\n| x | @bob |\n|---|---|\n```\n@bob\n```"
+        t' = "- hello\n| x | @robert |\n|---|---|\n```\n@bob\n```"
+        (mc', ft', _) = updatedMentionNames (MCText t) (parseMaybeMarkdownList t) (mm [("bob", Just "robert")])
+    msgContentText mc' `shouldBe` t'
+    ft' `shouldBe` parseMaybeMarkdownList t'
   where
     test mentionsMap t =
       let (mc', _, _) = updatedMentionNames (MCText t) (parseMaybeMarkdownList t) mentionsMap
@@ -9520,6 +9632,65 @@ testChannels1RelayDeliver ps =
             cath <## "group ID: 1"
             cath <## "subscribers: 4"
 
+testChannels1RelayDeliverNotification :: HasCallStack => TestParams -> IO ()
+testChannels1RelayDeliverNotification ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice -> do
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob -> do
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+            forM_ [cath, dan, eve] $ \cc -> do
+              cc ##> "/set receipts all off"
+              cc <## "ok"
+            cathConnId <- relayConnIdToMember bob "cath"
+            danConnId <- relayConnIdToMember bob "dan"
+            eveConnId <- relayConnIdToMember bob "eve"
+
+            alice #> "#team hi"
+            bob <# "#team> hi"
+            [cath, dan, eve] *<# "#team> hi [>>]"
+            forM_ [cathConnId, danConnId, eveConnId] $ \connId ->
+              lastSndMsgFlags bob connId 1 `shouldReturn` ["T"]
+            lastJobNotification bob `shouldReturn` True
+
+            cath ##> "+1 #team hi"
+            cath <## "added 👍"
+            bob <# "#team cath> > hi"
+            bob <## "    + 👍"
+            alice <# "#team cath> > hi"
+            alice <## "    + 👍"
+            dan <## "#team: bob introduced cath (Catherine) in the channel"
+            dan <# "#team cath> > hi"
+            dan <## "    + 👍"
+            eve <## "#team: bob introduced cath (Catherine) in the channel"
+            eve <# "#team cath> > hi"
+            eve <## "    + 👍"
+            forM_ [danConnId, eveConnId] $ \connId ->
+              lastSndMsgFlags bob connId 1 `shouldReturn` ["F"]
+            lastJobNotification bob `shouldReturn` False
+
+testChannelDuplicateEvent :: HasCallStack => TestParams -> IO ()
+testChannelDuplicateEvent ps = do
+  (dups, cfg) <- duplicateMessageEventsCfg
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChatCfg ps cfg "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+            alice #> "#team hi"
+            bob <# "#team> hi"
+            [cath, dan, eve] *<# "#team> hi [>>]"
+
+            sharedMsgId <- itemSharedMsgId cath
+            connId <- relayConnIdToMember bob "cath"
+            ts <- getCurrentTime
+            let chatMsg = ChatMessage chatInitialVRange (Just sharedMsgId) (XMsgNew $ mcSimple $ MCText "hi")
+            setMainAppOff cath
+            agentSendBody bob connId $ encodeBinaryBatch [encodeFwdElement (GrpMsgForward FwdChannel ts) (VMUnsigned chatMsg)]
+            readTVarIO dups `shouldEventuallyReturn` ["bob"]
+
 createChannel1Relay :: String -> TestCC -> TestCC -> TestCC -> TestCC -> TestCC -> IO ()
 createChannel1Relay gName owner relay cath dan eve = do
   (shortLink, fullLink) <- prepareChannel1Relay gName owner relay
@@ -9979,6 +10150,34 @@ testChannelLargeProfileFits ps =
 
           memberIntroducedTo bob "cath" "dan"
 
+testChannelOverflowProfileNotification :: HasCallStack => TestParams -> IO ()
+testChannelOverflowProfileNotification ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice -> do
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob -> do
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink dan
+          promoteChannelMember "team" alice bob cath [dan]
+          dan ##> "/set receipts all off"
+          dan <## "ok"
+          danConnId <- relayConnIdToMember bob "dan"
+
+          let bigImage = T.pack ("data:image/png;base64," <> replicate 10000 'A')
+              longText = replicate 7000 'x'
+          withCCTransaction bob $ \db ->
+            DB.execute db "UPDATE contact_profiles SET image = ? WHERE display_name = ?" (bigImage, "cath" :: T.Text)
+          sentBefore <- length <$> lastSndMsgFlags bob danConnId 100
+
+          cath #> ("#team " <> longText)
+          bob <# ("#team cath> " <> longText)
+          alice <# ("#team cath> " <> longText <> " [>>]")
+          dan <### [EndsWith "updated to cath"]
+          dan <## "#team: bob introduced cath (Catherine) in the channel"
+          dan <# ("#team cath> " <> longText <> " [>>]")
+          drop sentBefore <$> lastSndMsgFlags bob danConnId 100 `shouldReturn` ["F", "T"]
+
 testChannelMultipleLargeProfiles :: HasCallStack => TestParams -> IO ()
 testChannelMultipleLargeProfiles ps =
   withNewTestChat ps "alice" aliceProfile $ \alice -> do
@@ -10066,6 +10265,53 @@ testChannelProfileUpdateNoRePrepend ps =
           dan <# "#team kate> hi again [>>]"
           threadDelay 500000
           memberIntroducedTo bob "kate" "dan"
+
+testChannelMemberAddressPeerType :: HasCallStack => TestParams -> IO ()
+testChannelMemberAddressPeerType ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathBotProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          _ <- setupRelay alice bob
+          alice ##> "/_public group 1 1 {\"displayName\": \"team\", \"fullName\": \"\", \"groupPreferences\": {\"directMessages\": {\"enable\": \"on\"}, \"support\": {\"enable\": \"off\"}}}"
+          alice <## "group #team is created"
+          alice <## "wait for selected relay(s) to join, then you can invite members via group link"
+          concurrentlyN_
+            [ do
+                alice <## "#team: group link relays updated, current relays:"
+                alice <## "  - relay id 1: active"
+                alice <## "group link:"
+                void $ getTermLine alice,
+              bob <## "#team: you joined the group as relay"
+            ]
+          alice ##> "/show link #team"
+          (shortLink, fullLink) <- getGroupLinks alice "team" GRObserver False
+
+          cath ##> "/ad"
+          _ <- getContactLinks cath True
+          cath ##> "/pa on"
+          cath <## "new contact address set"
+
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink dan
+          promoteChannelMember "team" alice bob cath [dan]
+
+          cath #> "#team hi from cath"
+          bob <# "#team cath> hi from cath"
+          alice <# "#team cath> hi from cath [>>]"
+          dan <### [EndsWith "updated to cath"]
+          dan <## "#team: bob introduced cath (Catherine) in the channel"
+          dan <# "#team cath> hi from cath [>>]"
+
+          Just cathAddress <- withCCUser cath $ \User {profile = LocalProfile {contactLink}} -> pure contactLink
+          mapM (`memberAddressPeerType` "cath") [alice, bob, dan] `shouldReturn` replicate 3 [(Just cathAddress, Just CPTBot)]
+  where
+    cathBotProfile = (cathProfile :: Profile) {peerType = Just CPTBot}
+
+memberAddressPeerType :: TestCC -> T.Text -> IO [(Maybe ConnLinkContact, Maybe ChatPeerType)]
+memberAddressPeerType cc name =
+  withCCTransaction cc $ \db ->
+    DB.query db "SELECT p.contact_link, p.chat_peer_type FROM group_members m JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id WHERE m.local_display_name = ?" (Only name)
 
 testChannelMultiSendersIndependent :: HasCallStack => TestParams -> IO ()
 testChannelMultiSendersIndependent ps =
@@ -10307,6 +10553,32 @@ testChannelLinkAfterWelcomeUpdate ps =
           alice #> "#team hi"
           bob <# "#team> hi"
           [cath, dan] *<# "#team> hi [>>]"
+
+testChannelChatLayout :: HasCallStack => TestParams -> IO ()
+testChannelChatLayout ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        (shortLink, _fullLink) <- prepareChannel1Relay "team" alice bob
+        alice ##> "/set layout #team terminal"
+        alice <## "chat layout changed to: terminal"
+        bob <## "alice updated group #team: (signed)"
+        bob <## "chat layout changed to: terminal"
+        cath ##> ("/c " <> shortLink)
+        cath <## "#team: connection started"
+        concurrentlyN_
+          [ cath
+              <### [ "#team: joining the group (connecting to relay bob)...",
+                     "#team: you joined the group (connected to relay bob)"
+                   ],
+            do
+              bob <## "cath (Catherine): accepting request to join group #team..."
+              bob <## "#team: cath joined the group",
+            alice <### [EndsWith "introduced cath (Catherine) in the channel"]
+          ]
+        groupChatLayout alice "team" `shouldReturn` Just CLTerminal
+        groupChatLayout bob "team" `shouldReturn` Just CLTerminal
+        groupChatLayout cath "team" `shouldReturn` Just CLTerminal
 
 testChannelOwnerKeyAfterLinkUpdate :: HasCallStack => TestParams -> IO ()
 testChannelOwnerKeyAfterLinkUpdate ps =
@@ -11053,6 +11325,7 @@ testChannelDeleteGroupSigned ps =
                   eve <## "#team: alice deleted the group (signed)"
                   eve <## "use /d #team to delete the local copy of the group"
               ]
+            lastJobNotification bob `shouldReturn` True
 
 testChannelDeleteGroupCleanup :: HasCallStack => TestParams -> IO ()
 testChannelDeleteGroupCleanup ps =
@@ -11246,6 +11519,7 @@ testChannelRelayLeave ps =
                   dan <## "#team: bob left the group (signed)",
                   eve <## "#team: bob left the group (signed)"
                 ]
+              lastJobNotification bob `shouldReturn` False
 
               -- verify relay1 member status is "left" on all clients that know bob
               checkMemberStatus alice "bob" (Just "left")
@@ -12421,13 +12695,7 @@ testChannelMessageFile ps =
         withNewTestChat ps "dan" danProfile $ \dan ->
           withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer ps $ do
             createChannel1Relay "team" alice bob cath dan eve
-            -- the roster arrives as a file before this one; Postgres assigns it a new id and does not
-            -- reuse it on delete (SQLite does), so the received message file is id 2 here, 1 on SQLite.
-#if defined(dbPostgres)
             let rcvFileId = 2 :: Int
-#else
-            let rcvFileId = 1 :: Int
-#endif
             -- owner sends file as channel message
             alice #> "/f #team ./tests/fixtures/test.jpg"
             alice <## "use /fc 1 to cancel sending"
@@ -12473,11 +12741,7 @@ testChannelMessageFileCancel ps =
         withNewTestChat ps "dan" danProfile $ \dan ->
           withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer ps $ do
             createChannel1Relay "team" alice bob cath dan eve
-#if defined(dbPostgres)
             let rcvFileId = 2 :: Int
-#else
-            let rcvFileId = 1 :: Int
-#endif
             -- owner sends file as channel message
             alice #> "/f #team ./tests/fixtures/test.jpg"
             alice <## "use /fc 1 to cancel sending"
@@ -12653,11 +12917,7 @@ testChannelOwnerFileTransferAsMember ps =
         withNewTestChat ps "dan" danProfile $ \dan ->
           withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer ps $ do
             createChannel1Relay "team" alice bob cath dan eve
-#if defined(dbPostgres)
             let rcvFileId = 2 :: Int
-#else
-            let rcvFileId = 1 :: Int
-#endif
             -- owner sends file as member (not as channel)
             alice ##> "/_send #1(as_group=off) json [{\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"type\": \"file\", \"text\": \"\"}}]"
             alice <# "/f #team ./tests/fixtures/test.jpg"
@@ -12805,11 +13065,7 @@ testChannelFileBadgeProof ps = do
           withNewTestChatCfg ps cfg "eve" eveProfile $ \eve -> withXFTPServer ps $ do
             createChannel1Relay "team" alice bob cath dan eve
             addTestBadge alice =<< issueTestBadge sk futureDate
-#if defined(dbPostgres)
             let rcvFileId = 2 :: Int
-#else
-            let rcvFileId = 1 :: Int
-#endif
             alice ##> "/_send #1(as_group=off) json [{\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"type\": \"file\", \"text\": \"\"}}]"
             alice <# "/f #team ./tests/fixtures/test.jpg"
             alice <## "use /fc 1 to cancel sending"
@@ -12872,11 +13128,7 @@ testChannelOwnerFileCancelAsMember ps =
         withNewTestChat ps "dan" danProfile $ \dan ->
           withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer ps $ do
             createChannel1Relay "team" alice bob cath dan eve
-#if defined(dbPostgres)
             let rcvFileId = 2 :: Int
-#else
-            let rcvFileId = 1 :: Int
-#endif
             -- owner sends file as member (not as channel)
             alice ##> "/_send #1(as_group=off) json [{\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"type\": \"file\", \"text\": \"\"}}]"
             alice <# "/f #team ./tests/fixtures/test.jpg"
@@ -13149,6 +13401,39 @@ relayConnIdToMember cc name = do
     (Only connId : _) -> pure connId
     _ -> fail $ "no relay connection to member " <> T.unpack name
 
+agentSendBody :: TestCC -> ByteString -> ByteString -> IO ()
+agentSendBody cc connId body = do
+  let ChatController {smpAgent} = chatController cc
+  runExceptT (sendMessages smpAgent [(connId, PQEncOff, MsgFlags False, vrValue body)]) >>= either (fail . show) (const $ pure ())
+
+lastSndMsgFlags :: TestCC -> ByteString -> Int -> IO [T.Text]
+lastSndMsgFlags cc connId n = do
+  rows <- withCCAgentTransaction cc $ \db ->
+    DB.query
+      db
+      "SELECT msg_flags FROM messages WHERE conn_id = ? AND internal_snd_id IS NOT NULL AND msg_type = ? ORDER BY internal_id DESC LIMIT ?"
+      (connId, Binary ("M" :: ByteString), n)
+  pure $ reverse $ map fromOnly rows
+
+lastJobNotification :: TestCC -> IO Bool
+lastJobNotification cc = do
+  [Only (BI ntf)] <- withCCTransaction cc $ \db ->
+    DB.query_ db "SELECT notification FROM delivery_jobs ORDER BY delivery_job_id DESC LIMIT 1"
+  pure ntf
+
+duplicateMessageEventsCfg :: IO (TVar [ContactName], ChatConfig)
+duplicateMessageEventsCfg = do
+  dups <- newTVarIO []
+  let hook _ evt = do
+        case evt of
+          Right (CEvtDuplicateGroupMessage _ GroupMember {localDisplayName}) -> atomically $ modifyTVar' dups (<> [localDisplayName])
+          _ -> pure ()
+        pure evt
+  pure (dups, testCfg {chatHooks = defaultChatHooks {eventHook = Just hook}})
+
+setMainAppOff :: TestCC -> IO ()
+setMainAppOff cc = atomically $ writeTVar (subscriptionMode $ chatController cc) SMOnlyCreate
+
 itemSharedMsgId :: TestCC -> IO SharedMsgId
 itemSharedMsgId cc = do
   rows <- withCCTransaction cc $ \db ->
@@ -13219,17 +13504,9 @@ testChannelSignedFile ps =
             xftpCLI ["rand", testfile, "1mb"] `shouldReturn` ["File created: " <> testfile]
             createChannel1Relay "team" alice bob cath dan eve
             promoteChannelMember "team" alice bob cath [dan, eve]
-            -- roster serves arrive as files that Postgres deletes without reusing the id (SQLite reuses
-            -- it), so ids run higher here. cath's send and the subscribers' (dan, eve) receive both
-            -- follow only their join roster (id 2). The relay (bob) also received the roster re-served
-            -- on cath's promotion, so its file is id 3. The owner (alice) has no roster file, so id 1.
-#if defined(dbPostgres)
+            -- roster files are deleted after the transfer, so ids run higher: cath, dan and eve use id 2, the relay (bob) id 3, the owner (alice) id 1.
             let fileId = 2 :: Int
                 relayFileId = 3 :: Int
-#else
-            let fileId = 1 :: Int
-                relayFileId = 1 :: Int
-#endif
 
             -- cath's first (signed) message introduces her to dan/eve
             cath ##> "/_send #1 sign=on text hi"

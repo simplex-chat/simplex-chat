@@ -4,6 +4,12 @@ This file provides guidance on coding style and approaches and on building the c
 
 ## Code Security
 
+Zero trust: providers and server owners cannot access users' data - design every feature with this constraint. Every code and design decision considers two threat vectors:
+1. users attacking providers;
+2. providers or server owners attacking users.
+
+Default to end-to-end encryption, minimal metadata exposure, and cryptographic verification over trust assumptions. Review the documented threat models and monitor compliance.
+
 When designing code and planning implementations:
 - Apply adversarial thinking, and consider what may happen if one of the communicating parties is malicious.
 - Formulate an explicit threat model for each change - who can do which undesirable things and under which circumstances.

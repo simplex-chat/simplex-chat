@@ -23,6 +23,7 @@ class AddRelayResult(TypedDict):
 class AddressSettings(TypedDict):
     businessAddress: bool
     autoAccept: NotRequired["AutoAccept"]
+    chatLayout: NotRequired["ChatLayout"]
     autoReply: NotRequired["MsgContent"]
 
 class AgentCryptoError_DECRYPT_AES(TypedDict):
@@ -188,6 +189,9 @@ class BadgeProof(TypedDict):
 class BadgeRedeemError_invalidCode(TypedDict):
     type: Literal["invalidCode"]
 
+class BadgeRedeemError_invalidReceipt(TypedDict):
+    type: Literal["invalidReceipt"]
+
 class BadgeRedeemError_serviceNotConfigured(TypedDict):
     type: Literal["serviceNotConfigured"]
 
@@ -210,6 +214,7 @@ class BadgeRedeemError_credentialNotVerified(TypedDict):
 
 BadgeRedeemError = (
     BadgeRedeemError_invalidCode
+    | BadgeRedeemError_invalidReceipt
     | BadgeRedeemError_serviceNotConfigured
     | BadgeRedeemError_badgeActive
     | BadgeRedeemError_serviceError
@@ -218,13 +223,84 @@ BadgeRedeemError = (
     | BadgeRedeemError_credentialNotVerified
 )
 
-BadgeRedeemError_Tag = Literal["invalidCode", "serviceNotConfigured", "badgeActive", "serviceError", "invalidResponse", "unknownKeyIndex", "credentialNotVerified"]
+BadgeRedeemError_Tag = Literal["invalidCode", "invalidReceipt", "serviceNotConfigured", "badgeActive", "serviceError", "invalidResponse", "unknownKeyIndex", "credentialNotVerified"]
 
-BadgeServiceErrorCode = Literal["bad_request", "unsupported_version", "unknown_purchase_key", "unknown_offer_id", "offer_disabled", "offer_mismatch", "product_unavailable", "payment_not_entitled", "payment_pending", "provider_unavailable", "rate_limited", "code_invalid", "code_used", "code_expired", "receipt_invalid", "receipt_used", "internal"]
+BadgeServiceErrorCode = Literal["bad_request", "unsupported_version", "unknown_purchase_key", "unknown_offer_id", "offer_disabled", "offer_mismatch", "product_unavailable", "payment_not_entitled", "payment_pending", "provider_unavailable", "provider_not_configured", "rate_limited", "code_invalid", "code_used", "code_expired", "receipt_invalid", "receipt_used", "test_purchase", "internal"]
 
 BadgeStatus = Literal["active", "expired", "expiredOld", "failed", "unknownKey"]
 
 BadgeType = Literal["supporter", "legend", "investor"]
+
+class BlockToken_lineBreak(TypedDict):
+    type: Literal["lineBreak"]
+
+class BlockToken_softBreak(TypedDict):
+    type: Literal["softBreak"]
+
+class BlockToken_hardBreak(TypedDict):
+    type: Literal["hardBreak"]
+
+class BlockToken_paragraphBreak(TypedDict):
+    type: Literal["paragraphBreak"]
+    lineBreaks: int  # int
+
+class BlockToken_indent(TypedDict):
+    type: Literal["indent"]
+
+class BlockToken_headingMark(TypedDict):
+    type: Literal["headingMark"]
+    level: int  # int
+
+class BlockToken_headingClose(TypedDict):
+    type: Literal["headingClose"]
+
+class BlockToken_headingUnderline(TypedDict):
+    type: Literal["headingUnderline"]
+    level: int  # int
+
+class BlockToken_listMark(TypedDict):
+    type: Literal["listMark"]
+    number: NotRequired[str]
+
+class BlockToken_quoteMark(TypedDict):
+    type: Literal["quoteMark"]
+
+class BlockToken_fenceMark(TypedDict):
+    type: Literal["fenceMark"]
+    language: NotRequired[str]
+
+class BlockToken_rowMark(TypedDict):
+    type: Literal["rowMark"]
+
+class BlockToken_cellMark(TypedDict):
+    type: Literal["cellMark"]
+
+class BlockToken_delimiterRow(TypedDict):
+    type: Literal["delimiterRow"]
+    columns: list["TableAlign"]
+
+class BlockToken_ruleMark(TypedDict):
+    type: Literal["ruleMark"]
+
+BlockToken = (
+    BlockToken_lineBreak
+    | BlockToken_softBreak
+    | BlockToken_hardBreak
+    | BlockToken_paragraphBreak
+    | BlockToken_indent
+    | BlockToken_headingMark
+    | BlockToken_headingClose
+    | BlockToken_headingUnderline
+    | BlockToken_listMark
+    | BlockToken_quoteMark
+    | BlockToken_fenceMark
+    | BlockToken_rowMark
+    | BlockToken_cellMark
+    | BlockToken_delimiterRow
+    | BlockToken_ruleMark
+)
+
+BlockToken_Tag = Literal["lineBreak", "softBreak", "hardBreak", "paragraphBreak", "indent", "headingMark", "headingClose", "headingUnderline", "listMark", "quoteMark", "fenceMark", "rowMark", "cellMark", "delimiterRow", "ruleMark"]
 
 class BlockingInfo(TypedDict):
     reason: "BlockingReason"
@@ -688,6 +764,7 @@ class CIQuote(TypedDict):
     sentAt: str  # ISO-8601 timestamp
     content: "MsgContent"
     formattedText: NotRequired[list["FormattedText"]]
+    markdownBlocks: NotRequired[list["MarkdownBlock"]]  # non-empty
 
 class CIReaction(TypedDict):
     chatDir: "CIDirection"
@@ -1220,6 +1297,7 @@ class ChatItem(TypedDict):
     content: "CIContent"
     mentions: dict[str, "CIMention"]
     formattedText: NotRequired[list["FormattedText"]]
+    markdownBlocks: NotRequired[list["MarkdownBlock"]]  # non-empty
     quotedItem: NotRequired["CIQuote"]
     reactions: list["CIReactionCount"]
     file: NotRequired["CIFile"]
@@ -1229,6 +1307,8 @@ class ChatItem(TypedDict):
 class ChatItemDeletion(TypedDict):
     deletedChatItem: "AChatItem"
     toChatItem: NotRequired["AChatItem"]
+
+ChatLayout = Literal["classic", "terminal"]
 
 class ChatListQuery_filters(TypedDict):
     type: Literal["filters"]
@@ -1243,7 +1323,7 @@ ChatListQuery = ChatListQuery_filters | ChatListQuery_search
 
 ChatListQuery_Tag = Literal["filters", "search"]
 
-ChatPeerType = Literal["human", "bot", "business"]
+ChatPeerType = Literal["human", "bot", "business", "agent"]
 
 # Used in API commands. Chat scope can only be passed with groups.
 
@@ -1523,6 +1603,7 @@ class Contact(TypedDict):
     chatTags: list[int]  # int64
     chatItemTTL: NotRequired[int]  # int64
     uiThemes: NotRequired["UIThemeEntityOverrides"]
+    chatLayout: NotRequired["ChatLayout"]
     chatDeleted: bool
     customData: NotRequired[dict[str, object]]
 
@@ -1564,6 +1645,7 @@ class ContactShortLinkData(TypedDict):
     profile: "Profile"
     message: NotRequired["MsgContent"]
     business: bool
+    chatLayout: NotRequired["ChatLayout"]
     localBadge: NotRequired["LocalBadge"]
 
 ContactStatus = Literal["active", "deleted", "deletedByUser", "rejected"]
@@ -1795,8 +1877,11 @@ class FileTransferMeta(TypedDict):
 
 FileType = Literal["normal", "roster"]
 
+# The format markup is a token of block Markdown syntax; its text is the syntax. The format escape is the backslash of a backslash escape. Bold singleStar: written with single stars.
+
 class Format_bold(TypedDict):
     type: Literal["bold"]
+    singleStar: bool
 
 class Format_italic(TypedDict):
     type: Literal["italic"]
@@ -1850,6 +1935,13 @@ class Format_email(TypedDict):
 class Format_phone(TypedDict):
     type: Literal["phone"]
 
+class Format_escape(TypedDict):
+    type: Literal["escape"]
+
+class Format_markup(TypedDict):
+    type: Literal["markup"]
+    token: "BlockToken"
+
 Format = (
     Format_bold
     | Format_italic
@@ -1866,9 +1958,11 @@ Format = (
     | Format_mention
     | Format_email
     | Format_phone
+    | Format_escape
+    | Format_markup
 )
 
-Format_Tag = Literal["bold", "italic", "strikeThrough", "snippet", "secret", "small", "colored", "uri", "hyperLink", "simplexLink", "simplexName", "command", "mention", "email", "phone"]
+Format_Tag = Literal["bold", "italic", "strikeThrough", "snippet", "secret", "small", "colored", "uri", "hyperLink", "simplexLink", "simplexName", "command", "mention", "email", "phone", "escape", "markup"]
 
 class FormattedText(TypedDict):
     format: NotRequired["Format"]
@@ -2086,6 +2180,7 @@ class GroupProfile(TypedDict):
     publicGroup: NotRequired["PublicGroupProfile"]
     groupPreferences: NotRequired["GroupPreferences"]
     memberAdmission: NotRequired["GroupMemberAdmission"]
+    chatLayout: NotRequired["ChatLayout"]
 
 class GroupRelay(TypedDict):
     groupRelayId: int  # int64
@@ -2191,6 +2286,11 @@ class LinkPreview(TypedDict):
     image: str
     content: NotRequired["LinkContent"]
 
+class ListEntry(TypedDict):
+    number: NotRequired[str]
+    content: "SegmentRange"
+    items: list["ListEntry"]
+
 class LocalBadge(TypedDict):
     badge: "BadgeInfo"
     status: "BadgeStatus"
@@ -2209,6 +2309,50 @@ class LocalProfile(TypedDict):
     localAlias: str
     contactDomain: NotRequired["SimplexDomainClaim"]
     contactDomainVerified: NotRequired["DomainVerification"]
+
+class MarkdownBlock_paragraph(TypedDict):
+    type: Literal["paragraph"]
+    content: "SegmentRange"
+
+class MarkdownBlock_heading(TypedDict):
+    type: Literal["heading"]
+    level: int  # int
+    content: "SegmentRange"
+
+class MarkdownBlock_codeBlock(TypedDict):
+    type: Literal["codeBlock"]
+    language: NotRequired[str]
+    content: "SegmentRange"
+
+class MarkdownBlock_quote(TypedDict):
+    type: Literal["quote"]
+    content: "SegmentRange"
+
+class MarkdownBlock_list(TypedDict):
+    type: Literal["list"]
+    items: list["ListEntry"]  # non-empty
+
+class MarkdownBlock_table(TypedDict):
+    type: Literal["table"]
+    columns: list["TableAlign"]  # non-empty
+    header: list["SegmentRange"]
+    rows: list[list["SegmentRange"]]
+
+class MarkdownBlock_rule(TypedDict):
+    type: Literal["rule"]
+    mark: "SegmentRange"
+
+MarkdownBlock = (
+    MarkdownBlock_paragraph
+    | MarkdownBlock_heading
+    | MarkdownBlock_codeBlock
+    | MarkdownBlock_quote
+    | MarkdownBlock_list
+    | MarkdownBlock_table
+    | MarkdownBlock_rule
+)
+
+MarkdownBlock_Tag = Literal["paragraph", "heading", "codeBlock", "quote", "list", "table", "rule"]
 
 MemberCriteria = Literal["all"]
 
@@ -2977,6 +3121,11 @@ class SecurityCode(TypedDict):
     securityCode: str
     verifiedAt: str  # ISO-8601 timestamp
 
+SegmentRange = TypedDict("SegmentRange", {
+    "from": int,  # int
+    "to": int,  # int
+})
+
 class SimplePreference(TypedDict):
     allow: "FeatureAllowed"
 
@@ -3629,6 +3778,8 @@ class SupportGroupPreference(TypedDict):
 
 SwitchPhase = Literal["started", "confirmed", "secured", "completed"]
 
+TableAlign = Literal["none", "left", "center", "right"]
+
 class TimedMessagesGroupPreference(TypedDict):
     enable: "GroupFeatureEnabled"
     ttl: NotRequired[int]  # int
@@ -3691,6 +3842,7 @@ class UIThemeEntityOverride(TypedDict):
 class UIThemeEntityOverrides(TypedDict):
     light: NotRequired["UIThemeEntityOverride"]
     dark: NotRequired["UIThemeEntityOverride"]
+    chatLayout: NotRequired["ChatLayout"]
 
 class UpdatedMessage(TypedDict):
     msgContent: "MsgContent"

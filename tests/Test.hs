@@ -10,6 +10,7 @@ import Bots.BadgeService.ConfigTests
 import Bots.BadgeService.GroupIntegrationTests
 import Bots.BadgeService.GroupTests
 import Bots.BadgeService.NameRegistrationTests
+import Bots.BadgeService.StoreVerifierTests
 import Bots.BadgeService.StripeTests
 import Bots.BadgeService.WaitersTests
 import Bots.BadgeService.WebTests
@@ -18,7 +19,6 @@ import Bots.DirectoryTests
 import ChatClient
 import ChatTests
 import ChatTests.DBUtils
-import ChatTests.Names (chatNamesTests)
 import ChatTests.Utils (xdescribe'')
 import Control.Logger.Simple
 import Data.Time.Clock.System
@@ -46,6 +46,7 @@ import Simplex.Chat.Store.Postgres.Migrations (migrations)
 import Simplex.Messaging.Agent.Store.Postgres.Util (createDBAndUserIfNotExists, dropDatabaseAndUser)
 #else
 import APIDocs
+import ChatTests.Names (chatNamesTests)
 import qualified Simplex.Messaging.TMap as TM
 import MobileTests
 import SchemaDump
@@ -86,6 +87,7 @@ main = do
         badgeBTCPayTests
         badgeStripeTests
         badgeNameRegistrationTests
+        badgeStoreVerifierTests
       describe "SimpleX chat markdown" markdownTests
       describe "JSON Tests" jsonTests
       describe "Member relations" memberRelationsTests
