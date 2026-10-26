@@ -75,9 +75,10 @@ actual class FileChooserLauncher actual constructor() {
       )
       res = simplexWindowState.openDialog.awaitResult(params)
     } else {
-      res = simplexWindowState.saveDialog.awaitResult(DialogParams(filename = input))
+      val filename = input.trimStart('.').ifEmpty { input }
+      res = simplexWindowState.saveDialog.awaitResult(DialogParams(filename = filename))
       if (res != null && res.isDirectory) {
-        res = File(res, input)
+        res = File(res, filename)
       }
     }
     onResult(res?.toURI())
