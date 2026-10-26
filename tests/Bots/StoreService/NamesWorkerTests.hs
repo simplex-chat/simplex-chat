@@ -46,7 +46,7 @@ import StoreService.Names.Abi (abiBytes, abiTuple, addressWord, AbiValue (..), h
 import StoreService.Names.Chain (Block (..), ChainClient, Receipt (..), TxHash (..), TxRequest (..), blockAt, decodeSignedTx, newChainClient)
 import StoreService.Names.Orders (Landing (..), OrdersEnv (..), confirmLanded)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange)
-import StoreService.Names.Registration (RegisterIntent (..), TermsAcceptance (..), acceptCalldata, commitCalldata, registerIntentDigest, registerWithCreditCalldata, sponsorDomain)
+import StoreService.Names.Registration (RegisterIntent (..), TermsAcceptance (..), acceptCalldata, acceptanceDigest, commitCalldata, policyDomain, registerIntentDigest, registerWithCreditCalldata, sponsorDomain)
 import StoreService.Names.Reveal (intentOf)
 import StoreService.Names.Sender
 import StoreService.Names.Signatures (OrderFields (..))
@@ -648,9 +648,10 @@ testTermsNotAccepted = withWorker $ \w@W {wCtx = ctx} -> do
 
 -- | The page's reveal with its acceptance of the policy's terms.
 acceptedReveal :: Ctx -> NameRegistration -> IO NameRegistration
-acceptedReveal ctx r = do
+acceptedReveal ctx@Ctx {cRandom} r = do
   rv <- signedReveal ctx keyA reveal {rvLabel = "alicebakery"} r
-  rewrite ctx r (\o -> o {nrReveal = Just rv {rvAcceptance = Just TermsAcceptance {taTermsHash = fakeCommunityTerms, taNonce = 0, taSignature = rvSignature rv}}})
+  sig <- either (error . show) id <$> signRecoverable cRandom keyA (acceptanceDigest (policyDomain fakeChainId fakeNamePolicy) (nrCommitment r) fakeCommunityTerms 0 (rvDeadline rv))
+  rewrite ctx r (\o -> o {nrReveal = Just rv {rvAcceptance = Just TermsAcceptance {taTermsHash = fakeCommunityTerms, taNonce = 0, taSignature = sig}}})
 
 -- | The terms hash the policy holds as accepted for the registration's commitment by its owner.
 answerAccepted :: W -> NameRegistration -> ByteString -> IO ()
