@@ -25,6 +25,8 @@
 #   ui key <key>...               press keys named as in xdotool (Return, Escape, ctrl+a)
 #   ui do <command> [args] -- <command> [args] ...
 #                                 run the commands in order, stopping at the first that fails
+#   ui layout <reachable|top>     restart the app with "Reachable app toolbars" on (the toolbar at the bottom) or off
+#                                 (at the top), keeping its data, and wait for the chat list
 #   ui stop                       stop the app, openbox and Xvfb
 #
 # Text is compared ignoring case, spaces and punctuation, with a capital I and a lowercase l alike; a phrase that is
@@ -86,11 +88,18 @@ start() {
   setsid openbox --sm-disable < /dev/null > "$UI_OUT/openbox.log" 2>&1 &
   echo $! > "$state/openbox.pid"
 
-  mkdir -p "$state/data" "$state/config" "$state/tmp"
   if [ $# -gt 0 ] && [ ! -f "$settings" ]; then
     mkdir -p "$(dirname "$settings")"
     printf '%s\n' "$@" > "$settings"
   fi
+  echo "$app_dir" > "$state/app-dir"
+  launch_app "$app_dir"
+  xdotool getwindowgeometry "$(head -n 1 "$state/window")" | tee "$state/window-geometry"
+}
+
+launch_app() {
+  local app_dir=$1
+  mkdir -p "$state/data" "$state/config" "$state/tmp"
   XDG_DATA_HOME="$state/data" \
     XDG_CONFIG_HOME="$state/config" \
     JAVA_TOOL_OPTIONS="-Djava.io.tmpdir=$state/tmp -Dskiko.renderApi=SOFTWARE" \
@@ -102,7 +111,50 @@ start() {
     echo "error: no app window after 120 s"
     return 1
   fi
-  xdotool getwindowgeometry "$(head -n 1 "$state/window")"
+}
+
+window_geometry() {
+  grep -E '^ *(Position|Geometry):' "$@"
+}
+
+# settings.properties, read at start, also holds the database passphrase: only OneHandUI changes, and the saved
+# DesktopWindowState goes, so the window opens where the first start put it.
+layout() {
+  local one_hand settings=$state/config/simplex/settings.properties geometry pos y
+  case "$1" in
+    reachable) one_hand=true ;;
+    top) one_hand=false ;;
+    *)
+      echo "error: layout is reachable or top"
+      return 1
+      ;;
+  esac
+  if [ ! -f "$state/app-dir" ] || [ ! -f "$settings" ]; then
+    echo "error: no app started with ui start, or it has no settings.properties"
+    return 1
+  fi
+  stop_process app 10
+  LC_ALL=C awk -v line="OneHandUI=$one_hand" '/^OneHandUI=/ { print line; done = 1; next } /^DesktopWindowState=/ { next } { print } END { if (!done) print line }' \
+    "$settings" > "$settings.new"
+  mv "$settings.new" "$settings"
+  launch_app "$(cat "$state/app-dir")"
+  # lib.sh clicks fixed points of the window, so it must come back where the first start put it
+  geometry=$(xdotool getwindowgeometry "$(head -n 1 "$state/window")" | window_geometry)
+  if [ "$geometry" != "$(window_geometry "$state/window-geometry")" ]; then
+    echo "error: the window moved or changed size after the restart:"
+    echo "$geometry"
+    return 1
+  fi
+  if ! pos=$(wait_for "Chats" 90); then
+    echo "error: no chat list 90 s after the restart"
+    return 1
+  fi
+  read -r _ y _ <<< "$pos"
+  if { [ "$one_hand" = true ] && [ "$y" -le 600 ]; } || { [ "$one_hand" = false ] && [ "$y" -ge 200 ]; }; then
+    echo "error: the toolbar is at y=$y, not where the $1 layout puts it"
+    return 1
+  fi
+  log "layout $1: the toolbar is at y=$y"
 }
 
 # ocr <png> lines | ocr <png> find <text>
@@ -268,6 +320,7 @@ case "${1:-}" in
     log "scroll $4 at $2,$3, ${5:-3} clicks"
     ;;
   avatar) avatar "$2" "${3:-}" ;;
+  layout) layout "${2:-}" ;;
   type)
     xdotool type --delay 50 -- "$2"
     log "type \"$2\""
