@@ -8,7 +8,7 @@ Pushes start nothing: a run is started by hand, on any branch, with inputs that 
 
 | Input | iOS | Desktop | Android |
 |---|---|---|---|
-| no input | scripted test | scripted test | scripted test |
+| no input | scripted test, the app uploaded | scripted test, the app uploaded | scripted test, the app uploaded |
 | `claude` | scripted test, then Claude | scripted test, then Claude | scripted test, then Claude |
 | `backend` | also the test backend | also the test backend | also the test backend |
 | `release` | — | also the latest release's onboarding, to tell a branch's failure from the runner's | also the latest release's onboarding, to tell a branch's failure from the runner's |
@@ -23,6 +23,8 @@ gh workflow run android-emu.yml --ref <branch> -f claude=true
 ```
 
 A newer run of a workflow on the same branch cancels the older one.
+
+Each run uploads the app it built, for manual tests, as an artifact kept 14 days: `ios-sim-app` (SimpleX.app.tar.gz, for the iOS simulator on an Apple-silicon Mac), `desktop-app` (desktop-app.tar.gz, for Linux x86-64) and `android-app` (the debug APK, arm64-v8a only). The run's page lists it under Artifacts; `gh run download <run id> -n <artifact>` downloads it.
 
 ## How long a run takes
 
