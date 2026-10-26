@@ -5,7 +5,7 @@ Images are resized by the core in one Catmull-Rom pass with sharpening, at a fix
 JPEG input is decoded by mozjpeg at the smallest scale that covers the display size, and its EXIF orientation is applied.
 The core functions are called by the apps in place of platform code, wrapped in both bot libraries and used for `/img` and `/imgf` previews; mozjpeg is compiled by cabal in every build.
 
-References are to branch `ab/resize-image` at `37be23b6b`, based on master `66e381bf5`. Haskell paths without a directory are in `src/Simplex/Chat/`.
+References are to branch `ab/resize-image` at `6b2383dd3`, based on master `7810fc475`. Haskell paths without a directory are in `src/Simplex/Chat/`.
 
 ## Image processing decisions
 
@@ -46,7 +46,7 @@ Decoding, `Image.hs`:
      - a side above 65500
      - a precision other than 8
      - a lossless JPEG
-  2. target size: both sides halved, each rounded by `scaledSide` (`:203-204`), while a side exceeds 4320; `Left` when a side is below 2 before a halving
+  2. target size: both sides halved, each rounded by `scaledSide` (`:318-319`), while a side exceeds 4320; `Left` when a side is below 2 before a halving
   3. scale: the smallest of `Full`, `Half`, `Quarter` and `Eighth` whose rounded-up sides are at least the target
   4. `decodeJpeg` with:
      - `maxPixels`: 2^28; `Left` above it, before the output is allocated
@@ -70,7 +70,7 @@ Decoding, `Image.hs`:
 
   | build | `simplex-chat.cabal` condition | set in |
   |---|---|---|
-  | iOS and iOS simulator | `flag(swift)` | `flake.nix:551`, `:588`; `scripts/ci/ios-sim/build-core.sh:27` |
+  | iOS and iOS simulator | `flag(swift)` | `flake.nix:553`, `:590`; `scripts/ci/ios-sim/build-core.sh:27` |
   | Android aarch64 and armv7a | `os(android)` | the target platforms of `flake.nix:418` and `:340` |
 
 - EXIF orientation of JPEG input:
@@ -121,7 +121,7 @@ Resizing, `Image.hs`:
   | no width fits | the smallest tried width halved until the encoding fits: `Left` when a width below 2 is to be halved | the same |
   | at the largest width | below 0.97·L: quality bisected in the quality..95; otherwise the encoding itself | the encoding itself |
 
-- The largest size applies to the image data and to the data URIs: the Android and desktop apps display images and previews only up to 4320 pixels per side (`CIImageView.kt:128`, `base64ToBitmap` in `Images.android.kt:34` and `Images.desktop.kt:42`).
+- The largest size applies to the image data and to the data URIs: the Android and desktop apps display images and previews only up to 4320 pixels per side (`CIImageView.kt:128`, `base64ToBitmap` in `Images.android.kt:35` and `Images.desktop.kt:42`).
 - The quality bisection is ended by an encoding of exactly `maxSize`.
 - Metadata of the input is dropped.
 
@@ -196,14 +196,14 @@ chat_resize_image_fd(fd, maxSize, png)        as chat_resize_image, from the fil
   - `libsimplex.dll.def`: the path functions
   - `flake.nix`, the Android `-u` list: the descriptor functions
 
-Apps, with function signatures kept and call sites unchanged except iOS `saveWallpaperFile(image:)` (`ImageUtils.swift:233`):
+Apps, with function signatures kept and call sites unchanged except iOS `saveWallpaperFile(image:)` (`ImageUtils.swift:246`):
 - iOS `resizeImageToDataSize` and `resizeImageToStrSizeSync`:
   - an image with orientation other than `.up` is redrawn upright;
   - input: UIKit PNG for an image with alpha, otherwise JPEG at quality 0.85;
   - alpha:
     - `resizeImageToDataSize`: the `hasAlpha` parameter, by which PNG or JPEG output is also selected
     - `resizeImageToStrSizeSync`: `imageHasAlpha(image)`, for the input only
-  - `""` is returned as `nil`; for it `nil` is also returned by `saveImage` (`ImageUtils.swift:68`) and `saveWallpaperFile(image:)` (`:233`).
+  - `""` is returned as `nil`; for it `nil` is also returned by `saveImage` (`ImageUtils.swift:68`) and `saveWallpaperFile(image:)` (`:246`).
 - Android and desktop, common code:
   - input: `compressImageData` bytes, PNG or JPEG at quality 85, in a direct `ByteBuffer`;
   - for `""` an exception is raised by both functions, the failure mode of the platform code of master;
@@ -273,7 +273,7 @@ Bot libraries:
 - Pinned releases:
   - Until a core release built with this change is pinned by `scripts/ci/packages_release.py prepare`, `core-7.1.0.14` is loaded (`packages/simplex-chat-nodejs/src/release.ts:3`, `packages/simplex-chat-python/src/simplex_chat/_version.py:8`), and the export error is raised by the Python wrappers.
   - The Node add-on is pinned to `nodejs-addon-308c0960c707` (`release.ts:5`), built without either function: the promises of the Node wrappers are rejected with `TypeError: addon[name] is not a function` (`src/simplex.js:20`). The export error is raised with an add-on built from this branch, as in the tests (`jest.config.js:4`).
-  - The core and the add-on are pinned together by `prepare` (`packages_release.py:350-353`); for nodejs an error is raised by `prepare` until the add-on release of the current sources is published (`:768-769`).
+  - The core and the add-on are pinned together by `prepare` (`packages_release.py:349-352`); for nodejs an error is raised by `prepare` until the add-on release of the current sources is published (`:767-768`).
 
 `/img` and `/imgf`:
 - The preview is generated from the file: read with `CF.readFile` (encrypted files included), decoded, and resized to a data URI of at most 14000 characters.
@@ -381,87 +381,144 @@ Branch `ep/stb-submodule` at `aed4e06`, on the Hackage release 0.1.0.0 (`917cd53
 
 Core:
 - `Image.hs`, new:
-  - exports (`:7-14`):
+  - exports (`:7-16`):
     - `ImageFormat (IFJpeg, IFPng)`
     - `imageFormat`
     - `decodeResizable`
     - `resizeImage`
     - `resizeImageDataUri`
-  - `decodeResizable` (`:45-48`): `decodeDisplayJpeg` for input starting `FF D8`, otherwise `decodeImage`
-  - `decodeDisplayJpeg` (`:50-54`): `readJpegHeader`, `displaySize`, `jpegScale`, `decodeJpeg`, `resizeToSize`, `orientImage` with `exifOrientation`
-  - `displaySize` (`:56-62`): the target size and the number of halvings, with the rounding of `downscale`, shared through `scaledSide`
-  - `jpegScale` (`:64-69`): `Full`, `Half`, `Quarter`, `Eighth` for 0, 1, 2, and 3 or more halvings
-  - `resizeToSize` (`:71-74`): `convertRGB8` and `STBIR.resize` when the decoded size differs from the target
-  - `exifOrientation` (`:76-98`): the orientation value of IFD0, 1 when absent or malformed
-  - `exifTiff` (`:100-108`): the TIFF data of the first APP1 `Exif` segment before the first SOS
-  - `orientImage` (`:110-122`): the 8 transforms with `generateImage`, applied with `dynamicPixelMap`
-  - `maxJpegPixels = 2 ^ 28` (`:175-176`); `maxJpegMemoryMB` (`:178-183`), 512 or 1024 by `mobileBuild`
-  - `fitImage` (`:130-152`): the size bound, the display halving (`fitDisplay`, `:141`), then the search, parameterized by the output (bytes or data URI); JPEG with `encodeRGB`
-  - `bisect` (`:154-164`)
-  - `minJpegQuality = 20` (`:166-167`)
-  - `maxImageSide = 16384` (`:169-170`)
-  - `maxDisplaySide = 4320` (`:172-173`)
-  - `hasSideAbove` (`:185-186`)
-  - `halveToSide` (`:188-191`)
-  - `halve` (`:193-196`)
-  - `downscale` (`:198-201`): `STBIR.resize` with `defaultOptions`
-  - `scaledSide` (`:203-204`)
-  - `toDataUri` (`:206-212`), with the approved comment at `:210`
+    - `scaleRGB8`
+    - `scaleRGBA8`
+  - `imageFormat` (`:41-52`)
+  - `decodeResizable` (`:54-57`): `decodeDisplayJpeg` for input starting `FF D8`, otherwise `decodeImage`
+  - `decodeDisplayJpeg` (`:59-63`): `readJpegHeader`, `displaySize`, `jpegScale`, `decodeJpeg`, `resizeToSize`, `orientImage` with `exifOrientation`
+  - `displaySize` (`:65-71`): the target size and the number of halvings, rounded by `scaledSide`
+  - `jpegScale` (`:73-78`): `Full`, `Half`, `Quarter`, `Eighth` for 0, 1, 2, and 3 or more halvings
+  - `resizeToSize` (`:80-83`): `convertRGB8` and `STBIR.resize` when the decoded size differs from the target
+  - `exifOrientation` (`:85-107`): the orientation value of IFD0, 1 when absent or malformed
+  - `exifTiff` (`:109-117`): the TIFF data of the first APP1 `Exif` segment before the first SOS
+  - `orientImage` (`:119-131`): the 8 transforms with `generateImage`, applied with `dynamicPixelMap`
+  - `ImageOutput` (`:133`): `ImageBytes`, `ImageDataUri`
+  - `resizeImage` (`:135-136`)
+  - `resizeImageDataUri` (`:138-139`)
+  - `fitImage` (`:141-160`): the size bound; the largest size from `displaySize`; the output, the quality and bpp0 by `ImageOutput`; `fitSize`; the quality bisection at the largest size below `minFill`; JPEG with `encodeRGB`
+  - `fitSize` (`:162-200`): the size search of D4
+  - `minFill = 0.97` (`:202-203`)
+  - `imageDoesNotFit` (`:205-206`)
+  - `bisect` (`:208-218`)
+  - `maxImageSide = 16384` (`:220-221`)
+  - `maxDisplaySide = 4320` (`:223-224`)
+  - `maxJpegPixels = 2 ^ 28` (`:226-227`)
+  - `maxJpegMemoryMB` (`:229-234`), 512 or 1024 by `mobileBuild`
+  - `hasSideAbove` (`:236-237`)
+  - `hasSize` (`:239-240`)
+  - `scaleRGB8` (`:242-247`)
+  - `scaleRGBA8` (`:249-254`)
+  - `catmullRom` (`:256-259`): `STBIR.resize` with Catmull-Rom and the given flags
+  - `premultiply` (`:261-264`)
+  - `unpremultiply` (`:266-271`)
+  - `sharpen` (`:273-278`)
+  - `blurLines` (`:280-297`)
+  - `sharpenOffsets` (`:299-302`)
+  - `sharpenWeights` (`:304-307`)
+  - `sharpenRadius` (`:309-310`)
+  - `sharpenAmount = 0.5` (`:312-313`)
+  - `sharpenSigma = 0.6` (`:315-316`)
+  - `scaledSide` (`:318-319`)
+  - `toDataUri` (`:321-327`), with the approved comment at `:325`
 - `Mobile/File.hs`:
-  - exported at `:13-14`:
-    - `cChatResizeImageUri` (`:147-148`)
-    - `cChatResizeImage` (`:150-157`): the format by `compare png 0`, `imageFormat` for `LT`
-  - `cResizeImage` (`:159-163`):
-    - `getByteString`
-    - `decodeResizable`, in place of `decodeImage` (`:162`)
+  - exported at `:13-18`:
+    - `cChatResizeImageUri` (`:152-153`)
+    - `cChatResizeImage` (`:155-156`)
+    - `cChatResizeImageFileUri` (`:158-159`)
+    - `cChatResizeImageFile` (`:161-162`)
+    - `cChatResizeImageFdUri` (`:164-165`)
+    - `cChatResizeImageFd` (`:167-168`)
+  - `readFilePath` (`:170-171`)
+  - `readFd` (`:173-174`)
+  - `cResizeImageUri` (`:176-177`)
+  - `cResizeImageData` (`:179-186`): the format by `compare png 0`, `imageFormat` for `LT`
+  - `cResizeImage` (`:188-191`):
+    - the read action
+    - `decodeResizable`, in place of `decodeImage`
     - `runCatchExceptT`
     - `newCStringFromLazyBS`
-- `Mobile.hs:167, 169`: `foreign export ccall` of both functions.
+- `Mobile.hs:167-177`: `foreign export ccall` of the six functions.
 - `Library/Commands.hs`:
-  - `maxImagePreviewSize = 14000` (`:175-176`)
-  - `imagePreview :: CryptoFile -> IO ImageData` (`:228-234`): `decodeResizable`, in place of `decodeImage` (`:233`)
-  - `SendImage` (`:3557`): the preview from `imagePreview`
+  - `maxImagePreviewSize = 14000` (`:176-177`)
+  - `imagePreview :: CryptoFile -> IO ImageData` (`:229-235`): `decodeResizable`, in place of `decodeImage` (`:234`)
+  - `SendImage` (`:3553`): the preview from `imagePreview` (`:3560`)
 - `simplex-chat.cabal`:
-  - library: `if flag(swift) || os(android)`, `cpp-options: -DmobileBuild` (`:411-412`)
+  - library: `if flag(swift) || os(android)`, `cpp-options: -DmobileBuild` (`:414-415`)
   - module `Simplex.Chat.Image` (`:52`)
-  - library dependencies (`:385-387`):
-    - `JuicyPixels`
-    - `JuicyPixels-jpeg-turbo`
-    - `JuicyPixels-stbir`
+  - library dependencies:
+    - `JuicyPixels` (`:387`)
+    - `JuicyPixels-jpeg-turbo` (`:388`)
+    - `JuicyPixels-stbir` (`:389`)
+    - `vector` (`:408`)
   - test suite:
-    - module `ImageTests` (`:722`)
-    - dependencies `JuicyPixels` and `JuicyPixels-jpeg-turbo` (`:814-815`)
-- `libsimplex.dll.def:30-31`, `flake.nix:487-488`: the export names.
+    - module `ImageTests` (`:725`)
+    - dependencies `JuicyPixels` and `JuicyPixels-jpeg-turbo` (`:817-818`)
+- `libsimplex.dll.def:30-33`, `flake.nix:487-490`: the export names.
 
 iOS:
 - `apps/ios/SimpleXChat/ImageUtils.swift`:
-  - `resizeImageToDataSize` (`:88-94`)
-  - `resizeImageToStrSizeSync` (`:96-102`)
-  - `resizeImageWithCore` (`:108-114`), private
-  - `saveWallpaperFile(image:)` (`:233`): `guard let` in place of a force-unwrap
+  - `saveImageFile` (`:75-80`)
+  - `resizeImageFileToStrSize` (`:82-86`)
+  - `resizeImageToDataSize` (`:101-107`)
+  - `resizeImageToStrSizeSync` (`:109-115`)
+  - `resizeImageWithCore` (`:121-127`), private
+  - `saveWallpaperFile(image:)` (`:246`): `guard let` in place of a force-unwrap
   - `compressImageStr` and `reduceSize` removed
-- `apps/ios/SimpleXChat/SimpleX.h:36-40`: both declarations, with the approved comments.
+- `apps/ios/SimpleXChat/SimpleX.h:36-44`: the four declarations; the two bytes functions with the approved comments.
+- `apps/ios/Shared/Views/Chat/ComposeMessage/ComposeView.swift`:
+  - `UploadContent.imageFile` (`:302`)
+  - `imagePreview()` (`:315-320`)
+  - `loadImageFileFromURL` (`:322-334`)
+  - previews (`:675`, `:1278`)
+  - sending (`:1598-1599`)
+- `apps/ios/Shared/Views/Helpers/ImagePicker.swift`:
+  - `loadImageData` (`:79-90`)
+  - `imageFileType` (`:92-95`)
 - `apps/ios/spec/architecture.md`:
-  - `:101-103`: FFI list
-  - `:61, 67, 69, 334`: header range `SimpleX.h#L1-L55`
+  - `:101-105`: FFI list
+  - `:61, 67, 69, 336`: header range `SimpleX.h#L1-L61`
 
 Android and desktop, `apps/multiplatform/common/src/`:
 - `commonMain/.../platform/Images.kt`:
-  - `resizeImageToStrSize` (`:34-38`)
-  - `resizeImageToDataSize` (`:40-46`)
-  - the `expect` declarations of both and of `compressImageStr` removed
-- `androidMain/.../platform/Images.android.kt`, `desktopMain/.../platform/Images.desktop.kt`: the three `actual` functions removed.
+  - `expect` of `resizeImageFileUri` and `resizeImageFileData` (`:34-35`)
+  - `resizeImageFileToStrSize` (`:37-38`)
+  - `resizeImageFileToDataSize` (`:40-41`)
+  - `resizeImageToStrSize` (`:43-47`)
+  - `resizeImageToDataSize` (`:49-55`)
+  - the `expect` declarations of `resizeImageToStrSize`, `resizeImageToDataSize` and `compressImageStr` removed
+- `androidMain/.../platform/Images.android.kt`:
+  - `resizeImageFileUri` (`:112-113`)
+  - `resizeImageFileData` (`:115-116`)
+  - `imageFileDescriptor` (`:118-124`)
+- `desktopMain/.../platform/Images.desktop.kt`:
+  - `resizeImageFileUri` (`:176`)
+  - `resizeImageFileData` (`:178`)
+- In both platform files, the three `actual` functions of master are removed.
 - `commonMain/.../platform/Core.kt`:
   - `chatResizeImageUri` (`:42`)
   - `chatResizeImage` (`:43`)
-  - `ByteArray.toDirectBuffer` (`:52-57`)
+  - `chatResizeImageFileUri`, `chatResizeImageFile`, `chatResizeImageFdUri`, `chatResizeImageFd` (`:44-47`)
+  - `ByteArray.toDirectBuffer` (`:56-61`)
 - `commonMain/.../model/CryptoFile.kt:25`: `toDirectBuffer` is used by `writeCryptoFile`.
-- `commonMain/cpp/android/simplex-api.c`: declarations (`:86-87`), JNI functions (`:280`, `:287`) with `decode_and_free`.
-- `commonMain/cpp/desktop/simplex-api.c`: declarations (`:49-50`), JNI functions (`:281`, `:288`) with `decode_to_utf8_string`.
+- `commonMain/.../views/helpers/Utils.kt`:
+  - `saveImage(uri)` (`:174-200`)
+  - `desktopSaveImageInTmp` (`:202-216`)
+  - `resizeImageFromUri` (`:218-227`)
+- `commonMain/.../views/chat/ComposeView.kt`: `processPickedMedia` (`:360`), the preview from the file (`:372`).
+- `androidMain/.../views/chat/ComposeView.android.kt`: the camera preview (`:23-31`).
+- `commonMain/cpp/android/simplex-api.c`: declarations (`:86-89`), JNI functions (`:282`, `:289`, `:296`, `:301`) with `decode_and_free`.
+- `commonMain/cpp/desktop/simplex-api.c`: declarations (`:49-52`), JNI functions (`:283`, `:290`, `:297`, `:305`) with `decode_to_utf8_string`.
 - `apps/multiplatform/spec/architecture.md`:
-  - `:142-151`: JNI table, with a `chatParseBadgeCode` row, rows renumbered and the total of 21
-  - `:344`: `base64ToBitmap` line
+  - `:142-155`: JNI table, with a `chatParseBadgeCode` row, the rows of the file and descriptor functions, and the total of 25
+  - `:348`: `base64ToBitmap` line
 - `apps/multiplatform/spec/services/files.md:59, 81-84, 208`: `CryptoFile.kt` lines.
+- `apps/multiplatform/spec/client/compose.md:318`: the image previews of `processPickedMedia`.
 
 Node, `packages/simplex-chat-nodejs/`:
 - `cpp/simplex.h:38-42`: function types, with the approved comments.
@@ -546,24 +603,25 @@ License notices, `docs/dependencies/`:
     - `JuicyPixels` 3.3.8, Hackage
     - `JuicyPixels-jpeg-turbo` 0.1.0.0, hs-jpeg-turbo fork at `820e05d`
     - `JuicyPixels-stbir` 0.1.0.0, JuicyPixels-stbir fork at `aed4e06`
-  - indirect dependency (`:143`): `jpeg-turbo` 0.1.0.0, hs-jpeg-turbo fork at `820e05d`, `BSD-3-Clause AND IJG AND Zlib`
+  - direct dependency (`:54`): `vector` 0.13.1.0, moved from the indirect dependencies
+  - indirect dependency (`:144`): `jpeg-turbo` 0.1.0.0, hs-jpeg-turbo fork at `820e05d`, `BSD-3-Clause AND IJG AND Zlib`
   - the four added to the dependents of:
     - `bytestring` (`:11`)
     - `containers` (`:14`)
     - `mtl` (`:30`)
-    - `binary` (`:68`)
-    - `deepseq` (`:92`)
-    - `data-default-class` (`:96`)
-    - `primitive` (`:136`)
-    - `transformers` (`:165`)
-    - `vector` (`:174`)
+    - `vector` (`:54`)
+    - `binary` (`:69`)
+    - `deepseq` (`:93`)
+    - `data-default-class` (`:97`)
+    - `primitive` (`:137`)
+    - `transformers` (`:166`)
     - `zlib` (`:179`)
 - `licences/haskell/<package>-<version>/LICENSE`: the `LICENSE` of each of the four packages, from Hackage and from the pinned fork commits; the JuicyPixels-stbir copy with the line `Copyright 2026 SimpleX Chat Ltd`.
 
 ## Tests
 
 `tests/ImageTests.hs`, group "Image resize" (`tests/Test.hs:98`):
-- Same aspect ratio, in every comparison below: `|w·h' − h·w'| ≤ w' + h'` (`:229-230`).
+- Same aspect ratio, in every comparison below: `|w·h' − h·w'| ≤ w' + h'` (`:283-284`).
 - data URI (`:30-33`), limit 14000; each result is decoded and compared by aspect ratio with the input:
   - `test.jpg` (1280×720): `data:image/jpg;base64,`
   - `logo-large-rgba.png` (1630×466, transparent pixels): `data:image/png;base64,`
@@ -584,13 +642,13 @@ License notices, `docs/dependencies/`:
   | 8×8640 | 4×4320 |
   | 4320×4 | 4320×4 |
 
-- fill: `test.jpg` and `preview-issue1.png`, the data URI with limit 14000 and the JPEG data with limit 20000: 97–100% of the limit
-- quality at the image size: a 64×48 gradient with a limit midway between its quality-65 and quality-95 encodings: at most the limit, larger than the quality-65 encoding, 64×48
-- image preview (`:41-45`):
+- fill (`:41`, `:127-136`): `test.jpg` and `preview-issue1.png`, the data URI with limit 14000 and the JPEG data with limit 20000: 97–100% of the limit
+- quality at the image size (`:42`, `:138-146`): a 64×48 gradient with a limit midway between its quality-65 and quality-95 encodings: at most the limit, larger than the quality-65 encoding, 64×48
+- image preview (`:43-47`):
   - `test.jpg`: JPEG data URI of at most 14000 characters
   - an encrypted copy of `test.jpg`: the same
   - `test.pdf`: `fixedImagePreview`
-- JPEG display size (`:47`, `:134-148`), blank W×16 JPEGs from `encodeRGB` and the same with the sides swapped, `decodeResizable`, then the image data with limit 261120, decoded:
+- JPEG display size (`:49`, `:161-175`), blank W×16 JPEGs from `encodeRGB` and the same with the sides swapped, `decodeResizable`, then the image data with limit 261120, decoded:
   - 4320, 4321, 8640, 8641: the size of the full-decode path, JuicyPixels `decodeImage` then `resizeImage`
   - expected sizes:
 
@@ -606,7 +664,7 @@ License notices, `docs/dependencies/`:
     | 34561 | 4320×2 |
     | 65500 | 4094×1 |
 
-- JPEG colour spaces (`:48`, `:150-158`), 64×48, `decodeResizable`:
+- JPEG colour spaces (`:50`, `:177-185`), 64×48, `decodeResizable`:
 
   | input | result |
   |---|---|
@@ -615,31 +673,31 @@ License notices, `docs/dependencies/`:
   | grayscale, JuicyPixels `Pixel8` encoding | `ImageY8` |
   | YCCK, JuicyPixels `PixelCMYK8` encoding | `ImageCMYK8` |
 
-- JPEG refusals (`:49`, `:160-175`), a baseline 64×48 JPEG changed as below, `decodeResizable`, `Left`:
+- JPEG refusals (`:51`, `:187-202`), a baseline 64×48 JPEG changed as below, `decodeResizable`, `Left`:
   - precision 12 written into the SOF
   - SOF marker `FF C3` (lossless)
   - a side of 65501 written into the SOF
   - 16385×16384 written into the SOF
   - the input shortened by one byte
   - a byte inserted before the SOF marker
-- EXIF orientation (`:50`, `:177-221`): a 64×32 JPEG with four solid quadrants and an APP1 Exif segment, little-endian for odd and big-endian for even values; `decodeResizable`:
+- EXIF orientation (`:52`, `:204-248`): a 64×32 JPEG with four solid quadrants and an APP1 Exif segment, little-endian for odd and big-endian for even values; `decodeResizable`:
   - values 1–8: the sides swapped for 5–8; the quadrant colours placed by the transform; the resized JPEG without `Exif`
   - an IFD0 offset beyond the segment: as value 1
-- scaling:
-  - research code: `scaleRGB8` of `preview-issue1.png` to 400×200 equals `preview-issue1-400x200-sharpened.png` pixel for pixel; the fixture is the output of the research code (`pvsf`, resize `catmullrom/g/0.5@0.6/single`) for the same decoded pixels
-  - the same size: `scaleRGB8` and `scaleRGBA8` of 64×48 images to 64×48 return the input samples
-  - transparency: a 64×64 opaque red disc on transparent pixels alternately green and blue, `scaleRGBA8` to 40×40: every pixel with alpha above 0 is red; some pixels have alpha below 255
+- scaling (`:53-56`):
+  - research code (`:250-256`): `scaleRGB8` of `preview-issue1.png` to 400×200 equals `preview-issue1-400x200-sharpened.png` pixel for pixel; the fixture is the output of the research code (`pvsf`, resize `catmullrom/g/0.5@0.6/single`) for the same decoded pixels
+  - the same size (`:258-263`): `scaleRGB8` and `scaleRGBA8` of 64×48 images to 64×48 return the input samples
+  - transparency (`:265-275`): a 64×64 opaque red disc on transparent pixels alternately green and blue, `scaleRGBA8` to 40×40: every pixel with alpha above 0 is red; some pixels have alpha below 255
 
-`tests/MobileTests.hs`, "Images" (`:95-99`), with buffers from `mallocBytes`:
-- `cChatResizeImageUri` on `test.jpg`, limit 14000: `data:image/jpg;base64,`, at most 14000 characters; on `"not an image"`: `""`.
-- `cChatResizeImage` on `test.jpg`, limit 100000: base64 decoded to at most 100000 bytes, starting `FF D8` for `png = 0` and with the PNG signature for `png = 1`.
-- `cChatResizeImage` with `png = -1`, limit 100000 (`:376-384`): `FF D8` for `test.jpg`; the PNG signature for `logo-large-rgba.png`.
-- `cChatResizeImage` with `png = -1`, limit 261120, on a blank 20000×16 JPEG from `encodeRGB` (`:386-390`): `FF D8`.
-- file path:
+`tests/MobileTests.hs`, "Images" (`:98-104`), with buffers from `mallocBytes`:
+- `cChatResizeImageUri` on `test.jpg`, limit 14000 (`:362-369`): `data:image/jpg;base64,`, at most 14000 characters; on `"not an image"`: `""`.
+- `cChatResizeImage` on `test.jpg`, limit 100000 (`:371-379`): base64 decoded to at most 100000 bytes, starting `FF D8` for `png = 0` and with the PNG signature for `png = 1`.
+- `cChatResizeImage` with `png = -1`, limit 100000 (`:381-389`): `FF D8` for `test.jpg`; the PNG signature for `logo-large-rgba.png`.
+- `cChatResizeImage` with `png = -1`, limit 261120, on a blank 20000×16 JPEG from `encodeRGB` (`:391-395`): `FF D8`.
+- file path (`:397-404`):
   - `cChatResizeImageFileUri` on `test.jpg`, limit 14000: `data:image/jpg;base64,`, at most 14000 characters
   - `cChatResizeImageFile` with `png = -1`, limit 100000, on `logo-large-rgba.png`: the PNG signature
   - a missing file: `""`
-- file descriptor, opened with `GHC.IO.FD.openFile`; closed afterwards: `fdStat` fails or names another file
+- file descriptor (`:406-422`), opened with `GHC.IO.FD.openFile`; closed afterwards: `fdStat` fails or names another file
   - `cChatResizeImageFdUri` on `test.jpg`, limit 14000: `data:image/jpg;base64,`, at most 14000 characters; closed afterwards
   - `cChatResizeImageFd` on `test.pdf`: `""`; closed afterwards
   - descriptors 1000000 and −1, not open: `""`
@@ -661,7 +719,7 @@ License notices, `docs/dependencies/`:
 - `maxSize` 2^31: `Expected 32-bit integer maxSize`
 - With a libsimplex lacking the exports, the export error is expected in each test (`:155-158`).
 
-`packages/simplex-chat-nodejs/tests/loader.test.ts:35`: `chat_resize_image` and `chat_resize_image_uri` are added to the add-on exports called before `load`; from each, `libsimplex is not loaded, call core.loadLibrary(backend) first` is expected (`RequireLoaded`, `:42`).
+`packages/simplex-chat-nodejs/tests/loader.test.ts:39-42`: `chat_resize_image` and `chat_resize_image_uri` are added to the add-on exports called before `load`; from each, `libsimplex is not loaded, call core.loadLibrary(backend) first` is expected (`RequireLoaded`, `cpp/simplex.cc:135`).
 
 `packages/simplex-chat-python/tests/test_core_resize_image.py`, with a fake library:
 - `chat_resize_image_uri`: the export is called with `(data, len(data), max_size)`; the data URI is returned (`:52`)
