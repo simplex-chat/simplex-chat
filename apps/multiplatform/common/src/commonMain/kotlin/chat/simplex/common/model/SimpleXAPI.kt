@@ -74,6 +74,8 @@ val CREATE_MEMBER_CONTACT_VERSION = 2
 // support group knocking (MsgScope)
 val GROUP_KNOCKING_VERSION = 15
 
+val CALL_RECONNECT_VERSION = 22
+
 enum class CallOnLockScreen {
   DISABLE,
   SHOW,
@@ -277,6 +279,10 @@ class AppPreferences {
 
   val oneHandUI = mkBoolPreference(SHARED_PREFS_ONE_HAND_UI, true)
   val chatBottomBar = mkBoolPreference(SHARED_PREFS_CHAT_BOTTOM_BAR, true)
+  val chatLayout = SharedPreference(
+    get = fun() = ChatLayoutMode.fromText(settings.getString(SHARED_PREFS_CHAT_LAYOUT, ChatLayoutMode.Classic.text)),
+    set = fun(value: ChatLayoutMode) = settings.putString(SHARED_PREFS_CHAT_LAYOUT, value.text)
+  )
 
   val hintPreferences: List<HintPref> = listOf(
     hintPref(laNoticeShown, false),
@@ -499,6 +505,7 @@ class AppPreferences {
     private const val SHARED_PREFS_CONFIRM_DB_UPGRADES = "ConfirmDBUpgrades"
     private const val SHARED_PREFS_ONE_HAND_UI = "OneHandUI"
     private const val SHARED_PREFS_CHAT_BOTTOM_BAR = "ChatBottomBar"
+    private const val SHARED_PREFS_CHAT_LAYOUT = "ChatLayout"
     private const val SHARED_PREFS_SELF_DESTRUCT = "LocalAuthenticationSelfDestruct"
     private const val SHARED_PREFS_SELF_DESTRUCT_DISPLAY_NAME = "LocalAuthenticationSelfDestructDisplayName"
     private const val SHARED_PREFS_PQ_EXPERIMENTAL_ENABLED = "PQExperimentalEnabled" // no longer used
@@ -3705,7 +3712,8 @@ object ChatController {
       media = r.callType.media,
       aesKey = r.sharedKey,
       iceServers = iceServers,
-      relay = useRelay
+      relay = useRelay,
+      canReconnect = r.contact.callReconnectSupported
     ))
   }
 
@@ -7820,7 +7828,8 @@ data class UserContactLinkRec(
 data class AddressSettings(
   val businessAddress: Boolean,
   val autoAccept: AutoAccept?,
-  val autoReply: MsgContent?
+  val autoReply: MsgContent?,
+  val chatLayout: ChatLayoutMode? = null
 )
 
 @Serializable
@@ -8776,7 +8785,8 @@ data class AppSettings(
   var uiCurrentThemeIds: Map<String, String>? = null,
   var uiThemes: List<ThemeOverrides>? = null,
   var oneHandUI: Boolean? = null,
-  var chatBottomBar: Boolean? = null
+  var chatBottomBar: Boolean? = null,
+  var uiChatLayout: ChatLayoutMode? = null
 ) {
   fun prepareForExport(): AppSettings {
     val empty = AppSettings()
@@ -8814,6 +8824,7 @@ data class AppSettings(
     if (uiThemes != def.uiThemes) { empty.uiThemes = uiThemes }
     if (oneHandUI != def.oneHandUI) { empty.oneHandUI = oneHandUI }
     if (chatBottomBar != def.chatBottomBar) { empty.chatBottomBar = chatBottomBar }
+    if (uiChatLayout != def.uiChatLayout) { empty.uiChatLayout = uiChatLayout }
     return empty
   }
 
@@ -8862,6 +8873,7 @@ data class AppSettings(
     uiThemes?.let { def.themeOverrides.set(it.skipDuplicates()) }
     oneHandUI?.let { def.oneHandUI.set(it) }
     chatBottomBar?.let { if (appPlatform.isAndroid) def.chatBottomBar.set(it) else def.chatBottomBar.set(true) }
+    uiChatLayout?.let { def.chatLayout.set(it) }
   }
 
   companion object {
@@ -8900,6 +8912,7 @@ data class AppSettings(
         uiThemes = null,
         oneHandUI = true,
         chatBottomBar = true,
+        uiChatLayout = ChatLayoutMode.Classic,
       )
 
     val current: AppSettings
@@ -8938,7 +8951,8 @@ data class AppSettings(
           uiCurrentThemeIds = def.currentThemeIds.get(),
           uiThemes = def.themeOverrides.get(),
           oneHandUI = def.oneHandUI.get(),
-          chatBottomBar = def.chatBottomBar.get()
+          chatBottomBar = def.chatBottomBar.get(),
+          uiChatLayout = def.chatLayout.get()
         )
     }
   }

@@ -19,6 +19,8 @@ public let REPORTS_VERSION = 12
 // support group knocking (MsgScope)
 public let GROUP_KNOCKING_VERSION = 15
 
+public let CALL_RECONNECT_VERSION = 22
+
 public let contentModerationPostLink = URL(string: "https://simplex.chat/blog/20250114-simplex-network-large-groups-privacy-preserving-content-moderation.html#preventing-server-abuse-without-compromising-e2e-encryption")!
 
 public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
@@ -256,6 +258,41 @@ extension ChatPeerType: Codable {
     public func encode(to encoder: Encoder) throws {
         var c = encoder.singleValueContainer()
         try c.encode(text)
+    }
+}
+
+public enum ChatLayout: Hashable {
+    case classic
+    case terminal
+    case unknown(String)
+}
+
+extension ChatLayout: RawRepresentable {
+    public init(rawValue: String) {
+        switch rawValue {
+        case "classic": self = .classic
+        case "terminal": self = .terminal
+        default: self = .unknown(rawValue)
+        }
+    }
+
+    public var rawValue: String {
+        switch self {
+        case .classic: "classic"
+        case .terminal: "terminal"
+        case let .unknown(s): s
+        }
+    }
+}
+
+extension ChatLayout: Codable {
+    public init(from decoder: Decoder) throws {
+        self.init(rawValue: try decoder.singleValueContainer().decode(String.self))
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
     }
 }
 
@@ -2578,6 +2615,7 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     public var sndReady: Bool { get { ready || activeConn?.connStatus == .sndReady } }
     public var active: Bool { get { contactStatus == .active } }
     public var nextSendGrpInv: Bool { get { contactGroupMemberId != nil && !contactGrpInvSent } }
+    public var callReconnectSupported: Bool { (activeConn?.peerChatVRange.maxVersion ?? 0) >= CALL_RECONNECT_VERSION }
     public var nextConnectPrepared: Bool { active && preparedContact != nil && (activeConn == nil || activeConn?.connStatus == .prepared) }
     public var profileChangeProhibited: Bool { activeConn != nil }
     public var nextAcceptContactRequest: Bool {
@@ -3142,6 +3180,7 @@ public struct GroupProfile: Codable, NamedChat, Hashable {
     public var publicGroup: PublicGroupProfile?
     public var groupPreferences: GroupPreferences?
     public var memberAdmission: GroupMemberAdmission?
+    public var chatLayout: ChatLayout?
     public var localAlias: String { "" }
 
     public var memberAdmission_: GroupMemberAdmission {
@@ -3189,6 +3228,7 @@ public struct ContactShortLinkData: Codable, Hashable {
     public var profile: Profile
     public var message: MsgContent?
     public var business: Bool
+    public var chatLayout: ChatLayout?
     // set by the core when building the connection plan: the link profile's badge, verified and crypto-free
     public var localBadge: LocalBadge?
 }

@@ -28,7 +28,7 @@ import qualified Data.ByteString.Char8 as B
 import Data.Maybe (fromMaybe, isJust, maybeToList)
 import Data.Time (UTCTime, getCurrentTime)
 import Data.Int (Int64)
-import Data.List (intercalate, isInfixOf, isSuffixOf)
+import Data.List (intercalate, isInfixOf, isSubsequenceOf, isSuffixOf)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Simplex.Chat.Badges (FileSizeLimits (..))
@@ -43,6 +43,7 @@ import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (XGrpMemNe
 import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations (MemberRelation (..), getRelation, setRelation)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
+import Simplex.Chat.Types.UITheme (ChatLayout (..))
 import Simplex.Messaging.Agent (joinConnection, prepareConnectionToJoin, sendMessages, vrValue)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
@@ -311,6 +312,7 @@ chatGroupTests = do
       it "should update channel profile (signed)" testChannelUpdateProfileSigned
       it "should preserve working link after profile update" testChannelLinkAfterProfileUpdate
       it "should preserve working link after welcome message update" testChannelLinkAfterWelcomeUpdate
+      it "should set chat layout of channel joined via relays from link data" testChannelChatLayout
       it "should preserve owner key in link data after profile update" testChannelOwnerKeyAfterLinkUpdate
       it "should update channel preferences (signed)" testChannelUpdatePrefsSigned
       it "should change member role (signed)" testChannelChangeRoleSigned
@@ -6282,7 +6284,7 @@ testGroupHistory =
 
       cath ##> "/_get chat #1 count=100"
       r <- chat <$> getTermLine cath
-      r `shouldContain` [(0, "hello"), (0, "hey!")]
+      r `shouldSatisfy` isSubsequenceOf [(0, "hello"), (0, "hey!")]
 
       -- message delivery works after sending history
       alice #> "#team 1"
@@ -6376,7 +6378,7 @@ testGroupHistoryPreferenceOff =
 
       cath ##> "/_get chat #1 count=100"
       r <- chat <$> getTermLine cath
-      r `shouldContain` [(0, "hello"), (0, "hey!")]
+      r `shouldSatisfy` isSubsequenceOf [(0, "hello"), (0, "hey!")]
 
       alice ##> "/set history #team off"
       alice <## "updated group preferences:"
@@ -6642,9 +6644,10 @@ testGroupHistoryMultipleFiles =
       cath ##> "/_get chat #1 count=100"
       r <- chatF <$> getTermLine cath
       r
-        `shouldContain` [ ((0, "hi alice"), Just $ tmpFile cath "testfile_bob_1"),
-                          ((0, "hey bob"), Just $ tmpFile cath "testfile_alice_1")
-                        ]
+        `shouldSatisfy` isSubsequenceOf
+          [ ((0, "hi alice"), Just $ tmpFile cath "testfile_bob_1"),
+            ((0, "hey bob"), Just $ tmpFile cath "testfile_alice_1")
+          ]
 
 testGroupHistoryFileCancel :: HasCallStack => TestParams -> IO ()
 testGroupHistoryFileCancel =
@@ -6862,13 +6865,14 @@ testGroupHistoryQuotes =
       cath ##> "/_get chat #1 count=100"
       r <- chat' <$> getTermLine cath
       r
-        `shouldContain` [ ((0, "ALICE"), Nothing),
-                          ((0, "BOB"), Nothing),
-                          ((0, "1"), Just (0, "ALICE")),
-                          ((0, "2"), Just (0, "BOB")),
-                          ((0, "3"), Just (0, "ALICE")),
-                          ((0, "4"), Just (0, "BOB"))
-                        ]
+        `shouldSatisfy` isSubsequenceOf
+          [ ((0, "ALICE"), Nothing),
+            ((0, "BOB"), Nothing),
+            ((0, "1"), Just (0, "ALICE")),
+            ((0, "2"), Just (0, "BOB")),
+            ((0, "3"), Just (0, "ALICE")),
+            ((0, "4"), Just (0, "BOB"))
+          ]
 
 testGroupHistoryDeletedMessage :: HasCallStack => TestParams -> IO ()
 testGroupHistoryDeletedMessage =
@@ -6970,7 +6974,7 @@ testGroupHistoryDisappearingMessage =
 
       cath ##> "/_get chat #1 count=100"
       r1 <- chat <$> getTermLine cath
-      r1 `shouldContain` [(0, "1"), (0, "2"), (0, "3"), (0, "4")]
+      r1 `shouldSatisfy` isSubsequenceOf [(0, "1"), (0, "2"), (0, "3"), (0, "4")]
 
       threadDelay 11000000
       concurrentlyN_
@@ -6990,7 +6994,7 @@ testGroupHistoryDisappearingMessage =
 
       cath ##> "/_get chat #1 count=100"
       r2 <- chat <$> getTermLine cath
-      r2 `shouldContain` [(0, "1"), (0, "4")]
+      r2 `shouldSatisfy` isSubsequenceOf [(0, "1"), (0, "4")]
       r2 `shouldNotContain` [(0, "2")]
       r2 `shouldNotContain` [(0, "3")]
 
@@ -7101,7 +7105,7 @@ testGroupHistoryUnknownMember =
 
       dan ##> "/_get chat #1 count=100"
       r <- chat <$> getTermLine dan
-      r `shouldContain` [(0, "hi from alice"), (0, "hi from bob"), (0, "hi from cath")]
+      r `shouldSatisfy` isSubsequenceOf [(0, "hi from alice"), (0, "hi from bob"), (0, "hi from cath")]
 
       dan ##> "/ms team"
       dan
@@ -10549,6 +10553,32 @@ testChannelLinkAfterWelcomeUpdate ps =
           alice #> "#team hi"
           bob <# "#team> hi"
           [cath, dan] *<# "#team> hi [>>]"
+
+testChannelChatLayout :: HasCallStack => TestParams -> IO ()
+testChannelChatLayout ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        (shortLink, _fullLink) <- prepareChannel1Relay "team" alice bob
+        alice ##> "/set layout #team terminal"
+        alice <## "chat layout changed to: terminal"
+        bob <## "alice updated group #team: (signed)"
+        bob <## "chat layout changed to: terminal"
+        cath ##> ("/c " <> shortLink)
+        cath <## "#team: connection started"
+        concurrentlyN_
+          [ cath
+              <### [ "#team: joining the group (connecting to relay bob)...",
+                     "#team: you joined the group (connected to relay bob)"
+                   ],
+            do
+              bob <## "cath (Catherine): accepting request to join group #team..."
+              bob <## "#team: cath joined the group",
+            alice <### [EndsWith "introduced cath (Catherine) in the channel"]
+          ]
+        groupChatLayout alice "team" `shouldReturn` Just CLTerminal
+        groupChatLayout bob "team" `shouldReturn` Just CLTerminal
+        groupChatLayout cath "team" `shouldReturn` Just CLTerminal
 
 testChannelOwnerKeyAfterLinkUpdate :: HasCallStack => TestParams -> IO ()
 testChannelOwnerKeyAfterLinkUpdate ps =

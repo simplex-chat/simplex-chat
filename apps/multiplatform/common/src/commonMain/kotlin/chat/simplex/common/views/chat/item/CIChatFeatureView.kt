@@ -8,11 +8,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.getChatItemIndexOrNull
 import chat.simplex.common.platform.onRightClick
+import chat.simplex.common.views.helpers.toDp
 
 @Composable
 fun CIChatFeatureView(
@@ -35,9 +37,11 @@ fun CIChatFeatureView(
       .onRightClick { showMenu.value = true }
   ) {
     if (!revealed.value && merged != null) {
+      val terminal = LocalTerminalLayout.current
       Row(
-        Modifier.padding(horizontal = 6.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+        Modifier.padding(chatEventPadding(vertical = 8.dp)).then(if (terminal) Modifier.height(chatEventTextStyle().lineHeight.toDp()) else Modifier),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = if (terminal) Alignment.CenterVertically else Alignment.Top
       ) {
         merged.forEach {
           FeatureIconView(it)
@@ -102,11 +106,11 @@ private fun featureInfo(ci: ChatItem, chatInfo: ChatInfo): FeatureInfo? =
 
 @Composable
 private fun FeatureIconView(f: FeatureInfo) {
-  val icon = @Composable { Icon(f.icon.icon, null, Modifier.size(20.dp), tint = f.color) }
+  val icon = @Composable { Icon(f.icon.icon, null, Modifier.inlineIcon().size(20.dp), tint = f.color) }
   if (f.param != null) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
       icon()
-      Text(chatEventText(f.param, ""), maxLines = 1)
+      Text(chatEventText(f.param, AnnotatedString("  ")), maxLines = 1, style = chatEventTextStyle())
     }
   } else {
     icon()
@@ -120,17 +124,20 @@ private fun FullFeatureView(
   iconColor: Color,
   icon: Painter? = null
 ) {
-  Row(
-    Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
-    verticalAlignment = Alignment.CenterVertically,
-    horizontalArrangement = Arrangement.spacedBy(4.dp)
-  ) {
-    Icon(icon ?: feature.iconFilled(), feature.text, Modifier.size(20.dp), tint = iconColor)
-    Text(
-      chatEventText(chatItem),
-      Modifier,
-      // this is important. Otherwise, aligning will be bad because annotated string has a Span with size 12.sp
-      fontSize = 12.sp
-    )
+  ChatEventWithMeta(chatItem) { separator, ts ->
+    Row(
+      Modifier.padding(chatEventPadding()),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+      Icon(icon ?: feature.iconFilled(), feature.text, Modifier.inlineIcon().size(20.dp), tint = iconColor)
+      Text(
+        chatEventText(chatItem, ts = separator + ts),
+        Modifier,
+        // this is important. Otherwise, aligning will be bad because annotated string has a Span with size 12.sp
+        fontSize = 12.sp,
+        style = chatEventTextStyle()
+      )
+    }
   }
 }

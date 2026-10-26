@@ -799,7 +799,8 @@ CREATE TABLE test_chat_schema.contacts (
     grp_direct_inv_from_group_id bigint,
     grp_direct_inv_from_group_member_id bigint,
     grp_direct_inv_from_member_conn_id bigint,
-    grp_direct_inv_started_connection smallint DEFAULT 0 NOT NULL
+    grp_direct_inv_started_connection smallint DEFAULT 0 NOT NULL,
+    chat_layout text
 );
 
 
@@ -1096,7 +1097,8 @@ CREATE TABLE test_chat_schema.group_profiles (
     domain_web_page bigint,
     allow_embedding bigint,
     group_domain_proof text,
-    preferences_json text
+    preferences_json text,
+    chat_layout text
 );
 
 
@@ -1731,7 +1733,8 @@ CREATE TABLE test_chat_schema.user_contact_links (
     short_link_contact bytea,
     short_link_data_set smallint DEFAULT 0 NOT NULL,
     short_link_large_data_set smallint DEFAULT 0 NOT NULL,
-    link_priv_sig_key bytea
+    link_priv_sig_key bytea,
+    chat_layout text
 );
 
 

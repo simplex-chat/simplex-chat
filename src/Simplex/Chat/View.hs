@@ -1191,16 +1191,17 @@ simplexDomainLine nameType (Just SimplexDomainClaim {domain, proof}) status = ca
 
 -- TODO [short links] show all settings
 viewAddressSettings :: AddressSettings -> [StyledString]
-viewAddressSettings AddressSettings {businessAddress, autoAccept, autoReply} = case autoAccept of
+viewAddressSettings AddressSettings {businessAddress, autoAccept, chatLayout, autoReply} = case autoAccept of
   Just AutoAccept {acceptIncognito} ->
     ("auto_accept on" <> aaInfo)
-      : maybe [] ((["auto reply:"] <>) . ttyMsgContent) autoReply
+      : viewChatLayout chatLayout
+      <> maybe [] ((["auto reply:"] <>) . ttyMsgContent) autoReply
     where
       aaInfo
         | businessAddress = ", business"
         | acceptIncognito = ", incognito"
         | otherwise = ""
-  _ -> ["auto_accept off"]
+  _ -> "auto_accept off" : viewChatLayout chatLayout
 
 groupLink_ :: Bool -> StyledString -> GroupInfo -> GroupLink -> [StyledString]
 groupLink_ showFullLinks intro g GroupLink {connLinkContact = CCLink cReq shortLink, acceptMemberRole} =
@@ -1896,7 +1897,7 @@ dayTime :: UTCTime -> Text
 dayTime = T.pack . formatTime defaultTimeLocale "%Y-%m-%d %H:%M"
 
 viewContactInfo :: Contact -> Maybe ConnectionStats -> Maybe Profile -> [StyledString]
-viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink, localBadge, contactDomain, contactDomainVerified, description}, activeConn, uiThemes, customData} stats incognitoProfile =
+viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink, localBadge, contactDomain, contactDomainVerified, description}, activeConn, uiThemes, chatLayout, customData} stats incognitoProfile =
   ["contact ID: " <> sShow contactId]
     <> viewContactBadge localBadge
     <> maybe [] ((bold' "description:" :) . map plain . T.lines) description
@@ -1912,6 +1913,7 @@ viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, conta
     <> ["quantum resistant end-to-end encryption" | contactPQEnabled ct == CR.PQEncOn]
     <> maybe [] (\ac -> [viewPeerChatVRange (peerChatVRange ac)]) activeConn
     <> viewUITheme uiThemes
+    <> viewChatLayout chatLayout
     <> viewCustomData customData
 
 viewGroupInfo :: GroupInfo -> [StyledString]
@@ -1933,6 +1935,9 @@ viewGroupInfo gInfo@GroupInfo {groupId, businessChat, groupDomainVerified, group
 
 viewUITheme :: Maybe UIThemeEntityOverrides -> [StyledString]
 viewUITheme = maybe [] (\uiThemes -> ["UI themes: " <> viewJSON uiThemes])
+
+viewChatLayout :: Maybe ChatLayout -> [StyledString]
+viewChatLayout = maybe [] (\chatLayout -> ["chat layout: " <> plain (textEncode chatLayout)])
 
 viewCustomData :: Maybe CustomData -> [StyledString]
 viewCustomData = maybe [] (\(CustomData v) -> ["custom data: " <> viewJSON (J.Object v)])
@@ -2114,10 +2119,10 @@ countactUserPrefText cup = case cup of
 
 viewGroupUpdated :: GroupInfo -> GroupInfo -> Maybe GroupMember -> Maybe MsgSigStatus -> [StyledString]
 viewGroupUpdated
-  GroupInfo {localDisplayName = n, groupProfile = GroupProfile {fullName, shortDescr, description, image, groupPreferences = gps, memberAdmission = ma, publicGroup = pg}}
-  g'@GroupInfo {localDisplayName = n', groupProfile = GroupProfile {fullName = fullName', shortDescr = shortDescr', description = description', image = image', groupPreferences = gps', memberAdmission = ma', publicGroup = pg'}}
+  GroupInfo {localDisplayName = n, groupProfile = GroupProfile {fullName, shortDescr, description, image, groupPreferences = gps, memberAdmission = ma, chatLayout = layout, publicGroup = pg}}
+  g'@GroupInfo {localDisplayName = n', groupProfile = GroupProfile {fullName = fullName', shortDescr = shortDescr', description = description', image = image', groupPreferences = gps', memberAdmission = ma', chatLayout = layout', publicGroup = pg'}}
   m signed = do
-    let update = groupProfileUpdated <> groupPrefsUpdated <> memberAdmissionUpdated <> publicGroupAccessUpdated
+    let update = groupProfileUpdated <> groupPrefsUpdated <> memberAdmissionUpdated <> chatLayoutUpdated <> publicGroupAccessUpdated
     if null update
       then []
       else memberUpdated <> update
@@ -2142,6 +2147,9 @@ viewGroupUpdated
       memberAdmissionUpdated
         | ma == ma' = []
         | otherwise = ["changed member admission rules"]
+      chatLayoutUpdated
+        | layout == layout' = []
+        | otherwise = ["chat layout " <> maybe "removed" (("changed to: " <>) . plain . textEncode) layout']
       publicGroupAccessUpdated
         | access == access' = []
         | otherwise = ["updated public group access:" <> viewAccess access']
@@ -2156,11 +2164,12 @@ viewGroupUpdated
               <> (if allowEmbedding then " embed=on" else "")
 
 viewGroupProfile :: GroupInfo -> [StyledString]
-viewGroupProfile g@GroupInfo {groupProfile = GroupProfile {shortDescr, description, image, groupPreferences = gps}} =
+viewGroupProfile g@GroupInfo {groupProfile = GroupProfile {shortDescr, description, image, groupPreferences = gps, chatLayout}} =
   [ttyFullGroup g]
     <> maybe [] (\sd -> ["description: " <> plain sd]) shortDescr
     <> maybe [] (const ["has profile image"]) image
     <> maybe [] ((bold' "welcome message:" :) . map plain . T.lines) description
+    <> viewChatLayout chatLayout
     <> (bold' "group preferences:" : map viewPref (if useRelays' g then channelGroupFeatures else regularGroupFeatures))
   where
     viewPref (AGF f) = plain $ groupPreferenceText (pref gps)

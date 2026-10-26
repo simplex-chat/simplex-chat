@@ -50,6 +50,7 @@ This file is generated automatically.
 - [ChatInfo](#chatinfo)
 - [ChatItem](#chatitem)
 - [ChatItemDeletion](#chatitemdeletion)
+- [ChatLayout](#chatlayout)
 - [ChatListQuery](#chatlistquery)
 - [ChatPeerType](#chatpeertype)
 - [ChatRef](#chatref)
@@ -273,6 +274,7 @@ This file is generated automatically.
 **Record type**:
 - businessAddress: bool
 - autoAccept: [AutoAccept](#autoaccept)?
+- chatLayout: [ChatLayout](#chatlayout)?
 - autoReply: [MsgContent](#msgcontent)?
 
 
@@ -1592,6 +1594,15 @@ Message deletion result.
 
 ---
 
+## ChatLayout
+
+**Enum type**:
+- "classic"
+- "terminal"
+
+
+---
+
 ## ChatListQuery
 
 **Discriminated union type**:
@@ -1981,6 +1992,7 @@ Error:
 - chatTags: [int64]
 - chatItemTTL: int64?
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
+- chatLayout: [ChatLayout](#chatlayout)?
 - chatDeleted: bool
 - customData: JSONObject?
 
@@ -2023,6 +2035,7 @@ ContactViaAddress:
 - profile: [Profile](#profile)
 - message: [MsgContent](#msgcontent)?
 - business: bool
+- chatLayout: [ChatLayout](#chatlayout)?
 - localBadge: [LocalBadge](#localbadge)?
 
 
@@ -2788,6 +2801,7 @@ UpdateRequired:
 - publicGroup: [PublicGroupProfile](#publicgroupprofile)?
 - groupPreferences: [GroupPreferences](#grouppreferences)?
 - memberAdmission: [GroupMemberAdmission](#groupmemberadmission)?
+- chatLayout: [ChatLayout](#chatlayout)?
 
 
 ---
@@ -4645,6 +4659,7 @@ Handshake:
 **Record type**:
 - light: [UIThemeEntityOverride](#uithemeentityoverride)?
 - dark: [UIThemeEntityOverride](#uithemeentityoverride)?
+- chatLayout: [ChatLayout](#chatlayout)?
 
 
 ---

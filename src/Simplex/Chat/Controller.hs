@@ -598,7 +598,7 @@ data ChatCommand
   | APISetProfileAddress {userId :: UserId, enable :: Bool}
   | SetProfileAddress Bool
   | APISetAddressSettings {userId :: UserId, pqRatchet :: Maybe Bool, settings :: AddressSettings}
-  | SetAddressSettings {pqRatchet :: Maybe Bool, settings :: AddressSettings}
+  | SetAddressSettings {pqRatchet :: Maybe Bool, settings :: AddressSettings, chatLayout :: Maybe (Maybe ChatLayout)}
   | AcceptContact IncognitoEnabled ContactName
   | RejectContact ContactName Bool
   | ForwardMessage {toChatName :: ChatName, fromContactName :: ContactName, forwardedMsg :: Text}
@@ -686,6 +686,7 @@ data ChatCommand
   | SetGroupFeature AGroupFeatureNoRole GroupName GroupFeatureEnabled
   | SetGroupFeatureRole AGroupFeatureRole GroupName GroupFeatureEnabled (Maybe GroupMemberRole)
   | SetGroupMemberAdmissionReview GroupName (Maybe MemberCriteria)
+  | SetGroupChatLayout GroupName (Maybe ChatLayout)
   | SetUserTimedMessages Bool -- UserId (not used in UI)
   | SetContactTimedMessages ContactName (Maybe TimedMessagesEnabled)
   | SetGroupTimedMessages GroupName (Maybe Int)

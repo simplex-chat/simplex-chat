@@ -729,6 +729,7 @@ class _StubApi:
 
     def __init__(self) -> None:
         self.profiles: list[dict] = []
+        self.address_settings: list[dict] = []
         self.user: dict = {"userId": 1, "profile": {"displayName": "x", "fullName": ""}}
         self.address: dict | None = None
 
@@ -758,8 +759,8 @@ class _StubApi:
     async def api_get_user_address(self, _user_id):
         return self.address
 
-    async def api_set_address_settings(self, _user_id, _settings):
-        pass
+    async def api_set_address_settings(self, _user_id, settings):
+        self.address_settings.append(settings)
 
     async def send_chat_cmd(self, _cmd):
         return {"type": "cmdOk"}
@@ -940,6 +941,55 @@ def test_sync_profile_keeps_the_bot_address_in_the_profile(monkeypatch):
 
     asyncio.run(go())
     assert api.profiles[0]["contactLink"] == "https://l"
+
+
+def test_bot_address_settings_include_the_chat_layout(monkeypatch):
+    import simplex_chat.client as client_mod
+
+    api = _StubApi()
+    api.address = {
+        "connLinkContact": {"connFullLink": "https://l"},
+        "addressSettings": {"businessAddress": False, "autoAccept": {"acceptIncognito": False}},
+    }
+    monkeypatch.setattr(client_mod, "ChatApi", _init_returning(api))
+    bot = Bot(
+        profile=BotProfile(display_name="x"),
+        db=SqliteDb(file_prefix="/tmp/test"),
+        update_profile=False,
+        chat_layout="terminal",
+    )
+
+    async def go():
+        async with bot:
+            pass
+
+    asyncio.run(go())
+    assert api.address_settings == [
+        {"businessAddress": False, "autoAccept": {"acceptIncognito": False}, "chatLayout": "terminal"}
+    ]
+
+
+def test_bot_address_settings_remove_the_chat_layout_not_in_bot_settings(monkeypatch):
+    import simplex_chat.client as client_mod
+
+    api = _StubApi()
+    api.address = {
+        "connLinkContact": {"connFullLink": "https://l"},
+        "addressSettings": {"businessAddress": False, "chatLayout": "terminal"},
+    }
+    monkeypatch.setattr(client_mod, "ChatApi", _init_returning(api))
+    bot = Bot(
+        profile=BotProfile(display_name="x"),
+        db=SqliteDb(file_prefix="/tmp/test"),
+        update_profile=False,
+    )
+
+    async def go():
+        async with bot:
+            pass
+
+    asyncio.run(go())
+    assert api.address_settings == [{"businessAddress": False, "autoAccept": {"acceptIncognito": False}}]
 
 
 def test_profile_can_be_replaced(monkeypatch):

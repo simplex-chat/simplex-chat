@@ -139,7 +139,7 @@ Converts `Color` to `#AARRGGBB` hex string with intelligent alpha handling.
 
 ## 3. Default Themes
 
-[`Theme.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/ui/theme/Theme.kt#L26):
+[`Theme.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/ui/theme/Theme.kt#L27):
 
 ```kotlin
 enum class DefaultTheme {
@@ -160,7 +160,7 @@ enum class DefaultTheme {
 
 `SYSTEM` is a virtual theme name that resolves to LIGHT or the configured dark variant at runtime.
 
-`DefaultThemeMode` ([line 46](../../common/src/commonMain/kotlin/chat/simplex/common/ui/theme/Theme.kt#L46)): `LIGHT` or `DARK`, serialized as `"light"` / `"dark"`.
+`DefaultThemeMode` ([line 47](../../common/src/commonMain/kotlin/chat/simplex/common/ui/theme/Theme.kt#L47)): `LIGHT` or `DARK`, serialized as `"light"` / `"dark"`.
 
 ---
 
@@ -168,9 +168,9 @@ enum class DefaultTheme {
 
 <a id="AppColors"></a>
 
-### AppColors (line 53)
+### AppColors (line 54)
 
-[`Theme.kt` L53](../../common/src/commonMain/kotlin/chat/simplex/common/ui/theme/Theme.kt#L53):
+[`Theme.kt` L54](../../common/src/commonMain/kotlin/chat/simplex/common/ui/theme/Theme.kt#L54):
 
 ```kotlin
 @Stable
@@ -188,9 +188,9 @@ Mutable state properties (for efficient recomposition) representing chat-specifi
 
 <a id="AppWallpaper"></a>
 
-### AppWallpaper (line 106)
+### AppWallpaper (line 107)
 
-[`Theme.kt` L106](../../common/src/commonMain/kotlin/chat/simplex/common/ui/theme/Theme.kt#L106):
+[`Theme.kt` L107](../../common/src/commonMain/kotlin/chat/simplex/common/ui/theme/Theme.kt#L107):
 
 ```kotlin
 @Stable
@@ -205,7 +205,7 @@ Represents the active wallpaper state with optional background color, tint overl
 
 <a id="ThemeColor"></a>
 
-### ThemeColor (line 140)
+### ThemeColor (line 141)
 
 Enum of all customizable color slots:
 
@@ -215,17 +215,17 @@ Each has a `fromColors()` method to extract the current value and a `text` prope
 
 <a id="ThemeColors"></a>
 
-### ThemeColors (line 183)
+### ThemeColors (line 184)
 
-[`Theme.kt` L183](../../common/src/commonMain/kotlin/chat/simplex/common/ui/theme/Theme.kt#L183):
+[`Theme.kt` L184](../../common/src/commonMain/kotlin/chat/simplex/common/ui/theme/Theme.kt#L184):
 
 Serializable data class with optional hex color strings for each slot. Uses `@SerialName` annotations for YAML compatibility (`accent` for `primary`, `accentVariant` for `primaryVariant`, `menus` for `surface`, etc.).
 
 <a id="ThemeWallpaper"></a>
 
-### ThemeWallpaper (line 224)
+### ThemeWallpaper (line 225)
 
-[`Theme.kt` L224](../../common/src/commonMain/kotlin/chat/simplex/common/ui/theme/Theme.kt#L224):
+[`Theme.kt` L225](../../common/src/commonMain/kotlin/chat/simplex/common/ui/theme/Theme.kt#L225):
 
 ```kotlin
 @Serializable
@@ -248,9 +248,9 @@ Key methods:
 
 <a id="ThemeOverrides"></a>
 
-### ThemeOverrides (line 304)
+### ThemeOverrides (line 305)
 
-[`Theme.kt` L304](../../common/src/commonMain/kotlin/chat/simplex/common/ui/theme/Theme.kt#L304):
+[`Theme.kt` L305](../../common/src/commonMain/kotlin/chat/simplex/common/ui/theme/Theme.kt#L305):
 
 ```kotlin
 @Serializable
@@ -269,25 +269,29 @@ A complete theme override entry. Multiple can coexist (one per wallpaper type pe
 
 <a id="ThemeModeOverrides"></a>
 
-### ThemeModeOverrides (line 475)
+### ThemeModeOverrides (line 476)
 
-[`Theme.kt` L475](../../common/src/commonMain/kotlin/chat/simplex/common/ui/theme/Theme.kt#L475):
+[`Theme.kt` L476](../../common/src/commonMain/kotlin/chat/simplex/common/ui/theme/Theme.kt#L476):
 
 ```kotlin
 @Serializable
 data class ThemeModeOverrides(
   val light: ThemeModeOverride? = null,
   val dark: ThemeModeOverride? = null,
+  val chatLayout: ChatLayoutMode? = null
 )
 ```
 
-Container for per-user or per-chat overrides, with separate light and dark mode variants. Stored on the `User` model as `uiThemes`.
+Container for per-user or per-chat overrides, with separate light and dark mode variants, and the chat layout chosen for the profile or the chat (both colour modes). Stored on the `User` model as `uiThemes`.
+
+- `layoutOnly()`: the overrides with the colours and wallpapers removed, `null` without a layout. Used by "Reset to app theme", "Remove image" and the app theme destination of Appearance, so the layout is kept.
+- `ThemeModeOverrides?.withChatLayout(chatLayout)`: the overrides with the layout set, `null` when empty.
 
 <a id="ThemeModeOverride"></a>
 
-### ThemeModeOverride (line 487)
+### ThemeModeOverride (line 494)
 
-[`Theme.kt` L487](../../common/src/commonMain/kotlin/chat/simplex/common/ui/theme/Theme.kt#L487):
+[`Theme.kt` L494](../../common/src/commonMain/kotlin/chat/simplex/common/ui/theme/Theme.kt#L494):
 
 ```kotlin
 @Serializable

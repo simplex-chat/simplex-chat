@@ -414,6 +414,13 @@ object ChatModel {
     }
   }
 
+  suspend fun addSentChatItem(activeCtx: ChatsContext, rhId: Long?, cInfo: ChatInfo, cItem: ChatItem) {
+    activeCtx.addChatItem(rhId, cInfo, cItem)
+    if (activeCtx.secondaryContextFilter != null && cInfo.inMainChatList) {
+      chatsContext.addChatItem(rhId, cInfo, cItem)
+    }
+  }
+
   // Spec: spec/state.md#ChatsContext
   class ChatsContext(val secondaryContextFilter: SecondaryContextFilter?) {
     val chats = mutableStateOf(SnapshotStateList<Chat>())
@@ -584,9 +591,9 @@ object ChatModel {
       val i = getChatIndex(rhId, cInfo.id)
       val chat: Chat
       if (i >= 0) {
-        chat = chatsContext.chats[i]
+        chat = chats[i]
         // update preview (for chat from main scope to show new items for invitee in pending status)
-        if (cInfo.groupChatScope() == null || cInfo.groupInfo_?.membership?.memberPending == true) {
+        if (cInfo.inMainChatList) {
           val newPreviewItem = when (cInfo) {
             is ChatInfo.Group -> {
               val currentPreviewItem = chat.chatItems.firstOrNull()
@@ -604,20 +611,20 @@ object ChatModel {
             else -> cItem
           }
           val wasUnread = chat.unreadTag
-          chatsContext.chats[i] = chat.copy(
+          chats[i] = chat.copy(
             chatItems = arrayListOf(newPreviewItem),
             chatStats =
-            if (cItem.meta.itemStatus is CIStatus.RcvNew) {
+            if (cItem.meta.itemStatus is CIStatus.RcvNew && secondaryContextFilter == null) {
               increaseUnreadCounter(rhId, currentUser.value!!)
               chat.chatStats.copy(unreadCount = chat.chatStats.unreadCount + 1, unreadMentions = if (cItem.meta.userMention) chat.chatStats.unreadMentions + 1 else chat.chatStats.unreadMentions)
             } else
               chat.chatStats
           )
-          updateChatTagReadInPrimaryContext(chatsContext.chats[i], wasUnread)
+          updateChatTagReadInPrimaryContext(chats[i], wasUnread)
         }
         // pop chat
         if (appPlatform.isDesktop && cItem.chatDir.sent) {
-          reorderChat(chatsContext.chats[i], 0)
+          reorderChat(chats[i], 0)
         } else {
           popChatCollector.throttlePopChat(chat.remoteHostId, chat.id, currentPosition = i)
         }
@@ -1858,6 +1865,24 @@ sealed class ChatInfo: SomeChat, NamedChat {
     else -> emptyList()
   }
 
+  val chatLayout: ChatLayoutMode? get() = when (this) {
+    is Direct -> contact.chatLayout
+    is Group -> groupInfo.groupProfile.chatLayout
+    else -> null
+  }
+
+  val uiThemes: ThemeModeOverrides? get() = when (this) {
+    is Direct -> contact.uiThemes
+    is Group -> groupInfo.uiThemes
+    else -> null
+  }
+
+  fun defaultChatLayout(user: User?): ChatLayoutMode =
+    chatLayout.known ?: profileChatLayout(user)
+
+  fun activeChatLayout(user: User?): ChatLayoutMode =
+    uiThemes?.chatLayout.known ?: defaultChatLayout(user)
+
   val contactCard: Boolean
     get() = when (this) {
       is Direct -> contact.isContactCard
@@ -1872,6 +1897,9 @@ sealed class ChatInfo: SomeChat, NamedChat {
 
   val isChannel: Boolean
     get() = groupInfo_?.useRelays == true
+
+  val inMainChatList: Boolean
+    get() = groupChatScope() == null || groupInfo_?.membership?.memberPending == true
 }
 
 @Serializable
@@ -1898,6 +1926,7 @@ data class Contact(
   val chatItemTTL: Long?,
   override val chatDeleted: Boolean,
   val uiThemes: ThemeModeOverrides? = null,
+  val chatLayout: ChatLayoutMode? = null,
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Direct
   override val id get() = "@$contactId"
@@ -1907,6 +1936,7 @@ data class Contact(
   val active get() = contactStatus == ContactStatus.Active
   override val nextConnect get() = sendMsgToConnect
   val nextSendGrpInv get() = contactGroupMemberId != null && !contactGrpInvSent
+  val callReconnectSupported get() = (activeConn?.peerChatVRange?.maxVersion ?: 0) >= CALL_RECONNECT_VERSION
   override val nextConnectPrepared get() = active && preparedContact != null && (activeConn == null || activeConn.connStatus == ConnStatus.Prepared)
   override val profileChangeProhibited get() = activeConn != null
   val nextAcceptContactRequest get() =
@@ -2190,6 +2220,39 @@ object ChatPeerTypeSerializer : KSerializer<ChatPeerType> {
     }
   override fun serialize(encoder: Encoder, value: ChatPeerType) = encoder.encodeString(value.text)
 }
+
+@Serializable(with = ChatLayoutModeSerializer::class)
+sealed class ChatLayoutMode {
+  @Serializable @SerialName("classic") object Classic: ChatLayoutMode()
+  @Serializable @SerialName("terminal") object Terminal: ChatLayoutMode()
+  @Serializable @SerialName("unknown") data class Unknown(val type: String): ChatLayoutMode()
+
+  val text: String
+    get() = when (this) {
+      is Classic -> "classic"
+      is Terminal -> "terminal"
+      is Unknown -> type
+    }
+
+  companion object {
+    fun fromText(text: String): ChatLayoutMode = when (text) {
+      "classic" -> Classic
+      "terminal" -> Terminal
+      else -> Unknown(text)
+    }
+  }
+}
+
+object ChatLayoutModeSerializer : KSerializer<ChatLayoutMode> {
+  override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("ChatLayoutMode", PrimitiveKind.STRING)
+  override fun deserialize(decoder: Decoder): ChatLayoutMode = ChatLayoutMode.fromText(decoder.decodeString())
+  override fun serialize(encoder: Encoder, value: ChatLayoutMode) = encoder.encodeString(value.text)
+}
+
+private val ChatLayoutMode?.known: ChatLayoutMode? get() = if (this is ChatLayoutMode.Unknown) null else this
+
+fun profileChatLayout(user: User?): ChatLayoutMode =
+  user?.uiThemes?.chatLayout.known ?: ChatController.appPrefs.chatLayout.state.value.known ?: ChatLayoutMode.Classic
 
 fun peerTypeIcon(peerType: ChatPeerType?): ImageResource =
   when (peerType) {
@@ -2759,7 +2822,8 @@ data class GroupProfile (
   val publicGroup: PublicGroupProfile? = null,
   override val localAlias: String = "",
   val groupPreferences: GroupPreferences? = null,
-  val memberAdmission: GroupMemberAdmission? = null
+  val memberAdmission: GroupMemberAdmission? = null,
+  val chatLayout: ChatLayoutMode? = null
 ): NamedChat {
   val isChannel: Boolean get() = publicGroup?.groupType == GroupType.Channel
 
@@ -2798,6 +2862,7 @@ data class ContactShortLinkData (
   val profile: Profile,
   val message: MsgContent?,
   val business: Boolean,
+  val chatLayout: ChatLayoutMode? = null,
   // set by the core when building the connection plan: the link profile's badge, verified and crypto-free
   val localBadge: LocalBadge? = null
 )

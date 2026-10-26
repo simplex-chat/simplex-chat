@@ -109,6 +109,7 @@ CREATE TABLE contacts(
   grp_direct_inv_from_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE SET NULL,
   grp_direct_inv_from_member_conn_id INTEGER REFERENCES connections(connection_id) ON DELETE SET NULL,
   grp_direct_inv_started_connection INTEGER NOT NULL DEFAULT 0,
+  chat_layout TEXT,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -149,7 +150,8 @@ CREATE TABLE group_profiles(
   domain_web_page INTEGER,
   allow_embedding INTEGER,
   group_domain_proof TEXT,
-  preferences_json TEXT
+  preferences_json TEXT,
+  chat_layout TEXT
 ) STRICT;
 CREATE TABLE groups(
   group_id INTEGER PRIMARY KEY AUTOINCREMENT, -- local group ID
@@ -417,6 +419,7 @@ CREATE TABLE user_contact_links(
   short_link_data_set INTEGER NOT NULL DEFAULT 0,
   short_link_large_data_set INTEGER NOT NULL DEFAULT 0,
   link_priv_sig_key BLOB,
+  chat_layout TEXT,
   UNIQUE(user_id, local_display_name)
 ) STRICT;
 CREATE TABLE contact_requests(

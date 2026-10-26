@@ -11,6 +11,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.ChatController
 import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.model.ChatLayoutMode
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.ThemeManager.colorFromReadableHex
 import chat.simplex.common.ui.theme.ThemeManager.toReadableHex
@@ -474,13 +475,19 @@ fun List<ThemeOverrides>.skipDuplicates(): List<ThemeOverrides> {
 @Serializable
 data class ThemeModeOverrides (
   val light: ThemeModeOverride? = null,
-  val dark: ThemeModeOverride? = null
+  val dark: ThemeModeOverride? = null,
+  val chatLayout: ChatLayoutMode? = null
 ) {
   fun preferredMode(darkTheme: Boolean): ThemeModeOverride? = when (darkTheme) {
     false -> light
     else -> dark
   }
+
+  fun layoutOnly(): ThemeModeOverrides? = chatLayout?.let { ThemeModeOverrides(chatLayout = it) }
 }
+
+fun ThemeModeOverrides?.withChatLayout(chatLayout: ChatLayoutMode?): ThemeModeOverrides? =
+  (this ?: ThemeModeOverrides()).copy(chatLayout = chatLayout).takeIf { it != ThemeModeOverrides() }
 
 // Spec: spec/services/theme.md#ThemeModeOverride
 @Serializable
