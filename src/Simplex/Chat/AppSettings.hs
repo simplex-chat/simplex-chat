@@ -2,6 +2,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TemplateHaskell #-}
+-- GHC 8.10.7 runs out of memory compiling this module at -O2
+{-# OPTIONS_GHC -O0 #-}
 
 module Simplex.Chat.AppSettings where
 
