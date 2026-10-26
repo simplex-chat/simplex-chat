@@ -31,3 +31,5 @@ EXPORTS
     chat_resize_image
     chat_resize_image_file_uri
     chat_resize_image_file
+    chat_resize_image_fd_uri
+    chat_resize_image_fd

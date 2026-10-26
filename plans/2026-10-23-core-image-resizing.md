@@ -70,7 +70,7 @@ Decoding, `Image.hs`:
 
   | build | `simplex-chat.cabal` condition | set in |
   |---|---|---|
-  | iOS and iOS simulator | `flag(swift)` | `flake.nix:553`, `:590`; `scripts/ci/ios-sim/build-core.sh:27` |
+  | iOS and iOS simulator | `flag(swift)` | `flake.nix:555`, `:592`; `scripts/ci/ios-sim/build-core.sh:27` |
   | Android aarch64 and armv7a | `os(android)` | the target platforms of `flake.nix:418` and `:340` |
 
 - EXIF orientation of JPEG input:
@@ -193,8 +193,7 @@ chat_resize_image_fd(fd, maxSize, png)        as chat_resize_image, from the fil
   - `cResizeImage` takes the read action in place of the buffer; the input is read inside `runCatchExceptT`.
 - Exports:
   - `Mobile.hs`: `foreign export ccall` of the four functions
-  - `libsimplex.dll.def`: the path functions
-  - `flake.nix`, the Android `-u` list: the descriptor functions
+  - `libsimplex.dll.def` and the Android `-u` list of `flake.nix`: the four functions
 
 Apps, with function signatures kept and call sites unchanged except iOS `saveWallpaperFile(image:)` (`ImageUtils.swift:246`):
 - iOS `resizeImageToDataSize` and `resizeImageToStrSizeSync`:
@@ -459,7 +458,7 @@ Core:
   - test suite:
     - module `ImageTests` (`:725`)
     - dependencies `JuicyPixels` and `JuicyPixels-jpeg-turbo` (`:817-818`)
-- `libsimplex.dll.def:30-33`, `flake.nix:487-490`: the export names.
+- `libsimplex.dll.def:30-35`, `flake.nix:487-492`: the export names.
 
 iOS:
 - `apps/ios/SimpleXChat/ImageUtils.swift`:
