@@ -25,6 +25,7 @@ export interface AddRelayResult {
 export interface AddressSettings {
   businessAddress: boolean
   autoAccept?: AutoAccept
+  chatLayout?: ChatLayout
   autoReply?: MsgContent
 }
 
@@ -1879,6 +1880,11 @@ export interface ChatItemDeletion {
   toChatItem?: AChatItem
 }
 
+export enum ChatLayout {
+  Classic = "classic",
+  Terminal = "terminal",
+}
+
 export type ChatListQuery = ChatListQuery.Filters | ChatListQuery.Search
 
 export namespace ChatListQuery {
@@ -2289,6 +2295,7 @@ export interface Contact {
   chatTags: number[] // int64
   chatItemTTL?: number // int64
   uiThemes?: UIThemeEntityOverrides
+  chatLayout?: ChatLayout
   chatDeleted: boolean
   customData?: object
 }
@@ -2348,6 +2355,7 @@ export interface ContactShortLinkData {
   profile: Profile
   message?: MsgContent
   business: boolean
+  chatLayout?: ChatLayout
   localBadge?: LocalBadge
 }
 
@@ -3113,6 +3121,7 @@ export interface GroupProfile {
   publicGroup?: PublicGroupProfile
   groupPreferences?: GroupPreferences
   memberAdmission?: GroupMemberAdmission
+  chatLayout?: ChatLayout
 }
 
 export interface GroupRelay {
@@ -5408,6 +5417,7 @@ export interface UIThemeEntityOverride {
 export interface UIThemeEntityOverrides {
   light?: UIThemeEntityOverride
   dark?: UIThemeEntityOverride
+  chatLayout?: ChatLayout
 }
 
 export interface UpdatedMessage {

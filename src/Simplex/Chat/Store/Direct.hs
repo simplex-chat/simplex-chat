@@ -324,7 +324,7 @@ getContactByConnReqHash db cxt user@User {userId} cReqHash1 cReqHash2 = do
             ct.contact_id, ct.contact_profile_id, ct.local_display_name, cp.display_name, cp.full_name, cp.short_descr, cp.description, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
             cp.preferences, cp.preferences_json, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id, cr2.rejection_supported,
             ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
-            ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
+            ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl, ct.chat_layout,
             cp.badge_proof, cp.badge_pres_header, cp.badge_expiry, cp.badge_type, cp.badge_verified, cp.badge_extra, cp.badge_master_key, cp.badge_signature, cp.badge_key_idx,
             cp.contact_domain, cp.contact_domain_proof, cp.contact_domain_verified,
             -- Connection
@@ -404,12 +404,12 @@ createIncognitoProfile db User {userId} p = do
   createdAt <- getCurrentTime
   createIncognitoProfile_ db userId createdAt p
 
-createPreparedContact :: DB.Connection -> StoreCxt -> User -> Maybe ProofPresHeader -> Profile -> ACreatedConnLink -> Maybe SharedMsgId -> Maybe Bool -> ExceptT StoreError IO Contact
-createPreparedContact db cxt user presHeader_ p connLinkToConnect welcomeSharedMsgId verified_ = do
+createPreparedContact :: DB.Connection -> StoreCxt -> User -> Maybe ProofPresHeader -> Profile -> ACreatedConnLink -> Maybe SharedMsgId -> Maybe ChatLayout -> Maybe Bool -> ExceptT StoreError IO Contact
+createPreparedContact db cxt user presHeader_ p connLinkToConnect welcomeSharedMsgId chatLayout verified_ = do
   currentTs <- liftIO getCurrentTime
   let prepared = Just (connLinkToConnect, welcomeSharedMsgId)
       ctUserPreferences = newContactUserPrefs user p
-  ct <- getContact db cxt user =<< createContact_ db cxt user presHeader_ p ctUserPreferences prepared "" currentTs
+  ct <- getContact db cxt user =<< createContact_ db cxt user presHeader_ p ctUserPreferences prepared chatLayout "" currentTs
   liftIO $ maybe (pure ct) (setContactDomainVerified db user ct) verified_
 
 updatePreparedContactUser :: DB.Connection -> StoreCxt -> User -> Contact -> User -> ExceptT StoreError IO Contact
@@ -454,7 +454,7 @@ createDirectContact :: DB.Connection -> StoreCxt -> User -> Connection -> Maybe 
 createDirectContact db cxt user Connection {connId, localAlias} presHeader_ p = do
   currentTs <- liftIO getCurrentTime
   let ctUserPreferences = newContactUserPrefs user p
-  contactId <- createContact_ db cxt user presHeader_ p ctUserPreferences Nothing localAlias currentTs
+  contactId <- createContact_ db cxt user presHeader_ p ctUserPreferences Nothing Nothing localAlias currentTs
   liftIO $ DB.execute db "UPDATE connections SET contact_id = ?, updated_at = ? WHERE connection_id = ?" (contactId, currentTs, connId)
   getContact db cxt user contactId
 
@@ -927,6 +927,7 @@ createContactFromRequest db user@User {userId, profile = LocalProfile {preferenc
             chatTags = [],
             chatItemTTL = Nothing,
             uiThemes = Nothing,
+            chatLayout = Nothing,
             chatDeleted = False,
             customData = Nothing
           }
@@ -976,7 +977,7 @@ getContact_ db cxt user@User {userId} contactId deleted = do
           ct.contact_id, ct.contact_profile_id, ct.local_display_name, cp.display_name, cp.full_name, cp.short_descr, cp.description, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
           cp.preferences, cp.preferences_json, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id, cr2.rejection_supported,
           ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
-          ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
+          ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl, ct.chat_layout,
           cp.badge_proof, cp.badge_pres_header, cp.badge_expiry, cp.badge_type, cp.badge_verified, cp.badge_extra, cp.badge_master_key, cp.badge_signature, cp.badge_key_idx,
           cp.contact_domain, cp.contact_domain_proof, cp.contact_domain_verified,
           -- Connection
