@@ -29,10 +29,28 @@ on:
       - "scripts/ci/ios-stub-libs.sh"
       - "scripts/desktop/**"
       - ".github/**"
+      - "packages/simplex-chat-nodejs/**"
+      - "packages/simplex-chat-client/types/typescript/**"
+      - "packages/simplex-chat-python/**"
+      - "scripts/ci/package-tests.sh"
+      - "apps/simplex-badge-service/web/**"
+      - "scripts/ci/packages_release.py"
+      - "scripts/ci/test_packages_release.py"
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+    inputs:
+      tests:
+        description: "hspec match patterns, one per line; / runs all tests, empty runs none"
+        type: string
+        default: ""
+      base:
+        description: the branch that the changes are compared with
+        type: string
+        default: master
 
 env:
-  opt: ${{ github.event_name == 'pull_request' && 'O0' || 'O2' }}
-  ghc_options: ${{ github.event_name == 'pull_request' && '--ghc-options=-O0' || '' }}
+  opt: ${{ github.event_name == 'push' && 'O2' || 'O0' }}
+  ghc_options: ${{ github.event_name != 'push' && '--ghc-options=-O0' || '' }}
   release: ${{ startsWith(github.ref, 'refs/tags/v') }}
   branch: ${{ github.base_ref || github.ref_name }}
   cache_o0: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/stable') }}
@@ -104,30 +122,48 @@ jobs:
       publish_nodejs: ${{ steps.publish.outputs.nodejs_version }}
       publish_python: ${{ steps.publish.outputs.python_version }}
       publish: ${{ steps.publish.outputs.nodejs_version || steps.publish.outputs.python_version }}
+      packages: ${{ steps.changes.outputs.packages }}
+      scopes: ${{ steps.changes.outputs.scopes }}
+      reduced: ${{ github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == true }}
     steps:
+      - name: Reject a manual run on a tag
+        if: github.event_name == 'workflow_dispatch' && github.ref_type == 'tag'
+        run: |
+          echo "::error::A manual run starts on a branch; to retry a release, re-run the jobs of its tag push."
+          exit 1
+
       - name: Clone project
-        if: github.event_name == 'push' || github.event_name == 'pull_request'
         uses: actions/checkout@v3
         with:
           fetch-depth: 2
 
       - name: Check changes
         id: changes
-        if: github.event_name == 'push' || github.event_name == 'pull_request'
         shell: bash
         env:
           BASE: ${{ github.event.pull_request.base.sha }}
+          BASE_BRANCH: ${{ inputs.base }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
-            git fetch -q --depth=1 origin "$BASE"
-            python3 scripts/ci/packages_release.py changes "$BASE"
-          else
-            echo "haskell=true"
-            if [ "$GITHUB_REF_TYPE" = branch ]; then
-              echo "kotlin=true"
-              echo "ios=true"
-            fi
-          fi >> "$GITHUB_OUTPUT"
+          case "$GITHUB_EVENT_NAME" in
+            pull_request)
+              git fetch -q --depth=1 origin "$BASE"
+              python3 scripts/ci/packages_release.py changes "$BASE"
+              ;;
+            workflow_dispatch)
+              base=$(gh api "repos/$GITHUB_REPOSITORY/compare/$BASE_BRANCH...$GITHUB_REF_NAME" --jq .merge_base_commit.sha)
+              git fetch -q --depth=1 origin "$base"
+              python3 scripts/ci/packages_release.py changes "$base"
+              ;;
+            *)
+              echo "haskell=true"
+              if [ "$GITHUB_REF_TYPE" = branch ]; then
+                echo "kotlin=true"
+                echo "ios=true"
+                python3 scripts/ci/packages_release.py scopes
+              fi
+              ;;
+          esac >> "$GITHUB_OUTPUT"
 
       - name: Build changelog
         id: build_changelog
@@ -223,16 +259,17 @@ jobs:
   build-linux:
     name: "ubuntu-${{ matrix.os }}-${{ matrix.arch }} (CLI,Desktop), GHC: ${{ matrix.ghc }}"
     needs: [maybe-release, variables]
+    if: needs.maybe-release.outputs.haskell == 'true' || needs.maybe-release.outputs.scopes != '' || (needs.maybe-release.outputs.reduced == 'true' && (needs.maybe-release.outputs.kotlin == 'true' || needs.maybe-release.outputs.packages == 'true'))
     runs-on: ${{ matrix.runner }}
     permissions:
       contents: write
       packages: write
     env:
-      image_cache: ghcr.io/simplex-chat/simplex-chat-build-cache:${{ matrix.os }}-${{ matrix.arch }}-ghc${{ matrix.ghc }}
+      image_cache: ghcr.io/${{ github.repository_owner }}/simplex-chat-build-cache:${{ matrix.os }}-${{ matrix.arch }}-ghc${{ matrix.ghc }}
       source_hashes: dist-newstyle/sources.sha256
     concurrency: &linux-concurrency
       group: ${{ github.workflow }}-${{ github.ref }}-linux-${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.ghc }}-${{ needs.maybe-release.outputs.libs_tag }}
-      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+      cancel-in-progress: ${{ github.event_name != 'push' }}
     strategy:
       fail-fast: false
       matrix:
@@ -245,17 +282,12 @@ jobs:
             ghc: ${{ needs.variables.outputs.GHC_VER }}
             hash: 'sha256:5c8b2c0a6c745bc177669abfaa716b4bc57d58e2ea3882fb5da67f4d59e3dda5'
             libs: true
-          - os: 24.04
-            os_underscore: 24_04
-            arch: x86_64
-            runner: "ubuntu-24.04"
-            should_run: ${{ needs.maybe-release.outputs.haskell == 'true' }}
-            ghc: ${{ needs.variables.outputs.GHC_VER }}
-            hash: 'sha256:98ff7968124952e719a8a69bb3cccdd217f5fe758108ac4f21ad22e1df44d237'
-            kotlin: ${{ needs.maybe-release.outputs.kotlin == 'true' }}
+            kotlin: ${{ needs.maybe-release.outputs.reduced == 'true' && needs.maybe-release.outputs.kotlin == 'true' }}
+            packages: ${{ needs.maybe-release.outputs.reduced == 'true' && needs.maybe-release.outputs.packages == 'true' }}
+            scope_tests: ${{ needs.maybe-release.outputs.scopes != '' }}
     steps: &linux-steps
       - name: Checkout Code
-        if: matrix.should_run == true || matrix.kotlin == true
+        if: matrix.should_run == true || matrix.kotlin == true || matrix.packages == true || matrix.scope_tests == true
         uses: actions/checkout@v3
         with:
           submodules: recursive
@@ -274,7 +306,7 @@ jobs:
 
       # Otherwise we run out of disk space with Docker build
       - name: Free disk space
-        if: matrix.should_run == true || matrix.kotlin == true
+        if: (matrix.should_run == true || matrix.kotlin == true) && needs.maybe-release.outputs.reduced != 'true'
         shell: bash
         run: ./scripts/ci/linux_util_free_space.sh
 
@@ -388,7 +420,7 @@ jobs:
 
       - name: Restore library build directory from cache
         id: restore-build-lib
-        if: env.release != 'true' && matrix.libs && needs.maybe-release.outputs.core_changed && matrix.arch == 'x86_64'
+        if: env.release != 'true' && matrix.libs && needs.maybe-release.outputs.core_changed && matrix.arch == 'x86_64' && (needs.maybe-release.outputs.reduced != 'true' || matrix.packages == true)
         uses: actions/cache/restore@v4
         with:
           path: |
@@ -434,7 +466,7 @@ jobs:
       # Also for pull requests that change the chat core, for the package tests.
       - name: Build library
         id: build-lib
-        if: matrix.libs && (needs.maybe-release.outputs.libs_tag || (needs.maybe-release.outputs.core_changed && matrix.arch == 'x86_64'))
+        if: matrix.libs && (needs.maybe-release.outputs.libs_tag || (needs.maybe-release.outputs.core_changed && matrix.arch == 'x86_64' && (needs.maybe-release.outputs.reduced != 'true' || matrix.packages == true)))
         shell: docker exec -t builder sh -eu {0}
         run: |
           scripts/ci/prune-old-builds.sh dist-lib
@@ -618,23 +650,12 @@ jobs:
         if: matrix.should_run == true && matrix.arch == 'x86_64'
         timeout-minutes: 120
         shell: bash
-        run: |
-          i=1
-          attempts=1
-          ${{ (github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) }} && attempts=3
-          while [ "$i" -le "$attempts" ]; do
-            if ./simplex-chat-test; then
-              break
-            else
-              echo "Attempt $i failed, retrying..."
-              i=$((i + 1))
-              sleep 1
-            fi
-          done
-          if [ "$i" -gt "$attempts" ]; then
-            echo "All "$attempts" attempts failed."
-            exit 1
-          fi
+        env:
+          REDUCED: ${{ needs.maybe-release.outputs.reduced }}
+          TESTS: ${{ github.event_name == 'workflow_dispatch' && inputs.tests || '' }}
+          PR_BODY: ${{ github.event.pull_request.draft == true && github.event.pull_request.body || '' }}
+          ATTEMPTS: ${{ (github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) && 3 || 1 }}
+        run: scripts/ci/run-tests.sh ./simplex-chat-test
 
       # Compiling the desktop and Android targets of :common in parallel exceeds the 2 GB Kotlin daemon heap.
       # cmakeBuildAndCopy links the JNI library against libsimplex, which this job does not build.
@@ -652,7 +673,7 @@ jobs:
 
       - name: Setup Node.js
         id: setup-node
-        if: ${{ !cancelled() && matrix.should_run == true && matrix.libs && (github.event_name == 'pull_request' || needs.maybe-release.outputs.addon_draft || needs.maybe-release.outputs.publish) }}
+        if: ${{ !cancelled() && (matrix.packages == true || matrix.scope_tests == true || (matrix.should_run == true && matrix.libs && ((github.event_name == 'pull_request' && needs.maybe-release.outputs.reduced != 'true') || needs.maybe-release.outputs.addon_draft || needs.maybe-release.outputs.publish))) }}
         uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -665,7 +686,7 @@ jobs:
           python-version: "3.12"
 
       - name: Package tests (pull request)
-        if: ${{ !cancelled() && steps.setup-python.outcome == 'success' && github.event_name == 'pull_request' && steps.build-lib.outcome != 'failure' }}
+        if: ${{ !cancelled() && steps.setup-python.outcome == 'success' && github.event_name != 'push' && steps.build-lib.outcome != 'failure' && ((needs.maybe-release.outputs.reduced != 'true' && matrix.should_run == true) || matrix.packages == true) }}
         timeout-minutes: 30
         shell: bash
         env:
@@ -700,6 +721,17 @@ jobs:
         with:
           name: package-tests-linux-${{ matrix.arch }}
           path: ${{ runner.temp }}/package-tests
+
+      - name: Test changed scopes
+        if: ${{ !cancelled() && matrix.scope_tests == true && steps.setup-python.outcome == 'success' }}
+        timeout-minutes: 30
+        shell: bash
+        env:
+          SCOPES: ${{ needs.maybe-release.outputs.scopes }}
+        run: |
+          for scope in $SCOPES; do
+            scripts/ci/scope-tests.sh "$scope"
+          done
 
       - name: Remove -O2 build directory
         id: remove-o2
@@ -746,16 +778,42 @@ jobs:
             !dist-newstyle/src
           key: ${{ steps.keys.outputs.dist }}-O0-${{ env.branch }}-${{ github.sha }}
 
-  build-linux-push:
+  build-linux-full:
     name: "ubuntu-${{ matrix.os }}-${{ matrix.arch }} (CLI,Desktop), GHC: ${{ matrix.ghc }}"
     needs: [maybe-release, variables]
-    if: github.event_name != 'pull_request'
+    if: needs.maybe-release.outputs.reduced != 'true' && (needs.maybe-release.outputs.haskell == 'true' || needs.maybe-release.outputs.kotlin == 'true')
     runs-on: ${{ matrix.runner }}
     permissions:
       contents: write
       packages: write
     env:
-      image_cache: ghcr.io/simplex-chat/simplex-chat-build-cache:${{ matrix.os }}-${{ matrix.arch }}-ghc${{ matrix.ghc }}
+      image_cache: ghcr.io/${{ github.repository_owner }}/simplex-chat-build-cache:${{ matrix.os }}-${{ matrix.arch }}-ghc${{ matrix.ghc }}
+      source_hashes: dist-newstyle/sources.sha256
+    concurrency: *linux-concurrency
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: 24.04
+            os_underscore: 24_04
+            arch: x86_64
+            runner: "ubuntu-24.04"
+            should_run: ${{ needs.maybe-release.outputs.haskell == 'true' }}
+            ghc: ${{ needs.variables.outputs.GHC_VER }}
+            hash: 'sha256:98ff7968124952e719a8a69bb3cccdd217f5fe758108ac4f21ad22e1df44d237'
+            kotlin: ${{ needs.maybe-release.outputs.kotlin == 'true' }}
+    steps: *linux-steps
+
+  build-linux-push:
+    name: "ubuntu-${{ matrix.os }}-${{ matrix.arch }} (CLI,Desktop), GHC: ${{ matrix.ghc }}"
+    needs: [maybe-release, variables]
+    if: github.event_name == 'push'
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: write
+      packages: write
+    env:
+      image_cache: ghcr.io/${{ github.repository_owner }}/simplex-chat-build-cache:${{ matrix.os }}-${{ matrix.arch }}-ghc${{ matrix.ghc }}
       source_hashes: dist-newstyle/sources.sha256
       cache_o0: false
     concurrency: *linux-concurrency
@@ -785,13 +843,13 @@ jobs:
   build-linux-ghc8:
     name: "ubuntu-${{ matrix.os }}-${{ matrix.arch }} (CLI,Desktop), GHC: ${{ matrix.ghc }}"
     needs: [maybe-release, variables]
-    if: ${{ needs.maybe-release.outputs.haskell == 'true' && !(github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) }}
+    if: ${{ needs.maybe-release.outputs.reduced != 'true' && needs.maybe-release.outputs.haskell == 'true' && !(github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) }}
     runs-on: ${{ matrix.runner }}
     permissions:
       contents: write
       packages: write
     env:
-      image_cache: ghcr.io/simplex-chat/simplex-chat-build-cache:${{ matrix.os }}-${{ matrix.arch }}-ghc${{ matrix.ghc }}
+      image_cache: ghcr.io/${{ github.repository_owner }}/simplex-chat-build-cache:${{ matrix.os }}-${{ matrix.arch }}-ghc${{ matrix.ghc }}
       source_hashes: dist-newstyle/sources.sha256
     concurrency: *linux-concurrency
     strategy:
@@ -930,6 +988,7 @@ jobs:
   build-macos:
     name: "${{ matrix.os }} (CLI,Desktop), GHC: ${{ matrix.ghc }}"
     needs: [maybe-release, variables]
+    if: needs.maybe-release.outputs.reduced != 'true' && needs.maybe-release.outputs.haskell == 'true'
     runs-on: ${{ matrix.os }}
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}-macos-${{ matrix.os }}-${{ needs.maybe-release.outputs.libs_tag }}
@@ -945,7 +1004,6 @@ jobs:
             desktop_asset_name: simplex-desktop-macos-aarch64.dmg
             openssl_dir: "/opt/homebrew/opt"
             should_run: ${{ needs.maybe-release.outputs.haskell == 'true' }}
-            ios: ${{ needs.maybe-release.outputs.ios == 'true' }}
           - os: macos-15-intel
             arch: x86_64
             ghc: ${{ needs.variables.outputs.GHC_VER }}
@@ -955,13 +1013,13 @@ jobs:
             should_run: ${{ needs.maybe-release.outputs.haskell == 'true' }}
     steps:
       - name: Checkout Code
-        if: matrix.should_run == true || matrix.ios == true
+        if: matrix.should_run == true
         uses: actions/checkout@v3
         with:
           submodules: recursive
 
       - name: Point Command Line Tools SDK to Xcode SDK
-        if: matrix.should_run == true || matrix.ios == true
+        if: matrix.should_run == true
         shell: bash
         run: sudo ln -sfn "$(xcrun --sdk macosx --show-sdk-path)" /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
 
@@ -1183,23 +1241,6 @@ jobs:
             exit 1
           fi
 
-      - name: Build iOS app
-        if: ${{ !cancelled() && matrix.ios == true }}
-        timeout-minutes: 60
-        shell: bash
-        run: |
-          scripts/ci/ios-stub-libs.sh
-          xcodebuild build -quiet \
-            -project apps/ios/SimpleX.xcodeproj \
-            -scheme "SimpleX (iOS)" \
-            -configuration Debug \
-            -destination "generic/platform=iOS Simulator" \
-            -onlyUsePackageVersionsFromResolvedFile \
-            -skipPackagePluginValidation \
-            -skipMacroValidation \
-            ARCHS=arm64 \
-            CODE_SIGNING_ALLOWED=NO
-
       - name: Build library
         id: mac_lib_build
         if: ${{ !cancelled() && matrix.should_run == true && needs.maybe-release.outputs.libs_tag && steps.mac_cli_build.outcome == 'success' }}
@@ -1309,6 +1350,38 @@ jobs:
             !dist-newstyle/src
           key: ${{ steps.keys.outputs.dist }}-O0-${{ env.branch }}-${{ github.sha }}
 
+  build-ios:
+    name: "macos-latest (iOS)"
+    needs: maybe-release
+    if: needs.maybe-release.outputs.ios == 'true'
+    runs-on: macos-latest
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-ios
+      cancel-in-progress: ${{ github.event_name != 'push' }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Point Command Line Tools SDK to Xcode SDK
+        shell: bash
+        run: sudo ln -sfn "$(xcrun --sdk macosx --show-sdk-path)" /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
+
+      - name: Build iOS app
+        timeout-minutes: 60
+        shell: bash
+        run: |
+          scripts/ci/ios-stub-libs.sh
+          xcodebuild build -quiet \
+            -project apps/ios/SimpleX.xcodeproj \
+            -scheme "SimpleX (iOS)" \
+            -configuration Debug \
+            -destination "generic/platform=iOS Simulator" \
+            -onlyUsePackageVersionsFromResolvedFile \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
+            ARCHS=arm64 \
+            CODE_SIGNING_ALLOWED=NO
+
 # =========================
 #      Windows Build
 # =========================
@@ -1316,7 +1389,7 @@ jobs:
   build-windows:
     name: "${{ matrix.os }} (CLI,Desktop), GHC: ${{ matrix.ghc }}"
     needs: [maybe-release, variables]
-    if: needs.maybe-release.outputs.haskell == 'true'
+    if: needs.maybe-release.outputs.reduced != 'true' && needs.maybe-release.outputs.haskell == 'true'
     runs-on: ${{ matrix.os }}
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}-windows-${{ matrix.os }}-${{ needs.maybe-release.outputs.libs_tag }}
@@ -1622,7 +1695,7 @@ jobs:
 # =========================
 
   releases:
-    needs: [maybe-release, build-linux, build-linux-push, build-linux-postgres, build-macos, build-windows]
+    needs: [maybe-release, build-linux, build-linux-full, build-linux-push, build-linux-postgres, build-macos, build-ios, build-windows]
     if: ${{ !cancelled() && (needs.maybe-release.outputs.libs_tag || needs.maybe-release.outputs.addon_draft) }}
     runs-on: ubuntu-latest
     env:
@@ -1646,7 +1719,7 @@ jobs:
 # publish under other names.
 
   publish:
-    needs: [maybe-release, build-linux, build-linux-push, build-macos, build-windows, releases]
+    needs: [maybe-release, build-linux, build-linux-full, build-linux-push, build-macos, build-ios, build-windows, releases]
     if: ${{ !cancelled() && (needs.maybe-release.outputs.publish || needs.maybe-release.outputs.publish_types) }}
     runs-on: ubuntu-latest
     permissions:

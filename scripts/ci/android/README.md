@@ -4,7 +4,7 @@
 
 ## Running it
 
-The workflow runs only when started by hand, on any branch: in the Actions tab, `android-emu` → Run workflow, or `gh workflow run android-emu.yml --ref <branch>` with `-f claude=true`, `-f backend=true` or `-f release=true`. [App tests on GitHub's runners](../README.md) lists the inputs. A newer run on the same branch cancels the older one.
+The workflow runs only when started by hand, on any branch: in the Actions tab, `android-emu` → Run workflow, or `gh workflow run android-emu.yml --ref <branch>` with `-f claude=true`, `-f backend=true` or `-f release=true`. [CI on GitHub's runners](../README.md) lists the inputs. A newer run on the same branch cancels the older one.
 
 Every run builds the core library, and the backend when it's asked for, from the branch's own Haskell code. It reuses an earlier build only when the sources are unchanged, as an artifact of the same branch named after a hash of its sources (30 days): for the core `src/**`, `cabal.project`, `simplex-chat.cabal`, `PRIVACY.md`, the Nix files (`flake.nix`, `flake.lock`, `scripts/nix/**`) and `build-core.sh`; the backend is desktop-linux's, under its name and hash, so a backend either workflow built is reused by both. The workflow saves no Actions caches, which this repository evicts within hours and shares with `build.yml`.
 
