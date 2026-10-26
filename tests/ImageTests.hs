@@ -5,7 +5,7 @@ module ImageTests where
 import Codec.Picture (DynamicImage (..), Image (..), PixelCMYK8, PixelRGB16 (..), PixelRGB8 (..), PixelRGBA16 (..), PixelRGBA8 (..), convertRGB8, decodeImage, dynamicMap, generateImage, pixelAt)
 import Codec.Picture.JPEGTurbo (encodeRGB)
 import Codec.Picture.Jpg (encodeDirectJpegAtQualityWithMetadata, encodeJpegAtQuality)
-import Codec.Picture.Types (convertImage, extractLumaPlane)
+import Codec.Picture.Types (convertImage, extractLumaPlane, pixelFold)
 import Control.Monad (forM_, when)
 import Control.Monad.Except (runExceptT)
 import Data.Bits (shiftR)
@@ -48,6 +48,10 @@ imageTests = do
     it "should decode JPEG colour spaces" testJpegColourSpaces
     it "should refuse unsupported and malformed JPEG" testJpegRefused
     it "should apply EXIF orientation of JPEG" testJpegOrientation
+  describe "scaling" $ do
+    it "should scale and sharpen as the research code" testScaleResearch
+    it "should keep an image of the same size" testScaleSameSize
+    it "should scale transparency in premultiplied alpha" testScaleTransparency
 
 testDataUri :: FilePath -> LB.ByteString -> IO ()
 testDataUri path prefix = do
@@ -219,6 +223,33 @@ testJpegOrientation = do
         word n = (if littleEndian then B.reverse else id) . bigEndian n
     bigEndian :: Int -> Int -> B.ByteString
     bigEndian n v = B.pack [fromIntegral (v `shiftR` (8 * i)) | i <- [n - 1, n - 2 .. 0]]
+
+testScaleResearch :: IO ()
+testScaleResearch = do
+  Right src <- decodeImage <$> B.readFile "tests/fixtures/preview-issue1.png"
+  Right (ImageRGB8 expected) <- decodeImage <$> B.readFile "tests/fixtures/preview-issue1-400x200-sharpened.png"
+  let scaled = scaleRGB8 (400, 200) $ convertRGB8 src
+  imageSize (ImageRGB8 scaled) `shouldBe` (400, 200)
+  pixelFold (\n x y p -> if p == pixelAt expected x y then n else n + 1) (0 :: Int) scaled `shouldBe` 0
+
+testScaleSameSize :: IO ()
+testScaleSameSize = do
+  let rgb = generateImage (\x y -> PixelRGB8 (fromIntegral $ x * 4) (fromIntegral $ y * 5) 128) 64 48
+      rgba = generateImage (\x y -> PixelRGBA8 (fromIntegral $ x * 4) (fromIntegral $ y * 5) 128 (fromIntegral $ x + y)) 64 48
+  imageData (scaleRGB8 (64, 48) rgb) `shouldBe` imageData rgb
+  imageData (scaleRGBA8 (64, 48) rgba) `shouldBe` imageData rgba
+
+testScaleTransparency :: IO ()
+testScaleTransparency = do
+  let scaled = scaleRGBA8 (40, 40) $ generateImage pixel 64 64
+      visible = [p | y <- [0 .. 39], x <- [0 .. 39], let p@(PixelRGBA8 _ _ _ a) = pixelAt scaled x y, a > 0]
+  filter (\(PixelRGBA8 r g b _) -> (r, g, b) /= (255, 0, 0)) visible `shouldBe` []
+  any (\(PixelRGBA8 _ _ _ a) -> a < 255) visible `shouldBe` True
+  where
+    pixel x y
+      | (x - 32) * (x - 32) + (y - 32) * (y - 32) < 400 = PixelRGBA8 255 0 0 255
+      | even (x + y) = PixelRGBA8 0 255 0 0
+      | otherwise = PixelRGBA8 0 0 255 0
 
 baselineJpeg :: Image PixelRGB8 -> B.ByteString
 baselineJpeg = LB.toStrict . encodeJpegAtQuality 90 . convertImage

@@ -117,6 +117,21 @@ Resizing, `Image.hs`:
 - The bisection is ended by an encoding of exactly `maxSize`.
 - Metadata of the input is dropped.
 
+Scaling (D3), `Image.hs`, for the search of D4:
+- `scaleRGB8 size image` and `scaleRGBA8 size image`: the image at `size`.
+  - the same size: the image itself, not sharpened (D18)
+  - another size: one stb_image_resize pass from the image, Catmull-Rom, edges clamped, on gamma-encoded values; then the unsharp mask
+- `scaleRGBA8` (D15):
+  1. colour premultiplied by alpha: `(c·a + 127) div 255`
+  2. stb_image_resize with `STBIR_FLAG_ALPHA_PREMULTIPLIED`
+  3. the unsharp mask on the four channels
+  4. colour divided by alpha: `min 255 ((c·255 + a div 2) div a)`; 0 for `a = 0`
+- Unsharp mask, the arithmetic of the research code:
+  - kernel: Gaussian, sigma 0.6 px, radius `ceiling (3·sigma)` = 2, weights divided by their sum, in `Double`
+  - a horizontal pass on the samples, then a vertical pass on its result; edges clamped; sums in `Double`, each pass stored as `Float`
+  - output: `floor (v + 0.5·(v − b) + 0.5)`, clamped to 0..255; `v − b` in `Float`
+- `vector` is a direct dependency.
+
 C API:
 ```
 chat_resize_image_uri(data, len, maxSize)     data URI of at most maxSize characters, or ""
@@ -573,6 +588,10 @@ License notices, `docs/dependencies/`:
 - EXIF orientation (`:50`, `:177-221`): a 64×32 JPEG with four solid quadrants and an APP1 Exif segment, little-endian for odd and big-endian for even values; `decodeResizable`:
   - values 1–8: the sides swapped for 5–8; the quadrant colours placed by the transform; the resized JPEG without `Exif`
   - an IFD0 offset beyond the segment: as value 1
+- scaling:
+  - research code: `scaleRGB8` of `preview-issue1.png` to 400×200 equals `preview-issue1-400x200-sharpened.png` pixel for pixel; the fixture is the output of the research code (`pvsf`, resize `catmullrom/g/0.5@0.6/single`) for the same decoded pixels
+  - the same size: `scaleRGB8` and `scaleRGBA8` of 64×48 images to 64×48 return the input samples
+  - transparency: a 64×64 opaque red disc on transparent pixels alternately green and blue, `scaleRGBA8` to 40×40: every pixel with alpha above 0 is red; some pixels have alpha below 255
 
 `tests/MobileTests.hs`, "Images" (`:95-99`), with buffers from `mallocBytes`:
 - `cChatResizeImageUri` on `test.jpg`, limit 14000: `data:image/jpg;base64,`, at most 14000 characters; on `"not an image"`: `""`.
