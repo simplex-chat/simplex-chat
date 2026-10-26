@@ -314,6 +314,7 @@ fun ChatItemView(
         Row(verticalAlignment = Alignment.CenterVertically) {
         val bubbleHovered = bubbleInteractionSource.collectIsHoveredAsState()
         val markedDeleted = cItem.meta.itemDeleted != null && (!revealed.value || cItem.isDeletedContent)
+        val tailRendered = shapeStyle(cItem, chatItemTailEnabled(), itemSeparation.largeGap, revealed.value).let { it is ShapeStyle.Bubble && it.tailVisible }
         if (alignEnd) {
           GoToItemButton(true, bubbleHovered)
         }
@@ -592,7 +593,7 @@ fun ChatItemView(
             }
 
             @Composable fun LegacyDeletedItem() {
-              DeletedItemView(cItem, cInfo.timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
+              DeletedItemView(cItem, cInfo.timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp, tailRendered = tailRendered)
               DefaultDropdownMenu(showMenu) {
                 ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
                 DeleteItemAction(chatsCtx, cInfo, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
@@ -664,7 +665,7 @@ fun ChatItemView(
 
             @Composable
             fun DeletedItem() {
-              MarkedDeletedItemView(chatsCtx, cItem, cInfo, cInfo.timedMessagesTTL, revealed, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
+              MarkedDeletedItemView(chatsCtx, cItem, cInfo, cInfo.timedMessagesTTL, revealed, showViaProxy = showViaProxy, showTimestamp = showTimestamp, tailRendered = tailRendered)
               DefaultDropdownMenu(showMenu) {
                 if (revealed.value) {
                   HideItemAction(revealed, showMenu, reveal)
@@ -708,7 +709,7 @@ fun ChatItemView(
             }
 
             if (markedDeleted) {
-              MarkedDeletedItemView(chatsCtx, cItem, cInfo, cInfo.timedMessagesTTL, revealed, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
+              MarkedDeletedItemView(chatsCtx, cItem, cInfo, cInfo.timedMessagesTTL, revealed, showViaProxy = showViaProxy, showTimestamp = showTimestamp, tailRendered = tailRendered)
               MarkedDeletedItemDropdownMenu()
             } else {
               when (val c = cItem.content) {
@@ -719,16 +720,16 @@ fun ChatItemView(
                 is CIContent.SndCall -> CallItem(c.status, c.duration)
                 is CIContent.RcvCall -> CallItem(c.status, c.duration)
                 is CIContent.RcvIntegrityError -> if (developerTools) {
-                  IntegrityErrorItemView(c.msgError, cItem, showTimestamp, cInfo.timedMessagesTTL)
+                  IntegrityErrorItemView(c.msgError, cItem, showTimestamp, cInfo.timedMessagesTTL, tailRendered)
                   DeleteItemMenu()
                 } else {
                   Box(Modifier.size(0.dp)) {}
                 }
                 is CIContent.RcvMsgErrorContent -> {
-                  RcvMsgErrorItemView(c.rcvMsgError, cItem, showTimestamp, cInfo.timedMessagesTTL)
+                  RcvMsgErrorItemView(c.rcvMsgError, cItem, showTimestamp, cInfo.timedMessagesTTL, tailRendered)
                 }
                 is CIContent.RcvDecryptionError -> {
-                  CIRcvDecryptionError(c.msgDecryptError, c.msgCount, cInfo, cItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember)
+                  CIRcvDecryptionError(c.msgDecryptError, c.msgCount, cInfo, cItem, tailRendered, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember)
                   DeleteItemMenu()
                 }
                 is CIContent.RcvGroupInvitation -> {
@@ -1235,6 +1236,9 @@ fun Modifier.chatItemOffset(cItem: ChatItem, tailVisible: Boolean, inverted: Boo
 
   return this.offset(x = if (inverted) (-1f * offset) else offset)
 }
+
+fun Modifier.bubbleTailSpace(sent: Boolean, tailRendered: Boolean): Modifier =
+  padding(start = if (!sent && tailRendered) msgTailWidthDp else 0.dp, end = if (sent && tailRendered) msgTailWidthDp else 0.dp)
 
 @Composable
 fun Modifier.clipChatItem(chatItem: ChatItem? = null, tailVisible: Boolean = false, revealed: Boolean = false): Modifier {

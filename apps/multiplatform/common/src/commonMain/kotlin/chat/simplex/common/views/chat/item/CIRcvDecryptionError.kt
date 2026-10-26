@@ -8,6 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
@@ -27,6 +28,7 @@ fun CIRcvDecryptionError(
   msgCount: UInt,
   cInfo: ChatInfo,
   ci: ChatItem,
+  tailRendered: Boolean,
   updateContactStats: (Contact) -> Unit,
   updateMemberStats: (GroupInfo, GroupMember) -> Unit,
   syncContactConnection: (Contact) -> Unit,
@@ -46,6 +48,7 @@ fun CIRcvDecryptionError(
   fun BasicDecryptionErrorItem() {
     DecryptionErrorItem(
       ci,
+      tailRendered,
       onClick = {
         AlertManager.shared.showAlertMsg(
           title = generalGetString(MR.strings.decryption_error),
@@ -63,6 +66,7 @@ fun CIRcvDecryptionError(
         if (modelContactStats.ratchetSyncAllowed) {
           DecryptionErrorItemFixButton(
             ci,
+            tailRendered,
             onClick = {
               AlertManager.shared.showAlertDialog(
                 title = generalGetString(MR.strings.fix_connection_question),
@@ -76,6 +80,7 @@ fun CIRcvDecryptionError(
         } else if (!modelContactStats.ratchetSyncSupported) {
           DecryptionErrorItemFixButton(
             ci,
+            tailRendered,
             onClick = {
               AlertManager.shared.showAlertMsg(
                 title = generalGetString(MR.strings.fix_connection_not_supported_by_contact),
@@ -100,6 +105,7 @@ fun CIRcvDecryptionError(
       if (modelMemberStats.ratchetSyncAllowed) {
         DecryptionErrorItemFixButton(
           ci,
+          tailRendered,
           onClick = {
             AlertManager.shared.showAlertDialog(
               title = generalGetString(MR.strings.fix_connection_question),
@@ -113,6 +119,7 @@ fun CIRcvDecryptionError(
       } else if (!modelMemberStats.ratchetSyncSupported) {
         DecryptionErrorItemFixButton(
           ci,
+          tailRendered,
           onClick = {
             AlertManager.shared.showAlertMsg(
               title = generalGetString(MR.strings.fix_connection_not_supported_by_group_member),
@@ -135,6 +142,7 @@ fun CIRcvDecryptionError(
 @Composable
 fun DecryptionErrorItemFixButton(
   ci: ChatItem,
+  tailRendered: Boolean,
   onClick: () -> Unit,
   syncSupported: Boolean
 ) {
@@ -142,12 +150,12 @@ fun DecryptionErrorItemFixButton(
   ItemWithMeta(meta = { CIMetaView(ci, timedMessagesTTL = null, showViaProxy = false, showTimestamp = true) }) { inlineMeta ->
     Surface(
       Modifier.clickable(onClick = onClick),
-      shape = RoundedCornerShape(18.dp),
+      shape = if (inlineMeta != null) RectangleShape else RoundedCornerShape(18.dp),
       color = receivedColor,
       contentColor = LocalContentColor.current
     ) {
       Box(
-        if (inlineMeta != null) Modifier else Modifier.padding(vertical = 6.dp, horizontal = 12.dp),
+        if (inlineMeta != null) Modifier.bubbleTailSpace(ci.chatDir.sent, tailRendered) else Modifier.padding(vertical = 6.dp, horizontal = 12.dp),
         contentAlignment = Alignment.BottomEnd,
       ) {
         Column(
@@ -194,18 +202,19 @@ fun DecryptionErrorItemFixButton(
 @Composable
 fun DecryptionErrorItem(
   ci: ChatItem,
+  tailRendered: Boolean,
   onClick: () -> Unit
 ) {
   val receivedColor = MaterialTheme.appColors.receivedMessage
   ItemWithMeta(meta = { CIMetaView(ci, timedMessagesTTL = null, showViaProxy = false, showTimestamp = true) }) { inlineMeta ->
     Surface(
       Modifier.clickable(onClick = onClick),
-      shape = RoundedCornerShape(18.dp),
+      shape = if (inlineMeta != null) RectangleShape else RoundedCornerShape(18.dp),
       color = receivedColor,
       contentColor = LocalContentColor.current
     ) {
       Box(
-        if (inlineMeta != null) Modifier else Modifier.padding(vertical = 6.dp, horizontal = 12.dp),
+        if (inlineMeta != null) Modifier.bubbleTailSpace(ci.chatDir.sent, tailRendered) else Modifier.padding(vertical = 6.dp, horizontal = 12.dp),
         contentAlignment = Alignment.BottomEnd,
       ) {
         val secondaryColor = MaterialTheme.colors.secondary

@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.desktop.ui.tooling.preview.Preview
@@ -16,18 +17,18 @@ import chat.simplex.common.model.ChatItem
 import chat.simplex.common.ui.theme.*
 
 @Composable
-fun DeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, showViaProxy: Boolean, showTimestamp: Boolean) {
+fun DeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, showViaProxy: Boolean, showTimestamp: Boolean, tailRendered: Boolean) {
   val sent = ci.chatDir.sent
   val sentColor = MaterialTheme.appColors.sentMessage
   val receivedColor = MaterialTheme.appColors.receivedMessage
   ItemWithMeta(meta = { CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp) }) { inlineMeta ->
     Surface(
-      shape = RoundedCornerShape(18.dp),
+      shape = if (inlineMeta != null) RectangleShape else RoundedCornerShape(18.dp),
       color = if (sent) sentColor else receivedColor,
       contentColor = LocalContentColor.current
     ) {
       Row(
-        if (inlineMeta != null) Modifier.bubbleTextPadding(16.sp) else Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+        if (inlineMeta != null) Modifier.bubbleTailSpace(sent, tailRendered).bubbleTextPadding(16.sp) else Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.Bottom
       ) {
         Text(
@@ -58,7 +59,8 @@ fun PreviewDeletedItemView() {
       ChatItem.getDeletedContentSampleData(),
       null,
       showViaProxy = false,
-      showTimestamp = true
+      showTimestamp = true,
+      tailRendered = false
     )
   }
 }

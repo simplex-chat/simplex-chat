@@ -200,7 +200,8 @@ B4   header: 14dp start, as message text (user); text inset by bubbleTextPadding
      header and quote bands kept (user)
 B5   quote: text inset by bubbleTextPadding; Inter for the sender and the text (earlier owner decision: quotes in Inter)
 B6   emoji in a bubble: the text paddings; the reserve line with the full line height
-B7   deleted, moderated and error items: text inset by bubbleTextPadding; time on the text baseline
+B7   deleted, moderated and error items: text inset by bubbleTextPadding; time on the text baseline;
+     the fill takes the bubble shape and the text keeps the tail space of a message (user)
 B8   file in a bubble: the last baseline of the size line BUBBLE_TEXT_INSET above the edge; the time and the ink bottom
      of the file icon on that baseline (user)
 B9   events: line height of 12sp secondary text; feature icons and merged icons without height, one event line high (user)
@@ -228,12 +229,12 @@ chat/item/MarkdownBlocks.kt       spacing, heading sizes and headingBox of termi
 chat/item/CIEventView.kt          chatEventTextStyle in both layouts; chatEventPadding without the vertical parameter
 chat/item/CIChatFeatureView.kt    merged icons one event line high in both layouts
 chat/item/CIFileView.kt           bubble: size line baseline inset from the bottom edge; fileIconOnBaseline
-chat/item/DeletedItemView.kt      bubble: bubbleTextPadding, time on the text baseline
+chat/item/DeletedItemView.kt      bubble: bubbleTextPadding, time on the text baseline; RectangleShape, bubbleTailSpace
 chat/item/MarkedDeletedItemView.kt
 chat/item/IntegrityErrorItemView.kt
-chat/item/CIRcvDecryptionError.kt bubble: bubbleTextPadding, bubbleMeta, the copy of the time
+chat/item/CIRcvDecryptionError.kt bubble: bubbleTextPadding, bubbleMeta, the copy of the time; RectangleShape, bubbleTailSpace
 chat/item/CIGroupInvitationView.kt bubble: the copy of the time
-chat/item/ChatItemView.kt         calls without LocalBubbleLayout
+chat/item/ChatItemView.kt         calls without LocalBubbleLayout; tailRendered for deleted and error items; bubbleTailSpace
 chat/ChatView.kt                  LocalBubbleLayout provided for classic chats; row gaps in sp
 usersettings/Appearance.kt        LocalBubbleLayout for the classic theme preview
 ```

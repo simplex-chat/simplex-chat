@@ -11,6 +11,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.desktop.ui.tooling.preview.Preview
@@ -25,8 +26,8 @@ import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.*
 
 @Composable
-fun IntegrityErrorItemView(msgError: MsgErrorType, ci: ChatItem, showTimestamp: Boolean, timedMessagesTTL: Int?) {
-  CIMsgError(ci, showTimestamp, timedMessagesTTL) {
+fun IntegrityErrorItemView(msgError: MsgErrorType, ci: ChatItem, showTimestamp: Boolean, timedMessagesTTL: Int?, tailRendered: Boolean) {
+  CIMsgError(ci, showTimestamp, timedMessagesTTL, tailRendered) {
     when (msgError) {
       is MsgErrorType.MsgSkipped ->
         AlertManager.shared.showAlertMsg(
@@ -51,17 +52,17 @@ fun IntegrityErrorItemView(msgError: MsgErrorType, ci: ChatItem, showTimestamp: 
 }
 
 @Composable
-fun CIMsgError(ci: ChatItem, showTimestamp: Boolean, timedMessagesTTL: Int?, onClick: () -> Unit) {
+fun CIMsgError(ci: ChatItem, showTimestamp: Boolean, timedMessagesTTL: Int?, tailRendered: Boolean, onClick: () -> Unit) {
   val receivedColor = MaterialTheme.appColors.receivedMessage
   ItemWithMeta(meta = { CIMetaView(ci, timedMessagesTTL, showViaProxy = false, showTimestamp = showTimestamp) }) { inlineMeta ->
     Surface(
       Modifier.clickable(onClick = onClick),
-      shape = RoundedCornerShape(18.dp),
+      shape = if (inlineMeta != null) RectangleShape else RoundedCornerShape(18.dp),
       color = receivedColor,
       contentColor = LocalContentColor.current
     ) {
       Row(
-        if (inlineMeta != null) Modifier.bubbleTextPadding(16.sp) else Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+        if (inlineMeta != null) Modifier.bubbleTailSpace(ci.chatDir.sent, tailRendered).bubbleTextPadding(16.sp) else Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.Bottom
       ) {
         Text(
@@ -82,8 +83,8 @@ fun CIMsgError(ci: ChatItem, showTimestamp: Boolean, timedMessagesTTL: Int?, onC
 }
 
 @Composable
-fun RcvMsgErrorItemView(rcvMsgError: RcvMsgError, ci: ChatItem, showTimestamp: Boolean, timedMessagesTTL: Int?) {
-  CIMsgError(ci, showTimestamp, timedMessagesTTL) {
+fun RcvMsgErrorItemView(rcvMsgError: RcvMsgError, ci: ChatItem, showTimestamp: Boolean, timedMessagesTTL: Int?, tailRendered: Boolean) {
+  CIMsgError(ci, showTimestamp, timedMessagesTTL, tailRendered) {
     AlertManager.shared.showAlertMsg(
       title = generalGetString(MR.strings.alert_title_msg_error),
       text = when (rcvMsgError) {
@@ -106,6 +107,7 @@ fun IntegrityErrorItemViewPreview() {
       ChatItem.getDeletedContentSampleData(),
       showTimestamp = true,
       null,
+      tailRendered = false,
     )
   }
 }

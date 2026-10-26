@@ -273,7 +273,7 @@ fun FramedItemView(
         Column(
           Modifier
             .width(IntrinsicSize.Max)
-            .padding(start = if (!sent && tailRendered) msgTailWidthDp else 0.dp, end = if (sent && tailRendered) msgTailWidthDp else 0.dp)
+            .bubbleTailSpace(sent, tailRendered)
         ) {
           PriorityLayout(Modifier, CHAT_IMAGE_LAYOUT_ID, limitToPriorityWidth = !terminal || captionlessMedia) {
             @Composable

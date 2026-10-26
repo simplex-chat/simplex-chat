@@ -4,6 +4,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
@@ -20,17 +21,17 @@ import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.datetime.Clock
 
 @Composable
-fun MarkedDeletedItemView(chatsCtx: ChatModel.ChatsContext, ci: ChatItem, chatInfo: ChatInfo, timedMessagesTTL: Int?, revealed: State<Boolean>, showViaProxy: Boolean, showTimestamp: Boolean) {
+fun MarkedDeletedItemView(chatsCtx: ChatModel.ChatsContext, ci: ChatItem, chatInfo: ChatInfo, timedMessagesTTL: Int?, revealed: State<Boolean>, showViaProxy: Boolean, showTimestamp: Boolean, tailRendered: Boolean) {
   val sentColor = MaterialTheme.appColors.sentMessage
   val receivedColor = MaterialTheme.appColors.receivedMessage
   ItemWithMeta(meta = { CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp) }) { inlineMeta ->
     Surface(
-      shape = RoundedCornerShape(18.dp),
+      shape = if (inlineMeta != null) RectangleShape else RoundedCornerShape(18.dp),
       color = if (ci.chatDir.sent) sentColor else receivedColor,
       contentColor = LocalContentColor.current
     ) {
       Row(
-        if (inlineMeta != null) Modifier.bubbleTextPadding(12.sp) else Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+        if (inlineMeta != null) Modifier.bubbleTailSpace(ci.chatDir.sent, tailRendered).bubbleTextPadding(12.sp) else Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
       ) {
         Box(Modifier.weight(1f, false).alignByBaseline()) {
@@ -127,7 +128,8 @@ fun PreviewMarkedDeletedItemView() {
       ChatItem.getSampleData(itemDeleted = CIDeleted.Deleted(Clock.System.now())),
       null,
       showViaProxy = false,
-      showTimestamp = true
+      showTimestamp = true,
+      tailRendered = false
     )
   }
 }
