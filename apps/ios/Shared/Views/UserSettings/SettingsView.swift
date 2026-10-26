@@ -57,6 +57,7 @@ let DEFAULT_USER_INTERFACE_STYLE = "userInterfaceStyle" // deprecated, only used
 let DEFAULT_PROFILE_IMAGE_CORNER_RADIUS = "profileImageCornerRadius"
 let DEFAULT_CHAT_ITEM_ROUNDNESS = "chatItemRoundness"
 let DEFAULT_CHAT_ITEM_TAIL = "chatItemTail"
+let DEFAULT_CHAT_LAYOUT = "chatLayout"
 let DEFAULT_ONE_HAND_UI_CARD_SHOWN = "oneHandUICardShown"
 let DEFAULT_ADDRESS_CREATION_CARD_SHOWN = "addressCreationCardShown"
 let DEFAULT_SUPPORTER_BANNER_SHOWN = "supporterBannerShown"
@@ -123,6 +124,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_PROFILE_IMAGE_CORNER_RADIUS: defaultProfileImageCorner,
     DEFAULT_CHAT_ITEM_ROUNDNESS: defaultChatItemRoundness,
     DEFAULT_CHAT_ITEM_TAIL: true,
+    DEFAULT_CHAT_LAYOUT: ChatLayout.classic.rawValue,
     DEFAULT_ONE_HAND_UI_CARD_SHOWN: false,
     DEFAULT_ADDRESS_CREATION_CARD_SHOWN: false,
     DEFAULT_SUPPORTER_BANNER_SHOWN: false,
@@ -213,6 +215,8 @@ let encryptionStartedAtDefault = DateDefault(defaults: UserDefaults.standard, fo
 let shouldDeleteDatabaseBackupsDefault = BoolDefault(defaults: UserDefaults.standard, forKey: DEFAULT_SHOULD_DELETE_DATABASE_BACKUPS)
 
 let connectViaLinkTabDefault = EnumDefault<ConnectViaLinkTab>(defaults: UserDefaults.standard, forKey: DEFAULT_CONNECT_VIA_LINK_TAB, withDefault: .scan)
+
+let chatLayoutDefault = EnumDefault<ChatLayout>(defaults: UserDefaults.standard, forKey: DEFAULT_CHAT_LAYOUT, withDefault: .classic)
 
 let privacySimplexLinkModeDefault = EnumDefault<SimpleXLinkMode>(defaults: UserDefaults.standard, forKey: DEFAULT_PRIVACY_SIMPLEX_LINK_MODE, withDefault: .description)
 

@@ -1,0 +1,283 @@
+#!/bin/bash
+
+# Drives the desktop app on a virtual X display, for the scripted cases and for an agent on the runner.
+# Compose for Desktop has no accessibility tree on Linux, so text is found on screenshots by OCR (tesseract);
+# coordinates are screen pixels, as in the screenshots. Screenshots, the text read from them and
+# a log of every command (steps.log) go to UI_OUT; the app's data stays in UI_STATE between starts.
+#
+#   ui start <app dir> [<setting>=<value>...]
+#                                 start Xvfb, openbox and <app dir>/bin/simplex, and wait for its window; the app gets
+#                                 the settings given when UI_STATE has none yet
+#   ui shot <name>                save UI_OUT/NN-<name>.png and NN-<name>.txt (OCR's input and output in UI_OUT/ocr), and print the text on screen
+#   ui text                       print the text on screen, one phrase per line after its centre x,y
+#   ui find <text>                print "x y left top right bottom", the text's centre and box; fail if it is not on screen
+#   ui ink <text>                 print the height in pixels of the text's ink, to compare text sizes
+#   ui wait <text> [secs]         wait up to secs (30) until the text is on screen
+#   ui click <x> <y>              click at x,y
+#   ui click-text <text> [secs]   wait up to secs (20) for the text and click its centre
+#   ui scroll <x> <y> <up|down> [clicks]
+#                                 turn the mouse wheel over x,y, 3 clicks unless given
+#   ui avatar <text> [colour]     print how many pixels of the profile image left of a list row's name (the text) stand out
+#                                 from the background, and their mean colour, saving the area as UI_OUT/NN-avatar-<text>.png;
+#                                 with red, green or blue, fail unless that colour dominates
+#   ui type <text>                type into the focused field
+#   ui key <key>...               press keys named as in xdotool (Return, Escape, ctrl+a)
+#   ui do <command> [args] -- <command> [args] ...
+#                                 run the commands in order, stopping at the first that fails
+#   ui stop                       stop the app, openbox and Xvfb
+#
+# Text is compared ignoring case, spaces and punctuation, with a capital I and a lowercase l alike; a phrase that is
+# exactly the text wins over one that contains it.
+
+set -euo pipefail
+# an agent on the runner runs this, and nothing it starts needs the agent's credentials
+unset CLAUDE_CODE_OAUTH_TOKEN
+
+: "${UI_OUT:?UI_OUT must be the output directory}"
+export DISPLAY=${UI_DISPLAY:-:99}
+state=${UI_STATE:-${RUNNER_TEMP:-/tmp}/ui}
+here=$(cd "$(dirname "$0")" && pwd)
+mkdir -p "$UI_OUT" "$state/ocr"
+
+log() {
+  echo "$(date -u +%H:%M:%S) $*" | tee -a "$UI_OUT/steps.log"
+}
+
+running() {
+  [ -f "$state/$1.pid" ] && kill -0 "$(cat "$state/$1.pid")" 2> /dev/null
+}
+
+stop_process() {
+  local name=$1 secs=$2 pid
+  if ! running "$name"; then
+    rm -f "$state/$name.pid"
+    return
+  fi
+  pid=$(cat "$state/$name.pid")
+  kill "$pid" 2> /dev/null || true
+  for _ in $(seq "$secs"); do
+    kill -0 "$pid" 2> /dev/null || break
+    sleep 1
+  done
+  kill -9 "$pid" 2> /dev/null || true
+  rm -f "$state/$name.pid"
+}
+
+start() {
+  local app_dir settings=$state/config/simplex/settings.properties
+  app_dir=$(cd "$1" && pwd)
+  shift
+  if running app; then
+    echo "error: the app is already running"
+    return 1
+  fi
+  stop_process openbox 2
+  stop_process xvfb 2
+
+  setsid Xvfb "$DISPLAY" -screen 0 1440x900x24 -nolisten tcp < /dev/null > "$UI_OUT/xvfb.log" 2>&1 &
+  echo $! > "$state/xvfb.pid"
+  for _ in $(seq 20); do
+    xdotool getdisplaygeometry > /dev/null 2>&1 && break
+    sleep 0.5
+  done
+  xdotool getdisplaygeometry
+
+  setsid openbox --sm-disable < /dev/null > "$UI_OUT/openbox.log" 2>&1 &
+  echo $! > "$state/openbox.pid"
+
+  mkdir -p "$state/data" "$state/config" "$state/tmp"
+  if [ $# -gt 0 ] && [ ! -f "$settings" ]; then
+    mkdir -p "$(dirname "$settings")"
+    printf '%s\n' "$@" > "$settings"
+  fi
+  XDG_DATA_HOME="$state/data" \
+    XDG_CONFIG_HOME="$state/config" \
+    JAVA_TOOL_OPTIONS="-Djava.io.tmpdir=$state/tmp -Dskiko.renderApi=SOFTWARE" \
+    LD_LIBRARY_PATH="$app_dir/lib/app/resources" \
+    setsid "$app_dir/bin/simplex" < /dev/null >> "$UI_OUT/app.log" 2>&1 &
+  echo $! > "$state/app.pid"
+
+  if ! timeout 120 xdotool search --sync --onlyvisible --name '^SimpleX$' > "$state/window"; then
+    echo "error: no app window after 120 s"
+    return 1
+  fi
+  xdotool getwindowgeometry "$(head -n 1 "$state/window")"
+}
+
+# ocr <png> lines | ocr <png> find <text>
+# Dark text is cut out by a local threshold, light text (labels on coloured buttons) by the difference from a morphological open:
+# a local threshold of the negative rings the buttons, and tesseract reads nothing inside a ring.
+ocr() {
+  local png=$1 o=$state/ocr
+  shift
+  convert "$png" -colorspace Gray -depth 8 "$o/gray.pgm"
+  convert "$o/gray.pgm" -resize 200% -lat 60x60-5% "$o/dark.png"
+  convert "$o/gray.pgm" \( +clone -morphology Erode Rectangle:9x1 -morphology Erode Rectangle:1x9 -morphology Dilate Rectangle:9x1 -morphology Dilate Rectangle:1x9 \) -compose Difference -composite -negate -resize 200% "$o/light.png"
+  tesseract "$o/dark.png" "$o/dark" --psm 11 tsv > /dev/null 2>&1
+  tesseract "$o/light.png" "$o/light" --psm 11 tsv > /dev/null 2>&1
+  python3 "$here/screen-text.py" 2 "$o" "$@"
+}
+
+screen_ocr() {
+  import -window root "$state/ocr/screen.png"
+  ocr "$state/ocr/screen.png" "$@"
+}
+
+# prints "x y left top right bottom" of the text once it is on screen
+wait_for() {
+  local text=$1 deadline=$((SECONDS + $2))
+  until screen_ocr find "$text"; do
+    [ "$SECONDS" -lt "$deadline" ] || return 1
+    sleep 1
+  done
+}
+
+# prints UI_OUT/NN-<name>, numbered after the files already saved
+next_file() {
+  local n
+  n=$(find "$UI_OUT" -maxdepth 1 -name '[0-9][0-9]-*.png' | wc -l)
+  printf '%s/%02d-%s' "$UI_OUT" $((n + 1)) "$1"
+}
+
+shot() {
+  local f
+  f=$(next_file "$1")
+  import -window root "$f.png"
+  ocr "$f.png" lines > "$f.txt"
+  mkdir -p "$UI_OUT/ocr"
+  for pass in dark light; do
+    cp "$state/ocr/$pass.png" "$UI_OUT/ocr/$(basename "$f")-$pass.png"
+    cp "$state/ocr/$pass.tsv" "$UI_OUT/ocr/$(basename "$f")-$pass.tsv"
+  done
+  echo "::group::text on screen: $(basename "$f")"
+  cat "$f.txt"
+  echo "::endgroup::"
+  log "shot $(basename "$f").png"
+}
+
+click() {
+  xdotool mousemove --sync "$1" "$2" click 1
+  sleep 1
+}
+
+# X buttons 4 and 5 are the wheel turned up and down
+scroll() {
+  local button
+  case "$3" in
+    up) button=4 ;;
+    down) button=5 ;;
+    *)
+      echo "error: scroll up or down, not \"$3\""
+      return 1
+      ;;
+  esac
+  xdotool mousemove --sync "$1" "$2" click --repeat "$4" --delay 100 "$button"
+  sleep 1
+}
+
+# A list row's profile image is 42 px square, 8 px left of the row's name, and starts a little below the name's top:
+# the area allows for OCR's box being a few pixels off, and leaves out the rows above and below.
+avatar() {
+  local text=$1 colour=${2:-} pos x y l t r b f stats
+  if ! pos=$(screen_ocr find "$text"); then
+    log "avatar \"$text\": not on screen"
+    return 1
+  fi
+  read -r x y l t r b <<< "$pos"
+  f=$(next_file "avatar-$(tr -cd 'a-zA-Z0-9_' <<< "$text")")
+  convert "$state/ocr/screen.png" -crop "52x64+$((l > 56 ? l - 56 : 0))+$((t > 6 ? t - 6 : 0))" +repage "$f.png"
+  convert "$f.png" -depth 8 "$state/ocr/avatar.ppm"
+  if ! stats=$(python3 "$here/screen-colour.py" "$state/ocr/avatar.ppm" ${colour:+"$colour"}); then
+    log "avatar \"$text\": $stats, not $colour"
+    return 1
+  fi
+  log "avatar \"$text\": $stats${colour:+, $colour}"
+}
+
+case "${1:-}" in
+  start)
+    shift
+    log "start $*"
+    start "$@"
+    ;;
+  shot) shot "$2" ;;
+  text) screen_ocr lines ;;
+  find)
+    if ! pos=$(screen_ocr find "$2"); then
+      log "find \"$2\": not on screen" >&2
+      exit 1
+    fi
+    log "find \"$2\": $pos" > /dev/null
+    echo "$pos"
+    ;;
+  ink)
+    if ! pos=$(screen_ocr find "$2"); then
+      log "ink \"$2\": not on screen" >&2
+      exit 1
+    fi
+    read -r _ _ l t r b <<< "$pos"
+    # 2 px around OCR's box, less than the gap between lines
+    h=$(python3 "$here/screen-ink.py" "$state/ocr/gray.pgm" "$l" $((t - 2)) "$r" $((b + 2)))
+    log "ink \"$2\": $h px" > /dev/null
+    echo "$h"
+    ;;
+  wait)
+    secs=${3:-30}
+    if ! pos=$(wait_for "$2" "$secs"); then
+      log "wait \"$2\": not on screen after $secs s"
+      exit 1
+    fi
+    read -r x y _ <<< "$pos"
+    log "wait \"$2\": at $x,$y"
+    ;;
+  click)
+    click "$2" "$3"
+    log "click $2,$3"
+    ;;
+  click-text)
+    secs=${3:-20}
+    if ! pos=$(wait_for "$2" "$secs"); then
+      log "click-text \"$2\": not on screen after $secs s"
+      exit 1
+    fi
+    read -r x y _ <<< "$pos"
+    click "$x" "$y"
+    log "click-text \"$2\" at $x,$y"
+    ;;
+  scroll)
+    scroll "$2" "$3" "$4" "${5:-3}"
+    log "scroll $4 at $2,$3, ${5:-3} clicks"
+    ;;
+  avatar) avatar "$2" "${3:-}" ;;
+  type)
+    xdotool type --delay 50 -- "$2"
+    log "type \"$2\""
+    ;;
+  key)
+    shift
+    xdotool key --delay 100 -- "$@"
+    log "key $*"
+    ;;
+  do)
+    shift
+    command=()
+    for arg in "$@" --; do
+      if [ "$arg" != -- ]; then
+        command+=("$arg")
+      elif [ ${#command[@]} -gt 0 ]; then
+        "$0" "${command[@]}"
+        command=()
+      fi
+    done
+    ;;
+  stop)
+    stop_process app 10
+    stop_process openbox 2
+    stop_process xvfb 2
+    log "stop"
+    ;;
+  *)
+    sed -n '3,/^$/s/^# \{0,1\}//p' "$0"
+    exit 1
+    ;;
+esac
