@@ -37,7 +37,7 @@
       </trans-unit>
       <trans-unit id="%1$@ supported SimpleX Chat. The badge expired on %2$@." xml:space="preserve" approved="no">
         <source>%1$@ supported SimpleX Chat. The badge expired on %2$@.</source>
-        <target state="translated">%1$@ hat SimpleX Chat unterstützt. Das Abzeichen ist am %2$@ abgelaufen.</target>
+        <target state="translated">%1$@ hat SimpleX Chat unterstützt. Der Badge ist am %2$@ abgelaufen.</target>
         <note>badge alert</note>
       </trans-unit>
       <trans-unit id="%02d hrs %02d min %02d sec" xml:space="preserve" approved="no">
@@ -1498,7 +1498,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Badge cannot be verified" xml:space="preserve" approved="no">
         <source>Badge cannot be verified</source>
-        <target state="translated">Abzeichen ist nicht verifizierbar</target>
+        <target state="translated">Badge ist nicht verifizierbar</target>
         <note>badge alert title</note>
       </trans-unit>
       <trans-unit id="Badge ledger" xml:space="preserve" approved="no">
@@ -1832,7 +1832,7 @@ new chat action</note>
       </trans-unit>
       <trans-unit id="Cannot generate random database passphrase" xml:space="preserve" approved="no">
         <source>Cannot generate random database passphrase</source>
-        <target state="translated">Es konnte keine zufällige Datenbank-Passphrase generiert werden</target>
+        <target state="translated">Es konnte kein zufälliges Datenbank-Passwort generiert werden</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Cannot receive file" xml:space="preserve" approved="no">
@@ -9603,7 +9603,7 @@ report reason</note>
       </trans-unit>
       <trans-unit id="Stop chat in Settings → Chat data → Database passphrase &amp; export to delete temp data." xml:space="preserve" approved="no">
         <source>Stop chat in Settings → Chat data → Database passphrase &amp; export to delete temp data.</source>
-        <target state="translated">Beenden Sie den Chat unter Einstellungen → Chatdaten → Datenbank-Passphrase &amp; Export, um temporäre Daten zu löschen.</target>
+        <target state="translated">Beenden Sie den Chat unter Einstellungen → Chatdaten → Datenbank-Passwort &amp; Export, um temporäre Daten zu löschen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." xml:space="preserve" approved="no">
@@ -9764,8 +9764,9 @@ Die Relais-Adresse wurde zur Einrichtung dieses Relais für diesen Kanal verwend
         <note>alert button
 alert title</note>
       </trans-unit>
-      <trans-unit id="Support SimpleX to send larger files that stay available longer" xml:space="preserve">
+      <trans-unit id="Support SimpleX to send larger files that stay available longer" xml:space="preserve" approved="no">
         <source>Support SimpleX to send larger files that stay available longer</source>
+        <target state="translated">Unterstützen Sie SimpleX, um größere Dateien zu senden, die länger verfügbar bleiben</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Support the project" xml:space="preserve" approved="no">
@@ -9773,20 +9774,24 @@ alert title</note>
         <target state="translated">Unterstützen Sie das Projekt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Supporter" xml:space="preserve">
+      <trans-unit id="Supporter" xml:space="preserve" approved="no">
         <source>Supporter</source>
+        <target state="translated">Unterstützer</target>
         <note>badge type</note>
       </trans-unit>
-      <trans-unit id="Supporter badge ❤️" xml:space="preserve">
+      <trans-unit id="Supporter badge ❤️" xml:space="preserve" approved="no">
         <source>Supporter badge ❤️</source>
+        <target state="translated">Unterstützer-Badge ❤️</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Supporter perks" xml:space="preserve">
+      <trans-unit id="Supporter perks" xml:space="preserve" approved="no">
         <source>Supporter perks</source>
+        <target state="translated">Vorteile für Unterstützer</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Supporter: 2 GB files available for 7 days." xml:space="preserve">
+      <trans-unit id="Supporter: 2 GB files available for 7 days." xml:space="preserve" approved="no">
         <source>Supporter: 2 GB files available for 7 days.</source>
+        <target state="translated">Unterstützer: Dateien bis 2 GB sind 7 Tage lang verfügbar.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Switch audio and video during the call." xml:space="preserve" approved="no">
@@ -9889,8 +9894,9 @@ alert title</note>
         <target state="translated">Schaltfläche antippen </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap for details" xml:space="preserve">
+      <trans-unit id="Tap for details" xml:space="preserve" approved="no">
         <source>Tap for details</source>
+        <target state="translated">Für Details tippen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap to Connect" xml:space="preserve" approved="no">
@@ -10038,51 +10044,62 @@ Dies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompro
       </trans-unit>
       <trans-unit id="The badge is signed with a key that this version of the app does not recognize. Update the app to verify this badge." xml:space="preserve" approved="no">
         <source>The badge is signed with a key that this version of the app does not recognize. Update the app to verify this badge.</source>
-        <target state="translated">Das Abzeichen ist mit einem Schlüssel signiert, den diese App‑Version nicht erkennt. Aktualisieren Sie die App, um dieses Abzeichen zu verifizieren.</target>
+        <target state="translated">Der Badge ist mit einem Schlüssel signiert, den diese App‑Version nicht erkennt. Aktualisieren Sie die App, um diesen Badge zu verifizieren.</target>
         <note>badge alert</note>
       </trans-unit>
-      <trans-unit id="The badge issued by the service cannot be verified." xml:space="preserve">
+      <trans-unit id="The badge issued by the service cannot be verified." xml:space="preserve" approved="no">
         <source>The badge issued by the service cannot be verified.</source>
+        <target state="translated">Der vom Dienst ausgestellte Badge kann nicht verifiziert werden.</target>
         <note>badge renewal error</note>
       </trans-unit>
-      <trans-unit id="The badge service could not be reached." xml:space="preserve">
+      <trans-unit id="The badge service could not be reached." xml:space="preserve" approved="no">
         <source>The badge service could not be reached.</source>
+        <target state="translated">Der Badge-Dienst konnte nicht erreicht werden.</target>
         <note>badge renewal error</note>
       </trans-unit>
-      <trans-unit id="The badge service did not respond." xml:space="preserve">
+      <trans-unit id="The badge service did not respond." xml:space="preserve" approved="no">
         <source>The badge service did not respond.</source>
+        <target state="translated">Der Badge-Dienst hat nicht geantwortet.</target>
         <note>badge renewal error</note>
       </trans-unit>
-      <trans-unit id="The badge service does not recognize this badge." xml:space="preserve">
+      <trans-unit id="The badge service does not recognize this badge." xml:space="preserve" approved="no">
         <source>The badge service does not recognize this badge.</source>
+        <target state="translated">Der Badge-Dienst erkennt diesen Badge nicht.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="The badge service refused the purchase: %@" xml:space="preserve">
+      <trans-unit id="The badge service refused the purchase: %@" xml:space="preserve" approved="no">
         <source>The badge service refused the purchase: %@</source>
+        <target state="translated">Der Badge-Dienst hat den Kauf abgelehnt: %@</target>
         <note>badge purchase error</note>
       </trans-unit>
-      <trans-unit id="The badge service refused the renewal: %@" xml:space="preserve">
+      <trans-unit id="The badge service refused the renewal: %@" xml:space="preserve" approved="no">
         <source>The badge service refused the renewal: %@</source>
+        <target state="translated">Der Badge-Dienst hat die Verlängerung abgelehnt: %@</target>
         <note>badge renewal error</note>
       </trans-unit>
-      <trans-unit id="The badge service reported an internal error." xml:space="preserve">
+      <trans-unit id="The badge service reported an internal error." xml:space="preserve" approved="no">
         <source>The badge service reported an internal error.</source>
+        <target state="translated">Der Badge-Dienst hat einen internen Fehler gemeldet.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="The badge service sent an unexpected response: %@" xml:space="preserve">
+      <trans-unit id="The badge service sent an unexpected response: %@" xml:space="preserve" approved="no">
         <source>The badge service sent an unexpected response: %@</source>
+        <target state="translated">Der Badge-Dienst hat eine unerwartete Antwort gesendet: %@</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="The badge was added to the profile %@." xml:space="preserve">
+      <trans-unit id="The badge was added to the profile %@." xml:space="preserve" approved="no">
         <source>The badge was added to the profile %@.</source>
+        <target state="translated">Der Badge wurde dem Profil %@ hinzugefügt.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="The badge will be added to the profile %@." xml:space="preserve">
+      <trans-unit id="The badge will be added to the profile %@." xml:space="preserve" approved="no">
         <source>The badge will be added to the profile %@.</source>
+        <target state="translated">Der Badge wird dem Profil %@ hinzugefügt.</target>
         <note>badge link confirmation</note>
       </trans-unit>
-      <trans-unit id="The badge will be added to this profile." xml:space="preserve">
+      <trans-unit id="The badge will be added to this profile." xml:space="preserve" approved="no">
         <source>The badge will be added to this profile.</source>
+        <target state="translated">Der Badge wird diesem Profil hinzugefügt.</target>
         <note>badge link, being issued</note>
       </trans-unit>
       <trans-unit id="The channel required this message to be signed, but the signature is missing." xml:space="preserve" approved="no">
@@ -10090,8 +10107,9 @@ Dies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompro
         <target state="translated">Der Kanal verlangt für diese Nachricht eine Signatur, welche aber fehlt.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="The code was accepted, but the badge it grants has already ended." xml:space="preserve">
+      <trans-unit id="The code was accepted, but the badge it grants has already ended." xml:space="preserve" approved="no">
         <source>The code was accepted, but the badge it grants has already ended.</source>
+        <target state="translated">Der Code wurde akzeptiert, aber der zugehörige Badge ist bereits abgelaufen.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The code you scanned is not a SimpleX link QR code." xml:space="preserve" approved="no">
@@ -10099,8 +10117,9 @@ Dies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompro
         <target state="translated">Der von Ihnen gescannte Code ist kein SimpleX-Link-QR-Code.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The code you scanned is not a badge code." xml:space="preserve">
+      <trans-unit id="The code you scanned is not a badge code." xml:space="preserve" approved="no">
         <source>The code you scanned is not a badge code.</source>
+        <target state="translated">Der eingescannte Code ist kein Badge-Code.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The connection reached the limit of undelivered messages" xml:space="preserve" approved="no">
@@ -10180,8 +10199,9 @@ in dem Sie Ihre Kontakte und Gruppen besitzen.</target>
         <target state="translated">Die älteste Freiheit des Menschen - mit einem anderen Menschen sprechen zu können, ohne beobachtet zu werden - gestützt auf einer Infrastruktur, die Sie nicht verraten kann.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The payment has not been confirmed yet." xml:space="preserve">
+      <trans-unit id="The payment has not been confirmed yet." xml:space="preserve" approved="no">
         <source>The payment has not been confirmed yet.</source>
+        <target state="translated">Die Zahlung wurde noch nicht bestätigt.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The same conditions will apply to operator **%@**." xml:space="preserve" approved="no">
@@ -10219,20 +10239,24 @@ in dem Sie Ihre Kontakte und Gruppen besitzen.</target>
         <target state="translated">Medien- und Datei-Server für neue Daten über Ihr aktuelles Chat-Profil **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The service did not respond. Please try again." xml:space="preserve">
+      <trans-unit id="The service did not respond. Please try again." xml:space="preserve" approved="no">
         <source>The service did not respond. Please try again.</source>
+        <target state="translated">Der Dienst hat nicht geantwortet. Bitte versuchen Sie es erneut.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="The store could not be reached." xml:space="preserve">
+      <trans-unit id="The store could not be reached." xml:space="preserve" approved="no">
         <source>The store could not be reached.</source>
+        <target state="translated">Der Store konnte nicht erreicht werden.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="The store did not confirm this purchase." xml:space="preserve">
+      <trans-unit id="The store did not confirm this purchase." xml:space="preserve" approved="no">
         <source>The store did not confirm this purchase.</source>
+        <target state="translated">Der Store hat diesen Kauf nicht bestätigt.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="The store returned a transaction that Apple has not signed. SimpleX cannot verify this purchase with the App Store." xml:space="preserve">
+      <trans-unit id="The store returned a transaction that Apple has not signed. SimpleX cannot verify this purchase with the App Store." xml:space="preserve" approved="no">
         <source>The store returned a transaction that Apple has not signed. SimpleX cannot verify this purchase with the App Store.</source>
+        <target state="translated">Der Store hat eine nicht von Apple signierte Transaktion zurückgegeben. SimpleX kann diesen Kauf daher nicht mit dem App Store verifizieren.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The text you pasted is not a SimpleX link." xml:space="preserve" approved="no">
@@ -10300,29 +10324,34 @@ in dem Sie Ihre Kontakte und Gruppen besitzen.</target>
         <target state="translated">Ihr Profil, Ihre Kontakte, Nachrichten und Dateien gehen unwiderruflich verloren. Diese Aktion kann nicht rückgängig gemacht werden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This app version cannot buy badges." xml:space="preserve">
+      <trans-unit id="This app version cannot buy badges." xml:space="preserve" approved="no">
         <source>This app version cannot buy badges.</source>
+        <target state="translated">Diese App-Version kann keine Badges kaufen.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="This app version cannot redeem badge codes." xml:space="preserve">
+      <trans-unit id="This app version cannot redeem badge codes." xml:space="preserve" approved="no">
         <source>This app version cannot redeem badge codes.</source>
+        <target state="translated">Diese App-Version kann keine Badge-Codes einlösen.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="This app version cannot verify this badge. Please update the app." xml:space="preserve">
+      <trans-unit id="This app version cannot verify this badge. Please update the app." xml:space="preserve" approved="no">
         <source>This app version cannot verify this badge. Please update the app.</source>
+        <target state="translated">Diese App-Version kann diesen Badge nicht überprüfen. Bitte aktualisieren Sie die App.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="This app version is too old for the badge service. Please update the app." xml:space="preserve">
+      <trans-unit id="This app version is too old for the badge service. Please update the app." xml:space="preserve" approved="no">
         <source>This app version is too old for the badge service. Please update the app.</source>
+        <target state="translated">Diese App-Version ist für den Badge-Dienst zu alt. Bitte aktualisieren Sie die App.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="This badge could not be verified and may not be genuine." xml:space="preserve" approved="no">
         <source>This badge could not be verified and may not be genuine.</source>
-        <target state="translated">Dieses Abzeichen konnte nicht verifiziert werden und ist möglicherweise nicht echt.</target>
+        <target state="translated">Dieser Badge konnte nicht verifiziert werden und ist möglicherweise nicht echt.</target>
         <note>badge alert</note>
       </trans-unit>
-      <trans-unit id="This badge is not on sale." xml:space="preserve">
+      <trans-unit id="This badge is not on sale." xml:space="preserve" approved="no">
         <source>This badge is not on sale.</source>
+        <target state="translated">Dieser Badge steht nicht zum Verkauf.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="This chat is protected by end-to-end encryption." xml:space="preserve" approved="no">
@@ -10335,20 +10364,24 @@ in dem Sie Ihre Kontakte und Gruppen besitzen.</target>
         <target state="translated">Dieser Chat ist durch Quantum-resistente Ende-zu-Ende-Verschlüsselung geschützt.</target>
         <note>E2EE info chat item</note>
       </trans-unit>
-      <trans-unit id="This code has already been used." xml:space="preserve">
+      <trans-unit id="This code has already been used." xml:space="preserve" approved="no">
         <source>This code has already been used.</source>
+        <target state="translated">Dieser Code wurde bereits verwendet.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="This code has expired." xml:space="preserve">
+      <trans-unit id="This code has expired." xml:space="preserve" approved="no">
         <source>This code has expired.</source>
+        <target state="translated">Dieser Code ist abgelaufen.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="This code is not valid." xml:space="preserve">
+      <trans-unit id="This code is not valid." xml:space="preserve" approved="no">
         <source>This code is not valid.</source>
+        <target state="translated">Dieser Code ist nicht gültig.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="This code was not recognized." xml:space="preserve">
+      <trans-unit id="This code was not recognized." xml:space="preserve" approved="no">
         <source>This code was not recognized.</source>
+        <target state="translated">Dieser Code wurde nicht erkannt.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="This device name" xml:space="preserve" approved="no">
@@ -10361,8 +10394,9 @@ in dem Sie Ihre Kontakte und Gruppen besitzen.</target>
         <target state="translated">Der Anzeigename ist ungültig. Bitte wählen Sie einen anderen Namen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This file has text direction characters. The text can be shown in a different order than it is written." xml:space="preserve">
+      <trans-unit id="This file has text direction characters. The text can be shown in a different order than it is written." xml:space="preserve" approved="no">
         <source>This file has text direction characters. The text can be shown in a different order than it is written.</source>
+        <target state="translated">Diese Datei enthält Zeichen zur Steuerung der Textrichtung. Dadurch kann der Text in einer anderen Reihenfolge angezeigt werden, als er geschrieben wurde.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This group has over %lld members, delivery receipts are not sent." xml:space="preserve" approved="no">
@@ -10396,8 +10430,9 @@ alert subtitle</note>
         <target state="translated">Dies ist Ihr Link für den Kanal %@!</target>
         <note>new chat action</note>
       </trans-unit>
-      <trans-unit id="This link is not supported by this app version. Please check for app updates." xml:space="preserve">
+      <trans-unit id="This link is not supported by this app version. Please check for app updates." xml:space="preserve" approved="no">
         <source>This link is not supported by this app version. Please check for app updates.</source>
+        <target state="translated">Dieser Link wird von dieser App-Version nicht unterstützt. Bitte prüfen Sie, ob ein App-Update verfügbar ist.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link." xml:space="preserve" approved="no">
@@ -10415,16 +10450,19 @@ alert subtitle</note>
         <target state="translated">Diese Nachricht wurde gelöscht oder bisher noch nicht empfangen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This profile already has a badge." xml:space="preserve">
+      <trans-unit id="This profile already has a badge." xml:space="preserve" approved="no">
         <source>This profile already has a badge.</source>
+        <target state="translated">Dieses Profil hat bereits einen Badge.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="This profile already has a badge. Redeem the code on another profile, or once this badge ends." xml:space="preserve">
+      <trans-unit id="This profile already has a badge. Redeem the code on another profile, or once this badge ends." xml:space="preserve" approved="no">
         <source>This profile already has a badge. Redeem the code on another profile, or once this badge ends.</source>
+        <target state="translated">Dieses Profil verfügt bereits über einen Badge. Lösen Sie den Code in einem anderen Profil ein oder warten Sie, bis dieser Badge abgelaufen ist.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="This purchase was already credited to a badge on another device or profile." xml:space="preserve">
+      <trans-unit id="This purchase was already credited to a badge on another device or profile." xml:space="preserve" approved="no">
         <source>This purchase was already credited to a badge on another device or profile.</source>
+        <target state="translated">Dieser Kauf wurde bereits einem Badge auf einem anderen Gerät oder Profil gutgeschrieben.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="This setting applies to messages in your current chat profile **%@**." xml:space="preserve" approved="no">
@@ -10494,12 +10532,14 @@ Sie werden aufgefordert, die Authentifizierung abzuschließen, bevor diese Funkt
         <target state="translated">Zum Schutz Ihrer Privatsphäre verwendet SimpleX an Stelle von Benutzerkennungen, die von allen anderen Plattformen verwendet werden, Kennungen für Nachrichtenwarteschlangen, die für jeden Ihrer Kontakte individuell sind.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To prove to a contact or a server that you have a badge, the app generates a new proof that reveals only the badge type and the expiry date, rounded to a week." xml:space="preserve">
+      <trans-unit id="To prove to a contact or a server that you have a badge, the app generates a new proof that reveals only the badge type and the expiry date, rounded to a week." xml:space="preserve" approved="no">
         <source>To prove to a contact or a server that you have a badge, the app generates a new proof that reveals only the badge type and the expiry date, rounded to a week.</source>
+        <target state="translated">Um einem Kontakt oder Server nachzuweisen, dass Sie einen Badge besitzen, erzeugt die App einen neuen Nachweis, der nur den Badge-Typ und das auf eine Woche gerundete Ablaufdatum offenlegt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To purchase key" xml:space="preserve">
+      <trans-unit id="To purchase key" xml:space="preserve" approved="no">
         <source>To purchase key</source>
+        <target state="translated">Um einen Schlüssel zu kaufen</target>
         <note>ledger entry field</note>
       </trans-unit>
       <trans-unit id="To receive" xml:space="preserve" approved="no">
@@ -10577,8 +10617,9 @@ Sie werden aufgefordert, die Authentifizierung abzuschließen, bevor diese Funkt
         <target state="translated">Token-Status: %@.</target>
         <note>token status</note>
       </trans-unit>
-      <trans-unit id="Too many attempts. Please try again later." xml:space="preserve">
+      <trans-unit id="Too many attempts. Please try again later." xml:space="preserve" approved="no">
         <source>Too many attempts. Please try again later.</source>
+        <target state="translated">Zu viele Versuche. Bitte versuchen Sie es später erneut.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Toolbar opacity" xml:space="preserve" approved="no">
@@ -10671,8 +10712,9 @@ Sie werden aufgefordert, die Authentifizierung abzuschließen, bevor diese Funkt
         <target state="translated">Nicht ausgelieferte Nachrichten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unexpected error: %@" xml:space="preserve">
+      <trans-unit id="Unexpected error: %@" xml:space="preserve" approved="no">
         <source>Unexpected error: %@</source>
+        <target state="translated">Unerwarteter Fehler: %@</target>
         <note>badge renewal error</note>
       </trans-unit>
       <trans-unit id="Unexpected migration state" xml:space="preserve" approved="no">
@@ -10767,7 +10809,7 @@ Sie werden aufgefordert, die Authentifizierung abzuschließen, bevor diese Funkt
       </trans-unit>
       <trans-unit id="Unverified badge" xml:space="preserve" approved="no">
         <source>Unverified badge</source>
-        <target state="translated">Abzeichen nicht verifiziert</target>
+        <target state="translated">Badge nicht verifiziert</target>
         <note>badge alert title</note>
       </trans-unit>
       <trans-unit id="Up to 100 last messages are sent to new members." xml:space="preserve" approved="no">
@@ -11126,8 +11168,9 @@ alert title</note>
         <target state="translated">Aktualisierte Nutzungsbedingungen anschauen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="View your badge" xml:space="preserve">
+      <trans-unit id="View your badge" xml:space="preserve" approved="no">
         <source>View your badge</source>
+        <target state="translated">Ihren Badge anzeigen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Visible history" xml:space="preserve" approved="no">
@@ -11175,8 +11218,9 @@ alert title</note>
         <target state="translated">Antwort abwarten</target>
         <note>relay test step</note>
       </trans-unit>
-      <trans-unit id="Waiting for approval" xml:space="preserve">
+      <trans-unit id="Waiting for approval" xml:space="preserve" approved="no">
         <source>Waiting for approval</source>
+        <target state="translated">Warten auf Bestätigung</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Waiting for channel owner to add relays." xml:space="preserve" approved="no">
@@ -11576,8 +11620,9 @@ Verbindungsanfrage wiederholen?</target>
         <target state="translated">Sie können in der Chat-Liste weiterhin die Unterhaltung mit %@ einsehen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can support SimpleX later in Settings." xml:space="preserve">
+      <trans-unit id="You can support SimpleX later in Settings." xml:space="preserve" approved="no">
         <source>You can support SimpleX later in Settings.</source>
+        <target state="translated">Sie können SimpleX später in den Einstellungen unterstützen.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="You can turn on SimpleX Lock via Settings." xml:space="preserve" approved="no">
@@ -11666,8 +11711,9 @@ Verbindungsanfrage wiederholen?</target>
         <target state="translated">Sie dürfen die neueste Version Ihrer Chat-Datenbank NUR auf einem Gerät verwenden, andernfalls erhalten Sie möglicherweise keine Nachrichten mehr von einigen Ihrer Kontakte.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You need a %1$@ to send files larger than %2$@." xml:space="preserve">
+      <trans-unit id="You need a %1$@ to send files larger than %2$@." xml:space="preserve" approved="no">
         <source>You need a %1$@ to send files larger than %2$@.</source>
+        <target state="translated">Sie benötigen ein %1$@, um Dateien zu senden, die größer als %2$@ sind.</target>
         <note>file alert</note>
       </trans-unit>
       <trans-unit id="You need to allow your contact to call to be able to call them." xml:space="preserve" approved="no">
@@ -11780,20 +11826,24 @@ Verbindungsanfrage wiederholen?</target>
         <target state="translated">Ihr SimpleX-Name</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your badge" xml:space="preserve">
+      <trans-unit id="Your badge" xml:space="preserve" approved="no">
         <source>Your badge</source>
+        <target state="translated">Ihr Badge</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your badge expired" xml:space="preserve">
+      <trans-unit id="Your badge expired" xml:space="preserve" approved="no">
         <source>Your badge expired</source>
+        <target state="translated">Ihr Badge ist abgelaufen</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Your badge expired on %@." xml:space="preserve">
+      <trans-unit id="Your badge expired on %@." xml:space="preserve" approved="no">
         <source>Your badge expired on %@.</source>
+        <target state="translated">Ihr Badge ist am %@ abgelaufen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your badge expired." xml:space="preserve">
+      <trans-unit id="Your badge expired." xml:space="preserve" approved="no">
         <source>Your badge expired.</source>
+        <target state="translated">Ihr Badge ist abgelaufen.</target>
         <note>file alert</note>
       </trans-unit>
       <trans-unit id="Your business contact" xml:space="preserve" approved="no">
@@ -11895,8 +11945,9 @@ If you cancel, the channel will be deleted - you can create it again.</source>
 Wenn Sie abbrechen, wird der Kanal gelöscht. Sie können ihn später erneut erstellen.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Your payment is complete. The badge will be added to this profile." xml:space="preserve">
+      <trans-unit id="Your payment is complete. The badge will be added to this profile." xml:space="preserve" approved="no">
         <source>Your payment is complete. The badge will be added to this profile.</source>
+        <target state="translated">Ihre Zahlung wurde abgeschlossen. Der Badge wird diesem Profil hinzugefügt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your preferences" xml:space="preserve" approved="no">
@@ -12603,8 +12654,9 @@ pref value</note>
         <target state="translated">hat die Gruppe verlassen</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="legend badge" xml:space="preserve">
+      <trans-unit id="legend badge" xml:space="preserve" approved="no">
         <source>legend badge</source>
+        <target state="translated">Legenden-Badge</target>
         <note>badge required to send a large file</note>
       </trans-unit>
       <trans-unit id="link" xml:space="preserve" approved="no">
@@ -12647,8 +12699,9 @@ pref value</note>
         <target state="translated">Nachricht empfangen</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="message rejected: bad signature" xml:space="preserve">
+      <trans-unit id="message rejected: bad signature" xml:space="preserve" approved="no">
         <source>message rejected: bad signature</source>
+        <target state="translated">Nachricht abgelehnt: Ungültige Signatur</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="minutes" xml:space="preserve" approved="no">
@@ -12804,8 +12857,9 @@ time to disappear</note>
         <target state="translated">Bestätigung erhalten…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="reconnecting…" xml:space="preserve">
+      <trans-unit id="reconnecting…" xml:space="preserve" approved="no">
         <source>reconnecting…</source>
+        <target state="translated">Erneut verbinden…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="rejected" xml:space="preserve" approved="no">
@@ -12952,8 +13006,9 @@ Zuletzt empfangene Nachricht: %2$@</target>
         <target state="translated">Es wurde ein neues Profil-Bild festgelegt</target>
         <note>profile update event chat item</note>
       </trans-unit>
-      <trans-unit id="shown on your profile" xml:space="preserve">
+      <trans-unit id="shown on your profile" xml:space="preserve" approved="no">
         <source>shown on your profile</source>
+        <target state="translated">Sichtbar auf Ihrem Profil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="standard end-to-end encryption" xml:space="preserve" approved="no">
@@ -12976,8 +13031,9 @@ Zuletzt empfangene Nachricht: %2$@</target>
         <target state="translated">Abonnent</target>
         <note>member role</note>
       </trans-unit>
-      <trans-unit id="supporter badge" xml:space="preserve">
+      <trans-unit id="supporter badge" xml:space="preserve" approved="no">
         <source>supporter badge</source>
+        <target state="translated">Unterstützer-Badge</target>
         <note>badge required to send a large file</note>
       </trans-unit>
       <trans-unit id="this contact" xml:space="preserve" approved="no">
@@ -13347,8 +13403,9 @@ Zuletzt empfangene Nachricht: %2$@</target>
         <target state="translated">Nachricht kann nicht weitergeleitet werden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Cannot generate random database passphrase" xml:space="preserve">
+      <trans-unit id="Cannot generate random database passphrase" xml:space="preserve" approved="no">
         <source>Cannot generate random database passphrase</source>
+        <target state="translated">Es konnte kein zufälliges Datenbank-Passwort generiert werden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Comment" xml:space="preserve" approved="no">
