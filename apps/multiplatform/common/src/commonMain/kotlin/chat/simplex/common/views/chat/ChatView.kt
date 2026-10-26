@@ -2084,7 +2084,7 @@ fun BoxScope.ChatItemsList(
                         memberNames(member, prevMember, memCount),
                         if (prevMember == null && memCount == 1) member.nameBadge else null,
                         Modifier
-                          .padding(start = (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + DEFAULT_PADDING_HALF)
+                          .padding(start = (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + 4.dp)
                           .weight(1f, false),
                         fontSize = 13.5.sp,
                         color = MaterialTheme.colors.secondary,
@@ -2166,7 +2166,7 @@ fun BoxScope.ChatItemsList(
                       Text(
                         chatInfo.groupInfo.chatViewName,
                         Modifier
-                          .padding(start = (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + DEFAULT_PADDING_HALF)
+                          .padding(start = (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + 4.dp)
                           .weight(1f, false),
                         fontSize = 13.5.sp,
                         color = MaterialTheme.colors.secondary,

@@ -127,7 +127,7 @@ The message list is a `LazyColumnWithScrollBar` with `reverseLayout = true`, mea
 
 ### Item Layout (ChatViewListItem)
 
-- **Group received messages** with `showAvatar = true`: Column layout with `MemberNameAndRole` header, `MemberImage` (clickable to `showMemberInfo`), and message bubble.
+- **Group received messages** with `showAvatar = true`: Column layout with `MemberNameAndRole` header, `MemberImage` (clickable to `showMemberInfo`), and message bubble. The name starts at the bubble edge, 4dp after the avatar, as the bubble (user, as iOS).
 - **Group received without avatar:** Indented to align with avatar-bearing messages.
 - **Sent messages (group or direct):** Right-aligned with larger start padding.
 - **Direct messages:** Symmetric padding (76dp opposite side).

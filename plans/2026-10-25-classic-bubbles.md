@@ -211,9 +211,10 @@ B10  row gaps in sp, values kept; a sender change in direct chats 8sp (user)
 B11  markdown blocks in bubbles: spacing and line heights of terminal rows (user); headings × 1.5625, 1.25, 1, bold,
      capitals placed by headingBox, in both layouts (user)
 B12  unchanged: fills, tails, roundness, colours, themes, wallpapers, interaction; link preview, chat link card,
-     group invitation, voice and call layout (D8: cards in the redesign); sender names and avatars; date separators
+     group invitation, voice and call layout (D8: cards in the redesign); avatars; date separators
      (shared with terminal rows); reactions; emoji without bubble; chat item info
 B13  calls: as on master, without the bubble typography (user)
+B14  group sender name: starts at the bubble edge, 4dp after the avatar, as the bubble (user, as iOS)
 ```
 
 ## 4. Kotlin
@@ -237,7 +238,8 @@ chat/item/IntegrityErrorItemView.kt
 chat/item/CIRcvDecryptionError.kt bubble: bubbleTextPadding, bubbleMeta, the copy of the time; RectangleShape, bubbleTailSpace
 chat/item/CIGroupInvitationView.kt bubble: the copy of the time
 chat/item/ChatItemView.kt         calls without LocalBubbleLayout; tailRendered for deleted and error items; bubbleTailSpace
-chat/ChatView.kt                  LocalBubbleLayout provided for classic chats; row gaps in sp; event runs (eventRunLargeGap)
+chat/ChatView.kt                  LocalBubbleLayout provided for classic chats; row gaps in sp; event runs (eventRunLargeGap);
+                                  sender name at the bubble edge
 usersettings/Appearance.kt        LocalBubbleLayout for the classic theme preview
 ```
 
