@@ -2997,4 +2997,5 @@
     <string name="chat_layout_terminal">Terminale</string>
     <string name="keystore_key_storage_tee">TEE</string>
     <string name="markdown_text_view">Visualizzazione testo</string>
+    <string name="file_already_exists_replace_question">Il file esiste già. Vuoi sostituirlo?</string>
 </resources>
