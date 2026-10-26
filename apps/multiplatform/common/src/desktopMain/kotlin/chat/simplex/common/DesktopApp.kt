@@ -132,34 +132,37 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
 //      val hardwareAccelerationDisabled = remember { listOf(GraphicsApi.SOFTWARE_FAST, GraphicsApi.SOFTWARE_COMPAT, GraphicsApi.UNKNOWN).contains(window.renderApi) }
       simplexWindowState.window = window
       AppScreen()
-      if (simplexWindowState.openDialog.isAwaiting) {
+      val openRequest = simplexWindowState.openDialog.request
+      if (openRequest != null) key(openRequest) {
         FileDialogChooser(
           title = "SimpleX",
           isLoad = true,
           params = simplexWindowState.openDialog.params,
           onResult = {
-            simplexWindowState.openDialog.onResult(it.firstOrNull())
+            openRequest.complete(it.firstOrNull())
           }
         )
       }
 
-      if (simplexWindowState.openMultipleDialog.isAwaiting) {
+      val openMultipleRequest = simplexWindowState.openMultipleDialog.request
+      if (openMultipleRequest != null) key(openMultipleRequest) {
         FileDialogChooser(
           title = "SimpleX",
           isLoad = true,
           params = simplexWindowState.openMultipleDialog.params,
           onResult = {
-            simplexWindowState.openMultipleDialog.onResult(it)
+            openMultipleRequest.complete(it)
           }
         )
       }
 
-      if (simplexWindowState.saveDialog.isAwaiting) {
+      val saveRequest = simplexWindowState.saveDialog.request
+      if (saveRequest != null) key(saveRequest) {
         FileDialogChooser(
           title = "SimpleX",
           isLoad = false,
           params = simplexWindowState.saveDialog.params,
-          onResult = { simplexWindowState.saveDialog.onResult(it.firstOrNull()) }
+          onResult = { saveRequest.complete(it.firstOrNull()) }
         )
       }
       val toasts = remember { simplexWindowState.toasts }
@@ -292,25 +295,28 @@ data class DialogParams(
 )
 
 class DialogState<T>(private val cancelled: T) {
-  private var onResult: CompletableDeferred<T>? by mutableStateOf(null)
+  var request: CompletableDeferred<T>? by mutableStateOf(null)
+    private set
   var params = DialogParams()
-  val isAwaiting get() = onResult != null
 
   suspend fun awaitResult(params: DialogParams = DialogParams()): T {
+    val request = CompletableDeferred<T>()
     synchronized(this) {
-      if (isAwaiting) {
+      if (this.request != null) {
         Log.w(TAG, "File dialog request cancelled: another request is already awaiting")
         return cancelled
       }
       this.params = params
-      onResult = CompletableDeferred()
+      this.request = request
     }
-    val result = onResult!!.await()
-    onResult = null
-    return result
+    try {
+      return request.await()
+    } finally {
+      synchronized(this) {
+        if (this.request === request) this.request = null
+      }
+    }
   }
-
-  fun onResult(result: T) = onResult!!.complete(result)
 }
 
 @Preview

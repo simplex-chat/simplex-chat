@@ -74,8 +74,8 @@ fun FrameWindowScope.FileDialogChooserMultiple(
 ) {
   val scope = rememberCoroutineScope()
   DisposableEffect(Unit) {
+    val fileChooser = JFileChooser()
     val job = scope.launch(Dispatchers.Main) {
-      val fileChooser = JFileChooser()
       fileChooser.dialogTitle = title
       fileChooser.isMultiSelectionEnabled = allowMultiple && isLoad
       fileChooser.isAcceptAllFileFilterUsed = fileFilter == null
@@ -125,6 +125,7 @@ fun FrameWindowScope.FileDialogChooserMultiple(
     }
     onDispose {
       job.cancel()
+      fileChooser.cancelSelection()
     }
   }
 }
