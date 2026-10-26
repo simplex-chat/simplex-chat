@@ -3012,4 +3012,14 @@
     <string name="badges_ledger_from_purchase_key">Aus dem Einkaufs-Schlüssel</string>
     <string name="badges_how_long_title">Wie lang?</string>
     <string name="badges_ledger_invoice_id">Rechnungs-ID</string>
+    <string name="chat_layout_chat_suffix">(Chat)</string>
+    <string name="chat_layout">Chat-Ansicht</string>
+    <string name="chat_layout_classic">Klassisch</string>
+    <string name="chat_layout_default_suffix">(Voreinstellung)</string>
+    <string name="badges_issuing_title">Badge wird erstellt</string>
+    <string name="badges_link_held_page">Den Code finden Sie auf der Seite, auf der Sie ihn gekauft haben, unter “Code anzeigen“.</string>
+    <string name="badges_choose_your_badge_lede">Größere Dateien, die länger verfügbar bleiben.</string>
+    <string name="badges_error_last_attempt">Letzter Versuch</string>
+    <string name="badges_level_legend_summary">Hinweis: Dateien bis 5 GB sind 21 Tage lang verfügbar.</string>
+    <string name="rcv_group_event_msg_bad_signature">Nachricht abgelehnt: Ungültige Signatur</string>
 </resources>
