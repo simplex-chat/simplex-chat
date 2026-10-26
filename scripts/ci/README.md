@@ -4,7 +4,9 @@ Three workflows build the apps from a branch's own code and test them, only when
 
 ## Reduced build
 
-GitHub runs the reduced build of `build.yml` on a dispatch (workflow_dispatch) and on each push to a draft pull request. Once the pull request is marked ready for review, GitHub runs the full matrix.
+GitHub runs the reduced build of `build.yml` on a dispatch (workflow_dispatch), on each push to a draft pull request and on a push to master or stable in a fork. Once the pull request is marked ready for review, GitHub runs the full matrix, as on a push to master or stable in simplex-chat/simplex-chat.
+
+On a push to master or stable in a fork, the release steps and tests are skipped; build-linux saves the -O0 build caches, and on master the Docker image cache, that the fork's dispatches restore.
 
 On a draft pull request, the tests are selected by a fenced block with the info string `ci-tests` in the description, one hspec match pattern per line; the block is read at each push. `/` runs the whole suite; without a block, the reduced build runs no tests.
 
