@@ -3321,7 +3321,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         GCHostMember ->
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db cxt user gInfo memId) >>= \case
             Right existingMember
-              | useRelays' gInfo -> do
+              | useRelays' gInfo && not (sameMemberId memId (membership gInfo)) -> do
                   updatedMember <- withStore $ \db -> updatePreparedChannelMember db cxt user existingMember memInfo (memberPresHeader gInfo memId (memberPubKey existingMember))
                   toView $ CEvtGroupMemberUpdated user gInfo existingMember updatedMember
               | otherwise ->
@@ -3367,25 +3367,26 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         _ -> messageError "x.grp.mem.inv can be only sent by invitee member"
 
     xGrpMemFwd :: GroupInfoKeys -> GroupMember -> MemberInfo -> IntroInvitation -> CM ()
-    xGrpMemFwd g@(GIK gInfo@GroupInfo {membership, chatSettings} _) m memInfo@(MemberInfo memId memRole memChatVRange _ _) IntroInvitation {groupConnReq} = do
+    xGrpMemFwd g@(GIK gInfo@GroupInfo {membership, chatSettings} _) m@GroupMember {localDisplayName = c} memInfo@(MemberInfo memId memRole memChatVRange _ _) IntroInvitation {groupConnReq} = do
       let GroupMember {memberId = membershipMemId} = membership
       checkHostRole m memRole
-      toMember <- withStore $ \db -> do
-        toMember <-
-          getGroupMemberByMemberId db cxt user gInfo memId
-            -- TODO if the missed messages are correctly sent as soon as there is connection before anything else is sent
-            -- the situation when member does not exist is an error
-            -- member receiving x.grp.mem.fwd should have also received x.grp.mem.new prior to that.
-            -- For now, this branch compensates for the lack of delayed message delivery.
-            `catchError` \case
-              SEGroupMemberNotFoundByMemberId _ -> createNewGroupMember db cxt user gInfo m memInfo (memberInfoPresHeader gInfo memInfo) GCPostMember GSMemAnnounced
-              e -> throwError e
-        -- TODO [knocking] separate pending statuses from GroupMemberStatus?
-        -- TODO            add GSMemIntroInvitedPending, GSMemConnectedPending, etc.?
-        -- TODO            keep as is? (GSMemIntroInvited has no purpose)
-        let newMemberStatus = if memberPending toMember then memberStatus toMember else GSMemIntroInvited
-        liftIO $ updateGroupMemberStatus db userId toMember newMemberStatus
-        pure toMember
+      when (memId == membershipMemId) $ throwChatError CEGroupDuplicateMemberId
+      toMember <- withStore $ \db ->
+        getGroupMemberByMemberId db cxt user gInfo memId
+          -- TODO if the missed messages are correctly sent as soon as there is connection before anything else is sent
+          -- the situation when member does not exist is an error
+          -- member receiving x.grp.mem.fwd should have also received x.grp.mem.new prior to that.
+          -- For now, this branch compensates for the lack of delayed message delivery.
+          `catchError` \case
+            SEGroupMemberNotFoundByMemberId _ -> createNewGroupMember db cxt user gInfo m memInfo (memberInfoPresHeader gInfo memInfo) GCPostMember GSMemAnnounced
+            e -> throwError e
+      unless (invitedByGroupMemberId toMember == Just (groupMemberId' m) || memberStatus toMember == GSMemUnknown) $
+        throwChatError (CEGroupContactRole c)
+      -- TODO [knocking] separate pending statuses from GroupMemberStatus?
+      -- TODO            add GSMemIntroInvitedPending, GSMemConnectedPending, etc.?
+      -- TODO            keep as is? (GSMemIntroInvited has no purpose)
+      let newMemberStatus = if memberPending toMember then memberStatus toMember else GSMemIntroInvited
+      withStore' $ \db -> updateGroupMemberStatus db userId toMember newMemberStatus
       subMode <- chatReadVar subscriptionMode
       let mcvr = maybe chatInitialVRange fromChatVRange memChatVRange
           chatV = vr cxt `peerConnChatVersion` mcvr

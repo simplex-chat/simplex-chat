@@ -39,20 +39,21 @@ import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
 import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent (publicGroupNoE2EText)
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (XGrpMemNew, XGrpRelayInv, XInfo, XMember, XMsgUpdate, XMsgNew, XMsgDel), FwdSender (FwdMember, FwdChannel), GrpMsgForward (GrpMsgForward), MsgContainer (..), MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), chatMsgToBody, mcSimple, msgContentText)
+import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (XGrpMemFwd, XGrpMemIntro, XGrpMemNew, XGrpRelayInv, XInfo, XMember, XMsgUpdate, XMsgNew, XMsgDel), FwdSender (FwdMember, FwdChannel), GrpMsgForward (GrpMsgForward), MsgContainer (..), MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), chatMsgToBody, mcSimple, msgContentText, supportedChatVRange)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations (MemberRelation (..), getRelation, setRelation)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
 import Simplex.Chat.Types.UITheme (ChatLayout (..))
-import Simplex.Messaging.Agent (joinConnection, prepareConnectionToJoin, sendMessages, vrValue)
+import Simplex.Messaging.Agent (createConnection, joinConnection, prepareConnectionToJoin, sendMessages, vrValue)
 import Simplex.Messaging.Agent.Env.SQLite
+import Simplex.Messaging.Agent.Protocol (CreatedConnLink (..), SConnectionMode (..))
 import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (bbsKeyGen)
 import Simplex.Messaging.Client (pattern NRMInteractive)
-import Simplex.Messaging.Crypto.Ratchet (pattern PQEncOff, pattern PQSupportOff)
+import Simplex.Messaging.Crypto.Ratchet (pattern IKPQOff, pattern PQEncOff, pattern PQSupportOff)
 import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Protocol (MsgFlags (..), SubscriptionMode (..))
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
@@ -100,6 +101,7 @@ chatGroupTests = do
     it "update group profile" testUpdateGroupProfile
     it "update member role" testUpdateMemberRole
     it "check owner role change" testOwnerRoleChange
+    it "reject member introduction for own membership and from member that did not announce it" testGroupMemFwdInvalidMember
     it "group description is shown as the first message to new members" testGroupDescription
     it "moderate message of another group member" testGroupModerate
     it "moderate own message (should process as deletion)" testGroupModerateOwn
@@ -349,6 +351,7 @@ chatGroupTests = do
         it "role transitions update the roster (mod <-> admin, admin -> non-roster)" testChannelRoleTransitionsUpdateRoster
         it "malicious relay cannot downgrade or re-key a roster-established moderator via XGrpMemNew" testChannelRelayCannotDowngradeRosterMember
         it "malicious relay cannot forge a privileged member via XGrpMemNew forwarded as the owner" testChannelRelayCannotForgePrivilegedMember
+        it "malicious relay cannot update subscriber's own member and profile via XGrpMemIntro" testChannelRelayCannotIntroduceOwnMember
         it "should add relay to channel with roster (relay caches roster before joinable)" testChannelAddRelayWithRoster
         it "roster blob spanning multiple chunks reassembles" testChannelRosterMultipartReassembly
         it "corrupted roster blob is rejected on digest mismatch" testChannelRosterDigestMismatchRejected
@@ -1758,6 +1761,44 @@ testOwnerRoleChange =
                "bob (Bob): admin, you, connected",
                "cath (Catherine): admin, connected"
              ]
+
+testGroupMemFwdInvalidMember :: HasCallStack => TestParams -> IO ()
+testGroupMemFwdInvalidMember =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      aliceMemId <- memberIdByName bob "alice"
+      cathMemId <- memberIdByName bob "cath"
+      sendMemFwd bob aliceMemId aliceProfile
+      alice <## "cannot add member - duplicate member ID"
+      alice ##> "/rm team cath"
+      concurrentlyN_
+        [ alice <## "#team: you removed cath from the group (signed)",
+          bob <## "#team: alice removed cath from the group (signed)",
+          do
+            cath <## "#team: alice removed you from the group (signed)"
+            cath <## "use /d #team to delete the group"
+        ]
+      sendMemFwd bob cathMemId cathProfile
+      alice <## "contact bob has insufficient permissions for this group action"
+      memberConnCount alice "alice" `shouldReturn` 0
+      memberConnCount alice "cath" `shouldReturn` 0
+  where
+    sendMemFwd cc memId p = do
+      let ChatController {smpAgent} = chatController cc
+      introInv <- withCCUser cc $ \user ->
+        runExceptT (createConnection smpAgent NRMInteractive (aUserId user) True False SCMInvitation Nothing Nothing IKPQOff False SMSubscribe)
+          >>= either (fail . show) (\(_, CCLink groupConnReq _) -> pure IntroInvitation {groupConnReq})
+      connId <- relayConnIdToMember cc "alice"
+      agentSendBody cc connId $ chatMsgToBody $ ChatMessage supportedChatVRange Nothing (XGrpMemFwd (MemberInfo memId GRMember Nothing p Nothing) introInv)
+    memberConnCount :: TestCC -> T.Text -> IO Int
+    memberConnCount cc name = do
+      [Only n] <- withCCTransaction cc $ \db ->
+        DB.query
+          db
+          "SELECT COUNT(1) FROM connections c JOIN group_members m ON m.group_member_id = c.group_member_id WHERE m.local_display_name = ?"
+          (Only name)
+      pure n
 
 testGroupDescription :: HasCallStack => TestParams -> IO ()
 testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
@@ -11279,6 +11320,34 @@ testChannelRelayCannotForgePrivilegedMember ps =
     forgedMemberRows cc name =
       withCCTransaction cc $ \db ->
         DB.query db "SELECT member_role, member_pub_key FROM group_members WHERE local_display_name = ?" (Only name)
+
+testChannelRelayCannotIntroduceOwnMember :: HasCallStack => TestParams -> IO ()
+testChannelRelayCannotIntroduceOwnMember ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+        memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+        ownMember cath `shouldReturn` [("cath", "connected")]
+        cathMemId <- memberIdByName bob "cath"
+        connId <- relayConnIdToMember bob "cath"
+        let forgedProfile = (cathProfile :: Profile) {displayName = "forgery", fullName = "Forgery"}
+            memInfo = MemberInfo {memberId = cathMemId, memberRole = GRObserver, v = Nothing, profile = forgedProfile, memberKey = Nothing}
+        agentSendBody bob connId $ chatMsgToBody $ ChatMessage chatInitialVRange Nothing (XGrpMemIntro memInfo Nothing)
+        cath <## "error: x.grp.mem.intro ignored: member already exists"
+        ownMember cath `shouldReturn` [("cath", "connected")]
+  where
+    ownMember :: TestCC -> IO [(T.Text, T.Text)]
+    ownMember cc =
+      withCCTransaction cc $ \db ->
+        DB.query_
+          db
+          [sql|
+            SELECT p.display_name, m.member_status
+            FROM group_members m
+            JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
+            WHERE m.member_category = 'user'
+          |]
 
 testChannelRemoveMemberSigned :: HasCallStack => TestParams -> IO ()
 testChannelRemoveMemberSigned ps =
