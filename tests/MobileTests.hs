@@ -60,7 +60,8 @@ import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import System.Directory (copyFile)
 import System.FilePath ((</>))
 import System.IO (IOMode (..), utf8)
-import System.Posix.Internals (c_close)
+import System.IO.Error (tryIOError)
+import System.Posix.Internals (fdStat)
 import Test.Hspec hiding (it)
 
 mobileTests :: HasCallStack => SpecWith TestParams
@@ -405,19 +406,20 @@ testResizeImageFileCApi _ = do
 testResizeImageFdCApi :: TestParams -> IO ()
 testResizeImageFdCApi _ = do
   jpeg <- openFd "./tests/fixtures/test.jpg"
+  jpegFile <- fdStat jpeg
   uri <- peekCAString =<< cChatResizeImageFdUri jpeg 14000
   uri `shouldStartWith` "data:image/jpg;base64,"
   length uri `shouldSatisfy` (<= 14000)
-  c_close jpeg `shouldReturn` (-1)
+  isOpen jpeg jpegFile `shouldReturn` False
   pdf <- openFd "./tests/fixtures/test.pdf"
+  pdfFile <- fdStat pdf
   (peekCAString =<< cChatResizeImageFd pdf 100000 (-1)) `shouldReturn` ""
-  c_close pdf `shouldReturn` (-1)
-  closed <- openFd "./tests/fixtures/test.jpg"
-  c_close closed `shouldReturn` 0
-  (peekCAString =<< cChatResizeImageFdUri closed 14000) `shouldReturn` ""
+  isOpen pdf pdfFile `shouldReturn` False
+  (peekCAString =<< cChatResizeImageFdUri 1000000 14000) `shouldReturn` ""
   (peekCAString =<< cChatResizeImageFdUri (-1) 14000) `shouldReturn` ""
   where
     openFd path = FD.fdFD . fst <$> FD.openFile path ReadMode False
+    isOpen fd file = either (const False) (== file) <$> tryIOError (fdStat fd)
 
 cBuffer :: ByteString -> IO (Ptr Word8, CInt)
 cBuffer s = do
