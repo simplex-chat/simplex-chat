@@ -2,8 +2,8 @@
 
 The CLI sends a fixed placeholder as the preview of every image sent with `/img` or `/imgf`, and bots on the Node and Python libraries need their own image resizing code.
 Images are resized by the core in one Catmull-Rom pass with sharpening, at a fixed JPEG quality, to the size whose encoding fills 97–100% of the size limit; an image that fits at its largest size is encoded at the highest quality that fits.
-JPEG input is decoded by mozjpeg at the smallest scale that covers the display size, and its EXIF orientation is applied.
-The core functions are called by the apps in place of platform code, wrapped in both bot libraries and used for `/img` and `/imgf` previews; mozjpeg is compiled by cabal in every build.
+JPEG input is decoded by mozjpeg at the smallest scale that covers the display size, and its EXIF orientation is applied; PNG input is decoded by libspng; other formats are refused.
+The core functions are called by the apps in place of platform code, wrapped in both bot libraries and used for `/img` and `/imgf` previews; mozjpeg and libspng are compiled by cabal in every build.
 
 References are to branch `ab/resize-image` at `6021d9a6d`, based on master `ec8884f46`. Haskell paths without a directory are in `src/Simplex/Chat/`.
 
@@ -27,7 +27,7 @@ The research winner is implemented: mozjpeg, Catmull-Rom and sharpening, at a fi
 | D12 | **Out of scope.** Guetzli (a later PR for channels and groups, badge holders only) and other image formats. | Confirmed. |
 | D13 | **Approved texts.** README line "JPEG decoding and encoding of resized images"; binding description "JPEG encoding and decoding of JuicyPixels images with mozjpeg"; a TurboJPEG3 module header like TurboJPEG2's. | Option (a), with the comment "to many words - we need what we've seen as the best result, I don't think it's even offered. To spell out the only possible choice: mozjpeg + Catmull-Rom + sharpening (recommended)  why it's not here?" The research winner became the first line of this section. |
 
-Decisions of the lead, 26 Oct, after the review:
+Decisions of 26 Oct, after the review:
 
 | ID | Decision |
 |---|---|
@@ -36,24 +36,31 @@ Decisions of the lead, 26 Oct, after the review:
 | D16 | **Exact pinned test on every platform.** stb_image_resize in JuicyPixels-stbir is compiled without floating-point contraction. |
 | D17 | **HEIC is converted by iOS before the core.** iOS requests the `public.jpeg` representation of picked items other than PNG and GIF; for `""` the bytes functions are used. |
 | D18 | **Sharpening only of downscaled images.** An image kept at its size is not sharpened: on the github input kept at full resolution, sharpening lowered the large-screen SSIMULACRA2 from 92.53 to 89.94. |
+| D19 | **PNG decoded by libspng; other formats refused.** PNG input is decoded by libspng 0.7.4 with miniz 3.1.2, bundled in JuicyPixels-spng: the header first, then the pixels, within the side and memory limits. Input other than JPEG and PNG gives `Left`, and `""` from the C API, on which the apps decode it themselves and pass JPEG or PNG bytes. JuicyPixels remains for PNG encoding and the image types. |
 
 ## Decisions
 
 Decoding, `Image.hs`:
-- `decodeResizable bytes`: the image for resizing; at the display size for JPEG, at full size for other formats.
+- `decodeResizable bytes`: the image for resizing; at the display size for JPEG, at full size for PNG; `Left` for other formats.
 - JPEG, input starting `FF D8`, decoded by mozjpeg:
   1. `readJpegHeader`; `Left` for:
      - a side above 65500
      - a precision other than 8
      - a lossless JPEG
-  2. target size: both sides halved, each rounded by `scaledSide` (`:318-319`), while a side exceeds 4320; `Left` when a side is below 2 before a halving
+  2. target size: both sides halved, each rounded by `scaledSide` (`:320-321`), while a side exceeds 4320; `Left` when a side is below 2 before a halving
   3. scale: the smallest of `Full`, `Half`, `Quarter` and `Eighth` whose rounded-up sides are at least the target
   4. `decodeJpeg` with:
      - `maxPixels`: 2^28; `Left` above it, before the output is allocated
-     - `maxMemoryMB`: 512 on iOS and Android, 1024 in other builds
+     - `maxMemoryMB`: `maxDecodeMemoryMB`
   5. a decode larger than the target: `convertRGB8`, then `STBIR.resize` to the target
   6. the EXIF orientation applied
-- Other formats: JuicyPixels `decodeImage`.
+- PNG, input starting with the signature `89 50 4E 47 0D 0A 1A 0A`, decoded by libspng with `Spng.decodePng`:
+  1. the header (IHDR) first; `Left` for a side above 16384
+  2. `maxMemoryMB`: `maxDecodeMemoryMB`; `Left` when the decoded pixels exceed it, before they are allocated
+  3. `Left` for any libspng error, including short image data and a chunk with a wrong CRC
+  4. constructor: `ImageRGBA8` for a colour type with alpha or a `tRNS` chunk, otherwise `ImageRGB8`; 16-bit samples converted to 8 bits
+  5. the full image, halved to the display size by `fitImage`
+- Other formats: `Left "unsupported image format"`.
 - Constructors of a decoded JPEG:
 
   | JPEG colour space | constructor |
@@ -66,7 +73,7 @@ Decoding, `Image.hs`:
   - any warning, including truncated data and extraneous bytes
   - more than 500 scans
   - whole-image coefficient buffers above `maxMemoryMB`
-- `maxMemoryMB`, a compile-time constant, 512 when `mobileBuild` is defined and 1024 otherwise:
+- `maxDecodeMemoryMB`, the `maxMemoryMB` of both decoders, a compile-time constant, 512 when `mobileBuild` is defined and 1024 otherwise:
 
   | build | `simplex-chat.cabal` condition | set in |
   |---|---|---|
@@ -107,7 +114,7 @@ Resizing, `Image.hs`:
 
   | step | JPEG | PNG |
   |---|---|---|
-  | size bound | the JPEG header limits: `Left`, before decoding; other formats: a side above 16384 pixels after decoding: `Left`, before any encode or resize | the same |
+  | size bound | the JPEG and PNG header limits: `Left`, before decoding; an image given to `resizeImage` or `resizeImageDataUri` with a side above 16384 pixels: `Left`, before any encode or resize | the same |
   | largest size | the image sides halved while a side exceeds 4320 pixels, rounded as `scaledSide` rounds | the same |
   | quality | 20 for data URIs, 65 for image data | |
   | trial | `scaleRGB8` from the decoded image to the trial size, encoded at the quality | `scaleRGBA8`, `encodePng` |
@@ -145,9 +152,9 @@ C API:
 chat_resize_image_uri(data, len, maxSize)     data URI of at most maxSize characters, or ""
 chat_resize_image(data, len, maxSize, png)    base64 of at most maxSize bytes of PNG (png > 0), JPEG (png == 0) or the imageFormat choice (png < 0), or ""
 ```
-- `data`: an encoded image, JPEG or a format decoded by JuicyPixels `decodeImage`, read in place during the call.
+- `data`: an encoded JPEG or PNG image, read in place during the call.
 - `""` is returned when:
-  - the input is undecodable, or a JPEG is refused by the header limits or by mozjpeg;
+  - the input is neither JPEG nor PNG, or it is refused by the header limits, by mozjpeg or by libspng;
   - the image exceeds the limit at every size;
   - an exception is raised.
 - The result is allocated with `malloc` and freed by the caller.
@@ -179,7 +186,14 @@ chat_resize_image_fd(fd, maxSize, png)        as chat_resize_image, from the fil
   | desktop | the chosen path | `chat_resize_image_file_uri`, `chat_resize_image_file` |
   | Android | `ParcelFileDescriptor.detachFd()` of the content URI | `chat_resize_image_fd_uri`, `chat_resize_image_fd` |
 
-- For `""`, the apps use the platform decoding and the functions with bytes, as now.
+- For `""`, the apps use the platform decoding and the functions with bytes, as now. Formats other than JPEG and PNG reach the core only as JPEG or PNG bytes encoded by the apps:
+
+  | app | preview | sent image | animated GIF and WebP |
+  |---|---|---|---|
+  | iOS | `UploadContent.imagePreview()`, `ComposeView.swift:315-320`: `resizeImageToStrSize` of the `UIImage` | `ComposeView.swift:1599`: `saveImage` of the `UIImage` | `.animatedImage`, sent as the file (`ComposeView.swift:1600-1601`) |
+  | Android | `processPickedMedia`, `ComposeView.kt:372-374`, `:404`: `getBitmapFromUri`, then `resizeImageToStrSize` | `resizeImageFromUri`, `Utils.kt:218-227`: `getBitmapFromUri`, then `resizeImageToDataSize` | `UploadContent.AnimatedImage`, sent as the file (`ComposeView.kt:375-384`) |
+  | desktop | as Android | as Android | as Android; the image picker offers only GIF, WebP, PNG and JPEG (`Images.desktop.kt:159-166`) |
+
 - Haskell, `Mobile/File.hs`:
   ```haskell
   cChatResizeImageFileUri :: CString -> CInt -> IO CString
@@ -276,22 +290,23 @@ Bot libraries:
 
 `/img` and `/imgf`:
 - The preview is generated from the file: read with `CF.readFile` (encrypted files included), decoded, and resized to a data URI of at most 14000 characters.
-- On any failure the fixed placeholder is sent, as before.
+- On any failure the fixed placeholder is sent, as before; a GIF, which `/img` accepts by its extension (`Library/Commands.hs:202`), gets the fixed placeholder.
 
 Native code:
 - mozjpeg master `08265790` (libjpeg-turbo 3.0.5 base) is the submodule `jpeg-turbo/cbits/mozjpeg` of the hs-jpeg-turbo fork; cabal compiles it in the `jpeg-turbo` package of every build:
   - 114 C sources on every target
   - aarch64: 15 Neon sources
   - armv7: `simd/arm/aarch32/jsimd.c`, and 14 Neon sources in the internal library `neon`, compiled with `-mfpu=neon`
-  - configuration headers `jconfig.h`, `jconfigint.h`, `jversion.h` and `neon-compat.h` in `cbits`, with the target-dependent values taken from compiler macros
+  - configuration headers `jconfig.h`, `jconfigint.h`, `jversion.h` and `neon-compat.h` in `cbits`, with the target-dependent values taken from compiler macros; `THREAD_LOCAL` empty on 32-bit Android Arm
   - the C code paths on x86-64
   - built with cabal and the C compiler only
 - JPEG input is decoded by the TurboJPEG API of mozjpeg; JPEG output is encoded by `jpeg_turbo_encode` (`cbits/encode.c`) through the libjpeg API, with mozjpeg's default profile.
+- libspng 0.7.4 and miniz 3.1.2 are the submodules `JuicyPixels-spng/cbits/libspng` and `JuicyPixels-spng/cbits/miniz` of the hs-jpeg-turbo fork; cabal compiles `spng.c`, `miniz.c`, `miniz_tdef.c` and `miniz_tinfl.c` in the `JuicyPixels-spng` package of every build, with `SPNG_USE_MINIZ`.
 - Package sources:
 
   | package | during review | before the final pull request |
   |---|---|---|
-  | hs-jpeg-turbo (`jpeg-turbo`, `JuicyPixels-jpeg-turbo`) | evgeny-simplex/hs-jpeg-turbo, branch `ep/jpeg-decode` at `5b64008` | a simplex-chat/hs-jpeg-turbo commit |
+  | hs-jpeg-turbo (`jpeg-turbo`, `JuicyPixels-jpeg-turbo`, `JuicyPixels-spng`) | evgeny-simplex/hs-jpeg-turbo, branch `ep/jpeg-decode` at `e94e035` | a simplex-chat/hs-jpeg-turbo commit |
   | JuicyPixels-stbir, with nothings/stb as a submodule | evgeny-simplex/JuicyPixels-stbir, branch `ep/stb-submodule` at `234dde8` | a simplex-chat/JuicyPixels-stbir commit |
   | JuicyPixels 3.3.8 | Hackage | Hackage |
 
@@ -300,14 +315,14 @@ Native code:
 
 License notices, in `docs/dependencies`:
 - `README.md`: mozjpeg, with the IJG sentence, and stb_image_resize
-- `HASKELL.md`: JuicyPixels, JuicyPixels-jpeg-turbo and JuicyPixels-stbir as direct dependencies, jpeg-turbo as an indirect one; the four are added to the "Also depended upon by" and "Depended upon by" cells of the packages they depend on
-- `licences/`: the license files of each, copied from the pinned commits
+- `HASKELL.md`: JuicyPixels, JuicyPixels-jpeg-turbo, JuicyPixels-spng and JuicyPixels-stbir as direct dependencies, jpeg-turbo as an indirect one; the five are added to the "Also depended upon by" and "Depended upon by" cells of the packages they depend on
+- `licences/`: the license files of each, copied from the pinned commits; libspng's BSD-2-Clause `LICENSE` and the libpng-2.0 notice of `spng.c`, and miniz's MIT `LICENSE`
 
 Out of scope: WebP, a separate PR after this one.
 
 ## hs-jpeg-turbo fork
 
-Branch `ep/jpeg-decode` at `5b64008`:
+Branch `ep/jpeg-decode` at `e94e035`:
 - mozjpeg compiled by cabal, as in "Native code"; arithmetic-coded JPEGs are decoded, the arithmetic encoder is not compiled.
 - `encodeRGB`: `jpeg_turbo_encode` (`cbits/encode.c`, `MozJPEG.hsc`): `jpeg_set_defaults`, `jpeg_set_quality`, the output in a buffer grown by doubling, its size returned as `size_t`; libjpeg errors and warnings end the encoding with their text.
 - `Codec.Picture.JPEGTurbo` exports, besides `encodeRGB` and `EncodableRGB`:
@@ -364,6 +379,16 @@ Branch `ep/jpeg-decode` at `5b64008`:
 - CI:
   - `.github/scripts/encode.c`: baseline and progressive JPEGs at five qualities, and their decodes at the four scales, compared byte for byte between the cabal and CMake builds
   - `armv7-check.sh`, on `ubuntu-24.04-arm`: the cabal sources cross-compiled for armv7 and run natively; Neon selected only with the `linux32` personality; JPEGs and decodes identical with Neon and with the C code paths
+  - `png-check.sh`: the libspng test images decoded identically by armv7 and aarch64 builds of the `JuicyPixels-spng` C sources
+- `jpeg-turbo`: `THREAD_LOCAL` empty on 32-bit Android Arm (`cbits/jconfigint.h`).
+- `JuicyPixels-spng`, new package, module `Codec.Picture.Spng`:
+  - `readPngHeader :: ByteString -> IO (Either String PngHeader)`
+  - `decodePng :: DecodeOptions -> ByteString -> IO (Either String DynamicImage)`
+  - `PngHeader`: `pngWidth`, `pngHeight`, `pngBitDepth`, `pngColorType`
+  - `newtype DecodeOptions = DecodeOptions {maxMemoryMB :: Int}`, at least 1
+  - limits: sides 16384 (`spng_set_image_limits`), chunks 64 MiB (`spng_set_chunk_limits`), decoded pixels `maxMemoryMB`
+  - output: `ImageRGBA8` (`SPNG_FMT_RGBA8`) for a colour type with alpha or a `tRNS` chunk, otherwise `ImageRGB8` (`SPNG_FMT_RGB8`)
+  - tests (`test/SpngTest.hs`): 16 PngSuite images equal to JuicyPixels' decodes and to a pinned FNV-1a hash; headers; a generated PNG; short image data, a 65537×65537 header, wrong CRCs, a missing image and truncations: `Left`; the memory limit
 
 ## JuicyPixels-stbir fork
 
@@ -389,43 +414,43 @@ Core:
     - `resizeImageDataUri`
     - `scaleRGB8`
     - `scaleRGBA8`
-  - `imageFormat` (`:41-52`)
-  - `decodeResizable` (`:54-57`): `decodeDisplayJpeg` for input starting `FF D8`, otherwise `decodeImage`
-  - `decodeDisplayJpeg` (`:59-63`): `readJpegHeader`, `displaySize`, `jpegScale`, `decodeJpeg`, `resizeToSize`, `orientImage` with `exifOrientation`
-  - `displaySize` (`:65-71`): the target size and the number of halvings, rounded by `scaledSide`
-  - `jpegScale` (`:73-78`): `Full`, `Half`, `Quarter`, `Eighth` for 0, 1, 2, and 3 or more halvings
-  - `resizeToSize` (`:80-83`): `convertRGB8` and `STBIR.resize` when the decoded size differs from the target
-  - `exifOrientation` (`:85-107`): the orientation value of IFD0, 1 when absent or malformed
-  - `exifTiff` (`:109-117`): the TIFF data of the first APP1 `Exif` segment before the first SOS
-  - `orientImage` (`:119-131`): the 8 transforms with `generateImage`, applied with `dynamicPixelMap`
-  - `ImageOutput` (`:133`): `ImageBytes`, `ImageDataUri`
-  - `resizeImage` (`:135-136`)
-  - `resizeImageDataUri` (`:138-139`)
-  - `fitImage` (`:141-160`): the size bound; the largest size from `displaySize`; the output, the quality and bpp0 by `ImageOutput`; `fitSize`; the quality bisection at the largest size below `minFill`; JPEG with `encodeRGB`
-  - `fitSize` (`:162-200`): the size search of D4
-  - `minFill = 0.97` (`:202-203`)
-  - `imageDoesNotFit` (`:205-206`)
-  - `bisect` (`:208-218`)
-  - `maxImageSide = 16384` (`:220-221`)
-  - `maxDisplaySide = 4320` (`:223-224`)
-  - `maxJpegPixels = 2 ^ 28` (`:226-227`)
-  - `maxJpegMemoryMB` (`:229-234`), 512 or 1024 by `mobileBuild`
-  - `hasSideAbove` (`:236-237`)
-  - `hasSize` (`:239-240`)
-  - `scaleRGB8` (`:242-247`)
-  - `scaleRGBA8` (`:249-254`)
-  - `catmullRom` (`:256-259`): `STBIR.resize` with Catmull-Rom and the given flags
-  - `premultiply` (`:261-264`)
-  - `unpremultiply` (`:266-271`)
-  - `sharpen` (`:273-278`)
-  - `blurLines` (`:280-297`)
-  - `sharpenOffsets` (`:299-302`)
-  - `sharpenWeights` (`:304-307`)
-  - `sharpenRadius` (`:309-310`)
-  - `sharpenAmount = 0.5` (`:312-313`)
-  - `sharpenSigma = 0.6` (`:315-316`)
-  - `scaledSide` (`:318-319`)
-  - `toDataUri` (`:321-327`), with the approved comment at `:325`
+  - `imageFormat` (`:42-53`)
+  - `decodeResizable` (`:55-59`): `decodeDisplayJpeg` for input starting `FF D8`; `Spng.decodePng` with `maxDecodeMemoryMB` for input starting with the PNG signature; otherwise `Left`
+  - `decodeDisplayJpeg` (`:61-65`): `readJpegHeader`, `displaySize`, `jpegScale`, `decodeJpeg`, `resizeToSize`, `orientImage` with `exifOrientation`
+  - `displaySize` (`:67-73`): the target size and the number of halvings, rounded by `scaledSide`
+  - `jpegScale` (`:75-80`): `Full`, `Half`, `Quarter`, `Eighth` for 0, 1, 2, and 3 or more halvings
+  - `resizeToSize` (`:82-85`): `convertRGB8` and `STBIR.resize` when the decoded size differs from the target
+  - `exifOrientation` (`:87-109`): the orientation value of IFD0, 1 when absent or malformed
+  - `exifTiff` (`:111-119`): the TIFF data of the first APP1 `Exif` segment before the first SOS
+  - `orientImage` (`:121-133`): the 8 transforms with `generateImage`, applied with `dynamicPixelMap`
+  - `ImageOutput` (`:135`): `ImageBytes`, `ImageDataUri`
+  - `resizeImage` (`:137-138`)
+  - `resizeImageDataUri` (`:140-141`)
+  - `fitImage` (`:143-162`): the size bound; the largest size from `displaySize`; the output, the quality and bpp0 by `ImageOutput`; `fitSize`; the quality bisection at the largest size below `minFill`; JPEG with `encodeRGB`
+  - `fitSize` (`:164-202`): the size search of D4
+  - `minFill = 0.97` (`:204-205`)
+  - `imageDoesNotFit` (`:207-208`)
+  - `bisect` (`:210-220`)
+  - `maxImageSide = 16384` (`:222-223`)
+  - `maxDisplaySide = 4320` (`:225-226`)
+  - `maxJpegPixels = 2 ^ 28` (`:228-229`)
+  - `maxDecodeMemoryMB` (`:231-236`), 512 or 1024 by `mobileBuild`
+  - `hasSideAbove` (`:238-239`)
+  - `hasSize` (`:241-242`)
+  - `scaleRGB8` (`:244-249`)
+  - `scaleRGBA8` (`:251-256`)
+  - `catmullRom` (`:258-261`): `STBIR.resize` with Catmull-Rom and the given flags
+  - `premultiply` (`:263-266`)
+  - `unpremultiply` (`:268-273`)
+  - `sharpen` (`:275-280`)
+  - `blurLines` (`:282-299`)
+  - `sharpenOffsets` (`:301-304`)
+  - `sharpenWeights` (`:306-309`)
+  - `sharpenRadius` (`:311-312`)
+  - `sharpenAmount = 0.5` (`:314-315`)
+  - `sharpenSigma = 0.6` (`:317-318`)
+  - `scaledSide` (`:320-321`)
+  - `toDataUri` (`:323-329`), with the approved comment at `:327`
 - `Mobile/File.hs`:
   - exported at `:13-18`:
     - `cChatResizeImageUri` (`:153-154`)
@@ -449,16 +474,17 @@ Core:
   - `imagePreview :: CryptoFile -> IO ImageData` (`:229-235`): `decodeResizable`, in place of `decodeImage` (`:234`)
   - `SendImage` (`:3553`): the preview from `imagePreview` (`:3560`)
 - `simplex-chat.cabal`:
-  - library: `if flag(swift) || os(android)`, `cpp-options: -DmobileBuild` (`:414-415`)
+  - library: `if flag(swift) || os(android)`, `cpp-options: -DmobileBuild` (`:415-416`)
   - module `Simplex.Chat.Image` (`:52`)
   - library dependencies:
     - `JuicyPixels` (`:387`)
     - `JuicyPixels-jpeg-turbo` (`:388`)
-    - `JuicyPixels-stbir` (`:389`)
-    - `vector` (`:408`)
+    - `JuicyPixels-spng` (`:389`)
+    - `JuicyPixels-stbir` (`:390`)
+    - `vector` (`:409`)
   - test suite:
-    - module `ImageTests` (`:725`)
-    - dependencies `JuicyPixels` and `JuicyPixels-jpeg-turbo` (`:817-818`)
+    - module `ImageTests` (`:726`)
+    - dependencies `JuicyPixels` and `JuicyPixels-jpeg-turbo` (`:818-819`)
 - `libsimplex.dll.def:30-35`, `flake.nix:487-492`: the export names.
 
 iOS:
@@ -579,7 +605,7 @@ Python, `packages/simplex-chat-python/src/simplex_chat/`:
 
 Build:
 - `cabal.project`, `source-repository-package`:
-  - hs-jpeg-turbo (`:76-80`): evgeny-simplex/hs-jpeg-turbo at `5b64008`, subdirectories `JuicyPixels-jpeg-turbo` and `jpeg-turbo`
+  - hs-jpeg-turbo (`:76-80`): evgeny-simplex/hs-jpeg-turbo at `e94e035`, subdirectories `JuicyPixels-jpeg-turbo`, `JuicyPixels-spng` and `jpeg-turbo`
   - JuicyPixels-stbir (`:82-85`): evgeny-simplex/JuicyPixels-stbir at `234dde8`
 - `scripts/nix/sha256map.nix:12-13`: the hashes of both forks, computed with submodules.
 - `dist-newstyle/src/hs-jpeg-t*` and `dist-newstyle/src/JuicyPixe*` in the Windows removals:
@@ -613,43 +639,46 @@ License notices, `docs/dependencies/`:
   `[stb_image_resize](https://github.com/nothings/stb): image scaling ([MIT or public domain](./licences/apps/stb_image_resize/LICENSE))`
 - `licences/apps/mozjpeg/LICENSE.md` and `README.ijg`: copies from mozjpeg `08265790`, the submodule of the hs-jpeg-turbo fork.
 - `licences/apps/stb_image_resize/LICENSE`: `cbits/stb/stb_image_resize.h:2596-2632` of the JuicyPixels-stbir fork at `234dde8`.
+- `licences/apps/libspng/LICENSE`: libspng's `LICENSE` (BSD-2-Clause); `licences/apps/libspng/LICENSE-libpng`: `spng/spng.c:6149-6180` (libpng-2.0), without the comment markers; from libspng `fb768002`, the submodule of the hs-jpeg-turbo fork at `e94e035`.
+- `licences/apps/miniz/LICENSE`: miniz's `LICENSE` (MIT), from miniz 3.1.2 (`77d0dce8`), the submodule of the hs-jpeg-turbo fork at `e94e035`.
 - `HASKELL.md`:
-  - direct dependencies (`:25-27`):
+  - direct dependencies (`:25-28`):
     - `JuicyPixels` 3.3.8, Hackage
-    - `JuicyPixels-jpeg-turbo` 0.1.0.0, hs-jpeg-turbo fork at `5b64008`
+    - `JuicyPixels-jpeg-turbo` 0.1.0.0, hs-jpeg-turbo fork at `e94e035`
+    - `JuicyPixels-spng` 0.1.0.0, hs-jpeg-turbo fork at `e94e035`, `BSD-3-Clause AND BSD-2-Clause AND libpng-2.0 AND MIT`
     - `JuicyPixels-stbir` 0.1.0.0, JuicyPixels-stbir fork at `234dde8`
-  - direct dependency (`:54`): `vector` 0.13.1.0, moved from the indirect dependencies
-  - indirect dependency (`:144`): `jpeg-turbo` 0.1.0.0, hs-jpeg-turbo fork at `5b64008`, `BSD-3-Clause AND IJG AND Zlib`
-  - the four added to the dependents of:
+  - direct dependency (`:55`): `vector` 0.13.1.0, moved from the indirect dependencies
+  - indirect dependency (`:145`): `jpeg-turbo` 0.1.0.0, hs-jpeg-turbo fork at `e94e035`, `BSD-3-Clause AND IJG AND Zlib`
+  - each of the five added to the dependents of the packages it depends on, among:
     - `bytestring` (`:11`)
     - `containers` (`:14`)
-    - `mtl` (`:30`)
-    - `vector` (`:54`)
-    - `binary` (`:69`)
-    - `deepseq` (`:93`)
-    - `data-default-class` (`:97`)
-    - `primitive` (`:137`)
-    - `transformers` (`:166`)
-    - `zlib` (`:179`)
-- `licences/haskell/<package>-<version>/LICENSE`: the `LICENSE` of each of the four packages, from Hackage and from the pinned fork commits; the JuicyPixels-stbir copy with the line `Copyright 2026 SimpleX Chat Ltd`.
+    - `mtl` (`:31`)
+    - `vector` (`:55`)
+    - `binary` (`:70`)
+    - `deepseq` (`:94`)
+    - `data-default-class` (`:98`)
+    - `primitive` (`:138`)
+    - `transformers` (`:167`)
+    - `zlib` (`:180`)
+- `licences/haskell/<package>-<version>/LICENSE`: the `LICENSE` of each of the five packages, from Hackage and from the pinned fork commits; the JuicyPixels-spng and JuicyPixels-stbir copies with the line `Copyright 2026 SimpleX Chat Ltd`.
 
 ## Tests
 
 `tests/ImageTests.hs`, group "Image resize" (`tests/Test.hs:98`):
-- Same aspect ratio, in every comparison below: `|w·h' − h·w'| ≤ w' + h'` (`:283-284`).
-- data URI (`:30-33`), limit 14000; each result is decoded and compared by aspect ratio with the input:
+- Same aspect ratio, in every comparison below: `|w·h' − h·w'| ≤ w' + h'` (`:333-334`).
+- data URI (`:32-35`), limit 14000; each result is decoded and compared by aspect ratio with the input:
   - `test.jpg` (1280×720): `data:image/jpg;base64,`
   - `logo-large-rgba.png` (1630×466, transparent pixels): `data:image/png;base64,`
   - `preview-issue1.png` (1200×600, opaque): `data:image/jpg;base64,`
-- 16-bit images (`:34`), 128×128: a JPEG URI for RGB16; for RGBA16 with half opacity, a PNG URI decoded as RGBA8.
-- image data (`:35-38`), limit 10000:
+- 16-bit images (`:36`), 128×128: a JPEG URI for RGB16; for RGBA16 with half opacity, a PNG URI decoded as RGBA8.
+- image data (`:37-40`), limit 10000:
   - JPEG from `test.jpg`: starts `FF D8`, width below 1280, same aspect ratio
   - PNG from `logo-large-rgba.png`: RGBA8, width below 1630, same aspect ratio
   - 1×1 image with limit 10: `Left` for JPEG and PNG
-- size bound (`:39`), transparent images, limit 100000, for PNG, JPEG and the data URI:
+- size bound (`:41`), transparent images, limit 100000, for PNG, JPEG and the data URI:
   - 16384×4 and 4×16384: `Right`
   - 16385×4 and 4×16385: `Left`
-- display halving (`:40`), opaque and transparent images, `imageFormat`; the image data with limit 261120 and the data URIs with limits 12500 and 14000, each decoded:
+- display halving (`:42`), opaque and transparent images, `imageFormat`; the image data with limit 261120 and the data URIs with limits 12500 and 14000, each decoded:
 
   | input | output |
   |---|---|
@@ -657,13 +686,13 @@ License notices, `docs/dependencies/`:
   | 8×8640 | 4×4320 |
   | 4320×4 | 4320×4 |
 
-- fill (`:41`, `:127-136`): `test.jpg` and `preview-issue1.png`, the data URI with limit 14000 and the JPEG data with limit 20000: 97–100% of the limit
-- quality at the image size (`:42`, `:138-146`): a 64×48 gradient with a limit midway between its quality-65 and quality-95 encodings: at most the limit, larger than the quality-65 encoding, 64×48
-- image preview (`:43-47`):
+- fill (`:43`, `:132-141`): `test.jpg` and `preview-issue1.png`, the data URI with limit 14000 and the JPEG data with limit 20000: 97–100% of the limit
+- quality at the image size (`:44`, `:143-151`): a 64×48 gradient with a limit midway between its quality-65 and quality-95 encodings: at most the limit, larger than the quality-65 encoding, 64×48
+- image preview (`:45-49`):
   - `test.jpg`: JPEG data URI of at most 14000 characters
   - an encrypted copy of `test.jpg`: the same
   - `test.pdf`: `fixedImagePreview`
-- JPEG display size (`:49`, `:161-175`), blank W×16 JPEGs from `encodeRGB` and the same with the sides swapped, `decodeResizable`, then the image data with limit 261120, decoded:
+- JPEG display size (`:51`, `:166-180`), blank W×16 JPEGs from `encodeRGB` and the same with the sides swapped, `decodeResizable`, then the image data with limit 261120, decoded:
   - 4320, 4321, 8640, 8641: the size of the full-decode path, JuicyPixels `decodeImage` then `resizeImage`
   - expected sizes:
 
@@ -679,7 +708,7 @@ License notices, `docs/dependencies/`:
     | 34561 | 4320×2 |
     | 65500 | 4094×1 |
 
-- JPEG colour spaces (`:50`, `:177-185`), 64×48, `decodeResizable`:
+- JPEG colour spaces (`:52`, `:182-190`), 64×48, `decodeResizable`:
 
   | input | result |
   |---|---|
@@ -688,35 +717,46 @@ License notices, `docs/dependencies/`:
   | grayscale, JuicyPixels `Pixel8` encoding | `ImageY8` |
   | YCCK, JuicyPixels `PixelCMYK8` encoding | `ImageCMYK8` |
 
-- JPEG refusals (`:51`, `:187-202`), a baseline 64×48 JPEG changed as below, `decodeResizable`, `Left`:
+- JPEG refusals (`:53`, `:192-207`), a baseline 64×48 JPEG changed as below, `decodeResizable`, `Left`:
   - precision 12 written into the SOF
   - SOF marker `FF C3` (lossless)
   - a side of 65501 written into the SOF
   - 16385×16384 written into the SOF
   - the input shortened by one byte
   - a byte inserted before the SOF marker
-- EXIF orientation (`:52`, `:204-248`): a 64×32 JPEG with four solid quadrants and an APP1 Exif segment, little-endian for odd and big-endian for even values; `decodeResizable`:
+- EXIF orientation (`:54`, `:209-253`): a 64×32 JPEG with four solid quadrants and an APP1 Exif segment, little-endian for odd and big-endian for even values; `decodeResizable`:
   - values 1–8: the sides swapped for 5–8; the quadrant colours placed by the transform; the resized JPEG without `Exif`
   - an IFD0 offset beyond the segment: as value 1
-- scaling (`:53-56`):
-  - research code (`:250-256`): `scaleRGB8` of `preview-issue1.png` to 400×200 equals `preview-issue1-400x200-sharpened.png` pixel for pixel; the fixture is the output of the research code (`pvsf`, resize `catmullrom/g/0.5@0.6/single`) for the same decoded pixels
-  - the same size (`:258-263`): `scaleRGB8` and `scaleRGBA8` of 64×48 images to 64×48 return the input samples
-  - transparency (`:265-275`): a 64×64 opaque red disc on transparent pixels alternately green and blue, `scaleRGBA8` to 40×40: every pixel with alpha above 0 is red; some pixels have alpha below 255
+- PNG decoding (`:55-57`), `decodeResizable`:
+  - `logo-large-rgba.png` (`:255-265`): `ImageRGBA8` with the samples of JuicyPixels `decodeImage`, and `imageFormat` PNG; `preview-issue1.png`: `ImageRGB8` with the samples of JuicyPixels `decodeImage`
+  - refusals (`:267-298`):
 
-`tests/MobileTests.hs`, "Images" (`:98-104`), with buffers from `mallocBytes`:
-- `cChatResizeImageUri` on `test.jpg`, limit 14000 (`:362-369`): `data:image/jpg;base64,`, at most 14000 characters; on `"not an image"`: `""`.
-- `cChatResizeImage` on `test.jpg`, limit 100000 (`:371-379`): base64 decoded to at most 100000 bytes, starting `FF D8` for `png = 0` and with the PNG signature for `png = 1`.
-- `cChatResizeImage` with `png = -1`, limit 100000 (`:381-389`): `FF D8` for `test.jpg`; the PNG signature for `logo-large-rgba.png`.
-- `cChatResizeImage` with `png = -1`, limit 261120, on a blank 20000×16 JPEG from `encodeRGB` (`:391-395`): `FF D8`.
-- file path (`:397-404`):
+    | input | `Left` |
+    |---|---|
+    | `pngShortImageData`: the 2048×1 grayscale PNG from JuicyPixels `encodePng` with its header set to 2048×2048 | `IDAT stream too short` |
+    | `pngSideAbove16384`: the 1×1 grayscale PNG with its header set to 65537×65537 | `image width exceeds user limit` |
+    | a 16×16 GIF and a 16×16 BMP from JuicyPixels | `unsupported image format` |
+
+- scaling (`:58-61`):
+  - research code (`:300-306`): `scaleRGB8` of `preview-issue1.png` to 400×200 equals `preview-issue1-400x200-sharpened.png` pixel for pixel; the fixture is the output of the research code (`pvsf`, resize `catmullrom/g/0.5@0.6/single`) for the same decoded pixels
+  - the same size (`:308-313`): `scaleRGB8` and `scaleRGBA8` of 64×48 images to 64×48 return the input samples
+  - transparency (`:315-325`): a 64×64 opaque red disc on transparent pixels alternately green and blue, `scaleRGBA8` to 40×40: every pixel with alpha above 0 is red; some pixels have alpha below 255
+
+`tests/MobileTests.hs`, "Images" (`:99-106`), with buffers from `mallocBytes`:
+- `cChatResizeImageUri` on `test.jpg`, limit 14000 (`:364-371`): `data:image/jpg;base64,`, at most 14000 characters; on `"not an image"`: `""`.
+- `cChatResizeImage` on `test.jpg`, limit 100000 (`:373-381`): base64 decoded to at most 100000 bytes, starting `FF D8` for `png = 0` and with the PNG signature for `png = 1`.
+- `cChatResizeImage` with `png = -1`, limit 100000 (`:383-391`): `FF D8` for `test.jpg`; the PNG signature for `logo-large-rgba.png`.
+- `cChatResizeImage` with `png = -1`, limit 261120, on a blank 20000×16 JPEG from `encodeRGB` (`:393-397`): `FF D8`.
+- file path (`:399-406`):
   - `cChatResizeImageFileUri` on `test.jpg`, limit 14000: `data:image/jpg;base64,`, at most 14000 characters
   - `cChatResizeImageFile` with `png = -1`, limit 100000, on `logo-large-rgba.png`: the PNG signature
   - a missing file: `""`
-- file descriptor (`:406-426`), opened with `GHC.IO.FD.openFile`; closed afterwards: `fdStat` fails or names another file
+- file descriptor (`:408-428`), opened with `GHC.IO.FD.openFile`; closed afterwards: `fdStat` fails or names another file
   - `cChatResizeImageFdUri` on `test.jpg`, limit 14000: `data:image/jpg;base64,`, at most 14000 characters; closed afterwards
   - `cChatResizeImageFd` on `test.pdf`: `""`; closed afterwards
   - `cChatResizeImageFdUri` on the `tests/fixtures` directory, opened with `c_open`: `""`; closed afterwards
   - descriptors 1000000 and −1, not open: `""`
+- malformed PNG (`:430-438`): `pngShortImageData` and `pngSideAbove16384` from `ImageTests`: `""` from `cChatResizeImageUri` with limit 14000 and from `cChatResizeImage` with `png = -1` and limit 261120
 
 `tests/ChatTests/Files.hs`, "send image with generated preview" (`:47`, `:179-192`):
 - `/img @bob ./tests/fixtures/test.jpg`: the received item has a JPEG data URI preview of at most 14000 characters, read with `APIGetChat` (`lastImagePreview`, `:194-200`).

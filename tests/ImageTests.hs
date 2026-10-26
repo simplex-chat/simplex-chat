@@ -2,18 +2,20 @@
 
 module ImageTests where
 
-import Codec.Picture (DynamicImage (..), Image (..), PixelCMYK8, PixelRGB16 (..), PixelRGB8 (..), PixelRGBA16 (..), PixelRGBA8 (..), convertRGB8, decodeImage, dynamicMap, generateImage, pixelAt)
+import Codec.Picture (DynamicImage (..), Image (..), Pixel8, PixelCMYK8, PixelRGB16 (..), PixelRGB8 (..), PixelRGBA16 (..), PixelRGBA8 (..), convertRGB8, convertRGBA8, decodeImage, dynamicMap, encodeBitmap, encodeGifImage, generateImage, pixelAt)
 import Codec.Picture.JPEGTurbo (encodeRGB)
 import Codec.Picture.Jpg (encodeDirectJpegAtQualityWithMetadata, encodeJpegAtQuality)
+import Codec.Picture.Png (encodePng)
 import Codec.Picture.Types (convertImage, extractLumaPlane, pixelFold)
 import Control.Monad (forM_, when)
 import Control.Monad.Except (runExceptT)
-import Data.Bits (shiftR)
+import Data.Bits (complement, shiftR, testBit, xor)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Base64.Lazy as LB64
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Either (isLeft, isRight)
 import qualified Data.Text as T
+import Data.Word (Word32)
 import Simplex.Chat.Image
 import Simplex.Chat.Library.Commands (fixedImagePreview, imagePreview)
 import Simplex.Chat.Types (ImageData (..))
@@ -50,6 +52,9 @@ imageTests = do
     it "should decode JPEG colour spaces" testJpegColourSpaces
     it "should refuse unsupported and malformed JPEG" testJpegRefused
     it "should apply EXIF orientation of JPEG" testJpegOrientation
+  describe "PNG decoding" $ do
+    it "should decode PNG as JuicyPixels does" testPngDecoding
+    it "should refuse malformed PNG and other formats" testPngRefused
   describe "scaling" $ do
     it "should scale and sharpen as the research code" testScaleResearch
     it "should keep an image of the same size" testScaleSameSize
@@ -246,6 +251,51 @@ testJpegOrientation = do
         word n = (if littleEndian then B.reverse else id) . bigEndian n
     bigEndian :: Int -> Int -> B.ByteString
     bigEndian n v = B.pack [fromIntegral (v `shiftR` (8 * i)) | i <- [n - 1, n - 2 .. 0]]
+
+testPngDecoding :: IO ()
+testPngDecoding = do
+  transparent <- B.readFile "tests/fixtures/logo-large-rgba.png"
+  Right img@(ImageRGBA8 rgba) <- decodeResizable transparent
+  Right reference <- pure $ decodeImage transparent
+  imageData rgba `shouldBe` imageData (convertRGBA8 reference)
+  IFPng <- pure $ imageFormat img
+  opaque <- B.readFile "tests/fixtures/preview-issue1.png"
+  Right (ImageRGB8 rgb) <- decodeResizable opaque
+  Right reference' <- pure $ decodeImage opaque
+  imageData rgb `shouldBe` imageData (convertRGB8 reference')
+
+testPngRefused :: IO ()
+testPngRefused =
+  forM_ inputs $ \(input, err) ->
+    either Just (const Nothing) <$> decodeResizable input `shouldReturn` Just err
+  where
+    inputs =
+      [ (pngShortImageData, "IDAT stream too short"),
+        (pngSideAbove16384, "image width exceeds user limit"),
+        (LB.toStrict $ encodeGifImage $ generateImage (\_ _ -> 0) 16 16, "unsupported image format"),
+        (LB.toStrict $ encodeBitmap $ generateImage (\_ _ -> PixelRGB8 0 0 0) 16 16, "unsupported image format")
+      ]
+
+pngShortImageData :: B.ByteString
+pngShortImageData = pngWithSides 2048 2048 $ blankPng 2048 1
+
+pngSideAbove16384 :: B.ByteString
+pngSideAbove16384 = pngWithSides 65537 65537 $ blankPng 1 1
+
+blankPng :: Int -> Int -> B.ByteString
+blankPng w h = LB.toStrict $ encodePng (generateImage (\_ _ -> 0) w h :: Image Pixel8)
+
+pngWithSides :: Int -> Int -> B.ByteString -> B.ByteString
+pngWithSides w h png = B.take 8 png <> word32 (B.length ihdr) <> "IHDR" <> ihdr <> word32 (crc32 $ "IHDR" <> ihdr) <> B.drop 33 png
+  where
+    ihdr = word32 w <> word32 h <> B.take 5 (B.drop 24 png)
+    word32 :: Integral a => a -> B.ByteString
+    word32 v = B.pack [fromIntegral (toInteger v `shiftR` (8 * i)) | i <- [3, 2, 1, 0]]
+
+crc32 :: B.ByteString -> Word32
+crc32 = complement . B.foldl' (\c b -> iterate step (c `xor` fromIntegral b) !! 8) 0xffffffff
+  where
+    step c = if testBit c 0 then 0xedb88320 `xor` shiftR c 1 else shiftR c 1
 
 testScaleResearch :: IO ()
 testScaleResearch = do

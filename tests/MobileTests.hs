@@ -35,6 +35,7 @@ import Foreign.StablePtr
 import Foreign.Storable (peek)
 import GHC.IO.Encoding (setLocaleEncoding, setFileSystemEncoding, setForeignEncoding)
 import qualified GHC.IO.FD as FD
+import ImageTests (pngShortImageData, pngSideAbove16384)
 import JSONFixtures
 import Simplex.Chat
 import Simplex.Chat.Badges (BadgeInfo (..), BadgeRequest (..), BadgeType (..), generateMasterKey, verifyCredential)
@@ -102,6 +103,7 @@ mobileTests = do
       it "should resize JPEG with a side above 16384 via C API" testResizeLargeJpegCApi
       it "should resize image from a file path via C API" testResizeImageFileCApi
       it "should resize image from a file descriptor via C API" testResizeImageFdCApi
+      it "should refuse malformed PNG via C API" testResizeMalformedPngCApi
 
 noActiveUser :: LB.ByteString
 noActiveUser =
@@ -424,6 +426,16 @@ testResizeImageFdCApi _ = do
   where
     openFd path = FD.fdFD . fst <$> FD.openFile path ReadMode False
     isOpen fd file = either (const False) (== file) <$> tryIOError (fdStat fd)
+
+testResizeMalformedPngCApi :: TestParams -> IO ()
+testResizeMalformedPngCApi _ = do
+  refused pngShortImageData
+  refused pngSideAbove16384
+  where
+    refused png = do
+      (ptr, len) <- cBuffer png
+      (peekCAString =<< cChatResizeImageUri ptr len 14000) `shouldReturn` ""
+      (peekCAString =<< cChatResizeImage ptr len 261120 (-1)) `shouldReturn` ""
 
 cBuffer :: ByteString -> IO (Ptr Word8, CInt)
 cBuffer s = do

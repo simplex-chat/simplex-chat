@@ -15,10 +15,11 @@ module Simplex.Chat.Image
   )
 where
 
-import Codec.Picture (DynamicImage (..), Image (..), Pixel (..), PixelRGB8, PixelRGBA8 (..), convertRGB8, convertRGBA8, decodeImage, dynamicMap, dynamicPixelMap, generateImage, pixelMap)
+import Codec.Picture (DynamicImage (..), Image (..), Pixel (..), PixelRGB8, PixelRGBA8 (..), convertRGB8, convertRGBA8, dynamicMap, dynamicPixelMap, generateImage, pixelMap)
 import Codec.Picture.JPEGTurbo (DecodeOptions (DecodeOptions), JpegHeader (..), Scale (..), decodeJpeg, encodeRGB, readJpegHeader)
 import Codec.Picture.Png (encodePng)
 import qualified Codec.Picture.STBIR as STBIR
+import qualified Codec.Picture.Spng as Spng
 import Codec.Picture.Types (pixelFoldMap)
 import Control.Monad (forM_)
 import Control.Monad.Except (ExceptT (..), runExceptT, throwError)
@@ -54,13 +55,14 @@ imageFormat = \case
 decodeResizable :: ByteString -> IO (Either String DynamicImage)
 decodeResizable s
   | "\xFF\xD8" `B.isPrefixOf` s = runExceptT $ decodeDisplayJpeg s
-  | otherwise = pure $ decodeImage s
+  | "\x89PNG\r\n\x1a\n" `B.isPrefixOf` s = Spng.decodePng (Spng.DecodeOptions maxDecodeMemoryMB) s
+  | otherwise = pure $ Left "unsupported image format"
 
 decodeDisplayJpeg :: ByteString -> ExceptT String IO DynamicImage
 decodeDisplayJpeg s = do
   JpegHeader {jpegWidth, jpegHeight} <- ExceptT $ readJpegHeader s
   (halvings, size) <- maybe (throwError "image does not fit") pure $ displaySize jpegWidth jpegHeight
-  orientImage (exifOrientation s) . resizeToSize size <$> ExceptT (decodeJpeg (DecodeOptions (jpegScale halvings) maxJpegPixels maxJpegMemoryMB) s)
+  orientImage (exifOrientation s) . resizeToSize size <$> ExceptT (decodeJpeg (DecodeOptions (jpegScale halvings) maxJpegPixels maxDecodeMemoryMB) s)
 
 displaySize :: Int -> Int -> Maybe (Int, (Int, Int))
 displaySize = go 0
@@ -226,11 +228,11 @@ maxDisplaySide = 4320
 maxJpegPixels :: Int
 maxJpegPixels = 2 ^ (28 :: Int)
 
-maxJpegMemoryMB :: Int
+maxDecodeMemoryMB :: Int
 #if defined(mobileBuild)
-maxJpegMemoryMB = 512
+maxDecodeMemoryMB = 512
 #else
-maxJpegMemoryMB = 1024
+maxDecodeMemoryMB = 1024
 #endif
 
 hasSideAbove :: Int -> Image a -> Bool

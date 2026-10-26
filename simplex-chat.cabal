@@ -386,6 +386,7 @@ library
     , http2 >=4.2.2 && <4.3
     , JuicyPixels ==3.3.*
     , JuicyPixels-jpeg-turbo ==0.1.*
+    , JuicyPixels-spng ==0.1.*
     , JuicyPixels-stbir ==0.1.*
     , memory ==0.18.*
     , mtl >=2.3.1 && <3.0
