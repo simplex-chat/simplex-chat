@@ -38,6 +38,36 @@ final class SnapshotTests: XCTestCase {
         }
         let data = try JSONSerialization.data(withJSONObject: index, options: [.prettyPrinted, .sortedKeys])
         try data.write(to: dir.appendingPathComponent("index-\(size).json"))
+        if size == "large" {
+            let theme = snapshotTheme(false)
+            CurrentColors = theme
+            var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+            UIColor.separator.resolvedColor(with: UITraitCollection(userInterfaceStyle: .light)).getRed(&r, green: &g, blue: &b, alpha: &a)
+            var variants: [[String: Any]] = []
+            for option in ["quote", "white", "mix"] {
+                snapshotVoiceCircle = option
+                for scene in fixtures.scenes(defaultSize: true) where ["overview-direct-terminal", "overview-group-terminal"].contains(scene.name) {
+                    let file = "voice2-\(scene.name)-\(option)-light-large.png"
+                    let image = try renderScene(scene, theme.toAppTheme(), dark: false, in: windowScene)
+                    try XCTUnwrap(image.pngData()).write(to: dir.appendingPathComponent(file))
+                    variants.append([
+                        "question": "voice",
+                        "scene": scene.name,
+                        "option": option,
+                        "theme": "light",
+                        "size": size,
+                        "file": file,
+                        "width": Int((image.size.width * image.scale).rounded()),
+                        "height": Int((image.size.height * image.scale).rounded()),
+                        "scale": image.scale,
+                        "separatorRGBA": [r, g, b, a]
+                    ])
+                }
+            }
+            snapshotVoiceCircle = "quote"
+            let variantData = try JSONSerialization.data(withJSONObject: variants, options: [.prettyPrinted, .sortedKeys])
+            try variantData.write(to: dir.appendingPathComponent("voice2-\(size).json"))
+        }
     }
 }
 

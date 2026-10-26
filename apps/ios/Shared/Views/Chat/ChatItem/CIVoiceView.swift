@@ -10,6 +10,16 @@
 import SwiftUI
 import SimpleXChat
 
+var snapshotVoiceCircle = "quote"
+
+func mixedCircleColor(_ theme: AppTheme) -> Color {
+    var r1: CGFloat = 0, g1: CGFloat = 0, b1: CGFloat = 0, a1: CGFloat = 0
+    var r2: CGFloat = 0, g2: CGFloat = 0, b2: CGFloat = 0, a2: CGFloat = 0
+    UIColor(terminalBackgroundColor(theme)).getRed(&r1, green: &g1, blue: &b1, alpha: &a1)
+    UIColor(messageTextColor(theme)).getRed(&r2, green: &g2, blue: &b2, alpha: &a2)
+    return Color(red: r1 * 0.92 + r2 * 0.08, green: g1 * 0.92 + g2 * 0.08, blue: b1 * 0.92 + b2 * 0.08)
+}
+
 // Spec: spec/client/chat-view.md#CIVoiceView
 struct CIVoiceView: View {
     @ObservedObject var chat: Chat
@@ -302,6 +312,7 @@ struct VoiceMessagePlayer: View {
                 .frame(width: 56 * sizeMultiplier, height: 56 * sizeMultiplier)
                 .background(showBackground ? backgroundColor : .clear)
                 .clipShape(Circle())
+                .overlay { ring }
             if recordingTime > 0 {
                 ProgressCircle(length: recordingTime, progress: $playbackTime)
                     .frame(width: 53 * sizeMultiplier, height: 53 * sizeMultiplier) // this + ProgressCircle lineWidth = background circle diameter
@@ -351,7 +362,15 @@ struct VoiceMessagePlayer: View {
     }
 
     private var backgroundColor: Color {
-        terminal ? chatItemFrameContextColor(chatItem, theme) : chatItemFrameColor(chatItem, theme)
+        if terminal && theme.colors.isLight && snapshotVoiceCircle == "white" { return .white }
+        if terminal && theme.colors.isLight && snapshotVoiceCircle == "mix" { return mixedCircleColor(theme) }
+        return terminal ? chatItemFrameContextColor(chatItem, theme) : chatItemFrameColor(chatItem, theme)
+    }
+
+    @ViewBuilder private var ring: some View {
+        if showBackground && terminal && theme.colors.isLight && snapshotVoiceCircle == "white" {
+            Circle().strokeBorder(Color(uiColor: .separator), lineWidth: 1)
+        }
     }
 
     private func fileStatusIcon(_ image: String, _ size: CGFloat) -> some View {
@@ -363,6 +382,7 @@ struct VoiceMessagePlayer: View {
             .frame(width: 56 * sizeMultiplier, height: 56 * sizeMultiplier)
             .background(showBackground ? backgroundColor : .clear)
             .clipShape(Circle())
+            .overlay { ring }
     }
 
     private func loadingIcon() -> some View {
@@ -371,6 +391,7 @@ struct VoiceMessagePlayer: View {
             .frame(width: 56 * sizeMultiplier, height: 56 * sizeMultiplier)
             .background(showBackground ? backgroundColor : .clear)
             .clipShape(Circle())
+            .overlay { ring }
     }
 
     private func startPlayback(_ recordingSource: CryptoFile) {
