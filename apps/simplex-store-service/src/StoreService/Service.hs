@@ -274,9 +274,6 @@ startNames cc@ChatController {chatStore} turns waiters providers nc@NamesConfig 
       checkNamePolicy nc neContracts >>= orExit
       pure ne
 
--- | The name policy is read once, here, or on first use when the chain does not answer; its terms and the [community]
--- lines are checked only when it is read here. Left, to stop the service, only when community_terms_url's text is not the
--- policy's terms.
 checkNamePolicy :: NamesConfig -> Contracts -> IO (Either String ())
 checkNamePolicy cfg@NamesConfig {nCommunity, nCommunityTermsUrl} ct =
   namePolicy ct >>= \case
