@@ -49,7 +49,7 @@ At the end of the app job's smoke test, `smoke-test.sh` runs `snapshots.sh <deri
 
 The sample items are dated 15 January 2025, before 10:15 UTC, and the test runs in UTC (`NSTimeZone.default`) and en_US (`-testLanguage en -testRegion US`), so the renders do not depend on the day, the runner's time zone or its locale; the date separators show the year, as for any date of an earlier year.
 
-The images go to `snapshots/` of the artifact `ios-sim-smoke-test`, named `<scene>-<light|dark>-<size>.png`, with `index-<size>.json` listing each file's scene, theme, size, pixel width and height, scale and the content size category the app saw. Rendering adds 5–11 minutes to the app job.
+The images go to `snapshots/` of the artifact `ios-sim-smoke-test` as 8-bit sRGB PNG files without alpha (`preferredRange = .standard`, `opaque`), named `<scene>-<light|dark>-<size>.png`, with `index-<size>.json` listing each file's scene, theme, size, pixel width and height, scale and the content size category the app saw. Rendering adds 5–11 minutes to the app job.
 
 ## The test backend
 

@@ -85,6 +85,8 @@ private func renderScene(_ scene: SnapshotScene, _ theme: AppTheme, dark: Bool, 
     }
     let format = UIGraphicsImageRendererFormat.default()
     format.scale = screen.scale
+    format.preferredRange = .standard
+    format.opaque = true
     let image = UIGraphicsImageRenderer(bounds: window.bounds, format: format).image { _ in
         _ = window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
     }
