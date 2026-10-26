@@ -1,7 +1,7 @@
 # Image resizing in the core
 
 The CLI sends a fixed placeholder as the preview of every image sent with `/img` or `/imgf`, and bots on the Node and Python libraries need their own image resizing code.
-Images are resized by the core: halved until the encoding fits the size limit; then the JPEG quality is bisected, and a halved PNG is rescaled by bisection between the last two sizes.
+Images are resized by the core in one Catmull-Rom pass with sharpening, at a fixed JPEG quality, to the size whose encoding fills 97–100% of the size limit; an image that fits at its largest size is encoded at the highest quality that fits.
 JPEG input is decoded by libjpeg-turbo at the smallest scale that covers the display size, and its EXIF orientation is applied.
 The core functions are called by the apps in place of platform code, wrapped in both bot libraries and used for `/img` and `/imgf` previews; libjpeg-turbo is compiled by cabal in every build.
 
@@ -46,7 +46,7 @@ Decoding, `Image.hs`:
      - a side above 65500
      - a precision other than 8
      - a lossless JPEG
-  2. target size: both sides halved, each rounded as `halve` rounds (`scaledSide`, `:203-204`), while a side exceeds 4320; `Left` when a side is below 2 before a halving
+  2. target size: both sides halved, each rounded by `scaledSide` (`:203-204`), while a side exceeds 4320; `Left` when a side is below 2 before a halving
   3. scale: the smallest of `Full`, `Half`, `Quarter` and `Eighth` whose rounded-up sides are at least the target
   4. `decodeJpeg` with:
      - `maxPixels`: 2^28; `Left` above it, before the output is allocated
@@ -103,21 +103,29 @@ Resizing, `Image.hs`:
     - `ImageRGBA16`
   - JPEG: other images
 - Pixels are converted to 8 bits per channel, RGB for JPEG and RGBA for PNG; every `DynamicImage` constructor is accepted.
-- Size search:
+- Size search (D4), `fitImage` and `fitSize`; L is the limit in the output measure, bytes or data URI characters:
 
   | step | JPEG | PNG |
   |---|---|---|
   | size bound | the JPEG header limits: `Left`, before decoding; other formats: a side above 16384 pixels after decoding: `Left`, before any encode or resize | the same |
-  | display halving | while a side exceeds 4320 pixels | the same |
-  | halving | while the image at quality 20 exceeds the limit | while the image exceeds the limit |
-  | final | quality bisected in 20..94 at the last size | the image itself when it fits after the display halving; otherwise the sides of the size before it are divided by a divisor bisected between 2 and 1 while the interval is at least 1/64: at most 7 encodings |
-  | failure | a side below 2 pixels before the image fits: `Left` | the same |
+  | largest size | the image sides halved while a side exceeds 4320 pixels, rounded as `scaledSide` rounds | the same |
+  | quality | 20 for data URIs, 65 for image data | |
+  | trial | `scaleRGB8` from the decoded image to the trial size, encoded at the quality | `scaleRGBA8`, `encodePng` |
+  | trial height | `max 1 (round (w·h_largest/w_largest))` | the same |
+  | first width | from pixels `8·B/bpp0`, with B the target T = √0.97·L in JPEG bytes (for a data URI, 3/4 of the characters after the prefix) and bpp0 0.35 at quality 20, 0.9 at quality 65 | the largest width |
+  | width from pixels p | `round (√(p·w_largest/h_largest))`, within 1..w_largest | the same |
+  | accepted | fits L and is at least 0.97·L, or fits at the largest width | the same |
+  | next width | from pixels `p·(T/size)^(1/α)`; α from the last two encodes, `log (size₂/size₁) / log (p₂/p₁)`, when within 0.4..1.3; otherwise 0.85 | the same |
+  | repeated width | the midpoint of the largest fitting width and the smallest larger width that does not fit; the search ends when they differ by 1 | the same |
+  | end | after 8 encodes or the end of the bisection: the largest fitting width | the same |
+  | no width fits | the smallest tried width halved until the encoding fits: `Left` when a width below 2 is to be halved | the same |
+  | at the largest width | quality bisected in the quality..95 | the encoding itself |
 
-- The display halving applies to the image data and to the data URIs: the Android and desktop apps display images and previews only up to 4320 pixels per side (`CIImageView.kt:128`, `base64ToBitmap` in `Images.android.kt:34` and `Images.desktop.kt:42`).
-- The bisection is ended by an encoding of exactly `maxSize`.
+- The largest size applies to the image data and to the data URIs: the Android and desktop apps display images and previews only up to 4320 pixels per side (`CIImageView.kt:128`, `base64ToBitmap` in `Images.android.kt:34` and `Images.desktop.kt:42`).
+- The quality bisection is ended by an encoding of exactly `maxSize`.
 - Metadata of the input is dropped.
 
-Scaling (D3), `Image.hs`, for the search of D4:
+Scaling (D3), `Image.hs`:
 - `scaleRGB8 size image` and `scaleRGBA8 size image`: the image at `size`.
   - the same size: the image itself, not sharpened (D18)
   - another size: one stb_image_resize pass from the image, Catmull-Rom, edges clamped, on gamma-encoded values; then the unsharp mask
@@ -549,6 +557,8 @@ License notices, `docs/dependencies/`:
   | 8×8640 | 4×4320 |
   | 4320×4 | 4320×4 |
 
+- fill: `test.jpg` and `preview-issue1.png`, the data URI with limit 14000 and the JPEG data with limit 20000: 97–100% of the limit
+- quality at the image size: a 64×48 gradient with a limit midway between its quality-65 and quality-95 encodings: at most the limit, larger than the quality-65 encoding, 64×48
 - image preview (`:41-45`):
   - `test.jpg`: JPEG data URI of at most 14000 characters
   - an encrypted copy of `test.jpg`: the same

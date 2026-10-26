@@ -27,8 +27,10 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Base64.Lazy as LB64
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Int (Int64)
+import Data.List (maximumBy)
 import Data.Maybe (fromMaybe, listToMaybe)
 import Data.Monoid (All (..))
+import Data.Ord (comparing)
 import qualified Data.Vector.Storable as VS
 import qualified Data.Vector.Storable.Mutable as VSM
 import Data.Word (Word8)
@@ -128,35 +130,77 @@ orientImage orientation = dynamicPixelMap orient
       8 -> generateImage (\x y -> pixelAt img (w - 1 - y) x) h w
       _ -> img
 
+data ImageOutput = ImageBytes | ImageDataUri
+
 resizeImage :: ImageFormat -> Int64 -> DynamicImage -> IO (Either String LB.ByteString)
-resizeImage = fitImage $ const id
+resizeImage = fitImage ImageBytes
 
 resizeImageDataUri :: Int64 -> DynamicImage -> IO (Either String LB.ByteString)
-resizeImageDataUri maxSize img = fitImage toDataUri (imageFormat img) maxSize img
+resizeImageDataUri maxSize img = fitImage ImageDataUri (imageFormat img) maxSize img
 
-fitImage :: (ImageFormat -> LB.ByteString -> LB.ByteString) -> ImageFormat -> Int64 -> DynamicImage -> IO (Either String LB.ByteString)
+fitImage :: ImageOutput -> ImageFormat -> Int64 -> DynamicImage -> IO (Either String LB.ByteString)
 fitImage output format maxSize img
-  | dynamicMap (hasSideAbove maxImageSide) img = tooLarge
-  | otherwise = case format of
-      IFJpeg -> fitDisplay (jpeg minJpegQuality) fitQuality $ convertRGB8 img
-      IFPng -> fitDisplay png fitScale $ convertRGBA8 img
+  | dynamicMap (hasSideAbove maxImageSide) img = pure imageDoesNotFit
+  | otherwise = maybe (pure imageDoesNotFit) (fitLargest . snd) $ dynamicMap (\i -> displaySize (imageWidth i) (imageHeight i)) img
   where
-    out = output format
-    fits = (<= maxSize) . LB.length
-    jpeg q = fmap (out . LB.fromStrict) . encodeRGB q
-    png = pure . out . encodePng
-    fitDisplay cheapest final = maybe tooLarge (fitHalving cheapest final Nothing) . halveToSide maxDisplaySide
-    fitHalving :: STBIR.STBIRPixel a => (Image a -> IO LB.ByteString) -> (Maybe (Image a) -> Image a -> LB.ByteString -> IO LB.ByteString) -> Maybe (Image a) -> Image a -> IO (Either String LB.ByteString)
-    fitHalving cheapest final larger i = do
-      r <- cheapest i
-      if fits r
-        then Right <$> final larger i r
-        else maybe tooLarge (fitHalving cheapest final (Just i)) $ halve i
-    fitQuality _ rgb r = bisect maxSize qualityStep (`jpeg` rgb) (minJpegQuality, r) 95
-    fitScale larger _ r = maybe (pure r) (\rgba -> bisect maxSize scaleStep (png . downscale rgba) (2, r) 1) larger
-    tooLarge = pure $ Left "image does not fit"
+    (out, quality, bitsPerPixel, jpegBytes) = case output of
+      ImageBytes -> (id, 65, 0.9, id)
+      ImageDataUri -> (toDataUri format, 20, 0.35, \target -> 0.75 * max 0 (target - fromIntegral (LB.length $ toDataUri format "")))
+    fitLargest largest = case format of
+      IFJpeg -> do
+        let rgb = convertRGB8 img
+            largestRGB = scaleRGB8 largest rgb
+            jpeg q = fmap (out . LB.fromStrict) . encodeRGB q
+        fitSize maxSize (Just $ \target -> 8 * jpegBytes target / bitsPerPixel) largest (jpeg quality . (`scaleRGB8` rgb)) >>= \case
+          Right (size, r) | size == largest -> Right <$> bisect maxSize qualityStep (`jpeg` largestRGB) (quality, r) 96
+          r -> pure $ snd <$> r
+      IFPng -> do
+        let rgba = convertRGBA8 img
+        fmap snd <$> fitSize maxSize Nothing largest (pure . out . encodePng . (`scaleRGBA8` rgba))
     qualityStep good bad = if bad - good <= 1 then Nothing else Just $ (good + bad) `div` 2
-    scaleStep good bad = if good - bad < 1 / 64 then Nothing else Just $ (good + bad) / 2
+
+fitSize :: Int64 -> Maybe (Double -> Double) -> (Int, Int) -> ((Int, Int) -> IO LB.ByteString) -> IO (Either String ((Int, Int), LB.ByteString))
+fitSize maxSize firstPixels (lw, lh) encode = search [] $ maybe lw (widthFor . ($ target)) firstPixels
+  where
+    search tried w = do
+      r <- encode $ sizeOf w
+      let tried' = (w, r) : tried
+      if fits r && (size r >= 0.97 * limit || w == lw)
+        then pure $ Right (sizeOf w, r)
+        else maybe (largestFit tried') (search tried') $ nextWidth tried' w r
+    nextWidth tried w r
+      | length tried >= 8 = Nothing
+      | predicted `notElem` map fst tried = Just predicted
+      | hi - lo > 1 = Just $ (lo + hi) `div` 2
+      | otherwise = Nothing
+      where
+        predicted = widthFor $ pixels w * (target / size r) ** (1 / slope tried)
+        lo = maximum $ 0 : map fst (filter (fits . snd) tried)
+        hi = minimum $ lw + 1 : [x | (x, r') <- tried, not (fits r'), x > lo]
+    slope ((w2, r2) : (w1, r1) : _)
+      | w1 /= w2 && size r1 /= size r2 && a >= 0.4 && a <= 1.3 = a
+      where
+        a = log (size r2 / size r1) / log (pixels w2 / pixels w1)
+    slope _ = 0.85
+    largestFit tried = case filter (fits . snd) tried of
+      [] -> shrink $ minimum $ map fst tried
+      fitting -> let (w, r) = maximumBy (comparing fst) fitting in pure $ Right (sizeOf w, r)
+    shrink w
+      | w < 2 = pure imageDoesNotFit
+      | otherwise = do
+          let w' = w `div` 2
+          r <- encode $ sizeOf w'
+          if fits r then pure $ Right (sizeOf w', r) else shrink w'
+    widthFor p = max 1 $ min lw $ round $ sqrt (p * fromIntegral lw / fromIntegral lh)
+    sizeOf w = (w, max 1 $ round (fromIntegral (w * lh) / fromIntegral lw :: Double))
+    pixels w = let (w', h') = sizeOf w in fromIntegral (w' * h')
+    fits r = LB.length r <= maxSize
+    size = fromIntegral . LB.length
+    limit = fromIntegral maxSize
+    target = sqrt 0.97 * limit
+
+imageDoesNotFit :: Either String a
+imageDoesNotFit = Left "image does not fit"
 
 bisect :: Int64 -> (p -> p -> Maybe p) -> (p -> IO LB.ByteString) -> (p, LB.ByteString) -> p -> IO LB.ByteString
 bisect maxSize step encode = go
@@ -169,9 +213,6 @@ bisect maxSize step encode = go
           LT -> go (m, r') bad
           EQ -> pure r'
           GT -> go (good, r) m
-
-minJpegQuality :: Int
-minJpegQuality = 20
 
 maxImageSide :: Int
 maxImageSide = 16384
@@ -194,21 +235,6 @@ hasSideAbove side img = imageWidth img > side || imageHeight img > side
 
 hasSize :: (Int, Int) -> Image a -> Bool
 hasSize (w, h) img = imageWidth img == w && imageHeight img == h
-
-halveToSide :: STBIR.STBIRPixel a => Int -> Image a -> Maybe (Image a)
-halveToSide side img
-  | hasSideAbove side img = halveToSide side =<< halve img
-  | otherwise = Just img
-
-halve :: STBIR.STBIRPixel a => Image a -> Maybe (Image a)
-halve img
-  | imageWidth img < 2 || imageHeight img < 2 = Nothing
-  | otherwise = Just $ downscale img 2
-
-downscale :: STBIR.STBIRPixel a => Image a -> Float -> Image a
-downscale img scale = STBIR.resize STBIR.defaultOptions (scaled imageWidth) (scaled imageHeight) img
-  where
-    scaled f = scaledSide scale (f img)
 
 scaleRGB8 :: (Int, Int) -> Image PixelRGB8 -> Image PixelRGB8
 scaleRGB8 size img

@@ -38,6 +38,8 @@ imageTests = do
     it "should fail when image does not fit" testImageTooLarge
     it "should refuse image with a side above 16384 pixels" testImageSideLimit
     it "should halve image to at most 4320 pixels per side" testDisplaySide
+    it "should fill 97-100% of the limit" testFill
+    it "should raise JPEG quality when the image fits at its size" testFullSizeQuality
   describe "image preview" $ do
     it "should generate preview of an image file" $ testFilePreview $ CryptoFile "tests/fixtures/test.jpg" Nothing
     it "should generate preview of an encrypted image file" testEncryptedFilePreview
@@ -121,6 +123,27 @@ testDisplaySide =
         (decodedSize =<< LB64.decode (LB.drop 1 $ LB.dropWhile (/= ',') uri)) `shouldBe` Right size
   where
     decodedSize = fmap imageSize . decodeImage . LB.toStrict
+
+testFill :: IO ()
+testFill = do
+  forM_ ["tests/fixtures/test.jpg", "tests/fixtures/preview-issue1.png"] $ \path -> do
+    Right img <- decodeImage <$> B.readFile path
+    Right uri <- resizeImageDataUri 14000 img
+    LB.length uri `shouldSatisfy` filled 14000
+    Right image <- resizeImage IFJpeg 20000 img
+    LB.length image `shouldSatisfy` filled 20000
+  where
+    filled limit n = n <= limit && fromIntegral n >= 0.97 * (fromIntegral limit :: Double)
+
+testFullSizeQuality :: IO ()
+testFullSizeQuality = do
+  let rgb = generateImage (\x y -> PixelRGB8 (fromIntegral $ x * 4) (fromIntegral $ y * 5) (fromIntegral $ x * y)) 64 48
+  q65 <- encodeRGB 65 rgb
+  q95 <- encodeRGB 95 rgb
+  let limit = fromIntegral $ (B.length q65 + B.length q95) `div` 2
+  Right jpeg <- resizeImage IFJpeg limit $ ImageRGB8 rgb
+  LB.length jpeg `shouldSatisfy` (\n -> n > fromIntegral (B.length q65) && n <= limit)
+  imageSize <$> decodeImage (LB.toStrict jpeg) `shouldBe` Right (64, 48)
 
 testFilePreview :: CryptoFile -> IO ()
 testFilePreview f = do
