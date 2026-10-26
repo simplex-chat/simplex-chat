@@ -2,7 +2,7 @@
 
 module ImageTests where
 
-import Codec.Picture (DynamicImage (..), Image (..), PixelCMYK8, PixelRGB16 (..), PixelRGB8 (..), PixelRGBA16 (..), PixelRGBA8 (..), decodeImage, dynamicMap, generateImage)
+import Codec.Picture (DynamicImage (..), Image (..), PixelCMYK8, PixelRGB16 (..), PixelRGB8 (..), PixelRGBA16 (..), PixelRGBA8 (..), convertRGB8, decodeImage, dynamicMap, generateImage, pixelAt)
 import Codec.Picture.JPEGTurbo (encodeRGB)
 import Codec.Picture.Jpg (encodeDirectJpegAtQualityWithMetadata, encodeJpegAtQuality)
 import Codec.Picture.Types (convertImage, extractLumaPlane)
@@ -47,6 +47,7 @@ imageTests = do
     it "should decode JPEG at the display size" testJpegDisplaySize
     it "should decode JPEG colour spaces" testJpegColourSpaces
     it "should refuse unsupported and malformed JPEG" testJpegRefused
+    it "should apply EXIF orientation of JPEG" testJpegOrientation
 
 testDataUri :: FilePath -> LB.ByteString -> IO ()
 testDataUri path prefix = do
@@ -172,6 +173,52 @@ testJpegRefused =
         B.init jpeg,
         B.take sof jpeg <> "\0" <> B.drop sof jpeg
       ]
+
+testJpegOrientation :: IO ()
+testJpegOrientation = do
+  jpeg <- encodeRGB 100 $ generateImage quadrant 64 32
+  forM_ orientations $ \(orientation, size, colours) -> do
+    Right img <- decodeResizable $ withExif (odd orientation) 8 orientation jpeg
+    imageSize img `shouldBe` size
+    quadrants img `shouldBe` colours
+    Right resized <- resizeImage IFJpeg 261120 img
+    "Exif" `B.isInfixOf` LB.toStrict resized `shouldBe` False
+  Right img <- decodeResizable $ withExif True 1000 6 jpeg
+  quadrants img `shouldBe` [red, green, blue, white]
+  where
+    quadrant x y = case (x < 32, y < 16) of
+      (True, True) -> red
+      (False, True) -> green
+      (True, False) -> blue
+      (False, False) -> white
+    orientations :: [(Int, (Int, Int), [PixelRGB8])]
+    orientations =
+      [ (1, (64, 32), [red, green, blue, white]),
+        (2, (64, 32), [green, red, white, blue]),
+        (3, (64, 32), [white, blue, green, red]),
+        (4, (64, 32), [blue, white, red, green]),
+        (5, (32, 64), [red, blue, green, white]),
+        (6, (32, 64), [blue, red, white, green]),
+        (7, (32, 64), [white, green, blue, red]),
+        (8, (32, 64), [green, white, red, blue])
+      ]
+    red = PixelRGB8 255 0 0
+    green = PixelRGB8 0 255 0
+    blue = PixelRGB8 0 0 255
+    white = PixelRGB8 255 255 255
+    quadrants img =
+      let rgb = convertRGB8 img
+          (w, h) = (imageWidth rgb, imageHeight rgb)
+          snap (PixelRGB8 r g b) = PixelRGB8 (level r) (level g) (level b)
+          level c = if c > 127 then 255 else 0
+       in [snap $ pixelAt rgb x y | y <- [h `div` 4, 3 * h `div` 4], x <- [w `div` 4, 3 * w `div` 4]]
+    withExif :: Bool -> Int -> Int -> B.ByteString -> B.ByteString
+    withExif littleEndian ifdOffset orientation jpeg = B.take 2 jpeg <> "\xFF\xE1" <> bigEndian 2 (8 + B.length tiff) <> "Exif\0\0" <> tiff <> B.drop 2 jpeg
+      where
+        tiff = B.concat [if littleEndian then "II" else "MM", word 2 42, word 4 ifdOffset, word 2 1, word 2 0x0112, word 2 3, word 4 1, word 2 orientation, word 2 0, word 4 0]
+        word n = (if littleEndian then B.reverse else id) . bigEndian n
+    bigEndian :: Int -> Int -> B.ByteString
+    bigEndian n v = B.pack [fromIntegral (v `shiftR` (8 * i)) | i <- [n - 1, n - 2 .. 0]]
 
 baselineJpeg :: Image PixelRGB8 -> B.ByteString
 baselineJpeg = LB.toStrict . encodeJpegAtQuality 90 . convertImage

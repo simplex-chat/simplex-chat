@@ -13,7 +13,7 @@ module Simplex.Chat.Image
   )
 where
 
-import Codec.Picture (DynamicImage (..), Image (..), Pixel (..), convertRGB8, convertRGBA8, decodeImage, dynamicMap)
+import Codec.Picture (DynamicImage (..), Image (..), Pixel (..), convertRGB8, convertRGBA8, decodeImage, dynamicMap, dynamicPixelMap, generateImage)
 import Codec.Picture.JPEGTurbo (DecodeOptions (DecodeOptions), JpegHeader (..), Scale (..), decodeJpeg, encodeRGB, readJpegHeader)
 import Codec.Picture.Png (encodePng)
 import qualified Codec.Picture.STBIR as STBIR
@@ -24,6 +24,7 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Base64.Lazy as LB64
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Int (Int64)
+import Data.Maybe (fromMaybe, listToMaybe)
 import Data.Monoid (All (..))
 
 data ImageFormat = IFJpeg | IFPng
@@ -50,7 +51,7 @@ decodeDisplayJpeg :: ByteString -> ExceptT String IO DynamicImage
 decodeDisplayJpeg s = do
   JpegHeader {jpegWidth, jpegHeight} <- ExceptT $ readJpegHeader s
   (halvings, size) <- maybe (throwError "image does not fit") pure $ displaySize jpegWidth jpegHeight
-  resizeToSize size <$> ExceptT (decodeJpeg (DecodeOptions (jpegScale halvings) maxJpegPixels maxJpegMemoryMB) s)
+  orientImage (exifOrientation s) . resizeToSize size <$> ExceptT (decodeJpeg (DecodeOptions (jpegScale halvings) maxJpegPixels maxJpegMemoryMB) s)
 
 displaySize :: Int -> Int -> Maybe (Int, (Int, Int))
 displaySize = go 0
@@ -71,6 +72,54 @@ resizeToSize :: (Int, Int) -> DynamicImage -> DynamicImage
 resizeToSize (w, h) img
   | dynamicMap (\i -> imageWidth i == w && imageHeight i == h) img = img
   | otherwise = ImageRGB8 $ STBIR.resize STBIR.defaultOptions w h $ convertRGB8 img
+
+exifOrientation :: ByteString -> Int
+exifOrientation s = fromMaybe 1 $ do
+  tiff <- exifTiff $ B.drop 2 s
+  order <- case B.take 2 tiff of
+    "II" -> Just B.reverse
+    "MM" -> Just id
+    _ -> Nothing
+  let field n i
+        | i < 0 || B.length bytes /= n = Nothing
+        | otherwise = Just $ B.foldl' (\a b -> a * 256 + fromIntegral b) 0 $ order bytes
+        where
+          bytes = B.take n $ B.drop i tiff
+      u16 = field 2
+  ifd <- field 4 4
+  entries <- u16 ifd
+  listToMaybe
+    [ v
+      | e <- [ifd + 2 + 12 * k | k <- [0 .. entries - 1]],
+        u16 e == Just 0x0112,
+        u16 (e + 2) == Just 3,
+        Just v <- [u16 (e + 8)],
+        v >= 1 && v <= 8
+    ]
+
+exifTiff :: ByteString -> Maybe ByteString
+exifTiff s
+  | B.length s < 4 || B.index s 0 /= 0xFF || marker == 0xDA = Nothing
+  | marker == 0xE1 && "Exif\0\0" `B.isPrefixOf` segment = Just $ B.drop 6 segment
+  | otherwise = exifTiff $ B.drop (2 + len) s
+  where
+    marker = B.index s 1
+    len = fromIntegral (B.index s 2) * 256 + fromIntegral (B.index s 3)
+    segment = B.take (len - 2) $ B.drop 4 s
+
+orientImage :: Int -> DynamicImage -> DynamicImage
+orientImage orientation = dynamicPixelMap orient
+  where
+    orient :: Pixel a => Image a -> Image a
+    orient img@Image {imageWidth = w, imageHeight = h} = case orientation of
+      2 -> generateImage (\x y -> pixelAt img (w - 1 - x) y) w h
+      3 -> generateImage (\x y -> pixelAt img (w - 1 - x) (h - 1 - y)) w h
+      4 -> generateImage (\x y -> pixelAt img x (h - 1 - y)) w h
+      5 -> generateImage (\x y -> pixelAt img y x) h w
+      6 -> generateImage (\x y -> pixelAt img y (h - 1 - x)) h w
+      7 -> generateImage (\x y -> pixelAt img (w - 1 - y) (h - 1 - x)) h w
+      8 -> generateImage (\x y -> pixelAt img (w - 1 - y) x) h w
+      _ -> img
 
 resizeImage :: ImageFormat -> Int64 -> DynamicImage -> IO (Either String LB.ByteString)
 resizeImage = fitImage $ const id
