@@ -104,6 +104,7 @@ theme screens     preview as terminal rows ("alice", then "bob" in the own colou
                   custom image tile, image scale, scale slider and wallpaper accent hidden
 theme export      colours and wallpaper; the layout is not exported
 classic           unchanged apart from the message text colour: no copy of the time in bubbles (decided 2026-10-23), no spacing or line-height changes
+                  iOS: group bubble width less the scaled avatar column (I18); sender name on the bubble edge (I23); Kotlin: on ep/classic-bubbles
 build             kotlin.daemon.jvmargs=-Xmx4096m in apps/multiplatform/gradle.properties (D33)
 rejected          hover action bar
                   reaction pills
@@ -195,6 +196,7 @@ Shared/Views/Chat/ChatView.swift         terminal = activeChatLayout == .termina
                                          gutter: memberImageSize + chatItemTextPadding in groups, 0 in other chats
                                          memberImageSize: 34pt × chat list profileImageSize ÷ 63 at the text size, classic rows too
                                          classic group bubble width: less scaledMemberImageSize + 8pt for the avatar column
+                                         classic sender name on the bubble edge: memberImageSize + 10pt (user, I23)
                                          terminalRowsSeparated(olderRow); olderRow: the next merged item
                                          bottom: 8pt below the newest row, terminalLevelStep above a date separator, otherwise 0
                                          chatItemWithMenu: alignEnd = sent && !terminal; ChatItemClipped skipped; reactions at the text edge
@@ -234,7 +236,7 @@ Shared/Views/UserSettings/AppearanceSettings.swift
                                          presets as colours; custom image tile, scale type, scale and wallpaper tint hidden
                                          \.terminalLayout by profileChatLayout
 theme writes                             chatLayout kept (agent profile plan, section 6)
-classic                                  message text in messageTextColor (MsgContentView); quote text in onSurface; otherwise unchanged
+classic                                  message text in messageTextColor (MsgContentView); quote text in onSurface; sender name on the bubble edge; otherwise unchanged
 differences                              row tint: selected only; hover and press indication omitted
                                          swipe to reply moves the item
                                          gaps × 17/16 at the default 17pt body (user, 2026-10-25); line heights from the SF font

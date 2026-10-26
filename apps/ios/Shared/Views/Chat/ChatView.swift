@@ -1985,7 +1985,7 @@ struct ChatView: View {
                             }
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                            .padding(.leading, memberImageSize + 14 + (selectedChatItems != nil && ci.canBeDeletedForSelf ? 12 + 24 : 0))
+                            .padding(.leading, memberImageSize + 10 + (selectedChatItems != nil && ci.canBeDeletedForSelf ? 12 + 24 : 0))
                             .padding(.top, 3)
                         }
                         HStack(alignment: .center, spacing: 0) {
@@ -2068,7 +2068,7 @@ struct ChatView: View {
                             }
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
-                                .padding(.leading, memberImageSize + 14 + (selectedChatItems != nil && ci.canBeDeletedForSelf ? 12 + 24 : 0))
+                                .padding(.leading, memberImageSize + 10 + (selectedChatItems != nil && ci.canBeDeletedForSelf ? 12 + 24 : 0))
                                 .padding(.top, 3) // this is in addition to message sequence gap
                         }
                         HStack(alignment: .center, spacing: 0) {

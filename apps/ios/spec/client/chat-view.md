@@ -360,6 +360,7 @@ gutter             groups and channels: memberImageSize + chatItemTextPadding, w
                    one 12pt padding (user, I26): screen edge to the text or the avatar, avatar to the text, time to the screen edge
 avatar             memberImageSize: scaledMemberImageSize, 34pt × chat list profileImageSize ÷ 63 (dynamicSize at the text size, at most 75); classic rows too
                    classic group bubbles: maximum width less the avatar column, scaledMemberImageSize + 8pt
+                   classic sender name: memberImageSize + 10pt after the avatar's start, on the bubble edge (user, I23)
 sender row         name and badge at terminalNameSize, 13.5 × 17/16 pt (primary for own items, secondary otherwise); role label 15pt after the name
                    start padding chatItemTextPadding; terminalSenderBottomGap below
 selection          SelectedChatItem 8pt from the start; row moved by 28pt; selected row tint primary 10%
