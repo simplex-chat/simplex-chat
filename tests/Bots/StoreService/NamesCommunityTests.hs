@@ -199,12 +199,13 @@ testStartupCheck g = withContracts g $ \node ct -> do
 
 testStartupUnread :: TVar ChaChaDRG -> IO ()
 testStartupUnread g = withContracts g $ \node ct -> do
-  cfg <- withTermsUrl (fakeTermsUrl node) <&> \c -> c {nCommunity = M.singleton (fromJust $ bytes32FromHex aliceHex) "Alice's bakery"}
+  cfg <- withTermsUrl (fakeTermsUrl node) <&> \c -> c {nCommunity = M.singleton (fromJust $ bytes32FromHex aliceHex) "a bakery the policy is not read for"}
   setCommunityTerms node fakeNewCommunityTerms
   answerCall node fakeController (selector "namePolicy()") $ Reverts ""
   warned <- capturingStderr $ checkNamePolicy cfg ct `shouldReturn` Right ()
   warned `shouldSatisfy` T.isInfixOf "names: the controller's name policy could not be read, it is read on first use"
-  warned `shouldNotSatisfy` T.isInfixOf "Alice's bakery"
+  -- a text no other case logs, so a line another case logs late cannot match it
+  warned `shouldNotSatisfy` T.isInfixOf "a bakery the policy is not read for"
 
 testStartupWarnings :: TVar ChaChaDRG -> IO ()
 testStartupWarnings g = withContracts g $ \node ct -> do
