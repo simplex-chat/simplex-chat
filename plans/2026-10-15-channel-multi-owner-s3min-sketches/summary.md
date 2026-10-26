@@ -38,9 +38,6 @@ The first slice builds these as recommended unless you choose otherwise. On the 
 2. **Should the server refuse today's write command on a link that several owners write?**
    - Recommended: **refuse it, as planned.** It stops a stale write, or one from a downgraded app, from erasing the other owners' changes. Single-owner channels are unaffected: their links have one owner key. It changes the server's behaviour in its new version. Source: [plan §9, question 5][pl469], [§4.1][pl47].
    - **Keep accepting it.** Nothing then stops a stale or downgraded single-owner write from erasing the other owners' changes. Source: [plan §9, question 5][pl469].
-3. **The server design was written against an older version of the server code. Should the first slice adapt it as it goes?**
-   - Recommended: **yes: build for the server code as it is now.** The server code has since dropped two storage parts the design mentions. The first slice builds the new write for the two kinds of storage left, where it stays ordered, and updates the design's code references in a docs commit of its own. Source: [plan §9, question 8][pl471], [the first slice][pl348].
-   - **First a short design pass, then the first slice.** The server design is brought up to the current code before the slice starts. Source: [plan §9, question 8][pl471].
 
 ## For programmers
 
@@ -110,7 +107,7 @@ Residual risks [[Ov: Residual risks][ov57-68], [§5][pl310-316]]:
 
 **Risks** [[§8][pl456-459], [Ov: Not verified, size][ov70-72]]: the riskiest assumption, which tests in S9, S10 and S13 check, is that today's roster protocol converges when versions are claimed through the link from complete rosters and departed owners' roster messages are still applied. The next is that background callbacks, re-derived from the latest read and the database, are idempotent; one that isn't would send twice or never (test [T17][pl413], in S8). S1 first proves the swap's atomicity and the computed 50-owner size; the 100,000-member catch-up is an estimate. Postgres is covered by the Haskell tests, not by the app runs.
 
-**Open in plan [§9][pl464-471]**, asked under "Questions for you": the two design questions, which S1 builds as recommended unless you choose otherwise: `LSWP` sending only the user data, which leaves room for about 50 owner keys (computed from the encoders, not yet tested) instead of 6 [[§4.1][pl45], [Ov: Not verified, size][ov72]], and refusing `LSET` on multi-key queues, a server behaviour change that stops stale or downgraded single-owner writes from erasing other owners. A third is for S1: the server design was written against an older simplexmq, which has since dropped its journal store and Postgres queue cache, so S1 builds the swap for the two stores left and updates the design's code references.
+**Open in plan [§9][pl464-471]**, asked under "Questions for you": the two design questions, which S1 builds as recommended unless you choose otherwise: `LSWP` sending only the user data, which leaves room for about 50 owner keys (computed from the encoders, not yet tested) instead of 6 [[§4.1][pl45], [Ov: Not verified, size][ov72]], and refusing `LSET` on multi-key queues, a server behaviour change that stops stale or downgraded single-owner writes from erasing other owners. A third, decided on 26 Oct: the server design was written against an older simplexmq, which has since dropped its journal store and Postgres queue cache, so S1 builds the swap for the two stores left and updates the design's code references [[§9][pl471]].
 
 ### Protocol changes
 
@@ -213,7 +210,6 @@ Residual risks [[Ov: Residual risks][ov57-68], [§5][pl310-316]]:
 [pl314]: https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L314
 [pl315]: https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L315
 [pl319-342]: https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L319-L342
-[pl348]: https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L348
 [pl350]: https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L350
 [pl365-382]: https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L365-L382
 [pl373]: https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L373
