@@ -2995,4 +2995,6 @@
     <string name="chat_layout_classic">Classica</string>
     <string name="chat_layout_default_suffix">(predefinita)</string>
     <string name="chat_layout_terminal">Terminale</string>
+    <string name="keystore_key_storage_tee">TEE</string>
+    <string name="markdown_text_view">Visualizzazione testo</string>
 </resources>
