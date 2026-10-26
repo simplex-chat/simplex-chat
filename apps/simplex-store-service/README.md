@@ -649,8 +649,8 @@ service registers. For a listed name the page also signs `AcceptBonaFideTerms` f
 with the reveal, at the policy's nonce and the reveal's deadline, and the service relays it with
 `commitUnderBonaFideCommunityTermsWithSig` as soon as the reveal is stored, then registers. When the
 policy's terms changed after the order, the page asks the buyer to agree again before it signs. A
-relay or a register refused for the acceptance (new terms, a used nonce, a wrong signature) clears
-the reveal, and the page signs again.
+relay or a register refused for the acceptance (new terms, a used nonce) clears the reveal, and the
+page signs again.
 
 ### The gas key
 
@@ -1130,7 +1130,8 @@ cabal build exe:simplex-store-service
 ENS_CONTRACTS_DIR=<ens-contracts> ANVIL=<anvil> scripts/store-service/names-contract-run.sh
 ```
 
-- `WEBAPP_DIR`: the names webapp (default: the `apps/simplex-domains` submodule's `webapp/`).
+- `WEBAPP_DIR`: the names webapp (default: the `apps/simplex-domains` submodule's `webapp/`), which needs
+  simplex.domains#7 for the name policy's terms and the community case until the submodule moves past it.
 - `STORE_SERVICE_BIN`: the service binary (default: `cabal list-bin exe:simplex-store-service`).
 - `SERVICE_PORT`, `CODES_PORT`, `COMMUNITY_TERMS_PORT`: the service's, the code server's and the terms server's
   ports (8180, 8199 and 8198).

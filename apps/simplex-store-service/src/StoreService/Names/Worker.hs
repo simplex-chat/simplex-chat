@@ -333,7 +333,7 @@ judge w@Worker {wkOrders = oe@OrdersEnv {oeContracts}} now r@NameRegistration {n
       LChanged -> pure (Nothing, Again)
       LUnread -> pure (Nothing, Retry (nrVersion r) "the register check's chain read failed")
       LNotLanded -> case reason of
-        Just e | e `elem` [RNInvalidNonce, RNTermsNotAccepted, RNTermsMismatch, RNInvalidSignature] -> store w now r {nrReveal = Nothing}
+        Just e | e `elem` [RNInvalidNonce, RNTermsNotAccepted, RNTermsMismatch] -> store w now r {nrReveal = Nothing}
         Just RNCommitmentTooNew -> pure (Nothing, waitUntil r $ addUTCTime chainSecond now)
         _ -> case nrReveal of
           Just NameReveal {rvLabel} ->

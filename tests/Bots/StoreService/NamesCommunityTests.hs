@@ -145,7 +145,6 @@ testLoadedCount = do
   none <- capturingStderr $ void $ parseIni (namesIni namesSection chainSection)
   none `shouldSatisfy` T.isInfixOf "names: 0 community names loaded"
 
-
 withTermsUrl :: Text -> IO NamesConfig
 withTermsUrl url = parsedNames (namesSection <> ["community_terms_url = " <> url]) chainSection
 

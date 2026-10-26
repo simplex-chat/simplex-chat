@@ -792,11 +792,11 @@ termsChanged version community =
         ]
   )
 
--- | A listed name's community entry: the ini's text, and the policy's terms the fake node serves.
 -- | The current version with community terms other than the policy's.
 otherCommunityTerms :: Text
 otherCommunityTerms = termsVersion <> "/community/" <> T.drop 2 (hex fakeNewCommunityTerms)
 
+-- | A listed name's community entry: the ini's text, and the policy's terms the fake node serves.
 communityEntry :: J.ToJSON a => FakeEthNode -> a -> J.Value
 communityEntry node for = J.object ["for" .= for, "terms" .= J.object ["url" .= fakeTermsUrl node, "hash" .= hex fakeCommunityTerms]]
 

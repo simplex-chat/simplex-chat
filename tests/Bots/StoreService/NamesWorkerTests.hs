@@ -98,7 +98,7 @@ workerTests = describe "StoreService names: worker" $ do
   describe "terms acceptance" $ do
     it "relays the reveal's acceptance to the name policy as soon as it is stored, and registers once the policy holds it" testAcceptanceRelayed
     it "relays the acceptance before the wait for revealAfter, then waits for it" testAcceptanceBeforeWait
-    it "clears the reveal when the relay's dry run refuses the acceptance for new terms, a used nonce or a wrong signature, staying committed" testAcceptanceRefused
+    it "clears the reveal when the relay's dry run refuses the acceptance for new terms or a used nonce, staying committed" testAcceptanceRefused
     it "retries the relay while the policy's acceptance for the commitment cannot be read, sending nothing" testAcceptanceUnread
     it "judges a relay past the acceptance's deadline as a register past it, failing the order" testAcceptanceExpired
   describe "lapse" $ do
@@ -687,7 +687,7 @@ testAcceptanceBeforeWait = withWorker $ \w@W {wCtx = ctx} -> do
   length <$> sent w `shouldReturn` 1
 
 testAcceptanceRefused :: IO ()
-testAcceptanceRefused = forM_ ["TermsMismatch(bytes32,bytes32)", "InvalidNonce()", "InvalidSignature()"] $ \revert -> withWorker $ \w@W {wCtx = ctx} -> do
+testAcceptanceRefused = forM_ ["TermsMismatch(bytes32,bytes32)", "InvalidNonce()"] $ \revert -> withWorker $ \w@W {wCtx = ctx} -> do
   r <- paidIn ctx aliceOrder openPhase >>= acceptedReveal ctx
   answerAccepted w r $ B.replicate 32 0
   dryRunsRevert w revert ""

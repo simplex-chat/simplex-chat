@@ -40,7 +40,7 @@ import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig (..), TermsConfig (..))
 import StoreService.Names.Abi (bytes32FromHex, hex)
-import StoreService.Names.Chain (ChainClient (..))
+import StoreService.Names.Chain (ChainClient (..), httpFailureDetail)
 import StoreService.Names.Contracts (Contracts (..), bonaFideName, communityTermsHash, namePolicy, policyNonce)
 import System.Timeout (timeout)
 
@@ -60,8 +60,8 @@ agreedTermsHash terms = case T.breakOn communityTermsSuffix terms of
 communityTermsSuffix :: Text
 communityTermsSuffix = "/community/"
 
--- | Null for a name the policy does not list, or without community_terms_url to link; else its text from the ini, if any,
--- and the terms it is sold under.
+-- | Null without community terms or without community_terms_url to link; else the name's text from the ini, if any, and
+-- those terms.
 communityJSON :: NamesConfig -> LabelHash -> Maybe ByteString -> J.Value
 communityJSON cfg@NamesConfig {nCommunityTermsUrl} lh h = case (h, nCommunityTermsUrl) of
   (Just h', Just url) -> J.object ["for" .= communityFor cfg lh, "terms" .= J.object ["url" .= url, "hash" .= hex h']]
@@ -127,7 +127,7 @@ fetchTerms :: Manager -> Text -> IO (Either Text ByteString)
 fetchTerms manager url =
   timeout termsTimeout (E.try get) >>= \case
     Nothing -> pure $ Left "names.community_terms_url did not answer in time"
-    Just (Left (e :: HttpException)) -> pure $ Left $ "names.community_terms_url could not be read: " <> tshow e
+    Just (Left (e :: HttpException)) -> pure $ Left $ "names.community_terms_url could not be read: " <> httpFailureDetail (T.unpack url) e
     Just (Right r) -> pure r
   where
     get = do
