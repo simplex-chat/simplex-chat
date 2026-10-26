@@ -249,19 +249,17 @@ jobs:
             DEVELOPMENT_TEAM= \
             PROVISIONING_PROFILE_SPECIFIER=
 
-      # for the Claude job; a tarball keeps the app's file modes, which an artifact drops
+      # a tarball keeps the app's file modes, which an artifact drops
       - name: Pack app
-        if: needs.plan.outputs.run-claude == 'true'
         run: tar -czf "$RUNNER_TEMP/SimpleX.app.tar.gz" -C "$RUNNER_TEMP/DerivedData/Build/Products/Debug-iphonesimulator" SimpleX.app
 
       - name: Upload app
-        if: needs.plan.outputs.run-claude == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: ios-sim-app
           path: ${{ runner.temp }}/SimpleX.app.tar.gz
           compression-level: 0
-          retention-days: 1
+          retention-days: 14
           if-no-files-found: error
 
       - name: Install AXe

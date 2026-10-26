@@ -7,6 +7,7 @@ on:
       - "packages/simplex-chat-client/types/typescript/**"
       - "packages/simplex-chat-python/**"
       - ".github/workflows/packages.yml"
+    types: [opened, synchronize, reopened, ready_for_review]
 
 concurrency:
   # build.yml and this workflow both run for a pull request that changes the core and the packages
@@ -23,20 +24,19 @@ env:
 
 jobs:
   addon:
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     outputs:
       platforms: ${{ steps.plan.outputs.platforms }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
 
       - name: Build plan
         id: plan
-        env:
-          BASE: ${{ github.event.pull_request.base.sha }}
-        run: |
-          git fetch -q --depth=1 origin "$BASE"
-          python3 scripts/ci/packages_release.py build-plan --base "$BASE" >> "$GITHUB_OUTPUT"
+        run: python3 scripts/ci/packages_release.py build-plan --base HEAD^1 >> "$GITHUB_OUTPUT"
 
   build:
     name: "build ${{ matrix.platform }}"
