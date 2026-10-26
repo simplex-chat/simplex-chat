@@ -42,7 +42,7 @@ The parts build on each other: run them in this order. cisub must join only afte
 
 1. (J1) Channel info → "Channel link" → "Share link". Check: the toast "Copied to clipboard". Press Escape until the chat list shows.
 2. (J2) Add the profile `cimod`, and as cimod join by the copied link. Check: "you are subscriber".
-3. (A6) As cimod in "ci signing": click the message "before signing". Check: the alert "Signature missing" says "The message may have been sent before the channel started signing messages, or it may be fake." Close it, right-click "before signing" → "Info". Check: "Signature missing". Then right-click "after signing" → "Info". Check: "Signed & verified".
+3. (A6) As cimod in "ci signing": click the message "before signing". Check: the alert "Signature missing" says "The message was sent before the channel started signing messages, or it is fake." Close it, right-click "before signing" → "Info". Check: "Signature missing". Then right-click "after signing" → "Info". Check: "Signed & verified".
 
 **B. A moderator.**
 
