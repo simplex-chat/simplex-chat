@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Starts the desktop app on a virtual display and runs the scripted UI cases with the ui helper: onboarding to the
-# chat list, a local group, then the chat list with the toolbar at the bottom (the default) and at the top.
+# chat list, a local group, then the chat list with the toolbar at the bottom (the default) and at the top, then
+# tests/fixtures/test.jpg and logo-large-rgba.png picked in the file dialog and sent in the group.
 # Usage: scripts/ci/desktop-linux/smoke-test.sh <app dir> <output dir> [start|onboarding|layouts|setup|backend]
 # With "start" it stops at the first screen, for an agent to go on from; with "onboarding", at the chat list.
 # "setup" creates the group, makes the test SMP server (backend.sh) the one that resolves SimpleX names, and stops;
@@ -31,6 +32,12 @@ ui=$(dirname "$0")/ui
 checks=$UI_OUT/checks.txt
 # switches are at the right of the left pane, where Settings open
 switch_x=335
+fixtures=$(cd "$(dirname "$0")/../../../tests/fixtures" && pwd)
+state=${UI_STATE:-${RUNNER_TEMP:-/tmp}/ui}
+compose_y=730
+paperclip_x=415
+message_x=700
+compose_area=976x200+390+500
 mkdir -p "$UI_OUT"
 : > "$checks"
 if [ -n "${GITHUB_ENV:-}" ]; then
@@ -310,6 +317,61 @@ connect_by_name() {
   back_to_chat_list || fail "no chat list after the name's alert"
 }
 
+sent_files() {
+  find "$state/data" -name "IMG_*.$1" | wc -l
+}
+
+sent_file() {
+  local deadline=$((SECONDS + 30))
+  until [ "$(sent_files "$1")" -gt "$2" ]; do
+    [ "$SECONDS" -lt "$deadline" ] || return 1
+    sleep 1
+  done
+}
+
+latest_shot() {
+  find "$UI_OUT" -maxdepth 1 -name "[0-9][0-9]-$1.png" | sort | tail -n 1
+}
+
+compose_changed() {
+  local changed
+  convert "$(latest_shot "$1")" -crop "$compose_area" +repage "$UI_OUT/compose-$1.png"
+  convert "$(latest_shot "$2")" -crop "$compose_area" +repage "$UI_OUT/compose-$2.png"
+  changed=$(compare -metric AE -fuzz 10% "$UI_OUT/compose-$1.png" "$UI_OUT/compose-$2.png" null: 2>&1 || true)
+  changed=${changed%% *}
+  echo "pixels changed above the message field: $changed"
+  [ "${changed%%.*}" -gt 2000 ]
+}
+
+send_image() {
+  local file=$1 ext=$2 sent x y
+  sent=$(sent_files "$ext")
+  "$ui" shot "before-$ext"
+  "$ui" click "$paperclip_x" "$compose_y"
+  "$ui" click-text Image 10
+  "$ui" wait "File Name" 20
+  "$ui" shot "file-dialog-$ext"
+  read -r x y _ < <("$ui" find "File Name")
+  "$ui" click $((x + 250)) "$y"
+  "$ui" type "$fixtures/$file"
+  "$ui" key Return
+  sleep 3
+  "$ui" shot "preview-$ext"
+  check "$ext: the compose area shows the picked image" compose_changed "before-$ext" "preview-$ext"
+  "$ui" click "$message_x" "$compose_y"
+  "$ui" key Return
+  check "$ext: the image is sent as a .$ext file" sent_file "$ext" "$sent"
+  "$ui" shot "sent-$ext"
+}
+
+send_images() {
+  local x y
+  read -r x y < <(left_pane_position "$local_chat") || fail "no \"$local_chat\" in the chat list"
+  "$ui" click "$x" "$y"
+  send_image test.jpg jpg
+  send_image logo-large-rgba.png png
+}
+
 # private routing to unknown servers only: the preset servers that would proxy name lookups can't reach the test SMP
 # server on 127.0.0.1; developer tools at the debug level put the app's debug log in app.log
 "$ui" start "$app_dir" NetworkSMPProxyMode=Unknown DeveloperTools=true LogLevel=DEBUG
@@ -367,6 +429,7 @@ fi
 check_layout bottom
 use_top_toolbar
 check_layout top
+send_images
 
 if grep -q '^FAIL' "$checks"; then
   fail "the smoke test failed checks: $(grep -c '^FAIL' "$checks") of $(grep -cE '^(PASS|FAIL)' "$checks")"

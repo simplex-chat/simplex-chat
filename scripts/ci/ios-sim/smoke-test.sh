@@ -2,7 +2,8 @@
 
 # Installs the app in a new iPhone simulator and runs the scripted UI cases with the ui helper: onboarding to the
 # chat list with the one-hand UI (the default), then the chat list again with the top bar. It leaves the app in the one-hand UI.
-# Usage: scripts/ci/ios-sim/smoke-test.sh <path to SimpleX.app> <output dir>
+# With "images" it then creates a group and sends tests/fixtures/test.jpg and logo-large-rgba.png picked in the photo library.
+# Usage: scripts/ci/ios-sim/smoke-test.sh <path to SimpleX.app> <output dir> [images]
 # Each step saves a screenshot and an accessibility tree to the output dir and prints the tree to the log.
 # Later steps of the job get SIM_UDID and UI_OUT, with the simulator still running.
 
@@ -10,8 +11,10 @@ set -euo pipefail
 
 app=$1
 export UI_OUT=$2
+cases=${3:-}
 bundle_id=chat.simplex.app
 ui=$(dirname "$0")/ui
+fixtures=$(cd "$(dirname "$0")/../../../tests/fixtures" && pwd)
 mkdir -p "$UI_OUT"
 
 axe --version
@@ -85,6 +88,62 @@ expect_chat_list() {
   echo "in the $1 layout the chat list shows the onboarding pages and the toolbar"
 }
 
+tap_element() {
+  local line x y w h
+  line=$("$ui" tree | grep -iE "^$1 \"$2\"" | tail -n 1)
+  [ -n "$line" ] || return 1
+  read -r x y w h < <(sed -E 's/.* at (-?[0-9]+),(-?[0-9]+) size ([0-9]+)x([0-9]+).*/\1 \2 \3 \4/' <<< "$line")
+  "$ui" tap-xy $((x + w / 2)) $((y + h / 2))
+}
+
+sent_files() {
+  find "$(xcrun simctl get_app_container "$SIM_UDID" "$bundle_id" group.chat.simplex.app)" "$(xcrun simctl get_app_container "$SIM_UDID" "$bundle_id" data)" -name "IMG_*.$1" 2> /dev/null | wc -l
+}
+
+sent_file() {
+  local deadline=$((SECONDS + 30))
+  until [ "$(sent_files "$1")" -gt "$2" ]; do
+    [ "$SECONDS" -lt "$deadline" ] || return 1
+    sleep 2
+  done
+}
+
+fail() {
+  echo "error: $*"
+  exit 1
+}
+
+create_group() {
+  "$ui" tap Compose
+  "$ui" tap "Create group"
+  "$ui" tap-value "Enter group name…"
+  "$ui" type "image notes"
+  "$ui" shot new-group
+  tap_element Button "Create group" || fail "no \"Create group\" button"
+  "$ui" tap Skip 10 || true
+  "$ui" shot group-created
+}
+
+send_image() {
+  local file=$1 ext=$2 sent
+  sent=$(sent_files "$ext")
+  xcrun simctl addmedia "$SIM_UDID" "$fixtures/$file"
+  tap_element Button "paperclip" || fail "no attachment button"
+  "$ui" tap "Choose from library"
+  sleep 3
+  "$ui" shot "picker-$ext"
+  tap_element "[A-Za-z]+" "Photo[^\"]*" || fail "no photo in the picker"
+  "$ui" shot "picker-selected-$ext"
+  "$ui" tap Add 10 || true
+  sleep 3
+  "$ui" shot "preview-$ext"
+  "$ui" find multiply || fail "$ext: no image preview in the compose area"
+  tap_element Button "[^\"]*arrow[^\"]*" || fail "no send button"
+  sent_file "$ext" "$sent" || fail "$ext: no .$ext file sent"
+  "$ui" shot "sent-$ext"
+  echo "$ext: the picked image was previewed and sent as a .$ext file"
+}
+
 xcrun simctl install "$SIM_UDID" "$app"
 xcrun simctl launch "$SIM_UDID" "$bundle_id"
 
@@ -122,3 +181,10 @@ expect_chat_list reachable
 expect_chat_list top
 "$ui" layout reachable
 echo "smoke test passed: onboarding reaches the chat list, which shows its onboarding pages and toolbar with the one-hand UI and with the top bar"
+
+if [ "$cases" = images ]; then
+  create_group
+  send_image test.jpg jpg
+  send_image logo-large-rgba.png png
+  echo "smoke test passed: images"
+fi

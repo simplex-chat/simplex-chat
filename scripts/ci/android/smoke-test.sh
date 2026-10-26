@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Installs the APK in the booted emulator (emulator.sh) and runs the scripted UI cases with the ui helper: onboarding to
-# the chat list, a local group, then the chat list with the reachable toolbar (the default) and with the top bar.
+# the chat list, a local group, then the chat list with the reachable toolbar (the default) and with the top bar, then
+# tests/fixtures/test.jpg and logo-large-rgba.png picked in the system's image picker and sent in the group.
 # Usage: scripts/ci/android/smoke-test.sh <apk> <output dir> [start|onboarding|layouts|backend]
 # With "start" it stops at the first screen, for an agent to go on from; with "onboarding", at the chat list. "backend"
 # also adds the test SMP server (NAMES_SERVER, from backend.sh, reached through emulator.sh reverse) under Your servers
@@ -27,6 +28,7 @@ package=chat.simplex.app
 local_chat="seeded notes"
 search_field="Search or paste SimpleX link"
 ui=$(dirname "$0")/ui
+fixtures=$(dirname "$0")/../../../tests/fixtures
 checks=$UI_OUT/checks.txt
 mkdir -p "$UI_OUT"
 : > "$checks"
@@ -258,6 +260,53 @@ check_layout() {
   fi
 }
 
+add_images() {
+  adb push "$fixtures/logo-large-rgba.png" /sdcard/Pictures/simplex-logo.png
+  adb push "$fixtures/test.jpg" /sdcard/Pictures/test-card.jpg
+  for image in simplex-logo.png test-card.jpg; do
+    adb shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d "file:///sdcard/Pictures/$image" > /dev/null
+  done
+}
+
+sent_files() {
+  adb shell run-as "$package" ls files/app_files 2> /dev/null | grep -c "^IMG_.*\.$1\$" || true
+}
+
+sent_file() {
+  local deadline=$((SECONDS + 30))
+  until [ "$(sent_files "$1")" -gt "$2" ]; do
+    [ "$SECONDS" -lt "$deadline" ] || return 1
+    sleep 1
+  done
+}
+
+send_image() {
+  local name=$1 ext=$2 sent
+  sent=$(sent_files "$ext")
+  "$ui" click-text Attach 10
+  "$ui" click-text Image 10
+  sleep 3
+  "$ui" shot "picker-$ext"
+  "$ui" click-text "$name" 30 || fail "no $name in the image picker"
+  if ! "$ui" wait "Cancel image preview" 10; then
+    "$ui" shot "picker-selected-$ext"
+    "$ui" click-text Add 5 || true
+  fi
+  check "$ext: the compose area shows the picked image" "$ui" wait "Cancel image preview" 30
+  "$ui" shot "preview-$ext"
+  "$ui" click-text "Send Message" 10
+  check "$ext: the image is sent as a .$ext file" sent_file "$ext" "$sent"
+  "$ui" shot "sent-$ext"
+}
+
+send_images() {
+  add_images
+  "$ui" click-text "$local_chat" 10
+  "$ui" wait Attach 10
+  send_image test-card.jpg jpg
+  send_image simplex-logo.png png
+}
+
 # private routing to unknown servers only: the preset servers that would proxy to the test SMP server can't reach the
 # runner's 127.0.0.1; developer tools at the debug level put the app's debug log in logcat
 started=$SECONDS
@@ -294,6 +343,7 @@ if [ "$cases" != onboarding ]; then
   check_layout reachable
   "$ui" layout top
   check_layout top
+  send_images
 fi
 check "the app is running and logged no crash" app_running
 
