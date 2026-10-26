@@ -11,6 +11,10 @@ on:
         description: Start the test backend
         type: boolean
         default: false
+      tests:
+        description: "Feature tests to run after the smoke test: names, all or none; empty runs the tests this branch's changes concern (scripts/ci/feature-tests.md)"
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -43,6 +47,7 @@ jobs:
       core-run: ${{ steps.core.outputs.run-id }}
       backend: ${{ steps.names.outputs.backend }}
       backend-run: ${{ steps.backend.outputs.run-id }}
+      tests: ${{ steps.tests.outputs.tests }}
     steps:
       - name: Choose jobs
         id: jobs
@@ -94,6 +99,21 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: scripts/ci/ios-sim/earlier-run.sh "${{ steps.names.outputs.backend }}"
+
+      - name: Choose feature tests
+        id: tests
+        shell: bash
+        env:
+          TESTS: ${{ inputs.tests }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          upstream=$(gh api "repos/$GITHUB_REPOSITORY" --jq '.parent.owner.login // .owner.login')
+          base=$(gh api "repos/$GITHUB_REPOSITORY/compare/$upstream:master...$GITHUB_REF_NAME" --jq .merge_base_commit.sha)
+          git fetch -q --depth=1 origin "$base"
+          tests=$(scripts/ci/select-tests.sh scripts/ci/ios-sim "$base" "$TESTS" | tr '\n' ' ')
+          tests=${tests% }
+          echo "tests=$tests" | tee -a "$GITHUB_OUTPUT"
+          echo "- Feature tests: ${tests:-none}" >> "$GITHUB_STEP_SUMMARY"
 
   app:
     name: app in the iOS simulator
@@ -184,6 +204,7 @@ jobs:
           github-token: ${{ github.token }}
 
       - name: Start test backend
+        id: backend
         if: env.START_BACKEND == 'true'
         timeout-minutes: 30
         run: scripts/ci/ios-sim/backend.sh start ~/Downloads/${{ env.BACKEND_PKG }} "$RUNNER_TEMP/backend"
@@ -222,7 +243,17 @@ jobs:
         run: scripts/ci/ios-sim/install-axe.sh
 
       - name: Run smoke test
+        id: smoke
         run: scripts/ci/ios-sim/smoke-test.sh "$RUNNER_TEMP/DerivedData/Build/Products/Debug-iphonesimulator/SimpleX.app" "$RUNNER_TEMP/smoke-test" images
+
+      - name: Run feature tests
+        id: features
+        if: ${{ !cancelled() && steps.smoke.outcome == 'success' && needs.plan.outputs.tests != '' }}
+        timeout-minutes: 30
+        env:
+          TESTS: ${{ needs.plan.outputs.tests }}
+          BACKEND_DIR: ${{ steps.backend.outcome == 'success' && format('{0}/backend', runner.temp) || '' }}
+        run: scripts/ci/feature-tests.sh scripts/ci/ios-sim "$RUNNER_TEMP/smoke-test/tests" $TESTS
 
       - name: Stop test backend
         if: ${{ !cancelled() && env.START_BACKEND == 'true' }}

@@ -19,6 +19,10 @@ on:
         description: Also build the core library for 32-bit Arm (armeabi-v7a)
         type: boolean
         default: false
+      tests:
+        description: "Feature tests to run after the smoke test: names, all or none; empty runs the tests this branch's changes concern (scripts/ci/feature-tests.md)"
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -51,6 +55,7 @@ jobs:
       core-run: ${{ steps.core.outputs.run-id }}
       backend: ${{ steps.names.outputs.backend }}
       backend-run: ${{ steps.backend.outputs.run-id }}
+      tests: ${{ steps.tests.outputs.tests }}
     steps:
       - name: Choose jobs
         id: jobs
@@ -107,6 +112,21 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: scripts/ci/desktop-linux/earlier-run.sh "${{ steps.names.outputs.backend }}"
+
+      - name: Choose feature tests
+        id: tests
+        shell: bash
+        env:
+          TESTS: ${{ inputs.tests }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          upstream=$(gh api "repos/$GITHUB_REPOSITORY" --jq '.parent.owner.login // .owner.login')
+          base=$(gh api "repos/$GITHUB_REPOSITORY/compare/$upstream:master...$GITHUB_REF_NAME" --jq .merge_base_commit.sha)
+          git fetch -q --depth=1 origin "$base"
+          tests=$(scripts/ci/select-tests.sh scripts/ci/android "$base" "$TESTS" | tr '\n' ' ')
+          tests=${tests% }
+          echo "tests=$tests" | tee -a "$GITHUB_OUTPUT"
+          echo "- Feature tests: ${tests:-none}" >> "$GITHUB_STEP_SUMMARY"
 
   backend:
     name: test backend for the app
@@ -315,8 +335,17 @@ jobs:
           fi
           scripts/ci/android/smoke-test.sh "$RUNNER_TEMP/apk/$APK" "$RUNNER_TEMP/smoke-test" ${cases:-}
 
+      - name: Run feature tests
+        id: features
+        if: ${{ !cancelled() && steps.smoke.outcome == 'success' && needs.plan.outputs.tests != '' }}
+        timeout-minutes: 30
+        env:
+          TESTS: ${{ needs.plan.outputs.tests }}
+          BACKEND_DIR: ${{ steps.reach.outcome == 'success' && format('{0}/backend', runner.temp) || '' }}
+        run: scripts/ci/feature-tests.sh scripts/ci/android "$RUNNER_TEMP/smoke-test/tests" $TESTS
+
       - name: Emulator state after a failed smoke test
-        if: ${{ !cancelled() && steps.smoke.outcome == 'failure' }}
+        if: ${{ !cancelled() && (steps.smoke.outcome == 'failure' || steps.features.outcome == 'failure') }}
         run: |
           adb devices
           pgrep -af qemu-system || echo "no emulator process"
