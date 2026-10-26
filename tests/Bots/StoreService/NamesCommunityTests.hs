@@ -215,9 +215,10 @@ testStartupWarnings g = withContracts g $ \node ct -> do
   unreachable <- withTermsUrl "http://127.0.0.1:1/terms"
   warns unreachable "names: the community terms could not be checked now: names.community_terms_url could not be read: "
   setCommunityTerms node $ B.replicate 32 0
-  warns cfg "names: the name policy has no community terms yet"
+  -- no warning without community_terms_url; a text only this check logs, captured before this case logs it, as other cases log in parallel
   quiet <- capturingStderr $ checkNamePolicy cfg {nCommunityTermsUrl = Nothing} ct `shouldReturn` Right ()
-  quiet `shouldNotSatisfy` T.isInfixOf "community terms"
+  quiet `shouldNotSatisfy` T.isInfixOf "names: the name policy has no community terms yet"
+  warns cfg "names: the name policy has no community terms yet"
 
 testTermsPageRefused :: TVar ChaChaDRG -> IO ()
 testTermsPageRefused g = withContracts g $ \node ct ->
