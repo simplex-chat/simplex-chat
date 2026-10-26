@@ -2061,7 +2061,7 @@ fun BoxScope.ChatItemsList(
               if (showAvatar) {
                 Column(
                   Modifier
-                    .padding(top = 8.dp)
+                    .padding(top = if (cItem.content.isEvent) 0.dp else 8.dp)
                     .padding(start = 8.dp, end = if (voiceWithTransparentBack || chatInfo.isChannel) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
                     .fillMaxWidth()
                     .then(swipeableModifier),
@@ -2153,7 +2153,7 @@ fun BoxScope.ChatItemsList(
               if (showAvatar) {
                 Column(
                   Modifier
-                    .padding(top = 8.dp)
+                    .padding(top = if (cItem.content.isEvent) 0.dp else 8.dp)
                     .padding(start = 8.dp, end = if (voiceWithTransparentBack || chatInfo.isChannel) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
                     .fillMaxWidth()
                     .then(swipeableModifier),
@@ -2466,9 +2466,12 @@ fun BoxScope.ChatItemsList(
           hasSenderRow = showAvatar
         )
         val isRevealed = remember { derivedStateOf { revealedItems.value.contains(item.id) } }
-        val itemSeparation = rowItemSeparation(merged)
+        val itemSeparation = rowItemSeparation(merged, groupEvents = !LocalTerminalLayout.current)
+        val eventGapAbove = if (LocalTerminalLayout.current) null else eventRunLargeGap(merged.oldest().item, older)
         val prevItemSeparationLargeGap: Boolean
-        if (merged is MergedItem.Single || isRevealed.value) {
+        if (eventGapAbove != null) {
+          prevItemSeparationLargeGap = eventGapAbove
+        } else if (merged is MergedItem.Single || isRevealed.value) {
           val prev = listItem.prevItem
           val nextForGap = if ((item.mergeCategory != null && item.mergeCategory == prev?.mergeCategory) || isLastItem) null else listItem.nextItem
           prevItemSeparationLargeGap = if (nextForGap == null) false else getItemSeparationLargeGap(nextForGap, item)
@@ -3810,14 +3813,16 @@ private fun getItemSeparation(chatItem: ChatItem, prevItem: ChatItem?): ItemSepa
   )
 }
 
-private fun rowItemSeparation(row: MergedItem): ItemSeparation {
+private fun rowItemSeparation(row: MergedItem, groupEvents: Boolean): ItemSeparation {
   val newest = row.newest()
-  return getItemSeparation(newest.item, if (row.revealed) newest.prevItem else null)
+  val separation = getItemSeparation(newest.item, if (row.revealed) newest.prevItem else null)
+  val eventGapBelow = if (groupEvents) eventRunLargeGap(newest.item, newest.prevItem) else null
+  return if (eventGapBelow == null) separation else separation.copy(timestamp = separation.timestamp || eventGapBelow, largeGap = eventGapBelow)
 }
 
 fun terminalRowsSeparated(olderRow: MergedItem?): Boolean {
   if (olderRow == null) return false
-  return olderRow.newest().item.content is CIContent.ChatBanner || rowItemSeparation(olderRow).date != null
+  return olderRow.newest().item.content is CIContent.ChatBanner || rowItemSeparation(olderRow, groupEvents = false).date != null
 }
 
 private fun getItemSeparationLargeGap(chatItem: ChatItem, nextItem: ChatItem?): Boolean {
@@ -3831,6 +3836,30 @@ private fun getItemSeparationLargeGap(chatItem: ChatItem, nextItem: ChatItem?): 
     true
   } else chatItem.chatDir.sent == nextItem.chatDir.sent
   return !sameMemberAndDirection || (abs(nextItem.meta.createdAt.epochSeconds - chatItem.meta.createdAt.epochSeconds) >= 60)
+}
+
+private fun eventRunLargeGap(item: ChatItem, neighbour: ChatItem?): Boolean? =
+  if (neighbour != null && (item.content.isEvent || neighbour.content.isEvent)) item.content.isEvent != neighbour.content.isEvent else null
+
+private val CIContent.isEvent: Boolean get() = when (this) {
+  is CIContent.RcvDirectEventContent,
+  is CIContent.RcvGroupEventContent,
+  is CIContent.SndGroupEventContent,
+  is CIContent.RcvConnEventContent,
+  is CIContent.SndConnEventContent,
+  is CIContent.RcvChatFeature,
+  is CIContent.SndChatFeature,
+  is CIContent.RcvChatPreference,
+  is CIContent.SndChatPreference,
+  is CIContent.RcvGroupFeature,
+  is CIContent.SndGroupFeature,
+  is CIContent.RcvChatFeatureRejected,
+  is CIContent.RcvGroupFeatureRejected,
+  is CIContent.SndDirectE2EEInfo,
+  is CIContent.RcvDirectE2EEInfo,
+  is CIContent.SndGroupE2EEInfo,
+  is CIContent.RcvGroupE2EEInfo -> true
+  else -> false
 }
 
 private fun shouldShowAvatar(current: ChatItem, older: ChatItem?): Boolean {

@@ -206,6 +206,8 @@ B8   file in a bubble: the last baseline of the size line BUBBLE_TEXT_INSET abov
      of the file icon on that baseline (user)
 B9   events: line height of 12sp secondary text; feature icons and merged icons without height, one event line high (user)
 B10  row gaps in sp, values kept; a sender change in direct chats 8sp (user)
+     events: 2sp between the events of a run, 8sp around the run; a message next to an event at a large gap,
+     with its tail and time; the avatar column of an event without its 8dp top padding (user)
 B11  markdown blocks in bubbles: spacing and line heights of terminal rows (user); headings × 1.5625, 1.25, 1, bold,
      capitals placed by headingBox, in both layouts (user)
 B12  unchanged: fills, tails, roundness, colours, themes, wallpapers, interaction; link preview, chat link card,
@@ -235,7 +237,7 @@ chat/item/IntegrityErrorItemView.kt
 chat/item/CIRcvDecryptionError.kt bubble: bubbleTextPadding, bubbleMeta, the copy of the time; RectangleShape, bubbleTailSpace
 chat/item/CIGroupInvitationView.kt bubble: the copy of the time
 chat/item/ChatItemView.kt         calls without LocalBubbleLayout; tailRendered for deleted and error items; bubbleTailSpace
-chat/ChatView.kt                  LocalBubbleLayout provided for classic chats; row gaps in sp
+chat/ChatView.kt                  LocalBubbleLayout provided for classic chats; row gaps in sp; event runs (eventRunLargeGap)
 usersettings/Appearance.kt        LocalBubbleLayout for the classic theme preview
 ```
 
@@ -277,8 +279,6 @@ row gaps         unchanged at font scale 1; × 1.5 at font scale 1.5
 ## 7. Open questions
 
 ```
-Q4   events: the gap above and below an event depends on the time and direction of its neighbours (2sp or 8sp);
-     terminal rows put events at the highest level whatever the time (D9a). Always 8sp around events?
-     recommended: always 8sp
-     shown: list-direct, list-group
+C8   group invitation with long translations: the time and the text on one baseline; the code unchanged until
+     an option is chosen
 ```
