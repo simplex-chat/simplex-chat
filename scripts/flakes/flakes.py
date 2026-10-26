@@ -522,7 +522,7 @@ class Collector:
             counted = [(run, job) for run, jobs in zip(runs, listings) for job in jobs if is_counted(job, name, tested)]
             results = list(pool.map(lambda pair: self.record(repository, *pair), counted))
         for (_, job), (record, spec) in zip(counted, results):
-            if spec is not None:
+            if spec is not None and record["event"] == "push":
                 self.update_spec(repository, record, spec)
         entries = defaultdict(list)
         for (run, job), (record, _) in zip(counted, results):
@@ -892,6 +892,7 @@ def test_report(window: Window, path: str) -> Report:
         ]))
     else:
         lines.append("No failures in the window.")
+    lines += ["", parser_check(all_records(window.runs))]
     return Report("\n".join(lines), {"failures": [dict(f, job=r["job"], url=r["url"]) for _, _, r, f in found]})
 
 
@@ -912,25 +913,26 @@ def pr_command(collector: Collector, args: argparse.Namespace) -> Report:
     if not runs:
         sys.exit(f"{args.url}: no {WORKFLOW} runs")
     pr_runs = collector.runs(repository, runs)
-    collector.resolve_hangs(pr_runs)
     base = pull["base"]["ref"]
     window = load_window(collector, main_repository(repository), base, runs[0]["created_at"], args.window)
+    collector.resolve_hangs(pr_runs)
     return run_report(f"CI failures: {pull['html_url']}", pr_runs[0], window, pr_runs)
 
 
 def run_base(run: dict, base: str) -> str:
-    if run["pull_requests"]:
-        return run["pull_requests"][0]["base"]["ref"]
-    return run["head_branch"] if run["event"] == "push" else base
+    if run["event"] == "push":
+        return run["head_branch"]
+    own = run["repository"]["id"]
+    return next((pull["base"]["ref"] for pull in run["pull_requests"] if pull["base"]["repo"]["id"] == own), base)
 
 
 def run_command(collector: Collector, args: argparse.Namespace) -> Report:
     repository, run_id = parse_url(args.url, "actions/runs")
     run = collector.github.get(f"repos/{repository}/actions/runs/{run_id}")
     entry = collector.runs(repository, [run])[0]
-    collector.resolve_hangs([entry])
     base = run_base(run, args.base)
     window = load_window(collector, main_repository(repository), base, run["created_at"], args.window)
+    collector.resolve_hangs([entry])
     return run_report(f"CI failures: {run['html_url']}", entry, window, None)
 
 

@@ -1,3 +1,4 @@
+import argparse
 import tempfile
 import unittest
 from pathlib import Path
@@ -190,6 +191,61 @@ class HangTest(unittest.TestCase):
             timeout = record(CHAT, job(LINUX, "failure", "failure"), "hspec-2.11-timeout.log")
             self.assertEqual(collector.next_item(timeout), "verify schema down migrations")
 
+    def test_spec_is_saved_from_push_runs_only(self):
+        logs = {PUSH_RUN["id"]: "hspec-2.11-failures.log", PULL_RUN["id"]: "hspec-2.11-failures.log"}
+        with tempfile.TemporaryDirectory() as directory:
+            collector = flakes.Collector(FakeGitHub(logs), flakes.Cache(Path(directory)))
+            collector.runs(CHAT, [PUSH_RUN])
+            collector.runs(CHAT, [PULL_RUN])
+            self.assertEqual(collector.cache.read(CHAT, "spec", flakes.job_key(LINUX))["job"], 1000)
+
+    def test_pr_reads_the_next_item_from_the_window_on_a_cold_cache(self):
+        logs = {PUSH_RUN["id"]: "hspec-2.11-failures.log", PULL_RUN["id"]: "hspec-2.11-timeout.log"}
+        with tempfile.TemporaryDirectory() as directory:
+            collector = flakes.Collector(FakeGitHub(logs), flakes.Cache(Path(directory)))
+            report = flakes.pr_command(collector, argparse.Namespace(url=PULL["html_url"], window=30)).text
+            self.assertIn("next item: verify schema down migrations", report)
+
+
+def workflow_run(run_id, event, branch, created):
+    return {
+        "id": run_id,
+        "run_attempt": 1,
+        "status": "completed",
+        "event": event,
+        "head_branch": branch,
+        "head_sha": "c" * 40,
+        "created_at": created,
+        "html_url": f"https://github.com/{CHAT}/actions/runs/{run_id}",
+        "head_repository": {"full_name": "fork/simplex-chat"},
+    }
+
+
+PUSH_RUN = workflow_run(100, "push", "master", "2026-10-21T00:00:00Z")
+PULL_RUN = workflow_run(200, "pull_request", "ep/x", "2026-10-22T00:00:00Z")
+PULL = {
+    "html_url": f"https://github.com/{CHAT}/pull/1",
+    "head": {"repo": {"full_name": "fork/simplex-chat"}, "ref": "ep/x"},
+    "base": {"ref": "master"},
+}
+
+
+class FakeGitHub:
+    def __init__(self, logs):
+        self.logs = logs
+
+    def get(self, path, **params):
+        if path.endswith("/pulls/1"):
+            return PULL
+        return {"workflow_runs": [run for run in (PULL_RUN, PUSH_RUN) if run["event"] == params["event"]]}
+
+    def pages(self, path, key, **params):
+        run_id = int(path.split("/")[-2])
+        return [job(LINUX, "failure", "failure", job_id=run_id * 10)]
+
+    def log(self, repository, job_id):
+        return fixture(self.logs[job_id // 10])
+
 
 def entry(run_id, created, jobs):
     run = {
@@ -244,6 +300,23 @@ class ReportTest(unittest.TestCase):
         self.assertIn("simplex-chat/simplex-chat master: 2 runs, 2026-10-20 to 2026-10-21", report)
         self.assertIn("| 1 | ubuntu-22.04-x86_64 GHC 8.10.7 | 2 | 1 | 1 |", report)
         self.assertIn("| 1 | /a/ | 2 | 1 | 1 | 2026-10-21 |", report)
+
+    def test_test_report_includes_the_parser_check(self):
+        window = flakes.Window(CHAT, "master", [entry(10, "2026-10-21T00:00:00Z", [(LINUX, 1, ["/a/"])])])
+        report = flakes.test_report(window, "/a/").text
+        self.assertIn("Parser check: 1 of 1 logs with summaries match their failure counts", report)
+
+    def test_base_of_a_run(self):
+        other = {"base": {"ref": "dev", "repo": {"id": 2}}}
+        own = {"base": {"ref": "stable", "repo": {"id": 1}}}
+
+        def base(event, pulls):
+            run = {"event": event, "head_branch": "master", "repository": {"id": 1}, "pull_requests": pulls}
+            return flakes.run_base(run, "release")
+
+        self.assertEqual(base("push", [other]), "master")
+        self.assertEqual(base("pull_request", [other, own]), "stable")
+        self.assertEqual(base("workflow_dispatch", [other]), "release")
 
     def test_urls(self):
         pull = "https://github.com/simplex-chat/simplex-chat/pull/7703"
