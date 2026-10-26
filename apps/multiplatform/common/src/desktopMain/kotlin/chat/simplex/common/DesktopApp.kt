@@ -303,7 +303,7 @@ class DialogState<T>(private val cancelled: T) {
     val request = CompletableDeferred<T>()
     synchronized(this) {
       if (this.request != null) {
-        Log.w(TAG, "File dialog request cancelled: another request is already awaiting")
+        Log.w(TAG, "File dialog request cancelled: another request is pending")
         return cancelled
       }
       this.params = params
@@ -313,7 +313,7 @@ class DialogState<T>(private val cancelled: T) {
       return request.await()
     } finally {
       synchronized(this) {
-        if (this.request === request) this.request = null
+        this.request = null
       }
     }
   }
