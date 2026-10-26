@@ -176,12 +176,11 @@ fun DecryptionErrorItemFixButton(
             )
             Spacer(Modifier.padding(2.dp))
             val secondaryColor = MaterialTheme.colors.secondary
-            val reserve = if (inlineMeta != null) metaReserveCopy(ci.meta, null, encrypted = null, signedFileVerified = null, secondaryColor = secondaryColor, showViaProxy = false, showTimestamp = true, breakBefore = true) else null
             Text(
               buildAnnotatedString {
                 append(generalGetString(MR.strings.fix_connection))
-                if (reserve != null) {
-                  withStyle(reserveTimestampStyle) { append(reserve) }
+                if (inlineMeta != null) {
+                  withStyle(reserveTimestampStyle) { append(metaReserveCopy(ci.meta, null, encrypted = null, signedFileVerified = null, secondaryColor = secondaryColor, showViaProxy = false, showTimestamp = true, breakBefore = true)) }
                   withStyle(reserveTimestampStyle) { append("    ") } // for icon
                 }
               },
@@ -218,12 +217,11 @@ fun DecryptionErrorItem(
         contentAlignment = Alignment.BottomEnd,
       ) {
         val secondaryColor = MaterialTheme.colors.secondary
-        val reserve = if (inlineMeta != null) metaReserveCopy(ci.meta, null, encrypted = null, signedFileVerified = null, secondaryColor = secondaryColor, showViaProxy = false, showTimestamp = true, breakBefore = true) else null
         Text(
           buildAnnotatedString {
             withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Color.Red)) { append(ci.content.text) }
-            if (reserve != null) {
-              withStyle(reserveTimestampStyle) { append(reserve) }
+            if (inlineMeta != null) {
+              withStyle(reserveTimestampStyle) { append(metaReserveCopy(ci.meta, null, encrypted = null, signedFileVerified = null, secondaryColor = secondaryColor, showViaProxy = false, showTimestamp = true, breakBefore = true)) }
             }
           },
           if (inlineMeta != null) Modifier.bubbleTextPadding(16.sp) else Modifier,
