@@ -10537,8 +10537,9 @@ Une authentification vous sera demandée avant que cette fonctionnalité ne soit
         <target state="translated">Pour prouver à un contact ou à un serveur que vous possédez un badge, l’application génère une nouvelle preuve qui ne révèle que le type de badge et sa date d’expiration, arrondie à la semaine.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To purchase key" xml:space="preserve">
+      <trans-unit id="To purchase key" xml:space="preserve" approved="no">
         <source>To purchase key</source>
+        <target state="translated">Vers la clé d’achat</target>
         <note>ledger entry field</note>
       </trans-unit>
       <trans-unit id="To receive" xml:space="preserve" approved="no">
@@ -10616,8 +10617,9 @@ Une authentification vous sera demandée avant que cette fonctionnalité ne soit
         <target state="translated">Statut du jeton : %@.</target>
         <note>token status</note>
       </trans-unit>
-      <trans-unit id="Too many attempts. Please try again later." xml:space="preserve">
+      <trans-unit id="Too many attempts. Please try again later." xml:space="preserve" approved="no">
         <source>Too many attempts. Please try again later.</source>
+        <target state="translated">Trop de tentatives. Veuillez réessayer plus tard.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Toolbar opacity" xml:space="preserve" approved="no">
@@ -10710,8 +10712,9 @@ Une authentification vous sera demandée avant que cette fonctionnalité ne soit
         <target state="translated">Messages non distribués</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unexpected error: %@" xml:space="preserve">
+      <trans-unit id="Unexpected error: %@" xml:space="preserve" approved="no">
         <source>Unexpected error: %@</source>
+        <target state="translated">Erreur inattendue : %@</target>
         <note>badge renewal error</note>
       </trans-unit>
       <trans-unit id="Unexpected migration state" xml:space="preserve" approved="no">
@@ -11165,8 +11168,9 @@ alert title</note>
         <target state="translated">Voir les conditions mises à jour</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="View your badge" xml:space="preserve">
+      <trans-unit id="View your badge" xml:space="preserve" approved="no">
         <source>View your badge</source>
+        <target state="translated">Voir votre badge</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Visible history" xml:space="preserve" approved="no">
@@ -11214,8 +11218,9 @@ alert title</note>
         <target state="translated">Attendre la réponse</target>
         <note>relay test step</note>
       </trans-unit>
-      <trans-unit id="Waiting for approval" xml:space="preserve">
+      <trans-unit id="Waiting for approval" xml:space="preserve" approved="no">
         <source>Waiting for approval</source>
+        <target state="translated">En attente d’approbation</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Waiting for channel owner to add relays." xml:space="preserve" approved="no">
@@ -11615,8 +11620,9 @@ Répéter la demande d'adhésion ?</target>
         <target state="translated">Vous pouvez toujours voir la conversation avec %@ dans la liste des conversations.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can support SimpleX later in Settings." xml:space="preserve">
+      <trans-unit id="You can support SimpleX later in Settings." xml:space="preserve" approved="no">
         <source>You can support SimpleX later in Settings.</source>
+        <target state="translated">Vous pouvez soutenir SimpleX plus tard dans les Paramètres.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="You can turn on SimpleX Lock via Settings." xml:space="preserve" approved="no">
@@ -11705,8 +11711,9 @@ Répéter la demande de connexion ?</target>
         <target state="translated">Vous devez utiliser la version la plus récente de votre base de données de messagerie sur UN SEUL appareil, sinon vous risquez de ne plus recevoir les messages de certains contacts.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You need a %1$@ to send files larger than %2$@." xml:space="preserve">
+      <trans-unit id="You need a %1$@ to send files larger than %2$@." xml:space="preserve" approved="no">
         <source>You need a %1$@ to send files larger than %2$@.</source>
+        <target state="translated">Vous avez besoin d’un %1$@ pour envoyer des fichiers de plus de %2$@.</target>
         <note>file alert</note>
       </trans-unit>
       <trans-unit id="You need to allow your contact to call to be able to call them." xml:space="preserve" approved="no">
@@ -11819,20 +11826,24 @@ Répéter la demande de connexion ?</target>
         <target state="translated">Votre nom SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your badge" xml:space="preserve">
+      <trans-unit id="Your badge" xml:space="preserve" approved="no">
         <source>Your badge</source>
+        <target state="translated">Votre badge</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your badge expired" xml:space="preserve">
+      <trans-unit id="Your badge expired" xml:space="preserve" approved="no">
         <source>Your badge expired</source>
+        <target state="translated">Votre badge a expiré</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Your badge expired on %@." xml:space="preserve">
+      <trans-unit id="Your badge expired on %@." xml:space="preserve" approved="no">
         <source>Your badge expired on %@.</source>
+        <target state="translated">Votre badge a expiré le %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your badge expired." xml:space="preserve">
+      <trans-unit id="Your badge expired." xml:space="preserve" approved="no">
         <source>Your badge expired.</source>
+        <target state="translated">Votre badge a expiré.</target>
         <note>file alert</note>
       </trans-unit>
       <trans-unit id="Your business contact" xml:space="preserve" approved="no">
@@ -11934,8 +11945,9 @@ If you cancel, the channel will be deleted - you can create it again.</source>
 Si vous annulez, le canal sera supprimé : vous pourrez le recréer.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Your payment is complete. The badge will be added to this profile." xml:space="preserve">
+      <trans-unit id="Your payment is complete. The badge will be added to this profile." xml:space="preserve" approved="no">
         <source>Your payment is complete. The badge will be added to this profile.</source>
+        <target state="translated">Votre paiement est terminé. Le badge sera ajouté à ce profil.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your preferences" xml:space="preserve" approved="no">
@@ -12642,8 +12654,9 @@ pref value</note>
         <target state="translated">a quitté</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="legend badge" xml:space="preserve">
+      <trans-unit id="legend badge" xml:space="preserve" approved="no">
         <source>legend badge</source>
+        <target state="translated">badge de légende</target>
         <note>badge required to send a large file</note>
       </trans-unit>
       <trans-unit id="link" xml:space="preserve" approved="no">
@@ -12686,8 +12699,9 @@ pref value</note>
         <target state="translated">message reçu</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="message rejected: bad signature" xml:space="preserve">
+      <trans-unit id="message rejected: bad signature" xml:space="preserve" approved="no">
         <source>message rejected: bad signature</source>
+        <target state="translated">message rejeté : signature invalide</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="minutes" xml:space="preserve" approved="no">
@@ -12843,8 +12857,9 @@ time to disappear</note>
         <target state="translated">confimation reçu…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="reconnecting…" xml:space="preserve">
+      <trans-unit id="reconnecting…" xml:space="preserve" approved="no">
         <source>reconnecting…</source>
+        <target state="translated">reconnexion…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="rejected" xml:space="preserve" approved="no">
@@ -12991,8 +13006,9 @@ dernier message reçu : %2$@</target>
         <target state="translated">a changé d'image de profil</target>
         <note>profile update event chat item</note>
       </trans-unit>
-      <trans-unit id="shown on your profile" xml:space="preserve">
+      <trans-unit id="shown on your profile" xml:space="preserve" approved="no">
         <source>shown on your profile</source>
+        <target state="translated">affiché sur votre profil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="standard end-to-end encryption" xml:space="preserve" approved="no">
@@ -13015,8 +13031,9 @@ dernier message reçu : %2$@</target>
         <target state="translated">abonné</target>
         <note>member role</note>
       </trans-unit>
-      <trans-unit id="supporter badge" xml:space="preserve">
+      <trans-unit id="supporter badge" xml:space="preserve" approved="no">
         <source>supporter badge</source>
+        <target state="translated">badge de supporter</target>
         <note>badge required to send a large file</note>
       </trans-unit>
       <trans-unit id="this contact" xml:space="preserve" approved="no">
@@ -13386,8 +13403,9 @@ dernier message reçu : %2$@</target>
         <target state="translated">Impossible de transférer le message</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Cannot generate random database passphrase" xml:space="preserve">
+      <trans-unit id="Cannot generate random database passphrase" xml:space="preserve" approved="no">
         <source>Cannot generate random database passphrase</source>
+        <target state="translated">Impossible de générer une phrase secrète aléatoire pour la base de données</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Comment" xml:space="preserve" approved="no">
