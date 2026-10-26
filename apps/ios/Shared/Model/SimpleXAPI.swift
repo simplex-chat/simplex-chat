@@ -1115,6 +1115,11 @@ private func apiConnectResponseAlert<R>(_ r: APIResult<R>) async {
                 NSLocalizedString("Connection link removed", comment: ""),
                 message: NSLocalizedString("Your contact removed this link, or it was a one-time link that was already used.\nTo connect, ask your contact to create a new link.", comment: "")
             )
+        case .errorAgent(.CONN(.DUPLICATE, _)):
+            showAlert(
+                NSLocalizedString("Already connected?", comment: ""),
+                message: String.localizedStringWithFormat(NSLocalizedString("It seems like you are already connected via this link. If it is not the case, there was an error (%@).", comment: ""), "CONN DUPLICATE")
+            )
         case let .errorAgent(.SMP(_, .BLOCKED(info))):
             showAlert(
                 NSLocalizedString("Connection blocked", comment: ""),
