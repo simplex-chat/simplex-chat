@@ -67,5 +67,6 @@ It writes what it seeded to `<work dir>/seed.md` (the Claude sessions get it) an
 
 ## Other files
 
+- `lib.sh`: the steps the smoke test and the feature tests in `tests/` share ([feature tests](../feature-tests.md)); they run under macOS's `/bin/bash` 3.2.
 - `use-macos26-sdk.sh`: runner images from 20261013 add Command Line Tools with a macOS 27 SDK that Xcode 26.6's linker can't read; every macOS job points the default SDK back at macOS 26.5. The pinned `macos-26` label runs such an image.
 - `earlier-run.sh <artifact name>`: finds the newest run of this branch in this repository with that artifact; artifacts from forks and other branches are never used.
