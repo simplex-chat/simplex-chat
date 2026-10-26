@@ -475,7 +475,6 @@
   <!-- CIMetaView.kt -->
   <string name="icon_descr_edited">edited</string>
   <string name="icon_descr_sent_msg_status_sent">sent</string>
-  <string name="icon_descr_sent_msg_status_rcvd">received</string>
   <string name="icon_descr_sent_msg_status_unauthorized_send">unauthorized send</string>
   <string name="icon_descr_sent_msg_status_send_failed">send failed</string>
   <string name="icon_descr_received_msg_status_unread">unread</string>

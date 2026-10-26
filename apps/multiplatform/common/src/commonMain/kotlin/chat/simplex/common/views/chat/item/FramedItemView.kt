@@ -324,7 +324,7 @@ fun FramedItemView(
             if (ci.quotedItem != null) {
               Column(
                 Modifier
-                  .ui(Ui.Chat.Item(ci.id).part("quote"))
+                  .ui { Ui.Chat.Item(ci.id).part("quote") }
                   .combinedClickable(
                     onLongClick = { showMenu.value = true },
                     onClick = {
@@ -444,7 +444,7 @@ fun FramedItemView(
                 is MsgContent.MCChat -> {
                   val hasText = mc.text != mc.chatLink.connLinkStr
                   Box(
-                    Modifier.ui(Ui.Chat.Item(ci.id).part("chatLink")).then(if (terminal) cardModifier.width(IntrinsicSize.Max) else Modifier).combinedClickable(
+                    Modifier.ui { Ui.Chat.Item(ci.id).part("chatLink") }.then(if (terminal) cardModifier.width(IntrinsicSize.Max) else Modifier).combinedClickable(
                       onClick = {
                         withBGApi { planAndConnect(chat.remoteHostId, mc.chatLink.connLinkStr, linkOwnerSig = mc.ownerSig, close = null) }
                       },

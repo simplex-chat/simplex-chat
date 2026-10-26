@@ -16,7 +16,7 @@ fun savedAddressSettings(): AddressSettings? = chatModel.userAddress.value?.addr
 fun UiScope.shareAddress(): String {
   click(Ui.Address.Share)
   var link: String? = null
-  poll(what = "the address on the clipboard") { link = clipboardText()?.takeIf { it.isNotBlank() }; link != null }
+  poll(what = "the address shared") { link = sharedText()?.takeIf { it.isNotBlank() }; link != null }
   return link!!
 }
 

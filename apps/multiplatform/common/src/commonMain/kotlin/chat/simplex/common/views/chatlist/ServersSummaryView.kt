@@ -177,6 +177,7 @@ private fun serverAddress(server: String): String {
 
 @Composable
 private fun SMPServerView(srvSumm: SMPServerSummary, statsStartedAt: Instant, rh: RemoteHostInfo?) {
+  val address = serverAddress(srvSumm.smpServer)
   SectionItemView(
     click = {
       ModalManager.start.showCustomModal { close ->
@@ -188,10 +189,10 @@ private fun SMPServerView(srvSumm: SMPServerSummary, statsStartedAt: Instant, rh
         )
       }
     },
-    uiKey = Ui.ServersSummary.SmpServer(serverAddress(srvSumm.smpServer))
+    uiKey = Ui.ServersSummary.SmpServer(address)
   ) {
     Text(
-      serverAddress(srvSumm.smpServer),
+      address,
       modifier = Modifier.weight(10f, fill = true)
     )
     if (srvSumm.subs != null) {

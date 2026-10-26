@@ -12,10 +12,12 @@ object UiIdle {
   @Volatile var lastEventAt = 0L
     private set
 
-  fun start(what: () -> String): Long {
-    if (!uiTestHooksEnabled) return 0
+  inline fun start(what: () -> String): Long = if (uiTestHooksEnabled) register(what()) else 0
+
+  @PublishedApi
+  internal fun register(what: String): Long {
     val id = nextId.incrementAndGet()
-    items[id] = Item(id, what())
+    items[id] = Item(id, what)
     return id
   }
 
@@ -25,8 +27,8 @@ object UiIdle {
     abandoned.remove(id)
   }
 
-  inline fun <T> track(noinline what: (() -> String)?, block: () -> T): T {
-    val id = if (what == null) 0 else start(what)
+  inline fun <T> track(what: () -> String?, block: () -> T): T {
+    val id = if (uiTestHooksEnabled) what()?.let { register(it) } ?: 0L else 0L
     try {
       return block()
     } finally {
@@ -34,7 +36,7 @@ object UiIdle {
     }
   }
 
-  inline fun <T> trackEvent(noinline what: () -> String, block: () -> T): T =
+  inline fun <T> trackEvent(what: () -> String?, block: () -> T): T =
     try {
       track(what, block)
     } finally {

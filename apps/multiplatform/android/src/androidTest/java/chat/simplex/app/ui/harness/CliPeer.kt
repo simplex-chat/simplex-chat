@@ -5,8 +5,8 @@ import java.io.BufferedWriter
 import java.net.Socket
 
 object Bridge {
-  private const val PORT = 7777
-  private const val READ_TIMEOUT_MS = 60_000
+  private val port = androidx.test.platform.app.InstrumentationRegistry.getArguments().let { it.getString("bridgePort") ?: it.getString("UITEST_BRIDGE_PORT") }?.toInt() ?: 7777
+  private const val READ_TIMEOUT_MS = 150_000
   private var socket: Socket? = null
   private lateinit var input: BufferedReader
   private lateinit var output: BufferedWriter
@@ -22,7 +22,7 @@ object Bridge {
 
   private fun exchange(cmd: String): List<String> {
     if (socket == null) {
-      val s = Socket("127.0.0.1", PORT).apply { soTimeout = READ_TIMEOUT_MS }
+      val s = Socket("127.0.0.1", port).apply { soTimeout = READ_TIMEOUT_MS }
       socket = s
       input = s.getInputStream().bufferedReader(Charsets.UTF_8)
       output = s.getOutputStream().bufferedWriter(Charsets.UTF_8)

@@ -15,4 +15,5 @@ object UiEnv {
   val repoRoot: File get() = File(required("repoRoot"))
   val cli: String get() = required("cli")
   val servers: String get() = required("servers")
+  val pass: String = System.getProperty("simplex.uitest.pass") ?: "1"
 }

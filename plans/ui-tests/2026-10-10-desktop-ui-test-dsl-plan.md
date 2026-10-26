@@ -1,9 +1,9 @@
 # Desktop UI tests: typed component keys, a headless driver and a test DSL
 
-**Date:** 2026-10-10 (revised 2026-10-13 after adversarial review rounds 1–49; review stopped on a time box; revised 2026-10-14: what is built is in 0.5, status in section 15)
-**Base:** master at `d72f68e6d` (`~/wt-uitest-ref`)
-**Files:** this plan and its companions are in `plans/ui-tests/`: the Android plan (`2026-10-12-android-ui-test-automation.md`), the Android research log (`2026-10-12-android-research-progress.md`), the P1a start page (`2026-10-13-p1a-start-here.md`), and the test catalogue (`catalogue/`: chapters `00`–`05`, review and progress notes in `catalogue/verify/`, count and status scripts in `catalogue/tools/`), the test drafts the shared and desktop tests were merged from (`drafts/`: per-batch test files, `keys.diff`, `screens.kt` and `NOTES.md` with the catalogue corrections; `drafts/BRIEF.md` holds the rules given to the drafting agents; batch 3 `drafts/b3` is not merged yet), and the 2026-10-14 PR and plan-sync review reports (`reviews/`; they are point-in-time, and what was done about each finding is in 15.4 and 15.4.2). Paths starting with `~/` refer to the author's machine (reference worktree, build scripts, Waydroid tooling).
-**Start here (implementers):** `plans/ui-tests/2026-10-13-p1a-start-here.md`. It covers the reading order, build order and exit check for P1a (section 12). P1a is complete, so that page is historical; the current harness is described in 0.5.
+**Date:** 2026-10-10 (design); section 0.5 "As built" checked against the code on 2026-10-26.
+**Base:** the design's `file:line` references are to master at `d72f68e6d` (2026-10-10).
+**Files:** in `plans/ui-tests/`: this plan, the Android plan (`2026-10-12-android-ui-test-automation.md`) and the test catalogue (`catalogue/`: legend `00`, chapters `01`–`05`, count and status scripts in `catalogue/tools/`). The test-writing guide is `apps/multiplatform/common/src/uiTestShared/README.md`.
+**How to read it:** 0.5 is what is built. 15.4 lists the traps found while running the tests, the open flakes and the limits of the suite, including what it does not cover (15.4.2). 15.5 lists the app bugs the tests found. Sections 1–14 are the original design; each design subsection that differs from the build starts with an "As built" note.
 
 ## Summary
 
@@ -25,40 +25,42 @@ Decisions (2026-10-10):
 - The stable CLI peer is the release binary downloaded by tag.
 - Screenshots (added 2026-10-12): every passing catalogue test (except the `REALTIME` ones and runs with `-PuiShots=off`, 7.7) saves committed PNG screenshots, rewritten only when the screen changes outside masked volatile regions, to show UI changes as image diffs, give evidence that the tests ran (new and changed images, plus each run's summary), and document every screen (7.7).
 
-Changed since (13, 2026-10-13/14): Android is in scope through shared test bodies (`uiTestShared`); the minimal-app-code rule of 2026-10-14 supersedes items 1–2 above and "typed keys on every component" for now; the shared bodies live in `common/src/uiTestShared`, compiled into `desktopTest` and Android `androidTest`. What is built is in 0.5.
+Changed since (13): Android is in scope through shared test bodies (`uiTestShared`, compiled into `desktopTest` and Android `androidTest`); the minimal-app-code rule of 2026-10-14 supersedes items 1–2 above and "typed keys on every component" for now; the stable CLI, screenshots and the catalogue machinery are not built (0.5.11). What is built is in 0.5.
 
-## 0.5 As built (2026-10-14)
+## 0.5 As built
 
-Sections 3–11 remain the design. This section describes what is implemented in `~/wt-uitest` (branch `nd/desktop-ui-tests`, base `eda94a505`, nothing committed), checked against the code on 2026-10-14 at about 20:05 UTC. Paths are relative to `apps/multiplatform`. Each design subsection that differs starts with a one-line "As built" note pointing here.
+Sections 3–11 remain the design. This section describes what is implemented, checked against the code on 2026-10-26. Paths are relative to `apps/multiplatform`.
 
 ### 0.5.1 Layout and test counts
 
 | Source set | Path | Compiled into | `@Test` |
 |---|---|---|---|
-| Shared harness and tests | `common/src/uiTestShared/kotlin/chat/simplex/app/ui/{harness,main,chat,groups,settings}` | `desktopTest` (`common/build.gradle.kts`, `kotlin.srcDir`) and `:android` `androidTest` (`android/build.gradle.kts`, `sourceSets["androidTest"].java.srcDir`) | 112 |
-| Desktop-only catalogue tests | `common/src/desktopTest/kotlin/chat/simplex/app/ui/desktop` | `desktopTest` | 25 |
-| Desktop harness and its tests | `common/src/desktopTest/kotlin/chat/simplex/app/ui/harness` | `desktopTest` | 4 (`HarnessMeasureTest` is `@Ignore`d, a manual benchmark) |
-| Android harness and Android-only tests | `android/src/androidTest/java/chat/simplex/app/ui/{harness,back}`, `ui/SmokeTest.kt` | `androidTest` | 15 |
-| **Desktop run** | | | **141** (140 run, 1 ignored) |
-| **Android run** | | | **127** (112 + 15) |
+| Shared harness and tests | `common/src/uiTestShared/kotlin/chat/simplex/app/ui/{harness,main,chat,groups,settings}` | `desktopTest` (`common/build.gradle.kts`, `kotlin.srcDir`) and `:android` `androidTest` (`android/build.gradle.kts`, `sourceSets["androidTest"].java.srcDir`) | 402 |
+| Desktop-only tests | `common/src/desktopTest/kotlin/chat/simplex/app/ui/desktop` | `desktopTest` | 58 |
+| Desktop harness and its tests | `common/src/desktopTest/kotlin/chat/simplex/app/ui/harness` | `desktopTest` | 3 |
+| Android harness and Android-only tests | `android/src/androidTest/java/chat/simplex/app/ui/{harness,back,android}`, `ui/SmokeTest.kt` | `androidTest` | 46 |
+| **Desktop run** | | | **461** (402 shared + 59 desktop-only) |
+| **Android run** | | | **448** (402 shared + 46 Android-only) |
 
-- Shared (112): ChatListFiltersListsTest 21, ChatListRowsTest 16, ChatListToolbarSearchTest 16, ChatListMenusPendingTest 10, ChatListRequestsCardsTest 8, MessagingTest 6, ContactsTest 5, ChatListMenuTest 4, WhatsNewTest 4, GroupsTest 3, ContactInfoTest 2, ForwardTest 2, MemberInfoTest 2, and 1 each in AddressCompatTest, AppearanceTest, ChatListRequestsCardsCompatTest, ChatProfilesTest, ChatSearchTest, DeleteMessageTest, EditMessageTest, JoiningCompatTest, NotesTest, OneTimeLinkCompatTest, OneTimeLinkTest, SendCompatTest, UserPickerTest.
-- Desktop-only, package `chat.simplex.app.ui.desktop` (names end in `DesktopTest`, except `OnboardingTest`, so none repeats a shared class name): OnboardingTest 22, ChatListFiltersListsDesktopTest 2, WhatsNewDesktopTest 1.
-- Desktop harness: HarnessResetTest 2, HarnessBootTest 1, HarnessMeasureTest 1.
-- Android-only: `back/BackKeyTest` 14 (helpers in `back/BackKeyHelpers.kt`), `SmokeTest` 1.
-- Shared harness files: `Screens.kt` (`App`, `ChatListScreen`, `NewChatScreen`, `UserPickerScreen`, `ProfilesScreen`, `AddressScreen`, `AppearanceScreen`, `ProfileScreen`, `ChatScreen`, `ContactInfoScreen`, `GroupInfoScreen`, `MemberInfoScreen`, `ownGroup`), `ChatList{Filter,Lists,Menus,Rows,Toolbar}Screens.kt`, `OnboardingScreens.kt`, `Helpers.kt`, `PeerLines.kt`, `TapPoint.kt`, `TestPrefs.kt`, `ServersConfig.kt`, `CommonReset.kt` (`ModelSnapshot`, `CommonUiState`, `CommonPrefs`).
+- Shared (402): 82 test classes in the packages `main` (chat list, connecting, profiles, address), `chat`, `groups` and `settings`. Per-class counts are in the code (`grep -c '@Test'`).
+- Desktop-only, package `chat.simplex.app.ui.desktop` (58): 22 classes. Their names end in `DesktopTest`, except `OnboardingTest`, so none repeats a shared class name.
+- Desktop harness (3): `HarnessResetTest` 2, `HarnessBootTest` 1.
+- Android-only (46): `back/BackKeyTest` 13 (helpers in `back/BackKeyHelpers.kt`), `SmokeTest` 1, and 11 classes in `android/` whose names end in `AndroidTest` (32 tests: share into the app, app links, system notifications and notification modes, keystore, keyboard, "Use from desktop", onboarding, settings, appearance).
+- `@Ignore`d with a reason: 4 shared tests (15.4 item 55, and three rows the in-process harness cannot reach, plan 11.3).
+- Shared harness (`uiTestShared/.../harness`): `Screens.kt` (`App`, `ChatListScreen`, `ChatScreen` and the info screens) and one `*Screens.kt` file per area, `Helpers.kt`, `PeerLines.kt`, `TapPoint.kt`, `TestPrefs.kt`, `ServersConfig.kt`, `CommonReset.kt` (`ModelSnapshot`, `CommonUiState`, `CommonPrefs`) and `AppCrashes.kt` (crash recording, `@KnownAppIssue`, `KnownIssueRule`).
 - Each platform has its own `UiScope` class with the same method names, and the shared code compiles against either. There is no `UiDriver` interface (7.4).
 
 ### 0.5.2 App code
 
-- `common/src/commonMain/kotlin/chat/simplex/common/ui/Ui.kt`: `UiKey`, `Modifier.ui(key)`, `object Ui` and the flag `uiTestHooksEnabled` (renamed from `uiTagsEnabled`). `Modifier.ui` and `UiIdle` do nothing unless the flag is set. The desktop harness sets it in `bootJvm`. On Android, `initUiTags(context)` (`common/src/androidMain/kotlin/chat/simplex/common/ui/UiTags.android.kt`, called from `SimplexApp`) sets it when the app is debuggable. Release builds never set it.
-- **Keys rule** (user, 2026-10-14; decision in 13): keys go only on elements a test acts on or must read, and there are no observation-only helpers. `Ui.UserPicker.Sheet` is the one presence-only key, because the Android user picker stays composed off screen. States without a key are read through the model (`contact.verified`, `chatInfo.incognito`, `draftChatId`, chat items), visible texts or existing content descriptions. Not built: typed semantics (4), `UiSemantics.kt`, `uiVolatile()`, the key lint (9.4).
+- `common/src/commonMain/kotlin/chat/simplex/common/ui/Ui.kt`: `UiKey`, `Modifier.ui(key)`, `object Ui` and the flag `uiTestHooksEnabled`. `Modifier.ui` and `UiIdle` do nothing unless the flag is set. The desktop harness sets it in `bootJvm`. On Android, `initUiTags(context)` (`common/src/androidMain/kotlin/chat/simplex/common/ui/UiTags.android.kt`, called from `SimplexApp`) sets it when the app is debuggable. Release builds never set it.
+- **Keys rule** (decision in 13): keys go only on elements a test acts on or must read, and there are no observation-only helpers. `Ui.UserPicker.Sheet` is the one presence-only key, because the Android user picker stays composed off screen. States without a key are read through the model (`contact.verified`, `chatInfo.incognito`, `draftChatId`, chat items), visible texts or existing content descriptions. Not built: typed semantics (4), `UiSemantics.kt`, `uiVolatile()`, the key lint (9.4).
 - **Pseudo-key `described(text)`** (`Helpers.kt`, id `@described`): matches a node with that content description and a click action, on both platforms. It replaces the planned `Ui.Modal.Back`.
 - **`ui/UiIdle.kt`**: in-flight items (id, label), `abandon`, `lastEventAt`; no counters. The hooks are thin wrappers:
   - `sendCmd` runs as `UiIdle.track { withContext(Dispatchers.IO) { … } }`; the status polls `GetAgentSubsTotal` and `GetAgentServersSummary` are not tracked;
   - the receiver wraps event processing in `UiIdle.trackEvent`;
-  - `withApi`/`withBGApi`/`withLongRunningApi` jobs are tracked until they complete, except those launched with `idle = false`: `PopChatCollector` (ChatModel.kt:827), `ProcessedErrors` (ProcessedErrors.kt:19), `createUpdateJob` (AppUpdater.kt:171).
-- Size: 56 modified app files (`commonMain`, `desktopMain`, `androidMain`, `SimplexApp.kt`; +380/−169 lines), plus the new `Ui.kt`, `UiIdle.kt` and `UiTags.android.kt`.
+  - `withApi`/`withBGApi`/`withLongRunningApi` jobs are tracked until they complete, except those launched with `idle = false`: `PopChatCollector` (`ChatModel.kt`), `ProcessedErrors`, `createUpdateJob` (`AppUpdater.kt`);
+  - `PopChatCollector` tracks a pending chat-list reorder as one item ("chat list reorder").
+- Size: 114 modified app files (`commonMain`, `desktopMain`, `androidMain`, `SimplexApp.kt`), most of them one-line key edits or a `uiKey` parameter on a shared helper, plus the new `Ui.kt`, `UiIdle.kt` and `UiTags.android.kt`.
 
 ### 0.5.3 Desktop harness (`common/src/desktopTest/kotlin/chat/simplex/app/ui/harness`)
 
@@ -66,53 +68,56 @@ Sections 3–11 remain the design. This section describes what is implemented in
   - directory `<run>/jvm-<slot>-<pid>`, with `user.home` and `java.io.tmpdir` inside it;
   - `bootJvm`: path check, `System.load(libapp-lib)` and `initHS`, English locale, `uiTestHooksEnabled = true`, a no-op `NtfManager` (records nothing), window state 1600 × 900, `runMigrations`, theme applied, toolbar blur 0, `PrefStores.capture`, `ModelSnapshot.capture`;
   - the shutdown hook stops the core, the peers and `uitest-servers`, then destroys the remaining descendant processes.
-- **`uiTest { }`** (no parameters):
-  - runs `runInternalSkikoComposeUiTest(1600, 900, StandardTestDispatcher())` with `autoAdvance = false`, then the body, then `drain()` inside the scene;
-  - `finally`: two EDT flushes, `drain()`, `resetForTest(null)` if the test left no controller, peers stopped, and `<jvm>/t<n>` deleted after a pass only;
-  - the known-issue policy is in 0.5.8.
+- **`uiTest { }`** (no parameters; `KnownIssueRule` is a JUnit rule of the base class, 0.5.8):
+  - runs `runInternalSkikoComposeUiTest(1600, 900, StandardTestDispatcher())` with `autoAdvance = false`, then the body, then the end-of-test checks inside the scene: up to 30 s for app work to finish, `drain()` (stuck work fails the test), recorded crashes, peer error lines;
+  - after the scene: two EDT flushes, `drain()` and the crash check again;
+  - `finally`: two EDT flushes, `drain()`, `resetForTest(null)` if the test left no controller, peers and the SOCKS stub stopped, and `<jvm>/t<n>` deleted after a pass only;
+  - a 240 s hard timeout prints a thread dump and halts the JVM (`Runtime.halt(3)`).
 - **`app(user)`** (`null` = onboarding boot) runs `resetForTest(user)` and composes `TestRoot { AppScreen() }`. `resetForTest`, in order:
   1. `drain`;
-  2. stop the core (wait at most 10 s for `ctrlInitInProgress`, `stopChatAsync`, `chatCloseStore`, `setChatCtrl(null)`) and `deleteChatDatabaseFilesAndState()`;
-  3. `drain`, `PrefStores.restore`, `clearUiState`, `TestServers.start()` (once per JVM), `DbTemplate.installIfPresent`, `TestPrefs.preset()` (onboarded boots only);
+  2. stop the core (wait at most 10 s for `ctrlInitInProgress`, then clear it with a log line; `stopChatAsync`; `chatCloseStore`, whose error fails the reset; `setChatCtrl(null)`) and `deleteChatDatabaseFilesAndState()`;
+  3. `drain`, `PrefStores.restore`, `clearUiState` (which also completes pending file dialogs empty and clears toasts), `TestServers.restoreBaseline()` (the first call launches `uitest-servers`), `DbTemplate.installIfPresent`, `TestPrefs.preset()` (onboarded boots only);
   4. `initChatController`; the first JVM without a template stops the core, publishes the template with an atomic rename and initialises again;
-  5. with a user: `apiCreateActiveUser`, model and onboarding stage set, `startChat`, `configureServers`, `setLastVersionDefault`, `clearTransientUi`.
-- **`restart()`**: empty composition; `restartCore` (`apiStopChat` if running, `chatRunning = null`, `chatCloseStore`, `setChatCtrl(null)`, `drain`, `clearUiState`, `initChatControllerOnStart`); compose again; poll (30 s) until `chatDbStatus != null` and init has finished.
-- **`TestRoot`**: an in-memory `LocalClipboardManager` and a recording `LocalUriHandler`.
+  5. with a user: `apiCreateActiveUser`, model and onboarding stage set, `startChat`, `TestServers.configure()`, `setLastVersionDefault`, `clearTransientUi`.
+- **`restart()`**: empty composition; `restartCore` (`drain`, `apiStopChat` if running, `chatRunning = null`, `chatCloseStore`, `setChatCtrl(null)`, `drain`, `clearUiState`, settings re-read from disk, `initChatControllerOnStart`); compose again; poll (30 s) until `chatDbStatus != null` and init has finished.
+- **`TestRoot`**: an in-memory clipboard (also installed as Skiko's system clipboard) and a recording `LocalUriHandler`.
 - **`poll(timeout = 10 s, what) { cond }`**:
-  - each iteration: `advanceTimeBy(16)`, `waitForIdle`, the condition, `Thread.sleep(16)`; a condition that throws counts as "not yet", and its last error goes into the timeout message;
+  - each iteration: `advanceTimeBy(16)`, `waitForIdle`, the crash check, the condition, `Thread.sleep(16)`; a condition that throws counts as "not yet", and its last error goes into the timeout message;
   - past the deadline it keeps waiting while any `UiIdle` item that was in flight at the deadline still is, up to 60 s more;
-  - a timeout writes `<run>/failures/<jvm>-NN-<what>.png` and reports the in-flight list and the first 60 visible texts;
+  - a timeout writes `<run>/failures/<jvm>-<test dir>-NN-<what>.png` and reports the in-flight list and the first 60 visible texts;
   - `settle()` advances 30 frames of 16 ms.
 - **Actions:**
-  - `click`: wait for the node; `scrollIntoView` (at most 10 `ScrollBy` steps: by the overflow plus 50 px, or 0.6 of a page for an unplaced node, then 40 frames); non-empty stable bounds; enabled; no open popup unless the target is inside one; `RequestFocus` and 3 frames; then a touch tap at `tapPointInNode` (`TapPoint.kt`: the centre, or the middle of the widest span no nested clickable covers, nested targets widened to 48 dp);
-  - `rightClick`: a mouse right click;
+  - `click`: wait for the node; `scrollIntoView` (at most 10 `ScrollBy` steps: by the overflow plus a 48 dp margin, or 0.6 of a page for an unplaced node, reversed for reversed lists, then 40 frames); non-empty stable bounds; enabled; no open popup unless the target is inside one; `RequestFocus` and 3 frames; then a touch tap at `tapPointInNode` (`TapPoint.kt`: the centre, or the middle of the widest span no nested clickable covers, nested targets widened to 48 dp);
+  - `rightClick`: a mouse right click; `drag(from, to)`: a mouse drag in 10 steps;
   - `typeInto`: `performTextInput`, verified through `EditableText`; `enterText`: the same without verification;
   - `replaceText`: select all, input, and `performTextReplacement` if the field doesn't hold the text after 2 s;
   - `pressEnter`: the Enter key; `escape()`: 3 frames, then the window back stack;
-  - `scrollTo(key)`: pages each lazy list (`ScrollBy` 0.6 page, 40 frames, at most 20 pages) until the key appears; `performScrollTo*` is never used (15.4 item 20);
-  - `setSlider`: `SetProgress`.
-- **Reads:** `exists` (any match), `waitFor`, `textOf`, `textsOf`, `descriptionsOf`, `editableText`, `isEnabled`, `seesText`, `seesDescription`, `texts`, `sliderValue`, `storedSetting` (`settings.properties`), `clipboardText`. Lookups use keys or literal English text, not `MR.strings`.
+  - `scrollTo(key)`: pages each lazy list (`ScrollBy` 0.6 page, 40 frames, at most 20 pages) until the key appears; `performScrollTo*` is never used (15.4 item 20); `scrollChatTowardOlder`/`Newer` page the chat and report whether it moved;
+  - `setSlider`: `SetProgress`;
+  - `saveFileAs(file) { … }` and `openFile(file) { … }` answer the app's save and open dialogs with a file in the test's `exchangeDir()`.
+- **Reads:** `exists` (any match), `waitFor`, `textOf`, `textsOf`, `annotatedTextsOf`, `descriptionsOf`, `editableText`, `hintOf`, `isEnabled`, `seesText`, `seesDescription`, `texts`, `sliderValue`, `storedSetting` (`settings.properties`), `clipboardText`/`setClipboardText`, `appVersion`. Lookups use keys or literal English text, not `MR.strings`.
 
 ### 0.5.4 Android harness (`android/src/androidTest/java/chat/simplex/app/ui/harness`)
 
-- **`uiTest { }`** under `createEmptyComposeRule()`: a 300 s watchdog (thread dump to logcat, then `Process.killProcess`; the runner resumes), `bootOnce`, the body, then `finish()` (peers stopped, `Intents.release()` before `ActivityScenario.close()`, `drain`).
+- **`uiTest { }`** under `KnownIssueRule` (rule order 0, 0.5.8) and `createEmptyComposeRule()` (order 1): a 300 s watchdog (thread dump to logcat, then `Process.killProcess`; the runner resumes), `bootOnce`, the body, the end-of-test checks (up to 30 s for app work, `drain` with stuck work failing the test, recorded crashes, peer error lines), then `finish()` (peers disposed, the SOCKS stub stopped, `Intents.release()` before `ActivityScenario.close()`, `drain`).
 - **`bootOnce`:**
   - waits at most 180 s for the app's own startup, and rebuilds a fresh database if it has users (15.4 item 10a);
-  - decrypts it: `apiStopChat`, then `apiStorageEncryption(key → "")`; on failure it keeps the encrypted template and logs the error. decryption succeeds (verified in the final run, 15.4 item 25);
-  - saves the template to `dataDir/uitest-db-template` (an empty key file means decrypted);
+  - decrypts it: `apiStopChat`, then `apiStorageEncryption(key → "")`; on failure it keeps the encrypted template and logs the error (15.4 item 25);
+  - saves the template to `dataDir/uitest-db-template`;
   - presets blur 0, `notificationsMode = OFF`, both background-service notices shown, `canAskToEnableNotifications = false`, `privacyProtectScreen = false`;
   - `PrefStores.capture` (the two SharedPreferences stores and `themes.yaml`), `ModelSnapshot.capture`.
-- **`app(user)`**: `resetForTest` (stop, delete, `PrefStores.restore`, `CommonUiState.clear`, `TestPrefs`, template, init, user, `startChat`, servers from the bridge, `setLastVersionDefault`), then `ActivityScenario.launch(MainActivity)` with Espresso-Intents stubbing external intents.
+- **`app(user)`**: `resetForTest` (stop, delete, `PrefStores.restore`, `TestServers.restoreBaseline()` through the bridge, notification shade collapsed, the notification service stopped if it runs, `CommonUiState.clear`, the clipboard cleared on Android 9+, `TestPrefs`, template, init, user, `startChat`, servers from the bridge, `setLastVersionDefault`), then `ActivityScenario.launch(MainActivity)` with Espresso-Intents stubbing external intents.
 - **`restart()`**: `restartCore` first, then a poll (60 s) until chat runs with the user loaded, then close and relaunch the activity (15.4 item 10).
-- **`poll`**: `advanceTimeBy(48)`, `waitForIdle`, the condition, `sleep(50)`; the deadline extension, last error and message are as on desktop. Failure screenshots go through `UiAutomation` into the app's external files directory, and the runner pulls them. `settle()` is one 500 ms advance.
+- **`poll`**: `advanceTimeBy(48)`, `waitForIdle` (a `ComposeNotIdleException` fails the test with a screenshot), the crash check, the condition, `sleep(50)`; the deadline extension, last error and message are as on desktop. Failure screenshots go through `UiAutomation` into the app's external files directory, and the runner pulls them. `settle()` is one 500 ms advance.
 - **Differences from desktop:**
   - `click` uses `performScrollTo`, then centres the node in its `ScrollBy` parent;
   - `rightClick` is a long press; `escape()` and `goBack()` press system Back (`Espresso.pressBack`);
-  - the message field (an `EditText`) is set with Espresso `replaceText`, retried every 2 s for up to 10 s, and read with a `ViewAssertion`; `pressEnter` on it clicks Send, elsewhere it sends the IME action;
+  - the message field (an `EditText`) is set once, after the field is stable and the screen has settled, by committing the text through the field's input connection as a keyboard does (`CommitText`); there is no retry (15.4 item 53). Its text and hint are read from the `EditText`. `pressEnter` on it clicks Send, elsewhere it sends the IME action;
   - `scrollTo` uses `performScrollToNode`;
+  - `saveFileAs`/`openFile` answer `ACTION_CREATE_DOCUMENT` and `ACTION_GET_CONTENT`/`ACTION_PICK` with a `FileProvider` URI;
   - `clipboardText` reads the last recorded intent's `EXTRA_TEXT` (inside `ACTION_CHOOSER` too), then the system clipboard;
-  - `Timing` logs `UITEST phase N ms: …` and `UITEST wait N ms: …` (waits of 500 ms or more) to logcat;
-  - there is no known-issue allowlist.
+  - `keyboardShown`, `hideKeyboard` and `assumeCamera` (skips a test on a device without a camera; no-ops on desktop);
+  - `Timing` logs `UITEST phase N ms: …` and `UITEST wait N ms: …` (waits of 500 ms or more) to logcat.
 
 ### 0.5.5 Peers and the bridge
 
@@ -120,21 +125,23 @@ Sections 3–11 remain the design. This section describes what is implemented in
   - `sends` types the command, then consumes the first matching echo anywhere in the buffer (the command, or the sent item without its `HH:MM ` prefix);
   - also `types`, `expects`, `expectsMessage`, `eventually`, `eventuallyMessage`, `eventuallyMatching`, `nextLine`, `contactId`, `pending`;
   - line waits default to `LINE_TIMEOUT_MS` = 15 s; a timeout appends the next 10 buffered lines.
+- **`PeerFlags`**: `reactions`, `markRead`, `fullLinks`, `relay`, `smpServer` (default `smp1`), `xftpServer` (default `xftp1`).
 - **Desktop `CliPeer`:**
-  - pty4j, 4000 × 50; `setpriv --pdeathsig KILL sh -c 'stty -echo -icanon; exec <cli> …'`;
-  - args `-d`, `--user-display-name`, `-s <smp1>`, plus `--reactions`, `--mark-read`, `--show-full-links` from `PeerFlags`;
+  - pty4j, 4000 columns; `setpriv --pdeathsig KILL sh -c 'stty -echo -icanon; exec <cli> …'`;
+  - args `-d`, `--user-display-name`, `-s <smpServer>`, `--xftp-server <xftpServer>`, plus `--reactions`, `--mark-read`, `--show-full-links`, `--relay` from `PeerFlags`; a relay peer answers the "Create relay address" prompt and exposes the printed address;
   - `HOME` = the peer directory `<jvm>/t<n>/peers/<name>`, `TMPDIR` inside it, `LC_ALL=C.UTF-8`, `TERM=xterm-256color`, working directory the repo root;
   - the database is copied from `<run>/peer-template` on first start; `cli()` returns at once, and the first use waits at most 60 s for `Current user:` and the prompt;
   - typing: write, wait until the input line equals the text (1.5 s unchanged window), else erase with DEL and retype (5 attempts); Enter, and Enter once more if the line still holds the text after 500 ms;
   - `VtScreen` is the terminal model.
-- **Android `CliPeer`** talks to the host through `Bridge`: TCP `127.0.0.1:7777` (fixed, through `adb reverse`), a 60 s read timeout, one connection per instrumentation process.
-- **The bridge** (`UiBridge.kt`, in the desktop harness; the Android runner starts it as a host JVM) owns `TestServers` and desktop `CliPeer`s, serves one client at a time, and when the client disconnects stops all peers and the SOCKS stub and restores the server baseline. Protocol, one line per command:
+- **Android `CliPeer`** talks to the host through `Bridge`: TCP `127.0.0.1:7777` (fixed, through `adb reverse`), a 60 s read timeout, one connection per instrumentation process; after an IO error or EOF it reconnects on the next call.
+- **The bridge** (`UiBridge.kt`, in the desktop harness; the Android runner starts it as a host JVM) launches `uitest-servers` at start, owns `TestServers` and desktop `CliPeer`s, serves one client at a time, and when the client disconnects stops all peers and the SOCKS stub and restores the server baseline. Protocol, one line per command:
   - `servers` → `ok <smp1> <xftp1>`;
-  - `remotePort` → `ok <port>`: the port a bridge CLI peer acting as a remote-desktop controller listens on (`TestServers.remoteCtrlPort`, port base + 90; the Android runner forwards it with `adb reverse`);
-  - `start <name> <flags, comma-separated>` → `ok` once the peer has started;
+  - `remotePort` → `ok <port>`: the port a bridge CLI peer acting as a remote-desktop controller listens on (`TestServers.remoteCtrlPort`, port base + 90);
+  - `start <name> <flags, comma-separated: reactions, markRead, fullLinks, relay, smp=<server>, xftp=<server>>` → `ok [<relay address>]` once the peer has started;
   - `type <name> <text>` → `ok`;
+  - `file <name> <file name> <base64 content>` → the path of the file created in the peer's directory;
   - `drain <name>` → `lines N`, then N lines;
-  - `stop <name>` → `ok`;
+  - `stop <name>` → `ok`; `forget <name>` → `ok`: stops the peer and drops its directory, so the next `start` gets a new one (`CliPeer.dispose()`, 15.4 item 50);
   - `server start|stop|reset|address <name>` → `ok [<address>]`, `server baseline` → `ok` (0.5.6);
   - `socks start` → `ok <port>`, `socks connections` → `lines N` + N lines, `socks stop` → `ok` (0.5.6);
   - any failure → `err <message>`.
@@ -147,15 +154,15 @@ Sections 3–11 remain the design. This section describes what is implemented in
 
 ### 0.5.6 Servers
 
-- `tests/UITestServers.hs` (cabal flag `uitest`, `exe:uitest-servers`) takes `<dir> <portBase>`, starts `smp1` (`localhost`, base + 1) and `xftp1` (`localhost`, base + 2) at launch, prints `ready <name> <address>` for each, and exits on stdin EOF. `smp2` (`127.0.0.1`, base + 11) and `xftp2` (`127.0.0.1`, base + 12) start only on request; the different host is needed because `/_servers` rejects two servers with the same host. Each server keeps its store in `<servers>/<name>` (SMP: `persistentServerStoreCfg`, so queues and undelivered messages survive a restart; XFTP: store log and files). Control protocol on stdin, one line per command, answered on stdout (server log lines are ignored):
+- `tests/UITestServers.hs` (cabal flag `uitest`, `exe:uitest-servers`) takes `<dir> <portBase>`, starts `smp1` (`localhost`, base + 1) and `xftp1` (`localhost`, base + 2) at launch, prints `ready <name> <address>` for each, and exits on stdin EOF. `smp2` (`127.0.0.1`, base + 11) and `xftp2` (`127.0.0.1`, base + 12) start only on request; the different host is needed because `/_servers` rejects two servers with the same host. Each server keeps its store in `<servers>/<name>` (SMP: `persistentServerStoreCfg`, so queues and undelivered messages survive a restart; XFTP: store log and files). The servers use the test suite's fixture TLS key and listen on all host interfaces. Control protocol on stdin, one line per command, answered on stdout (server log lines are ignored):
   - `start <name>` → `ready <name> <address>` once it listens (also when it already runs);
   - `stop <name>` → `stopped <name>` after the server has saved its store and closed its port (`cancel` of its thread, which runs the server's own `finally` save);
   - `reset <name>` → `ready <name> <address>`: stop, delete `<servers>/<name>`, start ("restarted without its store", for AUTH/expired-file rows);
   - any failure → `error <name|-> <message>`.
-- `TestServers` (desktop harness): 120 slots (`slot-<k>.lock` in the run directory), base 20000 + 100 k. It is spawned under `setpriv --pdeathsig KILL` from the test thread during the first reset (in the bridge, from its main thread). **Per JVM**: each test JVM (Gradle fork) has its own slot, its own `uitest-servers` and its own port block, and the tests of one JVM run one at a time, so a test that stops a server affects only itself; with `-PuiForks=N` there are N independent server sets. Android runs its tests one at a time against the one bridge. API (same names on both platforms; Android's `TestServers` object in `android/.../harness/CliPeer.kt` sends `server <cmd> <name>` to the bridge): `start(name): String` (the address), `stop(name)`, `reset(name): String`, `address(name): String` (fails if the server is not running), `restoreBaseline()`. `restoreBaseline()` runs in every reset (desktop `resetForTest`, Android `resetForTest` through the bridge, and the bridge when its client disconnects): it stops `smp2`/`xftp2` and starts `smp1`/`xftp1` if a previous test left them stopped; with nothing changed it sends no command. `smp1`/`xftp1` keep their stores across tests (each test's databases are new, so old queues are unused).
-- `configureServers(smp, xftp)` disables the operator groups and adds a custom group with `smp1` and `xftp1`. CLI peers get `-s` and `--xftp-server` from `PeerFlags(smpServer = "smp1", xftpServer = "xftp1")` (server names; Android passes `smp=<name>`/`xftp=<name>` in the bridge `start` flags), so a peer can live on `smp2`. `CliPeer.createFile(name, content)` writes a file on the peer's host (Android: through the bridge `file` command).
+- `TestServers` (desktop harness): 120 slots (`slot-<k>.lock` in the run directory), base 20000 + 100 k. It is spawned under `setpriv --pdeathsig KILL` by the first `restoreBaseline()` (in the bridge, at start). **Per JVM**: each test JVM (Gradle fork) has its own slot, its own `uitest-servers` and its own port block, and the tests of one JVM run one at a time, so a test that stops a server affects only itself; with `-PuiForks=N` there are N independent server sets. Android runs its tests one at a time against the one bridge. API (same names on both platforms; Android's `TestServers` object in `android/.../harness/CliPeer.kt` sends `server <cmd> <name>` to the bridge): `start(name): String` (the address), `stop(name)`, `reset(name): String`, `address(name): String` (fails if the server is not running), `restoreBaseline()`, `configure()`. `restoreBaseline()` runs in every reset (desktop `resetForTest`, Android `resetForTest` through the bridge, and the bridge when its client disconnects): it stops any server other than `smp1`/`xftp1` and starts `smp1`/`xftp1` if a previous test left them stopped; with nothing changed it sends no command. `smp1`/`xftp1` keep their stores across tests (each test's databases are new, so old queues are unused).
+- `configureServers(smp, xftp)` (`TestServers.configure()` on desktop) disables the operator groups and adds a custom group with `smp1` and `xftp1`. CLI peers get `-s` and `--xftp-server` from `PeerFlags` (server names; Android passes `smp=<name>`/`xftp=<name>` in the bridge `start` flags), so a peer can live on `smp2`. `CliPeer.createFile(name, content)` writes a file on the peer's host (Android: through the bridge `file` command).
 - **SOCKS stub** (`Socks5Stub.kt`, desktop harness): an RFC 1928 CONNECT-only SOCKS5 server with no-auth and RFC 1929 username/password (the app's default "isolate" mode sends a random username), IPv4/IPv6/domain targets, bound to `127.0.0.1:<base + 20>`; it records each CONNECT as `SocksConnection(host, port, username)` (uiTestShared `ServersConfig.kt`) and relays the bytes. Tests use `SocksProxy.start()`, `SocksProxy.port`, `SocksProxy.connections()`; the harness stops it at the end of every test. On Android the stub runs in the bridge (`socks start` → `ok <port>`, `socks connections` → `lines N` + `<host> <port> <username|->`, `socks stop`), and the device reaches it through `adb reverse`.
-- **Ports in a JVM's block**: base + 1 `smp1`, + 2 `xftp1`, + 11 `smp2`, + 12 `xftp2`, + 20 SOCKS stub. `uitest-android.sh` reverses all five.
+- **Ports in a JVM's block**: base + 1 `smp1`, + 2 `xftp1`, + 11 `smp2`, + 12 `xftp2`, + 20 SOCKS stub, + 90 remote-desktop controller. `uitest-android.sh` reverses seven ports: 7777 (the bridge), base + 1, + 2, + 11, + 12, + 20 and + 90.
 - Outages in tests stay short: the agents back off (message retries stay at about 2 s for the first 10 s, then grow ×1.5; a failed connection is cached for 3 s, `persistErrorInterval`), so a server is started again within a few seconds and waits after the start use `CONNECT_TIMEOUT_MS`.
 
 ### 0.5.7 Helpers and timeouts
@@ -173,36 +180,39 @@ Sections 3–11 remain the design. This section describes what is implemented in
 |---|---|---|
 | `poll` default | 10 s, plus up to 60 s while the same API calls stay in flight | same |
 | Connections (`CONNECT_TIMEOUT_MS`) | 60 s | 60 s |
+| Database encryption, export and import (`DB_WORK_TIMEOUT_MS`) | 120 s | 120 s (15.4 item 54) |
 | Peer line / peer start | 15 s / 60 s | 15 s / 60 s (in the bridge); bridge socket read 60 s |
-| `quiesce` / `drain` | 30 s / 30 s, then stuck items are abandoned | same |
+| App work at the end of a test / `quiesce` / `drain` | 30 s / 30 s / 30 s, then stuck items are abandoned | same |
 | `restart()` | 30 s | 60 s |
 | App startup in `bootOnce` | — | 180 s |
 | Hard timeout per test | 240 s: thread dump, `Runtime.halt(3)`; the JVM's remaining tests are lost (15.4 item 20) | 300 s: thread dump, process killed; the runner resumes |
+| No instrumentation output (`UITEST_STALL_S`) | — | 420 s: the runner force-stops the app and resumes (15.4 item 52) |
 | Gradle task | 12 h | — |
 
-### 0.5.8 Failure policy (both platforms, 2026-10-19)
+### 0.5.8 Failure policy (both platforms)
 
 The rules for test authors are in `apps/multiplatform/common/src/uiTestShared/README.md` (the test-writing guide). The harness enforces:
 - **Any app crash fails the test.** `AppCrashes` (uiTestShared) wraps the default uncaught-exception handler (on Android around the app's own `GlobalExceptionsHandler`, which still runs); every `poll` and the end of every test fail on a recorded crash. Uncaught coroutine exceptions that kotlinx-coroutines-test reports at the end of the scene fail the test too. There is no message-text allowlist.
-- **Known app bugs are explicit.** `@KnownAppIssue(finding, error, intermittent)` on a test turns a failure whose stack trace contains `error` into a skipped result naming the plan §15.5 finding; any other failure still fails; a pass fails with "no longer reproduces" unless `intermittent`. `androidOnly` / `desktopOnly` apply the annotation on one platform only, for a bug that exists there only; on the other platform the same failure fails the test.
+- **Known app bugs are explicit.** `@KnownAppIssue(finding, error, intermittent)` on a test, applied by `KnownIssueRule` on both platforms, turns a failure whose stack trace contains `error` into a skipped result naming the plan §15.5 finding; any other failure still fails; a pass fails with "no longer reproduces" unless `intermittent`. `androidOnly` / `desktopOnly` apply the annotation on one platform only, for a bug that exists there only; on the other platform the same failure fails the test.
 - **Peers:** lines that look like CLI errors (`error…`, `chat error:`, `chat db error:`, `exception:`, `smp server error`, `agent error`), whether skipped by `eventually` or never read, fail the test unless the test consumed them explicitly.
-- **App work still running at the end** (after a 30 s drain) fails the test with the names of the stuck calls.
+- **App work still running at the end** (after up to 30 s for it to finish and a 30 s drain) fails the test with the names of the stuck calls.
 - **No input retries:** `send` presses Enter once (Android: taps Send once) and fails if the field does not clear; Android types into the message field once, after the field is stable.
 - **Restart** stops the core after draining pending app work, re-reads `settings.properties`/`themes.properties` from disk (desktop) or refreshes preference states (Android), then initialises the core, the order of a real relaunch.
-- **Isolation:** a reset that finds `ctrlInitInProgress` still set by a failed test clears it (logged) instead of failing every later test.
+- **Isolation:** a reset that finds `ctrlInitInProgress` still set by a failed test clears it (logged) instead of failing every later test; a reset fails when `chatCloseStore` returns an error (15.4 item 41).
 
 ### 0.5.9 Runners and Gradle
 
 **Desktop: `scripts/uitest.sh [gradle args]`.**
+- Prerequisites: Linux x86_64 (the native libs are staged in `common/src/commonMain/cpp/desktop/libs/linux-x86_64`, built by `:desktop:cmakeBuildAndCopy` from libsimplex), GHC and cabal (or `UITEST_CLI`/`UITEST_SERVERS`), unprivileged user namespaces (`unshare -rn`; on Ubuntu 24.04 `sysctl kernel.apparmor_restrict_unprivileged_userns=0`, as `ui-tests.yml` does), `setpriv`, `ip` and `flock`.
 - Refuses to start with less than 3000 MB `MemAvailable`. Takes `flock -n build/uitest/runner.lock`. Creates `build/uitest/run-<timestamp>` (with `jvmtmp` and `cache`) and keeps the newest 6 run directories.
 - Outside the namespace:
-  - `cabal build -O0 -f uitest --builddir=dist-uitest exe:simplex-chat exe:uitest-servers`, paths from `cabal list-bin`;
+  - `cabal build -O0 -f uitest --builddir=dist-uitest exe:simplex-chat exe:uitest-servers`, paths from `cabal list-bin`; skipped when `UITEST_CLI` and `UITEST_SERVERS` name prebuilt binaries (absolute paths);
   - in the background, the peer database template (`--maintenance -e /v -t 0`, accepted when the output says "no active user in maintenance mode");
+  - writes `build/uitest/env.properties` (`libAppLib`, `runDir`, `repoRoot`, `cli`, `servers`); `--prepare-only` stops here (for `uitest-android.sh`);
   - checks that the native libs are staged;
-  - `./gradlew -g .gradle/uitest-home --no-daemon :desktop:cmakeBuildAndCopy :common:desktopTestClasses :common:uitestPrepare`, then `--stop`; skipped when a fingerprint (build files, the cpp sources outside `libs`, `ls -l` of the staged libs except `libapp-lib.so`) matches `build/uitest/prepare.key`;
-  - writes `build/uitest/env.properties` (`libAppLib`, `runDir`, `repoRoot`, `cli`, `servers`).
+  - `./gradlew -g .gradle/uitest-home --no-daemon :desktop:cmakeBuildAndCopy :common:desktopTestClasses :common:uitestPrepare`, then `--stop`; skipped when a fingerprint (build files, the cpp sources outside `libs`, `ls -l` of the staged libs except `libapp-lib.so`) matches `build/uitest/prepare.key`.
 - Adds `-PuiForks=N`, N = (MemAvailable MB − 2500) / 1000 clamped to 1..4, unless `-PuiForks` is given.
-- Inside `unshare -rn --pid --fork --kill-child --mount-proc` (loopback up, multicast route): `./gradlew -g … --offline --no-daemon :common:desktopUiTest -PuiRunDir=<run> -PuiPass=1 <args>`. One pass. Every Gradle call uses `-Pkotlin.compiler.execution.strategy=in-process`.
+- Inside `unshare -rn --pid --fork --kill-child --mount-proc` (loopback up, multicast route): `SIMPLEX_UITEST_RUNNER=1 ./gradlew -g … --offline --no-daemon :common:desktopUiTest -PuiRunDir=<run> -PuiPass=1 <args>`. One pass. Every Gradle call uses `-Pkotlin.compiler.execution.strategy=in-process`.
 
 **`desktopUiTest`** (`common/build.gradle.kts`; a `KotlinJvmTest` that runs only with `SIMPLEX_UITEST_RUNNER=1`):
 - includes `chat/simplex/app/ui/**`, which `desktopTest` excludes;
@@ -214,26 +224,32 @@ The rules for test authors are in `apps/multiplatform/common/src/uiTestShared/RE
 `uitestPrepare` only resolves `desktopTestRuntimeClasspath`. `uitestBridgeClasspath` copies the harness classes to `build/uitest/bridge-classes` and writes `build/uitest/bridge.classpath`.
 
 **Android: `scripts/uitest-android.sh <app.apk> <androidTest.apk> [am instrument -e …]`.**
-- Requires a previous `scripts/uitest.sh` run (for `env.properties`, the CLI and `uitest-servers`) and 4500 MB `MemAvailable`.
+- Requires a previous `scripts/uitest.sh` or `scripts/uitest.sh --prepare-only` run (for `env.properties`, the CLI and `uitest-servers`) and 4500 MB `MemAvailable`.
 - Environment:
   - `UITEST_SERIAL`: any adb device; Waydroid is then not used;
-  - `WD_INSTANCE` (default 2), `WD_OWNER` (default `uitest-$USER`), `WD_SH` (default `scripts/waydroid/wd.sh`, the Waydroid tool in the repo; Qubes and other Linux hosts, see its `README.md`);
-  - `UITEST_APP_ID` (default `chat.simplex.app.debug`);
-  - `ADB`, `JAVA_HOME` (defaults: the adb `wd.sh adb-path` prints, so the runner and `wd.sh` share one adb binary; `java` from `JAVA_HOME` or `PATH`).
+  - `WD_INSTANCE` (default 1; 2 selects the optional second Waydroid instance), `WD_OWNER` (default `uitest-$USER`), `WD_SH` (default `scripts/waydroid/wd.sh`, see its `README.md`);
+  - `UITEST_APP_ID` (default `chat.simplex.app.debug`, the id with `application_id.suffix=.debug` in `local.properties`; CI builds without the suffix and sets `chat.simplex.app`);
+  - `ADB`, `JAVA_HOME` (defaults: the adb `wd.sh adb-path` prints, so the runner and `wd.sh` share one adb binary; `java` from `JAVA_HOME` or `PATH`);
+  - `UITEST_STALL_S` (default 420).
 - Setup:
-  - rebuilds the bridge classpath only when one of its 7 sources is newer;
+  - rebuilds the bridge classpath only when one of its 9 sources is newer;
   - claims the Waydroid instance and starts it in the background if needed;
-  - starts the bridge (`setsid java -cp … UiBridge 7777`) and kills it by `$!` on exit;
+  - starts the bridge (`setsid java -cp … UiBridge 7777`) and kills it by its PID on exit;
+  - on Waydroid, sets the display to the CI emulator's size in dp (reset on exit);
   - installs the app APK unless its sha256 and `lastUpdateTime` match the stamp, and always the test APK;
-  - `adb reverse` for 7777, base + 1, base + 2 and base + 90 (the remote-desktop controller port, 0.5.5).
-- Each pass: `pm clear`, grants POST_NOTIFICATIONS, CAMERA and RECORD_AUDIO, then `am instrument -w -r`. After "Process crashed" it resumes with `-e notClass <finished tests>` (at most 4 passes).
+  - `adb reverse` for the seven ports of 0.5.6.
+- Each pass: `pm clear`, heads-up notifications off (15.4 item 51), grants POST_NOTIFICATIONS, CAMERA and RECORD_AUDIO, then `am instrument -w -r`. When the output does not change for `UITEST_STALL_S`, it force-stops the app. After any abnormal end ("Process crashed", an ANR, a force-stop) it resumes with `-e notClass <finished tests>` (at most 4 passes).
 - Output in `build/uitest-android/run-<timestamp>/`:
   - `results.txt`, one line per test, `<class>#<test> <code>`: 0 pass, −2 fail, −3/−4 skipped, or `crashed`;
   - `instrument-<n>.txt`, `instrument.txt`, `logcat.txt` (`logcat -G 16M`), `timings.txt`, `failures/`, `bridge.log`.
-- The exit status is non-zero on any −2 or `crashed`, or when there are no results.
+- The exit status is non-zero on any −2 or `crashed`, when it gives up after 4 passes, or when there are no results.
 - It does **not** run `wd.sh net isolate` (open item). The container keeps internet access during a run, and isolation rests on the local server configuration and on onboarding opening no connection.
 
-APKs: `ANDROID_TEST=1 bash ~/build/android.sh` (run in the worktree) builds the app APK and publishes the test APK next to it.
+APKs (from `apps/multiplatform`, as `.github/workflows/ui-tests.yml` builds them): `./gradlew :android:assembleFossDebug :android:assembleFossDebugAndroidTest`. The app APK is `android/build/intermediates/apk/foss/debug/<apk>`, the test APK the `*androidTest*.apk` under `android/build`. The APKs carry arm native libraries only, so the device must run arm code: an arm device, an emulator image with ARM translation (as in CI, `scripts/ci/android/emulator.sh`), or Waydroid with arm translation.
+
+**CI:** `.github/workflows/ui-tests.yml` (manual `workflow_dispatch`) builds the core, the CLI and `uitest-servers` and the APKs once, then runs the desktop tests and the Android tests (GitHub emulator) in shards; `scripts/ci/ui-tests/README.md` describes it.
+
+**Not in this plan's scope:** the Windows installer GUI test (MSI install, update and uninstall) lives with the Windows installer work (#7789).
 
 ### 0.5.10 How to run
 
@@ -242,32 +258,35 @@ cd apps/multiplatform
 scripts/uitest.sh                                   # all desktop tests
 scripts/uitest.sh --tests '*ChatListRowsTest*'      # one class (any Gradle test filter)
 scripts/uitest.sh -PuiForks=1 -PuiForkEvery=1       # serial, one JVM per class
-ANDROID_TEST=1 bash ~/build/android.sh              # app APK + androidTest APK
-scripts/uitest-android.sh <app.apk> <test.apk>      # all Android tests on Waydroid instance 2
-scripts/uitest-android.sh <app.apk> <test.apk> -e class chat.simplex.app.ui.main.ChatListRowsTest
-UITEST_SERIAL=<serial> scripts/uitest-android.sh <app.apk> <test.apk>   # another adb device
+./gradlew :android:assembleFossDebug :android:assembleFossDebugAndroidTest   # app APK + androidTest APK
+scripts/uitest.sh --prepare-only                    # CLI, test servers and env.properties only, before the first Android run
+UITEST_SERIAL=<serial> UITEST_APP_ID=chat.simplex.app scripts/uitest-android.sh <app.apk> <test.apk>   # an adb device or emulator
+UITEST_SERIAL=<serial> UITEST_APP_ID=chat.simplex.app scripts/uitest-android.sh <app.apk> <test.apk> -e class chat.simplex.app.ui.main.ChatListRowsTest
+scripts/uitest-android.sh <app.apk> <test.apk>      # on Waydroid instance 1 (WD_INSTANCE=2 for the optional second instance)
 ```
+
+`./gradlew :common:desktopUiTest` on its own, and an IDE run of a UI test, do not run the tests (15.4.2).
 
 ### 0.5.11 Design items not built yet (P1b+)
 
 | Design | Not built |
 |---|---|
 | 4, 5, 9.4 | typed semantics, keys everywhere, key lint: superseded for now by the minimal-app-code rule (13) |
-| 6 | the real-time clock target and input-lead correction (the loop advances a fixed 16 ms, Android 48 ms, so composition delays fire late in real time); the end-of-test dialog drain; closing alerts with Escape or by reflection (alerts are only dropped with `hideAllAlerts` at the next reset); the end-of-test `ctrlInitInProgress` wait; `setCatchNonTestRelatedExceptions(false)`, `UiUncaught`, `allowUncaught` and composition-error bookkeeping; JVM poisoning, the `Slow` category, the EDT probe and per-shot allowances (the hard timeout halts the JVM instead) |
+| 6 | the real-time clock target and input-lead correction (the loop advances a fixed 16 ms, Android 48 ms, so composition delays fire late in real time); the end-of-test dialog drain; closing alerts with Escape or by reflection (alerts are only dropped with `hideAllAlerts` at the next reset); `setCatchNonTestRelatedExceptions(false)`, `UiUncaught`, `allowUncaught` and composition-error bookkeeping; JVM poisoning, the `Slow` category, the EDT probe and per-shot allowances (the hard timeout halts the JVM instead) |
 | 7.1, 7.1.1 | JUnit categories (`-PuiTags`, `-PuiExcludeTags`, `Smoke`, …); pinned fonts (`FONTCONFIG_FILE`); the `shots`, `shotTolerance`, `pass` and `strict` system properties; Kover and `uitestCoverageMerge`; `uitestPrepare` steps 2–4 (stable and fixture CLI downloads, migration lists) and the migration check; the second (`Multicast`) pass, the empty-run check, screenshot cleanup and coverage merge |
-| 7.2, 7.3 | fixtures (`app(…, fixture)`, `restart(fixture)`); `RecordingNtfManager`, `UiTestPlatform` and the seams of 11.2; deleting `dataDir/tmp`; the `CC.ShowVersion` check; the lock-screen restart path and the alert exit of the restart poll; the `changingActiveUserMutex` check, manual `migrationState` handling, and the `OnboardingSharedState`/`BadgeStore` roots |
-| 7.4, 7.5 | `UiDriver`/`UiNode`/`InProcessDriver`; `MR.strings` lookups and exactly-one matching; `hold`, `dragTo`, `hover`, `clickAtTextRange`, `press(key, modifiers)`, `wait(d)`, `composeField()` (placeholder); the report directory with semantics dump, peer tails and command log (only the failure PNG and the message exist) |
-| 7.6, 7.7, 7.8 | `UiFiles` dialog responders (pending dialogs are only completed empty at reset); `LocalClipboard`; a throwing URI handler; toast and notification recording; screenshots; coverage |
-| 8.1 | the Stable CLI and `CliVersion`; `--mute` (the D-Bus notification concern of 8.3 stands); `--xftp-server`; `$HOME/Downloads`; the start–stop–start cycle; the `! `/`> `/`\ ` typing rule; `PeerFlags.key` (`PeerServers` is built as `PeerFlags.smpServer`/`xftpServer`, 0.5.6); `expectsAny`, `repeatUntil`; `stop`/`start`/`snapshot`/`restore` inside a test; `RelayPeer`; mobile hosts |
+| 7.2, 7.3 | fixtures (`app(…, fixture)`, `restart(fixture)`); `RecordingNtfManager`, `UiTestPlatform` and the seams of 11.2; deleting `dataDir/tmp`; the `CC.ShowVersion` check; the lock-screen restart path and the alert exit of the restart poll; the `changingActiveUserMutex` check, manual `migrationState` handling, and the `OnboardingSharedState`/`BadgeStore` roots (only `selectedOperatorIds` and `badgeLinkStep` are reset, by field, in `CommonReset.kt`) |
+| 7.4, 7.5 | `UiDriver`/`UiNode`/`InProcessDriver`; `MR.strings` lookups and exactly-one matching; `hold`, `hover`, `clickAtTextRange`, `press(key, modifiers)`, `wait(d)`, `composeField()` (placeholder); the report directory with semantics dump, peer tails and command log (only the failure PNG and the message exist) |
+| 7.6, 7.7, 7.8 | `UiFiles` dialog responders as designed (tests answer the open and save dialogs with `openFile`/`saveFileAs`, 0.5.3; other pending dialogs are completed empty at reset); `LocalClipboard`; a throwing URI handler; toast and notification recording on desktop; screenshots; coverage |
+| 8.1 | the Stable CLI and `CliVersion`; `--mute` (the D-Bus notification concern of 8.3 stands); `$HOME/Downloads`; the start–stop–start cycle; the `! `/`> `/`\ ` typing rule; `PeerFlags.key`; `expectsAny`, `repeatUntil`; `stop`/`start`/`snapshot`/`restore` inside a test; `RelayPeer` (a relay is a `CliPeer` with `PeerFlags(relay = true)`); mobile hosts |
 | 8.2 | the names resolver, `register`/`clear-names` (`smp2`, `xftp2`, the control protocol and `restoreBaseline` are built, 0.5.6) |
 | 9.1–9.3 | `GuiUser`, `ChatRow` and the typed row classes; `uiTest(realTimes)`, `app(name, onboarded, fixture)`, `connect(gui, peer)`, `relay`, `mobileHost`, `servers`, `allowUncaught`, `screenshot`, `shouldHave`; the one-`app()`-per-test rule; `…CompatStableTest` subclasses |
-| 10.1 | `CatalogueTraceabilityTest`, stub generation, the catalogue in the repo; a traceability rule for the desktop-only (`chat.simplex.app.ui.desktop`) and Android-only (`chat.simplex.app.ui`, `chat.simplex.app.ui.back`) packages |
+| 10.1 | `CatalogueTraceabilityTest`, stub generation, the catalogue in the repo; a traceability rule for the desktop-only (`chat.simplex.app.ui.desktop`) and Android-only (`chat.simplex.app.ui`, `.back`, `.android`) packages |
 | 11 | the local HTTP stub, committed media fixtures, multicast tests, SQL fixtures (the SOCKS stub and server control are built, 0.5.6) |
-| Android | notification tests; the 10-run exit check; `wd.sh net isolate` in the runner; `testTagsAsResourceId` and `ui-test-manifest` (not needed by the instrumented layer); the debug network-security-config (approved, 13) |
+| Android | the 10-run exit check; `wd.sh net isolate` in the runner; `testTagsAsResourceId` and `ui-test-manifest` (not needed by the instrumented layer); the debug network-security-config (approved, 13) |
 
 ## Terms
 
-Paths are repo-relative. **C** = `apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common`, **D** = `apps/multiplatform/common/src/desktopMain/kotlin/chat/simplex/common`, **A** = `apps/multiplatform/common/src/androidMain/kotlin/chat/simplex/common`, **Hs** = `src/Simplex/Chat`. Every `file:line` reference in the plan and the catalogue is to master at `d72f68e6d` (2026-10-10), checked out at `~/wt-uitest-ref`.
+Paths are repo-relative. **C** = `apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common`, **D** = `apps/multiplatform/common/src/desktopMain/kotlin/chat/simplex/common`, **A** = `apps/multiplatform/common/src/androidMain/kotlin/chat/simplex/common`, **Hs** = `src/Simplex/Chat`. Every `file:line` reference in the plan and the catalogue is to master at `d72f68e6d` (2026-10-10).
 
 - **Key** — a value of type `UiKey`: a dotted id plus an optional entity argument, e.g. `chatList.row` + `@12`. Rendered as one `testTag` string, `chatList.row[@12]`.
 - **Semantics node** — the unit Compose tests find and act on. `clickable`, `Button`, `IconButton`, `Switch`, `Tab`, `DropdownMenuItem` merge their children into one node.
@@ -297,7 +316,7 @@ The parts of the app that leave the process are tested up to their boundary: cal
 
 ## 2. Architecture
 
-(As built: see 0.5. Differs: no `UiDriver` layer, each platform has a `UiScope` with the same methods; no typed semantics; `uitest-servers` runs `smp1` only; no `RelayPeer`.)
+(As built: see 0.5. Differs: no `UiDriver` layer, each platform has a `UiScope` with the same methods; no typed semantics; `uitest-servers` runs `smp1`/`xftp1` and, on request, `smp2`/`xftp2`; no `RelayPeer` (a relay is a `CliPeer` with `PeerFlags(relay = true)`); no stable CLI.)
 
 ```
 runner script          uitest.sh: build + fetch outside, then Gradle inside a loopback-only network namespace
@@ -616,7 +635,7 @@ tasks.register<KotlinJvmTest>("desktopUiTest") {                       // Kotlin
 - `env.properties` holds the absolute paths of `libapp-lib.so` and its library folder, the current CLI, the stable CLI and the tag it was downloaded for, each fixture CLI and its tag, `uitest-servers`, the repo root, the run directory (port slots, 8.2; per-JVM directories, 7.1; failure reports, 7.5), and the current CLI's chat and agent migration lists (7.1). The catalogue is read from the test classpath (10).
 - The JUnit category interfaces (`Smoke`, `StableCompat`, `NeedsRelay`, `NeedsNames`, `NeedsFixture`, `Multicast`, `Slow`) live in package `chat.simplex.app.ui`; Gradle loads every listed category up front.
 - **Per-JVM data directories.** The app's paths are read once at class initialisation: `dataDir` from `XDG_DATA_HOME` or `user.home` (D/platform/Platform.desktop.kt:6-8), `desktopPlatform.configPath` (:7, :12; settings file at D/platform/Resources.desktop.kt:39-40), `tmpDir` from `java.io.tmpdir` (D/platform/Files.desktop.kt:15). The task removes `XDG_DATA_HOME` and `XDG_CONFIG_HOME`; the `UiTest` base class's companion initialiser — which runs before any app class is initialised (JUnit and Gradle load classes without initialising them) — registers the harness's single shutdown hook of 8.2 (Kover's agent has its own) (it stops peers and relays, closes `uitest-servers`' stdin and waits for it, then destroys the remaining descendant processes with `destroyForcibly()`, `ProcessHandle.current().descendants()` — which also covers the `gsettings monitor` process the app's theme detector starts, Theme.desktop.kt:8-11, which never exits on its own under the memory backend, measured one orphan per JVM; it first sets a shutting-down flag, after which `UiUncaught` drops errors, since destroying the `gsettings monitor` process makes the detector's reader thread throw an uncaught `NullPointerException`), creates a fresh directory per JVM, `<run directory>/jvm-<slot>-<pid>` (slots are reused by later JVMs, and a reused directory would bring back the previous JVM's peer databases, server stores and settings) (on the same filesystem as the checkout, not `/tmp`, which may be a small root filesystem; one test picks a sparse file over 1 GB), and sets `user.home` and `java.io.tmpdir` inside it. `bootJvm()` asserts that `dataDir` and `configPath` are inside that directory, failing fast otherwise. Setting `java.io.tmpdir` at runtime covers the app's `tmpDir`, but not the JDK's NIO `Files.createTempFile`/`createTempDirectory`, nor `File.createTempFile` once it has been used (measured, JDK 17), so the task also passes `-Djava.io.tmpdir=<run directory>/jvmtmp` (created by the runner) and library and harness temp files stay off `/tmp`.
-- Native libs: `libsimplex.so` and GHC libs are staged into `apps/multiplatform/common/src/commonMain/cpp/desktop/libs/linux-x86_64` (gitignored; `bash ~/build/stage-libs.sh` in the worktree, or upstream `scripts/desktop/build-lib-linux.sh`). `libapp-lib.so` comes from `:desktop:cmakeBuildAndCopy` (it links against the staged `libsimplex.so`, cpp/desktop/CMakeLists.txt:57). The staged core and the current CLI must be the same version: fixture SQL edits run the CLI with `-y` on the GUI's database (11.1), so a newer CLI would apply migrations the GUI's core doesn't know, and "current" peers would differ from the GUI. The check compares the migrations applied to a fresh database. `uitestPrepare` runs the current CLI once on a scratch database with `--user-display-name uitest -e "/sql chat select name from migrations order by name" -t 0`, and again with `/sql agent …` (not `--maintenance`, which exits on a database with no user, Hs/Core.hs:89-91; the CLI's `/v` prints only the version, View.hs:216, :2711-2716), and writes both lists to `env.properties` (dropping the `Current user:` line, the `name` header row and the trailing blank line). The first `resetForTest` in the JVM whose init succeeds (a fixture with a startup database error defers it to the next) sends `CC.ShowVersion()` (SimpleXAPI.kt:4110) through `chatController.sendCmd(null, …, log = false)` — not `apiGetVersion()`, which returns only the version (SimpleXAPI.kt:2737-2742), and without logging, so the console of the JVM's first test shows no extra items — and reads `chatMigrations`/`agentMigrations` (`UpMigration.upName`, DatabaseUtils.kt:109-112) from the `CR.VersionInfo` result (:6901; the core reads the database's `migrations` table sorted by name, Hs/Library/Commands.hs:3671-3676, the same rows as the CLI's query), and fails the current test and poisons the JVM, with both lists in the report, when they differ.
+- Native libs: `libsimplex.so` and GHC libs are staged into `apps/multiplatform/common/src/commonMain/cpp/desktop/libs/linux-x86_64` (gitignored; built with `scripts/desktop/build-lib-linux.sh`). `libapp-lib.so` comes from `:desktop:cmakeBuildAndCopy` (it links against the staged `libsimplex.so`, cpp/desktop/CMakeLists.txt:57). The staged core and the current CLI must be the same version: fixture SQL edits run the CLI with `-y` on the GUI's database (11.1), so a newer CLI would apply migrations the GUI's core doesn't know, and "current" peers would differ from the GUI. The check compares the migrations applied to a fresh database. `uitestPrepare` runs the current CLI once on a scratch database with `--user-display-name uitest -e "/sql chat select name from migrations order by name" -t 0`, and again with `/sql agent …` (not `--maintenance`, which exits on a database with no user, Hs/Core.hs:89-91; the CLI's `/v` prints only the version, View.hs:216, :2711-2716), and writes both lists to `env.properties` (dropping the `Current user:` line, the `name` header row and the trailing blank line). The first `resetForTest` in the JVM whose init succeeds (a fixture with a startup database error defers it to the next) sends `CC.ShowVersion()` (SimpleXAPI.kt:4110) through `chatController.sendCmd(null, …, log = false)` — not `apiGetVersion()`, which returns only the version (SimpleXAPI.kt:2737-2742), and without logging, so the console of the JVM's first test shows no extra items — and reads `chatMigrations`/`agentMigrations` (`UpMigration.upName`, DatabaseUtils.kt:109-112) from the `CR.VersionInfo` result (:6901; the core reads the database's `migrations` table sorted by name, Hs/Library/Commands.hs:3671-3676, the same rows as the CLI's query), and fails the current test and poisons the JVM, with both lists in the report, when they differ.
 
 #### 7.1.1 Runner script
 
@@ -624,7 +643,7 @@ tasks.register<KotlinJvmTest>("desktopUiTest") {                       // Kotlin
 
 Tests are run by `apps/multiplatform/scripts/uitest.sh [gradle args]`:
 
-1. **Outside the namespace** (network allowed; the script runs in `apps/multiplatform`, and relative paths below are from there): the script first runs `mkdir -p build/uitest` and takes `flock -n` on `build/uitest/runner.lock`, held through both passes (a second runner would rewrite `env.properties` and re-copy `libapp-lib.so` under the first run's JVMs, so it exits instead), then creates a fresh run directory `$PWD/build/uitest/run-<timestamp>` and its `jvmtmp` subdirectory (the test JVMs' launch-time `java.io.tmpdir`, 7.1) (absolute, since `uitestPrepare` and the test JVM resolve paths from `common/`; port-slot locks, 8.2) and removes older `run-*` directories except the last 5 (keeping 5 old ones plus the new one, since a run keeps each JVM's GUI data and server stores, the peer databases of failing tests, and its reports), then runs `./gradlew -g "$PWD/.gradle/uitest-home" --no-daemon :desktop:cmakeBuildAndCopy :common:desktopTestClasses :common:uitestPrepare` with `-PuiRunDir=<that directory>` (written into `env.properties`) and the user's `-PuiStableTag` and `-PuiFixtureTags` (they select the binaries `uitestPrepare` downloads), then `./gradlew -g "$PWD/.gradle/uitest-home" --stop`. Both steps use their own Gradle user home, `.gradle/uitest-home` in `apps/multiplatform` (git-ignored, and outside `build/`, which the root `clean` task deletes, build.gradle.kts:112-113; filled by this outside step, which has network; the first run downloads the wrapper distribution and dependencies once, an estimated 1–2.5 GB on disk): a Gradle process holds cache locks (`caches/journal-1`, shared across Gradle versions) that a Gradle process on the other side of the namespace can't ask it to release, so with a shared home an outside daemon makes the inside run fail with "Timeout waiting to lock journal cache", and a run of several hours makes every outside build on the same home fail the same way (the daily prebuild timer, `~/build/linux.sh`, IDE syncs; verified both ways, the outside build failed after 69 s). A build or IDE sync of the same checkout still conflicts during a run, on the project's own `.gradle/8.12/fileHashes` lock (verified: failed after 64 s), so other work during a run uses another worktree. Every invocation on that home uses `--no-daemon`, so its only daemon is the single-use one that exits with its build; the script still runs `./gradlew -g … --stop` before entering the namespace and before pass 2, as a guard against a process left by an interrupted run. Before the Gradle invocation, the outside step runs `cabal build -f uitest --builddir=dist-uitest exe:simplex-chat exe:uitest-servers`, because `uitestPrepare` runs the built CLI (a separate build directory, because the desktop library is built with `client_library` and sharing `dist-newstyle` would rebuild the package each time).
+1. **Outside the namespace** (network allowed; the script runs in `apps/multiplatform`, and relative paths below are from there): the script first runs `mkdir -p build/uitest` and takes `flock -n` on `build/uitest/runner.lock`, held through both passes (a second runner would rewrite `env.properties` and re-copy `libapp-lib.so` under the first run's JVMs, so it exits instead), then creates a fresh run directory `$PWD/build/uitest/run-<timestamp>` and its `jvmtmp` subdirectory (the test JVMs' launch-time `java.io.tmpdir`, 7.1) (absolute, since `uitestPrepare` and the test JVM resolve paths from `common/`; port-slot locks, 8.2) and removes older `run-*` directories except the last 5 (keeping 5 old ones plus the new one, since a run keeps each JVM's GUI data and server stores, the peer databases of failing tests, and its reports), then runs `./gradlew -g "$PWD/.gradle/uitest-home" --no-daemon :desktop:cmakeBuildAndCopy :common:desktopTestClasses :common:uitestPrepare` with `-PuiRunDir=<that directory>` (written into `env.properties`) and the user's `-PuiStableTag` and `-PuiFixtureTags` (they select the binaries `uitestPrepare` downloads), then `./gradlew -g "$PWD/.gradle/uitest-home" --stop`. Both steps use their own Gradle user home, `.gradle/uitest-home` in `apps/multiplatform` (git-ignored, and outside `build/`, which the root `clean` task deletes, build.gradle.kts:112-113; filled by this outside step, which has network; the first run downloads the wrapper distribution and dependencies once, an estimated 1–2.5 GB on disk): a Gradle process holds cache locks (`caches/journal-1`, shared across Gradle versions) that a Gradle process on the other side of the namespace can't ask it to release, so with a shared home an outside daemon makes the inside run fail with "Timeout waiting to lock journal cache", and a run of several hours makes every outside build on the same home fail the same way (scheduled or scripted builds, IDE syncs; verified both ways, the outside build failed after 69 s). A build or IDE sync of the same checkout still conflicts during a run, on the project's own `.gradle/8.12/fileHashes` lock (verified: failed after 64 s), so other work during a run uses another worktree. Every invocation on that home uses `--no-daemon`, so its only daemon is the single-use one that exits with its build; the script still runs `./gradlew -g … --stop` before entering the namespace and before pass 2, as a guard against a process left by an interrupted run. Before the Gradle invocation, the outside step runs `cabal build -f uitest --builddir=dist-uitest exe:simplex-chat exe:uitest-servers`, because `uitestPrepare` runs the built CLI (a separate build directory, because the desktop library is built with `client_library` and sharing `dist-newstyle` would rebuild the package each time).
 2. **Inside the namespace** (8.3; the inner Gradle runs get `SIMPLEX_UITEST_RUNNER=1`, without which `desktopUiTest` is skipped, 7.1): the script re-executes itself under
    ```sh
    self=$(readlink -f "$0")   # set at the top of the script, so the re-exec still resolves whatever directory step 1 runs in
@@ -641,7 +660,7 @@ Usage: `scripts/uitest.sh` (full run), `scripts/uitest.sh -PuiTags=Smoke -PuiExc
 
 ### 7.2 Boot, reset and restart
 
-(As built: see 0.5.3 and 0.5.4. Differs: `bootJvm` has no collector change, uncaught handler, `platform` or seams, uses a no-op `NtfManager` and applies the theme; `resetForTest(user)` has no fixture, uses `deleteChatDatabaseFilesAndState()` (so `dataDir/tmp` is not deleted), and runs `PrefStores.restore` → `clearUiState` → `TestServers.start()` → `DbTemplate.installIfPresent` (so the template's key is installed after the prefs are restored, as 15.1 says; the code below has the opposite order); no `MigrationCheck`; `TestRoot` provides `LocalClipboardManager` and `LocalUriHandler` only, with no throwing option.)
+(As built: see 0.5.3 and 0.5.4. Differs: `bootJvm` has no collector change, uncaught handler, `platform` or seams, uses a no-op `NtfManager` and applies the theme; `resetForTest(user)` has no fixture, uses `deleteChatDatabaseFilesAndState()` (so `dataDir/tmp` is not deleted), and runs `PrefStores.restore` → `clearUiState` → `TestServers.restoreBaseline()` → `DbTemplate.installIfPresent` (so the template's key is installed after the prefs are restored; the code below has the opposite order); no `MigrationCheck`; `TestRoot` provides `LocalClipboardManager` and `LocalUriHandler` only, with no throwing option.)
 
 `initHaskell()` is private to the desktop module (desktop/src/jvmMain/kotlin/chat/simplex/desktop/Main.kt:50-91), so the harness repeats its essential steps. `acquireSingleInstance()` (D/SingleInstance.kt:33) is skipped. The reset adds no app code beyond `UiIdle` (6): it uses existing functions, public state and reflection from test code (private fields, and the model walk of 7.3).
 
@@ -660,7 +679,7 @@ object UiTestApp {
     simplexWindowState.windowState = WindowState(size = DpSize(1600.dp, 900.dp))  // lateinit, D/DesktopApp.kt:271
     tmpDir.mkdirs()                                           // databaseExportDir; desktop main creates it
     runMigrations()                                           // C/platform/AppCommon.kt:46; writes lastMigratedVersionCode
-    appPrefs.appearanceBarsBlurRadius.set(0)                  // toolbar blur off in every test, onboarding included, for performance (user decision 2026-10-13);
+    appPrefs.appearanceBarsBlurRadius.set(0)                  // toolbar blur off in every test, onboarding included, for performance (decided 2026-10-13);
                                                               //   set before the capture, so every reset restores it; tests about blur turn it on
     PrefStores.capture()                                      // settings.properties, themes.properties, themes.yaml as they are now (7.3)
     ModelSnapshot.capture()                                   // initial values of ChatModel, ChatsContext, AppLock fields (7.3)
@@ -781,7 +800,7 @@ On any failed assertion or timeout: the semantics tree of every root (`onAllNode
 
 ### 7.6 Surfaces outside the scene
 
-(As built: in-memory `LocalClipboardManager` and recording `LocalUriHandler` (desktop); pending `DialogState`s are completed empty at reset only; notifications go to a no-op manager; no toast recording. Android uses Espresso-Intents, 0.5.4.)
+(As built: in-memory `LocalClipboardManager` and recording `LocalUriHandler` (desktop); tests answer the open and save dialogs with `openFile`/`saveFileAs`, and other pending `DialogState`s are completed empty at reset; notifications go to a no-op manager; no toast recording. Android uses Espresso-Intents, 0.5.4.)
 
 | Surface | Location | In tests |
 |---|---|---|
@@ -837,7 +856,7 @@ Decided 2026-10-12: the UI test run measures real coverage, so catalogue complet
 
 ### 8.1 CLI peers
 
-(As built: see 0.5.5. Differs: Current CLI only; args `-d`, `--user-display-name`, `-s <smp1>` and the three display flags, with no `--mute`, `--xftp-server` or `--key`; no `$HOME/Downloads`; `TERM=xterm-256color`; `stty -echo -icanon` before exec instead of the start–stop–start cycle; the database comes from the run's peer template (15.1); typing uses a 1.5 s unchanged window and 5 attempts, with no `! `/`> `/`\ ` rule; `sends` consumes the first matching echo anywhere in the buffer; line waits 15 s; no `expectsAny`, `repeatUntil`, `stop`/`start`/`snapshot`/`restore`, relays or mobile hosts; added `eventuallyMessage`, `eventuallyMatching`, `pending`. Matching is shared in `PeerLines`; on Android it runs device-side over the bridge.)
+(As built: see 0.5.5. Differs: Current CLI only; args `-d`, `--user-display-name`, `-s <server>`, `--xftp-server <server>`, the three display flags and `--relay`, with no `--mute` or `--key`; no `$HOME/Downloads`; `TERM=xterm-256color`; `stty -echo -icanon` before exec instead of the start–stop–start cycle; the database comes from the run's peer template (15.1 measures it); typing uses a 1.5 s unchanged window and 5 attempts, with no `! `/`> `/`\ ` rule; `sends` consumes the first matching echo anywhere in the buffer; line waits 15 s; no `expectsAny`, `repeatUntil`, `stop`/`start`/`snapshot`/`restore` or mobile hosts; added `eventuallyMessage`, `eventuallyMatching`, `pending`. Matching is shared in `PeerLines`; on Android it runs device-side over the bridge.)
 
 ```kotlin
 sealed interface CliVersion {
@@ -880,7 +899,7 @@ data class PeerServers(val smp: String = "smp1", val xftp: String = "xftp1")   /
 
 ### 8.2 Servers: `uitest-servers`
 
-(As built: see 0.5.6. Differs: `smp1` only, args `<dir> <portBase>`, no control protocol or names resolver, no `restoreBaseline`; `xftp1` is configured in the GUI but not served (P1b); the process is spawned from the test thread during the first reset (bridge: its main thread), not from a dedicated daemon thread.)
+(As built: see 0.5.6. Differs: `smp1`/`xftp1` at launch and `smp2`/`xftp2` on request, args `<dir> <portBase>`, a stdin control protocol and `restoreBaseline`, no names resolver; the process is spawned from the test thread during the first reset (bridge: its main thread), not from a dedicated daemon thread.)
 
 A test-only executable component in `simplex-chat.cabal`, built only with a manual flag:
 
@@ -946,7 +965,7 @@ The Gradle run executes in an unprivileged user, network and pid namespace with 
 
 ### 9.1 Screen objects
 
-(As built: see 0.5.1. Built screens: `App`, `ChatListScreen`, `NewChatScreen`, `UserPickerScreen`, `ProfilesScreen`, `AddressScreen`, `AppearanceScreen`, `ProfileScreen`, `ChatScreen`, `ContactInfoScreen`, `GroupInfoScreen`, `MemberInfoScreen`, plus the chat-list, onboarding and What's New helpers; no `GuiUser`, `ChatRow`, `ContactRequestRow`, `GroupInvitationRow`, `ConnectPlanAlert` or `RelayPeer`; `ChatListScreen.row()` returns the screen.)
+(As built: see 0.5.1. Screens are in `Screens.kt` (`App`, `ChatListScreen`, `ChatScreen`, the info screens) and one `*Screens.kt` file per area; no `GuiUser`, `ChatRow`, `ContactRequestRow`, `GroupInvitationRow`, `ConnectPlanAlert` or `RelayPeer`; `ChatListScreen.row()` returns the screen.)
 
 ```kotlin
 class GuiUser(override val name: String, internal val d: UiDriver) : TestUser {
@@ -1021,7 +1040,7 @@ abstract class UiTest {                        // base class: per-JVM setup in i
 
 ### 9.3 Example tests
 
-(As built: the three tests exist as `OneTimeLinkCompatTest`, `AddressCompatTest` and `JoiningCompatTest` without stable subclasses. `JoiningCompatTest` reads `connect(bob)`, `alice.chatList.open("team")`, `click(Ui.Alert.Confirm(Ui.AlertSource.Shared))`, `bob.eventually("#team: alice joined the group")`.)
+(As built: `oneTimeLinkCliConnectsViaShortLink` is in `OneTimeLinkCompatTest`; the invitation flow became `JoiningCompatTest.groupInvitation_tapToJoin`, and the address flow is covered by `AddressTest` and `ChatListRequestsCardsTest`. No class has a stable subclass, so the `…CompatTest` classes run against the in-tree CLI only, 15.4.2.)
 
 These are catalogue rows written in the DSL (the names are catalogue names). All three rows include `S`, so their tests live in `…CompatTest` classes with a stable subclass (10.1).
 
@@ -1121,7 +1140,7 @@ Per test: a reset (database, prefs, composition; a few seconds) plus the test it
 
 | Piece | Used by (Needs code) | How |
 |---|---|---|
-| Local SMP and XFTP servers | everything (`SMP`, `XFTP`) | (As built: `smp1` only; `xftp1` is configured in the GUI but not served, P1b, 0.5.6.) `uitest-servers` `smp1`/`xftp1` (8.2), once per JVM; peers get `-s`/`--xftp-server`, the GUI gets them in `resetForTest` (or `useLocalServers()` after onboarding) |
+| Local SMP and XFTP servers | everything (`SMP`, `XFTP`) | (As built: `smp1`/`xftp1` served, `smp2`/`xftp2` on request, 0.5.6.) `uitest-servers` `smp1`/`xftp1` (8.2), once per JVM; peers get `-s`/`--xftp-server`, the GUI gets them in `resetForTest` (or `useLocalServers()` after onboarding) |
 | Second SMP / XFTP server | private routing, sent-via-proxy, unknown-XFTP approval, manual server add, a member connection that fails (`SMP2`, `XFTP2`) | `uitest-servers` `smp2`/`xftp2` on host `127.0.0.1` |
 | Names | SimpleX names (`NAMES`; 13 tests) | the process-lifetime resolver behind `smp1` and `register` lines; GUI and peers get the names role |
 | Chat relays | channels and relay settings (`RELAY`; 90 tests) | headless relay processes (8.1) |
@@ -1173,7 +1192,7 @@ OS drag and drop is not exercised: the drop target (`desktopOnExternalDrag`, D/p
 
 | Phase | Deliverable | Depends on |
 |---|---|---|
-| P1a (complete 2026-10-13, 15.1) | A thin vertical slice that proves the approach on the real app before the rest is built (about 1–2 weeks): the runner script and namespace (7.1.1, 8.3); `desktopUiTest`; per-JVM directories; `UiTestApp` (`bootJvm`, `resetForTest`, `restartCore`, onboarding boot); `UiIdle` (approved, 6, 13) with the hard timeout (no other watchdog parts); `InProcessDriver` with click, text input, keys and `waitUntil`; `CliPeer` Current only; `uitest-servers` with one SMP server only (no XFTP, relays, names resolver or control protocol); pre-set prefs; the keys and screen objects these tests use. Tests (catalogue names, Current CLI only, no stable subclasses): the three of 9.3 (`oneTimeLinkCliConnectsViaShortLink`, `addressCliConnectsAndRequestAppears`, `groupInvitation_tapRowShowsJoinAlert`), 02 `sendText_enter_peerReceives` and 04 `appearance_settingsPersistAcrossRestart` (a `restartCore` with `PrefStores`). Not in P1a: screenshots, Kover, the seams of 11.2, the dialog drain and file choosers, the Stable CLI, relays, mobile hosts, HTTP and SOCKS stubs, stub generation and traceability, K0. Exit: the 5 tests pass 20 consecutive runs; these are measured on the real app and recorded in 15: boot and reset time per test, frame render cost (14), `captureToImage` time on the full scene (the settle-step input of 7.7), memory growth over 20 resets in one JVM, and the offline Gradle run in the namespace; the scene runner choice (`runInternalSkikoComposeUiTest` or the fallback) and the DSL shape are confirmed or changed before P1b | — |
+| P1a (complete 2026-10-13; measurements in 15.1) | A thin vertical slice that proves the approach on the real app before the rest is built (about 1–2 weeks): the runner script and namespace (7.1.1, 8.3); `desktopUiTest`; per-JVM directories; `UiTestApp` (`bootJvm`, `resetForTest`, `restartCore`, onboarding boot); `UiIdle` (approved, 6, 13) with the hard timeout (no other watchdog parts); `InProcessDriver` with click, text input, keys and `waitUntil`; `CliPeer` Current only; `uitest-servers` with one SMP server only (no XFTP, relays, names resolver or control protocol); pre-set prefs; the keys and screen objects these tests use. Tests (catalogue names, Current CLI only, no stable subclasses): the three of 9.3 (`oneTimeLinkCliConnectsViaShortLink`, `addressCliConnectsAndRequestAppears`, `groupInvitation_tapRowShowsJoinAlert`), 02 `sendText_enter_peerReceives` and 04 `appearance_settingsPersistAcrossRestart` (a `restartCore` with `PrefStores`). Not in P1a: screenshots, Kover, the seams of 11.2, the dialog drain and file choosers, the Stable CLI, relays, mobile hosts, HTTP and SOCKS stubs, stub generation and traceability, K0. Exit: the 5 tests pass 20 consecutive runs; these are measured on the real app and recorded in 15: boot and reset time per test, frame render cost (14), `captureToImage` time on the full scene (the settle-step input of 7.7), memory growth over 20 resets in one JVM, and the offline Gradle run in the namespace; the scene runner choice (`runInternalSkikoComposeUiTest` or the fallback) and the DSL shape are confirmed or changed before P1b | — |
 | P1b | The rest of the harness, completing what P1a started: runner script and namespace (7.1.1, 8.3), `desktopUiTest` and `uitestPrepare` tasks, per-JVM directories, `UiTestApp` (`bootJvm`, `resetForTest`, `restartCore`, onboarding boot, fixtures), `UiIdle` (approved 2026-10-13, 13) and the watchdog (6), the four seams of 11.2 and their fakes (and the fixed display clock), screenshots (7.7: capture, settle loop, masks, compare-and-write, summary, docs index, the `.gitattributes` LFS line; `uiVolatile()` on the volatile composables), coverage measurement (7.8: Kover on `desktopUiTest`, per-pass reports merged by the runner, the zero-coverage list), `InProcessDriver` with all input methods, `TestRoot` stubs, `CliPeer` (Current + Stable, peer control), relays and mobile hosts, `uitest-servers` (cabal flag, all servers, names resolver, control protocol), HTTP and SOCKS stubs, pre-set prefs; K0 (all helper parameters and fixed keys) and the keys and screen objects the three 9.3 tests use (chat list rows and requests, group invitation row, user picker and address screen, new chat sheet and one-time link, chat screen, compose and items); the catalogue and legend moved into the repo; `CatalogueTraceabilityTest`; every catalogue name generated as a stub in its mapped class (the Compat class and its stable subclass for `S` names) with the categories its Needs imply (10.1) — `@Ignore("not written")` for runnable rows, `@Ignore("<the row's IGNORE reason>")` for `IGNORE` rows (the generator escapes `"`, `\` and `$`); the three tests of 9.3; measurements of frame render cost (14) and of the `Smoke` run time (10.2); one run of the connection-failure recipe of catalogue 03 `memberInfo_connectionFailedSection`, which is derived from the core and agent code only, choosing its sync point before the server reset; on day one, `./gradlew -g .gradle/uitest-home --offline --no-daemon help` on the real project inside the namespace, after the outside step has filled that home (configuring the real project there has worked once, `./gradlew help` in 3 min 11 s; an offline run is not confirmed yet)  | P1a |
 | P2 | One stub per sub-area with runnable tests (71) turned into a passing `Smoke` test, with the keys each needs | P1b |
 | P3 | Catalogue 01 in full (352 tests) | P2 |
@@ -1181,7 +1200,7 @@ OS drag and drop is not exercised: the drop target (`desktopOnExternalDrag`, D/p
 | P5 | Catalogue 03 in full (312 tests) | P2 |
 | P6 | Catalogue 04 in full (232 tests) | P2 |
 | P7 | Key lint (9.4); strict traceability: every name is a passing test or `@Ignore` with its row's `IGNORE` reason | P3–P6 |
-| P8 | Changed-area runs (user decision 2026-10-13, later phase): `scripts/uitest.sh -PuiAffected=<base>` runs only the tests a branch can affect. `git diff <base>` lists the changed files, and each file selects test classes two ways. (1) Catalogue refs: the rows whose code-ref cells cite the file give the test names, and through them their classes. (2) Coverage map: each full run records, from Kover (7.8), which test class executed which file; this also covers files no row cites. Changes to shared foundations (theme, `ChatModel`, `SimpleXAPI`, common helpers) add `Smoke`. Haskell core changes run `Smoke`, or everything on request. Unmapped files are reported and run `Smoke` | P7, 7.8 |
+| P8 | Changed-area runs (decided 2026-10-13, later phase): `scripts/uitest.sh -PuiAffected=<base>` runs only the tests a branch can affect. `git diff <base>` lists the changed files, and each file selects test classes two ways. (1) Catalogue refs: the rows whose code-ref cells cite the file give the test names, and through them their classes. (2) Coverage map: each full run records, from Kover (7.8), which test class executed which file; this also covers files no row cites. Changes to shared foundations (theme, `ChatModel`, `SimpleXAPI`, common helpers) add `Smoke`. Haskell core changes run `Smoke`, or everything on request. Unmapped files are reported and run `Smoke` | P7, 7.8 |
 
 All shared infrastructure is in P1, so P3–P6 are independent and can proceed in parallel. Within each, one PR per catalogue sub-area keeps reviews small (keys for that sub-area + its screen objects + its tests).
 
@@ -1193,16 +1212,16 @@ Settled (2026-10-10, with additions dated 2026-10-12):
 - **Local servers:** `uitest-servers`, an executable component in `simplex-chat.cabal` behind a default-off `uitest` flag, using `tests/ChatClient.hs` (8.2).
 - **Onboarding presets:** no core change; the run is network-isolated and tests switch to local servers after onboarding (8.3).
 - **App seams (11.2):** approved — recorder factory, audio/video provider, Ctrl+V clipboard reader; and (2026-10-12) the display clock for stable screenshots (7.7).
-- **Android (2026-10-12, changed 2026-10-13):** first out of scope, researched separately (`plans/ui-tests/2026-10-12-android-ui-test-automation.md`, Waydroid) with an Android-only catalogue, `05-android-only.md`. Since 2026-10-13 Android is in scope: its harness is built in the same worktree, and screens, helpers and test bodies are shared through `common/src/uiTestShared`, added to `desktopTest` and to `:android` `androidTest` (0.5.1, 0.5.4, 15.2–15.4). Android-only UI (catalogue 05) remains a separate effort.
+- **Android (2026-10-12, changed 2026-10-13):** first out of scope, researched separately (`plans/ui-tests/2026-10-12-android-ui-test-automation.md`, Waydroid) with an Android-only catalogue, `05-android-only.md`. Since 2026-10-13 Android is in scope: its harness is built on the same branch, and screens, helpers and test bodies are shared through `common/src/uiTestShared`, added to `desktopTest` and to `:android` `androidTest` (0.5.1, 0.5.4, 15.4). Android-only UI (catalogue 05) remains a separate effort.
 - **Coverage (2026-10-12):** the run measures line and branch coverage of the UI, model and platform packages with Kover (7.8); zero-coverage files feed new catalogue rows or recorded exclusions; reported, not enforced.
 - **Test tags only in test/debug builds (2026-10-12):** `uiTagsEnabled`, renamed `uiTestHooksEnabled` (2026-10-14), gates the tags and the `UiIdle` hooks (3.1, 0.5.2); release builds carry none.
 - **Stable CLI:** downloaded by tag; default tag v7.0.3 (GitHub "Latest" on 2026-10-10).
-- **Screenshots (2026-10-12, user request):** tests save committed PNG screenshots, rewritten only when the screen changes outside masked volatile regions or the set of volatile elements changes (7.7); purposes: regressions as image diffs, evidence that tests ran, documentation. Every passing catalogue test except `REALTIME` ones (and none with `-PuiShots=off`) saves an end-of-test shot plus named shots; PNGs are stored with Git LFS; displayed times come from a display-clock seam fixed in UI tests (11.2).
-- **Implementation:** P1a approved (2026-10-13); it goes on a new branch off master in its own worktree, with one build per milestone. P1b is re-planned from P1a's measurements.
+- **Screenshots (2026-10-12):** tests save committed PNG screenshots, rewritten only when the screen changes outside masked volatile regions or the set of volatile elements changes (7.7); purposes: regressions as image diffs, evidence that tests ran, documentation. Every passing catalogue test except `REALTIME` ones (and none with `-PuiShots=off`) saves an end-of-test shot plus named shots; PNGs are stored with Git LFS; displayed times come from a display-clock seam fixed in UI tests (11.2).
+- **Implementation:** P1a approved (2026-10-13); it goes on a new branch off master, with one build per milestone. P1b is re-planned from P1a's measurements.
 - **Decisions of 2026-10-13 (section 15 table, all approved):** the `UiIdle` hooks are approved (6); the OS folder-opener seam is deferred to P6; for Android, the restart is in-process (05 question 14), the debug-only network-security-config is approved (15), the `FIXTURE` proposal is approved (16), screenshots are deferred (17), and the toast hook is decided only if the `UiAutomation` check fails (13).
 - **`UiIdle` hooks: approved 2026-10-13 and implemented** (0.5.2, 15.1). The fallback below is kept in case the hooks have to be removed.
 - **Desktop forks (2026-10-14):** `forkEvery = 0` by default (one JVM per fork runs many classes; `-PuiForkEvery=1` restores one JVM per class), and the runner picks the number of parallel forks from free memory (15.4 item 24, 0.5.9).
-- **Minimal app code (user rule, 2026-10-14):** keys go only on elements a test acts on or must read; no observation-only helpers (15.4 item 31). For now this supersedes typed semantics (4), "keys everywhere" (Summary item 1, 5) and the key lint (9.4). Revisit only with a new user decision.
+- **Minimal app code (rule of 2026-10-14):** keys go only on elements a test acts on or must read; no observation-only helpers (15.4 item 31). For now this supersedes typed semantics (4), "keys everywhere" (Summary item 1, 5) and the key lint (9.4). Revisit only with a new decision.
 
 Open:
 - **`UiIdle` fallback (kept for reference; the hooks are settled above).** The busy tracker adds a few lines to `sendCmd`, `startReceiver` and the `with*Api` launchers (and an `idle` parameter on `withLongRunningApi`); like the keys it is app-side code. **Approved 2026-10-13** (section 15). The fallback is kept documented in case the hooks have to be removed later; without them the harness works at a cost: waits use fixed deadlines (tests with long commands pass explicit timeouts), `drain()` becomes "`ctrlInitInProgress` false, then 1 s with no new chat event", the screenshot quiet wait becomes "1 s with no new chat event" and settled becomes "two equal captures with no chat event between them" (7.7), the end-of-test dialog poll becomes "a `DialogState` is pending, or 1 s with no new chat event" (6), and the `changingActiveUserMutex` check first waits up to 30 s for the lock (a user switch may be behind a slow core command), failure reports lose the in-flight list, and uncaught job errors are attributed by phase only, not to the test that launched the job (6).
@@ -1221,204 +1240,28 @@ Open:
 - **Early class loading.** If a test or JUnit extension initialises an app class before the base class sets `user.home`, the paths would point to the real home; `bootJvm()` checks the paths and fails fast.
 - **Headless rendering** (Skiko software, no AWT window): layout code reads `simplexWindowState.windowState`, which the harness sets to the scene size; code reading real AWT windows (`LocalWindowWidth`, D/views/chat/item/CIVideoView.desktop.kt:37-44) falls back to it.
 
-## 15. Review status and open items (shipped 2026-10-13)
+## 15. Open items, run findings and app findings
 
-**Review.** The plan and catalogue went through 49 rounds of adversarial review. Each round had five concurrent reviewers:
-- A: consistency
-- B: plan claims vs code
-- C: catalogue rows vs code
-- D: feasibility, measured on toy projects built on the real app jar and core
-- E: Android catalogue and carry-over map
-
-Every finding was applied. The review then stopped on a time box rather than at "two clean rounds", because the two halves behave differently:
-- **The harness design has converged.** B was clean in rounds 38–41, 46 and 48, D in rounds 37, 39, 40 and 48, and E in rounds 45, 46 and 49. The last design findings were details: the image-cache reset (7.3), the key for the security-code status line (4) and the dialog drain at the end of a test (6). All are fixed.
-- **Catalogue rows have not converged.** Each fresh sample of 30–40 rows still finds 3–6 row-level issues. The recurring classes are:
-  - a confirmation alert missing from the steps (e.g. "Use current profile", "Connection request sent!", "Update network settings?");
-  - an assertion on text that is only an icon's content description;
-  - a row that lists labels without a pass condition;
-  - a multi-test row that gives an outcome for only some of its tests.
-
-  Expect issues at a similar rate in rows not re-checked since round 18. These are cheap to fix where they surface. Rule for P1 onwards: when a newly written test fails, check the row against the code before the app, and fix the row in the same PR.
+**Catalogue rows.** Before implementation the plan and catalogue went through 49 rounds of adversarial review. The harness design converged; the catalogue rows did not: each fresh sample of 30–40 rows still found 3–6 row-level issues, mostly a confirmation alert missing from the steps (e.g. "Use current profile", "Connection request sent!", "Update network settings?"), an assertion on text that is only an icon's content description, a row that lists labels without a pass condition, or a multi-test row that gives an outcome for only some of its tests. Rule: when a newly written test fails, check the row against the code before the app, and fix the row in the same PR.
 
 **Open items.**
-
-1. Decisions. **All recommendations below were approved by the user on 2026-10-13**; the "Recommendation" column is now the decision.
-
-   | Decision | Recommendation | Why | Cost if declined |
-   |---|---|---|---|
-   | Go-ahead | Start P1a only (12) | 5 real tests on the real app validate boot, reset, restart, the scene runner and the CLI peers, and give the timings that every budget in this plan depends on; P1b is re-planned from those numbers | — |
-   | `UiIdle` hooks (6, 13) | Approve | A few lines in `sendCmd`, `startReceiver` and the `with*Api` launchers, counters only, with no behaviour change. Waits end as soon as the app is idle instead of at fixed deadlines, and failure reports name the job in flight | Fixed timeouts: slower tests, more flakiness, and errors attributed by phase only |
-   | OS folder-opener seam (13) | Defer to P6 | It only unblocks the few database-folder rows in 04; decide when P6 reaches them | Those rows stay `IGNORE` |
-   | Android question 14, restart | Defer until Android work starts; then prefer the in-process restart (stop the core, run the startup steps again, relaunch `MainActivity`) | It mirrors desktop `restartCore` and keeps each test in one `am instrument` run | — |
-   | Android question 15, debug-only network-security-config | Approve when Android starts | A debug source-set XML that allows cleartext only to `127.0.0.1`; release builds are unchanged | 3 link-preview tests fail, and 1 passes vacuously |
-   | Android question 16, `FIXTURE` mechanism | Approve the proposal when Android starts | It reuses the desktop SQL helper host-side; no app change | 38 carried-over tests stay unrunnable |
-   | Android question 17, screenshots | Defer | Android screenshots are a nice-to-have; failure PNGs already work | No committed Android shots |
-   | Android question 13, toast hook | Decide only if the `UiAutomation` check fails on the device | The hook is needed only if system toasts don't reach the listener | `TOAST` rows can't assert |
-
-2. Measurements. Measured in P1a on the real app: the render cost per 16 ms frame (2.6 ms, 15.1). Not measurable until P1b builds them (so far measured only on toy projects with the real jar):
-   - the settle-step time and per-shot budget (6, 7.7);
-   - the timing of the end-of-test dialog drain (6);
-   - the Kover overhead (7.8).
-3. App bugs found while cataloguing, which are outside this plan and are reported when their tests are written (11.3):
-   - The "Error importing chat database" alert is never shown, because `apiImportArchive` throws `Exception` and `importArchive` catches only `Error`.
-   - The migration upload goes to preset public XFTP servers, so its rows are `IGNORE` in the network-isolated run.
+1. Decisions: the 2026-10-13 decisions are recorded in 13.
+2. Not measured, because the parts are not built: the settle-step time and per-shot budget (6, 7.7), the timing of the end-of-test dialog drain (6), the Kover overhead (7.8).
+3. App bugs found while cataloguing (11.3): the "Error importing chat database" alert is never shown (now part of 15.5 item 7); the migration upload goes to preset public XFTP servers, so its rows are `IGNORE` in the network-isolated run.
 4. Known nit, left as is: `previewMutex` (LinkPreviews.kt:46) is a `Mutex`, not one of the mutable types the 9.4 source check lists. It is harmless, because its fetches have bounded timeouts.
-5. Review artefacts: the per-round findings are in the session scratchpad (`r<N>{a..e}/findings.md`), and the resume state is in `plans/ui-tests/catalogue/verify/REVIEW-STATE.md`. Toy harness sources (real-jar experiments) are in `r46d`–`r48d`.
 
-### 15.1 P1a results so far (2026-10-13, first session)
+### 15.1 P1a measurements
 
-These were measured on the real app, built from master `eda94a505` on branch `nd/desktop-ui-tests` in `~/wt-uitest`, with no commits yet. Each run used a headless scene of 1600 × 900 with a `StandardTestDispatcher`, inside the namespace with the dedicated Gradle home, offline. The harness so far is `HarnessBootTest` and `HarnessMeasureTest` (P1a progress: `plans/ui-tests/catalogue/verify/P1a-progress.md`).
+Desktop, real app, headless 1600 × 900 scene with a `StandardTestDispatcher`, inside the runner's namespace, offline:
+- **Reset.** 7.2 s median of 20 without a template, 6–8 s of it `initChatController` creating and migrating a fresh database. With the per-run template database (7.2, `DbTemplate`) a reset takes 0.94 s (median of 20; slowest 1.08 s), and the first reset of a later JVM 3.8 s instead of 11.5 s.
+- **Leaks per reset.** RSS grew from 412 to 504 MB over 20 resets (about 4.6 MB each), and live threads from 15 to 35 (one receiver thread per reset), while the Java heap stayed at 21 MB.
+- **Rendering.** One 16 ms frame of the chat list took 2.6 ms on average; `captureToImage` of the full scene took 10–23 ms.
+- **Peers.** A new peer's first start with a fresh database took 11.4–13.6 s; from the run's peer template, 0.36–0.42 s (both at a load average of 28–31).
+- **Exit check.** The five P1a tests passed 20 consecutive runs.
 
-- **Day-1 risk check passed.** The outside step filled `.gradle/uitest-home` (1.1 GB), and the offline `--no-daemon` run inside `unshare -rn --pid` compiled and ran the tests. One test costs 66–80 s of wall time, mostly Gradle configuration.
-- **Boot works.** The JVM loaded `libapp-lib.so` and ran `initHS`, `initChatController`, `apiCreateActiveUser` and `startChat`, and `AppScreen()` showed the chat list ("Chats", "Private notes"). Boot, the first reset and the first frame took 10.7–11.5 s.
-- **Reset time is the cost driver.** A reset took 7.2 s (median of 20; the slowest was 8.5 s), and 6–8 s of that is `initChatController` creating and migrating a fresh database. The other steps took 5–14 ms to stop and delete, 40–120 ms to create the user and 40–340 ms to start the chat. Over 1,177 tests that is about 2.3 h of serial reset time. **Fixed in P1a (same day):** a template database is migrated once per run and copied in before `initChatController` (7.2, `DbTemplate`). The JVM that creates it publishes it with an atomic rename, and parallel forks reuse it. A reset now takes **0.94 s** (median of 20; the slowest was 1.08 s), and the first reset of a later JVM 3.8 s instead of 11.5 s. The template is per run, so it always matches the current core's migrations.
-- **Leaks per reset.** RSS grew from 412 to 504 MB over 20 resets (about 4.6 MB each), and live threads went from 15 to 35 (one per reset, the old receiver as 14 predicts), while the Java heap stayed at 21 MB. That is within the class-sized JVMs of 10.2.
-- **Rendering is cheap.** One 16 ms frame of the chat list took 2.6 ms on average, and `captureToImage` of the full scene took 10–23 ms. The settle-step and per-shot budgets of 6 and 7.7 (about 1.4 s per step, 28 s per shot) are therefore conservative, and P1b can lower them after measuring a busy chat.
-- **Confirmed as predicted:** the theme detector's thread throws a `NullPointerException` when the shutdown hook destroys `gsettings monitor` (8.2). No harness code suppresses it: `UiUncaught` and the shutting-down flag are P1b (0.5.11). Boot without the pre-set prefs of 11.1 opens the connect-onboarding view (`addressCreationCardShown`). Without `TestServers.configure` (8.2), What's New opens with "View updated conditions". With `uitest-servers` in place (below) the stopgap is gone: `TestServers.configure` disables the operators and refreshes `chatModel.conditions`.
-- **Setup found:** a new worktree needs `git submodule update --init --recursive` (nanohttpd). `~/build/stage-libs.sh` refuses on current master, because master's `build-lib-linux.sh` no longer matches the reviewed hash. The libs were copied from the build slot instead (`cp -al`, with `libapp-lib.so` as a real copy, since `cmakeBuildAndCopy` writes it in place).
+Android (Waydroid, arm translation): the app's own startup in the instrumentation process took 15.4 s after `pm clear`; the reset numbers are in the Android plan, §8.
 
-- **First catalogue tests pass** (session 2): `oneTimeLinkCliConnectsViaShortLink`, `sendText_enter_peerReceives` and `groupInvitation_tapRowShowsJoinAlert` pass together in 178 s. They use the first keys in app code: `Ui.kt`, alert confirm and dismiss keyed by manager, chat-list rows on both platforms, the new-chat buttons, `SectionItemView`'s `uiKey` parameter, `LinkTextView` and the message field. Four driver rules were found and are now implemented:
-  1. A click waits until the node's bounds are unchanged between two polls. A click on a sheet still sliding in landed behind it.
-  2. `typeInto` waits until the field's `EditableText` holds the text before the next action. Text input settles a few frames late, and an Enter before that sends nothing.
-  3. Received CLI messages carry an `HH:MM ` prefix, which `expectsMessage` strips (8.1).
-  4. A key on the text field itself carries `EditableText` on the same node, while `LinkTextView`'s key is on its clickable parent, so field reads match the node or its descendants.
-
-- **All five P1a tests pass individually** (session 2): plus `addressCliConnectsAndRequestAppears` and `appearance_settingsPersistAcrossRestart`. The second uses `restartCore` as 7.3 specifies, and its theme, font scale and zoom are checked both in `settings.properties` and in the UI after the restart. More keys were added: the user picker and its address and settings entries, `SettingsActionItem`'s and `ExposedDropDownSetting`'s `uiKey` (with options), the address create and share buttons, the appearance sliders, and the color-mode dropdown. Findings:
-  1. **`TestRoot`'s in-memory clipboard is required, not optional.** The address is read from "Share address", which goes to `ClipboardManager.shareText`; with no AWT clipboard in a headless JVM, the stub is the only way to read it.
-  2. **Some keyed clickables don't merge.** `ExposedDropdownMenuBox`'s clickable node does not merge its children, so the selected value is a child `Text` even in the merged tree. `textOf(key)` reads the node's own text, then its first descendant's, after waiting for the node.
-  3. **Sliders work through `SetProgress`.** The semantics action also runs `onValueChangeFinished`, so the value is stored.
-  4. **The restart logs harmless errors.** It logs `Error updating users` / `Error updating remote hosts: Controller is not initialized` from composables that run before init completes. The test passes; P1b decides whether `restartCore` should compose only after init has started.
-- **Exit check, first attempt:** 12 of 12 consecutive runs passed (all five tests, 149–210 s per run). It was stopped there to continue work, and will be rerun on the final P1a code.
-- **`UiIdle` hooks are in** (approved, 6):
-  - `sendCmd`: inside `withContext(Dispatchers.IO)`, with the status polls excluded by command type (since 2026-10-14 a thin `UiIdle.track` wrapper around that block, 0.5.2);
-  - receiver events: also counted, with the time of the last one (counters removed 2026-10-14; only the time of the last event is kept);
-  - `withApi`/`withBGApi`/`withLongRunningApi`: `idle = false` at `PopChatCollector`, `ProcessedErrors` and `createUpdateJob`.
-
-  The harness uses them in `drain()`, the deadline extension and timeout messages. All 8 tests pass with them.
-- **Peer start is asynchronous, as 8.1 intends, with a 60 s deadline.** A new peer's first start (the `-O0` current CLI) took 8.1–9.6 s at a load average of 9–17, and more than 30 s right after a 13-minute Kotlin compile (load average about 20), which failed a test with the synchronous 30 s start. `cli()` now returns at once, and the peer's first command waits for `Current user:` and the prompt.
-
-
-- **The full reset of 7.2–7.3 is in:**
-  - `PrefStores`: raw `Properties`, the files and `themes.yaml` restored; the `themeOverridesStore` cache nulled; every `SharedPreference._state` refreshed by reflection; theme and locale re-applied; the four model fields copied from prefs once refreshed.
-  - `ModelSnapshot`: a reflection walk of `ChatModel`, its contexts, `AppLock`, `ConnectProgressManager`, `ChannelRelaysModel`, `BadgeModel` and `VideoPlayerHolder`, excluding `ChatController` and `AppPreferences`.
-  - `clearUiState`: image and wallpaper caches, `cachedRemoteFileRequests`, the file-level list states, window state and auth state.
-  - `clearTransientUi`: modals, passcode views, pending dialogs, both alert managers and toasts.
-
-  The template database's key is installed after `PrefStores.restore`, which would otherwise wipe it. `HarnessResetTest` (two tests in one JVM) shows that a preference, an open sheet and a contact from the first test are gone in the second. All 10 tests pass in one run; the median reset is 1.67 s.
-
-- **Two run-time cuts (user request, 2026-10-13):**
-  1. **The runner skips the outside Gradle step** when a fingerprint is unchanged. The fingerprint covers the build files (`*.gradle.kts`, `gradle.properties`, version catalogs), the native C sources, and the staged native libs other than `libapp-lib.so`, which the step itself writes. `env.properties` is now written by the script on every run, and `uitestPrepare` only resolves `desktopTestRuntimeClasspath`. The step took 40–150 s per run; the inside run still compiles changed Kotlin, offline.
-  2. **A peer database template.** While the outside step runs, the runner migrates one user-less CLI database per run: `--maintenance` exits with "no active user in maintenance mode" after running all 174 migrations. Each new peer's directory gets a copy, and the peer creates its user on first start. Measured, interleaved at a load average of 28–31: a first start with a fresh database took 11.4–13.6 s; from the template, 0.36–0.42 s. This replaces 8.1's "4–15 s per new peer".
-
-- **P1a exit check passed (2026-10-13):** 20 of 20 consecutive runs of the five tests on the final P1a code (all passed, 98–329 s per run, mean 142 s; the slow early runs were at a load average of about 30 from other sessions, the later ones 98–127 s). Earlier loops on intermediate code: 12/12 and 7/7. **P1a is complete.**
-
-Next: re-plan P1b from these results.
-
-### 15.2 First test batch after P1a (2026-10-13, user request: "the most important parts of the app")
-
-**Desktop: 12 more catalogue tests pass**, 17 in total including P1a:
-
-| Area | Tests |
-|---|---|
-| Messaging | `unreadCounterIncrementsAndClears`, `reply_menu_sendQuoted_peerSeesQuote`, `delete_ownForEveryone_peerSeesMarkedDeleted`, `reaction_add_peerSeesAdded`, `reaction_received_chipCount` |
-| Contacts | `contactRequestMenuAccept`, `contactRequestMenuReject`, `contactInfoSetLocalAlias` |
-| Profile | `editProfileDisplayName` |
-| Groups | `createGroup_opensChatAndInviteSheet`, `groupSend_allMembersReceive`, `leaveGroup_fromChatListMenu` |
-
-**Two are parked with `@Ignore` and a reason** (both unparked in batch 2, P1a progress note; no test is `@Ignore`d now except the `HarnessMeasureTest` benchmark):
-- `edit_menu_updatesPeer`: a test can't replace the pre-filled text of the controlled message field in edit mode. Neither `performTextReplacement` nor select-all plus `performTextInput` reaches the compose state.
-- `deleteContactAndNotify`: "Delete contact" is an unplaced lazy-list item on the info screen, with zero bounds, and a bounded `ScrollBy` did not bring it into view.
-
-**New keys:**
-- chat items, their context-menu actions (`ItemAction` gained a `uiKey` parameter, on 5 overloads), reaction buttons and chips;
-- the send button;
-- chat-list row menus (accept, accept incognito, reject, leave);
-- `DefaultAppBar`'s title (a `uiKey` parameter); the info screen's alias field and delete button; the delete dialogs' options (`Ui.Alert.Option`);
-- the user picker's current user (desktop);
-- `ProfileNameField` (a `uiKey` parameter); the group name and create button; the profile save button.
-
-**Driver rules found and implemented:**
-1. **Message commands have no echo.** Their CLI "echo" is the sent item `HH:MM @alice …`, so `sends` accepts either form (8.1).
-2. **The verified Enter.** After a context-menu action, the first Enter is dropped (cause still open), so `send` waits for the send button to be enabled, presses Enter, and presses once more if the field hasn't cleared within 1.5 s (now 5 s, and only while the field still holds text and Send is enabled: 15.4 item 10b). This is safe, because `inProgress` blocks a second send (`ComposeView.kt:631`).
-3. **`escape()`** invokes the window back stack (`simplexWindowState.backstack`, filled by the desktop `BackHandler`), for example to close the address screen before using the chat list behind it.
-4. **Scroll into view, bounded.** `performScrollTo` looped until the heap ran out (`OutOfMemoryError` with a 2 GB heap) on a node in the end pane. The driver now scrolls the nearest `ScrollBy` ancestor by the overflow (or a page for an unplaced lazy item), at most 10 times.
-5. **Connections get 30 s.** Under load, a connection took more than 10 s, so the waits for "contact is connected" are 30 s (now 60 s, `CONNECT_TIMEOUT_MS`, 0.5.7).
-6. **A per-test hard timeout** of 4 min (thread dump, then halt), plus heap dumps on OOM. Before them, one hang cost 35 minutes.
-7. **Group sends wait for members to connect.** A group message sent before a member is directly connected arrives forwarded by the host, with a ` [>>]` suffix. The test waits for `#team: member alice is connected` on each member before sending (catalogue 02:40 note).
-
-**Full desktop run at the end of the day:** 24 tests (17 catalogue + 5 harness + 2 parked). After the group-send fix, everything passes except the 2 parked tests; the Groups class was rerun separately with 3/3 passing.
-
-**Catalogue facts confirmed by the real CLI:**
-- a reaction to the peer's own message prints `alice> >> hi` (catalogue 02:177 fixed);
-- leaving prints `#team: alice left the group (signed)`, as 03:240 already says.
-
-**Android (started on the same day):**
-- `~/build/android.sh` gained `ANDROID_TEST=1`, which builds and publishes the `androidTest` APK next to the app APK.
-- `android/build.gradle.kts` got the AndroidX runner, Compose `ui-test-junit4` 1.8.2, espresso-intents and uiautomator.
-- `initUiTags(context)` switches tags on when the app is debuggable.
-- `SmokeTest` boots, creates a user, launches `MainActivity` and finds the new-chat key.
-- `scripts/uitest-android.sh` claims a Waydroid instance (default 2), installs both APKs, runs `pm clear` and grants permissions, runs `am instrument -r`, saves logcat and releases the claim.
-- Research and the full step list: `plans/ui-tests/catalogue/verify/android-harness-research.md`.
-- **The first Android instrumented test passes** (2026-10-13, Waydroid instance 2, claimed and released by the runner): `SmokeTest` reports `OK (1 test)`. The app's own startup in the instrumentation process took 15.4 s after `pm clear` (the estimate was ~45 s). The real `MainActivity` then showed the chat list, and the debug-only key `chatList.newChat` was found 18.2 s after start. The build takes 5 min 44 s for both APKs, from a slot whose Kotlin was already compiled. (The runner's `OK` check was later replaced: it parses `am instrument -r` into per-test `results.txt`, 0.5.9.)
-- **Remaining for Android P1a** (about 2 days, from the research step list; status 2026-10-14 in brackets):
-  1. the boot step plus reset and template (`AndroidUiTestApp`, `AndroidPrefStores`, `AndroidUiState`) [done as `UiTestApp`, `PrefStores` and the shared `CommonUiState`];
-  2. the shared `uiTestShared` source set (screens and test bodies over a `UiDriver`/`Peer` interface), with the desktop re-run [done, without the interfaces: each platform has a `UiScope` with the same methods, and peers share `PeerLines`];
-  3. a host-side peer bridge reached through `adb reverse`, with the SMP server outside the network namespace [done];
-  4. porting the 5 P1a tests [done];
-  5. the Android-only Back and notification tests [Back done, `BackKeyTest` 14; notification tests open];
-  6. a 10-run exit check [open].
-- Decisions: a shared `uiTestShared` source set for screens and test bodies, and the `~/build` test mode.
-
-### 15.3 Second batch (2026-10-14)
-
-**Desktop.**
-- Shared tests now live in `common/src/uiTestShared`: screens, helpers, server config, `CommonReset` and the test bodies.
-- New this batch: `ChatListMenuTest` (mark read/unread, favorite, mute, clear chat from the row menu) and `OneTimeLinkTest.oneTimeLinkSwitchToIncognito`. All 5 pass.
-- The earlier full run passed 24/24 (19 catalogue + 5 harness). With the new tests that makes 24 catalogue tests in all; the whole suite has not been run again since.
-- New keys:
-  - row-menu `markRead`, `markUnread`, `favorite`/`unfavorite`, `ntfs.<next mode>` and `clear`;
-  - the one-time link's "Share profile" row (`link.shareProfile`) and its picker options (`link.profile.incognito`, `link.profile(<userId>)`).
-- New driver calls:
-  - `descriptionsOf(key)` returns content descriptions; for example, the row star is "Favorite" and the muted icon is "Notifications".
-  - `click` taps a point no nested button covers (15.4 item 8). The incognito option's centre is on its ⓘ button.
-  - `CliPeer.eventuallyMatching(regex)`.
-- Peer timeouts now show the peer's output at the moment of timeout. Before, they showed the output at the start of the wait, which wrongly made a failed connect look like "the peer saw nothing".
-
-**Android.**
-- Host bridge, shared tests over `adb reverse`, Espresso-Intents for share and copy, and an app APK install that is skipped when unchanged.
-- Fixes this batch:
-  1. `poll` advances the Compose clock (48 ms per step), as desktop does. Effect `delay()`s run on the test clock, so mark-read (600 ms) and the alias save (500 ms) never finished.
-  2. The message field retries Espresso `replaceText` when the field is recreated while the chat opens.
-  3. Accepting a contact request waits the 30 s connect timeout.
-  4. A timeout takes a screenshot, which the runner pulls into `<run>/failures/`.
-  5. The runner stops the bridge JVM by its PID (`$!` of `setsid java …`). Gradle's forked daemon is in its own session, so stopping the process group left the bridge and servers running.
-  6. The runner stops at once if the bridge exits.
-- **Last run** (`run-20261014-090056`): 14 of 14 executed tests passed, including 3 of the 6 previous failures (unread badge, edit, group send).
-  - Claude Code stopped the run while the host was critically low on memory: 0.7 GB free, with about 7 GB held by another session's JVMs.
-  - Not reached: `ContactsTest` (5, including the remaining previous failures: alias, delete contact, accept request), 3 of the 4 `ChatListMenuTest` tests and the 2 one-time-link tests.
-
-**Status 2026-10-14, about 20:05 UTC (code before the PR; counts from the code, 0.5.1):**
-- Desktop: 142 `@Test` methods (112 shared + 25 desktop-only + 5 harness; `HarnessMeasureTest` is `@Ignore`d, so 141 run).
-- Android: 127 (112 shared + 14 `BackKeyTest` + `SmokeTest`). The last Android run (`run-20261014-164429`, 53/53) predates the exhaustive batches, so 74 shared tests had not run on Android before the final runs.
-- **Latest run results (2026-10-14, final code):** desktop `b22-desktop.log`: 142 completed, 141 passed, 0 failed, 1 skipped (`HarnessMeasureTest`, manual), 6 min 37 s with automatic forks; Android full run `run-20261014-214038` on Waydroid instance 2: 127 tests, 126 passed, 0 failed, 1 skipped (`connectBannerCardOpensPasteLink`, no camera), 18.5 min. Open flakes seen in earlier runs of the same day: 15.4.1, 15.4.1a, item 41. After rebasing on master `000258224` (2026-10-15): desktop `b23-desktop-rebased.log` 140 passed, 1 failed (15.4.1b; 3 reruns of the class passed), 1 skipped; Android `run-20261015-072618` through `scripts/waydroid/wd.sh` 126 passed, 0 failed, 1 skipped, 18.5 min. After the test review, the stricter harness and the new tests (2026-10-19): desktop `s17-desktop.log` 138 tests, 137 passed, 0 failed, 1 skipped (`profilesHideShowsPasswordHint`, 15.5 item 5), 10 min 48 s; Android `run-20261019-182857` 131 tests, 126 passed, 2 failed (fixed afterwards: the quote test uses short filler messages because Android positions a chat inside a message taller than the screen; the group-link setup reopens the group because of 15.5 item 6), 3 skipped (no camera; 15.5 items 5 and 6).
-
-**Earlier status, 2026-10-14 about 17:00:** desktop 43/43, twice in a row (`b13-desktop-1/2.log`); Android 53/53 in one run (`run-20261014-164429`: 38 shared + 14 Back-key + smoke, 16.5 min of instrumentation). The exhaustive pass then added 99 catalogue tests (74 shared, 25 desktop-only) in two batches (P1a progress, batches 5 and 6).
-
-**Earlier status, end of 2026-10-14 afternoon:**
-- **Desktop 29/29** (24 catalogue + 5 harness): `~/uitest-review-tmp/b6-desktop-full.log`, 7 min 23 s including the build.
-- **Android 25/25** (24 catalogue + smoke): `run-20261014-134126`, 39 s setup plus 5.3 min of instrumentation, with no crashes and no resumes.
-
-**Open.**
-- ~~Rerun those 10 Android tests when memory allows~~ (done: all pass).
-- ~~Delete-contact failure~~ (fixed, 15.4 item 6).
-- ~~Android `PrefStores` reset~~ (done: `android/.../harness/PrefStores.kt`, used by `resetForTest`); ~~Android Back tests~~ (done: `BackKeyTest`, 14).
-- Android notification tests; an Android 10-run exit check.
-- Android template decryption: `bootOnce` now calls `apiStopChat` before `apiStorageEncryption` (15.4 item 25); verified on Waydroid in the final run (reset median 585 ms, n = 126).
-- `wd.sh net isolate` in the Android runner (0.5.9); peer `--mute` (8.1).
-- The test-APK build spends about 80 s on the `~/build` snapshot and slot plus a cold Gradle daemon, before about 60 s of real work. A warm daemon during runs would save most of that, but costs 1.5–2.5 GB of RAM; not done.
-- Nothing is committed.
-
-### 15.4 Edge-case failures found while running (2026-10-13/14)
+### 15.4 Edge-case failures found while running
 
 Each entry gives the symptom, the cause (how it was confirmed), and the fix or mitigation. These are traps any later test or harness change can hit again.
 
@@ -1430,7 +1273,7 @@ Each entry gives the symptom, the cause (how it was confirmed), and the fix or m
 2. **Message field emptied after typing.**
    - Symptom: "message field to hold `hello`" times out right after opening a chat (edit, group send).
    - Cause (inferred): the compose `EditText` is recreated while the chat finishes opening, so text set by Espresso `replaceText` lands in the old view.
-   - Fix: `setMessageField` retries `replaceText` every 2 s for up to 10 s. Both tests passed after the change.
+   - Fix at the time: `setMessageField` retried `replaceText` every 2 s for up to 10 s. Replaced by item 53: the field is set once, after it is stable, with no retry.
 3. **45 s stall at the end of every test.**
    - Symptom: tests took about 45 s longer than their steps.
    - Cause: `ActivityScenario.close()` starts `InstrumentationActivityInvoker$EmptyActivity` from the test package to push the app to the background. The Espresso-Intents stub `not(isInternal())` treats the test package as external, so logcat shows "Stubbing intent … EmptyActivity", and `close()` waits out its 45 s timeout.
@@ -1494,14 +1337,14 @@ Each entry gives the symptom, the cause (how it was confirmed), and the fix or m
 13. **`adb root` on Waydroid restarts `adbd`**, which ends a running `am instrument` (exit 255). Use `wd.sh rootsh <cmd>` for root actions such as `kill -3 <pid>` for a thread dump. `run-as` is blocked on this image.
 14. **Misleading peer timeout output.** "seen: …" was evaluated when the wait started, so a failed connect showed `[]`. Peer timeouts now append the output at timeout time.
 15. **Host memory pressure.**
-    - Other sessions on the qube took about 7 GB mid-run, and Claude Code stopped the background run with 0.7 GB free. The runner's 4.5 GB check at start doesn't protect a 30+ min run.
+    - Other processes on the host took about 7 GB mid-run, and the run had to be stopped with 0.7 GB free. The runner's 4.5 GB check at start doesn't protect a 30+ min run.
     - Keep runs short (class filters), and stop Waydroid when idle.
     - Never `pkill -f` a pattern that matches your own shell command line.
-15a. **`pm clear` on a shared instance.** The runner runs `pm clear chat.simplex.app.debug` at the start of every pass. On instance 1, which other sessions use with the same debug package, that wipes their app state even when the claim is free. UI test runs use instance 2 only; the queueing helper waits for instance 2 and never falls back to 1.
+15a. **`pm clear` on a shared instance.** The runner runs `pm clear <UITEST_APP_ID>` at the start of every pass, which wipes that app's data on the instance even when the claim is free. The runner uses Waydroid instance 1 by default; to keep an interactive instance 1 untouched, run the tests on the optional instance 2 (`WD_INSTANCE=2`, `scripts/waydroid/README.md`).
 
 16. **Waydroid ran alongside a bridge compile.** The bridge compile now runs before the Waydroid boot, and the boot overlaps only the 1 s bridge start. Waydroid comes up 30–34 s after the run starts.
 
-**Desktop harness** (already in 15.2, listed here for completeness): the first Enter after a context-menu action is dropped (verified Enter); `performScrollTo` looped until OOM in the end pane (bounded `ScrollBy`); select-all must settle before `performTextInput` replaces text; connections need 30 s under load; group sends wait for each member's "member alice is connected".
+**Desktop harness, first findings:** the first Enter after a context-menu action is dropped (verified Enter); `performScrollTo` looped until OOM in the end pane (bounded `ScrollBy`); select-all must settle before `performTextInput` replaces text; connections need 30 s under load; group sends wait for each member's "member alice is connected".
 
 17. **Popups swallow the next pointer or key event.** A desktop popup that is still closing after a menu-item click takes the next right-click or Enter as an outside click and only dismisses itself. This is the likely cause of the old "first Enter after a context-menu action is dropped" quirk.
     - Fix: `click`, `rightClick` and `pressEnter` wait until no popup is open, unless the target is itself inside one.
@@ -1529,10 +1372,10 @@ Each entry gives the symptom, the cause (how it was confirmed), and the fix or m
 27. **App background errors were attributed to the wrong test.** A job started by the test's own actions (or by its UI teardown) fails after `runTest` returns, and coroutines-test reports it as "uncaught exceptions before the test started" in the NEXT test.
     - Fix: each test body ends with `drain()` inside the test, so the test's own background jobs finish while it is still current. The desktop `finally` also flushes the Swing queue and drains, because scene disposal is queued on the EDT.
     - The full exception list (`suppressed`) is now printed; Gradle's short format hid it.
-28. **Known app issues are allowlisted by message, not ignored wholesale.** `KNOWN_APP_ISSUES` lists app errors traced to a documented finding (15.5 item 3); a match is logged as "UITEST known app issue, not failing the test". It passes a test only when its body completed; a test whose body never ran because of such an error is rerun (at most 3 attempts), and one whose body started but did not complete fails. `AssertionError`s never match. Any other uncaught exception still fails the test. Desktop only; details in 0.5.8.
+28. **Known app issues were first allowlisted by message.** `KNOWN_APP_ISSUES` listed app errors traced to a documented finding (15.5 item 3), desktop only. It could not tell a body-time error from a teardown one, and it hid failures; it was replaced on 2026-10-19 by `@KnownAppIssue` on both platforms (item 43, 0.5.8).
 29. **Desktop failure screenshots.** A desktop `poll` timeout writes `<run>/failures/<jvm>-NN-<what>.png` (`captureToImage` of the window root). The first one showed that the "chat list title" expectation was wrong (15.6).
 30. **CLI typing under parallel load.** The CLI's echo of a 200-character `/c` link paused for more than the 200 ms "line unchanged" window when 4 JVMs ran together. The window is now 1.5 s (it only matters on a mismatch), and failures report what the input line held.
-31. **App-code additions are kept minimal** (user rule, 2026-10-14). Keys go only on elements a test acts on, or whose text cannot be read otherwise. Observation-only helpers were removed: the `uiMarker` modifier, row icon marks, a key attached only while an error shows, and a QR key. The tests assert those states through the model (`contact.verified`, `chatInfo.incognito`, `draftChatId`, chat item content), visible texts, or existing content descriptions (`seesDescription`, added to both harnesses).
+31. **App-code additions are kept minimal** (rule of 2026-10-14). Keys go only on elements a test acts on, or whose text cannot be read otherwise. Observation-only helpers were removed: the `uiMarker` modifier, row icon marks, a key attached only while an error shows, and a QR key. The tests assert those states through the model (`contact.verified`, `chatInfo.incognito`, `draftChatId`, chat item content), visible texts, or existing content descriptions (`seesDescription`, added to both harnesses).
 
 32. **Taps landed on a nested control's touch target.** The chat-list title tap hit the subscription indicator: Compose inflates a small clickable to a 48 dp touch target, so a point outside its drawn bounds still belongs to it. `tapPointInNode` now inflates nested clickables to 48 dp before choosing a free point.
 33. **Desktop has no Back handler on some screens.** The New chat sheet and the pending-connection info ("You invited a contact", opened with `showClose = appPlatform.isAndroid`) register no `BackHandler` on desktop, so Esc does nothing there. The sheet has a "Back" arrow, so `goBack()` clicks `described("Back")` on desktop and presses system Back on Android. The pending-connection info has no close control on desktop; it stays in the center pane until another chat opens, so `closePendingConnectionInfo()` closes it on Android only. Because the panel stays open on desktop, the app turns it into the contact's chat when the peer connects (`replaceConnReqView`), and the open chat is always listed whatever the search (`ChatListView.kt` `filteredChats`); `searchFiltersByAlias` therefore asserts "listed for non-matching text exactly when it is the open chat", which holds on both platforms. This was the cause of the last 3 desktop failures in run b18 (`searchFiltersByAlias`, `searchMatchesPendingConnectionAlias`, `pendingConnectionMenuSetName`).
@@ -1541,14 +1384,14 @@ Each entry gives the symptom, the cause (how it was confirmed), and the fix or m
 36. **Peer line matching is shared.** `PeerLines` (uiTestShared) holds `sends/expects/eventually*`; desktop and Android `CliPeer` only implement `fill()` and `type()`. The Android bridge socket has a 60 s read timeout so a dead bridge fails the test instead of hanging it.
 37. **Test hooks are off in release builds.** `UiIdle` and `Modifier.ui` do nothing unless `uiTestHooksEnabled` (set from `FLAG_DEBUGGABLE` on Android and by the desktop harness); `sendCmd` and the event loop wrap their bodies with `UiIdle.track`/`trackEvent`, which cost one volatile read when off.
 38. **Android runner is portable.** `UITEST_SERIAL` selects any adb device and skips Waydroid; `ADB`, `JAVA_HOME`, `UITEST_APP_ID`, `WD_INSTANCE`, `WD_OWNER` are read from the environment; the runner refuses to start before `scripts/uitest.sh` has written `env.properties`.
-39. **A new key parameter after a trailing lambda broke Android-only callers.** `uiKey` was added after `onChange`/`selectItem` in `SettingsPreferenceItem`, `SharedPreferenceToggle` and `SelectItemAction`; `androidMain` callers that pass the lambda as a trailing lambda (`Appearance.android.kt`, `PrivacySettings.android.kt`) stopped compiling, and the desktop suite does not compile `androidMain`. Rule: a new `uiKey` parameter goes before the last function-typed parameter, and every app-code change is compiled for Android (`android.sh`) as well as desktop before a run is reported.
+39. **A new key parameter after a trailing lambda broke Android-only callers.** `uiKey` was added after `onChange`/`selectItem` in `SettingsPreferenceItem`, `SharedPreferenceToggle` and `SelectItemAction`; `androidMain` callers that pass the lambda as a trailing lambda (`Appearance.android.kt`, `PrivacySettings.android.kt`) stopped compiling, and the desktop suite does not compile `androidMain`. Rule: a new `uiKey` parameter goes before the last function-typed parameter, and every app-code change is compiled for Android (`./gradlew :android:assembleFossDebug`) as well as desktop before a run is reported.
 40. **First full Android run of the shared tests (127 tests, 22 min, 121 passed).** Android-only causes of the 6 failures:
     - Back on the pending-connection info first closes the soft keyboard ("Set contact name" focuses the name field), so one Back left the screen open; `closePendingConnectionInfo()` taps the screen's own "Back" arrow (`described("Back")`) on Android.
     - Confirming a contact link plan opens the prepared chat full screen on Android, covering the chat list; `contactMenuForNotReadyContactOnlyDelete` calls `backToChatList()` before opening the row menu (no-op on desktop, where the list stays visible).
     - The "Paste link / Scan" banner opens the QR scanner; Waydroid has no camera, so CameraX fails and the app crashes when the scanner is disposed (15.5 item 4). `connectBannerCardOpensPasteLink` calls `assumeCamera()` (skipped on devices without a camera; no-op on desktop).
 41. **`chatCloseStore` failures were ignored.** It returns an error text ("" on success); the resets deleted the database files whatever it returned. One desktop run (b21) had `apiNewGroup` fail with "SQLite3 returned ErrorIO … disk I/O error" right after a reset (first time in about 20 runs; the disk was not full). Both harnesses now fail the reset when `chatCloseStore` returns an error, so a recurrence names its cause. The I/O error itself is not explained yet (open item).
-42. **The Waydroid tool is in the repo and portable** (2026-10-15, user request). `apps/multiplatform/scripts/waydroid/` holds `wd.sh`, `provision2.sh` (instance 2), `watchdog2.sh`, `weston.ini`, `fetch-images.sh` and a README; `uitest-android.sh` uses it by default (`WD_SH` overrides) and takes its adb from `wd.sh adb-path`, so both use one adb binary (before, the runner used `$ANDROID_HOME`'s adb 37.0.0 and `wd.sh` `~/Android/Sdk`'s 36.0.2). Machine paths became `WD_HOME`/`WD2_HOME`/`$HOME`/SDK variables. On Qubes it behaves as before (offline debs, `$WD_HOME/var` bind mount, Qubes nft chains). Elsewhere it installs with apt (repo.waydro.id) or dnf, uses `/var/lib/waydroid` directly, lets `waydroid init` download images, trusts the bridge in firewalld, and isolates with an nft table of its own (`inet wd_uitest`). Weston flags follow the version (12+: `--backend=headless --renderer=pixman`; checked against weston 11, 12 and 14 sources). Verified on Qubes: instance 2 up/status/shot/nodes/rootsh, `net isolate/open` with the Qubes chain and, on a scratch copy with the Qubes check off, with the own table; the full Android suite ran through it. The apt/dnf install, image download and firewalld paths were not run (no non-Qubes host here).
-43. **Test review and the stricter harness (2026-10-19).** Five reviewers graded all 157 tests (`reviews/2026-10-19-test-review-{A..E}.md`; point-in-time, the outcome is in this item): 103 keep, 29 strengthen, 19 merge, 6 drop; the harness hid failures (Android crash handler recovery, second Enter, quiesce, deadline extensions, discarded peer output, message allowlist). The test-writing guide (`apps/multiplatform/common/src/uiTestShared/README.md`) codifies the rules; the harness now fails on crashes, peer errors and stuck work, has no input retries, and marks known app bugs with `@KnownAppIssue` (0.5.8). Steps 2–3 applied the verdicts: about 25 tests merged or dropped, the rest strengthened (outcomes checked, opposite states proven first, negative controls, both branches of conditional UI); new keys only on elements tests act on: the link-preview thumbnail (`Ui.ChatList.Row(id).part("link")`) and the database-error passphrase field and Open button (`Ui.DbError`).
+42. **The Waydroid tool is in the repo and portable** (2026-10-15). `apps/multiplatform/scripts/waydroid/` holds `wd.sh`, `provision2.sh` (the optional instance 2), `watchdog2.sh`, `weston.ini`, `fetch-images.sh` and a README; `uitest-android.sh` uses it by default (`WD_SH` overrides) and takes its adb from `wd.sh adb-path`, so both use one adb binary (before, the runner used `$ANDROID_HOME`'s adb 37.0.0 and `wd.sh` `~/Android/Sdk`'s 36.0.2). Machine paths became `WD_HOME`/`WD2_HOME`/`$HOME`/SDK variables. On Qubes it behaves as before (offline debs, `$WD_HOME/var` bind mount, Qubes nft chains). Elsewhere it installs with apt (repo.waydro.id) or dnf, uses `/var/lib/waydroid` directly, lets `waydroid init` download images, trusts the bridge in firewalld, and isolates with an nft table of its own (`inet wd_uitest`). Weston flags follow the version (12+: `--backend=headless --renderer=pixman`; checked against weston 11, 12 and 14 sources). Verified on Qubes: instance 2 up/status/shot/nodes/rootsh, `net isolate/open` with the Qubes chain and, on a scratch copy with the Qubes check off, with the own table; the full Android suite ran through it. The apt/dnf install, image download and firewalld paths were not run (no non-Qubes host was available).
+43. **Test review and the stricter harness (2026-10-19).** Five reviewers graded all 157 tests (the outcome is in this item): 103 keep, 29 strengthen, 19 merge, 6 drop; the harness hid failures (Android crash handler recovery, second Enter, quiesce, deadline extensions, discarded peer output, message allowlist). The test-writing guide (`apps/multiplatform/common/src/uiTestShared/README.md`) codifies the rules; the harness now fails on crashes, peer errors and stuck work, has no input retries, and marks known app bugs with `@KnownAppIssue` (0.5.8). Steps 2–3 applied the verdicts: about 25 tests merged or dropped, the rest strengthened (outcomes checked, opposite states proven first, negative controls, both branches of conditional UI); new keys only on elements tests act on: the link-preview thumbnail (`Ui.ChatList.Row(id).part("link")`) and the database-error passphrase field and Open button (`Ui.DbError`).
 44. **Restart re-read settings after the core started.** Reloading `settings.properties` after `initChatControllerOnStart` raced with the app's start-up and opened the database with the wrong key ("Wrong database passphrase") in three tests. The reload now runs between stopping and initialising the core.
 45. **Restart stopped the core before pending app work finished.** `restart()` disposes the scene, and a disposed onboarding passphrase screen starts chat in the background (15.5 item 3); stopping the core first made that job fail with "Controller is not initialized" and left `ctrlInitInProgress` set, which failed every later test of the JVM. `restartCore` now drains first, and a reset clears a leftover `ctrlInitInProgress`.
 46. **Assertions written from the review were checked against the app.** Two proposed checks did not match the app: the invite sheet shows "Skip inviting members" or, with no contacts, "No contacts to add" instead of an Invite button; a row with unread messages shows the badge instead of the mute icon. Rule kept in the guide: read the code behind every expected element.
@@ -1581,10 +1424,10 @@ Each entry gives the symptom, the cause (how it was confirmed), and the fix or m
 
 - 2026-10-22: seen on desktop too, in `ChatListRowsTest.previewGroupSenderPrefix` (1 of 2 runs, after the master merge with #7072): bob's group message arrived while alice had the group open, and the row kept showing alice's earlier "mine" instead of "bob: hello all". The test passed when rerun alone.
 
-### 15.4.1b Open flake: received message missing from a chat opened at the same moment (desktop, 1 of 4 runs)
+### 15.4.1b Flake: received message missing from a chat opened at the same moment (desktop, 1 of 4 runs; cause in 15.5 item 25)
 
 - `ForwardTest.forward_toNotes_showsSavedFrom` (rebased run b23, 2026-10-15): bob sends "hey", alice opens bob's chat right away; the chat list row shows "hey" with unread 1, but the open chat shows no items (only the "1" unread-below counter) for 10 s. Three reruns of the class passed.
-- Likely an app race between loading the opened chat's items and the new-item event (the item is in the chat preview, not in the open chat's list). Not resolved; next step is to capture `chatsContext.chatItems` on failure.
+- Likely an app race between loading the opened chat's items and the new-item event (the item is in the chat preview, not in the open chat's list). Not resolved at the time; the root cause was found later and is 15.5 item 25.
 
 ### 15.4.1c Open: Android cannot reach the quoted reply in `reply_received_showsQuote_clickScrollsToOriginal`
 
@@ -1624,14 +1467,14 @@ Each entry gives the symptom, the cause (how it was confirmed), and the fix or m
 - CI trial 12 (Android emulator, 2026-10-25): 4 failures, one per shard, all waits that timed out and passed before: `dbEncrypt_removeFromSettings` and `dbEncrypt_changePassphrase` (the `Wrong passphrase!` alert never shown after typing a wrong passphrase on the Encrypted database prompt, again the database-encryption family of item 27), `pagination_quoteOutsidePage_jumpLoadsOriginal` (`far reply` never reached the row after `f77`; failed in trials 11 and 12) and `planInvitationAlreadyConnectingFullLink` (`Connection request sent!`).
 - Hypothesis for the burst stalls (15.4.1e, trial 11/12 pagination, unread test at 52 of 60): the tests send 60-200 messages in one burst from one CLI peer; a slow receiver (ARM translation) falls behind on acknowledgements and the SMP server's per-queue quota pauses the sender. Not confirmed. Fix idea for the tests, not done: send in batches of about 20 and wait for the row between batches.
 
-### 15.4.2 Test strength limits (second review, 2026-10-14)
+### 15.4.2 Test strength limits
 
 Under the minimal-app-code rule (item 31) some states are asserted through the model, not the UI. These tests pass if the model is right even when the UI fails to render the state:
 - row icons without a description or key: `incognitoIconOnRow`, `verifiedIconOnRow`, the link image in `previewLink`, the edit icon in `previewShowsDraft`, the badge colour in `unreadCounterGrayWhenMuted`, mark-unread badges (`ChatListMenuTest`, `ChatListMenusPendingTest`);
 - `ChatListScreen.gone()` checks the model only (the list is rendered from the same model);
 - `profilesAddProfile` checks `chatModel.users`;
 - `createListDuplicateNameError` cannot see the error text because it is always composed (transparent when hidden, `TagListView.kt`).
-- Classes named `...CompatTest` (`InviteMembersCompatTest`, `JoiningCompatTest`, `OneTimeLinkCompatTest`, `ChatListRequestsCardsCompatTest`, `ItemStatusCompatTest`) run only against the current CLI: the stable-peer subclasses (plan §10.1) are not built, so they do not test compatibility yet.
+- Tests named `*Compat*` (`ChatListRequestsCardsCompatTest`, `OneTimeLinkCompatTest`, `JoiningCompatTest`, `InviteMembersCompatTest`) currently run against the in-tree CLI, like every other test: there is no stable CLI peer yet (the download step and the stable subclasses of 10.1 are not built, 0.5.11), so they do not test compatibility with the last release.
 - `OnboardingTest.onboardingPassphrasePersistsAcrossRestart` (`@KnownAppIssue` item 3, intermittent): a failure to restart chat after the onboarding encryption throws the same "failed to list users" as the item-3 race, so it is reported as skipped, not failed. A skip in every run is a regression signal.
 - `LockDesktopTest.lock_noticeOfferedWithManyChats` (`@KnownAppIssue` item 23, intermittent): a change that stops the SimpleX Lock notice for good fails the same poll as the item-23 race, so it is reported as skipped, not failed. The "3 chats or fewer, no notice" check is subject to the same race. A skip in every run is a regression signal.
 Harness behaviours that can hide an app defect:
@@ -1640,14 +1483,27 @@ Harness behaviours that can hide an app defect:
 - `isEnabled` is always true for `SectionItemView` keys (a disabled item drops `clickable` and sets no Disabled semantics).
 Known harness limits (accepted for P1a):
 - (replaced 2026-10-19 by `@KnownAppIssue`, item 43) the known-issue allowlist could not tell a body-time "database closed" from a teardown one, because Compose reports uncaught coroutine exceptions only when the test ends;
-- Android `clipboardText()` falls back to the device clipboard, which is not cleared between tests;
-- `OnboardingSharedState.selectedOperatorIds` is not reset between tests (no current test depends on it);
-- `:common:desktopUiTest` run without `scripts/uitest.sh` is skipped and reports success with zero tests;
+- Android `clipboardText()` falls back to the device clipboard, which each reset clears on Android 9 and later only;
+- of `OnboardingSharedState`, only `selectedOperatorIds` is reset between tests;
+- `:common:desktopUiTest` run without `scripts/uitest.sh` is skipped and reports success with zero tests, and an IDE run of a single UI test goes through `desktopTest`, which excludes the UI tests;
 - on the Android path the test SMP server listens on all host interfaces with the repo's fixture TLS key, and `pm clear` acts on whatever `UITEST_APP_ID` names; never point `UITEST_SERIAL` at a personal device with the release package.
 Fixed from the second code review: `UiKey` is a `data class`, so keys passed to composables compare equal and do not break recomposition skipping (keys are built in release too); the Android bridge client drops its socket after an IO error or EOF so the next call reconnects instead of reading a stale reply, and the bridge keeps accepting after a client drops; `uitest-android.sh` exits non-zero when it gives up after 4 crashed passes, runs its cleanup (bridge, Waydroid claim) on Ctrl-C/TERM, and rebuilds the bridge when `PeerLines.kt` changes; `uitest.sh --inside` refuses to run unless it is PID 1 of the runner's PID namespace (its TERM trap kills `-1`).
 Fixed in the same review: `createGroup_opensChatAndInviteSheet` now checks the open chat, `search_direct_filtersResults` checks the matching item nodes, onboarding `!isEnabled` checks wait for the node first, the Android `TagEditor.Emoji` key was removed (no Android test acts on it), and the desktop scroll margin is 48 dp, not 50 px.
 
-### 15.5 App findings from the UI tests (2026-10-14; not fixed, reported only)
+
+### 15.4.3 Not covered: a green run says nothing about these
+
+- **Calls (WebRTC).** No call is placed, received or shown. Only the call preference alerts are tested (`contactInfoAllowCallsAlert`, `memberInfo_callButtonsDirectMessagesProhibitedAlert`); WebRTC is out of reach in-process (11.3).
+- **Desktop notifications.** The desktop harness installs a no-op `NtfManager` that records nothing, so notification text, preview modes, muted chats, hidden profiles and notification actions are untested on desktop until a `RecordingNtfManager` exists (7.2, 0.5.11). Android has a few system-notification tests (`SystemNotificationsAndroidTest`, `NotificationModesAndroidTest`).
+- **Database upgrade and migration.** No test opens a database created by the last release, and none runs a device-to-device migration (MigrateFromDevice/MigrateToDevice). The migration tests only open screens (`onboardingMigrateFromAnotherDeviceOpensMigrationScreen`) or add a future migration by SQL (`addFutureMigrationViaSql`).
+- **XFTP variants.** File tests cover small single-chunk files in direct chats. Not covered: voice and video messages (record, send, receive, play); multi-chunk files and cancelling a transfer midway; downloading a file received in a group, and a forwarded file received in a group; server outages and recovery during an upload or download (only "accepted before the upload" is tested, `ReceiveFileTest`), and `xftp2`; temp and files directories on different filesystems. Encrypted local files are covered for received images only (`PrivacyTest.morePrivacy_encryptLocalFilesOff`).
+- **i18n and RTL.** One desktop test switches the language (`AppearanceDesktopTest.appearance_language_switch`, German); all lookups use literal English, and there are no RTL or long-string layout checks.
+- **Large screens and orientation.** Desktop runs at a fixed 1600 × 900, and the Android runner forces the CI phone size in dp. No narrow desktop window, tablet, landscape or split-screen run, so the one-pane/two-pane switch is untested.
+- **Accessibility.** None: content descriptions are used only as locators, following the keys-not-semantics decision (4 is not built).
+- **Compatibility with the last release.** See the `*Compat*` note in 15.4.2.
+- **Windows and macOS.** The desktop tests run on Linux only. The Windows installer GUI test is part of the Windows installer work (#7789).
+
+### 15.5 App findings from the UI tests (not fixed, reported only)
 
 1. **The group mute setting can revert in the UI right after joining a group** (catalogue 01:86, `groupMenuMuteModesAllMentionsNone`).
    - What was seen: alice joins bob's group and changes the mode from the row menu (All → Mentions). The model shows Mentions once `apiSetSettings` returns, then about 0.5 s later shows All again, with no further user action. It happened in 2 of about 12 runs. Each time, the model's `chatSettings.enableNtfs` was captured in the failure message.
@@ -1714,7 +1570,7 @@ Fixed in the same review: `createGroup_opensChatAndInviteSheet` now checks the o
 
 24. **Desktop: the system theme detector thread crashes without a session D-Bus** (jSystemThemeDetector `GnomeThemeDetector$DetectorThread.run`, `GnomeThemeDetector.java:119`: `readLine` returns null when `gsettings monitor` exits, then `NullPointerException` on `split`). Seen on every GitHub runner job (2026-10-22): an Ubuntu runner has no session bus, so `gsettings monitor` exits at once. A user on a Linux desktop without a session bus or without the GNOME schemas gets the same uncaught exception in a background thread; theme following stops. The `ui-tests` workflow runs the desktop tests with a session bus on a filesystem socket, so the tests do not hit it. Related: memory of an NPE in the library's KDE path on an unset `XDG_CURRENT_DESKTOP`.
 
-25. **A message saved while its chat is being opened is dropped from the open chat** (desktop; formerly open flake 15.4.1b; root cause in `plans/ui-tests/drafts/finding-25-missing-unread.md`). `apiGetChat` reads the items and the unread count in one transaction (`Store/Messages.hs:1356-1364`), and the app publishes that snapshot in two main-thread steps (`ChatItemsLoader.kt:64-91`): first the chat list's unread count (`:75`), then `chatItems` and only then `chatModel.chatId` (`:80-81`). A message saved after the snapshot and handled before `chatId` is set raises the row's unread count but is not added to the open chat (`ChatModel.kt:641-657` compares with the old `chatId`), and nothing loads it later (the snapshot has nothing after its last item). Seen as messages 1, 2, 3 and 5 of five, with the unread button showing 1; or a single new message missing. The same window affects opening around an item and reloading an open chat. Tests that send and then open now wait for the message to reach the chat list first (`awaitRowText` / `awaitRowItem`); `ReceivedMessagesTest.openChat_whileMessagesArrive_showsAll` opens while messages arrive and is marked `@KnownAppIssue("15.5 item 25", intermittent = true)`. Fix idea, not done: publish the stats, the items and `chatId` in one main-thread block, and when the chat received events during the load, load once more after the last loaded item.
+25. **A message saved while its chat is being opened is dropped from the open chat** (desktop; formerly the flake 15.4.1b). `apiGetChat` reads the items and the unread count in one transaction (`Store/Messages.hs:1356-1364`), and the app publishes that snapshot in two main-thread steps (`ChatItemsLoader.kt:64-91`): first the chat list's unread count (`:75`), then `chatItems` and only then `chatModel.chatId` (`:80-81`). A message saved after the snapshot and handled before `chatId` is set raises the row's unread count but is not added to the open chat (`ChatModel.kt:641-657` compares with the old `chatId`), and nothing loads it later (the snapshot has nothing after its last item). Seen as messages 1, 2, 3 and 5 of five, with the unread button showing 1; or a single new message missing. The same window affects opening around an item and reloading an open chat. Tests that send and then open now wait for the message to reach the chat list first (`awaitRowText` / `awaitRowItem`); `ReceivedMessagesTest.openChat_whileMessagesArrive_showsAll` opens while messages arrive and is marked `@KnownAppIssue("15.5 item 25", intermittent = true)`. Fix idea, not done: publish the stats, the items and `chatId` in one main-thread block, and when the chat received events during the load, load once more after the last loaded item.
 
 26. **The user picker can close itself right after it is reopened** (desktop; `ProfileEditTest.editProfileBioAndFullName`, marked `@KnownAppIssue("15.5 item 26", intermittent = true)`; inferred from code). Opening a modal from the picker schedules two delayed closes (`onUserClicked` → `withBGApi { closePicker() }` and the `snapshotFlow { ModalManager.start.modalCount }` collector, `UserPicker.kt:88-95`), each after 500 ms; on desktop the picker stays composed (`App.kt:438`), so a close still pending when the picker is reopened within 500 ms hides the new picker. A person must reopen within half a second.
 
@@ -1739,7 +1595,7 @@ Fixed in the same review: `createGroup_opensChatAndInviteSheet` now checks the o
 
 31. **Save in the SOCKS proxy "unsaved changes" alert does not close the screen when the proxy is off** (deterministic; `NetworkProxyTest.socks_unsavedAlert`, marked `@KnownAppIssue("15.5 item 31")`; found by the 2026-10-23 test review). Back with an edited port shows the alert, and its Save calls `save(true)` (`NetworkAndServers.kt:471`). But `close()` is reached only inside `if (networkUseSocksProxy && !migration)` (`:433-447`), so with the proxy off the settings are stored and the screen stays open, and the user must press Back again. The advanced network and servers screens close after the same alert's Save. Fix idea, not done: call `close()` when `closeOnSuccess` and the proxy is off.
 
-32. **Sharing a mix of files (a PDF and a photo) into the app silently closes the open chat and drops the share** (Android; `ShareIntoAppAndroidTest.shareIn_sendMultipleNonMedia_giveFeedback`, marked `@KnownAppIssue("15.5 item 32")`; the user confirmed it is a bug, 2026-10-25). A file manager sends `ACTION_SEND_MULTIPLE` with type `*/*`, which matches the manifest's `image/*` filter. `processExternalIntent` (`MainActivity.kt:194-205`) closes the chat and takes the `else -> {}` branch: no share list, no alert. Fix idea, not done: offer the files in the share list, or show an alert that they cannot be shared together.
+32. **Sharing a mix of files (a PDF and a photo) into the app silently closes the open chat and drops the share** (Android; `ShareIntoAppAndroidTest.shareIn_sendMultipleNonMedia_giveFeedback`, marked `@KnownAppIssue("15.5 item 32")`; confirmed as a bug, 2026-10-25). A file manager sends `ACTION_SEND_MULTIPLE` with type `*/*`, which matches the manifest's `image/*` filter. `processExternalIntent` (`MainActivity.kt:194-205`) closes the chat and takes the `else -> {}` branch: no share list, no alert. Fix idea, not done: offer the files in the share list, or show an alert that they cannot be shared together.
 
 33. **The Lock after option for 60 seconds reads `1 minutes`** (deterministic; `LockDesktopTest.lock_delayOption60_singularMinute`, marked `@KnownAppIssue("15.5 item 33")`; found by the round 8 test review, 2026-10-25). `laDelayText` (`PrivacySettings.kt:846-856`) formats every whole-minute delay with `la_minutes` = `"%d minutes"` (`strings.xml:336`), so the 60 s option reads `1 minutes`. The 3 and 10 minute options are correct. Fix idea, not done: use a singular string when `m == 1` (`send_disappearing_message_1_minute` = "1 minute", `strings.xml:778`, already exists) or a plural resource.
 
@@ -1768,10 +1624,9 @@ Fixed in the same review: `createGroup_opensChatAndInviteSheet` now checks the o
     - iOS binds the editor to the settings and clears the text when Auto-accept is turned off (`UserAddressView.swift:642-646`), so its field matches what is stored.
     - Test: `AddressTest.addressAutoAcceptOff_clearsWelcomeField`, marked `@KnownAppIssue("15.5 item 44")`: the field must be empty after Auto-accept off, and after typing and then turning Auto-accept on. Fix idea, not done: key the editor on `autoReply` (or clear the bound text when the toggle clears `autoReply`).
 
-### 15.6 Catalogue corrections applied from passing tests (exhaustive pass)
+### 15.6 Catalogue corrections found by passing tests
 
 - 01:34 and 01:8: accepting conditions enables the operators selected in onboarding, not all preset ones.
 - 01:34: on desktop with no conversations the app then shows the "Talk to someone" connect-onboarding view, and the chat-list title and search are hidden (`shouldShowOnboarding()`, `OnboardingCards.kt:52`), not "the chat list".
 - 01:37: `TestServers.configure()` (not `useLocalServers()`).
-- The other corrections drafted per batch are in `plans/ui-tests/drafts/b*/*/NOTES.md`, sections "Catalogue corrections". They are applied to the catalogue files after each batch passes.
 

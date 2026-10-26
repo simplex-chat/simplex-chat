@@ -183,7 +183,7 @@ class AddressScreen(private val s: UiScope) {
     s.click(Ui.Address.Create)
     s.click(Ui.Address.Share)
     var link: String? = null
-    s.poll(what = "the address on the clipboard") { link = s.clipboardText(); link != null }
+    s.poll(what = "the address shared") { link = s.sharedText(); link != null }
     return link!!
   }
 
@@ -407,7 +407,7 @@ class GroupInfoScreen(private val s: UiScope) {
     s.waitFor(Ui.GroupLink.Share, CONNECT_TIMEOUT_MS)
     s.click(Ui.GroupLink.Share)
     var link: String? = null
-    s.poll(what = "the group link shared") { link = s.clipboardText()?.takeIf { it.isNotBlank() }; link != null }
+    s.poll(what = "the group link shared") { link = s.sharedText()?.takeIf { it.isNotBlank() }; link != null }
     s.escape()
     s.poll(what = "the group link screen to close") { !s.exists(Ui.GroupLink.Share) }
     return link!!

@@ -15,7 +15,7 @@ fun UiScope.sharedGroupLink(previous: String? = null): String {
   if (previous == null) setClipboardText(null)
   click(Ui.GroupLink.Share)
   var link: String? = null
-  poll(what = "the group link shared") { link = clipboardText()?.takeIf { it.isNotBlank() && it != previous }; link != null }
+  poll(what = "the group link shared") { link = sharedText()?.takeIf { it.isNotBlank() && it != previous }; link != null }
   return link!!
 }
 

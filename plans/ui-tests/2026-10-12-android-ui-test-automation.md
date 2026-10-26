@@ -1,14 +1,14 @@
-# Android UI test automation on this host
+# Android UI test automation on a host without KVM
 
-**Date:** 2026-10-12. **Status (2026-10-14):** the instrumented harness (layer (a), 3.1) is built and running in `~/wt-uitest`: 127 Android tests (112 shared with desktop + 14 `BackKeyTest` + `SmokeTest`); what is built is described in the desktop plan, section 0.5 (`plans/ui-tests/2026-10-10-desktop-ui-test-dsl-plan.md`), and run findings are in §8. Sections 0–7 below are the 2026-10-12 investigation, with notes where the build differs.
-Running log: `plans/ui-tests/2026-10-12-android-research-progress.md`. Evidence: `~/android-uitest-research/evidence/`. Tool: `apps/multiplatform/scripts/waydroid/` (`wd.sh`, `README.md`, `provision2.sh` for instance 2; state in `WD_HOME`, default `~/waydroid`). It runs on Qubes AppVMs and on other Linux hosts (2026-10-15).
+**Date:** 2026-10-12. The instrumented harness (layer (a), 3.1) is built: the 402 shared tests and 46 Android-only tests run on Android. What is built is described in the desktop plan, section 0.5 (`plans/ui-tests/2026-10-10-desktop-ui-test-dsl-plan.md`), and run findings are in §8 and in that plan's §15.4. Sections 0–7 below are the 2026-10-12 investigation, with notes where the build differs.
+Tool: `apps/multiplatform/scripts/waydroid/` (`wd.sh` and its `README.md`; state in `WD_HOME`). It was run on a Qubes AppVM; the paths for other Linux hosts are implemented but were not run. The `evidence/…` files cited below were kept outside the repo.
 
 ## 0. Summary
 
-- **Runtime: Waydroid works, the emulator does not.** On this KVM-less qube, Waydroid (LXC, LineageOS 20 /
+- **Runtime: Waydroid works, the emulator does not.** On a KVM-less host (a Qubes AppVM), Waydroid (LXC, LineageOS 20 /
   Android 13 x86_64, libndk arm64 translation) runs the real arm64-only SimpleX debug APK headless:
   - Android boots in 37–56 s; the 266 MB APK installs in 5–8 s; the app cold-starts in 2.2–2.6 s.
-  - The Haskell core works under translation. After `pm clear`, the first database creation takes ~45 s (measured later inside the instrumented harness: the app's startup took 15.4 s, plan 15.2).
+  - The Haskell core works under translation. After `pm clear`, the first database creation takes ~45 s (measured later inside the instrumented harness: the app's startup took 15.4 s, plan 15.1).
   - The emulator only runs x86_64 AVDs under TCG with no ARM translation (x27 boots in 149 s). The real app can't run on it.
 - **Proof:** a clean-environment script installed, reset and launched the app, took screenshots, dumped the UI
   hierarchy, tapped through onboarding, typed a name and created a profile, all with rc=0
@@ -31,11 +31,10 @@ Running log: `plans/ui-tests/2026-10-12-android-research-progress.md`. Evidence:
 
 ## 1. Host facts
 
-- Qubes AppVM `claude-8tb`: Debian 12, kernel 6.18.51 (qubes), Intel i7-10700, 8 vCPU, 12 GB RAM, no swap,
+- Qubes AppVM: Debian 12, kernel 6.18.51 (qubes), Intel i7-10700, 8 vCPU, 12 GB RAM, no swap,
   **no `/dev/kvm`**, no `/dev/dri`. The root FS is non-persistent (25 GB, reset on qube restart); /home is 1.8 TB.
 - The kernel has `CONFIG_ANDROID_BINDER_IPC=y` and `CONFIG_ANDROID_BINDERFS=y`, so Waydroid needs no kernel modules.
-- Before today Waydroid was not installed on this qube. The earlier Waydroid use (PR #7570 attach sheet) was in
-  another qube; its logcat is `~/QubesIncoming/waydroid/attach-full.txt`, and it showed the same SwiftShader/gralloc stack.
+- An earlier Waydroid use on another VM (PR #7570 attach sheet) showed the same SwiftShader/gralloc stack in its logcat.
 
 ## 2. Runtime: Waydroid vs emulator
 
@@ -50,7 +49,7 @@ Running log: `plans/ui-tests/2026-10-12-android-research-progress.md`. Evidence:
 | UI dump / input | `uiautomator dump` 2–3 s; `input tap/text/keyevent` | same |
 | Host servers | bridge IP 192.168.240.1 or `adb reverse` (both verified) | `10.0.2.2` or `adb reverse` |
 | Internet isolation | `wd.sh net isolate` (nft forward drop); host still reachable (verified) | not examined |
-| Multiple instances | **two** since 2026-10-14 (instance 1 shared, instance 2 for UI test runs; `~/waydroid2`, plan 15.4 item 15a); runs are serial within an instance | several AVDs, each slow |
+| Multiple instances | **two** at most: instance 1 is the default; instance 2 is an optional second container for test runs next to an interactive instance 1 (`scripts/waydroid/README.md`, plan 15.4 item 15a); runs are serial within an instance | several AVDs, each slow |
 | RAM | app process ~680 MB RSS / 490 MB PSS (`dumpsys meminfo`); whole container not measured | 2 GB guest RAM (AVD config) + QEMU |
 
 Gotchas found and solved, all handled in `wd.sh`:
@@ -109,7 +108,7 @@ Evidence for (b):
 
 ### 3.3 Not verified (needs a build) — resolved 2026-10-13
 
-Resolved: the runner class is fixed, `ui-test-junit4` 1.8.2 is added, and the instrumented tests run on Waydroid instance 2 (`SmokeTest` first, plan 15.2). The original text:
+Resolved: the runner class is fixed, `ui-test-junit4` 1.8.2 is added, and the instrumented tests run on Waydroid (`SmokeTest` first). The original text:
 
 
 - No instrumentation APK was built or run (builds were out of scope). The current
@@ -122,13 +121,13 @@ Resolved: the runner class is fixed, `ui-test-junit4` 1.8.2 is added, and the in
 
 ## 4. Proof run (evidence)
 
-`~/android-uitest-research/scripts/30-wd-e2e.sh`, run under `env -i HOME=/home/user PATH=/usr/bin:/bin:/usr/sbin:/sbin`.
+A throwaway script (not in the repo) drove `wd.sh` under `env -i HOME="$HOME" PATH=/usr/bin:/bin:/usr/sbin:/sbin`.
 Log: `evidence/wd-e2e/30-e2e.log`.
 
 | Step | Result |
 |---|---|
 | `wd.sh down` / `up` | 2 s / 54 s (boot), serial `192.168.240.112:5555` |
-| `install ~/android-arm64-v8a-debug-master-7c2c750.apk` | Success, 8 s (7.1-beta.6, `chat.simplex.app.debug`) |
+| `install android-arm64-v8a-debug.apk` (master `7c2c750`) | Success, 8 s (7.1-beta.6, `chat.simplex.app.debug`) |
 | `reset-app` (pm clear), `launch` | 1 s, cold start 2.2 s; onboarding after ~45 s (first database) |
 | `shot` | `evidence/wd-e2e/10-onboarding.png` (SimpleX "Be free in your network", "Get started") |
 | `dump`, `nodes` | `10-onboarding.xml`; "Get started" tap point 360,1284 (= pixel position in the PNG) |
@@ -148,7 +147,7 @@ layer (5.1). The host-driven layer (5.2) can share the DSL's surface but not its
 
 ### 5.1 Instrumented tests behind `UiDriver` (recommended)
 
-- (As built: no shared `UiDriver`; each platform has a `UiScope` with the same methods, and the shared directory is added to `:android`'s `androidTest`, not `androidInstrumentedTest`. The message field is set with Espresso `replaceText` with retries, no `setSelection`, and read with a `ViewAssertion`; its hint (placeholder) is not read. Plan 0.5.4.)
+- (As built: no shared `UiDriver`; each platform has a `UiScope` with the same methods, and the shared directory is added to `:android`'s `androidTest`, not `androidInstrumentedTest`. The message field is set once, after it is stable, by committing the text through the `EditText`'s input connection as a keyboard does (no retry), and its text and hint are read from the `EditText`. Plan 0.5.4.)
 - **Shared code.** The plan's `UiDriver` (§7.4) wraps Compose test APIs that exist in both runners:
   `onNode(hasTestTag(key.tag))`, `performClick`, `performTextInput`, semantics reads, `waitUntil`. On desktop the
   receiver is `SkikoComposeUiTest` (`runInternalSkikoComposeUiTest`, plan §7.2/§14); on Android it is the
@@ -176,25 +175,28 @@ layer (5.1). The host-driven layer (5.2) can share the DSL's surface but not its
     It is a small Kotlin/JVM main in the test tree that reuses the desktop `CliPeer` code.
   - **As built** (`UiBridge.kt` in the desktop harness; client `Bridge` in the Android `CliPeer.kt`): a line protocol on
     `127.0.0.1:7777`, one client at a time; the Android side uses a fixed port 7777 and a 60 s read timeout.
-    - `servers` → `ok <smp1> <xftp1>` (`xftp1` is configured but not served yet, plan 0.5.6);
-    - `start <name> <flags, comma-separated: reactions, markRead, fullLinks>` → `ok`, sent only after the peer has started
+    - `servers` → `ok <smp1> <xftp1>` (both served, plan 0.5.6);
+    - `start <name> <flags, comma-separated: reactions, markRead, fullLinks, relay, smp=<server>, xftp=<server>>` → `ok`, sent only after the peer has started
       (synchronous; the peer's database is copied from the peer template of the run directory named in `env.properties`, when present);
     - `type <name> <text>` (verified typing, host-side) → `ok`;
     - `drain <name>` → `lines N`, then the N new output lines;
-    - `stop <name>` → `ok`; any failure → `err <message>`; when the client disconnects, the bridge stops all its peers.
+    - `stop`, `forget`, `file`, `server …`, `socks …` and `remotePort`: plan 0.5.5;
+    - any failure → `err <message>`; when the client disconnects, the bridge stops all its peers and the SOCKS stub and restores the server baseline.
   - Comparison (`sends` echo, `expects`, `eventually`, `contactId`) runs **device-side** on the drained lines, in the
     shared `PeerLines` class, so `bob expects "…"` has the same semantics as on desktop.
-  - The test connects through `adb reverse tcp:7777 tcp:7777`, and the server ports (base + 1, base + 2) are reversed as well.
+  - The test connects through `adb reverse tcp:7777 tcp:7777`; the runner also reverses the server, SOCKS and remote-desktop ports (base + 1, + 2, + 11, + 12, + 20, + 90).
   - Proposed earlier and not built: `sends`/`contactId`/`expect … <timeoutMs>` as bridge commands, `servers reset`, `snapshot`.
 - **Runner.** (The package name `chat.simplex.app.debug` used throughout assumes `application_id.suffix=.debug` in `local.properties`, as `local.properties.example` sets it; root `build.gradle.kts:23-25`.)
   - **As built:** `scripts/uitest-android.sh <app.apk> <androidTest.apk> [am instrument -e …]`, with APKs from
-    `ANDROID_TEST=1 bash ~/build/android.sh`. It needs one earlier `scripts/uitest.sh` run (CLI, `uitest-servers`,
-    `env.properties`) and 4500 MB free.
-  - Environment: `UITEST_SERIAL` (any adb device; skips Waydroid), `WD_INSTANCE` (default 2), `WD_OWNER`
-    (default `uitest-$USER`), `UITEST_APP_ID` (default `chat.simplex.app.debug`), `ADB`, `JAVA_HOME`.
+    `./gradlew :android:assembleFossDebug :android:assembleFossDebugAndroidTest` (as in `ui-tests.yml`). It needs one earlier
+    `scripts/uitest.sh` or `scripts/uitest.sh --prepare-only` run (CLI, `uitest-servers`, `env.properties`) and 4500 MB free.
+  - Environment: `UITEST_SERIAL` (any adb device; skips Waydroid), `WD_INSTANCE` (default 1; 2 selects the optional
+    second instance), `WD_OWNER` (default `uitest-$USER`), `UITEST_APP_ID` (default `chat.simplex.app.debug`; set it to
+    the application id of the APK under test), `ADB`, `JAVA_HOME`, `UITEST_STALL_S`.
   - It claims and boots Waydroid in the background, starts the bridge with `java -cp`, installs the APKs (the app APK
     only when changed), sets the `adb reverse` ports, and per pass runs `pm clear`, grants permissions and
-    `am instrument -w -r`; after a process crash it resumes with `-e notClass` (at most 4 passes).
+    `am instrument -w -r`; after a process crash, or after it force-stops a process whose output stalled for
+    `UITEST_STALL_S` (420 s), it resumes with `-e notClass` (at most 4 passes).
   - Results are not JUnit XML: `build/uitest-android/run-<timestamp>/results.txt` (`<class>#<test> <code>`: 0 pass,
     −2 fail, −3/−4 skipped, `crashed`), plus `instrument*.txt`, `logcat.txt`, `timings.txt`, `failures/`, `bridge.log`.
     The exit status is non-zero on any failure or crash. Details: plan 0.5.9.
@@ -202,9 +204,9 @@ layer (5.1). The host-driven layer (5.2) can share the DSL's surface but not its
   - Considered and not used: `./gradlew :android:connectedFossDebugAndroidTest` (the app has `google`/`foss` flavors,
     foss the default, `android/build.gradle.kts:40-50`).
 - **Throughput limits.**
-  - Runs are serial within a Waydroid instance: no parallel JVMs as on desktop (§10.2). UI test runs use instance 2; instance 1 is shared with other sessions.
+  - Runs are serial within a Waydroid instance: no parallel JVMs as on desktop (§10.2). The runner uses instance 1 unless `WD_INSTANCE=2` selects the optional second instance.
   - In-process reset avoids the 45 s first-database cost per test.
-  - The core runs under arm translation; it measured fine for onboarding, but no figure exists yet for a full Android run (the 1,094 carried-over tests of 01–04, 18 of them `IGNORE`, plus the runnable tests of `05-android-only.md`).
+  - The core runs under arm translation. Full runs of the shared and Android-only tests complete on Waydroid (plan 15.4.1h), with the allocator stall of plan 15.4 item 52 handled by the runner; most of the 1,094 carried-over catalogue rows of 01–04 are not written as tests.
 
 ### 5.2 Host-driven over adb/UiAutomator(2) with `testTagsAsResourceId`
 
@@ -220,8 +222,8 @@ layer (5.1). The host-driven layer (5.2) can share the DSL's surface but not its
     `/_get` via a peer.
   - No Compose idling; every observation is a 2–3 s `uiautomator dump`, or less with a resident UiAutomator2 server (not measured here).
   - Off-screen lazy-list items aren't in the tree, so scrolling is needed.
-- **Fit.** Good for smoke tests and LLM-guided exploratory testing (`scripts/waydroid/README.md` "How an agent should
-  drive the GUI"). Not a substitute for the catalogue's assertions.
+- **Fit.** Good for smoke tests and LLM-guided exploratory testing (`scripts/waydroid/README.md` "Driving the GUI
+  from a script"). Not a substitute for the catalogue's assertions.
 
 ### 5.3 Catalogue carry-over (1,177 names; counts from `plans/ui-tests/catalogue/tools/needs.py`)
 
@@ -253,7 +255,7 @@ layer (5.1). The host-driven layer (5.2) can share the DSL's surface but not its
    re-provisions itself after qube restarts from `$WD_HOME`, default `~/waydroid`). Use the emulator only for framework-only questions with stub APKs, as before.
 2. **Now, no app change:** LLM-guided and smoke GUI testing with `wd.sh nodes/shot/tap-text/text` on the existing
    debug APKs. This is already usable and is shared between sessions with `claim`/`WD_OWNER`.
-3. **Desktop plan alignment (after its P1 keys land):** (status 2026-10-14: a, b, c and d are done, except the items marked below; see §0 "Built" and plan 0.5)
+3. **Desktop plan alignment (after its P1 keys land):** (a–d are done, except the items marked below; see §0 "Built" and plan 0.5)
    - **a.** Android build set-up (done, except `ui-test-manifest` and `testTagsAsResourceId`, not built):
      - fix `testInstrumentationRunner` to `androidx.test.runner.AndroidJUnitRunner`;
      - add `androidTestImplementation("androidx.compose.ui:ui-test-junit4:<compose 1.8.2>")` and
@@ -271,17 +273,17 @@ layer (5.1). The host-driven layer (5.2) can share the DSL's surface but not its
      before planning catalogue-wide runs. (Done: §8.)
 4. **x86_64 APK: not worth it now.**
    - `flake.nix` has only `aarch64-android` and `armv7a-android` cross targets, and nix is not installed here.
-   - `~/build/android.sh` packages prebuilt arm64 `libsimplex.so`/`libsupport.so` only.
+   - The Android build packages arm64-v8a and armeabi-v7a native libraries only (`android/build.gradle.kts` `abiFilters`).
    - An x86_64 build would need a new haskell.nix `x86_64-android` cross toolchain (GHC, plus openssl, libffi,
      gmp and iconv for x86_64-android), a CI job, and `x86_64` in the Gradle `splits`/`abiFilters`.
    - That is days of toolchain work for a speed-up translation doesn't need: onboarding is already responsive.
    - Revisit only if translation proves too slow for catalogue-scale runs.
 
 **Costs/risks:**
-- runs are serial within an instance (two instances since 2026-10-14; UI test runs use instance 2);
+- runs are serial within an instance (two instances at most; the runner uses instance 1 unless `WD_INSTANCE=2`);
 - arm translation is fast enough for onboarding, but bulk message and file tests are not measured yet;
 - Waydroid quirks (freeze, window mapping, stale mounts) are handled in `wd.sh`, though new ones may appear;
-- the root FS is reset on restart, so the offline deb reinstall path is only simulated, not tested from a truly clean root;
+- on Qubes the root FS is reset on restart, so the offline deb reinstall path is only simulated, not tested from a truly clean root;
 - Android 13 only (one OS version);
 - no camera.
 
@@ -302,7 +304,7 @@ Open:
 3. libndk vs libhoudini: only libndk was tested. Houdini is Intel's and often faster on Intel CPUs; worth one A/B
    run of a message-heavy test later.
 
-## 8. Findings from running the harness (2026-10-14)
+## 8. Findings from running the harness
 
 The full list, with causes and fixes, is in plan §15.4 (`plans/ui-tests/2026-10-10-desktop-ui-test-dsl-plan.md`). The ones that change this write-up:
 - **Open question 2 (in-process reset):** the reset isolates tests, but the translated core sometimes crashes (SIGSEGV) or hangs in `chatMigrateInit` when the database is re-created. Mitigations:
@@ -311,7 +313,7 @@ The full list, with causes and fixes, is in plan §15.4 (`plans/ui-tests/2026-10
   - runner resume after a crash.
 
   Orchestrator `clearPackageData` is still not needed.
-- **Speed, measured:** the reset went from 31.6 s to about 4 s; closing the activity from 45 s to 0.4 s, by releasing the Espresso-Intents stub first; bridge startup from 1–7 min to 1 s, by running it without Gradle. Waydroid now boots alongside the bridge start, so run setup takes 33 s with an unchanged app APK. A simple test now takes 15–20 s, against 65–90 s before. In the last full run (`run-20261014-164429`, 53/53, 16.5 min of instrumentation, about 19 s per test on average) the `reset` phase took 5.1 s median (3.7–7.7 s, n = 53, from logcat), because the template was still encrypted ("database is locked" on decryption; the `apiStopChat` fix is not yet run, plan 15.4 item 25). Final run 2026-10-14 (`run-20261014-214038`, 127 tests, 126 passed, 1 skipped, 18.5 min, about 8.8 s per test): the template is now decrypted, and the `reset` phase took 585 ms median (64 ms–3.2 s, n = 126).
+- **Speed, measured:** the reset went from 31.6 s to about 4 s; closing the activity from 45 s to 0.4 s, by releasing the Espresso-Intents stub first; bridge startup from 1–7 min to 1 s, by running it without Gradle. Waydroid now boots alongside the bridge start, so run setup takes 33 s with an unchanged app APK. A simple test now takes 15–20 s, against 65–90 s before. With an encrypted template (decryption failed with "database is locked") the `reset` phase took 5.1 s median (3.7–7.7 s, n = 53); with the template decrypted after `apiStopChat` (plan 15.4 item 25) it took 585 ms median (64 ms–3.2 s, n = 126), and a 127-test run took 18.5 min (about 8.8 s per test).
 - **Compose test clock:** `poll` must advance `mainClock`, because effect `delay()`s (mark-read 600 ms, alias 500 ms) run on the test clock.
 - **Root actions:** `adb root` restarts `adbd` and kills a running `am instrument`. Use `wd.sh rootsh`, for example `kill -3 <pid>` for thread dumps; `run-as` is blocked.
 

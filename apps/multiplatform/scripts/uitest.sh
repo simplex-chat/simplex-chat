@@ -43,9 +43,12 @@ if [ -n "${UITEST_CLI:-}${UITEST_SERVERS:-}" ]; then
   cli=$UITEST_CLI
   servers=$UITEST_SERVERS
 else
-  (cd "$repo" && cabal build -O0 -f uitest --builddir=dist-uitest exe:simplex-chat exe:uitest-servers | tail -n 1)
+  build_out=$(cd "$repo" && cabal build -O0 -f uitest --builddir=dist-uitest exe:simplex-chat exe:uitest-servers 2>&1) \
+    || { printf '%s\n' "$build_out" | tail -n 40 >&2; echo "uitest: cabal build failed" >&2; exit 1; }
+  printf '%s\n' "$build_out" | tail -n 1
   cli=$(cd "$repo" && cabal list-bin -O0 -f uitest --builddir=dist-uitest exe:simplex-chat | tail -n 1)
   servers=$(cd "$repo" && cabal list-bin -O0 -f uitest --builddir=dist-uitest exe:uitest-servers | tail -n 1)
+  [ -x "$cli" ] && [ -x "$servers" ] || { echo "uitest: cabal built no executable at $cli or $servers" >&2; exit 1; }
 fi
 
 peer_template() {
@@ -81,8 +84,8 @@ prepare_key=$({
   find common/src/commonMain/cpp -path '*/libs' -prune -o -type f -print
 } | LC_ALL=C sort | xargs sha256sum | sha256sum; ls -l --time-style=full-iso common/src/commonMain/cpp/desktop/libs/linux-x86_64 | grep -v libapp-lib.so)
 prepare_key=$(printf '%s' "$prepare_key" | sha256sum | cut -d' ' -f1)
-if [ "$prepare_key" = "$(cat build/uitest/prepare.key 2>/dev/null)" ] && [ -f "$lib" ]; then
-  echo "uitest: build files and native libs unchanged, skipping the outside Gradle step"
+if [ "$prepare_key" = "$(cat build/uitest/prepare.key 2>/dev/null)" ] && [ -f "$lib" ] && [ -d "$home/caches" ]; then
+  echo "uitest: build files and native libs unchanged, Gradle caches present: skipping the outside Gradle step"
 else
   rm -f build/uitest/prepare.key
   ./gradlew -g "$home" --no-daemon "$kotlin_in_process" :desktop:cmakeBuildAndCopy :common:desktopTestClasses :common:uitestPrepare

@@ -26,6 +26,7 @@ object UiTestApp {
   fun bootOnce() {
     if (booted) return
     booted = true
+    java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("UTC"))
     waitUntil(STARTUP_MS, "the app's own startup init") { chatModel.chatDbStatus.value != null && !chatModel.ctrlInitInProgress.value }
     check(chatModel.chatDbStatus.value == DBMigrationResult.OK) { "startup database: ${chatModel.chatDbStatus.value}" }
     Timing.phase("boot.saveTemplate") {
@@ -57,6 +58,7 @@ object UiTestApp {
     if (stuck.isNotEmpty()) {
       android.util.Log.w("UITEST", "drain gave up after ${DRAIN_MS / 1000} s; abandoned: ${stuck.joinToString { it.what }}")
       chat.simplex.common.ui.UiIdle.abandon(stuck)
+      LeakedWork.record(stuck.map { it.what })
     }
     return stuck.map { it.what }
   }

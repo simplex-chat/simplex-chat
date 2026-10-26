@@ -104,7 +104,7 @@ fun CIImageView(
   }
 
   @Composable
-  fun imageView(imageBitmap: ImageBitmap, key: UiKey? = null, onClick: () -> Unit) {
+  fun imageView(imageBitmap: ImageBitmap, onClick: () -> Unit, key: UiKey? = null) {
     Image(
       imageBitmap,
       contentDescription = stringResource(MR.strings.image_descr),

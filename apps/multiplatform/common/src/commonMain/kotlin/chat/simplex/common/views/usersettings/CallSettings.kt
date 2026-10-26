@@ -87,8 +87,8 @@ private fun LockscreenOpts(lockscreenOpts: State<CallOnLockScreen>, enabled: Sta
 fun SharedPreferenceToggle(
   preference: SharedPreference<Boolean>,
   enabled: Boolean = true,
-  uiKey: UiKey? = null,
   onChange: ((Boolean) -> Unit)? = null,
+  uiKey: UiKey? = null,
 ) {
   DefaultSwitch(
     modifier = Modifier.ui(uiKey),
@@ -106,10 +106,10 @@ fun SharedPreferenceToggleWithIcon(
   text: String,
   icon: Painter,
   stopped: Boolean = false,
-  uiKey: UiKey? = null,
   onClickInfo: () -> Unit,
   preference: SharedPreference<Boolean>,
-  preferenceState: MutableState<Boolean>? = null
+  preferenceState: MutableState<Boolean>? = null,
+  uiKey: UiKey? = null
 ) {
   val prefState = preferenceState ?: remember { mutableStateOf(preference.get()) }
   Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {

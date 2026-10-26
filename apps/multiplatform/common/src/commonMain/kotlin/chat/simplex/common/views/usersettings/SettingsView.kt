@@ -435,7 +435,7 @@ fun SettingsPreferenceItem(
   onChange: ((Boolean) -> Unit)? = null,
 ) {
   SettingsActionItemWithContent(icon, text, iconColor = iconColor,) {
-    SharedPreferenceToggle(pref, enabled, uiKey, onChange)
+    SharedPreferenceToggle(pref, enabled, onChange, uiKey = uiKey)
   }
 }
 

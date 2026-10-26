@@ -654,7 +654,7 @@ fun SessionModePicker(
       showModal {
         ColumnWithScrollBar {
           AppBarTitle(stringResource(MR.strings.network_session_mode_transport_isolation))
-          SectionViewSelectable(null, sessionMode, values, Ui.AdvancedNetwork.SessionMode, onSelected = updateSessionMode)
+          SectionViewSelectable(null, sessionMode, values, updateSessionMode, uiKey = Ui.AdvancedNetwork.SessionMode)
         }
       }
     }

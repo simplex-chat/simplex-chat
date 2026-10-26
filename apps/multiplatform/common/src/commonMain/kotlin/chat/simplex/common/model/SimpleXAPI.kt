@@ -989,7 +989,7 @@ object ChatController {
   suspend fun sendCmd(rhId: Long?, cmd: CC, otherCtrl: ChatCtrl? = null, retryNum: Int = 0, log: Boolean = true): API {
     val ctrl = otherCtrl ?: chatCtrl ?: throw Exception("Controller is not initialized")
 
-    return UiIdle.track(if (cmd is CC.GetAgentSubsTotal || cmd is CC.GetAgentServersSummary) null else { { "cmd ${cmd.cmdType}" } }) { withContext(Dispatchers.IO) {
+    return UiIdle.track({ if (cmd is CC.GetAgentSubsTotal || cmd is CC.GetAgentServersSummary) null else "cmd ${cmd.cmdType}" }) { withContext(Dispatchers.IO) {
       val c = cmd.cmdString
       if (log) {
         chatModel.addTerminalItem(TerminalItem.cmd(rhId, cmd.obfuscated))

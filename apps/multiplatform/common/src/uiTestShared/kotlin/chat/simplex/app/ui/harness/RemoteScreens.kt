@@ -72,7 +72,7 @@ class LinkMobileScreen(private val s: UiScope) {
     s.click(Ui.Remote.ShareLink)
     var invitation: String? = null
     s.poll(what = "the invitation on the clipboard") {
-      invitation = s.clipboardText()?.takeIf { it.startsWith("xrcp:/") }
+      invitation = s.sharedText()?.takeIf { it.startsWith("xrcp:/") }
       invitation != null
     }
     return invitation!!

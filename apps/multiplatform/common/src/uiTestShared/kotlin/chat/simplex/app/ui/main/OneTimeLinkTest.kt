@@ -61,7 +61,7 @@ class OneTimeLinkTest : UiTest() {
 
     val shared = alice.newChat().createOneTimeLink()
     click(Ui.Link.Text)
-    poll(what = "the link shared") { clipboardText() == shared }
+    poll(what = "the link shared") { sharedText() == shared }
     goBack()
     awaitInviteClosed()
     check(!AlertManager.shared.hasAlertsShown() && !seesText("Keep unused invitation?")) { "`Keep unused invitation?` shown for a shared link" }

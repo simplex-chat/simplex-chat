@@ -19,6 +19,7 @@ import chat.simplex.common.model.CIDeleted
 import chat.simplex.common.model.CIForwardedFrom
 import chat.simplex.common.model.CIStatus
 import chat.simplex.common.model.ChatItem
+import chat.simplex.common.model.GroupSndStatus
 import chat.simplex.common.model.MsgReceiptStatus
 import chat.simplex.common.model.SndCIStatusProgress
 import chat.simplex.common.model.localTimestamp
@@ -26,6 +27,7 @@ import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.Ui
 import org.junit.Assert.assertFalse
 import org.junit.Test
+import kotlin.reflect.KClass
 
 private val NOT_IDLE = setOf("ComposeNotIdleException", "IdlingResourceTimeoutException")
 
@@ -122,14 +124,14 @@ class ItemInfoTest : UiTest() {
       (chat.item(hi)?.meta?.itemStatus as? CIStatus.SndRcvd)?.sndProgress == SndCIStatusProgress.Partial
     }
     chat.itemInfo("hi").run {
-      val bobRow = Ui.ItemInfo.Member(memberId("bob")); val cathRow = Ui.ItemInfo.Member(memberId("cath"))
-      poll(what = "the Delivery tab with bob `$RECEIVED` and cath `$SENT`") {
-        descriptionsOf(bobRow).let { RECEIVED in it && SENT !in it } && descriptionsOf(cathRow).let { SENT in it && RECEIVED !in it }
+      val bobId = memberId("bob"); val cathId = memberId("cath")
+      poll(what = "the Delivery tab with bob `received` and cath `sent`") {
+        shows(bobId, GroupSndStatus.Rcvd::class) && shows(cathId, GroupSndStatus.Sent::class)
       }
       cath.start()
       cath.eventuallyMessage("#team alice> hi", CONNECT_TIMEOUT_MS)
-      poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "cath `$RECEIVED` in the open Delivery tab") {
-        descriptionsOf(cathRow).let { RECEIVED in it && SENT !in it } && RECEIVED in descriptionsOf(bobRow)
+      poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "cath `received` in the open Delivery tab") {
+        shows(cathId, GroupSndStatus.Rcvd::class) && shows(bobId, GroupSndStatus.Rcvd::class)
       }
       poll(timeoutMs = CONNECT_TIMEOUT_MS, what = "`hi` delivered to bob and cath: delivered, complete") {
         (chat.item(hi)?.meta?.itemStatus as? CIStatus.SndRcvd)?.let { it.msgRcptStatus == MsgReceiptStatus.Ok && it.sndProgress == SndCIStatusProgress.Complete } == true
@@ -264,6 +266,9 @@ class ItemInfoTest : UiTest() {
   private fun UiScope.listed(groupMemberId: Long, name: String): Boolean =
     exists(Ui.ItemInfo.Member(groupMemberId)) && name in textsOf(Ui.ItemInfo.Member(groupMemberId))
 
+  private fun UiScope.shows(groupMemberId: Long, status: KClass<out GroupSndStatus>): Boolean =
+    exists(Ui.ItemInfo.MemberStatus(groupMemberId, status))
+
   private fun UiScope.memberId(name: String): Long {
     var id: Long? = null
     poll(what = "member `$name` in the model") {
@@ -274,8 +279,6 @@ class ItemInfoTest : UiTest() {
   }
 
   private companion object {
-    const val SENT = "sent"
-    const val RECEIVED = "received"
     const val FIVE_MINUTES = 300
     const val SOURCE_HIDDEN = "Recipient(s) can't see who this message is from."
     val QUOTE_TAB = described("In reply to")

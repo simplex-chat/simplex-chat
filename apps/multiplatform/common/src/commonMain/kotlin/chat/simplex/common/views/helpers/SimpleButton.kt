@@ -77,8 +77,8 @@ fun SimpleButtonIconEnded(
   style: TextStyle = MaterialTheme.typography.caption,
   color: Color = MaterialTheme.colors.primary,
   disabled: Boolean = false,
-  uiKey: UiKey? = null,
-  click: () -> Unit
+  click: () -> Unit,
+  uiKey: UiKey? = null
 ) {
   SimpleButtonFrame(click, Modifier.ui(uiKey), disabled = disabled) {
     Text(text, style = style, color = color)

@@ -377,7 +377,7 @@ private fun SMPProxyModePicker(
       showModal {
         ColumnWithScrollBar {
           AppBarTitle(stringResource(MR.strings.network_smp_proxy_mode_private_routing))
-          SectionViewSelectableCards(null, smpProxyMode, values, Ui.AdvancedNetwork.ProxyMode, updateSMPProxyMode)
+          SectionViewSelectableCards(null, smpProxyMode, values, updateSMPProxyMode, uiKey = Ui.AdvancedNetwork.ProxyMode)
         }
       }
     }
@@ -413,7 +413,7 @@ private fun SMPProxyFallbackPicker(
       showModal {
         ColumnWithScrollBar {
           AppBarTitle(stringResource(MR.strings.network_smp_proxy_fallback_allow_downgrade))
-          SectionViewSelectableCards(null, smpProxyFallback, values, Ui.AdvancedNetwork.ProxyFallback, updateSMPProxyFallback)
+          SectionViewSelectableCards(null, smpProxyFallback, values, updateSMPProxyFallback, uiKey = Ui.AdvancedNetwork.ProxyFallback)
         }
       }
     }

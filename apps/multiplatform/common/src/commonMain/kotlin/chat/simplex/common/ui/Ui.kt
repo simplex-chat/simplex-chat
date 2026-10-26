@@ -5,6 +5,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import chat.simplex.common.model.ChatFeature
 import chat.simplex.common.model.GroupFeature
+import chat.simplex.common.model.GroupSndStatus
+import kotlin.reflect.KClass
 
 @Immutable
 data class UiKey(val id: String, val arg: Any? = null) {
@@ -18,6 +20,8 @@ data class UiKey(val id: String, val arg: Any? = null) {
 internal var uiTestHooksEnabled = false
 
 fun Modifier.ui(key: UiKey?): Modifier = if (key == null || !uiTestHooksEnabled) this else testTag(key.tag)
+
+inline fun Modifier.ui(key: () -> UiKey?): Modifier = if (uiTestHooksEnabled) ui(key()) else this
 
 object Ui {
   object ChatList {
@@ -350,6 +354,7 @@ object Ui {
   }
   object ItemInfo {
     fun Member(groupMemberId: Long) = UiKey("itemInfo.member", groupMemberId)
+    fun MemberStatus(groupMemberId: Long, status: KClass<out GroupSndStatus>) = UiKey("itemInfo.member.status", "$groupMemberId:${status.simpleName}")
     val Quote = UiKey("itemInfo.quote")
     val ForwardedFrom = UiKey("itemInfo.forwardedFrom")
     val Share = UiKey("itemInfo.share")

@@ -669,6 +669,7 @@ jobs:
             :common:desktopTest \
             :desktop:compileKotlinJvm -x :desktop:cmakeBuildAndCopy \
             :android:compileGoogleDebugKotlin \
+            :android:compileFossDebugAndroidTestKotlin \
             :android:testFossDebugUnitTest
 
       - name: Setup Node.js

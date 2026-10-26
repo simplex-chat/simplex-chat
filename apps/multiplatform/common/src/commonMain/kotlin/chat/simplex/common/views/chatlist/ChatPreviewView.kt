@@ -323,7 +323,7 @@ fun ChatPreviewView(
         val blurred = remember { mutableStateOf(appPrefs.privacyMediaBlurRadius.get() > 0) }
         IconButton(
           { openBrowserAlert(mc.preview.uri, uriHandler) },
-          Modifier.desktopPointerHoverIconHand().ui(Ui.ChatList.Row(chat.id, chat.remoteHostId).part("link")),
+          Modifier.desktopPointerHoverIconHand().ui { Ui.ChatList.Row(chat.id, chat.remoteHostId).part("link") },
         ) {
           Image(image, null, Modifier.desktopModifyBlurredState(blurred, noMenu).privacyBlur(fullSize = false, image, blurred, chatViewScrollState.collectAsState()), contentScale = ContentScale.Crop)
         }
@@ -357,7 +357,7 @@ fun ChatPreviewView(
       }
       is MsgContent.MCChat -> SmallContentPreview(borderColor = if (mc.chatLink.image != null) MaterialTheme.colors.onSurface.copy(alpha = 0.12f) else Color.Transparent) {
         Box(
-          Modifier.fillMaxSize().ui(Ui.ChatList.Row(chat.id, chat.remoteHostId).part("link")).clickable { withBGApi { planAndConnect(chat.remoteHostId, mc.chatLink.connLinkStr, linkOwnerSig = mc.ownerSig, close = null) } },
+          Modifier.fillMaxSize().ui { Ui.ChatList.Row(chat.id, chat.remoteHostId).part("link") }.clickable { withBGApi { planAndConnect(chat.remoteHostId, mc.chatLink.connLinkStr, linkOwnerSig = mc.ownerSig, close = null) } },
           contentAlignment = Alignment.Center
         ) {
           val image = mc.chatLink.image

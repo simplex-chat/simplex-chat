@@ -37,7 +37,9 @@ abstract class UiTest {
     try {
       UiTestApp.bootOnce()
       AppCrashes.install()
+      AppCrashes.failIfAny("crash after the previous test ended")
       AppCrashes.clear()
+      LeakedWork.failIfAny("previous test leaked")
       val scope = UiScope(rule)
       try {
         scope.body()
@@ -48,6 +50,7 @@ abstract class UiTest {
       }
       scope.finish()
       AppCrashes.failIfAny()
+      LeakedWork.failIfAny("this test leaked")
     } finally {
       watchdog.cancel()
     }
@@ -431,12 +434,17 @@ class UiScope(val rule: ComposeTestRule) {
     rule.waitForIdle()
   }
 
-  fun clipboardText(): String? =
+  fun sharedText(): String? =
     Intents.getIntents().asReversed().firstNotNullOfOrNull { i ->
       val inner = if (i.action == Intent.ACTION_CHOOSER) i.getParcelableExtra(Intent.EXTRA_INTENT) as? Intent else i
       inner?.getStringExtra(Intent.EXTRA_TEXT)
-    } ?: (androidAppContext.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager)
+    }
+
+  fun clipboardText(): String? =
+    (androidAppContext.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager)
       .takeIf { it.primaryClipDescription != null }?.primaryClip?.getItemAt(0)?.text?.toString()
+
+  fun onUiThread(action: () -> Unit) = rule.runOnUiThread(action)
 
   fun setClipboardText(text: String?) = UiTestApp.onMain {
     val cm = androidAppContext.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
@@ -448,11 +456,12 @@ class UiScope(val rule: ComposeTestRule) {
 
 object FailureShots {
   private var n = 0
+  private val pass = androidx.test.platform.app.InstrumentationRegistry.getArguments().getString("pass")?.let { "p$it" } ?: "pid${android.os.Process.myPid()}"
 
   fun take(what: String): String? = runCatching {
     val inst = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
     val dir = java.io.File(androidAppContext.getExternalFilesDir(null) ?: error("no external files dir"), "failures").apply { mkdirs() }
-    val name = "%02d-%s.png".format(++n, what.replace(Regex("[^A-Za-z0-9]+"), "_").take(60))
+    val name = "%s-%s-%02d-%s.png".format(pass, CurrentTest.name.replace(Regex("[^A-Za-z0-9.]+"), "_"), ++n, what.replace(Regex("[^A-Za-z0-9]+"), "_").take(60))
     val bmp = inst.uiAutomation.takeScreenshot() ?: error("UiAutomation.takeScreenshot returned null")
     java.io.File(dir, name).outputStream().use { bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
     name

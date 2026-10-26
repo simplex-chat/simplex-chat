@@ -1,6 +1,6 @@
 # UI test catalogue 5a: what changes on Android for the rows of 01–04
 
-Companion to `05-android-only.md` (paths `A/`, `APP/`, `MAN`, `C/`, `D/`, `US/`, `NS/` as defined there and in `00-legend.md`; line numbers of master `d72f68e6d` at `~/wt-uitest-ref`). Every test of catalogues 01–04 runs on Android unless this map lists it. Each of the 1,155 test names of 01–04 was checked against its row's entry path, expected cells and the code it touches; a name is listed only when its Android behaviour or the harness mechanism differs from desktop.
+Companion to `05-android-only.md` (paths `A/`, `APP/`, `MAN`, `C/`, `D/`, `US/`, `NS/` as defined there and in `00-legend.md`; line numbers of master `d72f68e6d`). Every test of catalogues 01–04 runs on Android unless this map lists it. Each of the 1,155 test names of 01–04 was checked against its row's entry path, expected cells and the code it touches; a name is listed only when its Android behaviour or the harness mechanism differs from desktop.
 
 ## Summary
 

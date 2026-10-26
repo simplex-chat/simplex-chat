@@ -414,10 +414,10 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
           )
         }
       }
-      Box(modifier, contentAlignment = Alignment.Center) {
+      Box(modifier.ui(Ui.ItemInfo.MemberStatus(member.groupMemberId, status::class)), contentAlignment = Alignment.Center) {
         Icon(
           painterResource(icon),
-          contentDescription = status.statusDescription,
+          contentDescription = null,
           tint = statusColor
         )
       }
@@ -561,12 +561,6 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
       HistoryTab()
     }
   }
-}
-
-private val GroupSndStatus.statusDescription: String? get() = when (this) {
-  is GroupSndStatus.Sent -> generalGetString(MR.strings.icon_descr_sent_msg_status_sent)
-  is GroupSndStatus.Rcvd -> generalGetString(MR.strings.icon_descr_sent_msg_status_rcvd)
-  else -> statusInto?.first
 }
 
 private fun membersStatuses(chatModel: ChatModel, memberDeliveryStatuses: List<MemberDeliveryStatus>): List<Triple<GroupMember, GroupSndStatus, Boolean?>> {

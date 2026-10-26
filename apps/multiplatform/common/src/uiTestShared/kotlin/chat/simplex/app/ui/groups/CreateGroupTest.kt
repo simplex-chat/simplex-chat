@@ -88,7 +88,7 @@ class CreateGroupTest : UiTest() {
     setClipboardText(null)
     click(Ui.GroupLink.Share)
     var link: String? = null
-    poll(what = "team's link shared") { link = clipboardText()?.takeIf { it.isNotBlank() }; link != null }
+    poll(what = "team's link shared") { link = sharedText()?.takeIf { it.isNotBlank() }; link != null }
     click(Ui.GroupLink.Continue)
     poll(what = "the link step closed with team's chat open") { !exists(Ui.GroupLink.Share) && !ModalManager.end.hasModalsOpen() && chatModel.chatId.value == id }
     bob sends "/c ${link!!}"

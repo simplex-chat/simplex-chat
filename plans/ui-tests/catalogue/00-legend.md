@@ -1,6 +1,6 @@
 # UI test catalogue 0: shared legend and rules
 
-Applies to catalogues 01–04. The plan (`20261010-desktop-ui-test-dsl-plan.md`, §10) points here.
+Applies to catalogues 01–04. The plan (`2026-10-10-desktop-ui-test-dsl-plan.md`, §10) points here.
 
 ## Paths
 
@@ -13,7 +13,7 @@ All paths are repo-relative:
 - **Log** / "the command log" in any catalogue is the app's command log, `chatModel.terminalItems`: `sendCmd` adds `TerminalItem.cmd(obfuscated)` and `.resp` (`C/model/SimpleXAPI.kt:936-954`); commands sent with `log=false` (the subscription total :560, the servers summary :569, badge redemption :580) never appear there. `<uid>` and `<userId>` in logged commands are the same user id; JSON arguments are pretty-printed (`SimpleXAPI.kt:6546-6551`), so assertions match `"key": value` with a space
 - **Pref** `<Key>` in catalogues 01–04 is the key in `settings.properties` (key strings at `C/model/SimpleXAPI.kt:390-530`, properties at :103-280); theme overrides live in `themes.yaml` instead; catalogue 05 writes `Pref <property> = <value>` with the AppPreferences property name, since Android has no `settings.properties`
 
-Line numbers are those of master at `d72f68e6d` (2026-10-10), checked out at `~/wt-uitest-ref`.
+Line numbers are those of master at `d72f68e6d` (2026-10-10).
 
 At P1 the catalogue moves into the repo at `apps/multiplatform/common/src/desktopTest/resources/uitest-catalog/`.
 

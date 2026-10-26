@@ -71,7 +71,7 @@ fun NotificationsModeView(
   val modes = remember { notificationModes() }
   ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.settings_notifications_mode_title).lowercase().capitalize(Locale.current))
-    SectionViewSelectable(null, notificationsMode, modes, Ui.Notifications.Mode, onNotificationsModeSelected)
+    SectionViewSelectable(null, notificationsMode, modes, onNotificationsModeSelected, uiKey = Ui.Notifications.Mode)
     if (platform.androidIsXiaomiDevice() && (notificationsMode.value == NotificationsMode.PERIODIC || notificationsMode.value == NotificationsMode.SERVICE)) {
       SectionTextFooter(annotatedStringResource(MR.strings.xiaomi_ignore_battery_optimization))
     }
@@ -86,7 +86,7 @@ fun NotificationPreviewView(
   val previewModes = remember { notificationPreviewModes() }
   ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.settings_notification_preview_title))
-    SectionViewSelectable(null, notificationPreviewMode, previewModes, onSelected = onNotificationPreviewModeSelected)
+    SectionViewSelectable(null, notificationPreviewMode, previewModes, onNotificationPreviewModeSelected)
   }
 }
 

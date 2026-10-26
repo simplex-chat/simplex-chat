@@ -158,8 +158,8 @@ fun <T> SectionViewSelectable(
   title: String?,
   currentValue: State<T>,
   values: List<ValueTitleDesc<T>>,
-  uiKey: UiKey? = null,
   onSelected: (T) -> Unit,
+  uiKey: UiKey? = null,
 ) {
   SectionView(title) {
     Column {
@@ -182,8 +182,8 @@ fun <T> SectionViewSelectableCards(
   title: String?,
   currentValue: State<T>,
   values: List<ValueTitleDesc<T>>,
-  uiKey: UiKey? = null,
   onSelected: (T) -> Unit,
+  uiKey: UiKey? = null,
 ) {
   SectionView(title) {
     Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
@@ -303,8 +303,8 @@ fun <T> SectionItemWithValue(
   icon: Painter? = null,
   iconTint: Color = MaterialTheme.colors.secondary,
   enabled: State<Boolean> = mutableStateOf(true),
-  uiKey: UiKey? = null,
-  onSelected: () -> Unit
+  onSelected: () -> Unit,
+  uiKey: UiKey? = null
 ) {
   SettingsActionItemWithContent(icon = icon, text = title, iconColor = iconTint, click = if (enabled.value) onSelected else null, disabled = !enabled.value, uiKey = uiKey) {
     Row(

@@ -32,10 +32,10 @@ class PendingConnectionTest : UiTest() {
         !seesText("You accepted connection")
     }
     setClipboardText(null)
-    check(clipboardText() == null) { "the clipboard is not empty before sharing the link" }
+    check(sharedText() == null) { "a link was shared before sharing the link" }
     click(SHARE)
     var link: String? = null
-    poll(what = "the one-time link shared") { link = clipboardText()?.takeIf { it.isNotBlank() }; link != null }
+    poll(what = "the one-time link shared") { link = sharedText()?.takeIf { it.isNotBlank() }; link != null }
     bob sends "/c $link"
     bob expects "confirmation sent!"
     bob.eventually("alice: contact is connected", CONNECT_TIMEOUT_MS)

@@ -20,7 +20,7 @@ gh workflow run ui-tests.yml --ref <branch> -f tests='*ChatListRowsTest, chat.si
 
 GitHub offers Run workflow, and accepts `gh workflow run`, only for a workflow whose file is on the default branch. Until `ui-tests.yml` is there, a branch can't be tested with it; once it is, the run uses the workflow file of the branch it is started on. A newer run on the same branch cancels the older one.
 
-Every run builds what the tests need from the branch's own code, and reuses an earlier build only when its sources are unchanged, as an artifact of the same branch named after a hash of its sources (30 days). The core libraries have the names and sources of `desktop-linux` and `android-emu`, so the three workflows reuse each other's builds on a branch. The CLI and `uitest-servers` (`ui-tests-bin-<hash>`) are built from `src/**`, `apps/simplex-chat/**`, the files under `tests/` that `uitest-servers` compiles (`UITestServers.hs`, `ChatClient.hs`, `NameResolver.hs`, `ChatTests/DBUtils.hs`, `ChatTests/DBUtils/**`), `cabal.project`, `simplex-chat.cabal`, `PRIVACY.md` and `build-bin.sh`. The workflow saves no Actions caches.
+Every run builds what the tests need from the branch's own code, and reuses an earlier build only when its sources are unchanged, as an artifact of the same branch named after a hash of its sources (30 days); the names of the Haskell builds also have the GHC and cabal versions. The core libraries have the names and sources of `desktop-linux` and `android-emu`, so the three workflows reuse each other's builds on a branch (`desktop-linux.yml` names its core the same way only once it appends the GHC and cabal versions too). The CLI and `uitest-servers` (`ui-tests-bin-<hash>`) are built from `src/**`, `apps/simplex-chat/**`, the files under `tests/` that `uitest-servers` compiles (`UITestServers.hs`, `ChatClient.hs`, `NameResolver.hs`, `ChatTests/DBUtils.hs`, `ChatTests/DBUtils/**`), `cabal.project`, `simplex-chat.cabal`, `PRIVACY.md` and `build-bin.sh`. The workflow saves no Actions caches, on purpose: the repository's cache space is shared with `build.yml`, whose release builds restore their Haskell dependencies from it, and several GB of Gradle caches per branch would evict those; and a cache would carry what one branch's build scripts and tests wrote into later runs, while an artifact is used only by runs of the same branch and only for the sources it is named after. The cost is that each Gradle job downloads its dependencies, which is why the bridge build retries when Maven Central rate-limits the parallel shards.
 
 ## Jobs
 
@@ -28,13 +28,15 @@ Without `tests`, each platform's tests run in four jobs at once; with `tests`, i
 
 | Job | Does | Time |
 |---|---|---|
-| `plan` | `plan.sh`: the platforms and the shards of each; finds earlier builds | 10 s |
+| `plan` | `plan.sh`: the platforms and the shards of each; finds earlier builds | 15 s |
 | `desktop-core` | desktop-linux's `build-core.sh`, when the desktop tests run | skipped when reused, about 24 min not |
 | `android-core` | android-emu's `build-core.sh`, when the Android tests run | skipped when reused, about 27 min not |
-| `bin` | `build-bin.sh`: `exe:simplex-chat` and `exe:uitest-servers` with `-O0 -f uitest`, as `uitest.sh` builds them locally | skipped when reused; to be measured |
-| `desktop` | one job per shard: `uitest.sh` with the prebuilt CLI and servers (`UITEST_CLI`, `UITEST_SERVERS`) | to be measured |
-| `android-apk` | the debug APK and the test APK, once per run | to be measured |
-| `android` | one job per shard: the host-side bridge, the emulator, `uitest-android.sh` | to be measured |
+| `bin` | `build-bin.sh`: `exe:simplex-chat` and `exe:uitest-servers` with `-O0 -f uitest`, as `uitest.sh` builds them locally | skipped when reused, about 25 min not |
+| `desktop` | one job per shard: `uitest.sh` with the prebuilt CLI and servers (`UITEST_CLI`, `UITEST_SERVERS`) | 9 to 12 min |
+| `android-apk` | the debug APK and the test APK, once per run | about 8 min |
+| `android` | one job per shard: the host-side bridge, the emulator, `uitest-android.sh` | 29 to 45 min |
+
+The times are from run 40234365113 (2026-10-25, `platform=both`, four shards each, the core libraries and `bin` reused), and for `bin` from run 39842985758.
 
 ### Desktop shards
 
@@ -48,14 +50,14 @@ The desktop app's system theme detector runs `gsettings monitor`, which exits at
 
 An emulator runs one test at a time, and the Android tests (about 450) run under ARM translation, likely too long for one job's 6 hours: without `tests` they are split by AndroidJUnitRunner's own sharding (`-e numShards 4 -e shardIndex <i>`), which assigns each test method to a shard by a hash of its name, the same in every pass of `uitest-android.sh`. The APKs are built once, in `android-apk`; each shard job builds only the host-side bridge, whose classpath names files in the job's Gradle cache, with the Kotlin compiler in-process (building the app and the bridge in one Gradle run ran out of memory).
 
-The emulator is android-emu's (`install-sdk.sh`, `emulator.sh`): Google APIs x86_64, API 34, with KVM, running the app's arm64-v8a code under ARM translation. The APKs are built as android-emu builds its APK (`-Pandroid.injected.build.abi=arm64-v8a`, `:android:assembleFossDebug`), with `:android:assembleFossDebugAndroidTest`; each shard builds `:common:uitestBridgeClasspath` before `install-sdk.sh` points `ANDROID_HOME` at an SDK that has only the emulator. Without `local.properties` the debug app's id is `chat.simplex.app` (`UITEST_APP_ID`). `uitest.sh --prepare-only` writes the peer template and `build/uitest/env.properties` that the host-side bridge reads, without the desktop build; `uitest-android.sh` then runs with `UITEST_SERIAL` set to the emulator and `ADB` to the SDK's adb, and forwards the bridge's and the servers' ports with `adb reverse`.
+The emulator is android-emu's (`install-sdk.sh`, `emulator.sh`): Google APIs x86_64, API 34, with KVM, running the app's arm64-v8a code under ARM translation. The APKs are built as android-emu builds its APK (`-Pandroid.injected.build.abi=arm64-v8a`, `:android:assembleFossDebug`), with `:android:assembleFossDebugAndroidTest`; each shard builds `:common:uitestBridgeClasspath` before `install-sdk.sh` points `ANDROID_HOME` at an SDK that has only the emulator. Without `local.properties` the debug app's id is `chat.simplex.app` (`UITEST_APP_ID`). `uitest.sh --prepare-only` writes the peer template and `build/uitest/env.properties` that the host-side bridge reads, without the desktop build; `uitest-android.sh` then runs with `UITEST_SERIAL` set to the emulator and `ADB` to the SDK's adb (the job fails at once when `adb devices` lists no emulator, and `uitest-android.sh` never sets up Waydroid when `CI=true`), sets the device's time zone to UTC and the app's locale to en-US, and forwards the bridge's port (`UITEST_BRIDGE_PORT`, default 7777, passed to the tests as `-e bridgePort`) and the servers' ports with `adb reverse`.
 
 ## Results
 
-The job summaries list the results: per test class for desktop (`desktop-linux/test-summary.py` on the JUnit XML; known-issue tests are counted as skipped), and per class with the failed and crashed tests for Android (`android-summary.py` on `results.txt`). A job fails when a test fails or, on Android, crashes. The artifacts (7 days):
+The job summaries list the results: per test class for desktop (`desktop-linux/test-summary.py` on the JUnit XML; known-issue tests are counted as skipped), and per class with the failed, crashed and flaky tests for Android (`android-summary.py` on `results.txt`). Both list the tests skipped for a known app issue and the intermittent known issues that did not reproduce, with their findings, from the run's `known-issues.txt` (`known_issues.py`). A desktop job also fails when classes of its shard have no results (`missing-classes.py`): a test JVM ended by a hard timeout does not run its remaining classes. An Android job fails when a test fails or crashes, when the instrumentation ended without `INSTRUMENTATION_CODE` (the device or adb was lost; marker `ABNORMAL`), or when the app crashed in 4 passes (marker `GAVE_UP`); the summary says when the remaining tests did not run. A test that was running when the app process died is re-run once at the end: it counts as flaky, not failed, when it then passes. The artifacts (7 days):
 
-- `ui-tests-desktop-<shard>`: the HTML report and the JUnit XML (`common/build/{reports,test-results}/desktopUiTest`), and from the run directory the failure screenshots (`failures/`), the transcripts of the failed tests' CLI peers (`jvm-*/t<n>/peers/<name>/transcript.log`: a test's directory is kept only when it failed) and JVM crash logs;
-- `ui-tests-android-<shard>`: the run directory of `uitest-android.sh` (`results.txt`, `instrument-<pass>.txt`, `logcat.txt`, `timings.txt`, `failures/`, `bridge.log`), `emulator/emulator.log`, and the transcripts of the bridge's peers (all tests).
+- `ui-tests-desktop-<shard>`: the HTML report and the JUnit XML (`common/build/{reports,test-results}/desktopUiTest`), and from the run directory the failure screenshots (`failures/`), `known-issues.txt`, the transcripts of the failed tests' CLI peers (`jvm-*/t<n>/peers/<name>/transcript.log`: a test's directory is kept only when it failed) and JVM crash logs;
+- `ui-tests-android-<shard>`: the run directory of `uitest-android.sh` (`results.txt`, `known-issues.txt`, `instrument-<pass>.txt`, `instrument-retry.txt`, `logcat.txt`, `timings.txt`, `failures/`, `bridge.log`), `emulator/emulator.log`, and the transcripts of the bridge's peers (all tests).
 
 ## Diagnosing a failure
 
@@ -63,7 +65,7 @@ Start from the failure message in the summary or the test report: a timed-out wa
 
 ## Known limits
 
-- **ARM translation on Android**, as android-emu's README describes: the app runs slower than on a phone and can crash in the translator. `uitest-android.sh` resumes after a crash (at most 4 passes), and force-stops the app when the instrumentation prints nothing for 420 s (`UITEST_STALL_S`).
+- **ARM translation on Android**, as android-emu's README describes: the app runs slower than on a phone and can crash in the translator. `uitest-android.sh` resumes after a crash (at most 4 passes), force-stops the app when the instrumentation prints nothing for 420 s (`UITEST_STALL_S`), and re-runs the crashed tests once.
 - **Memory**: `uitest.sh` needs 3000 MB free and `uitest-android.sh` 4500 MB besides the emulator; the runners have 16 GB.
 - The test JVMs per desktop job follow free memory, not the runner's 4 CPUs.
 
@@ -72,3 +74,5 @@ Start from the failure message in the summary or the test report: a timed-out wa
 - `plan.sh`: the plan job's choices and the shards of both platforms.
 - `build-bin.sh`, `install-bin.sh`: the CLI and `uitest-servers`, built and installed for `uitest.sh` (`UITEST_CLI`, `UITEST_SERVERS`).
 - `android-summary.py`: the Android job summary.
+- `missing-classes.py`: fails a desktop job whose shard's classes have no results.
+- `known_issues.py`: the known-issue lists of both summaries.

@@ -14,9 +14,8 @@ import java.util.Properties
 import javax.swing.SwingUtilities
 
 object PrefStores {
-  private val resources = Class.forName("chat.simplex.common.platform.Resources_desktopKt")
-  private val settingsProps = staticField(resources, "settingsProps") as Properties
-  private val themesProps = staticField(resources, "settingsThemesProps") as Properties
+  private val settingsProps = DesktopFields.settingsProps.field.get(null) as Properties
+  private val themesProps = DesktopFields.themesProps.field.get(null) as Properties
   private val settingsFile get() = File(desktopPlatform.configPath, "settings.properties")
   private val themesFile get() = File(desktopPlatform.configPath, "themes.properties")
   private val themesYaml get() = File(getPreferenceFilePath("themes.yaml"))
@@ -83,7 +82,7 @@ object UiState {
   }
 
   fun completePendingDialogs() {
-    val onResult = chat.simplex.common.DialogState::class.java.getDeclaredField("onResult\$delegate").apply { isAccessible = true }
+    val onResult = DesktopFields.dialogResult.field
     with(simplexWindowState) {
       for ((ds, empty) in listOf(openDialog to null, saveDialog to null, openMultipleDialog to emptyList<File>())) {
         @Suppress("UNCHECKED_CAST")
@@ -94,7 +93,18 @@ object UiState {
   }
 }
 
-private fun staticField(cls: Class<*>, name: String): Any? = cls.getDeclaredField(name).apply { isAccessible = true }.get(null)
+object DesktopFields {
+  val settingsProps = FieldRef("chat.simplex.common.platform.Resources_desktopKt", "settingsProps")
+  val themesProps = FieldRef("chat.simplex.common.platform.Resources_desktopKt", "settingsThemesProps")
+  val dialogResult = FieldRef("chat.simplex.common.DialogState", "onResult\$delegate")
+  val skikoClipboard = FieldRef("org.jetbrains.skiko.Actuals_awtKt", "systemClipboard\$delegate")
+  val all: List<FieldRef> get() = listOf(settingsProps, themesProps, dialogResult, skikoClipboard)
+
+  fun skikoClipboardValue(): java.lang.reflect.Field {
+    val lazy = skikoClipboard.field.get(null) ?: error("$skikoClipboard is null")
+    return lazy.javaClass.getDeclaredField("_value").apply { isAccessible = true }
+  }
+}
 
 internal fun onEdt(action: () -> Unit) {
   if (SwingUtilities.isEventDispatchThread()) action() else SwingUtilities.invokeAndWait(action)

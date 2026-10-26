@@ -204,7 +204,7 @@ private fun SearchingDesktop(deviceName: String, remoteCtrls: SnapshotStateList<
     Text(stringResource(MR.strings.waiting_for_desktop), fontStyle = FontStyle.Italic)
   }
   SectionDividerSpaced()
-  DisconnectButton(stringResource(MR.strings.scan_QR_code).replace('\n', ' '), MR.images.ic_qr_code, onClick = ::disconnectDesktop)
+  DisconnectButton(stringResource(MR.strings.scan_QR_code).replace('\n', ' '), MR.images.ic_qr_code, ::disconnectDesktop)
 }
 
 @Composable
@@ -335,7 +335,7 @@ private fun ActiveSession(session: RemoteCtrlSession, rc: RemoteCtrlInfo, close:
   SectionDividerSpaced()
 
   SectionView {
-    DisconnectButton(uiKey = Ui.Remote.Disconnect) { disconnectDesktop(close) }
+    DisconnectButton(onClick = { disconnectDesktop(close) }, uiKey = Ui.Remote.Disconnect)
   }
 }
 
@@ -541,7 +541,7 @@ private fun verifyDesktopSessionCode(remoteCtrls: SnapshotStateList<RemoteCtrlIn
 }
 
 @Composable
-private fun DisconnectButton(label: String = generalGetString(MR.strings.disconnect_remote_host), icon: ImageResource = MR.images.ic_close, uiKey: UiKey? = null, onClick: () -> Unit) {
+private fun DisconnectButton(label: String = generalGetString(MR.strings.disconnect_remote_host), icon: ImageResource = MR.images.ic_close, onClick: () -> Unit, uiKey: UiKey? = null) {
   SectionItemView(onClick, uiKey = uiKey) {
     Icon(painterResource(icon), label, tint = MaterialTheme.colors.secondary)
     TextIconSpaced(false)

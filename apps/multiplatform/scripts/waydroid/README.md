@@ -4,8 +4,8 @@ A headless Waydroid container: LineageOS 20 (Android 13, x86_64) with libndk arm
 SimpleX debug APKs, which ship arm64-v8a native libraries only. One script, `wd.sh`, drives everything. It works
 from a fresh shell with no environment set.
 
-`scripts/uitest-android.sh` uses it to run the Android UI tests (`plans/ui-tests/`). To run the tests on another
-device or emulator instead, set `UITEST_SERIAL` and Waydroid is not used.
+`scripts/uitest-android.sh` uses it to run the Android UI tests (`plans/ui-tests/`), on instance 1 by default. To run
+the tests on another device or emulator instead, set `UITEST_SERIAL` and Waydroid is not used.
 
 ## Why Waydroid and not the Android emulator
 
@@ -27,16 +27,17 @@ device or emulator instead, set `UITEST_SERIAL` and Waydroid is not used.
 
 ## Files
 
-The scripts live here; the state lives outside the repo, in `WD_HOME` (default `~/waydroid`) and `WD2_HOME`
-(default `~/waydroid2`, instance 2).
+The scripts live here; the state lives outside the repo, in `WD_HOME` (default `~/waydroid`) and, only for the
+optional second instance, `WD2_HOME` (default `~/waydroid2`).
 
 | Path | What |
 |---|---|
 | `wd.sh` | the tool |
 | `weston.ini` | weston config: no panel, no locking (`$WD_HOME/weston.ini` overrides it) |
-| `fetch-images.sh`, `repair-zip.py` | download the system/vendor images into `$WD_HOME/images` (parallel, resumable) |
-| `provision2.sh` | build instance 2 in `$WD2_HOME` from the installed Waydroid and instance 1's state |
-| `watchdog2.sh [secs]` | kill instance 2 if instance 1 loses its display service (use while changing instance 2's setup) |
+| `fetch-images.sh` | download the system/vendor images into `$WD_HOME/images` (parallel, resumable, sha256-checked) |
+| `repair-zip.py` | repair a corrupt image download: re-fetch the 1 MiB blocks around given offsets with HTTP Range requests and patch the ones that differ (Troubleshooting) |
+| `provision2.sh` | optional: build instance 2 in `$WD2_HOME` from the installed Waydroid and instance 1's state |
+| `watchdog2.sh [secs]` | optional: kill instance 2 if instance 1 loses its display service (use while changing instance 2's setup) |
 | `$WD_HOME/images/` | optional local images; without them `waydroid init` downloads them (Qubes requires them, below) |
 | `$WD_HOME/var/` | optional: when present (always on Qubes), `/var/lib/waydroid` is a bind mount of it |
 | `$WD_HOME/debs/` | optional: `.deb` files for an offline package install (Qubes) |
@@ -68,7 +69,7 @@ everything in `$WD_HOME`:
 
 ```bash
 W=scripts/waydroid/wd.sh                           # from apps/multiplatform
-$W who                                             # free? (shared device; or use instance 2: WD_INSTANCE=2)
+$W who                                             # free? (instance 1, shared; see "Optional second instance")
 $W claim <you>; export WD_OWNER=<you>              # claim before changing anything; <you> = a name only you use
 $W up                                              # setup if needed, then weston + Android; prints the adb serial
 $W install android-arm64-v8a-debug.apk
@@ -97,7 +98,11 @@ shell bt adb adb-path serial reverse reverse-clear net`.
   time, `wd.sh wait-free [secs]` blocks until the claim is free, `wd.sh claim <name> --force` takes it over (only when
   the owner is known to be gone), and `wd.sh release` ends a claim.
 
-## Second instance (WD_INSTANCE=2)
+## Optional second instance (WD_INSTANCE=2)
+
+Instance 1 is the default for every command and for `scripts/uitest-android.sh`. Instance 2 is an optional second
+container for running the UI tests next to an interactive instance 1: a test run clears the app's data (`pm clear`)
+on the instance it uses. Skip this section unless you need both at once.
 
 Upstream Waydroid supports one container per host. Instance 2 is a patched copy of Waydroid's code in
 `$WD2_HOME/lib` that renames every per-instance identifier:
@@ -119,9 +124,9 @@ WD_INSTANCE=2 WD_OWNER=<you> scripts/waydroid/wd.sh down    # frees its RAM (~1.
 - **Binder guard:** `up` refuses to boot instance 2 unless `$WD2_HOME/var/lxc/waydroid2/config_nodes` maps
   `/dev/binder2` (etc.) and those devices differ from instance 1's. Two Androids on one binder context corrupt each
   other's service registry (instance 1 lost its `display` service until `wd.sh down && wd.sh up`).
-- The UI tests use instance 2 (`scripts/uitest-android.sh`, `WD_INSTANCE`, default 2), so instance 1 stays free.
+- To run the UI tests on instance 2 and keep instance 1 free: `WD_INSTANCE=2 scripts/uitest-android.sh <app.apk> <test.apk>`.
 
-## How an agent should drive the GUI
+## Driving the GUI from a script
 
 Loop: **observe → act → re-observe**.
 
@@ -145,6 +150,16 @@ and the first `key BACK` only hides it.
   `wd.sh reverse-clear` removes them.
 - Internet: Android reaches it through the host's NAT. `wd.sh net isolate` drops forwarding from the bridge, so Android
   reaches only the host (bridge IP and adb reverse still work); `wd.sh net open` undoes it; `wd.sh net status` shows it.
+
+## Security
+
+- `wd.sh setup` adds the Waydroid apt repository and its key under `/etc` (Debian/Ubuntu), installs packages with
+  `sudo`, and changes firewall rules.
+- For the arm translation it clones the third-party installer `casualsnek/waydroid_script` at the commit pinned in
+  `wd.sh`, installs its `requirements.txt` from PyPI into a venv, and runs it **as root** to patch the Android image.
+  Review that commit and its requirements before the first `setup`, or run the tool in a disposable VM.
+- The UI test SMP server listens on all host interfaces with the repo's fixture TLS key while a run is in progress,
+  and `pm clear` wipes whatever app `UITEST_APP_ID` names: never point a test run at a personal device.
 
 ## Known limitations
 
@@ -174,5 +189,6 @@ and the first `key BACK` only hides it.
 | logs | `$WD_HOME/run/weston.log`, `run/session.log`, `sudo waydroid log`, `wd.sh logcat` |
 | instance 2 | `WD_INSTANCE=2 wd.sh status`, `$WD2_HOME/run/*.log`, `/var/lib/waydroid2/waydroid.log`, `sudo journalctl -u waydroid2-container` |
 | images lost (Qubes) | `fetch-images.sh`, then `wd.sh setup` |
+| `fetch-images.sh` ends with `sha256 mismatch` | a corrupt part (for example two downloaders appended to one file): find the bad offset with an inflate test (`unzip -t`), then `python3 -I repair-zip.py <zip> <zip>.url <offset> <radius-MiB>` in `$WD_HOME/downloads`, and run `fetch-images.sh` again |
 
 Never `pkill -f wd.sh` or `pgrep -f …` with a pattern that appears in your own command line: it kills your own shell.

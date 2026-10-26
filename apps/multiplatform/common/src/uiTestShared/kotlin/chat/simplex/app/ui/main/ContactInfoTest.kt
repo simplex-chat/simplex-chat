@@ -313,7 +313,7 @@ class ContactInfoTest : UiTest() {
     setClipboardText(null)
     click(Ui.Address.Share)
     var shared: String? = null
-    poll(what = "bob's address shared") { shared = clipboardText()?.takeIf { it.isNotBlank() }; shared != null }
+    poll(what = "bob's address shared") { shared = sharedText()?.takeIf { it.isNotBlank() }; shared != null }
     bob sends "/_connect plan 1 $shared"
     bob.eventually("contact address: own address")
   }

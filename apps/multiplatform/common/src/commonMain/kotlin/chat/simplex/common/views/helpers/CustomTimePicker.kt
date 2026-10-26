@@ -89,8 +89,8 @@ fun DropdownCustomTimePickerSettingRow(
   customPickerTitle: String,
   customPickerConfirmButtonText: String,
   customPickerTimeUnitsLimits: List<TimeUnitLimits> = TimeUnitLimits.defaultUnitsLimits,
-  uiKey: UiKey? = null,
-  onSelected: (Int?) -> Unit
+  onSelected: (Int?) -> Unit,
+  uiKey: UiKey? = null
 ) {
   fun getValues(selectedValue: Int?): List<DropdownSelection> =
     dropdownValues.map { DropdownSelection.DropdownValue(it) } +

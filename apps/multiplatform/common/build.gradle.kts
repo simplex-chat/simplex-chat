@@ -376,7 +376,7 @@ tasks.named<Test>("desktopTest") {
 
 tasks.register<org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest>("desktopUiTest") {
   targetName = "desktop"
-  onlyIf { System.getenv("SIMPLEX_UITEST_RUNNER") == "1" }
+  doFirst { if (System.getenv("SIMPLEX_UITEST_RUNNER") != "1") throw GradleException("desktopUiTest needs the servers, CLI and isolation that scripts/uitest.sh sets up: run scripts/uitest.sh (or scripts/uitest.sh --tests <class>)") }
   val dt = tasks.named<Test>("desktopTest").get()
   testClassesDirs = dt.testClassesDirs; classpath = dt.classpath
   include("chat/simplex/app/ui/**")
@@ -399,6 +399,7 @@ tasks.register<org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest>("des
   testLogging { events("passed", "failed", "skipped"); showStandardStreams = true; exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL }
   outputs.upToDateWhen { false }
   val pass = (findProperty("uiPass") as String?) ?: "1"
+  systemProperty("simplex.uitest.pass", pass)
   reports.junitXml.outputLocation.set(layout.buildDirectory.dir("test-results/desktopUiTest/pass$pass"))
   reports.html.outputLocation.set(layout.buildDirectory.dir("reports/tests/desktopUiTest/pass$pass"))
   binaryResultsDirectory.set(layout.buildDirectory.dir("test-results/desktopUiTest/pass$pass/binary"))

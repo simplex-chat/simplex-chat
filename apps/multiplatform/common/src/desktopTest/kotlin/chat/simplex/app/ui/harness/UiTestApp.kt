@@ -53,6 +53,7 @@ object UiTestApp {
     if (stuck.isNotEmpty()) {
       println("UITEST drain gave up after ${DRAIN_MS / 1000} s; abandoned: ${stuck.joinToString { it.what }}")
       UiIdle.abandon(stuck)
+      LeakedWork.record(stuck.map { it.what })
     }
     return stuck.map { it.what }
   }

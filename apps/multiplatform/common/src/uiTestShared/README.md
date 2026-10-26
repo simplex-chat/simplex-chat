@@ -2,7 +2,7 @@
 
 Rules for the Compose UI tests in `common/src/uiTestShared` (both platforms), `common/src/desktopTest/.../ui/desktop`
 (desktop only) and `android/src/androidTest/.../ui` (Android only). Every rule below comes from a mistake that was made
-and found in review (`plans/ui-tests/reviews/`, plan §15.4). Read it before writing or changing a test; check the
+and found in review (plan §15.4). Read it before writing or changing a test; check the
 list at the end before opening a PR.
 
 How the harness works is in plan §0.5 (`plans/ui-tests/2026-10-10-desktop-ui-test-dsl-plan.md`); how to run the
@@ -160,15 +160,30 @@ When you change the harness (`harness/*.kt`, both `UiTest.kt`), keep these prope
 
 - **Any app crash fails the test**: an uncaught exception on any thread or coroutine, on both platforms, including
   ones the app's own crash handler recovers from (on Android it closes the open screen or chat, which can look like
-  the screen change a test waits for). There is no allowlist by message text.
+  the screen change a test waits for). There is no allowlist by message text. A crash recorded after a test's last
+  check fails the next test with "crash after the previous test ended".
 - **A known app bug is a visible result, not a pass.** Mark the test `@KnownAppIssue("<plan §15.5 item>", "<exact
   error text>")`: when the test fails with that error it is reported as skipped with the finding; when it fails any
   other way it fails; when it passes, it fails with "known issue no longer reproduces; remove the annotation".
   `intermittent = true` lets the test pass when the bug does not show. A test can carry several annotations; a failure
-  matching any of them is skipped, and a pass still fails while any of them is not intermittent.
-- **No retries of user input**, no repeated `replaceText` until the text sticks, no second Enter.
-- **App work still running when the test ends fails the test** (it is a hang or a leaked job), with the names of the
-  stuck calls.
+  matching any of them is skipped, and a pass still fails while any of them is not intermittent. The error text is
+  matched against the message of the exception the test failed with, not its causes, suppressed exceptions or stack
+  trace: use a poll's `what`, a check's message or the observed wrong value ("expected X, got Y"), never a generic
+  phrase. Each skip and each intermittent issue that did not reproduce is printed as a line
+  `KNOWN_ISSUE <class>.<test><TAB><SKIPPED|NOT-REPRODUCED><TAB><finding><TAB><message>`; desktop also writes these lines
+  without the prefix to `<run directory>/known-issues.txt`.
+- **No retries of user input**, no repeated `replaceText` until the text sticks, no second Enter. One exception: on
+  desktop, when typing over the selected text does not replace it within 2 s, `replaceText` replaces it once with
+  `performTextReplacement`, so a dropped selection there does not fail the test.
+- **Tracked app work still running when the test ends fails the test** (it is a hang or a leaked job), with the names
+  of the stuck calls. Tracked work is `withApi`, `withBGApi`, `withLongRunningApi` (with the default `idle = true`), API
+  commands and event processing. Work still running after the 30 s drain is abandoned, not cancelled, so it could
+  change the next test's app: every later test in the process fails with "previous test leaked <what>". Untracked
+  work can outlive the test unseen: the direct `CoroutineScope(...).launch` calls in `ComposeView` (picked media and
+  attachments), `ChatView` (an image dropped on the chat), `AppLock.runAuthenticate`, `NetworkAndServers` (saving
+  servers from the unsaved-changes alert), `DatabaseErrorView` (`runChat`), `SimpleXAPI` (closing the support chat
+  after a member is accepted), the migration views and the audio and video player progress jobs, and
+  `withLongRunningApi(idle = false)` (the chat list reorder loop, `AppUpdater`, `ProcessedErrors`).
 - **Helpers set up state through the UI** when that state is what the test is about. Setting state through the API or
   the model is allowed only for preconditions outside the feature under test, and the helper's name says so.
 - **No debug helpers, prints or temporary logging** in committed code.
@@ -187,3 +202,57 @@ When you change the harness (`harness/*.kt`, both `UiTest.kt`), keep these prope
 - [ ] Desktop suite and Android suite run green (or the test is `@KnownAppIssue` with a plan §15.5 entry); new tests
       ran three times without a flake.
 - [ ] The catalogue row and the plan (§15.4 findings, §15.5 app findings) are updated.
+
+## 8. Running the tests
+
+Prerequisites:
+
+- Linux x86_64 (the desktop native libraries are taken from `libs/linux-x86_64`).
+- GHC 9.6.3 and cabal: the scripts build the CLI peers and the test servers with `cabal -f uitest`. To skip that build,
+  set `UITEST_CLI` and `UITEST_SERVERS` to the absolute paths of prebuilt ones.
+- Unprivileged user namespaces: the desktop tests run in their own user, PID and network namespaces. On Ubuntu 24.04:
+  `sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0`.
+- `setpriv` (util-linux) and `ip` (iproute2).
+- Free memory: 3000 MB for the desktop suite, 4500 MB for the Android suite (the bridge and Waydroid).
+- The desktop native library, which needs libsimplex: `./gradlew :desktop:cmakeBuildAndCopy`.
+
+Desktop, from `apps/multiplatform`:
+
+```sh
+./gradlew :desktop:cmakeBuildAndCopy
+scripts/uitest.sh                               # the whole suite
+scripts/uitest.sh --tests '*ChatListMenuTest'   # one class
+```
+
+`./gradlew :common:desktopUiTest` alone fails with "run scripts/uitest.sh", and IDE runs are not supported: the IDE
+runs a test through `desktopTest`, which excludes `chat/simplex/app/ui/**`. Run single tests with `--tests` through
+the script.
+
+Android also needs an arm64-capable device or emulator, or Waydroid with libndk or libhoudini (`scripts/waydroid`),
+and the Android core library installed (the repository's `scripts/ci/android/install-core.sh`, as CI does). From
+`apps/multiplatform`:
+
+```sh
+./gradlew -Pandroid.injected.build.abi=arm64-v8a :android:assembleFossDebug :android:assembleFossDebugAndroidTest
+scripts/uitest.sh --prepare-only
+UITEST_APP_ID=chat.simplex.app scripts/uitest-android.sh \
+  android/build/intermediates/apk/foss/debug/android-foss-arm64-v8a-debug.apk \
+  "$(find android/build -name '*androidTest*.apk' | head -n 1)"
+```
+
+`UITEST_APP_ID` is the application id of the app APK; the script's default, `chat.simplex.app.debug`, is right only
+with `application_id.suffix=.debug` in `local.properties`. Extra arguments are passed to `am instrument`, for example
+`-e class chat.simplex.app.ui.main.ChatListMenuTest`.
+
+## 9. What the suite does not cover
+
+Green UI tests do not mean these work; nothing tests them:
+
+- calls (only the call preference alerts are tested; WebRTC does not run in the test process);
+- desktop notifications (the desktop harness installs a notification manager that records nothing; Android has
+  notification tests);
+- database upgrade and migration: no test opens a database made by the last release, and none runs device-to-device
+  migration;
+- most XFTP variants: voice and video messages, multi-chunk files, cancelling a receive, files in groups, forwarded or
+  relayed, local file encryption on and off, an XFTP outage during upload, temporary and files folders on different
+  filesystems.

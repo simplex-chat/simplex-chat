@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # Prints the results in the JUnit XML reports of a Gradle test task, and adds them to the job summary on GitHub.
-# Usage: scripts/ci/desktop-linux/test-summary.py <test-results dir>
+# Usage: scripts/ci/desktop-linux/test-summary.py <test-results dir> [title, default desktopTest]
 
 import glob
 import os
@@ -9,6 +9,7 @@ import sys
 import xml.etree.ElementTree as ET
 
 results_dir = sys.argv[1]
+title = sys.argv[2] if len(sys.argv) > 2 else "desktopTest"
 suites = [ET.parse(path).getroot() for path in sorted(glob.glob(os.path.join(results_dir, "*.xml")))]
 if not suites:
     sys.exit(f"no test results in {results_dir}")
@@ -25,7 +26,7 @@ for suite in suites:
         for problem in list(case.findall("failure")) + list(case.findall("error")):
             failures.append(f"{case.get('classname')}.{case.get('name')}: {problem.get('message')}")
 
-summary = [f"### desktopTest: {totals[0]} tests, {totals[1]} failed, {totals[2]} skipped", ""] + rows
+summary = [f"### {title}: {totals[0]} tests, {totals[1]} failed, {totals[2]} skipped", ""] + rows
 if failures:
     summary += ["", "Failures:", ""] + [f"- {f}" for f in failures]
 print("\n".join(summary))

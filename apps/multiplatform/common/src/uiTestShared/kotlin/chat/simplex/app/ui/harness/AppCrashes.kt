@@ -5,6 +5,7 @@ import org.junit.AssumptionViolatedException
 import org.junit.rules.TestRule
 import org.junit.runner.Description
 import org.junit.runners.model.Statement
+import java.io.File
 import java.util.concurrent.ConcurrentLinkedQueue
 
 @Target(AnnotationTarget.FUNCTION)
@@ -14,7 +15,10 @@ annotation class KnownAppIssue(val finding: String, val error: String, val inter
 
 class KnownIssueRule : TestRule {
   override fun apply(base: Statement, description: Description): Statement = object : Statement() {
-    override fun evaluate() = withKnownIssue(knownIssues(description)) { base.evaluate() }
+    override fun evaluate() {
+      CurrentTest.name = "${description.testClass?.simpleName ?: description.className}.${description.methodName}"
+      withKnownIssue("${description.className}.${description.methodName}", knownIssues(description)) { base.evaluate() }
+    }
   }
 
   private fun knownIssues(description: Description): List<KnownAppIssue> = knownIssuesOf(description).filter { (!it.androidOnly || appPlatform.isAndroid) && (!it.desktopOnly || appPlatform.isDesktop) }
@@ -28,20 +32,43 @@ class KnownIssueRule : TestRule {
   }
 }
 
-fun withKnownIssue(issues: List<KnownAppIssue>, block: () -> Unit) {
+object CurrentTest {
+  @Volatile var name: String = "unknown"
+}
+
+fun withKnownIssue(test: String, issues: List<KnownAppIssue>, block: () -> Unit) {
   if (issues.isEmpty()) return block()
   try {
     block()
   } catch (e: AssumptionViolatedException) {
     throw e
   } catch (e: Throwable) {
-    val trace = e.stackTraceToString()
-    issues.firstOrNull { it.error in trace }?.let { throw AssumptionViolatedException("known app issue (plan ${it.finding}): ${it.error}") }
+    val message = ((e as? FailureWithSuppressed)?.primary ?: e).message.orEmpty()
+    issues.firstOrNull { it.error in message }?.let {
+      KnownIssueLog.write(test, "SKIPPED", it.finding, message)
+      throw AssumptionViolatedException("known app issue (plan ${it.finding}): ${it.error}; failure: $message")
+    }
     throw e
   }
   issues.firstOrNull { !it.intermittent }?.let { throw AssertionError("known app issue (plan ${it.finding}) no longer reproduces; remove @KnownAppIssue") }
-  issues.forEach { println("UITEST known app issue (plan ${it.finding}) did not reproduce in this run") }
+  issues.forEach { KnownIssueLog.write(test, "NOT-REPRODUCED", it.finding, it.error) }
 }
+
+object KnownIssueLog {
+  @Volatile var file: File? = null
+  private const val MESSAGE_MAX = 2000
+
+  @Synchronized fun write(test: String, result: String, finding: String, message: String) {
+    val line = listOf(test, result, finding, message.replace(Regex("\\s+"), " ").take(MESSAGE_MAX)).joinToString("\t")
+    println("KNOWN_ISSUE $line")
+    file?.let { f -> runCatching { f.parentFile?.mkdirs(); f.appendText("$line\n") }.onFailure { println("UITEST cannot write $f: $it") } }
+  }
+}
+
+class FailureWithSuppressed(val primary: Throwable) : AssertionError(
+  "${primary.message}; suppressed:\n" + primary.suppressed.joinToString("\n") { it.stackTraceToString().lines().take(25).joinToString("\n") },
+  primary
+)
 
 object AppCrashes {
   private val recorded = ConcurrentLinkedQueue<Pair<String, Throwable>>()
@@ -53,10 +80,10 @@ object AppCrashes {
 
   fun clear() = recorded.clear()
 
-  fun failIfAny() {
+  fun failIfAny(what: String = "the app crashed") {
     if (recorded.isEmpty()) return
     val crashes = generateSequence { recorded.poll() }.toList()
-    throw AssertionError("the app crashed:\n" + crashes.joinToString("\n") { (thread, e) -> "thread $thread: " + e.stackTraceToString().lines().take(25).joinToString("\n") })
+    throw AssertionError("$what:\n" + crashes.joinToString("\n") { (thread, e) -> "thread $thread: " + e.stackTraceToString().lines().take(25).joinToString("\n") })
   }
 
   private class Recorder(private val next: Thread.UncaughtExceptionHandler?) : Thread.UncaughtExceptionHandler {
@@ -64,6 +91,17 @@ object AppCrashes {
       recorded.add(t.name to e)
       if (next != null) next.uncaughtException(t, e) else e.printStackTrace()
     }
+  }
+}
+
+object LeakedWork {
+  private val abandoned = ConcurrentLinkedQueue<String>()
+
+  fun record(stuck: List<String>) { abandoned.addAll(stuck) }
+
+  fun failIfAny(what: String) {
+    if (abandoned.isEmpty()) return
+    throw AssertionError("$what ${abandoned.distinct().joinToString()}: abandoned app work can still change the app, so every later test in this process fails")
   }
 }
 

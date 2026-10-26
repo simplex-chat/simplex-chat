@@ -62,10 +62,10 @@ fun SendMsgView(
   cancelLiveMessage: (() -> Unit)? = null,
   editPrevMessage: () -> Unit,
   onFilesPasted: (List<URI>) -> Unit,
-  uiKey: UiKey? = null,
   onMessageChange: (ComposeMessage) -> Unit,
   textStyle: MutableState<TextStyle>,
   focusRequester: FocusRequester? = null,
+  uiKey: UiKey? = null,
   ) {
   val showCustomDisappearingMessageDialog = remember { mutableStateOf(false) }
   val padding = if (appPlatform.isAndroid) PaddingValues(vertical = 8.dp) else PaddingValues(top = 3.dp, bottom = 4.dp)
@@ -278,9 +278,9 @@ expect fun VoiceButtonWithoutPermissionByPlatform()
 @Composable
 private fun CustomDisappearingMessageDialog(
   showMenu: MutableState<Boolean>,
-  uiKey: UiKey? = null,
   sendMessage: (Int?) -> Unit,
-  customDisappearingMessageTimePref: SharedPreference<Int>?
+  customDisappearingMessageTimePref: SharedPreference<Int>?,
+  uiKey: UiKey? = null
 ) {
   DefaultDropdownMenu(showMenu) {
     Text(

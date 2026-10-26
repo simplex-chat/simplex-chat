@@ -29,8 +29,7 @@ private val NO_TEXT = object : Transferable {
 }
 
 private fun installAsSkikoSystemClipboard(clipboard: Clipboard) {
-  val lazy = Class.forName("org.jetbrains.skiko.Actuals_awtKt").getDeclaredField("systemClipboard\$delegate").apply { isAccessible = true }.get(null)
-  lazy.javaClass.getDeclaredField("_value").apply { isAccessible = true }.set(lazy, clipboard)
+  DesktopFields.skikoClipboardValue().set(DesktopFields.skikoClipboard.field.get(null), clipboard)
 }
 
 class RecordingUriHandler : UriHandler {

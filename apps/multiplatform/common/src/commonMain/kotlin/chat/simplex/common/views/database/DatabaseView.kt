@@ -356,9 +356,9 @@ private fun setChatItemTTLAlert(
 fun TtlOptions(
   current: State<ChatItemTTL?>,
   enabled: State<Boolean>,
-  uiKey: UiKey? = null,
   onSelected: (ChatItemTTL?) -> Unit,
-  default: State<ChatItemTTL>? = null
+  default: State<ChatItemTTL>? = null,
+  uiKey: UiKey? = null
 ) {
   val values = remember {
     val all: ArrayList<ChatItemTTL> = arrayListOf(ChatItemTTL.None, ChatItemTTL.Year, ChatItemTTL.Month, ChatItemTTL.Week, ChatItemTTL.Day)

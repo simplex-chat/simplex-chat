@@ -5,7 +5,10 @@ import chat.simplex.common.AppLock
 import chat.simplex.common.model.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.platform.VideoPlayerHolder
+import chat.simplex.common.views.badges.BadgeStore
+import chat.simplex.common.views.chat.chatViewScrollState
 import kotlinx.coroutines.flow.MutableStateFlow
+import java.lang.reflect.Field
 import java.lang.reflect.Modifier
 import java.util.IdentityHashMap
 
@@ -16,7 +19,7 @@ object ModelSnapshot {
   fun capture() {
     restores.clear()
     val seen = IdentityHashMap<Any, Unit>()
-    listOf<Any>(ChatModel, AppLock, ConnectProgressManager, ChannelRelaysModel, BadgeModel, VideoPlayerHolder).forEach { walk(it, seen) }
+    listOf<Any>(ChatModel, AppLock, ConnectProgressManager, ChannelRelaysModel, BadgeModel, BadgeStore, VideoPlayerHolder).forEach { walk(it, seen) }
   }
 
   fun restore(onMain: (() -> Unit) -> Unit) = onMain { restores.forEach { it() } }
@@ -61,10 +64,12 @@ object CommonUiState {
       CIFile.cachedRemoteFileRequests.clear()
       clearImageCaches()
       WallpaperType.cachedImages.clear()
-      setStatic("chat.simplex.common.views.chatlist.ChatListViewKt", "lazyListState", 0 to 0)
-      setStatic("chat.simplex.common.views.chat.ChatViewKt", "reportsListState", null)
+      CommonFields.chatListState.field.set(null, 0 to 0)
+      CommonFields.reportsListState.field.set(null, null)
+      chatViewScrollState.value = false
+      CommonFields.badgeLinkStep.field.set(null, null)
       AppLock.clearAuthState()
-      setStatic("chat.simplex.common.views.onboarding.OnboardingSharedState", "selectedOperatorIds", emptySet<Long>())
+      CommonFields.selectedOperatorIds.field.set(null, emptySet<Long>())
     }
     clearTransient(onMain)
   }
@@ -72,24 +77,20 @@ object CommonUiState {
   fun clearTransient(onMain: (() -> Unit) -> Unit) = onMain {
     ModalManager.closeAllModalsEverywhere()
     listOf(ModalManager.start, ModalManager.center, ModalManager.end, ModalManager.fullscreen).distinct().forEach { m ->
-      for (name in listOf("passcodeView", "onTimePasscodeView")) {
+      for (ref in CommonFields.passcodeViews) {
         @Suppress("UNCHECKED_CAST")
-        (ModalManager::class.java.getDeclaredField(name).apply { isAccessible = true }.get(m) as MutableStateFlow<Any?>).value = null
+        (ref.field.get(m) as MutableStateFlow<Any?>).value = null
       }
     }
     AlertManager.shared.hideAllAlerts()
     AlertManager.privacySensitive.hideAllAlerts()
   }
-
-  private fun setStatic(cls: String, name: String, value: Any?) {
-    Class.forName(cls).getDeclaredField(name).apply { isAccessible = true }.set(null, value)
-  }
 }
 
 object CommonPrefs {
   fun reload() {
-    AppPreferences::class.java.getDeclaredField("themeOverridesStore").apply { isAccessible = true }.set(null, null)
-    val stateField = SharedPreference::class.java.getDeclaredField("_state").apply { isAccessible = true }
+    CommonFields.themeOverridesStore.field.set(null, null)
+    val stateField = CommonFields.prefState.field
     for (f in AppPreferences::class.java.declaredFields) {
       if (!SharedPreference::class.java.isAssignableFrom(f.type)) continue
       f.isAccessible = true
@@ -109,3 +110,19 @@ object CommonPrefs {
   }
 }
 
+class FieldRef(private val cls: String, private val name: String) {
+  val field: Field get() = Class.forName(cls, false, FieldRef::class.java.classLoader).getDeclaredField(name).apply { isAccessible = true }
+  override fun toString() = "$cls.$name"
+}
+
+object CommonFields {
+  val chatListState = FieldRef("chat.simplex.common.views.chatlist.ChatListViewKt", "lazyListState")
+  val reportsListState = FieldRef("chat.simplex.common.views.chat.ChatViewKt", "reportsListState")
+  val badgeLinkStep = FieldRef("chat.simplex.common.views.badges.BadgesRedeemCodeViewKt", "badgeLinkStep")
+  val selectedOperatorIds = FieldRef("chat.simplex.common.views.onboarding.OnboardingSharedState", "selectedOperatorIds")
+  val passcodeViews = listOf("passcodeView", "onTimePasscodeView").map { FieldRef("chat.simplex.common.views.helpers.ModalManager", it) }
+  val themeOverridesStore = FieldRef("chat.simplex.common.model.AppPreferences", "themeOverridesStore")
+  val prefState = FieldRef("chat.simplex.common.model.SharedPreference", "_state")
+  val whatsNewLastVersion = FieldRef("chat.simplex.common.views.onboarding.WhatsNewViewKt", "lastVersion")
+  val all: List<FieldRef> get() = listOf(chatListState, reportsListState, badgeLinkStep, selectedOperatorIds, themeOverridesStore, prefState, whatsNewLastVersion) + passcodeViews
+}

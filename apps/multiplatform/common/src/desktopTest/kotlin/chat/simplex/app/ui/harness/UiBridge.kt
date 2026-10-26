@@ -16,7 +16,7 @@ object UiBridge {
   }
 
   @JvmStatic fun main(args: Array<String>) {
-    val port = args.getOrNull(0)?.toInt() ?: 7777
+    val port = (args.getOrNull(0) ?: System.getenv("bridgePort"))?.toInt() ?: 7777
     UiJvm.setup()
     TestServers.launch()
     val dir = File(UiEnv.jvmDir, "bridge-peers").apply { mkdirs() }

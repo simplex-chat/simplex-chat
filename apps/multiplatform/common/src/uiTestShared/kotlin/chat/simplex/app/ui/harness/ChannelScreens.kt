@@ -16,7 +16,7 @@ class ChannelLinkScreen(private val s: UiScope, private val channel: String) {
   fun share(): String {
     s.click(Ui.GroupLink.Share)
     var link: String? = null
-    s.poll(what = "the channel link of `$channel` shared") { link = s.clipboardText()?.takeIf { it.isNotBlank() }; link != null }
+    s.poll(what = "the channel link of `$channel` shared") { link = s.sharedText()?.takeIf { it.isNotBlank() }; link != null }
     return link!!
   }
 

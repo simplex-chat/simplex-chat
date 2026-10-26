@@ -14,7 +14,10 @@ abstract class UiTest {
   @get:org.junit.Rule val knownIssue = KnownIssueRule()
 
   companion object {
-    init { UiJvm.setup() }
+    init {
+      UiJvm.setup()
+      KnownIssueLog.file = File(UiEnv.runDir, "known-issues.txt")
+    }
     private var testIndex = 0
     private const val HARD_TIMEOUT_MS = 240_000L
   }
@@ -34,7 +37,9 @@ abstract class UiTest {
     }
     try {
       AppCrashes.install()
+      AppCrashes.failIfAny("crash after the previous test ended")
       AppCrashes.clear()
+      LeakedWork.failIfAny("previous test leaked")
       try {
         runInternalSkikoComposeUiTest(width = 1600, height = 900, coroutineDispatcher = StandardTestDispatcher()) {
           mainClock.autoAdvance = false
@@ -47,11 +52,12 @@ abstract class UiTest {
           }
         }
       } catch (e: Throwable) {
-        throw if (e.suppressed.isEmpty()) e else AssertionError("${e.message}; suppressed:\n" + e.suppressed.joinToString("\n") { it.stackTraceToString().lines().take(25).joinToString("\n") }, e)
+        throw if (e.suppressed.isEmpty()) e else FailureWithSuppressed(e)
       }
       repeat(2) { javax.swing.SwingUtilities.invokeAndWait {} }
       failOnStuckWork(UiTestApp.drain())
       AppCrashes.failIfAny()
+      LeakedWork.failIfAny("this test leaked")
       passed = true
     } finally {
       repeat(2) { javax.swing.SwingUtilities.invokeAndWait {} }
@@ -155,6 +161,10 @@ class UiScope(val ui: SkikoComposeUiTest, private val dir: File) {
   }
 
   fun clipboardText(): String? = clipboard.content?.text
+
+  fun sharedText(): String? = clipboardText()
+
+  fun onUiThread(action: () -> Unit) = ui.runOnUiThread(action)
 
   fun setClipboardText(text: String?) { clipboard.content = text?.let { androidx.compose.ui.text.AnnotatedString(it) } }
 
@@ -416,7 +426,7 @@ class UiScope(val ui: SkikoComposeUiTest, private val dir: File) {
 
   private fun failureShot(what: String): String? = runCatching {
     val dir = File(UiEnv.runDir, "failures").apply { mkdirs() }
-    val f = File(dir, "%s-%s-%02d-%s.png".format(UiEnv.jvmDir.name, this.dir.name, ++shots, what.replace(Regex("[^A-Za-z0-9]+"), "_").take(60)))
+    val f = File(dir, "p%s-%s-%s-%s-%02d-%s.png".format(UiEnv.pass, CurrentTest.name.replace(Regex("[^A-Za-z0-9.]+"), "_"), UiEnv.jvmDir.name, this.dir.name, ++shots, what.replace(Regex("[^A-Za-z0-9]+"), "_").take(60)))
     javax.imageio.ImageIO.write(ui.onRoot().captureToImage().toAwtImage(), "png", f)
     f.path
   }.getOrNull()

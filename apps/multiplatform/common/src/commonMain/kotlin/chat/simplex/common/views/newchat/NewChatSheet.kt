@@ -187,19 +187,30 @@ private fun ModalData.NewChatSheetLayout(
   }
 
   val actionButtonsOriginal = listOf(
-    NewChatAction(painterResource(MR.images.ic_add_link), stringResource(MR.strings.create_1_time_link), Ui.NewChat.CreateLink, addContact),
-    NewChatAction(
+    Triple(
+      painterResource(MR.images.ic_add_link),
+      stringResource(MR.strings.create_1_time_link),
+      addContact,
+    ),
+    Triple(
       painterResource(MR.images.ic_qr_code),
       if (appPlatform.isAndroid) stringResource(MR.strings.scan_paste_link) else stringResource(MR.strings.paste_link),
-      Ui.NewChat.PasteLink,
       scanPaste,
     ),
-    NewChatAction(painterResource(MR.images.ic_group), stringResource(MR.strings.create_group_button), Ui.NewChat.CreateGroup, createGroup),
-    NewChatAction(painterResource(MR.images.ic_bigtop_updates), stringResource(MR.strings.create_channel_button), Ui.NewChat.CreateChannel, createChannel),
+    Triple(
+      painterResource(MR.images.ic_group),
+      stringResource(MR.strings.create_group_button),
+      createGroup,
+    ),
+    Triple(
+      painterResource(MR.images.ic_bigtop_updates),
+      stringResource(MR.strings.create_channel_button),
+      createChannel,
+    )
   )
 
   @Composable
-  fun DeletedChatsItem(actionButtons: List<NewChatAction>) {
+  fun DeletedChatsItem(actionButtons: List<Triple<Painter, String, () -> Unit>>) {
     if (searchText.value.text.isEmpty()) {
       Spacer(Modifier.padding(bottom = 27.dp))
     }
@@ -209,10 +220,15 @@ private fun ModalData.NewChatSheetLayout(
         SectionView {
           actionButtons.map {
             NewChatButton(
-              icon = it.icon,
-              text = it.text,
-              click = it.click,
-              uiKey = it.uiKey,
+              icon = it.first,
+              text = it.second,
+              click = it.third,
+              uiKey = when (it.third) {
+                addContact -> Ui.NewChat.CreateLink
+                scanPaste -> Ui.NewChat.PasteLink
+                createGroup -> Ui.NewChat.CreateGroup
+                else -> Ui.NewChat.CreateChannel
+              },
             )
           }
         }
@@ -447,8 +463,6 @@ private fun ModalData.NewChatSheetLayout(
     }
   }
 }
-
-private class NewChatAction(val icon: Painter, val text: String, val uiKey: UiKey?, val click: () -> Unit)
 
 @Composable
 private fun NewChatButton(

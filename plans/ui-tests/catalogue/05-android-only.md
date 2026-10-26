@@ -9,8 +9,8 @@ Rows follow `00-legend.md` (row format, `Test case(s)` cells, Needs, users and C
   - `APP/` = `apps/multiplatform/android/src/main/java/chat/simplex/app/`
   - `MAN` = `apps/multiplatform/android/src/main/AndroidManifest.xml`
   - `US/` = `C/views/usersettings/`, `NS/` = `US/networkAndServers/` (as in 04)
-- Line numbers are those of master `d72f68e6d` at `~/wt-uitest-ref`, as in 01–04.
-- **Runtime:** Waydroid (LineageOS 20, Android 13 / API 33, x86_64 with libndk arm64 translation) through `~/waydroid/wd.sh`; one instance per host, so every test in this file runs serially. The APK is the default `foss` flavor, debug build (flavors at `android/build.gradle.kts:40-50`); its package is `chat.simplex.app.debug` only with `application_id.suffix=.debug` in `local.properties` (root `build.gradle.kts:23-25`, default empty; `android/build.gradle.kts:55`), as `local.properties.example` and `~/build/android.md` set it; without it the debug package is `chat.simplex.app`.
+- Line numbers are those of master `d72f68e6d`, as in 01–04.
+- **Runtime:** Waydroid (LineageOS 20, Android 13 / API 33, x86_64 with libndk arm64 translation) through `apps/multiplatform/scripts/waydroid/wd.sh`; tests run serially within an instance. The APK is the default `foss` flavor, debug build (flavors at `android/build.gradle.kts:40-50`); its package is `chat.simplex.app.debug` only with `application_id.suffix=.debug` in `local.properties` (root `build.gradle.kts:23-25`, default empty; `android/build.gradle.kts:55`), as `local.properties.example` sets it; without it the debug package is `chat.simplex.app`.
 - **Runner:** instrumented tests in the app process (`createEmptyComposeRule()`, with `MainActivity` launched by `ActivityScenario.launch` after the reset, setup item 4), sharing the desktop plan's `UiDriver`, screen objects and `Ui` keys; CLI peers, relays and `uitest-servers` run on the host and are reached through the peer bridge over `adb reverse` (research doc §5.1). `ComposeRootRegistry` sees every Compose root in the process, so `CallActivity` (a second activity) is found by the same queries.
 - **Package:** `chat.simplex.app.ui.android` (proposed; its class map lives with the Android harness, not in `00-legend.md`, whose class map covers 01–04 only).
 
@@ -38,7 +38,7 @@ Plan §11.3 lists desktop reasons. These Android reasons are proposed as new §1
 
 | Reason (the `@Ignore` text) | Why |
 |---|---|
-| `no camera on the test runtime: QR scanning needs live camera frames` | Waydroid has no camera device (`~/waydroid/README.md`, "Media"); `QRCodeScanner` decodes CameraX frames with BoofCV (`A/views/newchat/QRCodeScanner.android.kt:89-128`) and has no frame seam. The UI before scanning (permission, "Tap to scan") is tested in §4 |
+| `no camera on the test runtime: QR scanning needs live camera frames` | Waydroid has no camera device (`apps/multiplatform/scripts/waydroid/README.md`, "Known limitations"); `QRCodeScanner` decodes CameraX frames with BoofCV (`A/views/newchat/QRCodeScanner.android.kt:89-128`) and has no frame seam. The UI before scanning (permission, "Tap to scan") is tested in §4 |
 | `real WebRTC calls (the call WebView and its media)` | as plan §11.3 "Real WebRTC calls"; on Android the page runs in a `WebView` (`A/views/call/CallView.android.kt:691-790`) and needs a microphone and camera. The call UI before media starts is tested in §9 |
 | `the action ends the app process, which is the instrumentation process` | "Shutdown", "Restart" and the critical-error "Restart" call `Runtime.exit` or ProcessPhoenix (`A/views/usersettings/SettingsView.android.kt:36-45`, `A/views/database/DatabaseView.android.kt:5-7`) |
 | `OS events that end or replace the app process (reboot, package update, removal from Recents)` | `StartReceiver`, `AppUpdateReceiver`, `AutoRestartReceiver` and `onTaskRemoved` (`APP/SimplexService.kt:210-281`) run only after the instrumented process is gone |

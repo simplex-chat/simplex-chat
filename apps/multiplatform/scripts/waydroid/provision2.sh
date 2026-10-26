@@ -60,8 +60,9 @@ echo 'lxc.cgroup2.memory.max = 2500M' | sudo tee -a "$W2/var/lxc/waydroid2/confi
 sudo sed -i -E 's#^binder = .*#binder = binder2#; s#^vndbinder = .*#vndbinder = vndbinder2#; s#^hwbinder = .*#hwbinder = hwbinder2#' "$W2/var/waydroid.cfg"
 if [[ -f $WD/images/system.img ]]; then sudo sed -i -E "s#^images_path = .*#images_path = $WD/images#" "$W2/var/waydroid.cfg"; fi
 
-# 3. private system bus config
+# 3. private system bus config; it lets whoever reaches its socket own any name, so its directory is private to this user
 mkdir -p "$W2/run" "$W2/xdg"
+chmod 700 "$W2/run"
 cat > "$W2/sys.conf" <<EOF
 <!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-Bus Bus Configuration 1.0//EN" "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
 <busconfig>

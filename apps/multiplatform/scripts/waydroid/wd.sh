@@ -120,17 +120,38 @@ install_packages() {
     die "no apt-get or dnf: install waydroid, weston (with weston-screenshooter) and dnsmasq with your package manager, then rerun"
   fi
 }
+# waydroid_script runs as root: only this reviewed commit, and its Python dependencies only as these wheels
+WAYDROID_SCRIPT_URL=https://github.com/casualsnek/waydroid_script
+WAYDROID_SCRIPT_COMMIT=48dbfaf34a6ddbe78688c530f9ba1c26522aafb2
+WAYDROID_SCRIPT_REQS='certifi==2026.7.22 --hash=sha256:62f22742b58a1a33014a2b6b706588a8d7e2a88ae7bd1a6ebe8c992928483775
+charset-normalizer==3.5.2 --hash=sha256:b6b751274acb69d77b3323d6b7dbaa3c7fdfc1eb829b7eb61d262f32e1af9685
+idna==3.20 --hash=sha256:ab7ae7122974553370f0bdb919e1a960b2cd1bc1ef0276416d896db81c14582c
+inquirerpy==0.3.4 --hash=sha256:c65fdfbac1fa00e3ee4fb10679f4d3ed7a012abf4833910e63c295827fe2a7d4
+pfzy==0.3.4 --hash=sha256:5f50d5b2b3207fa72e7ec0ef08372ef652685470974a107d0d4999fc5a903a96
+prompt_toolkit==3.0.53 --hash=sha256:01c0891d7f9237d5e339f7d3e42cdae80b7534abb1c7c0e3352efba6231492f2
+requests==2.34.2 --hash=sha256:2a0d60c172f83ac6ab31e4554906c0f3b3588d37b5cb939b1c061f4907e278e0
+tqdm==4.70.1 --hash=sha256:c293e525e6fef9c20e8728fd4612df02a0aa31bb5fe91ecd93e123b1b7bffa73
+urllib3==2.8.0 --hash=sha256:0cf3cae568d36aa9576b28dfb35f11328f1cb974ca7647d9475ebb86c75ac6e3
+wcwidth==0.9.2 --hash=sha256:89ca642c5bf0101157a09366be69fad0379db1f700ae39a920e103234573670e'
 install_translation() {
-  if [[ ! -f $WD/waydroid_script/main.py ]]; then
-    note "fetching waydroid_script into $WD/waydroid_script"
-    git clone --depth 1 https://github.com/casualsnek/waydroid_script "$WD/waydroid_script" || die "git clone of waydroid_script failed"
+  local ws=$WD/waydroid_script
+  [[ -d $ws/.git ]] || git init -q "$ws" || die "git init of $ws failed"
+  if [[ $(git -C "$ws" rev-parse -q --verify HEAD) != "$WAYDROID_SCRIPT_COMMIT" ]]; then
+    note "fetching waydroid_script $WAYDROID_SCRIPT_COMMIT into $ws"
+    git -C "$ws" fetch -q --depth 1 "$WAYDROID_SCRIPT_URL" "$WAYDROID_SCRIPT_COMMIT" && git -C "$ws" checkout -q --detach "$WAYDROID_SCRIPT_COMMIT" \
+      || die "fetching waydroid_script $WAYDROID_SCRIPT_COMMIT failed"
   fi
-  if [[ ! -x $WD/venv/bin/python ]]; then
-    python3 -m venv "$WD/venv" && "$WD/venv/bin/pip" install -q -r "$WD/waydroid_script/requirements.txt" || die "venv for waydroid_script failed (python3-venv installed?)"
+  [[ $(git -C "$ws" rev-parse HEAD) == "$WAYDROID_SCRIPT_COMMIT" && -z $(git -C "$ws" status --porcelain --untracked-files=no) ]] \
+    || die "$ws is not at waydroid_script $WAYDROID_SCRIPT_COMMIT or has local changes"
+  if [[ "$(cat "$WD/venv/installed-requirements.txt" 2>/dev/null)" != "$WAYDROID_SCRIPT_REQS" ]]; then
+    python3 -m venv "$WD/venv" && printf '%s\n' "$WAYDROID_SCRIPT_REQS" > "$WD/venv/requirements.txt" \
+      && "$WD/venv/bin/pip" install -q --require-hashes --only-binary :all: --no-deps -r "$WD/venv/requirements.txt" \
+      && cp "$WD/venv/requirements.txt" "$WD/venv/installed-requirements.txt" \
+      || die "venv for waydroid_script failed (python3-venv installed? Python 3.10 or newer?)"
   fi
   mkdir -p "$HOME/.cache/waydroid-script/downloads"
   cp -n "$WD"/translation/*.zip "$HOME/.cache/waydroid-script/downloads/" 2>/dev/null
-  sudo env HOME="$HOME" SUDO_USER="$(id -un)" "$WD/venv/bin/python" "$WD/waydroid_script/main.py" -a "$ANDROID_VERSION" install "$TRANSLATION" \
+  sudo env HOME="$HOME" SUDO_USER="$(id -un)" "$WD/venv/bin/python" "$ws/main.py" -a "$ANDROID_VERSION" install "$TRANSLATION" \
     || die "translation install failed"
 }
 cmd_setup() {
@@ -257,7 +278,8 @@ cmd_up() {
   # never freeze the container, never sleep the screen
   wdy prop set persist.waydroid.suspend false >/dev/null 2>&1
   local key; key=$(cat "$ADB_KEY" 2>/dev/null) || { "$ADB" start-server >/dev/null; key=$(cat "$ADB_KEY"); }
-  swdy shell -- sh -c "mkdir -p /data/misc/adb; touch /data/misc/adb/adb_keys; grep -qF '$key' /data/misc/adb/adb_keys || echo '$key' >> /data/misc/adb/adb_keys; chown system:shell /data/misc/adb/adb_keys; chmod 640 /data/misc/adb/adb_keys"
+  printf '%s\n' "$key" | swdy shell -- sh -c 'k=$(cat); f=/data/misc/adb/adb_keys; mkdir -p /data/misc/adb; touch "$f"; [ -z "$k" ] || grep -qxF "$k" "$f" || printf "%s\n" "$k" >> "$f"; chown system:shell "$f"; chmod 640 "$f"'
+  swdy shell -- cat /data/misc/adb/adb_keys | tr -d '\r' | grep -xF -- "$key" >/dev/null || die "could not add $ADB_KEY to the container's adb keys"
   local s=
   for _ in $(seq 30); do s=$(serial) && break; sleep 1; done
   [[ $s ]] || die "container has no IPv4 (DHCP blocked by the host firewall? Qubes: 'sudo nft list chain ip qubes custom-input'; see README, Networking)"

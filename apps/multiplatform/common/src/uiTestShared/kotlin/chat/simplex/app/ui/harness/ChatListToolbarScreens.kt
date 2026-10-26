@@ -43,7 +43,7 @@ class WhatsNewScreen(private val s: UiScope) {
 
   companion object {
     val VERSION: String by lazy {
-      Class.forName("chat.simplex.common.views.onboarding.WhatsNewViewKt").getDeclaredField("lastVersion").apply { isAccessible = true }.get(null) as String
+      CommonFields.whatsNewLastVersion.field.get(null) as String
     }
     val TITLE: String get() = "New in $VERSION"
     const val OLDER_VERSION = "v6.5"

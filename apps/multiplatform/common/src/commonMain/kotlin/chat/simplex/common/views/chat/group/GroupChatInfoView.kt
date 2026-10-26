@@ -1222,7 +1222,7 @@ private fun DropDownMenuForMember(rhId: Long?, member: GroupMember, groupInfo: G
         }
         if (selectedItems.value == null && member.memberRole < GroupMemberRole.Moderator) {
           Divider()
-          SelectItemAction(showMenu, Ui.GroupInfo.MemberMenu(member.groupMemberId, "select")) { toggleItemSelection(member.groupMemberId, selectedItems) }
+          SelectItemAction(showMenu, { toggleItemSelection(member.groupMemberId, selectedItems) }, uiKey = Ui.GroupInfo.MemberMenu(member.groupMemberId, "select"))
         }
       }
     }
