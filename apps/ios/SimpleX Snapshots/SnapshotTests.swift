@@ -162,12 +162,13 @@ private func rowMaxWidth(_ ci: ChatItem, _ merged: MergedItem, _ cInfo: ChatInfo
     let voiceNoFrame = ci.content.msgContent?.isVoice == true && ci.content.text.count == 0 && ci.quotedItem == nil && ci.meta.itemForwarded == nil
     let channelReceived = !ci.chatDir.sent && cInfo.isChannel
     let channelReceivedNoAvatar = channelReceived && !showsAvatar(merged.newest().item, merged.oldest().nextItem)
+    let avatarColumn = scaledMemberImageSize(DynamicTypeSize(UIApplication.shared.preferredContentSizeCategory) ?? .large) + 8
     return cInfo.chatType == .group
     ? channelReceivedNoAvatar
     ? width - 26
     : voiceNoFrame || channelReceived
-    ? (width - 28) - 42
-    : (width - 28) * 0.84 - 42
+    ? (width - 28) - avatarColumn
+    : (width - 28) * 0.84 - avatarColumn
     : voiceNoFrame
     ? (width - 32)
     : (width - 32) * 0.84

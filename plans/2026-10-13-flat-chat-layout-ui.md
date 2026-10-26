@@ -192,6 +192,7 @@ Shared/Views/Chat/ChatView.swift         terminal = activeChatLayout == .termina
                                          terminalItemRow: SelectedChatItem, TerminalChatItemRow(chatItemSender or nil, gutter, terminalRowGap)
                                          gutter: memberImageSize + 4pt in groups, 0 in other chats
                                          memberImageSize: 34pt × chat list profileImageSize ÷ 63 at the text size, classic rows too
+                                         classic group bubble width: less scaledMemberImageSize + 8pt for the avatar column
                                          terminalRowsSeparated(olderRow); olderRow: the next merged item
                                          bottom: 8pt below the newest row, terminalLevelStep above a date separator, otherwise 0
                                          chatItemWithMenu: alignEnd = sent && !terminal; ChatItemClipped skipped; reactions at the text edge

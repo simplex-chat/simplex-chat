@@ -14,6 +14,10 @@ import Combine
 
 private let memberImageBaseSize: CGFloat = 34
 
+func scaledMemberImageSize(_ font: DynamicTypeSize) -> CGFloat {
+    memberImageBaseSize * dynamicSize(font).profileImageSize / dynamicSize(.large).profileImageSize
+}
+
 private func shouldShowAvatar(_ current: ChatItem, _ older: ChatItem?) -> Bool {
     let oldIsGroupRcv = switch older?.chatDir {
     case .groupRcv: true
@@ -45,6 +49,7 @@ struct ChatView: View {
     @State var theme: AppTheme = buildTheme()
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
+    @Environment(\.dynamicTypeSize) private var userFont
     @Environment(\.presentationMode) var presentationMode
     @Environment(\.scenePhase) var scenePhase
     @State @ObservedObject var chat: Chat
@@ -928,12 +933,13 @@ struct ChatView: View {
                         // left padding (see .leading padding below), so they get the full row width here
                         // too — otherwise the reserved avatar inset would leave a gap on the right
                         let channelReceivedNoAvatar = channelReceived && !shouldShowAvatar(mergedItem.newest().item, mergedItem.oldest().nextItem)
+                        let avatarColumn = scaledMemberImageSize(userFont) + 8
                         let maxWidth = cInfo.chatType == .group
                         ? channelReceivedNoAvatar
                         ? g.size.width - 26
                         : voiceNoFrame || channelReceived
-                        ? (g.size.width - 28) - 42
-                        : (g.size.width - 28) * 0.84 - 42
+                        ? (g.size.width - 28) - avatarColumn
+                        : (g.size.width - 28) * 0.84 - avatarColumn
                         : voiceNoFrame
                         ? (g.size.width - 32)
                         : (g.size.width - 32) * 0.84
@@ -1753,7 +1759,7 @@ struct ChatView: View {
         var revealed: Bool { revealedItems.contains(chatItem.id) }
 
         private var memberImageSize: CGFloat {
-            memberImageBaseSize * dynamicSize(userFont).profileImageSize / dynamicSize(.large).profileImageSize
+            scaledMemberImageSize(userFont)
         }
 
         typealias ItemSeparation = (timestamp: Bool, largeGap: Bool, date: Date?)

@@ -357,7 +357,8 @@ unknown values                     skipped
 ```
 row padding        top: topGap, plus terminalSenderTopGap with a sender row; start 8pt; end 12pt
 gutter             groups and channels: memberImageSize + 4pt, with the sender avatar; other chats: none
-avatar             memberImageSize: 34pt × chat list profileImageSize ÷ 63 (dynamicSize at the text size, at most 75); classic rows too
+avatar             memberImageSize: scaledMemberImageSize, 34pt × chat list profileImageSize ÷ 63 (dynamicSize at the text size, at most 75); classic rows too
+                   classic group bubbles: maximum width less the avatar column, scaledMemberImageSize + 8pt
 sender row         name and badge at terminalNameSize, 13.5 × 17/16 pt (primary for own items, secondary otherwise); role label 15pt after the name
                    start padding chatItemTextPadding; terminalSenderBottomGap below
 selection          SelectedChatItem 8pt from the start; row moved by 28pt; selected row tint primary 10%
