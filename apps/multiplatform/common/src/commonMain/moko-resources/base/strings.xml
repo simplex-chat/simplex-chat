@@ -697,6 +697,7 @@
   <string name="file_will_be_received_when_contact_completes_uploading">File will be received when your contact completes uploading it.</string>
   <string name="file_will_be_received_when_contact_is_online">File will be received when your contact is online, please wait or check later!</string>
   <string name="file_saved">File saved</string>
+  <string name="file_already_exists_replace_question">File already exists. Replace it?</string>
   <string name="file_not_found">File not found</string>
   <string name="error_saving_file">Error saving file</string>
   <string name="markdown_formatted_view">Formatted view</string>

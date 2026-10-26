@@ -253,19 +253,19 @@ jobs:
           du -sh "$app"
           LD_LIBRARY_PATH="$app/lib/app/resources" ldd "$app/lib/app/resources/libapp-lib.so"
 
-      # for the Claude job; a tarball keeps the app's file modes, which an artifact drops
+      # a tarball keeps the app's file modes, which an artifact drops
       - name: Pack app
-        if: ${{ !cancelled() && steps.build.outcome == 'success' && needs.plan.outputs.run-claude == 'true' }}
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: tar -czf "$RUNNER_TEMP/desktop-app.tar.gz" -C apps/multiplatform/release/main/app simplex
 
       - name: Upload app
-        if: ${{ !cancelled() && steps.build.outcome == 'success' && needs.plan.outputs.run-claude == 'true' }}
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         uses: actions/upload-artifact@v7
         with:
           name: desktop-app
           path: ${{ runner.temp }}/desktop-app.tar.gz
           compression-level: 0
-          retention-days: 1
+          retention-days: 14
           if-no-files-found: error
 
       - name: Run desktop tests
