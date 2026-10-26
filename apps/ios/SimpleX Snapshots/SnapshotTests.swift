@@ -112,7 +112,7 @@ private struct ChatRows: View {
         let items = mergedItems.items
         VStack(spacing: 0) {
             ForEach(Array(items.indices.reversed()), id: \.self) { index in
-                row(index, items[index])
+                row(index, items[index]).fixedSize(horizontal: false, vertical: true)
             }
         }
         .padding(.vertical, 8)
