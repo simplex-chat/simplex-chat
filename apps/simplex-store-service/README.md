@@ -649,8 +649,8 @@ service registers. For a listed name the page also signs `AcceptBonaFideTerms` f
 with the reveal, at the policy's nonce and the reveal's deadline, and the service relays it with
 `commitUnderBonaFideCommunityTermsWithSig` as soon as the reveal is stored, then registers. When the
 policy's terms changed after the order, the page asks the buyer to agree again before it signs. A
-relay or a register refused for the acceptance (new terms, a used nonce) clears the reveal, and the
-page signs again.
+relay or a register refused for the acceptance (new terms, a used nonce), or an acceptance signed for
+the name policy before a `setNamePolicy`, clears the reveal, and the page signs again.
 
 ### The gas key
 

@@ -44,7 +44,7 @@ import StoreService.Names.Codes (CodeRefusal (..), codeRefusal, releaseCode, res
 import StoreService.Names.Contracts (CommitmentAges (..), acceptedTerms, commitmentAges, commitmentTime, controllerAvailable, namePolicy, sponsorNonce)
 import StoreService.Names.Orders (Landing (..), OrdersEnv (..), WriteRefusal (..), confirmLanded, versionWritten)
 import StoreService.Names.Phases (RegistrationId (..), awaitChange, publish)
-import StoreService.Names.Registration (TermsAcceptance (..), acceptCalldata, commitCalldata, registerWithCreditCalldata, sponsorDomain, verifyRegisterIntent)
+import StoreService.Names.Registration (TermsAcceptance (..), acceptCalldata, commitCalldata, policyDomain, registerWithCreditCalldata, sponsorDomain, verifyAcceptance, verifyRegisterIntent)
 import StoreService.Names.Reveal (intentOf)
 import StoreService.Names.Revert (RevertName (..))
 import StoreService.Names.Sender (PendingTx, SendError (..), Sender, awaitOutcome, inFlightTransaction, ptHash, submitTransaction)
@@ -274,9 +274,10 @@ committed w@Worker {wkSender} now r@NameRegistration {nrId, nrReveal, nrRevealAf
             _ -> sendRegister w now r rv
 
 -- | The relay of the reveal's acceptance to the name policy, sent without waiting for revealAfter; Nothing once the policy
--- stores that acceptance. Its dry run's revert is judged as a register's is.
+-- stores that acceptance. One signed for another policy, before a setNamePolicy, clears the reveal for the page to sign
+-- again; the relay's dry run's revert is judged as a register's is.
 relayAcceptance :: Worker -> UTCTime -> NameRegistration -> Word64 -> TermsAcceptance -> IO (Maybe Next)
-relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts}, wkSender} now r@NameRegistration {nrId = regId, nrOwner, nrCommitment} deadline a@TermsAcceptance {taTermsHash} =
+relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts, oeConfig = NamesConfig {nChain = ChainConfig {cChainId}}}, wkSender} now r@NameRegistration {nrId = regId, nrOwner, nrCommitment} deadline a@TermsAcceptance {taTermsHash} =
   inFlightTransaction wkSender (TxAccept regId) >>= \case
     Just p -> pure $ Just $ Await p
     Nothing ->
@@ -287,11 +288,14 @@ relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts}, wkSender} now r@Na
           | otherwise -> Just <$> relay policy
   where
     relay policy =
-      submitTransaction wkSender (TxAccept regId) policy (acceptCalldata nrCommitment nrOwner deadline a) >>= \case
-        Right p -> pure $ Await p
-        Left SEInFlight -> pure Again
-        Left (SEChain (ChainReverted reason)) -> judge w now r reason
-        Left e -> pure $ failure r e
+      verifyAcceptance (policyDomain cChainId policy) nrOwner nrCommitment deadline a >>= \case
+        Left _ -> save w now r {nrReveal = Nothing}
+        Right () ->
+          submitTransaction wkSender (TxAccept regId) policy (acceptCalldata nrCommitment nrOwner deadline a) >>= \case
+            Right p -> pure $ Await p
+            Left SEInFlight -> pure Again
+            Left (SEChain (ChainReverted reason)) -> judge w now r reason
+            Left e -> pure $ failure r e
 
 -- | The stored intent is checked before its dry run, whose revert decides at once; no label turn is held across the send.
 sendRegister :: Worker -> UTCTime -> NameRegistration -> NameReveal -> IO Next

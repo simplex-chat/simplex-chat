@@ -40,6 +40,7 @@ import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto (keccak256)
 import Simplex.Messaging.Crypto.Secp256k1 (Secp256k1PrivateKey, signRecoverable)
+import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.SimplexName (labelHash)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Names.Abi (abiBytes, abiTuple, addressWord, AbiValue (..), hex, selector, uint256)
@@ -100,6 +101,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "relays the acceptance before the wait for revealAfter, then waits for it" testAcceptanceBeforeWait
     it "clears the reveal when the relay's dry run refuses the acceptance for new terms or a used nonce, staying committed" testAcceptanceRefused
     it "retries the relay while the policy's acceptance for the commitment cannot be read, sending nothing" testAcceptanceUnread
+    it "clears the reveal of an acceptance signed for another policy, sending nothing, for the page to sign again" testAcceptanceOtherPolicy
     it "judges a relay past the acceptance's deadline as a register past it, failing the order" testAcceptanceExpired
   describe "lapse" $ do
     it "ends a committed order not revealed by revealBefore failed, keeping its code" testLapseFailed
@@ -648,9 +650,13 @@ testTermsNotAccepted = withWorker $ \w@W {wCtx = ctx} -> do
 
 -- | The page's reveal with its acceptance of the policy's terms.
 acceptedReveal :: Ctx -> NameRegistration -> IO NameRegistration
-acceptedReveal ctx@Ctx {cRandom} r = do
+acceptedReveal = acceptedRevealFor fakeNamePolicy
+
+-- | The page's reveal with its acceptance signed for the given policy.
+acceptedRevealFor :: Address -> Ctx -> NameRegistration -> IO NameRegistration
+acceptedRevealFor policy ctx@Ctx {cRandom} r = do
   rv <- signedReveal ctx keyA reveal {rvLabel = "alicebakery"} r
-  sig <- either (error . show) id <$> signRecoverable cRandom keyA (acceptanceDigest (policyDomain fakeChainId fakeNamePolicy) (nrCommitment r) fakeCommunityTerms 0 (rvDeadline rv))
+  sig <- either (error . show) id <$> signRecoverable cRandom keyA (acceptanceDigest (policyDomain fakeChainId policy) (nrCommitment r) fakeCommunityTerms 0 (rvDeadline rv))
   rewrite ctx r (\o -> o {nrReveal = Just rv {rvAcceptance = Just TermsAcceptance {taTermsHash = fakeCommunityTerms, taNonce = 0, taSignature = sig}}})
 
 -- | The terms hash the policy holds as accepted for the registration's commitment by its owner.
@@ -702,6 +708,15 @@ testAcceptanceUnread = withWorker $ \w@W {wCtx = ctx} -> do
   r <- paidIn ctx aliceOrder openPhase >>= acceptedReveal ctx
   steps w r >>= retrying
   stored ctx r `shouldReturn` r
+  sent w `shouldReturn` []
+
+testAcceptanceOtherPolicy :: IO ()
+testAcceptanceOtherPolicy = withWorker $ \w@W {wCtx = ctx} -> do
+  r <- paidIn ctx aliceOrder openPhase >>= acceptedRevealFor fakeSponsor ctx
+  answerAccepted w r $ B.replicate 32 0
+  published w r (steps w r >>= waitingUntil) `shouldReturn` at (orderSeconds - minAge + maxAge + 1)
+  x <- stored ctx r
+  (nrPhase x, nrReveal x) `shouldBe` (PCommitted, Nothing)
   sent w `shouldReturn` []
 
 testAcceptanceExpired :: IO ()
