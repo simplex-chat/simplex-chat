@@ -791,8 +791,8 @@ termsChanged version community =
   )
 
 -- | A listed name's community entry: the ini's text, and the policy's terms the fake node serves.
-communityEntry :: Ctx -> Text -> J.Value
-communityEntry Ctx {cNode} for = J.object ["for" .= for, "terms" .= J.object ["url" .= fakeTermsUrl cNode, "hash" .= hex fakeCommunityTerms]]
+communityEntry :: J.ToJSON a => FakeEthNode -> a -> J.Value
+communityEntry node for = J.object ["for" .= for, "terms" .= J.object ["url" .= fakeTermsUrl node, "hash" .= hex fakeCommunityTerms]]
 
 -- | The policy lists the name as a community name.
 listOnChain :: Ctx -> Text -> IO ()
@@ -817,7 +817,7 @@ testTermsChanged = withOrders $ \ctx0 -> withSettings (listName "dynamis") ctx0 
   forM_ [olderTerms, communityTerms termsVersion, communityTerms olderTerms, T.replicate 112 "a"] $ \t ->
     placeOrder ctx aliceOrder {oTerms = t} `shouldReturn` termsChanged termsVersion Nothing
   forM_ [termsVersion, olderTerms, communityTerms olderTerms] $ \t ->
-    placeOrder ctx dynamis {oTerms = t} `shouldReturn` termsChanged termsVersion (Just $ communityEntry ctx bakers)
+    placeOrder ctx dynamis {oTerms = t} `shouldReturn` termsChanged termsVersion (Just $ communityEntry (cNode ctx) bakers)
   stubCalls (cStub ctx) `shouldReturn` []
   registrationsOf ctx ownerA `shouldReturn` []
   (invId, v) <- placed ctx dynamis {oTerms = communityTerms termsVersion}
@@ -828,13 +828,13 @@ testCommunityTerms :: IO ()
 testCommunityTerms = withOrders $ \ctx0 -> withSettings (listName "alicebakery" . vectorTermStart) ctx0 $ \ctx -> do
   listOnChain ctx "alicebakery"
   writeIORef (cClock ctx) (posixSecondsToUTCTime $ fromIntegral $ oTimestamp vectorOrder)
-  postOrder ctx (withSignature vectorSignature $ unsignedBody vectorOrder) `shouldReturn` termsChanged termsVersion (Just $ communityEntry ctx bakers)
+  postOrder ctx (withSignature vectorSignature $ unsignedBody vectorOrder) `shouldReturn` termsChanged termsVersion (Just $ communityEntry (cNode ctx) bakers)
   let community = vectorOrder {oTerms = communityTerms termsVersion}
       communitySignature = "0xaaae43ae111b0411c50cc0c09acb6bac1bdf3d338539341046189f84e785efe331c5bb7b43ad36fa84e0ce8bcaa6d7e5e42cf21c61eb172a0e4dc704ebcdf1001c"
   signedBody (cRandom ctx) community >>= (`shouldBe` withSignature communitySignature (unsignedBody community))
   (status, v) <- postOrder ctx $ withSignature communitySignature (unsignedBody community)
   (status, field "terms" . registrationOf =<< v, field "community" . registrationOf =<< v)
-    `shouldBe` (200, Just (J.String $ communityTerms termsVersion), Just (communityEntry ctx bakers))
+    `shouldBe` (200, Just (J.String $ communityTerms termsVersion), Just (communityEntry (cNode ctx) bakers))
 
 testResendAfterBump :: IO ()
 testResendAfterBump = withOrders $ \ctx0 -> do
@@ -949,7 +949,7 @@ testCodeTermsChanged = withOrders $ \ctx0 -> withSettings (listName "dynamis") c
   forM_ [olderTerms, communityTerms termsVersion] $ \t ->
     register ctx code aliceOrder {oTerms = t} `shouldReturn` termsChanged termsVersion Nothing
   forM_ [termsVersion, communityTerms olderTerms] $ \t ->
-    register ctx code dynamis {oTerms = t} `shouldReturn` termsChanged termsVersion (Just $ communityEntry ctx bakers)
+    register ctx code dynamis {oTerms = t} `shouldReturn` termsChanged termsVersion (Just $ communityEntry (cNode ctx) bakers)
   pcReservedBy <$> readCode ctx issued `shouldReturn` Nothing
   rid <- registered ctx code dynamis {oTerms = communityTerms termsVersion}
   nrAgreedTerms <$> registrationById ctx rid `shouldReturn` communityTerms termsVersion
@@ -1608,7 +1608,7 @@ testViewCommunity = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   let LabelHash aliceHash = labelHash "alicebakery"
       listing :: [(ByteString, Text)] -> NameRegistration -> Maybe J.Value
       listing entries r' = field "community" $ objectOf $ viewJSON (testNamesConfig node) {nCommunity = M.fromList entries} r' Nothing Nothing ViewReads {vrIntentNonce = Nothing, vrUnread = [], vrAcceptance = Nothing}
-      entry for = Just $ J.object ["for" .= for, "terms" .= J.object ["url" .= fakeTermsUrl node, "hash" .= hex fakeCommunityTerms]]
+      entry = Just . communityEntry node
   listing [(aliceHash, "bakers and bakeries in Lisbon")] r `shouldBe` entry (Just ("bakers and bakeries in Lisbon" :: Text))
   -- the community terms the order signed, without a text in the ini
   listing [] r `shouldBe` entry (Nothing :: Maybe Text)

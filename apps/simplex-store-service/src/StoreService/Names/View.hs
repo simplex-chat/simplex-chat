@@ -18,10 +18,8 @@ module StoreService.Names.View
   )
 where
 
-import Control.Monad.Except (ExceptT (..), runExceptT, withExceptT)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
-import Data.ByteString (ByteString)
 import Data.Functor ((<&>))
 import Data.Int (Int64)
 import Data.Maybe (isJust)
@@ -34,12 +32,12 @@ import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Encoding.String (strEncode, textEncode)
 import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD)
-import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
+import Simplex.Messaging.Util (safeDecodeUtf8)
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Names.Abi (hex)
 import StoreService.Names.Chain (TxHash (..))
-import StoreService.Names.Community (agreedTermsHash, communityJSON, nameCommunityTerms, termsErrorText)
-import StoreService.Names.Contracts (Contracts, namePolicy, policyNonce, sponsorNonce)
+import StoreService.Names.Community (Acceptance (..), agreedTermsHash, communityJSON, currentAcceptance)
+import StoreService.Names.Contracts (Contracts, sponsorNonce)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Store (Balance (..), BalanceHold (..), LateWait (..), NamePhase (..), NameRegistration (..), NameReveal (..), RegistrationPayment (..), getBalance, getRegistration, heldBy, lateWait)
 
@@ -49,10 +47,6 @@ data ViewReads = ViewReads
     vrUnread :: [Text],
     vrAcceptance :: Maybe Acceptance
   }
-  deriving (Eq, Show)
-
--- | What the page signs to accept the community terms of a name the policy lists.
-data Acceptance = Acceptance {acPolicy :: Address, acTermsHash :: ByteString, acNonce :: Word64}
   deriving (Eq, Show)
 
 -- | The balance as it reads at the given time, when a hold may have become overdue, and what a closed order's late money waits on.
@@ -75,17 +69,12 @@ readViewChain cfg ct NameRegistration {nrPhase, nrOwner, nrLabelHash, nrReveal} 
       Left _ -> pure none {vrUnread = ["intentNonce"]}
     if isJust nrReveal
       then pure vr
-      else runExceptT acceptanceRead <&> \case
+      else currentAcceptance cfg ct nrLabelHash nrOwner <&> \case
         Right vrAcceptance -> vr {vrAcceptance}
         Left _ -> vr {vrUnread = vrUnread vr <> ["acceptance"]}
   _ -> pure none
   where
     none = ViewReads {vrIntentNonce = Nothing, vrUnread = [], vrAcceptance = Nothing}
-    acceptanceRead = withExceptT termsErrorText (ExceptT $ nameCommunityTerms cfg ct nrLabelHash) >>= traverse acceptance
-    acceptance acTermsHash = do
-      acPolicy <- withExceptT tshow $ ExceptT $ namePolicy ct
-      acNonce <- withExceptT tshow $ ExceptT $ policyNonce ct nrOwner
-      pure Acceptance {acPolicy, acTermsHash, acNonce}
 
 viewJSON :: NamesConfig -> NameRegistration -> Maybe Balance -> Maybe LateWait -> ViewReads -> J.Value
 viewJSON cfg@NamesConfig {nTLD, nChain = ChainConfig {cChainId, cResolver, cSponsor}} r balance late ViewReads {vrIntentNonce, vrUnread, vrAcceptance} =

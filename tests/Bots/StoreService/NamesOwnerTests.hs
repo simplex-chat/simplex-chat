@@ -500,10 +500,10 @@ testMoveTermsChanged = withOwnerAs (listName "alicebakers") $ \ctx -> do
   move ctx keyA r (currentFields r) {ofAgreedTerms = olderTerms} `shouldReturn` termsChanged termsVersion Nothing
   to <- moveTo ctx "alicebakers" 10
   forM_ [termsVersion, communityTerms olderTerms] $ \t ->
-    move ctx keyA r to {ofAgreedTerms = t} `shouldReturn` termsChanged termsVersion (Just $ communityEntry ctx bakers)
+    move ctx keyA r to {ofAgreedTerms = t} `shouldReturn` termsChanged termsVersion (Just $ communityEntry (cNode ctx) bakers)
   stored ctx r `shouldReturn` r
   v <- moved ctx keyA r to {ofAgreedTerms = communityTerms termsVersion}
-  fieldsIn v [("terms", J.String $ communityTerms termsVersion), ("community", communityEntry ctx bakers)]
+  fieldsIn v [("terms", J.String $ communityTerms termsVersion), ("community", communityEntry (cNode ctx) bakers)]
   nrAgreedTerms <$> stored ctx r `shouldReturn` communityTerms termsVersion
 
 testMoveTermsCheckOrder :: IO ()

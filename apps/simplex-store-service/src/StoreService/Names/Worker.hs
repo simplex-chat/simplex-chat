@@ -275,7 +275,7 @@ committed w@Worker {wkSender} now r@NameRegistration {nrId, nrReveal, nrRevealAf
 
 -- | The step that relays the reveal's acceptance to the name policy, before the wait for revealAfter for a reveal stored
 -- before it; Nothing once the policy holds it. A relay whose dry run refuses the acceptance clears the reveal, for
--- the page to sign both again.
+-- the page to sign both again; one past its deadline, the reveal's, is judged as a register past it is.
 relayAcceptance :: Worker -> UTCTime -> NameRegistration -> Word64 -> TermsAcceptance -> IO (Maybe Next)
 relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts}, wkSender} now r@NameRegistration {nrId = regId@(RegistrationId rid), nrOwner, nrCommitment} deadline a@TermsAcceptance {taTermsHash} =
   inFlightTransaction wkSender (TxAccept regId) >>= \case
@@ -285,15 +285,18 @@ relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts}, wkSender} now r@Na
         Left e -> pure $ Just $ failure r e
         Right (policy, held)
           | held == taTermsHash -> pure Nothing
-          | otherwise ->
-              Just <$> (submitTransaction wkSender (TxAccept regId) policy (acceptCalldata nrCommitment nrOwner deadline a) >>= \case
-                Right p -> pure $ Await p
-                Left SEInFlight -> pure Again
-                Left (SEChain (ChainReverted (Just reason)))
-                  | reason `elem` [RNTermsMismatch, RNInvalidNonce, RNSignatureExpired, RNInvalidSignature] -> do
-                      logWarn $ "names worker: registration " <> rid <> ": its terms acceptance is refused, " <> tshow reason <> "; the page signs again"
-                      save w now r {nrReveal = Nothing}
-                Left e -> pure $ failure r e)
+          | otherwise -> Just <$> relay policy
+  where
+    relay policy =
+      submitTransaction wkSender (TxAccept regId) policy (acceptCalldata nrCommitment nrOwner deadline a) >>= \case
+        Right p -> pure $ Await p
+        Left SEInFlight -> pure Again
+        Left (SEChain (ChainReverted reason@(Just RNSignatureExpired))) -> judge w now r reason
+        Left (SEChain (ChainReverted (Just reason)))
+          | reason `elem` [RNTermsMismatch, RNInvalidNonce, RNInvalidSignature] -> do
+              logWarn $ "names worker: registration " <> rid <> ": its terms acceptance is refused, " <> tshow reason <> "; the page signs again"
+              save w now r {nrReveal = Nothing}
+        Left e -> pure $ failure r e
 
 -- | The stored intent is checked before its dry run, whose revert decides at once; no label turn is held across the send.
 sendRegister :: Worker -> UTCTime -> NameRegistration -> NameReveal -> IO Next

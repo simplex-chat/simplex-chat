@@ -13,6 +13,8 @@ module StoreService.Names.Community
     termsErrorText,
     currentCommunityTerms,
     nameCommunityTerms,
+    Acceptance (..),
+    currentAcceptance,
   )
 where
 
@@ -29,15 +31,17 @@ import Data.IORef (atomicWriteIORef, readIORef)
 import qualified Data.Map.Strict as M
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Word (Word64)
 import Network.HTTP.Client (HttpException, Manager, Response (..), brReadSome, parseRequest, withResponse)
 import Network.HTTP.Types (statusCode)
 import Simplex.Messaging.Crypto (keccak256)
+import Simplex.Messaging.Eth.Address (Address)
 import Simplex.Messaging.SimplexName (LabelHash (..))
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (NamesConfig (..), TermsConfig (..))
 import StoreService.Names.Abi (bytes32FromHex, hex)
 import StoreService.Names.Chain (ChainClient (..))
-import StoreService.Names.Contracts (Contracts (..), bonaFideName, communityTermsHash)
+import StoreService.Names.Contracts (Contracts (..), bonaFideName, communityTermsHash, namePolicy, policyNonce)
 import System.Timeout (timeout)
 
 communityFor :: NamesConfig -> LabelHash -> Maybe Text
@@ -90,6 +94,20 @@ nameCommunityTerms cfg ct lh = runExceptT $
   withExceptT (TEUnread . tshow) (ExceptT $ bonaFideName ct lh) >>= \case
     False -> pure Nothing
     True -> Just <$> ExceptT (currentCommunityTerms cfg ct)
+
+-- | What the page signs to accept the community terms of a name the policy lists.
+data Acceptance = Acceptance {acPolicy :: Address, acTermsHash :: ByteString, acNonce :: Word64}
+  deriving (Eq, Show)
+
+-- | The acceptance the owner signs for a name the policy lists, Nothing for another name; the view asks for it and the
+-- reveal is checked against it.
+currentAcceptance :: NamesConfig -> Contracts -> LabelHash -> Address -> IO (Either Text (Maybe Acceptance))
+currentAcceptance cfg ct lh owner = runExceptT $ withExceptT termsErrorText (ExceptT $ nameCommunityTerms cfg ct lh) >>= traverse acceptance
+  where
+    acceptance acTermsHash = do
+      acPolicy <- withExceptT tshow $ ExceptT $ namePolicy ct
+      acNonce <- withExceptT tshow $ ExceptT $ policyNonce ct owner
+      pure Acceptance {acPolicy, acTermsHash, acNonce}
 
 -- | The policy's community terms hash, once the text at community_terms_url hashes to it. Each call reads the hash and
 -- fetches the page until its text hashes to it, so terms set later are checked when a call first reads them.

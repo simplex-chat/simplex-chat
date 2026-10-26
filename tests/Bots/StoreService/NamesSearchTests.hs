@@ -26,6 +26,7 @@ import Bots.StoreService.NamesContractsTests
     withContracts,
     year,
   )
+import Bots.StoreService.NamesOrdersTests (communityEntry)
 import Bots.StoreService.NamesProfilesTests (bakeryLink, jpeg, newsLink)
 import Bots.StoreService.NamesStoreTests (issue, order, ownerA, placeCode, t0, usable)
 import Bots.StoreService.WebTests (withServiceStore)
@@ -55,7 +56,7 @@ import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..))
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import StoreService.Config (ListenerConfig (..), NamesConfig (..), TermsConfig (..))
-import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, bytes32FromHex, hex, selector, uint256)
+import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, bytes32FromHex, selector, uint256)
 import StoreService.Names.Contracts (Contracts (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Profiles (ChatKind (..), HostResolver, LinkProfile (..), ProfileFetcher, ProfileLimits (..), defaultProfileLimits, monotonicSeconds, newProfiles)
@@ -137,7 +138,7 @@ listed node (status, answer) = (status, withEntry <$> answer)
   where
     withEntry :: J.Value -> J.Value
     withEntry = \case
-      J.Object o -> J.Object $ KM.insert "community" (J.object ["for" .= aliceCommunity, "terms" .= J.object ["url" .= fakeTermsUrl node, "hash" .= hex fakeCommunityTerms]]) o
+      J.Object o -> J.Object $ KM.insert "community" (communityEntry node aliceCommunity) o
       v -> v
 
 fetchMicros :: Int

@@ -431,7 +431,7 @@ testSpendTermsChanged = withSpend $ \ctx0 -> serveSpend (configured (listName "d
   forM_ [olderTerms, communityTerms termsVersion] $ \t ->
     spend ctx src (covered 30000) {sbOrder = aliceOrder {oTerms = t}} `shouldReturn` termsChanged termsVersion Nothing
   forM_ [termsVersion, communityTerms olderTerms] $ \t ->
-    spend ctx src (dynamis 30000 Nothing) {sbOrder = dynamisOrder {oTerms = t}} `shouldReturn` termsChanged termsVersion (Just $ communityEntry ctx bakers)
+    spend ctx src (dynamis 30000 Nothing) {sbOrder = dynamisOrder {oTerms = t}} `shouldReturn` termsChanged termsVersion (Just $ communityEntry (cNode ctx) bakers)
   amountOf ctx src `shouldReturn` Just 30000
   rid <- registrationAnswer . snd <$> spend ctx src (dynamis 30000 Nothing) {sbOrder = dynamisOrder {oTerms = communityTerms termsVersion}}
   nrAgreedTerms <$> registrationById ctx rid `shouldReturn` communityTerms termsVersion

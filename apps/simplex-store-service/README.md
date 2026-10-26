@@ -480,7 +480,7 @@ IPv4-compatible and NAT64 forms of the IPv4 ones), are rejected, and so are thos
 host's own addresses, public ones included, since a rebinding name can answer with them too and
 reach whatever listens on the host. The exceptions are the
 endpoints the service is configured to use, on their ports: the RPC node (`[chain] rpc_url`),
-BTCPay (`[btcpay] host`), the database and the DNS resolvers in `/etc/resolv.conf`. Replies on
+BTCPay (`[btcpay] host`), the community terms page (`[names] community_terms_url`), the database and the DNS resolvers in `/etc/resolv.conf`. Replies on
 connections already open, such as Caddy's requests, pass, and so does IPv6 neighbour discovery on
 the link.
 
@@ -635,8 +635,8 @@ The terms settings and the `[community]` texts are read only at startup, so an e
 restart; the policy's list and its community terms apply as soon as they change on chain. After a
 restart, search each listed name on the names site and check that it shows as a community name.
 
-Every order signs the terms the buyer agreed to: `terms_version`, followed by `/community/` and the
-community terms' hash in hex for a listed name. The service stores them with the order, so an open order keeps the terms it signed
+Every order signs the terms the buyer agreed to: `terms_version`, followed by `/community/` and the community terms' hash in hex for a
+listed name. The service stores them with the order, so an open order keeps the terms it signed
 after an edit, and every move signs the current terms for the name it moves to, and stores them. An
 order or a move signed with any other value answers `409 terms_changed` with the current terms and
 the name's community entry, and the page asks again. An exact resend is still answered after the version changed.
@@ -649,15 +649,14 @@ service registers. For a listed name the page also signs `AcceptBonaFideTerms` f
 with the reveal, at the policy's nonce and the reveal's deadline, and the service relays it with
 `commitUnderBonaFideCommunityTermsWithSig` as soon as the reveal is stored, then registers. When the
 policy's terms changed after the order, the page asks the buyer to agree again before it signs. A
-relay or a register refused for the acceptance (new terms, a used nonce, an expired or wrong
-signature) clears the reveal, and the page signs again.
+relay or a register refused for the acceptance (new terms, a used nonce, a wrong signature) clears
+the reveal, and the page signs again.
 
 ### The gas key
 
 `[chain] service_key` is the registrar key: an Ethereum account (EOA) that sends every names
-transaction, `commit` to the controller, a community name's terms acceptance
-(`commitUnderBonaFideCommunityTermsWithSig`) to the name policy, `registerWithCredit` to the sponsor,
-and the owners' record edits (`setTextWithSig`, `clearRecordsWithSig`) to the resolver. It pays only their gas, in ETH. The
+transaction, `commit` to the controller, a community name's terms acceptance (`commitUnderBonaFideCommunityTermsWithSig`) to the name policy, `registerWithCredit` to the sponsor, and the owners' record
+edits (`setTextWithSig`, `clearRecordsWithSig`) to the resolver. It pays only their gas, in ETH. The
 names' rent is spent from its allowance on the sponsor, in USD, which the guardian sets. It holds no
 names.
 
@@ -1122,9 +1121,9 @@ Foundry's anvil, Node.js 22.18 or later (which runs the webapp's `dev/deploy.ts`
 Playwright's Chromium (`npm install`, `npx playwright install chromium`); and an `ens-contracts` checkout
 compiled as the webapp's `dev/start.sh` needs. The cases read the chain's addresses from the webapp's
 `dev/local-chain-0.json`, so the script stops when its deployment differs from it; run the webapp's
-`SLOTS=1 MIN_COMMITMENT_AGE=5 dev/start.sh` once to write it. Ports 8545, 8180, 8199 and 8198 must be
-free: the script stops before starting anything when one of them answers, and stops at once when
-anvil, the terms server, the service or the code server exits before it answers.
+`SLOTS=1 MIN_COMMITMENT_AGE=5 dev/start.sh` once to write it. Ports 8545, 8180, 8199 and 8198 must be free:
+the script stops before starting anything when one of them answers, and stops at once when anvil,
+the terms server, the service or the code server exits before it answers.
 
 ```
 cabal build exe:simplex-store-service

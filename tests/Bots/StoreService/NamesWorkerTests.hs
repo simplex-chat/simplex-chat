@@ -99,6 +99,7 @@ workerTests = describe "StoreService names: worker" $ do
     it "relays the reveal's acceptance to the name policy as soon as it is stored, and registers once the policy holds it" testAcceptanceRelayed
     it "relays the acceptance before the wait for revealAfter, then waits for it" testAcceptanceBeforeWait
     it "clears the reveal when the relay's dry run refuses the acceptance, staying committed" testAcceptanceRefused
+    it "judges a relay past the acceptance's deadline as a register past it, failing the order" testAcceptanceExpired
   describe "lapse" $ do
     it "ends a committed order not revealed by revealBefore failed, keeping its code" testLapseFailed
     it "wakes a held poll with failed at the lapse, and answers an old version at once after it" testLapsePoll
@@ -692,6 +693,18 @@ testAcceptanceRefused = withWorker $ \w@W {wCtx = ctx} -> do
   published w r (steps w r >>= waitingUntil) `shouldReturn` at (orderSeconds - minAge + maxAge + 1)
   x <- stored ctx r
   (nrPhase x, nrReveal x) `shouldBe` (PCommitted, Nothing)
+  sent w `shouldReturn` []
+
+testAcceptanceExpired :: IO ()
+testAcceptanceExpired = withWorker $ \w@W {wCtx = ctx} -> do
+  r <- paidIn ctx aliceOrder openPhase >>= acceptedReveal ctx
+  answerAccepted w r $ B.replicate 32 0
+  answerAvailable w True
+  dryRunsRevert w "SignatureExpired()" ""
+  steps w r >>= done
+  now <- nowOf ctx
+  x <- stored ctx r
+  (nrPhase x, nrFailedAt x, nrError x) `shouldBe` (PFailed, Just now, Just "The name could not be registered")
   sent w `shouldReturn` []
 
 testCheckUnread :: IO ()

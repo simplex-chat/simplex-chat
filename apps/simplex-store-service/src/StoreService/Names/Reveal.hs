@@ -21,7 +21,6 @@ module StoreService.Names.Reveal
 where
 
 import Control.Monad (forM, unless)
-import Control.Monad.Except (ExceptT (..), runExceptT, throwError, withExceptT)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import Data.Bifunctor (first)
@@ -38,8 +37,8 @@ import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..))
 import StoreService.Log (logWarn)
 import StoreService.Names.Abi (bytes32FromHex)
-import StoreService.Names.Community (nameCommunityTerms, termsErrorText)
-import StoreService.Names.Contracts (Contracts, namePolicy, policyNonce, sponsorNonce)
+import StoreService.Names.Community (Acceptance (..), currentAcceptance)
+import StoreService.Names.Contracts (Contracts, sponsorNonce)
 import StoreService.Names.Label (validLabel)
 import StoreService.Names.Links (LinkKind (..), linkKindOf)
 import StoreService.Names.Orders (integerField, textField)
@@ -129,25 +128,17 @@ checkIntent NamesConfig {nChain = ChainConfig {cChainId, cSponsor}} ct now revea
             Left e -> Left RVChainUnavailable <$ logWarn ("names: a reveal's nonce read failed: " <> tshow e)
             Right nonce -> pure $ if nonce == riNonce then Right () else Left RVBadRequest
 
--- | After the intent, so only a signed request reads the policy. A name the policy lists needs its owner's acceptance of the
--- current community terms by the policy's nonce, with the intent's deadline; another name takes none.
+-- | After the intent, so only a signed request reads the policy. A name the policy lists needs its owner's signature of
+-- the acceptance its view asks for, with the intent's deadline; another name takes none.
 checkAcceptance :: NamesConfig -> Contracts -> NameRegistration -> Word64 -> Maybe TermsAcceptance -> IO (Either RevealRefusal ())
-checkAcceptance cfg@NamesConfig {nChain = ChainConfig {cChainId}} ct NameRegistration {nrLabelHash, nrOwner, nrCommitment} deadline acceptance = runExceptT $ do
-  terms <- chainRead "community terms" termsErrorText $ nameCommunityTerms cfg ct nrLabelHash
-  case (terms, acceptance) of
-    (Nothing, Nothing) -> pure ()
-    (Just current, Just a@TermsAcceptance {taTermsHash, taNonce}) -> do
-      policy <- chainRead "name policy" tshow $ namePolicy ct
-      withExceptT (const RVBadRequest) $ ExceptT $ verifyAcceptance (policyDomain cChainId policy) nrOwner nrCommitment deadline a
-      nonce <- chainRead "policy nonce" tshow $ policyNonce ct nrOwner
-      unless (taTermsHash == current && taNonce == nonce) $ throwError RVBadRequest
-    _ -> throwError RVBadRequest
-  where
-    chainRead what err a =
-      ExceptT $
-        a >>= \case
-          Left e -> Left RVChainUnavailable <$ logWarn ("names: a reveal's " <> what <> " read failed: " <> err e)
-          Right v -> pure $ Right v
+checkAcceptance cfg@NamesConfig {nChain = ChainConfig {cChainId}} ct NameRegistration {nrLabelHash, nrOwner, nrCommitment} deadline acceptance =
+  currentAcceptance cfg ct nrLabelHash nrOwner >>= \case
+    Left e -> Left RVChainUnavailable <$ logWarn ("names: a reveal's community terms acceptance could not be read: " <> e)
+    Right asked -> case (asked, acceptance) of
+      (Nothing, Nothing) -> pure $ Right ()
+      (Just Acceptance {acPolicy, acTermsHash, acNonce}, Just a@TermsAcceptance {taTermsHash, taNonce})
+        | taTermsHash == acTermsHash && taNonce == acNonce -> first (const RVBadRequest) <$> verifyAcceptance (policyDomain cChainId acPolicy) nrOwner nrCommitment deadline a
+      _ -> pure $ Left RVBadRequest
 
 linksValid :: Registration -> Bool
 linksValid Registration {rContactLink, rChannelLink} = all (ofKind LKContact) rContactLink && all (ofKind LKChannel) rChannelLink

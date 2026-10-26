@@ -10,6 +10,7 @@ import Bots.StoreService.NamesSearchTests (aliceHex)
 import Bots.StoreService.WebTests (capturingStderr)
 import Control.Concurrent.STM (TVar, atomically, newTVarIO, readTVarIO, writeTVar)
 import Control.Monad (forM_, void)
+import Crypto.Random (ChaChaDRG)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as LB
 import Data.Ini (readIniFile)
@@ -30,6 +31,7 @@ import Test.Hspec
 
 namesCommunityTests :: Spec
 namesCommunityTests = describe "StoreService names: community" $ do
+  g <- runIO C.newRandom
   it "reads the terms, and the list keyed by the label's keccak256, empty without [community]" testCommunityParsed
   it "refuses [community] without [names]" testCommunityWithoutNames
   it "refuses a section header written twice, naming it" testRepeatedHeader
@@ -41,47 +43,10 @@ namesCommunityTests = describe "StoreService names: community" $ do
   it "logs how many community names it loaded" testLoadedCount
   it "gives the version for an unlisted name and its community variant with the terms' hash for a listed one" testTermsFor
   it "reads community_terms_url: https, or http on loopback only on the local chain" testCommunityTermsUrl
-  g <- runIO C.newRandom
-  it "takes the policy's terms once the page's text hashes to them, and fetches again for new terms" $ withContracts g $ \node ct ->
-    newTVarIO (ok200, fakeCommunityTermsText) >>= \page -> withTermsPage page $ \url -> do
-      cfg <- withTermsUrl url
-      setCommunityTerms node fakeCommunityTerms
-      currentCommunityTerms cfg ct `shouldReturn` Right fakeCommunityTerms
-      -- checked once: a page edited without new terms on chain is not fetched again
-      atomically $ writeTVar page (ok200, "other text")
-      currentCommunityTerms cfg ct `shouldReturn` Right fakeCommunityTerms
-      setCommunityTerms node newTerms
-      currentCommunityTerms cfg ct `shouldReturn` Left (TEMismatch newTerms)
-      atomically $ writeTVar page (ok200, "bona fide community terms v2")
-      currentCommunityTerms cfg ct `shouldReturn` Right newTerms
-      setCommunityTerms node $ B.replicate 32 0
-      currentCommunityTerms cfg ct `shouldReturn` Left TENoTerms
-      setCommunityTerms node $ C.keccak256 "bona fide community terms v3"
-      currentCommunityTerms cfg {nCommunityTermsUrl = Nothing} ct `shouldReturn` Left TENoUrl
-  it "checks the policy's terms and the [community] lines at startup, stopping only on terms the page does not hash to" $ withContracts g $ \node ct -> do
-    cfg <- withTermsUrl (fakeTermsUrl node) >>= \c -> pure c {nCommunity = M.singleton (fromJust $ bytes32FromHex aliceHex) "Alice's bakery"}
-    warned <- capturingStderr $ checkNamePolicy cfg ct `shouldReturn` Right ()
-    warned `shouldSatisfy` T.isInfixOf "names: [community] lists a name the name policy does not list, so it is sold as a plain name: Alice's bakery"
-    setCommunityTerms node newTerms
-    checkNamePolicy cfg ct `shouldReturn` Left ("names: the text at names.community_terms_url does not hash to the name policy's terms " <> T.unpack (hex newTerms))
-  it "checks neither the terms nor the [community] lines when the policy cannot be read at startup" $ withContracts g $ \node ct -> do
-    cfg <- withTermsUrl (fakeTermsUrl node)
-    setCommunityTerms node newTerms
-    answerCall node fakeController (selector "namePolicy()") $ Reverts ""
-    warned <- capturingStderr $ checkNamePolicy cfg ct `shouldReturn` Right ()
-    warned `shouldSatisfy` T.isInfixOf "names: the controller's name policy could not be read, it is read on first use"
-  it "takes no terms from a page that answers another status or more than 1 MiB, or that cannot be reached" $ withContracts g $ \node ct ->
-    newTVarIO (notFound404, fakeCommunityTermsText) >>= \page -> withTermsPage page $ \url -> do
-      cfg <- withTermsUrl url
-      setCommunityTerms node fakeCommunityTerms
-      currentCommunityTerms cfg ct `shouldReturn` Left (TEUnread "names.community_terms_url answered HTTP 404")
-      atomically $ writeTVar page (ok200, B.replicate (1024 * 1024 + 1) 0x61)
-      currentCommunityTerms cfg ct `shouldReturn` Left (TEUnread "names.community_terms_url answered more than 1 MiB")
-      unreachable <- withTermsUrl "http://127.0.0.1:1/terms"
-      Left (TEUnread e) <- currentCommunityTerms unreachable ct
-      e `shouldSatisfy` T.isPrefixOf "names.community_terms_url could not be read: "
-      atomically $ writeTVar page (ok200, fakeCommunityTermsText)
-      currentCommunityTerms cfg ct `shouldReturn` Right fakeCommunityTerms
+  it "takes the policy's terms once the page's text hashes to them, and fetches again for new terms" $ testCurrentTerms g
+  it "checks the policy's terms and the [community] lines at startup, stopping only on terms the page does not hash to" $ testStartupCheck g
+  it "checks neither the terms nor the [community] lines when the policy cannot be read at startup" $ testStartupUnread g
+  it "takes no terms from a page that answers another status or more than 1 MiB, or that cannot be reached" $ testTermsPageRefused g
 
 bakersText :: Text
 bakersText = "bakers and bakeries in Portugal"
@@ -202,6 +167,54 @@ testTermsFor = do
   agreedTermsHash termsVersion `shouldBe` Nothing
   agreedTermsHash (termsVersion <> "/community") `shouldBe` Nothing
   agreedTermsHash (termsVersion <> "/community/" <> T.toUpper hexDigits) `shouldBe` Nothing
+
+testCurrentTerms :: TVar ChaChaDRG -> IO ()
+testCurrentTerms g = withContracts g $ \node ct ->
+  newTVarIO (ok200, fakeCommunityTermsText) >>= \page -> withTermsPage page $ \url -> do
+    cfg <- withTermsUrl url
+    setCommunityTerms node fakeCommunityTerms
+    currentCommunityTerms cfg ct `shouldReturn` Right fakeCommunityTerms
+    -- checked once: a page edited without new terms on chain is not fetched again
+    atomically $ writeTVar page (ok200, "other text")
+    currentCommunityTerms cfg ct `shouldReturn` Right fakeCommunityTerms
+    setCommunityTerms node newTerms
+    currentCommunityTerms cfg ct `shouldReturn` Left (TEMismatch newTerms)
+    atomically $ writeTVar page (ok200, "bona fide community terms v2")
+    currentCommunityTerms cfg ct `shouldReturn` Right newTerms
+    setCommunityTerms node $ B.replicate 32 0
+    currentCommunityTerms cfg ct `shouldReturn` Left TENoTerms
+    setCommunityTerms node $ C.keccak256 "bona fide community terms v3"
+    currentCommunityTerms cfg {nCommunityTermsUrl = Nothing} ct `shouldReturn` Left TENoUrl
+
+testStartupCheck :: TVar ChaChaDRG -> IO ()
+testStartupCheck g = withContracts g $ \node ct -> do
+  cfg <- withTermsUrl (fakeTermsUrl node) >>= \c -> pure c {nCommunity = M.singleton (fromJust $ bytes32FromHex aliceHex) "Alice's bakery"}
+  warned <- capturingStderr $ checkNamePolicy cfg ct `shouldReturn` Right ()
+  warned `shouldSatisfy` T.isInfixOf "names: [community] lists a name the name policy does not list, so it is sold as a plain name: Alice's bakery"
+  setCommunityTerms node newTerms
+  checkNamePolicy cfg ct `shouldReturn` Left ("names: the text at names.community_terms_url does not hash to the name policy's terms " <> T.unpack (hex newTerms))
+
+testStartupUnread :: TVar ChaChaDRG -> IO ()
+testStartupUnread g = withContracts g $ \node ct -> do
+  cfg <- withTermsUrl (fakeTermsUrl node)
+  setCommunityTerms node newTerms
+  answerCall node fakeController (selector "namePolicy()") $ Reverts ""
+  warned <- capturingStderr $ checkNamePolicy cfg ct `shouldReturn` Right ()
+  warned `shouldSatisfy` T.isInfixOf "names: the controller's name policy could not be read, it is read on first use"
+
+testTermsPageRefused :: TVar ChaChaDRG -> IO ()
+testTermsPageRefused g = withContracts g $ \node ct ->
+  newTVarIO (notFound404, fakeCommunityTermsText) >>= \page -> withTermsPage page $ \url -> do
+    cfg <- withTermsUrl url
+    setCommunityTerms node fakeCommunityTerms
+    currentCommunityTerms cfg ct `shouldReturn` Left (TEUnread "names.community_terms_url answered HTTP 404")
+    atomically $ writeTVar page (ok200, B.replicate (1024 * 1024 + 1) 0x61)
+    currentCommunityTerms cfg ct `shouldReturn` Left (TEUnread "names.community_terms_url answered more than 1 MiB")
+    unreachable <- withTermsUrl "http://127.0.0.1:1/terms"
+    Left (TEUnread e) <- currentCommunityTerms unreachable ct
+    e `shouldSatisfy` T.isPrefixOf "names.community_terms_url could not be read: "
+    atomically $ writeTVar page (ok200, fakeCommunityTermsText)
+    currentCommunityTerms cfg ct `shouldReturn` Right fakeCommunityTerms
 
 testCommunityTermsUrl :: IO ()
 testCommunityTermsUrl = do
