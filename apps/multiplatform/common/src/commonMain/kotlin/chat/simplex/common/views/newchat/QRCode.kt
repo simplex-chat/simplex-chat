@@ -93,7 +93,7 @@ fun QRCode(
               .let { if (withLogo) it.addLogo(logoSize) else it }
             val file = saveTempImageUncompressed(image, true)
             if (file != null) {
-              shareFile("", CryptoFile.plain(file.absolutePath))
+              if (appPlatform.isAndroid) shareFile("", CryptoFile.plain(file.absolutePath))
               onShare?.invoke()
             }
           }
