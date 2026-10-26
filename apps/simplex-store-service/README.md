@@ -600,8 +600,8 @@ logged) decides which names are community names: its bona fide list, which the o
 the guardian can add to. A listed name can be registered only after its owner accepts the policy's current
 community terms on chain, identified by `termsHash`, the keccak256 of their text. The controller
 owner's `setNamePolicy` takes effect for the service after a restart, so restart it at once: until
-then the service relays each open community order's acceptance to the old policy, whose register the
-new policy refuses, and the page signs again until the order lapses; only the first relay spends gas. One
+then the service reads the reservations, the list, the terms and the nonces from the old policy, so an order of a name the
+new policy reserves or lists does not register; the page signs again until the order lapses, and only the first relay spends gas. One
 more setting gives the community terms' text:
 
 - `community_terms_url`: the page of the community terms, which the order's checkbox links to beside

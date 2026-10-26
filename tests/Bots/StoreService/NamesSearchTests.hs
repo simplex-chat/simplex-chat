@@ -56,7 +56,7 @@ import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..))
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import StoreService.Config (ListenerConfig (..), NamesConfig (..), TermsConfig (..))
-import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, bytes32FromHex, selector, uint256)
+import StoreService.Names.Abi (AbiValue (..), abiBytes, abiTuple, bytes32FromHex, uint256)
 import StoreService.Names.Contracts (Contracts (..))
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Names.Profiles (ChatKind (..), HostResolver, LinkProfile (..), ProfileFetcher, ProfileLimits (..), defaultProfileLimits, monotonicSeconds, newProfiles)
@@ -390,7 +390,7 @@ testCommunity g = withSearch g listAlice id $ \s@Search {node, store} -> do
   available node
   searchAlice s 12 `shouldReturn` unavailable
   setCommunityTerms node fakeCommunityTerms
-  answerCall node fakeNamePolicy (selector "bonaFideNames(bytes32)" <> fromJust (bytes32FromHex aliceHex)) $ Reverts ""
+  answerListing node (LabelHash $ fromJust $ bytes32FromHex aliceHex) $ Reverts ""
   searchAlice s 12 `shouldReturn` unavailable
 
 testCommunityWithoutText :: TVar ChaChaDRG -> IO ()

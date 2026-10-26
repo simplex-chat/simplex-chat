@@ -42,7 +42,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Secp256k1 (RecoverableSignature (..), Secp256k1PrivateKey, signRecoverable)
 import Simplex.Messaging.Eth.EIP712 (serializeSignature)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD (..), labelHash)
-import StoreService.Names.Abi (hex, selector, uint256)
+import StoreService.Names.Abi (hex, uint256)
 import StoreService.Names.Links (linkMaxBytes)
 import StoreService.Names.Orders (OrdersEnv (..))
 import StoreService.Names.Phases (RegistrationId (..))
@@ -277,7 +277,6 @@ testAcceptanceUnavailable = withListedReveals $ \Fx {fCtx = ctx@Ctx {cNode}} -> 
   sig <- signIntent ctx keyA alice 0 revealBefore
   acceptance <- signAcceptance ctx keyA fakeCommunityTerms 2
   let body = withAcceptance acceptance $ bodyOf sig alice 0 revealBefore
-      LabelHash aliceHash = labelHash "alicebakery"
       unavailable = do
         reveal ctx rid body `shouldReturn` refused 503 "provider_unavailable"
         nrReveal <$> stored ctx rid `shouldReturn` Nothing
@@ -288,7 +287,7 @@ testAcceptanceUnavailable = withListedReveals $ \Fx {fCtx = ctx@Ctx {cNode}} -> 
   answerCall cNode fakeNamePolicy noncesCall $ Reverts ""
   unavailable
   answerCall cNode fakeNamePolicy noncesCall $ Returns $ uint256 (2 :: Int)
-  answerCall cNode fakeNamePolicy (selector "bonaFideNames(bytes32)" <> aliceHash) $ Reverts ""
+  answerListing cNode (labelHash "alicebakery") $ Reverts ""
   unavailable
   listCommunityName cNode $ labelHash "alicebakery"
   reveal ctx rid body `shouldReturn` accepted

@@ -4,7 +4,7 @@
 module Bots.StoreService.NamesCommunityTests (namesCommunityTests) where
 
 import Bots.StoreService.ConfigTests (chainSection, namesIni, namesRefusal, namesSection, parseIni, parsedNames, termsUrl, termsVersion, withIni)
-import Bots.StoreService.FakeEthNode (CallAnswer (..), answerCall, fakeCommunityTerms, fakeCommunityTermsText, fakeController, fakeNamePolicy, fakeNewCommunityTerms, fakeTermsUrl, setCommunityTerms)
+import Bots.StoreService.FakeEthNode (CallAnswer (..), answerCall, answerListing, fakeCommunityTerms, fakeCommunityTermsText, fakeController, fakeNewCommunityTerms, fakeTermsUrl, setCommunityTerms)
 import Bots.StoreService.NamesContractsTests (withContracts)
 import Bots.StoreService.NamesSearchTests (aliceHex)
 import Bots.StoreService.WebTests (capturingStderr)
@@ -172,7 +172,6 @@ testCurrentTerms :: TVar ChaChaDRG -> IO ()
 testCurrentTerms g = withContracts g $ \node ct ->
   newTVarIO (ok200, fakeCommunityTermsText) >>= \page -> withTermsPage page $ \url -> do
     cfg <- withTermsUrl url
-    setCommunityTerms node fakeCommunityTerms
     currentCommunityTerms cfg ct `shouldReturn` Right fakeCommunityTerms
     -- checked once: a page edited without new terms on chain is not fetched again
     atomically $ writeTVar page (ok200, "other text")
@@ -193,7 +192,7 @@ testStartupCheck g = withContracts g $ \node ct -> do
   warned `shouldSatisfy` T.isInfixOf "names: [community] lists a name the name policy does not list, so it is sold as a plain name: Alice's bakery"
   setCommunityTerms node fakeNewCommunityTerms
   checkNamePolicy cfg ct `shouldReturn` Left ("names: the text at names.community_terms_url does not hash to the name policy's terms " <> T.unpack (hex fakeNewCommunityTerms))
-  answerCall node fakeNamePolicy (selector "bonaFideNames(bytes32)" <> fromJust (bytes32FromHex aliceHex)) $ Reverts ""
+  answerListing node (LabelHash $ fromJust $ bytes32FromHex aliceHex) $ Reverts ""
   unread <- capturingStderr $ void $ checkNamePolicy cfg ct
   unread `shouldSatisfy` T.isInfixOf "names: a [community] name's listing could not be read: Alice's bakery"
 
@@ -221,10 +220,9 @@ testStartupWarnings g = withContracts g $ \node ct -> do
   warns cfg "names: the name policy has no community terms yet"
 
 testTermsPageRefused :: TVar ChaChaDRG -> IO ()
-testTermsPageRefused g = withContracts g $ \node ct ->
+testTermsPageRefused g = withContracts g $ \_ ct ->
   newTVarIO (notFound404, fakeCommunityTermsText) >>= \page -> withTermsPage page $ \url -> do
     cfg <- withTermsUrl url
-    setCommunityTerms node fakeCommunityTerms
     currentCommunityTerms cfg ct `shouldReturn` Left (TEUnread "names.community_terms_url answered HTTP 404")
     atomically $ writeTVar page (ok200, B.replicate (maxTermsBytes + 1) 0x61)
     currentCommunityTerms cfg ct `shouldReturn` Left (TEUnread $ "names.community_terms_url answered more than " <> tshow maxTermsBytes <> " bytes")

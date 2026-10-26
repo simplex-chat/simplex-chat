@@ -31,6 +31,7 @@ module Bots.StoreService.FakeEthNode
     fakeController,
     fakeNamePolicy,
     listCommunityName,
+    answerListing,
     setCommunityTerms,
     fakeCommunityTerms,
     fakeCommunityTermsText,
@@ -162,7 +163,11 @@ fakeTermsUrl FakeEthNode {fnUrl} = T.pack fnUrl <> "/terms"
 
 -- | The policy lists the name as a community name.
 listCommunityName :: FakeEthNode -> LabelHash -> IO ()
-listCommunityName node (LabelHash lh) = answerCall node fakeNamePolicy (selector "bonaFideNames(bytes32)" <> lh) $ Returns $ B.replicate 31 0 <> "\x01"
+listCommunityName node lh = answerListing node lh $ Returns $ B.replicate 31 0 <> "\x01"
+
+-- | The policy's answer to whether the name is a community name.
+answerListing :: FakeEthNode -> LabelHash -> CallAnswer -> IO ()
+answerListing node (LabelHash lh) = answerCall node fakeNamePolicy (selector "bonaFideNames(bytes32)" <> lh)
 
 -- | The policy's community terms are the text with this keccak256.
 setCommunityTerms :: FakeEthNode -> ByteString -> IO ()
