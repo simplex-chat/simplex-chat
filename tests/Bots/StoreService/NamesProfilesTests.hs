@@ -23,6 +23,7 @@ import qualified Data.ByteString.Base64.URL as B64URL
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.List (isPrefixOf)
+import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
@@ -453,10 +454,10 @@ testEmbeddedAndReserved = do
 testOnionUnresolvable :: IO ()
 testOnionUnresolvable = do
   asked <- newTVarIO []
-  hostCheck (stubResolver asked) (L.singleton "abcdefghij234567.onion") `shouldReturn` HostRefused
-  hostCheck (stubResolver asked) (L.singleton $ THDomainName "abcdefghij234567.ONION.") `shouldReturn` HostRefused
+  hostCheck (stubResolver asked) ("abcdefghij234567.onion" :| []) `shouldReturn` HostRefused
+  hostCheck (stubResolver asked) (THDomainName "abcdefghij234567.ONION." :| []) `shouldReturn` HostRefused
   readTVarIO asked `shouldReturn` []
-  hostCheck (stubResolver asked) (L.singleton "unknown.test") `shouldReturn` HostRefused
+  hostCheck (stubResolver asked) ("unknown.test" :| []) `shouldReturn` HostRefused
   readTVarIO asked `shouldReturn` ["unknown.test"]
 
 -- | An IPv4-mapped IPv6 address, @::ffff:a.b.c.d@.
