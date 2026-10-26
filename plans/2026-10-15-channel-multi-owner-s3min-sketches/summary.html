@@ -70,9 +70,8 @@
   h2 { font-size: 1.45rem; margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--rule); }
   p, ul { margin: 0; }
   ul { padding-left: 1.3em; display: flex; flex-direction: column; gap: 8px; }
-  .lede { font-size: 1.05rem; }
+  .headline { font-size: 1.15rem; font-weight: 600; line-height: 1.45; }
   .muted { color: var(--muted); font-size: 0.9rem; }
-  nav.toc { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.9rem; }
   a { color: var(--accent); text-underline-offset: 2px; }
   a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
   code {
@@ -94,6 +93,49 @@
   .fig-scroll { overflow-x: auto; border-radius: 8px; }
   .fig-scroll svg { display: block; width: 100%; max-width: 840px; min-width: 680px; height: auto; }
   figcaption { color: var(--muted); font-size: 0.9rem; max-width: 74ch; }
+  [hidden] { display: none !important; }
+  .pics { display: flex; flex-direction: column; gap: 8px; }
+  .pic-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pic-tabs button, .talk button {
+    font: inherit;
+    font-size: 0.85rem;
+    color: var(--fg);
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    padding: 3px 11px;
+    cursor: pointer;
+  }
+  .pic-tabs button[aria-selected="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  button:focus-visible, summary:focus-visible, .options li:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  details.sources { font-size: 0.85rem; color: var(--muted); max-width: 74ch; }
+  details.sources summary, details.more > summary { cursor: pointer; width: max-content; max-width: 100%; }
+  details.sources ul { margin-top: 6px; gap: 3px; }
+  .src { font-size: 0.8rem; white-space: nowrap; }
+  .questions { display: flex; flex-direction: column; gap: 12px; max-width: 74ch; }
+  .question { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+  .question .q { font-weight: 600; }
+  .options { list-style: none; padding: 0; gap: 6px; }
+  .options li { border: 1px solid var(--rule); border-radius: 6px; padding: 7px 10px; display: flex; flex-direction: column; gap: 2px; }
+  .options .label { font-weight: 600; }
+  .options li.recommended .label::after { content: "recommended"; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); margin-left: 8px; }
+  .options .why { font-size: 0.92rem; }
+  .options .source { font-size: 0.8rem; color: var(--muted); }
+  .live .options li { cursor: pointer; }
+  .live .options li:hover { border-color: var(--accent); }
+  .options li.mine { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+  .who { font-size: 0.8rem; color: var(--muted); }
+  .talk { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; font-size: 0.9rem; }
+  .talk textarea { width: 100%; min-height: 56px; font: inherit; font-size: 0.9rem; color: var(--fg); background: var(--bg); border: 1px solid var(--rule); border-radius: 6px; padding: 6px 8px; }
+  .talk .notes { list-style: none; padding: 0; gap: 2px; color: var(--muted); }
+  .talk .notes:empty { display: none; }
+  .talk .notes b { color: var(--fg); font-weight: 600; }
+  .status { font-size: 0.85rem; color: var(--muted); }
+  .status:empty { display: none; }
+  details.more { border-top: 1px solid var(--rule); padding-top: 12px; }
+  details.more > summary { font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; line-height: 1.3; }
+  details.more > :not(summary) { margin-top: 12px; }
+  details.more > p, details.more > ul { max-width: 74ch; }
   @media (max-width: 520px) {
     h1 { font-size: 1.6rem; }
     body { font-size: 15px; }
@@ -102,15 +144,21 @@
 
 <main class="page">
   <header>
-    <span class="eyebrow">simplex-chat · plan summary · f/channel-multi-owner</span>
-    <h1>Channel multi-owner (S3-min)</h1>
-    <p class="lede">Several equal owners per channel, each owner change ordered by the link server; nothing is implemented yet. S3-min is the plan's name for this design: the minimal one that keeps every feature of the original, larger design.</p>
+    <span class="eyebrow">simplex-chat · design and plan · not built yet</span>
+    <h1>Channels with several owners</h1>
+    <p class="headline">The plan lets a channel have several equal owners: the server that holds the channel's link takes their changes one at a time, so concurrent changes are never lost or undone. Nothing is built yet; please confirm the choices below.</p>
   </header>
 
-  <p><b>Problem.</b> Today a channel's creator is its only owner: it overwrites the link data on the link server with <code>LSET</code>, last writer wins, and alone numbers the roster, the signed list of member, moderator and admin roles that relays and members apply in version order <span class="cite">[§3]</span>. Several owners writing this way would undo each other's changes.</p>
-  <p><b>Idea.</b> The link server already orders writes to the link, so each owner change becomes a compare-and-swap: an owner reads the link data, applies its one change and writes it back with a new command, <code>LSWP</code>, carrying the hash of what it read. If another owner wrote in between, the server answers <code>CONFLICT</code>, and the owner reads again and re-applies, five attempts at most <span class="cite">[§4.1, §4.4]</span>.</p>
+  <section class="pics" aria-label="How it works, in pictures">
+    <div class="pic-tabs" role="tablist" aria-label="Pictures" hidden>
+      <button type="button" role="tab" data-pic="owner-write">Two owners change the link at once</button>
+      <button type="button" role="tab" data-pic="components">Who holds what</button>
+      <button type="button" role="tab" data-pic="promotion">Adding an owner</button>
+      <button type="button" role="tab" data-pic="removal">Removing an owner, leaving</button>
+      <button type="button" role="tab" data-pic="roster">Two owners change roles</button>
+    </div>
 
-  <figure id="owner-write">
+  <figure id="owner-write" class="pic">
     <div class="fig-scroll">
 <svg xmlns="http://www.w3.org/2000/svg" width="840" height="514" viewBox="0 0 840 514" role="img" aria-label="Two owners change the link at the same time. Both read data D1 with hash h1. O2 swaps first with LSWP and hash h1, the server stores D2 and answers OK, and O2 announces its change. O1's swap still carries h1, so the server stores nothing and answers CONFLICT; O1 reads D2 with hash h2, re-applies its change and swaps again, which lands, and then announces its change.">
   <defs>
@@ -184,26 +232,17 @@
   </g>
 </svg>
     </div>
+    <figcaption><code>LSWP</code> is the new write command: it carries the hash (h1, h2) of the link data the owner read, and the server stores it only if that hash still matches. Otherwise the server answers <code>CONFLICT</code>, and the owner reads again and re-applies its change, so neither change is lost.</figcaption>
+    <details class="sources"><summary>Sources</summary>
+      <ul>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min.md?plain=1#L28">Overview, How it works</a>: the one new server command</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L44-L48">Plan §4.1</a>: the hash, <code>CONFLICT</code> and <code>LSWP</code></li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L100-L107">Plan §4.4</a>: read, apply, swap, at most five attempts, then the announcement</li>
+      </ul>
+    </details>
   </figure>
 
-  <p class="muted">Sources: the <a href="https://github.com/simplex-chat/simplex-chat/blob/f/channel-multi-owner/plans/2026-10-15-channel-multi-owner-s3min.md">overview</a> and the <a href="https://github.com/simplex-chat/simplex-chat/blob/f/channel-multi-owner/plans/2026-10-15-channel-multi-owner-s3min-implementation.md">implementation plan</a>. Brackets cite them: <span class="cite">[Ov: heading]</span> is a heading of the overview, <span class="cite">[§4.4]</span> a section of the implementation plan; T8 and T17 are its tests (§7).</p>
-  <p class="muted">Terms: the link is the channel's link data on the link server; its write counter, <code>linkVersion</code>, goes up with every swap; the roster version numbers role changes; a link sync is an owner's background work on the link, defined below.</p>
-  <nav class="toc" aria-label="Contents">
-    <a href="#approach">Approach</a>
-    <a href="#owners">Adding and removing owners</a>
-    <a href="#consistency">Consistency</a>
-    <a href="#tradeoffs">Trade-offs and risks</a>
-    <a href="#slices">Slices</a>
-    <a href="#protocol">Protocol</a>
-    <a href="#api">API and apps</a>
-    <a href="#types">Types</a>
-    <a href="#database">Database</a>
-  </nav>
-
-  <h2 id="approach">Approach and why</h2>
-  <p>A member becomes an owner only by accepting; owners can remove each other, and any owner, the creator included, can leave. Owners are trusted as the single owner is today, and the design defends against malicious relays and a link server that withholds or serves stale data. So relays handle owner actions as today, without checking them against the link, and relays and members keep today's roster protocol <span class="cite">[Ov: intro, Ov: Decisions, §4]</span>. Work an owner does in the background, such as finishing a promotion, is a <b>link sync</b>: agent commands queued on the owner's connection to a relay, each step re-derived from the latest read, so it survives restarts <span class="cite">[§4.4]</span>.</p>
-
-  <figure id="components">
+  <figure id="components" class="pic">
     <div class="fig-scroll">
 <svg xmlns="http://www.w3.org/2000/svg" width="840" height="498" viewBox="0 0 840 498" role="img" aria-label="Who holds what in a multi-owner channel. The link server holds the channel's link queue: the recipient keys that may write it (the key the creator made the queue with, while the creator is an owner, plus every current owner's member key, the creator's included) and the signed link data (owner chain, relays, profile, count, plus revoked owners, a write counter and the roster version and author). Owners write it with LSWP over a direct connection and read it through a proxy; relays read it at invitation and every 15 minutes; members read it at channel open and join. Owners and relays exchange events and the roster, and relays send a new owner member pages; relays forward events and the roster to members. Relays and members skip profile updates older than the ones they hold.">
   <defs>
@@ -280,10 +319,22 @@
   </g>
 </svg>
     </div>
+    <figcaption>Only owners write the channel's link; relays and members read it, and relays carry everything else between owners and members, as today. Blue marks what the plan adds.</figcaption>
+    <details class="sources"><summary>Sources</summary>
+      <ul>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min.md?plain=1#L26-L32">Overview, How it works</a>: the link server orders what owners share</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L45-L48">Plan §4.1</a>: the key set swapped with the data</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L80-L86">Plan §4.3</a>: the new link-data fields</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L104">Plan §4.4, step 3</a>: which keys may write</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L135">Plan §4.4</a>: who reads the link, and when</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L188-L190">Plan §4.7</a>: member pages for a new owner</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L247">Plan §4.12</a>: older profile updates skipped</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L313-L317">Plan §5</a>: relays can't forge owners; the 15-minute relay check; writes direct, reads private</li>
+      </ul>
+    </details>
   </figure>
 
-  <h2 id="owners">Adding and removing owners</h2>
-  <figure id="promotion">
+  <figure id="promotion" class="pic">
     <div class="fig-scroll">
 <svg xmlns="http://www.w3.org/2000/svg" width="840" height="576" viewBox="0 0 840 576" role="img" aria-label="Adding an owner. Owner O1 checks that member M's security code is verified and that the relays and the link server are upgraded, then sends x.grp.owner.inv, which relays deliver to M's support chat. M is asked whether to become an owner, told that everyone will see its profile and the link server its IP address, and accepts with x.grp.owner.acpt. In a background link sync O1 reads the link, adds M's chain entry and key with one LSWP, and after a read shows M's entry sends x.grp.owner.add, which relays apply and forward to everyone, M included. M then pulls the member list from a relay page by page.">
   <defs>
@@ -368,10 +419,19 @@
   </g>
 </svg>
     </div>
-    <figcaption>Transferring ownership is this promotion, then the creator leaves.</figcaption>
+    <figcaption>A member becomes an owner only after its security code is verified and it accepts; one link write adds it. The messages, in order: the invitation, the acceptance, the announcement to everyone, then the new owner's download of the member list from a relay. Transferring ownership is this promotion, then the creator leaves.</figcaption>
+    <details class="sources"><summary>Sources</summary>
+      <ul>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min.md?plain=1#L14">Overview, What owners can do</a>: make a member an owner</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L163-L184">Plan §4.6</a>: invite, accept, the link write, the commit</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L188-L190">Plan §4.7</a>: the new owner's member list</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L373">Plan §6.1</a>: the "Become an owner?" question</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L399">Plan §7, T3</a>: the creator promotes M and leaves</li>
+      </ul>
+    </details>
   </figure>
 
-  <figure id="removal">
+  <figure id="removal" class="pic">
     <div class="fig-scroll">
 <svg xmlns="http://www.w3.org/2000/svg" width="840" height="560" viewBox="0 0 840 560" role="img" aria-label="Removing an owner, and leaving. To remove owner X, owner O1 reads the link and swaps it with LSWP to revoke X, which drops X's key from the key set; then it sends x.grp.mem.del, which relays deliver first to X and then to everyone else. Relays delete their connection to X, X applies the removal and erases its keys, others hold X as departed, and the link server answers AUTH to any later LSWP or DEL by X. An owner that leaves is refused if no other current owner remains; if its own last roster was not stored or sent, it re-signs it with one more LSWP and waits up to 30 seconds for it to be sent, or the leave is refused; then it swaps to revoke itself, sends x.grp.leave and erases its keys.">
   <defs>
@@ -452,17 +512,18 @@
   </g>
 </svg>
     </div>
+    <figcaption>A removal or a leave lands on the link first: from then the server refuses the departed owner's key (<code>AUTH</code>), and the announcement follows. The last owner can't leave.</figcaption>
+    <details class="sources"><summary>Sources</summary>
+      <ul>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min.md?plain=1#L16-L17">Overview, What owners can do</a>: remove an owner, leave</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L194-L198">Plan §4.8</a>: removing an owner</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L202-L208">Plan §4.9</a>: leaving, with the re-sign and the 30-second wait</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L16">Plan §1, AC4</a>: the removed owner's writes and <code>DEL</code> get <code>AUTH</code></li>
+      </ul>
+    </details>
   </figure>
 
-  <h2 id="consistency">How owners, relays and members stay consistent</h2>
-  <ul>
-    <li><b>Reads</b> ignore link data older than the stored <code>linkVersion</code> and only add owners or mark revoked ones departed: a stale read can't undo a promotion, but can make a party take a removed owner as current until its next read; that device can no longer write the link, and an honest one sends nothing <span class="cite">[§4.4, §5]</span>.</li>
-    <li><b>Roster</b>: an owner may claim the next roster version on the link only while it holds the complete roster at the current one (picture below). An owner that sees another owner's role change above its version fetches the roster from the relays; roster messages from an owner who has since left or been removed are still applied in version order; an undelivered own roster is re-signed at the next version <span class="cite">[§4.10]</span>.</li>
-    <li><b>Relays</b> accept from a departed owner only its leave and roster messages up to the link's roster version. Relays and members skip an <code>x.grp.info</code> older than their <code>linkVersion</code>; relays still forward it <span class="cite">[§4.12, §4.13]</span>.</li>
-    <li><b>Link syncs</b> run in the main app only, at most five swaps per channel per trigger. The first current owner in the chain publishes the subscriber count, batching joins over a minute <span class="cite">[§4.4, §4.11, §4.15]</span>.</li>
-  </ul>
-
-  <figure id="roster">
+  <figure id="roster" class="pic">
     <div class="fig-scroll">
 <svg xmlns="http://www.w3.org/2000/svg" width="840" height="600" viewBox="0 0 840 600" role="img" aria-label="Two owners change roles. The link names roster version 7 by O1, and both owners hold 7. O2 reads the link, holds the roster it names, claims version 8 with LSWP, and sends roster 8 with its role change to the relays, which forward them to members. O1 then tries a role change: its read names version 8, which it doesn't hold, so it is refused with catching up, try again, and asks the relays for the roster. Once it holds 8, a retry reads the link, claims version 9 and sends roster 9 with its role change.">
   <defs>
@@ -538,16 +599,85 @@
   </g>
 </svg>
     </div>
+    <figcaption>The roster is the signed list of member, moderator and admin roles, and 7, 8 and 9 are its versions. An owner takes the next version only while it holds every earlier one, so members and relays apply role changes in order, as today; an owner that is behind sees "catching up, try again" for a few seconds.</figcaption>
+    <details class="sources"><summary>Sources</summary>
+      <ul>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min.md?plain=1#L29">Overview, How it works</a>: role changes numbered on the link server</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min.md?plain=1#L15">Overview, What owners can do</a> and <a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L221">plan §4.10</a>: the roster's roles, owners outside it</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min.md?plain=1#L49">Overview, Trade-offs users notice</a>: "catching up, try again"</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L212-L219">Plan §4.10</a>: claims from the complete roster, and the roster request</li>
+        <li><a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L297">Plan §4.17</a>: two role changes at once</li>
+      </ul>
+    </details>
   </figure>
+  </section>
 
-  <h2 id="tradeoffs">Trade-offs and residual risks</h2>
-  <p>Trade-offs <span class="cite">[Ov: Trade-offs users notice, Ov: Decisions]</span>:</p>
+  <ul class="lines">
+    <li><b>For users.</b> Today a channel has one owner, its creator. With the plan any owner can post, edit the channel, change roles, manage relays and destroy the channel; a member becomes an owner only after its security code is verified and it accepts an invitation; owners can remove each other, and the channel keeps working after the creator leaves. <a class="src" href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min.md?plain=1#L3-L22">overview</a></li>
+    <li><b>How.</b> An owner reads the channel's link, makes its one change and writes it back; the server takes the write only if nobody wrote since that read, otherwise the owner reads again and re-applies. Role changes are numbered on the same server, so relays and members keep today's role protocol. <a class="src" href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min.md?plain=1#L24-L32">overview</a></li>
+    <li><b>What users notice.</b> Owner actions need that server, posting doesn't; a role change takes 1–3 seconds and can be refused for a few seconds after another owner's ("catching up, try again"); a new owner's device connects to the server directly, showing it the device's IP address, and the invitation says so. <a class="src" href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min.md?plain=1#L47-L55">overview</a> <a class="src" href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min.md?plain=1#L38">timing</a></li>
+    <li><b>Trust.</b> Owners trust each other as the single owner is trusted today: any owner can destroy the channel or lock the others out. The design guards against dishonest relays and a server that withholds the link or serves an old copy. <a class="src" href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min.md?plain=1#L3">overview</a> <a class="src" href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min.md?plain=1#L57-L63">risks</a></li>
+    <li><b>Cost and order.</b> About 110 hours: the server and the messaging library first, then the chat core, with the iOS, Android and desktop apps after the core parts they need, built and tested on GitHub's runners. The riskiest part, role changes by several owners reaching every member in order, is mostly tested before any app work. <a class="src" href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L319-L342">plan</a> <a class="src" href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L458">risk</a></li>
+  </ul>
+
+  <h2 id="questions">Questions for you</h2>
+  <p class="muted">The first slice builds these as recommended unless you choose otherwise. Pick an answer or comment: each is saved under your name, and everyone who opens this page sees them.</p>
+  <div class="questions">
+    <article class="question" data-point="write-size">
+      <p class="q">How much should an owner's write send to the server?</p>
+      <ul class="options">
+        <li data-option="changed-part" class="recommended"><span class="label">Only the part owners change, as planned</span><span class="why">Room for up to about 50 owners, since the write fits 52 owner keys; a write shaped like today's fits 6. The figure is computed from the encoders and the first slice tests it; the owner list shares the link data's fixed size with the channel's profile, so a large profile picture leaves room for fewer (not yet measured).</span><span class="source">Source: <a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L468">plan §9, question 4</a>, <a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L45">§4.1</a>, <a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min.md?plain=1#L72">overview</a>, <a href="https://github.com/simplex-chat/simplexmq/blob/8bc4d3601250d9f79dc7e80ead319ec2b6d4a95a/src/Simplex/Messaging/Crypto/ShortLink.hs#L45-L46">the link data's size in simplexmq</a></span></li>
+        <li data-option="whole-link-data"><span class="label">The whole link data, as today's write</span><span class="why">Owners capped at about 6.</span><span class="source">Source: <a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L468">plan §9, question 4</a></span></li>
+      </ul>
+    </article>
+    <article class="question" data-point="refuse-old-write">
+      <p class="q">Should the server refuse today's write command on a link that several owners write?</p>
+      <ul class="options">
+        <li data-option="refuse" class="recommended"><span class="label">Refuse it, as planned</span><span class="why">It stops a stale write, or one from a downgraded app, from erasing the other owners' changes. Single-owner channels are unaffected: their links have one owner key. It changes the server's behaviour in its new version.</span><span class="source">Source: <a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L469">plan §9, question 5</a>, <a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L47">§4.1</a></span></li>
+        <li data-option="accept"><span class="label">Keep accepting it</span><span class="why">Nothing then stops a stale or downgraded single-owner write from erasing the other owners' changes.</span><span class="source">Source: <a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L469">plan §9, question 5</a></span></li>
+      </ul>
+    </article>
+    <article class="question" data-point="server-stores">
+      <p class="q">The server design was written against an older version of the server code. Should the first slice adapt it as it goes?</p>
+      <ul class="options">
+        <li data-option="adapt-in-first-slice" class="recommended"><span class="label">Yes: build for the server code as it is now</span><span class="why">The server code has since dropped two storage parts the design mentions. The first slice builds the new write for the two kinds of storage left, where it stays ordered, and updates the design's code references in a docs commit of its own.</span><span class="source">Source: <a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L471">plan §9, question 8</a>, <a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L348">the first slice</a></span></li>
+        <li data-option="design-pass-first"><span class="label">First a short design pass, then the first slice</span><span class="why">The server design is brought up to the current code before the slice starts.</span><span class="source">Source: <a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L471">plan §9, question 8</a></span></li>
+      </ul>
+    </article>
+  </div>
+  <p class="status" id="status" aria-live="polite"></p>
+
+  <h2 id="reference">For programmers</h2>
+  <p class="muted">The rest of the page is reference for the programmers who build it. S3-min is the plan's name for this design: the minimal one that keeps the features of the original, larger design except four optional parts, listed under Trade-offs.</p>
+
+  <details class="more" id="approach">
+    <summary>Problem, idea and approach</summary>
+    <p><b>Problem.</b> Today a channel's creator is its only owner: it overwrites the link data on the link server with <code>LSET</code>, last writer wins, and alone numbers the roster, the signed list of member, moderator and admin roles that relays and members apply in version order <span class="cite">[<a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L31-L35">§3</a>, <a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L221">§4.10</a>]</span>. Several owners writing this way would undo each other's changes.</p>
+    <p><b>Idea.</b> The link server already orders writes to the link, so each owner change becomes a compare-and-swap: an owner reads the link data, applies its one change and writes it back with a new command, <code>LSWP</code>, carrying the hash of what it read. If another owner wrote in between, the server answers <code>CONFLICT</code>, and the owner reads again and re-applies, five attempts at most <span class="cite">[<a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L44-L46">§4.1</a>, <a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L105-L106">§4.4</a>]</span>.</p>
+    <p><b>Approach.</b> A member becomes an owner only by accepting; owners can remove each other, and any owner, the creator included, can leave. Owners are trusted as the single owner is today, and the design defends against malicious relays and a link server that withholds or serves stale data. So relays handle owner actions as today, without checking them against the link, and relays and members keep today's roster protocol <span class="cite">[<a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min.md?plain=1#L3">Ov: intro</a>, <a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min.md?plain=1#L43">Ov: Decisions</a>, <a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L39">§4</a>]</span>. Work an owner does in the background, such as finishing a promotion, is a <b>link sync</b>: agent commands queued on the owner's connection to a relay, each step re-derived from the latest read, so it survives restarts <span class="cite">[<a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L112-L118">§4.4</a>]</span>.</p>
+    <p class="muted">Terms: the link is the channel's link data on the link server; its write counter, <code>linkVersion</code>, goes up with every swap; the roster version numbers role changes; a link sync is an owner's background work on the link, defined above.</p>
+    <p class="muted">Sources: the <a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min.md">overview</a> and the <a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md">implementation plan</a>, at the commit this page describes. Each bracket links to the lines it cites: <span class="cite">[Ov: heading]</span> in the overview, <span class="cite">[§4.4]</span> in a section of the implementation plan; T8 and T17 are its tests (§7).</p>
+  </details>
+
+  <details class="more" id="consistency">
+    <summary>How owners, relays and members stay consistent</summary>
+    <ul>
+      <li><b>Reads</b> ignore link data older than the stored <code>linkVersion</code> and only add owners or mark revoked ones departed: a stale read can't undo a promotion, but can make a party take a removed owner as current until its next read; that device can no longer write the link, and an honest one sends nothing <span class="cite">[<a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L137-L140">§4.4</a>, <a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L314">§5</a>]</span>.</li>
+      <li><b>Roster</b>: an owner may claim the next roster version on the link only while it holds the complete roster at the current one (the picture <a href="#roster">Two owners change roles</a>). An owner that sees another owner's role change above its version fetches the roster from the relays; roster messages from an owner who has since left or been removed are still applied in version order; an undelivered own roster is re-signed at the next version <span class="cite">[<a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L210-L237">§4.10</a>]</span>.</li>
+      <li><b>Relays</b> accept from a departed owner only its leave and roster messages up to the link's roster version. Relays and members skip an <code>x.grp.info</code> older than their <code>linkVersion</code>; relays still forward it <span class="cite">[<a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L247">§4.12</a>, <a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L252">§4.13</a>]</span>.</li>
+      <li><b>Link syncs</b> run in the main app only, at most five swaps per channel per trigger. The first current owner in the chain publishes the subscriber count, batching joins over a minute <span class="cite">[<a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L112-L128">§4.4</a>, <a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L241">§4.11</a>, <a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L272">§4.15</a>]</span>.</li>
+    </ul>
+  </details>
+
+  <details class="more" id="tradeoffs">
+    <summary>Trade-offs</summary>
+    <p>Trade-offs <span class="cite">[<a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min.md?plain=1#L47-L55">Ov: Trade-offs users notice</a>, <a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min.md?plain=1#L34-L45">Ov: Decisions</a>]</span>:</p>
   <ul>
     <li>Owner actions need the link server, posting doesn't; a role change takes 1–3 s and can be refused for a few seconds after another owner's.</li>
-    <li>The link server learns when owners act and how many there are; a new owner's profile reaches every subscriber, and its member list comes from one relay, without profile pictures (a malicious relay can add made-up subscribers to it, never members with roles).</li>
-    <li>The link orders profile, role, owner and relay changes, leaving and destroying, each announced after its write lands; posts, moderation, blocks, subscriber removals and invitations are sent as today, outside the link <span class="cite">[§5]</span>. Not built: cancelling an invitation, merging two profile edits field by field, a tie-break between equal roster versions, retiring the creator's root key.</li>
-    <li>Older apps and servers: promotion needs every relay on chat protocol v23 and the link server on SMP v24. Older members reject a new owner's messages until they upgrade; older joiners take every owner the link lists as an owner, removed ones included, though those keys can't write the link. A channel's link writes switch to the swap at its first accepted invitation and stay as today until then; a single-owner creator also reads the link before leaving or destroying, and a failed read refuses the leave <span class="cite">[§4.3, §4.9, §4.14, §5]</span>.</li>
-    <li>A promotion wins over a concurrent removal or leave of member M (decided 2026-10-19 as a rare case, with no mitigation). The link decides who is listed as an owner; what each party does depends on which message it applied first <span class="cite">[§4.8]</span>:</li>
+    <li>The link server learns when owners act and how many there are; a new owner's profile reaches every subscriber, and its member list comes from one relay, without profile pictures (a malicious relay can add made-up subscribers to it, never members with roles <span class="cite">[<a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L313">§5</a>]</span>).</li>
+    <li>The link orders profile, role, owner and relay changes, leaving and destroying, each announced after its write lands; posts, moderation, blocks, subscriber removals and invitations are sent as today, outside the link <span class="cite">[<a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L315">§5</a>]</span>. Not built: cancelling an invitation, merging two profile edits field by field, a tie-break between equal roster versions, retiring the creator's root key.</li>
+    <li>Older apps and servers: promotion needs every relay on chat protocol v23 and the link server on SMP v24. Older members reject a new owner's messages until they upgrade; older joiners take every owner the link lists as an owner, removed ones included, though those keys can't write the link. A channel's link writes switch to the swap at its first accepted invitation and stay as today until then; a single-owner creator also reads the link before leaving or destroying, and a failed read refuses the leave <span class="cite">[<a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L92">§4.3</a>, <a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L202">§4.9</a>, <a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L268">§4.14</a>, <a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L311">§5</a>]</span>.</li>
+    <li>A promotion wins over a concurrent removal or leave of member M (decided, with nothing done for it). The link decides who is listed as an owner; what each party does depends on which message it applied first <span class="cite">[<a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L197">§4.8</a>]</span>:</li>
   </ul>
   <div class="table-wrap">
     <table>
@@ -558,19 +688,25 @@
       </tbody>
     </table>
   </div>
-  <p>The remover's device always applied the removal first. The owner-remover cells follow today's <code>checkRole</code>, which the plan keeps; test T8 covers only the removal-first order.</p>
-  <p>Residual risks <span class="cite">[Ov: Residual risks, §5]</span>:</p>
+  <p>The remover's device always applied the removal first. The owner-remover cells follow today's <code>checkRole</code>, which the plan keeps; test <a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L404">T8</a> covers only the removal-first order.</p>
+  </details>
+
+  <details class="more" id="risks">
+    <summary>Residual risks</summary>
+  <p>Residual risks <span class="cite">[<a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min.md?plain=1#L57-L68">Ov: Residual risks</a>, <a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L310-L316">§5</a>]</span>:</p>
   <ul>
     <li>A link server ignoring the compare-and-swap can lose writes or split roles, but can't forge.</li>
     <li>A removed owner on modified software acts as an owner through a relay until the relay learns of the removal (the announcement, or its next 15-minute check), including inflated role versions that block later role changes there and at its members. A relay that learned from its check still accepts its new role events up to the link's roster version, and members apply them; with a colluding link server the removed owner can serve forged link data.</li>
     <li>Any current owner can destroy the channel or lock the others out.</li>
     <li>A role change no relay serves (author lost or removed first, or its only relay failed) blocks other owners' role changes while a lost author is still an owner. Once it is removed, the others wait up to a day, then one owner skips its version and carries on from its own roster, which every device then takes: role changes from that version that some devices had already applied are undone there, and so are that author's earlier changes the skipping owner never received, wherever they were applied.</li>
     <li>A remover crashing after its swap sends no announcement; others learn at their next read.</li>
-    <li>A creator restored from a backup older than its first promotion acts as the single owner until it leaves or destroys, and its role changes can collide. A downgraded server keeps the owner keys but loses link data written since its last start, stops multi-owner writes and accepts <code>LSET</code> again; on an upgraded server a creator on an older app can't change the link.</li>
+    <li>A creator restored from a backup older than its first promotion acts as the single owner until it leaves or destroys, and its role changes can collide. A downgraded server keeps the owner keys but can lose the data of owner-changing writes since its last start, stops multi-owner writes and accepts <code>LSET</code> again; on an upgraded server a creator on an older app can't change the link.</li>
   </ul>
+  </details>
 
-  <h2 id="slices">Slices</h2>
-  <p>~2,260 production Haskell lines (simplexmq ~490 plus chat ~1,770) plus tests, ~380 per app platform and ~850 of CI scripts, scripted checks and test plans; sixteen slices, about 110 hours; each compiles and passes its tests alone, and the app slices are built and tested on GitHub's runners <span class="cite">[§6, §7.1]</span>.</p>
+  <details class="more" id="slices">
+    <summary>Slices, size and risks</summary>
+  <p>~2,260 production Haskell lines (simplexmq ~490 plus chat ~1,770) plus tests, ~380 per app platform and ~850 of CI scripts, scripted checks and test plans; sixteen slices, about 110 hours; each compiles and passes its tests alone, and the app slices are built and tested on GitHub's runners <span class="cite">[<a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L3">header</a>, <a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L319-L342">§6</a>, <a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L424">§7.1</a>]</span>.</p>
   <div class="table-wrap">
     <table>
       <thead><tr><th>Slices</th><th>What</th></tr></thead>
@@ -586,44 +722,201 @@
       </tbody>
     </table>
   </div>
-  <p><b>Risks</b> <span class="cite">[§8, Ov: Not verified, size]</span>: the riskiest assumption, which tests in S9, S10 and S13 check, is that today's roster protocol converges when versions are claimed through the link from complete rosters and departed owners' roster messages are still applied. The next is that background callbacks, re-derived from the latest read and the database, are idempotent; one that isn't would send twice or never (test T17, in S8). S1 first proves the swap's atomicity and the computed 50-owner size; the 100,000-member catch-up is an estimate. Postgres is covered by the Haskell tests, not by the app runs.</p>
-  <p><b>Open in plan §9</b>, the two design questions, taken as recommended unless a review shows otherwise, and built in S1: <code>LSWP</code> sending only the user data, which leaves room for about 50 owner keys (computed from the encoders, not yet tested) instead of 6, and refusing <code>LSET</code> on multi-key queues, a server behaviour change that stops stale or downgraded single-owner writes from erasing other owners. A third is for S1: the server design was written against an older simplexmq, which has since dropped its journal store and Postgres queue cache, so S1 builds the swap for the two stores left and updates the design's code references.</p>
-  <p class="muted">The rest of the page is reference for the programmers who build it.</p>
+  <p><b>Risks</b> <span class="cite">[<a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L456-L459">§8</a>, <a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min.md?plain=1#L70-L72">Ov: Not verified, size</a>]</span>: the riskiest assumption, which tests in S9, S10 and S13 check, is that today's roster protocol converges when versions are claimed through the link from complete rosters and departed owners' roster messages are still applied. The next is that background callbacks, re-derived from the latest read and the database, are idempotent; one that isn't would send twice or never (test <a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L413">T17</a>, in S8). S1 first proves the swap's atomicity and the computed 50-owner size; the 100,000-member catch-up is an estimate. Postgres is covered by the Haskell tests, not by the app runs.</p>
+  <p><b>Open in plan <a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L464-L471">§9</a></b>, asked under <a href="#questions">Questions for you</a>: the two design questions, which S1 builds as recommended unless you choose otherwise: <code>LSWP</code> sending only the user data, which leaves room for about 50 owner keys (computed from the encoders, not yet tested) instead of 6 <span class="cite">[<a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L45">§4.1</a>, <a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min.md?plain=1#L72">Ov: Not verified, size</a>]</span>, and refusing <code>LSET</code> on multi-key queues, a server behaviour change that stops stale or downgraded single-owner writes from erasing other owners. A third is for S1: the server design was written against an older simplexmq, which has since dropped its journal store and Postgres queue cache, so S1 builds the swap for the two stores left and updates the design's code references.</p>
+  </details>
 
-  <h2 id="protocol">Protocol changes</h2>
+  <details class="more" id="protocol">
+    <summary>Protocol changes</summary>
   <div class="table-wrap">
     <table>
       <thead><tr><th>Layer</th><th>Change</th><th>Plan</th></tr></thead>
       <tbody>
-        <tr><td class="nowrap">SMP v24</td><td><code>LSWP hash [keys] userData</code>: stores the user data, and the key set if given, only if <code>hash</code> is the SHA-256 of the stored user data; not proxied</td><td class="cite">§4.1</td></tr>
-        <tr><td class="nowrap">SMP v24</td><td><code>CONFLICT</code>; <code>LSET</code> refused (<code>AUTH</code>) on multi-key queues; store-log record <code>LKEYS</code> (link data with its keys)</td><td class="cite">§4.1</td></tr>
-        <tr><td class="nowrap">Link data</td><td>optional <code>linkVersion</code>, <code>revokedOwners</code>, <code>roster {version, author}</code>, <code>creatorQueueKey</code> and <code>linkRcvId</code> (the creator's queue key, and the queue address other owners write to)</td><td class="cite">§4.3</td></tr>
-        <tr><td class="nowrap">Chat protocol v23</td><td><code>x.grp.owner.inv</code>, <code>x.grp.owner.acpt</code>, <code>x.grp.owner.add</code> (invite, consent, commit); <code>x.grp.members.req</code>, <code>x.grp.members.page</code> (member list); <code>linkVersion</code> in <code>x.grp.info</code></td><td class="cite">§4.5</td></tr>
+        <tr><td class="nowrap">SMP v24</td><td><code>LSWP hash [keys] userData</code>: stores the user data, and the key set if given, only if <code>hash</code> is the SHA-256 of the stored user data; not proxied</td><td class="cite"><a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L44-L46">§4.1</a></td></tr>
+        <tr><td class="nowrap">SMP v24</td><td><code>CONFLICT</code>; <code>LSET</code> refused (<code>AUTH</code>) on multi-key queues; store-log record <code>LKEYS</code> (link data with its keys)</td><td class="cite"><a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L44-L52">§4.1</a></td></tr>
+        <tr><td class="nowrap">Link data</td><td>optional <code>linkVersion</code>, <code>revokedOwners</code>, <code>roster {version, author}</code>, <code>creatorQueueKey</code> and <code>linkRcvId</code> (the creator's queue key, and the queue address other owners write to)</td><td class="cite"><a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L78-L86">§4.3</a></td></tr>
+        <tr><td class="nowrap">Chat protocol v23</td><td><code>x.grp.owner.inv</code>, <code>x.grp.owner.acpt</code>, <code>x.grp.owner.add</code> (invite, consent, commit); <code>x.grp.members.req</code>, <code>x.grp.members.page</code> (member list); <code>linkVersion</code> in <code>x.grp.info</code></td><td class="cite"><a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L148-L157">§4.5</a></td></tr>
       </tbody>
     </table>
   </div>
+  </details>
 
-  <h2 id="api">API, commands and apps</h2>
+  <details class="more" id="api">
+    <summary>API, commands and apps</summary>
   <ul>
-    <li><b><code>/owner invite #&lt;group&gt; &lt;member&gt;</code></b> (<code>APIInviteGroupOwner</code>) needs the member's security code verified (only this catches a relay substituting the member's key), relays on chat v23, the link server on SMP v24 and a chain under 50 entries <span class="cite">[§4.6]</span>.</li>
-    <li><b><code>/_owner accept #&lt;groupId&gt; &lt;chatItemId&gt; [direct=on]</code></b> (<code>APIAcceptGroupOwnerInvitation</code>): the device then talks to the link server directly, revealing its IP address; private routing asks first, and settings forbidding direct connections refuse <span class="cite">[§4.6]</span>.</li>
-    <li><b>In multi-owner mode</b> role changes, and removals of members, moderators and admins, claim the next roster version on the link; removing an owner and leaving write the link first; destroying deletes the link queue first. A profile edit is refused if the link's profile differs from the device's at the edit's start; the apps also refuse a save over a profile changed while editing <span class="cite">[§4.8–§4.14]</span>.</li>
-    <li><b>Apps</b>, iOS then Kotlin, ~380 lines each: Owner in the role picker via verification, the invitation, Remove owner, Leave, and the link and relay screens for every owner. Group-link commands are refused in channels <span class="cite">[§4.14, §6.1]</span>.</li>
+    <li><b><code>/owner invite #&lt;group&gt; &lt;member&gt;</code></b> (<code>APIInviteGroupOwner</code>) needs the member's security code verified (only this catches a relay substituting the member's key), relays on chat v23, the link server on SMP v24 and a chain under 50 entries <span class="cite">[<a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L163-L168">§4.6</a>]</span>.</li>
+    <li><b><code>/_owner accept #&lt;groupId&gt; &lt;chatItemId&gt; [direct=on]</code></b> (<code>APIAcceptGroupOwnerInvitation</code>): the device then talks to the link server directly, revealing its IP address; private routing asks first, and settings forbidding direct connections refuse <span class="cite">[<a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L174">§4.6</a>]</span>.</li>
+    <li><b>In multi-owner mode</b> role changes, and removals of members, moderators and admins, claim the next roster version on the link; removing an owner and leaving write the link first; destroying deletes the link queue first. A profile edit is refused if the link's profile differs from the device's at the edit's start; the apps also refuse a save over a profile changed while editing <span class="cite">[<a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L192-L268">§4.8–§4.14</a>]</span>.</li>
+    <li><b>Apps</b>, iOS then Kotlin, ~380 lines each: Owner in the role picker via verification, the invitation, Remove owner, Leave, and the link and relay screens for every owner. Group-link commands are refused in channels <span class="cite">[<a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L264">§4.14</a>, <a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L365-L382">§6.1</a>]</span>.</li>
   </ul>
+  </details>
 
-  <h2 id="types">Types by module</h2>
+  <details class="more" id="types">
+    <summary>Types by module</summary>
   <div class="table-wrap">
     <table>
       <thead><tr><th>Module</th><th>Added or changed</th><th>Plan</th></tr></thead>
       <tbody>
-        <tr><td>simplexmq <code>Protocol</code>, <code>Server</code>, stores, <code>Client</code></td><td><code>LinkDataHash</code>, <code>CONFLICT</code>, <code>LSWP</code>, <code>swapQueueLinkData</code>, <code>CreateLinkKeys</code>; SMP version 23 → 24</td><td class="cite">§4.1</td></tr>
-        <tr><td>simplexmq agent</td><td><code>LinkOwnerCreds</code>, <code>setShortLinkSwap</code> (sync, async), <code>deleteLinkQueueWithCreds</code>, hash in <code>LDATA</code></td><td class="cite">§4.2</td></tr>
-        <tr><td>chat <code>Protocol</code>, <code>Controller</code>, <code>Types</code></td><td>link fields, events, chat protocol 22 → 23; two commands, <code>CEChannelLink</code>, <code>CFChannelLinkSync</code>, <code>CFChannelLinkResign</code>, <code>CFChannelLinkSwap</code></td><td class="cite">§4.3, §4.5, §4.16</td></tr>
-        <tr><td>chat <code>Library/*</code></td><td><code>writeChannelLink</code>, <code>enqueueLinkSync</code>, <code>applyChannelLinkData</code>, <code>claimRosterVersion</code></td><td class="cite">§4.4, §4.10</td></tr>
+        <tr><td>simplexmq <code>Protocol</code>, <code>Server</code>, stores, <code>Client</code></td><td><code>LinkDataHash</code>, <code>CONFLICT</code>, <code>LSWP</code>, <code>swapQueueLinkData</code>, <code>CreateLinkKeys</code>; SMP version 23 → 24</td><td class="cite"><a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L43-L53">§4.1</a></td></tr>
+        <tr><td>simplexmq agent</td><td><code>LinkOwnerCreds</code>, <code>setShortLinkSwap</code> (sync, async), <code>deleteLinkQueueWithCreds</code>, hash in <code>LDATA</code></td><td class="cite"><a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L57-L70">§4.2</a></td></tr>
+        <tr><td>chat <code>Protocol</code>, <code>Controller</code>, <code>Types</code></td><td>link fields, events, chat protocol 22 → 23; two commands, <code>CEChannelLink</code>, <code>CFChannelLinkSync</code>, <code>CFChannelLinkResign</code>, <code>CFChannelLinkSwap</code></td><td class="cite"><a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L78-L86">§4.3</a>, <a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L148-L157">§4.5</a>, <a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L276-L286">§4.16</a></td></tr>
+        <tr><td>chat <code>Library/*</code></td><td><code>writeChannelLink</code>, <code>enqueueLinkSync</code>, <code>applyChannelLinkData</code>, <code>claimRosterVersion</code></td><td class="cite"><a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L100-L135">§4.4</a>, <a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L212">§4.10</a></td></tr>
       </tbody>
     </table>
   </div>
+  </details>
 
-  <h2 id="database">Database</h2>
-  <p><code>groups</code> gains <code>link_data_version</code>, <code>link_roster_version</code>, <code>link_roster_seen_at</code>, <code>members_catchup</code> and <code>roster_pending_msg_id</code>; <code>group_members</code> gains <code>owner_inv_msg_id</code>, <code>owner_inv_accepted</code> and <code>relay_web_domain</code>. One migration, <code>M20261015_channel_multi_owner</code>, SQLite and Postgres, columns only; no agent or server schema change <span class="cite">[§4.16, §5]</span>.</p>
+  <details class="more" id="database">
+    <summary>Database</summary>
+  <p><code>groups</code> gains <code>link_data_version</code>, <code>link_roster_version</code>, <code>link_roster_seen_at</code>, <code>members_catchup</code> and <code>roster_pending_msg_id</code>; <code>group_members</code> gains <code>owner_inv_msg_id</code>, <code>owner_inv_accepted</code> and <code>relay_web_domain</code>. One migration (<code>M20261015_channel_multi_owner</code> in the design; S3 dates it when it adds it <span class="cite">[<a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L350">§6</a>]</span>), SQLite and Postgres, columns only; no agent or server schema change <span class="cite">[<a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L282-L288">§4.16</a>, <a href="https://github.com/spaced4ndy/simplex-chat/blob/8ccf8b8c873d81b57ff4283b95139f33c42a3848/plans/2026-10-15-channel-multi-owner-s3min-implementation.md?plain=1#L309">§5</a>]</span>.</p>
+  </details>
 </main>
+<script>
+(function () {
+  "use strict";
+  var pics = Array.prototype.slice.call(document.querySelectorAll("figure.pic"));
+  var picTabs = document.querySelector(".pic-tabs");
+  var status = document.getElementById("status");
+
+  // One picture at a time; without this script all five show, stacked.
+  function showPic(id) {
+    pics.forEach(function (f) { f.hidden = f.id !== id; });
+    Array.prototype.forEach.call(picTabs.children, function (b) { b.setAttribute("aria-selected", String(b.dataset.pic === id)); });
+  }
+  Array.prototype.forEach.call(picTabs.children, function (b) {
+    b.addEventListener("click", function () { showPic(b.dataset.pic); });
+  });
+  picTabs.hidden = false;
+  showPic(pics[0].id);
+
+  function showTarget() {
+    var el = location.hash.length > 1 ? document.getElementById(location.hash.slice(1)) : null;
+    if (!el) return;
+    if (pics.indexOf(el) >= 0) showPic(el.id);
+    for (var d = el.closest("details"); d; d = d.parentElement && d.parentElement.closest("details")) d.open = true;
+    el.scrollIntoView();
+  }
+  window.addEventListener("hashchange", showTarget);
+  showTarget();
+
+  // Answers and comments: one document per viewer, answers/<their id>, holding
+  // {points: {"<question>": {choice, note, at}}}. Everyone reads all of them.
+  var points = Array.prototype.slice.call(document.querySelectorAll("[data-point]"));
+  var mine = {};          // this viewer's points, as last saved or typed
+  var all = {};           // viewer id -> points
+  var me = null, db = null, user = null, loaded = false, readOnly = false;
+  var chain = Promise.resolve(), timer = null;
+
+  function ui(el) {
+    if (el._ui) return el._ui;
+    var talk = document.createElement("div"); talk.className = "talk";
+    var open = document.createElement("button"); open.type = "button"; open.textContent = "Comment";
+    var box = document.createElement("textarea"); box.hidden = true; box.placeholder = "Your comment";
+    box.id = "comment-" + el.dataset.point; box.setAttribute("aria-label", "Your comment");
+    var notes = document.createElement("ul"); notes.className = "notes";
+    talk.appendChild(open); talk.appendChild(box); talk.appendChild(notes);
+    el.appendChild(talk);
+    open.addEventListener("click", function () { box.hidden = !box.hidden; if (!box.hidden) box.focus(); });
+    box.addEventListener("input", function () { edit(el.dataset.point, { note: box.value }, 1500); });
+    box.addEventListener("blur", function () { flush(); });
+    var opts = Array.prototype.slice.call(el.querySelectorAll(".options li[data-option]"));
+    opts.forEach(function (li) {
+      function choose() {
+        if (!db || readOnly || !loaded) return;
+        var cur = (mine[el.dataset.point] || {}).choice;
+        edit(el.dataset.point, { choice: cur === li.dataset.option ? null : li.dataset.option }, 0);
+        render();
+      }
+      li.addEventListener("click", function (e) { if (!e.target.closest("a")) choose(); });
+      li.addEventListener("keydown", function (e) {
+        if (e.target === li && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); choose(); }
+      });
+    });
+    el._ui = { open: open, box: box, notes: notes, opts: opts };
+    return el._ui;
+  }
+
+  function edit(key, change, delay) {
+    if (!db || readOnly || !loaded) return;
+    var cur = Object.assign({}, mine[key] || {}, change, { at: Date.now() });
+    if (!cur.choice && !cur.note) delete mine[key]; else mine[key] = cur;
+    clearTimeout(timer);
+    timer = setTimeout(save, delay);
+  }
+  function flush() { if (timer) { clearTimeout(timer); save(); } }
+  function save() {
+    timer = null;
+    if (!loaded || !me || readOnly) return;   // never overwrite answers not yet loaded
+    var body = { points: JSON.parse(JSON.stringify(mine)), updatedAt: Date.now() };
+    chain = chain.then(function () {
+      return db.doc("answers/" + me).set(body);
+    }).then(function () {
+      say("Saved.");
+    }, function (e) {
+      if (e && e.code === "invalid_argument") { readOnly = true; say("Your answers can't be saved here: the owner can give you Editor access."); render(); }
+      else if (e && e.code === "quota_exceeded") say("The page's storage is full; tell the owner.");
+      else say("Couldn't save just now; your text is kept and saved with your next change.");
+    });
+  }
+  function say(text) { status.textContent = text; }
+
+  async function render() {
+    var ids = Object.keys(all);
+    var names = {};
+    if (user && ids.length) {
+      try { var ps = await user.profiles(ids); ids.forEach(function (id) { names[id] = (ps[id] && ps[id].name) || "Someone"; }); } catch (e) {}
+    }
+    points.forEach(function (el) {
+      var key = el.dataset.point, u = ui(el);
+      var own = mine[key] || {};
+      if (document.activeElement !== u.box) u.box.value = own.note || "";
+      if (own.note) u.box.hidden = false;
+      u.opts.forEach(function (li) {
+        li.classList.toggle("mine", own.choice === li.dataset.option);
+        if (db) li.setAttribute("aria-pressed", String(own.choice === li.dataset.option));
+        var who = li.querySelector(".who");
+        var pickers = ids.filter(function (id) { return id !== me && all[id][key] && all[id][key].choice === li.dataset.option; })
+          .map(function (id) { return names[id] || "Someone"; });
+        if (!who) { who = document.createElement("span"); who.className = "who"; li.appendChild(who); }
+        who.textContent = pickers.length ? "Chosen by " + pickers.join(", ") : "";
+      });
+      u.notes.textContent = "";
+      ids.forEach(function (id) {
+        if (id === me) return;
+        var p = all[id][key];
+        if (!p || !p.note) return;
+        var li = document.createElement("li"), b = document.createElement("b");
+        b.textContent = (names[id] || "Someone") + ": "; li.appendChild(b);
+        li.appendChild(document.createTextNode(p.note || ""));
+        u.notes.appendChild(li);
+      });
+      var count = ids.filter(function (id) { return id !== me && all[id][key] && all[id][key].note; }).length;
+      u.open.textContent = count ? "Comment (" + count + ")" : "Comment";
+      u.open.hidden = !db && !count;
+      u.box.disabled = !db || readOnly || !loaded;
+    });
+  }
+
+  points.forEach(ui);
+  render();
+  if (!(window.claude && window.claude.use)) { say("Opened outside claude.ai: answers and comments show only there."); return; }
+  Promise.all([window.claude.use("db"), window.claude.use("user")]).then(async function (got) {
+    db = got[0]; user = got[1];
+    if (!db) { say("Answers and comments can't be saved in this view."); render(); return; }
+    document.body.classList.add("live");
+    points.forEach(function (el) { ui(el).opts.forEach(function (li) { li.tabIndex = 0; li.setAttribute("role", "button"); }); });
+    me = user ? await user.id() : null;
+    if (!me) { readOnly = true; say("Sign in to answer and comment."); }
+    db.collection("answers").onSnapshot(function (snap) {
+      all = {};
+      snap.docs.forEach(function (d) { var b = d.data(); if (b && b.points) all[d.id] = b.points; });
+      if (!loaded) {
+        loaded = true;
+        if (me && all[me]) mine = JSON.parse(JSON.stringify(all[me]));
+        if (timer) { clearTimeout(timer); save(); }
+      }
+      render();
+    }, function () { say("Answers stopped updating; reload the page."); });
+  });
+})();
+</script>
