@@ -28,7 +28,7 @@
     <string name="full_backup">Cópia de segurança dos dados da aplicação</string>
     <string name="auto_accept_images">Aceitar imagens automaticamente</string>
     <string name="passcode_set">Código de acesso definido!</string>
-    <string name="settings_section_title_you">Eu</string>
+    <string name="settings_section_title_you">Você</string>
     <string name="settings_section_title_messages">Mensagens e ficheiros</string>
     <string name="settings_section_title_icon">Ícone da aplicação</string>
     <string name="chat_item_ttl_month">1 mês</string>
@@ -70,7 +70,7 @@
     <string name="v4_5_message_draft">Rascunho de mensagem</string>
     <string name="v5_0_app_passcode_descr">Defina-o em vez da autenticação do sistema.</string>
     <string name="connected_to_server_to_receive_messages_from_contact">Está ligado ao servidor usado para receber mensagens desta ligação.</string>
-    <string name="sender_you_pronoun">eu</string>
+    <string name="sender_you_pronoun">você</string>
     <string name="smp_server_test_disconnect">Desligar</string>
     <string name="error_smp_test_certificate">A impressão digital no endereço do servidor não corresponde ao certificado.</string>
     <string name="enter_passphrase_notification_title">A frase-chave é necessária</string>
@@ -461,7 +461,7 @@
     <string name="direct_messages">Mensagens diretas</string>
     <string name="integrity_msg_duplicate">mensagem duplicada</string>
     <string name="file_with_path">Ficheiro: %s</string>
-    <string name="group_info_member_you">eu: %1$s</string>
+    <string name="group_info_member_you">você: %1$s</string>
     <string name="ttl_s">%ds</string>
     <string name="ttl_sec">%d seg</string>
     <string name="ttl_w">%dw</string>
@@ -909,14 +909,14 @@
     <string name="only_you_can_make_calls">Apenas o utilizador pode fazer chamadas.</string>
     <string name="chat_theme_apply_to_all_modes">Todos os modos de cor</string>
     <string name="feature_roles_admins">administradores</string>
-    <string name="snd_conn_event_ratchet_sync_started">a acordar a encriptação com %s…</string>
+    <string name="snd_conn_event_ratchet_sync_started">a acordar a cifragem com %s…</string>
     <string name="add_contact_tab">Adicionar contacto</string>
     <string name="network_smp_proxy_fallback_allow_downgrade">Permitir regressão de versão</string>
     <string name="clear_note_folder_warning">Todas as mensagens serão eliminadas - esta ação não pode ser revertida!</string>
     <string name="v5_2_more_things">Mais algumas coisas</string>
     <string name="allow_to_send_files">Permitir o envio de ficheiros e multimédia.</string>
     <string name="v5_6_safer_groups_descr">Os administradores podem bloquear um membro para todos.</string>
-    <string name="conn_event_ratchet_sync_started">a acordar a encriptação…</string>
+    <string name="conn_event_ratchet_sync_started">a acordar a cifragem…</string>
     <string name="wallpaper_advanced_settings">Definições avançadas</string>
     <string name="feature_roles_all_members">todos os membros</string>
     <string name="acknowledgement_errors">Erros de confirmação</string>
@@ -2758,7 +2758,7 @@
     <string name="max_group_mentions_per_message_reached">Pode mencionar até %1$s membros por mensagem!</string>
     <string name="channel_members_title_subscribers">Subscritores</string>
     <string name="channel_members_section_owners">Proprietários &amp; colaboradores</string>
-    <string name="channel_member_you">eu</string>
+    <string name="channel_member_you">você</string>
     <string name="chat_relay">Servidor de retransmissão de conversas</string>
     <string name="new_chat_relay">Novo servidor de retransmissão de conversas</string>
     <string name="preset_relay_name">Nome do servidor de retransmissão predefinido</string>
@@ -2997,4 +2997,5 @@
     <string name="supporter_perks">Vantagens de apoiante</string>
     <string name="v7_1_supporter_badge_title">Distintivo de apoiante ❤️</string>
     <string name="v7_1_supporter_badge_body">Ajude a manter a rede em funcionamento — envie ficheiros até 2 GB.</string>
+    <string name="file_already_exists_replace_question">O ficheiro já existe. Substituir?</string>
 </resources>
