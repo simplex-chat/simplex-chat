@@ -1420,7 +1420,7 @@ jobs:
         run: echo "::warning title=Cache miss::${{ steps.keys.outputs.dist }}-${{ env.opt }}-${{ env.branch }}"
 
       # rm -rf dist-newstyle/src/{direct-sq,simplexmq,hs-jpeg-t,JuicyPixe}* is here because of the bug in cabal's dependency which prevents second build from finishing
-      # (simplexmq, hs-jpeg-turbo and JuicyPixels-stbir are removed because cabal cannot delete their read-only git submodule pack files - blst, libbbs, libjpeg-turbo, stb - on Windows)
+      # (simplexmq, hs-jpeg-turbo and JuicyPixels-stbir are removed because cabal cannot delete their read-only git submodule pack files - blst, libbbs, mozjpeg, stb - on Windows)
       - name: Build CLI
         id: windows_cli_build
         shell: msys2 {0}
