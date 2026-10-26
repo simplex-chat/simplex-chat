@@ -355,8 +355,9 @@ unknown values                     skipped
 [`ChatItemWithMenu.terminalItemRow`](../../Shared/Views/Chat/ChatView.swift#L2136) wraps `chatItemWithMenu` in [`TerminalChatItemRow`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L378):
 
 ```
-row padding        top: topGap, plus terminalSenderTopGap with a sender row; start 8pt; end 12pt
-gutter             groups and channels: memberImageSize + 4pt, with the sender avatar; other chats: none
+row padding        top: topGap, plus terminalSenderTopGap with a sender row
+gutter             groups and channels: memberImageSize + chatItemTextPadding, with the sender avatar chatItemTextPadding from the start; other chats: none
+                   one 12pt padding (user, I26): screen edge to the text or the avatar, avatar to the text, time to the screen edge
 avatar             memberImageSize: scaledMemberImageSize, 34pt × chat list profileImageSize ÷ 63 (dynamicSize at the text size, at most 75); classic rows too
                    classic group bubbles: maximum width less the avatar column, scaledMemberImageSize + 8pt
 sender row         name and badge at terminalNameSize, 13.5 × 17/16 pt (primary for own items, secondary otherwise); role label 15pt after the name

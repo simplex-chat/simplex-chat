@@ -394,7 +394,7 @@ struct TerminalChatItemRow<Content: View>: View {
             if gutter > 0 {
                 ZStack(alignment: .topLeading) {
                     Color.clear.frame(width: gutter, height: 0)
-                    sender?.image
+                    sender?.image?.padding(.leading, chatItemTextPadding)
                 }
             }
             VStack(alignment: .leading, spacing: 0) {
@@ -407,8 +407,6 @@ struct TerminalChatItemRow<Content: View>: View {
             }
         }
         .padding(.top, topGap + (sender == nil ? 0 : senderTopGap))
-        .padding(.leading, 8)
-        .padding(.trailing, 12)
     }
 
     private func senderNameAndRole(_ sender: ChatItemSender) -> some View {

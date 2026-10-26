@@ -34,8 +34,9 @@ unchanged    chat list preview
 row               the classic item without bubble fill and tail; start-aligned for both directions
 text edge         CHAT_ITEM_TEXT_PADDING (12dp) inside the item: text, quotes, headers, media, cards, events, voice, calls, reactions
 sender row        classic group geometry and style: name 13.5sp, role label; own name in the primary colour
-avatars           groups and channels only; gutter: member image width and 4dp
+avatars           groups and channels only; gutter: member image width and 12dp, the avatar 12dp from the start
 gutter            other chats: none (user, 2026-10-25)
+padding           one 12dp padding: screen edge to the text or the avatar, avatar to the text, time to the screen edge; row start and end 0 (user, I26, 2026-10-26)
 sender groups     new sender row after an event or a sender change, as classic: time gaps and date changes do not repeat it
 time, status      at the end of the row, for every item with a time; baseline of the time on the last baseline of the content (D3)
                   message text ends with a transparent copy of the time, joined to the last word by no-break spaces
@@ -191,7 +192,7 @@ Shared/Views/Chat/ChatView.swift         terminal = activeChatLayout == .termina
                                          wallpaper background colour without the image
                                          showAvatar = terminalItemShowsSender(item, older) when terminal
                                          terminalItemRow: SelectedChatItem, TerminalChatItemRow(chatItemSender or nil, gutter, terminalRowGap)
-                                         gutter: memberImageSize + 4pt in groups, 0 in other chats
+                                         gutter: memberImageSize + chatItemTextPadding in groups, 0 in other chats
                                          memberImageSize: 34pt × chat list profileImageSize ÷ 63 at the text size, classic rows too
                                          classic group bubble width: less scaledMemberImageSize + 8pt for the avatar column
                                          terminalRowsSeparated(olderRow); olderRow: the next merged item
@@ -205,7 +206,7 @@ Shared/Views/Chat/ChatItem/TerminalItemView.swift
                                          messageLastLine, messageLastBlock: custom alignment guides; metaCopyJoiner
                                          ItemWithMeta: TerminalMetaLayout on iOS 16, HStack on the last text baseline on iOS 15
                                          ChatEventWithMeta: ts only; the separator of the classic text kept, the copy after WJ, a direction mark and two no-break spaces
-                                         ChatItemSender, TerminalChatItemRow
+                                         ChatItemSender, TerminalChatItemRow: no padding at the sides, the avatar chatItemTextPadding from the start
 Shared/Views/Chat/ChatItemView.swift     endButton to FramedItemView; event items with ChatEventWithMeta; chatEventText(ts:)
 Shared/Views/Chat/ChatItem/
   FramedItemView.swift                   backgrounds omitted; headers and quote at the text edge; terminalQuote with quoteBar; terminalBlock for media and cards

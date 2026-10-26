@@ -2161,7 +2161,7 @@ struct ChatView: View {
                 }
                 TerminalChatItemRow(
                     sender: showSender ? chatItemSender(ci, range) : nil,
-                    gutter: chat.chatInfo.chatType == .group ? memberImageSize + 4 : 0,
+                    gutter: chat.chatInfo.chatType == .group ? memberImageSize + chatItemTextPadding : 0,
                     topGap: topGap
                 ) {
                     chatItemWithMenu(ci, range, maxWidth, itemSeparation)
