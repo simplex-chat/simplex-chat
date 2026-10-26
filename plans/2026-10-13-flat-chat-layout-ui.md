@@ -79,7 +79,6 @@ level targets     measured from a baseline or a block edge to the top of the tal
                   paragraph break and a heading inside a message: 4.75sp
                   below a heading: 2.375sp (half of 4.75sp), so a heading is nearer to its own text (D21)
                   headings: body × 1.72, 1.3125, 1 for levels 1, 2, 3 (D15, revised 2026-10-25); capitals placed as body capitals
-                  headings, both layouts: body × 1.5625, 1.25, 1 for levels 1, 2, 3, bold (user, 2026-10-26); iOS here, Kotlin on ep/classic-bubbles
                   files: 2sp above; voice drawn by FramedItemView (caption, quote or header): as voice alone, 4sp above, 6sp below
                   emoji-only items, also under a quote or header: 4.25sp above, 1.5sp below; not stretched to the item width
                   feature and preference icons: centred on the event text, no height; merged feature icons: one event line high, centred
@@ -105,7 +104,6 @@ theme screens     preview as terminal rows ("alice", then "bob" in the own colou
                   custom image tile, image scale, scale slider and wallpaper accent hidden
 theme export      colours and wallpaper; the layout is not exported
 classic           unchanged apart from the message text colour: no copy of the time in bubbles (decided 2026-10-23), no spacing or line-height changes
-                  iOS: group bubble width less the scaled avatar column (I18); sender name on the bubble edge (I23); Kotlin: on ep/classic-bubbles
 build             kotlin.daemon.jvmargs=-Xmx4096m in apps/multiplatform/gradle.properties (D33)
 rejected          hover action bar
                   reaction pills
