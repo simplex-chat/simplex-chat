@@ -5,7 +5,7 @@ Images are resized by the core: halved until the encoding fits the size limit; t
 JPEG input is decoded by libjpeg-turbo at the smallest scale that covers the display size, and its EXIF orientation is applied.
 The core functions are called by the apps in place of platform code, wrapped in both bot libraries and used for `/img` and `/imgf` previews; libjpeg-turbo is compiled by cabal in every build.
 
-References are to branch `ab/resize-image` at `d27d70438`, based on master `66e381bf5`. Haskell paths without a directory are in `src/Simplex/Chat/`.
+References are to branch `ab/resize-image` at `37be23b6b`, based on master `66e381bf5`. Haskell paths without a directory are in `src/Simplex/Chat/`.
 
 ## Decisions
 
@@ -16,7 +16,7 @@ Decoding, `Image.hs`:
      - a side above 65500
      - a precision other than 8
      - a lossless JPEG
-  2. target size: both sides halved, each rounded as `halve` rounds (`:97-105`), while a side exceeds 4320; `Left` when a side is below 2 before a halving
+  2. target size: both sides halved, each rounded as `halve` rounds (`scaledSide`, `:203-204`), while a side exceeds 4320; `Left` when a side is below 2 before a halving
   3. scale: the smallest of `Full`, `Half`, `Quarter` and `Eighth` whose rounded-up sides are at least the target
   4. `decodeJpeg` with:
      - `maxPixels`: 2^28; `Left` above it, before the output is allocated
@@ -264,29 +264,32 @@ PR #1, branch `ep/stb-submodule`, on the Hackage release 0.1.0.0 (`917cd53`):
 
 Core:
 - `Image.hs`, new:
-  - exports (`:5-11`):
+  - exports (`:7-14`):
     - `ImageFormat (IFJpeg, IFPng)`
     - `imageFormat`
     - `decodeResizable`
     - `resizeImage`
     - `resizeImageDataUri`
-  - `decodeResizable`: `decodeDisplayJpeg` for input starting `FF D8`, otherwise `decodeImage`
-  - `decodeDisplayJpeg`: `readJpegHeader`, `displaySize`, `jpegScale`, `decodeJpeg`, the resize to the display size, `orientImage` with `exifOrientation`
-  - `displaySize`: the target size and the number of halvings, with the rounding of `downscale`, shared through `scaledSide`
-  - `jpegScale`: `Full`, `Half`, `Quarter`, `Eighth` for 0, 1, 2, and 3 or more halvings
-  - `exifOrientation`: the orientation value from the JPEG markers before the first SOS, 1 when absent or malformed
-  - `orientImage`: the 8 transforms with `generateImage`, applied with `dynamicPixelMap`
-  - `maxJpegPixels = 2 ^ 28`; `maxJpegMemoryMB`, 512 or 2047 by `mobileBuild`
-  - `fitImage` (`:44-66`): the size bound, the display halving (`fitDisplay`, `:55`), then the search, parameterized by the output (bytes or data URI); JPEG with `encodeRGB`
-  - `bisect` (`:68-78`)
-  - `minJpegQuality = 20` (`:80-81`)
-  - `maxImageSide = 16384` (`:83-84`)
-  - `maxDisplaySide = 4320` (`:86-87`)
-  - `hasSideAbove` (`:89-90`)
-  - `halveToSide` (`:92-95`)
-  - `halve` (`:97-100`)
-  - `downscale` (`:102-105`): `STBIR.resize` with `defaultOptions`
-  - `toDataUri` (`:107-113`), with the approved comment at `:111`
+  - `decodeResizable` (`:45-48`): `decodeDisplayJpeg` for input starting `FF D8`, otherwise `decodeImage`
+  - `decodeDisplayJpeg` (`:50-54`): `readJpegHeader`, `displaySize`, `jpegScale`, `decodeJpeg`, `resizeToSize`, `orientImage` with `exifOrientation`
+  - `displaySize` (`:56-62`): the target size and the number of halvings, with the rounding of `downscale`, shared through `scaledSide`
+  - `jpegScale` (`:64-69`): `Full`, `Half`, `Quarter`, `Eighth` for 0, 1, 2, and 3 or more halvings
+  - `resizeToSize` (`:71-74`): `convertRGB8` and `STBIR.resize` when the decoded size differs from the target
+  - `exifOrientation` (`:76-98`): the orientation value of IFD0, 1 when absent or malformed
+  - `exifTiff` (`:100-108`): the TIFF data of the first APP1 `Exif` segment before the first SOS
+  - `orientImage` (`:110-122`): the 8 transforms with `generateImage`, applied with `dynamicPixelMap`
+  - `maxJpegPixels = 2 ^ 28` (`:175-176`); `maxJpegMemoryMB` (`:178-183`), 512 or 2047 by `mobileBuild`
+  - `fitImage` (`:130-152`): the size bound, the display halving (`fitDisplay`, `:141`), then the search, parameterized by the output (bytes or data URI); JPEG with `encodeRGB`
+  - `bisect` (`:154-164`)
+  - `minJpegQuality = 20` (`:166-167`)
+  - `maxImageSide = 16384` (`:169-170`)
+  - `maxDisplaySide = 4320` (`:172-173`)
+  - `hasSideAbove` (`:185-186`)
+  - `halveToSide` (`:188-191`)
+  - `halve` (`:193-196`)
+  - `downscale` (`:198-201`): `STBIR.resize` with `defaultOptions`
+  - `scaledSide` (`:203-204`)
+  - `toDataUri` (`:206-212`), with the approved comment at `:210`
 - `Mobile/File.hs`:
   - exported at `:13-14`:
     - `cChatResizeImageUri` (`:147-148`)
@@ -298,19 +301,19 @@ Core:
     - `newCStringFromLazyBS`
 - `Mobile.hs:167, 169`: `foreign export ccall` of both functions.
 - `Library/Commands.hs`:
-  - `maxImagePreviewSize = 14000` (`:176-177`)
-  - `imagePreview :: CryptoFile -> IO ImageData` (`:229-235`): `decodeResizable`, in place of `decodeImage` (`:234`)
-  - `SendImage` (`:3558`): the preview from `imagePreview`
+  - `maxImagePreviewSize = 14000` (`:175-176`)
+  - `imagePreview :: CryptoFile -> IO ImageData` (`:228-234`): `decodeResizable`, in place of `decodeImage` (`:233`)
+  - `SendImage` (`:3557`): the preview from `imagePreview`
 - `simplex-chat.cabal`:
-  - library: `if flag(swift) || os(android)`, `cpp-options: -DmobileBuild`
+  - library: `if flag(swift) || os(android)`, `cpp-options: -DmobileBuild` (`:411-412`)
   - module `Simplex.Chat.Image` (`:52`)
   - library dependencies (`:385-387`):
     - `JuicyPixels`
     - `JuicyPixels-jpeg-turbo`
     - `JuicyPixels-stbir`
   - test suite:
-    - module `ImageTests` (`:720`)
-    - dependency `JuicyPixels` (`:812`)
+    - module `ImageTests` (`:722`)
+    - dependencies `JuicyPixels` and `JuicyPixels-jpeg-turbo` (`:814-815`)
 - `libsimplex.dll.def:30-31`, `flake.nix:487-488`: the export names.
 
 iOS:
@@ -443,20 +446,20 @@ License notices, `docs/dependencies/`:
 ## Tests
 
 `tests/ImageTests.hs`, group "Image resize" (`tests/Test.hs:98`):
-- Same aspect ratio, in every comparison below: `|w·h' − h·w'| ≤ w' + h'` (`:128-129`).
-- data URI (`:26-29`), limit 14000; each result is decoded and compared by aspect ratio with the input:
+- Same aspect ratio, in every comparison below: `|w·h' − h·w'| ≤ w' + h'` (`:229-230`).
+- data URI (`:30-33`), limit 14000; each result is decoded and compared by aspect ratio with the input:
   - `test.jpg` (1280×720): `data:image/jpg;base64,`
   - `logo-large-rgba.png` (1630×466, transparent pixels): `data:image/png;base64,`
   - `preview-issue1.png` (1200×600, opaque): `data:image/jpg;base64,`
-- 16-bit images (`:30`), 128×128: a JPEG URI for RGB16; for RGBA16 with half opacity, a PNG URI decoded as RGBA8.
-- image data (`:31-34`), limit 10000:
+- 16-bit images (`:34`), 128×128: a JPEG URI for RGB16; for RGBA16 with half opacity, a PNG URI decoded as RGBA8.
+- image data (`:35-38`), limit 10000:
   - JPEG from `test.jpg`: starts `FF D8`, width below 1280, same aspect ratio
   - PNG from `logo-large-rgba.png`: RGBA8, width below 1630, same aspect ratio
   - 1×1 image with limit 10: `Left` for JPEG and PNG
-- size bound (`:35`), transparent images, limit 100000, for PNG, JPEG and the data URI:
+- size bound (`:39`), transparent images, limit 100000, for PNG, JPEG and the data URI:
   - 16384×4 and 4×16384: `Right`
   - 16385×4 and 4×16385: `Left`
-- display halving (`:36`), opaque and transparent images, `imageFormat`; the image data with limit 261120 and the data URIs with limits 12500 and 14000, each decoded:
+- display halving (`:40`), opaque and transparent images, `imageFormat`; the image data with limit 261120 and the data URIs with limits 12500 and 14000, each decoded:
 
   | input | output |
   |---|---|
@@ -464,11 +467,11 @@ License notices, `docs/dependencies/`:
   | 8×8640 | 4×4320 |
   | 4320×4 | 4320×4 |
 
-- image preview (`:37-41`):
+- image preview (`:41-45`):
   - `test.jpg`: JPEG data URI of at most 14000 characters
   - an encrypted copy of `test.jpg`: the same
   - `test.pdf`: `fixedImagePreview`
-- JPEG display size, blank W×16 JPEGs from `encodeRGB` and the same with the sides swapped, `decodeResizable`, then the image data with limit 261120, decoded:
+- JPEG display size (`:47`, `:134-148`), blank W×16 JPEGs from `encodeRGB` and the same with the sides swapped, `decodeResizable`, then the image data with limit 261120, decoded:
   - 4320, 4321, 8640, 8641: the size of the full-decode path, JuicyPixels `decodeImage` then `resizeImage`
   - expected sizes:
 
@@ -484,31 +487,31 @@ License notices, `docs/dependencies/`:
     | 34561 | 4320×2 |
     | 65500 | 4094×1 |
 
-- JPEG formats, 64×48, `decodeResizable`:
+- JPEG colour spaces (`:48`, `:150-158`), 64×48, `decodeResizable`:
 
   | input | result |
   |---|---|
+  | progressive YCbCr, `encodeRGB` | `ImageRGB8` |
   | baseline YCbCr, JuicyPixels `encodeJpegAtQuality` | `ImageRGB8` |
-  | progressive, `encodeRGB` | `ImageRGB8` |
   | grayscale, JuicyPixels `Pixel8` encoding | `ImageY8` |
   | YCCK, JuicyPixels `PixelCMYK8` encoding | `ImageCMYK8` |
-  | precision 12, written into the SOF | `Left` |
-  | lossless, SOF marker `FF C3` | `Left` |
 
-- JPEG refusals, `decodeResizable`, `Left`:
+- JPEG refusals (`:49`, `:160-175`), a baseline 64×48 JPEG changed as below, `decodeResizable`, `Left`:
+  - precision 12 written into the SOF
+  - SOF marker `FF C3` (lossless)
   - a side of 65501 written into the SOF
   - 16385×16384 written into the SOF
   - the input shortened by one byte
-  - a byte inserted before a marker
-- EXIF orientation: a 64×32 JPEG with four solid quadrants and an APP1 Exif segment, little-endian for odd and big-endian for even values; `decodeResizable`:
-  - values 1–8: the sides swapped for 5–8; the quadrant colours placed by the transform
+  - a byte inserted before the SOF marker
+- EXIF orientation (`:50`, `:177-221`): a 64×32 JPEG with four solid quadrants and an APP1 Exif segment, little-endian for odd and big-endian for even values; `decodeResizable`:
+  - values 1–8: the sides swapped for 5–8; the quadrant colours placed by the transform; the resized JPEG without `Exif`
   - an IFD0 offset beyond the segment: as value 1
 
-`tests/MobileTests.hs`, "Images" (`:93-96`), with buffers from `mallocBytes`:
+`tests/MobileTests.hs`, "Images" (`:95-99`), with buffers from `mallocBytes`:
 - `cChatResizeImageUri` on `test.jpg`, limit 14000: `data:image/jpg;base64,`, at most 14000 characters; on `"not an image"`: `""`.
 - `cChatResizeImage` on `test.jpg`, limit 100000: base64 decoded to at most 100000 bytes, starting `FF D8` for `png = 0` and with the PNG signature for `png = 1`.
-- `cChatResizeImage` with `png = -1`, limit 100000 (`:373-381`): `FF D8` for `test.jpg`; the PNG signature for `logo-large-rgba.png`.
-- `cChatResizeImage` with `png = -1`, limit 261120, on a blank 20000×16 JPEG: `FF D8`.
+- `cChatResizeImage` with `png = -1`, limit 100000 (`:376-384`): `FF D8` for `test.jpg`; the PNG signature for `logo-large-rgba.png`.
+- `cChatResizeImage` with `png = -1`, limit 261120, on a blank 20000×16 JPEG from `encodeRGB` (`:386-390`): `FF D8`.
 
 `tests/ChatTests/Files.hs`, "send image with generated preview" (`:47`, `:179-192`):
 - `/img @bob ./tests/fixtures/test.jpg`: the received item has a JPEG data URI preview of at most 14000 characters, read with `APIGetChat` (`lastImagePreview`, `:194-200`).
