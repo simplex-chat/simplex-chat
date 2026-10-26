@@ -50,6 +50,7 @@ namesStoreTests = describe "StoreService names: store" $ do
     it "turns a code_issued order taken at price 0 and not live at its next version, dropping issued_code_id with its index and foreign key, which the down migration restores" testDropTakenCodes
     it "makes taken orders not live and gives a taken paid order a balance of its price, none to a code order or a price of 0, and rolls back the balance tables and columns" testNameBalancesMigration
     it "gives the orders stored before it empty agreed terms, and rolls the column back keeping them" testNameTermsMigration
+    it "refuses a stored reveal whose acceptance columns are set only in part" testPartialAcceptance
     it "rolls the acceptance columns back with the acceptance relays, which the code before them cannot read" testNameTermsAcceptanceMigration
   describe "order hash" $ do
     it "is equal for the same order fields, and differs when any one field differs" testOrderHashFields
@@ -297,6 +298,14 @@ testNameTermsMigration = withServiceStore $ \st -> do
   kept `shouldReturn` [("paid", "unpaid", price)]
   runMigrations st $ MTRUp terms
   agreedTerms `shouldReturn` [("paid", "")]
+
+testPartialAcceptance :: IO ()
+testPartialAcceptance = withServiceStore $ \st -> do
+  placePaid st "r1" ownerA (order "alicebakery" 1) (at 60) `shouldReturn` Right ()
+  r <- reg st "r1"
+  write st r {nrReveal = Just reveal} `shouldReturn` Written 2
+  withTransaction st $ \db -> DB.execute db "UPDATE sx_badge_service_name_registrations SET accept_terms = ? WHERE registration_id = 'r1'" (Only $ DB.Binary $ digestFixture 1)
+  reg st "r1" `shouldThrow` anyException
 
 testNameTermsAcceptanceMigration :: IO ()
 testNameTermsAcceptanceMigration = withServiceStore $ \st -> do

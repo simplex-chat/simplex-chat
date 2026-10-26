@@ -166,7 +166,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
     it "answers the code's refusal when its reservation fails in the insert, writing nothing" testCodeNotReservable
     it "counts code orders and code checks against one code limit" testCodeLimitShared
   describe "terms" $ do
-    it "answers terms_changed with the current terms and community for an old version or the wrong variant, listed or not, creating nothing" testTermsChanged
+    it "answers terms_changed with the current terms and community for an old version or the wrong variant, listed or not, creating nothing, and takes an ini-only name under plain terms" testTermsChanged
     it "accepts the community terms for a listed name as viem signs them, storing them" testCommunityTerms
     it "answers an exact resend after the version changed, and takes the same fields under the new terms as another order" testResendAfterBump
     it "checks the terms after the existing orders, the timestamp and the duration, with the community listing's read, before the name check and the price" testTermsCheckOrder
@@ -1623,6 +1623,8 @@ testViewCommunity = withServiceStore $ \st -> withFakeEthNode $ \node -> do
   -- the community terms the order signed, without a text in the ini
   listing [] r `shouldBe` entry (Nothing :: Maybe Text)
   listing [(aliceHash, "bakers and bakeries in Lisbon")] r {nrAgreedTerms = termsVersion} `shouldBe` Just J.Null
+  -- signed community terms without community_terms_url to link
+  field "community" (objectOf $ viewJSON (testNamesConfig node) {nCommunityTermsUrl = Nothing} r Nothing Nothing ViewReads {vrIntentNonce = Nothing, vrUnread = [], vrAcceptance = Nothing}) `shouldBe` Just J.Null
 
 testViewTerms :: IO ()
 testViewTerms = withServiceStore $ \st -> withFakeEthNode $ \node -> do

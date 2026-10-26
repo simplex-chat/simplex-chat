@@ -4,7 +4,7 @@
 module Bots.StoreService.NamesCommunityTests (namesCommunityTests) where
 
 import Bots.StoreService.ConfigTests (chainSection, namesIni, namesRefusal, namesSection, parseIni, parsedNames, termsUrl, termsVersion, withIni)
-import Bots.StoreService.FakeEthNode (CallAnswer (..), answerCall, fakeCommunityTerms, fakeCommunityTermsText, fakeController, fakeNewCommunityTerms, fakeTermsUrl, setCommunityTerms)
+import Bots.StoreService.FakeEthNode (CallAnswer (..), answerCall, fakeCommunityTerms, fakeCommunityTermsText, fakeController, fakeNamePolicy, fakeNewCommunityTerms, fakeTermsUrl, setCommunityTerms)
 import Bots.StoreService.NamesContractsTests (withContracts)
 import Bots.StoreService.NamesSearchTests (aliceHex)
 import Bots.StoreService.WebTests (capturingStderr)
@@ -43,9 +43,9 @@ namesCommunityTests = describe "StoreService names: community" $ do
   it "refuses a missing or malformed terms_version or terms_url" testBadTerms
   it "names no community label as a setting nothing reads" testNoUnknownKeys
   it "logs how many community names it loaded" testLoadedCount
-  it "gives the version for an unlisted name and its community variant with the terms' hash for a listed one" testTermsFor
+  it "gives the version for an unlisted name and its community variant with the terms' hash for a listed one, and reads that hash back" testTermsFor
   it "reads community_terms_url: https, or http on loopback only on the local chain" testCommunityTermsUrl
-  it "takes the policy's terms once the page's text hashes to them, and fetches again for new terms" $ testCurrentTerms g
+  it "takes the policy's terms once the page's text hashes to them, and fetches again for new terms, none without terms on chain or community_terms_url" $ testCurrentTerms g
   it "checks the policy's terms and the [community] lines at startup, stopping only on terms the page does not hash to" $ testStartupCheck g
   it "checks neither the terms nor the [community] lines when the policy cannot be read at startup" $ testStartupUnread g
   it "warns at startup, without stopping, on no terms on chain, no community_terms_url or a page it cannot read" $ testStartupWarnings g
@@ -193,6 +193,9 @@ testStartupCheck g = withContracts g $ \node ct -> do
   warned `shouldSatisfy` T.isInfixOf "names: [community] lists a name the name policy does not list, so it is sold as a plain name: Alice's bakery"
   setCommunityTerms node fakeNewCommunityTerms
   checkNamePolicy cfg ct `shouldReturn` Left ("names: the text at names.community_terms_url does not hash to the name policy's terms " <> T.unpack (hex fakeNewCommunityTerms))
+  answerCall node fakeNamePolicy (selector "bonaFideNames(bytes32)" <> fromJust (bytes32FromHex aliceHex)) $ Reverts ""
+  unread <- capturingStderr $ void $ checkNamePolicy cfg ct
+  unread `shouldSatisfy` T.isInfixOf "names: a [community] name's listing could not be read: Alice's bakery"
 
 testStartupUnread :: TVar ChaChaDRG -> IO ()
 testStartupUnread g = withContracts g $ \node ct -> do

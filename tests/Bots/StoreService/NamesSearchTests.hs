@@ -74,7 +74,7 @@ namesSearchTests = describe "StoreService names: search" $ do
     it "answers a reserved name" $ testReserved g
     it "answers a name the chain has available as registered while its register here is sent, without a price" $ testRegistering g
     it "answers a registered name with its entities, raw records, owner, resolver, nonce, expiry and grace period" $ testRegistered g
-    it "answers a listed name's community entry when available, reserved, being registered here and registered" $ testCommunity g
+    it "answers a listed name's community entry when available, reserved, being registered here and registered, a plain answer for an ini line the policy does not list, and 503 while its terms are unverified or its listing unread" $ testCommunity g
     it "answers a name the policy lists without an ini line as a community name without its text" $ testCommunityWithoutText g
     it "makes one entity per short link of its record's kind, splitting on ';', and none from other values" $ testRecordLinks g
     it "makes entities of the first 5 short links of a record only, fetching no other" $ testRecordLinksCap g
