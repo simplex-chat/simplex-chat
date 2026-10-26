@@ -70,8 +70,9 @@
         <target state="translated">%@ / %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ accepted the call without end-to-end encryption." xml:space="preserve">
+      <trans-unit id="%@ accepted the call without end-to-end encryption." xml:space="preserve" approved="no">
         <source>%@ accepted the call without end-to-end encryption.</source>
+        <target state="translated">%@ hat den Anruf ohne Ende-zu-Ende-Verschlüsselung angenommen.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="%@ and %@" xml:space="preserve" approved="no">
@@ -159,12 +160,14 @@
         <target state="translated">%@, %@ und %lld weitere Mitglieder wurden mit Ihnen verbunden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@/month" xml:space="preserve">
+      <trans-unit id="%@/month" xml:space="preserve" approved="no">
         <source>%@/month</source>
+        <target state="translated">%@/Monat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@/year" xml:space="preserve">
+      <trans-unit id="%@/year" xml:space="preserve" approved="no">
         <source>%@/year</source>
+        <target state="translated">%@/Jahr</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@:" xml:space="preserve" approved="no">
@@ -217,8 +220,9 @@
         <target state="translated">%d min</target>
         <note>time interval</note>
       </trans-unit>
-      <trans-unit id="%d month" xml:space="preserve">
+      <trans-unit id="%d month" xml:space="preserve" approved="no">
         <source>%d month</source>
+        <target state="translated">%d Monat</target>
         <note>time interval</note>
       </trans-unit>
       <trans-unit id="%d months" xml:space="preserve" approved="no">
@@ -401,8 +405,9 @@ channel relay bar</note>
         <target state="translated">%lld Sekunden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld%% off" xml:space="preserve">
+      <trans-unit id="%lld%% off" xml:space="preserve" approved="no">
         <source>%lld%% off</source>
+        <target state="translated">%lld%% aus</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lldd" xml:space="preserve" approved="no">
@@ -655,12 +660,14 @@ time interval</note>
 &lt;p&gt;&lt;a href="%@"&gt;Verbinden Sie sich per SimpleX Chat mit mir&lt;/a&gt;&lt;/p&gt;</target>
         <note>email text</note>
       </trans-unit>
-      <trans-unit id="A badge can be added to another profile, or here once this badge ends." xml:space="preserve">
+      <trans-unit id="A badge can be added to another profile, or here once this badge ends." xml:space="preserve" approved="no">
         <source>A badge can be added to another profile, or here once this badge ends.</source>
+        <target state="translated">Ein Badge kann zu einem anderen Profil hinzugefügt werden oder hier, sobald dieser Badge endet.</target>
         <note>badge link, profile has a badge</note>
       </trans-unit>
-      <trans-unit id="A badge is an anonymous credential stored in your profile on your device. This credential is never sent to anyone." xml:space="preserve">
+      <trans-unit id="A badge is an anonymous credential stored in your profile on your device. This credential is never sent to anyone." xml:space="preserve" approved="no">
         <source>A badge is an anonymous credential stored in your profile on your device. This credential is never sent to anyone.</source>
+        <target state="translated">Ein Badge ist ein anonymes Credential, das in Ihrem Profil auf Ihrem Gerät gespeichert wird. Dieses Credential wird niemals an jemanden gesendet.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="A few more things" xml:space="preserve" approved="no">
@@ -809,12 +816,14 @@ swipe action</note>
         <target state="translated">Fügen Sie die Adresse Ihrem Profil hinzu, damit Ihre SimpleX-Kontakte sie mit anderen Personen teilen können. Es wird eine Profilaktualisierung an Ihre SimpleX-Kontakte gesendet.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add badge" xml:space="preserve">
+      <trans-unit id="Add badge" xml:space="preserve" approved="no">
         <source>Add badge</source>
+        <target state="translated">Badge hinzufügen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add badge to your profile?" xml:space="preserve">
+      <trans-unit id="Add badge to your profile?" xml:space="preserve" approved="no">
         <source>Add badge to your profile?</source>
+        <target state="translated">Badge zu Ihrem Profil hinzufügen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add contributors." xml:space="preserve" approved="no">
@@ -1247,12 +1256,14 @@ swipe action</note>
         <target state="translated">Es wurde ein leeres Chat-Profil mit dem eingegebenen Namen erstellt und die App öffnet wie gewohnt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Anchor" xml:space="preserve">
+      <trans-unit id="Anchor" xml:space="preserve" approved="no">
         <source>Anchor</source>
+        <target state="translated">Anker</target>
         <note>ledger entry field</note>
       </trans-unit>
-      <trans-unit id="Annual" xml:space="preserve">
+      <trans-unit id="Annual" xml:space="preserve" approved="no">
         <source>Annual</source>
+        <target state="translated">Jährlich</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Another reason" xml:space="preserve" approved="no">
@@ -1480,8 +1491,9 @@ swipe action</note>
         <target state="translated">Ungültiger Nachrichten-Hash</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Badge added" xml:space="preserve">
+      <trans-unit id="Badge added" xml:space="preserve" approved="no">
         <source>Badge added</source>
+        <target state="translated">Badge hinzugefügt</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Badge cannot be verified" xml:space="preserve" approved="no">
@@ -1489,28 +1501,34 @@ swipe action</note>
         <target state="translated">Abzeichen ist nicht verifizierbar</target>
         <note>badge alert title</note>
       </trans-unit>
-      <trans-unit id="Badge ledger" xml:space="preserve">
+      <trans-unit id="Badge ledger" xml:space="preserve" approved="no">
         <source>Badge ledger</source>
+        <target state="translated">Badge-Verlauf</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Badge renewal failed" xml:space="preserve">
+      <trans-unit id="Badge renewal failed" xml:space="preserve" approved="no">
         <source>Badge renewal failed</source>
+        <target state="translated">Badge-Verlängerung fehlgeschlagen</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Badge type" xml:space="preserve">
+      <trans-unit id="Badge type" xml:space="preserve" approved="no">
         <source>Badge type</source>
+        <target state="translated">Badge-Typ</target>
         <note>ledger entry field</note>
       </trans-unit>
-      <trans-unit id="Badges cannot be bought in the app yet." xml:space="preserve">
+      <trans-unit id="Badges cannot be bought in the app yet." xml:space="preserve" approved="no">
         <source>Badges cannot be bought in the app yet.</source>
+        <target state="translated">Badges können noch nicht in der App gekauft werden.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Balance" xml:space="preserve">
+      <trans-unit id="Balance" xml:space="preserve" approved="no">
         <source>Balance</source>
+        <target state="translated">Guthaben</target>
         <note>ledger entry field</note>
       </trans-unit>
-      <trans-unit id="Balance start" xml:space="preserve">
+      <trans-unit id="Balance start" xml:space="preserve" approved="no">
         <source>Balance start</source>
+        <target state="translated">Anfangs-Guthaben</target>
         <note>ledger entry field</note>
       </trans-unit>
       <trans-unit id="Be free&#10;in your network" xml:space="preserve" approved="no">
@@ -1720,8 +1738,9 @@ in Ihrem Netzwerk</target>
         <target state="translated">Unternehmen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Buy in browser" xml:space="preserve">
+      <trans-unit id="Buy in browser" xml:space="preserve" approved="no">
         <source>Buy in browser</source>
+        <target state="translated">Im Browser kaufen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve" approved="no">
@@ -1734,8 +1753,9 @@ in Ihrem Netzwerk</target>
         <target state="translated">Anruf ist bereits beendet!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Call is not encrypted" xml:space="preserve">
+      <trans-unit id="Call is not encrypted" xml:space="preserve" approved="no">
         <source>Call is not encrypted</source>
+        <target state="translated">Der Anruf ist nicht verschlüsselt</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Calls prohibited!" xml:space="preserve" approved="no">
@@ -1810,8 +1830,9 @@ new chat action</note>
         <target state="translated">Die Nachricht kann nicht weitergeleitet werden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Cannot generate random database passphrase" xml:space="preserve">
+      <trans-unit id="Cannot generate random database passphrase" xml:space="preserve" approved="no">
         <source>Cannot generate random database passphrase</source>
+        <target state="translated">Es konnte keine zufällige Datenbank-Passphrase generiert werden</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Cannot receive file" xml:space="preserve" approved="no">
@@ -1819,12 +1840,14 @@ new chat action</note>
         <target state="translated">Datei kann nicht empfangen werden</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Cannot redeem code" xml:space="preserve">
+      <trans-unit id="Cannot redeem code" xml:space="preserve" approved="no">
         <source>Cannot redeem code</source>
+        <target state="translated">Dieser Code kann nicht eingelöst werden</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Cannot verify this purchase" xml:space="preserve">
+      <trans-unit id="Cannot verify this purchase" xml:space="preserve" approved="no">
         <source>Cannot verify this purchase</source>
+        <target state="translated">Dieser Kauf kann nicht verifiziert werden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Capacity exceeded - recipient did not receive previously sent messages." xml:space="preserve" approved="no">
@@ -1984,8 +2007,9 @@ alert subtitle</note>
         <target state="translated">Kanäle</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Charge ID" xml:space="preserve">
+      <trans-unit id="Charge ID" xml:space="preserve" approved="no">
         <source>Charge ID</source>
+        <target state="translated">Transaktions-ID</target>
         <note>ledger entry field</note>
       </trans-unit>
       <trans-unit id="Chat" xml:space="preserve" approved="no">
@@ -2179,12 +2203,14 @@ chat toolbar</note>
         <target state="translated">Überprüfen Sie die Serveradresse und versuchen Sie es nochmal.</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Check your order" xml:space="preserve">
+      <trans-unit id="Check your order" xml:space="preserve" approved="no">
         <source>Check your order</source>
+        <target state="translated">Überprüfen Sie Ihre Bestellung</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Checking your purchases" xml:space="preserve">
+      <trans-unit id="Checking your purchases" xml:space="preserve" approved="no">
         <source>Checking your purchases</source>
+        <target state="translated">Ihre Einkäufe werden überprüft</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chinese and Spanish interface" xml:space="preserve" approved="no">
@@ -2207,8 +2233,9 @@ chat toolbar</note>
         <target state="translated">Aus dem Fotoalbum auswählen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Choose your badge" xml:space="preserve">
+      <trans-unit id="Choose your badge" xml:space="preserve" approved="no">
         <source>Choose your badge</source>
+        <target state="translated">Wählen Sie Ihren Badge aus</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chunks deleted" xml:space="preserve" approved="no">
@@ -2598,8 +2625,9 @@ Das ist Ihr eigener Einmal-Link!</target>
         <target state="translated">Kontakt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Contact SimpleX team" xml:space="preserve">
+      <trans-unit id="Contact SimpleX team" xml:space="preserve" approved="no">
         <source>Contact SimpleX team</source>
+        <target state="translated">Kontakt mit dem SimpleX-Team aufnehmen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact address" xml:space="preserve" approved="no">
@@ -2657,12 +2685,14 @@ Das ist Ihr eigener Einmal-Link!</target>
         <target state="translated">Kontakt wird gelöscht. Dies kann nicht rückgängig gemacht werden!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Contact's badge expired." xml:space="preserve">
+      <trans-unit id="Contact's badge expired." xml:space="preserve" approved="no">
         <source>Contact's badge expired.</source>
+        <target state="translated">Badge des Kontakts ist abgelaufen.</target>
         <note>file alert</note>
       </trans-unit>
-      <trans-unit id="Contact's badge verification failed." xml:space="preserve">
+      <trans-unit id="Contact's badge verification failed." xml:space="preserve" approved="no">
         <source>Contact's badge verification failed.</source>
+        <target state="translated">Badge‑Verifizierung des Kontakts ist fehlgeschlagen.</target>
         <note>file alert</note>
       </trans-unit>
       <trans-unit id="Contacts" xml:space="preserve" approved="no">
@@ -2710,8 +2740,9 @@ Das ist Ihr eigener Einmal-Link!</target>
         <target state="translated">Fehlermeldung kopieren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Copy purchase key" xml:space="preserve">
+      <trans-unit id="Copy purchase key" xml:space="preserve" approved="no">
         <source>Copy purchase key</source>
+        <target state="translated">Schlüssel des Einkaufs kopieren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Core version: v%@" xml:space="preserve" approved="no">
@@ -2849,8 +2880,9 @@ Das ist Ihr eigener Einmal-Link!</target>
         <target state="translated">Link wird erstellt…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Credential" xml:space="preserve">
+      <trans-unit id="Credential" xml:space="preserve" approved="no">
         <source>Credential</source>
+        <target state="translated">Anmeldeinformation</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Crowdfunding investors can reserve names before the sale starts: [simplex.domains](https://simplex.domains/)" xml:space="preserve" approved="no">
@@ -3016,8 +3048,9 @@ Das ist Ihr eigener Einmal-Link!</target>
         <target state="translated">Die Datenbank wird beim nächsten Start der App migriert</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Date" xml:space="preserve">
+      <trans-unit id="Date" xml:space="preserve" approved="no">
         <source>Date</source>
+        <target state="translated">Datum</target>
         <note>ledger entry field</note>
       </trans-unit>
       <trans-unit id="Debug delivery" xml:space="preserve" approved="no">
@@ -3272,12 +3305,14 @@ alert button</note>
         <target state="translated">Meldung löschen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete temp data" xml:space="preserve">
+      <trans-unit id="Delete temp data" xml:space="preserve" approved="no">
         <source>Delete temp data</source>
+        <target state="translated">Temporäre Daten löschen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete temp data?" xml:space="preserve">
+      <trans-unit id="Delete temp data?" xml:space="preserve" approved="no">
         <source>Delete temp data?</source>
+        <target state="translated">Temporäre Daten löschen?</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Delete up to 20 messages at once." xml:space="preserve" approved="no">
@@ -3525,8 +3560,9 @@ alert button</note>
         <target state="translated">Lokales Netzwerk durchsuchen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Dismiss" xml:space="preserve">
+      <trans-unit id="Dismiss" xml:space="preserve" approved="no">
         <source>Dismiss</source>
+        <target state="translated">Schließen</target>
         <note>alert button</note>
       </trans-unit>
       <trans-unit id="Do NOT send messages directly, even if your or destination server does not support private routing." xml:space="preserve" approved="no">
@@ -3880,16 +3916,19 @@ chat item action</note>
         <target state="translated">Die Neuverhandlung der Verschlüsselung läuft.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="End call" xml:space="preserve">
+      <trans-unit id="End call" xml:space="preserve" approved="no">
         <source>End call</source>
+        <target state="translated">Anruf beenden</target>
         <note>alert action</note>
       </trans-unit>
-      <trans-unit id="Ends" xml:space="preserve">
+      <trans-unit id="Ends" xml:space="preserve" approved="no">
         <source>Ends</source>
+        <target state="translated">Endet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Ends on %@." xml:space="preserve">
+      <trans-unit id="Ends on %@." xml:space="preserve" approved="no">
         <source>Ends on %@.</source>
+        <target state="translated">Endet am %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enter Passcode" xml:space="preserve" approved="no">
@@ -3972,8 +4011,9 @@ chat item action</note>
         <target state="translated">Geben Sie Ihren Namen ein…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Entry ID" xml:space="preserve">
+      <trans-unit id="Entry ID" xml:space="preserve" approved="no">
         <source>Entry ID</source>
+        <target state="translated">Eintrags-ID</target>
         <note>ledger entry field</note>
       </trans-unit>
       <trans-unit id="Error" xml:space="preserve" approved="no">
@@ -4221,8 +4261,9 @@ chat item action</note>
         <target state="translated">Fehler beim Öffnen des Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error reading file" xml:space="preserve">
+      <trans-unit id="Error reading file" xml:space="preserve" approved="no">
         <source>Error reading file</source>
+        <target state="translated">Fehler beim Lesen der Datei</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error receiving file" xml:space="preserve" approved="no">
@@ -4300,8 +4341,9 @@ chat item action</note>
         <target state="translated">Fehler beim Speichern des Passworts in den Schlüsselbund</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error saving profile" xml:space="preserve">
+      <trans-unit id="Error saving profile" xml:space="preserve" approved="no">
         <source>Error saving profile</source>
+        <target state="translated">Fehler beim Speichern des Profils</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error saving servers" xml:space="preserve" approved="no">
@@ -4483,8 +4525,9 @@ server test error</note>
         <target state="translated">Abgelaufen</target>
         <note>token status text</note>
       </trans-unit>
-      <trans-unit id="Expires" xml:space="preserve">
+      <trans-unit id="Expires" xml:space="preserve" approved="no">
         <source>Expires</source>
+        <target state="translated">Läuft ab</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Export database" xml:space="preserve" approved="no">
@@ -4552,8 +4595,9 @@ server test error</note>
         <target state="translated">Favoriten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="File available until" xml:space="preserve">
+      <trans-unit id="File available until" xml:space="preserve" approved="no">
         <source>File available until</source>
+        <target state="translated">Datei verfügbar bis zum</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="File error" xml:space="preserve" approved="no">
@@ -4568,8 +4612,9 @@ server test error</note>
 %@</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="File expired" xml:space="preserve">
+      <trans-unit id="File expired" xml:space="preserve" approved="no">
         <source>File expired</source>
+        <target state="translated">Datei nicht mehr verfügbar</target>
         <note>file error alert title</note>
       </trans-unit>
       <trans-unit id="File is blocked by server operator:&#10;%@." xml:space="preserve" approved="no">
@@ -4609,12 +4654,14 @@ server test error</note>
         <target state="translated">Datei-Status: %@</target>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="File was available until" xml:space="preserve">
+      <trans-unit id="File was available until" xml:space="preserve" approved="no">
         <source>File was available until</source>
+        <target state="translated">Datei war verfügbar bis zum</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="File was available until %@." xml:space="preserve">
+      <trans-unit id="File was available until %@." xml:space="preserve" approved="no">
         <source>File was available until %@.</source>
+        <target state="translated">Datei war verfügbar bis zum %@.</target>
         <note>file error text</note>
       </trans-unit>
       <trans-unit id="File will be deleted from servers." xml:space="preserve" approved="no">
@@ -4672,20 +4719,24 @@ server test error</note>
         <target state="translated">Dateien und Medien sind nicht erlaubt!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Files being sent or received will never complete. Videos in unsent drafts will be sent without the file." xml:space="preserve">
+      <trans-unit id="Files being sent or received will never complete. Videos in unsent drafts will be sent without the file." xml:space="preserve" approved="no">
         <source>Files being sent or received will never complete. Videos in unsent drafts will be sent without the file.</source>
+        <target state="translated">Dateien, die gerade gesendet oder empfangen werden, können nicht abgeschlossen werden. Videos in nicht gesendeten Entwürfen werden ohne die Datei versendet.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Files larger than %@ cannot be sent in incognito chats." xml:space="preserve">
+      <trans-unit id="Files larger than %@ cannot be sent in incognito chats." xml:space="preserve" approved="no">
         <source>Files larger than %@ cannot be sent in incognito chats.</source>
+        <target state="translated">Dateien, die größer als %@ sind, können in Inkognito-Chats nicht gesendet werden.</target>
         <note>file alert</note>
       </trans-unit>
-      <trans-unit id="Files up to 2 GB" xml:space="preserve">
+      <trans-unit id="Files up to 2 GB" xml:space="preserve" approved="no">
         <source>Files up to 2 GB</source>
+        <target state="translated">Dateien bis zu 2 GB</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Files up to 5 GB" xml:space="preserve">
+      <trans-unit id="Files up to 5 GB" xml:space="preserve" approved="no">
         <source>Files up to 5 GB</source>
+        <target state="translated">Dateien bis zu 5 GB</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Filter" xml:space="preserve" approved="no">
@@ -4769,12 +4820,14 @@ server test error</note>
         <target state="translated">Reparatur wird vom Gruppenmitglied nicht unterstützt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Follow SimpleX Network News" xml:space="preserve">
+      <trans-unit id="Follow SimpleX Network News" xml:space="preserve" approved="no">
         <source>Follow SimpleX Network News</source>
+        <target state="translated">Folgen Sie den SimpleX-Netzwerk-Neuigkeiten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="For %@ only" xml:space="preserve">
+      <trans-unit id="For %@ only" xml:space="preserve" approved="no">
         <source>For %@ only</source>
+        <target state="translated">Nur für %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="For all moderators" xml:space="preserve" approved="no">
@@ -4818,8 +4871,9 @@ servers warning</note>
         <target state="translated">Für soziale Medien</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="For you only" xml:space="preserve">
+      <trans-unit id="For you only" xml:space="preserve" approved="no">
         <source>For you only</source>
+        <target state="translated">Nur für Sie</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Forward" xml:space="preserve" approved="no">
@@ -4906,8 +4960,9 @@ Fehler: %2$@</target>
         <target state="translated">Französische Bedienoberfläche</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="From purchase key" xml:space="preserve">
+      <trans-unit id="From purchase key" xml:space="preserve" approved="no">
         <source>From purchase key</source>
+        <target state="translated">Aus dem Einkaufs-Schlüssel</target>
         <note>ledger entry field</note>
       </trans-unit>
       <trans-unit id="Full link" xml:space="preserve" approved="no">
@@ -4945,12 +5000,14 @@ Fehler: %2$@</target>
         <target state="translated">Einen SimpleX-Namen erhalten (BETA)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Get a badge to send larger files (2-5GB) that stay available longer (7-21 days), and to show it on your profile." xml:space="preserve">
+      <trans-unit id="Get a badge to send larger files (2-5GB) that stay available longer (7-21 days), and to show it on your profile." xml:space="preserve" approved="no">
         <source>Get a badge to send larger files (2-5GB) that stay available longer (7-21 days), and to show it on your profile.</source>
+        <target state="translated">Holen Sie sich einen Badge, um größere Dateien (2-5 GB) zu senden, die länger verfügbar bleiben (7-21 Tage), und um ihn in Ihrem Profil anzuzeigen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Get badge + better files" xml:space="preserve">
+      <trans-unit id="Get badge + better files" xml:space="preserve" approved="no">
         <source>Get badge + better files</source>
+        <target state="translated">Badge erhalten + bessere Dateien</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Get link" xml:space="preserve" approved="no">
@@ -5108,8 +5165,9 @@ Fehler: %2$@</target>
         <target state="translated">Helfen Sie Administratoren bei der Moderation ihrer Gruppen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Help keep the network running — send files up to 2 GB." xml:space="preserve">
+      <trans-unit id="Help keep the network running — send files up to 2 GB." xml:space="preserve" approved="no">
         <source>Help keep the network running — send files up to 2 GB.</source>
+        <target state="translated">Unterstützen Sie den Betrieb des Netzwerks und senden Sie Dateien bis zu 2 GB.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Hidden" xml:space="preserve" approved="no">
@@ -5167,8 +5225,9 @@ Fehler: %2$@</target>
         <target state="translated">Wie SimpleX funktioniert</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="How badges protect your privacy" xml:space="preserve">
+      <trans-unit id="How badges protect your privacy" xml:space="preserve" approved="no">
         <source>How badges protect your privacy</source>
+        <target state="translated">Wie Badges Ihre Privatsphäre schützen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="How it affects privacy" xml:space="preserve" approved="no">
@@ -5186,8 +5245,9 @@ Fehler: %2$@</target>
         <target state="translated">Wie es funktioniert</target>
         <note>alert button</note>
       </trans-unit>
-      <trans-unit id="How long?" xml:space="preserve">
+      <trans-unit id="How long?" xml:space="preserve" approved="no">
         <source>How long?</source>
+        <target state="translated">Wie lang?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="How to" xml:space="preserve" approved="no">
@@ -5524,12 +5584,14 @@ Weitere Verbesserungen sind bald verfügbar!</target>
         <target state="translated">Ungültiger Status</target>
         <note>item status text</note>
       </trans-unit>
-      <trans-unit id="Invest in SimpleX Chat!" xml:space="preserve">
+      <trans-unit id="Invest in SimpleX Chat!" xml:space="preserve" approved="no">
         <source>Invest in SimpleX Chat!</source>
+        <target state="translated">Investieren Sie in SimpleX-Chat!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Investor" xml:space="preserve">
+      <trans-unit id="Investor" xml:space="preserve" approved="no">
         <source>Investor</source>
+        <target state="translated">Investor</target>
         <note>badge type</note>
       </trans-unit>
       <trans-unit id="Invitation expired!" xml:space="preserve" approved="no">
@@ -5567,8 +5629,9 @@ Weitere Verbesserungen sind bald verfügbar!</target>
         <target state="translated">In Gruppe einladen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Invoice ID" xml:space="preserve">
+      <trans-unit id="Invoice ID" xml:space="preserve" approved="no">
         <source>Invoice ID</source>
+        <target state="translated">Rechnungs-ID</target>
         <note>ledger entry field</note>
       </trans-unit>
       <trans-unit id="Irreversible message deletion" xml:space="preserve" approved="no">
@@ -5586,8 +5649,9 @@ Weitere Verbesserungen sind bald verfügbar!</target>
         <target state="translated">In dieser Gruppe ist das unwiederbringliche Löschen von Nachrichten nicht erlaubt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Issuing your badge" xml:space="preserve">
+      <trans-unit id="Issuing your badge" xml:space="preserve" approved="no">
         <source>Issuing your badge</source>
+        <target state="translated">Badge wird erstellt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="It allows having many anonymous connections without any shared data between them in a single chat profile." xml:space="preserve" approved="no">
@@ -5631,8 +5695,9 @@ Weitere Verbesserungen sind bald verfügbar!</target>
         <target state="translated">Italienische Bedienoberfläche</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Its code is on the page you bought it on, under Show code." xml:space="preserve">
+      <trans-unit id="Its code is on the page you bought it on, under Show code." xml:space="preserve" approved="no">
         <source>Its code is on the page you bought it on, under Show code.</source>
+        <target state="translated">Den Code finden Sie auf der Seite, auf der Sie ihn gekauft haben, unter “Code anzeigen“.</target>
         <note>badge link, profile has a badge</note>
       </trans-unit>
       <trans-unit id="Japanese interface" xml:space="preserve" approved="no">
@@ -5737,12 +5802,14 @@ Das ist Ihr Link für die Gruppe %@!</target>
         <target state="translated">Große Datei!</target>
         <note>file alert title</note>
       </trans-unit>
-      <trans-unit id="Larger files that stay available longer." xml:space="preserve">
+      <trans-unit id="Larger files that stay available longer." xml:space="preserve" approved="no">
         <source>Larger files that stay available longer.</source>
+        <target state="translated">Größere Dateien, die länger verfügbar bleiben.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Last attempt" xml:space="preserve">
+      <trans-unit id="Last attempt" xml:space="preserve" approved="no">
         <source>Last attempt</source>
+        <target state="translated">Letzter Versuch</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Learn more" xml:space="preserve" approved="no">
@@ -5785,12 +5852,14 @@ Das ist Ihr Link für die Gruppe %@!</target>
         <target state="translated">Die Gruppe verlassen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Legend" xml:space="preserve">
+      <trans-unit id="Legend" xml:space="preserve" approved="no">
         <source>Legend</source>
+        <target state="translated">Legende</target>
         <note>badge type</note>
       </trans-unit>
-      <trans-unit id="Legend: 5 GB files available for 21 days." xml:space="preserve">
+      <trans-unit id="Legend: 5 GB files available for 21 days." xml:space="preserve" approved="no">
         <source>Legend: 5 GB files available for 21 days.</source>
+        <target state="translated">Legende: Dateien bis 5 GB sind 21 Tage lang verfügbar.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Less traffic on mobile networks." xml:space="preserve" approved="no">
@@ -5883,8 +5952,9 @@ Das ist Ihr Link für die Gruppe %@!</target>
         <target state="translated">Profil wird geladen…</target>
         <note>in progress text</note>
       </trans-unit>
-      <trans-unit id="Loading…" xml:space="preserve">
+      <trans-unit id="Loading…" xml:space="preserve" approved="no">
         <source>Loading…</source>
+        <target state="translated">Wird geladen…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Local name" xml:space="preserve" approved="no">
@@ -5952,8 +6022,9 @@ Das ist Ihr Link für die Gruppe %@!</target>
         <target state="translated">Max. 30 Sekunden, sofort erhalten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Maximum supported file size is %1$@, with a %2$@." xml:space="preserve">
+      <trans-unit id="Maximum supported file size is %1$@, with a %2$@." xml:space="preserve" approved="no">
         <source>Maximum supported file size is %1$@, with a %2$@.</source>
+        <target state="translated">Die maximal unterstützte Dateigröße beträgt %1$@ mit einem %2$@.</target>
         <note>file alert</note>
       </trans-unit>
       <trans-unit id="Media &amp; file servers" xml:space="preserve" approved="no">
@@ -6316,12 +6387,14 @@ Das ist Ihr Link für die Gruppe %@!</target>
         <target state="translated">Moderiert um: %@</target>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="Monthly" xml:space="preserve">
+      <trans-unit id="Monthly" xml:space="preserve" approved="no">
         <source>Monthly</source>
+        <target state="translated">Monatlich</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Months left" xml:space="preserve">
+      <trans-unit id="Months left" xml:space="preserve" approved="no">
         <source>Months left</source>
+        <target state="translated">Verbleibende Monate</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="More" xml:space="preserve" approved="no">
@@ -6374,8 +6447,9 @@ Das ist Ihr Link für die Gruppe %@!</target>
         <target state="translated">Bei Inaktivität stummgeschaltet!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="My nickname" xml:space="preserve">
+      <trans-unit id="My nickname" xml:space="preserve" approved="no">
         <source>My nickname</source>
+        <target state="translated">Mein Nickname</target>
         <note>badges preview placeholder</note>
       </trans-unit>
       <trans-unit id="Name" xml:space="preserve" approved="no">
@@ -6550,8 +6624,9 @@ wer mit wem kommuniziert</target>
         <target state="translated">Neuer Server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Next check" xml:space="preserve">
+      <trans-unit id="Next check" xml:space="preserve" approved="no">
         <source>Next check</source>
+        <target state="translated">Nächste Überprüfung</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No" xml:space="preserve" approved="no">
@@ -6636,8 +6711,9 @@ Die sicherste Verschlüsselung.</target>
         <target state="translated">Bisher keine direkte Verbindung. Nachricht wird von einem Admin weitergeleitet.</target>
         <note>item status description</note>
       </trans-unit>
-      <trans-unit id="No entries" xml:space="preserve">
+      <trans-unit id="No entries" xml:space="preserve" approved="no">
         <source>No entries</source>
+        <target state="translated">Keine Einträge</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No filtered chats" xml:space="preserve" approved="no">
@@ -6660,8 +6736,9 @@ Die sicherste Verschlüsselung.</target>
         <target state="translated">Keine Information - es wird versucht neu zu laden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No key to verify contact's badge." xml:space="preserve">
+      <trans-unit id="No key to verify contact's badge." xml:space="preserve" approved="no">
         <source>No key to verify contact's badge.</source>
+        <target state="translated">Kein Schlüssel zur Badge-Verifizierung des Kontakts.</target>
         <note>file alert</note>
       </trans-unit>
       <trans-unit id="No media &amp; file servers." xml:space="preserve" approved="no">
@@ -6759,8 +6836,9 @@ Die sicherste Verschlüsselung.</target>
         <target state="translated">Kein gültiger Link</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Nobody can link two different proofs to each other or to the purchase." xml:space="preserve">
+      <trans-unit id="Nobody can link two different proofs to each other or to the purchase." xml:space="preserve" approved="no">
         <source>Nobody can link two different proofs to each other or to the purchase.</source>
+        <target state="translated">Niemand kann zwei verschiedene Nachweise miteinander oder mit dem Kauf in Verbindung bringen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Nobody tracked your conversations. No one drew a map of where you'd been. Privacy was never a feature - it was the way of life." xml:space="preserve" approved="no">
@@ -6788,8 +6866,9 @@ Die sicherste Verschlüsselung.</target>
         <target state="translated">Es sind nicht alle Relais verbunden</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Not available" xml:space="preserve">
+      <trans-unit id="Not available" xml:space="preserve" approved="no">
         <source>Not available</source>
+        <target state="translated">Nicht verfügbar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Not compatible!" xml:space="preserve" approved="no">
@@ -6802,8 +6881,9 @@ Die sicherste Verschlüsselung.</target>
         <target state="translated">Anmerkungen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Nothing has been charged." xml:space="preserve">
+      <trans-unit id="Nothing has been charged." xml:space="preserve" approved="no">
         <source>Nothing has been charged.</source>
+        <target state="translated">Es wurde nichts berechnet.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Nothing selected" xml:space="preserve" approved="no">
@@ -7250,8 +7330,9 @@ alert button</note>
         <target state="translated">Passwort anzeigen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Paste" xml:space="preserve">
+      <trans-unit id="Paste" xml:space="preserve" approved="no">
         <source>Paste</source>
+        <target state="translated">Einfügen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Paste desktop address" xml:space="preserve" approved="no">
@@ -7274,8 +7355,9 @@ alert button</note>
         <target state="translated">Zum Verbinden den Link einfügen!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Paste the code you received." xml:space="preserve">
+      <trans-unit id="Paste the code you received." xml:space="preserve" approved="no">
         <source>Paste the code you received.</source>
+        <target state="translated">Fügen Sie den erhaltenen Code ein.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Paste the link you received" xml:space="preserve" approved="no">
@@ -7283,20 +7365,24 @@ alert button</note>
         <target state="translated">Fügen Sie den erhaltenen Link ein</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Paused since" xml:space="preserve">
+      <trans-unit id="Paused since" xml:space="preserve" approved="no">
         <source>Paused since</source>
+        <target state="translated">Pausiert seit</target>
         <note>ledger entry field</note>
       </trans-unit>
-      <trans-unit id="Pay %@" xml:space="preserve">
+      <trans-unit id="Pay %@" xml:space="preserve" approved="no">
         <source>Pay %@</source>
+        <target state="translated">Bezahlen Sie %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Pay %@/month" xml:space="preserve">
+      <trans-unit id="Pay %@/month" xml:space="preserve" approved="no">
         <source>Pay %@/month</source>
+        <target state="translated">Bezahlen Sie %@/Monat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Pay %@/year" xml:space="preserve">
+      <trans-unit id="Pay %@/year" xml:space="preserve" approved="no">
         <source>Pay %@/year</source>
+        <target state="translated">Bezahlen Sie %@/Jahr</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Pending" xml:space="preserve" approved="no">
@@ -7438,8 +7524,9 @@ Fehler: %@</target>
         <target state="translated">Port</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Prepaid months have no billing date. The badge is reissued each month from the balance you already paid for, and ends when it runs out." xml:space="preserve">
+      <trans-unit id="Prepaid months have no billing date. The badge is reissued each month from the balance you already paid for, and ends when it runs out." xml:space="preserve" approved="no">
         <source>Prepaid months have no billing date. The badge is reissued each month from the balance you already paid for, and ends when it runs out.</source>
+        <target state="translated">Für vorausbezahlte Monate gibt es kein Abrechnungsdatum. Der Badge wird monatlich aus Ihrem Guthaben erneuert und endet, wenn dieses aufgebraucht ist.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Preserve the last message draft, with attachments." xml:space="preserve" approved="no">
@@ -7537,8 +7624,9 @@ Fehler: %@</target>
         <target state="translated">Zeitüberschreitung der privaten Routing-Sitzung</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Profile already has a badge" xml:space="preserve">
+      <trans-unit id="Profile already has a badge" xml:space="preserve" approved="no">
         <source>Profile already has a badge</source>
+        <target state="translated">Dieses Profil hat bereits einen Badge</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Profile and server connections" xml:space="preserve" approved="no">
@@ -7694,12 +7782,14 @@ Aktivieren Sie es in den *Netzwerk und Server* Einstellungen.</target>
         <target state="translated">Öffentliche Namen für Ihren Kanal oder Ihr Unternehmen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Purchase ID" xml:space="preserve">
+      <trans-unit id="Purchase ID" xml:space="preserve" approved="no">
         <source>Purchase ID</source>
+        <target state="translated">Kauf-ID</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Purchase error" xml:space="preserve">
+      <trans-unit id="Purchase error" xml:space="preserve" approved="no">
         <source>Purchase error</source>
+        <target state="translated">Fehler beim Kauf</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Push notifications" xml:space="preserve" approved="no">
@@ -7752,8 +7842,9 @@ Aktivieren Sie es in den *Netzwerk und Server* Einstellungen.</target>
         <target state="translated">Erfahren Sie in unserem GitHub-Repository mehr dazu.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Read more in our blog." xml:space="preserve">
+      <trans-unit id="Read more in our blog." xml:space="preserve" approved="no">
         <source>Read more in our blog.</source>
+        <target state="translated">Mehr in unserem Blog erfahren.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Receipts are disabled" xml:space="preserve" approved="no">
@@ -7871,16 +7962,19 @@ Aktivieren Sie es in den *Netzwerk und Server* Einstellungen.</target>
         <target state="translated">Datensatz aktualisiert um: %@</target>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="Redeem" xml:space="preserve">
+      <trans-unit id="Redeem" xml:space="preserve" approved="no">
         <source>Redeem</source>
+        <target state="translated">Einlösen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Redeem badge code" xml:space="preserve">
+      <trans-unit id="Redeem badge code" xml:space="preserve" approved="no">
         <source>Redeem badge code</source>
+        <target state="translated">Badge-Code einlösen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Redeem code" xml:space="preserve">
+      <trans-unit id="Redeem code" xml:space="preserve" approved="no">
         <source>Redeem code</source>
+        <target state="translated">Code einlösen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Reduced battery usage" xml:space="preserve" approved="no">
@@ -7980,8 +8074,9 @@ swipe action</note>
         <target state="translated">Zuverlässigkeit: Mehrere Relais pro Kanal.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Remind me later" xml:space="preserve">
+      <trans-unit id="Remind me later" xml:space="preserve" approved="no">
         <source>Remind me later</source>
+        <target state="translated">Später erneut erinnern</target>
         <note>alert button</note>
       </trans-unit>
       <trans-unit id="Remove" xml:space="preserve" approved="no">
@@ -8064,8 +8159,9 @@ swipe action</note>
         <target state="translated">Verschlüsselung neu aushandeln?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Renews on %@. Cancel anytime." xml:space="preserve">
+      <trans-unit id="Renews on %@. Cancel anytime." xml:space="preserve" approved="no">
         <source>Renews on %@. Cancel anytime.</source>
+        <target state="translated">Verlängert sich am %@. Jederzeit kündbar.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Repeat download" xml:space="preserve" approved="no">
@@ -8328,12 +8424,14 @@ swipe action</note>
         <target state="translated">Sicherere Gruppen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sandbox purchase" xml:space="preserve">
+      <trans-unit id="Sandbox purchase" xml:space="preserve" approved="no">
         <source>Sandbox purchase</source>
+        <target state="translated">Test-Kauf</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Sandbox purchases are not credited. Badges can only be bought in the App Store version of the app." xml:space="preserve">
+      <trans-unit id="Sandbox purchases are not credited. Badges can only be bought in the App Store version of the app." xml:space="preserve" approved="no">
         <source>Sandbox purchases are not credited. Badges can only be bought in the App Store version of the app.</source>
+        <target state="translated">Test-Käufe werden nicht angerechnet. Badges können nur in der App-Store-Version der App gekauft werden.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Save" xml:space="preserve" approved="no">
@@ -8858,8 +8956,9 @@ chat item action</note>
         <target state="translated">Der Server %@ unterstützt keine Namensauflösung. Konfigurieren Sie Server oder verwenden Sie einen Verbindungslink.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Server %@ has more than two host names." xml:space="preserve">
+      <trans-unit id="Server %@ has more than two host names." xml:space="preserve" approved="no">
         <source>Server %@ has more than two host names.</source>
+        <target state="translated">Der Server %@ hat mehr als zwei Hostnamen.</target>
         <note>servers error</note>
       </trans-unit>
       <trans-unit id="Server added to operator %@." xml:space="preserve" approved="no">
@@ -9379,8 +9478,9 @@ copied message info</note>
         <target state="translated">Vereinfachter Inkognito-Modus</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Since" xml:space="preserve">
+      <trans-unit id="Since" xml:space="preserve" approved="no">
         <source>Since</source>
+        <target state="translated">Seit</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Size" xml:space="preserve" approved="no">
@@ -9501,8 +9601,9 @@ report reason</note>
         <target state="translated">Chat beenden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stop chat in Settings → Chat data → Database passphrase &amp; export to delete temp data." xml:space="preserve">
+      <trans-unit id="Stop chat in Settings → Chat data → Database passphrase &amp; export to delete temp data." xml:space="preserve" approved="no">
         <source>Stop chat in Settings → Chat data → Database passphrase &amp; export to delete temp data.</source>
+        <target state="translated">Beenden Sie den Chat unter Einstellungen → Chatdaten → Datenbank-Passphrase &amp; Export, um temporäre Daten zu löschen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." xml:space="preserve" approved="no">
@@ -9550,12 +9651,14 @@ report reason</note>
         <target state="translated">Ablage</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stored for 7 days" xml:space="preserve">
+      <trans-unit id="Stored for 7 days" xml:space="preserve" approved="no">
         <source>Stored for 7 days</source>
+        <target state="translated">Für 7 Tage gespeichert</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stored for 21 days" xml:space="preserve">
+      <trans-unit id="Stored for 21 days" xml:space="preserve" approved="no">
         <source>Stored for 21 days</source>
+        <target state="translated">Für 21 Tage gespeichert</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Strong" xml:space="preserve" approved="no">
@@ -9655,8 +9758,9 @@ Die Relais-Adresse wurde zur Einrichtung dieses Relais für diesen Kanal verwend
         <target state="translated">Nicht beachtete Abonnements</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Support SimpleX" xml:space="preserve">
+      <trans-unit id="Support SimpleX" xml:space="preserve" approved="no">
         <source>Support SimpleX</source>
+        <target state="translated">SimpleX unterstützen</target>
         <note>alert button
 alert title</note>
       </trans-unit>
@@ -13127,12 +13231,12 @@ Zuletzt empfangene Nachricht: %2$@</target>
     <body>
       <trans-unit id="CFBundleName" translate="no" xml:space="preserve">
         <source>SimpleXChat</source>
-        <target></target>
+        <target/>
         <note>Bundle name</note>
       </trans-unit>
       <trans-unit id="NSHumanReadableCopyright" translate="no" xml:space="preserve">
         <source>Copyright © 2022 SimpleX Chat. All rights reserved.</source>
-        <target></target>
+        <target/>
         <note>Copyright (human-readable)</note>
       </trans-unit>
     </body>
