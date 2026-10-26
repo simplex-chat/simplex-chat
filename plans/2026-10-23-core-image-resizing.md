@@ -5,7 +5,7 @@ Images are resized by the core in one Catmull-Rom pass with sharpening, at a fix
 JPEG input is decoded by mozjpeg at the smallest scale that covers the display size, and its EXIF orientation is applied.
 The core functions are called by the apps in place of platform code, wrapped in both bot libraries and used for `/img` and `/imgf` previews; mozjpeg is compiled by cabal in every build.
 
-References are to branch `ab/resize-image` at `6b2383dd3`, based on master `7810fc475`. Haskell paths without a directory are in `src/Simplex/Chat/`.
+References are to branch `ab/resize-image` at `6021d9a6d`, based on master `ec8884f46`. Haskell paths without a directory are in `src/Simplex/Chat/`.
 
 ## Image processing decisions
 
@@ -273,7 +273,7 @@ Bot libraries:
 - Pinned releases:
   - Until a core release built with this change is pinned by `scripts/ci/packages_release.py prepare`, `core-7.1.0.14` is loaded (`packages/simplex-chat-nodejs/src/release.ts:3`, `packages/simplex-chat-python/src/simplex_chat/_version.py:8`), and the export error is raised by the Python wrappers.
   - The Node add-on is pinned to `nodejs-addon-308c0960c707` (`release.ts:5`), built without either function: the promises of the Node wrappers are rejected with `TypeError: addon[name] is not a function` (`src/simplex.js:20`). The export error is raised with an add-on built from this branch, as in the tests (`jest.config.js:4`).
-  - The core and the add-on are pinned together by `prepare` (`packages_release.py:349-352`); for nodejs an error is raised by `prepare` until the add-on release of the current sources is published (`:767-768`).
+  - The core and the add-on are pinned together by `prepare` (`packages_release.py:360-363`); for nodejs an error is raised by `prepare` until the add-on release of the current sources is published (`:779-780`).
 
 `/img` and `/imgf`:
 - The preview is generated from the file: read with `CF.readFile` (encrypted files included), decoded, and resized to a data URI of at most 14000 characters.
@@ -583,7 +583,7 @@ Build:
   - JuicyPixels-stbir (`:82-85`): evgeny-simplex/JuicyPixels-stbir at `aed4e06`
 - `scripts/nix/sha256map.nix:12-13`: the hashes of both forks, computed with submodules.
 - `dist-newstyle/src/hs-jpeg-t*` and `dist-newstyle/src/JuicyPixe*` in the Windows removals:
-  - `.github/workflows/build.yml:1439, 1442, 1565, 1607, 1609`, with the comment `:1422-1423`
+  - `.github/workflows/build.yml:1512, 1515, 1638, 1680, 1682`, with the comment `:1495-1496`
   - `scripts/desktop/build-lib-windows.sh:43`, with the comment `:41-42`
 - `scripts/simplex-chat-reproduce-builds-android.sh:103`: submodules are updated after checkout.
 
