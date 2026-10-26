@@ -5,7 +5,7 @@ For an agent that tests the iOS, desktop or Android app with the app test workfl
 ## Starting a run
 
 1. The branch needs master's app test workflows from 9a1d3e4969 (2026-10-20) or later: fetch master from the remote for simplex-chat, then `git merge-base --is-ancestor 9a1d3e4969 HEAD`. If it fails, tell the user the branch needs master merged.
-2. The run tests the branch as it is in the fork: commit the work to test (never a `cabal.project` that points at a local simplexmq), `git push -u <remote> HEAD`, then `git fetch <remote> <branch>`; `FETCH_HEAD` must equal `HEAD`.
+2. The run tests the branch as it is in the fork: commit the work to test by explicit paths (never a `cabal.project` that points at a local simplexmq), `git push -u <remote> HEAD`, then `git fetch <remote> <branch>`; `FETCH_HEAD` must equal `HEAD`. These steps test the branch you are on; to test another, ask the user first.
 3. `gh workflow run <workflow>.yml --repo <owner>/simplex-chat --ref <branch>` with `ios-sim`, `desktop-linux` or `android-emu`, plus `-f claude=true`, `-f backend=true` or `-f release=true` (`ios-sim` has no `release`). If `gh` can't find or start the workflow, ask the user to check the fork's setup: Actions on, the three workflows enabled and on its default branch, master.
 4. A few seconds later, `gh run list --repo <owner>/simplex-chat --workflow <workflow>.yml --branch <branch> --event workflow_dispatch --limit 1 --json databaseId,createdAt,headSha,url` gives its id: check that it was created after you started it and that `headSha` is your HEAD. Wait in the background with `gh run watch <id> --repo <owner>/simplex-chat --exit-status --interval 60`.
 
@@ -20,7 +20,7 @@ A newer run of a workflow on a branch cancels the older one, whose watch then ex
 
 ## Reading results
 
-`gh run view <id> --repo <owner>/simplex-chat` lists the jobs, and with `--log-failed` prints the failed steps' logs. `gh run download <id> --repo <owner>/simplex-chat -n <artifact> -D <dir>` fetches an artifact; each platform's README names them, and they are kept 3 days (Claude's 7, on iOS 14). A Claude session passes when its final message ends with `CLAUDE-TEST: PASS`; its report, transcript, guard log and usage (`claude-usage.json`) are in the `*-claude-test` artifact. Tell the user each Claude run's turns and cost estimated at API prices; a cancelled desktop or Android Claude job leaves no usage, so its cost is unknown.
+`gh run view <id> --repo <owner>/simplex-chat` lists the jobs, and with `--log-failed` prints the failed steps' logs. `gh run download <id> --repo <owner>/simplex-chat -n <artifact> -D <dir>` fetches an artifact; each platform's README names them. Scripted results are kept 3 days, Claude's 7 (on iOS 14). A Claude session passes when its final message ends with `CLAUDE-TEST: PASS`; its report, transcript, guard log and usage (`claude-usage.json`) are in the `*-claude-test` artifact. Tell the user each Claude run's turns and cost estimated at API prices; a cancelled desktop or Android Claude job leaves no usage, so its cost is unknown.
 
 ## When a run fails
 
@@ -35,10 +35,11 @@ A newer run of a workflow on a branch cancels the older one, whose watch then ex
 - A feature's Claude plan replaces `device-test-plan.md` (iOS) or `claude-test.md` (desktop, Android), with its `claude-scope`, on the feature branch. iOS sets each session's turn and budget limits in `claude-scope`. Desktop and Android set them (60 turns, $3) in desktop's `claude-test.sh`, which doesn't yet give the session the test backend's addresses, as iOS's does.
 - One kind per commit: CI changes every branch would want, CI changes only this feature needs (its plans, which don't go to master), fixes to the feature, fixes to bugs master has too. Report each kind's commits and whether a runner verified them.
 - A workflow you add or change triggers only on `workflow_dispatch`, which can start it once the file is on the fork's default branch. No `pull_request_target`, no write permissions for `GITHUB_TOKEN`, no secret but `CLAUDE_CODE_OAUTH_TOKEN`, and that only in the step that runs `claude`. Don't test branch names in workflow code: the environment's branch rule decides which branches get the token.
-- The runners build simplexmq at the commit `cabal.project` pins, from simplex-chat/simplexmq (the backend's build clones that repository). A branch that needs a simplexmq change runs only once that commit is there, the pin points at it and `scripts/nix/sha256map.nix` has its hash (Android's Nix build). Getting the commit into simplex-chat/simplexmq is the user's step: ask.
+- The runners build simplexmq at the commit `cabal.project` pins, from simplex-chat/simplexmq (the backend's build fetches it from there). A branch that needs a simplexmq change runs only once that commit is there, the pin points at it and `scripts/nix/sha256map.nix` has its hash (Android's Nix build). Getting the commit into simplex-chat/simplexmq is the user's step: ask.
 
 ## Never
 
 - Print, echo, encode, save or upload the Claude token or the Claude step's environment (no `set -x` in its scripts): the fork's logs and artifacts are public, and GitHub masks only the exact value.
 - Write run tags in a commit message: `[app-ci]`, `[claude-test]`, their `:ios` and `:desktop` forms, `[ci-backend]`, `[ci-release]`. On a branch whose workflows predate 5834179be6 (#7777), a push starts their runs, whose jobs run when the pushed commit's message has one of the first ones; the last two add jobs.
+- Push to or start runs in simplex-chat/simplex-chat itself: only in the fork.
 - Push anything but the branch you are on, push `master`, `stable` or tags, or force-push.
