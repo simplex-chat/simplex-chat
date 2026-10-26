@@ -27,7 +27,7 @@ xcodebuild build-for-testing -quiet "${xcode[@]}"
 
 for size in large extra-extra-extra-large accessibility-medium; do
   xcrun simctl ui "$SIM_UDID" content_size "$size"
-  TEST_RUNNER_SNAPSHOT_DIR="$out" TEST_RUNNER_SNAPSHOT_SIZE="$size" xcodebuild test-without-building "${xcode[@]}"
+  TEST_RUNNER_SNAPSHOT_DIR="$out" TEST_RUNNER_SNAPSHOT_SIZE="$size" xcodebuild test-without-building -testLanguage en -testRegion US "${xcode[@]}"
 done
 xcrun simctl ui "$SIM_UDID" content_size large
 

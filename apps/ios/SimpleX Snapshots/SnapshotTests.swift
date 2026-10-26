@@ -7,6 +7,7 @@ import UIKit
 final class SnapshotTests: XCTestCase {
     @MainActor
     func testChatScenes() throws {
+        NSTimeZone.default = try XCTUnwrap(TimeZone(identifier: "UTC"))
         let env = ProcessInfo.processInfo.environment
         let dir = URL(fileURLWithPath: env["SNAPSHOT_DIR"] ?? NSTemporaryDirectory() + "snapshots", isDirectory: true)
         let size = env["SNAPSHOT_SIZE"] ?? "large"
@@ -218,7 +219,7 @@ private let markdownText = """
 @MainActor
 private final class SnapshotFixtures {
     private var nextId: Int64 = 1
-    private let baseDate = Calendar.current.date(bySettingHour: 10, minute: 15, second: 0, of: Date()) ?? Date()
+    private let baseDate = Date(timeIntervalSince1970: 1_736_936_100)
     let photo = imageBase64(UIColor(red: 0.2, green: 0.4, blue: 0.8, alpha: 1), CGSize(width: 120, height: 80))
     let landscape = imageBase64(UIColor(red: 0.25, green: 0.55, blue: 0.35, alpha: 1), CGSize(width: 320, height: 200))
     let user: User
