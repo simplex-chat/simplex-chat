@@ -36,18 +36,16 @@ TO DO               Plans for future IJG releases.
 Other documentation files in the distribution are:
 
 User documentation:
-  doc/usage.txt         Usage instructions for cjpeg, djpeg, jpegtran,
-                        rdjpgcom, and wrjpgcom.
-  doc/*.1               Unix-style man pages for programs (same info as
-                        usage.txt).
-  doc/wizard.txt        Advanced usage instructions for JPEG wizards only.
-  doc/change.log        Version-to-version change highlights.
+  usage.txt         Usage instructions for cjpeg, djpeg, jpegtran,
+                    rdjpgcom, and wrjpgcom.
+  *.1               Unix-style man pages for programs (same info as usage.txt).
+  wizard.txt        Advanced usage instructions for JPEG wizards only.
+  change.log        Version-to-version change highlights.
 Programmer and internal documentation:
-  doc/libjpeg.txt       How to use the JPEG library in your own programs.
-  src/example.c         Sample code for calling the JPEG library.
-  doc/structure.txt     Overview of the JPEG library's internal structure.
-  doc/coderules.txt     Coding style rules --- please read if you contribute
-                        code.
+  libjpeg.txt       How to use the JPEG library in your own programs.
+  example.c         Sample code for calling the JPEG library.
+  structure.txt     Overview of the JPEG library's internal structure.
+  coderules.txt     Coding style rules --- please read if you contribute code.
 
 Please read at least usage.txt.  Some information can also be found in the JPEG
 FAQ (Frequently Asked Questions) article.  See ARCHIVE LOCATIONS below to find

@@ -2,8 +2,8 @@
 
 The CLI sends a fixed placeholder as the preview of every image sent with `/img` or `/imgf`, and bots on the Node and Python libraries need their own image resizing code.
 Images are resized by the core in one Catmull-Rom pass with sharpening, at a fixed JPEG quality, to the size whose encoding fills 97–100% of the size limit; an image that fits at its largest size is encoded at the highest quality that fits.
-JPEG input is decoded by libjpeg-turbo at the smallest scale that covers the display size, and its EXIF orientation is applied.
-The core functions are called by the apps in place of platform code, wrapped in both bot libraries and used for `/img` and `/imgf` previews; libjpeg-turbo is compiled by cabal in every build.
+JPEG input is decoded by mozjpeg at the smallest scale that covers the display size, and its EXIF orientation is applied.
+The core functions are called by the apps in place of platform code, wrapped in both bot libraries and used for `/img` and `/imgf` previews; mozjpeg is compiled by cabal in every build.
 
 References are to branch `ab/resize-image` at `37be23b6b`, based on master `66e381bf5`. Haskell paths without a directory are in `src/Simplex/Chat/`.
 
@@ -41,7 +41,7 @@ Decisions of the lead, 26 Oct, after the review:
 
 Decoding, `Image.hs`:
 - `decodeResizable bytes`: the image for resizing; at the display size for JPEG, at full size for other formats.
-- JPEG, input starting `FF D8`, decoded by libjpeg-turbo:
+- JPEG, input starting `FF D8`, decoded by mozjpeg:
   1. `readJpegHeader`; `Left` for:
      - a side above 65500
      - a precision other than 8
@@ -62,7 +62,7 @@ Decoding, `Image.hs`:
   | grayscale | `ImageY8` |
   | CMYK, YCCK | `ImageCMYK8` |
 
-- `Left` from libjpeg-turbo for:
+- `Left` from mozjpeg for:
   - any warning, including truncated data and extraneous bytes
   - more than 500 scans
   - whole-image coefficient buffers above `maxMemoryMB`
@@ -147,7 +147,7 @@ chat_resize_image(data, len, maxSize, png)    base64 of at most maxSize bytes of
 ```
 - `data`: an encoded image, JPEG or a format decoded by JuicyPixels `decodeImage`, read in place during the call.
 - `""` is returned when:
-  - the input is undecodable, or a JPEG is refused by the header limits or by libjpeg-turbo;
+  - the input is undecodable, or a JPEG is refused by the header limits or by mozjpeg;
   - the image exceeds the limit at every size;
   - an exception is raised.
 - The result is allocated with `malloc` and freed by the caller.
@@ -280,25 +280,27 @@ Bot libraries:
 - On any failure the fixed placeholder is sent, as before.
 
 Native code:
-- libjpeg-turbo 3.1.4.1, commit `9217719d`, is the submodule `jpeg-turbo/cbits/libjpeg-turbo` of the hs-jpeg-turbo fork; cabal compiles it in the `jpeg-turbo` package of every build:
-  - 113 C sources on every target, and 15 Neon sources on aarch64
+- mozjpeg master `08265790` (libjpeg-turbo 3.0.5 base) is the submodule `jpeg-turbo/cbits/mozjpeg` of the hs-jpeg-turbo fork; cabal compiles it in the `jpeg-turbo` package of every build:
+  - 112 C sources on every target
+  - aarch64: 15 Neon sources
+  - armv7: `simd/arm/aarch32/jsimd.c`, and 14 Neon sources in the internal library `neon`, compiled with `-mfpu=neon`
   - configuration headers `jconfig.h`, `jconfigint.h`, `jversion.h` and `neon-compat.h` in `cbits`, with the target-dependent values taken from compiler macros
-  - the C code paths on x86-64, Neon on aarch64
+  - the C code paths on x86-64
   - built with cabal and the C compiler only
-- JPEG input is decoded, and JPEG output encoded, by libjpeg-turbo.
+- JPEG input is decoded by the TurboJPEG API of mozjpeg; JPEG output is encoded by `jpeg_turbo_encode` (`cbits/encode.c`) through the libjpeg API, with mozjpeg's default profile.
 - Package sources:
 
   | package | during review | before the final pull request |
   |---|---|---|
-  | hs-jpeg-turbo (`jpeg-turbo`, `JuicyPixels-jpeg-turbo`) | evgeny-simplex/hs-jpeg-turbo, branch `ep/jpeg-decode` (PR #3, on `ep/bundled-libjpeg-turbo`, PR #2) | a simplex-chat/hs-jpeg-turbo commit |
-  | JuicyPixels-stbir, with nothings/stb as a submodule | evgeny-simplex/JuicyPixels-stbir, branch `ep/stb-submodule` | a simplex-chat/JuicyPixels-stbir commit |
+  | hs-jpeg-turbo (`jpeg-turbo`, `JuicyPixels-jpeg-turbo`) | evgeny-simplex/hs-jpeg-turbo, branch `ep/jpeg-decode` at `820e05d` | a simplex-chat/hs-jpeg-turbo commit |
+  | JuicyPixels-stbir, with nothings/stb as a submodule | evgeny-simplex/JuicyPixels-stbir, branch `ep/stb-submodule` at `aed4e06` | a simplex-chat/JuicyPixels-stbir commit |
   | JuicyPixels 3.3.8 | Hackage | Hackage |
 
 - The hashes of both forks in `scripts/nix/sha256map.nix` are computed with submodules, as for simplexmq.
 - In Windows builds, `dist-newstyle/src/hs-jpeg-t*` and `dist-newstyle/src/JuicyPixe*` are removed beside `direct-sq*` and `simplexmq*`.
 
 License notices, in `docs/dependencies`:
-- `README.md`: libjpeg-turbo, with the IJG sentence, and stb_image_resize
+- `README.md`: mozjpeg, with the IJG sentence, and stb_image_resize
 - `HASKELL.md`: JuicyPixels, JuicyPixels-jpeg-turbo and JuicyPixels-stbir as direct dependencies, jpeg-turbo as an indirect one; the four are added to the "Also depended upon by" and "Depended upon by" cells of the packages they depend on
 - `licences/`: the license files of each, copied from the pinned commits
 
@@ -306,9 +308,9 @@ Out of scope: WebP, a separate PR after this one.
 
 ## hs-jpeg-turbo fork
 
-PR #2, branch `ep/bundled-libjpeg-turbo`: libjpeg-turbo compiled by cabal, as in "Native code".
-
-PR #3, branch `ep/jpeg-decode` at `9e5cb68`, on PR #2:
+Branch `ep/jpeg-decode` at `820e05d`:
+- mozjpeg compiled by cabal, as in "Native code"; arithmetic-coded JPEGs are decoded, the arithmetic encoder is not compiled.
+- `encodeRGB`: `jpeg_turbo_encode` (`cbits/encode.c`, `MozJPEG.hsc`): `jpeg_set_defaults`, `jpeg_set_quality`, the output in a buffer grown by doubling; libjpeg errors and warnings end the encoding with their text.
 - `Codec.Picture.JPEGTurbo` exports, besides `encodeRGB` and `EncodableRGB`:
   - `readJpegHeader :: ByteString -> IO (Either String JpegHeader)`
   - `decodeJpeg :: DecodeOptions -> ByteString -> IO (Either String DynamicImage)`
@@ -327,7 +329,7 @@ PR #3, branch `ep/jpeg-decode` at `9e5cb68`, on PR #2:
   - decoding: `tjDecompress2` with the scaled width and height
 - `readJpegHeader` and `decodeJpeg` give `Left` for:
   - an input longer than `CULong`
-  - any libjpeg-turbo error or warning, including an empty input
+  - any mozjpeg error or warning, including an empty input
   - a side below 1
   - a precision other than 8
   - a lossless JPEG
@@ -336,7 +338,6 @@ PR #3, branch `ep/jpeg-decode` at `9e5cb68`, on PR #2:
   - stop on the first warning (`TJPARAM_STOPONWARNING`, `TJFLAG_STOPONWARNING`)
   - at most 500 scans (`TJFLAG_LIMITSCANS`)
   - `TJPARAM_MAXMEMORY`: `maxMemoryMB`
-  - `TJPARAM_SAVEMARKERS`: 0
 - Output:
 
   | JPEG colour space | pixel format | constructor |
@@ -348,27 +349,33 @@ PR #3, branch `ep/jpeg-decode` at `9e5cb68`, on PR #2:
 
 - Sides: the JPEG sides divided by 1, 2, 4 or 8, rounded up.
 - The pixels are written into a pinned buffer that becomes the image data without a copy.
-- The error text of libjpeg-turbo is kept per OS thread; it is used as is.
+- The error text of mozjpeg's TurboJPEG API is kept per OS thread; it is used as is.
 - Tests (`JuicyPixels-jpeg-turbo/test/JPTest.hs`), on generated JPEGs:
   - header: dimensions, subsampling and colour space of YCbCr, RGB, grayscale, YCCK, CMYK, 4:4:1 and unknown subsampling
   - 12-bit and lossless JPEGs: `Left` from both functions
   - scales: 37×23, 1001×999 and 65500×1 at the four scales; sides rounded up; a solid colour within 2 per byte
   - YCbCr, grayscale, YCCK and CMYK at full scale: within 3 per sample of JuicyPixels `decodeJpeg`
-  - arithmetic coding, sequential and progressive: decoded as the Huffman-coded JPEG at the four scales
+  - `encodeRGB` of a gradient at quality 50 and of a texture at qualities 20 and 85: the lengths and FNV-1a hashes of mozjpeg 4.1.5
   - truncation after 2 bytes, at the end of the SOS header, in the middle and by one byte: `Left`
   - malformed input: empty, text, PNG bytes, a JPEG without a frame, an SOF width of 0 or 65501: `Left`; width 65500 accepted
   - limits: `maxMemoryMB` 1 refuses a progressive 1000×1000 JPEG and decodes the baseline one; `maxPixels` one below the pixel count refused, equal accepted; invalid options refused
-  - a progressive JPEG with 704 scans (`test/many-scans.c`): `Left`
-- CI (`.github/scripts/encode.c`): baseline and progressive JPEGs at five qualities, and their decodes at the four scales, compared byte for byte between the cabal and CMake builds.
+  - a progressive JPEG from `test/progressive.c` with its AC scan repeated 600 times: `Left`
+- Tests (`jpeg-turbo/test/FFITest.hs`): mozjpeg's `testimgari.jpg` decoded as `testimgint.jpg` at the four scales.
+- CI:
+  - `.github/scripts/encode.c`: baseline and progressive JPEGs at five qualities, and their decodes at the four scales, compared byte for byte between the cabal and CMake builds
+  - `armv7-check.sh`, on `ubuntu-24.04-arm`: the cabal sources cross-compiled for armv7 and run natively; Neon selected only with the `linux32` personality; JPEGs and decodes identical with Neon and with the C code paths
 
 ## JuicyPixels-stbir fork
 
-PR #1, branch `ep/stb-submodule`, on the Hackage release 0.1.0.0 (`917cd53`):
+Branch `ep/stb-submodule` at `aed4e06`, on the Hackage release 0.1.0.0 (`917cd53`):
 - `cbits/stb`: nothings/stb at `1ee679ca` as a submodule, `stb_image_resize.h` v0.97, replacing the bundled v0.95 copy.
 - `cbits/stb_image_resize.c`: `STBIR_ASSERT` defined empty.
+- `cc-options: -ffp-contract=off` (D16).
 - `LICENSE` and the cabal `copyright` field: "2026 SimpleX Chat Ltd" added.
-- Test suite `scale-test` (`test/ScaleTest.hs`): output sides equal the input sides divided by the scale and rounded, for halvings and for scales k/64, k in 65..127, on RGB8 and RGBA8 images.
-- CI (`.github/workflows/build.yml`): build and test on Linux with GHC 9.6.3 and 8.10.7, macOS and Windows with GHC 9.6.3.
+- Test suite `scale-test` (`test/ScaleTest.hs`):
+  - output sides equal the input sides divided by the scale and rounded, for halvings and for scales k/64, k in 65..127, on RGB8 and RGBA8 images
+  - a 1001×999 RGB gradient resized to 320×240 with Catmull-Rom: a pinned FNV-1a hash of the samples
+- CI (`.github/workflows/build.yml`): build and test on Linux x86-64 with GHC 9.6.3 and 8.10.7, Linux ARM64, macOS and Windows with GHC 9.6.3.
 
 ## Mechanics
 
@@ -515,8 +522,8 @@ Python, `packages/simplex-chat-python/src/simplex_chat/`:
 
 Build:
 - `cabal.project`, `source-repository-package`:
-  - hs-jpeg-turbo (`:76-80`): evgeny-simplex/hs-jpeg-turbo at `9e5cb68`, subdirectories `JuicyPixels-jpeg-turbo` and `jpeg-turbo`
-  - JuicyPixels-stbir (`:82-85`): evgeny-simplex/JuicyPixels-stbir at `6cf27aad`
+  - hs-jpeg-turbo (`:76-80`): evgeny-simplex/hs-jpeg-turbo at `820e05d`, subdirectories `JuicyPixels-jpeg-turbo` and `jpeg-turbo`
+  - JuicyPixels-stbir (`:82-85`): evgeny-simplex/JuicyPixels-stbir at `aed4e06`
 - `scripts/nix/sha256map.nix:12-13`: the hashes of both forks, computed with submodules.
 - `dist-newstyle/src/hs-jpeg-t*` and `dist-newstyle/src/JuicyPixe*` in the Windows removals:
   - `.github/workflows/build.yml:1439, 1442, 1565, 1607, 1609`, with the comment `:1422-1423`
@@ -529,17 +536,17 @@ CI, comments of the avatar scripts:
 
 License notices, `docs/dependencies/`:
 - `README.md:3`:
-  `[libjpeg-turbo](https://github.com/libjpeg-turbo/libjpeg-turbo): JPEG decoding and encoding of resized images ([IJG and BSD-3-clause](./licences/apps/libjpeg-turbo/LICENSE.md)). This software is based in part on the work of the Independent JPEG Group.`
+  `[mozjpeg](https://github.com/mozilla/mozjpeg): JPEG decoding and encoding of resized images ([IJG and BSD-3-clause](./licences/apps/mozjpeg/LICENSE.md)). This software is based in part on the work of the Independent JPEG Group.`
 - `README.md:7`:
   `[stb_image_resize](https://github.com/nothings/stb): image scaling ([MIT or public domain](./licences/apps/stb_image_resize/LICENSE))`
-- `licences/apps/libjpeg-turbo/LICENSE.md` and `README.ijg`: copies from libjpeg-turbo `9217719d`, the submodule of the hs-jpeg-turbo fork.
-- `licences/apps/stb_image_resize/LICENSE`: `cbits/stb/stb_image_resize.h:2596-2632` of the JuicyPixels-stbir fork at `6cf27aad`.
+- `licences/apps/mozjpeg/LICENSE.md` and `README.ijg`: copies from mozjpeg `08265790`, the submodule of the hs-jpeg-turbo fork.
+- `licences/apps/stb_image_resize/LICENSE`: `cbits/stb/stb_image_resize.h:2596-2632` of the JuicyPixels-stbir fork at `aed4e06`.
 - `HASKELL.md`:
   - direct dependencies (`:25-27`):
     - `JuicyPixels` 3.3.8, Hackage
-    - `JuicyPixels-jpeg-turbo` 0.1.0.0, hs-jpeg-turbo fork at `9e5cb68`
-    - `JuicyPixels-stbir` 0.1.0.0, JuicyPixels-stbir fork at `6cf27aad`
-  - indirect dependency (`:143`): `jpeg-turbo` 0.1.0.0, hs-jpeg-turbo fork at `9e5cb68`, `BSD-3-Clause AND IJG AND Zlib`
+    - `JuicyPixels-jpeg-turbo` 0.1.0.0, hs-jpeg-turbo fork at `820e05d`
+    - `JuicyPixels-stbir` 0.1.0.0, JuicyPixels-stbir fork at `aed4e06`
+  - indirect dependency (`:143`): `jpeg-turbo` 0.1.0.0, hs-jpeg-turbo fork at `820e05d`, `BSD-3-Clause AND IJG AND Zlib`
   - the four added to the dependents of:
     - `bytestring` (`:11`)
     - `containers` (`:14`)
@@ -632,10 +639,10 @@ License notices, `docs/dependencies/`:
   - `cChatResizeImageFileUri` on `test.jpg`, limit 14000: `data:image/jpg;base64,`, at most 14000 characters
   - `cChatResizeImageFile` with `png = -1`, limit 100000, on `logo-large-rgba.png`: the PNG signature
   - a missing file: `""`
-- file descriptor, opened with `GHC.IO.FD.openFile`:
-  - `cChatResizeImageFdUri` on `test.jpg`, limit 14000: `data:image/jpg;base64,`, at most 14000 characters; the descriptor is closed afterwards
-  - `cChatResizeImageFd` on `test.pdf`: `""`; the descriptor is closed afterwards
-  - a closed descriptor and −1: `""`
+- file descriptor, opened with `GHC.IO.FD.openFile`; closed afterwards: `fdStat` fails or names another file
+  - `cChatResizeImageFdUri` on `test.jpg`, limit 14000: `data:image/jpg;base64,`, at most 14000 characters; closed afterwards
+  - `cChatResizeImageFd` on `test.pdf`: `""`; closed afterwards
+  - descriptors 1000000 and −1, not open: `""`
 
 `tests/ChatTests/Files.hs`, "send image with generated preview" (`:47`, `:179-192`):
 - `/img @bob ./tests/fixtures/test.jpg`: the received item has a JPEG data URI preview of at most 14000 characters, read with `APIGetChat` (`lastImagePreview`, `:194-200`).
