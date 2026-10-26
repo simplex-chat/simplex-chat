@@ -264,6 +264,8 @@ Currently members can have one of four roles - `owner`, `admin`, `member` and `o
 
 `x.grp.info` message is sent to all members by the member who updated group profile. Only group owners can update group profiles. Clients MAY implement some conflict resolution strategy - it is currently not implemented by SimpleX Chat client. This message MUST only be sent by members with `owner` role. Receiving clients MUST ignore this message if it is received from member other than with `owner` role.
 
+Group profile can include optional `chatLayout` property (`classic` or `terminal`) set by a group owner. Clients use it as the layout of the group chat, also after it is changed by `x.grp.info`, unless the user chose another layout for this chat. Clients MUST treat unknown values as absent.
+
 `x.grp.direct.inv` message is sent to a group member to propose establishing a direct connection between members, thus creating a contact with another member.
 
 `x.grp.msg.forward` message is sent by inviting member to forward messages between introduced members, while they are connecting. This message MUST NOT contain another `x.grp.msg.forward` message.
@@ -286,7 +288,7 @@ These message are used for WebRTC calls:
 
 3. `x.call.answer`: to continue with call connection the initiating clients must reply with `x.call.answer` message. This message contains WebRTC answer and collected ICE candidates. Additional ICE candidates can be sent in `x.call.extra` message.
 
-4. `x.call.extra` with `rtcSession` property: when an established connection is lost, the client that sent `x.call.offer` restarts ICE and sends the new offer in `rtcSession` of `x.call.extra`. The other client replies with the answer in `rtcSession` of `x.call.extra`. Clients that do not support it ignore this property, and the call ends when reconnection times out.
+4. `x.call.extra` with `rtcSession` property: when an established connection is lost, the client that sent `x.call.offer` restarts ICE and sends the new offer in `rtcSession` of `x.call.extra`. The other client replies with the answer in `rtcSession` of `x.call.extra`. Clients restart ICE only when the peer supports chat protocol version 22 or later, otherwise the call ends when the connection is lost.
 
 5. `x.call.end` message is sent to notify the other party that the call is terminated.
 

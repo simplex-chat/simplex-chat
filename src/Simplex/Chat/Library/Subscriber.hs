@@ -25,7 +25,7 @@ import Control.Monad.Reader
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.Either (lefts, partitionEithers, rights)
+import Data.Either (isLeft, lefts, partitionEithers, rights)
 import Data.Foldable (foldr', foldrM)
 import Data.Functor (($>))
 import Data.Int (Int64)
@@ -1129,7 +1129,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               XInfoProbeOk probe -> Nothing <$ xInfoProbeOk (COMGroupMember m'') probe
               BFileChunk sharedMsgId chunk -> Nothing <$ bFileChunkGroup (GIK gInfo' gks) m'' sharedMsgId chunk msgMeta
               _ -> Nothing <$ messageError ("unsupported message: " <> tshow event)
-            forM deliveryTaskContext_ $ \taskContext -> do
+            forM (if memberStatus m'' == GSMemPendingApproval then Nothing else deliveryTaskContext_) $ \taskContext -> do
               let contentChanged :: CM ()
                   contentChanged = atomically $ channelContentChanged cc groupId
               case event of
@@ -1497,7 +1497,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             -- ##### Contact requests (regular and business contacts) #####
             Nothing -> do
               let UserContactLink {connLinkContact = CCLink connReq _, shortLinkDataSet, addressSettings} = ucl
-                  AddressSettings {autoAccept} = addressSettings
+                  AddressSettings {autoAccept, chatLayout} = addressSettings
                   isSimplexTeam = sameConnReqContact connReq adminContactReq
               gVar <- asks random
               withStore (\db -> createOrUpdateContactRequest db gVar cxt user uclId ucl isSimplexTeam invId chatVRange (Just reqHeader) p xContactId_ welcomeMsgId_ requestMsg_ reqPQSup rejectionSupported) >>= \case
@@ -1540,7 +1540,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                         ct' <- acceptContactRequestAsync user uclId ct ucr incognitoProfile
                         toView $ CEvtAcceptingContactRequest user ct'
                   Just (REBusinessChat g@(GIK gInfo _) clientMember) -> do
-                    (_gInfo', _clientMember') <- acceptBusinessJoinRequestAsync user uclId g clientMember ucr
+                    (_gInfo', _clientMember') <- acceptBusinessJoinRequestAsync user uclId chatLayout g clientMember ucr
                     let cd = CDGroupRcv gInfo Nothing clientMember
                     void $ case prevUcr_ of
                       Just UserContactRequest {requestSharedMsgId = prevSharedMsgId_} ->
@@ -4193,11 +4193,16 @@ resumeDeliveryTaskWork :: DeliveryWorkerKey -> CM' ()
 resumeDeliveryTaskWork = void . getDeliveryTaskWorker False
 
 getDeliveryTaskWorker :: Bool -> DeliveryWorkerKey -> CM' Worker
-getDeliveryTaskWorker hasWork deliveryKey = do
+getDeliveryTaskWorker hasWork deliveryKey@(groupId, _) = do
   ws <- asks deliveryTaskWorkers
   a <- asks smpAgent
-  getAgentWorker "delivery_task" hasWork a deliveryKey ws $
-    runDeliveryTaskWorker a deliveryKey
+  getAgentWorker "delivery_task" hasWork a deliveryKey ws $ \w ->
+    runDeliveryTaskWorker a deliveryKey w `catchAllErrors` \e -> do
+      whenM (groupDeleted groupId) $ atomically $ TM.delete deliveryKey ws
+      throwError e
+
+groupDeleted :: GroupId -> CM Bool
+groupDeleted groupId = isLeft <$> withStore' (\db -> runExceptT $ getUserByGroupId db groupId)
 
 runDeliveryTaskWorker :: AgentClient -> DeliveryWorkerKey -> Worker -> CM ()
 runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
@@ -4220,7 +4225,7 @@ runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
         processDeliveryTask task
           `catchAllErrors` \e -> do
             withStore' $ \db -> setDeliveryTaskErrStatus db (deliveryTaskId task) (tshow e)
-            eToView e
+            unlessM (groupDeleted groupId) $ eToView e
       where
         processDeliveryTask :: MessageDeliveryTask -> CM ()
         processDeliveryTask task@MessageDeliveryTask {jobScope} =
@@ -4261,11 +4266,13 @@ resumeDeliveryJobWork :: DeliveryWorkerKey -> CM' ()
 resumeDeliveryJobWork = void . getDeliveryJobWorker False
 
 getDeliveryJobWorker :: Bool -> DeliveryWorkerKey -> CM' Worker
-getDeliveryJobWorker hasWork deliveryKey = do
+getDeliveryJobWorker hasWork deliveryKey@(groupId, _) = do
   ws <- asks deliveryJobWorkers
   a <- asks smpAgent
-  getAgentWorker "delivery_job" hasWork a deliveryKey ws $
-    runDeliveryJobWorker a deliveryKey
+  getAgentWorker "delivery_job" hasWork a deliveryKey ws $ \w ->
+    runDeliveryJobWorker a deliveryKey w `catchAllErrors` \e -> do
+      whenM (groupDeleted groupId) $ atomically $ TM.delete deliveryKey ws
+      throwError e
 
 -- TODO [relays] dissemination here is unsigned (relay-asserted profile).
 -- Future: members sign an XMember on channel join, relay stores it per
@@ -4308,7 +4315,7 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
         processDeliveryJob job
           `catchAllErrors` \e -> do
             withStore' $ \db -> setDeliveryJobErrStatus db (deliveryJobId job) (tshow e)
-            eToView e
+            unlessM (groupDeleted groupId) $ eToView e
       where
         processDeliveryJob :: MessageDeliveryJob -> CM ()
         processDeliveryJob job =

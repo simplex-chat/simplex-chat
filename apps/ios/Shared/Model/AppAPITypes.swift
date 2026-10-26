@@ -1630,6 +1630,7 @@ struct AddressSettings: Codable, Hashable {
     var businessAddress: Bool
     var autoAccept: AutoAccept?
     var autoReply: MsgContent?
+    var chatLayout: ChatLayout?
 }
 
 struct AutoAccept: Codable, Hashable {
@@ -2308,6 +2309,7 @@ struct AppSettings: Codable, Equatable {
     var uiThemes: [ThemeOverrides]? = nil
     var oneHandUI: Bool? = nil
     var chatBottomBar: Bool? = nil
+    var uiChatLayout: ChatLayout? = nil
 
     func prepareForExport() -> AppSettings {
         var empty = AppSettings()
@@ -2344,6 +2346,7 @@ struct AppSettings: Codable, Equatable {
         if uiThemes != def.uiThemes { empty.uiThemes = uiThemes }
         if oneHandUI != def.oneHandUI { empty.oneHandUI = oneHandUI }
         if chatBottomBar != def.chatBottomBar { empty.chatBottomBar = chatBottomBar }
+        if uiChatLayout != def.uiChatLayout { empty.uiChatLayout = uiChatLayout }
         return empty
     }
 
@@ -2380,7 +2383,8 @@ struct AppSettings: Codable, Equatable {
             uiCurrentThemeIds: nil as [String: String]?,
             uiThemes: nil as [ThemeOverrides]?,
             oneHandUI: true,
-            chatBottomBar: true
+            chatBottomBar: true,
+            uiChatLayout: .classic
         )
     }
 }

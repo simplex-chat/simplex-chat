@@ -109,7 +109,7 @@ All signaling messages are exchanged via E2E encrypted SMP messages (no central 
 2. The call shows "reconnecting…" and plays the connecting sound. Call duration continues, as this state is not reported to the core.
 3. The callee (the party that sent the initial offer) restarts ICE every 10 seconds, sending the new offer via `apiSendCallExtraInfo` with `rtcSession`; the caller answers the same way.
 4. When the connection is restored, the call returns to connected state.
-5. If the connection is not restored in 30 seconds, the call ends. Clients without ICE restart support ignore the restart offer, so the call ends in this case.
+5. If the connection is not restored in 30 seconds, the call ends. If the contact's chat version is below 22 (`CALL_RECONNECT_VERSION`), the call ends as soon as the connection is lost, without reconnection.
 
 ### 7. Audio Routing
 

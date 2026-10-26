@@ -300,6 +300,7 @@ cliCommands =
     "SetClientService",
     "SetContactFeature",
     "SetContactTimedMessages",
+    "SetGroupChatLayout",
     "SetGroupFeature",
     "SetGroupFeatureRole",
     "SetGroupMemberAdmissionReview",
