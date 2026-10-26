@@ -134,7 +134,7 @@ class TerminalMetaCopyTest {
     val density = Density(1f)
     val head = "The bot replied at once"
     val bubbleCopy = copy(sentEdited, density, LayoutDirection.Ltr, breakBefore = true)
-    assertEquals(" " + copy(sentEdited, density, LayoutDirection.Ltr).text.removePrefix("⁠"), bubbleCopy.text)
+    assertEquals(copy(sentEdited, density, LayoutDirection.Ltr).text.replaceFirst(Char(0x2060), ' '), bubbleCopy.text)
     val text = buildAnnotatedString {
       append(head)
       append(bubbleCopy)
