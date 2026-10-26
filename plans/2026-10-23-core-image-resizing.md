@@ -291,8 +291,8 @@ Native code:
 
   | package | during review | before the final pull request |
   |---|---|---|
-  | hs-jpeg-turbo (`jpeg-turbo`, `JuicyPixels-jpeg-turbo`) | evgeny-simplex/hs-jpeg-turbo, branch `ep/jpeg-decode` at `820e05d` | a simplex-chat/hs-jpeg-turbo commit |
-  | JuicyPixels-stbir, with nothings/stb as a submodule | evgeny-simplex/JuicyPixels-stbir, branch `ep/stb-submodule` at `aed4e06` | a simplex-chat/JuicyPixels-stbir commit |
+  | hs-jpeg-turbo (`jpeg-turbo`, `JuicyPixels-jpeg-turbo`) | evgeny-simplex/hs-jpeg-turbo, branch `ep/jpeg-decode` at `5b64008` | a simplex-chat/hs-jpeg-turbo commit |
+  | JuicyPixels-stbir, with nothings/stb as a submodule | evgeny-simplex/JuicyPixels-stbir, branch `ep/stb-submodule` at `234dde8` | a simplex-chat/JuicyPixels-stbir commit |
   | JuicyPixels 3.3.8 | Hackage | Hackage |
 
 - The hashes of both forks in `scripts/nix/sha256map.nix` are computed with submodules, as for simplexmq.
@@ -307,9 +307,9 @@ Out of scope: WebP, a separate PR after this one.
 
 ## hs-jpeg-turbo fork
 
-Branch `ep/jpeg-decode` at `820e05d`:
+Branch `ep/jpeg-decode` at `5b64008`:
 - mozjpeg compiled by cabal, as in "Native code"; arithmetic-coded JPEGs are decoded, the arithmetic encoder is not compiled.
-- `encodeRGB`: `jpeg_turbo_encode` (`cbits/encode.c`, `MozJPEG.hsc`): `jpeg_set_defaults`, `jpeg_set_quality`, the output in a buffer grown by doubling; libjpeg errors and warnings end the encoding with their text.
+- `encodeRGB`: `jpeg_turbo_encode` (`cbits/encode.c`, `MozJPEG.hsc`): `jpeg_set_defaults`, `jpeg_set_quality`, the output in a buffer grown by doubling, its size returned as `size_t`; libjpeg errors and warnings end the encoding with their text.
 - `Codec.Picture.JPEGTurbo` exports, besides `encodeRGB` and `EncodableRGB`:
   - `readJpegHeader :: ByteString -> IO (Either String JpegHeader)`
   - `decodeJpeg :: DecodeOptions -> ByteString -> IO (Either String DynamicImage)`
@@ -339,16 +339,17 @@ Branch `ep/jpeg-decode` at `820e05d`:
   - `TJPARAM_MAXMEMORY`: `maxMemoryMB`
 - Output:
 
-  | JPEG colour space | pixel format | constructor |
-  |---|---|---|
-  | YCbCr, RGB | `TJPF_RGB` | `ImageRGB8` |
-  | grayscale | `TJPF_GRAY` | `ImageY8` |
-  | CMYK | `TJPF_CMYK` | `ImageCMYK8` |
-  | YCCK | `TJPF_CMYK`, samples inverted | `ImageCMYK8` |
+  | JPEG colour space | pixel format | bytes per pixel | constructor |
+  |---|---|---|---|
+  | YCbCr, RGB | `TJPF_RGB` | 3 | `ImageRGB8` |
+  | grayscale | `TJPF_GRAY` | 1 | `ImageY8` |
+  | CMYK | `TJPF_CMYK` | 4 | `ImageCMYK8` |
+  | YCCK | `TJPF_CMYK`, samples inverted in the output buffer | 4 | `ImageCMYK8` |
 
 - Sides: the JPEG sides divided by 1, 2, 4 or 8, rounded up.
+- The bytes per pixel are passed with each pixel format; the output buffer size is their product with the sides.
 - The pixels are written into a pinned buffer that becomes the image data without a copy.
-- The error text of mozjpeg's TurboJPEG API is kept per OS thread; it is used as is.
+- `readJpegHeader` and `decodeJpeg` run in a bound thread when the RTS is threaded (`runInBoundThread`): the error text, kept by mozjpeg per handle or per OS thread, is read in the thread of the failed call.
 - Tests (`JuicyPixels-jpeg-turbo/test/JPTest.hs`), on generated JPEGs:
   - header: dimensions, subsampling and colour space of YCbCr, RGB, grayscale, YCCK, CMYK, 4:4:1 and unknown subsampling
   - 12-bit and lossless JPEGs: `Left` from both functions
@@ -366,13 +367,13 @@ Branch `ep/jpeg-decode` at `820e05d`:
 
 ## JuicyPixels-stbir fork
 
-Branch `ep/stb-submodule` at `aed4e06`, on the Hackage release 0.1.0.0 (`917cd53`):
+Branch `ep/stb-submodule` at `234dde8`, on the Hackage release 0.1.0.0 (`917cd53`):
 - `cbits/stb`: nothings/stb at `1ee679ca` as a submodule, `stb_image_resize.h` v0.97, replacing the bundled v0.95 copy.
 - `cbits/stb_image_resize.c`: `STBIR_ASSERT` defined empty.
 - `cc-options: -ffp-contract=off` (D16).
 - `LICENSE` and the cabal `copyright` field: "2026 SimpleX Chat Ltd" added.
 - Test suite `scale-test` (`test/ScaleTest.hs`):
-  - output sides equal the input sides divided by the scale and rounded, for halvings and for scales k/64, k in 65..127, on RGB8 and RGBA8 images
+  - a solid colour, RGB8 and RGBA8 with alpha 128, kept in every output pixel, for repeated halvings and for scales k/64, k in 65..127
   - a 1001×999 RGB gradient resized to 320×240 with Catmull-Rom: a pinned FNV-1a hash of the samples
 - CI (`.github/workflows/build.yml`): build and test on Linux x86-64 with GHC 9.6.3 and 8.10.7, Linux ARM64, macOS and Windows with GHC 9.6.3.
 
@@ -578,8 +579,8 @@ Python, `packages/simplex-chat-python/src/simplex_chat/`:
 
 Build:
 - `cabal.project`, `source-repository-package`:
-  - hs-jpeg-turbo (`:76-80`): evgeny-simplex/hs-jpeg-turbo at `820e05d`, subdirectories `JuicyPixels-jpeg-turbo` and `jpeg-turbo`
-  - JuicyPixels-stbir (`:82-85`): evgeny-simplex/JuicyPixels-stbir at `aed4e06`
+  - hs-jpeg-turbo (`:76-80`): evgeny-simplex/hs-jpeg-turbo at `5b64008`, subdirectories `JuicyPixels-jpeg-turbo` and `jpeg-turbo`
+  - JuicyPixels-stbir (`:82-85`): evgeny-simplex/JuicyPixels-stbir at `234dde8`
 - `scripts/nix/sha256map.nix:12-13`: the hashes of both forks, computed with submodules.
 - `dist-newstyle/src/hs-jpeg-t*` and `dist-newstyle/src/JuicyPixe*` in the Windows removals:
   - `.github/workflows/build.yml:1512, 1515, 1638, 1680, 1682`, with the comment `:1495-1496`
@@ -596,14 +597,14 @@ License notices, `docs/dependencies/`:
 - `README.md:7`:
   `[stb_image_resize](https://github.com/nothings/stb): image scaling ([MIT or public domain](./licences/apps/stb_image_resize/LICENSE))`
 - `licences/apps/mozjpeg/LICENSE.md` and `README.ijg`: copies from mozjpeg `08265790`, the submodule of the hs-jpeg-turbo fork.
-- `licences/apps/stb_image_resize/LICENSE`: `cbits/stb/stb_image_resize.h:2596-2632` of the JuicyPixels-stbir fork at `aed4e06`.
+- `licences/apps/stb_image_resize/LICENSE`: `cbits/stb/stb_image_resize.h:2596-2632` of the JuicyPixels-stbir fork at `234dde8`.
 - `HASKELL.md`:
   - direct dependencies (`:25-27`):
     - `JuicyPixels` 3.3.8, Hackage
-    - `JuicyPixels-jpeg-turbo` 0.1.0.0, hs-jpeg-turbo fork at `820e05d`
-    - `JuicyPixels-stbir` 0.1.0.0, JuicyPixels-stbir fork at `aed4e06`
+    - `JuicyPixels-jpeg-turbo` 0.1.0.0, hs-jpeg-turbo fork at `5b64008`
+    - `JuicyPixels-stbir` 0.1.0.0, JuicyPixels-stbir fork at `234dde8`
   - direct dependency (`:54`): `vector` 0.13.1.0, moved from the indirect dependencies
-  - indirect dependency (`:144`): `jpeg-turbo` 0.1.0.0, hs-jpeg-turbo fork at `820e05d`, `BSD-3-Clause AND IJG AND Zlib`
+  - indirect dependency (`:144`): `jpeg-turbo` 0.1.0.0, hs-jpeg-turbo fork at `5b64008`, `BSD-3-Clause AND IJG AND Zlib`
   - the four added to the dependents of:
     - `bytestring` (`:11`)
     - `containers` (`:14`)
