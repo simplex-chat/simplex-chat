@@ -175,9 +175,11 @@ text paddings    BUBBLE_TEXT_TOP_GAP 5sp and BUBBLE_TEXT_BOTTOM_GAP 6.625sp: the
 bands            header and quote text: bubbleTextPadding, the inset from the band edges by the first and last baselines
 time             the baseline of the time BUBBLE_TEXT_INSET above the bubble bottom, on the last baseline of the text
                  ticks without a time: where they stand next to a time (as terminal rows)
+                 group invitation: on the last baseline of the card, at its end (user)
                  principle: inline elements on the text baseline (D3)
 reserve          metaReserveCopy in bubbles: a breaking space after text, direction mark, icon spaces in dp, time at 12sp
                  the time alone moves to the next line when it does not fit (user)
+                 group invitation: the word joiner instead of the space, the time joined to the last word (user)
                  principle: a precise reserve for the time (as terminal rows)
 row gaps         BUBBLE_CLOSE_GAP 2sp between close messages, BUBBLE_FAR_GAP 8sp at a large gap
                  principle: constants in sp; the measured gaps are kept (D7)
@@ -194,7 +196,7 @@ icons            header, feature and preference icons centred on their text, wit
 B1   message text and captions: full line height; 5sp above, 6.625sp below; 14dp at the sides (user)
 B2   time: baseline on the last text baseline, by its distance from the bubble bottom
 B3   reserve: the copy of the time in message text, under an emoji, in decryption errors and group invitations,
-     after text with a breaking space before it and without the word joiner (user);
+     after text with a breaking space before it and without the word joiner (user), in group invitations joined (B15);
      files keep the string reserve of their size line (shared with terminal rows)
 B4   header: 14dp start, as message text (user); text inset by bubbleTextPadding; icon without height;
      header and quote bands kept (user)
@@ -211,10 +213,12 @@ B10  row gaps in sp, values kept; a sender change in direct chats 8sp (user)
 B11  markdown blocks in bubbles: spacing and line heights of terminal rows (user); headings × 1.5625, 1.25, 1, bold,
      capitals placed by headingBox, in both layouts (user)
 B12  unchanged: fills, tails, roundness, colours, themes, wallpapers, interaction; link preview, chat link card,
-     group invitation, voice and call layout (D8: cards in the redesign); avatars; date separators
+     group invitation (its time: B15), voice and call layout (D8: cards in the redesign); avatars; date separators
      (shared with terminal rows); reactions; emoji without bubble; chat item info
 B13  calls: as on master, without the bubble typography (user)
 B14  group sender name: starts at the bubble edge, 4dp after the avatar, as the bubble (user, as iOS)
+B15  group invitation: the time on the last baseline of the card, at its end; its copy joined to the last word
+     (user, 2026-10-26)
 ```
 
 ## 4. Kotlin
@@ -224,7 +228,7 @@ chat/item/TerminalItemView.kt     LocalBubbleLayout; usesChatTypography(); chatT
                                   inlineIcon in both layouts; metaBaseline shared by TerminalMetaLayout and the bubbles;
                                   hasTerminalSender shared with the event runs of bubbles
 chat/item/FramedItemView.kt       BUBBLE_* constants, BUBBLE_SIDE_INSET among them; Modifier.bubbleTextPadding, Modifier.bubbleMeta(),
-                                  RowScope.bubbleMetaOnBaseline(); header, quote, emoji, meta and text insets
+                                  RowScope.bubbleMetaOnBaseline(), MetaOnLastBaseline; header, quote, emoji, meta and text insets
 chat/item/CIMetaView.kt           metaReserveCopy (was terminalReserveSpaceForMeta); breakBefore: a breaking space instead of the word joiner
 chat/item/TextItemView.kt         the copy for every message text with a time, breakBefore in bubbles after text;
                                   ruleMinWidth in terminal rows only
@@ -237,7 +241,7 @@ chat/item/DeletedItemView.kt      bubble: bubbleTextPadding, time on the text ba
 chat/item/MarkedDeletedItemView.kt
 chat/item/IntegrityErrorItemView.kt
 chat/item/CIRcvDecryptionError.kt bubble: bubbleTextPadding, bubbleMeta, the copy of the time; RectangleShape, bubbleTailSpace
-chat/item/CIGroupInvitationView.kt bubble: the copy of the time
+chat/item/CIGroupInvitationView.kt bubble: the copy of the time joined to the last word; the time placed by MetaOnLastBaseline
 chat/item/ChatItemView.kt         calls without LocalBubbleLayout; tailRendered for deleted and error items; bubbleTailSpace
 chat/ChatView.kt                  LocalBubbleLayout provided for classic chats; row gaps in sp; event runs (eventRunLargeGap);
                                   sender name at the bubble edge
@@ -253,6 +257,7 @@ usersettings/Appearance.kt        LocalBubbleLayout for the classic theme previe
 - text capitals and last baseline inset from the edges, BUBBLE_SIDE_INSET at the sides
 - no bottom inset before another part of the band
 - time on the text baseline in a card row
+- time on the last baseline of a card, at its end
 - file icon ink bottom on the size-line baseline
 
 `apps/multiplatform/common/src/desktopTest/kotlin/chat/simplex/app/TerminalMetaCopyTest.kt`:
@@ -275,6 +280,7 @@ quote            Inter; full line heights; band 33px with one line (29px), talle
 deleted, errors  one-line card 34px (31px), as a one-line message; marked deleted 31px (27px); time on the text baseline
                  decryption errors and legacy deleted items: the tail drawn, the text 14px from the visible edge (3px)
 file             size line baseline 11px above the edge (9px); the time and the ink bottom of the file icon on it
+group invitation the time at the end of the card, 0–1px from the last text baseline (8–9px below it)
 events           runs: between event rows 8px of background in groups (avatars), 12–14px in direct chats;
                  a message next to a run shows its tail and time
 markdown         list items 22px apart (19px); paragraph break, headings, cards and rules at the gaps of terminal rows
@@ -282,12 +288,4 @@ headings         25, 20 and 16sp, bold, in bubbles and terminal rows (bubbles: 2
 calls            pixel-identical to master (12 of 12 renders)
 sender names     the first ink 0–1px from the bubble edge (6–7px)
 row gaps         unchanged at font scale 1; × 1.5 at font scale 1.5
-```
-
-## 7. Open questions
-
-```
-C8   group invitation with long translations: the time and the text on one baseline (user); options rendered:
-     A the time on the last baseline, joined to the last word; B on the baseline of the status line;
-     C on the baseline of the group name; the code unchanged until an option is chosen
 ```

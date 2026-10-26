@@ -101,61 +101,67 @@ fun CIGroupInvitationView(
           .padding(start = 8.dp, end = 12.dp, top = 8.dp, bottom = 4.dp),
         contentAlignment = Alignment.BottomEnd
       ) {
-        Box(
-          contentAlignment = Alignment.Center
-        ) {
-          Column(
-            Modifier
-              .defaultMinSize(minWidth = 220.dp)
-              .padding(bottom = 4.dp),
+        @Composable
+        fun invitationCard() {
+          Box(
+            contentAlignment = Alignment.Center
           ) {
-            groupInfoView()
-            val secondaryColor = MaterialTheme.colors.secondary
-            val reserve = if (inlineMeta != null) metaReserveCopy(ci.meta, timedMessagesTTL, encrypted = null, signedFileVerified = null, secondaryColor = secondaryColor, showStatus = false, showEdited = false, showViaProxy = false, showTimestamp = showTimestamp, breakBefore = true) else null
-            Divider(Modifier.fillMaxWidth().padding(top = 8.dp))
-            Column(Modifier.padding(top = 8.dp, bottom = 4.dp, start = 4.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-              if (groupChat) {
-                Text(if (sent) String.format(stringResource(MR.strings.group_invitation_for_member_only), groupInvitation.localDisplayName) else stringResource(MR.strings.group_invitation_for_you_only), fontSize = 12.sp, color = secondaryColor)
-              }
-              if (action) {
-                Text(groupInvitationStr(), fontSize = 13.sp, lineHeight = 18.sp)
-                Text(
-                  buildAnnotatedString {
-                    append(generalGetString(if (chatIncognito) MR.strings.group_invitation_tap_to_join_incognito else MR.strings.group_invitation_tap_to_join))
-                    if (reserve != null) {
-                      withStyle(reserveTimestampStyle) { append(reserve) }
-                    }
-                  },
-                  color = if (inProgress.value)
-                    MaterialTheme.colors.secondary
-                  else
-                    if (chatIncognito) Indigo else MaterialTheme.colors.primary
-                )
-              } else {
-                Text(
-                  buildAnnotatedString {
-                    append(groupInvitationStr())
-                    if (reserve != null) {
-                      withStyle(reserveTimestampStyle) { append(reserve) }
-                    }
-                  },
-                  fontSize = 13.sp,
-                  lineHeight = 18.sp,
-                )
+            Column(
+              Modifier
+                .defaultMinSize(minWidth = 220.dp)
+                .padding(bottom = 4.dp),
+            ) {
+              groupInfoView()
+              val secondaryColor = MaterialTheme.colors.secondary
+              Divider(Modifier.fillMaxWidth().padding(top = 8.dp))
+              Column(Modifier.padding(top = 8.dp, bottom = 4.dp, start = 4.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                if (groupChat) {
+                  Text(if (sent) String.format(stringResource(MR.strings.group_invitation_for_member_only), groupInvitation.localDisplayName) else stringResource(MR.strings.group_invitation_for_you_only), fontSize = 12.sp, color = secondaryColor)
+                }
+                if (action) {
+                  Text(groupInvitationStr(), fontSize = 13.sp, lineHeight = 18.sp)
+                  Text(
+                    buildAnnotatedString {
+                      append(generalGetString(if (chatIncognito) MR.strings.group_invitation_tap_to_join_incognito else MR.strings.group_invitation_tap_to_join))
+                      if (inlineMeta != null) {
+                        withStyle(reserveTimestampStyle) { append(metaReserveCopy(ci.meta, timedMessagesTTL, encrypted = null, signedFileVerified = null, secondaryColor = secondaryColor, showStatus = false, showEdited = false, showViaProxy = false, showTimestamp = showTimestamp)) }
+                      }
+                    },
+                    color = if (inProgress.value)
+                      MaterialTheme.colors.secondary
+                    else
+                      if (chatIncognito) Indigo else MaterialTheme.colors.primary
+                  )
+                } else {
+                  Text(
+                    buildAnnotatedString {
+                      append(groupInvitationStr())
+                      if (inlineMeta != null) {
+                        withStyle(reserveTimestampStyle) { append(metaReserveCopy(ci.meta, timedMessagesTTL, encrypted = null, signedFileVerified = null, secondaryColor = secondaryColor, showStatus = false, showEdited = false, showViaProxy = false, showTimestamp = showTimestamp)) }
+                      }
+                    },
+                    fontSize = 13.sp,
+                    lineHeight = 18.sp,
+                  )
+                }
               }
             }
-          }
 
-          if (progressByTimeout) {
-            CircularProgressIndicator(
-              Modifier.size(32.dp),
-              color = if (isInDarkTheme()) FileDark else FileLight,
-              strokeWidth = 3.dp
-            )
+            if (progressByTimeout) {
+              CircularProgressIndicator(
+                Modifier.size(32.dp),
+                color = if (isInDarkTheme()) FileDark else FileLight,
+                strokeWidth = 3.dp
+              )
+            }
           }
         }
 
-        inlineMeta?.invoke()
+        if (inlineMeta != null) {
+          MetaOnLastBaseline(inlineMeta) { invitationCard() }
+        } else {
+          invitationCard()
+        }
       }
     }
   }

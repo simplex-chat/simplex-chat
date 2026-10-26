@@ -2,8 +2,10 @@ package chat.simplex.app
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.LastBaseline
@@ -87,6 +89,21 @@ class BubbleLayoutTest {
     }
     val row = placed.getValue("row")
     assertEquals(placed.getValue("text").relativeTo(row).y + 17, placed.getValue("meta").relativeTo(row).y + 12)
+  }
+
+  @Test
+  fun timeOnLastBaselineAtCardEnd() {
+    renderScene {
+      Box(Modifier.width(IntrinsicSize.Min)) {
+        MetaOnLastBaseline({ Box(Modifier.record(placed, "meta").fixed(60, 16, 12)) }) {
+          Column(Modifier.record(placed, "card")) {
+            Box(Modifier.fixed(220, 40, 30))
+            Box(Modifier.fixed(220, 22, 17))
+          }
+        }
+      }
+    }
+    assertEquals(Placed(220 - 60, 40 + 17 - 12, 60, 16), placed.getValue("meta").relativeTo(placed.getValue("card")))
   }
 
   @Test

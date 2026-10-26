@@ -578,6 +578,20 @@ fun RowScope.bubbleMetaOnBaseline(): Modifier {
   return Modifier.alignBy { with(density) { metaBaseline(it) } }
 }
 
+@Composable
+fun MetaOnLastBaseline(meta: @Composable () -> Unit, content: @Composable () -> Unit) {
+  Layout({ content(); meta() }) { measurables, constraints ->
+    val contentPlaceable = measurables[0].measure(constraints)
+    val metaPlaceable = measurables[1].measure(constraints)
+    val lastBaseline = contentPlaceable[LastBaseline].takeIf { it != AlignmentLine.Unspecified } ?: contentPlaceable.height
+    val metaTop = lastBaseline - metaBaseline(metaPlaceable)
+    layout(contentPlaceable.width, maxOf(contentPlaceable.height, metaTop + metaPlaceable.height)) {
+      contentPlaceable.placeRelative(0, 0)
+      metaPlaceable.placeRelative(contentPlaceable.width - metaPlaceable.width, metaTop)
+    }
+  }
+}
+
 /**
  * Compose shows "Can't represent a width of ... and height ... in Constraints" even when using built-in method for measuring max
  * available size. It seems like padding around such layout prevents showing them in parent layout when such child layouts are placed.
