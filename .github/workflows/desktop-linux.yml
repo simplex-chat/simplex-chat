@@ -389,6 +389,12 @@ jobs:
       - name: Start the app
         run: scripts/ci/desktop-linux/smoke-test.sh "$RUNNER_TEMP/app/simplex" "$RUNNER_TEMP/claude-test/screens" start
 
+      - name: Add test images
+        run: |
+          mkdir -p "$RUNNER_TEMP/claude-test/images"
+          cp tests/fixtures/test.jpg "$RUNNER_TEMP/claude-test/images/test-card.jpg"
+          cp tests/fixtures/logo-large-rgba.png "$RUNNER_TEMP/claude-test/images/simplex-logo.png"
+
       # Claude's Bash is limited to single ui commands by the guard hook in claude-test.sh. Claude Code's credential
       # scrub stays off: on Linux it forces its whole Bash sandbox (bubblewrap, socat), which ui isn't set up for.
       - name: Run Claude

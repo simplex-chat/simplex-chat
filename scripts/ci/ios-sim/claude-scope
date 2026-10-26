@@ -5,6 +5,6 @@
 backend: no
 model: claude-haiku-5-5
 layouts: reachable
-cases-reachable: S1-S3
-max-turns: 60
+cases-reachable: S1-S3, I1-I4
+max-turns: 100
 max-budget-usd: 3

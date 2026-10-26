@@ -47,7 +47,7 @@ CLAUDE_CODE_OAUTH_TOKEN=$token claude -p \
   --permission-mode dontAsk \
   --permission-prompts none \
   --strict-mcp-config \
-  --max-turns 60 \
+  --max-turns 90 \
   --max-budget-usd 3 \
   --autocompact 200k \
   --no-session-persistence \

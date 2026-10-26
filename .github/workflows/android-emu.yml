@@ -394,6 +394,14 @@ jobs:
       - name: Boot emulator
         run: scripts/ci/android/emulator.sh start "$RUNNER_TEMP/claude-test/screens"
 
+      - name: Add test images
+        run: |
+          adb push tests/fixtures/test.jpg /sdcard/Pictures/test-card.jpg
+          adb push tests/fixtures/logo-large-rgba.png /sdcard/Pictures/simplex-logo.png
+          for image in test-card.jpg simplex-logo.png; do
+            adb shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d "file:///sdcard/Pictures/$image"
+          done
+
       - name: Reach the test backend
         if: steps.backend.outcome == 'success'
         run: scripts/ci/android/emulator.sh reverse 5223

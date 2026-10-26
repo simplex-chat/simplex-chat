@@ -591,6 +591,21 @@ CI, comments of the avatar scripts:
 - `scripts/ci/ios-sim/avatar.swift:1`: `// Makes a group avatar:`
 - `scripts/ci/desktop-linux/backend.sh:70`: `# Prints a profile image data URI: JPEG at quality 85, scaled down by the square root`
 
+CI, Claude-driven app tests (run with `claude=true`, which needs the `app-sim-claude` environment):
+- images: `tests/fixtures/test.jpg` and `tests/fixtures/logo-large-rgba.png`, added before Claude starts by the step "Add test images":
+
+  | app | where | HEIC |
+  |---|---|---|
+  | Android (`android-emu.yml`) | `/sdcard/Pictures/test-card.jpg` and `simplex-logo.png`, with a media scan broadcast | |
+  | desktop (`desktop-linux.yml`) | `images/` in Claude's working directory | |
+  | iOS (`ios-sim.yml`) | the photo library, with `xcrun simctl addmedia` | `test.jpg` turned to portrait by `sips`, when `sips` writes HEIC |
+
+- steps: pick the JPEG, then the PNG with transparency (and on iOS the HEIC); check the compose preview; send; open the sent image
+  - Android: `scripts/ci/android/claude-test.md`, part D
+  - desktop: `scripts/ci/desktop-linux/claude-test.md`, part D
+  - iOS: `scripts/ci/ios-sim/device-test-plan.md`, cases I1-I4, named in `claude-scope` with `max-turns: 100`; the photo picker in `claude-prompt.md`
+- `scripts/ci/desktop-linux/claude-test.sh`: `--max-turns 90`, for Android and desktop
+
 License notices, `docs/dependencies/`:
 - `README.md:3`:
   `[mozjpeg](https://github.com/mozilla/mozjpeg): JPEG decoding and encoding of resized images ([IJG and BSD-3-clause](./licences/apps/mozjpeg/LICENSE.md)). This software is based in part on the work of the Independent JPEG Group.`

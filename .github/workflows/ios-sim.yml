@@ -354,6 +354,14 @@ jobs:
       - name: Run smoke test
         run: scripts/ci/ios-sim/smoke-test.sh "$RUNNER_TEMP/SimpleX.app" "$RUNNER_TEMP/claude-test/smoke-test"
 
+      - name: Add test images
+        run: |
+          images=(tests/fixtures/test.jpg tests/fixtures/logo-large-rgba.png)
+          if sips -r 90 -s format heic tests/fixtures/test.jpg --out "$RUNNER_TEMP/test-card-portrait.heic"; then
+            images+=("$RUNNER_TEMP/test-card-portrait.heic")
+          fi
+          xcrun simctl addmedia "$SIM_UDID" "${images[@]}"
+
       - name: Install Claude Code
         run: |
           npm install -g "@anthropic-ai/claude-code@$CLAUDE_CODE_VERSION"
