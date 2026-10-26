@@ -277,7 +277,7 @@ committed w@Worker {wkSender} now r@NameRegistration {nrId, nrReveal, nrRevealAf
 -- stores that acceptance. One signed for another policy, before a setNamePolicy, clears the reveal for the page to sign
 -- again; the relay's dry run's revert is judged as a register's is.
 relayAcceptance :: Worker -> UTCTime -> NameRegistration -> Word64 -> TermsAcceptance -> IO (Maybe Next)
-relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts, oeConfig = NamesConfig {nChain = ChainConfig {cChainId}}}, wkSender} now r@NameRegistration {nrId = regId, nrOwner, nrCommitment} deadline a@TermsAcceptance {taTermsHash} =
+relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts, oeConfig = NamesConfig {nChain = ChainConfig {cChainId}}}, wkSender} now r@NameRegistration {nrId = regId@(RegistrationId rid), nrOwner, nrCommitment} deadline a@TermsAcceptance {taTermsHash} =
   inFlightTransaction wkSender (TxAccept regId) >>= \case
     Just p -> pure $ Just $ Await p
     Nothing ->
@@ -289,7 +289,9 @@ relayAcceptance w@Worker {wkOrders = OrdersEnv {oeContracts, oeConfig = NamesCon
   where
     relay policy =
       verifyAcceptance (policyDomain cChainId policy) nrOwner nrCommitment deadline a >>= \case
-        Left _ -> save w now r {nrReveal = Nothing}
+        Left refusal -> do
+          logWarn $ "names worker: registration " <> rid <> ": its stored acceptance is refused, " <> T.pack refusal
+          save w now r {nrReveal = Nothing}
         Right () ->
           submitTransaction wkSender (TxAccept regId) policy (acceptCalldata nrCommitment nrOwner deadline a) >>= \case
             Right p -> pure $ Await p
