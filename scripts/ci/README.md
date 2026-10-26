@@ -154,6 +154,7 @@ Pushes start none of the app workflows: a run is started by hand, on any branch,
 | `claude` | scripted test, then Claude | scripted test, then Claude | scripted test, then Claude |
 | `backend` | also the test backend | also the test backend | also the test backend |
 | `release` | — | also the latest release's onboarding, to tell a branch's failure from the runner's | also the latest release's onboarding, to tell a branch's failure from the runner's |
+| `armv7a` | — | — | also the core library for 32-bit Arm (armeabi-v7a), built only |
 
 In the Actions tab: `ios-sim`, `desktop-linux` or `android-emu` → Run workflow, choose the branch and tick the inputs. With the GitHub CLI, each input is a field:
 
