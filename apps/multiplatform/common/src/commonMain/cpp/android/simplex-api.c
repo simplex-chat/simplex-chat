@@ -85,6 +85,8 @@ extern char *chat_encrypt_file(chat_ctrl ctrl, const char *from_path, const char
 extern char *chat_decrypt_file(const char *from_path, const char *key, const char *nonce, const char *to_path);
 extern char *chat_resize_image_uri(char *ptr, int length, int max_size);
 extern char *chat_resize_image(char *ptr, int length, int max_size, int png);
+extern char *chat_resize_image_fd_uri(int fd, int max_size);
+extern char *chat_resize_image_fd(int fd, int max_size, int png);
 
 JNIEXPORT jobjectArray JNICALL
 Java_chat_simplex_common_platform_CoreKt_chatMigrateInit(JNIEnv *env, __unused jclass clazz, jstring dbPath, jstring dbKey, jstring confirm) {
@@ -288,4 +290,14 @@ Java_chat_simplex_common_platform_CoreKt_chatResizeImage(JNIEnv *env, jclass cla
     jbyte *buff = (jbyte *) (*env)->GetDirectBufferAddress(env, buffer);
     jlong capacity = (*env)->GetDirectBufferCapacity(env, buffer);
     return decode_and_free(env, chat_resize_image(buff, capacity, maxSize, png));
+}
+
+JNIEXPORT jstring JNICALL
+Java_chat_simplex_common_platform_CoreKt_chatResizeImageFdUri(JNIEnv *env, jclass clazz, jint fd, jint maxSize) {
+    return decode_and_free(env, chat_resize_image_fd_uri(fd, maxSize));
+}
+
+JNIEXPORT jstring JNICALL
+Java_chat_simplex_common_platform_CoreKt_chatResizeImageFd(JNIEnv *env, jclass clazz, jint fd, jint maxSize, jint png) {
+    return decode_and_free(env, chat_resize_image_fd(fd, maxSize, png));
 }

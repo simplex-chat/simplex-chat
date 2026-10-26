@@ -72,6 +72,19 @@ public func saveImage(_ uiImage: UIImage) -> CryptoFile? {
     return nil
 }
 
+public func saveImageFile(_ url: URL) -> CryptoFile? {
+    var cPath = url.path.cString(using: .utf8)!
+    guard let data = Data(base64Encoded: fromCString(chat_resize_image_file(&cPath, Int32(MAX_IMAGE_SIZE), -1)!)), !data.isEmpty else { return nil }
+    let ext = data.starts(with: [0x89, 0x50, 0x4E, 0x47]) ? "png" : "jpg"
+    return saveFile(data, generateNewFileName("IMG", ext), encrypted: privacyEncryptLocalFilesGroupDefault.get())
+}
+
+public func resizeImageFileToStrSize(_ url: URL, maxDataSize: Int64) -> String? {
+    var cPath = url.path.cString(using: .utf8)!
+    let str = fromCString(chat_resize_image_file_uri(&cPath, Int32(maxDataSize))!)
+    return str.isEmpty ? nil : str
+}
+
 public func cropToSquare(_ image: UIImage) -> UIImage {
     let size = image.size
     let side = min(size.width, size.height)

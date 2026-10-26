@@ -147,8 +147,12 @@ All JNI declarations reside in [`Core.kt`](../common/src/commonMain/kotlin/chat/
 | 19 | [`chatDecryptFile()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L41) | `external fun chatDecryptFile(fromPath: String, key: String, nonce: String, toPath: String): String` | 41 | Decrypt file on disk |
 | 20 | [`chatResizeImageUri()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L42) | `external fun chatResizeImageUri(buffer: ByteBuffer, maxSize: Int): String` | 42 | Resize encoded image to a data URI of at most `maxSize` characters |
 | 21 | [`chatResizeImage()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L43) | `external fun chatResizeImage(buffer: ByteBuffer, maxSize: Int, png: Boolean): String` | 43 | Resize encoded image to base64 of PNG or JPEG data of at most `maxSize` bytes |
+| 22 | [`chatResizeImageFileUri()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L44) | `external fun chatResizeImageFileUri(path: String, maxSize: Int): String` | 44 | Desktop: as `chatResizeImageUri`, from the file at `path` |
+| 23 | [`chatResizeImageFile()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L45) | `external fun chatResizeImageFile(path: String, maxSize: Int, png: Int): String` | 45 | Desktop: as `chatResizeImage`, from the file at `path`; `png` −1 selects the format by transparency |
+| 24 | [`chatResizeImageFdUri()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L46) | `external fun chatResizeImageFdUri(fd: Int, maxSize: Int): String` | 46 | Android: as `chatResizeImageUri`, from the file descriptor `fd`, which core closes |
+| 25 | [`chatResizeImageFd()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L47) | `external fun chatResizeImageFd(fd: Int, maxSize: Int, png: Int): String` | 47 | Android: as `chatResizeImage`, from the file descriptor `fd`, which core closes |
 
-**Total: 21 external native functions** (the `ChatCtrl` type alias at [line 23](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L23) is `Long`, representing the Haskell-side controller pointer).
+**Total: 25 external native functions** (the `ChatCtrl` type alias at [line 23](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L23) is `Long`, representing the Haskell-side controller pointer).
 
 <a id="initChatControllerOnStart"></a>
 <a id="chatInitTemporaryDatabase"></a>

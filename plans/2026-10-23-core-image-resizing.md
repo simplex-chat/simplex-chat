@@ -218,6 +218,21 @@ Apps, with function signatures kept and call sites unchanged except iOS `saveWal
       - `desktopSaveImageInTmp`
       - `ThemeWallpaper.importFromString`, around `saveWallpaperFile`
 
+Apps, file reference (D7, D17):
+- iOS:
+  - picker, `loadImageData` (`ImagePicker.swift`): the `public.jpeg` representation when the item provider has one and the item is neither PNG nor GIF; otherwise `public.data`, as before
+  - `UploadContent.imageFile(image:url:)`: a non-animated picked image, with its file copied to the temporary directory and added to `filesToDelete`
+  - preview, `imagePreview()`: `resizeImageFileToStrSize` for `.imageFile`; for other content or `nil`, `resizeImageToStrSize`
+  - sending: `saveImageFile(url)`; for `nil`, `saveImage(image)`
+  - `SimpleX.h`: `chat_resize_image_file`, `chat_resize_image_file_uri`
+- Android and desktop:
+  - common: `resizeImageFileToStrSize` and `resizeImageFileToDataSize`, on `resizeImageFileUri` and `resizeImageFileData` of each platform:
+    - Android: `contentResolver.openFileDescriptor(uri, "r").detachFd()`, then `chatResizeImageFdUri` or `chatResizeImageFd`
+    - desktop: `uri.toFile().absolutePath`, then `chatResizeImageFileUri` or `chatResizeImageFile`
+  - `processPickedMedia` and the Android camera: the preview from the file; the bitmap only for an animated image or when the preview is `null`
+  - `saveImage(uri)` and `desktopSaveImageInTmp(uri)`, through `resizeImageFromUri`: the core data from the file with `png = -1`, extension `png` for a first byte `0x89`, otherwise `jpg`; for `null`, the bitmap path, as before
+  - JNI: the descriptor functions in the Android `simplex-api.c`, the path functions in the desktop one
+
 Bot libraries:
 - Node, `core`:
   - `resizeImage(image: ArrayBuffer | Uint8Array, size: ImageSize): Promise<Buffer | string>`, with overloads: `Buffer` for `ImageSize.Image`, `string` for the previews

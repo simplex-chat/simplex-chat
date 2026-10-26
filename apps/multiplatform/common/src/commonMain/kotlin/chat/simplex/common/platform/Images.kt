@@ -31,6 +31,15 @@ expect fun isAnimImage(uri: URI, drawable: Any?): Boolean
 
 expect fun loadImageBitmap(inputStream: InputStream): ImageBitmap
 
+expect fun resizeImageFileUri(uri: URI, maxSize: Int): String
+expect fun resizeImageFileData(uri: URI, maxSize: Int): String
+
+fun resizeImageFileToStrSize(uri: URI, maxDataSize: Long): String? =
+  resizeImageFileUri(uri, maxDataSize.toInt()).ifEmpty { null }
+
+fun resizeImageFileToDataSize(uri: URI, maxDataSize: Long): ByteArray? =
+  resizeImageFileData(uri, maxDataSize.toInt()).ifEmpty { null }?.let { Base64.getDecoder().decode(it) }
+
 fun resizeImageToStrSize(image: ImageBitmap, maxDataSize: Long): String {
   val str = chatResizeImageUri(compressImageData(image, image.hasAlpha()).toByteArray().toDirectBuffer(), maxDataSize.toInt())
   if (str.isEmpty()) throw Exception("Image resize failed")

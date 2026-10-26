@@ -13,6 +13,7 @@ import androidx.core.graphics.scale
 import boofcv.android.ConvertBitmap
 import boofcv.struct.image.GrayU8
 import chat.simplex.common.R
+import chat.simplex.common.helpers.toUri
 import chat.simplex.common.views.helpers.decodeSampledBitmapFromByteArray
 import chat.simplex.common.views.helpers.errorBitmap
 import chat.simplex.common.views.helpers.getFileName
@@ -107,3 +108,17 @@ actual fun isAnimImage(uri: URI, drawable: Any?): Boolean {
 
 actual fun loadImageBitmap(inputStream: InputStream): ImageBitmap =
   BitmapFactory.decodeStream(inputStream).asImageBitmap()
+
+actual fun resizeImageFileUri(uri: URI, maxSize: Int): String =
+  imageFileDescriptor(uri)?.let { chatResizeImageFdUri(it, maxSize) } ?: ""
+
+actual fun resizeImageFileData(uri: URI, maxSize: Int): String =
+  imageFileDescriptor(uri)?.let { chatResizeImageFd(it, maxSize, -1) } ?: ""
+
+private fun imageFileDescriptor(uri: URI): Int? =
+  try {
+    androidAppContext.contentResolver.openFileDescriptor(uri.toUri(), "r")?.detachFd()
+  } catch (e: Exception) {
+    Log.e(TAG, "imageFileDescriptor error: ${e.stackTraceToString()}")
+    null
+  }

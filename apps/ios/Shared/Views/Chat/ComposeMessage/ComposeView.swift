@@ -299,15 +299,38 @@ func chatItemPreview(chatItem: ChatItem) -> ComposePreview {
 // Spec: spec/client/compose.md#UploadContent
 enum UploadContent: Equatable {
     case simpleImage(image: UIImage)
+    case imageFile(image: UIImage, url: URL)
     case animatedImage(image: UIImage)
     case video(image: UIImage, url: URL, duration: Int)
 
     var uiImage: UIImage {
         switch self {
         case let .simpleImage(image): return image
+        case let .imageFile(image, _): return image
         case let .animatedImage(image): return image
         case let .video(image, _, _): return image
         }
+    }
+
+    func imagePreview() async -> String? {
+        if case let .imageFile(_, url) = self, let preview = resizeImageFileToStrSize(url, maxDataSize: 14000) {
+            return preview
+        }
+        return await resizeImageToStrSize(uiImage, maxDataSize: 14000)
+    }
+
+    static func loadImageFileFromURL(url: URL) -> UploadContent? {
+        let content = loadFromURL(url: url)
+        guard case let .simpleImage(image)? = content else { return content }
+        let tempUrl = URL(fileURLWithPath: generateNewFileName(getTempFilesDirectory().path + "/" + "image", url.pathExtension, fullPath: true))
+        do {
+            try FileManager.default.copyItem(at: url, to: tempUrl)
+        } catch let err {
+            logger.error("UploadContent copyItem error: \(err.localizedDescription)")
+            return content
+        }
+        _ = ChatModel.shared.filesToDelete.insert(tempUrl)
+        return .imageFile(image: image, url: tempUrl)
     }
 
     static func loadFromURL(url: URL) -> UploadContent? {
@@ -649,7 +672,7 @@ struct ComposeView: View {
             Task {
                 var media: [(String, UploadContent)] = []
                 for content in selected {
-                    if let img = await resizeImageToStrSize(content.uiImage, maxDataSize: 14000) {
+                    if let img = await content.imagePreview() {
                         media.append((img, content))
                         await MainActor.run {
                             composeState = composeState.copy(preview: .mediaPreviews(mediaPreviews: media))
@@ -1252,7 +1275,7 @@ struct ComposeView: View {
 
     // Spec: spec/client/compose.md#addMediaContent
     private func addMediaContent(_ content: UploadContent) async {
-        if let img = await resizeImageToStrSize(content.uiImage, maxDataSize: 14000) {
+        if let img = await content.imagePreview() {
             var newMedia: [(String, UploadContent?)] = []
             if case var .mediaPreviews(media) = composeState.preview {
                 media.append((img, content))
@@ -1572,6 +1595,8 @@ struct ComposeView: View {
             return switch uploadContent {
             case let .simpleImage(image):
                 (saveImage(image), .image(text: text, image: previewImage))
+            case let .imageFile(image, url):
+                (saveImageFile(url) ?? saveImage(image), .image(text: text, image: previewImage))
             case let .animatedImage(image):
                 (saveAnimImage(image), .image(text: text, image: previewImage))
             case let .video(_, url, duration):

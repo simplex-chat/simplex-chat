@@ -173,6 +173,10 @@ actual fun isAnimImage(uri: URI, drawable: Any?): Boolean {
 actual fun loadImageBitmap(inputStream: InputStream): ImageBitmap =
   Image.makeFromEncoded(inputStream.readBytes()).toComposeImageBitmap()
 
+actual fun resizeImageFileUri(uri: URI, maxSize: Int): String = chatResizeImageFileUri(uri.toFile().absolutePath, maxSize)
+
+actual fun resizeImageFileData(uri: URI, maxSize: Int): String = chatResizeImageFile(uri.toFile().absolutePath, maxSize, -1)
+
 // https://stackoverflow.com/a/68926993
 fun BufferedImage.rotate(angle: Double): BufferedImage {
   val sin = Math.abs(Math.sin(Math.toRadians(angle)))
