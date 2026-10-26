@@ -395,6 +395,35 @@ lower case and without its port or a trailing dot (an IPv6 literal whole, in bra
 outside `/api/` and `/webhooks/` is a file of the chosen site, `/` and `/index.html` its shell. The
 API answers on every host.
 
+### Development with a local chain
+
+`compose.dev.yml` adds a container `chain`: an anvil chain on `127.0.0.1:8545` (chain id 31337)
+with the names contracts, deployed on its first start. Its state is kept in `./data/chain`, so
+restarts keep the contracts, balances and registered names. Its keys are anvil's public test keys,
+so never use it beside a real chain. From `scripts/store-service/`:
+
+```
+echo "COMPOSE_FILE=compose.yml:compose.dev.yml" >> .env
+docker compose up -d --build
+docker compose logs chain
+```
+
+The service starts once the chain is up. The chain's log prints its `[chain]` section; put it in
+`config/store_service.ini` with a `[names]` section and the names site's folders under `[listener]`
+(`names_static_dir = /srv/names`, `names_export_dir = /srv/names-export`), then
+`docker compose restart store-service`.
+
+The service key's account starts with 10,000 ETH and a sponsor allowance. To top it up, or set any
+account's balance:
+
+```
+docker compose exec chain dev-chain.sh topup [address] [eth]
+```
+
+Registrations wait 10 seconds after their commit (`MIN_COMMITMENT_AGE` in `compose.dev.yml`), and
+prepaid codes need no payment provider. To start over, run `docker compose down` and delete
+`./data/chain`; orders the service already holds then point at names that no longer exist.
+
 ### Caddy
 
 The Caddyfile is not in this repository. Its two host blocks, with the exported folders at
