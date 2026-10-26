@@ -16,6 +16,9 @@ const val DIRECTORY_SERVICE_LINK = "https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi
 // A search sets up an encrypted connection, so it takes seconds, not milliseconds.
 const val DIRECTORY_SEARCH_TIMEOUT_SEC = 10.0
 
+// The directory refuses longer search text, counting code points rather than UTF-16 chars.
+const val DIRECTORY_SEARCH_MAX_TEXT_LENGTH = 100
+
 @Serializable
 data class DirectoryPublicLink(
   val connFullLink: String? = null,
@@ -69,8 +72,18 @@ data class DirectorySearchResults(
 
 fun directorySearchRequest(text: String, cursor: JsonObject?): JsonObject = buildJsonObject {
   put("type", JsonPrimitive("search"))
-  put("searchText", JsonPrimitive(text))
+  put("searchText", JsonPrimitive(text.takeCodePoints(DIRECTORY_SEARCH_MAX_TEXT_LENGTH)))
   if (cursor != null) put("searchCursor", cursor)
+}
+
+private fun String.takeCodePoints(n: Int): String {
+  var end = 0
+  var count = 0
+  while (end < length && count < n) {
+    end += if (this[end].isHighSurrogate() && getOrNull(end + 1)?.isLowSurrogate() == true) 2 else 1
+    count++
+  }
+  return substring(0, end)
 }
 
 // Anything but a well-formed results response is a failure, not something to salvage: it comes

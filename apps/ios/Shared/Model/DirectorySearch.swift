@@ -16,6 +16,9 @@ let DIRECTORY_SERVICE_LINK = "https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkG
 // A search sets up an encrypted connection, so it takes seconds, not milliseconds.
 let DIRECTORY_SEARCH_TIMEOUT_SEC: Double = 10
 
+// The directory refuses longer search text, counting Unicode scalars rather than characters.
+let DIRECTORY_SEARCH_MAX_TEXT_LENGTH = 100
+
 struct DirectoryPublicLink: Decodable, Hashable {
     var connFullLink: String? = nil
     var connShortLink: String? = nil
@@ -84,7 +87,8 @@ struct DirectorySearchResults {
 }
 
 func directorySearchRequestJSON(_ text: String, _ cursor: JSONValue?) -> String {
-    var req: [String: JSONValue] = ["type": .string("search"), "searchText": .string(text)]
+    let searchText = String(String.UnicodeScalarView(text.unicodeScalars.prefix(DIRECTORY_SEARCH_MAX_TEXT_LENGTH)))
+    var req: [String: JSONValue] = ["type": .string("search"), "searchText": .string(searchText)]
     if let cursor { req["searchCursor"] = cursor }
     return encodeJSON(JSONValue.object(req))
 }
