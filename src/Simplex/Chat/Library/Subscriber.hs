@@ -1927,8 +1927,8 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             void $ sendDirectMemberMessage conn (XInfoProbeCheck checkHash) groupId
             withStore' $ \db -> createSentProbeHash db userId probeId cgm
 
-    getMatchingContactsOrMembers :: ContactOrMember -> CM [ContactOrMember]
-    getMatchingContactsOrMembers cgm = withStore' $ \db -> case cgm of
+    getMatchingContactsOrMembers :: DB.Connection -> ContactOrMember -> IO [ContactOrMember]
+    getMatchingContactsOrMembers db = \case
       COMContact ct -> map COMGroupMember <$> getMatchingMembers db cxt user ct
       COMGroupMember m -> map COMContact <$> getMatchingMemberContacts db cxt user m
 
@@ -3004,7 +3004,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       contactMerge <- readTVarIO =<< asks contactMergeEnabled
       -- [incognito] unless connected incognito
       when (contactMerge && not (contactOrMemberIncognito cgm2)) $ do
-        cgms <- getMatchingContactsOrMembers cgm2
+        cgms <- withStore' (`getMatchingContactsOrMembers` cgm2)
         connCode <- getConnCodes (cgm2 : cgms)
         forM_ (connCode cgm2) $ \probeConnCode -> do
           let probeHash = connProbeHash probeConnCode probe
@@ -3025,10 +3025,10 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       contactMerge <- readTVarIO =<< asks contactMergeEnabled
       -- [incognito] unless connected incognito
       when (contactMerge && not (contactOrMemberIncognito cgm1)) $ do
-        cgms <- getMatchingContactsOrMembers cgm1
         connCode <- getConnCodes [cgm1]
         forM_ (connCode cgm1) $ \checkConnCode -> do
-          cgm2Probe_ <- withStore' $ \db -> matchReceivedProbeHash db user cgm1 checkConnCode checkHash cgms
+          cgm2Probe_ <- withStore' $ \db ->
+            matchReceivedProbeHash db user cgm1 checkConnCode checkHash =<< getMatchingContactsOrMembers db cgm1
           forM_ cgm2Probe_ $ \(cgm2, probe) ->
             unless (contactOrMemberIncognito cgm2) . void $
               probeMatch cgm1 cgm2 probe

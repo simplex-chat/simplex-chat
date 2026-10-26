@@ -174,8 +174,6 @@ module Simplex.Chat.Store.Groups
     getMatchingMemberContacts,
     createSentProbe,
     createSentProbeHash,
-    connProbeHash,
-    connProbeCheckHash,
     matchReceivedProbe,
     matchReceivedProbeHash,
     matchSentProbe,
@@ -3032,12 +3030,6 @@ createSentProbeHash db userId probeId to = do
     db
     "INSERT INTO sent_probe_hashes (sent_probe_id, contact_id, group_member_id, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
     (probeId, ctId, gmId, userId, currentTs, currentTs)
-
-connProbeHash :: ByteString -> Probe -> ProbeHash
-connProbeHash connCode (Probe probe) = ProbeHash $ C.sha256Hash $ connCode <> probe
-
-connProbeCheckHash :: ByteString -> ProbeHash -> ProbeHash
-connProbeCheckHash connCode (ProbeHash probeHash) = ProbeHash $ C.sha256Hash $ connCode <> probeHash
 
 matchReceivedProbe :: DB.Connection -> User -> ContactOrMember -> Probe -> ProbeHash -> [(ContactOrMember, ProbeHash)] -> IO [ContactOrMember]
 matchReceivedProbe db User {userId} from (Probe probe) (ProbeHash probeHash) cgmCheckHashes = do
