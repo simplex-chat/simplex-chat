@@ -209,7 +209,7 @@ B8   file in a bubble: the last baseline of the size line BUBBLE_TEXT_INSET abov
 B9   events: line height of 12sp secondary text; feature icons and merged icons without height, one event line high (user)
 B10  row gaps in sp, values kept; a sender change in direct chats 8sp (user)
      events: 2sp between the events of a run, 8sp around the run; a message next to an event at a large gap,
-     with its tail and time; the avatar column of an event without its 8dp top padding (user)
+     above an event with its tail and time; the avatar column of an event without its 8dp top padding (user)
 B11  markdown blocks in bubbles: spacing and line heights of terminal rows (user); headings × 1.5625, 1.25, 1, bold,
      capitals placed by headingBox, in both layouts (user)
 B12  unchanged: fills, tails, roundness, colours, themes, wallpapers, interaction; link preview, chat link card,
@@ -282,7 +282,7 @@ deleted, errors  one-line card 34px (31px), as a one-line message; marked delete
 file             size line baseline 11px above the edge (9px); the time and the ink bottom of the file icon on it
 group invitation the time at the end of the card, 0–1px from the last text baseline (8–9px below it)
 events           runs: between event rows 8px of background in groups (avatars), 12–14px in direct chats;
-                 a message next to a run shows its tail and time
+                 a message above a run shows its tail and time
 markdown         list items 22px apart (19px); paragraph break, headings, cards and rules at the gaps of terminal rows
 headings         25, 20 and 16sp, bold, in bubbles and terminal rows (bubbles: 24, 20.8, 18.4sp; terminal rows: 27.6, 21, 16sp)
 calls            pixel-identical to master (12 of 12 renders)
