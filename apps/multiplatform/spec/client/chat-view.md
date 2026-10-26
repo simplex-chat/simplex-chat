@@ -111,7 +111,7 @@ The outer [`when (chatInfo)`](../../common/src/commonMain/kotlin/chat/simplex/co
 
 ## 3. Message List
 
-**Location:** [`ChatView.kt#L1757`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L1758) (`ChatItemsList` composable)
+**Location:** [`ChatView.kt#L1758`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L1758) (`ChatItemsList` composable)
 
 The message list is a `LazyColumnWithScrollBar` with `reverseLayout = true`, meaning index 0 is the newest message at the bottom of the screen.
 
@@ -509,12 +509,12 @@ The selection checkbox (8dp start padding) and the full-row selection click over
 | Screen | Value |
 |---|---|
 | Chat theme ([`ChatWallpaperEditorModal`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatInfoView.kt#L1300)) | `activeChatLayout` of the chat |
-| Appearance › Themes, preset selector ([`ThemesSection`](../../common/src/commonMain/kotlin/chat/simplex/common/views/usersettings/Appearance.kt#L581)) | `profileChatLayout` of the current user, or of none for the app theme destination |
+| Appearance › Themes, preset selector ([`ThemesSection`](../../common/src/commonMain/kotlin/chat/simplex/common/views/usersettings/Appearance.kt#L582)) | `profileChatLayout` of the current user, or of none for the app theme destination |
 | Customize theme, profile theme, colour editors | the same, through `profileLayoutIsTerminal` and the `terminal` parameter of `editColor` |
 
 With the value true:
 
-- the preview draws two terminal rows ("alice", then "bob" in the own colour) without gutter, the gap between them by `terminalRowGap` and `TERMINAL_SENDER_TOP_GAP`, as in the chat; [`PreviewInEitherLayout`](../../common/src/commonMain/kotlin/chat/simplex/common/views/usersettings/Appearance.kt#L337) measures both layouts and shows the active one centred in the larger height, so a layout switch keeps the preview height;
+- the preview draws two terminal rows ("alice", then "bob" in the own colour) without gutter, the gap between them by `terminalRowGap` and `TERMINAL_SENDER_TOP_GAP`, as in the chat; [`PreviewInEitherLayout`](../../common/src/commonMain/kotlin/chat/simplex/common/views/usersettings/Appearance.kt#L338) measures both layouts and shows the active one centred in the larger height, so a layout switch keeps the preview height;
 - the preview and the preset tiles show the wallpaper colour without the image;
 - the custom image tile, the image scale, the scale slider and the wallpaper accent row are hidden.
 
@@ -523,5 +523,5 @@ Layout controls:
 | Control | Values | Stored in |
 |---|---|---|
 | Chat theme screen, first section ([`ChatLayoutSection`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatInfoView.kt#L1313)) | the chat default, "(chat)" when the chat layout is the default, otherwise "(default)"; the other layout | chat theme record, by [`setChatLayout`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatInfoView.kt#L1382) and `apiSetChatUIThemes` |
-| Appearance › Themes, app theme destination ([`ChatLayoutRow`](../../common/src/commonMain/kotlin/chat/simplex/common/views/usersettings/Appearance.kt#L950)) | Classic, Terminal; the selection is `profileChatLayout(null)` | `appPrefs.chatLayout` |
+| Appearance › Themes, app theme destination ([`ChatLayoutRow`](../../common/src/commonMain/kotlin/chat/simplex/common/views/usersettings/Appearance.kt#L951)) | Classic, Terminal; the selection is `profileChatLayout(null)` | `appPrefs.chatLayout` |
 | Appearance › Themes, profile destination | `profileChatLayout(null)` "(default)"; the other layout | profile theme record, by `saveThemeToDatabase` and `apiSetUserUIThemes` |
