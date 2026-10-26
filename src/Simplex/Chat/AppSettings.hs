@@ -58,7 +58,8 @@ data AppSettings = AppSettings
     uiCurrentThemeIds :: Maybe (Map ThemeColorScheme Text),
     uiThemes :: Maybe [UITheme],
     oneHandUI :: Maybe Bool,
-    chatBottomBar :: Maybe Bool
+    chatBottomBar :: Maybe Bool,
+    uiChatLayout :: Maybe ChatLayout
   }
   deriving (Show)
 
@@ -109,7 +110,8 @@ defaultAppSettings =
       uiCurrentThemeIds = Nothing,
       uiThemes = Nothing,
       oneHandUI = Just True,
-      chatBottomBar = Just True
+      chatBottomBar = Just True,
+      uiChatLayout = Just CLClassic
     }
 
 defaultParseAppSettings :: AppSettings
@@ -147,7 +149,8 @@ defaultParseAppSettings =
       uiCurrentThemeIds = Nothing,
       uiThemes = Nothing,
       oneHandUI = Nothing,
-      chatBottomBar = Nothing
+      chatBottomBar = Nothing,
+      uiChatLayout = Nothing
     }
 
 combineAppSettings :: AppSettings -> AppSettings -> AppSettings
@@ -185,7 +188,8 @@ combineAppSettings platformDefaults storedSettings =
       uiCurrentThemeIds = p uiCurrentThemeIds,
       uiThemes = p uiThemes,
       oneHandUI = p oneHandUI,
-      chatBottomBar = p chatBottomBar
+      chatBottomBar = p chatBottomBar,
+      uiChatLayout = p uiChatLayout
     }
   where
     p :: (AppSettings -> Maybe a) -> Maybe a
@@ -240,6 +244,7 @@ instance FromJSON AppSettings where
     uiThemes <- p "uiThemes"
     oneHandUI <- p "oneHandUI"
     chatBottomBar <- p "chatBottomBar"
+    uiChatLayout <- p "uiChatLayout"
     pure
       AppSettings
         { appPlatform,
@@ -274,7 +279,8 @@ instance FromJSON AppSettings where
           uiCurrentThemeIds,
           uiThemes,
           oneHandUI,
-          chatBottomBar
+          chatBottomBar,
+          uiChatLayout
         }
     where
       p key = v .:? key <|> pure Nothing

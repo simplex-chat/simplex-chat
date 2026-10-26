@@ -10,6 +10,8 @@ module StoreService.Config
     SpeedPolicy (..),
     speedPolicyName,
     PollConfig (..),
+    AppleStoreConfig (..),
+    PlayStoreConfig (..),
     BadgeIssuerKey (..),
     GroupConfig (..),
     NamesConfig (..),
@@ -40,6 +42,8 @@ import qualified Data.ByteString.Char8 as B
 import Data.Char (GeneralCategory (..), generalCategory, isAsciiLower, isAsciiUpper, isControl, isDigit, isSpace)
 import Data.Ini (Ini, iniGlobals, iniParser, keyValueParser, keys, lookupValue, sectionParser, sections)
 import Data.List (nub, (\\))
+import Data.List.NonEmpty (NonEmpty)
+import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust, isNothing)
@@ -120,6 +124,20 @@ instance Show StripeConfig where
 data PollConfig = PollConfig {pWaitingSeconds :: Int, pIdleSeconds :: Int}
   deriving (Eq, Show)
 
+data AppleStoreConfig = AppleStoreConfig
+  { aBundleId :: Text,
+    aRootCertificates :: NonEmpty FilePath
+  }
+  deriving (Eq, Show)
+
+data PlayStoreConfig = PlayStoreConfig
+  { gPackageName :: Text,
+    gServiceAccountFile :: FilePath,
+    gApiHost :: Text,
+    gTokenUrl :: Text
+  }
+  deriving (Eq, Show)
+
 data BadgeIssuerKey = BadgeIssuerKey
   { keyIdx :: Int,
     secretKey :: BBSSecretKey
@@ -178,11 +196,15 @@ data ServiceConfig = ServiceConfig
     btcpay :: Maybe BTCPayConfig,
     stripe :: Maybe StripeConfig,
     poll :: PollConfig,
+    appleStore :: Maybe AppleStoreConfig,
+    playStore :: Maybe PlayStoreConfig,
     issuer :: Maybe BadgeIssuerKey,
     -- | Trusted beside the clients' keys; only with names on the local chain.
     devIssuerKeys :: [BadgeIssuerKey],
     group :: Maybe GroupConfig,
-    names :: Maybe NamesConfig
+    names :: Maybe NamesConfig,
+    -- Local testing only; anyone who can reach the service can mint badges with any well-formed receipt.
+    devAcceptUnverifiedStoreReceipts :: Bool
   }
   deriving (Eq, Show)
 
@@ -194,6 +216,12 @@ defaultStripeHost = "https://api.stripe.com"
 
 defaultSessionMinutes :: Int
 defaultSessionMinutes = 60
+
+defaultPlayApiHost :: Text
+defaultPlayApiHost = "https://androidpublisher.googleapis.com"
+
+defaultPlayTokenUrl :: Text
+defaultPlayTokenUrl = "https://oauth2.googleapis.com/token"
 
 -- | At most one day, so a card order expires long before the poller stops checking it at 72 hours.
 minSessionMinutes, maxSessionMinutes :: Int
@@ -285,7 +313,10 @@ knownSettings =
     ("btcpay", ["host", "api_key", "store_id", "webhook_secret", "expiry_minutes", "speed_policy", "payment_tolerance"]),
     ("stripe", ["secret_key", "publishable_key", "webhook_secret", "session_minutes"]),
     ("poll", ["waiting_seconds", "idle_seconds"]),
+    ("apple", ["bundle_id", "root_certificates"]),
+    ("google", ["package_name", "service_account_file"]),
     ("group", ["display_name", "description"]),
+    ("dev", ["accept_unverified_store_receipts"]),
     ("issuer", ["index", "private_key", "dev_keys"]),
     ("names", ["tld", "terms_version", "terms_url", "years", "term_start", "term_slack_seconds", "reveal_margin_seconds", "max_order_moves"]),
     ("chain", ["rpc_url", "chain_id", "controller", "sponsor", "base_registrar", "resolver", "service_key", "confirmations", "gas_limit_cap", "max_fee_per_gas"])
@@ -331,16 +362,24 @@ parseConfig ini = do
     Left "issuer.dev_keys is refused with [btcpay] or [stripe], since a run with dev keys takes no payments"
   pWaitingSeconds <- cadence "waiting_seconds" 3
   pIdleSeconds <- cadence "idle_seconds" 60
+  apple <- appleSection
+  google <- googleSection
+  devUnverifiedReceipts <- bool "dev" "accept_unverified_store_receipts" False
+  when (devUnverifiedReceipts && (isJust apple || isJust google)) $
+    Left "[dev] accept_unverified_store_receipts must be off where [apple] or [google] verifies store receipts"
   pure
     ServiceConfig
       { listener = ListenerConfig {lHost, lPort, lStaticDir, lServeWebapp, lWebappExportDir, lTrustForwardedFor, lNamesStaticDir, lNamesExportDir, lNamesHosts},
         btcpay = btc,
         stripe = str,
         poll = PollConfig {pWaitingSeconds, pIdleSeconds},
+        appleStore = apple,
+        playStore = google,
         issuer = iss,
         devIssuerKeys = devKeys,
         group = grp,
-        names = nms
+        names = nms,
+        devAcceptUnverifiedStoreReceipts = devUnverifiedReceipts
       }
   where
     hasSection s = s `elem` sections ini
@@ -444,6 +483,22 @@ parseConfig ini = do
           sSessionMinutes <- sessionMinutes
           let sHost = defaultStripeHost
           pure (Just StripeConfig {sSecretKey, sPublishableKey, sWebhookSecret, sSessionMinutes, sHost})
+    appleSection
+      | not (hasSection "apple") = Right Nothing
+      | otherwise = do
+          aBundleId <- required "apple" "bundle_id"
+          aRootCertificates <- rootCertificates
+          pure (Just AppleStoreConfig {aBundleId, aRootCertificates})
+    rootCertificates = do
+      v <- required "apple" "root_certificates"
+      maybe (Left "apple.root_certificates must list at least one file") Right $
+        L.nonEmpty $ map T.unpack $ filter (not . T.null) $ map T.strip $ T.splitOn "," v
+    googleSection
+      | not (hasSection "google") = Right Nothing
+      | otherwise = do
+          gPackageName <- required "google" "package_name"
+          gServiceAccountFile <- T.unpack <$> required "google" "service_account_file"
+          pure (Just PlayStoreConfig {gPackageName, gServiceAccountFile, gApiHost = defaultPlayApiHost, gTokenUrl = defaultPlayTokenUrl})
     namesSection
       | not (hasSection "names") = case filter hasSection ["chain", "community"] of
           s : _ -> Left ("[" <> T.unpack s <> "] is set but [names] is absent, so nothing would use it")

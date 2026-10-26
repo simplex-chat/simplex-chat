@@ -93,12 +93,12 @@ ownProfile = linkDataProfile "store" "SimpleX store" Nothing
 
 contactData :: Bool -> Profile -> ConnectionPlan
 contactData business profile =
-  CPContactAddress CAPOk {contactSLinkData_ = Just ContactShortLinkData {profile, message = Nothing, business, localBadge = Nothing}, ownerVerification = Nothing} Nothing
+  CPContactAddress CAPOk {contactSLinkData_ = Just ContactShortLinkData {profile, message = Nothing, business, localBadge = Nothing, chatLayout = Nothing}, ownerVerification = Nothing} Nothing
 
 channelData :: Maybe Int64 -> GroupShortLinkData
 channelData count =
   GroupShortLinkData
-    { groupProfile = GroupProfile {displayName = "news", fullName = "Bakery news", shortDescr = Nothing, description = Nothing, image = Nothing, publicGroup = Nothing, groupPreferences = Nothing, memberAdmission = Nothing},
+    { groupProfile = GroupProfile {displayName = "news", fullName = "Bakery news", shortDescr = Nothing, description = Nothing, image = Nothing, publicGroup = Nothing, groupPreferences = Nothing, memberAdmission = Nothing, chatLayout = Nothing},
       publicGroupData = PublicGroupData <$> count
     }
 

@@ -18,14 +18,44 @@ on:
       - "apps/simplex-store-service/**"
       - "apps/simplex-broadcast-bot/**"
       - "apps/simplex-directory-service/**"
+      - "apps/multiplatform/**"
+      - "apps/ios/**"
       - "tests/**"
       - "bots/src/**"
       - "simplex-chat.cabal"
       - "cabal.project"
       - "Dockerfile*"
       - "scripts/ci/**"
+      - "scripts/ci/ios-stub-libs.sh"
       - "scripts/desktop/**"
       - ".github/**"
+      - "packages/simplex-chat-nodejs/**"
+      - "packages/simplex-chat-client/types/typescript/**"
+      - "packages/simplex-chat-python/**"
+      - "scripts/ci/package-tests.sh"
+      - "apps/simplex-store-service/web/**"
+      - "scripts/ci/packages_release.py"
+      - "scripts/ci/test_packages_release.py"
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+    inputs:
+      tests:
+        description: "hspec match patterns, one per line; / runs all tests, empty runs none"
+        type: string
+        default: ""
+      base:
+        description: the branch that the changes are compared with
+        type: string
+        default: master
+
+env:
+  opt: ${{ github.event_name == 'push' && 'O2' || 'O0' }}
+  ghc_options: ${{ github.event_name != 'push' && '--ghc-options=-O0' || '' }}
+  release: ${{ startsWith(github.ref, 'refs/tags/v') }}
+  branch: ${{ github.base_ref || github.ref_name }}
+  cache_o0: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/stable') }}
+  release_branch: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/stable') && github.ref_name || '' }}
+  ZSTD_CLEVEL: 9
 
 # This workflow uses custom actions (prepare-build and prepare-release) defined in:
 # 
@@ -66,7 +96,8 @@ jobs:
 # =============================
 
 # Create release, but only if it's triggered by tag push.
-# Create simplex-chat-libs release core-<version>, but only if the head commit of a push to master or stable changes the version in simplex-chat.cabal.
+# On pushes to master or stable: claim the simplex-chat-libs release core-<version of simplex-chat.cabal> for the branch
+# and create its draft, create the draft of a missing add-on release, and find the package versions to publish.
 # On pull requests and other pushes, this job will always complete.
 
 # Secrets:
@@ -79,23 +110,60 @@ jobs:
   maybe-release:
     runs-on: ubuntu-latest
     outputs:
-      libs_tag: ${{ steps.libs_commit.outputs.tag }}
-      core_changed: ${{ steps.core.outputs.core }}
+      libs_tag: ${{ steps.libs.outputs.tag }}
+      core_changed: ${{ steps.changes.outputs.core }}
+      haskell: ${{ steps.changes.outputs.haskell }}
+      kotlin: ${{ steps.changes.outputs.kotlin }}
+      ios: ${{ steps.changes.outputs.ios }}
+      addon_tag: ${{ steps.addon.outputs.tag }}
+      addon_draft: ${{ steps.addon.outputs.draft }}
+      libs_latest: ${{ steps.latest_libs.outputs.tag }}
+      publish_types: ${{ steps.libs.outputs.tag && steps.publish.outputs.types_version || '' }}
+      publish_nodejs: ${{ steps.publish.outputs.nodejs_version }}
+      publish_python: ${{ steps.publish.outputs.python_version }}
+      publish: ${{ steps.publish.outputs.nodejs_version || steps.publish.outputs.python_version }}
+      packages: ${{ steps.changes.outputs.packages }}
+      scopes: ${{ steps.changes.outputs.scopes }}
+      reduced: ${{ github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == true }}
     steps:
+      - name: Reject a manual run on a tag
+        if: github.event_name == 'workflow_dispatch' && github.ref_type == 'tag'
+        run: |
+          echo "::error::A manual run starts on a branch; to retry a release, re-run the jobs of its tag push."
+          exit 1
+
       - name: Clone project
-        if: github.event_name == 'push' || github.event_name == 'pull_request'
         uses: actions/checkout@v3
         with:
           fetch-depth: 2
 
-      - name: Check chat core change
-        id: core
-        if: github.event_name == 'pull_request'
+      - name: Check changes
+        id: changes
+        shell: bash
         env:
           BASE: ${{ github.event.pull_request.base.sha }}
+          BASE_BRANCH: ${{ inputs.base }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          git fetch -q --depth=1 origin "$BASE"
-          python3 scripts/ci/packages_release.py changes "$BASE" | grep '^core=' >> "$GITHUB_OUTPUT"
+          case "$GITHUB_EVENT_NAME" in
+            pull_request)
+              git fetch -q --depth=1 origin "$BASE"
+              python3 scripts/ci/packages_release.py changes "$BASE"
+              ;;
+            workflow_dispatch)
+              base=$(gh api "repos/$GITHUB_REPOSITORY/compare/$BASE_BRANCH...$GITHUB_REF_NAME" --jq .merge_base_commit.sha)
+              git fetch -q --depth=1 origin "$base"
+              python3 scripts/ci/packages_release.py changes "$base"
+              ;;
+            *)
+              echo "haskell=true"
+              if [ "$GITHUB_REF_TYPE" = branch ]; then
+                echo "kotlin=true"
+                echo "ios=true"
+                python3 scripts/ci/packages_release.py scopes
+              fi
+              ;;
+          esac >> "$GITHUB_OUTPUT"
 
       - name: Build changelog
         id: build_changelog
@@ -121,47 +189,68 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Check version change
-        id: check_version
-        if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/stable'
+      - name: Library release
+        id: libs
+        if: env.release_branch
         shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.NODEJS_REPO_TOKEN }}
+          LIBS_REPOSITORY: ${{ github.repository }}-libs
         run: |
           version=$(sed -n 's/^version: *//p' simplex-chat.cabal)
-          prev_version=$(git show HEAD^1:simplex-chat.cabal | sed -n 's/^version: *//p')
-          if [ "$version" != "$prev_version" ]; then
-            echo "version=$version" >> $GITHUB_OUTPUT
+          tag=core-$version
+          claim_output=$(python3 scripts/ci/packages_release.py claim-core "$version" "$GITHUB_SHA" "$release_branch")
+          eval "$claim_output"
+          if [ "$claim" = skip ]; then
+            echo "::notice title=Library release::core $version is recorded for another commit"
+            exit 0
+          fi
+          status_output=$(python3 scripts/ci/packages_release.py release-status "$tag")
+          eval "$status_output"
+          if [ "$status" = absent ]; then
+            gh release create "$tag" --repo "$LIBS_REPOSITORY" --draft --title "$tag" --notes "" ${commit:+--target "$commit"}
+          fi
+          if [ "$status" != published ]; then
+            echo "tag=$tag" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Clone libs repo
-        if: steps.check_version.outputs.version
-        uses: actions/checkout@v3
-        with:
-          repository: ${{ github.repository }}-libs
-          token: ${{ secrets.NODEJS_REPO_TOKEN }}
-          path: libs-repo
-
-      - name: Commit and tag libs release
-        id: libs_commit
-        if: steps.check_version.outputs.version
-        working-directory: libs-repo
+      - name: Add-on release
+        id: addon
+        if: env.release_branch
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.NODEJS_REPO_TOKEN }}
+          LIBS_REPOSITORY: ${{ github.repository }}-libs
         run: |
-          tag=core-${{ steps.check_version.outputs.version }}
-          printf 'version: %s\ncommit: %s\n' "${{ steps.check_version.outputs.version }}" "${{ github.sha }}" > core-release
-          git config user.name "SimpleX Chat"
-          git config user.email "build@simplex.chat"
-          git add core-release
-          git commit -m "$tag"
-          git tag "$tag"
-          git push --atomic origin HEAD "$tag"
-          echo "tag=$tag" >> $GITHUB_OUTPUT
+          addon_output=$(python3 scripts/ci/packages_release.py addon-release)
+          eval "$addon_output"
+          if [ "$status" = absent ]; then
+            tag=nodejs-addon-${GITHUB_SHA::7}
+            gh release create "$tag" --repo "$LIBS_REPOSITORY" --draft --title "$tag" --notes "$notes"
+          fi
+          if [ "$status" != published ]; then
+            echo "tag=$tag" >> "$GITHUB_OUTPUT"
+            echo "draft=true" >> "$GITHUB_OUTPUT"
+          fi
 
-      - name: Create libs release
-        if: steps.check_version.outputs.version
-        uses: softprops/action-gh-release@v2
-        with:
-          repository: ${{ github.repository }}-libs
-          tag_name: ${{ steps.libs_commit.outputs.tag }}
-          token: ${{ secrets.NODEJS_REPO_TOKEN }}
+      - name: Latest library
+        id: latest_libs
+        if: steps.addon.outputs.draft
+        env:
+          GH_TOKEN: ${{ secrets.NODEJS_REPO_TOKEN }}
+          LIBS_REPOSITORY: ${{ github.repository }}-libs
+        run: python3 scripts/ci/packages_release.py latest-libs --branch "$release_branch" >> "$GITHUB_OUTPUT"
+
+      - name: Versions to publish
+        id: publish
+        if: env.release_branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LIBS_REPOSITORY: ${{ github.repository }}-libs
+          NPM_SCOPE: ${{ vars.NPM_SCOPE }}
+          PYPI_PROJECT: ${{ vars.PYPI_PROJECT }}
+          PYPI_URL: ${{ vars.PYPI_URL }}
+        run: python3 scripts/ci/packages_release.py publish-plan >> "$GITHUB_OUTPUT"
 
 # =========================
 #        Linux Build
@@ -170,10 +259,17 @@ jobs:
   build-linux:
     name: "ubuntu-${{ matrix.os }}-${{ matrix.arch }} (CLI,Desktop), GHC: ${{ matrix.ghc }}"
     needs: [maybe-release, variables]
+    if: needs.maybe-release.outputs.haskell == 'true' || needs.maybe-release.outputs.scopes != '' || (needs.maybe-release.outputs.reduced == 'true' && (needs.maybe-release.outputs.kotlin == 'true' || needs.maybe-release.outputs.packages == 'true'))
     runs-on: ${{ matrix.runner }}
-    concurrency:
+    permissions:
+      contents: write
+      packages: write
+    env:
+      image_cache: ghcr.io/${{ github.repository_owner }}/simplex-chat-build-cache:${{ matrix.os }}-${{ matrix.arch }}-ghc${{ matrix.ghc }}
+      source_hashes: dist-newstyle/sources.sha256
+    concurrency: &linux-concurrency
       group: ${{ github.workflow }}-${{ github.ref }}-linux-${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.ghc }}-${{ needs.maybe-release.outputs.libs_tag }}
-      cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/v') && !needs.maybe-release.outputs.libs_tag }}
+      cancel-in-progress: ${{ github.event_name != 'push' }}
     strategy:
       fail-fast: false
       matrix:
@@ -182,42 +278,16 @@ jobs:
             os_underscore: 22_04
             arch: x86_64
             runner: "ubuntu-22.04"
-            ghc: "8.10.7"
-            hash: 'sha256:5c8b2c0a6c745bc177669abfaa716b4bc57d58e2ea3882fb5da67f4d59e3dda5'
-            should_run: ${{ !(github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) }}
-          - os: 22.04
-            os_underscore: 22_04
-            arch: x86_64
-            runner: "ubuntu-22.04"
-            should_run: true
+            should_run: ${{ needs.maybe-release.outputs.haskell == 'true' }}
             ghc: ${{ needs.variables.outputs.GHC_VER }}
             hash: 'sha256:5c8b2c0a6c745bc177669abfaa716b4bc57d58e2ea3882fb5da67f4d59e3dda5'
             libs: true
-          - os: 24.04
-            os_underscore: 24_04
-            arch: x86_64
-            runner: "ubuntu-24.04"
-            should_run: true
-            ghc: ${{ needs.variables.outputs.GHC_VER }}
-            hash: 'sha256:98ff7968124952e719a8a69bb3cccdd217f5fe758108ac4f21ad22e1df44d237'
-          - os: 22.04
-            os_underscore: 22_04
-            arch: aarch64
-            runner: "ubuntu-22.04-arm"
-            should_run: true
-            ghc: ${{ needs.variables.outputs.GHC_VER }}
-            hash: 'sha256:6a62a4157b8775eaf4959cb629e757d32d39d1f4c8ac1b0ddc2510b555cf72f3'
-            libs: true
-          - os: 24.04
-            os_underscore: 24_04
-            arch: aarch64
-            runner: "ubuntu-24.04-arm"
-            should_run: true
-            ghc: ${{ needs.variables.outputs.GHC_VER }}
-            hash: 'sha256:68434214381cb38287104e629fe8ee720167dd98cbb36ab1cbbab342515fa6ab'
-    steps:
+            kotlin: ${{ needs.maybe-release.outputs.reduced == 'true' && needs.maybe-release.outputs.kotlin == 'true' }}
+            packages: ${{ needs.maybe-release.outputs.reduced == 'true' && needs.maybe-release.outputs.packages == 'true' }}
+            scope_tests: ${{ needs.maybe-release.outputs.scopes != '' }}
+    steps: &linux-steps
       - name: Checkout Code
-        if: matrix.should_run == true
+        if: matrix.should_run == true || matrix.kotlin == true || matrix.packages == true || matrix.scope_tests == true
         uses: actions/checkout@v3
         with:
           submodules: recursive
@@ -236,25 +306,28 @@ jobs:
 
       # Otherwise we run out of disk space with Docker build
       - name: Free disk space
-        if: matrix.should_run == true
+        if: (matrix.should_run == true || matrix.kotlin == true) && needs.maybe-release.outputs.reduced != 'true'
         shell: bash
         run: ./scripts/ci/linux_util_free_space.sh
 
-      - name: Restore cached build
-        if: matrix.should_run == true
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cabal/store
-            dist-newstyle
-          key: ubuntu-${{ matrix.os }}-${{ matrix.arch }}-ghc${{ matrix.ghc }}-${{ hashFiles('cabal.project', 'simplex-chat.cabal') }}
-
       - name: Set up Docker Buildx
-        if: matrix.should_run == true
+        if: matrix.should_run == true || matrix.kotlin == true
         uses: simplex-chat/docker-setup-buildx-action@v3
 
+      - name: Log in to GitHub Container Registry
+        if: (matrix.should_run == true || matrix.kotlin == true) && env.release != 'true'
+        shell: bash
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "$GHCR_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Compute image cache week
+        id: week
+        if: (matrix.should_run == true || matrix.kotlin == true) && env.release != 'true'
+        run: echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+
       - name: Build and cache Docker image
-        if: matrix.should_run == true
+        if: matrix.should_run == true || matrix.kotlin == true
         uses: simplex-chat/docker-build-push-action@v6
         with:
           context: .
@@ -267,24 +340,104 @@ jobs:
             GHC=${{ matrix.ghc }}
             USER_UID=${{ steps.ids.outputs.uid }}
             USER_GID=${{ steps.ids.outputs.gid }}
+          cache-from: ${{ env.release != 'true' && format('type=registry,ref={0}-{1}', env.image_cache, steps.week.outputs.week) || '' }}
+          cache-to: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && format('type=registry,ref={0}-{1},mode=max,ignore-error=true', env.image_cache, steps.week.outputs.week) || '' }}
 
       # Docker needs these flags for AppImage build:
       # --device /dev/fuse
       # --cap-add SYS_ADMIN
       # --security-opt apparmor:unconfined
       - name: Start container
-        if: matrix.should_run == true
+        if: matrix.should_run == true || matrix.kotlin == true
         shell: bash
         run: |
+          mkdir -p ~/.cabal
           docker run -t -d \
             --device /dev/fuse \
             --cap-add SYS_ADMIN \
             --security-opt apparmor:unconfined \
             --name builder \
-            -v ~/.cabal:/root/.cabal \
+            -e CABAL_DIR=/home/builder/.cabal \
+            -v ~/.cabal:/home/builder/.cabal \
             -v /home/runner/work/_temp:/home/runner/work/_temp \
             -v ${{ github.workspace }}:/project \
             build/${{ matrix.os }}:latest
+
+      - name: Compute cache key prefixes
+        id: keys
+        if: matrix.should_run == true && env.release != 'true'
+        run: |
+          toolchain=$(docker exec builder dpkg-query -W -f '${db:Status-Status} ${binary:Package} ${Version}\n' 'binutils*' 'cpp*' 'gcc*' '*-dev' | grep '^installed ' | sha256sum | cut -c1-16)
+          target=ubuntu-${{ matrix.os }}-${{ matrix.arch }}-ghc${{ matrix.ghc }}-$toolchain
+          echo "deps=deps-$target" >> "$GITHUB_OUTPUT"
+          echo "dist=dist-$target" >> "$GITHUB_OUTPUT"
+          echo "dist_lib=dist-lib-$target" >> "$GITHUB_OUTPUT"
+
+      - name: Restore dependencies from cache
+        id: restore-deps
+        if: matrix.should_run == true && env.release != 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cabal/store
+          key: ${{ steps.keys.outputs.deps }}-${{ env.branch }}-${{ github.sha }}
+          restore-keys: |
+            ${{ steps.keys.outputs.deps }}-${{ env.branch }}-
+            ${{ steps.keys.outputs.deps }}-
+
+      - name: Warn if dependencies not in cache
+        if: matrix.should_run == true && env.release != 'true' && steps.restore-deps.outputs.cache-matched-key == ''
+        run: echo "::warning title=Cache miss::${{ steps.keys.outputs.deps }}-${{ env.branch }}"
+
+      - name: Restore source repositories from cache
+        id: restore-src
+        if: matrix.should_run == true && env.release != 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: dist-newstyle/src
+          key: src-${{ runner.os }}-${{ hashFiles('cabal.project') }}
+          restore-keys: src-${{ runner.os }}-
+
+      - name: Warn if source repositories not in cache
+        if: matrix.should_run == true && env.release != 'true' && steps.restore-src.outputs.cache-matched-key == ''
+        run: echo "::warning title=Cache miss::src-${{ runner.os }}"
+
+      - name: Restore build directory from cache
+        id: restore-build
+        if: matrix.should_run == true && env.release != 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            dist-newstyle/*
+            !dist-newstyle/src
+          key: ${{ steps.keys.outputs.dist }}-${{ env.opt }}-${{ env.branch }}-${{ github.sha }}
+          restore-keys: |
+            ${{ steps.keys.outputs.dist }}-${{ env.opt }}-${{ env.branch }}-
+            ${{ steps.keys.outputs.dist }}-${{ env.opt }}-
+
+      - name: Warn if build directory not in cache
+        if: matrix.should_run == true && env.release != 'true' && steps.restore-build.outputs.cache-matched-key == ''
+        run: echo "::warning title=Cache miss::${{ steps.keys.outputs.dist }}-${{ env.opt }}-${{ env.branch }}"
+
+      - name: Restore library build directory from cache
+        id: restore-build-lib
+        if: env.release != 'true' && matrix.libs && needs.maybe-release.outputs.core_changed && matrix.arch == 'x86_64' && (needs.maybe-release.outputs.reduced != 'true' || matrix.packages == true)
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            dist-lib/*
+            !dist-lib/src
+          key: ${{ steps.keys.outputs.dist_lib }}-${{ env.branch }}-${{ github.sha }}
+          restore-keys: |
+            ${{ steps.keys.outputs.dist_lib }}-${{ env.branch }}-
+            ${{ steps.keys.outputs.dist_lib }}-
+
+      - name: Warn if library build directory not in cache
+        if: steps.restore-build-lib.outcome == 'success' && steps.restore-build-lib.outputs.cache-matched-key == ''
+        run: echo "::warning title=Cache miss::${{ steps.keys.outputs.dist_lib }}-${{ env.branch }}"
+
+      - name: Set old timestamps on unchanged sources (GHC 8.10.7)
+        if: matrix.ghc == '8.10.7' && steps.restore-build.outputs.cache-matched-key != '' && hashFiles(env.source_hashes) != ''
+        run: scripts/ci/source-timestamps.sh restore ${{ env.source_hashes }}
 
       - name: Prepare cabal.project.local
         if: matrix.should_run == true
@@ -294,49 +447,88 @@ jobs:
           echo "package direct-sqlcipher" >> cabal.project.local
           echo "    flags: +openssl"      >> cabal.project.local
 
-      # chmod/git commands are used to workaround permission issues when cache is restored
       - name: Build CLI
+        id: build-cli
         if: matrix.should_run == true
         shell: docker exec -t builder sh -eu {0}
         run: |
-          cabal clean
+          scripts/ci/prune-old-builds.sh dist-newstyle
           cabal update
-          cabal build -j --enable-tests
+          cabal build -j --enable-tests ${{ env.ghc_options }}
           mkdir -p /out
           for i in simplex-chat simplex-chat-test; do
             bin=$(find /project/dist-newstyle -name "$i" -type f -executable)
             chmod +x "$bin"
-            mv "$bin" /out/
+            cp "$bin" /out/
           done
           strip /out/simplex-chat
 
-      # Also for pull requests that change the chat core, for the package tests (packages-pr).
+      # Also for pull requests that change the chat core, for the package tests.
       - name: Build library
-        if: matrix.libs && (needs.maybe-release.outputs.libs_tag || (needs.maybe-release.outputs.core_changed && matrix.arch == 'x86_64'))
+        id: build-lib
+        if: matrix.libs && (needs.maybe-release.outputs.libs_tag || (needs.maybe-release.outputs.core_changed && matrix.arch == 'x86_64' && (needs.maybe-release.outputs.reduced != 'true' || matrix.packages == true)))
         shell: docker exec -t builder sh -eu {0}
         run: |
-          SKIP_VLC=1 scripts/desktop/build-lib-linux.sh
+          scripts/ci/prune-old-builds.sh dist-lib
+          mkdir -p dist-lib
+          rm -rf dist-lib/src
+          ln -s ../dist-newstyle/src dist-lib/src
+          DIST_DIR=dist-lib SKIP_VLC=1 scripts/desktop/build-lib-linux.sh
           name=simplex-chat-libs-linux-${{ matrix.arch }}
           mkdir -p release-libs/$name/libs
           find apps/multiplatform/common/src/commonMain/cpp/desktop/libs/linux-${{ matrix.arch }} -maxdepth 1 -type f -exec cp {} release-libs/$name/libs/ \;
           (cd release-libs/$name && zip -r ../$name.zip libs)
 
-      - name: Upload library artifact
-        if: matrix.libs && needs.maybe-release.outputs.core_changed && matrix.arch == 'x86_64'
-        uses: actions/upload-artifact@v7
+      - name: Record source hashes (GHC 8.10.7)
+        if: matrix.should_run == true && matrix.ghc == '8.10.7'
+        shell: docker exec -t builder sh -eu {0}
+        run: scripts/ci/source-timestamps.sh record ${{ env.source_hashes }}
+
+      - name: Compute dependency cache key
+        id: hash-deps
+        if: matrix.should_run == true && env.release != 'true'
+        shell: bash
+        run: echo "hash=$(ls ~/.cabal/store/ghc-*/ | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
+
+      - name: Save dependencies to cache
+        if: matrix.should_run == true && env.release != 'true' && steps.restore-deps.outputs.cache-matched-key != format('{0}-{1}-{2}', steps.keys.outputs.deps, env.branch, steps.hash-deps.outputs.hash)
+        uses: actions/cache/save@v4
         with:
-          name: simplex-chat-libs-linux-${{ matrix.arch }}
-          path: release-libs/simplex-chat-libs-linux-${{ matrix.arch }}.zip
-          if-no-files-found: error
+          path: ~/.cabal/store
+          key: ${{ steps.keys.outputs.deps }}-${{ env.branch }}-${{ steps.hash-deps.outputs.hash }}
+
+      - name: Save source repositories to cache
+        if: matrix.should_run == true && env.release != 'true' && matrix.libs && matrix.arch == 'x86_64' && steps.restore-src.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: dist-newstyle/src
+          key: src-${{ runner.os }}-${{ hashFiles('cabal.project') }}
+
+      - name: Save build directory to cache
+        if: matrix.should_run == true && env.release != 'true' && steps.restore-build.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            dist-newstyle/*
+            !dist-newstyle/src
+          key: ${{ steps.keys.outputs.dist }}-${{ env.opt }}-${{ env.branch }}-${{ github.sha }}
+
+      - name: Save library build directory to cache
+        if: steps.build-lib.outcome == 'success' && env.release != 'true' && steps.restore-build-lib.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            dist-lib/*
+            !dist-lib/src
+          key: ${{ steps.keys.outputs.dist_lib }}-${{ env.branch }}-${{ github.sha }}
 
       - name: Upload library
         if: needs.maybe-release.outputs.libs_tag && matrix.libs
-        uses: softprops/action-gh-release@v2
-        with:
-          repository: ${{ github.repository }}-libs
-          tag_name: ${{ needs.maybe-release.outputs.libs_tag }}
-          files: release-libs/*.zip
-          token: ${{ secrets.NODEJS_REPO_TOKEN }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.NODEJS_REPO_TOKEN }}
+          TAG: ${{ needs.maybe-release.outputs.libs_tag }}
+        run: gh release upload "$TAG" release-libs/*.zip --clobber --repo "${{ github.repository }}-libs"
 
       - name: Build CLI deb
         if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
@@ -446,13 +638,6 @@ jobs:
           github_ref: ${{ github.ref }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Fix permissions for cache
-        if: matrix.should_run == true
-        shell: bash
-        run: |
-          sudo chmod -R 777 dist-newstyle ~/.cabal
-          sudo chown -R $(id -u):$(id -g) dist-newstyle ~/.cabal
-
       - name: Mount RAM disk for tests
         if: matrix.should_run == true && matrix.arch == 'x86_64'
         shell: bash
@@ -465,23 +650,221 @@ jobs:
         if: matrix.should_run == true && matrix.arch == 'x86_64'
         timeout-minutes: 120
         shell: bash
+        env:
+          REDUCED: ${{ needs.maybe-release.outputs.reduced }}
+          TESTS: ${{ github.event_name == 'workflow_dispatch' && inputs.tests || '' }}
+          PR_BODY: ${{ github.event.pull_request.draft == true && github.event.pull_request.body || '' }}
+          ATTEMPTS: ${{ (github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) && 3 || 1 }}
+        run: scripts/ci/run-tests.sh ./simplex-chat-test
+
+      # Compiling the desktop and Android targets of :common in parallel exceeds the 2 GB Kotlin daemon heap.
+      # cmakeBuildAndCopy links the JNI library against libsimplex, which this job does not build.
+      - name: Build and test Kotlin apps
+        if: ${{ !cancelled() && matrix.kotlin == true }}
+        timeout-minutes: 90
+        shell: docker exec -t builder sh -eu {0}
         run: |
-          i=1
-          attempts=1
-          ${{ (github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) }} && attempts=3
-          while [ "$i" -le "$attempts" ]; do
-            if ./simplex-chat-test; then
-              break
-            else
-              echo "Attempt $i failed, retrying..."
-              i=$((i + 1))
-              sleep 1
-            fi
+          cd apps/multiplatform
+          ./gradlew --no-daemon --max-workers=1 \
+            :common:desktopTest \
+            :desktop:compileKotlinJvm -x :desktop:cmakeBuildAndCopy \
+            :android:compileGoogleDebugKotlin \
+            :android:testFossDebugUnitTest
+
+      - name: Setup Node.js
+        id: setup-node
+        if: ${{ !cancelled() && (matrix.packages == true || matrix.scope_tests == true || (matrix.should_run == true && matrix.libs && ((github.event_name == 'pull_request' && needs.maybe-release.outputs.reduced != 'true') || needs.maybe-release.outputs.addon_draft || needs.maybe-release.outputs.publish))) }}
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Setup Python
+        id: setup-python
+        if: ${{ !cancelled() && steps.setup-node.outcome == 'success' }}
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Package tests (pull request)
+        if: ${{ !cancelled() && steps.setup-python.outcome == 'success' && github.event_name != 'push' && steps.build-lib.outcome != 'failure' && ((needs.maybe-release.outputs.reduced != 'true' && matrix.should_run == true) || matrix.packages == true) }}
+        timeout-minutes: 30
+        shell: bash
+        env:
+          SIMPLEX_LIBS_DIR: ${{ steps.build-lib.outcome == 'success' && format('{0}/release-libs/simplex-chat-libs-linux-{1}/libs', github.workspace, matrix.arch) || '' }}
+        run: |
+          scripts/ci/package-tests.sh build linux-${{ matrix.arch }}
+          scripts/ci/package-tests.sh test
+
+      - name: Add-on
+        if: ${{ !cancelled() && steps.setup-python.outcome == 'success' && needs.maybe-release.outputs.addon_draft }}
+        timeout-minutes: 30
+        shell: bash
+        env:
+          LIBS_RELEASE: ${{ needs.maybe-release.outputs.libs_latest }}
+          ADDON_TAG: ${{ needs.maybe-release.outputs.addon_tag }}
+          LIBS_REPOSITORY: ${{ github.repository }}-libs
+          GH_TOKEN: ${{ secrets.NODEJS_REPO_TOKEN }}
+        run: scripts/ci/package-tests.sh addon linux-${{ matrix.arch }}
+
+      - name: Package tests
+        id: package-tests
+        if: ${{ !cancelled() && steps.setup-python.outcome == 'success' && needs.maybe-release.outputs.publish }}
+        timeout-minutes: 30
+        shell: bash
+        run: |
+          scripts/ci/package-tests.sh publish linux-${{ matrix.arch }} ${{ needs.maybe-release.outputs.publish_nodejs && 'nodejs' || '' }} ${{ needs.maybe-release.outputs.publish_python && 'python' || '' }}
+          echo "linux-${{ matrix.arch }}" > "$RUNNER_TEMP/package-tests"
+
+      - name: Package tests result
+        if: ${{ !cancelled() && steps.package-tests.outcome == 'success' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: package-tests-linux-${{ matrix.arch }}
+          path: ${{ runner.temp }}/package-tests
+
+      - name: Test changed scopes
+        if: ${{ !cancelled() && matrix.scope_tests == true && steps.setup-python.outcome == 'success' }}
+        timeout-minutes: 30
+        shell: bash
+        env:
+          SCOPES: ${{ needs.maybe-release.outputs.scopes }}
+        run: |
+          for scope in $SCOPES; do
+            scripts/ci/scope-tests.sh "$scope"
           done
-          if [ "$i" -gt "$attempts" ]; then
-            echo "All "$attempts" attempts failed."
-            exit 1
-          fi
+
+      - name: Remove -O2 build directory
+        id: remove-o2
+        if: env.cache_o0 == 'true' && !cancelled() && steps.build-cli.outcome == 'success'
+        shell: docker exec -t builder sh -eu {0}
+        run: find dist-newstyle -mindepth 1 -maxdepth 1 ! -name src -exec rm -rf {} +
+
+      - name: Restore -O0 build directory from cache
+        id: restore-build-o0
+        if: ${{ !cancelled() && steps.remove-o2.outcome == 'success' }}
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            dist-newstyle/*
+            !dist-newstyle/src
+          key: ${{ steps.keys.outputs.dist }}-O0-${{ env.branch }}-${{ github.sha }}
+          restore-keys: |
+            ${{ steps.keys.outputs.dist }}-O0-${{ env.branch }}-
+            ${{ steps.keys.outputs.dist }}-O0-
+
+      - name: Set old timestamps on unchanged sources for -O0 build (GHC 8.10.7)
+        if: ${{ !cancelled() && matrix.ghc == '8.10.7' && steps.restore-build-o0.outputs.cache-matched-key != '' && hashFiles(env.source_hashes) != '' }}
+        run: scripts/ci/source-timestamps.sh restore ${{ env.source_hashes }}
+
+      - name: Build at -O0 for pull request caches
+        id: build-o0
+        if: ${{ !cancelled() && steps.remove-o2.outcome == 'success' }}
+        shell: docker exec -t builder sh -eu {0}
+        run: |
+          scripts/ci/prune-old-builds.sh dist-newstyle
+          cabal build -j --enable-tests --ghc-options=-O0
+
+      - name: Record source hashes for -O0 build (GHC 8.10.7)
+        if: ${{ !cancelled() && matrix.ghc == '8.10.7' && steps.build-o0.outcome == 'success' }}
+        shell: docker exec -t builder sh -eu {0}
+        run: scripts/ci/source-timestamps.sh record ${{ env.source_hashes }}
+
+      - name: Save -O0 build directory to cache
+        if: ${{ !cancelled() && steps.build-o0.outcome == 'success' && steps.restore-build-o0.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            dist-newstyle/*
+            !dist-newstyle/src
+          key: ${{ steps.keys.outputs.dist }}-O0-${{ env.branch }}-${{ github.sha }}
+
+  build-linux-full:
+    name: "ubuntu-${{ matrix.os }}-${{ matrix.arch }} (CLI,Desktop), GHC: ${{ matrix.ghc }}"
+    needs: [maybe-release, variables]
+    if: needs.maybe-release.outputs.reduced != 'true' && (needs.maybe-release.outputs.haskell == 'true' || needs.maybe-release.outputs.kotlin == 'true')
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: write
+      packages: write
+    env:
+      image_cache: ghcr.io/${{ github.repository_owner }}/simplex-chat-build-cache:${{ matrix.os }}-${{ matrix.arch }}-ghc${{ matrix.ghc }}
+      source_hashes: dist-newstyle/sources.sha256
+    concurrency: *linux-concurrency
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: 24.04
+            os_underscore: 24_04
+            arch: x86_64
+            runner: "ubuntu-24.04"
+            should_run: ${{ needs.maybe-release.outputs.haskell == 'true' }}
+            ghc: ${{ needs.variables.outputs.GHC_VER }}
+            hash: 'sha256:98ff7968124952e719a8a69bb3cccdd217f5fe758108ac4f21ad22e1df44d237'
+            kotlin: ${{ needs.maybe-release.outputs.kotlin == 'true' }}
+    steps: *linux-steps
+
+  build-linux-push:
+    name: "ubuntu-${{ matrix.os }}-${{ matrix.arch }} (CLI,Desktop), GHC: ${{ matrix.ghc }}"
+    needs: [maybe-release, variables]
+    if: github.event_name == 'push'
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: write
+      packages: write
+    env:
+      image_cache: ghcr.io/${{ github.repository_owner }}/simplex-chat-build-cache:${{ matrix.os }}-${{ matrix.arch }}-ghc${{ matrix.ghc }}
+      source_hashes: dist-newstyle/sources.sha256
+      cache_o0: false
+    concurrency: *linux-concurrency
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: 22.04
+            os_underscore: 22_04
+            arch: aarch64
+            runner: "ubuntu-22.04-arm"
+            should_run: true
+            ghc: ${{ needs.variables.outputs.GHC_VER }}
+            hash: 'sha256:6a62a4157b8775eaf4959cb629e757d32d39d1f4c8ac1b0ddc2510b555cf72f3'
+            libs: true
+            kotlin: false
+          - os: 24.04
+            os_underscore: 24_04
+            arch: aarch64
+            runner: "ubuntu-24.04-arm"
+            should_run: true
+            ghc: ${{ needs.variables.outputs.GHC_VER }}
+            hash: 'sha256:68434214381cb38287104e629fe8ee720167dd98cbb36ab1cbbab342515fa6ab'
+            kotlin: false
+    steps: *linux-steps
+
+  build-linux-ghc8:
+    name: "ubuntu-${{ matrix.os }}-${{ matrix.arch }} (CLI,Desktop), GHC: ${{ matrix.ghc }}"
+    needs: [maybe-release, variables]
+    if: ${{ needs.maybe-release.outputs.reduced != 'true' && needs.maybe-release.outputs.haskell == 'true' && !(github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) }}
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: write
+      packages: write
+    env:
+      image_cache: ghcr.io/${{ github.repository_owner }}/simplex-chat-build-cache:${{ matrix.os }}-${{ matrix.arch }}-ghc${{ matrix.ghc }}
+      source_hashes: dist-newstyle/sources.sha256
+    concurrency: *linux-concurrency
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: 22.04
+            os_underscore: 22_04
+            arch: x86_64
+            runner: "ubuntu-22.04"
+            ghc: "8.10.7"
+            hash: 'sha256:5c8b2c0a6c745bc177669abfaa716b4bc57d58e2ea3882fb5da67f4d59e3dda5'
+            should_run: true
+            kotlin: false
+    steps: *linux-steps
 
 # =================================
 #   Linux PostgreSQL Library Build
@@ -506,14 +889,6 @@ jobs:
         shell: bash
         run: ./scripts/ci/linux_util_free_space.sh
 
-      - name: Restore cached build
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cabal/store
-            dist-newstyle
-          key: ubuntu-22.04-x86_64-postgres-ghc${{ needs.variables.outputs.GHC_VER }}-${{ hashFiles('cabal.project', 'simplex-chat.cabal') }}
-
       - name: Set up Docker Buildx
         uses: simplex-chat/docker-setup-buildx-action@v3
 
@@ -534,12 +909,34 @@ jobs:
       - name: Start container
         shell: bash
         run: |
+          mkdir -p ~/.cabal
           docker run -t -d \
             --name builder \
-            -v ~/.cabal:/root/.cabal \
+            -e CABAL_DIR=/home/builder/.cabal \
+            -v ~/.cabal:/home/builder/.cabal \
             -v /home/runner/work/_temp:/home/runner/work/_temp \
             -v ${{ github.workspace }}:/project \
             build/22.04:latest
+
+      - name: Compute cache key prefix
+        id: keys
+        run: |
+          toolchain=$(docker exec builder dpkg-query -W -f '${db:Status-Status} ${binary:Package} ${Version}\n' 'binutils*' 'cpp*' 'gcc*' '*-dev' | grep '^installed ' | sha256sum | cut -c1-16)
+          echo "deps=deps-ubuntu-22.04-x86_64-postgres-ghc${{ needs.variables.outputs.GHC_VER }}-$toolchain" >> "$GITHUB_OUTPUT"
+
+      - name: Restore dependencies from cache
+        id: restore-deps
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cabal/store
+          key: ${{ steps.keys.outputs.deps }}-${{ env.branch }}-${{ github.sha }}
+          restore-keys: |
+            ${{ steps.keys.outputs.deps }}-${{ env.branch }}-
+            ${{ steps.keys.outputs.deps }}-
+
+      - name: Warn if dependencies not in cache
+        if: steps.restore-deps.outputs.cache-matched-key == ''
+        run: echo "::warning title=Cache miss::${{ steps.keys.outputs.deps }}-${{ env.branch }}"
 
       - name: Prepare cabal.project.local
         shell: bash
@@ -551,9 +948,20 @@ jobs:
       - name: Build postgres library
         shell: docker exec -t builder sh -eu {0}
         run: |
-          cabal clean
           cabal update
           scripts/desktop/build-lib-linux.sh postgres
+
+      - name: Compute dependency cache key
+        id: hash-deps
+        shell: bash
+        run: echo "hash=$(ls ~/.cabal/store/ghc-*/ | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
+
+      - name: Save dependencies to cache
+        if: steps.restore-deps.outputs.cache-matched-key != format('{0}-{1}-{2}', steps.keys.outputs.deps, env.branch, steps.hash-deps.outputs.hash)
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cabal/store
+          key: ${{ steps.keys.outputs.deps }}-${{ env.branch }}-${{ steps.hash-deps.outputs.hash }}
 
       - name: Copy libs from container
         shell: bash
@@ -567,18 +975,11 @@ jobs:
           (cd postgres-libs && zip -r simplex-chat-libs-linux-x86_64-postgres.zip libs)
 
       - name: Upload postgres library
-        uses: softprops/action-gh-release@v2
-        with:
-          repository: ${{ github.repository }}-libs
-          tag_name: ${{ needs.maybe-release.outputs.libs_tag }}
-          files: postgres-libs/*.zip
-          token: ${{ secrets.NODEJS_REPO_TOKEN }}
-
-      - name: Fix permissions for cache
         shell: bash
-        run: |
-          sudo chmod -R 777 dist-newstyle ~/.cabal
-          sudo chown -R $(id -u):$(id -g) dist-newstyle ~/.cabal
+        env:
+          GH_TOKEN: ${{ secrets.NODEJS_REPO_TOKEN }}
+          TAG: ${{ needs.maybe-release.outputs.libs_tag }}
+        run: gh release upload "$TAG" postgres-libs/*.zip --clobber --repo "${{ github.repository }}-libs"
 
 # =========================
 #        MacOS Build
@@ -587,10 +988,11 @@ jobs:
   build-macos:
     name: "${{ matrix.os }} (CLI,Desktop), GHC: ${{ matrix.ghc }}"
     needs: [maybe-release, variables]
+    if: needs.maybe-release.outputs.reduced != 'true' && needs.maybe-release.outputs.haskell == 'true'
     runs-on: ${{ matrix.os }}
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}-macos-${{ matrix.os }}-${{ needs.maybe-release.outputs.libs_tag }}
-      cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/v') && !needs.maybe-release.outputs.libs_tag }}
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
     strategy:
       fail-fast: false
       matrix:
@@ -601,30 +1003,72 @@ jobs:
             cli_asset_name: simplex-chat-macos-aarch64
             desktop_asset_name: simplex-desktop-macos-aarch64.dmg
             openssl_dir: "/opt/homebrew/opt"
+            should_run: ${{ needs.maybe-release.outputs.haskell == 'true' }}
           - os: macos-15-intel
             arch: x86_64
             ghc: ${{ needs.variables.outputs.GHC_VER }}
             cli_asset_name: simplex-chat-macos-x86-64
             desktop_asset_name: simplex-desktop-macos-x86_64.dmg
             openssl_dir: "/usr/local/opt"
+            should_run: ${{ needs.maybe-release.outputs.haskell == 'true' }}
     steps:
       - name: Checkout Code
+        if: matrix.should_run == true
         uses: actions/checkout@v3
         with:
           submodules: recursive
 
+      - name: Point Command Line Tools SDK to Xcode SDK
+        if: matrix.should_run == true
+        shell: bash
+        run: sudo ln -sfn "$(xcrun --sdk macosx --show-sdk-path)" /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
+
+      - name: Compute toolchain cache key
+        id: toolchain-key
+        if: matrix.should_run == true && env.release != 'true'
+        shell: bash
+        run: echo "key=ghcup-${{ matrix.os }}-${{ matrix.arch }}-ghc${{ matrix.ghc }}-cabal3.10.2.0-$({ sw_vers -productVersion; clang --version; } | shasum -a 256 | cut -c1-16)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore toolchain from cache
+        id: restore-toolchain
+        if: matrix.should_run == true && env.release != 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.ghcup/ghc/${{ matrix.ghc }}
+            ~/.ghcup/bin/*-${{ matrix.ghc }}
+            ~/.ghcup/bin/cabal-3.10.2.0
+          key: ${{ steps.toolchain-key.outputs.key }}
+
+      - name: Warn if toolchain not in cache
+        if: matrix.should_run == true && env.release != 'true' && steps.restore-toolchain.outputs.cache-hit != 'true'
+        run: echo "::warning title=Cache miss::${{ steps.toolchain-key.outputs.key }}"
+
       - name: Prepare build
+        id: prepare
+        if: matrix.should_run == true
         uses: ./.github/actions/prepare-build
         with:
           java_ver: ${{ needs.variables.outputs.JAVA_VER }}
           ghc_ver: ${{ matrix.ghc }}
-          os: ${{ matrix.os }}
           github_ref: ${{ github.ref }}
 
+      - name: Save toolchain to cache
+        if: matrix.should_run == true && env.release != 'true' && steps.restore-toolchain.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.ghcup/ghc/${{ matrix.ghc }}
+            ~/.ghcup/bin/*-${{ matrix.ghc }}
+            ~/.ghcup/bin/cabal-3.10.2.0
+          key: ${{ steps.toolchain-key.outputs.key }}
+
       - name: Install OpenSSL
+        if: matrix.should_run == true
         run: brew install openssl@3.0
 
       - name: Prepare cabal.project.local
+        if: matrix.should_run == true
         shell: bash
         run: |
           echo "ignore-project: False"                                                    >> cabal.project.local
@@ -637,17 +1081,103 @@ jobs:
           echo "    extra-lib-dirs: ${{ matrix.openssl_dir }}/openssl@3.0/lib"            >> cabal.project.local
           echo "    flags: +openssl"                                                      >> cabal.project.local
 
-      - name: Build CLI
-        id: mac_cli_build
+      - name: Compute cache key prefixes
+        id: keys
+        if: matrix.should_run == true && env.release != 'true'
         shell: bash
         run: |
-          cabal build -j --enable-tests
-          path=$(cabal list-bin simplex-chat)
+          toolchain=$({ sw_vers -productVersion; clang --version; } | shasum -a 256 | cut -c1-16)
+          target=${{ matrix.os }}-${{ matrix.arch }}-ghc${{ matrix.ghc }}-$toolchain
+          echo "deps=deps-$target" >> "$GITHUB_OUTPUT"
+          echo "dist=dist-$target" >> "$GITHUB_OUTPUT"
+
+      - name: Restore dependencies from cache
+        id: restore-deps
+        if: matrix.should_run == true && env.release != 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ steps.prepare.outputs.cabal-store }}
+          key: ${{ steps.keys.outputs.deps }}-${{ env.branch }}-${{ github.sha }}
+          restore-keys: |
+            ${{ steps.keys.outputs.deps }}-${{ env.branch }}-
+            ${{ steps.keys.outputs.deps }}-
+
+      - name: Warn if dependencies not in cache
+        if: matrix.should_run == true && env.release != 'true' && steps.restore-deps.outputs.cache-matched-key == ''
+        run: echo "::warning title=Cache miss::${{ steps.keys.outputs.deps }}-${{ env.branch }}"
+
+      - name: Restore source repositories from cache
+        id: restore-src
+        if: matrix.should_run == true && env.release != 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: dist-newstyle/src
+          key: src-${{ runner.os }}-${{ hashFiles('cabal.project') }}
+          restore-keys: src-${{ runner.os }}-
+
+      - name: Warn if source repositories not in cache
+        if: matrix.should_run == true && env.release != 'true' && steps.restore-src.outputs.cache-matched-key == ''
+        run: echo "::warning title=Cache miss::src-${{ runner.os }}"
+
+      - name: Restore build directory from cache
+        id: restore-build
+        if: matrix.should_run == true && env.release != 'true' && !needs.maybe-release.outputs.libs_tag
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            dist-newstyle/*
+            !dist-newstyle/src
+          key: ${{ steps.keys.outputs.dist }}-${{ env.opt }}-${{ env.branch }}-${{ github.sha }}
+          restore-keys: |
+            ${{ steps.keys.outputs.dist }}-${{ env.opt }}-${{ env.branch }}-
+            ${{ steps.keys.outputs.dist }}-${{ env.opt }}-
+
+      - name: Warn if build directory not in cache
+        if: matrix.should_run == true && steps.restore-build.outcome == 'success' && steps.restore-build.outputs.cache-matched-key == ''
+        run: echo "::warning title=Cache miss::${{ steps.keys.outputs.dist }}-${{ env.opt }}-${{ env.branch }}"
+
+      - name: Build CLI
+        id: mac_cli_build
+        if: matrix.should_run == true
+        shell: bash
+        run: |
+          scripts/ci/prune-old-builds.sh dist-newstyle
+          cabal build -j --enable-tests ${{ env.ghc_options }}
+          path=$(cabal list-bin simplex-chat | tail -n 1)
           echo "bin_path=$path" >> $GITHUB_OUTPUT
           echo "bin_hash=$(echo SHA2-256\(${{ matrix.cli_asset_name }}\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
+      - name: Compute dependency cache key
+        id: hash-deps
+        if: matrix.should_run == true && env.release != 'true'
+        shell: bash
+        run: echo "hash=$(ls '${{ steps.prepare.outputs.cabal-store }}'/ghc-*/ | shasum -a 256 | cut -c1-16)" >> "$GITHUB_OUTPUT"
+
+      - name: Save dependencies to cache
+        if: matrix.should_run == true && env.release != 'true' && steps.restore-deps.outputs.cache-matched-key != format('{0}-{1}-{2}', steps.keys.outputs.deps, env.branch, steps.hash-deps.outputs.hash)
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ steps.prepare.outputs.cabal-store }}
+          key: ${{ steps.keys.outputs.deps }}-${{ env.branch }}-${{ steps.hash-deps.outputs.hash }}
+
+      - name: Save source repositories to cache
+        if: matrix.should_run == true && env.release != 'true' && matrix.arch == 'x86_64' && steps.restore-src.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: dist-newstyle/src
+          key: src-${{ runner.os }}-${{ hashFiles('cabal.project') }}
+
+      - name: Save build directory to cache
+        if: matrix.should_run == true && env.release != 'true' && steps.restore-build.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            dist-newstyle/*
+            !dist-newstyle/src
+          key: ${{ steps.keys.outputs.dist }}-${{ env.opt }}-${{ env.branch }}-${{ github.sha }}
+
       - name: Upload CLI
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: matrix.should_run == true && startsWith(github.ref, 'refs/tags/v')
         uses: ./.github/actions/prepare-release
         with:
           bin_path: ${{ steps.mac_cli_build.outputs.bin_path }}
@@ -658,7 +1188,7 @@ jobs:
 
       - name: Build Desktop
         id: mac_desktop_build
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: matrix.should_run == true && startsWith(github.ref, 'refs/tags/v')
         shell: bash
         env:
           APPLE_SIMPLEX_SIGNING_KEYCHAIN: ${{ secrets.APPLE_SIMPLEX_SIGNING_KEYCHAIN }}
@@ -672,7 +1202,7 @@ jobs:
           echo "package_hash=$(echo SHA2-256\(${{ matrix.desktop_asset_name }}\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
       - name: Upload Desktop
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: matrix.should_run == true && startsWith(github.ref, 'refs/tags/v')
         uses: ./.github/actions/prepare-release
         with:
           bin_path: ${{ steps.mac_desktop_build.outputs.package_path }}
@@ -681,7 +1211,16 @@ jobs:
           github_ref: ${{ github.ref }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Mount RAM disk for tests
+        if: matrix.should_run == true && matrix.arch == 'aarch64'
+        shell: bash
+        run: |
+          disk=$(hdiutil attach -nomount ram://1048576 | tr -d '[:space:]')
+          diskutil erasevolume HFS+ tests "$disk"
+          ln -s /Volumes/tests tests/tmp
+
       - name: Run tests
+        if: matrix.should_run == true && matrix.arch == 'aarch64'
         timeout-minutes: 120
         shell: bash
         run: |
@@ -689,7 +1228,7 @@ jobs:
           attempts=1
           ${{ (github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) }} && attempts=3
           while [ "$i" -le "$attempts" ]; do
-            if cabal test --test-show-details=direct; then
+            if cabal test --test-show-details=direct ${{ env.ghc_options }}; then
               break
             else
               echo "Attempt $i failed, retrying..."
@@ -704,23 +1243,144 @@ jobs:
 
       - name: Build library
         id: mac_lib_build
-        if: ${{ !cancelled() && needs.maybe-release.outputs.libs_tag && steps.mac_cli_build.outcome == 'success' }}
+        if: ${{ !cancelled() && matrix.should_run == true && needs.maybe-release.outputs.libs_tag && steps.mac_cli_build.outcome == 'success' }}
         shell: bash
+        env:
+          APPLE_SIMPLEX_SIGNING_KEYCHAIN: ${{ secrets.APPLE_SIMPLEX_SIGNING_KEYCHAIN }}
+          APPLE_SIMPLEX_NOTARIZATION_APPLE_ID: ${{ secrets.APPLE_SIMPLEX_NOTARIZATION_APPLE_ID }}
+          APPLE_SIMPLEX_NOTARIZATION_PASSWORD: ${{ secrets.APPLE_SIMPLEX_NOTARIZATION_PASSWORD }}
         run: |
           SKIP_VLC=1 scripts/desktop/build-lib-mac.sh
           name=simplex-chat-libs-macos-${{ matrix.arch }}
           mkdir -p release-libs/$name/libs
           find apps/multiplatform/common/src/commonMain/cpp/desktop/libs/mac-${{ matrix.arch }} -maxdepth 1 -type f -exec cp {} release-libs/$name/libs/ \;
+          scripts/ci/sign-libs-mac.sh release-libs/$name/libs
           (cd release-libs/$name && zip -r ../$name.zip libs)
 
       - name: Upload library
-        if: ${{ !cancelled() && steps.mac_lib_build.outcome == 'success' }}
-        uses: softprops/action-gh-release@v2
+        if: ${{ !cancelled() && matrix.should_run == true && steps.mac_lib_build.outcome == 'success' }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.NODEJS_REPO_TOKEN }}
+          TAG: ${{ needs.maybe-release.outputs.libs_tag }}
+        run: gh release upload "$TAG" release-libs/*.zip --clobber --repo "${{ github.repository }}-libs"
+
+      - name: Setup Node.js
+        id: setup-node
+        if: ${{ !cancelled() && matrix.should_run == true && (github.event_name == 'pull_request' || needs.maybe-release.outputs.addon_draft || needs.maybe-release.outputs.publish) }}
+        uses: actions/setup-node@v7
         with:
-          repository: ${{ github.repository }}-libs
-          tag_name: ${{ needs.maybe-release.outputs.libs_tag }}
-          files: release-libs/*.zip
-          token: ${{ secrets.NODEJS_REPO_TOKEN }}
+          node-version: 22
+
+      - name: Setup Python
+        id: setup-python
+        if: ${{ !cancelled() && matrix.should_run == true && steps.setup-node.outcome == 'success' }}
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Package tests (pull request)
+        if: ${{ !cancelled() && matrix.should_run == true && steps.setup-python.outcome == 'success' && github.event_name == 'pull_request' }}
+        timeout-minutes: 30
+        shell: bash
+        run: |
+          scripts/ci/package-tests.sh build macos-${{ matrix.arch }}
+          scripts/ci/package-tests.sh test
+
+      - name: Add-on
+        if: ${{ !cancelled() && matrix.should_run == true && steps.setup-python.outcome == 'success' && needs.maybe-release.outputs.addon_draft }}
+        timeout-minutes: 30
+        shell: bash
+        env:
+          LIBS_RELEASE: ${{ needs.maybe-release.outputs.libs_latest }}
+          ADDON_TAG: ${{ needs.maybe-release.outputs.addon_tag }}
+          LIBS_REPOSITORY: ${{ github.repository }}-libs
+          GH_TOKEN: ${{ secrets.NODEJS_REPO_TOKEN }}
+        run: scripts/ci/package-tests.sh addon macos-${{ matrix.arch }}
+
+      - name: Package tests
+        id: package-tests
+        if: ${{ !cancelled() && matrix.should_run == true && steps.setup-python.outcome == 'success' && needs.maybe-release.outputs.publish }}
+        timeout-minutes: 30
+        shell: bash
+        run: |
+          scripts/ci/package-tests.sh publish macos-${{ matrix.arch }} ${{ needs.maybe-release.outputs.publish_nodejs && 'nodejs' || '' }} ${{ needs.maybe-release.outputs.publish_python && 'python' || '' }}
+          echo "macos-${{ matrix.arch }}" > "$RUNNER_TEMP/package-tests"
+
+      - name: Package tests result
+        if: ${{ !cancelled() && matrix.should_run == true && steps.package-tests.outcome == 'success' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: package-tests-macos-${{ matrix.arch }}
+          path: ${{ runner.temp }}/package-tests
+
+      - name: Remove -O2 build directory
+        id: remove-o2
+        if: matrix.should_run == true && env.cache_o0 == 'true' && !cancelled() && steps.mac_cli_build.outcome == 'success'
+        shell: bash
+        run: find dist-newstyle -mindepth 1 -maxdepth 1 ! -name src -exec rm -rf {} +
+
+      - name: Restore -O0 build directory from cache
+        id: restore-build-o0
+        if: ${{ !cancelled() && matrix.should_run == true && steps.remove-o2.outcome == 'success' }}
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            dist-newstyle/*
+            !dist-newstyle/src
+          key: ${{ steps.keys.outputs.dist }}-O0-${{ env.branch }}-${{ github.sha }}
+          restore-keys: |
+            ${{ steps.keys.outputs.dist }}-O0-${{ env.branch }}-
+            ${{ steps.keys.outputs.dist }}-O0-
+
+      - name: Build at -O0 for pull request caches
+        id: build-o0
+        if: ${{ !cancelled() && matrix.should_run == true && steps.remove-o2.outcome == 'success' }}
+        shell: bash
+        run: |
+          scripts/ci/prune-old-builds.sh dist-newstyle
+          cabal build -j --enable-tests --ghc-options=-O0
+
+      - name: Save -O0 build directory to cache
+        if: ${{ !cancelled() && matrix.should_run == true && steps.build-o0.outcome == 'success' && steps.restore-build-o0.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            dist-newstyle/*
+            !dist-newstyle/src
+          key: ${{ steps.keys.outputs.dist }}-O0-${{ env.branch }}-${{ github.sha }}
+
+  build-ios:
+    name: "macos-latest (iOS)"
+    needs: maybe-release
+    if: needs.maybe-release.outputs.ios == 'true'
+    runs-on: macos-latest
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-ios
+      cancel-in-progress: ${{ github.event_name != 'push' }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Point Command Line Tools SDK to Xcode SDK
+        shell: bash
+        run: sudo ln -sfn "$(xcrun --sdk macosx --show-sdk-path)" /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
+
+      - name: Build iOS app
+        timeout-minutes: 60
+        shell: bash
+        run: |
+          scripts/ci/ios-stub-libs.sh
+          xcodebuild build -quiet \
+            -project apps/ios/SimpleX.xcodeproj \
+            -scheme "SimpleX (iOS)" \
+            -configuration Debug \
+            -destination "generic/platform=iOS Simulator" \
+            -onlyUsePackageVersionsFromResolvedFile \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
+            ARCHS=arm64 \
+            CODE_SIGNING_ALLOWED=NO
 
 # =========================
 #      Windows Build
@@ -729,10 +1389,11 @@ jobs:
   build-windows:
     name: "${{ matrix.os }} (CLI,Desktop), GHC: ${{ matrix.ghc }}"
     needs: [maybe-release, variables]
+    if: needs.maybe-release.outputs.reduced != 'true' && needs.maybe-release.outputs.haskell == 'true'
     runs-on: ${{ matrix.os }}
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}-windows-${{ matrix.os }}-${{ needs.maybe-release.outputs.libs_tag }}
-      cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/v') && !needs.maybe-release.outputs.libs_tag }}
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
     strategy:
       fail-fast: false
       matrix:
@@ -748,12 +1409,11 @@ jobs:
           submodules: recursive
 
       - name: Prepare build
+        id: prepare
         uses: ./.github/actions/prepare-build
         with:
           java_ver: ${{ needs.variables.outputs.JAVA_VER }}
           ghc_ver: ${{ matrix.ghc }}
-          os: ${{ matrix.os }}
-          cache_path: "C:/cabal"
           github_ref: ${{ github.ref }}
 
       - name: Configure pagefile (Windows)
@@ -777,6 +1437,61 @@ jobs:
             toolchain:p
             cmake:p
 
+      - name: Compute cache key prefixes
+        id: keys
+        if: env.release != 'true'
+        shell: msys2 {0}
+        run: |
+          toolchain=$(gcc --version | sha256sum | cut -c1-16)
+          target=windows-x86_64-ghc${{ matrix.ghc }}-$toolchain
+          echo "deps=deps-$target" >> "$GITHUB_OUTPUT"
+          echo "dist=dist-$target" >> "$GITHUB_OUTPUT"
+
+      - name: Restore dependencies from cache
+        id: restore-deps
+        if: env.release != 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ steps.prepare.outputs.cabal-store }}
+          key: ${{ steps.keys.outputs.deps }}-${{ env.branch }}-${{ github.sha }}
+          restore-keys: |
+            ${{ steps.keys.outputs.deps }}-${{ env.branch }}-
+            ${{ steps.keys.outputs.deps }}-
+
+      - name: Warn if dependencies not in cache
+        if: env.release != 'true' && steps.restore-deps.outputs.cache-matched-key == ''
+        run: echo "::warning title=Cache miss::${{ steps.keys.outputs.deps }}-${{ env.branch }}"
+
+      - name: Restore source repositories from cache
+        id: restore-src
+        if: env.release != 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: dist-newstyle/src
+          key: src-${{ runner.os }}-${{ hashFiles('cabal.project') }}
+          restore-keys: src-${{ runner.os }}-
+
+      - name: Warn if source repositories not in cache
+        if: env.release != 'true' && steps.restore-src.outputs.cache-matched-key == ''
+        run: echo "::warning title=Cache miss::src-${{ runner.os }}"
+
+      - name: Restore build directory from cache
+        id: restore-build
+        if: env.release != 'true' && !needs.maybe-release.outputs.libs_tag
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            dist-newstyle/*
+            !dist-newstyle/src
+          key: ${{ steps.keys.outputs.dist }}-${{ env.opt }}-${{ env.branch }}-${{ github.sha }}
+          restore-keys: |
+            ${{ steps.keys.outputs.dist }}-${{ env.opt }}-${{ env.branch }}-
+            ${{ steps.keys.outputs.dist }}-${{ env.opt }}-
+
+      - name: Warn if build directory not in cache
+        if: steps.restore-build.outcome == 'success' && steps.restore-build.outputs.cache-matched-key == ''
+        run: echo "::warning title=Cache miss::${{ steps.keys.outputs.dist }}-${{ env.opt }}-${{ env.branch }}"
+
       # rm -rf dist-newstyle/src/{direct-sq,simplexmq}* is here because of the bug in cabal's dependency which prevents second build from finishing
       # (simplexmq is removed because cabal cannot delete its read-only git submodule pack files - blst, libbbs - on Windows)
       - name: Build CLI
@@ -793,13 +1508,43 @@ jobs:
           echo "    extra-include-dirs: $openssl_windows_style_path\include" >> cabal.project.local
           echo "    extra-lib-dirs: $openssl_windows_style_path" >> cabal.project.local
 
+          scripts/ci/prune-old-builds.sh dist-newstyle
           rm -rf dist-newstyle/src/direct-sq* dist-newstyle/src/simplexmq*
           sed -i "s/, unix /--, unix /" simplex-chat.cabal
-          cabal build -j --enable-tests
+          cabal build -j --enable-tests ${{ env.ghc_options }}
           rm -rf dist-newstyle/src/direct-sq* dist-newstyle/src/simplexmq*
           path=$(cabal list-bin simplex-chat | tail -n 1)
           echo "bin_path=$path" >> $GITHUB_OUTPUT
           echo "bin_hash=$(echo SHA2-256\(${{ matrix.cli_asset_name }}\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
+
+      - name: Compute dependency cache key
+        id: hash-deps
+        if: env.release != 'true'
+        shell: msys2 {0}
+        run: echo "hash=$(ls "$(cygpath -u '${{ steps.prepare.outputs.cabal-store }}')"/ghc-*/ | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
+
+      - name: Save dependencies to cache
+        if: env.release != 'true' && steps.restore-deps.outputs.cache-matched-key != format('{0}-{1}-{2}', steps.keys.outputs.deps, env.branch, steps.hash-deps.outputs.hash)
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ steps.prepare.outputs.cabal-store }}
+          key: ${{ steps.keys.outputs.deps }}-${{ env.branch }}-${{ steps.hash-deps.outputs.hash }}
+
+      - name: Save source repositories to cache
+        if: env.release != 'true' && steps.restore-src.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: dist-newstyle/src
+          key: src-${{ runner.os }}-${{ hashFiles('cabal.project') }}
+
+      - name: Save build directory to cache
+        if: env.release != 'true' && steps.restore-build.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            dist-newstyle/*
+            !dist-newstyle/src
+          key: ${{ steps.keys.outputs.dist }}-${{ env.opt }}-${{ env.branch }}-${{ github.sha }}
 
       - name: Build library
         if: needs.maybe-release.outputs.libs_tag
@@ -816,12 +1561,60 @@ jobs:
 
       - name: Upload library
         if: needs.maybe-release.outputs.libs_tag
-        uses: softprops/action-gh-release@v2
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.NODEJS_REPO_TOKEN }}
+          TAG: ${{ needs.maybe-release.outputs.libs_tag }}
+        run: gh release upload "$TAG" release-libs/*.zip --clobber --repo "${{ github.repository }}-libs"
+
+      - name: Setup Node.js
+        id: setup-node
+        if: ${{ !cancelled() && (github.event_name == 'pull_request' || needs.maybe-release.outputs.addon_draft || needs.maybe-release.outputs.publish) }}
+        uses: actions/setup-node@v7
         with:
-          repository: ${{ github.repository }}-libs
-          tag_name: ${{ needs.maybe-release.outputs.libs_tag }}
-          files: release-libs/*.zip
-          token: ${{ secrets.NODEJS_REPO_TOKEN }}
+          node-version: 22
+
+      - name: Setup Python
+        id: setup-python
+        if: ${{ !cancelled() && steps.setup-node.outcome == 'success' }}
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Package tests (pull request)
+        if: ${{ !cancelled() && steps.setup-python.outcome == 'success' && github.event_name == 'pull_request' }}
+        timeout-minutes: 30
+        shell: bash
+        run: |
+          scripts/ci/package-tests.sh build windows-x86_64
+          scripts/ci/package-tests.sh test
+
+      - name: Add-on
+        if: ${{ !cancelled() && steps.setup-python.outcome == 'success' && needs.maybe-release.outputs.addon_draft }}
+        timeout-minutes: 30
+        shell: bash
+        env:
+          LIBS_RELEASE: ${{ needs.maybe-release.outputs.libs_latest }}
+          ADDON_TAG: ${{ needs.maybe-release.outputs.addon_tag }}
+          LIBS_REPOSITORY: ${{ github.repository }}-libs
+          GH_TOKEN: ${{ secrets.NODEJS_REPO_TOKEN }}
+        run: scripts/ci/package-tests.sh addon windows-x86_64
+
+      - name: Package tests
+        id: package-tests
+        if: ${{ !cancelled() && steps.setup-python.outcome == 'success' && needs.maybe-release.outputs.publish }}
+        timeout-minutes: 30
+        shell: bash
+        run: |
+          scripts/ci/package-tests.sh publish windows-x86_64 ${{ needs.maybe-release.outputs.publish_nodejs && 'nodejs' || '' }} ${{ needs.maybe-release.outputs.publish_python && 'python' || '' }}
+          echo "windows-x86_64" > "$RUNNER_TEMP/package-tests"
+
+      - name: Package tests result
+        if: ${{ !cancelled() && steps.package-tests.outcome == 'success' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: package-tests-windows-x86_64
+          path: ${{ runner.temp }}/package-tests
 
       - name: Upload CLI
         if: startsWith(github.ref, 'refs/tags/v')
@@ -857,33 +1650,210 @@ jobs:
           github_ref: ${{ github.ref }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Remove -O2 build directory
+        id: remove-o2
+        if: env.cache_o0 == 'true' && !needs.maybe-release.outputs.libs_tag && !cancelled() && steps.windows_cli_build.outcome == 'success'
+        shell: msys2 {0}
+        run: find dist-newstyle -mindepth 1 -maxdepth 1 ! -name src -exec rm -rf {} +
+
+      - name: Restore -O0 build directory from cache
+        id: restore-build-o0
+        if: ${{ !cancelled() && steps.remove-o2.outcome == 'success' }}
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            dist-newstyle/*
+            !dist-newstyle/src
+          key: ${{ steps.keys.outputs.dist }}-O0-${{ env.branch }}-${{ github.sha }}
+          restore-keys: |
+            ${{ steps.keys.outputs.dist }}-O0-${{ env.branch }}-
+            ${{ steps.keys.outputs.dist }}-O0-
+
+      - name: Build at -O0 for pull request caches
+        id: build-o0
+        if: ${{ !cancelled() && steps.remove-o2.outcome == 'success' }}
+        shell: msys2 {0}
+        run: |
+          export PATH=$PATH:/c/ghcup/bin:$(echo /c/tools/ghc-*/bin || echo)
+          scripts/desktop/prepare-openssl-windows.sh
+          scripts/ci/prune-old-builds.sh dist-newstyle
+          rm -rf dist-newstyle/src/direct-sq* dist-newstyle/src/simplexmq*
+          cabal build -j --enable-tests --ghc-options=-O0
+          rm -rf dist-newstyle/src/direct-sq* dist-newstyle/src/simplexmq*
+
+      - name: Save -O0 build directory to cache
+        if: ${{ !cancelled() && steps.build-o0.outcome == 'success' && steps.restore-build-o0.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            dist-newstyle/*
+            !dist-newstyle/src
+          key: ${{ steps.keys.outputs.dist }}-O0-${{ env.branch }}-${{ github.sha }}
+
 # =========================
-#   Packages release
+#   Releases and packages
 # =========================
 
-# A new library release is tested with the Node.js and Python packages and updates them in a release PR.
+  releases:
+    needs: [maybe-release, build-linux, build-linux-full, build-linux-push, build-linux-postgres, build-macos, build-ios, build-windows]
+    if: ${{ !cancelled() && (needs.maybe-release.outputs.libs_tag || needs.maybe-release.outputs.addon_draft) }}
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.NODEJS_REPO_TOKEN }}
+      LIBS_REPOSITORY: ${{ github.repository }}-libs
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
 
-  packages:
-    needs: [maybe-release, build-linux, build-linux-postgres, build-macos, build-windows]
-    if: ${{ !cancelled() && needs.maybe-release.outputs.libs_tag }}
-    # the called workflow can't be granted more than its caller, and its publish job needs these
+      - name: Publish library release
+        if: needs.maybe-release.outputs.libs_tag
+        run: python3 scripts/ci/packages_release.py publish-release "${{ needs.maybe-release.outputs.libs_tag }}"
+
+      - name: Publish add-on release
+        if: ${{ !cancelled() && needs.maybe-release.outputs.addon_draft }}
+        run: python3 scripts/ci/packages_release.py publish-release "${{ needs.maybe-release.outputs.addon_tag }}"
+
+# Publishing uses trusted publishing (OIDC) for this workflow on npm and PyPI,
+# or the NPM_TOKEN and PYPI_API_TOKEN secrets when they are set.
+# Test repositories: variables NPM_SCOPE, PYPI_PROJECT and PYPI_URL / PYPI_UPLOAD_URL (TestPyPI)
+# publish under other names.
+
+  publish:
+    needs: [maybe-release, build-linux, build-linux-full, build-linux-push, build-macos, build-ios, build-windows, releases]
+    if: ${{ !cancelled() && (needs.maybe-release.outputs.publish || needs.maybe-release.outputs.publish_types) }}
+    runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
       id-token: write
-    uses: ./.github/workflows/packages.yml
-    with:
-      libs_release: ${{ needs.maybe-release.outputs.libs_tag }}
-    secrets: inherit
+    # set by a publish step after it succeeds, so a failed publish still reports the earlier ones
+    outputs:
+      types: ${{ steps.types.outputs.version }}
+      nodejs: ${{ steps.nodejs.outputs.version }}
+      python: ${{ steps.python.outputs.version }}
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      NPM_SCOPE: ${{ vars.NPM_SCOPE }}
+      PYPI_PROJECT: ${{ vars.PYPI_PROJECT }}
+      PYPI_URL: ${{ vars.PYPI_URL }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
 
-# A pull request that changes the chat core is tested with the Node.js and Python packages.
+      - name: Download package tests results
+        if: needs.maybe-release.outputs.publish
+        uses: actions/download-artifact@v8
+        with:
+          pattern: package-tests-*
+          path: ${{ runner.temp }}/package-tests
 
-  packages-pr:
-    needs: [maybe-release, build-linux]
-    # build-linux uploads the library before its chat tests run
-    if: ${{ !cancelled() && needs.maybe-release.outputs.core_changed }}
-    permissions:
-      contents: write
-      id-token: write
-    uses: ./.github/workflows/packages.yml
-    with:
-      libs_artifact: true
+      - name: Check package tests and pins
+        if: needs.maybe-release.outputs.publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LIBS_REPOSITORY: ${{ github.repository }}-libs
+        run: |
+          passed=$(find "$RUNNER_TEMP/package-tests" -mindepth 1 -maxdepth 1 -type d -name 'package-tests-*' | wc -l)
+          if [ "$passed" -ne 5 ]; then
+            echo "::error::package tests passed on $passed of 5 platforms"
+            exit 1
+          fi
+          python3 scripts/ci/packages_release.py check-pins
+
+      - name: Versions to publish
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LIBS_REPOSITORY: ${{ github.repository }}-libs
+        run: python3 scripts/ci/packages_release.py publish-plan >> "$GITHUB_OUTPUT"
+
+      - name: Setup Node.js
+        if: steps.plan.outputs.types_version || steps.plan.outputs.nodejs_version
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Setup Python
+        if: steps.plan.outputs.python_version
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      # Before the test names: the build installs @simplex-chat/types from this repository.
+      - name: Build and test simplex-chat (npm)
+        if: steps.plan.outputs.nodejs_version
+        working-directory: packages/simplex-chat-nodejs
+        run: |
+          (cd ../simplex-chat-client/types/typescript && npm install --no-audit --no-fund && npx tsc)
+          npm install --ignore-scripts --no-save --no-audit --no-fund ../simplex-chat-client/types/typescript
+          npx tsc && cp src/simplex.* dist
+          npx jest tests/libs.test.ts tests/api.unit.test.ts
+
+      - name: Use test package names
+        if: vars.NPM_SCOPE || vars.PYPI_PROJECT
+        run: python3 scripts/ci/packages_release.py test-names
+
+      - name: Publish @simplex-chat/types
+        id: types
+        if: steps.plan.outputs.types_version && needs.maybe-release.outputs.publish_types && needs.releases.result == 'success'
+        working-directory: packages/simplex-chat-client/types/typescript
+        env:
+          VERSION: ${{ steps.plan.outputs.types_version }}
+          DIST_TAG: ${{ steps.plan.outputs.types_dist_tag }}
+        run: |
+          npm install --no-audit --no-fund
+          npm publish --provenance --access public --tag "$DIST_TAG"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Publish simplex-chat (npm)
+        id: nodejs
+        if: steps.plan.outputs.nodejs_version
+        working-directory: packages/simplex-chat-nodejs
+        env:
+          VERSION: ${{ steps.plan.outputs.nodejs_version }}
+          DIST_TAG: ${{ steps.plan.outputs.nodejs_dist_tag }}
+        run: |
+          npm publish --provenance --access public --tag "$DIST_TAG"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Build and test simplex-chat (PyPI)
+        if: steps.plan.outputs.python_version
+        working-directory: packages/simplex-chat-python
+        run: |
+          python -m pip install build -e ".[test]"
+          python -m pytest -q
+          python -m build
+
+      - name: Publish simplex-chat (PyPI)
+        if: steps.plan.outputs.python_version
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: packages/simplex-chat-python/dist
+          repository-url: ${{ vars.PYPI_UPLOAD_URL || 'https://upload.pypi.org/legacy/' }}
+          password: ${{ secrets.PYPI_API_TOKEN }}
+
+      - name: Report the published PyPI version
+        id: python
+        if: steps.plan.outputs.python_version
+        env:
+          VERSION: ${{ steps.plan.outputs.python_version }}
+        run: echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+  record:
+    needs: publish
+    if: ${{ !cancelled() && (needs.publish.outputs.types || needs.publish.outputs.nodejs || needs.publish.outputs.python) }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Record published versions
+        env:
+          GH_TOKEN: ${{ secrets.NODEJS_REPO_TOKEN }}
+          LIBS_REPOSITORY: ${{ github.repository }}-libs
+          TYPES: ${{ needs.publish.outputs.types }}
+          NODEJS: ${{ needs.publish.outputs.nodejs }}
+          PYTHON: ${{ needs.publish.outputs.python }}
+        run: |
+          python3 scripts/ci/packages_release.py record --commit "$GITHUB_SHA" \
+            --types "$TYPES" --nodejs "$NODEJS" --python "$PYTHON"

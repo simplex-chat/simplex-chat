@@ -30,6 +30,7 @@ module Simplex.Chat.Badges.Types
     BadgeAlert (..),
     BadgeAlertPrice (..),
     BadgeState (..),
+    OpenStorePurchase (..),
   ) where
 
 import Control.Applicative ((<|>))
@@ -43,7 +44,7 @@ import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import Data.Word (Word8)
 import Simplex.Chat.Badges hiding (BadgePurchase (..))
-import Simplex.Chat.PaymentService.Types (InvoiceId, PaymentId, StoredPayment)
+import Simplex.Chat.PaymentService.Types (InvoiceId, PaymentId)
 import Simplex.Chat.Types (BoolDef (..))
 import Simplex.Messaging.Agent.Protocol (UserId)
 import Simplex.Messaging.Agent.Store.DB (fromTextField_)
@@ -236,12 +237,14 @@ data StoreServiceErrorCode
   | STEPaymentNotEntitled
   | STEPaymentPending
   | STEProviderUnavailable
+  | STEProviderNotConfigured -- no verifier deployed: a dev service, not the store failing to answer
   | STERateLimited
   | STECodeInvalid
   | STECodeUsed
   | STECodeExpired
   | STEReceiptInvalid
   | STEReceiptUsed
+  | STETestPurchase -- the store vouched for a purchase that cost nothing: Apple's sandbox, a Play license tester
   | STEInternal
   | STEUnknown Text -- forwards-compatible: service is deployed ahead of clients
   deriving (Eq, Show)
@@ -278,6 +281,17 @@ data BadgeState = BadgeState
     alert :: Maybe BadgeAlert,
     issueError :: Maybe BadgeIssueError,
     nextWakeAt :: Maybe UTCTime
+  }
+  deriving (Show)
+
+-- | One of a profile's store purchases that no receipt has reached yet, or whose receipt is held until
+-- the service credits it; transactionRef is set once a receipt arrived. Neither reference is a secret:
+-- Apple's is the transaction id, Google's is a hash of the token. creditError is set only while the
+-- held receipt's last attempt failed in a way that cannot clear on its own.
+data OpenStorePurchase = OpenStorePurchase
+  { invoiceId :: Maybe Text,
+    transactionRef :: Maybe Text,
+    creditError :: Maybe BadgeIssueFailure
   }
   deriving (Show)
 
@@ -325,12 +339,14 @@ instance TextEncoding StoreServiceErrorCode where
     STEPaymentNotEntitled -> "payment_not_entitled"
     STEPaymentPending -> "payment_pending"
     STEProviderUnavailable -> "provider_unavailable"
+    STEProviderNotConfigured -> "provider_not_configured"
     STERateLimited -> "rate_limited"
     STECodeInvalid -> "code_invalid"
     STECodeUsed -> "code_used"
     STECodeExpired -> "code_expired"
     STEReceiptInvalid -> "receipt_invalid"
     STEReceiptUsed -> "receipt_used"
+    STETestPurchase -> "test_purchase"
     STEInternal -> "internal"
     STEUnknown t -> t
   textDecode s = Just $ case s of
@@ -344,12 +360,14 @@ instance TextEncoding StoreServiceErrorCode where
     "payment_not_entitled" -> STEPaymentNotEntitled
     "payment_pending" -> STEPaymentPending
     "provider_unavailable" -> STEProviderUnavailable
+    "provider_not_configured" -> STEProviderNotConfigured
     "rate_limited" -> STERateLimited
     "code_invalid" -> STECodeInvalid
     "code_used" -> STECodeUsed
     "code_expired" -> STECodeExpired
     "receipt_invalid" -> STEReceiptInvalid
     "receipt_used" -> STEReceiptUsed
+    "test_purchase" -> STETestPurchase
     "internal" -> STEInternal
     t -> STEUnknown t
 
@@ -410,3 +428,5 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "BIF") ''BadgeIssueFailure)
 $(JQ.deriveJSON defaultJSON ''BadgeIssueError)
 
 $(JQ.deriveJSON defaultJSON ''BadgeState)
+
+$(JQ.deriveJSON defaultJSON ''OpenStorePurchase)

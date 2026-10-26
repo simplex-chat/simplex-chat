@@ -31,6 +31,7 @@ import Bots.StoreService.NamesSpendTests
 import Bots.StoreService.NamesStoreTests
 import Bots.StoreService.NamesWiringTests
 import Bots.StoreService.NamesWorkerTests
+import Bots.StoreService.StoreVerifierTests
 import Bots.StoreService.StripeTests
 import Bots.StoreService.WaitersTests
 import Bots.StoreService.WebTests
@@ -107,6 +108,7 @@ main = do
         badgeBTCPayTests
         badgeStripeTests
         badgeNameRegistrationTests
+        badgeStoreVerifierTests
       namesConfigTests
       namesBalancesTests
       namesLateCreditTests

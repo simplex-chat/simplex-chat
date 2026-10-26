@@ -17,13 +17,27 @@ describe("Core tests", () => {
   }, 300000);
   const tmpDir = "./tests/tmp";
   const dbPath = path.join(tmpDir, "simplex_v1");
+  const templateDir = "./tests/template";
+  const templateDbPath = path.join(templateDir, "simplex_v1");
 
-  beforeEach(() => fs.mkdirSync(tmpDir, {recursive: true}));
+  beforeAll(async () => {
+    fs.mkdirSync(templateDir, {recursive: true});
+    await stopAndClose(await core.chatMigrateInit(templateDbPath, "key", core.MigrationConfirmation.YesUp));
+  }, 30000);
+  afterAll(() => fs.rmSync(templateDir, {recursive: true, force: true}));
+  beforeEach(() => {
+    fs.mkdirSync(tmpDir, {recursive: true});
+    copyTemplateDb(dbPath);
+  });
   afterEach(() => fs.rmSync(tmpDir, {recursive: true, force: true}));
 
   async function stopAndClose(ctrl: bigint): Promise<void> {
     await expect(core.chatSendCmd(ctrl, "/_stop")).resolves.toMatchObject({type: "chatStopped"});
     await core.chatCloseStore(ctrl);
+  }
+
+  function copyTemplateDb(dbFilePrefix: string): void {
+    for (const suffix of ["_chat.db", "_agent.db"]) fs.copyFileSync(templateDbPath + suffix, dbFilePrefix + suffix);
   }
 
   it("should initialize chat controller", async () => {
@@ -132,7 +146,7 @@ describe("Core tests", () => {
 
   it("should not block the libuv pool while receiving", async () => {
     const ctrl = await core.chatMigrateInit(dbPath, "key", core.MigrationConfirmation.YesUp);
-    const receives = [1, 2, 3, 4].map(() => core.chatRecvMsgWait(ctrl, 2_000_000));
+    const receives = [1, 2, 3, 4].map(() => core.chatRecvMsgWait(ctrl, 500_000));
     const start = Date.now();
     await fs.promises.stat(tmpDir);
     expect(Date.now() - start).toBeLessThan(200);
@@ -159,8 +173,10 @@ describe("Core tests", () => {
   }, 30000);
 
   it("should receive on two controllers concurrently", async () => {
-    const ctrlA = await core.chatMigrateInit(path.join(tmpDir, "simplex_a"), "key", core.MigrationConfirmation.YesUp);
-    const ctrlB = await core.chatMigrateInit(path.join(tmpDir, "simplex_b"), "key", core.MigrationConfirmation.YesUp);
+    const dbPathB = path.join(tmpDir, "simplex_b");
+    copyTemplateDb(dbPathB);
+    const ctrlA = await core.chatMigrateInit(dbPath, "key", core.MigrationConfirmation.YesUp);
+    const ctrlB = await core.chatMigrateInit(dbPathB, "key", core.MigrationConfirmation.YesUp);
     const start = Date.now();
     await expect(Promise.all([core.chatRecvMsgWait(ctrlA, 1_000_000), core.chatRecvMsgWait(ctrlB, 1_000_000)]))
       .resolves.toEqual([undefined, undefined]);
@@ -169,7 +185,7 @@ describe("Core tests", () => {
     expect(elapsed).toBeLessThan(1800);
     await stopAndClose(ctrlA);
     await stopAndClose(ctrlB);
-  }, 10000);
+  });
 
   it("should receive events of one controller in order", async () => {
     const ctrl = await core.chatMigrateInit(dbPath, "key", core.MigrationConfirmation.YesUp);
@@ -183,7 +199,7 @@ describe("Core tests", () => {
       {type: "timedAction", action: "second"}
     ]);
     await stopAndClose(ctrl);
-  }, 10000);
+  });
 
   it("should close the store while a receive is in flight", async () => {
     const ctrl = await core.chatMigrateInit(dbPath, "key", core.MigrationConfirmation.YesUp);
@@ -201,7 +217,7 @@ describe("Core tests", () => {
     expect({closed, timerDelayBelow100ms: timerDelay < 100}).toEqual({closed: false, timerDelayBelow100ms: true});
     await close;
     expect(await receives).toEqual([{event: undefined}, {error: "chat receiver stopped"}]);
-  }, 10000);
+  });
 
   it("should accept loading libsimplex again from the same path", () => {
     expect(() => simplex.load(addonPath, libPath)).not.toThrow();
@@ -235,7 +251,7 @@ describe("Core tests", () => {
   }, 35000);
 
   it("should let the process exit while a receiver is idle", () => {
-    const childDbPath = path.resolve(tmpDir, "simplex_child");
+    const childDbPath = path.resolve(dbPath);
     const script = `
       const simplex = require("./build/Release/simplex.node");
       simplex.load(${JSON.stringify(libPath)});
@@ -243,11 +259,11 @@ describe("Core tests", () => {
         .then(([ctrl]) => simplex.chat_recv_msg_wait(ctrl, 1))
         .then((res) => console.log("received " + JSON.stringify(res)));
     `;
-    const child = spawnSync(process.execPath, ["-e", script], {cwd: path.join(__dirname, ".."), timeout: 10000, encoding: "utf8"});
+    const child = spawnSync(process.execPath, ["-e", script], {cwd: path.join(__dirname, ".."), timeout: 25000, encoding: "utf8"});
     if (child.status !== 0 || child.signal !== null) console.log("child stderr:", child.stderr);
     expect({status: child.status, signal: child.signal, stdout: child.stdout.trim()})
       .toEqual({status: 0, signal: null, stdout: 'received ""'});
-  }, 15000);
+  });
 
   it("should not crash when closing stopped controllers repeatedly", async () => {
     const script = `

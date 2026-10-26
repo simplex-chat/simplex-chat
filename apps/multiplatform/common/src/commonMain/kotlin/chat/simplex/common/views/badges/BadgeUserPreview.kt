@@ -19,7 +19,7 @@ import chat.simplex.res.*
 import kotlinx.datetime.Instant
 
 @Composable
-fun BadgeUserPreview(level: BadgeLevel, modifier: Modifier = Modifier, trailing: @Composable () -> Unit = {}) {
+fun BadgeUserPreview(level: BadgeLevel, modifier: Modifier = Modifier) {
   val user = chatModel.currentUser.value
   val displayName = user?.displayName ?: stringResource(MR.strings.badges_preview_my_nickname)
   val previewBadge = LocalBadge(
@@ -29,15 +29,12 @@ fun BadgeUserPreview(level: BadgeLevel, modifier: Modifier = Modifier, trailing:
   )
   Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
     ProfileImage(size = 128.dp, image = user?.image)
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-      NameWithBadge(
-        name = displayName,
-        badge = previewBadge,
-        style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis
-      )
-      trailing()
-    }
+    NameWithBadge(
+      name = displayName,
+      badge = previewBadge,
+      style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
+      maxLines = 1,
+      overflow = TextOverflow.Ellipsis
+    )
   }
 }

@@ -21,7 +21,6 @@ module StoreService.Store.Invoices
     getInvoice,
     getInvoiceByProviderRef,
     unpaidRefs,
-    providerText,
     codeHashExists,
     OverdueInvoice (..),
     overdueInvoices,
@@ -65,7 +64,7 @@ import Simplex.Chat.Store.Shared (insertedRowId)
 import Simplex.Chat.PaymentService.Types (CardProvider (..), CryptoCurrency (..), CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), PaymentProvider (..), PaymentStatus (..), ServicePaymentDestination (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withConnection, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
-import Simplex.Messaging.Encoding.String (textEncode)
+import Simplex.Messaging.Encoding.String (textDecode, textEncode)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import StoreService.Names.Phases (RegistrationId (..))
 import StoreService.Providers (Confirmed (..), Received (..))
@@ -360,25 +359,6 @@ qSeedBadgeOffer =
     "INSERT INTO @badge_offers (offer_id, price_id, months, free_months, discount, status, created_at) "
       <> "VALUES (?,?,?,?,?,?,?) ON CONFLICT (offer_id) DO NOTHING"
 
-providerText :: PaymentProvider -> Text
-providerText = \case
-  PPApple -> "apple"
-  PPGoogle -> "google"
-  PPStripe -> "stripe"
-  PPCrypto -> "crypto"
-  PPCode -> "code"
-  PPReceipt -> "receipt"
-
-textToProvider :: Text -> Maybe PaymentProvider
-textToProvider = \case
-  "apple" -> Just PPApple
-  "google" -> Just PPGoogle
-  "stripe" -> Just PPStripe
-  "crypto" -> Just PPCrypto
-  "code" -> Just PPCode
-  "receipt" -> Just PPReceipt
-  _ -> Nothing
-
 cryptoCurrencyText :: CryptoCurrency -> Text
 cryptoCurrencyText CCBtc = "btc"
 cryptoCurrencyText CCXmr = "xmr"
@@ -450,7 +430,7 @@ mkInvoiceRow
       :. (cryptoAmt, expiresAt, statusTxt, createdAt)
       :. (pAmount, pCryptoPaid, pCryptoDue, pPaidInFull, pStatus, pUpdatedAt, pConfirmedAmount, pConfirmedUnits)
     ) = do
-    provider <- note "invoices.provider" (textToProvider providerTxt)
+    provider <- note "invoices.provider" (textDecode providerTxt)
     invoiceProduct <- case (badgeType, months, registrationId) of
       (Just bt, Just m, Nothing) -> Right (IPBadge bt (fromIntegral m))
       (Nothing, Nothing, Just rid) -> Right (IPName (RegistrationId rid))
@@ -558,7 +538,7 @@ insertInvoiceRow db (InvoiceId invId) provider price amount currency destination
   DB.execute
     db
     qInsertInvoice
-    ( (invId, providerText provider, price, price - amount, Nothing :: Maybe Word32, amount, currency)
+    ( (invId, textEncode provider, price, price - amount, Nothing :: Maybe Word32, amount, currency)
         :. (url, addr, cryptoCur, cryptoAmt, truncateToSecond expiresAt', invoiceStatusText ISOpen, createdAt, createdAt)
     )
   where
@@ -621,7 +601,7 @@ overdueInvoices st cutoff = withConnection st $ \db -> do
   rows <- DB.query db qOverdueInvoices (Only (truncateToSecond cutoff))
   either (E.throwIO . StoreDecodeError) pure (traverse toOverdue rows)
   where
-    toOverdue (i, providerTxt, oiProviderRef, oiCreatedAt) = case textToProvider providerTxt of
+    toOverdue (i, providerTxt, oiProviderRef, oiCreatedAt) = case textDecode providerTxt of
       Just oiProvider -> Right OverdueInvoice {oiInvoiceId = InvoiceId i, oiProvider, oiProviderRef, oiCreatedAt}
       Nothing -> Left ("invoices.provider: " <> providerTxt)
 
@@ -683,7 +663,7 @@ upsertPayment db InvoiceRow {irInvoiceId, irProvider, irProviderRef, irCurrency}
   DB.execute
     db
     qUpsertPayment
-    ( (invId, invId, providerText irProvider, irProviderRef, amount)
+    ( (invId, invId, textEncode irProvider, irProviderRef, amount)
         :. (irCurrency, rcvCrypto, rcvDue, if paidInFull then 1 :: Int else 0, paymentStatusText status)
         :. (rcvUnits, confirmedCents, cfUnits, rcvRate, at, at)
     )

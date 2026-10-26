@@ -14,7 +14,7 @@ where
 
 import Control.Exception (SomeAsyncException, SomeException, fromException, throwIO, try)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString as B
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -36,7 +36,7 @@ logError = logAt "ERROR" callStack
 logAt :: MonadIO m => Text -> CallStack -> Text -> m ()
 logAt tag cs msg = liftIO $ do
   ts <- formatTime defaultTimeLocale "%Y-%m-%d %H:%M:%S %z" <$> getZonedTime
-  -- One hPut holds the handle's lock for the whole line; T.hPutStr writes char by char unbuffered and buffer by buffer otherwise.
+  -- one write per line, putStrLn family is not atomic
   B.hPut stderr $ encodeUtf8 $ "[" <> tag <> " " <> T.pack ts <> " " <> loc <> "] " <> msg <> "\n"
   where
     loc = case getCallStack cs of

@@ -564,10 +564,13 @@ runGroupServiceAs svc groupCfg action = do
   -- The web listener starts after group start-up, so the stop cannot land inside start-up's database calls.
   let started = pollUntilTrue (listening port) >> pollUntil (getStoredGroup cc)
       -- A stop inside a lane's database call leaves a statement open, and closing the store then fails.
-      settle gid = when (isJust groupCfg) $ do
-        status <- memberStatus cc gid badgeBotName
-        forM_ status $ \s -> unless (s `elem` ["removed", "left", "deleted"]) $ settleLane cc env gid
+      settle gid = when (isJust groupCfg) $ settleServingLane cc env gid
   (started >>= \ManagedGroup {mgGroupId} -> action cc env mgGroupId <* settle mgGroupId) `finally` stopGroupService t cc
+
+settleServingLane :: HasCallStack => ChatController -> ServiceState -> Int64 -> IO ()
+settleServingLane cc env gid = do
+  status <- memberStatus cc gid badgeBotName
+  forM_ status $ \s -> unless (s `elem` ["removed", "left", "deleted"]) $ settleLane cc env gid
 
 -- It returns once chat has started, while group start-up may still run; the Int is its web listener's port.
 startGroupService :: HasCallStack => GroupSvc -> Maybe GroupConfig -> IO (Async (), ChatController, ServiceState, Int)
@@ -622,25 +625,31 @@ withGroupOwner ps action = do
   runWithOwner svc $ \cc env _ -> action gsKey cc env
 
 runWithOwner :: HasCallStack => GroupSvc -> (ChatController -> ServiceState -> Int64 -> TestCC -> IO a) -> IO a
-runWithOwner svc@GroupSvc {gsPs} action = runGroupService svc $ \cc env gid -> withOwnerJoined gsPs cc gid $ action cc env gid
+runWithOwner svc@GroupSvc {gsPs} action = runGroupService svc $ \cc env gid -> withOwnerJoined gsPs cc env gid $ action cc env gid
 
-withOwnerJoined :: HasCallStack => TestParams -> ChatController -> Int64 -> (TestCC -> IO a) -> IO a
-withOwnerJoined ps cc gid action =
+withOwnerJoined :: HasCallStack => TestParams -> ChatController -> ServiceState -> Int64 -> (TestCC -> IO a) -> IO a
+withOwnerJoined ps cc env gid action =
   withNewTestChat ps "alice" aliceProfile $ \alice -> do
     joinGroup cc alice
     waitMemberRole cc gid "alice" "owner"
     drainUntil alice ["#" <> groupName <> ": " <> botName <> " changed your role from member to owner"]
+    joined <- lastMessageId cc
     r <- action alice
+    settleServingLane cc env gid
+    awaitBroadcasts cc joined "alice" alice
     drainConsole alice
     pure r
 
 -- Bob joins after the first member and is connected to her.
-withMemberJoined :: HasCallStack => TestParams -> ChatController -> TestCC -> (TestCC -> IO a) -> IO a
-withMemberJoined ps cc alice action =
+withMemberJoined :: HasCallStack => TestParams -> ChatController -> ServiceState -> Int64 -> TestCC -> (TestCC -> IO a) -> IO a
+withMemberJoined ps cc env gid alice action =
   withNewTestChat ps "bob" bobProfile $ \bob -> do
     joinGroup cc bob
     drainUntil alice ["#" <> groupName <> ": new member bob is connected"]
+    joined <- lastMessageId cc
     r <- action bob
+    settleServingLane cc env gid
+    awaitBroadcasts cc joined "bob" bob
     drainConsole bob
     pure r
 
@@ -710,7 +719,7 @@ testEarliestPromotedOnLaterJoin ps = do
   runWithOwner svc $ \cc env gid alice -> do
     setMemberRole cc gid "alice" "member"
     executeSql cc "UPDATE sx_badge_service_group SET owner_bootstrapped = 0"
-    withMemberJoined ps cc alice $ \bob -> do
+    withMemberJoined ps cc env gid alice $ \bob -> do
       waitMemberRole cc gid "alice" "owner"
       awaitLaneOnConsoles cc env [alice, bob]
       memberRoles cc gid `shouldReturn` [("alice", "owner"), ("bob", "member")]
@@ -825,7 +834,7 @@ memberStatus cc gid name =
 withTwoMembersOwnerUnset :: HasCallStack => GroupSvc -> (ChatController -> Int64 -> TestCC -> TestCC -> IO ()) -> IO ()
 withTwoMembersOwnerUnset svc@GroupSvc {gsPs = ps} action =
   runWithOwner svc $ \cc env gid alice ->
-    withMemberJoined ps cc alice $ \bob -> do
+    withMemberJoined ps cc env gid alice $ \bob -> do
       -- The lane must handle bob's join before the flag is cleared, or it would act on the cleared flag in this run.
       awaitLaneOnConsoles cc env [alice, bob]
       action cc gid alice bob
@@ -834,8 +843,8 @@ withTwoMembersOwnerUnset svc@GroupSvc {gsPs = ps} action =
 testFirstJoinerPromoted :: HasCallStack => TestParams -> IO ()
 testFirstJoinerPromoted ps = do
   svc <- prepareGroupService ps
-  runWithOwner svc $ \cc _ gid alice ->
-    withMemberJoined ps cc alice $ \bob -> do
+  runWithOwner svc $ \cc env gid alice ->
+    withMemberJoined ps cc env gid alice $ \bob -> do
       waitMemberRole cc gid "bob" "member"
       -- The bot queues bob's join before it introduces him, so alice's code proves the join was handled.
       sendGroupCmd alice "/issue supporter"
@@ -856,7 +865,7 @@ testFailedPromotionNotRetried ps = do
       pollUntilTrue $ mgOwnerBootstrapped <$> storedGroup cc
       awaitLaneOnConsoles cc env [alice]
       setBotRole cc "owner"
-      withMemberJoined ps cc alice $ \bob -> awaitLaneOnConsoles cc env [alice, bob]
+      withMemberJoined ps cc env gid alice $ \bob -> awaitLaneOnConsoles cc env [alice, bob]
       memberRoles cc gid `shouldReturn` [("alice", "member"), ("bob", "member")]
       drainConsole alice
 
@@ -901,8 +910,8 @@ testRoleGatedIssue ps = do
 testBlockedMemberCommandIgnored :: HasCallStack => TestParams -> IO ()
 testBlockedMemberCommandIgnored ps = do
   svc <- prepareGroupService ps
-  runWithOwner svc $ \cc _ gid alice ->
-    withMemberJoined ps cc alice $ \bob -> do
+  runWithOwner svc $ \cc env gid alice ->
+    withMemberJoined ps cc env gid alice $ \bob -> do
       waitMemberRole cc gid "bob" "member"
       -- bob is made moderator so that only the block can refuse his command.
       send alice ("/mr #" <> groupName <> " bob moderator")
@@ -1669,6 +1678,29 @@ drainConsole cc =
   timeout quietPeriod (atomically (readTQueue (termQ cc))) >>= \case
     Just _ -> drainConsole cc
     Nothing -> pure ()
+
+lastMessageId :: ChatController -> IO Int64
+lastMessageId cc = fromMaybe 0 <$> queryFirst cc "SELECT COALESCE(MAX(message_id), 0) FROM messages"
+
+awaitBroadcasts :: HasCallStack => ChatController -> Int64 -> Text -> TestCC -> IO ()
+awaitBroadcasts cc joined name TestCC {chatController = memberCC} = do
+  lastBroadcast <- listToMaybe <$> queryRows cc lastBroadcastSql
+  forM_ lastBroadcast $ \(gid, sharedMsgId) -> do
+    status <- memberStatus cc gid name
+    when (maybe False (`notElem` ["removed", "left", "deleted"]) status) $
+      pollUntilTrue $ isJust <$> (queryFirst memberCC (receivedSql sharedMsgId) :: IO (Maybe Int64))
+  where
+    lastBroadcastSql =
+      "SELECT group_id, " <> hexSharedMsgId <> " FROM messages WHERE msg_sent = 1 AND message_id > " <> show joined
+        <> " AND chat_msg_event IN ('x.msg.new', 'x.msg.update', 'x.msg.del') ORDER BY message_id DESC LIMIT 1"
+    receivedSql sharedMsgId = "SELECT message_id FROM messages WHERE msg_sent = 0 AND " <> hexSharedMsgId <> " = '" <> T.unpack sharedMsgId <> "'"
+
+hexSharedMsgId :: String
+#if defined(dbPostgres)
+hexSharedMsgId = "encode(shared_msg_id, 'hex')"
+#else
+hexSharedMsgId = "hex(shared_msg_id)"
+#endif
 
 -- A console silent this long is taken as drained.
 quietPeriod :: Int

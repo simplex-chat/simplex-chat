@@ -25,6 +25,7 @@ export interface AddRelayResult {
 export interface AddressSettings {
   businessAddress: boolean
   autoAccept?: AutoAccept
+  chatLayout?: ChatLayout
   autoReply?: MsgContent
 }
 
@@ -249,6 +250,7 @@ export interface BadgeProof {
 
 export type BadgeRedeemError = 
   | BadgeRedeemError.InvalidCode
+  | BadgeRedeemError.InvalidReceipt
   | BadgeRedeemError.ServiceNotConfigured
   | BadgeRedeemError.BadgeActive
   | BadgeRedeemError.ServiceError
@@ -259,6 +261,7 @@ export type BadgeRedeemError =
 export namespace BadgeRedeemError {
   export type Tag = 
     | "invalidCode"
+    | "invalidReceipt"
     | "serviceNotConfigured"
     | "badgeActive"
     | "serviceError"
@@ -272,6 +275,10 @@ export namespace BadgeRedeemError {
 
   export interface InvalidCode extends Interface {
     type: "invalidCode"
+  }
+
+  export interface InvalidReceipt extends Interface {
+    type: "invalidReceipt"
   }
 
   export interface ServiceNotConfigured extends Interface {
@@ -313,6 +320,112 @@ export enum BadgeType {
   Supporter = "supporter",
   Legend = "legend",
   Investor = "investor",
+}
+
+export type BlockToken = 
+  | BlockToken.LineBreak
+  | BlockToken.SoftBreak
+  | BlockToken.HardBreak
+  | BlockToken.ParagraphBreak
+  | BlockToken.Indent
+  | BlockToken.HeadingMark
+  | BlockToken.HeadingClose
+  | BlockToken.HeadingUnderline
+  | BlockToken.ListMark
+  | BlockToken.QuoteMark
+  | BlockToken.FenceMark
+  | BlockToken.RowMark
+  | BlockToken.CellMark
+  | BlockToken.DelimiterRow
+  | BlockToken.RuleMark
+
+export namespace BlockToken {
+  export type Tag = 
+    | "lineBreak"
+    | "softBreak"
+    | "hardBreak"
+    | "paragraphBreak"
+    | "indent"
+    | "headingMark"
+    | "headingClose"
+    | "headingUnderline"
+    | "listMark"
+    | "quoteMark"
+    | "fenceMark"
+    | "rowMark"
+    | "cellMark"
+    | "delimiterRow"
+    | "ruleMark"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface LineBreak extends Interface {
+    type: "lineBreak"
+  }
+
+  export interface SoftBreak extends Interface {
+    type: "softBreak"
+  }
+
+  export interface HardBreak extends Interface {
+    type: "hardBreak"
+  }
+
+  export interface ParagraphBreak extends Interface {
+    type: "paragraphBreak"
+    lineBreaks: number // int
+  }
+
+  export interface Indent extends Interface {
+    type: "indent"
+  }
+
+  export interface HeadingMark extends Interface {
+    type: "headingMark"
+    level: number // int
+  }
+
+  export interface HeadingClose extends Interface {
+    type: "headingClose"
+  }
+
+  export interface HeadingUnderline extends Interface {
+    type: "headingUnderline"
+    level: number // int
+  }
+
+  export interface ListMark extends Interface {
+    type: "listMark"
+    number?: string
+  }
+
+  export interface QuoteMark extends Interface {
+    type: "quoteMark"
+  }
+
+  export interface FenceMark extends Interface {
+    type: "fenceMark"
+    language?: string
+  }
+
+  export interface RowMark extends Interface {
+    type: "rowMark"
+  }
+
+  export interface CellMark extends Interface {
+    type: "cellMark"
+  }
+
+  export interface DelimiterRow extends Interface {
+    type: "delimiterRow"
+    columns: TableAlign[]
+  }
+
+  export interface RuleMark extends Interface {
+    type: "ruleMark"
+  }
 }
 
 export interface BlockingInfo {
@@ -970,6 +1083,7 @@ export interface CIQuote {
   sentAt: string // ISO-8601 timestamp
   content: MsgContent
   formattedText?: FormattedText[]
+  markdownBlocks?: MarkdownBlock[]
 }
 
 export interface CIReaction {
@@ -1732,6 +1846,7 @@ export interface ChatItem {
   content: CIContent
   mentions: {[key: string]: CIMention}
   formattedText?: FormattedText[]
+  markdownBlocks?: MarkdownBlock[]
   quotedItem?: CIQuote
   reactions: CIReactionCount[]
   file?: CIFile
@@ -1741,6 +1856,11 @@ export interface ChatItem {
 export interface ChatItemDeletion {
   deletedChatItem: AChatItem
   toChatItem?: AChatItem
+}
+
+export enum ChatLayout {
+  Classic = "classic",
+  Terminal = "terminal",
 }
 
 export type ChatListQuery = ChatListQuery.Filters | ChatListQuery.Search
@@ -1768,6 +1888,7 @@ export enum ChatPeerType {
   Human = "human",
   Bot = "bot",
   Business = "business",
+  Agent = "agent",
 }
 // Used in API commands. Chat scope can only be passed with groups.
 
@@ -2154,6 +2275,7 @@ export interface Contact {
   chatTags: number[] // int64
   chatItemTTL?: number // int64
   uiThemes?: UIThemeEntityOverrides
+  chatLayout?: ChatLayout
   chatDeleted: boolean
   customData?: object
 }
@@ -2213,6 +2335,7 @@ export interface ContactShortLinkData {
   profile: Profile
   message?: MsgContent
   business: boolean
+  chatLayout?: ChatLayout
   localBadge?: LocalBadge
 }
 
@@ -2548,6 +2671,7 @@ export enum FileType {
   Normal = "normal",
   Roster = "roster",
 }
+// The format markup is a token of block Markdown syntax; its text is the syntax. The format escape is the backslash of a backslash escape. Bold singleStar: written with single stars.
 
 export type Format = 
   | Format.Bold
@@ -2565,6 +2689,8 @@ export type Format =
   | Format.Mention
   | Format.Email
   | Format.Phone
+  | Format.Escape
+  | Format.Markup
 
 export namespace Format {
   export type Tag = 
@@ -2583,6 +2709,8 @@ export namespace Format {
     | "mention"
     | "email"
     | "phone"
+    | "escape"
+    | "markup"
 
   interface Interface {
     type: Tag
@@ -2590,6 +2718,7 @@ export namespace Format {
 
   export interface Bold extends Interface {
     type: "bold"
+    singleStar: boolean
   }
 
   export interface Italic extends Interface {
@@ -2656,6 +2785,15 @@ export namespace Format {
 
   export interface Phone extends Interface {
     type: "phone"
+  }
+
+  export interface Escape extends Interface {
+    type: "escape"
+  }
+
+  export interface Markup extends Interface {
+    type: "markup"
+    token: BlockToken
   }
 }
 
@@ -2969,6 +3107,7 @@ export interface GroupProfile {
   publicGroup?: PublicGroupProfile
   groupPreferences?: GroupPreferences
   memberAdmission?: GroupMemberAdmission
+  chatLayout?: ChatLayout
 }
 
 export interface GroupRelay {
@@ -3121,6 +3260,12 @@ export interface LinkPreview {
   content?: LinkContent
 }
 
+export interface ListEntry {
+  number?: string
+  content: SegmentRange
+  items: ListEntry[]
+}
+
 export interface LocalBadge {
   badge: BadgeInfo
   status: BadgeStatus
@@ -3140,6 +3285,62 @@ export interface LocalProfile {
   localAlias: string
   contactDomain?: SimplexDomainClaim
   contactDomainVerified?: DomainVerification
+}
+
+export type MarkdownBlock = 
+  | MarkdownBlock.Paragraph
+  | MarkdownBlock.Heading
+  | MarkdownBlock.CodeBlock
+  | MarkdownBlock.Quote
+  | MarkdownBlock.List
+  | MarkdownBlock.Table
+  | MarkdownBlock.Rule
+
+export namespace MarkdownBlock {
+  export type Tag = "paragraph" | "heading" | "codeBlock" | "quote" | "list" | "table" | "rule"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Paragraph extends Interface {
+    type: "paragraph"
+    content: SegmentRange
+  }
+
+  export interface Heading extends Interface {
+    type: "heading"
+    level: number // int
+    content: SegmentRange
+  }
+
+  export interface CodeBlock extends Interface {
+    type: "codeBlock"
+    language?: string
+    content: SegmentRange
+  }
+
+  export interface Quote extends Interface {
+    type: "quote"
+    content: SegmentRange
+  }
+
+  export interface List extends Interface {
+    type: "list"
+    items: ListEntry[] // non-empty
+  }
+
+  export interface Table extends Interface {
+    type: "table"
+    columns: TableAlign[] // non-empty
+    header: SegmentRange[]
+    rows: SegmentRange[][]
+  }
+
+  export interface Rule extends Interface {
+    type: "rule"
+    mark: SegmentRange
+  }
 }
 
 export enum MemberCriteria {
@@ -4253,6 +4454,11 @@ export interface SecurityCode {
   verifiedAt: string // ISO-8601 timestamp
 }
 
+export interface SegmentRange {
+  from: number // int
+  to: number // int
+}
+
 export interface SimplePreference {
   allow: FeatureAllowed
 }
@@ -5157,12 +5363,14 @@ export enum StoreServiceErrorCode {
   Payment_not_entitled = "payment_not_entitled",
   Payment_pending = "payment_pending",
   Provider_unavailable = "provider_unavailable",
+  Provider_not_configured = "provider_not_configured",
   Rate_limited = "rate_limited",
   Code_invalid = "code_invalid",
   Code_used = "code_used",
   Code_expired = "code_expired",
   Receipt_invalid = "receipt_invalid",
   Receipt_used = "receipt_used",
+  Test_purchase = "test_purchase",
   Internal = "internal",
 }
 
@@ -5206,6 +5414,13 @@ export enum SwitchPhase {
   Confirmed = "confirmed",
   Secured = "secured",
   Completed = "completed",
+}
+
+export enum TableAlign {
+  None = "none",
+  Left = "left",
+  Center = "center",
+  Right = "right",
 }
 
 export interface TimedMessagesGroupPreference {
@@ -5288,6 +5503,7 @@ export interface UIThemeEntityOverride {
 export interface UIThemeEntityOverrides {
   light?: UIThemeEntityOverride
   dark?: UIThemeEntityOverride
+  chatLayout?: ChatLayout
 }
 
 export interface UpdatedMessage {

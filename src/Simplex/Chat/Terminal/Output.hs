@@ -388,8 +388,9 @@ printMessage ChatTerminal {termSize = Size {height, width}, nextMessageRow} msg 
 -- because of accounting for control sequences in length
 putStyled :: MonadTerminal m => StyledString -> m ()
 putStyled (s1 :<>: s2) = putStyled s1 >> putStyled s2
-putStyled (Styled [] s) = putString s
-putStyled (Styled sgr s) = setSGR sgr >> putString s >> resetAttributes
+-- putText, as putString sends a terminal command per character
+putStyled (Styled [] s) = putText (T.pack s)
+putStyled (Styled sgr s) = setSGR sgr >> putText (T.pack s) >> resetAttributes
 
 setSGR :: MonadTerminal m => [SGR] -> m ()
 setSGR = mapM_ $ \case

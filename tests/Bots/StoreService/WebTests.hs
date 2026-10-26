@@ -83,7 +83,9 @@ import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, diffUTCTime, getCurrentTime, picosecondsToDiffTime, secondsToDiffTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Word (Word32, Word8)
-import GHC.IO.Handle (hDuplicate, hDuplicateTo)
+import qualified GHC.IO.Device as IODevice
+import qualified GHC.IO.FD as FD
+import GHC.IO.Handle.FD (handleToFd)
 import Network.HTTP.Client (Manager, Request (..), RequestBody (..), Response, defaultManagerSettings, httpLbs, newManager, parseRequest, responseBody, responseHeaders, responseStatus, responseTimeoutMicro)
 import Network.HTTP.Types (Header, HeaderName, hCacheControl, hContentType)
 import Network.HTTP.Types.Status (statusCode)
@@ -104,7 +106,7 @@ import Simplex.Messaging.Encoding.String (textDecode, textEncode)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import System.Directory (createDirectoryIfMissing, createFileLink, doesFileExist, listDirectory)
 import System.FilePath ((</>))
-import System.IO (BufferMode (..), IOMode (..), hClose, hGetBuffering, hSetBuffering, stderr, withFile)
+import System.IO (BufferMode (..), IOMode (..), hFlush, hGetBuffering, hSetBuffering, stderr, withFile)
 import System.IO.Unsafe (unsafePerformIO)
 import System.Timeout (timeout)
 import Test.Hspec
@@ -1036,10 +1038,13 @@ testServiceConfig staticDir trustForwarded =
       btcpay = Nothing,
       stripe = Nothing,
       poll = PollConfig {pWaitingSeconds = 3, pIdleSeconds = 60},
+      appleStore = Nothing,
+      playStore = Nothing,
       issuer = Nothing,
       devIssuerKeys = [],
       group = Nothing,
-      names = Nothing
+      names = Nothing,
+      devAcceptUnverifiedStoreReceipts = False
     }
 
 testServeWebappOff :: IO ()
@@ -2866,7 +2871,7 @@ stderrCaptureLock :: MVar ()
 stderrCaptureLock = unsafePerformIO $ newMVar ()
 {-# NOINLINE stderrCaptureLock #-}
 
--- hDuplicateTo changes stderr's buffering, so put the original setting back.
+-- testLogRecordsWhole changes stderr's buffering, so put the original setting back.
 capturingStderr :: IO () -> IO Text
 capturingStderr action = withMVar stderrCaptureLock $ \_ -> do
   createDirectoryIfMissing True "tests/tmp"
@@ -2874,8 +2879,10 @@ capturingStderr action = withMVar stderrCaptureLock $ \_ -> do
     let path = dir </> "stderr.log"
     withFile path WriteMode $ \h -> do
       buffering <- hGetBuffering stderr
-      saved <- hDuplicate stderr
-      (hDuplicateTo h stderr >> action) `E.finally` (hDuplicateTo saved stderr >> hClose saved >> hSetBuffering stderr buffering)
+      fd <- handleToFd h
+      hFlush stderr
+      saved <- IODevice.dup FD.stderr
+      (IODevice.dup2 fd FD.stderr >> action) `E.finally` (hFlush stderr >> IODevice.dup2 saved FD.stderr >> IODevice.close saved >> hSetBuffering stderr buffering)
     T.readFile path
 
 logThreads :: Int

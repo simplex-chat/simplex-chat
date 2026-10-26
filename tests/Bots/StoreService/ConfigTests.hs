@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -9,6 +10,7 @@ import qualified Data.ByteArray as BA
 import qualified Data.ByteString.Char8 as B
 import Data.Either (isLeft)
 import Data.Ini (readIniFile)
+import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Data.Time.Calendar (fromGregorian)
@@ -54,6 +56,14 @@ badgeConfigTests = describe "store service config" $ do
   it "refuses an index that is not a positive whole number" testIssuerIndexInvalid
   it "refuses a private key that is not a valid issuer secret" testIssuerBadSecret
   it "names the old default and key_<n> settings, then refuses the boot" testIssuerOldFormat
+  it "verifies store receipts when the dev section is absent" testDevUnverifiedReceiptsAbsent
+  it "reads accept_unverified_store_receipts = on" testDevUnverifiedReceiptsOn
+  it "reads accept_unverified_store_receipts = off" testDevUnverifiedReceiptsOff
+  it "refuses an accept_unverified_store_receipts that is not on or off" testDevUnverifiedReceiptsNotBoolean
+  it "configures no store verifier when [apple] and [google] are absent" testStoresAbsent
+  it "reads [apple] and [google], defaulting Google's endpoints" testStoresRead
+  it "refuses an incomplete [apple] or [google], naming the key" testStoresIncomplete
+  it "refuses accept_unverified_store_receipts beside a real store verifier" testDevUnverifiedBesideVerifier
   groupConfigTests
 
 fullIni :: T.Text
@@ -359,6 +369,74 @@ testIssuerOldFormat = do
     Right ini <- readIniFile p
     unknownKeys ini `shouldMatchList` ["issuer.default", "issuer.key_1"]
   issuerRefusal old `shouldReturn` "issuer.index is required"
+
+testDevUnverifiedReceiptsAbsent :: IO ()
+testDevUnverifiedReceiptsAbsent = withIni fullIni $ \p -> do
+  Right cfg <- readServiceConfig p
+  devAcceptUnverifiedStoreReceipts cfg `shouldBe` False
+
+testDevUnverifiedReceiptsOn :: IO ()
+testDevUnverifiedReceiptsOn = withDev "accept_unverified_store_receipts = on\n" $ \r -> case r of
+  Right cfg -> devAcceptUnverifiedStoreReceipts cfg `shouldBe` True
+  Left e -> expectationFailure ("[dev] accept_unverified_store_receipts = on is legal: " <> e)
+
+testDevUnverifiedReceiptsOff :: IO ()
+testDevUnverifiedReceiptsOff = withDev "accept_unverified_store_receipts = off\n" $ \r -> case r of
+  Right cfg -> devAcceptUnverifiedStoreReceipts cfg `shouldBe` False
+  Left e -> expectationFailure ("[dev] accept_unverified_store_receipts = off is legal: " <> e)
+
+testDevUnverifiedReceiptsNotBoolean :: IO ()
+testDevUnverifiedReceiptsNotBoolean = withDev "accept_unverified_store_receipts = yes\n" $ \r -> case r of
+  Left e -> e `shouldContain` "accept_unverified_store_receipts"
+  Right _ -> expectationFailure "only on and off are accepted, so a typo cannot silently arm the mock"
+
+withDev :: T.Text -> (Either String ServiceConfig -> IO a) -> IO a
+withDev keys act = withIni (fullIni <> "[dev]\n" <> keys) $ \p -> readServiceConfig p >>= act
+
+appleIni, googleIni :: T.Text
+appleIni = "[apple]\nbundle_id = chat.simplex.app\nroot_certificates = /etc/badges/AppleRootCA-G3.cer ,/etc/badges/AppleRootCA-G4.cer,\n"
+googleIni = "[google]\npackage_name = chat.simplex.app\nservice_account_file = /etc/badges/play.json\n"
+
+testStoresAbsent :: IO ()
+testStoresAbsent = withIni fullIni $ \p -> do
+  Right cfg <- readServiceConfig p
+  appleStore cfg `shouldBe` Nothing
+  playStore cfg `shouldBe` Nothing
+
+testStoresRead :: IO ()
+testStoresRead = withIni (fullIni <> appleIni <> googleIni) $ \p -> do
+  Right cfg <- readServiceConfig p
+  appleStore cfg `shouldBe` Just AppleStoreConfig {aBundleId = "chat.simplex.app", aRootCertificates = "/etc/badges/AppleRootCA-G3.cer" :| ["/etc/badges/AppleRootCA-G4.cer"]}
+  playStore cfg
+    `shouldBe` Just
+      PlayStoreConfig
+        { gPackageName = "chat.simplex.app",
+          gServiceAccountFile = "/etc/badges/play.json",
+          gApiHost = "https://androidpublisher.googleapis.com",
+          gTokenUrl = "https://oauth2.googleapis.com/token"
+        }
+
+testStoresIncomplete :: IO ()
+testStoresIncomplete = do
+  refused (T.replace "bundle_id = chat.simplex.app\n" "" appleIni) "apple.bundle_id"
+  refused (T.replace "root_certificates = /etc/badges/AppleRootCA-G3.cer ,/etc/badges/AppleRootCA-G4.cer,\n" "" appleIni) "apple.root_certificates"
+  refused (T.replace "package_name = chat.simplex.app\n" "" googleIni) "google.package_name"
+  refused (T.replace "service_account_file = /etc/badges/play.json\n" "" googleIni) "google.service_account_file"
+  where
+    refused section key =
+      withIni (fullIni <> section) readServiceConfig >>= \case
+        Left e -> e `shouldContain` key
+        Right _ -> expectationFailure ("an incomplete section must fail at boot, naming " <> key)
+
+testDevUnverifiedBesideVerifier :: IO ()
+testDevUnverifiedBesideVerifier =
+  mapM_
+    ( \stores ->
+        withIni (fullIni <> stores <> "[dev]\naccept_unverified_store_receipts = on\n") readServiceConfig >>= \case
+          Left e -> e `shouldContain` "accept_unverified_store_receipts"
+          Right _ -> expectationFailure "a service that verifies store receipts must not also accept unverified ones"
+    )
+    [appleIni, googleIni]
 
 parseIni :: T.Text -> IO (Either String ServiceConfig)
 parseIni t = withIni t readServiceConfig

@@ -8,7 +8,7 @@
 
 > **subscribeChatItems**(`bot`, `onMessage`, `commands`): `void`
 
-Defined in: [src/bot.ts:110](../src/bot.ts#L110)
+Defined in: [src/bot.ts:110](../bot.ts#L110)
 
 ## Parameters
 
@@ -21,6 +21,8 @@ Defined in: [src/bot.ts:110](../src/bot.ts#L110)
 ((`chatItem`, `content`, `chat`) => `void` \| `Promise`\<`void`\>) \| `undefined`
 
 ### commands
+
+\{\[`key`: `string`\]: ((`chatItem`, `command`, `chat`) => `void` \| `Promise`\<`void`\>) \| `undefined`; \}
 
 ## Returns
 

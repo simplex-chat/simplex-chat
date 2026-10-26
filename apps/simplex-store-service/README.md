@@ -51,7 +51,7 @@ simplex-store-service --help
   `simplex-directory-service --run-cli`). This mode is the chat/RPC side and the `//` commands
   below: it starts no web listener and no poller, and serves no group commands, whatever
   `--service-config` says. It still updates a code's group message when the code is redeemed or
-  revoked.
+  revoked. `[apple]`, `[google]` and `[dev] accept_unverified_store_receipts` apply to it.
 - `--no-address`: skip address creation on start-up (for operators who provision the address themselves).
 The service cannot sign credentials without an issuer key and refuses to start without one:
 
@@ -106,7 +106,8 @@ Other options:
 - `--service-config INI_FILE`: path to `store_service.ini`. Omit it to run the chat/RPC side
   only; the process never starts a web listener without it, and never starts one under
   `--run-cli`, which parses and validates the whole file (`[listener] static_dir` included) but
-  uses only its `[issuer]` section. An issuer key is still required either way.
+  uses only its `[issuer]`, `[apple]` and `[google]` sections and `[dev] accept_unverified_store_receipts`. An issuer key is
+  still required either way.
 - `--service-name NAME`: the bot's display name, without `*`s or spaces (default `SimpleX Badges`).
 - `--client-service`: use the client service certificate.
 - also accepts the standard SimpleX Chat core options — database path, SMP/XFTP servers,
@@ -119,7 +120,8 @@ Other options:
 `[btcpay]` section (omitting it disables Bitcoin and Monero), an optional `[stripe]`
 section (omitting it disables card payments), an optional `[group]` section (omitting it
 turns off the group's commands, though a group created earlier still has its code messages updated),
-the poll cadence, and optional `[names]` and `[chain]` sections for the names store (omitting both
+the poll cadence, optional `[apple]` and `[google]` sections that verify store purchases (see
+[Store purchases](#store-purchases-app-store-and-google-play)), and optional `[names]` and `[chain]` sections for the names store (omitting both
 turns it off), whose `[chain] service_key` is [the gas key](#the-gas-key). `[names]` requires
 `terms_version` and `terms_url`, and an optional `[community]` section lists the community names
 (see [Terms and community names](#terms-and-community-names)). Write every setting as
@@ -255,12 +257,79 @@ the exception: each answers 200, 400 or 413 with an empty body, because its prov
 caller and nothing it could read would change what the route does. A wrong verb on any route, those
 two included, answers `method_not_allowed`.
 
+### Store purchases (App Store and Google Play)
+
+Each store is verified only when its section is present; without one, every receipt from that store
+is answered `provider_not_configured` and the app keeps the purchase to present again. A section
+missing a key, a root certificate that cannot be read or is not a root, an unreadable service
+account key, or either section beside
+`[dev] accept_unverified_store_receipts = on`, stops the service at startup.
+
+```ini
+[apple]
+bundle_id = chat.simplex.app
+root_certificates = /etc/simplex-store-service/AppleRootCA-G3.cer
+
+[google]
+package_name = chat.simplex.app
+service_account_file = /etc/simplex-store-service/play-service-account.json
+```
+
+- `[apple]` verifies the signed transaction offline, against the roots `root_certificates` lists,
+  comma-separated, each in DER. Today that is Apple Root CA - G3 as Apple publishes it at
+  <https://www.apple.com/certificateauthority/AppleRootCA-G3.cer>. Each must be self-signed.
+  Verification reads no validity period, so an expired root keeps verifying. A transaction for
+  another bundle id, or an intermediate no listed root signed, is answered `internal` and logged as
+  an error rather than refused, since `bundle_id` may be wrong or a root missing; check both when those errors appear, unless the purchase was made in Xcode's
+  StoreKit testing, which the App Store does not sign, so no root verifies it. When Apple signs
+  under a new root, list it beside the old one rather than in its place: a purchase signed under the
+  old root still verifies, and one answered `internal` meanwhile is credited when the app presents
+  it again.
+- `[google]` asks the Google Play Developer API about each purchase, and acknowledges it before
+  crediting it, as the service account whose JSON key `service_account_file` holds. The account
+  needs both Play Console permissions Google's
+  [getting started](https://developers.google.com/android-publisher/getting_started) lists for its
+  billing APIs: "View financial data, orders, and cancellation survey responses" to read a
+  purchase, and "Manage orders and subscriptions" to acknowledge it. Without the second, a Play
+  purchase the app has not already acknowledged itself is answered `internal` and logged as an
+  error naming the acknowledgement, and the app presents it again once the permission is granted,
+  which must be within three days, before Play refunds it. The key signs in
+  for an access token, so keep the file readable by this service alone.
+  Play purchases are verified on a lane of their own, so a slow or unreachable Play delays only
+  other Play purchases, not code redemptions, renewals or App Store purchases.
+
+Which answers are terminal for a purchase and which leave it to be presented again is listed per
+store in [`docs/protocol/badges-rpc.md`](../../docs/protocol/badges-rpc.md#commands).
+
+### Accepting store receipts unverified, for local testing
+
+```ini
+[dev]
+accept_unverified_store_receipts = on
+```
+
+Without a store verifier every store purchase is answered `provider_not_configured`. With this on,
+the service accepts any well-formed receipt without asking or verifying anything: an Apple JWS for
+the `transactionId` and `productId` its payload names, unsigned or not, and a Play product id and
+token as given. It applies to both run modes, since `--run-cli` answers service requests too, and
+the service logs a warning at every start while it is on. Off by default, and only `on`/`off`
+parse. The service refuses to start with it on beside an `[apple]` or `[google]` section.
+
+With it on, anyone who can reach the service address can mint badges by sending a made-up receipt.
+That is harmless only while this deployment signs with an issuer key released apps do not carry, so
+they refuse what it signs — never turn it on where the key is one those apps trust.
+
 ## Deployment
 
 `scripts/store-service/` holds the production deployment: the image (`Dockerfile`, built from
 the repository root), `compose.yml`, the ini template `store_service.ini.example` and the egress
 rule `egress.sh`. The service runs with `+client_postgres` and host networking; one Caddy serves
 both sites from the folders the service exports at boot and proxies the API to it.
+
+`compose.yml` mounts the folder `scripts/store-service/config/` read-only at
+`/etc/simplex-store-service`. It holds `store_service.ini`, and the App Store root and the Play
+service account key when `[apple]` and `[google]` are configured. The folder must exist before
+`docker compose up`: compose refuses to start rather than create it empty.
 
 ### Upgrading from the badge service
 
@@ -270,14 +339,18 @@ The rename to StoreService changed what the operator runs:
 |---|---|
 | `scripts/badge-service/` | `scripts/store-service/` |
 | compose service `badge-service`, image `simplex-badge-service` | compose service `store-service`, image `simplex-store-service` |
-| `badge_service.ini`, mounted at `/etc/simplex-badge-service/badge_service.ini` | `store_service.ini`, mounted at `/etc/simplex-store-service/store_service.ini` |
+| `badge_service.ini` | `store_service.ini` |
+| the folder `config`, mounted read-only at `/etc/simplex-badge-service` (before it, `badge_service.ini` alone, mounted at `/etc/simplex-badge-service/badge_service.ini`) | the folder `config`, mounted read-only at `/etc/simplex-store-service` |
+| `[apple] root_certificates` and `[google] service_account_file` under `/etc/simplex-badge-service/` | the same files under `/etc/simplex-store-service/` |
 | the binary `simplex-badge-service` | `simplex-store-service` |
 | `static_dir = /srv/web` | `static_dir = /srv/badges` |
 | `webapp_export_dir = /srv/webapp`, host folder `web` | `webapp_export_dir = /srv/badges-export`, host folder `badges` |
 
-Move `badge_service.ini` to `scripts/store-service/store_service.ini` and change its two paths,
-and point Caddy's badges root at `scripts/store-service/badges`, which the service fills at boot. Then start the new service
-with
+Move `scripts/badge-service/config/` to `scripts/store-service/config/` (a deployment from before
+the config folder creates it and moves `badge_service.ini` into it), rename `badge_service.ini` in it
+to `store_service.ini`, and change its paths: `static_dir`, `webapp_export_dir`, and the
+`/etc/simplex-badge-service/` files under `[apple]` and `[google]`. Point Caddy's badges root at
+`scripts/store-service/badges`, which the service fills at boot. Then start the new service with
 
 ```
 docker compose up -d --build --remove-orphans
@@ -423,9 +496,9 @@ arguments too, so rebuild the image:
 ```
 sudo useradd --system --no-create-home --shell /usr/sbin/nologin simplex-store
 id simplex-store
-mkdir -p badges names
+mkdir -p badges names config
 sudo chown -R simplex-store:simplex-store badges names
-sudo chown simplex-store store_service.ini && sudo chmod 600 store_service.ini
+sudo chown simplex-store config/store_service.ini && sudo chmod 600 config/store_service.ini
 docker compose up -d --build --remove-orphans
 ```
 
@@ -563,17 +636,17 @@ The commands run from `scripts/store-service/` on the service host, with Foundry
 shell function, which takes a `[chain]` key's value without surrounding spaces, tabs or a CR:
 
 ```
-ini() { sudo sed -n "/^\[chain\]/,/^\[/s/^$1[[:space:]]*=[[:space:]]*\([^[:space:]]*\).*/\1/p" "${2:-store_service.ini}"; }
+ini() { sudo sed -n "/^\[chain\]/,/^\[/s/^$1[[:space:]]*=[[:space:]]*\([^[:space:]]*\).*/\1/p" "${2:-config/store_service.ini}"; }
 ```
 
 Keys and the RPC URL are read through `ini`, so they stay out of the shell history. A key is in
 cast's arguments, and the RPC URL in curl's, visible to `ps` while it runs.
 
 The ini is never edited in place. `sudoedit` refuses a file in a directory the invoking user can
-write (sudo(8), sudoers(5) `sudoedit_checkdir`), as `scripts/store-service/` of the checkout is.
+write (sudo(8), sudoers(5) `sudoedit_checkdir`), as `scripts/store-service/config/` of the checkout is.
 `sudo <editor>` would leave swap or backup files holding the key beside it, which git does not
 ignore. So each change is made in a copy in a root-only directory and copied over the ini, which
-keeps its owner, mode and inode, so compose's read-only mount sees it. `next/store_service.ini` and
+keeps its owner and mode. `next/store_service.ini` and
 the other copies below are ignored by git, as every `store_service.ini` is, and are outside the
 image.
 
@@ -583,18 +656,18 @@ Fill `[names]` and `[chain]` in a copy, with a `service_key = 0x...` line under 
 generate the key into that line, so it is never printed, and put the copy in place:
 
 ```
-sudo install -d -m 700 next && sudo cp -p store_service.ini next/store_service.ini
+sudo install -d -m 700 next && sudo cp -p config/store_service.ini next/store_service.ini
 sudoedit next/store_service.ini
 cast wallet new --json | jq -r '"s/^service_key[[:space:]]*=.*/service_key = " + .[0].private_key + "/"' | sudo sed -i -f - next/store_service.ini
 cast wallet address "$(ini service_key next/store_service.ini)"
-sudo cp next/store_service.ini store_service.ini && sudo rm -r next
+sudo cp next/store_service.ini config/store_service.ini && sudo rm -r next
 ```
 
 The address check prints the key's address, as in `0xB2590B3a4fa5bEdda803F5f1F605803438C3F71E`, and
 fails when the line was not replaced. The key is `0x` and 64 hex digits.
 
 The ini holds the only copy of the key. It is gitignored, every `*.ini` is kept out of the image,
-and compose mounts it read-only. Keep it owned by the service user with mode 600 (see
+and compose mounts its folder read-only. Keep it owned by the service user with mode 600 (see
 [Egress rule](#egress-rule)). The service never logs the key; keep it out of logs and tickets too.
 If a key was ever shown on a terminal, clear the screen and its scrollback (`clear && printf
 '\e[3J'`, and `tmux clear-history` in tmux), and never show one in a recorded session.
@@ -754,7 +827,7 @@ minute after its commit.
 
    ```
    sudo install -d -m 700 prev next
-   sudo cp -p store_service.ini prev/store_service.ini && sudo cp -p store_service.ini next/store_service.ini
+   sudo cp -p config/store_service.ini prev/store_service.ini && sudo cp -p config/store_service.ini next/store_service.ini
    cast wallet new --json | jq -r '"s/^service_key[[:space:]]*=.*/service_key = " + .[0].private_key + "/"' | sudo sed -i -f - next/store_service.ini
    OLD=$(cast wallet address "$(ini service_key prev/store_service.ini)")
    NEW=$(cast wallet address "$(ini service_key next/store_service.ini)")
@@ -773,21 +846,21 @@ minute after its commit.
    `max_fee_per_gas = 1` under `[chain]` instead:
 
    ```
-   sudo install -d -m 700 drain && sudo cp -p store_service.ini drain/store_service.ini
+   sudo install -d -m 700 drain && sudo cp -p config/store_service.ini drain/store_service.ini
    sudoedit drain/store_service.ini
-   sudo cp drain/store_service.ini store_service.ini
+   sudo cp drain/store_service.ini config/store_service.ini
    docker compose start store-service
    ```
 
    With a cap of 1 wei the service signs no new transaction. Each new one waits and logs the fee
    warning, and an owner's link edit is answered as unavailable. The saved transactions are still
    followed and settle. They are not bumped above the cap, so one that stays pending for long needs
-   the old ini back (`sudo cp prev/store_service.ini store_service.ini` and a restart) to be
+   the old ini back (`sudo cp prev/store_service.ini config/store_service.ini` and a restart) to be
    replaced. Step 3 puts the full cap back, since `next/` was copied before.
 3. Put the new ini in place, start, and check that the ini on disk now holds the new key:
 
    ```
-   sudo cp next/store_service.ini store_service.ini
+   sudo cp next/store_service.ini config/store_service.ini
    docker compose start store-service
    cast wallet address "$(ini service_key)"
    ```

@@ -21,7 +21,7 @@ constraints: zip +disable-bzip2 +disable-zstd
 source-repository-package
     type: git
     location: https://github.com/simplex-chat/simplexmq.git
-    tag: 4e6f55861419c174d45d9cad20a9e4ba9a4c0bfb
+    tag: dcdb8c0f2e4a1eebe359b9ba6ac73a37f71cc6cc
 
 source-repository-package
     type: git
@@ -70,5 +70,5 @@ source-repository-package
 source-repository-package
     type: git
     location: https://github.com/simplex-chat/wai.git
-    tag: 2f6e5aa5f05ba9140ac99e195ee647b4f7d926b0
+    tag: 63667cb577d09c967ddcd945e42c324872dfeb7d
     subdir: warp

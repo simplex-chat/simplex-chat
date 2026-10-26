@@ -39,7 +39,7 @@ import StoreService.Names.Phases (Phases, RegistrationId (..))
 import StoreService.Names.Store (CleanupKept (..), LateAlert (..), LateCredit (..), LateCreditState (..), LatePending (..), LateSupport (..), claimLateAlert, deleteUnpaidRegistration, lateAlertDue, latePending, uncreditedLateInvoices, unpaidCleanupCandidates)
 import StoreService.Orders (decide, expireOverdue, settleOrder)
 import StoreService.Providers (ListPass (..), PaymentSignal (..), Provider (..), ProviderError (..), Rate (..), Received (..), expiresItself, settleWindow, unitName)
-import StoreService.Store.Invoices (InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), cryptoCurrencyText, getInvoice, getInvoiceByProviderRef, overdueInvoices, providerText, unpaidRefs)
+import StoreService.Store.Invoices (InvoiceProduct (..), InvoiceRow (..), OverdueInvoice (..), cryptoCurrencyText, getInvoice, getInvoiceByProviderRef, overdueInvoices, unpaidRefs)
 import StoreService.Waiters (Waiters, waitingCount, waitingCountSTM)
 import Control.Concurrent.STM
 import StoreService.Log (logError, logInfo, logWarn, safely, safelyWith)
@@ -55,6 +55,7 @@ import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCu
 import Numeric.Natural (Natural)
 import Simplex.Chat.PaymentService.Types (CryptoCurrency, InvoiceId (..), InvoiceStatus (..), PaymentProvider (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
+import Simplex.Messaging.Encoding.String (textEncode)
 import Simplex.Messaging.Util (tshow)
 
 -- | Allows for our clock running ahead of the provider's; an expired invoice can still be marked paid.
@@ -181,7 +182,7 @@ readsPerPass = 25
 
 coveringProvider :: PollerEnv -> UTCTime -> (Text, Text) -> IO (Maybe Provider)
 coveringProvider env@PollerEnv {peProviders} now (provider, ref) =
-  case find ((== provider) . providerText . pProvider) peProviders of
+  case find ((== provider) . textEncode . pProvider) peProviders of
     Just p -> pure (Just p)
     Nothing -> do
       due <- dueToWarn env now ("no provider for " <> provider)
@@ -351,10 +352,10 @@ cachedRate PollerEnv {peRates} Provider {pProvider, pCurrentRate} coin =
   M.lookup key <$> readTVarIO peRates >>= \case
     Just rate -> pure rate
     Nothing -> do
-      rate <- maybe (pure $ Left $ ProviderError $ providerText pProvider <> " offers no rates") ($ coin) pCurrentRate
+      rate <- maybe (pure $ Left $ ProviderError $ textEncode pProvider <> " offers no rates") ($ coin) pCurrentRate
       rate <$ atomically (modifyTVar' peRates (M.insert key rate))
   where
-    key = (providerText pProvider, cryptoCurrencyText coin)
+    key = (textEncode pProvider, cryptoCurrencyText coin)
 
 -- | Each pass and hinted read reads the rates again.
 forgetRates :: PollerEnv -> IO ()
@@ -504,7 +505,7 @@ reportStrangers env provider now = \case
     home = case provider of
       PPCrypto -> "BTCPay store"
       PPStripe -> "Stripe account"
-      other -> providerText other <> " account"
+      other -> textEncode other <> " account"
 
 dueToWarn :: PollerEnv -> UTCTime -> Text -> IO Bool
 dueToWarn PollerEnv {peSkipped} now reason = atomically $ do

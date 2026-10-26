@@ -41,7 +41,7 @@ Installs the egress rule as the iptables and ip6tables chain $CHAIN, rebuilt on 
   --bridge IFACE     a Docker bridge network: match traffic from its interface IFACE
                      ($DOCKER_CHAIN, which must exist, and INPUT)
   --ini FILE         store_service.ini, read for [chain] rpc_url and [btcpay] host
-                     (default ./store_service.ini)
+                     (default ./config/store_service.ini)
   --db CONN          the database connection string the service is started with
                      (default \$BADGE_DB_CONN, else $DEFAULT_DB_CONN)
   --resolv-conf FILE the DNS resolvers the service uses (default /etc/resolv.conf)
@@ -57,7 +57,7 @@ die() {
 mode=install
 uid=
 bridge=
-ini=./store_service.ini
+ini=./config/store_service.ini
 db_conn=${BADGE_DB_CONN:-$DEFAULT_DB_CONN}
 resolv_conf=/etc/resolv.conf
 extra=()

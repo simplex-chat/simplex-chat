@@ -19,6 +19,7 @@ schemaMigrations :: [(String, Text, Maybe Text)]
 schemaMigrations =
   [ ("20260915_badge_service_schema", m20260915_badge_service_schema, Just down_m20260915_badge_service_schema),
     ("20260918_badge_group_ops", m20260918_badge_group_ops, Just down_m20260918_badge_group_ops),
+    ("20260925_badge_store_receipts", m20260925_badge_store_receipts, Just down_m20260925_badge_store_receipts),
     ("20261010_names", m20261010_names, Just down_m20261010_names),
     ("20261022_drop_taken_codes", m20261022_drop_taken_codes, Just down_m20261022_drop_taken_codes),
     ("20261022_name_balances", m20261022_name_balances, Just down_m20261022_name_balances),
@@ -155,6 +156,44 @@ ALTER TABLE @badge_codes DROP COLUMN group_item_id;
 ALTER TABLE @badge_codes DROP COLUMN redeem_count;
 ALTER TABLE @badge_codes DROP COLUMN redeem_limit;
 DROP TABLE @group;
+|]
+
+m20260925_badge_store_receipts :: Text
+m20260925_badge_store_receipts =
+  withPrefix
+    servicePrefix
+    -- The unique provider_ref is what makes one store transaction fund one purchase: presented twice
+    -- at once, or under two keys, only one insert of its payment succeeds.
+    [r|
+DROP INDEX @idx_payments_provider_ref;
+
+CREATE UNIQUE INDEX @idx_payments_provider_ref ON @payments(provider, provider_ref);
+
+ALTER TABLE @badge_purchases ADD COLUMN payment_id TEXT REFERENCES @payments;
+
+CREATE UNIQUE INDEX @idx_badge_purchases_payment ON @badge_purchases(payment_id);
+
+ALTER TABLE @badge_ledger ADD COLUMN payment_id TEXT REFERENCES @payments;
+
+CREATE INDEX @idx_badge_ledger_payment ON @badge_ledger(payment_id);
+|]
+
+down_m20260925_badge_store_receipts :: Text
+down_m20260925_badge_store_receipts =
+  withPrefix
+    servicePrefix
+    [r|
+DROP INDEX @idx_badge_ledger_payment;
+
+ALTER TABLE @badge_ledger DROP COLUMN payment_id;
+
+DROP INDEX @idx_badge_purchases_payment;
+
+ALTER TABLE @badge_purchases DROP COLUMN payment_id;
+
+DROP INDEX @idx_payments_provider_ref;
+
+CREATE INDEX @idx_payments_provider_ref ON @payments(provider, provider_ref);
 |]
 
 -- A registration is live as Names.Store's orderLive decides.

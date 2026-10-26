@@ -46,7 +46,7 @@ import Simplex.Chat.Markdown
 import Simplex.Chat.Badges (BadgeInfo (..), BadgeStatus (..), BadgeType (..), LocalBadge, localBadgeInfo, localBadgeStatus)
 import Simplex.Chat.Badges.Ledger (creditTypeTag, debitTypeTag)
 import Simplex.Chat.StoreService (StatementEntry (..), StatementEntryType (..))
-import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeIssueError (..), BadgeState (..))
+import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeIssueError (..), BadgeState (..), OpenStorePurchase (..))
 import Simplex.Chat.Messages hiding (NewChatItem (..))
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Operators
@@ -195,7 +195,8 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRServiceReplyAccepted u (AgentConnId cId) -> ttyUser u [plain $ "service reply accepted, connection id: " <> safeDecodeUtf8 (strEncode cId)]
   -- the badge is only shown when it is the one now on the profile; a replayed code's badge may not be
   CRBadgeRedeemed u badge newBadge _ -> ttyUser u $ if newBadge then "badge redeemed" : viewContactBadge (Just badge) else ["badge already redeemed"]
-  CRBadgeState u st -> ttyUser u $ viewUserBadgeState st
+  CRBadgeInvoice u invoiceId -> ttyUser u ["badge invoice: " <> plain invoiceId]
+  CRBadgeState u st storePurchases -> ttyUser u $ viewUserBadgeState st <> map viewOpenStorePurchase storePurchases
   CRBadgeLedger u entries -> ttyUser u $ viewBadgeLedger entries
   CRWallet u info -> ttyUser u $ viewWalletInfo info
   CRWalletMnemonic u mnemonic -> ttyUser u [plain mnemonic]
@@ -474,6 +475,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtUnknownMemberCreated u g fwdM um -> ttyUser u [ttyGroup' g <> ": " <> ttyMember fwdM <> " forwarded a message from an unknown member, creating unknown member record " <> ttyMember um]
   CEvtUnknownMemberBlocked u g byM um -> ttyUser u [ttyGroup' g <> ": " <> ttyMember byM <> " blocked an unknown member, creating unknown member record " <> ttyMember um]
   CEvtUnknownMemberAnnounced u g _ um m -> ttyUser u [ttyGroup' g <> ": unknown member " <> ttyMember um <> " updated to " <> ttyMember m]
+  CEvtDuplicateGroupMessage {} -> []
   CEvtRcvFileDescrReady _ _ _ _ -> []
   CEvtRcvFileAccepted u ci -> ttyUser u $ savingFile' ci
   CEvtRcvFileAcceptedSndCancelled u ft -> ttyUser u $ viewRcvFileSndCancelled ft
@@ -490,6 +492,8 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtServiceReplySent (AgentConnId cId) -> [plain $ "service reply sent, connection id: " <> safeDecodeUtf8 (strEncode cId)]
   CEvtBadgeChanged u st -> ttyUser u $ viewUserBadgeState st
   CEvtBadgeAlert u alert -> ttyUser u $ viewBadgeAlert alert
+  CEvtStorePurchaseCredited u invoiceId -> ttyUser u ["store purchase credited: invoice " <> plain invoiceId]
+  CEvtStorePurchaseRefused u invoiceId refusal -> ttyUser u ["store purchase refused: invoice " <> plain invoiceId <> ", " <> plain (safeDecodeUtf8 $ strEncode refusal)]
   CEvtContactRequestRejected u Contact {localDisplayName = c} _reason -> ttyUser u [ttyContact c <> ": contact request rejected"]
   CEvtRcvFileStart u ci -> ttyUser u $ receivingFile_' hu testView "started" ci
   CEvtRcvFileComplete u ci -> ttyUser u $ receivingFile_' hu testView "completed" ci
@@ -1193,16 +1197,17 @@ simplexDomainLine nameType (Just SimplexDomainClaim {domain, proof}) status = ca
 
 -- TODO [short links] show all settings
 viewAddressSettings :: AddressSettings -> [StyledString]
-viewAddressSettings AddressSettings {businessAddress, autoAccept, autoReply} = case autoAccept of
+viewAddressSettings AddressSettings {businessAddress, autoAccept, chatLayout, autoReply} = case autoAccept of
   Just AutoAccept {acceptIncognito} ->
     ("auto_accept on" <> aaInfo)
-      : maybe [] ((["auto reply:"] <>) . ttyMsgContent) autoReply
+      : viewChatLayout chatLayout
+      <> maybe [] ((["auto reply:"] <>) . ttyMsgContent) autoReply
     where
       aaInfo
         | businessAddress = ", business"
         | acceptIncognito = ", incognito"
         | otherwise = ""
-  _ -> ["auto_accept off"]
+  _ -> "auto_accept off" : viewChatLayout chatLayout
 
 groupLink_ :: Bool -> StyledString -> GroupInfo -> GroupLink -> [StyledString]
 groupLink_ showFullLinks intro g GroupLink {connLinkContact = CCLink cReq shortLink, acceptMemberRole} =
@@ -1870,6 +1875,14 @@ viewBadgeIssueError BadgeIssueError {failedSince, lastAttemptAt, reason} =
 viewBadgeAlert :: BadgeAlert -> [StyledString]
 viewBadgeAlert BadgeAlert {kind, date} = [plain $ "badge alert: " <> textEncode kind <> " " <> day date]
 
+viewOpenStorePurchase :: OpenStorePurchase -> StyledString
+viewOpenStorePurchase OpenStorePurchase {invoiceId, transactionRef, creditError} =
+  plain $
+    "store purchase open: invoice "
+      <> fromMaybe "none" invoiceId
+      <> maybe "" (", transaction " <>) transactionRef
+      <> maybe "" ((", not credited: " <>) . safeDecodeUtf8 . strEncode) creditError
+
 viewBadgeLedger :: [StatementEntry] -> [StyledString]
 viewBadgeLedger [] = ["no ledger entries"]
 viewBadgeLedger entries = map viewEntry entries
@@ -1899,7 +1912,7 @@ viewWalletAddress WalletAddress {accountIndex, keyPath, address} =
   plain $ tshow (unAccountIndex accountIndex) <> "  " <> keyPath <> "  " <> safeDecodeUtf8 (strEncode address)
 
 viewContactInfo :: Contact -> Maybe ConnectionStats -> Maybe Profile -> [StyledString]
-viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink, localBadge, contactDomain, contactDomainVerified, description}, activeConn, uiThemes, customData} stats incognitoProfile =
+viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink, localBadge, contactDomain, contactDomainVerified, description}, activeConn, uiThemes, chatLayout, customData} stats incognitoProfile =
   ["contact ID: " <> sShow contactId]
     <> viewContactBadge localBadge
     <> maybe [] ((bold' "description:" :) . map plain . T.lines) description
@@ -1915,6 +1928,7 @@ viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, conta
     <> ["quantum resistant end-to-end encryption" | contactPQEnabled ct == CR.PQEncOn]
     <> maybe [] (\ac -> [viewPeerChatVRange (peerChatVRange ac)]) activeConn
     <> viewUITheme uiThemes
+    <> viewChatLayout chatLayout
     <> viewCustomData customData
 
 viewGroupInfo :: GroupInfo -> [StyledString]
@@ -1936,6 +1950,9 @@ viewGroupInfo gInfo@GroupInfo {groupId, businessChat, groupDomainVerified, group
 
 viewUITheme :: Maybe UIThemeEntityOverrides -> [StyledString]
 viewUITheme = maybe [] (\uiThemes -> ["UI themes: " <> viewJSON uiThemes])
+
+viewChatLayout :: Maybe ChatLayout -> [StyledString]
+viewChatLayout = maybe [] (\chatLayout -> ["chat layout: " <> plain (textEncode chatLayout)])
 
 viewCustomData :: Maybe CustomData -> [StyledString]
 viewCustomData = maybe [] (\(CustomData v) -> ["custom data: " <> viewJSON (J.Object v)])
@@ -2117,10 +2134,10 @@ countactUserPrefText cup = case cup of
 
 viewGroupUpdated :: GroupInfo -> GroupInfo -> Maybe GroupMember -> Maybe MsgSigStatus -> [StyledString]
 viewGroupUpdated
-  GroupInfo {localDisplayName = n, groupProfile = GroupProfile {fullName, shortDescr, description, image, groupPreferences = gps, memberAdmission = ma, publicGroup = pg}}
-  g'@GroupInfo {localDisplayName = n', groupProfile = GroupProfile {fullName = fullName', shortDescr = shortDescr', description = description', image = image', groupPreferences = gps', memberAdmission = ma', publicGroup = pg'}}
+  GroupInfo {localDisplayName = n, groupProfile = GroupProfile {fullName, shortDescr, description, image, groupPreferences = gps, memberAdmission = ma, chatLayout = layout, publicGroup = pg}}
+  g'@GroupInfo {localDisplayName = n', groupProfile = GroupProfile {fullName = fullName', shortDescr = shortDescr', description = description', image = image', groupPreferences = gps', memberAdmission = ma', chatLayout = layout', publicGroup = pg'}}
   m signed = do
-    let update = groupProfileUpdated <> groupPrefsUpdated <> memberAdmissionUpdated <> publicGroupAccessUpdated
+    let update = groupProfileUpdated <> groupPrefsUpdated <> memberAdmissionUpdated <> chatLayoutUpdated <> publicGroupAccessUpdated
     if null update
       then []
       else memberUpdated <> update
@@ -2145,6 +2162,9 @@ viewGroupUpdated
       memberAdmissionUpdated
         | ma == ma' = []
         | otherwise = ["changed member admission rules"]
+      chatLayoutUpdated
+        | layout == layout' = []
+        | otherwise = ["chat layout " <> maybe "removed" (("changed to: " <>) . plain . textEncode) layout']
       publicGroupAccessUpdated
         | access == access' = []
         | otherwise = ["updated public group access:" <> viewAccess access']
@@ -2159,11 +2179,12 @@ viewGroupUpdated
               <> (if allowEmbedding then " embed=on" else "")
 
 viewGroupProfile :: GroupInfo -> [StyledString]
-viewGroupProfile g@GroupInfo {groupProfile = GroupProfile {shortDescr, description, image, groupPreferences = gps}} =
+viewGroupProfile g@GroupInfo {groupProfile = GroupProfile {shortDescr, description, image, groupPreferences = gps, chatLayout}} =
   [ttyFullGroup g]
     <> maybe [] (\sd -> ["description: " <> plain sd]) shortDescr
     <> maybe [] (const ["has profile image"]) image
     <> maybe [] ((bold' "welcome message:" :) . map plain . T.lines) description
+    <> viewChatLayout chatLayout
     <> (bold' "group preferences:" : map viewPref (if useRelays' g then channelGroupFeatures else regularGroupFeatures))
   where
     viewPref (AGF f) = plain $ groupPreferenceText (pref gps)
@@ -2175,7 +2196,7 @@ viewGroupDescription GroupInfo {groupProfile = GroupProfile {description}} =
   maybe ["No welcome message!"] ((bold' "Welcome message:" :) . map plain . T.lines) description
 
 bold' :: String -> StyledString
-bold' = styled Bold
+bold' = styled (Bold $ BoolDef False)
 
 viewContactAliasUpdated :: Contact -> [StyledString]
 viewContactAliasUpdated ct@Contact {profile = LocalProfile {localAlias}}
@@ -2921,13 +2942,14 @@ viewChatError isCmd logLevel testView = \case
     CEBadgeRedeemError e ->
       let reason = case e of
             BREInvalidCode -> "invalid code"
+            BREInvalidReceipt -> "invalid store receipt"
             BREServiceNotConfigured -> "store service not configured"
             BREBadgeActive -> "badge already active"
             BREServiceError code -> "store service error: " <> T.unpack (storeServiceErrorText code)
             BREInvalidResponse m -> "invalid service response: " <> m
             BREUnknownKeyIndex -> "credential names an unknown badge key index"
             BRECredentialNotVerified -> "credential does not verify against configured key"
-       in ["cannot redeem badge code: " <> plain reason]
+       in ["cannot get badge: " <> plain reason]
     CEAgentCommandError e -> ["agent command error: " <> plain e]
     CEInvalidFileDescription e -> ["invalid file description: " <> plain e]
     CEConnectionIncognitoChangeProhibited -> ["incognito mode change prohibited"]
