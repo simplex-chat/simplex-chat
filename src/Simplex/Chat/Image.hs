@@ -1,20 +1,26 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Simplex.Chat.Image
   ( ImageFormat (..),
     imageFormat,
+    decodeResizable,
     resizeImage,
     resizeImageDataUri,
   )
 where
 
-import Codec.Picture (DynamicImage (..), Image (..), Pixel (..), convertRGB8, convertRGBA8, dynamicMap)
-import Codec.Picture.JPEGTurbo (encodeRGB)
+import Codec.Picture (DynamicImage (..), Image (..), Pixel (..), convertRGB8, convertRGBA8, decodeImage, dynamicMap)
+import Codec.Picture.JPEGTurbo (DecodeOptions (DecodeOptions), JpegHeader (..), Scale (..), decodeJpeg, encodeRGB, readJpegHeader)
 import Codec.Picture.Png (encodePng)
 import qualified Codec.Picture.STBIR as STBIR
 import Codec.Picture.Types (pixelFoldMap)
+import Control.Monad.Except (ExceptT (..), runExceptT, throwError)
+import Data.ByteString (ByteString)
+import qualified Data.ByteString as B
 import qualified Data.ByteString.Base64.Lazy as LB64
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Int (Int64)
@@ -34,6 +40,37 @@ imageFormat = \case
     alphaFormat img
       | getAll $ pixelFoldMap (All . (maxBound ==) . pixelOpacity) img = IFJpeg
       | otherwise = IFPng
+
+decodeResizable :: ByteString -> IO (Either String DynamicImage)
+decodeResizable s
+  | "\xFF\xD8" `B.isPrefixOf` s = runExceptT $ decodeDisplayJpeg s
+  | otherwise = pure $ decodeImage s
+
+decodeDisplayJpeg :: ByteString -> ExceptT String IO DynamicImage
+decodeDisplayJpeg s = do
+  JpegHeader {jpegWidth, jpegHeight} <- ExceptT $ readJpegHeader s
+  (halvings, size) <- maybe (throwError "image does not fit") pure $ displaySize jpegWidth jpegHeight
+  resizeToSize size <$> ExceptT (decodeJpeg (DecodeOptions (jpegScale halvings) maxJpegPixels maxJpegMemoryMB) s)
+
+displaySize :: Int -> Int -> Maybe (Int, (Int, Int))
+displaySize = go 0
+  where
+    go n w h
+      | w <= maxDisplaySide && h <= maxDisplaySide = Just (n, (w, h))
+      | w < 2 || h < 2 = Nothing
+      | otherwise = go (n + 1) (scaledSide 2 w) (scaledSide 2 h)
+
+jpegScale :: Int -> Scale
+jpegScale = \case
+  0 -> Full
+  1 -> Half
+  2 -> Quarter
+  _ -> Eighth
+
+resizeToSize :: (Int, Int) -> DynamicImage -> DynamicImage
+resizeToSize (w, h) img
+  | dynamicMap (\i -> imageWidth i == w && imageHeight i == h) img = img
+  | otherwise = ImageRGB8 $ STBIR.resize STBIR.defaultOptions w h $ convertRGB8 img
 
 resizeImage :: ImageFormat -> Int64 -> DynamicImage -> IO (Either String LB.ByteString)
 resizeImage = fitImage $ const id
@@ -86,6 +123,16 @@ maxImageSide = 16384
 maxDisplaySide :: Int
 maxDisplaySide = 4320
 
+maxJpegPixels :: Int
+maxJpegPixels = 2 ^ (28 :: Int)
+
+maxJpegMemoryMB :: Int
+#if defined(mobileBuild)
+maxJpegMemoryMB = 512
+#else
+maxJpegMemoryMB = 2047
+#endif
+
 hasSideAbove :: Int -> Image a -> Bool
 hasSideAbove side img = imageWidth img > side || imageHeight img > side
 
@@ -102,7 +149,10 @@ halve img
 downscale :: STBIR.STBIRPixel a => Image a -> Float -> Image a
 downscale img scale = STBIR.resize STBIR.defaultOptions (scaled imageWidth) (scaled imageHeight) img
   where
-    scaled f = round $ fromIntegral (f img) / scale
+    scaled f = scaledSide scale (f img)
+
+scaledSide :: Float -> Int -> Int
+scaledSide scale side = round $ fromIntegral side / scale
 
 toDataUri :: ImageFormat -> LB.ByteString -> LB.ByteString
 toDataUri format body = "data:image/" <> mime <> ";base64," <> LB64.encode body

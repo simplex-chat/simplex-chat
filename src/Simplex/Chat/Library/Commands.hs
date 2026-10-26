@@ -18,7 +18,6 @@
 
 module Simplex.Chat.Library.Commands where
 
-import Codec.Picture (decodeImage)
 import Control.Applicative (optional, (<|>))
 import Control.Concurrent.STM (retry)
 import Control.Logger.Simple
@@ -70,7 +69,7 @@ import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
 import Simplex.Chat.Files
-import Simplex.Chat.Image (resizeImageDataUri)
+import Simplex.Chat.Image (decodeResizable, resizeImageDataUri)
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.Batch (BatchMode, encodeBatchElement)
@@ -231,7 +230,7 @@ imagePreview f = either (const fixedImagePreview) (ImageData . safeDecodeUtf8 . 
   where
     preview = do
       s <- withExceptT show $ CF.readFile f
-      img <- liftEither $ decodeImage $ LB.toStrict s
+      img <- ExceptT $ decodeResizable $ LB.toStrict s
       ExceptT $ resizeImageDataUri maxImagePreviewSize img
 
 imageFilePrefix :: String

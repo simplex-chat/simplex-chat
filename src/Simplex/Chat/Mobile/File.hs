@@ -19,7 +19,7 @@ module Simplex.Chat.Mobile.File
   )
 where
 
-import Codec.Picture (DynamicImage, decodeImage)
+import Codec.Picture (DynamicImage)
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
@@ -39,7 +39,7 @@ import Foreign.Ptr
 import Foreign.StablePtr
 import Foreign.Storable (poke, pokeByteOff)
 import Simplex.Chat.Controller (ChatController (..))
-import Simplex.Chat.Image (ImageFormat (..), imageFormat, resizeImage, resizeImageDataUri)
+import Simplex.Chat.Image (ImageFormat (..), decodeResizable, imageFormat, resizeImage, resizeImageDataUri)
 import Simplex.Chat.Mobile.Shared
 import Simplex.Chat.Util (chunkSize, encryptFile)
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..), CryptoFileHandle, FTCryptoError (..))
@@ -159,7 +159,7 @@ cChatResizeImage ptr len maxSize png = cResizeImage LB64.encode resize ptr len
 cResizeImage :: (LB.ByteString -> LB.ByteString) -> (DynamicImage -> IO (Either String LB.ByteString)) -> Ptr Word8 -> CInt -> IO CString
 cResizeImage encode resize ptr len = do
   s <- getByteString ptr len
-  r <- runCatchExceptT $ ExceptT . resize =<< liftEither (decodeImage s)
+  r <- runCatchExceptT $ ExceptT . resize =<< ExceptT (decodeResizable s)
   newCStringFromLazyBS $ either (const "") encode r
 
 runCatchExceptT :: ExceptT String IO a -> IO (Either String a)

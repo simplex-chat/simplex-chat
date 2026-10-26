@@ -2,9 +2,13 @@
 
 module ImageTests where
 
-import Codec.Picture (DynamicImage (..), Image (..), PixelRGB16 (..), PixelRGB8 (..), PixelRGBA16 (..), PixelRGBA8 (..), decodeImage, dynamicMap, generateImage)
-import Control.Monad (forM_)
+import Codec.Picture (DynamicImage (..), Image (..), PixelCMYK8, PixelRGB16 (..), PixelRGB8 (..), PixelRGBA16 (..), PixelRGBA8 (..), decodeImage, dynamicMap, generateImage)
+import Codec.Picture.JPEGTurbo (encodeRGB)
+import Codec.Picture.Jpg (encodeDirectJpegAtQualityWithMetadata, encodeJpegAtQuality)
+import Codec.Picture.Types (convertImage, extractLumaPlane)
+import Control.Monad (forM_, when)
 import Control.Monad.Except (runExceptT)
+import Data.Bits (shiftR)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Base64.Lazy as LB64
 import qualified Data.ByteString.Lazy.Char8 as LB
@@ -39,6 +43,10 @@ imageTests = do
     it "should generate preview of an encrypted image file" testEncryptedFilePreview
     it "should keep the fixed preview when the file is not an image" $
       imagePreview (CryptoFile "tests/fixtures/test.pdf" Nothing) `shouldReturn` fixedImagePreview
+  describe "JPEG decoding" $ do
+    it "should decode JPEG at the display size" testJpegDisplaySize
+    it "should decode JPEG colour spaces" testJpegColourSpaces
+    it "should refuse unsupported and malformed JPEG" testJpegRefused
 
 testDataUri :: FilePath -> LB.ByteString -> IO ()
 testDataUri path prefix = do
@@ -121,6 +129,52 @@ testEncryptedFilePreview = withTempDirectory "tests/tmp" "image-preview" $ \dir 
   let f = CryptoFile (dir </> "test.jpg") (Just args)
   Right () <- runExceptT . CF.writeFile f . LB.fromStrict =<< B.readFile "tests/fixtures/test.jpg"
   testFilePreview f
+
+testJpegDisplaySize :: IO ()
+testJpegDisplaySize =
+  forM_ sizes $ \(w, (w', h')) ->
+    forM_ [((w, 16), (w', h')), ((16, w), (h', w'))] $ \((iw, ih), size) -> do
+      jpeg <- encodeRGB 90 $ generateImage (\_ _ -> PixelRGB8 128 128 128) iw ih
+      Right img <- decodeResizable jpeg
+      resizedSize img `shouldReturn` size
+      when (w <= 8641) $ do
+        Right full <- pure $ decodeImage jpeg
+        resizedSize full `shouldReturn` size
+  where
+    sizes = [(4320, (4320, 16)), (4321, (2160, 8)), (8640, (4320, 8)), (8641, (4320, 8)), (17280, (4320, 4)), (17281, (4320, 4)), (17282, (4320, 4)), (34561, (4320, 2)), (65500, (4094, 1))]
+    resizedSize img = do
+      Right image <- resizeImage IFJpeg 261120 img
+      either fail (pure . imageSize) $ decodeImage $ LB.toStrict image
+
+testJpegColourSpaces :: IO ()
+testJpegColourSpaces = do
+  let rgb = generateImage (\x y -> PixelRGB8 (fromIntegral $ x * 4) (fromIntegral $ y * 5) 128) 64 48
+  progressive <- encodeRGB 90 rgb
+  Right (ImageRGB8 _) <- decodeResizable progressive
+  Right (ImageRGB8 _) <- decodeResizable $ baselineJpeg rgb
+  Right (ImageY8 _) <- decodeResizable $ LB.toStrict $ encodeDirectJpegAtQualityWithMetadata 90 mempty $ extractLumaPlane rgb
+  Right (ImageCMYK8 _) <- decodeResizable $ LB.toStrict $ encodeDirectJpegAtQualityWithMetadata 90 mempty (convertImage rgb :: Image PixelCMYK8)
+  pure ()
+
+testJpegRefused :: IO ()
+testJpegRefused =
+  forM_ inputs $ \input -> isLeft <$> decodeResizable input `shouldReturn` True
+  where
+    jpeg = baselineJpeg $ generateImage (\_ _ -> PixelRGB8 128 128 128) 64 48
+    sof = B.length $ fst $ B.breakSubstring "\xFF\xC0" jpeg
+    patchAt i bytes = B.take i jpeg <> B.pack bytes <> B.drop (i + length bytes) jpeg
+    sides w h = patchAt (sof + 5) $ concatMap (\v -> [fromIntegral (v `shiftR` 8), fromIntegral v]) [h, w :: Int]
+    inputs =
+      [ patchAt (sof + 4) [12],
+        patchAt (sof + 1) [0xC3],
+        sides 65501 16,
+        sides 16385 16384,
+        B.init jpeg,
+        B.take sof jpeg <> "\0" <> B.drop sof jpeg
+      ]
+
+baselineJpeg :: Image PixelRGB8 -> B.ByteString
+baselineJpeg = LB.toStrict . encodeJpegAtQuality 90 . convertImage
 
 imageSize :: DynamicImage -> (Int, Int)
 imageSize = dynamicMap (\img -> (imageWidth img, imageHeight img))

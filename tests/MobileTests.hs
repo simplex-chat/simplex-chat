@@ -12,6 +12,8 @@ module MobileTests (mobileTests) where
 import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
+import Codec.Picture (PixelRGB8 (..), generateImage)
+import Codec.Picture.JPEGTurbo (encodeRGB)
 import Control.Concurrent.STM
 import Control.Monad.Except
 import Data.Aeson (FromJSON)
@@ -94,6 +96,7 @@ mobileTests = do
       it "should resize image to data URI via C API" testResizeImageUriCApi
       it "should resize image to data size via C API" testResizeImageCApi
       it "should choose image format by transparency via C API" testResizeImageAutoFormatCApi
+      it "should resize JPEG with a side above 16384 via C API" testResizeLargeJpegCApi
 
 noActiveUser :: LB.ByteString
 noActiveUser =
@@ -379,6 +382,12 @@ testResizeImageAutoFormatCApi _ = do
       (ptr, len) <- cBuffer =<< B.readFile path
       Right bytes <- B64.decode . BS.pack <$> (peekCAString =<< cChatResizeImage ptr len 100000 (-1))
       pure bytes
+
+testResizeLargeJpegCApi :: TestParams -> IO ()
+testResizeLargeJpegCApi _ = do
+  (ptr, len) <- cBuffer =<< encodeRGB 90 (generateImage (\_ _ -> PixelRGB8 128 128 128) 20000 16)
+  Right bytes <- B64.decode . BS.pack <$> (peekCAString =<< cChatResizeImage ptr len 261120 (-1))
+  B.take 2 bytes `shouldBe` "\xFF\xD8"
 
 cBuffer :: ByteString -> IO (Ptr Word8, CInt)
 cBuffer s = do
