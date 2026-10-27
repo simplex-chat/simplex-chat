@@ -22,6 +22,7 @@ module StoreService.Config
     defaultSessionMinutes,
     minNameYears,
     localChainId,
+    isLoopbackHost,
     readServiceConfig,
     unknownKeys,
   )
@@ -45,7 +46,7 @@ import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe, isJust, isNothing)
+import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -229,6 +230,18 @@ minSessionMinutes, maxSessionMinutes :: Int
 minSessionMinutes = 1
 maxSessionMinutes = 1440
 
+isLoopbackHost :: Text -> Bool
+isLoopbackHost h = h `elem` ["127.0.0.1", "::1", "localhost"]
+
+-- | The host of an absolute URL, lower-cased, without user info, port or an IPv6 literal's brackets.
+urlHost :: Text -> Text
+urlHost url = T.toLower $ case T.stripPrefix "[" hostPort of
+  Just literal -> T.takeWhile (/= ']') literal
+  Nothing -> T.takeWhile (/= ':') hostPort
+  where
+    authority = T.takeWhile (`notElem` ['/', '?', '#']) (T.drop 2 (snd (T.breakOn "//" url)))
+    hostPort = snd (T.breakOnEnd "@" authority)
+
 -- | An http host would carry the API key in the clear on every call.
 requireHttps :: Text -> Either String Text
 requireHttps u
@@ -366,8 +379,15 @@ parseConfig ini = do
   devKeys <- devKeysSetting
   unless (null devKeys || maybe False onLocalChain nms) $
     Left ("issuer.dev_keys is accepted only with [names] on the local chain, [chain] chain_id = " <> show localChainId)
-  unless (null devKeys || (isNothing btc && isNothing str)) $
-    Left "issuer.dev_keys is refused with [btcpay] or [stripe], since a run with dev keys takes no payments"
+  unless (null devKeys) $ do
+    forM_ str $ \StripeConfig {sSecretKey, sPublishableKey} -> do
+      unless (any (`T.isPrefixOf` sSecretKey) ["sk_test_", "rk_test_"]) $
+        Left "issuer.dev_keys is refused with a live Stripe key: stripe.secret_key must be a test key, sk_test_ or rk_test_"
+      unless ("pk_test_" `T.isPrefixOf` sPublishableKey) $
+        Left "issuer.dev_keys is refused with a live Stripe key: stripe.publishable_key must be a test key, pk_test_"
+    forM_ btc $ \BTCPayConfig {bHost} ->
+      unless (isLoopbackHost (urlHost bHost)) $
+        Left "issuer.dev_keys is refused with a remote BTCPay: btcpay.host must be on loopback, 127.0.0.1, ::1 or localhost"
   pWaitingSeconds <- cadence "waiting_seconds" 3
   pIdleSeconds <- cadence "idle_seconds" 60
   apple <- appleSection

@@ -94,8 +94,14 @@ With `dev_keys`, the service refuses to start:
 
 - unless `[names]` is on and `[chain] chain_id` is 31337, anvil's local chain;
 - unless the node at `rpc_url` answers `eth_chainId` with 31337 as the service starts;
-- when `[btcpay]` or `[stripe]` is configured, since a run with dev keys takes no payments;
+- when `[stripe]` holds a live key: `secret_key` must be a test key (`sk_test_` or `rk_test_`), and
+  `publishable_key` too (`pk_test_`);
+- when `[btcpay]`'s `host` is not on loopback (`127.0.0.1`, `::1` or `localhost`);
 - when a dev key has the index of a key clients trust.
+
+So a run with dev keys takes test payments only: Stripe in test mode, and a BTCPay on the same machine,
+such as one on regtest. `host` must still be https, so put a TLS proxy in front of a local BTCPay and
+have the service trust the proxy's certificate authority with `SYSTEM_CERTIFICATE_PATH`.
 
 It logs a warning naming the dev keys' indexes at every start. Clients never trust a dev key, but the
 service's own chat core does, for the badges it receives, so a contact's badge signed by a dev key is
