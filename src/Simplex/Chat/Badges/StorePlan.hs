@@ -1,6 +1,7 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Simplex.Chat.Badges.StorePlan (storePlan) where
+module Simplex.Chat.Badges.StorePlan (storePlan, playBasePlan) where
 
 import Data.Text (Text)
 import Simplex.Chat.Badges (BadgeType (..))
@@ -14,8 +15,15 @@ storePlan provider planId = case (provider, planId) of
   (PPApple, "SUBSCR_BADGE_SUPPORTER_YEAR_01") -> Just (BTSupporter, 12)
   (PPApple, "SUBSCR_BADGE_LEGEND_MONTH_01") -> Just (BTLegend, 1)
   (PPApple, "SUBSCR_BADGE_LEGEND_YEAR_01") -> Just (BTLegend, 12)
-  (PPGoogle, "subscr-badge-supporter-month-02") -> Just (BTSupporter, 1)
-  (PPGoogle, "subscr-badge-supporter-year-01") -> Just (BTSupporter, 12)
-  (PPGoogle, "subscr-badge-legend-month-01") -> Just (BTLegend, 1)
-  (PPGoogle, "subscr-badge-legend-year-01") -> Just (BTLegend, 12)
+  (PPGoogle, _) -> snd <$> playBasePlan planId
+  _ -> Nothing
+
+-- | A Play base plan's subscription product, and what the plan grants. Play keeps a base plan id unique
+-- only within its subscription, so a plan is one of these only under its own product.
+playBasePlan :: Text -> Maybe (Text, (BadgeType, Int))
+playBasePlan = \case
+  "subscr-badge-supporter-month-02" -> Just ("subscr_badge_supporter_01", (BTSupporter, 1))
+  "subscr-badge-supporter-year-01" -> Just ("subscr_badge_supporter_01", (BTSupporter, 12))
+  "subscr-badge-legend-month-01" -> Just ("subscr_badge_legend_01", (BTLegend, 1))
+  "subscr-badge-legend-year-01" -> Just ("subscr_badge_legend_01", (BTLegend, 12))
   _ -> Nothing

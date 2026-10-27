@@ -975,7 +975,7 @@ testPlaySubscriptionCharge = withFakePlay $ \fake -> do
       orderRef = googlePurchaseRef "GPA.3312-4521-8899-01234..1"
   chargeFor (lineItem [] [])
     `shouldReturn` Right (Just (orderRef, "subscr-badge-supporter-month-02", at 2026 10 14 36000.123456789, at 2026 11 14 36000.123456789, Nothing, False, False))
-  chargeFor (lineItem [basePlan "subscr-badge-legend-year-01", ("expiryTime", "2027-10-14T10:00:00Z")] [])
+  chargeFor (lineItem [("productId", "subscr_badge_legend_01"), basePlan "subscr-badge-legend-year-01", ("expiryTime", "2027-10-14T10:00:00Z")] [])
     `shouldReturn` Right (Just (orderRef, "subscr-badge-legend-year-01", at 2026 10 14 36000, at 2027 10 14 36000, Nothing, False, False))
   -- a plan this service does not sell has no length, so its charge is given no period, and is never granted
   chargeFor (lineItem [basePlan "subscr-badge-supporter-month-99"] [])

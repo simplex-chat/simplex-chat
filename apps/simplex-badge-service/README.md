@@ -310,9 +310,9 @@ It answers subscriptions too, each as renewing, charged from a minute before the
 length of its plan:
 
 - an App Store subscription: the plan its product names;
-- a Play subscription: the base plan a test token `test.<basePlanId>.<uuid>` names (the apps'
-  test products sign their tokens so), or else the product's monthly base plan, so a licence
-  tester's purchase is credited too;
+- a Play subscription: the base plan a test token `test.<basePlanId>.<uuid>` names, when it is a
+  plan of the product (the apps' test products sign their tokens so), or else the product's
+  monthly base plan, so a licence tester's purchase is credited too;
 - a renewal: a new charge for the plan it first charged. It keeps that plan in memory only, so after
   a restart it answers a renewal of a subscription it credited before as ended, and the unissued
   months of a plan still covered are refunded at its next month.
