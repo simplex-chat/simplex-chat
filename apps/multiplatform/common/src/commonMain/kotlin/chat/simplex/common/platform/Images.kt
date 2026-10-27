@@ -47,7 +47,7 @@ fun resizeImageToStrSize(image: ImageBitmap, maxDataSize: Long): String {
 }
 
 fun resizeImageToDataSize(image: ImageBitmap, usePng: Boolean, maxDataSize: Long): ByteArrayOutputStream {
-  val str = chatResizeImage(compressImageData(image, usePng).toByteArray().toDirectBuffer(), maxDataSize.toInt(), usePng)
+  val str = chatResizeImage(compressImageData(image, usePng).toByteArray().toDirectBuffer(), maxDataSize.toInt(), if (usePng) 1 else 0)
   if (str.isEmpty()) throw Exception("Image resize failed")
   val stream = ByteArrayOutputStream()
   stream.write(Base64.getDecoder().decode(str))

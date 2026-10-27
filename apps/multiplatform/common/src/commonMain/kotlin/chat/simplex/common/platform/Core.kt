@@ -40,7 +40,7 @@ external fun chatReadFile(path: String, key: String, nonce: String): Array<Any>
 external fun chatEncryptFile(ctrl: ChatCtrl, fromPath: String, toPath: String): String
 external fun chatDecryptFile(fromPath: String, key: String, nonce: String, toPath: String): String
 external fun chatResizeImageUri(buffer: ByteBuffer, maxSize: Int): String
-external fun chatResizeImage(buffer: ByteBuffer, maxSize: Int, png: Boolean): String
+external fun chatResizeImage(buffer: ByteBuffer, maxSize: Int, png: Int): String
 external fun chatResizeImageFileUri(path: String, maxSize: Int): String
 external fun chatResizeImageFile(path: String, maxSize: Int, png: Int): String
 external fun chatResizeImageFdUri(fd: Int, maxSize: Int): String

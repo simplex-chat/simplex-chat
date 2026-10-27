@@ -286,7 +286,7 @@ Java_chat_simplex_common_platform_CoreKt_chatResizeImageUri(JNIEnv *env, jclass 
 }
 
 JNIEXPORT jstring JNICALL
-Java_chat_simplex_common_platform_CoreKt_chatResizeImage(JNIEnv *env, jclass clazz, jobject buffer, jint maxSize, jboolean png) {
+Java_chat_simplex_common_platform_CoreKt_chatResizeImage(JNIEnv *env, jclass clazz, jobject buffer, jint maxSize, jint png) {
     jbyte *buff = (jbyte *) (*env)->GetDirectBufferAddress(env, buffer);
     jlong capacity = (*env)->GetDirectBufferCapacity(env, buffer);
     return decode_and_free(env, chat_resize_image(buff, capacity, maxSize, png));
