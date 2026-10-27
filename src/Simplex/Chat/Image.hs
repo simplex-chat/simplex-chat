@@ -152,8 +152,9 @@ fitImage output format maxSize img
       IFJpeg -> do
         let rgb = convertRGB8 img
             largestRGB = scaleRGB8 rgb largest
+            scale size = if size == largest then largestRGB else scaleRGB8 rgb size
             jpeg q = fmap (out . LB.fromStrict) . encodeRGB q
-        fitSize maxSize (Just $ \target -> 8 * jpegBytes target / bitsPerPixel) largest (jpeg quality . scaleRGB8 rgb) >>= \case
+        fitSize maxSize (Just $ \target -> 8 * jpegBytes target / bitsPerPixel) largest (jpeg quality . scale) >>= \case
           Right (size, r) | size == largest && fromIntegral (LB.length r) < minFill * fromIntegral maxSize -> Right <$> bisect maxSize qualityStep (`jpeg` largestRGB) (quality, r) 96
           r -> pure $ snd <$> r
       IFPng -> do
