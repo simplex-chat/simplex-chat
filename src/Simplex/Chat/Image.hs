@@ -3,6 +3,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 
 module Simplex.Chat.Image
   ( ImageFormat (..),
@@ -21,14 +22,14 @@ import Codec.Picture.JPEGTurbo (DecodeOptions (DecodeOptions), JpegHeader (..), 
 import qualified Codec.Picture.STBIR as STBIR
 import qualified Codec.Picture.Spng as Spng
 import Codec.Picture.Types (pixelFoldMap)
-import Control.Monad (forM_, when)
+import Control.Monad (forM_, guard, mfilter, when)
 import Control.Monad.Except (ExceptT (..), runExceptT, throwError)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Base64.Lazy as LB64
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Int (Int64)
-import Data.List (maximumBy, minimumBy)
+import Data.List (maximumBy, minimumBy, sortOn)
 import Data.Maybe (fromMaybe, listToMaybe)
 import Data.Monoid (All (..))
 import Data.Ord (comparing)
@@ -52,9 +53,9 @@ imageFormat = \case
       | getAll $ pixelFoldMap (All . (maxBound ==) . pixelOpacity) img = IFJpeg
       | otherwise = IFPng
 
-decodeResizable :: ByteString -> IO (Either String DynamicImage)
+decodeResizable :: ByteString -> IO (Either String (DynamicImage, Maybe ByteString))
 decodeResizable s
-  | "\xFF\xD8" `B.isPrefixOf` s = runExceptT $ decodeDisplayJpeg s
+  | "\xFF\xD8" `B.isPrefixOf` s = runExceptT $ (,jpegIccProfile s) <$> decodeDisplayJpeg s
   | "\x89PNG\r\n\x1a\n" `B.isPrefixOf` s = Spng.decodePng (Spng.DecodeOptions $ maxDecodeMemoryMB `div` 2) s
   | otherwise = pure $ Left "unsupported image format"
 
@@ -109,14 +110,27 @@ exifOrientation s = fromMaybe 1 $ do
     ]
 
 exifTiff :: ByteString -> Maybe ByteString
-exifTiff s
-  | B.length s < 4 || B.index s 0 /= 0xFF || marker == 0xDA = Nothing
-  | marker == 0xE1 && "Exif\0\0" `B.isPrefixOf` segment = Just $ B.drop 6 segment
-  | otherwise = exifTiff $ B.drop (2 + len) s
+exifTiff s = listToMaybe [B.drop 6 segment | (0xE1, segment) <- jpegSegments s, "Exif\0\0" `B.isPrefixOf` segment]
+
+jpegIccProfile :: ByteString -> Maybe ByteString
+jpegIccProfile s = do
+  chunks <- sortOn (\(n, _, _) -> n) <$> mapM iccChunk segments
+  let profile = B.concat [chunk | (_, _, chunk) <- chunks]
+  guard $ [n | (n, _, _) <- chunks] == [1 .. length chunks] && all (\(_, count, _) -> count == length chunks) chunks && not (B.null profile)
+  pure profile
+  where
+    segments = [segment | (0xE2, segment) <- jpegSegments $ B.drop 2 s, "ICC_PROFILE\0" `B.isPrefixOf` segment]
+    iccChunk segment
+      | B.length segment < 14 = Nothing
+      | otherwise = Just (fromIntegral $ B.index segment 12, fromIntegral $ B.index segment 13, B.drop 14 segment)
+
+jpegSegments :: ByteString -> [(Word8, ByteString)]
+jpegSegments s
+  | B.length s < 4 || B.index s 0 /= 0xFF || marker == 0xDA = []
+  | otherwise = (marker, B.take (len - 2) $ B.drop 4 s) : jpegSegments (B.drop (2 + len) s)
   where
     marker = B.index s 1
     len = fromIntegral (B.index s 2) * 256 + fromIntegral (B.index s 3)
-    segment = B.take (len - 2) $ B.drop 4 s
 
 orientImage :: Int -> DynamicImage -> DynamicImage
 orientImage orientation = dynamicPixelMap orient
@@ -134,31 +148,32 @@ orientImage orientation = dynamicPixelMap orient
 
 data ImageOutput = ImageBytes | ImageDataUri
 
-resizeImage :: ImageFormat -> Int64 -> DynamicImage -> IO (Either String LB.ByteString)
+resizeImage :: ImageFormat -> Int64 -> DynamicImage -> Maybe ByteString -> IO (Either String LB.ByteString)
 resizeImage = fitImage ImageBytes
 
-resizeImageDataUri :: Int64 -> DynamicImage -> IO (Either String LB.ByteString)
+resizeImageDataUri :: Int64 -> DynamicImage -> Maybe ByteString -> IO (Either String LB.ByteString)
 resizeImageDataUri maxSize img = fitImage ImageDataUri (imageFormat img) maxSize img
 
-fitImage :: ImageOutput -> ImageFormat -> Int64 -> DynamicImage -> IO (Either String LB.ByteString)
-fitImage output format maxSize img
+fitImage :: ImageOutput -> ImageFormat -> Int64 -> DynamicImage -> Maybe ByteString -> IO (Either String LB.ByteString)
+fitImage output format maxSize img profile
   | dynamicMap (hasSideAbove maxImageSide) img = pure imageDoesNotFit
   | otherwise = maybe (pure imageDoesNotFit) (fitLargest . snd) $ dynamicMap (\i -> displaySize (imageWidth i) (imageHeight i)) img
   where
-    (out, quality, bitsPerPixel, jpegBytes) = case output of
-      ImageBytes -> (id, 65, 0.9, id)
-      ImageDataUri -> (toDataUri format, 20, 0.35, \target -> 0.75 * max 0 (target - fromIntegral (LB.length $ toDataUri format "")))
+    (out, quality, bitsPerPixel, jpegBytes, outputLength) = case output of
+      ImageBytes -> (id, 65, 0.9, id, id)
+      ImageDataUri -> (toDataUri format, 20, 0.35, \target -> 0.75 * max 0 (target - fromIntegral (LB.length $ toDataUri format "")), \n -> 4 * ((n + 2) `div` 3))
+    keptProfile = mfilter (\p -> not (B.null p) && fromIntegral (outputLength $ B.length p) <= maxSize `div` 10) profile
     fitLargest largest = case format of
       IFJpeg -> do
         let rgb = convertRGB8 img
             largestRGB = scaleRGB8 rgb largest
             scale size = if size == largest then largestRGB else scaleRGB8 rgb size
-            jpeg q = fmap (out . LB.fromStrict) . encodeRGB q
+            jpeg q = fmap (out . LB.fromStrict) . encodeRGB q keptProfile
         fitSize maxSize (Just $ \target -> 8 * jpegBytes target / bitsPerPixel) largest (jpeg quality . scale) >>= \case
           Right (size, r) | size == largest && fromIntegral (LB.length r) < minFill * fromIntegral maxSize -> Right <$> bisect maxSize (`jpeg` largestRGB) (quality, r) 96
           r -> pure $ snd <$> r
       IFPng -> do
-        let png = fmap (out . LB.fromStrict) . encodeSmallerPng
+        let png = fmap (out . LB.fromStrict) . encodeSmallerPng keptProfile
         fmap snd <$> fitSize maxSize Nothing largest (png . scaleRGBA8 (convertRGBA8 img))
 
 fitSize :: Int64 -> Maybe (Double -> Double) -> (Int, Int) -> ((Int, Int) -> IO LB.ByteString) -> IO (Either String ((Int, Int), LB.ByteString))
@@ -220,10 +235,10 @@ bisect maxSize encode = go
             EQ -> pure r'
             GT -> go (good, r) m
 
-encodeSmallerPng :: Image PixelRGBA8 -> IO ByteString
-encodeSmallerPng img = minimumBy (comparing B.length) <$> mapM encode [False, True]
+encodeSmallerPng :: Maybe ByteString -> Image PixelRGBA8 -> IO ByteString
+encodeSmallerPng profile img = minimumBy (comparing B.length) <$> mapM encode [False, True]
   where
-    encode filtering = either fail pure =<< Spng.encodePng (Spng.EncodeOptions 9 filtering) img
+    encode filtering = either fail pure =<< Spng.encodePng (Spng.EncodeOptions 9 filtering profile) img
 
 maxImageSide :: Int
 maxImageSide = 16384

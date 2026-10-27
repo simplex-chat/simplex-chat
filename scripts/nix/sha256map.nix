@@ -9,6 +9,6 @@
   "https://github.com/simplex-chat/zip.git"."2eff156c3aac389e35d38bf10a52733d7061640a" = "052vahd5d4lxnazjrb6l60i261aycn2js7jhzafyb72n15ns4r6p";
   "https://github.com/yesodweb/wai.git"."ec5e017d896a78e787a5acea62b37a4e677dec2e" = "1ckcpmpjfy9jiqrb52q20lj7ln4hmq9v2jk6kpkf3m68c1m9c2bx";
   "https://github.com/simplex-chat/wai.git"."63667cb577d09c967ddcd945e42c324872dfeb7d" = "1nh4j3fnxbpkdhz1sfgpfhb7j0371apbmx1kv7aqa2zrdxc8gmzb";
-  "https://github.com/evgeny-simplex/hs-jpeg-turbo.git"."45272a5af110d91038aa7972bf475e132f9a7978" = "1l8i63jc18sfzfsh4fw1vzvrma44q8lnvmhbwrrrrgw3vvm9gkgx";
+  "https://github.com/evgeny-simplex/hs-jpeg-turbo.git"."4db152c5a87152b2d0af09186433023aad7de802" = "1f32s5c82zz3dysb7y7a1ppkzhl3n8rlivg0f6j5rsdi26ggfxsd";
   "https://github.com/evgeny-simplex/JuicyPixels-stbir.git"."234dde8e2f4068ba306fc544482c08bb9f157002" = "1r1vq2c3p2cifwcgxfryqjn49spicallibhnnd2rkxdss5bfxd23";
 }

@@ -195,9 +195,9 @@ cResizeImageData input maxSize png = cResizeImage LB64.encode resize input
       EQ -> IFJpeg
       GT -> IFPng
 
-cResizeImage :: (LB.ByteString -> LB.ByteString) -> (DynamicImage -> IO (Either String LB.ByteString)) -> IO ByteString -> IO CString
+cResizeImage :: (LB.ByteString -> LB.ByteString) -> (DynamicImage -> Maybe ByteString -> IO (Either String LB.ByteString)) -> IO ByteString -> IO CString
 cResizeImage encode resize input = do
-  r <- runCatchExceptT $ ExceptT . resize =<< ExceptT (decodeResizable =<< input)
+  r <- runCatchExceptT $ ExceptT . uncurry resize =<< ExceptT (decodeResizable =<< input)
   newCStringFromLazyBS $ either (const "") encode r
 
 runCatchExceptT :: ExceptT String IO a -> IO (Either String a)

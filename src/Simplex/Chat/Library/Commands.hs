@@ -231,8 +231,8 @@ imagePreview f = either (const fixedImagePreview) (ImageData . safeDecodeUtf8 . 
   where
     preview = do
       s <- withExceptT show $ CF.readFile f
-      img <- ExceptT $ decodeResizable $ LB.toStrict s
-      ExceptT $ resizeImageDataUri maxImagePreviewSize img
+      (img, profile) <- ExceptT $ decodeResizable $ LB.toStrict s
+      ExceptT $ resizeImageDataUri maxImagePreviewSize img profile
 
 imageFilePrefix :: String
 imageFilePrefix = "IMG_"

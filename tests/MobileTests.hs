@@ -393,7 +393,7 @@ testResizeImageAutoFormatCApi _ = do
 
 testResizeLargeJpegCApi :: TestParams -> IO ()
 testResizeLargeJpegCApi _ = do
-  (ptr, len) <- cBuffer =<< encodeRGB 90 (generateImage (\_ _ -> PixelRGB8 128 128 128) 20000 16)
+  (ptr, len) <- cBuffer =<< encodeRGB 90 Nothing (generateImage (\_ _ -> PixelRGB8 128 128 128) 20000 16)
   Right bytes <- B64.decode . BS.pack <$> (peekCAString =<< cChatResizeImage ptr len 261120 (-1))
   B.take 2 bytes `shouldBe` "\xFF\xD8"
 
