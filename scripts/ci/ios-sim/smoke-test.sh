@@ -15,6 +15,10 @@ cases=${3:-}
 bundle_id=chat.simplex.app
 ui=$(dirname "$0")/ui
 fixtures=$(cd "$(dirname "$0")/../../../tests/fixtures" && pwd)
+first_photo_x=66
+first_photo_y=412
+picker_done_x=363
+picker_done_y=144
 mkdir -p "$UI_OUT"
 
 axe --version
@@ -137,9 +141,9 @@ send_image() {
   "$ui" tap "Choose from library"
   sleep 3
   "$ui" shot "picker-$ext"
-  tap_element "[A-Za-z]+" "Photo[^\"]*" || fail "no photo in the picker"
+  "$ui" tap-xy "$first_photo_x" "$first_photo_y"
   "$ui" shot "picker-selected-$ext"
-  "$ui" tap Add 10 || true
+  "$ui" tap-xy "$picker_done_x" "$picker_done_y"
   sleep 3
   "$ui" shot "preview-$ext"
   "$ui" find multiply || fail "$ext: no image preview in the compose area"
