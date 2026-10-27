@@ -108,7 +108,7 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 
 | Source File | Product Concepts Affected | Risk Level | Notes |
 |-------------|--------------------------|------------|-------|
-| `views/chat/ChatView.kt` | PC2, PC3, PC4, PC5, PC6, PC7, PC8, PC9, PC11 | High | Core conversation UI, full-row Android message gestures and shared menu visibility |
+| `views/chat/ChatView.kt` | PC2, PC3, PC4, PC5, PC6, PC7, PC8, PC9, PC11 | High | Core conversation UI, full-row gestures, shared menu visibility and Android reply-swipe haptics |
 | `views/chat/ComposeView.kt` | PC4, PC6, PC9, PC10, PC11 | High | Message composition — send path for all messages |
 | `views/chat/SendMsgView.kt` | PC4, PC9 | Medium | Send button and voice record toggle |
 | `views/chat/ComposeVoiceView.kt` | PC9 | Medium | Voice message recording UI |
@@ -138,8 +138,9 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 | `views/chat/item/TextItemView.kt` | PC2, PC3, PC4, PC11 | Medium | Markdown annotation taps and shared Android message gestures |
 | `views/chat/item/ChatBubbleStyle.kt` | PC2, PC3, PC5, PC24 | Medium | Scoped conversation typography, measured layout constants and sender/date grouping boundaries |
 | `views/chat/item/ChatSendAnimation.kt` | PC2, PC3, PC4, PC11 | Medium | Scoped local-send tokens and composer-to-bubble motion; no model/protocol state |
-| `views/chat/item/FramedItemView.kt` | PC2, PC3, PC4, PC6, PC10, PC11 | Medium | Framed container, quote-specific tap action and shared Android long-press selection |
-| `views/chat/item/CIImageView.kt` | PC2, PC3, PC10 | Medium | Image message, shared long-press action, privacy-aware thumbnail geometry and visibility |
+| `views/chat/item/FramedItemView.kt` | PC2, PC3, PC4, PC6, PC10, PC11 | Medium | Framed container, quote actions, shared long-press selection and photo-specific height constraints |
+| `views/chat/item/CIImageView.kt` | PC2, PC3, PC10 | Medium | Android photo sizing/cropping, shared long-press action, privacy-aware thumbnail geometry and visibility |
+| `views/chat/item/ChatImageSizing.kt` | PC2, PC3, PC10 | Medium | Telegram-reference photo bounds, density/aspect fitting, metadata minimum width and window-size contract |
 | `views/chat/item/CIVideoView.kt` | PC2, PC3, PC10 | Medium | Video rendering and controls, shared message long-press |
 | `views/chat/item/CIFileView.kt` | PC2, PC3, PC10 | Medium | File controls, shared message long-press |
 | `views/chat/item/CIVoiceView.kt` | PC2, PC3, PC9 | Medium | Voice playback, shared message long-press |
@@ -306,7 +307,7 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 | `views/helpers/Enums.kt` | — | Low | Enum utility extensions |
 | `views/helpers/ExposedDropDownSettingRow.kt` | — | Low | Dropdown setting row composable |
 | `views/helpers/GestureDetector.kt` | — | Low | Touch gesture utilities |
-| `views/helpers/Modifiers.kt` | — | Low | Compose modifier extensions |
+| `views/helpers/Modifiers.kt` | PC2, PC3, PC4 | Low | Compose modifiers and one-per-drag swipe-threshold callback for reply feedback |
 | `views/helpers/SubscriptionStatusIcon.kt` | PC25 | Low | Server connection status icon |
 
 ### 1.14 Views — Other
@@ -369,7 +370,7 @@ Path prefix: `common/src/androidMain/kotlin/chat/simplex/common/`
 | `views/chat/ComposeView.android.kt` | PC4, PC10 | Low | Android compose view extensions |
 | `views/chat/SendMsgView.android.kt` | PC4 | Low | Android send button extensions |
 | `views/chat/item/ChatItemView.android.kt` | PC2, PC3 | Low | Android chat item extensions |
-| `views/chat/item/CIImageView.android.kt` | PC10 | Low | Android image rendering and synchronous transition capture before opening the existing modal |
+| `views/chat/item/CIImageView.android.kt` | PC10 | Low | Android image rendering, Configuration photo window dimensions and synchronous transition capture |
 | `views/chat/item/CIVideoView.android.kt` | PC10 | Low | Android video rendering extensions |
 | `views/chat/item/CIFileView.android.kt` | PC10 | Low | Android file view extensions |
 | `views/chat/item/EmojiItemView.android.kt` | PC5 | Low | Android emoji rendering extensions |
@@ -442,7 +443,7 @@ Path prefix: `common/src/desktopMain/kotlin/chat/simplex/common/`
 | `views/chat/ComposeView.desktop.kt` | PC4, PC10 | Low | Desktop compose view (drag-and-drop, paste) |
 | `views/chat/SendMsgView.desktop.kt` | PC4 | Low | Desktop send shortcut (Enter key handling) |
 | `views/chat/item/ChatItemView.desktop.kt` | PC2, PC3 | Low | Desktop chat item extensions |
-| `views/chat/item/CIImageView.desktop.kt` | PC10 | Low | Desktop image rendering and transition capture before opening the existing modal |
+| `views/chat/item/CIImageView.desktop.kt` | PC10 | Low | Desktop image rendering, window-size actual and transition capture before opening the existing modal |
 | `views/chat/item/CIVideoView.desktop.kt` | PC10 | Low | Desktop video rendering |
 | `views/chat/item/CIFileView.desktop.kt` | PC10 | Low | Desktop file open/save |
 | `views/chat/item/EmojiItemView.desktop.kt` | PC5 | Low | Desktop emoji rendering |

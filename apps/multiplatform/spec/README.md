@@ -130,6 +130,7 @@ Common Module (commonMain)
 | Message Gestures | [`ChatItemView.kt`](../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemView.kt#L71) | `fun ChatItemView()` | 71 |
 | Message Menu Placement | [`ChatItemMenu.kt`](../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemMenu.kt#L105) | `fun ChatItemDropdownMenu()` | 105 |
 | Image Viewer Motion | [`ImageGalleryAnimation.kt`](../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ImageGalleryAnimation.kt#L82) | `fun ImageGalleryAnimatedContainer()` | 82 |
+| Chat Photo Sizing | [`ChatImageSizing.kt`](../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatImageSizing.kt#L11) | `fun chatImageSize()` | 11 |
 | App Preferences | [`SimpleXAPI.kt`](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L102) | `class AppPreferences` | 102 |
 | Platform Interface | [`Platform.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Platform.kt#L15) | `interface PlatformInterface` | 15 |
 | Notification Manager | [`NtfManager.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/NtfManager.kt#L19) | `abstract class NtfManager` | 19 |

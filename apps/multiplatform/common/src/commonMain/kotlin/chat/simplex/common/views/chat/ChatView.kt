@@ -16,6 +16,7 @@ import androidx.compose.ui.draw.*
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.layer.GraphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -1985,6 +1986,10 @@ fun BoxScope.ChatItemsList(
 
       @Composable
       fun ChatItemView(cItem: ChatItem, range: State<IntRange?>, itemSeparation: ItemSeparation, previousItemSeparationLargeGap: Boolean) {
+        val haptics = LocalHapticFeedback.current
+        val replyFeedbackEnabled = appPlatform.isAndroid && selectedChatItems.value == null && chatInfo.sendMsgEnabled &&
+          chatInfo !is ChatInfo.Local && !cItem.isReport && !cItem.meta.isLive && cItem.meta.itemDeleted == null &&
+          cItem.id != ChatItem.TEMP_LIVE_CHAT_ITEM_ID && (cItem.content is CIContent.SndMsgContent || cItem.content is CIContent.RcvMsgContent)
         val dismissState = rememberDismissState(initialValue = DismissValue.Default) {
           if (it == DismissValue.DismissedToStart) {
             itemScope.launch {
@@ -2003,6 +2008,7 @@ fun BoxScope.ChatItemsList(
           state = dismissState,
           directions = setOf(DismissDirection.EndToStart),
           swipeDistance = with(LocalDensity.current) { 30.dp.toPx() },
+          onThresholdReached = if (replyFeedbackEnabled) ({ haptics.performHapticFeedback(HapticFeedbackType.ContextClick) }) else null,
         )
         val sent = cItem.chatDir.sent
 

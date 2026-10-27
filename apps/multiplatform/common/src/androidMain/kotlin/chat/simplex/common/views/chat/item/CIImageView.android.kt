@@ -7,6 +7,9 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.CIFile
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.CurrentColors
@@ -16,6 +19,12 @@ import coil.compose.rememberAsyncImagePainter
 import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
 import coil.request.ImageRequest
+
+@Composable
+internal actual fun chatImageWindowSize(): DpSize {
+  val configuration = LocalConfiguration.current
+  return DpSize(configuration.screenWidthDp.dp, configuration.screenHeightDp.dp)
+}
 
 @Composable
 actual fun SimpleAndAnimatedImageView(

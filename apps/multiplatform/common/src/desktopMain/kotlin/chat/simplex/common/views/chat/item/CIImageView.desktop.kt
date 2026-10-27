@@ -4,9 +4,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.unit.DpSize
 import chat.simplex.common.model.CIFile
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.ModalManager
+
+@Composable
+internal actual fun chatImageWindowSize(): DpSize = DpSize(LocalWindowWidth(), LocalWindowHeight())
 
 @Composable
 actual fun SimpleAndAnimatedImageView(

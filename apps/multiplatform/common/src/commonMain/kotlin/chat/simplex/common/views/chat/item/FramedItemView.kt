@@ -269,7 +269,7 @@ fun FramedItemView(
             }
           }
         }
-        PriorityLayout(Modifier, CHAT_IMAGE_LAYOUT_ID) {
+        PriorityLayout(Modifier, CHAT_IMAGE_LAYOUT_ID, limitMediaAspectRatio = !(appPlatform.isAndroid && ci.content.msgContent is MsgContent.MCImage)) {
           @Composable
           fun Header() {
             if (ci.isReport) {
@@ -502,6 +502,7 @@ private fun horizontalPaddingAroundCustomLayouts(density: Float): Int =
 fun PriorityLayout(
   modifier: Modifier = Modifier,
   priorityLayoutId: String,
+  limitMediaAspectRatio: Boolean = true,
   content: @Composable () -> Unit
 ) {
   Layout(
@@ -512,7 +513,7 @@ fun PriorityLayout(
     // Expecting only one such element. Can be less than one but not more
     // Max image height for chat item display, taller images are cropped
     val maxImageHeight = (constraints.maxWidth * 2.33f).toInt().coerceAtMost(constraints.maxHeight)
-    val imageConstraints = constraints.copy(maxHeight = maxImageHeight)
+    val imageConstraints = if (limitMediaAspectRatio) constraints.copy(maxHeight = maxImageHeight) else constraints
     val imagePlaceable = measureable.firstOrNull { it.layoutId == priorityLayoutId }?.measure(imageConstraints)
     val placeables: List<Placeable> = measureable.map {
       if (it.layoutId == priorityLayoutId)

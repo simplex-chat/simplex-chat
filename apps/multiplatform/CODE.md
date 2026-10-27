@@ -254,6 +254,7 @@ desktop/src/jvmMain/kotlin/chat/simplex/desktop/ -- Desktop app (1 file)
 | common/.../common/views/chat/item/ChatItemMenu.kt | spec/client/chat-view.md#message-menu-placement | product/views/chat.md#message-interactions |
 | common/.../common/views/chat/item/ChatSendAnimation.kt | spec/client/chat-view.md#outgoing-message-animation, spec/client/compose.md#outgoing-send-animation | product/views/chat.md |
 | common/.../common/views/chat/item/ImageGalleryAnimation.kt | spec/client/chat-view.md#image-viewer-transition | product/views/chat.md#full-screen-images |
+| common/.../common/views/chat/item/ChatImageSizing.kt | spec/client/chat-view.md#chat-photo-sizing | product/views/chat.md#chat-image-previews |
 | common/.../common/views/call/CallView.kt | spec/services/calls.md | product/views/call.md |
 | common/.../common/views/call/IncomingCallAlertView.kt | spec/services/calls.md | product/views/call.md |
 | common/.../common/views/call/WebRTC.kt | spec/services/calls.md | product/flows/calling.md |

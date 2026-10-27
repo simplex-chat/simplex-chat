@@ -94,6 +94,9 @@ message selection. This selects whole messages, independently of desktop text
 selection. Desktop retains its existing long-press/right-click menu and drag text
 selection.
 
+A short haptic tick marks the swipe-to-reply threshold on Android. It occurs once
+per drag for messages that can be replied to and respects system haptic settings.
+
 Links, mentions, commands, secret reveals, quoted-message navigation, media opening,
 file controls and reactions keep their own tap actions. Long-presses on nested
 message content follow the same message-selection action on Android.
@@ -117,6 +120,19 @@ window and minimizes overlap. Placement adapts to the keyboard and window size.
 | Select multiple | Enters multi-select mode (`selectedChatItems`) with bulk delete/forward/archive toolbar |
 | Archive | Archive selected reports (moderators) |
 | Details | Opens message information; delivery/signature explanation remains available there when present |
+
+### Chat Image Previews
+
+On Android, single-photo previews use Telegram-style bounds: portrait width starts
+at 70% of the window's short side, while square and landscape photos use that side
+minus 64dp. Height is limited to the initial width plus 100dp; tall portraits shrink
+in both dimensions. Panoramas use a 120dp minimum height with centered cropping.
+Tablet bounds account for a navigation pane, and actual chat gutters can narrow
+the preview further. Measured message metadata sets a minimum width for thin images.
+
+Preview dimensions stay stable when the full image loads or the keyboard opens.
+Captions wrap within the existing media bubble layout. Small quote/list thumbnails
+and desktop image sizing retain their existing behavior.
 
 ### Full-Screen Images
 

@@ -59,7 +59,7 @@ ChatView
 
 ## 2. ChatView Composable
 
-**Location:** [`ChatView()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L100)
+**Location:** [`ChatView()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L101)
 
 ```kotlin
 fun ChatView(
@@ -110,7 +110,7 @@ The outer `when (chatInfo)` (line ~229) branches:
 
 ## 3. Message List
 
-**Location:** [`ChatItemsList()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L1742)
+**Location:** [`ChatItemsList()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L1743)
 
 The message list is a `LazyColumnWithScrollBar` with `reverseLayout = true`, meaning index 0 is the newest message at the bottom of the screen.
 
@@ -123,6 +123,18 @@ The message list is a `LazyColumnWithScrollBar` with `reverseLayout = true`, mea
 - **Date Separators:** `DateSeparator` composable renders between messages when the date changes (via `ItemSeparation.date`).
 - **Swipe to Reply:** `SwipeToDismiss` modifier on each item (EndToStart direction, 30dp threshold) sets `ComposeContextItem.QuotedItem`.
 - **Selection Mode:** When `selectedChatItems` is non-null, a checkbox overlay appears on each item; a full-width clickable overlay toggles selection.
+
+[`SwipeToDismissModifier()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/helpers/Modifiers.kt#L32)
+accepts an optional `onThresholdReached` callback. Its interaction source identifies
+active drags; `snapshotFlow` observes dragging and offset, notifying once when the
+existing 0.99 fractional threshold is crossed. The latch resets after drag end,
+so return animations cannot trigger feedback. `rememberUpdatedState` keeps the
+callback current without restarting observation.
+
+Android replyable message rows provide `LocalHapticFeedback` with
+`ContextClick`, supported throughout the app's Android API range. Local notes, reports, live/deleted messages, unsent
+temporary items, disabled sending and bulk selection do not provide feedback.
+The native haptic implementation respects system settings.
 
 ### Item Layout (ChatViewListItem)
 
@@ -180,7 +192,7 @@ existing `selectedChatItems` bulk-message mode, where taps toggle selection. It
 does not start character selection. Desktop retains its status-information tap,
 long-press/right-click menu and existing drag text selection.
 
-[`ChatViewListItem()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L1914)
+[`ChatViewListItem()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L1915)
 owns the remembered menu visibility and passes it to `ChatItemView(showMenu = ...)`.
 On Android, the outer full-width row handles unconsumed taps and long-presses,
 including gutters outside the bubble/avatar layout. Nested links, media, avatar
@@ -378,6 +390,7 @@ Key sections: group profile, group link, member list with roles, group preferenc
 | `FramedItemView.kt` | Message bubble frame (quoted item, text, media) |
 | `ImageFullScreenView.kt` | Fullscreen image gallery |
 | `ImageGalleryAnimation.kt` | Thumbnail capture, shared image geometry, animated open/close state and source restoration |
+| `ChatImageSizing.kt` | Android photo bounds, aspect fitting, metadata minimum width and platform window dimensions |
 | `IntegrityErrorItemView.kt` | Message integrity error |
 | `MarkedDeletedItemView.kt` | Marked-as-deleted / moderated message |
 | `TextItemView.kt` | Plain text message with markdown |
@@ -447,7 +460,7 @@ localized strings and require initialized Android resources on an Android JVM te
 
 ## 11. Outgoing Message Animation
 
-[`ChatLayout()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L903)
+[`ChatLayout()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L904)
 provides one `ChatSendAnimations` controller per mounted remote host, chat, group
 scope and user. `SendMsgView` measures its padded input bounds in window coordinates.
 The send gesture captures those bounds before API work; the successful response
@@ -502,9 +515,50 @@ The reference is Telegram Android `3de37c8cf` `PhotoViewer` normal open/close:
 adaptation uses `(1 - cos(PI * t)) / 2` and the existing full-screen modal rather
 than a separate window.
 
+<a id="chat-photo-sizing"></a>
+
+### Chat Photo Sizing
+
+[`chatImageSize()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatImageSizing.kt#L11)
+adapts Telegram Android's [single-photo bounds](https://github.com/DrKLO/Telegram/blob/3de37c8cf/TMessagesProj/src/main/java/org/telegram/ui/Cells/ChatMessageCell.java#L9812-L9854)
+and [aspect fitting](https://github.com/DrKLO/Telegram/blob/3de37c8cf/TMessagesProj/src/main/java/org/telegram/ui/Cells/ChatMessageCell.java#L26748-L26793).
+Inputs are source pixel dimensions, window dimensions in dp, density and measured
+metadata minimum width. Invalid source/window dimensions return an empty size.
+
+| Rule | Implementation |
+|---|---|
+| Phone portrait | Initial width is 70% of the window's short side. |
+| Phone square/landscape | Initial width is short side minus 64dp. |
+| Tablet | For short side above 690dp, reserve `max(320dp, 35% of short side)`; otherwise use the lesser of the short side and the long side minus its reservation. Initial width is 70% of the resulting pane size. Tablet classification starts at a 600dp short side. |
+| Height cap | Initial width plus 100dp. Portrait/tablet width and height caps are additionally limited to `1280 / density` dp, matching Telegram's physical-pixel limit. |
+| Aspect fitting | Start at the width cap, then shrink both dimensions if too tall. If shorter than 120dp, keep width bounded and use a 120dp centered crop. |
+| Metadata | Widen a thin photo enough for the measured SimpleX metadata row plus its end inset, bounded by the width cap; retain fitted height and crop. |
+
+[`chatImageWindowSize()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatImageSizing.kt#L45)
+has [Android](../../common/src/androidMain/kotlin/chat/simplex/common/views/chat/item/CIImageView.android.kt#L24)
+and [Desktop](../../common/src/desktopMain/kotlin/chat/simplex/common/views/chat/item/CIImageView.desktop.kt#L13)
+actuals. Android reads `LocalConfiguration` screen dp dimensions, which update for
+window changes independently of IME visibility. Desktop supplies its existing
+window dimensions; the new sizing policy is enabled only for full Android photos.
+
+`CIImageView` derives nominal dimensions from the embedded preview, so loading the
+original cannot resize the bubble. The nominal width also supplies intrinsic
+measurement. Actual parent gutters constrain width; narrowing scales height down,
+while widening cannot increase nominal height. `PriorityLayout(limitMediaAspectRatio
+= false)` exempts Android photos from its legacy 2.33 aspect cap, preserving tall
+fitted images. Other media and Desktop retain the cap. Captions use the existing
+SimpleX wrapping layout; Telegram's share/sidebar deductions and caption expansion
+are not part of this adaptation.
+
+Android preview bitmaps, loaded painters and large-image fallbacks use `Crop`, as
+does their gallery source geometry. This keeps panorama/metadata crops consistent
+with the opening animation. `ChatImageSizingTest` covers reference phone ratios,
+panoramas, metadata width, orientation, density, both tablet branches and invalid
+dimensions.
+
 ### Capture and Platform Entry Points
 
-[`CIImageView()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/CIImageView.kt#L37)
+[`CIImageView()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/CIImageView.kt#L39)
 remembers an `ImageGalleryThumbnail` for the image/file, small-view mode and radius.
 The actual bounded thumbnail box records `LayoutCoordinates` and hides only its
 drawing while the transition owns the source. Its disposal invalidates coordinates
@@ -513,9 +567,9 @@ the current-source callback checks the current privacy blur state before capture
 Unrevealed media retains the existing reveal/download/error path and cannot supply
 hidden pixels to an animated thumbnail.
 
-The [`SimpleAndAnimatedImageView` expect](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/CIImageView.kt#L292)
-and its [Android](../../common/src/androidMain/kotlin/chat/simplex/common/views/chat/item/CIImageView.android.kt#L21)
-and [Desktop](../../common/src/desktopMain/kotlin/chat/simplex/common/views/chat/item/CIImageView.desktop.kt#L12)
+The [`SimpleAndAnimatedImageView` expect](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/CIImageView.kt#L307)
+and its [Android](../../common/src/androidMain/kotlin/chat/simplex/common/views/chat/item/CIImageView.android.kt#L30)
+and [Desktop](../../common/src/desktopMain/kotlin/chat/simplex/common/views/chat/item/CIImageView.desktop.kt#L16)
 actuals take `createTransition: () -> ImageGalleryTransition`. They capture synchronously
 on the image click, then call `showCustomModal(animated = false)` and pass the
 transition to the existing viewer. This avoids stacking the generic modal animation
@@ -540,8 +594,8 @@ contains the following types and functions:
 | `imageGalleryEasing` | Sinusoidal accelerate-decelerate timing. |
 | [`ImageGalleryAnimatedContainer()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ImageGalleryAnimation.kt#L82) | Animates scrim and bitmap, gates gestures and coordinates close/disposal. |
 
-Full-size thumbnails use their measured width and capped height; small previews
-use crop mode. Image placement, rounded image clip and list-visible clip interpolate
+Android full-size thumbnails and small previews use crop mode; desktop full-size
+thumbnails use their measured width and capped height. Image placement, rounded image clip and list-visible clip interpolate
 independently, so tall/clipped thumbnails expand without stretching. The canvas
 clamps corner radius to the clip dimensions. The real pager remains composed at a
 stable call site behind the transition; it becomes visible when opening finishes.
@@ -576,7 +630,7 @@ the exact joined-bubble corner/tail or user-roundness shape; carry the source's
 actual contour if exact visual continuity is required.
 
 **[GAP] Synchronous gallery loading:** `providerForGallery().getMedia()` in
-[`ChatView.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L3642)
+[`ChatView.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L3648)
 already uses `runBlocking { getLoadedImage(...) }`, and the viewer calls it during
 composition. This can block the UI while reading/decoding a gallery page. Draw-only
 animation avoids multiplying that work per frame but does not remove the existing
