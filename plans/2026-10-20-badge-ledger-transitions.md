@@ -121,7 +121,7 @@ One PR, built in these slices in order; T3 and R2 need the same-install resume o
 | S0 | move `storePlan` to shared code (structural) | existing suites | ~60 |
 | T2 | `upgradeBadgeSubscription` handler, renewal lane | `testSubscriptionUpgradeNow`, `testUpgradeRequestRefused`, `testStoreRouting` | ~250 |
 | T3 | `productId`, `hold_kind` migration, tier-change hold and worker send | `testAppleTierChangeHandOver`, `testAppleTierChangeStoreLags` | ~300 |
-| R1a | `rebound_at`, charge index, move-binding store function | schema down/up (down refuses after a re-bind), store test | ~150 |
+| R1a | `rebound_at`, charge index, move-binding store function | schema down/up (these changes are in `20261012_badge_subscriptions`, whose down migration drops them and every other subscription column without refusing, and the service README warns against it on a database holding subscriptions; whether it should refuse there is the owner's open call), store test | ~150 |
 | R1b | `transferBadge` handler, `ended` after `transferOut`, docs | `testStoreRebind`, `testStoreRebindCapped`, `testStoreRebindOldKeyEnded`, `testStoreRebindStaleAppleTransaction`, `testTransferUncredited`, `testTransferReplayAnswered`, `testTransferKnownKeyRefused` | ~300 |
 | R2 | `SRORestored` and the restore cases in core | `testRestoreOnNewDevice`, `testRestoreOnOtherProfile`, `testRestoreAfterUnfinishedPass` | ~300 |
 | R3 | Restore in iOS and Kotlin, `gaps.md` | build both apps; restore on a second device and profile | ~150 |
