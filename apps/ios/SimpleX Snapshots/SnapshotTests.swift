@@ -39,64 +39,64 @@ final class SnapshotTests: XCTestCase {
         let data = try JSONSerialization.data(withJSONObject: index, options: [.prettyPrinted, .sortedKeys])
         try data.write(to: dir.appendingPathComponent("index-\(size).json"))
     }
+
+    private func snapshotTheme(_ dark: Bool) -> ThemeManager.ActiveTheme {
+        let base: DefaultTheme = dark ? .DARK : .LIGHT
+        return ThemeManager.ActiveTheme(
+            name: base.themeName,
+            base: base,
+            colors: (dark ? DarkColorPalette : LightColorPalette).clone(),
+            appColors: (dark ? DarkColorPaletteApp : LightColorPaletteApp).clone(),
+            wallpaper: AppWallpaper(background: nil, tint: nil, type: PresetWallpaper.school.toType(base))
+        )
+    }
+
+    @MainActor
+    private func renderScene(_ scene: SnapshotScene, _ theme: AppTheme, dark: Bool, in windowScene: UIWindowScene) throws -> UIImage {
+        let screen = windowScene.screen
+        let width = screen.bounds.width
+        let root = scene.view
+            .environmentObject(ChatModel.shared)
+            .environmentObject(theme)
+            .frame(width: width, height: scene.height)
+        let host = UIHostingController(rootView: AnyView(root))
+        if #available(iOS 16.4, *) {
+            host.safeAreaRegions = []
+        }
+        let window = UIWindow(windowScene: windowScene)
+        window.overrideUserInterfaceStyle = dark ? .dark : .light
+        window.rootViewController = host
+        window.frame = CGRect(x: 0, y: 0, width: width, height: scene.height ?? screen.bounds.height)
+        window.isHidden = false
+        settle()
+        if scene.height == nil {
+            for _ in 0..<2 {
+                let fit = host.sizeThatFits(in: CGSize(width: width, height: .greatestFiniteMagnitude))
+                window.frame = CGRect(x: 0, y: 0, width: width, height: ceil(fit.height))
+                settle()
+            }
+        }
+        let format = UIGraphicsImageRendererFormat.default()
+        format.scale = screen.scale
+        format.preferredRange = .standard
+        format.opaque = true
+        let image = UIGraphicsImageRenderer(bounds: window.bounds, format: format).image { _ in
+            _ = window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
+        }
+        window.isHidden = true
+        window.rootViewController = nil
+        return image
+    }
+
+    private func settle() {
+        RunLoop.main.run(until: Date().addingTimeInterval(0.6))
+    }
 }
 
 private struct SnapshotScene {
     var name: String
     var height: CGFloat? = nil
     var view: AnyView
-}
-
-private func snapshotTheme(_ dark: Bool) -> ThemeManager.ActiveTheme {
-    let base: DefaultTheme = dark ? .DARK : .LIGHT
-    return ThemeManager.ActiveTheme(
-        name: base.themeName,
-        base: base,
-        colors: (dark ? DarkColorPalette : LightColorPalette).clone(),
-        appColors: (dark ? DarkColorPaletteApp : LightColorPaletteApp).clone(),
-        wallpaper: AppWallpaper(background: nil, tint: nil, type: PresetWallpaper.school.toType(base))
-    )
-}
-
-@MainActor
-private func renderScene(_ scene: SnapshotScene, _ theme: AppTheme, dark: Bool, in windowScene: UIWindowScene) throws -> UIImage {
-    let screen = windowScene.screen
-    let width = screen.bounds.width
-    let root = scene.view
-        .environmentObject(ChatModel.shared)
-        .environmentObject(theme)
-        .frame(width: width, height: scene.height)
-    let host = UIHostingController(rootView: AnyView(root))
-    if #available(iOS 16.4, *) {
-        host.safeAreaRegions = []
-    }
-    let window = UIWindow(windowScene: windowScene)
-    window.overrideUserInterfaceStyle = dark ? .dark : .light
-    window.rootViewController = host
-    window.frame = CGRect(x: 0, y: 0, width: width, height: scene.height ?? screen.bounds.height)
-    window.isHidden = false
-    settle()
-    if scene.height == nil {
-        for _ in 0..<2 {
-            let fit = host.sizeThatFits(in: CGSize(width: width, height: .greatestFiniteMagnitude))
-            window.frame = CGRect(x: 0, y: 0, width: width, height: ceil(fit.height))
-            settle()
-        }
-    }
-    let format = UIGraphicsImageRendererFormat.default()
-    format.scale = screen.scale
-    format.preferredRange = .standard
-    format.opaque = true
-    let image = UIGraphicsImageRenderer(bounds: window.bounds, format: format).image { _ in
-        _ = window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
-    }
-    window.isHidden = true
-    window.rootViewController = nil
-    return image
-}
-
-private func settle() {
-    RunLoop.main.run(until: Date().addingTimeInterval(0.6))
 }
 
 private struct ChatRows: View {
@@ -159,51 +159,39 @@ private struct ChatRows: View {
         )
         .environment(\.terminalLayout, terminal)
     }
-}
 
-private func rowMaxWidth(_ ci: ChatItem, _ merged: MergedItem, _ cInfo: ChatInfo, _ width: CGFloat) -> CGFloat {
-    let voiceNoFrame = ci.content.msgContent?.isVoice == true && ci.content.text.count == 0 && ci.quotedItem == nil && ci.meta.itemForwarded == nil
-    let channelReceived = !ci.chatDir.sent && cInfo.isChannel
-    let channelReceivedNoAvatar = channelReceived && !showsAvatar(merged.newest().item, merged.oldest().nextItem)
-    let avatarColumn = scaledMemberImageSize(DynamicTypeSize(UIApplication.shared.preferredContentSizeCategory) ?? .large) + 8
-    return cInfo.chatType == .group
-    ? channelReceivedNoAvatar
-    ? width - 26
-    : voiceNoFrame || channelReceived
-    ? (width - 28) - avatarColumn
-    : (width - 28) * 0.84 - avatarColumn
-    : voiceNoFrame
-    ? (width - 32)
-    : (width - 32) * 0.84
-}
+    private func rowMaxWidth(_ ci: ChatItem, _ merged: MergedItem, _ cInfo: ChatInfo, _ width: CGFloat) -> CGFloat {
+        let voiceNoFrame = ci.content.msgContent?.isVoice == true && ci.content.text.count == 0 && ci.quotedItem == nil && ci.meta.itemForwarded == nil
+        let channelReceived = !ci.chatDir.sent && cInfo.isChannel
+        let channelReceivedNoAvatar = channelReceived && !showsAvatar(merged.newest().item, merged.oldest().nextItem)
+        let avatarColumn = ChatView.scaledMemberImageSize(DynamicTypeSize(UIApplication.shared.preferredContentSizeCategory) ?? .large) + 8
+        return cInfo.chatType == .group
+        ? channelReceivedNoAvatar
+        ? width - 26
+        : voiceNoFrame || channelReceived
+        ? (width - 28) - avatarColumn
+        : (width - 28) * 0.84 - avatarColumn
+        : voiceNoFrame
+        ? (width - 32)
+        : (width - 32) * 0.84
+    }
 
-private func showsAvatar(_ current: ChatItem, _ older: ChatItem?) -> Bool {
-    let oldIsGroupRcv = switch older?.chatDir {
-    case .groupRcv: true
-    case .channelRcv: true
-    default: false
+    private func showsAvatar(_ current: ChatItem, _ older: ChatItem?) -> Bool {
+        let oldIsGroupRcv = switch older?.chatDir {
+        case .groupRcv: true
+        case .channelRcv: true
+        default: false
+        }
+        let sameMember = switch (older?.chatDir, current.chatDir) {
+        case let (.groupRcv(oldMember), .groupRcv(member)): oldMember.memberId == member.memberId
+        case (.channelRcv, .channelRcv): true
+        default: false
+        }
+        return switch current.chatDir {
+        case .groupRcv, .channelRcv: older == nil || !oldIsGroupRcv || !sameMember
+        default: false
+        }
     }
-    let sameMember = switch (older?.chatDir, current.chatDir) {
-    case let (.groupRcv(oldMember), .groupRcv(member)): oldMember.memberId == member.memberId
-    case (.channelRcv, .channelRcv): true
-    default: false
-    }
-    return switch current.chatDir {
-    case .groupRcv, .channelRcv: older == nil || !oldIsGroupRcv || !sameMember
-    default: false
-    }
-}
-
-private func imageBase64(_ color: UIColor, _ size: CGSize) -> String {
-    let format = UIGraphicsImageRendererFormat.default()
-    format.scale = 1
-    let image = UIGraphicsImageRenderer(size: size, format: format).image { ctx in
-        color.setFill()
-        ctx.fill(CGRect(origin: .zero, size: size))
-        UIColor.white.withAlphaComponent(0.4).setFill()
-        ctx.cgContext.fillEllipse(in: CGRect(x: size.width * 0.55, y: size.height * 0.15, width: size.height * 0.4, height: size.height * 0.4))
-    }
-    return "data:image/jpg;base64," + (image.jpegData(compressionQuality: 0.8)?.base64EncodedString() ?? "")
 }
 
 private let markdownText = """
@@ -222,8 +210,8 @@ private let markdownText = """
 private final class SnapshotFixtures {
     private var nextId: Int64 = 1
     private let baseDate = Date(timeIntervalSince1970: 1_736_936_100)
-    let photo = imageBase64(UIColor(red: 0.2, green: 0.4, blue: 0.8, alpha: 1), CGSize(width: 120, height: 80))
-    let landscape = imageBase64(UIColor(red: 0.25, green: 0.55, blue: 0.35, alpha: 1), CGSize(width: 320, height: 200))
+    let photo = SnapshotFixtures.imageBase64(UIColor(red: 0.2, green: 0.4, blue: 0.8, alpha: 1), CGSize(width: 120, height: 80))
+    let landscape = SnapshotFixtures.imageBase64(UIColor(red: 0.25, green: 0.55, blue: 0.35, alpha: 1), CGSize(width: 320, height: 200))
     let user: User
     let alice: GroupMember
     let bob: GroupMember
@@ -239,9 +227,9 @@ private final class SnapshotFixtures {
         u.profile = LocalProfile(profileId: 100, displayName: "me", fullName: "", localAlias: "")
         u.localDisplayName = "me"
         user = u
-        alice = Self.member(2, "alice", .admin, image: imageBase64(UIColor(red: 0.85, green: 0.45, blue: 0.3, alpha: 1), CGSize(width: 64, height: 64)))
+        alice = Self.member(2, "alice", .admin, image: Self.imageBase64(UIColor(red: 0.85, green: 0.45, blue: 0.3, alpha: 1), CGSize(width: 64, height: 64)))
         bob = Self.member(3, "bob", .member)
-        carol = Self.member(4, "carol", .member, image: imageBase64(UIColor(red: 0.55, green: 0.35, blue: 0.75, alpha: 1), CGSize(width: 64, height: 64)))
+        carol = Self.member(4, "carol", .member, image: Self.imageBase64(UIColor(red: 0.55, green: 0.35, blue: 0.75, alpha: 1), CGSize(width: 64, height: 64)))
         team = Self.group(1, "team", channel: false)
         news = Self.group(2, "SimpleX news", channel: true)
         var c = Contact.sampleData
@@ -271,6 +259,18 @@ private final class SnapshotFixtures {
         }
         g.membership = member(99, "me", .member)
         return g
+    }
+
+    nonisolated private static func imageBase64(_ color: UIColor, _ size: CGSize) -> String {
+        let format = UIGraphicsImageRendererFormat.default()
+        format.scale = 1
+        let image = UIGraphicsImageRenderer(size: size, format: format).image { ctx in
+            color.setFill()
+            ctx.fill(CGRect(origin: .zero, size: size))
+            UIColor.white.withAlphaComponent(0.4).setFill()
+            ctx.cgContext.fillEllipse(in: CGRect(x: size.width * 0.55, y: size.height * 0.15, width: size.height * 0.4, height: size.height * 0.4))
+        }
+        return "data:image/jpg;base64," + (image.jpegData(compressionQuality: 0.8)?.base64EncodedString() ?? "")
     }
 
     private func id() -> Int64 {

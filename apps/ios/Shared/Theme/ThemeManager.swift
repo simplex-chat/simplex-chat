@@ -313,4 +313,16 @@ class ThemeManager {
         themes.removeAll(where: { $0.themeId == themeId })
         themeOverridesDefault.set(themes)
     }
+
+    static func profileChatLayout(_ user: User?) -> ChatLayout {
+        user?.uiThemes?.chatLayout?.known ?? chatLayoutDefault.get().known ?? .classic
+    }
+
+    static func defaultChatLayout(_ chatInfo: ChatInfo, _ user: User?) -> ChatLayout {
+        chatInfo.chatLayout?.known ?? profileChatLayout(user)
+    }
+
+    static func activeChatLayout(_ chatInfo: ChatInfo, _ user: User?) -> ChatLayout {
+        chatInfo.uiThemes?.chatLayout?.known ?? defaultChatLayout(chatInfo, user)
+    }
 }

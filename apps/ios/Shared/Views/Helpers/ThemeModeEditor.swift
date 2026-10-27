@@ -461,8 +461,8 @@ struct ChatLayoutSection: View {
     var setChatLayout: (ChatLayout?) -> Void
 
     var body: some View {
-        let defaultChatLayout = chatInfo.defaultChatLayout(ChatModel.shared.currentUser)
-        let otherLayout = otherChatLayout(defaultChatLayout)
+        let defaultChatLayout = ThemeManager.defaultChatLayout(chatInfo, ChatModel.shared.currentUser)
+        let otherLayout = defaultChatLayout.other
         let suffix = chatInfo.chatLayout == defaultChatLayout ? NSLocalizedString("(chat)", comment: "chat layout") : NSLocalizedString("(default)", comment: "chat layout")
         Section {
             Picker("Chat layout", selection: Binding(
@@ -475,18 +475,4 @@ struct ChatLayoutSection: View {
             .frame(height: 36)
         }
     }
-}
-
-extension ChatLayout {
-    var displayName: String {
-        switch self {
-        case .classic: NSLocalizedString("Classic", comment: "chat layout")
-        case .terminal: NSLocalizedString("Terminal", comment: "chat layout")
-        case let .unknown(text): text
-        }
-    }
-}
-
-func otherChatLayout(_ layout: ChatLayout) -> ChatLayout {
-    layout == .terminal ? .classic : .terminal
 }

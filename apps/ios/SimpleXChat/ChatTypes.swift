@@ -265,6 +265,22 @@ public enum ChatLayout: Hashable {
     case classic
     case terminal
     case unknown(String)
+
+    public var known: ChatLayout? {
+        if case .unknown = self { nil } else { self }
+    }
+
+    public var other: ChatLayout {
+        self == .terminal ? .classic : .terminal
+    }
+
+    public var displayName: String {
+        switch self {
+        case .classic: NSLocalizedString("Classic", comment: "chat layout")
+        case .terminal: NSLocalizedString("Terminal", comment: "chat layout")
+        case let .unknown(text): text
+        }
+    }
 }
 
 extension ChatLayout: RawRepresentable {
@@ -4102,6 +4118,39 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
         (content.msgContent != nil && !meta.isLive) || meta.itemDeleted != nil || isDeletedContent || mergeCategory != nil || showLocalDelete
     }
 
+    public var channelIsSender: Bool {
+        switch chatDir {
+        case .channelRcv: true
+        case .groupSnd: meta.showGroupAsSender
+        default: false
+        }
+    }
+
+    public var textAtItemTop: Bool {
+        let textContent = switch content.msgContent {
+        case .text: true
+        case .unknown: file == nil
+        default: false
+        }
+        return textContent && quotedItem == nil && meta.itemForwarded == nil && meta.itemDeleted == nil && !meta.isLive && !isReport
+    }
+
+    public var startsWithHeading: Bool {
+        if case .heading = markdownBlocks?.first { true } else { false }
+    }
+
+    public func showsTerminalSender(_ older: ChatItem?) -> Bool {
+        guard content.hasTerminalSender else { return false }
+        guard let older else { return true }
+        return !older.content.hasTerminalSender || !sameSender(older)
+    }
+
+    private func sameSender(_ older: ChatItem) -> Bool {
+        channelIsSender || older.channelIsSender
+        ? channelIsSender && older.channelIsSender
+        : chatDir.sameDirection(older.chatDir)
+    }
+
     public static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, quotedItem: CIQuote? = nil, file: CIFile? = nil, itemDeleted: CIDeleted? = nil, itemEdited: Bool = false, itemLive: Bool = false, deletable: Bool = true, editable: Bool = true) -> ChatItem {
         ChatItem(
             chatDir: dir,
@@ -4882,6 +4931,13 @@ public enum CIContent: Decodable, ItemContent, Hashable {
         case .rcvBlocked: return true
         case .invalidJSON: return true
         default: return false
+        }
+    }
+
+    public var hasTerminalSender: Bool {
+        switch self {
+        case .sndMsgContent, .sndDeleted, .sndCall, .sndGroupInvitation, .sndModerated: true
+        default: showMemberName
         }
     }
 
@@ -5786,6 +5842,10 @@ public enum MarkdownBlock: Decodable, Hashable {
     case list(items: [ListEntry])
     case table(columns: [TableAlign], header: [SegmentRange], rows: [[SegmentRange]])
     case rule(mark: SegmentRange)
+
+    public var isHeading: Bool {
+        if case .heading = self { true } else { false }
+    }
 }
 
 public struct ListEntry: Decodable, Hashable {

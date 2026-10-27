@@ -12,12 +12,6 @@ import SimpleXChat
 import SwiftyGif
 import Combine
 
-private let memberImageBaseSize: CGFloat = 34
-
-func scaledMemberImageSize(_ font: DynamicTypeSize) -> CGFloat {
-    memberImageBaseSize * dynamicSize(font).profileImageSize / dynamicSize(.large).profileImageSize
-}
-
 private func shouldShowAvatar(_ current: ChatItem, _ older: ChatItem?) -> Bool {
     let oldIsGroupRcv = switch older?.chatDir {
     case .groupRcv: true
@@ -99,8 +93,14 @@ struct ChatView: View {
 
     let userSupportScopeInfo: GroupChatScopeInfo = .memberSupport(groupMember_: nil)
 
+    private static let memberImageBaseSize: CGFloat = 34
+
+    static func scaledMemberImageSize(_ font: DynamicTypeSize) -> CGFloat {
+        memberImageBaseSize * dynamicSize(font).profileImageSize / dynamicSize(.large).profileImageSize
+    }
+
     private var terminal: Bool {
-        chat.chatInfo.activeChatLayout(ChatModel.shared.currentUser) == .terminal
+        ThemeManager.activeChatLayout(chat.chatInfo, ChatModel.shared.currentUser) == .terminal
     }
 
     // Spec: spec/client/chat-view.md#body
@@ -933,7 +933,7 @@ struct ChatView: View {
                         // left padding (see .leading padding below), so they get the full row width here
                         // too — otherwise the reserved avatar inset would leave a gap on the right
                         let channelReceivedNoAvatar = channelReceived && !shouldShowAvatar(mergedItem.newest().item, mergedItem.oldest().nextItem)
-                        let avatarColumn = scaledMemberImageSize(userFont) + 8
+                        let avatarColumn = ChatView.scaledMemberImageSize(userFont) + 8
                         let maxWidth = cInfo.chatType == .group
                         ? channelReceivedNoAvatar
                         ? g.size.width - 26
@@ -1759,7 +1759,7 @@ struct ChatView: View {
         var revealed: Bool { revealedItems.contains(chatItem.id) }
 
         private var memberImageSize: CGFloat {
-            scaledMemberImageSize(userFont)
+            ChatView.scaledMemberImageSize(userFont)
         }
 
         typealias ItemSeparation = (timestamp: Bool, largeGap: Bool, date: Date?)
@@ -1798,7 +1798,7 @@ struct ChatView: View {
             } else {
                 nil
             }
-            let showAvatar = terminal ? terminalItemShowsSender(item, merged.oldest().nextItem) : shouldShowAvatar(item, merged.oldest().nextItem)
+            let showAvatar = terminal ? item.showsTerminalSender(merged.oldest().nextItem) : shouldShowAvatar(item, merged.oldest().nextItem)
             let single = switch merged {
             case .single: true
             default: false
@@ -2147,7 +2147,7 @@ struct ChatView: View {
         private func terminalItemRow(_ range: ClosedRange<Int>?, _ showSender: Bool, _ ci: ChatItem, _ itemSeparation: ItemSeparation) -> some View {
             let selecting = selectedChatItems != nil && ci.canBeDeletedForSelf
             let older = merged.oldest().nextItem
-            let topGap = terminalRowGap(
+            let topGap = TerminalLayout.rowGap(
                 ci,
                 older,
                 separated: terminalRowsSeparated(olderRow),
@@ -2161,14 +2161,14 @@ struct ChatView: View {
                 }
                 TerminalChatItemRow(
                     sender: showSender ? chatItemSender(ci, range) : nil,
-                    gutter: chat.chatInfo.chatType == .group ? memberImageSize + chatItemTextPadding : 0,
+                    gutter: chat.chatInfo.chatType == .group ? memberImageSize + TerminalLayout.textPadding : 0,
                     topGap: topGap
                 ) {
                     chatItemWithMenu(ci, range, maxWidth, itemSeparation)
                 }
                 .padding(.leading, selecting ? 4 + 24 : 0)
             }
-            .padding(.bottom, index == 0 && itemSeparation.largeGap ? 8 : itemSeparation.date == nil ? 0 : terminalLevelStep)
+            .padding(.bottom, index == 0 && itemSeparation.largeGap ? 8 : itemSeparation.date == nil ? 0 : TerminalLayout.levelStep)
             .background(selectedChatItems?.contains(ci.id) == true ? theme.colors.primary.opacity(0.1) : Color.clear)
         }
 
@@ -2275,7 +2275,7 @@ struct ChatView: View {
                     }
                     if ci.content.msgContent != nil && (ci.meta.itemDeleted == nil || revealed) && ci.reactions.count > 0 {
                         chatItemReactions(ci)
-                            .padding(.leading, terminal ? chatItemTextPadding - 6 : 0)
+                            .padding(.leading, terminal ? TerminalLayout.textPadding - 6 : 0)
                             .padding(.bottom, 4)
                     }
                 }

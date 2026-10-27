@@ -69,9 +69,9 @@ struct CIVoiceView: View {
                 }
             }
         }
-        .padding(.top, terminal ? terminalGap(4) : 4)
-        .padding(.bottom, terminal ? terminalGap(6) : 8)
-        .padding(.leading, terminal ? chatItemTextPadding : 0)
+        .padding(.top, terminal ? TerminalLayout.gap(4) : 4)
+        .padding(.bottom, terminal ? TerminalLayout.gap(6) : 8)
+        .padding(.leading, terminal ? TerminalLayout.textPadding : 0)
     }
 
     private func player() -> some View {

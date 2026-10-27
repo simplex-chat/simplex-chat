@@ -31,8 +31,8 @@ struct EmojiItemView: View {
                 }
             } else {
                 emojiText(chatItem.content.text)
-                    .messageLastLine()
-                    .padding(EdgeInsets(top: terminalEmojiTopGap, leading: chatItemTextPadding, bottom: terminalEmojiBottomGap, trailing: chatItemTextPadding))
+                    .modifier(MessageLastLine())
+                    .padding(EdgeInsets(top: TerminalLayout.emojiTopGap, leading: TerminalLayout.textPadding, bottom: TerminalLayout.emojiBottomGap, trailing: TerminalLayout.textPadding))
             }
         }
     }

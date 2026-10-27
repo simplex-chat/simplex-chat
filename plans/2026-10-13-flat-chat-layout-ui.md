@@ -187,37 +187,42 @@ Paths are relative to `apps/ios/`.
 
 ```
 SimpleXChat/ChatTypes.swift              Contact.chatLayout; ChatInfo.chatLayout, ChatInfo.uiThemes
+                                         ChatLayout.known, ChatLayout.other, ChatLayout.displayName
+                                         ChatItem.channelIsSender, textAtItemTop, startsWithHeading, showsTerminalSender
+                                         CIContent.hasTerminalSender; MarkdownBlock.isHeading
 SimpleXChat/Theme/ThemeTypes.swift       ThemeModeOverrides.withChatLayout: nil for overrides left empty
-Shared/Model/ChatModel.swift             ChatInfo.defaultChatLayout, ChatInfo.activeChatLayout, profileChatLayout; unknown values skipped
+Shared/Theme/ThemeManager.swift          activeChatLayout, defaultChatLayout, profileChatLayout; unknown values skipped
+Shared/Theme/Theme.swift                 AppTheme.messageTextColor, AppTheme.terminalBackgroundColor
 Shared/Views/Chat/ChatView.swift         terminal = activeChatLayout == .terminal; \.terminalLayout on the cells; visible cells rebuilt on a change
                                          wallpaper background colour without the image
-                                         showAvatar = terminalItemShowsSender(item, older) when terminal
-                                         terminalItemRow: SelectedChatItem, TerminalChatItemRow(chatItemSender or nil, gutter, terminalRowGap)
-                                         gutter: memberImageSize + chatItemTextPadding in groups, 0 in other chats
+                                         showAvatar = item.showsTerminalSender(older) when terminal
+                                         terminalItemRow: SelectedChatItem, TerminalChatItemRow(chatItemSender or nil, gutter, TerminalLayout.rowGap)
+                                         gutter: memberImageSize + TerminalLayout.textPadding in groups, 0 in other chats
                                          memberImageSize: 34pt × chat list profileImageSize ÷ 63 at the text size, classic rows too
-                                         classic group bubble width: less scaledMemberImageSize + 8pt for the avatar column
+                                         classic group bubble width: less ChatView.scaledMemberImageSize + 8pt for the avatar column
                                          classic sender name on the bubble edge: memberImageSize + 10pt (user, I23)
                                          terminalRowsSeparated(olderRow); olderRow: the next merged item
-                                         bottom: 8pt below the newest row, terminalLevelStep above a date separator, otherwise 0
+                                         bottom: 8pt below the newest row, TerminalLayout.levelStep above a date separator, otherwise 0
                                          chatItemWithMenu: alignEnd = sent && !terminal; ChatItemClipped skipped; reactions at the text edge
                                          go-to button after the item in search results and for marked deleted items, otherwise endButton
 Shared/Views/Chat/ChatItemsMerger.swift  MergedItem.revealed
 Shared/Views/Chat/ChatItem/TerminalItemView.swift
-                                         \.terminalLayout; gaps: Kotlin sp × body point size ÷ 16 (terminalGap)
-                                         messageTextColor, terminalLineBox, lineBox; terminalItemShowsSender, sameSender, terminalRowGap, terminalHeadingGap
-                                         messageLastLine, messageLastBlock: custom alignment guides; metaCopyJoiner
+                                         \.terminalLayout; TerminalLayout: its key, gaps: Kotlin sp × body point size ÷ 16 (gap)
+                                         TerminalLayout.rowGap, headingGap, metaCopyJoiner
+                                         TerminalLineBox: view modifier, line height, withLineSpacing
+                                         MessageLastLine, MessageLastBlock: view modifiers with custom alignment guides
                                          ItemWithMeta: TerminalMetaLayout on iOS 16, HStack on the last text baseline on iOS 15
                                          ChatEventWithMeta: ts only; the separator of the classic text kept, the copy after WJ, a direction mark and two no-break spaces
-                                         ChatItemSender, TerminalChatItemRow: no padding at the sides, the avatar chatItemTextPadding from the start
+                                         ChatItemSender, TerminalChatItemRow: no padding at the sides, the avatar TerminalLayout.textPadding from the start
 Shared/Views/Chat/ChatItemView.swift     endButton to FramedItemView; event items with ChatEventWithMeta; chatEventText(ts:)
 Shared/Views/Chat/ChatItem/
-  FramedItemView.swift                   backgrounds omitted; headers and quote at the text edge; terminalQuote with quoteBar; terminalBlock for media and cards
-                                         ciMsgContentView(terminalTop:) plus terminalHeadingGap; metaPlacement; mediaLimit
-                                         quote: sender at terminalNameSize; thumbnail 12pt after the quote text, or 12pt after the bar without text and sender
+  FramedItemView.swift                   backgrounds omitted; headers and quote at the text edge; terminalQuote with QuoteBar; terminalBlock for media and cards
+                                         ciMsgContentView(terminalTop:) plus TerminalLayout.headingGap; metaPlacement; mediaLimit
+                                         quote: sender at TerminalLayout.nameSize; thumbnail 12pt after the quote text, or 12pt after the bar without text and sender
                                          overlayMeta for captionless media; terminal emoji paddings
   MsgContentView.swift                   messageText(textColor:); line boxes and lineSpacing, also for taps; meta line for live messages only
-                                         reserveSpaceForMeta: metaCopyJoiner, three no-break spaces, ciMetaText(unbreakable: true) with file encryption and signature
-                                         MarkdownBlocksView: heading gaps, terminalHeadingFont, cardMargins, marksLastBlock, ruleWidthText, ruleMinWidth, quoteBar()
+                                         reserveSpaceForMeta: TerminalLayout.metaCopyJoiner, three no-break spaces, ciMetaText(unbreakable: true) with file encryption and signature
+                                         MarkdownBlocksView: heading gaps, terminalHeadingFont, cardMargins, marksLastBlock, ruleWidthText, ruleMinWidth, QuoteBar
                                          rule-only message: the rule widened by a wider quote or header (D31); ruleMinWidth from msgWidth
   CIMetaView.swift                       ciMetaText(unbreakable:): no-break separators, word joiners after the edit, timer and via-proxy icons
   CIFileView.swift, CIVoiceView.swift, FramedCIVoiceView.swift, CIEventView.swift, CIChatLinkHeader.swift
@@ -228,15 +233,15 @@ Shared/Views/Chat/ChatItem/
 Shared/Views/Helpers/ChatItemClipShape.swift
                                          tail off in terminal rows
 Shared/Views/Helpers/ThemeModeEditor.swift
-                                         ChatWallpaperEditor(layoutSection:); ChatLayoutSection; ChatLayout.displayName; otherChatLayout
+                                         ChatWallpaperEditor(layoutSection:); ChatLayoutSection
 Shared/Views/Chat/ChatInfoView.swift     ChatWallpaperEditorSheet: ChatLayoutSection, setChatLayout, \.terminalLayout of the chat
 Shared/Views/UserSettings/AppearanceSettings.swift
                                          ChatLayoutPicker after ThemeDestinationPicker; app destination: currentUser.uiThemes = layoutOnly()
                                          ChatThemePreview: terminal rows and classic rows in one ZStack; background colour only
                                          presets as colours; custom image tile, scale type, scale and wallpaper tint hidden
-                                         \.terminalLayout by profileChatLayout
+                                         \.terminalLayout by ThemeManager.profileChatLayout
 theme writes                             chatLayout kept (agent profile plan, section 6)
-classic                                  message text in messageTextColor (MsgContentView); quote text in onSurface; sender name on the bubble edge; otherwise unchanged
+classic                                  message text in AppTheme.messageTextColor (MsgContentView); quote text in onSurface; sender name on the bubble edge; otherwise unchanged
 differences                              row tint: selected only; hover and press indication omitted
                                          swipe to reply moves the item
                                          gaps × 17/16 at the default 17pt body (user, 2026-10-25); line heights from the SF font

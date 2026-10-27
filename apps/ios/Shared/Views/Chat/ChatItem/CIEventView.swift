@@ -18,8 +18,8 @@ struct CIEventView: View {
 
     var body: some View {
         eventText
-        .if(terminal) { $0.lineBox(terminalLineBox(UIFont.preferredFont(forTextStyle: .caption1), theme.colors.secondary, theme)) }
-        .padding(terminal ? terminalEventPadding : EdgeInsets(top: 4, leading: 6, bottom: 4, trailing: 6))
+        .if(terminal) { $0.modifier(TerminalLineBox(UIFont.preferredFont(forTextStyle: .caption1), theme.colors.secondary, theme)) }
+        .padding(terminal ? TerminalLayout.eventPadding : EdgeInsets(top: 4, leading: 6, bottom: 4, trailing: 6))
         .textSelection(.disabled)
         .lineLimit(terminal ? nil : 4)
     }

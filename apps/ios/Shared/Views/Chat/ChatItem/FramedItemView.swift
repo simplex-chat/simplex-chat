@@ -110,7 +110,7 @@ struct FramedItemView: View {
                                     Text(itemForwarded.chatName)
                                         .font(.subheadline)
                                         .lineLimit(1)
-                                        .lineBox(terminal ? terminalLineBox(UIFont.preferredFont(forTextStyle: .subheadline), theme.colors.secondary, theme) : nil)
+                                        .if(terminal) { $0.modifier(TerminalLineBox(UIFont.preferredFont(forTextStyle: .subheadline), theme.colors.secondary, theme)) }
                                 }
                             }
                             .simultaneousGesture(TapGesture().onEnded {
@@ -141,7 +141,7 @@ struct FramedItemView: View {
         }
             .background { if !terminal { chatItemFrameColorMaybeImageOrVideo(chatItem, theme).modifier(ChatTailPadding()) } }
             .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
-            .padding(.bottom, terminal && metaPlacement.gapBelowBlock ? terminalBlockBottomGap : 0)
+            .padding(.bottom, terminal && metaPlacement.gapBelowBlock ? TerminalLayout.blockBottomGap : 0)
 
         if let (title, text) = chatItem.meta.itemStatus.statusInfo ?? chatItem.meta.msgVerified?.sigMissingInfo {
             v.simultaneousGesture(TapGesture().onEnded {
@@ -161,8 +161,8 @@ struct FramedItemView: View {
         if chatItem.formattedText == nil && chatItem.file == nil && !chatItem.meta.isLive && isShortEmoji(chatItem.content.text) {
             if terminal {
                 emojiText(chatItem.content.text)
-                    .messageLastLine()
-                    .padding(EdgeInsets(top: terminalEmojiTopGap, leading: chatItemTextPadding, bottom: terminalEmojiBottomGap, trailing: chatItemTextPadding))
+                    .modifier(MessageLastLine())
+                    .padding(EdgeInsets(top: TerminalLayout.emojiTopGap, leading: TerminalLayout.textPadding, bottom: TerminalLayout.emojiBottomGap, trailing: TerminalLayout.textPadding))
             } else {
                 VStack {
                     emojiText(chatItem.content.text)
@@ -190,7 +190,7 @@ struct FramedItemView: View {
                             useWhiteMetaColor = false
                         }
                 } else {
-                    ciMsgContentView(chatItem, terminalTop: terminalBlockBottomGap)
+                    ciMsgContentView(chatItem, terminalTop: TerminalLayout.blockBottomGap)
                 }
             case let .video(text, _, duration):
                 CIVideoView(chatItem: chatItem, preview: preview, duration: duration, maxWidth: maxWidth, videoWidth: videoWidth, showFullscreenPlayer: $showFullscreenGallery)
@@ -206,7 +206,7 @@ struct FramedItemView: View {
                         useWhiteMetaColor = false
                     }
                 } else {
-                    ciMsgContentView(chatItem, terminalTop: terminalBlockBottomGap)
+                    ciMsgContentView(chatItem, terminalTop: TerminalLayout.blockBottomGap)
                 }
             case let .voice(text, duration):
                 FramedCIVoiceView(chat: chat, chatItem: chatItem, recordingFile: chatItem.file, duration: duration, allowMenu: $allowMenu)
@@ -221,7 +221,7 @@ struct FramedItemView: View {
             case let .link(_, preview):
                 CILinkView(linkPreview: preview, maxWidth: maxWidth)
                     .if(terminal) { terminalBlock($0.padding(.bottom, 8), chatItemFrameContextColor(chatItem, theme)) }
-                ciMsgContentView(chatItem, terminalTop: terminalBlockBottomGap)
+                ciMsgContentView(chatItem, terminalTop: TerminalLayout.blockBottomGap)
             case let .chat(text, chatLink, ownerSig):
                 let hasText = text != chatLink.connLinkStr
                 CIChatLinkHeader(chatItem: chatItem, chatLink: chatLink, ownerSig: ownerSig, hasText: hasText)
@@ -231,7 +231,7 @@ struct FramedItemView: View {
                     })
                     .if(terminal) { terminalBlock($0.frame(maxWidth: maxWidth).fixedSize(horizontal: true, vertical: false), chatItemFrameContextColor(chatItem, theme)) }
                 if hasText {
-                    ciMsgContentView(chatItem, stripLink: chatLink.connLinkStr, terminalTop: terminalBlockBottomGap)
+                    ciMsgContentView(chatItem, stripLink: chatLink.connLinkStr, terminalTop: TerminalLayout.blockBottomGap)
                 }
             case let .unknown(_, text: text):
                 if chatItem.file == nil {
@@ -263,7 +263,7 @@ struct FramedItemView: View {
             caption
                 .font(.caption)
                 .lineLimit(1)
-                .lineBox(terminal ? terminalLineBox(UIFont.preferredFont(forTextStyle: .caption1), theme.colors.secondary, theme) : nil)
+                .if(terminal) { $0.modifier(TerminalLineBox(UIFont.preferredFont(forTextStyle: .caption1), theme.colors.secondary, theme)) }
         }
     }
 
@@ -271,8 +271,8 @@ struct FramedItemView: View {
         let v = content()
             .foregroundColor(theme.colors.secondary)
             .padding(.horizontal, 12)
-            .padding(.top, terminal ? terminalHeaderTopGap : 6)
-            .padding(.bottom, terminal ? terminalHeaderBottomGap : pad || (chatItem.quotedItem == nil && chatItem.meta.itemForwarded == nil) ? 6 : 0)
+            .padding(.top, terminal ? TerminalLayout.headerTopGap : 6)
+            .padding(.bottom, terminal ? TerminalLayout.headerBottomGap : pad || (chatItem.quotedItem == nil && chatItem.meta.itemForwarded == nil) ? 6 : 0)
             .overlay(DetermineWidth())
             .frame(minWidth: msgWidth, alignment: .leading)
             .background(terminal ? Color.clear : chatItemFrameContextColor(chatItem, theme))
@@ -334,7 +334,7 @@ struct FramedItemView: View {
             .overlay { if case .voice = chatItem.content.msgContent {} else { DetermineWidth() } }
             .frame(minWidth: quoteMinWidth, alignment: .leading)
             .background(terminal ? Color.clear : backgroundColor)
-            .environment(\.containerBackground, UIColor(terminal ? terminalBackgroundColor(theme) : backgroundColor))
+            .environment(\.containerBackground, UIColor(terminal ? theme.terminalBackgroundColor : backgroundColor))
             .if(terminal) { terminalQuote($0) }
         if let mediaWidth = mediaLimit {
             v.frame(maxWidth: mediaWidth, alignment: .leading)
@@ -345,7 +345,7 @@ struct FramedItemView: View {
 
     @ViewBuilder private func quotedMsgOrGap(_ qi: CIQuote) -> some View {
         if terminal && qi.text.isEmpty && qi.getSender(membership()) == nil {
-            Color.clear.frame(width: chatItemTextPadding - quoteBarSpacing, height: 0)
+            Color.clear.frame(width: TerminalLayout.textPadding - quoteBarSpacing, height: 0)
         } else {
             ciQuotedMsgView(qi)
         }
@@ -356,10 +356,10 @@ struct FramedItemView: View {
             if let sender = qi.getSender(membership()) {
                 VStack(alignment: .leading, spacing: terminal ? 0 : 2) {
                     Text(sender)
-                        .font(terminal ? .system(size: terminalNameSize) : .caption)
+                        .font(terminal ? .system(size: TerminalLayout.nameSize) : .caption)
                         .foregroundColor(qi.chatDir == .groupSnd ? .accentColor : theme.colors.secondary)
                         .lineLimit(1)
-                        .lineBox(terminal ? terminalLineBox(UIFont.systemFont(ofSize: terminalNameSize), nil, theme) : nil)
+                        .if(terminal) { $0.modifier(TerminalLineBox(UIFont.systemFont(ofSize: TerminalLayout.nameSize), nil, theme)) }
                     ciQuotedMsgTextView(qi, lines: 2, stripLink: stripLink, prefix: prefix)
                 }
             } else {
@@ -390,22 +390,22 @@ struct FramedItemView: View {
 
     private func terminalQuote(_ quote: some View) -> some View {
         HStack(alignment: .top, spacing: quoteBarSpacing) {
-            quoteBar()
+            QuoteBar()
             quote
         }
         .fixedSize(horizontal: false, vertical: true)
-        .padding(.leading, chatItemTextPadding)
+        .padding(.leading, TerminalLayout.textPadding)
         .overlay { if case .voice = chatItem.content.msgContent {} else { DetermineWidth() } }
-        .padding(.top, terminalBlockTopGap)
-        .padding(.bottom, terminalBlockBottomGap)
+        .padding(.top, TerminalLayout.blockTopGap)
+        .padding(.bottom, TerminalLayout.blockBottomGap)
     }
 
     private func terminalBlock(_ block: some View, _ background: Color = .clear) -> some View {
         block
             .background(background)
             .clipShape(RoundedRectangle(cornerRadius: msgRectMaxRadius * roundness))
-            .padding(.leading, chatItemTextPadding)
-            .padding(.top, terminalBlockTopGap)
+            .padding(.leading, TerminalLayout.textPadding)
+            .padding(.top, TerminalLayout.blockTopGap)
     }
     
     private func membership() -> GroupMember? {
@@ -435,12 +435,12 @@ struct FramedItemView: View {
             cardColor: ci.chatDir.sent ? theme.appColors.sentQuote : theme.appColors.receivedQuote,
             encrypted: ci.encryptedFile,
             signedFileVerified: ci.file?.loaded,
-            ruleMinWidth: terminal ? max(0, msgWidth - 2 * chatItemTextPadding) : 0
+            ruleMinWidth: terminal ? max(0, msgWidth - 2 * TerminalLayout.textPadding) : 0
         )
-        .environment(\.containerBackground, UIColor(terminal ? terminalBackgroundColor(theme) : chatItemFrameColor(ci, theme)))
+        .environment(\.containerBackground, UIColor(terminal ? theme.terminalBackgroundColor : chatItemFrameColor(ci, theme)))
         .multilineTextAlignment(rtl ? .trailing : .leading)
         .padding(.vertical, terminal ? 0 : 6)
-        .padding(.top, terminal ? terminalTop + terminalHeadingGap(ci) : 0)
+        .padding(.top, terminal ? terminalTop + TerminalLayout.headingGap(ci) : 0)
         .padding(.horizontal, 12)
         .overlay(DetermineWidth())
         .frame(minWidth: 0, alignment: .leading)
@@ -473,7 +473,7 @@ struct FramedItemView: View {
     private var mediaLimit: CGFloat? {
         guard let mediaWidth = maxMediaWidth() else { return nil }
         return if terminal {
-            captionlessMedia ? mediaWidth + chatItemTextPadding : nil
+            captionlessMedia ? mediaWidth + TerminalLayout.textPadding : nil
         } else {
             mediaWidth < maxWidth ? mediaWidth : nil
         }
