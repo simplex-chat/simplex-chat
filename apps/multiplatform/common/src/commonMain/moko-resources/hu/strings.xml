@@ -2998,4 +2998,5 @@
     <string name="chat_layout_default_suffix">(alapértelmezett)</string>
     <string name="chat_layout_terminal">Terminál</string>
     <string name="chat_layout_chat_suffix">(csevegő)</string>
+    <string name="file_already_exists_replace_question">A fájl már létezik. Lecseréli?</string>
 </resources>
