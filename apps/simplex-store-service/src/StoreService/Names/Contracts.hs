@@ -151,9 +151,9 @@ resolverNonce ct owner = call ct (resolver ct) ("nonces(address)", addressWord o
 -- | The policy holding the reserved and the community names, read once: as the service starts, or on first use after that
 -- read failed or found none set.
 namePolicy :: Contracts -> IO (Either ChainError Address)
-namePolicy ct@Contracts {ctNamePolicy} = readOnce ctNamePolicy $ (>>= set) <$> call ct (controller ct) ("namePolicy()", "") decodeAddress
+namePolicy ct@Contracts {ctNamePolicy} = readOnce ctNamePolicy $ (>>= nonZero) <$> call ct (controller ct) ("namePolicy()", "") decodeAddress
   where
-    set policy = if B.all (== '\NUL') (unAddress policy) then Left (ChainUnavailable "the controller has no name policy yet") else Right policy
+    nonZero policy = if B.all (== '\NUL') (unAddress policy) then Left (ChainUnavailable "the controller has no name policy yet") else Right policy
 
 bonaFideName :: Contracts -> LabelHash -> IO (Either ChainError Bool)
 bonaFideName ct lh = policyCall ct ("bonaFideNames(bytes32)", labelHashArg lh) decodeBool

@@ -74,7 +74,7 @@ namesContractsTests = describe "StoreService names: contracts" $ do
     it "reads the controller's availability and the name's expiry" $ testAvailability g
     it "reads the commitment ages once" $ testCommitmentAges g
   describe "name policy" $ do
-    it "reads the policy from the controller once, and the reservations, listing, terms, nonces and acceptances from it" $ testNamePolicy g
+    it "reads the policy from the controller once, and again after a zero answer or a failed read, and the reservations, listing, terms, nonces and acceptances from it" $ testNamePolicy g
     it "reads the policy's terms text for its hash only" $ testTermsText g
   describe "failures" $ do
     it "fails a status on a failed read, never reading it as available" $ testFailedRead g
@@ -111,6 +111,11 @@ testNamePolicy g = withContracts g $ \node ct -> do
   setBlock node 100 now
   answerCall node (registrarOf node) nameExpiresCall $ Returns $ uint256 (0 :: Int)
   answerCall node fakeNamePolicy reservedNamesCall $ Returns $ uint256 (2 :: Int)
+  answerCall node fakeController (selector "namePolicy()") $ Returns $ B.replicate 32 0
+  namePolicy ct `shouldReturn` Left (ChainUnavailable "the controller has no name policy yet")
+  answerCall node fakeController (selector "namePolicy()") $ Reverts ""
+  namePolicy ct `shouldReturn` Left (ChainReverted $ Just RNWithoutData)
+  answerCall node fakeController (selector "namePolicy()") $ Returns $ addressWord fakeNamePolicy
   namePolicy ct `shouldReturn` Right fakeNamePolicy
   -- read once: a controller answering no more keeps the policy read
   answerCall node fakeController (selector "namePolicy()") $ Reverts ""

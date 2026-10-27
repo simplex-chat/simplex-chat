@@ -40,7 +40,7 @@ namesCommunityTests = describe "StoreService names: community" $ do
   it "logs how many community names it loaded" testLoadedCount
   it "gives the version for an unlisted name and its community variant with the terms' hash for a listed one, and reads that hash back" testTermsFor
   it "logs the name policy and its terms at startup, and checks the [community] lines" $ testStartupCheck g
-  it "checks neither the terms nor the [community] lines when the policy cannot be read at startup" $ testStartupUnread g
+  it "checks no [community] line when the policy cannot be read at startup" $ testStartupUnread g
   it "warns at startup on a policy without terms, or whose terms cannot be read" $ testStartupWarnings g
 
 bakersText :: Text
