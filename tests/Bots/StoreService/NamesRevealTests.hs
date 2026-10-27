@@ -77,8 +77,8 @@ namesRevealTests = describe "StoreService names: reveal" $ do
     it "records invalid_link for a committed link one byte over the bound, waking a held poll, once" testLinksRefused
     it "records no refusal for links that do not rebuild the commitment, or for another signer" testNoRefusalRecorded
   describe "community terms" $ do
-    it "stores the owner's acceptance of the policy's current terms with a listed name's reveal" testAcceptanceStored
-    it "refuses a listed name's reveal without an acceptance, or by another signer, for other terms or at another nonce, and an unlisted name's with one" testAcceptanceRefusals
+    it "stores the owner's acceptance of the policy's current terms, at the intent's deadline, with a listed name's reveal" testAcceptanceStored
+    it "refuses a listed name's reveal without an acceptance, or by another signer, for other terms, at another nonce or another deadline, and an unlisted name's with one" testAcceptanceRefusals
     it "refuses a listed name's reveal whose acceptance is not an object or has a malformed field, storing nothing" testAcceptanceMalformed
     it "answers 503 for a listed name's reveal while its listing or the owner's policy nonce cannot be read, or its terms are unverified, storing nothing" testAcceptanceUnavailable
   describe "races" $ do
@@ -219,8 +219,12 @@ listedOrder :: Order
 listedOrder = (orderOf alice) {oTerms = communityTerms (oTerms aliceOrder)}
 
 signAcceptance :: Ctx -> Secp256k1PrivateKey -> B.ByteString -> Word64 -> IO TermsAcceptance
-signAcceptance Ctx {cRandom} key terms nonce = do
-  sig <- either error id <$> signRecoverable cRandom key (acceptanceDigest (policyDomain fakeChainId fakeNamePolicy) (makeCommitment alice) terms nonce revealBefore)
+signAcceptance ctx key terms nonce = signAcceptanceAt ctx key terms nonce revealBefore
+
+-- | The acceptance signed with the given deadline, which must be the intent's.
+signAcceptanceAt :: Ctx -> Secp256k1PrivateKey -> B.ByteString -> Word64 -> Word64 -> IO TermsAcceptance
+signAcceptanceAt Ctx {cRandom} key terms nonce deadline = do
+  sig <- either error id <$> signRecoverable cRandom key (acceptanceDigest (policyDomain fakeChainId fakeNamePolicy) (makeCommitment alice) terms nonce deadline)
   pure TermsAcceptance {taTermsHash = terms, taNonce = nonce, taSignature = sig}
 
 withAcceptance :: TermsAcceptance -> J.Object -> J.Object
@@ -230,9 +234,11 @@ withAcceptance TermsAcceptance {taTermsHash, taNonce, taSignature} =
 testAcceptanceStored :: IO ()
 testAcceptanceStored = withListedReveals $ \Fx {fCtx = ctx} -> do
   rid <- committed ctx listedOrder
-  sig <- signIntent ctx keyA alice 0 revealBefore
-  acceptance <- signAcceptance ctx keyA fakeCommunityTerms 2
-  reveal ctx rid (withAcceptance acceptance $ bodyOf sig alice 0 revealBefore) `shouldReturn` accepted
+  -- past revealBefore, as checkIntent allows: the acceptance is checked with the intent's deadline
+  let deadline = revealBefore + 3600
+  sig <- signIntent ctx keyA alice 0 deadline
+  acceptance <- signAcceptanceAt ctx keyA fakeCommunityTerms 2 deadline
+  reveal ctx rid (withAcceptance acceptance $ bodyOf sig alice 0 deadline) `shouldReturn` accepted
   (rvAcceptance =<<) . nrReveal <$> stored ctx rid `shouldReturn` Just acceptance
 
 testAcceptanceRefusals :: IO ()
@@ -246,6 +252,7 @@ testAcceptanceRefusals = do
     refusedWith . Just =<< signAcceptance ctx fakeRegistrarKey fakeCommunityTerms 2
     refusedWith . Just =<< signAcceptance ctx keyA (C.keccak256 "bona fide community terms v0") 2
     refusedWith . Just =<< signAcceptance ctx keyA fakeCommunityTerms 1
+    refusedWith . Just =<< signAcceptanceAt ctx keyA fakeCommunityTerms 2 (revealBefore + 3600)
     nrReveal <$> stored ctx rid `shouldReturn` Nothing
   withReveals $ \Fx {fCtx = ctx} -> do
     rid <- committed ctx (orderOf alice)
