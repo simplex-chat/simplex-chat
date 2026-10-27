@@ -31,19 +31,19 @@ Two commits, one per defect, in the one function:
 
 - `commonMain`: Android and desktop share the path. Nothing platform-specific.
 - Core unchanged.
-- On desktop, the chat-list menu item "Archive reports" calls the same handler through `archiveAllReportsForMe`, and a member support chat can stay open beside the chat list, so that chat is now updated at once there too (not covered by the recorded runs). On Android the support chat covers the chat list, so this case does not arise.
+- On desktop, the chat-list menu item "Archive reports" calls the same handler through `archiveAllReportsForMe`, and a member support chat can stay open beside the chat list, so that chat is now updated at once there too (read from the code, not tested). On Android the support chat covers the chat list, so this case does not arise.
 
 ## Not fixed
 
 - iOS's handler sets `.deleted` for a sent item where Android and desktop now set `Moderated`, and it only iterates over the primary `ItemsModel`, so an open support chat or the Reports view is not updated there at all (read from the code, not run). iOS shows "archived report" for both values, so nothing differs on screen.
 - The reports counter is decremented once per id, including ids of sent reports. It is clamped at 0, and a member who reported and was later promoted to moderator can see it drop too far. This handler did the same before this change.
 - When the item's author is the moderator, the UI sets `Deleted` where a reload shows `Moderated`.
-- For the Reports view context the handler passes a null scope, so the first update adds a chat entry to that context's chat list, which is otherwise empty. No visible effect found.
+- For the Reports view context the handler passes a null scope, so the first update adds a chat entry to that context's chat list, as the new-item and item-update handlers already do. That list is read only for the unread count (`ChatView.kt`), which is 0 with or without the entry.
 - Other nullable casts of the same form in `commonMain` (`FramedItemView.kt`, `ComposeView.kt`, `ChatInfoView.kt`) are guarded by earlier checks and cannot throw.
 
 ## Verification
 
-Desktop AppImage on Linux, master compared with this branch, group with an owner, two members and the app as a member or a moderator; the owner moderates through `/_delete member item`.
+Desktop AppImage on Linux, master compared with this branch, group with an owner, two members and the app as a member or a moderator; the owner moderates through `/_delete member item`, except where the app user moderates.
 
 | Case | master | this branch |
 |---|---|---|
@@ -58,4 +58,4 @@ Desktop AppImage on Linux, master compared with this branch, group with an owner
 
 Also tried on this branch: moderating while another member's support chat is open, three moderations in quick succession, moderating while scrolling, and opening Chat with admins only after the moderation. No exception, stale or duplicate item in any of them.
 
-Not tested: Android on a device (the changed code is shared with desktop) and iOS.
+Not tested: Android on a device (the changed code is shared with desktop), iOS, and "Archive reports" from the chat list on desktop while a member support chat of that group is open.
