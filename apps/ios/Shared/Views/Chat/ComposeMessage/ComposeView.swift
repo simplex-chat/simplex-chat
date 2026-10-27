@@ -1596,7 +1596,7 @@ struct ComposeView: View {
             case let .simpleImage(image):
                 (saveImage(image), .image(text: text, image: previewImage))
             case let .imageFile(image, url):
-                (saveImageFile(url) ?? saveImage(image), .image(text: text, image: previewImage))
+                (imageCryptoFile(url, image), .image(text: text, image: previewImage))
             case let .animatedImage(image):
                 (saveAnimImage(image), .image(text: text, image: previewImage))
             case let .video(_, url, duration):
@@ -1604,6 +1604,13 @@ struct ComposeView: View {
             case .none:
                 nil
             }
+        }
+
+        func imageCryptoFile(_ url: URL, _ image: UIImage) -> CryptoFile? {
+            let file = saveImageFile(url) ?? saveImage(image)
+            removeFile(url)
+            ChatModel.shared.filesToDelete.remove(url)
+            return file
         }
 
         func updateMessage(_ ei: ChatItem, live: Bool) async -> ChatItem? {
