@@ -15,9 +15,10 @@ import zipfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-WORKFLOW = "ios-sim.yml"
-ARTIFACT = "ios-sim-smoke-test"
-REFERENCES = "apps/ios/SimpleX Snapshots/References"
+APPS = {
+    "ios": ("ios-sim.yml", "ios-sim-smoke-test", "apps/ios/SimpleX Snapshots/References"),
+    "desktop": ("desktop-linux.yml", "desktop-snapshots", "apps/multiplatform/common/src/desktopTest/snapshots"),
+}
 
 
 def git(*args):
@@ -70,18 +71,18 @@ class GitHub:
             return r.read()
 
 
-def run_workflow(github, branch):
+def run_workflow(github, workflow, branch):
     head = git("rev-parse", "HEAD")
     quoted = urllib.parse.quote(branch, safe="")
     remote_head = github.get(f"/branches/{quoted}")["commit"]["sha"]
     if remote_head != head:
         sys.exit(f"{branch} is at {remote_head[:9]} on GitHub and at {head[:9]} here: push it first")
     dispatched = datetime.now(timezone.utc) - timedelta(minutes=1)
-    github.post(f"/actions/workflows/{WORKFLOW}/dispatches", {"ref": branch})
+    github.post(f"/actions/workflows/{workflow}/dispatches", {"ref": branch})
     run = None
     while run is None:
         time.sleep(15)
-        runs = github.get(f"/actions/workflows/{WORKFLOW}/runs?branch={quoted}&event=workflow_dispatch&per_page=10")["workflow_runs"]
+        runs = github.get(f"/actions/workflows/{workflow}/runs?branch={quoted}&event=workflow_dispatch&per_page=10")["workflow_runs"]
         run = next((r for r in runs if r["head_sha"] == head and datetime.fromisoformat(r["created_at"].replace("Z", "+00:00")) >= dispatched), None)
     print(f"run {run['html_url']}", flush=True)
     while run["status"] != "completed":
@@ -91,11 +92,11 @@ def run_workflow(github, branch):
     return run
 
 
-def download_snapshots(github, run):
-    artifacts = github.get(f"/actions/runs/{run['id']}/artifacts?name={ARTIFACT}")["artifacts"]
+def download_snapshots(github, run, artifact):
+    artifacts = github.get(f"/actions/runs/{run['id']}/artifacts?name={artifact}")["artifacts"]
     if not artifacts:
-        sys.exit(f"run {run['id']} has no artifact {ARTIFACT}")
-    target = Path(tempfile.mkdtemp(prefix="ios-snapshots-"))
+        sys.exit(f"run {run['id']} has no artifact {artifact}")
+    target = Path(tempfile.mkdtemp(prefix="snapshots-"))
     with zipfile.ZipFile(io.BytesIO(github.download(artifacts[0]["archive_download_url"]))) as z:
         for name in z.namelist():
             if name.startswith(("snapshots/", "snapshots-diff/")):
@@ -103,12 +104,12 @@ def download_snapshots(github, run):
     return target
 
 
-def record(downloaded):
+def record(downloaded, references_dir):
     renders = downloaded / "snapshots"
     files = sorted({e["file"] for index in renders.glob("index-*.json") for e in json.loads(index.read_text())})
     if not files:
         sys.exit(f"no snapshots in {renders}")
-    references = Path(git("rev-parse", "--show-toplevel")) / REFERENCES
+    references = Path(git("rev-parse", "--show-toplevel")) / references_dir
     references.mkdir(parents=True, exist_ok=True)
     for old in references.glob("*.png"):
         if old.name not in files:
@@ -132,13 +133,14 @@ def check(downloaded):
 
 
 def main():
-    if len(sys.argv) not in (2, 3) or sys.argv[1] not in ("record", "check"):
-        sys.exit("usage: snapshots-remote.py record|check [branch]")
-    branch = sys.argv[2] if len(sys.argv) == 3 else git("rev-parse", "--abbrev-ref", "HEAD")
+    if len(sys.argv) not in (3, 4) or sys.argv[1] not in APPS or sys.argv[2] not in ("record", "check"):
+        sys.exit("usage: snapshots-remote.py ios|desktop record|check [branch]")
+    workflow, artifact, references = APPS[sys.argv[1]]
+    branch = sys.argv[3] if len(sys.argv) == 4 else git("rev-parse", "--abbrev-ref", "HEAD")
     github = GitHub()
-    downloaded = download_snapshots(github, run_workflow(github, branch))
-    if sys.argv[1] == "record":
-        record(downloaded)
+    downloaded = download_snapshots(github, run_workflow(github, workflow, branch), artifact)
+    if sys.argv[2] == "record":
+        record(downloaded, references)
     else:
         check(downloaded)
 

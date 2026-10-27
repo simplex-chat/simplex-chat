@@ -27,7 +27,6 @@ import chat.simplex.common.model.*
 import chat.simplex.common.platform.appPreferences
 import chat.simplex.common.ui.theme.isInDarkTheme
 import chat.simplex.res.*
-import kotlinx.datetime.Clock
 
 @Composable
 fun CIMetaView(
@@ -282,7 +281,7 @@ private fun StatusIconText(icon: Painter, color: Color) {
 fun PreviewCIMetaView() {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
-      1, CIDirection.DirectSnd(), Clock.System.now(), "hello"
+      1, CIDirection.DirectSnd(), previewDate, "hello"
     ),
     null,
     showViaProxy = false,
@@ -295,7 +294,7 @@ fun PreviewCIMetaView() {
 fun PreviewCIMetaViewUnread() {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
-      1, CIDirection.DirectSnd(), Clock.System.now(), "hello",
+      1, CIDirection.DirectSnd(), previewDate, "hello",
       status = CIStatus.RcvNew()
     ),
     null,
@@ -309,7 +308,7 @@ fun PreviewCIMetaViewUnread() {
 fun PreviewCIMetaViewSendFailed() {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
-      1, CIDirection.DirectSnd(), Clock.System.now(), "hello",
+      1, CIDirection.DirectSnd(), previewDate, "hello",
       status = CIStatus.CISSndError(SndError.Other("CMD SYNTAX"))
     ),
     null,
@@ -323,7 +322,7 @@ fun PreviewCIMetaViewSendFailed() {
 fun PreviewCIMetaViewSendNoAuth() {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
-      1, CIDirection.DirectSnd(), Clock.System.now(), "hello", status = CIStatus.SndErrorAuth()
+      1, CIDirection.DirectSnd(), previewDate, "hello", status = CIStatus.SndErrorAuth()
     ),
     null,
     showViaProxy = false,
@@ -336,7 +335,7 @@ fun PreviewCIMetaViewSendNoAuth() {
 fun PreviewCIMetaViewSendSent() {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
-      1, CIDirection.DirectSnd(), Clock.System.now(), "hello", status = CIStatus.SndSent(SndCIStatusProgress.Complete)
+      1, CIDirection.DirectSnd(), previewDate, "hello", status = CIStatus.SndSent(SndCIStatusProgress.Complete)
     ),
     null,
     showViaProxy = false,
@@ -349,7 +348,7 @@ fun PreviewCIMetaViewSendSent() {
 fun PreviewCIMetaViewEdited() {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
-      1, CIDirection.DirectSnd(), Clock.System.now(), "hello",
+      1, CIDirection.DirectSnd(), previewDate, "hello",
       itemEdited = true
     ),
     null,
@@ -363,7 +362,7 @@ fun PreviewCIMetaViewEdited() {
 fun PreviewCIMetaViewEditedUnread() {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
-      1, CIDirection.DirectRcv(), Clock.System.now(), "hello",
+      1, CIDirection.DirectRcv(), previewDate, "hello",
       itemEdited = true,
       status= CIStatus.RcvNew()
     ),
@@ -378,7 +377,7 @@ fun PreviewCIMetaViewEditedUnread() {
 fun PreviewCIMetaViewEditedSent() {
   CIMetaView(
     chatItem = ChatItem.getSampleData(
-      1, CIDirection.DirectSnd(), Clock.System.now(), "hello",
+      1, CIDirection.DirectSnd(), previewDate, "hello",
       itemEdited = true,
       status= CIStatus.SndSent(SndCIStatusProgress.Complete)
     ),
@@ -392,7 +391,7 @@ fun PreviewCIMetaViewEditedSent() {
 @Composable
 fun PreviewCIMetaViewDeletedContent() {
   CIMetaView(
-    chatItem = ChatItem.getDeletedContentSampleData(),
+    chatItem = ChatItem.getDeletedContentSampleData(ts = previewDate),
     null,
     showViaProxy = false,
     showTimestamp = true

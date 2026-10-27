@@ -168,7 +168,7 @@ fun CIGroupInvitationView(
 fun PendingCIGroupInvitationViewPreview() {
   SimpleXTheme {
     CIGroupInvitationView(
-      ci = ChatItem.getGroupInvitationSample(),
+      ci = previewDated(ChatItem.getGroupInvitationSample()),
       groupInvitation = CIGroupInvitation.getSample(),
       memberRole = GroupMemberRole.Admin,
       joinGroup = { _, _ -> },
@@ -186,7 +186,7 @@ fun PendingCIGroupInvitationViewPreview() {
 fun CIGroupInvitationViewAcceptedPreview() {
   SimpleXTheme {
     CIGroupInvitationView(
-      ci = ChatItem.getGroupInvitationSample(),
+      ci = previewDated(ChatItem.getGroupInvitationSample()),
       groupInvitation = CIGroupInvitation.getSample(status = CIGroupInvitationStatus.Accepted),
       memberRole = GroupMemberRole.Admin,
       joinGroup = { _, _ -> },
@@ -201,7 +201,7 @@ fun CIGroupInvitationViewAcceptedPreview() {
 fun CIGroupInvitationViewLongNamePreview() {
   SimpleXTheme {
     CIGroupInvitationView(
-      ci = ChatItem.getGroupInvitationSample(),
+      ci = previewDated(ChatItem.getGroupInvitationSample()),
       groupInvitation = CIGroupInvitation.getSample(
         groupProfile = GroupProfile("group_with_a_really_really_really_long_name", "Group With A Really Really Really Long Name", shortDescr = null),
         status = CIGroupInvitationStatus.Accepted
