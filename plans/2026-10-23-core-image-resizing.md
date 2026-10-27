@@ -38,6 +38,7 @@ Decisions of 26 Oct, after the review:
 | D18 | **Sharpening only of downscaled images.** An image kept at its size is not sharpened: on the github input kept at full resolution, sharpening lowered the large-screen SSIMULACRA2 from 92.53 to 89.94. |
 | D19 | **PNG decoded by libspng; other formats refused.** PNG input is decoded by libspng 0.7.4 with miniz 3.1.2, bundled in JuicyPixels-spng: the header first, then the pixels, within the side and memory limits. Input other than JPEG and PNG gives `Left`, and `""` from the C API, on which the apps decode it themselves and pass JPEG or PNG bytes. JuicyPixels remains for the image types and the pixel conversions. |
 | D20 | **PNG output: Catmull-Rom with sharpening, encoded by libspng.** Each PNG trial is encoded by libspng at zlib level 9 with row filters off and on, and the smaller output is kept; the RGBA source is premultiplied once per image for all trials. Research path, the smaller of two at miniz level 9: 3.19 / 87.72 / 86.73. Resize time of the core on the 8 PNG research inputs, on the development machine: previews 0.57–15.6 s, mean 4.09 s; full images 0.24–20.3 s, mean 4.53 s. |
+| D21 | **Nix licence of JuicyPixels-spng.** The nix builds take its licence as "BSD-3-Clause AND BSD-2-Clause AND MIT" (`flake.nix:73-75`). haskell.nix counts a licence as free only when its SPDX list marks it OSI-approved or FSF-libre, which libpng-2.0 is not, and refuses to evaluate the package. The cabal file, the licence files and HASKELL.md keep libpng-2.0. |
 
 ## Decisions
 
@@ -78,8 +79,8 @@ Decoding, `Image.hs`:
 
   | build | `simplex-chat.cabal` condition | set in |
   |---|---|---|
-  | iOS and iOS simulator | `flag(swift)` | `flake.nix:555`, `:592`; `scripts/ci/ios-sim/build-core.sh:27` |
-  | Android aarch64 and armv7a | `os(android)` | the target platforms of `flake.nix:418` and `:340` |
+  | iOS and iOS simulator | `flag(swift)` | `flake.nix:559`, `:596`; `scripts/ci/ios-sim/build-core.sh:27` |
+  | Android aarch64 and armv7a | `os(android)` | the target platforms of `flake.nix:422` and `:344` |
 
 - EXIF orientation of JPEG input:
   - source: the first APP1 segment with the `Exif\0\0` header before the first SOS; IFD0 tag `0x0112`
@@ -489,7 +490,8 @@ Core:
   - test suite:
     - module `ImageTests` (`:726`)
     - dependencies `JuicyPixels` and `JuicyPixels-jpeg-turbo` (`:818-819`)
-- `libsimplex.dll.def:30-35`, `flake.nix:487-492`: the export names.
+- `libsimplex.dll.def:30-35`, `flake.nix:491-496`: the export names.
+- `flake.nix:73-75`: the nix licence of JuicyPixels-spng (D21).
 
 iOS:
 - `apps/ios/SimpleXChat/ImageUtils.swift`:
