@@ -99,7 +99,7 @@ suspend fun purchaseBadge(id: BadgeStoreProductId, invoiceId: String): BadgePurc
   try {
     val launched = withContext(Dispatchers.Main) { client.launchBillingFlow(activity, params) }
     if (launched.responseCode != BillingClient.BillingResponseCode.OK) {
-      throw BadgeStoreError.BillingError(launched.responseCode, launched.debugMessage)
+      throw badgePurchaseError(launched)
     }
     return purchase.await()
   } finally {
@@ -150,9 +150,13 @@ private val badgePurchasesUpdatedListener = PurchasesUpdatedListener { result, p
     result.responseCode == BillingClient.BillingResponseCode.USER_CANCELED ->
       pending.complete(BadgePurchaseOutcome.Cancelled)
     else ->
-      pending.completeExceptionally(BadgeStoreError.BillingError(result.responseCode, result.debugMessage))
+      pending.completeExceptionally(badgePurchaseError(result))
   }
 }
+
+private fun badgePurchaseError(result: BillingResult): BadgeStoreError =
+  if (result.responseCode == BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED) BadgeStoreError.AlreadyOwned
+  else BadgeStoreError.BillingError(result.responseCode, result.debugMessage)
 
 private fun badgePurchaseOutcome(purchase: Purchase): BadgePurchaseOutcome? = when (purchase.purchaseState) {
   Purchase.PurchaseState.PENDING -> BadgePurchaseOutcome.Pending(purchase.accountIdentifiers?.obfuscatedAccountId)

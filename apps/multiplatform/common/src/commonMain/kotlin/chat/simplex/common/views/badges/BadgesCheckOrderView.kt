@@ -135,8 +135,11 @@ private fun purchase(level: BadgeLevel, period: BadgePeriod, purchasing: Mutable
       purchasing.value = false
       AlertManager.shared.showAlertMsg(
         title = generalGetString(MR.strings.badges_purchase_error),
-        text = if (e is BadgeStoreError.ApiError) chatModel.controller.redeemErrorText(e.err, purchase = true)
-          else "${generalGetString(MR.strings.error_prefix)}: ${e.message ?: e}"
+        text = when (e) {
+          is BadgeStoreError.ApiError -> chatModel.controller.redeemErrorText(e.err, purchase = true)
+          is BadgeStoreError.AlreadyOwned -> generalGetString(MR.strings.badges_error_already_owned)
+          else -> "${generalGetString(MR.strings.error_prefix)}: ${e.message ?: e}"
+        }
       )
     }
   }

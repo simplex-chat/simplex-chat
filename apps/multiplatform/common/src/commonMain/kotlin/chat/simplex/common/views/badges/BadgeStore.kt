@@ -130,6 +130,7 @@ enum class BadgePurchaseState {
 sealed class BadgeStoreError: Exception() {
   class ProductUnavailable(val productId: String): BadgeStoreError()
   class BillingError(val responseCode: Int, val debugMessage: String): BadgeStoreError()
+  object AlreadyOwned: BadgeStoreError()
   object StoreUnavailable: BadgeStoreError()
   object NoActiveProfile: BadgeStoreError()
   class ApiError(val err: ChatError): BadgeStoreError()
@@ -138,6 +139,7 @@ sealed class BadgeStoreError: Exception() {
     get() = when (this) {
       is ProductUnavailable -> "productUnavailable(productId: $productId)"
       is BillingError -> "billingError(responseCode: $responseCode, $debugMessage)"
+      is AlreadyOwned -> "alreadyOwned"
       is StoreUnavailable -> "storeUnavailable"
       is NoActiveProfile -> "noActiveProfile"
       is ApiError -> "apiError(${err.string})"
