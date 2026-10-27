@@ -40,6 +40,7 @@ module Simplex.Chat.Store.Badges
     storeReceiptHeldFor,
     recordStoreReceiptFailure,
     refuseStoreReceipt,
+    clearStoreReceiptRefusal,
     settleStoreReceipt,
     reholdStoreReceipt,
     showChargedPurchase,
@@ -429,6 +430,11 @@ refuseStoreReceipt db receiptId payment refusal =
         RETURNING 1
       |]
       (refusal, SHKPurchase, receiptId, receiptId, payment)
+
+-- | Only while the record is resolved: one held meanwhile keeps its hold.
+clearStoreReceiptRefusal :: DB.Connection -> Int64 -> IO ()
+clearStoreReceiptRefusal db receiptId =
+  DB.execute db "UPDATE badge_store_receipts SET credit_error = NULL WHERE badge_store_receipt_id = ? AND payment IS NULL" (Only receiptId)
 
 -- | Every settle clears the failure, so one recorded on a credited record is a refused resume or tier change.
 -- It returns the record to the profile whose purchase it funds, which a Restore may have taken it from meanwhile.

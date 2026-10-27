@@ -5413,12 +5413,17 @@ handOverStoreReceipt presentingUser echoedInvoiceId origin payment = do
             Just RHAttempts -> rehold SHKPurchase
             _ -> pure False
           lastChargeAt_ <- withStore' (`getLastChargeCreditAt` badgePurchaseId)
-          -- a refused tier change is answered from the record, or every sweep would hold it and send it again
+          -- a refused tier change is answered from the record once, on which the app finishes it, or every sweep would hold it
+          -- and send it again; the record keeps no transaction id, so the refusal is then cleared and a later charge is held
           tierChangeHeld <- case tierChangeCharge now lastChargeAt_ payment of
             Just tier
-              | not (answeredHeld || refusalRecorded) ->
+              | not answeredHeld ->
                   withStore' (`getBadgePurchase` badgePurchaseId) >>= \case
-                    Just UserBadgePurchase {badgeType} | raisesTier badgeType tier -> rehold SHKTierChange
+                    Just UserBadgePurchase {badgeType, shown}
+                      | raisesTier badgeType tier ->
+                          if refusalRecorded
+                            then False <$ when shown (withStore' (`clearStoreReceiptRefusal` receiptId))
+                            else rehold SHKTierChange
                     _ -> pure False
             _ -> pure False
           if answeredHeld || tierChangeHeld
