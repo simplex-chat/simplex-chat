@@ -1366,7 +1366,7 @@ jobs:
         shell: bash
         run: sudo ln -sfn "$(xcrun --sdk macosx --show-sdk-path)" /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
 
-      - name: Check that the snapshot tests render every preview
+      - name: Check the previews listed in the snapshot tests
         shell: bash
         run: python3 "apps/ios/SimpleX Snapshots/check-previews.py"
 
