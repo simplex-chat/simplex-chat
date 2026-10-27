@@ -14,6 +14,10 @@ import Combine
 
 private let memberImageBaseSize: CGFloat = 34
 
+func scaledMemberImageSize(_ font: DynamicTypeSize) -> CGFloat {
+    memberImageBaseSize * dynamicSize(font).profileImageSize / dynamicSize(.large).profileImageSize
+}
+
 private func shouldShowAvatar(_ current: ChatItem, _ older: ChatItem?) -> Bool {
     let oldIsGroupRcv = switch older?.chatDir {
     case .groupRcv: true
@@ -95,12 +99,8 @@ struct ChatView: View {
 
     let userSupportScopeInfo: GroupChatScopeInfo = .memberSupport(groupMember_: nil)
 
-    static func scaledMemberImageSize(_ font: DynamicTypeSize) -> CGFloat {
-        memberImageBaseSize * dynamicSize(font).profileImageSize / dynamicSize(.large).profileImageSize
-    }
-
     private var terminal: Bool {
-        ThemeManager.activeChatLayout(chat.chatInfo, ChatModel.shared.currentUser) == .terminal
+        chat.chatInfo.activeChatLayout(profileChatLayout(ChatModel.shared.currentUser)) == .terminal
     }
 
     // Spec: spec/client/chat-view.md#body
@@ -933,7 +933,7 @@ struct ChatView: View {
                         // left padding (see .leading padding below), so they get the full row width here
                         // too — otherwise the reserved avatar inset would leave a gap on the right
                         let channelReceivedNoAvatar = channelReceived && !shouldShowAvatar(mergedItem.newest().item, mergedItem.oldest().nextItem)
-                        let avatarColumn = ChatView.scaledMemberImageSize(userFont) + 8
+                        let avatarColumn = scaledMemberImageSize(userFont) + 8
                         let maxWidth = cInfo.chatType == .group
                         ? channelReceivedNoAvatar
                         ? g.size.width - 26
@@ -1759,7 +1759,7 @@ struct ChatView: View {
         var revealed: Bool { revealedItems.contains(chatItem.id) }
 
         private var memberImageSize: CGFloat {
-            ChatView.scaledMemberImageSize(userFont)
+            scaledMemberImageSize(userFont)
         }
 
         typealias ItemSeparation = (timestamp: Bool, largeGap: Bool, date: Date?)
@@ -1798,7 +1798,7 @@ struct ChatView: View {
             } else {
                 nil
             }
-            let showAvatar = terminal ? item.showsTerminalSender(merged.oldest().nextItem) : shouldShowAvatar(item, merged.oldest().nextItem)
+            let showAvatar = terminal ? terminalItemShowsSender(item, merged.oldest().nextItem) : shouldShowAvatar(item, merged.oldest().nextItem)
             let single = switch merged {
             case .single: true
             default: false
@@ -2147,7 +2147,7 @@ struct ChatView: View {
         private func terminalItemRow(_ range: ClosedRange<Int>?, _ showSender: Bool, _ ci: ChatItem, _ itemSeparation: ItemSeparation) -> some View {
             let selecting = selectedChatItems != nil && ci.canBeDeletedForSelf
             let older = merged.oldest().nextItem
-            let topGap = TerminalLayout.rowGap(
+            let topGap = terminalRowGap(
                 ci,
                 older,
                 separated: terminalRowsSeparated(olderRow),

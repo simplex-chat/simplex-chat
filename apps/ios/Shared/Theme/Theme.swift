@@ -43,14 +43,6 @@ class AppTheme: ObservableObject, Equatable {
         lhs.wallpaper == rhs.wallpaper
     }
 
-    var messageTextColor: Color {
-        colors.onSurface.opacity(colors.isLight ? 1 : 0.87)
-    }
-
-    var terminalBackgroundColor: Color {
-        wallpaper.background ?? wallpaper.type.defaultBackgroundColor(base, colors.background)
-    }
-
     func updateFromCurrentColors() {
         DispatchQueue.main.async {
             self.objectWillChange.send()

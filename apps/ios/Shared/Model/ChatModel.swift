@@ -1468,6 +1468,10 @@ final class Chat: ObservableObject, Identifiable, ChatLike {
     public static var sampleData: Chat = Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: [])
 }
 
+func profileChatLayout(_ user: User?) -> ChatLayout {
+    user?.uiThemes?.chatLayout?.known ?? chatLayoutDefault.get().known ?? .classic
+}
+
 final class GMember: ObservableObject, Identifiable {
     @Published var wrapped: GroupMember
     var created = Date.now

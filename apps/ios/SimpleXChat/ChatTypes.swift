@@ -270,10 +270,6 @@ public enum ChatLayout: Hashable {
         if case .unknown = self { nil } else { self }
     }
 
-    public var other: ChatLayout {
-        self == .terminal ? .classic : .terminal
-    }
-
     public var displayName: String {
         switch self {
         case .classic: NSLocalizedString("Classic", comment: "chat layout")
@@ -2408,6 +2404,14 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
 
+    public func defaultChatLayout(_ profileLayout: ChatLayout) -> ChatLayout {
+        chatLayout?.known ?? profileLayout
+    }
+
+    public func activeChatLayout(_ profileLayout: ChatLayout) -> ChatLayout {
+        uiThemes?.chatLayout?.known ?? defaultChatLayout(profileLayout)
+    }
+
     public var chatTs: Date {
         switch self {
         case let .direct(contact): return contact.chatTs ?? contact.updatedAt
@@ -4137,18 +4141,6 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
 
     public var startsWithHeading: Bool {
         if case .heading = markdownBlocks?.first { true } else { false }
-    }
-
-    public func showsTerminalSender(_ older: ChatItem?) -> Bool {
-        guard content.hasTerminalSender else { return false }
-        guard let older else { return true }
-        return !older.content.hasTerminalSender || !sameSender(older)
-    }
-
-    private func sameSender(_ older: ChatItem) -> Bool {
-        channelIsSender || older.channelIsSender
-        ? channelIsSender && older.channelIsSender
-        : chatDir.sameDirection(older.chatDir)
     }
 
     public static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, quotedItem: CIQuote? = nil, file: CIFile? = nil, itemDeleted: CIDeleted? = nil, itemEdited: Bool = false, itemLive: Bool = false, deletable: Bool = true, editable: Bool = true) -> ChatItem {

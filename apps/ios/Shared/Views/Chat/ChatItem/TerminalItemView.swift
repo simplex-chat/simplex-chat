@@ -2,6 +2,10 @@ import SwiftUI
 import SimpleXChat
 
 extension EnvironmentValues {
+    struct TerminalLayout: EnvironmentKey {
+        static let defaultValue: Bool = false
+    }
+
     var terminalLayout: Bool {
         get { self[TerminalLayout.self] }
         set { self[TerminalLayout.self] = newValue }
@@ -9,51 +13,40 @@ extension EnvironmentValues {
 }
 
 let chatItemTextPadding: CGFloat = 12
-var terminalBlockTopGap: CGFloat { TerminalLayout.gap(5.75) }
-var terminalBlockBottomGap: CGFloat { TerminalLayout.gap(5) }
-var terminalLevelStep: CGFloat { TerminalLayout.gap(4.75) }
+var terminalBlockTopGap: CGFloat { terminalGap(5.75) }
+var terminalBlockBottomGap: CGFloat { terminalGap(5) }
+var terminalLevelStep: CGFloat { terminalGap(4.75) }
 var terminalHeadingBottomGap: CGFloat { terminalLevelStep / 2 }
-var terminalSenderTopGap: CGFloat { TerminalLayout.gap(6.5) }
-private var terminalSenderBottomGap: CGFloat { TerminalLayout.gap(5.5) }
-var terminalHeaderTopGap: CGFloat { TerminalLayout.gap(2.5) }
-var terminalHeaderBottomGap: CGFloat { TerminalLayout.gap(1.5) }
-var terminalEventTopGap: CGFloat { TerminalLayout.gap(8.25) }
-var terminalEventBottomGap: CGFloat { TerminalLayout.gap(1.5) }
-var terminalFileTopGap: CGFloat { TerminalLayout.gap(2) }
-var terminalEmojiTopGap: CGFloat { TerminalLayout.gap(4.25) }
-var terminalEmojiBottomGap: CGFloat { TerminalLayout.gap(1.5) }
-var terminalMetaGap: CGFloat { TerminalLayout.gap(6) }
-var terminalNameSize: CGFloat { TerminalLayout.bodyScaled(13.5 * 17 / 16) }
+var terminalSenderTopGap: CGFloat { terminalGap(6.5) }
+private var terminalSenderBottomGap: CGFloat { terminalGap(5.5) }
+var terminalHeaderTopGap: CGFloat { terminalGap(2.5) }
+var terminalHeaderBottomGap: CGFloat { terminalGap(1.5) }
+var terminalEventTopGap: CGFloat { terminalGap(8.25) }
+var terminalEventBottomGap: CGFloat { terminalGap(1.5) }
+var terminalFileTopGap: CGFloat { terminalGap(2) }
+var terminalEmojiTopGap: CGFloat { terminalGap(4.25) }
+var terminalEmojiBottomGap: CGFloat { terminalGap(1.5) }
+var terminalMetaGap: CGFloat { terminalGap(6) }
+var terminalNameSize: CGFloat { bodyScaled(13.5 * 17 / 16) }
 let terminalHeadingRatio: CGFloat = 1.25
 private let terminalLineHeightRatio: CGFloat = 22 / 16
 private let terminalLineHeightContrastSlope: CGFloat = 0.1515
 private let terminalGapBodySize: CGFloat = 16
 
-enum TerminalLayout: EnvironmentKey {
-    static let defaultValue: Bool = false
+func terminalGap(_ size: CGFloat) -> CGFloat {
+    size * UIFont.preferredFont(forTextStyle: .body).pointSize / terminalGapBodySize
+}
 
-    static func gap(_ size: CGFloat) -> CGFloat {
-        size * UIFont.preferredFont(forTextStyle: .body).pointSize / terminalGapBodySize
-    }
+func bodyScaled(_ points: CGFloat) -> CGFloat {
+    UIFontMetrics(forTextStyle: .body).scaledValue(for: points)
+}
 
-    static func bodyScaled(_ points: CGFloat) -> CGFloat {
-        UIFontMetrics(forTextStyle: .body).scaledValue(for: points)
-    }
+func messageTextColor(_ theme: AppTheme) -> Color {
+    theme.colors.onSurface.opacity(theme.colors.isLight ? 1 : 0.87)
+}
 
-    static func rowGap(_ item: ChatItem, _ older: ChatItem?, separated: Bool, largeGap: Bool, hasSenderRow: Bool) -> CGFloat {
-        guard let older, !separated else { return 0 }
-        return largeGap || hasSenderRow || !item.content.hasTerminalSender || !older.content.hasTerminalSender || (item.textAtItemTop && item.startsWithHeading)
-        ? terminalLevelStep
-        : 0
-    }
-
-    static func headingGap(_ item: ChatItem) -> CGFloat {
-        !item.textAtItemTop && item.startsWithHeading ? terminalLevelStep : 0
-    }
-
-    static func metaCopyJoiner(_ rightToLeft: Bool) -> Text {
-        Text(verbatim: rightToLeft ? "\u{2060}\u{200F}" : "\u{2060}\u{200E}")
-    }
+func terminalBackgroundColor(_ theme: AppTheme) -> Color {
+    theme.wallpaper.background ?? theme.wallpaper.type.defaultBackgroundColor(theme.base, theme.colors.background)
 }
 
 struct TerminalLineBox: ViewModifier {
@@ -61,90 +54,107 @@ struct TerminalLineBox: ViewModifier {
     var top: CGFloat
     var bottom: CGFloat
 
-    init(_ font: UIFont, _ color: Color?, _ theme: AppTheme, capsOf bodyFont: UIFont? = nil) {
-        if let bodyFont {
-            let bodyLineHeight = bodyFont.pointSize * terminalLineHeightRatio
-            let body = Self.proportionalExtra(bodyFont, bodyLineHeight)
-            spacing = max(0, bodyLineHeight * font.pointSize / bodyFont.pointSize - font.lineHeight)
-            top = body.top + bodyFont.ascender - bodyFont.capHeight - (font.ascender - font.capHeight)
-            bottom = body.bottom - bodyFont.descender + font.descender
-        } else {
-            let lineHeight = Self.lineHeight(font, color, theme)
-            let extra = Self.proportionalExtra(font, lineHeight)
-            spacing = max(0, lineHeight - font.lineHeight)
-            top = extra.top
-            bottom = extra.bottom
-        }
-    }
-
     func body(content: Content) -> some View {
         content
             .lineSpacing(spacing)
             .padding(.top, top)
             .padding(.bottom, bottom)
     }
+}
 
-    static func lineHeight(_ font: UIFont, _ color: Color?, _ theme: AppTheme) -> CGFloat {
-        font.pointSize * terminalLineHeightRatio * contrastLineHeightFactor(color, theme)
+func terminalLineBox(_ font: UIFont, _ color: Color?, _ theme: AppTheme, capsOf bodyFont: UIFont? = nil) -> TerminalLineBox {
+    if let bodyFont {
+        let bodyLineHeight = bodyFont.pointSize * terminalLineHeightRatio
+        let body = proportionalExtra(bodyFont, bodyLineHeight)
+        return TerminalLineBox(
+            spacing: max(0, bodyLineHeight * font.pointSize / bodyFont.pointSize - font.lineHeight),
+            top: body.top + bodyFont.ascender - bodyFont.capHeight - (font.ascender - font.capHeight),
+            bottom: body.bottom - bodyFont.descender + font.descender
+        )
     }
+    let lineHeight = terminalLineHeight(font, color, theme)
+    let extra = proportionalExtra(font, lineHeight)
+    return TerminalLineBox(spacing: max(0, lineHeight - font.lineHeight), top: extra.top, bottom: extra.bottom)
+}
 
-    static func withLineSpacing(_ s: NSAttributedString, _ lineSpacing: CGFloat) -> NSAttributedString {
-        if lineSpacing <= 0 { return s }
-        let spaced = NSMutableAttributedString(attributedString: s)
-        let style = NSMutableParagraphStyle()
-        style.lineSpacing = lineSpacing
-        spaced.addAttribute(.paragraphStyle, value: style, range: NSRange(location: 0, length: spaced.length))
-        return spaced
-    }
+func terminalLineHeight(_ font: UIFont, _ color: Color?, _ theme: AppTheme) -> CGFloat {
+    font.pointSize * terminalLineHeightRatio * contrastLineHeightFactor(color, theme)
+}
 
-    private static func proportionalExtra(_ font: UIFont, _ lineHeight: CGFloat) -> (top: CGFloat, bottom: CGFloat) {
-        let extra = max(0, lineHeight - font.lineHeight)
-        let ascent = font.ascender
-        let descent = -font.descender
-        return (extra * ascent / (ascent + descent), extra * descent / (ascent + descent))
-    }
+private func proportionalExtra(_ font: UIFont, _ lineHeight: CGFloat) -> (top: CGFloat, bottom: CGFloat) {
+    let extra = max(0, lineHeight - font.lineHeight)
+    let ascent = font.ascender
+    let descent = -font.descender
+    return (extra * ascent / (ascent + descent), extra * descent / (ascent + descent))
+}
 
-    private static func contrastLineHeightFactor(_ color: Color?, _ theme: AppTheme) -> CGFloat {
-        guard let color else { return 1 }
-        let background = UIColor(theme.colors.background)
-        let textContrast = lightnessContrast(UIColor(theme.messageTextColor), background)
-        let weight = textContrast > 0 ? min(max(lightnessContrast(UIColor(color), background) / textContrast, 0), 1) : 1
-        return 1 - terminalLineHeightContrastSlope * (1 - weight)
-    }
+private func contrastLineHeightFactor(_ color: Color?, _ theme: AppTheme) -> CGFloat {
+    guard let color else { return 1 }
+    let background = UIColor(theme.colors.background)
+    let textContrast = lightnessContrast(UIColor(messageTextColor(theme)), background)
+    let weight = textContrast > 0 ? min(max(lightnessContrast(UIColor(color), background) / textContrast, 0), 1) : 1
+    return 1 - terminalLineHeightContrastSlope * (1 - weight)
+}
 
-    private static func lightnessContrast(_ color: UIColor, _ background: UIColor) -> CGFloat {
-        abs(lightness(composited(color, over: background)) - lightness(background))
-    }
+private func lightnessContrast(_ color: UIColor, _ background: UIColor) -> CGFloat {
+    abs(lightness(composited(color, over: background)) - lightness(background))
+}
 
-    private static func lightness(_ color: UIColor) -> CGFloat {
-        let y = luminance(color)
-        return y > 216 / 24389 ? 116 * pow(y, 1 / 3) - 16 : y * 24389 / 27
-    }
+private func lightness(_ color: UIColor) -> CGFloat {
+    let y = luminance(color)
+    return y > 216 / 24389 ? 116 * pow(y, 1 / 3) - 16 : y * 24389 / 27
+}
 
-    private static func luminance(_ color: UIColor) -> CGFloat {
-        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
-        color.getRed(&r, green: &g, blue: &b, alpha: &a)
-        func linear(_ v: CGFloat) -> CGFloat {
-            v <= 0.04045 ? v / 12.92 : pow((v + 0.055) / 1.055, 2.4)
-        }
-        return 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b)
+private func luminance(_ color: UIColor) -> CGFloat {
+    var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+    color.getRed(&r, green: &g, blue: &b, alpha: &a)
+    func linear(_ v: CGFloat) -> CGFloat {
+        v <= 0.04045 ? v / 12.92 : pow((v + 0.055) / 1.055, 2.4)
     }
+    return 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b)
+}
 
-    private static func composited(_ color: UIColor, over background: UIColor) -> UIColor {
-        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
-        var br: CGFloat = 0, bg: CGFloat = 0, bb: CGFloat = 0, ba: CGFloat = 0
-        color.getRed(&r, green: &g, blue: &b, alpha: &a)
-        background.getRed(&br, green: &bg, blue: &bb, alpha: &ba)
-        return UIColor(red: r * a + br * (1 - a), green: g * a + bg * (1 - a), blue: b * a + bb * (1 - a), alpha: 1)
-    }
+private func composited(_ color: UIColor, over background: UIColor) -> UIColor {
+    var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+    var br: CGFloat = 0, bg: CGFloat = 0, bb: CGFloat = 0, ba: CGFloat = 0
+    color.getRed(&r, green: &g, blue: &b, alpha: &a)
+    background.getRed(&br, green: &bg, blue: &bb, alpha: &ba)
+    return UIColor(red: r * a + br * (1 - a), green: g * a + bg * (1 - a), blue: b * a + bb * (1 - a), alpha: 1)
+}
+
+func terminalItemShowsSender(_ item: ChatItem, _ older: ChatItem?) -> Bool {
+    guard item.content.hasTerminalSender else { return false }
+    guard let older else { return true }
+    return !older.content.hasTerminalSender || !sameSender(item, older)
+}
+
+private func sameSender(_ item: ChatItem, _ older: ChatItem) -> Bool {
+    item.channelIsSender || older.channelIsSender
+    ? item.channelIsSender && older.channelIsSender
+    : item.chatDir.sameDirection(older.chatDir)
+}
+
+func terminalRowGap(_ item: ChatItem, _ older: ChatItem?, separated: Bool, largeGap: Bool, hasSenderRow: Bool) -> CGFloat {
+    guard let older, !separated else { return 0 }
+    return largeGap || hasSenderRow || !item.content.hasTerminalSender || !older.content.hasTerminalSender || (item.textAtItemTop && item.startsWithHeading)
+    ? terminalLevelStep
+    : 0
+}
+
+func terminalHeadingGap(_ item: ChatItem) -> CGFloat {
+    !item.textAtItemTop && item.startsWithHeading ? terminalLevelStep : 0
+}
+
+private enum MessageLastLineRight: AlignmentID {
+    static func defaultValue(in d: ViewDimensions) -> CGFloat { d[.trailing] }
+}
+
+private enum MessageLastBlockBottom: AlignmentID {
+    static func defaultValue(in d: ViewDimensions) -> CGFloat { d[.bottom] }
 }
 
 struct MessageLastLine: ViewModifier {
-    static let right = HorizontalAlignment(Right.self)
-
-    private enum Right: AlignmentID {
-        static func defaultValue(in d: ViewDimensions) -> CGFloat { d[.trailing] }
-    }
+    fileprivate static let right = HorizontalAlignment(MessageLastLineRight.self)
 
     func body(content: Content) -> some View {
         content.alignmentGuide(Self.right) { $0[.trailing] }
@@ -152,17 +162,17 @@ struct MessageLastLine: ViewModifier {
 }
 
 struct MessageLastBlock: ViewModifier {
-    static let bottom = VerticalAlignment(Bottom.self)
-
-    private enum Bottom: AlignmentID {
-        static func defaultValue(in d: ViewDimensions) -> CGFloat { d[.bottom] }
-    }
+    fileprivate static let bottom = VerticalAlignment(MessageLastBlockBottom.self)
 
     func body(content: Content) -> some View {
         content
             .modifier(MessageLastLine())
             .alignmentGuide(Self.bottom) { $0[.bottom] }
     }
+}
+
+func metaCopyJoiner(_ rightToLeft: Bool) -> Text {
+    Text(verbatim: rightToLeft ? "\u{2060}\u{200F}" : "\u{2060}\u{200E}")
 }
 
 struct ItemWithMeta<Meta: View, Content: View>: View {
@@ -210,7 +220,7 @@ struct ItemWithMeta<Meta: View, Content: View>: View {
 
     @ViewBuilder private func metaBox(_ meta: some View, _ lineHeightColor: Color?) -> some View {
         let v = meta
-            .modifier(TerminalLineBox(UIFont.preferredFont(forTextStyle: .caption1), lineHeightColor, theme))
+            .modifier(terminalLineBox(UIFont.preferredFont(forTextStyle: .caption1), lineHeightColor, theme))
             .padding(.trailing, chatItemTextPadding)
         if overlayMeta != nil {
             v.frame(maxWidth: .infinity, maxHeight: .infinity).clipped()
@@ -310,7 +320,7 @@ struct ChatEventWithMeta<Content: View>: View {
         } content: { inlineMeta in
             content(
                 inlineMeta == nil
-                ? (TerminalLayout.metaCopyJoiner(layoutDirection == .rightToLeft) + Text(verbatim: "\u{00A0}\u{00A0}") + eventMetaText(colorMode: .transparent, unbreakable: true)).fontWeight(.regular)
+                ? (metaCopyJoiner(layoutDirection == .rightToLeft) + Text(verbatim: "\u{00A0}\u{00A0}") + eventMetaText(colorMode: .transparent, unbreakable: true)).fontWeight(.regular)
                 : chatItem.timestampText
             )
         }
@@ -375,6 +385,6 @@ struct TerminalChatItemRow<Content: View>: View {
                     .layoutPriority(1)
             }
         }
-        .modifier(TerminalLineBox(UIFont.systemFont(ofSize: size), nil, theme))
+        .modifier(terminalLineBox(UIFont.systemFont(ofSize: size), nil, theme))
     }
 }

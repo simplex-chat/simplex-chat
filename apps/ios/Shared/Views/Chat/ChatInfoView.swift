@@ -955,7 +955,7 @@ struct ChatWallpaperEditorSheet: View {
                 await save(applyToMode, newTheme, $chat)
             }
         )
-        .environment(\.terminalLayout, ThemeManager.activeChatLayout(chat.chatInfo, ChatModel.shared.currentUser) == .terminal)
+        .environment(\.terminalLayout, chat.chatInfo.activeChatLayout(profileChatLayout(ChatModel.shared.currentUser)) == .terminal)
         .navigationTitle("Chat theme")
         .modifier(ThemedBackground(grouped: true))
         .navigationBarTitleDisplayMode(.inline)

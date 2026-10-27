@@ -89,7 +89,7 @@ struct AppearanceSettings: View {
                         currentColors: currentColors,
                         onChooseType: onChooseType
                     )
-                    .environment(\.terminalLayout, ThemeManager.profileChatLayout(themeUserDestination == nil ? nil : m.currentUser) == .terminal)
+                    .environment(\.terminalLayout, profileChatLayout(themeUserDestination == nil ? nil : m.currentUser) == .terminal)
                     .padding(.bottom, 10)
                     .listRowInsets(.init())
                     .listRowBackground(Color.clear)
@@ -150,7 +150,7 @@ struct AppearanceSettings: View {
                                 }
                         } else {
                             CustomizeThemeView(onChooseType: onChooseType)
-                                .environment(\.terminalLayout, ThemeManager.profileChatLayout(nil) == .terminal)
+                                .environment(\.terminalLayout, profileChatLayout(nil) == .terminal)
                                 .navigationTitle("Customize theme")
                                 .modifier(ThemedBackground(grouped: true))
                                 .onAppear {
@@ -393,10 +393,10 @@ struct ChatThemePreview: View {
                     .opacity(terminal ? 0 : 1)
                     .accessibilityHidden(terminal)
                     VStack(spacing: 0) {
-                        TerminalChatItemRow(sender: ChatItemSender(name: Text(verbatim: "alice"), own: false), gutter: 0, topGap: TerminalLayout.rowGap(alice, nil, separated: false, largeGap: true, hasSenderRow: true), senderTopGap: 0) {
+                        TerminalChatItemRow(sender: ChatItemSender(name: Text(verbatim: "alice"), own: false), gutter: 0, topGap: terminalRowGap(alice, nil, separated: false, largeGap: true, hasSenderRow: true), senderTopGap: 0) {
                             ChatItemView(chat: Chat.sampleData, im: ItemsModel.shared, chatItem: alice, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
                         }
-                        TerminalChatItemRow(sender: ChatItemSender(name: Text(verbatim: "bob"), own: true), gutter: 0, topGap: TerminalLayout.rowGap(bob, alice, separated: false, largeGap: true, hasSenderRow: true)) {
+                        TerminalChatItemRow(sender: ChatItemSender(name: Text(verbatim: "bob"), own: true), gutter: 0, topGap: terminalRowGap(bob, alice, separated: false, largeGap: true, hasSenderRow: true)) {
                             ChatItemView(chat: Chat.sampleData, im: ItemsModel.shared, chatItem: bob, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
                         }
                     }
@@ -743,7 +743,7 @@ struct UserWallpaperEditorSheet: View {
                 }
             }
         )
-        .environment(\.terminalLayout, ThemeManager.profileChatLayout(ChatModel.shared.currentUser) == .terminal)
+        .environment(\.terminalLayout, profileChatLayout(ChatModel.shared.currentUser) == .terminal)
         .navigationTitle("Profile theme")
         .modifier(ThemedBackground(grouped: true))
         .onAppear {
@@ -907,8 +907,8 @@ struct ChatLayoutPicker: View {
 
     var body: some View {
         if let dest = themeUserDestination {
-            let defaultLayout = ThemeManager.profileChatLayout(nil)
-            let otherLayout = defaultLayout.other
+            let defaultLayout = profileChatLayout(nil)
+            let otherLayout = otherChatLayout(defaultLayout)
             Picker("Chat layout", selection: Binding(
                 get: { dest.1?.chatLayout == otherLayout ? otherLayout : nil },
                 set: { layout in

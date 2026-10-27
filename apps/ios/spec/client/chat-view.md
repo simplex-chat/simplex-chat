@@ -192,7 +192,7 @@ Renders emoji-only messages (messages containing only emoji characters) in a lar
 
 Renders message text with SimpleX markdown formatting (bold, italic, code, links, mentions). Blocks of `markdownBlocks` (headings, lists, quotes, code blocks, tables, rules) are drawn as a column of views by `MarkdownBlocksView`; code blocks and tables scroll sideways.
 
-Text colour: `textColor`, else `AppTheme.messageTextColor`: `onSurface`, at 87% in dark themes. `FramedItemView` passes `onSurface` for quote text (terminal rows: 70%). `MarkdownView` (chat item info, group welcome message, profile description) draws its text in `AppTheme.messageTextColor`.
+Text colour: `textColor`, else `messageTextColor(theme)`: `onSurface`, at 87% in dark themes. `FramedItemView` passes `onSurface` for quote text (terminal rows: 70%). `MarkdownView` (chat item info, group welcome message, profile description) draws its text in `messageTextColor(theme)`.
 
 ### DeletedItemView / MarkedDeletedItemView
 
@@ -328,38 +328,38 @@ Multi-selection mode allows batch operations on messages:
 
 **File**: [`Shared/Views/Chat/ChatItem/TerminalItemView.swift`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift)
 
-Rendering of a chat whose `ThemeManager.activeChatLayout(chatInfo, currentUser)` is `.terminal`: full-width start-aligned rows, messages without bubbles, the sender name once per group of messages, avatars in groups only. Reference: `apps/multiplatform/spec/client/chat-view.md`, sections 4 and 10.
+Rendering of a chat whose `ChatInfo.activeChatLayout(profileChatLayout(currentUser))` is `.terminal`: full-width start-aligned rows, messages without bubbles, the sender name once per group of messages, avatars in groups only. Reference: `apps/multiplatform/spec/client/chat-view.md`, sections 4 and 10.
 
 ### Activation
 
 ```
-ChatView.terminal            ThemeManager.activeChatLayout(chat.chatInfo, currentUser) == .terminal
+ChatView.terminal            chat.chatInfo.activeChatLayout(profileChatLayout(currentUser)) == .terminal
 cells                        .environment(\.terminalLayout, terminal)
 layout change                scrollView.updateItems(items, true): visible cells rebuilt
 background                   wallpaper background colour; image omitted
 ```
 
-`EnvironmentValues.terminalLayout` (key `TerminalLayout`) is false outside the chat cells and the theme screens: chat item info and the chat list are drawn classic.
+`EnvironmentValues.terminalLayout` is false outside the chat cells and the theme screens: chat item info and the chat list are drawn classic.
 
-Layout resolution, in [`ThemeManager.swift`](../../Shared/Theme/ThemeManager.swift):
+Layout resolution, in [`ChatTypes.swift`](../../SimpleXChat/ChatTypes.swift) and [`ChatModel.swift`](../../Shared/Model/ChatModel.swift):
 
 ```
-activeChatLayout(chatInfo, user)    chat uiThemes.chatLayout, else defaultChatLayout(chatInfo, user)
-defaultChatLayout(chatInfo, user)   ChatInfo.chatLayout (contact or group profile), else profileChatLayout(user)
-profileChatLayout(user)             user uiThemes.chatLayout, else chatLayoutDefault (app setting), else classic
-unknown values                      skipped (ChatLayout.known)
+ChatInfo.activeChatLayout(profileLayout)    chat uiThemes.chatLayout, else defaultChatLayout(profileLayout)
+ChatInfo.defaultChatLayout(profileLayout)   ChatInfo.chatLayout (contact or group profile), else profileLayout
+profileChatLayout(user)                     user uiThemes.chatLayout, else chatLayoutDefault (app setting), else classic
+unknown values                              skipped
 ```
 
 ### Rows
 
-[`ChatItemWithMenu.terminalItemRow`](../../Shared/Views/Chat/ChatView.swift#L2147) wraps `chatItemWithMenu` in [`TerminalChatItemRow`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L336):
+[`ChatItemWithMenu.terminalItemRow`](../../Shared/Views/Chat/ChatView.swift#L2147) wraps `chatItemWithMenu` in [`TerminalChatItemRow`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L346):
 
 ```
 row padding        top: topGap, plus terminalSenderTopGap with a sender row
 gutter             groups and channels: memberImageSize + chatItemTextPadding, with the sender avatar chatItemTextPadding from the start; other chats: none
                    one 12pt padding (user, I26): screen edge to the text or the avatar, avatar to the text, time to the screen edge
-avatar             memberImageSize: ChatView.scaledMemberImageSize, 34pt × chat list profileImageSize ÷ 63 (dynamicSize at the text size, at most 75); classic rows too
-                   classic group bubbles: maximum width less the avatar column, ChatView.scaledMemberImageSize + 8pt
+avatar             memberImageSize: scaledMemberImageSize, 34pt × chat list profileImageSize ÷ 63 (dynamicSize at the text size, at most 75); classic rows too
+                   classic group bubbles: maximum width less the avatar column, scaledMemberImageSize + 8pt
                    classic sender name: memberImageSize + 10pt after the avatar's start, on the bubble edge (user, I23)
 sender row         name and badge at terminalNameSize, 13.5 × 17/16 pt (primary for own items, secondary otherwise); role label 15pt after the name
                    start padding chatItemTextPadding; terminalSenderBottomGap below
@@ -369,9 +369,9 @@ bottom padding     newest row: 8pt; above a date separator: terminalLevelStep; o
 
 | Function | Rule |
 |----------|------|
-| [`ChatItem.showsTerminalSender(older)`](../../SimpleXChat/ChatTypes.swift#L4142) | Item with a sender (`hasTerminalSender`), and the older item is absent, has no sender or has another sender. Same sender: channel as sender on both items, or `CIDirection.sameDirection` when neither item has it |
-| [`TerminalLayout.rowGap(item, older, separated, largeGap, hasSenderRow)`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L43) | `terminalLevelStep` when the older item exists, the rows are not separated, and one holds: large gap, sender row, either item without a sender, text at the item top starting with a heading. Otherwise 0 |
-| [`TerminalLayout.headingGap(item)`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L50) | `terminalLevelStep` above a heading that starts the text below a quote, header or block |
+| [`terminalItemShowsSender(item, older)`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L125) | Item with a sender (`hasTerminalSender`), and the older item is absent, has no sender or has another sender. Same sender: channel as sender on both items, or `CIDirection.sameDirection` when neither item has it |
+| [`terminalRowGap(item, older, separated, largeGap, hasSenderRow)`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L137) | `terminalLevelStep` when the older item exists, the rows are not separated, and one holds: large gap, sender row, either item without a sender, text at the item top starting with a heading. Otherwise 0 |
+| [`terminalHeadingGap(item)`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L144) | `terminalLevelStep` above a heading that starts the text below a quote, header or block |
 | [`terminalRowsSeparated(olderRow)`](../../Shared/Views/Chat/ChatView.swift#L2175) | The newest item of the older row is the chat banner, or its `getItemSeparation` has a date (against its newer item only for single and revealed rows) |
 | [`chatItemSender(ci, range)`](../../Shared/Views/Chat/ChatView.swift#L2182) | Channel as sender: group name, role "channel", group image. Received direct: contact name and badge. Group member: `memberNames`, badge and role of a single member, member image (tap: member info). Own group items: membership name, badge, role, image. Other own items: user name and badge, or "Incognito" |
 | `CIContent.hasTerminalSender` | Sent messages, deleted and moderated items, calls and group invitations; received content with `showMemberName` |
@@ -395,14 +395,14 @@ Item views start at the text edge `chatItemTextPadding` (12pt):
 ```
 FramedItemView        background, quote background and header backgrounds omitted
                       headers: terminalHeaderTopGap above, terminalHeaderBottomGap below
-                      quote: QuoteBar, text onSurface 70%, terminalBlockTopGap above, terminalBlockBottomGap below
+                      quote: quoteBar(), text onSurface 70%, terminalBlockTopGap above, terminalBlockBottomGap below
                       quote sender: terminalNameSize (13.5 × 17/16 pt, Dynamic Type), no spacing above the text
                       quote thumbnail: 12pt after the quote text; a quote without text and sender: 12pt after the bar (quotedMsgOrGap)
                       quote thumbnails and media: message corner clip (msgRectMaxRadius × roundness)
                       link preview and chat link cards: quote colour, message corner clip (terminalBlock)
                       media width limit for captionless media only (mediaLimit)
                       captionless media, chat link without text: terminalBlockBottomGap below (metaPlacement)
-MsgContentView        line box TerminalLineBox; meta line for live messages only
+MsgContentView        line box terminalLineBox; meta line for live messages only
                       text ends with the transparent copy of the meta (reserveSpaceForMeta)
 MarkdownBlocksView    paragraph break, heading after another block: terminalLevelStep
                       block other than a heading after a heading: terminalHeadingBottomGap
@@ -413,8 +413,8 @@ MarkdownBlocksView    paragraph break, heading after another block: terminalLeve
                       rules of a rule-only message: as wide as the copy of the meta, or the item less its text edges
                       when a quote or header is wider (ruleMinWidth: msgWidth less 24pt; terminalQuote reports its full width)
 emoji                 EmojiItemView and FramedItemView: terminalEmojiTopGap, terminalEmojiBottomGap, MessageLastLine
-voice                 CIVoiceView: received layout for both directions, TerminalLayout.gap(4) above, TerminalLayout.gap(6) below
-                      FramedCIVoiceView: TerminalLayout.gap(4) above, TerminalLayout.gap(6) below, player background
+voice                 CIVoiceView: received layout for both directions, terminalGap(4) above, terminalGap(6) below
+                      FramedCIVoiceView: terminalGap(4) above, terminalGap(6) below, player background
                       VoiceMessagePlayer circle in the quote colour (chatItemFrameContextColor); classic: the bubble colour
 files                 CIFileView: terminalFileTopGap above, icon without top padding
 events                terminalEventPadding, line box, line limit removed
@@ -425,7 +425,7 @@ cards                 DeletedItemView, MarkedDeletedItemView, CIMsgError, CIRcvD
 
 ### Time and Status
 
-[`ItemWithMeta(showMeta, metaReserved, overlayMeta, endButton, meta, content)`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L168):
+[`ItemWithMeta(showMeta, metaReserved, overlayMeta, endButton, meta, content)`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L178):
 
 ```
 classic            content(meta()): the meta drawn inside the item, as before
@@ -434,7 +434,7 @@ iOS 16             TerminalMetaLayout
 iOS 15             HStack(alignment: .lastTextBaseline): content, end button, meta
 ```
 
-[`TerminalMetaLayout`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L224):
+[`TerminalMetaLayout`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L234):
 
 ```
 content width      row width less the wider of: the end button; the meta, without metaReserved and overlayMeta
@@ -450,7 +450,7 @@ row height         at least the meta height
 
 `metaReserved`: content with its own reserve for the time: text with the copy, files, emoji, events.
 
-[`ChatEventWithMeta(chatItem) { ts in }`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L301) passes the end of the event text, placed after the classic separator: classic `chatItem.timestampText`; terminal `TerminalLayout.metaCopyJoiner`, two no-break spaces and the transparent unbreakable time in regular weight.
+[`ChatEventWithMeta(chatItem) { ts in }`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L311) passes the end of the event text, placed after the classic separator: classic `chatItem.timestampText`; terminal `metaCopyJoiner`, two no-break spaces and the transparent unbreakable time in regular weight.
 
 Meta copy, `ciMetaText(unbreakable: true)`:
 
@@ -458,13 +458,13 @@ Meta copy, `ciMetaText(unbreakable: true)`:
 separators         no-break spaces
 icons              word joiner after the edit, timer and via-proxy icons
 time               no-break space inside
-prefix             TerminalLayout.metaCopyJoiner(rightToLeft): U+2060, then U+200E or U+200F; three no-break spaces
+prefix             metaCopyJoiner(rightToLeft): U+2060, then U+200E or U+200F; three no-break spaces
 content            file encryption and signature included (MsgContentView encrypted, signedFileVerified)
 ```
 
 ### Spacing and Line Heights
 
-Constants at the top of `TerminalItemView.swift`: the Kotlin values in sp at its 16sp body, converted by `TerminalLayout.gap`, value × body point size ÷ 16 (17pt body by default; Dynamic Type included):
+Constants at the top of `TerminalItemView.swift`: the Kotlin values in sp at its 16sp body, converted by `terminalGap`, value × body point size ÷ 16 (17pt body by default; Dynamic Type included):
 
 ```
 terminalBlockTopGap         5.75
@@ -483,25 +483,25 @@ terminalEmojiBottomGap      1.5
 terminalMetaGap             6
 ```
 
-[`TerminalLineBox(font, color, theme, capsOf:)`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L59), applied with `.modifier`:
+[`terminalLineBox(font, color, theme, capsOf:)`](../../Shared/Views/Chat/ChatItem/TerminalItemView.swift#L65), a `TerminalLineBox` view modifier:
 
 ```
 line height        font size × 22/16 × f(w)
 f(w)               1 − 0.1515 × (1 − w); nil colour: 1
-w                  L* contrast of the colour against the background ÷ that of AppTheme.messageTextColor, 0…1
+w                  L* contrast of the colour against the background ÷ that of messageTextColor, 0…1
 extra height       split by ascent and descent: lineSpacing between lines, padding above and below
 headings           capsOf body font: body line height scaled by the size ratio; capitals placed as body capitals
-taps               handleTextTaps lays the text out with the same lineSpacing (TerminalLineBox.withLineSpacing)
+taps               handleTextTaps lays the text out with the same lineSpacing (withLineSpacing)
 ```
 
 ### Theme Screens
 
 | Screen | `terminalLayout` |
 |--------|------------------|
-| Appearance: wallpaper presets | `ThemeManager.profileChatLayout` of the theme destination: app or current profile |
-| Customize theme | `ThemeManager.profileChatLayout(nil)` |
-| Profile theme | `ThemeManager.profileChatLayout(currentUser)` |
-| Chat theme | `ThemeManager.activeChatLayout(chatInfo, currentUser)` |
+| Appearance: wallpaper presets | `profileChatLayout` of the theme destination: app or current profile |
+| Customize theme | `profileChatLayout(nil)` |
+| Profile theme | `profileChatLayout(currentUser)` |
+| Chat theme | `activeChatLayout(profileChatLayout(currentUser))` of the chat |
 
 ```
 ChatThemePreview          two TerminalChatItemRow rows: "alice", then "bob" as own; both layouts in one ZStack, one height

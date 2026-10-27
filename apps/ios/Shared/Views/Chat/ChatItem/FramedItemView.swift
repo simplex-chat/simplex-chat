@@ -110,7 +110,7 @@ struct FramedItemView: View {
                                     Text(itemForwarded.chatName)
                                         .font(.subheadline)
                                         .lineLimit(1)
-                                        .if(terminal) { $0.modifier(TerminalLineBox(UIFont.preferredFont(forTextStyle: .subheadline), theme.colors.secondary, theme)) }
+                                        .if(terminal) { $0.modifier(terminalLineBox(UIFont.preferredFont(forTextStyle: .subheadline), theme.colors.secondary, theme)) }
                                 }
                             }
                             .simultaneousGesture(TapGesture().onEnded {
@@ -263,7 +263,7 @@ struct FramedItemView: View {
             caption
                 .font(.caption)
                 .lineLimit(1)
-                .if(terminal) { $0.modifier(TerminalLineBox(UIFont.preferredFont(forTextStyle: .caption1), theme.colors.secondary, theme)) }
+                .if(terminal) { $0.modifier(terminalLineBox(UIFont.preferredFont(forTextStyle: .caption1), theme.colors.secondary, theme)) }
         }
     }
 
@@ -334,7 +334,7 @@ struct FramedItemView: View {
             .overlay { if case .voice = chatItem.content.msgContent {} else { DetermineWidth() } }
             .frame(minWidth: quoteMinWidth, alignment: .leading)
             .background(terminal ? Color.clear : backgroundColor)
-            .environment(\.containerBackground, UIColor(terminal ? theme.terminalBackgroundColor : backgroundColor))
+            .environment(\.containerBackground, UIColor(terminal ? terminalBackgroundColor(theme) : backgroundColor))
             .if(terminal) { terminalQuote($0) }
         if let mediaWidth = mediaLimit {
             v.frame(maxWidth: mediaWidth, alignment: .leading)
@@ -359,7 +359,7 @@ struct FramedItemView: View {
                         .font(terminal ? .system(size: terminalNameSize) : .caption)
                         .foregroundColor(qi.chatDir == .groupSnd ? .accentColor : theme.colors.secondary)
                         .lineLimit(1)
-                        .if(terminal) { $0.modifier(TerminalLineBox(UIFont.systemFont(ofSize: terminalNameSize), nil, theme)) }
+                        .if(terminal) { $0.modifier(terminalLineBox(UIFont.systemFont(ofSize: terminalNameSize), nil, theme)) }
                     ciQuotedMsgTextView(qi, lines: 2, stripLink: stripLink, prefix: prefix)
                 }
             } else {
@@ -390,7 +390,7 @@ struct FramedItemView: View {
 
     private func terminalQuote(_ quote: some View) -> some View {
         HStack(alignment: .top, spacing: quoteBarSpacing) {
-            QuoteBar()
+            quoteBar()
             quote
         }
         .fixedSize(horizontal: false, vertical: true)
@@ -437,10 +437,10 @@ struct FramedItemView: View {
             signedFileVerified: ci.file?.loaded,
             ruleMinWidth: terminal ? max(0, msgWidth - 2 * chatItemTextPadding) : 0
         )
-        .environment(\.containerBackground, UIColor(terminal ? theme.terminalBackgroundColor : chatItemFrameColor(ci, theme)))
+        .environment(\.containerBackground, UIColor(terminal ? terminalBackgroundColor(theme) : chatItemFrameColor(ci, theme)))
         .multilineTextAlignment(rtl ? .trailing : .leading)
         .padding(.vertical, terminal ? 0 : 6)
-        .padding(.top, terminal ? terminalTop + TerminalLayout.headingGap(ci) : 0)
+        .padding(.top, terminal ? terminalTop + terminalHeadingGap(ci) : 0)
         .padding(.horizontal, 12)
         .overlay(DetermineWidth())
         .frame(minWidth: 0, alignment: .leading)
