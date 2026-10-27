@@ -2927,4 +2927,37 @@
     <string name="group_invitation_for_you_only">Apenas para você</string>
     <string name="badges_ledger_from_purchase_key">Da chave de compra</string>
     <string name="badges_how_long_title">Por quanto tempo?</string>
+    <string name="chat_layout_default_suffix">(padrão)</string>
+    <string name="chat_layout">Layout do chat</string>
+    <string name="chat_layout_classic">Clássico</string>
+    <string name="file_already_exists_replace_question">O arquivo já existe. Deseja substituí-lo?</string>
+    <string name="markdown_formatted_view">Visualização formatada</string>
+    <string name="badges_ledger_invoice_id">ID da fatura</string>
+    <string name="badges_issuing_title">Emitindo seu selo</string>
+    <string name="badges_link_held_page">O código está na página onde você comprou, em Mostrar código.</string>
+    <string name="badges_choose_your_badge_lede">Arquivos maiores disponíveis por mais tempo.</string>
+    <string name="badges_error_last_attempt">Última tentativa</string>
+    <string name="rcv_group_event_msg_bad_signature">mensagem rejeitada: assinatura inválida</string>
+    <string name="badges_credential_months_left">Meses restantes</string>
+    <string name="badges_credential_next_check">Próxima verificação</string>
+    <string name="no_emoji_found">Nenhum emoji encontrado</string>
+    <string name="badges_ledger_no_entries">Nenhum registro</string>
+    <string name="badges_waiting_for_approval_body">Nenhuma cobrança foi realizada.</string>
+    <string name="emoji_category_objects">Objetos</string>
+    <string name="badges_ledger_paused_since">Pausado desde</string>
+    <string name="emoji_category_people">Pessoas e gestos</string>
+    <string name="badges_link_held_title">O perfil já tem um selo</string>
+    <string name="badges_credential_purchase_id">ID da compra</string>
+    <string name="badges_how_it_works_read_more_with_link"><![CDATA[Leia mais em <font color="#0088ff">nosso blog</font>.]]></string>
+    <string name="callstate_reconnecting">reconectando…</string>
+    <string name="call_not_encrypted_desc">%s atendeu à chamada sem criptografia de ponta a ponta.</string>
+    <string name="keystore_key_storage_strongbox">Elemento seguro</string>
+    <string name="server_has_too_many_hosts">O servidor %1$s tem mais de dois nomes de host.</string>
+    <string name="badges_error_since">Desde</string>
+    <string name="storage">Armazenamento</string>
+    <string name="badges_level_legend_file_storage">Armazenado por 21 dias</string>
+    <string name="badges_level_supporter_file_storage">Armazenado por 7 dias</string>
+    <string name="emoji_category_symbols">Símbolos</string>
+    <string name="badges_tap_for_details">Toque para ver detalhes</string>
+    <string name="badges_error_test_purchase">Compras de teste não contam. Os selos só podem ser adquiridos com compras reais.</string>
 </resources>
