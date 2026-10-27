@@ -75,7 +75,7 @@ namesContractsTests = describe "StoreService names: contracts" $ do
     it "reads the commitment ages once" $ testCommitmentAges g
   describe "name policy" $ do
     it "reads the policy from the controller once, and the reservations, listing, terms, nonces and acceptances from it" $ testNamePolicy g
-    it "reads the policy's terms text for its hash only, keeping the text last read" $ testTermsText g
+    it "reads the policy's terms text for its hash only" $ testTermsText g
   describe "failures" $ do
     it "fails a status on a failed read, never reading it as available" $ testFailedRead g
     it "fails a read whose answer does not decode or does not fit" $ testMalformed g
@@ -127,10 +127,7 @@ testNamePolicy g = withContracts g $ \node ct -> do
 testTermsText :: TVar ChaChaDRG -> IO ()
 testTermsText g = withContracts g $ \node ct -> do
   communityTermsText ct fakeCommunityTerms `shouldReturn` Right (Just fakeCommunityTermsText)
-  -- kept: a policy answering no more still gives the text read for its hash, and another hash reads it again
-  answerCall node fakeNamePolicy (selector "termsText()") $ Reverts ""
-  communityTermsText ct fakeCommunityTerms `shouldReturn` Right (Just fakeCommunityTermsText)
-  Left _ <- communityTermsText ct fakeNewCommunityTerms
+  communityTermsText ct fakeNewCommunityTerms `shouldReturn` Right Nothing
   setCommunityTerms node fakeNewCommunityTermsText
   communityTermsText ct fakeNewCommunityTerms `shouldReturn` Right (Just fakeNewCommunityTermsText)
   communityTermsText ct fakeCommunityTerms `shouldReturn` Right Nothing

@@ -101,7 +101,7 @@ import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import StoreService.Config (ChainConfig (..), NamesConfig (..), ServiceConfig (..), TermsConfig (..))
 import StoreService.Names.Abi (hex, uint256)
 import StoreService.Names.Chain (newChainClient)
-import StoreService.Names.Contracts (newContracts)
+import StoreService.Names.Contracts (newContracts, noCommunityTerms)
 import StoreService.Names.Codes (CodeRefusal (..))
 import StoreService.Names.Community (AcceptanceAsked (..))
 import StoreService.Names.Orders (OrdersEnv (..))
@@ -169,6 +169,7 @@ namesOrdersTests = describe "StoreService names: orders" $ do
   describe "terms" $ do
     it "answers terms_changed with the current terms and community for an old version or the wrong variant, listed or not, creating nothing, and takes an ini-only name under plain terms" testTermsChanged
     it "accepts the community terms for a listed name as viem signs them, storing them" testCommunityTerms
+    it "answers terms_changed for a listed name before the policy has community terms, with their zero hash, creating nothing" testNoCommunityTerms
     it "answers an exact resend after the version changed, and takes the same fields under the new terms as another order" testResendAfterBump
     it "checks the terms after the existing orders, the timestamp and the duration, with the community listing's read, before the name check and the price" testTermsCheckOrder
     it "answers terms_changed for a code order under old terms, listed or not, leaving the code unreserved, and accepts the community terms" testCodeTermsChanged
@@ -781,14 +782,14 @@ communityTerms :: Text -> Text
 communityTerms version = version <> "/community/" <> T.drop 2 (hex fakeCommunityTerms)
 
 -- | terms_changed with the current version, the terms' URL and the name's community entry.
-termsChanged :: Text -> Maybe J.Value -> (Int, Maybe J.Object)
+termsChanged :: Text -> Maybe Text -> (Int, Maybe J.Object)
 termsChanged version community =
   ( 409,
     Just $
       KM.fromList
         [ ("error", "terms_changed"),
           ("terms", J.object ["version" .= version, "url" .= termsUrl]),
-          ("community", fromMaybe J.Null community)
+          ("community", maybe J.Null communityEntry community)
         ]
   )
 
@@ -826,7 +827,7 @@ testTermsChanged = withOrders $ \ctx0 -> withSettings (listName "dynamis" . list
   forM_ [olderTerms, communityTerms termsVersion, communityTerms olderTerms, T.replicate 112 "a"] $ \t ->
     placeOrder ctx aliceOrder {oTerms = t} `shouldReturn` termsChanged termsVersion Nothing
   forM_ [termsVersion, olderTerms, communityTerms olderTerms, otherCommunityTerms] $ \t ->
-    placeOrder ctx dynamis {oTerms = t} `shouldReturn` termsChanged termsVersion (Just $ communityEntry bakers)
+    placeOrder ctx dynamis {oTerms = t} `shouldReturn` termsChanged termsVersion (Just bakers)
   stubCalls (cStub ctx) `shouldReturn` []
   registrationsOf ctx ownerA `shouldReturn` []
   (invId, v) <- placed ctx dynamis {oTerms = communityTerms termsVersion}
@@ -834,11 +835,20 @@ testTermsChanged = withOrders $ \ctx0 -> withSettings (listName "dynamis" . list
   nrAgreedTerms <$> invoiceRegistration ctx invId `shouldReturn` communityTerms termsVersion
   void $ placed ctx aliceOrder
 
+testNoCommunityTerms :: IO ()
+testNoCommunityTerms = withOrders $ \ctx0 -> withSettings (listName "dynamis") ctx0 $ \ctx -> do
+  listOnChain ctx "dynamis"
+  setCommunityTerms (cNode ctx) ""
+  let dynamis = aliceOrder {oLabel = "dynamis", oCommitment = commitmentOf 2, oPrice = 20000}
+  placeOrder ctx dynamis {oTerms = termsVersion <> "/community/" <> T.replicate 64 "0"}
+    `shouldReturn` (fmap (KM.insert "community" (communityEntryOf noCommunityTerms bakers)) <$> termsChanged termsVersion Nothing)
+  registrationsOf ctx ownerA `shouldReturn` []
+
 testCommunityTerms :: IO ()
 testCommunityTerms = withOrders $ \ctx0 -> withSettings (listName "alicebakery" . vectorTermStart) ctx0 $ \ctx -> do
   listOnChain ctx "alicebakery"
   writeIORef (cClock ctx) (posixSecondsToUTCTime $ fromIntegral $ oTimestamp vectorOrder)
-  postOrder ctx (withSignature vectorSignature $ unsignedBody vectorOrder) `shouldReturn` termsChanged termsVersion (Just $ communityEntry bakers)
+  postOrder ctx (withSignature vectorSignature $ unsignedBody vectorOrder) `shouldReturn` termsChanged termsVersion (Just bakers)
   let community = vectorOrder {oTerms = communityTerms termsVersion}
       communitySignature = "0xaaae43ae111b0411c50cc0c09acb6bac1bdf3d338539341046189f84e785efe331c5bb7b43ad36fa84e0ce8bcaa6d7e5e42cf21c61eb172a0e4dc704ebcdf1001c"
   signedBody (cRandom ctx) community >>= (`shouldBe` withSignature communitySignature (unsignedBody community))
@@ -959,7 +969,7 @@ testCodeTermsChanged = withOrders $ \ctx0 -> withSettings (listName "dynamis") c
   forM_ [olderTerms, communityTerms termsVersion] $ \t ->
     register ctx code aliceOrder {oTerms = t} `shouldReturn` termsChanged termsVersion Nothing
   forM_ [termsVersion, communityTerms olderTerms, otherCommunityTerms] $ \t ->
-    register ctx code dynamis {oTerms = t} `shouldReturn` termsChanged termsVersion (Just $ communityEntry bakers)
+    register ctx code dynamis {oTerms = t} `shouldReturn` termsChanged termsVersion (Just bakers)
   pcReservedBy <$> readCode ctx issued `shouldReturn` Nothing
   rid <- registered ctx code dynamis {oTerms = communityTerms termsVersion}
   nrAgreedTerms <$> registrationById ctx rid `shouldReturn` communityTerms termsVersion

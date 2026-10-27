@@ -410,7 +410,6 @@ testCommunityTermsText g = withSearch g id id $ \s@Search {node} -> do
       text r = (statusCode (responseStatus r), lookup hContentType (responseHeaders r), responseBody r)
   text <$> terms (hex fakeCommunityTerms) `shouldReturn` (200, Just "text/plain; charset=utf-8", LB.fromStrict fakeCommunityTermsText)
   answerOf <$> terms (hex fakeNewCommunityTerms) `shouldReturn` refused 404 "not_found"
-  -- the text kept is the one on chain now, so new terms replace it
   setCommunityTerms node fakeNewCommunityTermsText
   text <$> terms (hex fakeNewCommunityTerms) `shouldReturn` (200, Just "text/plain; charset=utf-8", LB.fromStrict fakeNewCommunityTermsText)
   answerOf <$> terms (hex fakeCommunityTerms) `shouldReturn` refused 404 "not_found"

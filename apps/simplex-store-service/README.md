@@ -406,10 +406,7 @@ each domain to its own port, as the all-in-one example in [Caddy](#caddy) does. 
 ### Development with a local chain
 
 `compose.dev.yml` adds a container `chain`: an anvil chain on `127.0.0.1:8545` (chain id 31337)
-with the names contracts, deployed on its first start by the `apps/simplex-domains` submodule's
-webapp, which needs simplex.domains#7 for the contracts whose name policy this service reads and
-which keeps the community terms' text on chain: until the submodule moves past it, every search
-answers 503. Its state is kept in `./data/chain`, so
+with the names contracts, deployed on its first start. Its state is kept in `./data/chain`, so
 restarts keep the contracts, balances and registered names. Its keys are anvil's public test keys,
 so never use it beside a real chain. From `scripts/store-service/`:
 
@@ -669,7 +666,7 @@ does not register: the page signs again until the order lapses, and only the fir
 The name policy keeps the community terms' text on chain, and `termsHash` is its keccak256, so the
 two cannot disagree. The service reads the text with `termsText()` and serves it, as plain text, at
 `GET /api/community-terms/<hash>`, which the order's checkbox links to beside the name terms; it
-answers `404` for any other hash, and the text it read last is kept until another hash is asked for.
+answers `404` for any other hash.
 To change the terms, the contracts' owner calls `setTerms(text)`: an order signed under the old
 terms is asked to agree again before its reveal, and the old text stays in the calldata of its
 `setTerms` transaction. Until the owner first sets terms there is no text to agree to, so community
@@ -1193,8 +1190,7 @@ cabal build exe:simplex-store-service
 ENS_CONTRACTS_DIR=<ens-contracts> ANVIL=<anvil> scripts/store-service/names-contract-run.sh
 ```
 
-- `WEBAPP_DIR`: the names webapp (default: the `apps/simplex-domains` submodule's `webapp/`), which needs
-  simplex.domains#7 for the name policy's terms and the community case until the submodule moves past it.
+- `WEBAPP_DIR`: the names webapp (default: the `apps/simplex-domains` submodule's `webapp/`).
 - `STORE_SERVICE_BIN`: the service binary (default: `cabal list-bin exe:simplex-store-service`).
 - `SERVICE_PORT`, `BADGES_PORT`, `CODES_PORT`: the service's names and badges ports and the code
   server's (8180, 8181 and 8199).

@@ -133,7 +133,7 @@ checkIntent NamesConfig {nChain = ChainConfig {cChainId, cSponsor}} ct now revea
 checkAcceptance :: NamesConfig -> Contracts -> NameRegistration -> Word64 -> Maybe TermsAcceptance -> IO (Either RevealRefusal ())
 checkAcceptance NamesConfig {nChain = ChainConfig {cChainId}} ct NameRegistration {nrLabelHash, nrOwner, nrCommitment} deadline acceptance =
   currentAcceptance ct nrLabelHash nrOwner >>= \case
-    Left e -> Left RVChainUnavailable <$ logWarn ("names: a reveal's community terms acceptance could not be read: " <> e)
+    Left e -> Left RVChainUnavailable <$ logWarn ("names: a reveal's community terms acceptance could not be read: " <> tshow e)
     Right asked -> case (asked, acceptance) of
       (Nothing, Nothing) -> pure $ Right ()
       (Just AcceptanceAsked {acPolicy, acTermsHash, acNonce}, Just a@TermsAcceptance {taTermsHash, taNonce})

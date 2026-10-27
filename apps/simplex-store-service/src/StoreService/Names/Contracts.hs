@@ -19,6 +19,7 @@ module StoreService.Names.Contracts
     namePolicy,
     bonaFideName,
     communityTermsHash,
+    noCommunityTerms,
     communityTermsText,
     policyNonce,
     acceptedTerms,
@@ -32,9 +33,7 @@ module StoreService.Names.Contracts
 where
 
 import Control.Concurrent.Async (Concurrently (..))
-import Control.Monad (unless)
 import Control.Monad.Except (ExceptT (..), runExceptT)
-import Control.Monad.IO.Class (liftIO)
 import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -45,7 +44,7 @@ import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Word (Word64)
 import Simplex.Messaging.Crypto (keccak256)
-import Simplex.Messaging.Eth.Address (Address)
+import Simplex.Messaging.Eth.Address (Address, unAddress)
 import Simplex.Messaging.SimplexName (LabelHash (..), SimplexTLD)
 import Simplex.Messaging.Util (tshow)
 import StoreService.Config (ChainConfig (..))
@@ -61,8 +60,6 @@ data Contracts = Contracts
     ctRegistrar :: IORef (Maybe RegistrarConstants),
     ctCommitmentAges :: IORef (Maybe CommitmentAges),
     ctNamePolicy :: IORef (Maybe Address),
-    -- | the community terms text last read, with its keccak256
-    ctTermsText :: IORef (Maybe (ByteString, ByteString)),
     -- | microseconds for all the reads of one name status or of one name's records
     ctDeadline :: Int
   }
@@ -103,8 +100,7 @@ newContracts ctTLD ctChain = do
   ctRegistrar <- newIORef Nothing
   ctCommitmentAges <- newIORef Nothing
   ctNamePolicy <- newIORef Nothing
-  ctTermsText <- newIORef Nothing
-  pure Contracts {ctChain, ctTLD, ctRegistrar, ctCommitmentAges, ctNamePolicy, ctTermsText, ctDeadline = nameReadsDeadline}
+  pure Contracts {ctChain, ctTLD, ctRegistrar, ctCommitmentAges, ctNamePolicy, ctDeadline = nameReadsDeadline}
 
 -- | Registered while @nameExpires + GRACE_PERIOD@ is not before the latest block's time.
 nameStatus :: Contracts -> LabelHash -> IO (Either ChainError NameStatus)
@@ -152,28 +148,28 @@ sponsorNonce ct owner = call ct (cSponsor $ chainConfig ct) ("nonces(address)", 
 resolverNonce :: Contracts -> Address -> IO (Either ChainError Word64)
 resolverNonce ct owner = call ct (resolver ct) ("nonces(address)", addressWord owner) decodeWord64
 
--- | The policy holding the reserved and the community names, read once: as the service starts, or on first use after that read failed.
+-- | The policy holding the reserved and the community names, read once: as the service starts, or on first use after that
+-- read failed or found none set.
 namePolicy :: Contracts -> IO (Either ChainError Address)
-namePolicy ct@Contracts {ctNamePolicy} = readOnce ctNamePolicy $ call ct (controller ct) ("namePolicy()", "") decodeAddress
+namePolicy ct@Contracts {ctNamePolicy} = readOnce ctNamePolicy $ (>>= set) <$> call ct (controller ct) ("namePolicy()", "") decodeAddress
+  where
+    set policy = if B.all (== '\NUL') (unAddress policy) then Left (ChainUnavailable "the controller has no name policy yet") else Right policy
 
 bonaFideName :: Contracts -> LabelHash -> IO (Either ChainError Bool)
 bonaFideName ct lh = policyCall ct ("bonaFideNames(bytes32)", labelHashArg lh) decodeBool
 
--- | The keccak256 of the community terms text, all zeros before the terms are set.
+-- | The keccak256 of the community terms text, 'noCommunityTerms' before the terms are set.
 communityTermsHash :: Contracts -> IO (Either ChainError ByteString)
 communityTermsHash ct = policyCall ct ("termsHash()", "") decodeBytes32
 
--- | The text the policy keeps for its community terms when it hashes to this hash, else Nothing. The text last read is
--- kept, so only a request for another hash reads it again.
+noCommunityTerms :: ByteString
+noCommunityTerms = B.replicate 32 '\NUL'
+
+-- | The text the policy keeps for its community terms when it hashes to this hash, else Nothing.
 communityTermsText :: Contracts -> ByteString -> IO (Either ChainError (Maybe ByteString))
-communityTermsText ct@Contracts {ctTermsText} h =
-  readIORef ctTermsText >>= \case
-    Just (h', text) | h' == h -> pure $ Right $ Just text
-    _ -> runExceptT $ do
-      text <- ExceptT $ policyCall ct ("termsText()", "") decodeBytes
-      let textHash = keccak256 text
-      unless (B.null text) $ liftIO $ atomicWriteIORef ctTermsText $ Just (textHash, text)
-      pure $ if not (B.null text) && textHash == h then Just text else Nothing
+communityTermsText ct h = fmap matching <$> policyCall ct ("termsText()", "") decodeBytes
+  where
+    matching text = if not (B.null text) && keccak256 text == h then Just text else Nothing
 
 policyNonce :: Contracts -> Address -> IO (Either ChainError Word64)
 policyNonce ct owner = policyCall ct ("nonces(address)", addressWord owner) decodeWord64

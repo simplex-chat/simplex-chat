@@ -55,9 +55,9 @@ searchHandler cfg@NamesConfig {nYears} st ct ps hashText req respond = case Labe
       registering <- withTransaction st (`isLabelRegistering` lh)
       timeout (ctDeadline ct) (concurrently (runExceptT $ found lh len registering) (nameCommunityTerms ct lh)) >>= \case
         Just (Right f, Right h) -> respond =<< searchAnswer cfg ps lh h f
-        Just (Left e, _) -> unavailable $ "a chain read failed: " <> tshow e
-        Just (_, Left e) -> unavailable $ "the community terms check failed: " <> e
-        Nothing -> unavailable "the chain reads or the community terms check timed out"
+        Just (Left e, _) -> unavailable $ tshow e
+        Just (_, Left e) -> unavailable $ tshow e
+        Nothing -> unavailable "timed out"
   where
     found lh len registering =
       ExceptT (nameStatus ct lh) >>= \case
@@ -67,7 +67,7 @@ searchHandler cfg@NamesConfig {nYears} st ct ps hashText req respond = case Labe
         NSReserved -> pure FReserved
         NSRegistered name -> FRegistered name <$> ExceptT (nameRecords ct lh name)
     unavailable :: Text -> IO ResponseReceived
-    unavailable why = logWarn ("GET /api/name: " <> why) >> respond providerUnavailable
+    unavailable why = logWarn ("GET /api/name: a chain read failed: " <> why) >> respond providerUnavailable
 
 -- | Nothing unless @length@ is a decimal integer in the label's bounds.
 queryLength :: Request -> Maybe Int

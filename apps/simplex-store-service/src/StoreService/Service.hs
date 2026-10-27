@@ -34,7 +34,7 @@ import StoreService.Names.Abi (hex)
 import StoreService.Names.Balances (RefundRecord (..), RefundRefusal (..), recordRefund)
 import StoreService.Names.Chain (newChainClient, nodeChainId)
 import StoreService.Names.Codes (issueNameCode, revokeNameCode)
-import StoreService.Names.Contracts (Contracts, bonaFideName, communityTermsHash, namePolicy)
+import StoreService.Names.Contracts (Contracts, bonaFideName, communityTermsHash, namePolicy, noCommunityTerms)
 import StoreService.Names.Env (NamesEnv (..), newNamesEnv)
 import StoreService.Names.Orders (ordersEnv)
 import StoreService.Names.Phases (RegistrationId (..))
@@ -67,7 +67,6 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Bifunctor (first)
-import qualified Data.ByteString as B
 import Data.ByteString.Char8 (ByteString)
 import Data.Char (isSpace)
 import Data.Either (fromRight, isRight)
@@ -288,7 +287,7 @@ checkNamePolicy NamesConfig {nCommunity} ct =
           Left e -> logWarn $ "names: a [community] name's listing could not be read: " <> text <> ": " <> tshow e
       communityTermsHash ct >>= \case
         Right h
-          | h == B.replicate 32 0 -> logWarn "names: the name policy has no community terms yet, so community names cannot be ordered until the owner sets them"
+          | h == noCommunityTerms -> logWarn "names: the name policy has no community terms yet, so community names cannot be ordered until the owner sets them"
           | otherwise -> logInfo $ "names: community terms " <> hex h
         Left e -> logWarn $ "names: the name policy's community terms could not be read: " <> tshow e
 
