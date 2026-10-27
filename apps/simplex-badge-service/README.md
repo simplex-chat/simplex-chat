@@ -264,11 +264,11 @@ service_account_file = /etc/simplex-badge-service/play-service-account.json
   error naming the acknowledgement, and the app presents it again once the permission is granted,
   which must be within three days, before Play refunds it. The key signs in
   for an access token, so keep the file readable by this service alone.
-  A request that may ask a store waits on a lane of its own: Play purchases and App Store
-  subscription purchases on one, and issue requests for a subscription due its hourly store check
-  on another. A slow or unreachable store therefore delays only those, not code redemptions,
-  App Store one-time purchases or other renewals; and no purchase, genuine or made up, delays a
-  renewal check. The purchase path asks Play about at most 300 subscriptions a minute (a purchase
+  A request that may ask a store waits on a lane of its own: Play purchases, App Store
+  subscription purchases and transfers of a subscription (Restore) on one, and issue requests and
+  tier raises for a subscription due its hourly store check on another. A slow or unreachable
+  store therefore delays only those, not code redemptions, App Store one-time purchases or other
+  renewals; and no purchase or transfer, genuine or made up, delays a renewal check. The purchase path asks Play about at most 300 subscriptions a minute (a purchase
   it credits is read once more to acknowledge it), so made-up tokens can spend at most a tenth of
   the quota renewal checks share.
 
