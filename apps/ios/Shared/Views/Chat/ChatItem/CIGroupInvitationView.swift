@@ -153,8 +153,8 @@ struct CIGroupInvitationView: View {
 struct CIGroupInvitationView_Previews: PreviewProvider {
     static var previews: some View {
         Group {
-            CIGroupInvitationView(chat: Chat.sampleData, chatItem: ChatItem.getGroupInvitationSample(), groupInvitation: CIGroupInvitation.getSample(groupProfile: GroupProfile(displayName: "team", fullName: "team")), memberRole: .admin)
-            CIGroupInvitationView(chat: Chat.sampleData, chatItem: ChatItem.getGroupInvitationSample(), groupInvitation: CIGroupInvitation.getSample(status: .accepted), memberRole: .admin)
+            CIGroupInvitationView(chat: Chat.sampleData, chatItem: previewDated(ChatItem.getGroupInvitationSample()), groupInvitation: CIGroupInvitation.getSample(groupProfile: GroupProfile(displayName: "team", fullName: "team")), memberRole: .admin)
+            CIGroupInvitationView(chat: Chat.sampleData, chatItem: previewDated(ChatItem.getGroupInvitationSample()), groupInvitation: CIGroupInvitation.getSample(status: .accepted), memberRole: .admin)
         }
     }
 }

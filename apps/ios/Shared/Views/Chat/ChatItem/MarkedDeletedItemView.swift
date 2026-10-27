@@ -89,7 +89,7 @@ struct MarkedDeletedItemView_Previews: PreviewProvider {
             MarkedDeletedItemView(
                 chat: Chat.sampleData,
                 im: ItemsModel.shared,
-                chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete), itemDeleted: .deleted(deletedTs: .now))
+                chatItem: ChatItem.getSample(1, .directSnd, previewDate, "hello", .sndSent(sndProgress: .complete), itemDeleted: .deleted(deletedTs: previewDate))
             ).environment(\.revealed, true)
         }
         .previewLayout(.fixed(width: 360, height: 200))

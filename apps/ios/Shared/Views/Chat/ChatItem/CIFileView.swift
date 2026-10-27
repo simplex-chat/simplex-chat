@@ -316,28 +316,28 @@ struct CIFileView_Previews: PreviewProvider {
         let im = ItemsModel.shared
         let sentFile: ChatItem = ChatItem(
             chatDir: .directSnd,
-            meta: CIMeta.getSample(1, .now, "", .sndSent(sndProgress: .complete), itemEdited: true),
+            meta: CIMeta.getSample(1, previewDate, "", .sndSent(sndProgress: .complete), itemEdited: true),
             content: .sndMsgContent(msgContent: .file("")),
             quotedItem: nil,
             file: CIFile.getSample(fileStatus: .sndComplete)
         )
         let fileChatItemWtFile = ChatItem(
             chatDir: .directRcv,
-            meta: CIMeta.getSample(1, .now, "", .rcvRead),
+            meta: CIMeta.getSample(1, previewDate, "", .rcvRead),
             content: .rcvMsgContent(msgContent: .file("")),
             quotedItem: nil,
             file: nil
         )
         Group {
             ChatItemView(chat: Chat.sampleData, im: im, chatItem: sentFile, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getFileMsgContentSample(), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getFileMsgContentSample(fileName: "some_long_file_name_here", fileStatus: .rcvInvitation), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvAccepted), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvTransfer(rcvProgress: 7, rcvTotal: 10)), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvCancelled), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getFileMsgContentSample(fileSize: 1_000_000_000, fileStatus: .rcvInvitation), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getFileMsgContentSample(text: "Hello there", fileStatus: .rcvInvitation), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getFileMsgContentSample(text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.", fileStatus: .rcvInvitation), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: previewDated(ChatItem.getFileMsgContentSample()), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: previewDated(ChatItem.getFileMsgContentSample(fileName: "some_long_file_name_here", fileStatus: .rcvInvitation)), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: previewDated(ChatItem.getFileMsgContentSample(fileStatus: .rcvAccepted)), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: previewDated(ChatItem.getFileMsgContentSample(fileStatus: .rcvTransfer(rcvProgress: 7, rcvTotal: 10))), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: previewDated(ChatItem.getFileMsgContentSample(fileStatus: .rcvCancelled)), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: previewDated(ChatItem.getFileMsgContentSample(fileSize: 1_000_000_000, fileStatus: .rcvInvitation)), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: previewDated(ChatItem.getFileMsgContentSample(text: "Hello there", fileStatus: .rcvInvitation)), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: previewDated(ChatItem.getFileMsgContentSample(text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.", fileStatus: .rcvInvitation)), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
             ChatItemView(chat: Chat.sampleData, im: im, chatItem: fileChatItemWtFile, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
         }
         .environment(\.revealed, false)

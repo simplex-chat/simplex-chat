@@ -105,7 +105,9 @@ struct BannerDismissButton: View {
     }
 }
 
-#Preview {
-    GetStakeBanner(showDismiss: true, onTap: {}, onDismiss: {})
-        .padding()
+struct GetStakeBanner_Previews: PreviewProvider {
+    static var previews: some View {
+        GetStakeBanner(showDismiss: true, onTap: {}, onDismiss: {})
+            .padding()
+    }
 }

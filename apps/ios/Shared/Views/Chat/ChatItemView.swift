@@ -286,19 +286,29 @@ func chatEventText(_ ci: ChatItem, _ secondaryColor: Color, isChannel: Bool = fa
     chatEventText("\(ci.content.text(isChannel: isChannel))", ci.timestampText, secondaryColor)
 }
 
+let previewDate = Date(timeIntervalSince1970: 1_736_936_100)
+
+func previewDated(_ chatItem: ChatItem) -> ChatItem {
+    var ci = chatItem
+    ci.meta.itemTs = previewDate
+    ci.meta.createdAt = previewDate
+    ci.meta.updatedAt = previewDate
+    return ci
+}
+
 struct ChatItemView_Previews: PreviewProvider {
     static var previews: some View {
         let im = ItemsModel.shared
         Group{
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello"), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(2, .directRcv, .now, "hello there too"), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(1, .directSnd, .now, "🙂"), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(2, .directRcv, .now, "🙂🙂🙂🙂🙂"), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(2, .directRcv, .now, "🙂🙂🙂🙂🙂🙂"), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getDeletedContentSample(), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete), itemDeleted: .deleted(deletedTs: .now)), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(1, .directSnd, .now, "🙂", .sndSent(sndProgress: .complete), itemLive: true), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil)).environment(\.revealed, true)
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete), itemLive: true), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil)).environment(\.revealed, true)
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(1, .directSnd, previewDate, "hello"), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(2, .directRcv, previewDate, "hello there too"), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(1, .directSnd, previewDate, "🙂"), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(2, .directRcv, previewDate, "🙂🙂🙂🙂🙂"), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(2, .directRcv, previewDate, "🙂🙂🙂🙂🙂🙂"), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getDeletedContentSample(1, previewDate), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(1, .directSnd, previewDate, "hello", .sndSent(sndProgress: .complete), itemDeleted: .deleted(deletedTs: previewDate)), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(1, .directSnd, previewDate, "🙂", .sndSent(sndProgress: .complete), itemLive: true), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil)).environment(\.revealed, true)
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(1, .directSnd, previewDate, "hello", .sndSent(sndProgress: .complete), itemLive: true), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil)).environment(\.revealed, true)
         }
         .environment(\.revealed, false)
         .previewLayout(.fixed(width: 360, height: 70))
@@ -316,7 +326,7 @@ struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
                 im: im,
                 chatItem: ChatItem(
                     chatDir: .directRcv,
-                    meta: CIMeta.getSample(1, .now, "1 skipped message", .rcvRead, itemDeleted: .deleted(deletedTs: .now)),
+                    meta: CIMeta.getSample(1, previewDate, "1 skipped message", .rcvRead, itemDeleted: .deleted(deletedTs: previewDate)),
                     content: .rcvIntegrityError(msgError: .msgSkipped(fromMsgId: 1, toMsgId: 2)),
                     quotedItem: nil,
                     file: nil
@@ -329,7 +339,7 @@ struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
                 im: im,
                 chatItem: ChatItem(
                     chatDir: .directRcv,
-                    meta: CIMeta.getSample(1, .now, "1 skipped message", .rcvRead),
+                    meta: CIMeta.getSample(1, previewDate, "1 skipped message", .rcvRead),
                     content: .rcvDecryptionError(msgDecryptError: .ratchetHeader, msgCount: 2),
                     quotedItem: nil,
                     file: nil
@@ -341,7 +351,7 @@ struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
                 im: im,
                 chatItem: ChatItem(
                     chatDir: .directRcv,
-                    meta: CIMeta.getSample(1, .now, "received invitation to join group team as admin", .rcvRead, itemDeleted: .deleted(deletedTs: .now)),
+                    meta: CIMeta.getSample(1, previewDate, "received invitation to join group team as admin", .rcvRead, itemDeleted: .deleted(deletedTs: previewDate)),
                     content: .rcvGroupInvitation(groupInvitation: CIGroupInvitation.getSample(status: .pending), memberRole: .admin),
                     quotedItem: nil,
                     file: nil
@@ -354,7 +364,7 @@ struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
                 im: im,
                 chatItem: ChatItem(
                     chatDir: .directRcv,
-                    meta: CIMeta.getSample(1, .now, "group event text", .rcvRead, itemDeleted: .deleted(deletedTs: .now)),
+                    meta: CIMeta.getSample(1, previewDate, "group event text", .rcvRead, itemDeleted: .deleted(deletedTs: previewDate)),
                     content: .rcvGroupEvent(rcvGroupEvent: .memberAdded(groupMemberId: 1, profile: Profile.sampleData)),
                     quotedItem: nil,
                     file: nil
@@ -367,7 +377,7 @@ struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
                 im: im,
                 chatItem: ChatItem(
                     chatDir: .directRcv,
-                    meta: CIMeta.getSample(1, .now, ciFeatureContent.text, .rcvRead, itemDeleted: .deleted(deletedTs: .now)),
+                    meta: CIMeta.getSample(1, previewDate, ciFeatureContent.text, .rcvRead, itemDeleted: .deleted(deletedTs: previewDate)),
                     content: ciFeatureContent,
                     quotedItem: nil,
                     file: nil

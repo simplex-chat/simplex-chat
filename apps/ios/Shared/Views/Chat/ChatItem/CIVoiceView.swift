@@ -445,14 +445,14 @@ struct CIVoiceView_Previews: PreviewProvider {
         let im = ItemsModel.shared
         let sentVoiceMessage: ChatItem = ChatItem(
             chatDir: .directSnd,
-            meta: CIMeta.getSample(1, .now, "", .sndSent(sndProgress: .complete), itemEdited: true),
+            meta: CIMeta.getSample(1, previewDate, "", .sndSent(sndProgress: .complete), itemEdited: true),
             content: .sndMsgContent(msgContent: .voice(text: "", duration: 30)),
             quotedItem: nil,
             file: CIFile.getSample(fileStatus: .sndComplete)
         )
         let voiceMessageWtFile = ChatItem(
             chatDir: .directRcv,
-            meta: CIMeta.getSample(1, .now, "", .rcvRead),
+            meta: CIMeta.getSample(1, previewDate, "", .rcvRead),
             content: .rcvMsgContent(msgContent: .voice(text: "", duration: 30)),
             quotedItem: nil,
             file: nil
@@ -460,14 +460,14 @@ struct CIVoiceView_Previews: PreviewProvider {
         Group {
             CIVoiceView(
                 chat: Chat.sampleData,
-                chatItem: ChatItem.getVoiceMsgContentSample(),
+                chatItem: previewDated(ChatItem.getVoiceMsgContentSample()),
                 recordingFile: CIFile.getSample(fileName: "voice.m4a", fileSize: 65536, fileStatus: .rcvComplete),
                 duration: 30,
                 allowMenu: Binding.constant(true)
             )
             ChatItemView(chat: Chat.sampleData, im: im, chatItem: sentVoiceMessage, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil), allowMenu: .constant(true))
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getVoiceMsgContentSample(), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil), allowMenu: .constant(true))
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getVoiceMsgContentSample(fileStatus: .rcvTransfer(rcvProgress: 7, rcvTotal: 10)), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil), allowMenu: .constant(true))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: previewDated(ChatItem.getVoiceMsgContentSample()), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil), allowMenu: .constant(true))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: previewDated(ChatItem.getVoiceMsgContentSample(fileStatus: .rcvTransfer(rcvProgress: 7, rcvTotal: 10))), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil), allowMenu: .constant(true))
             ChatItemView(chat: Chat.sampleData, im: im, chatItem: voiceMessageWtFile, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil), allowMenu: .constant(true))
         }
         .previewLayout(.fixed(width: 360, height: 360))

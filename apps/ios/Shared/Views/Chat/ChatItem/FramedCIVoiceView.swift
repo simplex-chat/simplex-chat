@@ -82,23 +82,23 @@ struct FramedCIVoiceView_Previews: PreviewProvider {
         let im = ItemsModel.shared
         let sentVoiceMessage: ChatItem = ChatItem(
             chatDir: .directSnd,
-            meta: CIMeta.getSample(1, .now, "", .sndSent(sndProgress: .complete), itemEdited: true),
+            meta: CIMeta.getSample(1, previewDate, "", .sndSent(sndProgress: .complete), itemEdited: true),
             content: .sndMsgContent(msgContent: .voice(text: "Hello there", duration: 30)),
             quotedItem: nil,
             file: CIFile.getSample(fileStatus: .sndComplete)
         )
         let voiceMessageWithQuote: ChatItem = ChatItem(
             chatDir: .directSnd,
-            meta: CIMeta.getSample(1, .now, "", .sndSent(sndProgress: .complete), itemEdited: true),
+            meta: CIMeta.getSample(1, previewDate, "", .sndSent(sndProgress: .complete), itemEdited: true),
             content: .sndMsgContent(msgContent: .voice(text: "", duration: 30)),
-            quotedItem: CIQuote.getSample(1, .now, "Hi", chatDir: .directRcv),
+            quotedItem: CIQuote.getSample(1, previewDate, "Hi", chatDir: .directRcv),
             file: CIFile.getSample(fileStatus: .sndComplete)
         )
         Group {
             ChatItemView(chat: Chat.sampleData, im: im, chatItem: sentVoiceMessage, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getVoiceMsgContentSample(text: "Hello there"), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getVoiceMsgContentSample(text: "Hello there", fileStatus: .rcvTransfer(rcvProgress: 7, rcvTotal: 10)), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getVoiceMsgContentSample(text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: previewDated(ChatItem.getVoiceMsgContentSample(text: "Hello there")), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: previewDated(ChatItem.getVoiceMsgContentSample(text: "Hello there", fileStatus: .rcvTransfer(rcvProgress: 7, rcvTotal: 10))), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: previewDated(ChatItem.getVoiceMsgContentSample(text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
             ChatItemView(chat: Chat.sampleData, im: im, chatItem: voiceMessageWithQuote, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
         }
         .environment(\.revealed, false)
