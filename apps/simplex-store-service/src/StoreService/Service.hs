@@ -11,7 +11,7 @@ module StoreService.Service
     welcomeGetOpts,
     trustDevKeys,
     checkDevChain,
-    checkNamePolicy,
+    logNamePolicy,
     requireDevKeys,
     checkIssuerKey,
     storeService,
@@ -271,11 +271,11 @@ startNames cc@ChatController {chatStore} turns waiters providers nc@NamesConfig 
     Just User {userId} -> do
       logInfo $ "names: on, TLD " <> safeDecodeUtf8 (strEncode nTLD) <> ", chain " <> tshow cChainId
       ne@NamesEnv {neContracts} <- newNamesEnv cc userId nc chatStore turns waiters providers
-      checkNamePolicy nc neContracts
+      logNamePolicy nc neContracts
       pure ne
 
-checkNamePolicy :: NamesConfig -> Contracts -> IO ()
-checkNamePolicy NamesConfig {nCommunity} ct =
+logNamePolicy :: NamesConfig -> Contracts -> IO ()
+logNamePolicy NamesConfig {nCommunity} ct =
   namePolicy ct >>= \case
     Left e -> logWarn ("names: the controller's name policy could not be read, it is read on first use: " <> tshow e)
     Right policy -> do

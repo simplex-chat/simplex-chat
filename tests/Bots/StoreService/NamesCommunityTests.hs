@@ -22,7 +22,7 @@ import StoreService.Config (NamesConfig (..), TermsConfig (..), unknownKeys)
 import StoreService.Names.Abi (bytes32FromHex, hex, selector)
 import StoreService.Names.Community (agreedTermsHash, communityFor, termsFor)
 import StoreService.Names.View (addressText)
-import StoreService.Service (checkNamePolicy)
+import StoreService.Service (logNamePolicy)
 import Test.Hspec
 
 namesCommunityTests :: Spec
@@ -153,19 +153,19 @@ testTermsFor = do
 testStartupCheck :: TVar ChaChaDRG -> IO ()
 testStartupCheck g = withContracts g $ \node ct -> do
   cfg <- withCommunity ["alicebakery = Alice's bakery"]
-  logged <- capturingStderr $ checkNamePolicy cfg ct
+  logged <- capturingStderr $ logNamePolicy cfg ct
   logged `shouldSatisfy` T.isInfixOf ("names: name policy " <> addressText fakeNamePolicy)
   logged `shouldSatisfy` T.isInfixOf ("names: community terms " <> hex fakeCommunityTerms)
   logged `shouldSatisfy` T.isInfixOf "names: [community] lists a name the name policy does not list, so it is sold as a plain name: Alice's bakery"
   answerListing node aliceHash $ Reverts ""
-  unread <- capturingStderr $ checkNamePolicy cfg ct
+  unread <- capturingStderr $ logNamePolicy cfg ct
   unread `shouldSatisfy` T.isInfixOf "names: a [community] name's listing could not be read: Alice's bakery"
 
 testStartupUnread :: TVar ChaChaDRG -> IO ()
 testStartupUnread g = withContracts g $ \node ct -> do
   cfg <- withCommunity ["alicebakery = a bakery the policy is not read for"]
   answerCall node fakeController (selector "namePolicy()") $ Reverts ""
-  warned <- capturingStderr $ checkNamePolicy cfg ct
+  warned <- capturingStderr $ logNamePolicy cfg ct
   warned `shouldSatisfy` T.isInfixOf "names: the controller's name policy could not be read, it is read on first use"
   -- a text no other case logs, so a line another case logs late cannot match it
   warned `shouldNotSatisfy` T.isInfixOf "a bakery the policy is not read for"
@@ -173,7 +173,7 @@ testStartupUnread g = withContracts g $ \node ct -> do
 testStartupWarnings :: TVar ChaChaDRG -> IO ()
 testStartupWarnings g = withContracts g $ \node ct -> do
   cfg <- parsedNames namesSection chainSection
-  let warns text = capturingStderr (checkNamePolicy cfg ct) >>= (`shouldSatisfy` T.isInfixOf text)
+  let warns text = capturingStderr (logNamePolicy cfg ct) >>= (`shouldSatisfy` T.isInfixOf text)
   setCommunityTerms node ""
   warns "names: the name policy has no community terms yet, so community names cannot be ordered until the owner sets them"
   answerCall node fakeNamePolicy (selector "termsHash()") $ Reverts ""

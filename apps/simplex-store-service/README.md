@@ -694,8 +694,8 @@ The terms settings and the `[community]` texts are read only at startup, so an e
 restart; the policy's list and its community terms apply as soon as they change on chain. After a
 restart, search each listed name on the names site and check that it shows as a community name.
 
-Every order signs the terms the buyer agreed to: `terms_version`, followed by `/community/` and the community terms' hash in hex for a
-listed name. The service stores them with the order, so an open order keeps the terms it signed
+Every order signs the terms the buyer agreed to: `terms_version`, followed by `/community/` and the 64 lower-case hex digits
+of the community terms' hash, without `0x`, for a listed name. The service stores them with the order, so an open order keeps the terms it signed
 after an edit, and every move signs the current terms for the name it moves to, and stores them. An
 order or a move signed with any other value answers `409 terms_changed` with the current terms and
 the name's community entry, and the page asks again. An exact resend is still answered after the version changed.
@@ -1178,8 +1178,10 @@ The code server answers the cases' `POST /control/code` with the issued codes, t
 It needs bash 5.1 or later (for `wait -n -p`), `cabal` (for the default `STORE_SERVICE_BIN`),
 Foundry's anvil, Node.js 22.18 or later (which runs the webapp's `dev/deploy.ts` as TypeScript, as its
 `dev/start.sh` does), `jq`, `curl` and `python3`; the webapp with its packages and
-Playwright's Chromium (`npm install`, `npx playwright install chromium`); and an `ens-contracts` checkout
-compiled as the webapp's `dev/start.sh` needs. The cases read the chain's addresses from the webapp's
+Playwright's Chromium (`npm install`, `npx playwright install chromium`); and the compiled
+`ens-contracts` submodule (simplex-network/ens-contracts#45) of a simplex-namespace-contract checkout
+(brenzi/simplex-namespace-contract#8), whose `bona-fide-terms.simplex.md` the deploy sets as the community terms,
+as the webapp's `dev/start.sh` needs. The cases read the chain's addresses from the webapp's
 `dev/local-chain-0.json`, so the script stops when its deployment differs from it; run the webapp's
 `SLOTS=1 MIN_COMMITMENT_AGE=5 dev/start.sh` once to write it. Ports 8545, 8180, 8181 and 8199 must be free:
 the script stops before starting anything when one of them answers, and stops at once when anvil,
