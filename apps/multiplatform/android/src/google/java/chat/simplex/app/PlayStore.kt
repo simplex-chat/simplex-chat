@@ -12,6 +12,8 @@ import chat.simplex.common.views.helpers.withLongRunningApi
 import com.android.billingclient.api.*
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 const val hasPlatformStore = true
@@ -48,6 +50,8 @@ fun loadPlayStoreCountry() {
 @Volatile private var badgeBillingClient: BillingClient? = null
 @Volatile private var badgeOffers: Map<BadgeStoreProductId, BadgeOffer> = emptyMap()
 @Volatile private var badgePurchase: CompletableDeferred<BadgePurchaseOutcome>? = null
+// two callers connecting at once would each keep a client open, and Play could deliver a purchase event to each
+private val badgeBillingConnection = Mutex()
 
 // offerToken is null for one-time products, which have no base plan to choose
 private class BadgeOffer(
@@ -165,8 +169,14 @@ private fun badgePurchaseOutcome(purchase: Purchase): BadgePurchaseOutcome? = wh
   else -> null
 }
 
-private suspend fun connectedBadgeBillingClient(): BillingClient {
-  badgeBillingClient?.let { if (it.isReady) return it }
+private suspend fun connectedBadgeBillingClient(): BillingClient = badgeBillingConnection.withLock {
+  badgeBillingClient?.let { replaced ->
+    if (replaced.isReady) return@withLock replaced
+    // ended, it no longer hears the result of a purchase launched on it, which the next sweep finds unfinished
+    badgePurchase?.completeExceptionally(BadgeStoreError.BillingError(BillingClient.BillingResponseCode.SERVICE_DISCONNECTED, "billing client replaced"))
+    replaced.endConnection()
+    badgeBillingClient = null
+  }
   val client = BillingClient.newBuilder(androidAppContext)
     .setListener(badgePurchasesUpdatedListener)
     .enablePendingPurchases(PendingPurchasesParams.newBuilder().enableOneTimeProducts().build())
@@ -178,7 +188,6 @@ private suspend fun connectedBadgeBillingClient(): BillingClient {
     }
 
     override fun onBillingServiceDisconnected() {
-      badgeBillingClient = null
       connected.complete(
         BillingResult.newBuilder().setResponseCode(BillingClient.BillingResponseCode.SERVICE_DISCONNECTED).build()
       )
@@ -190,7 +199,7 @@ private suspend fun connectedBadgeBillingClient(): BillingClient {
     throw BadgeStoreError.BillingError(result.responseCode, result.debugMessage)
   }
   badgeBillingClient = client
-  return client
+  client
 }
 
 private suspend fun queryBadgeProducts(client: BillingClient, ids: List<BadgeStoreProductId>, productType: String): List<ProductDetails> {
