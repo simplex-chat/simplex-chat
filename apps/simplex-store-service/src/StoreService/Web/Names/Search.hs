@@ -5,7 +5,7 @@
 
 module StoreService.Web.Names.Search (searchHandler, previewHandler, communityTermsHandler) where
 
-import Control.Concurrent.Async (concurrently, mapConcurrently)
+import Control.Concurrent.Async (mapConcurrently)
 import Control.Monad (join)
 import Control.Monad.Except (ExceptT (..), runExceptT)
 import Data.Aeson ((.=))
@@ -53,10 +53,9 @@ searchHandler cfg@NamesConfig {nYears} st ct ps hashText req respond = case Labe
     Nothing -> respond invalidName
     Just len -> do
       registering <- withTransaction st (`isLabelRegistering` lh)
-      timeout (ctDeadline ct) (concurrently (runExceptT $ found lh len registering) (nameCommunityTerms ct lh)) >>= \case
-        Just (Right f, Right h) -> respond =<< searchAnswer cfg ps lh h f
-        Just (Left e, _) -> unavailable $ tshow e
-        Just (_, Left e) -> unavailable $ tshow e
+      timeout (ctDeadline ct) (together $ (,) <$> concurrent (runExceptT $ found lh len registering) <*> concurrent (nameCommunityTerms ct lh)) >>= \case
+        Just (Right (f, h)) -> respond =<< searchAnswer cfg ps lh h f
+        Just (Left e) -> unavailable $ tshow e
         Nothing -> unavailable "timed out"
   where
     found lh len registering =

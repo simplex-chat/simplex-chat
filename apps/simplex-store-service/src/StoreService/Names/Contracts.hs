@@ -29,6 +29,8 @@ module StoreService.Names.Contracts
     commitmentTime,
     controllerAvailable,
     commitmentAges,
+    together,
+    concurrent,
   )
 where
 

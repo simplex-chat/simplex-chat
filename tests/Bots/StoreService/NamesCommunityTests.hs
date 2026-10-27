@@ -11,7 +11,6 @@ import Bots.StoreService.WebTests (capturingStderr)
 import Control.Concurrent.STM (TVar)
 import Control.Monad (forM_, void)
 import Crypto.Random (ChaChaDRG)
-import Data.Functor ((<&>))
 import Data.Ini (readIniFile)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromJust)
@@ -153,7 +152,7 @@ testTermsFor = do
 
 testStartupCheck :: TVar ChaChaDRG -> IO ()
 testStartupCheck g = withContracts g $ \node ct -> do
-  cfg <- parsedNames namesSection chainSection <&> \c -> c {nCommunity = M.singleton (fromJust $ bytes32FromHex aliceHex) "Alice's bakery"}
+  cfg <- withCommunity ["alicebakery = Alice's bakery"]
   logged <- capturingStderr $ checkNamePolicy cfg ct
   logged `shouldSatisfy` T.isInfixOf ("names: name policy " <> addressText fakeNamePolicy)
   logged `shouldSatisfy` T.isInfixOf ("names: community terms " <> hex fakeCommunityTerms)
@@ -164,7 +163,7 @@ testStartupCheck g = withContracts g $ \node ct -> do
 
 testStartupUnread :: TVar ChaChaDRG -> IO ()
 testStartupUnread g = withContracts g $ \node ct -> do
-  cfg <- parsedNames namesSection chainSection <&> \c -> c {nCommunity = M.singleton (fromJust $ bytes32FromHex aliceHex) "a bakery the policy is not read for"}
+  cfg <- withCommunity ["alicebakery = a bakery the policy is not read for"]
   answerCall node fakeController (selector "namePolicy()") $ Reverts ""
   warned <- capturingStderr $ checkNamePolicy cfg ct
   warned `shouldSatisfy` T.isInfixOf "names: the controller's name policy could not be read, it is read on first use"

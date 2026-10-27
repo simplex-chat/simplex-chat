@@ -36,7 +36,7 @@ communityFor NamesConfig {nCommunity} (LabelHash h) = M.lookup h nCommunity
 termsFor :: NamesConfig -> Maybe ByteString -> Text
 termsFor NamesConfig {nTerms = TermsConfig {tVersion}} = maybe tVersion (\h -> tVersion <> communityTermsSuffix <> T.drop 2 (hex h))
 
--- | The community terms hash an order signed, Nothing for the terms of a name not listed.
+-- | The community terms hash an order signed, Nothing for plain terms.
 agreedTermsHash :: Text -> Maybe ByteString
 agreedTermsHash terms = T.stripPrefix communityTermsSuffix (snd $ T.breakOn communityTermsSuffix terms) >>= bytes32FromHex . ("0x" <>)
 
