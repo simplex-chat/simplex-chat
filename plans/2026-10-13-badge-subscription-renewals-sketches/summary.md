@@ -70,4 +70,4 @@ Purchases and Restores that ask a store, requests with a month due and tier chan
 
 Not built: iOS resubscription on another device or profile or to another badge, Restore for badges bought by card or crypto, seeing a Play refund that leaves the subscription active, and spreading the weekly moment.
 
-Store setup: App Store: one subscription group with legend at a higher level than supporter, as only supporter to legend is treated as a raise; Billing Grace Period and Family Sharing off (once on, Family Sharing can't be undone). Play: minimum grace period, account hold on, pausing off. Both: no offers of any kind, server API credentials, enough quota, translations, store review (Sandbox purchases are refused as test purchases, an open question), and products hidden until these apps ship.
+Store setup: the product ids and every store setting are the store setup checklist in the badge service's [README](../../apps/simplex-badge-service/README.md#store-setup). Besides them: server API credentials, enough quota, translations, store review (Sandbox purchases are refused as test purchases, an open question), and products hidden until these apps ship.

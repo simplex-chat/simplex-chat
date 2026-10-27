@@ -292,6 +292,29 @@ a prepaid purchase that is never renewed, every Play purchase token is lost, and
 charge, transfer or tier-change row can no longer be read, so its purchase answers `internal`.
 Upgrading again restores none of it. Take a backup first if a rollback is unavoidable.
 
+#### Store setup
+
+The subscriptions must be sold under the ids the apps buy and the service credits, and set up as
+follows:
+
+- [ ] App Store: one subscription group holding all four subscriptions, so a change of tier or plan
+  keeps the original transaction id, and with it the purchase.
+- [ ] App Store levels: `SUBSCR_BADGE_LEGEND_MONTH_01` and `SUBSCR_BADGE_LEGEND_YEAR_01` at level 1,
+  `SUBSCR_BADGE_SUPPORTER_MONTH_01` and `SUBSCR_BADGE_SUPPORTER_YEAR_01` at level 2. Apple charges a
+  move to a higher level at once, and the apps send only Supporter to Legend as a raise.
+- [ ] App Store: Billing Grace Period off, and Family Sharing off, which cannot be turned off once on:
+  a family-shared subscription is refused.
+- [ ] Play: the product `subscr_badge_supporter_01` with the base plans
+  `subscr-badge-supporter-month-02` and `subscr-badge-supporter-year-01`, and the product
+  `subscr_badge_legend_01` with `subscr-badge-legend-month-01` and `subscr-badge-legend-year-01`.
+  A charge for any other base plan is not credited, and a charge for one of these under the other
+  product is answered `internal`.
+- [ ] Play, on each of the four base plans: Resubscribe off, pausing off, the minimum grace period,
+  and account hold on.
+- [ ] Both: no offers of any kind: no free trial, introductory or promotional price, or offer code.
+  The service credits no App Store charge made with an offer and no Play charge in a free trial or
+  introductory price.
+
 ### Accepting store receipts unverified, for local testing
 
 ```ini
