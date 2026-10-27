@@ -5390,11 +5390,21 @@ handOverStoreReceipt presentingUser echoedInvoiceId origin payment = do
         RSHeld {} -> lift (resumeStoreReceiptWork ownerId) >> badgeStateResponse owner
         RSCredited {badgePurchaseId, refusalRecorded} -> do
           let rehold kind = withStore' $ \db -> reholdStoreReceipt db owner receiptId badgePurchaseId kind payment now
+              -- a resubscription no resume reaches moves to fresh keys of its owner, as Restore moves it, once the owner shows
+              -- no badge; until then it is answered held, so the app keeps it unfinished
+              holdAppleResume =
+                withStore' (\db -> purchaseUnreached db owner badgePurchaseId) >>= \case
+                  False -> rehold SHKPurchase
+                  True -> do
+                    unlessM (withStore' (`userHasBadge` owner)) $ do
+                      limited <- withStore' $ \db -> holdStoreTransfer db g owner txRef payment now
+                      when limited $ lift (resumeStoreReceiptWork ownerId) >> throwRedeemError (BREServiceError BSETransferLimited)
+                    pure True
           movedOut <- withStore' (`purchaseMovedOut` badgePurchaseId)
           answeredHeld <- case resumeHold now payment of
             _ | movedOut -> pure False
             -- a charge refused after its hold is answered from the record, or the app's sweep would hold it again at every launch
-            Just (RHPurchasedAt purchasedAt) | not (refusalRecorded && resumeHoldEnded now purchasedAt) -> rehold SHKPurchase
+            Just (RHPurchasedAt purchasedAt) | not (refusalRecorded && resumeHoldEnded now purchasedAt) -> holdAppleResume
             -- a refused Play resume is held again: the service's hourly check bounds what the sweep can ask of Play
             Just RHAttempts -> rehold SHKPurchase
             _ -> pure False

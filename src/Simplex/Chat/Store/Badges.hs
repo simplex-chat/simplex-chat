@@ -28,6 +28,7 @@ module Simplex.Chat.Store.Badges
     StoreHoldKind (..),
     holdStoreReceipt,
     holdStoreTransfer,
+    purchaseUnreached,
     purchaseMovedOut,
     paymentMovedOut,
     getReceiptRecord,
@@ -255,20 +256,22 @@ holdStoreTransfer db g user@User {userId} txRef payment now =
   where
     movesHere ownerId badgePurchaseId
       | ownerId /= userId = pure True
-      | otherwise = do
-          movedOut <- purchaseMovedOut db badgePurchaseId
-          p_ <- getBadgePurchase db badgePurchaseId
-          newestId <- fmap (\UserBadgePurchase {badgePurchaseId = i} -> i) <$> getUserBadgePurchase db user
-          let unreached = case p_ of
-                -- a one-time purchase is never moved, as its months were issued when it was bought
-                Just UserBadgePurchase {shown = False, purchaseKind = PKSubscription _} -> newestId /= Just badgePurchaseId
-                _ -> False
-          pure $ movedOut || unreached
+      | otherwise = (||) <$> purchaseMovedOut db badgePurchaseId <*> purchaseUnreached db user badgePurchaseId
     holdTransfer receiptId =
       DB.execute
         db
         "UPDATE badge_store_receipts SET user_id = ?, payment = ?, next_attempt_at = ?, retry_delay = NULL, retry_count = 0, credit_error = NULL, hold_kind = ? WHERE badge_store_receipt_id = ? AND payment IS NULL"
         (userId, safeDecodeUtf8 . LB.toStrict $ J.encode payment, now, SHKTransfer, receiptId)
+
+-- | A subscription neither shown nor its owner's newest, which no resume reaches.
+purchaseUnreached :: DB.Connection -> User -> Int64 -> IO Bool
+purchaseUnreached db owner badgePurchaseId = do
+  p_ <- getBadgePurchase db badgePurchaseId
+  newestId <- fmap (\UserBadgePurchase {badgePurchaseId = i} -> i) <$> getUserBadgePurchase db owner
+  pure $ case p_ of
+    -- a one-time purchase is never moved, as its months were issued when it was bought
+    Just UserBadgePurchase {shown = False, purchaseKind = PKSubscription _} -> newestId /= Just badgePurchaseId
+    _ -> False
 
 -- | The service answers a purchase whose payment moved away ended, so a resume of it never succeeds.
 purchaseMovedOut :: DB.Connection -> Int64 -> IO Bool
