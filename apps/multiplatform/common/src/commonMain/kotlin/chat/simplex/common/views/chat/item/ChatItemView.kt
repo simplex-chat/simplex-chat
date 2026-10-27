@@ -61,6 +61,10 @@ data class ChatItemReactionMenuItem (
   val onClick: (() -> Unit)?
 )
 
+data class ChatItemActions(val onClick: () -> Unit, val onLongClick: () -> Unit)
+
+val LocalChatItemActions = staticCompositionLocalOf<ChatItemActions?> { null }
+
 // Spec: spec/client/chat-view.md#ChatItemView
 @Composable
 fun ChatItemView(
@@ -117,7 +121,15 @@ fun ChatItemView(
   val alignment = if (sent) Alignment.CenterEnd else Alignment.CenterStart
   val showMenu = remember { mutableStateOf(false) }
   val fullDeleteAllowed = remember(cInfo) { cInfo.featureEnabled(ChatFeature.FullDelete) }
-  val onLinkLongClick = { _: String -> showMenu.value = true }
+  val onLongClick = {
+    if (appPlatform.isAndroid) {
+      showMenu.value = false
+      if (cItem.canBeDeletedForSelf) selectChatItem()
+    } else {
+      showMenu.value = true
+    }
+  }
+  val onLinkLongClick = { _: String -> onLongClick() }
   val live = remember { derivedStateOf { composeState.value.liveMessage != null } }.value
 
   Box(
@@ -298,6 +310,22 @@ fun ChatItemView(
       }
     }
 
+    val itemActions = ChatItemActions(
+      onClick = {
+        if (selectedChatItems.value != null) {
+          if (cItem.canBeDeletedForSelf) selectChatItem()
+        } else if (appPlatform.isAndroid) {
+          showMenu.value = true
+          if (searchIsNotBlank.value || cItem.meta.itemForwarded?.chatTypeApiIdMsgId != null) {
+            hoveredItemId.value = if (hoveredItemId.value == cItem.id) null else cItem.id
+          }
+        } else {
+          onClick()
+        }
+      },
+      onLongClick = onLongClick
+    )
+    CompositionLocalProvider(LocalChatItemActions provides itemActions) {
     ChatSendAnimatedItem(cItem.id) { animationModifier ->
     Column(
       modifier = animationModifier,
@@ -326,13 +354,8 @@ fun ChatItemView(
               .clipChatItem(cItem, itemSeparation.largeGap, revealed.value)
               .hoverable(bubbleInteractionSource)
               .combinedClickable(
-                onLongClick = { showMenu.value = true },
-                onClick = {
-                  if (appPlatform.isAndroid && (searchIsNotBlank.value || cItem.meta.itemForwarded?.chatTypeApiIdMsgId != null)) {
-                    hoveredItemId.value = if (hoveredItemId.value == cItem.id) null else cItem.id
-                  }
-                  onClick()
-                }, interactionSource = bubbleInteractionSource, indication = LocalIndication.current)
+                onLongClick = itemActions.onLongClick,
+                onClick = itemActions.onClick, interactionSource = bubbleInteractionSource, indication = LocalIndication.current)
               .onRightClick { showMenu.value = true },
           ) {
             @Composable
@@ -820,6 +843,7 @@ fun ChatItemView(
       if (cItem.content.msgContent != null && (cItem.meta.itemDeleted == null || revealed.value) && cItem.reactions.isNotEmpty()) {
         ChatItemReactions()
       }
+    }
     }
     }
   }

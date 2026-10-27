@@ -118,7 +118,7 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 | `views/chat/SelectableChatItemToolbars.kt` | PC7, PC10 | Medium | Multi-select toolbar (delete, forward) |
 | `views/chat/ChatInfoView.kt` | PC2, PC13, PC20 | Medium | Contact details and verification |
 | `views/chat/ContactPreferences.kt` | PC2, PC8 | Medium | Per-contact feature preferences |
-| `views/chat/ChatItemInfoView.kt` | PC2, PC3 | Low | Message delivery detail |
+| `views/chat/ChatItemInfoView.kt` | PC2, PC3 | Low | Message delivery detail and status/signature explanation alert |
 | `views/chat/ChatItemsLoader.kt` | PC2, PC3 | Medium | Pagination and message loading logic |
 | `views/chat/ChatItemsMerger.kt` | PC2, PC3 | Medium | Merges incremental message updates |
 | `views/chat/VerifyCodeView.kt` | PC13 | Medium | Contact security code verification |
@@ -133,27 +133,28 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 
 | Source File | Product Concepts Affected | Risk Level | Notes |
 |-------------|--------------------------|------------|-------|
-| `views/chat/item/ChatItemView.kt` | PC2, PC3, PC5, PC6, PC7, PC8 | High | Root chat item renderer with context menus |
-| `views/chat/item/TextItemView.kt` | PC2, PC3, PC4 | Medium | Text message bubble rendering |
+| `views/chat/item/ChatItemView.kt` | PC2, PC3, PC5, PC6, PC7, PC8 | High | Root renderer, shared item actions, Android tap menu and long-press bulk selection |
+| `views/chat/item/TextItemView.kt` | PC2, PC3, PC4, PC11 | Medium | Markdown annotation taps and shared Android message gestures |
 | `views/chat/item/ChatBubbleStyle.kt` | PC2, PC3, PC5, PC24 | Medium | Scoped conversation typography, measured layout constants and sender/date grouping boundaries |
 | `views/chat/item/ChatSendAnimation.kt` | PC2, PC3, PC4, PC11 | Medium | Scoped local-send tokens and composer-to-bubble motion; no model/protocol state |
-| `views/chat/item/FramedItemView.kt` | PC4, PC6, PC10, PC11 | Medium | Framed (quoted/forwarded) message container |
-| `views/chat/item/CIImageView.kt` | PC10 | Medium | Image message rendering |
-| `views/chat/item/CIVideoView.kt` | PC10 | Medium | Video message rendering |
-| `views/chat/item/CIFileView.kt` | PC10 | Medium | File message rendering |
-| `views/chat/item/CIVoiceView.kt` | PC9 | Medium | Voice message rendering and playback |
-| `views/chat/item/EmojiItemView.kt` | PC5 | Low | Emoji reaction display |
+| `views/chat/item/FramedItemView.kt` | PC2, PC3, PC4, PC6, PC10, PC11 | Medium | Framed container, quote-specific tap action and shared Android long-press selection |
+| `views/chat/item/CIImageView.kt` | PC2, PC3, PC10 | Medium | Image message, shared long-press action, privacy-aware thumbnail geometry and visibility |
+| `views/chat/item/CIVideoView.kt` | PC2, PC3, PC10 | Medium | Video rendering and controls, shared message long-press |
+| `views/chat/item/CIFileView.kt` | PC2, PC3, PC10 | Medium | File controls, shared message long-press |
+| `views/chat/item/CIVoiceView.kt` | PC2, PC3, PC9 | Medium | Voice playback, shared message long-press |
+| `views/chat/item/EmojiItemView.kt` | PC2, PC3, PC5 | Low | Emoji message and shared message gestures |
 | `views/chat/item/CIMetaView.kt` | PC2, PC3, PC8 | Low | Timestamp, delivery status, timed message indicator |
 | `views/chat/item/CICallItemView.kt` | PC17 | Low | Call event item rendering |
 | `views/chat/item/CIEventView.kt` | PC3, PC14, PC16 | Low | Group event item rendering |
 | `views/chat/item/CIGroupInvitationView.kt` | PC3, PC14 | Low | Group invitation item rendering |
 | `views/chat/item/CIMemberCreatedContactView.kt` | PC3, PC12 | Low | Member-created contact event |
-| `views/chat/item/CIChatFeatureView.kt` | PC8 | Low | Feature change event rendering |
+| `views/chat/item/CIChatFeatureView.kt` | PC2, PC3, PC8 | Low | Feature events, shared Android tap/long-press actions |
 | `views/chat/item/CIFeaturePreferenceView.kt` | PC8 | Low | Feature preference change rendering |
 | `views/chat/item/CIRcvDecryptionError.kt` | PC2, PC3 | Low | Decryption error display |
 | `views/chat/item/DeletedItemView.kt` | PC7 | Low | Deleted message placeholder |
 | `views/chat/item/MarkedDeletedItemView.kt` | PC7 | Low | Moderated/marked-deleted placeholder |
-| `views/chat/item/ImageFullScreenView.kt` | PC10 | Low | Full-screen image viewer |
+| `views/chat/item/ImageFullScreenView.kt` | PC10 | Medium | Full-screen viewer, optional image transition, original-page/zoom close guards |
+| `views/chat/item/ImageGalleryAnimation.kt` | PC10 | Medium | Validated thumbnail geometry, draw-only motion, source restoration and guarded close lifecycle |
 | `views/chat/item/CIBrokenComposableView.kt` | — | Low | Fallback for render failures |
 | `views/chat/item/CIInvalidJSONView.kt` | — | Low | Fallback for malformed items |
 | `views/chat/item/IntegrityErrorItemView.kt` | PC2, PC3 | Low | Message integrity error display |
@@ -367,7 +368,7 @@ Path prefix: `common/src/androidMain/kotlin/chat/simplex/common/`
 | `views/chat/ComposeView.android.kt` | PC4, PC10 | Low | Android compose view extensions |
 | `views/chat/SendMsgView.android.kt` | PC4 | Low | Android send button extensions |
 | `views/chat/item/ChatItemView.android.kt` | PC2, PC3 | Low | Android chat item extensions |
-| `views/chat/item/CIImageView.android.kt` | PC10 | Low | Android image rendering extensions |
+| `views/chat/item/CIImageView.android.kt` | PC10 | Low | Android image rendering and synchronous transition capture before opening the existing modal |
 | `views/chat/item/CIVideoView.android.kt` | PC10 | Low | Android video rendering extensions |
 | `views/chat/item/CIFileView.android.kt` | PC10 | Low | Android file view extensions |
 | `views/chat/item/EmojiItemView.android.kt` | PC5 | Low | Android emoji rendering extensions |
@@ -440,7 +441,7 @@ Path prefix: `common/src/desktopMain/kotlin/chat/simplex/common/`
 | `views/chat/ComposeView.desktop.kt` | PC4, PC10 | Low | Desktop compose view (drag-and-drop, paste) |
 | `views/chat/SendMsgView.desktop.kt` | PC4 | Low | Desktop send shortcut (Enter key handling) |
 | `views/chat/item/ChatItemView.desktop.kt` | PC2, PC3 | Low | Desktop chat item extensions |
-| `views/chat/item/CIImageView.desktop.kt` | PC10 | Low | Desktop image rendering |
+| `views/chat/item/CIImageView.desktop.kt` | PC10 | Low | Desktop image rendering and transition capture before opening the existing modal |
 | `views/chat/item/CIVideoView.desktop.kt` | PC10 | Low | Desktop video rendering |
 | `views/chat/item/CIFileView.desktop.kt` | PC10 | Low | Desktop file open/save |
 | `views/chat/item/EmojiItemView.desktop.kt` | PC5 | Low | Desktop emoji rendering |

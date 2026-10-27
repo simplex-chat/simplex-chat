@@ -179,6 +179,7 @@ fun MarkdownText (
     }
   }
   val scope = rememberCoroutineScope()
+  val itemActions = if (appPlatform.isAndroid) LocalChatItemActions.current else null
   CompositionLocalProvider(
     LocalLayoutDirection provides if (textLayoutDirection != LocalLayoutDirection.current)
       if (LocalLayoutDirection.current == LayoutDirection.Ltr) LayoutDirection.Rtl else LayoutDirection.Ltr
@@ -370,7 +371,9 @@ fun MarkdownText (
         val icon = remember { mutableStateOf(PointerIcon.Text) }
         ClickableText(annotatedText, style = style, selectionRange = clampedRange, modifier = modifier.pointerHoverIcon(icon.value), maxLines = maxLines, overflow = overflow,
           onLongClick = { offset ->
-            if (hasLinks) {
+            if (itemActions != null) {
+              itemActions.onLongClick()
+            } else if (hasLinks) {
               val withAnnotation: (String, (Range<String>) -> Unit) -> Unit = { tag, f ->
                 annotatedText.getStringAnnotations(tag, start = offset, end = offset).firstOrNull()?.let(f)
               }
@@ -380,8 +383,12 @@ fun MarkdownText (
             }
           },
           onClick = { offset ->
+            var handled = false
             val withAnnotation: (String, (Range<String>) -> Unit) -> Unit = { tag, f ->
-              annotatedText.getStringAnnotations(tag, start = offset, end = offset).firstOrNull()?.let(f)
+              annotatedText.getStringAnnotations(tag, start = offset, end = offset).firstOrNull()?.let {
+                handled = true
+                f(it)
+              }
             }
             if (hasLinks && uriHandler != null) {
               withAnnotation("WEB_URL") { a -> openBrowserAlert(a.item, uriHandler) }
@@ -409,6 +416,7 @@ fun MarkdownText (
                 (a.item.toIntOrNull()?.let { formattedText.getOrNull(it)?.format } as? Format.Modal)?.let { openMarkdownModal(it) }
               }
             }
+            if (!handled) itemActions?.onClick?.invoke()
           },
           onHover = { offset ->
             val hasAnnotation: (String) -> Boolean = { tag -> annotatedText.hasStringAnnotations(tag, start = offset, end = offset) }
@@ -420,7 +428,7 @@ fun MarkdownText (
             icon.value = PointerIcon.Text
           },
           shouldConsumeEvent = { offset ->
-            annotatedText.hasStringAnnotations(tag = "WEB_URL", start = offset, end = offset)
+            itemActions != null || annotatedText.hasStringAnnotations(tag = "WEB_URL", start = offset, end = offset)
                 || annotatedText.hasStringAnnotations(tag = "SIMPLEX_URL", start = offset, end = offset)
                 || annotatedText.hasStringAnnotations(tag = "OTHER_URL", start = offset, end = offset)
                 || annotatedText.hasStringAnnotations(tag = "MODAL", start = offset, end = offset)

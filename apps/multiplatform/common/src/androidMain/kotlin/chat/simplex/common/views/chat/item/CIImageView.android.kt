@@ -24,6 +24,7 @@ actual fun SimpleAndAnimatedImageView(
   file: CIFile?,
   imageProvider: () -> ImageGalleryProvider,
   smallView: Boolean,
+  createTransition: () -> ImageGalleryTransition,
   ImageView: @Composable (painter: Painter, onClick: () -> Unit) -> Unit
 ) {
   val context = LocalContext.current
@@ -34,10 +35,11 @@ actual fun SimpleAndAnimatedImageView(
   )
   val view = LocalMultiplatformView()
   ImageView(imagePainter) {
+    val transition = createTransition()
     hideKeyboard(view)
     if (getLoadedFilePath(file) != null) {
       ModalManager.fullscreen.showCustomModal(animated = false) { close ->
-        ImageFullScreenView(imageProvider, close)
+        ImageFullScreenView(imageProvider, close, transition)
       }
     }
   }

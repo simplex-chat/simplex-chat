@@ -13,6 +13,7 @@ This document catalogs known gaps in the multiplatform codebase (Android and Des
 5. [Documentation: Haskell Store Layer Not Fully Specified](#gap-05-documentation-haskell-store-layer-not-fully-specified)
 6. [Desktop: Recording Not Implemented](#gap-06-desktop-recording-not-implemented)
 7. [Desktop: Cryptor Not Implemented](#gap-07-desktop-cryptor-not-implemented)
+8. [Gallery: Synchronous Image Loading](#gap-08-gallery-images-load-synchronously-during-composition)
 
 ---
 
@@ -288,3 +289,30 @@ This directly undermines RULE-02 (Database Encryption at Rest) and RULE-04 (Self
 
 - GAP-03 (Database Passphrase Not Enforced) is compounded by this gap on Desktop.
 - The `testCrypto()` function referenced in `AppCommon.desktop.kt:39` is commented out with a `// LALAL` marker, suggesting crypto testing was planned but never completed.
+
+---
+
+## GAP-08: Gallery Images Load Synchronously During Composition
+
+**Severity:** Medium
+**Category:** UI / Performance
+**Platforms:** Android, Desktop
+
+### Description and Impact
+
+The existing `providerForGallery().getMedia()` implementation in `ChatView.kt`
+uses `runBlocking { getLoadedImage(item.file) }`. `ImageFullScreenView` invokes
+this provider while composing gallery content, so file reads and image decoding
+can block the UI during opening, paging or recomposition. This predates the image
+viewer transition.
+
+The transition reads animation progress only in drawing and graphics layers,
+avoiding synchronous media loads on every animation frame. It does not remove
+the underlying blocking page load.
+
+### Recommendation
+
+Load gallery pages asynchronously and cache decoded results by media identity,
+with explicit loading/error states and cancellation when the page or viewer leaves.
+See the [image viewer specification](../spec/client/chat-view.md#image-viewer-transition)
+for the current transition and its separate [REC] source-corner approximation.

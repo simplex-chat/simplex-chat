@@ -15,13 +15,15 @@ actual fun SimpleAndAnimatedImageView(
   file: CIFile?,
   imageProvider: () -> ImageGalleryProvider,
   smallView: Boolean,
+  createTransition: () -> ImageGalleryTransition,
   ImageView: @Composable (painter: Painter, onClick: () -> Unit) -> Unit
 ) {
   // LALAL make it animated too
   ImageView(BitmapPainter(imageBitmap)) {
     if (getLoadedFilePath(file) != null) {
+      val transition = createTransition()
       ModalManager.fullscreen.showCustomModal(animated = false) { close ->
-        ImageFullScreenView(imageProvider, close)
+        ImageFullScreenView(imageProvider, close, transition)
       }
     }
   }

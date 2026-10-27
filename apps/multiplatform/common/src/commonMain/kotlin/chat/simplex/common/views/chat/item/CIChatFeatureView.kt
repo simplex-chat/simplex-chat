@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.getChatItemIndexOrNull
 import chat.simplex.common.platform.onRightClick
+import chat.simplex.common.platform.appPlatform
 
 @Composable
 fun CIChatFeatureView(
@@ -26,11 +27,12 @@ fun CIChatFeatureView(
   showMenu: MutableState<Boolean>,
 ) {
   val merged = if (!revealed.value) mergedFeatures(chatsCtx, chatItem, chatInfo) else emptyList()
+  val itemActions = LocalChatItemActions.current
   Box(
     Modifier
       .combinedClickable(
-        onLongClick = { showMenu.value = true },
-        onClick = {}
+        onLongClick = itemActions?.onLongClick ?: { showMenu.value = true },
+        onClick = { if (appPlatform.isAndroid) itemActions?.onClick?.invoke() }
       )
       .onRightClick { showMenu.value = true }
   ) {

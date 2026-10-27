@@ -87,7 +87,15 @@ Each type has a dedicated composable in `views/chat/item/`:
 
 ### Message Interactions
 
-Long-press context menu on any message:
+On Android, tap an ordinary message bubble to open its context menu. Long-press
+selects the message and opens the bulk-action toolbar; subsequent taps toggle
+message selection. This selects whole messages, independently of desktop text
+selection. Desktop retains its existing long-press/right-click menu and drag text
+selection.
+
+Links, mentions, commands, secret reveals, quoted-message navigation, media opening,
+file controls and reactions keep their own tap actions. Long-presses on nested
+message content follow the same message-selection action on Android.
 
 | Action | Description |
 |---|---|
@@ -101,6 +109,26 @@ Long-press context menu on any message:
 | Report | Report message to group moderators (`ComposeContextItem.ReportedItem` with `ReportReason`) |
 | Select multiple | Enters multi-select mode (`selectedChatItems`) with bulk delete/forward/archive toolbar |
 | Archive | Archive selected reports (moderators) |
+| Details | Opens message information; delivery/signature explanation remains available there when present |
+
+### Full-Screen Images
+
+Tapping a loaded, revealed image expands its thumbnail into the existing full-screen
+gallery over 200 ms while the black background fades in. The animation preserves
+the image's proportions and uncrops tall or square previews. The source thumbnail
+stays hidden while owned by the viewer and is restored on close or before a
+fade-out fallback.
+
+Closing returns to the visible source when the original page is settled and
+unzoomed. Closing a different page, a zoomed image or a missing source uses a fade.
+A close during opening reverses the opening path. Paging and zoom gestures resume
+after opening; system animation settings are respected. Hidden media first follows
+the existing reveal/download flow. Video and other viewer callers retain their
+existing presentation.
+
+The image transition is shared by Android and Desktop; Android's message gesture
+changes do not change desktop message interactions. Source-corner fidelity remains
+a [recommendation](../../spec/client/chat-view.md#image-viewer-transition).
 
 ### Compose Bar (`ComposeView` + `SendMsgView`)
 
@@ -148,3 +176,6 @@ When `timedMessageAllowed` is true, compose bar includes a timer icon for settin
 | `ComposeView.kt` | `views/chat/ComposeView.kt` |
 | `SendMsgView.kt` | `views/chat/SendMsgView.kt` |
 | Chat item views | `views/chat/item/*.kt` |
+| Full-screen image gallery | `views/chat/item/ImageFullScreenView.kt` |
+| Image transition geometry and lifecycle | `views/chat/item/ImageGalleryAnimation.kt` |
+| Message details | `views/chat/ChatItemInfoView.kt` |

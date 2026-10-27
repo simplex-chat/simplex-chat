@@ -122,14 +122,12 @@ fun CIVideoView(
           }
         },
           smallView = smallView,
-          onLongClick = {
-            showMenu.value = true
-          })
+          onLongClick = LocalChatItemActions.current?.onLongClick ?: { showMenu.value = true })
         if (file != null && !smallView) {
           DurationProgress(file, remember { mutableStateOf(false) }, remember { mutableStateOf(duration * 1000L) }, remember { mutableStateOf(0L) }/*, soundEnabled*/)
         }
         if (showDownloadButton(file?.fileStatus) && !blurred.value && file != null) {
-          PlayButton(error = false, sizeMultiplier, { showMenu.value = true }) { receiveFileIfValidSize(file, senderProfile, receiveFile) }
+          PlayButton(error = false, sizeMultiplier, LocalChatItemActions.current?.onLongClick ?: { showMenu.value = true }) { receiveFileIfValidSize(file, senderProfile, receiveFile) }
         }
       }
     }
@@ -156,7 +154,7 @@ private fun VideoViewEncrypted(
   openFullscreen: () -> Unit,
 ) {
   var decryptionInProgress by rememberSaveable(file.fileName) { mutableStateOf(false) }
-  val onLongClick = { showMenu.value = true }
+  val onLongClick = LocalChatItemActions.current?.onLongClick ?: { showMenu.value = true }
   Box {
     VideoPreviewImageView(defaultPreview, smallView = false, blurred = blurred, if (decryptionInProgress) {{}} else openFullscreen, onLongClick)
     if (decryptionInProgress) {
@@ -190,7 +188,7 @@ private fun SmallVideoViewEncrypted(
   openFullscreen: () -> Unit,
 ) {
   var decryptionInProgress by rememberSaveable(file.fileName) { mutableStateOf(false) }
-  val onLongClick = { showMenu.value = true }
+  val onLongClick = LocalChatItemActions.current?.onLongClick ?: { showMenu.value = true }
   Box {
     VideoPreviewImageView(defaultPreview, smallView = true, blurred = blurred, onClick = if (decryptionInProgress) {{}} else openFullscreen, onLongClick = onLongClick)
     if (decryptionInProgress) {
@@ -226,6 +224,7 @@ private fun SmallVideoView(
   val preview by remember { player.preview }
   //  val soundEnabled by rememberSaveable(uri.path) { player.soundEnabled }
   val brokenVideo by rememberSaveable(uri.path) { player.brokenVideo }
+  val onLongClick = LocalChatItemActions.current?.onLongClick ?: {}
   Box {
     val windowWidth = LocalWindowWidth()
     val width = remember(preview) { if (preview.width * 0.97 <= preview.height) videoViewFullWidth(windowWidth) * 0.75f else DEFAULT_MAX_IMAGE_WIDTH }
@@ -233,12 +232,12 @@ private fun SmallVideoView(
       player,
       width,
       onClick = openFullscreen,
-      onLongClick = {},
+      onLongClick = onLongClick,
       {}
     )
-    VideoPreviewImageView(preview, smallView = true, blurred = blurred, onClick = openFullscreen, onLongClick = {})
+    VideoPreviewImageView(preview, smallView = true, blurred = blurred, onClick = openFullscreen, onLongClick = onLongClick)
     if (!file.showStatusIconInSmallView && !blurHidesMedia(true, blurred)) {
-      PlayButton(brokenVideo, sizeMultiplier, onLongClick = {}, onClick = openFullscreen)
+      PlayButton(brokenVideo, sizeMultiplier, onLongClick = onLongClick, onClick = openFullscreen)
     }
   }
   LaunchedEffect(uri) {
@@ -285,7 +284,7 @@ private fun VideoView(
       stop()
     }
   }
-  val onLongClick = { showMenu.value = true }
+  val onLongClick = LocalChatItemActions.current?.onLongClick ?: { showMenu.value = true }
   Box {
     val windowWidth = LocalWindowWidth()
     val width = remember(preview) { if (preview.width * 0.97 <= preview.height) videoViewFullWidth(windowWidth) * 0.75f else DEFAULT_MAX_IMAGE_WIDTH }

@@ -32,7 +32,7 @@ interface ImageGalleryProvider {
 }
 
 @Composable
-fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> Unit) {
+fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> Unit, transition: ImageGalleryTransition? = null) {
   val provider = remember { imageProvider() }
   val pagerState = rememberPagerState(
     initialPage = provider.initialIndex,
@@ -41,7 +41,14 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
     provider.totalMediaSize.value
   }
   val firstValidPageBeforeScrollingToStart = remember { mutableStateOf(0) }
-  val goBack = { provider.onDismiss(pagerState.currentPage); close() }
+  var originalPage by remember { mutableStateOf(provider.initialIndex) }
+  val zoomedPages = remember { mutableStateMapOf<Int, Boolean>() }
+  ImageGalleryAnimatedContainer(
+    transition,
+    canReturnToSource = { pagerState.currentPage == originalPage && !pagerState.isScrollInProgress && zoomedPages[pagerState.currentPage] != true },
+    close = { provider.onDismiss(pagerState.currentPage); close() },
+  ) { goBack, gesturesEnabled ->
+  val gesturesEnabledState = rememberUpdatedState(gesturesEnabled)
   BackHandler(onBack = goBack)
   // Pager doesn't ask previous page at initialization step who knows why. By not doing this, prev page is not checked and can be blank,
   // which makes this blank page visible for a moment. Prevent it by doing the check ourselves
@@ -49,6 +56,7 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
     if (provider.getMedia(provider.initialIndex - 1) == null) {
       firstValidPageBeforeScrollingToStart.value = provider.initialIndex
       provider.scrollToStart()
+      originalPage = 0
       pagerState.scrollToPage(0)
       firstValidPageBeforeScrollingToStart.value = 0
     }
@@ -78,7 +86,6 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
     Column(
       Modifier
         .fillMaxSize()
-        .background(Color.Black)
         .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = goBack)
     ) {
       var settledCurrentPage by remember { mutableStateOf(pagerState.currentPage) }
@@ -120,6 +127,7 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
           scale = 1f
           translationX = 0f
           translationY = 0f
+          zoomedPages.remove(index)
         }
         val modifier = Modifier
           .onGloballyPositioned {
@@ -134,7 +142,8 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
           .pointerInput(Unit) {
             detectTransformGestures(
               { allowTranslate },
-              onGesture = { _, pan, gestureZoom, _ ->
+              onGesture = gesture@{ _, pan, gestureZoom, _ ->
+                if (!gesturesEnabledState.value) return@gesture
                 scale = (scale * gestureZoom).coerceIn(1f, 20f)
                 allowTranslate = viewWidth * (scale - 1f) - ((translationX + pan.x * scale).absoluteValue * 2) > 0
                 if (scale > 1 && allowTranslate) {
@@ -144,6 +153,7 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
                   translationX = 0f
                   translationY = 0f
                 }
+                zoomedPages[index] = scale != 1f || translationX != 0f || translationY != 0f
               }
             )
           }
@@ -161,21 +171,22 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
             // settledCurrentPage finishes **only** when fully swiped
             // So we use pagerState.currentPage that changes right away as the screen is being dragged
             val isCurrentPage = index == pagerState.currentPage && kotlin.math.abs(pagerState.currentPageOffsetFraction) < 0.3f
-            VideoView(modifier, decrypted, preview, isCurrentPage, close)
+            VideoView(modifier, decrypted, preview, isCurrentPage, goBack)
             DisposableEffect(Unit) {
               onDispose { playersToRelease.add(decrypted) }
             }
           } else if (media.fileSource != null) {
-            VideoViewEncrypted(uriDecrypted, media.fileSource, preview, close)
+            VideoViewEncrypted(uriDecrypted, media.fileSource, preview, goBack)
           }
         }
       }
     }
   }
   if (appPlatform.isAndroid) {
-    HorizontalPager(state = pagerState) { index -> Content(index) }
+    HorizontalPager(state = pagerState, userScrollEnabled = gesturesEnabled) { index -> Content(index) }
   } else {
     Content(pagerState.currentPage)
+  }
   }
 }
 

@@ -55,13 +55,30 @@ fun FramedItemView(
   val chatInfo = chat.chatInfo
   val sent = ci.chatDir.sent
   val chatTTL = chatInfo.timedMessagesTTL
+  val onLongClick = LocalChatItemActions.current?.onLongClick ?: { showMenu.value = true }
 
   fun membership(): GroupMember? {
     return if (chatInfo is ChatInfo.Group) chatInfo.groupInfo.membership else null
   }
 
+  fun openQuotedItem(qi: CIQuote) {
+    if (qi.itemId != null) {
+      if (ci.isReport && chatsCtx.secondaryContextFilter != null) {
+        scrollToItemId.value = qi.itemId
+      } else {
+        scrollToItem(qi.itemId)
+      }
+    } else {
+      scrollToQuotedItemFromItem(ci.id)
+    }
+  }
+
   @Composable
   fun ciQuotedMsgTextView(qi: CIQuote, lines: Int, showTimestamp: Boolean, stripLink: String? = null, prefix: AnnotatedString? = null) {
+    val quoteActions = LocalChatItemActions.current?.let {
+      ChatItemActions(onClick = { openQuotedItem(qi) }, onLongClick = it.onLongClick)
+    }
+    CompositionLocalProvider(LocalChatItemActions provides quoteActions) {
     MarkdownText(
       qi.text,
       qi.formattedText,
@@ -75,6 +92,7 @@ fun FramedItemView(
       prefix = prefix,
       stripLink = stripLink,
     )
+    }
   }
 
   @Composable
@@ -162,7 +180,7 @@ fun FramedItemView(
             imageBitmap,
             contentDescription = stringResource(MR.strings.image_descr),
             contentScale = ContentScale.Crop,
-            modifier = Modifier.size(35.dp).clipToBounds().desktopModifyBlurredState(blurred, showMenu).privacyBlur(fullSize = false, imageBitmap, blurred, chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true })
+            modifier = Modifier.size(35.dp).clipToBounds().desktopModifyBlurredState(blurred, showMenu).privacyBlur(fullSize = false, imageBitmap, blurred, chatViewScrollState.collectAsState(), onLongClick = onLongClick)
           )
         }
         is MsgContent.MCVideo -> {
@@ -174,7 +192,7 @@ fun FramedItemView(
             imageBitmap,
             contentDescription = stringResource(MR.strings.video_descr),
             contentScale = ContentScale.Crop,
-            modifier = Modifier.size(35.dp).clipToBounds().desktopModifyBlurredState(blurred, showMenu).privacyBlur(fullSize = false, imageBitmap, blurred, chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true })
+            modifier = Modifier.size(35.dp).clipToBounds().desktopModifyBlurredState(blurred, showMenu).privacyBlur(fullSize = false, imageBitmap, blurred, chatViewScrollState.collectAsState(), onLongClick = onLongClick)
           )
         }
         is MsgContent.MCFile, is MsgContent.MCVoice -> {
@@ -293,18 +311,8 @@ fun FramedItemView(
             Column(
               Modifier
                 .combinedClickable(
-                  onLongClick = { showMenu.value = true },
-                  onClick = {
-                    if (ci.quotedItem.itemId != null) {
-                      if (ci.isReport && chatsCtx.secondaryContextFilter != null) {
-                        scrollToItemId.value = ci.quotedItem.itemId
-                      } else {
-                        scrollToItem(ci.quotedItem.itemId)
-                      }
-                    } else {
-                      scrollToQuotedItemFromItem(ci.id)
-                    }
-                  }
+                  onLongClick = onLongClick,
+                  onClick = { openQuotedItem(ci.quotedItem) }
                 )
                 .onRightClick { showMenu.value = true }
             ) {
@@ -365,7 +373,7 @@ fun FramedItemView(
                   ciFileView(ci, mc.text)
                 }
               is MsgContent.MCLink -> {
-                ChatItemLinkView(mc.preview, showMenu, onLongClick = { showMenu.value = true })
+                ChatItemLinkView(mc.preview, showMenu, onLongClick = onLongClick)
                 Box(Modifier.widthIn(max = DEFAULT_MAX_IMAGE_WIDTH)) {
                   CIMarkdownText(chatsCtx, ci, chat, chatTTL, linkMode, uriHandler, onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
                 }
@@ -377,7 +385,7 @@ fun FramedItemView(
                     onClick = {
                       withBGApi { planAndConnect(chat.remoteHostId, mc.chatLink.connLinkStr, linkOwnerSig = mc.ownerSig, close = null) }
                     },
-                    onLongClick = { showMenu.value = true }
+                    onLongClick = onLongClick
                   )
                 ) {
                   CIChatLinkHeader(chatLink = mc.chatLink, ownerSig = mc.ownerSig, hasText = hasText)

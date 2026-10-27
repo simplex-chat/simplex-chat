@@ -8,12 +8,14 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.layoutId
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -42,7 +44,12 @@ fun CIImageView(
   receiveFile: (Long) -> Unit
 ) {
   val blurred = remember { mutableStateOf(appPrefs.privacyMediaBlurRadius.get() > 0) }
+  val blurRadius = remember { appPrefs.privacyMediaBlurRadius.state }
+  val onLongClick = LocalChatItemActions.current?.onLongClick ?: { showMenu.value = true }
   val previewBitmap = remember(image) { base64ToBitmap(image) }
+  val cornerRadius = with(LocalDensity.current) { (if (smallView) 4.dp else 17.dp).toPx() }
+  val thumbnail = remember(image, file?.fileId, smallView, cornerRadius) { ImageGalleryThumbnail(cornerRadius, smallView) }
+  DisposableEffect(thumbnail) { onDispose { thumbnail.dispose() } }
   @Composable
   fun progressIndicator() {
     CircularProgressIndicator(
@@ -107,11 +114,11 @@ fun CIImageView(
       modifier = Modifier
         .width(if (imageBitmap.width * 0.97 <= imageBitmap.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH)
         .combinedClickable(
-          onLongClick = { showMenu.value = true },
+          onLongClick = onLongClick,
           onClick = onClick
         )
         .onRightClick { showMenu.value = true }
-        .privacyBlur(!smallView, imageBitmap, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
+        .privacyBlur(!smallView, imageBitmap, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = onLongClick),
       contentScale = if (smallView) ContentScale.Crop else ContentScale.FillWidth,
     )
   }
@@ -131,22 +138,22 @@ fun CIImageView(
         modifier = Modifier
           .width(if (painter.intrinsicSize.width * 0.97 <= painter.intrinsicSize.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH)
           .combinedClickable(
-            onLongClick = { showMenu.value = true },
+            onLongClick = onLongClick,
             onClick = onClick
           )
           .onRightClick { showMenu.value = true }
-          .privacyBlur(!smallView, previewBitmap, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
+          .privacyBlur(!smallView, previewBitmap, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = onLongClick),
         contentScale = if (smallView) ContentScale.Crop else ContentScale.FillWidth,
       )
     } else {
       Box(Modifier
         .width(if (painter.intrinsicSize != Size.Unspecified && painter.intrinsicSize.width * 0.97 <= painter.intrinsicSize.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH)
         .combinedClickable(
-          onLongClick = { showMenu.value = true },
+          onLongClick = onLongClick,
           onClick = {}
         )
         .onRightClick { showMenu.value = true }
-        .privacyBlur(!smallView, previewBitmap, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
+        .privacyBlur(!smallView, previewBitmap, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = onLongClick),
         contentAlignment = Alignment.Center
       ) {
         imageView(previewBitmap, onClick = onClick)
@@ -172,6 +179,8 @@ fun CIImageView(
 
   Box(
     Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID)
+      .onGloballyPositioned { thumbnail.coordinates = it }
+      .drawWithContent { if (!thumbnail.hidden) drawContent() }
       .then(
         if (!smallView) {
           val w = if (previewBitmap.width * 0.97 <= previewBitmap.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH
@@ -210,7 +219,12 @@ fun CIImageView(
     val loaded = if (revealed) res.value else null
     if (loaded != null && file != null) {
       val (imageBitmap, data, _) = loaded
-      SimpleAndAnimatedImageView(data, imageBitmap, file, imageProvider, smallView, @Composable { painter, onClick -> ImageView(painter, image, onClick) })
+      SimpleAndAnimatedImageView(data, imageBitmap, file, imageProvider, smallView,
+        createTransition = {
+          val currentSource = { if (!blurred.value || blurRadius.value <= 0) thumbnail.capture() else null }
+          ImageGalleryTransition(imageBitmap, currentSource(), currentSource, { thumbnail.hidden = it })
+        },
+        ImageView = @Composable { painter, onClick -> ImageView(painter, image, onClick) })
     } else {
       imageView(previewBitmap, onClick = {
         if (file != null) {
@@ -281,5 +295,6 @@ expect fun SimpleAndAnimatedImageView(
   file: CIFile?,
   imageProvider: () -> ImageGalleryProvider,
   smallView: Boolean,
+  createTransition: () -> ImageGalleryTransition,
   ImageView: @Composable (painter: Painter, onClick: () -> Unit) -> Unit
 )
