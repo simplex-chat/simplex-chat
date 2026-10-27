@@ -262,7 +262,6 @@ def _crypto_args_result(raw: str) -> CryptoArgs:
 
 
 async def chat_resize_image_uri(data: bytes, max_size: int) -> str:
-    """Resize image to a data URI of at most max_size characters."""
     _check_c_int("len(data)", len(data))
     _check_c_int("max_size", max_size)
     resize = _native.resize_image_uri()
@@ -276,7 +275,6 @@ async def chat_resize_image_uri(data: bytes, max_size: int) -> str:
 async def chat_resize_image(
     data: bytes, max_size: int, image_format: Literal["jpeg", "png"]
 ) -> bytes:
-    """Resize image to JPEG or PNG of at most max_size bytes."""
     return await _resize_image_data(data, max_size, 1 if image_format == "png" else 0)
 
 
