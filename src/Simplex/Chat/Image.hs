@@ -21,7 +21,7 @@ import Codec.Picture.JPEGTurbo (DecodeOptions (DecodeOptions), JpegHeader (..), 
 import qualified Codec.Picture.STBIR as STBIR
 import qualified Codec.Picture.Spng as Spng
 import Codec.Picture.Types (pixelFoldMap)
-import Control.Monad (forM_)
+import Control.Monad (forM_, when)
 import Control.Monad.Except (ExceptT (..), runExceptT, throwError)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
@@ -55,7 +55,7 @@ imageFormat = \case
 decodeResizable :: ByteString -> IO (Either String DynamicImage)
 decodeResizable s
   | "\xFF\xD8" `B.isPrefixOf` s = runExceptT $ decodeDisplayJpeg s
-  | "\x89PNG\r\n\x1a\n" `B.isPrefixOf` s = Spng.decodePng (Spng.DecodeOptions maxDecodeMemoryMB) s
+  | "\x89PNG\r\n\x1a\n" `B.isPrefixOf` s = Spng.decodePng (Spng.DecodeOptions $ maxDecodeMemoryMB `div` 2) s
   | otherwise = pure $ Left "unsupported image format"
 
 decodeDisplayJpeg :: ByteString -> ExceptT String IO DynamicImage
@@ -282,30 +282,39 @@ unpremultiply (PixelRGBA8 r g b a) = PixelRGBA8 (divide r) (divide g) (divide b)
       | otherwise = fromIntegral (min 255 $ (fromIntegral c * 255 + fromIntegral a `div` 2) `div` fromIntegral a :: Int)
 
 sharpen :: Int -> (Int, Int) -> VS.Vector Word8 -> VS.Vector Word8
-sharpen channels (w, h) samples = VS.generate (VS.length samples) $ \i -> unsharp (VS.unsafeIndex samples i) (VS.unsafeIndex blurred i)
-  where
-    rows = blurLines h w channels $ fromIntegral . VS.unsafeIndex samples
-    blurred = blurLines 1 h (channels * w) $ float2Double . VS.unsafeIndex rows
-    unsharp v b = fromIntegral (max 0 $ min 255 $ floor (fromIntegral v + sharpenAmount * float2Double (fromIntegral v - b) + 0.5) :: Int)
-
-blurLines :: Int -> Int -> Int -> (Int -> Double) -> VS.Vector Float
-blurLines count n step sample = VS.create $ do
-  out <- VSM.unsafeNew $ count * n * step
-  forM_ [0 .. count - 1] $ \line -> forM_ [0 .. n - 1] $ \p -> do
-    let base = (line * n + p) * step
-        offsets
-          | p >= sharpenRadius && p < n - sharpenRadius = interior
-          | otherwise = VS.map (\t -> (max 0 (min (n - 1) (p + t)) - p) * step) sharpenOffsets
-        convolve i = go 0 0
-          where
-            go t s
-              | t == VS.length sharpenWeights = s
-              | otherwise = go (t + 1) (s + VS.unsafeIndex sharpenWeights t * sample (i + VS.unsafeIndex offsets t))
-    forM_ [base .. base + step - 1] $ \i -> VSM.unsafeWrite out i $ double2Float $ convolve i
+sharpen channels (w, h) samples = VS.create $ do
+  rows <- VSM.unsafeNew $ VS.length sharpenOffsets * stride
+  out <- VSM.unsafeNew $ VS.length samples
+  let blurRow r = forM_ [0 .. w - 1] $ \p -> do
+        let offsets
+              | p >= sharpenRadius && p < w - sharpenRadius = interior
+              | otherwise = VS.map (\t -> (max 0 (min (w - 1) (p + t)) - p) * channels) sharpenOffsets
+        forM_ [0 .. channels - 1] $ \c -> do
+          let i = (r * w + p) * channels + c
+          v <- convolve (\o -> pure $ fromIntegral $ VS.unsafeIndex samples $ i + o) offsets
+          VSM.unsafeWrite rows (rowStart r + p * channels + c) $ double2Float v
+  forM_ [0 .. min h sharpenRadius - 1] blurRow
+  forM_ [0 .. h - 1] $ \y -> do
+    when (y + sharpenRadius < h) $ blurRow $ y + sharpenRadius
+    let offsets = VS.map (\t -> rowStart $ max 0 $ min (h - 1) $ y + t) sharpenOffsets
+    forM_ [0 .. stride - 1] $ \x -> do
+      b <- convolve (\o -> float2Double <$> VSM.unsafeRead rows (o + x)) offsets
+      let i = y * stride + x
+      VSM.unsafeWrite out i $ unsharp (VS.unsafeIndex samples i) $ double2Float b
   pure out
   where
-    interior = VS.map (* step) sharpenOffsets
-{-# INLINE blurLines #-}
+    stride = channels * w
+    rowStart r = (r `mod` VS.length sharpenOffsets) * stride
+    interior = VS.map (* channels) sharpenOffsets
+    unsharp v b = fromIntegral (max 0 $ min 255 $ floor (fromIntegral v + sharpenAmount * float2Double (fromIntegral v - b) + 0.5) :: Int)
+
+convolve :: Monad m => (Int -> m Double) -> VS.Vector Int -> m Double
+convolve sample offsets = go 0 0
+  where
+    go t s
+      | t == VS.length sharpenWeights = pure s
+      | otherwise = sample (VS.unsafeIndex offsets t) >>= \v -> go (t + 1) (s + VS.unsafeIndex sharpenWeights t * v)
+{-# INLINE convolve #-}
 
 sharpenOffsets :: VS.Vector Int
 sharpenOffsets = VS.enumFromTo (-radius) radius
