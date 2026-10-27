@@ -133,7 +133,7 @@ send_image() {
   sent=$(sent_files "$ext")
   resized=$(app_resized_images)
   xcrun simctl addmedia "$SIM_UDID" "$fixtures/$file"
-  tap_element Button "paperclip" || fail "no attachment button"
+  tap_element Button "Attachements" || fail "no attachment button"
   "$ui" tap "Choose from library"
   sleep 3
   "$ui" shot "picker-$ext"
