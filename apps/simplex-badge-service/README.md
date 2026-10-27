@@ -313,7 +313,8 @@ length of its plan:
 - a Play subscription: the base plan a test token `test.<basePlanId>.<uuid>` names, when it is a
   plan of the product (the apps' test products sign their tokens so), or else the product's
   monthly base plan, so a licence tester's purchase is credited too;
-- a renewal: a new charge for the plan it first charged. It keeps that plan in memory only, so after
+- an App Store tier raise: a charge for the raised plan, which its renewals then charge;
+- a renewal: a new charge for the plan it last charged. It keeps that plan in memory only, so after
   a restart it answers a renewal of a subscription it credited before as ended, and the unissued
   months of a plan still covered are refunded at its next month.
 

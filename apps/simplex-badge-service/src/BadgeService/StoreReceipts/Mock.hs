@@ -26,7 +26,7 @@ import Simplex.Messaging.Util (eitherToMaybe, tshow)
 
 -- | Vouches for any well-formed receipt without verifying anything. Each transaction is named by
 -- the same function its claim is named by, so the two cannot differ. A subscription is charged for
--- the plan its first purchase names, and that plan is kept in memory to charge each renewal again.
+-- the plan its first purchase or a tier raise names, and that plan is kept in memory to charge each renewal again.
 newMockStoreVerifier :: IO UTCTime -> IO StoreVerifier
 newMockStoreVerifier clock = do
   plans <- newTVarIO M.empty
