@@ -166,6 +166,11 @@ that arrived under `HighSpeed`. With `MediumSpeed` (the template's value) or a s
 bitcoin is credited to the order's balance once confirmed, at the lower of the invoice's rate and the
 rate when it is credited.
 
+BTCPay keeps an invoice it has closed `Expired` (or `Invalid` after a cancel) when money arrives late.
+The invoice view reports `paidInFull` on such an invoice once BTCPay reads it `PaidLate` or
+`PaidOver`, or its due is 0 or less, and reports an overpaid invoice's `cryptoAmountDue` as `0`,
+never below.
+
 **Set the Monero plugin's settled-confirmation threshold (`InvoiceSettledConfirmationThreshold`) to
 at least 1.** BTCPay's API does not show how many confirmations a Monero payment has, only that
 threshold, so late Monero is credited only on an invoice made while it was 1 or more; it is then

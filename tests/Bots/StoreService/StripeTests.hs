@@ -7,6 +7,7 @@ module Bots.StoreService.StripeTests (badgeStripeTests) where
 import StoreService.Config (StripeConfig (..))
 import StoreService.Providers
   ( Confirmed (..),
+    Funded (..),
     ListPass (..),
     OrderDraft (..),
     PaymentSignal (..),
@@ -176,7 +177,7 @@ testFakeCancel = withProvider $ \fake p -> do
   ProviderInvoice {piProviderRef = pid} <- createdInvoice p (SPMCard CPStripe)
   pCancelInvoice p pid `shouldReturn` Right ()
   fakeIntentStatus fake pid `shouldReturn` Just "canceled"
-  pReadInvoice p pid `shouldReturn` Right (Just (SigClosed nothingReceived))
+  pReadInvoice p pid `shouldReturn` Right (Just (SigClosed nothingReceived PaidInPart))
   pCancelInvoice p pid >>= (`shouldSatisfy` namesInError "payment_intent_unexpected_state")
 
 testFakeReadExpands :: IO ()
@@ -193,7 +194,7 @@ testFakeCanceled = withProvider $ \fake p -> do
   ProviderInvoice {piProviderRef = pid} <- createdInvoice p (SPMCard CPStripe)
   setIntentState fake pid ["status" .= ("canceled" :: Text)]
   -- A nonzero received amount here would write a phantom payment for money the buyer never sent.
-  pReadInvoice p pid `shouldReturn` Right (Just (SigClosed nothingReceived))
+  pReadInvoice p pid `shouldReturn` Right (Just (SigClosed nothingReceived PaidInPart))
 
 testFakeCreate500 :: IO ()
 testFakeCreate500 = withProvider $ \fake p -> do
@@ -236,7 +237,7 @@ testConfirmedOnlySucceeded = do
   now <- getCurrentTime
   let read' status = signalOf now IntentRead {irId = "pi_test_x", irStatus = status, irAmountReceived = 5400, irChargeCreated = Nothing}
   read' "succeeded" `shouldBe` Right (Just (SigSettled (cardReceived 5400 5400) now))
-  read' "canceled" `shouldBe` Right (Just (SigClosed (cardReceived 0 0)))
+  read' "canceled" `shouldBe` Right (Just (SigClosed (cardReceived 0 0) PaidInPart))
   withProvider $ \_ p -> isNothing (pCurrentRate p) `shouldBe` True
 
 -- | A status=open query returns only open intents, which carry no signal, so the poll lists by
@@ -274,7 +275,7 @@ testFakeListsOpen = withProvider $ \_ p -> do
           rcv `shouldBe` fiftyFourDollarsReceived
           settledAt `shouldSatisfy` \t -> t >= askedAt && t <= answeredAt
         other -> failWith ("pi_test_a should settle at read time, got " <> show other)
-      lookup "pi_test_b" lpMoved `shouldBe` Just (SigClosed nothingReceived)
+      lookup "pi_test_b" lpMoved `shouldBe` Just (SigClosed nothingReceived PaidInPart)
     Left e -> failWith ("expected a list pass, got " <> show e)
 
 testFakeListSkipsIdless :: IO ()

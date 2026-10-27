@@ -107,6 +107,10 @@ knownMethodIds = map fst methodCurrencies
 confirmingPolicies :: [SpeedPolicy]
 confirmingPolicies = [MediumSpeed, LowMediumSpeed, LowSpeed]
 
+-- | BTCPay's additional statuses of a closed invoice that the whole amount reached, late or above it.
+closedInFullStatuses :: [Text]
+closedInFullStatuses = ["PaidLate", "PaidOver"]
+
 -- The last two are the only events a payment into a closed invoice sends.
 actedOnEventTypes :: [Text]
 actedOnEventTypes = ["InvoiceProcessing", "InvoiceSettled", "InvoiceExpired", "InvoiceInvalid", "InvoiceReceivedPayment", "InvoicePaymentSettled"]
@@ -357,7 +361,7 @@ readInvoice env ref = do
       logAdditionalStatus ref giAdditionalStatus
       ms <- greenfield env what methodGet ["invoices", ref, "payment-methods"] [] Nothing
       now <- getCurrentTime
-      pure (ms >>= paymentMethodsSignal now ref giStatus giSpeedPolicy)
+      pure (ms >>= paymentMethodsSignal now ref giStatus giAdditionalStatus giSpeedPolicy)
   where
     what = "read invoice"
 
@@ -404,11 +408,11 @@ invoicesPass now invs = foldr add (Right ListPass {lpMoved = [], lpSkipped = []}
     add v (Right pass) = case J.fromJSON v of
       J.Error e -> Right pass {lpSkipped = (invoiceIdOf v, T.pack e) : lpSkipped pass}
       J.Success gi -> addInvoice gi pass
-    addInvoice GInvoice {giId, giStatus, giSpeedPolicy, giPaymentMethods} pass = case giPaymentMethods of
+    addInvoice GInvoice {giId, giStatus, giAdditionalStatus, giSpeedPolicy, giPaymentMethods} pass = case giPaymentMethods of
       Nothing ->
         Left . ProviderError $
           listWhat <> ": invoice " <> giId <> " carries no paymentMethods, so includePaymentMethods was not honoured"
-      Just ms -> case invoiceSignal now giId giStatus giSpeedPolicy ms of
+      Just ms -> case invoiceSignal now giId giStatus giAdditionalStatus giSpeedPolicy ms of
         Left (ProviderError e) -> Right pass {lpSkipped = (Just giId, e) : lpSkipped pass}
         Right Nothing -> Right pass
         Right (Just sig) -> Right pass {lpMoved = (giId, sig) : lpMoved pass}
@@ -425,14 +429,14 @@ logAdditionalStatus ref = \case
   Just s | s /= "None" -> logInfo ("btcpay: invoice " <> ref <> " additionalStatus " <> s)
   _ -> pure ()
 
--- | The status and speed policy are the invoice's, the body its payment methods.
-paymentMethodsSignal :: UTCTime -> Text -> Text -> Maybe Text -> LB.ByteString -> Either ProviderError (Maybe PaymentSignal)
-paymentMethodsSignal now ref status policy body =
-  decodeGreenfield "read invoice" body >>= invoiceSignal now ref status policy
+-- | The status, additional status and speed policy are the invoice's, the body its payment methods.
+paymentMethodsSignal :: UTCTime -> Text -> Text -> Maybe Text -> Maybe Text -> LB.ByteString -> Either ProviderError (Maybe PaymentSignal)
+paymentMethodsSignal now ref status additional policy body =
+  decodeGreenfield "read invoice" body >>= invoiceSignal now ref status additional policy
 
 -- Complete is the old API's status name and never matches, so it has no case here.
-invoiceSignal :: UTCTime -> Text -> Text -> Maybe Text -> [GPaymentMethod] -> Either ProviderError (Maybe PaymentSignal)
-invoiceSignal now ref status policy ms = do
+invoiceSignal :: UTCTime -> Text -> Text -> Maybe Text -> Maybe Text -> [GPaymentMethod] -> Either ProviderError (Maybe PaymentSignal)
+invoiceSignal now ref status additional policy ms = do
   (m@GPaymentMethod {gpmRate, gpmPaid, gpmDue, gpmPayments, gpmSettledThreshold}, cc) <- chooseMethod ref ms
   rate <- priced "rate" gpmRate
   paid <- priced "paymentMethodPaid" gpmPaid
@@ -440,11 +444,16 @@ invoiceSignal now ref status policy ms = do
       confirming = maybe False (`elem` map speedPolicyName confirmingPolicies) policy
       shown = cc /= CCXmr || maybe False (>= 1) gpmSettledThreshold
       received = receivedOf decimals confirming shown (status == "Settled") rate paid gpmDue gpmPayments
+      -- BTCPay never settles an invoice it has closed, so only these tell that the whole amount reached it
+      closedFunded
+        | maybe False (`elem` closedInFullStatuses) additional = PaidInFull
+        | wnValue paid > 0 && maybe False ((<= 0) . wnValue) gpmDue = PaidInFull
+        | otherwise = PaidInPart
   case status of
     "Settled" -> Right (Just (SigSettled received (fromMaybe now (latestSettledAt m))))
     "Processing" -> Right (Just (SigFunded received PaidInFull))
-    "Expired" -> Right (Just (SigClosed received))
-    "Invalid" -> Right (Just (SigClosed received))
+    "Expired" -> Right (Just (SigClosed received closedFunded))
+    "Invalid" -> Right (Just (SigClosed received closedFunded))
     "New" -> Right (SigFunded received PaidInPart <$ rcvCrypto received)
     other -> Left (ProviderError ("btcpay invoice " <> ref <> ": unknown status " <> other))
   where
@@ -486,7 +495,7 @@ receivedOf decimals confirming shown invoiceSettled rate paid due payments =
   Received
     { rcvAmount = toMinorUnits (wnValue paid * wnValue rate),
       rcvCrypto = if wnValue paid > 0 then Just (wnText paid) else Nothing,
-      rcvDue = wnText <$> due,
+      rcvDue = nonNegative <$> due,
       rcvUnits = fst <$> counted,
       rcvRate = Just (wnText rate),
       rcvConfirmed = case uncreditable of
@@ -495,6 +504,8 @@ receivedOf decimals confirming shown invoiceSettled rate paid due payments =
       rcvUncreditable = uncreditable
     }
   where
+    -- an overpaid invoice's due is below 0, and nothing is owed on it
+    nonNegative WireNum {wnText, wnValue} = if wnValue < 0 then "0" else wnText
     settled = filter ((== "Settled") . gpStatus) payments
     allSettled = invoiceSettled || (not (null payments) && length settled == length payments)
     counted = do

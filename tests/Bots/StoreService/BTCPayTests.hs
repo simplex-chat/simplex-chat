@@ -61,6 +61,8 @@ badgeBTCPayTests = describe "badge btcpay adapter" $ do
     it "falls back to the read time when a Settled invoice was marked by hand" testSettledManuallyMarked
     it "funds on Processing" testProcessing
     it "closes on Expired and on Invalid" testClosed
+    it "reports a closed invoice paid in full on PaidLate, PaidOver or a due at 0 or less, and in part otherwise" testClosedPaidInFull
+    it "reads an overpaid invoice's negative due as 0" testOverpaidDueIsZero
     it "funds on New with something received" testNewWithPayment
     it "funds on New with a payment worth less than a minor unit" testNewWithDust
     it "reports no change on New with nothing received" testNewWithNothing
@@ -93,6 +95,7 @@ badgeBTCPayTests = describe "badge btcpay adapter" $ do
     it "fails the pass when the payment methods are absent, rather than reporting health" testListFailsWithoutPaymentMethods
     it "skips an invoice it cannot even name, unaccounted for" testListSkipsWithoutId
     it "fails the pass on a response it cannot read" testListFailsOnUnreadableBody
+    it "reports a listed closed invoice paid in full from its PaidLate" testListClosedPaidLate
   describe "BTCPay-Sig" $ do
     it "accepts the indented bytes as received, for each acted-on type" testWebhookAccepts
     it "finds the header whatever its case" testWebhookHeaderCase
@@ -109,7 +112,7 @@ badgeBTCPayTests = describe "badge btcpay adapter" $ do
     it "is refused when the api key is wrong, rather than passing silently" testFakeWrongApiKey
     it "sends the documented create body, and no redirectURL" testFakeCreateBody
     it "walks New to Processing to Settled, two calls per read" testFakeLifecycle
-    it "closes on Expired and on Invalid" testFakeClosed
+    it "closes on Expired and on Invalid, in full once the whole amount or BTCPay's PaidLate says so" testFakeClosed
     it "names a status the provider invented" testFakeUnknownStatus
     it "reads paymentMethodPaid over the wire, never totalPaid" testFakePaymentMethodPaid
     it "makes a 500 at checkout a ProviderError" testFakeCreate500
@@ -200,7 +203,7 @@ rcvUnitsOf :: PaymentSignal -> Maybe Int64
 rcvUnitsOf = \case
   SigFunded r _ -> rcvUnits r
   SigSettled r _ -> rcvUnits r
-  SigClosed r -> rcvUnits r
+  SigClosed r _ -> rcvUnits r
 
 testHighSpeedConfirmsNothing :: IO ()
 testHighSpeedConfirmsNothing = do
@@ -254,6 +257,7 @@ btcPaid paid payments =
 dueAfter :: Text -> Text
 dueAfter = \case
   "0.00050000" -> "0.00000000"
+  "0.00080000" -> "-0.00030000"
   "0.00000001" -> "0.00050499"
   _ -> "0.00050000"
 
@@ -275,7 +279,11 @@ signalOf = signalUnder (Just "MediumSpeed")
 
 -- | Read from an invoice made under the speed policy given, or none.
 signalUnder :: Maybe Text -> Text -> [J.Value] -> Either ProviderError (Maybe PaymentSignal)
-signalUnder policy status methods = paymentMethodsSignal readTime ref status policy (methodsBody methods)
+signalUnder policy status methods = paymentMethodsSignal readTime ref status Nothing policy (methodsBody methods)
+
+-- | Read from an invoice with the additional status given.
+signalWith :: Text -> Text -> [J.Value] -> Either ProviderError (Maybe PaymentSignal)
+signalWith additional status methods = paymentMethodsSignal readTime ref status (Just additional) (Just "MediumSpeed") (methodsBody methods)
 
 -- | BTC at the rate the bodies carry: the cents, crypto and due received, and the satoshi received and confirmed, with the confirmed cents.
 btcReceived :: Word32 -> Maybe Text -> Text -> Int64 -> Int64 -> Word32 -> Received
@@ -317,9 +325,27 @@ testProcessing =
 testClosed :: IO ()
 testClosed = do
   signalOf "Expired" [btcPaid "0.00050000" [payment "Processing" 1700000000]]
-    `shouldBe` Right (Just (SigClosed halfMilliBtcUnconfirmed))
+    `shouldBe` Right (Just (SigClosed halfMilliBtcUnconfirmed PaidInFull))
   signalOf "Invalid" [btcPaid "0.00000000" []]
-    `shouldBe` Right (Just (SigClosed (nothingReceived "0.00050000")))
+    `shouldBe` Right (Just (SigClosed (nothingReceived "0.00050000") PaidInPart))
+
+-- | BTCPay keeps a late-paid invoice Expired, or Invalid after a cancel, and says the whole amount arrived only by these.
+testClosedPaidInFull :: IO ()
+testClosedPaidInFull = do
+  let verdict additional status paid = (\case Right (Just (SigClosed _ f)) -> Just f; _ -> Nothing) (signalWith additional status [btcPaid paid [payment "Settled" 1700000000]])
+  verdict "PaidLate" "Expired" "0.00025000" `shouldBe` Just PaidInFull
+  verdict "PaidOver" "Invalid" "0.00025000" `shouldBe` Just PaidInFull
+  verdict "None" "Expired" "0.00050000" `shouldBe` Just PaidInFull
+  verdict "Marked" "Invalid" "0.00080000" `shouldBe` Just PaidInFull
+  verdict "PaidPartial" "Expired" "0.00025000" `shouldBe` Just PaidInPart
+  verdict "None" "Invalid" "0.00025000" `shouldBe` Just PaidInPart
+  verdict "None" "Expired" "0.00000000" `shouldBe` Just PaidInPart
+
+testOverpaidDueIsZero :: IO ()
+testOverpaidDueIsZero = do
+  let overpaid = btcReceived 8640 (Just "0.00080000") "0" 80000 80000 8640
+  signalOf "Settled" [btcPaid "0.00080000" []] `shouldBe` Right (Just (SigSettled overpaid readTime))
+  signalWith "PaidOver" "Expired" [btcPaid "0.00080000" []] `shouldBe` Right (Just (SigClosed overpaid {rcvConfirmed = Confirmed {cfCents = CurrencyAmount 0, cfUnits = Just 0}} PaidInFull))
 
 testNewWithPayment :: IO ()
 testNewWithPayment =
@@ -399,7 +425,7 @@ testUnknownPaymentMethod = do
 
 testUnreadableResponse :: IO ()
 testUnreadableResponse =
-  paymentMethodsSignal readTime ref "Settled" (Just "MediumSpeed") "<html>502 Bad Gateway</html>" `shouldSatisfy` namesInError "could not read the response"
+  paymentMethodsSignal readTime ref "Settled" Nothing (Just "MediumSpeed") "<html>502 Bad Gateway</html>" `shouldSatisfy` namesInError "could not read the response"
 
 namesInError :: Text -> Either ProviderError a -> Bool
 namesInError what = \case
@@ -498,6 +524,14 @@ testListFailsOnUnreadableBody :: IO ()
 testListFailsOnUnreadableBody =
   listSignals readTime "<html>502 Bad Gateway</html>" `shouldSatisfy` namesInError "could not read the response"
 
+testListClosedPaidLate :: IO ()
+testListClosedPaidLate = do
+  let paidLate = case listEntry ref "Expired" (Just [btcPaid "0.00025000" []]) of
+        J.Object o -> J.Object (KM.insert "additionalStatus" (J.String "PaidLate") o)
+        other -> other
+      quarter = btcReceived 2700 (Just "0.00025000") "0.00050000" 25000 0 0
+  lpMoved <$> listSignals readTime (J.encode [paidLate]) `shouldBe` Right [(ref, SigClosed quarter PaidInFull)]
+
 testReadsPaymentMethodPaid :: IO ()
 testReadsPaymentMethodPaid = do
   signalOf "Settled" [btcPaid "0.00050000" [payment "Settled" 1700000000]]
@@ -547,7 +581,7 @@ testNumberAsWellAsString = do
   let asNumbers =
         "[{\"paymentMethodId\":\"BTC-CHAIN\",\"rate\":108000.12,\"paymentMethodPaid\":0.00050000,\
         \\"payments\":[{\"status\":\"Settled\",\"receivedDate\":1700000000}]}]"
-  case paymentMethodsSignal readTime ref "Settled" (Just "MediumSpeed") asNumbers of
+  case paymentMethodsSignal readTime ref "Settled" Nothing (Just "MediumSpeed") asNumbers of
     Right (Just (SigSettled r t)) -> do
       rcvAmount r `shouldBe` CurrencyAmount 5400
       rcvCrypto r `shouldBe` Just "0.00050000"
@@ -755,9 +789,11 @@ testFakeClosed :: IO ()
 testFakeClosed = withProvider $ \fake p -> do
   ProviderInvoice {piProviderRef = invRef} <- createdInvoice p (SPMCrypto CCBtc)
   setInvoiceState fake invRef ["status" .= ("Expired" :: Text), "paymentMethodPaid" .= ("0.00050000" :: Text)]
-  pReadInvoice p invRef `shouldReturn` Right (Just (SigClosed halfMilliBtcUnconfirmed))
+  pReadInvoice p invRef `shouldReturn` Right (Just (SigClosed halfMilliBtcUnconfirmed PaidInFull))
   setInvoiceState fake invRef ["status" .= ("Invalid" :: Text), "paymentMethodPaid" .= ("0.00000000" :: Text)]
-  pReadInvoice p invRef `shouldReturn` Right (Just (SigClosed (nothingReceived "0.00050000")))
+  pReadInvoice p invRef `shouldReturn` Right (Just (SigClosed (nothingReceived "0.00050000") PaidInPart))
+  setInvoiceState fake invRef ["status" .= ("Expired" :: Text), "additionalStatus" .= ("PaidLate" :: Text), "paymentMethodPaid" .= ("0.00025000" :: Text), "due" .= ("0.00025000" :: Text)]
+  pReadInvoice p invRef `shouldReturn` Right (Just (SigClosed (btcReceived 2700 (Just "0.00025000") "0.00025000" 25000 0 0) PaidInFull))
 
 testFakeUnknownStatus :: IO ()
 testFakeUnknownStatus = withProvider $ \fake p -> do

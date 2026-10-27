@@ -252,7 +252,7 @@ settleMoved env@PollerEnv {peStore, peWaiters, pePhases, peProviders} provider n
     reportSettled sold before after
       -- checked before the no-change case, so a refund still alerts when money lands after expiry;
       -- a name order's late payment is credited to its balance instead
-      | IPBadge {} <- sold, after == ISExpired, SigClosed Received {rcvCrypto = Just paid} <- signal = do
+      | IPBadge {} <- sold, after == ISExpired, SigClosed Received {rcvCrypto = Just paid} _ <- signal = do
           let alert = "badge poller: order " <> ref <> " expired holding " <> paid <> ", which needs a refund"
           due <- dueToWarn env now alert
           when due $ logError alert
