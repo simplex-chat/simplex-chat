@@ -3797,7 +3797,7 @@ object ChatController {
           } else {
             CIDeleted.Deleted(Clock.System.now())
           }
-          chatsCtx.upsertChatItem(rhId, cInfo, cItem.copy(meta = cItem.meta.copy(itemDeleted = deleted)))
+          chatsCtx.upsertChatItem(rhId, cInfo.copy(groupChatScope = chatsCtx.groupScopeInfo), cItem.copy(meta = cItem.meta.copy(itemDeleted = deleted)))
         }
       }
     }
