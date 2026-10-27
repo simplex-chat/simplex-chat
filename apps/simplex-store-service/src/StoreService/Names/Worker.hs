@@ -268,7 +268,7 @@ committed w@Worker {wkSender} now r@NameRegistration {nrId, nrReveal, nrRevealAf
         _ -> save w now r {nrPhase = PFailed, nrFailedAt = Just now, nrError = Just notSignedInTime}
       Just rv@NameReveal {rvAcceptance, rvDeadline} ->
         (pure rvAcceptance $>>= relayAcceptance w now r rvDeadline) >>= \case
-          Just relaying -> pure relaying
+          Just next -> pure next
           Nothing -> case secondsTime . toInteger <$> nrRevealAfter of
             Just revealAfter | now < revealAfter -> pure $ waitUntil r revealAfter
             _ -> sendRegister w now r rv

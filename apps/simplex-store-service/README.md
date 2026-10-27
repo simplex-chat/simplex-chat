@@ -612,7 +612,8 @@ One more setting gives the community terms' text:
   it again on each search, order, reveal and view of a listed name until its text hashes to them.
   Until the text matches, and without this setting or before the policy has terms, a search of any
   listed name answers 503, registered names included, and community names cannot be ordered or
-  revealed.
+  revealed. To change the terms, the owner sets the new hash on chain first and the page is replaced
+  after it, so no order signs a hash whose text the page no longer serves.
 
 `[community]` gives what each community name is for, one line per name: the label, as it is searched,
 then `=` and the text:
