@@ -60,7 +60,7 @@ ComposeView
 
 ## 2. ComposeState Data Class
 
-**Location:** [`ComposeView.kt#L98`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt#L98)
+**Location:** [`ComposeState`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt#L107)
 
 ```kotlin
 @Serializable
@@ -142,7 +142,7 @@ Tracks a live (streaming) message: the associated `ChatItem`, the currently type
 
 ## 3. ComposePreview Sealed Class
 
-**Location:** [`ComposeView.kt#L52`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt#L52)
+**Location:** [`ComposePreview`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt#L60)
 
 ```kotlin
 sealed class ComposePreview {
@@ -174,7 +174,7 @@ Used within `MediaPreview` to track the source type:
 
 ## 4. ComposeContextItem Sealed Class
 
-**Location:** [`ComposeView.kt#L61`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt#L61)
+**Location:** [`ComposeContextItem`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt#L70)
 
 ```kotlin
 sealed class ComposeContextItem {
@@ -348,9 +348,14 @@ When `privacyLinkPreviews` is enabled and the message contains a URL:
 
 ## 7. Draft Persistence
 
-**Location:** [`ComposeView.kt#L1230`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt#L1230) (`KeyChangeEffect(chatModel.chatId.value)`)
+**Location:** [`KeyChangeEffect(chatModel.chatId.value)`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt#L1366)
 
 Controlled by the `privacySaveLastDraft` preference.
+
+The compose input style is derived from the current body size and theme color,
+with the system default sans-serif font, natural line height and zero letter
+spacing, matching the conversation's Telegram reference typography. Draft and
+sending behavior are independent of this visual style.
 
 ### Save Behavior
 

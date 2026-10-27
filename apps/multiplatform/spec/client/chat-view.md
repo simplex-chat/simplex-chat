@@ -15,6 +15,7 @@ Source: `common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt
 7. [ChatInfoView](#7-chatinfoview)
 8. [GroupChatInfoView](#8-groupchatinfoview)
 9. [Source Files](#9-source-files)
+10. [Telegram Reference Layout](#10-telegram-reference-layout)
 
 ---
 
@@ -56,7 +57,7 @@ ChatView
 
 ## 2. ChatView Composable
 
-**Location:** [`ChatView.kt#L97`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L97)
+**Location:** [`ChatView()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L98)
 
 ```kotlin
 fun ChatView(
@@ -107,7 +108,7 @@ The outer `when (chatInfo)` (line ~229) branches:
 
 ## 3. Message List
 
-**Location:** [`ChatView.kt#L1592`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L1592) (`ChatItemsList` composable)
+**Location:** [`ChatItemsList()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L1733)
 
 The message list is a `LazyColumnWithScrollBar` with `reverseLayout = true`, meaning index 0 is the newest message at the bottom of the screen.
 
@@ -123,10 +124,10 @@ The message list is a `LazyColumnWithScrollBar` with `reverseLayout = true`, mea
 
 ### Item Layout (ChatViewListItem)
 
-- **Group received messages** with `showAvatar = true`: Column layout with `MemberNameAndRole` header, `MemberImage` (clickable to `showMemberInfo`), and message bubble.
+- **Group received messages** with `showAvatar = true`: bottom-aligned `MemberImage` (clickable to `showMemberInfo`) at the end of a sender run. Ordinary message sender names, badges and moderator roles appear inside the first bubble of the run; non-message events retain their external header.
 - **Group received without avatar:** Indented to align with avatar-bearing messages.
 - **Sent messages (group or direct):** Right-aligned with larger start padding.
-- **Direct messages:** Symmetric padding (76dp opposite side).
+- **Direct messages:** 6dp screen gutter and 49dp opposite gutter before tail alignment adjustments.
 
 ---
 
@@ -134,7 +135,7 @@ The message list is a `LazyColumnWithScrollBar` with `reverseLayout = true`, mea
 
 ## 4. ChatItemView
 
-**Location:** [`item/ChatItemView.kt#L66`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemView.kt#L66)
+**Location:** [`ChatItemView()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemView.kt#L66)
 
 ```kotlin
 fun ChatItemView(
@@ -330,3 +331,36 @@ Key sections: group profile, group link, member list with roles, group preferenc
 When a relay operator runs `/leave #channel`, the relay sends `x.grp.relay.reject` over the owner-relay direct contact channel. Owner-side handling: the corresponding `GroupRelay.relayStatus` transitions `RSInvited → RSRejected`; the relay's `GroupMember.memberStatus` is set to `MemLeft` so the owner UI renders the rejected relay identically to one that explicitly ran `/leave` (`MemRejected` is reserved for the knocking-admission flow). In `GroupMemberInfoView`, an additional "Status: rejected by relay operator" `InfoRow` appears when `groupRelay?.relayStatus == RelayStatus.RsRejected`. The status is final on the owner side — clearable only by the relay operator running `/group allow #<channel>`, which has no owner-facing event.
 
 The `RelayStatusIndicator` composable in `AddChannelView.kt` renders `RsRejected` with a red dot and "rejected" text, matching the `connFailed`/`removed` rendering.
+
+## 10. Telegram Reference Layout
+
+The classic conversation adapts Telegram Android `3de37c8cf` geometry to Compose.
+
+Source: [`TelegramChatTypography()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatBubbleStyle.kt#L31),
+[`chatMessageTextStyle()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatBubbleStyle.kt#L46),
+[`chatMessagesJoined()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatBubbleStyle.kt#L54).
+
+| Rule | Compose implementation |
+|---|---|
+| Body typography | System default sans-serif, user's existing body size, natural line metrics and zero letter spacing. Scoped to conversation rows; the global application theme retains its fonts. |
+| Text insets | 11dp at the sides; 5dp above and below the text layout. These are adapted layout-box insets, not measured glyph bounds. |
+| Quotes | Font size `(2 * bodySize + 10) / 3`; bold sender; compact tinted card with 2dp accent, 4dp corners and 35dp media thumbnails. |
+| Bubble contour | Circular corners, 17dp at the default roundness setting, 6dp near joined messages, limited by available width/height; 6dp tail outside the body. Existing tail and roundness preferences remain active. |
+| Grouping | Ordinary messages with matching direction/sender within 300 seconds, inclusive. Different calendar dates, deleted items, system events and report/non-report changes break runs. |
+| List spacing | 2dp inside runs, 6dp between runs; 8dp bottom space after the newest separate message. Group avatar-column constraints remain supported. |
+| Sender | Name and badge inside the first received group bubble; avatar bottom-aligned at the end of the run. |
+| Metadata | 12sp natural text; visible outgoing status after the time. Every message shows its timestamp. All SimpleX encryption, signature, proxy, error and disappearing-message indicators retain their visibility rules. |
+| Metadata wrapping | Measure the real metadata row before composing message text. An inline placeholder reserves its width plus 4dp; a zero-width break allows metadata to move alone. Mixed RTL direction gets a separate metadata line. |
+
+[`MeasuredChatMetadata()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/CIMetaView.kt#L29)
+must wrap the framed bubble **outside** its intrinsic-width content, because a
+`SubcomposeLayout` does not provide intrinsic measurements. The hidden measurement
+copy is not placed. The visible row remains at the lower end of the bubble, 4.5dp
+above the bottom. Specialized file/error renderers retain their existing space
+reservation where they do not use `MarkdownText`.
+
+[`CIMarkdownText()`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/FramedItemView.kt#L417)
+uses the natural message style. Selectable and clickable text both receive the
+inline content map; metadata/live-typing suffixes are excluded from selection.
+`ChatBubbleGroupingTest` runs on desktop/JVM because model sample fixtures load
+localized strings and require initialized Android resources on an Android JVM test.

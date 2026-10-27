@@ -24,12 +24,12 @@ fun MarkedDeletedItemView(chatsCtx: ChatModel.ChatsContext, ci: ChatItem, chatIn
   val sentColor = MaterialTheme.appColors.sentMessage
   val receivedColor = MaterialTheme.appColors.receivedMessage
   Surface(
-    shape = RoundedCornerShape(18.dp),
+    shape = RoundedCornerShape(17.dp),
     color = if (ci.chatDir.sent) sentColor else receivedColor,
     contentColor = LocalContentColor.current
   ) {
     Row(
-      Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+      Modifier.padding(horizontal = CHAT_TEXT_INSET, vertical = CHAT_TEXT_TOP_INSET),
       verticalAlignment = Alignment.CenterVertically
     ) {
       Box(Modifier.weight(1f, false)) {
@@ -84,7 +84,7 @@ private fun MergedMarkedDeletedText(chatsCtx: ChatModel.ChatsContext, chatItem: 
     buildAnnotatedString {
       withStyle(SpanStyle(fontSize = 12.sp, fontStyle = FontStyle.Italic, color = MaterialTheme.colors.secondary)) { append(text) }
     },
-    style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp),
+    style = chatMessageTextStyle(),
     modifier = Modifier.padding(end = 8.dp),
     maxLines = 1,
     overflow = TextOverflow.Ellipsis,

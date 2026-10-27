@@ -2,11 +2,15 @@ package chat.simplex.common.views.chat.item
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.*
@@ -16,6 +20,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
@@ -63,7 +68,7 @@ fun FramedItemView(
       toggleSecrets = true,
       maxLines = lines,
       overflow = TextOverflow.Ellipsis,
-      style = TextStyle(fontSize = 15.sp, color = MaterialTheme.colors.onSurface),
+      style = chatMessageTextStyle(chatReplyFontSize()),
       linkMode = linkMode,
       uriHandler = if (appPlatform.isDesktop) uriHandler else null,
       showTimestamp = showTimestamp,
@@ -79,7 +84,7 @@ fun FramedItemView(
         // this width limitation prevents crash on calculating constraints that may happen if you post veeeery long message and then quote it.
         // Top level layout wants `IntrinsicWidth.Max` and very long layout makes the crash in this case
         .widthIn(max = 50000.dp)
-        .padding(vertical = 6.dp, horizontal = 12.dp),
+        .padding(vertical = 3.dp, horizontal = 8.dp),
       contentAlignment = Alignment.TopStart
     ) {
       val sender = qi.sender(membership())
@@ -89,13 +94,13 @@ fun FramedItemView(
         ) {
           Text(
             sender,
-            style = TextStyle(fontSize = 13.5.sp, color = if (qi.chatDir is CIDirection.GroupSnd) CurrentColors.value.colors.primary else CurrentColors.value.colors.secondary),
+            style = chatMessageTextStyle(chatReplyFontSize(), if (qi.chatDir is CIDirection.GroupSnd) CurrentColors.value.colors.primary else CurrentColors.value.colors.secondary).copy(fontWeight = FontWeight.Bold),
             maxLines = 1
           )
-          ciQuotedMsgTextView(qi, lines = 2, showTimestamp = showTimestamp, stripLink = stripLink, prefix = prefix)
+          ciQuotedMsgTextView(qi, lines = 1, showTimestamp = showTimestamp, stripLink = stripLink, prefix = prefix)
         }
       } else {
-        ciQuotedMsgTextView(qi, lines = 3, showTimestamp = showTimestamp, stripLink = stripLink, prefix = prefix)
+        ciQuotedMsgTextView(qi, lines = 2, showTimestamp = showTimestamp, stripLink = stripLink, prefix = prefix)
       }
     }
   }
@@ -108,7 +113,7 @@ fun FramedItemView(
       Modifier
         .background(if (sent) sentColor else receivedColor)
         .fillMaxWidth()
-        .padding(start = 8.dp, top = 6.dp, end = 12.dp, bottom = if (pad || (ci.quotedItem == null && ci.meta.itemForwarded == null)) 6.dp else 0.dp),
+        .padding(start = CHAT_TEXT_INSET, top = 5.dp, end = CHAT_TEXT_INSET, bottom = if (pad || (ci.quotedItem == null && ci.meta.itemForwarded == null)) 3.dp else 0.dp),
       horizontalArrangement = Arrangement.spacedBy(4.dp),
       verticalAlignment = Alignment.CenterVertically
     ) {
@@ -126,7 +131,7 @@ fun FramedItemView(
             append(caption)
           }
         },
-        style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp),
+        style = chatMessageTextStyle(chatReplyFontSize()),
         maxLines = 1,
         overflow = TextOverflow.Ellipsis
       )
@@ -138,9 +143,13 @@ fun FramedItemView(
     val blurred = remember { mutableStateOf(appPreferences.privacyMediaBlurRadius.get() > 0) }
     val sentColor = MaterialTheme.appColors.sentQuote
     val receivedColor = MaterialTheme.appColors.receivedQuote
+    val quoteAccent = MaterialTheme.colors.primary
     Row(
       Modifier
+        .padding(start = CHAT_TEXT_INSET, end = CHAT_TEXT_INSET, top = 5.dp)
+        .clip(RoundedCornerShape(4.dp))
         .background(if (sent) sentColor else receivedColor)
+        .drawBehind { drawRect(quoteAccent, size = Size(2.dp.toPx(), size.height)) }
         .fillMaxWidth()
     ) {
       when (qi.content) {
@@ -153,7 +162,7 @@ fun FramedItemView(
             imageBitmap,
             contentDescription = stringResource(MR.strings.image_descr),
             contentScale = ContentScale.Crop,
-            modifier = Modifier.size(68.dp).clipToBounds().desktopModifyBlurredState(blurred, showMenu).privacyBlur(fullSize = false, imageBitmap, blurred, chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true })
+            modifier = Modifier.size(35.dp).clipToBounds().desktopModifyBlurredState(blurred, showMenu).privacyBlur(fullSize = false, imageBitmap, blurred, chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true })
           )
         }
         is MsgContent.MCVideo -> {
@@ -165,7 +174,7 @@ fun FramedItemView(
             imageBitmap,
             contentDescription = stringResource(MR.strings.video_descr),
             contentScale = ContentScale.Crop,
-            modifier = Modifier.size(68.dp).clipToBounds().desktopModifyBlurredState(blurred, showMenu).privacyBlur(fullSize = false, imageBitmap, blurred, chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true })
+            modifier = Modifier.size(35.dp).clipToBounds().desktopModifyBlurredState(blurred, showMenu).privacyBlur(fullSize = false, imageBitmap, blurred, chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true })
           )
         }
         is MsgContent.MCFile, is MsgContent.MCVoice -> {
@@ -213,6 +222,7 @@ fun FramedItemView(
 
   val sentColor = MaterialTheme.appColors.sentMessage
   val receivedColor = MaterialTheme.appColors.receivedMessage
+  MeasuredChatMetadata(ci, chatTTL, showViaProxy, showTimestamp) {
   Box(Modifier
     .clipChatItem(ci, tailVisible, revealed = true)
     .background(
@@ -232,6 +242,15 @@ fun FramedItemView(
           .width(IntrinsicSize.Max)
           .padding(start = if (!sent && tailRendered) msgTailWidthDp else 0.dp, end = if (sent && tailRendered) msgTailWidthDp else 0.dp)
       ) {
+        val groupMember = (ci.chatDir as? CIDirection.GroupRcv)?.groupMember
+        if (groupMember != null && !LocalChatBubbleGroup.current.joinedAbove && ci.content.showMemberName) {
+          Row(Modifier.padding(start = CHAT_TEXT_INSET, end = CHAT_TEXT_INSET, top = 5.dp, bottom = 1.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            NameWithBadge(groupMember.chatViewName, groupMember.nameBadge, Modifier.weight(1f, false), style = chatMessageTextStyle(chatReplyFontSize(), MaterialTheme.colors.primary).copy(fontWeight = FontWeight.Bold), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (groupMember.memberRole > GroupMemberRole.Member) {
+              Text(groupMember.memberRole.text(isChannel = (chatInfo as? ChatInfo.Group)?.isChannel == true), style = chatMessageTextStyle(12.sp, MaterialTheme.colors.secondary), maxLines = 1)
+            }
+          }
+        }
         PriorityLayout(Modifier, CHAT_IMAGE_LAYOUT_ID) {
           @Composable
           fun Header() {
@@ -299,7 +318,7 @@ fun FramedItemView(
             }
           }
           if (ci.file == null && ci.formattedText == null && !ci.meta.isLive && isShortEmoji(ci.content.text)) {
-            Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
+            Box(Modifier.padding(vertical = CHAT_TEXT_TOP_INSET, horizontal = CHAT_TEXT_INSET)) {
               Column(
                 Modifier
                   .padding(bottom = 2.dp)
@@ -383,13 +402,14 @@ fun FramedItemView(
       Box(
         Modifier
           .padding(
-            bottom = 6.dp,
-            end = 12.dp + if (tailRendered && sent) msgTailWidthDp else 0.dp,
+            bottom = CHAT_META_BOTTOM_INSET,
+            end = CHAT_TEXT_INSET + if (tailRendered && sent) msgTailWidthDp else 0.dp,
           )
       ) {
         CIMetaView(ci, chatTTL, metaColor, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
       }
     }
+  }
   }
 }
 
@@ -411,9 +431,10 @@ fun CIMarkdownText(
   val text = if (ci.meta.isLive) ci.content.msgContent?.text ?: ci.text else ci.text
   val selection = setupItemSelection(LocalSelectionManager.current, LocalItemContext.current.selectionIndex, ci.meta.isLive == true)
 
-  Box(Modifier.padding(vertical = 7.dp, horizontal = 12.dp).then(selection.positionModifier)) {
+  Box(Modifier.padding(start = CHAT_TEXT_INSET, end = CHAT_TEXT_INSET, top = CHAT_TEXT_TOP_INSET, bottom = CHAT_TEXT_BOTTOM_INSET).then(selection.positionModifier)) {
     MarkdownText(
       text, if (text.isEmpty()) emptyList() else ci.formattedText, toggleSecrets = true,
+      style = chatMessageTextStyle(),
       sendCommandMsg = if (chatInfo.useCommands && chat.chatInfo.sndReady) { { msg -> sendCommandMsg(chatsCtx, chat, msg) } } else null,
       meta = ci.meta, chatTTL = chatTTL, linkMode = linkMode,
       mentions = ci.mentions, userMemberId = when {

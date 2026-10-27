@@ -43,10 +43,18 @@ Rendered by `LazyColumnWithScrollBar` with pagination:
 | Scroll direction | Bottom-to-top (newest messages at bottom) |
 | Pagination | `apiLoadMessages` called on scroll to load more; supports `.before`, `.after`, `.around`, `.initial` |
 | Merged items | Adjacent messages grouped with `ItemSeparation` (timestamp, large gap, date separators) |
+| Message appearance | Telegram reference system typography, compact text insets, circular bubble corners and small joined corners; five-minute sender runs stop at dates/events/deleted items. Each message shows a timestamp. |
 | Floating buttons | Scroll-to-bottom button with unread count |
 | Date separators | Date headers between messages from different days |
 | Wallpaper | Per-chat themed background via `perChatTheme` from contact/group `uiThemes` |
 | Content filter | Filter messages by type via `ContentFilter` (images, files, links, etc.) |
+
+In received group messages, the first bubble of a run contains the sender name,
+badge and moderator role; the avatar sits at the bottom of the last bubble. Reply
+previews use a compact tinted card with an accent line and bold sender. Metadata
+reserves its actual rendered width so text and status indicators do not overlap.
+System, deletion and decryption error information remains visible in the compact
+message typography. The input text also uses the system sans-serif font.
 
 ### Message Types
 

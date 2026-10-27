@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.InlineTextContent
+import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
@@ -34,6 +35,7 @@ import kotlinx.coroutines.*
 
 val reserveTimestampStyle = SpanStyle(color = Color.Transparent)
 val boldFont = SpanStyle(fontWeight = FontWeight.Medium)
+private const val metadataInlineContentId = "chat-metadata-reserve"
 
 fun appendSender(b: AnnotatedString.Builder, sender: String?, senderBold: Boolean) {
   if (sender != null) {
@@ -131,7 +133,7 @@ fun MarkdownText (
   userMemberId: String? = null,
   toggleSecrets: Boolean,
   sendCommandMsg: ((String) -> Unit)? = null,
-  style: TextStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onSurface, lineHeight = 22.sp),
+  style: TextStyle = if (LocalTelegramChatStyle.current) chatMessageTextStyle() else MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onSurface, lineHeight = 22.sp),
   maxLines: Int = Int.MAX_VALUE,
   overflow: TextOverflow = TextOverflow.Clip,
   uriHandler: UriHandler? = null,
@@ -152,12 +154,29 @@ fun MarkdownText (
   val textLayoutDirection = remember (text) {
     if (isRtl(text.subSequence(0, kotlin.math.min(50, text.length)))) LayoutDirection.Rtl else LayoutDirection.Ltr
   }
-  val reserve = if (textLayoutDirection != LocalLayoutDirection.current && meta != null) {
+  val metadataSize = if (meta != null) LocalChatMetadataSize.current else null
+  val separateMetadataLine = textLayoutDirection != LocalLayoutDirection.current
+  val reserve = if (metadataSize != null || meta == null) {
+    ""
+  } else if (separateMetadataLine) {
     "\n"
-  } else if (meta != null) {
-    reserveSpaceForMeta(meta, chatTTL, null, secondaryColor = MaterialTheme.colors.secondary, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
   } else {
-    "    "
+    reserveSpaceForMeta(meta, chatTTL, null, secondaryColor = MaterialTheme.colors.secondary, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
+  }
+  val textInlineContent = (inlineContent?.second ?: emptyMap()) + if (metadataSize != null) {
+    mapOf(metadataInlineContentId to InlineTextContent(
+      Placeholder(metadataSize.width, metadataSize.height, PlaceholderVerticalAlign.Bottom)
+    ) {})
+  } else emptyMap()
+  fun AnnotatedString.Builder.appendMetadataReserve() {
+    if (meta != null) withStyle(reserveTimestampStyle) {
+      if (metadataSize != null) {
+        append(if (separateMetadataLine) "\n" else "\u200B")
+        appendInlineContent(metadataInlineContentId)
+      } else {
+        append(reserve)
+      }
+    }
   }
   val scope = rememberCoroutineScope()
   CompositionLocalProvider(
@@ -207,13 +226,13 @@ fun MarkdownText (
         if (meta?.isLive == true) {
           append(typingIndicator(meta.recent, typingIdx))
         }
-        if (meta != null) withStyle(reserveTimestampStyle) { append(reserve) }
+        appendMetadataReserve()
       }
-      val clampedRange = selectionRange?.let { it.first .. minOf(it.last, selectableEnd) }
+      val clampedRange = selectionRange?.let { it.first .. minOf(it.last, selectableEnd - 1) }
       if (onTextLayoutResult != null) {
-        SelectableText(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, selectionRange = clampedRange, onTextLayoutResult = onTextLayoutResult)
+        SelectableText(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, selectionRange = clampedRange, onTextLayoutResult = onTextLayoutResult, inlineContent = textInlineContent)
       } else {
-        Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, inlineContent = inlineContent?.second ?: mapOf())
+        Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, inlineContent = textInlineContent)
       }
     } else {
       var selectableEnd = 0
@@ -344,12 +363,9 @@ fun MarkdownText (
         if (meta?.isLive == true) {
           append(typingIndicator(meta.recent, typingIdx))
         }
-        // With RTL language set globally links looks bad sometimes, better to add a new line to bo sure everything looks good
-        /*if (metaText != null && hasLinks && LocalLayoutDirection.current == LayoutDirection.Rtl)
-          withStyle(reserveTimestampStyle) { append("\n" + metaText) }
-        else */if (meta != null) withStyle(reserveTimestampStyle) { append(reserve) }
+        appendMetadataReserve()
       }
-      val clampedRange = selectionRange?.let { it.first .. minOf(it.last, selectableEnd) }
+      val clampedRange = selectionRange?.let { it.first .. minOf(it.last, selectableEnd - 1) }
       if ((hasLinks && uriHandler != null) || hasSecrets || (hasCommands && sendCommandMsg != null) || hasModals) {
         val icon = remember { mutableStateOf(PointerIcon.Text) }
         ClickableText(annotatedText, style = style, selectionRange = clampedRange, modifier = modifier.pointerHoverIcon(icon.value), maxLines = maxLines, overflow = overflow,
@@ -409,13 +425,14 @@ fun MarkdownText (
                 || annotatedText.hasStringAnnotations(tag = "OTHER_URL", start = offset, end = offset)
                 || annotatedText.hasStringAnnotations(tag = "MODAL", start = offset, end = offset)
           },
-          onTextLayout = { onTextLayoutResult?.invoke(it) }
+          onTextLayout = { onTextLayoutResult?.invoke(it) },
+          inlineContent = textInlineContent
         )
       } else {
         if (onTextLayoutResult != null) {
-          SelectableText(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, selectionRange = clampedRange, onTextLayoutResult = onTextLayoutResult)
+          SelectableText(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, selectionRange = clampedRange, onTextLayoutResult = onTextLayoutResult, inlineContent = textInlineContent)
         } else {
-          Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, inlineContent = inlineContent?.second ?: mapOf())
+          Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, inlineContent = textInlineContent)
         }
       }
     }
@@ -436,6 +453,7 @@ fun ClickableText(
   onLongClick: (Int) -> Unit = {},
   onHover: (Int) -> Unit = {},
   onHoverExit: () -> Unit = {},
+  inlineContent: Map<String, InlineTextContent> = emptyMap(),
   shouldConsumeEvent: (Int) -> Boolean
 ) {
   val layoutResult = remember { mutableStateOf<TextLayoutResult?>(null) }
@@ -487,6 +505,7 @@ fun ClickableText(
     softWrap = softWrap,
     overflow = overflow,
     maxLines = maxLines,
+    inlineContent = inlineContent,
     onTextLayout = {
       layoutResult.value = it
       onTextLayout(it)
@@ -502,7 +521,8 @@ private fun SelectableText(
   maxLines: Int = Int.MAX_VALUE,
   overflow: TextOverflow = TextOverflow.Clip,
   selectionRange: IntRange? = null,
-  onTextLayoutResult: ((TextLayoutResult) -> Unit)? = null
+  onTextLayoutResult: ((TextLayoutResult) -> Unit)? = null,
+  inlineContent: Map<String, InlineTextContent> = emptyMap()
 ) {
   val layoutResult = remember { mutableStateOf<TextLayoutResult?>(null) }
 
@@ -512,6 +532,7 @@ private fun SelectableText(
     style = style,
     maxLines = maxLines,
     overflow = overflow,
+    inlineContent = inlineContent,
     onTextLayout = {
       layoutResult.value = it
       onTextLayoutResult?.invoke(it)

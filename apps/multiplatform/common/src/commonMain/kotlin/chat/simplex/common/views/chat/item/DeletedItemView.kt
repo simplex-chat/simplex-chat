@@ -21,19 +21,19 @@ fun DeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, showViaProxy: Boolean,
   val sentColor = MaterialTheme.appColors.sentMessage
   val receivedColor = MaterialTheme.appColors.receivedMessage
   Surface(
-    shape = RoundedCornerShape(18.dp),
+    shape = RoundedCornerShape(17.dp),
     color = if (sent) sentColor else receivedColor,
     contentColor = LocalContentColor.current
   ) {
     Row(
-      Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+      Modifier.padding(horizontal = CHAT_TEXT_INSET, vertical = CHAT_TEXT_TOP_INSET),
       verticalAlignment = Alignment.Bottom
     ) {
       Text(
         buildAnnotatedString {
           withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = MaterialTheme.colors.secondary)) { append(ci.content.text) }
         },
-        style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp),
+        style = chatMessageTextStyle(),
         modifier = Modifier.padding(end = 8.dp)
       )
       CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp)

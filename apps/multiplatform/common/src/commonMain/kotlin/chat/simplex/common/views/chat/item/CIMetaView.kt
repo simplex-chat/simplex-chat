@@ -4,12 +4,15 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.ui.graphics.painter.Painter
 import dev.icerock.moko.resources.compose.painterResource
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.ui.layout.SubcomposeLayout
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
@@ -17,6 +20,43 @@ import chat.simplex.common.platform.appPreferences
 import chat.simplex.common.ui.theme.isInDarkTheme
 import chat.simplex.res.MR
 import kotlinx.datetime.Clock
+
+internal data class ChatMetadataSize(val width: TextUnit, val height: TextUnit)
+
+internal val LocalChatMetadataSize = staticCompositionLocalOf<ChatMetadataSize?> { null }
+
+@Composable
+fun MeasuredChatMetadata(
+  chatItem: ChatItem,
+  timedMessagesTTL: Int?,
+  showViaProxy: Boolean,
+  showTimestamp: Boolean,
+  content: @Composable () -> Unit
+) {
+  SubcomposeLayout { constraints ->
+    val metadataMaxWidth = (constraints.maxWidth - (CHAT_TEXT_INSET * 2 + msgTailWidthDp + 4.dp).roundToPx()).coerceAtLeast(1)
+    val metadata = subcompose("metadata") {
+      CIMetaView(chatItem, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
+    }.single().measure(constraints.copy(minWidth = 0, minHeight = 0, maxWidth = metadataMaxWidth))
+    val size = ChatMetadataSize((metadata.width + 4.dp.roundToPx()).toSp(), metadata.height.toSp())
+    val body = subcompose("body") {
+      CompositionLocalProvider(LocalChatMetadataSize provides size) {
+        Box { content() }
+      }
+    }.single().measure(constraints)
+    layout(body.width, body.height) {
+      // The bubble draws its metadata overlay; this copy only supplies its measured dimensions.
+      body.placeRelative(0, 0)
+    }
+  }
+}
+
+@Composable
+private fun metadataTextStyle(): TextStyle = MaterialTheme.typography.caption.copy(
+  fontSize = 12.sp,
+  lineHeight = TextUnit.Unspecified,
+  letterSpacing = 0.sp
+)
 
 @Composable
 fun CIMetaView(
@@ -44,7 +84,7 @@ fun CIMetaView(
       Text(
         chatItem.timestampText,
         color = metaColor,
-        fontSize = 12.sp,
+        style = metadataTextStyle(),
         modifier = Modifier.padding(start = 3.dp)
       )
     } else {
@@ -58,14 +98,14 @@ fun CIMetaView(
         showEdited = showEdited,
         showViaProxy = showViaProxy,
         showTimestamp = showTimestamp,
-        signedFileVerified = chatItem.file?.loaded
+        signedFileVerified = chatItem.file?.loaded,
+        statusAfterTimestamp = chatItem.chatDir.sent
       )
     }
   }
 }
 
 @Composable
-// changing this function requires updating reserveSpaceForMeta
 private fun CIMetaText(
   meta: CIMeta,
   chatTTL: Int?,
@@ -77,6 +117,7 @@ private fun CIMetaText(
   showTimestamp: Boolean,
   showViaProxy: Boolean,
   signedFileVerified: Boolean?,
+  statusAfterTimestamp: Boolean = false,
 ) {
   val showSignature = appPreferences.privacyShowSignature.state.value
   val showEncryption = appPreferences.privacyShowEncryption.state.value
@@ -87,14 +128,15 @@ private fun CIMetaText(
     StatusIconText(painterResource(MR.images.ic_timer), color)
     val ttl = meta.itemTimed?.ttl
     if (ttl != chatTTL) {
-      Text(shortTimeText(ttl), color = color, fontSize = 12.sp)
+      Text(shortTimeText(ttl), color = color, style = metadataTextStyle())
     }
   }
   if (showViaProxy && meta.sentViaProxy == true) {
     Spacer(Modifier.width(4.dp))
     Icon(painterResource(MR.images.ic_arrow_forward), null, Modifier.height(17.dp), tint = MaterialTheme.colors.secondary)
   }
-  if (showStatus) {
+  @Composable
+  fun status() {
     Spacer(Modifier.width(4.dp))
     val statusIcon = meta.statusIcon(MaterialTheme.colors.primary, color, paleColor)
     if (statusIcon != null) {
@@ -104,9 +146,10 @@ private fun CIMetaText(
       } else {
         StatusIconText(painterResource(icon), statusColor)
       }
-    } else if (!meta.disappearing) {
-      StatusIconText(painterResource(MR.images.ic_circle_filled), Color.Transparent)
     }
+  }
+  if (showStatus && !statusAfterTimestamp && meta.statusIcon(MaterialTheme.colors.primary, color, paleColor) != null) {
+    status()
   }
   if (encrypted != null && showEncryption) {
     Spacer(Modifier.width(4.dp))
@@ -122,11 +165,14 @@ private fun CIMetaText(
 
   if (showTimestamp) {
     Spacer(Modifier.width(4.dp))
-    Text(meta.timestampText, color = color, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    Text(meta.timestampText, color = color, style = metadataTextStyle(), maxLines = 1, overflow = TextOverflow.Ellipsis)
+  }
+  if (showStatus && statusAfterTimestamp && meta.statusIcon(MaterialTheme.colors.primary, color, paleColor) != null) {
+    status()
   }
 }
 
-// the conditions in this function should match CIMetaText
+// Legacy reservation for specialized renderers without measured inline metadata.
 fun reserveSpaceForMeta(
   meta: CIMeta,
   chatTTL: Int?,

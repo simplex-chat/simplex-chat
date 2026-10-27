@@ -156,7 +156,7 @@ fun DecryptionErrorItemFixButton(
           buildAnnotatedString {
             withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Color.Red)) { append(ci.content.text) }
           },
-          style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp)
+              style = chatMessageTextStyle()
         )
         Row {
           Icon(
@@ -203,7 +203,7 @@ fun DecryptionErrorItem(
           withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Color.Red)) { append(ci.content.text) }
           withStyle(reserveTimestampStyle) { append(reserveSpaceForMeta(ci.meta, null, encrypted = null, secondaryColor = secondaryColor, showTimestamp = true)) }
         },
-        style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp)
+        style = chatMessageTextStyle()
       )
       CIMetaView(ci, timedMessagesTTL = null, showViaProxy = false, showTimestamp = true)
     }

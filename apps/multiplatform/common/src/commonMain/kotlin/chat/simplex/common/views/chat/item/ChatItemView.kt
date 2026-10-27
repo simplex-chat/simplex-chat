@@ -42,11 +42,8 @@ import kotlin.math.*
 
 // TODO refactor so that FramedItemView can show all CIContent items if they're deleted (see Swift code)
 
-private val msgRectMaxRadius = 18.dp
-private val msgBubbleMaxRadius = msgRectMaxRadius * 1.2f
-val msgTailWidthDp = 9.dp
-private val msgTailMinHeightDp = msgTailWidthDp * 1.254f // ~56deg
-private val msgTailMaxHeightDp = msgTailWidthDp * 1.732f // 60deg
+private val msgRectMaxRadius = 17.dp / 0.75f
+val msgTailWidthDp = 6.dp
 
 val chatEventStyle = SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.Light, color = CurrentColors.value.colors.secondary)
 
@@ -153,7 +150,7 @@ fun ChatItemView(
             }
           }
 
-          var modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp).clip(RoundedCornerShape(8.dp))
+          var modifier = Modifier.padding(horizontal = 2.dp, vertical = 2.dp).clip(RoundedCornerShape(13.dp))
           if (cInfo.featureEnabled(ChatFeature.Reactions)) {
             fun showReactionsMenu() {
               when (cInfo) {
@@ -206,8 +203,8 @@ fun ChatItemView(
               )
               .onRightClick { showReactionsMenu() }
           }
-          Row(modifier.padding(2.dp), verticalAlignment = Alignment.CenterVertically) {
-            ReactionIcon(r.reaction.text, fontSize = 12.sp)
+          Row(modifier.padding(horizontal = 6.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            ReactionIcon(r.reaction.text, fontSize = 16.sp)
             DefaultDropdownMenu(showMenu = showReactionMenu) {
               reactionMenuItems.value.forEach { m ->
                 ItemAction(
@@ -229,7 +226,7 @@ fun ChatItemView(
               Spacer(Modifier.width(4.dp))
               Text(
                 "${r.totalReacted}",
-                fontSize = 11.5.sp,
+                fontSize = 12.sp,
                 fontWeight = if (r.userReacted) FontWeight.Bold else FontWeight.Normal,
                 color = if (r.userReacted) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
               )
@@ -1232,7 +1229,8 @@ fun Modifier.clipChatItem(chatItem: ChatItem? = null, tailVisible: Boolean = fal
       // items, dropping long-press on the lower part of the bubble (issue #6991). Clip
       // in the draw pass instead — drawing is clipped identically (the press ripple
       // included), with no effect on hit-test.
-      val shape = chatItemShape(cornerRoundness, LocalDensity.current, style.tailVisible, chatItem?.chatDir?.sent == true)
+      val group = LocalChatBubbleGroup.current
+      val shape = chatItemShape(cornerRoundness, LocalDensity.current, style.tailVisible, chatItem?.chatDir?.sent == true, group)
       this.drawWithCache {
         val path = Path().apply {
           addOutline(shape.createOutline(size, layoutDirection, this@drawWithCache))
@@ -1247,63 +1245,35 @@ fun Modifier.clipChatItem(chatItem: ChatItem? = null, tailVisible: Boolean = fal
   }
 }
 
-private fun chatItemShape(roundness: Float, density: Density, tailVisible: Boolean, sent: Boolean = false): GenericShape = GenericShape { size, _ ->
-  val (msgTailWidth, msgBubbleMaxRadius) = with(density) { Pair(msgTailWidthDp.toPx(), msgBubbleMaxRadius.toPx()) }
-  val width = size.width
-  val height = size.height
-  val rxMax = min(msgBubbleMaxRadius, width / 2)
-  val ryMax = min(msgBubbleMaxRadius, height / 2)
-  val rx = roundness * rxMax
-  val ry = roundness * ryMax
-  val tailHeight = with(density) {
-    min(
-      msgTailMinHeightDp.toPx() + roundness * (msgTailMaxHeightDp.toPx() - msgTailMinHeightDp.toPx()),
-      height / 2
-    )
-  }
-  moveTo(rx, 0f)
-  lineTo(width - rx, 0f) // Top Line
-  if (roundness > 0) {
-    quadraticBezierTo(width, 0f, width, ry) // Top-right corner
-  }
-  if (height > 2 * ry) {
-    lineTo(width, height - ry) // Right side
-  }
-  if (roundness > 0) {
-    quadraticBezierTo(width, height, width - rx, height) // Bottom-right corner
-  }
+private fun chatItemShape(roundness: Float, density: Density, tailVisible: Boolean, sent: Boolean = false, group: ChatBubbleGroup): GenericShape = GenericShape { size, _ ->
+  val tail = with(density) { if (tailVisible) msgTailWidthDp.toPx() else 0f }
+  val left = tail.coerceAtMost(size.width)
+  val right = size.width
+  val bottom = size.height
+  val maxRadius = min((right - left) / 2, bottom / 2).coerceAtLeast(0f)
+  val radius = min(with(density) { msgRectMaxRadius.toPx() } * roundness, maxRadius)
+  val nearRadius = min(with(density) { 6.dp.toPx() } * (roundness / 0.75f), radius)
+  val topLeft = if (group.joinedAbove) nearRadius else radius
+  val bottomLeft = if (group.joinedBelow) nearRadius else radius
+  moveTo(left + topLeft, 0f)
+  lineTo(right - radius, 0f)
+  if (radius > 0) arcTo(Rect(right - radius * 2, 0f, right, radius * 2), -90f, 90f, false)
+  lineTo(right, bottom - radius)
+  if (radius > 0) arcTo(Rect(right - radius * 2, bottom - radius * 2, right, bottom), 0f, 90f, false)
   if (tailVisible) {
-    lineTo(0f, height) // Bottom line
-    if (roundness > 0) {
-      val d = tailHeight - msgTailWidth * msgTailWidth / tailHeight
-      val controlPoint = Offset(msgTailWidth, height - tailHeight + d * sqrt(roundness))
-      quadraticBezierTo(controlPoint.x, controlPoint.y, msgTailWidth, height - tailHeight)
-    } else {
-      lineTo(msgTailWidth, height - tailHeight)
-    }
-
-    if (height > ry + tailHeight) {
-      lineTo(msgTailWidth, ry)
-    }
+    lineTo(0f, bottom)
+    val tailHeight = min(with(density) { 15.dp.toPx() }, bottom / 2)
+    cubicTo(left * 0.85f, bottom - tailHeight * 0.15f, left, bottom - tailHeight * 0.55f, left, bottom - tailHeight)
   } else {
-    lineTo(rx, height) // Bottom line
-    if (roundness > 0) {
-      quadraticBezierTo(0f, height, 0f, height - ry) // Bottom-left corner
-    }
-    if (height > 2 * ry) {
-      lineTo(0f, ry) // Left side
-    }
+    lineTo(left + bottomLeft, bottom)
+    if (bottomLeft > 0) arcTo(Rect(left, bottom - bottomLeft * 2, left + bottomLeft * 2, bottom), 90f, 90f, false)
   }
-  if (roundness > 0) {
-    val bubbleInitialX = if (tailVisible) msgTailWidth else 0f
-    quadraticBezierTo(bubbleInitialX, 0f, bubbleInitialX + rx, 0f) // Top-left corner
-  }
-
+  lineTo(left, topLeft)
+  if (topLeft > 0) arcTo(Rect(left, 0f, left + topLeft * 2, topLeft * 2), 180f, 90f, false)
+  close()
   if (sent) {
-    val matrix = Matrix()
-    matrix.scale(-1f, 1f)
-    this.transform(matrix)
-    this.translate(Offset(size.width, 0f))
+    transform(Matrix().apply { scale(-1f, 1f) })
+    translate(Offset(size.width, 0f))
   }
 }
 

@@ -1934,6 +1934,7 @@ fun BoxScope.ChatItemsList(
 
       @Composable
       fun ChatItemViewShortHand(cItem: ChatItem, itemSeparation: ItemSeparation, range: State<IntRange?>, fillMaxWidth: Boolean = true, swipeOffset: Float = 0f) {
+        TelegramChatTypography(LocalChatBubbleGroup.current) {
         tryOrShowError("${cItem.id}ChatItem", error = {
           CIBrokenComposableView(if (cItem.chatDir.sent) Alignment.CenterEnd else Alignment.CenterStart)
         }) {
@@ -1948,6 +1949,7 @@ fun BoxScope.ChatItemsList(
               }
           }
           ChatItemView(chatsCtx, remoteHostId, chat, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, highlighted = highlighted, hoveredItemId = hoveredItemId, range = range, searchIsNotBlank = searchValueIsNotBlank, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems, reversedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, archiveReports = archiveReports, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, scrollToItemId = scrollToItemId, scrollToQuotedItemFromItem = scrollToQuotedItemFromItem, setReaction = setReaction, showItemDetails = showItemDetails, reveal = reveal, showMemberInfo = showMemberInfo, showChatInfo = showChatInfo, developerTools = developerTools, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp, swipeOffset = swipeOffset)
+        }
         }
       }
 
@@ -1982,9 +1984,9 @@ fun BoxScope.ChatItemsList(
                 if (itemAtZeroIndexInWholeList) {
                   8.dp
                 } else {
-                  4.dp
+                  3.dp
                 }
-              } else 1.dp, top = if (previousItemSeparationLargeGap) 4.dp else 1.dp
+              } else 1.dp, top = if (previousItemSeparationLargeGap) 3.dp else 1.dp
             ),
             contentAlignment = Alignment.CenterStart
           ) {
@@ -2011,11 +2013,11 @@ fun BoxScope.ChatItemsList(
               if (showAvatar) {
                 Column(
                   Modifier
-                    .padding(top = 8.dp)
+                    .padding(top = 0.dp)
                     .padding(start = 8.dp, end = if (voiceWithTransparentBack || chatInfo.isChannel) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
                     .fillMaxWidth()
                     .then(swipeableModifier),
-                  verticalArrangement = Arrangement.spacedBy(4.dp),
+                  verticalArrangement = Arrangement.spacedBy(0.dp),
                   horizontalAlignment = Alignment.Start
                 ) {
                   @Composable
@@ -2064,18 +2066,18 @@ fun BoxScope.ChatItemsList(
                       androidx.compose.animation.AnimatedVisibility(selectionVisible, enter = fadeIn(), exit = fadeOut()) {
                         SelectedListItem(Modifier, cItem.id, selectedChatItems)
                       }
-                      Row(Modifier.graphicsLayer { translationX = selectionOffset.toPx() }) {
+                      Row(Modifier.graphicsLayer { translationX = selectionOffset.toPx() }, verticalAlignment = Alignment.Bottom) {
                         val member = cItem.chatDir.groupMember
                         Box(Modifier.clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
                           MemberImage(member)
                         }
-                        Box(modifier = Modifier.padding(top = 2.dp, start = 4.dp).chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)) {
+                        Box(modifier = Modifier.padding(start = 4.dp).chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)) {
                           ChatItemViewShortHand(cItem, itemSeparation, range, false, dismissState.offset.value)
                         }
                       }
                     }
                   }
-                  if (cItem.content.showMemberName) {
+                  if (cItem.content.showMemberName && cItem.content.msgContent == null) {
                     DependentLayout(Modifier, CHAT_BUBBLE_LAYOUT_ID) {
                       MemberNameAndRole(range)
                       Item()
@@ -2103,11 +2105,11 @@ fun BoxScope.ChatItemsList(
               if (showAvatar) {
                 Column(
                   Modifier
-                    .padding(top = 8.dp)
+                    .padding(top = 0.dp)
                     .padding(start = 8.dp, end = if (voiceWithTransparentBack || chatInfo.isChannel) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
                     .fillMaxWidth()
                     .then(swipeableModifier),
-                  verticalArrangement = Arrangement.spacedBy(4.dp),
+                  verticalArrangement = Arrangement.spacedBy(0.dp),
                   horizontalAlignment = Alignment.Start
                 ) {
                   @Composable
@@ -2143,7 +2145,7 @@ fun BoxScope.ChatItemsList(
                       androidx.compose.animation.AnimatedVisibility(selectionVisible, enter = fadeIn(), exit = fadeOut()) {
                         SelectedListItem(Modifier, cItem.id, selectedChatItems)
                       }
-                      Row(Modifier.graphicsLayer { translationX = selectionOffset.toPx() }) {
+                      Row(Modifier.graphicsLayer { translationX = selectionOffset.toPx() }, verticalAlignment = Alignment.Bottom) {
                         Box(Modifier.clickable { showChatInfo() }) {
                           ProfileImage(
                             MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier,
@@ -2152,13 +2154,13 @@ fun BoxScope.ChatItemsList(
                             backgroundColor = MaterialTheme.colors.background
                           )
                         }
-                        Box(modifier = Modifier.padding(top = 2.dp, start = 4.dp).chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)) {
+                        Box(modifier = Modifier.padding(start = 4.dp).chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)) {
                           ChatItemViewShortHand(cItem, itemSeparation, range, false)
                         }
                       }
                     }
                   }
-                  if (cItem.content.showMemberName) {
+                  if (cItem.content.showMemberName && cItem.content.msgContent == null) {
                     DependentLayout(Modifier, CHAT_BUBBLE_LAYOUT_ID) {
                       ChannelNameAndRole()
                       Item()
@@ -2189,7 +2191,7 @@ fun BoxScope.ChatItemsList(
                 }
                 Box(
                   Modifier
-                    .padding(start = if (voiceWithTransparentBack) 12.dp else adjustTailPaddingOffset(104.dp, start = true), end = 12.dp)
+                    .padding(start = if (voiceWithTransparentBack) CHAT_SCREEN_INSET else adjustTailPaddingOffset(CHAT_OPPOSITE_INSET, start = true), end = CHAT_SCREEN_INSET)
                     .chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)
                     .then(if (selectionVisible) Modifier else swipeableModifier)
                 ) {
@@ -2205,8 +2207,8 @@ fun BoxScope.ChatItemsList(
 
               Box(
                 Modifier.padding(
-                  start = if (sent && !voiceWithTransparentBack) adjustTailPaddingOffset(76.dp, start = true) else 12.dp,
-                  end = if (sent || voiceWithTransparentBack) 12.dp else adjustTailPaddingOffset(76.dp, start = false),
+                  start = if (sent && !voiceWithTransparentBack) adjustTailPaddingOffset(CHAT_OPPOSITE_INSET, start = true) else CHAT_SCREEN_INSET,
+                  end = if (sent || voiceWithTransparentBack) CHAT_SCREEN_INSET else adjustTailPaddingOffset(CHAT_OPPOSITE_INSET, start = false),
                 )
                   .chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)
                   .then(if (!selectionVisible || !sent) swipeableOrSelectionModifier else Modifier)
@@ -2407,7 +2409,7 @@ fun BoxScope.ChatItemsList(
         } else {
           null
         }
-        val showAvatar = shouldShowAvatar(item, merged.oldest().nextItem)
+        val showAvatar = shouldShowAvatar(item, listItem.prevItem)
         val isRevealed = remember { derivedStateOf { revealedItems.value.contains(item.id) } }
         val itemSeparation: ItemSeparation
         val prevItemSeparationLargeGap: Boolean
@@ -2420,7 +2422,10 @@ fun BoxScope.ChatItemsList(
           itemSeparation = getItemSeparation(item, null)
           prevItemSeparationLargeGap = false
         }
-        CompositionLocalProvider(LocalItemContext provides ItemContext(selectionIndex = index)) {
+        CompositionLocalProvider(
+          LocalItemContext provides ItemContext(selectionIndex = index),
+          LocalChatBubbleGroup provides ChatBubbleGroup(chatMessagesJoined(item, listItem.nextItem), chatMessagesJoined(item, listItem.prevItem))
+        ) {
           ChatViewListItem(index == 0, rememberUpdatedState(range), showAvatar, item, itemSeparation, prevItemSeparationLargeGap, isRevealed) {
             if (merged is MergedItem.Grouped) merged.reveal(it, revealedItems)
           }
@@ -3740,15 +3745,10 @@ private fun getItemSeparation(chatItem: ChatItem, prevItem: ChatItem?): ItemSepa
     return ItemSeparation(timestamp = true, largeGap = true, date = null)
   }
 
-  val sameMemberAndDirection = if (prevItem.chatDir is GroupRcv && chatItem.chatDir is GroupRcv) {
-    chatItem.chatDir.groupMember.groupMemberId == prevItem.chatDir.groupMember.groupMemberId
-  } else if (chatItem.chatDir is CIDirection.ChannelRcv && prevItem.chatDir is CIDirection.ChannelRcv) {
-    true
-  } else chatItem.chatDir.sent == prevItem.chatDir.sent
-  val largeGap = !sameMemberAndDirection || (abs(prevItem.meta.createdAt.epochSeconds - chatItem.meta.createdAt.epochSeconds) >= 60)
+  val largeGap = !chatMessagesJoined(chatItem, prevItem)
 
   return ItemSeparation(
-    timestamp = largeGap || prevItem.meta.timestampText != chatItem.meta.timestampText,
+    timestamp = true,
     largeGap = largeGap,
     date = if (getTimestampDateText(chatItem.meta.itemTs) == getTimestampDateText(prevItem.meta.itemTs)) null else prevItem.meta.itemTs
   )
@@ -3759,27 +3759,11 @@ private fun getItemSeparationLargeGap(chatItem: ChatItem, nextItem: ChatItem?): 
     return true
   }
 
-  val sameMemberAndDirection = if (nextItem.chatDir is GroupRcv && chatItem.chatDir is GroupRcv) {
-    chatItem.chatDir.groupMember.groupMemberId == nextItem.chatDir.groupMember.groupMemberId
-  } else if (chatItem.chatDir is CIDirection.ChannelRcv && nextItem.chatDir is CIDirection.ChannelRcv) {
-    true
-  } else chatItem.chatDir.sent == nextItem.chatDir.sent
-  return !sameMemberAndDirection || (abs(nextItem.meta.createdAt.epochSeconds - chatItem.meta.createdAt.epochSeconds) >= 60)
+  return !chatMessagesJoined(chatItem, nextItem)
 }
 
 private fun shouldShowAvatar(current: ChatItem, older: ChatItem?): Boolean {
-  val oldIsGroupRcv = older?.chatDir is CIDirection.GroupRcv || older?.chatDir is CIDirection.ChannelRcv
-  val sameMember = when {
-    older?.chatDir is CIDirection.GroupRcv && current.chatDir is CIDirection.GroupRcv ->
-      older.chatDir.groupMember.memberId == current.chatDir.groupMember.memberId
-    older?.chatDir is CIDirection.ChannelRcv && current.chatDir is CIDirection.ChannelRcv -> true
-    else -> false
-  }
-  return when {
-    current.chatDir is CIDirection.GroupRcv -> older == null || !oldIsGroupRcv || !sameMember
-    current.chatDir is CIDirection.ChannelRcv -> older == null || !oldIsGroupRcv || !sameMember
-    else -> false
-  }
+  return (current.chatDir is CIDirection.GroupRcv || current.chatDir is CIDirection.ChannelRcv) && !chatMessagesJoined(current, older)
 }
 
 
