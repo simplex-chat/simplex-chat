@@ -455,12 +455,13 @@ object BadgeStore {
     reportSubscriptionStates()
     val rhId = chatModel.remoteHostId()
     chatModel.controller.loadBadgeState(rhId)
-    if (handOverError != null) throw handOverError
-    return withContext(Dispatchers.Main) {
+    val restored = withContext(Dispatchers.Main) {
       val userId = chatModel.currentUser.value?.userId
       val badgeShown = BadgeModel.isCurrent(rhId, userId) && BadgeModel.badgeState.value?.shown == true
       badgeShown || purchaseState(userId) != null
     }
+    if (!restored && handOverError != null) throw handOverError
+    return restored
   }
 
   fun subscriptionPrice(badgeType: BadgeType, planMonths: Int): String? {
