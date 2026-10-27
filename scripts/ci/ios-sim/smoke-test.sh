@@ -115,8 +115,8 @@ fail() {
 
 create_group() {
   "$ui" tap Compose
-  "$ui" tap "Create group"
-  "$ui" tap-value "Enter group name…"
+  "$ui" tap "Create group" 30
+  "$ui" tap-value "Enter group name…" 30
   "$ui" type "image notes"
   "$ui" shot new-group
   tap_element Button "Create group" || fail "no \"Create group\" button"
