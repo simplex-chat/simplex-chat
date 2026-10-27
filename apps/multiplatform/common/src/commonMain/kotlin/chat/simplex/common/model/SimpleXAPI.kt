@@ -3775,7 +3775,7 @@ object ChatController {
             generalGetString(MR.strings.marked_deleted_description)
           )
         }
-        val deleted = if (r.member_ != null && (cItem.chatDir as CIDirection.GroupRcv?)?.groupMember?.groupMemberId != r.member_.groupMemberId) {
+        val deleted = if (r.member_ != null && (cItem.chatDir as? CIDirection.GroupRcv)?.groupMember?.groupMemberId != r.member_.groupMemberId) {
           CIDeleted.Moderated(Clock.System.now(), r.member_)
         } else {
           CIDeleted.Deleted(Clock.System.now())
@@ -3792,7 +3792,7 @@ object ChatController {
             // Stop voice playback only inside a chat, allow to play in a chat list
             AudioPlayer.stop(cItem)
           }
-          val deleted = if (r.member_ != null && (cItem.chatDir as CIDirection.GroupRcv?)?.groupMember?.groupMemberId != r.member_.groupMemberId) {
+          val deleted = if (r.member_ != null && (cItem.chatDir as? CIDirection.GroupRcv)?.groupMember?.groupMemberId != r.member_.groupMemberId) {
             CIDeleted.Moderated(Clock.System.now(), r.member_)
           } else {
             CIDeleted.Deleted(Clock.System.now())
