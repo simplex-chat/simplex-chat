@@ -2791,7 +2791,7 @@
     <string name="sign_message_desc">La firma dimostra che hai scritto questo messaggio e non può essere negato più tardi.</string>
     <string name="sign_message">Firma il messaggio</string>
     <string name="sign_messages">Firma i messaggi</string>
-    <string name="signature_missing_alert_desc">Il canale ha richiesto di firmare questo messaggio, ma la firma non è presente.</string>
+    <string name="signature_missing_alert_desc">Il messaggio è stato inviato prima che il canale abbia iniziato a firmare messaggi, o è falso.</string>
     <string name="channel_simplex_name">Nome SimpleX per il canale</string>
     <string name="get_simplex_name_beta">Ottieni nome SimpleX (BETA)</string>
     <string name="register_test_name">Come registrare un nome di prova</string>
@@ -2998,4 +2998,9 @@
     <string name="keystore_key_storage_tee">TEE</string>
     <string name="markdown_text_view">Visualizzazione testo</string>
     <string name="file_already_exists_replace_question">Il file esiste già. Vuoi sostituirlo?</string>
+    <string name="member_info_section_title_contributor">Collaboratore</string>
+    <string name="sign_messages_enable">Attiva</string>
+    <string name="sign_messages_alert_desc">I messaggi inviati prima mostreranno che manca la firma agli iscritti che si uniscono più tardi.</string>
+    <string name="member_info_section_title_moderator">Moderatore</string>
+    <string name="sign_messages_question">Firmare i messaggi?</string>
 </resources>
