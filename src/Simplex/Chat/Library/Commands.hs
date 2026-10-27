@@ -5855,7 +5855,7 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
       answer <- tryAllErrors $ requireBadgeService >>= \sendTarget -> sendBadgeIssue sendTarget userId p upgradeCmd (atomically . writeTVar failure_ . Just) now
       answeredAt <- badgeNow
       recorded_ <- readTVarIO failure_
-      let refusedInSilence failure = SRODeferred <$ withStore' (\db -> refuseStoreReceipt db receiptId failure)
+      let refusedInSilence failure = SRODeferred <$ withStore' (\db -> refuseStoreReceipt db receiptId payment failure)
       serviceAnswered ri delay refusedInSilence (failedHeld ri delay) answer $ \case
         _ | Just failure <- recorded_ -> failedHeld ri delay failure Nothing
         (_, stored) ->
@@ -5877,7 +5877,10 @@ creditStoreReceipt a userId receiptId stash@BadgeStash {masterKey} invoiceId_ pa
         else failed ri delay failure retryAfter
     setAside = SRODeferred <$ withStore' (`settleStoreReceipt` receiptId)
     receiptInvalid = BIFServiceError {code = BSEReceiptInvalid, retryable = False}
-    refuse failure = SRORefused failure <$ withStore' (\db -> refuseStoreReceipt db receiptId failure)
+    -- a payment adopted while this one was with the service stays held and is sent next, so nothing is announced
+    refuse failure = do
+      refused <- withStore' $ \db -> refuseStoreReceipt db receiptId payment failure
+      pure $ if refused then SRORefused failure else SRODeferred
     serviceFailure code retryAfter = BIFServiceError {code = boundedServiceErrorCode code, retryable = isJust retryAfter}
     failed ri delay failure retryAfter = do
       now <- badgeNow

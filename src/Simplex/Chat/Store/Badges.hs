@@ -415,17 +415,20 @@ recordStoreReceiptFailure db receiptId payment retryDelay nextAttemptAt failure 
 
 -- | Kept rather than deleted, so that a later hand-over of the same transaction is answered from the record.
 -- A refused move returns the record to the profile whose purchase it still funds.
-refuseStoreReceipt :: DB.Connection -> Int64 -> BadgeIssueFailure -> IO ()
-refuseStoreReceipt db receiptId refusal =
-  DB.execute
-    db
-    [sql|
-      UPDATE badge_store_receipts
-      SET payment = NULL, next_attempt_at = NULL, retry_delay = NULL, retry_count = 0, credit_error = ?, hold_kind = ?,
-        user_id = COALESCE((SELECT p.user_id FROM badge_purchases p WHERE p.badge_store_receipt_id = ?), user_id)
-      WHERE badge_store_receipt_id = ?
-    |]
-    (refusal, SHKPurchase, receiptId, receiptId)
+-- Only while the record still holds the payment refused, which is when it answers True: one adopted meanwhile is due at once.
+refuseStoreReceipt :: DB.Connection -> Int64 -> Text -> BadgeIssueFailure -> IO Bool
+refuseStoreReceipt db receiptId payment refusal =
+  maybeFirstRow' False ((== (1 :: Int)) . fromOnly) $
+    DB.query
+      db
+      [sql|
+        UPDATE badge_store_receipts
+        SET payment = NULL, next_attempt_at = NULL, retry_delay = NULL, retry_count = 0, credit_error = ?, hold_kind = ?,
+          user_id = COALESCE((SELECT p.user_id FROM badge_purchases p WHERE p.badge_store_receipt_id = ?), user_id)
+        WHERE badge_store_receipt_id = ? AND payment = ?
+        RETURNING 1
+      |]
+      (refusal, SHKPurchase, receiptId, receiptId, payment)
 
 -- | Every settle clears the failure, so one recorded on a credited record is a refused resume or tier change.
 settleStoreReceipt :: DB.Connection -> Int64 -> IO ()
